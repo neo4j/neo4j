@@ -788,7 +788,7 @@ public class SeekCursorTest
 
             // Seeker pauses and writer insert new key which causes a split
             expected.add( (long) maxKeyCount );
-            insert( (long) maxKeyCount );
+            insert( maxKeyCount );
 
             seekCursor.forceRetry();
 
@@ -878,7 +878,7 @@ public class SeekCursorTest
 
             // Seeker pauses and writer insert new key which causes a split
             expected.add( (long) maxKeyCount );
-            insert( (long) maxKeyCount );
+            insert( maxKeyCount );
             seekCursor.forceRetry();
 
             while ( cursor.next() )
@@ -1641,7 +1641,7 @@ public class SeekCursorTest
         // a newer right leaf
         long rightChild = cursor.getCurrentPageId();
         node.initializeLeaf( cursor, stableGen, unstableGen );
-        cursor.next();
+        cursor.next( cursor.getCurrentPageId() + 1 );
 
         Supplier<Root> rootCatchup = () ->
         {
@@ -1663,7 +1663,7 @@ public class SeekCursorTest
         node.initializeLeaf( cursor, stableGen - 1, unstableGen - 1 );
         // with an old pointer to right sibling
         node.setRightSibling( cursor, rightChild, stableGen - 1, unstableGen - 1 );
-        cursor.next();
+        cursor.next( cursor.getCurrentPageId() + 1 );
 
         // a root
         node.initializeInternal( cursor, stableGen - 1, unstableGen - 1 );

@@ -40,6 +40,7 @@ import org.neo4j.io.pagecache.PageCache;
 import org.neo4j.io.pagecache.PageCursor;
 import org.neo4j.io.pagecache.PagedFile;
 
+import static java.lang.Long.max;
 import static java.lang.String.format;
 
 import static org.neo4j.index.internal.gbptree.Generation.generation;
@@ -130,7 +131,7 @@ public class GBPTree<KEY,VALUE> implements Closeable
      * If any of the above changes the on-page format then this version should be bumped, so that opening
      * an index on wrong format version fails and user will need to rebuild.
      */
-    static final int FORMAT_VERSION = 1;
+    static final int FORMAT_VERSION = 2;
 
     /**
      * For monitoring {@link GBPTree}.
@@ -161,14 +162,26 @@ public class GBPTree<KEY,VALUE> implements Closeable
     };
 
     /**
-     * Paged file in a {@link PageCache} providing the means of storage.
+     * Paged file in a {@link PageCache} providing the means of storage for the tree data.
      */
     private final PagedFile pagedFile;
 
     /**
+     * Paged file in a {@link PageCache} providing the means of storage for the meta data and tree state.
+     */
+    private final PagedFile pagedMetaFile;
+
+    /**
      * {@link File} to map in {@link PageCache} for storing this tree.
      */
-    private final File indexFile;
+    private final File file;
+
+    /**
+     * {@link File} containing meta information about this tree. Main reason to keep this information
+     * separately is for concurrent store-copy to be able to copy this header after the actual contents
+     * of the tree.
+     */
+    private final File metaFile;
 
     /**
      * User-provided layout of key/value as well as custom additional meta information.
@@ -283,16 +296,18 @@ public class GBPTree<KEY,VALUE> implements Closeable
      * @param monitor {@link Monitor} for monitoring {@link GBPTree}.
      * @throws IOException on page cache error
      */
-    public GBPTree( PageCache pageCache, File indexFile, Layout<KEY,VALUE> layout, int tentativePageSize,
+    public GBPTree( PageCache pageCache, File file, Layout<KEY,VALUE> layout, int tentativePageSize,
             Monitor monitor ) throws IOException
     {
-        this.indexFile = indexFile;
+        this.file = file;
+        this.metaFile = metaFileOf( file );
         this.monitor = monitor;
         this.generation = Generation.generation( GenSafePointer.MIN_GENERATION, GenSafePointer.MIN_GENERATION + 1 );
         long rootId = IdSpace.MIN_TREE_NODE_ID;
         setRoot( rootId, Generation.unstableGeneration( generation ) );
         this.layout = layout;
-        this.pagedFile = openOrCreate( pageCache, indexFile, tentativePageSize, layout );
+        this.pagedMetaFile = openOrCreateMeta( pageCache, metaFile, tentativePageSize, layout );
+        this.pagedFile = openOrCreate( pageCache, file );
         this.bTreeNode = new TreeNode<>( pageSize, layout );
         this.freeList = new FreeListIdProvider( pagedFile, pageSize, rootId, FreeListIdProvider.NO_MONITOR );
         this.writer = new SingleWriter( new InternalTreeLogic<>( freeList, bTreeNode, layout ) );
@@ -305,7 +320,7 @@ public class GBPTree<KEY,VALUE> implements Closeable
             }
             else
             {
-                loadState( pagedFile );
+                loadState();
             }
         }
         catch ( Throwable t )
@@ -322,10 +337,23 @@ public class GBPTree<KEY,VALUE> implements Closeable
         }
     }
 
+    private static File metaFileOf( File file )
+    {
+        return new File( file.getPath() + ".meta" );
+    }
+
+    /**
+     * @return an array of {@link File files} which is paged in the provided {@link PageCache} for this tree.
+     */
+    public File[] pagedFiles()
+    {
+        return new File[] {file, metaFile};
+    }
+
     private void initializeAfterCreation( Layout<KEY,VALUE> layout ) throws IOException
     {
         // Write meta
-        writeMeta( layout, pagedFile );
+        writeMeta( layout );
 
         // Initialize index root node to a leaf node.
         try ( PageCursor cursor = openRootCursor( PagedFile.PF_SHARED_WRITE_LOCK ) )
@@ -339,28 +367,33 @@ public class GBPTree<KEY,VALUE> implements Closeable
         // Initialize free-list
         freeList.initializeAfterCreation();
         changesSinceLastCheckpoint = true;
+        long highestStatePageId = max( IdSpace.STATE_PAGE_A, IdSpace.STATE_PAGE_B );
+        try ( PageCursor cursor = pagedMetaFile.io( highestStatePageId, PagedFile.PF_SHARED_WRITE_LOCK ) )
+        {
+            PageCursorUtil.goTo( cursor, "State page initialization", highestStatePageId );
+        }
         checkpoint( IOLimiter.unlimited() );
     }
 
-    private PagedFile openOrCreate( PageCache pageCache, File indexFile,
+    private PagedFile openOrCreateMeta( PageCache pageCache, File metaFile,
             int pageSizeForCreation, Layout<KEY,VALUE> layout ) throws IOException
     {
         try
         {
-            PagedFile pagedFile = pageCache.map( indexFile, pageCache.pageSize() );
-            // This index already exists, verify the header with what we got passed into the constructor this time
+            PagedFile pagedMetaFile = pageCache.map( metaFile, pageCache.pageSize() );
+            // Already exists, verify the meta information with what we got passed into the constructor this time
 
             try
             {
-                readMeta( indexFile, layout, pagedFile );
-                pagedFile = mapWithCorrectPageSize( pageCache, indexFile, pagedFile );
-                return pagedFile;
+                readMeta( metaFile, layout, pagedMetaFile );
+                pagedMetaFile = mapWithCorrectPageSize( pageCache, metaFile, pagedMetaFile );
+                return pagedMetaFile;
             }
             catch ( Throwable t )
             {
                 try
                 {
-                    pagedFile.close();
+                    pagedMetaFile.close();
                 }
                 catch ( IOException e )
                 {
@@ -376,22 +409,34 @@ public class GBPTree<KEY,VALUE> implements Closeable
             pageSize = pageSizeForCreation == 0 ? pageCache.pageSize() : pageSizeForCreation;
             if ( pageSize > pageCache.pageSize() )
             {
-                throw new MetadataMismatchException( "Tree in " + indexFile.getAbsolutePath() +
+                throw new MetadataMismatchException( "Tree in " + metaFile.getAbsolutePath() +
                         " was about to be created with page size:" + pageSize +
                         ", but page cache used to create it has a smaller page size:" +
                         pageCache.pageSize() + " so cannot be created" );
             }
 
             // We need to create this index
-            PagedFile pagedFile = pageCache.map( indexFile, pageSize, StandardOpenOption.CREATE );
             created = true;
-            return pagedFile;
+            return pageCache.map( metaFile, pageSize, StandardOpenOption.CREATE );
         }
     }
 
-    private void loadState( PagedFile pagedFile ) throws IOException
+    private PagedFile openOrCreate( PageCache pageCache, File file ) throws IOException
     {
-        Pair<TreeState,TreeState> states = readStatePages( pagedFile );
+        try
+        {
+            return pageCache.map( file, pageSize );
+        }
+        catch ( NoSuchFileException e )
+        {
+            created = true;
+            return pageCache.map( file, pageSize, StandardOpenOption.CREATE );
+        }
+    }
+
+    private void loadState() throws IOException
+    {
+        Pair<TreeState,TreeState> states = readStatePages();
         TreeState state = TreeStatePair.selectNewestValidState( states );
         generation = Generation.generation( state.stableGeneration(), state.unstableGeneration() );
         setRoot( state.rootId(), state.rootGen() );
@@ -404,13 +449,13 @@ public class GBPTree<KEY,VALUE> implements Closeable
         freeList.initialize( lastId, freeListWritePageId, freeListReadPageId, freeListWritePos, freeListReadPos );
     }
 
-    private void writeState( PagedFile pagedFile ) throws IOException
+    private void writeAndFlushState() throws IOException
     {
-        Pair<TreeState,TreeState> states = readStatePages( pagedFile );
+        Pair<TreeState,TreeState> states = readStatePages();
         TreeState oldestState = TreeStatePair.selectOldestOrInvalid( states );
         long pageToOverwrite = oldestState.pageId();
         Root root = this.root;
-        try ( PageCursor cursor = pagedFile.io( pageToOverwrite, PagedFile.PF_SHARED_WRITE_LOCK ) )
+        try ( PageCursor cursor = pagedMetaFile.io( pageToOverwrite, PagedFile.PF_SHARED_WRITE_LOCK ) )
         {
             PageCursorUtil.goTo( cursor, "state page", pageToOverwrite );
             TreeState.write( cursor, stableGeneration( generation ), unstableGeneration( generation ),
@@ -419,12 +464,15 @@ public class GBPTree<KEY,VALUE> implements Closeable
                     freeList.writePos(), freeList.readPos() );
             checkOutOfBounds( cursor );
         }
+
+        // Flush the state page.
+        pagedMetaFile.flushAndForce();
     }
 
-    private static Pair<TreeState,TreeState> readStatePages( PagedFile pagedFile ) throws IOException
+    private Pair<TreeState,TreeState> readStatePages() throws IOException
     {
         Pair<TreeState,TreeState> states;
-        try ( PageCursor cursor = pagedFile.io( 0L /*ignored*/, PagedFile.PF_SHARED_READ_LOCK ) )
+        try ( PageCursor cursor = pagedMetaFile.io( 0L /*ignored*/, PagedFile.PF_SHARED_READ_LOCK ) )
         {
             states = TreeStatePair.readStatePages(
                     cursor, IdSpace.STATE_PAGE_A, IdSpace.STATE_PAGE_B );
@@ -432,14 +480,14 @@ public class GBPTree<KEY,VALUE> implements Closeable
         return states;
     }
 
-    private static PageCursor openMetaPageCursor( PagedFile pagedFile, int pfFlags ) throws IOException
+    private static PageCursor openMetaPageCursor( PagedFile pagedMetaFile, int pfFlags ) throws IOException
     {
-        PageCursor metaCursor = pagedFile.io( IdSpace.META_PAGE_ID, pfFlags );
+        PageCursor metaCursor = pagedMetaFile.io( IdSpace.META_PAGE_ID, pfFlags );
         PageCursorUtil.goTo( metaCursor, "meta page", IdSpace.META_PAGE_ID );
         return metaCursor;
     }
 
-    private void readMeta( File indexFile, Layout<KEY,VALUE> layout, PagedFile pagedFile )
+    private void readMeta( File indexFile, Layout<KEY,VALUE> layout, PagedFile pagedMetaFile )
             throws IOException
     {
         // Read meta
@@ -447,7 +495,7 @@ public class GBPTree<KEY,VALUE> implements Closeable
         long layoutIdentifier;
         int majorVersion;
         int minorVersion;
-        try ( PageCursor metaCursor = openMetaPageCursor( pagedFile, PagedFile.PF_SHARED_READ_LOCK ) )
+        try ( PageCursor metaCursor = openMetaPageCursor( pagedMetaFile, PagedFile.PF_SHARED_READ_LOCK ) )
         {
             do
             {
@@ -489,9 +537,9 @@ public class GBPTree<KEY,VALUE> implements Closeable
         }
     }
 
-    private void writeMeta( Layout<KEY,VALUE> layout, PagedFile pagedFile ) throws IOException
+    private void writeMeta( Layout<KEY,VALUE> layout ) throws IOException
     {
-        try ( PageCursor metaCursor = openMetaPageCursor( pagedFile, PagedFile.PF_SHARED_WRITE_LOCK ) )
+        try ( PageCursor metaCursor = openMetaPageCursor( pagedMetaFile, PagedFile.PF_SHARED_WRITE_LOCK ) )
         {
             metaCursor.putInt( FORMAT_VERSION );
             metaCursor.putInt( pageSize );
@@ -503,7 +551,7 @@ public class GBPTree<KEY,VALUE> implements Closeable
         }
     }
 
-    private PagedFile mapWithCorrectPageSize( PageCache pageCache, File indexFile, PagedFile pagedFile )
+    private PagedFile mapWithCorrectPageSize( PageCache pageCache, File file, PagedFile pagedFile )
             throws IOException
     {
         // This index was created with another page size, re-open with that actual page size
@@ -511,13 +559,13 @@ public class GBPTree<KEY,VALUE> implements Closeable
         {
             if ( pageSize > pageCache.pageSize() )
             {
-                throw new MetadataMismatchException( "Tree in " + indexFile.getAbsolutePath() +
+                throw new MetadataMismatchException( "Tree in " + file.getAbsolutePath() +
                         " was created with page size:" + pageSize +
                         ", but page cache used to open it this time has a smaller page size:" +
                         pageCache.pageSize() + " so cannot be opened" );
             }
             pagedFile.close();
-            return pageCache.map( indexFile, pageSize );
+            return pageCache.map( file, pageSize );
         }
         return pagedFile;
     }
@@ -611,10 +659,7 @@ public class GBPTree<KEY,VALUE> implements Closeable
             // and write the tree state (rootId, lastId, generation a.s.o.) to state page.
             long unstableGeneration = unstableGeneration( generation );
             generation = Generation.generation( unstableGeneration, unstableGeneration + 1 );
-            writeState( pagedFile );
-
-            // Flush the state page.
-            pagedFile.flushAndForce();
+            writeAndFlushState();
 
             // Expose this fact.
             monitor.checkpointCompleted();
@@ -650,7 +695,14 @@ public class GBPTree<KEY,VALUE> implements Closeable
         }
         finally
         {
-            pagedFile.close();
+            try
+            {
+                pagedFile.close();
+            }
+            finally
+            {
+                pagedMetaFile.close();
+            }
         }
     }
 
@@ -725,8 +777,7 @@ public class GBPTree<KEY,VALUE> implements Closeable
         // Increment unstable generation, widening the gap between stable and unstable generation
         // so that generations in between are considered crash generation(s).
         generation = generation( stableGeneration( generation ), unstableGeneration( generation ) + 1 );
-        writeState( pagedFile );
-        pagedFile.flushAndForce();
+        writeAndFlushState();
     }
 
     void printTree() throws IOException
@@ -771,7 +822,7 @@ public class GBPTree<KEY,VALUE> implements Closeable
     {
         long generation = this.generation;
         return format( "GB+Tree[file:%s, layout:%s, gen:%d/%d]",
-                indexFile.getAbsolutePath(), layout,
+                file.getAbsolutePath(), layout,
                 stableGeneration( generation ), unstableGeneration( generation ) );
     }
 

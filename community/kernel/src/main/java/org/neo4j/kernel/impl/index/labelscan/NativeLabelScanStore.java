@@ -264,7 +264,7 @@ public class NativeLabelScanStore implements LabelScanStore
     @Override
     public ResourceIterator<File> snapshotStoreFiles() throws IOException
     {
-        return asResourceIterator( iterator( storeFile ) );
+        return asResourceIterator( iterator( index.pagedFiles() ) );
     }
 
     /**

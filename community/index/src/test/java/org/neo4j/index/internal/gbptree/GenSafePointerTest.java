@@ -179,11 +179,11 @@ public class GenSafePointerTest
     }
 
     @Test
-    public void shouldThrowIfPointerToSmall() throws Exception
+    public void shouldThrowIfPointerTooSmall() throws Exception
     {
         // GIVEN
         long generation = GenSafePointer.MIN_GENERATION;
-        long pointer = GenSafePointer.MIN_POINTER - 1;
+        long pointer = -1;
         GSP broken = gsp( generation, pointer );
 
         // WHEN
