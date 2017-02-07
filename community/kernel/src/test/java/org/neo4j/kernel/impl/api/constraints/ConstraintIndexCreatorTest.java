@@ -68,6 +68,7 @@ import static org.neo4j.kernel.impl.api.StatementOperationsTestHelper.mockedStat
 public class ConstraintIndexCreatorTest
 {
     private final NodePropertyDescriptor descriptor = new NodePropertyDescriptor( 123, 456 );
+    private final NewIndexDescriptor index = NewIndexDescriptorFactory.uniqueForLabel( 123, 456 );
 
     @Test
     public void shouldCreateIndexInAnotherTransaction() throws Exception
@@ -76,7 +77,6 @@ public class ConstraintIndexCreatorTest
         StatementOperationParts constraintCreationContext = mockedParts();
         StatementOperationParts indexCreationContext = mockedParts();
 
-        IndexDescriptor index = IndexDescriptorFactory.of( descriptor );
         KernelStatement state = mockedState();
 
         IndexingService indexingService = mock( IndexingService.class );
@@ -95,7 +95,7 @@ public class ConstraintIndexCreatorTest
         // then
         assertEquals( 2468L, indexId );
         assertEquals( 1, kernel.statements.size() );
-        verify( kernel.statements.get( 0 ).txState() ).indexRuleDoAdd( eq( IndexBoundary.mapUnique( index ) ) );
+        verify( kernel.statements.get( 0 ).txState() ).indexRuleDoAdd( eq( index ) );
         verifyNoMoreInteractions( indexCreationContext.schemaWriteOperations() );
         verify( constraintCreationContext.schemaReadOperations() ).indexGetCommittedId( state, index, UNIQUE );
         verifyNoMoreInteractions( constraintCreationContext.schemaReadOperations() );
@@ -108,8 +108,6 @@ public class ConstraintIndexCreatorTest
         // given
         StatementOperationParts constraintCreationContext = mockedParts();
         KernelStatement state = mockedState();
-
-        IndexDescriptor index = IndexDescriptorFactory.of( descriptor );
 
         IndexingService indexingService = mock( IndexingService.class );
         StubKernel kernel = new StubKernel();

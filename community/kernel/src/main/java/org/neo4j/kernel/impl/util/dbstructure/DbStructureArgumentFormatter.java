@@ -23,8 +23,11 @@ import java.io.IOException;
 import java.util.Arrays;
 import java.util.Collection;
 import java.util.List;
+import java.util.stream.Collectors;
+import java.util.stream.StreamSupport;
 
 import org.neo4j.helpers.Strings;
+import org.neo4j.helpers.collection.Iterables;
 import org.neo4j.kernel.api.schema.NodePropertyDescriptor;
 import org.neo4j.kernel.api.schema.RelationshipPropertyDescriptor;
 import org.neo4j.kernel.api.constraints.NodePropertyExistenceConstraint;
@@ -32,6 +35,8 @@ import org.neo4j.kernel.api.constraints.RelationshipPropertyExistenceConstraint;
 import org.neo4j.kernel.api.constraints.UniquenessConstraint;
 import org.neo4j.kernel.api.schema.IndexDescriptor;
 import org.neo4j.kernel.api.schema.IndexDescriptorFactory;
+import org.neo4j.kernel.api.schema_new.index.NewIndexDescriptor;
+import org.neo4j.kernel.api.schema_new.index.NewIndexDescriptorFactory;
 
 import static java.lang.String.format;
 
@@ -43,7 +48,8 @@ public enum DbStructureArgumentFormatter implements ArgumentFormatter
             UniquenessConstraint.class.getCanonicalName(),
             NodePropertyDescriptor.class.getCanonicalName(),
             IndexDescriptorFactory.class.getCanonicalName(),
-            IndexDescriptor.class.getCanonicalName()
+            IndexDescriptor.class.getCanonicalName(),
+            NewIndexDescriptorFactory.class.getCanonicalName()
     );
 
     @Override
@@ -89,7 +95,14 @@ public enum DbStructureArgumentFormatter implements ArgumentFormatter
         {
             NodePropertyDescriptor descriptor = (NodePropertyDescriptor) arg;
             int labelId = descriptor.getLabelId();
-            builder.append( format( "IndexDescriptorFactory.of( %s, %s )", labelId, descriptor.propertyIdText( ) ) );
+            builder.append( format( "IndexDescriptorFactory.of( %d, %s )", labelId, descriptor.propertyIdText( ) ) );
+        }
+        else if ( arg instanceof NewIndexDescriptor )
+        {
+            NewIndexDescriptor descriptor = (NewIndexDescriptor) arg;
+            int labelId = descriptor.schema().getLabelId();
+            builder.append( format( "NewIndexDescriptorFactory.forLabel( %d, %s )",
+                    labelId, asString( descriptor.schema().getPropertyIds( ) ) ) );
         }
         else if ( arg instanceof NodePropertyDescriptor )
         {
@@ -123,5 +136,11 @@ public enum DbStructureArgumentFormatter implements ArgumentFormatter
                 "Can't handle argument of type: %s with value: %s", arg.getClass(), arg
             ) );
         }
+    }
+
+    private String asString( int[] propertyIds )
+    {
+        List<String> strings = Arrays.stream( propertyIds ).mapToObj( i -> "" + i ).collect( Collectors.toList() );
+        return String.join( ",", strings );
     }
 }

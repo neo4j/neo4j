@@ -48,6 +48,7 @@ import org.neo4j.helpers.collection.Visitable;
 import org.neo4j.kernel.api.schema.NodePropertyDescriptor;
 import org.neo4j.kernel.api.constraints.UniquenessConstraint;
 import org.neo4j.kernel.api.schema.IndexDescriptorFactory;
+import org.neo4j.kernel.api.schema_new.index.NewIndexDescriptorFactory;
 
 import static org.junit.Assert.assertEquals;
 import static org.mockito.Mockito.mock;
@@ -131,8 +132,8 @@ public class DbStructureInvocationTracingAcceptanceTest
         visitor.apply( null ).visitPropertyKey( 1, "age" );
         visitor.apply( null ).visitRelationshipType( 0, "ACCEPTS" );
         visitor.apply( null ).visitRelationshipType( 1, "REJECTS" );
-        visitor.apply( null ).visitIndex( IndexDescriptorFactory.of( 0, 1 ), ":Person(age)", 0.5d, 1L );
-        visitor.apply( null ).visitUniqueIndex( IndexDescriptorFactory.of( 0, 0 ), ":Person(name)", 0.5d, 1L );
+        visitor.apply( null ).visitIndex( NewIndexDescriptorFactory.forLabel( 0, 1 ), ":Person(age)", 0.5d, 1L );
+        visitor.apply( null ).visitUniqueIndex( NewIndexDescriptorFactory.forLabel( 0, 0 ), ":Person(name)", 0.5d, 1L );
         visitor.apply( null ).visitUniqueConstraint( new UniquenessConstraint( new NodePropertyDescriptor( 1, 0) ), ":Party(name)" );
         visitor.apply( null ).visitAllNodesCount( 55 );
         visitor.apply( null ).visitNodeCount( 0, "Person", 50 );

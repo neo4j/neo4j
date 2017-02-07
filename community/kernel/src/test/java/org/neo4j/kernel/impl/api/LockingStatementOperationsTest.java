@@ -39,6 +39,7 @@ import org.neo4j.kernel.api.schema.IndexDescriptor;
 import org.neo4j.kernel.api.schema.IndexDescriptorFactory;
 import org.neo4j.kernel.api.properties.DefinedProperty;
 import org.neo4j.kernel.api.properties.Property;
+import org.neo4j.kernel.api.schema_new.index.NewIndexDescriptor;
 import org.neo4j.kernel.api.txstate.LegacyIndexTransactionState;
 import org.neo4j.kernel.api.txstate.TransactionState;
 import org.neo4j.kernel.api.txstate.TxStateHolder;
@@ -237,11 +238,11 @@ public class LockingStatementOperationsTest
     public void shouldAcquireSchemaReadLockBeforeGettingIndexRules() throws Exception
     {
         // given
-        Iterator<IndexDescriptor> rules = Collections.emptyIterator();
+        Iterator<NewIndexDescriptor> rules = Collections.emptyIterator();
         when( schemaReadOps.indexesGetAll( state ) ).thenReturn( rules );
 
         // when
-        Iterator<IndexDescriptor> result = lockingOps.indexesGetAll( state );
+        Iterator<NewIndexDescriptor> result = lockingOps.indexesGetAll( state );
 
         // then
         assertSame( rules, result );

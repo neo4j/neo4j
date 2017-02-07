@@ -37,9 +37,8 @@ import org.neo4j.graphdb.schema.ConstraintDefinition;
 import org.neo4j.graphdb.schema.IndexCreator;
 import org.neo4j.graphdb.schema.IndexDefinition;
 import org.neo4j.graphdb.schema.Schema;
-import org.neo4j.kernel.api.schema.NodePropertyDescriptor;
+import org.neo4j.helpers.collection.Iterables;
 import org.neo4j.kernel.api.ReadOperations;
-import org.neo4j.kernel.api.schema.RelationshipPropertyDescriptor;
 import org.neo4j.kernel.api.Statement;
 import org.neo4j.kernel.api.StatementTokenNameLookup;
 import org.neo4j.kernel.api.constraints.NodePropertyConstraint;
@@ -61,9 +60,12 @@ import org.neo4j.kernel.api.exceptions.schema.DropIndexFailureException;
 import org.neo4j.kernel.api.exceptions.schema.IllegalTokenNameException;
 import org.neo4j.kernel.api.exceptions.schema.SchemaRuleNotFoundException;
 import org.neo4j.kernel.api.exceptions.schema.TooManyLabelsException;
-import org.neo4j.kernel.api.schema.IndexDescriptor;
-import org.neo4j.kernel.api.schema.IndexDescriptorFactory;
 import org.neo4j.kernel.api.index.InternalIndexState;
+import org.neo4j.kernel.api.schema.IndexDescriptorFactory;
+import org.neo4j.kernel.api.schema.NodePropertyDescriptor;
+import org.neo4j.kernel.api.schema.RelationshipPropertyDescriptor;
+import org.neo4j.kernel.api.schema_new.index.IndexBoundary;
+import org.neo4j.kernel.api.schema_new.index.NewIndexDescriptor;
 import org.neo4j.kernel.impl.api.operations.KeyReadOperations;
 import org.neo4j.storageengine.api.schema.PopulationProgress;
 
@@ -77,7 +79,6 @@ import static org.neo4j.helpers.collection.Iterators.addToCollection;
 import static org.neo4j.helpers.collection.Iterators.asCollection;
 import static org.neo4j.helpers.collection.Iterators.map;
 import static org.neo4j.kernel.api.schema.IndexDescriptorFactory.getOrCreateTokens;
-import static org.neo4j.kernel.impl.coreapi.schema.PropertyNameUtils.getIndexDescriptor;
 import static org.neo4j.kernel.impl.coreapi.schema.PropertyNameUtils.getPropertyKeys;
 
 public class SchemaImpl implements Schema
@@ -126,14 +127,14 @@ public class SchemaImpl implements Schema
         }
     }
 
-    private IndexDefinition descriptorToDefinition( final ReadOperations statement, IndexDescriptor index,
+    private IndexDefinition descriptorToDefinition( final ReadOperations statement, NewIndexDescriptor index,
             final boolean constraintIndex )
     {
         try
         {
-            Label label = label( statement.labelGetName( index.getLabelId() ) );
+            Label label = label( statement.labelGetName( index.schema().getLabelId() ) );
             return new IndexDefinitionImpl( actions, label,
-                    getPropertyKeys( statement, index.descriptor() ), constraintIndex );
+                    PropertyNameUtils.getPropertyKeys( statement, index.schema().getPropertyIds() ), constraintIndex );
         }
         catch ( LabelNotFoundKernelException | PropertyKeyIdNotFoundKernelException e )
         {
@@ -142,7 +143,7 @@ public class SchemaImpl implements Schema
     }
 
     private void addDefinitions( List<IndexDefinition> definitions, final ReadOperations statement,
-                                 Iterator<IndexDescriptor> indexes, final boolean constraintIndex )
+                                 Iterator<NewIndexDescriptor> indexes, final boolean constraintIndex )
     {
         addToCollection(
                 map( index -> descriptorToDefinition( statement, index, constraintIndex ), indexes ),
@@ -208,8 +209,9 @@ public class SchemaImpl implements Schema
         actions.assertInOpenTransaction();
         try ( Statement statement = statementContextSupplier.get() )
         {
-            IndexDescriptor descriptor = getIndexDescriptor( statement.readOperations(), index );
-            InternalIndexState indexState = statement.readOperations().indexGetState( descriptor );
+            ReadOperations readOps = statement.readOperations();
+            NewIndexDescriptor descriptor = getIndexDescriptor( readOps, index );
+            InternalIndexState indexState = readOps.indexGetState( descriptor );
             switch ( indexState )
             {
                 case POPULATING:
@@ -235,8 +237,9 @@ public class SchemaImpl implements Schema
         actions.assertInOpenTransaction();
         try ( Statement statement = statementContextSupplier.get() )
         {
-            IndexDescriptor descriptor = getIndexDescriptor( statement.readOperations(), index );
-            PopulationProgress progress = statement.readOperations().indexGetPopulationProgress( descriptor );
+            ReadOperations readOps = statement.readOperations();
+            NewIndexDescriptor descriptor = getIndexDescriptor( readOps, index );
+            PopulationProgress progress = readOps.indexGetPopulationProgress( descriptor );
             return new IndexPopulationProgress( progress.getCompleted(), progress.getTotal() );
         }
         catch ( SchemaRuleNotFoundException | IndexNotFoundKernelException e )
@@ -252,8 +255,9 @@ public class SchemaImpl implements Schema
         actions.assertInOpenTransaction();
         try ( Statement statement = statementContextSupplier.get() )
         {
-            IndexDescriptor descriptor = getIndexDescriptor( statement.readOperations(), index );
-            return statement.readOperations().indexGetFailure( descriptor );
+            ReadOperations readOps = statement.readOperations();
+            NewIndexDescriptor descriptor = getIndexDescriptor( readOps, index );
+            return readOps.indexGetFailure( descriptor );
         }
         catch ( SchemaRuleNotFoundException | IndexNotFoundKernelException e )
         {
@@ -311,6 +315,37 @@ public class SchemaImpl implements Schema
             Iterator<RelationshipPropertyConstraint> constraints =
                     statement.readOperations().constraintsGetForRelationshipType( typeId );
             return asConstraintDefinitions( constraints, statement.readOperations() );
+        }
+    }
+
+    private static NewIndexDescriptor getIndexDescriptor( ReadOperations readOperations, IndexDefinition index )
+            throws SchemaRuleNotFoundException
+    {
+        int labelId = readOperations.labelGetForName( index.getLabel().name() );
+        int[] propertyKeyIds = PropertyNameUtils.getPropertyKeyIds( readOperations, index.getPropertyKeys() );
+        assertValidLabel( index.getLabel(), labelId );
+        assertValidProperties( index.getPropertyKeys(), propertyKeyIds );
+        return readOperations.indexGetForLabelAndPropertyKey(
+                IndexDescriptorFactory.getNodePropertyDescriptor( labelId, propertyKeyIds ) );
+    }
+
+    private static void assertValidLabel( Label label, int labelId )
+    {
+        if ( labelId == KeyReadOperations.NO_SUCH_LABEL )
+        {
+            throw new NotFoundException( format( "Label %s not found", label.name() ) );
+        }
+    }
+
+    private static void assertValidProperties( Iterable<String> properties , int[] propertyIds )
+    {
+        for ( int i = 0; i < propertyIds.length; i++ )
+        {
+            if ( propertyIds[i] == KeyReadOperations.NO_SUCH_PROPERTY_KEY )
+            {
+                throw new NotFoundException(
+                        format( "Property key %s not found", Iterables.asArray( String.class, properties )[i] ) );
+            }
         }
     }
 
@@ -414,8 +449,8 @@ public class SchemaImpl implements Schema
             {
                 try
                 {
-                    statement.schemaWriteOperations()
-                            .indexDrop( getIndexDescriptor( statement.readOperations(), indexDefinition ) );
+                    statement.schemaWriteOperations().indexDrop(
+                            IndexBoundary.map( getIndexDescriptor( statement.readOperations(), indexDefinition ) ) );
                 }
                 catch ( NotFoundException e )
                 {

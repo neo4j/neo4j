@@ -50,6 +50,8 @@ import org.neo4j.kernel.api.properties.Property;
 import org.neo4j.kernel.api.schema.IndexDescriptor;
 import org.neo4j.kernel.api.schema.NodePropertyDescriptor;
 import org.neo4j.kernel.api.schema.RelationshipPropertyDescriptor;
+import org.neo4j.kernel.api.schema_new.index.IndexBoundary;
+import org.neo4j.kernel.api.schema_new.index.NewIndexDescriptor;
 import org.neo4j.kernel.impl.api.operations.EntityOperations;
 import org.neo4j.kernel.impl.api.operations.EntityReadOperations;
 import org.neo4j.kernel.impl.api.operations.EntityWriteOperations;
@@ -144,7 +146,7 @@ public class ConstraintEnforcingEntityOperations implements EntityOperations, Sc
         {
             // TODO: Support composite constraints
             IndexDescriptor index = constraint.indexDescriptor();
-            assertIndexOnline( state, index );
+            assertIndexOnline( state, IndexBoundary.map( index ) );
             state.locks().optimistic().acquireExclusive( state.lockTracer(), INDEX_ENTRY,
                     indexEntryResourceId( index.getLabelId(), index.getPropertyKeyId(), Strings.prettyPrint( value
                     ) ) );
@@ -163,7 +165,7 @@ public class ConstraintEnforcingEntityOperations implements EntityOperations, Sc
         }
     }
 
-    private void assertIndexOnline( KernelStatement state, IndexDescriptor indexDescriptor )
+    private void assertIndexOnline( KernelStatement state, NewIndexDescriptor indexDescriptor )
             throws IndexNotFoundKernelException, IndexBrokenKernelException
     {
         switch ( schemaReadOperations.indexGetState( state, indexDescriptor ) )
@@ -311,7 +313,7 @@ public class ConstraintEnforcingEntityOperations implements EntityOperations, Sc
             Object value )
             throws IndexNotFoundKernelException, IndexBrokenKernelException
     {
-        assertIndexOnline( state, index );
+        assertIndexOnline( state, IndexBoundary.map( index ) );
 
         // TODO: Support composite index, either by allowing value to be an array, or by creating a new method
         int labelId = index.getLabelId();

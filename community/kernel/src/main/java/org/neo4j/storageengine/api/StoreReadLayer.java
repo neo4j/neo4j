@@ -91,7 +91,7 @@ public interface StoreReadLayer
      * @return schema rule id for matching index.
      * @throws SchemaRuleNotFoundException if no such index exists in storage.
      */
-    long indexGetCommittedId( NewIndexDescriptor index, Predicate<NewIndexDescriptor> filter )
+    long indexGetCommittedId( NewIndexDescriptor index, NewIndexDescriptor.Filter filter )
             throws SchemaRuleNotFoundException;
 
     /**

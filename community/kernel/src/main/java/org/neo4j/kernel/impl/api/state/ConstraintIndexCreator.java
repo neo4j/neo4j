@@ -68,7 +68,7 @@ public class ConstraintIndexCreator
         boolean success = false;
         try
         {
-            long indexId = schema.indexGetCommittedId( state, IndexBoundary.map( index ), NewIndexDescriptor.Filter.UNIQUE );
+            long indexId = schema.indexGetCommittedId( state, index, NewIndexDescriptor.Filter.UNIQUE );
 
             awaitConstrainIndexPopulation( constraint, indexId );
             success = true;

@@ -25,6 +25,7 @@ import org.neo4j.helpers.collection.Iterators;
 import org.neo4j.kernel.api.schema.NodePropertyDescriptor;
 import org.neo4j.kernel.api.constraints.UniquenessConstraint;
 import org.neo4j.kernel.api.schema.IndexDescriptorFactory;
+import org.neo4j.kernel.api.schema_new.index.NewIndexDescriptorFactory;
 
 import static java.util.Arrays.asList;
 import static org.junit.Assert.assertEquals;
@@ -43,9 +44,9 @@ public class DbStructureCollectorTest
         collector.visitPropertyKey( 2, "income" );
         collector.visitRelationshipType( 1, "LIVES_IN" );
         collector.visitRelationshipType( 2, "FRIEND" );
-        collector.visitUniqueIndex( IndexDescriptorFactory.of( 1, 1 ), ":Person(name)", 1.0d, 1L );
+        collector.visitUniqueIndex( NewIndexDescriptorFactory.forLabel( 1, 1 ), ":Person(name)", 1.0d, 1L );
         collector.visitUniqueConstraint( new UniquenessConstraint( new NodePropertyDescriptor( 2, 1 ) ), ":Person(name)" );
-        collector.visitIndex( IndexDescriptorFactory.of( 2, 2 ), ":City(income)", 0.2d, 1L );
+        collector.visitIndex( NewIndexDescriptorFactory.forLabel( 2, 2 ), ":City(income)", 0.2d, 1L );
         collector.visitAllNodesCount( 50 );
         collector.visitNodeCount( 1, "Person", 20 );
         collector.visitNodeCount( 2, "City", 30 );

@@ -26,6 +26,9 @@ import org.neo4j.kernel.api.schema.NodePropertyDescriptor;
 import org.neo4j.kernel.api.schema.IndexDescriptor;
 import org.neo4j.kernel.api.schema.IndexDescriptorFactory;
 import org.neo4j.kernel.api.index.InternalIndexState;
+import org.neo4j.kernel.api.schema_new.index.IndexBoundary;
+import org.neo4j.kernel.api.schema_new.index.NewIndexDescriptor;
+import org.neo4j.kernel.api.schema_new.index.NewIndexDescriptorFactory;
 import org.neo4j.kernel.impl.api.ConstraintEnforcingEntityOperations;
 import org.neo4j.kernel.impl.api.KernelStatement;
 import org.neo4j.kernel.impl.constraints.StandardConstraintSemantics;
@@ -62,7 +65,8 @@ public class ConstraintEnforcingEntityOperationsTest
         SchemaReadOperations schemaReadOps = mock( SchemaReadOperations.class );
         SchemaWriteOperations schemaWriteOps = mock( SchemaWriteOperations.class );
         this.state = mock( KernelStatement.class );
-        when( schemaReadOps.indexGetState( state, indexDescriptor ) ).thenReturn( InternalIndexState.ONLINE );
+        when( schemaReadOps.indexGetState( state, IndexBoundary.map( indexDescriptor ) ) )
+                .thenReturn( InternalIndexState.ONLINE );
         this.locks = mock( Locks.Client.class );
         when( state.locks() ).thenReturn( new SimpleStatementLocks( locks ) );
         when( state.lockTracer() ).thenReturn( LockTracer.NONE );

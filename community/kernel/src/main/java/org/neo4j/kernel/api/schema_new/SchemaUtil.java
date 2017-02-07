@@ -21,6 +21,8 @@ package org.neo4j.kernel.api.schema_new;
 
 import org.neo4j.kernel.api.TokenNameLookup;
 
+import static java.lang.String.format;
+
 public class SchemaUtil
 {
     private SchemaUtil()
@@ -37,32 +39,24 @@ public class SchemaUtil
         return String.join( ", ", properties );
     }
 
-    public static TokenNameLookup noopTokenNameLookup = new PrefixTokenName( "" );
-    public static class PrefixTokenName implements TokenNameLookup
-    {
-        private final String prefix;
-
-        public PrefixTokenName( String prefix )
-        {
-            this.prefix = prefix;
-        }
+    public static TokenNameLookup idTokenNameLookup = new TokenNameLookup() {
 
         @Override
         public String labelGetName( int labelId )
         {
-            return prefix + labelId;
+            return format( "label[%d]", labelId );
         }
 
         @Override
         public String relationshipTypeGetName( int relationshipTypeId )
         {
-            return prefix + relationshipTypeId;
+            return format( "relType[%d]", relationshipTypeId );
         }
 
         @Override
         public String propertyKeyGetName( int propertyKeyId )
         {
-            return prefix + propertyKeyId;
+            return format( "property[%d]", propertyKeyId );
         }
-    }
+    };
 }

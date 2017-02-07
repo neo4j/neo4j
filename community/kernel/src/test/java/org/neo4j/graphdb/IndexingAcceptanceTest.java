@@ -38,6 +38,8 @@ import org.neo4j.kernel.api.exceptions.index.IndexNotFoundKernelException;
 import org.neo4j.kernel.api.exceptions.schema.SchemaRuleNotFoundException;
 import org.neo4j.kernel.api.schema.IndexDescriptor;
 import org.neo4j.kernel.api.schema.IndexDescriptorFactory;
+import org.neo4j.kernel.api.schema_new.index.IndexBoundary;
+import org.neo4j.kernel.api.schema_new.index.NewIndexDescriptor;
 import org.neo4j.kernel.impl.core.ThreadToStatementContextBridge;
 import org.neo4j.kernel.internal.GraphDatabaseAPI;
 import org.neo4j.test.mockito.matcher.Neo4jMatchers;
@@ -605,7 +607,7 @@ public class IndexingAcceptanceTest
             throws SchemaRuleNotFoundException
     {
         NodePropertyDescriptor descriptor = IndexDescriptorFactory.getTokens( readOperations, index );
-        return readOperations.indexGetForLabelAndPropertyKey( descriptor );
+        return IndexBoundary.map( readOperations.indexGetForLabelAndPropertyKey( descriptor ) );
     }
 
     private Statement getStatement( GraphDatabaseAPI db )
