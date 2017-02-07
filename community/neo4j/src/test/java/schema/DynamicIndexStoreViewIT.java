@@ -27,6 +27,7 @@ import org.junit.rules.RuleChain;
 import java.util.ArrayList;
 import java.util.List;
 import java.util.Map;
+import java.util.concurrent.CountDownLatch;
 import java.util.concurrent.ThreadLocalRandom;
 import java.util.concurrent.TimeUnit;
 
@@ -42,8 +43,8 @@ import org.neo4j.logging.FormattedLogProvider;
 import org.neo4j.test.TestGraphDatabaseFactory;
 import org.neo4j.test.rule.SuppressOutput;
 import org.neo4j.test.rule.TestDirectory;
-
 import static org.neo4j.helpers.collection.MapUtil.stringMap;
+import static org.neo4j.test.DoubleLatch.awaitLatch;
 
 public class DynamicIndexStoreViewIT
 {
@@ -76,9 +77,10 @@ public class DynamicIndexStoreViewIT
             }
 
             List<Populator> populators = new ArrayList<>();
+            CountDownLatch startSignal = new CountDownLatch( 1 );
             for ( int i = 0; i < 5; i++ )
             {
-                Populator populator = new Populator( database, counter );
+                Populator populator = new Populator( database, counter, startSignal );
                 populators.add( populator );
                 populator.start();
             }
@@ -88,6 +90,7 @@ public class DynamicIndexStoreViewIT
                 database.schema().indexFor( Label.label( "label10" ) ).on( "property" ).create();
                 transaction.success();
             }
+            startSignal.countDown();
 
             try ( Transaction transaction = database.beginTx() )
             {
@@ -110,20 +113,22 @@ public class DynamicIndexStoreViewIT
 
     private class Populator extends Thread
     {
-
         private final GraphDatabaseService databaseService;
         private final long totalNodes;
         private volatile boolean terminate;
+        private final CountDownLatch startSignal;
 
-        Populator( GraphDatabaseService databaseService, long totalNodes )
+        Populator( GraphDatabaseService databaseService, long totalNodes, CountDownLatch startSignal )
         {
             this.databaseService = databaseService;
             this.totalNodes = totalNodes;
+            this.startSignal = startSignal;
         }
 
         @Override
         public void run()
         {
+            awaitLatch( startSignal );
             while ( !terminate )
             {
                 try ( Transaction transaction = databaseService.beginTx() )
