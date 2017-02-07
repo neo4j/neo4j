@@ -30,6 +30,7 @@ import java.util.Map;
 import java.util.function.BiFunction;
 
 import org.neo4j.bolt.transport.BoltProtocol;
+import org.neo4j.bolt.transport.ProtocolChooser;
 import org.neo4j.bolt.transport.SocketTransportHandler;
 import org.neo4j.bolt.v1.runtime.BoltStateMachine;
 import org.neo4j.bolt.v1.runtime.SynchronousBoltWorker;
@@ -44,7 +45,6 @@ import static org.junit.Assert.assertSame;
 import static org.mockito.Mockito.mock;
 import static org.mockito.Mockito.verify;
 import static org.mockito.Mockito.when;
-import static org.neo4j.bolt.transport.SocketTransportHandler.ProtocolChooser;
 import static org.neo4j.logging.AssertableLogProvider.inLog;
 
 public class SocketTransportHandlerTest

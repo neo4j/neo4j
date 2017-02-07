@@ -31,7 +31,7 @@ public class BufferedChannelOutput implements PackOutput
 
     public BufferedChannelOutput( int bufferSize )
     {
-        this.buffer = ByteBuffer.allocateDirect( bufferSize ).order( ByteOrder.BIG_ENDIAN );
+        this.buffer = ByteBuffer.allocate( bufferSize ).order( ByteOrder.BIG_ENDIAN );
     }
 
     public BufferedChannelOutput( WritableByteChannel channel )

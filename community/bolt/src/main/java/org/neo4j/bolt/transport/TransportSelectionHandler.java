@@ -29,13 +29,14 @@ import io.netty.handler.codec.http.HttpServerCodec;
 import io.netty.handler.codec.http.websocketx.WebSocketServerProtocolHandler;
 import io.netty.handler.ssl.SslContext;
 import io.netty.handler.ssl.SslHandler;
-import org.neo4j.logging.LogProvider;
 
 import java.util.List;
 import java.util.Map;
 import java.util.function.BiFunction;
 
-import static org.neo4j.bolt.transport.SocketTransportHandler.ProtocolChooser.BOLT_MAGIC_PREAMBLE;
+import org.neo4j.logging.LogProvider;
+
+import static org.neo4j.bolt.transport.ProtocolChooser.BOLT_MAGIC_PREAMBLE;
 
 public class TransportSelectionHandler extends ByteToMessageDecoder
 {
@@ -121,7 +122,7 @@ public class TransportSelectionHandler extends ByteToMessageDecoder
     {
         ChannelPipeline p = ctx.pipeline();
         p.addLast( new SocketTransportHandler(
-                new SocketTransportHandler.ProtocolChooser( protocolVersions, encryptionRequired, isEncrypted ), logging ) );
+                new ProtocolChooser( protocolVersions, encryptionRequired, isEncrypted ), logging ) );
         p.remove( this );
     }
 
@@ -134,7 +135,7 @@ public class TransportSelectionHandler extends ByteToMessageDecoder
                 new WebSocketServerProtocolHandler( "/" ),
                 new WebSocketFrameTranslator(),
                 new SocketTransportHandler(
-                        new SocketTransportHandler.ProtocolChooser( protocolVersions, encryptionRequired, isEncrypted ), logging ) );
+                        new ProtocolChooser( protocolVersions, encryptionRequired, isEncrypted ), logging ) );
         p.remove( this );
     }
 }

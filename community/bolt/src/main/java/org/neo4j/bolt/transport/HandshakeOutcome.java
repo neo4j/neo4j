@@ -17,30 +17,18 @@
  * You should have received a copy of the GNU General Public License
  * along with this program.  If not, see <http://www.gnu.org/licenses/>.
  */
-package org.neo4j.bolt.v1.packstream;
+package org.neo4j.bolt.transport;
 
-import org.junit.Rule;
-import org.junit.Test;
-import org.junit.rules.ExpectedException;
-
-import java.io.IOException;
-
-public class BufferedChannelOutputTest
+public enum HandshakeOutcome
 {
-    @Rule
-    public ExpectedException exception = ExpectedException.none();
-
-    @Test
-    public void shouldThrowWhenAskedToWriteMoreThanGiven() throws Throwable
-    {
-        // Given
-        BufferedChannelOutput out = new BufferedChannelOutput( 12 );
-
-        // Expect
-        exception.expect( IOException.class );
-        exception.expectMessage( "Asked to write 2 bytes, but there is only 1 bytes available in data provided." );
-
-        // When
-        out.writeBytes( new byte[]{1}, 0, 2 );
-    }
+    /** Yay! */
+    PROTOCOL_CHOSEN,
+    /** Pending more bytes before handshake can complete */
+    PARTIAL_HANDSHAKE,
+    /** the client sent an invalid handshake */
+    INVALID_HANDSHAKE,
+    /** None of the clients suggested protocol versions are available :( */
+    NO_APPLICABLE_PROTOCOL,
+    /** Encryption is required but the connection is not encrypted */
+    INSECURE_HANDSHAKE
 }
