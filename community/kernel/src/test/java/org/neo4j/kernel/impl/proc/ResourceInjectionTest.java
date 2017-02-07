@@ -70,26 +70,15 @@ public class ResourceInjectionTest
     @Test
     public void shouldFailNicelyWhenUnknownAPI() throws Throwable
     {
-        // When
-        List<CallableProcedure> procList = compile( procedureWithUnknownAPI.class, true );
+        //When
+        exception.expect( ProcedureException.class );
+        exception.expectMessage( "Unable to set up injection for procedure `procedureWithUnknownAPI`, " +
+                "the field `api` has type `class org.neo4j.kernel.impl.proc.ResourceInjectionTest$UnknownAPI` " +
+                "which is not a known injectable component." );
 
-        //Then
-        verify( log )
-                .warn( "Unable to set up injection for procedure `procedureWithUnknownAPI`, the field `api` has type" +
-                        " `class org.neo4j.kernel.impl.proc.ResourceInjectionTest$UnknownAPI`" +
-                        " which is not a known injectable component." );
+        // Then
+        compile( procedureWithUnknownAPI.class, true );
 
-        assertThat( procList.size(), equalTo( 1 ) );
-        try
-        {
-            procList.get( 0 ).apply( new BasicContext(), new Object[0] );
-            fail();
-        }
-        catch ( ProcedureException e )
-        {
-            assertThat( e.getMessage(), containsString(
-                    "org.neo4j.kernel.impl.proc.listCoolPeople is not available due to not having access to one or more components." ) );
-        }
     }
 
     @Test
@@ -127,7 +116,8 @@ public class ResourceInjectionTest
         catch ( ProcedureException e )
         {
             assertThat( e.getMessage(), containsString(
-                    "org.neo4j.kernel.impl.proc.listCoolPeople is not available due to not having access to one or more components." ) );
+                    "org.neo4j.kernel.impl.proc.listCoolPeopleis not " +
+                            "available due to not having unrestricted access rights, check configuration." ) );
         }
 
     }

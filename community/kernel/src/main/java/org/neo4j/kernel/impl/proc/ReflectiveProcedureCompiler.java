@@ -175,26 +175,7 @@ class ReflectiveProcedureCompiler
             ArrayList<CallableProcedure> out = new ArrayList<>( procedureMethods.size() );
             for ( Method method : procedureMethods )
             {
-                String valueName = method.getAnnotation( Procedure.class ).value();
-                String definedName = method.getAnnotation( Procedure.class ).name();
-                QualifiedName procName = extractName( procDefinition, method, valueName, definedName );
-                List<FieldSignature> inputSignature = inputSignatureDeterminer.signatureFor( method );
-                OutputMapper outputMapper = outputMappers.mapper( method );
-                try
-                {
-                    out.add( compileProcedure( procDefinition, constructor, method, warning, fullAccess, procName,
-                            inputSignature, outputMapper ) );
-                }
-                catch ( ProcedureInjectionException e )
-                {
-                    log.warn( e.getMessage() );
-                    Optional<String> description = Optional.of(
-                            procName + " is not available due to not having access to one or more components." );
-                    ProcedureSignature signature =
-                            new ProcedureSignature( procName, inputSignature, outputMapper.signature(), Mode.DEFAULT,
-                                    Optional.empty(), new String[0], description, warning );
-                    out.add( new LoadFailProcedure( signature ) );
-                }
+                out.add( compileProcedure( procDefinition, constructor, method, warning, fullAccess ) );
             }
             out.sort( Comparator.comparing( a -> a.signature().name().toString() ) );
             return out;
@@ -210,21 +191,17 @@ class ReflectiveProcedureCompiler
         }
     }
 
-    private ReflectiveProcedure compileProcedure( Class<?> procDefinition, MethodHandle constructor, Method method,
-            Optional<String> warning, boolean fullAccess, QualifiedName procName, List<FieldSignature> inputSignature,
-            OutputMapper outputMapper )
+    private CallableProcedure compileProcedure( Class<?> procDefinition, MethodHandle constructor, Method method,
+            Optional<String> warning, boolean fullAccess )
             throws ProcedureException, IllegalAccessException
     {
         MethodHandle procedureMethod = lookup.unreflect( method );
-        List<FieldInjections.FieldSetter> setters;
-        if ( fullAccess || config.fullAccessFor( procName.toString() ) )
-        {
-            setters = allFieldInjections.setters( procDefinition );
-        }
-        else
-        {
-            setters = safeFieldInjections.setters( procDefinition );
-        }
+
+        String valueName = method.getAnnotation( Procedure.class ).value();
+        String definedName = method.getAnnotation( Procedure.class ).name();
+        QualifiedName procName = extractName( procDefinition, method, valueName, definedName );
+        List<FieldSignature> inputSignature = inputSignatureDeterminer.signatureFor( method );
+        OutputMapper outputMapper = outputMappers.mapper( method );
 
         Optional<String> description = description( method );
         Procedure procedure = method.getAnnotation( Procedure.class );
@@ -245,10 +222,29 @@ class ReflectiveProcedureCompiler
         Optional<String> deprecated = deprecated( method, procedure::deprecatedBy,
                 "Use of @Procedure(deprecatedBy) without @Deprecated in " + procName );
 
-        ProcedureSignature signature =
-                new ProcedureSignature( procName, inputSignature, outputMapper.signature(),
-                        mode, deprecated, config.rolesFor( procName.toString() ), description, warning );
+        List<FieldInjections.FieldSetter> setters;
+        setters = allFieldInjections.setters( procDefinition );
+        ProcedureSignature signature;
 
+        if ( !fullAccess && !config.fullAccessFor( procName.toString() ) )
+        {
+            try
+            {
+                setters = safeFieldInjections.setters( procDefinition );
+            }
+            catch ( ProcedureInjectionException e )
+            {
+                log.warn( e.getMessage() );
+                description = Optional.of( procName.toString() +
+                        "is not available due to not having unrestricted access rights, check configuration." );
+
+                signature = new ProcedureSignature( procName, inputSignature, outputMapper.signature(), Mode.DEFAULT,
+                        Optional.empty(), new String[0], description, warning );
+                return new LoadFailProcedure( signature );
+            }
+        }
+        signature = new ProcedureSignature( procName, inputSignature, outputMapper.signature(), mode, deprecated,
+                config.rolesFor( procName.toString() ), description, warning );
         return new ReflectiveProcedure( signature, constructor, procedureMethod, outputMapper, setters );
     }
 
