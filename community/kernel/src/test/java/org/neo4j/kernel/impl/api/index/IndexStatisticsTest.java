@@ -430,7 +430,7 @@ public class IndexStatisticsTest
         try ( Transaction tx = db.beginTx() )
         {
             Statement statement = bridge.get();
-            statement.schemaWriteOperations().indexDrop( IndexBoundary.map( index ) );
+            statement.schemaWriteOperations().indexDrop( index );
             tx.success();
         }
     }
@@ -498,9 +498,9 @@ public class IndexStatisticsTest
             int labelId = statement.tokenWriteOperations().labelGetOrCreateForName( labelName );
             int propertyKeyId = statement.tokenWriteOperations().propertyKeyGetOrCreateForName( propertyKeyName );
             NodePropertyDescriptor descriptor = new NodePropertyDescriptor( labelId, propertyKeyId );
-            IndexDescriptor index = statement.schemaWriteOperations().indexCreate( descriptor );
+            NewIndexDescriptor index = statement.schemaWriteOperations().indexCreate( descriptor );
             tx.success();
-            return IndexBoundary.map( index );
+            return index;
         }
     }
 

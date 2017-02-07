@@ -40,6 +40,7 @@ import org.neo4j.kernel.api.schema.IndexDescriptorFactory;
 import org.neo4j.kernel.api.properties.DefinedProperty;
 import org.neo4j.kernel.api.properties.Property;
 import org.neo4j.kernel.api.schema_new.index.NewIndexDescriptor;
+import org.neo4j.kernel.api.schema_new.index.NewIndexDescriptorFactory;
 import org.neo4j.kernel.api.txstate.LegacyIndexTransactionState;
 import org.neo4j.kernel.api.txstate.TransactionState;
 import org.neo4j.kernel.api.txstate.TxStateHolder;
@@ -208,14 +209,14 @@ public class LockingStatementOperationsTest
     {
         // given
         NodePropertyDescriptor descriptor = new NodePropertyDescriptor( 123, 456 );
-        IndexDescriptor rule = mock( IndexDescriptor.class );
-        when( schemaWriteOps.indexCreate( state, descriptor ) ).thenReturn( rule );
+        NewIndexDescriptor index = NewIndexDescriptorFactory.forLabel( 123, 456 );
+        when( schemaWriteOps.indexCreate( state, descriptor ) ).thenReturn( index );
 
         // when
-        IndexDescriptor result = lockingOps.indexCreate( state, descriptor );
+        NewIndexDescriptor result = lockingOps.indexCreate( state, descriptor );
 
         // then
-        assertSame( rule, result );
+        assertSame( index, result );
         order.verify( locks ).acquireExclusive( LockTracer.NONE, ResourceTypes.SCHEMA, schemaResource() );
         order.verify( schemaWriteOps ).indexCreate( state, descriptor );
     }
@@ -224,14 +225,14 @@ public class LockingStatementOperationsTest
     public void shouldAcquireSchemaWriteLockBeforeRemovingIndexRule() throws Exception
     {
         // given
-        IndexDescriptor rule = IndexDescriptorFactory.of( 0, 0 );
+        NewIndexDescriptor index = NewIndexDescriptorFactory.forLabel( 0, 0 );
 
         // when
-        lockingOps.indexDrop( state, rule );
+        lockingOps.indexDrop( state, index );
 
         // then
         order.verify( locks ).acquireExclusive( LockTracer.NONE, ResourceTypes.SCHEMA, schemaResource() );
-        order.verify( schemaWriteOps ).indexDrop( state, rule );
+        order.verify( schemaWriteOps ).indexDrop( state, index );
     }
 
     @Test

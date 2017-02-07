@@ -450,7 +450,7 @@ public class SchemaImpl implements Schema
                 try
                 {
                     statement.schemaWriteOperations().indexDrop(
-                            IndexBoundary.map( getIndexDescriptor( statement.readOperations(), indexDefinition ) ) );
+                            getIndexDescriptor( statement.readOperations(), indexDefinition ) );
                 }
                 catch ( NotFoundException e )
                 {

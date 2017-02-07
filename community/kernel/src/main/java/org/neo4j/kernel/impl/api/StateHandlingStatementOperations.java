@@ -377,22 +377,22 @@ public class StateHandlingStatementOperations implements
     }
 
     @Override
-    public IndexDescriptor indexCreate( KernelStatement state, NodePropertyDescriptor descriptor )
+    public NewIndexDescriptor indexCreate( KernelStatement state, NodePropertyDescriptor descriptor )
     {
         state.txState().indexRuleDoAdd( IndexBoundary.map( descriptor ) );
-        return IndexDescriptorFactory.of( descriptor );
+        return IndexBoundary.map( descriptor );
     }
 
     @Override
-    public void indexDrop( KernelStatement state, IndexDescriptor descriptor ) throws DropIndexFailureException
+    public void indexDrop( KernelStatement state, NewIndexDescriptor descriptor ) throws DropIndexFailureException
     {
-        state.txState().indexDoDrop( IndexBoundary.map( descriptor ) );
+        state.txState().indexDoDrop( descriptor );
     }
 
     @Override
-    public void uniqueIndexDrop( KernelStatement state, IndexDescriptor descriptor ) throws DropIndexFailureException
+    public void uniqueIndexDrop( KernelStatement state, NewIndexDescriptor descriptor ) throws DropIndexFailureException
     {
-        state.txState().indexDoDrop( IndexBoundary.mapUnique( descriptor ) );
+        state.txState().indexDoDrop( descriptor );
     }
 
     @Override
