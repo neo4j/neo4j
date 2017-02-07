@@ -25,8 +25,8 @@ import org.neo4j.kernel.configuration.Config;
 
 import static org.hamcrest.CoreMatchers.equalTo;
 import static org.hamcrest.MatcherAssert.assertThat;
+import static org.neo4j.graphdb.factory.GraphDatabaseSettings.procedure_unrestricted;
 import static org.neo4j.helpers.collection.MapUtil.genericMap;
-import static org.neo4j.kernel.impl.factory.GraphDatabaseFacadeFactory.Configuration.procedure_full_access;
 import static org.neo4j.kernel.impl.proc.ProcedureConfig.PROC_ALLOWED_SETTING_DEFAULT_NAME;
 import static org.neo4j.kernel.impl.proc.ProcedureConfig.PROC_ALLOWED_SETTING_ROLES;
 
@@ -141,7 +141,7 @@ public class ProcedureConfigTest
     @Test
     public void shouldAllowFullAccessForProcedures()
     {
-        Config config = Config.defaults().with( genericMap( procedure_full_access.name(),
+        Config config = Config.defaults().with( genericMap( procedure_unrestricted.name(),
                 "test.procedure.name" ) );
         ProcedureConfig procConfig = new ProcedureConfig( config );
 
@@ -152,7 +152,7 @@ public class ProcedureConfigTest
     @Test
     public void shouldAllowFullAccessForSeveralProcedures()
     {
-        Config config = Config.defaults().with( genericMap( procedure_full_access.name(),
+        Config config = Config.defaults().with( genericMap( procedure_unrestricted.name(),
                 "test.procedure.name, test.procedure.otherName" ) );
         ProcedureConfig procConfig = new ProcedureConfig( config );
 
@@ -164,7 +164,7 @@ public class ProcedureConfigTest
     @Test
     public void shouldAllowFullAcsessForSeveralProceduresOddNames()
     {
-        Config config = Config.defaults().with( genericMap( procedure_full_access.name(),
+        Config config = Config.defaults().with( genericMap( procedure_unrestricted.name(),
                 "test\\.procedure.name, test*rocedure.otherName" ) );
         ProcedureConfig procConfig = new ProcedureConfig( config );
 
@@ -176,7 +176,7 @@ public class ProcedureConfigTest
     @Test
     public void shouldAllowFullAccessWildcardProceduresNames()
     {
-        Config config = Config.defaults().with( genericMap( procedure_full_access.name(),
+        Config config = Config.defaults().with( genericMap( procedure_unrestricted.name(),
                 " test.procedure.*  ,     test.*.otherName" ) );
         ProcedureConfig procConfig = new ProcedureConfig( config );
 

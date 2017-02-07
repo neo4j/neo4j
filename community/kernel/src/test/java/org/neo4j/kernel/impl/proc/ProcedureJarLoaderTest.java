@@ -46,11 +46,11 @@ import static java.util.stream.Collectors.toList;
 import static org.hamcrest.Matchers.contains;
 import static org.hamcrest.Matchers.containsInAnyOrder;
 import static org.junit.Assert.assertThat;
+import static org.neo4j.graphdb.factory.GraphDatabaseSettings.procedure_unrestricted;
 import static org.neo4j.helpers.collection.Iterators.asList;
 import static org.neo4j.helpers.collection.MapUtil.genericMap;
 import static org.neo4j.kernel.api.proc.Neo4jTypes.NTInteger;
 import static org.neo4j.kernel.api.proc.ProcedureSignature.procedureSignature;
-import static org.neo4j.kernel.impl.factory.GraphDatabaseFacadeFactory.Configuration.procedure_full_access;
 
 @SuppressWarnings( "WeakerAccess" )
 public class ProcedureJarLoaderTest
@@ -371,7 +371,7 @@ public class ProcedureJarLoaderTest
     private ProcedureConfig procedureConfig()
     {
         Config config = Config.defaults().with(
-                genericMap( procedure_full_access.name(), "org.neo4j.kernel.impl.proc.unsafeFullAccessProcedure" ) );
+                genericMap( procedure_unrestricted.name(), "org.neo4j.kernel.impl.proc.unsafeFullAccessProcedure" ) );
         return new ProcedureConfig( config );
     }
 }

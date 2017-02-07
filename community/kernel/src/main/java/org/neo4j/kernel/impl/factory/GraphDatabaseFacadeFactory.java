@@ -25,7 +25,6 @@ import java.util.concurrent.atomic.AtomicReference;
 import java.util.function.Function;
 import java.util.function.Supplier;
 
-import org.neo4j.configuration.Description;
 import org.neo4j.configuration.LoadableConfig;
 import org.neo4j.graphdb.config.Setting;
 import org.neo4j.graphdb.security.URLAccessRule;
@@ -100,10 +99,6 @@ public class GraphDatabaseFacadeFactory
         @Internal
         public static final Setting<String> editionName =
                 setting( "unsupported.dbms.edition", Settings.STRING, Edition.unknown.toString() );
-
-        @Description("A comma separated list of procedures that are allowed full access to the database, note that this" +
-                " will enable them to bypass security. Use with care.")
-        public static final Setting<String> procedure_full_access = setting( "dbms.security.procedures.full_access", Settings.STRING, "" );
     }
 
     protected final DatabaseInfo databaseInfo;

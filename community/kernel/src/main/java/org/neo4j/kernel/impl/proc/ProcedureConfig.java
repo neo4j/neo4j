@@ -21,12 +21,13 @@ package org.neo4j.kernel.impl.proc;
 
 import java.util.Collections;
 import java.util.List;
+import java.util.function.Function;
 import java.util.regex.Pattern;
 import java.util.stream.Collectors;
 import java.util.stream.Stream;
 
+import org.neo4j.graphdb.factory.GraphDatabaseSettings;
 import org.neo4j.kernel.configuration.Config;
-import org.neo4j.kernel.impl.factory.GraphDatabaseFacadeFactory.Configuration;
 
 import static java.util.Arrays.stream;
 
@@ -56,33 +57,30 @@ public class ProcedureConfig
         this.defaultValue = config.getValue( PROC_ALLOWED_SETTING_DEFAULT_NAME )
                 .map( Object::toString )
                 .orElse( "" );
-        String allowedRoles = config.getValue( PROC_ALLOWED_SETTING_ROLES ).map( Object::toString ).orElse( "" );
-        if ( allowedRoles.isEmpty() )
+        this.matchers = parseMatchers( PROC_ALLOWED_SETTING_ROLES, config, SETTING_DELIMITER, procToRoleSpec ->
         {
-            this.matchers = Collections.emptyList();
-        }
-        else
-        {
-            this.matchers = Stream.of( allowedRoles.split( SETTING_DELIMITER ) )
-                    .map( procToRoleSpec ->
-                    {
-                        String[] spec = procToRoleSpec.split( MAPPING_DELIMITER );
-                        String[] roles = stream( spec[1].split( ROLES_DELIMITER ) )
-                                .map( String::trim ).toArray( String[]::new );
-                        return new ProcMatcher( spec[0].trim(), roles );
-                    } )
-                    .collect( Collectors.toList() );
-        }
-        String fullAccessProcedures =
-                config.getValue( Configuration.procedure_full_access.name() ).map( Object::toString ).orElse( "" );
+            String[] spec = procToRoleSpec.split( MAPPING_DELIMITER );
+            String[] roles = stream( spec[1].split( ROLES_DELIMITER ) ).map( String::trim ).toArray( String[]::new );
+            return new ProcMatcher( spec[0].trim(), roles );
+        } );
+
+        this.accessPatterns =
+                parseMatchers( GraphDatabaseSettings.procedure_unrestricted.name(), config, PROCEDURE_DELIMITER,
+                        ProcedureConfig::compilePattern );
+    }
+
+    private <T> List<T> parseMatchers( String configName, Config config, String delimiter, Function<String,T>
+            matchFunc )
+    {
+        String fullAccessProcedures = config.getValue( configName ).map( Object::toString ).orElse( "" );
         if ( fullAccessProcedures.isEmpty() )
         {
-            this.accessPatterns = Collections.emptyList();
+            return Collections.emptyList();
         }
         else
         {
-            this.accessPatterns = Stream.of( fullAccessProcedures.split( PROCEDURE_DELIMITER ) )
-                    .map( ProcedureConfig::compilePattern ).collect( Collectors.toList() );
+            return Stream.of( fullAccessProcedures.split( delimiter ) ).map( matchFunc )
+                    .collect( Collectors.toList() );
         }
     }
 
