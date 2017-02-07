@@ -262,7 +262,7 @@ class TreeState
     @Override
     public String toString()
     {
-        return String.format( "pageId=%d, stableGeneration=%d, unstableGeneration=%d, rootId=%d, rootGen=%d" +
+        return String.format( "pageId=%d, stableGeneration=%d, unstableGeneration=%d, rootId=%d, rootGen=%d, " +
                 "lastId=%d, freeListWritePageId=%d, freeListReadPageId=%d, freeListWritePos=%d, freeListReadPos=%d, " +
                 "valid=%b",
                 pageId, stableGeneration, unstableGeneration, rootId, rootGen, lastId,

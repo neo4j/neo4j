@@ -31,6 +31,7 @@ import java.util.concurrent.locks.Lock;
 import java.util.concurrent.locks.ReentrantLock;
 import java.util.function.LongSupplier;
 import java.util.function.Supplier;
+
 import org.neo4j.collection.primitive.Primitive;
 import org.neo4j.collection.primitive.PrimitiveLongSet;
 import org.neo4j.cursor.RawCursor;
@@ -324,8 +325,14 @@ public class GBPTree<KEY,VALUE> implements Closeable
 
     private void initializeAfterCreation( Layout<KEY,VALUE> layout ) throws IOException
     {
-        // Write meta
+        // Initialize meta
         writeMeta( layout, pagedFile );
+
+        // Initialize state
+        try ( PageCursor cursor = pagedFile.io( 0 /*ignored*/, PagedFile.PF_SHARED_WRITE_LOCK ) )
+        {
+            TreeStatePair.initializeStatePages( cursor );
+        }
 
         // Initialize index root node to a leaf node.
         try ( PageCursor cursor = openRootCursor( PagedFile.PF_SHARED_WRITE_LOCK ) )
