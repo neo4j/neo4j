@@ -94,6 +94,36 @@ public class LabelCountsTest
     }
 
     @Test
+    public void shouldAccountForDeletedNodesWithMultipleLabels() throws Exception
+    {
+        // given
+        GraphDatabaseService graphDb = db.getGraphDatabaseAPI();
+        Node node;
+        try ( Transaction tx = graphDb.beginTx() )
+        {
+            node = graphDb.createNode( label( "Foo" ), label( "Bar" ) );
+            graphDb.createNode( label( "Foo" ) );
+            graphDb.createNode( label( "Bar" ) );
+
+            tx.success();
+        }
+        try ( Transaction tx = graphDb.beginTx() )
+        {
+            node.delete();
+
+            tx.success();
+        }
+
+        // when
+        long fooCount = numberOfNodesWith( label( "Foo" ) );
+        long barCount = numberOfNodesWith( label( "Bar" ) );
+
+        // then
+        assertEquals( 1, fooCount );
+        assertEquals( 1, barCount );
+    }
+
+    @Test
     public void shouldAccountForAddedLabels() throws Exception
     {
         // given
