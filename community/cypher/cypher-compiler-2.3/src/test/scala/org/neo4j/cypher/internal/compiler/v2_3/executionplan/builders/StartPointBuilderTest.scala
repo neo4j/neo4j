@@ -28,10 +28,10 @@ import org.neo4j.cypher.internal.compiler.v2_3.commands.predicates.Equals
 import org.neo4j.cypher.internal.compiler.v2_3.commands.values.TokenType.PropertyKey
 import org.neo4j.cypher.internal.compiler.v2_3.executionplan.PartiallySolvedQuery
 import org.neo4j.cypher.internal.compiler.v2_3.pipes.NodeStartPipe
+import org.neo4j.cypher.internal.compiler.v2_3.spi.SchemaTypes.IndexDescriptor
 import org.neo4j.cypher.internal.compiler.v2_3.spi.PlanContext
 import org.neo4j.cypher.internal.frontend.v2_3.helpers.NonEmptyList
 import org.neo4j.cypher.internal.frontend.v2_3.{ExclusiveBound, InclusiveBound, IndexHintException}
-import org.neo4j.cypher.internal.compiler.v2_3.IndexDescriptor
 
 class StartPointBuilderTest extends BuilderTest {
 
@@ -51,7 +51,7 @@ class StartPointBuilderTest extends BuilderTest {
     val propertyName = "prop"
     val q = PartiallySolvedQuery().
       copy(start = Seq(Unsolved(SchemaIndex("n", labelName, propertyName, AnyIndex, Some(RangeQueryExpression(range))))))
-    when(context.getIndexRule(labelName, propertyName)).thenReturn(Some(new IndexDescriptor(123,456)))
+    when(context.getIndexRule(labelName, propertyName)).thenReturn(Some(IndexDescriptor(123,456)))
 
     assertAccepts(q)
   }
@@ -62,7 +62,7 @@ class StartPointBuilderTest extends BuilderTest {
     val propertyName = "prop"
     val q = PartiallySolvedQuery().
       copy(start = Seq(Unsolved(SchemaIndex("n", labelName, propertyName, UniqueIndex, Some(RangeQueryExpression(range))))))
-    when(context.getUniqueIndexRule(labelName, propertyName)).thenReturn(Some(new IndexDescriptor(123,456)))
+    when(context.getUniqueIndexRule(labelName, propertyName)).thenReturn(Some(IndexDescriptor(123,456)))
 
     assertAccepts(q)
   }
@@ -73,7 +73,7 @@ class StartPointBuilderTest extends BuilderTest {
     val propertyName = "prop"
     val q = PartiallySolvedQuery().
       copy(start = Seq(Unsolved(SchemaIndex("n", labelName, propertyName, AnyIndex, Some(RangeQueryExpression(range))))))
-    when(context.getIndexRule(labelName, propertyName)).thenReturn(Some(new IndexDescriptor(123,456)))
+    when(context.getIndexRule(labelName, propertyName)).thenReturn(Some(IndexDescriptor(123,456)))
 
     assertAccepts(q)
   }
@@ -85,7 +85,7 @@ class StartPointBuilderTest extends BuilderTest {
     val propertyName = "prop"
     val q = PartiallySolvedQuery().
       copy(start = Seq(Unsolved(SchemaIndex("n", labelName, propertyName, AnyIndex, Some(RangeQueryExpression(range))))))
-    when(context.getIndexRule(labelName, propertyName)).thenReturn(Some(new IndexDescriptor(123,456)))
+    when(context.getIndexRule(labelName, propertyName)).thenReturn(Some(IndexDescriptor(123,456)))
 
     assertAccepts(q)
   }
@@ -96,7 +96,7 @@ class StartPointBuilderTest extends BuilderTest {
     val propertyName = "prop"
     val q = PartiallySolvedQuery().
       copy(start = Seq(Unsolved(SchemaIndex("n", labelName, propertyName, UniqueIndex, Some(RangeQueryExpression(range))))))
-    when(context.getUniqueIndexRule(labelName, propertyName)).thenReturn(Some(new IndexDescriptor(123,456)))
+    when(context.getUniqueIndexRule(labelName, propertyName)).thenReturn(Some(IndexDescriptor(123,456)))
 
     assertAccepts(q)
   }
@@ -108,7 +108,7 @@ class StartPointBuilderTest extends BuilderTest {
     val propertyName = "prop"
     val q = PartiallySolvedQuery().
       copy(start = Seq(Unsolved(SchemaIndex("n", labelName, propertyName, UniqueIndex, Some(RangeQueryExpression(range))))))
-    when(context.getUniqueIndexRule(labelName, propertyName)).thenReturn(Some(new IndexDescriptor(123,456)))
+    when(context.getUniqueIndexRule(labelName, propertyName)).thenReturn(Some(IndexDescriptor(123,456)))
 
     assertAccepts(q)
   }
@@ -119,7 +119,7 @@ class StartPointBuilderTest extends BuilderTest {
     val propertyName = "prop"
     val q = PartiallySolvedQuery().
       copy(start = Seq(Unsolved(SchemaIndex("n", labelName, propertyName, UniqueIndex, Some(RangeQueryExpression(range))))))
-    when(context.getUniqueIndexRule(labelName, propertyName)).thenReturn(Some(new IndexDescriptor(123,456)))
+    when(context.getUniqueIndexRule(labelName, propertyName)).thenReturn(Some(IndexDescriptor(123,456)))
 
     assertAccepts(q)
   }
@@ -130,7 +130,7 @@ class StartPointBuilderTest extends BuilderTest {
     val propertyName = "prop"
     val q = PartiallySolvedQuery().
       copy(start = Seq(Unsolved(SchemaIndex("n", labelName, propertyName, UniqueIndex, Some(RangeQueryExpression(range))))))
-    when(context.getUniqueIndexRule(labelName, propertyName)).thenReturn(Some(new IndexDescriptor(123,456)))
+    when(context.getUniqueIndexRule(labelName, propertyName)).thenReturn(Some(IndexDescriptor(123,456)))
 
     assertAccepts(q)
   }
@@ -188,7 +188,7 @@ class StartPointBuilderTest extends BuilderTest {
       where = Seq(Unsolved(Equals(Property(Identifier("n"), propertyKey), Literal("Stefan")))),
       start = Seq(Unsolved(SchemaIndex("n", labelName, propertyKey.name, AnyIndex, Some(SingleQueryExpression(Literal("a")))))))
 
-    when(context.getIndexRule(labelName, propertyKey.name)).thenReturn(Some(new IndexDescriptor(123,456)))
+    when(context.getIndexRule(labelName, propertyKey.name)).thenReturn(Some(IndexDescriptor(123,456)))
 
     //THEN
     val producedPlan = assertAccepts(q)

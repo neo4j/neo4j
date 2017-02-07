@@ -25,6 +25,7 @@ import org.neo4j.cypher.internal.compiler.v2_3.commands.AnyInCollection
 import org.neo4j.cypher.internal.compiler.v2_3.commands.expressions.{Collection, Identifier, Property}
 import org.neo4j.cypher.internal.compiler.v2_3.commands.predicates.{Equals, HasLabel}
 import org.neo4j.cypher.internal.compiler.v2_3.commands.values.{UnresolvedLabel, UnresolvedProperty}
+import org.neo4j.cypher.internal.compiler.v2_3.spi.SchemaTypes.IndexDescriptor
 import org.neo4j.cypher.internal.compiler.v2_3.spi.PlanContext
 import org.neo4j.cypher.internal.compiler.v2_3.symbols.SymbolTable
 import org.neo4j.cypher.internal.frontend.v2_3.ast
@@ -32,7 +33,6 @@ import org.neo4j.cypher.internal.frontend.v2_3.ast.AstConstructionTestSupport
 import org.neo4j.cypher.internal.frontend.v2_3.helpers.NonEmptyList
 import org.neo4j.cypher.internal.frontend.v2_3.symbols._
 import org.neo4j.cypher.internal.frontend.v2_3.test_helpers.CypherFunSuite
-import org.neo4j.cypher.internal.compiler.v2_3.IndexDescriptor
 
 class NodeFetchStrategyTest extends CypherFunSuite {
   val propertyName = "prop"
@@ -44,7 +44,7 @@ class NodeFetchStrategyTest extends CypherFunSuite {
     val equalityPredicate = Equals(Property(Identifier("a"), UnresolvedProperty(propertyName)), Identifier("b"))
     val labelPredicate = HasLabel(Identifier("a"), UnresolvedLabel(labelName))
     val planCtx = mock[PlanContext]
-    val indexDescriptor = new IndexDescriptor(0, 0)
+    val indexDescriptor = IndexDescriptor(0, 0)
 
     when(planCtx.getIndexRule(labelName, propertyName)).thenReturn(Some(indexDescriptor))
 
@@ -61,7 +61,7 @@ class NodeFetchStrategyTest extends CypherFunSuite {
     val equalityPredicate = Equals(Property(Identifier("a"), UnresolvedProperty(propertyName)), Identifier("b"))
     val labelPredicate = HasLabel(Identifier("a"), UnresolvedLabel(labelName))
     val planCtx = mock[PlanContext]
-    val indexDescriptor = new IndexDescriptor(0, 0)
+    val indexDescriptor = IndexDescriptor(0, 0)
 
     when(planCtx.getIndexRule(labelName, propertyName)).thenReturn(Some(indexDescriptor))
     when(planCtx.getUniquenessConstraint(labelName, propertyName)).thenReturn(None)
@@ -79,7 +79,7 @@ class NodeFetchStrategyTest extends CypherFunSuite {
     val inPredicate = AnyInCollection(Collection(Identifier("b")),"_inner_",Equals(Property(Identifier("a"), UnresolvedProperty(propertyName)), Identifier("_inner_")))
     val labelPredicate = HasLabel(Identifier("a"), UnresolvedLabel(labelName))
     val planCtx = mock[PlanContext]
-    val indexDescriptor = new IndexDescriptor(0, 0)
+    val indexDescriptor = IndexDescriptor(0, 0)
 
     when(planCtx.getIndexRule(labelName, propertyName)).thenReturn(Some(indexDescriptor))
     when(planCtx.getUniquenessConstraint(labelName, propertyName)).thenReturn(None)

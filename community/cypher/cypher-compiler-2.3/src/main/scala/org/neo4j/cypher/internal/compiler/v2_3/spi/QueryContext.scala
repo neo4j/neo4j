@@ -24,10 +24,9 @@ import java.net.URL
 import org.neo4j.cypher.internal.compiler.v2_3.InternalQueryStatistics
 import org.neo4j.cypher.internal.compiler.v2_3.commands.expressions.{Expander, KernelPredicate}
 import org.neo4j.cypher.internal.compiler.v2_3.pipes.matching.PatternNode
+import org.neo4j.cypher.internal.compiler.v2_3.spi.SchemaTypes.{IndexDescriptor, NodePropertyExistenceConstraint, RelationshipPropertyExistenceConstraint, UniquenessConstraint}
 import org.neo4j.cypher.internal.frontend.v2_3.SemanticDirection
-import org.neo4j.graphdb.{Path, PropertyContainer, Relationship, Node}
-import org.neo4j.kernel.api.constraints.{NodePropertyExistenceConstraint, RelationshipPropertyExistenceConstraint, UniquenessConstraint}
-import org.neo4j.cypher.internal.compiler.v2_3.IndexDescriptor
+import org.neo4j.graphdb.{Node, Path, PropertyContainer, Relationship}
 
 /*
  * Developer note: This is an attempt at an internal graph database API, which defines a clean cut between
