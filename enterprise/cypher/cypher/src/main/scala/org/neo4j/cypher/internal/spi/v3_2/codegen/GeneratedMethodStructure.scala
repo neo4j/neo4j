@@ -34,10 +34,11 @@ import org.neo4j.cypher.internal.compiled_runtime.v3_2.codegen.ir.expressions.{B
 import org.neo4j.cypher.internal.compiled_runtime.v3_2.codegen.spi._
 import org.neo4j.cypher.internal.compiled_runtime.v3_2.codegen.{CodeGenContext, QueryExecutionEvent}
 import org.neo4j.cypher.internal.compiler.v3_2.ast.convert.commands.DirectionConverter.toGraphDb
-import org.neo4j.cypher.internal.compiler.v3_2.helpers._
 import org.neo4j.cypher.internal.compiler.v3_2.planDescription.Id
+import org.neo4j.cypher.internal.frontend.v3_2.helpers._
 import org.neo4j.cypher.internal.frontend.v3_2.symbols.{CTNode, CTRelationship, ListType}
 import org.neo4j.cypher.internal.frontend.v3_2.{ParameterNotFoundException, SemanticDirection, symbols}
+import org.neo4j.cypher.internal.spi.v3_2.codegen.GeneratedMethodStructure.CompletableFinalizer
 import org.neo4j.cypher.internal.spi.v3_2.codegen.Methods._
 import org.neo4j.cypher.internal.spi.v3_2.codegen.Templates.{createNewInstance, handleKernelExceptions, newRelationshipDataExtractor, tryCatch}
 import org.neo4j.graphdb.Direction
@@ -45,7 +46,7 @@ import org.neo4j.kernel.api.ReadOperations
 import org.neo4j.kernel.api.schema_new.index.{NewIndexDescriptor, NewIndexDescriptorFactory}
 import org.neo4j.kernel.impl.api.RelationshipDataExtractor
 import org.neo4j.kernel.impl.api.store.RelationshipIterator
-import GeneratedMethodStructure.CompletableFinalizer
+
 import scala.collection.mutable
 
 object GeneratedMethodStructure {

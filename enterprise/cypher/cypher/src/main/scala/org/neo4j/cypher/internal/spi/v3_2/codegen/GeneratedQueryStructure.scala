@@ -35,11 +35,11 @@ import org.neo4j.cypher.internal.compiled_runtime.v3_2.codegen.ir.expressions._
 import org.neo4j.cypher.internal.compiled_runtime.v3_2.codegen.spi.{CodeStructure, CodeStructureResult, MethodStructure}
 import org.neo4j.cypher.internal.compiled_runtime.v3_2.executionplan.{GeneratedQuery, GeneratedQueryExecution}
 import org.neo4j.cypher.internal.compiler.v3_2.executionplan._
-import org.neo4j.cypher.internal.compiler.v3_2.helpers._
 import org.neo4j.cypher.internal.compiler.v3_2.planDescription.{Id, InternalPlanDescription}
 import org.neo4j.cypher.internal.compiler.v3_2.planner.CantCompileQueryException
 import org.neo4j.cypher.internal.compiler.v3_2.spi.{InternalResultVisitor, QueryContext}
 import org.neo4j.cypher.internal.compiler.v3_2.{ExecutionMode, ResultRowImpl, TaskCloser}
+import org.neo4j.cypher.internal.frontend.v3_2.helpers.using
 import org.neo4j.cypher.internal.frontend.v3_2.symbols
 import org.neo4j.kernel.api.ReadOperations
 import org.neo4j.kernel.impl.core.NodeManager

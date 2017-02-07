@@ -30,11 +30,11 @@ import org.neo4j.collection.primitive.{Primitive, PrimitiveLongIntMap, Primitive
 import org.neo4j.cypher.internal.codegen.{PrimitiveNodeStream, PrimitiveRelationshipStream}
 import org.neo4j.cypher.internal.compiled_runtime.v3_2.codegen.QueryExecutionTracer
 import org.neo4j.cypher.internal.compiler.v3_2.executionplan._
-import org.neo4j.cypher.internal.compiler.v3_2.helpers.using
 import org.neo4j.cypher.internal.compiler.v3_2.planDescription.InternalPlanDescription
 import org.neo4j.cypher.internal.compiler.v3_2.spi.{QueryContext, QueryTransactionalContext}
-import org.neo4j.cypher.internal.compiler.v3_2.{ExecutionMode, ResultRowImpl, TaskCloser, helpers}
+import org.neo4j.cypher.internal.compiler.v3_2.{ExecutionMode, ResultRowImpl, TaskCloser}
 import org.neo4j.cypher.internal.frontend.v3_2.CypherExecutionException
+import org.neo4j.cypher.internal.frontend.v3_2.helpers.using
 import org.neo4j.graphdb.Direction
 import org.neo4j.kernel.api.exceptions.KernelException
 import org.neo4j.kernel.api.{ReadOperations, StatementTokenNameLookup, TokenNameLookup}
