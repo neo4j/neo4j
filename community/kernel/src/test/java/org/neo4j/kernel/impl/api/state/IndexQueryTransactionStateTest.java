@@ -74,7 +74,8 @@ public class IndexQueryTransactionStateTest
     String value = "My Value";
     NodePropertyDescriptor descriptor = new NodePropertyDescriptor( labelId, propertyKeyId );
     IndexDescriptor indexDescriptor = IndexDescriptorFactory.of( descriptor );
-    List<NewIndexDescriptor> indexes = Collections.singletonList( IndexBoundary.map( indexDescriptor ) );
+    private final NewIndexDescriptor newIndexDescriptor = IndexBoundary.map( indexDescriptor );
+    List<NewIndexDescriptor> indexes = Collections.singletonList( newIndexDescriptor );
 
     private StoreReadLayer store;
     private StoreStatement statement;
@@ -98,14 +99,13 @@ public class IndexQueryTransactionStateTest
                 .<IndexDescriptor>emptyList() ) );
         when( store.indexesGetAll() ).then( answerAsIteratorFrom( Collections.<IndexDescriptor>emptyList() ) );
         when( store.constraintsGetForLabel( labelId ) ).thenReturn( Collections.<NodePropertyConstraint>emptyIterator() );
-        when( store.indexGetForLabelAndPropertyKey( SchemaBoundary.map( descriptor ) ) ).thenReturn(
-                IndexBoundary.map( indexDescriptor ) );
+        when( store.indexGetForLabelAndPropertyKey( SchemaBoundary.map( descriptor ) ) ).thenReturn( newIndexDescriptor );
 
         statement = mock( StoreStatement.class );
         when( state.getStoreStatement() ).thenReturn( statement );
         indexReader = mock( IndexReader.class );
-        when( statement.getIndexReader( indexDescriptor ) ).thenReturn( indexReader );
-        when( statement.getFreshIndexReader( indexDescriptor ) ).thenReturn( indexReader );
+        when( statement.getIndexReader( newIndexDescriptor ) ).thenReturn( indexReader );
+        when( statement.getFreshIndexReader( newIndexDescriptor ) ).thenReturn( indexReader );
 
         StateHandlingStatementOperations stateHandlingOperations = new StateHandlingStatementOperations(
                 store,
@@ -128,7 +128,7 @@ public class IndexQueryTransactionStateTest
         txContext.nodeDelete( state, nodeId );
 
         // When
-        PrimitiveLongIterator result = txContext.nodesGetFromIndexSeek( state, indexDescriptor, value );
+        PrimitiveLongIterator result = txContext.nodesGetFromIndexSeek( state, newIndexDescriptor, value );
 
         // Then
         assertThat( PrimitiveLongCollections.toSet( result ), equalTo( asSet( 1L, 3L ) ) );
@@ -146,7 +146,7 @@ public class IndexQueryTransactionStateTest
         txContext.nodeDelete( state, nodeId );
 
         // When
-        long result = txContext.nodeGetFromUniqueIndexSeek( state, indexDescriptor, value );
+        long result = txContext.nodeGetFromUniqueIndexSeek( state, newIndexDescriptor, value );
 
         // Then
         assertNoSuchNode( result );
@@ -162,7 +162,7 @@ public class IndexQueryTransactionStateTest
                 Property.intProperty( propertyKeyId, 10 ) );
 
         // When
-        PrimitiveLongIterator result = txContext.nodesGetFromIndexSeek( state, indexDescriptor, value );
+        PrimitiveLongIterator result = txContext.nodesGetFromIndexSeek( state, newIndexDescriptor, value );
 
         // Then
         assertThat( PrimitiveLongCollections.toSet( result ), equalTo( asSet( 2L, 3L ) ) );
@@ -177,7 +177,7 @@ public class IndexQueryTransactionStateTest
                 Property.intProperty( propertyKeyId, 10 ) );
 
         // When
-        long result = txContext.nodeGetFromUniqueIndexSeek( state, indexDescriptor, value );
+        long result = txContext.nodeGetFromUniqueIndexSeek( state, newIndexDescriptor, value );
 
         // Then
         assertNoSuchNode( result );
@@ -200,7 +200,7 @@ public class IndexQueryTransactionStateTest
         txContext.nodeAddLabel( state, nodeId, labelId );
 
         // When
-        PrimitiveLongIterator result = txContext.nodesGetFromIndexSeek( state, indexDescriptor, value );
+        PrimitiveLongIterator result = txContext.nodesGetFromIndexSeek( state, newIndexDescriptor, value );
 
         // Then
         assertThat( PrimitiveLongCollections.toSet( result ), equalTo( asSet( nodeId, 2L, 3L ) ) );
@@ -223,7 +223,7 @@ public class IndexQueryTransactionStateTest
         txContext.nodeAddLabel( state, nodeId, labelId );
 
         // When
-        long result = txContext.nodeGetFromUniqueIndexSeek( state, indexDescriptor, value );
+        long result = txContext.nodeGetFromUniqueIndexSeek( state, newIndexDescriptor, value );
 
         // Then
         assertThat( result, equalTo( nodeId ) );
@@ -244,7 +244,7 @@ public class IndexQueryTransactionStateTest
         txContext.nodeAddLabel( state, nodeId, labelId );
 
         // When
-        PrimitiveLongIterator result = txContext.nodesGetFromIndexSeek( state, indexDescriptor, value );
+        PrimitiveLongIterator result = txContext.nodesGetFromIndexSeek( state, newIndexDescriptor, value );
 
         // Then
         assertThat( PrimitiveLongCollections.toSet( result ), equalTo( asSet( nodeId, 2L, 3L ) ) );
@@ -266,7 +266,7 @@ public class IndexQueryTransactionStateTest
         txContext.nodeAddLabel( state, nodeId, labelId );
 
         // When
-        long result = txContext.nodeGetFromUniqueIndexSeek( state, indexDescriptor, value );
+        long result = txContext.nodeGetFromUniqueIndexSeek( state, newIndexDescriptor, value );
 
         // Then
         assertThat( result, equalTo( nodeId ) );
@@ -287,7 +287,7 @@ public class IndexQueryTransactionStateTest
         txContext.nodeRemoveLabel( state, nodeId, labelId );
 
         // When
-        PrimitiveLongIterator result = txContext.nodesGetFromIndexSeek( state, indexDescriptor, value );
+        PrimitiveLongIterator result = txContext.nodesGetFromIndexSeek( state, newIndexDescriptor, value );
 
         // Then
         assertThat( PrimitiveLongCollections.toSet( result ), equalTo( asSet( 2L, 3L ) ) );
@@ -308,7 +308,7 @@ public class IndexQueryTransactionStateTest
         txContext.nodeRemoveLabel( state, nodeId, labelId );
 
         // When
-        long result = txContext.nodeGetFromUniqueIndexSeek( state, indexDescriptor, value );
+        long result = txContext.nodeGetFromUniqueIndexSeek( state, newIndexDescriptor, value );
 
         // Then
         assertNoSuchNode( result );
@@ -332,7 +332,7 @@ public class IndexQueryTransactionStateTest
         txContext.nodeAddLabel( state, nodeId, labelId );
 
         // When
-        PrimitiveLongIterator result = txContext.nodesGetFromIndexSeek( state, indexDescriptor, value );
+        PrimitiveLongIterator result = txContext.nodesGetFromIndexSeek( state, newIndexDescriptor, value );
 
         // Then
         assertThat( PrimitiveLongCollections.toSet( result ), equalTo( asSet( 2L, 3L ) ) );
@@ -353,7 +353,7 @@ public class IndexQueryTransactionStateTest
         txContext.nodeRemoveProperty( state, nodeId, propertyKeyId );
 
         // When
-        long result = txContext.nodeGetFromUniqueIndexSeek( state, indexDescriptor, value );
+        long result = txContext.nodeGetFromUniqueIndexSeek( state, newIndexDescriptor, value );
 
         // Then
         assertNoSuchNode( result );

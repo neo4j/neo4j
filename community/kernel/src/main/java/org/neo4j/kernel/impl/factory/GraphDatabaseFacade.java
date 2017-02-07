@@ -592,7 +592,7 @@ public class GraphDatabaseFacade implements GraphDatabaseAPI
             return emptyIterator();
         }
 
-        IndexDescriptor descriptor = findAnyIndexByLabelAndProperty( readOps, propertyId, labelId );
+        NewIndexDescriptor descriptor = findAnyIndexByLabelAndProperty( readOps, propertyId, labelId );
 
         try
         {
@@ -610,7 +610,7 @@ public class GraphDatabaseFacade implements GraphDatabaseAPI
         return getNodesByLabelAndPropertyWithoutIndex( propertyId, value, statement, labelId );
     }
 
-    private IndexDescriptor findAnyIndexByLabelAndProperty( ReadOperations readOps, int propertyId, int labelId )
+    private NewIndexDescriptor findAnyIndexByLabelAndProperty( ReadOperations readOps, int propertyId, int labelId )
     {
         try
         {
@@ -620,7 +620,7 @@ public class GraphDatabaseFacade implements GraphDatabaseAPI
             if ( readOps.indexGetState( descriptor ) == InternalIndexState.ONLINE )
             {
                 // Ha! We found an index - let's use it to find matching nodes
-                return IndexBoundary.map( descriptor );
+                return descriptor;
             }
         }
         catch ( SchemaRuleNotFoundException | IndexNotFoundKernelException e )

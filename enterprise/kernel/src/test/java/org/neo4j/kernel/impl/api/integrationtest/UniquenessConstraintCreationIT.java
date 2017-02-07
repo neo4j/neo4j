@@ -49,6 +49,8 @@ import org.neo4j.kernel.api.schema_new.SchemaDescriptorFactory;
 import org.neo4j.kernel.api.schema_new.constaints.ConstraintDescriptorFactory;
 import org.neo4j.kernel.api.security.AnonymousContext;
 import org.neo4j.kernel.api.security.SecurityContext;
+import org.neo4j.kernel.api.schema_new.index.NewIndexDescriptor;
+import org.neo4j.kernel.api.schema_new.index.NewIndexDescriptorFactory;
 import org.neo4j.kernel.impl.storageengine.impl.recordstorage.RecordStorageEngine;
 import org.neo4j.kernel.impl.store.NeoStores;
 import org.neo4j.kernel.impl.store.SchemaStorage;
@@ -68,6 +70,7 @@ public class UniquenessConstraintCreationIT
         extends AbstractConstraintCreationIT<UniquenessConstraint,NodePropertyDescriptor>
 {
     private static final String DUPLICATED_VALUE = "apa";
+    private NewIndexDescriptor uniqueIndex;
 
     @Override
     int initializeLabelOrRelType( TokenWriteOperations tokenWriteOperations, String name ) throws KernelException
@@ -121,6 +124,7 @@ public class UniquenessConstraintCreationIT
     @Override
     NodePropertyDescriptor makeDescriptor( int typeId, int propertyKeyId )
     {
+        uniqueIndex = NewIndexDescriptorFactory.uniqueForLabel( typeId, propertyKeyId );
         return new NodePropertyDescriptor( typeId, propertyKeyId );
     }
 
@@ -179,7 +183,7 @@ public class UniquenessConstraintCreationIT
 
         // then
         ReadOperations readOperations = readOperationsInNewTransaction();
-        assertEquals( asSet( IndexDescriptorFactory.of( descriptor ) ), asSet( readOperations.uniqueIndexesGetAll() ) );
+        assertEquals( asSet( uniqueIndex ), asSet( readOperations.uniqueIndexesGetAll() ) );
     }
 
     @Test
@@ -188,7 +192,7 @@ public class UniquenessConstraintCreationIT
         // given
         Statement statement = statementInNewTransaction( SecurityContext.AUTH_DISABLED );
         statement.schemaWriteOperations().uniquePropertyConstraintCreate( descriptor );
-        assertEquals( asSet( IndexDescriptorFactory.of( descriptor ) ),
+        assertEquals( asSet( uniqueIndex ),
                 asSet( statement.readOperations().uniqueIndexesGetAll() ) );
 
         // when
@@ -196,7 +200,7 @@ public class UniquenessConstraintCreationIT
 
         // then
         ReadOperations readOperations = readOperationsInNewTransaction();
-        assertEquals( emptySetOf( IndexDescriptor.class ), asSet( readOperations.uniqueIndexesGetAll() ) );
+        assertEquals( emptySetOf( NewIndexDescriptor.class ), asSet( readOperations.uniqueIndexesGetAll() ) );
         commit();
     }
 
@@ -268,7 +272,7 @@ public class UniquenessConstraintCreationIT
         Statement statement = statementInNewTransaction( SecurityContext.AUTH_DISABLED );
         UniquenessConstraint constraint =
                 statement.schemaWriteOperations().uniquePropertyConstraintCreate( descriptor );
-        assertEquals( asSet( IndexDescriptorFactory.of( descriptor ) ),
+        assertEquals( asSet( uniqueIndex ),
                 asSet( statement.readOperations().uniqueIndexesGetAll() ) );
         commit();
 
@@ -279,7 +283,7 @@ public class UniquenessConstraintCreationIT
 
         // then
         ReadOperations readOperations = readOperationsInNewTransaction();
-        assertEquals( emptySetOf( IndexDescriptor.class ), asSet( readOperations.uniqueIndexesGetAll() ) );
+        assertEquals( emptySetOf( NewIndexDescriptor.class ), asSet( readOperations.uniqueIndexesGetAll() ) );
         commit();
     }
 

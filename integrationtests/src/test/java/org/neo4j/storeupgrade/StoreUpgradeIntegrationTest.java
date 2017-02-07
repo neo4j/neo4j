@@ -55,6 +55,7 @@ import org.neo4j.kernel.api.ReadOperations;
 import org.neo4j.kernel.api.Statement;
 import org.neo4j.kernel.api.exceptions.KernelException;
 import org.neo4j.kernel.api.schema.IndexDescriptor;
+import org.neo4j.kernel.api.schema_new.index.NewIndexDescriptor;
 import org.neo4j.kernel.api.security.AnonymousContext;
 import org.neo4j.kernel.configuration.Config;
 import org.neo4j.kernel.configuration.HttpConnector;
@@ -452,14 +453,14 @@ public class StoreUpgradeIntegrationTest
         try ( KernelTransaction tx = kernel.newTransaction( KernelTransaction.Type.implicit, AnonymousContext.read() );
               Statement statement = tx.acquireStatement() )
         {
-            Iterator<IndexDescriptor> indexes = getAllIndexes( db );
+            Iterator<NewIndexDescriptor> indexes = getAllIndexes( db );
             DoubleLongRegister register = Registers.newDoubleLongRegister();
             for ( int i = 0; indexes.hasNext(); i++ )
             {
-                IndexDescriptor descriptor = indexes.next();
+                NewIndexDescriptor descriptor = indexes.next();
 
                 // wait index to be online since sometimes we need to rebuild the indexes on migration
-                awaitOnline( db, statement.readOperations(), descriptor );
+                awaitOnline( statement.readOperations(), descriptor );
 
                 assertDoubleLongEquals( store.indexCounts[i][0], store.indexCounts[i][1],
                         statement.readOperations().indexUpdatesAndSize( descriptor, register ) );
@@ -471,7 +472,7 @@ public class StoreUpgradeIntegrationTest
         }
     }
 
-    private static Iterator<IndexDescriptor> getAllIndexes( GraphDatabaseAPI db )
+    private static Iterator<NewIndexDescriptor> getAllIndexes( GraphDatabaseAPI db )
     {
         try ( Transaction ignored = db.beginTx() )
         {
@@ -585,8 +586,8 @@ public class StoreUpgradeIntegrationTest
         return new long[]{upgrade, size, unique, sampleSize};
     }
 
-    private static IndexDescriptor awaitOnline( GraphDatabaseAPI db,
-            ReadOperations readOperations, IndexDescriptor index ) throws KernelException
+    private static NewIndexDescriptor awaitOnline( ReadOperations readOperations, NewIndexDescriptor index )
+            throws KernelException
     {
         long start = System.currentTimeMillis();
         long end = start + 20_000;

@@ -46,7 +46,6 @@ import org.neo4j.kernel.api.index.InternalIndexState;
 import org.neo4j.kernel.api.proc.ProcedureSignature;
 import org.neo4j.kernel.api.proc.QualifiedName;
 import org.neo4j.kernel.api.proc.UserFunctionSignature;
-import org.neo4j.kernel.api.schema.IndexDescriptor;
 import org.neo4j.kernel.api.schema.NodePropertyDescriptor;
 import org.neo4j.kernel.api.schema.RelationshipPropertyDescriptor;
 import org.neo4j.kernel.api.schema_new.index.NewIndexDescriptor;
@@ -122,7 +121,7 @@ public interface ReadOperations
      *
      * @throws org.neo4j.kernel.api.exceptions.index.IndexNotFoundKernelException if no such index found.
      */
-    PrimitiveLongIterator nodesGetFromIndexSeek( IndexDescriptor index, Object value )
+    PrimitiveLongIterator nodesGetFromIndexSeek( NewIndexDescriptor index, Object value )
             throws IndexNotFoundKernelException;
 
     /**
@@ -130,7 +129,7 @@ public interface ReadOperations
      *
      * @throws org.neo4j.kernel.api.exceptions.index.IndexNotFoundKernelException if no such index found.
      */
-    PrimitiveLongIterator nodesGetFromIndexRangeSeekByPrefix( IndexDescriptor index, String prefix )
+    PrimitiveLongIterator nodesGetFromIndexRangeSeekByPrefix( NewIndexDescriptor index, String prefix )
             throws IndexNotFoundKernelException;
 
     /**
@@ -138,7 +137,7 @@ public interface ReadOperations
      *
      * @throws org.neo4j.kernel.api.exceptions.index.IndexNotFoundKernelException if no such index found.
      */
-    PrimitiveLongIterator nodesGetFromIndexRangeSeekByNumber( IndexDescriptor index, Number lower, boolean includeLower, Number upper, boolean includeUpper )
+    PrimitiveLongIterator nodesGetFromIndexRangeSeekByNumber( NewIndexDescriptor index, Number lower, boolean includeLower, Number upper, boolean includeUpper )
             throws IndexNotFoundKernelException;
 
     /**
@@ -146,7 +145,7 @@ public interface ReadOperations
      *
      * @throws org.neo4j.kernel.api.exceptions.index.IndexNotFoundKernelException if no such index found.
      */
-    PrimitiveLongIterator nodesGetFromIndexRangeSeekByString( IndexDescriptor index, String lower, boolean includeLower, String upper, boolean includeUpper )
+    PrimitiveLongIterator nodesGetFromIndexRangeSeekByString( NewIndexDescriptor index, String lower, boolean includeLower, String upper, boolean includeUpper )
             throws IndexNotFoundKernelException;
 
     /**
@@ -154,7 +153,7 @@ public interface ReadOperations
      *
      * @throws org.neo4j.kernel.api.exceptions.index.IndexNotFoundKernelException if no such index found.
      */
-    PrimitiveLongIterator nodesGetFromIndexScan( IndexDescriptor index )
+    PrimitiveLongIterator nodesGetFromIndexScan( NewIndexDescriptor index )
             throws IndexNotFoundKernelException;
 
     /**
@@ -162,7 +161,7 @@ public interface ReadOperations
      *
      * @throws org.neo4j.kernel.api.exceptions.index.IndexNotFoundKernelException if no such index found.
      */
-    PrimitiveLongIterator nodesGetFromIndexContainsScan( IndexDescriptor index, String term )
+    PrimitiveLongIterator nodesGetFromIndexContainsScan( NewIndexDescriptor index, String term )
             throws IndexNotFoundKernelException;
 
     /**
@@ -170,7 +169,7 @@ public interface ReadOperations
      *
      * @throws org.neo4j.kernel.api.exceptions.index.IndexNotFoundKernelException if no such index found.
      */
-    PrimitiveLongIterator nodesGetFromIndexEndsWithScan( IndexDescriptor index, String suffix )
+    PrimitiveLongIterator nodesGetFromIndexEndsWithScan( NewIndexDescriptor index, String suffix )
             throws IndexNotFoundKernelException;
 
     /**
@@ -201,10 +200,10 @@ public interface ReadOperations
      *
      * @throws org.neo4j.kernel.api.exceptions.index.IndexNotFoundKernelException if no such index found.
      */
-    long nodeGetFromUniqueIndexSeek( IndexDescriptor index, Object value ) throws IndexNotFoundKernelException,
+    long nodeGetFromUniqueIndexSeek( NewIndexDescriptor index, Object value ) throws IndexNotFoundKernelException,
             IndexBrokenKernelException;
 
-    long nodesCountIndexed( IndexDescriptor index, long nodeId, Object value )
+    long nodesCountIndexed( NewIndexDescriptor index, long nodeId, Object value )
             throws IndexNotFoundKernelException, IndexBrokenKernelException;
 
     boolean nodeExists( long nodeId );
@@ -526,10 +525,10 @@ public interface ReadOperations
      */
     long countsForRelationshipWithoutTxState( int startLabelId, int typeId, int endLabelId );
 
-    DoubleLongRegister indexUpdatesAndSize( IndexDescriptor index, DoubleLongRegister target )
+    DoubleLongRegister indexUpdatesAndSize( NewIndexDescriptor index, DoubleLongRegister target )
             throws IndexNotFoundKernelException;
 
-    DoubleLongRegister indexSample( IndexDescriptor index, DoubleLongRegister target )
+    DoubleLongRegister indexSample( NewIndexDescriptor index, DoubleLongRegister target )
             throws IndexNotFoundKernelException;
 
     //===========================================

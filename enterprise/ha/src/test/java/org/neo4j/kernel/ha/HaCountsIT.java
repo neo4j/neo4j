@@ -28,10 +28,11 @@ import org.neo4j.graphdb.Node;
 import org.neo4j.graphdb.Relationship;
 import org.neo4j.graphdb.Transaction;
 import org.neo4j.graphdb.schema.IndexDefinition;
-import org.neo4j.kernel.api.schema.NodePropertyDescriptor;
 import org.neo4j.kernel.api.Statement;
 import org.neo4j.kernel.api.exceptions.KernelException;
-import org.neo4j.kernel.api.schema.IndexDescriptor;
+import org.neo4j.kernel.api.schema.NodePropertyDescriptor;
+import org.neo4j.kernel.api.schema_new.index.IndexBoundary;
+import org.neo4j.kernel.api.schema_new.index.NewIndexDescriptor;
 import org.neo4j.kernel.impl.api.index.IndexingService;
 import org.neo4j.kernel.impl.core.ThreadToStatementContextBridge;
 import org.neo4j.kernel.impl.ha.ClusterManager.ManagedCluster;
@@ -42,7 +43,6 @@ import org.neo4j.test.ha.ClusterRule;
 
 import static org.junit.Assert.assertEquals;
 import static org.junit.Assert.assertTrue;
-
 import static org.neo4j.register.Registers.newDoubleLongRegister;
 
 public class HaCountsIT
@@ -130,7 +130,7 @@ public class HaCountsIT
     {
         // when creating a node on the master
         createANode( master, LABEL, PROPERTY_VALUE, PROPERTY_NAME );
-        IndexDescriptor indexDescriptor = createAnIndex( master, LABEL, PROPERTY_NAME );
+        NewIndexDescriptor indexDescriptor = createAnIndex( master, LABEL, PROPERTY_NAME );
         long indexId = awaitOnline( master, indexDescriptor );
 
         // and the slaves got the updates
@@ -150,7 +150,7 @@ public class HaCountsIT
     {
         // when creating a node on the master
         createANode( slave1, LABEL, PROPERTY_VALUE, PROPERTY_NAME );
-        IndexDescriptor indexDescriptor = createAnIndex( master, LABEL, PROPERTY_NAME );
+        NewIndexDescriptor indexDescriptor = createAnIndex( master, LABEL, PROPERTY_NAME );
         long indexId = awaitOnline( master, indexDescriptor );
 
         // and the updates are propagate in the cluster
@@ -175,7 +175,7 @@ public class HaCountsIT
         }
     }
 
-    private IndexDescriptor createAnIndex( HighlyAvailableGraphDatabase db, Label label, String propertyName )
+    private NewIndexDescriptor createAnIndex( HighlyAvailableGraphDatabase db, Label label, String propertyName )
             throws KernelException
     {
         try ( Transaction tx = db.beginTx() )
@@ -183,7 +183,7 @@ public class HaCountsIT
             Statement statement = statement( db );
             int labelId = statement.tokenWriteOperations().labelGetOrCreateForName( label.name() );
             int propertyKeyId = statement.tokenWriteOperations().propertyKeyGetOrCreateForName( propertyName );
-            IndexDescriptor index = statement.schemaWriteOperations()
+            NewIndexDescriptor index = statement.schemaWriteOperations()
                     .indexCreate( new NodePropertyDescriptor( labelId, propertyKeyId ) );
             tx.success();
             return index;
@@ -238,7 +238,7 @@ public class HaCountsIT
         return db.getDependencyResolver().resolveDependency( IndexingService.class );
     }
 
-    private long awaitOnline( HighlyAvailableGraphDatabase db, IndexDescriptor index )
+    private long awaitOnline( HighlyAvailableGraphDatabase db, NewIndexDescriptor index )
             throws KernelException
     {
         long start = System.currentTimeMillis();
@@ -250,7 +250,7 @@ public class HaCountsIT
                 switch ( statement( db ).readOperations().indexGetState( index ) )
                 {
                 case ONLINE:
-                    return indexingService( db ).getIndexId( index );
+                    return indexingService( db ).getIndexId( IndexBoundary.map( index ) );
 
                 case FAILED:
                     throw new IllegalStateException( "Index failed instead of becoming ONLINE" );

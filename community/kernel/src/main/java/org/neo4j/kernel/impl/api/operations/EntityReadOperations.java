@@ -25,7 +25,7 @@ import org.neo4j.cursor.Cursor;
 import org.neo4j.kernel.api.exceptions.EntityNotFoundException;
 import org.neo4j.kernel.api.exceptions.index.IndexNotFoundKernelException;
 import org.neo4j.kernel.api.exceptions.schema.IndexBrokenKernelException;
-import org.neo4j.kernel.api.schema.IndexDescriptor;
+import org.neo4j.kernel.api.schema_new.index.NewIndexDescriptor;
 import org.neo4j.kernel.impl.api.KernelStatement;
 import org.neo4j.kernel.impl.api.RelationshipVisitor;
 import org.neo4j.storageengine.api.NodeItem;
@@ -44,7 +44,7 @@ public interface EntityReadOperations
      *
      * @throws IndexNotFoundKernelException if no such index found.
      */
-    PrimitiveLongIterator nodesGetFromIndexSeek( KernelStatement state, IndexDescriptor index, Object value )
+    PrimitiveLongIterator nodesGetFromIndexSeek( KernelStatement state, NewIndexDescriptor index, Object value )
             throws IndexNotFoundKernelException;
 
     /**
@@ -53,7 +53,7 @@ public interface EntityReadOperations
      * @throws IndexNotFoundKernelException if no such index found.
      */
     PrimitiveLongIterator nodesGetFromIndexRangeSeekByNumber( KernelStatement state,
-            IndexDescriptor index,
+            NewIndexDescriptor index,
             Number lower,
             boolean includeLower,
             Number upper,
@@ -66,7 +66,7 @@ public interface EntityReadOperations
      * @throws IndexNotFoundKernelException if no such index found.
      */
     PrimitiveLongIterator nodesGetFromIndexRangeSeekByString( KernelStatement state,
-            IndexDescriptor index,
+            NewIndexDescriptor index,
             String lower,
             boolean includeLower,
             String upper,
@@ -79,7 +79,7 @@ public interface EntityReadOperations
      * @throws IndexNotFoundKernelException if no such index found.
      */
     PrimitiveLongIterator nodesGetFromIndexRangeSeekByPrefix( KernelStatement state,
-            IndexDescriptor index,
+            NewIndexDescriptor index,
             String prefix )
             throws IndexNotFoundKernelException;
 
@@ -88,7 +88,7 @@ public interface EntityReadOperations
      *
      * @throws IndexNotFoundKernelException if no such index found.
      */
-    PrimitiveLongIterator nodesGetFromIndexScan( KernelStatement state, IndexDescriptor index )
+    PrimitiveLongIterator nodesGetFromIndexScan( KernelStatement state, NewIndexDescriptor index )
             throws IndexNotFoundKernelException;
 
     /**
@@ -96,7 +96,7 @@ public interface EntityReadOperations
      *
      * @throws IndexNotFoundKernelException if no such index found.
      */
-    PrimitiveLongIterator nodesGetFromIndexContainsScan( KernelStatement state, IndexDescriptor index, String term )
+    PrimitiveLongIterator nodesGetFromIndexContainsScan( KernelStatement state, NewIndexDescriptor index, String term )
             throws IndexNotFoundKernelException;
 
     /**
@@ -104,7 +104,7 @@ public interface EntityReadOperations
      *
      * @throws IndexNotFoundKernelException if no such index found.
      */
-    PrimitiveLongIterator nodesGetFromIndexEndsWithScan( KernelStatement state, IndexDescriptor index, String suffix )
+    PrimitiveLongIterator nodesGetFromIndexEndsWithScan( KernelStatement state, NewIndexDescriptor index, String suffix )
             throws IndexNotFoundKernelException;
 
     /**
@@ -113,10 +113,10 @@ public interface EntityReadOperations
      * @throws IndexNotFoundKernelException if no such index found.
      * @throws IndexBrokenKernelException   if we found an index that was corrupt or otherwise in a failed state.
      */
-    long nodeGetFromUniqueIndexSeek( KernelStatement state, IndexDescriptor index, Object value )
+    long nodeGetFromUniqueIndexSeek( KernelStatement state, NewIndexDescriptor index, Object value )
             throws IndexNotFoundKernelException, IndexBrokenKernelException;
 
-    long nodesCountIndexed( KernelStatement statement, IndexDescriptor index, long nodeId, Object value )
+    long nodesCountIndexed( KernelStatement statement, NewIndexDescriptor index, long nodeId, Object value )
             throws IndexNotFoundKernelException, IndexBrokenKernelException;
 
     boolean graphHasProperty( KernelStatement state, int propertyKeyId );

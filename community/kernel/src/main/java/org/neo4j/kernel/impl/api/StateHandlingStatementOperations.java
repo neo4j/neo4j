@@ -63,7 +63,6 @@ import org.neo4j.kernel.api.properties.DefinedProperty;
 import org.neo4j.kernel.api.properties.Property;
 import org.neo4j.kernel.api.properties.PropertyKeyIdIterator;
 import org.neo4j.kernel.api.schema.IndexDescriptor;
-import org.neo4j.kernel.api.schema.IndexDescriptorFactory;
 import org.neo4j.kernel.api.schema.NodePropertyDescriptor;
 import org.neo4j.kernel.api.schema.RelationshipPropertyDescriptor;
 import org.neo4j.kernel.api.schema_new.LabelSchemaDescriptor;
@@ -644,7 +643,7 @@ public class StateHandlingStatementOperations implements
     }
 
     @Override
-    public long nodeGetFromUniqueIndexSeek( KernelStatement state, IndexDescriptor index, Object value )
+    public long nodeGetFromUniqueIndexSeek( KernelStatement state, NewIndexDescriptor index, Object value )
             throws IndexNotFoundKernelException, IndexBrokenKernelException
     {
         StorageStatement storeStatement = state.getStoreStatement();
@@ -663,7 +662,7 @@ public class StateHandlingStatementOperations implements
     }
 
     @Override
-    public PrimitiveLongIterator nodesGetFromIndexSeek( KernelStatement state, IndexDescriptor index, Object value )
+    public PrimitiveLongIterator nodesGetFromIndexSeek( KernelStatement state, NewIndexDescriptor index, Object value )
             throws IndexNotFoundKernelException
     {
         StorageStatement storeStatement = state.getStoreStatement();
@@ -674,7 +673,7 @@ public class StateHandlingStatementOperations implements
     }
 
     @Override
-    public PrimitiveLongIterator nodesGetFromIndexRangeSeekByNumber( KernelStatement state, IndexDescriptor index,
+    public PrimitiveLongIterator nodesGetFromIndexRangeSeekByNumber( KernelStatement state, NewIndexDescriptor index,
             Number lower, boolean includeLower,
             Number upper, boolean includeUpper ) throws IndexNotFoundKernelException
 
@@ -690,7 +689,7 @@ public class StateHandlingStatementOperations implements
     }
 
     @Override
-    public PrimitiveLongIterator nodesGetFromIndexRangeSeekByString( KernelStatement state, IndexDescriptor index,
+    public PrimitiveLongIterator nodesGetFromIndexRangeSeekByString( KernelStatement state, NewIndexDescriptor index,
             String lower, boolean includeLower,
             String upper, boolean includeUpper ) throws IndexNotFoundKernelException
 
@@ -703,7 +702,7 @@ public class StateHandlingStatementOperations implements
     }
 
     @Override
-    public PrimitiveLongIterator nodesGetFromIndexRangeSeekByPrefix( KernelStatement state, IndexDescriptor index,
+    public PrimitiveLongIterator nodesGetFromIndexRangeSeekByPrefix( KernelStatement state, NewIndexDescriptor index,
             String prefix ) throws IndexNotFoundKernelException
     {
         StorageStatement storeStatement = state.getStoreStatement();
@@ -713,7 +712,7 @@ public class StateHandlingStatementOperations implements
     }
 
     @Override
-    public PrimitiveLongIterator nodesGetFromIndexScan( KernelStatement state, IndexDescriptor index )
+    public PrimitiveLongIterator nodesGetFromIndexScan( KernelStatement state, NewIndexDescriptor index )
             throws IndexNotFoundKernelException
     {
         StorageStatement storeStatement = state.getStoreStatement();
@@ -723,7 +722,7 @@ public class StateHandlingStatementOperations implements
     }
 
     @Override
-    public long nodesCountIndexed( KernelStatement statement, IndexDescriptor index, long nodeId, Object value )
+    public long nodesCountIndexed( KernelStatement statement, NewIndexDescriptor index, long nodeId, Object value )
             throws IndexNotFoundKernelException, IndexBrokenKernelException
     {
         IndexReader reader = statement.getStoreStatement().getIndexReader( index );
@@ -731,7 +730,7 @@ public class StateHandlingStatementOperations implements
     }
 
     @Override
-    public PrimitiveLongIterator nodesGetFromIndexContainsScan( KernelStatement state, IndexDescriptor index,
+    public PrimitiveLongIterator nodesGetFromIndexContainsScan( KernelStatement state, NewIndexDescriptor index,
             String term )
             throws IndexNotFoundKernelException
     {
@@ -742,7 +741,7 @@ public class StateHandlingStatementOperations implements
     }
 
     @Override
-    public PrimitiveLongIterator nodesGetFromIndexEndsWithScan( KernelStatement state, IndexDescriptor index,
+    public PrimitiveLongIterator nodesGetFromIndexEndsWithScan( KernelStatement state, NewIndexDescriptor index,
             String suffix ) throws IndexNotFoundKernelException
     {
         StorageStatement storeStatement = state.getStoreStatement();
@@ -751,12 +750,13 @@ public class StateHandlingStatementOperations implements
         return filterIndexStateChangesForScanOrSeek( state, index, null, committed );
     }
 
-    private PrimitiveLongIterator filterExactIndexMatches( final KernelStatement state, IndexDescriptor index,
+    private PrimitiveLongIterator filterExactIndexMatches( final KernelStatement state, NewIndexDescriptor index,
             Object value, PrimitiveLongIterator committed )
     {
-        if ( !index.isComposite() )
+        // TODO: composite index
+        if ( index.schema().getPropertyIds().length == 1 )
         {
-            return LookupFilter.exactIndexMatches( this, state, committed, index.getPropertyKeyId(), value );
+            return LookupFilter.exactIndexMatches( this, state, committed, index.schema().getPropertyIds()[0], value );
         }
         else
         {
@@ -764,13 +764,14 @@ public class StateHandlingStatementOperations implements
         }
     }
 
-    private PrimitiveLongIterator filterExactRangeMatches( final KernelStatement state, IndexDescriptor index,
+    private PrimitiveLongIterator filterExactRangeMatches( final KernelStatement state, NewIndexDescriptor index,
             PrimitiveLongIterator committed, Number lower, boolean includeLower, Number upper, boolean includeUpper )
     {
-        if ( !index.isComposite() )
+        // TODO: composite index
+        if ( index.schema().getPropertyIds().length == 1 )
         {
             return LookupFilter
-                    .exactRangeMatches( this, state, committed, index.getPropertyKeyId(), lower, includeLower,
+                    .exactRangeMatches( this, state, committed, index.schema().getPropertyIds()[0], lower, includeLower,
                             upper, includeUpper );
         }
         else
@@ -779,14 +780,13 @@ public class StateHandlingStatementOperations implements
         }
     }
 
-    private PrimitiveLongIterator filterIndexStateChangesForScanOrSeek( KernelStatement state, IndexDescriptor index,
+    private PrimitiveLongIterator filterIndexStateChangesForScanOrSeek( KernelStatement state, NewIndexDescriptor index,
             Object value, PrimitiveLongIterator nodeIds )
     {
         if ( state.hasTxStateWithChanges() )
         {
             ReadableDiffSets<Long> labelPropertyChanges =
-                    state.txState().indexUpdatesForScanOrSeek(
-                        IndexBoundary.map( index ), value );
+                    state.txState().indexUpdatesForScanOrSeek( index, value );
             ReadableDiffSets<Long> nodes = state.txState().addedAndRemovedNodes();
 
             // Apply to actual index lookup
@@ -796,7 +796,7 @@ public class StateHandlingStatementOperations implements
     }
 
     private PrimitiveLongIterator filterIndexStateChangesForRangeSeekByNumber( KernelStatement state,
-            IndexDescriptor index,
+            NewIndexDescriptor index,
             Number lower, boolean includeLower,
             Number upper, boolean includeUpper,
             PrimitiveLongIterator nodeIds )
@@ -805,7 +805,7 @@ public class StateHandlingStatementOperations implements
         {
             ReadableDiffSets<Long> labelPropertyChangesForNumber =
                     state.txState().indexUpdatesForRangeSeekByNumber(
-                            IndexBoundary.map( index ), lower, includeLower, upper, includeUpper );
+                            index, lower, includeLower, upper, includeUpper );
             ReadableDiffSets<Long> nodes = state.txState().addedAndRemovedNodes();
 
             // Apply to actual index lookup
@@ -816,7 +816,7 @@ public class StateHandlingStatementOperations implements
     }
 
     private PrimitiveLongIterator filterIndexStateChangesForRangeSeekByString( KernelStatement state,
-            IndexDescriptor index,
+            NewIndexDescriptor index,
             String lower, boolean includeLower,
             String upper, boolean includeUpper,
             PrimitiveLongIterator nodeIds )
@@ -825,7 +825,7 @@ public class StateHandlingStatementOperations implements
         {
             ReadableDiffSets<Long> labelPropertyChangesForString =
                     state.txState().indexUpdatesForRangeSeekByString(
-                            IndexBoundary.map( index ), lower, includeLower, upper, includeUpper );
+                            index, lower, includeLower, upper, includeUpper );
             ReadableDiffSets<Long> nodes = state.txState().addedAndRemovedNodes();
 
             // Apply to actual index lookup
@@ -836,14 +836,14 @@ public class StateHandlingStatementOperations implements
     }
 
     private PrimitiveLongIterator filterIndexStateChangesForRangeSeekByPrefix( KernelStatement state,
-            IndexDescriptor index,
+            NewIndexDescriptor index,
             String prefix,
             PrimitiveLongIterator nodeIds )
     {
         if ( state.hasTxStateWithChanges() )
         {
             ReadableDiffSets<Long> labelPropertyChangesForPrefix =
-                    state.txState().indexUpdatesForRangeSeekByPrefix( IndexBoundary.map( index ), prefix );
+                    state.txState().indexUpdatesForRangeSeekByPrefix( index, prefix );
             ReadableDiffSets<Long> nodes = state.txState().addedAndRemovedNodes();
 
             // Apply to actual index lookup
@@ -1143,17 +1143,17 @@ public class StateHandlingStatementOperations implements
     }
 
     @Override
-    public DoubleLongRegister indexUpdatesAndSize( KernelStatement statement, IndexDescriptor index,
+    public DoubleLongRegister indexUpdatesAndSize( KernelStatement statement, NewIndexDescriptor index,
             DoubleLongRegister target ) throws IndexNotFoundKernelException
     {
-        return storeLayer.indexUpdatesAndSize( SchemaBoundary.map( index.descriptor() ), target );
+        return storeLayer.indexUpdatesAndSize( index.schema(), target );
     }
 
     @Override
-    public DoubleLongRegister indexSample( KernelStatement statement, IndexDescriptor index, DoubleLongRegister target )
+    public DoubleLongRegister indexSample( KernelStatement statement, NewIndexDescriptor index, DoubleLongRegister target )
             throws IndexNotFoundKernelException
     {
-        return storeLayer.indexSample( SchemaBoundary.map( index.descriptor() ), target );
+        return storeLayer.indexSample( index.schema(), target );
     }
 
     //
