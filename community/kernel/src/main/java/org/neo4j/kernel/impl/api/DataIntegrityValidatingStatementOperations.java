@@ -43,13 +43,12 @@ import org.neo4j.kernel.api.exceptions.schema.NoSuchIndexException;
 import org.neo4j.kernel.api.exceptions.schema.SchemaKernelException.OperationContext;
 import org.neo4j.kernel.api.exceptions.schema.TooManyLabelsException;
 import org.neo4j.kernel.api.schema_new.SchemaBoundary;
-import org.neo4j.kernel.api.schema_new.index.IndexBoundary;
 import org.neo4j.kernel.api.schema_new.index.NewIndexDescriptor;
 import org.neo4j.kernel.impl.api.operations.KeyWriteOperations;
 import org.neo4j.kernel.impl.api.operations.SchemaReadOperations;
 import org.neo4j.kernel.impl.api.operations.SchemaWriteOperations;
 
-import static org.neo4j.helpers.collection.Iterators.loop;
+import static org.neo4j.kernel.api.schema_new.index.NewIndexDescriptor.Type.UNIQUE;
 
 public class DataIntegrityValidatingStatementOperations implements
     KeyWriteOperations,
@@ -123,9 +122,18 @@ public class DataIntegrityValidatingStatementOperations implements
     {
         try
         {
-            assertIsNotUniqueIndex( index, schemaReadDelegate.uniqueIndexesGetForLabel(
-                    state, index.schema().getLabelId() ) );
-            assertIndexExists( index, schemaReadDelegate.indexesGetForLabel( state, index.schema().getLabelId() ) );
+            NewIndexDescriptor existingIndex =
+                    schemaReadDelegate.indexGetForLabelAndPropertyKey( state, SchemaBoundary.map( index.schema() ) );
+
+            if ( existingIndex == null )
+            {
+                throw new NoSuchIndexException( index.schema() );
+            }
+
+            if ( existingIndex.type() == UNIQUE )
+            {
+                throw new IndexBelongsToConstraintException( index.schema() );
+            }
         }
         catch ( IndexBelongsToConstraintException | NoSuchIndexException e )
         {
@@ -236,23 +244,19 @@ public class DataIntegrityValidatingStatementOperations implements
             NodePropertyDescriptor descriptor )
             throws AlreadyIndexedException, AlreadyConstrainedException
     {
-        for ( NewIndexDescriptor index :
-                loop( schemaReadDelegate.indexesGetForLabel( state, descriptor.getLabelId() ) ) )
+        NewIndexDescriptor existingIndex = schemaReadDelegate.indexGetForLabelAndPropertyKey( state, descriptor );
+        if ( existingIndex != null )
         {
-            if ( SchemaBoundary.map( descriptor ).equals( index.schema() ) )
+            switch ( existingIndex.type() )
             {
+            case GENERAL:
                 throw new AlreadyIndexedException( descriptor, context );
-            }
-
-        }
-        for ( NewIndexDescriptor index :
-                loop( schemaReadDelegate.uniqueIndexesGetForLabel( state, descriptor.getLabelId() ) ) )
-        {
-            if ( SchemaBoundary.map( descriptor ).equals( index.schema() ) )
-            {
+            case UNIQUE:
                 throw new AlreadyConstrainedException(
                         new UniquenessConstraint( descriptor ), context,
                         new StatementTokenNameLookup( state.readOperations() ) );
+            default:
+                break;
             }
         }
     }
@@ -264,32 +268,6 @@ public class DataIntegrityValidatingStatementOperations implements
             throw new IllegalTokenNameException( name );
         }
         return name;
-    }
-
-    private void assertIsNotUniqueIndex( NewIndexDescriptor index, Iterator<NewIndexDescriptor> uniqueIndexes )
-            throws IndexBelongsToConstraintException
-
-    {
-        for ( NewIndexDescriptor uniqueIndex : loop( uniqueIndexes ) )
-        {
-            if ( uniqueIndex.equals( index ) )
-            {
-                throw new IndexBelongsToConstraintException( index.schema() );
-            }
-        }
-    }
-
-    private void assertIndexExists( NewIndexDescriptor index, Iterator<NewIndexDescriptor> indexes )
-            throws NoSuchIndexException
-    {
-        for ( NewIndexDescriptor existing : loop( indexes ) )
-        {
-            if ( existing.equals( index ) )
-            {
-                return;
-            }
-        }
-        throw new NoSuchIndexException( index.schema() );
     }
 
     private <C extends PropertyConstraint> void assertConstraintExists( C constraint, Iterator<C> existingConstraints )

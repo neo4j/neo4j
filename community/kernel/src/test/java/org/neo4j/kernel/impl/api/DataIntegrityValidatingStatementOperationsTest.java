@@ -27,7 +27,6 @@ import org.mockito.stubbing.Answer;
 
 import java.util.Iterator;
 
-import org.neo4j.helpers.collection.Iterators;
 import org.neo4j.kernel.api.schema.NodePropertyDescriptor;
 import org.neo4j.kernel.api.exceptions.schema.AlreadyConstrainedException;
 import org.neo4j.kernel.api.exceptions.schema.AlreadyIndexedException;
@@ -36,9 +35,6 @@ import org.neo4j.kernel.api.exceptions.schema.IllegalTokenNameException;
 import org.neo4j.kernel.api.exceptions.schema.IndexBelongsToConstraintException;
 import org.neo4j.kernel.api.exceptions.schema.NoSuchIndexException;
 import org.neo4j.kernel.api.exceptions.schema.SchemaKernelException;
-import org.neo4j.kernel.api.schema.IndexDescriptor;
-import org.neo4j.kernel.api.schema.IndexDescriptorFactory;
-import org.neo4j.kernel.api.schema_new.index.IndexBoundary;
 import org.neo4j.kernel.api.schema_new.index.NewIndexDescriptor;
 import org.neo4j.kernel.api.schema_new.index.NewIndexDescriptorFactory;
 import org.neo4j.kernel.impl.api.operations.KeyWriteOperations;
@@ -48,8 +44,6 @@ import org.neo4j.kernel.impl.api.operations.SchemaWriteOperations;
 import static org.hamcrest.core.IsInstanceOf.instanceOf;
 import static org.junit.Assert.assertThat;
 import static org.junit.Assert.fail;
-import static org.mockito.Matchers.any;
-import static org.mockito.Matchers.anyInt;
 import static org.mockito.Matchers.anyObject;
 import static org.mockito.Matchers.eq;
 import static org.mockito.Mockito.mock;
@@ -65,6 +59,7 @@ public class DataIntegrityValidatingStatementOperationsTest
 
     NodePropertyDescriptor descriptor = new NodePropertyDescriptor( 0, 7 );
     NewIndexDescriptor index = NewIndexDescriptorFactory.forLabel( 0, 7 );
+    NewIndexDescriptor uniqueIndex = NewIndexDescriptorFactory.uniqueForLabel( 0, 7 );
 
     @Test
     public void shouldDisallowReAddingIndex() throws Exception
@@ -74,7 +69,7 @@ public class DataIntegrityValidatingStatementOperationsTest
         SchemaWriteOperations innerWrite = mock( SchemaWriteOperations.class );
         DataIntegrityValidatingStatementOperations ctx =
                 new DataIntegrityValidatingStatementOperations( null, innerRead, innerWrite );
-        when( innerRead.indexesGetForLabel( state, index.schema().getLabelId() ) ).thenAnswer( withIterator( index ) );
+        when( innerRead.indexGetForLabelAndPropertyKey( state, descriptor ) ).thenReturn( index );
 
         // WHEN
         try
@@ -99,8 +94,7 @@ public class DataIntegrityValidatingStatementOperationsTest
         SchemaWriteOperations innerWrite = mock( SchemaWriteOperations.class );
         DataIntegrityValidatingStatementOperations ctx =
                 new DataIntegrityValidatingStatementOperations( null, innerRead, innerWrite );
-        when( innerRead.indexesGetForLabel( state, descriptor.getLabelId() ) ).thenAnswer( withIterator() );
-        when( innerRead.uniqueIndexesGetForLabel( state, descriptor.getLabelId() ) ).thenAnswer( withIterator( index ) );
+        when( innerRead.indexGetForLabelAndPropertyKey( state, descriptor ) ).thenReturn( uniqueIndex );
 
         // WHEN
         try
@@ -125,8 +119,7 @@ public class DataIntegrityValidatingStatementOperationsTest
         SchemaWriteOperations innerWrite = mock( SchemaWriteOperations.class );
         DataIntegrityValidatingStatementOperations ctx =
                 new DataIntegrityValidatingStatementOperations( null, innerRead, innerWrite );
-        when( innerRead.uniqueIndexesGetForLabel( state, descriptor.getLabelId() ) ).thenAnswer( withIterator(  ) );
-        when( innerRead.indexesGetForLabel( state, descriptor.getLabelId() ) ).thenAnswer( withIterator( ) );
+        when( innerRead.indexGetForLabelAndPropertyKey( state, descriptor ) ).thenReturn( null );
 
         // WHEN
         try
@@ -151,8 +144,7 @@ public class DataIntegrityValidatingStatementOperationsTest
         SchemaWriteOperations innerWrite = mock( SchemaWriteOperations.class );
         DataIntegrityValidatingStatementOperations ctx =
                 new DataIntegrityValidatingStatementOperations( null, innerRead, innerWrite );
-        when( innerRead.uniqueIndexesGetForLabel( state, descriptor.getLabelId() ) ).thenAnswer( withIterator( index ) );
-        when( innerRead.indexesGetForLabel( state, descriptor.getLabelId() ) ).thenAnswer( withIterator() );
+        when( innerRead.indexGetForLabelAndPropertyKey( state, descriptor ) ).thenReturn( uniqueIndex );
 
         // WHEN
         try
@@ -177,8 +169,7 @@ public class DataIntegrityValidatingStatementOperationsTest
         SchemaWriteOperations innerWrite = mock( SchemaWriteOperations.class );
         DataIntegrityValidatingStatementOperations ctx =
                 new DataIntegrityValidatingStatementOperations( null, innerRead, innerWrite );
-        when( innerRead.uniqueIndexesGetForLabel( state, descriptor.getLabelId() ) ).thenAnswer( withIterator( index ) );
-        when( innerRead.indexesGetForLabel( state, descriptor.getLabelId() ) ).thenAnswer( withIterator(  ) );
+        when( innerRead.indexGetForLabelAndPropertyKey( state, descriptor ) ).thenReturn( uniqueIndex );
 
         // WHEN
         try
@@ -203,8 +194,7 @@ public class DataIntegrityValidatingStatementOperationsTest
         SchemaWriteOperations innerWrite = mock( SchemaWriteOperations.class );
         DataIntegrityValidatingStatementOperations ctx =
                 new DataIntegrityValidatingStatementOperations( null, innerRead, innerWrite );
-        when( innerRead.uniqueIndexesGetForLabel( state, descriptor.getLabelId() ) ).thenAnswer( withIterator( index ) );
-        when( innerRead.indexesGetForLabel( state, descriptor.getLabelId() ) ).thenAnswer( withIterator() );
+        when( innerRead.indexGetForLabelAndPropertyKey( state, descriptor ) ).thenReturn( uniqueIndex );
 
         // WHEN
         try
