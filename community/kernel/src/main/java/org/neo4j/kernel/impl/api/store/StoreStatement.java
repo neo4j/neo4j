@@ -21,10 +21,10 @@ package org.neo4j.kernel.impl.api.store;
 
 import java.util.function.Supplier;
 
-import org.neo4j.collection.primitive.PrimitiveLongIterator;
 import org.neo4j.cursor.Cursor;
 import org.neo4j.kernel.api.exceptions.index.IndexNotFoundKernelException;
-import org.neo4j.kernel.api.schema.IndexDescriptor;
+import org.neo4j.kernel.api.schema_new.index.IndexBoundary;
+import org.neo4j.kernel.api.schema_new.index.NewIndexDescriptor;
 import org.neo4j.kernel.impl.api.IndexReaderFactory;
 import org.neo4j.kernel.impl.locking.LockService;
 import org.neo4j.kernel.impl.store.NeoStores;
@@ -177,14 +177,14 @@ public class StoreStatement implements StorageStatement
     }
 
     @Override
-    public IndexReader getIndexReader( IndexDescriptor descriptor ) throws IndexNotFoundKernelException
+    public IndexReader getIndexReader( NewIndexDescriptor descriptor ) throws IndexNotFoundKernelException
     {
-        return indexReaderFactory().newReader( descriptor );
+        return indexReaderFactory().newReader( IndexBoundary.map( descriptor ) );
     }
 
     @Override
-    public IndexReader getFreshIndexReader( IndexDescriptor descriptor ) throws IndexNotFoundKernelException
+    public IndexReader getFreshIndexReader( NewIndexDescriptor descriptor ) throws IndexNotFoundKernelException
     {
-        return indexReaderFactory().newUnCachedReader( descriptor );
+        return indexReaderFactory().newUnCachedReader( IndexBoundary.map( descriptor ) );
     }
 }

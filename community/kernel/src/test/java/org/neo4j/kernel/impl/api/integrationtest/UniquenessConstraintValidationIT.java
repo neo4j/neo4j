@@ -336,7 +336,7 @@ public class UniquenessConstraintValidationIT extends KernelIntegrationTest
         createLabeledNode( statement, "Item", "id", 2 );
 
         // then I should find the original node
-        assertThat( readOps.nodeGetFromUniqueIndexSeek( IndexBoundary.map( idx ), 1 ), equalTo( ourNode ) );
+        assertThat( readOps.nodeGetFromUniqueIndexSeek( idx, 1 ), equalTo( ourNode ) );
     }
 
     @Test
@@ -363,7 +363,7 @@ public class UniquenessConstraintValidationIT extends KernelIntegrationTest
         createLabeledNode( statement, "Person", "id", 2 );
 
         // then I should find the original node
-        assertThat( readOps.nodeGetFromUniqueIndexSeek( IndexBoundary.map( idx ), 1 ), equalTo( ourNode ));
+        assertThat( readOps.nodeGetFromUniqueIndexSeek( idx, 1 ), equalTo( ourNode ));
     }
 
     private long constrainedNode( String labelName, String propertyKey, Object propertyValue )

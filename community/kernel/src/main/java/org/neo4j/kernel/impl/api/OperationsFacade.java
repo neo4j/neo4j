@@ -227,7 +227,7 @@ public class OperationsFacade
     }
 
     @Override
-    public PrimitiveLongIterator nodesGetFromIndexSeek( IndexDescriptor index, Object value )
+    public PrimitiveLongIterator nodesGetFromIndexSeek( NewIndexDescriptor index, Object value )
             throws IndexNotFoundKernelException
     {
         statement.assertOpen();
@@ -235,7 +235,7 @@ public class OperationsFacade
     }
 
     @Override
-    public PrimitiveLongIterator nodesGetFromIndexRangeSeekByNumber( IndexDescriptor index,
+    public PrimitiveLongIterator nodesGetFromIndexRangeSeekByNumber( NewIndexDescriptor index,
             Number lower,
             boolean includeLower,
             Number upper,
@@ -248,7 +248,7 @@ public class OperationsFacade
     }
 
     @Override
-    public PrimitiveLongIterator nodesGetFromIndexRangeSeekByString( IndexDescriptor index,
+    public PrimitiveLongIterator nodesGetFromIndexRangeSeekByString( NewIndexDescriptor index,
             String lower,
             boolean includeLower,
             String upper,
@@ -261,7 +261,7 @@ public class OperationsFacade
     }
 
     @Override
-    public PrimitiveLongIterator nodesGetFromIndexRangeSeekByPrefix( IndexDescriptor index, String prefix )
+    public PrimitiveLongIterator nodesGetFromIndexRangeSeekByPrefix( NewIndexDescriptor index, String prefix )
             throws IndexNotFoundKernelException
     {
         statement.assertOpen();
@@ -269,7 +269,7 @@ public class OperationsFacade
     }
 
     @Override
-    public PrimitiveLongIterator nodesGetFromIndexScan( IndexDescriptor index )
+    public PrimitiveLongIterator nodesGetFromIndexScan( NewIndexDescriptor index )
             throws IndexNotFoundKernelException
     {
         statement.assertOpen();
@@ -277,7 +277,7 @@ public class OperationsFacade
     }
 
     @Override
-    public PrimitiveLongIterator nodesGetFromIndexContainsScan( IndexDescriptor index, String term )
+    public PrimitiveLongIterator nodesGetFromIndexContainsScan( NewIndexDescriptor index, String term )
             throws IndexNotFoundKernelException
     {
         statement.assertOpen();
@@ -285,7 +285,7 @@ public class OperationsFacade
     }
 
     @Override
-    public PrimitiveLongIterator nodesGetFromIndexEndsWithScan( IndexDescriptor index, String suffix )
+    public PrimitiveLongIterator nodesGetFromIndexEndsWithScan( NewIndexDescriptor index, String suffix )
             throws IndexNotFoundKernelException
     {
         statement.assertOpen();
@@ -293,7 +293,7 @@ public class OperationsFacade
     }
 
     @Override
-    public long nodeGetFromUniqueIndexSeek( IndexDescriptor index, Object value )
+    public long nodeGetFromUniqueIndexSeek( NewIndexDescriptor index, Object value )
             throws IndexNotFoundKernelException, IndexBrokenKernelException
     {
         statement.assertOpen();
@@ -588,7 +588,7 @@ public class OperationsFacade
     }
 
     @Override
-    public long nodesCountIndexed( IndexDescriptor index, long nodeId, Object value )
+    public long nodesCountIndexed( NewIndexDescriptor index, long nodeId, Object value )
             throws IndexNotFoundKernelException, IndexBrokenKernelException
     {
         statement.assertOpen();
@@ -1383,7 +1383,7 @@ public class OperationsFacade
     }
 
     @Override
-    public DoubleLongRegister indexUpdatesAndSize( IndexDescriptor index, DoubleLongRegister target )
+    public DoubleLongRegister indexUpdatesAndSize( NewIndexDescriptor index, DoubleLongRegister target )
             throws IndexNotFoundKernelException
     {
         statement.assertOpen();
@@ -1391,7 +1391,7 @@ public class OperationsFacade
     }
 
     @Override
-    public DoubleLongRegister indexSample( IndexDescriptor index, DoubleLongRegister target )
+    public DoubleLongRegister indexSample( NewIndexDescriptor index, DoubleLongRegister target )
             throws IndexNotFoundKernelException
     {
         statement.assertOpen();

@@ -224,7 +224,7 @@ public class StateHandlingStatementOperationsTest
         StateHandlingStatementOperations context = newTxStateOps( storeReadLayer );
 
         // When
-        PrimitiveLongIterator results = context.nodesGetFromIndexScan( statement, IndexBoundary.map( index ) );
+        PrimitiveLongIterator results = context.nodesGetFromIndexScan( statement, index );
 
         // Then
         assertEquals( asSet( 42L, 43L ), PrimitiveLongCollections.toSet( results ) );
@@ -253,7 +253,7 @@ public class StateHandlingStatementOperationsTest
         StateHandlingStatementOperations context = newTxStateOps( storeReadLayer );
 
         // When
-        PrimitiveLongIterator results = context.nodesGetFromIndexSeek( statement, IndexBoundary.map( index ), "value" );
+        PrimitiveLongIterator results = context.nodesGetFromIndexSeek( statement, index, "value" );
 
         // Then
         assertEquals( asSet( 42L, 43L ), PrimitiveLongCollections.toSet( results ) );
@@ -282,7 +282,7 @@ public class StateHandlingStatementOperationsTest
         StateHandlingStatementOperations context = newTxStateOps( storeReadLayer );
 
         // When
-        PrimitiveLongIterator results = context.nodesGetFromIndexRangeSeekByPrefix( statement, IndexBoundary.map( index ), "prefix" );
+        PrimitiveLongIterator results = context.nodesGetFromIndexRangeSeekByPrefix( statement, index, "prefix" );
 
         // Then
         assertEquals( asSet( 42L, 43L ), PrimitiveLongCollections.toSet( results ) );
@@ -331,7 +331,7 @@ public class StateHandlingStatementOperationsTest
 
         // When
         PrimitiveLongIterator results = context.nodesGetFromIndexRangeSeekByNumber(
-                statement, IndexBoundary.map( index ), lower, true, upper, false );
+                statement, index, lower, true, upper, false );
 
         // Then
         assertEquals( asSet( 42L, 43L ), PrimitiveLongCollections.toSet( results ) );
@@ -362,7 +362,7 @@ public class StateHandlingStatementOperationsTest
 
         // When
         PrimitiveLongIterator results = context.nodesGetFromIndexRangeSeekByString(
-                statement, IndexBoundary.map( index ), "Anne", true, "Bill", false );
+                statement, index, "Anne", true, "Bill", false );
 
         // Then
         assertEquals( asSet( 42L, 43L ), PrimitiveLongCollections.toSet( results ) );
@@ -381,7 +381,7 @@ public class StateHandlingStatementOperationsTest
 
         StateHandlingStatementOperations operations = newTxStateOps( mock( StoreReadLayer.class ) );
 
-        operations.nodeGetFromUniqueIndexSeek( kernelStatement, IndexDescriptorFactory.of( 1, 1 ), "foo" );
+        operations.nodeGetFromUniqueIndexSeek( kernelStatement, NewIndexDescriptorFactory.uniqueForLabel( 1, 1 ), "foo" );
 
         verify( indexReader ).close();
     }
@@ -404,7 +404,7 @@ public class StateHandlingStatementOperationsTest
             throws IndexNotFoundKernelException
     {
         IndexReader indexReader = mock( IndexReader.class );
-        when( storeStatement.getIndexReader( any( IndexDescriptor.class ) ) ).thenReturn( indexReader );
+        when( storeStatement.getIndexReader( any( NewIndexDescriptor.class ) ) ).thenReturn( indexReader );
         return indexReader;
     }
 }
