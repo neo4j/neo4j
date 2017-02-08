@@ -19,13 +19,13 @@
  */
 package org.neo4j.cypher.internal.spi.v2_3
 
-import org.neo4j.cypher.internal.compiler.v2_3.IndexDescriptor
+import org.neo4j.cypher.internal.compiler.v2_3.spi.SchemaTypes.IndexDescriptor
 import org.neo4j.kernel.api.index.{IndexDescriptor => KernelIndexDescriptor}
 
 trait IndexDescriptorCompatibility {
   implicit def toKernelIndexDescriptor(descriptor: IndexDescriptor): KernelIndexDescriptor =
-    new KernelIndexDescriptor(descriptor.label, descriptor.property)
+    new KernelIndexDescriptor(descriptor.labelId, descriptor.propertyId)
 
   implicit def toCypherIndexDescriptor(descriptor: KernelIndexDescriptor): IndexDescriptor =
-    new IndexDescriptor(descriptor.getLabelId, descriptor.getPropertyKeyId)
+    IndexDescriptor(descriptor.getLabelId, descriptor.getPropertyKeyId)
 }

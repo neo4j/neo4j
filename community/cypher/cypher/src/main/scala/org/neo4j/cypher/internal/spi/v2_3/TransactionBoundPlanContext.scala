@@ -22,15 +22,15 @@ package org.neo4j.cypher.internal.spi.v2_3
 import org.neo4j.cypher.MissingIndexException
 import org.neo4j.cypher.internal.compiler.v2_3.pipes.EntityProducer
 import org.neo4j.cypher.internal.compiler.v2_3.pipes.matching.ExpanderStep
+import org.neo4j.cypher.internal.compiler.v2_3.spi.SchemaTypes.{IndexDescriptor, UniquenessConstraint}
 import org.neo4j.cypher.internal.compiler.v2_3.spi._
-import org.neo4j.graphdb.{Node, GraphDatabaseService}
+import org.neo4j.graphdb.{GraphDatabaseService, Node}
 import org.neo4j.kernel.GraphDatabaseAPI
 import org.neo4j.kernel.api.Statement
-import org.neo4j.kernel.api.constraints.UniquenessConstraint
+import org.neo4j.kernel.api.constraints.{UniquenessConstraint => KernelUniquenessConstraint}
 import org.neo4j.kernel.api.exceptions.KernelException
 import org.neo4j.kernel.api.exceptions.schema.SchemaKernelException
-import org.neo4j.kernel.api.index.{IndexDescriptor => KernelIndexDescriptor, InternalIndexState}
-import org.neo4j.cypher.internal.compiler.v2_3.IndexDescriptor
+import org.neo4j.kernel.api.index.{InternalIndexState, IndexDescriptor => KernelIndexDescriptor}
 import org.neo4j.kernel.impl.transaction.log.TransactionIdStore
 
 import scala.collection.JavaConverters._
@@ -80,7 +80,7 @@ class TransactionBoundPlanContext(initialStatement: Statement, val gdb: GraphDat
 
     import scala.collection.JavaConverters._
     statement.readOperations().constraintsGetForLabelAndPropertyKey(labelId, propertyKeyId).asScala.collectFirst {
-      case unique: UniquenessConstraint => unique
+      case unique: KernelUniquenessConstraint => UniquenessConstraint(unique.label(), unique.propertyKey())
     }
   } catch {
     case _: KernelException => None

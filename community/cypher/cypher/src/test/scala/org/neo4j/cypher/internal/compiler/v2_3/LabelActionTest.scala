@@ -22,14 +22,14 @@ package org.neo4j.cypher.internal.compiler.v2_3
 import java.net.URL
 
 import org.neo4j.cypher.GraphDatabaseFunSuite
-import org.neo4j.cypher.internal.compiler.v2_3.commands.expressions.{KernelPredicate, Expander, Literal}
+import org.neo4j.cypher.internal.compiler.v2_3.commands.expressions.{Expander, KernelPredicate, Literal}
 import org.neo4j.cypher.internal.compiler.v2_3.commands.values.{KeyToken, TokenType}
 import org.neo4j.cypher.internal.compiler.v2_3.commands.{LabelAction, LabelSetOp}
 import org.neo4j.cypher.internal.compiler.v2_3.pipes.matching.PatternNode
+import org.neo4j.cypher.internal.compiler.v2_3.spi.SchemaTypes.{IndexDescriptor, NodePropertyExistenceConstraint, UniquenessConstraint}
 import org.neo4j.cypher.internal.compiler.v2_3.spi.{IdempotentResult, LockingQueryContext, QueryContext}
 import org.neo4j.cypher.internal.frontend.v2_3.SemanticDirection
-import org.neo4j.graphdb.{PropertyContainer, Path, Node, Relationship}
-import org.neo4j.kernel.api.constraints.{NodePropertyExistenceConstraint, UniquenessConstraint}
+import org.neo4j.graphdb.{Node, Path, PropertyContainer, Relationship}
 
 class LabelActionTest extends GraphDatabaseFunSuite {
   val queryContext = new SnitchingQueryContext

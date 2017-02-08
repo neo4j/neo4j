@@ -21,11 +21,11 @@ package org.neo4j.cypher.internal.compiler.v2_3.spi
 
 import java.net.URL
 
-import org.neo4j.cypher.internal.compiler.v2_3.commands.expressions.{KernelPredicate, Expander}
+import org.neo4j.cypher.internal.compiler.v2_3.commands.expressions.{Expander, KernelPredicate}
 import org.neo4j.cypher.internal.compiler.v2_3.pipes.matching.PatternNode
+import org.neo4j.cypher.internal.compiler.v2_3.spi.SchemaTypes.IndexDescriptor
 import org.neo4j.cypher.internal.frontend.v2_3.SemanticDirection
-import org.neo4j.graphdb.{Path, Relationship, PropertyContainer, Node}
-import org.neo4j.cypher.internal.compiler.v2_3.IndexDescriptor
+import org.neo4j.graphdb.{Node, Path, PropertyContainer, Relationship}
 
 class DelegatingQueryContext(inner: QueryContext) extends QueryContext {
 
