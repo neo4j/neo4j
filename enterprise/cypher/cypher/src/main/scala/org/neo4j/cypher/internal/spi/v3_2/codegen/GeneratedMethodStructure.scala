@@ -42,7 +42,7 @@ import org.neo4j.cypher.internal.spi.v3_2.codegen.Methods._
 import org.neo4j.cypher.internal.spi.v3_2.codegen.Templates.{createNewInstance, handleKernelExceptions, newRelationshipDataExtractor, tryCatch}
 import org.neo4j.graphdb.Direction
 import org.neo4j.kernel.api.ReadOperations
-import org.neo4j.kernel.api.schema.{IndexDescriptor, IndexDescriptorFactory, NodePropertyDescriptor}
+import org.neo4j.kernel.api.schema_new.index.{NewIndexDescriptor, NewIndexDescriptorFactory}
 import org.neo4j.kernel.impl.api.RelationshipDataExtractor
 import org.neo4j.kernel.impl.api.store.RelationshipIterator
 import GeneratedMethodStructure.CompletableFinalizer
@@ -1282,16 +1282,10 @@ class GeneratedMethodStructure(val fields: Fields, val generator: CodeBlock, aux
     generator.assign(typeRef[Int], propIdVar, invoke(readOperations, propertyKeyGetForName, constant(propName)))
 
   override def newIndexDescriptor(descriptorVar: String, labelVar: String, propKeyVar: String) = {
-    val getNodePropertyDescriptor =
-      method[IndexDescriptorFactory, NodePropertyDescriptor]("getNodePropertyDescriptor", typeRef[Int], typeRef[Int])
-    val getIndexDescriptor =
-      method[IndexDescriptorFactory, IndexDescriptor]("of", typeRef[NodePropertyDescriptor])
-    generator.assign(typeRef[IndexDescriptor], descriptorVar,
-                      invoke(
-                        getIndexDescriptor,
-                        invoke(getNodePropertyDescriptor, generator.load(labelVar), generator.load(propKeyVar))
-                      )
-    )
+    val getIndexDescriptor = method[NewIndexDescriptorFactory, NewIndexDescriptor]("forLabel", typeRef[Int], typeRef[Array[Int]])
+    val propertyIdsExpr = Expression.newArray(typeRef[Int], generator.load(propKeyVar))
+    generator.assign(typeRef[NewIndexDescriptor], descriptorVar,
+                      invoke(getIndexDescriptor, generator.load(labelVar), propertyIdsExpr ))
   }
 
   override def indexSeek(iterVar: String, descriptorVar: String, value: Expression) = {
