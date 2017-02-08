@@ -144,6 +144,11 @@ public interface EntityReadOperations
 
     Cursor<RelationshipItem> relationshipCursorGetAll( KernelStatement statement );
 
+    Cursor<RelationshipItem> nodeGetRelationships( KernelStatement statement, NodeItem node, Direction direction );
+
+    Cursor<RelationshipItem> nodeGetRelationships( KernelStatement statement, NodeItem node, Direction direction,
+            int... relTypes );
+
     long nodesGetCount( KernelStatement statement );
 
     long relationshipsGetCount( KernelStatement statement );

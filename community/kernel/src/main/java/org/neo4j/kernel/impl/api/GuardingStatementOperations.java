@@ -319,6 +319,22 @@ public class GuardingStatementOperations implements
     }
 
     @Override
+    public Cursor<RelationshipItem> nodeGetRelationships( KernelStatement statement, NodeItem node,
+            Direction direction )
+    {
+        guard.check( statement );
+        return entityReadDelegate.nodeGetRelationships( statement, node, direction );
+    }
+
+    @Override
+    public Cursor<RelationshipItem> nodeGetRelationships( KernelStatement statement, NodeItem node, Direction direction,
+            int... relTypes )
+    {
+        guard.check( statement );
+        return entityReadDelegate.nodeGetRelationships( statement, node, direction, relTypes );
+    }
+
+    @Override
     public long nodesGetCount( KernelStatement statement )
     {
         guard.check( statement );

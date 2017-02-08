@@ -30,27 +30,18 @@ import org.neo4j.kernel.api.StatementConstants;
 import org.neo4j.kernel.api.cursor.EntityItemHelper;
 import org.neo4j.kernel.impl.locking.Lock;
 import org.neo4j.kernel.impl.locking.LockService;
-import org.neo4j.kernel.impl.store.NeoStores;
 import org.neo4j.kernel.impl.store.NodeLabelsField;
 import org.neo4j.kernel.impl.store.RecordCursor;
 import org.neo4j.kernel.impl.store.RecordCursors;
-import org.neo4j.kernel.impl.store.RecordStore;
-import org.neo4j.kernel.impl.store.RelationshipStore;
 import org.neo4j.kernel.impl.store.record.DynamicRecord;
 import org.neo4j.kernel.impl.store.record.NodeRecord;
 import org.neo4j.kernel.impl.store.record.Record;
-import org.neo4j.kernel.impl.store.record.RelationshipGroupRecord;
 import org.neo4j.kernel.impl.util.IoPrimitiveUtils;
-import org.neo4j.storageengine.api.Direction;
 import org.neo4j.storageengine.api.NodeItem;
 import org.neo4j.storageengine.api.PropertyItem;
-import org.neo4j.storageengine.api.RelationshipItem;
 
-import static org.neo4j.collection.primitive.Primitive.intSet;
 import static org.neo4j.kernel.impl.locking.LockService.NO_LOCK_SERVICE;
-import static org.neo4j.kernel.impl.store.record.Record.NO_NEXT_RELATIONSHIP;
 import static org.neo4j.kernel.impl.store.record.RecordLoad.CHECK;
-import static org.neo4j.kernel.impl.store.record.RecordLoad.FORCE;
 import static org.neo4j.kernel.impl.util.IoPrimitiveUtils.safeCastLongToInt;
 
 /**
@@ -105,8 +96,6 @@ public class StoreSingleNodeCursor extends EntityItemHelper implements Cursor<No
 
     private final NodeLabelView labelView;
     private final NodeRecord nodeRecord;
-    private final RelationshipStore relationshipStore;
-    private final RecordStore<RelationshipGroupRecord> relationshipGroupStore;
     private final Consumer<StoreSingleNodeCursor> instanceCache;
 
     private final LockService lockService;
@@ -115,17 +104,14 @@ public class StoreSingleNodeCursor extends EntityItemHelper implements Cursor<No
 
     private long nodeId = StatementConstants.NO_SUCH_NODE;
 
-    StoreSingleNodeCursor( NodeRecord nodeRecord, NeoStores neoStores, Consumer<StoreSingleNodeCursor> instanceCache,
+    StoreSingleNodeCursor( NodeRecord nodeRecord, Consumer<StoreSingleNodeCursor> instanceCache,
             RecordCursors recordCursors, LockService lockService )
     {
         this.nodeRecord = nodeRecord;
         this.recordCursors = recordCursors;
-        this.relationshipStore = neoStores.getRelationshipStore();
-        this.relationshipGroupStore = neoStores.getRelationshipGroupStore();
         this.lockService = lockService;
         this.instanceCache = instanceCache;
-        this.cursors =
-                new NodeExploringCursors( recordCursors, lockService, relationshipStore, relationshipGroupStore );
+        this.cursors = new NodeExploringCursors( recordCursors );
         this.labelView = new NodeLabelView( recordCursors.label() );
     }
 
@@ -229,18 +215,6 @@ public class StoreSingleNodeCursor extends EntityItemHelper implements Cursor<No
     }
 
     @Override
-    public Cursor<RelationshipItem> relationships( Direction direction )
-    {
-        return cursors.relationships( isDense(), nextRel(), id(), direction );
-    }
-
-    @Override
-    public Cursor<RelationshipItem> relationships( Direction direction, int... relTypes )
-    {
-        return cursors.relationships( isDense(), nextRel(), id(), direction, relTypes );
-    }
-
-    @Override
     public boolean isDense()
     {
         return nodeRecord.isDense();
@@ -250,10 +224,11 @@ public class StoreSingleNodeCursor extends EntityItemHelper implements Cursor<No
     public long nextGroupId()
     {
         assert isDense();
-        return nextRel();
+        return nextRelationshipId();
     }
 
-    private long nextRel()
+    @Override
+    public long nextRelationshipId()
     {
         return nodeRecord.getNextRel();
     }

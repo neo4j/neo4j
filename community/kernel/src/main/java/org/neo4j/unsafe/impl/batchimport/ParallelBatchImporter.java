@@ -338,7 +338,7 @@ public class ParallelBatchImporter implements BatchImporter
 
         String topic = " Sparse";
         nodeRelationshipCache.setForwardScan( true );
-        // Stage 4b -- set node nextRel fields for sparse nodes
+        // Stage 4b -- set node nextRe fields for sparse nodes
         executeStages( new NodeFirstRelationshipStage( topic, nodeConfig, neoStore.getNodeStore(),
                 neoStore.getTemporaryRelationshipGroupStore(), nodeRelationshipCache, false/*sparse*/, -1 ) );
 

@@ -99,6 +99,7 @@ import org.neo4j.storageengine.api.StoreReadLayer;
 import org.neo4j.storageengine.api.Token;
 import org.neo4j.storageengine.api.schema.IndexReader;
 import org.neo4j.storageengine.api.schema.PopulationProgress;
+import org.neo4j.storageengine.api.txstate.NodeState;
 import org.neo4j.storageengine.api.txstate.ReadableDiffSets;
 
 import static java.lang.String.format;
@@ -112,6 +113,7 @@ import static org.neo4j.kernel.api.schema_new.index.NewIndexDescriptor.Filter.GE
 import static org.neo4j.kernel.api.schema_new.index.NewIndexDescriptor.Filter.UNIQUE;
 import static org.neo4j.kernel.impl.api.PropertyValueComparison.COMPARE_NUMBERS;
 import static org.neo4j.kernel.impl.util.Cursors.count;
+import static org.neo4j.kernel.impl.util.Cursors.empty;
 import static org.neo4j.register.Registers.newDoubleLongRegister;
 import static org.neo4j.storageengine.api.txstate.TxStateVisitor.EMPTY;
 
@@ -198,6 +200,48 @@ public class StateHandlingStatementOperations implements
             return statement.txState().augmentRelationshipsGetAllCursor( cursor );
         }
         return cursor;
+    }
+
+    @Override
+    public Cursor<RelationshipItem> nodeGetRelationships( KernelStatement statement, NodeItem node,
+            Direction direction )
+    {
+        Cursor<RelationshipItem> cursor;
+        if ( statement.hasTxStateWithChanges() && statement.txState().nodeIsAddedInThisTx( node.id() ) )
+        {
+            cursor = empty();
+        }
+        else
+        {
+            cursor = storeLayer.nodeGetRelationships( statement.getStoreStatement(), node, direction );
+        }
+        if ( !statement.hasTxStateWithChanges() )
+        {
+            return cursor;
+        }
+        NodeState nodeState = statement.txState().getNodeState( node.id() );
+        return statement.txState().augmentNodeRelationshipCursor( cursor, nodeState, direction, null );
+    }
+
+    @Override
+    public Cursor<RelationshipItem> nodeGetRelationships( KernelStatement statement, NodeItem node, Direction direction,
+            int... relTypes )
+    {
+        Cursor<RelationshipItem> cursor;
+        if ( statement.hasTxStateWithChanges() && statement.txState().nodeIsAddedInThisTx( node.id() ) )
+        {
+            cursor = empty();
+        }
+        else
+        {
+            cursor = storeLayer.nodeGetRelationships( statement.getStoreStatement(), node, direction, relTypes );
+        }
+        if ( !statement.hasTxStateWithChanges() )
+        {
+            return cursor;
+        }
+        NodeState nodeState = statement.txState().getNodeState( node.id() );
+        return statement.txState().augmentNodeRelationshipCursor( cursor, nodeState, direction, relTypes );
     }
 
     // </Cursors>
@@ -1648,7 +1692,7 @@ public class StateHandlingStatementOperations implements
                      ? 0
                      : computeDegree( statement, node, direction, null );
 
-        return statement.hasTxStateWithChanges() && augmentDegree( statement, node )
+        return statement.hasTxStateWithChanges()
                 ? statement.txState().getNodeState( node.id() ).augmentDegree( direction, degree )
                 : degree;
     }
@@ -1660,29 +1704,24 @@ public class StateHandlingStatementOperations implements
                      ? 0
                      : computeDegree( statement, node, direction, relType );
 
-        return statement.hasTxStateWithChanges() && augmentDegree( statement, node )
+        return statement.hasTxStateWithChanges()
                ? statement.txState().getNodeState( node.id() ).augmentDegree( direction, degree, relType )
                : degree;
     }
 
-    // FIXME: temporary workaround: the node item takes care of the tx state itself, hence don't count it twice!
-    private boolean augmentDegree( KernelStatement statement, NodeItem node )
-    {
-        return node.isDense() || statement.txState().nodeIsAddedInThisTx( node.id() );
-    }
-
     private int computeDegree( KernelStatement statement, NodeItem node,  Direction direction, Integer relType )
     {
+        StorageStatement storeStatement = statement.getStoreStatement();
         if ( node.isDense() )
         {
-            return storeLayer.degreeRelationshipsInGroup( statement.getStoreStatement(), node.id(), node.nextGroupId(),
+            return storeLayer.degreeRelationshipsInGroup( storeStatement, node.id(), node.nextGroupId(),
                     direction, relType );
         }
         else
         {
             return count( relType == null
-                          ? node.relationships( direction )
-                          : node.relationships( direction, relType ) );
+                          ? storeLayer.nodeGetRelationships( storeStatement, node, direction )
+                          : storeLayer.nodeGetRelationships( storeStatement, node, direction, relType ) );
         }
     }
 

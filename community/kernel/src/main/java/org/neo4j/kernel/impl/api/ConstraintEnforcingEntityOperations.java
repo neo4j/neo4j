@@ -436,6 +436,20 @@ public class ConstraintEnforcingEntityOperations implements EntityOperations, Sc
     }
 
     @Override
+    public Cursor<RelationshipItem> nodeGetRelationships( KernelStatement statement, NodeItem node,
+            Direction direction )
+    {
+        return entityReadOperations.nodeGetRelationships( statement, node, direction );
+    }
+
+    @Override
+    public Cursor<RelationshipItem> nodeGetRelationships( KernelStatement statement, NodeItem node, Direction direction,
+            int... relTypes )
+    {
+        return entityReadOperations.nodeGetRelationships( statement, node, direction, relTypes );
+    }
+
+    @Override
     public NewIndexDescriptor indexCreate( KernelStatement state, NodePropertyDescriptor descriptor )
             throws AlreadyIndexedException, AlreadyConstrainedException
     {

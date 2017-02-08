@@ -165,6 +165,6 @@ public class TransactionStats implements TransactionMonitor, TransactionCounters
     private void decrementCounter( AtomicLong readCount, AtomicLong writeCount, boolean write )
     {
         long count = write ? writeCount.decrementAndGet() : readCount.decrementAndGet();
-        assert count >= 0 : "count is " + count;
+        assert count >= 0;
     }
 }

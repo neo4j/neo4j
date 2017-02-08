@@ -26,10 +26,8 @@ import org.neo4j.cursor.Cursor;
 import org.neo4j.kernel.api.StatementConstants;
 import org.neo4j.kernel.api.cursor.EntityItemHelper;
 import org.neo4j.kernel.api.txstate.TransactionState;
-import org.neo4j.storageengine.api.Direction;
 import org.neo4j.storageengine.api.NodeItem;
 import org.neo4j.storageengine.api.PropertyItem;
-import org.neo4j.storageengine.api.RelationshipItem;
 import org.neo4j.storageengine.api.txstate.NodeState;
 
 import static org.neo4j.collection.primitive.Primitive.intSet;
@@ -151,21 +149,6 @@ public class TxSingleNodeCursor extends EntityItemHelper implements Cursor<NodeI
     }
 
     @Override
-    public Cursor<RelationshipItem> relationships( Direction direction, int... relTypes )
-    {
-        Cursor<RelationshipItem> cursor =
-                nodeIsAddedInThisTx ? empty() : this.cursor.get().relationships( direction, relTypes );
-        return state.augmentNodeRelationshipCursor( cursor, nodeState, direction, relTypes );
-    }
-
-    @Override
-    public Cursor<RelationshipItem> relationships( Direction direction )
-    {
-        Cursor<RelationshipItem> cursor = nodeIsAddedInThisTx ? empty() : this.cursor.get().relationships( direction );
-        return state.augmentNodeRelationshipCursor( cursor, nodeState, direction, null );
-    }
-
-    @Override
     public boolean isDense()
     {
         return cursor.get().isDense();
@@ -175,5 +158,11 @@ public class TxSingleNodeCursor extends EntityItemHelper implements Cursor<NodeI
     public long nextGroupId()
     {
         return nodeIsAddedInThisTx ? NO_NEXT_RELATIONSHIP.longValue() : cursor.get().nextGroupId();
+    }
+
+    @Override
+    public long nextRelationshipId()
+    {
+        return nodeIsAddedInThisTx ? NO_NEXT_RELATIONSHIP.longValue() : cursor.get().nextRelationshipId();
     }
 }

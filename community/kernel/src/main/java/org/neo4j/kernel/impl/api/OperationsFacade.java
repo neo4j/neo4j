@@ -370,8 +370,8 @@ public class OperationsFacade
         statement.assertOpen();
         try ( Cursor<NodeItem> node = dataRead().nodeCursorById( statement, nodeId ) )
         {
-            return new CursorRelationshipIterator(
-                    node.get().relationships( direction( direction ), deduplicate( relTypes ) ) );
+            return new CursorRelationshipIterator( dataRead()
+                    .nodeGetRelationships( statement, node.get(), direction( direction ), deduplicate( relTypes ) ) );
         }
     }
 
@@ -393,7 +393,8 @@ public class OperationsFacade
         statement.assertOpen();
         try ( Cursor<NodeItem> node = dataRead().nodeCursorById( statement, nodeId ) )
         {
-            return new CursorRelationshipIterator( node.get().relationships( direction( direction ) ) );
+            return new CursorRelationshipIterator(
+                    dataRead().nodeGetRelationships( statement, node.get(), direction( direction ) ) );
         }
     }
 

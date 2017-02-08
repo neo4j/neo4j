@@ -58,7 +58,8 @@ class TwoPhaseNodeForRelationshipLocking
             // lock all the nodes involved by following the node id ordering
             try ( Cursor<NodeItem> node = entityReadOperations.nodeCursorById( state, nodeId ) )
             {
-                node.get().relationships( Direction.BOTH ).forAll( this::collectNodeId );
+                entityReadOperations.nodeGetRelationships( state, node.get(), Direction.BOTH )
+                        .forAll( this::collectNodeId );
             }
 
             lockAllNodes( state );
@@ -66,7 +67,8 @@ class TwoPhaseNodeForRelationshipLocking
             // perform the action on each relationship, we will retry if the the relationship iterator contains new relationships
             try ( Cursor<NodeItem> node = entityReadOperations.nodeCursorById( state, nodeId ) )
             {
-                try ( Cursor<RelationshipItem> relationships = node.get().relationships( Direction.BOTH ) )
+                try ( Cursor<RelationshipItem> relationships = entityReadOperations
+                        .nodeGetRelationships( state, node.get(), Direction.BOTH ) )
                 {
                     boolean first = true;
                     while ( relationships.next() && !retry )

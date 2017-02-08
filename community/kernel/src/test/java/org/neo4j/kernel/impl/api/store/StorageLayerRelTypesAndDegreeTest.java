@@ -112,7 +112,6 @@ public class StorageLayerRelTypesAndDegreeTest extends StorageLayerTest
         testDegreesForDenseNodeWithPartiallyDeletedRelChains( true, true, true );
     }
 
-
     @Test
     public void degreeByDirectionForDenseNodeWithPartiallyDeletedRelGroupChain()
     {
@@ -472,13 +471,10 @@ public class StorageLayerRelTypesAndDegreeTest extends StorageLayerTest
     @SuppressWarnings( "unchecked" )
     private StoreSingleNodeCursor newCursor( long nodeId )
     {
-        StoreSingleNodeCursor cursor =
-                new StoreSingleNodeCursor( new NodeRecord( -1 ), resolveNeoStores(), mock( Consumer.class ),
-                        new RecordCursors( resolveNeoStores() ), NO_LOCK_SERVICE );
-
+        StoreSingleNodeCursor cursor = new StoreSingleNodeCursor( new NodeRecord( -1 ), mock( Consumer.class ),
+                new RecordCursors( resolveNeoStores() ), NO_LOCK_SERVICE );
         cursor.init( nodeId );
         assertTrue( cursor.next() );
-
         return cursor;
     }
 

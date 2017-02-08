@@ -412,6 +412,14 @@ public class StorageLayer implements StoreReadLayer
     }
 
     @Override
+    public Cursor<RelationshipItem> nodeGetRelationships( StorageStatement statement, NodeItem node,
+            Direction direction, int... relTypes )
+    {
+        return statement.acquireNodeRelationshipCursor( node.isDense(), node.id(), node.nextRelationshipId(), direction,
+                relTypes );
+    }
+
+    @Override
     public long reserveNode()
     {
         return nodeStore.nextId();
@@ -524,7 +532,8 @@ public class StorageLayer implements StoreReadLayer
         }
         else
         {
-            node.relationships( Direction.BOTH ).forAll( relationship -> set.add( relationship.type() ) );
+            nodeGetRelationships( statement, node, Direction.BOTH )
+                    .forAll( relationship -> set.add( relationship.type() ) );
         }
         return set;
     }
@@ -538,7 +547,7 @@ public class StorageLayer implements StoreReadLayer
         }
         else
         {
-            visitNode( nodeItem, visitor );
+            visitNode( statement, nodeItem, visitor );
         }
     }
 
@@ -565,9 +574,9 @@ public class StorageLayer implements StoreReadLayer
                 relationshipGroupRecord, storeStatement.recordCursors() );
     }
 
-    private void visitNode( NodeItem nodeItem, DegreeVisitor visitor )
+    private void visitNode( StorageStatement statement, NodeItem nodeItem, DegreeVisitor visitor )
     {
-        try ( Cursor<RelationshipItem> relationships = nodeItem.relationships( Direction.BOTH ) )
+        try ( Cursor<RelationshipItem> relationships = nodeGetRelationships( statement, nodeItem, Direction.BOTH ) )
         {
             while ( relationships.next() )
             {

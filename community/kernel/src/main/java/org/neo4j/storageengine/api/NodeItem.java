@@ -35,18 +35,6 @@ public interface NodeItem
     PrimitiveIntSet labels();
 
     /**
-     * @return relationship cursor for current node
-     * @throws IllegalStateException if no current node is selected
-     */
-    Cursor<RelationshipItem> relationships( Direction direction, int... typeIds );
-
-    /**
-     * @return relationship cursor for current node
-     * @throws IllegalStateException if no current node is selected
-     */
-    Cursor<RelationshipItem> relationships( Direction direction );
-
-    /**
      * @return whether or not this node has been marked as being dense, i.e. exceeding a certain threshold
      * of number of relationships.
      */
@@ -59,4 +47,6 @@ public interface NodeItem
     boolean hasLabel( int labelId );
 
     long nextGroupId();
+
+    long nextRelationshipId();
 }
