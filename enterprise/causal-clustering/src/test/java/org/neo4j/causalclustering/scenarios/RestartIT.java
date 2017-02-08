@@ -62,7 +62,7 @@ public class RestartIT
 
         // when
         cluster.removeCoreMemberWithMemberId( 0 );
-        cluster.addCoreMemberWithId( 0 );
+        cluster.addCoreMemberWithId( 0 ).start();
 
         // then
         cluster.shutdown();
@@ -76,7 +76,7 @@ public class RestartIT
 
         // when
         cluster.removeCoreMemberWithMemberId( 1 );
-        cluster.addCoreMemberWithId( 1 );
+        cluster.addCoreMemberWithId( 1 ).start();
 
         // then
         cluster.shutdown();
@@ -112,7 +112,7 @@ public class RestartIT
         Thread.sleep( 500 );
 
         cluster.removeCoreMemberWithMemberId( 1 );
-        cluster.addCoreMemberWithId( 1 );
+        cluster.addCoreMemberWithId( 1 ).start();
         Thread.sleep( 500 );
 
         // then
