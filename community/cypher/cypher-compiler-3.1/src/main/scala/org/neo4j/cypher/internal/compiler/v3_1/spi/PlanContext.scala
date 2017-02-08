@@ -22,9 +22,8 @@ package org.neo4j.cypher.internal.compiler.v3_1.spi
 import org.neo4j.cypher.internal.compiler.v3_1.InternalNotificationLogger
 import org.neo4j.cypher.internal.compiler.v3_1.pipes.EntityProducer
 import org.neo4j.cypher.internal.compiler.v3_1.pipes.matching.{ExpanderStep, TraversalMatcher}
+import org.neo4j.cypher.internal.compiler.v3_1.spi.SchemaTypes.{IndexDescriptor, UniquenessConstraint}
 import org.neo4j.graphdb.Node
-import org.neo4j.kernel.api.constraints.UniquenessConstraint
-import org.neo4j.cypher.internal.compiler.v3_1.IndexDescriptor
 
 /**
  * PlanContext is an internal access layer to the graph that is solely used during plan building

@@ -23,8 +23,8 @@ import org.neo4j.cypher.internal.compiler.v3_1.commands.QueryExpression
 import org.neo4j.cypher.internal.compiler.v3_1.planner.QueryGraph
 import org.neo4j.cypher.internal.compiler.v3_1.planner.logical.LogicalPlanningContext
 import org.neo4j.cypher.internal.compiler.v3_1.planner.logical.plans.{IdName, LogicalPlan, NodeUniqueIndexSeek}
-import org.neo4j.cypher.internal.frontend.v3_1.ast.{Expression, HasLabels, LabelToken, PropertyKeyToken, UsingIndexHint}
-import org.neo4j.cypher.internal.compiler.v3_1.IndexDescriptor
+import org.neo4j.cypher.internal.compiler.v3_1.spi.SchemaTypes.IndexDescriptor
+import org.neo4j.cypher.internal.frontend.v3_1.ast._
 
 /*
  * Plan the following type of plan

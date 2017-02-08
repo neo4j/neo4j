@@ -25,11 +25,11 @@ import org.neo4j.cypher.internal.compiler.v3_1.helpers.IdentityTypeConverter
 import org.neo4j.cypher.internal.compiler.v3_1.pipes._
 import org.neo4j.cypher.internal.compiler.v3_1.planner.logical.idp.DefaultIDPSolverConfig
 import org.neo4j.cypher.internal.compiler.v3_1.spi.PlanContext
+import org.neo4j.cypher.internal.compiler.v3_1.spi.SchemaTypes.IndexDescriptor
 import org.neo4j.cypher.internal.compiler.v3_1.tracing.rewriters.RewriterStepSequencer
 import org.neo4j.cypher.internal.frontend.v3_1.parser.CypherParser
 import org.neo4j.cypher.internal.frontend.v3_1.test_helpers.CypherFunSuite
 import org.neo4j.cypher.internal.frontend.v3_1.{Scope, SemanticTable}
-import org.neo4j.cypher.internal.compiler.v3_1.IndexDescriptor
 
 class RuleExecutablePlanBuilderTest extends CypherFunSuite {
   val planContext: PlanContext = mock[PlanContext]
@@ -68,7 +68,7 @@ class RuleExecutablePlanBuilderTest extends CypherFunSuite {
 
     when(planContext.getOptLabelId("Person")).thenReturn(Some(1))
     when(planContext.getOptPropertyKeyId("name")).thenReturn(Some(1))
-    when(planContext.getIndexRule("Person", "name")).thenReturn(Some(new IndexDescriptor(1, 1)))
+    when(planContext.getIndexRule("Person", "name")).thenReturn(Some(IndexDescriptor(1, 1)))
     when(planContext.getUniquenessConstraint("Person", "name")).thenReturn(None)
 
     val pipe = buildExecutionPipe("LOAD CSV FROM 'file:///tmp/foo.csv' AS line MATCH (p:Person { name: line[0] }) RETURN p;")
@@ -81,7 +81,7 @@ class RuleExecutablePlanBuilderTest extends CypherFunSuite {
 
     when(planContext.getOptLabelId("Person")).thenReturn(Some(1))
     when(planContext.getOptPropertyKeyId("name")).thenReturn(Some(1))
-    when(planContext.getIndexRule("Person", "name")).thenReturn(Some(new IndexDescriptor(1, 1)))
+    when(planContext.getIndexRule("Person", "name")).thenReturn(Some(IndexDescriptor(1, 1)))
     when(planContext.getUniquenessConstraint("Person", "name")).thenReturn(None)
 
     val pipe = buildExecutionPipe("LOAD CSV FROM 'file:///tmp/foo.csv' AS line MATCH (p:Person { name: \"Foo Bar Baz\" }) RETURN p;")

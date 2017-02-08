@@ -20,12 +20,12 @@
 package org.neo4j.cypher.internal.compiler.v3_1.pipes
 
 import org.mockito.Mockito._
-import org.neo4j.cypher.internal.compiler.v3_1.planDescription.InternalPlanDescription
 import org.neo4j.cypher.internal.compiler.v3_1.commands._
 import org.neo4j.cypher.internal.compiler.v3_1.commands.expressions.Literal
+import org.neo4j.cypher.internal.compiler.v3_1.planDescription.InternalPlanDescription
 import org.neo4j.cypher.internal.compiler.v3_1.spi.PlanContext
+import org.neo4j.cypher.internal.compiler.v3_1.spi.SchemaTypes.IndexDescriptor
 import org.neo4j.cypher.internal.frontend.v3_1.test_helpers.CypherFunSuite
-import org.neo4j.cypher.internal.compiler.v3_1.IndexDescriptor
 
 class StartPipePlanDescriptionTest extends CypherFunSuite {
 
@@ -40,7 +40,7 @@ class StartPipePlanDescriptionTest extends CypherFunSuite {
     super.beforeEach()
     planContext = mock[PlanContext]
     factory = new EntityProducerFactory
-    when(planContext.getIndexRule(label, prop)).thenReturn(Some(new IndexDescriptor(123,456)))
+    when(planContext.getIndexRule(label, prop)).thenReturn(Some(IndexDescriptor(123,456)))
     when(planContext.getOptLabelId(label)).thenReturn(Some(1))
   }
 

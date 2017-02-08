@@ -33,6 +33,7 @@ import org.neo4j.cypher.internal.compiler.v3_1.commands.expressions.{KernelPredi
 import org.neo4j.cypher.internal.compiler.v3_1.helpers.JavaConversionSupport
 import org.neo4j.cypher.internal.compiler.v3_1.helpers.JavaConversionSupport._
 import org.neo4j.cypher.internal.compiler.v3_1.pipes.matching.PatternNode
+import org.neo4j.cypher.internal.compiler.v3_1.spi.SchemaTypes.{IndexDescriptor, NodePropertyExistenceConstraint, RelationshipPropertyExistenceConstraint, UniquenessConstraint}
 import org.neo4j.cypher.internal.compiler.v3_1.spi._
 import org.neo4j.cypher.internal.frontend.v3_1.{Bound, EntityNotFoundException, FailedIndexException, SemanticDirection}
 import org.neo4j.cypher.internal.spi.v3_1.TransactionBoundQueryContext.IndexSearchMonitor
@@ -47,7 +48,7 @@ import org.neo4j.graphdb.security.URLAccessValidationError
 import org.neo4j.graphdb.traversal.{Evaluators, TraversalDescription, Uniqueness}
 import org.neo4j.kernel.GraphDatabaseQueryService
 import org.neo4j.kernel.api._
-import org.neo4j.kernel.api.constraints.{NodePropertyExistenceConstraint, RelationshipPropertyExistenceConstraint, UniquenessConstraint}
+import org.neo4j.kernel.api.constraints.{NodePropertyExistenceConstraint => KernelNPEConstraint, RelationshipPropertyExistenceConstraint => KernelRPEConstraint, UniquenessConstraint => KernelUniquenessConstraint}
 import org.neo4j.kernel.api.exceptions.ProcedureException
 import org.neo4j.kernel.api.exceptions.schema.{AlreadyConstrainedException, AlreadyIndexedException}
 import org.neo4j.kernel.api.index.InternalIndexState
@@ -474,36 +475,39 @@ final class TransactionBoundQueryContext(val transactionalContext: Transactional
     transactionalContext.statement.schemaWriteOperations().indexDrop(new IndexDescriptor(labelId, propertyKeyId))
 
   override def createUniqueConstraint(labelId: Int, propertyKeyId: Int): IdempotentResult[UniquenessConstraint] = try {
-    IdempotentResult(transactionalContext.statement.schemaWriteOperations().uniquePropertyConstraintCreate(labelId, propertyKeyId))
+    transactionalContext.statement.schemaWriteOperations().uniquePropertyConstraintCreate(labelId, propertyKeyId)
+    IdempotentResult(UniquenessConstraint(labelId, propertyKeyId))
   } catch {
     case existing: AlreadyConstrainedException =>
-      IdempotentResult(existing.constraint().asInstanceOf[UniquenessConstraint], wasCreated = false)
+      IdempotentResult(UniquenessConstraint(labelId, propertyKeyId), wasCreated = false)
   }
 
   override def dropUniqueConstraint(labelId: Int, propertyKeyId: Int) =
-    transactionalContext.statement.schemaWriteOperations().constraintDrop(new UniquenessConstraint(labelId, propertyKeyId))
+    transactionalContext.statement.schemaWriteOperations().constraintDrop(new KernelUniquenessConstraint(labelId, propertyKeyId))
 
   override def createNodePropertyExistenceConstraint(labelId: Int, propertyKeyId: Int): IdempotentResult[NodePropertyExistenceConstraint] =
     try {
-      IdempotentResult(transactionalContext.statement.schemaWriteOperations().nodePropertyExistenceConstraintCreate(labelId, propertyKeyId))
+      transactionalContext.statement.schemaWriteOperations().nodePropertyExistenceConstraintCreate(labelId, propertyKeyId)
+      IdempotentResult(NodePropertyExistenceConstraint(labelId, propertyKeyId))
     } catch {
       case existing: AlreadyConstrainedException =>
-        IdempotentResult(existing.constraint().asInstanceOf[NodePropertyExistenceConstraint], wasCreated = false)
+        IdempotentResult(NodePropertyExistenceConstraint(labelId, propertyKeyId), wasCreated = false)
     }
 
   override def dropNodePropertyExistenceConstraint(labelId: Int, propertyKeyId: Int) =
-    transactionalContext.statement.schemaWriteOperations().constraintDrop(new NodePropertyExistenceConstraint(labelId, propertyKeyId))
+    transactionalContext.statement.schemaWriteOperations().constraintDrop(new KernelNPEConstraint(labelId, propertyKeyId))
 
   override def createRelationshipPropertyExistenceConstraint(relTypeId: Int, propertyKeyId: Int): IdempotentResult[RelationshipPropertyExistenceConstraint] =
     try {
-      IdempotentResult(transactionalContext.statement.schemaWriteOperations().relationshipPropertyExistenceConstraintCreate(relTypeId, propertyKeyId))
+      transactionalContext.statement.schemaWriteOperations().relationshipPropertyExistenceConstraintCreate(relTypeId, propertyKeyId)
+      IdempotentResult(RelationshipPropertyExistenceConstraint(relTypeId, propertyKeyId))
     } catch {
       case existing: AlreadyConstrainedException =>
-        IdempotentResult(existing.constraint().asInstanceOf[RelationshipPropertyExistenceConstraint], wasCreated = false)
+        IdempotentResult(RelationshipPropertyExistenceConstraint(relTypeId, propertyKeyId), wasCreated = false)
     }
 
   override def dropRelationshipPropertyExistenceConstraint(relTypeId: Int, propertyKeyId: Int) =
-    transactionalContext.statement.schemaWriteOperations().constraintDrop(new RelationshipPropertyExistenceConstraint(relTypeId, propertyKeyId))
+    transactionalContext.statement.schemaWriteOperations().constraintDrop(new KernelRPEConstraint(relTypeId, propertyKeyId))
 
   override def getImportURL(url: URL): Either[String,URL] = transactionalContext.graph match {
     case db: GraphDatabaseQueryService =>

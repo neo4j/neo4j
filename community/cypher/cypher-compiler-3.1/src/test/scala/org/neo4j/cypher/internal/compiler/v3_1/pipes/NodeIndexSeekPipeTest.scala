@@ -25,6 +25,7 @@ import org.neo4j.cypher.internal.compiler.v3_1._
 import org.neo4j.cypher.internal.compiler.v3_1.commands.expressions.{Expression, ListLiteral, Literal, Variable}
 import org.neo4j.cypher.internal.compiler.v3_1.commands.{ManyQueryExpression, QueryExpression, RangeQueryExpression, SingleQueryExpression}
 import org.neo4j.cypher.internal.compiler.v3_1.spi.QueryContext
+import org.neo4j.cypher.internal.compiler.v3_1.spi.SchemaTypes.IndexDescriptor
 import org.neo4j.cypher.internal.frontend.v3_1.ast._
 import org.neo4j.cypher.internal.frontend.v3_1.test_helpers.{CypherFunSuite, WindowsStringSafe}
 import org.neo4j.cypher.internal.frontend.v3_1.{CypherTypeException, InternalException, LabelId, PropertyKeyId}
@@ -37,7 +38,7 @@ class NodeIndexSeekPipeTest extends CypherFunSuite with AstConstructionTestSuppo
 
   val label = LabelToken(LabelName("LabelName") _, LabelId(11))
   val propertyKey = PropertyKeyToken(PropertyKeyName("PropertyName") _, PropertyKeyId(10))
-  val descriptor = new IndexDescriptor(label.nameId.id, propertyKey.nameId.id)
+  val descriptor = IndexDescriptor(label.nameId.id, propertyKey.nameId.id)
   val node = mock[Node]
   val node2 = mock[Node]
 

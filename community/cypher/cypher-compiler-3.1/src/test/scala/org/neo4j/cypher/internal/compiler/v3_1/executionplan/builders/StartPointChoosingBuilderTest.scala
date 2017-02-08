@@ -30,12 +30,11 @@ import org.neo4j.cypher.internal.compiler.v3_1.commands.values.{KeyToken, TokenT
 import org.neo4j.cypher.internal.compiler.v3_1.executionplan.PartiallySolvedQuery
 import org.neo4j.cypher.internal.compiler.v3_1.pipes.FakePipe
 import org.neo4j.cypher.internal.compiler.v3_1.spi.PlanContext
+import org.neo4j.cypher.internal.compiler.v3_1.spi.SchemaTypes.{IndexDescriptor, UniquenessConstraint}
 import org.neo4j.cypher.internal.frontend.v3_1.ast.AstConstructionTestSupport
 import org.neo4j.cypher.internal.frontend.v3_1.helpers.NonEmptyList
 import org.neo4j.cypher.internal.frontend.v3_1.symbols._
 import org.neo4j.cypher.internal.frontend.v3_1.{SemanticDirection, ast}
-import org.neo4j.kernel.api.constraints.UniquenessConstraint
-import org.neo4j.cypher.internal.compiler.v3_1.IndexDescriptor
 
 class StartPointChoosingBuilderTest extends BuilderTest {
   def builder = new StartPointChoosingBuilder
@@ -89,7 +88,7 @@ class StartPointChoosingBuilderTest extends BuilderTest {
         Equals(Property(Variable(_var), PropertyKey("prop1")), Literal("banana")))
     )
 
-    when(context.getIndexRule("Person", "prop1")).thenReturn(Some(new IndexDescriptor(123,456)))
+    when(context.getIndexRule("Person", "prop1")).thenReturn(Some(IndexDescriptor(123,456)))
     when(context.getUniquenessConstraint( Matchers.any(), Matchers.any() )).thenReturn(None)
 
     // When
@@ -120,7 +119,7 @@ class StartPointChoosingBuilderTest extends BuilderTest {
       SingleNode(_var)
     ))
 
-    when(context.getIndexRule("Person", "prop")).thenReturn(Some(new IndexDescriptor(123,456)))
+    when(context.getIndexRule("Person", "prop")).thenReturn(Some(IndexDescriptor(123,456)))
     when(context.getUniquenessConstraint( Matchers.any(), Matchers.any() )).thenReturn(None)
 
     // When
@@ -139,8 +138,8 @@ class StartPointChoosingBuilderTest extends BuilderTest {
       SingleNode(_var)
     ))
 
-    when(context.getIndexRule("Person", "prop")).thenReturn(Some(new IndexDescriptor(123,456)))
-    when(context.getUniquenessConstraint( "Person", "prop" )).thenReturn(Some(new UniquenessConstraint(123,456)))
+    when(context.getIndexRule("Person", "prop")).thenReturn(Some(IndexDescriptor(123,456)))
+    when(context.getUniquenessConstraint( "Person", "prop" )).thenReturn(Some(UniquenessConstraint(123,456)))
 
     // When
     val plan = assertAccepts(query)
@@ -158,7 +157,7 @@ class StartPointChoosingBuilderTest extends BuilderTest {
       SingleNode(_var)
     ))
 
-    when(context.getIndexRule("Person", "prop")).thenReturn(Some(new IndexDescriptor(123,456)))
+    when(context.getIndexRule("Person", "prop")).thenReturn(Some(IndexDescriptor(123,456)))
     when(context.getUniquenessConstraint( Matchers.any(), Matchers.any() )).thenReturn(None)
 
     // When
@@ -177,8 +176,8 @@ class StartPointChoosingBuilderTest extends BuilderTest {
       SingleNode(_var)
     ))
 
-    when(context.getIndexRule("Person", "prop")).thenReturn(Some(new IndexDescriptor(123,456)))
-    when(context.getUniquenessConstraint( "Person", "prop" )).thenReturn(Some(new UniquenessConstraint(123,456)))
+    when(context.getIndexRule("Person", "prop")).thenReturn(Some(IndexDescriptor(123,456)))
+    when(context.getUniquenessConstraint( "Person", "prop" )).thenReturn(Some(UniquenessConstraint(123,456)))
 
     // When
     val plan = assertAccepts(query)
@@ -196,7 +195,7 @@ class StartPointChoosingBuilderTest extends BuilderTest {
       SingleNode(_var)
     ))
 
-    when(context.getIndexRule("Person", "prop")).thenReturn(Some(new IndexDescriptor(123,456)))
+    when(context.getIndexRule("Person", "prop")).thenReturn(Some(IndexDescriptor(123,456)))
     when(context.getUniquenessConstraint( Matchers.any(), Matchers.any() )).thenReturn(None)
 
     // When
@@ -215,7 +214,7 @@ class StartPointChoosingBuilderTest extends BuilderTest {
       SingleNode(_var)
     ))
 
-    when(context.getIndexRule("Person", "prop")).thenReturn(Some(new IndexDescriptor(123,456)))
+    when(context.getIndexRule("Person", "prop")).thenReturn(Some(IndexDescriptor(123,456)))
     when(context.getUniquenessConstraint( Matchers.any(), Matchers.any() )).thenReturn(None)
 
     // When
@@ -234,8 +233,8 @@ class StartPointChoosingBuilderTest extends BuilderTest {
       SingleNode(_var)
     ))
 
-    when(context.getIndexRule("Person", "prop")).thenReturn(Some(new IndexDescriptor(123,456)))
-    when(context.getUniquenessConstraint( "Person", "prop" )).thenReturn(Some(new UniquenessConstraint(123,456)))
+    when(context.getIndexRule("Person", "prop")).thenReturn(Some(IndexDescriptor(123,456)))
+    when(context.getUniquenessConstraint( "Person", "prop" )).thenReturn(Some(UniquenessConstraint(123,456)))
 
     // When
     val plan = assertAccepts(query)
@@ -254,8 +253,8 @@ class StartPointChoosingBuilderTest extends BuilderTest {
       SingleNode(_var)
     ))
 
-    when(context.getIndexRule(label, property)).thenReturn(Some(new IndexDescriptor(123,456)))
-    when(context.getIndexRule(label, otherProperty)).thenReturn(Some(new IndexDescriptor(2468,3579)))
+    when(context.getIndexRule(label, property)).thenReturn(Some(IndexDescriptor(123,456)))
+    when(context.getIndexRule(label, otherProperty)).thenReturn(Some(IndexDescriptor(2468,3579)))
     when(context.getUniquenessConstraint( Matchers.any(), Matchers.any() )).thenReturn(None)
 
     // When
@@ -279,7 +278,7 @@ class StartPointChoosingBuilderTest extends BuilderTest {
           patterns = Seq(SingleNode(_var))
         )
 
-        when(context.getIndexRule(label, property)).thenReturn(Some(new IndexDescriptor(123, 456)))
+        when(context.getIndexRule(label, property)).thenReturn(Some(IndexDescriptor(123, 456)))
         when(context.getUniquenessConstraint( Matchers.any(), Matchers.any() )).thenReturn(None)
 
         // When
@@ -308,7 +307,7 @@ class StartPointChoosingBuilderTest extends BuilderTest {
           patterns = Seq(SingleNode(_var))
         )
 
-        when(context.getIndexRule(label, property)).thenReturn(Some(new IndexDescriptor(123, 456)))
+        when(context.getIndexRule(label, property)).thenReturn(Some(IndexDescriptor(123, 456)))
         when(context.getUniquenessConstraint( Matchers.any(), Matchers.any() )).thenReturn(None)
 
         // When
@@ -332,10 +331,10 @@ class StartPointChoosingBuilderTest extends BuilderTest {
       SingleNode(_var)
     ))
 
-    when(context.getIndexRule(label, property)).thenReturn(Some(new IndexDescriptor(123,456)))
-    when(context.getIndexRule(label, otherProperty)).thenReturn(Some(new IndexDescriptor(2468,3579)))
+    when(context.getIndexRule(label, property)).thenReturn(Some(IndexDescriptor(123,456)))
+    when(context.getIndexRule(label, otherProperty)).thenReturn(Some(IndexDescriptor(2468,3579)))
     when(context.getUniquenessConstraint( label, property )).thenReturn(None)
-    when(context.getUniquenessConstraint( label, otherProperty )).thenReturn(Some(new UniquenessConstraint(2468,3579)))
+    when(context.getUniquenessConstraint( label, otherProperty )).thenReturn(Some(UniquenessConstraint(2468,3579)))
 
     // When
     val result = assertAccepts(query).query
@@ -354,9 +353,9 @@ class StartPointChoosingBuilderTest extends BuilderTest {
       SingleNode(_var)
     ))
 
-    when(context.getIndexRule(label, property)).thenReturn(Some(new IndexDescriptor(123,456)))
-    when(context.getIndexRule(label, otherProperty)).thenReturn(Some(new IndexDescriptor(2468,3579)))
-    when(context.getUniquenessConstraint( label, property )).thenReturn(Some(new UniquenessConstraint(123,456)))
+    when(context.getIndexRule(label, property)).thenReturn(Some(IndexDescriptor(123,456)))
+    when(context.getIndexRule(label, otherProperty)).thenReturn(Some(IndexDescriptor(2468,3579)))
+    when(context.getUniquenessConstraint( label, property )).thenReturn(Some(UniquenessConstraint(123,456)))
     when(context.getUniquenessConstraint( label, otherProperty )).thenReturn(None)
 
     // When

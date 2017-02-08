@@ -19,14 +19,14 @@
  */
 package org.neo4j.cypher.internal.compiler.v3_1.planner.logical.steps
 
-import org.neo4j.cypher.internal.compiler.v3_1.commands.{SingleQueryExpression, QueryExpression}
+import org.neo4j.cypher.internal.compiler.v3_1.commands.{QueryExpression, SingleQueryExpression}
 import org.neo4j.cypher.internal.compiler.v3_1.planner.QueryGraph
 import org.neo4j.cypher.internal.compiler.v3_1.planner.logical._
 import org.neo4j.cypher.internal.compiler.v3_1.planner.logical.plans._
+import org.neo4j.cypher.internal.compiler.v3_1.spi.SchemaTypes.IndexDescriptor
 import org.neo4j.cypher.internal.frontend.v3_1.SemanticTable
 import org.neo4j.cypher.internal.frontend.v3_1.ast._
 import org.neo4j.cypher.internal.frontend.v3_1.notification.IndexLookupUnfulfillableNotification
-import org.neo4j.cypher.internal.compiler.v3_1.IndexDescriptor
 
 abstract class AbstractIndexSeekLeafPlanner extends LeafPlanner {
 

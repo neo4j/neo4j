@@ -22,10 +22,9 @@ package org.neo4j.cypher.internal.spi.v3_1
 import org.neo4j.cypher.internal.compiler.v3_1.InternalNotificationLogger
 import org.neo4j.cypher.internal.compiler.v3_1.pipes.EntityProducer
 import org.neo4j.cypher.internal.compiler.v3_1.pipes.matching.{ExpanderStep, TraversalMatcher}
+import org.neo4j.cypher.internal.compiler.v3_1.spi.SchemaTypes.{IndexDescriptor, UniquenessConstraint}
 import org.neo4j.cypher.internal.compiler.v3_1.spi._
 import org.neo4j.graphdb.Node
-import org.neo4j.kernel.api.constraints.UniquenessConstraint
-import org.neo4j.cypher.internal.compiler.v3_1.IndexDescriptor
 
 class ExceptionTranslatingPlanContext(inner: PlanContext) extends PlanContext with ExceptionTranslationSupport {
 

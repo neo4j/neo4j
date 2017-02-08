@@ -23,6 +23,7 @@ import org.neo4j.cypher.internal.compiler.v3_1._
 import org.neo4j.cypher.internal.compiler.v3_1.executionplan.{Effects, ReadsGivenNodeProperty, ReadsNodesWithLabels}
 import org.neo4j.cypher.internal.compiler.v3_1.planDescription.InternalPlanDescription.Arguments.Index
 import org.neo4j.cypher.internal.compiler.v3_1.planDescription.{NoChildren, PlanDescriptionImpl}
+import org.neo4j.cypher.internal.compiler.v3_1.spi.SchemaTypes.IndexDescriptor
 import org.neo4j.cypher.internal.compiler.v3_1.symbols.SymbolTable
 import org.neo4j.cypher.internal.frontend.v3_1.ast.{LabelToken, PropertyKeyToken}
 import org.neo4j.cypher.internal.frontend.v3_1.symbols.CTNode
@@ -33,7 +34,7 @@ case class NodeIndexScanPipe(ident: String,
                             (val estimatedCardinality: Option[Double] = None)(implicit pipeMonitor: PipeMonitor)
   extends Pipe with RonjaPipe {
 
-  private val descriptor = new IndexDescriptor(label.nameId.id, propertyKey.nameId.id)
+  private val descriptor = IndexDescriptor(label.nameId.id, propertyKey.nameId.id)
 
   protected def internalCreateResults(state: QueryState): Iterator[ExecutionContext] = {
     //register as parent so that stats are associated with this pipe

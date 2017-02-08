@@ -17,6 +17,11 @@
  * You should have received a copy of the GNU General Public License
  * along with this program.  If not, see <http://www.gnu.org/licenses/>.
  */
-package org.neo4j.cypher.internal.compiler.v3_1
+package org.neo4j.cypher.internal.compiler.v3_1.spi
 
-case class IndexDescriptor(label: Int, property: Int)
+object SchemaTypes {
+  case class UniquenessConstraint( labelId:Int, propertyId:Int )
+  case class NodePropertyExistenceConstraint( labelId:Int, propertyId:Int)
+  case class RelationshipPropertyExistenceConstraint( relTypeId:Int, propertyId:Int)
+  case class IndexDescriptor( labelId:Int, propertyId:Int)
+}
