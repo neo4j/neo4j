@@ -25,7 +25,7 @@ import java.util.concurrent.Executor;
 import java.util.function.Consumer;
 
 import org.neo4j.io.fs.FileSystemAbstraction;
-import org.neo4j.kernel.api.security.AuthSubject;
+import org.neo4j.kernel.api.security.SecurityContext;
 import org.neo4j.kernel.configuration.Config;
 import org.neo4j.kernel.impl.util.JobScheduler;
 import org.neo4j.kernel.lifecycle.LifecycleAdapter;
@@ -65,9 +65,9 @@ public class SecurityLog extends LifecycleAdapter implements Log
         inner = log;
     }
 
-    private static String withSubject( AuthSubject subject, String msg )
+    private static String withContext( SecurityContext context, String msg )
     {
-        return "[" + escape( subject.username() ) + "]: " + msg;
+        return "[" + escape( context.subject().username() ) + "]: " + msg;
     }
 
     @Override
@@ -100,9 +100,9 @@ public class SecurityLog extends LifecycleAdapter implements Log
         inner.debug( format, arguments );
     }
 
-    public void debug( AuthSubject subject, String format, Object... arguments )
+    public void debug( SecurityContext context, String format, Object... arguments )
     {
-        inner.debug( withSubject( subject, format ), arguments );
+        inner.debug( withContext( context, format ), arguments );
     }
 
     @Override
@@ -129,14 +129,14 @@ public class SecurityLog extends LifecycleAdapter implements Log
         inner.info( format, arguments );
     }
 
-    public void info( AuthSubject subject, String format, Object... arguments )
+    public void info( SecurityContext context, String format, Object... arguments )
     {
-        inner.info( withSubject( subject, format ), arguments );
+        inner.info( withContext( context, format ), arguments );
     }
 
-    public void info( AuthSubject subject, String format )
+    public void info( SecurityContext context, String format )
     {
-        inner.info( withSubject( subject, format ) );
+        inner.info( withContext( context, format ) );
     }
 
     @Override
@@ -163,9 +163,9 @@ public class SecurityLog extends LifecycleAdapter implements Log
         inner.warn( format, arguments );
     }
 
-    public void warn( AuthSubject subject, String format, Object... arguments )
+    public void warn( SecurityContext context, String format, Object... arguments )
     {
-        inner.warn( withSubject( subject, format ), arguments );
+        inner.warn( withContext( context, format ), arguments );
     }
 
     @Override
@@ -192,9 +192,9 @@ public class SecurityLog extends LifecycleAdapter implements Log
         inner.error( format, arguments );
     }
 
-    public void error( AuthSubject subject, String format, Object... arguments )
+    public void error( SecurityContext context, String format, Object... arguments )
     {
-        inner.error( withSubject( subject, format ), arguments );
+        inner.error( withContext( context, format ), arguments );
     }
 
     @Override

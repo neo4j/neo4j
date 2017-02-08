@@ -23,8 +23,8 @@ import java.io.IOException;
 import java.util.Set;
 
 import org.neo4j.kernel.api.exceptions.InvalidArgumentsException;
-import org.neo4j.server.security.auth.User;
-import org.neo4j.server.security.auth.UserManager;
+import org.neo4j.kernel.impl.security.User;
+import org.neo4j.kernel.api.security.UserManager;
 
 import static java.util.Collections.emptySet;
 

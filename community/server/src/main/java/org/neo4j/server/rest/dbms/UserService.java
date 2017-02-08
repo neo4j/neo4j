@@ -39,9 +39,9 @@ import org.neo4j.server.rest.repr.ExceptionRepresentation;
 import org.neo4j.server.rest.repr.InputFormat;
 import org.neo4j.server.rest.repr.OutputFormat;
 import org.neo4j.server.rest.transactional.error.Neo4jError;
-import org.neo4j.server.security.auth.User;
-import org.neo4j.server.security.auth.UserManager;
-import org.neo4j.server.security.auth.UserManagerSupplier;
+import org.neo4j.kernel.impl.security.User;
+import org.neo4j.kernel.api.security.UserManager;
+import org.neo4j.kernel.api.security.UserManagerSupplier;
 
 import static javax.ws.rs.core.Response.Status.BAD_REQUEST;
 import static org.neo4j.server.rest.dbms.AuthorizedRequestWrapper.getSecurityContextFromUserPrincipal;

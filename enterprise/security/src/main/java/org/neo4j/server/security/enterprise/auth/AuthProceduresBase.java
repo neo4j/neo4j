@@ -33,7 +33,7 @@ import org.neo4j.kernel.impl.api.KernelTransactions;
 import org.neo4j.kernel.impl.core.ThreadToStatementContextBridge;
 import org.neo4j.kernel.internal.GraphDatabaseAPI;
 import org.neo4j.procedure.Context;
-import org.neo4j.server.security.auth.User;
+import org.neo4j.kernel.impl.security.User;
 import org.neo4j.server.security.enterprise.log.SecurityLog;
 
 import static java.util.Collections.emptyList;

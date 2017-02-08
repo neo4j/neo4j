@@ -102,7 +102,7 @@ class MultiRealmAuthManager implements EnterpriseAuthAndUserManager
                     this, (ShiroSubject) securityManager.login( null, token ) );
             if ( logSuccessfulLogin )
             {
-                securityLog.info( securityContext.subject(), "logged in" );
+                securityLog.info( securityContext, "logged in" );
             }
         }
         catch ( UnsupportedTokenException e )

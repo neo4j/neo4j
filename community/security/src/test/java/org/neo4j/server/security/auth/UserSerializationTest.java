@@ -23,6 +23,8 @@ import org.junit.Test;
 
 import java.util.List;
 
+import org.neo4j.kernel.impl.security.Credential;
+import org.neo4j.kernel.impl.security.User;
 import org.neo4j.string.UTF8;
 
 import static java.util.Arrays.asList;

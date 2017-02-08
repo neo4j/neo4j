@@ -23,6 +23,8 @@ import org.junit.Rule;
 import org.junit.Test;
 
 import org.neo4j.kernel.api.security.AuthManager;
+import org.neo4j.kernel.impl.security.Credential;
+import org.neo4j.kernel.impl.security.User;
 import org.neo4j.kernel.configuration.Config;
 import org.neo4j.logging.NullLogProvider;
 import org.neo4j.test.rule.fs.EphemeralFileSystemRule;

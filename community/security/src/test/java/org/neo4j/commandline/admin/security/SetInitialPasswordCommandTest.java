@@ -36,8 +36,8 @@ import org.neo4j.io.fs.FileSystemAbstraction;
 import org.neo4j.logging.NullLogProvider;
 import org.neo4j.server.security.auth.CommunitySecurityModule;
 import org.neo4j.server.security.auth.FileUserRepository;
-import org.neo4j.server.security.auth.User;
-import org.neo4j.server.security.auth.UserManager;
+import org.neo4j.kernel.impl.security.User;
+import org.neo4j.kernel.api.security.UserManager;
 import org.neo4j.test.rule.TestDirectory;
 import org.neo4j.test.rule.fs.EphemeralFileSystemRule;
 

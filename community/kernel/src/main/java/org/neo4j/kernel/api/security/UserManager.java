@@ -17,12 +17,13 @@
  * You should have received a copy of the GNU General Public License
  * along with this program.  If not, see <http://www.gnu.org/licenses/>.
  */
-package org.neo4j.server.security.auth;
+package org.neo4j.kernel.api.security;
 
 import java.io.IOException;
 import java.util.Set;
 
 import org.neo4j.kernel.api.exceptions.InvalidArgumentsException;
+import org.neo4j.kernel.impl.security.User;
 
 public interface UserManager
 {
@@ -41,4 +42,44 @@ public interface UserManager
             throws IOException, InvalidArgumentsException;
 
     Set<String> getAllUsernames();
+
+    UserManager NO_AUTH = new UserManager()
+    {
+        @Override
+        public User newUser( String username, String initialPassword, boolean requirePasswordChange )
+                throws IOException, InvalidArgumentsException
+        {
+            return null;
+        }
+
+        @Override
+        public boolean deleteUser( String username ) throws IOException, InvalidArgumentsException
+        {
+            return false;
+        }
+
+        @Override
+        public User getUser( String username ) throws InvalidArgumentsException
+        {
+            return null;
+        }
+
+        @Override
+        public User silentlyGetUser( String username )
+        {
+            return null;
+        }
+
+        @Override
+        public void setUserPassword( String username, String password, boolean requirePasswordChange )
+                throws IOException, InvalidArgumentsException
+        {
+        }
+
+        @Override
+        public Set<String> getAllUsernames()
+        {
+            return null;
+        }
+    };
 }

@@ -46,7 +46,7 @@ public class BoltInitChangePasswordTest
     @Before
     public void setup() throws Throwable
     {
-        authentication = new BasicAuthentication( authManagerRule.getManager() );
+        authentication = new BasicAuthentication( authManagerRule.getManager(), authManagerRule.getManager() );
         authManagerRule.getManager().getUserManager().newUser( "neo4j", "123", true );
     }
 

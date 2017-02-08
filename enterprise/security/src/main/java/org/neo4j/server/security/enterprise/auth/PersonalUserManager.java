@@ -24,9 +24,8 @@ import java.util.Set;
 
 import org.neo4j.graphdb.security.AuthorizationViolationException;
 import org.neo4j.kernel.api.exceptions.InvalidArgumentsException;
-import org.neo4j.kernel.api.security.AuthSubject;
 import org.neo4j.kernel.api.security.SecurityContext;
-import org.neo4j.server.security.auth.User;
+import org.neo4j.kernel.impl.security.User;
 import org.neo4j.server.security.enterprise.auth.plugin.api.PredefinedRoles;
 import org.neo4j.server.security.enterprise.log.SecurityLog;
 
@@ -36,14 +35,12 @@ class PersonalUserManager implements EnterpriseUserManager
 {
     private final EnterpriseUserManager userManager;
     private final SecurityContext securityContext;
-    private final AuthSubject authSubject;
     private final SecurityLog securityLog;
 
     PersonalUserManager( EnterpriseUserManager userManager, SecurityContext securityContext, SecurityLog securityLog )
     {
         this.userManager = userManager;
         this.securityContext = securityContext;
-        this.authSubject = securityContext.subject();
         this.securityLog = securityLog;
     }
 
@@ -55,13 +52,13 @@ class PersonalUserManager implements EnterpriseUserManager
         {
             assertAdmin();
             User user = userManager.newUser( username, initialPassword, requirePasswordChange );
-            securityLog.info( authSubject, "created user `%s`%s", username,
+            securityLog.info( securityContext, "created user `%s`%s", username,
                     requirePasswordChange ? ", with password change required" : "" );
             return user;
         }
         catch ( Exception e )
         {
-            securityLog.error( authSubject, "tried to create user `%s`: %s", username, e.getMessage() );
+            securityLog.error( securityContext, "tried to create user `%s`: %s", username, e.getMessage() );
             throw e;
         }
     }
@@ -72,17 +69,17 @@ class PersonalUserManager implements EnterpriseUserManager
         try
         {
             assertAdmin();
-            if ( authSubject.hasUsername( username ) )
+            if ( securityContext.subject().hasUsername( username ) )
             {
                 throw new InvalidArgumentsException( "Suspending yourself (user '" + username +
                         "') is not allowed." );
             }
             userManager.suspendUser( username );
-            securityLog.info( authSubject, "suspended user `%s`", username );
+            securityLog.info( securityContext, "suspended user `%s`", username );
         }
         catch ( Exception e )
         {
-            securityLog.error( authSubject, "tried to suspend user `%s`: %s", username, e.getMessage() );
+            securityLog.error( securityContext, "tried to suspend user `%s`: %s", username, e.getMessage() );
             throw e;
         }
     }
@@ -93,17 +90,17 @@ class PersonalUserManager implements EnterpriseUserManager
         try
         {
             assertAdmin();
-            if ( authSubject.hasUsername( username ) )
+            if ( securityContext.subject().hasUsername( username ) )
             {
                 throw new InvalidArgumentsException( "Deleting yourself (user '" + username + "') is not allowed." );
             }
             boolean wasDeleted = userManager.deleteUser( username );
-            securityLog.info( authSubject, "deleted user `%s`", username );
+            securityLog.info( securityContext, "deleted user `%s`", username );
             return wasDeleted;
         }
         catch ( Exception e )
         {
-            securityLog.error( authSubject, "tried to delete user `%s`: %s", username, e.getMessage() );
+            securityLog.error( securityContext, "tried to delete user `%s`: %s", username, e.getMessage() );
             throw e;
         }
     }
@@ -115,16 +112,16 @@ class PersonalUserManager implements EnterpriseUserManager
         try
         {
             assertAdmin();
-            if ( authSubject.hasUsername( username ) )
+            if ( securityContext.subject().hasUsername( username ) )
             {
                 throw new InvalidArgumentsException( "Activating yourself (user '" + username + "') is not allowed." );
             }
             userManager.activateUser( username, requirePasswordChange );
-            securityLog.info( authSubject, "activated user `%s`", username );
+            securityLog.info( securityContext, "activated user `%s`", username );
         }
         catch ( Exception e )
         {
-            securityLog.error( authSubject, "tried to activate user `%s`: %s", username, e.getMessage() );
+            securityLog.error( securityContext, "tried to activate user `%s`: %s", username, e.getMessage() );
             throw e;
         }
     }
@@ -148,12 +145,12 @@ class PersonalUserManager implements EnterpriseUserManager
         {
             assertAdmin();
             RoleRecord newRole = userManager.newRole( roleName, usernames );
-            securityLog.info( authSubject, "created role `%s`", roleName );
+            securityLog.info( securityContext, "created role `%s`", roleName );
             return newRole;
         }
         catch ( Exception e )
         {
-            securityLog.error( authSubject, "tried to create role `%s`: %s", roleName, e.getMessage() );
+            securityLog.error( securityContext, "tried to create role `%s`: %s", roleName, e.getMessage() );
             throw e;
         }
     }
@@ -165,12 +162,12 @@ class PersonalUserManager implements EnterpriseUserManager
         {
             assertAdmin();
             boolean wasDeleted = userManager.deleteRole( roleName );
-            securityLog.info( authSubject, "deleted role `%s`", roleName );
+            securityLog.info( securityContext, "deleted role `%s`", roleName );
             return wasDeleted;
         }
         catch ( Exception e )
         {
-            securityLog.error( authSubject, "tried to delete role `%s`: %s", roleName, e.getMessage() );
+            securityLog.error( securityContext, "tried to delete role `%s`: %s", roleName, e.getMessage() );
             throw e;
         }
     }
@@ -179,17 +176,17 @@ class PersonalUserManager implements EnterpriseUserManager
     public void setUserPassword( String username, String password, boolean requirePasswordChange )
             throws IOException, InvalidArgumentsException
     {
-        if ( authSubject.hasUsername( username ) )
+        if ( securityContext.subject().hasUsername( username ) )
         {
             try
             {
                 userManager.setUserPassword( username, password, requirePasswordChange );
-                securityLog.info( authSubject, "changed password%s",
+                securityLog.info( securityContext, "changed password%s",
                         requirePasswordChange ? ", with password change required" : "" );
             }
             catch ( Exception e )
             {
-                securityLog.error( authSubject, "tried to change password: %s", e.getMessage() );
+                securityLog.error( securityContext, "tried to change password: %s", e.getMessage() );
                 throw e;
             }
         }
@@ -199,12 +196,12 @@ class PersonalUserManager implements EnterpriseUserManager
             {
                 assertAdmin();
                 userManager.setUserPassword( username, password, requirePasswordChange );
-                securityLog.info( authSubject, "changed password for user `%s`%s", username,
+                securityLog.info( securityContext, "changed password for user `%s`%s", username,
                         requirePasswordChange ? ", with password change required" : "" );
             }
             catch ( Exception e )
             {
-                securityLog.error( authSubject, "tried to change password for user `%s`: %s", username,
+                securityLog.error( securityContext, "tried to change password for user `%s`: %s", username,
                         e.getMessage() );
                 throw e;
             }
@@ -221,7 +218,7 @@ class PersonalUserManager implements EnterpriseUserManager
         }
         catch ( AuthorizationViolationException e )
         {
-            securityLog.error( authSubject, "tried to list users: %s", e.getMessage() );
+            securityLog.error( securityContext, "tried to list users: %s", e.getMessage() );
             throw e;
         }
     }
@@ -245,11 +242,11 @@ class PersonalUserManager implements EnterpriseUserManager
         {
             assertAdmin();
             userManager.addRoleToUser( roleName, username );
-            securityLog.info( authSubject, "added role `%s` to user `%s`", roleName, username );
+            securityLog.info( securityContext, "added role `%s` to user `%s`", roleName, username );
         }
         catch ( Exception e )
         {
-            securityLog.error( authSubject, "tried to add role `%s` to user `%s`: %s", roleName, username,
+            securityLog.error( securityContext, "tried to add role `%s` to user `%s`: %s", roleName, username,
                     e.getMessage() );
             throw e;
         }
@@ -261,17 +258,17 @@ class PersonalUserManager implements EnterpriseUserManager
         try
         {
             assertAdmin();
-            if ( authSubject.hasUsername( username ) && roleName.equals( PredefinedRoles.ADMIN ) )
+            if ( securityContext.subject().hasUsername( username ) && roleName.equals( PredefinedRoles.ADMIN ) )
             {
                 throw new InvalidArgumentsException(
                         "Removing yourself (user '" + username + "') from the admin role is not allowed." );
             }
             userManager.removeRoleFromUser( roleName, username );
-            securityLog.info( authSubject, "removed role `%s` from user `%s`", roleName, username );
+            securityLog.info( securityContext, "removed role `%s` from user `%s`", roleName, username );
         }
         catch ( Exception e )
         {
-            securityLog.error( authSubject, "tried to remove role `%s` from user `%s`: %s", roleName, username, e
+            securityLog.error( securityContext, "tried to remove role `%s` from user `%s`: %s", roleName, username, e
                     .getMessage() );
             throw e;
         }
@@ -287,7 +284,7 @@ class PersonalUserManager implements EnterpriseUserManager
         }
         catch ( AuthorizationViolationException e )
         {
-            securityLog.error( authSubject, "tried to list roles: %s", e.getMessage() );
+            securityLog.error( securityContext, "tried to list roles: %s", e.getMessage() );
             throw e;
         }
     }
@@ -302,7 +299,7 @@ class PersonalUserManager implements EnterpriseUserManager
         }
         catch ( Exception e )
         {
-            securityLog.error( authSubject, "tried to list roles for user `%s`: %s", username, e.getMessage() );
+            securityLog.error( securityContext, "tried to list roles for user `%s`: %s", username, e.getMessage() );
             throw e;
         }
     }
@@ -323,7 +320,7 @@ class PersonalUserManager implements EnterpriseUserManager
         }
         catch ( Exception e )
         {
-            securityLog.error( authSubject, "tried to list users for role `%s`: %s", roleName, e.getMessage() );
+            securityLog.error( securityContext, "tried to list users for role `%s`: %s", roleName, e.getMessage() );
             throw e;
         }
     }
@@ -336,7 +333,7 @@ class PersonalUserManager implements EnterpriseUserManager
 
     private void assertSelfOrAdmin( String username )
     {
-        if ( !authSubject.hasUsername( username ) )
+        if ( !securityContext.subject().hasUsername( username ) )
         {
             assertAdmin();
         }

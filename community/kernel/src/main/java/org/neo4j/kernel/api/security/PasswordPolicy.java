@@ -17,13 +17,12 @@
  * You should have received a copy of the GNU General Public License
  * along with this program.  If not, see <http://www.gnu.org/licenses/>.
  */
-package org.neo4j.server.security.auth;
+package org.neo4j.kernel.api.security;
 
-import org.neo4j.kernel.api.security.SecurityContext;
+import org.neo4j.kernel.api.exceptions.InvalidArgumentsException;
 
-public interface UserManagerSupplier
+public interface PasswordPolicy
 {
-    UserManager getUserManager( SecurityContext securityContext );
-
-    UserManager getUserManager();
+    // TODO: We may want to reintroduce AuthSubject here to be able to check against repeating last used passwords etc.
+    void validatePassword( String password ) throws InvalidArgumentsException;
 }
