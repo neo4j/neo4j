@@ -20,6 +20,7 @@
 package org.neo4j.kernel.api.constraints;
 
 import org.neo4j.kernel.api.schema.RelationshipPropertyDescriptor;
+import org.neo4j.kernel.api.schema_new.RelationTypeSchemaDescriptor;
 
 /**
  * Base class describing property constraint on relationships.
@@ -42,6 +43,14 @@ public abstract class RelationshipPropertyConstraint implements PropertyConstrai
     public boolean matches( RelationshipPropertyDescriptor descriptor )
     {
         return this.descriptor.equals( descriptor );
+    }
+
+    public boolean matches( RelationTypeSchemaDescriptor other )
+    {
+        return other != null &&
+                descriptor.getRelationshipTypeId() == other.getRelTypeId() &&
+                descriptor.getPropertyKeyId() == other.getPropertyIds()[0];
+        // this is safe because we are replacing this class before introducing composite constraints
     }
 
     @Override

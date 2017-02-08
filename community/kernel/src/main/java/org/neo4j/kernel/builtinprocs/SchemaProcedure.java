@@ -44,6 +44,7 @@ import org.neo4j.kernel.api.Statement;
 import org.neo4j.kernel.api.StatementTokenNameLookup;
 import org.neo4j.kernel.api.constraints.NodePropertyConstraint;
 import org.neo4j.kernel.api.schema.IndexDescriptor;
+import org.neo4j.kernel.api.schema_new.index.NewIndexDescriptor;
 import org.neo4j.kernel.impl.coreapi.schema.PropertyNameUtils;
 import org.neo4j.kernel.internal.GraphDatabaseAPI;
 
@@ -78,14 +79,14 @@ public class SchemaProcedure
                     Label label = labelsInDatabase.next();
                     Map<String,Object> properties = new HashMap<>();
 
-                    Iterator<IndexDescriptor> indexDescriptorIterator =
+                    Iterator<NewIndexDescriptor> indexDescriptorIterator =
                             readOperations.indexesGetForLabel( readOperations.labelGetForName( label.name() ) );
                     ArrayList<String> indexes = new ArrayList<>();
                     while ( indexDescriptorIterator.hasNext() )
                     {
-                        IndexDescriptor index = indexDescriptorIterator.next();
-                        String[] propertyNames =
-                                PropertyNameUtils.getPropertyKeys( statementTokenNameLookup, index.descriptor() );
+                        NewIndexDescriptor index = indexDescriptorIterator.next();
+                        String[] propertyNames = PropertyNameUtils.getPropertyKeys(
+                                                    statementTokenNameLookup, index.schema().getPropertyIds() );
                         indexes.add( String.join( ",", propertyNames ) );
                     }
                     properties.put( "indexes", indexes );

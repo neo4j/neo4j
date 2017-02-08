@@ -34,6 +34,8 @@ import org.neo4j.kernel.api.constraints.PropertyConstraint;
 import org.neo4j.kernel.api.constraints.RelationshipPropertyConstraint;
 import org.neo4j.kernel.api.constraints.RelationshipPropertyExistenceConstraint;
 import org.neo4j.kernel.api.constraints.UniquenessConstraint;
+import org.neo4j.kernel.api.schema_new.SchemaBoundary;
+import org.neo4j.kernel.api.schema_new.SchemaDescriptorFactory;
 import org.neo4j.test.TestEnterpriseGraphDatabaseFactory;
 
 import static org.junit.Assert.assertEquals;
@@ -118,7 +120,8 @@ public class StorageLayerSchemaWithPECTest extends StorageLayerTest
         // When
         NodePropertyDescriptor descriptor =
                 new NodePropertyDescriptor( labelId( label1 ), propertyKeyId( propertyKey ) );
-        Set<NodePropertyConstraint> constraints = asSet( disk.constraintsGetForLabelAndPropertyKey( descriptor ) );
+        Set<NodePropertyConstraint> constraints = asSet( disk.constraintsGetForLabelAndPropertyKey(
+                SchemaBoundary.map( descriptor ) ) );
 
         // Then
         Set<NodePropertyConstraint> expectedConstraints = asSet(
@@ -141,7 +144,7 @@ public class StorageLayerSchemaWithPECTest extends StorageLayerTest
         Set<RelationshipPropertyConstraint> constraints = asSet( disk.constraintsGetForRelationshipType( relTypeId ) );
 
         // Then
-        Set<RelationshipPropertyConstraint> expectedConstraints = Iterators.<RelationshipPropertyConstraint>asSet(
+        Set<RelationshipPropertyConstraint> expectedConstraints = Iterators.asSet(
                 new RelationshipPropertyExistenceConstraint(
                         new RelationshipPropertyDescriptor( relTypeId, propertyKeyId( propertyKey ) ) ),
                 new RelationshipPropertyExistenceConstraint(
@@ -165,10 +168,10 @@ public class StorageLayerSchemaWithPECTest extends StorageLayerTest
         int propKeyId = propertyKeyId( propertyKey );
         Set<RelationshipPropertyConstraint> constraints = asSet(
                 disk.constraintsGetForRelationshipTypeAndPropertyKey(
-                        new RelationshipPropertyDescriptor( relTypeId, propKeyId ) ) );
+                        SchemaDescriptorFactory.forRelType( relTypeId, propKeyId ) ) );
 
         // Then
-        Set<RelationshipPropertyConstraint> expectedConstraints = Iterators.<RelationshipPropertyConstraint>asSet(
+        Set<RelationshipPropertyConstraint> expectedConstraints = Iterators.asSet(
                 new RelationshipPropertyExistenceConstraint(
                         new RelationshipPropertyDescriptor( relTypeId, propKeyId ) ) );
 

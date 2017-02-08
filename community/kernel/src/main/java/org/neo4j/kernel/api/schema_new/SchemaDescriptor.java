@@ -66,11 +66,11 @@ public interface SchemaDescriptor
      */
     default boolean isSame( SchemaDescriptor.Supplier supplier )
     {
-        return this.equals( supplier.getSchemaDescriptor() );
+        return this.equals( supplier.schema() );
     }
 
     interface Supplier
     {
-        SchemaDescriptor getSchemaDescriptor();
+        SchemaDescriptor schema();
     }
 }

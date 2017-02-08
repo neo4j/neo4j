@@ -54,6 +54,8 @@ import org.neo4j.kernel.api.schema.IndexDescriptor;
 import org.neo4j.kernel.api.properties.Property;
 import org.neo4j.kernel.api.schema_new.LabelSchemaDescriptor;
 import org.neo4j.kernel.api.schema_new.SchemaDescriptorFactory;
+import org.neo4j.kernel.api.schema_new.index.IndexBoundary;
+import org.neo4j.kernel.api.schema_new.index.NewIndexDescriptor;
 import org.neo4j.kernel.impl.core.ThreadToStatementContextBridge;
 import org.neo4j.kernel.impl.storageengine.impl.recordstorage.RecordStorageEngine;
 import org.neo4j.kernel.impl.store.NeoStores;
@@ -133,7 +135,7 @@ public class IndexStatisticsTest
         createSomePersons();
 
         // when
-        IndexDescriptor index = awaitOnline( createIndex( "Person", "name" ) );
+        NewIndexDescriptor index = awaitOnline( createIndex( "Person", "name" ) );
 
         // then
         assertEquals( 0.75d, indexSelectivity( index ), DOUBLE_ERROR_TOLERANCE );
@@ -145,7 +147,7 @@ public class IndexStatisticsTest
     public void shouldNotSeeDataCreatedAfterPopulation() throws KernelException
     {
         // given
-        IndexDescriptor index = awaitOnline( createIndex( "Person", "name" ) );
+        NewIndexDescriptor index = awaitOnline( createIndex( "Person", "name" ) );
 
         // when
         createSomePersons();
@@ -162,7 +164,7 @@ public class IndexStatisticsTest
     {
         // given
         createSomePersons();
-        IndexDescriptor index = awaitOnline( createIndex( "Person", "name" ) );
+        NewIndexDescriptor index = awaitOnline( createIndex( "Person", "name" ) );
 
         // when
         createSomePersons();
@@ -178,7 +180,7 @@ public class IndexStatisticsTest
     {
         // given
         createSomePersons();
-        IndexDescriptor index = awaitOnline( createIndex( "Person", "name" ) );
+        NewIndexDescriptor index = awaitOnline( createIndex( "Person", "name" ) );
         long indexId = indexId( index );
 
         // when
@@ -208,7 +210,7 @@ public class IndexStatisticsTest
         int created = repeatCreateNamedPeopleFor( NAMES.length * CREATION_MULTIPLIER ).length;
 
         // when
-        IndexDescriptor index = awaitOnline( createIndex( "Person", "name" ) );
+        NewIndexDescriptor index = awaitOnline( createIndex( "Person", "name" ) );
 
         // then
         double expectedSelectivity = UNIQUE_NAMES / (created);
@@ -224,7 +226,7 @@ public class IndexStatisticsTest
         int initialNodes = repeatCreateNamedPeopleFor( NAMES.length * CREATION_MULTIPLIER ).length;
 
         // when populating while creating
-        IndexDescriptor index = createIndex( "Person", "name" );
+        NewIndexDescriptor index = createIndex( "Person", "name" );
         final UpdatesTracker updatesTracker = executeCreations( index, CREATION_MULTIPLIER );
         awaitOnline( index );
 
@@ -244,7 +246,7 @@ public class IndexStatisticsTest
         int initialNodes = nodes.length;
 
         // when populating while creating
-        IndexDescriptor index = createIndex( "Person", "name" );
+        NewIndexDescriptor index = createIndex( "Person", "name" );
         UpdatesTracker updatesTracker = executeCreationsAndDeletions( nodes, index, CREATION_MULTIPLIER );
         awaitOnline( index );
 
@@ -266,7 +268,7 @@ public class IndexStatisticsTest
         int initialNodes = nodes.length;
 
         // when populating while creating
-        IndexDescriptor index = createIndex( "Person", "name" );
+        NewIndexDescriptor index = createIndex( "Person", "name" );
         UpdatesTracker updatesTracker = executeCreationsAndUpdates( nodes, index, CREATION_MULTIPLIER );
         awaitOnline( index );
 
@@ -288,7 +290,7 @@ public class IndexStatisticsTest
         ExecutorService executorService = Executors.newFixedThreadPool( threads );
 
         // when populating while creating
-        final IndexDescriptor index = createIndex( "Person", "name" );
+        final NewIndexDescriptor index = createIndex( "Person", "name" );
 
         final Collection<Callable<UpdatesTracker>> jobs = new ArrayList<>( threads );
         for ( int i = 0; i < threads; i++ )
@@ -423,7 +425,7 @@ public class IndexStatisticsTest
         return nodes;
     }
 
-    private void dropIndex( IndexDescriptor index ) throws KernelException
+    private void dropIndex( NewIndexDescriptor index ) throws KernelException
     {
         try ( Transaction tx = db.beginTx() )
         {
@@ -433,21 +435,21 @@ public class IndexStatisticsTest
         }
     }
 
-    private long indexSize( IndexDescriptor descriptor ) throws KernelException
+    private long indexSize( NewIndexDescriptor descriptor ) throws KernelException
     {
         return ((GraphDatabaseAPI) db).getDependencyResolver()
                                       .resolveDependency( IndexingService.class )
-                                      .indexUpdatesAndSize( descriptor ).readSecond();
+                                      .indexUpdatesAndSize( IndexBoundary.map( descriptor ) ).readSecond();
     }
 
-    private long indexUpdates( IndexDescriptor descriptor ) throws KernelException
+    private long indexUpdates( NewIndexDescriptor descriptor ) throws KernelException
     {
         return ((GraphDatabaseAPI) db).getDependencyResolver()
                                       .resolveDependency( IndexingService.class )
-                                      .indexUpdatesAndSize( descriptor ).readFirst();
+                                      .indexUpdatesAndSize( IndexBoundary.map( descriptor ) ).readFirst();
     }
 
-    private double indexSelectivity( IndexDescriptor descriptor ) throws KernelException
+    private double indexSelectivity( NewIndexDescriptor descriptor ) throws KernelException
     {
         try ( Transaction tx = db.beginTx() )
         {
@@ -488,7 +490,7 @@ public class IndexStatisticsTest
         return nodeId;
     }
 
-    private IndexDescriptor createIndex( String labelName, String propertyKeyName ) throws KernelException
+    private NewIndexDescriptor createIndex( String labelName, String propertyKeyName ) throws KernelException
     {
         try ( Transaction tx = db.beginTx() )
         {
@@ -496,18 +498,16 @@ public class IndexStatisticsTest
             int labelId = statement.tokenWriteOperations().labelGetOrCreateForName( labelName );
             int propertyKeyId = statement.tokenWriteOperations().propertyKeyGetOrCreateForName( propertyKeyName );
             NodePropertyDescriptor descriptor = new NodePropertyDescriptor( labelId, propertyKeyId );
-            IndexDescriptor index = statement.schemaWriteOperations().indexCreate( descriptor );
+            NewIndexDescriptor index = statement.schemaWriteOperations().indexCreate( descriptor );
             tx.success();
             return index;
         }
     }
 
-    private long indexId( IndexDescriptor index )
+    private long indexId( NewIndexDescriptor index )
     {
         SchemaStorage storage = new SchemaStorage( neoStores().getSchemaStore() );
-        LabelSchemaDescriptor descriptor =
-                SchemaDescriptorFactory.forLabel( index.getLabelId(), index.getPropertyKeyId() );
-        return storage.indexGetForSchema( descriptor ).getId();
+        return storage.indexGetForSchema( index.schema() ).getId();
     }
 
     private NeoStores neoStores()
@@ -516,7 +516,7 @@ public class IndexStatisticsTest
                 .testAccessNeoStores();
     }
 
-    private IndexDescriptor awaitOnline( IndexDescriptor index ) throws KernelException
+    private NewIndexDescriptor awaitOnline( NewIndexDescriptor index ) throws KernelException
     {
         long start = System.currentTimeMillis();
         long end = start + 20_000;
@@ -551,34 +551,34 @@ public class IndexStatisticsTest
         throw new IllegalStateException( "Index did not become ONLINE within reasonable time" );
     }
 
-    private UpdatesTracker executeCreations( IndexDescriptor index, int numberOfCreations ) throws KernelException
+    private UpdatesTracker executeCreations( NewIndexDescriptor index, int numberOfCreations ) throws KernelException
     {
         return internalExecuteCreationsDeletionsAndUpdates( null, index, numberOfCreations, false, false );
     }
 
     private UpdatesTracker executeCreationsAndDeletions( long[] nodes,
-                                                         IndexDescriptor index,
+                                                         NewIndexDescriptor index,
                                                          int numberOfCreations ) throws KernelException
     {
         return internalExecuteCreationsDeletionsAndUpdates( nodes, index, numberOfCreations, true, false );
     }
 
     private UpdatesTracker executeCreationsAndUpdates( long[] nodes,
-                                                       IndexDescriptor index,
+                                                       NewIndexDescriptor index,
                                                        int numberOfCreations ) throws KernelException
     {
         return internalExecuteCreationsDeletionsAndUpdates( nodes, index, numberOfCreations, false, true );
     }
 
     private UpdatesTracker executeCreationsDeletionsAndUpdates( long[] nodes,
-                                                                IndexDescriptor index,
+                                                                NewIndexDescriptor index,
                                                                 int numberOfCreations ) throws KernelException
     {
         return internalExecuteCreationsDeletionsAndUpdates( nodes, index, numberOfCreations, true, true );
     }
 
     private UpdatesTracker internalExecuteCreationsDeletionsAndUpdates( long[] nodes,
-                                                                        IndexDescriptor index,
+                                                                        NewIndexDescriptor index,
                                                                         int numberOfCreations,
                                                                         boolean allowDeletions,
                                                                         boolean allowUpdates ) throws KernelException
@@ -593,7 +593,9 @@ public class IndexStatisticsTest
             updatesTracker.increaseCreated( created );
 
             // check index online
-            if ( !updatesTracker.isPopulationCompleted() && indexOnlineMonitor.isIndexOnline( index ) )
+            IndexDescriptor oldIndex = IndexBoundary.map( index );
+            if ( !updatesTracker.isPopulationCompleted() &&
+                    indexOnlineMonitor.isIndexOnline( oldIndex ) )
             {
                 updatesTracker.notifyPopulationCompleted();
             }
@@ -613,7 +615,8 @@ public class IndexStatisticsTest
                 }
 
                 // check again index online
-                if ( !updatesTracker.isPopulationCompleted() && indexOnlineMonitor.isIndexOnline( index ) )
+                if ( !updatesTracker.isPopulationCompleted() &&
+                        indexOnlineMonitor.isIndexOnline( oldIndex ) )
                 {
                     updatesTracker.notifyPopulationCompleted();
                 }
@@ -633,7 +636,7 @@ public class IndexStatisticsTest
                 }
 
                 // check again index online
-                if ( !updatesTracker.isPopulationCompleted() && indexOnlineMonitor.isIndexOnline( index ) )
+                if ( !updatesTracker.isPopulationCompleted() && indexOnlineMonitor.isIndexOnline( oldIndex ) )
                 {
                     updatesTracker.notifyPopulationCompleted();
                 }

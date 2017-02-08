@@ -19,21 +19,23 @@
  */
 package org.neo4j.kernel.api.exceptions.schema;
 
-import org.neo4j.kernel.api.schema.NodePropertyDescriptor;
 import org.neo4j.kernel.api.TokenNameLookup;
 import org.neo4j.kernel.api.exceptions.KernelException;
 import org.neo4j.kernel.api.exceptions.Status;
+import org.neo4j.kernel.api.schema_new.LabelSchemaDescriptor;
+import org.neo4j.kernel.api.schema_new.SchemaUtil;
 
 import static java.lang.String.format;
 
 public class DropIndexFailureException extends SchemaKernelException
 {
-    private final NodePropertyDescriptor descriptor;
+    private final LabelSchemaDescriptor descriptor;
     private static final String message = "Unable to drop index on %s: %s";
 
-    public DropIndexFailureException( NodePropertyDescriptor descriptor, SchemaKernelException cause )
+    public DropIndexFailureException( LabelSchemaDescriptor descriptor, SchemaKernelException cause )
     {
-        super( Status.Schema.IndexDropFailed, format( message, descriptor, cause.getMessage() ), cause );
+        super( Status.Schema.IndexDropFailed, format( message, descriptor.userDescription( SchemaUtil.idTokenNameLookup ),
+                        cause.getMessage() ), cause );
         this.descriptor = descriptor;
     }
 

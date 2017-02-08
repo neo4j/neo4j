@@ -22,7 +22,6 @@ package org.neo4j.kernel.impl.api.state;
 import org.junit.Test;
 
 import java.util.Collections;
-import java.util.Iterator;
 import java.util.Set;
 
 import org.neo4j.collection.primitive.PrimitiveLongCollections;
@@ -30,13 +29,17 @@ import org.neo4j.collection.primitive.PrimitiveLongIterator;
 import org.neo4j.cursor.Cursor;
 import org.neo4j.helpers.collection.Iterables;
 import org.neo4j.helpers.collection.Iterators;
-import org.neo4j.kernel.api.schema.NodePropertyDescriptor;
 import org.neo4j.kernel.api.constraints.NodePropertyConstraint;
 import org.neo4j.kernel.api.constraints.PropertyConstraint;
 import org.neo4j.kernel.api.constraints.UniquenessConstraint;
 import org.neo4j.kernel.api.exceptions.index.IndexNotFoundKernelException;
 import org.neo4j.kernel.api.schema.IndexDescriptor;
 import org.neo4j.kernel.api.schema.IndexDescriptorFactory;
+import org.neo4j.kernel.api.schema.NodePropertyDescriptor;
+import org.neo4j.kernel.api.schema_new.SchemaBoundary;
+import org.neo4j.kernel.api.schema_new.index.IndexBoundary;
+import org.neo4j.kernel.api.schema_new.index.NewIndexDescriptor;
+import org.neo4j.kernel.api.schema_new.index.NewIndexDescriptorFactory;
 import org.neo4j.kernel.api.txstate.TransactionState;
 import org.neo4j.kernel.impl.api.KernelStatement;
 import org.neo4j.kernel.impl.api.StateHandlingStatementOperations;
@@ -59,6 +62,7 @@ import static org.mockito.Mockito.verifyNoMoreInteractions;
 import static org.mockito.Mockito.when;
 import static org.neo4j.helpers.collection.Iterators.asIterable;
 import static org.neo4j.helpers.collection.Iterators.asSet;
+import static org.neo4j.helpers.collection.Iterators.iterator;
 import static org.neo4j.kernel.api.properties.Property.intProperty;
 import static org.neo4j.kernel.impl.api.StatementOperationsTestHelper.mockedState;
 import static org.neo4j.kernel.impl.api.state.StubCursors.asNodeCursor;
@@ -73,10 +77,9 @@ public class StateHandlingStatementOperationsTest
 
     StoreReadLayer inner = mock( StoreReadLayer.class );
 
-    private int[] properties={66};
-    private int[] properties2={99};
     private NodePropertyDescriptor descriptor1 = new NodePropertyDescriptor( 10, 66 );
     private NodePropertyDescriptor descriptor2 = new NodePropertyDescriptor( 11, 99 );
+    private NewIndexDescriptor index = NewIndexDescriptorFactory.forLabel( 1, 2 );
 
     @Test
     public void shouldNeverDelegateWrites() throws Exception
@@ -86,8 +89,7 @@ public class StateHandlingStatementOperationsTest
         when( state.txState() ).thenReturn( new TxState() );
         StoreStatement storeStatement = mock( StoreStatement.class );
         when( state.getStoreStatement() ).thenReturn( storeStatement );
-        Iterator<IndexDescriptor> indexesIterator = Collections.singletonList( IndexDescriptorFactory.of( 0, 0 ) ).iterator();
-        when( inner.indexesGetForLabel( 0 ) ).thenReturn( indexesIterator );
+        when( inner.indexesGetForLabel( 0 ) ).thenReturn( iterator( NewIndexDescriptorFactory.forLabel( 0, 0 ) ) );
         when( storeStatement.acquireSingleNodeCursor( anyLong() ) ).
                 thenReturn( asNodeCursor( 0 ) );
 
@@ -97,7 +99,7 @@ public class StateHandlingStatementOperationsTest
         NodePropertyDescriptor descriptor = new NodePropertyDescriptor( 0, 0 );
         ctx.indexCreate( state, descriptor );
         ctx.nodeAddLabel( state, 0, 0 );
-        ctx.indexDrop( state, IndexDescriptorFactory.of( descriptor ) );
+        ctx.indexDrop( state, IndexBoundary.map( descriptor ) );
         ctx.nodeRemoveLabel( state, 0, 0 );
 
         // one for add and one for remove
@@ -114,8 +116,8 @@ public class StateHandlingStatementOperationsTest
         when( txState.nodesWithLabelChanged( anyInt() ) ).thenReturn( new DiffSets<Long>() );
         when( txState.hasChanges() ).thenReturn( true );
         KernelStatement state = mockedState( txState );
-        when( inner.constraintsGetForLabelAndPropertyKey( descriptor1 ) )
-                .thenAnswer( invocation -> Iterators.iterator( constraint ) );
+        when( inner.constraintsGetForLabelAndPropertyKey( SchemaBoundary.map( descriptor1 ) ) )
+                .thenAnswer( invocation -> iterator( constraint ) );
         StateHandlingStatementOperations context = newTxStateOps( inner );
 
         // when
@@ -132,7 +134,7 @@ public class StateHandlingStatementOperationsTest
         PropertyConstraint constraint = new UniquenessConstraint( descriptor1 );
         TransactionState txState = new TxState();
         KernelStatement state = mockedState( txState );
-        when( inner.constraintsGetForLabelAndPropertyKey( descriptor1 ) )
+        when( inner.constraintsGetForLabelAndPropertyKey( SchemaBoundary.map( descriptor1 ) ) )
                 .thenAnswer( invocation -> Iterators.emptyIterator() );
         StateHandlingStatementOperations context = newTxStateOps( inner );
         context.uniquePropertyConstraintCreate( state, descriptor1 );
@@ -154,14 +156,14 @@ public class StateHandlingStatementOperationsTest
 
         TransactionState txState = new TxState();
         KernelStatement state = mockedState( txState );
-        when( inner.constraintsGetForLabelAndPropertyKey( descriptor1 ) )
+        when( inner.constraintsGetForLabelAndPropertyKey( SchemaBoundary.map( descriptor1 ) ) )
                 .thenAnswer( invocation -> Iterators.emptyIterator() );
-        when( inner.constraintsGetForLabelAndPropertyKey( descriptor2 ) )
+        when( inner.constraintsGetForLabelAndPropertyKey( SchemaBoundary.map( descriptor2 ) ) )
                 .thenAnswer( invocation -> Iterators.emptyIterator() );
         when( inner.constraintsGetForLabel( 10 ) )
                 .thenAnswer( invocation -> Iterators.emptyIterator() );
         when( inner.constraintsGetForLabel( 11 ) )
-                .thenAnswer( invocation -> Iterators.iterator( constraint1 ) );
+                .thenAnswer( invocation -> iterator( constraint1 ) );
         StateHandlingStatementOperations context = newTxStateOps( inner );
         context.uniquePropertyConstraintCreate( state, descriptor1 );
         context.uniquePropertyConstraintCreate( state, descriptor2 );
@@ -182,12 +184,12 @@ public class StateHandlingStatementOperationsTest
 
         TransactionState txState = new TxState();
         KernelStatement state = mockedState( txState );
-        when( inner.constraintsGetForLabelAndPropertyKey( descriptor1 ) )
+        when( inner.constraintsGetForLabelAndPropertyKey( SchemaBoundary.map( descriptor1 ) ) )
                 .thenAnswer( invocation -> Iterators.emptyIterator() );
-        when( inner.constraintsGetForLabelAndPropertyKey( descriptor2 ) )
+        when( inner.constraintsGetForLabelAndPropertyKey( SchemaBoundary.map( descriptor2 ) ) )
                 .thenAnswer( invocation -> Iterators.emptyIterator() );
         when( inner.constraintsGetAll() )
-                .thenAnswer( invocation -> Iterators.iterator( constraint2 ) );
+                .thenAnswer( invocation -> iterator( constraint2 ) );
         StateHandlingStatementOperations context = newTxStateOps( inner );
         context.uniquePropertyConstraintCreate( state, descriptor1 );
 
@@ -206,7 +208,6 @@ public class StateHandlingStatementOperationsTest
         KernelStatement statement = mock( KernelStatement.class );
         when( statement.hasTxStateWithChanges() ).thenReturn( true );
         when( statement.txState() ).thenReturn( txState );
-        IndexDescriptor index = IndexDescriptorFactory.of( 1, 2 );
         when( txState.indexUpdatesForScanOrSeek( index, null ) ).thenReturn(
                 new DiffSets<>( Collections.singleton( 42L ), Collections.singleton( 44L ) )
         );
@@ -237,7 +238,6 @@ public class StateHandlingStatementOperationsTest
         KernelStatement statement = mock( KernelStatement.class );
         when( statement.hasTxStateWithChanges() ).thenReturn( true );
         when( statement.txState() ).thenReturn( txState );
-        IndexDescriptor index = IndexDescriptorFactory.of( 1, 2 );
         when( txState.indexUpdatesForScanOrSeek( index, "value" ) ).thenReturn(
                 new DiffSets<>( Collections.singleton( 42L ), Collections.singleton( 44L ) )
         );
@@ -267,7 +267,6 @@ public class StateHandlingStatementOperationsTest
         KernelStatement statement = mock( KernelStatement.class );
         when( statement.hasTxStateWithChanges() ).thenReturn( true );
         when( statement.txState() ).thenReturn( txState );
-        IndexDescriptor index = IndexDescriptorFactory.of( 1, 2 );
         when( txState.indexUpdatesForRangeSeekByPrefix( index, "prefix" ) ).thenReturn(
                 new DiffSets<>( Collections.singleton( 42L ), Collections.singleton( 44L ) )
         );
@@ -305,7 +304,6 @@ public class StateHandlingStatementOperationsTest
         when( statement.txState() ).thenReturn( txState );
         StorageStatement storageStatement = mock( StorageStatement.class );
         when( statement.getStoreStatement() ).thenReturn( storageStatement );
-        IndexDescriptor index = IndexDescriptorFactory.of( 1, propertyKey );
         when( txState.indexUpdatesForRangeSeekByNumber( index, lower, true, upper, false ) ).thenReturn(
                 new DiffSets<>( Collections.singleton( 42L ), Collections.singleton( 44L ) )
         );
@@ -332,8 +330,8 @@ public class StateHandlingStatementOperationsTest
         StateHandlingStatementOperations context = newTxStateOps( storeReadLayer );
 
         // When
-        PrimitiveLongIterator results = context.nodesGetFromIndexRangeSeekByNumber( statement, index, lower, true,
-                upper, false );
+        PrimitiveLongIterator results = context.nodesGetFromIndexRangeSeekByNumber(
+                statement, index, lower, true, upper, false );
 
         // Then
         assertEquals( asSet( 42L, 43L ), PrimitiveLongCollections.toSet( results ) );
@@ -347,7 +345,6 @@ public class StateHandlingStatementOperationsTest
         KernelStatement statement = mock( KernelStatement.class );
         when( statement.hasTxStateWithChanges() ).thenReturn( true );
         when( statement.txState() ).thenReturn( txState );
-        IndexDescriptor index = IndexDescriptorFactory.of( 1, 2 );
         when( txState.indexUpdatesForRangeSeekByString( index, "Anne", true, "Bill", false ) ).thenReturn(
                 new DiffSets<>( Collections.singleton( 42L ), Collections.singleton( 44L ) )
         );
@@ -364,7 +361,8 @@ public class StateHandlingStatementOperationsTest
         StateHandlingStatementOperations context = newTxStateOps( storeReadLayer );
 
         // When
-        PrimitiveLongIterator results = context.nodesGetFromIndexRangeSeekByString( statement, index, "Anne", true, "Bill", false );
+        PrimitiveLongIterator results = context.nodesGetFromIndexRangeSeekByString(
+                statement, index, "Anne", true, "Bill", false );
 
         // Then
         assertEquals( asSet( 42L, 43L ), PrimitiveLongCollections.toSet( results ) );
@@ -383,7 +381,7 @@ public class StateHandlingStatementOperationsTest
 
         StateHandlingStatementOperations operations = newTxStateOps( mock( StoreReadLayer.class ) );
 
-        operations.nodeGetFromUniqueIndexSeek( kernelStatement, IndexDescriptorFactory.of( 1, 1 ), "foo" );
+        operations.nodeGetFromUniqueIndexSeek( kernelStatement, NewIndexDescriptorFactory.uniqueForLabel( 1, 1 ), "foo" );
 
         verify( indexReader ).close();
     }
@@ -406,7 +404,7 @@ public class StateHandlingStatementOperationsTest
             throws IndexNotFoundKernelException
     {
         IndexReader indexReader = mock( IndexReader.class );
-        when( storeStatement.getIndexReader( any( IndexDescriptor.class ) ) ).thenReturn( indexReader );
+        when( storeStatement.getIndexReader( any( NewIndexDescriptor.class ) ) ).thenReturn( indexReader );
         return indexReader;
     }
 }

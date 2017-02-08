@@ -28,12 +28,12 @@ import org.neo4j.kernel.api.constraints.UniquenessConstraint;
 import org.neo4j.kernel.api.exceptions.schema.CreateConstraintFailureException;
 import org.neo4j.kernel.api.exceptions.schema.DuplicateSchemaRuleException;
 import org.neo4j.kernel.api.exceptions.schema.SchemaRuleNotFoundException;
-import org.neo4j.kernel.api.schema.IndexDescriptor;
 import org.neo4j.kernel.api.index.SchemaIndexProvider;
 import org.neo4j.kernel.api.properties.DefinedProperty;
 import org.neo4j.kernel.api.schema_new.SchemaDescriptorFactory;
 import org.neo4j.kernel.api.schema_new.constaints.ConstraintDescriptorFactory;
-import org.neo4j.kernel.api.schema_new.index.NewIndexDescriptorFactory;
+import org.neo4j.kernel.api.schema_new.index.IndexBoundary;
+import org.neo4j.kernel.api.schema_new.index.NewIndexDescriptor;
 import org.neo4j.kernel.impl.api.index.SchemaIndexProviderMap;
 import org.neo4j.kernel.impl.constraints.ConstraintSemantics;
 import org.neo4j.kernel.impl.store.SchemaStorage;
@@ -41,6 +41,8 @@ import org.neo4j.kernel.impl.store.record.IndexRule;
 import org.neo4j.kernel.impl.transaction.state.TransactionRecordState;
 import org.neo4j.storageengine.api.StorageProperty;
 import org.neo4j.storageengine.api.txstate.TxStateVisitor;
+
+import static org.neo4j.kernel.api.schema_new.index.NewIndexDescriptor.Type.UNIQUE;
 
 public class TransactionToRecordStateVisitor extends TxStateVisitor.Adapter
 {
@@ -179,37 +181,21 @@ public class TransactionToRecordStateVisitor extends TxStateVisitor.Adapter
     }
 
     @Override
-    public void visitAddedIndex( IndexDescriptor element, boolean isConstraintIndex )
+    public void visitAddedIndex( NewIndexDescriptor index )
     {
         SchemaIndexProvider.Descriptor providerDescriptor =
                 schemaIndexProviderMap.getDefaultProvider().getProviderDescriptor();
-        IndexRule rule;
-        if ( isConstraintIndex )
-        {
-            // was IndexRule.constraintIndexRule, but calling this with null gives the non-constraint version?
-            rule = IndexRule.indexRule(
-                        schemaStorage.newRuleId(),
-                        NewIndexDescriptorFactory.uniqueForLabel( element.getLabelId(), element.getPropertyKeyId() ),
-                        providerDescriptor );
-        }
-        else
-        {
-            rule = IndexRule.indexRule(
-                        schemaStorage.newRuleId(),
-                        NewIndexDescriptorFactory.forLabel( element.getLabelId(), element.getPropertyKeyId() ),
-                        providerDescriptor );
-        }
+        IndexRule rule = IndexRule.indexRule( schemaStorage.newRuleId(), index, providerDescriptor );
         recordState.createSchemaRule( rule );
     }
 
     @Override
-    public void visitRemovedIndex( IndexDescriptor desc, boolean isConstraintIndex )
+    public void visitRemovedIndex( NewIndexDescriptor index )
     {
-        SchemaStorage.IndexRuleKind kind = isConstraintIndex ?
-                SchemaStorage.IndexRuleKind.CONSTRAINT
-                : SchemaStorage.IndexRuleKind.INDEX;
-        IndexRule rule = schemaStorage.indexGetForSchema(
-                SchemaDescriptorFactory.forLabel( desc.getLabelId(), desc.getPropertyKeyId() ), kind );
+        NewIndexDescriptor.Filter filter = index.type() == UNIQUE ?
+                                          NewIndexDescriptor.Filter.UNIQUE
+                                        : NewIndexDescriptor.Filter.GENERAL;
+        IndexRule rule = schemaStorage.indexGetForSchema( index.schema(), filter );
         recordState.dropSchemaRule( rule );
     }
 
@@ -221,8 +207,7 @@ public class TransactionToRecordStateVisitor extends TxStateVisitor.Adapter
         int propertyKeyId = element.descriptor().getPropertyKeyId();
 
         IndexRule indexRule = schemaStorage.indexGetForSchema(
-                SchemaDescriptorFactory.forLabel( element.label(), propertyKeyId ),
-                SchemaStorage.IndexRuleKind.CONSTRAINT );
+                SchemaDescriptorFactory.forLabel( element.label(), propertyKeyId ), NewIndexDescriptor.Filter.UNIQUE );
         recordState.createSchemaRule(
                 constraintSemantics.writeUniquePropertyConstraint(
                         constraintId, element.descriptor(), indexRule.getId() ) );
@@ -252,7 +237,7 @@ public class TransactionToRecordStateVisitor extends TxStateVisitor.Adapter
             throw new IllegalStateException( "Multiple constraints found for specified label and property." );
         }
         // Remove the index for the constraint as well
-        visitRemovedIndex( element.indexDescriptor(), true );
+        visitRemovedIndex( IndexBoundary.mapUnique( element.indexDescriptor() ) );
     }
 
     @Override

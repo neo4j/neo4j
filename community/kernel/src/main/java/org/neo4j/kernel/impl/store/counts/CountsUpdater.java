@@ -21,7 +21,6 @@ package org.neo4j.kernel.impl.store.counts;
 
 import java.io.IOException;
 
-import org.neo4j.kernel.api.schema.IndexDescriptor;
 import org.neo4j.kernel.impl.api.CountsAccessor;
 import org.neo4j.kernel.impl.store.UnderlyingStorageException;
 import org.neo4j.kernel.impl.store.counts.keys.CountsKey;
@@ -95,7 +94,7 @@ final class CountsUpdater implements CountsAccessor.Updater, CountsAccessor.Inde
      *  u - number of updates
      *  s - size of index
      * </pre>
-     * For key format, see {@link KeyFormat#visitIndexStatistics(IndexDescriptor, long, long)}
+     * For key format, see {@link KeyFormat#visitIndexStatistics(long, long, long)}
      */
     @Override
     public void replaceIndexUpdateAndSize( long indexId, long updates, long size )
@@ -118,7 +117,7 @@ final class CountsUpdater implements CountsAccessor.Updater, CountsAccessor.Inde
      *  u - number of unique values
      *  s - size of index
      * </pre>
-     * For key format, see {@link KeyFormat#visitIndexSample(IndexDescriptor, long, long)}
+     * For key format, see {@link KeyFormat#visitIndexSample(long, long, long)}
      */
     @Override
     public void replaceIndexSample( long indexId, long unique, long size )
@@ -134,7 +133,7 @@ final class CountsUpdater implements CountsAccessor.Updater, CountsAccessor.Inde
     }
 
     /**
-     * For key format, see {@link KeyFormat#visitIndexStatistics(IndexDescriptor, long, long)}
+     * For key format, see {@link KeyFormat#visitIndexStatistics(long, long, long)}
      * For value format, see {@link CountsUpdater#replaceIndexUpdateAndSize(long, long, long)}
      */
     @Override

@@ -29,6 +29,7 @@ import static java.lang.String.format;
  *
  * @see SchemaRule
  */
+@Deprecated
 public interface IndexDescriptor
 {
     /**

@@ -38,10 +38,12 @@ import org.neo4j.kernel.api.constraints.UniquenessConstraint;
 import org.neo4j.kernel.api.exceptions.KernelException;
 import org.neo4j.kernel.api.exceptions.index.IndexNotFoundKernelException;
 import org.neo4j.kernel.api.schema.IndexDescriptor;
+import org.neo4j.kernel.api.schema_new.index.NewIndexDescriptor;
 import org.neo4j.kernel.impl.core.ThreadToStatementContextBridge;
 import org.neo4j.kernel.internal.GraphDatabaseAPI;
 
 import static java.lang.String.format;
+import static org.neo4j.helpers.collection.Iterators.loop;
 import static org.neo4j.kernel.api.ReadOperations.ANY_LABEL;
 import static org.neo4j.kernel.api.ReadOperations.ANY_RELATIONSHIP_TYPE;
 
@@ -139,11 +141,9 @@ public class GraphDbStructureGuide implements Visitable<DbStructureVisitor>
 
     private void showIndices( DbStructureVisitor visitor, ReadOperations read, TokenNameLookup nameLookup ) throws IndexNotFoundKernelException
     {
-        Iterator<IndexDescriptor> indexDescriptors = read.indexesGetAll();
-        while ( indexDescriptors.hasNext() )
+        for ( NewIndexDescriptor descriptor : loop( read.indexesGetAll() ) )
         {
-            IndexDescriptor descriptor = indexDescriptors.next();
-            String userDescription = descriptor.userDescription( nameLookup );
+            String userDescription = descriptor.schema().userDescription( nameLookup );
             double uniqueValuesPercentage = read.indexUniqueValuesSelectivity( descriptor );
             long size = read.indexSize( descriptor );
             visitor.visitIndex( descriptor, userDescription , uniqueValuesPercentage, size );
@@ -153,11 +153,9 @@ public class GraphDbStructureGuide implements Visitable<DbStructureVisitor>
     private void showUniqueIndices( DbStructureVisitor visitor, ReadOperations read, TokenNameLookup nameLookup ) throws IndexNotFoundKernelException
 
     {
-        Iterator<IndexDescriptor> indexDescriptors = read.uniqueIndexesGetAll();
-        while ( indexDescriptors.hasNext() )
+        for ( NewIndexDescriptor descriptor : loop( read.uniqueIndexesGetAll() ) )
         {
-            IndexDescriptor descriptor = indexDescriptors.next();
-            String userDescription = descriptor.userDescription( nameLookup );
+            String userDescription = descriptor.schema().userDescription( nameLookup );
             double uniqueValuesPercentage = read.indexUniqueValuesSelectivity( descriptor );
             long size = read.indexSize( descriptor );
             visitor.visitUniqueIndex( descriptor, userDescription, uniqueValuesPercentage, size );

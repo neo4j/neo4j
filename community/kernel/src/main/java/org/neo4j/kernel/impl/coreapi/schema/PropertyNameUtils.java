@@ -21,82 +21,19 @@ package org.neo4j.kernel.impl.coreapi.schema;
 
 import java.util.ArrayList;
 
-import org.neo4j.graphdb.Label;
-import org.neo4j.graphdb.NotFoundException;
 import org.neo4j.graphdb.schema.IndexDefinition;
 import org.neo4j.helpers.collection.Iterables;
-import org.neo4j.kernel.api.TokenWriteOperations;
-import org.neo4j.kernel.api.schema.IndexDescriptorFactory;
-import org.neo4j.kernel.api.schema.NodePropertyDescriptor;
 import org.neo4j.kernel.api.ReadOperations;
-import org.neo4j.kernel.api.SchemaWriteOperations;
 import org.neo4j.kernel.api.TokenNameLookup;
+import org.neo4j.kernel.api.TokenWriteOperations;
 import org.neo4j.kernel.api.exceptions.PropertyKeyIdNotFoundKernelException;
 import org.neo4j.kernel.api.exceptions.schema.IllegalTokenNameException;
-import org.neo4j.kernel.api.exceptions.schema.SchemaRuleNotFoundException;
-import org.neo4j.kernel.api.schema.IndexDescriptor;
-import org.neo4j.kernel.impl.api.operations.KeyReadOperations;
-
-import static java.lang.String.format;
-import static java.util.Arrays.asList;
+import org.neo4j.kernel.api.schema.NodePropertyDescriptor;
 
 public class PropertyNameUtils
 {
     private PropertyNameUtils()
     {
-    }
-
-    private static String getPropertyKeyNameAt( Iterable<String> properties, int propertyKeyIndex )
-    {
-        for ( String propertyKey : properties )
-        {
-            if ( propertyKeyIndex == 0 )
-            {
-                return propertyKey;
-            }
-            propertyKeyIndex--;
-        }
-        return null;
-    }
-
-    static IndexDescriptor getIndexDescriptor( ReadOperations readOperations, IndexDefinition index )
-            throws SchemaRuleNotFoundException
-    {
-        int labelId = readOperations.labelGetForName( index.getLabel().name() );
-        int[] propertyKeyIds = getPropertyKeyIds( readOperations, index.getPropertyKeys() );
-        NodePropertyDescriptor descriptor =
-                checkValidLabelAndProperties( index.getLabel(), labelId, propertyKeyIds, index.getPropertyKeys() );
-        return readOperations.indexGetForLabelAndPropertyKey( descriptor );
-    }
-
-    private static NodePropertyDescriptor checkValidLabelAndProperties( Label label, int labelId, int[] propertyKeyIds,
-            Iterable<String> properties )
-    {
-        if ( labelId == KeyReadOperations.NO_SUCH_LABEL )
-        {
-            throw new NotFoundException( format( "Label %s not found", label.name() ) );
-        }
-
-        for ( int i = 0; i < propertyKeyIds.length; i++ )
-        {
-            if ( propertyKeyIds[i] == KeyReadOperations.NO_SUCH_PROPERTY_KEY )
-            {
-                throw new NotFoundException(
-                        format( "Property key %s not found", getPropertyKeyNameAt( properties, i ) ) );
-            }
-        }
-        return IndexDescriptorFactory.getNodePropertyDescriptor( labelId, propertyKeyIds );
-    }
-
-    static IndexDescriptor getIndexDescriptor( ReadOperations readOperations, Label label,
-            String[] propertyKeys )
-            throws SchemaRuleNotFoundException
-    {
-        int labelId = readOperations.labelGetForName( label.name() );
-        int[] propertyKeyIds = getPropertyKeyIds( readOperations, propertyKeys );
-        NodePropertyDescriptor descriptor =
-                checkValidLabelAndProperties( label, labelId, propertyKeyIds, asList( propertyKeys ) );
-        return readOperations.indexGetForLabelAndPropertyKey( descriptor );
     }
 
     public static String[] getPropertyKeys( ReadOperations readOperations, NodePropertyDescriptor descriptor )
@@ -120,6 +57,27 @@ public class PropertyNameUtils
         for ( int i = 0; i < propertyKeyIds.length; i++ )
         {
             propertyKeys[i] = tokenNameLookup.propertyKeyGetName( propertyKeyIds[i] );
+        }
+        return propertyKeys;
+    }
+
+    public static String[] getPropertyKeys( ReadOperations readOperations, int[] propertyIds )
+            throws PropertyKeyIdNotFoundKernelException
+    {
+        String[] propertyKeys = new String[propertyIds.length];
+        for ( int i = 0; i < propertyIds.length; i++ )
+        {
+            propertyKeys[i] = readOperations.propertyKeyGetName( propertyIds[i] );
+        }
+        return propertyKeys;
+    }
+
+    public static String[] getPropertyKeys( TokenNameLookup tokenNameLookup, int[] propertyIds )
+    {
+        String[] propertyKeys = new String[propertyIds.length];
+        for ( int i = 0; i < propertyIds.length; i++ )
+        {
+            propertyKeys[i] = tokenNameLookup.propertyKeyGetName( propertyIds[i] );
         }
         return propertyKeys;
     }

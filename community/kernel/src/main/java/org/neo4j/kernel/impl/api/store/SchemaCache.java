@@ -25,19 +25,16 @@ import java.util.HashSet;
 import java.util.Iterator;
 import java.util.List;
 import java.util.Map;
-import java.util.Set;
 
 import org.neo4j.helpers.collection.Iterators;
 import org.neo4j.kernel.api.constraints.NodePropertyConstraint;
 import org.neo4j.kernel.api.constraints.PropertyConstraint;
 import org.neo4j.kernel.api.constraints.RelationshipPropertyConstraint;
-import org.neo4j.kernel.api.schema.IndexDescriptor;
-import org.neo4j.kernel.api.schema.IndexDescriptorFactory;
-import org.neo4j.kernel.api.schema.NodePropertyDescriptor;
-import org.neo4j.kernel.api.schema.RelationshipPropertyDescriptor;
+import org.neo4j.kernel.api.schema_new.LabelSchemaDescriptor;
+import org.neo4j.kernel.api.schema_new.RelationTypeSchemaDescriptor;
 import org.neo4j.kernel.api.schema_new.SchemaDescriptor;
 import org.neo4j.kernel.api.schema_new.constaints.ConstraintDescriptor;
-import org.neo4j.kernel.api.schema_new.index.IndexBoundary;
+import org.neo4j.kernel.api.schema_new.index.NewIndexDescriptor;
 import org.neo4j.kernel.impl.constraints.ConstraintSemantics;
 import org.neo4j.kernel.impl.store.record.ConstraintRule;
 import org.neo4j.kernel.impl.store.record.IndexRule;
@@ -59,7 +56,7 @@ public class SchemaCache
 
     private final Collection<NodePropertyConstraint> nodeConstraints = new HashSet<>();
     private final Collection<RelationshipPropertyConstraint> relationshipConstraints = new HashSet<>();
-    private final Set<IndexDescriptor> indexDescriptors = new HashSet<>();
+    private final Map<SchemaDescriptor, NewIndexDescriptor> indexDescriptors = new HashMap<>();
     private final ConstraintSemantics constraintSemantics;
 
     public SchemaCache( ConstraintSemantics constraintSemantics, Iterable<SchemaRule> initialRules )
@@ -104,7 +101,7 @@ public class SchemaCache
     {
         for ( IndexRule rule : indexRuleById.values() )
         {
-            if ( rule.getSchemaDescriptor().equals( descriptor ) )
+            if ( rule.schema().equals( descriptor ) )
             {
                 return true;
             }
@@ -126,7 +123,7 @@ public class SchemaCache
                 nodeConstraints.iterator() );
     }
 
-    public Iterator<NodePropertyConstraint> constraintsForLabelAndProperty( NodePropertyDescriptor descriptor )
+    public Iterator<NodePropertyConstraint> constraintsForLabelAndProperty( LabelSchemaDescriptor descriptor )
     {
         return Iterators.filter(
                 constraint -> constraint.matches( descriptor ),
@@ -141,7 +138,7 @@ public class SchemaCache
     }
 
     public Iterator<RelationshipPropertyConstraint> constraintsForRelationshipTypeAndProperty(
-            RelationshipPropertyDescriptor descriptor )
+            RelationTypeSchemaDescriptor descriptor )
     {
         return Iterators.filter(
                 constraint -> constraint.matches( descriptor ),
@@ -168,7 +165,7 @@ public class SchemaCache
         {
             IndexRule indexRule = (IndexRule) rule;
             indexRuleById.put( indexRule.getId(), indexRule );
-            indexDescriptors.add( IndexBoundary.map( indexRule.getIndexDescriptor() ) );
+            indexDescriptors.put( indexRule.schema(), indexRule.getIndexDescriptor() );
         }
     }
 
@@ -208,13 +205,12 @@ public class SchemaCache
         else if ( indexRuleById.containsKey( id ) )
         {
             IndexRule rule = indexRuleById.remove( id );
-            indexDescriptors.remove( IndexBoundary.map( rule.getIndexDescriptor() ) );
+            indexDescriptors.remove( rule.schema() );
         }
     }
 
-    public IndexDescriptor indexDescriptor( NodePropertyDescriptor descriptor )
+    public NewIndexDescriptor indexDescriptor( LabelSchemaDescriptor descriptor )
     {
-        IndexDescriptor key = IndexDescriptorFactory.of( descriptor );
-        return indexDescriptors.contains( key ) ? key : null;
+        return indexDescriptors.get( descriptor );
     }
 }

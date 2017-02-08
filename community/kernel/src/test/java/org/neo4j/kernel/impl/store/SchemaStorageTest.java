@@ -53,7 +53,6 @@ import org.neo4j.kernel.api.schema_new.index.NewIndexDescriptor;
 import org.neo4j.kernel.api.schema_new.index.NewIndexDescriptorFactory;
 import org.neo4j.kernel.impl.core.ThreadToStatementContextBridge;
 import org.neo4j.kernel.impl.storageengine.impl.recordstorage.RecordStorageEngine;
-import org.neo4j.kernel.impl.store.SchemaStorage.IndexRuleKind;
 import org.neo4j.kernel.impl.store.record.ConstraintRule;
 import org.neo4j.kernel.impl.store.record.IndexRule;
 import org.neo4j.test.GraphDatabaseServiceCleaner;
@@ -138,7 +137,7 @@ public class SchemaStorageTest
                 index( LABEL1, PROP2 ) );
 
         // When
-        IndexRule rule = storage.indexGetForSchema( schemaDescriptor( LABEL1, PROP1 ), IndexRuleKind.CONSTRAINT );
+        IndexRule rule = storage.indexGetForSchema( schemaDescriptor( LABEL1, PROP1 ), NewIndexDescriptor.Filter.UNIQUE );
 
         // Then
         assertNotNull( rule );

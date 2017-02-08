@@ -19,23 +19,67 @@
  */
 package org.neo4j.kernel.api.schema_new.index;
 
+import java.util.Iterator;
+
+import org.neo4j.helpers.collection.Iterators;
 import org.neo4j.kernel.api.schema.IndexDescriptor;
+import org.neo4j.kernel.api.schema.IndexDescriptorFactory;
+import org.neo4j.kernel.api.schema.NodePropertyDescriptor;
 import org.neo4j.kernel.api.schema_new.LabelSchemaDescriptor;
 
 /**
- * This class represents the boundary of where new index descriptors are converted to old index descriptors
+ * This class represents the boundary of where new index descriptors are converted to old index descriptors. Take me
+ * away when possible...
  */
 public class IndexBoundary
 {
     public static IndexDescriptor map( NewIndexDescriptor descriptor )
     {
-        LabelSchemaDescriptor labelSchema = (LabelSchemaDescriptor) descriptor.schema();
-        return org.neo4j.kernel.api.schema.IndexDescriptorFactory.of(
-                labelSchema.getLabelId(), labelSchema.getPropertyIds()[0] );
+        if ( descriptor == null )
+        {
+            return null;
+        }
+        return IndexDescriptorFactory.of( descriptor.schema().getLabelId(), descriptor.schema().getPropertyIds()[0] );
+    }
+
+    public static IndexDescriptor map( LabelSchemaDescriptor descriptor )
+    {
+        if ( descriptor == null )
+        {
+            return null;
+        }
+        return IndexDescriptorFactory.of( descriptor.getLabelId(), descriptor.getPropertyIds() );
     }
 
     public static NewIndexDescriptor map( IndexDescriptor descriptor )
     {
+        if ( descriptor == null )
+        {
+            return null;
+        }
         return NewIndexDescriptorFactory.forLabel( descriptor.getLabelId(), descriptor.getPropertyKeyId() );
+    }
+
+    public static NewIndexDescriptor map( NodePropertyDescriptor descriptor )
+    {
+        if ( descriptor == null )
+        {
+            return null;
+        }
+        return NewIndexDescriptorFactory.forLabel( descriptor.getLabelId(), descriptor.getPropertyKeyId() );
+    }
+
+    public static NewIndexDescriptor mapUnique( IndexDescriptor descriptor )
+    {
+        if ( descriptor == null )
+        {
+            return null;
+        }
+        return NewIndexDescriptorFactory.uniqueForLabel( descriptor.getLabelId(), descriptor.getPropertyKeyId() );
+    }
+
+    public static Iterator<IndexDescriptor> map( Iterator<NewIndexDescriptor> iterator )
+    {
+        return Iterators.map( IndexBoundary::map, iterator );
     }
 }

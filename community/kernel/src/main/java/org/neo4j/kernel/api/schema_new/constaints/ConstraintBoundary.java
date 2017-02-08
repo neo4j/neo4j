@@ -32,7 +32,8 @@ import org.neo4j.kernel.api.schema_new.RelationTypeSchemaDescriptor;
 import org.neo4j.kernel.api.schema_new.SchemaComputer;
 
 /**
- * This class represents the boundary of where new constraint descriptors are converted to old constraints
+ * This class represents the boundary of where new constraint descriptors are converted to old constraints. This class
+ * should disappear once the old constraints are no longer used.
  */
 public class ConstraintBoundary
 {

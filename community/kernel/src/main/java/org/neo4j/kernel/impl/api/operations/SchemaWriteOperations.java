@@ -32,6 +32,7 @@ import org.neo4j.kernel.api.exceptions.schema.CreateConstraintFailureException;
 import org.neo4j.kernel.api.exceptions.schema.DropConstraintFailureException;
 import org.neo4j.kernel.api.exceptions.schema.DropIndexFailureException;
 import org.neo4j.kernel.api.schema.IndexDescriptor;
+import org.neo4j.kernel.api.schema_new.index.NewIndexDescriptor;
 import org.neo4j.kernel.impl.api.KernelStatement;
 
 public interface SchemaWriteOperations
@@ -40,17 +41,17 @@ public interface SchemaWriteOperations
      * Creates an index, indexing properties with the given {@code propertyKeyId} for nodes with the given
      * {@code labelId}.
      */
-    IndexDescriptor indexCreate( KernelStatement state, NodePropertyDescriptor descriptor )
+    NewIndexDescriptor indexCreate( KernelStatement state, NodePropertyDescriptor descriptor )
             throws AlreadyIndexedException, AlreadyConstrainedException;
 
-    /** Drops a {@link IndexDescriptor} from the database */
-    void indexDrop( KernelStatement state, IndexDescriptor descriptor ) throws DropIndexFailureException;
+    /** Drops a {@link NewIndexDescriptor} from the database */
+    void indexDrop( KernelStatement state, NewIndexDescriptor descriptor ) throws DropIndexFailureException;
 
     /**
      * This should not be used, it is exposed to allow an external job to clean up constraint indexes.
      * That external job should become an internal job, at which point this operation should go away.
      */
-    void uniqueIndexDrop( KernelStatement state, IndexDescriptor descriptor ) throws DropIndexFailureException;
+    void uniqueIndexDrop( KernelStatement state, NewIndexDescriptor descriptor ) throws DropIndexFailureException;
 
     UniquenessConstraint uniquePropertyConstraintCreate( KernelStatement state, NodePropertyDescriptor descriptor )
             throws AlreadyConstrainedException, CreateConstraintFailureException, AlreadyIndexedException;
