@@ -370,22 +370,15 @@ public class GetServersProcedureV1Test
         return ClusterView.parse( (List<Map<String,Object>>) rows[1] );
     }
 
-    static Map<MemberId,ReadReplicaAddresses> addresses( int... ids )
+    public static Map<MemberId,ReadReplicaAddresses> addresses( int... ids )
     {
         return Arrays.stream( ids ).mapToObj( GetServersProcedureV1Test::readReplicaAddresses ).collect( Collectors
                 .toMap( (p) -> new MemberId( UUID.randomUUID() ), Function.identity() ) );
     }
 
-    static CoreAddresses coreAddresses( int id )
-    {
-        AdvertisedSocketAddress advertisedSocketAddress = new AdvertisedSocketAddress( "localhost", (3000 + id) );
-        return new CoreAddresses( advertisedSocketAddress, advertisedSocketAddress,
-                new ClientConnectorAddresses( singletonList( new ClientConnectorAddresses.ConnectorUri( bolt, advertisedSocketAddress ) ) ) );
-    }
-
     private static ReadReplicaAddresses readReplicaAddresses( int id )
     {
-        AdvertisedSocketAddress advertisedSocketAddress = new AdvertisedSocketAddress( "localhost", (3000 + id) );
+        AdvertisedSocketAddress advertisedSocketAddress = new AdvertisedSocketAddress( "localhost", (6000 + id) );
         return new ReadReplicaAddresses(
                 new ClientConnectorAddresses( singletonList( new ClientConnectorAddresses.ConnectorUri( bolt, advertisedSocketAddress ) ) ),
                 new AdvertisedSocketAddress( "localhost", 4000 + id ));
