@@ -25,6 +25,13 @@ package org.neo4j.csv.reader;
 public interface Configuration
 {
     /**
+     * TODO: Default value is false here, but it is our intention to flip this to true at some point
+     * because of how it better complies with common expectancy of behavior. It may be least disruptive
+     * to do this when changing major version of the product.
+     */
+    boolean DEFAULT_LEGACY_STYLE_QUOTING = true;
+
+    /**
      * Character to regard as quotes. Quoted values can contain newline characters and even delimiters.
      */
     char quotationCharacter();
@@ -43,6 +50,20 @@ public interface Configuration
      * @return {@code true} for treating empty strings, i.e. {@code ""} as null, instead of an empty string.
      */
     boolean emptyQuotedStringsAsNull();
+
+    /**
+     * Adds a default implementation returning {@link #DEFAULT_LEGACY_STYLE_QUOTING}, this to not requiring
+     * any change to other classes using this interface.
+     *
+     * @return whether or not the parsing will interpret <code>\"</code> (see {@link #quotationCharacter()})
+     * as an inner quote. Reason why this is configurable is that this interpretation conflicts with
+     * "standard" RFC for CSV parsing, see https://tools.ietf.org/html/rfc4180. This also makes it impossible
+     * to enter some combinations of characters, e.g. <code>"""abc\"""</code>, when expecting <code>"abc\"</code>.
+     */
+    default boolean legacyStyleQuoting()
+    {
+        return DEFAULT_LEGACY_STYLE_QUOTING;
+    }
 
     static int KB = 1024, MB = KB * KB;
 
@@ -106,6 +127,12 @@ public interface Configuration
         public boolean emptyQuotedStringsAsNull()
         {
             return defaults.emptyQuotedStringsAsNull();
+        }
+
+        @Override
+        public boolean legacyStyleQuoting()
+        {
+            return defaults.legacyStyleQuoting();
         }
     }
 }
