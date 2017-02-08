@@ -29,6 +29,8 @@ import java.util.ArrayList;
 import java.util.Collection;
 import java.util.Objects;
 import java.util.Set;
+import java.util.function.Consumer;
+
 import org.neo4j.cluster.ClusterSettings;
 import org.neo4j.graphdb.GraphDatabaseService;
 import org.neo4j.graphdb.Node;
@@ -49,11 +51,11 @@ import org.neo4j.kernel.impl.ha.ClusterManager.RepairKit;
 import org.neo4j.kernel.impl.logging.StoreLogService;
 import org.neo4j.kernel.impl.util.Listener;
 import org.neo4j.com.storecopy.StoreUtil;
-import org.neo4j.function.ThrowingAction;
 import org.neo4j.kernel.lifecycle.LifeRule;
 import org.neo4j.kernel.monitoring.Monitors;
 import org.neo4j.storageengine.api.StoreFileMetadata;
 import org.neo4j.test.TestGraphDatabaseFactory;
+import org.neo4j.test.rule.DatabaseRule;
 import org.neo4j.test.rule.TestDirectory;
 
 import static java.lang.String.format;
@@ -66,6 +68,8 @@ import static org.neo4j.kernel.ha.cluster.modeswitch.HighAvailabilityModeSwitche
 import static org.neo4j.kernel.impl.ha.ClusterManager.allSeesAllAsAvailable;
 import static org.neo4j.kernel.impl.ha.ClusterManager.clusterOfSize;
 import static org.neo4j.kernel.impl.ha.ClusterManager.memberThinksItIsRole;
+import static org.neo4j.test.rule.RetryACoupleOfTimesHandler.ANY_EXCEPTION;
+import static org.neo4j.test.rule.RetryACoupleOfTimesHandler.retryACoupleOfTimesOn;
 
 public class TestBranchedData
 {
@@ -165,14 +169,14 @@ public class TestBranchedData
         cluster.await( ClusterManager.masterAvailable( thor ) );
         cluster.await( ClusterManager.memberThinksItIsRole( odin, HighAvailabilityModeSwitcher.MASTER ) );
         assertTrue( odin.isMaster() );
-        retryOnTransactionFailure( () -> createNode( odin, "B2", andIndexInto( indexName ) ) );
+        retryOnTransactionFailure( odin, db -> createNode( db, "B2", andIndexInto( indexName ) ) );
         // perform transactions so that index files changes under the hood
         Set<File> odinLuceneFilesBefore = Iterables.asSet( gatherLuceneFiles( odin, indexName ) );
         for ( char prefix = 'C'; !changed( odinLuceneFilesBefore,
                 Iterables.asSet( gatherLuceneFiles( odin, indexName ) ) ); prefix++ )
         {
             char fixedPrefix = prefix;
-            retryOnTransactionFailure( () ->
+            retryOnTransactionFailure( odin, db ->
                     createNodes( odin, String.valueOf( fixedPrefix ), 10_000, andIndexInto( indexName ) ) );
             cluster.force(); // Force will most likely cause lucene legacy indexes to commit and change file structure
         }
@@ -192,7 +196,7 @@ public class TestBranchedData
         for( int i = 0; i < 3; i++ )
         {
             int ii = i;
-            retryOnTransactionFailure( () ->
+            retryOnTransactionFailure( odin, db ->
                     createNodes( odin, String.valueOf( "" + ii ), 10, andIndexInto( indexName ) ) );
             cluster.sync();
             cluster.force();
@@ -213,24 +217,10 @@ public class TestBranchedData
         return monitor;
     }
 
-    private void retryOnTransactionFailure( ThrowingAction<Exception> transaction ) throws Exception
+    private void retryOnTransactionFailure( GraphDatabaseService db, Consumer<GraphDatabaseService> tx )
+            throws Exception
     {
-        Exception exception = null;
-        for ( int i = 0; i < 10; i++ )
-        {
-            try
-            {
-                transaction.apply();
-                return;
-            }
-            catch ( Exception e )
-            {
-                // Just retry
-                exception = e;
-            }
-        }
-
-        throw exception;
+        DatabaseRule.tx( db, retryACoupleOfTimesOn( ANY_EXCEPTION ), tx );
     }
 
     private boolean changed( Set<File> before, Set<File> after )
