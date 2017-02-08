@@ -20,6 +20,7 @@
 package org.neo4j.kernel.impl.api;
 
 import org.neo4j.collection.primitive.PrimitiveIntIterator;
+import org.neo4j.collection.primitive.PrimitiveIntSet;
 import org.neo4j.collection.primitive.PrimitiveLongIterator;
 import org.neo4j.cursor.Cursor;
 import org.neo4j.kernel.api.exceptions.EntityNotFoundException;
@@ -35,6 +36,7 @@ import org.neo4j.kernel.api.schema_new.index.NewIndexDescriptor;
 import org.neo4j.kernel.guard.Guard;
 import org.neo4j.kernel.impl.api.operations.EntityReadOperations;
 import org.neo4j.kernel.impl.api.operations.EntityWriteOperations;
+import org.neo4j.storageengine.api.Direction;
 import org.neo4j.storageengine.api.NodeItem;
 import org.neo4j.storageengine.api.RelationshipItem;
 
@@ -335,5 +337,26 @@ public class GuardingStatementOperations implements
     {
         guard.check( statement );
         return entityReadDelegate.nodeExists( statement, id );
+    }
+
+    @Override
+    public PrimitiveIntSet relationshipTypes( KernelStatement statement, NodeItem nodeItem )
+    {
+        guard.check( statement );
+        return entityReadDelegate.relationshipTypes( statement, nodeItem );
+    }
+
+    @Override
+    public int degree( KernelStatement statement, NodeItem nodeItem, Direction direction )
+    {
+        guard.check( statement );
+        return entityReadDelegate.degree( statement, nodeItem, direction );
+    }
+
+    @Override
+    public int degree( KernelStatement statement, NodeItem nodeItem, Direction direction, int relType )
+    {
+        guard.check( statement );
+        return entityReadDelegate.degree( statement, nodeItem, direction, relType );
     }
 }

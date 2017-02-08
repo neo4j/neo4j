@@ -162,24 +162,6 @@ public class StubCursors
         }
 
         @Override
-        public PrimitiveIntSet relationshipTypes()
-        {
-            throw new UnsupportedOperationException();
-        }
-
-        @Override
-        public int degree( Direction direction )
-        {
-            throw new UnsupportedOperationException();
-        }
-
-        @Override
-        public int degree( Direction direction, int relType )
-        {
-            throw new UnsupportedOperationException();
-        }
-
-        @Override
         public boolean isDense()
         {
             throw new UnsupportedOperationException(  );

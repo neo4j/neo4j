@@ -24,6 +24,7 @@ import java.util.function.Predicate;
 import java.util.function.Supplier;
 
 import org.neo4j.collection.primitive.PrimitiveIntIterator;
+import org.neo4j.collection.primitive.PrimitiveIntSet;
 import org.neo4j.collection.primitive.PrimitiveLongIterator;
 import org.neo4j.cursor.Cursor;
 import org.neo4j.graphdb.TransactionFailureException;
@@ -79,9 +80,11 @@ import org.neo4j.storageengine.api.Token;
 import org.neo4j.storageengine.api.schema.PopulationProgress;
 import org.neo4j.storageengine.api.schema.SchemaRule;
 
+import static org.neo4j.collection.primitive.Primitive.intSet;
 import static org.neo4j.helpers.collection.Iterables.filter;
 import static org.neo4j.kernel.api.schema_new.SchemaDescriptorPredicates.hasLabel;
 import static org.neo4j.kernel.impl.api.store.DegreeCounter.countByFirstPrevPointer;
+import static org.neo4j.kernel.impl.api.store.DegreeCounter.countRelationshipsInGroup;
 import static org.neo4j.kernel.impl.store.record.Record.NO_NEXT_RELATIONSHIP;
 import static org.neo4j.kernel.impl.store.record.RecordLoad.CHECK;
 import static org.neo4j.kernel.impl.store.record.RecordLoad.FORCE;
@@ -504,6 +507,29 @@ public class StorageLayer implements StoreReadLayer
     }
 
     @Override
+    public PrimitiveIntSet relationshipTypes( StorageStatement statement, NodeItem node )
+    {
+        PrimitiveIntSet set = intSet();
+        if ( node.isDense() )
+        {
+            RelationshipGroupRecord groupRecord = relationshipGroupStore.newRecord();
+            RecordCursor<RelationshipGroupRecord> cursor = statement.recordCursors().relationshipGroup();
+            for ( long id = node.nextGroupId(); id != NO_NEXT_RELATIONSHIP.intValue(); id = groupRecord.getNext() )
+            {
+                if ( cursor.next( id, groupRecord, FORCE ) )
+                {
+                    set.add( groupRecord.getType() );
+                }
+            }
+        }
+        else
+        {
+            node.relationships( Direction.BOTH ).forAll( relationship -> set.add( relationship.type() ) );
+        }
+        return set;
+    }
+
+    @Override
     public void degrees( StorageStatement statement, NodeItem nodeItem, DegreeVisitor visitor )
     {
         if ( nodeItem.isDense() )
@@ -527,6 +553,16 @@ public class StorageLayer implements StoreReadLayer
         }
 
         return schemaStorage.indexGetForSchema( index.schema(), filter );
+    }
+
+    @Override
+    public int degreeRelationshipsInGroup( StorageStatement storeStatement, long nodeId, long groupId,
+            Direction direction, Integer relType )
+    {
+        RelationshipRecord relationshipRecord = relationshipStore.newRecord();
+        RelationshipGroupRecord relationshipGroupRecord = relationshipGroupStore.newRecord();
+        return countRelationshipsInGroup( groupId, direction, relType, nodeId, relationshipRecord,
+                relationshipGroupRecord, storeStatement.recordCursors() );
     }
 
     private void visitNode( NodeItem nodeItem, DegreeVisitor visitor )

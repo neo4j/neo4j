@@ -22,6 +22,7 @@ package org.neo4j.kernel.impl.api;
 import java.util.Iterator;
 
 import org.neo4j.collection.primitive.PrimitiveIntIterator;
+import org.neo4j.collection.primitive.PrimitiveIntSet;
 import org.neo4j.collection.primitive.PrimitiveLongIterator;
 import org.neo4j.cursor.Cursor;
 import org.neo4j.helpers.Strings;
@@ -61,6 +62,7 @@ import org.neo4j.kernel.impl.api.store.EntityLoadingIterator;
 import org.neo4j.kernel.impl.constraints.ConstraintSemantics;
 import org.neo4j.kernel.impl.locking.LockTracer;
 import org.neo4j.kernel.impl.locking.Locks;
+import org.neo4j.storageengine.api.Direction;
 import org.neo4j.storageengine.api.NodeItem;
 import org.neo4j.storageengine.api.RelationshipItem;
 
@@ -509,5 +511,23 @@ public class ConstraintEnforcingEntityOperations implements EntityOperations, Sc
     public boolean nodeExists( KernelStatement statement, long id )
     {
         return entityReadOperations.nodeExists( statement, id );
+    }
+
+    @Override
+    public PrimitiveIntSet relationshipTypes( KernelStatement statement, NodeItem nodeItem )
+    {
+        return entityReadOperations.relationshipTypes( statement, nodeItem );
+    }
+
+    @Override
+    public int degree( KernelStatement statement, NodeItem nodeItem, Direction direction )
+    {
+        return entityReadOperations.degree( statement, nodeItem, direction );
+    }
+
+    @Override
+    public int degree( KernelStatement statement, NodeItem nodeItem, Direction direction, int relType )
+    {
+        return entityReadOperations.degree( statement, nodeItem, direction, relType );
     }
 }

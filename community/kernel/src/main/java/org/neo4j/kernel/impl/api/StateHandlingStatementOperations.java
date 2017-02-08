@@ -22,7 +22,9 @@ package org.neo4j.kernel.impl.api;
 import java.util.Iterator;
 import java.util.Map;
 
+import org.neo4j.collection.primitive.Primitive;
 import org.neo4j.collection.primitive.PrimitiveIntIterator;
+import org.neo4j.collection.primitive.PrimitiveIntSet;
 import org.neo4j.collection.primitive.PrimitiveLongCollections;
 import org.neo4j.collection.primitive.PrimitiveLongIterator;
 import org.neo4j.collection.primitive.PrimitiveLongResourceIterator;
@@ -86,6 +88,7 @@ import org.neo4j.kernel.impl.index.IndexEntityType;
 import org.neo4j.kernel.impl.index.LegacyIndexStore;
 import org.neo4j.kernel.impl.util.Validators;
 import org.neo4j.register.Register.DoubleLongRegister;
+import org.neo4j.storageengine.api.Direction;
 import org.neo4j.storageengine.api.EntityType;
 import org.neo4j.storageengine.api.NodeItem;
 import org.neo4j.storageengine.api.PropertyItem;
@@ -99,6 +102,7 @@ import org.neo4j.storageengine.api.schema.PopulationProgress;
 import org.neo4j.storageengine.api.txstate.ReadableDiffSets;
 
 import static java.lang.String.format;
+import static org.neo4j.collection.primitive.PrimitiveIntCollections.filter;
 import static org.neo4j.collection.primitive.PrimitiveLongCollections.single;
 import static org.neo4j.helpers.collection.Iterators.filter;
 import static org.neo4j.helpers.collection.Iterators.iterator;
@@ -107,6 +111,7 @@ import static org.neo4j.kernel.api.StatementConstants.NO_SUCH_NODE;
 import static org.neo4j.kernel.api.schema_new.index.NewIndexDescriptor.Filter.GENERAL;
 import static org.neo4j.kernel.api.schema_new.index.NewIndexDescriptor.Filter.UNIQUE;
 import static org.neo4j.kernel.impl.api.PropertyValueComparison.COMPARE_NUMBERS;
+import static org.neo4j.kernel.impl.util.Cursors.count;
 import static org.neo4j.register.Registers.newDoubleLongRegister;
 import static org.neo4j.storageengine.api.txstate.TxStateVisitor.EMPTY;
 
@@ -1613,6 +1618,72 @@ public class StateHandlingStatementOperations implements
             }
         }
         return storeLayer.nodeExists( id );
+    }
+
+    @Override
+    public PrimitiveIntSet relationshipTypes( KernelStatement statement, NodeItem node )
+    {
+        if ( statement.hasTxStateWithChanges() && statement.txState().nodeIsAddedInThisTx( node.id() ) )
+        {
+            return statement.txState().getNodeState( node.id() ).relationshipTypes();
+        }
+
+        // Read types in the current transaction
+        PrimitiveIntSet types = statement.hasTxStateWithChanges()
+                                ? statement.txState().getNodeState( node.id() ).relationshipTypes()
+                                : Primitive.intSet();
+
+        // Augment with types stored on disk, minus any types where all rels of that type are deleted
+        // in current tx.
+        types.addAll( filter( storeLayer.relationshipTypes( statement.getStoreStatement(), node ).iterator(),
+                ( current ) -> !types.contains( current ) && degree( statement, node, Direction.BOTH, current ) > 0 ) );
+
+        return types;
+    }
+
+    @Override
+    public int degree( KernelStatement statement, NodeItem node, Direction direction )
+    {
+        int degree = statement.hasTxStateWithChanges() && statement.txState().nodeIsAddedInThisTx( node.id() )
+                     ? 0
+                     : computeDegree( statement, node, direction, null );
+
+        return statement.hasTxStateWithChanges() && augmentDegree( statement, node )
+                ? statement.txState().getNodeState( node.id() ).augmentDegree( direction, degree )
+                : degree;
+    }
+
+    @Override
+    public int degree( KernelStatement statement, NodeItem node, Direction direction, int relType )
+    {
+        int degree = statement.hasTxStateWithChanges() && statement.txState().nodeIsAddedInThisTx( node.id() )
+                     ? 0
+                     : computeDegree( statement, node, direction, relType );
+
+        return statement.hasTxStateWithChanges() && augmentDegree( statement, node )
+               ? statement.txState().getNodeState( node.id() ).augmentDegree( direction, degree, relType )
+               : degree;
+    }
+
+    // FIXME: temporary workaround: the node item takes care of the tx state itself, hence don't count it twice!
+    private boolean augmentDegree( KernelStatement statement, NodeItem node )
+    {
+        return node.isDense() || statement.txState().nodeIsAddedInThisTx( node.id() );
+    }
+
+    private int computeDegree( KernelStatement statement, NodeItem node,  Direction direction, Integer relType )
+    {
+        if ( node.isDense() )
+        {
+            return storeLayer.degreeRelationshipsInGroup( statement.getStoreStatement(), node.id(), node.nextGroupId(),
+                    direction, relType );
+        }
+        else
+        {
+            return count( relType == null
+                          ? node.relationships( direction )
+                          : node.relationships( direction, relType ) );
+        }
     }
 
     private static DefinedProperty definedPropertyOrNull( Property existingProperty )

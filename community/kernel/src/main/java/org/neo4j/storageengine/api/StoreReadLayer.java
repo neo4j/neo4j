@@ -22,6 +22,7 @@ package org.neo4j.storageengine.api;
 import java.util.Iterator;
 
 import org.neo4j.collection.primitive.PrimitiveIntIterator;
+import org.neo4j.collection.primitive.PrimitiveIntSet;
 import org.neo4j.collection.primitive.PrimitiveLongIterator;
 import org.neo4j.kernel.api.constraints.NodePropertyConstraint;
 import org.neo4j.kernel.api.constraints.PropertyConstraint;
@@ -370,5 +371,10 @@ public interface StoreReadLayer
 
     boolean nodeExists( long id );
 
+    PrimitiveIntSet relationshipTypes( StorageStatement statement, NodeItem node );
+
     void degrees( StorageStatement statement, NodeItem nodeItem, DegreeVisitor visitor );
+
+    int degreeRelationshipsInGroup( StorageStatement storeStatement, long id, long groupId, Direction direction,
+            Integer relType );
 }

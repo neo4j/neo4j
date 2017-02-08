@@ -47,12 +47,10 @@ import org.neo4j.storageengine.api.PropertyItem;
 import org.neo4j.storageengine.api.RelationshipItem;
 
 import static org.neo4j.collection.primitive.Primitive.intSet;
-import static org.neo4j.kernel.impl.api.store.DegreeCounter.countRelationshipsInGroup;
 import static org.neo4j.kernel.impl.locking.LockService.NO_LOCK_SERVICE;
 import static org.neo4j.kernel.impl.store.record.Record.NO_NEXT_RELATIONSHIP;
 import static org.neo4j.kernel.impl.store.record.RecordLoad.CHECK;
 import static org.neo4j.kernel.impl.store.record.RecordLoad.FORCE;
-import static org.neo4j.kernel.impl.util.Cursors.count;
 import static org.neo4j.kernel.impl.util.IoPrimitiveUtils.safeCastLongToInt;
 
 /**
@@ -240,56 +238,6 @@ public class StoreSingleNodeCursor extends EntityItemHelper implements Cursor<No
     public Cursor<RelationshipItem> relationships( Direction direction, int... relTypes )
     {
         return cursors.relationships( isDense(), nextRel(), id(), direction, relTypes );
-    }
-
-    @Override
-    public PrimitiveIntSet relationshipTypes()
-    {
-        PrimitiveIntSet set = intSet();
-        if ( isDense() )
-        {
-            RelationshipGroupRecord groupRecord = relationshipGroupStore.newRecord();
-            for ( long id = nextGroupId(); id != NO_NEXT_RELATIONSHIP.intValue(); id = groupRecord.getNext() )
-            {
-                if ( recordCursors.relationshipGroup().next( id, groupRecord, FORCE ) )
-                {
-                    set.add( groupRecord.getType() );
-                }
-            }
-        }
-        else
-        {
-            relationships( Direction.BOTH ).forAll( relationship -> set.add( relationship.type() ) );
-        }
-        return set;
-    }
-
-    @Override
-    public int degree( Direction direction )
-    {
-        if ( isDense() )
-        {
-            return countRelationshipsInGroup( nextGroupId(), direction, null, id(), relationshipStore.newRecord(),
-                    relationshipGroupStore.newRecord(), recordCursors );
-        }
-        else
-        {
-            return count( relationships( direction ) );
-        }
-    }
-
-    @Override
-    public int degree( Direction direction, int relType )
-    {
-        if ( isDense() )
-        {
-            return countRelationshipsInGroup( nextGroupId(), direction, relType, id(), relationshipStore.newRecord(),
-                    relationshipGroupStore.newRecord(), recordCursors );
-        }
-        else
-        {
-            return count( relationships( direction, relType ) );
-        }
     }
 
     @Override
