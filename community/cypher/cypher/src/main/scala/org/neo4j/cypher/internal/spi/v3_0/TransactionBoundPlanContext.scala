@@ -21,18 +21,18 @@ package org.neo4j.cypher.internal.spi.v3_0
 
 import org.neo4j.cypher.MissingIndexException
 import org.neo4j.cypher.internal.LastCommittedTxIdProvider
-import org.neo4j.cypher.internal.compiler.v3_0.IndexDescriptor
 import org.neo4j.cypher.internal.compiler.v3_0.pipes.EntityProducer
 import org.neo4j.cypher.internal.compiler.v3_0.pipes.matching.ExpanderStep
+import org.neo4j.cypher.internal.compiler.v3_0.spi.SchemaTypes.{IndexDescriptor, UniquenessConstraint}
 import org.neo4j.cypher.internal.compiler.v3_0.spi._
 import org.neo4j.cypher.internal.frontend.v3_0.symbols.CypherType
 import org.neo4j.cypher.internal.frontend.v3_0.{CypherExecutionException, symbols}
 import org.neo4j.cypher.internal.spi.TransactionalContextWrapper
 import org.neo4j.graphdb.Node
-import org.neo4j.kernel.api.constraints.UniquenessConstraint
+import org.neo4j.kernel.api.constraints.{UniquenessConstraint => KernelUniquenessConstraint}
 import org.neo4j.kernel.api.exceptions.KernelException
 import org.neo4j.kernel.api.exceptions.schema.SchemaKernelException
-import org.neo4j.kernel.api.index.{IndexDescriptor => KernelIndexDescriptor, InternalIndexState}
+import org.neo4j.kernel.api.index.{InternalIndexState, IndexDescriptor => KernelIndexDescriptor}
 import org.neo4j.kernel.api.proc.Neo4jTypes.AnyType
 import org.neo4j.kernel.api.proc.{Neo4jTypes, ProcedureSignature => KernelProcedureSignature}
 
@@ -81,7 +81,7 @@ class TransactionBoundPlanContext(tc: TransactionalContextWrapper)
 
     import scala.collection.JavaConverters._
     tc.statement.readOperations().constraintsGetForLabelAndPropertyKey(labelId, propertyKeyId).asScala.collectFirst {
-      case unique: UniquenessConstraint => unique
+      case unique: KernelUniquenessConstraint => UniquenessConstraint(unique.label(), unique.propertyKey())
     }
   } catch {
     case _: KernelException => None

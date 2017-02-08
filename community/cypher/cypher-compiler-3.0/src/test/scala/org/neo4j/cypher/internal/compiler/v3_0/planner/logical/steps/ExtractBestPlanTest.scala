@@ -25,11 +25,11 @@ import org.neo4j.cypher.internal.compiler.v3_0.RecordingNotificationLogger
 import org.neo4j.cypher.internal.compiler.v3_0.planner._
 import org.neo4j.cypher.internal.compiler.v3_0.planner.logical.plans._
 import org.neo4j.cypher.internal.compiler.v3_0.spi.PlanContext
+import org.neo4j.cypher.internal.compiler.v3_0.spi.SchemaTypes.IndexDescriptor
 import org.neo4j.cypher.internal.frontend.v3_0.ast._
 import org.neo4j.cypher.internal.frontend.v3_0.notification.{IndexHintUnfulfillableNotification, JoinHintUnfulfillableNotification}
 import org.neo4j.cypher.internal.frontend.v3_0.test_helpers.CypherFunSuite
-import org.neo4j.cypher.internal.frontend.v3_0.{SemanticDirection, IndexHintException, JoinHintException}
-import org.neo4j.cypher.internal.compiler.v3_0.IndexDescriptor
+import org.neo4j.cypher.internal.frontend.v3_0.{IndexHintException, JoinHintException, SemanticDirection}
 
 class ExtractBestPlanTest extends CypherFunSuite with LogicalPlanningTestSupport {
 
@@ -52,7 +52,7 @@ class ExtractBestPlanTest extends CypherFunSuite with LogicalPlanningTestSupport
   private def getPlanContext(hasIndex: Boolean): PlanContext = {
 
     val planContext = newMockedPlanContext
-    val indexDescriptor: Option[IndexDescriptor] = if (hasIndex) Option(new IndexDescriptor(0,0)) else None
+    val indexDescriptor: Option[IndexDescriptor] = if (hasIndex) Option(IndexDescriptor(0,0)) else None
 
     when(planContext.getIndexRule(anyString(),anyString())).thenReturn(indexDescriptor)
     when(planContext.getUniqueIndexRule(anyString(),anyString())).thenReturn(None)

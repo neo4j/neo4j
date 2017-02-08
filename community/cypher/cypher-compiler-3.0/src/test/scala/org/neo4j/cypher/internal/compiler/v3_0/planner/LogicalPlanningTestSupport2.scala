@@ -31,6 +31,7 @@ import org.neo4j.cypher.internal.compiler.v3_0.planner.logical.idp.{IDPQueryGrap
 import org.neo4j.cypher.internal.compiler.v3_0.planner.logical.plans._
 import org.neo4j.cypher.internal.compiler.v3_0.planner.logical.plans.rewriter.{LogicalPlanRewriter, unnestApply}
 import org.neo4j.cypher.internal.compiler.v3_0.planner.logical.steps.LogicalPlanProducer
+import org.neo4j.cypher.internal.compiler.v3_0.spi.SchemaTypes.{IndexDescriptor, UniquenessConstraint}
 import org.neo4j.cypher.internal.compiler.v3_0.spi.{GraphStatistics, PlanContext, ProcedureSignature, QualifiedProcedureName}
 import org.neo4j.cypher.internal.compiler.v3_0.tracing.rewriters.RewriterStepSequencer
 import org.neo4j.cypher.internal.frontend.v3_0.ast._
@@ -40,8 +41,6 @@ import org.neo4j.cypher.internal.frontend.v3_0.test_helpers.{CypherFunSuite, Cyp
 import org.neo4j.cypher.internal.frontend.v3_0.{Foldable, PropertyKeyId, SemanticTable, _}
 import org.neo4j.graphdb.Node
 import org.neo4j.helpers.collection.Visitable
-import org.neo4j.kernel.api.constraints.UniquenessConstraint
-import org.neo4j.cypher.internal.compiler.v3_0.IndexDescriptor
 import org.neo4j.kernel.impl.util.dbstructure.DbStructureVisitor
 import org.scalatest.matchers.{BeMatcher, MatchResult}
 
@@ -90,7 +89,7 @@ trait LogicalPlanningTestSupport2 extends CypherTestSupport with AstConstruction
 
       def getUniqueIndexRule(labelName: String, propertyKey: String): Option[IndexDescriptor] =
         if (config.uniqueIndexes((labelName, propertyKey)))
-          Some(new IndexDescriptor(
+          Some(IndexDescriptor(
             semanticTable.resolvedLabelIds(labelName).id,
             semanticTable.resolvedPropertyKeyNames(propertyKey).id
           ))
@@ -99,7 +98,7 @@ trait LogicalPlanningTestSupport2 extends CypherTestSupport with AstConstruction
 
       def getUniquenessConstraint(labelName: String, propertyKey: String): Option[UniquenessConstraint] = {
         if (config.uniqueIndexes((labelName, propertyKey)))
-          Some(new UniquenessConstraint(
+          Some(UniquenessConstraint(
             semanticTable.resolvedLabelIds(labelName).id,
             semanticTable.resolvedPropertyKeyNames(propertyKey).id
           ))
@@ -109,7 +108,7 @@ trait LogicalPlanningTestSupport2 extends CypherTestSupport with AstConstruction
 
       def getIndexRule(labelName: String, propertyKey: String): Option[IndexDescriptor] =
         if (config.indexes((labelName, propertyKey)) || config.uniqueIndexes((labelName, propertyKey)))
-          Some(new IndexDescriptor(
+          Some(IndexDescriptor(
             semanticTable.resolvedLabelIds(labelName).id,
             semanticTable.resolvedPropertyKeyNames(propertyKey).id
           ))
