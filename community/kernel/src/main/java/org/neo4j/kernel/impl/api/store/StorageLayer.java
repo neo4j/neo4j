@@ -26,6 +26,7 @@ import java.util.function.Supplier;
 
 import org.neo4j.collection.primitive.PrimitiveIntIterator;
 import org.neo4j.collection.primitive.PrimitiveLongIterator;
+import org.neo4j.cursor.Cursor;
 import org.neo4j.function.Predicates;
 import org.neo4j.graphdb.TransactionFailureException;
 import org.neo4j.helpers.collection.Iterators;
@@ -47,6 +48,7 @@ import org.neo4j.kernel.api.schema.NodePropertyDescriptor;
 import org.neo4j.kernel.api.schema.RelationshipPropertyDescriptor;
 import org.neo4j.kernel.api.schema_new.LabelSchemaDescriptor;
 import org.neo4j.kernel.api.schema_new.index.IndexBoundary;
+import org.neo4j.kernel.impl.api.DegreeVisitor;
 import org.neo4j.kernel.impl.api.RelationshipVisitor;
 import org.neo4j.kernel.impl.api.index.IndexingService;
 import org.neo4j.kernel.impl.core.IteratingPropertyReceiver;
@@ -54,18 +56,25 @@ import org.neo4j.kernel.impl.core.LabelTokenHolder;
 import org.neo4j.kernel.impl.core.PropertyKeyTokenHolder;
 import org.neo4j.kernel.impl.core.RelationshipTypeTokenHolder;
 import org.neo4j.kernel.impl.core.TokenNotFoundException;
+import org.neo4j.kernel.impl.store.InvalidRecordException;
 import org.neo4j.kernel.impl.store.NeoStores;
 import org.neo4j.kernel.impl.store.NodeStore;
+import org.neo4j.kernel.impl.store.RecordCursor;
+import org.neo4j.kernel.impl.store.RecordStore;
 import org.neo4j.kernel.impl.store.RelationshipStore;
 import org.neo4j.kernel.impl.store.SchemaStorage;
 import org.neo4j.kernel.impl.store.UnderlyingStorageException;
 import org.neo4j.kernel.impl.store.counts.CountsTracker;
 import org.neo4j.kernel.impl.store.record.IndexRule;
+import org.neo4j.kernel.impl.store.record.RelationshipGroupRecord;
 import org.neo4j.kernel.impl.store.record.RelationshipRecord;
 import org.neo4j.kernel.impl.transaction.state.PropertyLoader;
 import org.neo4j.register.Register;
 import org.neo4j.register.Register.DoubleLongRegister;
+import org.neo4j.storageengine.api.Direction;
 import org.neo4j.storageengine.api.EntityType;
+import org.neo4j.storageengine.api.NodeItem;
+import org.neo4j.storageengine.api.RelationshipItem;
 import org.neo4j.storageengine.api.StorageProperty;
 import org.neo4j.storageengine.api.StorageStatement;
 import org.neo4j.storageengine.api.StoreReadLayer;
@@ -76,7 +85,10 @@ import org.neo4j.storageengine.api.schema.SchemaRule;
 import static org.neo4j.helpers.collection.Iterables.filter;
 import static org.neo4j.kernel.api.schema_new.SchemaDescriptorFactory.forLabel;
 import static org.neo4j.kernel.api.schema_new.SchemaDescriptorPredicates.hasLabel;
+import static org.neo4j.kernel.impl.api.store.DegreeCounter.countByFirstPrevPointer;
+import static org.neo4j.kernel.impl.store.record.Record.NO_NEXT_RELATIONSHIP;
 import static org.neo4j.kernel.impl.store.record.RecordLoad.CHECK;
+import static org.neo4j.kernel.impl.store.record.RecordLoad.FORCE;
 import static org.neo4j.register.Registers.newDoubleLongRegister;
 
 /**
@@ -94,6 +106,7 @@ public class StorageLayer implements StoreReadLayer
     private final IndexingService indexService;
     private final NodeStore nodeStore;
     private final RelationshipStore relationshipStore;
+    private final RecordStore<RelationshipGroupRecord> relationshipGroupStore;
     private final SchemaStorage schemaStorage;
     private final CountsTracker counts;
     private final PropertyLoader propertyLoader;
@@ -112,6 +125,7 @@ public class StorageLayer implements StoreReadLayer
         this.statementProvider = storeStatementSupplier;
         this.nodeStore = neoStores.getNodeStore();
         this.relationshipStore = neoStores.getRelationshipStore();
+        this.relationshipGroupStore = neoStores.getRelationshipGroupStore();
         this.counts = neoStores.getCounts();
         this.propertyLoader = new PropertyLoader( neoStores );
         this.schemaCache = schemaCache;
@@ -520,6 +534,92 @@ public class StorageLayer implements StoreReadLayer
     public boolean nodeExists( long id )
     {
         return nodeStore.isInUse( id );
+    }
+
+    @Override
+    public void degrees( StorageStatement statement, NodeItem nodeItem, DegreeVisitor visitor )
+    {
+        if ( nodeItem.isDense() )
+        {
+            visitDenseNode( statement, nodeItem, visitor );
+        }
+        else
+        {
+            visitNode( nodeItem, visitor );
+        }
+    }
+
+    private void visitNode( NodeItem nodeItem, DegreeVisitor visitor )
+    {
+        try ( Cursor<RelationshipItem> relationships = nodeItem.relationships( Direction.BOTH ) )
+        {
+            while ( relationships.next() )
+            {
+                RelationshipItem rel = relationships.get();
+                int type = rel.type();
+                switch ( directionOf( nodeItem.id(), rel.id(), rel.startNode(), rel.endNode() ) )
+                {
+                case OUTGOING:
+                    visitor.visitDegree( type, 1, 0 );
+                    break;
+                case INCOMING:
+                    visitor.visitDegree( type, 0, 1 );
+                    break;
+                case BOTH:
+                    visitor.visitDegree( type, 1, 1 );
+                    break;
+                default:
+                    throw new IllegalStateException( "You found the missing direction!" );
+                }
+            }
+        }
+    }
+
+    private void visitDenseNode( StorageStatement statement, NodeItem nodeItem, DegreeVisitor visitor )
+    {
+        RelationshipGroupRecord relationshipGroupRecord = relationshipGroupStore.newRecord();
+        RecordCursor<RelationshipGroupRecord> relationshipGroupCursor = statement.recordCursors().relationshipGroup();
+        RelationshipRecord relationshipRecord = relationshipStore.newRecord();
+        RecordCursor<RelationshipRecord> relationshipCursor = statement.recordCursors().relationship();
+
+        long groupId = nodeItem.nextGroupId();
+        while ( groupId != NO_NEXT_RELATIONSHIP.longValue() )
+        {
+            relationshipGroupCursor.next( groupId, relationshipGroupRecord, FORCE );
+            if ( relationshipGroupRecord.inUse() )
+            {
+                int type = relationshipGroupRecord.getType();
+
+                long firstLoop = relationshipGroupRecord.getFirstLoop();
+                long firstOut = relationshipGroupRecord.getFirstOut();
+                long firstIn = relationshipGroupRecord.getFirstIn();
+
+                long loop = countByFirstPrevPointer( firstLoop, relationshipCursor, nodeItem.id(), relationshipRecord );
+                long outgoing =
+                        countByFirstPrevPointer( firstOut, relationshipCursor, nodeItem.id(), relationshipRecord ) +
+                                loop;
+                long incoming =
+                        countByFirstPrevPointer( firstIn, relationshipCursor, nodeItem.id(), relationshipRecord ) +
+                                loop;
+                visitor.visitDegree( type, outgoing, incoming );
+            }
+            groupId = relationshipGroupRecord.getNext();
+        }
+    }
+
+    private Direction directionOf( long nodeId, long relationshipId, long startNode, long endNode )
+    {
+        if ( startNode == nodeId )
+        {
+            return endNode == nodeId ? Direction.BOTH : Direction.OUTGOING;
+        }
+        if ( endNode == nodeId )
+        {
+            return Direction.INCOMING;
+        }
+        throw new InvalidRecordException(
+                "Node " + nodeId + " neither start nor end node of relationship " + relationshipId +
+                        " with startNode:" + startNode + " and endNode:" + endNode );
     }
 
     private static Iterator<IndexDescriptor> toIndexDescriptors( Iterable<IndexRule> rules )

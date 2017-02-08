@@ -21,13 +21,11 @@ package org.neo4j.kernel.impl.api.cursor;
 
 import java.util.function.Consumer;
 
-import org.neo4j.collection.primitive.PrimitiveIntIterator;
 import org.neo4j.collection.primitive.PrimitiveIntSet;
 import org.neo4j.cursor.Cursor;
 import org.neo4j.kernel.api.StatementConstants;
 import org.neo4j.kernel.api.cursor.EntityItemHelper;
 import org.neo4j.kernel.api.txstate.TransactionState;
-import org.neo4j.storageengine.api.DegreeItem;
 import org.neo4j.storageengine.api.Direction;
 import org.neo4j.storageengine.api.NodeItem;
 import org.neo4j.storageengine.api.PropertyItem;
@@ -36,6 +34,7 @@ import org.neo4j.storageengine.api.txstate.NodeState;
 
 import static org.neo4j.collection.primitive.Primitive.intSet;
 import static org.neo4j.collection.primitive.PrimitiveIntCollections.filter;
+import static org.neo4j.kernel.impl.store.record.Record.NO_NEXT_RELATIONSHIP;
 import static org.neo4j.kernel.impl.util.Cursors.empty;
 
 /**
@@ -200,69 +199,14 @@ public class TxSingleNodeCursor extends EntityItemHelper implements Cursor<NodeI
     }
 
     @Override
-    public Cursor<DegreeItem> degrees()
-    {
-        return new DegreeCursor( relationshipTypes().iterator() );
-    }
-
-    @Override
     public boolean isDense()
     {
         return cursor.get().isDense();
     }
 
-    private class DegreeCursor implements Cursor<DegreeItem>, DegreeItem
+    @Override
+    public long nextGroupId()
     {
-        private final PrimitiveIntIterator relTypeCursor;
-        private int type;
-        private long outgoing;
-        private long incoming;
-
-        DegreeCursor( PrimitiveIntIterator relTypeCursor )
-        {
-            this.relTypeCursor = relTypeCursor;
-        }
-
-        @Override
-        public boolean next()
-        {
-            boolean hasNext = relTypeCursor.hasNext();
-            if ( hasNext )
-            {
-                type = relTypeCursor.next();
-                outgoing = degree( Direction.OUTGOING, type );
-                incoming = degree( Direction.INCOMING, type );
-            }
-            return hasNext;
-        }
-
-        @Override
-        public void close()
-        {
-        }
-
-        @Override
-        public int type()
-        {
-            return type;
-        }
-
-        @Override
-        public long outgoing()
-        {
-            return outgoing;
-        }
-
-        @Override
-        public long incoming()
-        {
-            return incoming;
-        }
-
-        @Override
-        public DegreeItem get()
-        {
-            return this;
-        }
+        return nodeIsAddedInThisTx ? NO_NEXT_RELATIONSHIP.longValue() : cursor.get().nextGroupId();
     }
 }

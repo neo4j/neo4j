@@ -17,9 +17,13 @@
  * You should have received a copy of the GNU General Public License
  * along with this program.  If not, see <http://www.gnu.org/licenses/>.
  */
-package org.neo4j.kernel.impl.api;
+package org.neo4j.kernel.impl.api.store;
 
-public interface DegreeVisitor
+import org.neo4j.graphdb.RelationshipType;
+
+public enum TestRelType implements RelationshipType
 {
-    void visitDegree( int type, long outgoing, long incoming );
+    IN,
+    OUT,
+    LOOP
 }

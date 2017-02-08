@@ -24,15 +24,12 @@ import org.junit.Rule;
 import org.junit.Test;
 import org.junit.rules.RuleChain;
 
-import java.util.HashSet;
 import java.util.Set;
 import java.util.function.Consumer;
 import java.util.function.LongConsumer;
 
-import org.neo4j.cursor.Cursor;
 import org.neo4j.graphdb.DependencyResolver;
 import org.neo4j.graphdb.Node;
-import org.neo4j.graphdb.RelationshipType;
 import org.neo4j.graphdb.Transaction;
 import org.neo4j.graphdb.factory.GraphDatabaseSettings;
 import org.neo4j.kernel.impl.core.RelationshipTypeTokenHolder;
@@ -47,12 +44,10 @@ import org.neo4j.kernel.impl.store.record.Record;
 import org.neo4j.kernel.impl.store.record.RecordLoad;
 import org.neo4j.kernel.impl.store.record.RelationshipGroupRecord;
 import org.neo4j.kernel.impl.store.record.RelationshipRecord;
-import org.neo4j.storageengine.api.DegreeItem;
 import org.neo4j.test.rule.DatabaseRule;
 import org.neo4j.test.rule.ImpermanentDatabaseRule;
 import org.neo4j.test.rule.RandomRule;
 
-import static java.util.Arrays.asList;
 import static java.util.Collections.emptySet;
 import static org.junit.Assert.assertEquals;
 import static org.junit.Assert.assertNotEquals;
@@ -85,28 +80,21 @@ public class StoreSingleNodeCursorTest
     @Test
     public void relationshipTypesForDenseNodeWithPartiallyDeletedRelGroupChain() throws Exception
     {
-        testRelationshipTypesForDenseNode(
-                this::noNodeChange,
+        testRelationshipTypesForDenseNode( this::noNodeChange,
                 asSet( TestRelType.IN, TestRelType.OUT, TestRelType.LOOP ) );
 
-        testRelationshipTypesForDenseNode(
-                nodeId -> markRelGroupNotInUse( nodeId, TestRelType.IN ),
+        testRelationshipTypesForDenseNode( nodeId -> markRelGroupNotInUse( nodeId, TestRelType.IN ),
                 asSet( TestRelType.OUT, TestRelType.LOOP ) );
-        testRelationshipTypesForDenseNode(
-                nodeId -> markRelGroupNotInUse( nodeId, TestRelType.OUT ),
+        testRelationshipTypesForDenseNode( nodeId -> markRelGroupNotInUse( nodeId, TestRelType.OUT ),
                 asSet( TestRelType.IN, TestRelType.LOOP ) );
-        testRelationshipTypesForDenseNode(
-                nodeId -> markRelGroupNotInUse( nodeId, TestRelType.LOOP ),
+        testRelationshipTypesForDenseNode( nodeId -> markRelGroupNotInUse( nodeId, TestRelType.LOOP ),
                 asSet( TestRelType.IN, TestRelType.OUT ) );
 
-        testRelationshipTypesForDenseNode(
-                nodeId -> markRelGroupNotInUse( nodeId, TestRelType.IN, TestRelType.OUT ),
+        testRelationshipTypesForDenseNode( nodeId -> markRelGroupNotInUse( nodeId, TestRelType.IN, TestRelType.OUT ),
                 asSet( TestRelType.LOOP ) );
-        testRelationshipTypesForDenseNode(
-                nodeId -> markRelGroupNotInUse( nodeId, TestRelType.IN, TestRelType.LOOP ),
+        testRelationshipTypesForDenseNode( nodeId -> markRelGroupNotInUse( nodeId, TestRelType.IN, TestRelType.LOOP ),
                 asSet( TestRelType.OUT ) );
-        testRelationshipTypesForDenseNode(
-                nodeId -> markRelGroupNotInUse( nodeId, TestRelType.OUT, TestRelType.LOOP ),
+        testRelationshipTypesForDenseNode( nodeId -> markRelGroupNotInUse( nodeId, TestRelType.OUT, TestRelType.LOOP ),
                 asSet( TestRelType.IN ) );
 
         testRelationshipTypesForDenseNode(
@@ -117,8 +105,7 @@ public class StoreSingleNodeCursorTest
     @Test
     public void relationshipTypesForDenseNodeWithPartiallyDeletedRelChains() throws Exception
     {
-        testRelationshipTypesForDenseNode(
-                this::markRandomRelsNotInUse,
+        testRelationshipTypesForDenseNode( this::markRandomRelsNotInUse,
                 asSet( TestRelType.IN, TestRelType.OUT, TestRelType.LOOP ) );
     }
 
@@ -164,12 +151,9 @@ public class StoreSingleNodeCursorTest
         testDegreeByDirectionAndTypeForDenseNodeWithPartiallyDeletedRelGroupChain( TestRelType.OUT );
         testDegreeByDirectionAndTypeForDenseNodeWithPartiallyDeletedRelGroupChain( TestRelType.LOOP );
 
-        testDegreeByDirectionAndTypeForDenseNodeWithPartiallyDeletedRelGroupChain( TestRelType.IN,
-                TestRelType.OUT );
-        testDegreeByDirectionAndTypeForDenseNodeWithPartiallyDeletedRelGroupChain( TestRelType.OUT,
-                TestRelType.LOOP );
-        testDegreeByDirectionAndTypeForDenseNodeWithPartiallyDeletedRelGroupChain( TestRelType.IN,
-                TestRelType.LOOP );
+        testDegreeByDirectionAndTypeForDenseNodeWithPartiallyDeletedRelGroupChain( TestRelType.IN, TestRelType.OUT );
+        testDegreeByDirectionAndTypeForDenseNodeWithPartiallyDeletedRelGroupChain( TestRelType.OUT, TestRelType.LOOP );
+        testDegreeByDirectionAndTypeForDenseNodeWithPartiallyDeletedRelGroupChain( TestRelType.IN, TestRelType.LOOP );
 
         testDegreeByDirectionAndTypeForDenseNodeWithPartiallyDeletedRelGroupChain( TestRelType.IN, TestRelType.OUT,
                 TestRelType.LOOP );
@@ -189,39 +173,6 @@ public class StoreSingleNodeCursorTest
         testDegreeByDirectionAndTypeForDenseNodeWithPartiallyDeletedRelChains( true, false, true );
 
         testDegreeByDirectionAndTypeForDenseNodeWithPartiallyDeletedRelChains( true, true, true );
-    }
-
-    @Test
-    public void degreesForDenseNodeWithPartiallyDeletedRelGroupChain() throws Exception
-    {
-        testDegreesForDenseNodeWithPartiallyDeletedRelGroupChain();
-
-        testDegreesForDenseNodeWithPartiallyDeletedRelGroupChain( TestRelType.IN );
-        testDegreesForDenseNodeWithPartiallyDeletedRelGroupChain( TestRelType.OUT );
-        testDegreesForDenseNodeWithPartiallyDeletedRelGroupChain( TestRelType.LOOP );
-
-        testDegreesForDenseNodeWithPartiallyDeletedRelGroupChain( TestRelType.IN, TestRelType.OUT );
-        testDegreesForDenseNodeWithPartiallyDeletedRelGroupChain( TestRelType.OUT, TestRelType.LOOP );
-        testDegreesForDenseNodeWithPartiallyDeletedRelGroupChain( TestRelType.IN, TestRelType.LOOP );
-
-        testDegreesForDenseNodeWithPartiallyDeletedRelGroupChain( TestRelType.IN, TestRelType.OUT,
-                TestRelType.LOOP );
-    }
-
-    @Test
-    public void degreesForDenseNodeWithPartiallyDeletedRelChains() throws Exception
-    {
-        testDegreesForDenseNodeWithPartiallyDeletedRelChains( false, false, false );
-
-        testDegreesForDenseNodeWithPartiallyDeletedRelChains( true, false, false );
-        testDegreesForDenseNodeWithPartiallyDeletedRelChains( false, true, false );
-        testDegreesForDenseNodeWithPartiallyDeletedRelChains( false, false, true );
-
-        testDegreesForDenseNodeWithPartiallyDeletedRelChains( true, true, false );
-        testDegreesForDenseNodeWithPartiallyDeletedRelChains( true, true, true );
-        testDegreesForDenseNodeWithPartiallyDeletedRelChains( true, false, true );
-
-        testDegreesForDenseNodeWithPartiallyDeletedRelChains( true, true, true );
     }
 
     private void testRelationshipTypesForDenseNode( LongConsumer nodeChanger, Set<TestRelType> expectedTypes )
@@ -377,88 +328,6 @@ public class StoreSingleNodeCursorTest
         assertEquals( loopRelCount, cursor.degree( BOTH, relTypeId( TestRelType.LOOP ) ) );
     }
 
-    private void testDegreesForDenseNodeWithPartiallyDeletedRelGroupChain( TestRelType... typesToDelete )
-            throws Exception
-    {
-        int inRelCount = randomRelCount();
-        int outRelCount = randomRelCount();
-        int loopRelCount = randomRelCount();
-
-        long nodeId = createNode( inRelCount, outRelCount, loopRelCount );
-        StoreSingleNodeCursor cursor = newCursor( nodeId );
-
-        for ( TestRelType type : typesToDelete )
-        {
-            markRelGroupNotInUse( nodeId, type );
-            switch ( type )
-            {
-            case IN:
-                inRelCount = 0;
-                break;
-            case OUT:
-                outRelCount = 0;
-                break;
-            case LOOP:
-                loopRelCount = 0;
-                break;
-            default:
-                throw new IllegalArgumentException( "Unknown type: " + type );
-            }
-        }
-
-        Set<TestDegreeItem> expectedDegrees = new HashSet<>();
-        if ( outRelCount != 0 )
-        {
-            expectedDegrees.add( new TestDegreeItem( relTypeId( TestRelType.OUT ), outRelCount, 0 ) );
-        }
-        if ( inRelCount != 0 )
-        {
-            expectedDegrees.add( new TestDegreeItem( relTypeId( TestRelType.IN ), 0, inRelCount ) );
-        }
-        if ( loopRelCount != 0 )
-        {
-            expectedDegrees.add( new TestDegreeItem( relTypeId( TestRelType.LOOP ), loopRelCount, loopRelCount ) );
-        }
-
-        Set<TestDegreeItem> actualDegrees = degrees( cursor );
-
-        assertEquals( expectedDegrees, actualDegrees );
-    }
-
-    private void testDegreesForDenseNodeWithPartiallyDeletedRelChains( boolean modifyInChain, boolean modifyOutChain,
-            boolean modifyLoopChain )
-    {
-        int inRelCount = randomRelCount();
-        int outRelCount = randomRelCount();
-        int loopRelCount = randomRelCount();
-
-        long nodeId = createNode( inRelCount, outRelCount, loopRelCount );
-        StoreSingleNodeCursor cursor = newCursor( nodeId );
-
-        if ( modifyInChain )
-        {
-            markRandomRelsInGroupNotInUse( nodeId, TestRelType.IN );
-        }
-        if ( modifyOutChain )
-        {
-            markRandomRelsInGroupNotInUse( nodeId, TestRelType.OUT );
-        }
-        if ( modifyLoopChain )
-        {
-            markRandomRelsInGroupNotInUse( nodeId, TestRelType.LOOP );
-        }
-
-        Set<TestDegreeItem> expectedDegrees = new HashSet<>( asList(
-                new TestDegreeItem( relTypeId( TestRelType.OUT ), outRelCount, 0 ),
-                new TestDegreeItem( relTypeId( TestRelType.IN ), 0, inRelCount ),
-                new TestDegreeItem( relTypeId( TestRelType.LOOP ), loopRelCount, loopRelCount )
-        ) );
-
-        Set<TestDegreeItem> actualDegrees = degrees( cursor );
-
-        assertEquals( expectedDegrees, actualDegrees );
-    }
-
     private Set<TestRelType> relTypes( StoreSingleNodeCursor cursor )
     {
         return mapToSet( cursor.relationshipTypes().iterator(), this::relTypeForId );
@@ -486,19 +355,6 @@ public class StoreSingleNodeCursorTest
         int id = relTypeHolder.getIdByName( type.name() );
         assertNotEquals( NO_ID, id );
         return id;
-    }
-
-    private Set<TestDegreeItem> degrees( StoreSingleNodeCursor cursor )
-    {
-        Set<TestDegreeItem> degrees = new HashSet<>();
-
-        Cursor<DegreeItem> degreesCursor = cursor.degrees();
-        while ( degreesCursor.next() )
-        {
-            degrees.add( new TestDegreeItem( degreesCursor.get() ) );
-        }
-
-        return degrees;
     }
 
     private long createNode( int inRelCount, int outRelCount, int loopRelCount )
@@ -660,12 +516,5 @@ public class StoreSingleNodeCursorTest
     private int randomRelCount()
     {
         return RELATIONSHIPS_COUNT + random.nextInt( 20 );
-    }
-
-    private enum TestRelType implements RelationshipType
-    {
-        IN,
-        OUT,
-        LOOP
     }
 }

@@ -22,13 +22,11 @@ package org.neo4j.kernel.impl.api.store;
 import org.neo4j.kernel.impl.store.InvalidRecordException;
 import org.neo4j.kernel.impl.store.RecordCursor;
 import org.neo4j.kernel.impl.store.RecordCursors;
-import org.neo4j.kernel.impl.store.record.NodeRecord;
 import org.neo4j.kernel.impl.store.record.Record;
 import org.neo4j.kernel.impl.store.record.RelationshipGroupRecord;
 import org.neo4j.kernel.impl.store.record.RelationshipRecord;
 import org.neo4j.storageengine.api.Direction;
 
-import static org.neo4j.kernel.impl.store.record.RecordLoad.CHECK;
 import static org.neo4j.kernel.impl.store.record.RecordLoad.FORCE;
 
 class DegreeCounter
@@ -38,34 +36,34 @@ class DegreeCounter
     }
 
     static long countByFirstPrevPointer( long relationshipId, RecordCursor<RelationshipRecord> cursor,
-            NodeRecord nodeRecord, RelationshipRecord relationshipRecord )
+            long nodeId, RelationshipRecord relationshipRecord )
     {
-        if ( relationshipId == Record.NO_NEXT_RELATIONSHIP.intValue() )
+        if ( relationshipId == Record.NO_NEXT_RELATIONSHIP.longValue() )
         {
             return 0;
         }
         cursor.next( relationshipId, relationshipRecord, FORCE );
-        if ( relationshipRecord.getFirstNode() == nodeRecord.getId() )
+        if ( relationshipRecord.getFirstNode() == nodeId )
         {
             return relationshipRecord.getFirstPrevRel();
         }
-        if ( relationshipRecord.getSecondNode() == nodeRecord.getId() )
+        if ( relationshipRecord.getSecondNode() == nodeId )
         {
             return relationshipRecord.getSecondPrevRel();
         }
-        throw new InvalidRecordException( "Node " + nodeRecord.getId() + " neither start nor end node of " + relationshipRecord );
+        throw new InvalidRecordException( "Node " + nodeId + " neither start nor end node of " + relationshipRecord );
     }
 
-    static int countRelationshipsInGroup( long groupId, Direction direction, Integer type, NodeRecord nodeRecord,
+    static int countRelationshipsInGroup( long groupId, Direction direction, Integer type, long nodeId,
             RelationshipRecord relationshipRecord, RelationshipGroupRecord groupRecord, RecordCursors cursors )
     {
         int count = 0;
-        while ( groupId != Record.NO_NEXT_RELATIONSHIP.intValue() )
+        while ( groupId != Record.NO_NEXT_RELATIONSHIP.longValue() )
         {
             boolean groupRecordInUse = cursors.relationshipGroup().next( groupId, groupRecord, FORCE );
             if ( groupRecordInUse && ( type == null || groupRecord.getType() == type ) )
             {
-                count += nodeDegreeByDirection( direction, nodeRecord, relationshipRecord, groupRecord, cursors );
+                count += nodeDegreeByDirection( direction, nodeId, relationshipRecord, groupRecord, cursors );
                 if ( type != null )
                 {
                     // we have read the only type we were interested on, so break the look
@@ -77,29 +75,30 @@ class DegreeCounter
         return count;
     }
 
-    private static long nodeDegreeByDirection( Direction direction, NodeRecord nodeRecord,
+    private static long nodeDegreeByDirection( Direction direction, long nodeId,
             RelationshipRecord relationshipRecord, RelationshipGroupRecord groupRecord, RecordCursors cursors )
     {
+        long firstLoop = groupRecord.getFirstLoop();
         RecordCursor<RelationshipRecord> cursor = cursors.relationship();
-        long loopCount = countByFirstPrevPointer( groupRecord.getFirstLoop(), cursor, nodeRecord, relationshipRecord );
+        long loopCount = countByFirstPrevPointer( firstLoop, cursor, nodeId, relationshipRecord );
         switch ( direction )
         {
         case OUTGOING:
         {
             long firstOut = groupRecord.getFirstOut();
-            return countByFirstPrevPointer( firstOut, cursor, nodeRecord, relationshipRecord ) + loopCount;
+            return countByFirstPrevPointer( firstOut, cursor, nodeId, relationshipRecord ) + loopCount;
         }
         case INCOMING:
         {
             long firstIn = groupRecord.getFirstIn();
-            return countByFirstPrevPointer( firstIn, cursor, nodeRecord, relationshipRecord ) + loopCount;
+            return countByFirstPrevPointer( firstIn, cursor, nodeId, relationshipRecord ) + loopCount;
         }
         case BOTH:
         {
             long firstOut = groupRecord.getFirstOut();
             long firstIn = groupRecord.getFirstIn();
-            return countByFirstPrevPointer( firstOut, cursor, nodeRecord, relationshipRecord ) +
-                    countByFirstPrevPointer( firstIn, cursor, nodeRecord, relationshipRecord ) + loopCount;
+            return countByFirstPrevPointer( firstOut, cursor, nodeId, relationshipRecord ) +
+                    countByFirstPrevPointer( firstIn, cursor, nodeId, relationshipRecord ) + loopCount;
         }
         default:
             throw new IllegalArgumentException( direction.name() );

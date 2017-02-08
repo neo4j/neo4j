@@ -19,17 +19,14 @@
  */
 package org.neo4j.kernel.impl.api.store;
 
-import org.neo4j.collection.primitive.PrimitiveIntObjectMap;
 import org.neo4j.cursor.Cursor;
 import org.neo4j.kernel.impl.locking.Lock;
 import org.neo4j.kernel.impl.locking.LockService;
 import org.neo4j.kernel.impl.store.RecordCursors;
 import org.neo4j.kernel.impl.store.RecordStore;
 import org.neo4j.kernel.impl.store.RelationshipStore;
-import org.neo4j.kernel.impl.store.record.NodeRecord;
 import org.neo4j.kernel.impl.store.record.RelationshipGroupRecord;
 import org.neo4j.kernel.impl.util.InstanceCache;
-import org.neo4j.storageengine.api.DegreeItem;
 import org.neo4j.storageengine.api.Direction;
 import org.neo4j.storageengine.api.PropertyItem;
 import org.neo4j.storageengine.api.RelationshipItem;
@@ -40,15 +37,10 @@ class NodeExploringCursors
     private final InstanceCache<StoreSinglePropertyCursor> singlePropertyCursorCache;
     private final InstanceCache<StorePropertyCursor> propertyCursorCache;
 
-    private final RelationshipStore relationshipStore;
-    private final RecordStore<RelationshipGroupRecord> relationshipGroupStore;
-
     NodeExploringCursors( final RecordCursors cursors, final LockService lockService,
             final RelationshipStore relationshipStore,
             final RecordStore<RelationshipGroupRecord> relationshipGroupStore )
     {
-        this.relationshipStore = relationshipStore;
-        this.relationshipGroupStore = relationshipGroupStore;
         nodeRelationshipCursorCache = new InstanceCache<StoreNodeRelationshipCursor>()
         {
             @Override
@@ -95,16 +87,5 @@ class NodeExploringCursors
             int... relTypes )
     {
         return nodeRelationshipCursorCache.get().init( dense, nextRel, id, direction, relTypes );
-    }
-
-    public Cursor<DegreeItem> degrees( PrimitiveIntObjectMap<int[]> degrees )
-    {
-        return new DegreeItemCursor( degrees );
-    }
-
-    public Cursor<DegreeItem> degrees( long groupId, NodeRecord nodeRecord, RecordCursors recordCursors )
-    {
-        return new DegreeItemDenseCursor( groupId, nodeRecord, relationshipGroupStore.newRecord(),
-                relationshipStore.newRecord(), recordCursors );
     }
 }

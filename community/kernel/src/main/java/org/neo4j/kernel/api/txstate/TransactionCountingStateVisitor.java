@@ -20,10 +20,8 @@
 package org.neo4j.kernel.api.txstate;
 
 import java.util.Set;
-import java.util.function.IntConsumer;
 
 import org.neo4j.collection.primitive.PrimitiveIntCollection;
-import org.neo4j.collection.primitive.PrimitiveIntCollections;
 import org.neo4j.collection.primitive.PrimitiveIntSet;
 import org.neo4j.collection.primitive.PrimitiveIntVisitor;
 import org.neo4j.cursor.Cursor;
@@ -37,7 +35,6 @@ import org.neo4j.storageengine.api.StoreReadLayer;
 import org.neo4j.storageengine.api.txstate.ReadableTransactionState;
 import org.neo4j.storageengine.api.txstate.TxStateVisitor;
 
-import static org.neo4j.collection.primitive.PrimitiveIntCollections.consume;
 import static org.neo4j.kernel.api.ReadOperations.ANY_LABEL;
 import static org.neo4j.kernel.api.ReadOperations.ANY_RELATIONSHIP_TYPE;
 
@@ -83,9 +80,8 @@ public class TransactionCountingStateVisitor extends TxStateVisitor.Delegator
             return false;
         } );
 
-        node.degrees().forAll(
-                degree -> updateRelationshipsCountsFromDegrees( labelIds, degree.type(), -degree.outgoing(),
-                        -degree.incoming() ) );
+        storeLayer.degrees( statement, node,
+                ( type, out, in ) -> updateRelationshipsCountsFromDegrees( labelIds, type, -out, -in ) );
     }
 
     @Override
@@ -128,18 +124,12 @@ public class TransactionCountingStateVisitor extends TxStateVisitor.Delegator
             }
             // get the relationship counts from *before* this transaction,
             // the relationship changes will compensate for what happens during the transaction
-            statement.acquireSingleNodeCursor( id ).forAll( node -> node.degrees().forAll( degree ->
-            {
-                for ( Integer label : added )
-                {
-                    updateRelationshipsCountsFromDegrees( degree.type(), label, degree.outgoing(), degree.incoming() );
-                }
-                for ( Integer label : removed )
-                {
-                    updateRelationshipsCountsFromDegrees( degree.type(), label, -degree.outgoing(),
-                            -degree.incoming() );
-                }
-            } ) );
+            statement.acquireSingleNodeCursor( id )
+                    .forAll( node -> storeLayer.degrees( statement, node, ( type, out, in ) ->
+                    {
+                        added.forEach( label -> updateRelationshipsCountsFromDegrees( type, label, out, in ) );
+                        removed.forEach( label -> updateRelationshipsCountsFromDegrees( type, label, -out, -in ) );
+                    } ) );
         }
         super.visitNodeLabelChanges( id, added, removed );
     }

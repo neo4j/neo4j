@@ -22,6 +22,8 @@ package org.neo4j.storageengine.api;
 import org.neo4j.cursor.Cursor;
 import org.neo4j.kernel.api.exceptions.index.IndexNotFoundKernelException;
 import org.neo4j.kernel.api.schema.IndexDescriptor;
+import org.neo4j.kernel.impl.store.RecordCursor;
+import org.neo4j.kernel.impl.store.RecordCursors;
 import org.neo4j.storageengine.api.schema.IndexReader;
 import org.neo4j.storageengine.api.schema.LabelScanReader;
 
@@ -124,4 +126,11 @@ public interface StorageStatement extends AutoCloseable
      * @throws IndexNotFoundKernelException if no such index exists.
      */
     IndexReader getFreshIndexReader( IndexDescriptor index ) throws IndexNotFoundKernelException;
+
+    /**
+     * Access to low level record cursors
+     *
+     * @return record cursors
+     */
+    RecordCursors recordCursors();
 }
