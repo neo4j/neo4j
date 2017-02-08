@@ -25,6 +25,7 @@ import org.neo4j.cypher.internal.compiler.v3_1.commands.{QueryExpression, RangeQ
 import org.neo4j.cypher.internal.compiler.v3_1.executionplan.{Effects, ReadsGivenNodeProperty, ReadsNodesWithLabels}
 import org.neo4j.cypher.internal.compiler.v3_1.planDescription.InternalPlanDescription.Arguments.{Index, InequalityIndex, PrefixIndex}
 import org.neo4j.cypher.internal.compiler.v3_1.planDescription.{NoChildren, PlanDescriptionImpl}
+import org.neo4j.cypher.internal.compiler.v3_1.spi.SchemaTypes.IndexDescriptor
 import org.neo4j.cypher.internal.compiler.v3_1.symbols.SymbolTable
 import org.neo4j.cypher.internal.frontend.v3_1.InternalException
 import org.neo4j.cypher.internal.frontend.v3_1.ast.{LabelToken, PropertyKeyToken}
@@ -38,7 +39,7 @@ case class NodeIndexSeekPipe(ident: String,
                             (val estimatedCardinality: Option[Double] = None)(implicit pipeMonitor: PipeMonitor)
   extends Pipe with RonjaPipe {
 
-  private val descriptor = new IndexDescriptor(label.nameId.id, propertyKey.nameId.id)
+  private val descriptor = IndexDescriptor(label.nameId.id, propertyKey.nameId.id)
 
   private val indexFactory = indexMode.indexFactory(descriptor)
 
