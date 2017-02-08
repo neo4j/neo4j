@@ -77,7 +77,7 @@ public class HazelcastClusterTopologyTest
         CoreAddresses addresses = extracted.other();
         assertEquals( new AdvertisedSocketAddress( "tx", 1001 ), addresses.getCatchupServer() );
         assertEquals( new AdvertisedSocketAddress( "raft", 2001 ), addresses.getRaftServer() );
-        assertEquals( new AdvertisedSocketAddress( "bolt", 3001 ), addresses.getClientConnectorAddresses().getBoltAddress() );
+        assertEquals( new AdvertisedSocketAddress( "bolt", 3001 ), addresses.connectors().boltAddress() );
     }
 
     @Test
@@ -117,7 +117,7 @@ public class HazelcastClusterTopologyTest
             CoreAddresses coreAddresses = coreMemberMap.get( coreMembers.get( i ) );
             assertEquals( new AdvertisedSocketAddress( "tx", (i + 1) ), coreAddresses.getCatchupServer() );
             assertEquals( new AdvertisedSocketAddress( "raft", (i + 1) ), coreAddresses.getRaftServer() );
-            assertEquals( new AdvertisedSocketAddress( "bolt", (i + 1) ), coreAddresses.getClientConnectorAddresses().getBoltAddress() );
+            assertEquals( new AdvertisedSocketAddress( "bolt", (i + 1) ), coreAddresses.connectors().boltAddress() );
         }
     }
 

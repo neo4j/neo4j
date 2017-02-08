@@ -47,7 +47,7 @@ import static org.hamcrest.Matchers.containsString;
 import static org.junit.Assert.assertEquals;
 import static org.junit.Assert.fail;
 import static org.neo4j.causalclustering.core.CausalClusteringSettings.cluster_allow_reads_on_followers;
-import static org.neo4j.causalclustering.load_balancing.ProcedureNames.GET_SERVERS_V1;
+import static org.neo4j.causalclustering.load_balancing.procedure.ProcedureNames.GET_SERVERS_V1;
 import static org.neo4j.helpers.collection.Iterators.asList;
 import static org.neo4j.kernel.api.proc.ProcedureSignature.procedureName;
 

@@ -19,23 +19,7 @@
  */
 package org.neo4j.causalclustering.discovery;
 
-public class ReadReplicaAddresses implements ClientConnector
+public interface ClientConnector
 {
-    private final ClientConnectorAddresses clientConnectorAddresses;
-
-    ReadReplicaAddresses( ClientConnectorAddresses clientConnectorAddresses )
-    {
-        this.clientConnectorAddresses = clientConnectorAddresses;
-    }
-
-    public ClientConnectorAddresses connectors()
-    {
-        return clientConnectorAddresses;
-    }
-
-    @Override
-    public String toString()
-    {
-        return String.format( "ReadReplicaAddresses{clientConnectorAddresses=%s}", clientConnectorAddresses );
-    }
+    ClientConnectorAddresses connectors();
 }

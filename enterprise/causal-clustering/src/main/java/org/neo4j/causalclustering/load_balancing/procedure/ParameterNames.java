@@ -17,13 +17,13 @@
  * You should have received a copy of the GNU Affero General Public License
  * along with this program. If not, see <http://www.gnu.org/licenses/>.
  */
-package org.neo4j.causalclustering.load_balancing;
+package org.neo4j.causalclustering.load_balancing.procedure;
 
 /**
  * Enumerates the parameter names used for the GetServers
  * procedures in a causal cluster.
  */
-public enum GetServersParameters
+public enum ParameterNames
 {
     /**
      * Type: IN
@@ -58,7 +58,7 @@ public enum GetServersParameters
 
     private final String parameterName;
 
-    GetServersParameters( String parameterName )
+    ParameterNames( String parameterName )
     {
         this.parameterName = parameterName;
     }

@@ -17,7 +17,7 @@
  * You should have received a copy of the GNU Affero General Public License
  * along with this program. If not, see <http://www.gnu.org/licenses/>.
  */
-package org.neo4j.causalclustering.load_balancing;
+package org.neo4j.causalclustering.load_balancing.procedure;
 
 import org.junit.Test;
 import org.junit.runner.RunWith;
@@ -45,7 +45,7 @@ import static org.junit.Assert.assertFalse;
 import static org.junit.runners.Parameterized.Parameters;
 import static org.mockito.Mockito.mock;
 import static org.mockito.Mockito.when;
-import static org.neo4j.causalclustering.discovery.TopologyHelper.adressesForCore;
+import static org.neo4j.causalclustering.discovery.TestTopology.adressesForCore;
 import static org.neo4j.causalclustering.identity.RaftTestMember.member;
 import static org.neo4j.helpers.collection.Iterators.asList;
 import static org.neo4j.logging.NullLogProvider.getInstance;

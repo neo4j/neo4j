@@ -305,7 +305,7 @@ public class ClusterOverviewIT
                     public void describeTo( Description description )
                     {
                         description.appendText( "MemberInfo with addresses: " )
-                                .appendValue( coreClusterMember.clientConnectorAddresses().getBoltAddress() );
+                                .appendValue( coreClusterMember.clientConnectorAddresses().boltAddress() );
                     }
                 }
         ).collect( toList() ) );

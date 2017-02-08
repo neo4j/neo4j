@@ -66,7 +66,7 @@ public class ClientConnectorAddresses implements Iterable<ClientConnectorAddress
         return new ClientConnectorAddresses( connectorUris );
     }
 
-    public AdvertisedSocketAddress getBoltAddress()
+    public AdvertisedSocketAddress boltAddress()
     {
         return connectorUris.stream().filter( connectorUri -> connectorUri.scheme == bolt ).findFirst().orElseThrow(
                 () -> new IllegalArgumentException( "A Bolt connector must be configured to run a cluster" ) )
