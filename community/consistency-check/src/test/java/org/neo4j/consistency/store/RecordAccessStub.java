@@ -333,15 +333,15 @@ public class RecordAccessStub implements RecordAccess
         else if ( newRecord instanceof DynamicRecord )
         {
             DynamicRecord dyn = (DynamicRecord) newRecord;
-            if ( dyn.getType() == PropertyType.STRING.intValue() )
+            if ( dyn.getType() == PropertyType.STRING )
             {
                 add( strings, (DynamicRecord) oldRecord, dyn );
             }
-            else if ( dyn.getType() == PropertyType.ARRAY.intValue() )
+            else if ( dyn.getType() == PropertyType.ARRAY )
             {
                 add( arrays, (DynamicRecord) oldRecord, dyn );
             }
-            else if ( dyn.getType() == SCHEMA_RECORD_TYPE )
+            else if ( dyn.getTypeAsInt() == SCHEMA_RECORD_TYPE )
             {
                 add( schemata, (DynamicRecord) oldRecord, dyn );
             }
@@ -386,15 +386,15 @@ public class RecordAccessStub implements RecordAccess
         else if ( record instanceof DynamicRecord )
         {
             DynamicRecord dyn = (DynamicRecord) record;
-            if ( dyn.getType() == PropertyType.STRING.intValue() )
+            if ( dyn.getType() == PropertyType.STRING )
             {
                 addString( dyn );
             }
-            else if ( dyn.getType() == PropertyType.ARRAY.intValue() )
+            else if ( dyn.getType() == PropertyType.ARRAY )
             {
                 addArray( dyn );
             }
-            else if ( dyn.getType() == SCHEMA_RECORD_TYPE )
+            else if ( dyn.getTypeAsInt() == SCHEMA_RECORD_TYPE )
             {
                 addSchema( dyn );
             }

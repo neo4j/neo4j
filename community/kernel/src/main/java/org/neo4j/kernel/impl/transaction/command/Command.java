@@ -156,7 +156,7 @@ public abstract class Command implements StorageCommand
                 inUse |= Record.FIRST_IN_CHAIN.byteValue();
             }
             channel.putLong( record.getId() )
-                   .putInt( record.getType() )
+                   .putInt( record.getTypeAsInt() )
                    .put( inUse )
                    .putInt( record.getLength() )
                    .putLong( record.getNextBlock() );
@@ -168,7 +168,7 @@ public abstract class Command implements StorageCommand
         {
             byte inUse = Record.NOT_IN_USE.byteValue();
             channel.putLong( record.getId() )
-                   .putInt( record.getType() )
+                   .putInt( record.getTypeAsInt() )
                    .put( inUse );
         }
     }

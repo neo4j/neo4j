@@ -25,11 +25,13 @@ import org.junit.runners.JUnit4;
 import org.junit.runners.Suite;
 
 import org.neo4j.consistency.report.ConsistencyReport;
+import org.neo4j.kernel.impl.store.PropertyType;
 import org.neo4j.kernel.impl.store.RecordStore;
 import org.neo4j.kernel.impl.store.SchemaStore;
 import org.neo4j.kernel.impl.store.format.standard.DynamicRecordFormat;
 import org.neo4j.kernel.impl.store.record.DynamicRecord;
 
+import static org.junit.Assert.assertEquals;
 import static org.mockito.Mockito.mock;
 import static org.mockito.Mockito.verify;
 import static org.mockito.Mockito.verifyNoMoreInteractions;
@@ -184,6 +186,27 @@ public abstract class DynamicRecordCheckTest
         // then
         verify( report ).emptyNextBlock( next );
         verifyNoMoreInteractions( report );
+    }
+
+    @Test
+    public void shouldReportCorrectTypeBasedOnProperBitsOnly() throws Exception
+    {
+        // given
+        DynamicRecord property = inUse( record( 42 ) );
+        // Type is 9, which is string, but has an extra bit set at a higher up position
+        int type = PropertyType.STRING.intValue();
+        type = type | 0b10000000;
+
+        property.setType( type );
+
+        // when
+        PropertyType reportedType = property.getType();
+
+        // then
+        // The type must be string
+        assertEquals( PropertyType.STRING, reportedType );
+        // but the type data must be preserved
+        assertEquals( type, property.getTypeAsInt() );
     }
 
     // utilities

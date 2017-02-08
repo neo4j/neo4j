@@ -140,11 +140,12 @@ public class PropertyStore extends CommonAbstractStore<PropertyRecord,NoStoreHea
     {
         for ( DynamicRecord valueRecord : records )
         {
-            if ( valueRecord.getType() == PropertyType.STRING.intValue() )
+            PropertyType recordType = valueRecord.getType();
+            if ( recordType == PropertyType.STRING )
             {
                 stringStore.updateRecord( valueRecord );
             }
-            else if ( valueRecord.getType() == PropertyType.ARRAY.intValue() )
+            else if ( recordType == PropertyType.ARRAY )
             {
                 arrayStore.updateRecord( valueRecord );
             }
