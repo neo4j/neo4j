@@ -29,14 +29,13 @@ import org.neo4j.bolt.security.auth.AuthenticationException;
 import org.neo4j.bolt.security.auth.AuthenticationResult;
 import org.neo4j.bolt.v1.runtime.spi.BoltResult;
 import org.neo4j.function.ThrowingConsumer;
-import org.neo4j.graphdb.security.AuthorizationExpiredException;
 import org.neo4j.graphdb.security.AuthProviderTimeoutException;
+import org.neo4j.graphdb.security.AuthorizationExpiredException;
 import org.neo4j.kernel.api.bolt.ManagedBoltStateMachine;
 import org.neo4j.kernel.api.exceptions.KernelException;
 import org.neo4j.kernel.api.exceptions.Status;
 import org.neo4j.kernel.api.exceptions.TransactionFailureException;
 
-import static java.lang.String.format;
 import static org.neo4j.kernel.api.security.AuthToken.PRINCIPAL;
 
 /**
@@ -659,11 +658,7 @@ public class BoltStateMachine implements AutoCloseable, ManagedBoltStateMachine
 
     private static void fail( BoltStateMachine machine, Neo4jError neo4jError )
     {
-        if ( neo4jError.status().code().classification() == Status.Classification.DatabaseError )
-        {
-            machine.spi.reportError( neo4jError );
-        }
-
+        machine.spi.reportError( neo4jError );
         machine.ctx.markFailed( neo4jError );
     }
 
