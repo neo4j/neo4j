@@ -239,20 +239,6 @@ public class StorageLayer implements StoreReadLayer
         return rule.getId();
     }
 
-//    @Override
-    private IndexRule indexRule( NewIndexDescriptor index, Predicate<IndexRule> filter )
-    {
-        for ( IndexRule rule : schemaCache.indexRules() )
-        {
-            if ( filter.test( rule ) && rule.getSchemaDescriptor().equals( index.schema() ) )
-            {
-                return rule;
-            }
-        }
-
-        return schemaStorage.indexGetForSchema( index.schema(), filter );
-    }
-
     @Override
     public InternalIndexState indexGetState( IndexDescriptor descriptor ) throws IndexNotFoundKernelException
     {
@@ -534,6 +520,19 @@ public class StorageLayer implements StoreReadLayer
         {
             visitNode( nodeItem, visitor );
         }
+    }
+
+    private IndexRule indexRule( NewIndexDescriptor index, Predicate<IndexRule> filter )
+    {
+        for ( IndexRule rule : schemaCache.indexRules() )
+        {
+            if ( filter.test( rule ) && rule.getSchemaDescriptor().equals( index.schema() ) )
+            {
+                return rule;
+            }
+        }
+
+        return schemaStorage.indexGetForSchema( index.schema(), filter );
     }
 
     private void visitNode( NodeItem nodeItem, DegreeVisitor visitor )
