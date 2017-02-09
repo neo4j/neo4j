@@ -242,7 +242,7 @@ public class KernelStatement implements TxStateHolder, Statement
         this.executingQueryList = executingQueryList.remove( executingQuery );
     }
 
-    /* only public for tests */ public StorageStatement getStoreStatement()
+    public StorageStatement getStoreStatement()
     {
         return storeStatement;
     }

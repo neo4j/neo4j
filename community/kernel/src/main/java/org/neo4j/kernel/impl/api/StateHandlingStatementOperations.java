@@ -104,6 +104,7 @@ import org.neo4j.storageengine.api.txstate.ReadableDiffSets;
 
 import static java.lang.String.format;
 import static org.neo4j.collection.primitive.PrimitiveIntCollections.filter;
+import static org.neo4j.collection.primitive.PrimitiveLongCollections.resourceIterator;
 import static org.neo4j.collection.primitive.PrimitiveLongCollections.single;
 import static org.neo4j.helpers.collection.Iterators.filter;
 import static org.neo4j.helpers.collection.Iterators.iterator;
@@ -694,27 +695,25 @@ public class StateHandlingStatementOperations implements
     public long nodeGetFromUniqueIndexSeek( KernelStatement state, NewIndexDescriptor index, Object value )
             throws IndexNotFoundKernelException, IndexBrokenKernelException
     {
-        StorageStatement storeStatement = state.getStoreStatement();
-        IndexReader reader = storeStatement.getFreshIndexReader( index );
+        IndexReader reader = state.getStoreStatement().getFreshIndexReader( index );
 
         /* Here we have an intricate scenario where we need to return the PrimitiveLongIterator
          * since subsequent filtering will happen outside, but at the same time have the ability to
          * close the IndexReader when done iterating over the lookup result. This is because we get
          * a fresh reader that isn't associated with the current transaction and hence will not be
          * automatically closed. */
-        PrimitiveLongResourceIterator committed = PrimitiveLongCollections.resourceIterator( reader.seek( value ), reader );
+        PrimitiveLongResourceIterator committed = resourceIterator( reader.seek( value ), reader );
         PrimitiveLongIterator exactMatches = filterExactIndexMatches( state, index, value, committed );
         PrimitiveLongIterator changesFiltered = filterIndexStateChangesForScanOrSeek( state, index, value,
                 exactMatches );
-        return single( PrimitiveLongCollections.resourceIterator( changesFiltered, committed ), NO_SUCH_NODE );
+        return single( resourceIterator( changesFiltered, committed ), NO_SUCH_NODE );
     }
 
     @Override
     public PrimitiveLongIterator nodesGetFromIndexSeek( KernelStatement state, NewIndexDescriptor index, Object value )
             throws IndexNotFoundKernelException
     {
-        StorageStatement storeStatement = state.getStoreStatement();
-        IndexReader reader = storeStatement.getIndexReader( index );
+        IndexReader reader = state.getStoreStatement().getIndexReader( index );
         PrimitiveLongIterator committed = reader.seek( value );
         PrimitiveLongIterator exactMatches = filterExactIndexMatches( state, index, value, committed );
         return filterIndexStateChangesForScanOrSeek( state, index, value, exactMatches );
@@ -726,10 +725,9 @@ public class StateHandlingStatementOperations implements
             Number upper, boolean includeUpper ) throws IndexNotFoundKernelException
 
     {
-        StorageStatement storeStatement = state.getStoreStatement();
         PrimitiveLongIterator committed = COMPARE_NUMBERS.isEmptyRange( lower, includeLower, upper, includeUpper )
                 ? PrimitiveLongCollections.emptyIterator()
-                : storeStatement.getIndexReader( index ).rangeSeekByNumberInclusive( lower, upper );
+                : state.getStoreStatement().getIndexReader( index ).rangeSeekByNumberInclusive( lower, upper );
         PrimitiveLongIterator exactMatches = filterExactRangeMatches( state, index, committed, lower, includeLower,
                 upper, includeUpper );
         return filterIndexStateChangesForRangeSeekByNumber( state, index, lower, includeLower, upper, includeUpper,
@@ -742,8 +740,7 @@ public class StateHandlingStatementOperations implements
             String upper, boolean includeUpper ) throws IndexNotFoundKernelException
 
     {
-        StorageStatement storeStatement = state.getStoreStatement();
-        IndexReader reader = storeStatement.getIndexReader( index );
+        IndexReader reader = state.getStoreStatement().getIndexReader( index );
         PrimitiveLongIterator committed = reader.rangeSeekByString( lower, includeLower, upper, includeUpper );
         return filterIndexStateChangesForRangeSeekByString( state, index, lower, includeLower, upper, includeUpper,
                 committed );
@@ -753,8 +750,7 @@ public class StateHandlingStatementOperations implements
     public PrimitiveLongIterator nodesGetFromIndexRangeSeekByPrefix( KernelStatement state, NewIndexDescriptor index,
             String prefix ) throws IndexNotFoundKernelException
     {
-        StorageStatement storeStatement = state.getStoreStatement();
-        IndexReader reader = storeStatement.getIndexReader( index );
+        IndexReader reader = state.getStoreStatement().getIndexReader( index );
         PrimitiveLongIterator committed = reader.rangeSeekByPrefix( prefix );
         return filterIndexStateChangesForRangeSeekByPrefix( state, index, prefix, committed );
     }
@@ -763,8 +759,7 @@ public class StateHandlingStatementOperations implements
     public PrimitiveLongIterator nodesGetFromIndexScan( KernelStatement state, NewIndexDescriptor index )
             throws IndexNotFoundKernelException
     {
-        StorageStatement storeStatement = state.getStoreStatement();
-        IndexReader reader = storeStatement.getIndexReader( index );
+        IndexReader reader = state.getStoreStatement().getIndexReader( index );
         PrimitiveLongIterator committed = reader.scan();
         return filterIndexStateChangesForScanOrSeek( state, index, null, committed );
     }
@@ -782,8 +777,7 @@ public class StateHandlingStatementOperations implements
             String term )
             throws IndexNotFoundKernelException
     {
-        StorageStatement storeStatement = state.getStoreStatement();
-        IndexReader reader = storeStatement.getIndexReader( index );
+        IndexReader reader = state.getStoreStatement().getIndexReader( index );
         PrimitiveLongIterator committed = reader.containsString( term );
         return filterIndexStateChangesForScanOrSeek( state, index, null, committed );
     }
@@ -792,8 +786,7 @@ public class StateHandlingStatementOperations implements
     public PrimitiveLongIterator nodesGetFromIndexEndsWithScan( KernelStatement state, NewIndexDescriptor index,
             String suffix ) throws IndexNotFoundKernelException
     {
-        StorageStatement storeStatement = state.getStoreStatement();
-        IndexReader reader = storeStatement.getIndexReader( index );
+        IndexReader reader = state.getStoreStatement().getIndexReader( index );
         PrimitiveLongIterator committed = reader.endsWith( suffix );
         return filterIndexStateChangesForScanOrSeek( state, index, null, committed );
     }
