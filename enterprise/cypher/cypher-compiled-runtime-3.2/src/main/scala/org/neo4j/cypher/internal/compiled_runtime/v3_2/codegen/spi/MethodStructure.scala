@@ -140,8 +140,8 @@ trait MethodStructure[E] {
   def allNodesScan(iterVar: String): Unit
   def lookupLabelId(labelIdVar: String, labelName: String): Unit
   def lookupRelationshipTypeId(typeIdVar: String, typeName: String): Unit
-  def nodeGetAllRelationships(iterVar: String, nodeVar: String, direction: SemanticDirection): Unit
-  def nodeGetRelationships(iterVar: String, nodeVar: String, direction: SemanticDirection, typeVars: Seq[String]): Unit
+  def nodeGetRelationshipsWithDirection(iterVar: String, nodeVar: String, direction: SemanticDirection): Unit
+  def nodeGetRelationshipsWithDirectionAndTypes(iterVar: String, nodeVar: String, direction: SemanticDirection, typeVars: Seq[String]): Unit
   def connectingRelationships(iterVar: String, fromNode: String, dir: SemanticDirection, toNode:String)
   def connectingRelationships(iterVar: String, fromNode: String, dir: SemanticDirection, types: Seq[String], toNode: String)
   def nextNode(targetVar: String, iterVar: String): Unit

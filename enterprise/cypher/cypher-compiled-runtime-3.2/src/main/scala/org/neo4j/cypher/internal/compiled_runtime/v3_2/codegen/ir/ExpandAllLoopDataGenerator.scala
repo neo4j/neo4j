@@ -36,9 +36,9 @@ case class ExpandAllLoopDataGenerator(opName: String, fromVar: Variable, dir: Se
 
   override def produceIterator[E](iterVar: String, generator: MethodStructure[E])(implicit context: CodeGenContext) = {
     if(types.isEmpty)
-      generator.nodeGetAllRelationships(iterVar, fromVar.name, dir)
+      generator.nodeGetRelationshipsWithDirection(iterVar, fromVar.name, dir)
     else
-      generator.nodeGetRelationships(iterVar, fromVar.name, dir, types.keys.toIndexedSeq)
+      generator.nodeGetRelationshipsWithDirectionAndTypes(iterVar, fromVar.name, dir, types.keys.toIndexedSeq)
     generator.incrementDbHits()
   }
 
