@@ -22,16 +22,21 @@ package org.neo4j.kernel.impl.store.record;
 import org.junit.Test;
 
 import java.nio.ByteBuffer;
+import java.util.Base64;
 import java.util.stream.IntStream;
 
 import org.neo4j.kernel.api.exceptions.schema.MalformedSchemaRuleException;
+import org.neo4j.kernel.api.index.SchemaIndexProvider;
+import org.neo4j.kernel.api.schema_new.constaints.ConstraintDescriptor;
 import org.neo4j.kernel.api.schema_new.constaints.ConstraintDescriptorFactory;
+import org.neo4j.kernel.api.schema_new.index.NewIndexDescriptor;
 import org.neo4j.kernel.api.schema_new.index.NewIndexDescriptorFactory;
 import org.neo4j.storageengine.api.schema.SchemaRule;
 
 import static org.hamcrest.MatcherAssert.assertThat;
 import static org.hamcrest.Matchers.equalTo;
 import static org.junit.Assert.fail;
+import static org.neo4j.test.assertion.Assert.assertException;
 
 public class SchemaRuleSerializationTest extends SchemaRuleTestBase
 {
@@ -125,6 +130,140 @@ public class SchemaRuleSerializationTest extends SchemaRuleTestBase
     public void shouldReturnCorrectLengthForConstraintRules() throws MalformedSchemaRuleException
     {
         assertCorrectLength( constraintExistsLabel );
+    }
+
+    // BACKWARDS COMPATIBILITY
+
+    @Test
+    public void shouldParseIndexRule() throws Exception
+    {
+        assertParseIndexRule( "/////wsAAAAOaW5kZXgtcHJvdmlkZXIAAAAEMjUuMB9bAAACAAABAAAABA==" );
+        assertParseIndexRule( "AAACAAEAAAAOaW5kZXgtcHJvdmlkZXIAAAAEMjUuMAABAAAAAAAAAAQ=" ); // LEGACY
+    }
+
+    @Test
+    public void shouldParseUniqueIndexRule() throws Exception
+    {
+        assertParseUniqueIndexRule( "/////wsAAAAOaW5kZXgtcHJvdmlkZXIAAAAEMjUuMCAAAAAAAAAAC1sAAAA9AAEAAAPc" );
+        assertParseUniqueIndexRule( "AAAAPQIAAAAOaW5kZXgtcHJvdmlkZXIAAAAEMjUuMAABAAAAAAAAA9wAAAAAAAAACw==" ); // LEGACY
+    }
+
+    @Test
+    public void shouldParseUniqueConstraintRule() throws Exception
+    {
+        assertParseUniqueConstraintRule( "/////ww+AAAAAAAAAAJbAAAANwABAAAAAw==" );
+        assertParseUniqueConstraintRule( "AAAANwMBAAAAAAAAAAMAAAAAAAAAAg==" ); // LEGACY
+    }
+
+    @Test
+    public void shouldParseNodePropertyExistsRule() throws Exception
+    {
+        assertParseNodePropertyExistsRule( "/////ww9WwAAAC0AAQAAADM=" );
+        assertParseNodePropertyExistsRule( "AAAALQQAAAAz" ); // LEGACY
+    }
+
+    @Test
+    public void shouldParseRelationshipPropertyExistsRule() throws Exception
+    {
+        assertParseRelationshipPropertyExistsRule( "/////ww9XAAAIUAAAQAAF+c=" ); // LEGACY6
+        assertParseRelationshipPropertyExistsRule( "AAAhQAUAABfn" ); // LEGACY6
+    }
+
+    private void assertParseIndexRule( String serialized ) throws Exception
+    {
+        // GIVEN
+        long ruleId = 24;
+        NewIndexDescriptor index = NewIndexDescriptorFactory.forLabel( 512, 4 );
+        SchemaIndexProvider.Descriptor indexProvider = new SchemaIndexProvider.Descriptor( "index-provider", "25.0" );
+        byte[] bytes = Base64.getDecoder().decode( serialized );
+
+        // WHEN
+        IndexRule deserialized = assertIndexRule( SchemaRuleSerialization.deserialize( ruleId, ByteBuffer.wrap( bytes ) ) );
+
+        // THEN
+        assertThat( deserialized.getId(), equalTo( ruleId ) );
+        assertThat( deserialized.getIndexDescriptor(), equalTo( index ) );
+        assertThat( deserialized.getSchemaDescriptor(), equalTo( index.schema() ) );
+        assertThat( deserialized.getProviderDescriptor(), equalTo( indexProvider ) );
+        assertException( deserialized::getOwningConstraint, IllegalStateException.class, "" );
+    }
+
+    private void assertParseUniqueIndexRule( String serialized ) throws MalformedSchemaRuleException
+    {
+        // GIVEN
+        long ruleId = 33;
+        long constraintId = 11;
+        NewIndexDescriptor index = NewIndexDescriptorFactory.uniqueForLabel( 61, 988 );
+        SchemaIndexProvider.Descriptor indexProvider = new SchemaIndexProvider.Descriptor( "index-provider", "25.0" );
+        byte[] bytes = Base64.getDecoder().decode( serialized );
+
+        // WHEN
+        IndexRule deserialized = assertIndexRule( SchemaRuleSerialization.deserialize( ruleId, ByteBuffer.wrap( bytes ) ) );
+
+        // THEN
+        assertThat( deserialized.getId(), equalTo( ruleId ) );
+        assertThat( deserialized.getIndexDescriptor(), equalTo( index ) );
+        assertThat( deserialized.getSchemaDescriptor(), equalTo( index.schema() ) );
+        assertThat( deserialized.getProviderDescriptor(), equalTo( indexProvider ) );
+        assertThat( deserialized.getOwningConstraint(), equalTo( constraintId ) );
+    }
+
+    private void assertParseUniqueConstraintRule( String serialized ) throws MalformedSchemaRuleException
+    {
+        // GIVEN
+        long ruleId = 1;
+        int propertyKey = 3;
+        int labelId = 55;
+        long ownedIndexId = 2;
+        ConstraintDescriptor constraint = ConstraintDescriptorFactory.uniqueForLabel( labelId, propertyKey );
+        byte[] bytes = Base64.getDecoder().decode( serialized );
+
+        // WHEN
+        ConstraintRule deserialized = assertConstraintRule( SchemaRuleSerialization.deserialize( ruleId, ByteBuffer.wrap( bytes ) ) );
+
+        // THEN
+        assertThat( deserialized.getId(), equalTo( ruleId ) );
+        assertThat( deserialized.getConstraintDescriptor(), equalTo( constraint ) );
+        assertThat( deserialized.getSchemaDescriptor(), equalTo( constraint.schema() ) );
+        assertThat( deserialized.getOwnedIndex(), equalTo( ownedIndexId ) );
+    }
+
+    private void assertParseNodePropertyExistsRule( String serialized ) throws Exception
+    {
+        // GIVEN
+        long ruleId = 87;
+        int propertyKey = 51;
+        int labelId = 45;
+        ConstraintDescriptor constraint = ConstraintDescriptorFactory.existsForLabel( labelId, propertyKey );
+        byte[] bytes = Base64.getDecoder().decode( serialized );
+
+        // WHEN
+        ConstraintRule deserialized = assertConstraintRule( SchemaRuleSerialization.deserialize( ruleId, ByteBuffer.wrap( bytes ) ) );
+
+        // THEN
+        assertThat( deserialized.getId(), equalTo( ruleId ) );
+        assertThat( deserialized.getConstraintDescriptor(), equalTo( constraint ) );
+        assertThat( deserialized.getSchemaDescriptor(), equalTo( constraint.schema() ) );
+        assertException( deserialized::getOwnedIndex, IllegalStateException.class, "" );
+    }
+
+    private void assertParseRelationshipPropertyExistsRule( String serialized ) throws Exception
+    {
+        // GIVEN
+        long ruleId = 51;
+        int propertyKey = 6119;
+        int relTypeId = 8512;
+        ConstraintDescriptor constraint = ConstraintDescriptorFactory.existsForRelType( relTypeId, propertyKey );
+        byte[] bytes = Base64.getDecoder().decode( serialized );
+
+        // WHEN
+        ConstraintRule deserialized = assertConstraintRule( SchemaRuleSerialization.deserialize( ruleId, ByteBuffer.wrap( bytes ) ) );
+
+        // THEN
+        assertThat( deserialized.getId(), equalTo( ruleId ) );
+        assertThat( deserialized.getConstraintDescriptor(), equalTo( constraint ) );
+        assertThat( deserialized.getSchemaDescriptor(), equalTo( constraint.schema() ) );
+        assertException( deserialized::getOwnedIndex, IllegalStateException.class, "" );
     }
 
     // HELPERS
