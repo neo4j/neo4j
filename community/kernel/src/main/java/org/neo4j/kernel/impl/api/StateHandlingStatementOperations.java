@@ -220,12 +220,12 @@ public class StateHandlingStatementOperations implements
             return cursor;
         }
         NodeState nodeState = statement.txState().getNodeState( node.id() );
-        return statement.txState().augmentNodeRelationshipCursor( cursor, nodeState, direction, null );
+        return statement.txState().augmentNodeRelationshipCursor( cursor, nodeState, direction );
     }
 
     @Override
     public Cursor<RelationshipItem> nodeGetRelationships( KernelStatement statement, NodeItem node, Direction direction,
-            int... relTypes )
+            PrimitiveIntSet relTypes )
     {
         Cursor<RelationshipItem> cursor;
         if ( statement.hasTxStateWithChanges() && statement.txState().nodeIsAddedInThisTx( node.id() ) )
@@ -1721,7 +1721,7 @@ public class StateHandlingStatementOperations implements
         {
             return count( relType == null
                           ? storeLayer.nodeGetRelationships( storeStatement, node, direction )
-                          : storeLayer.nodeGetRelationships( storeStatement, node, direction, relType ) );
+                          : storeLayer.nodeGetRelationships( storeStatement, node, direction, (t) -> t == relType ) );
         }
     }
 

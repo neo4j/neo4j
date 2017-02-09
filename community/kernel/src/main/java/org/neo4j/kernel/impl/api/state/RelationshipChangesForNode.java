@@ -258,7 +258,7 @@ public class RelationshipChangesForNode
         return augmentRelationships( direction, rels, ALL_TYPES );
     }
 
-    public RelationshipIterator augmentRelationships( Direction direction, int[] types, RelationshipIterator rels )
+    public RelationshipIterator augmentRelationships( Direction direction, PrimitiveIntSet types, RelationshipIterator rels )
     {
         return augmentRelationships( direction, rels, typeFilter( types ) );
     }
@@ -441,11 +441,11 @@ public class RelationshipChangesForNode
         return relTypeToRelsMap;
     }
 
-    private Function<Map<Integer, Set<Long>>, Iterator<Set<Long>>> typeFilter( final int[] types )
+    private Function<Map<Integer, Set<Long>>, Iterator<Set<Long>>> typeFilter( PrimitiveIntSet types )
     {
         return relationshipsByType -> new PrefetchingIterator<Set<Long>>()
         {
-            private final PrimitiveIntIterator iterTypes = iterator( types );
+            private final PrimitiveIntIterator iterTypes = types.iterator();
 
             @Override
             protected Set<Long> fetchNextOrNull()
@@ -490,7 +490,7 @@ public class RelationshipChangesForNode
         return getRelationships( direction, ALL_TYPES );
     }
 
-    public PrimitiveLongIterator getRelationships( Direction direction, int[] types )
+    public PrimitiveLongIterator getRelationships( Direction direction, PrimitiveIntSet types )
     {
         return getRelationships( direction, typeFilter( types ) );
     }

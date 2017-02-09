@@ -112,6 +112,7 @@ import org.neo4j.storageengine.api.schema.PopulationProgress;
 import org.neo4j.storageengine.api.schema.SchemaRule;
 
 import static java.lang.String.format;
+import static org.neo4j.collection.primitive.PrimitiveIntCollections.asSet;
 import static org.neo4j.collection.primitive.PrimitiveIntCollections.deduplicate;
 
 public class OperationsFacade
@@ -371,7 +372,8 @@ public class OperationsFacade
         try ( Cursor<NodeItem> node = dataRead().nodeCursorById( statement, nodeId ) )
         {
             return new CursorRelationshipIterator( dataRead()
-                    .nodeGetRelationships( statement, node.get(), direction( direction ), deduplicate( relTypes ) ) );
+                    .nodeGetRelationships( statement, node.get(), direction( direction ),
+                            asSet( relTypes, t -> t >= 0 ) ) );
         }
     }
 

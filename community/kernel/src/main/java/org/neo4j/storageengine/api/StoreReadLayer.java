@@ -20,6 +20,7 @@
 package org.neo4j.storageengine.api;
 
 import java.util.Iterator;
+import java.util.function.IntPredicate;
 
 import org.neo4j.collection.primitive.PrimitiveIntIterator;
 import org.neo4j.collection.primitive.PrimitiveIntSet;
@@ -281,8 +282,10 @@ public interface StoreReadLayer
      */
     RelationshipIterator relationshipsGetAll();
 
+    Cursor<RelationshipItem> nodeGetRelationships( StorageStatement statement, NodeItem nodeItem, Direction direction );
+
     Cursor<RelationshipItem> nodeGetRelationships( StorageStatement statement, NodeItem nodeItem, Direction direction,
-            int... typeIds );
+            IntPredicate typeIds );
 
     /**
      * Reserves a node id for future use to store a node. The reason for it being exposed here is that

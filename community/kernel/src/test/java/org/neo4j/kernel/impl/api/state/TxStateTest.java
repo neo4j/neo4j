@@ -40,14 +40,14 @@ import org.neo4j.collection.primitive.PrimitiveLongIterator;
 import org.neo4j.cursor.Cursor;
 import org.neo4j.helpers.collection.Iterables;
 import org.neo4j.helpers.collection.Pair;
-import org.neo4j.kernel.api.schema.NodePropertyDescriptor;
-import org.neo4j.kernel.api.schema.RelationshipPropertyDescriptor;
 import org.neo4j.kernel.api.constraints.NodePropertyConstraint;
 import org.neo4j.kernel.api.constraints.RelationshipPropertyExistenceConstraint;
 import org.neo4j.kernel.api.constraints.UniquenessConstraint;
 import org.neo4j.kernel.api.cursor.RelationshipItemHelper;
 import org.neo4j.kernel.api.properties.DefinedProperty;
 import org.neo4j.kernel.api.properties.Property;
+import org.neo4j.kernel.api.schema.NodePropertyDescriptor;
+import org.neo4j.kernel.api.schema.RelationshipPropertyDescriptor;
 import org.neo4j.kernel.api.schema_new.index.NewIndexDescriptor;
 import org.neo4j.kernel.api.schema_new.index.NewIndexDescriptorFactory;
 import org.neo4j.kernel.api.txstate.TransactionState;
@@ -80,8 +80,8 @@ import static org.neo4j.kernel.api.properties.Property.booleanProperty;
 import static org.neo4j.kernel.api.properties.Property.noNodeProperty;
 import static org.neo4j.kernel.api.properties.Property.numberProperty;
 import static org.neo4j.kernel.api.properties.Property.stringProperty;
-import static org.neo4j.kernel.impl.api.state.StubCursors.cursor;
 import static org.neo4j.kernel.api.schema_new.index.NewIndexDescriptor.Filter.GENERAL;
+import static org.neo4j.kernel.impl.api.state.StubCursors.cursor;
 
 public class TxStateTest
 {
@@ -1459,9 +1459,10 @@ public class TxStateTest
             int[] relationshipTypes = randomTypes( relationshipTypeCount, random.random() );
             Cursor<RelationshipItem> committed = cursor(
                     relationshipsForNode( i, committedRelationships, direction, relationshipTypes ).values() );
-            Cursor<RelationshipItem> augmented =
-                    state.augmentNodeRelationshipCursor( committed, state.getNodeState( i ), direction,
-                            relationshipTypes );
+            Cursor<RelationshipItem> augmented = relationshipTypes == null
+                    ? state.augmentNodeRelationshipCursor( committed, state.getNodeState( i ), direction )
+                    : state.augmentNodeRelationshipCursor( committed, state.getNodeState( i ), direction,
+                             PrimitiveIntCollections.asSet( relationshipTypes ) );
 
             Map<Long,RelationshipItem> expectedRelationships =
                     relationshipsForNode( i, allRelationships, direction, relationshipTypes );

@@ -20,6 +20,7 @@
 package org.neo4j.kernel.impl.api.store;
 
 import java.util.Iterator;
+import java.util.function.IntPredicate;
 import java.util.function.Predicate;
 import java.util.function.Supplier;
 
@@ -81,6 +82,7 @@ import org.neo4j.storageengine.api.schema.PopulationProgress;
 import org.neo4j.storageengine.api.schema.SchemaRule;
 
 import static org.neo4j.collection.primitive.Primitive.intSet;
+import static org.neo4j.function.Predicates.ALWAYS_TRUE_INT;
 import static org.neo4j.helpers.collection.Iterables.filter;
 import static org.neo4j.kernel.api.schema_new.SchemaDescriptorPredicates.hasLabel;
 import static org.neo4j.kernel.impl.api.store.DegreeCounter.countByFirstPrevPointer;
@@ -412,8 +414,15 @@ public class StorageLayer implements StoreReadLayer
     }
 
     @Override
+    public Cursor<RelationshipItem> nodeGetRelationships( StorageStatement statement, NodeItem nodeItem,
+            Direction direction )
+    {
+        return nodeGetRelationships( statement, nodeItem, direction, ALWAYS_TRUE_INT );
+    }
+
+    @Override
     public Cursor<RelationshipItem> nodeGetRelationships( StorageStatement statement, NodeItem node,
-            Direction direction, int... relTypes )
+            Direction direction, IntPredicate relTypes )
     {
         return statement.acquireNodeRelationshipCursor( node.isDense(), node.id(), node.nextRelationshipId(), direction,
                 relTypes );

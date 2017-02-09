@@ -142,31 +142,10 @@ public class StoreStatement implements StorageStatement
 
     @Override
     public Cursor<RelationshipItem> acquireNodeRelationshipCursor( boolean isDense, long nodeId, long relationshipId,
-            Direction direction, int... relTypes )
+            Direction direction, IntPredicate relTypeFilter )
     {
         neoStores.assertOpen();
-        return nodeRelationshipCursor.get().init( isDense, relationshipId, nodeId, direction, predicate( relTypes ) );
-    }
-
-    private IntPredicate predicate( int[] relTypes )
-    {
-        if ( relTypes.length == 0 )
-        {
-            return Predicates.ALWAYS_TRUE_INT;
-        }
-
-        return type ->
-        {
-            for ( int relType : relTypes )
-            {
-                if ( type == relType )
-                {
-                    return true;
-                }
-            }
-            return false;
-
-        };
+        return nodeRelationshipCursor.get().init( isDense, relationshipId, nodeId, direction, relTypeFilter );
     }
 
     @Override

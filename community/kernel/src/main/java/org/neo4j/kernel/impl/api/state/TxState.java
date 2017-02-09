@@ -804,19 +804,21 @@ public final class TxState implements TransactionState, RelationshipVisitor.Home
     @Override
     public Cursor<RelationshipItem> augmentNodeRelationshipCursor( Cursor<RelationshipItem> cursor,
             NodeState nodeState,
-            Direction direction,
-            int[] relTypes )
+            Direction direction )
     {
-        if ( nodeState.hasChanges() )
-        {
-            if ( relTypes == null )
-            {
-                return iteratorRelationshipCursor.get().init( cursor, nodeState.getAddedRelationships( direction ) );
-            }
-            return iteratorRelationshipCursor.get().init( cursor,
-                    nodeState.getAddedRelationships( direction, relTypes ) );
-        }
-        return cursor;
+        return nodeState.hasChanges()
+               ? iteratorRelationshipCursor.get().init( cursor, nodeState.getAddedRelationships( direction ) )
+               : cursor;
+    }
+    @Override
+    public Cursor<RelationshipItem> augmentNodeRelationshipCursor( Cursor<RelationshipItem> cursor,
+            NodeState nodeState,
+            Direction direction,
+            PrimitiveIntSet relTypes )
+    {
+        return nodeState.hasChanges()
+               ? iteratorRelationshipCursor.get().init( cursor, nodeState.getAddedRelationships( direction, relTypes ) )
+               : cursor;
     }
 
     @Override

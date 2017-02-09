@@ -57,5 +57,5 @@ public interface NodeState extends PropertyContainerState
 
     PrimitiveLongIterator getAddedRelationships( Direction direction );
 
-    PrimitiveLongIterator getAddedRelationships( Direction direction, int[] relTypes );
+    PrimitiveLongIterator getAddedRelationships( Direction direction, PrimitiveIntSet relTypes );
 }

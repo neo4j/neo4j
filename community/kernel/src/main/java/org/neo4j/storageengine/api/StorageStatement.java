@@ -19,6 +19,8 @@
  */
 package org.neo4j.storageengine.api;
 
+import java.util.function.IntPredicate;
+
 import org.neo4j.cursor.Cursor;
 import org.neo4j.kernel.api.exceptions.index.IndexNotFoundKernelException;
 import org.neo4j.kernel.api.schema_new.index.NewIndexDescriptor;
@@ -93,11 +95,11 @@ public interface StorageStatement extends AutoCloseable
      * @param nodeId the id of the node where to start traversing the relationships
      * @param relationshipId the id of the first relationship in the chain
      * @param direction the direction of the relationship wrt the node
-     * @param relTypes the allowed types (it allows all types if unspecified)
+     * @param relTypeFilter the allowed types (it allows all types if unspecified)
      * @return a {@link Cursor} over {@link RelationshipItem} for traversing the relationships associated to the node.
      */
     Cursor<RelationshipItem> acquireNodeRelationshipCursor(  boolean isDense, long nodeId, long relationshipId,
-            Direction direction, int... relTypes );
+            Direction direction, IntPredicate relTypeFilter );
 
     /**
      -     * Acquires {@link Cursor} capable of {@link Cursor#get() serving} {@link RelationshipItem} for selected
