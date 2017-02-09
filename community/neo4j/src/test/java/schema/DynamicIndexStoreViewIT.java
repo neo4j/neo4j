@@ -24,11 +24,13 @@ import org.junit.Rule;
 import org.junit.Test;
 import org.junit.rules.RuleChain;
 
-import java.util.ArrayList;
-import java.util.List;
 import java.util.Map;
+import java.util.concurrent.CountDownLatch;
+import java.util.concurrent.ExecutorService;
+import java.util.concurrent.Executors;
 import java.util.concurrent.ThreadLocalRandom;
 import java.util.concurrent.TimeUnit;
+import java.util.concurrent.atomic.AtomicBoolean;
 
 import org.neo4j.consistency.ConsistencyCheckService;
 import org.neo4j.graphdb.GraphDatabaseService;
@@ -42,8 +44,8 @@ import org.neo4j.logging.FormattedLogProvider;
 import org.neo4j.test.TestGraphDatabaseFactory;
 import org.neo4j.test.rule.SuppressOutput;
 import org.neo4j.test.rule.TestDirectory;
-
 import static org.neo4j.helpers.collection.MapUtil.stringMap;
+import static org.neo4j.test.DoubleLatch.awaitLatch;
 
 public class DynamicIndexStoreViewIT
 {
@@ -75,27 +77,36 @@ public class DynamicIndexStoreViewIT
                 counter++;
             }
 
-            List<Populator> populators = new ArrayList<>();
-            for ( int i = 0; i < 5; i++ )
+            int populatorCount = 5;
+            ExecutorService executor = Executors.newFixedThreadPool( populatorCount );
+            CountDownLatch startSignal = new CountDownLatch( 1 );
+            AtomicBoolean endSignal = new AtomicBoolean();
+            for ( int i = 0; i < populatorCount; i++ )
             {
-                Populator populator = new Populator( database, counter );
-                populators.add( populator );
-                populator.start();
+                executor.submit( new Populator( database, counter, startSignal, endSignal ) );
             }
 
-            try ( Transaction transaction = database.beginTx() )
+            try
             {
-                database.schema().indexFor( Label.label( "label10" ) ).on( "property" ).create();
-                transaction.success();
-            }
+                try ( Transaction transaction = database.beginTx() )
+                {
+                    database.schema().indexFor( Label.label( "label10" ) ).on( "property" ).create();
+                    transaction.success();
+                }
+                startSignal.countDown();
 
-            try ( Transaction transaction = database.beginTx() )
+                try ( Transaction transaction = database.beginTx() )
+                {
+                    database.schema().awaitIndexesOnline( populatorCount, TimeUnit.MINUTES );
+                    transaction.success();
+                }
+            }
+            finally
             {
-                database.schema().awaitIndexesOnline( 5, TimeUnit.MINUTES );
-                transaction.success();
+                endSignal.set( true );
+                executor.shutdown();
+                // Basically we don't care to await their completion because they've done their job
             }
-
-            populators.forEach( Populator::terminate );
         }
         finally
         {
@@ -108,23 +119,27 @@ public class DynamicIndexStoreViewIT
         }
     }
 
-    private class Populator extends Thread
+    private class Populator implements Runnable
     {
-
         private final GraphDatabaseService databaseService;
         private final long totalNodes;
-        private volatile boolean terminate;
+        private final CountDownLatch startSignal;
+        private final AtomicBoolean endSignal;
 
-        Populator( GraphDatabaseService databaseService, long totalNodes )
+        Populator( GraphDatabaseService databaseService, long totalNodes, CountDownLatch startSignal,
+                AtomicBoolean endSignal )
         {
             this.databaseService = databaseService;
             this.totalNodes = totalNodes;
+            this.startSignal = startSignal;
+            this.endSignal = endSignal;
         }
 
         @Override
         public void run()
         {
-            while ( !terminate )
+            awaitLatch( startSignal );
+            while ( !endSignal.get() )
             {
                 try ( Transaction transaction = databaseService.beginTx() )
                 {
@@ -161,11 +176,6 @@ public class DynamicIndexStoreViewIT
                     }
                 }
             }
-        }
-
-        void terminate()
-        {
-            terminate = true;
         }
     }
 }
