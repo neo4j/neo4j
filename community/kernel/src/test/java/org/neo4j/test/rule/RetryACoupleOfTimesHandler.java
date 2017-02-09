@@ -21,30 +21,31 @@ package org.neo4j.test.rule;
 
 import java.util.concurrent.TimeUnit;
 import java.util.concurrent.locks.LockSupport;
+import java.util.function.Predicate;
 
 import org.neo4j.graphdb.TransientFailureException;
 import org.neo4j.kernel.api.exceptions.Status;
 
 /**
- * Retries on {@link TransientFailureException} and any {@link Throwable} implementing
- * {@link org.neo4j.kernel.api.exceptions.Status.HasStatus} with
- * {@link org.neo4j.kernel.api.exceptions.Status.Classification#TransientError} classification.
- * a configurable number of times and with a configurable delay between retries.
+ * Retries a transaction a couple of times, with a delay in between.
  */
-public class RetryOnTransientFailure implements RetryHandler
+public class RetryACoupleOfTimesHandler implements RetryHandler
 {
+    private final Predicate<Throwable> retriable;
     private final int maxRetryCount;
     private final long timeBetweenTries;
     private final TimeUnit unit;
     private int retries;
 
-    public RetryOnTransientFailure()
+    public RetryACoupleOfTimesHandler( Predicate<Throwable> retriable )
     {
-        this( 5, 1, TimeUnit.SECONDS );
+        this( retriable, 5, 1, TimeUnit.SECONDS );
     }
 
-    public RetryOnTransientFailure( int maxRetryCount, long timeBetweenTries, TimeUnit unit )
+    public RetryACoupleOfTimesHandler( Predicate<Throwable> retriable,
+            int maxRetryCount, long timeBetweenTries, TimeUnit unit )
     {
+        this.retriable = retriable;
         this.maxRetryCount = maxRetryCount;
         this.timeBetweenTries = timeBetweenTries;
         this.unit = unit;
@@ -53,7 +54,7 @@ public class RetryOnTransientFailure implements RetryHandler
     @Override
     public boolean retryOn( Throwable t )
     {
-        if ( isTransientFailure( t ) )
+        if ( retriable.test( t ) )
         {
             LockSupport.parkNanos( unit.toNanos( timeBetweenTries ) );
             return retries++ < maxRetryCount;
@@ -61,7 +62,13 @@ public class RetryOnTransientFailure implements RetryHandler
         return false;
     }
 
-    private boolean isTransientFailure( Throwable t )
+    /**
+     * Retries on {@link TransientFailureException} and any {@link Throwable} implementing
+     * {@link org.neo4j.kernel.api.exceptions.Status.HasStatus} with
+     * {@link org.neo4j.kernel.api.exceptions.Status.Classification#TransientError} classification.
+     * a configurable number of times and with a configurable delay between retries.
+     */
+    public static final Predicate<Throwable> TRANSIENT_ERRORS = t ->
     {
         if ( t instanceof TransientFailureException )
         {
@@ -76,5 +83,24 @@ public class RetryOnTransientFailure implements RetryHandler
             }
         }
         return false;
+    };
+
+    /**
+     * Retries on any {@link Exception}, i.e. not {@link OutOfMemoryError} or similar.
+     */
+    public static final Predicate<Throwable> ANY_EXCEPTION = t ->
+    {
+        return t instanceof Exception; // i.e. excluding OutOfMemory and more sever errors.
+    };
+
+    public static RetryHandler retryACoupleOfTimesOn( Predicate<Throwable> retriable )
+    {
+        return new RetryACoupleOfTimesHandler( retriable );
+    }
+
+    public static RetryHandler retryACoupleOfTimesOn( Predicate<Throwable> retriable,
+            int maxRetryCount, long timeBetweenTries, TimeUnit unit )
+    {
+        return new RetryACoupleOfTimesHandler( retriable, maxRetryCount, timeBetweenTries, unit );
     }
 }

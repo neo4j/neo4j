@@ -29,6 +29,8 @@ import java.util.ArrayList;
 import java.util.Collection;
 import java.util.Objects;
 import java.util.Set;
+import java.util.function.Consumer;
+
 import org.neo4j.cluster.ClusterSettings;
 import org.neo4j.graphdb.GraphDatabaseService;
 import org.neo4j.graphdb.Node;
@@ -41,6 +43,7 @@ import org.neo4j.io.fs.FileUtils;
 import org.neo4j.kernel.NeoStoreDataSource;
 import org.neo4j.kernel.ha.HaSettings;
 import org.neo4j.kernel.ha.HighlyAvailableGraphDatabase;
+import org.neo4j.kernel.ha.cluster.SwitchToSlave.Monitor;
 import org.neo4j.kernel.ha.cluster.modeswitch.HighAvailabilityModeSwitcher;
 import org.neo4j.kernel.impl.ha.ClusterManager;
 import org.neo4j.kernel.impl.ha.ClusterManager.ManagedCluster;
@@ -48,10 +51,11 @@ import org.neo4j.kernel.impl.ha.ClusterManager.RepairKit;
 import org.neo4j.kernel.impl.logging.StoreLogService;
 import org.neo4j.kernel.impl.util.Listener;
 import org.neo4j.com.storecopy.StoreUtil;
-import org.neo4j.function.ThrowingAction;
 import org.neo4j.kernel.lifecycle.LifeRule;
+import org.neo4j.kernel.monitoring.Monitors;
 import org.neo4j.storageengine.api.StoreFileMetadata;
 import org.neo4j.test.TestGraphDatabaseFactory;
+import org.neo4j.test.rule.DatabaseRule;
 import org.neo4j.test.rule.TestDirectory;
 
 import static java.lang.String.format;
@@ -64,6 +68,8 @@ import static org.neo4j.kernel.ha.cluster.modeswitch.HighAvailabilityModeSwitche
 import static org.neo4j.kernel.impl.ha.ClusterManager.allSeesAllAsAvailable;
 import static org.neo4j.kernel.impl.ha.ClusterManager.clusterOfSize;
 import static org.neo4j.kernel.impl.ha.ClusterManager.memberThinksItIsRole;
+import static org.neo4j.test.rule.RetryACoupleOfTimesHandler.ANY_EXCEPTION;
+import static org.neo4j.test.rule.RetryACoupleOfTimesHandler.retryACoupleOfTimesOn;
 
 public class TestBranchedData
 {
@@ -163,31 +169,35 @@ public class TestBranchedData
         cluster.await( ClusterManager.masterAvailable( thor ) );
         cluster.await( ClusterManager.memberThinksItIsRole( odin, HighAvailabilityModeSwitcher.MASTER ) );
         assertTrue( odin.isMaster() );
-        retryOnTransactionFailure( () -> createNode( odin, "B2", andIndexInto( indexName ) ) );
+        retryOnTransactionFailure( odin, db -> createNode( db, "B2", andIndexInto( indexName ) ) );
         // perform transactions so that index files changes under the hood
         Set<File> odinLuceneFilesBefore = Iterables.asSet( gatherLuceneFiles( odin, indexName ) );
-        for ( char prefix = 'C'; !changed( odinLuceneFilesBefore, Iterables.asSet( gatherLuceneFiles( odin, indexName ) ) ); prefix++ )
+        for ( char prefix = 'C'; !changed( odinLuceneFilesBefore,
+                Iterables.asSet( gatherLuceneFiles( odin, indexName ) ) ); prefix++ )
         {
             char fixedPrefix = prefix;
-            retryOnTransactionFailure( () ->
+            retryOnTransactionFailure( odin, db ->
                     createNodes( odin, String.valueOf( fixedPrefix ), 10_000, andIndexInto( indexName ) ) );
             cluster.force(); // Force will most likely cause lucene legacy indexes to commit and change file structure
         }
         // so anyways, when thor comes back into the cluster
         cluster.info( format( "%n   ==== REPAIRING CABLES ====%n" ) );
         cluster.await( memberThinksItIsRole( thor, UNKNOWN ) );
+        BranchMonitor thorHasBranched = installBranchedDataMonitor( thor );
         thorRepairKit.repair();
         cluster.await( memberThinksItIsRole( thor, SLAVE ) );
         cluster.await( memberThinksItIsRole( odin, MASTER ) );
         cluster.await( allSeesAllAsAvailable() );
         assertFalse( thor.isMaster() );
+        assertTrue( "No store-copy performed", thorHasBranched.copyCompleted );
+        assertTrue( "Store-copy unsuccessful", thorHasBranched.copySucessful );
 
         // Now do some more transactions on current master (odin) and have thor pull those
         for( int i = 0; i < 3; i++ )
         {
             int ii = i;
-            retryOnTransactionFailure( () ->
-                    createNodes( odin, String.valueOf( "" + ii ), 100_000, andIndexInto( indexName ) ) );
+            retryOnTransactionFailure( odin, db ->
+                    createNodes( odin, String.valueOf( "" + ii ), 10, andIndexInto( indexName ) ) );
             cluster.sync();
             cluster.force();
         }
@@ -200,24 +210,17 @@ public class TestBranchedData
         assertTrue( hasNode( odin, "0-0" ) );
     }
 
-    private void retryOnTransactionFailure( ThrowingAction<Exception> transaction ) throws Exception
+    private BranchMonitor installBranchedDataMonitor( HighlyAvailableGraphDatabase odin )
     {
-        Exception exception = null;
-        for ( int i = 0; i < 10; i++ )
-        {
-            try
-            {
-                transaction.apply();
-                return;
-            }
-            catch ( Exception e )
-            {
-                // Just retry
-                exception = e;
-            }
-        }
+        BranchMonitor monitor = new BranchMonitor();
+        odin.getDependencyResolver().resolveDependency( Monitors.class ).addMonitorListener( monitor );
+        return monitor;
+    }
 
-        throw exception;
+    private void retryOnTransactionFailure( GraphDatabaseService db, Consumer<GraphDatabaseService> tx )
+            throws Exception
+    {
+        DatabaseRule.tx( db, retryACoupleOfTimesOn( ANY_EXCEPTION ), tx );
     }
 
     private boolean changed( Set<File> before, Set<File> after )
@@ -360,5 +363,18 @@ public class TestBranchedData
     private GraphDatabaseService startGraphDatabaseService( File storeDir )
     {
         return new TestGraphDatabaseFactory().newEmbeddedDatabase( storeDir );
+    }
+
+    private static class BranchMonitor implements Monitor
+    {
+        private volatile boolean copyCompleted;
+        private volatile boolean copySucessful;
+
+        @Override
+        public void storeCopyCompleted( boolean wasSuccessful )
+        {
+            copyCompleted = true;
+            copySucessful = wasSuccessful;
+        }
     }
 }

@@ -458,38 +458,10 @@ public class HighAvailabilityMemberStateMachineTest
         SwitchToSlave.Monitor monitor = new SwitchToSlave.Monitor()
         {
             @Override
-            public void switchToSlaveStarted()
-            {
-            }
-
-            @Override
             public void switchToSlaveCompleted( boolean wasSuccessful )
             {
                 switchedSuccessfully.set( wasSuccessful );
                 latch.countDown();
-            }
-
-            @Override
-            public void storeCopyStarted()
-            {
-            }
-
-            @Override
-            public void storeCopyCompleted( boolean wasSuccessful )
-            {
-
-            }
-
-            @Override
-            public void catchupStarted()
-            {
-
-            }
-
-            @Override
-            public void catchupCompleted()
-            {
-
             }
         };
 
