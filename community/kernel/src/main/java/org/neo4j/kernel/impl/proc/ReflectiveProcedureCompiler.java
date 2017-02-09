@@ -234,10 +234,9 @@ class ReflectiveProcedureCompiler
             }
             catch ( ProcedureInjectionException e )
             {
-                log.warn( e.getMessage() );
                 description = Optional.of( procName.toString() +
-                        "is not available due to not having unrestricted access rights, check configuration." );
-
+                        " is not available due to not having unrestricted access rights, check configuration." );
+                log.warn( description.get());
                 signature = new ProcedureSignature( procName, inputSignature, outputMapper.signature(), Mode.DEFAULT,
                         Optional.empty(), new String[0], description, warning );
                 return new LoadFailProcedure( signature );

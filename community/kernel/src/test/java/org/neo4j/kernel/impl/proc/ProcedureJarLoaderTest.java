@@ -219,9 +219,8 @@ public class ProcedureJarLoaderTest
 
         // Then
         verify( log )
-                .warn( "Unable to set up injection for procedure `ClassWithUnsafeComponent`, " +
-                        "the field `api` has type `class org.neo4j.kernel.impl.proc.ProcedureJarLoaderTest$UnsafeAPI`" +
-                        " which is not a known injectable component." );
+                .warn( "org.neo4j.kernel.impl.proc.unsafeProcedure is not available " +
+                        "due to not having unrestricted access rights, check configuration." );
 
     }
 

@@ -103,9 +103,8 @@ public class ResourceInjectionTest
         //When
         List<CallableProcedure> procList = compile( procedureWithUnsafeAPI.class, false );
         verify( log )
-                .warn( "Unable to set up injection for procedure `procedureWithUnsafeAPI`, the field `api` has type" +
-                        " `class org.neo4j.kernel.impl.proc.ResourceInjectionTest$MyUnsafeAPI`" +
-                        " which is not a known injectable component." );
+                .warn( "org.neo4j.kernel.impl.proc.listCoolPeople is not " +
+                        "available due to not having unrestricted access rights, check configuration." );
 
         assertThat( procList.size(), equalTo( 1 ) );
         try
@@ -116,7 +115,7 @@ public class ResourceInjectionTest
         catch ( ProcedureException e )
         {
             assertThat( e.getMessage(), containsString(
-                    "org.neo4j.kernel.impl.proc.listCoolPeopleis not " +
+                    "org.neo4j.kernel.impl.proc.listCoolPeople is not " +
                             "available due to not having unrestricted access rights, check configuration." ) );
         }
 
