@@ -38,8 +38,7 @@ class BoltStateMachineSPI implements BoltStateMachine.SPI
     private final BoltConnectionTracker connectionTracker;
     private final Authentication authentication;
     private final String version;
-
-    final TransactionStateMachine.SPI transactionSpi;
+    private final TransactionStateMachine.SPI transactionSpi;
 
     BoltStateMachineSPI( BoltConnectionDescriptor connectionDescriptor,
                          UsageData usageData,

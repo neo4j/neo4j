@@ -34,14 +34,12 @@ import org.neo4j.kernel.impl.logging.LogService;
 import org.neo4j.kernel.impl.query.QueryExecutionEngine;
 import org.neo4j.kernel.impl.transaction.log.TransactionIdStore;
 import org.neo4j.kernel.internal.GraphDatabaseAPI;
-import org.neo4j.kernel.lifecycle.LifeSupport;
 import org.neo4j.kernel.lifecycle.LifecycleAdapter;
 import org.neo4j.udc.UsageData;
 
-public class LifecycleManagedBoltFactory extends LifecycleAdapter implements BoltFactory
+public class BoltFactoryImpl extends LifecycleAdapter implements BoltFactory
 {
     private final GraphDatabaseAPI gds;
-    private final LifeSupport life = new LifeSupport();
     private final UsageData usageData;
     private final LogService logging;
     private final Authentication authentication;
@@ -54,7 +52,7 @@ public class LifecycleManagedBoltFactory extends LifecycleAdapter implements Bol
     private TransactionIdStore transactionIdStore;
     private AvailabilityGuard availabilityGuard;
 
-    public LifecycleManagedBoltFactory( GraphDatabaseAPI gds, UsageData usageData, LogService logging,
+    public BoltFactoryImpl( GraphDatabaseAPI gds, UsageData usageData, LogService logging,
             ThreadToStatementContextBridge txBridge, Authentication authentication,
             BoltConnectionTracker connectionTracker, Config config )
     {
@@ -68,12 +66,6 @@ public class LifecycleManagedBoltFactory extends LifecycleAdapter implements Bol
     }
 
     @Override
-    public void init() throws Throwable
-    {
-        life.init();
-    }
-
-    @Override
     public void start() throws Throwable
     {
         DependencyResolver dependencyResolver = gds.getDependencyResolver();
@@ -81,19 +73,15 @@ public class LifecycleManagedBoltFactory extends LifecycleAdapter implements Bol
         queryService = dependencyResolver.resolveDependency( GraphDatabaseQueryService.class );
         transactionIdStore = dependencyResolver.resolveDependency( TransactionIdStore.class );
         availabilityGuard = dependencyResolver.resolveDependency( AvailabilityGuard.class );
-        life.start();
     }
 
     @Override
     public void stop() throws Throwable
     {
-        life.stop();
-    }
-
-    @Override
-    public void shutdown() throws Throwable
-    {
-        life.shutdown();
+        queryExecutionEngine = null;
+        queryService = null;
+        transactionIdStore = null;
+        availabilityGuard = null;
     }
 
     @Override
