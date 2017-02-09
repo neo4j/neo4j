@@ -19,9 +19,7 @@
  */
 package org.neo4j.kernel.impl.api.store;
 
-import java.util.Objects;
 import java.util.function.Consumer;
-import java.util.function.Supplier;
 
 import org.neo4j.collection.primitive.PrimitiveIntCollections;
 import org.neo4j.collection.primitive.PrimitiveIntSet;
@@ -31,9 +29,7 @@ import org.neo4j.kernel.api.cursor.EntityItemHelper;
 import org.neo4j.kernel.impl.locking.Lock;
 import org.neo4j.kernel.impl.locking.LockService;
 import org.neo4j.kernel.impl.store.NodeLabelsField;
-import org.neo4j.kernel.impl.store.RecordCursor;
 import org.neo4j.kernel.impl.store.RecordCursors;
-import org.neo4j.kernel.impl.store.record.DynamicRecord;
 import org.neo4j.kernel.impl.store.record.NodeRecord;
 import org.neo4j.kernel.impl.store.record.Record;
 import org.neo4j.kernel.impl.util.IoPrimitiveUtils;
@@ -49,52 +45,6 @@ import static org.neo4j.kernel.impl.util.IoPrimitiveUtils.safeCastLongToInt;
  */
 public class StoreSingleNodeCursor extends EntityItemHelper implements Cursor<NodeItem>, NodeItem
 {
-    private static class NodeLabelView implements Supplier<PrimitiveIntSet>
-    {
-        private final RecordCursor<DynamicRecord> dynamicLabelRecordCursor;
-        private long[] labels;
-
-        NodeLabelView( RecordCursor<DynamicRecord> dynamicLabelRecordCursor )
-        {
-            this.dynamicLabelRecordCursor = dynamicLabelRecordCursor;
-        }
-
-        NodeLabelView load( NodeRecord nodeRecord )
-        {
-            if ( labels == null )
-            {
-                labels = NodeLabelsField.get( nodeRecord, dynamicLabelRecordCursor );
-            }
-            return this;
-        }
-
-        void clear()
-        {
-            labels = null;
-        }
-
-        boolean hasLabel( int labelId )
-        {
-            Objects.requireNonNull( labels );
-            for ( long label : labels )
-            {
-                if ( safeCastLongToInt( label ) == labelId )
-                {
-                    return true;
-                }
-            }
-            return false;
-        }
-
-        @Override
-        public PrimitiveIntSet get()
-        {
-            Objects.requireNonNull( labels );
-            return PrimitiveIntCollections.asSet( labels, IoPrimitiveUtils::safeCastLongToInt );
-        }
-    }
-
-    private final NodeLabelView labelView;
     private final NodeRecord nodeRecord;
     private final Consumer<StoreSingleNodeCursor> instanceCache;
 
@@ -103,6 +53,7 @@ public class StoreSingleNodeCursor extends EntityItemHelper implements Cursor<No
     private final NodeExploringCursors cursors;
 
     private long nodeId = StatementConstants.NO_SUCH_NODE;
+    private long[] labels;
 
     StoreSingleNodeCursor( NodeRecord nodeRecord, Consumer<StoreSingleNodeCursor> instanceCache,
             RecordCursors recordCursors, LockService lockService )
@@ -112,7 +63,6 @@ public class StoreSingleNodeCursor extends EntityItemHelper implements Cursor<No
         this.lockService = lockService;
         this.instanceCache = instanceCache;
         this.cursors = new NodeExploringCursors( recordCursors );
-        this.labelView = new NodeLabelView( recordCursors.label() );
     }
 
     public StoreSingleNodeCursor init( long nodeId )
@@ -130,6 +80,7 @@ public class StoreSingleNodeCursor extends EntityItemHelper implements Cursor<No
     @Override
     public boolean next()
     {
+        labels = null;
         if ( nodeId != StatementConstants.NO_SUCH_NODE )
         {
             try
@@ -142,14 +93,14 @@ public class StoreSingleNodeCursor extends EntityItemHelper implements Cursor<No
             }
         }
 
-        labelView.clear();
         return false;
     }
 
     @Override
     public void close()
     {
-        labelView.clear();
+        labels = null;
+        nodeRecord.clear();
         instanceCache.accept( this );
     }
 
@@ -162,13 +113,30 @@ public class StoreSingleNodeCursor extends EntityItemHelper implements Cursor<No
     @Override
     public PrimitiveIntSet labels()
     {
-        return labelView.load( nodeRecord ).get();
+        ensureLabels();
+        return PrimitiveIntCollections.asSet( labels, IoPrimitiveUtils::safeCastLongToInt );
+    }
+
+    private void ensureLabels()
+    {
+        if ( labels == null )
+        {
+            labels = NodeLabelsField.get( nodeRecord, recordCursors.label() );
+        }
     }
 
     @Override
     public boolean hasLabel( int labelId )
     {
-        return labelView.load( nodeRecord ).hasLabel( labelId );
+        ensureLabels();
+        for ( long label : labels )
+        {
+            if ( safeCastLongToInt( label ) == labelId )
+            {
+                return true;
+            }
+        }
+        return false;
     }
 
     private Lock shortLivedReadLock()
