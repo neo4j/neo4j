@@ -99,16 +99,16 @@ public class EnterpriseSecurityModule extends SecurityModule
         life.add( dependencies.dependencySatisfier().satisfyDependency( authManager ) );
 
         // Register procedures
-        procedures.registerComponent( SecurityLog.class, ( ctx ) -> securityLog );
-        procedures.registerComponent( EnterpriseAuthManager.class, ctx -> authManager );
+        procedures.registerComponent( SecurityLog.class, ( ctx ) -> securityLog, false );
+        procedures.registerComponent( EnterpriseAuthManager.class, ctx -> authManager, false );
         procedures.registerComponent( EnterpriseSecurityContext.class,
-                ctx -> asEnterprise( ctx.get( SECURITY_CONTEXT ) ) );
+                ctx -> asEnterprise( ctx.get( SECURITY_CONTEXT ) ), true );
 
         if ( config.get( SecuritySettings.native_authentication_enabled )
              || config.get( SecuritySettings.native_authorization_enabled ) )
         {
             procedures.registerComponent( EnterpriseUserManager.class,
-                    ctx -> authManager.getUserManager( asEnterprise( ctx.get( SECURITY_CONTEXT ) ) ) );
+                    ctx -> authManager.getUserManager( asEnterprise( ctx.get( SECURITY_CONTEXT ) ) ), true );
             if ( config.get( SecuritySettings.auth_providers ).size() > 1 )
             {
                 procedures.registerProcedure( UserManagementProcedures.class, true,
@@ -121,7 +121,7 @@ public class EnterpriseSecurityModule extends SecurityModule
         }
         else
         {
-            procedures.registerComponent( EnterpriseUserManager.class, ctx -> EnterpriseUserManager.NOOP );
+            procedures.registerComponent( EnterpriseUserManager.class, ctx -> EnterpriseUserManager.NOOP, true );
         }
 
         procedures.registerProcedure( SecurityProcedures.class, true );

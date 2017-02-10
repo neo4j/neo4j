@@ -34,6 +34,7 @@ import java.util.stream.Collectors;
 import java.util.stream.Stream;
 
 import org.neo4j.collection.RawIterator;
+import org.neo4j.kernel.api.exceptions.ProcedureInjectionException;
 import org.neo4j.kernel.api.exceptions.KernelException;
 import org.neo4j.kernel.api.exceptions.ProcedureException;
 import org.neo4j.kernel.api.exceptions.Status;
@@ -42,6 +43,7 @@ import org.neo4j.kernel.api.proc.CallableUserAggregationFunction;
 import org.neo4j.kernel.api.proc.CallableUserFunction;
 import org.neo4j.kernel.api.proc.Context;
 import org.neo4j.kernel.api.proc.FieldSignature;
+import org.neo4j.kernel.api.proc.LoadFailProcedure;
 import org.neo4j.kernel.api.proc.ProcedureSignature;
 import org.neo4j.kernel.api.proc.QualifiedName;
 import org.neo4j.kernel.api.proc.UserFunctionSignature;
@@ -68,17 +70,19 @@ class ReflectiveProcedureCompiler
     private final MethodHandles.Lookup lookup = MethodHandles.lookup();
     private final OutputMappers outputMappers;
     private final MethodSignatureCompiler inputSignatureDeterminer;
-    private final FieldInjections fieldInjections;
+    private final FieldInjections safeFieldInjections;
+    private final FieldInjections allFieldInjections;
     private final Log log;
     private final TypeMappers typeMappers;
-    private final ProcedureAllowedConfig config;
+    private final ProcedureConfig config;
 
-    ReflectiveProcedureCompiler( TypeMappers typeMappers, ComponentRegistry components, Log log,
-            ProcedureAllowedConfig config )
+    ReflectiveProcedureCompiler( TypeMappers typeMappers, ComponentRegistry safeComponents,
+            ComponentRegistry allComponents, Log log, ProcedureConfig config )
     {
         inputSignatureDeterminer = new MethodSignatureCompiler( typeMappers );
         outputMappers = new OutputMappers( typeMappers );
-        this.fieldInjections = new FieldInjections( components );
+        this.safeFieldInjections = new FieldInjections( safeComponents );
+        this.allFieldInjections = new FieldInjections( allComponents );
         this.log = log;
         this.typeMappers = typeMappers;
         this.config = config;
@@ -152,7 +156,8 @@ class ReflectiveProcedureCompiler
         }
     }
 
-    List<CallableProcedure> compileProcedure( Class<?> procDefinition, Optional<String> warning ) throws KernelException
+    List<CallableProcedure> compileProcedure( Class<?> procDefinition, Optional<String> warning,
+            boolean fullAccess ) throws KernelException
     {
         try
         {
@@ -170,7 +175,7 @@ class ReflectiveProcedureCompiler
             ArrayList<CallableProcedure> out = new ArrayList<>( procedureMethods.size() );
             for ( Method method : procedureMethods )
             {
-                out.add( compileProcedure( procDefinition, constructor, method, warning ) );
+                out.add( compileProcedure( procDefinition, constructor, method, warning, fullAccess ) );
             }
             out.sort( Comparator.comparing( a -> a.signature().name().toString() ) );
             return out;
@@ -186,18 +191,17 @@ class ReflectiveProcedureCompiler
         }
     }
 
-    private ReflectiveProcedure compileProcedure( Class<?> procDefinition, MethodHandle constructor, Method method,
-            Optional<String> warning )
+    private CallableProcedure compileProcedure( Class<?> procDefinition, MethodHandle constructor, Method method,
+            Optional<String> warning, boolean fullAccess )
             throws ProcedureException, IllegalAccessException
     {
+        MethodHandle procedureMethod = lookup.unreflect( method );
+
         String valueName = method.getAnnotation( Procedure.class ).value();
         String definedName = method.getAnnotation( Procedure.class ).name();
         QualifiedName procName = extractName( procDefinition, method, valueName, definedName );
-
         List<FieldSignature> inputSignature = inputSignatureDeterminer.signatureFor( method );
         OutputMapper outputMapper = outputMappers.mapper( method );
-        MethodHandle procedureMethod = lookup.unreflect( method );
-        List<FieldInjections.FieldSetter> setters = fieldInjections.setters( procDefinition );
 
         Optional<String> description = description( method );
         Procedure procedure = method.getAnnotation( Procedure.class );
@@ -218,10 +222,28 @@ class ReflectiveProcedureCompiler
         Optional<String> deprecated = deprecated( method, procedure::deprecatedBy,
                 "Use of @Procedure(deprecatedBy) without @Deprecated in " + procName );
 
-        ProcedureSignature signature =
-                new ProcedureSignature( procName, inputSignature, outputMapper.signature(),
-                        mode, deprecated, config.rolesFor( procName.toString() ), description, warning );
+        List<FieldInjections.FieldSetter> setters;
+        setters = allFieldInjections.setters( procDefinition );
+        ProcedureSignature signature;
 
+        if ( !fullAccess && !config.fullAccessFor( procName.toString() ) )
+        {
+            try
+            {
+                setters = safeFieldInjections.setters( procDefinition );
+            }
+            catch ( ProcedureInjectionException e )
+            {
+                description = Optional.of( procName.toString() +
+                        " is not available due to not having unrestricted access rights, check configuration." );
+                log.warn( description.get());
+                signature = new ProcedureSignature( procName, inputSignature, outputMapper.signature(), Mode.DEFAULT,
+                        Optional.empty(), new String[0], description, warning );
+                return new LoadFailProcedure( signature );
+            }
+        }
+        signature = new ProcedureSignature( procName, inputSignature, outputMapper.signature(), mode, deprecated,
+                config.rolesFor( procName.toString() ), description, warning );
         return new ReflectiveProcedure( signature, constructor, procedureMethod, outputMapper, setters );
     }
 
@@ -243,7 +265,7 @@ class ReflectiveProcedureCompiler
         Class<?> returnType = method.getReturnType();
         TypeMappers.NeoValueConverter valueConverter = typeMappers.converterFor( returnType );
         MethodHandle procedureMethod = lookup.unreflect( method );
-        List<FieldInjections.FieldSetter> setters = fieldInjections.setters( procDefinition );
+        List<FieldInjections.FieldSetter> setters = safeFieldInjections.setters( procDefinition );
 
         Optional<String> description = description( method );
         UserFunction function = method.getAnnotation( UserFunction.class );
@@ -345,7 +367,7 @@ class ReflectiveProcedureCompiler
         MethodHandle creator = lookup.unreflect( method );
         MethodHandle updateMethod = lookup.unreflect( update );
         MethodHandle resultMethod = lookup.unreflect( result );
-        List<FieldInjections.FieldSetter> setters = fieldInjections.setters( definition);
+        List<FieldInjections.FieldSetter> setters = safeFieldInjections.setters( definition );
 
         Optional<String> description = description( method );
         UserAggregationFunction function = method.getAnnotation( UserAggregationFunction.class );

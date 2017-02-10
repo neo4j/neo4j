@@ -52,7 +52,6 @@ import org.neo4j.graphdb.Relationship;
 import org.neo4j.graphdb.RelationshipType;
 import org.neo4j.graphdb.Result;
 import org.neo4j.graphdb.Transaction;
-import org.neo4j.graphdb.factory.GraphDatabaseSettings;
 import org.neo4j.graphdb.security.AuthorizationViolationException;
 import org.neo4j.helpers.Exceptions;
 import org.neo4j.helpers.collection.Iterators;
@@ -60,7 +59,6 @@ import org.neo4j.io.fs.FileUtils;
 import org.neo4j.kernel.api.KernelTransaction;
 import org.neo4j.kernel.api.exceptions.Status;
 import org.neo4j.kernel.api.security.AnonymousContext;
-import org.neo4j.kernel.api.security.SecurityContext;
 import org.neo4j.kernel.impl.proc.JarBuilder;
 import org.neo4j.kernel.impl.proc.Procedures;
 import org.neo4j.kernel.internal.GraphDatabaseAPI;
@@ -76,6 +74,8 @@ import static org.junit.Assert.assertEquals;
 import static org.junit.Assert.assertFalse;
 import static org.junit.Assert.assertTrue;
 import static org.neo4j.graphdb.Label.label;
+import static org.neo4j.graphdb.factory.GraphDatabaseSettings.plugin_dir;
+import static org.neo4j.graphdb.factory.GraphDatabaseSettings.procedure_unrestricted;
 import static org.neo4j.helpers.collection.Iterables.asList;
 import static org.neo4j.helpers.collection.MapUtil.map;
 import static org.neo4j.logging.AssertableLogProvider.inLog;
@@ -476,7 +476,8 @@ public class ProcedureIT
                 .setInternalLogProvider( logProvider )
                 .setUserLogProvider( logProvider )
                 .newImpermanentDatabaseBuilder()
-                .setConfig( GraphDatabaseSettings.plugin_dir, plugins.getRoot().getAbsolutePath() )
+                .setConfig( plugin_dir, plugins.getRoot().getAbsolutePath() )
+                .setConfig( procedure_unrestricted, "org.neo4j.procedure.*" )
                 .newGraphDatabase();
 
         // When
@@ -1136,9 +1137,9 @@ public class ProcedureIT
         new JarBuilder().createJarFor( plugins.newFile( "myFunctions.jar" ), ClassWithFunctions.class );
         db = new TestGraphDatabaseFactory()
                 .newImpermanentDatabaseBuilder()
-                .setConfig( GraphDatabaseSettings.plugin_dir, plugins.getRoot().getAbsolutePath() )
+                .setConfig( plugin_dir, plugins.getRoot().getAbsolutePath() )
+                .setConfig( procedure_unrestricted, "org.neo4j.procedure.*" )
                 .newGraphDatabase();
-
     }
 
     @After

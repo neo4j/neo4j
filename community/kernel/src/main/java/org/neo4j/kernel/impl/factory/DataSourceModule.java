@@ -63,7 +63,7 @@ import org.neo4j.kernel.impl.core.StartupStatisticsProvider;
 import org.neo4j.kernel.impl.core.ThreadToStatementContextBridge;
 import org.neo4j.kernel.impl.core.TokenNotFoundException;
 import org.neo4j.kernel.impl.logging.LogService;
-import org.neo4j.kernel.impl.proc.ProcedureAllowedConfig;
+import org.neo4j.kernel.impl.proc.ProcedureConfig;
 import org.neo4j.kernel.impl.proc.ProcedureGDSFactory;
 import org.neo4j.kernel.impl.proc.Procedures;
 import org.neo4j.kernel.impl.proc.TerminationGuardProvider;
@@ -350,7 +350,7 @@ public class DataSourceModule
         Procedures procedures = new Procedures(
                 new SpecialBuiltInProcedures( Version.getNeo4jVersion(),
                         platform.databaseInfo.edition.toString() ),
-                pluginDir, internalLog, new ProcedureAllowedConfig( platform.config ) );
+                pluginDir, internalLog, new ProcedureConfig( platform.config ) );
         platform.life.add( procedures );
         platform.dependencies.satisfyDependency( procedures );
 
@@ -362,16 +362,16 @@ public class DataSourceModule
 
         // Register injected public API components
         Log proceduresLog = platform.logging.getUserLog( Procedures.class );
-        procedures.registerComponent( Log.class, ( ctx ) -> proceduresLog );
+        procedures.registerComponent( Log.class, ( ctx ) -> proceduresLog, true );
 
         Guard guard = platform.dependencies.resolveDependency( Guard.class );
-        procedures.registerComponent( TerminationGuard.class, new TerminationGuardProvider( guard ) );
+        procedures.registerComponent( TerminationGuard.class, new TerminationGuardProvider( guard ), true );
 
         // Register injected private API components: useful to have available in procedures to access the kernel etc.
         ProcedureGDSFactory gdsFactory = new ProcedureGDSFactory( platform.config, platform.storeDir,
                 platform.dependencies, storeId, this.queryExecutor, editionModule.coreAPIAvailabilityGuard,
                 platform.urlAccessRule );
-        procedures.registerComponent( GraphDatabaseService.class, gdsFactory::apply );
+        procedures.registerComponent( GraphDatabaseService.class, gdsFactory::apply, true );
 
         // Below components are not public API, but are made available for internal
         // procedures to call, and to provide temporary workarounds for the following
@@ -380,12 +380,12 @@ public class DataSourceModule
         //  - Group-transaction writes (same pattern as above, but rather than splitting large transactions,
         //                              combine lots of small ones)
         //  - Bleeding-edge performance (KernelTransaction, to bypass overhead of working with Core API)
-        procedures.registerComponent( DependencyResolver.class, ( ctx ) -> platform.dependencies );
-        procedures.registerComponent( KernelTransaction.class, ( ctx ) -> ctx.get( KERNEL_TRANSACTION ) );
-        procedures.registerComponent( GraphDatabaseAPI.class, ( ctx ) -> platform.graphDatabaseFacade );
+        procedures.registerComponent( DependencyResolver.class, ( ctx ) -> platform.dependencies, false );
+        procedures.registerComponent( KernelTransaction.class, ( ctx ) -> ctx.get( KERNEL_TRANSACTION ), false );
+        procedures.registerComponent( GraphDatabaseAPI.class, ( ctx ) -> platform.graphDatabaseFacade, false );
 
         // Security procedures
-        procedures.registerComponent( SecurityContext.class, ctx -> ctx.get( SECURITY_CONTEXT ) );
+        procedures.registerComponent( SecurityContext.class, ctx -> ctx.get( SECURITY_CONTEXT ), true );
 
         // Edition procedures
         try

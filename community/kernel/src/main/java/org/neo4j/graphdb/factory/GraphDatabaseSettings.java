@@ -502,6 +502,10 @@ public class GraphDatabaseSettings implements LoadableConfig
     public static final Setting<File> auth_store =
             pathSetting( "unsupported.dbms.security.auth_store.location", NO_DEFAULT );
 
+    @Description("A comma separated list of procedures that are allowed full access to the database, note that this" +
+            " will enable them to bypass security. Use with care.")
+    public static final Setting<String> procedure_unrestricted = setting( "dbms.security.procedures.unrestricted", Settings.STRING, "" );
+
     // Bolt Settings
 
     @Description("Default network interface to listen for incoming connections. " +

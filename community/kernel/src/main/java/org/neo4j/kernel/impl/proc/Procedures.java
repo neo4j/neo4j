@@ -49,7 +49,8 @@ public class Procedures extends LifecycleAdapter
 {
     private final ProcedureRegistry registry = new ProcedureRegistry();
     private final TypeMappers typeMappers = new TypeMappers();
-    private final ComponentRegistry components = new ComponentRegistry();
+    private final ComponentRegistry safeComponents = new ComponentRegistry();
+    private final ComponentRegistry allComponents = new ComponentRegistry();
     private final ReflectiveProcedureCompiler compiler;
     private final ThrowingConsumer<Procedures, ProcedureException> builtin;
     private final File pluginDir;
@@ -58,16 +59,16 @@ public class Procedures extends LifecycleAdapter
 
     public Procedures()
     {
-        this( new SpecialBuiltInProcedures( "N/A", "N/A" ), null, NullLog.getInstance(), ProcedureAllowedConfig.DEFAULT );
+        this( new SpecialBuiltInProcedures( "N/A", "N/A" ), null, NullLog.getInstance(), ProcedureConfig.DEFAULT );
     }
 
     public Procedures( ThrowingConsumer<Procedures,ProcedureException> builtin, File pluginDir, Log log,
-            ProcedureAllowedConfig config )
+            ProcedureConfig config )
     {
         this.builtin = builtin;
         this.pluginDir = pluginDir;
         this.log = log;
-        this.compiler = new ReflectiveProcedureCompiler( typeMappers, components, log, config );
+        this.compiler = new ReflectiveProcedureCompiler( typeMappers, safeComponents, allComponents, log, config );
     }
 
     /**
@@ -125,7 +126,7 @@ public class Procedures extends LifecycleAdapter
     }
 
     /**
-     * Register a new procedure defined with annotations on a java class.
+     * Register a new internal procedure defined with annotations on a java class.
      * @param proc the procedure class
      */
     public void registerProcedure( Class<?> proc ) throws KernelException
@@ -134,7 +135,7 @@ public class Procedures extends LifecycleAdapter
     }
 
     /**
-     * Register a new procedure defined with annotations on a java class.
+     * Register a new internal procedure defined with annotations on a java class.
      * @param proc the procedure class
      * @param overrideCurrentImplementation set to true if procedures within this class should override older procedures with the same name
      */
@@ -144,7 +145,7 @@ public class Procedures extends LifecycleAdapter
     }
 
     /**
-     * Register a new procedure defined with annotations on a java class.
+     * Register a new internal procedure defined with annotations on a java class.
      * @param proc the procedure class
      * @param overrideCurrentImplementation set to true if procedures within this class should override older procedures with the same name
      * @param warning the warning the procedure should generate when called
@@ -153,7 +154,7 @@ public class Procedures extends LifecycleAdapter
             throws
             KernelException
     {
-        for ( CallableProcedure procedure : compiler.compileProcedure( proc, warning ) )
+        for ( CallableProcedure procedure : compiler.compileProcedure( proc, warning, true ) )
         {
             register( procedure, overrideCurrentImplementation );
         }
@@ -213,13 +214,17 @@ public class Procedures extends LifecycleAdapter
 
     /**
      * Registers a component, these become available in reflective procedures for injection.
-     *
      * @param cls the type of component to be registered (this is what users 'ask' for in their field declaration)
      * @param provider a function that supplies the component, given the context of a procedure invocation
+     * @param safe set to false if this component can bypass security, true if it respects security
      */
-    public <T> void registerComponent( Class<T> cls, ComponentRegistry.Provider<T> provider )
+    public <T> void registerComponent( Class<T> cls, ComponentRegistry.Provider<T> provider, boolean safe )
     {
-        components.register( cls, provider );
+        if ( safe )
+        {
+            safeComponents.register( cls, provider );
+        }
+        allComponents.register( cls, provider );
     }
 
     public ProcedureSignature procedure( QualifiedName name ) throws ProcedureException

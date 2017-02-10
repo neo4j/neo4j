@@ -21,15 +21,17 @@ package org.neo4j.kernel.impl.proc;
 
 import java.util.Collections;
 import java.util.List;
+import java.util.function.Function;
 import java.util.regex.Pattern;
 import java.util.stream.Collectors;
 import java.util.stream.Stream;
 
+import org.neo4j.graphdb.factory.GraphDatabaseSettings;
 import org.neo4j.kernel.configuration.Config;
 
 import static java.util.Arrays.stream;
 
-public class ProcedureAllowedConfig
+public class ProcedureConfig
 {
     public static final String PROC_ALLOWED_SETTING_DEFAULT_NAME = "dbms.security.procedures.default_allowed";
     public static final String PROC_ALLOWED_SETTING_ROLES = "dbms.security.procedures.roles";
@@ -37,36 +39,47 @@ public class ProcedureAllowedConfig
     private static final String ROLES_DELIMITER = ",";
     private static final String SETTING_DELIMITER = ";";
     private static final String MAPPING_DELIMITER = ":";
+    private static final String PROCEDURE_DELIMITER = ",";
 
     private final String defaultValue;
     private final List<ProcMatcher> matchers;
+    private final List<Pattern> accessPatterns;
 
-    private ProcedureAllowedConfig()
+    private ProcedureConfig()
     {
         this.defaultValue = "";
         this.matchers = Collections.emptyList();
+        this.accessPatterns = Collections.emptyList();
     }
 
-    public ProcedureAllowedConfig( Config config )
+    public ProcedureConfig( Config config )
     {
         this.defaultValue = config.getValue( PROC_ALLOWED_SETTING_DEFAULT_NAME )
                 .map( Object::toString )
                 .orElse( "" );
-        String allowedRoles = config.getValue( PROC_ALLOWED_SETTING_ROLES ).map( Object::toString ).orElse( "" );
-        if ( allowedRoles.isEmpty() )
+        this.matchers = parseMatchers( PROC_ALLOWED_SETTING_ROLES, config, SETTING_DELIMITER, procToRoleSpec ->
         {
-            this.matchers = Collections.emptyList();
+            String[] spec = procToRoleSpec.split( MAPPING_DELIMITER );
+            String[] roles = stream( spec[1].split( ROLES_DELIMITER ) ).map( String::trim ).toArray( String[]::new );
+            return new ProcMatcher( spec[0].trim(), roles );
+        } );
+
+        this.accessPatterns =
+                parseMatchers( GraphDatabaseSettings.procedure_unrestricted.name(), config, PROCEDURE_DELIMITER,
+                        ProcedureConfig::compilePattern );
+    }
+
+    private <T> List<T> parseMatchers( String configName, Config config, String delimiter, Function<String,T>
+            matchFunc )
+    {
+        String fullAccessProcedures = config.getValue( configName ).map( Object::toString ).orElse( "" );
+        if ( fullAccessProcedures.isEmpty() )
+        {
+            return Collections.emptyList();
         }
         else
         {
-            this.matchers = Stream.of( allowedRoles.split( SETTING_DELIMITER ) )
-                    .map( procToRoleSpec ->
-                    {
-                        String[] spec = procToRoleSpec.split( MAPPING_DELIMITER );
-                        String[] roles = stream( spec[1].split( ROLES_DELIMITER ) )
-                                .map( String::trim ).toArray( String[]::new );
-                        return new ProcMatcher( spec[0].trim(), roles );
-                    } )
+            return Stream.of( fullAccessProcedures.split( delimiter ) ).map( matchFunc )
                     .collect( Collectors.toList() );
         }
     }
@@ -86,12 +99,22 @@ public class ProcedureAllowedConfig
         }
     }
 
+    boolean fullAccessFor( String procedureName )
+    {
+        return accessPatterns.stream().anyMatch( pattern -> pattern.matcher( procedureName ).matches() );
+    }
+
+    private static Pattern compilePattern( String procedure )
+    {
+        return Pattern.compile( procedure.trim().replaceAll( "\\.", "\\\\." ).replaceAll( "\\*", ".*" ) );
+    }
+
     private String[] getDefaultValue()
     {
         return defaultValue == null || defaultValue.isEmpty() ? new String[0] : new String[]{defaultValue};
     }
 
-    static final ProcedureAllowedConfig DEFAULT = new ProcedureAllowedConfig();
+    static final ProcedureConfig DEFAULT = new ProcedureConfig();
 
     private static class ProcMatcher
     {

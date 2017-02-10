@@ -36,7 +36,10 @@ import org.neo4j.kernel.api.exceptions.ProcedureException;
 import org.neo4j.kernel.api.proc.BasicContext;
 import org.neo4j.kernel.api.proc.CallableProcedure;
 import org.neo4j.kernel.api.proc.ProcedureSignature;
+import org.neo4j.kernel.configuration.Config;
+import org.neo4j.logging.Log;
 import org.neo4j.logging.NullLog;
+import org.neo4j.procedure.Context;
 import org.neo4j.procedure.Name;
 import org.neo4j.procedure.Procedure;
 
@@ -44,10 +47,15 @@ import static java.util.stream.Collectors.toList;
 import static org.hamcrest.Matchers.contains;
 import static org.hamcrest.Matchers.containsInAnyOrder;
 import static org.junit.Assert.assertThat;
+import static org.neo4j.graphdb.factory.GraphDatabaseSettings.procedure_unrestricted;
+import static org.mockito.Mockito.mock;
+import static org.mockito.Mockito.verify;
 import static org.neo4j.helpers.collection.Iterators.asList;
+import static org.neo4j.helpers.collection.MapUtil.genericMap;
 import static org.neo4j.kernel.api.proc.Neo4jTypes.NTInteger;
 import static org.neo4j.kernel.api.proc.ProcedureSignature.procedureSignature;
 
+@SuppressWarnings( "WeakerAccess" )
 public class ProcedureJarLoaderTest
 {
     @Rule
@@ -55,9 +63,10 @@ public class ProcedureJarLoaderTest
     @Rule
     public ExpectedException exception = ExpectedException.none();
 
+    private Log log = mock( Log.class );
     private final ProcedureJarLoader jarloader =
             new ProcedureJarLoader( new ReflectiveProcedureCompiler( new TypeMappers(), new ComponentRegistry(),
-                    NullLog.getInstance(), ProcedureAllowedConfig.DEFAULT ), NullLog.getInstance() );
+                    registryWithUnsafeAPI(), log, procedureConfig() ), NullLog.getInstance());
 
     @Test
     public void shouldLoadProcedureFromJar() throws Throwable
@@ -199,6 +208,40 @@ public class ProcedureJarLoaderTest
         jarloader.loadProcedures( jar );
     }
 
+    @Test
+    public void shouldGiveHelpfulLogOnUnsafeRestrictedProcedure() throws Throwable
+    {
+        // Given
+        URL jar = createJarFor( ClassWithUnsafeComponent.class );
+
+        // When
+        jarloader.loadProcedures( jar );
+
+        // Then
+        verify( log )
+                .warn( "org.neo4j.kernel.impl.proc.unsafeProcedure is not available " +
+                        "due to not having unrestricted access rights, check configuration." );
+
+    }
+
+    @Test
+    public void shouldLoadUnsafeAllowedProcedureFromJar() throws Throwable
+    {
+        // Given
+        URL jar = createJarFor( ClassWithUnsafeConfiguredComponent.class );
+
+        // When
+        List<CallableProcedure> procedures = jarloader.loadProcedures( jar ).procedures();
+
+        // Then
+        List<ProcedureSignature> signatures = procedures.stream().map( CallableProcedure::signature ).collect( toList() );
+        assertThat( signatures, contains(
+                procedureSignature( "org","neo4j", "kernel", "impl", "proc", "unsafeFullAccessProcedure" ).out( "someNumber", NTInteger ).build() ));
+
+        assertThat( asList( procedures.get( 0 ).apply( new BasicContext(), new Object[0] ) ),
+                contains( IsEqual.equalTo( new Object[]{7331L} )) );
+    }
+
     public URL createJarFor( Class<?> ... targets ) throws IOException
     {
         return new JarBuilder().createJarFor( tmpdir.newFile( new Random().nextInt() + ".jar" ), targets );
@@ -288,5 +331,51 @@ public class ProcedureJarLoaderTest
         {
             return Stream.of( Collections.singletonList( new Output() ));
         }
+    }
+
+    public static class ClassWithUnsafeComponent
+    {
+        @Context
+        public UnsafeAPI api;
+
+        @Procedure
+        public Stream<Output> unsafeProcedure()
+        {
+            return Stream.of( new Output( api.getNumber() ) );
+        }
+    }
+
+    public static class ClassWithUnsafeConfiguredComponent
+    {
+        @Context
+        public UnsafeAPI api;
+
+        @Procedure
+        public Stream<Output> unsafeFullAccessProcedure()
+        {
+            return Stream.of( new Output( api.getNumber() ) );
+        }
+    }
+
+    private static class UnsafeAPI
+    {
+        public long getNumber()
+        {
+            return 7331;
+        }
+    }
+
+    private ComponentRegistry registryWithUnsafeAPI()
+    {
+        ComponentRegistry allComponents = new ComponentRegistry();
+        allComponents.register( UnsafeAPI.class, (ctx) -> new UnsafeAPI() );
+        return allComponents;
+    }
+
+    private ProcedureConfig procedureConfig()
+    {
+        Config config = Config.defaults().with(
+                genericMap( procedure_unrestricted.name(), "org.neo4j.kernel.impl.proc.unsafeFullAccessProcedure" ) );
+        return new ProcedureConfig( config );
     }
 }
