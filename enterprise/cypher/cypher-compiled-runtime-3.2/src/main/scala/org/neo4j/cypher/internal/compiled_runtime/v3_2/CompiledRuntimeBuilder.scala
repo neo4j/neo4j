@@ -30,7 +30,7 @@ class CompiledRuntimeBuilder extends RuntimeBuilder[Transformer[CompiledRuntimeC
     runtimeName match {
       case None =>
         BuildCompiledExecutionPlan andThen
-          If[CompiledRuntimeContext, CompilationState](_.maybeExecutionPlan.isEmpty)(
+          If[CompiledRuntimeContext, CompilationState, CompilationState](_.maybeExecutionPlan.isEmpty)(
             BuildInterpretedExecutionPlan
           )
 
@@ -39,13 +39,13 @@ class CompiledRuntimeBuilder extends RuntimeBuilder[Transformer[CompiledRuntimeC
 
       case Some(CompiledRuntimeName) if useErrorsOverWarnings =>
         BuildCompiledExecutionPlan andThen
-          If[CompiledRuntimeContext, CompilationState](_.maybeExecutionPlan.isEmpty)(
+          If[CompiledRuntimeContext, CompilationState, CompilationState](_.maybeExecutionPlan.isEmpty)(
             Do(_ => throw new InvalidArgumentException("The given query is not currently supported in the selected runtime"))
           )
 
       case Some(CompiledRuntimeName) =>
         BuildCompiledExecutionPlan andThen
-          If[CompiledRuntimeContext, CompilationState](_.maybeExecutionPlan.isEmpty)(
+          If[CompiledRuntimeContext, CompilationState, CompilationState](_.maybeExecutionPlan.isEmpty)(
             Do((ctx: CompiledRuntimeContext) => warnThatCompiledRuntimeDoesNotYetSupportQuery(ctx)) andThen
               BuildInterpretedExecutionPlan
           )

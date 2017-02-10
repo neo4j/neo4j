@@ -57,26 +57,26 @@ case class CypherCompiler[Context <: CompilerContext](createExecutionPlan: Trans
                 notificationLogger: InternalNotificationLogger,
                 plannerName: String = "",
                 offset: Option[InputPosition] = None): (ExecutionPlan, Map[String, Any]) = {
-    val step1: CompilationState = parseQuery(queryText, queryText, notificationLogger, plannerName, None, CompilationPhaseTracer.NO_TRACING)
-    planPreparedQuery(step1, notificationLogger, context, offset, CompilationPhaseTracer.NO_TRACING)
+    val state = parseQuery(queryText, queryText, notificationLogger, plannerName, None, CompilationPhaseTracer.NO_TRACING)
+    planPreparedQuery(state, notificationLogger, context, offset, CompilationPhaseTracer.NO_TRACING)
   }
 
-  def planPreparedQuery(input: CompilationState,
+  def planPreparedQuery(state: BaseState,
                         notificationLogger: InternalNotificationLogger,
                         planContext: PlanContext,
                         offset: Option[InputPosition] = None,
                         tracer: CompilationPhaseTracer): (ExecutionPlan, Map[String, Any]) = {
-    val context: Context = contextCreation.create(tracer, notificationLogger, planContext, input.queryText,
-      input.startPosition, monitors, createFingerprintReference, typeConverter, metricsFactory,
+    val context: Context = contextCreation.create(tracer, notificationLogger, planContext, state.queryText,
+      state.startPosition, monitors, createFingerprintReference, typeConverter, metricsFactory,
       queryGraphSolver, config, updateStrategy, clock)
-    val preparedCompilationState = prepareForCaching.transform(input, context)
+    val preparedCompilationState = prepareForCaching.transform(state, context)
     val cache = provideCache(cacheAccessor, cacheMonitor, planContext)
     val isStale = (plan: ExecutionPlan) => plan.isStale(planContext.txIdProvider, planContext.statistics)
-    val (executionPlan, _) = cache.getOrElseUpdate(input.statement, input.queryText, isStale, {
+    val (executionPlan, _) = cache.getOrElseUpdate(state.statement(), state.queryText, isStale, {
       val result: CompilationState = planAndCreateExecPlan.transform(preparedCompilationState, context)
       result.executionPlan
     })
-    (executionPlan, preparedCompilationState.extractedParams)
+    (executionPlan, preparedCompilationState.extractedParams())
   }
 
   def parseQuery(queryText: String,
@@ -84,7 +84,7 @@ case class CypherCompiler[Context <: CompilerContext](createExecutionPlan: Trans
                  notificationLogger: InternalNotificationLogger,
                  plannerNameText: String = IDPPlannerName.name,
                  offset: Option[InputPosition],
-                 tracer: CompilationPhaseTracer): CompilationState = {
+                 tracer: CompilationPhaseTracer): BaseState = {
     val plannerName = PlannerName(plannerNameText)
     val startState = CompilationState(queryText, offset, plannerName)
     //TODO: these nulls are a short cut
@@ -93,30 +93,33 @@ case class CypherCompiler[Context <: CompilerContext](createExecutionPlan: Trans
     CompilationPhases.parsing(sequencer).transform(startState, context)
   }
 
-  val irConstruction: Transformer[CompilerContext, CompilationState, CompilationState] =
-    ResolveTokens andThen
-    CreatePlannerQuery.adds[UnionQuery] andThen
-    OptionalMatchRemover
-
-  val prepareForCaching: Transformer[CompilerContext, CompilationState, CompilationState] =
+  val prepareForCaching: Transformer[CompilerContext, BaseState, BaseState] =
     RewriteProcedureCalls andThen
     ProcedureDeprecationWarnings andThen
     ProcedureWarnings
 
-  val costBasedPlanning: Transformer[CompilerContext, CompilationState, CompilationState] =
+  val irConstruction: Transformer[CompilerContext, BaseState, CompilationState] =
+    ResolveTokens andThen
+      CreatePlannerQuery.adds[UnionQuery] andThen
+      OptionalMatchRemover
+
+  val costBasedPlanning =
     QueryPlanner().adds[LogicalPlan] andThen
     PlanRewriter(sequencer) andThen
-    If[CompilerContext, CompilationState](_.unionQuery.readOnly) (
+    If((s: CompilationState) => s.unionQuery.readOnly) (
       CheckForUnresolvedTokens
     )
 
-  val planAndCreateExecPlan: Transformer[Context, CompilationState, CompilationState] =
+  val standardPipeline: Transformer[Context, BaseState, CompilationState] =
+    CompilationPhases.lateAstRewriting andThen
+    irConstruction andThen
+    costBasedPlanning andThen
+    createExecutionPlan.adds[ExecutionPlan]
+
+  val planAndCreateExecPlan: Transformer[Context, BaseState, CompilationState] =
     ProcedureCallOrSchemaCommandPlanBuilder andThen
-    If[Context, CompilationState](_.maybeExecutionPlan.isEmpty)(
-      CompilationPhases.lateAstRewriting andThen
-      irConstruction andThen
-      costBasedPlanning andThen
-      createExecutionPlan.adds[ExecutionPlan]
+    If((s: CompilationState) => s.maybeExecutionPlan.isEmpty)(
+      standardPipeline
     )
 
   private def provideCache(cacheAccessor: CacheAccessor[Statement, ExecutionPlan],

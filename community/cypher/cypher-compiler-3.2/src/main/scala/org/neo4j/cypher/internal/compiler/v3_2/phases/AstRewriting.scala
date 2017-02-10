@@ -28,15 +28,15 @@ import org.neo4j.cypher.internal.frontend.v3_2.helpers.rewriting.{RewriterCondit
 import org.neo4j.cypher.internal.frontend.v3_2.phases.BaseContext
 import org.neo4j.cypher.internal.frontend.v3_2.{Rewriter, inSequence}
 
-case class AstRewriting(sequencer: String => RewriterStepSequencer, shouldExtractParams: Boolean) extends Phase[BaseContext, CompilationState, CompilationState] {
+case class AstRewriting(sequencer: String => RewriterStepSequencer, shouldExtractParams: Boolean) extends Phase[BaseContext, BaseState, BaseState] {
 
   private val astRewriter = new ASTRewriter(sequencer, shouldExtractParams)
 
-  override def process(in: CompilationState, context: BaseContext): CompilationState = {
+  override def process(in: BaseState, context: BaseContext): BaseState = {
 
-    val (rewrittenStatement, extractedParams, postConditions) = astRewriter.rewrite(in.queryText, in.statement, in.semantics)
+    val (rewrittenStatement, extractedParams, _) = astRewriter.rewrite(in.queryText, in.statement(), in.semantics())
 
-    in.copy(
+    CompilationState(in).copy(
       maybeStatement = Some(rewrittenStatement),
       maybeExtractedParams = Some(extractedParams))
   }

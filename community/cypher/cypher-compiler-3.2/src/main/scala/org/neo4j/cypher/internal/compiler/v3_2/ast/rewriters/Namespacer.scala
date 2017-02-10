@@ -26,7 +26,7 @@ import org.neo4j.cypher.internal.frontend.v3_2.ast._
 import org.neo4j.cypher.internal.frontend.v3_2.phases.BaseContext
 import org.neo4j.cypher.internal.frontend.v3_2.{Ref, Rewriter, SemanticTable, bottomUp, _}
 
-object Namespacer extends Phase[BaseContext, CompilationState, CompilationState] {
+object Namespacer extends Phase[BaseContext, BaseState, BaseState] {
   type VariableRenamings = Map[Ref[Variable], Variable]
 
   import org.neo4j.cypher.internal.frontend.v3_2.phases.CompilationPhaseTracer.CompilationPhase.AST_REWRITE
@@ -35,17 +35,17 @@ object Namespacer extends Phase[BaseContext, CompilationState, CompilationState]
 
   override def description: String = "rename variables so they are all unique"
 
-  override def process(from: CompilationState, ignored: BaseContext): CompilationState = {
-    val ambiguousNames = shadowedNames(from.semantics.scopeTree)
-    val variableDefinitions: Map[SymbolUse, SymbolUse] = from.semantics.scopeTree.allVariableDefinitions
-    val protectedVariables = returnAliases(from.statement)
-    val renamings = variableRenamings(from.statement, variableDefinitions, ambiguousNames, protectedVariables)
+  override def process(from: BaseState, ignored: BaseContext): BaseState = {
+    val ambiguousNames = shadowedNames(from.semantics().scopeTree)
+    val variableDefinitions: Map[SymbolUse, SymbolUse] = from.semantics().scopeTree.allVariableDefinitions
+    val protectedVariables = returnAliases(from.statement())
+    val renamings = variableRenamings(from.statement(), variableDefinitions, ambiguousNames, protectedVariables)
 
-    val newStatement = from.statement.endoRewrite(statementRewriter(renamings))
-    val table = SemanticTable(types = from.semantics.typeTable, recordedScopes = from.semantics.recordedScopes)
+    val newStatement = from.statement().endoRewrite(statementRewriter(renamings))
+    val table = SemanticTable(types = from.semantics().typeTable, recordedScopes = from.semantics().recordedScopes)
 
     val newSemanticTable: SemanticTable = tableRewriter(renamings)(table)
-    from.copy(maybeStatement = Some(newStatement), maybeSemanticTable = Some(newSemanticTable))
+    CompilationState(from).copy(maybeStatement = Some(newStatement), maybeSemanticTable = Some(newSemanticTable))
   }
 
   override def postConditions: Set[Condition] = Set.empty

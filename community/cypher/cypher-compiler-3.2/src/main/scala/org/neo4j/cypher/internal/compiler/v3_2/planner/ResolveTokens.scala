@@ -25,7 +25,7 @@ import org.neo4j.cypher.internal.compiler.v3_2.spi.TokenContext
 import org.neo4j.cypher.internal.frontend.v3_2.ast.{Query, _}
 import org.neo4j.cypher.internal.frontend.v3_2.{LabelId, PropertyKeyId, RelTypeId, SemanticTable}
 
-object ResolveTokens extends VisitorPhase[CompilerContext, CompilationState] {
+object ResolveTokens extends VisitorPhase[CompilerContext, BaseState] {
   def resolve(ast: Query)(implicit semanticTable: SemanticTable, tokenContext: TokenContext) {
     ast.fold(()) {
       case token: PropertyKeyName =>
@@ -65,8 +65,8 @@ object ResolveTokens extends VisitorPhase[CompilerContext, CompilationState] {
 
   override def description = "resolve token ids for labels, property keys and relationship types"
 
-  override def visit(value: CompilationState, context: CompilerContext): Unit = value.statement match {
-    case q: Query => resolve(q)(value.semanticTable, context.planContext)
+  override def visit(value: BaseState, context: CompilerContext): Unit = value.statement() match {
+    case q: Query => resolve(q)(value.semanticTable(), context.planContext)
     case _ =>
   }
 }

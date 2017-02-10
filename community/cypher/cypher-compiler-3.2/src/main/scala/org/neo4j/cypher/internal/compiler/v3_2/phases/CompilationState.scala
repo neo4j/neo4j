@@ -45,24 +45,49 @@ case class CompilationState(queryText: String,
                             maybeUnionQuery: Option[UnionQuery] = None,
                             maybeLogicalPlan: Option[LogicalPlan] = None,
                             maybePeriodicCommit: Option[Option[PeriodicCommit]] = None,
-                            accumulatedConditions: Set[Condition] = Set.empty) {
+                            accumulatedConditions: Set[Condition] = Set.empty) extends BaseState {
 
-  def isPeriodicCommit: Boolean = statement match {
-    case Query(Some(_), _) => true
-    case _ => false
-  }
-
-  def statement = maybeStatement getOrElse fail("Statement")
-  def semantics = maybeSemantics getOrElse fail("Semantics")
-  def extractedParams = maybeExtractedParams getOrElse fail("Extracted parameters")
-  def semanticTable = maybeSemanticTable getOrElse fail("Semantic table")
   def executionPlan = maybeExecutionPlan getOrElse fail("Execution plan")
   def unionQuery = maybeUnionQuery getOrElse fail("Union query")
   def logicalPlan = maybeLogicalPlan getOrElse fail("Logical plan")
   def periodicCommit = maybePeriodicCommit getOrElse fail("Periodic commit")
   def astAsQuery = statement.asInstanceOf[Query]
+}
 
-  private def fail(what: String) = {
+object CompilationState {
+  def apply(state: BaseState): CompilationState =
+    CompilationState(queryText = state.queryText,
+      startPosition = state.startPosition,
+      plannerName = state.plannerName,
+      maybeStatement = state.maybeStatement,
+      maybeSemantics = state.maybeSemantics,
+      maybeExtractedParams = state.maybeExtractedParams,
+      maybeSemanticTable = state.maybeSemanticTable,
+      accumulatedConditions = state.accumulatedConditions)
+}
+
+trait BaseState {
+  def queryText: String
+  def startPosition: Option[InputPosition]
+  def plannerName: PlannerName
+  def maybeStatement: Option[Statement]
+  def maybeSemantics: Option[SemanticState]
+  def maybeExtractedParams: Option[Map[String, Any]]
+  def maybeSemanticTable: Option[SemanticTable]
+
+  def accumulatedConditions: Set[Condition]
+
+  def isPeriodicCommit(): Boolean = statement() match {
+    case Query(Some(_), _) => true
+    case _ => false
+  }
+
+  def statement(): Statement = maybeStatement getOrElse fail("Statement")
+  def semantics(): SemanticState = maybeSemantics getOrElse fail("Semantics")
+  def extractedParams(): Map[String, Any] = maybeExtractedParams getOrElse fail("Extracted parameters")
+  def semanticTable(): SemanticTable = maybeSemanticTable getOrElse fail("Semantic table")
+
+  protected def fail(what: String) = {
     throw new InternalException(s"$what not yet initialised")
   }
 }

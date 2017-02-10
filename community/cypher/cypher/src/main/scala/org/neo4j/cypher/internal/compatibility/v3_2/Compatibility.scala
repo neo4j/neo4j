@@ -23,7 +23,7 @@ import org.neo4j.cypher.internal._
 import org.neo4j.cypher.internal.compatibility._
 import org.neo4j.cypher.internal.compiler.v3_2
 import org.neo4j.cypher.internal.compiler.v3_2.executionplan.{LegacyNodeIndexUsage, LegacyRelationshipIndexUsage, SchemaIndexScanUsage, SchemaIndexSeekUsage, ExecutionPlan => ExecutionPlan_v3_2}
-import org.neo4j.cypher.internal.compiler.v3_2.phases.{CompilationState, CompilerContext}
+import org.neo4j.cypher.internal.compiler.v3_2.phases.{BaseState, CompilerContext}
 import org.neo4j.cypher.internal.compiler.v3_2.{InfoLogger, ExplainMode => ExplainModev3_2, NormalMode => NormalModev3_2, ProfileMode => ProfileModev3_2}
 import org.neo4j.cypher.internal.frontend.v3_2.helpers.rewriting.RewriterStepSequencer
 import org.neo4j.cypher.internal.frontend.v3_2.phases.{CompilationPhaseTracer, RecordingNotificationLogger}
@@ -76,7 +76,7 @@ trait Compatibility[C <: CompilerContext] {
         (new ExecutionPlanWrapper(planImpl, preParsingNotifications), extractedParameters)
       }
 
-      override protected val trier: Try[CompilationState] = preparedSyntacticQueryForV_3_2
+      override protected val trier: Try[BaseState] = preparedSyntacticQueryForV_3_2
     }
   }
 

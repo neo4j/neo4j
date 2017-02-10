@@ -24,17 +24,17 @@ import org.neo4j.cypher.internal.compiler.v3_2.ast.rewriters.{expandCallWhere, n
 import org.neo4j.cypher.internal.frontend.v3_2.inSequence
 import org.neo4j.cypher.internal.frontend.v3_2.phases.BaseContext
 
-case object PreparatoryRewriting extends Phase[BaseContext, CompilationState, CompilationState] {
+case object PreparatoryRewriting extends Phase[BaseContext, BaseState, BaseState] {
 
-  override def process(from: CompilationState, context: BaseContext): CompilationState = {
+  override def process(from: BaseState, context: BaseContext): BaseState = {
 
-    val rewrittenStatement = from.statement.endoRewrite(inSequence(
+    val rewrittenStatement = from.statement().endoRewrite(inSequence(
       normalizeReturnClauses(context.exceptionCreator),
       normalizeWithClauses(context.exceptionCreator),
       expandCallWhere,
       replaceAliasedFunctionInvocations))
 
-    from.copy(maybeStatement = Some(rewrittenStatement))
+    CompilationState(from).copy(maybeStatement = Some(rewrittenStatement))
   }
 
   override val phase = AST_REWRITE

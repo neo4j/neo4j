@@ -65,7 +65,7 @@ trait VisitorPhase[-C <: BaseContext, STATE] extends Phase[C, STATE, STATE] {
   override def postConditions: Set[Condition] = Set.empty
 }
 
-trait Transformer[-C <: BaseContext, FROM, TO] {
+trait Transformer[-C <: BaseContext, -FROM, TO] {
   def transform(from: FROM, context: C): TO
 
   def andThen[D <: C, TO2](other: Transformer[D, TO, TO2]): Transformer[D, FROM, TO2] =
@@ -128,7 +128,7 @@ class PipeLine[-C <: BaseContext, FROM, MID, TO](first: Transformer[C, FROM, MID
   }
 }
 
-case class If[-C <: BaseContext, STATE](f: STATE => Boolean)(thenT: Transformer[C, STATE, STATE]) extends Transformer[C, STATE, STATE] {
+case class If[-C <: BaseContext, FROM, STATE <: FROM](f: STATE => Boolean)(thenT: Transformer[C, FROM, STATE]) extends Transformer[C, STATE, STATE] {
   override def transform(from: STATE, context: C): STATE = {
     if (f(from))
       thenT.transform(from, context)

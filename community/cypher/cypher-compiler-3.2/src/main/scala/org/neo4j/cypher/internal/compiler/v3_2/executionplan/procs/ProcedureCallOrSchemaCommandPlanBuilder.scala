@@ -24,7 +24,7 @@ import org.neo4j.cypher.internal.frontend.v3_2.phases.CompilationPhaseTracer.Com
 import org.neo4j.cypher.internal.compiler.v3_2.IndexDescriptor
 import org.neo4j.cypher.internal.compiler.v3_2.ast.ResolvedCall
 import org.neo4j.cypher.internal.compiler.v3_2.executionplan._
-import org.neo4j.cypher.internal.compiler.v3_2.phases.{CompilationState, Condition, CompilerContext, Phase}
+import org.neo4j.cypher.internal.compiler.v3_2.phases._
 import org.neo4j.cypher.internal.compiler.v3_2.spi.QueryContext
 import org.neo4j.cypher.internal.frontend.v3_2._
 import org.neo4j.cypher.internal.frontend.v3_2.ast._
@@ -32,7 +32,7 @@ import org.neo4j.cypher.internal.frontend.v3_2.ast._
 /**
   * This planner takes on queries that requires no planning such as procedures and schema commands
   */
-case object ProcedureCallOrSchemaCommandPlanBuilder extends Phase[CompilerContext, CompilationState, CompilationState] {
+case object ProcedureCallOrSchemaCommandPlanBuilder extends Phase[CompilerContext, BaseState, CompilationState] {
 
   override def phase: CompilationPhase = PIPE_BUILDING
 
@@ -40,8 +40,8 @@ case object ProcedureCallOrSchemaCommandPlanBuilder extends Phase[CompilerContex
 
   override def postConditions: Set[Condition] = Set.empty
 
-  override def process(from: CompilationState, context: CompilerContext): CompilationState = {
-    val maybeExecutionPlan: Option[ExecutionPlan] = from.statement match {
+  override def process(from: BaseState, context: CompilerContext): CompilationState = {
+    val maybeExecutionPlan: Option[ExecutionPlan] = from.statement() match {
       // Global call: CALL foo.bar.baz("arg1", 2)
       case Query(None, SingleQuery(Seq(resolved@ResolvedCall(signature, args, _, _, _)))) =>
         val SemanticCheckResult(_, errors) = resolved.semanticCheck(SemanticState.clean)
@@ -101,7 +101,7 @@ case object ProcedureCallOrSchemaCommandPlanBuilder extends Phase[CompilerContex
       case _ => None
     }
 
-    from.copy(maybeExecutionPlan = maybeExecutionPlan)
+    CompilationState(from).copy(maybeExecutionPlan = maybeExecutionPlan)
   }
 
   implicit private def labelToId(ctx: QueryContext)(label: LabelName): LabelId =

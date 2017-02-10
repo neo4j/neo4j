@@ -27,6 +27,20 @@ import org.neo4j.cypher.internal.frontend.v3_2.ast.Statement
 
 import scala.reflect.ClassTag
 
+//trait A
+//trait B
+//
+//trait X extends A
+//
+//trait C {
+//  def foo(a: A): B
+//}
+//
+//trait Y extends C {
+//  override def foo(a: X) = ???
+//}
+
+
 trait Condition {
   def check(state: CompilationState): Seq[String]
 }

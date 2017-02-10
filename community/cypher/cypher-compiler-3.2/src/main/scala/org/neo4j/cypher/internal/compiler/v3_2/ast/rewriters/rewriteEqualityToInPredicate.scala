@@ -19,7 +19,7 @@
  */
 package org.neo4j.cypher.internal.compiler.v3_2.ast.rewriters
 
-import org.neo4j.cypher.internal.compiler.v3_2.phases.{CompilationState, Condition, Phase}
+import org.neo4j.cypher.internal.compiler.v3_2.phases._
 import org.neo4j.cypher.internal.frontend.v3_2.ast._
 import org.neo4j.cypher.internal.frontend.v3_2.phases.BaseContext
 import org.neo4j.cypher.internal.frontend.v3_2.phases.CompilationPhaseTracer.CompilationPhase
@@ -48,13 +48,13 @@ case object rewriteEqualityToInPredicate extends StatementRewriter {
   override def postConditions: Set[Condition] = Set.empty
 }
 
-trait StatementRewriter extends Phase[BaseContext, CompilationState, CompilationState] {
+trait StatementRewriter extends Phase[BaseContext, BaseState, BaseState] {
   override def phase: CompilationPhase = AST_REWRITE
 
   def instance(context: BaseContext): Rewriter
 
-  override def process(from: CompilationState, context: BaseContext): CompilationState = {
-    val rewritten = from.statement.endoRewrite(instance(context))
-    from.copy(maybeStatement = Some(rewritten))
+  override def process(from: BaseState, context: BaseContext): BaseState = {
+    val rewritten = from.statement().endoRewrite(instance(context))
+    CompilationState(from).copy(maybeStatement = Some(rewritten))
   }
 }
