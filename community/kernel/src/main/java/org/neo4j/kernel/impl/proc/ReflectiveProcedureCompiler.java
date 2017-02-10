@@ -68,17 +68,19 @@ class ReflectiveProcedureCompiler
     private final MethodHandles.Lookup lookup = MethodHandles.lookup();
     private final OutputMappers outputMappers;
     private final MethodSignatureCompiler inputSignatureDeterminer;
-    private final FieldInjections fieldInjections;
+    private final FieldInjections safeFieldInjections;
+    private final FieldInjections allFieldInjections;
     private final Log log;
     private final TypeMappers typeMappers;
     private final ProcedureAllowedConfig config;
 
-    ReflectiveProcedureCompiler( TypeMappers typeMappers, ComponentRegistry components, Log log,
-            ProcedureAllowedConfig config )
+    ReflectiveProcedureCompiler( TypeMappers typeMappers, ComponentRegistry safeComponents,
+            ComponentRegistry allComponents, Log log, ProcedureAllowedConfig config )
     {
         inputSignatureDeterminer = new MethodSignatureCompiler( typeMappers );
         outputMappers = new OutputMappers( typeMappers );
-        this.fieldInjections = new FieldInjections( components );
+        this.safeFieldInjections = new FieldInjections( safeComponents );
+        this.allFieldInjections = new FieldInjections( allComponents );
         this.log = log;
         this.typeMappers = typeMappers;
         this.config = config;
@@ -152,7 +154,8 @@ class ReflectiveProcedureCompiler
         }
     }
 
-    List<CallableProcedure> compileProcedure( Class<?> procDefinition, Optional<String> warning ) throws KernelException
+    List<CallableProcedure> compileProcedure( Class<?> procDefinition, Optional<String> warning,
+            boolean fullAccess ) throws KernelException
     {
         try
         {
@@ -170,7 +173,7 @@ class ReflectiveProcedureCompiler
             ArrayList<CallableProcedure> out = new ArrayList<>( procedureMethods.size() );
             for ( Method method : procedureMethods )
             {
-                out.add( compileProcedure( procDefinition, constructor, method, warning ) );
+                out.add( compileProcedure( procDefinition, constructor, method, warning, fullAccess ) );
             }
             out.sort( Comparator.comparing( a -> a.signature().name().toString() ) );
             return out;
@@ -187,7 +190,7 @@ class ReflectiveProcedureCompiler
     }
 
     private ReflectiveProcedure compileProcedure( Class<?> procDefinition, MethodHandle constructor, Method method,
-            Optional<String> warning )
+            Optional<String> warning, boolean fullAccess )
             throws ProcedureException, IllegalAccessException
     {
         String valueName = method.getAnnotation( Procedure.class ).value();
@@ -197,7 +200,15 @@ class ReflectiveProcedureCompiler
         List<FieldSignature> inputSignature = inputSignatureDeterminer.signatureFor( method );
         OutputMapper outputMapper = outputMappers.mapper( method );
         MethodHandle procedureMethod = lookup.unreflect( method );
-        List<FieldInjections.FieldSetter> setters = fieldInjections.setters( procDefinition );
+        List<FieldInjections.FieldSetter> setters;
+        if ( fullAccess )
+        {
+            setters = allFieldInjections.setters( procDefinition );
+        }
+        else
+        {
+            setters = safeFieldInjections.setters( procDefinition );
+        }
 
         Optional<String> description = description( method );
         Procedure procedure = method.getAnnotation( Procedure.class );
@@ -243,7 +254,7 @@ class ReflectiveProcedureCompiler
         Class<?> returnType = method.getReturnType();
         TypeMappers.NeoValueConverter valueConverter = typeMappers.converterFor( returnType );
         MethodHandle procedureMethod = lookup.unreflect( method );
-        List<FieldInjections.FieldSetter> setters = fieldInjections.setters( procDefinition );
+        List<FieldInjections.FieldSetter> setters = safeFieldInjections.setters( procDefinition );
 
         Optional<String> description = description( method );
         UserFunction function = method.getAnnotation( UserFunction.class );
@@ -345,7 +356,7 @@ class ReflectiveProcedureCompiler
         MethodHandle creator = lookup.unreflect( method );
         MethodHandle updateMethod = lookup.unreflect( update );
         MethodHandle resultMethod = lookup.unreflect( result );
-        List<FieldInjections.FieldSetter> setters = fieldInjections.setters( definition);
+        List<FieldInjections.FieldSetter> setters = safeFieldInjections.setters( definition );
 
         Optional<String> description = description( method );
         UserAggregationFunction function = method.getAnnotation( UserAggregationFunction.class );
