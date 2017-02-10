@@ -26,10 +26,11 @@ import java.util.stream.Collectors;
 import java.util.stream.Stream;
 
 import org.neo4j.kernel.configuration.Config;
+import org.neo4j.kernel.impl.factory.GraphDatabaseFacadeFactory.Configuration;
 
 import static java.util.Arrays.stream;
 
-public class ProcedureAllowedConfig
+public class ProcedureConfig
 {
     public static final String PROC_ALLOWED_SETTING_DEFAULT_NAME = "dbms.security.procedures.default_allowed";
     public static final String PROC_ALLOWED_SETTING_ROLES = "dbms.security.procedures.roles";
@@ -37,17 +38,20 @@ public class ProcedureAllowedConfig
     private static final String ROLES_DELIMITER = ",";
     private static final String SETTING_DELIMITER = ";";
     private static final String MAPPING_DELIMITER = ":";
+    private static final String PROCEDURE_DELIMITER = ",";
 
     private final String defaultValue;
     private final List<ProcMatcher> matchers;
+    private final List<Pattern> accessPatterns;
 
-    private ProcedureAllowedConfig()
+    private ProcedureConfig()
     {
         this.defaultValue = "";
         this.matchers = Collections.emptyList();
+        this.accessPatterns = Collections.emptyList();
     }
 
-    public ProcedureAllowedConfig( Config config )
+    public ProcedureConfig( Config config )
     {
         this.defaultValue = config.getValue( PROC_ALLOWED_SETTING_DEFAULT_NAME )
                 .map( Object::toString )
@@ -69,6 +73,17 @@ public class ProcedureAllowedConfig
                     } )
                     .collect( Collectors.toList() );
         }
+        String fullAccessProcedures =
+                config.getValue( Configuration.procedure_full_access.name() ).map( Object::toString ).orElse( "" );
+        if ( fullAccessProcedures.isEmpty() )
+        {
+            this.accessPatterns = Collections.emptyList();
+        }
+        else
+        {
+            this.accessPatterns = Stream.of( fullAccessProcedures.split( PROCEDURE_DELIMITER ) )
+                    .map( ProcedureConfig::compilePattern ).collect( Collectors.toList() );
+        }
     }
 
     String[] rolesFor( String procedureName )
@@ -86,12 +101,22 @@ public class ProcedureAllowedConfig
         }
     }
 
+    boolean fullAccessFor( String procedureName )
+    {
+        return accessPatterns.stream().anyMatch( pattern -> pattern.matcher( procedureName ).matches() );
+    }
+
+    private static Pattern compilePattern( String procedure )
+    {
+        return Pattern.compile( procedure.trim().replaceAll( "\\.", "\\\\." ).replaceAll( "\\*", ".*" ) );
+    }
+
     private String[] getDefaultValue()
     {
         return defaultValue == null || defaultValue.isEmpty() ? new String[0] : new String[]{defaultValue};
     }
 
-    static final ProcedureAllowedConfig DEFAULT = new ProcedureAllowedConfig();
+    static final ProcedureConfig DEFAULT = new ProcedureConfig();
 
     private static class ProcMatcher
     {
