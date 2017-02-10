@@ -82,7 +82,7 @@ public class RelationshipGroupCache implements Iterable<RelationshipGroupRecord>
      */
     public void incrementGroupCount( long nodeId )
     {
-        int count = groupCountCache.getShort( nodeId, 0 ) & 0xFFFF;
+        int count = groupCount( nodeId );
         count++;
         if ( (count & ~0xFFFF) != 0 )
         {
@@ -90,6 +90,11 @@ public class RelationshipGroupCache implements Iterable<RelationshipGroupRecord>
                     "Invalid number of relationship groups for node " + nodeId + " " + count );
         }
         groupCountCache.setShort( nodeId, 0, (short) count );
+    }
+
+    int groupCount( long nodeId )
+    {
+        return groupCountCache.getShort( nodeId, 0 ) & 0xFFFF;
     }
 
     /**
@@ -119,7 +124,7 @@ public class RelationshipGroupCache implements Iterable<RelationshipGroupRecord>
         highCacheId = 0;
         for ( long nodeId = fromNodeId; nodeId < highNodeId; nodeId++ )
         {
-            short count = groupCountCache.getShort( nodeId, 0 );
+            int count = groupCount( nodeId );
             if ( highCacheId + count > cache.length() )
             {
                 // Cannot include this one, so up until the previous is good
@@ -155,7 +160,7 @@ public class RelationshipGroupCache implements Iterable<RelationshipGroupRecord>
 
         long baseIndex = offsets.get( rebase( nodeId ) );
         // grouCount is extra validation, really
-        int groupCount = groupCountCache.getShort( nodeId, 0 );
+        int groupCount = groupCount( nodeId );
         long index = scanForFreeFrom( baseIndex, groupCount, groupRecord.getType() );
 
         // Put the group at this index
@@ -240,7 +245,7 @@ public class RelationshipGroupCache implements Iterable<RelationshipGroupRecord>
         {
             private long cursor;
             private long nodeId = fromNodeId;
-            private int countLeftForThisNode = groupCountCache.getShort( nodeId, 0 );
+            private int countLeftForThisNode = groupCount( nodeId );
             {
                 findNextNodeWithGroupsIfNeeded();
             }
@@ -285,8 +290,7 @@ public class RelationshipGroupCache implements Iterable<RelationshipGroupRecord>
                     do
                     {
                         nodeId++;
-                        countLeftForThisNode = nodeId >= groupCountCache.length() ? 0 :
-                            groupCountCache.getShort( nodeId, 0 );
+                        countLeftForThisNode = nodeId >= groupCountCache.length() ? 0 : groupCount( nodeId );
                     }
                     while ( countLeftForThisNode == 0 && nodeId < groupCountCache.length() );
                 }

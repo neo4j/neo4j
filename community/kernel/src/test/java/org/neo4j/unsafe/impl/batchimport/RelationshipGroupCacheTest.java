@@ -164,6 +164,37 @@ public class RelationshipGroupCacheTest
         assertEquals( cachedCount, readCount );
     }
 
+    @Test
+    public void shouldHandleGroupCountBeyondSignedShortRange() throws Exception
+    {
+        // GIVEN
+        long nodeId = 0;
+        int limit = Short.MAX_VALUE + 10;
+        RelationshipGroupCache cache = new RelationshipGroupCache( HEAP, ByteUnit.kibiBytes( 100 ), nodeId + 1 );
+
+        // WHEN first counting all groups per node
+        for ( int type = 0; type < limit; type++ )
+        {
+            cache.incrementGroupCount( nodeId );
+        }
+        // and WHEN later putting group records into the cache
+        RelationshipGroupRecord group = new RelationshipGroupRecord( -1 );
+        group.setOwningNode( nodeId );
+        for ( int type = 0; type < limit; type++ )
+        {
+            group.setId( type );
+            group.setFirstOut( type ); // just some relationship
+            group.setType( type );
+            cache.put( group );
+        }
+        long prepared = cache.prepare( nodeId );
+
+        // THEN that should work, because it used to fail inside prepare, but we can also ask
+        // the groupCount method to be sure
+        assertEquals( nodeId, prepared );
+        assertEquals( limit, cache.groupCount( nodeId ) );
+    }
+
     private int[] scrambledTypes( int count )
     {
         int[] types = new int[count];
