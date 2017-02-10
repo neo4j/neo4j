@@ -57,44 +57,36 @@ public class RelationshipGroupDefragmenter
         try ( RelationshipGroupCache groupCache =
                 new RelationshipGroupCache( AUTO, memoryWeCanHoldForCertain, highNodeId ) )
         {
-            try
+            // Read from the temporary relationship group store...
+            RecordStore<RelationshipGroupRecord> fromStore = neoStore.getTemporaryRelationshipGroupStore();
+            // and write into the main relationship group store
+            RecordStore<RelationshipGroupRecord> toStore = neoStore.getRelationshipGroupStore();
+
+            // Count all nodes, how many groups each node has each
+            Configuration groupConfig =
+                    withBatchSize( config, neoStore.getRelationshipGroupStore().getRecordsPerPage() );
+            executeStage( new CountGroupsStage( groupConfig, fromStore, groupCache ) );
+            long fromNodeId = 0;
+            long toNodeId = 0;
+            while ( fromNodeId < highNodeId )
             {
-                // Read from the temporary relationship group store...
-                RecordStore<RelationshipGroupRecord> fromStore = neoStore.getTemporaryRelationshipGroupStore();
-                // and write into the main relationship group store
-                RecordStore<RelationshipGroupRecord> toStore = neoStore.getRelationshipGroupStore();
+                // See how many nodes' groups we can fit into the cache this iteration of the loop.
+                // Groups that doesn't fit in this round will be included in consecutive rounds.
+                toNodeId = groupCache.prepare( fromNodeId );
+                // Cache those groups
+                executeStage( new ScanAndCacheGroupsStage( groupConfig, fromStore, groupCache ) );
+                // And write them in sequential order in the store
+                executeStage( new WriteGroupsStage( groupConfig, groupCache, toStore ) );
 
-                // Count all nodes, how many groups each node has each
-                Configuration groupConfig =
-                        withBatchSize( config, neoStore.getRelationshipGroupStore().getRecordsPerPage() );
-                executeStage( new CountGroupsStage( groupConfig, fromStore, groupCache ) );
-                long fromNodeId = 0;
-                long toNodeId = 0;
-                while ( fromNodeId < highNodeId )
-                {
-                    // See how many nodes' groups we can fit into the cache this iteration of the loop.
-                    // Groups that doesn't fit in this round will be included in consecutive rounds.
-                    toNodeId = groupCache.prepare( fromNodeId );
-                    // Cache those groups
-                    executeStage( new ScanAndCacheGroupsStage( groupConfig, fromStore, groupCache ) );
-                    // And write them in sequential order in the store
-                    executeStage( new WriteGroupsStage( groupConfig, groupCache, toStore ) );
-
-                    // Make adjustments for the next iteration
-                    fromNodeId = toNodeId;
-                }
-
-                // Now update nodes to point to the new groups
-                ByteArray groupCountCache = groupCache.getGroupCountCache();
-                groupCountCache.clear();
-                Configuration nodeConfig = withBatchSize( config, neoStore.getNodeStore().getRecordsPerPage() );
-                executeStage( new NodeFirstGroupStage( nodeConfig, toStore, neoStore.getNodeStore(), groupCountCache ) );
+                // Make adjustments for the next iteration
+                fromNodeId = toNodeId;
             }
-            catch ( Throwable t )
-            {
-                t.printStackTrace();
-                throw t;
-            }
+
+            // Now update nodes to point to the new groups
+            ByteArray groupCountCache = groupCache.getGroupCountCache();
+            groupCountCache.clear();
+            Configuration nodeConfig = withBatchSize( config, neoStore.getNodeStore().getRecordsPerPage() );
+            executeStage( new NodeFirstGroupStage( nodeConfig, toStore, neoStore.getNodeStore(), groupCountCache ) );
         }
     }
 
