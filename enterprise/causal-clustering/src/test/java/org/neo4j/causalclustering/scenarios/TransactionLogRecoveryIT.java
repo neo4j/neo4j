@@ -44,7 +44,7 @@ import org.neo4j.test.rule.PageCacheRule;
 
 import static java.util.Collections.singletonList;
 import static org.neo4j.causalclustering.discovery.Cluster.dataMatchesEventually;
-import static org.neo4j.causalclustering.helpers.DataCreator.createNodes;
+import static org.neo4j.causalclustering.helpers.DataCreator.createEmptyNodes;
 
 /**
  * Recovery scenarios where the transaction log was only partially written.
@@ -72,14 +72,14 @@ public class TransactionLogRecoveryIT
     public void coreShouldStartAfterPartialTransactionWriteCrash() throws Exception
     {
         // given: a fully synced cluster with some data
-        dataMatchesEventually( createNodes( cluster, 10 ), cluster.coreMembers() );
+        dataMatchesEventually( createEmptyNodes( cluster, 10 ), cluster.coreMembers() );
 
         // when: shutting down a core
         CoreClusterMember core = cluster.getCoreMemberById( 0 );
         core.shutdown();
 
         // and making sure there will be something new to pull
-        CoreClusterMember lastWrites = createNodes( cluster, 10 );
+        CoreClusterMember lastWrites = createEmptyNodes( cluster, 10 );
 
         // and writing a partial tx
         writePartialTx( core.storeDir() );
@@ -95,14 +95,14 @@ public class TransactionLogRecoveryIT
     public void coreShouldStartWithSeedHavingPartialTransactionWriteCrash() throws Exception
     {
         // given: a fully synced cluster with some data
-        dataMatchesEventually( createNodes( cluster, 10 ), cluster.coreMembers() );
+        dataMatchesEventually( createEmptyNodes( cluster, 10 ), cluster.coreMembers() );
 
         // when: shutting down a core
         CoreClusterMember core = cluster.getCoreMemberById( 0 );
         core.shutdown();
 
         // and making sure there will be something new to pull
-        CoreClusterMember lastWrites = createNodes( cluster, 10 );
+        CoreClusterMember lastWrites = createEmptyNodes( cluster, 10 );
 
         // and writing a partial tx
         writePartialTx( core.storeDir() );
@@ -122,14 +122,14 @@ public class TransactionLogRecoveryIT
     public void readReplicaShouldStartAfterPartialTransactionWriteCrash() throws Exception
     {
         // given: a fully synced cluster with some data
-        dataMatchesEventually( createNodes( cluster, 10 ), cluster.readReplicas() );
+        dataMatchesEventually( createEmptyNodes( cluster, 10 ), cluster.readReplicas() );
 
         // when: shutting down a read replica
         ReadReplica readReplica = cluster.getReadReplicaById( 0 );
         readReplica.shutdown();
 
         // and making sure there will be something new to pull
-        CoreClusterMember lastWrites = createNodes( cluster, 10 );
+        CoreClusterMember lastWrites = createEmptyNodes( cluster, 10 );
         dataMatchesEventually( lastWrites, cluster.coreMembers() );
 
         // and writing a partial tx

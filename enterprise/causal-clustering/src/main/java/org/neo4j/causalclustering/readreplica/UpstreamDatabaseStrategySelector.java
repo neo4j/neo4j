@@ -54,7 +54,7 @@ public class UpstreamDatabaseStrategySelector
     public MemberId bestUpstreamDatabase() throws UpstreamDatabaseSelectionException
     {
         MemberId result = null;
-        for ( UpstreamDatabaseSelectionStrategy strategy : this.strategies )
+        for ( UpstreamDatabaseSelectionStrategy strategy : strategies )
         {
             try
             {

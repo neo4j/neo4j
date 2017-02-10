@@ -55,21 +55,13 @@ public class TypicallyConnectToRandomReadReplica extends UpstreamDatabaseSelecti
         ModuloCounter( int modulo )
         {
             // e.g. every 10th means 0-9
-            this.modulo = modulo -1;
+            this.modulo = modulo - 1;
         }
 
         boolean shouldReturnCoreMemberId()
         {
-            if ( counter == modulo )
-            {
-                counter = 0;
-                return true;
-            }
-            else
-            {
-                counter++;
-                return false;
-            }
+            counter = (counter + 1) % modulo;
+            return counter == 0;
         }
     }
 }

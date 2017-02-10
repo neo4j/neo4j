@@ -37,7 +37,7 @@ public class ClusterTopology
     public Optional<CatchupServerAddress> find( MemberId upstream )
     {
         Optional<CoreAddresses> coreAddresses = coreTopology.find( upstream );
-        Optional<ReadReplicaAddresses> readReplicaAddresses = readReplicaTopology.find( upstream );
+        Optional<ReadReplicaAddresses> readReplicaAddresses = readReplicaTopology.findAddressFor( upstream );
 
         if ( coreAddresses.isPresent() )
         {

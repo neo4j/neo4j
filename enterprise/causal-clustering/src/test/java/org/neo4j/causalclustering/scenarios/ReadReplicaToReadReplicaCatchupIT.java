@@ -38,21 +38,22 @@ import org.neo4j.causalclustering.readreplica.UpstreamDatabaseSelectionException
 import org.neo4j.causalclustering.readreplica.UpstreamDatabaseSelectionStrategy;
 import org.neo4j.function.ThrowingSupplier;
 import org.neo4j.graphdb.GraphDatabaseService;
-import org.neo4j.graphdb.Label;
 import org.neo4j.graphdb.Node;
 import org.neo4j.graphdb.Transaction;
 import org.neo4j.helpers.Service;
+import org.neo4j.helpers.collection.Pair;
 import org.neo4j.kernel.impl.api.scan.LabelScanStoreProvider;
 import org.neo4j.kernel.monitoring.Monitors;
 import org.neo4j.test.causalclustering.ClusterRule;
 
-import static java.lang.String.format;
 import static java.util.concurrent.TimeUnit.MINUTES;
 import static org.hamcrest.CoreMatchers.startsWith;
 import static org.hamcrest.MatcherAssert.assertThat;
 import static org.hamcrest.core.Is.is;
+import static org.neo4j.causalclustering.helpers.DataCreator.createLabelledNodesWithProperty;
 import static org.neo4j.causalclustering.scenarios.ReadReplicaToReadReplicaCatchupIT.SpecificReplicaStrategy.upstreamFactory;
 import static org.neo4j.com.storecopy.StoreUtil.TEMP_COPY_DIRECTORY_NAME;
+import static org.neo4j.graphdb.Label.label;
 import static org.neo4j.helpers.collection.Iterables.count;
 import static org.neo4j.test.assertion.Assert.assertEventually;
 
@@ -73,26 +74,17 @@ public class ReadReplicaToReadReplicaCatchupIT
 
         cluster.coreTx( ( db, tx ) ->
         {
-            db.schema().constraintFor( Label.label( "Foo" ) ).assertPropertyIsUnique( "foobar" ).create();
+            db.schema().constraintFor( label( "Foo" ) ).assertPropertyIsUnique( "foobar" ).create();
             tx.success();
         } );
 
-        storeSomeDataInCores( cluster, numberOfNodesToCreate );
+        createLabelledNodesWithProperty( cluster, numberOfNodesToCreate, label( "Foo" ),
+                () -> Pair.of( "foobar", String.format( "baz_bat%s", UUID.randomUUID() ) ) );
 
-        AtomicBoolean labelScanStoreCorrectlyPlaced = new AtomicBoolean( false );
-        Monitors monitors = new Monitors();
-        ReadReplica firstReadReplica = cluster.addReadReplicaWithIdAndMonitors( 101, monitors );
+        ReadReplica firstReadReplica = cluster.addReadReplicaWithIdAndMonitors( 101, new Monitors() );
 
         File labelScanStore = LabelScanStoreProvider
                 .getStoreDirectory( new File( firstReadReplica.storeDir(), TEMP_COPY_DIRECTORY_NAME ) );
-
-        monitors.addMonitorListener( (FileCopyMonitor) file ->
-        {
-            if ( file.getParent().contains( labelScanStore.getPath() ) )
-            {
-                labelScanStoreCorrectlyPlaced.set( true );
-            }
-        } );
 
         firstReadReplica.start();
 
@@ -125,27 +117,17 @@ public class ReadReplicaToReadReplicaCatchupIT
 
         cluster.coreTx( ( db, tx ) ->
         {
-            db.schema().constraintFor( Label.label( "Foo" ) ).assertPropertyIsUnique( "foobar" ).create();
+            db.schema().constraintFor( label( "Foo" ) ).assertPropertyIsUnique( "foobar" ).create();
             tx.success();
         } );
 
-        storeSomeDataInCores( cluster, numberOfNodes );
-
-        AtomicBoolean labelScanStoreCorrectlyPlaced = new AtomicBoolean( false );
-        Monitors monitors = new Monitors();
+        createLabelledNodesWithProperty( cluster, numberOfNodes, label( "Foo" ),
+                () -> Pair.of( "foobar", String.format( "baz_bat%s", UUID.randomUUID() ) ) );
 
         ReadReplica firstReadReplica =
-                cluster.addReadReplicaWithIdAndMonitors( firstReadReplicaLocalMemberId, monitors );
+                cluster.addReadReplicaWithIdAndMonitors( firstReadReplicaLocalMemberId, new Monitors() );
         File labelScanStore = LabelScanStoreProvider
                 .getStoreDirectory( new File( firstReadReplica.storeDir(), TEMP_COPY_DIRECTORY_NAME ) );
-
-        monitors.addMonitorListener( (FileCopyMonitor) file ->
-        {
-            if ( file.getParent().contains( labelScanStore.getPath() ) )
-            {
-                labelScanStoreCorrectlyPlaced.set( true );
-            }
-        } );
 
         firstReadReplica.start();
 
@@ -167,37 +149,12 @@ public class ReadReplicaToReadReplicaCatchupIT
 
         // when
         // More transactions into core
-        storeSomeDataInCores( cluster, numberOfNodes );
+        createLabelledNodesWithProperty( cluster, numberOfNodes, label( "Foo" ),
+                () -> Pair.of( "foobar", String.format( "baz_bat%s", UUID.randomUUID() ) ) );
 
         // then
         // reached second read replica from cores
         checkDataHasReplicatedToReadReplicas( cluster, numberOfNodes * 2 );
-    }
-
-    private void storeSomeDataInCores( Cluster cluster, int numberOfNodes ) throws Exception
-    {
-        for ( int i = 0; i < numberOfNodes; i++ )
-        {
-            cluster.coreTx( ( db, tx ) ->
-            {
-                createData( db );
-                tx.success();
-            } );
-        }
-    }
-
-    private void createData( GraphDatabaseService db )
-    {
-        Node node = db.createNode( Label.label( "Foo" ) );
-        node.setProperty( "foobar", format( "baz_bat%s", UUID.randomUUID() ) );
-        node.setProperty( "foobar1", format( "baz_bat%s", UUID.randomUUID() ) );
-        node.setProperty( "foobar2", format( "baz_bat%s", UUID.randomUUID() ) );
-        node.setProperty( "foobar3", format( "baz_bat%s", UUID.randomUUID() ) );
-        node.setProperty( "foobar4", format( "baz_bat%s", UUID.randomUUID() ) );
-        node.setProperty( "foobar5", format( "baz_bat%s", UUID.randomUUID() ) );
-        node.setProperty( "foobar6", format( "baz_bat%s", UUID.randomUUID() ) );
-        node.setProperty( "foobar7", format( "baz_bat%s", UUID.randomUUID() ) );
-        node.setProperty( "foobar8", format( "baz_bat%s", UUID.randomUUID() ) );
     }
 
     private void checkDataHasReplicatedToReadReplicas( Cluster cluster, long numberOfNodes ) throws Exception

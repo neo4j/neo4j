@@ -94,7 +94,7 @@ public class AllServersStrategy implements LoadBalancingStrategy
 
     private List<Endpoint> readEndpoints( CoreTopology cores, ReadReplicaTopology readers )
     {
-        return concat( readers.members().stream(), cores.addresses().stream() )
+        return concat( readers.addresses().stream(), cores.addresses().stream() )
                 .map( extractBoltAddress() )
                 .map( Endpoint::read )
                 .collect( Collectors.toList() );

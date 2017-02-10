@@ -99,7 +99,7 @@ public class ClusterOverviewProcedure extends CallableProcedure.BasicProcedure
                 log.debug( "No Address found for " + memberId );
             }
         }
-        for ( ReadReplicaAddresses readReplicaAddresses : discoveryService.readReplicas().members() )
+        for ( ReadReplicaAddresses readReplicaAddresses : discoveryService.readReplicas().addresses() )
         {
             endpoints.add( new ReadWriteEndPoint( readReplicaAddresses.connectors(), Role.READ_REPLICA ) );
         }

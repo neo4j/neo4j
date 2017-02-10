@@ -130,7 +130,7 @@ public class GetServersProcedureV1 implements CallableProcedure
 
     private List<Endpoint> readEndpoints()
     {
-        List<AdvertisedSocketAddress> readReplicas = discoveryService.readReplicas().members().stream()
+        List<AdvertisedSocketAddress> readReplicas = discoveryService.readReplicas().addresses().stream()
                 .map( extractBoltAddress() ).collect( toList() );
         boolean addFollowers = readReplicas.isEmpty() || config.get( cluster_allow_reads_on_followers );
         Stream<AdvertisedSocketAddress> readCore = addFollowers ? coreReadEndPoints() : Stream.empty();

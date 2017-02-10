@@ -100,14 +100,7 @@ public class CoreTopology
 
     public Optional<MemberId> anyCoreMemberId()
     {
-        if ( coreMembers.keySet().size() == 0 )
-        {
-            return Optional.empty();
-        }
-        else
-        {
             return coreMembers.keySet().stream().findAny();
-        }
     }
 
     class TopologyDifference

@@ -41,12 +41,12 @@ public class ReadReplicaTopology
         this.readReplicaMembers = readReplicaMembers;
     }
 
-    public Collection<ReadReplicaAddresses> members()
+    public Collection<ReadReplicaAddresses> addresses()
     {
         return readReplicaMembers.values();
     }
 
-    public Optional<ReadReplicaAddresses> find( MemberId memberId )
+    Optional<ReadReplicaAddresses> findAddressFor( MemberId memberId )
     {
         return Optional.ofNullable( readReplicaMembers.get( memberId ) );
     }
