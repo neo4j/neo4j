@@ -26,16 +26,12 @@ import org.junit.Rule;
 import org.junit.Test;
 import org.junit.rules.ExpectedException;
 
-import java.io.IOException;
-
 import org.neo4j.kernel.api.exceptions.Status;
+import org.neo4j.kernel.api.security.AccessMode;
 import org.neo4j.kernel.api.security.PasswordPolicy;
-import org.neo4j.kernel.impl.security.User;
-import org.neo4j.server.security.auth.AbstractUserRepository;
 import org.neo4j.server.security.auth.BasicAuthManager;
-import org.neo4j.server.security.auth.ListSnapshot;
+import org.neo4j.server.security.auth.InMemoryUserRepository;
 import org.neo4j.server.security.auth.UserRepository;
-import org.neo4j.test.rule.fs.EphemeralFileSystemRule;
 import org.neo4j.time.Clocks;
 
 import static java.util.Collections.singletonList;
@@ -50,8 +46,6 @@ public class BasicAuthenticationTest
     @Rule
     public ExpectedException exception = ExpectedException.none();
 
-    @Rule
-    public final EphemeralFileSystemRule fsRule = new EphemeralFileSystemRule();
     private Authentication authentication;
 
     @Test
@@ -62,7 +56,8 @@ public class BasicAuthenticationTest
                 authentication.authenticate( map( "scheme", "basic", "principal", "mike", "credentials", "secret2" ) );
 
         // Then
-        assertThat( result.getSecurityContext().description(), equalTo( "user 'mike' with FULL" ) );
+        assertThat(result.getSecurityContext().mode(), equalTo( AccessMode.Static.FULL));
+        assertThat( result.getSecurityContext().subject().username(), equalTo( "mike" ) );
     }
 
     @Test
@@ -187,7 +182,7 @@ public class BasicAuthenticationTest
     @Before
     public void setup() throws Throwable
     {
-        UserRepository userRepository = new TestUserRepository();
+        UserRepository userRepository = new InMemoryUserRepository();
         PasswordPolicy policy = mock( PasswordPolicy.class );
         BasicAuthManager manager = new BasicAuthManager( userRepository, policy, Clocks.systemClock(), userRepository );
         authentication =  new BasicAuthentication( manager, manager );
@@ -227,26 +222,6 @@ public class BasicAuthenticationTest
         {
             mismatchDescription.appendText( "was " )
                     .appendValue( item.status() );
-        }
-    }
-
-    private static class TestUserRepository extends AbstractUserRepository
-    {
-        @Override
-        protected void persistUsers() throws IOException
-        {
-        }
-
-        @Override
-        protected ListSnapshot<User> readPersistedUsers() throws IOException
-        {
-            return null;
-        }
-
-        @Override
-        public ListSnapshot<User> getPersistedSnapshot() throws IOException
-        {
-            return null;
         }
     }
 }
