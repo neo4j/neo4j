@@ -46,7 +46,7 @@ import static org.junit.Assert.assertEquals;
 import static org.neo4j.backup.OnlineBackupCommandIT.runBackupToolFromOtherJvmToGetExitCode;
 import static org.neo4j.causalclustering.backup.BackupCoreIT.backupAddress;
 import static org.neo4j.causalclustering.discovery.Cluster.dataMatchesEventually;
-import static org.neo4j.causalclustering.helpers.DataCreator.createNodes;
+import static org.neo4j.causalclustering.helpers.DataCreator.createEmptyNodes;
 
 public class ClusterSeedingIT
 {
@@ -156,7 +156,7 @@ public class ClusterSeedingIT
         cluster = new Cluster( testDir.directory( "cluster-b" ), 3, 0,
                 new SharedDiscoveryService(), emptyMap(), backupParams(), emptyMap(), emptyMap(), Standard.LATEST_NAME );
         cluster.start();
-        createNodes( cluster, 100 );
+        createEmptyNodes( cluster, 100 );
 
         // when: creating a backup
         File backupDir = createBackup( cluster.getCoreMemberById( 0 ).database(), "the-backup" );

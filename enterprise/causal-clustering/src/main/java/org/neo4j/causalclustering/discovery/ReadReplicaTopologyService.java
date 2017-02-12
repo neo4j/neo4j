@@ -21,7 +21,11 @@ package org.neo4j.causalclustering.discovery;
 
 import org.neo4j.kernel.lifecycle.Lifecycle;
 
-public interface TopologyService extends Lifecycle
+public interface ReadReplicaTopologyService extends Lifecycle
 {
     CoreTopology coreServers();
+
+    ReadReplicaTopology readReplicas();
+
+    ClusterTopology allServers();
 }

@@ -26,6 +26,7 @@ import java.util.Map;
 import java.util.SortedMap;
 import java.util.function.IntFunction;
 
+import org.neo4j.causalclustering.catchup.CatchupServer;
 import org.neo4j.causalclustering.core.CausalClusteringSettings;
 import org.neo4j.causalclustering.core.CoreGraphDatabase;
 import org.neo4j.causalclustering.core.consensus.RaftMachine;
@@ -216,5 +217,10 @@ public class CoreClusterMember implements ClusterMember
     public File raftLogDirectory()
     {
         return raftLogDir;
+    }
+
+    public void stopCatchupServer() throws Throwable
+    {
+        database.getDependencyResolver().resolveDependency( CatchupServer.class).stop();
     }
 }

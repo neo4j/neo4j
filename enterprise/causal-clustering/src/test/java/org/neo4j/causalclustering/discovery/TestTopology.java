@@ -50,7 +50,10 @@ public class TestTopology
 
     public static ReadReplicaAddresses addressesForReadReplica( int id )
     {
-        AdvertisedSocketAddress boltServerAddress = new AdvertisedSocketAddress( "localhost", (6000 + id) );
-        return new ReadReplicaAddresses( wrapAsClientConnectorAddresses( boltServerAddress ) );
+        AdvertisedSocketAddress advertisedSocketAddress = new AdvertisedSocketAddress( "localhost", (6000 + id) );
+        ClientConnectorAddresses clientConnectorAddresses = new ClientConnectorAddresses(
+                singletonList( new ClientConnectorAddresses.ConnectorUri( bolt, advertisedSocketAddress ) ) );
+
+        return new ReadReplicaAddresses( clientConnectorAddresses, advertisedSocketAddress );
     }
 }

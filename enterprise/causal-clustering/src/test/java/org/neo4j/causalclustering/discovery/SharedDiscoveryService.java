@@ -21,10 +21,8 @@ package org.neo4j.causalclustering.discovery;
 
 import java.util.ArrayList;
 import java.util.HashMap;
-import java.util.HashSet;
 import java.util.List;
 import java.util.Map;
-import java.util.Set;
 import java.util.concurrent.TimeUnit;
 import java.util.concurrent.locks.Condition;
 import java.util.concurrent.locks.Lock;
@@ -38,12 +36,11 @@ import org.neo4j.kernel.impl.util.JobScheduler;
 import org.neo4j.logging.LogProvider;
 
 import static java.util.Collections.unmodifiableMap;
-import static java.util.Collections.unmodifiableSet;
 
 public class SharedDiscoveryService implements DiscoveryServiceFactory
 {
     private final Map<MemberId,CoreAddresses> coreMembers = new HashMap<>();
-    private final Set<ReadReplicaAddresses> readReplicaAddresses = new HashSet<>();
+    private final Map<MemberId,ReadReplicaAddresses> readReplicaAddresses = new HashMap<>();
     private final List<SharedDiscoveryCoreClient> coreClients = new ArrayList<>();
 
     private final Lock lock = new ReentrantLock();
@@ -54,18 +51,19 @@ public class SharedDiscoveryService implements DiscoveryServiceFactory
     public CoreTopologyService coreTopologyService( Config config, MemberId myself, JobScheduler jobScheduler,
             LogProvider logProvider, LogProvider userLogProvider )
     {
-        SharedDiscoveryCoreClient sharedDiscoveryCoreClient = new SharedDiscoveryCoreClient( this, myself, logProvider, config );
+        SharedDiscoveryCoreClient sharedDiscoveryCoreClient =
+                new SharedDiscoveryCoreClient( this, myself, logProvider, config );
         sharedDiscoveryCoreClient.onCoreTopologyChange( coreTopology( sharedDiscoveryCoreClient ) );
         sharedDiscoveryCoreClient.onReadReplicaTopologyChange( readReplicaTopology() );
         return sharedDiscoveryCoreClient;
     }
 
     @Override
-    public TopologyService readReplicaDiscoveryService( Config config, LogProvider logProvider,
-                                                 DelayedRenewableTimeoutService timeoutService,
-                                                 long readReplicaTimeToLiveTimeout, long readReplicaRefreshRate )
+    public ReadReplicaTopologyService readReplicaTopologyService( Config config, LogProvider logProvider,
+            DelayedRenewableTimeoutService timeoutService, long readReplicaTimeToLiveTimeout,
+            long readReplicaRefreshRate, MemberId myself )
     {
-        return new SharedDiscoveryReadReplicaClient( this, config, logProvider );
+        return new SharedDiscoveryReadReplicaClient( this, config, myself, logProvider );
     }
 
     void waitForClusterFormation() throws InterruptedException
@@ -89,11 +87,8 @@ public class SharedDiscoveryService implements DiscoveryServiceFactory
         lock.lock();
         try
         {
-            return new CoreTopology(
-                    clusterId,
-                    coreClients.size() > 0 && coreClients.get( 0 ) == client,
-                    unmodifiableMap( coreMembers )
-            );
+            return new CoreTopology( clusterId, coreClients.size() > 0 && coreClients.get( 0 ) == client,
+                    unmodifiableMap( coreMembers ) );
         }
         finally
         {
@@ -101,12 +96,12 @@ public class SharedDiscoveryService implements DiscoveryServiceFactory
         }
     }
 
-    private ReadReplicaTopology readReplicaTopology()
+    ReadReplicaTopology readReplicaTopology()
     {
         lock.lock();
         try
         {
-            return new ReadReplicaTopology( unmodifiableSet( readReplicaAddresses ) );
+            return new ReadReplicaTopology( unmodifiableMap( readReplicaAddresses ) );
         }
         finally
         {
@@ -150,16 +145,16 @@ public class SharedDiscoveryService implements DiscoveryServiceFactory
         for ( SharedDiscoveryCoreClient coreClient : coreClients )
         {
             coreClient.onCoreTopologyChange( coreTopology( coreClient ) );
-            coreClient.onReadReplicaTopologyChange( readReplicaTopology(  ) );
+            coreClient.onReadReplicaTopologyChange( readReplicaTopology() );
         }
     }
 
-    void registerReadReplica( ReadReplicaAddresses readReplicaAddresses )
+    void registerReadReplica( MemberId memberId, ReadReplicaAddresses readReplicaAddresses )
     {
         lock.lock();
         try
         {
-            this.readReplicaAddresses.add( readReplicaAddresses );
+            this.readReplicaAddresses.put( memberId, readReplicaAddresses );
             notifyCoreClients();
         }
         finally
@@ -168,12 +163,12 @@ public class SharedDiscoveryService implements DiscoveryServiceFactory
         }
     }
 
-    void unRegisterReadReplica( ReadReplicaAddresses readReplicaAddresses )
+    void unRegisterReadReplica( MemberId memberId )
     {
         lock.lock();
         try
         {
-            this.readReplicaAddresses.remove( readReplicaAddresses );
+            ReadReplicaAddresses removed = this.readReplicaAddresses.remove( memberId );
             notifyCoreClients();
         }
         finally

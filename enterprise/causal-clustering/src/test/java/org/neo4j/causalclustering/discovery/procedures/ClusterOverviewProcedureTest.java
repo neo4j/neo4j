@@ -19,14 +19,13 @@
  */
 package org.neo4j.causalclustering.discovery.procedures;
 
+import org.hamcrest.collection.IsIterableContainingInOrder;
+import org.junit.Test;
+
 import java.util.HashMap;
 import java.util.List;
 import java.util.Map;
-import java.util.Set;
 import java.util.UUID;
-
-import org.hamcrest.collection.IsIterableContainingInOrder;
-import org.junit.Test;
 
 import org.neo4j.causalclustering.core.consensus.LeaderLocator;
 import org.neo4j.causalclustering.discovery.CoreAddresses;
@@ -40,9 +39,8 @@ import org.neo4j.logging.NullLogProvider;
 import static org.hamcrest.MatcherAssert.assertThat;
 import static org.mockito.Mockito.mock;
 import static org.mockito.Mockito.when;
-
-import static org.neo4j.causalclustering.discovery.TestTopology.addressesForReadReplicas;
 import static org.neo4j.causalclustering.discovery.TestTopology.adressesForCore;
+import static org.neo4j.causalclustering.load_balancing.procedure.GetServersProcedureV1Test.addresses;
 import static org.neo4j.helpers.collection.Iterators.asList;
 
 public class ClusterOverviewProcedureTest
@@ -62,7 +60,7 @@ public class ClusterOverviewProcedureTest
         coreMembers.put( follower1, adressesForCore( 1 ) );
         coreMembers.put( follower2, adressesForCore( 2 ) );
 
-        Set<ReadReplicaAddresses> readReplicas = addressesForReadReplicas( 4, 5 );
+        Map<MemberId,ReadReplicaAddresses> readReplicas = addresses( 4, 5 );
 
         when( topologyService.coreServers() ).thenReturn( new CoreTopology( null, false, coreMembers ) );
         when( topologyService.readReplicas() ).thenReturn( new ReadReplicaTopology( readReplicas ) );

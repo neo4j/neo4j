@@ -19,36 +19,44 @@
  */
 package org.neo4j.causalclustering.discovery;
 
+import org.neo4j.causalclustering.core.CausalClusteringSettings;
+import org.neo4j.causalclustering.identity.MemberId;
+import org.neo4j.helpers.AdvertisedSocketAddress;
 import org.neo4j.kernel.configuration.Config;
 import org.neo4j.kernel.lifecycle.LifecycleAdapter;
 import org.neo4j.logging.Log;
 import org.neo4j.logging.LogProvider;
 
-class SharedDiscoveryReadReplicaClient extends LifecycleAdapter implements TopologyService
+import static org.neo4j.helpers.SocketAddressFormat.socketAddress;
+
+class SharedDiscoveryReadReplicaClient extends LifecycleAdapter implements ReadReplicaTopologyService
 {
     private final SharedDiscoveryService sharedDiscoveryService;
     private final ReadReplicaAddresses addresses;
+    private final MemberId memberId;
     private final Log log;
 
-    SharedDiscoveryReadReplicaClient( SharedDiscoveryService sharedDiscoveryService, Config config,
-                               LogProvider logProvider )
+    SharedDiscoveryReadReplicaClient( SharedDiscoveryService sharedDiscoveryService, Config config, MemberId memberId,
+            LogProvider logProvider )
     {
         this.sharedDiscoveryService = sharedDiscoveryService;
-        this.addresses = new ReadReplicaAddresses( ClientConnectorAddresses.extractFromConfig( config ) );
+        this.addresses = new ReadReplicaAddresses( ClientConnectorAddresses.extractFromConfig( config ),
+                socketAddress( config.get( CausalClusteringSettings.transaction_advertised_address ).toString(), AdvertisedSocketAddress::new ) );
+        this.memberId = memberId;
         this.log = logProvider.getLog( getClass() );
     }
 
     @Override
     public void start() throws Throwable
     {
-        sharedDiscoveryService.registerReadReplica( addresses );
-        log.info( "Registered read replica at %s", addresses );
+        sharedDiscoveryService.registerReadReplica( memberId, addresses );
+        log.info( "Registered read replica member id: %s at %s", memberId, addresses );
     }
 
     @Override
     public void stop() throws Throwable
     {
-        sharedDiscoveryService.unRegisterReadReplica( addresses );
+        sharedDiscoveryService.unRegisterReadReplica( memberId);
     }
 
     @Override
@@ -57,5 +65,19 @@ class SharedDiscoveryReadReplicaClient extends LifecycleAdapter implements Topol
         CoreTopology topology = sharedDiscoveryService.coreTopology( null );
         log.info( "Core topology is %s", topology );
         return topology;
+    }
+
+    @Override
+    public ReadReplicaTopology readReplicas()
+    {
+        ReadReplicaTopology topology = sharedDiscoveryService.readReplicaTopology();
+        log.info( "Read replica topology is %s", topology );
+        return topology;
+    }
+
+    @Override
+    public ClusterTopology allServers()
+    {
+        return new ClusterTopology( coreServers(), readReplicas() );
     }
 }

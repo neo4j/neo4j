@@ -20,10 +20,12 @@
 package org.neo4j.causalclustering.readreplica;
 
 import java.io.File;
+import java.util.UUID;
 import java.util.function.Function;
 
 import org.neo4j.causalclustering.discovery.DiscoveryServiceFactory;
 import org.neo4j.causalclustering.discovery.HazelcastDiscoveryServiceFactory;
+import org.neo4j.causalclustering.identity.MemberId;
 import org.neo4j.kernel.configuration.Config;
 import org.neo4j.kernel.impl.factory.DatabaseInfo;
 import org.neo4j.kernel.impl.factory.EditionModule;
@@ -36,14 +38,15 @@ public class ReadReplicaGraphDatabase extends GraphDatabaseFacade
 {
     public ReadReplicaGraphDatabase( File storeDir, Config config, Dependencies dependencies )
     {
-        this( storeDir, config, dependencies, new HazelcastDiscoveryServiceFactory() );
+        this( storeDir, config, dependencies, new HazelcastDiscoveryServiceFactory(), new MemberId( UUID.randomUUID() ) );
     }
 
     public ReadReplicaGraphDatabase( File storeDir, Config config, Dependencies dependencies,
-            DiscoveryServiceFactory discoveryServiceFactory )
+            DiscoveryServiceFactory discoveryServiceFactory, MemberId memberId )
     {
         Function<PlatformModule,EditionModule> factory =
-                ( platformModule ) -> new EnterpriseReadReplicaEditionModule( platformModule, discoveryServiceFactory );
+                ( platformModule ) -> new EnterpriseReadReplicaEditionModule( platformModule,
+                        discoveryServiceFactory, memberId );
         new GraphDatabaseFacadeFactory( DatabaseInfo.READ_REPLICA, factory ).initFacade( storeDir, config,
                 dependencies, this );
     }

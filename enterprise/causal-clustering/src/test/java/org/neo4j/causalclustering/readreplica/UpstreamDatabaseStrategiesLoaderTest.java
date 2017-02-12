@@ -23,7 +23,7 @@ import org.junit.Test;
 
 import java.util.Set;
 
-import org.neo4j.causalclustering.discovery.TopologyService;
+import org.neo4j.causalclustering.discovery.ReadReplicaTopologyService;
 import org.neo4j.kernel.configuration.Config;
 
 import static org.junit.Assert.assertEquals;
@@ -41,7 +41,7 @@ public class UpstreamDatabaseStrategiesLoaderTest
         config.augment( stringMap( "causal_clustering.upstream_selection_strategy", "dummy" ) );
 
         UpstreamDatabaseStrategiesLoader
-                strategies = new UpstreamDatabaseStrategiesLoader( mock( TopologyService.class ), config );
+                strategies = new UpstreamDatabaseStrategiesLoader( mock( ReadReplicaTopologyService.class ), config );
 
         // when
         Set<UpstreamDatabaseSelectionStrategy> upstreamDatabaseSelectionStrategies = asSet( strategies.iterator() );
@@ -62,7 +62,7 @@ public class UpstreamDatabaseStrategiesLoaderTest
 
         // when
         UpstreamDatabaseStrategiesLoader
-                strategies = new UpstreamDatabaseStrategiesLoader( mock( TopologyService.class ), config );
+                strategies = new UpstreamDatabaseStrategiesLoader( mock( ReadReplicaTopologyService.class ), config );
 
         // then
         assertEquals( UpstreamDatabaseStrategySelectorTest.YetAnotherDummyUpstreamDatabaseSelectionStrategy.class,

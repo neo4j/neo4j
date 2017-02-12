@@ -37,14 +37,14 @@ public class HazelcastDiscoveryServiceFactory implements DiscoveryServiceFactory
     }
 
     @Override
-    public TopologyService readReplicaDiscoveryService( Config config,
-                                                 LogProvider logProvider, DelayedRenewableTimeoutService timeoutService,
-                                                 long readReplicaTimeToLiveTimeout, long readReplicaRefreshRate )
+    public ReadReplicaTopologyService readReplicaTopologyService( Config config, LogProvider logProvider,
+            DelayedRenewableTimeoutService timeoutService, long readReplicaTimeToLiveTimeout,
+            long readReplicaRefreshRate, MemberId myself )
     {
         configureHazelcast( config );
 
         return new HazelcastClient( new HazelcastClientConnector( config ), logProvider, config, timeoutService,
-                readReplicaTimeToLiveTimeout, readReplicaRefreshRate );
+                readReplicaTimeToLiveTimeout, readReplicaRefreshRate, myself );
     }
 
     private static void configureHazelcast( Config config )

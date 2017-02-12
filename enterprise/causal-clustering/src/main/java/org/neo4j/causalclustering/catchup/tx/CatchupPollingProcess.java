@@ -287,10 +287,10 @@ public class CatchupPollingProcess extends LifecycleAdapter
 
     private void copyStore()
     {
-        MemberId core;
+        MemberId upstream;
         try
         {
-            core = selectionStrategyPipeline.bestUpstreamDatabase();
+            upstream = selectionStrategyPipeline.bestUpstreamDatabase();
         }
         catch ( UpstreamDatabaseSelectionException e )
         {
@@ -299,10 +299,10 @@ public class CatchupPollingProcess extends LifecycleAdapter
         }
 
         StoreId localStoreId = localDatabase.storeId();
-        downloadDatabase( core, localStoreId );
+        downloadDatabase( upstream, localStoreId );
     }
 
-    private void downloadDatabase( MemberId core, StoreId localStoreId )
+    private void downloadDatabase( MemberId upstream, StoreId localStoreId )
     {
         try
         {
@@ -316,11 +316,11 @@ public class CatchupPollingProcess extends LifecycleAdapter
 
         try
         {
-            storeCopyProcess.replaceWithStoreFrom( core, localStoreId );
+            storeCopyProcess.replaceWithStoreFrom( upstream, localStoreId );
         }
         catch ( IOException | StoreCopyFailedException | StreamingTransactionsFailedException e )
         {
-            log.warn( String.format( "Error copying store from: %s. Will retry shortly.", core ) );
+            log.warn( String.format( "Error copying store from: %s. Will retry shortly.", upstream ) );
             return;
         }
 

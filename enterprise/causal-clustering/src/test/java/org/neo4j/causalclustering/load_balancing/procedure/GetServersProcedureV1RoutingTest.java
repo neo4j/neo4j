@@ -40,6 +40,7 @@ import org.neo4j.causalclustering.identity.ClusterId;
 import org.neo4j.causalclustering.identity.MemberId;
 import org.neo4j.kernel.configuration.Config;
 
+import static java.util.Collections.emptyMap;
 import static java.util.Collections.emptySet;
 import static org.junit.Assert.assertFalse;
 import static org.junit.runners.Parameterized.Parameters;
@@ -81,7 +82,7 @@ public class GetServersProcedureV1RoutingTest
 
         final CoreTopology clusterTopology = new CoreTopology( clusterId, false, coreMembers );
         when( coreTopologyService.coreServers() ).thenReturn( clusterTopology );
-        when( coreTopologyService.readReplicas() ).thenReturn( new ReadReplicaTopology( emptySet() ) );
+        when( coreTopologyService.readReplicas() ).thenReturn( new ReadReplicaTopology( emptyMap() ) );
 
         final GetServersProcedureV1 proc =
                 new GetServersProcedureV1( coreTopologyService, leaderLocator, config, getInstance() );

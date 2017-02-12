@@ -92,6 +92,12 @@ class SharedDiscoveryCoreClient extends LifecycleAdapter implements CoreTopology
     }
 
     @Override
+    public ClusterTopology allServers()
+    {
+        return new ClusterTopology( coreServers(), readReplicas() );
+    }
+
+    @Override
     public CoreTopology coreServers()
     {
         return coreTopology;

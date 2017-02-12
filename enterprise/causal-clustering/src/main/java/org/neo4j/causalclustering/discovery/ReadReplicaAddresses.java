@@ -19,13 +19,17 @@
  */
 package org.neo4j.causalclustering.discovery;
 
-public class ReadReplicaAddresses implements ClientConnector
+import org.neo4j.helpers.AdvertisedSocketAddress;
+
+public class ReadReplicaAddresses implements CatchupServerAddress, ClientConnector
 {
+    private final AdvertisedSocketAddress catchupServerAddress;
     private final ClientConnectorAddresses clientConnectorAddresses;
 
-    ReadReplicaAddresses( ClientConnectorAddresses clientConnectorAddresses )
+    public ReadReplicaAddresses( ClientConnectorAddresses clientConnectorAddresses, AdvertisedSocketAddress catchupServerAddress )
     {
         this.clientConnectorAddresses = clientConnectorAddresses;
+        this.catchupServerAddress = catchupServerAddress;
     }
 
     public ClientConnectorAddresses connectors()
@@ -37,5 +41,11 @@ public class ReadReplicaAddresses implements ClientConnector
     public String toString()
     {
         return String.format( "ReadReplicaAddresses{clientConnectorAddresses=%s}", clientConnectorAddresses );
+    }
+
+    @Override
+    public AdvertisedSocketAddress getCatchupServer()
+    {
+        return catchupServerAddress;
     }
 }

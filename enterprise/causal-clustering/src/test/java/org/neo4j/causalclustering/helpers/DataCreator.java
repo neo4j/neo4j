@@ -19,12 +19,33 @@
  */
 package org.neo4j.causalclustering.helpers;
 
+import java.util.function.Supplier;
+
 import org.neo4j.causalclustering.discovery.Cluster;
 import org.neo4j.causalclustering.discovery.CoreClusterMember;
+import org.neo4j.graphdb.Label;
+import org.neo4j.graphdb.Node;
+import org.neo4j.helpers.collection.Pair;
 
 public class DataCreator
 {
-    public static CoreClusterMember createNodes( Cluster cluster, int numberOfNodes ) throws Exception
+    public static CoreClusterMember createLabelledNodesWithProperty( Cluster cluster, int numberOfNodes,
+            Label label, Supplier<Pair<String,Object>> supplier ) throws Exception
+    {
+        CoreClusterMember last = null;
+        for ( int i = 0; i < numberOfNodes; i++ )
+        {
+            last = cluster.coreTx( ( db, tx ) ->
+            {
+                Node node = db.createNode( label );
+                node.setProperty( supplier.get().first(), supplier.get().other() );
+                tx.success();
+            } );
+        }
+        return last;
+    }
+
+    public static CoreClusterMember createEmptyNodes( Cluster cluster, int numberOfNodes ) throws Exception
     {
         CoreClusterMember last = null;
         for ( int i = 0; i < numberOfNodes; i++ )

@@ -20,43 +20,49 @@
 package org.neo4j.causalclustering.readreplica;
 
 
-import java.util.LinkedList;
+import java.util.LinkedHashSet;
 import java.util.NoSuchElementException;
 
 import org.neo4j.causalclustering.identity.MemberId;
 
+import static org.neo4j.helpers.collection.Iterables.empty;
+
 public class UpstreamDatabaseStrategySelector
 {
-    private LinkedList<UpstreamDatabaseSelectionStrategy> strategies = new LinkedList<>();
+    private LinkedHashSet<UpstreamDatabaseSelectionStrategy> strategies = new LinkedHashSet<>();
+    private MemberId myself;
 
     UpstreamDatabaseStrategySelector( UpstreamDatabaseSelectionStrategy defaultStrategy )
     {
-        this( defaultStrategy, null );
+        this( defaultStrategy, empty(), null );
     }
 
     UpstreamDatabaseStrategySelector( UpstreamDatabaseSelectionStrategy defaultStrategy,
-            Iterable<UpstreamDatabaseSelectionStrategy> otherStrategies )
+            Iterable<UpstreamDatabaseSelectionStrategy> otherStrategies, MemberId myself )
     {
-        strategies.push( defaultStrategy );
+        this.myself = myself;
         if ( otherStrategies != null )
         {
             for ( UpstreamDatabaseSelectionStrategy otherStrategy : otherStrategies )
             {
-                strategies.push( otherStrategy );
+                strategies.add( otherStrategy );
             }
         }
+        strategies.add( defaultStrategy );
     }
 
     public MemberId bestUpstreamDatabase() throws UpstreamDatabaseSelectionException
     {
         MemberId result = null;
-
         for ( UpstreamDatabaseSelectionStrategy strategy : strategies )
         {
             try
             {
-                result = strategy.upstreamDatabase().get();
-                break;
+                if ( strategy.upstreamDatabase().isPresent() )
+                {
+                    result = strategy.upstreamDatabase().get();
+                    break;
+                }
             }
             catch ( NoSuchElementException ex )
             {
