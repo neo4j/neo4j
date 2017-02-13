@@ -19,6 +19,7 @@
  */
 package org.neo4j.causalclustering.catchup;
 
+import java.util.Optional;
 import java.util.concurrent.ExecutionException;
 import java.util.concurrent.Future;
 import java.util.concurrent.TimeUnit;
@@ -29,7 +30,7 @@ import org.neo4j.logging.Log;
 
 class TimeoutLoop
 {
-    static <T> T waitForCompletion( Future<T> future, String operation, Supplier<Long> millisSinceLastResponseSupplier,
+    static <T> T waitForCompletion( Future<T> future, String operation, Supplier<Optional<Long>> millisSinceLastResponseSupplier,
                                     long inactivityTimeoutMillis, Log log ) throws CatchUpClientException
     {
         long remainingTimeoutMillis = inactivityTimeoutMillis;
@@ -50,15 +51,23 @@ class TimeoutLoop
             }
             catch ( TimeoutException e )
             {
-                long millisSinceLastResponse = millisSinceLastResponseSupplier.get();
-                if ( millisSinceLastResponse < inactivityTimeoutMillis )
+                if ( !millisSinceLastResponseSupplier.get().isPresent() )
                 {
-                    remainingTimeoutMillis = inactivityTimeoutMillis - millisSinceLastResponse;
+                    log.info( "Request timed out with no responses after " + inactivityTimeoutMillis + " ms." );
+                    throw exception( future, operation, e );
                 }
                 else
                 {
-                    log.info( "Request timed out. Time since last response: " + millisSinceLastResponse );
-                    throw exception( future, operation, e );
+                    long millisSinceLastResponse = millisSinceLastResponseSupplier.get().get();
+                    if ( millisSinceLastResponse < inactivityTimeoutMillis )
+                    {
+                        remainingTimeoutMillis = inactivityTimeoutMillis - millisSinceLastResponse;
+                    }
+                    else
+                    {
+                        log.info( "Request timed out after period of inactivity. Time since last response: " + millisSinceLastResponse + " ms." );
+                        throw exception( future, operation, e );
+                    }
                 }
             }
         }
