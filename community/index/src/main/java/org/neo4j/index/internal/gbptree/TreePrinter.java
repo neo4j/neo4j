@@ -52,9 +52,10 @@ class TreePrinter<KEY,VALUE>
      *
      * @param cursor {@link PageCursor} placed at root of tree or sub-tree.
      * @param out target to print tree at.
+     * @param printPosition
      * @throws IOException on page cache access error.
      */
-    void printTree( PageCursor cursor, PrintStream out, boolean printValues ) throws IOException
+    void printTree( PageCursor cursor, PrintStream out, boolean printValues, boolean printPosition ) throws IOException
     {
         assertOnTreeNode( cursor );
 
@@ -67,7 +68,7 @@ class TreePrinter<KEY,VALUE>
             long leftmostSibling = cursor.getCurrentPageId();
 
             // Go right through all siblings
-            printLevel( cursor, out, printValues );
+            printLevel( cursor, out, printValues, printPosition );
 
             // Then go back to the left-most node on this level
             node.goTo( cursor, "back", leftmostSibling );
@@ -76,8 +77,8 @@ class TreePrinter<KEY,VALUE>
         while ( goToLeftmostChild( cursor ) );
     }
 
-    private void printTreeNode( PageCursor cursor, int keyCount, boolean isLeaf, PrintStream out, boolean printValues )
-            throws IOException
+    private void printTreeNode( PageCursor cursor, int keyCount, boolean isLeaf, PrintStream out, boolean printValues,
+            boolean printPosition ) throws IOException
     {
         out.print( "{" + cursor.getCurrentPageId() + "} " );
         KEY key = layout.newKey();
@@ -99,7 +100,10 @@ class TreePrinter<KEY,VALUE>
             }
             while ( cursor.shouldRetry() );
 
-            out.print( "#" + i + " " );
+            if ( printPosition )
+            {
+                out.print( "#" + i + " " );
+            }
 
             if ( isLeaf )
             {
@@ -124,7 +128,11 @@ class TreePrinter<KEY,VALUE>
             }
             while ( cursor.shouldRetry() );
 
-            out.print( "#" + keyCount + " /" + child + "\\" );
+            if ( printPosition )
+            {
+                out.print( "#" + keyCount + " " );
+            }
+            out.print( "/" + child + "\\" );
         }
         out.println();
     }
@@ -150,7 +158,7 @@ class TreePrinter<KEY,VALUE>
         return isInternal;
     }
 
-    private void printLevel( PageCursor cursor, PrintStream out, boolean printValues )
+    private void printLevel( PageCursor cursor, PrintStream out, boolean printValues, boolean printPosition )
             throws IOException
     {
         int keyCount;
@@ -171,7 +179,7 @@ class TreePrinter<KEY,VALUE>
             }
             while ( cursor.shouldRetry() );
 
-            printTreeNode( cursor, keyCount, isLeaf, out, printValues );
+            printTreeNode( cursor, keyCount, isLeaf, out, printValues, printPosition );
 
             if ( TreeNode.isNode( rightSibling ) )
             {
