@@ -19,10 +19,9 @@
  */
 package org.neo4j.kernel.api.constraints;
 
-import org.neo4j.kernel.api.schema.NodePropertyDescriptor;
 import org.neo4j.kernel.api.TokenNameLookup;
-import org.neo4j.kernel.api.schema.IndexDescriptor;
-import org.neo4j.kernel.api.schema.IndexDescriptorFactory;
+import org.neo4j.kernel.api.schema.NodePropertyDescriptor;
+import org.neo4j.kernel.api.schema_new.LabelSchemaDescriptor;
 
 /**
  * Base class describing property constraint on nodes.
@@ -49,6 +48,14 @@ public abstract class NodePropertyConstraint implements PropertyConstraint
     public boolean matches( NodePropertyDescriptor descriptor )
     {
         return this.descriptor.equals( descriptor );
+    }
+
+    public boolean matches( LabelSchemaDescriptor other )
+    {
+        return other != null &&
+                descriptor.getLabelId() == other.getLabelId() &&
+                descriptor.getPropertyKeyId() == other.getPropertyIds()[0];
+        // this is safe because we are replacing this class before introducing composite constraints
     }
 
     @Override

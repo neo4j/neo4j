@@ -26,17 +26,22 @@ import org.neo4j.kernel.api.schema_new.SchemaComputer;
 import org.neo4j.kernel.api.schema_new.SchemaDescriptor;
 import org.neo4j.kernel.api.schema_new.constaints.ConstraintDescriptor;
 import org.neo4j.kernel.api.schema_new.index.NewIndexDescriptor;
+import org.neo4j.kernel.impl.store.record.RecordSerializable;
 
 /**
  * Represents a stored schema rule.
  */
-public interface SchemaRule extends SchemaDescriptor.Supplier
+public interface SchemaRule extends SchemaDescriptor.Supplier, RecordSerializable
 {
     /**
      * The persistence id for this rule.
      */
     long getId();
 
+    /**
+     * This enum is used for the legacy schema store, and should not be extended.
+     */
+    @Deprecated
     enum Kind
     {
         INDEX_RULE( "Index" ),

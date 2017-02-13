@@ -67,6 +67,8 @@ import org.neo4j.kernel.api.schema.IndexDescriptor;
 import org.neo4j.kernel.api.schema.IndexDescriptorFactory;
 import org.neo4j.kernel.api.schema.NodePropertyDescriptor;
 import org.neo4j.kernel.api.schema.RelationshipPropertyDescriptor;
+import org.neo4j.kernel.api.schema_new.SchemaBoundary;
+import org.neo4j.kernel.api.schema_new.index.IndexBoundary;
 import org.neo4j.kernel.api.txstate.TransactionCountingStateVisitor;
 import org.neo4j.kernel.api.txstate.TransactionState;
 import org.neo4j.kernel.impl.api.operations.CountsOperations;
@@ -406,7 +408,8 @@ public class StateHandlingStatementOperations implements
             }
             else // *CREATE*
             { // create from scratch
-                for ( Iterator<NodePropertyConstraint> it = storeLayer.constraintsGetForLabelAndPropertyKey( descriptor );
+                for ( Iterator<NodePropertyConstraint> it = storeLayer.constraintsGetForLabelAndPropertyKey(
+                        SchemaBoundary.map( descriptor) );
                         it.hasNext(); )
                 {
                     if ( it.next().equals( constraint ) )
@@ -451,7 +454,7 @@ public class StateHandlingStatementOperations implements
             NodePropertyDescriptor descriptor )
     {
         Iterator<NodePropertyConstraint> constraints =
-                storeLayer.constraintsGetForLabelAndPropertyKey(descriptor );
+                storeLayer.constraintsGetForLabelAndPropertyKey( SchemaBoundary.map( descriptor ) );
         if ( state.hasTxStateWithChanges() )
         {
             return state.txState().constraintsChangesForLabelAndProperty( descriptor ).apply( constraints );
@@ -475,7 +478,7 @@ public class StateHandlingStatementOperations implements
             KernelStatement state, RelationshipPropertyDescriptor descriptor )
     {
         Iterator<RelationshipPropertyConstraint> constraints =
-                storeLayer.constraintsGetForRelationshipTypeAndPropertyKey( descriptor );
+                storeLayer.constraintsGetForRelationshipTypeAndPropertyKey( SchemaBoundary.map( descriptor ) );
         if ( state.hasTxStateWithChanges() )
         {
             return state.txState()
@@ -524,7 +527,8 @@ public class StateHandlingStatementOperations implements
     @Override
     public IndexDescriptor indexGetForLabelAndPropertyKey( KernelStatement state, NodePropertyDescriptor descriptor )
     {
-        IndexDescriptor indexDescriptor = storeLayer.indexGetForLabelAndPropertyKey( descriptor );
+        IndexDescriptor indexDescriptor = IndexBoundary.map(
+                storeLayer.indexGetForLabelAndPropertyKey( SchemaBoundary.map( descriptor ) ) );
 
         Iterator<IndexDescriptor> rules = iterator( indexDescriptor );
         if ( state.hasTxStateWithChanges() )
@@ -610,10 +614,10 @@ public class StateHandlingStatementOperations implements
         if ( state.hasTxStateWithChanges() )
         {
             return state.txState().indexDiffSetsByLabel( labelId )
-                    .apply( storeLayer.indexesGetForLabel( labelId ) );
+                    .apply( IndexBoundary.map( storeLayer.indexesGetForLabel( labelId ) ) );
         }
 
-        return storeLayer.indexesGetForLabel( labelId );
+        return IndexBoundary.map( storeLayer.indexesGetForLabel( labelId ) );
     }
 
     @Override
@@ -621,10 +625,10 @@ public class StateHandlingStatementOperations implements
     {
         if ( state.hasTxStateWithChanges() )
         {
-            return state.txState().indexChanges().apply( storeLayer.indexesGetAll() );
+            return state.txState().indexChanges().apply( IndexBoundary.map( storeLayer.indexesGetAll() ) );
         }
 
-        return storeLayer.indexesGetAll();
+        return IndexBoundary.map( storeLayer.indexesGetAll() );
     }
 
     @Override
@@ -633,10 +637,10 @@ public class StateHandlingStatementOperations implements
         if ( state.hasTxStateWithChanges() )
         {
             return state.txState().constraintIndexDiffSetsByLabel( labelId )
-                    .apply( storeLayer.uniquenessIndexesGetForLabel( labelId ) );
+                    .apply( IndexBoundary.map( storeLayer.uniquenessIndexesGetForLabel( labelId ) ) );
         }
 
-        return storeLayer.uniquenessIndexesGetForLabel( labelId );
+        return IndexBoundary.map( storeLayer.uniquenessIndexesGetForLabel( labelId ) );
     }
 
     @Override
@@ -645,10 +649,10 @@ public class StateHandlingStatementOperations implements
         if ( state.hasTxStateWithChanges() )
         {
             return state.txState().constraintIndexChanges()
-                    .apply( storeLayer.uniquenessIndexesGetAll() );
+                    .apply( IndexBoundary.map( storeLayer.uniquenessIndexesGetAll() ) );
         }
 
-        return storeLayer.uniquenessIndexesGetAll();
+        return IndexBoundary.map( storeLayer.uniquenessIndexesGetAll() );
     }
 
     @Override
@@ -1168,14 +1172,14 @@ public class StateHandlingStatementOperations implements
     public Long indexGetOwningUniquenessConstraintId( KernelStatement state, IndexDescriptor index )
             throws SchemaRuleNotFoundException
     {
-        return storeLayer.indexGetOwningUniquenessConstraintId( index );
+        return storeLayer.indexGetOwningUniquenessConstraintId( IndexBoundary.map( index ) );
     }
 
     @Override
     public long indexGetCommittedId( KernelStatement state, IndexDescriptor index, Predicate<IndexRule> filter )
             throws SchemaRuleNotFoundException
     {
-        return storeLayer.indexGetCommittedId( index, filter );
+        return storeLayer.indexGetCommittedId( IndexBoundary.map( index ), filter );
     }
 
     @Override

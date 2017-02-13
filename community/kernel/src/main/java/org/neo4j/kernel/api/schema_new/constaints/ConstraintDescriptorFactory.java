@@ -19,6 +19,7 @@
  */
 package org.neo4j.kernel.api.schema_new.constaints;
 
+import org.neo4j.kernel.api.schema_new.SchemaDescriptor;
 import org.neo4j.kernel.api.schema_new.SchemaDescriptorFactory;
 
 import static org.neo4j.kernel.api.schema_new.constaints.ConstraintDescriptor.Type.EXISTS;
@@ -28,21 +29,31 @@ public class ConstraintDescriptorFactory
 {
     public static ConstraintDescriptor existsForLabel( int labelId, int... propertyIds )
     {
-        return new ConstraintDescriptor( SchemaDescriptorFactory.forLabel( labelId, propertyIds ), EXISTS );
+        return existsForSchema( SchemaDescriptorFactory.forLabel( labelId, propertyIds ) );
     }
 
     public static ConstraintDescriptor existsForRelType( int relTypeId, int... propertyIds )
     {
-        return new ConstraintDescriptor( SchemaDescriptorFactory.forRelType( relTypeId, propertyIds ), EXISTS );
+        return existsForSchema( SchemaDescriptorFactory.forRelType( relTypeId, propertyIds ) );
     }
 
     public static ConstraintDescriptor uniqueForLabel( int labelId, int... propertyIds )
     {
-        return new ConstraintDescriptor( SchemaDescriptorFactory.forLabel( labelId, propertyIds ), UNIQUE );
+        return uniqueForSchema( SchemaDescriptorFactory.forLabel( labelId, propertyIds ) );
     }
 
     public static ConstraintDescriptor uniqueForRelType( int relTypeId, int... propertyIds )
     {
-        return new ConstraintDescriptor( SchemaDescriptorFactory.forRelType( relTypeId, propertyIds ), UNIQUE );
+        return uniqueForSchema( SchemaDescriptorFactory.forRelType( relTypeId, propertyIds ) );
+    }
+
+    public static ConstraintDescriptor existsForSchema( SchemaDescriptor schema )
+    {
+        return new ConstraintDescriptor( schema, EXISTS );
+    }
+
+    public static ConstraintDescriptor uniqueForSchema( SchemaDescriptor schema )
+    {
+        return new ConstraintDescriptor( schema, UNIQUE );
     }
 }

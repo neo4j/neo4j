@@ -20,83 +20,40 @@
 package org.neo4j.kernel.impl.store.record;
 
 import java.nio.ByteBuffer;
-import java.util.Optional;
 
-import org.neo4j.kernel.api.schema_new.LabelSchemaDescriptor;
-import org.neo4j.kernel.api.schema_new.RelationTypeSchemaDescriptor;
-import org.neo4j.kernel.api.schema_new.SchemaComputer;
 import org.neo4j.kernel.api.schema_new.SchemaDescriptor;
-import org.neo4j.kernel.api.schema_new.SchemaProcessor;
 import org.neo4j.kernel.api.schema_new.constaints.ConstraintDescriptor;
-import org.neo4j.kernel.api.schema_new.constaints.ConstraintDescriptorFactory;
+import org.neo4j.storageengine.api.schema.SchemaRule;
 
 import static org.neo4j.kernel.api.schema_new.SchemaUtil.noopTokenNameLookup;
-import static org.neo4j.kernel.impl.util.IoPrimitiveUtils.safeCastLongToInt;
-import static org.neo4j.storageengine.api.schema.SchemaRule.Kind.NODE_PROPERTY_EXISTENCE_CONSTRAINT;
-import static org.neo4j.storageengine.api.schema.SchemaRule.Kind.RELATIONSHIP_PROPERTY_EXISTENCE_CONSTRAINT;
-import static org.neo4j.storageengine.api.schema.SchemaRule.Kind.UNIQUENESS_CONSTRAINT;
 
-public class ConstraintRule extends AbstractSchemaRule implements ConstraintDescriptor.Supplier
+public class ConstraintRule implements SchemaRule, ConstraintDescriptor.Supplier
 {
-    private final Optional<Long> ownedIndexRule;
+    private final long id;
+    private final Long ownedIndexRule;
     private final ConstraintDescriptor descriptor;
 
-    public static ConstraintRule readUniquenessConstraintRule( long id, int labelId, ByteBuffer buffer )
+    @Override
+    public final long getId()
     {
-        return new ConstraintRule( id,
-                ConstraintDescriptorFactory.uniqueForLabel( labelId, readPropertyKeys( buffer ) ),
-                readOwnedIndexRule( buffer ) );
-    }
-
-    public static ConstraintRule readNodePropertyExistenceConstraintRule( long id, int labelId, ByteBuffer buffer )
-    {
-        return new ConstraintRule( id,
-                ConstraintDescriptorFactory.existsForLabel( labelId, readPropertyKey( buffer ) ),
-                Optional.empty() );
-    }
-
-    public static ConstraintRule readRelPropertyExistenceConstraintRule( long id, int relTypeId, ByteBuffer buffer )
-    {
-        return new ConstraintRule( id,
-                ConstraintDescriptorFactory.existsForRelType( relTypeId, readPropertyKey( buffer ) ),
-                Optional.empty() );
+        return this.id;
     }
 
     public static ConstraintRule constraintRule(
             long id, ConstraintDescriptor descriptor )
     {
-        return new ConstraintRule( id, descriptor, Optional.empty() );
+        return new ConstraintRule( id, descriptor, null );
     }
 
     public static ConstraintRule constraintRule(
             long id, ConstraintDescriptor descriptor, long ownedIndexRule )
     {
-        return new ConstraintRule( id, descriptor, Optional.of( ownedIndexRule ) );
+        return new ConstraintRule( id, descriptor, ownedIndexRule );
     }
 
-    private static int readPropertyKey( ByteBuffer buffer )
+    ConstraintRule( long id, ConstraintDescriptor descriptor, Long ownedIndexRule )
     {
-        return buffer.getInt();
-    }
-
-    private static int[] readPropertyKeys( ByteBuffer buffer )
-    {
-        int[] keys = new int[buffer.get()];
-        for ( int i = 0; i < keys.length; i++ )
-        {
-            keys[i] = safeCastLongToInt( buffer.getLong() );
-        }
-        return keys;
-    }
-
-    private static Optional<Long> readOwnedIndexRule( ByteBuffer buffer )
-    {
-        return Optional.of( buffer.getLong() );
-    }
-
-    private ConstraintRule( long id, ConstraintDescriptor descriptor, Optional<Long> ownedIndexRule )
-    {
-        super( id );
+        this.id = id;
         this.descriptor = descriptor;
         this.ownedIndexRule = ownedIndexRule;
     }
@@ -119,21 +76,26 @@ public class ConstraintRule extends AbstractSchemaRule implements ConstraintDesc
         return descriptor;
     }
 
+    @SuppressWarnings( "NumberEquality" )
     public long getOwnedIndex()
     {
-        return ownedIndexRule.orElseThrow( IllegalStateException::new );
+        if ( ownedIndexRule == null )
+        {
+            throw new IllegalStateException( "This constraint does not own an index." );
+        }
+        return ownedIndexRule;
     }
 
     @Override
     public int length()
     {
-        return descriptor.schema().computeWith( lengthComputer );
+        return SchemaRuleSerialization.lengthOf( this );
     }
 
     @Override
     public void serialize( ByteBuffer target )
     {
-        new Serializer( target ).process( descriptor.schema() );
+        SchemaRuleSerialization.serialize( this, target );
     }
 
     @Override
@@ -151,86 +113,5 @@ public class ConstraintRule extends AbstractSchemaRule implements ConstraintDesc
     public int hashCode()
     {
         return descriptor.hashCode();
-    }
-
-    private SchemaComputer<Integer> lengthComputer =
-            new SchemaComputer<Integer>() {
-                @Override
-                public Integer computeSpecific( LabelSchemaDescriptor schema )
-                {
-                    switch ( descriptor.type() )
-                    {
-                    case UNIQUE:
-                        return  4 + /* label */
-                                1 + /* kind id */
-                                1 + /* the number of properties that form a unique tuple */
-                                8 * schema.getPropertyIds().length + /* the property keys themselves */
-                                8;  /* owned index rule */
-
-                    case EXISTS:
-                        return  4 /* label id */ +
-                                1 /* kind id */ +
-                                4; /* property key id */
-
-                    default:
-                        throw new UnsupportedOperationException( "This constraint type is not yet supported by the store" );
-                    }
-                }
-
-                @Override
-                public Integer computeSpecific( RelationTypeSchemaDescriptor schema )
-                {
-                    return  4 /* relationship type id */ +
-                            1 /* kind id */ +
-                            4; /* property key id */
-                }
-            };
-
-    class Serializer implements SchemaProcessor {
-
-        private final ByteBuffer buffer;
-
-        Serializer( ByteBuffer buffer )
-        {
-            this.buffer = buffer;
-        }
-
-        @Override
-        public void processSpecific( LabelSchemaDescriptor schema )
-        {
-            switch ( descriptor.type() )
-            {
-            case UNIQUE:
-                buffer.putInt( schema.getLabelId() );
-                buffer.put( UNIQUENESS_CONSTRAINT.id() );
-                buffer.put( (byte) schema.getPropertyIds().length );
-                for ( int propertyKeyId : schema.getPropertyIds() )
-                {
-                    buffer.putLong( propertyKeyId );
-                }
-                if ( ownedIndexRule.isPresent() )
-                {
-                    buffer.putLong( ownedIndexRule.get() );
-                }
-                break;
-
-            case EXISTS:
-                buffer.putInt( schema.getLabelId() );
-                buffer.put( NODE_PROPERTY_EXISTENCE_CONSTRAINT.id() );
-                buffer.putInt( schema.getPropertyIds()[0] ); // only one property supported by store format atm
-                break;
-
-            default:
-                throw new UnsupportedOperationException( "This constraint type is not yet supported by the store" );
-            }
-        }
-
-        @Override
-        public void processSpecific( RelationTypeSchemaDescriptor schema )
-        {
-            buffer.putInt( schema.getRelTypeId() );
-            buffer.put( RELATIONSHIP_PROPERTY_EXISTENCE_CONSTRAINT.id() );
-            buffer.putInt( schema.getPropertyIds()[0] ); // only one property supported by store format atm
-        }
     }
 }

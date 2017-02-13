@@ -31,7 +31,6 @@ import org.neo4j.kernel.api.schema_new.index.NewIndexDescriptorFactory;
 import org.neo4j.kernel.impl.store.DynamicNodeLabels;
 import org.neo4j.kernel.impl.store.PropertyStore;
 import org.neo4j.kernel.impl.store.PropertyType;
-import org.neo4j.kernel.impl.store.record.AbstractSchemaRule;
 import org.neo4j.kernel.impl.store.record.DynamicRecord;
 import org.neo4j.kernel.impl.store.record.IndexRule;
 import org.neo4j.kernel.impl.store.record.LabelTokenRecord;
@@ -149,7 +148,7 @@ public class Commands
                 NewIndexDescriptorFactory.forLabel( descriptor.getLabelId(), descriptor.getPropertyKeyId() ),
                 provider );
         RecordSerializer serializer = new RecordSerializer();
-        serializer.append( (AbstractSchemaRule)rule );
+        serializer.append( rule );
         DynamicRecord record = new DynamicRecord( id );
         record.setInUse( true );
         record.setCreated();

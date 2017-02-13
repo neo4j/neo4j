@@ -53,6 +53,20 @@ public class NewIndexDescriptorFactoryTest
     }
 
     @Test
+    public void shouldCreateIndexDescriptorsFromSchema()
+    {
+        NewIndexDescriptor desc;
+
+        desc = NewIndexDescriptorFactory.forSchema( SchemaDescriptorFactory.forLabel( LABEL_ID, 1 ) );
+        assertThat( desc.type(), equalTo( NewIndexDescriptor.Type.GENERAL ) );
+        assertThat( desc.schema(), equalTo( SchemaDescriptorFactory.forLabel( LABEL_ID, 1 ) ) );
+
+        desc = NewIndexDescriptorFactory.uniqueForSchema( SchemaDescriptorFactory.forLabel( LABEL_ID, 1 ) );
+        assertThat( desc.type(), equalTo( NewIndexDescriptor.Type.UNIQUE) );
+        assertThat( desc.schema(), equalTo( SchemaDescriptorFactory.forLabel( LABEL_ID, 1 ) ) );
+    }
+
+    @Test
     public void shouldCreateEqualDescriptors()
     {
         NewIndexDescriptor desc1;
