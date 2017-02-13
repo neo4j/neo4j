@@ -53,9 +53,9 @@ enum ValueEncoding
                 }
 
                 @Override
-                Field encodeField( Object value )
+                Field encodeField( String name, Object value )
                 {
-                    return new DoubleField( key(), ((Number) value).doubleValue(), NO );
+                    return new DoubleField( name, ((Number) value).doubleValue(), NO );
                 }
 
                 @Override
@@ -87,9 +87,9 @@ enum ValueEncoding
                 }
 
                 @Override
-                Field encodeField( Object value )
+                Field encodeField( String name, Object value )
                 {
-                    return stringField( key(), ArrayEncoder.encode( value ) );
+                    return stringField( name, ArrayEncoder.encode( value ) );
                 }
 
                 @Override
@@ -119,9 +119,9 @@ enum ValueEncoding
                 }
 
                 @Override
-                Field encodeField( Object value )
+                Field encodeField( String name, Object value )
                 {
-                    return stringField( key(), value.toString() );
+                    return stringField( name, value.toString() );
                 }
 
                 @Override
@@ -152,9 +152,9 @@ enum ValueEncoding
                 }
 
                 @Override
-                Field encodeField( Object value )
+                Field encodeField( String name, Object value )
                 {
-                    return stringField( key(), value.toString() );
+                    return stringField( name, value.toString() );
                 }
 
                 @Override
@@ -176,7 +176,7 @@ enum ValueEncoding
 
     abstract boolean canEncode( Object value );
 
-    abstract Field encodeField( Object value );
+    abstract Field encodeField( String name, Object value );
 
     abstract void setFieldValue( Object value, Field field );
 

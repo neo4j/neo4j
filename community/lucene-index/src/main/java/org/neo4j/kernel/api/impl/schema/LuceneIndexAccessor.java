@@ -145,15 +145,15 @@ public class LuceneIndexAccessor implements IndexAccessor
             case ADDED:
                 if ( isRecovery )
                 {
-                    addRecovered( update.getEntityId(), update.values()[0] );
+                    addRecovered( update.getEntityId(), update.values() );
                 }
                 else
                 {
-                    add( update.getEntityId(), update.values()[0]  );
+                    add( update.getEntityId(), update.values() );
                 }
                 break;
             case CHANGED:
-                change( update.getEntityId(), update.values()[0]  );
+                change( update.getEntityId(), update.values() );
                 break;
             case REMOVED:
                 remove( update.getEntityId() );
@@ -178,22 +178,22 @@ public class LuceneIndexAccessor implements IndexAccessor
             } );
         }
 
-        private void addRecovered( long nodeId, Object value ) throws IOException
+        private void addRecovered( long nodeId, Object[] values ) throws IOException
         {
 
             writer.updateDocument( LuceneDocumentStructure.newTermForChangeOrRemove( nodeId ),
-                    LuceneDocumentStructure.documentRepresentingProperty( nodeId, value ) );
+                    LuceneDocumentStructure.documentRepresentingProperties( nodeId, values ) );
         }
 
-        private void add( long nodeId, Object value ) throws IOException
+        private void add( long nodeId, Object[] values ) throws IOException
         {
-            writer.addDocument( LuceneDocumentStructure.documentRepresentingProperty( nodeId, value ) );
+            writer.addDocument( LuceneDocumentStructure.documentRepresentingProperties( nodeId, values ) );
         }
 
-        private void change( long nodeId, Object value ) throws IOException
+        private void change( long nodeId, Object[] values ) throws IOException
         {
             writer.updateDocument( LuceneDocumentStructure.newTermForChangeOrRemove( nodeId ),
-                    LuceneDocumentStructure.documentRepresentingProperty( nodeId, value ) );
+                    LuceneDocumentStructure.documentRepresentingProperties( nodeId, values ) );
         }
 
         protected void remove( long nodeId ) throws IOException

@@ -33,6 +33,7 @@ import org.junit.Test;
 import org.junit.rules.ExpectedException;
 
 import static junit.framework.TestCase.assertEquals;
+import static org.hamcrest.CoreMatchers.equalTo;
 import static org.hamcrest.Matchers.containsString;
 import static org.junit.Assert.assertThat;
 import static org.neo4j.kernel.api.impl.schema.LuceneDocumentStructure.NODE_ID_KEY;
@@ -65,6 +66,46 @@ public class LuceneDocumentStructureTest
         // then
         assertEquals( "123", document.get( NODE_ID_KEY ) );
         assertEquals( "hello", document.get( String.key() ) );
+    }
+
+    @Test
+    public void shouldBuildDocumentRepresentingMultipleStringProperties() throws Exception
+    {
+        // given
+        String[] values = new String[]{"hello", "world"};
+        Document document = LuceneDocumentStructure.documentRepresentingProperties( 123, values );
+
+        // then
+        assertEquals( "123", document.get( NODE_ID_KEY ) );
+        assertThat( document.getValues( "composite" ), equalTo( values ) );
+    }
+
+    @Test
+    public void shouldBuildDocumentRepresentingMultipleIntProperties() throws Exception
+    {
+        // given
+        Integer[] values = new Integer[]{456, 789};
+        Document document = LuceneDocumentStructure.documentRepresentingProperties( 123, values );
+
+        // then
+        assertEquals( "123", document.get( NODE_ID_KEY ) );
+        for ( int i = 0; i < values.length; i++ )
+        {
+            assertThat( document.getFields( "composite" )[i].numericValue(), equalTo( new Double( values[i] ) ) );
+        }
+    }
+
+    @Test
+    public void shouldBuildDocumentRepresentingMultiplePropertiesOfDifferentTypes() throws Exception
+    {
+        // given
+        Object[] values = new Object[]{"hello", 789};
+        Document document = LuceneDocumentStructure.documentRepresentingProperties( 123, values );
+
+        // then
+        assertEquals( "123", document.get( NODE_ID_KEY ) );
+        assertThat( document.getFields( "composite" )[0].stringValue(), equalTo( "hello" ) );
+        assertThat( document.getFields( "composite" )[1].numericValue(), equalTo( new Double(789) ) );
     }
 
     @Test

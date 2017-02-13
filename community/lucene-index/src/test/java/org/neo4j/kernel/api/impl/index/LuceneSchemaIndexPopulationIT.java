@@ -61,7 +61,7 @@ public class LuceneSchemaIndexPopulationIT
     public final DefaultFileSystemRule fileSystemRule = new DefaultFileSystemRule();
 
     private int affectedNodes;
-    private NewIndexDescriptor index = NewIndexDescriptorFactory.forLabel( 0, 0 );
+    private final NewIndexDescriptor index = NewIndexDescriptorFactory.forLabel( 0, 0 );
 
     @Before
     public void before() throws Exception

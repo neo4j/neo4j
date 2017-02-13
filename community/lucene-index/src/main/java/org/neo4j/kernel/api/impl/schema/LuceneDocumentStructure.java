@@ -47,6 +47,7 @@ import org.apache.lucene.util.NumericUtils;
 import org.apache.lucene.util.StringHelper;
 
 import java.io.IOException;
+import java.util.ArrayList;
 import java.util.EnumMap;
 import java.util.Iterator;
 import java.util.Map;
@@ -78,14 +79,21 @@ public class LuceneDocumentStructure
     public static Document documentRepresentingProperty( long nodeId, Object value )
     {
         DocWithId document = reuseDocument( nodeId );
-        document.setValue( ValueEncoding.forValue( value ), value );
+        document.setValue( value );
+        return document.document;
+    }
+
+    public static Document documentRepresentingProperties( long nodeId, Object... values )
+    {
+        DocWithId document = reuseDocument( nodeId );
+        document.setValues( values );
         return document.document;
     }
 
     public static String encodedStringValue( Object value )
     {
         ValueEncoding encoding = ValueEncoding.forValue( value );
-        Field field = encoding.encodeField( value );
+        Field field = encoding.encodeField( encoding.key(), value );
         return field.stringValue();
     }
 
@@ -174,7 +182,7 @@ public class LuceneDocumentStructure
 
     /**
      * Filters the given {@link Terms terms} to include only terms that were created using fields from
-     * {@link ValueEncoding#encodeField(Object)}. Internal lucene terms like those created for indexing numeric values
+     * {@link ValueEncoding#encodeField(String,Object)}. Internal lucene terms like those created for indexing numeric values
      * (see javadoc for {@link NumericRangeQuery} class) are skipped. In other words this method returns
      * {@link TermsEnum} over all terms for the given field that were created using {@link ValueEncoding}.
      *
@@ -250,6 +258,7 @@ public class LuceneDocumentStructure
         private final Field idValueField;
 
         private final Map<ValueEncoding,Field> valueFields = new EnumMap<>( ValueEncoding.class );
+        private final ArrayList<Map<ValueEncoding,Field>> compositeValueFields = new ArrayList<>();
 
         private DocWithId() {
             idField = new StringField( NODE_ID_KEY, "", YES );
@@ -265,11 +274,23 @@ public class LuceneDocumentStructure
             idValueField.setLongValue( id );
         }
 
-        private void setValue( ValueEncoding encoding, Object value )
+        private void setValue( Object value )
         {
             removeAllValueFields();
+            ValueEncoding encoding = ValueEncoding.forValue( value );
             Field reusableField = getFieldWithValue( encoding, value );
             document.add( reusableField );
+        }
+
+        private void setValues( Object... values )
+        {
+            removeAllValueFields();
+            for ( int i = 0; i < values.length; i++ )
+            {
+                ValueEncoding encoding = ValueEncoding.forValue( values[i] );
+                Field reusableField = getFieldWithValue( i, "composite", encoding, values[i] );
+                document.add( reusableField );
+            }
         }
 
         private void removeAllValueFields()
@@ -291,8 +312,33 @@ public class LuceneDocumentStructure
             Field reusableField = valueFields.get( encoding );
             if ( reusableField == null )
             {
-                reusableField = encoding.encodeField( value );
+                reusableField = encoding.encodeField( encoding.key(), value );
                 valueFields.put( encoding, reusableField );
+            }
+            else
+            {
+                encoding.setFieldValue( value, reusableField );
+            }
+            return reusableField;
+        }
+
+        private Map<ValueEncoding,Field> getValueFields( int compositeKey )
+        {
+            while ( compositeValueFields.size() <= compositeKey )
+            {
+                compositeValueFields.add( new EnumMap<>( ValueEncoding.class ) );
+            }
+            return compositeValueFields.get( compositeKey );
+        }
+
+        private Field getFieldWithValue( int compositeKey, String name, ValueEncoding encoding, Object value )
+        {
+            Map<ValueEncoding,Field> compositeValueField = getValueFields( compositeKey );
+            Field reusableField = compositeValueField.get( encoding );
+            if ( reusableField == null )
+            {
+                reusableField = encoding.encodeField( name, value );
+                compositeValueField.put( encoding, reusableField );
             }
             else
             {

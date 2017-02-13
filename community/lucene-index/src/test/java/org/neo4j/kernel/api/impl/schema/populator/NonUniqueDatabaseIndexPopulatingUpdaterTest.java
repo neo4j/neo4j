@@ -43,9 +43,8 @@ import static org.neo4j.kernel.api.index.IndexEntryUpdate.remove;
 
 public class NonUniqueDatabaseIndexPopulatingUpdaterTest
 {
-    private static final int PROPERTY_KEY = 42;
+    private static final NewIndexDescriptor index = NewIndexDescriptorFactory.forLabel( 1, 42 );
     private static final int SAMPLING_BUFFER_SIZE_LIMIT = 100;
-    private static final NewIndexDescriptor index = NewIndexDescriptorFactory.forLabel( 1, PROPERTY_KEY );
 
     @Test
     public void removeNotSupported()
