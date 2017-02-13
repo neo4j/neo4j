@@ -19,7 +19,7 @@
  */
 package org.neo4j.cypher.internal.spi.v3_2.codegen
 
-import org.neo4j.codegen.{FieldReference, MethodReference}
+import org.neo4j.codegen.FieldReference
 
 case class Fields(closer: FieldReference,
                   ro: FieldReference,
@@ -29,6 +29,4 @@ case class Fields(closer: FieldReference,
                   tracer: FieldReference,
                   params: FieldReference,
                   closeable: FieldReference,
-                  success: MethodReference,
-                  close: MethodReference,
                   queryContext: FieldReference)

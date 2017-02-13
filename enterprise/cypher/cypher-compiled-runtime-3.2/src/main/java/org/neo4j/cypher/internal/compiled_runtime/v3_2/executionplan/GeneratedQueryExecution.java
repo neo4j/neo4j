@@ -19,12 +19,12 @@
  */
 package org.neo4j.cypher.internal.compiled_runtime.v3_2.executionplan;
 
+import java.util.List;
+
 import org.neo4j.cypher.internal.compiler.v3_2.ExecutionMode;
-import org.neo4j.cypher.internal.compiler.v3_2.executionplan.SuccessfulCloseable;
+import org.neo4j.cypher.internal.compiler.v3_2.executionplan.Completable;
 import org.neo4j.cypher.internal.compiler.v3_2.planDescription.InternalPlanDescription;
 import org.neo4j.cypher.internal.compiler.v3_2.spi.InternalResultVisitor;
-
-import java.util.List;
 
 public interface GeneratedQueryExecution
 {
@@ -36,5 +36,5 @@ public interface GeneratedQueryExecution
 
     InternalPlanDescription executionPlanDescription();
 
-    void setSuccessfulCloseable( SuccessfulCloseable closeable );
+    void setCompletable( Completable completable );
 }

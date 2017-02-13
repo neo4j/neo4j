@@ -24,6 +24,8 @@ import java.util
 import java.util.stream.{DoubleStream, IntStream, LongStream}
 
 import org.neo4j.codegen.CodeGeneratorOption._
+import org.neo4j.codegen.Expression.{constant, invoke, newInstance}
+import org.neo4j.codegen.MethodReference.constructorReference
 import org.neo4j.codegen.TypeReference._
 import org.neo4j.codegen.source.{SourceCode, SourceVisitor}
 import org.neo4j.codegen.{CodeGenerator, Parameter, _}
@@ -43,9 +45,6 @@ import org.neo4j.kernel.api.ReadOperations
 import org.neo4j.kernel.impl.core.NodeManager
 
 object GeneratedQueryStructure extends CodeStructure[GeneratedQuery] {
-
-  import Expression.{constant, invoke, newInstance}
-  import MethodReference.constructorReference
 
   case class GeneratedQueryStructureResult(query: GeneratedQuery, source: Option[(String, String)])
     extends CodeStructureResult[GeneratedQuery]
@@ -79,92 +78,111 @@ object GeneratedQueryStructure extends CodeStructure[GeneratedQuery] {
     def source: Option[(String, String)] = _source
   }
 
-  override def generateQuery(className: String, columns: Seq[String], operatorIds: Map[String, Id],
+  override def generateQuery(className: String,
+                             columns: Seq[String],
+                             operatorIds: Map[String, Id],
                              conf: CodeGenConfiguration)
-                            (block: MethodStructure[_] => Unit)(implicit codeGenContext: CodeGenContext) = {
+                            (methodStructure: MethodStructure[_] => Unit)
+                            (implicit codeGenContext: CodeGenContext): GeneratedQueryStructureResult = {
 
     val sourceSaver = new SourceSaver
     val generator = createGenerator(conf, sourceSaver)
     val execution = using(
-      generator.generateClass(conf.packageName, className + "Execution", typeRef[GeneratedQueryExecution],
-                              typeRef[SuccessfulCloseable])) { clazz =>
-      // fields
-      val fields = Fields(
-        closer = clazz.field(typeRef[TaskCloser], "closer"),
-        ro = clazz.field(typeRef[ReadOperations], "ro"),
-        entityAccessor = clazz.field(typeRef[NodeManager], "nodeManager"),
-        executionMode = clazz.field(typeRef[ExecutionMode], "executionMode"),
-        description = clazz.field(typeRef[Provider[InternalPlanDescription]], "description"),
-        tracer = clazz.field(typeRef[QueryExecutionTracer], "tracer"),
-        params = clazz.field(typeRef[util.Map[String, Object]], "params"),
-        closeable = clazz.field(typeRef[SuccessfulCloseable], "closeable"),
-        success = clazz.generate(Templates.success(clazz.handle())),
-        close = clazz.generate(Templates.close(clazz.handle())),
-        queryContext = clazz.field(typeRef[QueryContext], "queryContext"))
-        // the "COLUMNS" static field
-        clazz.staticField(typeRef[util.List[String]], "COLUMNS", Templates.asList[String](
-        columns.map(key => constant(key))))
-
-      // the operator id fields
-      operatorIds.keys.foreach { opId =>
-        clazz.staticField(typeRef[Id], opId)
-      }
-
-      // simple methods
-      clazz.generate(Templates.constructor(clazz.handle()))
-      Templates.getOrLoadReadOperations(clazz, fields)
-      clazz.generate(Templates.setSuccessfulCloseable(clazz.handle()))
-      clazz.generate(Templates.executionMode(clazz.handle()))
-      clazz.generate(Templates.executionPlanDescription(clazz.handle()))
-      clazz.generate(Templates.JAVA_COLUMNS)
-
-      using(clazz.generate(MethodDeclaration.method(typeRef[Unit], "accept",
-                                                    Parameter.param(parameterizedType(classOf[InternalResultVisitor[_]],
-                                                                                      typeParameter("E")), "visitor")).
-        parameterizedWith("E", extending(typeRef[Exception])).
-        throwsException(typeParameter("E")))) { method =>
-        val structure = new GeneratedMethodStructure(fields, method, new AuxGenerator(conf.packageName, generator), onClose =
-          Seq(block => block.expression(Expression.invoke(block.self(), fields.close))))
-        method.assign(typeRef[ResultRowImpl], "row", Templates.newResultRow)
-        block(structure)
-        method.expression(invoke(method.self(), fields.success))
-        structure.finalizers.foreach(_(method))
-      }
+      generator.generateClass(conf.packageName, className + "Execution", typeRef[GeneratedQueryExecution])) { clazz =>
+      val fields: Fields = createFields(columns, clazz)
+      setOperatorIds(clazz, operatorIds)
+      addSimpleMethods(clazz, fields)
+      addAccept(methodStructure, generator, clazz, fields, conf)
       clazz.handle()
     }
     val query = using(generator.generateClass(conf.packageName, className, typeRef[GeneratedQuery])) { clazz =>
       using(clazz.generateMethod(typeRef[GeneratedQueryExecution], "execute",
-                                 param[TaskCloser]("closer"),
-                                 param[QueryContext]("queryContext"),
-                                 param[ExecutionMode]("executionMode"),
-                                 param[Provider[InternalPlanDescription]]("description"),
-                                 param[QueryExecutionTracer]("tracer"),
-                                 param[util.Map[String, Object]]("params"))) { execute =>
+        param[TaskCloser]("closer"),
+        param[QueryContext]("queryContext"),
+        param[ExecutionMode]("executionMode"),
+        param[Provider[InternalPlanDescription]]("description"),
+        param[QueryExecutionTracer]("tracer"),
+        param[util.Map[String, Object]]("params"))) { execute =>
         execute.returns(
           invoke(
             newInstance(execution),
             constructorReference(execution,
-                                 typeRef[TaskCloser],
-                                 typeRef[QueryContext],
-                                 typeRef[ExecutionMode],
-                                 typeRef[Provider[InternalPlanDescription]],
-                                 typeRef[QueryExecutionTracer],
-                                 typeRef[util.Map[String, Object]]),
-                                  execute.load("closer"),
-                                  execute.load("queryContext"),
-                                  execute.load("executionMode"),
-                                  execute.load("description"),
-                                  execute.load("tracer"),
-                                  execute.load("params")))
+              typeRef[TaskCloser],
+              typeRef[QueryContext],
+              typeRef[ExecutionMode],
+              typeRef[Provider[InternalPlanDescription]],
+              typeRef[QueryExecutionTracer],
+              typeRef[util.Map[String, Object]]),
+            execute.load("closer"),
+            execute.load("queryContext"),
+            execute.load("executionMode"),
+            execute.load("description"),
+            execute.load("tracer"),
+            execute.load("params")))
       }
       clazz.handle()
     }.newInstance().asInstanceOf[GeneratedQuery]
+
     val clazz: Class[_] = execution.loadClass()
     operatorIds.foreach {
       case (key, id) => setStaticField(clazz, key, id)
     }
-
     GeneratedQueryStructureResult(query, sourceSaver.source)
+  }
+
+  private def addAccept(methodStructure: (MethodStructure[_]) => Unit,
+                        generator: CodeGenerator,
+                        clazz: ClassGenerator,
+                        fields: Fields,
+                        conf: CodeGenConfiguration)(implicit codeGenContext: CodeGenContext) = {
+    using(clazz.generate(MethodDeclaration.method(typeRef[Unit], "accept",
+      Parameter.param(parameterizedType(classOf[InternalResultVisitor[_]],
+        typeParameter("E")), "visitor")).
+      parameterizedWith("E", extending(typeRef[Exception])).
+      throwsException(typeParameter("E")))) { (codeBlock: CodeBlock) =>
+      val structure = new GeneratedMethodStructure(fields, codeBlock, new AuxGenerator(conf.packageName, generator), onClose =
+        Seq((success: Boolean) => (block: CodeBlock) => {
+          val target = Expression.get(block.self(), fields.closeable)
+          val reference = method[Completable, Unit]("completed", typeRef[Boolean])
+          val constant1 = Expression.constant(success)
+          val invoke1 = Expression.invoke(target, reference, constant1)
+          block.expression(invoke1)
+        }))
+      codeBlock.assign(typeRef[ResultRowImpl], "row", Templates.newResultRow)
+      methodStructure(structure)
+      structure.finalizers.foreach(_ (true)(codeBlock))
+    }
+  }
+
+  private def addSimpleMethods(clazz: ClassGenerator, fields: Fields) = {
+    clazz.generate(Templates.constructor(clazz.handle()))
+    Templates.getOrLoadReadOperations(clazz, fields)
+    clazz.generate(Templates.setCompletable(clazz.handle()))
+    clazz.generate(Templates.executionMode(clazz.handle()))
+    clazz.generate(Templates.executionPlanDescription(clazz.handle()))
+    clazz.generate(Templates.JAVA_COLUMNS)
+  }
+
+  private def setOperatorIds(clazz: ClassGenerator, operatorIds: Map[String, Id]) = {
+    operatorIds.keys.foreach { opId =>
+      clazz.staticField(typeRef[Id], opId)
+    }
+  }
+
+  private def createFields(columns: Seq[String], clazz: ClassGenerator) = {
+    clazz.staticField(typeRef[util.List[String]], "COLUMNS", Templates.asList[String](
+      columns.map(key => constant(key))))
+
+    Fields(
+      closer = clazz.field(typeRef[TaskCloser], "closer"),
+      ro = clazz.field(typeRef[ReadOperations], "ro"),
+      entityAccessor = clazz.field(typeRef[NodeManager], "nodeManager"),
+      executionMode = clazz.field(typeRef[ExecutionMode], "executionMode"),
+      description = clazz.field(typeRef[Provider[InternalPlanDescription]], "description"),
+      tracer = clazz.field(typeRef[QueryExecutionTracer], "tracer"),
+      params = clazz.field(typeRef[util.Map[String, Object]], "params"),
+      closeable = clazz.field(typeRef[Completable], "closeable"),
+      queryContext = clazz.field(typeRef[QueryContext], "queryContext"))
   }
 
   def method[O <: AnyRef, R](name: String, params: TypeReference*)
@@ -195,13 +213,11 @@ object GeneratedQueryStructure extends CodeStructure[GeneratedQuery] {
     case CodeGenType(symbols.CTInteger, IntType) => typeRef[Long]
     case CodeGenType(symbols.CTFloat, FloatType) => typeRef[Double]
     case CodeGenType(symbols.CTBoolean, BoolType) => typeRef[Boolean]
-    //case CodeGenType(symbols.CTString, ReferenceType) => typeRef[String] // We do not (yet) care about non-primitive types
     case CodeGenType(symbols.ListType(symbols.CTNode), ListReferenceType(IntType)) => typeRef[PrimitiveNodeStream]
     case CodeGenType(symbols.ListType(symbols.CTRelationship), ListReferenceType(IntType)) => typeRef[PrimitiveRelationshipStream]
     case CodeGenType(symbols.ListType(_), ListReferenceType(IntType)) => typeRef[LongStream]
     case CodeGenType(symbols.ListType(_), ListReferenceType(FloatType)) => typeRef[DoubleStream]
     case CodeGenType(symbols.ListType(_), ListReferenceType(BoolType)) => typeRef[IntStream]
-    //case CodeGenType(symbols.ListType(_), _) => typeRef[java.lang.Iterable[Object]] // We do not (yet) have a shared base class for List types
     case _ => typeRef[Object]
   }
 

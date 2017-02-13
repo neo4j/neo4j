@@ -36,7 +36,7 @@ import scala.collection.{Map, mutable}
 abstract class StandardInternalExecutionResult(context: QueryContext,
                                                taskCloser: Option[TaskCloser] = None)
   extends InternalExecutionResult
-    with SuccessfulCloseable {
+    with Completable {
 
   self =>
 
@@ -44,8 +44,6 @@ abstract class StandardInternalExecutionResult(context: QueryContext,
 
   protected val isGraphKernelResultValue = context.isGraphKernelResultValue _
   private val scalaValues = new RuntimeScalaValueConverter(isGraphKernelResultValue, identity)
-
-  private var successful = false
 
   protected def isOpen = !isClosed
   protected def isClosed = taskCloser.exists(_.isClosed)
@@ -82,15 +80,15 @@ abstract class StandardInternalExecutionResult(context: QueryContext,
     formatOutput(writer, columns, builder.result(), queryStatistics())
   }
 
-  def success() = {
-    successful = true
-  }
-
   override def planDescriptionRequested: Boolean = executionMode == ExplainMode || executionMode == ProfileMode
   override def notifications = Iterable.empty[InternalNotification]
 
-  override def close() = {
-    taskCloser.foreach(_.close(success = successful))
+  override def close(): Unit = {
+    completed(success = true)
+  }
+
+  override def completed(success: Boolean): Unit = {
+    taskCloser.foreach(_.close(success = success))
   }
 
   /*

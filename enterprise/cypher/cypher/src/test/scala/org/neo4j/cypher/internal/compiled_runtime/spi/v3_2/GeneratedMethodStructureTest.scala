@@ -26,7 +26,7 @@ import org.neo4j.codegen.{CodeGenerationStrategy, CodeGenerator, Expression, Met
 import org.neo4j.cypher.internal.compiled_runtime.v3_2.codegen.ir.expressions.{CodeGenType, ReferenceType}
 import org.neo4j.cypher.internal.compiled_runtime.v3_2.codegen.spi._
 import org.neo4j.cypher.internal.compiled_runtime.v3_2.codegen.{CodeGenContext, QueryExecutionTracer}
-import org.neo4j.cypher.internal.compiler.v3_2.executionplan.{Provider, SuccessfulCloseable}
+import org.neo4j.cypher.internal.compiler.v3_2.executionplan.{Provider, Completable}
 import org.neo4j.cypher.internal.compiler.v3_2.helpers._
 import org.neo4j.cypher.internal.compiler.v3_2.planDescription.InternalPlanDescription
 import org.neo4j.cypher.internal.compiler.v3_2.spi.QueryContext
@@ -232,9 +232,7 @@ class GeneratedMethodStructureTest extends CypherFunSuite {
         description = body.field(typeRef[Provider[InternalPlanDescription]], "description"),
         tracer = body.field(typeRef[QueryExecutionTracer], "tracer"),
         params = body.field(typeRef[util.Map[String, Object]], "params"),
-        closeable = body.field(typeRef[SuccessfulCloseable], "closeable"),
-        success = body.generate(Templates.success(body.handle())),
-        close = body.generate(Templates.close(body.handle())),
+        closeable = body.field(typeRef[Completable], "closeable"),
         queryContext = body.field(typeRef[QueryContext], "queryContext"))
       // the "COLUMNS" static field
       body.staticField(typeRef[util.List[String]], "COLUMNS", Templates.asList[String](Seq.empty))

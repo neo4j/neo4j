@@ -19,7 +19,10 @@
  */
 package org.neo4j.cypher.internal.compiler.v3_2.executionplan
 
-trait SuccessfulCloseable {
-  def success(): Unit
-  def close(): Unit
+/**
+  * This trait is used to signal up the abstraction levels that running a query is completed, either
+  * because the results have been exhausted, or because a failure has terminated the execution of the query.
+  */
+trait Completable {
+  def completed(success: Boolean): Unit
 }

@@ -24,7 +24,7 @@ import java.util
 import org.mockito.Matchers._
 import org.mockito.Mockito._
 import org.neo4j.cypher.internal.compiled_runtime.v3_2.executionplan.GeneratedQueryExecution
-import org.neo4j.cypher.internal.compiler.v3_2.executionplan.SuccessfulCloseable
+import org.neo4j.cypher.internal.compiler.v3_2.executionplan.Completable
 import org.neo4j.cypher.internal.compiler.v3_2.planDescription.InternalPlanDescription
 import org.neo4j.cypher.internal.compiler.v3_2.spi.{InternalResultRow, InternalResultVisitor, QueryContext}
 import org.neo4j.cypher.internal.compiler.v3_2.{ExecutionMode, NormalMode, ResultRowImpl, TaskCloser}
@@ -158,7 +158,7 @@ class CompiledExecutionResultTest extends CypherFunSuite {
                                          taskCloser: TaskCloser = new TaskCloser,
                                          assertion: () => Unit = () => {}) = {
     val noCompiledCode: GeneratedQueryExecution = new GeneratedQueryExecution {
-      override def setSuccessfulCloseable(closeable: SuccessfulCloseable){}
+      override def setCompletable(closeable: Completable){}
       override def javaColumns(): util.List[String] = new util.ArrayList(row.keySet())
       override def executionMode(): ExecutionMode = NormalMode
       override def accept[E <: Exception](visitor: InternalResultVisitor[E]): Unit = {

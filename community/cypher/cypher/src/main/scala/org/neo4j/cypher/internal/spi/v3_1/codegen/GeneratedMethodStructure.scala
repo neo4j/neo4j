@@ -267,7 +267,7 @@ case class GeneratedMethodStructure(fields: Fields, generator: CodeBlock, aux: A
 
   private def traceEvent(planStepId: String) =
     invoke(tracer, executeOperator,
-           get(FieldReference.staticField(generator.owner(), typeRef[Id], planStepId)))
+           getStatic(FieldReference.staticField(generator.owner(), typeRef[Id], planStepId)))
 
   override def incrementDbHits() = if (tracing) generator.expression(invoke(loadEvent, Methods.dbHit))
 
@@ -471,7 +471,7 @@ case class GeneratedMethodStructure(fields: Fields, generator: CodeBlock, aux: A
         pop(
           invoke(generator.load(tableVar), countingTablePut, generator.load(keyVar),
                  ternary(
-                   equal(generator.load(countName), get(staticField[LongKeyIntValueTable, Int]("NULL"))),
+                   equal(generator.load(countName), getStatic(staticField[LongKeyIntValueTable, Int]("NULL"))),
                    constant(1), add(generator.load(countName), constant(1))))))
 
     case LongsToCountTable =>

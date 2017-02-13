@@ -45,12 +45,17 @@ import org.neo4j.kernel.api.ReadOperations
 import org.neo4j.kernel.api.schema.{IndexDescriptor, IndexDescriptorFactory, NodePropertyDescriptor}
 import org.neo4j.kernel.impl.api.RelationshipDataExtractor
 import org.neo4j.kernel.impl.api.store.RelationshipIterator
-
+import GeneratedMethodStructure.CompletableFinalizer
 import scala.collection.mutable
+
+object GeneratedMethodStructure {
+  type CompletableFinalizer = Boolean => CodeBlock => Unit
+}
+
 
 class GeneratedMethodStructure(val fields: Fields, val generator: CodeBlock, aux: AuxGenerator, tracing: Boolean = true,
                                events: List[String] = List.empty,
-                               onClose: Seq[CodeBlock => Unit] = Seq.empty,
+                               onClose: Seq[CompletableFinalizer] = Seq.empty,
                                locals: mutable.Map[String, LocalVariable] = mutable.Map.empty
                               )(implicit context: CodeGenContext)
   extends MethodStructure[Expression] {
@@ -58,17 +63,17 @@ class GeneratedMethodStructure(val fields: Fields, val generator: CodeBlock, aux
   import GeneratedQueryStructure._
   import TypeReference.parameterizedType
 
-  private val _finalizers: mutable.ArrayBuffer[CodeBlock => Unit] = mutable.ArrayBuffer()
+  private val _finalizers: mutable.ArrayBuffer[CompletableFinalizer] = mutable.ArrayBuffer()
   _finalizers.appendAll(onClose)
 
-  def finalizers: Seq[CodeBlock => Unit] = _finalizers
+  def finalizers: Seq[CompletableFinalizer] = _finalizers
 
   private def copy(fields: Fields = fields,
                    generator: CodeBlock = generator,
                    aux: AuxGenerator = aux,
                    tracing: Boolean = tracing,
                    events: List[String] = events,
-                   onClose: Seq[CodeBlock => Unit] = _finalizers,
+                   onClose: Seq[CompletableFinalizer] = _finalizers,
                    locals: mutable.Map[String, LocalVariable] = locals): GeneratedMethodStructure = new GeneratedMethodStructure(
     fields, generator, aux, tracing, events, onClose, locals)
 
@@ -200,8 +205,7 @@ class GeneratedMethodStructure(val fields: Fields, val generator: CodeBlock, aux
         invoke(generator.load(event),
                method[QueryExecutionEvent, Unit]("close")))
     }
-    generator.expression(invoke(generator.self(), fields.success))
-    _finalizers.foreach(_ (generator))
+    _finalizers.foreach(codeBlock => codeBlock(true)(generator))
     generator.returns()
   }
 
@@ -246,8 +250,7 @@ class GeneratedMethodStructure(val fields: Fields, val generator: CodeBlock, aux
         body.expression(invoke(generator.load(event),
                                method[QueryExecutionEvent, Unit]("close")))
       }
-      body.expression(invoke(body.self(), fields.success))
-      _finalizers.foreach(_ (body))
+      _finalizers.foreach(block => block(true)(body))
       body.returns()
     }
   }(exception = param[Throwable]("e")) { onError =>
@@ -256,7 +259,7 @@ class GeneratedMethodStructure(val fields: Fields, val generator: CodeBlock, aux
         invoke(onError.load(event),
                method[QueryExecutionEvent, Unit]("close")))
     }
-    _finalizers.foreach(_ (onError))
+    _finalizers.foreach(block => block(false)(onError))
     onError.throwException(onError.load("e"))
   }
 
@@ -314,7 +317,7 @@ class GeneratedMethodStructure(val fields: Fields, val generator: CodeBlock, aux
 
   private def traceEvent(planStepId: String) =
     invoke(tracer, executeOperator,
-           get(FieldReference.staticField(generator.owner(), typeRef[Id], planStepId)))
+           getStatic(FieldReference.staticField(generator.owner(), typeRef[Id], planStepId)))
 
   override def incrementDbHits() = if (tracing) generator.expression(invoke(loadEvent, Methods.dbHit))
 
@@ -567,7 +570,7 @@ class GeneratedMethodStructure(val fields: Fields, val generator: CodeBlock, aux
     if (codeGenTypes.size == 1 && codeGenTypes.head.repr == IntType) {
       generator.assign(generator.declare(typeRef[PrimitiveLongSet], name),
                        invoke(method[Primitive, PrimitiveLongSet]("offHeapLongSet")))
-      _finalizers.append((block) =>
+      _finalizers.append((_: Boolean) => (block) =>
                            block.expression(
                              invoke(block.load(name), method[PrimitiveLongSet, Unit]("close"))))
 
@@ -664,7 +667,7 @@ class GeneratedMethodStructure(val fields: Fields, val generator: CodeBlock, aux
     if (keyTypes.size == 1 && keyTypes.head.repr == IntType) {
       generator.assign(generator.declare(typeRef[PrimitiveLongLongMap], name),
                        invoke(method[Primitive, PrimitiveLongLongMap]("offHeapLongLongMap")))
-      _finalizers.append((block) =>
+      _finalizers.append((_: Boolean) => (block) =>
                            block.expression(
                              invoke(block.load(name), method[PrimitiveLongLongMap, Unit]("close"))))
     } else {
@@ -1003,7 +1006,7 @@ class GeneratedMethodStructure(val fields: Fields, val generator: CodeBlock, aux
         pop(
           invoke(generator.load(tableVar), countingTablePut, generator.load(keyVar),
                  ternary(
-                   equal(generator.load(countName), get(staticField[LongKeyIntValueTable, Int]("NULL"))),
+                   equal(generator.load(countName), getStatic(staticField[LongKeyIntValueTable, Int]("NULL"))),
                    constant(1), add(generator.load(countName), constant(1))))))
 
     case LongsToCountTable =>

@@ -82,7 +82,7 @@ object Templates {
     methodReference(typeRef[IntStream], typeRef[IntStream], "of", typeRef[Array[Int]]),
     Expression.newArray(typeRef[Int], values: _*))
 
-  def handleKernelExceptions[V](generate: CodeBlock, ro: FieldReference, finalizers: Seq[CodeBlock => Unit])
+  def handleKernelExceptions[V](generate: CodeBlock, ro: FieldReference, finalizers: Seq[Boolean => CodeBlock => Unit])
                          (block: CodeBlock => V): V = {
     var result = null.asInstanceOf[V]
 
@@ -92,7 +92,7 @@ object Templates {
       }
     }, new Consumer[CodeBlock]() {
       override def accept(handle: CodeBlock) = {
-        finalizers.foreach(_(handle))
+        finalizers.foreach(block => block(false)(handle))
         handle.throwException(Expression.invoke(
           Expression.newInstance(typeRef[CypherExecutionException]),
           MethodReference.constructorReference(typeRef[CypherExecutionException], typeRef[String], typeRef[Throwable]),
@@ -118,9 +118,9 @@ object Templates {
     }, exception)
   }
 
-  val incoming = Expression.get(staticField[Direction, Direction](Direction.INCOMING.name()))
-  val outgoing = Expression.get(staticField[Direction, Direction](Direction.OUTGOING.name()))
-  val both = Expression.get(staticField[Direction, Direction](Direction.BOTH.name()))
+  val incoming = Expression.getStatic(staticField[Direction, Direction](Direction.INCOMING.name()))
+  val outgoing = Expression.getStatic(staticField[Direction, Direction](Direction.OUTGOING.name()))
+  val both = Expression.getStatic(staticField[Direction, Direction](Direction.BOTH.name()))
   val newResultRow = Expression
     .invoke(Expression.newInstance(typeRef[ResultRowImpl]),
             MethodReference.constructorReference(typeRef[ResultRowImpl]))
@@ -165,19 +165,9 @@ object Templates {
     }
   }
 
-  def setSuccessfulCloseable(classHandle: ClassHandle) = MethodTemplate.method(typeRef[Unit], "setSuccessfulCloseable",
-                                                                               param[SuccessfulCloseable]("closeable")).
-    put(self(classHandle), typeRef[SuccessfulCloseable], "closeable", load("closeable", typeRef[SuccessfulCloseable])).
-    build()
-
-  def success(classHandle: ClassHandle) = MethodTemplate.method(typeRef[Unit], "success").
-    expression(
-      invoke(get(self(classHandle), typeRef[SuccessfulCloseable], "closeable"), method[SuccessfulCloseable, Unit]("success"))).
-    build()
-
-  def close(classHandle: ClassHandle) = MethodTemplate.method(typeRef[Unit], "close").
-    expression(
-      invoke(get(self(classHandle), typeRef[SuccessfulCloseable], "closeable"), method[SuccessfulCloseable, Unit]("close"))).
+  def setCompletable(classHandle: ClassHandle) = MethodTemplate.method(typeRef[Unit], "setCompletable",
+                                                                               param[Completable]("closeable")).
+    put(self(classHandle), typeRef[Completable], "closeable", load("closeable", typeRef[Completable])).
     build()
 
   def executionMode(classHandle: ClassHandle) = MethodTemplate.method(typeRef[ExecutionMode], "executionMode").

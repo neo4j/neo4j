@@ -94,9 +94,9 @@ object Templates {
     }, exception)
   }
 
-  val incoming = Expression.get(staticField[Direction, Direction](Direction.INCOMING.name()))
-  val outgoing = Expression.get(staticField[Direction, Direction](Direction.OUTGOING.name()))
-  val both = Expression.get(staticField[Direction, Direction](Direction.BOTH.name()))
+  val incoming = Expression.getStatic(staticField[Direction, Direction](Direction.INCOMING.name()))
+  val outgoing = Expression.getStatic(staticField[Direction, Direction](Direction.OUTGOING.name()))
+  val both = Expression.getStatic(staticField[Direction, Direction](Direction.BOTH.name()))
   val newResultRow = Expression
     .invoke(Expression.newInstance(typeRef[ResultRowImpl]),
             MethodReference.constructorReference(typeRef[ResultRowImpl]))
