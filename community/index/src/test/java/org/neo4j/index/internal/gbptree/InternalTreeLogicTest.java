@@ -1040,7 +1040,7 @@ public class InternalTreeLogicTest
     // KEEP even if unused
     private void printTree() throws IOException
     {
-        new TreePrinter<>( node, layout, stableGen, unstableGen ).printTree( cursor, System.out, true );
+        new TreePrinter<>( node, layout, stableGen, unstableGen ).printTree( cursor, System.out, true, true );
     }
 
     private static MutableLong key( long key )
