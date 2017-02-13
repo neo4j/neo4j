@@ -24,9 +24,8 @@ import org.neo4j.cypher.internal.compiler.v3_2.planner.logical.{LogicalPlanningC
 import org.neo4j.cypher.internal.compiler.v3_2.spi.PlanContext
 import org.neo4j.cypher.internal.frontend.v3_2.ast._
 import org.neo4j.cypher.internal.frontend.v3_2.notification.{IndexHintUnfulfillableNotification, JoinHintUnfulfillableNotification}
-import org.neo4j.cypher.internal.frontend.v3_2.{IndexHintException, JoinHintException}
+import org.neo4j.cypher.internal.frontend.v3_2.{IndexHintException, InvalidArgumentException, JoinHintException}
 import org.neo4j.cypher.internal.ir.v3_2.PlannerQuery
-import org.neo4j.cypher.internal.ir.v3_2.exception.CantHandleQueryException
 
 object verifyBestPlan extends PlanTransformer[PlannerQuery] {
   def apply(plan: LogicalPlan, expected: PlannerQuery)(implicit context: LogicalPlanningContext): LogicalPlan = {
@@ -40,10 +39,15 @@ object verifyBestPlan extends PlanTransformer[PlannerQuery] {
         val b: PlannerQuery = constructed.withoutHints(constructed.allHints)
         if (a != b) {
           // unknown planner issue failed to find plan (without regard for differences in hints)
-          throw new CantHandleQueryException(s"Expected \n$expected \n\n\nInstead, got: \n$constructed")
+          throw new InvalidArgumentException(s"Expected \n$expected \n\n\nInstead, got: \n$constructed")
         } else {
           // unknown planner issue failed to find plan matching hints (i.e. "implicit hints")
-          throw new CantHandleQueryException(s"Expected \n${expected.allHints} \n\n\nInstead, got: \n${constructed.allHints}")
+          val expectedHints = expected.allHints.mkString(System.lineSeparator())
+          val actualHints = constructed.allHints.mkString(System.lineSeparator())
+          val message =
+            s"Something went when trying to fulfill the index hints of your query.\n" +
+            s"Expected: \n$expectedHints \n\n\nInstead, got: \n$actualHints"
+          throw new InvalidArgumentException(message)
         }
       } else {
         processUnfulfilledIndexHints(context, unfulfillableIndexHints)
@@ -78,19 +82,19 @@ object verifyBestPlan extends PlanTransformer[PlannerQuery] {
           context.notificationLogger.log(JoinHintUnfulfillableNotification(hint.variables.map(_.name).toIndexedSeq))
         }
       }
-    }
+    } 
   }
 
   private def findUnfulfillableIndexHints(query: PlannerQuery, planContext: PlanContext): Set[UsingIndexHint] = {
     query.allHints.flatMap {
       // using index name:label(property)
-      case hint@UsingIndexHint(Variable(name), LabelName(label), PropertyKeyName(property))
+      case UsingIndexHint(Variable(_), LabelName(label), PropertyKeyName(property))
         if planContext.getIndexRule( label, property ).isDefined ||
           planContext.getUniqueIndexRule( label, property ).isDefined => None
       // no such index exists
-      case hint@UsingIndexHint(Variable(name), LabelName(label), PropertyKeyName(property)) => Option(hint)
+      case hint@UsingIndexHint(Variable(_), LabelName(_), PropertyKeyName(_)) => Option(hint)
       // don't care about other hints
-      case hint => None
+      case _ => None
     }
   }
 

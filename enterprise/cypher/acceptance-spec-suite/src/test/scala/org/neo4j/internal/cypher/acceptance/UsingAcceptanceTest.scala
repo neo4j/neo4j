@@ -702,6 +702,19 @@ class UsingAcceptanceTest extends ExecutionEngineFunSuite with NewPlannerTestSup
     result.toList should be(empty)
   }
 
+  test("Two hints and only a single relationship give good error message") {
+    graph.createIndex("PERSON", "id")
+
+    val result = intercept[RuntimeException](graph.execute(
+      """MATCH (a:PERSON {id: 1})-->(b:PERSON {id: 1})
+        |USING INDEX a:PERSON(id)
+        |USING INDEX b:PERSON(id)
+        |RETURN *""".stripMargin)
+    )
+
+    result.getMessage should startWith("Something went when trying to fulfill the index hints of your query")
+  }
+
   //---------------------------------------------------------------------------
   // Verification helpers
 
