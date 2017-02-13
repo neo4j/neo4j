@@ -606,14 +606,14 @@ public interface Status
     enum Classification
     {
         /** The Client sent a bad request - changing the request might yield a successful outcome. */
-        ClientError( TransactionEffect.ROLLBACK, PublishingPolicy.REPORTS_TO_CLIENT,
+        ClientError( TransactionEffect.ROLLBACK,
                 "The Client sent a bad request - changing the request might yield a successful outcome."),
         /** There are notifications about the request sent by the client.*/
-        ClientNotification( TransactionEffect.NONE, PublishingPolicy.REPORTS_TO_CLIENT,
+        ClientNotification( TransactionEffect.NONE,
                 "There are notifications about the request sent by the client." ),
 
         /** The database cannot service the request right now, retrying later might yield a successful outcome. */
-        TransientError( TransactionEffect.ROLLBACK, PublishingPolicy.REPORTS_TO_CLIENT_AND_LOG,
+        TransientError( TransactionEffect.ROLLBACK,
                 "The database cannot service the request right now, retrying later might yield a successful outcome. "),
 
         // Implementation note: These are a sharp tool, database error signals
@@ -621,7 +621,7 @@ public interface Status
         // an error report back to us. Only use this if the code path you are
         // at would truly indicate the database is in a broken or bug-induced state.
         /** The database failed to service the request. */
-        DatabaseError( TransactionEffect.ROLLBACK, PublishingPolicy.REFERS_TO_LOG,
+        DatabaseError( TransactionEffect.ROLLBACK,
                 "The database failed to service the request. " );
 
         private enum TransactionEffect
@@ -629,43 +629,18 @@ public interface Status
             ROLLBACK, NONE,
         }
 
-        private enum PublishingPolicy
-        {
-            REPORTS_TO_CLIENT( false ), REPORTS_TO_CLIENT_AND_LOG( true ), REFERS_TO_LOG( true );
-
-            private final boolean shouldLog;
-
-            PublishingPolicy( boolean shouldLog )
-            {
-                this.shouldLog = shouldLog;
-            }
-
-            boolean shouldLog()
-            {
-                return shouldLog;
-            }
-
-        }
-
         private final boolean rollbackTransaction;
-        private final boolean shouldLog;
         private final String description;
 
-        Classification( TransactionEffect transactionEffect, PublishingPolicy publishingPolicy, String description )
+        Classification( TransactionEffect transactionEffect, String description )
         {
             this.description = description;
-            this.shouldLog = publishingPolicy.shouldLog();
             this.rollbackTransaction = transactionEffect == TransactionEffect.ROLLBACK;
         }
 
         public boolean rollbackTransaction()
         {
             return rollbackTransaction;
-        }
-
-        public boolean shouldLog()
-        {
-            return shouldLog;
         }
 
         public String description()

@@ -20,10 +20,12 @@
 package org.neo4j.bolt.v1.runtime;
 
 import org.junit.Test;
-import org.neo4j.kernel.api.exceptions.Status;
-import org.neo4j.logging.AssertableLogProvider;
 
 import java.util.UUID;
+
+import org.neo4j.kernel.api.exceptions.Status;
+import org.neo4j.logging.AssertableLogProvider;
+import org.neo4j.logging.LogProvider;
 
 import static org.mockito.Mockito.mock;
 import static org.mockito.Mockito.when;
@@ -31,47 +33,24 @@ import static org.mockito.Mockito.when;
 public class ErrorReporterTest
 {
     @Test
-    public void clientErrorShouldNotLog() throws Exception
+    public void onlyDatabaseErrorsAreLogged()
     {
-        // given
         AssertableLogProvider userLog = new AssertableLogProvider();
         AssertableLogProvider internalLog = new AssertableLogProvider();
-        ErrorReporter reporter =
-                new ErrorReporter( userLog.getLog( "userLog" ), internalLog.getLog( "internalLog" ) );
+        ErrorReporter reporter = newErrorReporter( userLog, internalLog );
 
-        Status.Code code = mock( Status.Code.class );
-        Neo4jError error = Neo4jError.from( () -> code, "Should not be logged" );
-        when( code.classification() ).thenReturn( Status.Classification.ClientError );
+        for ( Status.Classification classification : Status.Classification.values() )
+        {
+            if ( classification != Status.Classification.DatabaseError )
+            {
+                Status.Code code = newStatusCode( classification );
+                Neo4jError error = Neo4jError.from( () -> code, "Database error" );
+                reporter.report( error );
 
-        // when
-        reporter.report( error );
-
-        // then
-
-        userLog.assertNoLoggingOccurred();
-        internalLog.assertNoLoggingOccurred();
-    }
-
-    @Test
-    public void clientNotificationShouldNotLog() throws Exception
-    {
-        // given
-        AssertableLogProvider userLog = new AssertableLogProvider();
-        AssertableLogProvider internalLog = new AssertableLogProvider();
-        ErrorReporter reporter =
-                new ErrorReporter( userLog.getLog( "userLog" ), internalLog.getLog( "internalLog" ) );
-
-        Status.Code code = mock( Status.Code.class );
-        Neo4jError error = Neo4jError.from( () -> code, "Should not be logged" );
-        when( code.classification() ).thenReturn( Status.Classification.ClientNotification );
-
-        // when
-        reporter.report( error );
-
-        // then
-
-        userLog.assertNoLoggingOccurred();
-        internalLog.assertNoLoggingOccurred();
+                userLog.assertNoLoggingOccurred();
+                internalLog.assertNoLoggingOccurred();
+            }
+        }
     }
 
     @Test
@@ -80,12 +59,9 @@ public class ErrorReporterTest
         // given
         AssertableLogProvider userLog = new AssertableLogProvider();
         AssertableLogProvider internalLog = new AssertableLogProvider();
-        ErrorReporter reporter =
-                new ErrorReporter( userLog.getLog( "userLog" ), internalLog.getLog( "internalLog" ) );
+        ErrorReporter reporter = newErrorReporter( userLog, internalLog );
 
-        Status.Code code = mock( Status.Code.class );
-        Neo4jError error = Neo4jError.from( () -> code, "Database error" );
-        when( code.classification() ).thenReturn( Status.Classification.DatabaseError );
+        Neo4jError error = Neo4jError.fatalFrom( new TestDatabaseError() );
         UUID reference = error.reference();
 
         // when
@@ -100,29 +76,29 @@ public class ErrorReporterTest
         internalLog.assertContainsLogCallContaining( "Database error" );
     }
 
-    @Test
-    public void transientErrorShouldLogFullMessageInDebugLogAndHelpfulPointerInUserLog() throws Exception
+    private static ErrorReporter newErrorReporter( LogProvider userLog, LogProvider internalLog )
     {
-        // given
-        AssertableLogProvider userLog = new AssertableLogProvider();
-        AssertableLogProvider internalLog = new AssertableLogProvider();
-        ErrorReporter reporter =
-                new ErrorReporter( userLog.getLog( "userLog" ), internalLog.getLog( "internalLog" ) );
+        return new ErrorReporter( userLog.getLog( "userLog" ), internalLog.getLog( "internalLog" ) );
+    }
 
+    private static Status.Code newStatusCode( Status.Classification classification )
+    {
         Status.Code code = mock( Status.Code.class );
-        Neo4jError error = Neo4jError.from( () -> code, "Transient error" );
-        when( code.classification() ).thenReturn( Status.Classification.TransientError );
-        UUID reference = error.reference();
+        when( code.classification() ).thenReturn( classification );
+        return code;
+    }
 
-        // when
-        reporter.report( error );
+    private static class TestDatabaseError extends RuntimeException implements Status.HasStatus
+    {
+        TestDatabaseError()
+        {
+            super( "Database error" );
+        }
 
-        // then
-        userLog.assertContainsLogCallContaining( "Client triggered an unexpected error" );
-        userLog.assertContainsLogCallContaining( reference.toString() );
-        userLog.assertContainsLogCallContaining( "Transient error" );
-
-        internalLog.assertContainsLogCallContaining( reference.toString() );
-        internalLog.assertContainsLogCallContaining( "Transient error" );
+        @Override
+        public Status status()
+        {
+            return () -> newStatusCode( Status.Classification.DatabaseError );
+        }
     }
 }
