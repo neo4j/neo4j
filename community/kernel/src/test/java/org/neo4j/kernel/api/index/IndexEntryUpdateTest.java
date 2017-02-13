@@ -17,23 +17,23 @@
  * You should have received a copy of the GNU General Public License
  * along with this program.  If not, see <http://www.gnu.org/licenses/>.
  */
-package org.neo4j.kernel.impl.api.index;
+package org.neo4j.kernel.api.index;
 
-import java.util.ArrayList;
+import org.junit.Test;
 
-import org.neo4j.kernel.api.index.IndexEntryUpdate;
-import org.neo4j.kernel.api.index.IndexUpdater;
+import org.neo4j.kernel.api.schema_new.index.NewIndexDescriptorFactory;
 
-public abstract class CollectingIndexUpdater implements IndexUpdater
+import static org.hamcrest.MatcherAssert.assertThat;
+import static org.hamcrest.Matchers.equalTo;
+
+public class IndexEntryUpdateTest
 {
-    protected final ArrayList<IndexEntryUpdate> updates = new ArrayList<>();
-
-    @Override
-    public void process( IndexEntryUpdate update )
+    @Test
+    public void indexEntryUpdatesShouldBeEqual()
     {
-        if ( null != update )
-        {
-            updates.add( update );
-        }
+        IndexEntryUpdate a = IndexEntryUpdate.add( 0, NewIndexDescriptorFactory.forLabel( 3, 4 ), "hi" );
+        IndexEntryUpdate b = IndexEntryUpdate.add( 0, NewIndexDescriptorFactory.forLabel( 3, 4 ), "hi" );
+        assertThat( a, equalTo( b ) );
+        assertThat( a.hashCode(), equalTo( b.hashCode() ) );
     }
 }

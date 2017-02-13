@@ -25,8 +25,8 @@ import java.util.function.IntPredicate;
 
 import org.neo4j.helpers.collection.Visitor;
 import org.neo4j.kernel.api.exceptions.EntityNotFoundException;
-import org.neo4j.kernel.api.schema.IndexDescriptor;
-import org.neo4j.kernel.api.index.NodePropertyUpdate;
+import org.neo4j.kernel.api.index.IndexEntryUpdate;
+import org.neo4j.kernel.api.index.NodeUpdates;
 import org.neo4j.kernel.api.index.PropertyAccessor;
 import org.neo4j.kernel.api.labelscan.NodeLabelUpdate;
 import org.neo4j.kernel.api.properties.Property;
@@ -45,17 +45,17 @@ public interface IndexStoreView extends PropertyAccessor
      */
     <FAILURE extends Exception> StoreScan<FAILURE> visitNodes(
             int[] labelIds, IntPredicate propertyKeyIdFilter,
-            Visitor<NodePropertyUpdates, FAILURE> propertyUpdateVisitor,
+            Visitor<NodeUpdates, FAILURE> propertyUpdateVisitor,
             Visitor<NodeLabelUpdate, FAILURE> labelUpdateVisitor);
 
     /**
-     * Produces {@link NodePropertyUpdate} objects from reading node {@code nodeId}, its labels and properties
+     * Produces {@link NodeUpdates} objects from reading node {@code nodeId}, its labels and properties
      * and puts those updates into {@code target}.
      *
      * @param nodeId id of node to load.
      * @param target {@link Collection} to add updates into.
      */
-    void nodeAsUpdates( long nodeId, Collection<NodePropertyUpdate> target );
+    void nodeAsUpdates( long nodeId, Collection<NodeUpdates> target );
 
     DoubleLongRegister indexUpdatesAndSize( long indexId, DoubleLongRegister output );
 
@@ -78,7 +78,7 @@ public interface IndexStoreView extends PropertyAccessor
         }
 
         @Override
-        public void acceptUpdate( MultipleIndexPopulator.MultipleIndexUpdater updater, NodePropertyUpdate update,
+        public void acceptUpdate( MultipleIndexPopulator.MultipleIndexUpdater updater, IndexEntryUpdate update,
                 long currentlyIndexedNodeId )
         {
 
@@ -107,7 +107,7 @@ public interface IndexStoreView extends PropertyAccessor
 
         @Override
         public <FAILURE extends Exception> StoreScan<FAILURE> visitNodes( int[] labelIds,
-                IntPredicate propertyKeyIdFilter, Visitor<NodePropertyUpdates,FAILURE> propertyUpdateVisitor,
+                IntPredicate propertyKeyIdFilter, Visitor<NodeUpdates,FAILURE> propertyUpdateVisitor,
                 Visitor<NodeLabelUpdate,FAILURE> labelUpdateVisitor )
         {
             return EMPTY_SCAN;
@@ -120,7 +120,7 @@ public interface IndexStoreView extends PropertyAccessor
         }
 
         @Override
-        public void nodeAsUpdates( long nodeId, Collection<NodePropertyUpdate> target )
+        public void nodeAsUpdates( long nodeId, Collection<NodeUpdates> target )
         {
         }
 

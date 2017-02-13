@@ -25,7 +25,7 @@ import java.util.List;
 import org.neo4j.collection.primitive.Primitive;
 import org.neo4j.collection.primitive.PrimitiveLongObjectMap;
 import org.neo4j.collection.primitive.PrimitiveLongSet;
-import org.neo4j.kernel.api.index.NodePropertyUpdate;
+import org.neo4j.kernel.api.index.NodeUpdates;
 import org.neo4j.kernel.impl.transaction.command.Command.NodeCommand;
 import org.neo4j.kernel.impl.transaction.command.Command.PropertyCommand;
 
@@ -39,7 +39,7 @@ public class RecoveryIndexUpdates implements IndexUpdates
     private final PrimitiveLongSet ids = Primitive.longSet();
 
     @Override
-    public Iterator<NodePropertyUpdate> iterator()
+    public Iterator<NodeUpdates> iterator()
     {
         throw new UnsupportedOperationException();
     }

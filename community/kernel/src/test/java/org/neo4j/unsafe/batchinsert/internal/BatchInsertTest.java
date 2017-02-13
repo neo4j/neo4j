@@ -60,9 +60,9 @@ import org.neo4j.helpers.collection.MapUtil;
 import org.neo4j.helpers.collection.Pair;
 import org.neo4j.io.pagecache.IOLimiter;
 import org.neo4j.kernel.api.index.IndexConfiguration;
+import org.neo4j.kernel.api.index.IndexEntryUpdate;
 import org.neo4j.kernel.api.schema.IndexDescriptor;
 import org.neo4j.kernel.api.index.IndexPopulator;
-import org.neo4j.kernel.api.index.NodePropertyUpdate;
 import org.neo4j.kernel.api.index.PreexistingIndexEntryConflictException;
 import org.neo4j.kernel.api.index.PropertyAccessor;
 import org.neo4j.kernel.api.index.SchemaIndexProvider;
@@ -935,7 +935,7 @@ public class BatchInsertTest
         verify( provider ).getPopulator( anyLong(), any( IndexDescriptor.class ), any( IndexConfiguration.class ),
                 any( IndexSamplingConfig.class ) );
         verify( populator ).create();
-        verify( populator ).add( singletonList( NodePropertyUpdate.add( nodeId, 0, "Jakewins", new long[]{0} ) ) );
+        verify( populator ).add( singletonList( IndexEntryUpdate.add( nodeId, any(), "Jakewins" ) ) );
         verify( populator ).verifyDeferredConstraints( any( PropertyAccessor.class ) );
         verify( populator ).close( true );
         verify( provider ).stop();
@@ -970,7 +970,7 @@ public class BatchInsertTest
         verify( provider ).getPopulator( anyLong(), any( IndexDescriptor.class ), any( IndexConfiguration.class ),
                 any( IndexSamplingConfig.class ) );
         verify( populator ).create();
-        verify( populator ).add( singletonList( NodePropertyUpdate.add( nodeId, 0, "Jakewins", new long[]{0} ) ) );
+        verify( populator ).add( singletonList( IndexEntryUpdate.add( nodeId, any(), "Jakewins" ) ) );
         verify( populator ).verifyDeferredConstraints( any( PropertyAccessor.class ) );
         verify( populator ).close( true );
         verify( provider ).stop();
@@ -1005,8 +1005,8 @@ public class BatchInsertTest
         verify( provider ).getPopulator( anyLong(), any( IndexDescriptor.class ), any( IndexConfiguration.class ),
                 any( IndexSamplingConfig.class ) );
         verify( populator ).create();
-        verify( populator ).add( singletonList( NodePropertyUpdate.add( jakewins, 0, "Jakewins", new long[]{0} ) ) );
-        verify( populator ).add( singletonList( NodePropertyUpdate.add( boggle, 0, "b0ggl3", new long[]{0} ) ) );
+        verify( populator ).add( singletonList( IndexEntryUpdate.add( jakewins, any(), "Jakewins" ) ) );
+        verify( populator ).add( singletonList( IndexEntryUpdate.add( boggle, any(), "b0ggl3" ) ) );
         verify( populator ).verifyDeferredConstraints( any( PropertyAccessor.class ) );
         verify( populator ).close( true );
         verify( provider ).stop();

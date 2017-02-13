@@ -46,12 +46,14 @@ import org.neo4j.kernel.api.Statement;
 import org.neo4j.kernel.api.exceptions.index.IndexEntryConflictException;
 import org.neo4j.kernel.api.index.IndexAccessor;
 import org.neo4j.kernel.api.index.IndexConfiguration;
+import org.neo4j.kernel.api.index.IndexEntryUpdate;
 import org.neo4j.kernel.api.schema.IndexDescriptor;
 import org.neo4j.kernel.api.index.IndexPopulator;
 import org.neo4j.kernel.api.index.IndexUpdater;
 import org.neo4j.kernel.api.index.InternalIndexState;
-import org.neo4j.kernel.api.index.NodePropertyUpdate;
 import org.neo4j.kernel.api.index.SchemaIndexProvider;
+import org.neo4j.kernel.api.schema_new.index.NewIndexDescriptor;
+import org.neo4j.kernel.api.schema_new.index.NewIndexDescriptorFactory;
 import org.neo4j.kernel.extension.KernelExtensionFactory;
 import org.neo4j.kernel.impl.api.index.sampling.IndexSamplingConfig;
 import org.neo4j.kernel.impl.api.index.updater.SwallowingIndexUpdater;
@@ -186,7 +188,7 @@ public class IndexRecoveryIT
         // rotate logs
         rotateLogsAndCheckPoint();
         // make updates
-        Set<NodePropertyUpdate> expectedUpdates = createSomeBananas( myLabel );
+        Set<IndexEntryUpdate> expectedUpdates = createSomeBananas( myLabel );
 
         // And Given
         killDb();
@@ -209,9 +211,9 @@ public class IndexRecoveryIT
         verify( mockedIndexProvider, times( onlineAccessorInvocationCount ) )
                 .getOnlineAccessor( anyLong(), any( IndexConfiguration.class ), any( IndexSamplingConfig.class ) );
         assertEquals( expectedUpdates, writer.batchedUpdates );
-        for ( NodePropertyUpdate update : writer.batchedUpdates )
+        for ( IndexEntryUpdate update : writer.batchedUpdates )
         {
-            assertTrue( writer.recoveredNodes.contains( update.getNodeId() ) );
+            assertTrue( writer.recoveredNodes.contains( update.getEntityId() ) );
         }
     }
 
@@ -346,22 +348,23 @@ public class IndexRecoveryIT
         }
     }
 
-    private Set<NodePropertyUpdate> createSomeBananas( Label label )
+    private Set<IndexEntryUpdate> createSomeBananas( Label label )
     {
-        Set<NodePropertyUpdate> updates = new HashSet<>();
+        Set<IndexEntryUpdate> updates = new HashSet<>();
         try ( Transaction tx = db.beginTx() )
         {
             ThreadToStatementContextBridge ctxSupplier = db.getDependencyResolver().resolveDependency(
                     ThreadToStatementContextBridge.class );
             try ( Statement statement = ctxSupplier.get() )
             {
+                int labelId = statement.readOperations().labelGetForName( label.name() );
+                int propertyKeyId = statement.readOperations().propertyKeyGetForName( key );
+                NewIndexDescriptor index = NewIndexDescriptorFactory.forLabel( labelId, propertyKeyId );
                 for ( int number : new int[] {4, 10} )
                 {
                     Node node = db.createNode( label );
                     node.setProperty( key, number );
-                    updates.add( NodePropertyUpdate.add( node.getId(),
-                            statement.readOperations().propertyKeyGetForName( key ), number,
-                            new long[]{statement.readOperations().labelGetForName( label.name() )} ) );
+                    updates.add( IndexEntryUpdate.add( node.getId(), index, number ) );
                 }
             }
             tx.success();
@@ -371,8 +374,8 @@ public class IndexRecoveryIT
 
     public static class GatheringIndexWriter extends IndexAccessor.Adapter
     {
-        private final Set<NodePropertyUpdate> regularUpdates = new HashSet<>();
-        private final Set<NodePropertyUpdate> batchedUpdates = new HashSet<>();
+        private final Set<IndexEntryUpdate> regularUpdates = new HashSet<>();
+        private final Set<IndexEntryUpdate> batchedUpdates = new HashSet<>();
         private final Set<Long> recoveredNodes = new HashSet<>();
 
         @Override

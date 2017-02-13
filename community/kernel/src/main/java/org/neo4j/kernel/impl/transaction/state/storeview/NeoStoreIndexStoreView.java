@@ -24,12 +24,11 @@ import java.util.function.IntPredicate;
 
 import org.neo4j.helpers.collection.Visitor;
 import org.neo4j.kernel.api.exceptions.EntityNotFoundException;
-import org.neo4j.kernel.api.index.NodePropertyUpdate;
+import org.neo4j.kernel.api.index.NodeUpdates;
 import org.neo4j.kernel.api.labelscan.NodeLabelUpdate;
 import org.neo4j.kernel.api.properties.Property;
 import org.neo4j.kernel.impl.api.CountsAccessor;
 import org.neo4j.kernel.impl.api.index.IndexStoreView;
-import org.neo4j.kernel.impl.api.index.NodePropertyUpdates;
 import org.neo4j.kernel.impl.api.index.StoreScan;
 import org.neo4j.kernel.impl.locking.LockService;
 import org.neo4j.kernel.impl.store.NeoStores;
@@ -43,7 +42,6 @@ import org.neo4j.kernel.impl.store.record.Record;
 import org.neo4j.register.Register.DoubleLongRegister;
 import org.neo4j.storageengine.api.EntityType;
 
-import static org.neo4j.kernel.api.index.NodePropertyUpdate.add;
 import static org.neo4j.kernel.impl.store.NodeLabelsField.parseLabelsField;
 import static org.neo4j.kernel.impl.store.record.RecordLoad.FORCE;
 
@@ -99,7 +97,7 @@ public class NeoStoreIndexStoreView implements IndexStoreView
     @Override
     public <FAILURE extends Exception> StoreScan<FAILURE> visitNodes(
             final int[] labelIds, IntPredicate propertyKeyIdFilter,
-            final Visitor<NodePropertyUpdates, FAILURE> propertyUpdatesVisitor,
+            final Visitor<NodeUpdates, FAILURE> propertyUpdatesVisitor,
             final Visitor<NodeLabelUpdate, FAILURE> labelUpdateVisitor )
     {
         return new StoreViewNodeStoreScan<>( nodeStore, locks, propertyStore, labelUpdateVisitor,
@@ -107,7 +105,7 @@ public class NeoStoreIndexStoreView implements IndexStoreView
     }
 
     @Override
-    public void nodeAsUpdates( long nodeId, Collection<NodePropertyUpdate> target )
+    public void nodeAsUpdates( long nodeId, Collection<NodeUpdates> target )
     {
         NodeRecord node = nodeStore.getRecord( nodeId, nodeStore.newRecord(), FORCE );
         if ( !node.inUse() )
@@ -124,14 +122,16 @@ public class NeoStoreIndexStoreView implements IndexStoreView
         {
             return; // no labels => no updates (it's not going to be in any index)
         }
+        NodeUpdates.Builder update = NodeUpdates.forNode( nodeId, labels );
         for ( PropertyRecord propertyRecord : propertyStore.getPropertyRecordChain( firstPropertyId ) )
         {
             for ( PropertyBlock property : propertyRecord )
             {
                 Object value = property.getType().getValue( property, propertyStore );
-                target.add( add( node.getId(), property.getKeyIndexId(), value, labels ) );
+                update.added( property.getKeyIndexId(), value );
             }
         }
+        target.add( update.build() );
     }
 
     @Override

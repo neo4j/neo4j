@@ -29,10 +29,10 @@ import org.neo4j.collection.primitive.PrimitiveLongResourceIterator;
 import org.neo4j.helpers.collection.Iterators;
 import org.neo4j.helpers.collection.PrefetchingIterator;
 import org.neo4j.helpers.collection.Visitor;
-import org.neo4j.kernel.api.index.NodePropertyUpdate;
+import org.neo4j.kernel.api.index.IndexEntryUpdate;
+import org.neo4j.kernel.api.index.NodeUpdates;
 import org.neo4j.kernel.api.labelscan.NodeLabelUpdate;
 import org.neo4j.kernel.impl.api.index.MultipleIndexPopulator;
-import org.neo4j.kernel.impl.api.index.NodePropertyUpdates;
 import org.neo4j.kernel.impl.locking.LockService;
 import org.neo4j.kernel.impl.store.NodeStore;
 import org.neo4j.kernel.impl.store.PropertyStore;
@@ -51,14 +51,13 @@ public class StoreViewNodeStoreScan<FAILURE extends Exception> extends NodeStore
     private final PropertyStore propertyStore;
 
     private final Visitor<NodeLabelUpdate,FAILURE> labelUpdateVisitor;
-    private final Visitor<NodePropertyUpdates,FAILURE> propertyUpdatesVisitor;
+    private final Visitor<NodeUpdates,FAILURE> propertyUpdatesVisitor;
     private final IntPredicate propertyKeyIdFilter;
-    private NodePropertyUpdates updates;
     protected final int[] labelIds;
 
     public StoreViewNodeStoreScan( NodeStore nodeStore, LockService locks, PropertyStore propertyStore,
             Visitor<NodeLabelUpdate,FAILURE> labelUpdateVisitor,
-            Visitor<NodePropertyUpdates,FAILURE> propertyUpdatesVisitor,
+            Visitor<NodeUpdates,FAILURE> propertyUpdatesVisitor,
             int[] labelIds, IntPredicate propertyKeyIdFilter )
     {
         super( nodeStore, locks, nodeStore.getHighId() );
@@ -68,7 +67,6 @@ public class StoreViewNodeStoreScan<FAILURE extends Exception> extends NodeStore
         this.labelIds = labelIds;
 
         this.propertyKeyIdFilter = propertyKeyIdFilter;
-        updates = new NodePropertyUpdates();
     }
 
     @Override
@@ -95,8 +93,8 @@ public class StoreViewNodeStoreScan<FAILURE extends Exception> extends NodeStore
 
         if ( propertyUpdatesVisitor != null && containsAnyLabel( labelIds, labels ) )
         {
-
-            updates.initForNodeId( node.getId() );
+            // TODO: reuse object instead? Better in terms of speed and GC?
+            NodeUpdates.Builder updates = NodeUpdates.forNode( node.getId(), labels );
             // Notify the property update visitor
             for ( PropertyBlock property : properties( node ) )
             {
@@ -106,13 +104,12 @@ public class StoreViewNodeStoreScan<FAILURE extends Exception> extends NodeStore
                     // This node has a property of interest to us
                     Object value = valueOf( property );
                     Validators.INDEX_VALUE_VALIDATOR.validate( value );
-                    updates.add( propertyKeyId, value, labels );
+                    updates.added( propertyKeyId, value );
                 }
             }
-            if ( updates.containsUpdates() )
+            if ( updates.hasUpdates() )
             {
-                propertyUpdatesVisitor.visit( updates );
-                updates.reset();
+                propertyUpdatesVisitor.visit( updates.build() );
             }
         }
     }
@@ -142,10 +139,10 @@ public class StoreViewNodeStoreScan<FAILURE extends Exception> extends NodeStore
     }
 
     @Override
-    public void acceptUpdate( MultipleIndexPopulator.MultipleIndexUpdater updater, NodePropertyUpdate update,
+    public void acceptUpdate( MultipleIndexPopulator.MultipleIndexUpdater updater, IndexEntryUpdate update,
             long currentlyIndexedNodeId )
     {
-        if ( update.getNodeId() <= currentlyIndexedNodeId )
+        if ( update.getEntityId() <= currentlyIndexedNodeId )
         {
             updater.process( update );
         }

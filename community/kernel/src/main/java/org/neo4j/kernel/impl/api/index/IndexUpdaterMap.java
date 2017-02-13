@@ -20,23 +20,19 @@
 package org.neo4j.kernel.impl.api.index;
 
 import java.io.IOException;
-import java.util.Arrays;
-import java.util.Collections;
 import java.util.HashMap;
 import java.util.HashSet;
 import java.util.Iterator;
-import java.util.List;
 import java.util.Map;
 import java.util.Set;
 
 import org.neo4j.helpers.collection.Pair;
 import org.neo4j.helpers.collection.PrefetchingIterator;
 import org.neo4j.kernel.api.exceptions.index.IndexEntryConflictException;
-import org.neo4j.kernel.api.schema.IndexDescriptor;
-import org.neo4j.kernel.api.schema.IndexDescriptorFactory;
 import org.neo4j.kernel.api.index.IndexUpdater;
 import org.neo4j.kernel.api.schema_new.index.IndexBoundary;
 import org.neo4j.kernel.api.schema_new.index.NewIndexDescriptor;
+import org.neo4j.kernel.api.schema.IndexDescriptor;
 import org.neo4j.kernel.impl.store.MultipleUnderlyingStorageExceptions;
 import org.neo4j.kernel.impl.store.UnderlyingStorageException;
 
@@ -62,21 +58,11 @@ class IndexUpdaterMap implements AutoCloseable, Iterable<IndexUpdater>
         this.updaterMap = new HashMap<>();
     }
 
-    List<IndexUpdater> getUpdaters( int labelId, int propertyKeyId )
+    Iterable<IndexDescriptor> descriptors()
     {
-        IndexDescriptor key = IndexDescriptorFactory.of( labelId, propertyKeyId );
-        IndexUpdater updater = getUpdater( key );
-        if ( updater != null )
-        {
-            return Arrays.asList(updater);
-        }
-        else
-        {
-            return Collections.emptyList();
-        }
+        return indexMap::descriptors;
     }
 
-    // exposed only for testing
     IndexUpdater getUpdater( IndexDescriptor descriptor )
     {
         IndexUpdater updater = updaterMap.get( descriptor );

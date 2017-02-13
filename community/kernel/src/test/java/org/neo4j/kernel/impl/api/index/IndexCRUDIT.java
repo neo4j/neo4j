@@ -42,12 +42,14 @@ import org.neo4j.kernel.api.ReadOperations;
 import org.neo4j.kernel.api.exceptions.index.IndexEntryConflictException;
 import org.neo4j.kernel.api.index.IndexAccessor;
 import org.neo4j.kernel.api.index.IndexConfiguration;
+import org.neo4j.kernel.api.index.IndexEntryUpdate;
+import org.neo4j.kernel.api.schema.IndexDescriptor;
 import org.neo4j.kernel.api.index.IndexPopulator;
 import org.neo4j.kernel.api.index.IndexUpdater;
-import org.neo4j.kernel.api.index.NodePropertyUpdate;
 import org.neo4j.kernel.api.index.PropertyAccessor;
 import org.neo4j.kernel.api.index.SchemaIndexProvider;
-import org.neo4j.kernel.api.schema.IndexDescriptor;
+import org.neo4j.kernel.api.schema_new.index.NewIndexDescriptor;
+import org.neo4j.kernel.api.schema_new.index.NewIndexDescriptorFactory;
 import org.neo4j.kernel.extension.KernelExtensionFactory;
 import org.neo4j.kernel.impl.api.index.sampling.IndexSamplingConfig;
 import org.neo4j.kernel.impl.api.scan.LabelScanStoreProvider;
@@ -92,9 +94,10 @@ public class IndexCRUDIT
         {
             ReadOperations readOperations = ctxSupplier.get().readOperations();
             int propertyKey1 = readOperations.propertyKeyGetForName( indexProperty );
-            long[] labels = new long[]{readOperations.labelGetForName( myLabel.name() )};
+            int label = readOperations.labelGetForName( myLabel.name() );
+            NewIndexDescriptor index = NewIndexDescriptorFactory.forLabel( label, propertyKey1 );
             assertThat( writer.updatesCommitted, equalTo( asSet(
-                    NodePropertyUpdate.add( node.getId(), propertyKey1, value1, labels ) ) ) );
+                    IndexEntryUpdate.add( node.getId(), index, value1 ) ) ) );
             tx.success();
         }
         // We get two updates because we both add a label and a property to be indexed
@@ -131,9 +134,10 @@ public class IndexCRUDIT
         {
             ReadOperations readOperations = ctxSupplier.get().readOperations();
             int propertyKey1 = readOperations.propertyKeyGetForName( indexProperty );
-            long[] labels = new long[]{readOperations.labelGetForName( myLabel.name() )};
+            int label = readOperations.labelGetForName( myLabel.name() );
+            NewIndexDescriptor index = NewIndexDescriptorFactory.forLabel( label, propertyKey1 );
             assertThat( writer.updatesCommitted, equalTo( asSet(
-                    NodePropertyUpdate.add( node.getId(), propertyKey1, value, labels ) ) ) );
+                    IndexEntryUpdate.add( node.getId(), index, value ) ) ) );
             tx.success();
         }
     }
@@ -200,7 +204,7 @@ public class IndexCRUDIT
 
     private class GatheringIndexWriter extends IndexAccessor.Adapter implements IndexPopulator
     {
-        private final Set<NodePropertyUpdate> updatesCommitted = new HashSet<>();
+        private final Set<IndexEntryUpdate> updatesCommitted = new HashSet<>();
         private final String propertyKey;
         private final Map<Object,Set<Long>> indexSamples = new HashMap<>();
 
@@ -215,9 +219,9 @@ public class IndexCRUDIT
         }
 
         @Override
-        public void add( Collection<NodePropertyUpdate> updates )
+        public void add( Collection<IndexEntryUpdate> updates )
         {
-            for ( NodePropertyUpdate update : updates )
+            for ( IndexEntryUpdate update : updates )
             {
                 ReadOperations statement = ctxSupplier.get().readOperations();
                 updatesCommitted.add( update );
@@ -265,9 +269,9 @@ public class IndexCRUDIT
         }
 
         @Override
-        public void includeSample( NodePropertyUpdate update )
+        public void includeSample( IndexEntryUpdate update )
         {
-            addValueToSample( update.getNodeId(), update.getValueAfter() );
+            addValueToSample( update.getEntityId(), update.value() );
         }
 
         @Override

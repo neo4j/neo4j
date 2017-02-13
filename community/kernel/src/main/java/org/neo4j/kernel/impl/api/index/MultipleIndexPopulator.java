@@ -20,12 +20,12 @@
 package org.neo4j.kernel.impl.api.index;
 
 import java.io.IOException;
-import java.util.ArrayList;
 import java.util.Collection;
+import java.util.Collections;
 import java.util.HashMap;
-import java.util.Iterator;
 import java.util.List;
 import java.util.Map;
+import java.util.Optional;
 import java.util.Queue;
 import java.util.concurrent.CopyOnWriteArrayList;
 import java.util.concurrent.LinkedBlockingQueue;
@@ -33,18 +33,22 @@ import java.util.function.IntPredicate;
 
 import org.neo4j.collection.primitive.PrimitiveLongSet;
 import org.neo4j.function.ThrowingConsumer;
+import org.neo4j.helpers.collection.Pair;
 import org.neo4j.helpers.collection.Visitor;
 import org.neo4j.kernel.api.exceptions.index.FlipFailedKernelException;
 import org.neo4j.kernel.api.exceptions.index.IndexEntryConflictException;
 import org.neo4j.kernel.api.exceptions.index.IndexPopulationFailedKernelException;
 import org.neo4j.kernel.api.index.IndexConfiguration;
-import org.neo4j.kernel.api.schema.IndexDescriptor;
+import org.neo4j.kernel.api.index.IndexEntryUpdate;
 import org.neo4j.kernel.api.index.IndexPopulator;
 import org.neo4j.kernel.api.index.IndexUpdater;
-import org.neo4j.kernel.api.index.NodePropertyUpdate;
+import org.neo4j.kernel.api.index.NodeUpdates;
 import org.neo4j.kernel.api.index.PropertyAccessor;
 import org.neo4j.kernel.api.index.SchemaIndexProvider;
 import org.neo4j.kernel.api.index.SchemaIndexProvider.Descriptor;
+import org.neo4j.kernel.api.schema.IndexDescriptor;
+import org.neo4j.kernel.api.schema_new.index.IndexBoundary;
+import org.neo4j.kernel.api.schema_new.index.NewIndexDescriptor;
 import org.neo4j.logging.Log;
 import org.neo4j.logging.LogProvider;
 import org.neo4j.storageengine.api.schema.IndexSample;
@@ -64,7 +68,7 @@ import static org.neo4j.kernel.impl.api.index.IndexPopulationFailure.failure;
  * and generate updates that are fed into the {@link IndexPopulator populators}. Only a single call to this
  * method should be made during the life time of a {@link MultipleIndexPopulator} and should be called by the
  * same thread instantiating this instance.</li>
- * <li>{@link #queue(NodePropertyUpdate)} which queues updates which will be read by the thread currently executing
+ * <li>{@link #queue(IndexEntryUpdate)} which queues updates which will be read by the thread currently executing
  * {@link #indexAllNodes()} and incorporated into that data stream. Calls to this method may come from any number
  * of concurrent threads.</li>
  * </ul>
@@ -76,7 +80,7 @@ import static org.neo4j.kernel.impl.api.index.IndexPopulationFailure.failure;
  * FlippableIndexProxy, FailedIndexProxyFactory, String)}.</li>
  * <li>Call to {@link #create()} to create data structures and files to start accepting updates.</li>
  * <li>Call to {@link #indexAllNodes()} (blocking call).</li>
- * <li>While all nodes are being indexed, calls to {@link #queue(NodePropertyUpdate)} are accepted.</li>
+ * <li>While all nodes are being indexed, calls to {@link #queue(IndexEntryUpdate)} are accepted.</li>
  * <li>Call to {@link #flipAfterPopulation()} after successful population, or {@link #fail(Throwable)} if not</li>
  * </ol>
  */
@@ -88,7 +92,7 @@ public class MultipleIndexPopulator implements IndexPopulator
 
     // Concurrency queue since multiple concurrent threads may enqueue updates into it. It is important for this queue
     // to have fast #size() method since it might be drained in batches
-    protected final Queue<NodePropertyUpdate> queue = new LinkedBlockingQueue<>();
+    protected final Queue<IndexEntryUpdate> queue = new LinkedBlockingQueue<>();
 
     // Populators are added into this list. The same thread adding populators will later call #indexAllNodes.
     // Multiple concurrent threads might fail individual populations.
@@ -151,7 +155,7 @@ public class MultipleIndexPopulator implements IndexPopulator
     }
 
     @Override
-    public void add( Collection<NodePropertyUpdate> updates )
+    public void add( Collection<IndexEntryUpdate> updates )
     {
         throw new UnsupportedOperationException( "Can't populate directly using this populator implementation. " );
     }
@@ -171,9 +175,9 @@ public class MultipleIndexPopulator implements IndexPopulator
      * Queues an update to be fed into the index populators. These updates come from changes being made
      * to storage while a concurrent scan is happening to keep populators up to date with all latest changes.
      *
-     * @param update {@link NodePropertyUpdate} to queue.
+     * @param update {@link IndexEntryUpdate} to queue.
      */
-    public void queue( NodePropertyUpdate update )
+    public void queue( IndexEntryUpdate update )
     {
         queue.add( update );
     }
@@ -249,12 +253,13 @@ public class MultipleIndexPopulator implements IndexPopulator
     @Override
     public MultipleIndexUpdater newPopulatingUpdater( PropertyAccessor accessor )
     {
-        Map<IndexPopulation,IndexUpdater> populationsWithUpdaters = new HashMap<>();
-        forEachPopulation( population -> {
+        Map<NewIndexDescriptor,Pair<IndexPopulation,IndexUpdater>> updaters = new HashMap<>();
+        forEachPopulation( population ->
+        {
             IndexUpdater updater = population.populator.newPopulatingUpdater( accessor );
-            populationsWithUpdaters.put( population, updater );
+            updaters.put( population.descriptor, Pair.of( population, updater ) );
         } );
-        return new MultipleIndexUpdater( this, populationsWithUpdaters, logProvider );
+        return new MultipleIndexUpdater( this, updaters, logProvider );
     }
 
     @Override
@@ -270,7 +275,7 @@ public class MultipleIndexPopulator implements IndexPopulator
     }
 
     @Override
-    public void includeSample( NodePropertyUpdate update )
+    public void includeSample( IndexEntryUpdate update )
     {
         throw new UnsupportedOperationException( "Multiple index populator can't perform index sampling." );
     }
@@ -311,12 +316,12 @@ public class MultipleIndexPopulator implements IndexPopulator
 
     private int[] propertyKeyIds()
     {
-        return populations.stream().mapToInt( population -> population.descriptor.getPropertyKeyId() ).toArray();
+        return populations.stream().mapToInt( population -> population.descriptor.schema().getPropertyId() ).toArray();
     }
 
     private int[] labelIds()
     {
-        return populations.stream().mapToInt( population -> population.descriptor.getLabelId() ).toArray();
+        return populations.stream().mapToInt( population -> population.descriptor.schema().getLabelId() ).toArray();
     }
 
     public void cancel()
@@ -352,7 +357,7 @@ public class MultipleIndexPopulator implements IndexPopulator
                 do
                 {
                     // no need to check for null as nobody else is emptying this queue
-                    NodePropertyUpdate update = queue.poll();
+                    IndexEntryUpdate update = queue.poll();
                     storeScan.acceptUpdate( updater, update, currentlyIndexedNodeId );
                 }
                 while ( !queue.isEmpty() );
@@ -377,12 +382,12 @@ public class MultipleIndexPopulator implements IndexPopulator
 
     public static class MultipleIndexUpdater implements IndexUpdater
     {
-        private final Map<IndexPopulation,IndexUpdater> populationsWithUpdaters;
+        private final Map<NewIndexDescriptor,Pair<IndexPopulation,IndexUpdater>> populationsWithUpdaters;
         private final MultipleIndexPopulator multipleIndexPopulator;
         private final Log log;
 
         MultipleIndexUpdater( MultipleIndexPopulator multipleIndexPopulator,
-                Map<IndexPopulation,IndexUpdater> populationsWithUpdaters, LogProvider logProvider )
+                Map<NewIndexDescriptor,Pair<IndexPopulation,IndexUpdater>> populationsWithUpdaters, LogProvider logProvider )
         {
             this.multipleIndexPopulator = multipleIndexPopulator;
             this.populationsWithUpdaters = populationsWithUpdaters;
@@ -396,34 +401,30 @@ public class MultipleIndexPopulator implements IndexPopulator
         }
 
         @Override
-        public void process( NodePropertyUpdate update )
+        public void process( IndexEntryUpdate update )
         {
-            Iterator<Map.Entry<IndexPopulation,IndexUpdater>> iterator = populationsWithUpdaters.entrySet().iterator();
-            while ( iterator.hasNext() )
+            Pair<IndexPopulation,IndexUpdater> pair = populationsWithUpdaters.get( update.descriptor() );
+            if ( pair != null )
             {
-                Map.Entry<IndexPopulation,IndexUpdater> entry = iterator.next();
-                IndexPopulation population = entry.getKey();
-                IndexUpdater updater = entry.getValue();
+                IndexPopulation population = pair.first();
+                IndexUpdater updater = pair.other();
 
-                if ( population.isApplicable( update ) )
+                try
+                {
+                    updater.process( update );
+                }
+                catch ( Throwable t )
                 {
                     try
                     {
-                        updater.process( update );
+                        updater.close();
                     }
-                    catch ( Throwable t )
+                    catch ( Throwable ce )
                     {
-                        try
-                        {
-                            updater.close();
-                        }
-                        catch ( Throwable ce )
-                        {
-                            log.error( format( "Failed to close index updater: [%s]", updater ), ce );
-                        }
-                        iterator.remove();
-                        multipleIndexPopulator.fail( population, t );
+                        log.error( format( "Failed to close index updater: [%s]", updater ), ce );
                     }
+                    populationsWithUpdaters.remove( update.descriptor() );
+                    multipleIndexPopulator.fail( population, t );
                 }
             }
         }
@@ -431,12 +432,10 @@ public class MultipleIndexPopulator implements IndexPopulator
         @Override
         public void close()
         {
-            Iterator<Map.Entry<IndexPopulation,IndexUpdater>> iterator = populationsWithUpdaters.entrySet().iterator();
-            while ( iterator.hasNext() )
+            for ( Pair<IndexPopulation,IndexUpdater> pair : populationsWithUpdaters.values() )
             {
-                Map.Entry<IndexPopulation,IndexUpdater> entry = iterator.next();
-                IndexPopulation population = entry.getKey();
-                IndexUpdater updater = entry.getValue();
+                IndexPopulation population = pair.first();
+                IndexUpdater updater = pair.other();
 
                 try
                 {
@@ -444,10 +443,10 @@ public class MultipleIndexPopulator implements IndexPopulator
                 }
                 catch ( Throwable t )
                 {
-                    iterator.remove();
                     multipleIndexPopulator.fail( population, t );
                 }
             }
+            populationsWithUpdaters.clear();
         }
     }
 
@@ -455,14 +454,13 @@ public class MultipleIndexPopulator implements IndexPopulator
     {
         public final IndexPopulator populator;
         final long indexId;
-        final IndexDescriptor descriptor;
+        final NewIndexDescriptor descriptor;
         final IndexConfiguration config;
         final SchemaIndexProvider.Descriptor providerDescriptor;
         final IndexCountsRemover indexCountsRemover;
         final FlippableIndexProxy flipper;
         final FailedIndexProxyFactory failedIndexProxyFactory;
         final String indexUserDescription;
-        private Collection<NodePropertyUpdate> applicableUpdates = new ArrayList<>();
 
         IndexPopulation(
                 IndexPopulator populator,
@@ -476,7 +474,7 @@ public class MultipleIndexPopulator implements IndexPopulator
         {
             this.populator = populator;
             this.indexId = indexId;
-            this.descriptor = descriptor;
+            this.descriptor = IndexBoundary.map( descriptor );
             this.config = config;
             this.providerDescriptor = providerDescriptor;
             this.flipper = flipper;
@@ -487,39 +485,27 @@ public class MultipleIndexPopulator implements IndexPopulator
 
         private void flipToFailed( Throwable t )
         {
-            flipper.flipTo( new FailedIndexProxy( descriptor, config, providerDescriptor, indexUserDescription,
+            flipper.flipTo( new FailedIndexProxy( IndexBoundary.map( descriptor ), config,
+                    providerDescriptor, indexUserDescription,
                     populator, failure( t ), indexCountsRemover, logProvider ) );
         }
 
-        private void addAll( Collection<NodePropertyUpdate> updates )
+        private void add( NodeUpdates updates )
                 throws IndexEntryConflictException, IOException
         {
-            for ( NodePropertyUpdate update : updates )
+            Optional<IndexEntryUpdate> updateOpt = updates.forIndex( descriptor );
+            if ( updateOpt.isPresent() )
             {
-                if ( isApplicable( update ) )
-                {
-                    populator.includeSample( update );
-                    applicableUpdates.add( update );
-                }
-            }
-            if ( !applicableUpdates.isEmpty() )
-            {
-                addApplicable( applicableUpdates );
-                applicableUpdates.clear();
+                IndexEntryUpdate update = updateOpt.get();
+                populator.includeSample( update );
+                add( update );
             }
         }
 
-        void addApplicable( Collection<NodePropertyUpdate> updates )
+        void add( IndexEntryUpdate update )
                 throws IOException, IndexEntryConflictException
         {
-            populator.add( updates );
-        }
-
-        private boolean isApplicable( NodePropertyUpdate update )
-        {
-            //TODO: This code and the methods calling it need to be updated to find composite indexes
-            return update.forLabel( descriptor.getLabelId() ) &&
-                   update.getPropertyKeyId() == descriptor.getPropertyKeyId();
+            populator.add( Collections.singleton( update ) );
         }
 
         private void flip() throws FlipFailedKernelException
@@ -536,20 +522,20 @@ public class MultipleIndexPopulator implements IndexPopulator
         }
     }
 
-    private class NodePopulationVisitor implements Visitor<NodePropertyUpdates,
+    private class NodePopulationVisitor implements Visitor<NodeUpdates,
             IndexPopulationFailedKernelException>
     {
         @Override
-        public boolean visit( NodePropertyUpdates updates ) throws IndexPopulationFailedKernelException
+        public boolean visit( NodeUpdates updates ) throws IndexPopulationFailedKernelException
         {
             add( updates );
             populateFromQueueBatched( updates.getNodeId() );
             return false;
         }
 
-        private void add( NodePropertyUpdates updates )
+        private void add( NodeUpdates updates )
         {
-            forEachPopulation( population -> population.addAll( updates.getPropertyUpdates() ) );
+            forEachPopulation( population -> population.add( updates ) );
         }
     }
 }

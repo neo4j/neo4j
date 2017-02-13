@@ -30,6 +30,8 @@ import java.util.List;
 
 import org.neo4j.collection.primitive.PrimitiveLongIterator;
 import org.neo4j.kernel.api.exceptions.index.IndexEntryConflictException;
+import org.neo4j.kernel.api.schema_new.index.IndexBoundary;
+import org.neo4j.kernel.api.schema_new.index.NewIndexDescriptor;
 import org.neo4j.kernel.configuration.Config;
 import org.neo4j.kernel.impl.api.index.IndexUpdateMode;
 import org.neo4j.kernel.impl.api.index.sampling.IndexSamplingConfig;
@@ -44,7 +46,6 @@ import static org.junit.Assert.assertThat;
 public abstract class IndexAccessorCompatibility extends IndexProviderCompatibilityTestSuite.Compatibility
 {
     protected IndexAccessor accessor;
-    private static final int PROPERTY_KEY_ID = 100;
 
     private boolean isUnique = true;
 
@@ -59,7 +60,7 @@ public abstract class IndexAccessorCompatibility extends IndexProviderCompatibil
     {
         IndexConfiguration indexConfig = IndexConfiguration.of( isUnique );
         IndexSamplingConfig indexSamplingConfig = new IndexSamplingConfig( Config.empty() );
-        IndexPopulator populator = indexProvider.getPopulator( 17, descriptor, indexConfig, indexSamplingConfig );
+        IndexPopulator populator = indexProvider.getPopulator( 17, IndexBoundary.map( descriptor ), indexConfig, indexSamplingConfig );
         populator.create();
         populator.close( true );
         accessor = indexProvider.getOnlineAccessor( 17, indexConfig, indexSamplingConfig );
@@ -76,11 +77,11 @@ public abstract class IndexAccessorCompatibility extends IndexProviderCompatibil
     public void testIndexSeekByNumber() throws Exception
     {
         updateAndCommit( asList(
-                NodePropertyUpdate.add( 1L, PROPERTY_KEY_ID, -5, new long[]{1000} ),
-                NodePropertyUpdate.add( 2L, PROPERTY_KEY_ID, 0, new long[]{1000} ),
-                NodePropertyUpdate.add( 3L, PROPERTY_KEY_ID, 5.5, new long[]{1000} ),
-                NodePropertyUpdate.add( 4L, PROPERTY_KEY_ID, 10.0, new long[]{1000} ),
-                NodePropertyUpdate.add( 5L, PROPERTY_KEY_ID, 100.0, new long[]{1000} ) ) );
+                IndexEntryUpdate.add( 1L, descriptor, -5 ),
+                IndexEntryUpdate.add( 2L, descriptor, 0 ),
+                IndexEntryUpdate.add( 3L, descriptor, 5.5 ),
+                IndexEntryUpdate.add( 4L, descriptor, 10.0 ),
+                IndexEntryUpdate.add( 5L, descriptor, 100.0 ) ) );
 
         assertThat( getAllNodesFromInclusiveIndexSeekByNumber( 0, 10 ), equalTo( asList( 2L, 3L, 4L ) ) );
         assertThat( getAllNodesFromInclusiveIndexSeekByNumber( 10, null ), equalTo( asList( 4L, 5L ) ) );
@@ -95,11 +96,11 @@ public abstract class IndexAccessorCompatibility extends IndexProviderCompatibil
     public void testIndexSeekByString() throws Exception
     {
         updateAndCommit( asList(
-                NodePropertyUpdate.add( 1L, PROPERTY_KEY_ID, "Anabelle", new long[]{1000} ),
-                NodePropertyUpdate.add( 2L, PROPERTY_KEY_ID, "Anna", new long[]{1000} ),
-                NodePropertyUpdate.add( 3L, PROPERTY_KEY_ID, "Bob", new long[]{1000} ),
-                NodePropertyUpdate.add( 4L, PROPERTY_KEY_ID, "Harriet", new long[]{1000} ),
-                NodePropertyUpdate.add( 5L, PROPERTY_KEY_ID, "William", new long[]{1000} ) ) );
+                IndexEntryUpdate.add( 1L, descriptor, "Anabelle" ),
+                IndexEntryUpdate.add( 2L, descriptor, "Anna" ),
+                IndexEntryUpdate.add( 3L, descriptor, "Bob" ),
+                IndexEntryUpdate.add( 4L, descriptor, "Harriet" ),
+                IndexEntryUpdate.add( 5L, descriptor, "William" ) ) );
 
         assertThat( getAllNodesFromIndexSeekByString( "Anna", true, "Harriet", false ), equalTo( asList( 2L, 3L ) ) );
         assertThat( getAllNodesFromIndexSeekByString( "Harriet", true, null, false ), equalTo( asList( 4L, 5L ) ) );
@@ -116,11 +117,11 @@ public abstract class IndexAccessorCompatibility extends IndexProviderCompatibil
     public void testIndexSeekByPrefix() throws Exception
     {
         updateAndCommit( asList(
-                NodePropertyUpdate.add( 1L, PROPERTY_KEY_ID, "a", new long[]{1000} ),
-                NodePropertyUpdate.add( 2L, PROPERTY_KEY_ID, "A", new long[]{1000} ),
-                NodePropertyUpdate.add( 3L, PROPERTY_KEY_ID, "apa", new long[]{1000} ),
-                NodePropertyUpdate.add( 4L, PROPERTY_KEY_ID, "apA", new long[]{1000} ),
-                NodePropertyUpdate.add( 5L, PROPERTY_KEY_ID, "b", new long[]{1000} ) ) );
+                IndexEntryUpdate.add( 1L, descriptor, "a" ),
+                IndexEntryUpdate.add( 2L, descriptor, "A" ),
+                IndexEntryUpdate.add( 3L, descriptor, "apa" ),
+                IndexEntryUpdate.add( 4L, descriptor, "apA" ),
+                IndexEntryUpdate.add( 5L, descriptor, "b" ) ) );
 
         assertThat( getAllNodesFromIndexSeekByPrefix( "a" ), equalTo( asList( 1L, 3L, 4L ) ) );
         assertThat( getAllNodesFromIndexSeekByPrefix( "A" ), equalTo( Collections.singletonList( 2L ) ) );
@@ -132,8 +133,8 @@ public abstract class IndexAccessorCompatibility extends IndexProviderCompatibil
     public void testIndexSeekByPrefixOnNonStrings() throws Exception
     {
         updateAndCommit( asList(
-                NodePropertyUpdate.add( 1L, PROPERTY_KEY_ID, "a", new long[]{1000} ),
-                NodePropertyUpdate.add( 2L, PROPERTY_KEY_ID, 2L, new long[]{1000} ) ) );
+                IndexEntryUpdate.add( 1L, descriptor, "a" ),
+                IndexEntryUpdate.add( 2L, descriptor, 2L ) ) );
         assertThat( getAllNodesFromIndexSeekByPrefix( "2" ), equalTo( EMPTY_LIST ) );
     }
 
@@ -191,12 +192,12 @@ public abstract class IndexAccessorCompatibility extends IndexProviderCompatibil
         PrimitiveLongIterator results( IndexReader reader );
     }
 
-    protected void updateAndCommit( List<NodePropertyUpdate> updates )
+    protected void updateAndCommit( List<IndexEntryUpdate> updates )
             throws IOException, IndexEntryConflictException
     {
         try ( IndexUpdater updater = accessor.newUpdater( IndexUpdateMode.ONLINE ) )
         {
-            for ( NodePropertyUpdate update : updates )
+            for ( IndexEntryUpdate update : updates )
             {
                 updater.process( update );
             }

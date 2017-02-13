@@ -28,13 +28,13 @@ import org.neo4j.kernel.api.exceptions.index.IndexEntryConflictException;
  * IndexUpdaters are responsible for updating indexes during the commit process. There is one new instance handling
  * each commit, created from {@link org.neo4j.kernel.api.index.IndexAccessor}.
  *
- * {@link #process(NodePropertyUpdate)} is called for each entry, wherein the actual updates are applied.
+ * {@link #process(IndexEntryUpdate)} is called for each entry, wherein the actual updates are applied.
  *
  * Each IndexUpdater is not thread-safe, and is assumed to be instantiated per transaction.
  */
 public interface IndexUpdater extends AutoCloseable
 {
-    void process( NodePropertyUpdate update ) throws IOException, IndexEntryConflictException;
+    void process( IndexEntryUpdate update ) throws IOException, IndexEntryConflictException;
 
     @Override
     void close() throws IOException, IndexEntryConflictException;

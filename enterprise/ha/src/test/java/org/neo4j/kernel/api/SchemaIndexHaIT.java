@@ -52,11 +52,11 @@ import org.neo4j.kernel.api.impl.index.storage.DirectoryFactory;
 import org.neo4j.kernel.api.impl.schema.LuceneSchemaIndexProvider;
 import org.neo4j.kernel.api.index.IndexAccessor;
 import org.neo4j.kernel.api.index.IndexConfiguration;
+import org.neo4j.kernel.api.index.IndexEntryUpdate;
 import org.neo4j.kernel.api.schema.IndexDescriptor;
 import org.neo4j.kernel.api.index.IndexPopulator;
 import org.neo4j.kernel.api.index.IndexUpdater;
 import org.neo4j.kernel.api.index.InternalIndexState;
-import org.neo4j.kernel.api.index.NodePropertyUpdate;
 import org.neo4j.kernel.api.index.PropertyAccessor;
 import org.neo4j.kernel.api.index.SchemaIndexProvider;
 import org.neo4j.kernel.configuration.Config;
@@ -436,7 +436,7 @@ public class SchemaIndexHaIT
         }
 
         @Override
-        public void add( Collection<NodePropertyUpdate> updates )
+        public void add( Collection<IndexEntryUpdate> updates )
                 throws IndexEntryConflictException, IOException
         {
             delegate.add( updates );
@@ -471,7 +471,7 @@ public class SchemaIndexHaIT
         }
 
         @Override
-        public void includeSample( NodePropertyUpdate update )
+        public void includeSample( IndexEntryUpdate update )
         {
             delegate.includeSample( update );
         }

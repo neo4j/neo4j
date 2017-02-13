@@ -62,7 +62,7 @@ public class IndexDescriptorFactory
     public static IndexDescriptor of( IndexRule rule )
     {
         LabelSchemaDescriptor schema = rule.getIndexDescriptor().schema();
-        return of( schema.getLabelId(), schema.getPropertyIds()[0] );
+        return of( schema.getLabelId(), schema.getPropertyId() );
         // here 1 property is assumed. That should be fine because this class will be gone before multiple props are
         // supported
     }

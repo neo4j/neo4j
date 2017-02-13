@@ -30,10 +30,10 @@ import org.neo4j.kernel.api.exceptions.index.IndexEntryConflictException;
 import org.neo4j.kernel.api.exceptions.index.IndexNotFoundKernelException;
 import org.neo4j.kernel.api.exceptions.index.IndexPopulationFailedKernelException;
 import org.neo4j.kernel.api.index.IndexConfiguration;
+import org.neo4j.kernel.api.index.IndexEntryUpdate;
 import org.neo4j.kernel.api.schema.IndexDescriptor;
 import org.neo4j.kernel.api.index.IndexUpdater;
 import org.neo4j.kernel.api.index.InternalIndexState;
-import org.neo4j.kernel.api.index.NodePropertyUpdate;
 import org.neo4j.kernel.api.index.SchemaIndexProvider;
 import org.neo4j.storageengine.api.schema.IndexReader;
 import org.neo4j.storageengine.api.schema.PopulationProgress;
@@ -73,7 +73,7 @@ public class PopulatingIndexProxy implements IndexProxy
                 return new PopulatingIndexUpdater()
                 {
                     @Override
-                    public void process( NodePropertyUpdate update ) throws IOException, IndexEntryConflictException
+                    public void process( IndexEntryUpdate update ) throws IOException, IndexEntryConflictException
                     {
                         job.update( update );
                     }
@@ -82,7 +82,7 @@ public class PopulatingIndexProxy implements IndexProxy
                 return new PopulatingIndexUpdater()
                 {
                     @Override
-                    public void process( NodePropertyUpdate update ) throws IOException, IndexEntryConflictException
+                    public void process( IndexEntryUpdate update ) throws IOException, IndexEntryConflictException
                     {
                         throw new IllegalArgumentException( "Unsupported update mode: " + mode );
                     }

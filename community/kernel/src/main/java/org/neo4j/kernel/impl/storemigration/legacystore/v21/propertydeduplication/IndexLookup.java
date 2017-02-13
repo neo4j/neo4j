@@ -64,7 +64,7 @@ class IndexLookup implements AutoCloseable
             if ( schemaRule instanceof IndexRule )
             {
                 IndexRule rule = (IndexRule) schemaRule;
-                int propertyId = rule.schema().getPropertyIds()[0]; // assuming 1 property always
+                int propertyId = rule.schema().getPropertyId(); // assuming 1 property always
                 List<IndexRule> ruleList = indexRuleIndex.get( propertyId );
                 if ( ruleList == null )
                 {

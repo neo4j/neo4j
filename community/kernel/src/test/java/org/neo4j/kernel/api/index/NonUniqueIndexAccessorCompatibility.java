@@ -24,6 +24,9 @@ import org.junit.Test;
 
 import java.util.Collections;
 
+import org.neo4j.kernel.api.schema_new.index.NewIndexDescriptor;
+import org.neo4j.kernel.api.schema_new.index.NewIndexDescriptorFactory;
+
 import static java.util.Arrays.asList;
 import static java.util.Collections.EMPTY_LIST;
 import static java.util.Collections.singletonList;
@@ -37,7 +40,7 @@ import static org.junit.Assert.assertThat;
         " errors or warnings in some IDEs about test classes needing a public zero-arg constructor." )
 public class NonUniqueIndexAccessorCompatibility extends IndexAccessorCompatibility
 {
-    private static final int PROPERTY_KEY_ID = 100;
+    private static final NewIndexDescriptor index = NewIndexDescriptorFactory.forLabel( 1000, 100 );
 
     public NonUniqueIndexAccessorCompatibility( IndexProviderCompatibilityTestSuite testSuite )
     {
@@ -54,8 +57,8 @@ public class NonUniqueIndexAccessorCompatibility extends IndexAccessorCompatibil
         // the exact-match filtering we do on index seeks in StateHandlingStatementOperations.
 
         updateAndCommit( asList(
-                NodePropertyUpdate.add( 1L, PROPERTY_KEY_ID, "a", new long[]{1000} ),
-                NodePropertyUpdate.add( 2L, PROPERTY_KEY_ID, "a", new long[]{1000} ) ) );
+                IndexEntryUpdate.add( 1L, index, "a" ),
+                IndexEntryUpdate.add( 2L, index, "a" ) ) );
 
         assertThat( getAllNodesWithProperty( "a" ), equalTo( asList( 1L, 2L ) ) );
     }
@@ -64,9 +67,9 @@ public class NonUniqueIndexAccessorCompatibility extends IndexAccessorCompatibil
     public void testIndexSeekAndScan() throws Exception
     {
         updateAndCommit( asList(
-                NodePropertyUpdate.add( 1L, PROPERTY_KEY_ID, "a", new long[]{1000} ),
-                NodePropertyUpdate.add( 2L, PROPERTY_KEY_ID, "a", new long[]{1000} ),
-                NodePropertyUpdate.add( 3L, PROPERTY_KEY_ID, "b", new long[]{1000} ) ) );
+                IndexEntryUpdate.add( 1L, index, "a" ),
+                IndexEntryUpdate.add( 2L, index, "a" ),
+                IndexEntryUpdate.add( 3L, index, "b" ) ) );
 
         assertThat( getAllNodesWithProperty( "a" ), equalTo( asList( 1L, 2L ) ) );
         assertThat( getAllNodes(), equalTo( asList( 1L, 2L, 3L ) ) );
@@ -76,11 +79,11 @@ public class NonUniqueIndexAccessorCompatibility extends IndexAccessorCompatibil
     public void testIndexRangeSeekByNumberWithDuplicates() throws Exception
     {
         updateAndCommit( asList(
-                NodePropertyUpdate.add( 1L, PROPERTY_KEY_ID, -5, new long[]{1000} ),
-                NodePropertyUpdate.add( 2L, PROPERTY_KEY_ID, -5, new long[]{1000} ),
-                NodePropertyUpdate.add( 3L, PROPERTY_KEY_ID, 0, new long[]{1000} ),
-                NodePropertyUpdate.add( 4L, PROPERTY_KEY_ID, 5, new long[]{1000} ),
-                NodePropertyUpdate.add( 5L, PROPERTY_KEY_ID, 5, new long[]{1000} ) ) );
+                IndexEntryUpdate.add( 1L, index, -5 ),
+                IndexEntryUpdate.add( 2L, index, -5 ),
+                IndexEntryUpdate.add( 3L, index, 0 ),
+                IndexEntryUpdate.add( 4L, index, 5 ),
+                IndexEntryUpdate.add( 5L, index, 5 ) ) );
 
         assertThat( getAllNodesFromInclusiveIndexSeekByNumber( -5, 5 ), equalTo( asList( 1L, 2L, 3L, 4L, 5L ) ) );
         assertThat( getAllNodesFromInclusiveIndexSeekByNumber( -3, -1 ), equalTo( EMPTY_LIST ) );
@@ -93,11 +96,11 @@ public class NonUniqueIndexAccessorCompatibility extends IndexAccessorCompatibil
     public void testIndexRangeSeekByStringWithDuplicates() throws Exception
     {
         updateAndCommit( asList(
-                NodePropertyUpdate.add( 1L, PROPERTY_KEY_ID, "Anna", new long[]{1000} ),
-                NodePropertyUpdate.add( 2L, PROPERTY_KEY_ID, "Anna", new long[]{1000} ),
-                NodePropertyUpdate.add( 3L, PROPERTY_KEY_ID, "Bob", new long[]{1000} ),
-                NodePropertyUpdate.add( 4L, PROPERTY_KEY_ID, "William", new long[]{1000} ),
-                NodePropertyUpdate.add( 5L, PROPERTY_KEY_ID, "William", new long[]{1000} ) ) );
+                IndexEntryUpdate.add( 1L, index, "Anna" ),
+                IndexEntryUpdate.add( 2L, index, "Anna" ),
+                IndexEntryUpdate.add( 3L, index, "Bob" ),
+                IndexEntryUpdate.add( 4L, index, "William" ),
+                IndexEntryUpdate.add( 5L, index, "William" ) ) );
 
         assertThat( getAllNodesFromIndexSeekByString( "Anna", false, "William", false ), equalTo( singletonList( 3L ) ) );
         assertThat( getAllNodesFromIndexSeekByString( "Arabella", false, "Bob", false ), equalTo( EMPTY_LIST ) );
@@ -110,11 +113,11 @@ public class NonUniqueIndexAccessorCompatibility extends IndexAccessorCompatibil
     public void testIndexRangeSeekByPrefixWithDuplicates() throws Exception
     {
         updateAndCommit( asList(
-                NodePropertyUpdate.add( 1L, PROPERTY_KEY_ID, "a", new long[]{1000} ),
-                NodePropertyUpdate.add( 2L, PROPERTY_KEY_ID, "A", new long[]{1000} ),
-                NodePropertyUpdate.add( 3L, PROPERTY_KEY_ID, "apa", new long[]{1000} ),
-                NodePropertyUpdate.add( 4L, PROPERTY_KEY_ID, "apa", new long[]{1000} ),
-                NodePropertyUpdate.add( 5L, PROPERTY_KEY_ID, "apa", new long[]{1000} ) ) );
+                IndexEntryUpdate.add( 1L, index, "a" ),
+                IndexEntryUpdate.add( 2L, index, "A" ),
+                IndexEntryUpdate.add( 3L, index, "apa" ),
+                IndexEntryUpdate.add( 4L, index, "apa" ),
+                IndexEntryUpdate.add( 5L, index, "apa" ) ) );
 
         assertThat( getAllNodesFromIndexSeekByPrefix( "a" ), equalTo( asList( 1L, 3L, 4L, 5L ) ) );
         assertThat( getAllNodesFromIndexSeekByPrefix( "apa" ), equalTo( asList( 3L, 4L, 5L ) ) );
@@ -124,11 +127,11 @@ public class NonUniqueIndexAccessorCompatibility extends IndexAccessorCompatibil
     public void testIndexFullSearchWithDuplicates() throws Exception
     {
         updateAndCommit( asList(
-                NodePropertyUpdate.add( 1L, PROPERTY_KEY_ID, "a", new long[]{1000} ),
-                NodePropertyUpdate.add( 2L, PROPERTY_KEY_ID, "A", new long[]{1000} ),
-                NodePropertyUpdate.add( 3L, PROPERTY_KEY_ID, "apa", new long[]{1000} ),
-                NodePropertyUpdate.add( 4L, PROPERTY_KEY_ID, "apa", new long[]{1000} ),
-                NodePropertyUpdate.add( 5L, PROPERTY_KEY_ID, "apalong", new long[]{1000} ) ) );
+                IndexEntryUpdate.add( 1L, index, "a" ),
+                IndexEntryUpdate.add( 2L, index, "A" ),
+                IndexEntryUpdate.add( 3L, index, "apa" ),
+                IndexEntryUpdate.add( 4L, index, "apa" ),
+                IndexEntryUpdate.add( 5L, index, "apalong" ) ) );
 
         assertThat( getAllNodesFromIndexScanByContains( "a" ), equalTo( asList( 1L, 3L, 4L, 5L ) ) );
         assertThat( getAllNodesFromIndexScanByContains( "apa" ), equalTo( asList( 3L, 4L, 5L ) ) );
@@ -139,12 +142,12 @@ public class NonUniqueIndexAccessorCompatibility extends IndexAccessorCompatibil
     public void testIndexEndsWithWithDuplicated() throws Exception
     {
         updateAndCommit( asList(
-                NodePropertyUpdate.add( 1L, PROPERTY_KEY_ID, "a", new long[]{1000} ),
-                NodePropertyUpdate.add( 2L, PROPERTY_KEY_ID, "A", new long[]{1000} ),
-                NodePropertyUpdate.add( 3L, PROPERTY_KEY_ID, "apa", new long[]{1000} ),
-                NodePropertyUpdate.add( 4L, PROPERTY_KEY_ID, "apa", new long[]{1000} ),
-                NodePropertyUpdate.add( 5L, PROPERTY_KEY_ID, "longapa", new long[]{1000} ),
-                NodePropertyUpdate.add( 6L, PROPERTY_KEY_ID, "apalong", new long[]{1000} ) ) );
+                IndexEntryUpdate.add( 1L, index, "a" ),
+                IndexEntryUpdate.add( 2L, index, "A" ),
+                IndexEntryUpdate.add( 3L, index, "apa" ),
+                IndexEntryUpdate.add( 4L, index, "apa" ),
+                IndexEntryUpdate.add( 5L, index, "longapa" ),
+                IndexEntryUpdate.add( 6L, index, "apalong" ) ) );
 
         assertThat( getAllNodesFromIndexScanEndsWith( "a" ), equalTo( asList( 1L, 3L, 4L, 5L ) ) );
         assertThat( getAllNodesFromIndexScanEndsWith( "apa" ), equalTo( asList( 3L, 4L, 5L ) ) );

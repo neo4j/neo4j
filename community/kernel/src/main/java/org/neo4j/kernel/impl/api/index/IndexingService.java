@@ -27,6 +27,7 @@ import java.util.HashMap;
 import java.util.HashSet;
 import java.util.List;
 import java.util.Map;
+import java.util.Optional;
 import java.util.Set;
 import java.util.concurrent.Future;
 
@@ -42,10 +43,11 @@ import org.neo4j.kernel.api.exceptions.index.IndexNotFoundKernelException;
 import org.neo4j.kernel.api.exceptions.index.IndexPopulationFailedKernelException;
 import org.neo4j.kernel.api.exceptions.schema.ConstraintVerificationFailedKernelException;
 import org.neo4j.kernel.api.index.IndexConfiguration;
+import org.neo4j.kernel.api.index.IndexEntryUpdate;
 import org.neo4j.kernel.api.schema.IndexDescriptor;
 import org.neo4j.kernel.api.index.IndexUpdater;
 import org.neo4j.kernel.api.index.InternalIndexState;
-import org.neo4j.kernel.api.index.NodePropertyUpdate;
+import org.neo4j.kernel.api.index.NodeUpdates;
 import org.neo4j.kernel.api.index.SchemaIndexProvider;
 import org.neo4j.kernel.api.index.SchemaIndexProvider.Descriptor;
 import org.neo4j.kernel.api.schema_new.index.IndexBoundary;
@@ -114,7 +116,7 @@ public class IndexingService extends LifecycleAdapter
     {
         void applyingRecoveredData( PrimitiveLongSet recoveredNodeIds );
 
-        void appliedRecoveredData( Iterable<NodePropertyUpdate> updates );
+        void appliedRecoveredData( Iterable<NodeUpdates> updates );
 
         void populationCompleteOn( IndexDescriptor descriptor );
 
@@ -126,7 +128,7 @@ public class IndexingService extends LifecycleAdapter
     public static class MonitorAdapter implements Monitor
     {
         @Override
-        public void appliedRecoveredData( Iterable<NodePropertyUpdate> updates )
+        public void appliedRecoveredData( Iterable<NodeUpdates> updates )
         {   // Do nothing
         }
 
@@ -432,68 +434,17 @@ public class IndexingService extends LifecycleAdapter
     {
         try ( IndexUpdaterMap updaterMap = indexMapRef.createIndexUpdaterMap( updateMode ) )
         {
-            // TODO Sort the updates by index so that we don't have to create an IndexDescriptor object per update
-            for ( NodePropertyUpdate update : updates )
+            for ( NodeUpdates update : updates )
             {
-                int propertyKeyId = update.getPropertyKeyId();
-                switch ( update.getUpdateMode() )
+                for ( IndexDescriptor descriptor : updaterMap.descriptors() )
                 {
-                case ADDED:
-                    for ( int len = update.getNumberOfLabelsAfter(), i = 0; i < len; i++ )
+                    Optional<IndexEntryUpdate> entry = update.forIndex( IndexBoundary.map( descriptor ) );
+                    if ( entry.isPresent() )
                     {
-                        processUpdate( update, updaterMap, update.getLabelAfter( i ), propertyKeyId );
+                        updaterMap.getUpdater( descriptor ).process( entry.get() );
                     }
-                    break;
-
-                case REMOVED:
-                    for ( int len = update.getNumberOfLabelsBefore(), i = 0; i < len; i++ )
-                    {
-                        processUpdate( update, updaterMap, update.getLabelBefore( i ), propertyKeyId );
-                    }
-                    break;
-
-                case CHANGED:
-                    int lenBefore = update.getNumberOfLabelsBefore();
-                    int lenAfter = update.getNumberOfLabelsAfter();
-
-                    for ( int i = 0, j = 0; i < lenBefore && j < lenAfter; )
-                    {
-                        int labelBefore = update.getLabelBefore( i );
-                        int labelAfter = update.getLabelAfter( j );
-
-                        if ( labelBefore == labelAfter )
-                        {
-                            processUpdate( update, updaterMap, labelAfter, propertyKeyId );
-                            i++;
-                            j++;
-                        }
-                        else
-                        {
-                            if ( labelBefore < labelAfter )
-                            {
-                                i++;
-                            }
-                            else /* labelBefore > labelAfter */
-                            {
-                                j++;
-                            }
-                        }
-                    }
-                    break;
-
-                default:
-                    throw new IllegalStateException( "Unknown update mode: " + update.getUpdateMode() );
                 }
             }
-        }
-    }
-
-    private void processUpdate( NodePropertyUpdate update, IndexUpdaterMap updaterMap, int labelId,
-            int propertyKeyId ) throws IOException, IndexEntryConflictException
-    {
-        for ( IndexUpdater updater : updaterMap.getUpdaters( labelId, propertyKeyId ) )
-        {
-            updater.process( update );
         }
     }
 
@@ -584,7 +535,7 @@ public class IndexingService extends LifecycleAdapter
 
     private IndexUpdates readRecoveredUpdatesFromStore()
     {
-        final List<NodePropertyUpdate> recoveredUpdates = new ArrayList<>();
+        final List<NodeUpdates> recoveredUpdates = new ArrayList<>();
         recoveredNodeIds.visitKeys( new PrimitiveLongVisitor<RuntimeException>()
         {
             @Override

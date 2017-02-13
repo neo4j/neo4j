@@ -23,15 +23,13 @@ import org.junit.Before;
 import org.junit.Test;
 
 import java.io.IOException;
-import java.util.List;
 
-import org.neo4j.kernel.api.schema.NodePropertyDescriptor;
+import org.neo4j.kernel.api.index.IndexUpdater;
 import org.neo4j.kernel.api.schema.IndexDescriptor;
 import org.neo4j.kernel.api.schema.IndexDescriptorFactory;
-import org.neo4j.kernel.api.index.IndexUpdater;
 
 import static org.hamcrest.MatcherAssert.assertThat;
-import static org.hamcrest.Matchers.containsInAnyOrder;
+import static org.hamcrest.Matchers.equalTo;
 import static org.junit.Assert.assertEquals;
 import static org.junit.Assert.assertNull;
 import static org.junit.Assert.assertTrue;
@@ -96,22 +94,10 @@ public class IndexUpdaterMapTest
         indexMap.putIndexProxy( 0, indexProxy1 );
 
         // when
-        List<IndexUpdater> updaters =
-                updaterMap.getUpdaters( indexDescriptor1.getLabelId(), indexDescriptor1.getPropertyKeyId() );
+        IndexUpdater updater = updaterMap.getUpdater( indexDescriptor1 );
 
         // then
-        assertThat( updaters, containsInAnyOrder( indexUpdater1 ) );
-    }
-
-    @Test
-    public void shouldRetrieveEmptyListOnNonExistentIndex()
-    {
-        // when
-        List<IndexUpdater> updaters =
-                updaterMap.getUpdaters( indexDescriptor1.getLabelId(), indexDescriptor1.getPropertyKeyId() );
-
-        // then
-        assertThat( updaters, containsInAnyOrder( ) );
+        assertThat( updater, equalTo( indexUpdater1 ) );
     }
 
     @Test

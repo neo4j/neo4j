@@ -22,6 +22,8 @@ package org.neo4j.kernel.api.exceptions.index;
 import java.util.Arrays;
 
 import org.neo4j.kernel.api.exceptions.KernelException;
+import org.neo4j.kernel.api.schema_new.SchemaUtil;
+import org.neo4j.kernel.api.schema_new.index.NewIndexDescriptor;
 
 import static java.lang.String.format;
 import static java.lang.String.valueOf;
@@ -80,11 +82,11 @@ public abstract class IndexEntryConflictException extends Exception
      * was caught but it should not have been allowed to be thrown in the first place.
      * Typically where the index we performed an operation on is not a unique index.
      */
-    public RuntimeException notAllowed( int labelId, int propertyKeyId )
+    public RuntimeException notAllowed( NewIndexDescriptor descriptor )
     {
         return new IllegalStateException( String.format(
-                "Index for label:%s propertyKey:%s should not require unique values.",
-                labelId, propertyKeyId ), this );
+                "Index for (%s) should not require unique values.",
+                descriptor.userDescription( SchemaUtil.noopTokenNameLookup ) ), this );
     }
 
     public abstract Object getPropertyValue();

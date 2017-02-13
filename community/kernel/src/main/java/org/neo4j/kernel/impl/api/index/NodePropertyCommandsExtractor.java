@@ -24,7 +24,7 @@ import java.util.ArrayList;
 import java.util.List;
 
 import org.neo4j.collection.primitive.PrimitiveLongObjectMap;
-import org.neo4j.kernel.api.index.NodePropertyUpdate;
+import org.neo4j.kernel.api.index.NodeUpdates;
 import org.neo4j.kernel.impl.api.BatchTransactionApplier;
 import org.neo4j.kernel.impl.api.TransactionApplier;
 import org.neo4j.kernel.impl.locking.LockGroup;
@@ -38,7 +38,7 @@ import static org.neo4j.kernel.impl.store.NodeLabelsField.fieldPointsToDynamicRe
 
 /**
  * Implements both BatchTransactionApplier and TransactionApplier in order to reduce garbage.
- * Gathers node/property commands by node id, preparing for extraction of {@link NodePropertyUpdate updates}.
+ * Gathers node/property commands by node id, preparing for extraction of {@link NodeUpdates updates}.
  */
 public class NodePropertyCommandsExtractor extends TransactionApplier.Adapter
         implements BatchTransactionApplier

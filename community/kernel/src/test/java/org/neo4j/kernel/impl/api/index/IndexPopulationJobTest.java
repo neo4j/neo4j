@@ -48,15 +48,18 @@ import org.neo4j.kernel.api.Statement;
 import org.neo4j.kernel.api.exceptions.TransactionFailureException;
 import org.neo4j.kernel.api.exceptions.index.IndexEntryConflictException;
 import org.neo4j.kernel.api.index.IndexConfiguration;
+import org.neo4j.kernel.api.index.IndexEntryUpdate;
+import org.neo4j.kernel.api.schema.IndexDescriptor;
+import org.neo4j.kernel.api.schema.IndexDescriptorFactory;
 import org.neo4j.kernel.api.index.IndexPopulator;
 import org.neo4j.kernel.api.index.IndexUpdater;
 import org.neo4j.kernel.api.index.InternalIndexState;
-import org.neo4j.kernel.api.index.NodePropertyUpdate;
+import org.neo4j.kernel.api.index.NodeUpdates;
 import org.neo4j.kernel.api.index.PreexistingIndexEntryConflictException;
 import org.neo4j.kernel.api.index.PropertyAccessor;
 import org.neo4j.kernel.api.labelscan.NodeLabelUpdate;
-import org.neo4j.kernel.api.schema.IndexDescriptor;
-import org.neo4j.kernel.api.schema.IndexDescriptorFactory;
+import org.neo4j.kernel.api.schema_new.index.NewIndexDescriptor;
+import org.neo4j.kernel.api.schema_new.index.NewIndexDescriptorFactory;
 import org.neo4j.kernel.api.security.AnonymousContext;
 import org.neo4j.kernel.configuration.Config;
 import org.neo4j.kernel.impl.api.KernelSchemaStateStore;
@@ -92,9 +95,7 @@ import static org.mockito.Mockito.when;
 import static org.neo4j.helpers.collection.Iterators.asSet;
 import static org.neo4j.helpers.collection.MapUtil.genericMap;
 import static org.neo4j.helpers.collection.MapUtil.map;
-import static org.neo4j.kernel.api.index.NodePropertyUpdate.add;
-import static org.neo4j.kernel.api.index.NodePropertyUpdate.change;
-import static org.neo4j.kernel.api.index.NodePropertyUpdate.remove;
+import static org.neo4j.kernel.api.index.IndexEntryUpdate.add;
 import static org.neo4j.kernel.api.security.SecurityContext.AUTH_DISABLED;
 import static org.neo4j.kernel.impl.api.index.IndexingService.NO_MONITOR;
 import static org.neo4j.kernel.impl.api.index.TestSchemaIndexProviderDescriptor.PROVIDER_DESCRIPTOR;
@@ -150,17 +151,18 @@ public class IndexPopulationJobTest
         long nodeId = createNode( map( name, value ), FIRST );
         IndexPopulator populator = spy( inMemoryPopulator( false ) );
         IndexPopulationJob job = newIndexPopulationJob( populator, new FlippableIndexProxy(), false );
+        NewIndexDescriptor index = NewIndexDescriptorFactory.forLabel( 0, 0 );
 
         // WHEN
         job.run();
 
         // THEN
-        NodePropertyUpdate update = add( nodeId, 0, value, new long[]{0} );
+        IndexEntryUpdate update = IndexEntryUpdate.add( nodeId, index, value );
 
         verify( populator ).create();
         verify( populator ).configureSampling( true );
         verify( populator ).includeSample( update );
-        verify( populator ).add( anyListOf(NodePropertyUpdate.class) );
+        verify( populator ).add( anyListOf(IndexEntryUpdate.class) );
         verify( populator ).verifyDeferredConstraints( indexStoreView );
         verify( populator ).sampleResult();
         verify( populator ).close( true );
@@ -197,19 +199,20 @@ public class IndexPopulationJobTest
         long node4 = createNode( map( age, 35, name, value ), FIRST );
         IndexPopulator populator = spy( inMemoryPopulator( false ) );
         IndexPopulationJob job = newIndexPopulationJob( populator, new FlippableIndexProxy(), false );
+        NewIndexDescriptor index = NewIndexDescriptorFactory.forLabel( 0, 0 );
 
         // WHEN
         job.run();
 
         // THEN
-        NodePropertyUpdate update1 = add( node1, 0, value, new long[]{0} );
-        NodePropertyUpdate update2 = add( node4, 0, value, new long[]{0} );
+        IndexEntryUpdate update1 = IndexEntryUpdate.add( node1, index, value );
+        IndexEntryUpdate update2 = add( node4, index, value );
 
         verify( populator ).create();
         verify( populator ).configureSampling( true );
         verify( populator ).includeSample( update1 );
         verify( populator ).includeSample( update2 );
-        verify( populator, times( 2 ) ).add( anyListOf(NodePropertyUpdate.class ) );
+        verify( populator, times( 2 ) ).add( anyListOf(IndexEntryUpdate.class ) );
         verify( populator ).verifyDeferredConstraints( indexStoreView );
         verify( populator ).sampleResult();
         verify( populator ).close( true );
@@ -297,7 +300,7 @@ public class IndexPopulationJobTest
         IndexStoreView storeView = mock( IndexStoreView.class );
         ControlledStoreScan storeScan = new ControlledStoreScan();
         when( storeView.visitNodes( any(int[].class), any( IntPredicate.class ),
-                Matchers.<Visitor<NodePropertyUpdates,RuntimeException>>any(),
+                Matchers.<Visitor<NodeUpdates,RuntimeException>>any(),
                 Matchers.<Visitor<NodeLabelUpdate,RuntimeException>>any()) )
                 .thenReturn(storeScan );
 
@@ -444,7 +447,7 @@ public class IndexPopulationJobTest
         }
 
         @Override
-        public void acceptUpdate( MultipleIndexPopulator.MultipleIndexUpdater updater, NodePropertyUpdate update,
+        public void acceptUpdate( MultipleIndexPopulator.MultipleIndexUpdater updater, IndexEntryUpdate update,
                 long currentlyIndexedNodeId )
         {
             // no-op
@@ -470,28 +473,26 @@ public class IndexPopulationJobTest
         private final long nodeToChange;
         private final Object newValue;
         private final Object previousValue;
-        private final int label, propertyKeyId;
+        private final NewIndexDescriptor index;
 
         NodeChangingWriter( long nodeToChange, int propertyKeyId, Object previousValue, Object newValue, int label )
         {
             this.nodeToChange = nodeToChange;
-            this.propertyKeyId = propertyKeyId;
             this.previousValue = previousValue;
             this.newValue = newValue;
-            this.label = label;
+            this.index = NewIndexDescriptorFactory.forLabel( label, propertyKeyId );
         }
 
         @Override
-        public void add( Collection<NodePropertyUpdate> updates )
+        public void add( Collection<IndexEntryUpdate> updates )
         {
-            for ( NodePropertyUpdate update : updates )
+            for ( IndexEntryUpdate update : updates )
             {
-                if ( update.getNodeId() == 2 )
+                if ( update.getEntityId() == 2 )
                 {
-                    long[] labels = new long[]{label};
-                    job.update( change( nodeToChange, propertyKeyId, previousValue, labels, newValue, labels ) );
+                    job.update( IndexEntryUpdate.change( nodeToChange, index, previousValue, newValue ) );
                 }
-                added.add( Pair.of( update.getNodeId(), update.getValueAfter() ) );
+                added.add( Pair.of( update.getEntityId(), update.value() ) );
             }
         }
 
@@ -501,16 +502,16 @@ public class IndexPopulationJobTest
             return new IndexUpdater()
             {
                 @Override
-                public void process( NodePropertyUpdate update ) throws IOException, IndexEntryConflictException
+                public void process( IndexEntryUpdate update ) throws IOException, IndexEntryConflictException
                 {
-                    switch ( update.getUpdateMode() )
+                    switch ( update.updateMode() )
                     {
                         case ADDED:
                         case CHANGED:
-                            added.add( Pair.of( update.getNodeId(), update.getValueAfter() ) );
+                            added.add( Pair.of( update.getEntityId(), update.value() ) );
                             break;
                         default:
-                            throw new IllegalArgumentException( update.getUpdateMode().name() );
+                            throw new IllegalArgumentException( update.updateMode().name() );
                     }
                 }
 
@@ -539,16 +540,14 @@ public class IndexPopulationJobTest
         private final Map<Long, Object> removed = new HashMap<>();
         private final long nodeToDelete;
         private IndexPopulationJob job;
-        private final int propertyKeyId;
         private final Object valueToDelete;
-        private final int label;
+        private final NewIndexDescriptor index;
 
         NodeDeletingWriter( long nodeToDelete, int propertyKeyId, Object valueToDelete, int label )
         {
             this.nodeToDelete = nodeToDelete;
-            this.propertyKeyId = propertyKeyId;
             this.valueToDelete = valueToDelete;
-            this.label = label;
+            this.index = NewIndexDescriptorFactory.forLabel( label, propertyKeyId );
         }
 
         public void setJob( IndexPopulationJob job )
@@ -557,15 +556,15 @@ public class IndexPopulationJobTest
         }
 
         @Override
-        public void add( Collection<NodePropertyUpdate> updates )
+        public void add( Collection<IndexEntryUpdate> updates )
         {
-            for ( NodePropertyUpdate update : updates )
+            for ( IndexEntryUpdate update : updates )
             {
-                if ( update.getNodeId() == 2 )
+                if ( update.getEntityId() == 2 )
                 {
-                    job.update( remove( nodeToDelete, propertyKeyId, valueToDelete, new long[]{label} ) );
+                    job.update( IndexEntryUpdate.remove( nodeToDelete, index, valueToDelete ) );
                 }
-                added.put( update.getNodeId(), update.getValueAfter() );
+                added.put( update.getEntityId(), update.value() );
             }
         }
 
@@ -575,19 +574,19 @@ public class IndexPopulationJobTest
             return new IndexUpdater()
             {
                 @Override
-                public void process( NodePropertyUpdate update ) throws IOException, IndexEntryConflictException
+                public void process( IndexEntryUpdate update ) throws IOException, IndexEntryConflictException
                 {
-                    switch ( update.getUpdateMode() )
+                    switch ( update.updateMode() )
                     {
                         case ADDED:
                         case CHANGED:
-                            added.put( update.getNodeId(), update.getValueAfter() );
+                            added.put( update.getEntityId(), update.value() );
                             break;
                         case REMOVED:
-                            removed.put( update.getNodeId(), update.getValueBefore() );
+                            removed.put( update.getEntityId(), update.value() ); // on remove, value is the before value
                             break;
                         default:
-                            throw new IllegalArgumentException( update.getUpdateMode().name() );
+                            throw new IllegalArgumentException( update.updateMode().name() );
                     }
                 }
 

@@ -67,9 +67,9 @@ import org.neo4j.kernel.api.exceptions.schema.IllegalTokenNameException;
 import org.neo4j.kernel.api.exceptions.schema.TooManyLabelsException;
 import org.neo4j.kernel.api.index.IndexAccessor;
 import org.neo4j.kernel.api.index.IndexConfiguration;
+import org.neo4j.kernel.api.index.IndexEntryUpdate;
 import org.neo4j.kernel.api.index.IndexPopulator;
 import org.neo4j.kernel.api.index.IndexUpdater;
-import org.neo4j.kernel.api.index.NodePropertyUpdate;
 import org.neo4j.kernel.api.index.SchemaIndexProvider;
 import org.neo4j.kernel.api.labelscan.LabelScanStore;
 import org.neo4j.kernel.api.labelscan.LabelScanWriter;
@@ -559,7 +559,7 @@ public class FullCheckIntegrationTest
                                             .indexes()
                                             .getOnlineAccessor( indexRule.getId(), indexConfig, samplingConfig );
             IndexUpdater updater = accessor.newUpdater( IndexUpdateMode.ONLINE );
-            updater.process( NodePropertyUpdate.add( 42, 0, "value", new long[]{3} ) );
+            updater.process( IndexEntryUpdate.add( 42, indexRule.getIndexDescriptor(), "value" ) );
             updater.close();
             accessor.close();
         }

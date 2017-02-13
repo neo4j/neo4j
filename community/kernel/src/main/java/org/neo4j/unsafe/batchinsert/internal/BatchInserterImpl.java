@@ -31,6 +31,7 @@ import java.util.Iterator;
 import java.util.List;
 import java.util.Map;
 import java.util.Map.Entry;
+import java.util.Optional;
 import java.util.function.LongFunction;
 
 import org.neo4j.collection.primitive.PrimitiveIntCollections;
@@ -57,21 +58,22 @@ import org.neo4j.kernel.api.exceptions.index.IndexEntryConflictException;
 import org.neo4j.kernel.api.exceptions.schema.AlreadyConstrainedException;
 import org.neo4j.kernel.api.exceptions.schema.CreateConstraintFailureException;
 import org.neo4j.kernel.api.index.IndexConfiguration;
+import org.neo4j.kernel.api.index.IndexEntryUpdate;
 import org.neo4j.kernel.api.index.IndexPopulator;
 import org.neo4j.kernel.api.index.InternalIndexState;
-import org.neo4j.kernel.api.index.NodePropertyUpdate;
+import org.neo4j.kernel.api.index.NodeUpdates;
 import org.neo4j.kernel.api.index.SchemaIndexProvider;
 import org.neo4j.kernel.api.labelscan.LabelScanStore;
 import org.neo4j.kernel.api.labelscan.LabelScanWriter;
 import org.neo4j.kernel.api.labelscan.NodeLabelUpdate;
 import org.neo4j.kernel.api.properties.DefinedProperty;
-import org.neo4j.kernel.api.schema.IndexDescriptor;
-import org.neo4j.kernel.api.schema.IndexDescriptorFactory;
 import org.neo4j.kernel.api.schema.NodePropertyDescriptor;
 import org.neo4j.kernel.api.schema_new.LabelSchemaDescriptor;
 import org.neo4j.kernel.api.schema_new.SchemaDescriptorFactory;
 import org.neo4j.kernel.api.schema_new.constaints.ConstraintDescriptor;
 import org.neo4j.kernel.api.schema_new.constaints.ConstraintDescriptorFactory;
+import org.neo4j.kernel.api.schema_new.index.IndexBoundary;
+import org.neo4j.kernel.api.schema_new.index.NewIndexDescriptor;
 import org.neo4j.kernel.api.schema_new.index.NewIndexDescriptorFactory;
 import org.neo4j.kernel.configuration.Config;
 import org.neo4j.kernel.extension.KernelExtensionFactory;
@@ -79,7 +81,6 @@ import org.neo4j.kernel.extension.KernelExtensions;
 import org.neo4j.kernel.extension.UnsatisfiedDependencyStrategies;
 import org.neo4j.kernel.extension.dependency.HighestSelectionStrategy;
 import org.neo4j.kernel.extension.dependency.NamedLabelScanStoreSelectionStrategy;
-import org.neo4j.kernel.impl.api.index.NodePropertyUpdates;
 import org.neo4j.kernel.impl.api.index.SchemaIndexProviderMap;
 import org.neo4j.kernel.impl.api.index.StoreScan;
 import org.neo4j.kernel.impl.api.index.sampling.IndexSamplingConfig;
@@ -445,53 +446,48 @@ public class BatchInserterImpl implements BatchInserter, IndexConfigStoreProvide
         final IndexPopulator[] populators = new IndexPopulator[rules.length];
         // the store is uncontended at this point, so creating a local LockService is safe.
 
-        final int[] labelIds = new int[rules.length];
-        final int[] propertyKeyIds = new int[rules.length];
+        final NewIndexDescriptor[] descriptors = new NewIndexDescriptor[rules.length];
 
-        for ( int i = 0; i < labelIds.length; i++ )
+        for ( int i = 0; i < rules.length; i++ )
         {
             IndexRule rule = rules[i];
-            int labelId = rule.schema().getLabelId();
-            int propertyKeyId = rule.schema().getPropertyIds()[0];
-
-            labelIds[i] = labelId;
-            // TODO: Support composite indexes
-            propertyKeyIds[i] = propertyKeyId;
-
-            IndexDescriptor descriptor = IndexDescriptorFactory.of( labelId, propertyKeyId );
+            descriptors[i] = rule.getIndexDescriptor();
             populators[i] = schemaIndexProviders.apply( rule.getProviderDescriptor() )
                                                 .getPopulator( rule.getId(),
-                                                        descriptor,
+                                                        IndexBoundary.map( descriptors[i] ),
                                                         IndexConfiguration.of( rule ),
                                                         new IndexSamplingConfig( config ) );
             populators[i].create();
         }
 
-        Visitor<NodePropertyUpdates, IOException> propertyUpdateVisitor = updates -> {
+        Visitor<NodeUpdates, IOException> propertyUpdateVisitor = updates -> {
             // Do a lookup from which property has changed to a list of indexes worried about that property.
-            for ( NodePropertyUpdate update : updates.getPropertyUpdates() )
+            for ( int i = 0; i < descriptors.length; i++ )
             {
-                int propertyKeyInQuestion = update.getPropertyKeyId();
-                for ( int i = 0; i < propertyKeyIds.length; i++ )
+                Optional<IndexEntryUpdate> update = updates.forIndex( descriptors[i] );
+                if ( update.isPresent() )
                 {
-                    if ( propertyKeyIds[i] == propertyKeyInQuestion )
+                    try
                     {
-                        if ( update.forLabel( labelIds[i] ) )
-                        {
-                            try
-                            {
-                                populators[i].add( Collections.singletonList( update ) );
-                            }
-                            catch ( IndexEntryConflictException conflict )
-                            {
-                                throw conflict.notAllowed( labelIds[i], propertyKeyIds[i] );
-                            }
-                        }
+                        populators[i].add( Collections.singletonList( update.get() ) );
+                    }
+                    catch ( IndexEntryConflictException conflict )
+                    {
+                        throw conflict.notAllowed( descriptors[i] );
                     }
                 }
             }
             return true;
         };
+
+        List<NewIndexDescriptor> descriptorList = Arrays.asList( descriptors );
+        int[] labelIds = descriptorList.stream()
+                .mapToInt( index -> index.schema().getLabelId() )
+                .toArray();
+
+        int[] propertyKeyIds = descriptorList.stream()
+                .flatMapToInt( d -> Arrays.stream( d.schema().getPropertyIds() ) )
+                .toArray();
 
         InitialNodeLabelCreationVisitor labelUpdateVisitor = new InitialNodeLabelCreationVisitor();
         StoreScan<IOException> storeScan = indexStoreView.visitNodes( labelIds,

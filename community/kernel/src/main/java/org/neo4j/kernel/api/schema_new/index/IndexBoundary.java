@@ -39,7 +39,7 @@ public class IndexBoundary
         {
             return null;
         }
-        return IndexDescriptorFactory.of( descriptor.schema().getLabelId(), descriptor.schema().getPropertyIds()[0] );
+        return IndexDescriptorFactory.of( descriptor.schema().getLabelId(), descriptor.schema().getPropertyIds() );
     }
 
     public static IndexDescriptor map( LabelSchemaDescriptor descriptor )

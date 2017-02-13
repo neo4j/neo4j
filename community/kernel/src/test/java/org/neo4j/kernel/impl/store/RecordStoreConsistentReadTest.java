@@ -480,7 +480,7 @@ public abstract class RecordStoreConsistentReadTest<R extends AbstractBaseRecord
             assertNotNull( "expectedRecord", expectedRecord );
             assertThat( "getDeletedRecords", actualRecord.getDeletedRecords(), is( expectedRecord.getDeletedRecords() ) );
             assertThat( "getNextProp", actualRecord.getNextProp(), is( expectedRecord.getNextProp() ) );
-            assertThat( "getNodeId", actualRecord.getNodeId(), is( expectedRecord.getNodeId() ) );
+            assertThat( "getEntityId", actualRecord.getNodeId(), is( expectedRecord.getNodeId() ) );
             assertThat( "getPrevProp", actualRecord.getPrevProp(), is( expectedRecord.getPrevProp() ) );
             assertThat( "getRelId", actualRecord.getRelId(), is( expectedRecord.getRelId() ) );
             assertThat( "getId", actualRecord.getId(), is( expectedRecord.getId() ) );
