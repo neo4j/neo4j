@@ -25,7 +25,6 @@ import com.codahale.metrics.graphite.Graphite;
 import com.codahale.metrics.graphite.GraphiteReporter;
 
 import java.io.IOException;
-import java.net.InetSocketAddress;
 import java.util.concurrent.TimeUnit;
 
 import org.neo4j.helpers.HostnamePort;
@@ -61,9 +60,7 @@ public class GraphiteOutput extends LifecycleAdapter
         {
             // Setup Graphite reporting
             hostnamePort = config.get( graphiteServer );
-            final InetSocketAddress graphiteServerAddress = new InetSocketAddress(
-                    hostnamePort.getHost(), hostnamePort.getPort() );
-            final Graphite graphite = new Graphite( graphiteServerAddress );
+            final Graphite graphite = new Graphite( hostnamePort.getHost(), hostnamePort.getPort() );
 
             graphiteReporter = GraphiteReporter.forRegistry( registry )
                                                .prefixedWith( prefix )
