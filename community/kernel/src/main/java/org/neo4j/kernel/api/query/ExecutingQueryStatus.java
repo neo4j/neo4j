@@ -17,22 +17,26 @@
  * You should have received a copy of the GNU General Public License
  * along with this program.  If not, see <http://www.gnu.org/licenses/>.
  */
-package org.neo4j.cypher.internal
+package org.neo4j.kernel.api.query;
 
-import org.neo4j.cypher.internal.spi.v3_2.TransactionalContextWrapper
-import org.neo4j.graphdb.Transaction
-import org.neo4j.kernel.api.Statement
-import org.neo4j.kernel.api.query.PlannerInfo
+import java.util.Map;
 
-final case class TransactionInfo(tx: Transaction, isTopLevelTx: Boolean, statement: Statement)
+import org.neo4j.kernel.api.ExecutingQuery;
+import org.neo4j.time.SystemNanoClock;
 
-trait ExecutionPlan {
+/**
+ * Internal representation of the status of an executing query.
+ * <p>
+ * This is used for inspecting the state of a query.
+ *
+ * @see ExecutingQuery#status
+ */
+public abstract class ExecutingQueryStatus
+{
+    public abstract long waitTimeNanos( SystemNanoClock clock );
 
-  def run(transactionalContext: TransactionalContextWrapper, executionMode: CypherExecutionMode, params: Map[String, Any]): ExecutionResult
+    public abstract Map<String,Object> toMap( SystemNanoClock clock );
 
-  def isPeriodicCommit: Boolean
+    public abstract boolean isPlanning();
 
-  def isStale(lastCommittedTxId: LastCommittedTxIdProvider, ctx: TransactionalContextWrapper): Boolean
-
-  def plannerInfo: PlannerInfo
 }

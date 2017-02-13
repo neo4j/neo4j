@@ -31,6 +31,7 @@ import org.hamcrest.Matcher;
 import org.hamcrest.TypeSafeMatcher;
 import org.junit.Test;
 
+import org.neo4j.kernel.api.query.PlannerInfo;
 import org.neo4j.kernel.impl.locking.LockWaitEvent;
 import org.neo4j.kernel.impl.query.clientconnection.ClientConnectionInfo;
 import org.neo4j.storageengine.api.lock.ResourceType;
@@ -80,7 +81,7 @@ public class ExecutingQueryTest
         assertThat( query.status(), hasEntry( "state", "PLANNING" ) );
 
         // when
-        query.planningCompleted( new ExecutingQuery.PlannerInfo( "the-planner", "the-runtime", emptyList() ) );
+        query.planningCompleted( new PlannerInfo( "the-planner", "the-runtime", emptyList() ) );
 
         // then
         assertThat( query.status(), hasEntry( "state", "RUNNING" ) );
@@ -106,7 +107,7 @@ public class ExecutingQueryTest
 
         // when
         clock.forward( 16, TimeUnit.MILLISECONDS );
-        query.planningCompleted( new ExecutingQuery.PlannerInfo( "the-planner", "the-runtime", emptyList() ) );
+        query.planningCompleted( new PlannerInfo( "the-planner", "the-runtime", emptyList() ) );
         clock.forward( 200, TimeUnit.MILLISECONDS );
 
         // then
@@ -118,7 +119,7 @@ public class ExecutingQueryTest
     public void shouldReportWaitTime() throws Exception
     {
         // given
-        query.planningCompleted( new ExecutingQuery.PlannerInfo( "the-planner", "the-runtime", emptyList() ) );
+        query.planningCompleted( new PlannerInfo( "the-planner", "the-runtime", emptyList() ) );
 
         // then
         assertEquals( singletonMap( "state", "RUNNING" ), query.status() );

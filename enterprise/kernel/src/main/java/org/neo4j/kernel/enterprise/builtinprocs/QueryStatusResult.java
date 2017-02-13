@@ -27,6 +27,7 @@ import java.util.Map;
 
 import org.neo4j.kernel.api.ExecutingQuery;
 import org.neo4j.kernel.api.exceptions.InvalidArgumentsException;
+import org.neo4j.kernel.api.query.QueryInfo;
 import org.neo4j.kernel.impl.query.clientconnection.ClientConnectionInfo;
 
 import static java.time.format.DateTimeFormatter.ISO_OFFSET_DATE_TIME;
@@ -87,7 +88,7 @@ public class QueryStatusResult
     private QueryStatusResult(
             QueryId queryId,
             String username,
-            ExecutingQuery.QueryInfo query,
+            QueryInfo query,
             long startTime,
             long elapsedTime,
             ClientConnectionInfo clientConnection,
@@ -95,8 +96,8 @@ public class QueryStatusResult
             long cpuTimeMillis,
             Map<String,Object> status,
             long activeLockCount,
-            long waitTimeMillis
-    ) {
+            long waitTimeMillis )
+    {
         this.queryId = queryId.toString();
         this.username = username;
         this.query = query.text;
@@ -121,8 +122,8 @@ public class QueryStatusResult
     private static String formatTime( final long startTime )
     {
         return OffsetDateTime
-            .ofInstant( Instant.ofEpochMilli( startTime ), ZoneId.systemDefault() )
-            .format( ISO_OFFSET_DATE_TIME );
+                .ofInstant( Instant.ofEpochMilli( startTime ), ZoneId.systemDefault() )
+                .format( ISO_OFFSET_DATE_TIME );
     }
 
     private static String formatInterval( final long l )

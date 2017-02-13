@@ -19,15 +19,13 @@
  */
 package org.neo4j.kernel.api;
 
-import java.util.ArrayList;
-import java.util.HashMap;
-import java.util.List;
 import java.util.Map;
 import java.util.concurrent.atomic.AtomicLongFieldUpdater;
 import java.util.function.LongSupplier;
 
 import org.apache.commons.lang3.builder.ToStringBuilder;
 
+import org.neo4j.kernel.api.query.*;
 import org.neo4j.kernel.impl.locking.ActiveLock;
 import org.neo4j.kernel.impl.locking.LockTracer;
 import org.neo4j.kernel.impl.locking.LockWaitEvent;
@@ -36,7 +34,6 @@ import org.neo4j.storageengine.api.lock.ResourceType;
 import org.neo4j.time.CpuClock;
 import org.neo4j.time.SystemNanoClock;
 
-import static java.util.Collections.emptyList;
 import static java.util.concurrent.TimeUnit.NANOSECONDS;
 import static java.util.concurrent.atomic.AtomicLongFieldUpdater.newUpdater;
 
@@ -45,56 +42,6 @@ import static java.util.concurrent.atomic.AtomicLongFieldUpdater.newUpdater;
  */
 public class ExecutingQuery
 {
-    public static class QueryInfo
-    {
-        public final String text;
-        public final Map<String, Object> parameters;
-        public final String planner;
-        public final String runtime;
-        private final List<IndexUsage> indexes;
-
-        private QueryInfo( String text, Map<String, Object> parameters, PlannerInfo plannerInfo )
-        {
-            this.text = text;
-            this.parameters = parameters;
-            if ( plannerInfo != null )
-            {
-                this.planner = plannerInfo.planner;
-                this.runtime = plannerInfo.runtime;
-                this.indexes = plannerInfo.indexes;
-            }
-            else
-            {
-                this.planner = null;
-                this.runtime = null;
-                this.indexes = emptyList();
-            }
-        }
-
-        public List<Map<String, String>> indexes()
-        {
-            List<Map<String,String>> used = new ArrayList<>( this.indexes.size() );
-            for ( IndexUsage index : indexes )
-            {
-                used.add( index.asMap() );
-            }
-            return used;
-        }
-    }
-
-    public static class PlannerInfo
-    {
-        final String planner;
-        final String runtime;
-        final List<IndexUsage> indexes;
-
-        public PlannerInfo( String planner, String runtime, List<IndexUsage> indexes )
-        {
-            this.planner = planner;
-            this.runtime = runtime;
-            this.indexes = indexes;
-        }
-    }
 
     private static final AtomicLongFieldUpdater<ExecutingQuery> WAIT_TIME =
             newUpdater( ExecutingQuery.class, "waitTimeNanos" );
@@ -115,7 +62,7 @@ public class ExecutingQuery
     private final Map<String,Object> metaData;
     /** Uses write barrier of {@link #status}. */
     private PlannerInfo plannerInfo;
-    private volatile ExecutingQueryStatus status = ExecutingQueryStatus.planning();
+    private volatile ExecutingQueryStatus status = SimpleState.planning();
     /** Updated through {@link #WAIT_TIME} */
     @SuppressWarnings( "unused" )
     private volatile long waitTimeNanos;
@@ -150,7 +97,7 @@ public class ExecutingQuery
     {
         this.plannerInfo = plannerInfo;
         this.planningDone = clock.millis();
-        this.status = ExecutingQueryStatus.running(); // write barrier - must be last
+        this.status = SimpleState.running(); // write barrier - must be last
     }
 
     @Override
@@ -284,7 +231,7 @@ public class ExecutingQuery
         return event;
     }
 
-    private class WaitingOnLockEvent extends ExecutingQueryStatus.WaitingOnLock implements LockWaitEvent
+    private class WaitingOnLockEvent extends WaitingOnLock implements LockWaitEvent
     {
         private final ExecutingQueryStatus previous = status;
 
@@ -305,7 +252,7 @@ public class ExecutingQuery
         }
 
         @Override
-        boolean isPlanning()
+        public boolean isPlanning()
         {
             return previous.isPlanning();
         }

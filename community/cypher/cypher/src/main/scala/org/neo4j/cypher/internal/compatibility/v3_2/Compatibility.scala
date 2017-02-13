@@ -29,9 +29,9 @@ import org.neo4j.cypher.internal.frontend.v3_2.helpers.rewriting.RewriterStepSeq
 import org.neo4j.cypher.internal.frontend.v3_2.phases.{CompilationPhaseTracer, RecordingNotificationLogger}
 import org.neo4j.cypher.internal.spi.v3_2.TransactionBoundQueryContext.IndexSearchMonitor
 import org.neo4j.cypher.internal.spi.v3_2._
-import org.neo4j.kernel.api.ExecutingQuery.PlannerInfo
-import org.neo4j.kernel.api.IndexUsage.{legacyIndexUsage, schemaIndexUsage}
+import org.neo4j.kernel.api.index.IndexUsage.{legacyIndexUsage, schemaIndexUsage}
 import org.neo4j.kernel.api.KernelAPI
+import org.neo4j.kernel.api.query.PlannerInfo
 import org.neo4j.kernel.impl.query.QueryExecutionMonitor
 import org.neo4j.kernel.monitoring.{Monitors => KernelMonitors}
 import org.neo4j.logging.Log

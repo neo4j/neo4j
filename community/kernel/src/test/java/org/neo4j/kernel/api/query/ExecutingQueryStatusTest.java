@@ -17,7 +17,7 @@
  * You should have received a copy of the GNU General Public License
  * along with this program.  If not, see <http://www.gnu.org/licenses/>.
  */
-package org.neo4j.kernel.api;
+package org.neo4j.kernel.api.query;
 
 import java.time.ZonedDateTime;
 import java.util.HashMap;
@@ -27,12 +27,13 @@ import java.util.concurrent.TimeUnit;
 import org.junit.Test;
 
 import org.neo4j.kernel.impl.locking.ActiveLock;
+import org.neo4j.storageengine.api.lock.ResourceType;
+import org.neo4j.storageengine.api.lock.WaitStrategy;
 import org.neo4j.time.Clocks;
 import org.neo4j.time.FakeClock;
 
 import static java.util.Collections.singletonMap;
 import static org.junit.Assert.assertEquals;
-import static org.neo4j.kernel.api.ExecutingQueryTest.resourceType;
 
 public class ExecutingQueryStatusTest
 {
@@ -42,7 +43,7 @@ public class ExecutingQueryStatusTest
     public void shouldProduceSensibleMapRepresentationInRunningState() throws Exception
     {
         // when
-        Map<String,Object> status = ExecutingQueryStatus.running().toMap( clock );
+        Map<String,Object> status = SimpleState.running().toMap( clock );
 
         // then
         assertEquals( singletonMap( "state", "RUNNING" ), status );
@@ -52,7 +53,7 @@ public class ExecutingQueryStatusTest
     public void shouldProduceSensibleMapRepresentationInPlanningState() throws Exception
     {
         // when
-        Map<String,Object> status = ExecutingQueryStatus.planning().toMap( clock );
+        Map<String,Object> status = SimpleState.planning().toMap( clock );
 
         // then
         assertEquals( singletonMap( "state", "PLANNING" ), status );
@@ -63,8 +64,8 @@ public class ExecutingQueryStatusTest
     {
         // given
         long[] resourceIds = {17};
-        ExecutingQueryStatus.WaitingOnLock status =
-                new ExecutingQueryStatus.WaitingOnLock(
+        WaitingOnLock status =
+                new WaitingOnLock(
                         ActiveLock.EXCLUSIVE_MODE,
                         resourceType( "NODE" ),
                         resourceIds,
@@ -82,5 +83,34 @@ public class ExecutingQueryStatusTest
         expected.put( "resourceType", "NODE" );
         expected.put( "resourceIds", resourceIds );
         assertEquals( expected, statusMap );
+    }
+    static ResourceType resourceType(String name )
+    {
+        return new ResourceType()
+        {
+            @Override
+            public String toString()
+            {
+                return name();
+            }
+
+            @Override
+            public int typeId()
+            {
+                throw new UnsupportedOperationException( "not used" );
+            }
+
+            @Override
+            public WaitStrategy waitStrategy()
+            {
+                throw new UnsupportedOperationException( "not used" );
+            }
+
+            @Override
+            public String name()
+            {
+                return name;
+            }
+        };
     }
 }
