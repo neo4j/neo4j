@@ -30,7 +30,6 @@ import com.codahale.metrics.graphite.Graphite;
 import com.codahale.metrics.graphite.GraphiteReporter;
 
 import java.io.IOException;
-import java.net.InetSocketAddress;
 import java.util.SortedMap;
 import java.util.concurrent.TimeUnit;
 
@@ -61,9 +60,7 @@ public class GraphiteOutput implements Lifecycle, EventReporter
     public void init()
     {
         // Setup Graphite reporting
-        final InetSocketAddress graphiteServerAddress = new InetSocketAddress(
-                hostnamePort.getHost(), hostnamePort.getPort() );
-        final Graphite graphite = new Graphite( graphiteServerAddress );
+        final Graphite graphite = new Graphite( hostnamePort.getHost(), hostnamePort.getPort() );
 
         graphiteReporter = GraphiteReporter.forRegistry( registry )
                 .prefixedWith( prefix )
