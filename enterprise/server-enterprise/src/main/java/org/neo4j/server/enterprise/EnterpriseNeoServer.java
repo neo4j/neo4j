@@ -27,6 +27,7 @@ import java.util.Arrays;
 import java.util.List;
 import java.util.regex.Pattern;
 
+import org.neo4j.causalclustering.core.CausalClusteringSettings;
 import org.neo4j.causalclustering.core.CoreGraphDatabase;
 import org.neo4j.causalclustering.readreplica.ReadReplicaGraphDatabase;
 import org.neo4j.dbms.DatabaseManagementSystemSettings;
@@ -191,10 +192,18 @@ public class EnterpriseNeoServer extends CommunityNeoServer
     protected Pattern[] getUriWhitelist()
     {
         final List<Pattern> uriWhitelist = new ArrayList<>( Arrays.asList( super.getUriWhitelist() ) );
+
         if ( !getConfig().get( HaSettings.ha_status_auth_enabled ) )
         {
             uriWhitelist.add( Pattern.compile( "/db/manage/server/ha.*" ) );
         }
+
+        if ( !getConfig().get( CausalClusteringSettings.status_auth_enabled ) )
+        {
+            uriWhitelist.add( Pattern.compile( "/db/manage/server/core.*" ) );
+            uriWhitelist.add( Pattern.compile( "/db/manage/server/read-replica.*" ) );
+        }
+
         return uriWhitelist.toArray( new Pattern[uriWhitelist.size()] );
     }
 }
