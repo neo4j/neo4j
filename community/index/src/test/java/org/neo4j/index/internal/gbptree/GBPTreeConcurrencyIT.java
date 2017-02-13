@@ -21,7 +21,6 @@ package org.neo4j.index.internal.gbptree;
 
 import org.apache.commons.lang3.mutable.MutableLong;
 import org.junit.After;
-import org.junit.Ignore;
 import org.junit.Rule;
 import org.junit.Test;
 import org.junit.rules.RuleChain;
@@ -138,8 +137,6 @@ public class GBPTreeConcurrencyIT
         shouldReadCorrectlyWithConcurrentUpdates( testCoordinator );
     }
 
-    @Ignore( "Test will leave tree nodes empty because merge is still missing in implementation. " +
-            "When seeking backwards this will cause infinite loops in SeekCursor." )
     @Test
     public void shouldReadBackwardCorrectlyWithConcurrentRemove() throws Throwable
     {
@@ -331,7 +328,7 @@ public class GBPTreeConcurrencyIT
                 }
                 else if ( toRemove.isEmpty() )
                 {
-                    operation = new WriteOperation( toAdd.poll() );
+                    operation = new PutOperation( toAdd.poll() );
                 }
                 else
                 {
@@ -342,7 +339,7 @@ public class GBPTreeConcurrencyIT
                     }
                     else
                     {
-                        operation = new WriteOperation( toAdd.poll() );
+                        operation = new PutOperation( toAdd.poll() );
                     }
                 }
                 updateOperations.add( operation );
@@ -394,9 +391,9 @@ public class GBPTreeConcurrencyIT
         abstract boolean isInsert();
     }
 
-    private class WriteOperation extends UpdateOperation
+    private class PutOperation extends UpdateOperation
     {
-        WriteOperation( long key )
+        PutOperation( long key )
         {
             super( key );
         }

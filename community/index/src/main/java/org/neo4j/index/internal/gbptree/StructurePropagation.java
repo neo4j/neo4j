@@ -59,20 +59,26 @@ package org.neo4j.index.internal.gbptree;
  */
 class StructurePropagation<KEY>
 {
+    // First level of updates, used when bubbling up the tree
     boolean hasLeftChildUpdate;
+    boolean hasRightChildUpdate;
     boolean hasMidChildUpdate;
     boolean hasRightKeyInsert;
     boolean hasLeftKeyReplace;
+    boolean hasRightKeyReplace;
     final KEY leftKey;
     final KEY rightKey;
+    final KEY bubbleKey;
     long leftChild;
     long midChild;
     long rightChild;
+    KeyReplaceStrategy keyReplaceStrategy;
 
-    StructurePropagation( KEY leftKey, KEY rightKey )
+    StructurePropagation( KEY leftKey, KEY rightKey, KEY bubbleKey )
     {
         this.leftKey = leftKey;
         this.rightKey = rightKey;
+        this.bubbleKey = bubbleKey;
     }
 
     /**
@@ -81,9 +87,11 @@ class StructurePropagation<KEY>
     void clear()
     {
         hasLeftChildUpdate = false;
+        hasRightChildUpdate = false;
         hasMidChildUpdate = false;
         hasRightKeyInsert = false;
         hasLeftKeyReplace = false;
+        hasRightKeyReplace = false;
     }
 
     interface StructureUpdate
@@ -100,4 +108,14 @@ class StructurePropagation<KEY>
         sp.hasMidChildUpdate = true;
         sp.midChild = childId;
     };
+
+    static final StructureUpdate UPDATE_RIGHT_CHILD = ( sp, childId ) -> {
+        sp.hasRightChildUpdate = true;
+        sp.rightChild = childId;
+    };
+
+    enum KeyReplaceStrategy
+    {
+        REPLACE, BUBBLE
+    }
 }

@@ -71,7 +71,7 @@ public class InternalTreeLogicTest
     private final MutableLong readKey = new MutableLong();
     private final MutableLong readValue = new MutableLong();
     private final StructurePropagation<MutableLong> structurePropagation = new StructurePropagation<>(
-            layout.newKey(), layout.newKey() );
+            layout.newKey(), layout.newKey(), layout.newKey() );
 
     private static long stableGen = GenSafePointer.MIN_GENERATION;
     private static long unstableGen = stableGen + 1;
@@ -913,15 +913,23 @@ public class InternalTreeLogicTest
         initialize();
         long targetLastId = id.lastId() + 3; // 2 splits and 1 new allocated root
         long i = 0;
-        for ( ; id.lastId() < targetLastId; i++ )
+        for ( ; id.lastId() < targetLastId; i += 2 )
         {
             insert( i, i );
         }
         goTo( readCursor, rootId );
         assertEquals( 2, keyCount() );
+
         long leftChild = childAt( readCursor, 0, stableGen, unstableGen );
         long middleChild = childAt( readCursor, 1, stableGen, unstableGen );
         long rightChild = childAt( readCursor, 2, stableGen, unstableGen );
+
+        // add some more keys to middleChild to not have remove trigger a merge
+        goTo( readCursor, middleChild );
+        Long firstKeyInMiddleChild = keyAt( 0 );
+        insert( firstKeyInMiddleChild + 1, firstKeyInMiddleChild + 1 );
+        goTo( readCursor, rootId );
+
         assertSiblings( leftChild, middleChild, rightChild );
 
         // WHEN

@@ -88,7 +88,8 @@ public class ConsistencyCheckerTest
         cursor.next( idProvider.acquireNewId( stableGeneration, unstableGeneration ) );
         node.initializeLeaf( cursor, stableGeneration, unstableGeneration );
         logic.initialize( cursor );
-        StructurePropagation<MutableLong> structure = new StructurePropagation<>( layout.newKey(), layout.newKey() );
+        StructurePropagation<MutableLong> structure = new StructurePropagation<>( layout.newKey(), layout.newKey(),
+                layout.newKey() );
         MutableLong key = layout.newKey();
         for ( int g = 0, k = 0; g < 3; g++ )
         {

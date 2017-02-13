@@ -66,7 +66,7 @@ public class SeekCursorTest
     private final TreeNode<MutableLong,MutableLong> node = new TreeNode<>( PAGE_SIZE, layout );
     private final InternalTreeLogic<MutableLong,MutableLong> treeLogic = new InternalTreeLogic<>( id, node, layout );
     private final StructurePropagation<MutableLong> structurePropagation =
-            new StructurePropagation<>( layout.newKey(), layout.newKey() );
+            new StructurePropagation<>( layout.newKey(), layout.newKey(), layout.newKey() );
     private final PageAwareByteArrayCursor cursor = new PageAwareByteArrayCursor( PAGE_SIZE );
     private final int maxKeyCount = node.leafMaxKeyCount();
 

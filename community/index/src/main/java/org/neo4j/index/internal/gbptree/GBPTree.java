@@ -795,7 +795,7 @@ public class GBPTree<KEY,VALUE> implements Closeable
 
         SingleWriter( InternalTreeLogic<KEY,VALUE> treeLogic )
         {
-            this.structurePropagation = new StructurePropagation<>( layout.newKey(), layout.newKey() );
+            this.structurePropagation = new StructurePropagation<>( layout.newKey(), layout.newKey(), layout.newKey() );
             this.treeLogic = treeLogic;
         }
 
@@ -843,8 +843,9 @@ public class GBPTree<KEY,VALUE> implements Closeable
             checkOutOfBounds( cursor );
         }
 
-        private void setRoot( long rootId )
+        private void setRoot( long rootPointer )
         {
+            long rootId = GenSafePointerPair.pointer( rootPointer );
             GBPTree.this.setRoot( rootId, unstableGeneration );
             treeLogic.initialize( cursor );
         }

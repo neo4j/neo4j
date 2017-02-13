@@ -247,10 +247,10 @@ class TreeNode<KEY,VALUE>
         removeSlotAt( cursor, pos, keyCount, keyOffset( 0 ), keySize );
     }
 
-    private void removeSlotAt( PageCursor cursor, int pos, int keyCount, int baseOffset, int itemSize )
+    private void removeSlotAt( PageCursor cursor, int pos, int itemCount, int baseOffset, int itemSize )
     {
         for ( int posToMoveLeft = pos + 1, offset = baseOffset + posToMoveLeft * itemSize;
-                posToMoveLeft < keyCount; posToMoveLeft++, offset += itemSize )
+                posToMoveLeft < itemCount; posToMoveLeft++, offset += itemSize )
         {
             cursor.copyTo( offset, cursor, offset - itemSize, itemSize );
         }
@@ -297,6 +297,11 @@ class TreeNode<KEY,VALUE>
     {
         insertChildSlotsAt( cursor, pos, 1, keyCount );
         setChildAt( cursor, child, pos, stableGeneration, unstableGeneration );
+    }
+
+    void removeChildAt( PageCursor cursor, int pos, int keyCount )
+    {
+        removeSlotAt( cursor, pos, keyCount + 1, childOffset( 0 ), childSize() );
     }
 
     void setChildAt( PageCursor cursor, long child, int pos, long stableGeneration, long unstableGeneration )
