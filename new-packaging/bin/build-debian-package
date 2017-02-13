@@ -37,6 +37,10 @@ tar --strip-components=1 -xf ${tarball} -C ${package_directory}/server
 skeleton_directory=src/debian/skeleton
 cp -r ${skeleton_directory}/* ${package_directory}
 
+# Rename service files to match package-name so we still get a service called neo4j
+cp src/common/neo4j.default ${package_directory}/debian/${package_name}.neo4j.default
+cp src/common/neo4j.init ${package_directory}/debian/${package_name}.neo4j.init
+
 # Rename rules input files to match package
 for file in $(cd ${package_directory}/debian && ls package.*)
 do
@@ -58,7 +62,7 @@ PACKAGE_NAME=${package_name} VERSION=${deb_version} envsubst '${PACKAGE_NAME} ${
 # Make the Neo4j wrapper scripts available to debuild
 scripts_directory=${package_directory}/server/scripts
 mkdir -p ${scripts_directory}
-script=src/debian/neo4j-script
+script=src/common/neo4j-script
 cp ${script} ${scripts_directory}/neo4j
 cp ${script} ${scripts_directory}/neo4j-admin
 cp ${script} ${scripts_directory}/neo4j-import
@@ -68,6 +72,9 @@ if [ ${package_name} = "neo4j-enterprise" ]
 then
   cp ${script} ${scripts_directory}/neo4j-backup
 fi
+
+# Copy manpages
+cp -r src/common/manpages ${package_directory}
 
 # Make UDC successful
 sed -i 's/unsupported.dbms.udc.source=tarball/unsupported.dbms.udc.source=debian/' ${package_directory}/server/conf/neo4j.conf
