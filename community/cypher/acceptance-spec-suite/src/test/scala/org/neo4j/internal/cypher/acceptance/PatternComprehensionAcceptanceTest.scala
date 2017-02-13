@@ -50,6 +50,20 @@ class PatternComprehensionAcceptanceTest extends ExecutionEngineFunSuite with Ne
     result.toList should equal(List(Map("list" -> List(PathImpl(n1, r, n2)))))
   }
 
+  test("miniscule WHERE clause") {
+    val n1 = createLabeledNode("Start")
+    val n2 = createLabeledNode("End")
+    val n3 = createLabeledNode("NotEnd")
+    val r = relate(n1, n2)
+    relate(n2, n3)
+
+    val query = "MATCH (n:Start) RETURN [p = (n)-->() where last(nodes(p)):End | p] AS list"
+
+    val result = executeWithCostPlannerOnly(query)
+
+    result.toList should equal(List(Map("list" -> List(PathImpl(n1, r, n2)))))
+  }
+
   test("with named path and shadowed variable in predicate") {
     val n1 = createLabeledNode("Start")
     val n2 = createLabeledNode("End")
