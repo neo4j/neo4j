@@ -75,6 +75,7 @@ import static org.mockito.Mockito.verifyZeroInteractions;
 import static org.neo4j.kernel.impl.transaction.log.TransactionIdStore.BASE_TX_COMMIT_TIMESTAMP;
 import static org.neo4j.kernel.impl.transaction.log.entry.LogHeaderWriter.writeLogHeader;
 import static org.neo4j.kernel.impl.transaction.log.entry.LogVersions.CURRENT_LOG_VERSION;
+import static org.neo4j.kernel.recovery.PositionToRecoverFrom.NO_MONITOR;
 
 public class RecoveryTest
 {
@@ -149,7 +150,7 @@ public class RecoveryTest
             LogicalTransactionStore txStore = new PhysicalLogicalTransactionStore( logFile, metadataCache, reader );
 
             life.add( new Recovery( new DefaultRecoverySPI( storageEngine,
-                    logFiles, fs, logVersionRepository, finder, transactionIdStore, txStore )
+                    logFiles, fs, logVersionRepository, finder, transactionIdStore, txStore, NO_MONITOR )
             {
                 private int nr = 0;
 
@@ -239,7 +240,7 @@ public class RecoveryTest
             LogicalTransactionStore txStore = new PhysicalLogicalTransactionStore( logFile, metadataCache, reader );
 
             life.add( new Recovery( new DefaultRecoverySPI( storageEngine,
-                  logFiles, fs, logVersionRepository, finder, transactionIdStore, txStore )
+                  logFiles, fs, logVersionRepository, finder, transactionIdStore, txStore, NO_MONITOR )
             {
                 @Override
                 public Visitor<CommittedTransactionRepresentation,Exception> startRecovery()
@@ -390,7 +391,7 @@ public class RecoveryTest
             LogicalTransactionStore txStore = new PhysicalLogicalTransactionStore( logFile, metadataCache, reader );
 
             life.add( new Recovery( new DefaultRecoverySPI( storageEngine,
-                    logFiles, fs, logVersionRepository, finder, transactionIdStore, txStore )
+                    logFiles, fs, logVersionRepository, finder, transactionIdStore, txStore, NO_MONITOR )
             {
                 @Override
                 public Visitor<CommittedTransactionRepresentation,Exception> startRecovery()
