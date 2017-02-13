@@ -19,13 +19,17 @@
  */
 package org.neo4j.kernel.api;
 
+import org.apache.commons.lang3.builder.ToStringBuilder;
+
 import java.util.Map;
 import java.util.concurrent.atomic.AtomicLongFieldUpdater;
 import java.util.function.LongSupplier;
 
-import org.apache.commons.lang3.builder.ToStringBuilder;
-
-import org.neo4j.kernel.api.query.*;
+import org.neo4j.kernel.api.query.ExecutingQueryStatus;
+import org.neo4j.kernel.api.query.PlannerInfo;
+import org.neo4j.kernel.api.query.QueryInfo;
+import org.neo4j.kernel.api.query.SimpleState;
+import org.neo4j.kernel.api.query.WaitingOnLockEvent;
 import org.neo4j.kernel.impl.locking.ActiveLock;
 import org.neo4j.kernel.impl.locking.LockTracer;
 import org.neo4j.kernel.impl.locking.LockWaitEvent;
@@ -138,6 +142,16 @@ public class ExecutingQuery
         return clientConnection;
     }
 
+    public SystemNanoClock clock()
+    {
+        return clock;
+    }
+
+    public ExecutingQueryStatus executingQueryStatus()
+    {
+        return status;
+    }
+
     public QueryInfo query()
     {
         return status.isPlanning() // read barrier - must be first
@@ -226,35 +240,19 @@ public class ExecutingQuery
         WaitingOnLockEvent event = new WaitingOnLockEvent(
                 exclusive ? ActiveLock.EXCLUSIVE_MODE : ActiveLock.SHARED_MODE,
                 resourceType,
-                resourceIds );
+                resourceIds,
+                this);
         status = event;
         return event;
     }
 
-    private class WaitingOnLockEvent extends WaitingOnLock implements LockWaitEvent
+    public void closeWaitingOnLockEvent( WaitingOnLockEvent waitingOnLockEvent )
     {
-        private final ExecutingQueryStatus previous = status;
-
-        WaitingOnLockEvent( String mode, ResourceType resourceType, long[] resourceIds )
+        if ( status != waitingOnLockEvent )
         {
-            super( mode, resourceType, resourceIds, clock.nanos() );
+            return; // already closed
         }
-
-        @Override
-        public void close()
-        {
-            if ( status != this )
-            {
-                return; // already closed
-            }
-            WAIT_TIME.addAndGet( ExecutingQuery.this, waitTimeNanos( clock ) );
-            status = previous;
-        }
-
-        @Override
-        public boolean isPlanning()
-        {
-            return previous.isPlanning();
-        }
+        WAIT_TIME.addAndGet( this, waitingOnLockEvent.waitTimeNanos( clock ) );
+        status = waitingOnLockEvent.previousStatus();
     }
 }
