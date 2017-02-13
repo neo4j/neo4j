@@ -233,11 +233,11 @@ class ConsistencyChecker<KEY>
         long newGen;
         long newGenGen;
 
-        long leftSibling;
-        long rightSibling;
-        long leftSiblingGen;
-        long rightSiblingGen;
-        long gen;
+        long leftSiblingPointer;
+        long rightSiblingPointer;
+        long leftSiblingPointerGen;
+        long rightSiblingPointerGen;
+        long currentNodeGen;
 
         do
         {
@@ -250,13 +250,13 @@ class ConsistencyChecker<KEY>
                     cursor, stableGeneration, unstableGeneration, "NewGen", TreeNode.BYTE_POS_NEWGEN, node );
 
             // for assertSiblings
-            leftSibling = node.leftSibling( cursor, stableGeneration, unstableGeneration );
-            rightSibling = node.rightSibling( cursor, stableGeneration, unstableGeneration );
-            leftSiblingGen = node.pointerGen( cursor, leftSibling );
-            rightSiblingGen = node.pointerGen( cursor, rightSibling );
-            leftSibling = pointer( leftSibling );
-            rightSibling = pointer( rightSibling );
-            gen = node.gen( cursor );
+            leftSiblingPointer = node.leftSibling( cursor, stableGeneration, unstableGeneration );
+            rightSiblingPointer = node.rightSibling( cursor, stableGeneration, unstableGeneration );
+            leftSiblingPointerGen = node.pointerGen( cursor, leftSiblingPointer );
+            rightSiblingPointerGen = node.pointerGen( cursor, rightSiblingPointer );
+            leftSiblingPointer = pointer( leftSiblingPointer );
+            rightSiblingPointer = pointer( rightSiblingPointer );
+            currentNodeGen = node.gen( cursor );
 
             newGen = node.newGen( cursor, stableGeneration, unstableGeneration );
             newGenGen = node.pointerGen( cursor, newGen );
@@ -280,8 +280,9 @@ class ConsistencyChecker<KEY>
                     " isn't a tree node, parent expected range " + range );
         }
 
-        assertPointerGenMatchesGen( cursor, gen, expectedGen );
-        assertSiblings( cursor, gen, leftSibling, leftSiblingGen, rightSibling, rightSiblingGen, level );
+        assertPointerGenMatchesGen( cursor, currentNodeGen, expectedGen );
+        assertSiblings( cursor, currentNodeGen, leftSiblingPointer, leftSiblingPointerGen, rightSiblingPointer,
+                rightSiblingPointerGen, level );
         checkNewGenPointerGen( cursor, newGen, newGenGen );
 
         if ( isInternal )
@@ -325,8 +326,8 @@ class ConsistencyChecker<KEY>
     }
 
     // Assumption: We traverse the tree from left to right on every level
-    private void assertSiblings( PageCursor cursor, long gen, long leftSibling, long leftSiblingGen,
-            long rightSibling, long rightSiblingGen, int level )
+    private void assertSiblings( PageCursor cursor, long currentNodeGen, long leftSiblingPointer,
+            long leftSiblingPointerGen, long rightSiblingPointer, long rightSiblingPointerGen, int level )
     {
         // If this is the first time on this level, we will add a new entry
         for ( int i = rightmostPerLevel.size(); i <= level; i++ )
@@ -335,7 +336,8 @@ class ConsistencyChecker<KEY>
         }
         RightmostInChain rightmost = rightmostPerLevel.get( level );
 
-        rightmost.assertNext( cursor, gen, leftSibling, leftSiblingGen, rightSibling, rightSiblingGen );
+        rightmost.assertNext( cursor, currentNodeGen, leftSiblingPointer, leftSiblingPointerGen, rightSiblingPointer,
+                rightSiblingPointerGen );
     }
 
     private void assertSubtrees( PageCursor cursor, KeyRange<KEY> range, int keyCount, int level )
@@ -414,7 +416,8 @@ class ConsistencyChecker<KEY>
             node.keyAt( cursor, readKey, pos );
             if ( !range.inRange( readKey ) )
             {
-                cursor.setCursorException( "Expected " + readKey + " to be in range " + range );
+                cursor.setCursorException( "Expected range for this node is " + range + " but found " + readKey +
+                        " in position " + pos + ", with key count " + keyCount );
             }
             if ( !first )
             {
@@ -524,7 +527,7 @@ class ConsistencyChecker<KEY>
         @Override
         public String toString()
         {
-            return fromInclusive + " ≤ key < " + toExclusive + (superRange != null ? format( "%n%s", superRange ) : "");
+            return (superRange != null ? format( "%s%n", superRange ) : "") + fromInclusive + " ≤ key < " + toExclusive;
         }
     }
 }
