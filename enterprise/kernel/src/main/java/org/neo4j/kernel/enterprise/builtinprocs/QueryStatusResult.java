@@ -100,8 +100,8 @@ public class QueryStatusResult
     {
         this.queryId = queryId.toString();
         this.username = username;
-        this.query = query.text;
-        this.parameters = query.parameters;
+        this.query = query.text();
+        this.parameters = query.parameters();
         this.startTime = formatTime( startTime );
         this.elapsedTime = formatInterval( elapsedTime );
         this.elapsedTimeMillis = elapsedTime;
@@ -114,8 +114,8 @@ public class QueryStatusResult
         this.status = status;
         this.activeLockCount = activeLockCount;
         this.waitTimeMillis = waitTimeMillis;
-        this.planner = query.planner;
-        this.runtime = query.runtime;
+        this.planner = query.planner();
+        this.runtime = query.runtime();
         this.indexes = query.indexes();
     }
 

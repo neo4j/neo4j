@@ -29,10 +29,10 @@ import static java.util.Collections.emptyList;
 
 public class QueryInfo
 {
-    public final String text;
-    public final Map<String,Object> parameters;
-    public final String planner;
-    public final String runtime;
+    private final String text;
+    private final Map<String,Object> parameters;
+    private final String planner;
+    private final String runtime;
     private final List<IndexUsage> indexes;
 
     public QueryInfo( String text, Map<String,Object> parameters, PlannerInfo plannerInfo )
@@ -51,6 +51,26 @@ public class QueryInfo
             this.runtime = null;
             this.indexes = emptyList();
         }
+    }
+
+    public String planner()
+    {
+        return planner;
+    }
+
+    public String runtime()
+    {
+        return runtime;
+    }
+
+    public String text()
+    {
+        return text;
+    }
+
+    public Map<String,Object> parameters()
+    {
+        return parameters;
     }
 
     public List<Map<String,String>> indexes()

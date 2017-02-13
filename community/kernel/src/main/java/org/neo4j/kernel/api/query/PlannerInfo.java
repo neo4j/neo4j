@@ -25,9 +25,9 @@ import org.neo4j.kernel.api.index.IndexUsage;
 
 public class PlannerInfo
 {
-    final String planner;
-    final String runtime;
-    final List<IndexUsage> indexes;
+    private final String planner;
+    private final String runtime;
+    private final List<IndexUsage> indexes;
 
     public PlannerInfo( String planner, String runtime, List<IndexUsage> indexes )
     {
