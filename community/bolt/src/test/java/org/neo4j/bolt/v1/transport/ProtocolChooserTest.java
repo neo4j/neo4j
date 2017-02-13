@@ -17,16 +17,19 @@
  * You should have received a copy of the GNU General Public License
  * along with this program.  If not, see <http://www.gnu.org/licenses/>.
  */
-package org.neo4j.bolt.v1.transport.socket;
+package org.neo4j.bolt.v1.transport;
 
 import io.netty.buffer.ByteBuf;
 import io.netty.channel.Channel;
 import org.junit.Test;
-import org.neo4j.bolt.transport.BoltProtocol;
 
 import java.util.HashMap;
 import java.util.Map;
 import java.util.function.BiFunction;
+
+import org.neo4j.bolt.transport.BoltProtocol;
+import org.neo4j.bolt.transport.HandshakeOutcome;
+import org.neo4j.bolt.transport.ProtocolChooser;
 
 import static io.netty.buffer.Unpooled.wrappedBuffer;
 import static org.hamcrest.CoreMatchers.equalTo;
@@ -34,13 +37,11 @@ import static org.hamcrest.CoreMatchers.nullValue;
 import static org.hamcrest.MatcherAssert.assertThat;
 import static org.mockito.Mockito.mock;
 import static org.mockito.Mockito.when;
-import static org.neo4j.bolt.transport.SocketTransportHandler.HandshakeOutcome;
-import static org.neo4j.bolt.transport.SocketTransportHandler.HandshakeOutcome.INSECURE_HANDSHAKE;
-import static org.neo4j.bolt.transport.SocketTransportHandler.HandshakeOutcome.INVALID_HANDSHAKE;
-import static org.neo4j.bolt.transport.SocketTransportHandler.HandshakeOutcome.NO_APPLICABLE_PROTOCOL;
-import static org.neo4j.bolt.transport.SocketTransportHandler.HandshakeOutcome.PARTIAL_HANDSHAKE;
-import static org.neo4j.bolt.transport.SocketTransportHandler.HandshakeOutcome.PROTOCOL_CHOSEN;
-import static org.neo4j.bolt.transport.SocketTransportHandler.ProtocolChooser;
+import static org.neo4j.bolt.transport.HandshakeOutcome.INSECURE_HANDSHAKE;
+import static org.neo4j.bolt.transport.HandshakeOutcome.INVALID_HANDSHAKE;
+import static org.neo4j.bolt.transport.HandshakeOutcome.NO_APPLICABLE_PROTOCOL;
+import static org.neo4j.bolt.transport.HandshakeOutcome.PARTIAL_HANDSHAKE;
+import static org.neo4j.bolt.transport.HandshakeOutcome.PROTOCOL_CHOSEN;
 
 public class ProtocolChooserTest
 {
