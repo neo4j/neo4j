@@ -682,7 +682,7 @@ abstract class MuninnPageCursor extends PageCursor
              & targetOffset >= 0
              & sourceOffset < sourcePageSize
              & targetOffset < targetPageSize
-             & lengthInBytes > 0 )
+             & lengthInBytes >= 0 )
         {
             MuninnPageCursor cursor = (MuninnPageCursor) targetCursor;
             int remainingSource = sourcePageSize - sourceOffset;

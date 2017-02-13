@@ -4042,6 +4042,11 @@ public abstract class PageCacheTest<T extends PageCache> extends PageCacheTestSu
             assertFalse( cursorA.checkAndClearBoundsFlag() );
             assertFalse( cursorB.checkAndClearBoundsFlag() );
 
+            // zero length
+            assertThat( cursorA.copyTo( 0, cursorB, 1, 0 ), is( 0 ) );
+            assertFalse( cursorA.checkAndClearBoundsFlag() );
+            assertFalse( cursorB.checkAndClearBoundsFlag() );
+
             // negative length
             cursorA.copyTo( 1, cursorB, 1, -1 );
             assertTrue( cursorA.checkAndClearBoundsFlag() );
