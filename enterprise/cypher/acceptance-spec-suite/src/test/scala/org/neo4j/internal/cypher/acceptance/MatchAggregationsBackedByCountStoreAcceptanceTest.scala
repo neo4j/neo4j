@@ -595,6 +595,20 @@ class MatchAggregationsBackedByCountStoreAcceptanceTest extends ExecutionEngineF
       }, allRuntimes = true)
   }
 
+  test("should work even when the tokens are already known") {
+    innerExecute(
+      s"""
+         |CREATE (p:User {name: 'Petra'})
+         |CREATE (s:User {name: 'Steve'})
+         |CREATE (p)-[:KNOWS]->(s)
+      """.stripMargin)
+
+    val result = executeWithAllPlannersAndRuntimesAndCompatibilityMode("MATCH (:User)-[r:KNOWS]->() RETURN count(r)")
+
+    result.columnAs("count(r)").toSet[Int] should equal(Set(1))
+  }
+
+
   def withModel(label1: String = "User",
                 label2: String = "User",
                 type1: String = "KNOWS",

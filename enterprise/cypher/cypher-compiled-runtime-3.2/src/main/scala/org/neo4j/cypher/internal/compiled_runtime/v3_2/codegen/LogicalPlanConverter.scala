@@ -54,7 +54,7 @@ object LogicalPlanConverter {
     case p: plans.Projection => projectionAsCodeGenPlan(p)
     case p: plans.Aggregation => aggregationAsCodeGenPlan(p)
     case p: plans.NodeCountFromCountStore => nodeCountFromCountStore(p)
-    case p: plans.RelationshipCountFromCountStore => relCountFromCountStore(p)
+//    case p: plans.RelationshipCountFromCountStore => relCountFromCountStore(p) // Need to handle the case when tokens are already known before enabling again
     case p: plans.UnwindCollection => unwindAsCodeGenPlan(p)
     case p: Sort => sortAsCodeGenPlan(p)
 
