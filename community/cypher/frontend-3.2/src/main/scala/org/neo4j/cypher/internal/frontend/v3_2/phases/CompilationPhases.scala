@@ -17,13 +17,12 @@
  * You should have received a copy of the GNU General Public License
  * along with this program.  If not, see <http://www.gnu.org/licenses/>.
  */
-package org.neo4j.cypher.internal.compiler.v3_2.phases
+package org.neo4j.cypher.internal.frontend.v3_2.phases
 
 import org.neo4j.cypher.internal.frontend.v3_2.SemanticState
 import org.neo4j.cypher.internal.frontend.v3_2.ast.Statement
 import org.neo4j.cypher.internal.frontend.v3_2.ast.rewriters.{CNFNormalizer, Namespacer, rewriteEqualityToInPredicate}
 import org.neo4j.cypher.internal.frontend.v3_2.helpers.rewriting.RewriterStepSequencer
-import org.neo4j.cypher.internal.frontend.v3_2.phases._
 
 object CompilationPhases {
 
