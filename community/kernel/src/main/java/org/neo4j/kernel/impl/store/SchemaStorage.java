@@ -66,7 +66,7 @@ public class SchemaStorage implements SchemaRuleAccess
      */
     public IndexRule indexGetForSchema( final SchemaDescriptor descriptor, NewIndexDescriptor.Filter filter )
     {
-        Iterator<IndexRule> rules = loadAllSchemaRules( descriptor::isSame, IndexRule.class, false );
+        Iterator<IndexRule> rules = loadAllSchemaRules( SchemaDescriptor.equalTo( descriptor ), IndexRule.class, false );
 
         IndexRule foundRule = null;
 
@@ -116,7 +116,7 @@ public class SchemaStorage implements SchemaRuleAccess
 
     public Iterator<ConstraintRule> constraintsGetForSchema( SchemaDescriptor schemaDescriptor )
     {
-        return loadAllSchemaRules( schemaDescriptor::isSame, ConstraintRule.class, false );
+        return loadAllSchemaRules( SchemaDescriptor.equalTo( schemaDescriptor ), ConstraintRule.class, false );
     }
 
     /**
