@@ -31,8 +31,8 @@ public interface DbStructureVisitor
     void visitRelationshipType( int relTypeId, String relTypeName );
 
     void visitIndex( NewIndexDescriptor descriptor, String userDescription, double uniqueValuesPercentage, long size );
-    void visitUniqueIndex( NewIndexDescriptor descriptor, String userDescription, double uniqueValuesPercentage, long
-            size );
+    void visitUniqueIndex( NewIndexDescriptor descriptor, String userDescription, double uniqueValuesPercentage,
+                           long size );
     void visitUniqueConstraint( UniquenessConstraint constraint, String userDescription );
     void visitNodePropertyExistenceConstraint( NodePropertyExistenceConstraint constraint, String userDescription );
     void visitRelationshipPropertyExistenceConstraint( RelationshipPropertyExistenceConstraint constraint,
