@@ -325,6 +325,8 @@ public class NodeUpdates
                 propertiesBefore.put( current.propertyKeyId, ((PropertyChanged) current).before );
                 propertiesAfter.put( current.propertyKeyId, current.value );
                 break;
+            default:
+                throw new IllegalStateException( current.mode.toString() );
             }
             current = current.next;
         }
@@ -486,7 +488,7 @@ public class NodeUpdates
         return a.equals( b );
     }
 
-    public abstract static class PropertyUpdate
+    private abstract static class PropertyUpdate
     {
         private final int propertyKeyId;
         private final Object value;
@@ -498,12 +500,6 @@ public class NodeUpdates
             this.propertyKeyId = propertyKeyId;
             this.value = value;
             this.mode = mode;
-        }
-
-        public boolean equals( PropertyUpdate other )
-        {
-            return this.propertyKeyId == other.propertyKeyId && this.mode == other.mode &&
-                   propertyValueEqual( this.value, other.value );
         }
 
         public UpdateMode mode()
