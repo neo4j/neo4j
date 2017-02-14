@@ -262,6 +262,7 @@ public class CatchupPollingProcess extends LifecycleAdapter
         }
         catch ( CatchUpClientException e )
         {
+            log.warn( "Exception occurred while pulling transactions. Will retry shortly.", e );
             streamComplete();
             return false;
         }
