@@ -28,7 +28,7 @@ import org.neo4j.cypher.internal.compiler.v3_2.phases._
 import org.neo4j.cypher.internal.compiler.v3_2.spi.QueryContext
 import org.neo4j.cypher.internal.frontend.v3_2._
 import org.neo4j.cypher.internal.frontend.v3_2.ast._
-import org.neo4j.cypher.internal.frontend.v3_2.phases.{BaseState, Condition}
+import org.neo4j.cypher.internal.frontend.v3_2.phases.{BaseState, Condition, Phase}
 
 /**
   * This planner takes on queries that requires no planning such as procedures and schema commands

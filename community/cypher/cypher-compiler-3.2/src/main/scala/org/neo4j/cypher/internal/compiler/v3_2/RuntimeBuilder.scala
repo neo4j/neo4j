@@ -21,6 +21,7 @@ package org.neo4j.cypher.internal.compiler.v3_2
 
 import org.neo4j.cypher.internal.compiler.v3_2.phases._
 import org.neo4j.cypher.internal.frontend.v3_2.InvalidArgumentException
+import org.neo4j.cypher.internal.frontend.v3_2.phases.Transformer
 
 trait RuntimeBuilder[T <: Transformer[_, _, _]] {
   def create(runtimeName: Option[RuntimeName], useErrorsOverWarnings: Boolean): T

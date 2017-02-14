@@ -22,7 +22,7 @@ package org.neo4j.cypher.internal.compiler.v3_2.phases
 import org.neo4j.cypher.internal.frontend.v3_2.phases.CompilationPhaseTracer.CompilationPhase.AST_REWRITE
 import org.neo4j.cypher.internal.compiler.v3_2.ast.rewriters.{expandCallWhere, normalizeReturnClauses, normalizeWithClauses, replaceAliasedFunctionInvocations}
 import org.neo4j.cypher.internal.frontend.v3_2.inSequence
-import org.neo4j.cypher.internal.frontend.v3_2.phases.{BaseContext, BaseState}
+import org.neo4j.cypher.internal.frontend.v3_2.phases.{BaseContext, BaseState, Phase}
 
 case object PreparatoryRewriting extends Phase[BaseContext, BaseState, BaseState] {
 

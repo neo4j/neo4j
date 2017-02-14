@@ -24,7 +24,7 @@ import org.neo4j.cypher.internal.compiler.v3_2.ast.conditions.containsNoNodesOfT
 import org.neo4j.cypher.internal.compiler.v3_2.ast.{ResolvedCall, ResolvedFunctionInvocation}
 import org.neo4j.cypher.internal.compiler.v3_2.spi.PlanContext
 import org.neo4j.cypher.internal.frontend.v3_2.ast._
-import org.neo4j.cypher.internal.frontend.v3_2.phases.{BaseState, Condition}
+import org.neo4j.cypher.internal.frontend.v3_2.phases.{BaseState, Condition, Phase}
 import org.neo4j.cypher.internal.frontend.v3_2.{Rewriter, bottomUp}
 
 // Given a way to lookup procedure signatures, this phase rewrites unresolved calls into resolved calls

@@ -23,7 +23,7 @@ import org.neo4j.cypher.internal.frontend.v3_2.phases.CompilationPhaseTracer.Com
 import org.neo4j.cypher.internal.compiler.v3_2.phases._
 import org.neo4j.cypher.internal.frontend.v3_2.Foldable._
 import org.neo4j.cypher.internal.frontend.v3_2.ast._
-import org.neo4j.cypher.internal.frontend.v3_2.phases.{BaseContext, BaseState, Condition}
+import org.neo4j.cypher.internal.frontend.v3_2.phases.{BaseContext, BaseState, Condition, Phase}
 import org.neo4j.cypher.internal.frontend.v3_2.{Ref, Rewriter, SemanticTable, bottomUp, _}
 
 object Namespacer extends Phase[BaseContext, BaseState, BaseState] {

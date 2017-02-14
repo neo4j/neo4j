@@ -23,7 +23,7 @@ import org.neo4j.cypher.internal.compiler.v3_2.ast.rewriters.{CNFNormalizer, Nam
 import org.neo4j.cypher.internal.frontend.v3_2.SemanticState
 import org.neo4j.cypher.internal.frontend.v3_2.ast.Statement
 import org.neo4j.cypher.internal.frontend.v3_2.helpers.rewriting.RewriterStepSequencer
-import org.neo4j.cypher.internal.frontend.v3_2.phases.{BaseContains, BaseContext, BaseState}
+import org.neo4j.cypher.internal.frontend.v3_2.phases.{BaseContains, BaseContext, BaseState, Transformer}
 
 object CompilationPhases {
 

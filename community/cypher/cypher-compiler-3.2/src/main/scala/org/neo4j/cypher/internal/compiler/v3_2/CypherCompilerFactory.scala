@@ -23,12 +23,12 @@ import java.time.Clock
 
 import org.neo4j.cypher.internal.compiler.v3_2.executionplan._
 import org.neo4j.cypher.internal.compiler.v3_2.helpers.RuntimeTypeConverter
+import org.neo4j.cypher.internal.compiler.v3_2.phases.{CompilationState, CompilerContext}
 import org.neo4j.cypher.internal.compiler.v3_2.planner.logical._
-import org.neo4j.cypher.internal.compiler.v3_2.phases.{CompilationState, CompilerContext, Transformer}
 import org.neo4j.cypher.internal.compiler.v3_2.planner.logical.idp._
 import org.neo4j.cypher.internal.frontend.v3_2.ast.Statement
 import org.neo4j.cypher.internal.frontend.v3_2.helpers.rewriting.RewriterStepSequencer
-import org.neo4j.cypher.internal.frontend.v3_2.phases.Monitors
+import org.neo4j.cypher.internal.frontend.v3_2.phases.{Monitors, Transformer}
 
 class CypherCompilerFactory[C <: CompilerContext, T <: Transformer[C, CompilationState, CompilationState]] {
   val monitorTag = "cypher3.2"

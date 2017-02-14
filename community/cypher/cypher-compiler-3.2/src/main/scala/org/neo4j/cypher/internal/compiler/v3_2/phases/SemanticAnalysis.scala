@@ -24,7 +24,7 @@ import org.neo4j.cypher.internal.compiler.v3_2.SemanticChecker
 import org.neo4j.cypher.internal.compiler.v3_2.ast.conditions.containsNoNodesOfType
 import org.neo4j.cypher.internal.frontend.v3_2.SemanticState
 import org.neo4j.cypher.internal.frontend.v3_2.ast.UnaliasedReturnItem
-import org.neo4j.cypher.internal.frontend.v3_2.phases.{BaseContains, BaseContext, BaseState}
+import org.neo4j.cypher.internal.frontend.v3_2.phases.{BaseContains, BaseContext, BaseState, Phase}
 
 case class SemanticAnalysis(warn: Boolean) extends Phase[BaseContext, BaseState, BaseState] {
 

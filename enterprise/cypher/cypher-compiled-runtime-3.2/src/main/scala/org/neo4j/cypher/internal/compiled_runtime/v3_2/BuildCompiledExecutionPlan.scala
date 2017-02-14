@@ -32,6 +32,7 @@ import org.neo4j.cypher.internal.compiler.v3_2.spi.{GraphStatistics, PlanContext
 import org.neo4j.cypher.internal.frontend.v3_2.PlannerName
 import org.neo4j.cypher.internal.frontend.v3_2.notification.InternalNotification
 import org.neo4j.cypher.internal.frontend.v3_2.phases.CompilationPhaseTracer.CompilationPhase.CODE_GENERATION
+import org.neo4j.cypher.internal.frontend.v3_2.phases.Phase
 
 object BuildCompiledExecutionPlan extends Phase[CompiledRuntimeContext, CompilationState, CompilationState] {
 
