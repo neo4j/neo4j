@@ -44,6 +44,8 @@ import org.neo4j.graphdb.Label;
 import org.neo4j.graphdb.Node;
 import org.neo4j.graphdb.Transaction;
 import org.neo4j.kernel.api.KernelTransaction;
+import org.neo4j.kernel.api.schema_new.index.NewIndexDescriptor;
+import org.neo4j.kernel.api.schema_new.index.NewIndexDescriptorFactory;
 import org.neo4j.kernel.extension.KernelExtensionFactory;
 import org.neo4j.kernel.impl.core.ThreadToStatementContextBridge;
 import org.neo4j.kernel.impl.locking.Lock;
@@ -69,7 +71,7 @@ public class UniqueConstraintCompatibility extends IndexProviderCompatibilityTes
 {
     public UniqueConstraintCompatibility( IndexProviderCompatibilityTestSuite testSuite )
     {
-        super( testSuite );
+        super( testSuite, NewIndexDescriptorFactory.uniqueForLabel( 1, 2 ) );
     }
 
     /*

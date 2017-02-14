@@ -32,6 +32,7 @@ import org.neo4j.collection.primitive.PrimitiveLongIterator;
 import org.neo4j.kernel.api.exceptions.index.IndexEntryConflictException;
 import org.neo4j.kernel.api.schema_new.IndexQuery;
 import org.neo4j.kernel.api.schema_new.index.IndexBoundary;
+import org.neo4j.kernel.api.schema_new.index.NewIndexDescriptor;
 import org.neo4j.kernel.configuration.Config;
 import org.neo4j.kernel.impl.api.index.IndexUpdateMode;
 import org.neo4j.kernel.impl.api.index.sampling.IndexSamplingConfig;
@@ -48,24 +49,21 @@ public abstract class IndexAccessorCompatibility extends IndexProviderCompatibil
 {
     protected IndexAccessor accessor;
 
-    private boolean isUnique = true;
-
-    public IndexAccessorCompatibility( IndexProviderCompatibilityTestSuite testSuite, boolean isUnique )
+    public IndexAccessorCompatibility( IndexProviderCompatibilityTestSuite testSuite,
+            NewIndexDescriptor descriptor, boolean isUnique )
     {
-        super(testSuite);
+        super( testSuite, descriptor );
         this.isUnique = isUnique;
     }
 
     @Before
     public void before() throws Exception
     {
-        IndexConfiguration indexConfig = IndexConfiguration.of( isUnique );
         IndexSamplingConfig indexSamplingConfig = new IndexSamplingConfig( Config.empty() );
-        IndexPopulator populator = indexProvider.getPopulator( 17, IndexBoundary.map( descriptor ), indexConfig, indexSamplingConfig );
+        IndexPopulator populator = indexProvider.getPopulator( 17, descriptor, indexSamplingConfig );
         populator.create();
         populator.close( true );
-        accessor = indexProvider.getOnlineAccessor( 17, IndexBoundary.map( descriptor ),
-                indexConfig, indexSamplingConfig );
+        accessor = indexProvider.getOnlineAccessor( 17, descriptor, indexSamplingConfig );
     }
 
     @After

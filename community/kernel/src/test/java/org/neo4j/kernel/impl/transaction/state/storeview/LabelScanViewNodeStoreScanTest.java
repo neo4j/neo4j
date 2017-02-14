@@ -39,6 +39,7 @@ import org.neo4j.kernel.api.index.NodeUpdates;
 import org.neo4j.kernel.api.index.SchemaIndexProvider;
 import org.neo4j.kernel.api.labelscan.LabelScanStore;
 import org.neo4j.kernel.api.labelscan.NodeLabelUpdate;
+import org.neo4j.kernel.api.schema_new.index.NewIndexDescriptor;
 import org.neo4j.kernel.impl.api.index.FailedIndexProxyFactory;
 import org.neo4j.kernel.impl.api.index.FlippableIndexProxy;
 import org.neo4j.kernel.impl.api.index.IndexStoreView;
@@ -156,7 +157,7 @@ public class LabelScanViewNodeStoreScanTest
 
     private MultipleIndexPopulator.IndexPopulation getPopulation( LabelScanTestMultipleIndexPopulator indexPopulator )
     {
-        return indexPopulator.createPopulation( mock( IndexPopulator.class ), 1, null, null, null, null, null, null );
+        return indexPopulator.createPopulation( mock( IndexPopulator.class ), 1, null, null, null, null, null );
     }
 
     private LabelScanViewNodeStoreScan<Exception> getLabelScanViewStoreScan( int[] labelIds )
@@ -175,14 +176,12 @@ public class LabelScanViewNodeStoreScanTest
 
         @Override
         public IndexPopulation createPopulation( IndexPopulator populator, long indexId,
-                IndexDescriptor descriptor, IndexConfiguration config,
-                SchemaIndexProvider.Descriptor providerDescriptor,
+                NewIndexDescriptor descriptor, SchemaIndexProvider.Descriptor providerDescriptor,
                 FlippableIndexProxy flipper, FailedIndexProxyFactory failedIndexProxyFactory,
                 String indexUserDescription )
         {
-            return super.createPopulation( populator, indexId, descriptor, config, providerDescriptor, flipper,
-                            failedIndexProxyFactory,
-                            indexUserDescription );
+            return super.createPopulation( populator, indexId, descriptor, providerDescriptor, flipper,
+                            failedIndexProxyFactory, indexUserDescription );
         }
     }
 

@@ -22,7 +22,7 @@ package org.neo4j.kernel.impl.api.index.sampling;
 import java.util.function.Predicate;
 
 import org.neo4j.kernel.api.TokenNameLookup;
-import org.neo4j.kernel.api.schema.IndexDescriptor;
+import org.neo4j.kernel.api.schema_new.index.NewIndexDescriptor;
 import org.neo4j.kernel.impl.api.index.IndexMapSnapshotProvider;
 import org.neo4j.kernel.impl.api.index.IndexStoreView;
 import org.neo4j.kernel.impl.util.JobScheduler;
@@ -92,12 +92,13 @@ public class IndexSamplingControllerFactory
             private final DoubleLongRegister register = newDoubleLongRegister();
 
             @Override
-            public boolean test( long indexId, IndexDescriptor descriptor )
+            public boolean test( long indexId, NewIndexDescriptor descriptor )
             {
                 boolean result = storeView.indexSample( indexId, register ).readSecond() == 0;
                 if ( result )
                 {
-                    log.warn( "Recovering index sampling for index %s", descriptor.userDescription( tokenNameLookup ) );
+                    log.warn( "Recovering index sampling for index %s",
+                            descriptor.schema().userDescription( tokenNameLookup ) );
                 }
                 return result;
             }

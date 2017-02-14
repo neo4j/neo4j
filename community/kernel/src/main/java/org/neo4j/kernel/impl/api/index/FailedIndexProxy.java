@@ -30,6 +30,8 @@ import org.neo4j.kernel.api.schema.IndexDescriptor;
 import org.neo4j.kernel.api.index.IndexPopulator;
 import org.neo4j.kernel.api.index.InternalIndexState;
 import org.neo4j.kernel.api.index.SchemaIndexProvider;
+import org.neo4j.kernel.api.schema_new.SchemaBoundary;
+import org.neo4j.kernel.api.schema_new.index.NewIndexDescriptor;
 import org.neo4j.logging.Log;
 import org.neo4j.logging.LogProvider;
 
@@ -43,8 +45,7 @@ public class FailedIndexProxy extends AbstractSwallowingIndexProxy
     private final IndexCountsRemover indexCountsRemover;
     private final Log log;
 
-    public FailedIndexProxy(IndexDescriptor descriptor,
-                            IndexConfiguration configuration,
+    public FailedIndexProxy( NewIndexDescriptor descriptor,
                             SchemaIndexProvider.Descriptor providerDescriptor,
                             String indexUserDescription,
                             IndexPopulator populator,
@@ -52,7 +53,7 @@ public class FailedIndexProxy extends AbstractSwallowingIndexProxy
                             IndexCountsRemover indexCountsRemover,
                             LogProvider logProvider )
     {
-        super( descriptor, providerDescriptor, populationFailure, configuration );
+        super( descriptor, providerDescriptor, populationFailure );
         this.populator = populator;
         this.indexUserDescription = indexUserDescription;
         this.indexCountsRemover = indexCountsRemover;
@@ -79,7 +80,8 @@ public class FailedIndexProxy extends AbstractSwallowingIndexProxy
     @Override
     public boolean awaitStoreScanCompleted() throws IndexPopulationFailedKernelException
     {
-        throw getPopulationFailure().asIndexPopulationFailure( getDescriptor().descriptor(), indexUserDescription );
+        throw getPopulationFailure().asIndexPopulationFailure(
+                SchemaBoundary.map( getDescriptor().schema() ), indexUserDescription );
     }
 
     @Override
@@ -91,7 +93,8 @@ public class FailedIndexProxy extends AbstractSwallowingIndexProxy
     @Override
     public void validate() throws IndexPopulationFailedKernelException
     {
-        throw getPopulationFailure().asIndexPopulationFailure( getDescriptor().descriptor(), indexUserDescription );
+        throw getPopulationFailure().asIndexPopulationFailure(
+                SchemaBoundary.map( getDescriptor().schema() ), indexUserDescription );
     }
 
     @Override

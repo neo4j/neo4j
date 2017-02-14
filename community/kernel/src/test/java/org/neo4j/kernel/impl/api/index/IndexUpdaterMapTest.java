@@ -27,6 +27,7 @@ import java.io.IOException;
 import org.neo4j.kernel.api.index.IndexUpdater;
 import org.neo4j.kernel.api.schema.IndexDescriptor;
 import org.neo4j.kernel.api.schema.IndexDescriptorFactory;
+import org.neo4j.kernel.api.schema_new.index.IndexBoundary;
 
 import static org.hamcrest.MatcherAssert.assertThat;
 import static org.hamcrest.Matchers.equalTo;
@@ -61,13 +62,13 @@ public class IndexUpdaterMapTest
         indexProxy1 = mock( IndexProxy.class );
         indexDescriptor1 = IndexDescriptorFactory.of( 2, 3 );
         indexUpdater1 = mock( IndexUpdater.class );
-        when( indexProxy1.getDescriptor() ).thenReturn( indexDescriptor1 );
+        when( indexProxy1.getDescriptor() ).thenReturn( IndexBoundary.map( indexDescriptor1 ) );
         when( indexProxy1.newUpdater( any( IndexUpdateMode.class ) ) ).thenReturn( indexUpdater1 );
 
         indexProxy2 = mock( IndexProxy.class );
         indexDescriptor2 = IndexDescriptorFactory.of( 5, 6 );
         IndexUpdater indexUpdater2 = mock( IndexUpdater.class );
-        when( indexProxy2.getDescriptor() ).thenReturn( indexDescriptor2 );
+        when( indexProxy2.getDescriptor() ).thenReturn( IndexBoundary.map( indexDescriptor2 ) );
         when( indexProxy2.newUpdater( any( IndexUpdateMode.class ) ) ).thenReturn( indexUpdater2 );
 
         updaterMap = new IndexUpdaterMap( indexMap, IndexUpdateMode.ONLINE );

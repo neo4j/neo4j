@@ -40,6 +40,7 @@ import org.neo4j.kernel.api.index.IndexConfiguration;
 import org.neo4j.kernel.api.index.SchemaIndexProvider;
 import org.neo4j.kernel.api.schema.IndexDescriptorFactory;
 import org.neo4j.kernel.api.schema_new.IndexQuery;
+import org.neo4j.kernel.api.schema_new.index.NewIndexDescriptorFactory;
 import org.neo4j.kernel.configuration.Config;
 import org.neo4j.kernel.impl.api.index.sampling.IndexSamplingConfig;
 import org.neo4j.kernel.impl.factory.CommunityEditionModule;
@@ -155,10 +156,9 @@ public class NonUniqueIndexTests
         Config config = Config.empty();
         SchemaIndexProvider indexProvider = new LuceneSchemaIndexProvider( fileSystemRule.get(),
                 DirectoryFactory.PERSISTENT, directory.graphDbDir(), NullLogProvider.getInstance(), Config.empty(), OperationalMode.single );
-        IndexConfiguration indexConfig = IndexConfiguration.NON_UNIQUE;
         IndexSamplingConfig samplingConfig = new IndexSamplingConfig( config );
-        try ( IndexAccessor accessor = indexProvider.getOnlineAccessor( indexId, IndexDescriptorFactory.of( 1, 2 ),
-                indexConfig, samplingConfig );
+        try ( IndexAccessor accessor = indexProvider.getOnlineAccessor( indexId,
+                NewIndexDescriptorFactory.forLabel( 0, 0 ), samplingConfig );
               IndexReader reader = accessor.newReader() )
         {
             return PrimitiveLongCollections.asList( reader.query( IndexQuery.exact( 1, value ) ) );

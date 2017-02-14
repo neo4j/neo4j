@@ -51,14 +51,13 @@ import org.neo4j.kernel.api.exceptions.index.IndexEntryConflictException;
 import org.neo4j.kernel.api.impl.index.storage.DirectoryFactory;
 import org.neo4j.kernel.api.impl.schema.LuceneSchemaIndexProvider;
 import org.neo4j.kernel.api.index.IndexAccessor;
-import org.neo4j.kernel.api.index.IndexConfiguration;
 import org.neo4j.kernel.api.index.IndexEntryUpdate;
-import org.neo4j.kernel.api.schema.IndexDescriptor;
 import org.neo4j.kernel.api.index.IndexPopulator;
 import org.neo4j.kernel.api.index.IndexUpdater;
 import org.neo4j.kernel.api.index.InternalIndexState;
 import org.neo4j.kernel.api.index.PropertyAccessor;
 import org.neo4j.kernel.api.index.SchemaIndexProvider;
+import org.neo4j.kernel.api.schema_new.index.NewIndexDescriptor;
 import org.neo4j.kernel.configuration.Config;
 import org.neo4j.kernel.extension.KernelExtensionFactory;
 import org.neo4j.kernel.ha.HighlyAvailableGraphDatabase;
@@ -504,18 +503,18 @@ public class SchemaIndexHaIT
         }
 
         @Override
-        public IndexPopulator getPopulator( long indexId, IndexDescriptor descriptor, IndexConfiguration config,
+        public IndexPopulator getPopulator( long indexId, NewIndexDescriptor descriptor,
                                             IndexSamplingConfig samplingConfig )
         {
-            IndexPopulator populator = delegate.getPopulator( indexId, descriptor, config, samplingConfig );
+            IndexPopulator populator = delegate.getPopulator( indexId, descriptor, samplingConfig );
             return new ControlledIndexPopulator( populator, latch );
         }
 
         @Override
-        public IndexAccessor getOnlineAccessor( long indexId, IndexDescriptor descriptor,
-                IndexConfiguration config, IndexSamplingConfig samplingConfig  ) throws IOException
+        public IndexAccessor getOnlineAccessor( long indexId, NewIndexDescriptor descriptor,
+                                                IndexSamplingConfig samplingConfig  ) throws IOException
         {
-            return delegate.getOnlineAccessor(indexId, descriptor, config, samplingConfig );
+            return delegate.getOnlineAccessor(indexId, descriptor, samplingConfig );
         }
 
         @Override

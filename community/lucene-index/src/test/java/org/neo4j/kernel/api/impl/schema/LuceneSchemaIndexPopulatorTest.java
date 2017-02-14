@@ -87,9 +87,8 @@ public class LuceneSchemaIndexPopulatorTest
         provider = new LuceneSchemaIndexProvider( fs.get(), directoryFactory, testDir.directory( "folder" ),
                 NullLogProvider.getInstance(), Config.empty(), OperationalMode.single );
         indexStoreView = mock( IndexStoreView.class );
-        IndexConfiguration indexConfig = IndexConfiguration.NON_UNIQUE;
         IndexSamplingConfig samplingConfig = new IndexSamplingConfig( Config.empty() );
-        indexPopulator = provider.getPopulator( indexId, IndexBoundary.map( index ), indexConfig, samplingConfig );
+        indexPopulator = provider.getPopulator( indexId, index, samplingConfig );
         indexPopulator.create();
         indexPopulator.configureSampling( true );
     }

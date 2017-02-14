@@ -24,15 +24,16 @@ import java.util.Map;
 import org.neo4j.io.fs.FileSystemAbstraction;
 import org.neo4j.io.pagecache.PageCache;
 import org.neo4j.kernel.api.index.IndexAccessor;
-import org.neo4j.kernel.api.index.IndexConfiguration;
-import org.neo4j.kernel.api.schema.IndexDescriptor;
 import org.neo4j.kernel.api.index.IndexPopulator;
 import org.neo4j.kernel.api.index.InternalIndexState;
 import org.neo4j.kernel.api.index.SchemaIndexProvider;
+import org.neo4j.kernel.api.schema_new.index.NewIndexDescriptor;
 import org.neo4j.kernel.impl.api.index.sampling.IndexSamplingConfig;
 import org.neo4j.kernel.impl.api.scan.LabelScanStoreProvider;
 import org.neo4j.kernel.impl.storemigration.StoreMigrationParticipant;
 import org.neo4j.kernel.impl.util.CopyOnWriteHashMap;
+
+import static org.neo4j.kernel.api.schema_new.index.NewIndexDescriptor.Type.UNIQUE;
 
 public class InMemoryIndexProvider extends SchemaIndexProvider
 {
@@ -69,26 +70,25 @@ public class InMemoryIndexProvider extends SchemaIndexProvider
     }
 
     @Override
-    public IndexPopulator getPopulator( long indexId, IndexDescriptor descriptor, IndexConfiguration config,
-                                        IndexSamplingConfig samplingConfig )
+    public IndexPopulator getPopulator( long indexId, NewIndexDescriptor descriptor, IndexSamplingConfig samplingConfig )
     {
         // TODO: Consider supporting composite indexes
-        InMemoryIndex index = config.isUnique()
-                ? new UniqueInMemoryIndex( descriptor.getPropertyKeyId() ) : new InMemoryIndex();
+        InMemoryIndex index = descriptor.type() == UNIQUE
+                ? new UniqueInMemoryIndex( descriptor.schema().getPropertyId() ) : new InMemoryIndex();
         indexes.put( indexId, index );
         return index.getPopulator();
     }
 
     @Override
-    public IndexAccessor getOnlineAccessor( long indexId, IndexDescriptor descriptor,
-                                            IndexConfiguration indexConfig, IndexSamplingConfig samplingConfig )
+    public IndexAccessor getOnlineAccessor( long indexId, NewIndexDescriptor descriptor,
+                                            IndexSamplingConfig samplingConfig )
     {
         InMemoryIndex index = indexes.get( indexId );
         if ( index == null || index.getState() != InternalIndexState.ONLINE )
         {
             throw new IllegalStateException( "Index " + indexId + " not online yet" );
         }
-        if ( indexConfig.isUnique() && !(index instanceof UniqueInMemoryIndex) )
+        if ( descriptor.type() == UNIQUE && !(index instanceof UniqueInMemoryIndex) )
         {
             throw new IllegalStateException(
                     String.format( "The index [%s] was not created as a unique index.", indexId )

@@ -45,13 +45,15 @@ import org.neo4j.graphdb.GraphDatabaseService;
 import org.neo4j.graphdb.Transaction;
 import org.neo4j.graphdb.factory.GraphDatabaseBuilder;
 import org.neo4j.graphdb.factory.GraphDatabaseSettings;
-import org.neo4j.kernel.api.schema.NodePropertyDescriptor;
 import org.neo4j.kernel.api.Statement;
 import org.neo4j.kernel.api.exceptions.EntityNotFoundException;
 import org.neo4j.kernel.api.exceptions.KernelException;
 import org.neo4j.kernel.api.exceptions.index.IndexNotFoundKernelException;
-import org.neo4j.kernel.api.schema.IndexDescriptor;
 import org.neo4j.kernel.api.properties.Property;
+import org.neo4j.kernel.api.schema.IndexDescriptor;
+import org.neo4j.kernel.api.schema.NodePropertyDescriptor;
+import org.neo4j.kernel.api.schema_new.LabelSchemaDescriptor;
+import org.neo4j.kernel.api.schema_new.SchemaDescriptorFactory;
 import org.neo4j.kernel.api.schema_new.index.IndexBoundary;
 import org.neo4j.kernel.api.schema_new.index.NewIndexDescriptor;
 import org.neo4j.kernel.impl.core.ThreadToStatementContextBridge;
@@ -693,9 +695,9 @@ public class IndexStatisticsTest
         private final Set<IndexDescriptor> onlineIndexes = Collections.newSetFromMap( new ConcurrentHashMap<>() );
 
         @Override
-        public void populationCompleteOn( IndexDescriptor descriptor )
+        public void populationCompleteOn( NewIndexDescriptor descriptor )
         {
-            onlineIndexes.add( descriptor );
+            onlineIndexes.add( IndexBoundary.map( descriptor ) );
         }
 
         public boolean isIndexOnline( IndexDescriptor descriptor )

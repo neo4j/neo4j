@@ -77,10 +77,7 @@ public class IndexAccessors implements Closeable
         for ( IndexRule indexRule : indexRules )
         {
             long indexId = indexRule.getId();
-            IndexConfiguration indexConfig = IndexConfiguration.of( indexRule );
-            accessors.put( indexId, provider.getOnlineAccessor( indexId,
-                    IndexBoundary.map( indexRule.getIndexDescriptor() ),
-                    indexConfig, samplingConfig ) );
+            accessors.put( indexId, provider.getOnlineAccessor( indexId, indexRule.getIndexDescriptor(), samplingConfig ) );
         }
     }
 

@@ -35,6 +35,7 @@ import org.neo4j.kernel.api.schema.IndexDescriptor;
 import org.neo4j.kernel.api.index.IndexUpdater;
 import org.neo4j.kernel.api.index.InternalIndexState;
 import org.neo4j.kernel.api.index.SchemaIndexProvider;
+import org.neo4j.kernel.api.schema_new.index.NewIndexDescriptor;
 import org.neo4j.storageengine.api.schema.IndexReader;
 import org.neo4j.storageengine.api.schema.PopulationProgress;
 
@@ -42,18 +43,15 @@ import static org.neo4j.helpers.collection.Iterators.emptyIterator;
 
 public class PopulatingIndexProxy implements IndexProxy
 {
-    private final IndexDescriptor descriptor;
+    private final NewIndexDescriptor descriptor;
     private final SchemaIndexProvider.Descriptor providerDescriptor;
-    private final IndexConfiguration configuration;
     private final IndexPopulationJob job;
 
-    public PopulatingIndexProxy( IndexDescriptor descriptor,
-                                 IndexConfiguration configuration,
+    public PopulatingIndexProxy( NewIndexDescriptor descriptor,
                                  SchemaIndexProvider.Descriptor providerDescriptor,
                                  IndexPopulationJob job )
     {
         this.descriptor = descriptor;
-        this.configuration = configuration;
         this.providerDescriptor = providerDescriptor;
         this.job = job;
     }
@@ -97,7 +95,7 @@ public class PopulatingIndexProxy implements IndexProxy
     }
 
     @Override
-    public IndexDescriptor getDescriptor()
+    public NewIndexDescriptor getDescriptor()
     {
         return descriptor;
     }
@@ -173,12 +171,6 @@ public class PopulatingIndexProxy implements IndexProxy
     public PopulationProgress getIndexPopulationProgress()
     {
         return job.getPopulationProgress();
-    }
-
-    @Override
-    public IndexConfiguration config()
-    {
-        return configuration;
     }
 
     @Override

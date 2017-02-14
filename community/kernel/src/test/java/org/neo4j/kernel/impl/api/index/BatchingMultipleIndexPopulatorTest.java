@@ -30,13 +30,11 @@ import java.util.concurrent.TimeUnit;
 
 import org.neo4j.helpers.collection.Visitor;
 import org.neo4j.kernel.api.exceptions.index.IndexPopulationFailedKernelException;
-import org.neo4j.kernel.api.index.IndexConfiguration;
+import org.neo4j.kernel.api.index.IndexEntryUpdate;
 import org.neo4j.kernel.api.index.IndexPopulator;
 import org.neo4j.kernel.api.index.IndexUpdater;
-import org.neo4j.kernel.api.index.IndexEntryUpdate;
 import org.neo4j.kernel.api.index.NodeUpdates;
 import org.neo4j.kernel.api.index.SchemaIndexProvider;
-import org.neo4j.kernel.api.schema_new.index.IndexBoundary;
 import org.neo4j.kernel.api.schema_new.index.NewIndexDescriptor;
 import org.neo4j.kernel.api.schema_new.index.NewIndexDescriptorFactory;
 import org.neo4j.kernel.impl.locking.LockService;
@@ -321,10 +319,9 @@ public class BatchingMultipleIndexPopulatorTest
         flipper.setFlipTarget( indexProxyFactory );
 
         batchingPopulator.addPopulator(
-                populator, descriptor.schema().getLabelId(), IndexBoundary.map(descriptor),
+                populator, descriptor.schema().getLabelId(), descriptor,
                 new SchemaIndexProvider.Descriptor( "foo", "1" ),
-                IndexConfiguration.NON_UNIQUE, flipper,
-                failedIndexProxyFactory, "testIndex" );
+                flipper, failedIndexProxyFactory, "testIndex" );
 
         return populator;
     }

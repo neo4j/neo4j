@@ -22,12 +22,12 @@ package org.neo4j.kernel.impl.api.index.sampling;
 import org.junit.Test;
 
 import java.util.concurrent.atomic.AtomicInteger;
-import java.util.function.Predicate;
 
 import org.neo4j.function.Predicates;
-import org.neo4j.kernel.api.schema.NodePropertyDescriptor;
-import org.neo4j.kernel.api.schema.IndexDescriptor;
 import org.neo4j.kernel.api.schema.IndexDescriptorFactory;
+import org.neo4j.kernel.api.schema.NodePropertyDescriptor;
+import org.neo4j.kernel.api.schema_new.index.NewIndexDescriptor;
+import org.neo4j.kernel.api.schema_new.index.NewIndexDescriptorFactory;
 import org.neo4j.kernel.impl.api.index.IndexMap;
 import org.neo4j.kernel.impl.api.index.IndexMapSnapshotProvider;
 import org.neo4j.kernel.impl.api.index.IndexProxy;
@@ -354,7 +354,7 @@ public class IndexSamplingControllerTest
         }
 
         @Override
-        public boolean test( long indexId, IndexDescriptor descriptor )
+        public boolean test( long indexId, NewIndexDescriptor descriptor )
         {
             return ans;
         }
@@ -371,16 +371,16 @@ public class IndexSamplingControllerTest
     private final long anotherIndexId = 3;
     private final IndexProxy indexProxy = mock( IndexProxy.class );
     private final IndexProxy anotherIndexProxy = mock( IndexProxy.class );
-    private final NodePropertyDescriptor descriptor = new NodePropertyDescriptor( 3, 4 );
-    private final NodePropertyDescriptor anotherDescriptor = new NodePropertyDescriptor( 5, 6 );
+    private final NewIndexDescriptor descriptor = NewIndexDescriptorFactory.forLabel( 3, 4 );
+    private final NewIndexDescriptor anotherDescriptor = NewIndexDescriptorFactory.forLabel( 5, 6 );
     private final IndexSamplingJob job = mock( IndexSamplingJob.class );
     private final IndexSamplingJob anotherJob = mock( IndexSamplingJob.class );
 
     {
         when( samplingConfig.backgroundSampling() ).thenReturn( true );
         when( samplingConfig.jobLimit() ).thenReturn( 1 );
-        when( indexProxy.getDescriptor() ).thenReturn( IndexDescriptorFactory.of( descriptor ) );
-        when( anotherIndexProxy.getDescriptor() ).thenReturn( IndexDescriptorFactory.of( anotherDescriptor ) );
+        when( indexProxy.getDescriptor() ).thenReturn( descriptor );
+        when( anotherIndexProxy.getDescriptor() ).thenReturn( anotherDescriptor );
         when( snapshotProvider.indexMapSnapshot() ).thenReturn( indexMap );
         when( jobFactory.create( indexId, indexProxy ) ).thenReturn( job );
         when( jobFactory.create( anotherIndexId, anotherIndexProxy ) ).thenReturn( anotherJob );

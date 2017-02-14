@@ -26,11 +26,10 @@ import java.util.concurrent.atomic.AtomicInteger;
 import org.neo4j.io.fs.FileSystemAbstraction;
 import org.neo4j.io.pagecache.PageCache;
 import org.neo4j.kernel.api.index.IndexAccessor;
-import org.neo4j.kernel.api.index.IndexConfiguration;
-import org.neo4j.kernel.api.schema.IndexDescriptor;
 import org.neo4j.kernel.api.index.IndexPopulator;
 import org.neo4j.kernel.api.index.InternalIndexState;
 import org.neo4j.kernel.api.index.SchemaIndexProvider;
+import org.neo4j.kernel.api.schema_new.index.NewIndexDescriptor;
 import org.neo4j.kernel.impl.api.index.sampling.IndexSamplingConfig;
 import org.neo4j.kernel.impl.api.scan.LabelScanStoreProvider;
 import org.neo4j.kernel.impl.storemigration.StoreMigrationParticipant;
@@ -89,16 +88,15 @@ public class ControlledPopulationSchemaIndexProvider extends SchemaIndexProvider
     }
 
     @Override
-    public IndexPopulator getPopulator( long indexId, IndexDescriptor descriptor, IndexConfiguration indexConfig,
-                                        IndexSamplingConfig samplingConfig )
+    public IndexPopulator getPopulator( long indexId, NewIndexDescriptor descriptor, IndexSamplingConfig samplingConfig )
     {
         populatorCallCount.incrementAndGet();
         return mockedPopulator;
     }
 
     @Override
-    public IndexAccessor getOnlineAccessor( long indexId, IndexDescriptor descriptor,
-                                            IndexConfiguration indexConfig, IndexSamplingConfig samplingConfig )
+    public IndexAccessor getOnlineAccessor( long indexId, NewIndexDescriptor indexConfig,
+                                            IndexSamplingConfig samplingConfig )
     {
         writerCallCount.incrementAndGet();
         writerLatch.countDown();

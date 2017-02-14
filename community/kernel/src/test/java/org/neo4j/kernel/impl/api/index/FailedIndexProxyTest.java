@@ -28,6 +28,7 @@ import org.neo4j.kernel.api.schema.IndexDescriptor;
 import org.neo4j.kernel.api.schema.IndexDescriptorFactory;
 import org.neo4j.kernel.api.index.IndexPopulator;
 import org.neo4j.kernel.api.index.SchemaIndexProvider;
+import org.neo4j.kernel.api.schema_new.index.NewIndexDescriptorFactory;
 import org.neo4j.logging.AssertableLogProvider;
 import org.neo4j.logging.NullLogProvider;
 
@@ -38,8 +39,6 @@ import static org.neo4j.logging.AssertableLogProvider.inLog;
 
 public class FailedIndexProxyTest
 {
-    private final IndexDescriptor descriptor = IndexDescriptorFactory.of( 1, 2 );
-    private final IndexConfiguration config = IndexConfiguration.NON_UNIQUE;
     private final SchemaIndexProvider.Descriptor providerDescriptor = mock( SchemaIndexProvider.Descriptor.class );
     private final String userDescription = "description";
     private final IndexPopulator indexPopulator = mock( IndexPopulator.class );
@@ -50,7 +49,8 @@ public class FailedIndexProxyTest
     public void shouldRemoveIndexCountsWhenTheIndexItselfIsDropped() throws IOException
     {
         // given
-        FailedIndexProxy index = new FailedIndexProxy( descriptor, config, providerDescriptor, userDescription,
+        FailedIndexProxy index = new FailedIndexProxy(
+                NewIndexDescriptorFactory.forLabel( 1, 2 ), providerDescriptor, userDescription,
                 indexPopulator, indexPopulationFailure, indexCountsRemover, NullLogProvider.getInstance() );
 
         // when
@@ -69,7 +69,7 @@ public class FailedIndexProxyTest
         AssertableLogProvider logProvider = new AssertableLogProvider();
 
         // when
-        new FailedIndexProxy( IndexDescriptorFactory.of( 0, 0 ), config,
+        new FailedIndexProxy( NewIndexDescriptorFactory.forLabel( 0, 0 ),
                 new SchemaIndexProvider.Descriptor( "foo", "bar" ), "foo",
                 mock( IndexPopulator.class ), IndexPopulationFailure.failure( "it broke" ), indexCountsRemover,
                 logProvider ).drop();

@@ -24,10 +24,10 @@ import java.util.concurrent.Future;
 
 import org.neo4j.graphdb.ResourceIterator;
 import org.neo4j.kernel.api.index.IndexConfiguration;
-import org.neo4j.kernel.api.schema.IndexDescriptor;
 import org.neo4j.kernel.api.index.IndexUpdater;
 import org.neo4j.kernel.api.index.InternalIndexState;
 import org.neo4j.kernel.api.index.SchemaIndexProvider;
+import org.neo4j.kernel.api.schema_new.index.NewIndexDescriptor;
 import org.neo4j.kernel.impl.api.index.updater.SwallowingIndexUpdater;
 import org.neo4j.storageengine.api.schema.IndexReader;
 import org.neo4j.storageengine.api.schema.PopulationProgress;
@@ -77,7 +77,7 @@ public class IndexProxyAdapter implements IndexProxy
     }
 
     @Override
-    public IndexDescriptor getDescriptor()
+    public NewIndexDescriptor getDescriptor()
     {
         return null;
     }
@@ -114,12 +114,6 @@ public class IndexProxyAdapter implements IndexProxy
     public ResourceIterator<File> snapshotFiles()
     {
         return emptyIterator();
-    }
-
-    @Override
-    public IndexConfiguration config()
-    {
-        return null;
     }
 
     @Override

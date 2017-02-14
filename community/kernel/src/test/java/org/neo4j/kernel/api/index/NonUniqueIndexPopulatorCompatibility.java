@@ -29,6 +29,8 @@ import org.neo4j.collection.primitive.PrimitiveLongIterator;
 import org.neo4j.kernel.api.properties.Property;
 import org.neo4j.kernel.api.schema_new.IndexQuery;
 import org.neo4j.kernel.api.schema_new.index.IndexBoundary;
+import org.neo4j.kernel.api.schema_new.index.NewIndexDescriptor;
+import org.neo4j.kernel.api.schema_new.index.NewIndexDescriptorFactory;
 import org.neo4j.kernel.configuration.Config;
 import org.neo4j.kernel.impl.api.index.sampling.IndexSamplingConfig;
 import org.neo4j.storageengine.api.schema.IndexReader;
@@ -48,7 +50,7 @@ public class NonUniqueIndexPopulatorCompatibility extends IndexProviderCompatibi
 {
     public NonUniqueIndexPopulatorCompatibility( IndexProviderCompatibilityTestSuite testSuite )
     {
-        super( testSuite );
+        super( testSuite, NewIndexDescriptorFactory.forLabel( 1, 2 ) );
     }
 
     @Test
@@ -57,15 +59,14 @@ public class NonUniqueIndexPopulatorCompatibility extends IndexProviderCompatibi
         // when
         IndexConfiguration config = IndexConfiguration.NON_UNIQUE;
         IndexSamplingConfig indexSamplingConfig = new IndexSamplingConfig( Config.empty() );
-        IndexPopulator populator = indexProvider.getPopulator( 17, IndexBoundary.map(descriptor), config, indexSamplingConfig );
+        IndexPopulator populator = indexProvider.getPopulator( 17, descriptor, indexSamplingConfig );
         populator.create();
         populator.add( Arrays.asList( IndexEntryUpdate.add( 1, descriptor, "value1" ),
                 IndexEntryUpdate.add( 2, descriptor, "value1" ) ) );
         populator.close( true );
 
         // then
-        IndexAccessor accessor = indexProvider.getOnlineAccessor( 17, IndexBoundary.map( descriptor ),
-                config, indexSamplingConfig );
+        IndexAccessor accessor = indexProvider.getOnlineAccessor( 17, descriptor, indexSamplingConfig );
         try ( IndexReader reader = accessor.newReader() )
         {
             PrimitiveLongIterator nodes = reader.query( IndexQuery.exact( 1, "value1" ) );
@@ -80,7 +81,7 @@ public class NonUniqueIndexPopulatorCompatibility extends IndexProviderCompatibi
         // GIVEN
         IndexConfiguration config = IndexConfiguration.NON_UNIQUE;
         IndexSamplingConfig indexSamplingConfig = new IndexSamplingConfig( Config.empty() );
-        IndexPopulator populator = indexProvider.getPopulator( 17, IndexBoundary.map(descriptor), config, indexSamplingConfig );
+        IndexPopulator populator = indexProvider.getPopulator( 17, descriptor, indexSamplingConfig );
         String failure = "The contrived failure";
         populator.create();
 
@@ -97,7 +98,7 @@ public class NonUniqueIndexPopulatorCompatibility extends IndexProviderCompatibi
         // GIVEN
         IndexConfiguration config = IndexConfiguration.NON_UNIQUE;
         IndexSamplingConfig indexSamplingConfig = new IndexSamplingConfig( Config.empty() );
-        IndexPopulator populator = indexProvider.getPopulator( 17, IndexBoundary.map(descriptor), config, indexSamplingConfig );
+        IndexPopulator populator = indexProvider.getPopulator( 17, descriptor, indexSamplingConfig );
         String failure = "The contrived failure";
         populator.create();
 
@@ -114,7 +115,7 @@ public class NonUniqueIndexPopulatorCompatibility extends IndexProviderCompatibi
         // GIVEN
         IndexConfiguration config = IndexConfiguration.NON_UNIQUE;
         IndexSamplingConfig indexSamplingConfig = new IndexSamplingConfig( Config.empty() );
-        IndexPopulator populator = indexProvider.getPopulator( 17, IndexBoundary.map(descriptor), config, indexSamplingConfig );
+        IndexPopulator populator = indexProvider.getPopulator( 17, descriptor, indexSamplingConfig );
         populator.close( false );
 
         // WHEN
@@ -127,9 +128,8 @@ public class NonUniqueIndexPopulatorCompatibility extends IndexProviderCompatibi
     public void shouldApplyUpdatesIdempotently() throws Exception
     {
         // GIVEN
-        IndexConfiguration config = IndexConfiguration.NON_UNIQUE;
         IndexSamplingConfig indexSamplingConfig = new IndexSamplingConfig( Config.empty() );
-        IndexPopulator populator = indexProvider.getPopulator( 17, IndexBoundary.map(descriptor), config, indexSamplingConfig );
+        IndexPopulator populator = indexProvider.getPopulator( 17, descriptor, indexSamplingConfig );
         populator.create();
         populator.configureSampling( true );
         long nodeId = 1;
@@ -148,8 +148,7 @@ public class NonUniqueIndexPopulatorCompatibility extends IndexProviderCompatibi
         populator.close( true );
 
         // then
-        IndexAccessor accessor = indexProvider.getOnlineAccessor( 17, IndexBoundary.map( descriptor ),
-                IndexConfiguration.NON_UNIQUE, indexSamplingConfig );
+        IndexAccessor accessor = indexProvider.getOnlineAccessor( 17, descriptor, indexSamplingConfig );
         try ( IndexReader reader = accessor.newReader() )
         {
             int propertyKeyId = descriptor.schema().getPropertyId();
