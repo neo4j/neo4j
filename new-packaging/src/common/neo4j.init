@@ -1,5 +1,9 @@
 #!/bin/sh
 
+### BEGIN REDHAT INFO
+# chkconfig: 2345 99 20
+# description: Neo4j Graph Database server
+### END REDHAT INFO
 ### BEGIN INIT INFO
 # Provides:          neo4j
 # Required-Start:    $remote_fs $syslog $network
@@ -34,7 +38,7 @@
 
 PATH=/sbin:/usr/sbin:/bin:/usr/bin
 NAME=neo4j
-DAEMON=/usr/bin/$NAME
+DAEMON=/usr/bin/${NAME}
 PIDDIR=/var/run/${NAME}
 PIDFILE=${PIDDIR}/neo4j.pid
 SCRIPTNAME=/etc/init.d/${NAME}
@@ -43,7 +47,27 @@ SCRIPTNAME=/etc/init.d/${NAME}
 [ -r /etc/default/$NAME ] && . /etc/default/$NAME
 [ -n "${NEO_USER}" ] || NEO_USER=$NAME
 
-. /lib/lsb/init-functions
+# Debian distros and SUSE
+has_lsb_init()
+{
+  test -f "/lib/lsb/init-functions"
+}
+
+# RedHat/Centos distros
+has_init()
+{
+  test -f "/etc/init.d/functions"
+}
+
+
+if has_lsb_init ; then
+  . /lib/lsb/init-functions
+elif has_init ; then
+  . /etc/init.d/functions
+else
+  echo "Error: your platform is not supported by ${NAME}" >&2
+  exit 1
+fi
 
 do_start()
 {
@@ -51,12 +75,25 @@ do_start()
   [ -d "${PIDDIR}" ] || mkdir -p "${PIDDIR}"
   chown "${NEO_USER}:" "${PIDDIR}"
 
-  start-stop-daemon --chuid ${NEO_USER} --start --quiet --oknodo --pidfile $PIDFILE --exec $DAEMON -- start
+  if has_lsb_init ; then
+    start-stop-daemon --chuid ${NEO_USER} --start --quiet --oknodo --pidfile ${PIDFILE} --exec ${DAEMON} -- start
+  else
+    daemon --user="${NEO_USER}" --pidfile="${PIDFILE}" "${DAEMON} start > /dev/null 2>&1 &"
+  fi
 }
 
 do_stop()
 {
-  $DAEMON stop
+  ${DAEMON} stop
+}
+
+do_status()
+{
+  if has_lsb_init ; then
+    status_of_proc -p "${PIDFILE}" "${DAEMON}" "${NAME}"
+  else
+    status -p "${PIDFILE}" "${NAME}"
+  fi
 }
 
 do_ulimit()
@@ -74,7 +111,7 @@ case "$1" in
     do_stop
     ;;
   status)
-    status_of_proc -p $PIDFILE "$DAEMON" "$NAME"
+    do_status
     ;;
   restart|force-reload)
     do_stop && do_start
