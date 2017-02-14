@@ -19,7 +19,8 @@
  */
 package org.neo4j.cypher.internal.compiler.v3_2.ast.conditions
 
-import org.neo4j.cypher.internal.frontend.v3_2.ast.{Variable, OrderBy, SortItem}
+import org.neo4j.cypher.internal.frontend.v3_2.ast.conditions.collectNodesOfType
+import org.neo4j.cypher.internal.frontend.v3_2.ast.{OrderBy, SortItem, Variable}
 import org.neo4j.cypher.internal.frontend.v3_2.helpers.rewriting.Condition
 
 case object orderByOnlyOnVariables extends Condition {

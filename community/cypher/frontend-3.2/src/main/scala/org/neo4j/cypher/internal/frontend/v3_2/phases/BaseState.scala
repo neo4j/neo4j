@@ -49,6 +49,7 @@ trait BaseState {
 
   def withStatement(s: Statement): BaseState
   def withSemanticTable(s: SemanticTable): BaseState
+  def withSemanticState(s: SemanticState): BaseState
 }
 
 case class BaseStateImpl(queryText: String,
@@ -62,4 +63,6 @@ case class BaseStateImpl(queryText: String,
   override def withStatement(s: Statement): BaseState = copy(maybeStatement = Some(s))
 
   override def withSemanticTable(s: SemanticTable): BaseState = copy(maybeSemanticTable = Some(s))
+
+  override def withSemanticState(s: SemanticState): BaseState = copy(maybeSemantics = Some(s))
 }

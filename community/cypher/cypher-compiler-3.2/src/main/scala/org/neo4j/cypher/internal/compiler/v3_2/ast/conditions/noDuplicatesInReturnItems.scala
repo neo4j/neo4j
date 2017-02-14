@@ -21,6 +21,7 @@ package org.neo4j.cypher.internal.compiler.v3_2.ast.conditions
 
 import org.neo4j.cypher.internal.frontend.v3_2.helpers.rewriting.Condition
 import org.neo4j.cypher.internal.frontend.v3_2.ast.ReturnItems
+import org.neo4j.cypher.internal.frontend.v3_2.ast.conditions.collectNodesOfType
 
 case object noDuplicatesInReturnItems extends Condition {
   def apply(that: Any): Seq[String] = {

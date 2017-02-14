@@ -22,7 +22,7 @@ package org.neo4j.cypher.internal.compiler.v3_2.ast.rewriters
 import org.neo4j.cypher.internal.compiler.v3_2._
 import org.neo4j.cypher.internal.frontend.v3_2.ast.Statement
 import org.neo4j.cypher.internal.frontend.v3_2.test_helpers.CypherFunSuite
-import org.neo4j.cypher.internal.frontend.v3_2.{DummyPosition, Rewriter}
+import org.neo4j.cypher.internal.frontend.v3_2.{DummyPosition, Rewriter, SemanticChecker}
 
 trait RewriteTest {
   self: CypherFunSuite =>

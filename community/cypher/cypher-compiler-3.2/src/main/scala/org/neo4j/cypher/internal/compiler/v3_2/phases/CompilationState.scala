@@ -55,6 +55,7 @@ case class CompilationState(queryText: String,
 
   override def withStatement(s: Statement): CompilationState = copy(maybeStatement = Some(s))
   override def withSemanticTable(s: SemanticTable): CompilationState = copy(maybeSemanticTable = Some(s))
+  override def withSemanticState(s: SemanticState): CompilationState = copy(maybeSemantics = Some(s))
 
   def withMaybeExecutionPlan(opt: Option[ExecutionPlan]): CompilationState = copy(maybeExecutionPlan = opt)
 }

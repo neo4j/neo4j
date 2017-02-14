@@ -21,6 +21,7 @@ package org.neo4j.cypher.internal.compiler.v3_2
 
 import org.neo4j.cypher.internal.compiler.v3_2.ast.conditions._
 import org.neo4j.cypher.internal.compiler.v3_2.ast.rewriters._
+import org.neo4j.cypher.internal.frontend.v3_2.ast.conditions.containsNoNodesOfType
 import org.neo4j.cypher.internal.frontend.v3_2.ast.rewriters.normalizeSargablePredicates
 import org.neo4j.cypher.internal.frontend.v3_2.ast.{NotEquals, Statement, UnaliasedReturnItem}
 import org.neo4j.cypher.internal.frontend.v3_2.helpers.rewriting.{ApplyRewriter, RewriterCondition, RewriterStepSequencer}

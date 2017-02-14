@@ -24,6 +24,7 @@ import org.neo4j.cypher.internal.frontend.v3_2.phases.CompilationPhaseTracer.Com
 import org.neo4j.cypher.internal.compiler.v3_2.ast.conditions._
 import org.neo4j.cypher.internal.compiler.v3_2.ast.rewriters._
 import org.neo4j.cypher.internal.frontend.v3_2.ast.NotEquals
+import org.neo4j.cypher.internal.frontend.v3_2.ast.conditions.{StatementCondition, containsNoNodesOfType}
 import org.neo4j.cypher.internal.frontend.v3_2.ast.rewriters.StatementRewriter
 import org.neo4j.cypher.internal.frontend.v3_2.helpers.rewriting.{RewriterCondition, RewriterStepSequencer}
 import org.neo4j.cypher.internal.frontend.v3_2.phases.{BaseContext, BaseState, Condition, Phase}
@@ -75,15 +76,4 @@ object LateAstRewriting extends StatementRewriter {
   override def description: String = "normalize the AST"
 
   override def postConditions: Set[Condition] = Set.empty
-}
-
-object StatementCondition {
-  def apply(inner: RewriterCondition) = new StatementCondition(inner.condition)
-}
-
-case class StatementCondition(inner: Any => Seq[String]) extends Condition {
-  override def check(state: AnyRef): Seq[String] = state match {
-    case s: BaseState => inner(s.statement())
-    case x => throw new IllegalArgumentException(s"Unknown state: $x")
-  }
 }
