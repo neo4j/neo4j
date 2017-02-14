@@ -202,7 +202,7 @@ trait Expressions extends Parser
   }
 
   def PatternComprehension: Rule1[ast.PatternComprehension] = rule("[") {
-    group("[" ~~ optional(Variable ~~ operator("=")) ~~ RelationshipsPattern ~ optional(WS ~ "WHERE" ~~ Expression) ~~ "|" ~~ Expression ~~ "]") ~~>> (ast.PatternComprehension(_, _, _, _))
+    group("[" ~~ optional(Variable ~~ operator("=")) ~~ RelationshipsPattern ~ optional(WS ~ keyword("WHERE") ~~ Expression) ~~ "|" ~~ Expression ~~ "]") ~~>> (ast.PatternComprehension(_, _, _, _))
   }
 
   def CaseExpression: Rule1[ast.CaseExpression] = rule("CASE") {
