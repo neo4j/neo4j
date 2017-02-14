@@ -479,7 +479,7 @@ public class MultiIndexPopulationConcurrentUpdatesIT
                                 case ADDED:
                                     node.addLabel(
                                             Label.label( labelsIdNameMap.get( descriptor.schema().getLabelId() ) ) );
-                                    node.setProperty( NAME_PROPERTY, indexUpdate.value() );
+                                    node.setProperty( NAME_PROPERTY, indexUpdate.values()[0] );
                                     break;
                                 case REMOVED:
                                     node.addLabel(

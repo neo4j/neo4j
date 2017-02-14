@@ -28,8 +28,8 @@ import org.neo4j.collection.primitive.PrimitiveLongSet;
 import org.neo4j.kernel.api.exceptions.index.IndexEntryConflictException;
 import org.neo4j.kernel.api.impl.schema.LuceneDocumentStructure;
 import org.neo4j.kernel.api.impl.schema.writer.LuceneIndexWriter;
+import org.neo4j.kernel.api.index.IndexEntryUpdate;
 import org.neo4j.kernel.api.index.IndexUpdater;
-import org.neo4j.kernel.api.index.NodePropertyUpdate;
 import org.neo4j.kernel.impl.api.index.UpdateMode;
 
 /**
@@ -47,28 +47,28 @@ public abstract class LuceneIndexPopulatingUpdater implements IndexUpdater
     }
 
     @Override
-    public void process( NodePropertyUpdate update ) throws IOException, IndexEntryConflictException
+    public void process( IndexEntryUpdate update ) throws IOException, IndexEntryConflictException
     {
-        long nodeId = update.getNodeId();
+        long nodeId = update.getEntityId();
 
-        switch ( update.getUpdateMode() )
+        switch ( update.updateMode() )
         {
         case ADDED:
             added( update );
             writer.updateDocument( LuceneDocumentStructure.newTermForChangeOrRemove( nodeId ),
-                    LuceneDocumentStructure.documentRepresentingProperty( nodeId, update.getValueAfter() ) );
+                    LuceneDocumentStructure.documentRepresentingProperty( nodeId, update.values()[0] ) );
             break;
         case CHANGED:
             changed( update );
             writer.updateDocument( LuceneDocumentStructure.newTermForChangeOrRemove( nodeId ),
-                    LuceneDocumentStructure.documentRepresentingProperty( nodeId, update.getValueAfter() ) );
+                    LuceneDocumentStructure.documentRepresentingProperty( nodeId, update.values()[0] ) );
             break;
         case REMOVED:
             removed( update );
             writer.deleteDocuments( LuceneDocumentStructure.newTermForChangeOrRemove( nodeId ) );
             break;
         default:
-            throw new IllegalStateException( "Unknown update mode " + update.getUpdateMode() );
+            throw new IllegalStateException( "Unknown update mode " + update.values()[0] );
         }
     }
 
@@ -79,23 +79,23 @@ public abstract class LuceneIndexPopulatingUpdater implements IndexUpdater
     }
 
     /**
-     * Method is invoked when {@link NodePropertyUpdate} with {@link UpdateMode#ADDED} is processed.
+     * Method is invoked when {@link IndexEntryUpdate} with {@link UpdateMode#ADDED} is processed.
      *
      * @param update the update being processed.
      */
-    protected abstract void added( NodePropertyUpdate update );
+    protected abstract void added( IndexEntryUpdate update );
 
     /**
-     * Method is invoked when {@link NodePropertyUpdate} with {@link UpdateMode#CHANGED} is processed.
+     * Method is invoked when {@link IndexEntryUpdate} with {@link UpdateMode#CHANGED} is processed.
      *
      * @param update the update being processed.
      */
-    protected abstract void changed( NodePropertyUpdate update );
+    protected abstract void changed( IndexEntryUpdate update );
 
     /**
-     * Method is invoked when {@link NodePropertyUpdate} with {@link UpdateMode#REMOVED} is processed.
+     * Method is invoked when {@link IndexEntryUpdate} with {@link UpdateMode#REMOVED} is processed.
      *
      * @param update the update being processed.
      */
-    protected abstract void removed( NodePropertyUpdate update );
+    protected abstract void removed( IndexEntryUpdate update );
 }

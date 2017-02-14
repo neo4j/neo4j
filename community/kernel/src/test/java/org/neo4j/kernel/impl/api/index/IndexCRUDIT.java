@@ -271,7 +271,7 @@ public class IndexCRUDIT
         @Override
         public void includeSample( IndexEntryUpdate update )
         {
-            addValueToSample( update.getEntityId(), update.value() );
+            addValueToSample( update.getEntityId(), update.values()[0] );
         }
 
         @Override

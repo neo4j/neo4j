@@ -492,7 +492,7 @@ public class IndexPopulationJobTest
                 {
                     job.update( IndexEntryUpdate.change( nodeToChange, index, previousValue, newValue ) );
                 }
-                added.add( Pair.of( update.getEntityId(), update.value() ) );
+                added.add( Pair.of( update.getEntityId(), update.values()[0] ) );
             }
         }
 
@@ -508,7 +508,7 @@ public class IndexPopulationJobTest
                     {
                         case ADDED:
                         case CHANGED:
-                            added.add( Pair.of( update.getEntityId(), update.value() ) );
+                            added.add( Pair.of( update.getEntityId(), update.values()[0] ) );
                             break;
                         default:
                             throw new IllegalArgumentException( update.updateMode().name() );
@@ -564,7 +564,7 @@ public class IndexPopulationJobTest
                 {
                     job.update( IndexEntryUpdate.remove( nodeToDelete, index, valueToDelete ) );
                 }
-                added.put( update.getEntityId(), update.value() );
+                added.put( update.getEntityId(), update.values()[0] );
             }
         }
 
@@ -580,10 +580,10 @@ public class IndexPopulationJobTest
                     {
                         case ADDED:
                         case CHANGED:
-                            added.put( update.getEntityId(), update.value() );
+                            added.put( update.getEntityId(), update.values()[0] );
                             break;
                         case REMOVED:
-                            removed.put( update.getEntityId(), update.value() ); // on remove, value is the before value
+                            removed.put( update.getEntityId(), update.values()[0] ); // on remove, value is the before value
                             break;
                         default:
                             throw new IllegalArgumentException( update.updateMode().name() );

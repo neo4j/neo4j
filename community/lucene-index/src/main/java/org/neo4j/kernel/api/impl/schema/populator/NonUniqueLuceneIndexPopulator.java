@@ -24,8 +24,8 @@ import java.io.IOException;
 import org.neo4j.kernel.api.exceptions.index.IndexEntryConflictException;
 import org.neo4j.kernel.api.impl.schema.LuceneDocumentStructure;
 import org.neo4j.kernel.api.impl.schema.SchemaIndex;
+import org.neo4j.kernel.api.index.IndexEntryUpdate;
 import org.neo4j.kernel.api.index.IndexUpdater;
-import org.neo4j.kernel.api.index.NodePropertyUpdate;
 import org.neo4j.kernel.api.index.PropertyAccessor;
 import org.neo4j.kernel.impl.api.index.sampling.DefaultNonUniqueIndexSampler;
 import org.neo4j.kernel.impl.api.index.sampling.IndexSamplingConfig;
@@ -70,12 +70,12 @@ public class NonUniqueLuceneIndexPopulator extends LuceneIndexPopulator
     }
 
     @Override
-    public void includeSample( NodePropertyUpdate update )
+    public void includeSample( IndexEntryUpdate update )
     {
         if ( updateSampling )
         {
             checkSampler();
-            sampler.include( LuceneDocumentStructure.encodedStringValue( update.getValueAfter() ) );
+            sampler.include( LuceneDocumentStructure.encodedStringValue( update.values()[0] ) );
         }
     }
 

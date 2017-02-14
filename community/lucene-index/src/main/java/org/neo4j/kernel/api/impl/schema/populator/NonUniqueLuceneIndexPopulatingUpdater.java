@@ -21,7 +21,7 @@ package org.neo4j.kernel.api.impl.schema.populator;
 
 import org.neo4j.kernel.api.impl.schema.LuceneDocumentStructure;
 import org.neo4j.kernel.api.impl.schema.writer.LuceneIndexWriter;
-import org.neo4j.kernel.api.index.NodePropertyUpdate;
+import org.neo4j.kernel.api.index.IndexEntryUpdate;
 import org.neo4j.kernel.impl.api.index.sampling.NonUniqueIndexSampler;
 
 /**
@@ -38,26 +38,26 @@ public class NonUniqueLuceneIndexPopulatingUpdater extends LuceneIndexPopulating
     }
 
     @Override
-    protected void added( NodePropertyUpdate update )
+    protected void added( IndexEntryUpdate update )
     {
-        String encodedValue = LuceneDocumentStructure.encodedStringValue( update.getValueAfter() );
+        String encodedValue = LuceneDocumentStructure.encodedStringValue( update.values()[0] );
         sampler.include( encodedValue );
     }
 
     @Override
-    protected void changed( NodePropertyUpdate update )
+    protected void changed( IndexEntryUpdate update )
     {
-        String encodedValueBefore = LuceneDocumentStructure.encodedStringValue( update.getValueBefore() );
+        String encodedValueBefore = LuceneDocumentStructure.encodedStringValue( update.beforeValues()[0] );
         sampler.exclude( encodedValueBefore );
 
-        String encodedValueAfter = LuceneDocumentStructure.encodedStringValue( update.getValueAfter() );
+        String encodedValueAfter = LuceneDocumentStructure.encodedStringValue( update.values()[0] );
         sampler.include( encodedValueAfter );
     }
 
     @Override
-    protected void removed( NodePropertyUpdate update )
+    protected void removed( IndexEntryUpdate update )
     {
-        String removedValue = LuceneDocumentStructure.encodedStringValue( update.getValueBefore() );
+        String removedValue = LuceneDocumentStructure.encodedStringValue( update.values()[0] );
         sampler.exclude( removedValue );
     }
 

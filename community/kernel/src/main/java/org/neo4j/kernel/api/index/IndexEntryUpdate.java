@@ -78,19 +78,6 @@ public class IndexEntryUpdate
         return values;
     }
 
-    public Object value()
-    {
-        if ( values.length == 1 )
-        {
-            return values[0];
-        }
-        else
-        {
-            throw new IllegalStateException(
-                    "Expected single value index update but found " + values.length + " values" );
-        }
-    }
-
     @Override
     public boolean equals( Object o )
     {
@@ -124,29 +111,19 @@ public class IndexEntryUpdate
                 .userDescription( SchemaUtil.noopTokenNameLookup ), Arrays.toString(values) );
     }
 
-    public static IndexEntryUpdate add( long nodeId, NewIndexDescriptor descriptor, Object value )
+    public static IndexEntryUpdate add( long nodeId, NewIndexDescriptor descriptor, Object... values )
     {
-        return new IndexEntryUpdate( nodeId, descriptor, UpdateMode.ADDED, new Object[]{value} );
+        return new IndexEntryUpdate( nodeId, descriptor, UpdateMode.ADDED, values );
     }
 
-    public static IndexEntryUpdate remove( long nodeId, NewIndexDescriptor descriptor, Object value )
+    public static IndexEntryUpdate remove( long nodeId, NewIndexDescriptor descriptor, Object... values )
     {
-        return new IndexEntryUpdate( nodeId, descriptor, UpdateMode.REMOVED, new Object[]{value} );
+        return new IndexEntryUpdate( nodeId, descriptor, UpdateMode.REMOVED, values );
     }
 
     public static IndexEntryUpdate change( long nodeId, NewIndexDescriptor descriptor, Object before, Object after )
     {
         return new IndexEntryUpdate( nodeId, descriptor, UpdateMode.CHANGED, new Object[]{before}, new Object[]{after} );
-    }
-
-    public static IndexEntryUpdate add( long nodeId, NewIndexDescriptor descriptor, Object[] values )
-    {
-        return new IndexEntryUpdate( nodeId, descriptor, UpdateMode.ADDED, values );
-    }
-
-    public static IndexEntryUpdate remove( long nodeId, NewIndexDescriptor descriptor, Object[] values )
-    {
-        return new IndexEntryUpdate( nodeId, descriptor, UpdateMode.REMOVED, values );
     }
 
     public static IndexEntryUpdate change( long nodeId, NewIndexDescriptor descriptor, Object[] before, Object[] after )
@@ -162,5 +139,4 @@ public class IndexEntryUpdate
         }
         return before;
     }
-
 }

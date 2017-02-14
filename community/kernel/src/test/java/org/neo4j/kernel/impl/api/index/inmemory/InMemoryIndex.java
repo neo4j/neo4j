@@ -64,7 +64,7 @@ class InMemoryIndex
         this( new HashBasedIndex() );
     }
 
-    InMemoryIndex( InMemoryIndexImplementation indexData )
+    private InMemoryIndex( InMemoryIndexImplementation indexData )
     {
         this.indexData = indexData;
     }
@@ -92,17 +92,6 @@ class InMemoryIndex
         return new OnlineAccessor();
     }
 
-    protected final PrimitiveLongIterator indexSeek( Object propertyValue )
-    {
-        return indexData.seek( propertyValue );
-    }
-
-    protected boolean add( long nodeId, Object propertyValue, boolean applyIdempotently )
-            throws IndexEntryConflictException, IOException
-    {
-        return indexData.add( nodeId, propertyValue, applyIdempotently );
-    }
-
     protected boolean add( long nodeId, Object[] propertyValues, boolean applyIdempotently )
             throws IndexEntryConflictException, IOException
     {
@@ -115,11 +104,6 @@ class InMemoryIndex
         {
             return indexData.add( nodeId, propertyValues, applyIdempotently );
         }
-    }
-
-    protected void remove( long nodeId, Object propertyValue )
-    {
-        indexData.remove( nodeId, propertyValue );
     }
 
     protected void remove( long nodeId, Object[] propertyValues )
