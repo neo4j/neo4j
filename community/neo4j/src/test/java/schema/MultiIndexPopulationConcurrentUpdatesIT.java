@@ -127,9 +127,9 @@ public class MultiIndexPopulationConcurrentUpdatesIT
     public void applyConcurrentDeletesToPopulatedIndex() throws Throwable
     {
         List<NodeUpdates> updates = new ArrayList<>( 2 );
-        updates.add( NodeUpdates.forNode( 0, new long[]{labelsNameIdMap.get( COUNTRY_LABEL )} )
+        updates.add( NodeUpdates.forNode( 0, id( COUNTRY_LABEL ) )
                 .removed( propertyId, "Sweden" ).build() );
-        updates.add( NodeUpdates.forNode( 3, new long[]{labelsNameIdMap.get( COLOR_LABEL )} )
+        updates.add( NodeUpdates.forNode( 3, id( COLOR_LABEL ) )
                 .removed( propertyId, "green" ).build() );
 
         launchCustomIndexPopulation( labelsNameIdMap, propertyId, updates );
@@ -157,9 +157,9 @@ public class MultiIndexPopulationConcurrentUpdatesIT
     public void applyConcurrentAddsToPopulatedIndex() throws Throwable
     {
         List<NodeUpdates> updates = new ArrayList<>( 2 );
-        updates.add( NodeUpdates.forNode( 6, new long[]{labelsNameIdMap.get( COUNTRY_LABEL )} )
+        updates.add( NodeUpdates.forNode( 6, id( COUNTRY_LABEL ) )
                 .added( propertyId, "Denmark" ).build() );
-        updates.add( NodeUpdates.forNode( 7, new long[]{labelsNameIdMap.get( CAR_LABEL )} )
+        updates.add( NodeUpdates.forNode( 7, id( CAR_LABEL ) )
                 .added( propertyId, "BMW" ).build() );
 
         launchCustomIndexPopulation( labelsNameIdMap, propertyId, updates );
@@ -185,9 +185,9 @@ public class MultiIndexPopulationConcurrentUpdatesIT
     public void applyConcurrentChangesToPopulatedIndex() throws Exception
     {
         List<NodeUpdates> updates = new ArrayList<>( 2 );
-        updates.add( NodeUpdates.forNode( 3, new long[]{labelsNameIdMap.get( COLOR_LABEL )} )
+        updates.add( NodeUpdates.forNode( 3, id( COLOR_LABEL ) )
                 .changed( propertyId, "green", "pink" ).build() );
-        updates.add( NodeUpdates.forNode( 5, new long[]{labelsNameIdMap.get( CAR_LABEL )} )
+        updates.add( NodeUpdates.forNode( 5, id( CAR_LABEL ) )
                 .changed( propertyId, "Ford", "SAAB" ).build() );
 
         launchCustomIndexPopulation( labelsNameIdMap, propertyId, updates );
@@ -211,6 +211,11 @@ public class MultiIndexPopulationConcurrentUpdatesIT
                 assertEquals("Should be added by concurrent change.", 1, indexReader.countIndexedNodes( 5, "SAAB" ) );
             }
         }
+    }
+
+    private long[] id( String label )
+    {
+        return new long[]{labelsNameIdMap.get( label )};
     }
 
     private IndexReader getIndexReader( int propertyId, Integer countryLabelId ) throws IndexNotFoundKernelException

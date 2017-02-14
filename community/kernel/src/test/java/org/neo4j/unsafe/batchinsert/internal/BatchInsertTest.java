@@ -19,6 +19,7 @@
  */
 package org.neo4j.unsafe.batchinsert.internal;
 
+import org.hamcrest.Matchers;
 import org.junit.After;
 import org.junit.AfterClass;
 import org.junit.BeforeClass;
@@ -70,6 +71,8 @@ import org.neo4j.kernel.api.labelscan.AllEntriesLabelScanReader;
 import org.neo4j.kernel.api.labelscan.LabelScanStore;
 import org.neo4j.kernel.api.labelscan.LabelScanWriter;
 import org.neo4j.kernel.api.labelscan.NodeLabelUpdate;
+import org.neo4j.kernel.api.schema_new.index.NewIndexDescriptor;
+import org.neo4j.kernel.api.schema_new.index.NewIndexDescriptorFactory;
 import org.neo4j.kernel.extension.KernelExtensionFactory;
 import org.neo4j.kernel.impl.MyRelTypes;
 import org.neo4j.kernel.impl.api.index.inmemory.InMemoryIndexProviderFactory;
@@ -105,6 +108,7 @@ import org.neo4j.unsafe.batchinsert.BatchRelationship;
 
 import static org.hamcrest.CoreMatchers.equalTo;
 import static org.hamcrest.Matchers.arrayContaining;
+import static org.hamcrest.Matchers.contains;
 import static org.hamcrest.Matchers.emptyArray;
 import static org.hamcrest.Matchers.is;
 import static org.junit.Assert.assertArrayEquals;
@@ -1000,13 +1004,16 @@ public class BatchInsertTest
         inserter.shutdown();
 
         // THEN
+        // This is the assumed internal index descriptor based on knowledge of what ids get assigned
+        NewIndexDescriptor internalIndex = NewIndexDescriptorFactory.forLabel( 0, 0 );
+
         verify( provider ).init();
         verify( provider ).start();
         verify( provider ).getPopulator( anyLong(), any( IndexDescriptor.class ), any( IndexConfiguration.class ),
                 any( IndexSamplingConfig.class ) );
         verify( populator ).create();
-        verify( populator ).add( singletonList( IndexEntryUpdate.add( jakewins, any(), "Jakewins" ) ) );
-        verify( populator ).add( singletonList( IndexEntryUpdate.add( boggle, any(), "b0ggl3" ) ) );
+        verify( populator ).add( singletonList( IndexEntryUpdate.add( jakewins, internalIndex, "Jakewins" ) ) );
+        verify( populator ).add( singletonList( IndexEntryUpdate.add( boggle, internalIndex, "b0ggl3" ) ) );
         verify( populator ).verifyDeferredConstraints( any( PropertyAccessor.class ) );
         verify( populator ).close( true );
         verify( provider ).stop();
