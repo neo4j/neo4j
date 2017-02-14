@@ -26,15 +26,6 @@ package org.neo4j.kernel.api.schema_new;
  */
 public interface SchemaProcessor
 {
-    /**
-     * Convenience method to make calls more readable.
-     * @param schema the SchemaDescriptor that is to be processed.
-     */
-    default void process( SchemaDescriptor schema )
-    {
-        schema.processWith( this );
-    }
-
     /*
     The following section contains the overloaded process signatures for all concrete SchemaDescriptor implementers.
     Add new overloaded methods here when adding more concrete SchemaDescriptors.

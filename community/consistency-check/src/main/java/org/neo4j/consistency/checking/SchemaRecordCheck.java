@@ -222,7 +222,7 @@ public class SchemaRecordCheck implements RecordCheck<DynamicRecord, Consistency
     private void checkSchema( SchemaRule rule, DynamicRecord record,
             RecordAccess records, CheckerEngine<DynamicRecord,ConsistencyReport.SchemaConsistencyReport> engine )
     {
-        new CheckSchema( engine, records ).process( rule.schema() );
+        rule.schema().processWith( new CheckSchema( engine, records ) );
         checkForDuplicates( rule, record, engine );
     }
 

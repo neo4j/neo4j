@@ -56,7 +56,7 @@ public class MandatoryProperties
         {
             if ( rule.getConstraintDescriptor().type() == EXISTS )
             {
-                constraintRecorder.process( rule.schema() );
+                rule.schema().processWith( constraintRecorder );
             }
         }
     }
