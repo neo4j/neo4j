@@ -37,10 +37,17 @@ trait BinaryOperator {
     rhs.init(generator)
   }
 
-  override final def generateExpression[E](structure: MethodStructure[E])(implicit context: CodeGenContext) =
+  override final def generateExpression[E](structure: MethodStructure[E])(implicit context: CodeGenContext) = {
+    def isListOf(codeGenType: CodeGenType, cType: CypherType) = codeGenType match {
+      case CodeGenType(ListType(inner),_) if inner == cType => true
+      case _ => false
+    }
     (lhs.codeGenType, rhs.codeGenType) match {
-      case (CodeGenType(CTBoolean, _), _) => throw new CypherTypeException(s"Cannot $name a boolean and ${rhs.codeGenType.ct}")
-      case (_, CodeGenType(CTBoolean, _)) => throw new CypherTypeException(s"Cannot $name a ${rhs.codeGenType.ct} and a boolean")
+      case (CodeGenType(CTBoolean, _), t) if !(isListOf(t, CTAny) || isListOf(t, CTBoolean)) =>
+        throw new CypherTypeException(s"Cannot $name a boolean and ${rhs.codeGenType.ct}")
+
+      case (t, CodeGenType(CTBoolean, _)) if !(isListOf(t, CTAny) || isListOf(t, CTBoolean)) =>
+        throw new CypherTypeException(s"Cannot $name a ${rhs.codeGenType.ct} and a boolean")
 
       case (t1, t2) if t1.isPrimitive && t2.isPrimitive =>
         generator(structure)(context)(structure.box(lhs.generateExpression(structure)),
@@ -51,11 +58,12 @@ trait BinaryOperator {
                                       rhs.generateExpression(structure))
       case (_, t) if t.isPrimitive =>
         generator(structure)(context)(lhs.generateExpression(structure),
-                                                           structure.box(rhs.generateExpression(structure)))
+                                      structure.box(rhs.generateExpression(structure)))
 
       case _ => generator(structure)(context)(lhs.generateExpression(structure),
                                               rhs.generateExpression(structure))
     }
+  }
 
   override def codeGenType(implicit context: CodeGenContext) =
     (lhs.codeGenType.ct, rhs.codeGenType.ct) match {

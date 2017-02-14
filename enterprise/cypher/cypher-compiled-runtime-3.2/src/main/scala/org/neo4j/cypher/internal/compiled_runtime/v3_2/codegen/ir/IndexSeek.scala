@@ -36,7 +36,7 @@ case class IndexSeek(opName: String, labelName: String, propName: String, descri
   }
 
   override def produceIterator[E](iterVar: String, generator: MethodStructure[E])(implicit context: CodeGenContext) = {
-      generator.indexSeek(iterVar, descriptorVar, expression.generateExpression(generator))
+      generator.indexSeek(iterVar, descriptorVar, expression.generateExpression(generator), expression.codeGenType)
       generator.incrementDbHits()
   }
 

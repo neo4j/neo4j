@@ -40,11 +40,16 @@ object LiteralTypeSupport {
   def deriveCodeGenType(obj: Any): CodeGenType = deriveCodeGenType(deriveCypherType(obj))
 
   def deriveCodeGenType(ct: CypherType): CodeGenType = ct match {
-    case CTInteger => CodeGenType(CTInteger, IntType)
-    case CTFloat => CodeGenType(CTFloat, expressions.FloatType)
-    case CTBoolean => CodeGenType(CTBoolean, BoolType)
-    case CTNode => CodeGenType(CTNode, IntType)
-    case CTRelationship => CodeGenType(CTRelationship, IntType)
-    case _ => CodeGenType(ct, ReferenceType)
+    case ListType(innerCt) => CodeGenType(CTList(innerCt), ListReferenceType(toRepresentationType(innerCt)))
+    case _ => CodeGenType(ct, toRepresentationType(ct))
+  }
+
+  private def toRepresentationType(ct: CypherType): RepresentationType = ct match {
+    case CTInteger => IntType
+    case CTFloat => expressions.FloatType
+    case CTBoolean => BoolType
+    case CTNode => IntType
+    case CTRelationship => IntType
+    case _ => ReferenceType
   }
 }

@@ -624,6 +624,51 @@ abstract class CodeGeneratorTest extends CypherFunSuite with LogicalPlanningTest
     result.toSet should equal(Set(Map("a" -> "BAR")))
   }
 
+  test("project null parameters") {
+
+    val plan = ProduceResult(List("a"), Projection(SingleRow()(solved), Map("a" -> Parameter("FOO", CTAny)(pos)))(solved))
+    val compiled = compileAndExecute(plan, Map("FOO" -> null))
+
+    //then
+    val result = getResult(compiled, "a")
+    result.toSet should equal(Set(Map("a" -> null)))
+  }
+
+  test("project primitive parameters") {
+
+    val plan = ProduceResult(List("a", "r1", "x", "y", "z"),
+      Projection(SingleRow()(solved), Map("a" -> Parameter("FOO_NODE", CTNode)(pos),
+                                          "r1" -> Parameter("FOO_REL",  CTRelationship)(pos),
+                                          "x" -> Parameter("FOO1", CTInteger)(pos),
+                                          "y" -> Parameter("FOO2", CTFloat)(pos),
+                                          "z" -> Parameter("FOO3", CTBoolean)(pos)))(solved))
+
+    val compiled = compileAndExecute(plan, Map("FOO_NODE" -> aNode,
+                                               "FOO_REL" -> relMap(11L).relationship,
+                                               "FOO1" -> 42L.asInstanceOf[AnyRef],
+                                               "FOO2" -> 3.14d.asInstanceOf[AnyRef],
+                                               "FOO3" -> true.asInstanceOf[AnyRef]))
+
+    //then
+    val result = getResult(compiled, "a", "r1", "x", "y", "z")
+    result.toSet should equal(Set(Map("a" -> aNode, "r1" -> relMap(11L).relationship,
+                                      "x" -> 42L, "y" -> 3.14d, "z" -> true)))
+  }
+
+  test("project null primitive node and relationship parameters") {
+
+    val plan = ProduceResult(List("a", "r1"),
+      Projection(SingleRow()(solved), Map("a" -> Parameter("FOO_NODE", CTNode)(pos),
+                                          "r1" -> Parameter("FOO_REL",  CTRelationship)(pos)))(solved))
+
+    val compiled = compileAndExecute(plan, Map("FOO_NODE" -> null,
+                                               "FOO_REL" -> null))
+
+    //then
+    val result = getResult(compiled, "a", "r1")
+    result.toSet should equal(Set(Map("a" -> null, "r1" -> null)))
+  }
+
   test("project nodes") {
     val scan = AllNodesScan(IdName("a"), Set.empty)(solved)
     val plan = ProduceResult(List("a"), plans.Projection(scan, Map("a" -> varFor("a")))(solved))

@@ -140,6 +140,11 @@ class IncomparableValuesException(lhs: String, rhs: String, cause: Throwable)
   def this(lhs: String, rhs: String) = this(lhs, rhs, null)
 }
 
+class UnorderableValueException(value: String, cause: Throwable)
+  extends CypherTypeException(s"Do not know how to order $value", cause) {
+  def this(value: String) = this(value, null)
+}
+
 class PeriodicCommitInOpenTransactionException(cause: Throwable)
   extends InvalidSemanticsException("Executing stream that use periodic commit in an open transaction is not possible.", cause) {
   def this() = this(null)

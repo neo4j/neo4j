@@ -326,13 +326,33 @@ class GeneratedMethodStructure(val fields: Fields, val generator: CodeBlock, aux
   private def loadEvent = generator
     .load(events.headOption.getOrElse(throw new IllegalStateException("no current trace event")))
 
-  override def expectParameter(key: String, variableName: String) = {
+  override def expectParameter(key: String, variableName: String, codeGenType: CodeGenType) = {
     using(
       generator.ifNotStatement(invoke(params, mapContains, constant(key)))) { block =>
       block.throwException(parameterNotFoundException(key))
     }
-    generator.assign(typeRef[Object], variableName, invoke(loadParameter,
-                                                           invoke(params, mapGet, constantExpression(key))))
+    val invokeLoadParameter = invoke(loadParameter, invoke(params, mapGet, constantExpression(key)))
+    generator.assign(lowerType(codeGenType), variableName,
+      // We assume the value in the parameter map will always be boxed, so if we are declaring
+      // a primitive variable we need to force it to be unboxed
+      codeGenType match {
+        case CodeGenType.primitiveNode =>
+          unbox(Expression.cast(typeRef[NodeIdWrapper], invokeLoadParameter),
+            CodeGenType(symbols.CTNode, ReferenceType))
+        case CodeGenType.primitiveRel =>
+          unbox(Expression.cast(typeRef[RelationshipIdWrapper], invokeLoadParameter),
+            CodeGenType(symbols.CTRelationship, ReferenceType))
+        case CodeGenType.primitiveInt =>
+          Expression.unbox(Expression.cast(typeRef[java.lang.Long], invokeLoadParameter))
+        case CodeGenType.primitiveFloat =>
+          Expression.unbox(Expression.cast(typeRef[java.lang.Double], invokeLoadParameter))
+        case CodeGenType.primitiveBool =>
+          Expression.unbox(Expression.cast(typeRef[java.lang.Boolean], invokeLoadParameter))
+        case CodeGenType(_, ListReferenceType(repr)) if RepresentationType.isPrimitive(repr) =>
+          asPrimitiveStream(invokeLoadParameter, codeGenType)
+        case _ => invokeLoadParameter
+      }
+    )
   }
 
   override def mapGetExpression(mapName: String, key: String): Expression = {
@@ -392,8 +412,8 @@ class GeneratedMethodStructure(val fields: Fields, val generator: CodeBlock, aux
 
   override def unbox(expression: Expression, codeGenType: CodeGenType) = codeGenType match {
     case c if c.isPrimitive => expression
-    case CodeGenType(symbols.CTNode, ReferenceType) => invoke(expression, Methods.unboxNode)
-    case CodeGenType(symbols.CTRelationship, ReferenceType) => invoke(expression, Methods.unboxRel)
+    case CodeGenType(symbols.CTNode, ReferenceType) => invoke(Methods.unboxNode, expression)
+    case CodeGenType(symbols.CTRelationship, ReferenceType) => invoke(Methods.unboxRel, expression)
     case _ => Expression.unbox(expression)
   }
 
@@ -477,6 +497,33 @@ class GeneratedMethodStructure(val fields: Fields, val generator: CodeBlock, aux
   }
 
   override def asList(values: Seq[Expression]) = Templates.asList[Object](values)
+
+  override def asPrimitiveStream(publicTypeList: Expression, codeGenType: CodeGenType) = {
+    codeGenType match {
+      case CodeGenType(ListType(CTNode), ListReferenceType(IntType)) =>
+        Expression.invoke(methodReference(typeRef[PrimitiveNodeStream], typeRef[PrimitiveNodeStream], "of", typeRef[Object]), publicTypeList)
+      case CodeGenType(ListType(CTRelationship), ListReferenceType(IntType)) =>
+        Expression.invoke(methodReference(typeRef[PrimitiveRelationshipStream], typeRef[PrimitiveRelationshipStream], "of", typeRef[Object]), publicTypeList)
+      case CodeGenType(_, ListReferenceType(IntType)) =>
+        // byte[]
+        // short[]
+        // int[]
+        // long[]
+        // Object[]
+        Expression.invoke(methodReference(typeRef[CompiledConversionUtils], typeRef[LongStream], "toLongStream", typeRef[Object]), publicTypeList)
+      case CodeGenType(_, ListReferenceType(FloatType)) =>
+        // float[]
+        // double[]
+        // Object[]
+        Expression.invoke(methodReference(typeRef[CompiledConversionUtils], typeRef[DoubleStream], "toDoubleStream", typeRef[Object]), publicTypeList)
+      case CodeGenType(_, ListReferenceType(BoolType)) =>
+        // boolean[]
+        // Object[]
+        Expression.invoke(methodReference(typeRef[CompiledConversionUtils], typeRef[IntStream], "toBooleanStream", typeRef[Object]), publicTypeList)
+      case _ =>
+        throw new IllegalArgumentException(s"CodeGenType $codeGenType not supported as primitive stream")
+    }
+  }
 
   override def asPrimitiveStream(values: Seq[Expression], codeGenType: CodeGenType) = {
     codeGenType match {
@@ -1253,8 +1300,15 @@ class GeneratedMethodStructure(val fields: Fields, val generator: CodeBlock, aux
     }
   }
 
-  override def nodeIdSeek(nodeIdVar: String, expression: Expression)(block: MethodStructure[Expression] => Unit) = {
-    generator.assign(typeRef[Long], nodeIdVar, invoke(Methods.mathCastToLong, expression))
+  override def nodeIdSeek(nodeIdVar: String, expression: Expression, codeGenType: CodeGenType)(block: MethodStructure[Expression] => Unit) = {
+    codeGenType match {
+      case CodeGenType(symbols.CTInteger, IntType) =>
+        generator.assign(typeRef[Long], nodeIdVar, expression)
+      case CodeGenType(symbols.CTInteger, ReferenceType) =>
+        generator.assign(typeRef[Long], nodeIdVar, invoke(Methods.mathCastToLong, expression))
+      case _ =>
+        throw new IllegalArgumentException(s"CodeGenType $codeGenType can not be converted to long")
+    }
     using(generator.ifStatement(
       gt(generator.load(nodeIdVar), constant(-1L)),
       invoke(readOperations, nodeExists, generator.load(nodeIdVar))
@@ -1294,18 +1348,20 @@ class GeneratedMethodStructure(val fields: Fields, val generator: CodeBlock, aux
     )
   }
 
-  override def indexSeek(iterVar: String, descriptorVar: String, value: Expression) = {
+  override def indexSeek(iterVar: String, descriptorVar: String, value: Expression, codeGenType: CodeGenType) = {
     val local = generator.declare(typeRef[PrimitiveLongIterator], iterVar)
+    val boxedValue = if (codeGenType.isPrimitive) Expression.box(value) else value
     handleKernelExceptions(generator, fields.ro, _finalizers) { body =>
-      body.assign(local, invoke(readOperations, nodesGetFromIndexLookup, generator.load(descriptorVar), value))
+      body.assign(local, invoke(readOperations, nodesGetFromIndexLookup, generator.load(descriptorVar), boxedValue))
     }
   }
 
-  override def indexUniqueSeek(nodeVar: String, descriptorVar: String, value: Expression) = {
+  override def indexUniqueSeek(nodeVar: String, descriptorVar: String, value: Expression, codeGenType: CodeGenType) = {
     val local = generator.declare(typeRef[Long], nodeVar)
+    val boxedValue = if (codeGenType.isPrimitive) Expression.box(value) else value
     handleKernelExceptions(generator, fields.ro, _finalizers) { body =>
       body.assign(local,
-                  invoke(readOperations, nodeGetUniqueFromIndexLookup, generator.load(descriptorVar), value))
+                  invoke(readOperations, nodeGetUniqueFromIndexLookup, generator.load(descriptorVar), boxedValue))
     }
   }
 

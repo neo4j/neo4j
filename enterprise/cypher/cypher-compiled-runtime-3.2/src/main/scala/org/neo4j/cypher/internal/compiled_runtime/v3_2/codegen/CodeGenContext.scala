@@ -49,6 +49,10 @@ class CodeGenContext(val semanticTable: SemanticTable, idMap: Map[LogicalPlan, I
 
   def getVariable(queryVariable: String): Variable = variables(queryVariable)
 
+  def hasVariable(queryVariable: String): Boolean = variables.isDefinedAt(queryVariable)
+
+  def isProjectedVariable(queryVariable: String): Boolean = projectedVariables.contains(queryVariable)
+
   def variableQueryVariables(): Set[String] = variables.keySet.toSet
 
   // We need to keep track of variables that are exposed by a QueryHorizon,
@@ -58,9 +62,9 @@ class CodeGenContext(val semanticTable: SemanticTable, idMap: Map[LogicalPlan, I
     projectedVariables.put(queryVariable, variable)
   }
 
-  // We need to clear projected variables that are no longer exposed by a QueryHorizon, e.g a regular Projection
-  def clearProjectedVariables(): Unit = {
-    projectedVariables.clear()
+  // We need to keep only the projected variables that are exposed by a QueryHorizon, e.g a regular Projection
+  def retainProjectedVariables(queryVariablesToRetain: Set[String]): Unit = {
+    projectedVariables.retain((key, _) => queryVariablesToRetain.contains(key))
   }
 
   def getProjectedVariables: Map[String, Variable] = projectedVariables.toMap

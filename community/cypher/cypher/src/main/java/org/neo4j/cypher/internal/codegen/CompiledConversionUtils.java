@@ -37,6 +37,8 @@ import org.neo4j.graphdb.Node;
 import org.neo4j.graphdb.Relationship;
 import org.neo4j.kernel.impl.core.NodeManager;
 
+import static java.lang.String.format;
+
 // Class with static methods used by compiled execution plans
 public abstract class CompiledConversionUtils
 {
@@ -263,4 +265,106 @@ public abstract class CompiledConversionUtils
             throw new CypherTypeException( "Don't know how to create an iterator out of " + iterable.getClass().getSimpleName(), null );
         }
     }
+
+    public static LongStream toLongStream( Object list )
+    {
+        if ( list == null )
+        {
+            return LongStream.empty();
+        }
+        else if ( list instanceof List )
+        {
+            return ((List) list).stream().mapToLong( n -> ((Number) n).longValue() );
+        }
+        else if ( Object[].class.isAssignableFrom( list.getClass() ) )
+        {
+            return Arrays.stream( (Object[]) list ).mapToLong( n -> ((Number) n).longValue() );
+        }
+        else if ( list instanceof byte[] )
+        {
+            byte[] array = (byte[]) list;
+            return IntStream.range( 0, array.length ).mapToLong( i -> array[i] );
+        }
+        else if ( list instanceof short[] )
+        {
+            short[] array = (short[]) list;
+            return IntStream.range( 0, array.length ).mapToLong( i -> array[i] );
+        }
+        else if ( list instanceof int[] )
+        {
+            return IntStream.of( (int[]) list ).mapToLong( i -> i );
+        }
+        else if ( list instanceof long[] )
+        {
+            return LongStream.of( (long[]) list );
+        }
+        throw new IllegalArgumentException( format( "Can not be converted to stream: %s", list.getClass().getName() ) );
+    }
+
+    public static DoubleStream toDoubleStream( Object list )
+    {
+        if ( list == null )
+        {
+            return DoubleStream.empty();
+        }
+        else if ( list instanceof List )
+        {
+            return ((List) list).stream().mapToDouble( n -> ((Number) n).doubleValue() );
+        }
+        else if ( Object[].class.isAssignableFrom( list.getClass() ) )
+        {
+            return Arrays.stream( (Object[]) list ).mapToDouble( n -> ((Number) n).doubleValue() );
+        }
+        else if ( list instanceof float[] )
+        {
+            float[] array = (float[]) list;
+            return IntStream.range( 0, array.length ).mapToDouble( i -> array[i] );
+        }
+        else if ( list instanceof double[] )
+        {
+            return DoubleStream.of( (double[]) list );
+        }
+        throw new IllegalArgumentException( format( "Can not be converted to stream: %s", list.getClass().getName() ) );
+    }
+
+    public static IntStream toBooleanStream( Object list )
+    {
+        if ( list == null )
+        {
+            return IntStream.empty();
+        }
+        else if ( list instanceof List )
+        {
+            return ((List) list).stream().mapToInt( n -> ((Number) n).intValue() );
+        }
+        else if ( Object[].class.isAssignableFrom( list.getClass() ) )
+        {
+            return Arrays.stream( (Object[]) list ).mapToInt( n -> ((Number) n).intValue() );
+        }
+        else if ( list instanceof boolean[] )
+        {
+            boolean[] array = (boolean[]) list;
+            return IntStream.range( 0, array.length ).map( i -> (array[i]) ? 1 : 0 );
+        }
+        throw new IllegalArgumentException( format( "Can not be converted to stream: %s", list.getClass().getName() ) );
+    }
+
+    public static long unboxNodeOrNull( NodeIdWrapper value )
+    {
+        if ( value == null )
+        {
+            return -1L;
+        }
+        return value.id();
+    }
+
+    public static long unboxRelationshipOrNull( RelationshipIdWrapper value )
+    {
+        if ( value == null )
+        {
+            return -1L;
+        }
+        return value.id();
+    }
+
 }

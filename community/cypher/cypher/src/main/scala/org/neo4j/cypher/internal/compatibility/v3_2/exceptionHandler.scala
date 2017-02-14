@@ -35,6 +35,7 @@ object exceptionHandler extends MapToPublicExceptions[CypherException] {
 
   def incomparableValuesException(lhs: String, rhs: String, cause: Throwable) = new IncomparableValuesException(lhs, rhs, cause)
 
+  def unorderableValueException(value: String, cause: Throwable) = new UnorderableValueException(value, cause)
 
   def patternException(message: String, cause: Throwable) = new PatternException(message, cause)
 

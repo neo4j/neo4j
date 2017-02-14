@@ -61,6 +61,7 @@ trait MethodStructure[E] {
   def constantExpression(value: Object): E
   def asMap(map: Map[String, E]): E
   def asList(values: Seq[E]): E
+  def asPrimitiveStream(values: E, codeGenType: CodeGenType): E
   def asPrimitiveStream(values: Seq[E], codeGenType: CodeGenType): E
 
   def declarePrimitiveIterator(name: String, iterableCodeGenType: CodeGenType): Unit
@@ -123,7 +124,7 @@ trait MethodStructure[E] {
   def toFloat(expression:E): E
 
   // parameters
-  def expectParameter(key: String, variableName: String): Unit
+  def expectParameter(key: String, variableName: String, codeGenType: CodeGenType): Unit
 
   // map
   def mapGetExpression(mapName: String, key: String): E
@@ -150,12 +151,12 @@ trait MethodStructure[E] {
   def hasNextRelationship(iterVar: String): E
   def nodeGetPropertyById(nodeIdVar: String, propId: Int, propValueVar: String): Unit
   def nodeGetPropertyForVar(nodeIdVar: String, propIdVar: String, propValueVar: String): Unit
-  def nodeIdSeek(nodeIdVar: String, expression: E)(block: MethodStructure[E] => Unit): Unit
+  def nodeIdSeek(nodeIdVar: String, expression: E, codeGenType: CodeGenType)(block: MethodStructure[E] => Unit): Unit
   def relationshipGetPropertyById(nodeIdVar: String, propId: Int, propValueVar: String): Unit
   def relationshipGetPropertyForVar(nodeIdVar: String, propIdVar: String, propValueVar: String): Unit
   def lookupPropertyKey(propName: String, propVar: String)
-  def indexSeek(iterVar: String, descriptorVar: String, value: E): Unit
-  def indexUniqueSeek(name: String, descriptorVar: String, value: E)
+  def indexSeek(iterVar: String, descriptorVar: String, value: E, codeGenType: CodeGenType): Unit
+  def indexUniqueSeek(name: String, descriptorVar: String, value: E, codeGenType: CodeGenType): Unit
   def relType(relIdVar: String, typeVar: String): Unit
   def newIndexDescriptor(descriptorVar: String, labelVar: String, propKeyVar: String): Unit
   def createRelExtractor(extractorName: String): Unit

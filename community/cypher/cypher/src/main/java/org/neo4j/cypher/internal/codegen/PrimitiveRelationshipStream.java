@@ -19,8 +19,14 @@
  */
 package org.neo4j.cypher.internal.codegen;
 
+import java.util.Arrays;
 import java.util.Iterator;
+import java.util.List;
 import java.util.stream.LongStream;
+
+import org.neo4j.graphdb.Relationship;
+
+import static java.lang.String.format;
 
 public class PrimitiveRelationshipStream extends PrimitiveEntityStream<RelationshipIdWrapper>
 {
@@ -34,10 +40,31 @@ public class PrimitiveRelationshipStream extends PrimitiveEntityStream<Relations
         return new PrimitiveRelationshipStream( LongStream.of( array ) );
     }
 
+    public static PrimitiveRelationshipStream of( Object list )
+    {
+        if ( null == list )
+        {
+            return empty;
+        }
+        else if ( list instanceof List )
+        {
+            return new PrimitiveRelationshipStream(
+                    ((List<Relationship>) list).stream().mapToLong( Relationship::getId ) );
+        }
+        else if ( list instanceof Relationship[] )
+        {
+            return new PrimitiveRelationshipStream(
+                    Arrays.stream( (Relationship[]) list ).mapToLong( Relationship::getId ) );
+        }
+        throw new IllegalArgumentException( format( "Can not convert to stream: %s", list.getClass().getName() ) );
+    }
+
     @Override
     // This method is only used when we do not know the element type at compile time, so it has to box the elements
     public Iterator<RelationshipIdWrapper> iterator()
     {
         return inner.mapToObj( RelationshipIdWrapper::new ).iterator();
     }
+
+    private static final PrimitiveRelationshipStream empty = new PrimitiveRelationshipStream( LongStream.empty() );
 }
