@@ -57,7 +57,8 @@ public class SeekCursorTest
             return Generation.generation( stableGen, unstableGen );
         }
     };
-    private static final Supplier<Root> failingRootCatchup = () -> {
+    private static final Supplier<Root> failingRootCatchup = () ->
+    {
         throw new AssertionError( "Should not happen" );
     };
 
@@ -379,7 +380,7 @@ public class SeekCursorTest
         }
 
         long expectedkey = 0;
-        try ( SeekCursor<MutableLong, MutableLong> seekCursor = seekCursor( -1, maxKeyCount - 1 ) )
+        try ( SeekCursor<MutableLong,MutableLong> seekCursor = seekCursor( -1, maxKeyCount - 1 ) )
         {
             while ( seekCursor.next() )
             {
@@ -401,7 +402,7 @@ public class SeekCursorTest
         }
 
         long expectedkey = maxKeyCount - 1;
-        try ( SeekCursor<MutableLong, MutableLong> seekCursor = seekCursor( maxKeyCount, 0 ) )
+        try ( SeekCursor<MutableLong,MutableLong> seekCursor = seekCursor( maxKeyCount, 0 ) )
         {
             while ( seekCursor.next() )
             {
@@ -423,7 +424,7 @@ public class SeekCursorTest
         }
 
         long expectedkey = 0;
-        try ( SeekCursor<MutableLong, MutableLong> seekCursor = seekCursor( 0, maxKeyCount + 1 ) )
+        try ( SeekCursor<MutableLong,MutableLong> seekCursor = seekCursor( 0, maxKeyCount + 1 ) )
         {
             while ( seekCursor.next() )
             {
@@ -445,7 +446,7 @@ public class SeekCursorTest
         }
 
         long expectedkey = maxKeyCount - 1;
-        try ( SeekCursor<MutableLong, MutableLong> seekCursor = seekCursor( maxKeyCount - 1 , -2 ) )
+        try ( SeekCursor<MutableLong,MutableLong> seekCursor = seekCursor( maxKeyCount - 1, -2 ) )
         {
             while ( seekCursor.next() )
             {
@@ -470,7 +471,7 @@ public class SeekCursorTest
         long rightChild = GenSafePointerPair.pointer( node.childAt( cursor, 1, stableGen, unstableGen ) );
 
         // when
-        try ( SeekCursor<MutableLong, MutableLong> seek = seekCursor( expectedNext, maxKeyCount + 1 ) )
+        try ( SeekCursor<MutableLong,MutableLong> seek = seekCursor( expectedNext, maxKeyCount + 1 ) )
         {
             assertEquals( rightChild, cursor.getCurrentPageId() );
             while ( seek.next() )
@@ -498,7 +499,7 @@ public class SeekCursorTest
         long rightChild = GenSafePointerPair.pointer( node.childAt( cursor, 1, stableGen, unstableGen ) );
 
         // when
-        try ( SeekCursor<MutableLong, MutableLong> seek = seekCursor( expectedNext, -1 ) )
+        try ( SeekCursor<MutableLong,MutableLong> seek = seekCursor( expectedNext, -1 ) )
         {
             assertEquals( rightChild, cursor.getCurrentPageId() );
             while ( seek.next() )
@@ -660,7 +661,7 @@ public class SeekCursorTest
 
             // Seeker pauses and writer insert new key in position where seeker will read next
             long midInsert = expected.get( stopPoint ) + 1;
-            insert(  midInsert, valueForKey( midInsert ) );
+            insert( midInsert, valueForKey( midInsert ) );
             expected.add( stopPoint, midInsert );
             this.cursor.forceRetry();
 
@@ -836,7 +837,7 @@ public class SeekCursorTest
 
             // Seeker pauses and writer insert new key which causes a split
             expected.add( 0L );
-            insert( 0L);
+            insert( 0L );
 
             seekCursor.forceRetry();
 
@@ -1248,17 +1249,11 @@ public class SeekCursorTest
         long toExclusive = fromInclusive + 1;
 
         // when
-        PageAwareByteArrayCursor seekCursor = cursor.duplicate( rootId );
+        TestPageCursor seekCursor = new TestPageCursor( cursor.duplicate( rootId ) );
         seekCursor.next();
         try ( SeekCursor<MutableLong,MutableLong> seeker = seekCursor( fromInclusive, toExclusive, seekCursor ) )
         {
-            // ... rebalance happens before first call to next
-            triggerRebalance( rightChild );
-
-            // ... then seeker should still find range
-            assertTrue( seeker.next() );
-            assertThat( seeker.get().key().longValue(), is( fromInclusive ) );
-            assertFalse( seeker.next() );
+            triggerUnderflowAndSeekRange( seeker, seekCursor, fromInclusive, toExclusive, rightChild );
         }
     }
 
@@ -1294,14 +1289,7 @@ public class SeekCursorTest
         seekCursor.next();
         try ( SeekCursor<MutableLong,MutableLong> seeker = seekCursor( fromInclusive, toExclusive, seekCursor ) )
         {
-            // ... rebalance happens before first call to next
-            triggerRebalance( rightChild );
-            seekCursor.changed(); // ByteArrayPageCursor is not aware of should retry, so fake it here
-
-            // ... then seeker should still find range
-            assertTrue( seeker.next() );
-            assertThat( seeker.get().key().longValue(), is( fromInclusive ) );
-            assertFalse( seeker.next() );
+            triggerUnderflowAndSeekRange( seeker, seekCursor, fromInclusive, toExclusive, rightChild );
         }
     }
 
@@ -1338,18 +1326,7 @@ public class SeekCursorTest
         seekCursor.next();
         try ( SeekCursor<MutableLong,MutableLong> seeker = seekCursor( fromInclusive, toExclusive, seekCursor ) )
         {
-            // ... after call to next
-            assertTrue( seeker.next() );
-            assertThat( seeker.get().key().longValue(), is( fromInclusive ) );
-
-            // ... rebalance happens
-            triggerRebalance( rightChild );
-            seekCursor.changed(); // ByteArrayPageCursor is not aware of should retry, so fake it here
-            assertTrue( seeker.next() );
-
-            // ... should still find rest of range
-            assertThat( seeker.get().key().longValue(), is( fromInclusive + 1 ) );
-            assertFalse( seeker.next() );
+            seekRangeWithUnderflowMidSeek( seeker, seekCursor, fromInclusive, toExclusive, rightChild );
         }
     }
 
@@ -1386,27 +1363,147 @@ public class SeekCursorTest
         seekCursor.next();
         try ( SeekCursor<MutableLong,MutableLong> seeker = seekCursor( fromInclusive, toExclusive, seekCursor ) )
         {
-            // ... after call to next
-            assertTrue( seeker.next() );
-            assertThat( seeker.get().key().longValue(), is( fromInclusive ) );
-
-            // ... rebalance happens
-            triggerRebalance( rightChild );
-            seekCursor.changed(); // ByteArrayPageCursor is not aware of should retry, so fake it here
-
-            // ... should still find rest of range
-            assertTrue( seeker.next() );
-            assertThat( seeker.get().key().longValue(), is( fromInclusive - 1 ) );
-            assertFalse( seeker.next() );
+            seekRangeWithUnderflowMidSeek( seeker, seekCursor, fromInclusive, toExclusive, rightChild );
         }
     }
 
-    /* MERGE (when merge is implemented) */
-    // todo mustFindRangeWhenRemoveInLeftSiblingCausesMerge
-    // todo mustFindRangeWhenRemoveInRightSiblingCausesMerge
-    // todo mustFindRangeWhenRemoveInSeekNodeCauseMergeWithLeft
-    // todo mustFindRangeWhenRemoveInSeekNodeCauseMergeWithRight
-    // todo mustFindRangeWhenRemoveTwoNodesToRightCauseMergeWithNodeOneToTheRight
+    /* MERGE */
+
+    @Test
+    public void mustFindRangeWhenMergingFromCurrentSeekNode() throws Exception
+    {
+        // given
+        long key = 0;
+        while ( numberOfRootSplits == 0 )
+        {
+            insert( key );
+            key++;
+        }
+
+        PageAwareByteArrayCursor readCursor = cursor.duplicate( rootId );
+        readCursor.next();
+        long leftChild = childAt( readCursor, 0, stableGen, unstableGen );
+        long rightChild = childAt( readCursor, 1, stableGen, unstableGen );
+
+        // from first key in left child
+        readCursor.next( pointer( leftChild ) );
+        node.keyAt( readCursor, from, 0 );
+        long fromInclusive = from.longValue();
+        long toExclusive = from.longValue() + 2;
+
+        // when
+        TestPageCursor seekCursor = new TestPageCursor( cursor.duplicate( rootId ) );
+        seekCursor.next();
+        try ( SeekCursor<MutableLong,MutableLong> seeker = seekCursor( fromInclusive, toExclusive, seekCursor ) )
+        {
+            assertThat( seekCursor.getCurrentPageId(), is( leftChild ) );
+            seekRangeWithUnderflowMidSeek( seeker, seekCursor, fromInclusive, toExclusive, rightChild );
+            readCursor.next( rootId );
+            assertTrue( TreeNode.isLeaf( readCursor ) );
+        }
+    }
+
+    @Test
+    public void mustFindRangeWhenMergingToCurrentSeekNode() throws Exception
+    {
+        // given
+        long key = 0;
+        while ( numberOfRootSplits == 0 )
+        {
+            insert( key );
+            key++;
+        }
+
+        PageAwareByteArrayCursor readCursor = cursor.duplicate( rootId );
+        readCursor.next();
+        long leftChild = childAt( readCursor, 0, stableGen, unstableGen );
+        long rightChild = childAt( readCursor, 1, stableGen, unstableGen );
+
+        // from first key in left child
+        readCursor.next( pointer( rightChild ) );
+        int keyCount = node.keyCount( readCursor );
+        long fromInclusive = keyAt( readCursor, keyCount - 3 );
+        long toExclusive = keyAt( readCursor, keyCount - 1 );
+
+        // when
+        TestPageCursor seekCursor = new TestPageCursor( cursor.duplicate( rootId ) );
+        seekCursor.next();
+        try ( SeekCursor<MutableLong,MutableLong> seeker = seekCursor( fromInclusive, toExclusive, seekCursor ) )
+        {
+            assertThat( seekCursor.getCurrentPageId(), is( rightChild ) );
+            seekRangeWithUnderflowMidSeek( seeker, seekCursor, fromInclusive, toExclusive, leftChild );
+            readCursor.next( rootId );
+            assertTrue( TreeNode.isLeaf( readCursor ) );
+        }
+    }
+
+    @Test
+    public void mustFindRangeWhenMergingToCurrentSeekNodeBackwards() throws Exception
+    {
+        // given
+        long key = 0;
+        while ( numberOfRootSplits == 0 )
+        {
+            insert( key );
+            key++;
+        }
+
+        PageAwareByteArrayCursor readCursor = cursor.duplicate( rootId );
+        readCursor.next();
+        long leftChild = childAt( readCursor, 0, stableGen, unstableGen );
+        long rightChild = childAt( readCursor, 1, stableGen, unstableGen );
+
+        // from first key in left child
+        readCursor.next( pointer( rightChild ) );
+        int keyCount = node.keyCount( readCursor );
+        long fromInclusive = keyAt( readCursor, keyCount - 1 );
+        long toExclusive = keyAt( readCursor, keyCount - 3 );
+
+        // when
+        TestPageCursor seekCursor = new TestPageCursor( cursor.duplicate( rootId ) );
+        seekCursor.next();
+        try ( SeekCursor<MutableLong,MutableLong> seeker = seekCursor( fromInclusive, toExclusive, seekCursor ) )
+        {
+            assertThat( seekCursor.getCurrentPageId(), is( rightChild ) );
+            seekRangeWithUnderflowMidSeek( seeker, seekCursor, fromInclusive, toExclusive, leftChild );
+            readCursor.next( rootId );
+            assertTrue( TreeNode.isLeaf( readCursor ) );
+        }
+    }
+
+    @Test
+    public void mustFindRangeWhenMergingFromCurrentSeekNodeBackwards() throws Exception
+    {
+        // given
+        long key = 0;
+        while ( numberOfRootSplits == 0 )
+        {
+            insert( key );
+            key++;
+        }
+
+        PageAwareByteArrayCursor readCursor = cursor.duplicate( rootId );
+        readCursor.next();
+        long leftChild = childAt( readCursor, 0, stableGen, unstableGen );
+        long rightChild = childAt( readCursor, 1, stableGen, unstableGen );
+
+        // from first key in left child
+        readCursor.next( pointer( leftChild ) );
+        node.keyAt( readCursor, from, 0 );
+        long fromInclusive = from.longValue() + 2;
+        long toExclusive = from.longValue();
+
+        // when
+        TestPageCursor seekCursor = new TestPageCursor( cursor.duplicate( rootId ) );
+        seekCursor.next();
+        try ( SeekCursor<MutableLong,MutableLong> seeker = seekCursor( fromInclusive, toExclusive, seekCursor ) )
+        {
+            assertThat( seekCursor.getCurrentPageId(), is( leftChild ) );
+            seekRangeWithUnderflowMidSeek( seeker, seekCursor, fromInclusive, toExclusive, rightChild );
+            readCursor.next( rootId );
+            assertTrue( TreeNode.isLeaf( readCursor ) );
+        }
+    }
 
     /* POINTER GENERATION TESTING */
 
@@ -1930,19 +2027,53 @@ public class SeekCursorTest
         }
     }
 
-    private void triggerRebalance( long nodeId ) throws IOException
+    private void triggerUnderflowAndSeekRange( SeekCursor<MutableLong,MutableLong> seeker,
+            TestPageCursor seekCursor, long fromInclusive, long toExclusive, long rightChild ) throws IOException
+    {
+        // ... then seeker should still find range
+        int stride = fromInclusive <= toExclusive ? 1 : -1;
+        triggerUnderflowAndSeekRange( seeker, seekCursor, fromInclusive, toExclusive, rightChild, stride );
+    }
+
+    private void seekRangeWithUnderflowMidSeek( SeekCursor<MutableLong,MutableLong> seeker, TestPageCursor seekCursor,
+            long fromInclusive, long toExclusive, long underflowNode ) throws IOException
+    {
+        // ... seeker has started seeking in range
+        assertTrue( seeker.next() );
+        assertThat( seeker.get().key().longValue(), is( fromInclusive ) );
+
+        int stride = fromInclusive <= toExclusive ? 1 : -1;
+        triggerUnderflowAndSeekRange( seeker, seekCursor, fromInclusive + stride, toExclusive, underflowNode, stride );
+    }
+
+    private void triggerUnderflowAndSeekRange( SeekCursor<MutableLong,MutableLong> seeker,
+            TestPageCursor seekCursor, long fromInclusive, long toExclusive, long rightChild, int stride ) throws IOException
+    {
+        // ... rebalance happens before first call to next
+        triggerUnderflow( rightChild );
+        seekCursor.changed(); // ByteArrayPageCursor is not aware of should retry, so fake it here
+
+        for ( long expected = fromInclusive; Long.compare( expected, toExclusive ) * stride < 0; expected += stride )
+        {
+            assertTrue( seeker.next() );
+            assertThat( seeker.get().key().longValue(), is( expected ) );
+        }
+        assertFalse( seeker.next() );
+    }
+
+    private void triggerUnderflow( long nodeId ) throws IOException
     {
         PageCursor readCursor = cursor.duplicate( nodeId );
         readCursor.next();
-        node.keyAt( readCursor, readKey, 0 );
-        long leftmostBeforeRebalance = readKey.longValue();
-        long toRemove = leftmostBeforeRebalance;
-        do
+        int underflowBoundary = (maxKeyCount + 1) / 2;
+        int keyCount = node.keyCount( readCursor );
+        long toRemove = keyAt( readCursor, 0 );
+        while ( keyCount >= underflowBoundary )
         {
             remove( toRemove );
             toRemove++;
-            node.keyAt( readCursor, readKey, 0 );
-        } while ( readKey.longValue() >= leftmostBeforeRebalance );
+            keyCount--;
+        }
     }
 
     private void checkpoint()
@@ -2022,6 +2153,7 @@ public class SeekCursorTest
     {
         return seekCursor( fromInclusive, toExclusive, pageCursor, stableGen, unstableGen );
     }
+
     private SeekCursor<MutableLong,MutableLong> seekCursor( long fromInclusive, long toExclusive,
             PageCursor pageCursor, long stableGen, long unstableGen ) throws IOException
     {
@@ -2156,5 +2288,11 @@ public class SeekCursorTest
     private long childAt( PageCursor cursor, int pos, long stableGen, long unstableGen )
     {
         return pointer( node.childAt( cursor, pos, stableGen, unstableGen ) );
+    }
+
+    private long keyAt( PageCursor cursor, int pos )
+    {
+        node.keyAt( cursor, readKey, pos );
+        return readKey.longValue();
     }
 }
