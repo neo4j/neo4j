@@ -1025,7 +1025,6 @@ class InternalTreeLogic<KEY,VALUE>
 
             bTreeNode.goTo( cursor, "child", rightmostSubtree );
 
-
             boolean foundKeyBelow = bubbleRightmostKeyRecursive( cursor, structurePropagation, currentPageId,
                     stableGeneration, unstableGeneration );
 
