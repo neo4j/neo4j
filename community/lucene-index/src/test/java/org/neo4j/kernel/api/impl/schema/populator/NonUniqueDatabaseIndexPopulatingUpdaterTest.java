@@ -23,6 +23,8 @@ import org.junit.Test;
 
 import org.neo4j.collection.primitive.PrimitiveLongCollections;
 import org.neo4j.kernel.api.impl.schema.writer.LuceneIndexWriter;
+import org.neo4j.kernel.api.schema_new.index.NewIndexDescriptor;
+import org.neo4j.kernel.api.schema_new.index.NewIndexDescriptorFactory;
 import org.neo4j.kernel.impl.api.index.sampling.DefaultNonUniqueIndexSampler;
 import org.neo4j.kernel.impl.api.index.sampling.NonUniqueIndexSampler;
 import org.neo4j.storageengine.api.schema.IndexSample;
@@ -35,14 +37,15 @@ import static org.mockito.Mockito.mock;
 import static org.mockito.Mockito.verify;
 import static org.neo4j.kernel.api.impl.schema.LuceneDocumentStructure.documentRepresentingProperty;
 import static org.neo4j.kernel.api.impl.schema.LuceneDocumentStructure.newTermForChangeOrRemove;
-import static org.neo4j.kernel.api.index.NodePropertyUpdate.add;
-import static org.neo4j.kernel.api.index.NodePropertyUpdate.change;
-import static org.neo4j.kernel.api.index.NodePropertyUpdate.remove;
+import static org.neo4j.kernel.api.index.IndexEntryUpdate.add;
+import static org.neo4j.kernel.api.index.IndexEntryUpdate.change;
+import static org.neo4j.kernel.api.index.IndexEntryUpdate.remove;
 
 public class NonUniqueDatabaseIndexPopulatingUpdaterTest
 {
     private static final int PROPERTY_KEY = 42;
     private static final int SAMPLING_BUFFER_SIZE_LIMIT = 100;
+    private static final NewIndexDescriptor index = NewIndexDescriptorFactory.forLabel( 1, PROPERTY_KEY );
 
     @Test
     public void removeNotSupported()
@@ -66,10 +69,10 @@ public class NonUniqueDatabaseIndexPopulatingUpdaterTest
         NonUniqueIndexSampler sampler = newSampler();
         NonUniqueLuceneIndexPopulatingUpdater updater = newUpdater( sampler );
 
-        updater.process( add( 1, PROPERTY_KEY, "foo", new long[]{1} ) );
-        updater.process( add( 2, PROPERTY_KEY, "bar", new long[]{1} ) );
-        updater.process( add( 3, PROPERTY_KEY, "baz", new long[]{1} ) );
-        updater.process( add( 4, PROPERTY_KEY, "bar", new long[]{1} ) );
+        updater.process( add( 1, index, "foo" ) );
+        updater.process( add( 2, index, "bar" ) );
+        updater.process( add( 3, index, "baz" ) );
+        updater.process( add( 4, index, "bar" ) );
 
         verifySamplingResult( sampler, 4, 3, 4 );
     }
@@ -80,12 +83,12 @@ public class NonUniqueDatabaseIndexPopulatingUpdaterTest
         NonUniqueIndexSampler sampler = newSampler();
         NonUniqueLuceneIndexPopulatingUpdater updater = newUpdater( sampler );
 
-        updater.process( add( 1, PROPERTY_KEY, "initial1", new long[]{1} ) );
-        updater.process( add( 2, PROPERTY_KEY, "initial2", new long[]{1} ) );
-        updater.process( add( 3, PROPERTY_KEY, "new2", new long[]{1} ) );
+        updater.process( add( 1, index, "initial1" ) );
+        updater.process( add( 2, index, "initial2" ) );
+        updater.process( add( 3, index, "new2" ) );
 
-        updater.process( change( 1, PROPERTY_KEY, "initial1", new long[]{1}, "new1", new long[]{1} ) );
-        updater.process( change( 1, PROPERTY_KEY, "initial2", new long[]{1}, "new2", new long[]{1} ) );
+        updater.process( change( 1, index, "initial1", "new1" ) );
+        updater.process( change( 1, index, "initial2", "new2" ) );
 
         verifySamplingResult( sampler, 3, 2, 3 );
     }
@@ -96,14 +99,14 @@ public class NonUniqueDatabaseIndexPopulatingUpdaterTest
         NonUniqueIndexSampler sampler = newSampler();
         NonUniqueLuceneIndexPopulatingUpdater updater = newUpdater( sampler );
 
-        updater.process( add( 1, PROPERTY_KEY, "foo", new long[]{1} ) );
-        updater.process( add( 2, PROPERTY_KEY, "bar", new long[]{1} ) );
-        updater.process( add( 3, PROPERTY_KEY, "baz", new long[]{1} ) );
-        updater.process( add( 4, PROPERTY_KEY, "qux", new long[]{1} ) );
+        updater.process( add( 1, index, "foo" ) );
+        updater.process( add( 2, index, "bar" ) );
+        updater.process( add( 3, index, "baz" ) );
+        updater.process( add( 4, index, "qux" ) );
 
-        updater.process( remove( 1, PROPERTY_KEY, "foo", new long[]{1} ) );
-        updater.process( remove( 2, PROPERTY_KEY, "bar", new long[]{1} ) );
-        updater.process( remove( 4, PROPERTY_KEY, "qux", new long[]{1} ) );
+        updater.process( remove( 1, index, "foo" ) );
+        updater.process( remove( 2, index, "bar" ) );
+        updater.process( remove( 4, index, "qux" ) );
 
         verifySamplingResult( sampler, 1, 1, 1 );
     }
@@ -114,19 +117,19 @@ public class NonUniqueDatabaseIndexPopulatingUpdaterTest
         NonUniqueIndexSampler sampler = newSampler();
         NonUniqueLuceneIndexPopulatingUpdater updater = newUpdater( sampler );
 
-        updater.process( add( 1, PROPERTY_KEY, "foo", new long[]{1} ) );
-        updater.process( change( 1, PROPERTY_KEY, "foo", new long[]{1}, "newFoo1", new long[]{1} ) );
+        updater.process( add( 1, index, "foo" ) );
+        updater.process( change( 1, index, "foo", "newFoo1" ) );
 
-        updater.process( add( 2, PROPERTY_KEY, "bar", new long[]{1} ) );
-        updater.process( remove( 2, PROPERTY_KEY, "bar", new long[]{1} ) );
+        updater.process( add( 2, index, "bar" ) );
+        updater.process( remove( 2, index, "bar" ) );
 
-        updater.process( change( 1, PROPERTY_KEY, "newFoo1", new long[]{1}, "newFoo2", new long[]{1} ) );
+        updater.process( change( 1, index, "newFoo1", "newFoo2" ) );
 
-        updater.process( add( 42, PROPERTY_KEY, "qux", new long[]{1} ) );
-        updater.process( add( 3, PROPERTY_KEY, "bar", new long[]{1} ) );
-        updater.process( add( 4, PROPERTY_KEY, "baz", new long[]{1} ) );
-        updater.process( add( 5, PROPERTY_KEY, "bar", new long[]{1} ) );
-        updater.process( remove( 42, PROPERTY_KEY, "qux", new long[]{1} ) );
+        updater.process( add( 42, index, "qux" ) );
+        updater.process( add( 3, index, "bar" ) );
+        updater.process( add( 4, index, "baz" ) );
+        updater.process( add( 5, index, "bar" ) );
+        updater.process( remove( 42, index, "qux" ) );
 
         verifySamplingResult( sampler, 4, 3, 4 );
     }
@@ -137,9 +140,9 @@ public class NonUniqueDatabaseIndexPopulatingUpdaterTest
         LuceneIndexWriter writer = mock( LuceneIndexWriter.class );
         NonUniqueLuceneIndexPopulatingUpdater updater = newUpdater( writer );
 
-        updater.process( add( 1, PROPERTY_KEY, "foo", new long[]{1} ) );
-        updater.process( add( 2, PROPERTY_KEY, "bar", new long[]{1} ) );
-        updater.process( add( 3, PROPERTY_KEY, "qux", new long[]{1} ) );
+        updater.process( add( 1, index, "foo" ) );
+        updater.process( add( 2, index, "bar" ) );
+        updater.process( add( 3, index, "qux" ) );
 
         verify( writer ).updateDocument( newTermForChangeOrRemove( 1 ), documentRepresentingProperty( 1, "foo" ) );
         verify( writer ).updateDocument( newTermForChangeOrRemove( 2 ), documentRepresentingProperty( 2, "bar" ) );
@@ -152,8 +155,8 @@ public class NonUniqueDatabaseIndexPopulatingUpdaterTest
         LuceneIndexWriter writer = mock( LuceneIndexWriter.class );
         NonUniqueLuceneIndexPopulatingUpdater updater = newUpdater( writer );
 
-        updater.process( change( 1, PROPERTY_KEY, "before1", new long[]{1}, "after1", new long[]{1} ) );
-        updater.process( change( 2, PROPERTY_KEY, "before2", new long[]{1}, "after2", new long[]{1} ) );
+        updater.process( change( 1, index, "before1", "after1" ) );
+        updater.process( change( 2, index, "before2", "after2" ) );
 
         verify( writer ).updateDocument( newTermForChangeOrRemove( 1 ), documentRepresentingProperty( 1, "after1" ) );
         verify( writer ).updateDocument( newTermForChangeOrRemove( 2 ), documentRepresentingProperty( 2, "after2" ) );
@@ -165,9 +168,9 @@ public class NonUniqueDatabaseIndexPopulatingUpdaterTest
         LuceneIndexWriter writer = mock( LuceneIndexWriter.class );
         NonUniqueLuceneIndexPopulatingUpdater updater = newUpdater( writer );
 
-        updater.process( remove( 1, PROPERTY_KEY, "foo", new long[]{1} ) );
-        updater.process( remove( 2, PROPERTY_KEY, "bar", new long[]{1} ) );
-        updater.process( remove( 3, PROPERTY_KEY, "baz", new long[]{1} ) );
+        updater.process( remove( 1, index, "foo" ) );
+        updater.process( remove( 2, index, "bar" ) );
+        updater.process( remove( 3, index, "baz" ) );
 
         verify( writer ).deleteDocuments( newTermForChangeOrRemove( 1 ) );
         verify( writer ).deleteDocuments( newTermForChangeOrRemove( 2 ) );

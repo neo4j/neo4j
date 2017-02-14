@@ -31,8 +31,10 @@ import org.neo4j.kernel.api.impl.index.storage.DirectoryFactory;
 import org.neo4j.kernel.api.impl.index.storage.IndexStorageFactory;
 import org.neo4j.kernel.api.impl.index.storage.PartitionedIndexStorage;
 import org.neo4j.kernel.api.index.IndexAccessor;
+import org.neo4j.kernel.api.index.IndexEntryUpdate;
 import org.neo4j.kernel.api.index.IndexUpdater;
-import org.neo4j.kernel.api.index.NodePropertyUpdate;
+import org.neo4j.kernel.api.schema_new.index.NewIndexDescriptor;
+import org.neo4j.kernel.api.schema_new.index.NewIndexDescriptorFactory;
 import org.neo4j.kernel.impl.api.index.IndexUpdateMode;
 import org.neo4j.test.rule.fs.EphemeralFileSystemRule;
 
@@ -46,6 +48,7 @@ public class AccessUniqueDatabaseIndexTest
     public final EphemeralFileSystemRule fileSystemRule = new EphemeralFileSystemRule();
     private final DirectoryFactory directoryFactory = new DirectoryFactory.InMemoryDirectoryFactory();
     private final File indexDirectory = new File( "index1" );
+    private final NewIndexDescriptor index = NewIndexDescriptorFactory.forLabel( 1000, 100 );
 
     @Test
     public void shouldAddUniqueEntries() throws Exception
@@ -145,19 +148,19 @@ public class AccessUniqueDatabaseIndexTest
         return storageFactory.indexStorageOf( 1, false );
     }
 
-    private NodePropertyUpdate add( long nodeId, Object propertyValue )
+    private IndexEntryUpdate add( long nodeId, Object propertyValue )
     {
-        return NodePropertyUpdate.add( nodeId, 100, propertyValue, new long[]{1000} );
+        return IndexEntryUpdate.add( nodeId, index, propertyValue );
     }
 
-    private NodePropertyUpdate change( long nodeId, Object oldValue, Object newValue )
+    private IndexEntryUpdate change( long nodeId, Object oldValue, Object newValue )
     {
-        return NodePropertyUpdate.change( nodeId, 100, oldValue, new long[]{1000}, newValue, new long[]{1000} );
+        return IndexEntryUpdate.change( nodeId, index, oldValue, newValue );
     }
 
-    private NodePropertyUpdate remove( long nodeId, Object oldValue )
+    private IndexEntryUpdate remove( long nodeId, Object oldValue )
     {
-        return NodePropertyUpdate.remove( nodeId, 100, oldValue, new long[]{1000} );
+        return IndexEntryUpdate.remove( nodeId, index, oldValue );
     }
 
     private List<Long> getAllNodes( PartitionedIndexStorage indexStorage, String propertyValue ) throws IOException
@@ -166,12 +169,12 @@ public class AccessUniqueDatabaseIndexTest
                 propertyValue );
     }
 
-    private void updateAndCommit( IndexAccessor accessor, Iterable<NodePropertyUpdate> updates )
+    private void updateAndCommit( IndexAccessor accessor, Iterable<IndexEntryUpdate> updates )
             throws IOException, IndexEntryConflictException
     {
         try ( IndexUpdater updater = accessor.newUpdater( IndexUpdateMode.ONLINE ) )
         {
-            for ( NodePropertyUpdate update : updates )
+            for ( IndexEntryUpdate update : updates )
             {
                 updater.process( update );
             }

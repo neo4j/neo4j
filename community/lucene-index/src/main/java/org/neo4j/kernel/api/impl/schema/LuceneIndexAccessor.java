@@ -29,8 +29,8 @@ import org.neo4j.kernel.api.exceptions.index.IndexEntryConflictException;
 import org.neo4j.kernel.api.impl.schema.reader.LuceneAllEntriesIndexAccessorReader;
 import org.neo4j.kernel.api.impl.schema.writer.LuceneIndexWriter;
 import org.neo4j.kernel.api.index.IndexAccessor;
+import org.neo4j.kernel.api.index.IndexEntryUpdate;
 import org.neo4j.kernel.api.index.IndexUpdater;
-import org.neo4j.kernel.api.index.NodePropertyUpdate;
 import org.neo4j.kernel.impl.api.index.IndexUpdateMode;
 import org.neo4j.storageengine.api.schema.IndexReader;
 
@@ -127,25 +127,25 @@ public class LuceneIndexAccessor implements IndexAccessor
         }
 
         @Override
-        public void process( NodePropertyUpdate update ) throws IOException
+        public void process( IndexEntryUpdate update ) throws IOException
         {
-            switch ( update.getUpdateMode() )
+            switch ( update.updateMode() )
             {
             case ADDED:
                 if ( isRecovery )
                 {
-                    addRecovered( update.getNodeId(), update.getValueAfter() );
+                    addRecovered( update.getEntityId(), update.values()[0] );
                 }
                 else
                 {
-                    add( update.getNodeId(), update.getValueAfter() );
+                    add( update.getEntityId(), update.values()[0]  );
                 }
                 break;
             case CHANGED:
-                change( update.getNodeId(), update.getValueAfter() );
+                change( update.getEntityId(), update.values()[0]  );
                 break;
             case REMOVED:
-                remove( update.getNodeId() );
+                remove( update.getEntityId() );
                 break;
             default:
                 throw new UnsupportedOperationException();

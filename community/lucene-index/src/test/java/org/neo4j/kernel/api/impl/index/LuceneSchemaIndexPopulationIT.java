@@ -35,8 +35,10 @@ import org.neo4j.kernel.api.exceptions.index.IndexEntryConflictException;
 import org.neo4j.kernel.api.impl.schema.LuceneIndexAccessor;
 import org.neo4j.kernel.api.impl.schema.LuceneSchemaIndexBuilder;
 import org.neo4j.kernel.api.impl.schema.SchemaIndex;
+import org.neo4j.kernel.api.index.IndexEntryUpdate;
 import org.neo4j.kernel.api.index.IndexUpdater;
-import org.neo4j.kernel.api.index.NodePropertyUpdate;
+import org.neo4j.kernel.api.schema_new.index.NewIndexDescriptor;
+import org.neo4j.kernel.api.schema_new.index.NewIndexDescriptorFactory;
 import org.neo4j.kernel.impl.api.index.IndexUpdateMode;
 import org.neo4j.storageengine.api.schema.IndexReader;
 import org.neo4j.storageengine.api.schema.IndexSample;
@@ -58,6 +60,7 @@ public class LuceneSchemaIndexPopulationIT
     public final DefaultFileSystemRule fileSystemRule = new DefaultFileSystemRule();
 
     private int affectedNodes;
+    private NewIndexDescriptor index = NewIndexDescriptorFactory.forLabel( 0, 0 );
 
     @Before
     public void before() throws Exception
@@ -132,8 +135,8 @@ public class LuceneSchemaIndexPopulationIT
         }
     }
 
-    private NodePropertyUpdate add( long nodeId, Object value )
+    private IndexEntryUpdate add( long nodeId, Object value )
     {
-        return NodePropertyUpdate.add( nodeId, 0, value, new long[0] );
+        return IndexEntryUpdate.add( nodeId, index, value );
     }
 }

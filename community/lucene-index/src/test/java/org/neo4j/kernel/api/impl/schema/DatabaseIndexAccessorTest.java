@@ -41,8 +41,10 @@ import org.neo4j.helpers.TaskCoordinator;
 import org.neo4j.kernel.api.exceptions.index.IndexEntryConflictException;
 import org.neo4j.kernel.api.exceptions.index.IndexNotFoundKernelException;
 import org.neo4j.kernel.api.impl.index.storage.DirectoryFactory;
+import org.neo4j.kernel.api.index.IndexEntryUpdate;
 import org.neo4j.kernel.api.index.IndexUpdater;
-import org.neo4j.kernel.api.index.NodePropertyUpdate;
+import org.neo4j.kernel.api.schema_new.index.NewIndexDescriptor;
+import org.neo4j.kernel.api.schema_new.index.NewIndexDescriptorFactory;
 import org.neo4j.kernel.impl.api.index.IndexUpdateMode;
 import org.neo4j.storageengine.api.schema.IndexReader;
 import org.neo4j.storageengine.api.schema.IndexSampler;
@@ -73,6 +75,7 @@ public class DatabaseIndexAccessorTest
     private final long nodeId = 1, nodeId2 = 2;
     private final Object value = "value", value2 = 40;
     private DirectoryFactory.InMemoryDirectoryFactory dirFactory;
+    private NewIndexDescriptor index = NewIndexDescriptorFactory.forLabel( 0, 0 );
 
     @Parameterized.Parameters( name = "{0}" )
     public static Collection<IOFunction<DirectoryFactory,LuceneIndexAccessor>[]> implementations()
@@ -319,27 +322,27 @@ public class DatabaseIndexAccessorTest
         }
     }
 
-    private NodePropertyUpdate add( long nodeId, Object value )
+    private IndexEntryUpdate add( long nodeId, Object value )
     {
-        return NodePropertyUpdate.add( nodeId, 0, value, new long[0] );
+        return IndexEntryUpdate.add( nodeId, index, value );
     }
 
-    private NodePropertyUpdate remove( long nodeId, Object value )
+    private IndexEntryUpdate remove( long nodeId, Object value )
     {
-        return NodePropertyUpdate.remove( nodeId, 0, value, new long[0] );
+        return IndexEntryUpdate.remove( nodeId, index, value );
     }
 
-    private NodePropertyUpdate change( long nodeId, Object valueBefore, Object valueAfter )
+    private IndexEntryUpdate change( long nodeId, Object valueBefore, Object valueAfter )
     {
-        return NodePropertyUpdate.change( nodeId, 0, valueBefore, new long[0], valueAfter, new long[0] );
+        return IndexEntryUpdate.change( nodeId, index, valueBefore, valueAfter );
     }
 
-    private void updateAndCommit( List<NodePropertyUpdate> nodePropertyUpdates )
+    private void updateAndCommit( List<IndexEntryUpdate> nodePropertyUpdates )
             throws IOException, IndexEntryConflictException
     {
         try ( IndexUpdater updater = accessor.newUpdater( IndexUpdateMode.ONLINE ) )
         {
-            for ( NodePropertyUpdate update : nodePropertyUpdates )
+            for ( IndexEntryUpdate update : nodePropertyUpdates )
             {
                 updater.process( update );
             }
