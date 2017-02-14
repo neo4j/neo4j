@@ -153,14 +153,14 @@ public class QueryLoggerKernelExtension extends KernelExtensionFactory<QueryLogg
         @Override
         public void endFailure( ExecutingQuery query, Throwable failure )
         {
-            long time = clock.millis() - query.startTime();
+            long time = clock.millis() - query.startTimestampMillis();
             log.error( logEntry( time, query ), failure );
         }
 
         @Override
         public void endSuccess( ExecutingQuery query )
         {
-            long time = clock.millis() - query.startTime();
+            long time = clock.millis() - query.startTimestampMillis();
             if ( time >= thresholdMillis )
             {
                 log.info( logEntry( time, query ) );
@@ -171,7 +171,7 @@ public class QueryLoggerKernelExtension extends KernelExtensionFactory<QueryLogg
         {
             String sourceString = query.connectionDetailsForLogging();
             String queryText = query.queryText();
-            String metaData = mapAsString( query.metaData() );
+            String metaData = mapAsString( query.transactionAnnotationData() );
             if ( logQueryParameters )
             {
                 String params = mapAsString( query.queryParameters() );

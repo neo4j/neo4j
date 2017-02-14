@@ -49,13 +49,13 @@ final class SimpleState extends ExecutingQueryStatus
     }
 
     @Override
-    public long waitTimeNanos( SystemNanoClock clock )
+    public long waitTimeNanos( long currentTimeNanos )
     {
         return 0;
     }
 
     @Override
-    public Map<String,Object> toMap( SystemNanoClock clock )
+    public Map<String,Object> toMap( long currentTimeNanos )
     {
         return state;
     }

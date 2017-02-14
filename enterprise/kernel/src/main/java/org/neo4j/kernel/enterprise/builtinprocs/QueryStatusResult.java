@@ -25,9 +25,9 @@ import java.time.ZoneId;
 import java.util.List;
 import java.util.Map;
 
-import org.neo4j.kernel.api.query.ExecutingQuery;
 import org.neo4j.kernel.api.exceptions.InvalidArgumentsException;
-import org.neo4j.kernel.api.query.QueryInfo;
+import org.neo4j.kernel.api.query.ExecutingQuery;
+import org.neo4j.kernel.api.query.QuerySnapshot;
 import org.neo4j.kernel.impl.query.clientconnection.ClientConnectionInfo;
 
 import static java.time.format.DateTimeFormatter.ISO_OFFSET_DATE_TIME;
@@ -66,54 +66,36 @@ public class QueryStatusResult
     public final long activeLockCount;
     /** EXPERIMENTAL: added in Neo4j 3.2 */
     public final long waitTimeMillis; // TODO: we want this field to be of a Duration type (when Cypher supports that)
+    /** EXPERIMENTAL: added in Neo4j 3.2 */
+    public final long sleepTimeMillis; // TODO: we want this field to be of a Duration type (when Cypher supports that)
     public final Map<String,Object> metaData;
     public final List<Map<String,String>> indexes;
 
-    QueryStatusResult( ExecutingQuery q ) throws InvalidArgumentsException
+    QueryStatusResult( ExecutingQuery query ) throws InvalidArgumentsException
     {
-        this(
-                ofInternalId( q.internalQueryId() ),
-                q.username(),
-                q.query(),
-                q.startTime(),
-                q.elapsedTimeMillis(),
-                q.clientConnection(),
-                q.metaData(),
-                q.cpuTimeMillis(),
-                q.status(),
-                q.activeLockCount(),
-                q.waitTimeMillis() );
+        this( query.snapshot() );
     }
 
-    private QueryStatusResult(
-            QueryId queryId,
-            String username,
-            QueryInfo query,
-            long startTime,
-            long elapsedTime,
-            ClientConnectionInfo clientConnection,
-            Map<String,Object> txMetaData,
-            long cpuTimeMillis,
-            Map<String,Object> status,
-            long activeLockCount,
-            long waitTimeMillis )
+    private QueryStatusResult( QuerySnapshot query ) throws InvalidArgumentsException
     {
-        this.queryId = queryId.toString();
-        this.username = username;
-        this.query = query.text();
-        this.parameters = query.parameters();
-        this.startTime = formatTime( startTime );
-        this.elapsedTime = formatInterval( elapsedTime );
-        this.elapsedTimeMillis = elapsedTime;
+        this.queryId = ofInternalId( query.internalQueryId() ).toString();
+        this.username = query.username();
+        this.query = query.queryText();
+        this.parameters = query.queryParameters();
+        this.startTime = formatTime( query.startTimestampMillis() );
+        this.elapsedTimeMillis = query.elapsedTimeMillis();
+        this.elapsedTime = formatInterval( elapsedTimeMillis );
+        ClientConnectionInfo clientConnection = query.clientConnection();
         this.connectionDetails = clientConnection.asConnectionDetails();
         this.requestScheme = clientConnection.requestScheme();
         this.clientAddress = clientConnection.clientAddress();
         this.requestUri = clientConnection.requestURI();
-        this.metaData = txMetaData;
-        this.cpuTimeMillis = cpuTimeMillis;
-        this.status = status;
-        this.activeLockCount = activeLockCount;
-        this.waitTimeMillis = waitTimeMillis;
+        this.metaData = query.transactionAnnotationData();
+        this.cpuTimeMillis = query.cpuTimeMillis();
+        this.status = query.status();
+        this.activeLockCount = query.activeLockCount();
+        this.waitTimeMillis = query.waitTimeMillis();
+        this.sleepTimeMillis = query.sleepTimeMillis();
         this.planner = query.planner();
         this.runtime = query.runtime();
         this.indexes = query.indexes();

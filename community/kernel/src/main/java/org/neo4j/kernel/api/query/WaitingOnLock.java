@@ -24,7 +24,6 @@ import java.util.Map;
 import java.util.concurrent.TimeUnit;
 
 import org.neo4j.storageengine.api.lock.ResourceType;
-import org.neo4j.time.SystemNanoClock;
 
 class WaitingOnLock extends ExecutingQueryStatus
 {
@@ -42,18 +41,18 @@ class WaitingOnLock extends ExecutingQueryStatus
     }
 
     @Override
-    public long waitTimeNanos( SystemNanoClock clock )
+    public long waitTimeNanos( long currentTimeNanos )
     {
-        return clock.nanos() - startTimeNanos;
+        return currentTimeNanos - startTimeNanos;
     }
 
     @Override
-    public Map<String,Object> toMap( SystemNanoClock clock )
+    public Map<String,Object> toMap( long currentTimeNanos )
     {
         Map<String,Object> map = new HashMap<>();
         map.put( "state", "WAITING" );
         map.put( "lockMode", mode );
-        map.put( "waitTimeMillis", TimeUnit.NANOSECONDS.toMillis( waitTimeNanos( clock ) ) );
+        map.put( "waitTimeMillis", TimeUnit.NANOSECONDS.toMillis( waitTimeNanos( currentTimeNanos ) ) );
         map.put( "resourceType", resourceType.toString() );
         map.put( "resourceIds", resourceIds );
         return map;

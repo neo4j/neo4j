@@ -21,8 +21,6 @@ package org.neo4j.kernel.api.query;
 
 import java.util.Map;
 
-import org.neo4j.time.SystemNanoClock;
-
 /**
  * Internal representation of the status of an executing query.
  * <p>
@@ -30,12 +28,19 @@ import org.neo4j.time.SystemNanoClock;
  *
  * @see ExecutingQuery#status
  */
-public abstract class ExecutingQueryStatus
+abstract class ExecutingQueryStatus
 {
-    public abstract long waitTimeNanos( SystemNanoClock clock );
+    /**
+     * Time in nanoseconds that has been spent waiting in the current state.
+     * This is the portion of wait time not included in the {@link ExecutingQuery#waitTimeNanos} field.
+     *
+     * @param currentTimeNanos
+     *         the current timestamp on the nano clock.
+     * @return the time between the time this state started waiting and the provided timestamp.
+     */
+    public abstract long waitTimeNanos( long currentTimeNanos );
 
-    public abstract Map<String,Object> toMap( SystemNanoClock clock );
+    public abstract Map<String,Object> toMap( long currentTimeNanos );
 
     public abstract boolean isPlanning();
-
 }

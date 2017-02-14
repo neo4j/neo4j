@@ -27,11 +27,17 @@ class WaitingOnLockEvent extends WaitingOnLock implements LockWaitEvent
     private final ExecutingQueryStatus previous;
     private final ExecutingQuery executingQuery;
 
-    WaitingOnLockEvent( String mode, ResourceType resourceType, long[] resourceIds, ExecutingQuery executingQuery )
+    WaitingOnLockEvent(
+            String mode,
+            ResourceType resourceType,
+            long[] resourceIds,
+            ExecutingQuery executingQuery,
+            long currentTimeNanos,
+            ExecutingQueryStatus previous )
     {
-        super( mode, resourceType, resourceIds, executingQuery.clock().nanos() );
+        super( mode, resourceType, resourceIds, currentTimeNanos );
         this.executingQuery = executingQuery;
-        this.previous = executingQuery.executingQueryStatus();
+        this.previous = previous;
     }
 
     ExecutingQueryStatus previousStatus()
@@ -42,7 +48,7 @@ class WaitingOnLockEvent extends WaitingOnLock implements LockWaitEvent
     @Override
     public void close()
     {
-        executingQuery.closeWaitingOnLockEvent(this);
+        executingQuery.doneWaitingOnLock( this );
     }
 
     @Override

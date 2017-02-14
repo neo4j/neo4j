@@ -43,7 +43,7 @@ public class ExecutingQueryStatusTest
     public void shouldProduceSensibleMapRepresentationInRunningState() throws Exception
     {
         // when
-        Map<String,Object> status = SimpleState.running().toMap( clock );
+        Map<String,Object> status = SimpleState.running().toMap( clock.nanos() );
 
         // then
         assertEquals( singletonMap( "state", "RUNNING" ), status );
@@ -53,7 +53,7 @@ public class ExecutingQueryStatusTest
     public void shouldProduceSensibleMapRepresentationInPlanningState() throws Exception
     {
         // when
-        Map<String,Object> status = SimpleState.planning().toMap( clock );
+        Map<String,Object> status = SimpleState.planning().toMap( clock.nanos() );
 
         // then
         assertEquals( singletonMap( "state", "PLANNING" ), status );
@@ -73,7 +73,7 @@ public class ExecutingQueryStatusTest
         clock.forward( 17, TimeUnit.MILLISECONDS );
 
         // when
-        Map<String,Object> statusMap = status.toMap( clock );
+        Map<String,Object> statusMap = status.toMap( clock.nanos() );
 
         // then
         Map<String,Object> expected = new HashMap<>();

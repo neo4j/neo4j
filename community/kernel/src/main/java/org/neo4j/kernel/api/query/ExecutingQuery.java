@@ -41,7 +41,6 @@ import static java.util.concurrent.atomic.AtomicLongFieldUpdater.newUpdater;
  */
 public class ExecutingQuery
 {
-
     private static final AtomicLongFieldUpdater<ExecutingQuery> WAIT_TIME =
             newUpdater( ExecutingQuery.class, "waitTimeNanos" );
     private final long queryId;
@@ -49,16 +48,16 @@ public class ExecutingQuery
     private final String username;
     private final ClientConnectionInfo clientConnection;
     private final String queryText;
-    private final Map<String, Object> queryParameters;
-    private final long startTime; // timestamp in milliseconds
+    private final Map<String,Object> queryParameters;
+    private final long startTimeNanos, startTimestampMillis;
     /** Uses write barrier of {@link #status}. */
-    private long planningDone;
+    private long planningDoneNanos;
     private final Thread threadExecutingTheQuery;
     private final LongSupplier activeLockCount;
     private final SystemNanoClock clock;
     private final CpuClock cpuClock;
     private final long cpuTimeNanosWhenQueryStarted;
-    private final Map<String,Object> metaData;
+    private final Map<String,Object> transactionAnnotationData;
     /** Uses write barrier of {@link #status}. */
     private PlannerInfo plannerInfo;
     private volatile ExecutingQueryStatus status = SimpleState.planning();
@@ -72,32 +71,84 @@ public class ExecutingQuery
             String username,
             String queryText,
             Map<String,Object> queryParameters,
-            Map<String,Object> metaData,
+            Map<String,Object> transactionAnnotationData,
             LongSupplier activeLockCount,
             Thread threadExecutingTheQuery,
             SystemNanoClock clock,
             CpuClock cpuClock )
     {
+        // Capture timestamps first
+        this.cpuTimeNanosWhenQueryStarted = cpuClock.cpuTimeNanos( threadExecutingTheQuery );
+        this.startTimeNanos = clock.nanos();
+        this.startTimestampMillis = clock.millis();
+        // then continue with assigning fields
         this.queryId = queryId;
         this.clientConnection = clientConnection;
         this.username = username;
         this.queryText = queryText;
         this.queryParameters = queryParameters;
+        this.transactionAnnotationData = transactionAnnotationData;
         this.activeLockCount = activeLockCount;
-        this.clock = clock;
-        this.startTime = clock.millis();
-        this.metaData = metaData;
         this.threadExecutingTheQuery = threadExecutingTheQuery;
         this.cpuClock = cpuClock;
-        this.cpuTimeNanosWhenQueryStarted = cpuClock.cpuTimeNanos( threadExecutingTheQuery );
+        this.clock = clock;
     }
+
+    // update state
 
     public void planningCompleted( PlannerInfo plannerInfo )
     {
         this.plannerInfo = plannerInfo;
-        this.planningDone = clock.millis();
+        this.planningDoneNanos = clock.nanos();
         this.status = SimpleState.running(); // write barrier - must be last
     }
+
+    public LockTracer lockTracer()
+    {
+        return lockTracer;
+    }
+
+    // snapshot state
+
+    public QuerySnapshot snapshot()
+    {
+        // capture a consistent snapshot of the "live" state
+        ExecutingQueryStatus status;
+        long waitTimeNanos, currentTimeNanos, cpuTimeNanos;
+        do
+        {
+            status = this.status; // read barrier, must be first
+            waitTimeNanos = this.waitTimeNanos; // the reason for the retry loop: don't count the wait time twice
+            cpuTimeNanos = cpuClock.cpuTimeNanos( threadExecutingTheQuery );
+            currentTimeNanos = clock.nanos(); // capture the time as close to the snapshot as possible
+        }
+        while ( this.status != status );
+        // guarded by barrier - unused if status is planning, stable otherwise
+        long planningDoneNanos = this.planningDoneNanos;
+        // guarded by barrier - like planningDoneNanos
+        PlannerInfo planner = status.isPlanning() ? null : this.plannerInfo;
+        // just needs to be captured at some point...
+        long activeLockCount = this.activeLockCount.getAsLong();
+
+        // - at this point we are done capturing the "live" state, and can start computing the snapshot -
+        long planningTimeNanos = (status.isPlanning() ? currentTimeNanos : planningDoneNanos) - startTimeNanos;
+        long elapsedTimeNanos = currentTimeNanos - startTimeNanos;
+        cpuTimeNanos -= cpuTimeNanosWhenQueryStarted;
+        waitTimeNanos += status.waitTimeNanos( currentTimeNanos );
+
+        return new QuerySnapshot(
+                this,
+                planner,
+                NANOSECONDS.toMillis( planningTimeNanos ),
+                NANOSECONDS.toMillis( elapsedTimeNanos ),
+                NANOSECONDS.toMillis( cpuTimeNanos ),
+                NANOSECONDS.toMillis( waitTimeNanos ),
+                status.toMap( currentTimeNanos ),
+                activeLockCount
+        );
+    }
+
+    // basic methods
 
     @Override
     public boolean equals( Object o )
@@ -122,6 +173,14 @@ public class ExecutingQuery
         return (int) (queryId ^ (queryId >>> 32));
     }
 
+    @Override
+    public String toString()
+    {
+        return ToStringBuilder.reflectionToString( this );
+    }
+
+    // access stable state
+
     public long internalQueryId()
     {
         return queryId;
@@ -130,28 +189,6 @@ public class ExecutingQuery
     public String username()
     {
         return username;
-    }
-
-    public ClientConnectionInfo clientConnection()
-    {
-        return clientConnection;
-    }
-
-    public SystemNanoClock clock()
-    {
-        return clock;
-    }
-
-    public ExecutingQueryStatus executingQueryStatus()
-    {
-        return status;
-    }
-
-    public QueryInfo query()
-    {
-        return status.isPlanning() // read barrier - must be first
-                ? new QueryInfo( queryText, queryParameters, null )
-                : new QueryInfo( queryText, queryParameters, plannerInfo );
     }
 
     public String queryText()
@@ -164,65 +201,19 @@ public class ExecutingQuery
         return queryParameters;
     }
 
-    public long startTime()
+    public long startTimestampMillis()
     {
-        return startTime;
+        return startTimestampMillis;
     }
 
-    public long planningTimeMillis()
+    public Map<String,Object> transactionAnnotationData()
     {
-        if ( status.isPlanning() ) // read barrier - must be first
-        {
-            return elapsedTimeMillis();
-        }
-        else
-        {
-            return planningDone - startTime;
-        }
+        return transactionAnnotationData;
     }
 
-    public long elapsedTimeMillis()
+    ClientConnectionInfo clientConnection()
     {
-        return clock.millis() - startTime;
-    }
-
-    /**
-     * @return the CPU time used by the query, in nanoseconds.
-     */
-    public long cpuTimeMillis()
-    {
-        return NANOSECONDS.toMillis( cpuClock.cpuTimeNanos( threadExecutingTheQuery ) - cpuTimeNanosWhenQueryStarted );
-    }
-
-    public long waitTimeMillis()
-    {
-        return NANOSECONDS.toMillis( waitTimeNanos + status.waitTimeNanos( clock ) );
-    }
-
-    @Override
-    public String toString()
-    {
-        return ToStringBuilder.reflectionToString( this );
-    }
-
-    public Map<String,Object> metaData()
-    {
-        return metaData;
-    }
-
-    public LockTracer lockTracer()
-    {
-        return lockTracer;
-    }
-
-    public long activeLockCount()
-    {
-        return activeLockCount.getAsLong();
-    }
-
-    public Map<String,Object> status()
-    {
-        return status.toMap( clock );
+        return clientConnection;
     }
 
     public String connectionDetailsForLogging()
@@ -236,18 +227,20 @@ public class ExecutingQuery
                 exclusive ? ActiveLock.EXCLUSIVE_MODE : ActiveLock.SHARED_MODE,
                 resourceType,
                 resourceIds,
-                this);
+                this,
+                clock.nanos(),
+                status );
         status = event;
         return event;
     }
 
-    void closeWaitingOnLockEvent( WaitingOnLockEvent waitingOnLockEvent )
+    void doneWaitingOnLock( WaitingOnLockEvent waiting )
     {
-        if ( status != waitingOnLockEvent )
+        if ( status != waiting )
         {
             return; // already closed
         }
-        WAIT_TIME.addAndGet( this, waitingOnLockEvent.waitTimeNanos( clock ) );
-        status = waitingOnLockEvent.previousStatus();
+        WAIT_TIME.addAndGet( this, waiting.waitTimeNanos( clock.nanos() ) );
+        status = waiting.previousStatus();
     }
 }
