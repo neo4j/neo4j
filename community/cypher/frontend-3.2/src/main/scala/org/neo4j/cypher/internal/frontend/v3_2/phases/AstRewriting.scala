@@ -17,17 +17,13 @@
  * You should have received a copy of the GNU General Public License
  * along with this program.  If not, see <http://www.gnu.org/licenses/>.
  */
-package org.neo4j.cypher.internal.compiler.v3_2.phases
+package org.neo4j.cypher.internal.frontend.v3_2.phases
 
-import org.neo4j.cypher.internal.compiler.v3_2.ast.conditions._
-import org.neo4j.cypher.internal.compiler.v3_2.ast.rewriters._
 import org.neo4j.cypher.internal.frontend.v3_2.ast.NotEquals
 import org.neo4j.cypher.internal.frontend.v3_2.ast.conditions._
-import org.neo4j.cypher.internal.frontend.v3_2.ast.rewriters.{ASTRewriter, StatementRewriter, projectNamedPaths}
+import org.neo4j.cypher.internal.frontend.v3_2.ast.rewriters.ASTRewriter
 import org.neo4j.cypher.internal.frontend.v3_2.helpers.rewriting.RewriterStepSequencer
 import org.neo4j.cypher.internal.frontend.v3_2.phases.CompilationPhaseTracer.CompilationPhase.AST_REWRITE
-import org.neo4j.cypher.internal.frontend.v3_2.phases.{BaseContext, BaseState, Condition, Phase}
-import org.neo4j.cypher.internal.frontend.v3_2.{Rewriter, inSequence}
 
 case class AstRewriting(sequencer: String => RewriterStepSequencer, shouldExtractParams: Boolean) extends Phase[BaseContext, BaseState, BaseState] {
 
@@ -37,9 +33,7 @@ case class AstRewriting(sequencer: String => RewriterStepSequencer, shouldExtrac
 
     val (rewrittenStatement, extractedParams, _) = astRewriter.rewrite(in.queryText, in.statement(), in.semantics())
 
-    CompilationState(in).copy(
-      maybeStatement = Some(rewrittenStatement),
-      maybeExtractedParams = Some(extractedParams))
+    in.withStatement(rewrittenStatement).withParams(extractedParams)
   }
 
   override def phase = AST_REWRITE
@@ -61,18 +55,4 @@ case class AstRewriting(sequencer: String => RewriterStepSequencer, shouldExtrac
 
     rewriterConditions.map(StatementCondition.apply)
   }
-}
-
-object LateAstRewriting extends StatementRewriter {
-  override def instance(context: BaseContext): Rewriter = inSequence(
-    collapseMultipleInPredicates,
-    nameUpdatingClauses,
-    projectNamedPaths,
-//    enableCondition(containsNamedPathOnlyForShortestPath), // TODO Re-enable
-    projectFreshSortExpressions
-  )
-
-  override def description: String = "normalize the AST"
-
-  override def postConditions: Set[Condition] = Set.empty
 }

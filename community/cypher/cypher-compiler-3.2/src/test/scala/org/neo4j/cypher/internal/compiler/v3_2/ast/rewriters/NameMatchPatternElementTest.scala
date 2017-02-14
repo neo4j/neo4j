@@ -20,7 +20,7 @@
 package org.neo4j.cypher.internal.compiler.v3_2.ast.rewriters
 
 import org.neo4j.cypher.internal.compiler.v3_2._
-import org.neo4j.cypher.internal.frontend.v3_2.ast.rewriters.nameMatchPatternElements
+import org.neo4j.cypher.internal.frontend.v3_2.ast.rewriters.{nameMatchPatternElements, nameUpdatingClauses}
 import org.neo4j.cypher.internal.frontend.v3_2.test_helpers.CypherFunSuite
 
 class NameMatchPatternElementTest extends CypherFunSuite {

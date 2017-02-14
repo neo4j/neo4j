@@ -17,9 +17,9 @@
  * You should have received a copy of the GNU General Public License
  * along with this program.  If not, see <http://www.gnu.org/licenses/>.
  */
-package org.neo4j.cypher.internal.compiler.v3_2.ast.rewriters
+package org.neo4j.cypher.internal.frontend.v3_2.ast.rewriters
 
-import org.neo4j.cypher.internal.frontend.v3_2.ast._
+import org.neo4j.cypher.internal.frontend.v3_2.ast.{Clause, Expression, SingleQuery, With}
 import org.neo4j.cypher.internal.frontend.v3_2.{Rewriter, bottomUp}
 
 /**
@@ -76,4 +76,3 @@ case object projectFreshSortExpressions extends Rewriter {
 
   private val instance: Rewriter = bottomUp(rewriter, _.isInstanceOf[Expression])
 }
-
