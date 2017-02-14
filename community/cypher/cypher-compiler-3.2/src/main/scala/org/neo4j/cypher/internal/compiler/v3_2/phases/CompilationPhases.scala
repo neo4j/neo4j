@@ -23,15 +23,15 @@ import org.neo4j.cypher.internal.compiler.v3_2.ast.rewriters.{CNFNormalizer, Nam
 import org.neo4j.cypher.internal.frontend.v3_2.SemanticState
 import org.neo4j.cypher.internal.frontend.v3_2.ast.Statement
 import org.neo4j.cypher.internal.frontend.v3_2.helpers.rewriting.RewriterStepSequencer
-import org.neo4j.cypher.internal.frontend.v3_2.phases.BaseContext
+import org.neo4j.cypher.internal.frontend.v3_2.phases.{BaseContains, BaseContext, BaseState}
 
 object CompilationPhases {
 
   def parsing(sequencer: String => RewriterStepSequencer): Transformer[BaseContext, BaseState, BaseState] =
-    Parsing.adds[Statement] andThen
+    Parsing.adds(BaseContains[Statement]) andThen
       SyntaxDeprecationWarnings andThen
       PreparatoryRewriting andThen
-      SemanticAnalysis(warn = true).adds[SemanticState] andThen
+      SemanticAnalysis(warn = true).adds(BaseContains[SemanticState]) andThen
       AstRewriting(sequencer, shouldExtractParams = true)
 
   def lateAstRewriting: Transformer[BaseContext, BaseState, BaseState] =

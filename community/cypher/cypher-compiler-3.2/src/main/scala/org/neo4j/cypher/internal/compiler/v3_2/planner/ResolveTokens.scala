@@ -23,6 +23,7 @@ import org.neo4j.cypher.internal.frontend.v3_2.phases.CompilationPhaseTracer.Com
 import org.neo4j.cypher.internal.compiler.v3_2.phases._
 import org.neo4j.cypher.internal.compiler.v3_2.spi.TokenContext
 import org.neo4j.cypher.internal.frontend.v3_2.ast.{Query, _}
+import org.neo4j.cypher.internal.frontend.v3_2.phases.BaseState
 import org.neo4j.cypher.internal.frontend.v3_2.{LabelId, PropertyKeyId, RelTypeId, SemanticTable}
 
 object ResolveTokens extends VisitorPhase[CompilerContext, BaseState] {

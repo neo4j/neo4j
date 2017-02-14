@@ -25,7 +25,7 @@ import org.neo4j.cypher.internal.compiler.v3_2.spi.ProcedureSignature
 import org.neo4j.cypher.internal.frontend.v3_2.InternalException
 import org.neo4j.cypher.internal.frontend.v3_2.ast.{FunctionInvocation, FunctionName, Statement, UnresolvedCall}
 import org.neo4j.cypher.internal.frontend.v3_2.notification.{DeprecatedFunctionNotification, DeprecatedProcedureNotification, InternalNotification, ProcedureWarningNotification}
-import org.neo4j.cypher.internal.frontend.v3_2.phases.BaseContext
+import org.neo4j.cypher.internal.frontend.v3_2.phases.{BaseContext, BaseState}
 import org.neo4j.cypher.internal.frontend.v3_2.phases.CompilationPhaseTracer.CompilationPhase.DEPRECATION_WARNINGS
 
 object SyntaxDeprecationWarnings extends VisitorPhase[BaseContext, BaseState] {

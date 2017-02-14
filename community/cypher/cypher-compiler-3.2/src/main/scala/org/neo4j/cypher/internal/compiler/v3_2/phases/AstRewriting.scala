@@ -25,7 +25,7 @@ import org.neo4j.cypher.internal.compiler.v3_2.ast.conditions._
 import org.neo4j.cypher.internal.compiler.v3_2.ast.rewriters._
 import org.neo4j.cypher.internal.frontend.v3_2.ast.NotEquals
 import org.neo4j.cypher.internal.frontend.v3_2.helpers.rewriting.{RewriterCondition, RewriterStepSequencer}
-import org.neo4j.cypher.internal.frontend.v3_2.phases.BaseContext
+import org.neo4j.cypher.internal.frontend.v3_2.phases.{BaseContext, BaseState, Condition}
 import org.neo4j.cypher.internal.frontend.v3_2.{Rewriter, inSequence}
 
 case class AstRewriting(sequencer: String => RewriterStepSequencer, shouldExtractParams: Boolean) extends Phase[BaseContext, BaseState, BaseState] {
@@ -81,5 +81,8 @@ object StatementCondition {
 }
 
 case class StatementCondition(inner: Any => Seq[String]) extends Condition {
-  override def check(state: CompilationState): Seq[String] = inner(state.statement)
+  override def check(state: AnyRef): Seq[String] = state match {
+    case s: BaseState => inner(s.statement())
+    case x => throw new IllegalArgumentException(s"Unknown state: $x")
+  }
 }

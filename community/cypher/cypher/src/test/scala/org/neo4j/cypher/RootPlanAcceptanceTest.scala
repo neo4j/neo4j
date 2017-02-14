@@ -21,6 +21,7 @@ package org.neo4j.cypher
 
 import org.neo4j.cypher.internal.compiler.v3_2._
 import org.neo4j.cypher.internal.javacompat.PlanDescription
+import org.neo4j.cypher.internal.frontend.v3_2.PlannerName
 
 class RootPlanAcceptanceTest extends ExecutionEngineFunSuite {
 

@@ -32,7 +32,7 @@ case class QueryPlanner(planSingleQuery: LogicalPlanningFunction1[PlannerQuery, 
 
   override def description = "using cost estimates, plan the query to a logical plan"
 
-  override def postConditions = Set(Contains[LogicalPlan])
+  override def postConditions = Set(CompilationContains[LogicalPlan])
 
   override def process(from: CompilationState, context: CompilerContext): CompilationState = {
     val logicalPlanProducer = LogicalPlanProducer(context.metrics.cardinality)

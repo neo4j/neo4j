@@ -24,7 +24,7 @@ import java.time.Clock
 import org.neo4j.cypher.internal.compiler.v3_2.executionplan._
 import org.neo4j.cypher.internal.compiler.v3_2.executionplan.procs.ProcedureCallOrSchemaCommandPlanBuilder
 import org.neo4j.cypher.internal.compiler.v3_2.helpers.RuntimeTypeConverter
-import org.neo4j.cypher.internal.compiler.v3_2.phases._
+import org.neo4j.cypher.internal.compiler.v3_2.phases.{CompilerContext, _}
 import org.neo4j.cypher.internal.compiler.v3_2.planner.logical._
 import org.neo4j.cypher.internal.compiler.v3_2.planner.logical.plans.LogicalPlan
 import org.neo4j.cypher.internal.compiler.v3_2.planner.logical.plans.rewriter.PlanRewriter
@@ -33,8 +33,7 @@ import org.neo4j.cypher.internal.compiler.v3_2.spi.PlanContext
 import org.neo4j.cypher.internal.frontend.v3_2.InputPosition
 import org.neo4j.cypher.internal.frontend.v3_2.ast.Statement
 import org.neo4j.cypher.internal.frontend.v3_2.helpers.rewriting.RewriterStepSequencer
-import org.neo4j.cypher.internal.frontend.v3_2.phases.{CompilationPhaseTracer, InternalNotificationLogger, Monitors}
-import org.neo4j.cypher.internal.compiler.v3_2.phases.CompilerContext
+import org.neo4j.cypher.internal.frontend.v3_2.phases.{BaseState, CompilationPhaseTracer, InternalNotificationLogger, Monitors}
 
 case class CypherCompiler[Context <: CompilerContext](createExecutionPlan: Transformer[Context, CompilationState, CompilationState],
                           astRewriter: ASTRewriter,
@@ -85,7 +84,7 @@ case class CypherCompiler[Context <: CompilerContext](createExecutionPlan: Trans
                  plannerNameText: String = IDPPlannerName.name,
                  offset: Option[InputPosition],
                  tracer: CompilationPhaseTracer): BaseState = {
-    val plannerName = PlannerName(plannerNameText)
+    val plannerName = PlannerNameFor(plannerNameText)
     val startState = CompilationState(queryText, offset, plannerName)
     //TODO: these nulls are a short cut
     val context = contextCreation.create(tracer, notificationLogger, planContext = null, rawQueryText, offset, monitors,
@@ -100,11 +99,11 @@ case class CypherCompiler[Context <: CompilerContext](createExecutionPlan: Trans
 
   val irConstruction: Transformer[CompilerContext, BaseState, CompilationState] =
     ResolveTokens andThen
-      CreatePlannerQuery.adds[UnionQuery] andThen
+      CreatePlannerQuery.adds(CompilationContains[UnionQuery]) andThen
       OptionalMatchRemover
 
   val costBasedPlanning =
-    QueryPlanner().adds[LogicalPlan] andThen
+    QueryPlanner().adds(CompilationContains[LogicalPlan]) andThen
     PlanRewriter(sequencer) andThen
     If((s: CompilationState) => s.unionQuery.readOnly) (
       CheckForUnresolvedTokens
@@ -114,7 +113,7 @@ case class CypherCompiler[Context <: CompilerContext](createExecutionPlan: Trans
     CompilationPhases.lateAstRewriting andThen
     irConstruction andThen
     costBasedPlanning andThen
-    createExecutionPlan.adds[ExecutionPlan]
+    createExecutionPlan.adds(CompilationContains[ExecutionPlan])
 
   val planAndCreateExecPlan: Transformer[Context, BaseState, CompilationState] =
     ProcedureCallOrSchemaCommandPlanBuilder andThen

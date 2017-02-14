@@ -36,7 +36,7 @@ object BuildInterpretedExecutionPlan extends Phase[CompilerContext, CompilationS
 
   override def description = "create interpreted execution plan"
 
-  override def postConditions = Set(Contains[ExecutionPlan])
+  override def postConditions = Set(CompilationContains[ExecutionPlan])
 
   override def process(from: CompilationState, context: CompilerContext): CompilationState = {
     val logicalPlan = from.logicalPlan

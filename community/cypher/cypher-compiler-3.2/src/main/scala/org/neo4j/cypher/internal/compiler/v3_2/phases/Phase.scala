@@ -24,7 +24,7 @@ import org.neo4j.cypher.internal.frontend.v3_2.phases.CompilationPhaseTracer.Com
 import org.neo4j.cypher.internal.frontend.v3_2.helpers.{AssertionRunner, closing}
 import org.neo4j.cypher.internal.frontend.v3_2.InternalException
 import org.neo4j.cypher.internal.frontend.v3_2.helpers.AssertionRunner.Thunk
-import org.neo4j.cypher.internal.frontend.v3_2.phases.BaseContext
+import org.neo4j.cypher.internal.frontend.v3_2.phases.{BaseContext, Condition}
 
 import scala.reflect.ClassTag
 
@@ -62,7 +62,7 @@ trait VisitorPhase[-C <: BaseContext, STATE] extends Phase[C, STATE, STATE] {
 
   def visit(value: STATE, context: C): Unit
 
-  override def postConditions: Set[Condition] = Set.empty
+  override def postConditions = Set.empty
 }
 
 trait Transformer[-C <: BaseContext, -FROM, TO] {
@@ -71,7 +71,7 @@ trait Transformer[-C <: BaseContext, -FROM, TO] {
   def andThen[D <: C, TO2](other: Transformer[D, TO, TO2]): Transformer[D, FROM, TO2] =
     new PipeLine(this, other)
 
-  def adds[T: ClassTag](implicit manifest: Manifest[T]): Transformer[C, FROM, TO] = this andThen AddCondition[C, TO](Contains[T])
+  def adds(condition: Condition): Transformer[C, FROM, TO] = this andThen AddCondition[C, TO](condition)
 
   def name: String
 }
@@ -83,7 +83,7 @@ case class AddCondition[-C <: BaseContext, STATE](postCondition: Condition) exte
 
   override def process(from: STATE, context: C): STATE = from
 
-  override def postConditions: Set[Condition] = Set(postCondition)
+  override def postConditions = Set(postCondition)
 }
 
 object Transformer {

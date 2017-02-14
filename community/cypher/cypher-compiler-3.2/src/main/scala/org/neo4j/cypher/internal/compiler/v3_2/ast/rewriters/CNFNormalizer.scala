@@ -20,12 +20,12 @@
 package org.neo4j.cypher.internal.compiler.v3_2.ast.rewriters
 
 import org.neo4j.cypher.internal.compiler.v3_2._
-import org.neo4j.cypher.internal.compiler.v3_2.phases.{CompilerContext, Condition}
+import org.neo4j.cypher.internal.compiler.v3_2.phases.CompilerContext
 import org.neo4j.cypher.internal.frontend.v3_2.Foldable._
 import org.neo4j.cypher.internal.frontend.v3_2.Rewritable._
 import org.neo4j.cypher.internal.frontend.v3_2.ast._
 import org.neo4j.cypher.internal.frontend.v3_2.helpers.fixedPoint
-import org.neo4j.cypher.internal.frontend.v3_2.phases.BaseContext
+import org.neo4j.cypher.internal.frontend.v3_2.phases.{BaseContext, Condition}
 import org.neo4j.cypher.internal.frontend.v3_2.{Rewriter, bottomUp, inSequence}
 
 case object CNFNormalizer extends StatementRewriter {

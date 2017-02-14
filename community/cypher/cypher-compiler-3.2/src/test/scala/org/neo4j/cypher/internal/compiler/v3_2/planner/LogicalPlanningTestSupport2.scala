@@ -128,7 +128,7 @@ trait LogicalPlanningTestSupport2 extends CypherTestSupport with AstConstruction
       ResolveTokens andThen
       CreatePlannerQuery andThen
       OptionalMatchRemover andThen
-      QueryPlanner().adds[LogicalPlan] andThen
+      QueryPlanner().adds(CompilationContains[LogicalPlan]) andThen
       Do(removeApply _)
 
     // This fakes pattern expression naming for testing purposes

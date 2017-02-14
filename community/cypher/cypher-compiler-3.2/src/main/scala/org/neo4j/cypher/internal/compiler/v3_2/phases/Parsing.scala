@@ -22,7 +22,7 @@ package org.neo4j.cypher.internal.compiler.v3_2.phases
 import org.neo4j.cypher.internal.frontend.v3_2.phases.CompilationPhaseTracer.CompilationPhase.PARSING
 import org.neo4j.cypher.internal.frontend.v3_2.ast.Statement
 import org.neo4j.cypher.internal.frontend.v3_2.parser.CypherParser
-import org.neo4j.cypher.internal.frontend.v3_2.phases.BaseContext
+import org.neo4j.cypher.internal.frontend.v3_2.phases.{BaseContains, BaseContext, BaseState}
 
 case object Parsing extends Phase[BaseContext, BaseState, BaseState] {
   private val parser = new CypherParser
@@ -35,5 +35,5 @@ case object Parsing extends Phase[BaseContext, BaseState, BaseState] {
 
   override val description = "parse text into an AST object"
 
-  override def postConditions: Set[Condition] = Set(Contains[Statement])
+  override def postConditions = Set(BaseContains[Statement])
 }

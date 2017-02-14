@@ -24,28 +24,11 @@ import org.neo4j.cypher.internal.compiler.v3_2.planner.UnionQuery
 import org.neo4j.cypher.internal.compiler.v3_2.planner.logical.plans.LogicalPlan
 import org.neo4j.cypher.internal.frontend.v3_2.SemanticState
 import org.neo4j.cypher.internal.frontend.v3_2.ast.Statement
+import org.neo4j.cypher.internal.frontend.v3_2.phases.Condition
 
 import scala.reflect.ClassTag
 
-//trait A
-//trait B
-//
-//trait X extends A
-//
-//trait C {
-//  def foo(a: A): B
-//}
-//
-//trait Y extends C {
-//  override def foo(a: X) = ???
-//}
-
-
-trait Condition {
-  def check(state: CompilationState): Seq[String]
-}
-
-case class Contains[T: ClassTag](implicit manifest: Manifest[T]) extends Condition {
+case class CompilationContains[T: ClassTag](implicit manifest: Manifest[T]) extends Condition {
   private val acceptableTypes: Set[Class[_]] = Set(
     classOf[Statement],
     classOf[SemanticState],
@@ -56,14 +39,16 @@ case class Contains[T: ClassTag](implicit manifest: Manifest[T]) extends Conditi
 
   assert(acceptableTypes.contains(manifest.runtimeClass))
 
-  override def check(state: CompilationState): Seq[String] = {
-    manifest.runtimeClass match {
-      case x if classOf[Statement] == x && state.maybeStatement.isEmpty => Seq("Statement missing")
-      case x if classOf[SemanticState] == x && state.maybeSemantics.isEmpty => Seq("Semantic State missing")
-      case x if classOf[UnionQuery] == x && state.maybeUnionQuery.isEmpty => Seq("Union query missing")
-      case x if classOf[LogicalPlan] == x && state.maybeLogicalPlan.isEmpty => Seq("Logical plan missing")
-      case x if classOf[ExecutionPlan] == x && state.maybeExecutionPlan.isEmpty => Seq("Execution plan missing")
-      case _ => Seq.empty
-    }
+  override def check(in: AnyRef): Seq[String] = in match {
+    case state: CompilationState =>
+      manifest.runtimeClass match {
+        case x if classOf[Statement] == x && state.maybeStatement.isEmpty => Seq("Statement missing")
+        case x if classOf[SemanticState] == x && state.maybeSemantics.isEmpty => Seq("Semantic State missing")
+        case x if classOf[UnionQuery] == x && state.maybeUnionQuery.isEmpty => Seq("Union query missing")
+        case x if classOf[LogicalPlan] == x && state.maybeLogicalPlan.isEmpty => Seq("Logical plan missing")
+        case x if classOf[ExecutionPlan] == x && state.maybeExecutionPlan.isEmpty => Seq("Execution plan missing")
+        case _ => Seq.empty
+      }
+    case x => throw new IllegalArgumentException(s"Unknown state: $x")
   }
 }
