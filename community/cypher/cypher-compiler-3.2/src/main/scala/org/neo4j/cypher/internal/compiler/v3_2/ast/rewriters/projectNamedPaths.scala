@@ -22,6 +22,7 @@ package org.neo4j.cypher.internal.compiler.v3_2.ast.rewriters
 import org.neo4j.cypher.internal.compiler.v3_2.planner.CantHandleQueryException
 import org.neo4j.cypher.internal.frontend.v3_2.Foldable._
 import org.neo4j.cypher.internal.frontend.v3_2.ast._
+import org.neo4j.cypher.internal.frontend.v3_2.ast.rewriters.copyVariables
 import org.neo4j.cypher.internal.frontend.v3_2.{Ref, Rewriter, topDown}
 
 import scala.annotation.tailrec

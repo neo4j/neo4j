@@ -1,32 +1,11 @@
-/*
- * Copyright (c) 2002-2017 "Neo Technology,"
- * Network Engine for Objects in Lund AB [http://neotechnology.com]
- *
- * This file is part of Neo4j.
- *
- * Neo4j is free software: you can redistribute it and/or modify
- * it under the terms of the GNU General Public License as published by
- * the Free Software Foundation, either version 3 of the License, or
- * (at your option) any later version.
- *
- * This program is distributed in the hope that it will be useful,
- * but WITHOUT ANY WARRANTY; without even the implied warranty of
- * MERCHANTABILITY or FITNESS FOR A PARTICULAR PURPOSE.  See the
- * GNU General Public License for more details.
- *
- * You should have received a copy of the GNU General Public License
- * along with this program.  If not, see <http://www.gnu.org/licenses/>.
- */
-package org.neo4j.cypher.internal.compiler.v3_2.ast.rewriters
+package org.neo4j.cypher.internal.frontend.v3_2.ast.rewriters
 
-import org.neo4j.cypher.internal.compiler.v3_2._
-import org.neo4j.cypher.internal.compiler.v3_2.phases.CompilerContext
-import org.neo4j.cypher.internal.frontend.v3_2.Foldable._
-import org.neo4j.cypher.internal.frontend.v3_2.Rewritable._
 import org.neo4j.cypher.internal.frontend.v3_2.ast._
-import org.neo4j.cypher.internal.frontend.v3_2.helpers.fixedPoint
 import org.neo4j.cypher.internal.frontend.v3_2.phases.{BaseContext, Condition}
-import org.neo4j.cypher.internal.frontend.v3_2.{Rewriter, bottomUp, inSequence}
+import org.neo4j.cypher.internal.frontend.v3_2.{AstRewritingMonitor, Rewriter, bottomUp, inSequence, topDown}
+import org.neo4j.cypher.internal.frontend.v3_2.Foldable._
+import org.neo4j.cypher.internal.frontend.v3_2.ast.functions.Exists
+import org.neo4j.cypher.internal.frontend.v3_2.helpers.fixedPoint
 
 case object CNFNormalizer extends StatementRewriter {
 
@@ -131,4 +110,20 @@ object simplifyPredicates extends Rewriter {
   }
 
   private val instance = fixedPoint(bottomUp(step))
+}
+
+case object normalizeSargablePredicates extends Rewriter {
+
+  override def apply(that: AnyRef): AnyRef = instance(that)
+
+  private val instance: Rewriter = topDown(Rewriter.lift {
+
+    // turn n.prop IS NOT NULL into exists(n.prop)
+    case predicate@IsNotNull(property@Property(_, _)) =>
+      Exists.asInvocation(property)(predicate.position)
+
+    // remove not from inequality expressions by negating them
+    case Not(inequality: InequalityExpression) =>
+      inequality.negated
+  })
 }

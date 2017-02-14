@@ -27,4 +27,20 @@ trait BaseState {
   protected def fail(what: String) = {
     throw new InternalException(s"$what not yet initialised")
   }
+
+  def withStatement(s: Statement): BaseState
+  def withSemanticTable(s: SemanticTable): BaseState
+}
+
+case class BaseStateImpl(queryText: String,
+                         startPosition: Option[InputPosition],
+                         plannerName: PlannerName,
+                         maybeStatement: Option[Statement] = None,
+                         maybeSemantics: Option[SemanticState] = None,
+                         maybeExtractedParams: Option[Map[String, Any]] = None,
+                         maybeSemanticTable: Option[SemanticTable] = None,
+                         accumulatedConditions: Set[Condition] = Set.empty) extends BaseState {
+  override def withStatement(s: Statement): BaseState = copy(maybeStatement = Some(s))
+
+  override def withSemanticTable(s: SemanticTable): BaseState = copy(maybeSemanticTable = Some(s))
 }

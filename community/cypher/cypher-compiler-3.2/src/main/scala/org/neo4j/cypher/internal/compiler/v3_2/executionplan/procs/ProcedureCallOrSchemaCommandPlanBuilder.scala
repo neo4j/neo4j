@@ -102,7 +102,7 @@ case object ProcedureCallOrSchemaCommandPlanBuilder extends Phase[CompilerContex
       case _ => None
     }
 
-    CompilationState(from).copy(maybeExecutionPlan = maybeExecutionPlan)
+    CompilationState(from).withMaybeExecutionPlan(maybeExecutionPlan)
   }
 
   implicit private def labelToId(ctx: QueryContext)(label: LabelName): LabelId =

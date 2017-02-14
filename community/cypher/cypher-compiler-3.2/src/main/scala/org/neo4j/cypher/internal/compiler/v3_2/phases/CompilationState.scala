@@ -52,6 +52,11 @@ case class CompilationState(queryText: String,
   def logicalPlan = maybeLogicalPlan getOrElse fail("Logical plan")
   def periodicCommit = maybePeriodicCommit getOrElse fail("Periodic commit")
   def astAsQuery = statement.asInstanceOf[Query]
+
+  override def withStatement(s: Statement): CompilationState = copy(maybeStatement = Some(s))
+  override def withSemanticTable(s: SemanticTable): CompilationState = copy(maybeSemanticTable = Some(s))
+
+  def withMaybeExecutionPlan(opt: Option[ExecutionPlan]): CompilationState = copy(maybeExecutionPlan = opt)
 }
 
 object CompilationState {

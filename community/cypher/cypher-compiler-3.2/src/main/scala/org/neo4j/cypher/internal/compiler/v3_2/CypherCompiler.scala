@@ -141,10 +141,6 @@ case class CypherCompilerConfiguration(queryCacheSize: Int,
                                        errorIfShortestPathFallbackUsedAtRuntime: Boolean,
                                        nonIndexedLabelWarningThreshold: Long)
 
-trait AstRewritingMonitor {
-  def abortedRewriting(obj: AnyRef)
-  def abortedRewritingDueToLargeDNF(obj: AnyRef)
-}
 
 trait CypherCacheFlushingMonitor[T] {
   def cacheFlushDetected(justBeforeKey: T) {}

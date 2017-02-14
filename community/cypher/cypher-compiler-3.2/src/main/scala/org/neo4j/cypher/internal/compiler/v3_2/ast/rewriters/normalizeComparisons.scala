@@ -19,7 +19,8 @@
  */
 package org.neo4j.cypher.internal.compiler.v3_2.ast.rewriters
 
-import org.neo4j.cypher.internal.frontend.v3_2.ast.{Equals, NotEquals, LessThan, _}
+import org.neo4j.cypher.internal.frontend.v3_2.ast.rewriters.copyVariables
+import org.neo4j.cypher.internal.frontend.v3_2.ast.{Equals, LessThan, NotEquals, _}
 import org.neo4j.cypher.internal.frontend.v3_2.{Rewriter, topDown}
 
 case object normalizeComparisons extends Rewriter {

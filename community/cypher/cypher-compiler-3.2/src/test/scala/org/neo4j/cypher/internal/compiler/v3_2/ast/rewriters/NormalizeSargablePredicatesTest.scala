@@ -21,6 +21,7 @@ package org.neo4j.cypher.internal.compiler.v3_2.ast.rewriters
 
 import org.neo4j.cypher.internal.frontend.v3_2.ast._
 import org.neo4j.cypher.internal.frontend.v3_2.ast.functions.Exists
+import org.neo4j.cypher.internal.frontend.v3_2.ast.rewriters.normalizeSargablePredicates
 import org.neo4j.cypher.internal.frontend.v3_2.test_helpers.CypherFunSuite
 
 class NormalizeSargablePredicatesTest extends CypherFunSuite with AstConstructionTestSupport {
