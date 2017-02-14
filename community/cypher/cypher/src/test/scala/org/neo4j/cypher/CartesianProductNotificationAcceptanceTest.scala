@@ -25,19 +25,18 @@ import org.mockito.Matchers._
 import org.mockito.Mockito.{verify, _}
 import org.neo4j.cypher.internal.compatibility.v3_2.{StringInfoLogger, WrappedMonitors}
 import org.neo4j.cypher.internal.compiler.v3_2._
-import org.neo4j.cypher.internal.compiler.v3_2.codegen.CodeGenConfiguration
 import org.neo4j.cypher.internal.compiler.v3_2.helpers.IdentityTypeConverter
+import org.neo4j.cypher.internal.compiler.v3_2.phases.CompilerContext
 import org.neo4j.cypher.internal.frontend.v3_2.InputPosition
 import org.neo4j.cypher.internal.frontend.v3_2.helpers.rewriting.RewriterStepSequencer
 import org.neo4j.cypher.internal.frontend.v3_2.notification.CartesianProductNotification
 import org.neo4j.cypher.internal.frontend.v3_2.phases.InternalNotificationLogger
 import org.neo4j.cypher.internal.frontend.v3_2.test_helpers.CypherFunSuite
-import org.neo4j.cypher.internal.spi.v3_2.codegen.GeneratedQueryStructure
 import org.neo4j.logging.NullLog
 
 class CartesianProductNotificationAcceptanceTest extends CypherFunSuite with GraphDatabaseTestSupport {
   var logger: InternalNotificationLogger = _
-  var compiler: CypherCompiler = _
+  var compiler: CypherCompiler[CompilerContext] = _
 
   override protected def beforeEach(): Unit = {
     super.beforeEach()
@@ -98,8 +97,8 @@ class CartesianProductNotificationAcceptanceTest extends CypherFunSuite with Gra
     }
   }
 
-  private def createCompiler() = {
-    CypherCompilerFactory.costBasedCompiler(
+  private def createCompiler(): CypherCompiler[CompilerContext] = {
+    new CypherCompilerFactory().costBasedCompiler(
       CypherCompilerConfiguration(
         queryCacheSize = 128,
         statsDivergenceThreshold = 0.5,
@@ -111,15 +110,15 @@ class CartesianProductNotificationAcceptanceTest extends CypherFunSuite with Gra
         nonIndexedLabelWarningThreshold = 10000L
       ),
       Clock.systemUTC(),
-      GeneratedQueryStructure,
       WrappedMonitors(kernelMonitors),
       new StringInfoLogger(NullLog.getInstance),
-      plannerName = Some(IDPPlannerName),
-      runtimeName = Some(CompiledRuntimeName),
-      codeGenMode = None,
+      plannerName = None,
+      runtimeName = None,
       updateStrategy = None,
       rewriterSequencer = RewriterStepSequencer.newValidating,
-      typeConverter = IdentityTypeConverter
+      runtimeBuilder = CommunityRuntimeBuilder,
+      typeConverter = IdentityTypeConverter,
+      contextCreator = CommunityContextCreator
     )
   }
 }

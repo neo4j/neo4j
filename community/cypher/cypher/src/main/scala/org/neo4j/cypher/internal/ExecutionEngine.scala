@@ -30,35 +30,34 @@ import org.neo4j.cypher.internal.spi.v3_2.TransactionalContextWrapper
 import org.neo4j.cypher.internal.tracing.{CompilationTracer, TimingCompilationTracer}
 import org.neo4j.graphdb.config.Setting
 import org.neo4j.graphdb.factory.GraphDatabaseSettings
-import org.neo4j.kernel.api.ReadOperations
+import org.neo4j.kernel.api.{KernelAPI, ReadOperations}
 import org.neo4j.kernel.api.security.AccessMode
 import org.neo4j.kernel.configuration.Config
 import org.neo4j.kernel.impl.query.{QueryExecutionMonitor, TransactionalContext}
 import org.neo4j.kernel.{GraphDatabaseQueryService, api, monitoring}
 import org.neo4j.logging.{LogProvider, NullLogProvider}
-
+import org.neo4j.kernel.monitoring.{Monitors => KernelMonitors}
 trait StringCacheMonitor extends CypherCacheMonitor[String, api.Statement]
 
 /**
   * This class construct and initialize both the cypher compiler and the cypher runtime, which is a very expensive
   * operation so please make sure this will be constructed only once and properly reused.
   */
-class ExecutionEngine(val queryService: GraphDatabaseQueryService, logProvider: LogProvider = NullLogProvider.getInstance()) {
+class ExecutionEngine(val queryService: GraphDatabaseQueryService,
+                      logProvider: LogProvider = NullLogProvider.getInstance(),
+                      compatibilityFactory: CompatibilityFactory) {
 
   require(queryService != null, "Can't work with a null graph database")
 
   // true means we run inside REST server
   protected val isServer = false
-  protected val kernel = queryService.getDependencyResolver.resolveDependency(classOf[org.neo4j.kernel.api.KernelAPI])
+  private val resolver = queryService.getDependencyResolver
+  private val kernel = resolver.resolveDependency(classOf[KernelAPI])
   private val lastCommittedTxId = LastCommittedTxIdProvider(queryService)
-  protected val kernelMonitors: monitoring.Monitors = queryService.getDependencyResolver.resolveDependency(classOf[org.neo4j.kernel.monitoring.Monitors])
-  private val compilationTracer: CompilationTracer = {
-    if( true) //optGraphSetting(queryService, GraphDatabaseSettings.cypher_compiler_tracing, FALSE))
-      new TimingCompilationTracer(kernelMonitors.newMonitor(classOf[TimingCompilationTracer.EventListener]))
-    else
-      CompilationTracer.NO_COMPILATION_TRACING
-  }
-  protected val compiler = createCompiler
+  private val kernelMonitors: KernelMonitors = resolver.resolveDependency(classOf[KernelMonitors])
+  private val compilationTracer: CompilationTracer =
+    new TimingCompilationTracer(kernelMonitors.newMonitor(classOf[TimingCompilationTracer.EventListener]))
+  private val queryDispatcher: CompilerEngineDelegator = createCompilerDelegator()
 
   private val log = logProvider.getLog( getClass )
   private val cacheMonitor = kernelMonitors.newMonitor(classOf[StringCacheMonitor])
@@ -115,7 +114,7 @@ class ExecutionEngine(val queryService: GraphDatabaseQueryService, logProvider: 
   @throws(classOf[SyntaxException])
   private def parsePreParsedQuery(preParsedQuery: PreParsedQuery, tracer: CompilationPhaseTracer): ParsedQuery = {
     parsedQueries.get(preParsedQuery.statementWithVersionAndPlanner).getOrElse {
-      val parsedQuery = compiler.parseQuery(preParsedQuery, tracer)
+      val parsedQuery = queryDispatcher.parseQuery(preParsedQuery, tracer)
       //don't cache failed queries
       if (!parsedQuery.hasErrors) parsedQueries.put(preParsedQuery.statementWithVersionAndPlanner, parsedQuery)
       parsedQuery
@@ -124,7 +123,7 @@ class ExecutionEngine(val queryService: GraphDatabaseQueryService, logProvider: 
 
   @throws(classOf[SyntaxException])
   private def preParseQuery(queryText: String): PreParsedQuery =
-    preParsedQueries.getOrElseUpdate(queryText, compiler.preParseQuery(queryText))
+    preParsedQueries.getOrElseUpdate(queryText, queryDispatcher.preParseQuery(queryText))
 
   @throws(classOf[SyntaxException])
   protected def planQuery(transactionalContext: TransactionalContext): (PreparedPlanExecution, TransactionalContextWrapper) = {
@@ -204,12 +203,12 @@ class ExecutionEngine(val queryService: GraphDatabaseQueryService, logProvider: 
 
   def isPeriodicCommit(query: String) = parseQuery(query).isPeriodicCommit
 
-  private def createCompiler: CypherCompiler = {
-    val version = CypherVersion(optGraphSetting[String](
+  private def createCompilerDelegator(): CompilerEngineDelegator = {
+    val version: CypherVersion = CypherVersion(optGraphSetting[String](
       queryService, GraphDatabaseSettings.cypher_parser_version, CypherVersion.default.name))
-    val planner = CypherPlanner(optGraphSetting[String](
+    val planner: CypherPlanner = CypherPlanner(optGraphSetting[String](
       queryService, GraphDatabaseSettings.cypher_planner, CypherPlanner.default.name))
-    val runtime = CypherRuntime(optGraphSetting[String](
+    val runtime: CypherRuntime = CypherRuntime(optGraphSetting[String](
       queryService, GraphDatabaseSettings.cypher_runtime, CypherRuntime.default.name))
     val useErrorsOverWarnings = optGraphSetting[java.lang.Boolean](
       queryService, GraphDatabaseSettings.cypher_hints_error,
@@ -232,7 +231,11 @@ class ExecutionEngine(val queryService: GraphDatabaseQueryService, logProvider: 
       log.error(message)
       throw new IllegalStateException(message)
     }
-    new CypherCompiler(queryService, kernel, kernelMonitors, version, planner, runtime, useErrorsOverWarnings, idpMaxTableSize, idpIterationDuration, errorIfShortestPathFallbackUsedAtRuntime, logProvider)
+
+    val compatibilityCache = new CompatibilityCache(compatibilityFactory)
+    new CompilerEngineDelegator(queryService, kernel, kernelMonitors, version, planner, runtime,
+      useErrorsOverWarnings, idpMaxTableSize, idpIterationDuration, errorIfShortestPathFallbackUsedAtRuntime,
+      logProvider, compatibilityCache)
   }
 
   private def getPlanCacheSize: Int =

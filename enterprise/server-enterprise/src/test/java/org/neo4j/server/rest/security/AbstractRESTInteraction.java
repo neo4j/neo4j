@@ -187,7 +187,8 @@ abstract class AbstractRESTInteraction extends CommunityServerTestBase implement
     @Override
     public void assertAuthenticated( RESTSubject subject )
     {
-        assertThat( authenticate( subject.principalCredentials ).status(), equalTo( 200 ) );
+        HTTP.Response authenticate = authenticate( subject.principalCredentials );
+        assertThat( authenticate.rawContent(), authenticate.status(), equalTo( 200 ) );
     }
 
     @Override

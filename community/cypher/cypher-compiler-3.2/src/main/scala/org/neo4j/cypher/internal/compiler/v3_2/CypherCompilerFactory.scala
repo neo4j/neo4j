@@ -21,34 +21,33 @@ package org.neo4j.cypher.internal.compiler.v3_2
 
 import java.time.Clock
 
-import org.neo4j.cypher.internal.compiler.v3_2.codegen.{CodeGenConfiguration, CodeGenMode}
-import org.neo4j.cypher.internal.compiler.v3_2.codegen.spi.CodeStructure
 import org.neo4j.cypher.internal.compiler.v3_2.executionplan._
 import org.neo4j.cypher.internal.compiler.v3_2.helpers.RuntimeTypeConverter
 import org.neo4j.cypher.internal.compiler.v3_2.planner.logical._
+import org.neo4j.cypher.internal.compiler.v3_2.phases.{CompilerContext, Transformer}
 import org.neo4j.cypher.internal.compiler.v3_2.planner.logical.idp._
 import org.neo4j.cypher.internal.frontend.v3_2.ast.Statement
 import org.neo4j.cypher.internal.frontend.v3_2.helpers.rewriting.RewriterStepSequencer
 import org.neo4j.cypher.internal.frontend.v3_2.phases.Monitors
 
-object CypherCompilerFactory {
+class CypherCompilerFactory[C <: CompilerContext, T <: Transformer[C]] {
   val monitorTag = "cypher3.2"
 
   def costBasedCompiler(config: CypherCompilerConfiguration,
                         clock: Clock,
-                        structure: CodeStructure[GeneratedQuery],
                         monitors: Monitors, logger: InfoLogger,
                         rewriterSequencer: (String) => RewriterStepSequencer,
                         plannerName: Option[CostBasedPlannerName],
                         runtimeName: Option[RuntimeName],
-                        codeGenMode: Option[CodeGenMode],
                         updateStrategy: Option[UpdateStrategy],
-                        typeConverter: RuntimeTypeConverter): CypherCompiler = {
+                        typeConverter: RuntimeTypeConverter,
+                        runtimeBuilder: RuntimeBuilder[T],
+                        contextCreator: ContextCreator[C]): CypherCompiler[C] = {
     val rewriter = new ASTRewriter(rewriterSequencer)
     val metricsFactory = CachedMetricsFactory(SimpleMetricsFactory)
 
     // Pick runtime based on input
-    val runtimePipeline = RuntimeBuilder.create(runtimeName, config.useErrorsOverWarnings)
+    val runtimePipeline = runtimeBuilder.create(runtimeName, config.useErrorsOverWarnings)
 
     val planner = plannerName.getOrElse(CostBasedPlannerName.default)
     val queryGraphSolver = createQueryGraphSolver(planner, monitors, config)
@@ -62,12 +61,9 @@ object CypherCompilerFactory {
     val cacheMonitor = monitors.newMonitor[AstCacheMonitor](monitorTag)
     val cache = new MonitoringCacheAccessor[Statement, ExecutionPlan](cacheMonitor)
 
-    val actualCodeGenMode = codeGenMode.getOrElse(CodeGenMode.default)
-    val codeGenConfiguration = CodeGenConfiguration(mode = actualCodeGenMode)
-
     CypherCompiler(runtimePipeline, rewriter, cache, planCacheFactory, cacheMonitor, monitors, rewriterSequencer,
-      createFingerprintReference, typeConverter, metricsFactory, queryGraphSolver, config, actualUpdateStrategy,
-      codeGenConfiguration, clock, structure)
+      createFingerprintReference, typeConverter, metricsFactory, queryGraphSolver, config, actualUpdateStrategy, clock,
+      contextCreator)
   }
 
   def createQueryGraphSolver(n: CostBasedPlannerName, monitors: Monitors, config: CypherCompilerConfiguration): QueryGraphSolver = n match {
@@ -85,7 +81,6 @@ object CypherCompilerFactory {
       val singleComponentPlanner = SingleComponentPlanner(monitor, DPSolverConfig)
       IDPQueryGraphSolver(singleComponentPlanner, cartesianProductsOrValueJoins, monitor)
   }
-
 
   private def logStalePlanRemovalMonitor(log: InfoLogger) = new AstCacheMonitor {
     override def cacheDiscard(key: Statement, userKey: String) {

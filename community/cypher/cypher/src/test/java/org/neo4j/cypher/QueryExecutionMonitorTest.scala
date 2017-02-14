@@ -22,6 +22,7 @@ package org.neo4j.cypher
 import org.mockito.Matchers._
 import org.mockito.Mockito._
 import org.neo4j.cypher.internal.frontend.v3_2.test_helpers.CypherFunSuite
+import org.neo4j.cypher.ExecutionEngineHelper.createEngine
 import org.neo4j.cypher.internal.helpers.GraphIcing
 import org.neo4j.cypher.internal.{ExecutionEngine, ExecutionResult}
 import org.neo4j.cypher.javacompat.internal.GraphDatabaseCypherService
@@ -34,11 +35,11 @@ import org.neo4j.test.TestGraphDatabaseFactory
 import scala.collection.immutable.Map
 import scala.language.implicitConversions
 
-class QueryExecutionMonitorTest extends CypherFunSuite with GraphIcing {
+class QueryExecutionMonitorTest extends CypherFunSuite with GraphIcing with GraphDatabaseTestSupport with ExecutionEngineTestSupport {
   implicit def contextQuery(context: TransactionalContext): ExecutingQuery = context.executingQuery()
 
   private def runQuery(query: String): (ExecutingQuery, ExecutionResult) = {
-    val context = graph.transactionalContext(query = query -> Map.empty)
+    val context = db.transactionalContext(query = query -> Map.empty)
     val executingQuery = context.executingQuery()
     val executionResult = engine.execute(executingQuery.queryText(), executingQuery.queryParameters(), context)
     (executingQuery, executionResult)
@@ -136,7 +137,7 @@ class QueryExecutionMonitorTest extends CypherFunSuite with GraphIcing {
   }
 
   test("monitor is called directly when proc return is void") {
-    graph.execute("CREATE INDEX ON :Person(name)").close()
+    db.execute("CREATE INDEX ON :Person(name)").close()
 
     val (context, result) = runQuery("CALL db.awaitIndex(':Person(name)')")
 
@@ -240,7 +241,7 @@ class QueryExecutionMonitorTest extends CypherFunSuite with GraphIcing {
 
   test("monitor is called directly when return is empty in 2.3") {
     // given
-    val context = graph.transactionalContext(query = "CYPHER 2.3 CREATE()" -> Map.empty)
+    val context = db.transactionalContext(query = "CYPHER 2.3 CREATE()" -> Map.empty)
 
     // when
     val result = engine.execute(context.queryText(), context.queryParameters(), context).javaIterator
@@ -252,7 +253,7 @@ class QueryExecutionMonitorTest extends CypherFunSuite with GraphIcing {
 
   test("triggering monitor in 3.1") {
     // given
-    val context = graph.transactionalContext(query = "CYPHER 3.1 RETURN [1, 2, 3, 4, 5]" -> Map.empty)
+    val context = db.transactionalContext(query = "CYPHER 3.1 RETURN [1, 2, 3, 4, 5]" -> Map.empty)
 
     // when
     val result = engine.profile(context.queryText(), context.queryParameters(), context).javaIterator
@@ -305,21 +306,21 @@ class QueryExecutionMonitorTest extends CypherFunSuite with GraphIcing {
     verify(monitor, times(1)).endSuccess(query)
   }
 
-  var graph: GraphDatabaseQueryService = null
+  var db: GraphDatabaseQueryService = null
   var monitor: QueryExecutionMonitor = null
   var engine: ExecutionEngine = null
 
   override protected def beforeEach(): Unit = {
     super.beforeEach()
-    graph = new GraphDatabaseCypherService(new TestGraphDatabaseFactory().newImpermanentDatabase())
+    db = new GraphDatabaseCypherService(new TestGraphDatabaseFactory().newImpermanentDatabase())
     monitor = mock[QueryExecutionMonitor]
-    val monitors = graph.getDependencyResolver.resolveDependency(classOf[org.neo4j.kernel.monitoring.Monitors])
+    val monitors = db.getDependencyResolver.resolveDependency(classOf[org.neo4j.kernel.monitoring.Monitors])
     monitors.addMonitorListener(monitor)
-    engine = new ExecutionEngine(graph)
+    engine = createEngine(db)
   }
 
   override protected def afterEach(): Unit = {
     super.afterEach()
-    if (graph != null) graph.shutdown()
+    if (db != null) db.shutdown()
   }
 }

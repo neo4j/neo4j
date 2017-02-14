@@ -24,14 +24,13 @@ import java.time.{Clock, Instant, ZoneOffset}
 import org.neo4j.cypher.GraphDatabaseTestSupport
 import org.neo4j.cypher.internal.compatibility.v3_2.{StringInfoLogger, WrappedMonitors}
 import org.neo4j.cypher.internal.frontend.v3_2.phases.CompilationPhaseTracer.NO_TRACING
-import org.neo4j.cypher.internal.compiler.v3_2.codegen.CodeGenConfiguration
 import org.neo4j.cypher.internal.compiler.v3_2.executionplan.ExecutionPlan
 import org.neo4j.cypher.internal.compiler.v3_2.helpers.IdentityTypeConverter
+import org.neo4j.cypher.internal.compiler.v3_2.phases.CompilerContext
 import org.neo4j.cypher.internal.frontend.v3_2.ast.Statement
 import org.neo4j.cypher.internal.frontend.v3_2.helpers.rewriting.RewriterStepSequencer
 import org.neo4j.cypher.internal.frontend.v3_2.phases.devNullLogger
 import org.neo4j.cypher.internal.frontend.v3_2.test_helpers.CypherFunSuite
-import org.neo4j.cypher.internal.spi.v3_2.codegen.GeneratedQueryStructure
 import org.neo4j.graphdb.config.Setting
 import org.neo4j.graphdb.factory.GraphDatabaseSettings
 import org.neo4j.logging.AssertableLogProvider.inLog
@@ -41,9 +40,9 @@ import scala.collection.Map
 
 class CypherCompilerAstCacheAcceptanceTest extends CypherFunSuite with GraphDatabaseTestSupport {
   def createCompiler(queryCacheSize: Int = 128, statsDivergenceThreshold: Double = 0.5, queryPlanTTL: Long = 1000,
-                     clock: Clock = Clock.systemUTC(), log: Log = NullLog.getInstance) = {
+                     clock: Clock = Clock.systemUTC(), log: Log = NullLog.getInstance): CypherCompiler[CompilerContext] = {
 
-    CypherCompilerFactory.costBasedCompiler(
+    new CypherCompilerFactory().costBasedCompiler(
       CypherCompilerConfiguration(
         queryCacheSize,
         statsDivergenceThreshold,
@@ -54,15 +53,16 @@ class CypherCompilerAstCacheAcceptanceTest extends CypherFunSuite with GraphData
         errorIfShortestPathFallbackUsedAtRuntime = false,
         nonIndexedLabelWarningThreshold = 10000L
       ),
-      clock, GeneratedQueryStructure,
+      clock,
       WrappedMonitors(kernelMonitors),
       new StringInfoLogger(log),
-      plannerName = Some(IDPPlannerName),
-      runtimeName = Some(CompiledRuntimeName),
+      plannerName = None,
+      runtimeName = None,
       updateStrategy = None,
-      codeGenMode = None,
       rewriterSequencer = RewriterStepSequencer.newValidating,
-      typeConverter = IdentityTypeConverter
+      typeConverter = IdentityTypeConverter,
+      runtimeBuilder = CommunityRuntimeBuilder,
+      contextCreator = CommunityContextCreator
     )
   }
 
@@ -91,7 +91,7 @@ class CypherCompilerAstCacheAcceptanceTest extends CypherFunSuite with GraphData
   override def databaseConfig(): Map[Setting[_], String] = Map(GraphDatabaseSettings.cypher_min_replan_interval -> "0")
 
   var counter: CacheCounter = _
-  var compiler: CypherCompiler = _
+  var compiler: CypherCompiler[CompilerContext] = _
 
   override protected def beforeEach(): Unit = {
     super.beforeEach()
@@ -138,7 +138,7 @@ class CypherCompilerAstCacheAcceptanceTest extends CypherFunSuite with GraphData
     graph.createConstraint("Person", "id")
     runQuery("return 42")
 
-    counter.counts should equal(CacheCounts(hits = 0, misses = 2, flushes = 2))
+    counter.counts should equal(CacheCounts(misses = 2, flushes = 2))
   }
 
   test("should monitor cache remove") {
@@ -164,11 +164,10 @@ class CypherCompilerAstCacheAcceptanceTest extends CypherFunSuite with GraphData
   test("should log on cache remove") {
     // given
     val logProvider = new AssertableLogProvider()
+    val logName = "testlog"
     val clock: Clock = Clock.fixed(Instant.ofEpochMilli(1000L), ZoneOffset.UTC)
-    compiler = createCompiler(queryPlanTTL = 0, clock = clock, log = logProvider.getLog(getClass))
-    compiler.monitors.addMonitorListener(counter)
+    compiler = createCompiler(queryPlanTTL = 0, clock = clock, log = logProvider.getLog(logName))
     val query: String = "match (n:Person:Dog) return n"
-    val statement = compiler.parseQuery(query, query, devNullLogger, offset = None, tracer = NO_TRACING).statement
 
     createLabeledNode("Dog")
     (0 until 50).foreach { _ => createLabeledNode("Person") }
@@ -180,7 +179,7 @@ class CypherCompilerAstCacheAcceptanceTest extends CypherFunSuite with GraphData
 
     // then
     logProvider.assertExactly(
-      inLog(getClass).info( s"Discarded stale query from the query cache: $query" )
+      inLog(logName).info( s"Discarded stale query from the query cache: $query" )
     )
   }
 }

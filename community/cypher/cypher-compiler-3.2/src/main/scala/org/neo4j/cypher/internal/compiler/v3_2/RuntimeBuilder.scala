@@ -21,25 +21,17 @@ package org.neo4j.cypher.internal.compiler.v3_2
 
 import org.neo4j.cypher.internal.compiler.v3_2.phases._
 import org.neo4j.cypher.internal.frontend.v3_2.InvalidArgumentException
-import org.neo4j.cypher.internal.frontend.v3_2.notification.RuntimeUnsupportedNotification
 
-object RuntimeBuilder {
-  def create(runtimeName: Option[RuntimeName], useErrorsOverWarnings: Boolean): Transformer[CompilerContext] = runtimeName match {
+trait RuntimeBuilder[T <: Transformer[_]] {
+  def create(runtimeName: Option[RuntimeName], useErrorsOverWarnings: Boolean): T
+}
+
+object CommunityRuntimeBuilder extends RuntimeBuilder[Transformer[CompilerContext]] {
+  override def create(runtimeName: Option[RuntimeName], useErrorsOverWarnings: Boolean): Transformer[CompilerContext] =
+    runtimeName match {
     case None | Some(InterpretedRuntimeName) =>
       BuildInterpretedExecutionPlan
 
-    case Some(CompiledRuntimeName) if useErrorsOverWarnings =>
-      BuildCompiledExecutionPlan andThen
-      If(_.maybeExecutionPlan.isEmpty)(
-        Do(_ => throw new InvalidArgumentException("The given query is not currently supported in the selected runtime"))
-      )
-
-    case Some(CompiledRuntimeName) =>
-      BuildCompiledExecutionPlan andThen
-      If(_.maybeExecutionPlan.isEmpty)(
-        Do { (c:CompilerContext) => c.notificationLogger.log(RuntimeUnsupportedNotification) } andThen
-        BuildInterpretedExecutionPlan
-      )
-
+    case Some(x) => throw new InvalidArgumentException(s"This version of Neo4j does not support requested runtime: $x")
   }
 }

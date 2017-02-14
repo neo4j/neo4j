@@ -83,18 +83,6 @@ class TransactionBoundPlanContext(tc: TransactionalContextWrapper, logger: Inter
       case _ => None
     }
 
-  def getUniquenessConstraint(labelName: String, propertyKey: String): Option[UniquenessConstraint] = try {
-    val labelId = tc.statement.readOperations().labelGetForName(labelName)
-    val propertyKeyId = tc.statement.readOperations().propertyKeyGetForName(propertyKey)
-
-    import scala.collection.JavaConverters._
-    tc.statement.readOperations().constraintsGetForLabelAndPropertyKey(new NodePropertyDescriptor(labelId, propertyKeyId)).asScala.collectFirst {
-      case unique: UniquenessConstraint => unique
-    }
-  } catch {
-    case _: KernelException => None
-  }
-
   override def hasPropertyExistenceConstraint(labelName: String, propertyKey: String): Boolean = {
     val labelId = tc.statement.readOperations().labelGetForName(labelName)
     val propertyKeyId = tc.statement.readOperations().propertyKeyGetForName(propertyKey)

@@ -352,7 +352,7 @@ public abstract class Expression extends ExpressionTemplate
     }
 
     /** get static field */
-    public static Expression get( final FieldReference field )
+    public static Expression getStatic(final FieldReference field )
     {
         return new Expression( field.type() )
         {

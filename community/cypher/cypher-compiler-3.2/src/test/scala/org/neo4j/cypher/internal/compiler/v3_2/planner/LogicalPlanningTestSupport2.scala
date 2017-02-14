@@ -93,16 +93,6 @@ trait LogicalPlanningTestSupport2 extends CypherTestSupport with AstConstruction
         else
           None
 
-      override def getUniquenessConstraint(labelName: String, propertyKey: String): Option[UniquenessConstraint] = {
-        if (config.uniqueIndexes((labelName, propertyKey)))
-          Some(new UniquenessConstraint(new NodePropertyDescriptor(
-            semanticTable.resolvedLabelIds(labelName).id,
-            semanticTable.resolvedPropertyKeyNames(propertyKey).id
-          )))
-        else
-          None
-      }
-
       override def getIndexRule(labelName: String, propertyKey: String): Option[IndexDescriptor] =
         if (config.indexes((labelName, propertyKey)) || config.uniqueIndexes((labelName, propertyKey)))
           Some(IndexDescriptor(

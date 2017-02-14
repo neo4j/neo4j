@@ -278,7 +278,7 @@ public class CodeGenerationTest
             FieldReference foo = simple.staticField( int.class, "FOO", constant( 42 ) );
             try ( CodeBlock get = simple.generateMethod( int.class, "get" ) )
             {
-                get.returns( Expression.get( foo ) );
+                get.returns( Expression.getStatic( foo ) );
             }
             handle = simple.handle();
         }
@@ -300,7 +300,7 @@ public class CodeGenerationTest
             FieldReference foo = simple.staticField( String.class, "FOO", constant( "42" ) );
             try ( CodeBlock get = simple.generateMethod( String.class, "get" ) )
             {
-                get.returns( Expression.get( foo ) );
+                get.returns( Expression.getStatic( foo ) );
             }
             handle = simple.handle();
         }
@@ -326,7 +326,7 @@ public class CodeGenerationTest
                             constant( "FOO" ), constant( "BAR" ), constant( "BAZ" ) ) ) );
             try ( CodeBlock get = simple.generateMethod( stringList, "get" ) )
             {
-                get.returns( Expression.get( foo ) );
+                get.returns( Expression.getStatic( foo ) );
             }
             handle = simple.handle();
         }

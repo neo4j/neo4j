@@ -21,11 +21,10 @@ package org.neo4j.cypher.internal.compiler.v3_2.executionplan.procs
 
 import java.util
 
-import org.neo4j.cypher.internal.compiler.v3_2.codegen.ResultRowImpl
 import org.neo4j.cypher.internal.compiler.v3_2.executionplan.{InternalQueryType, ProcedureCallMode, StandardInternalExecutionResult}
 import org.neo4j.cypher.internal.compiler.v3_2.planDescription.InternalPlanDescription
 import org.neo4j.cypher.internal.compiler.v3_2.spi.{InternalResultVisitor, QualifiedName, QueryContext}
-import org.neo4j.cypher.internal.compiler.v3_2.{ExecutionMode, InternalQueryStatistics, ProfileMode, TaskCloser}
+import org.neo4j.cypher.internal.compiler.v3_2._
 import org.neo4j.cypher.internal.frontend.v3_2.ProfilerStatisticsNotReadyException
 
 /**
@@ -59,15 +58,25 @@ class ProcedureExecutionResult[E <: Exception](context: QueryContext,
 
   override protected def createInner = new util.Iterator[util.Map[String, Any]]() {
     override def next(): util.Map[String, Any] =
-      try { resultAsMap( executionResults.next( ) ) }
-      catch { case e: NoSuchElementException => success(); throw e }
+      resultAsMap( executionResults.next( ) ) //TODO!!!¡¡¡¡
+    /*
+        override def next(): util.Map[String, Any] =
+          try { resultAsMap( executionResults.next( ) ) }
+          catch { case e: NoSuchElementException => success(); throw e }
 
-    override def hasNext: Boolean = if (executionResults.hasNext) true else { success(); close(); false }
+     */
+
+    override def hasNext: Boolean = {
+      val moreToCome = executionResults.hasNext
+      if (!moreToCome)  {
+        close()
+      }
+      moreToCome
+    }
   }
 
   override def accept[EX <: Exception](visitor: InternalResultVisitor[EX]) = {
     executionResults.foreach { res => visitor.visit(new ResultRowImpl(resultAsRefMap(res))) }
-    success()
     close()
   }
 

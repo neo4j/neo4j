@@ -22,25 +22,25 @@ package org.neo4j.cypher.internal.compatibility.v3_2
 import java.time.Clock
 
 import org.neo4j.cypher.internal.compiler.v3_2._
-import org.neo4j.cypher.internal.compiler.v3_2.codegen.{ByteCodeMode, SourceCodeMode}
-import org.neo4j.cypher.internal.spi.v3_2.codegen.GeneratedQueryStructure
-import org.neo4j.cypher.{CypherCodeGenMode, CypherPlanner, CypherRuntime, CypherUpdateStrategy}
+import org.neo4j.cypher.internal.compiler.v3_2.phases.{CompilerContext, Transformer}
+import org.neo4j.cypher.{CypherPlanner, CypherRuntime, CypherUpdateStrategy}
 import org.neo4j.kernel.api.KernelAPI
 import org.neo4j.kernel.monitoring.{Monitors => KernelMonitors}
 import org.neo4j.logging.Log
 
-// TODO: Merge with the trait?
-case class CostCompatibility(config: CypherCompilerConfiguration,
+case class CostCompatibility[C <: CompilerContext, T <: Transformer[C]](config: CypherCompilerConfiguration,
                              clock: Clock,
                              kernelMonitors: KernelMonitors,
                              kernelAPI: KernelAPI,
                              log: Log,
                              planner: CypherPlanner,
                              runtime: CypherRuntime,
-                             codeGenMode: CypherCodeGenMode,
-                             updateStrategy: CypherUpdateStrategy) extends Compatibility {
+                             updateStrategy: CypherUpdateStrategy,
+                             runtimeBuilder: RuntimeBuilder[T],
+                             contextCreator: ContextCreator[C]) extends Compatibility[C] {
+  assert(contextCreator != null)
 
-  protected val compiler = {
+  protected override val compiler: CypherCompiler[C] = {
     val maybePlannerName = planner match {
       case CypherPlanner.default => None
       case CypherPlanner.cost | CypherPlanner.idp => Some(IDPPlannerName)
@@ -54,12 +54,6 @@ case class CostCompatibility(config: CypherCompilerConfiguration,
       case CypherRuntime.compiled => Some(CompiledRuntimeName)
     }
 
-    val maybeCodeGenMode = codeGenMode match {
-      case CypherCodeGenMode.default => None
-      case CypherCodeGenMode.byteCode => Some(ByteCodeMode)
-      case CypherCodeGenMode.sourceCode => Some(SourceCodeMode)
-    }
-
     val maybeUpdateStrategy = updateStrategy match {
       case CypherUpdateStrategy.eager => Some(eagerUpdateStrategy)
       case _ => None
@@ -67,8 +61,9 @@ case class CostCompatibility(config: CypherCompilerConfiguration,
 
     val logger = new StringInfoLogger(log)
     val monitors = WrappedMonitors(kernelMonitors)
-    CypherCompilerFactory.costBasedCompiler(config, clock, GeneratedQueryStructure, monitors, logger, rewriterSequencer,
-      maybePlannerName, maybeRuntimeName, maybeCodeGenMode, maybeUpdateStrategy, typeConversions)
+
+    new CypherCompilerFactory().costBasedCompiler(config, clock, monitors, logger, rewriterSequencer,
+      maybePlannerName, maybeRuntimeName, maybeUpdateStrategy, typeConversions, runtimeBuilder, contextCreator)
   }
 
   override val queryCacheSize: Int = config.queryCacheSize

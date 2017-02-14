@@ -34,6 +34,7 @@
     <module>cluster</module>
     <module>backup</module>
     <module>kernel</module>
+    <module>cypher</module>
     <module>causal-clustering</module>
     <module>metrics</module>
     <module>neo4j-enterprise</module>

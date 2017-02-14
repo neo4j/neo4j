@@ -36,21 +36,6 @@ import static org.neo4j.server.rest.domain.JsonHelper.jsonToMap;
 public class CypherQueriesIT extends AbstractRestFunctionalTestBase
 {
     @Test
-    public void runningInCompiledRuntime() throws JsonParseException
-    {
-        // Document
-        ResponseEntity response = gen.get()
-                .expectedStatus( 200 )
-                .payload( quotedJson(
-                        "{ 'statements': [ { 'statement': 'CYPHER runtime=compiled MATCH (n) RETURN n' } ] }" ) )
-                .post( getDataUri() + "transaction/commit" );
-
-        // Then
-        Map<String, Object> result = jsonToMap( response.entity() );
-        assertNoErrors( result );
-    }
-
-    @Test
     public void runningWithGeometryTypes() throws JsonParseException
     {
         // Document

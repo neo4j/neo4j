@@ -23,12 +23,17 @@ import java.util.concurrent.TimeUnit
 
 import org.hamcrest.CoreMatchers._
 import org.junit.Assert._
+import org.neo4j.cypher.ExecutionEngineHelper.createEngine
 import org.neo4j.cypher.internal.compiler.v3_2.executionplan.InternalExecutionResult
 import org.neo4j.cypher.internal.frontend.v3_2.test_helpers.{CypherFunSuite, CypherTestSupport}
 import org.neo4j.cypher.internal.helpers.GraphIcing
-import org.neo4j.cypher.internal.{ExecutionEngine, RewindableExecutionResult}
+import org.neo4j.cypher.internal.{CompatibilityFactory, ExecutionEngine, RewindableExecutionResult}
 import org.neo4j.cypher.javacompat.internal.GraphDatabaseCypherService
-import org.neo4j.kernel.impl.query.TransactionalContext
+import org.neo4j.graphdb.GraphDatabaseService
+import org.neo4j.kernel.GraphDatabaseQueryService
+import org.neo4j.kernel.api.KernelAPI
+import org.neo4j.kernel.monitoring.{Monitors => KernelMonitors}
+import org.neo4j.logging.{LogProvider, NullLogProvider}
 
 import scala.concurrent.ExecutionContext.Implicits.global
 import scala.concurrent.duration.Duration
@@ -45,7 +50,7 @@ trait ExecutionEngineTestSupport extends CypherTestSupport with ExecutionEngineH
 
   override protected def initTest() {
     super.initTest()
-    eengine = new ExecutionEngine(graph)
+    eengine = createEngine(graph)
   }
 
   def runAndFail[T <: Throwable : Manifest](q: String): ExpectedException[T] =
@@ -63,6 +68,27 @@ trait ExecutionEngineTestSupport extends CypherTestSupport with ExecutionEngineH
     }
 
     Await.result(future, Duration.apply(length, timeUnit))
+  }
+}
+
+object ExecutionEngineHelper {
+  def createEngine(db: GraphDatabaseService, logProvider: LogProvider): ExecutionEngine = {
+    val service = new GraphDatabaseCypherService(db)
+    createEngine(service, logProvider)
+  }
+
+  def createEngine(db: GraphDatabaseService): ExecutionEngine = {
+    val service = new GraphDatabaseCypherService(db)
+    createEngine(service, NullLogProvider.getInstance())
+  }
+
+  def createEngine(graphDatabaseCypherService: GraphDatabaseQueryService, logProvider: LogProvider = NullLogProvider.getInstance()): ExecutionEngine = {
+    val resolver = graphDatabaseCypherService.getDependencyResolver
+    val kernel = resolver.resolveDependency(classOf[KernelAPI])
+    val kernelMonitors: KernelMonitors = resolver.resolveDependency(classOf[KernelMonitors])
+    val compatibilityFactory = resolver.resolveDependency( classOf[CompatibilityFactory] )
+
+    new ExecutionEngine(graphDatabaseCypherService, logProvider, compatibilityFactory)
   }
 }
 

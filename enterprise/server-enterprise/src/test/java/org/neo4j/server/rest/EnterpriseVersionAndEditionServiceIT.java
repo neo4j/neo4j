@@ -19,85 +19,21 @@
  */
 package org.neo4j.server.rest;
 
-import org.junit.AfterClass;
-import org.junit.Before;
-import org.junit.BeforeClass;
-import org.junit.ClassRule;
 import org.junit.Test;
-import org.junit.rules.TemporaryFolder;
-
-import java.util.concurrent.Callable;
-
 import org.neo4j.kernel.internal.KernelData;
-import org.neo4j.server.NeoServer;
-import org.neo4j.server.enterprise.helpers.EnterpriseServerBuilder;
-import org.neo4j.server.helpers.FunctionalTestHelper;
 import org.neo4j.server.rest.management.VersionAndEditionService;
-import org.neo4j.test.server.ExclusiveServerTestBase;
 import org.neo4j.test.server.HTTP;
-import org.neo4j.time.Clocks;
-import org.neo4j.time.FakeClock;
 
 import static org.hamcrest.Matchers.equalTo;
 import static org.junit.Assert.assertEquals;
 import static org.junit.Assert.assertThat;
-import static org.neo4j.test.rule.SuppressOutput.suppressAll;
 
 /*
 Note that when running this test from within an IDE, the version field will be an empty string. This is because the
 code that generates the version identifier is written by Maven as part of the build process(!). The tests will pass
 both in the IDE (where the empty string will be correctly compared).
  */
-public class EnterpriseVersionAndEditionServiceIT extends ExclusiveServerTestBase
-{
-    private static NeoServer server;
-    private static FunctionalTestHelper functionalTestHelper;
-
-    @ClassRule
-    public static TemporaryFolder staticFolder = new TemporaryFolder();
-
-    private static FakeClock clock;
-
-    @BeforeClass
-    public static void setupServer() throws Exception
-    {
-        clock = Clocks.fakeClock();
-        server = EnterpriseServerBuilder.server()
-                .usingDataDir( staticFolder.getRoot().getAbsolutePath() )
-                .withClock( clock )
-                .build();
-
-        suppressAll().call( new Callable<Void>()
-        {
-            @Override
-            public Void call() throws Exception
-            {
-                server.start();
-                return null;
-            }
-        } );
-        functionalTestHelper = new FunctionalTestHelper( server );
-    }
-
-    @Before
-    public void setupTheDatabase() throws Exception
-    {
-        // do nothing, we don't care about the database contents here
-    }
-
-    @AfterClass
-    public static void stopServer() throws Exception
-    {
-        suppressAll().call( new Callable<Void>()
-        {
-            @Override
-            public Void call() throws Exception
-            {
-                server.stop();
-                return null;
-            }
-        } );
-    }
+public class EnterpriseVersionAndEditionServiceIT extends EnterpriseVersionIT {
 
     @Test
     public void shouldReportEnterpriseEdition() throws Exception

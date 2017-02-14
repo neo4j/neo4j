@@ -22,9 +22,7 @@ package org.neo4j.cypher.internal.compiler.v3_2.test_helpers
 import java.time.Clock
 
 import org.neo4j.cypher.internal.compiler.v3_2._
-import org.neo4j.cypher.internal.compiler.v3_2.codegen.CodeGenConfiguration
-import org.neo4j.cypher.internal.compiler.v3_2.codegen.spi.CodeStructure
-import org.neo4j.cypher.internal.compiler.v3_2.executionplan.{GeneratedQuery, PlanFingerprint, PlanFingerprintReference}
+import org.neo4j.cypher.internal.compiler.v3_2.executionplan.{PlanFingerprint, PlanFingerprintReference}
 import org.neo4j.cypher.internal.compiler.v3_2.helpers.RuntimeTypeConverter
 import org.neo4j.cypher.internal.compiler.v3_2.phases.CompilerContext
 import org.neo4j.cypher.internal.compiler.v3_2.planner.logical.{Metrics, QueryGraphSolver}
@@ -35,7 +33,7 @@ import org.neo4j.cypher.internal.frontend.v3_2.{CypherException, InputPosition, 
 import org.scalatest.mock.MockitoSugar
 
 object ContextHelper extends MockitoSugar {
-  def create(exceptionCreator: (String, InputPosition) => CypherException = (_,_) => new InternalException("apa"),
+  def create(exceptionCreator: (String, InputPosition) => CypherException = (_, _) => new InternalException("apa"),
              tracer: CompilationPhaseTracer = NO_TRACING,
              notificationLogger: InternalNotificationLogger = devNullLogger,
              planContext: PlanContext = new NotImplementedPlanContext,
@@ -46,9 +44,8 @@ object ContextHelper extends MockitoSugar {
              queryGraphSolver: QueryGraphSolver = mock[QueryGraphSolver],
              config: CypherCompilerConfiguration = mock[CypherCompilerConfiguration],
              updateStrategy: UpdateStrategy = mock[UpdateStrategy],
-             clock: Clock = Clock.systemUTC(),
-             codeStructure: CodeStructure[GeneratedQuery] = mock[CodeStructure[GeneratedQuery]],
-             codeGenConfiguration: CodeGenConfiguration = CodeGenConfiguration()): CompilerContext =
-    CompilerContext(exceptionCreator, tracer, notificationLogger, planContext, typeConverter, createFingerprintReference,
-      monitors, metrics, queryGraphSolver, config, updateStrategy, clock, codeStructure, codeGenConfiguration)
+             clock: Clock = Clock.systemUTC()): CompilerContext = {
+    new CompilerContext(exceptionCreator, tracer, notificationLogger, planContext, typeConverter, createFingerprintReference,
+      monitors, metrics, queryGraphSolver, config, updateStrategy, clock)
+  }
 }

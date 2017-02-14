@@ -19,34 +19,11 @@
  */
 package org.neo4j.cypher.internal.compiler.v3_2.executionplan
 
-import org.neo4j.cypher.internal.compiler.v3_2.codegen.QueryExecutionTracer
-import org.neo4j.cypher.internal.compiler.v3_2.codegen.profiling.ProfilingTracer
-import org.neo4j.cypher.internal.compiler.v3_2.executionplan.ExecutionPlanBuilder.DescriptionProvider
+import org.neo4j.cypher.internal.compiler.v3_2._
 import org.neo4j.cypher.internal.compiler.v3_2.pipes._
-import org.neo4j.cypher.internal.compiler.v3_2.planDescription.InternalPlanDescription
-import org.neo4j.cypher.internal.compiler.v3_2.planDescription.InternalPlanDescription.Arguments
 import org.neo4j.cypher.internal.compiler.v3_2.planner.logical.plans.LogicalPlan
 import org.neo4j.cypher.internal.compiler.v3_2.planner.{CantCompileQueryException, CantHandleQueryException}
-import org.neo4j.cypher.internal.compiler.v3_2.spi._
-import org.neo4j.cypher.internal.compiler.v3_2.{ExecutionMode, ProfileMode, _}
 import org.neo4j.cypher.internal.frontend.v3_2.ast.Statement
-
-trait RunnablePlan {
-  def apply(queryContext: QueryContext,
-            execMode: ExecutionMode,
-            descriptionProvider: DescriptionProvider,
-            params: Map[String, Any],
-            closer: TaskCloser): InternalExecutionResult
-}
-
-case class CompiledPlan(updating: Boolean,
-                        periodicCommit: Option[PeriodicCommitInfo] = None,
-                        fingerprint: Option[PlanFingerprint] = None,
-                        plannerUsed: PlannerName,
-                        planDescription: InternalPlanDescription,
-                        columns: Seq[String],
-                        executionResultBuilder: RunnablePlan,
-                        plannedIndexUsage: Seq[IndexUsage] = Seq.empty )
 
 case class PipeInfo(pipe: Pipe,
                     updating: Boolean,
@@ -66,28 +43,4 @@ trait NewLogicalPlanSuccessRateMonitor {
 trait NewRuntimeSuccessRateMonitor {
   def newPlanSeen(plan: LogicalPlan)
   def unableToHandlePlan(plan: LogicalPlan, origin: CantCompileQueryException)
-}
-
-object ExecutionPlanBuilder {
-  type DescriptionProvider =
-        (InternalPlanDescription => (Provider[InternalPlanDescription], Option[QueryExecutionTracer]))
-
-  def tracer( mode: ExecutionMode ) : DescriptionProvider = mode match {
-    case ProfileMode =>
-      val tracer = new ProfilingTracer()
-      (description: InternalPlanDescription) => (new Provider[InternalPlanDescription] {
-
-        override def get(): InternalPlanDescription = description.map {
-          plan: InternalPlanDescription =>
-            val data = tracer.get(plan.id)
-            plan.
-              addArgument(Arguments.DbHits(data.dbHits())).
-              addArgument(Arguments.Rows(data.rows())).
-              addArgument(Arguments.Time(data.time()))
-        }
-      }, Some(tracer))
-    case _ => (description: InternalPlanDescription) => (new Provider[InternalPlanDescription] {
-      override def get(): InternalPlanDescription = description
-    }, None)
-  }
 }

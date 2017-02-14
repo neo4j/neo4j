@@ -22,27 +22,22 @@ package org.neo4j.cypher.internal.compiler.v3_2.phases
 import java.time.Clock
 
 import org.neo4j.cypher.internal.compiler.v3_2._
-import org.neo4j.cypher.internal.compiler.v3_2.codegen.CodeGenConfiguration
-import org.neo4j.cypher.internal.compiler.v3_2.codegen.spi.CodeStructure
-import org.neo4j.cypher.internal.compiler.v3_2.executionplan.{GeneratedQuery, PlanFingerprint, PlanFingerprintReference}
+import org.neo4j.cypher.internal.compiler.v3_2.executionplan.{PlanFingerprint, PlanFingerprintReference}
 import org.neo4j.cypher.internal.compiler.v3_2.helpers.RuntimeTypeConverter
 import org.neo4j.cypher.internal.compiler.v3_2.planner.logical.{Metrics, QueryGraphSolver}
 import org.neo4j.cypher.internal.compiler.v3_2.spi.PlanContext
 import org.neo4j.cypher.internal.frontend.v3_2.phases.{BaseContext, CompilationPhaseTracer, InternalNotificationLogger, Monitors}
 import org.neo4j.cypher.internal.frontend.v3_2.{CypherException, InputPosition}
 
-case class CompilerContext(exceptionCreator: (String, InputPosition) => CypherException,
-                           tracer: CompilationPhaseTracer,
-                           notificationLogger: InternalNotificationLogger,
-                           planContext: PlanContext,
-                           typeConverter: RuntimeTypeConverter,
-                           createFingerprintReference: Option[PlanFingerprint] => PlanFingerprintReference,
-                           monitors: Monitors,
-                           metrics: Metrics,
-                           queryGraphSolver: QueryGraphSolver,
-                           config: CypherCompilerConfiguration,
-                           updateStrategy: UpdateStrategy,
-                           clock: Clock,
-                           codeStructure: CodeStructure[GeneratedQuery],
-                           codeGenConfiguration: CodeGenConfiguration) extends BaseContext
-
+class CompilerContext(val exceptionCreator: (String, InputPosition) => CypherException,
+                      val tracer: CompilationPhaseTracer,
+                      val notificationLogger: InternalNotificationLogger,
+                      val planContext: PlanContext,
+                      val typeConverter: RuntimeTypeConverter,
+                      val createFingerprintReference: Option[PlanFingerprint] => PlanFingerprintReference,
+                      val monitors: Monitors,
+                      val metrics: Metrics,
+                      val queryGraphSolver: QueryGraphSolver,
+                      val config: CypherCompilerConfiguration,
+                      val updateStrategy: UpdateStrategy,
+                      val clock: Clock) extends BaseContext
