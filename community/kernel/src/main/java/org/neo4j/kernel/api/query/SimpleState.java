@@ -22,46 +22,49 @@ package org.neo4j.kernel.api.query;
 
 import java.util.Map;
 
-import org.neo4j.time.SystemNanoClock;
-
-import static java.util.Collections.singletonMap;
-import static java.util.Collections.unmodifiableMap;
+import static java.util.Collections.emptyMap;
 
 final class SimpleState extends ExecutingQueryStatus
 {
-    private static final ExecutingQueryStatus PLANNING = new SimpleState( singletonMap( "state", "PLANNING" ) );
-    private static final ExecutingQueryStatus RUNNING = new SimpleState( singletonMap( "state", "RUNNING" ) );
-    private final Map<String,Object> state;
+    private static final ExecutingQueryStatus PLANNING = new SimpleState( PLANNING_STATE );
+    private static final ExecutingQueryStatus RUNNING = new SimpleState( RUNNING_STATE );
+    private final String name;
 
-    public static ExecutingQueryStatus planning()
+    static ExecutingQueryStatus planning()
     {
         return PLANNING;
     }
 
-    public static ExecutingQueryStatus running()
+    static ExecutingQueryStatus running()
     {
         return RUNNING;
     }
 
-    private SimpleState( Map<String,Object> state )
+    private SimpleState( String name )
     {
-        this.state = unmodifiableMap( state );
+        this.name = name;
     }
 
     @Override
-    public long waitTimeNanos( long currentTimeNanos )
+    long waitTimeNanos( long currentTimeNanos )
     {
         return 0;
     }
 
     @Override
-    public Map<String,Object> toMap( long currentTimeNanos )
+    Map<String,Object> toMap( long currentTimeNanos )
     {
-        return state;
+        return emptyMap();
     }
 
     @Override
-    public boolean isPlanning()
+    String name()
+    {
+        return name;
+    }
+
+    @Override
+    boolean isPlanning()
     {
         return this == PLANNING;
     }

@@ -196,7 +196,8 @@ public class KernelStatement implements TxStateHolder, Statement
 
     public LockTracer lockTracer()
     {
-        return executingQueryList.reduce( systemLockTracer, ExecutingQuery::lockTracer, LockTracer::combine );
+        LockTracer tracer = executingQueryList.top( ExecutingQuery::lockTracer );
+        return tracer == null ? systemLockTracer : systemLockTracer.combine( tracer );
     }
 
     public final void acquire()

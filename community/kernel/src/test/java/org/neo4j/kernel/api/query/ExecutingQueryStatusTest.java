@@ -29,10 +29,10 @@ import org.junit.Test;
 import org.neo4j.kernel.impl.locking.ActiveLock;
 import org.neo4j.storageengine.api.lock.ResourceType;
 import org.neo4j.storageengine.api.lock.WaitStrategy;
+import org.neo4j.test.FakeCpuClock;
 import org.neo4j.time.Clocks;
 import org.neo4j.time.FakeClock;
 
-import static java.util.Collections.singletonMap;
 import static org.junit.Assert.assertEquals;
 
 public class ExecutingQueryStatusTest
@@ -43,24 +43,24 @@ public class ExecutingQueryStatusTest
     public void shouldProduceSensibleMapRepresentationInRunningState() throws Exception
     {
         // when
-        Map<String,Object> status = SimpleState.running().toMap( clock.nanos() );
+        String status = SimpleState.running().name();
 
         // then
-        assertEquals( singletonMap( "state", "RUNNING" ), status );
+        assertEquals( "running", status );
     }
 
     @Test
     public void shouldProduceSensibleMapRepresentationInPlanningState() throws Exception
     {
         // when
-        Map<String,Object> status = SimpleState.planning().toMap( clock.nanos() );
+        String status = SimpleState.planning().name();
 
         // then
-        assertEquals( singletonMap( "state", "PLANNING" ), status );
+        assertEquals( "planning", status );
     }
 
     @Test
-    public void shouldProduceSensibleMapRepresentationInWaitingState() throws Exception
+    public void shouldProduceSensibleMapRepresentationInWaitingOnLockState() throws Exception
     {
         // given
         long[] resourceIds = {17};
@@ -76,14 +76,45 @@ public class ExecutingQueryStatusTest
         Map<String,Object> statusMap = status.toMap( clock.nanos() );
 
         // then
+        assertEquals( "waiting", status.name() );
         Map<String,Object> expected = new HashMap<>();
-        expected.put( "state", "WAITING" );
         expected.put( "waitTimeMillis", 17L );
         expected.put( "lockMode", "EXCLUSIVE" );
         expected.put( "resourceType", "NODE" );
         expected.put( "resourceIds", resourceIds );
         assertEquals( expected, statusMap );
     }
+
+    @Test
+    public void shouldProduceSensibleMapRepresentationInWaitingOnQueryState() throws Exception
+    {
+        // given
+        WaitingOnQuery status =
+                new WaitingOnQuery(
+                        new ExecutingQuery(
+                                12,
+                                null,
+                                null,
+                                null,
+                                null,
+                                null,
+                                null,
+                                Thread.currentThread(),
+                                clock,
+                                FakeCpuClock.CPU_CLOCK ), clock.nanos() );
+        clock.forward( 1025, TimeUnit.MILLISECONDS );
+
+        // when
+        Map<String,Object> statusMap = status.toMap( clock.nanos() );
+
+        // then
+        assertEquals( "waiting", status.name() );
+        Map<String,Object> expected = new HashMap<>();
+        expected.put( "waitTimeMillis", 1025L );
+        expected.put( "queryId", "query-12" );
+        assertEquals( expected, statusMap );
+    }
+
     static ResourceType resourceType(String name )
     {
         return new ResourceType()

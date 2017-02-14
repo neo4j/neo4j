@@ -61,6 +61,16 @@ public class ExecutingQueryTest
             () -> lockCount, Thread.currentThread(),
             clock,
             cpuClock );
+    private ExecutingQuery subQuery = new ExecutingQuery(
+            2,
+            ClientConnectionInfo.EMBEDDED_CONNECTION,
+            "neo4j",
+            "goodbye world",
+            Collections.emptyMap(),
+            Collections.emptyMap(),
+            () -> lockCount, Thread.currentThread(),
+            clock,
+            cpuClock );
 
     @Test
     public void shouldReportElapsedTime() throws Exception
@@ -77,22 +87,34 @@ public class ExecutingQueryTest
     public void shouldTransitionBetweenStates() throws Exception
     {
         // initial
-        assertThat( query.snapshot().status(), hasEntry( "state", "PLANNING" ) );
+        assertEquals( "planning", query.snapshot().status() );
 
         // when
         query.planningCompleted( new PlannerInfo( "the-planner", "the-runtime", emptyList() ) );
 
         // then
-        assertThat( query.snapshot().status(), hasEntry( "state", "RUNNING" ) );
+        assertEquals( "running", query.snapshot().status() );
 
         // when
         try ( LockWaitEvent event = lock( "NODE", 17 ) )
         {
             // then
-            assertThat( query.snapshot().status(), hasEntry( "state", "WAITING" ) );
+            assertEquals( "waiting", query.snapshot().status() );
         }
         // then
-        assertThat( query.snapshot().status(), hasEntry( "state", "RUNNING" ) );
+        assertEquals( "running", query.snapshot().status() );
+
+        // when
+        query.waitsForQuery( subQuery );
+
+        // then
+        assertEquals( "waiting", query.snapshot().status() );
+
+        // when
+        query.waitsForQuery( null );
+
+        // then
+        assertEquals( "running", query.snapshot().status() );
     }
 
     @Test
@@ -123,7 +145,7 @@ public class ExecutingQueryTest
         query.planningCompleted( new PlannerInfo( "the-planner", "the-runtime", emptyList() ) );
 
         // then
-        assertEquals( singletonMap( "state", "RUNNING" ), query.snapshot().status() );
+        assertEquals( "running", query.snapshot().status() );
 
         // when
         clock.forward( 10, TimeUnit.SECONDS );
@@ -133,8 +155,8 @@ public class ExecutingQueryTest
 
             // then
             QuerySnapshot snapshot = query.snapshot();
-            assertThat( snapshot.status(), CoreMatchers.<Map<String,Object>>allOf(
-                    hasEntry( "state", "WAITING" ),
+            assertEquals( "waiting", snapshot.status() );
+            assertThat( snapshot.resourceInformation(), CoreMatchers.<Map<String,Object>>allOf(
                     hasEntry( "waitTimeMillis", 5_000L ),
                     hasEntry( "resourceType", "NODE" ),
                     hasEntry( equalTo( "resourceIds" ), longArray( 17 ) ) ) );
@@ -142,7 +164,7 @@ public class ExecutingQueryTest
         }
         {
             QuerySnapshot snapshot = query.snapshot();
-            assertEquals( singletonMap( "state", "RUNNING" ), snapshot.status() );
+            assertEquals( "running", snapshot.status() );
             assertEquals( 5_000, snapshot.waitTimeMillis() );
         }
 
@@ -154,8 +176,8 @@ public class ExecutingQueryTest
 
             // then
             QuerySnapshot snapshot = query.snapshot();
-            assertThat( snapshot.status(), CoreMatchers.<Map<String,Object>>allOf(
-                    hasEntry( "state", "WAITING" ),
+            assertEquals( "waiting", snapshot.status() );
+            assertThat( snapshot.resourceInformation(), CoreMatchers.<Map<String,Object>>allOf(
                     hasEntry( "waitTimeMillis", 1_000L ),
                     hasEntry( "resourceType", "RELATIONSHIP" ),
                     hasEntry( equalTo( "resourceIds" ), longArray( 612 ) ) ) );
@@ -163,9 +185,38 @@ public class ExecutingQueryTest
         }
         {
             QuerySnapshot snapshot = query.snapshot();
-            assertEquals( singletonMap( "state", "RUNNING" ), snapshot.status() );
+            assertEquals( "running", snapshot.status() );
             assertEquals( 6_000, snapshot.waitTimeMillis() );
         }
+    }
+
+    @Test
+    public void shouldReportQueryWaitTime() throws Exception
+    {
+        // given
+        query.planningCompleted( new PlannerInfo( "the-planner", "the-runtime", emptyList() ) );
+
+        // when
+        query.waitsForQuery( subQuery );
+        clock.forward( 5, TimeUnit.SECONDS );
+
+        // then
+        QuerySnapshot snapshot = query.snapshot();
+        assertEquals( 5_000L, snapshot.waitTimeMillis() );
+        assertEquals( "waiting", snapshot.status() );
+        assertThat( snapshot.resourceInformation(), CoreMatchers.<Map<String,Object>>allOf(
+                hasEntry( "waitTimeMillis", 5_000L ),
+                hasEntry( "queryId", "query-2" ) ) );
+
+        // when
+        clock.forward( 1, TimeUnit.SECONDS );
+        query.waitsForQuery( null );
+        clock.forward( 2, TimeUnit.SECONDS );
+
+        // then
+        snapshot = query.snapshot();
+        assertEquals( 6_000L, snapshot.waitTimeMillis() );
+        assertEquals( "running", snapshot.status() );
     }
 
     @Test

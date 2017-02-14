@@ -34,7 +34,8 @@ public class QuerySnapshot
     private final long elapsedTimeMillis;
     private final long cpuTimeMillis;
     private final long waitTimeMillis;
-    private final Map<String,Object> status;
+    private final String status;
+    private final Map<String,Object> resourceInfo;
     private final long activeLockCount;
 
     QuerySnapshot(
@@ -44,7 +45,8 @@ public class QuerySnapshot
             long elapsedTimeMillis,
             long cpuTimeMillis,
             long waitTimeMillis,
-            Map<String,Object> status,
+            String status,
+            Map<String,Object> resourceInfo,
             long activeLockCount )
     {
         this.query = query;
@@ -54,6 +56,7 @@ public class QuerySnapshot
         this.cpuTimeMillis = cpuTimeMillis;
         this.waitTimeMillis = waitTimeMillis;
         this.status = status;
+        this.resourceInfo = resourceInfo;
         this.activeLockCount = activeLockCount;
     }
 
@@ -113,9 +116,14 @@ public class QuerySnapshot
                 .collect( Collectors.toList() );
     }
 
-    public Map<String,Object> status()
+    public String status()
     {
         return status;
+    }
+
+    public Map<String,Object> resourceInformation()
+    {
+        return resourceInfo;
     }
 
     public long startTimestampMillis()
@@ -123,27 +131,59 @@ public class QuerySnapshot
         return query.startTimestampMillis();
     }
 
+    /**
+     * The time spent planning the query, before the query actually starts executing.
+     *
+     * @return the time in milliseconds spent planning the query.
+     */
     public long planningTimeMillis()
     {
         return planningTimeMillis;
     }
 
+    /**
+     * The time that has been spent waiting on locks or other queries, as opposed to actively executing this query.
+     *
+     * @return the time in milliseconds spent waiting on locks.
+     */
     public long waitTimeMillis()
     {
         return waitTimeMillis;
     }
 
+    /**
+     * The time (wall time) that has elapsed since the execution of this query started.
+     *
+     * @return the time in milliseconds since execution of this query started.
+     */
     public long elapsedTimeMillis()
     {
         return elapsedTimeMillis;
     }
 
+    /**
+     * Time that the CPU has actively spent working on things related to this query.
+     *
+     * @return the time in milliseconds that the CPU has spent on this query.
+     */
     public long cpuTimeMillis()
     {
         return cpuTimeMillis;
     }
 
-    public long sleepTimeMillis()
+    /**
+     * Time from the start of this query that the computer spent doing other things than working on this query, even
+     * though the query was runnable.
+     * <p>
+     * In rare cases the idle time can be negative. This is due to the fact that the Thread does not go to sleep
+     * immediately after we start measuring the wait-time, there is still some "lock bookkeeping time" that counts as
+     * both cpu time (because the CPU is actually actively working on this thread) and wait time (because the query is
+     * actually waiting on the lock rather than doing active work). In most cases such "lock bookkeeping time" is going
+     * to be dwarfed by the idle time.
+     *
+     * @return the time in milliseconds that this query was de-scheduled.
+     */
+    public long idleTimeMillis()
     {
         return elapsedTimeMillis - cpuTimeMillis - waitTimeMillis;
     }

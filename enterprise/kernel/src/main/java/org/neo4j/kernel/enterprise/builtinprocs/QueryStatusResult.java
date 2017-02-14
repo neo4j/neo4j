@@ -61,13 +61,15 @@ public class QueryStatusResult
     /** EXPERIMENTAL: added in Neo4j 3.2 */
     public final long cpuTimeMillis; // TODO: we want this field to be of a Duration type (when Cypher supports that)
     /** EXPERIMENTAL: added in Neo4j 3.2 */
-    public final Map<String,Object> status;
+    public final String status;
+    /** EXPERIMENTAL: added in Neo4j 3.2 */
+    public final Map<String,Object> resourceInformation;
     /** EXPERIMENTAL: added in Neo4j 3.2 */
     public final long activeLockCount;
     /** EXPERIMENTAL: added in Neo4j 3.2 */
     public final long waitTimeMillis; // TODO: we want this field to be of a Duration type (when Cypher supports that)
     /** EXPERIMENTAL: added in Neo4j 3.2 */
-    public final long sleepTimeMillis; // TODO: we want this field to be of a Duration type (when Cypher supports that)
+    public final long idleTimeMillis; // TODO: we want this field to be of a Duration type (when Cypher supports that)
     public final Map<String,Object> metaData;
     public final List<Map<String,String>> indexes;
 
@@ -93,9 +95,10 @@ public class QueryStatusResult
         this.metaData = query.transactionAnnotationData();
         this.cpuTimeMillis = query.cpuTimeMillis();
         this.status = query.status();
+        this.resourceInformation = query.resourceInformation();
         this.activeLockCount = query.activeLockCount();
         this.waitTimeMillis = query.waitTimeMillis();
-        this.sleepTimeMillis = query.sleepTimeMillis();
+        this.idleTimeMillis = query.idleTimeMillis();
         this.planner = query.planner();
         this.runtime = query.runtime();
         this.indexes = query.indexes();

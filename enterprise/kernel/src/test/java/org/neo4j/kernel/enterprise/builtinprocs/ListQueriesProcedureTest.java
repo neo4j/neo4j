@@ -103,15 +103,15 @@ public class ListQueriesProcedureTest
             assertThat( data, hasKey( "cpuTimeMillis" ) );
             Object cpuTime1 = data.get( "cpuTimeMillis" );
             assertThat( cpuTime1, instanceOf( Long.class ) );
-            assertThat( data, hasKey( "status" ) );
-            Object status = data.get( "status" );
-            assertThat( status, instanceOf( Map.class ) );
+            assertThat( data, hasKey( "resourceInformation" ) );
+            Object ri = data.get( "resourceInformation" );
+            assertThat( ri, instanceOf( Map.class ) );
             @SuppressWarnings( "unchecked" )
-            Map<String,Object> statusMap = (Map<String,Object>) status;
-            assertEquals( "WAITING", statusMap.get( "state" ) );
-            assertEquals( "EXCLUSIVE", statusMap.get( "lockMode" ) );
-            assertEquals( "NODE", statusMap.get( "resourceType" ) );
-            assertArrayEquals( new long[] {test.resource().getId()}, (long[]) statusMap.get( "resourceIds" ) );
+            Map<String,Object> resourceInformation = (Map<String,Object>) ri;
+            assertEquals( "waiting", data.get( "status" ) );
+            assertEquals( "EXCLUSIVE", resourceInformation.get( "lockMode" ) );
+            assertEquals( "NODE", resourceInformation.get( "resourceType" ) );
+            assertArrayEquals( new long[] {test.resource().getId()}, (long[]) resourceInformation.get( "resourceIds" ) );
             assertThat( data, hasKey( "waitTimeMillis" ) );
             Object waitTime1 = data.get( "waitTimeMillis" );
             assertThat( waitTime1, instanceOf( Long.class ) );

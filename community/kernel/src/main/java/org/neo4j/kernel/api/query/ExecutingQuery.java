@@ -108,6 +108,19 @@ public class ExecutingQuery
         return lockTracer;
     }
 
+    public void waitsForQuery( ExecutingQuery child )
+    {
+        if ( child == null )
+        {
+            WAIT_TIME.addAndGet( this, status.waitTimeNanos( clock.nanos() ) );
+            this.status = SimpleState.running();
+        }
+        else
+        {
+            this.status = new WaitingOnQuery( child, clock.nanos() );
+        }
+    }
+
     // snapshot state
 
     public QuerySnapshot snapshot()
@@ -143,6 +156,7 @@ public class ExecutingQuery
                 NANOSECONDS.toMillis( elapsedTimeNanos ),
                 NANOSECONDS.toMillis( cpuTimeNanos ),
                 NANOSECONDS.toMillis( waitTimeNanos ),
+                status.name(),
                 status.toMap( currentTimeNanos ),
                 activeLockCount
         );

@@ -23,20 +23,14 @@ import java.util.HashMap;
 import java.util.Map;
 import java.util.concurrent.TimeUnit;
 
-import org.neo4j.storageengine.api.lock.ResourceType;
-
-class WaitingOnLock extends ExecutingQueryStatus
+class WaitingOnQuery extends ExecutingQueryStatus
 {
-    private final String mode;
-    private final ResourceType resourceType;
-    private final long[] resourceIds;
+    private final ExecutingQuery query;
     private final long startTimeNanos;
 
-    WaitingOnLock( String mode, ResourceType resourceType, long[] resourceIds, long startTimeNanos )
+    WaitingOnQuery( ExecutingQuery query, long startTimeNanos )
     {
-        this.mode = mode;
-        this.resourceType = resourceType;
-        this.resourceIds = resourceIds;
+        this.query = query;
         this.startTimeNanos = startTimeNanos;
     }
 
@@ -50,10 +44,8 @@ class WaitingOnLock extends ExecutingQueryStatus
     Map<String,Object> toMap( long currentTimeNanos )
     {
         Map<String,Object> map = new HashMap<>();
-        map.put( "lockMode", mode );
+        map.put( "queryId", "query-" + query.internalQueryId() );
         map.put( "waitTimeMillis", TimeUnit.NANOSECONDS.toMillis( waitTimeNanos( currentTimeNanos ) ) );
-        map.put( "resourceType", resourceType.toString() );
-        map.put( "resourceIds", resourceIds );
         return map;
     }
 

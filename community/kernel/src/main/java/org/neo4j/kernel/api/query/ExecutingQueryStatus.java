@@ -30,6 +30,7 @@ import java.util.Map;
  */
 abstract class ExecutingQueryStatus
 {
+    static final String PLANNING_STATE = "planning", RUNNING_STATE = "running", WAITING_STATE = "waiting";
     /**
      * Time in nanoseconds that has been spent waiting in the current state.
      * This is the portion of wait time not included in the {@link ExecutingQuery#waitTimeNanos} field.
@@ -38,9 +39,14 @@ abstract class ExecutingQueryStatus
      *         the current timestamp on the nano clock.
      * @return the time between the time this state started waiting and the provided timestamp.
      */
-    public abstract long waitTimeNanos( long currentTimeNanos );
+    abstract long waitTimeNanos( long currentTimeNanos );
 
-    public abstract Map<String,Object> toMap( long currentTimeNanos );
+    abstract Map<String,Object> toMap( long currentTimeNanos );
 
-    public abstract boolean isPlanning();
+    abstract String name();
+
+    boolean isPlanning()
+    {
+        return false;
+    }
 }
