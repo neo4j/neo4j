@@ -33,15 +33,6 @@ package org.neo4j.kernel.api.schema_new;
  */
 public interface SchemaComputer<R>
 {
-    /**
-     * Convenience method to make compute calls more readable.
-     * @param schema the SchemaDescriptor that is to be computed with.
-     */
-    default R compute( SchemaDescriptor schema )
-    {
-        return schema.computeWith( this );
-    }
-
     /*
     The following section contains the overloaded process signatures for all concrete SchemaDescriptor implementers.
     Add new overloaded methods here when adding more concrete SchemaDescriptors.

@@ -20,7 +20,6 @@
 package org.neo4j.consistency.checking.full;
 
 import java.util.Arrays;
-import java.util.Iterator;
 import java.util.function.Function;
 
 import org.neo4j.collection.primitive.Primitive;
@@ -30,7 +29,6 @@ import org.neo4j.collection.primitive.PrimitiveIntSet;
 import org.neo4j.consistency.RecordType;
 import org.neo4j.consistency.report.ConsistencyReport;
 import org.neo4j.consistency.report.ConsistencyReporter;
-import org.neo4j.kernel.api.exceptions.schema.MalformedSchemaRuleException;
 import org.neo4j.kernel.api.schema_new.LabelSchemaDescriptor;
 import org.neo4j.kernel.api.schema_new.RelationTypeSchemaDescriptor;
 import org.neo4j.kernel.api.schema_new.SchemaProcessor;
@@ -58,7 +56,7 @@ public class MandatoryProperties
         {
             if ( rule.getConstraintDescriptor().type() == EXISTS )
             {
-                constraintRecorder.process( rule.getSchemaDescriptor() );
+                rule.schema().processWith( constraintRecorder );
             }
         }
     }

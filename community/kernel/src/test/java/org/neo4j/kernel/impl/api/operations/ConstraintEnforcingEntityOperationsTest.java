@@ -22,10 +22,10 @@ package org.neo4j.kernel.impl.api.operations;
 import org.junit.Before;
 import org.junit.Test;
 
-import org.neo4j.kernel.api.schema.NodePropertyDescriptor;
-import org.neo4j.kernel.api.schema.IndexDescriptor;
-import org.neo4j.kernel.api.schema.IndexDescriptorFactory;
 import org.neo4j.kernel.api.index.InternalIndexState;
+import org.neo4j.kernel.api.schema_new.index.IndexBoundary;
+import org.neo4j.kernel.api.schema_new.index.NewIndexDescriptor;
+import org.neo4j.kernel.api.schema_new.index.NewIndexDescriptorFactory;
 import org.neo4j.kernel.impl.api.ConstraintEnforcingEntityOperations;
 import org.neo4j.kernel.impl.api.KernelStatement;
 import org.neo4j.kernel.impl.constraints.StandardConstraintSemantics;
@@ -48,8 +48,7 @@ public class ConstraintEnforcingEntityOperationsTest
     private final int labelId = 1;
     private final int propertyKeyId = 2;
     private final String value = "value";
-    private final IndexDescriptor indexDescriptor =
-            IndexDescriptorFactory.of( labelId, propertyKeyId );
+    private final NewIndexDescriptor index = NewIndexDescriptorFactory.uniqueForLabel( labelId, propertyKeyId );
     private EntityReadOperations readOps;
     private KernelStatement state;
     private Locks.Client locks;
@@ -62,7 +61,7 @@ public class ConstraintEnforcingEntityOperationsTest
         SchemaReadOperations schemaReadOps = mock( SchemaReadOperations.class );
         SchemaWriteOperations schemaWriteOps = mock( SchemaWriteOperations.class );
         this.state = mock( KernelStatement.class );
-        when( schemaReadOps.indexGetState( state, indexDescriptor ) ).thenReturn( InternalIndexState.ONLINE );
+        when( schemaReadOps.indexGetState( state, index ) ).thenReturn( InternalIndexState.ONLINE );
         this.locks = mock( Locks.Client.class );
         when( state.locks() ).thenReturn( new SimpleStatementLocks( locks ) );
         when( state.lockTracer() ).thenReturn( LockTracer.NONE );
@@ -75,10 +74,10 @@ public class ConstraintEnforcingEntityOperationsTest
     {
         // given
         long expectedNodeId = 15;
-        when( readOps.nodeGetFromUniqueIndexSeek( state, indexDescriptor, value ) ).thenReturn( expectedNodeId );
+        when( readOps.nodeGetFromUniqueIndexSeek( state, index, value ) ).thenReturn( expectedNodeId );
 
         // when
-        long nodeId = ops.nodeGetFromUniqueIndexSeek( state, indexDescriptor, value );
+        long nodeId = ops.nodeGetFromUniqueIndexSeek( state, index, value );
 
         // then
         assertEquals( expectedNodeId, nodeId );
@@ -92,10 +91,10 @@ public class ConstraintEnforcingEntityOperationsTest
     public void shouldHoldIndexWriteLockIfNodeDoesNotExist() throws Exception
     {
         // given
-        when( readOps.nodeGetFromUniqueIndexSeek( state, indexDescriptor, value ) ).thenReturn( NO_SUCH_NODE );
+        when( readOps.nodeGetFromUniqueIndexSeek( state, index, value ) ).thenReturn( NO_SUCH_NODE );
 
         // when
-        long nodeId = ops.nodeGetFromUniqueIndexSeek( state, indexDescriptor, value );
+        long nodeId = ops.nodeGetFromUniqueIndexSeek( state, index, value );
 
         // then
         assertEquals( NO_SUCH_NODE, nodeId );
@@ -114,12 +113,12 @@ public class ConstraintEnforcingEntityOperationsTest
     {
         // given
         long expectedNodeId = 15;
-        when( readOps.nodeGetFromUniqueIndexSeek( state, indexDescriptor, value ) )
+        when( readOps.nodeGetFromUniqueIndexSeek( state, index, value ) )
                 .thenReturn( NO_SUCH_NODE )
                 .thenReturn( expectedNodeId );
 
         // when
-        long nodeId = ops.nodeGetFromUniqueIndexSeek( state, indexDescriptor, value );
+        long nodeId = ops.nodeGetFromUniqueIndexSeek( state, index, value );
 
         // then
         assertEquals( expectedNodeId, nodeId );

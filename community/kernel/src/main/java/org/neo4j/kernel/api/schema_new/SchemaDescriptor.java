@@ -19,6 +19,8 @@
  */
 package org.neo4j.kernel.api.schema_new;
 
+import java.util.function.Predicate;
+
 import org.neo4j.kernel.api.TokenNameLookup;
 
 /**
@@ -60,17 +62,18 @@ public interface SchemaDescriptor
     String userDescription( TokenNameLookup tokenNameLookup );
 
     /**
-     * Checks whether a schema descriptor Supplier supplies this schema descriptor.
-     * @param supplier supplier to get a schema descriptor from
-     * @return true if the supplied schema descriptor equals this schema descriptor
+     * Create a predicate that checks whether a schema descriptor Supplier supplies the given schema descriptor.
+     * @param descriptor The schema descriptor to check equality with.
+     * @return A predicate that returns {@code true} if it is given a schema descriptor supplier that supplies the
+     * same schema descriptor as the given schema descriptor.
      */
-    default boolean isSame( SchemaDescriptor.Supplier supplier )
+    static <T extends SchemaDescriptor.Supplier> Predicate<T> equalTo( SchemaDescriptor descriptor )
     {
-        return this.equals( supplier.getSchemaDescriptor() );
+        return supplier -> descriptor.equals( supplier.schema() );
     }
 
     interface Supplier
     {
-        SchemaDescriptor getSchemaDescriptor();
+        SchemaDescriptor schema();
     }
 }

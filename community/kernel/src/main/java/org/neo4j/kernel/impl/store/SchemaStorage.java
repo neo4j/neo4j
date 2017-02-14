@@ -31,6 +31,7 @@ import org.neo4j.kernel.api.exceptions.schema.SchemaRuleNotFoundException;
 import org.neo4j.kernel.api.schema_new.SchemaDescriptor;
 import org.neo4j.kernel.api.schema_new.SchemaDescriptorPredicates;
 import org.neo4j.kernel.api.schema_new.constaints.ConstraintDescriptor;
+import org.neo4j.kernel.api.schema_new.index.NewIndexDescriptor;
 import org.neo4j.kernel.impl.store.record.ConstraintRule;
 import org.neo4j.kernel.impl.store.record.DynamicRecord;
 import org.neo4j.kernel.impl.store.record.IndexRule;
@@ -39,34 +40,6 @@ import org.neo4j.storageengine.api.schema.SchemaRule;
 
 public class SchemaStorage implements SchemaRuleAccess
 {
-    public enum IndexRuleKind implements Predicate<IndexRule>
-    {
-        INDEX
-        {
-            @Override
-            public boolean test( IndexRule rule )
-            {
-                return !rule.canSupportUniqueConstraint();
-            }
-        },
-        CONSTRAINT
-        {
-            @Override
-            public boolean test( IndexRule rule )
-            {
-                return rule.canSupportUniqueConstraint();
-            }
-        },
-        ALL
-        {
-            @Override
-            public boolean test( IndexRule rule )
-            {
-                return true;
-            }
-        }
-    }
-
     private final RecordStore<DynamicRecord> schemaStore;
 
     public SchemaStorage( RecordStore<DynamicRecord> schemaStore )
@@ -82,7 +55,7 @@ public class SchemaStorage implements SchemaRuleAccess
      */
     public IndexRule indexGetForSchema( SchemaDescriptor schemaDescriptor )
     {
-        return indexGetForSchema( schemaDescriptor, IndexRuleKind.ALL );
+        return indexGetForSchema( schemaDescriptor, NewIndexDescriptor.Filter.ANY );
     }
 
     /**
@@ -91,16 +64,16 @@ public class SchemaStorage implements SchemaRuleAccess
      * @return  the matching IndexRule, or null if no matching IndexRule was found
      * @throws  IllegalStateException if more than one matching rule.
      */
-    public IndexRule indexGetForSchema( final SchemaDescriptor descriptor, Predicate<IndexRule> filter )
+    public IndexRule indexGetForSchema( final SchemaDescriptor descriptor, NewIndexDescriptor.Filter filter )
     {
-        Iterator<IndexRule> rules = loadAllSchemaRules( descriptor::isSame, IndexRule.class, false );
+        Iterator<IndexRule> rules = loadAllSchemaRules( SchemaDescriptor.equalTo( descriptor ), IndexRule.class, false );
 
         IndexRule foundRule = null;
 
         while ( rules.hasNext() )
         {
             IndexRule candidate = rules.next();
-            if ( filter.test( candidate ) )
+            if ( filter.test( candidate.getIndexDescriptor() ) )
             {
                 if ( foundRule != null )
                 {
@@ -143,7 +116,7 @@ public class SchemaStorage implements SchemaRuleAccess
 
     public Iterator<ConstraintRule> constraintsGetForSchema( SchemaDescriptor schemaDescriptor )
     {
-        return loadAllSchemaRules( schemaDescriptor::isSame, ConstraintRule.class, false );
+        return loadAllSchemaRules( SchemaDescriptor.equalTo( schemaDescriptor ), ConstraintRule.class, false );
     }
 
     /**

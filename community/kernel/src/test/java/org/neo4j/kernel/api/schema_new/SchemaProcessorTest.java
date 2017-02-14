@@ -51,12 +51,12 @@ public class SchemaProcessorTest
             }
         };
 
-        processor.process( disguisedLabel() );
-        processor.process( disguisedLabel() );
-        processor.process( disguisedRelType() );
-        processor.process( disguisedLabel() );
-        processor.process( disguisedRelType() );
-        processor.process( disguisedRelType() );
+        disguisedLabel().processWith( processor );
+        disguisedLabel().processWith( processor );
+        disguisedRelType().processWith( processor );
+        disguisedLabel().processWith( processor );
+        disguisedRelType().processWith( processor );
+        disguisedRelType().processWith( processor );
 
         assertThat( callHistory, Matchers.contains(
                 "LabelSchemaDescriptor", "LabelSchemaDescriptor",

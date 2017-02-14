@@ -37,7 +37,10 @@ import org.neo4j.kernel.api.schema.IndexDescriptor;
 import org.neo4j.kernel.api.schema.NodePropertyDescriptor;
 import org.neo4j.kernel.api.security.AnonymousContext;
 import org.neo4j.kernel.api.security.SecurityContext;
+import org.neo4j.kernel.api.schema_new.index.IndexBoundary;
+import org.neo4j.kernel.api.schema_new.index.NewIndexDescriptor;
 import org.neo4j.kernel.impl.api.integrationtest.KernelIntegrationTest;
+import org.neo4j.kernel.impl.api.operations.SchemaReadOperations;
 import org.neo4j.kernel.impl.api.state.ConstraintIndexCreator;
 
 import static org.junit.Assert.assertEquals;
@@ -73,7 +76,7 @@ public class IndexIT extends KernelIntegrationTest
         SchemaWriteOperations schemaWriteOperations = schemaWriteOperationsInNewTransaction();
 
         // WHEN
-        IndexDescriptor expectedRule = schemaWriteOperations.indexCreate( descriptor );
+        NewIndexDescriptor expectedRule = schemaWriteOperations.indexCreate( descriptor );
         commit();
 
         // THEN
@@ -88,14 +91,14 @@ public class IndexIT extends KernelIntegrationTest
     {
         // GIVEN
         SchemaWriteOperations schemaWriteOperations = schemaWriteOperationsInNewTransaction();
-        IndexDescriptor existingRule = schemaWriteOperations.indexCreate( descriptor );
+        NewIndexDescriptor existingRule = schemaWriteOperations.indexCreate( descriptor );
         commit();
 
         // WHEN
         Statement statement = statementInNewTransaction( AnonymousContext.AUTH_DISABLED );
-        IndexDescriptor addedRule =
-                statement.schemaWriteOperations().indexCreate( new NodePropertyDescriptor( labelId, 10 ) );
-        Set<IndexDescriptor> indexRulesInTx = asSet( statement.readOperations().indexesGetForLabel( labelId ) );
+        NewIndexDescriptor addedRule = statement.schemaWriteOperations()
+                                            .indexCreate( new NodePropertyDescriptor( labelId, 10 ) );
+        Set<NewIndexDescriptor> indexRulesInTx = asSet( statement.readOperations().indexesGetForLabel( labelId ) );
         commit();
 
         // THEN
@@ -139,7 +142,7 @@ public class IndexIT extends KernelIntegrationTest
     public void shouldDisallowDroppingIndexThatDoesNotExist() throws Exception
     {
         // given
-        IndexDescriptor index;
+        NewIndexDescriptor index;
         {
             SchemaWriteOperations statement = schemaWriteOperationsInNewTransaction();
             index = statement.indexCreate( descriptor );

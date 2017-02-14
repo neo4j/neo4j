@@ -38,6 +38,8 @@ import org.neo4j.kernel.api.exceptions.index.IndexNotFoundKernelException;
 import org.neo4j.kernel.api.exceptions.schema.SchemaRuleNotFoundException;
 import org.neo4j.kernel.api.schema.IndexDescriptor;
 import org.neo4j.kernel.api.schema.IndexDescriptorFactory;
+import org.neo4j.kernel.api.schema_new.index.IndexBoundary;
+import org.neo4j.kernel.api.schema_new.index.NewIndexDescriptor;
 import org.neo4j.kernel.impl.core.ThreadToStatementContextBridge;
 import org.neo4j.kernel.internal.GraphDatabaseAPI;
 import org.neo4j.test.mockito.matcher.Neo4jMatchers;
@@ -486,7 +488,7 @@ public class IndexingAcceptanceTest
         {
             Statement statement = getStatement( (GraphDatabaseAPI) db );
             ReadOperations ops = statement.readOperations();
-            IndexDescriptor descriptor = indexDescriptor( ops, index );
+            NewIndexDescriptor descriptor = indexDescriptor( ops, index );
             found.addAll( ops.nodesGetFromIndexRangeSeekByPrefix( descriptor, "Karl" ) );
         }
 
@@ -511,7 +513,7 @@ public class IndexingAcceptanceTest
             createNode( db, map( "name", "Karla" ), LABEL1 );
             Statement statement = getStatement( (GraphDatabaseAPI) db );
             ReadOperations readOperations = statement.readOperations();
-            IndexDescriptor descriptor = indexDescriptor( readOperations, index );
+            NewIndexDescriptor descriptor = indexDescriptor( readOperations, index );
             found.addAll( readOperations.nodesGetFromIndexRangeSeekByPrefix( descriptor, "Carl" ) );
         }
         // THEN
@@ -541,7 +543,7 @@ public class IndexingAcceptanceTest
             }
             Statement statement = getStatement( (GraphDatabaseAPI) db );
             ReadOperations readOperations = statement.readOperations();
-            IndexDescriptor descriptor = indexDescriptor( readOperations, index );
+            NewIndexDescriptor descriptor = indexDescriptor( readOperations, index );
             found.addAll( readOperations.nodesGetFromIndexRangeSeekByPrefix( descriptor, "Karl" ) );
         }
         // THEN
@@ -580,7 +582,7 @@ public class IndexingAcceptanceTest
             }
             Statement statement = getStatement( (GraphDatabaseAPI) db );
             ReadOperations readOperations = statement.readOperations();
-            IndexDescriptor descriptor = indexDescriptor( readOperations, index );
+            NewIndexDescriptor descriptor = indexDescriptor( readOperations, index );
             found.addAll( readOperations.nodesGetFromIndexRangeSeekByPrefix( descriptor, prefix ) );
         }
         // THEN
@@ -601,7 +603,7 @@ public class IndexingAcceptanceTest
         return expected;
     }
 
-    private IndexDescriptor indexDescriptor(ReadOperations readOperations, IndexDefinition index)
+    private NewIndexDescriptor indexDescriptor(ReadOperations readOperations, IndexDefinition index)
             throws SchemaRuleNotFoundException
     {
         NodePropertyDescriptor descriptor = IndexDescriptorFactory.getTokens( readOperations, index );

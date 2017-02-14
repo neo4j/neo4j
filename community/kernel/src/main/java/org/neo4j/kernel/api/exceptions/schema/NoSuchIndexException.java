@@ -19,20 +19,22 @@
  */
 package org.neo4j.kernel.api.exceptions.schema;
 
-import org.neo4j.kernel.api.schema.NodePropertyDescriptor;
 import org.neo4j.kernel.api.TokenNameLookup;
 import org.neo4j.kernel.api.exceptions.Status;
+import org.neo4j.kernel.api.schema_new.LabelSchemaDescriptor;
+import org.neo4j.kernel.api.schema_new.SchemaUtil;
 
 import static java.lang.String.format;
 
 public class NoSuchIndexException extends SchemaKernelException
 {
-    private final NodePropertyDescriptor descriptor;
+    private final LabelSchemaDescriptor descriptor;
     private static final String message = "No such INDEX ON %s.";
 
-    public NoSuchIndexException( NodePropertyDescriptor descriptor )
+    public NoSuchIndexException( LabelSchemaDescriptor descriptor )
     {
-        super( Status.Schema.IndexNotFound, format( message, descriptor ) );
+        super( Status.Schema.IndexNotFound, format( message,
+                descriptor.userDescription( SchemaUtil.idTokenNameLookup ) ) );
         this.descriptor = descriptor;
     }
 

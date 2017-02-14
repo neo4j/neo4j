@@ -35,6 +35,8 @@ import org.neo4j.kernel.api.exceptions.KernelException;
 import org.neo4j.kernel.api.exceptions.TransactionFailureException;
 import org.neo4j.kernel.api.exceptions.index.IndexNotFoundKernelException;
 import org.neo4j.kernel.api.schema.IndexDescriptor;
+import org.neo4j.kernel.api.schema_new.index.IndexBoundary;
+import org.neo4j.kernel.api.schema_new.index.NewIndexDescriptor;
 import org.neo4j.kernel.impl.api.index.SchemaIndexTestHelper;
 import org.neo4j.kernel.internal.GraphDatabaseAPI;
 import org.neo4j.test.rule.ImpermanentDatabaseRule;
@@ -74,9 +76,7 @@ public class KernelSchemaStateFlushingTest
         // given
         commitToSchemaState( "test", "before" );
 
-        IndexDescriptor descriptor = createIndex();
-
-        awaitIndexOnline( descriptor, "test" );
+        awaitIndexOnline( createIndex(), "test" );
 
         // when
         String after = commitToSchemaState( "test", "after" );
@@ -88,7 +88,7 @@ public class KernelSchemaStateFlushingTest
     @Test
     public void shouldInvalidateSchemaStateOnDropIndex() throws Exception
     {
-        IndexDescriptor descriptor = createIndex();
+        NewIndexDescriptor descriptor = createIndex();
 
         awaitIndexOnline( descriptor, "test" );
 
@@ -157,18 +157,18 @@ public class KernelSchemaStateFlushingTest
         }
     }
 
-    private IndexDescriptor createIndex() throws KernelException
+    private NewIndexDescriptor createIndex() throws KernelException
     {
         try ( KernelTransaction transaction = kernel.newTransaction( KernelTransaction.Type.implicit, AUTH_DISABLED );
               Statement statement = transaction.acquireStatement() )
         {
-            IndexDescriptor descriptor = statement.schemaWriteOperations().indexCreate( descriptor1 );
+            NewIndexDescriptor descriptor = statement.schemaWriteOperations().indexCreate( descriptor1 );
             transaction.success();
             return descriptor;
         }
     }
 
-    private void dropIndex( IndexDescriptor descriptor ) throws KernelException
+    private void dropIndex( NewIndexDescriptor descriptor ) throws KernelException
     {
         try ( KernelTransaction transaction = kernel.newTransaction( KernelTransaction.Type.implicit, AUTH_DISABLED );
               Statement statement = transaction.acquireStatement() )
@@ -178,7 +178,7 @@ public class KernelSchemaStateFlushingTest
         }
     }
 
-    private void awaitIndexOnline( IndexDescriptor descriptor, String keyForProbing )
+    private void awaitIndexOnline( NewIndexDescriptor descriptor, String keyForProbing )
             throws IndexNotFoundKernelException, TransactionFailureException
     {
         try ( KernelTransaction transaction = kernel.newTransaction( KernelTransaction.Type.implicit, AUTH_DISABLED );

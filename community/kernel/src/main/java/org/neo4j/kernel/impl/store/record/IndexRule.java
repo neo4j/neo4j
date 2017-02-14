@@ -27,7 +27,7 @@ import org.neo4j.kernel.api.schema_new.LabelSchemaDescriptor;
 import org.neo4j.kernel.api.schema_new.index.NewIndexDescriptor;
 import org.neo4j.storageengine.api.schema.SchemaRule;
 
-import static org.neo4j.kernel.api.schema_new.SchemaUtil.noopTokenNameLookup;
+import static org.neo4j.kernel.api.schema_new.SchemaUtil.idTokenNameLookup;
 
 /**
  * A {@link Label} can have zero or more index rules which will have data specified in the rules indexed.
@@ -134,12 +134,12 @@ public class IndexRule implements SchemaRule, NewIndexDescriptor.Supplier
             ownerString = ", owner=" + owningConstraint;
         }
 
-        return "IndexRule[id=" + id + ", descriptor=" + descriptor.userDescription( noopTokenNameLookup ) +
+        return "IndexRule[id=" + id + ", descriptor=" + descriptor.userDescription( idTokenNameLookup ) +
                ", provider=" + providerDescriptor + ownerString + "]";
     }
 
     @Override
-    public LabelSchemaDescriptor getSchemaDescriptor()
+    public LabelSchemaDescriptor schema()
     {
         return descriptor.schema();
     }

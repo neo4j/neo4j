@@ -29,9 +29,9 @@ import org.neo4j.kernel.api.exceptions.index.IndexNotFoundKernelException;
 import org.neo4j.kernel.api.exceptions.legacyindex.AutoIndexingKernelException;
 import org.neo4j.kernel.api.exceptions.schema.ConstraintValidationKernelException;
 import org.neo4j.kernel.api.exceptions.schema.IndexBrokenKernelException;
-import org.neo4j.kernel.api.schema.IndexDescriptor;
 import org.neo4j.kernel.api.properties.DefinedProperty;
 import org.neo4j.kernel.api.properties.Property;
+import org.neo4j.kernel.api.schema_new.index.NewIndexDescriptor;
 import org.neo4j.kernel.guard.Guard;
 import org.neo4j.kernel.impl.api.operations.EntityReadOperations;
 import org.neo4j.kernel.impl.api.operations.EntityWriteOperations;
@@ -169,7 +169,7 @@ public class GuardingStatementOperations implements
     }
 
     @Override
-    public PrimitiveLongIterator nodesGetFromIndexSeek( KernelStatement statement, IndexDescriptor index, Object value )
+    public PrimitiveLongIterator nodesGetFromIndexSeek( KernelStatement statement, NewIndexDescriptor index, Object value )
             throws IndexNotFoundKernelException
     {
         guard.check( statement );
@@ -178,7 +178,7 @@ public class GuardingStatementOperations implements
 
     @Override
     public PrimitiveLongIterator nodesGetFromIndexRangeSeekByNumber( KernelStatement statement,
-            IndexDescriptor index,
+            NewIndexDescriptor index,
             Number lower, boolean includeLower,
             Number upper, boolean includeUpper )
             throws IndexNotFoundKernelException
@@ -191,7 +191,7 @@ public class GuardingStatementOperations implements
 
     @Override
     public PrimitiveLongIterator nodesGetFromIndexRangeSeekByString( KernelStatement statement,
-            IndexDescriptor index,
+            NewIndexDescriptor index,
             String lower, boolean includeLower,
             String upper, boolean includeUpper )
             throws IndexNotFoundKernelException
@@ -203,7 +203,7 @@ public class GuardingStatementOperations implements
     }
 
     @Override
-    public PrimitiveLongIterator nodesGetFromIndexRangeSeekByPrefix( KernelStatement statement, IndexDescriptor index,
+    public PrimitiveLongIterator nodesGetFromIndexRangeSeekByPrefix( KernelStatement statement, NewIndexDescriptor index,
             String prefix ) throws IndexNotFoundKernelException
     {
         guard.check( statement );
@@ -211,7 +211,7 @@ public class GuardingStatementOperations implements
     }
 
     @Override
-    public PrimitiveLongIterator nodesGetFromIndexScan( KernelStatement statement, IndexDescriptor index )
+    public PrimitiveLongIterator nodesGetFromIndexScan( KernelStatement statement, NewIndexDescriptor index )
             throws IndexNotFoundKernelException
     {
         guard.check( statement );
@@ -219,7 +219,7 @@ public class GuardingStatementOperations implements
     }
 
     @Override
-    public PrimitiveLongIterator nodesGetFromIndexContainsScan( KernelStatement statement, IndexDescriptor index,
+    public PrimitiveLongIterator nodesGetFromIndexContainsScan( KernelStatement statement, NewIndexDescriptor index,
             String term ) throws IndexNotFoundKernelException
     {
         guard.check( statement );
@@ -227,7 +227,7 @@ public class GuardingStatementOperations implements
     }
 
     @Override
-    public PrimitiveLongIterator nodesGetFromIndexEndsWithScan( KernelStatement statement, IndexDescriptor index,
+    public PrimitiveLongIterator nodesGetFromIndexEndsWithScan( KernelStatement statement, NewIndexDescriptor index,
             String suffix ) throws IndexNotFoundKernelException
     {
         guard.check( statement );
@@ -235,7 +235,7 @@ public class GuardingStatementOperations implements
     }
 
     @Override
-    public long nodeGetFromUniqueIndexSeek( KernelStatement statement, IndexDescriptor index, Object value )
+    public long nodeGetFromUniqueIndexSeek( KernelStatement statement, NewIndexDescriptor index, Object value )
             throws IndexNotFoundKernelException, IndexBrokenKernelException
     {
         guard.check( statement );
@@ -243,7 +243,7 @@ public class GuardingStatementOperations implements
     }
 
     @Override
-    public long nodesCountIndexed( KernelStatement statement, IndexDescriptor index, long nodeId, Object value )
+    public long nodesCountIndexed( KernelStatement statement, NewIndexDescriptor index, long nodeId, Object value )
             throws IndexNotFoundKernelException, IndexBrokenKernelException
     {
         guard.check( statement );

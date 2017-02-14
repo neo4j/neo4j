@@ -50,6 +50,8 @@ import org.neo4j.kernel.api.properties.Property;
 import org.neo4j.kernel.api.schema.IndexDescriptor;
 import org.neo4j.kernel.api.schema.NodePropertyDescriptor;
 import org.neo4j.kernel.api.schema.RelationshipPropertyDescriptor;
+import org.neo4j.kernel.api.schema_new.index.IndexBoundary;
+import org.neo4j.kernel.api.schema_new.index.NewIndexDescriptor;
 import org.neo4j.kernel.impl.api.operations.EntityOperations;
 import org.neo4j.kernel.impl.api.operations.EntityReadOperations;
 import org.neo4j.kernel.impl.api.operations.EntityWriteOperations;
@@ -144,12 +146,12 @@ public class ConstraintEnforcingEntityOperations implements EntityOperations, Sc
         {
             // TODO: Support composite constraints
             IndexDescriptor index = constraint.indexDescriptor();
-            assertIndexOnline( state, index );
+            assertIndexOnline( state, IndexBoundary.map( index ) );
             state.locks().optimistic().acquireExclusive( state.lockTracer(), INDEX_ENTRY,
                     indexEntryResourceId( index.getLabelId(), index.getPropertyKeyId(), Strings.prettyPrint( value
                     ) ) );
 
-            long existing = entityReadOperations.nodeGetFromUniqueIndexSeek( state, index, value );
+            long existing = entityReadOperations.nodeGetFromUniqueIndexSeek( state, IndexBoundary.map( index ), value );
             if ( existing != NO_SUCH_NODE && existing != modifiedNode )
             {
                 throw new UniquePropertyConstraintViolationKernelException( index.getLabelId(),
@@ -163,7 +165,7 @@ public class ConstraintEnforcingEntityOperations implements EntityOperations, Sc
         }
     }
 
-    private void assertIndexOnline( KernelStatement state, IndexDescriptor indexDescriptor )
+    private void assertIndexOnline( KernelStatement state, NewIndexDescriptor indexDescriptor )
             throws IndexNotFoundKernelException, IndexBrokenKernelException
     {
         switch ( schemaReadOperations.indexGetState( state, indexDescriptor ) )
@@ -261,7 +263,7 @@ public class ConstraintEnforcingEntityOperations implements EntityOperations, Sc
     }
 
     @Override
-    public PrimitiveLongIterator nodesGetFromIndexSeek( KernelStatement state, IndexDescriptor index, Object value )
+    public PrimitiveLongIterator nodesGetFromIndexSeek( KernelStatement state, NewIndexDescriptor index, Object value )
             throws IndexNotFoundKernelException
     {
         return entityReadOperations.nodesGetFromIndexSeek( state, index, value );
@@ -269,7 +271,7 @@ public class ConstraintEnforcingEntityOperations implements EntityOperations, Sc
 
     @Override
     public PrimitiveLongIterator nodesGetFromIndexRangeSeekByNumber( KernelStatement statement,
-            IndexDescriptor index,
+            NewIndexDescriptor index,
             Number lower, boolean includeLower,
             Number upper, boolean includeUpper )
             throws IndexNotFoundKernelException
@@ -280,7 +282,7 @@ public class ConstraintEnforcingEntityOperations implements EntityOperations, Sc
 
     @Override
     public PrimitiveLongIterator nodesGetFromIndexRangeSeekByString( KernelStatement statement,
-            IndexDescriptor index,
+            NewIndexDescriptor index,
             String lower, boolean includeLower,
             String upper, boolean includeUpper )
             throws IndexNotFoundKernelException
@@ -291,14 +293,14 @@ public class ConstraintEnforcingEntityOperations implements EntityOperations, Sc
 
     @Override
     public PrimitiveLongIterator nodesGetFromIndexRangeSeekByPrefix( KernelStatement state,
-            IndexDescriptor index, String prefix )
+            NewIndexDescriptor index, String prefix )
             throws IndexNotFoundKernelException
     {
         return entityReadOperations.nodesGetFromIndexRangeSeekByPrefix( state, index, prefix );
     }
 
     @Override
-    public PrimitiveLongIterator nodesGetFromIndexScan( KernelStatement state, IndexDescriptor index )
+    public PrimitiveLongIterator nodesGetFromIndexScan( KernelStatement state, NewIndexDescriptor index )
             throws IndexNotFoundKernelException
     {
         return entityReadOperations.nodesGetFromIndexScan( state, index );
@@ -307,15 +309,15 @@ public class ConstraintEnforcingEntityOperations implements EntityOperations, Sc
     @Override
     public long nodeGetFromUniqueIndexSeek(
             KernelStatement state,
-            IndexDescriptor index,
+            NewIndexDescriptor index,
             Object value )
             throws IndexNotFoundKernelException, IndexBrokenKernelException
     {
         assertIndexOnline( state, index );
 
         // TODO: Support composite index, either by allowing value to be an array, or by creating a new method
-        int labelId = index.getLabelId();
-        int propertyKeyId = index.getPropertyKeyId();
+        int labelId = index.schema().getLabelId();
+        int propertyKeyId = index.schema().getPropertyIds()[0];
         String stringVal = "";
         if ( null != value )
         {
@@ -349,21 +351,21 @@ public class ConstraintEnforcingEntityOperations implements EntityOperations, Sc
     }
 
     @Override
-    public long nodesCountIndexed( KernelStatement statement, IndexDescriptor index, long nodeId, Object value )
+    public long nodesCountIndexed( KernelStatement statement, NewIndexDescriptor index, long nodeId, Object value )
             throws IndexNotFoundKernelException, IndexBrokenKernelException
     {
         return entityReadOperations.nodesCountIndexed( statement, index, nodeId, value );
     }
 
     @Override
-    public PrimitiveLongIterator nodesGetFromIndexContainsScan( KernelStatement state, IndexDescriptor index,
+    public PrimitiveLongIterator nodesGetFromIndexContainsScan( KernelStatement state, NewIndexDescriptor index,
             String term ) throws IndexNotFoundKernelException
     {
         return entityReadOperations.nodesGetFromIndexContainsScan( state, index, term );
     }
 
     @Override
-    public PrimitiveLongIterator nodesGetFromIndexEndsWithScan( KernelStatement state, IndexDescriptor index,
+    public PrimitiveLongIterator nodesGetFromIndexEndsWithScan( KernelStatement state, NewIndexDescriptor index,
             String suffix ) throws IndexNotFoundKernelException
     {
         return entityReadOperations.nodesGetFromIndexEndsWithScan( state, index, suffix );
@@ -432,20 +434,20 @@ public class ConstraintEnforcingEntityOperations implements EntityOperations, Sc
     }
 
     @Override
-    public IndexDescriptor indexCreate( KernelStatement state, NodePropertyDescriptor descriptor )
+    public NewIndexDescriptor indexCreate( KernelStatement state, NodePropertyDescriptor descriptor )
             throws AlreadyIndexedException, AlreadyConstrainedException
     {
         return schemaWriteOperations.indexCreate( state, descriptor );
     }
 
     @Override
-    public void indexDrop( KernelStatement state, IndexDescriptor descriptor ) throws DropIndexFailureException
+    public void indexDrop( KernelStatement state, NewIndexDescriptor descriptor ) throws DropIndexFailureException
     {
         schemaWriteOperations.indexDrop( state, descriptor );
     }
 
     @Override
-    public void uniqueIndexDrop( KernelStatement state, IndexDescriptor descriptor ) throws DropIndexFailureException
+    public void uniqueIndexDrop( KernelStatement state, NewIndexDescriptor descriptor ) throws DropIndexFailureException
     {
         schemaWriteOperations.uniqueIndexDrop( state, descriptor );
     }

@@ -37,6 +37,8 @@ import org.neo4j.kernel.api.schema.IndexDescriptor;
 import org.neo4j.kernel.api.schema.IndexDescriptorFactory;
 import org.neo4j.kernel.api.schema.NodePropertyDescriptor;
 import org.neo4j.kernel.api.schema_new.SchemaBoundary;
+import org.neo4j.kernel.api.schema_new.index.IndexBoundary;
+import org.neo4j.kernel.api.schema_new.index.NewIndexDescriptor;
 import org.neo4j.kernel.api.schema_new.index.NewIndexDescriptorFactory;
 import org.neo4j.kernel.api.txstate.TransactionState;
 import org.neo4j.kernel.impl.api.KernelStatement;
@@ -75,10 +77,9 @@ public class StateHandlingStatementOperationsTest
 
     StoreReadLayer inner = mock( StoreReadLayer.class );
 
-    private int[] properties={66};
-    private int[] properties2={99};
     private NodePropertyDescriptor descriptor1 = new NodePropertyDescriptor( 10, 66 );
     private NodePropertyDescriptor descriptor2 = new NodePropertyDescriptor( 11, 99 );
+    private NewIndexDescriptor index = NewIndexDescriptorFactory.forLabel( 1, 2 );
 
     @Test
     public void shouldNeverDelegateWrites() throws Exception
@@ -98,7 +99,7 @@ public class StateHandlingStatementOperationsTest
         NodePropertyDescriptor descriptor = new NodePropertyDescriptor( 0, 0 );
         ctx.indexCreate( state, descriptor );
         ctx.nodeAddLabel( state, 0, 0 );
-        ctx.indexDrop( state, IndexDescriptorFactory.of( descriptor ) );
+        ctx.indexDrop( state, IndexBoundary.map( descriptor ) );
         ctx.nodeRemoveLabel( state, 0, 0 );
 
         // one for add and one for remove
@@ -207,7 +208,6 @@ public class StateHandlingStatementOperationsTest
         KernelStatement statement = mock( KernelStatement.class );
         when( statement.hasTxStateWithChanges() ).thenReturn( true );
         when( statement.txState() ).thenReturn( txState );
-        IndexDescriptor index = IndexDescriptorFactory.of( 1, 2 );
         when( txState.indexUpdatesForScanOrSeek( index, null ) ).thenReturn(
                 new DiffSets<>( Collections.singleton( 42L ), Collections.singleton( 44L ) )
         );
@@ -238,7 +238,6 @@ public class StateHandlingStatementOperationsTest
         KernelStatement statement = mock( KernelStatement.class );
         when( statement.hasTxStateWithChanges() ).thenReturn( true );
         when( statement.txState() ).thenReturn( txState );
-        IndexDescriptor index = IndexDescriptorFactory.of( 1, 2 );
         when( txState.indexUpdatesForScanOrSeek( index, "value" ) ).thenReturn(
                 new DiffSets<>( Collections.singleton( 42L ), Collections.singleton( 44L ) )
         );
@@ -268,7 +267,6 @@ public class StateHandlingStatementOperationsTest
         KernelStatement statement = mock( KernelStatement.class );
         when( statement.hasTxStateWithChanges() ).thenReturn( true );
         when( statement.txState() ).thenReturn( txState );
-        IndexDescriptor index = IndexDescriptorFactory.of( 1, 2 );
         when( txState.indexUpdatesForRangeSeekByPrefix( index, "prefix" ) ).thenReturn(
                 new DiffSets<>( Collections.singleton( 42L ), Collections.singleton( 44L ) )
         );
@@ -306,7 +304,6 @@ public class StateHandlingStatementOperationsTest
         when( statement.txState() ).thenReturn( txState );
         StorageStatement storageStatement = mock( StorageStatement.class );
         when( statement.getStoreStatement() ).thenReturn( storageStatement );
-        IndexDescriptor index = IndexDescriptorFactory.of( 1, propertyKey );
         when( txState.indexUpdatesForRangeSeekByNumber( index, lower, true, upper, false ) ).thenReturn(
                 new DiffSets<>( Collections.singleton( 42L ), Collections.singleton( 44L ) )
         );
@@ -333,8 +330,8 @@ public class StateHandlingStatementOperationsTest
         StateHandlingStatementOperations context = newTxStateOps( storeReadLayer );
 
         // When
-        PrimitiveLongIterator results = context.nodesGetFromIndexRangeSeekByNumber( statement, index, lower, true,
-                upper, false );
+        PrimitiveLongIterator results = context.nodesGetFromIndexRangeSeekByNumber(
+                statement, index, lower, true, upper, false );
 
         // Then
         assertEquals( asSet( 42L, 43L ), PrimitiveLongCollections.toSet( results ) );
@@ -348,7 +345,6 @@ public class StateHandlingStatementOperationsTest
         KernelStatement statement = mock( KernelStatement.class );
         when( statement.hasTxStateWithChanges() ).thenReturn( true );
         when( statement.txState() ).thenReturn( txState );
-        IndexDescriptor index = IndexDescriptorFactory.of( 1, 2 );
         when( txState.indexUpdatesForRangeSeekByString( index, "Anne", true, "Bill", false ) ).thenReturn(
                 new DiffSets<>( Collections.singleton( 42L ), Collections.singleton( 44L ) )
         );
@@ -365,7 +361,8 @@ public class StateHandlingStatementOperationsTest
         StateHandlingStatementOperations context = newTxStateOps( storeReadLayer );
 
         // When
-        PrimitiveLongIterator results = context.nodesGetFromIndexRangeSeekByString( statement, index, "Anne", true, "Bill", false );
+        PrimitiveLongIterator results = context.nodesGetFromIndexRangeSeekByString(
+                statement, index, "Anne", true, "Bill", false );
 
         // Then
         assertEquals( asSet( 42L, 43L ), PrimitiveLongCollections.toSet( results ) );
@@ -384,7 +381,7 @@ public class StateHandlingStatementOperationsTest
 
         StateHandlingStatementOperations operations = newTxStateOps( mock( StoreReadLayer.class ) );
 
-        operations.nodeGetFromUniqueIndexSeek( kernelStatement, IndexDescriptorFactory.of( 1, 1 ), "foo" );
+        operations.nodeGetFromUniqueIndexSeek( kernelStatement, NewIndexDescriptorFactory.uniqueForLabel( 1, 1 ), "foo" );
 
         verify( indexReader ).close();
     }
@@ -407,7 +404,7 @@ public class StateHandlingStatementOperationsTest
             throws IndexNotFoundKernelException
     {
         IndexReader indexReader = mock( IndexReader.class );
-        when( storeStatement.getIndexReader( any( IndexDescriptor.class ) ) ).thenReturn( indexReader );
+        when( storeStatement.getIndexReader( any( NewIndexDescriptor.class ) ) ).thenReturn( indexReader );
         return indexReader;
     }
 }

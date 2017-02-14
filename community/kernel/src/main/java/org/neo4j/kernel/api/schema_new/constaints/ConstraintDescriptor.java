@@ -28,7 +28,7 @@ import static java.lang.String.format;
  * Internal representation of a graph constraint, including the schema unit it targets (eg. label-property combination)
  * and the how that schema unit is constrained (eg. "has to exist", or "must be unique").
  */
-public class ConstraintDescriptor
+public class ConstraintDescriptor implements SchemaDescriptor.Supplier
 {
     public enum Type { UNIQUE, EXISTS }
 
@@ -48,6 +48,7 @@ public class ConstraintDescriptor
 
     // METHODS
 
+    @Override
     public SchemaDescriptor schema()
     {
         return schema;

@@ -30,6 +30,9 @@ import org.neo4j.kernel.api.schema.IndexDescriptor;
 import org.neo4j.kernel.api.schema.IndexDescriptorFactory;
 import org.neo4j.kernel.api.schema.NodePropertyDescriptor;
 import org.neo4j.kernel.api.schema_new.SchemaDescriptorFactory;
+import org.neo4j.kernel.api.schema_new.index.IndexBoundary;
+import org.neo4j.kernel.api.schema_new.index.NewIndexDescriptor;
+import org.neo4j.kernel.api.schema_new.index.NewIndexDescriptorFactory;
 import org.neo4j.kernel.impl.api.index.IndexingService;
 import org.neo4j.kernel.impl.api.index.sampling.IndexSamplingMode;
 
@@ -87,7 +90,7 @@ public class ResampleIndexProcedureTest
     public void shouldLookUpTheIndexByLabelIdAndPropertyKeyId()
             throws ProcedureException, SchemaRuleNotFoundException, IndexNotFoundKernelException
     {
-        IndexDescriptor index = IndexDescriptorFactory.of( 0, 0 );
+        NewIndexDescriptor index = NewIndexDescriptorFactory.forLabel( 0, 0 );
         when( operations.labelGetForName( anyString() ) ).thenReturn( 123 );
         when( operations.propertyKeyGetForName( anyString() ) ).thenReturn( 456 );
         when( operations.indexGetForLabelAndPropertyKey( anyObject() ) ).thenReturn( index );
@@ -122,11 +125,12 @@ public class ResampleIndexProcedureTest
     public void shouldTriggerResampling()
             throws SchemaRuleNotFoundException, ProcedureException, IndexNotFoundKernelException
     {
-        IndexDescriptor index = IndexDescriptorFactory.of( 123, 456 );
+        NewIndexDescriptor index = NewIndexDescriptorFactory.forLabel( 123, 456 );
         when( operations.indexGetForLabelAndPropertyKey( anyObject() ) ).thenReturn( index );
 
         procedure.resampleIndex( ":Person(name)" );
 
-        verify( indexingService ).triggerIndexSampling( index, IndexSamplingMode.TRIGGER_REBUILD_ALL );
+        verify( indexingService ).triggerIndexSampling( IndexBoundary.map( index ),
+                IndexSamplingMode.TRIGGER_REBUILD_ALL );
     }
 }

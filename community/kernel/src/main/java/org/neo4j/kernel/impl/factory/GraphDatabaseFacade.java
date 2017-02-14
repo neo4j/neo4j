@@ -71,6 +71,8 @@ import org.neo4j.kernel.api.schema.IndexDescriptor;
 import org.neo4j.kernel.api.index.InternalIndexState;
 import org.neo4j.kernel.api.legacyindex.AutoIndexing;
 import org.neo4j.kernel.api.properties.Property;
+import org.neo4j.kernel.api.schema_new.index.IndexBoundary;
+import org.neo4j.kernel.api.schema_new.index.NewIndexDescriptor;
 import org.neo4j.kernel.api.security.SecurityContext;
 import org.neo4j.kernel.configuration.Config;
 import org.neo4j.kernel.guard.Guard;
@@ -590,7 +592,7 @@ public class GraphDatabaseFacade implements GraphDatabaseAPI
             return emptyIterator();
         }
 
-        IndexDescriptor descriptor = findAnyIndexByLabelAndProperty( readOps, propertyId, labelId );
+        NewIndexDescriptor descriptor = findAnyIndexByLabelAndProperty( readOps, propertyId, labelId );
 
         try
         {
@@ -608,11 +610,11 @@ public class GraphDatabaseFacade implements GraphDatabaseAPI
         return getNodesByLabelAndPropertyWithoutIndex( propertyId, value, statement, labelId );
     }
 
-    private IndexDescriptor findAnyIndexByLabelAndProperty( ReadOperations readOps, int propertyId, int labelId )
+    private NewIndexDescriptor findAnyIndexByLabelAndProperty( ReadOperations readOps, int propertyId, int labelId )
     {
         try
         {
-            IndexDescriptor descriptor =
+            NewIndexDescriptor descriptor =
                     readOps.indexGetForLabelAndPropertyKey( new NodePropertyDescriptor( labelId, propertyId ) );
 
             if ( readOps.indexGetState( descriptor ) == InternalIndexState.ONLINE )

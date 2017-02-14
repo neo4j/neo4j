@@ -24,9 +24,10 @@ import org.neo4j.kernel.api.constraints.NodePropertyExistenceConstraint;
 import org.neo4j.kernel.api.constraints.RelationshipPropertyConstraint;
 import org.neo4j.kernel.api.constraints.RelationshipPropertyExistenceConstraint;
 import org.neo4j.kernel.api.constraints.UniquenessConstraint;
-import org.neo4j.kernel.api.schema.IndexDescriptor;
 import org.neo4j.kernel.api.properties.DefinedProperty;
 import org.neo4j.kernel.api.properties.Property;
+import org.neo4j.kernel.api.schema_new.LabelSchemaDescriptor;
+import org.neo4j.kernel.api.schema_new.index.NewIndexDescriptor;
 import org.neo4j.storageengine.api.txstate.ReadableTransactionState;
 
 /**
@@ -78,13 +79,9 @@ public interface TransactionState extends ReadableTransactionState
 
     // SCHEMA RELATED
 
-    void indexRuleDoAdd( IndexDescriptor descriptor );
+    void indexRuleDoAdd( NewIndexDescriptor descriptor );
 
-    void constraintIndexRuleDoAdd( IndexDescriptor descriptor );
-
-    void indexDoDrop( IndexDescriptor descriptor );
-
-    void constraintIndexDoDrop( IndexDescriptor descriptor );
+    void indexDoDrop( NewIndexDescriptor descriptor );
 
     void constraintDoAdd( UniquenessConstraint constraint, long indexId );
 
@@ -100,5 +97,5 @@ public interface TransactionState extends ReadableTransactionState
 
     boolean constraintIndexDoUnRemove( UniquenessConstraint constraint );
 
-    void indexDoUpdateProperty( IndexDescriptor descriptor, long nodeId, DefinedProperty before, DefinedProperty after );
+    void indexDoUpdateProperty( LabelSchemaDescriptor descriptor, long nodeId, DefinedProperty before, DefinedProperty after );
 }

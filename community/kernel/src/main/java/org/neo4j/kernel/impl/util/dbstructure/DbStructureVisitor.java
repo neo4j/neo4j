@@ -22,7 +22,7 @@ package org.neo4j.kernel.impl.util.dbstructure;
 import org.neo4j.kernel.api.constraints.NodePropertyExistenceConstraint;
 import org.neo4j.kernel.api.constraints.RelationshipPropertyExistenceConstraint;
 import org.neo4j.kernel.api.constraints.UniquenessConstraint;
-import org.neo4j.kernel.api.schema.IndexDescriptor;
+import org.neo4j.kernel.api.schema_new.index.NewIndexDescriptor;
 
 public interface DbStructureVisitor
 {
@@ -30,8 +30,9 @@ public interface DbStructureVisitor
     void visitPropertyKey( int propertyKeyId, String propertyKeyName );
     void visitRelationshipType( int relTypeId, String relTypeName );
 
-    void visitIndex( IndexDescriptor descriptor, String userDescription, double uniqueValuesPercentage, long size );
-    void visitUniqueIndex( IndexDescriptor descriptor, String userDescription, double uniqueValuesPercentage, long size );
+    void visitIndex( NewIndexDescriptor descriptor, String userDescription, double uniqueValuesPercentage, long size );
+    void visitUniqueIndex( NewIndexDescriptor descriptor, String userDescription, double uniqueValuesPercentage,
+                           long size );
     void visitUniqueConstraint( UniquenessConstraint constraint, String userDescription );
     void visitNodePropertyExistenceConstraint( NodePropertyExistenceConstraint constraint, String userDescription );
     void visitRelationshipPropertyExistenceConstraint( RelationshipPropertyExistenceConstraint constraint,

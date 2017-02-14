@@ -48,7 +48,8 @@ import org.neo4j.kernel.GraphDatabaseQueryService
 import org.neo4j.kernel.api.constraints.{NodePropertyExistenceConstraint, RelationshipPropertyExistenceConstraint, UniquenessConstraint}
 import org.neo4j.kernel.api.exceptions.schema.{AlreadyConstrainedException, AlreadyIndexedException}
 import org.neo4j.kernel.api.index.InternalIndexState
-import org.neo4j.kernel.api.schema.{IndexDescriptorFactory, NodePropertyDescriptor, RelationshipPropertyDescriptor}
+import org.neo4j.kernel.api.schema.{NodePropertyDescriptor, RelationshipPropertyDescriptor}
+import org.neo4j.kernel.api.schema_new.index.NewIndexDescriptorFactory
 import org.neo4j.kernel.api.{exceptions, _}
 import org.neo4j.kernel.impl.core.NodeManager
 
@@ -212,10 +213,7 @@ final class TransactionBoundQueryContext(tc: TransactionalContextWrapper)
       case RangeBetween(rangeGreaterThan, rangeLessThan) =>
         rangeGreaterThan.limit(BY_NUMBER).flatMap { greaterThanLimit =>
           rangeLessThan.limit(BY_NUMBER).map { lessThanLimit =>
-            readOps.nodesGetFromIndexRangeSeekByNumber(
-              index,
-              greaterThanLimit.endPoint, greaterThanLimit.isInclusive,
-              lessThanLimit.endPoint, lessThanLimit.isInclusive)
+            readOps.nodesGetFromIndexRangeSeekByNumber(index, greaterThanLimit.endPoint, greaterThanLimit.isInclusive, lessThanLimit.endPoint, lessThanLimit.isInclusive)
           }
         }
     }).getOrElse(EMPTY_PRIMITIVE_LONG_COLLECTION.iterator)
@@ -239,10 +237,7 @@ final class TransactionBoundQueryContext(tc: TransactionalContextWrapper)
       case RangeBetween(rangeGreaterThan, rangeLessThan) =>
         rangeGreaterThan.limit(BY_STRING).flatMap { greaterThanLimit =>
           rangeLessThan.limit(BY_STRING).map { lessThanLimit =>
-            readOps.nodesGetFromIndexRangeSeekByString(
-              index,
-              greaterThanLimit.endPoint.asInstanceOf[String], greaterThanLimit.isInclusive,
-              lessThanLimit.endPoint.asInstanceOf[String], lessThanLimit.isInclusive)
+            readOps.nodesGetFromIndexRangeSeekByString(index, greaterThanLimit.endPoint.asInstanceOf[String], greaterThanLimit.isInclusive, lessThanLimit.endPoint.asInstanceOf[String], lessThanLimit.isInclusive)
           }
         }.getOrElse(EMPTY_PRIMITIVE_LONG_COLLECTION.iterator)
     }
@@ -468,7 +463,7 @@ final class TransactionBoundQueryContext(tc: TransactionalContextWrapper)
   }
 
   def dropIndexRule(labelId: Int, propertyKeyId: Int) =
-    tc.statement.schemaWriteOperations().indexDrop(IndexDescriptorFactory.of( labelId, propertyKeyId ))
+    tc.statement.schemaWriteOperations().indexDrop(NewIndexDescriptorFactory.forLabel( labelId, propertyKeyId ))
 
   def createUniqueConstraint(labelId: Int, propertyKeyId: Int): IdempotentResult[UniquenessConstraint] = try {
     IdempotentResult(tc.statement.schemaWriteOperations().uniquePropertyConstraintCreate(new NodePropertyDescriptor(labelId,

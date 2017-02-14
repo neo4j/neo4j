@@ -39,17 +39,18 @@ public class ConstraintBoundary
 {
     public static PropertyConstraint map( ConstraintDescriptor descriptor )
     {
-        return new BoundaryTransformer( descriptor ).compute( descriptor.schema() );
+        return descriptor.schema().computeWith( new BoundaryTransformer( descriptor ) );
     }
 
     public static NodePropertyConstraint mapNode( ConstraintDescriptor descriptor )
     {
-        return (NodePropertyConstraint)new BoundaryTransformer( descriptor ).compute( descriptor.schema() );
+        return (NodePropertyConstraint) descriptor.schema().computeWith( new BoundaryTransformer( descriptor ) );
     }
 
     public static RelationshipPropertyConstraint mapRelationship( ConstraintDescriptor descriptor )
     {
-        return (RelationshipPropertyConstraint)new BoundaryTransformer( descriptor ).compute( descriptor.schema() );
+        return (RelationshipPropertyConstraint) descriptor.schema()
+                                                          .computeWith( new BoundaryTransformer( descriptor ) );
     }
 
     static class BoundaryTransformer implements SchemaComputer<PropertyConstraint>

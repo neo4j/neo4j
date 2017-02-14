@@ -46,9 +46,9 @@ import org.neo4j.kernel.api.index.InternalIndexState;
 import org.neo4j.kernel.api.proc.ProcedureSignature;
 import org.neo4j.kernel.api.proc.QualifiedName;
 import org.neo4j.kernel.api.proc.UserFunctionSignature;
-import org.neo4j.kernel.api.schema.IndexDescriptor;
 import org.neo4j.kernel.api.schema.NodePropertyDescriptor;
 import org.neo4j.kernel.api.schema.RelationshipPropertyDescriptor;
+import org.neo4j.kernel.api.schema_new.index.NewIndexDescriptor;
 import org.neo4j.kernel.impl.api.RelationshipVisitor;
 import org.neo4j.kernel.impl.api.store.RelationshipIterator;
 import org.neo4j.register.Register.DoubleLongRegister;
@@ -121,7 +121,7 @@ public interface ReadOperations
      *
      * @throws org.neo4j.kernel.api.exceptions.index.IndexNotFoundKernelException if no such index found.
      */
-    PrimitiveLongIterator nodesGetFromIndexSeek( IndexDescriptor index, Object value )
+    PrimitiveLongIterator nodesGetFromIndexSeek( NewIndexDescriptor index, Object value )
             throws IndexNotFoundKernelException;
 
     /**
@@ -129,7 +129,7 @@ public interface ReadOperations
      *
      * @throws org.neo4j.kernel.api.exceptions.index.IndexNotFoundKernelException if no such index found.
      */
-    PrimitiveLongIterator nodesGetFromIndexRangeSeekByPrefix( IndexDescriptor index, String prefix )
+    PrimitiveLongIterator nodesGetFromIndexRangeSeekByPrefix( NewIndexDescriptor index, String prefix )
             throws IndexNotFoundKernelException;
 
     /**
@@ -137,7 +137,7 @@ public interface ReadOperations
      *
      * @throws org.neo4j.kernel.api.exceptions.index.IndexNotFoundKernelException if no such index found.
      */
-    PrimitiveLongIterator nodesGetFromIndexRangeSeekByNumber( IndexDescriptor index, Number lower, boolean includeLower, Number upper, boolean includeUpper )
+    PrimitiveLongIterator nodesGetFromIndexRangeSeekByNumber( NewIndexDescriptor index, Number lower, boolean includeLower, Number upper, boolean includeUpper )
             throws IndexNotFoundKernelException;
 
     /**
@@ -145,7 +145,7 @@ public interface ReadOperations
      *
      * @throws org.neo4j.kernel.api.exceptions.index.IndexNotFoundKernelException if no such index found.
      */
-    PrimitiveLongIterator nodesGetFromIndexRangeSeekByString( IndexDescriptor index, String lower, boolean includeLower, String upper, boolean includeUpper )
+    PrimitiveLongIterator nodesGetFromIndexRangeSeekByString( NewIndexDescriptor index, String lower, boolean includeLower, String upper, boolean includeUpper )
             throws IndexNotFoundKernelException;
 
     /**
@@ -153,7 +153,7 @@ public interface ReadOperations
      *
      * @throws org.neo4j.kernel.api.exceptions.index.IndexNotFoundKernelException if no such index found.
      */
-    PrimitiveLongIterator nodesGetFromIndexScan( IndexDescriptor index )
+    PrimitiveLongIterator nodesGetFromIndexScan( NewIndexDescriptor index )
             throws IndexNotFoundKernelException;
 
     /**
@@ -161,7 +161,7 @@ public interface ReadOperations
      *
      * @throws org.neo4j.kernel.api.exceptions.index.IndexNotFoundKernelException if no such index found.
      */
-    PrimitiveLongIterator nodesGetFromIndexContainsScan( IndexDescriptor index, String term )
+    PrimitiveLongIterator nodesGetFromIndexContainsScan( NewIndexDescriptor index, String term )
             throws IndexNotFoundKernelException;
 
     /**
@@ -169,7 +169,7 @@ public interface ReadOperations
      *
      * @throws org.neo4j.kernel.api.exceptions.index.IndexNotFoundKernelException if no such index found.
      */
-    PrimitiveLongIterator nodesGetFromIndexEndsWithScan( IndexDescriptor index, String suffix )
+    PrimitiveLongIterator nodesGetFromIndexEndsWithScan( NewIndexDescriptor index, String suffix )
             throws IndexNotFoundKernelException;
 
     /**
@@ -200,10 +200,10 @@ public interface ReadOperations
      *
      * @throws org.neo4j.kernel.api.exceptions.index.IndexNotFoundKernelException if no such index found.
      */
-    long nodeGetFromUniqueIndexSeek( IndexDescriptor index, Object value ) throws IndexNotFoundKernelException,
+    long nodeGetFromUniqueIndexSeek( NewIndexDescriptor index, Object value ) throws IndexNotFoundKernelException,
             IndexBrokenKernelException;
 
-    long nodesCountIndexed( IndexDescriptor index, long nodeId, Object value )
+    long nodesCountIndexed( NewIndexDescriptor index, long nodeId, Object value )
             throws IndexNotFoundKernelException, IndexBrokenKernelException;
 
     boolean nodeExists( long nodeId );
@@ -266,39 +266,44 @@ public interface ReadOperations
     //===========================================
 
     /** Returns the index rule for the given labelId and propertyKey. */
-    IndexDescriptor indexGetForLabelAndPropertyKey( NodePropertyDescriptor descriptor )
+    NewIndexDescriptor indexGetForLabelAndPropertyKey( NodePropertyDescriptor descriptor )
             throws SchemaRuleNotFoundException;
 
     /** Get all indexes for a label. */
-    Iterator<IndexDescriptor> indexesGetForLabel( int labelId );
+    Iterator<NewIndexDescriptor> indexesGetForLabel( int labelId );
 
     /** Returns all indexes. */
-    Iterator<IndexDescriptor> indexesGetAll();
+    Iterator<NewIndexDescriptor> indexesGetAll();
 
     /** Returns the constraint index for the given labelId and propertyKey. */
-    IndexDescriptor uniqueIndexGetForLabelAndPropertyKey( NodePropertyDescriptor descriptor )
+    NewIndexDescriptor uniqueIndexGetForLabelAndPropertyKey( NodePropertyDescriptor descriptor )
             throws SchemaRuleNotFoundException, DuplicateSchemaRuleException;
 
     /** Get all constraint indexes for a label. */
-    Iterator<IndexDescriptor> uniqueIndexesGetForLabel( int labelId );
+    Iterator<NewIndexDescriptor> uniqueIndexesGetForLabel( int labelId );
 
     /** Returns all constraint indexes. */
-    Iterator<IndexDescriptor> uniqueIndexesGetAll();
+    Iterator<NewIndexDescriptor> uniqueIndexesGetAll();
 
-    /** Retrieve the state of an index. */
-    InternalIndexState indexGetState( IndexDescriptor descriptor ) throws IndexNotFoundKernelException;
+    /** Retrieve the state of an index.
+     * @param descriptor*/
+    InternalIndexState indexGetState( NewIndexDescriptor descriptor ) throws IndexNotFoundKernelException;
 
-    /** Retrieve the population progress of an index. */
-    PopulationProgress indexGetPopulationProgress( IndexDescriptor descriptor ) throws IndexNotFoundKernelException;
+    /** Retrieve the population progress of an index.
+     * @param descriptor*/
+    PopulationProgress indexGetPopulationProgress( NewIndexDescriptor descriptor ) throws IndexNotFoundKernelException;
 
-    /** Get the index size. */
-    long indexSize( IndexDescriptor descriptor ) throws IndexNotFoundKernelException;
+    /** Get the index size.
+     * @param descriptor*/
+    long indexSize( NewIndexDescriptor descriptor ) throws IndexNotFoundKernelException;
 
-    /** Calculate the index unique values percentage (range: {@code 0.0} exclusive to {@code 1.0} inclusive). */
-    double indexUniqueValuesSelectivity( IndexDescriptor descriptor ) throws IndexNotFoundKernelException;
+    /** Calculate the index unique values percentage (range: {@code 0.0} exclusive to {@code 1.0} inclusive).
+     * @param descriptor*/
+    double indexUniqueValuesSelectivity( NewIndexDescriptor descriptor ) throws IndexNotFoundKernelException;
 
-    /** Returns the failure description of a failed index. */
-    String indexGetFailure( IndexDescriptor descriptor ) throws IndexNotFoundKernelException;
+    /** Returns the failure description of a failed index.
+     * @param descriptor*/
+    String indexGetFailure( NewIndexDescriptor descriptor ) throws IndexNotFoundKernelException;
 
     /**
      * Get all constraints applicable to label and propertyKey. There are only {@link NodePropertyConstraint}
@@ -334,7 +339,7 @@ public interface ReadOperations
     /**
      * Get the owning constraint for a constraint index. Returns null if the index does not have an owning constraint.
      */
-    Long indexGetOwningUniquenessConstraintId( IndexDescriptor index ) throws SchemaRuleNotFoundException;
+    Long indexGetOwningUniquenessConstraintId( NewIndexDescriptor index ) throws SchemaRuleNotFoundException;
 
     <K, V> V schemaStateGetOrCreate( K key, Function<K, V> creator );
 
@@ -520,10 +525,10 @@ public interface ReadOperations
      */
     long countsForRelationshipWithoutTxState( int startLabelId, int typeId, int endLabelId );
 
-    DoubleLongRegister indexUpdatesAndSize( IndexDescriptor index, DoubleLongRegister target )
+    DoubleLongRegister indexUpdatesAndSize( NewIndexDescriptor index, DoubleLongRegister target )
             throws IndexNotFoundKernelException;
 
-    DoubleLongRegister indexSample( IndexDescriptor index, DoubleLongRegister target )
+    DoubleLongRegister indexSample( NewIndexDescriptor index, DoubleLongRegister target )
             throws IndexNotFoundKernelException;
 
     //===========================================

@@ -38,6 +38,7 @@ import org.neo4j.kernel.api.exceptions.ProcedureException;
 import org.neo4j.kernel.api.exceptions.Status;
 import org.neo4j.kernel.api.exceptions.index.IndexNotFoundKernelException;
 import org.neo4j.kernel.api.schema.IndexDescriptor;
+import org.neo4j.kernel.api.schema_new.index.NewIndexDescriptor;
 import org.neo4j.kernel.impl.api.TokenAccess;
 import org.neo4j.kernel.impl.api.index.IndexingService;
 import org.neo4j.kernel.internal.GraphDatabaseAPI;
@@ -101,15 +102,14 @@ public class BuiltInProcedures
             ReadOperations operations = statement.readOperations();
             TokenNameLookup tokens = new StatementTokenNameLookup( operations );
 
-            List<IndexDescriptor> indexes =
-                    asList( operations.indexesGetAll() );
+            List<NewIndexDescriptor> indexes = asList( operations.indexesGetAll() );
 
-            Set<IndexDescriptor> uniqueIndexes = asSet( operations.uniqueIndexesGetAll() );
+            Set<NewIndexDescriptor> uniqueIndexes = asSet( operations.uniqueIndexesGetAll() );
             indexes.addAll( uniqueIndexes );
             indexes.sort( Comparator.comparing( a -> a.userDescription( tokens ) ) );
 
             ArrayList<IndexResult> result = new ArrayList<>();
-            for ( IndexDescriptor index : indexes )
+            for ( NewIndexDescriptor index : indexes )
             {
                 try
                 {
@@ -123,7 +123,7 @@ public class BuiltInProcedures
                         type = IndexType.NODE_LABEL_PROPERTY.typeName();
                     }
 
-                    result.add( new IndexResult( "INDEX ON " + index.userDescription( tokens ),
+                    result.add( new IndexResult( "INDEX ON " + index.schema().userDescription( tokens ),
                             operations.indexGetState( index ).toString(), type ) );
                 }
                 catch ( IndexNotFoundKernelException e )

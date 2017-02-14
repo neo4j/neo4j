@@ -27,19 +27,19 @@ public class SchemaDescriptorPredicates
 {
     public static boolean hasLabel( SchemaDescriptor.Supplier supplier, int labelId )
     {
-        Optional<Integer> labelOpt = getLabel.compute( supplier.getSchemaDescriptor() );
+        Optional<Integer> labelOpt = supplier.schema().computeWith( getLabel );
         return labelOpt.isPresent() && labelOpt.get() == labelId;
     }
 
     public static boolean hasRelType( SchemaDescriptor.Supplier supplier, int relTypeId )
     {
-        Optional<Integer> relTypeOpt = getRelType.compute( supplier.getSchemaDescriptor() );
+        Optional<Integer> relTypeOpt = supplier.schema().computeWith( getRelType );
         return relTypeOpt.isPresent() && relTypeOpt.get() == relTypeId;
     }
 
     public static boolean hasProperty( SchemaDescriptor.Supplier supplier, int propertyId )
     {
-        List<Integer> properties = getProperties.compute( supplier.getSchemaDescriptor() );
+        List<Integer> properties = supplier.schema().computeWith( getProperties );
         return properties.contains( propertyId );
     }
 

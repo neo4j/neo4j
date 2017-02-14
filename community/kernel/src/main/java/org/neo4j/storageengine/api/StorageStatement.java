@@ -21,9 +21,8 @@ package org.neo4j.storageengine.api;
 
 import org.neo4j.cursor.Cursor;
 import org.neo4j.kernel.api.exceptions.index.IndexNotFoundKernelException;
-import org.neo4j.kernel.api.schema.IndexDescriptor;
-import org.neo4j.kernel.impl.store.RecordCursor;
 import org.neo4j.kernel.impl.store.RecordCursors;
+import org.neo4j.kernel.api.schema_new.index.NewIndexDescriptor;
 import org.neo4j.storageengine.api.schema.IndexReader;
 import org.neo4j.storageengine.api.schema.LabelScanReader;
 
@@ -107,11 +106,11 @@ public interface StorageStatement extends AutoCloseable
      * Reader returned from this method should not be closed. All such readers will be closed during {@link #close()}
      * of the current statement.
      *
-     * @param index {@link IndexDescriptor} to get reader for.
+     * @param index {@link NewIndexDescriptor} to get reader for.
      * @return {@link IndexReader} capable of searching entity ids given property values.
      * @throws IndexNotFoundKernelException if no such index exists.
      */
-    IndexReader getIndexReader( IndexDescriptor index ) throws IndexNotFoundKernelException;
+    IndexReader getIndexReader( NewIndexDescriptor index ) throws IndexNotFoundKernelException;
 
     /**
      * Returns an {@link IndexReader} for searching entity ids given property values. A new reader is allocated
@@ -121,11 +120,11 @@ public interface StorageStatement extends AutoCloseable
      * <b>NOTE:</b>
      * It is caller's responsibility to close the returned reader.
      *
-     * @param index {@link IndexDescriptor} to get reader for.
+     * @param index {@link NewIndexDescriptor} to get reader for.
      * @return {@link IndexReader} capable of searching entity ids given property values.
      * @throws IndexNotFoundKernelException if no such index exists.
      */
-    IndexReader getFreshIndexReader( IndexDescriptor index ) throws IndexNotFoundKernelException;
+    IndexReader getFreshIndexReader( NewIndexDescriptor index ) throws IndexNotFoundKernelException;
 
     /**
      * Access to low level record cursors

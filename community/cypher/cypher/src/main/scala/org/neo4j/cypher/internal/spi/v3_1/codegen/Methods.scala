@@ -30,7 +30,7 @@ import org.neo4j.cypher.internal.compiler.v3_1.spi.{InternalResultRow, InternalR
 import org.neo4j.graphdb.Direction
 import org.neo4j.helpers.collection.MapUtil
 import org.neo4j.kernel.api.ReadOperations
-import org.neo4j.kernel.api.schema.IndexDescriptor
+import org.neo4j.kernel.api.schema_new.index.NewIndexDescriptor
 import org.neo4j.kernel.impl.api.store.RelationshipIterator
 import org.neo4j.kernel.impl.api.{RelationshipDataExtractor, RelationshipVisitor}
 import org.neo4j.kernel.impl.core.{NodeManager, NodeProxy, RelationshipProxy}
@@ -80,8 +80,8 @@ object Methods {
   val nodeExists = method[ReadOperations, Boolean]("nodeExists", typeRef[Long])
   val nodesGetAll = method[ReadOperations, PrimitiveLongIterator]("nodesGetAll")
   val nodeGetProperty = method[ReadOperations, Object]("nodeGetProperty", typeRef[Long], typeRef[Int])
-  val nodesGetFromIndexLookup = method[ReadOperations, PrimitiveLongIterator]("nodesGetFromIndexSeek", typeRef[IndexDescriptor], typeRef[Object])
-  val nodeGetUniqueFromIndexLookup = method[ReadOperations, Long]("nodeGetFromUniqueIndexSeek", typeRef[IndexDescriptor], typeRef[Object])
+  val nodesGetFromIndexLookup = method[ReadOperations, PrimitiveLongIterator]("nodesGetFromIndexSeek", typeRef[NewIndexDescriptor], typeRef[Object])
+  val nodeGetUniqueFromIndexLookup = method[ReadOperations, Long]("nodeGetFromUniqueIndexSeek", typeRef[NewIndexDescriptor], typeRef[Object])
   val relationshipGetProperty = method[ReadOperations, Object]("relationshipGetProperty", typeRef[Long], typeRef[Int])
   val nodesGetForLabel = method[ReadOperations, PrimitiveLongIterator]("nodesGetForLabel", typeRef[Int])
   val nodeHasLabel = method[ReadOperations, Boolean]("nodeHasLabel", typeRef[Long], typeRef[Int])

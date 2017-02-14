@@ -35,7 +35,7 @@ import org.neo4j.kernel.api.index.InternalIndexState
 import org.neo4j.kernel.api.proc.Neo4jTypes.AnyType
 import org.neo4j.kernel.api.proc.{Neo4jTypes, QualifiedName => KernelQualifiedName}
 import org.neo4j.kernel.api.schema.NodePropertyDescriptor
-import org.neo4j.kernel.api.schema.{IndexDescriptor => KernelIndexDescriptor}
+import org.neo4j.kernel.api.schema_new.index.{NewIndexDescriptor => KernelIndexDescriptor}
 import org.neo4j.kernel.impl.proc.Neo4jValue
 import org.neo4j.procedure.Mode
 
@@ -67,7 +67,7 @@ class TransactionBoundPlanContext(tc: TransactionalContextWrapper, logger: Inter
 
     // here we do not need to use getOnlineIndex method because uniqueness constraint creation is synchronous
     val index = tc.statement.readOperations().uniqueIndexGetForLabelAndPropertyKey(new NodePropertyDescriptor(labelId, propertyKeyId))
-    Some(IndexDescriptor(index.getLabelId, index.getPropertyKeyId))
+    Some(IndexDescriptor(index.schema().getLabelId, index.schema().getPropertyIds()(0)))
   }
 
   private def evalOrNone[T](f: => Option[T]): Option[T] =
@@ -79,7 +79,7 @@ class TransactionBoundPlanContext(tc: TransactionalContextWrapper, logger: Inter
 
   private def getOnlineIndex(descriptor: KernelIndexDescriptor): Option[IndexDescriptor] =
     tc.statement.readOperations().indexGetState(descriptor) match {
-      case InternalIndexState.ONLINE => Some(IndexDescriptor(descriptor.getLabelId, descriptor.getPropertyKeyId))
+      case InternalIndexState.ONLINE => Some(IndexDescriptor(descriptor.schema().getLabelId, descriptor.schema().getPropertyIds()(0)))
       case _ => None
     }
 

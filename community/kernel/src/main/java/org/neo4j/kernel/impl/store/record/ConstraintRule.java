@@ -25,7 +25,7 @@ import org.neo4j.kernel.api.schema_new.SchemaDescriptor;
 import org.neo4j.kernel.api.schema_new.constaints.ConstraintDescriptor;
 import org.neo4j.storageengine.api.schema.SchemaRule;
 
-import static org.neo4j.kernel.api.schema_new.SchemaUtil.noopTokenNameLookup;
+import static org.neo4j.kernel.api.schema_new.SchemaUtil.idTokenNameLookup;
 
 public class ConstraintRule implements SchemaRule, ConstraintDescriptor.Supplier
 {
@@ -61,12 +61,12 @@ public class ConstraintRule implements SchemaRule, ConstraintDescriptor.Supplier
     @Override
     public String toString()
     {
-        return "ConstraintRule[id=" + id + ", descriptor=" + descriptor.userDescription( noopTokenNameLookup ) + ", " +
+        return "ConstraintRule[id=" + id + ", descriptor=" + descriptor.userDescription( idTokenNameLookup ) + ", " +
                 "ownedIndex=" + ownedIndexRule + "]";
     }
 
     @Override
-    public SchemaDescriptor getSchemaDescriptor()
+    public SchemaDescriptor schema()
     {
         return descriptor.schema();
     }

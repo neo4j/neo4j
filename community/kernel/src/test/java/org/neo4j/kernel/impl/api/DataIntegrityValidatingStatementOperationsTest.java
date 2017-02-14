@@ -35,8 +35,8 @@ import org.neo4j.kernel.api.exceptions.schema.IllegalTokenNameException;
 import org.neo4j.kernel.api.exceptions.schema.IndexBelongsToConstraintException;
 import org.neo4j.kernel.api.exceptions.schema.NoSuchIndexException;
 import org.neo4j.kernel.api.exceptions.schema.SchemaKernelException;
-import org.neo4j.kernel.api.schema.IndexDescriptor;
-import org.neo4j.kernel.api.schema.IndexDescriptorFactory;
+import org.neo4j.kernel.api.schema_new.index.NewIndexDescriptor;
+import org.neo4j.kernel.api.schema_new.index.NewIndexDescriptorFactory;
 import org.neo4j.kernel.impl.api.operations.KeyWriteOperations;
 import org.neo4j.kernel.impl.api.operations.SchemaReadOperations;
 import org.neo4j.kernel.impl.api.operations.SchemaWriteOperations;
@@ -58,17 +58,18 @@ public class DataIntegrityValidatingStatementOperationsTest
     public ExpectedException exception = ExpectedException.none();
 
     NodePropertyDescriptor descriptor = new NodePropertyDescriptor( 0, 7 );
+    NewIndexDescriptor index = NewIndexDescriptorFactory.forLabel( 0, 7 );
+    NewIndexDescriptor uniqueIndex = NewIndexDescriptorFactory.uniqueForLabel( 0, 7 );
 
     @Test
     public void shouldDisallowReAddingIndex() throws Exception
     {
         // GIVEN
-        IndexDescriptor rule = IndexDescriptorFactory.of( descriptor );
         SchemaReadOperations innerRead = mock( SchemaReadOperations.class );
         SchemaWriteOperations innerWrite = mock( SchemaWriteOperations.class );
         DataIntegrityValidatingStatementOperations ctx =
                 new DataIntegrityValidatingStatementOperations( null, innerRead, innerWrite );
-        when( innerRead.indexesGetForLabel( state, rule.getLabelId() ) ).thenAnswer( withIterator( rule ) );
+        when( innerRead.indexGetForLabelAndPropertyKey( state, descriptor ) ).thenReturn( index );
 
         // WHEN
         try
@@ -89,13 +90,11 @@ public class DataIntegrityValidatingStatementOperationsTest
     public void shouldDisallowAddingIndexWhenConstraintIndexExists() throws Exception
     {
         // GIVEN
-        IndexDescriptor rule = IndexDescriptorFactory.of( descriptor );
         SchemaReadOperations innerRead = mock( SchemaReadOperations.class );
         SchemaWriteOperations innerWrite = mock( SchemaWriteOperations.class );
         DataIntegrityValidatingStatementOperations ctx =
                 new DataIntegrityValidatingStatementOperations( null, innerRead, innerWrite );
-        when( innerRead.indexesGetForLabel( state, rule.getLabelId() ) ).thenAnswer( withIterator(  ) );
-        when( innerRead.uniqueIndexesGetForLabel( state, rule.getLabelId() ) ).thenAnswer( withIterator( rule ) );
+        when( innerRead.indexGetForLabelAndPropertyKey( state, descriptor ) ).thenReturn( uniqueIndex );
 
         // WHEN
         try
@@ -116,18 +115,16 @@ public class DataIntegrityValidatingStatementOperationsTest
     public void shouldDisallowDroppingIndexThatDoesNotExist() throws Exception
     {
         // GIVEN
-        IndexDescriptor indexDescriptor = IndexDescriptorFactory.of( descriptor );
         SchemaReadOperations innerRead = mock( SchemaReadOperations.class );
         SchemaWriteOperations innerWrite = mock( SchemaWriteOperations.class );
         DataIntegrityValidatingStatementOperations ctx =
                 new DataIntegrityValidatingStatementOperations( null, innerRead, innerWrite );
-        when( innerRead.uniqueIndexesGetForLabel( state, indexDescriptor.getLabelId() ) ).thenAnswer( withIterator(  ) );
-        when( innerRead.indexesGetForLabel( state, indexDescriptor.getLabelId() ) ).thenAnswer( withIterator( ) );
+        when( innerRead.indexGetForLabelAndPropertyKey( state, descriptor ) ).thenReturn( null );
 
         // WHEN
         try
         {
-            ctx.indexDrop( state, indexDescriptor );
+            ctx.indexDrop( state, index );
             fail( "Should have thrown exception." );
         }
         catch ( DropIndexFailureException e )
@@ -143,19 +140,16 @@ public class DataIntegrityValidatingStatementOperationsTest
     public void shouldDisallowDroppingIndexWhenConstraintIndexExists() throws Exception
     {
         // GIVEN
-        IndexDescriptor indexDescriptor = IndexDescriptorFactory.of( descriptor );
         SchemaReadOperations innerRead = mock( SchemaReadOperations.class );
         SchemaWriteOperations innerWrite = mock( SchemaWriteOperations.class );
         DataIntegrityValidatingStatementOperations ctx =
                 new DataIntegrityValidatingStatementOperations( null, innerRead, innerWrite );
-        when( innerRead.uniqueIndexesGetForLabel( state, indexDescriptor.getLabelId() ) ).thenAnswer(
-                withIterator( indexDescriptor ) );
-        when( innerRead.indexesGetForLabel( state, indexDescriptor.getLabelId() ) ).thenAnswer( withIterator() );
+        when( innerRead.indexGetForLabelAndPropertyKey( state, descriptor ) ).thenReturn( uniqueIndex );
 
         // WHEN
         try
         {
-            ctx.indexDrop( state, indexDescriptor );
+            ctx.indexDrop( state, index );
             fail( "Should have thrown exception." );
         }
         catch ( DropIndexFailureException e )
@@ -171,19 +165,16 @@ public class DataIntegrityValidatingStatementOperationsTest
     public void shouldDisallowDroppingConstraintIndexThatDoesNotExists() throws Exception
     {
         // GIVEN
-        IndexDescriptor indexDescriptor = IndexDescriptorFactory.of( descriptor );
         SchemaReadOperations innerRead = mock( SchemaReadOperations.class );
         SchemaWriteOperations innerWrite = mock( SchemaWriteOperations.class );
         DataIntegrityValidatingStatementOperations ctx =
                 new DataIntegrityValidatingStatementOperations( null, innerRead, innerWrite );
-        when( innerRead.uniqueIndexesGetForLabel( state, indexDescriptor.getLabelId() ) ).thenAnswer(
-                withIterator( indexDescriptor ) );
-        when( innerRead.indexesGetForLabel( state, indexDescriptor.getLabelId() ) ).thenAnswer( withIterator() );
+        when( innerRead.indexGetForLabelAndPropertyKey( state, descriptor ) ).thenReturn( uniqueIndex );
 
         // WHEN
         try
         {
-            ctx.indexDrop( state, indexDescriptor );
+            ctx.indexDrop( state, index );
             fail( "Should have thrown exception." );
         }
         catch ( DropIndexFailureException e )
@@ -199,19 +190,16 @@ public class DataIntegrityValidatingStatementOperationsTest
     public void shouldDisallowDroppingConstraintIndexThatIsReallyJustRegularIndex() throws Exception
     {
         // GIVEN
-        IndexDescriptor indexDescriptor = IndexDescriptorFactory.of( descriptor );
         SchemaReadOperations innerRead = mock( SchemaReadOperations.class );
         SchemaWriteOperations innerWrite = mock( SchemaWriteOperations.class );
         DataIntegrityValidatingStatementOperations ctx =
                 new DataIntegrityValidatingStatementOperations( null, innerRead, innerWrite );
-        when( innerRead.uniqueIndexesGetForLabel( state, indexDescriptor.getLabelId() ) ).thenAnswer(
-                withIterator( indexDescriptor ) );
-        when( innerRead.indexesGetForLabel( state, indexDescriptor.getLabelId() ) ).thenAnswer( withIterator() );
+        when( innerRead.indexGetForLabelAndPropertyKey( state, descriptor ) ).thenReturn( uniqueIndex );
 
         // WHEN
         try
         {
-            ctx.indexDrop( state, indexDescriptor );
+            ctx.indexDrop( state, index );
             fail( "Should have thrown exception." );
         }
         catch ( DropIndexFailureException e )

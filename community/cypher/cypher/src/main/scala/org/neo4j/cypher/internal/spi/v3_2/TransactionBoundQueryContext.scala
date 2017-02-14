@@ -22,10 +22,10 @@ package org.neo4j.cypher.internal.spi.v3_2
 import java.net.URL
 import java.util.function.Predicate
 
-import org.neo4j.cypher.internal.compiler.v3_2.IndexDescriptor.toKernelEncode
 import org.neo4j.collection.RawIterator
 import org.neo4j.collection.primitive.PrimitiveLongIterator
 import org.neo4j.collection.primitive.base.Empty.EMPTY_PRIMITIVE_LONG_COLLECTION
+import org.neo4j.cypher.internal.compiler.v3_2.IndexDescriptor.toKernelEncode
 import org.neo4j.cypher.internal.compiler.v3_2.MinMaxOrdering.{BY_NUMBER, BY_STRING, BY_VALUE}
 import org.neo4j.cypher.internal.compiler.v3_2._
 import org.neo4j.cypher.internal.compiler.v3_2.ast.convert.commands.DirectionConverter.toGraphDb
@@ -54,7 +54,7 @@ import org.neo4j.kernel.api.exceptions.schema.{AlreadyConstrainedException, Alre
 import org.neo4j.kernel.api.index.InternalIndexState
 import org.neo4j.kernel.api.proc.CallableUserAggregationFunction.Aggregator
 import org.neo4j.kernel.api.proc.{QualifiedName => KernelQualifiedName}
-import org.neo4j.kernel.api.schema.{IndexDescriptorFactory, NodeMultiPropertyDescriptor, NodePropertyDescriptor, RelationshipPropertyDescriptor}
+import org.neo4j.kernel.api.schema.{NodeMultiPropertyDescriptor, NodePropertyDescriptor, RelationshipPropertyDescriptor}
 import org.neo4j.kernel.impl.core.NodeManager
 import org.neo4j.kernel.impl.locking.ResourceTypes
 
@@ -212,21 +212,18 @@ final class TransactionBoundQueryContext(val transactionalContext: Transactional
 
       case rangeLessThan: RangeLessThan[Number] =>
         rangeLessThan.limit(BY_NUMBER).map { limit =>
-          readOps.nodesGetFromIndexRangeSeekByNumber( index, null, false, limit.endPoint, limit.isInclusive )
+          readOps.nodesGetFromIndexRangeSeekByNumber(index, null, false, limit.endPoint, limit.isInclusive)
         }
 
       case rangeGreaterThan: RangeGreaterThan[Number] =>
         rangeGreaterThan.limit(BY_NUMBER).map { limit =>
-          readOps.nodesGetFromIndexRangeSeekByNumber( index, limit.endPoint, limit.isInclusive, null, false )
+          readOps.nodesGetFromIndexRangeSeekByNumber(index, limit.endPoint, limit.isInclusive, null, false)
         }
 
       case RangeBetween(rangeGreaterThan, rangeLessThan) =>
         rangeGreaterThan.limit(BY_NUMBER).flatMap { greaterThanLimit =>
           rangeLessThan.limit(BY_NUMBER).map { lessThanLimit =>
-            readOps.nodesGetFromIndexRangeSeekByNumber(
-              index,
-              greaterThanLimit.endPoint, greaterThanLimit.isInclusive,
-              lessThanLimit.endPoint, lessThanLimit.isInclusive )
+            readOps.nodesGetFromIndexRangeSeekByNumber(index, greaterThanLimit.endPoint, greaterThanLimit.isInclusive, lessThanLimit.endPoint, lessThanLimit.isInclusive)
           }
         }
     }).getOrElse(EMPTY_PRIMITIVE_LONG_COLLECTION.iterator)
@@ -239,21 +236,18 @@ final class TransactionBoundQueryContext(val transactionalContext: Transactional
 
       case rangeLessThan: RangeLessThan[String] =>
         rangeLessThan.limit(BY_STRING).map { limit =>
-          readOps.nodesGetFromIndexRangeSeekByString( index, null, false, limit.endPoint.asInstanceOf[String], limit.isInclusive )
+          readOps.nodesGetFromIndexRangeSeekByString(index, null, false, limit.endPoint.asInstanceOf[String], limit.isInclusive)
         }.getOrElse(EMPTY_PRIMITIVE_LONG_COLLECTION.iterator)
 
       case rangeGreaterThan: RangeGreaterThan[String] =>
         rangeGreaterThan.limit(BY_STRING).map { limit =>
-          readOps.nodesGetFromIndexRangeSeekByString( index, limit.endPoint.asInstanceOf[String], limit.isInclusive, null, false )
+          readOps.nodesGetFromIndexRangeSeekByString(index, limit.endPoint.asInstanceOf[String], limit.isInclusive, null, false)
         }.getOrElse(EMPTY_PRIMITIVE_LONG_COLLECTION.iterator)
 
       case RangeBetween(rangeGreaterThan, rangeLessThan) =>
         rangeGreaterThan.limit(BY_STRING).flatMap { greaterThanLimit =>
           rangeLessThan.limit(BY_STRING).map { lessThanLimit =>
-            readOps.nodesGetFromIndexRangeSeekByString(
-              index,
-              greaterThanLimit.endPoint.asInstanceOf[String], greaterThanLimit.isInclusive,
-              lessThanLimit.endPoint.asInstanceOf[String], lessThanLimit.isInclusive )
+            readOps.nodesGetFromIndexRangeSeekByString(index, greaterThanLimit.endPoint.asInstanceOf[String], greaterThanLimit.isInclusive, lessThanLimit.endPoint.asInstanceOf[String], lessThanLimit.isInclusive)
           }
         }.getOrElse(EMPTY_PRIMITIVE_LONG_COLLECTION.iterator)
     }

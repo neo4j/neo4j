@@ -20,14 +20,12 @@
 package org.neo4j.kernel.impl.api.store;
 
 import java.util.Iterator;
-import java.util.function.Function;
 import java.util.function.Predicate;
 import java.util.function.Supplier;
 
 import org.neo4j.collection.primitive.PrimitiveIntIterator;
 import org.neo4j.collection.primitive.PrimitiveLongIterator;
 import org.neo4j.cursor.Cursor;
-import org.neo4j.function.Predicates;
 import org.neo4j.graphdb.TransactionFailureException;
 import org.neo4j.helpers.collection.Iterators;
 import org.neo4j.kernel.api.ReadOperations;
@@ -43,7 +41,6 @@ import org.neo4j.kernel.api.exceptions.schema.SchemaRuleNotFoundException;
 import org.neo4j.kernel.api.exceptions.schema.TooManyLabelsException;
 import org.neo4j.kernel.api.index.InternalIndexState;
 import org.neo4j.kernel.api.properties.PropertyKeyIdIterator;
-import org.neo4j.kernel.api.schema.IndexDescriptor;
 import org.neo4j.kernel.api.schema_new.LabelSchemaDescriptor;
 import org.neo4j.kernel.api.schema_new.RelationTypeSchemaDescriptor;
 import org.neo4j.kernel.api.schema_new.index.IndexBoundary;
@@ -95,9 +92,6 @@ import static org.neo4j.register.Registers.newDoubleLongRegister;
  */
 public class StorageLayer implements StoreReadLayer
 {
-    private static final Function<? super IndexRule,IndexDescriptor> TO_INDEX_RULE =
-            rule -> IndexBoundary.map( rule.getIndexDescriptor() );
-
     // These token holders should perhaps move to the cache layer.. not really any reason to have them here?
     private final PropertyKeyTokenHolder propertyKeyTokenHolder;
     private final LabelTokenHolder labelTokenHolder;
@@ -219,7 +213,7 @@ public class StorageLayer implements StoreReadLayer
     @Override
     public Long indexGetOwningUniquenessConstraintId( NewIndexDescriptor index ) throws SchemaRuleNotFoundException
     {
-        IndexRule rule = indexRule( index, Predicates.alwaysTrue() );
+        IndexRule rule = indexRule( index, NewIndexDescriptor.Filter.ANY );
         if ( rule != null )
         {
             return rule.getOwningConstraint();
@@ -228,7 +222,7 @@ public class StorageLayer implements StoreReadLayer
     }
 
     @Override
-    public long indexGetCommittedId( NewIndexDescriptor index, Predicate<IndexRule> filter )
+    public long indexGetCommittedId( NewIndexDescriptor index, NewIndexDescriptor.Filter filter )
             throws SchemaRuleNotFoundException
     {
         IndexRule rule = indexRule( index, filter );
@@ -240,35 +234,35 @@ public class StorageLayer implements StoreReadLayer
     }
 
     @Override
-    public InternalIndexState indexGetState( IndexDescriptor descriptor ) throws IndexNotFoundKernelException
+    public InternalIndexState indexGetState( LabelSchemaDescriptor descriptor ) throws IndexNotFoundKernelException
     {
-        return indexService.getIndexProxy( descriptor ).getState();
+        return indexService.getIndexProxy( IndexBoundary.map( descriptor ) ).getState();
     }
 
     @Override
-    public PopulationProgress indexGetPopulationProgress( IndexDescriptor descriptor )
+    public PopulationProgress indexGetPopulationProgress( LabelSchemaDescriptor descriptor )
             throws IndexNotFoundKernelException
     {
-        return indexService.getIndexProxy( descriptor ).getIndexPopulationProgress();
+        return indexService.getIndexProxy( IndexBoundary.map( descriptor ) ).getIndexPopulationProgress();
     }
 
     @Override
-    public long indexSize( IndexDescriptor descriptor ) throws IndexNotFoundKernelException
+    public long indexSize( LabelSchemaDescriptor descriptor ) throws IndexNotFoundKernelException
     {
-        Register.DoubleLongRegister result = indexService.indexUpdatesAndSize( descriptor );
+        Register.DoubleLongRegister result = indexService.indexUpdatesAndSize( IndexBoundary.map( descriptor ) );
         return result.readSecond();
     }
 
     @Override
-    public double indexUniqueValuesPercentage( IndexDescriptor descriptor ) throws IndexNotFoundKernelException
+    public double indexUniqueValuesPercentage( LabelSchemaDescriptor descriptor ) throws IndexNotFoundKernelException
     {
-        return indexService.indexUniqueValuesPercentage( descriptor );
+        return indexService.indexUniqueValuesPercentage( IndexBoundary.map( descriptor ) );
     }
 
     @Override
-    public String indexGetFailure( IndexDescriptor descriptor ) throws IndexNotFoundKernelException
+    public String indexGetFailure( LabelSchemaDescriptor descriptor ) throws IndexNotFoundKernelException
     {
-        return indexService.getIndexProxy( descriptor ).getPopulationFailure().asString();
+        return indexService.getIndexProxy( IndexBoundary.map( descriptor ) ).getPopulationFailure().asString();
     }
 
     @Override
@@ -485,22 +479,22 @@ public class StorageLayer implements StoreReadLayer
     }
 
     @Override
-    public DoubleLongRegister indexUpdatesAndSize( IndexDescriptor descriptor, DoubleLongRegister target )
+    public DoubleLongRegister indexUpdatesAndSize( LabelSchemaDescriptor descriptor, DoubleLongRegister target )
             throws IndexNotFoundKernelException
     {
         return counts.indexUpdatesAndSize( tryGetIndexId( descriptor ), target );
     }
 
     @Override
-    public DoubleLongRegister indexSample( IndexDescriptor descriptor, DoubleLongRegister target )
+    public DoubleLongRegister indexSample( LabelSchemaDescriptor descriptor, DoubleLongRegister target )
             throws IndexNotFoundKernelException
     {
         return counts.indexSample( tryGetIndexId( descriptor ), target );
     }
 
-    private long tryGetIndexId( IndexDescriptor descriptor ) throws IndexNotFoundKernelException
+    private long tryGetIndexId( LabelSchemaDescriptor descriptor) throws IndexNotFoundKernelException
     {
-        return indexService.getIndexId( descriptor );
+        return indexService.getIndexId( IndexBoundary.map( descriptor ) );
     }
 
     @Override
@@ -522,11 +516,11 @@ public class StorageLayer implements StoreReadLayer
         }
     }
 
-    private IndexRule indexRule( NewIndexDescriptor index, Predicate<IndexRule> filter )
+    private IndexRule indexRule( NewIndexDescriptor index, NewIndexDescriptor.Filter filter )
     {
         for ( IndexRule rule : schemaCache.indexRules() )
         {
-            if ( filter.test( rule ) && rule.getSchemaDescriptor().equals( index.schema() ) )
+            if ( filter.test( rule.getIndexDescriptor() ) && rule.schema().equals( index.schema() ) )
             {
                 return rule;
             }

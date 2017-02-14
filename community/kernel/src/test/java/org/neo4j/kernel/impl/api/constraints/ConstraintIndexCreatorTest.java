@@ -41,6 +41,9 @@ import org.neo4j.kernel.api.index.PreexistingIndexEntryConflictException;
 import org.neo4j.kernel.api.proc.CallableProcedure;
 import org.neo4j.kernel.api.proc.CallableUserAggregationFunction;
 import org.neo4j.kernel.api.proc.CallableUserFunction;
+import org.neo4j.kernel.api.schema_new.index.IndexBoundary;
+import org.neo4j.kernel.api.schema_new.index.NewIndexDescriptor;
+import org.neo4j.kernel.api.schema_new.index.NewIndexDescriptorFactory;
 import org.neo4j.kernel.api.security.SecurityContext;
 import org.neo4j.kernel.api.txstate.TransactionState;
 import org.neo4j.kernel.impl.api.KernelStatement;
@@ -51,19 +54,21 @@ import org.neo4j.kernel.impl.api.state.ConstraintIndexCreator;
 
 import static org.junit.Assert.assertEquals;
 import static org.junit.Assert.fail;
+import static org.mockito.Matchers.eq;
 import static org.mockito.Mockito.doThrow;
 import static org.mockito.Mockito.mock;
 import static org.mockito.Mockito.verify;
 import static org.mockito.Mockito.verifyNoMoreInteractions;
 import static org.mockito.Mockito.verifyZeroInteractions;
 import static org.mockito.Mockito.when;
+import static org.neo4j.kernel.api.schema_new.index.NewIndexDescriptor.Filter.UNIQUE;
 import static org.neo4j.kernel.impl.api.StatementOperationsTestHelper.mockedParts;
 import static org.neo4j.kernel.impl.api.StatementOperationsTestHelper.mockedState;
-import static org.neo4j.kernel.impl.store.SchemaStorage.IndexRuleKind.CONSTRAINT;
 
 public class ConstraintIndexCreatorTest
 {
     private final NodePropertyDescriptor descriptor = new NodePropertyDescriptor( 123, 456 );
+    private final NewIndexDescriptor index = NewIndexDescriptorFactory.uniqueForLabel( 123, 456 );
 
     @Test
     public void shouldCreateIndexInAnotherTransaction() throws Exception
@@ -72,13 +77,12 @@ public class ConstraintIndexCreatorTest
         StatementOperationParts constraintCreationContext = mockedParts();
         StatementOperationParts indexCreationContext = mockedParts();
 
-        IndexDescriptor index = IndexDescriptorFactory.of( descriptor );
         KernelStatement state = mockedState();
 
         IndexingService indexingService = mock( IndexingService.class );
         StubKernel kernel = new StubKernel();
 
-        when( constraintCreationContext.schemaReadOperations().indexGetCommittedId( state, index, CONSTRAINT ) )
+        when( constraintCreationContext.schemaReadOperations().indexGetCommittedId( state, index, UNIQUE ) )
                 .thenReturn( 2468L );
         IndexProxy indexProxy = mock( IndexProxy.class );
         when( indexingService.getIndexProxy( 2468L ) ).thenReturn( indexProxy );
@@ -91,9 +95,9 @@ public class ConstraintIndexCreatorTest
         // then
         assertEquals( 2468L, indexId );
         assertEquals( 1, kernel.statements.size() );
-        verify( kernel.statements.get( 0 ).txState() ).constraintIndexRuleDoAdd( index );
+        verify( kernel.statements.get( 0 ).txState() ).indexRuleDoAdd( eq( index ) );
         verifyNoMoreInteractions( indexCreationContext.schemaWriteOperations() );
-        verify( constraintCreationContext.schemaReadOperations() ).indexGetCommittedId( state, index, CONSTRAINT );
+        verify( constraintCreationContext.schemaReadOperations() ).indexGetCommittedId( state, index, UNIQUE );
         verifyNoMoreInteractions( constraintCreationContext.schemaReadOperations() );
         verify( indexProxy ).awaitStoreScanCompleted();
     }
@@ -105,12 +109,10 @@ public class ConstraintIndexCreatorTest
         StatementOperationParts constraintCreationContext = mockedParts();
         KernelStatement state = mockedState();
 
-        IndexDescriptor index = IndexDescriptorFactory.of( descriptor );
-
         IndexingService indexingService = mock( IndexingService.class );
         StubKernel kernel = new StubKernel();
 
-        when( constraintCreationContext.schemaReadOperations().indexGetCommittedId( state, index, CONSTRAINT ) )
+        when( constraintCreationContext.schemaReadOperations().indexGetCommittedId( state, index, UNIQUE ) )
                 .thenReturn( 2468L );
         IndexProxy indexProxy = mock( IndexProxy.class );
         when( indexingService.getIndexProxy( 2468L ) ).thenReturn( indexProxy );
@@ -135,12 +137,13 @@ public class ConstraintIndexCreatorTest
         }
         assertEquals( 2, kernel.statements.size() );
         TransactionState tx1 = kernel.statements.get( 0 ).txState();
-        verify( tx1 ).constraintIndexRuleDoAdd( IndexDescriptorFactory.of( 123, 456 ) );
+        NewIndexDescriptor newIndex = NewIndexDescriptorFactory.uniqueForLabel( 123, 456 );
+        verify( tx1 ).indexRuleDoAdd( newIndex );
         verifyNoMoreInteractions( tx1 );
-        verify( constraintCreationContext.schemaReadOperations() ).indexGetCommittedId( state, index, CONSTRAINT );
+        verify( constraintCreationContext.schemaReadOperations() ).indexGetCommittedId( state, index, UNIQUE );
         verifyNoMoreInteractions( constraintCreationContext.schemaReadOperations() );
         TransactionState tx2 = kernel.statements.get( 1 ).txState();
-        verify( tx2 ).constraintIndexDoDrop( IndexDescriptorFactory.of( 123, 456 ) );
+        verify( tx2 ).indexDoDrop( newIndex );
         verifyNoMoreInteractions( tx2 );
     }
 
@@ -151,16 +154,16 @@ public class ConstraintIndexCreatorTest
         StubKernel kernel = new StubKernel();
         IndexingService indexingService = mock( IndexingService.class );
 
-        IndexDescriptor descriptor = IndexDescriptorFactory.of( 123, 456 );
+        NewIndexDescriptor index = NewIndexDescriptorFactory.uniqueForLabel( 123, 456 );
 
         ConstraintIndexCreator creator = new ConstraintIndexCreator( () -> kernel, indexingService );
 
         // when
-        creator.dropUniquenessConstraintIndex( descriptor );
+        creator.dropUniquenessConstraintIndex( index );
 
         // then
         assertEquals( 1, kernel.statements.size() );
-        verify( kernel.statements.get( 0 ).txState() ).constraintIndexDoDrop( descriptor );
+        verify( kernel.statements.get( 0 ).txState() ).indexDoDrop( index );
         verifyZeroInteractions( indexingService );
     }
 
