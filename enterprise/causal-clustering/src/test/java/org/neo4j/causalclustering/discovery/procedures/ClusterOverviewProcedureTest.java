@@ -28,10 +28,10 @@ import java.util.Map;
 import java.util.UUID;
 
 import org.neo4j.causalclustering.core.consensus.LeaderLocator;
-import org.neo4j.causalclustering.discovery.CoreAddresses;
+import org.neo4j.causalclustering.discovery.CoreServerInfo;
 import org.neo4j.causalclustering.discovery.CoreTopology;
 import org.neo4j.causalclustering.discovery.CoreTopologyService;
-import org.neo4j.causalclustering.discovery.ReadReplicaAddresses;
+import org.neo4j.causalclustering.discovery.ReadReplicaInfo;
 import org.neo4j.causalclustering.discovery.ReadReplicaTopology;
 import org.neo4j.causalclustering.identity.MemberId;
 import org.neo4j.logging.NullLogProvider;
@@ -40,7 +40,7 @@ import static org.hamcrest.MatcherAssert.assertThat;
 import static org.mockito.Mockito.mock;
 import static org.mockito.Mockito.when;
 import static org.neo4j.causalclustering.discovery.TestTopology.adressesForCore;
-import static org.neo4j.causalclustering.load_balancing.procedure.GetServersProcedureV1Test.addresses;
+import static org.neo4j.causalclustering.load_balancing.procedure.GetServersProcedureV1Test.readReplicaInfoMap;
 import static org.neo4j.helpers.collection.Iterators.asList;
 
 public class ClusterOverviewProcedureTest
@@ -51,7 +51,7 @@ public class ClusterOverviewProcedureTest
         // given
         final CoreTopologyService topologyService = mock( CoreTopologyService.class );
 
-        Map<MemberId,CoreAddresses> coreMembers = new HashMap<>();
+        Map<MemberId,CoreServerInfo> coreMembers = new HashMap<>();
         MemberId theLeader = new MemberId( UUID.randomUUID() );
         MemberId follower1 = new MemberId( UUID.randomUUID() );
         MemberId follower2 = new MemberId( UUID.randomUUID() );
@@ -60,7 +60,7 @@ public class ClusterOverviewProcedureTest
         coreMembers.put( follower1, adressesForCore( 1 ) );
         coreMembers.put( follower2, adressesForCore( 2 ) );
 
-        Map<MemberId,ReadReplicaAddresses> readReplicas = addresses( 4, 5 );
+        Map<MemberId,ReadReplicaInfo> readReplicas = readReplicaInfoMap( 4, 5 );
 
         when( topologyService.coreServers() ).thenReturn( new CoreTopology( null, false, coreMembers ) );
         when( topologyService.readReplicas() ).thenReturn( new ReadReplicaTopology( readReplicas ) );

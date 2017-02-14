@@ -17,11 +17,12 @@
  * You should have received a copy of the GNU Affero General Public License
  * along with this program. If not, see <http://www.gnu.org/licenses/>.
  */
-package org.neo4j.causalclustering.load_balancing.strategy;
+package org.neo4j.causalclustering.load_balancing.strategy.server_policy;
 
 import java.util.List;
 import java.util.Map;
 import java.util.Optional;
+import java.util.Set;
 import java.util.stream.Collectors;
 
 import org.neo4j.causalclustering.core.CausalClusteringSettings;
@@ -34,37 +35,40 @@ import org.neo4j.causalclustering.identity.MemberId;
 import org.neo4j.causalclustering.load_balancing.Endpoint;
 import org.neo4j.causalclustering.load_balancing.LoadBalancingResult;
 import org.neo4j.causalclustering.load_balancing.LoadBalancingStrategy;
+import org.neo4j.causalclustering.load_balancing.filters.Filter;
 import org.neo4j.kernel.configuration.Config;
 
 import static java.util.Collections.emptyList;
-import static java.util.stream.Stream.concat;
-import static org.neo4j.causalclustering.load_balancing.Util.extractBoltAddress;
 import static org.neo4j.causalclustering.load_balancing.Util.asList;
+import static org.neo4j.causalclustering.load_balancing.Util.extractBoltAddress;
 
-/**
- * This is just a simple strategy and not intended for actual use. Will be replaced.
- */
-public class AllServersStrategy implements LoadBalancingStrategy
+// TODO: This is work in progress. Currently mostly copies V1 behaviour.
+public class ServerPolicyStrategy implements LoadBalancingStrategy
 {
     private final CoreTopologyService topologyService;
     private final LeaderLocator leaderLocator;
     private final Long timeToLive;
+    private final boolean allowReadsOnFollowers;
+    private final Policies policies;
 
-    public AllServersStrategy( CoreTopologyService topologyService, LeaderLocator leaderLocator, Config config )
+    public ServerPolicyStrategy( CoreTopologyService topologyService,
+            LeaderLocator leaderLocator, Policies policies, Config config )
     {
         this.topologyService = topologyService;
         this.leaderLocator = leaderLocator;
         this.timeToLive = config.get( CausalClusteringSettings.cluster_routing_ttl );
+        this.allowReadsOnFollowers = config.get( CausalClusteringSettings.cluster_allow_reads_on_followers );
+        this.policies = policies;
     }
 
     @Override
     public Result run( Map<String,String> context )
     {
-        CoreTopology cores = topologyService.coreServers();
-        ReadReplicaTopology readers = topologyService.readReplicas();
+        CoreTopology coreTopology = topologyService.coreServers();
+        ReadReplicaTopology rrTopology = topologyService.readReplicas();
 
-        return new LoadBalancingResult( routeEndpoints( cores ), writeEndpoints( cores ),
-                readEndpoints( cores, readers ), timeToLive );
+        return new LoadBalancingResult( routeEndpoints( coreTopology ), writeEndpoints( coreTopology ),
+                readEndpoints( coreTopology, rrTopology, policies.selectFor( context ) ), timeToLive );
     }
 
     private List<Endpoint> routeEndpoints( CoreTopology cores )
@@ -92,11 +96,31 @@ public class AllServersStrategy implements LoadBalancingStrategy
         return asList( endPoint );
     }
 
-    private List<Endpoint> readEndpoints( CoreTopology cores, ReadReplicaTopology readers )
+    private List<Endpoint> readEndpoints( CoreTopology coreTopology, ReadReplicaTopology rrTopology, Filter<ServerInfo> policyFilter )
     {
-        return concat( readers.allMemberInfo().stream(), cores.allMemberInfo().stream() )
-                .map( extractBoltAddress() )
-                .map( Endpoint::read )
-                .collect( Collectors.toList() );
+        Set<ServerInfo> possibleReaders = rrTopology.allMemberInfo().stream()
+                .map( info -> new ServerInfo( info.connectors().boltAddress(), info.tags() ) )
+                .collect( Collectors.toSet() );
+
+        if ( allowReadsOnFollowers || possibleReaders.size() == 0 )
+        {
+            Set<MemberId> validCores = coreTopology.members();
+            try
+            {
+                MemberId leader = leaderLocator.getLeader();
+                validCores = validCores.stream().filter( memberId -> !memberId.equals( leader ) ).collect( Collectors.toSet() );
+            }
+            catch ( NoLeaderFoundException ignored )
+            {
+                // we might end up using the leader for reading during this ttl, should be fine in general
+            }
+
+            possibleReaders.addAll( validCores.stream().map( coreTopology::find ).map( Optional::get )
+                    .map( info -> new ServerInfo( info.connectors().boltAddress(), info.tags() ) )
+                    .collect( Collectors.toSet() ) );
+        }
+
+        Set<ServerInfo> readers = policyFilter.apply( possibleReaders );
+        return readers.stream().map( r -> Endpoint.read( r.boltAddress() ) ).collect( Collectors.toList() );
     }
 }

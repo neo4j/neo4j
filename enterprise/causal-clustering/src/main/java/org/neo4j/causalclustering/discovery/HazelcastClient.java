@@ -21,7 +21,9 @@ package org.neo4j.causalclustering.discovery;
 
 import com.hazelcast.core.HazelcastInstance;
 import com.hazelcast.core.HazelcastInstanceNotActiveException;
+import com.hazelcast.core.MultiMap;
 
+import java.util.List;
 import java.util.function.Function;
 
 import org.neo4j.causalclustering.core.CausalClusteringSettings;
@@ -37,6 +39,9 @@ import static java.util.concurrent.TimeUnit.MILLISECONDS;
 import static org.neo4j.causalclustering.discovery.HazelcastClusterTopology.READ_REPLICA_BOLT_ADDRESS_MAP_NAME;
 import static org.neo4j.causalclustering.discovery.HazelcastClusterTopology.READ_REPLICA_MEMBER_ID_MAP_NAME;
 import static org.neo4j.causalclustering.discovery.HazelcastClusterTopology.READ_REPLICA_TRANSACTION_SERVER_ADDRESS_MAP_NAME;
+import static org.neo4j.causalclustering.discovery.HazelcastClusterTopology.SERVER_TAGS_MULTIMAP_NAME;
+import static org.neo4j.causalclustering.discovery.HazelcastClusterTopology.getCoreTopology;
+import static org.neo4j.causalclustering.discovery.HazelcastClusterTopology.getReadReplicaTopology;
 
 class HazelcastClient extends LifecycleAdapter implements ReadReplicaTopologyService
 {
@@ -46,6 +51,7 @@ class HazelcastClient extends LifecycleAdapter implements ReadReplicaTopologySer
     private final HazelcastConnector connector;
     private final RenewableTimeoutService renewableTimeoutService;
     private final AdvertisedSocketAddress transactionSource;
+    private final List<String> tags;
     private HazelcastInstance hazelcastInstance;
     private RenewableTimeoutService.RenewableTimeout readReplicaRefreshTimer;
     private final long readReplicaTimeToLiveTimeout;
@@ -62,6 +68,7 @@ class HazelcastClient extends LifecycleAdapter implements ReadReplicaTopologySer
         this.log = logProvider.getLog( getClass() );
         this.connectorAddresses = ClientConnectorAddresses.extractFromConfig( config );
         this.transactionSource = config.get( CausalClusteringSettings.transaction_advertised_address );
+        this.tags = config.get( CausalClusteringSettings.server_tags );
         this.readReplicaTimeToLiveTimeout = readReplicaTimeToLiveTimeout;
         this.myself = myself;
     }
@@ -71,7 +78,7 @@ class HazelcastClient extends LifecycleAdapter implements ReadReplicaTopologySer
     {
         try
         {
-            return retry( ( hazelcastInstance ) -> HazelcastClusterTopology.getCoreTopology( hazelcastInstance, log ) );
+            return retry( ( hazelcastInstance ) -> getCoreTopology( hazelcastInstance, log ) );
         }
         catch ( Exception e )
         {
@@ -87,8 +94,7 @@ class HazelcastClient extends LifecycleAdapter implements ReadReplicaTopologySer
     {
         try
         {
-            return retry( ( hazelcastInstance ) -> HazelcastClusterTopology
-                    .getReadReplicaTopology( hazelcastInstance, log ) );
+            return retry( ( hazelcastInstance ) -> getReadReplicaTopology( hazelcastInstance, log ) );
         }
         catch ( Exception e )
         {
@@ -131,6 +137,9 @@ class HazelcastClient extends LifecycleAdapter implements ReadReplicaTopologySer
 
         hazelcastInstance.getMap( READ_REPLICA_MEMBER_ID_MAP_NAME )
                 .put( uuid, myself.getUuid().toString(), readReplicaTimeToLiveTimeout, MILLISECONDS );
+
+        MultiMap<String,String> tagsMap = hazelcastInstance.getMultiMap( SERVER_TAGS_MULTIMAP_NAME );
+        tags.forEach( tag -> tagsMap.put( uuid, tag ) );
 
         return null; // return value not used.
     }

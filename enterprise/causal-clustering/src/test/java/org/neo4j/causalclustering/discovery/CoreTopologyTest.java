@@ -41,9 +41,9 @@ public class CoreTopologyTest
         UUID one = UUID.randomUUID();
         UUID two = UUID.randomUUID();
 
-        Map<MemberId, CoreAddresses> coreMembers = new HashMap<>();
-        coreMembers.put( new MemberId( one ), mock(CoreAddresses.class) );
-        coreMembers.put( new MemberId( two ), mock(CoreAddresses.class) );
+        Map<MemberId,CoreServerInfo> coreMembers = new HashMap<>();
+        coreMembers.put( new MemberId( one ), mock(CoreServerInfo.class) );
+        coreMembers.put( new MemberId( two ), mock(CoreServerInfo.class) );
 
         CoreTopology topology = new CoreTopology( new ClusterId( UUID.randomUUID() ), true, coreMembers );
 
@@ -62,14 +62,14 @@ public class CoreTopologyTest
         UUID one = UUID.randomUUID();
         UUID two = UUID.randomUUID();
 
-        Map<MemberId, CoreAddresses> initialMembers = new HashMap<>();
-        initialMembers.put( new MemberId( one ), mock(CoreAddresses.class) );
-        initialMembers.put( new MemberId( two ), mock(CoreAddresses.class) );
+        Map<MemberId,CoreServerInfo> initialMembers = new HashMap<>();
+        initialMembers.put( new MemberId( one ), mock(CoreServerInfo.class) );
+        initialMembers.put( new MemberId( two ), mock(CoreServerInfo.class) );
 
-        Map<MemberId, CoreAddresses> newMembers = new HashMap<>();
-        newMembers.put( new MemberId( one ), mock(CoreAddresses.class) );
-        newMembers.put( new MemberId( two ), mock(CoreAddresses.class) );
-        newMembers.put( new MemberId( UUID.randomUUID() ), mock(CoreAddresses.class) );
+        Map<MemberId,CoreServerInfo> newMembers = new HashMap<>();
+        newMembers.put( new MemberId( one ), mock(CoreServerInfo.class) );
+        newMembers.put( new MemberId( two ), mock(CoreServerInfo.class) );
+        newMembers.put( new MemberId( UUID.randomUUID() ), mock(CoreServerInfo.class) );
 
         CoreTopology topology = new CoreTopology( new ClusterId( UUID.randomUUID() ), true, initialMembers );
 
@@ -88,12 +88,12 @@ public class CoreTopologyTest
         UUID one = UUID.randomUUID();
         UUID two = UUID.randomUUID();
 
-        Map<MemberId, CoreAddresses> initialMembers = new HashMap<>();
-        initialMembers.put( new MemberId( one ), mock(CoreAddresses.class) );
-        initialMembers.put( new MemberId( two ), mock(CoreAddresses.class) );
+        Map<MemberId,CoreServerInfo> initialMembers = new HashMap<>();
+        initialMembers.put( new MemberId( one ), mock(CoreServerInfo.class) );
+        initialMembers.put( new MemberId( two ), mock(CoreServerInfo.class) );
 
-        Map<MemberId, CoreAddresses> newMembers = new HashMap<>();
-        newMembers.put( new MemberId( two ), mock(CoreAddresses.class) );
+        Map<MemberId,CoreServerInfo> newMembers = new HashMap<>();
+        newMembers.put( new MemberId( two ), mock(CoreServerInfo.class) );
 
         CoreTopology topology = new CoreTopology( new ClusterId( UUID.randomUUID() ), true, initialMembers );
 
@@ -110,13 +110,13 @@ public class CoreTopologyTest
     {
         // given
 
-        Map<MemberId, CoreAddresses> initialMembers = new HashMap<>();
-        initialMembers.put( new MemberId( UUID.randomUUID() ), mock(CoreAddresses.class) );
-        initialMembers.put( new MemberId( UUID.randomUUID() ), mock(CoreAddresses.class) );
+        Map<MemberId,CoreServerInfo> initialMembers = new HashMap<>();
+        initialMembers.put( new MemberId( UUID.randomUUID() ), mock(CoreServerInfo.class) );
+        initialMembers.put( new MemberId( UUID.randomUUID() ), mock(CoreServerInfo.class) );
 
-        Map<MemberId, CoreAddresses> newMembers = new HashMap<>();
-        newMembers.put( new MemberId( UUID.randomUUID() ), mock(CoreAddresses.class) );
-        newMembers.put( new MemberId( UUID.randomUUID() ), mock(CoreAddresses.class) );
+        Map<MemberId,CoreServerInfo> newMembers = new HashMap<>();
+        newMembers.put( new MemberId( UUID.randomUUID() ), mock(CoreServerInfo.class) );
+        newMembers.put( new MemberId( UUID.randomUUID() ), mock(CoreServerInfo.class) );
 
         CoreTopology topology = new CoreTopology( new ClusterId( UUID.randomUUID() ), true, initialMembers );
 

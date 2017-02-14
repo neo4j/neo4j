@@ -39,10 +39,10 @@ import java.util.stream.Stream;
 import org.neo4j.causalclustering.core.consensus.LeaderLocator;
 import org.neo4j.causalclustering.core.consensus.NoLeaderFoundException;
 import org.neo4j.causalclustering.discovery.ClientConnectorAddresses;
-import org.neo4j.causalclustering.discovery.CoreAddresses;
+import org.neo4j.causalclustering.discovery.CoreServerInfo;
 import org.neo4j.causalclustering.discovery.CoreTopology;
 import org.neo4j.causalclustering.discovery.CoreTopologyService;
-import org.neo4j.causalclustering.discovery.ReadReplicaAddresses;
+import org.neo4j.causalclustering.discovery.ReadReplicaInfo;
 import org.neo4j.causalclustering.discovery.ReadReplicaTopology;
 import org.neo4j.causalclustering.identity.ClusterId;
 import org.neo4j.causalclustering.identity.MemberId;
@@ -149,7 +149,7 @@ public class GetServersProcedureV1Test
 
         LeaderLocator leaderLocator = mock( LeaderLocator.class );
 
-        Map<MemberId,CoreAddresses> coreMembers = new HashMap<>();
+        Map<MemberId,CoreServerInfo> coreMembers = new HashMap<>();
         coreMembers.put( member( 0 ), adressesForCore( 0 ) );
 
         final CoreTopology clusterTopology = new CoreTopology( clusterId, false, coreMembers );
@@ -179,7 +179,7 @@ public class GetServersProcedureV1Test
         LeaderLocator leaderLocator = mock( LeaderLocator.class );
         when( leaderLocator.getLeader() ).thenReturn( member( 0 ) );
 
-        Map<MemberId,CoreAddresses> coreMembers = new HashMap<>();
+        Map<MemberId,CoreServerInfo> coreMembers = new HashMap<>();
         coreMembers.put( member( 0 ), adressesForCore( 0 ) );
         coreMembers.put( member( 1 ), adressesForCore( 1 ) );
         coreMembers.put( member( 2 ), adressesForCore( 2 ) );
@@ -215,7 +215,7 @@ public class GetServersProcedureV1Test
         LeaderLocator leaderLocator = mock( LeaderLocator.class );
         when( leaderLocator.getLeader() ).thenReturn( member( 0 ) );
 
-        Map<MemberId,CoreAddresses> coreMembers = new HashMap<>();
+        Map<MemberId,CoreServerInfo> coreMembers = new HashMap<>();
         coreMembers.put( member( 0 ), adressesForCore( 0 ) );
 
         final CoreTopology clusterTopology = new CoreTopology( clusterId, false, coreMembers );
@@ -243,12 +243,12 @@ public class GetServersProcedureV1Test
         // given
         final CoreTopologyService topologyService = mock( CoreTopologyService.class );
 
-        Map<MemberId,CoreAddresses> coreMembers = new HashMap<>();
+        Map<MemberId,CoreServerInfo> coreMembers = new HashMap<>();
         MemberId theLeader = member( 0 );
         coreMembers.put( theLeader, adressesForCore( 0 ) );
 
         when( topologyService.coreServers() ).thenReturn( new CoreTopology( clusterId, false, coreMembers ) );
-        when( topologyService.readReplicas() ).thenReturn( new ReadReplicaTopology( addresses( 1 ) ) );
+        when( topologyService.readReplicas() ).thenReturn( new ReadReplicaTopology( readReplicaInfoMap( 1 ) ) );
 
         LeaderLocator leaderLocator = mock( LeaderLocator.class );
         when( leaderLocator.getLeader() ).thenReturn( theLeader );
@@ -278,7 +278,7 @@ public class GetServersProcedureV1Test
         // given
         final CoreTopologyService topologyService = mock( CoreTopologyService.class );
 
-        Map<MemberId,CoreAddresses> coreMembers = new HashMap<>();
+        Map<MemberId,CoreServerInfo> coreMembers = new HashMap<>();
         MemberId theLeader = member( 0 );
         coreMembers.put( theLeader, adressesForCore( 0 ) );
 
@@ -309,7 +309,7 @@ public class GetServersProcedureV1Test
         // given
         final CoreTopologyService topologyService = mock( CoreTopologyService.class );
 
-        Map<MemberId,CoreAddresses> coreMembers = new HashMap<>();
+        Map<MemberId,CoreServerInfo> coreMembers = new HashMap<>();
         coreMembers.put( member( 0 ), adressesForCore( 0 ) );
 
         when( topologyService.coreServers() ).thenReturn( new CoreTopology( clusterId, false, coreMembers ) );
@@ -338,7 +338,7 @@ public class GetServersProcedureV1Test
         // given
         final CoreTopologyService topologyService = mock( CoreTopologyService.class );
 
-        Map<MemberId,CoreAddresses> coreMembers = new HashMap<>();
+        Map<MemberId,CoreServerInfo> coreMembers = new HashMap<>();
         coreMembers.put( member( 0 ), adressesForCore( 0 ) );
 
         when( topologyService.coreServers() ).thenReturn( new CoreTopology( clusterId, false, coreMembers ) );
@@ -370,16 +370,16 @@ public class GetServersProcedureV1Test
         return ClusterView.parse( (List<Map<String,Object>>) rows[1] );
     }
 
-    public static Map<MemberId,ReadReplicaAddresses> addresses( int... ids )
+    public static Map<MemberId,ReadReplicaInfo> readReplicaInfoMap( int... ids )
     {
-        return Arrays.stream( ids ).mapToObj( GetServersProcedureV1Test::readReplicaAddresses ).collect( Collectors
+        return Arrays.stream( ids ).mapToObj( GetServersProcedureV1Test::readReplicaInfo ).collect( Collectors
                 .toMap( (p) -> new MemberId( UUID.randomUUID() ), Function.identity() ) );
     }
 
-    private static ReadReplicaAddresses readReplicaAddresses( int id )
+    private static ReadReplicaInfo readReplicaInfo( int id )
     {
         AdvertisedSocketAddress advertisedSocketAddress = new AdvertisedSocketAddress( "localhost", (6000 + id) );
-        return new ReadReplicaAddresses(
+        return new ReadReplicaInfo(
                 new ClientConnectorAddresses( singletonList( new ClientConnectorAddresses.ConnectorUri( bolt, advertisedSocketAddress ) ) ),
                 new AdvertisedSocketAddress( "localhost", 4000 + id ));
     }

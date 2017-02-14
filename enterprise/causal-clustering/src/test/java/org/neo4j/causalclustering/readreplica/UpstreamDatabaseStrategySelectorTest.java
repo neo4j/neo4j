@@ -26,7 +26,7 @@ import java.util.Map;
 import java.util.Optional;
 import java.util.UUID;
 
-import org.neo4j.causalclustering.discovery.CoreAddresses;
+import org.neo4j.causalclustering.discovery.CoreServerInfo;
 import org.neo4j.causalclustering.discovery.CoreTopology;
 import org.neo4j.causalclustering.discovery.ReadReplicaTopologyService;
 import org.neo4j.causalclustering.identity.ClusterId;
@@ -75,7 +75,7 @@ public class UpstreamDatabaseStrategySelectorTest
         ReadReplicaTopologyService readReplicaTopologyService = mock( ReadReplicaTopologyService.class );
         MemberId memberId = new MemberId( UUID.randomUUID() );
         when( readReplicaTopologyService.coreServers() ).thenReturn( new CoreTopology( new ClusterId( UUID.randomUUID() ), false,
-                mapOf( memberId, mock( CoreAddresses.class ) ) ) );
+                mapOf( memberId, mock( CoreServerInfo.class ) ) ) );
 
         ConnectToRandomCoreServer defaultStrategy = new ConnectToRandomCoreServer();
         defaultStrategy.setDiscoveryService( readReplicaTopologyService );
@@ -96,7 +96,7 @@ public class UpstreamDatabaseStrategySelectorTest
         ReadReplicaTopologyService readReplicaTopologyService = mock( ReadReplicaTopologyService.class );
         MemberId memberId = new MemberId( UUID.randomUUID() );
         when( readReplicaTopologyService.coreServers() ).thenReturn( new CoreTopology( new ClusterId( UUID.randomUUID() ), false,
-                mapOf( memberId, mock( CoreAddresses.class ) ) ) );
+                mapOf( memberId, mock( CoreServerInfo.class ) ) ) );
 
         ConnectToRandomCoreServer shouldNotUse = new ConnectToRandomCoreServer();
 
@@ -165,11 +165,11 @@ public class UpstreamDatabaseStrategySelectorTest
         }
     }
 
-    private Map<MemberId,CoreAddresses> mapOf( MemberId memberId, CoreAddresses coreAddresses )
+    private Map<MemberId,CoreServerInfo> mapOf( MemberId memberId, CoreServerInfo coreServerInfo )
     {
-        HashMap<MemberId,CoreAddresses> map = new HashMap<>();
+        HashMap<MemberId,CoreServerInfo> map = new HashMap<>();
 
-        map.put( memberId, coreAddresses );
+        map.put( memberId, coreServerInfo );
 
         return map;
     }

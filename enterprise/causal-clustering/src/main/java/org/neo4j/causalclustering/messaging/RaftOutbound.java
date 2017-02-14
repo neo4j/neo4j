@@ -24,7 +24,7 @@ import java.util.function.Supplier;
 
 import org.neo4j.causalclustering.core.consensus.RaftMessages.ClusterIdAwareMessage;
 import org.neo4j.causalclustering.core.consensus.RaftMessages.RaftMessage;
-import org.neo4j.causalclustering.discovery.CoreAddresses;
+import org.neo4j.causalclustering.discovery.CoreServerInfo;
 import org.neo4j.causalclustering.discovery.CoreTopologyService;
 import org.neo4j.causalclustering.identity.ClusterId;
 import org.neo4j.causalclustering.identity.MemberId;
@@ -62,10 +62,10 @@ public class RaftOutbound implements Outbound<MemberId, RaftMessage>
             return;
         }
 
-        Optional<CoreAddresses> coreAddresses = discoveryService.coreServers().find( to );
-        if ( coreAddresses.isPresent() )
+        Optional<CoreServerInfo> coreServerInfo = discoveryService.coreServers().find( to );
+        if ( coreServerInfo.isPresent() )
         {
-            outbound.send( coreAddresses.get().getRaftServer(), new ClusterIdAwareMessage( clusterId.get(), message ) );
+            outbound.send( coreServerInfo.get().getRaftServer(), new ClusterIdAwareMessage( clusterId.get(), message ) );
         }
         else
         {

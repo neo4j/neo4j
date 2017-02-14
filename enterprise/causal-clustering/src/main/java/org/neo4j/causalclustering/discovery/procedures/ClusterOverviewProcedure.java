@@ -30,10 +30,10 @@ import java.util.UUID;
 import org.neo4j.causalclustering.core.consensus.LeaderLocator;
 import org.neo4j.causalclustering.core.consensus.NoLeaderFoundException;
 import org.neo4j.causalclustering.discovery.ClientConnectorAddresses;
-import org.neo4j.causalclustering.discovery.CoreAddresses;
+import org.neo4j.causalclustering.discovery.CoreServerInfo;
 import org.neo4j.causalclustering.discovery.CoreTopology;
 import org.neo4j.causalclustering.discovery.CoreTopologyService;
-import org.neo4j.causalclustering.discovery.ReadReplicaAddresses;
+import org.neo4j.causalclustering.discovery.ReadReplicaInfo;
 import org.neo4j.causalclustering.identity.MemberId;
 import org.neo4j.collection.RawIterator;
 import org.neo4j.kernel.api.exceptions.ProcedureException;
@@ -88,7 +88,7 @@ public class ClusterOverviewProcedure extends CallableProcedure.BasicProcedure
         for ( MemberId memberId : coreMembers )
         {
             Optional<ClientConnectorAddresses> clientConnectorAddresses =
-                    coreTopology.find( memberId ).map( CoreAddresses::connectors );
+                    coreTopology.find( memberId ).map( CoreServerInfo::connectors );
             if ( clientConnectorAddresses.isPresent() )
             {
                 Role role = memberId.equals( leader ) ? Role.LEADER : Role.FOLLOWER;
@@ -99,9 +99,9 @@ public class ClusterOverviewProcedure extends CallableProcedure.BasicProcedure
                 log.debug( "No Address found for " + memberId );
             }
         }
-        for ( ReadReplicaAddresses readReplicaAddresses : discoveryService.readReplicas().addresses() )
+        for ( ReadReplicaInfo readReplicaInfo : discoveryService.readReplicas().allMemberInfo() )
         {
-            endpoints.add( new ReadWriteEndPoint( readReplicaAddresses.connectors(), Role.READ_REPLICA ) );
+            endpoints.add( new ReadWriteEndPoint( readReplicaInfo.connectors(), Role.READ_REPLICA ) );
         }
 
         Collections.sort( endpoints, ( o1, o2 ) -> o1.addresses().toString().compareTo( o2.addresses().toString() ) );

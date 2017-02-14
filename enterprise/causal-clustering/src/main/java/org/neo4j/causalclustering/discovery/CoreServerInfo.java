@@ -19,20 +19,32 @@
  */
 package org.neo4j.causalclustering.discovery;
 
+import java.util.Set;
+
 import org.neo4j.helpers.AdvertisedSocketAddress;
 
-public class CoreAddresses implements CatchupServerAddress, ClientConnector
+import static java.util.Collections.emptySet;
+
+public class CoreServerInfo implements CatchupServerAddress, ClientConnector, TaggedServer
 {
     private final AdvertisedSocketAddress raftServer;
     private final AdvertisedSocketAddress catchupServer;
     private final ClientConnectorAddresses clientConnectorAddresses;
+    private Set<String> tags;
 
-    public CoreAddresses( AdvertisedSocketAddress raftServer, AdvertisedSocketAddress catchupServer,
-                          ClientConnectorAddresses clientConnectorAddresses )
+    public CoreServerInfo( AdvertisedSocketAddress raftServer, AdvertisedSocketAddress catchupServer,
+            ClientConnectorAddresses clientConnectors )
+    {
+        this( raftServer, catchupServer, clientConnectors, emptySet() );
+    }
+
+    public CoreServerInfo( AdvertisedSocketAddress raftServer, AdvertisedSocketAddress catchupServer,
+            ClientConnectorAddresses clientConnectorAddresses, Set<String> tags )
     {
         this.raftServer = raftServer;
         this.catchupServer = catchupServer;
         this.clientConnectorAddresses = clientConnectorAddresses;
+        this.tags = tags;
     }
 
     public AdvertisedSocketAddress getRaftServer()
@@ -46,18 +58,26 @@ public class CoreAddresses implements CatchupServerAddress, ClientConnector
         return catchupServer;
     }
 
+    @Override
     public ClientConnectorAddresses connectors()
     {
         return clientConnectorAddresses;
     }
 
     @Override
+    public Set<String> tags()
+    {
+        return tags;
+    }
+
+    @Override
     public String toString()
     {
-        return "CoreAddresses{" +
-                "raftServer=" + raftServer +
-                ", catchupServer=" + catchupServer +
-                ", clientConnectorAddresses=" + clientConnectorAddresses +
-                '}';
+        return "CoreServerInfo{" +
+               "raftServer=" + raftServer +
+               ", catchupServer=" + catchupServer +
+               ", clientConnectorAddresses=" + clientConnectorAddresses +
+               ", tags=" + tags +
+               '}';
     }
 }

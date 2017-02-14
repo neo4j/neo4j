@@ -37,6 +37,7 @@ import com.hazelcast.core.ItemListener;
 import com.hazelcast.core.Member;
 import com.hazelcast.core.MemberSelector;
 import com.hazelcast.core.MultiExecutionCallback;
+import com.hazelcast.core.MultiMap;
 import com.hazelcast.map.EntryProcessor;
 import com.hazelcast.map.MapInterceptor;
 import com.hazelcast.map.listener.MapListener;
@@ -46,6 +47,7 @@ import com.hazelcast.mapreduce.aggregation.Aggregation;
 import com.hazelcast.mapreduce.aggregation.Supplier;
 import com.hazelcast.monitor.LocalExecutorStats;
 import com.hazelcast.monitor.LocalMapStats;
+import com.hazelcast.monitor.LocalMultiMapStats;
 import com.hazelcast.query.Predicate;
 import org.junit.Test;
 
@@ -128,6 +130,7 @@ public class HazelcastClientTest
 
         when( hazelcastInstance.getAtomicReference( anyString() ) ).thenReturn( mock( IAtomicReference.class ) );
         when( hazelcastInstance.getSet( anyString() ) ).thenReturn( new HazelcastSet() );
+        when( hazelcastInstance.getMultiMap( anyString() ) ).thenReturn( new HazelcastMultiMap() );
 
         com.hazelcast.core.Cluster cluster = mock( Cluster.class );
         when( hazelcastInstance.getCluster() ).thenReturn( cluster );
@@ -156,6 +159,7 @@ public class HazelcastClientTest
 
         when( hazelcastInstance.getAtomicReference( anyString() ) ).thenReturn( mock( IAtomicReference.class ) );
         when( hazelcastInstance.getSet( anyString() ) ).thenReturn( new HazelcastSet() );
+        when( hazelcastInstance.getMultiMap( anyString() ) ).thenReturn( new HazelcastMultiMap() );
         when( hazelcastInstance.getExecutorService( anyString() ) ).thenReturn( new StubExecutorService() );
 
         com.hazelcast.core.Cluster cluster = mock( Cluster.class );
@@ -250,8 +254,10 @@ public class HazelcastClientTest
 
         when( hazelcastInstance1.getAtomicReference( anyString() ) ).thenReturn( mock( IAtomicReference.class ) );
         when( hazelcastInstance1.getSet( anyString() ) ).thenReturn( new HazelcastSet() );
+        when( hazelcastInstance1.getMultiMap( anyString() ) ).thenReturn( new HazelcastMultiMap() );
         when( hazelcastInstance2.getAtomicReference( anyString() ) ).thenReturn( mock( IAtomicReference.class ) );
         when( hazelcastInstance2.getSet( anyString() ) ).thenReturn( new HazelcastSet() );
+        when( hazelcastInstance2.getMultiMap( anyString() ) ).thenReturn( new HazelcastMultiMap() );
 
         when( hazelcastInstance1.getExecutorService( anyString() ) ).thenReturn( new StubExecutorService() );
         when( hazelcastInstance2.getExecutorService( anyString() ) ).thenReturn( new StubExecutorService() );
@@ -968,6 +974,214 @@ public class HazelcastClientTest
         public void destroy()
         {
 
+        }
+    }
+
+    private class HazelcastMultiMap implements MultiMap<Object,Object>
+    {
+        private Map<Object,Object> delegate = new HashMap<>();
+
+        @Override
+        public String getPartitionKey()
+        {
+            throw new UnsupportedOperationException();
+        }
+
+        @Override
+        public String getName()
+        {
+            throw new UnsupportedOperationException();
+        }
+
+        @Override
+        public String getServiceName()
+        {
+            throw new UnsupportedOperationException();
+        }
+
+        @Override
+        public void destroy()
+        {
+            throw new UnsupportedOperationException();
+        }
+
+        @Override
+        public boolean put( Object key, Object value )
+        {
+            if ( delegate.get( key ) != null )
+            {
+                throw new UnsupportedOperationException( "This is not a true multimap" );
+            }
+            delegate.put( key, value );
+            return true;
+        }
+
+        @Override
+        public Collection<Object> get( Object key )
+        {
+            return asSet( delegate.get( key ) );
+        }
+
+        @Override
+        public boolean remove( Object key, Object value )
+        {
+            return delegate.remove( key, value );
+        }
+
+        @Override
+        public Collection<Object> remove( Object key )
+        {
+            return asSet( delegate.remove( key ) );
+        }
+
+        @Override
+        public Set<Object> localKeySet()
+        {
+            throw new UnsupportedOperationException();
+        }
+
+        @Override
+        public Set<Object> keySet()
+        {
+            throw new UnsupportedOperationException();
+        }
+
+        @Override
+        public Collection<Object> values()
+        {
+            return delegate.values();
+        }
+
+        @Override
+        public Set<Map.Entry<Object,Object>> entrySet()
+        {
+            return delegate.entrySet();
+        }
+
+        @Override
+        public boolean containsKey( Object key )
+        {
+            return delegate.containsKey( key );
+        }
+
+        @Override
+        public boolean containsValue( Object value )
+        {
+            return delegate.containsValue( value );
+        }
+
+        @Override
+        public boolean containsEntry( Object key, Object value )
+        {
+            throw new UnsupportedOperationException();
+        }
+
+        @Override
+        public int size()
+        {
+            return delegate.size();
+        }
+
+        @Override
+        public void clear()
+        {
+            delegate.clear();
+        }
+
+        @Override
+        public int valueCount( Object key )
+        {
+            throw new UnsupportedOperationException();
+        }
+
+        @Override
+        public String addLocalEntryListener( EntryListener<Object,Object> listener )
+        {
+            throw new UnsupportedOperationException();
+        }
+
+        @Override
+        public String addEntryListener( EntryListener<Object,Object> listener, boolean includeValue )
+        {
+            throw new UnsupportedOperationException();
+        }
+
+        @Override
+        public boolean removeEntryListener( String registrationId )
+        {
+            throw new UnsupportedOperationException();
+        }
+
+        @Override
+        public String addEntryListener( EntryListener<Object,Object> listener, Object key, boolean includeValue )
+        {
+            throw new UnsupportedOperationException();
+        }
+
+        @Override
+        public void lock( Object key )
+        {
+            throw new UnsupportedOperationException();
+        }
+
+        @Override
+        public void lock( Object key, long leaseTime, TimeUnit timeUnit )
+        {
+            throw new UnsupportedOperationException();
+        }
+
+        @Override
+        public boolean isLocked( Object key )
+        {
+            throw new UnsupportedOperationException();
+        }
+
+        @Override
+        public boolean tryLock( Object key )
+        {
+            throw new UnsupportedOperationException();
+        }
+
+        @Override
+        public boolean tryLock( Object key, long time, TimeUnit timeunit ) throws InterruptedException
+        {
+            throw new UnsupportedOperationException();
+        }
+
+        @Override
+        public boolean tryLock( Object key, long time, TimeUnit timeunit, long leaseTime, TimeUnit leaseTimeunit ) throws InterruptedException
+        {
+            throw new UnsupportedOperationException();
+        }
+
+        @Override
+        public void unlock( Object key )
+        {
+            throw new UnsupportedOperationException();
+        }
+
+        @Override
+        public void forceUnlock( Object key )
+        {
+            throw new UnsupportedOperationException();
+        }
+
+        @Override
+        public LocalMultiMapStats getLocalMultiMapStats()
+        {
+            throw new UnsupportedOperationException();
+        }
+
+        @Override
+        public <SuppliedValue, Result> Result aggregate( Supplier<Object,Object,SuppliedValue> supplier, Aggregation<Object,SuppliedValue,Result> aggregation )
+        {
+            throw new UnsupportedOperationException();
+        }
+
+        @Override
+        public <SuppliedValue, Result> Result aggregate( Supplier<Object,Object,SuppliedValue> supplier, Aggregation<Object,SuppliedValue,Result> aggregation, JobTracker jobTracker )
+        {
+            throw new UnsupportedOperationException();
         }
     }
 

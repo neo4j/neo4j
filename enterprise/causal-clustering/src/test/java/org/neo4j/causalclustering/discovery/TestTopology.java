@@ -19,10 +19,6 @@
  */
 package org.neo4j.causalclustering.discovery;
 
-import java.util.Arrays;
-import java.util.Set;
-import java.util.stream.Collectors;
-
 import org.neo4j.helpers.AdvertisedSocketAddress;
 
 import static java.util.Collections.singletonList;
@@ -30,30 +26,25 @@ import static org.neo4j.causalclustering.discovery.ClientConnectorAddresses.Sche
 
 public class TestTopology
 {
-    public static Set<ReadReplicaAddresses> addressesForReadReplicas( int... ids )
-    {
-        return Arrays.stream( ids ).mapToObj( TestTopology::addressesForReadReplica ).collect( Collectors.toSet() );
-    }
-
     private static ClientConnectorAddresses wrapAsClientConnectorAddresses( AdvertisedSocketAddress advertisedSocketAddress )
     {
         return new ClientConnectorAddresses( singletonList( new ClientConnectorAddresses.ConnectorUri( bolt, advertisedSocketAddress ) ) );
     }
 
-    public static CoreAddresses adressesForCore( int id )
+    public static CoreServerInfo adressesForCore( int id )
     {
         AdvertisedSocketAddress raftServerAddress = new AdvertisedSocketAddress( "localhost", (3000 + id) );
         AdvertisedSocketAddress catchupServerAddress = new AdvertisedSocketAddress( "localhost", (4000 + id) );
         AdvertisedSocketAddress boltServerAddress = new AdvertisedSocketAddress( "localhost", (5000 + id) );
-        return new CoreAddresses( raftServerAddress, catchupServerAddress, wrapAsClientConnectorAddresses( boltServerAddress ) );
+        return new CoreServerInfo( raftServerAddress, catchupServerAddress, wrapAsClientConnectorAddresses( boltServerAddress ) );
     }
 
-    public static ReadReplicaAddresses addressesForReadReplica( int id )
+    public static ReadReplicaInfo addressesForReadReplica( int id )
     {
         AdvertisedSocketAddress advertisedSocketAddress = new AdvertisedSocketAddress( "localhost", (6000 + id) );
         ClientConnectorAddresses clientConnectorAddresses = new ClientConnectorAddresses(
                 singletonList( new ClientConnectorAddresses.ConnectorUri( bolt, advertisedSocketAddress ) ) );
 
-        return new ReadReplicaAddresses( clientConnectorAddresses, advertisedSocketAddress );
+        return new ReadReplicaInfo( clientConnectorAddresses, advertisedSocketAddress );
     }
 }

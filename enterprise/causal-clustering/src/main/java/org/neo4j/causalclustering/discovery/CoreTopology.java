@@ -38,9 +38,9 @@ public class CoreTopology
 
     private final ClusterId clusterId;
     private final boolean canBeBootstrapped;
-    private final Map<MemberId,CoreAddresses> coreMembers;
+    private final Map<MemberId,CoreServerInfo> coreMembers;
 
-    public CoreTopology( ClusterId clusterId, boolean canBeBootstrapped, Map<MemberId,CoreAddresses> coreMembers )
+    public CoreTopology( ClusterId clusterId, boolean canBeBootstrapped, Map<MemberId,CoreServerInfo> coreMembers )
     {
         this.clusterId = clusterId;
         this.canBeBootstrapped = canBeBootstrapped;
@@ -57,7 +57,7 @@ public class CoreTopology
         return clusterId;
     }
 
-    public Collection<CoreAddresses> addresses()
+    public Collection<CoreServerInfo> allMemberInfo()
     {
         return coreMembers.values();
     }
@@ -67,7 +67,7 @@ public class CoreTopology
         return canBeBootstrapped;
     }
 
-    public Optional<CoreAddresses> find( MemberId memberId )
+    public Optional<CoreServerInfo> find( MemberId memberId )
     {
         return Optional.ofNullable( coreMembers.get( memberId ) );
     }
@@ -139,18 +139,18 @@ public class CoreTopology
     private class Difference
     {
         private MemberId memberId;
-        private CoreAddresses coreAddresses;
+        private CoreServerInfo coreServerInfo;
 
-        Difference( MemberId memberId, CoreAddresses coreAddresses )
+        Difference( MemberId memberId, CoreServerInfo coreServerInfo )
         {
             this.memberId = memberId;
-            this.coreAddresses = coreAddresses;
+            this.coreServerInfo = coreServerInfo;
         }
 
         @Override
         public String toString()
         {
-            return String.format( "{memberId=%s, coreAddresses=%s}", memberId, coreAddresses );
+            return String.format( "{memberId=%s, coreServerInfo=%s}", memberId, coreServerInfo );
         }
     }
 }

@@ -39,8 +39,8 @@ import static java.util.Collections.unmodifiableMap;
 
 public class SharedDiscoveryService implements DiscoveryServiceFactory
 {
-    private final Map<MemberId,CoreAddresses> coreMembers = new HashMap<>();
-    private final Map<MemberId,ReadReplicaAddresses> readReplicaAddresses = new HashMap<>();
+    private final Map<MemberId,CoreServerInfo> coreMembers = new HashMap<>();
+    private final Map<MemberId,ReadReplicaInfo> readReplicaInfoMap = new HashMap<>();
     private final List<SharedDiscoveryCoreClient> coreClients = new ArrayList<>();
 
     private final Lock lock = new ReentrantLock();
@@ -101,7 +101,7 @@ public class SharedDiscoveryService implements DiscoveryServiceFactory
         lock.lock();
         try
         {
-            return new ReadReplicaTopology( unmodifiableMap( readReplicaAddresses ) );
+            return new ReadReplicaTopology( unmodifiableMap( readReplicaInfoMap ) );
         }
         finally
         {
@@ -109,12 +109,12 @@ public class SharedDiscoveryService implements DiscoveryServiceFactory
         }
     }
 
-    void registerCoreMember( MemberId memberId, CoreAddresses coreAddresses, SharedDiscoveryCoreClient client )
+    void registerCoreMember( MemberId memberId, CoreServerInfo coreServerInfo, SharedDiscoveryCoreClient client )
     {
         lock.lock();
         try
         {
-            coreMembers.put( memberId, coreAddresses );
+            coreMembers.put( memberId, coreServerInfo );
             coreClients.add( client );
             enoughMembers.signalAll();
             notifyCoreClients();
@@ -149,12 +149,12 @@ public class SharedDiscoveryService implements DiscoveryServiceFactory
         }
     }
 
-    void registerReadReplica( MemberId memberId, ReadReplicaAddresses readReplicaAddresses )
+    void registerReadReplica( MemberId memberId, ReadReplicaInfo readReplicaInfo )
     {
         lock.lock();
         try
         {
-            this.readReplicaAddresses.put( memberId, readReplicaAddresses );
+            this.readReplicaInfoMap.put( memberId, readReplicaInfo );
             notifyCoreClients();
         }
         finally
@@ -168,7 +168,7 @@ public class SharedDiscoveryService implements DiscoveryServiceFactory
         lock.lock();
         try
         {
-            ReadReplicaAddresses removed = this.readReplicaAddresses.remove( memberId );
+            ReadReplicaInfo removed = this.readReplicaInfoMap.remove( memberId );
             notifyCoreClients();
         }
         finally

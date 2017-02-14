@@ -32,7 +32,7 @@ import static org.neo4j.helpers.SocketAddressFormat.socketAddress;
 class SharedDiscoveryReadReplicaClient extends LifecycleAdapter implements ReadReplicaTopologyService
 {
     private final SharedDiscoveryService sharedDiscoveryService;
-    private final ReadReplicaAddresses addresses;
+    private final ReadReplicaInfo addresses;
     private final MemberId memberId;
     private final Log log;
 
@@ -40,7 +40,7 @@ class SharedDiscoveryReadReplicaClient extends LifecycleAdapter implements ReadR
             LogProvider logProvider )
     {
         this.sharedDiscoveryService = sharedDiscoveryService;
-        this.addresses = new ReadReplicaAddresses( ClientConnectorAddresses.extractFromConfig( config ),
+        this.addresses = new ReadReplicaInfo( ClientConnectorAddresses.extractFromConfig( config ),
                 socketAddress( config.get( CausalClusteringSettings.transaction_advertised_address ).toString(), AdvertisedSocketAddress::new ) );
         this.memberId = memberId;
         this.log = logProvider.getLog( getClass() );
