@@ -23,8 +23,6 @@ import java.util.List;
 
 import javax.annotation.Nonnull;
 
-import org.neo4j.kernel.api.index.IndexUsage;
-
 public class PlannerInfo
 {
     private final String planner;

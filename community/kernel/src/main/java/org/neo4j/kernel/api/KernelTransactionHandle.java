@@ -23,6 +23,7 @@ import java.util.Optional;
 import java.util.stream.Stream;
 
 import org.neo4j.kernel.api.exceptions.Status;
+import org.neo4j.kernel.api.query.ExecutingQuery;
 import org.neo4j.kernel.api.security.SecurityContext;
 import org.neo4j.kernel.impl.api.Kernel;
 import org.neo4j.kernel.impl.locking.ActiveLock;

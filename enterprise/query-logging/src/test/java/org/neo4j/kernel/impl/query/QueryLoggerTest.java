@@ -27,7 +27,7 @@ import java.util.concurrent.TimeUnit;
 
 import org.junit.Test;
 
-import org.neo4j.kernel.api.ExecutingQuery;
+import org.neo4j.kernel.api.query.ExecutingQuery;
 import org.neo4j.kernel.impl.query.QueryLoggerKernelExtension.QueryLogger;
 import org.neo4j.kernel.impl.query.clientconnection.ClientConnectionInfo;
 import org.neo4j.kernel.impl.query.clientconnection.ShellConnectionInfo;

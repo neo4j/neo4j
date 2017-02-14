@@ -27,6 +27,7 @@ import org.neo4j.graphdb.PropertyContainer;
 import org.neo4j.kernel.GraphDatabaseQueryService;
 import org.neo4j.kernel.api.*;
 import org.neo4j.kernel.api.dbms.DbmsOperations;
+import org.neo4j.kernel.api.query.ExecutingQuery;
 import org.neo4j.kernel.api.security.SecurityContext;
 import org.neo4j.kernel.api.txstate.TxStateHolder;
 import org.neo4j.kernel.guard.Guard;

@@ -21,7 +21,6 @@ package org.neo4j.kernel.api.query;
 
 import java.util.Map;
 
-import org.neo4j.kernel.api.ExecutingQuery;
 import org.neo4j.time.SystemNanoClock;
 
 /**

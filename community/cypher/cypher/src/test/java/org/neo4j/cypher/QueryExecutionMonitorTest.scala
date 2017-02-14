@@ -28,7 +28,7 @@ import org.neo4j.cypher.internal.{ExecutionEngine, ExecutionResult}
 import org.neo4j.cypher.javacompat.internal.GraphDatabaseCypherService
 import org.neo4j.graphdb.Result.{ResultRow, ResultVisitor}
 import org.neo4j.kernel.GraphDatabaseQueryService
-import org.neo4j.kernel.api.ExecutingQuery
+import org.neo4j.kernel.api.query.ExecutingQuery
 import org.neo4j.kernel.impl.query.{QueryExecutionMonitor, TransactionalContext}
 import org.neo4j.test.TestGraphDatabaseFactory
 

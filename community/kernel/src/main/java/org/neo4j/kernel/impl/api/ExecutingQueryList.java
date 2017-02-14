@@ -23,7 +23,7 @@ import java.util.function.BiFunction;
 import java.util.function.Function;
 import java.util.stream.Stream;
 
-import org.neo4j.kernel.api.ExecutingQuery;
+import org.neo4j.kernel.api.query.ExecutingQuery;
 
 abstract class ExecutingQueryList
 {

@@ -23,7 +23,7 @@ import org.neo4j.cypher.internal.QueryStatistics
 import org.neo4j.cypher.internal.compatibility.v3_2.ExecutionResultWrapper
 import org.neo4j.cypher.internal.compiler.v3_2.executionplan.InternalExecutionResult
 import org.neo4j.cypher.internal.compiler.v3_2.{CompiledRuntimeName, CostBasedPlannerName}
-import org.neo4j.kernel.api.ExecutingQuery
+import org.neo4j.kernel.api.query.ExecutingQuery
 import org.neo4j.kernel.impl.query.QueryExecutionMonitor
 import org.scalatest.Assertions
 import org.scalatest.mock.MockitoSugar

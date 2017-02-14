@@ -25,7 +25,7 @@ import java.util.function.Function;
 import org.neo4j.graphdb.NotInTransactionException;
 import org.neo4j.graphdb.TransactionTerminatedException;
 import org.neo4j.kernel.api.DataWriteOperations;
-import org.neo4j.kernel.api.ExecutingQuery;
+import org.neo4j.kernel.api.query.ExecutingQuery;
 import org.neo4j.kernel.api.ProcedureCallOperations;
 import org.neo4j.kernel.api.QueryRegistryOperations;
 import org.neo4j.kernel.api.ReadOperations;

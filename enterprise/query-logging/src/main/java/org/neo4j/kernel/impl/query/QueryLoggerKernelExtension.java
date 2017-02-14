@@ -29,7 +29,7 @@ import org.neo4j.graphdb.factory.GraphDatabaseSettings;
 import org.neo4j.helpers.Service;
 import org.neo4j.helpers.Strings;
 import org.neo4j.io.fs.FileSystemAbstraction;
-import org.neo4j.kernel.api.ExecutingQuery;
+import org.neo4j.kernel.api.query.ExecutingQuery;
 import org.neo4j.kernel.configuration.Config;
 import org.neo4j.kernel.extension.KernelExtensionFactory;
 import org.neo4j.kernel.impl.logging.LogService;

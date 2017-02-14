@@ -17,28 +17,31 @@
  * You should have received a copy of the GNU General Public License
  * along with this program.  If not, see <http://www.gnu.org/licenses/>.
  */
-package org.neo4j.kernel.api.index;
+package org.neo4j.kernel.api.query;
 
+import java.util.HashMap;
 import java.util.Map;
 
-public abstract class IndexUsage
+class LegacyIndexUsage extends IndexUsage
 {
-    public static IndexUsage schemaIndexUsage( String identifier, String label, String propertyKey )
+    private final String index;
+    private final String entityType;
+
+    LegacyIndexUsage( String identifier, String index, String entityType )
     {
-        return new SchemaIndexUsage( identifier, label, propertyKey );
+        super( identifier );
+        this.index = index;
+        this.entityType = entityType;
     }
 
-    public static IndexUsage legacyIndexUsage( String identifier, String entityType, String index )
+    @Override
+    public Map<String,String> asMap()
     {
-        return new LegacyIndexUsage( identifier, index, entityType );
-    }
-
-    public abstract Map<String,String> asMap();
-
-    final String identifier;
-
-    IndexUsage( String identifier )
-    {
-        this.identifier = identifier;
+        Map<String,String> map = new HashMap<>();
+        map.put( "indexType", "LEGACY INDEX" );
+        map.put( "entityType", entityType );
+        map.put( "identifier", identifier );
+        map.put( "indexName", index );
+        return map;
     }
 }

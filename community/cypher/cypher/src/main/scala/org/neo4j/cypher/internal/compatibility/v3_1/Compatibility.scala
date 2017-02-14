@@ -32,9 +32,8 @@ import org.neo4j.cypher.internal.spi.v3_1.{TransactionalContextWrapper => Transa
 import org.neo4j.cypher.internal.spi.v3_2.{TransactionalContextWrapper => TransactionalContextWrapperV3_2}
 import org.neo4j.cypher.internal.{frontend, _}
 import org.neo4j.kernel.GraphDatabaseQueryService
-import org.neo4j.kernel.api.query.PlannerInfo
+import org.neo4j.kernel.api.query.{IndexUsage, PlannerInfo}
 import org.neo4j.kernel.api.KernelAPI
-import org.neo4j.kernel.api.index.IndexUsage
 import org.neo4j.kernel.impl.query.QueryExecutionMonitor
 import org.neo4j.kernel.monitoring.{Monitors => KernelMonitors}
 import org.neo4j.logging.Log

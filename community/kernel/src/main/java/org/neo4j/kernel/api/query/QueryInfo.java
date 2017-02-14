@@ -23,8 +23,6 @@ import java.util.ArrayList;
 import java.util.List;
 import java.util.Map;
 
-import org.neo4j.kernel.api.index.IndexUsage;
-
 import static java.util.Collections.emptyList;
 
 public class QueryInfo
@@ -35,7 +33,7 @@ public class QueryInfo
     private final String runtime;
     private final List<IndexUsage> indexes;
 
-    public QueryInfo( String text, Map<String,Object> parameters, PlannerInfo plannerInfo )
+    QueryInfo( String text, Map<String,Object> parameters, PlannerInfo plannerInfo )
     {
         this.text = text;
         this.parameters = parameters;

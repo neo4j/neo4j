@@ -19,27 +19,22 @@
  */
 package org.neo4j.kernel.api.query;
 
-import org.neo4j.kernel.api.ExecutingQuery;
 import org.neo4j.kernel.impl.locking.LockWaitEvent;
 import org.neo4j.storageengine.api.lock.ResourceType;
 
-public class WaitingOnLockEvent extends WaitingOnLock implements LockWaitEvent
+class WaitingOnLockEvent extends WaitingOnLock implements LockWaitEvent
 {
     private final ExecutingQueryStatus previous;
     private final ExecutingQuery executingQuery;
 
-    public WaitingOnLockEvent(
-            String mode,
-            ResourceType resourceType,
-            long[] resourceIds,
-            ExecutingQuery executingQuery )
+    WaitingOnLockEvent( String mode, ResourceType resourceType, long[] resourceIds, ExecutingQuery executingQuery )
     {
         super( mode, resourceType, resourceIds, executingQuery.clock().nanos() );
         this.executingQuery = executingQuery;
         this.previous = executingQuery.executingQueryStatus();
     }
 
-    public ExecutingQueryStatus previousStatus()
+    ExecutingQueryStatus previousStatus()
     {
         return previous;
     }

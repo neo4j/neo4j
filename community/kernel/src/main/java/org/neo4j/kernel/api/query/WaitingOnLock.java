@@ -26,14 +26,14 @@ import java.util.concurrent.TimeUnit;
 import org.neo4j.storageengine.api.lock.ResourceType;
 import org.neo4j.time.SystemNanoClock;
 
-public class WaitingOnLock extends ExecutingQueryStatus
+class WaitingOnLock extends ExecutingQueryStatus
 {
     private final String mode;
     private final ResourceType resourceType;
     private final long[] resourceIds;
     private final long startTimeNanos;
 
-    public WaitingOnLock( String mode, ResourceType resourceType, long[] resourceIds, long startTimeNanos )
+    WaitingOnLock( String mode, ResourceType resourceType, long[] resourceIds, long startTimeNanos )
     {
         this.mode = mode;
         this.resourceType = resourceType;

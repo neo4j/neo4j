@@ -25,7 +25,7 @@ import java.time.ZoneId;
 import java.util.List;
 import java.util.Map;
 
-import org.neo4j.kernel.api.ExecutingQuery;
+import org.neo4j.kernel.api.query.ExecutingQuery;
 import org.neo4j.kernel.api.exceptions.InvalidArgumentsException;
 import org.neo4j.kernel.api.query.QueryInfo;
 import org.neo4j.kernel.impl.query.clientconnection.ClientConnectionInfo;

@@ -27,7 +27,7 @@ import org.neo4j.time.SystemNanoClock;
 import static java.util.Collections.singletonMap;
 import static java.util.Collections.unmodifiableMap;
 
-public final class SimpleState extends ExecutingQueryStatus
+final class SimpleState extends ExecutingQueryStatus
 {
     private static final ExecutingQueryStatus PLANNING = new SimpleState( singletonMap( "state", "PLANNING" ) );
     private static final ExecutingQueryStatus RUNNING = new SimpleState( singletonMap( "state", "RUNNING" ) );

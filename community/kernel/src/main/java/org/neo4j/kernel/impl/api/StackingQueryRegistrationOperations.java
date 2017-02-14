@@ -22,7 +22,7 @@ package org.neo4j.kernel.impl.api;
 import java.util.Map;
 import java.util.stream.Stream;
 
-import org.neo4j.kernel.api.ExecutingQuery;
+import org.neo4j.kernel.api.query.ExecutingQuery;
 import org.neo4j.kernel.impl.api.operations.QueryRegistrationOperations;
 import org.neo4j.kernel.impl.query.clientconnection.ClientConnectionInfo;
 import org.neo4j.kernel.impl.util.MonotonicCounter;

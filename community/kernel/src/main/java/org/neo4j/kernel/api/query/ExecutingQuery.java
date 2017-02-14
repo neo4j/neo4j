@@ -17,7 +17,7 @@
  * You should have received a copy of the GNU General Public License
  * along with this program.  If not, see <http://www.gnu.org/licenses/>.
  */
-package org.neo4j.kernel.api;
+package org.neo4j.kernel.api.query;
 
 import org.apache.commons.lang3.builder.ToStringBuilder;
 
@@ -25,11 +25,6 @@ import java.util.Map;
 import java.util.concurrent.atomic.AtomicLongFieldUpdater;
 import java.util.function.LongSupplier;
 
-import org.neo4j.kernel.api.query.ExecutingQueryStatus;
-import org.neo4j.kernel.api.query.PlannerInfo;
-import org.neo4j.kernel.api.query.QueryInfo;
-import org.neo4j.kernel.api.query.SimpleState;
-import org.neo4j.kernel.api.query.WaitingOnLockEvent;
 import org.neo4j.kernel.impl.locking.ActiveLock;
 import org.neo4j.kernel.impl.locking.LockTracer;
 import org.neo4j.kernel.impl.locking.LockWaitEvent;
@@ -246,7 +241,7 @@ public class ExecutingQuery
         return event;
     }
 
-    public void closeWaitingOnLockEvent( WaitingOnLockEvent waitingOnLockEvent )
+    void closeWaitingOnLockEvent( WaitingOnLockEvent waitingOnLockEvent )
     {
         if ( status != waitingOnLockEvent )
         {
