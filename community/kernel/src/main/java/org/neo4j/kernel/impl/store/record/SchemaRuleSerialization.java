@@ -180,7 +180,7 @@ public class SchemaRuleSerialization
             length += 8; // owning constraint id
         }
 
-        length += schemaSizeComputer.compute( indexDescriptor.schema() );
+        length += indexDescriptor.schema().computeWith( schemaSizeComputer );
         return length;
     }
 
@@ -201,7 +201,7 @@ public class SchemaRuleSerialization
             length += 8; // owned index id
         }
 
-        length += schemaSizeComputer.compute( constraintDescriptor.schema() );
+        length += constraintDescriptor.schema().computeWith( schemaSizeComputer );
         return length;
     }
 

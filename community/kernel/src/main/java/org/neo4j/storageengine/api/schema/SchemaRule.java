@@ -98,7 +98,7 @@ public interface SchemaRule extends SchemaDescriptor.Supplier, RecordSerializabl
             case UNIQUE:
                 return UNIQUENESS_CONSTRAINT;
             case EXISTS:
-                return existenceKindMapper.compute( descriptor.schema() );
+                return descriptor.schema().computeWith( existenceKindMapper );
             default:
                 throw new IllegalStateException( "Cannot end up here, says johant" );
             }
