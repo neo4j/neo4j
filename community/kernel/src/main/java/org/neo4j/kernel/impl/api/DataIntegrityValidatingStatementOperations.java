@@ -247,17 +247,13 @@ public class DataIntegrityValidatingStatementOperations implements
         NewIndexDescriptor existingIndex = schemaReadDelegate.indexGetForLabelAndPropertyKey( state, descriptor );
         if ( existingIndex != null )
         {
-            switch ( existingIndex.type() )
+            if ( existingIndex.type() == UNIQUE )
             {
-            case GENERAL:
-                throw new AlreadyIndexedException( descriptor, context );
-            case UNIQUE:
                 throw new AlreadyConstrainedException(
                         new UniquenessConstraint( descriptor ), context,
                         new StatementTokenNameLookup( state.readOperations() ) );
-            default:
-                break;
             }
+            throw new AlreadyIndexedException( descriptor, context );
         }
     }
 
