@@ -21,6 +21,8 @@ package org.neo4j.kernel.api.query;
 
 import java.util.List;
 
+import javax.annotation.Nonnull;
+
 import org.neo4j.kernel.api.index.IndexUsage;
 
 public class PlannerInfo
@@ -29,7 +31,7 @@ public class PlannerInfo
     private final String runtime;
     private final List<IndexUsage> indexes;
 
-    public PlannerInfo( String planner, String runtime, List<IndexUsage> indexes )
+    public PlannerInfo( @Nonnull String planner, @Nonnull String runtime, @Nonnull List<IndexUsage> indexes )
     {
         this.planner = planner;
         this.runtime = runtime;
@@ -38,12 +40,12 @@ public class PlannerInfo
 
     public String planner()
     {
-        return planner;
+        return planner.toLowerCase();
     }
 
     public String runtime()
     {
-        return runtime;
+        return runtime.toLowerCase();
     }
 
     public List<IndexUsage> indexes()
