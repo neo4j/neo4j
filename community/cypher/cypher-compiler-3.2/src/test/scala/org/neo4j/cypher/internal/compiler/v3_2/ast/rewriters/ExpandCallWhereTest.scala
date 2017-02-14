@@ -20,6 +20,7 @@
 package org.neo4j.cypher.internal.compiler.v3_2.ast.rewriters
 
 import org.neo4j.cypher.internal.frontend.v3_2.ast.AstConstructionTestSupport
+import org.neo4j.cypher.internal.frontend.v3_2.ast.rewriters.expandCallWhere
 import org.neo4j.cypher.internal.frontend.v3_2.test_helpers.CypherFunSuite
 
 class ExpandCallWhereTest extends CypherFunSuite with RewriteTest with AstConstructionTestSupport {

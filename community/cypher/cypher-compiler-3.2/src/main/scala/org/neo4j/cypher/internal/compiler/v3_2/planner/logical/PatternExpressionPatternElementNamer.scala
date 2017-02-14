@@ -19,8 +19,8 @@
  */
 package org.neo4j.cypher.internal.compiler.v3_2.planner.logical
 
-import org.neo4j.cypher.internal.compiler.v3_2.helpers.UnNamedNameGenerator
 import org.neo4j.cypher.internal.frontend.v3_2.ast._
+import org.neo4j.cypher.internal.frontend.v3_2.helpers.UnNamedNameGenerator
 import org.neo4j.cypher.internal.frontend.v3_2.{IdentityMap, Rewriter, topDown}
 
 object PatternExpressionPatternElementNamer {

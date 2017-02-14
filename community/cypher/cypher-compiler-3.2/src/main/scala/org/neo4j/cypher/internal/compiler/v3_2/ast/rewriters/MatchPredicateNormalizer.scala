@@ -19,9 +19,10 @@
  */
 package org.neo4j.cypher.internal.compiler.v3_2.ast.rewriters
 
-import org.neo4j.cypher.internal.compiler.v3_2.helpers.{FreshIdNameGenerator, PartialFunctionSupport}
+import org.neo4j.cypher.internal.compiler.v3_2.helpers.PartialFunctionSupport
 import org.neo4j.cypher.internal.frontend.v3_2.InputPosition
 import org.neo4j.cypher.internal.frontend.v3_2.ast._
+import org.neo4j.cypher.internal.frontend.v3_2.helpers.FreshIdNameGenerator
 
 trait MatchPredicateNormalizer {
   val extract: PartialFunction[AnyRef, IndexedSeq[Expression]]

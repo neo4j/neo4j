@@ -23,7 +23,7 @@ import org.neo4j.cypher.internal.compiler.v3_2._
 import org.neo4j.cypher.internal.compiler.v3_2.ast.convert.commands.ExpressionConverters._
 import org.neo4j.cypher.internal.compiler.v3_2.commands.expressions.{Expression => CommandExpression}
 import org.neo4j.cypher.internal.compiler.v3_2.commands.{values => commandvalues}
-import org.neo4j.cypher.internal.compiler.v3_2.helpers.UnNamedNameGenerator
+import org.neo4j.cypher.internal.frontend.v3_2.helpers.UnNamedNameGenerator
 import org.neo4j.cypher.internal.frontend.v3_2.{SyntaxException, ast}
 
 object PatternConverters {

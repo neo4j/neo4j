@@ -23,7 +23,7 @@ import org.neo4j.cypher.internal.compiler.v3_2._
 import org.neo4j.cypher.internal.compiler.v3_2.commands.expressions.Expression
 import org.neo4j.cypher.internal.compiler.v3_2.commands.predicates.Predicate
 import org.neo4j.cypher.internal.compiler.v3_2.executionplan.builders.PatternGraphBuilder
-import org.neo4j.cypher.internal.compiler.v3_2.helpers.UnNamedNameGenerator.isNamed
+import org.neo4j.cypher.internal.frontend.v3_2.helpers.UnNamedNameGenerator.isNamed
 import org.neo4j.cypher.internal.compiler.v3_2.pipes.QueryState
 import org.neo4j.cypher.internal.compiler.v3_2.pipes.matching.MatchingContext
 import org.neo4j.cypher.internal.compiler.v3_2.symbols.SymbolTable

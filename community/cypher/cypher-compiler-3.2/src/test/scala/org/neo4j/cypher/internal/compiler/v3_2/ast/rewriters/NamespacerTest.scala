@@ -25,7 +25,7 @@ import org.neo4j.cypher.internal.compiler.v3_2.parser.ParserFixture.parser
 import org.neo4j.cypher.internal.compiler.v3_2.phases.CompilationState
 import org.neo4j.cypher.internal.compiler.v3_2.test_helpers.ContextHelper
 import org.neo4j.cypher.internal.frontend.v3_2._
-import org.neo4j.cypher.internal.frontend.v3_2.ast.rewriters.Namespacer
+import org.neo4j.cypher.internal.frontend.v3_2.ast.rewriters.{Namespacer, normalizeReturnClauses, normalizeWithClauses}
 import org.neo4j.cypher.internal.frontend.v3_2.ast.{AstConstructionTestSupport, Statement}
 import org.neo4j.cypher.internal.frontend.v3_2.helpers.rewriting.RewriterStepSequencer
 import org.neo4j.cypher.internal.frontend.v3_2.test_helpers.CypherFunSuite
