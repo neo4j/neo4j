@@ -21,7 +21,11 @@ package org.neo4j.causalclustering.discovery;
 
 import org.neo4j.causalclustering.identity.ClusterId;
 
-public interface CoreTopologyService extends ReadReplicaTopologyService
+/**
+ * Extends upon the topology service with a few extra services, connected to
+ * the underlying discovery service.
+ */
+public interface CoreTopologyService extends TopologyService
 {
     void addCoreTopologyListener( Listener listener );
 

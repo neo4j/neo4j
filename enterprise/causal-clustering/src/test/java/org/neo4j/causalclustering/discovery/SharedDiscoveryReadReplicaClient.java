@@ -29,7 +29,7 @@ import org.neo4j.logging.LogProvider;
 
 import static org.neo4j.helpers.SocketAddressFormat.socketAddress;
 
-class SharedDiscoveryReadReplicaClient extends LifecycleAdapter implements ReadReplicaTopologyService
+class SharedDiscoveryReadReplicaClient extends LifecycleAdapter implements TopologyService
 {
     private final SharedDiscoveryService sharedDiscoveryService;
     private final ReadReplicaInfo addresses;

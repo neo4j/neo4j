@@ -30,7 +30,7 @@ public interface DiscoveryServiceFactory
     CoreTopologyService coreTopologyService( Config config, MemberId myself, JobScheduler jobScheduler,
             LogProvider logProvider, LogProvider userLogProvider );
 
-    ReadReplicaTopologyService readReplicaTopologyService( Config config, LogProvider logProvider,
+    TopologyService topologyService( Config config, LogProvider logProvider,
             DelayedRenewableTimeoutService timeoutService, long readReplicaTimeToLiveTimeout,
             long readReplicaRefreshRate, MemberId myself );
 }

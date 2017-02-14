@@ -29,7 +29,7 @@ import java.util.UUID;
 import org.neo4j.causalclustering.discovery.ClientConnectorAddresses;
 import org.neo4j.causalclustering.discovery.CoreServerInfo;
 import org.neo4j.causalclustering.discovery.CoreTopology;
-import org.neo4j.causalclustering.discovery.ReadReplicaTopologyService;
+import org.neo4j.causalclustering.discovery.TopologyService;
 import org.neo4j.causalclustering.identity.ClusterId;
 import org.neo4j.causalclustering.identity.MemberId;
 import org.neo4j.helpers.AdvertisedSocketAddress;
@@ -52,12 +52,12 @@ public class ConnectToRandomCoreServerTest
         MemberId memberId2 = new MemberId( UUID.randomUUID() );
         MemberId memberId3 = new MemberId( UUID.randomUUID() );
 
-        ReadReplicaTopologyService readReplicaTopologyService = mock( ReadReplicaTopologyService.class );
-        when( readReplicaTopologyService.coreServers() )
+        TopologyService topologyService = mock( TopologyService.class );
+        when( topologyService.coreServers() )
                 .thenReturn( fakeCoreTopology( memberId1, memberId2, memberId3 ) );
 
         ConnectToRandomCoreServer connectionStrategy = new ConnectToRandomCoreServer();
-        connectionStrategy.setDiscoveryService( readReplicaTopologyService );
+        connectionStrategy.setTopologyService( topologyService );
 
         // when
         Optional<MemberId> memberId = connectionStrategy.upstreamDatabase();

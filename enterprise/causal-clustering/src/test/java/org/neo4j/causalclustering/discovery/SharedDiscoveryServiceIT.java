@@ -116,7 +116,7 @@ public class SharedDiscoveryServiceIT
             {
                 RaftMachine raftMock = mock( RaftMachine.class );
                 topologyService.start();
-                topologyService.addCoreTopologyListener( new RaftDiscoveryServiceConnector( topologyService, raftMock ) );
+                topologyService.addCoreTopologyListener( new RaftCoreTopologyConnector( topologyService, raftMock ) );
 
                 assertEventually( "should discover complete target set", () ->
                 {

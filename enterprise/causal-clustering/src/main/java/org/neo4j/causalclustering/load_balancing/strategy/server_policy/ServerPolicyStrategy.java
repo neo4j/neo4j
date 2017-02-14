@@ -29,8 +29,8 @@ import org.neo4j.causalclustering.core.CausalClusteringSettings;
 import org.neo4j.causalclustering.core.consensus.LeaderLocator;
 import org.neo4j.causalclustering.core.consensus.NoLeaderFoundException;
 import org.neo4j.causalclustering.discovery.CoreTopology;
-import org.neo4j.causalclustering.discovery.CoreTopologyService;
 import org.neo4j.causalclustering.discovery.ReadReplicaTopology;
+import org.neo4j.causalclustering.discovery.TopologyService;
 import org.neo4j.causalclustering.identity.MemberId;
 import org.neo4j.causalclustering.load_balancing.Endpoint;
 import org.neo4j.causalclustering.load_balancing.LoadBalancingResult;
@@ -45,13 +45,13 @@ import static org.neo4j.causalclustering.load_balancing.Util.extractBoltAddress;
 // TODO: This is work in progress. Currently mostly copies V1 behaviour.
 public class ServerPolicyStrategy implements LoadBalancingStrategy
 {
-    private final CoreTopologyService topologyService;
+    private final TopologyService topologyService;
     private final LeaderLocator leaderLocator;
     private final Long timeToLive;
     private final boolean allowReadsOnFollowers;
     private final Policies policies;
 
-    public ServerPolicyStrategy( CoreTopologyService topologyService,
+    public ServerPolicyStrategy( TopologyService topologyService,
             LeaderLocator leaderLocator, Policies policies, Config config )
     {
         this.topologyService = topologyService;

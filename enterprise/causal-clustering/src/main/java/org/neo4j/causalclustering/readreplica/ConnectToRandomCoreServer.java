@@ -40,7 +40,7 @@ public class ConnectToRandomCoreServer extends UpstreamDatabaseSelectionStrategy
     @Override
     public Optional<MemberId> upstreamDatabase() throws UpstreamDatabaseSelectionException
     {
-        final CoreTopology coreTopology = readReplicaTopologyService.coreServers();
+        final CoreTopology coreTopology = topologyService.coreServers();
 
         if ( coreTopology.members().size() == 0 )
         {

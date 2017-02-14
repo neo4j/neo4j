@@ -21,7 +21,10 @@ package org.neo4j.causalclustering.discovery;
 
 import org.neo4j.kernel.lifecycle.Lifecycle;
 
-public interface ReadReplicaTopologyService extends Lifecycle
+/**
+ * Provides a read-only service for the eventually consistent topology information.
+ */
+public interface TopologyService extends Lifecycle
 {
     CoreTopology coreServers();
 

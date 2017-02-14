@@ -43,7 +43,7 @@ import static org.neo4j.causalclustering.discovery.HazelcastClusterTopology.SERV
 import static org.neo4j.causalclustering.discovery.HazelcastClusterTopology.getCoreTopology;
 import static org.neo4j.causalclustering.discovery.HazelcastClusterTopology.getReadReplicaTopology;
 
-class HazelcastClient extends LifecycleAdapter implements ReadReplicaTopologyService
+class HazelcastClient extends LifecycleAdapter implements TopologyService
 {
     static final RenewableTimeoutService.TimeoutName REFRESH_READ_REPLICA = () -> "Refresh Read Replica";
     private final Log log;

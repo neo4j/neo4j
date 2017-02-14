@@ -36,16 +36,16 @@ import org.neo4j.time.Clocks;
 
 public class RaftOutbound implements Outbound<MemberId, RaftMessage>
 {
-    private final CoreTopologyService discoveryService;
+    private final CoreTopologyService coreTopologyService;
     private final Outbound<AdvertisedSocketAddress,Message> outbound;
     private final Supplier<Optional<ClusterId>> clusterIdentity;
     private final UnknownAddressMonitor unknownAddressMonitor;
     private final Log log;
 
-    public RaftOutbound( CoreTopologyService discoveryService, Outbound<AdvertisedSocketAddress,Message> outbound,
+    public RaftOutbound( CoreTopologyService coreTopologyService, Outbound<AdvertisedSocketAddress,Message> outbound,
                          Supplier<Optional<ClusterId>> clusterIdentity, LogProvider logProvider, long logThresholdMillis )
     {
-        this.discoveryService = discoveryService;
+        this.coreTopologyService = coreTopologyService;
         this.outbound = outbound;
         this.clusterIdentity = clusterIdentity;
         this.log = logProvider.getLog( getClass() );
@@ -62,7 +62,7 @@ public class RaftOutbound implements Outbound<MemberId, RaftMessage>
             return;
         }
 
-        Optional<CoreServerInfo> coreServerInfo = discoveryService.coreServers().find( to );
+        Optional<CoreServerInfo> coreServerInfo = coreTopologyService.coreServers().find( to );
         if ( coreServerInfo.isPresent() )
         {
             outbound.send( coreServerInfo.get().getRaftServer(), new ClusterIdAwareMessage( clusterId.get(), message ) );
