@@ -21,13 +21,13 @@ package org.neo4j.causalclustering.catchup;
 
 import org.junit.Test;
 
+import java.util.Optional;
 import java.util.concurrent.CompletableFuture;
 import java.util.concurrent.TimeUnit;
 import java.util.concurrent.TimeoutException;
 import java.util.function.Supplier;
 
 import org.neo4j.logging.NullLog;
-import org.neo4j.logging.NullLogProvider;
 
 import static junit.framework.TestCase.fail;
 import static org.junit.Assert.assertEquals;
@@ -45,7 +45,7 @@ public class TimeoutLoopTest
         // given
         CompletableFuture<Long> future = new CompletableFuture<>();
         future.complete( 12L );
-        Supplier<Long> lastResponseSupplier = () -> 1L;
+        Supplier<Optional<Long>> lastResponseSupplier = () -> Optional.of( 1L );
 
         // when
         long value = TimeoutLoop.<Long>waitForCompletion( future, "", lastResponseSupplier, 2, NullLog.getInstance() );
@@ -62,7 +62,31 @@ public class TimeoutLoopTest
         CompletableFuture<Long> future = mock( CompletableFuture.class );
         when( future.get( anyLong(), any( TimeUnit.class ) ) ).thenThrow( TimeoutException.class ).thenReturn( 12L );
 
-        Supplier<Long> lastResponseSupplier = () -> 5L;
+        Supplier<Optional<Long>> lastResponseSupplier = Optional::empty;
+
+        try
+        {
+            // when
+            TimeoutLoop.<Long>waitForCompletion( future, "", lastResponseSupplier, 1, NullLog.getInstance() );
+            fail( "Should have timed out" );
+        }
+        catch ( CatchUpClientException e )
+        {
+            // then
+            // expected
+            verify( future ).cancel( true );
+        }
+    }
+
+    @SuppressWarnings("unchecked")
+    @Test
+    public void shouldTimeoutIfNoContinuedActivity() throws Exception
+    {
+        // given
+        CompletableFuture<Long> future = mock( CompletableFuture.class );
+        when( future.get( anyLong(), any( TimeUnit.class ) ) ).thenThrow( TimeoutException.class ).thenReturn( 12L );
+
+        Supplier<Optional<Long>> lastResponseSupplier = () -> Optional.of( 5L );
 
         try
         {
@@ -86,7 +110,7 @@ public class TimeoutLoopTest
         CompletableFuture<Long> future = mock( CompletableFuture.class );
         when( future.get( anyLong(), any( TimeUnit.class ) ) ).thenThrow( TimeoutException.class ).thenReturn( 12L );
 
-        Supplier<Long> lastResponseSupplier = () -> 1L;
+        Supplier<Optional<Long>> lastResponseSupplier = () -> Optional.of( 1L );
 
         // when
         long value = TimeoutLoop.<Long>waitForCompletion( future, "", lastResponseSupplier, 2, NullLog.getInstance() );
@@ -105,7 +129,7 @@ public class TimeoutLoopTest
         // when
         try
         {
-            TimeoutLoop.<Long>waitForCompletion( future, "", () -> 1L, 2, NullLog.getInstance() );
+            TimeoutLoop.<Long>waitForCompletion( future, "", () -> Optional.of( 1L ), 2, NullLog.getInstance() );
             fail( "Should have thrown exception" );
         }
         catch ( CatchUpClientException e )

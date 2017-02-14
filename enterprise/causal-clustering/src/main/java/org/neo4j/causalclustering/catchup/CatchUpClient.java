@@ -136,9 +136,9 @@ public class CatchUpClient extends LifecycleAdapter
             nettyChannel.writeAndFlush( request );
         }
 
-        long millisSinceLastResponse()
+        Optional<Long> millisSinceLastResponse()
         {
-            return clock.millis() - handler.lastResponseTime();
+            return handler.lastResponseTime().map( lastResponseMillis -> clock.millis() - lastResponseMillis );
         }
 
         @Override

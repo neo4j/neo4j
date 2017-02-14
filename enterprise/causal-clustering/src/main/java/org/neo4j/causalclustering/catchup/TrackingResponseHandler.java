@@ -21,6 +21,7 @@ package org.neo4j.causalclustering.catchup;
 
 import java.io.IOException;
 import java.time.Clock;
+import java.util.Optional;
 import java.util.concurrent.CompletableFuture;
 
 import org.neo4j.causalclustering.catchup.storecopy.FileChunk;
@@ -37,13 +38,12 @@ class TrackingResponseHandler implements CatchUpResponseHandler
     private CatchUpResponseCallback delegate;
     private CompletableFuture<?> requestOutcomeSignal = new CompletableFuture<>();
     private final Clock clock;
-    private long lastResponseTime;
+    private Long lastResponseTime;
 
     TrackingResponseHandler( CatchUpResponseCallback delegate, Clock clock )
     {
         this.delegate = delegate;
         this.clock = clock;
-        this.lastResponseTime = clock.millis();
     }
 
     void setResponseHandler( CatchUpResponseCallback responseHandler, CompletableFuture<?>
@@ -125,9 +125,9 @@ class TrackingResponseHandler implements CatchUpResponseHandler
         }
     }
 
-    long lastResponseTime()
+    Optional<Long> lastResponseTime()
     {
-        return lastResponseTime;
+        return Optional.ofNullable( lastResponseTime );
     }
 
     private void recordLastResponse()
