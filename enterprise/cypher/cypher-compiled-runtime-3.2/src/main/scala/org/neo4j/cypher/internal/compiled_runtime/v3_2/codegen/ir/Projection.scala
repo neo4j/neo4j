@@ -38,14 +38,8 @@ case class Projection(projectionOpName: String, variables: Map[Variable, CodeGen
       body.incrementRows()
       variables.foreach {
         case (variable, expr) =>
-          if (variable.codeGenType.isPrimitive) {
-            body.declare(variable.name, variable.codeGenType)
-            body.assign(variable.name, variable.codeGenType, expr.generateExpression(body))
-          }
-          else {
-            body.declare(variable.name, variable.codeGenType)
-            body.assign(variable.name, variable.codeGenType, expr.generateExpression(body))
-          }
+          body.declare(variable.name, variable.codeGenType)
+          body.assign(variable.name, variable.codeGenType, expr.generateExpression(body))
       }
       action.body(body)
     }

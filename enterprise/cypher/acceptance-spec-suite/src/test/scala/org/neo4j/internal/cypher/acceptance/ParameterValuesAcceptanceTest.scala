@@ -23,6 +23,14 @@ import org.neo4j.cypher.{ExecutionEngineFunSuite, NewPlannerTestSupport, QuerySt
 
 class ParameterValuesAcceptanceTest extends ExecutionEngineFunSuite with NewRuntimeTestSupport with QueryStatisticsTestSupport {
 
+  test("should be able to send in an array of nodes via parameter") {
+    // given
+    val node = createLabeledNode("Person")
+    val result = executeWithAllPlannersAndRuntimesAndCompatibilityMode("WITH {param} as p RETURN p", "param" -> Array(node))
+    val outputP = result.next.get("p").get
+    outputP should equal(Array(node))
+  }
+
   // Not TCK material below; sending graph types or characters as parameters is not supported
 
   ignore("should not erase the type of an empty array sent as parameter") {

@@ -86,14 +86,19 @@ object LogicalPlanConverter {
                                        (e: ast.Expression) => ExpressionConverter.createExpression(e)(context))
       context.retainProjectedVariables(projection.expressions.keySet)
       val vars = columns.collect {
-        case (name, expr) if !context.isProjectedVariable(name) =>
+        case (name, expr) if !context.hasVariable(name) =>
           val variable = Variable(context.namer.newVarName(), expr.codeGenType(context), expr.nullable(context))
-          if (context.hasVariable(name))
-            context.updateVariable(name, variable)
-          else
-            context.addVariable(name, variable)
+          context.addVariable(name, variable)
           context.addProjectedVariable(name, variable)
           variable -> expr
+      }
+      // Variables that pre-existed do not need new names, but need to be added to the collection of projected variables
+      columns.foreach {
+        case (name, _) if !context.isProjectedVariable(name) =>
+          // The variable exists but has not yet been projected
+          val existingVariable = context.getVariable(name)
+          context.addProjectedVariable(name, existingVariable)
+        case _ => ()
       }
       val (methodHandle, action :: tl) = context.popParent().consume(context, this)
 
