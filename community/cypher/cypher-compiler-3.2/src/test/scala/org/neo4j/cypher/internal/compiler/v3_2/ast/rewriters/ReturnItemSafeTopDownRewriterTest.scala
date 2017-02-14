@@ -21,6 +21,7 @@ package org.neo4j.cypher.internal.compiler.v3_2.ast.rewriters
 
 import org.neo4j.cypher.internal.frontend.v3_2.Rewriter
 import org.neo4j.cypher.internal.frontend.v3_2.ast._
+import org.neo4j.cypher.internal.frontend.v3_2.ast.rewriters.ReturnItemSafeTopDownRewriter
 import org.neo4j.cypher.internal.frontend.v3_2.test_helpers.CypherFunSuite
 
 class ReturnItemSafeTopDownRewriterTest extends CypherFunSuite with AstConstructionTestSupport {

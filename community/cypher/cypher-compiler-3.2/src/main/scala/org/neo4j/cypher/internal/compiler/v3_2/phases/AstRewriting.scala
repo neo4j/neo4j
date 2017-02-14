@@ -19,14 +19,13 @@
  */
 package org.neo4j.cypher.internal.compiler.v3_2.phases
 
-import org.neo4j.cypher.internal.compiler.v3_2.ASTRewriter
-import org.neo4j.cypher.internal.frontend.v3_2.phases.CompilationPhaseTracer.CompilationPhase.AST_REWRITE
 import org.neo4j.cypher.internal.compiler.v3_2.ast.conditions._
 import org.neo4j.cypher.internal.compiler.v3_2.ast.rewriters._
 import org.neo4j.cypher.internal.frontend.v3_2.ast.NotEquals
-import org.neo4j.cypher.internal.frontend.v3_2.ast.conditions.{StatementCondition, containsNoNodesOfType}
-import org.neo4j.cypher.internal.frontend.v3_2.ast.rewriters.StatementRewriter
-import org.neo4j.cypher.internal.frontend.v3_2.helpers.rewriting.{RewriterCondition, RewriterStepSequencer}
+import org.neo4j.cypher.internal.frontend.v3_2.ast.conditions._
+import org.neo4j.cypher.internal.frontend.v3_2.ast.rewriters.{ASTRewriter, StatementRewriter, projectNamedPaths}
+import org.neo4j.cypher.internal.frontend.v3_2.helpers.rewriting.RewriterStepSequencer
+import org.neo4j.cypher.internal.frontend.v3_2.phases.CompilationPhaseTracer.CompilationPhase.AST_REWRITE
 import org.neo4j.cypher.internal.frontend.v3_2.phases.{BaseContext, BaseState, Condition, Phase}
 import org.neo4j.cypher.internal.frontend.v3_2.{Rewriter, inSequence}
 

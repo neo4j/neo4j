@@ -35,7 +35,7 @@ import org.neo4j.cypher.internal.compiler.v3_2.spi.{GraphStatistics, PlanContext
 import org.neo4j.cypher.internal.compiler.v3_2.test_helpers.ContextHelper
 import org.neo4j.cypher.internal.frontend.v3_2._
 import org.neo4j.cypher.internal.frontend.v3_2.ast._
-import org.neo4j.cypher.internal.frontend.v3_2.ast.rewriters.{CNFNormalizer, Namespacer, rewriteEqualityToInPredicate}
+import org.neo4j.cypher.internal.frontend.v3_2.ast.rewriters.{ASTRewriter, CNFNormalizer, Namespacer, rewriteEqualityToInPredicate}
 import org.neo4j.cypher.internal.frontend.v3_2.helpers.rewriting.RewriterStepSequencer
 import org.neo4j.cypher.internal.frontend.v3_2.helpers.rewriting.RewriterStepSequencer.newPlain
 import org.neo4j.cypher.internal.frontend.v3_2.parser.CypherParser

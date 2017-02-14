@@ -20,6 +20,7 @@
 package org.neo4j.cypher.internal.compiler.v3_2.ast.rewriters
 
 import org.neo4j.cypher.internal.frontend.v3_2.Rewriter
+import org.neo4j.cypher.internal.frontend.v3_2.ast.rewriters.foldConstants
 import org.neo4j.cypher.internal.frontend.v3_2.test_helpers.CypherFunSuite
 import org.neo4j.cypher.internal.frontend.v3_2.helpers.fixedPoint
 

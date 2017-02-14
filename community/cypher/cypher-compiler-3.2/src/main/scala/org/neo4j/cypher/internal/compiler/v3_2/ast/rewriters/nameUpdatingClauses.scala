@@ -20,6 +20,7 @@
 package org.neo4j.cypher.internal.compiler.v3_2.ast.rewriters
 
 import org.neo4j.cypher.internal.frontend.v3_2.ast._
+import org.neo4j.cypher.internal.frontend.v3_2.ast.rewriters.nameAllPatternElements
 import org.neo4j.cypher.internal.frontend.v3_2.{Rewriter, bottomUp}
 
 case object nameUpdatingClauses extends Rewriter {

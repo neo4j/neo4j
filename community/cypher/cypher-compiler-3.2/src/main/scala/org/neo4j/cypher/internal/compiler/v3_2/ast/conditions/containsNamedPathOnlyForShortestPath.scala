@@ -19,6 +19,7 @@
  */
 package org.neo4j.cypher.internal.compiler.v3_2.ast.conditions
 
+import org.neo4j.cypher.internal.frontend.v3_2.ast.conditions.containsNoMatchingNodes
 import org.neo4j.cypher.internal.frontend.v3_2.helpers.rewriting.Condition
 import org.neo4j.cypher.internal.frontend.v3_2.ast.{NamedPatternPart, ShortestPaths}
 
