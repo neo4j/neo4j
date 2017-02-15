@@ -139,8 +139,7 @@ object exceptionHandlerFor3_1 extends MapToPublicExceptions[CypherException] {
     throw new ProfilerStatisticsNotReadyException(cause)
   }
 
-  def incomparableValuesException(lhs: String, rhs: String, cause: Throwable) = new IncomparableValuesException(lhs, rhs, cause)
-
+  override def incomparableValuesException(details: Option[String], lhs: String, rhs: String, cause: Throwable) = new IncomparableValuesException(details, lhs, rhs, cause)
 
   def patternException(message: String, cause: Throwable) = new PatternException(message, cause)
 

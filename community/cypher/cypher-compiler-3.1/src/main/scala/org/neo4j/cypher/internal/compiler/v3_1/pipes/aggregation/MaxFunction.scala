@@ -27,6 +27,7 @@ import org.neo4j.cypher.internal.frontend.v3_1.SyntaxException
 trait MinMax extends AggregationFunction with Comparer {
   def value: Expression
   def keep(comparisonResult: Int): Boolean
+  def name: String
 
   private var biggestSeen: Any = null
 
@@ -43,7 +44,7 @@ trait MinMax extends AggregationFunction with Comparer {
   private def checkIfLargest(value: Any)(implicit qtx: QueryState) {
     if (biggestSeen == null) {
       biggestSeen = value
-    } else if (keep(compare(biggestSeen, value))) {
+    } else if (keep(compare(Some(name), biggestSeen, value))) {
       biggestSeen = value
     }
   }
@@ -51,8 +52,10 @@ trait MinMax extends AggregationFunction with Comparer {
 
 class MaxFunction(val value: Expression) extends AggregationFunction with MinMax {
   def keep(comparisonResult: Int) = comparisonResult < 0
+  override def name: String = "MAX"
 }
 
 class MinFunction(val value: Expression) extends AggregationFunction with MinMax {
   def keep(comparisonResult: Int) = comparisonResult > 0
+  override def name: String = "MIN"
 }
