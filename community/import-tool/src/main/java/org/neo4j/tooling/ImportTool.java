@@ -205,7 +205,10 @@ public class ImportTool
                         + GraphDatabaseSettings.array_block_size.name() ),
         PAGE_SIZE( "page-size", Format.bytes( org.neo4j.unsafe.impl.batchimport.Configuration.DEFAULT.pageSize() ),
                 "<page size in bytes",
-                "Page size in bytes, or e.g. 4M or 8k" );
+                "Page size in bytes, or e.g. 4M or 8k" ),
+        LEGACY_STYLE_QUOTING( "legacy-style-quoting", Configuration.DEFAULT_LEGACY_STYLE_QUOTING,
+                "<true/false>",
+                "Whether or not backslash-escaped quote e.g. \\\" is interpreted as inner quote." );
 
         private final String key;
         private final Object defaultValue;
@@ -712,6 +715,7 @@ public class ImportTool
                 CHARACTER_CONVERTER );
         final Boolean multiLineFields = args.getBoolean( Options.MULTILINE_FIELDS.key(), null );
         final Boolean emptyStringsAsNull = args.getBoolean( Options.IGNORE_EMPTY_STRINGS.key(), null );
+        final Boolean legacyStyleQuoting = args.getBoolean( Options.LEGACY_STYLE_QUOTING.key(), null );
         return new Configuration.Default()
         {
             @Override
@@ -758,6 +762,14 @@ public class ImportTool
             public int bufferSize()
             {
                 return defaultSettingsSuitableForTests ? 10_000 : super.bufferSize();
+            }
+
+            @Override
+            public boolean legacyStyleQuoting()
+            {
+                return legacyStyleQuoting != null
+                        ? legacyStyleQuoting.booleanValue()
+                        : defaultConfiguration.legacyStyleQuoting();
             }
         };
     }

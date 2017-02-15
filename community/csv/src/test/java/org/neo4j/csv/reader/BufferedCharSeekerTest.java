@@ -368,7 +368,7 @@ public class BufferedCharSeekerTest
     public void shouldReadQuotedValuesWithNewLinesInside() throws Exception
     {
         // GIVEN
-        seeker = seeker( "value one\t\"value\ntwo\"\tvalue three", config( 1_000, true ) );
+        seeker = seeker( "value one\t\"value\ntwo\"\tvalue three", withMultilineFields( config(), true ) );
 
         // WHEN/THEN
         assertTrue( seeker.seek( mark, TAB ) );
@@ -403,10 +403,11 @@ public class BufferedCharSeekerTest
     }
 
     @Test
-    public void shouldHandleSlashEncodedQuotes() throws Exception
+    public void shouldHandleSlashEncodedQuotesIfConfiguredWithLegacyStyleQuoting() throws Exception
     {
         // GIVEN
-        seeker = seeker( "\"value \\\"one\\\"\"\t\"\\\"value\\\" two\"\t\"va\\\"lue\\\" three\"" );
+        seeker = seeker( "\"value \\\"one\\\"\"\t\"\\\"value\\\" two\"\t\"va\\\"lue\\\" three\"",
+                withLegacyStyleQuoting( config(), true ) );
 
         // WHEN/THEN
         assertTrue( seeker.seek( mark, TAB ) );
@@ -485,11 +486,11 @@ public class BufferedCharSeekerTest
     }
 
     @Test
-    public void shouldEscapeBackslashesInQuotes() throws Exception
+    public void shouldEscapeBackslashesInQuotesIfConfiguredWithLegacyStyleQuoting() throws Exception
     {
         // GIVEN
         //                4,    "\\\"",   "f\oo"
-        seeker = seeker( "4,\"\\\\\\\"\",\"f\\oo\"" );
+        seeker = seeker( "4,\"\\\\\\\"\",\"f\\oo\"", withLegacyStyleQuoting( config(), true ) );
 
         // WHEN/THEN
         assertNextValue( seeker, mark, COMMA, "4" );
@@ -571,7 +572,7 @@ public class BufferedCharSeekerTest
                 "d,e,f",
                 "\"g,h,i",
                 "abcdefghijlkmopqrstuvwxyz,l,m" );
-        seeker = seeker( data, config( 20, true ) );
+        seeker = seeker( data, withMultilineFields( config( 20 ), true ) );
 
         // WHEN
         assertNextValue( seeker, mark, COMMA, "a" );
@@ -598,6 +599,19 @@ public class BufferedCharSeekerTest
         }
     }
 
+    @Test
+    public void shouldNotInterpretBackslashQuoteDifferentlyIfDisabledLegacyStyleQuoting() throws Exception
+    {
+        // GIVEN data with the quote character ' for easier readability
+        char slash = '\\';
+        String data = lines( "\n", "'abc''def" + slash + "''ghi'" );
+        seeker = seeker( data, withLegacyStyleQuoting( withQuoteCharacter( config(), '\'' ), false ) );
+
+        // WHEN/THEN
+        assertNextValue( seeker, mark, COMMA, "abc'def" + slash + "'ghi" );
+        assertFalse( seeker.seek( mark, COMMA ) );
+    }
+
     private void shouldParseMultilineFieldWhereEndQuoteIsOnItsOwnLine( String newline ) throws Exception
     {
         // GIVEN
@@ -611,7 +625,7 @@ public class BufferedCharSeekerTest
                 "",
                 "Quux\"",
                 "" );
-        seeker = seeker( data, config( 1_000, true ) );
+        seeker = seeker( data, withMultilineFields( config(), true ) );
 
         // THEN
         assertNextValue( seeker, mark, COMMA, "1" );
@@ -735,7 +749,7 @@ public class BufferedCharSeekerTest
 
     private CharSeeker seeker( CharReadable readable )
     {
-        return seeker( readable, config( 1_000 ) );
+        return seeker( readable, config() );
     }
 
     private CharSeeker seeker( CharReadable readable, Configuration config )
@@ -745,7 +759,7 @@ public class BufferedCharSeekerTest
 
     private CharSeeker seeker( String data )
     {
-        return seeker( data, config( 1_000 ) );
+        return seeker( data, config() );
     }
 
     private CharSeeker seeker( String data, Configuration config )
@@ -765,25 +779,55 @@ public class BufferedCharSeekerTest
         };
     }
 
-    private static Configuration config( final int bufferSize )
+    private static Configuration config()
     {
-        return config( bufferSize, Configuration.DEFAULT.multilineFields() );
+        return config( 1_000 );
     }
 
-    private static Configuration config( final int bufferSize, final boolean multiline )
+    private static Configuration config( final int bufferSize )
     {
         return new Configuration.Overridden( Configuration.DEFAULT )
+        {
+            @Override
+            public int bufferSize()
+            {
+                return bufferSize;
+            }
+        };
+    }
+
+    private static Configuration withMultilineFields( Configuration config, boolean multiline )
+    {
+        return new Configuration.Overridden( config )
         {
             @Override
             public boolean multilineFields()
             {
                 return multiline;
             }
+        };
+    }
 
+    private static Configuration withLegacyStyleQuoting( Configuration config, boolean legacyStyleQuoting )
+    {
+        return new Configuration.Overridden( config )
+        {
             @Override
-            public int bufferSize()
+            public boolean legacyStyleQuoting()
             {
-                return bufferSize;
+                return legacyStyleQuoting;
+            }
+        };
+    }
+
+    private static Configuration withQuoteCharacter( Configuration config, char quoteCharacter )
+    {
+        return new Configuration.Overridden( config )
+        {
+            @Override
+            public char quotationCharacter()
+            {
+                return quoteCharacter;
             }
         };
     }
