@@ -74,6 +74,24 @@ public class CompatibilitySpecSuiteTest
     @RunWith( Cucumber.class )
     @CucumberOptions(
             plugin = {
+                    DB_CONFIG + "cost-compiled.json",
+                    HTML_REPORT + SUITE_NAME + "/cost-compiled",
+                    JSON_REPORT + SUITE_NAME + "/cost-compiled",
+                    BLACKLIST_PLUGIN + "cost-compiled.txt",
+                    CYPHER_OPTION_PLUGIN + "cost-compiled-sourcecode.txt"
+            },
+            glue = { GLUE_PATH },
+            features = { FEATURE_PATH + FEATURE_TO_RUN },
+            tags = { "~@pending" },
+            strict = true
+    )
+    public static class CostCompiledSourceCode
+    {
+    }
+
+    @RunWith( Cucumber.class )
+    @CucumberOptions(
+            plugin = {
                     DB_CONFIG + "compatibility-23.json",
                     HTML_REPORT + SUITE_NAME + "/compatibility-23",
                     JSON_REPORT + SUITE_NAME + "/compatibility-23",

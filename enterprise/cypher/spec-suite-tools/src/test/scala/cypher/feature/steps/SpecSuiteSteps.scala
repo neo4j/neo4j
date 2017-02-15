@@ -23,13 +23,14 @@ import java.util
 
 import cucumber.api.DataTable
 import cypher.SpecSuiteResources
+import cypher.cucumber.CypherOptionPlugin
 import cypher.cucumber.db.DatabaseConfigProvider._
 import cypher.cucumber.db.{GraphArchive, GraphArchiveImporter, GraphArchiveLibrary, GraphFileRepository}
 import cypher.feature.parser._
 import cypher.feature.parser.matchers.ResultWrapper
 import org.neo4j.collection.RawIterator
 import org.neo4j.cypher.internal.frontend.v3_2.symbols.{CypherType, _}
-import org.neo4j.graphdb.factory.{EnterpriseGraphDatabaseFactory, GraphDatabaseFactory, GraphDatabaseSettings}
+import org.neo4j.graphdb.factory.{EnterpriseGraphDatabaseFactory, GraphDatabaseSettings}
 import org.neo4j.graphdb.{GraphDatabaseService, QueryStatistics, Result, Transaction}
 import org.neo4j.kernel.api.KernelAPI
 import org.neo4j.kernel.api.exceptions.ProcedureException
@@ -37,7 +38,7 @@ import org.neo4j.kernel.api.proc.CallableProcedure.BasicProcedure
 import org.neo4j.kernel.api.proc.{Context, Neo4jTypes}
 import org.neo4j.kernel.internal.GraphDatabaseAPI
 import org.neo4j.procedure.Mode
-import org.neo4j.test.{TestEnterpriseGraphDatabaseFactory, TestGraphDatabaseFactory}
+import org.neo4j.test.TestEnterpriseGraphDatabaseFactory
 import org.opencypher.tools.tck.TCKCucumberTemplate
 import org.opencypher.tools.tck.constants.TCKStepDefinitions._
 import org.scalatest.{FunSuiteLike, Matchers}
@@ -108,7 +109,7 @@ trait SpecSuiteSteps extends FunSuiteLike with Matchers with TCKCucumberTemplate
 
   When(EXECUTING_QUERY) { (query: String) =>
     scenarioBuilder.exec { (g: GraphDatabaseAPI, params: util.Map[String, Object]) =>
-      g.execute(query, params)
+      g.execute(s"${CypherOptionPlugin.options} $query", params)
     }
   }
 
