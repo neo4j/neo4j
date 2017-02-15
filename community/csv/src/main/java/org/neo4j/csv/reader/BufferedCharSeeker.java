@@ -61,6 +61,7 @@ public class BufferedCharSeeker implements CharSeeker
     private long absoluteBufferStartPosition;
     private String sourceDescription;
     private final boolean multilineFields;
+    private final boolean legacyStyleQuoting;
     private final Source source;
     private Chunk currentChunk;
 
@@ -70,6 +71,7 @@ public class BufferedCharSeeker implements CharSeeker
         this.quoteChar = config.quotationCharacter();
         this.lineStartPos = this.bufferPos;
         this.multilineFields = config.multilineFields();
+        this.legacyStyleQuoting = config.legacyStyleQuoting();
     }
 
     @Override
@@ -154,7 +156,7 @@ public class BufferedCharSeeker implements CharSeeker
                         lineNumber++;
                     }
                 }
-                else if ( ch == BACK_SLASH )
+                else if ( ch == BACK_SLASH && legacyStyleQuoting )
                 {   // Legacy concern, support java style quote encoding
                     int nextCh = peekChar( skippedChars );
                     if ( nextCh == quoteChar || nextCh == BACK_SLASH )

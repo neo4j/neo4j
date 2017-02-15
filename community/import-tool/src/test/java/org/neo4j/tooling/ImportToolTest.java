@@ -1640,6 +1640,31 @@ public class ImportToolTest
         }
     }
 
+    @Test
+    public void shouldDisableLegacyStyleQuotingIfToldTo() throws Exception
+    {
+        // GIVEN
+        String nodeId = "me";
+        String labelName = "Alive";
+        List<String> lines = new ArrayList<>();
+        lines.add( ":ID,name,:LABEL" );
+        lines.add( nodeId + "," + "\"abc\"\"def\\\"\"ghi\"" + "," + labelName );
+
+        // WHEN
+        importTool(
+                "--into", dbRule.getStoreDirAbsolutePath(),
+                "--nodes", data( lines.toArray( new String[lines.size()] ) ).getAbsolutePath(),
+                "--legacy-style-quoting", "false",
+                "--stacktrace" );
+
+        // THEN
+        GraphDatabaseService db = dbRule.getGraphDatabaseAPI();
+        try ( Transaction tx = db.beginTx() )
+        {
+            assertNotNull( db.findNode( Label.label( labelName ), "name", "abc\"def\\\"ghi" ) );
+        }
+    }
+
     private File writeArrayCsv( String[] headers, String[] values ) throws FileNotFoundException
     {
         File data = file( fileName( "whitespace.csv" ) );
