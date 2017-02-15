@@ -40,16 +40,20 @@ object BuildCompiledExecutionPlan extends Phase[CompiledRuntimeContext] {
 
   override def postConditions: Set[Condition] = Set.empty// Can't yet guarantee that we can build an execution plan
 
-  override def process(from: CompilationState, context: CompiledRuntimeContext): CompilationState =
+  override def process(from: CompilationState, context: CompiledRuntimeContext): CompilationState = {
+    val runtimeSuccessRateMonitor = context.monitors.newMonitor[NewRuntimeSuccessRateMonitor]()
     try {
       val codeGen = new CodeGenerator(context.codeStructure, context.clock, context.codeGenConfiguration)
       val compiled: CompiledPlan = codeGen.generate(from.logicalPlan, context.planContext, from.semanticTable, from.plannerName)
       val executionPlan: ExecutionPlan = createExecutionPlan(context, compiled)
+      runtimeSuccessRateMonitor.newPlanSeen(from.logicalPlan)
       from.copy(maybeExecutionPlan = Some(executionPlan))
     } catch {
-      case _: CantCompileQueryException =>
+      case e: CantCompileQueryException =>
+        runtimeSuccessRateMonitor.unableToHandlePlan(from.logicalPlan, e)
         from.copy(maybeExecutionPlan = None)
     }
+  }
 
   private def createExecutionPlan(context: CompiledRuntimeContext, compiled: CompiledPlan) = new ExecutionPlan {
     private val fingerprint = context.createFingerprintReference(compiled.fingerprint)

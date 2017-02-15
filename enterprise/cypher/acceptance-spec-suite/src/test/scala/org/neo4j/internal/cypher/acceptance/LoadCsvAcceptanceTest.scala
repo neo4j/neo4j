@@ -476,7 +476,7 @@ class LoadCsvAcceptanceTest
 
 
       //make sure three unique movies are created
-      val result = executeWithAllPlannersAndCompatibilityMode("match (m:Movie) return m.id AS id ORDER BY m.id").toList
+      val result = executeWithAllPlannersAndRuntimesAndCompatibilityMode("match (m:Movie) return m.id AS id ORDER BY m.id").toList
 
       result should equal(List(Map("id" -> 1), Map("id" -> 2), Map("id" -> 3)))
       //empty database
