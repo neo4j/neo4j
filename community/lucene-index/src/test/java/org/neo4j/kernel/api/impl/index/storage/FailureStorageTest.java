@@ -28,9 +28,12 @@ import java.io.File;
 import org.neo4j.kernel.api.impl.index.storage.layout.IndexFolderLayout;
 import org.neo4j.test.rule.fs.EphemeralFileSystemRule;
 
+import static org.hamcrest.CoreMatchers.containsString;
+
 import static java.lang.String.format;
 import static org.junit.Assert.assertEquals;
 import static org.junit.Assert.assertFalse;
+import static org.junit.Assert.assertThat;
 import static org.junit.Assert.assertTrue;
 
 public class FailureStorageTest
@@ -98,5 +101,24 @@ public class FailureStorageTest
 
         // THEN
         assertFalse( fs.get().fileExists( failureFile ) );
+    }
+
+    @Test
+    public void shouldAppendFailureIfAlreadyExists() throws Exception
+    {
+        // GIVEN
+        FailureStorage storage = new FailureStorage( fs.get(), indexFolderLayout );
+        storage.reserveForIndex();
+        String failure1 = "Once upon a time there was a first failure";
+        String failure2 = "Then there was another";
+        storage.storeIndexFailure( failure1 );
+
+        // WHEN
+        storage.storeIndexFailure( failure2 );
+
+        // THEN
+        String allFailures = storage.loadIndexFailure();
+        assertThat( allFailures, containsString( failure1 ) );
+        assertThat( allFailures, containsString( failure2 ) );
     }
 }
