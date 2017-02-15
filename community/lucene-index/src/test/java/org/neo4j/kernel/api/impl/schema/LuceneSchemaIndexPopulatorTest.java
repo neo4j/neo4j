@@ -75,8 +75,8 @@ public class LuceneSchemaIndexPopulatorTest
     private IndexReader reader;
     private IndexSearcher searcher;
     private final long indexId = 0;
-    private final static int propertyKeyId = 666;
-    private final static NewIndexDescriptor index = NewIndexDescriptorFactory.forLabel( 42, propertyKeyId );
+    private static final int propertyKeyId = 666;
+    private static final NewIndexDescriptor index = NewIndexDescriptorFactory.forLabel( 42, propertyKeyId );
 
     @Before
     public void before() throws Exception

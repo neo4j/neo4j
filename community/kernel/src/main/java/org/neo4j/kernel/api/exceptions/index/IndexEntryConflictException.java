@@ -86,7 +86,7 @@ public abstract class IndexEntryConflictException extends Exception
     {
         return new IllegalStateException( String.format(
                 "Index for (%s) should not require unique values.",
-                descriptor.userDescription( SchemaUtil.noopTokenNameLookup ) ), this );
+                descriptor.userDescription( SchemaUtil.idTokenNameLookup ) ), this );
     }
 
     public abstract Object getPropertyValue();

@@ -108,7 +108,7 @@ public class IndexEntryUpdate
     public String toString()
     {
         return format( "IndexEntryUpdate[id=%d, mode=%s, %s, values=%s]", entityId, updateMode, descriptor()
-                .userDescription( SchemaUtil.noopTokenNameLookup ), Arrays.toString(values) );
+                .userDescription( SchemaUtil.idTokenNameLookup ), Arrays.toString(values) );
     }
 
     public static IndexEntryUpdate add( long nodeId, NewIndexDescriptor descriptor, Object... values )
