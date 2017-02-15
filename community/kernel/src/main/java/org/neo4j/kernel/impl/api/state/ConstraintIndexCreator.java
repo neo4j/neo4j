@@ -96,7 +96,7 @@ public class ConstraintIndexCreator
         Client locks = state.locks().pessimistic();
         try
         {
-            long indexId = schema.indexGetCommittedId( state, index, NewIndexDescriptor.Filter.UNIQUE );
+            long indexId = schema.indexGetCommittedId( state, index );
 
             // Release the SCHEMA WRITE lock during index population.
             // At this point the integrity of the constraint to be created was checked

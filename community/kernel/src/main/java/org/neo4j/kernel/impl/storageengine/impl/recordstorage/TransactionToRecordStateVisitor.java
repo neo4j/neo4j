@@ -30,10 +30,10 @@ import org.neo4j.kernel.api.exceptions.schema.DuplicateSchemaRuleException;
 import org.neo4j.kernel.api.exceptions.schema.SchemaRuleNotFoundException;
 import org.neo4j.kernel.api.index.SchemaIndexProvider;
 import org.neo4j.kernel.api.properties.DefinedProperty;
-import org.neo4j.kernel.api.schema_new.SchemaDescriptorFactory;
 import org.neo4j.kernel.api.schema_new.constaints.ConstraintDescriptorFactory;
 import org.neo4j.kernel.api.schema_new.index.IndexBoundary;
 import org.neo4j.kernel.api.schema_new.index.NewIndexDescriptor;
+import org.neo4j.kernel.api.schema_new.index.NewIndexDescriptorFactory;
 import org.neo4j.kernel.impl.api.index.SchemaIndexProviderMap;
 import org.neo4j.kernel.impl.constraints.ConstraintSemantics;
 import org.neo4j.kernel.impl.store.SchemaStorage;
@@ -41,8 +41,6 @@ import org.neo4j.kernel.impl.store.record.IndexRule;
 import org.neo4j.kernel.impl.transaction.state.TransactionRecordState;
 import org.neo4j.storageengine.api.StorageProperty;
 import org.neo4j.storageengine.api.txstate.TxStateVisitor;
-
-import static org.neo4j.kernel.api.schema_new.index.NewIndexDescriptor.Type.UNIQUE;
 
 public class TransactionToRecordStateVisitor extends TxStateVisitor.Adapter
 {
@@ -192,10 +190,7 @@ public class TransactionToRecordStateVisitor extends TxStateVisitor.Adapter
     @Override
     public void visitRemovedIndex( NewIndexDescriptor index )
     {
-        NewIndexDescriptor.Filter filter = index.type() == UNIQUE ?
-                                          NewIndexDescriptor.Filter.UNIQUE
-                                        : NewIndexDescriptor.Filter.GENERAL;
-        IndexRule rule = schemaStorage.indexGetForSchema( index.schema(), filter );
+        IndexRule rule = schemaStorage.indexGetForSchema( index );
         recordState.dropSchemaRule( rule );
     }
 
@@ -207,7 +202,7 @@ public class TransactionToRecordStateVisitor extends TxStateVisitor.Adapter
         int propertyKeyId = element.descriptor().getPropertyKeyId();
 
         IndexRule indexRule = schemaStorage.indexGetForSchema(
-                SchemaDescriptorFactory.forLabel( element.label(), propertyKeyId ), NewIndexDescriptor.Filter.UNIQUE );
+                NewIndexDescriptorFactory.uniqueForLabel( element.label(), propertyKeyId ) );
         recordState.createSchemaRule(
                 constraintSemantics.writeUniquePropertyConstraint(
                         constraintId, element.descriptor(), indexRule.getId() ) );

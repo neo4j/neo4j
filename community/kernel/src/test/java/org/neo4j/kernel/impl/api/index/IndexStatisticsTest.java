@@ -52,8 +52,6 @@ import org.neo4j.kernel.api.exceptions.KernelException;
 import org.neo4j.kernel.api.exceptions.index.IndexNotFoundKernelException;
 import org.neo4j.kernel.api.schema.IndexDescriptor;
 import org.neo4j.kernel.api.properties.Property;
-import org.neo4j.kernel.api.schema_new.LabelSchemaDescriptor;
-import org.neo4j.kernel.api.schema_new.SchemaDescriptorFactory;
 import org.neo4j.kernel.api.schema_new.index.IndexBoundary;
 import org.neo4j.kernel.api.schema_new.index.NewIndexDescriptor;
 import org.neo4j.kernel.impl.core.ThreadToStatementContextBridge;
@@ -65,7 +63,6 @@ import org.neo4j.kernel.internal.GraphDatabaseAPI;
 import org.neo4j.kernel.monitoring.Monitors;
 import org.neo4j.register.Register.DoubleLongRegister;
 import org.neo4j.register.Registers;
-import org.neo4j.storageengine.api.schema.SchemaRule;
 import org.neo4j.test.rule.DatabaseRule;
 import org.neo4j.test.rule.EmbeddedDatabaseRule;
 
@@ -181,7 +178,8 @@ public class IndexStatisticsTest
         // given
         createSomePersons();
         NewIndexDescriptor index = awaitOnline( createIndex( "Person", "name" ) );
-        long indexId = indexId( index );
+        SchemaStorage storage = new SchemaStorage( neoStores().getSchemaStore() );
+        long indexId = storage.indexGetForSchema( index ).getId();
 
         // when
         dropIndex( index );
@@ -502,12 +500,6 @@ public class IndexStatisticsTest
             tx.success();
             return index;
         }
-    }
-
-    private long indexId( NewIndexDescriptor index )
-    {
-        SchemaStorage storage = new SchemaStorage( neoStores().getSchemaStore() );
-        return storage.indexGetForSchema( index.schema() ).getId();
     }
 
     private NeoStores neoStores()

@@ -107,7 +107,7 @@ public class SchemaStorageTest
                 index( LABEL2, PROP1 ) );
 
         // When
-        IndexRule rule = storage.indexGetForSchema( schemaDescriptor( LABEL1, PROP2 ) );
+        IndexRule rule = storage.indexGetForSchema( indexDescriptor( LABEL1, PROP2 ) );
 
         // Then
         assertNotNull( rule );
@@ -122,7 +122,7 @@ public class SchemaStorageTest
                 index( LABEL1, PROP1 ) );
 
         // When
-        IndexRule rule = storage.indexGetForSchema( schemaDescriptor( LABEL1, PROP2 ) );
+        IndexRule rule = storage.indexGetForSchema( indexDescriptor( LABEL1, PROP2 ) );
 
         // Then
         assertNull( rule );
@@ -137,7 +137,7 @@ public class SchemaStorageTest
                 index( LABEL1, PROP2 ) );
 
         // When
-        IndexRule rule = storage.indexGetForSchema( schemaDescriptor( LABEL1, PROP1 ), NewIndexDescriptor.Filter.UNIQUE );
+        IndexRule rule = storage.indexGetForSchema( uniqueIndexDescriptor( LABEL1, PROP1 ) );
 
         // Then
         assertNotNull( rule );
@@ -288,6 +288,16 @@ public class SchemaStorageTest
     private LabelSchemaDescriptor schemaDescriptor( String label, String property )
     {
         return SchemaDescriptorFactory.forLabel( labelId( label ), propId( property ) );
+    }
+
+    private NewIndexDescriptor indexDescriptor( String label, String property )
+    {
+        return NewIndexDescriptorFactory.forLabel( labelId( label ), propId( property ) );
+    }
+
+    private NewIndexDescriptor uniqueIndexDescriptor( String label, String property )
+    {
+        return NewIndexDescriptorFactory.uniqueForLabel( labelId( label ), propId( property ) );
     }
 
     private IndexRule makeIndexRule( long ruleId, String label, String propertyKey )

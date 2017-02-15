@@ -35,15 +35,12 @@ import org.neo4j.kernel.api.exceptions.Status;
 import org.neo4j.kernel.api.exceptions.TransactionFailureException;
 import org.neo4j.kernel.api.exceptions.index.IndexPopulationFailedKernelException;
 import org.neo4j.kernel.api.exceptions.schema.ConstraintVerificationFailedKernelException;
-import org.neo4j.kernel.api.schema.IndexDescriptor;
-import org.neo4j.kernel.api.schema.IndexDescriptorFactory;
 import org.neo4j.kernel.api.index.PreexistingIndexEntryConflictException;
 import org.neo4j.kernel.api.index.PropertyAccessor;
 import org.neo4j.kernel.api.proc.CallableProcedure;
 import org.neo4j.kernel.api.proc.CallableUserAggregationFunction;
 import org.neo4j.kernel.api.proc.CallableUserFunction;
 import org.neo4j.kernel.api.schema_new.SchemaBoundary;
-import org.neo4j.kernel.api.schema_new.index.IndexBoundary;
 import org.neo4j.kernel.api.schema_new.index.NewIndexDescriptor;
 import org.neo4j.kernel.api.schema_new.index.NewIndexDescriptorFactory;
 import org.neo4j.kernel.api.security.SecurityContext;
@@ -65,7 +62,6 @@ import static org.mockito.Mockito.verify;
 import static org.mockito.Mockito.verifyNoMoreInteractions;
 import static org.mockito.Mockito.verifyZeroInteractions;
 import static org.mockito.Mockito.when;
-import static org.neo4j.kernel.api.schema_new.index.NewIndexDescriptor.Filter.UNIQUE;
 import static org.neo4j.kernel.impl.api.StatementOperationsTestHelper.mockedParts;
 import static org.neo4j.kernel.impl.api.StatementOperationsTestHelper.mockedState;
 
@@ -86,7 +82,7 @@ public class ConstraintIndexCreatorTest
         IndexingService indexingService = mock( IndexingService.class );
         StubKernel kernel = new StubKernel();
 
-        when( constraintCreationContext.schemaReadOperations().indexGetCommittedId( state, index, UNIQUE ) )
+        when( constraintCreationContext.schemaReadOperations().indexGetCommittedId( state, index ) )
                 .thenReturn( 2468L );
         IndexProxy indexProxy = mock( IndexProxy.class );
         when( indexingService.getIndexProxy( 2468L ) ).thenReturn( indexProxy );
@@ -102,7 +98,7 @@ public class ConstraintIndexCreatorTest
         assertEquals( 1, kernel.statements.size() );
         verify( kernel.statements.get( 0 ).txState() ).indexRuleDoAdd( eq( index ) );
         verifyNoMoreInteractions( indexCreationContext.schemaWriteOperations() );
-        verify( constraintCreationContext.schemaReadOperations() ).indexGetCommittedId( state, index, UNIQUE );
+        verify( constraintCreationContext.schemaReadOperations() ).indexGetCommittedId( state, index );
         verifyNoMoreInteractions( constraintCreationContext.schemaReadOperations() );
         verify( indexProxy ).awaitStoreScanCompleted();
     }
@@ -117,7 +113,7 @@ public class ConstraintIndexCreatorTest
         IndexingService indexingService = mock( IndexingService.class );
         StubKernel kernel = new StubKernel();
 
-        when( constraintCreationContext.schemaReadOperations().indexGetCommittedId( state, index, UNIQUE ) )
+        when( constraintCreationContext.schemaReadOperations().indexGetCommittedId( state, index ) )
                 .thenReturn( 2468L );
         IndexProxy indexProxy = mock( IndexProxy.class );
         when( indexingService.getIndexProxy( 2468L ) ).thenReturn( indexProxy );
@@ -146,7 +142,7 @@ public class ConstraintIndexCreatorTest
         NewIndexDescriptor newIndex = NewIndexDescriptorFactory.uniqueForLabel( 123, 456 );
         verify( tx1 ).indexRuleDoAdd( newIndex );
         verifyNoMoreInteractions( tx1 );
-        verify( constraintCreationContext.schemaReadOperations() ).indexGetCommittedId( state, index, UNIQUE );
+        verify( constraintCreationContext.schemaReadOperations() ).indexGetCommittedId( state, index );
         verifyNoMoreInteractions( constraintCreationContext.schemaReadOperations() );
         TransactionState tx2 = kernel.statements.get( 1 ).txState();
         verify( tx2 ).indexDoDrop( newIndex );
@@ -185,7 +181,7 @@ public class ConstraintIndexCreatorTest
 
         KernelStatement state = mockedState();
 
-        when( constraintCreationContext.schemaReadOperations().indexGetCommittedId( state, index, UNIQUE ) )
+        when( constraintCreationContext.schemaReadOperations().indexGetCommittedId( state, index ) )
                 .thenReturn( 2468L );
         IndexProxy indexProxy = mock( IndexProxy.class );
         when( indexingService.getIndexProxy( anyLong() ) ).thenReturn( indexProxy );

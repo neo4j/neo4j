@@ -20,7 +20,6 @@
 package org.neo4j.kernel.impl.api.operations;
 
 import java.util.Iterator;
-import java.util.function.Predicate;
 
 import org.neo4j.kernel.api.schema.NodePropertyDescriptor;
 import org.neo4j.kernel.api.schema.RelationshipPropertyDescriptor;
@@ -129,6 +128,5 @@ public interface SchemaReadOperations
      * Get the index id (the id or the schema rule record) for a committed index
      * - throws exception for indexes that aren't committed.
      */
-    long indexGetCommittedId( KernelStatement state, NewIndexDescriptor index, NewIndexDescriptor.Filter filter )
-            throws SchemaRuleNotFoundException;
+    long indexGetCommittedId( KernelStatement state, NewIndexDescriptor index ) throws SchemaRuleNotFoundException;
 }

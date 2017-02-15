@@ -1186,10 +1186,10 @@ public class StateHandlingStatementOperations implements
     }
 
     @Override
-    public long indexGetCommittedId( KernelStatement state, NewIndexDescriptor index, NewIndexDescriptor.Filter filter )
+    public long indexGetCommittedId( KernelStatement state, NewIndexDescriptor index )
             throws SchemaRuleNotFoundException
     {
-        return storeLayer.indexGetCommittedId( index, filter );
+        return storeLayer.indexGetCommittedId( index );
     }
 
     @Override

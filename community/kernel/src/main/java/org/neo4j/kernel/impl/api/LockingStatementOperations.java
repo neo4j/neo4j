@@ -23,7 +23,6 @@ import org.apache.commons.lang3.mutable.MutableInt;
 
 import java.util.Iterator;
 import java.util.function.Function;
-import java.util.function.Predicate;
 
 import org.neo4j.kernel.api.schema.NodePropertyDescriptor;
 import org.neo4j.kernel.api.schema.RelationshipPropertyDescriptor;
@@ -243,12 +242,12 @@ public class LockingStatementOperations implements
     }
 
     @Override
-    public long indexGetCommittedId( KernelStatement state, NewIndexDescriptor index, NewIndexDescriptor.Filter filter )
+    public long indexGetCommittedId( KernelStatement state, NewIndexDescriptor index )
             throws SchemaRuleNotFoundException
     {
         acquireSharedSchemaLock( state );
         state.assertOpen();
-        return schemaReadDelegate.indexGetCommittedId( state, index, filter );
+        return schemaReadDelegate.indexGetCommittedId( state, index );
     }
 
     @Override
