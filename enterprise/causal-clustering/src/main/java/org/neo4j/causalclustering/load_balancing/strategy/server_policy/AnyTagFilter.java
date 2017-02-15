@@ -17,28 +17,36 @@
  * You should have received a copy of the GNU Affero General Public License
  * along with this program. If not, see <http://www.gnu.org/licenses/>.
  */
-package org.neo4j.causalclustering.readreplica;
+package org.neo4j.causalclustering.load_balancing.strategy.server_policy;
 
-import java.util.Optional;
+import java.util.Set;
+import java.util.function.Predicate;
+import java.util.stream.Collectors;
 
-import org.neo4j.causalclustering.discovery.TopologyService;
-import org.neo4j.causalclustering.identity.MemberId;
-import org.neo4j.helpers.Service;
+import org.neo4j.causalclustering.load_balancing.filters.Filter;
 
-public abstract class UpstreamDatabaseSelectionStrategy extends Service
+public class AnyTagFilter implements Filter<ServerInfo>
 {
-    TopologyService topologyService;
+    private final Predicate<ServerInfo> matchesAnyTag;
 
-    public UpstreamDatabaseSelectionStrategy( String key, String... altKeys )
+    AnyTagFilter( Set<String> tags )
     {
-        super( key, altKeys );
+        this.matchesAnyTag = serverInfo ->
+        {
+            for ( String tag : serverInfo.tags() )
+            {
+                if ( tags.contains( tag ) )
+                {
+                    return true;
+                }
+            }
+            return false;
+        };
     }
 
-    // Service loaded can't inject this via the constructor
-    void setTopologyService( TopologyService topologyService )
+    @Override
+    public Set<ServerInfo> apply( Set<ServerInfo> data )
     {
-        this.topologyService = topologyService;
+        return data.stream().filter( matchesAnyTag ).collect( Collectors.toSet() );
     }
-
-    public abstract Optional<MemberId> upstreamDatabase() throws UpstreamDatabaseSelectionException;
 }

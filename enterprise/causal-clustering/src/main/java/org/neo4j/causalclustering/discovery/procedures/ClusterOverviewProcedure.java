@@ -21,7 +21,6 @@ package org.neo4j.causalclustering.discovery.procedures;
 
 import java.net.URI;
 import java.util.ArrayList;
-import java.util.Collections;
 import java.util.List;
 import java.util.Optional;
 import java.util.Set;
@@ -30,10 +29,10 @@ import java.util.UUID;
 import org.neo4j.causalclustering.core.consensus.LeaderLocator;
 import org.neo4j.causalclustering.core.consensus.NoLeaderFoundException;
 import org.neo4j.causalclustering.discovery.ClientConnectorAddresses;
-import org.neo4j.causalclustering.discovery.CoreAddresses;
+import org.neo4j.causalclustering.discovery.CoreServerInfo;
 import org.neo4j.causalclustering.discovery.CoreTopology;
-import org.neo4j.causalclustering.discovery.CoreTopologyService;
-import org.neo4j.causalclustering.discovery.ReadReplicaAddresses;
+import org.neo4j.causalclustering.discovery.ReadReplicaInfo;
+import org.neo4j.causalclustering.discovery.TopologyService;
 import org.neo4j.causalclustering.identity.MemberId;
 import org.neo4j.collection.RawIterator;
 import org.neo4j.kernel.api.exceptions.ProcedureException;
@@ -44,6 +43,7 @@ import org.neo4j.kernel.api.proc.QualifiedName;
 import org.neo4j.logging.Log;
 import org.neo4j.logging.LogProvider;
 
+import static java.util.Comparator.comparing;
 import static org.neo4j.helpers.collection.Iterators.asRawIterator;
 import static org.neo4j.helpers.collection.Iterators.map;
 import static org.neo4j.kernel.api.proc.ProcedureSignature.procedureSignature;
@@ -52,11 +52,11 @@ public class ClusterOverviewProcedure extends CallableProcedure.BasicProcedure
 {
     private static final String[] PROCEDURE_NAMESPACE = {"dbms", "cluster"};
     public static final String PROCEDURE_NAME = "overview";
-    private final CoreTopologyService discoveryService;
+    private final TopologyService topologyService;
     private final LeaderLocator leaderLocator;
     private final Log log;
 
-    public ClusterOverviewProcedure( CoreTopologyService discoveryService,
+    public ClusterOverviewProcedure( TopologyService topologyService,
             LeaderLocator leaderLocator, LogProvider logProvider )
     {
         super( procedureSignature( new QualifiedName( PROCEDURE_NAMESPACE, PROCEDURE_NAME ) )
@@ -64,7 +64,7 @@ public class ClusterOverviewProcedure extends CallableProcedure.BasicProcedure
                 .out( "role", Neo4jTypes.NTString )
                 .description( "Overview of all currently accessible cluster members and their roles." )
                 .build() );
-        this.discoveryService = discoveryService;
+        this.topologyService = topologyService;
         this.leaderLocator = leaderLocator;
         this.log = logProvider.getLog( getClass() );
     }
@@ -73,7 +73,7 @@ public class ClusterOverviewProcedure extends CallableProcedure.BasicProcedure
     public RawIterator<Object[],ProcedureException> apply( Context ctx, Object[] input ) throws ProcedureException
     {
         List<ReadWriteEndPoint> endpoints = new ArrayList<>();
-        CoreTopology coreTopology = discoveryService.coreServers();
+        CoreTopology coreTopology = topologyService.coreServers();
         Set<MemberId> coreMembers = coreTopology.members();
         MemberId leader = null;
         try
@@ -88,7 +88,7 @@ public class ClusterOverviewProcedure extends CallableProcedure.BasicProcedure
         for ( MemberId memberId : coreMembers )
         {
             Optional<ClientConnectorAddresses> clientConnectorAddresses =
-                    coreTopology.find( memberId ).map( CoreAddresses::connectors );
+                    coreTopology.find( memberId ).map( CoreServerInfo::connectors );
             if ( clientConnectorAddresses.isPresent() )
             {
                 Role role = memberId.equals( leader ) ? Role.LEADER : Role.FOLLOWER;
@@ -99,12 +99,12 @@ public class ClusterOverviewProcedure extends CallableProcedure.BasicProcedure
                 log.debug( "No Address found for " + memberId );
             }
         }
-        for ( ReadReplicaAddresses readReplicaAddresses : discoveryService.readReplicas().addresses() )
+        for ( ReadReplicaInfo readReplicaInfo : topologyService.readReplicas().allMemberInfo() )
         {
-            endpoints.add( new ReadWriteEndPoint( readReplicaAddresses.connectors(), Role.READ_REPLICA ) );
+            endpoints.add( new ReadWriteEndPoint( readReplicaInfo.connectors(), Role.READ_REPLICA ) );
         }
 
-        Collections.sort( endpoints, ( o1, o2 ) -> o1.addresses().toString().compareTo( o2.addresses().toString() ) );
+        endpoints.sort( comparing( o -> o.addresses().toString() ) );
 
         return map( ( l ) -> new Object[]{l.identifier().toString(), l.addresses().uriList().stream().map( URI::toString ).toArray(), l.role().name()},
                 asRawIterator( endpoints.iterator() ) );

@@ -26,21 +26,24 @@ import org.neo4j.causalclustering.core.consensus.RaftMachine.BootstrapException;
 import org.neo4j.causalclustering.identity.MemberId;
 import org.neo4j.kernel.lifecycle.LifecycleAdapter;
 
-public class RaftDiscoveryServiceConnector extends LifecycleAdapter implements CoreTopologyService.Listener
+/**
+ * Makes the Raft aware of changes to the core topology.
+ */
+public class RaftCoreTopologyConnector extends LifecycleAdapter implements CoreTopologyService.Listener
 {
-    private final CoreTopologyService discoveryService;
+    private final CoreTopologyService coreTopologyService;
     private final RaftMachine raftMachine;
 
-    public RaftDiscoveryServiceConnector( CoreTopologyService discoveryService, RaftMachine raftMachine )
+    public RaftCoreTopologyConnector( CoreTopologyService coreTopologyService, RaftMachine raftMachine )
     {
-        this.discoveryService = discoveryService;
+        this.coreTopologyService = coreTopologyService;
         this.raftMachine = raftMachine;
     }
 
     @Override
     public void start() throws BootstrapException
     {
-        discoveryService.addCoreTopologyListener( this );
+        coreTopologyService.addCoreTopologyListener( this );
     }
 
     @Override

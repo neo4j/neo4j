@@ -313,4 +313,17 @@ public class CausalClusteringSettings implements LoadableConfig
             "upstream database server from which to pull transactional updates." )
     public static final Setting<List<String>> upstream_selection_strategy =
             setting( "causal_clustering.upstream_selection_strategy", list( ",", STRING ), "default" );
+
+    @Description( "The load balancing plugin to use. This must be the same for all core servers participating in the cluster." )
+    public static Setting<String> load_balancing_plugin =
+            setting( "causal_clustering.load_balancing.plugin", STRING, "server_policies" );
+
+    @Description( "The configuration must be valid for the configured plugin." )
+    public static Setting<String> load_balancing_config =
+            setting( "causal_clustering.load_balancing.config", STRING, "" );
+
+    @Description( "Tags for the server used when configuring load balancing and replication policies." +
+                  " Multiple tags can be configured by separating with a comma." )
+    public static Setting<List<String>> server_tags =
+            setting( "causal_clustering.server_tags", list( ",", STRING ), "" );
 }

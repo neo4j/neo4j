@@ -43,7 +43,7 @@ import org.neo4j.causalclustering.core.replication.SendToMyself;
 import org.neo4j.causalclustering.core.state.storage.DurableStateStorage;
 import org.neo4j.causalclustering.core.state.storage.StateStorage;
 import org.neo4j.causalclustering.discovery.CoreTopologyService;
-import org.neo4j.causalclustering.discovery.RaftDiscoveryServiceConnector;
+import org.neo4j.causalclustering.discovery.RaftCoreTopologyConnector;
 import org.neo4j.causalclustering.identity.MemberId;
 import org.neo4j.causalclustering.messaging.CoreReplicatedContentMarshal;
 import org.neo4j.causalclustering.messaging.Outbound;
@@ -75,7 +75,7 @@ public class ConsensusModule
     private final InFlightMap<RaftLogEntry> inFlightMap = new InFlightMap<>();
 
     public ConsensusModule( MemberId myself, final PlatformModule platformModule, Outbound<MemberId,RaftMessages.RaftMessage> outbound,
-            File clusterStateDirectory, CoreTopologyService discoveryService )
+            File clusterStateDirectory, CoreTopologyService coreTopologyService )
     {
         final Config config = platformModule.config;
         final LogService logging = platformModule.logging;
@@ -139,7 +139,7 @@ public class ConsensusModule
                         heartbeatInterval, raftTimeoutService, outbound, logProvider, raftMembershipManager,
                         logShipping, inFlightMap, platformModule.monitors );
 
-        life.add( new RaftDiscoveryServiceConnector( discoveryService, raftMachine ) );
+        life.add( new RaftCoreTopologyConnector( coreTopologyService, raftMachine ) );
 
         life.add( logShipping );
     }

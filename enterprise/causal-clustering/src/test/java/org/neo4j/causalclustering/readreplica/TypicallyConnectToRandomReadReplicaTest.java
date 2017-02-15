@@ -30,9 +30,9 @@ import java.util.UUID;
 import org.neo4j.causalclustering.discovery.ClientConnectorAddresses;
 import org.neo4j.causalclustering.discovery.ClusterTopology;
 import org.neo4j.causalclustering.discovery.CoreTopology;
-import org.neo4j.causalclustering.discovery.ReadReplicaAddresses;
+import org.neo4j.causalclustering.discovery.ReadReplicaInfo;
 import org.neo4j.causalclustering.discovery.ReadReplicaTopology;
-import org.neo4j.causalclustering.discovery.ReadReplicaTopologyService;
+import org.neo4j.causalclustering.discovery.TopologyService;
 import org.neo4j.causalclustering.identity.MemberId;
 import org.neo4j.helpers.AdvertisedSocketAddress;
 
@@ -48,11 +48,11 @@ public class TypicallyConnectToRandomReadReplicaTest
     {
         // given
         MemberId theCoreMemberId = new MemberId( UUID.randomUUID() );
-        ReadReplicaTopologyService readReplicaTopologyService =
+        TopologyService topologyService =
                 fakeTopologyService( fakeCoreTopology( theCoreMemberId ), fakeReadReplicaTopology( memberIDs( 100 ) ) );
 
         TypicallyConnectToRandomReadReplica connectionStrategy = new TypicallyConnectToRandomReadReplica();
-        connectionStrategy.setDiscoveryService( readReplicaTopologyService );
+        connectionStrategy.setTopologyService( topologyService );
 
         List<MemberId> responses = new ArrayList<>();
 
@@ -66,10 +66,10 @@ public class TypicallyConnectToRandomReadReplicaTest
         assertThat( responses, hasItem( theCoreMemberId ) );
     }
 
-    private ReadReplicaTopologyService fakeTopologyService( CoreTopology coreTopology,
+    private TopologyService fakeTopologyService( CoreTopology coreTopology,
             ReadReplicaTopology readReplicaTopology )
     {
-        return new ReadReplicaTopologyService()
+        return new TopologyService()
         {
             @Override
             public CoreTopology coreServers()
@@ -131,13 +131,13 @@ public class TypicallyConnectToRandomReadReplicaTest
     {
         assert readReplicaIds.length > 0;
 
-        Map<MemberId,ReadReplicaAddresses> readReplicas = new HashMap<>();
+        Map<MemberId,ReadReplicaInfo> readReplicas = new HashMap<>();
 
         int offset = 0;
 
         for ( MemberId memberId : readReplicaIds )
         {
-            readReplicas.put( memberId, new ReadReplicaAddresses( new ClientConnectorAddresses( singletonList(
+            readReplicas.put( memberId, new ReadReplicaInfo( new ClientConnectorAddresses( singletonList(
                     new ClientConnectorAddresses.ConnectorUri( ClientConnectorAddresses.Scheme.bolt,
                             new AdvertisedSocketAddress( "localhost", 11000 + offset ) ) ) ),
                     new AdvertisedSocketAddress( "localhost", 10000 + offset ) ) );

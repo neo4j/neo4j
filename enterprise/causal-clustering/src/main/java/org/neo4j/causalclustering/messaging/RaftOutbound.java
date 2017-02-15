@@ -24,7 +24,7 @@ import java.util.function.Supplier;
 
 import org.neo4j.causalclustering.core.consensus.RaftMessages.ClusterIdAwareMessage;
 import org.neo4j.causalclustering.core.consensus.RaftMessages.RaftMessage;
-import org.neo4j.causalclustering.discovery.CoreAddresses;
+import org.neo4j.causalclustering.discovery.CoreServerInfo;
 import org.neo4j.causalclustering.discovery.CoreTopologyService;
 import org.neo4j.causalclustering.identity.ClusterId;
 import org.neo4j.causalclustering.identity.MemberId;
@@ -36,16 +36,16 @@ import org.neo4j.time.Clocks;
 
 public class RaftOutbound implements Outbound<MemberId, RaftMessage>
 {
-    private final CoreTopologyService discoveryService;
+    private final CoreTopologyService coreTopologyService;
     private final Outbound<AdvertisedSocketAddress,Message> outbound;
     private final Supplier<Optional<ClusterId>> clusterIdentity;
     private final UnknownAddressMonitor unknownAddressMonitor;
     private final Log log;
 
-    public RaftOutbound( CoreTopologyService discoveryService, Outbound<AdvertisedSocketAddress,Message> outbound,
+    public RaftOutbound( CoreTopologyService coreTopologyService, Outbound<AdvertisedSocketAddress,Message> outbound,
                          Supplier<Optional<ClusterId>> clusterIdentity, LogProvider logProvider, long logThresholdMillis )
     {
-        this.discoveryService = discoveryService;
+        this.coreTopologyService = coreTopologyService;
         this.outbound = outbound;
         this.clusterIdentity = clusterIdentity;
         this.log = logProvider.getLog( getClass() );
@@ -62,10 +62,10 @@ public class RaftOutbound implements Outbound<MemberId, RaftMessage>
             return;
         }
 
-        Optional<CoreAddresses> coreAddresses = discoveryService.coreServers().find( to );
-        if ( coreAddresses.isPresent() )
+        Optional<CoreServerInfo> coreServerInfo = coreTopologyService.coreServers().find( to );
+        if ( coreServerInfo.isPresent() )
         {
-            outbound.send( coreAddresses.get().getRaftServer(), new ClusterIdAwareMessage( clusterId.get(), message ) );
+            outbound.send( coreServerInfo.get().getRaftServer(), new ClusterIdAwareMessage( clusterId.get(), message ) );
         }
         else
         {

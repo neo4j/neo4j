@@ -30,6 +30,7 @@ import com.hazelcast.core.HazelcastInstance;
 import com.hazelcast.core.MemberAttributeEvent;
 import com.hazelcast.core.MembershipEvent;
 import com.hazelcast.core.MembershipListener;
+import com.hazelcast.core.MultiMap;
 
 import java.util.List;
 import java.util.concurrent.TimeUnit;
@@ -53,6 +54,7 @@ import static com.hazelcast.spi.properties.GroupProperty.MERGE_NEXT_RUN_DELAY_SE
 import static com.hazelcast.spi.properties.GroupProperty.OPERATION_CALL_TIMEOUT_MILLIS;
 import static com.hazelcast.spi.properties.GroupProperty.WAIT_SECONDS_BEFORE_JOIN;
 import static java.util.concurrent.TimeUnit.MILLISECONDS;
+import static org.neo4j.causalclustering.discovery.HazelcastClusterTopology.SERVER_TAGS_MULTIMAP_NAME;
 import static org.neo4j.kernel.impl.util.JobScheduler.SchedulingStrategy.POOLED;
 
 class HazelcastCoreTopologyService extends LifecycleAdapter implements CoreTopologyService
@@ -208,6 +210,11 @@ class HazelcastCoreTopologyService extends LifecycleAdapter implements CoreTopol
             log.error( errorMessage, e );
             throw new RuntimeException( e );
         }
+
+        List<String> tags = config.get( CausalClusteringSettings.server_tags );
+
+        MultiMap<String,String> tagsMap = hazelcastInstance.getMultiMap( SERVER_TAGS_MULTIMAP_NAME );
+        tags.forEach( tag -> tagsMap.put( myself.getUuid().toString(), tag ) );
 
         return hazelcastInstance;
     }

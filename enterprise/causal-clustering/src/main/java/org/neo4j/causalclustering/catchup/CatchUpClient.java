@@ -32,7 +32,7 @@ import java.util.Optional;
 import java.util.concurrent.CompletableFuture;
 
 import org.neo4j.causalclustering.discovery.CatchupServerAddress;
-import org.neo4j.causalclustering.discovery.ReadReplicaTopologyService;
+import org.neo4j.causalclustering.discovery.TopologyService;
 import org.neo4j.causalclustering.identity.MemberId;
 import org.neo4j.causalclustering.messaging.CatchUpRequest;
 import org.neo4j.helpers.AdvertisedSocketAddress;
@@ -48,7 +48,7 @@ import static org.neo4j.causalclustering.catchup.TimeoutLoop.waitForCompletion;
 public class CatchUpClient extends LifecycleAdapter
 {
     private final LogProvider logProvider;
-    private final ReadReplicaTopologyService discoveryService;
+    private final TopologyService topologyService;
     private final Log log;
     private final Clock clock;
     private final Monitors monitors;
@@ -57,11 +57,11 @@ public class CatchUpClient extends LifecycleAdapter
 
     private NioEventLoopGroup eventLoopGroup;
 
-    public CatchUpClient( ReadReplicaTopologyService discoveryService, LogProvider logProvider, Clock clock,
+    public CatchUpClient( TopologyService topologyService, LogProvider logProvider, Clock clock,
             long inactivityTimeoutMillis, Monitors monitors )
     {
         this.logProvider = logProvider;
-        this.discoveryService = discoveryService;
+        this.topologyService = topologyService;
         this.log = logProvider.getLog( getClass() );
         this.clock = clock;
         this.inactivityTimeoutMillis = inactivityTimeoutMillis;
@@ -73,7 +73,7 @@ public class CatchUpClient extends LifecycleAdapter
     {
         CompletableFuture<T> future = new CompletableFuture<>();
         Optional<AdvertisedSocketAddress> catchUpAddress =
-                discoveryService.allServers().find( upstream ).map( CatchupServerAddress::getCatchupServer );
+                topologyService.allServers().find( upstream ).map( CatchupServerAddress::getCatchupServer );
 
         CatchUpChannel channel = pool.acquire( catchUpAddress.orElseThrow(
                 () -> new CatchUpClientException( "Cannot find the target member socket address" ) ) );

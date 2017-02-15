@@ -36,20 +36,9 @@ public class ClusterTopology
 
     public Optional<CatchupServerAddress> find( MemberId upstream )
     {
-        Optional<CoreAddresses> coreAddresses = coreTopology.find( upstream );
-        Optional<ReadReplicaAddresses> readReplicaAddresses = readReplicaTopology.findAddressFor( upstream );
+        Optional<CatchupServerAddress> coreCatchupAddress = coreTopology.find( upstream ).map( a -> (CatchupServerAddress) a );
+        Optional<CatchupServerAddress> readCatchupAddress = readReplicaTopology.find( upstream ).map( a -> (CatchupServerAddress) a );
 
-        if ( coreAddresses.isPresent() )
-        {
-            return Optional.of( coreAddresses.get() );
-        }
-        else if ( readReplicaAddresses.isPresent() )
-        {
-            return Optional.of( readReplicaAddresses.get() );
-        }
-        else
-        {
-            return Optional.empty();
-        }
+        return coreCatchupAddress.map( Optional::of ).orElse( readCatchupAddress );
     }
 }

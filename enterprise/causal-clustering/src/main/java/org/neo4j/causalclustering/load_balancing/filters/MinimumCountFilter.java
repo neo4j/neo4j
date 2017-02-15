@@ -17,15 +17,24 @@
  * You should have received a copy of the GNU Affero General Public License
  * along with this program. If not, see <http://www.gnu.org/licenses/>.
  */
-package org.neo4j.causalclustering.discovery;
+package org.neo4j.causalclustering.load_balancing.filters;
 
-import org.neo4j.kernel.lifecycle.Lifecycle;
+import java.util.Set;
 
-public interface ReadReplicaTopologyService extends Lifecycle
+import static java.util.Collections.emptySet;
+
+public class MinimumCountFilter<T> implements Filter<T>
 {
-    CoreTopology coreServers();
+    private final int minCount;
 
-    ReadReplicaTopology readReplicas();
+    public MinimumCountFilter( int minCount )
+    {
+        this.minCount = minCount;
+    }
 
-    ClusterTopology allServers();
+    @Override
+    public Set<T> apply( Set<T> data )
+    {
+        return data.size() >= minCount ? data : emptySet();
+    }
 }

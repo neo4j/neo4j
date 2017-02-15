@@ -17,28 +17,18 @@
  * You should have received a copy of the GNU Affero General Public License
  * along with this program. If not, see <http://www.gnu.org/licenses/>.
  */
-package org.neo4j.causalclustering.readreplica;
+package org.neo4j.causalclustering.discovery;
 
-import java.util.Optional;
+import org.neo4j.kernel.lifecycle.Lifecycle;
 
-import org.neo4j.causalclustering.discovery.TopologyService;
-import org.neo4j.causalclustering.identity.MemberId;
-import org.neo4j.helpers.Service;
-
-public abstract class UpstreamDatabaseSelectionStrategy extends Service
+/**
+ * Provides a read-only service for the eventually consistent topology information.
+ */
+public interface TopologyService extends Lifecycle
 {
-    TopologyService topologyService;
+    CoreTopology coreServers();
 
-    public UpstreamDatabaseSelectionStrategy( String key, String... altKeys )
-    {
-        super( key, altKeys );
-    }
+    ReadReplicaTopology readReplicas();
 
-    // Service loaded can't inject this via the constructor
-    void setTopologyService( TopologyService topologyService )
-    {
-        this.topologyService = topologyService;
-    }
-
-    public abstract Optional<MemberId> upstreamDatabase() throws UpstreamDatabaseSelectionException;
+    ClusterTopology allServers();
 }

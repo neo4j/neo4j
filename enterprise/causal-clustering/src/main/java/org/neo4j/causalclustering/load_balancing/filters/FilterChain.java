@@ -17,28 +17,30 @@
  * You should have received a copy of the GNU Affero General Public License
  * along with this program. If not, see <http://www.gnu.org/licenses/>.
  */
-package org.neo4j.causalclustering.readreplica;
+package org.neo4j.causalclustering.load_balancing.filters;
 
-import java.util.Optional;
+import java.util.List;
+import java.util.Set;
 
-import org.neo4j.causalclustering.discovery.TopologyService;
-import org.neo4j.causalclustering.identity.MemberId;
-import org.neo4j.helpers.Service;
-
-public abstract class UpstreamDatabaseSelectionStrategy extends Service
+/**
+ * Filters the set through each filter of the chain in order.
+ */
+public class FilterChain<T> implements Filter<T>
 {
-    TopologyService topologyService;
+    private List<Filter<T>> chain;
 
-    public UpstreamDatabaseSelectionStrategy( String key, String... altKeys )
+    public FilterChain( List<Filter<T>> chain )
     {
-        super( key, altKeys );
+        this.chain = chain;
     }
 
-    // Service loaded can't inject this via the constructor
-    void setTopologyService( TopologyService topologyService )
+    @Override
+    public Set<T> apply( Set<T> data )
     {
-        this.topologyService = topologyService;
+        for ( Filter<T> filter : chain )
+        {
+            data = filter.apply( data );
+        }
+        return data;
     }
-
-    public abstract Optional<MemberId> upstreamDatabase() throws UpstreamDatabaseSelectionException;
 }

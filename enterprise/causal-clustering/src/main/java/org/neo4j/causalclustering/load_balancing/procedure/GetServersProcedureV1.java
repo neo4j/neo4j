@@ -28,8 +28,8 @@ import java.util.stream.Stream;
 import org.neo4j.causalclustering.core.CausalClusteringSettings;
 import org.neo4j.causalclustering.core.consensus.LeaderLocator;
 import org.neo4j.causalclustering.core.consensus.NoLeaderFoundException;
-import org.neo4j.causalclustering.discovery.CoreAddresses;
-import org.neo4j.causalclustering.discovery.CoreTopologyService;
+import org.neo4j.causalclustering.discovery.CoreServerInfo;
+import org.neo4j.causalclustering.discovery.TopologyService;
 import org.neo4j.causalclustering.identity.MemberId;
 import org.neo4j.causalclustering.load_balancing.Endpoint;
 import org.neo4j.causalclustering.load_balancing.LoadBalancingResult;
@@ -67,15 +67,15 @@ public class GetServersProcedureV1 implements CallableProcedure
                     .description( DESCRIPTION )
                     .build();
 
-    private final CoreTopologyService discoveryService;
+    private final TopologyService topologyService;
     private final LeaderLocator leaderLocator;
     private final Config config;
     private final Log log;
 
-    public GetServersProcedureV1( CoreTopologyService discoveryService, LeaderLocator leaderLocator,
+    public GetServersProcedureV1( TopologyService topologyService, LeaderLocator leaderLocator,
             Config config, LogProvider logProvider )
     {
-        this.discoveryService = discoveryService;
+        this.topologyService = topologyService;
         this.leaderLocator = leaderLocator;
         this.config = config;
         this.log = logProvider.getLog( getClass() );
@@ -111,13 +111,13 @@ public class GetServersProcedureV1 implements CallableProcedure
             return Optional.empty();
         }
 
-        return discoveryService.coreServers().find( leader ).map( extractBoltAddress() );
+        return topologyService.coreServers().find( leader ).map( extractBoltAddress() );
     }
 
     private List<Endpoint> routeEndpoints()
     {
-        Stream<AdvertisedSocketAddress> routers = discoveryService.coreServers()
-                .addresses().stream().map( extractBoltAddress() );
+        Stream<AdvertisedSocketAddress> routers = topologyService.coreServers()
+                .allMemberInfo().stream().map( extractBoltAddress() );
         List<Endpoint> routeEndpoints = routers.map( Endpoint::route ).collect( toList() );
         Collections.shuffle( routeEndpoints );
         return routeEndpoints;
@@ -130,7 +130,7 @@ public class GetServersProcedureV1 implements CallableProcedure
 
     private List<Endpoint> readEndpoints()
     {
-        List<AdvertisedSocketAddress> readReplicas = discoveryService.readReplicas().addresses().stream()
+        List<AdvertisedSocketAddress> readReplicas = topologyService.readReplicas().allMemberInfo().stream()
                 .map( extractBoltAddress() ).collect( toList() );
         boolean addFollowers = readReplicas.isEmpty() || config.get( cluster_allow_reads_on_followers );
         Stream<AdvertisedSocketAddress> readCore = addFollowers ? coreReadEndPoints() : Stream.empty();
@@ -143,12 +143,12 @@ public class GetServersProcedureV1 implements CallableProcedure
     private Stream<AdvertisedSocketAddress> coreReadEndPoints()
     {
         Optional<AdvertisedSocketAddress> leader = leaderBoltAddress();
-        Collection<CoreAddresses> coreAddresses = discoveryService.coreServers().addresses();
-        Stream<AdvertisedSocketAddress> boltAddresses = discoveryService.coreServers()
-                .addresses().stream().map( extractBoltAddress() );
+        Collection<CoreServerInfo> coreServerInfo = topologyService.coreServers().allMemberInfo();
+        Stream<AdvertisedSocketAddress> boltAddresses = topologyService.coreServers()
+                .allMemberInfo().stream().map( extractBoltAddress() );
 
         // if the leader is present and it is not alone filter it out from the read end points
-        if ( leader.isPresent() && coreAddresses.size() > 1 )
+        if ( leader.isPresent() && coreServerInfo.size() > 1 )
         {
             AdvertisedSocketAddress advertisedSocketAddress = leader.get();
             return boltAddresses.filter( address -> !advertisedSocketAddress.equals( address ) );

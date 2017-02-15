@@ -32,7 +32,7 @@ import java.util.Map;
 import java.util.UUID;
 
 import org.neo4j.causalclustering.core.consensus.LeaderLocator;
-import org.neo4j.causalclustering.discovery.CoreAddresses;
+import org.neo4j.causalclustering.discovery.CoreServerInfo;
 import org.neo4j.causalclustering.discovery.CoreTopology;
 import org.neo4j.causalclustering.discovery.CoreTopologyService;
 import org.neo4j.causalclustering.discovery.ReadReplicaTopology;
@@ -41,7 +41,6 @@ import org.neo4j.causalclustering.identity.MemberId;
 import org.neo4j.kernel.configuration.Config;
 
 import static java.util.Collections.emptyMap;
-import static java.util.Collections.emptySet;
 import static org.junit.Assert.assertFalse;
 import static org.junit.runners.Parameterized.Parameters;
 import static org.mockito.Mockito.mock;
@@ -75,7 +74,7 @@ public class GetServersProcedureV1RoutingTest
         LeaderLocator leaderLocator = mock( LeaderLocator.class );
         when( leaderLocator.getLeader() ).thenReturn( member( 0 ) );
 
-        Map<MemberId,CoreAddresses> coreMembers = new HashMap<>();
+        Map<MemberId,CoreServerInfo> coreMembers = new HashMap<>();
         coreMembers.put( member( 0 ), adressesForCore( 0 ) );
         coreMembers.put( member( 1 ), adressesForCore( 1 ) );
         coreMembers.put( member( 2 ), adressesForCore( 2 ) );

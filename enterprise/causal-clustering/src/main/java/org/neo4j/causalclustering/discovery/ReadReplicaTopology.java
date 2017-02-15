@@ -22,10 +22,8 @@ package org.neo4j.causalclustering.discovery;
 import java.util.Collection;
 import java.util.Map;
 import java.util.Optional;
-import java.util.Set;
 
 import org.neo4j.causalclustering.identity.MemberId;
-import org.neo4j.helpers.collection.Pair;
 
 import static java.util.Collections.emptyMap;
 
@@ -34,19 +32,19 @@ public class ReadReplicaTopology
 {
     static final ReadReplicaTopology EMPTY = new ReadReplicaTopology( emptyMap() );
 
-    private final Map<MemberId,ReadReplicaAddresses> readReplicaMembers;
+    private final Map<MemberId,ReadReplicaInfo> readReplicaMembers;
 
-    public ReadReplicaTopology( Map<MemberId,ReadReplicaAddresses> readReplicaMembers )
+    public ReadReplicaTopology( Map<MemberId,ReadReplicaInfo> readReplicaMembers )
     {
         this.readReplicaMembers = readReplicaMembers;
     }
 
-    public Collection<ReadReplicaAddresses> addresses()
+    public Collection<ReadReplicaInfo> allMemberInfo()
     {
         return readReplicaMembers.values();
     }
 
-    Optional<ReadReplicaAddresses> findAddressFor( MemberId memberId )
+    Optional<ReadReplicaInfo> find( MemberId memberId )
     {
         return Optional.ofNullable( readReplicaMembers.get( memberId ) );
     }

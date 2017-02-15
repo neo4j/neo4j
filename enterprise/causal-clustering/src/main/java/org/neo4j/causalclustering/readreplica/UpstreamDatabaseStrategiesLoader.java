@@ -23,7 +23,7 @@ import java.util.Iterator;
 import java.util.LinkedHashSet;
 
 import org.neo4j.causalclustering.core.CausalClusteringSettings;
-import org.neo4j.causalclustering.discovery.ReadReplicaTopologyService;
+import org.neo4j.causalclustering.discovery.TopologyService;
 import org.neo4j.helpers.Service;
 import org.neo4j.kernel.configuration.Config;
 
@@ -33,12 +33,12 @@ import org.neo4j.kernel.configuration.Config;
  */
 public class UpstreamDatabaseStrategiesLoader implements Iterable<UpstreamDatabaseSelectionStrategy>
 {
-    private final ReadReplicaTopologyService readReplicaTopologyService;
+    private final TopologyService topologyService;
     private final Config config;
 
-    UpstreamDatabaseStrategiesLoader( ReadReplicaTopologyService readReplicaTopologyService, Config config )
+    UpstreamDatabaseStrategiesLoader( TopologyService topologyService, Config config )
     {
-        this.readReplicaTopologyService = readReplicaTopologyService;
+        this.topologyService = topologyService;
         this.config = config;
     }
 
@@ -56,7 +56,7 @@ public class UpstreamDatabaseStrategiesLoader implements Iterable<UpstreamDataba
             {
                 if ( candidate.getKeys().iterator().next().equals( key ) )
                 {
-                    candidate.setDiscoveryService( readReplicaTopologyService );
+                    candidate.setTopologyService( topologyService );
                     candidates.add( candidate );
                 }
             }

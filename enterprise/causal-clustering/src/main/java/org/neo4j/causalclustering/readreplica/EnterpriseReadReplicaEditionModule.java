@@ -41,7 +41,7 @@ import org.neo4j.causalclustering.catchup.tx.TxPullClient;
 import org.neo4j.causalclustering.core.CausalClusteringSettings;
 import org.neo4j.causalclustering.core.consensus.schedule.DelayedRenewableTimeoutService;
 import org.neo4j.causalclustering.discovery.DiscoveryServiceFactory;
-import org.neo4j.causalclustering.discovery.ReadReplicaTopologyService;
+import org.neo4j.causalclustering.discovery.TopologyService;
 import org.neo4j.causalclustering.discovery.procedures.ReadReplicaRoleProcedure;
 import org.neo4j.causalclustering.helper.ExponentialBackoffStrategy;
 import org.neo4j.causalclustering.identity.MemberId;
@@ -178,14 +178,14 @@ public class EnterpriseReadReplicaEditionModule extends EditionModule
 
         logProvider.getLog( getClass() ).info( String.format( "Generated new id: %s", myself ) );
 
-        ReadReplicaTopologyService readReplicaTopologyService = discoveryServiceFactory
-                .readReplicaTopologyService( config, logProvider, refreshReadReplicaTimeoutService,
+        TopologyService topologyService = discoveryServiceFactory
+                .topologyService( config, logProvider, refreshReadReplicaTimeoutService,
                         readReplicaTimeToLiveTimeout, readReplicaRefreshRate, myself );
-        life.add( dependencies.satisfyDependency( readReplicaTopologyService ) );
+        life.add( dependencies.satisfyDependency( topologyService ) );
 
         long inactivityTimeoutMillis = config.get( CausalClusteringSettings.catch_up_client_inactivity_timeout );
         CatchUpClient catchUpClient = life.add(
-                new CatchUpClient( readReplicaTopologyService, logProvider, Clocks.systemClock(),
+                new CatchUpClient( topologyService, logProvider, Clocks.systemClock(),
                         inactivityTimeoutMillis, monitors ) );
 
         final Supplier<DatabaseHealth> databaseHealthSupplier = dependencies.provideDependency( DatabaseHealth.class );
@@ -249,11 +249,11 @@ public class EnterpriseReadReplicaEditionModule extends EditionModule
                         logProvider );
 
         ConnectToRandomCoreServer defaultStrategy = new ConnectToRandomCoreServer();
-        defaultStrategy.setDiscoveryService( readReplicaTopologyService );
+        defaultStrategy.setTopologyService( topologyService );
 
         UpstreamDatabaseStrategySelector upstreamDatabaseStrategySelector =
                 new UpstreamDatabaseStrategySelector( defaultStrategy,
-                        new UpstreamDatabaseStrategiesLoader( readReplicaTopologyService, config ), myself );
+                        new UpstreamDatabaseStrategiesLoader( topologyService, config ), myself );
 
         CatchupPollingProcess catchupProcess =
                 new CatchupPollingProcess( logProvider, localDatabase, servicesToStopOnStoreCopy, catchUpClient,

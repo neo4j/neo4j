@@ -17,28 +17,11 @@
  * You should have received a copy of the GNU Affero General Public License
  * along with this program. If not, see <http://www.gnu.org/licenses/>.
  */
-package org.neo4j.causalclustering.readreplica;
+package org.neo4j.causalclustering.discovery;
 
-import java.util.Optional;
+import java.util.Set;
 
-import org.neo4j.causalclustering.discovery.TopologyService;
-import org.neo4j.causalclustering.identity.MemberId;
-import org.neo4j.helpers.Service;
-
-public abstract class UpstreamDatabaseSelectionStrategy extends Service
+interface TaggedServer
 {
-    TopologyService topologyService;
-
-    public UpstreamDatabaseSelectionStrategy( String key, String... altKeys )
-    {
-        super( key, altKeys );
-    }
-
-    // Service loaded can't inject this via the constructor
-    void setTopologyService( TopologyService topologyService )
-    {
-        this.topologyService = topologyService;
-    }
-
-    public abstract Optional<MemberId> upstreamDatabase() throws UpstreamDatabaseSelectionException;
+    Set<String> tags();
 }

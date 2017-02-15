@@ -39,11 +39,11 @@ public class TypicallyConnectToRandomReadReplica extends UpstreamDatabaseSelecti
     {
         if ( counter.shouldReturnCoreMemberId() )
         {
-            return readReplicaTopologyService.coreServers().anyCoreMemberId();
+            return topologyService.coreServers().anyCoreMemberId();
         }
         else
         {
-            return readReplicaTopologyService.readReplicas().anyReadReplicaMemberId();
+            return topologyService.readReplicas().anyReadReplicaMemberId();
         }
     }
 
