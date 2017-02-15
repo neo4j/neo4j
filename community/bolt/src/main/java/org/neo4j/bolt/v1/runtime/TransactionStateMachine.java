@@ -167,22 +167,33 @@ public class TransactionStateMachine implements StatementProcessor
                             throw new QueryExecutionKernelException(
                                     new InvalidSemanticsException( "No current transaction to rollback." ) );
                         }
-                        else if ( spi.isPeriodicCommit( statement ) )
-                        {
-                            BoltResultHandle resultHandle = executeQuery( ctx, spi, statement, params, () -> {} );
-                            ctx.currentResultHandle = resultHandle;
-                            ctx.currentResult = resultHandle.start();
-                            ctx.currentTransaction = null; // Periodic commit will change the current transaction, so
-                            // we can't trust this to point to the actual current transaction;
-                            return AUTO_COMMIT;
-                        }
                         else
                         {
-                            ctx.currentTransaction = spi.beginTransaction( ctx.securityContext );
-                            BoltResultHandle resultHandle = execute( ctx, spi, statement, params );
-                            ctx.currentResultHandle = resultHandle;
-                            ctx.currentResult = resultHandle.start();
-                            return AUTO_COMMIT;
+                            if ( statement.isEmpty() )
+                            {
+                                statement = ctx.lastStatement;
+                            }
+                            else
+                            {
+                                ctx.lastStatement = statement;
+                            }
+                            if ( spi.isPeriodicCommit( statement ) )
+                            {
+                                BoltResultHandle resultHandle = executeQuery( ctx, spi, statement, params, () -> {} );
+                                ctx.currentResultHandle = resultHandle;
+                                ctx.currentResult = resultHandle.start();
+                                ctx.currentTransaction = null; // Periodic commit will change the current transaction, so
+                                // we can't trust this to point to the actual current transaction;
+                                return AUTO_COMMIT;
+                            }
+                            else
+                            {
+                                ctx.currentTransaction = spi.beginTransaction( ctx.securityContext );
+                                BoltResultHandle resultHandle = execute( ctx, spi, statement, params );
+                                ctx.currentResultHandle = resultHandle;
+                                ctx.currentResult = resultHandle.start();
+                                return AUTO_COMMIT;
+                            }
                         }
                     }
 
@@ -236,17 +247,28 @@ public class TransactionStateMachine implements StatementProcessor
                             ctx.currentResult = BoltResult.EMPTY;
                             return AUTO_COMMIT;
                         }
-                        else if( spi.isPeriodicCommit( statement ) )
-                        {
-                            throw new QueryExecutionKernelException( new InvalidSemanticsException(
-                                    "Executing queries that use periodic commit in an " +
-                                            "open transaction is not possible." ) );
-                        }
                         else
                         {
-                            ctx.currentResultHandle = execute( ctx, spi, statement, params );
-                            ctx.currentResult = ctx.currentResultHandle.start();
-                            return EXPLICIT_TRANSACTION;
+                            if ( statement.isEmpty() )
+                            {
+                                statement = ctx.lastStatement;
+                            }
+                            else
+                            {
+                                ctx.lastStatement = statement;
+                            }
+                            if( spi.isPeriodicCommit( statement ) )
+                            {
+                                throw new QueryExecutionKernelException( new InvalidSemanticsException(
+                                        "Executing queries that use periodic commit in an " +
+                                                "open transaction is not possible." ) );
+                            }
+                            else
+                            {
+                                ctx.currentResultHandle = execute( ctx, spi, statement, params );
+                                ctx.currentResult = ctx.currentResultHandle.start();
+                                return EXPLICIT_TRANSACTION;
+                            }
                         }
                     }
 
@@ -355,6 +377,9 @@ public class TransactionStateMachine implements StatementProcessor
 
         /** The current transaction, if present */
         KernelTransaction currentTransaction;
+
+        /** Last Cypher statement executed */
+        String lastStatement = "";
 
         /** The current pending result, if present */
         BoltResult currentResult;
