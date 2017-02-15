@@ -28,9 +28,12 @@ import org.neo4j.kernel.api.security.AuthManager;
 import org.neo4j.kernel.api.security.AuthToken;
 import org.neo4j.kernel.api.exceptions.InvalidArgumentsException;
 import org.neo4j.kernel.api.security.SecurityContext;
+import org.neo4j.kernel.api.security.UserManagerSupplier;
 import org.neo4j.kernel.api.security.exception.InvalidAuthTokenException;
 
+import static org.neo4j.kernel.api.security.AuthToken.CREDENTIALS;
 import static org.neo4j.kernel.api.security.AuthToken.NEW_CREDENTIALS;
+import static org.neo4j.kernel.api.security.AuthToken.PRINCIPAL;
 
 /**
  * Performs basic authentication with user name and password.
@@ -38,10 +41,12 @@ import static org.neo4j.kernel.api.security.AuthToken.NEW_CREDENTIALS;
 public class BasicAuthentication implements Authentication
 {
     private final AuthManager authManager;
+    private final UserManagerSupplier userManagerSupplier;
 
-    public BasicAuthentication( AuthManager authManager )
+    public BasicAuthentication( AuthManager authManager, UserManagerSupplier userManagerSupplier )
     {
         this.authManager = authManager;
+        this.userManagerSupplier = userManagerSupplier;
     }
 
     @Override
@@ -94,7 +99,10 @@ public class BasicAuthentication implements Authentication
             case SUCCESS:
             case PASSWORD_CHANGE_REQUIRED:
                 String newPassword = AuthToken.safeCast( NEW_CREDENTIALS, authToken );
-                securityContext.subject().setPassword( newPassword, requiresPasswordChange );
+                String username = AuthToken.safeCast( PRINCIPAL, authToken );
+                userManagerSupplier.getUserManager( securityContext )
+                        .setUserPassword( username, newPassword, requiresPasswordChange );
+                securityContext.subject().setPasswordChangeNoLongerRequired();
                 break;
             default:
                 throw new AuthenticationException( Status.Security.Unauthorized );

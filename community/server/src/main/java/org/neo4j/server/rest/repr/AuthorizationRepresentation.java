@@ -19,7 +19,7 @@
  */
 package org.neo4j.server.rest.repr;
 
-import org.neo4j.server.security.auth.User;
+import org.neo4j.kernel.impl.security.User;
 
 import static java.lang.String.format;
 

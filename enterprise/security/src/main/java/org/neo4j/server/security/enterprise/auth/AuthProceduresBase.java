@@ -33,7 +33,7 @@ import org.neo4j.kernel.impl.api.KernelTransactions;
 import org.neo4j.kernel.impl.core.ThreadToStatementContextBridge;
 import org.neo4j.kernel.internal.GraphDatabaseAPI;
 import org.neo4j.procedure.Context;
-import org.neo4j.server.security.auth.User;
+import org.neo4j.kernel.impl.security.User;
 import org.neo4j.server.security.enterprise.log.SecurityLog;
 
 import static java.util.Collections.emptyList;
@@ -64,7 +64,7 @@ public class AuthProceduresBase
         }
         catch ( Exception e )
         {
-            securityLog.error( securityContext.subject(), "failed to terminate running transaction and bolt connections for " +
+            securityLog.error( securityContext, "failed to terminate running transaction and bolt connections for " +
                     "user `%s` following %s: %s", username, reason, e.getMessage() );
             throw e;
         }

@@ -19,13 +19,11 @@
  */
 package org.neo4j.server.security.auth;
 
-import java.io.IOException;
-
 import org.neo4j.kernel.api.security.AccessMode;
 import org.neo4j.kernel.api.security.AuthSubject;
 import org.neo4j.kernel.api.security.AuthenticationResult;
-import org.neo4j.kernel.api.exceptions.InvalidArgumentsException;
 import org.neo4j.kernel.api.security.SecurityContext;
+import org.neo4j.kernel.impl.security.User;
 
 import static org.neo4j.kernel.api.security.AuthenticationResult.FAILURE;
 import static org.neo4j.kernel.api.security.AuthenticationResult.PASSWORD_CHANGE_REQUIRED;
@@ -77,16 +75,6 @@ public class BasicSecurityContext implements SecurityContext
         public AuthenticationResult getAuthenticationResult()
         {
             return authenticationResult;
-        }
-
-        @Override
-        public void setPassword( String password, boolean requirePasswordChange )
-                throws IOException, InvalidArgumentsException
-        {
-            authManager.setPassword( this, user.name(), password, requirePasswordChange );
-
-            // Make user authenticated if successful
-            setPasswordChangeNoLongerRequired();
         }
 
         @Override

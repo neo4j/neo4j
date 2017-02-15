@@ -21,6 +21,8 @@ package org.neo4j.server.security.auth;
 
 import java.io.IOException;
 
+import org.neo4j.kernel.impl.security.User;
+
 /** A user repository implementation that just stores users in memory */
 public class InMemoryUserRepository extends AbstractUserRepository
 {

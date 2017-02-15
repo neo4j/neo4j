@@ -38,9 +38,9 @@ import org.neo4j.kernel.api.exceptions.InvalidArgumentsException;
 import org.neo4j.kernel.configuration.Config;
 import org.neo4j.logging.NullLogProvider;
 import org.neo4j.server.security.auth.CommunitySecurityModule;
-import org.neo4j.server.security.auth.Credential;
+import org.neo4j.kernel.impl.security.Credential;
 import org.neo4j.server.security.auth.FileUserRepository;
-import org.neo4j.server.security.auth.User;
+import org.neo4j.kernel.impl.security.User;
 import org.neo4j.server.security.auth.UserRepository;
 import org.neo4j.test.rule.TestDirectory;
 

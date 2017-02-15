@@ -57,12 +57,13 @@ import org.neo4j.graphdb.GraphDatabaseService;
 import org.neo4j.graphdb.config.Configuration;
 import org.neo4j.graphdb.config.Setting;
 import org.neo4j.graphdb.factory.GraphDatabaseSettings;
+import org.neo4j.kernel.api.security.UserManagerSupplier;
+import org.neo4j.kernel.configuration.BoltConnector;
 import org.neo4j.helpers.AdvertisedSocketAddress;
 import org.neo4j.helpers.ListenSocketAddress;
 import org.neo4j.helpers.Service;
 import org.neo4j.kernel.api.bolt.BoltConnectionTracker;
 import org.neo4j.kernel.api.security.AuthManager;
-import org.neo4j.kernel.configuration.BoltConnector;
 import org.neo4j.kernel.configuration.Config;
 import org.neo4j.kernel.configuration.Internal;
 import org.neo4j.kernel.extension.KernelExtensionFactory;
@@ -130,6 +131,8 @@ public class BoltKernelExtension extends KernelExtensionFactory<BoltKernelExtens
         Clock clock();
 
         AuthManager authManager();
+
+        UserManagerSupplier userManagerSupplier();
     }
 
     public BoltKernelExtension()
@@ -153,7 +156,7 @@ public class BoltKernelExtension extends KernelExtensionFactory<BoltKernelExtens
 
         InternalLoggerFactory.setDefaultFactory( new Netty4LoggerFactory( logService.getInternalLogProvider() ) );
 
-        Authentication authentication = authentication( dependencies.authManager() );
+        Authentication authentication = authentication( dependencies.authManager(), dependencies.userManagerSupplier() );
 
         BoltFactory boltFactory = life.add( new BoltFactoryImpl( api, dependencies.usageData(),
                 logService, dependencies.txBridge(), authentication, dependencies.sessionTracker(), config ) );
@@ -279,8 +282,8 @@ public class BoltKernelExtension extends KernelExtensionFactory<BoltKernelExtens
         return new KeyStoreFactory().createKeyStore( privateKeyPath, certificatePath );
     }
 
-    private Authentication authentication( AuthManager authManager )
+    private Authentication authentication( AuthManager authManager, UserManagerSupplier userManagerSupplier )
     {
-        return new BasicAuthentication( authManager );
+        return new BasicAuthentication( authManager, userManagerSupplier );
     }
 }

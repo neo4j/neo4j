@@ -229,15 +229,6 @@ class StandardEnterpriseSecurityContext implements EnterpriseSecurityContext
         }
 
         @Override
-        public void setPassword( String password, boolean requirePasswordChange )
-                throws IOException, InvalidArgumentsException
-        {
-            getUserManager().setUserPassword( (String) shiroSubject.getPrincipal(), password, requirePasswordChange );
-            // Make user authenticated if successful
-            setPasswordChangeNoLongerRequired();
-        }
-
-        @Override
         public void setPasswordChangeNoLongerRequired()
         {
             if ( getAuthenticationResult() == AuthenticationResult.PASSWORD_CHANGE_REQUIRED )

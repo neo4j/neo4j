@@ -24,6 +24,8 @@ import org.junit.Test;
 import java.util.concurrent.TimeUnit;
 
 import org.neo4j.kernel.api.security.AuthenticationResult;
+import org.neo4j.kernel.impl.security.Credential;
+import org.neo4j.kernel.impl.security.User;
 import org.neo4j.time.Clocks;
 import org.neo4j.time.FakeClock;
 
