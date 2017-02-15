@@ -25,6 +25,7 @@ import java.util.Arrays;
 import java.util.List;
 
 import org.neo4j.collection.primitive.PrimitiveLongCollections;
+import org.neo4j.kernel.api.impl.schema.LuceneDocumentStructure;
 import org.neo4j.kernel.api.impl.schema.SchemaIndex;
 import org.neo4j.kernel.api.impl.schema.writer.LuceneIndexWriter;
 import org.neo4j.kernel.api.index.PropertyAccessor;
@@ -42,7 +43,6 @@ import static org.mockito.Matchers.eq;
 import static org.mockito.Mockito.mock;
 import static org.mockito.Mockito.verify;
 import static org.mockito.Mockito.verifyZeroInteractions;
-import static org.neo4j.kernel.api.impl.schema.LuceneDocumentStructure.documentRepresentingProperty;
 import static org.neo4j.kernel.api.impl.schema.LuceneDocumentStructure.newTermForChangeOrRemove;
 import static org.neo4j.kernel.api.index.IndexEntryUpdate.add;
 import static org.neo4j.kernel.api.index.IndexEntryUpdate.change;
@@ -186,9 +186,12 @@ public class UniqueDatabaseIndexPopulatingUpdaterTest
         updater.process( add( 2, descriptor, "bar" ) );
         updater.process( add( 3, descriptor, "qux" ) );
 
-        verify( writer ).updateDocument( newTermForChangeOrRemove( 1 ), documentRepresentingProperty( 1, "foo" ) );
-        verify( writer ).updateDocument( newTermForChangeOrRemove( 2 ), documentRepresentingProperty( 2, "bar" ) );
-        verify( writer ).updateDocument( newTermForChangeOrRemove( 3 ), documentRepresentingProperty( 3, "qux" ) );
+        verify( writer ).updateDocument( newTermForChangeOrRemove( 1 ),
+                LuceneDocumentStructure.documentRepresentingProperties( (long) 1, "foo" ) );
+        verify( writer ).updateDocument( newTermForChangeOrRemove( 2 ),
+                LuceneDocumentStructure.documentRepresentingProperties( (long) 2, "bar" ) );
+        verify( writer ).updateDocument( newTermForChangeOrRemove( 3 ),
+                LuceneDocumentStructure.documentRepresentingProperties( (long) 3, "qux" ) );
     }
 
     @Test
@@ -200,8 +203,10 @@ public class UniqueDatabaseIndexPopulatingUpdaterTest
         updater.process( change( 1, descriptor, "before1", "after1" ) );
         updater.process( change( 2, descriptor, "before2", "after2" ) );
 
-        verify( writer ).updateDocument( newTermForChangeOrRemove( 1 ), documentRepresentingProperty( 1, "after1" ) );
-        verify( writer ).updateDocument( newTermForChangeOrRemove( 2 ), documentRepresentingProperty( 2, "after2" ) );
+        verify( writer ).updateDocument( newTermForChangeOrRemove( 1 ),
+                LuceneDocumentStructure.documentRepresentingProperties( (long) 1, "after1" ) );
+        verify( writer ).updateDocument( newTermForChangeOrRemove( 2 ),
+                LuceneDocumentStructure.documentRepresentingProperties( (long) 2, "after2" ) );
     }
 
     @Test

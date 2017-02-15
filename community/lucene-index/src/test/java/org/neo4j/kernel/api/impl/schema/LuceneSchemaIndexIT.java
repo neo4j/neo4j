@@ -136,7 +136,7 @@ public class LuceneSchemaIndexIT
             addDocumentToIndex( index, 45 );
 
             index.getIndexWriter().updateDocument( LuceneDocumentStructure.newTermForChangeOrRemove( 100 ),
-                    LuceneDocumentStructure.documentRepresentingProperty( 100, 100 ) );
+                    LuceneDocumentStructure.documentRepresentingProperties( (long) 100, 100 ) );
             index.maybeRefreshBlocking();
 
             long documentsInIndex = Iterators.count( index.allDocumentsReader().iterator() );
@@ -244,7 +244,8 @@ public class LuceneSchemaIndexIT
     {
         for ( int i = 0; i < documents; i++ )
         {
-            index.getIndexWriter().addDocument( LuceneDocumentStructure.documentRepresentingProperty( i, i ) );
+            index.getIndexWriter().addDocument(
+                    LuceneDocumentStructure.documentRepresentingProperties( (long) i, i ) );
         }
     }
 

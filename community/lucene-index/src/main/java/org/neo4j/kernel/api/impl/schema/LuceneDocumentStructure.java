@@ -76,13 +76,6 @@ public class LuceneDocumentStructure
         return doc;
     }
 
-    public static Document documentRepresentingProperty( long nodeId, Object value )
-    {
-        DocWithId document = reuseDocument( nodeId );
-        document.setValue( value );
-        return document.document;
-    }
-
     public static Document documentRepresentingProperties( long nodeId, Object... values )
     {
         DocWithId document = reuseDocument( nodeId );
@@ -284,6 +277,11 @@ public class LuceneDocumentStructure
 
         private void setValues( Object... values )
         {
+            if( values.length == 1 )
+            {
+                setValue( values[0] );
+                return;
+            }
             removeAllValueFields();
             for ( int i = 0; i < values.length; i++ )
             {

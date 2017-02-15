@@ -131,7 +131,7 @@ public class NonUniqueDatabaseIndexSamplerTest
 
     private static void insertDocument( WritableIndexPartition partition, long nodeId, Object propertyValue ) throws IOException
     {
-        Document doc = LuceneDocumentStructure.documentRepresentingProperty( nodeId, propertyValue );
+        Document doc = LuceneDocumentStructure.documentRepresentingProperties( nodeId, propertyValue );
         partition.getIndexWriter().addDocument( doc );
     }
 

@@ -22,6 +22,7 @@ package org.neo4j.kernel.api.impl.schema.populator;
 import org.junit.Test;
 
 import org.neo4j.collection.primitive.PrimitiveLongCollections;
+import org.neo4j.kernel.api.impl.schema.LuceneDocumentStructure;
 import org.neo4j.kernel.api.impl.schema.writer.LuceneIndexWriter;
 import org.neo4j.kernel.api.schema_new.index.NewIndexDescriptor;
 import org.neo4j.kernel.api.schema_new.index.NewIndexDescriptorFactory;
@@ -35,7 +36,6 @@ import static org.junit.Assert.assertThat;
 import static org.junit.Assert.fail;
 import static org.mockito.Mockito.mock;
 import static org.mockito.Mockito.verify;
-import static org.neo4j.kernel.api.impl.schema.LuceneDocumentStructure.documentRepresentingProperty;
 import static org.neo4j.kernel.api.impl.schema.LuceneDocumentStructure.newTermForChangeOrRemove;
 import static org.neo4j.kernel.api.index.IndexEntryUpdate.add;
 import static org.neo4j.kernel.api.index.IndexEntryUpdate.change;
@@ -143,9 +143,12 @@ public class NonUniqueDatabaseIndexPopulatingUpdaterTest
         updater.process( add( 2, index, "bar" ) );
         updater.process( add( 3, index, "qux" ) );
 
-        verify( writer ).updateDocument( newTermForChangeOrRemove( 1 ), documentRepresentingProperty( 1, "foo" ) );
-        verify( writer ).updateDocument( newTermForChangeOrRemove( 2 ), documentRepresentingProperty( 2, "bar" ) );
-        verify( writer ).updateDocument( newTermForChangeOrRemove( 3 ), documentRepresentingProperty( 3, "qux" ) );
+        verify( writer ).updateDocument( newTermForChangeOrRemove( 1 ),
+                LuceneDocumentStructure.documentRepresentingProperties( (long) 1, "foo" ) );
+        verify( writer ).updateDocument( newTermForChangeOrRemove( 2 ),
+                LuceneDocumentStructure.documentRepresentingProperties( (long) 2, "bar" ) );
+        verify( writer ).updateDocument( newTermForChangeOrRemove( 3 ),
+                LuceneDocumentStructure.documentRepresentingProperties( (long) 3, "qux" ) );
     }
 
     @Test
@@ -157,8 +160,10 @@ public class NonUniqueDatabaseIndexPopulatingUpdaterTest
         updater.process( change( 1, index, "before1", "after1" ) );
         updater.process( change( 2, index, "before2", "after2" ) );
 
-        verify( writer ).updateDocument( newTermForChangeOrRemove( 1 ), documentRepresentingProperty( 1, "after1" ) );
-        verify( writer ).updateDocument( newTermForChangeOrRemove( 2 ), documentRepresentingProperty( 2, "after2" ) );
+        verify( writer ).updateDocument( newTermForChangeOrRemove( 1 ),
+                LuceneDocumentStructure.documentRepresentingProperties( (long) 1, "after1" ) );
+        verify( writer ).updateDocument( newTermForChangeOrRemove( 2 ),
+                LuceneDocumentStructure.documentRepresentingProperties( (long) 2, "after2" ) );
     }
 
     @Test

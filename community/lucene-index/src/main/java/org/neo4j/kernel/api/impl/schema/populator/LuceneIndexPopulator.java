@@ -93,6 +93,6 @@ public abstract class LuceneIndexPopulator implements IndexPopulator
 
     private static Document updateAsDocument( IndexEntryUpdate update )
     {
-        return LuceneDocumentStructure.documentRepresentingProperty( update.getEntityId(), update.values()[0] );
+        return LuceneDocumentStructure.documentRepresentingProperties( update.getEntityId(), update.values() );
     }
 }

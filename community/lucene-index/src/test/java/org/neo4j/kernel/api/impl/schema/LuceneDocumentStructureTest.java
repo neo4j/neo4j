@@ -53,7 +53,8 @@ public class LuceneDocumentStructureTest
     public void stringWithMaximumLengthShouldBeAllowed()
     {
         String longestString = RandomStringUtils.randomAscii( IndexWriter.MAX_TERM_LENGTH );
-        Document document = LuceneDocumentStructure.documentRepresentingProperty( 123, longestString );
+        Document document = LuceneDocumentStructure
+                .documentRepresentingProperties( (long) 123, longestString );
         assertEquals( longestString, document.getField( String.key() ).stringValue() );
     }
 
@@ -61,7 +62,7 @@ public class LuceneDocumentStructureTest
     public void shouldBuildDocumentRepresentingStringProperty() throws Exception
     {
         // given
-        Document document = LuceneDocumentStructure.documentRepresentingProperty( 123, "hello" );
+        Document document = LuceneDocumentStructure.documentRepresentingProperties( (long) 123, "hello" );
 
         // then
         assertEquals( "123", document.get( NODE_ID_KEY ) );
@@ -112,7 +113,7 @@ public class LuceneDocumentStructureTest
     public void shouldBuildDocumentRepresentingBoolProperty() throws Exception
     {
         // given
-        Document document = LuceneDocumentStructure.documentRepresentingProperty( 123, true );
+        Document document = LuceneDocumentStructure.documentRepresentingProperties( (long) 123, true );
 
         // then
         assertEquals( "123", document.get( NODE_ID_KEY ) );
@@ -123,7 +124,7 @@ public class LuceneDocumentStructureTest
     public void shouldBuildDocumentRepresentingNumberProperty() throws Exception
     {
         // given
-        Document document = LuceneDocumentStructure.documentRepresentingProperty( 123, 12 );
+        Document document = LuceneDocumentStructure.documentRepresentingProperties( (long) 123, 12 );
 
         // then
         assertEquals( "123", document.get( NODE_ID_KEY ) );
@@ -134,7 +135,8 @@ public class LuceneDocumentStructureTest
     public void shouldBuildDocumentRepresentingArrayProperty() throws Exception
     {
         // given
-        Document document = LuceneDocumentStructure.documentRepresentingProperty( 123, new Integer[]{1, 2, 3} );
+        Document document = LuceneDocumentStructure
+                .documentRepresentingProperties( (long) 123, new Object[]{ new Integer[]{1, 2, 3} } );
 
         // then
         assertEquals( "123", document.get( NODE_ID_KEY ) );

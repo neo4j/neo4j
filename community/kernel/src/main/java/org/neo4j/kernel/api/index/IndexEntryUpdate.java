@@ -40,7 +40,7 @@ public class IndexEntryUpdate
     private Object[] values;
     private NewIndexDescriptor descriptor;
 
-    private IndexEntryUpdate( long entityId, NewIndexDescriptor descriptor, UpdateMode updateMode, Object[] values )
+    private IndexEntryUpdate( long entityId, NewIndexDescriptor descriptor, UpdateMode updateMode, Object... values )
     {
         this.entityId = entityId;
         this.descriptor = descriptor;
