@@ -20,7 +20,7 @@
 package org.neo4j.internal.cypher.acceptance
 
 import org.neo4j.cypher.internal.compiler.v3_0.test_helpers.CustomMatchers
-import org.neo4j.cypher.{ExecutionEngineFunSuite, NewPlannerTestSupport, SyntaxException}
+import org.neo4j.cypher.{ExecutionEngineFunSuite, IncomparableValuesException, NewPlannerTestSupport, SyntaxException}
 
 class OrderByAcceptanceTest extends ExecutionEngineFunSuite with CustomMatchers with NewPlannerTestSupport {
 
@@ -125,5 +125,19 @@ class OrderByAcceptanceTest extends ExecutionEngineFunSuite with CustomMatchers 
     val expected = List(Map("floats" -> 1.3), Map("floats" -> 1.5), Map("floats" -> 999.99))
     executeWithAllPlannersAndCompatibilityMode(query).toList should equal(expected)
     executeWithAllPlannersAndCompatibilityMode(s"$query DESC").toList should equal(expected.reverse)
+  }
+
+  test("should provide sensible error message when ordering by mixed types") {
+    withEachPlanner { execute =>
+      val exception = intercept[IncomparableValuesException](execute("UNWIND {things} AS thing RETURN thing ORDER BY thing", Seq("things" -> List("1", 2))))
+      exception.getMessage should startWith("Cannot perform ORDER BY on mixed types.")
+    }
+  }
+
+  test("should provide sensible error message when ordering by list values") {
+    withEachPlanner { execute =>
+      val exception = intercept[IncomparableValuesException](execute("UNWIND {things} AS thing RETURN thing ORDER BY thing", Seq("things" -> List(List("a"),List("b")))))
+      exception.getMessage should startWith("Cannot perform ORDER BY on lists, consider using UNWIND.")
+    }
   }
 }

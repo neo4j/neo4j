@@ -70,9 +70,9 @@ sealed trait SortDescription {
 }
 
 case class Ascending(id: String) extends SortDescription with Comparer {
-  override def compareAny(a: Any, b: Any)(implicit qtx: QueryState) = compare(a, b)
+  override def compareAny(a: Any, b: Any)(implicit qtx: QueryState) = compare(Some("ORDER BY"), a, b)
 }
 
 case class Descending(id: String) extends SortDescription with Comparer {
-  override def compareAny(a: Any, b: Any)(implicit qtx: QueryState) = compare(b, a)
+  override def compareAny(a: Any, b: Any)(implicit qtx: QueryState) = compare(Some("ORDER BY"), b, a)
 }

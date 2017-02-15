@@ -135,9 +135,10 @@ class ArithmeticException(message: String, cause: Throwable) extends CypherExcep
   val status = Status.Statement.ArithmeticError
 }
 
-class IncomparableValuesException(lhs: String, rhs: String, cause: Throwable)
-  extends SyntaxException(s"Don't know how to compare that. Left: ${lhs}; Right: ${rhs}", cause) {
-  def this(lhs: String, rhs: String) = this(lhs, rhs, null)
+class IncomparableValuesException(details: Option[String], lhs: String, rhs: String, cause: Throwable)
+  extends SyntaxException(s"${details.getOrElse("Don't know how to compare that.")} Left: $lhs; Right: $rhs", cause) {
+  def this(lhs: String, rhs: String, cause: Throwable) = this(None, lhs, rhs, null)
+  def this(lhs: String, rhs: String) = this(None, lhs, rhs, null)
 }
 
 class PeriodicCommitInOpenTransactionException(cause: Throwable)
