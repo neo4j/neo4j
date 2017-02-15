@@ -33,7 +33,7 @@ object exceptionHandler extends MapToPublicExceptions[CypherException] {
     throw new ProfilerStatisticsNotReadyException(cause)
   }
 
-  def incomparableValuesException(lhs: String, rhs: String, cause: Throwable) = new IncomparableValuesException(lhs, rhs, cause)
+  override def incomparableValuesException(details: Option[String], lhs: String, rhs: String, cause: Throwable) = new IncomparableValuesException(details, lhs, rhs, cause)
 
   def unorderableValueException(value: String, cause: Throwable) = new UnorderableValueException(value, cause)
 

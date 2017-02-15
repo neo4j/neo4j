@@ -98,8 +98,10 @@ class ArithmeticException(message: String, cause: Throwable = null) extends Cyph
   def mapToPublic[T <: Throwable](mapper: MapToPublicExceptions[T]) = mapper.arithmeticException(message, this)
 }
 
-class IncomparableValuesException(lhs: String, rhs: String) extends CypherException {
-  def mapToPublic[T <: Throwable](mapper: MapToPublicExceptions[T]) = mapper.incomparableValuesException(lhs, rhs, this)
+class IncomparableValuesException(details: Option[String], lhs: String, rhs: String) extends CypherException {
+  def mapToPublic[T <: Throwable](mapper: MapToPublicExceptions[T]) = mapper.incomparableValuesException(details, lhs, rhs, this)
+  def this(operator: String, lhs: String, rhs: String) = this(Some(operator), lhs, rhs)
+  def this(lhs: String, rhs: String) = this(None, lhs, rhs)
 }
 
 class PeriodicCommitInOpenTransactionException extends CypherException {

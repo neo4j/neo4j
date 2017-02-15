@@ -33,7 +33,7 @@ abstract sealed class ComparablePredicate(val left: Expression, val right: Expre
     if (l == null || r == null)
       return None
 
-    val comparisonResult: Int = compare(l, r)(state)
+    val comparisonResult: Int = compare(None, l, r)(state)
 
     Some(compare(comparisonResult))
   }
