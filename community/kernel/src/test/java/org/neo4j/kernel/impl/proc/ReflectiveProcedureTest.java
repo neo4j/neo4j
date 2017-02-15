@@ -328,7 +328,6 @@ public class ReflectiveProcedureTest
 
         // Then
         assertEquals( result.next()[0], "Bonnie" );
-
     }
 
     @Test
@@ -349,7 +348,6 @@ public class ReflectiveProcedureTest
         verify( log )
                 .warn( "The procedure 'org.neo4j.kernel.impl.proc.listCoolPeople' is not white listed." );
         assertThat( proc.isEmpty(), is(true) );
-
     }
 
     @Test
@@ -358,7 +356,6 @@ public class ReflectiveProcedureTest
         // Given
         ProcedureConfig config = new ProcedureConfig( Config.defaults().with(
                 genericMap( procedure_white_list.name(), "org.neo4j.kernel.impl.proc.NOTlistCoolPeople") ) );
-
         Log log = mock(Log.class);
         ReflectiveProcedureCompiler procedureCompiler = new ReflectiveProcedureCompiler( new TypeMappers(), components,
                 components, log, config );
@@ -368,9 +365,7 @@ public class ReflectiveProcedureTest
                 procedureCompiler.compileProcedure( SingleReadOnlyProcedure.class, Optional.empty(), true ).get( 0 );
         // Then
         RawIterator<Object[],ProcedureException> result = proc.apply( new BasicContext(), new Object[0] );
-
         assertEquals( result.next()[0], "Bonnie" );
-
     }
 
     public static class MyOutputRecord
