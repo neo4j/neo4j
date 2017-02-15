@@ -523,6 +523,9 @@ public class GraphDatabaseSettings implements LoadableConfig
     public static final Setting<Boolean> release_schema_lock_while_building_constraint = setting(
             "unsupported.dbms.schema.release_lock_while_building_constraint", BOOLEAN, FALSE );
 
+    @Description("A comma separated list of procedures that are allowed to run. If " +
+            "this list contains anything all procedures not in the list will be disallowed.")
+    public static final Setting<String> procedure_white_list = setting( "dbms.security.procedures.procedure_white_list", Settings.STRING, "" );
     // Bolt Settings
 
     @Description("Default network interface to listen for incoming connections. " +

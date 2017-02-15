@@ -26,6 +26,7 @@ import org.neo4j.kernel.configuration.Config;
 import static org.hamcrest.CoreMatchers.equalTo;
 import static org.hamcrest.MatcherAssert.assertThat;
 import static org.neo4j.graphdb.factory.GraphDatabaseSettings.procedure_unrestricted;
+import static org.neo4j.graphdb.factory.GraphDatabaseSettings.procedure_white_list;
 import static org.neo4j.helpers.collection.MapUtil.genericMap;
 import static org.neo4j.kernel.impl.proc.ProcedureConfig.PROC_ALLOWED_SETTING_DEFAULT_NAME;
 import static org.neo4j.kernel.impl.proc.ProcedureConfig.PROC_ALLOWED_SETTING_ROLES;
@@ -186,5 +187,33 @@ public class ProcedureConfigTest
         assertThat( procConfig.fullAccessFor( "test.other.otherName" ), equalTo( true ) );
         assertThat( procConfig.fullAccessFor( "test.other.cool.otherName" ), equalTo( true ) );
         assertThat( procConfig.fullAccessFor( "test.other.name" ), equalTo( false ) );
+    }
+
+    @Test
+    public void shouldBlockWithWhiteListingForProcedures()
+    {
+        Config config = Config.defaults().with( genericMap( procedure_unrestricted.name(),
+                "test.procedure.name, test.procedure.name2",  procedure_white_list.name(),
+                "test.procedure.name") );
+        ProcedureConfig procConfig = new ProcedureConfig( config );
+
+        assertThat( procConfig.whiteListed( "xyzabc" ), equalTo( false ) );
+        assertThat( procConfig.whiteListed( "test.procedure.name" ), equalTo( true ) );
+        assertThat( procConfig.whiteListed( "test.procedure.name2" ), equalTo( false ) );
+    }
+
+    @Test
+    public void shouldAllowWhiteListsWildcardProceduresNames()
+    {
+        Config config = Config.defaults().with( genericMap( procedure_white_list.name(),
+                " test.procedure.* ,  test.*.otherName"  ));
+        ProcedureConfig procConfig = new ProcedureConfig( config );
+
+        assertThat( procConfig.whiteListed( "xyzabc" ), equalTo( false ) );
+        assertThat( procConfig.whiteListed( "test.procedure.name" ), equalTo( true ) );
+        assertThat( procConfig.whiteListed( "test.procedure.otherName" ), equalTo( true ) );
+        assertThat( procConfig.whiteListed( "test.other.otherName" ), equalTo( true ) );
+        assertThat( procConfig.whiteListed( "test.other.cool.otherName" ), equalTo( true ) );
+        assertThat( procConfig.whiteListed( "test.other.name" ), equalTo( false ) );
     }
 }

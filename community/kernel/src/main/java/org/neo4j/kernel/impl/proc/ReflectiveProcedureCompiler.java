@@ -175,7 +175,18 @@ class ReflectiveProcedureCompiler
             ArrayList<CallableProcedure> out = new ArrayList<>( procedureMethods.size() );
             for ( Method method : procedureMethods )
             {
-                out.add( compileProcedure( procDefinition, constructor, method, warning, fullAccess ) );
+                String valueName = method.getAnnotation( Procedure.class ).value();
+                String definedName = method.getAnnotation( Procedure.class ).name();
+                QualifiedName procName = extractName( procDefinition, method, valueName, definedName );
+
+                if ( !(fullAccess || config.whiteListed( procName.toString() )) )
+                {
+                    log.warn( String.format( "The procedure '%s' is not white listed.", procName.toString() ) );
+                }
+                else
+                {
+                    out.add( compileProcedure( procDefinition, constructor, method, warning, fullAccess, procName ) );
+                }
             }
             out.sort( Comparator.comparing( a -> a.signature().name().toString() ) );
             return out;
@@ -192,14 +203,11 @@ class ReflectiveProcedureCompiler
     }
 
     private CallableProcedure compileProcedure( Class<?> procDefinition, MethodHandle constructor, Method method,
-            Optional<String> warning, boolean fullAccess )
+            Optional<String> warning, boolean fullAccess, QualifiedName procName  )
             throws ProcedureException, IllegalAccessException
     {
         MethodHandle procedureMethod = lookup.unreflect( method );
 
-        String valueName = method.getAnnotation( Procedure.class ).value();
-        String definedName = method.getAnnotation( Procedure.class ).name();
-        QualifiedName procName = extractName( procDefinition, method, valueName, definedName );
         List<FieldSignature> inputSignature = inputSignatureDeterminer.signatureFor( method );
         OutputMapper outputMapper = outputMappers.mapper( method );
 
