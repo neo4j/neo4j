@@ -41,37 +41,40 @@ public class QueryStatusResult
 {
     public final String queryId;
     public final String username;
+    public final Map<String,Object> metaData;
     public final String query;
     public final Map<String,Object> parameters;
+    /** @since Neo4j 3.2 */
     public final String planner;
+    /** @since Neo4j 3.2 */
     public final String runtime;
+    /** @since Neo4j 3.2 */
+    public final List<Map<String,String>> indexes;
     public final String startTime;
     @Deprecated
     public final String elapsedTime;
-    /** EXPERIMENTAL: added in Neo4j 3.2 */
-    public final long elapsedTimeMillis; // TODO: this field should be of a Duration type (when Cypher supports that)
     @Deprecated
     public final String connectionDetails;
-    /** EXPERIMENTAL: added in Neo4j 3.2 */
+    /** @since Neo4j 3.2 */
     public final String requestScheme;
-    /** EXPERIMENTAL: added in Neo4j 3.2 */
+    /** @since Neo4j 3.2 */
     public final String clientAddress;
-    /** EXPERIMENTAL: added in Neo4j 3.2 */
+    /** @since Neo4j 3.2 */
     public final String requestUri;
-    /** EXPERIMENTAL: added in Neo4j 3.2 */
-    public final long cpuTimeMillis; // TODO: we want this field to be of a Duration type (when Cypher supports that)
-    /** EXPERIMENTAL: added in Neo4j 3.2 */
+    /** @since Neo4j 3.2 */
     public final String status;
-    /** EXPERIMENTAL: added in Neo4j 3.2 */
+    /** @since Neo4j 3.2 */
     public final Map<String,Object> resourceInformation;
-    /** EXPERIMENTAL: added in Neo4j 3.2 */
+    /** @since Neo4j 3.2 */
     public final long activeLockCount;
-    /** EXPERIMENTAL: added in Neo4j 3.2 */
+    /** @since Neo4j 3.2 */
+    public final long elapsedTimeMillis; // TODO: this field should be of a Duration type (when Cypher supports that)
+    /** @since Neo4j 3.2 */
+    public final long cpuTimeMillis; // TODO: we want this field to be of a Duration type (when Cypher supports that)
+    /** @since Neo4j 3.2 */
     public final long waitTimeMillis; // TODO: we want this field to be of a Duration type (when Cypher supports that)
-    /** EXPERIMENTAL: added in Neo4j 3.2 */
+    /** @since Neo4j 3.2 */
     public final long idleTimeMillis; // TODO: we want this field to be of a Duration type (when Cypher supports that)
-    public final Map<String,Object> metaData;
-    public final List<Map<String,String>> indexes;
 
     QueryStatusResult( ExecutingQuery query ) throws InvalidArgumentsException
     {
