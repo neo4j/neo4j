@@ -30,15 +30,22 @@ trait Comparer extends StringHelper {
 
   import Comparer._
 
-  def compare(l: Any, r: Any)(implicit qtx: QueryState): Int = {
+  def compare(operator: Option[String], l: Any, r: Any)(implicit qtx: QueryState): Int = {
     try {
       if ((isString(l) && isString(r)) || (isNumber(l) && isNumber(r)) || (isBoolean(l) && isBoolean(r)))
         CypherOrdering.DEFAULT.compare(l, r)
       else
-        throw new IncomparableValuesException(textWithType(l), textWithType(r))
+        throw new IncomparableValuesException(operator.map( reason(l, r) ), textWithType(l), textWithType(r))
     } catch {
       case _: IllegalArgumentException =>
-        throw new IncomparableValuesException(textWithType(l), textWithType(r))
+        throw new IncomparableValuesException(operator.map( reason(l, r) ), textWithType(l), textWithType(r))
+    }
+  }
+
+  private def reason(l:Any, r:Any)(operator: String):String = {
+    (l, r) match {
+      case (_:List[_], _:List[_]) => s"Cannot perform $operator on lists, consider using UNWIND."
+      case (_, _) => s"Cannot perform $operator on mixed types."
     }
   }
 }
