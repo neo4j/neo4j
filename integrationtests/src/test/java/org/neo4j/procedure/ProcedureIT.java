@@ -1271,12 +1271,12 @@ public class ProcedureIT
         public TerminationGuard guard;
 
         @Context
-        public KernelTransaction ktx;
+        public MarkForTermination termination;
 
         @Procedure
         public Stream<Output> guardMe()
         {
-            ktx.markForTermination( Status.Transaction.Terminated );
+            termination.mark( Status.Transaction.Terminated  );
             guard.check();
             throw new IllegalStateException( "Should never have executed this!" );
         }
