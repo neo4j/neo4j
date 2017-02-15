@@ -371,8 +371,6 @@ public class DataSourceModule
         Guard guard = platform.dependencies.resolveDependency( Guard.class );
         procedures.registerComponent( TerminationGuard.class, new TerminationGuardProvider( guard ), true );
 
-        // Register injected private API components: useful to have available in procedures to access the kernel etc.
-
         // Below components are not public API, but are made available for internal
         // procedures to call, and to provide temporary workarounds for the following
         // patterns:

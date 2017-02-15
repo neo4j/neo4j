@@ -182,7 +182,7 @@ class ProcedureGDBFacadeSPI implements GraphDatabaseFacade.SPI
     }
 
     @Override
-    public KernelTransaction beginTransaction( KernelTransaction.Type type, SecurityContext securityContext, long timeout )
+    public KernelTransaction beginTransaction( KernelTransaction.Type type, SecurityContext ignoredSecurityContext, long timeout )
     {
         try
         {

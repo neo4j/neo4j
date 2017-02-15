@@ -37,12 +37,10 @@ import java.util.List;
 import java.util.Map;
 import java.util.concurrent.Executors;
 import java.util.concurrent.ScheduledExecutorService;
-import java.util.concurrent.TimeUnit;
 import java.util.stream.Collectors;
 import java.util.stream.IntStream;
 import java.util.stream.Stream;
 
-import org.neo4j.function.Predicates;
 import org.neo4j.graphdb.GraphDatabaseService;
 import org.neo4j.graphdb.Label;
 import org.neo4j.graphdb.Node;
@@ -53,7 +51,6 @@ import org.neo4j.graphdb.RelationshipType;
 import org.neo4j.graphdb.Result;
 import org.neo4j.graphdb.Transaction;
 import org.neo4j.graphdb.security.AuthorizationViolationException;
-import org.neo4j.helpers.Exceptions;
 import org.neo4j.helpers.collection.Iterators;
 import org.neo4j.io.fs.FileUtils;
 import org.neo4j.kernel.api.KernelTransaction;
@@ -68,7 +65,6 @@ import org.neo4j.test.TestGraphDatabaseFactory;
 
 import static java.util.Collections.singletonList;
 import static org.hamcrest.MatcherAssert.assertThat;
-import static org.hamcrest.Matchers.instanceOf;
 import static org.hamcrest.core.IsEqual.equalTo;
 import static org.junit.Assert.assertEquals;
 import static org.junit.Assert.assertFalse;
@@ -824,7 +820,7 @@ public class ProcedureIT
     {
         // given
         Runnable doIt = () -> {
-            Result result = db.execute( "CALL org.neo4j.procedure.unsupportedProcedure()" );
+            Result result = db.execute( "CALL org.neo4j.procedure.supportedProcedure()" );
             while ( result.hasNext() )
             {
                 result.next();
@@ -1539,7 +1535,7 @@ public class ProcedureIT
         }
 
         @Procedure( mode = WRITE )
-        public void unsupportedProcedure()
+        public void supportedProcedure()
         {
             jobs.submit( () -> {
                 try ( Transaction tx = db.beginTx() )
