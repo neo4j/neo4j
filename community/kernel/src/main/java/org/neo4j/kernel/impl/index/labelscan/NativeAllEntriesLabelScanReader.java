@@ -249,5 +249,34 @@ class NativeAllEntriesLabelScanReader implements AllEntriesLabelScanReader
             assert index >= 0 && index < RANGE_SIZE : "nodeId:" + nodeId + ", idRange:" + idRange;
             return labels[index];
         }
+
+        @Override
+        public String toString()
+        {
+            long lowRange = idRange * RANGE_SIZE;
+            long highRange = ((idRange + 1) * RANGE_SIZE);
+            String rangeString = lowRange + "-" + highRange;
+            StringBuilder result = new StringBuilder( "NodeLabelRange[idRange=" ).append( rangeString );
+            result.append( "; {" );
+            for ( int i = 0; i < nodes.length; i++ )
+            {
+                if ( i != 0 )
+                {
+                    result.append( ", " );
+                }
+                result.append( "Node[" ).append( nodes[i] ).append( "]: Labels[" );
+                String sep = "";
+                if ( labels[i] != null )
+                {
+                    for ( long labelId : labels[i] )
+                    {
+                        result.append( sep ).append( labelId );
+                        sep = ", ";
+                    }
+                }
+                result.append( "]" );
+            }
+            return result.append( "}]" ).toString();
+        }
     }
 }
