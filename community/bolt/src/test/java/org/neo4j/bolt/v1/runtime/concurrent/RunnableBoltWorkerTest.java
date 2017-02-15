@@ -19,6 +19,7 @@
  */
 package org.neo4j.bolt.v1.runtime.concurrent;
 
+import org.apache.commons.lang3.mutable.MutableBoolean;
 import org.junit.Before;
 import org.junit.Test;
 
@@ -29,7 +30,13 @@ import org.neo4j.kernel.impl.logging.LogService;
 import org.neo4j.kernel.impl.logging.NullLogService;
 import org.neo4j.logging.AssertableLogProvider;
 
-import static org.mockito.Mockito.*;
+import static org.junit.Assert.assertFalse;
+import static org.junit.Assert.fail;
+import static org.mockito.Mockito.mock;
+import static org.mockito.Mockito.never;
+import static org.mockito.Mockito.verify;
+import static org.mockito.Mockito.verifyNoMoreInteractions;
+import static org.mockito.Mockito.when;
 import static org.neo4j.logging.AssertableLogProvider.inLog;
 
 public class RunnableBoltWorkerTest
@@ -124,5 +131,71 @@ public class RunnableBoltWorkerTest
         internalLog.assertExactly( inLog( RunnableBoltWorker.class ).error( "Bolt protocol breach in session " +
                 "'test-session'" ) );
         userLog.assertNone( inLog( RunnableBoltWorker.class ).any() );
+    }
+
+    @Test
+    public void haltShouldTerminateButNotCloseTheStateMachine()
+    {
+        RunnableBoltWorker worker = new RunnableBoltWorker( machine, logService );
+
+        worker.halt();
+
+        verify( machine ).terminate();
+        verify( machine, never() ).close();
+    }
+
+    @Test
+    public void stateMachineIsClosedOnExit()
+    {
+        RunnableBoltWorker worker = new RunnableBoltWorker( machine, logService );
+
+        worker.enqueue( machine1 ->
+                worker.enqueue( machine2 ->
+                        worker.enqueue( machine3 ->
+                        {
+                            worker.enqueue( RunnableBoltWorker.SHUTDOWN );
+                            worker.enqueue( machine4 -> fail( "Should not be executed" ) );
+                        } ) ) );
+
+        worker.run();
+
+        verify( machine ).close();
+    }
+
+    @Test
+    public void haltIsRespected()
+    {
+        RunnableBoltWorker worker = new RunnableBoltWorker( machine, logService );
+
+        worker.enqueue( machine1 ->
+                worker.enqueue( machine2 ->
+                        worker.enqueue( machine3 ->
+                        {
+                            worker.halt();
+                            verify( machine ).terminate();
+                            worker.enqueue( machine4 -> fail( "Should not be executed" ) );
+                        } ) ) );
+
+        worker.run();
+
+        verify( machine ).close();
+    }
+
+    @Test
+    public void runDoesNothingAfterHalt()
+    {
+        RunnableBoltWorker worker = new RunnableBoltWorker( machine, logService );
+        MutableBoolean jobWasExecuted = new MutableBoolean();
+        worker.enqueue( machine1 ->
+        {
+            jobWasExecuted.setTrue();
+            fail( "Should not be executed" );
+        } );
+
+        worker.halt();
+        worker.run();
+
+        assertFalse( jobWasExecuted.booleanValue() );
+        verify( machine ).close();
     }
 }

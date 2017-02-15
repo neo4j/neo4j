@@ -46,7 +46,8 @@ class RunnableBoltWorker implements Runnable, BoltWorker
     private final BoltStateMachine machine;
     private final Log log;
     private final Log userLog;
-    private boolean keepRunning;
+
+    private volatile boolean keepRunning = true;
 
     RunnableBoltWorker( BoltStateMachine machine, LogService logging )
     {
@@ -76,7 +77,6 @@ class RunnableBoltWorker implements Runnable, BoltWorker
     @Override
     public void run()
     {
-        keepRunning = true;
         ArrayList<Job> batch = new ArrayList<>( workQueueSize );
 
         try
@@ -147,7 +147,10 @@ class RunnableBoltWorker implements Runnable, BoltWorker
     {
         try
         {
-            machine.close();
+            // Notify the state machine that it should terminate.
+            // We can't close it here because this method can be called from a different thread.
+            // State machine will be closed when this worker exits.
+            machine.terminate();
         }
         finally
         {
