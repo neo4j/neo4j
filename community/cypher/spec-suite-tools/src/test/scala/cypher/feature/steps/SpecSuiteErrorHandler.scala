@@ -213,6 +213,8 @@ case class SpecSuiteErrorHandler(typ: String, phase: String, detail: String) ext
       detail should equal(DELETE_CONNECTED_NODE)
     else if (msg.matches("Don't know how to compare that\\..+"))
       detail should equal(INCOMPARABLE_VALUES)
+    else if (msg.matches("Cannot perform .+ on mixed types\\..+"))
+      detail should equal(INCOMPARABLE_VALUES)
     else if (msg.matches("Invalid input '.+' is not a valid argument, must be a number in the range 0.0 to 1.0"))
       detail should equal(NUMBER_OUT_OF_RANGE)
     else if (msg.matches("step argument to range\\(\\) cannot be zero"))
