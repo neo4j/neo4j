@@ -19,6 +19,7 @@
  */
 package org.neo4j.bolt.v1.runtime.concurrent;
 
+import org.apache.commons.lang3.mutable.MutableBoolean;
 import org.junit.Before;
 import org.junit.Test;
 
@@ -30,9 +31,12 @@ import org.neo4j.kernel.impl.logging.NullLogService;
 import org.neo4j.logging.AssertableLogProvider;
 
 import static org.hamcrest.Matchers.equalTo;
+import static org.junit.Assert.assertFalse;
+import static org.junit.Assert.fail;
 import static org.mockito.Mockito.doThrow;
 import static org.mockito.Mockito.mock;
 import static org.mockito.Mockito.never;
+import static org.mockito.Mockito.times;
 import static org.mockito.Mockito.verify;
 import static org.mockito.Mockito.verifyNoMoreInteractions;
 import static org.mockito.Mockito.when;
@@ -75,6 +79,7 @@ public class RunnableBoltWorkerTest
 
         // Then
         verify( machine ).run( "Hello, world!", null, null );
+        verify( machine ).terminate();
         verify( machine ).close();
         verifyNoMoreInteractions( machine );
     }
@@ -84,7 +89,8 @@ public class RunnableBoltWorkerTest
     {
         // Given
         RunnableBoltWorker worker = new RunnableBoltWorker( machine, NullLogService.getInstance() );
-        worker.enqueue( s -> {
+        worker.enqueue( s ->
+        {
             throw new RuntimeException( "It didn't work out." );
         } );
 
@@ -100,7 +106,8 @@ public class RunnableBoltWorkerTest
     {
         // Given
         RunnableBoltWorker worker = new RunnableBoltWorker( machine, logService );
-        worker.enqueue( s -> {
+        worker.enqueue( s ->
+        {
             throw new BoltConnectionAuthFatality( "fatality" );
         } );
 
@@ -118,7 +125,8 @@ public class RunnableBoltWorkerTest
     {
         // Given
         RunnableBoltWorker worker = new RunnableBoltWorker( machine, logService );
-        worker.enqueue( s -> {
+        worker.enqueue( s ->
+        {
             throw new BoltProtocolBreachFatality( "protocol breach fatality" );
         } );
 
@@ -127,9 +135,20 @@ public class RunnableBoltWorkerTest
 
         // Then
         verify( machine ).close();
-        internalLog.assertExactly( inLog( RunnableBoltWorker.class ).error( "Bolt protocol breach in session " +
-                "'test-session'" ) );
+        internalLog.assertExactly( inLog( RunnableBoltWorker.class )
+                .error( "Bolt protocol breach in session 'test-session'" ) );
         userLog.assertNone( inLog( RunnableBoltWorker.class ).any() );
+    }
+
+    @Test
+    public void haltShouldTerminateButNotCloseTheStateMachine()
+    {
+        RunnableBoltWorker worker = new RunnableBoltWorker( machine, logService );
+
+        worker.halt();
+
+        verify( machine ).terminate();
+        verify( machine, never() ).close();
     }
 
     @Test
@@ -141,6 +160,9 @@ public class RunnableBoltWorkerTest
         worker.halt();
         worker.halt();
 
+        verify( machine, times( 3 ) ).terminate();
+        verify( machine, never() ).close();
+
         worker.run();
 
         verify( machine ).close();
@@ -150,9 +172,20 @@ public class RunnableBoltWorkerTest
     public void stateMachineIsClosedOnExit()
     {
         RunnableBoltWorker worker = new RunnableBoltWorker( machine, logService );
-        worker.enqueue( s -> s.run( "RETURN 1", null, null ) );
-        worker.enqueue( s -> s.run( "RETURN 2", null, null ) );
-        worker.enqueue( s -> worker.halt() );
+
+        worker.enqueue( machine1 ->
+        {
+            machine1.run( "RETURN 1", null, null );
+            worker.enqueue( machine2 ->
+            {
+                machine2.run( "RETURN 1", null, null );
+                worker.enqueue( machine3 ->
+                {
+                    worker.halt();
+                    worker.enqueue( machine4 -> fail( "Should not be executed" ) );
+                } );
+            } );
+        } );
 
         worker.run();
 
@@ -193,5 +226,42 @@ public class RunnableBoltWorkerTest
         internalLog.assertExactly( inLog( RunnableBoltWorker.class ).error(
                 equalTo( "Unable to close Bolt session 'test-session'" ),
                 equalTo( closeError ) ) );
+    }
+
+    @Test
+    public void haltIsRespected()
+    {
+        RunnableBoltWorker worker = new RunnableBoltWorker( machine, logService );
+
+        worker.enqueue( machine1 ->
+                worker.enqueue( machine2 ->
+                        worker.enqueue( machine3 ->
+                        {
+                            worker.halt();
+                            verify( machine ).terminate();
+                            worker.enqueue( machine4 -> fail( "Should not be executed" ) );
+                        } ) ) );
+
+        worker.run();
+
+        verify( machine ).close();
+    }
+
+    @Test
+    public void runDoesNothingAfterHalt()
+    {
+        RunnableBoltWorker worker = new RunnableBoltWorker( machine, logService );
+        MutableBoolean jobWasExecuted = new MutableBoolean();
+        worker.enqueue( machine1 ->
+        {
+            jobWasExecuted.setTrue();
+            fail( "Should not be executed" );
+        } );
+
+        worker.halt();
+        worker.run();
+
+        assertFalse( jobWasExecuted.booleanValue() );
+        verify( machine ).close();
     }
 }

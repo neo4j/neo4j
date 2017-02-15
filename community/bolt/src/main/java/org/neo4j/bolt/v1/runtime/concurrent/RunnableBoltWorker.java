@@ -58,6 +58,7 @@ class RunnableBoltWorker implements Runnable, BoltWorker
     /**
      * Accept a command to be executed at some point in the future. This will get queued and executed as soon as
      * possible.
+     *
      * @param job an operation to be performed on the session
      */
     @Override
@@ -71,7 +72,7 @@ class RunnableBoltWorker implements Runnable, BoltWorker
         {
             Thread.currentThread().interrupt();
             throw new RuntimeException( "Worker interrupted while queueing request, the session may have been " +
-                    "forcibly closed, or the database may be shutting down." );
+                                        "forcibly closed, or the database may be shutting down." );
         }
     }
 
@@ -138,7 +139,17 @@ class RunnableBoltWorker implements Runnable, BoltWorker
     @Override
     public void halt()
     {
-        keepRunning = false;
+        try
+        {
+            // Notify the state machine that it should terminate.
+            // We can't close it here because this method can be called from a different thread.
+            // State machine will be closed when this worker exits.
+            machine.terminate();
+        }
+        finally
+        {
+            keepRunning = false;
+        }
     }
 
     private void closeStateMachine()
