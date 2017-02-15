@@ -24,9 +24,12 @@ import org.neo4j.kernel.api.schema_new.index.NewIndexDescriptorFactory
 import org.neo4j.kernel.api.schema_new.index.{NewIndexDescriptor => KernelIndexDescriptor}
 
 trait IndexDescriptorCompatibility {
-  implicit def cypherToKernel(index: CypherIndexDescriptor) =
+  implicit def cypherToKernel(index: CypherIndexDescriptor): KernelIndexDescriptor =
     NewIndexDescriptorFactory.forLabel(index.label, index.property)
 
-  implicit def kernelToCypher(index: KernelIndexDescriptor) =
-    CypherIndexDescriptor(index.schema().getLabelId, index.schema().getPropertyIds()(0))
+  implicit def kernelToCypher(index: KernelIndexDescriptor): CypherIndexDescriptor =
+    if (index.schema().getPropertyIds().length == 1)
+      CypherIndexDescriptor(index.schema().getLabelId, index.schema().getPropertyIds()(0))
+    else
+      throw new UnsupportedOperationException("Cypher 3.1 does not support composite indexes")
 }

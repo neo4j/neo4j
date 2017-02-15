@@ -43,7 +43,7 @@ class LeafPlanningIntegrationTest extends CypherFunSuite with LogicalPlanningTes
       NodeIndexSeek(
         "a",
         LabelToken("Person", LabelId(0)),
-        PropertyKeyToken(PropertyKeyName("name") _, PropertyKeyId(0)),
+        Seq(PropertyKeyToken(PropertyKeyName("name") _, PropertyKeyId(0))),
         RangeQueryExpression(PrefixSeekRangeWrapper(PrefixRange(StringLiteral("prefix")_)) _),
         Set.empty)(solved)
     )
@@ -74,7 +74,7 @@ class LeafPlanningIntegrationTest extends CypherFunSuite with LogicalPlanningTes
           NodeIndexSeek(
             "a",
             LabelToken("Person", LabelId(0)),
-            PropertyKeyToken(PropertyKeyName("lastname") _, PropertyKeyId(1)),
+            Seq(PropertyKeyToken(PropertyKeyName("lastname") _, PropertyKeyId(1))),
             RangeQueryExpression(PrefixSeekRangeWrapper(PrefixRange(StringLiteral("longer") _)) _),
             Set.empty)(solved)
         )(solved))
@@ -91,7 +91,7 @@ class LeafPlanningIntegrationTest extends CypherFunSuite with LogicalPlanningTes
         NodeIndexSeek(
           "a",
           LabelToken("Person", LabelId(0)),
-          PropertyKeyToken(PropertyKeyName("lastname") _, PropertyKeyId(1)),
+          Seq(PropertyKeyToken(PropertyKeyName("lastname") _, PropertyKeyId(1))),
           RangeQueryExpression(PrefixSeekRangeWrapper(PrefixRange(StringLiteral("longer") _)) _),
           Set.empty)(solved)
       )(solved))
@@ -108,7 +108,7 @@ class LeafPlanningIntegrationTest extends CypherFunSuite with LogicalPlanningTes
                 NodeIndexSeek(
                   "a",
                   LabelToken("Person", LabelId(0)),
-                  PropertyKeyToken(PropertyKeyName("name") _, PropertyKeyId(0)),
+                  Seq(PropertyKeyToken(PropertyKeyName("name") _, PropertyKeyId(0))),
                   RangeQueryExpression(PrefixSeekRangeWrapper(PrefixRange(StringLiteral("longer") _)) _),
                   Set.empty)(solved)
       )(solved))
@@ -125,7 +125,7 @@ class LeafPlanningIntegrationTest extends CypherFunSuite with LogicalPlanningTes
                 NodeIndexSeek(
                   "a",
                   LabelToken("Person", LabelId(0)),
-                  PropertyKeyToken(PropertyKeyName("name") _, PropertyKeyId(0)),
+                  Seq(PropertyKeyToken(PropertyKeyName("name") _, PropertyKeyId(0))),
                   SingleQueryExpression(StringLiteral("prefix1") _),
                   Set.empty)(solved)
       )(solved))
@@ -142,7 +142,7 @@ class LeafPlanningIntegrationTest extends CypherFunSuite with LogicalPlanningTes
                 NodeIndexSeek(
                   "a",
                   LabelToken("Person", LabelId(0)),
-                  PropertyKeyToken(PropertyKeyName("name") _, PropertyKeyId(0)),
+                  Seq(PropertyKeyToken(PropertyKeyName("name") _, PropertyKeyId(0))),
                   ManyQueryExpression(ListLiteral(List(StringLiteral("prefix1") _, StringLiteral("prefix2") _)) _),
                   Set.empty)(solved)
       )(solved))
@@ -156,7 +156,7 @@ class LeafPlanningIntegrationTest extends CypherFunSuite with LogicalPlanningTes
       NodeIndexSeek(
         "a",
         LabelToken("Person", LabelId(0)),
-        PropertyKeyToken(PropertyKeyName("age") _, PropertyKeyId(0)),
+        Seq(PropertyKeyToken(PropertyKeyName("age") _, PropertyKeyId(0))),
         RangeQueryExpression(InequalitySeekRangeWrapper(
           RangeLessThan(NonEmptyList(ExclusiveBound(SignedDecimalIntegerLiteral("12")_)))
         )_),
@@ -174,7 +174,7 @@ class LeafPlanningIntegrationTest extends CypherFunSuite with LogicalPlanningTes
       NodeIndexSeek(
         "a",
         LabelToken("Person", LabelId(0)),
-        PropertyKeyToken(PropertyKeyName("age") _, PropertyKeyId(0)),
+        Seq(PropertyKeyToken(PropertyKeyName("age") _, PropertyKeyId(0))),
         RangeQueryExpression(
           InequalitySeekRangeWrapper(
             RangeBetween(
@@ -211,7 +211,7 @@ class LeafPlanningIntegrationTest extends CypherFunSuite with LogicalPlanningTes
         NodeIndexSeek(
           "a",
           LabelToken("Person", LabelId(0)),
-          PropertyKeyToken(PropertyKeyName("name") _, PropertyKeyId(0)),
+          Seq(PropertyKeyToken(PropertyKeyName("name") _, PropertyKeyId(0))),
           RangeQueryExpression(InequalitySeekRangeWrapper(
             RangeGreaterThan(NonEmptyList(InclusiveBound(StringLiteral("Cinderella")_)))
           )_),
@@ -227,7 +227,7 @@ class LeafPlanningIntegrationTest extends CypherFunSuite with LogicalPlanningTes
       NodeIndexSeek(
         "a",
         LabelToken("Person", LabelId(0)),
-        PropertyKeyToken(PropertyKeyName("name") _, PropertyKeyId(0)),
+        Seq(PropertyKeyToken(PropertyKeyName("name") _, PropertyKeyId(0))),
         RangeQueryExpression(InequalitySeekRangeWrapper(
           RangeGreaterThan(NonEmptyList(InclusiveBound(StringLiteral("Frodo")_)))
         )_),
@@ -323,11 +323,11 @@ class LeafPlanningIntegrationTest extends CypherFunSuite with LogicalPlanningTes
 
     plan._2 should equal(
       Selection(Seq(FunctionInvocation(FunctionName("exists") _, Property(varFor("n"), PropertyKeyName("prop") _) _) _),
-                NodeIndexSeek(
+        NodeIndexSeek(
           "n",
           LabelToken("Awesome", LabelId(0)),
-          PropertyKeyToken(PropertyKeyName("prop") _, PropertyKeyId(0)),
-          SingleQueryExpression(SignedDecimalIntegerLiteral("42")_),
+          Seq(PropertyKeyToken(PropertyKeyName("prop") _, PropertyKeyId(0))),
+          SingleQueryExpression(SignedDecimalIntegerLiteral("42") _),
           Set.empty)(solved)
       )(solved))
   }
@@ -341,7 +341,7 @@ class LeafPlanningIntegrationTest extends CypherFunSuite with LogicalPlanningTes
       NodeIndexSeek(
         "n",
         LabelToken("Awesome", LabelId(0)),
-        PropertyKeyToken(PropertyKeyName("prop")_, PropertyKeyId(0)),
+        Seq(PropertyKeyToken(PropertyKeyName("prop")_, PropertyKeyId(0))),
         SingleQueryExpression(SignedDecimalIntegerLiteral("42")_),
         Set.empty)(solved)
     )
@@ -353,7 +353,7 @@ class LeafPlanningIntegrationTest extends CypherFunSuite with LogicalPlanningTes
     } getLogicalPlanFor "MATCH (n:Awesome) WHERE n.prop = 42 RETURN n"
 
     plan._2 should equal(
-      NodeUniqueIndexSeek("n", LabelToken("Awesome", LabelId(0)), PropertyKeyToken("prop", PropertyKeyId(0)), SingleQueryExpression(SignedDecimalIntegerLiteral("42")_), Set.empty)(solved)
+      NodeUniqueIndexSeek("n", LabelToken("Awesome", LabelId(0)), Seq(PropertyKeyToken("prop", PropertyKeyId(0))), SingleQueryExpression(SignedDecimalIntegerLiteral("42") _), Set.empty)(solved)
     )
   }
 
@@ -411,7 +411,7 @@ class LeafPlanningIntegrationTest extends CypherFunSuite with LogicalPlanningTes
       case NodeIndexSeek(
               IdName("n"),
               LabelToken("Awesome", _),
-              PropertyKeyToken("prop", _),
+              Seq(PropertyKeyToken("prop", _)),
               SingleQueryExpression(SignedDecimalIntegerLiteral("42")), _) => ()
     }
   }
@@ -456,7 +456,7 @@ class LeafPlanningIntegrationTest extends CypherFunSuite with LogicalPlanningTes
     } getLogicalPlanFor "MATCH (n) USING INDEX n:Awesome(prop) WHERE n:Awesome AND n.prop = 42 RETURN n"
 
     plan._2 should equal(
-      NodeIndexSeek("n", LabelToken("Awesome", LabelId(0)), PropertyKeyToken("prop", PropertyKeyId(0)), SingleQueryExpression(SignedDecimalIntegerLiteral("42")_), Set.empty)(solved)
+      NodeIndexSeek("n", LabelToken("Awesome", LabelId(0)), Seq(PropertyKeyToken("prop", PropertyKeyId(0))), SingleQueryExpression(SignedDecimalIntegerLiteral("42")_), Set.empty)(solved)
     )
   }
 
@@ -466,7 +466,7 @@ class LeafPlanningIntegrationTest extends CypherFunSuite with LogicalPlanningTes
     } getLogicalPlanFor "MATCH (n) USING INDEX n:Awesome(prop) WHERE n:Awesome AND n.prop = 42 RETURN *"
 
     plan._2 should equal(
-      NodeIndexSeek("n", LabelToken("Awesome", LabelId(0)), PropertyKeyToken("prop", PropertyKeyId(0)), SingleQueryExpression(SignedDecimalIntegerLiteral("42")_), Set.empty)(solved)
+      NodeIndexSeek("n", LabelToken("Awesome", LabelId(0)), Seq(PropertyKeyToken("prop", PropertyKeyId(0))), SingleQueryExpression(SignedDecimalIntegerLiteral("42")_), Set.empty)(solved)
     )
   }
 
@@ -479,7 +479,7 @@ class LeafPlanningIntegrationTest extends CypherFunSuite with LogicalPlanningTes
     plan._2 should equal(
       Selection(
         List(In(Property(varFor("n"), PropertyKeyName("prop1")_)_, ListLiteral(Seq(SignedDecimalIntegerLiteral("42")_))_)_),
-        NodeIndexSeek("n", LabelToken("Awesome", LabelId(0)), PropertyKeyToken("prop2", PropertyKeyId(1)), SingleQueryExpression(SignedDecimalIntegerLiteral("3")_), Set.empty)(solved)
+        NodeIndexSeek("n", LabelToken("Awesome", LabelId(0)), Seq(PropertyKeyToken("prop2", PropertyKeyId(1))), SingleQueryExpression(SignedDecimalIntegerLiteral("3")_), Set.empty)(solved)
       )(solved)
     )
   }
@@ -490,7 +490,7 @@ class LeafPlanningIntegrationTest extends CypherFunSuite with LogicalPlanningTes
     } getLogicalPlanFor "MATCH (n) USING INDEX n:Awesome(prop) WHERE n:Awesome AND n.prop = 42 RETURN n"
 
     plan._2 should equal(
-      NodeUniqueIndexSeek("n", LabelToken("Awesome", LabelId(0)), PropertyKeyToken("prop", PropertyKeyId(0)), SingleQueryExpression(SignedDecimalIntegerLiteral("42")_), Set.empty)(solved)
+      NodeUniqueIndexSeek("n", LabelToken("Awesome", LabelId(0)), Seq(PropertyKeyToken("prop", PropertyKeyId(0))), SingleQueryExpression(SignedDecimalIntegerLiteral("42")_), Set.empty)(solved)
     )
   }
 
@@ -503,7 +503,7 @@ class LeafPlanningIntegrationTest extends CypherFunSuite with LogicalPlanningTes
     plan._2 should equal(
       Selection(
         List(In(Property(varFor("n"), PropertyKeyName("prop1")_)_, ListLiteral(Seq(SignedDecimalIntegerLiteral("42")_))_)_),
-        NodeUniqueIndexSeek("n", LabelToken("Awesome", LabelId(0)), PropertyKeyToken("prop2", PropertyKeyId(1)), SingleQueryExpression(SignedDecimalIntegerLiteral("3")_), Set.empty)(solved)
+        NodeUniqueIndexSeek("n", LabelToken("Awesome", LabelId(0)), Seq(PropertyKeyToken("prop2", PropertyKeyId(1))), SingleQueryExpression(SignedDecimalIntegerLiteral("3")_), Set.empty)(solved)
       )(solved)
     )
   }
@@ -517,7 +517,7 @@ class LeafPlanningIntegrationTest extends CypherFunSuite with LogicalPlanningTes
     plan._2 should equal(
       Selection(
         List(In(Property(varFor("n"), PropertyKeyName("prop1")_)_, ListLiteral(Seq(SignedDecimalIntegerLiteral("42")_))_)_),
-        NodeUniqueIndexSeek("n", LabelToken("Awesome", LabelId(0)), PropertyKeyToken("prop2", PropertyKeyId(1)), SingleQueryExpression(SignedDecimalIntegerLiteral("3")_), Set.empty)(solved)
+        NodeUniqueIndexSeek("n", LabelToken("Awesome", LabelId(0)), Seq(PropertyKeyToken("prop2", PropertyKeyId(1))), SingleQueryExpression(SignedDecimalIntegerLiteral("3")_), Set.empty)(solved)
       )(solved)
     )
   }
@@ -573,12 +573,12 @@ class LeafPlanningIntegrationTest extends CypherFunSuite with LogicalPlanningTes
           NodeIndexSeek(
             IdName("n"),
             LabelToken("Awesome", _),
-            PropertyKeyToken("prop2", _),
+            Seq(PropertyKeyToken("prop2", _)),
             SingleQueryExpression(StringLiteral("apa")), _),
           NodeIndexSeek(
             IdName("n"),
             LabelToken("Awesome", _),
-            PropertyKeyToken("prop1", _),
+            Seq(PropertyKeyToken("prop1", _)),
             SingleQueryExpression(SignedDecimalIntegerLiteral("42")), _)),
       _,
       _)

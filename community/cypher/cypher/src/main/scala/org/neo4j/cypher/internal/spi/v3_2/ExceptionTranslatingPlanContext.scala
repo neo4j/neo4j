@@ -25,11 +25,11 @@ import org.neo4j.cypher.internal.frontend.v3_2.phases.InternalNotificationLogger
 
 class ExceptionTranslatingPlanContext(inner: PlanContext) extends PlanContext with ExceptionTranslationSupport {
 
-  override def getIndexRule(labelName: String, propertyKey: String): Option[IndexDescriptor] =
-    translateException(inner.getIndexRule(labelName, propertyKey))
+  override def getIndexRule(labelName: String, propertyKeys: Seq[String]): Option[IndexDescriptor] =
+    translateException(inner.getIndexRule(labelName, propertyKeys))
 
-  override def getUniqueIndexRule(labelName: String, propertyKey: String): Option[IndexDescriptor] =
-    translateException(inner.getUniqueIndexRule(labelName, propertyKey))
+  override def getUniqueIndexRule(labelName: String, propertyKeys: Seq[String]): Option[IndexDescriptor] =
+    translateException(inner.getUniqueIndexRule(labelName, propertyKeys))
 
   override def statistics: GraphStatistics =
     translateException(inner.statistics)

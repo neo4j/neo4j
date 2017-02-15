@@ -41,14 +41,12 @@ import org.neo4j.procedure.Mode
 import scala.collection.JavaConverters._
 
 class TransactionBoundPlanContext(tc: TransactionalContextWrapper, logger: InternalNotificationLogger)
-  extends TransactionBoundTokenContext(tc.statement) with PlanContext {
+  extends TransactionBoundTokenContext(tc.statement) with PlanContext with IndexDescriptorCompatibility {
 
   @Deprecated
-  def getIndexRule(labelName: String, propertyKey: String): Option[IndexDescriptor] = evalOrNone {
-    val labelId = tc.statement.readOperations().labelGetForName(labelName)
-    val propertyKeyId = tc.statement.readOperations().propertyKeyGetForName(propertyKey)
-
-    getOnlineIndex(tc.statement.readOperations().indexGetForLabelAndPropertyKey(new NodePropertyDescriptor(labelId, propertyKeyId)))
+  def getIndexRule(labelName: String, propertyKeys: Seq[String]): Option[IndexDescriptor] = evalOrNone {
+    val descriptor = toNodePropertyDescriptor(tc, labelName, propertyKeys)
+    getOnlineIndex(tc.statement.readOperations().indexGetForLabelAndPropertyKey(descriptor))
   }
 
   def hasIndexRule(labelName: String): Boolean = {
@@ -60,13 +58,12 @@ class TransactionBoundPlanContext(tc: TransactionalContextWrapper, logger: Inter
     onlineIndexDescriptors.nonEmpty
   }
 
-  def getUniqueIndexRule(labelName: String, propertyKey: String): Option[IndexDescriptor] = evalOrNone {
-    val labelId = tc.statement.readOperations().labelGetForName(labelName)
-    val propertyKeyId = tc.statement.readOperations().propertyKeyGetForName(propertyKey)
+  def getUniqueIndexRule(labelName: String, propertyKeys: Seq[String]): Option[IndexDescriptor] = evalOrNone {
+    val descriptor = toNodePropertyDescriptor(tc, labelName, propertyKeys)
 
     // here we do not need to use getOnlineIndex method because uniqueness constraint creation is synchronous
-    val index = tc.statement.readOperations().uniqueIndexGetForLabelAndPropertyKey(new NodePropertyDescriptor(labelId, propertyKeyId))
-    Some(IndexDescriptor(index.schema().getLabelId, index.schema().getPropertyIds()(0)))
+    val index = tc.statement.readOperations().uniqueIndexGetForLabelAndPropertyKey(descriptor)
+    Some(IndexDescriptor(index.schema().getLabelId, index.schema().getPropertyIds()))
   }
 
   private def evalOrNone[T](f: => Option[T]): Option[T] =

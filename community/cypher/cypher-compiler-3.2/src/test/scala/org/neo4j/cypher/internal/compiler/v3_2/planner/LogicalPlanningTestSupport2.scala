@@ -96,20 +96,20 @@ trait LogicalPlanningTestSupport2 extends CypherTestSupport with AstConstruction
       override def statistics: GraphStatistics =
         config.graphStatistics
 
-      override def getUniqueIndexRule(labelName: String, propertyKey: String): Option[IndexDescriptor] =
-        if (config.uniqueIndexes((labelName, propertyKey)))
+      override def getUniqueIndexRule(labelName: String, propertyKeys: Seq[String]): Option[IndexDescriptor] =
+        if (config.uniqueIndexes((labelName, propertyKeys)))
           Some(IndexDescriptor(
             semanticTable.resolvedLabelIds(labelName).id,
-            semanticTable.resolvedPropertyKeyNames(propertyKey).id
+            propertyKeys.map(semanticTable.resolvedPropertyKeyNames(_).id)
           ))
         else
           None
 
-      override def getIndexRule(labelName: String, propertyKey: String): Option[IndexDescriptor] =
-        if (config.indexes((labelName, propertyKey)) || config.uniqueIndexes((labelName, propertyKey)))
+      override def getIndexRule(labelName: String, propertyKeys: Seq[String]): Option[IndexDescriptor] =
+        if (config.indexes((labelName, propertyKeys)) || config.uniqueIndexes((labelName, propertyKeys)))
           Some(IndexDescriptor(
             semanticTable.resolvedLabelIds(labelName).id,
-            semanticTable.resolvedPropertyKeyNames(propertyKey).id
+            propertyKeys.map(semanticTable.resolvedPropertyKeyNames(_).id)
           ))
         else
           None

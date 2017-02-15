@@ -19,7 +19,7 @@
  */
 package org.neo4j.cypher.internal.compiler.v3_2.planner.logical.steps
 
-import org.neo4j.cypher.internal.compiler.v3_2.commands.{QueryExpression, SingleQueryExpression}
+import org.neo4j.cypher.internal.compiler.v3_2.commands.{ManyQueryExpression, QueryExpression, SingleQueryExpression}
 import org.neo4j.cypher.internal.compiler.v3_2.planner.logical.LeafPlansForVariable.maybeLeafPlans
 import org.neo4j.cypher.internal.compiler.v3_2.planner.logical._
 import org.neo4j.cypher.internal.compiler.v3_2.planner.logical.plans._
@@ -77,11 +77,15 @@ abstract class AbstractIndexSeekLeafPlanner extends LeafPlanner with LeafPlanFro
     val plannables: Seq[IndexPlannableExpression] = expressions.collect(
       indexPlannableExpression(qg.argumentIds, arguments, labelPredicateMap, qg.hints))
     val singlePropertyIndexes = plannables.flatMap(p => maybeLeafPlans(p.name, p.producePlans()))
-//    val doublePropertyIndexes = plannables.combinations(2).map { pair =>
-//      //TODO: find composite plans
-//      maybeLeafPlans(pair.head.name, pair.head.producePlans())
-//    }.flatten
-    singlePropertyIndexes //++ doublePropertyIndexes
+    val doublePropertyIndexes = plannables.combinations(2).map { pair =>
+      val left = pair.head
+      val right = pair.tail.head
+      if (left.name == right.name)
+        maybeLeafPlans(left.name, producePlansFor(left.name, pair, labelPredicateMap, qg.hints, qg.argumentIds))
+      else
+        None
+    }.flatten
+    singlePropertyIndexes ++ doublePropertyIndexes
   }
 
   override def apply(qg: QueryGraph)(implicit context: LogicalPlanningContext): Seq[LogicalPlan] = {
@@ -141,13 +145,37 @@ abstract class AbstractIndexSeekLeafPlanner extends LeafPlanner with LeafPlanFro
 
   protected def constructPlan(idName: IdName,
                               label: LabelToken,
-                              propertyKey: PropertyKeyToken,
+                              propertyKeys: Seq[PropertyKeyToken],
                               valueExpr: QueryExpression[Expression],
                               hint: Option[UsingIndexHint],
                               argumentIds: Set[IdName])
                              (implicit context: LogicalPlanningContext): (Seq[Expression]) => LogicalPlan
 
-  protected def findIndexesFor(label: String, property: String)(implicit context: LogicalPlanningContext): Option[IndexDescriptor]
+  protected def findIndexesFor(label: String, properties: Seq[String])(implicit context: LogicalPlanningContext): Option[IndexDescriptor]
+
+  protected def producePlansFor(name: String, plannables: Seq[IndexPlannableExpression],
+                                labelPredicateMap: Map[IdName, Set[HasLabels]],
+                                hints: Set[Hint], argumentIds: Set[IdName])
+                               (implicit context: LogicalPlanningContext): Set[LogicalPlan] = {
+    implicit val semanticTable = context.semanticTable
+    val idName = IdName(name)
+    for (labelPredicate <- labelPredicateMap.getOrElse(idName, Set.empty);
+         labelName <- labelPredicate.labels;
+         labelId <- labelName.id;
+         indexDescriptor <- findIndexesFor(labelName.name, plannables.map(p => p.propertyKeyName.name)))
+      yield {
+        val propertyKeyTokens = plannables.map(p => p.propertyKeyName).map(n => PropertyKeyToken(n, n.id.head))
+        val hint = None
+        // TODO: support for composite hints
+        val pos = plannables.head.queryExpression.expression.position
+        // TODO: Decide on the best composite expression, currently mimicking a literal array of values
+        val queryExpression = ManyQueryExpression(ListLiteral(plannables.map(_.queryExpression.expression))(pos))
+        val entryConstructor: (Seq[Expression]) => LogicalPlan =
+          constructPlan(idName, LabelToken(labelName, labelId), propertyKeyTokens,
+            queryExpression, hint, argumentIds)
+        entryConstructor(plannables.map(p => p.propertyPredicate) :+ labelPredicate)
+      }
+  }
 
   case class IndexPlannableExpression(name: String, propertyKeyName: PropertyKeyName,
                                       propertyPredicate: Expression, queryExpression: QueryExpression[Expression],
@@ -158,7 +186,7 @@ abstract class AbstractIndexSeekLeafPlanner extends LeafPlanner with LeafPlanFro
       val idName = IdName(name)
       for (labelPredicate <- labelPredicateMap.getOrElse(idName, Set.empty);
            labelName <- labelPredicate.labels;
-           indexDescriptor <- findIndexesFor(labelName.name, propertyKeyName.name);
+           indexDescriptor <- findIndexesFor(labelName.name, Seq(propertyKeyName.name));
            labelId <- labelName.id)
         yield {
           val propertyName = propertyKeyName.name
@@ -166,7 +194,7 @@ abstract class AbstractIndexSeekLeafPlanner extends LeafPlanner with LeafPlanFro
             case hint @ UsingIndexHint(Variable(`name`), `labelName`, PropertyKeyName(`propertyName`)) => hint
           }
           val entryConstructor: (Seq[Expression]) => LogicalPlan =
-            constructPlan(idName, LabelToken(labelName, labelId), PropertyKeyToken(propertyKeyName, propertyKeyName.id.head),
+            constructPlan(idName, LabelToken(labelName, labelId), Seq(PropertyKeyToken(propertyKeyName, propertyKeyName.id.head)),
               queryExpression, hint, argumentIds)
           entryConstructor(Seq(propertyPredicate, labelPredicate))
         }
@@ -178,34 +206,37 @@ abstract class AbstractIndexSeekLeafPlanner extends LeafPlanner with LeafPlanFro
 object uniqueIndexSeekLeafPlanner extends AbstractIndexSeekLeafPlanner {
   protected def constructPlan(idName: IdName,
                               label: LabelToken,
-                              propertyKey: PropertyKeyToken,
+                              propertyKeys: Seq[PropertyKeyToken],
                               valueExpr: QueryExpression[Expression],
                               hint: Option[UsingIndexHint],
                               argumentIds: Set[IdName])
                              (implicit context: LogicalPlanningContext): (Seq[Expression]) => LogicalPlan =
     (predicates: Seq[Expression]) =>
-      context.logicalPlanProducer.planNodeUniqueIndexSeek(idName, label, propertyKey, valueExpr, predicates, hint, argumentIds)
+      context.logicalPlanProducer.planNodeUniqueIndexSeek(idName, label, propertyKeys, valueExpr, predicates, hint, argumentIds)
 
-  protected def findIndexesFor(label: String, property: String)(implicit context: LogicalPlanningContext): Option[IndexDescriptor] =
-    context.planContext.getUniqueIndexRule(label, property)
+  protected def findIndexesFor(label: String, properties: Seq[String])(implicit context: LogicalPlanningContext): Option[IndexDescriptor] =
+    context.planContext.getUniqueIndexRule(label, properties)
 }
 
 object indexSeekLeafPlanner extends AbstractIndexSeekLeafPlanner {
   protected def constructPlan(idName: IdName,
                               label: LabelToken,
-                              propertyKey: PropertyKeyToken,
+                              propertyKeys: Seq[PropertyKeyToken],
                               valueExpr: QueryExpression[Expression],
                               hint: Option[UsingIndexHint],
                               argumentIds: Set[IdName])
                              (implicit context: LogicalPlanningContext): (Seq[Expression]) => LogicalPlan =
     (predicates: Seq[Expression]) =>
-      context.logicalPlanProducer.planNodeIndexSeek(idName, label, propertyKey, valueExpr, predicates, hint, argumentIds)
+      context.logicalPlanProducer.planNodeIndexSeek(idName, label, propertyKeys, valueExpr, predicates, hint, argumentIds)
 
-  protected def findIndexesFor(label: String, property: String)(implicit context: LogicalPlanningContext): Option[IndexDescriptor] = {
-    if (uniqueIndex(label, property).isDefined) None else anyIndex(label, property)
+  protected def findIndexesFor(label: String, properties: Seq[String])(implicit context: LogicalPlanningContext): Option[IndexDescriptor] = {
+    if (uniqueIndex(label, properties).isDefined) None else anyIndex(label, properties)
   }
 
-  private def anyIndex(label: String, property: String)(implicit context: LogicalPlanningContext) = context.planContext.getIndexRule(label, property)
-  private def uniqueIndex(label: String, property: String)(implicit context: LogicalPlanningContext) = context.planContext.getUniqueIndexRule(label, property)
+  private def anyIndex(label: String, properties: Seq[String])(implicit context: LogicalPlanningContext) =
+    context.planContext.getIndexRule(label, properties)
+
+  private def uniqueIndex(label: String, properties: Seq[String])(implicit context: LogicalPlanningContext) =
+    context.planContext.getUniqueIndexRule(label, properties)
 }
 

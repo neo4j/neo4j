@@ -56,14 +56,14 @@ object DbStructureLogicalPlanningConfiguration {
       override val graphStatistics: GraphStatistics =
         new StatisticsCompletingGraphStatistics(underlyingStatistics)
 
-      override val indexes: Set[(String, String)] = indexSet(lookup.knownIndices())
+      override val indexes: Set[(String, Seq[String])] = indexSet(lookup.knownIndices())
       override val knownLabels: Set[String] = resolvedLabels.keys.toSet
-      override val uniqueIndexes: Set[(String, String)] = indexSet(lookup.knownUniqueIndices())
+      override val uniqueIndexes: Set[(String, Seq[String])] = indexSet(lookup.knownUniqueIndices())
     }
   }
 
-  private def indexSet(indices: util.Iterator[Pair[String, String]]): Set[(String, String)] =
-    indices.asScala.map { pair => pair.first() -> pair.other() }.toSet
+  private def indexSet(indices: util.Iterator[Pair[String, String]]): Set[(String, Seq[String])] =
+    indices.asScala.map { pair => pair.first() -> Seq(pair.other()) }.toSet
 
   private def resolveTokens[T](iterator: util.Iterator[Pair[Integer, String]])(f: Int => T): mutable.Map[String, T] = {
     val builder = mutable.Map.newBuilder[String, T]

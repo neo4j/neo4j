@@ -465,12 +465,6 @@ final class TransactionBoundQueryContext(val transactionalContext: Transactional
     transactionalContext.statement.readOperations().schemaStateGetOrCreate(key, javaCreator)
   }
 
-  implicit private def toNodePropertyDescriptor(descriptor: IndexDescriptor): NodePropertyDescriptor =
-    if (descriptor.isComposite)
-      new NodeMultiPropertyDescriptor(descriptor.label, descriptor.properties)
-    else
-      new NodePropertyDescriptor(descriptor.label, descriptor.property)
-
   override def addIndexRule(descriptor: IndexDescriptor): IdempotentResult[IndexDescriptor] = {
     val index = toNodePropertyDescriptor(descriptor)
     try {

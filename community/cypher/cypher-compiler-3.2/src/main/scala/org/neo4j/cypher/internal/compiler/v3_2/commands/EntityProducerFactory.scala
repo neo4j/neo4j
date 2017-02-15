@@ -71,24 +71,24 @@ class EntityProducerFactory extends GraphElementPropertyFunctions {
   }
 
   def nodeByIndexHint(readOnly: Boolean): PartialFunction[(PlanContext, StartItem), EntityProducer[Node]] = {
-    case (planContext, startItem @ SchemaIndex(variable, labelName, propertyName, AnyIndex, Some(ScanQueryExpression(_)))) =>
+    case (planContext, startItem @ SchemaIndex(variable, labelName, propertyNames, AnyIndex, Some(ScanQueryExpression(_)))) =>
 
-      val indexGetter = planContext.getIndexRule(labelName, propertyName)
+      val indexGetter = planContext.getIndexRule(labelName, propertyNames)
 
       val index = indexGetter getOrElse
-        (throw new IndexHintException(variable, labelName, propertyName, "No such index found."))
+        (throw new IndexHintException(variable, labelName, propertyNames, "No such index found."))
 
       asProducer[Node](startItem) { (m: ExecutionContext, state: QueryState) =>
         val resultNodes: Iterator[Node] = state.query.indexScan(index)
         resultNodes
       }
 
-    case (planContext, startItem @ SchemaIndex(variable, labelName, propertyName, AnyIndex, valueExp)) =>
+    case (planContext, startItem @ SchemaIndex(variable, labelName, propertyNames, AnyIndex, valueExp)) =>
 
-      val indexGetter = planContext.getIndexRule(labelName, propertyName)
+      val indexGetter = planContext.getIndexRule(labelName, propertyNames)
 
       val index = indexGetter getOrElse
-        (throw new IndexHintException(variable, labelName, propertyName, "No such index found."))
+        (throw new IndexHintException(variable, labelName, propertyNames, "No such index found."))
 
       val expression = valueExp getOrElse
         (throw new InternalException("Something went wrong trying to build your query."))
@@ -97,15 +97,15 @@ class EntityProducerFactory extends GraphElementPropertyFunctions {
         indexFactory(index)
 
       asProducer[Node](startItem) { (m: ExecutionContext, state: QueryState) =>
-        indexQuery(expression, m, state, indexFactory(state), labelName, Seq(propertyName))
+        indexQuery(expression, m, state, indexFactory(state), labelName, propertyNames)
       }
 
-    case (planContext, startItem @ SchemaIndex(variable, labelName, propertyName, UniqueIndex, valueExp)) =>
+    case (planContext, startItem @ SchemaIndex(variable, labelName, propertyNames, UniqueIndex, valueExp)) =>
 
-      val indexGetter = planContext.getUniqueIndexRule(labelName, propertyName)
+      val indexGetter = planContext.getUniqueIndexRule(labelName, propertyNames)
 
       val index = indexGetter getOrElse
-        (throw new IndexHintException(variable, labelName, propertyName, "No such index found."))
+        (throw new IndexHintException(variable, labelName, propertyNames, "No such index found."))
 
       val expression = valueExp getOrElse
         (throw new InternalException("Something went wrong trying to build your query."))
@@ -114,7 +114,7 @@ class EntityProducerFactory extends GraphElementPropertyFunctions {
         indexFactory(index)
 
       asProducer[Node](startItem) { (m: ExecutionContext, state: QueryState) =>
-        indexQuery(expression, m, state, indexFactory(state), labelName, Seq(propertyName))
+        indexQuery(expression, m, state, indexFactory(state), labelName, propertyNames)
       }
   }
 

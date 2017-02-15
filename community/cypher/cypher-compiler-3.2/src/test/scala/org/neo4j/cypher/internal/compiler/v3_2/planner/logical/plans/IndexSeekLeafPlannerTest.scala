@@ -20,7 +20,7 @@
 package org.neo4j.cypher.internal.compiler.v3_2.planner.logical.plans
 
 import org.neo4j.cypher.internal.frontend.v3_2.ast._
-import org.neo4j.cypher.internal.compiler.v3_2.commands.SingleQueryExpression
+import org.neo4j.cypher.internal.compiler.v3_2.commands.{ManyQueryExpression, SingleQueryExpression}
 import org.neo4j.cypher.internal.compiler.v3_2.planner.BeLikeMatcher._
 import org.neo4j.cypher.internal.compiler.v3_2.planner._
 import org.neo4j.cypher.internal.compiler.v3_2.planner.logical.steps.{indexSeekLeafPlanner, uniqueIndexSeekLeafPlanner}
@@ -34,6 +34,7 @@ class IndexSeekLeafPlannerTest extends CypherFunSuite with LogicalPlanningTestSu
   val idName = IdName("n")
   val hasLabels: Expression = HasLabels(varFor("n"), Seq(LabelName("Awesome") _)) _
   val property: Expression = Property(varFor("n"), PropertyKeyName("prop") _)_
+  val property2: Expression = Property(varFor("n"), PropertyKeyName("prop2") _)_
   val lit42: Expression = SignedDecimalIntegerLiteral("42") _
   val lit6: Expression = SignedDecimalIntegerLiteral("6") _
 
@@ -89,6 +90,60 @@ class IndexSeekLeafPlannerTest extends CypherFunSuite with LogicalPlanningTestSu
       // then
       resultPlans should beLike {
         case Seq(NodeIndexSeek(`idName`, _, _, SingleQueryExpression(`lit42`), _)) =>  ()
+      }
+    }
+  }
+
+  test("index scan when there is a composite index on two properties") {
+    new given {
+      val inCollectionValue2 = In(property2, ListLiteral(Seq(lit6))_)_
+      qg = queryGraph(inCollectionValue, inCollectionValue2, hasLabels)
+
+      indexOn("Awesome", Seq("prop", "prop2"))
+    }.withLogicalPlanningContext { (cfg, ctx) =>
+      // when
+      val resultPlans = indexSeekLeafPlanner(cfg.qg)(ctx)
+
+      // then
+      resultPlans should beLike {
+        case Seq(NodeIndexSeek(`idName`, LabelToken("Awesome", _),
+        Seq(PropertyKeyToken("prop", _), PropertyKeyToken("prop2", _)),
+        ManyQueryExpression(ListLiteral(Seq(`lit42`, `lit6`))), _)) => ()
+      }
+    }
+  }
+
+  ignore("index scan when there is a composite index on many properties") {
+    val propertyNames: Seq[String] = (0 to 10).map(n => s"prop$n")
+    val properties: Seq[Expression] = propertyNames.map { n =>
+      val prop: Expression = Property(varFor("n"), PropertyKeyName(n) _) _
+      prop
+    }
+    val values: Seq[Expression] = (0 to 10).map { n =>
+      val lit: Expression = SignedDecimalIntegerLiteral((n * 10 + 2).toString) _
+      lit
+    }
+    val predicates = properties.zip(values).map{ pair =>
+      val predicate = In(pair._1, ListLiteral(Seq(pair._2))_ )_
+      Predicate(Set(idName), predicate)
+    }
+
+    new given {
+      qg = QueryGraph(
+        selections = Selections(predicates.toSet + Predicate(Set(idName), hasLabels)),
+        patternNodes = Set(idName)
+      )
+
+      indexOn("Awesome", propertyNames)
+    }.withLogicalPlanningContext { (cfg, ctx) =>
+      // when
+      val resultPlans = indexSeekLeafPlanner(cfg.qg)(ctx)
+
+      // then
+      resultPlans should beLike {
+        case Seq(NodeIndexSeek(`idName`, LabelToken("Awesome", _),
+        Seq(_),
+        ManyQueryExpression(ListLiteral(_)), _)) => ()
       }
     }
   }

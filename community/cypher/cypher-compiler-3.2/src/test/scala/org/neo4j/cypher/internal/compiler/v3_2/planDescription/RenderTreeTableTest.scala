@@ -270,7 +270,7 @@ class RenderTreeTableTest extends CypherFunSuite with BeforeAndAfterAll {
 
   test("plan information is rendered on the corresponding row to the tree") {
     val args1 = Seq(Rows(42), DbHits(33), EstimatedRows(1))
-    val args2 = Seq(Rows(2), DbHits(633), Index("Label", "Prop"), EstimatedRows(1))
+    val args2 = Seq(Rows(2), DbHits(633), Index("Label", Seq("prop")), EstimatedRows(1))
 
     val plan1 = PlanDescriptionImpl(new Id, "NAME", NoChildren, args1, Set("a"))
     val plan2 = PlanDescriptionImpl(new Id, "NAME", SingleChild(plan1), args2, Set("b"))
@@ -279,13 +279,30 @@ class RenderTreeTableTest extends CypherFunSuite with BeforeAndAfterAll {
       """+----------+----------------+------+---------+-----------+--------------+
         || Operator | Estimated Rows | Rows | DB Hits | Variables | Other        |
         |+----------+----------------+------+---------+-----------+--------------+
-        || +NAME    |              1 |    2 |     633 | b         | :Label(Prop) |
+        || +NAME    |              1 |    2 |     633 | b         | :Label(prop) |
         || |        +----------------+------+---------+-----------+--------------+
         || +NAME    |              1 |   42 |      33 | a         |              |
         |+----------+----------------+------+---------+-----------+--------------+
         |""".stripMargin)
   }
 
+  test("composite index rendered correctly") {
+    val args1 = Seq(Rows(42), DbHits(33), EstimatedRows(1))
+    val args2 = Seq(Rows(2), DbHits(633), Index("Label", Seq("propA", "propB")), EstimatedRows(1))
+
+    val plan1 = PlanDescriptionImpl(new Id, "NAME", NoChildren, args1, Set("a"))
+    val plan2 = PlanDescriptionImpl(new Id, "NAME", SingleChild(plan1), args2, Set("b"))
+
+    renderAsTreeTable(plan2) should equal(
+      """+----------+----------------+------+---------+-----------+---------------------+
+        || Operator | Estimated Rows | Rows | DB Hits | Variables | Other               |
+        |+----------+----------------+------+---------+-----------+---------------------+
+        || +NAME    |              1 |    2 |     633 | b         | :Label(propA,propB) |
+        || |        +----------------+------+---------+-----------+---------------------+
+        || +NAME    |              1 |   42 |      33 | a         |                     |
+        |+----------+----------------+------+---------+-----------+---------------------+
+        |""".stripMargin)
+  }
 
   test("Expand contains information about its relations") {
     val expandPlan = Expand(singleRow, IdName("from"), SemanticDirection.INCOMING, Seq.empty, IdName("to"), IdName("rel"), ExpandAll)(solved)

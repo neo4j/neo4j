@@ -23,11 +23,11 @@ import org.neo4j.cypher.internal.compiler.v3_2.spi._
 import org.neo4j.cypher.internal.frontend.v3_2.phases.InternalNotificationLogger
 
 class NotImplementedPlanContext extends PlanContext {
-  override def getIndexRule(labelName: String, propertyKey: String): Option[IndexDescriptor] = ???
+  override def getIndexRule(labelName: String, propertyKeys: Seq[String]): Option[IndexDescriptor] = ???
 
   override def hasIndexRule(labelName: String): Boolean = ???
 
-  override def getUniqueIndexRule(labelName: String, propertyKey: String): Option[IndexDescriptor] = ???
+  override def getUniqueIndexRule(labelName: String, propertyKeys: Seq[String]): Option[IndexDescriptor] = ???
 
   override def hasPropertyExistenceConstraint(labelName: String, propertyKey: String): Boolean = ???
 

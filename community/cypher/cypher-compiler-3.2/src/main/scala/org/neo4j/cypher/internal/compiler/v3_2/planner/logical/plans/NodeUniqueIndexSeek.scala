@@ -25,7 +25,7 @@ import org.neo4j.cypher.internal.ir.v3_2.{CardinalityEstimation, IdName, Planner
 
 case class NodeUniqueIndexSeek(idName: IdName,
                                label: LabelToken,
-                               propertyKey: PropertyKeyToken,
+                               propertyKeys: Seq[PropertyKeyToken],
                                valueExpr: QueryExpression[Expression],
                                argumentIds: Set[IdName])
                               (val solved: PlannerQuery with CardinalityEstimation) extends IndexLeafPlan {

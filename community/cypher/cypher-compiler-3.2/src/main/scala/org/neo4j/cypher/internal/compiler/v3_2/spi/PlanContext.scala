@@ -32,11 +32,11 @@ import org.neo4j.kernel.api.constraints.UniquenessConstraint
  */
 trait PlanContext extends TokenContext with ProcedureSignatureResolver {
 
-  def getIndexRule(labelName: String, propertyKey: String): Option[IndexDescriptor]
+  def getIndexRule(labelName: String, propertyKeys: Seq[String]): Option[IndexDescriptor]
 
   def hasIndexRule(labelName: String): Boolean
 
-  def getUniqueIndexRule(labelName: String, propertyKey: String): Option[IndexDescriptor]
+  def getUniqueIndexRule(labelName: String, propertyKey: Seq[String]): Option[IndexDescriptor]
 
   def hasPropertyExistenceConstraint(labelName: String, propertyKey: String): Boolean
 

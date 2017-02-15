@@ -78,8 +78,8 @@ class ProfilerStatisticsNotReadyException extends CypherException {
   override def mapToPublic[T <: Throwable](mapper: MapToPublicExceptions[T]) = mapper.profilerStatisticsNotReadyException(this)
 }
 
-class IndexHintException(variable: String, label: String, property: String, message: String) extends CypherException {
-  override def mapToPublic[T <: Throwable](mapper: MapToPublicExceptions[T]) = mapper.indexHintException(variable, label, property, message, this)
+class IndexHintException(variable: String, label: String, properties: Seq[String], message: String) extends CypherException {
+  def mapToPublic[T <: Throwable](mapper: MapToPublicExceptions[T]) = mapper.indexHintException(variable, label, properties, message, this)
 }
 
 class JoinHintException(variable: String, message: String) extends CypherException {

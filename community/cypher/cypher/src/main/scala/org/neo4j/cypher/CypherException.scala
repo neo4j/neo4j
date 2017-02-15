@@ -100,8 +100,8 @@ class HintException(message: String, cause: Throwable)
   val status = Status.Statement.ExecutionFailed
 }
 
-class IndexHintException(variable: String, label: String, property: String, message: String, cause: Throwable)
-  extends CypherException(s"$message\nLabel: `$label`\nProperty name: `$property`", cause) {
+class IndexHintException(variable: String, label: String, properties: Seq[String], message: String, cause: Throwable)
+  extends CypherException(s"$message\nLabel: `$label`\nProperty name: ${properties.map(p => s"'$p'").mkString(", ")}", cause) {
   val status = Status.Schema.IndexNotFound
 }
 

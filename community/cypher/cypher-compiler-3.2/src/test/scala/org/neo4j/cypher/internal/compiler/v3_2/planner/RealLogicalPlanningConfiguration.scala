@@ -20,17 +20,17 @@
 package org.neo4j.cypher.internal.compiler.v3_2.planner
 
 import org.neo4j.cypher.internal.compiler.v3_2.HardcodedGraphStatistics
-import org.neo4j.cypher.internal.compiler.v3_2.planner.logical.Metrics.{QueryGraphCardinalityModel, QueryGraphSolverInput}
+import org.neo4j.cypher.internal.compiler.v3_2.planner.logical.Metrics.{CardinalityModel, QueryGraphCardinalityModel, QueryGraphSolverInput}
 import org.neo4j.cypher.internal.compiler.v3_2.planner.logical.plans.LogicalPlan
 import org.neo4j.cypher.internal.compiler.v3_2.planner.logical.{CardinalityCostModel, Metrics, StatisticsBackedCardinalityModel}
 import org.neo4j.cypher.internal.compiler.v3_2.spi.GraphStatistics
 import org.neo4j.cypher.internal.frontend.v3_2.SemanticTable
-import org.neo4j.cypher.internal.ir.v3_2.{Cost, PlannerQuery, QueryGraph}
+import org.neo4j.cypher.internal.ir.v3_2.{Cardinality, Cost, PlannerQuery, QueryGraph}
 
 case class RealLogicalPlanningConfiguration()
   extends LogicalPlanningConfiguration with LogicalPlanningConfigurationAdHocSemanticTable {
 
-  override def cardinalityModel(queryGraphCardinalityModel: QueryGraphCardinalityModel) = {
+  override def cardinalityModel(queryGraphCardinalityModel: QueryGraphCardinalityModel): CardinalityModel = {
     val model: Metrics.CardinalityModel = new StatisticsBackedCardinalityModel(queryGraphCardinalityModel)
     ({
       case (pq: PlannerQuery, card: QueryGraphSolverInput, semanticTable: SemanticTable) => model(pq, card, semanticTable)
@@ -45,10 +45,10 @@ case class RealLogicalPlanningConfiguration()
   }
 
   override def graphStatistics: GraphStatistics = HardcodedGraphStatistics
-  override def indexes = Set.empty
-  override def uniqueIndexes = Set.empty
-  override def labelCardinality = Map.empty
-  override def knownLabels = Set.empty
+  override def indexes: Set[(String, Seq[String])] = Set.empty
+  override def uniqueIndexes: Set[(String, Seq[String])] = Set.empty
+  override def labelCardinality: Map[String, Cardinality] = Map.empty
+  override def knownLabels: Set[String] = Set.empty
 
   override def qg: QueryGraph = ???
 }

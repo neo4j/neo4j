@@ -39,15 +39,23 @@ class StubbedLogicalPlanningConfiguration(parent: LogicalPlanningConfiguration)
   var statistics = null
   var qg: QueryGraph = null
 
-  var indexes: Set[(String, String)] = Set.empty
-  var uniqueIndexes: Set[(String, String)] = Set.empty
+  var indexes: Set[(String, Seq[String])] = Set.empty
+  var uniqueIndexes: Set[(String, Seq[String])] = Set.empty
 
   def indexOn(label: String, property: String) {
-    indexes = indexes + (label -> property)
+    indexes = indexes + (label -> Seq(property))
+  }
+
+  def indexOn(label: String, properties: Seq[String]) {
+    indexes = indexes + (label -> properties)
   }
 
   def uniqueIndexOn(label: String, property: String) {
-    uniqueIndexes = uniqueIndexes + (label -> property)
+    uniqueIndexes = uniqueIndexes + (label -> Seq(property))
+  }
+
+  def uniqueIndexOn(label: String, properties: Seq[String]) {
+    uniqueIndexes = uniqueIndexes + (label -> properties)
   }
 
   def costModel() = cost.orElse(parent.costModel())

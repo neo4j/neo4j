@@ -58,12 +58,12 @@ case class LogicalPlan2PlanDescription(idMap: Map[LogicalPlan, Id], readOnly: Bo
       case NodeByIdSeek(_, _, _) =>
         PlanDescriptionImpl(id, "NodeByIdSeek", NoChildren, Seq(), variables)
 
-      case NodeIndexSeek(_, label, propertyKey, valueExpr, _) =>
-        val (indexMode, indexDesc) = getDescriptions(label, propertyKey, valueExpr, unique = false, readOnly)
+      case NodeIndexSeek(_, label, propertyKeys, valueExpr, _) =>
+        val (indexMode, indexDesc) = getDescriptions(label, propertyKeys, valueExpr, unique = false, readOnly)
         PlanDescriptionImpl(id, indexMode.name, NoChildren, Seq(indexDesc), variables)
 
-      case NodeUniqueIndexSeek(_, label, propertyKey, valueExpr, _) =>
-        val (indexMode, indexDesc) = getDescriptions(label, propertyKey, valueExpr, unique = true, readOnly)
+      case NodeUniqueIndexSeek(_, label, propertyKeys, valueExpr, _) =>
+        val (indexMode, indexDesc) = getDescriptions(label, propertyKeys, valueExpr, unique = true, readOnly)
         PlanDescriptionImpl(id, indexMode.name, NoChildren, Seq(indexDesc), variables)
 
       case ProduceResult(_, _) =>
@@ -87,15 +87,15 @@ case class LogicalPlan2PlanDescription(idMap: Map[LogicalPlan, Id], readOnly: Bo
         PlanDescriptionImpl(id, "NodeCountFromCountStore", NoChildren, arguments, variables)
 
       case NodeIndexContainsScan(_, label, propertyKey, valueExpr, _) =>
-        val arguments = Seq(Index(label.name, propertyKey.name), Expression(valueExpr))
+        val arguments = Seq(Index(label.name, Seq(propertyKey.name)), Expression(valueExpr))
         PlanDescriptionImpl(id, "NodeIndexContainsScan", NoChildren, arguments, variables)
 
       case NodeIndexEndsWithScan(_, label, propertyKey, valueExpr, _) =>
-        val arguments = Seq(Index(label.name, propertyKey.name), Expression(valueExpr))
+        val arguments = Seq(Index(label.name, Seq(propertyKey.name)), Expression(valueExpr))
         PlanDescriptionImpl(id, "NodeIndexEndsWithScan", NoChildren, arguments, variables)
 
       case NodeIndexScan(_, label, propertyKey, _) =>
-        PlanDescriptionImpl(id, "NodeIndexScan", NoChildren, Seq(Index(label.name, propertyKey.name)), variables)
+        PlanDescriptionImpl(id, "NodeIndexScan", NoChildren, Seq(Index(label.name, Seq(propertyKey.name))), variables)
 
       case ProcedureCall(_, call) =>
         val signature = Signature(call.qualifiedName, call.callArguments, call.callResultTypes)
@@ -155,8 +155,8 @@ case class LogicalPlan2PlanDescription(idMap: Map[LogicalPlan, Id], readOnly: Bo
                             Seq(CountRelationshipsExpression(id, start.map(_.name), types.map(_.name), end.map(_.name))),
                             variables)
 
-      case NodeUniqueIndexSeek(IdName(id), label, propKey, value, arguments) =>
-        PlanDescriptionImpl(id = idMap(plan), "NodeUniqueIndexSeek", NoChildren, Seq(Index(label.name, propKey.name)), variables)
+      case NodeUniqueIndexSeek(IdName(id), label, propKeys, value, arguments) =>
+        PlanDescriptionImpl(id = idMap(plan), "NodeUniqueIndexSeek", NoChildren, Seq(Index(label.name, propKeys.map(_.name))), variables)
 
       case _: ErrorPlan =>
         PlanDescriptionImpl(id, "Error", children, Seq.empty, variables)
@@ -359,7 +359,7 @@ case class LogicalPlan2PlanDescription(idMap: Map[LogicalPlan, Id], readOnly: Bo
   }
 
   private def getDescriptions(label: LabelToken,
-                              propertyKey: PropertyKeyToken,
+                              propertyKeys: Seq[PropertyKeyToken],
                               valueExpr: QueryExpression[ast.Expression],
                               unique: Boolean,
                               readOnly: Boolean): (IndexSeekMode, planDescription.Argument) = {
@@ -371,24 +371,24 @@ case class LogicalPlan2PlanDescription(idMap: Map[LogicalPlan, Id], readOnly: Bo
           case e: RangeQueryExpression[_] =>
             e.expression match {
               case PrefixSeekRangeExpression(PrefixRange(prefix)) =>
-                PrefixIndex(label.name, propertyKey.name, prefix)
+                PrefixIndex(label.name, propertyKeys.head.name, prefix)
 
               case InequalitySeekRangeExpression(RangeLessThan(bounds)) =>
-                InequalityIndex(label.name, propertyKey.name, bounds.map(bound => s"<${bound.inequalitySignSuffix} ${bound.endPoint}").toIndexedSeq)
+                InequalityIndex(label.name, propertyKeys.head.name, bounds.map(bound => s"<${bound.inequalitySignSuffix} ${bound.endPoint}").toIndexedSeq)
 
               case InequalitySeekRangeExpression(RangeGreaterThan(bounds)) =>
-                InequalityIndex(label.name, propertyKey.name, bounds.map(bound => s">${bound.inequalitySignSuffix} ${bound.endPoint}").toIndexedSeq)
+                InequalityIndex(label.name, propertyKeys.head.name, bounds.map(bound => s">${bound.inequalitySignSuffix} ${bound.endPoint}").toIndexedSeq)
 
               case InequalitySeekRangeExpression(RangeBetween(greaterThanBounds, lessThanBounds)) =>
                 val greaterThanBoundsText = greaterThanBounds.bounds.map(bound => s">${bound.inequalitySignSuffix} ${bound.endPoint}").toIndexedSeq
                 val lessThanBoundsText = lessThanBounds.bounds.map(bound => s"<${bound.inequalitySignSuffix} ${bound.endPoint}").toIndexedSeq
-                InequalityIndex(label.name, propertyKey.name, greaterThanBoundsText ++ lessThanBoundsText)
+                InequalityIndex(label.name, propertyKeys.head.name, greaterThanBoundsText ++ lessThanBoundsText)
             }
 
           case _ =>
             throw new InternalException("This should never happen. Missing a case?")
         }
-      case IndexSeek | LockingUniqueIndexSeek | UniqueIndexSeek => Index(label.name, propertyKey.name)
+      case IndexSeek | LockingUniqueIndexSeek | UniqueIndexSeek => Index(label.name, propertyKeys.map(_.name))
       case _ => throw new InternalException("This should never happen. Missing a case?")
     }
     (indexMode, indexDesc)
