@@ -17,14 +17,36 @@
  * You should have received a copy of the GNU Affero General Public License
  * along with this program. If not, see <http://www.gnu.org/licenses/>.
  */
-package org.neo4j.causalclustering.load_balancing.strategy.server_policy;
+package org.neo4j.causalclustering.load_balancing.filters;
 
-import org.neo4j.kernel.configuration.Config;
+import java.util.Set;
 
-public class PolicyLoader
+/**
+ * Performs no filtering.
+ */
+public class IdentityFilter<T> implements Filter<T>
 {
-    PolicyLoader( Config config, Policies policies )
+    public static final IdentityFilter INSTANCE = new IdentityFilter();
+
+    private IdentityFilter()
     {
-        // TODO: Load policies from config into policies.
+    }
+
+    public static <T> IdentityFilter<T> as()
+    {
+        //noinspection unchecked
+        return INSTANCE;
+    }
+
+    @Override
+    public Set<T> apply( Set<T> data )
+    {
+        return data;
+    }
+
+    @Override
+    public String toString()
+    {
+        return "IdentityFilter{}";
     }
 }

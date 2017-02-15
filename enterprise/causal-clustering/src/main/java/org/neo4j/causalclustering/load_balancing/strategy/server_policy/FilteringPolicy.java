@@ -17,32 +17,26 @@
  * You should have received a copy of the GNU Affero General Public License
  * along with this program. If not, see <http://www.gnu.org/licenses/>.
  */
-package org.neo4j.causalclustering.load_balancing.filters;
+package org.neo4j.causalclustering.load_balancing.strategy.server_policy;
 
-import java.util.List;
 import java.util.Objects;
 import java.util.Set;
 
-/**
- * Filters the set through each filter of the chain in order.
- */
-public class FilterChain<T> implements Filter<T>
-{
-    private List<Filter<T>> chain;
+import org.neo4j.causalclustering.load_balancing.filters.Filter;
 
-    public FilterChain( List<Filter<T>> chain )
+public class FilteringPolicy implements Policy
+{
+    private final Filter<ServerInfo> filter;
+
+    FilteringPolicy( Filter<ServerInfo> filter )
     {
-        this.chain = chain;
+        this.filter = filter;
     }
 
     @Override
-    public Set<T> apply( Set<T> data )
+    public Set<ServerInfo> apply( Set<ServerInfo> data )
     {
-        for ( Filter<T> filter : chain )
-        {
-            data = filter.apply( data );
-        }
-        return data;
+        return filter.apply( data );
     }
 
     @Override
@@ -52,21 +46,21 @@ public class FilterChain<T> implements Filter<T>
         { return true; }
         if ( o == null || getClass() != o.getClass() )
         { return false; }
-        FilterChain<?> that = (FilterChain<?>) o;
-        return Objects.equals( chain, that.chain );
+        FilteringPolicy that = (FilteringPolicy) o;
+        return Objects.equals( filter, that.filter );
     }
 
     @Override
     public int hashCode()
     {
-        return Objects.hash( chain );
+        return Objects.hash( filter );
     }
 
     @Override
     public String toString()
     {
-        return "FilterChain{" +
-               "chain=" + chain +
+        return "FilteringPolicy{" +
+               "filter=" + filter +
                '}';
     }
 }

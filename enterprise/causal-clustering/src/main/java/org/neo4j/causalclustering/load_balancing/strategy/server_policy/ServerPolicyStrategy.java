@@ -35,30 +35,37 @@ import org.neo4j.causalclustering.identity.MemberId;
 import org.neo4j.causalclustering.load_balancing.Endpoint;
 import org.neo4j.causalclustering.load_balancing.LoadBalancingResult;
 import org.neo4j.causalclustering.load_balancing.LoadBalancingStrategy;
-import org.neo4j.causalclustering.load_balancing.filters.Filter;
 import org.neo4j.kernel.configuration.Config;
+import org.neo4j.logging.LogProvider;
 
 import static java.util.Collections.emptyList;
 import static org.neo4j.causalclustering.load_balancing.Util.asList;
 import static org.neo4j.causalclustering.load_balancing.Util.extractBoltAddress;
 
-// TODO: This is work in progress. Currently mostly copies V1 behaviour.
+/**
+ * The server policy strategy defines policies on the server-side which
+ * can be bound to by a client by supplying a appropriately formed context.
+ *
+ * An example would be to define a policy for a particular region.
+ */
 public class ServerPolicyStrategy implements LoadBalancingStrategy
 {
+    private static final String STRATEGY_NAME = "server_policy";
+
     private final TopologyService topologyService;
     private final LeaderLocator leaderLocator;
     private final Long timeToLive;
     private final boolean allowReadsOnFollowers;
     private final Policies policies;
 
-    public ServerPolicyStrategy( TopologyService topologyService,
-            LeaderLocator leaderLocator, Policies policies, Config config )
+    public ServerPolicyStrategy( TopologyService topologyService, LeaderLocator leaderLocator,
+            LogProvider logProvider, Config config ) throws InvalidFilterSpecification
     {
         this.topologyService = topologyService;
         this.leaderLocator = leaderLocator;
         this.timeToLive = config.get( CausalClusteringSettings.cluster_routing_ttl );
         this.allowReadsOnFollowers = config.get( CausalClusteringSettings.cluster_allow_reads_on_followers );
-        this.policies = policies;
+        this.policies = FilteringPolicyLoader.load( config, STRATEGY_NAME, logProvider );
     }
 
     @Override
@@ -96,7 +103,7 @@ public class ServerPolicyStrategy implements LoadBalancingStrategy
         return asList( endPoint );
     }
 
-    private List<Endpoint> readEndpoints( CoreTopology coreTopology, ReadReplicaTopology rrTopology, Filter<ServerInfo> policyFilter )
+    private List<Endpoint> readEndpoints( CoreTopology coreTopology, ReadReplicaTopology rrTopology, Policy policy )
     {
         Set<ServerInfo> possibleReaders = rrTopology.allMemberInfo().stream()
                 .map( info -> new ServerInfo( info.connectors().boltAddress(), info.tags() ) )
@@ -120,7 +127,7 @@ public class ServerPolicyStrategy implements LoadBalancingStrategy
                     .collect( Collectors.toSet() ) );
         }
 
-        Set<ServerInfo> readers = policyFilter.apply( possibleReaders );
+        Set<ServerInfo> readers = policy.apply( possibleReaders );
         return readers.stream().map( r -> Endpoint.read( r.boltAddress() ) ).collect( Collectors.toList() );
     }
 }

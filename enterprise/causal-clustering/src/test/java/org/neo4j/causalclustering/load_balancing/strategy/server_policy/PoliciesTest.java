@@ -23,7 +23,6 @@ import org.junit.Test;
 
 import java.util.Set;
 
-import org.neo4j.causalclustering.load_balancing.filters.Filter;
 import org.neo4j.helpers.AdvertisedSocketAddress;
 import org.neo4j.logging.NullLogProvider;
 
@@ -35,19 +34,38 @@ import static org.neo4j.helpers.collection.MapUtil.stringMap;
 public class PoliciesTest
 {
     @Test
-    public void shouldSupplyDefaultUnfilteredPolicy() throws Exception
+    public void shouldSupplyDefaultUnfilteredPolicyForEmptyContext() throws Exception
     {
         // given
         Policies policies = new Policies( NullLogProvider.getInstance() );
 
         // when
-        Filter<ServerInfo> filter = policies.selectFor( emptyMap() );
+        Policy policy = policies.selectFor( emptyMap() );
         Set<ServerInfo> input = asSet(
                 new ServerInfo( new AdvertisedSocketAddress( "bolt", 1 ), asSet( "tagA" ) ),
                 new ServerInfo( new AdvertisedSocketAddress( "bolt", 2 ), asSet( "tagB" ) )
         );
 
-        Set<ServerInfo> output = filter.apply( input );
+        Set<ServerInfo> output = policy.apply( input );
+
+        // then
+        assertEquals( input, output );
+    }
+
+    @Test
+    public void shouldSupplyDefaultUnfilteredPolicyForUnknownPolicyName() throws Exception
+    {
+        // given
+        Policies policies = new Policies( NullLogProvider.getInstance() );
+
+        // when
+        Policy policy = policies.selectFor( stringMap( Policies.POLICY_KEY, "unknown-policy" ) );
+        Set<ServerInfo> input = asSet(
+                new ServerInfo( new AdvertisedSocketAddress( "bolt", 1 ), asSet( "tagA" ) ),
+                new ServerInfo( new AdvertisedSocketAddress( "bolt", 2 ), asSet( "tagB" ) )
+        );
+
+        Set<ServerInfo> output = policy.apply( input );
 
         // then
         assertEquals( input, output );
@@ -60,11 +78,11 @@ public class PoliciesTest
         Policies policies = new Policies( NullLogProvider.getInstance() );
 
         String myPolicyName = "china";
-        Filter<ServerInfo> myPolicy = data -> data;
+        Policy myPolicy = data -> data;
 
         // when
         policies.addPolicy( myPolicyName, myPolicy );
-        Filter<ServerInfo> selectedPolicy = policies.selectFor( stringMap( Policies.POLICY_KEY, myPolicyName ) );
+        Policy selectedPolicy = policies.selectFor( stringMap( Policies.POLICY_KEY, myPolicyName ) );
 
         // then
         assertEquals( myPolicy, selectedPolicy );

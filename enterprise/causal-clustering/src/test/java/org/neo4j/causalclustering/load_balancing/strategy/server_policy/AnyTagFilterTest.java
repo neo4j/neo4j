@@ -60,9 +60,4 @@ public class AnyTagFilterTest
 
         assertEquals( asSet( 1, 2, 3, 4, 7 ), ports );
     }
-
-    ServerInfo serverInfo( String... tags )
-    {
-        return new ServerInfo( new AdvertisedSocketAddress( "bolt", 1 ), asSet( tags ) );
-    }
 }

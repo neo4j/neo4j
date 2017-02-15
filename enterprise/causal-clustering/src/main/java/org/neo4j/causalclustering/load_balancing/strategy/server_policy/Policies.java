@@ -22,35 +22,51 @@ package org.neo4j.causalclustering.load_balancing.strategy.server_policy;
 import java.util.HashMap;
 import java.util.Map;
 
-import org.neo4j.causalclustering.load_balancing.filters.Filter;
+import org.neo4j.causalclustering.load_balancing.filters.IdentityFilter;
 import org.neo4j.logging.Log;
 import org.neo4j.logging.LogProvider;
+
+import static java.lang.String.format;
 
 class Policies
 {
     static final String POLICY_KEY = "load_balancing.policy"; // TODO: move somewhere (driver support package?)
-    private static final Filter<ServerInfo> DEFAULT_POLICY = input -> input;
 
-    private final Map<String,Filter<ServerInfo>> policies = new HashMap<>();
+    private final Map<String,Policy> policies = new HashMap<>();
+    private final Policy DEFAULT_POLICY = new FilteringPolicy( IdentityFilter.as() );
     private final Log log;
 
     Policies( LogProvider logProvider )
     {
         this.log = logProvider.getLog( getClass() );
-        policies.put( null, DEFAULT_POLICY );
     }
 
-    void addPolicy( String policyName, Filter<ServerInfo> filter )
+    void addPolicy( String policyName, Policy policy )
     {
-        Filter<ServerInfo> oldPolicy = policies.putIfAbsent( policyName, filter );
+        Policy oldPolicy = policies.putIfAbsent( policyName, policy );
         if ( oldPolicy != null )
         {
-            log.error( "Policy name conflict for: " + policyName );
+            log.error( format( "Policy name conflict for '%s'.", policyName ) );
         }
     }
 
-    Filter<ServerInfo> selectFor( Map<String,String> context )
+    Policy selectFor( Map<String,String> context )
     {
-        return policies.get( context.get( POLICY_KEY ) );
+        String policyName = context.get( POLICY_KEY );
+        Policy selectedPolicy = policies.get( policyName );
+
+        if ( policyName == null )
+        {
+            return DEFAULT_POLICY;
+        }
+        else if ( selectedPolicy == null )
+        {
+            log.warn( format( "Policy '%s' could not be found. Will use default instead.", policyName ) );
+            return DEFAULT_POLICY;
+        }
+        else
+        {
+            return selectedPolicy;
+        }
     }
 }
