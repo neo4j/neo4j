@@ -28,8 +28,8 @@ import org.neo4j.kernel.api.impl.index.partition.AbstractIndexPartition;
 import org.neo4j.kernel.api.impl.index.partition.WritableIndexPartitionFactory;
 import org.neo4j.kernel.api.impl.index.storage.PartitionedIndexStorage;
 import org.neo4j.kernel.api.impl.schema.writer.LuceneIndexWriter;
-import org.neo4j.kernel.api.index.IndexConfiguration;
 import org.neo4j.kernel.api.index.PropertyAccessor;
+import org.neo4j.kernel.api.schema_new.index.NewIndexDescriptor;
 import org.neo4j.kernel.impl.api.index.sampling.IndexSamplingConfig;
 import org.neo4j.storageengine.api.schema.IndexReader;
 
@@ -39,10 +39,10 @@ import org.neo4j.storageengine.api.schema.IndexReader;
 public class WritableDatabaseSchemaIndex extends WritableAbstractDatabaseIndex<LuceneSchemaIndex> implements SchemaIndex
 {
 
-    public WritableDatabaseSchemaIndex( PartitionedIndexStorage indexStorage, IndexConfiguration indexConfig,
+    public WritableDatabaseSchemaIndex( PartitionedIndexStorage storage, NewIndexDescriptor descriptor,
             IndexSamplingConfig samplingConfig, WritableIndexPartitionFactory writableIndexPartitionFactory )
     {
-        super( new LuceneSchemaIndex( indexStorage, indexConfig, samplingConfig, writableIndexPartitionFactory ) );
+        super( new LuceneSchemaIndex( storage, descriptor, samplingConfig, writableIndexPartitionFactory ) );
     }
 
     @Override

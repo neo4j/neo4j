@@ -23,9 +23,6 @@ import org.junit.Test;
 
 import java.io.IOException;
 
-import org.neo4j.kernel.api.index.IndexConfiguration;
-import org.neo4j.kernel.api.schema.IndexDescriptor;
-import org.neo4j.kernel.api.schema.IndexDescriptorFactory;
 import org.neo4j.kernel.api.index.IndexPopulator;
 import org.neo4j.kernel.api.index.SchemaIndexProvider;
 import org.neo4j.kernel.api.schema_new.index.NewIndexDescriptorFactory;

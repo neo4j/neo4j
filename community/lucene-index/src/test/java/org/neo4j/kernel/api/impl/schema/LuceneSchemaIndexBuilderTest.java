@@ -24,6 +24,8 @@ import org.junit.Test;
 
 import org.neo4j.graphdb.factory.GraphDatabaseSettings;
 import org.neo4j.helpers.collection.MapUtil;
+import org.neo4j.kernel.api.schema_new.index.NewIndexDescriptor;
+import org.neo4j.kernel.api.schema_new.index.NewIndexDescriptorFactory;
 import org.neo4j.kernel.configuration.Config;
 import org.neo4j.kernel.configuration.Settings;
 import org.neo4j.kernel.impl.factory.OperationalMode;
@@ -40,10 +42,12 @@ public class LuceneSchemaIndexBuilderTest
     @Rule
     public final DefaultFileSystemRule fileSystemRule = new DefaultFileSystemRule();
 
+    private final NewIndexDescriptor descriptor = NewIndexDescriptorFactory.forLabel( 0, 0 );
+
     @Test
     public void readOnlyIndexCreation() throws Exception
     {
-        try ( SchemaIndex schemaIndex = LuceneSchemaIndexBuilder.create()
+        try ( SchemaIndex schemaIndex = LuceneSchemaIndexBuilder.create( descriptor )
                 .withFileSystem( fileSystemRule.get() )
                 .withConfig( getReadOnlyConfig() )
                 .withOperationalMode( OperationalMode.single )
@@ -58,7 +62,7 @@ public class LuceneSchemaIndexBuilderTest
     @Test
     public void writableIndexCreation() throws Exception
     {
-        try ( SchemaIndex schemaIndex = LuceneSchemaIndexBuilder.create()
+        try ( SchemaIndex schemaIndex = LuceneSchemaIndexBuilder.create( descriptor )
                 .withConfig( getDefaultConfig() )
                 .withFileSystem( fileSystemRule.get() )
                 .withOperationalMode( OperationalMode.single )

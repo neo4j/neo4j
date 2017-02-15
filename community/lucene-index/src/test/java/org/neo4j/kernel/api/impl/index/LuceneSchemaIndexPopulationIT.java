@@ -61,7 +61,7 @@ public class LuceneSchemaIndexPopulationIT
     public final DefaultFileSystemRule fileSystemRule = new DefaultFileSystemRule();
 
     private int affectedNodes;
-    private final NewIndexDescriptor index = NewIndexDescriptorFactory.forLabel( 0, 0 );
+    private final NewIndexDescriptor descriptor = NewIndexDescriptorFactory.uniqueForLabel( 0, 0 );
 
     @Before
     public void before() throws Exception
@@ -89,7 +89,7 @@ public class LuceneSchemaIndexPopulationIT
     @Test
     public void partitionedIndexPopulation() throws Exception
     {
-        try ( SchemaIndex uniqueIndex = LuceneSchemaIndexBuilder.create().uniqueIndex()
+        try ( SchemaIndex uniqueIndex = LuceneSchemaIndexBuilder.create( descriptor )
                 .withFileSystem( fileSystemRule.get() )
                 .withIndexRootFolder( testDir.directory( "partitionIndex" + affectedNodes ) )
                 .withIndexIdentifier( "uniqueIndex" + affectedNodes )
@@ -139,6 +139,6 @@ public class LuceneSchemaIndexPopulationIT
 
     private IndexEntryUpdate add( long nodeId, Object value )
     {
-        return IndexEntryUpdate.add( nodeId, index, value );
+        return IndexEntryUpdate.add( nodeId, descriptor, value );
     }
 }

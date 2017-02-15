@@ -21,8 +21,6 @@ package org.neo4j.kernel.impl.api.index;
 
 import java.util.concurrent.Future;
 
-import org.neo4j.kernel.api.index.IndexConfiguration;
-import org.neo4j.kernel.api.schema.IndexDescriptor;
 import org.neo4j.kernel.api.index.IndexUpdater;
 import org.neo4j.kernel.api.index.SchemaIndexProvider;
 import org.neo4j.kernel.api.schema_new.index.NewIndexDescriptor;

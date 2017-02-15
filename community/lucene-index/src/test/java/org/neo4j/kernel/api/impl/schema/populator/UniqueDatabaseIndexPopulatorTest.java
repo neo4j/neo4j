@@ -93,9 +93,9 @@ public class UniqueDatabaseIndexPopulatorTest
     public void setUp() throws Exception
     {
         File folder = testDir.directory( "folder" );
-        indexStorage = new PartitionedIndexStorage( directoryFactory, fileSystemRule.get(), folder, INDEX_IDENTIFIER,
-                false );
-        index = LuceneSchemaIndexBuilder.create()
+        indexStorage = new PartitionedIndexStorage( directoryFactory, fileSystemRule.get(),
+                                                    folder, INDEX_IDENTIFIER, false );
+        index = LuceneSchemaIndexBuilder.create( descriptor )
                 .withIndexStorage( indexStorage )
                 .build();
     }

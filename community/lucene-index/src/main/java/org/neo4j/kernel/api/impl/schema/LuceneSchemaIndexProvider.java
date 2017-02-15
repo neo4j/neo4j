@@ -32,7 +32,6 @@ import org.neo4j.kernel.api.impl.index.storage.PartitionedIndexStorage;
 import org.neo4j.kernel.api.impl.schema.populator.NonUniqueLuceneIndexPopulator;
 import org.neo4j.kernel.api.impl.schema.populator.UniqueLuceneIndexPopulator;
 import org.neo4j.kernel.api.index.IndexAccessor;
-import org.neo4j.kernel.api.index.IndexConfiguration;
 import org.neo4j.kernel.api.index.IndexPopulator;
 import org.neo4j.kernel.api.index.InternalIndexState;
 import org.neo4j.kernel.api.index.SchemaIndexProvider;
@@ -83,12 +82,8 @@ public class LuceneSchemaIndexProvider extends SchemaIndexProvider
     @Override
     public IndexPopulator getPopulator( long indexId, NewIndexDescriptor descriptor, IndexSamplingConfig samplingConfig )
     {
-        IndexConfiguration indexConfiguration =
-                descriptor.type() == UNIQUE ?
-                IndexConfiguration.UNIQUE : IndexConfiguration.NON_UNIQUE;
-        SchemaIndex luceneIndex = LuceneSchemaIndexBuilder.create()
+        SchemaIndex luceneIndex = LuceneSchemaIndexBuilder.create( descriptor )
                                         .withFileSystem( fileSystem )
-                                        .withIndexConfig( indexConfiguration )
                                         .withConfig( config )
                                         .withOperationalMode( operationalMode )
                                         .withSamplingConfig( samplingConfig )
@@ -99,7 +94,7 @@ public class LuceneSchemaIndexProvider extends SchemaIndexProvider
         {
             throw new UnsupportedOperationException( "Can't create populator for read only index" );
         }
-        if ( indexConfiguration.isUnique() )
+        if ( descriptor.type() == UNIQUE )
         {
             return new UniqueLuceneIndexPopulator( luceneIndex, IndexBoundary.map( descriptor ) );
         }
@@ -113,11 +108,7 @@ public class LuceneSchemaIndexProvider extends SchemaIndexProvider
     public IndexAccessor getOnlineAccessor( long indexId, NewIndexDescriptor descriptor,
             IndexSamplingConfig samplingConfig ) throws IOException
     {
-        IndexConfiguration indexConfiguration =
-                descriptor.type() == UNIQUE ?
-                IndexConfiguration.UNIQUE : IndexConfiguration.NON_UNIQUE;
-        SchemaIndex luceneIndex = LuceneSchemaIndexBuilder.create()
-                                            .withIndexConfig( indexConfiguration )
+        SchemaIndex luceneIndex = LuceneSchemaIndexBuilder.create( descriptor )
                                             .withConfig( config )
                                             .withOperationalMode( operationalMode )
                                             .withSamplingConfig( samplingConfig )
@@ -177,7 +168,7 @@ public class LuceneSchemaIndexProvider extends SchemaIndexProvider
 
     private boolean indexIsOnline( PartitionedIndexStorage indexStorage ) throws IOException
     {
-        try ( SchemaIndex index = LuceneSchemaIndexBuilder.create().withIndexStorage( indexStorage ).build() )
+        try ( SchemaIndex index = LuceneSchemaIndexBuilder.create( null ).withIndexStorage( indexStorage ).build() )
         {
             if ( index.exists() )
             {

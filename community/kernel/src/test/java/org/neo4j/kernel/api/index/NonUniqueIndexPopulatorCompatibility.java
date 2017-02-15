@@ -57,7 +57,6 @@ public class NonUniqueIndexPopulatorCompatibility extends IndexProviderCompatibi
     public void shouldProvidePopulatorThatAcceptsDuplicateEntries() throws Exception
     {
         // when
-        IndexConfiguration config = IndexConfiguration.NON_UNIQUE;
         IndexSamplingConfig indexSamplingConfig = new IndexSamplingConfig( Config.empty() );
         IndexPopulator populator = indexProvider.getPopulator( 17, descriptor, indexSamplingConfig );
         populator.create();
@@ -79,7 +78,6 @@ public class NonUniqueIndexPopulatorCompatibility extends IndexProviderCompatibi
     public void shouldStorePopulationFailedForRetrievalFromProviderLater() throws Exception
     {
         // GIVEN
-        IndexConfiguration config = IndexConfiguration.NON_UNIQUE;
         IndexSamplingConfig indexSamplingConfig = new IndexSamplingConfig( Config.empty() );
         IndexPopulator populator = indexProvider.getPopulator( 17, descriptor, indexSamplingConfig );
         String failure = "The contrived failure";
@@ -96,7 +94,6 @@ public class NonUniqueIndexPopulatorCompatibility extends IndexProviderCompatibi
     public void shouldReportInitialStateAsFailedIfPopulationFailed() throws Exception
     {
         // GIVEN
-        IndexConfiguration config = IndexConfiguration.NON_UNIQUE;
         IndexSamplingConfig indexSamplingConfig = new IndexSamplingConfig( Config.empty() );
         IndexPopulator populator = indexProvider.getPopulator( 17, descriptor, indexSamplingConfig );
         String failure = "The contrived failure";
@@ -113,7 +110,6 @@ public class NonUniqueIndexPopulatorCompatibility extends IndexProviderCompatibi
     public void shouldBeAbleToDropAClosedIndexPopulator() throws Exception
     {
         // GIVEN
-        IndexConfiguration config = IndexConfiguration.NON_UNIQUE;
         IndexSamplingConfig indexSamplingConfig = new IndexSamplingConfig( Config.empty() );
         IndexPopulator populator = indexProvider.getPopulator( 17, descriptor, indexSamplingConfig );
         populator.close( false );

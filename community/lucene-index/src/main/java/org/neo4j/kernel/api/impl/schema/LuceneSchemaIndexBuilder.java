@@ -29,7 +29,7 @@ import org.neo4j.kernel.api.impl.index.builder.AbstractLuceneIndexBuilder;
 import org.neo4j.kernel.api.impl.index.partition.ReadOnlyIndexPartitionFactory;
 import org.neo4j.kernel.api.impl.index.partition.WritableIndexPartitionFactory;
 import org.neo4j.kernel.api.impl.index.storage.PartitionedIndexStorage;
-import org.neo4j.kernel.api.index.IndexConfiguration;
+import org.neo4j.kernel.api.schema_new.index.NewIndexDescriptor;
 import org.neo4j.kernel.configuration.Config;
 import org.neo4j.kernel.impl.api.index.sampling.IndexSamplingConfig;
 
@@ -43,22 +43,24 @@ import org.neo4j.kernel.impl.api.index.sampling.IndexSamplingConfig;
  */
 public class LuceneSchemaIndexBuilder extends AbstractLuceneIndexBuilder<LuceneSchemaIndexBuilder>
 {
+    private final NewIndexDescriptor descriptor;
     private IndexSamplingConfig samplingConfig = new IndexSamplingConfig( Config.empty() );
-    private IndexConfiguration indexConfig = IndexConfiguration.NON_UNIQUE;
     private Factory<IndexWriterConfig> writerConfigFactory = IndexWriterConfigs::standard;
 
-    private LuceneSchemaIndexBuilder()
+    private LuceneSchemaIndexBuilder( NewIndexDescriptor descriptor )
     {
+        this.descriptor = descriptor;
     }
 
     /**
      * Create new lucene schema index builder.
      *
      * @return new LuceneSchemaIndexBuilder
+     * @param descriptor The descriptor for this index
      */
-    public static LuceneSchemaIndexBuilder create()
+    public static LuceneSchemaIndexBuilder create( NewIndexDescriptor descriptor )
     {
-        return new LuceneSchemaIndexBuilder();
+        return new LuceneSchemaIndexBuilder( descriptor );
     }
 
     /**
@@ -70,18 +72,6 @@ public class LuceneSchemaIndexBuilder extends AbstractLuceneIndexBuilder<LuceneS
     public LuceneSchemaIndexBuilder withSamplingConfig( IndexSamplingConfig samplingConfig )
     {
         this.samplingConfig = samplingConfig;
-        return this;
-    }
-
-    /**
-     * Specify lucene schema index config
-     *
-     * @param indexConfig index config
-     * @return index builder
-     */
-    public LuceneSchemaIndexBuilder withIndexConfig( IndexConfiguration indexConfig )
-    {
-        this.indexConfig = indexConfig;
         return this;
     }
 
@@ -98,17 +88,6 @@ public class LuceneSchemaIndexBuilder extends AbstractLuceneIndexBuilder<LuceneS
     }
 
     /**
-     * Transform builder to build unique index
-     *
-     * @return index builder
-     */
-    public LuceneSchemaIndexBuilder uniqueIndex()
-    {
-        this.indexConfig = IndexConfiguration.UNIQUE;
-        return this;
-    }
-
-    /**
      * Build lucene schema index with specified configuration
      *
      * @return lucene schema index
@@ -117,14 +96,14 @@ public class LuceneSchemaIndexBuilder extends AbstractLuceneIndexBuilder<LuceneS
     {
         if ( isReadOnly() )
         {
-            return new ReadOnlyDatabaseSchemaIndex( storageBuilder.build(), indexConfig, samplingConfig,
+            return new ReadOnlyDatabaseSchemaIndex( storageBuilder.build(), descriptor, samplingConfig,
                     new ReadOnlyIndexPartitionFactory() );
         }
         else
         {
             Boolean archiveFailed = getConfig( GraphDatabaseSettings.archive_failed_index );
             PartitionedIndexStorage storage = storageBuilder.archivingFailed( archiveFailed ).build();
-            return new WritableDatabaseSchemaIndex( storage, indexConfig, samplingConfig,
+            return new WritableDatabaseSchemaIndex( storage, descriptor, samplingConfig,
                     new WritableIndexPartitionFactory( writerConfigFactory ) );
         }
     }

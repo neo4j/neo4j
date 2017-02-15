@@ -40,6 +40,7 @@ import org.neo4j.kernel.api.exceptions.index.IndexEntryConflictException;
 import org.neo4j.kernel.api.impl.index.storage.DirectoryFactory;
 import org.neo4j.kernel.api.index.IndexEntryUpdate;
 import org.neo4j.kernel.api.index.IndexUpdater;
+import org.neo4j.kernel.api.schema_new.IndexQuery;
 import org.neo4j.kernel.api.schema_new.index.NewIndexDescriptor;
 import org.neo4j.kernel.api.schema_new.index.NewIndexDescriptorFactory;
 import org.neo4j.kernel.impl.api.index.IndexUpdateMode;
@@ -54,6 +55,8 @@ import static org.neo4j.helpers.collection.Iterators.asSet;
 @RunWith( Parameterized.class )
 public class DatabaseCompositeIndexAccessorTest
 {
+    private static final int PROP_ID1 = 1;
+    private static final int PROP_ID2 = 2;
     @Rule
     public final ThreadingRule threading = new ThreadingRule();
     @ClassRule
@@ -66,7 +69,10 @@ public class DatabaseCompositeIndexAccessorTest
     private final long nodeId = 1, nodeId2 = 2;
     private final Object[] value = new String[]{"value", "valuex"}, value2 = new Integer[]{40, 42};
     private DirectoryFactory.InMemoryDirectoryFactory dirFactory;
-    private final NewIndexDescriptor index = NewIndexDescriptorFactory.forLabel( 0, 0 );
+    private static final NewIndexDescriptor indexDescriptor = NewIndexDescriptorFactory
+            .forLabel( 0, PROP_ID1, PROP_ID2 );
+    private static final NewIndexDescriptor uniqueIndexDescriptor = NewIndexDescriptorFactory
+            .uniqueForLabel( 1, PROP_ID1, PROP_ID2 );
 
     @Parameterized.Parameters( name = "{0}" )
     public static Collection<IOFunction<DirectoryFactory,LuceneIndexAccessor>[]> implementations()
@@ -74,7 +80,7 @@ public class DatabaseCompositeIndexAccessorTest
         final File dir = new File( "dir" );
         return Arrays.asList(
                 arg( dirFactory1 -> {
-                    SchemaIndex index = LuceneSchemaIndexBuilder.create()
+                    SchemaIndex index = LuceneSchemaIndexBuilder.create( indexDescriptor )
                             .withFileSystem( fileSystemRule.get() )
                             .withDirectoryFactory( dirFactory1 )
                             .withIndexRootFolder( dir )
@@ -86,8 +92,7 @@ public class DatabaseCompositeIndexAccessorTest
                     return new LuceneIndexAccessor( index );
                 } ),
                 arg( dirFactory1 -> {
-                    SchemaIndex index = LuceneSchemaIndexBuilder.create()
-                            .uniqueIndex()
+                    SchemaIndex index = LuceneSchemaIndexBuilder.create( uniqueIndexDescriptor )
                             .withFileSystem( fileSystemRule.get() )
                             .withDirectoryFactory( dirFactory1 )
                             .withIndexRootFolder( dir )
@@ -129,11 +134,12 @@ public class DatabaseCompositeIndexAccessorTest
         IndexReader reader = accessor.newReader();
 
         // WHEN
-        PrimitiveLongIterator results = reader.scan();
+        PrimitiveLongIterator results = reader.query( IndexQuery.exists( PROP_ID1 ), IndexQuery.exists( PROP_ID2 ) );
 
         // THEN
         assertEquals( asSet( nodeId, nodeId2 ), PrimitiveLongCollections.toSet( results ) );
-        assertEquals( asSet( nodeId ), PrimitiveLongCollections.toSet( reader.seek( value ) ) );
+        assertEquals( asSet( nodeId ), PrimitiveLongCollections.toSet( reader
+                .query( IndexQuery.exact( PROP_ID1, value[0] ), IndexQuery.exact( PROP_ID2, value[1] ) ) ) );
         reader.close();
     }
 
@@ -146,17 +152,18 @@ public class DatabaseCompositeIndexAccessorTest
         IndexReader reader = accessor.newReader();
 
         // WHEN
-        PrimitiveLongIterator results = reader.scan();
+        PrimitiveLongIterator results = reader.query( IndexQuery.exists( PROP_ID1 ), IndexQuery.exists( PROP_ID2 ) );
 
         // THEN
         assertEquals( asSet( nodeId, nodeId2 ), PrimitiveLongCollections.toSet( results ) );
-        assertEquals( asSet( nodeId ), PrimitiveLongCollections.toSet( reader.seek( value ) ) );
+        assertEquals( asSet( nodeId ), PrimitiveLongCollections.toSet( reader
+                .query( IndexQuery.exact( PROP_ID1, value[0] ), IndexQuery.exact( PROP_ID2, value[1] ) ) ) );
         reader.close();
     }
 
     private IndexEntryUpdate add( long nodeId, Object[] values )
     {
-        return IndexEntryUpdate.add( nodeId, index, values );
+        return IndexEntryUpdate.add( nodeId, indexDescriptor, values );
     }
 
     private void updateAndCommit( List<IndexEntryUpdate> nodePropertyUpdates )

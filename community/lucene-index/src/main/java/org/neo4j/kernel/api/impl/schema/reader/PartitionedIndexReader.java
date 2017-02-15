@@ -30,7 +30,7 @@ import org.neo4j.helpers.TaskCoordinator;
 import org.neo4j.io.IOUtils;
 import org.neo4j.kernel.api.impl.index.partition.PartitionSearcher;
 import org.neo4j.kernel.api.impl.index.sampler.AggregatingIndexSampler;
-import org.neo4j.kernel.api.index.IndexConfiguration;
+import org.neo4j.kernel.api.schema_new.index.NewIndexDescriptor;
 import org.neo4j.kernel.api.schema_new.IndexQuery;
 import org.neo4j.kernel.impl.api.index.sampling.IndexSamplingConfig;
 import org.neo4j.storageengine.api.schema.IndexReader;
@@ -48,12 +48,12 @@ public class PartitionedIndexReader implements IndexReader
     private final List<SimpleIndexReader> indexReaders;
 
     public PartitionedIndexReader( List<PartitionSearcher> partitionSearchers,
-            IndexConfiguration indexConfiguration,
+            NewIndexDescriptor descriptor,
             IndexSamplingConfig samplingConfig,
             TaskCoordinator taskCoordinator )
     {
         this( partitionSearchers.stream()
-                .map( partitionSearcher -> new SimpleIndexReader( partitionSearcher, indexConfiguration,
+                .map( partitionSearcher -> new SimpleIndexReader( partitionSearcher, descriptor,
                         samplingConfig, taskCoordinator ) )
                 .collect( Collectors.toList() ) );
     }

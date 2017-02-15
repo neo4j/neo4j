@@ -23,7 +23,6 @@ import java.io.File;
 import java.util.concurrent.Future;
 
 import org.neo4j.graphdb.ResourceIterator;
-import org.neo4j.kernel.api.index.IndexConfiguration;
 import org.neo4j.kernel.api.index.IndexUpdater;
 import org.neo4j.kernel.api.index.InternalIndexState;
 import org.neo4j.kernel.api.index.SchemaIndexProvider;

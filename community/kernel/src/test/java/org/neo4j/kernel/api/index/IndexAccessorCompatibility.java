@@ -53,7 +53,6 @@ public abstract class IndexAccessorCompatibility extends IndexProviderCompatibil
             NewIndexDescriptor descriptor, boolean isUnique )
     {
         super( testSuite, descriptor );
-        this.isUnique = isUnique;
     }
 
     @Before
