@@ -19,9 +19,9 @@
  */
 package org.neo4j.kernel.impl.api.state;
 
+import java.io.IOException;
 import java.util.function.Supplier;
 
-import org.neo4j.kernel.api.security.AccessMode;
 import org.neo4j.kernel.api.KernelAPI;
 import org.neo4j.kernel.api.KernelTransaction;
 import org.neo4j.kernel.api.Statement;
@@ -36,27 +36,51 @@ import org.neo4j.kernel.api.exceptions.schema.DropIndexFailureException;
 import org.neo4j.kernel.api.exceptions.schema.SchemaRuleNotFoundException;
 import org.neo4j.kernel.api.exceptions.schema.UniquenessConstraintVerificationFailedKernelException;
 import org.neo4j.kernel.api.index.IndexDescriptor;
+import org.neo4j.kernel.api.index.PropertyAccessor;
+import org.neo4j.kernel.api.security.AccessMode;
 import org.neo4j.kernel.impl.api.KernelStatement;
 import org.neo4j.kernel.impl.api.index.IndexingService;
 import org.neo4j.kernel.impl.api.operations.SchemaReadOperations;
+import org.neo4j.kernel.impl.locking.Locks.Client;
 
 import static java.util.Collections.singleton;
 
+import static org.neo4j.kernel.impl.locking.ResourceTypes.SCHEMA;
+import static org.neo4j.kernel.impl.locking.ResourceTypes.schemaResource;
 import static org.neo4j.kernel.impl.store.SchemaStorage.IndexRuleKind.CONSTRAINT;
 
 public class ConstraintIndexCreator
 {
     private final IndexingService indexingService;
     private final Supplier<KernelAPI> kernelSupplier;
+    private final PropertyAccessor propertyAccessor;
 
-    public ConstraintIndexCreator( Supplier<KernelAPI> kernelSupplier, IndexingService indexingService )
+    public ConstraintIndexCreator( Supplier<KernelAPI> kernelSupplier, IndexingService indexingService,
+            PropertyAccessor propertyAccessor )
     {
         this.kernelSupplier = kernelSupplier;
         this.indexingService = indexingService;
+        this.propertyAccessor = propertyAccessor;
     }
 
     /**
      * You MUST hold a schema write lock before you call this method.
+     * However the schema write lock is temporarily released while populating the index backing the constraint.
+     * It goes a little like this:
+     * <ol>
+     * <li>Prerequisite: Getting here means that there's an open schema transaction which has acquired the
+     * SCHEMA WRITE lock.</li>
+     * <li>Index schema rule which is backing the constraint is created in a nested mini-transaction
+     * which doesn't acquire any locking, merely adds tx state and commits so that the index rule is applied
+     * to the store, which triggers the index population</li>
+     * <li>Release the SCHEMA WRITE lock</li>
+     * <li>Await index population to complete</li>
+     * <li>Acquire the SCHEMA WRITE lock (effectively blocking concurrent transactions changing
+     * data related to this constraint, and it so happens, most other transactions as well) and verify
+     * the uniqueness of the built index</li>
+     * <li>Leave this method, knowing that the uniqueness constraint rule will be added to tx state
+     * and this tx committed, which will create the uniqueness constraint</li>
+     * </ol>
      */
     public long createUniquenessConstraintIndex( KernelStatement state, SchemaReadOperations schema,
             int labelId, int propertyKeyId )
@@ -67,19 +91,41 @@ public class ConstraintIndexCreator
         UniquenessConstraint constraint = new UniquenessConstraint( labelId, propertyKeyId );
 
         boolean success = false;
+        boolean reacquiredSchemaLock = false;
+        Client locks = state.locks().pessimistic();
         try
         {
             long indexId = schema.indexGetCommittedId( state, descriptor, CONSTRAINT );
+
+            // Release the SCHEMA WRITE lock during index population.
+            // At this point the integrity of the constraint to be created was checked
+            // while holding the lock and the index rule backing the soon-to-be-created constraint
+            // has been created. Now it's just the population left, which can take a long time
+            locks.releaseExclusive( SCHEMA, schemaResource() );
+
             awaitIndexPopulation( constraint, indexId );
+
+            // Index population was successful, but at this point we don't know if the uniqueness constraint holds.
+            // Acquire SCHEMA WRITE lock and verify the constraints here in this user transaction
+            // and if everything checks out then it will be held until after the constraint has been
+            // created and activated.
+            locks.acquireExclusive( SCHEMA, schemaResource() );
+            reacquiredSchemaLock = true;
+            indexingService.getIndexProxy( indexId ).verifyDeferredConstraints( propertyAccessor );
+
             success = true;
             return indexId;
         }
-        catch ( SchemaRuleNotFoundException e )
+        catch ( SchemaRuleNotFoundException | IndexNotFoundKernelException e )
         {
             throw new IllegalStateException(
                     String.format( "Index (%s) that we just created does not exist.", descriptor ) );
         }
-        catch ( InterruptedException e )
+        catch ( IndexEntryConflictException e )
+        {
+            throw new UniquenessConstraintVerificationFailedKernelException( constraint, singleton( e ) );
+        }
+        catch ( InterruptedException | IOException e )
         {
             throw new CreateConstraintFailureException( constraint, e );
         }
@@ -87,6 +133,10 @@ public class ConstraintIndexCreator
         {
             if ( !success )
             {
+                if ( !reacquiredSchemaLock )
+                {
+                    locks.acquireExclusive( SCHEMA, schemaResource() );
+                }
                 dropUniquenessConstraintIndex( descriptor );
             }
         }

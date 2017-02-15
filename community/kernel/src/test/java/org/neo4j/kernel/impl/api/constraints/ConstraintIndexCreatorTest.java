@@ -34,6 +34,7 @@ import org.neo4j.kernel.api.exceptions.index.IndexPopulationFailedKernelExceptio
 import org.neo4j.kernel.api.exceptions.schema.ConstraintVerificationFailedKernelException;
 import org.neo4j.kernel.api.index.IndexDescriptor;
 import org.neo4j.kernel.api.index.PreexistingIndexEntryConflictException;
+import org.neo4j.kernel.api.index.PropertyAccessor;
 import org.neo4j.kernel.api.proc.CallableProcedure;
 import org.neo4j.kernel.api.security.AccessMode;
 import org.neo4j.kernel.api.txstate.TransactionState;
@@ -74,8 +75,9 @@ public class ConstraintIndexCreatorTest
                 .thenReturn( 2468L );
         IndexProxy indexProxy = mock( IndexProxy.class );
         when( indexingService.getIndexProxy( 2468L ) ).thenReturn( indexProxy );
+        PropertyAccessor propertyAccessor = mock( PropertyAccessor.class );
 
-        ConstraintIndexCreator creator = new ConstraintIndexCreator( () -> kernel, indexingService );
+        ConstraintIndexCreator creator = new ConstraintIndexCreator( () -> kernel, indexingService, propertyAccessor );
 
         // when
         long indexId = creator.createUniquenessConstraintIndex( state, constraintCreationContext.schemaReadOperations(), 123, 456 );
@@ -109,8 +111,9 @@ public class ConstraintIndexCreatorTest
         PreexistingIndexEntryConflictException cause = new PreexistingIndexEntryConflictException("a", 2, 1);
         doThrow( new IndexPopulationFailedKernelException( descriptor, "some index", cause) )
                 .when(indexProxy).awaitStoreScanCompleted();
+        PropertyAccessor propertyAccessor = mock( PropertyAccessor.class );
 
-        ConstraintIndexCreator creator = new ConstraintIndexCreator( () -> kernel, indexingService );
+        ConstraintIndexCreator creator = new ConstraintIndexCreator( () -> kernel, indexingService, propertyAccessor );
 
         // when
         try
@@ -144,8 +147,9 @@ public class ConstraintIndexCreatorTest
         IndexingService indexingService = mock( IndexingService.class );
 
         IndexDescriptor descriptor = new IndexDescriptor( 123, 456 );
+        PropertyAccessor propertyAccessor = mock( PropertyAccessor.class );
 
-        ConstraintIndexCreator creator = new ConstraintIndexCreator( () -> kernel, indexingService );
+        ConstraintIndexCreator creator = new ConstraintIndexCreator( () -> kernel, indexingService, propertyAccessor );
 
         // when
         creator.dropUniquenessConstraintIndex( descriptor );

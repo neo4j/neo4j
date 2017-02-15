@@ -31,6 +31,7 @@ import org.neo4j.kernel.api.SchemaWriteOperations;
 import org.neo4j.kernel.api.TokenWriteOperations;
 import org.neo4j.kernel.api.exceptions.schema.SchemaKernelException;
 import org.neo4j.kernel.api.index.IndexDescriptor;
+import org.neo4j.kernel.api.index.PropertyAccessor;
 import org.neo4j.kernel.impl.api.integrationtest.KernelIntegrationTest;
 import org.neo4j.kernel.impl.api.state.ConstraintIndexCreator;
 
@@ -38,6 +39,8 @@ import static org.junit.Assert.assertEquals;
 import static org.junit.Assert.assertFalse;
 import static org.junit.Assert.assertTrue;
 import static org.junit.Assert.fail;
+import static org.mockito.Mockito.mock;
+
 import static org.neo4j.helpers.collection.Iterators.asSet;
 import static org.neo4j.helpers.collection.Iterators.emptySetOf;
 
@@ -132,7 +135,8 @@ public class IndexIT extends KernelIntegrationTest
     public void shouldRemoveAConstraintIndexWithoutOwnerInRecovery() throws Exception
     {
         // given
-        ConstraintIndexCreator creator = new ConstraintIndexCreator( () -> kernel, indexingService );
+        PropertyAccessor propertyAccessor = mock( PropertyAccessor.class );
+        ConstraintIndexCreator creator = new ConstraintIndexCreator( () -> kernel, indexingService, propertyAccessor );
         creator.createConstraintIndex( labelId, propertyKeyId );
 
         // when

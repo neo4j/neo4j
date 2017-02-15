@@ -253,7 +253,6 @@ public class IndexingServiceTest
         //
         // (We don't get an update for value2 here because we mock a fake store that doesn't contain it
         //  just for the purpose of testing this behavior)
-        order.verify( populator ).verifyDeferredConstraints( storeView );
         order.verify( populator ).newPopulatingUpdater( storeView );
         order.verify( updater ).close();
         order.verify( populator ).sampleResult();
@@ -603,10 +602,10 @@ public class IndexingServiceTest
         IndexUpdater updater2 = mock( IndexUpdater.class );
         when( accessor2.newUpdater( any( IndexUpdateMode.class ) ) ).thenReturn( updater2 );
 
-        when( indexProvider.getOnlineAccessor( eq( 1L ), any( IndexConfiguration.class ),
-                any( IndexSamplingConfig.class ) ) ).thenReturn( accessor1 );
-        when( indexProvider.getOnlineAccessor( eq( 2L ), any( IndexConfiguration.class ),
-                any( IndexSamplingConfig.class ) ) ).thenReturn( accessor2 );
+        when( indexProvider.getOnlineAccessor( eq( 1L ), any( IndexDescriptor.class ),
+                any( IndexConfiguration.class ), any( IndexSamplingConfig.class ) ) ).thenReturn( accessor1 );
+        when( indexProvider.getOnlineAccessor( eq( 2L ), any( IndexDescriptor.class ),
+                any( IndexConfiguration.class ), any( IndexSamplingConfig.class ) ) ).thenReturn( accessor2 );
 
         life.start();
 
@@ -855,8 +854,8 @@ public class IndexingServiceTest
         when( nameLookup.labelGetName( labelId ) ).thenReturn( "TheLabel" );
         when( nameLookup.propertyKeyGetName( propertyKeyId ) ).thenReturn( "propertyKey" );
 
-        when( indexProvider.getOnlineAccessor(
-                eq( indexId ), any( IndexConfiguration.class ), any( IndexSamplingConfig.class ) ) )
+        when( indexProvider.getOnlineAccessor( eq( indexId ), any( IndexDescriptor.class ),
+                any( IndexConfiguration.class ), any( IndexSamplingConfig.class ) ) )
                 .thenThrow( exception );
 
         life.start();
@@ -891,8 +890,8 @@ public class IndexingServiceTest
         when( nameLookup.propertyKeyGetName( propertyKeyId ) ).thenReturn( "propertyKey" );
 
         when( indexProvider.getInitialState( indexId ) ).thenReturn( POPULATING );
-        when( indexProvider.getOnlineAccessor(
-                eq( indexId ), any( IndexConfiguration.class ), any( IndexSamplingConfig.class ) ) )
+        when( indexProvider.getOnlineAccessor( eq( indexId ), any( IndexDescriptor.class ),
+                any( IndexConfiguration.class ), any( IndexSamplingConfig.class ) ) )
                 .thenThrow( exception );
 
         life.start();
@@ -1004,8 +1003,8 @@ public class IndexingServiceTest
         when( indexProvider.getPopulator( anyLong(), any( IndexDescriptor.class ), any( IndexConfiguration.class ),
                 any( IndexSamplingConfig.class ) ) ).thenReturn( populator );
         data.getsProcessedByStoreScanFrom( storeView );
-        when( indexProvider.getOnlineAccessor( anyLong(), any( IndexConfiguration.class ),
-                any( IndexSamplingConfig.class ) ) )
+        when( indexProvider.getOnlineAccessor( anyLong(), any( IndexDescriptor.class ),
+                any( IndexConfiguration.class ), any( IndexSamplingConfig.class ) ) )
                 .thenReturn( accessor );
         when( indexProvider.snapshotMetaFiles() ).thenReturn( Iterators.emptyIterator() );
         when( indexProvider.storeMigrationParticipant( any( FileSystemAbstraction.class ), any( PageCache.class ),
@@ -1136,7 +1135,7 @@ public class IndexingServiceTest
         }
     }
 
-    private static class TrackingIndexAccessor implements IndexAccessor
+    private static class TrackingIndexAccessor extends IndexAccessor.Adapter
     {
         private final IndexUpdater updater = mock( IndexUpdater.class );
 
@@ -1150,21 +1149,6 @@ public class IndexingServiceTest
         public IndexUpdater newUpdater( IndexUpdateMode mode )
         {
             return updater;
-        }
-
-        @Override
-        public void force()
-        {
-        }
-
-        @Override
-        public void flush()
-        {
-        }
-
-        @Override
-        public void close()
-        {
         }
 
         @Override

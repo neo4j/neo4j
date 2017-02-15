@@ -35,6 +35,7 @@ import org.neo4j.kernel.api.exceptions.index.IndexEntryConflictException;
 import org.neo4j.kernel.api.impl.schema.LuceneIndexAccessor;
 import org.neo4j.kernel.api.impl.schema.LuceneSchemaIndexBuilder;
 import org.neo4j.kernel.api.impl.schema.SchemaIndex;
+import org.neo4j.kernel.api.index.IndexDescriptor;
 import org.neo4j.kernel.api.index.IndexUpdater;
 import org.neo4j.kernel.api.index.NodePropertyUpdate;
 import org.neo4j.kernel.impl.api.index.IndexUpdateMode;
@@ -50,7 +51,6 @@ import static org.junit.Assert.assertTrue;
 @RunWith( Parameterized.class )
 public class LuceneSchemaIndexPopulationIT
 {
-
     @Rule
     public TargetDirectory.TestDirectory testDir = TargetDirectory.testDirForTest( getClass() );
     private int affectedNodes;
@@ -92,7 +92,8 @@ public class LuceneSchemaIndexPopulationIT
             assertEquals( 0, uniqueIndex.allDocumentsReader().maxCount() );
             assertFalse( uniqueIndex.exists() );
 
-            try ( LuceneIndexAccessor indexAccessor = new LuceneIndexAccessor( uniqueIndex ) )
+            try ( LuceneIndexAccessor indexAccessor = new LuceneIndexAccessor( uniqueIndex,
+                    new IndexDescriptor( 1, 1 ) ) )
             {
                 generateUpdates( indexAccessor, affectedNodes );
                 indexAccessor.force();

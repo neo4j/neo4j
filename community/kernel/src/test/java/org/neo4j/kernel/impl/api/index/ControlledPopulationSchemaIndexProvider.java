@@ -97,8 +97,8 @@ public class ControlledPopulationSchemaIndexProvider extends SchemaIndexProvider
     }
 
     @Override
-    public IndexAccessor getOnlineAccessor( long indexId, IndexConfiguration indexConfig,
-                                            IndexSamplingConfig samplingConfig )
+    public IndexAccessor getOnlineAccessor( long indexId, IndexDescriptor descriptor,
+                                            IndexConfiguration indexConfig, IndexSamplingConfig samplingConfig )
     {
         writerCallCount.incrementAndGet();
         writerLatch.countDown();

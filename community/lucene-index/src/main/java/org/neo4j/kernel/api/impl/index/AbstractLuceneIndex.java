@@ -59,7 +59,7 @@ public abstract class AbstractLuceneIndex
 
     protected final PartitionedIndexStorage indexStorage;
     private final IndexPartitionFactory partitionFactory;
-    private List<AbstractIndexPartition> partitions = new CopyOnWriteArrayList<>();
+    private final List<AbstractIndexPartition> partitions = new CopyOnWriteArrayList<>();
     private volatile boolean open;
 
     public AbstractLuceneIndex( PartitionedIndexStorage indexStorage, IndexPartitionFactory partitionFactory )
@@ -187,7 +187,7 @@ public abstract class AbstractLuceneIndex
     /**
      * Commits all index partitions.
      *
-     * @throws IOException
+     * @throws IOException on Lucene I/O error.
      */
     public void flush() throws IOException
     {

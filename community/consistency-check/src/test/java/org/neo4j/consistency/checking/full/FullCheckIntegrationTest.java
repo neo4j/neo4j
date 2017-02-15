@@ -592,7 +592,8 @@ public class FullCheckIntegrationTest
         for ( IndexRule indexRule : loadAllIndexRules( fixture.directStoreAccess().nativeStores().getSchemaStore() ) )
         {
             IndexAccessor accessor = fixture.directStoreAccess().indexes().getOnlineAccessor(
-                    indexRule.getId(), IndexConfiguration.of( indexRule ), samplingConfig );
+                    indexRule.getId(), new IndexDescriptor( indexRule.getLabel(), indexRule.getPropertyKey() ),
+                    IndexConfiguration.of( indexRule ), samplingConfig );
             IndexUpdater updater = accessor.newUpdater( IndexUpdateMode.ONLINE );
             updater.remove( asPrimitiveLongSet( indexedNodes ) );
             updater.close();
@@ -615,9 +616,9 @@ public class FullCheckIntegrationTest
         IndexSamplingConfig samplingConfig = new IndexSamplingConfig( Config.empty() );
         for ( IndexRule indexRule : loadAllIndexRules( fixture.directStoreAccess().nativeStores().getSchemaStore() ) )
         {
-            IndexAccessor accessor = fixture.directStoreAccess()
-                                            .indexes()
-                                            .getOnlineAccessor( indexRule.getId(), indexConfig, samplingConfig );
+            IndexAccessor accessor = fixture.directStoreAccess().indexes().getOnlineAccessor( indexRule.getId(),
+                    new IndexDescriptor( indexRule.getLabel(), indexRule.getPropertyKey() ),
+                    indexConfig, samplingConfig );
             IndexUpdater updater = accessor.newUpdater( IndexUpdateMode.ONLINE );
             updater.process( NodePropertyUpdate.add( 42, 0, "value", new long[]{3} ) );
             updater.close();

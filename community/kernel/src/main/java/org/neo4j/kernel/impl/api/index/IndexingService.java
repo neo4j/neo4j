@@ -118,7 +118,7 @@ public class IndexingService extends LifecycleAdapter
 
         void populationCompleteOn( IndexDescriptor descriptor );
 
-        void verifyDeferredConstraints();
+        void indexPopulationScanComplete();
 
         void awaitingPopulationOfRecoveredIndex( long indexId, IndexDescriptor descriptor );
     }
@@ -141,7 +141,7 @@ public class IndexingService extends LifecycleAdapter
         }
 
         @Override
-        public void verifyDeferredConstraints()
+        public void indexPopulationScanComplete()
         {   // Do nothing
         }
 

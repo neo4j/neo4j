@@ -79,8 +79,8 @@ public class InMemoryIndexProvider extends SchemaIndexProvider
     }
 
     @Override
-    public IndexAccessor getOnlineAccessor( long indexId, IndexConfiguration indexConfig,
-                                            IndexSamplingConfig samplingConfig )
+    public IndexAccessor getOnlineAccessor( long indexId, IndexDescriptor descriptor,
+                                            IndexConfiguration indexConfig, IndexSamplingConfig samplingConfig )
     {
         InMemoryIndex index = indexes.get( indexId );
         if ( index == null || index.getState() != InternalIndexState.ONLINE )
