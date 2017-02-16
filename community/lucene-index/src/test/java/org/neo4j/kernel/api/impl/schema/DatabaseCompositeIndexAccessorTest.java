@@ -32,11 +32,14 @@ import java.io.IOException;
 import java.util.Arrays;
 import java.util.Collection;
 import java.util.List;
+import java.util.concurrent.Future;
 
 import org.neo4j.collection.primitive.PrimitiveLongCollections;
 import org.neo4j.collection.primitive.PrimitiveLongIterator;
 import org.neo4j.function.IOFunction;
+import org.neo4j.helpers.TaskCoordinator;
 import org.neo4j.kernel.api.exceptions.index.IndexEntryConflictException;
+import org.neo4j.kernel.api.exceptions.index.IndexNotFoundKernelException;
 import org.neo4j.kernel.api.impl.index.storage.DirectoryFactory;
 import org.neo4j.kernel.api.index.IndexEntryUpdate;
 import org.neo4j.kernel.api.index.IndexUpdater;
@@ -45,12 +48,17 @@ import org.neo4j.kernel.api.schema_new.index.NewIndexDescriptor;
 import org.neo4j.kernel.api.schema_new.index.NewIndexDescriptorFactory;
 import org.neo4j.kernel.impl.api.index.IndexUpdateMode;
 import org.neo4j.storageengine.api.schema.IndexReader;
+import org.neo4j.storageengine.api.schema.IndexSampler;
 import org.neo4j.test.rule.concurrent.ThreadingRule;
 import org.neo4j.test.rule.fs.EphemeralFileSystemRule;
 
 import static java.util.Arrays.asList;
+import static java.util.concurrent.TimeUnit.SECONDS;
 import static org.junit.Assert.assertEquals;
+import static org.junit.Assert.fail;
 import static org.neo4j.helpers.collection.Iterators.asSet;
+import static org.neo4j.helpers.collection.Iterators.emptySetOf;
+import static org.neo4j.test.rule.concurrent.ThreadingRule.waitingWhileIn;
 
 @RunWith( Parameterized.class )
 public class DatabaseCompositeIndexAccessorTest
@@ -147,8 +155,8 @@ public class DatabaseCompositeIndexAccessorTest
     public void indexReaderShouldSupportSeekOnCompositeIndexUpdatedWithTwoTransactions() throws Exception
     {
         // GIVEN
-        updateAndCommit( asList( add( nodeId, value ), add( nodeId2, value2 ) ) );
-        updateAndCommit( asList( add( nodeId, value ), add( nodeId2, value2 ) ) );
+        updateAndCommit( asList( add( nodeId, value ), add( nodeId2, value ) ) );
+        updateAndCommit( asList( add( nodeId, value2 ), add( nodeId2, value2 ) ) );
         IndexReader reader = accessor.newReader();
 
         // WHEN
@@ -161,9 +169,130 @@ public class DatabaseCompositeIndexAccessorTest
         reader.close();
     }
 
-    private IndexEntryUpdate add( long nodeId, Object[] values )
+    @Test
+    public void multipleIndexReadersFromDifferentPointsInTimeCanSeeDifferentResults() throws Exception
+    {
+        // WHEN
+        updateAndCommit( asList( add( nodeId, value ) ) );
+        IndexReader firstReader = accessor.newReader();
+        updateAndCommit( asList( add( nodeId2, value2 ) ) );
+        IndexReader secondReader = accessor.newReader();
+
+        // THEN
+        assertEquals( asSet( nodeId ), PrimitiveLongCollections.toSet( firstReader
+                .query( IndexQuery.exact( PROP_ID1, value[0] ), IndexQuery.exact( PROP_ID2, value[1] ) ) ) );
+        assertEquals( asSet(), PrimitiveLongCollections.toSet( firstReader
+                .query( IndexQuery.exact( PROP_ID1, value2[0] ), IndexQuery.exact( PROP_ID2, value2[1] ) ) ) );
+        assertEquals( asSet( nodeId ), PrimitiveLongCollections.toSet( secondReader
+                .query( IndexQuery.exact( PROP_ID1, value[0] ), IndexQuery.exact( PROP_ID2, value[1] ) ) ) );
+        assertEquals( asSet( nodeId2 ), PrimitiveLongCollections.toSet( secondReader
+                .query( IndexQuery.exact( PROP_ID1, value2[0] ), IndexQuery.exact( PROP_ID2, value2[1] ) ) ) );
+        firstReader.close();
+        secondReader.close();
+    }
+
+    @Test
+    public void canAddNewData() throws Exception
+    {
+        // WHEN
+        updateAndCommit( asList( add( nodeId, value ), add( nodeId2, value2 ) ) );
+        IndexReader reader = accessor.newReader();
+
+        // THEN
+        assertEquals( asSet( nodeId ), PrimitiveLongCollections.toSet( reader
+                .query( IndexQuery.exact( PROP_ID1, value[0] ), IndexQuery.exact( PROP_ID2, value[1] ) ) ) );
+        reader.close();
+    }
+
+    @Test
+    public void canChangeExistingData() throws Exception
+    {
+        // GIVEN
+        updateAndCommit( asList( add( nodeId, value ) ) );
+
+        // WHEN
+        updateAndCommit( asList( change( nodeId, value, value2 ) ) );
+        IndexReader reader = accessor.newReader();
+
+        // THEN
+        assertEquals( asSet( nodeId ), PrimitiveLongCollections.toSet( reader
+                .query( IndexQuery.exact( PROP_ID1, value2[0] ), IndexQuery.exact( PROP_ID2, value2[1] ) ) ) );
+        assertEquals( emptySetOf( Long.class ), PrimitiveLongCollections.toSet( reader
+                .query( IndexQuery.exact( PROP_ID1, value[0] ), IndexQuery.exact( PROP_ID2, value[1] ) ) ) );
+        reader.close();
+    }
+
+    @Test
+    public void canRemoveExistingData() throws Exception
+    {
+        // GIVEN
+        updateAndCommit( asList( add( nodeId, value ), add( nodeId2, value2 ) ) );
+
+        // WHEN
+        updateAndCommit( asList( remove( nodeId, value ) ) );
+        IndexReader reader = accessor.newReader();
+
+        // THEN
+        assertEquals( asSet( nodeId2 ), PrimitiveLongCollections.toSet( reader
+                .query( IndexQuery.exact( PROP_ID1, value2[0] ), IndexQuery.exact( PROP_ID2, value2[1] ) ) ) );
+        assertEquals( asSet(), PrimitiveLongCollections.toSet( reader
+                .query( IndexQuery.exact( PROP_ID1, value[0] ), IndexQuery.exact( PROP_ID2, value[1] ) ) ) );
+        reader.close();
+    }
+
+    @Test
+    public void shouldStopSamplingWhenIndexIsDropped() throws Exception
+    {
+        // given
+        updateAndCommit( asList( add( nodeId, value ), add( nodeId2, value2 ) ) );
+
+        // when
+        IndexReader indexReader = accessor.newReader(); // needs to be acquired before drop() is called
+        IndexSampler indexSampler = indexReader.createSampler();
+
+        Future<Void> drop = threading.executeAndAwait( new IOFunction<Void,Void>()
+        {
+            @Override
+            public Void apply( Void nothing ) throws IOException
+            {
+                accessor.drop();
+                return nothing;
+            }
+        }, null, waitingWhileIn( TaskCoordinator.class, "awaitCompletion" ), 3, SECONDS );
+
+        try ( IndexReader reader = indexReader /* do not inline! */ )
+        {
+            indexSampler.sampleIndex();
+            fail( "expected exception" );
+        }
+        catch ( IndexNotFoundKernelException e )
+        {
+            assertEquals( "Index dropped while sampling.", e.getMessage() );
+        }
+        finally
+        {
+            drop.get();
+        }
+    }
+
+    private IndexEntryUpdate add( long nodeId, Object... values )
     {
         return IndexEntryUpdate.add( nodeId, indexDescriptor, values );
+    }
+
+    private IndexEntryUpdate remove( long nodeId, Object... values )
+    {
+        return IndexEntryUpdate.remove( nodeId, indexDescriptor, values );
+    }
+
+    private IndexEntryUpdate change( long nodeId, Object valueBefore, Object valueAfter )
+    {
+        return IndexEntryUpdate.change( nodeId, indexDescriptor, valueBefore, valueAfter );
+    }
+
+    private IndexEntryUpdate change( long nodeId, Object[] valuesBefore, Object[] valuesAfter )
+    {
+        return IndexEntryUpdate.change( nodeId, indexDescriptor, valuesBefore, valuesAfter );
     }
 
     private void updateAndCommit( List<IndexEntryUpdate> nodePropertyUpdates )

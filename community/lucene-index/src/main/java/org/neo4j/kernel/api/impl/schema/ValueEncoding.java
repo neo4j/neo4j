@@ -41,9 +41,9 @@ enum ValueEncoding
     Number
             {
                 @Override
-                String key( int propertyNumber )
+                String key()
                 {
-                    return propertyNumber + "number";
+                    return "number";
                 }
 
                 @Override
@@ -65,20 +65,19 @@ enum ValueEncoding
                 }
 
                 @Override
-                Query encodeQuery( Object value )
+                Query encodeQuery( Object value, int propertyNumber )
                 {
                     Double doubleValue = ((Number) value).doubleValue();
-                    return new ConstantScoreQuery( NumericRangeQuery.newDoubleRange( key( 0 ), doubleValue,
-                            doubleValue,
-                            true, true ) );
+                    return new ConstantScoreQuery( NumericRangeQuery
+                            .newDoubleRange( key( propertyNumber ), doubleValue, doubleValue, true, true ) );
                 }
             },
     Array
             {
                 @Override
-                String key( int propertyNumber )
+                String key()
                 {
-                    return propertyNumber + "array";
+                    return "array";
                 }
 
                 @Override
@@ -100,18 +99,18 @@ enum ValueEncoding
                 }
 
                 @Override
-                Query encodeQuery( Object value )
+                Query encodeQuery( Object value, int propertyNumber )
                 {
-                    return new ConstantScoreQuery( new TermQuery( new Term( key( 0 ), ArrayEncoder.encode( value ) )
-                    ) );
+                    return new ConstantScoreQuery(
+                            new TermQuery( new Term( key( propertyNumber ), ArrayEncoder.encode( value ) ) ) );
                 }
             },
     Bool
             {
                 @Override
-                String key( int propertyNumber )
+                String key()
                 {
-                    return propertyNumber + "bool";
+                    return "bool";
                 }
 
                 @Override
@@ -133,17 +132,18 @@ enum ValueEncoding
                 }
 
                 @Override
-                Query encodeQuery( Object value )
+                Query encodeQuery( Object value, int propertyNumber )
                 {
-                    return new ConstantScoreQuery( new TermQuery( new Term( key( 0 ), value.toString() ) ) );
+                    return new ConstantScoreQuery(
+                            new TermQuery( new Term( key( propertyNumber ), value.toString() ) ) );
                 }
             },
     String
             {
                 @Override
-                String key( int propertyNumber )
+                String key()
                 {
-                    return propertyNumber + "string";
+                    return "string";
                 }
 
                 @Override
@@ -166,15 +166,21 @@ enum ValueEncoding
                 }
 
                 @Override
-                Query encodeQuery( Object value )
+                Query encodeQuery( Object value, int propertyNumber )
                 {
-                    return new ConstantScoreQuery( new TermQuery( new Term( key( 0 ), value.toString() ) ) );
+                    return new ConstantScoreQuery(
+                            new TermQuery( new Term( key( propertyNumber ), value.toString() ) ) );
                 }
             };
 
     private static final ValueEncoding[] AllEncodings = values();
 
-    abstract String key( int propertyNumber );
+    abstract String key();
+
+    String key( int propertyNumber )
+    {
+        return propertyNumber + key();
+    }
 
     abstract boolean canEncode( Object value );
 
@@ -182,13 +188,13 @@ enum ValueEncoding
 
     abstract void setFieldValue( Object value, Field field );
 
-    abstract Query encodeQuery( Object value );
+    abstract Query encodeQuery( Object value, int propertyNumber );
 
     public static ValueEncoding forKey( String key )
     {
         for ( ValueEncoding encoding : AllEncodings )
         {
-            if ( encoding.key( 0 ).equals( key ) )
+            if ( key.endsWith( encoding.key( ) ) )
             {
                 return encoding;
             }

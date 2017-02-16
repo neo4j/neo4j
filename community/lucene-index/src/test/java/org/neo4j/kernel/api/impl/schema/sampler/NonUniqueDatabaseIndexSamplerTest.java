@@ -66,7 +66,7 @@ public class NonUniqueDatabaseIndexSamplerTest
     public void nonUniqueSamplingCancel() throws IndexNotFoundKernelException, IOException
     {
         Terms terms = getTerms( "test", 1 );
-        Map<String,Terms> fieldTermsMap = MapUtil.genericMap( "string", terms, "id", terms, "string", terms );
+        Map<String,Terms> fieldTermsMap = MapUtil.genericMap( "0string", terms, "id", terms, "0string", terms );
         IndexReaderStub indexReader = new IndexReaderStub( new SamplingFields( fieldTermsMap ) );
         when( indexSearcher.getIndexReader() ).thenReturn( indexReader );
 
@@ -84,7 +84,7 @@ public class NonUniqueDatabaseIndexSamplerTest
         Terms aTerms = getTerms( "a", 1 );
         Terms idTerms = getTerms( "id", 2 );
         Terms bTerms = getTerms( "b", 3 );
-        Map<String,Terms> fieldTermsMap = MapUtil.genericMap( "string", aTerms, "id", idTerms, "array", bTerms );
+        Map<String,Terms> fieldTermsMap = MapUtil.genericMap( "0string", aTerms, "id", idTerms, "0array", bTerms );
         IndexReaderStub indexReader = new IndexReaderStub( new SamplingFields( fieldTermsMap ) );
         indexReader.setElements( new String[4] );
         when( indexSearcher.getIndexReader() ).thenReturn( indexReader );

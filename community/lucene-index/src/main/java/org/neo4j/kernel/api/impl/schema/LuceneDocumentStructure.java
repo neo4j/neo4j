@@ -95,10 +95,15 @@ public class LuceneDocumentStructure
         return new MatchAllDocsQuery();
     }
 
-    public static Query newSeekQuery( Object value )
+    public static Query newSeekQuery( Object... values )
     {
-        ValueEncoding encoding = ValueEncoding.forValue( value );
-        return encoding.encodeQuery( value );
+        BooleanQuery.Builder builder = new BooleanQuery.Builder();
+        for ( int i = 0; i < values.length; i++ )
+        {
+            ValueEncoding encoding = ValueEncoding.forValue( values[i] );
+            builder.add( encoding.encodeQuery( values[i], i ), BooleanClause.Occur.MUST );
+        }
+        return builder.build();
     }
 
     /**
