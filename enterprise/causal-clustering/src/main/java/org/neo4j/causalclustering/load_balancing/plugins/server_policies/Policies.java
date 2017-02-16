@@ -17,7 +17,7 @@
  * You should have received a copy of the GNU Affero General Public License
  * along with this program. If not, see <http://www.gnu.org/licenses/>.
  */
-package org.neo4j.causalclustering.load_balancing.strategy.server_policy;
+package org.neo4j.causalclustering.load_balancing.plugins.server_policies;
 
 import java.util.HashMap;
 import java.util.Map;
@@ -31,9 +31,11 @@ import static java.lang.String.format;
 class Policies
 {
     static final String POLICY_KEY = "load_balancing.policy"; // TODO: move somewhere (driver support package?)
+    static final String DEFAULT_POLICY_NAME = "default";
+    static final Policy DEFAULT_POLICY = new FilteringPolicy( IdentityFilter.as() );
 
     private final Map<String,Policy> policies = new HashMap<>();
-    private final Policy DEFAULT_POLICY = new FilteringPolicy( IdentityFilter.as() );
+
     private final Log log;
 
     Policies( LogProvider logProvider )
@@ -53,15 +55,13 @@ class Policies
     Policy selectFor( Map<String,String> context )
     {
         String policyName = context.get( POLICY_KEY );
+        policyName = (policyName != null) ? policyName : DEFAULT_POLICY_NAME;
+
         Policy selectedPolicy = policies.get( policyName );
 
-        if ( policyName == null )
+        if ( selectedPolicy == null )
         {
-            return DEFAULT_POLICY;
-        }
-        else if ( selectedPolicy == null )
-        {
-            log.warn( format( "Policy '%s' could not be found. Will use default instead.", policyName ) );
+            log.warn( format( "Policy definition for '%s' could not be found. Will use built-in default instead.", policyName ) );
             return DEFAULT_POLICY;
         }
         else

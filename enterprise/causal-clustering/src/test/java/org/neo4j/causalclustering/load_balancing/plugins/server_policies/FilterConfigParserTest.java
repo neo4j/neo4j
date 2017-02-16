@@ -17,7 +17,7 @@
  * You should have received a copy of the GNU Affero General Public License
  * along with this program. If not, see <http://www.gnu.org/licenses/>.
  */
-package org.neo4j.causalclustering.load_balancing.strategy.server_policy;
+package org.neo4j.causalclustering.load_balancing.plugins.server_policies;
 
 import org.junit.Test;
 
@@ -26,7 +26,7 @@ import org.neo4j.causalclustering.load_balancing.filters.Filter;
 import static java.lang.String.format;
 import static org.junit.Assert.assertEquals;
 import static org.junit.Assert.fail;
-import static org.neo4j.causalclustering.load_balancing.strategy.server_policy.FilterBuilder.filter;
+import static org.neo4j.causalclustering.load_balancing.plugins.server_policies.FilterBuilder.filter;
 
 public class FilterConfigParserTest
 {

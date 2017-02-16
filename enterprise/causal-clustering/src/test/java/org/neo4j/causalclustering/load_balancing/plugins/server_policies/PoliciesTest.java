@@ -17,7 +17,7 @@
  * You should have received a copy of the GNU Affero General Public License
  * along with this program. If not, see <http://www.gnu.org/licenses/>.
  */
-package org.neo4j.causalclustering.load_balancing.strategy.server_policy;
+package org.neo4j.causalclustering.load_balancing.plugins.server_policies;
 
 import org.junit.Test;
 
@@ -28,6 +28,7 @@ import org.neo4j.logging.NullLogProvider;
 
 import static java.util.Collections.emptyMap;
 import static org.junit.Assert.assertEquals;
+import static org.junit.Assert.assertNotEquals;
 import static org.neo4j.helpers.collection.Iterators.asSet;
 import static org.neo4j.helpers.collection.MapUtil.stringMap;
 
@@ -50,6 +51,7 @@ public class PoliciesTest
 
         // then
         assertEquals( input, output );
+        assertEquals( Policies.DEFAULT_POLICY, policy );
     }
 
     @Test
@@ -69,6 +71,24 @@ public class PoliciesTest
 
         // then
         assertEquals( input, output );
+        assertEquals( Policies.DEFAULT_POLICY, policy );
+    }
+
+    @Test
+    public void shouldAllowOverridingDefaultPolicy() throws Exception
+    {
+        Policies policies = new Policies( NullLogProvider.getInstance() );
+
+        String defaulyPolicyName = Policies.DEFAULT_POLICY_NAME;
+        Policy defaultPolicy = new FilteringPolicy( new AnyTagFilter( "tagA", "tagB" ) );
+
+        // when
+        policies.addPolicy( defaulyPolicyName, defaultPolicy );
+        Policy selectedPolicy = policies.selectFor( emptyMap() );
+
+        // then
+        assertEquals( defaultPolicy, selectedPolicy );
+        assertNotEquals( Policies.DEFAULT_POLICY, selectedPolicy );
     }
 
     @Test

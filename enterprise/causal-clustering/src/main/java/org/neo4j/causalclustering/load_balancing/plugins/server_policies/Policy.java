@@ -17,17 +17,11 @@
  * You should have received a copy of the GNU Affero General Public License
  * along with this program. If not, see <http://www.gnu.org/licenses/>.
  */
-package org.neo4j.causalclustering.load_balancing.strategy.server_policy;
+package org.neo4j.causalclustering.load_balancing.plugins.server_policies;
 
-class InvalidFilterSpecification extends Exception
+import java.util.Set;
+
+public interface Policy
 {
-    InvalidFilterSpecification( String message )
-    {
-        super( message );
-    }
-
-    InvalidFilterSpecification( String message, NumberFormatException cause )
-    {
-        super( message, cause );
-    }
+    Set<ServerInfo> apply( Set<ServerInfo> data );
 }

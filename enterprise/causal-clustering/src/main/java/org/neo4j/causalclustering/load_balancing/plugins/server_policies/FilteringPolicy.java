@@ -17,35 +17,26 @@
  * You should have received a copy of the GNU Affero General Public License
  * along with this program. If not, see <http://www.gnu.org/licenses/>.
  */
-package org.neo4j.causalclustering.load_balancing.strategy.server_policy;
+package org.neo4j.causalclustering.load_balancing.plugins.server_policies;
 
 import java.util.Objects;
 import java.util.Set;
 
-import org.neo4j.helpers.AdvertisedSocketAddress;
+import org.neo4j.causalclustering.load_balancing.filters.Filter;
 
-/**
- * Hold the server information that is interesting for load balancing purposes.
- */
-class ServerInfo
+public class FilteringPolicy implements Policy
 {
-    private final AdvertisedSocketAddress boltAddress;
-    private Set<String> tags;
+    private final Filter<ServerInfo> filter;
 
-    ServerInfo( AdvertisedSocketAddress boltAddress, Set<String> tags )
+    FilteringPolicy( Filter<ServerInfo> filter )
     {
-        this.boltAddress = boltAddress;
-        this.tags = tags;
+        this.filter = filter;
     }
 
-    AdvertisedSocketAddress boltAddress()
+    @Override
+    public Set<ServerInfo> apply( Set<ServerInfo> data )
     {
-        return boltAddress;
-    }
-
-    Set<String> tags()
-    {
-        return tags;
+        return filter.apply( data );
     }
 
     @Override
@@ -55,23 +46,21 @@ class ServerInfo
         { return true; }
         if ( o == null || getClass() != o.getClass() )
         { return false; }
-        ServerInfo that = (ServerInfo) o;
-        return Objects.equals( boltAddress, that.boltAddress ) &&
-               Objects.equals( tags, that.tags );
+        FilteringPolicy that = (FilteringPolicy) o;
+        return Objects.equals( filter, that.filter );
     }
 
     @Override
     public int hashCode()
     {
-        return Objects.hash( boltAddress, tags );
+        return Objects.hash( filter );
     }
 
     @Override
     public String toString()
     {
-        return "ServerInfo{" +
-               "boltAddress=" + boltAddress +
-               ", tags=" + tags +
+        return "FilteringPolicy{" +
+               "filter=" + filter +
                '}';
     }
 }

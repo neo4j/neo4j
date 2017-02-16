@@ -30,7 +30,7 @@ public enum ParameterNames
      *
      * An opaque key-value map for supplying client context.
      *
-     * Refer to the specific routing strategy deployed to
+     * Refer to the specific routing plugin deployed to
      * understand which specific keys can be utilised.
      */
     CONTEXT( "context" ),
@@ -51,7 +51,7 @@ public enum ParameterNames
      * Defines the time-to-live of the returned information,
      * after which it shall be refreshed.
      *
-     * Refer to the specific routing strategy deployed to
+     * Refer to the specific routing plugin deployed to
      * understand the impact of this setting.
      */
     TTL( "ttl" );

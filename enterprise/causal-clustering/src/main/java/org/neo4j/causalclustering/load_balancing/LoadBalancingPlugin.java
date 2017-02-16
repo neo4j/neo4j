@@ -26,7 +26,7 @@ import java.util.Map;
  * Defines the interface for an implementation of the GetServersV2
  * cluster discovery and load balancing procedure.
  */
-public interface LoadBalancingStrategy
+public interface LoadBalancingPlugin
 {
     interface Result
     {

@@ -314,16 +314,21 @@ public class CausalClusteringSettings implements LoadableConfig
     public static final Setting<List<String>> upstream_selection_strategy =
             setting( "causal_clustering.upstream_selection_strategy", list( ",", STRING ), "default" );
 
-    @Description( "The load balancing plugin to use. This must be the same for all core servers participating in the cluster." )
+    @Description( "Tags for the server used when configuring load balancing and replication policies." )
+    public static Setting<List<String>> server_tags =
+            setting( "causal_clustering.server_tags", list( ",", STRING ), "" );
+
+    @Description( "The load balancing plugin to use." )
     public static Setting<String> load_balancing_plugin =
             setting( "causal_clustering.load_balancing.plugin", STRING, "server_policies" );
 
-    @Description( "The configuration must be valid for the configured plugin." )
+    @Description( "The configuration must be valid for the configured plugin and usually exists" +
+                  "under matching subkeys, e.g. ..config.server_policies.*" +
+                  "This is just a top-level placeholder for the plugin-specific configuration." )
     public static Setting<String> load_balancing_config =
             setting( "causal_clustering.load_balancing.config", STRING, "" );
 
-    @Description( "Tags for the server used when configuring load balancing and replication policies." +
-                  " Multiple tags can be configured by separating with a comma." )
-    public static Setting<List<String>> server_tags =
-            setting( "causal_clustering.server_tags", list( ",", STRING ), "" );
+    @Description( "Enables shuffling of the returned load balancing result." )
+    public static final Setting<Boolean> load_balancing_shuffle =
+            setting( "causal_clustering.load_balancing.shuffle", BOOLEAN, "true" );
 }

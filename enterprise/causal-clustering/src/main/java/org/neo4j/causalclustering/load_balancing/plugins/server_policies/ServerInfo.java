@@ -17,26 +17,35 @@
  * You should have received a copy of the GNU Affero General Public License
  * along with this program. If not, see <http://www.gnu.org/licenses/>.
  */
-package org.neo4j.causalclustering.load_balancing.strategy.server_policy;
+package org.neo4j.causalclustering.load_balancing.plugins.server_policies;
 
 import java.util.Objects;
 import java.util.Set;
 
-import org.neo4j.causalclustering.load_balancing.filters.Filter;
+import org.neo4j.helpers.AdvertisedSocketAddress;
 
-public class FilteringPolicy implements Policy
+/**
+ * Hold the server information that is interesting for load balancing purposes.
+ */
+class ServerInfo
 {
-    private final Filter<ServerInfo> filter;
+    private final AdvertisedSocketAddress boltAddress;
+    private Set<String> tags;
 
-    FilteringPolicy( Filter<ServerInfo> filter )
+    ServerInfo( AdvertisedSocketAddress boltAddress, Set<String> tags )
     {
-        this.filter = filter;
+        this.boltAddress = boltAddress;
+        this.tags = tags;
     }
 
-    @Override
-    public Set<ServerInfo> apply( Set<ServerInfo> data )
+    AdvertisedSocketAddress boltAddress()
     {
-        return filter.apply( data );
+        return boltAddress;
+    }
+
+    Set<String> tags()
+    {
+        return tags;
     }
 
     @Override
@@ -46,21 +55,23 @@ public class FilteringPolicy implements Policy
         { return true; }
         if ( o == null || getClass() != o.getClass() )
         { return false; }
-        FilteringPolicy that = (FilteringPolicy) o;
-        return Objects.equals( filter, that.filter );
+        ServerInfo that = (ServerInfo) o;
+        return Objects.equals( boltAddress, that.boltAddress ) &&
+               Objects.equals( tags, that.tags );
     }
 
     @Override
     public int hashCode()
     {
-        return Objects.hash( filter );
+        return Objects.hash( boltAddress, tags );
     }
 
     @Override
     public String toString()
     {
-        return "FilteringPolicy{" +
-               "filter=" + filter +
+        return "ServerInfo{" +
+               "boltAddress=" + boltAddress +
+               ", tags=" + tags +
                '}';
     }
 }

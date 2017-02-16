@@ -23,12 +23,11 @@ import org.junit.Test;
 
 import java.util.Map;
 
-import org.neo4j.causalclustering.load_balancing.LoadBalancingStrategy;
+import org.neo4j.causalclustering.load_balancing.LoadBalancingPlugin;
 import org.neo4j.kernel.api.proc.FieldSignature;
 import org.neo4j.kernel.api.proc.ProcedureSignature;
 
 import static org.hamcrest.MatcherAssert.assertThat;
-import static org.hamcrest.Matchers.any;
 import static org.hamcrest.Matchers.containsInAnyOrder;
 import static org.mockito.Matchers.anyMap;
 import static org.mockito.Mockito.mock;
@@ -59,18 +58,18 @@ public class GetServersProcedureV2Test
     }
 
     @Test
-    public void shouldPassClientContextToStrategy() throws Exception
+    public void shouldPassClientContextToPlugin() throws Exception
     {
         // given
-        LoadBalancingStrategy strategy = mock( LoadBalancingStrategy.class );
-        when( strategy.run( anyMap() ) ).thenReturn( mock( LoadBalancingStrategy.Result.class ) );
-        GetServersProcedureV2 getServers = new GetServersProcedureV2( strategy );
+        LoadBalancingPlugin plugin = mock( LoadBalancingPlugin.class );
+        when( plugin.run( anyMap() ) ).thenReturn( mock( LoadBalancingPlugin.Result.class ) );
+        GetServersProcedureV2 getServers = new GetServersProcedureV2( plugin );
         Map<String,String> clientContext = stringMap( "key", "value", "key2", "value2" );
 
         // when
         getServers.apply( null, new Object[] { clientContext } );
 
         // then
-        verify( strategy ).run( clientContext );
+        verify( plugin ).run( clientContext );
     }
 }

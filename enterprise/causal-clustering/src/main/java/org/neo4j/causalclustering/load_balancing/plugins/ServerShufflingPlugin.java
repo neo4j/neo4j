@@ -17,12 +17,12 @@
  * You should have received a copy of the GNU Affero General Public License
  * along with this program. If not, see <http://www.gnu.org/licenses/>.
  */
-package org.neo4j.causalclustering.load_balancing.strategy;
+package org.neo4j.causalclustering.load_balancing.plugins;
 
 import java.util.Collections;
 import java.util.Map;
 
-import org.neo4j.causalclustering.load_balancing.LoadBalancingStrategy;
+import org.neo4j.causalclustering.load_balancing.LoadBalancingPlugin;
 
 /**
  * Shuffles the servers of the delegate around so that every client
@@ -30,11 +30,11 @@ import org.neo4j.causalclustering.load_balancing.LoadBalancingStrategy;
  *
  * N.B: Lists are shuffled in place.
  */
-public class ServerShufflingStrategy implements LoadBalancingStrategy
+public class ServerShufflingPlugin implements LoadBalancingPlugin
 {
-    private final LoadBalancingStrategy delegate;
+    private final LoadBalancingPlugin delegate;
 
-    public ServerShufflingStrategy( LoadBalancingStrategy delegate )
+    public ServerShufflingPlugin( LoadBalancingPlugin delegate )
     {
         this.delegate = delegate;
     }

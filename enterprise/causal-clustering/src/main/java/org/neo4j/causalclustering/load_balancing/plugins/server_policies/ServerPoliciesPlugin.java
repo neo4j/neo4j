@@ -17,7 +17,7 @@
  * You should have received a copy of the GNU Affero General Public License
  * along with this program. If not, see <http://www.gnu.org/licenses/>.
  */
-package org.neo4j.causalclustering.load_balancing.strategy.server_policy;
+package org.neo4j.causalclustering.load_balancing.plugins.server_policies;
 
 import java.util.List;
 import java.util.Map;
@@ -33,24 +33,25 @@ import org.neo4j.causalclustering.discovery.ReadReplicaTopology;
 import org.neo4j.causalclustering.discovery.TopologyService;
 import org.neo4j.causalclustering.identity.MemberId;
 import org.neo4j.causalclustering.load_balancing.Endpoint;
+import org.neo4j.causalclustering.load_balancing.LoadBalancingPlugin;
 import org.neo4j.causalclustering.load_balancing.LoadBalancingResult;
-import org.neo4j.causalclustering.load_balancing.LoadBalancingStrategy;
 import org.neo4j.kernel.configuration.Config;
 import org.neo4j.logging.LogProvider;
 
 import static java.util.Collections.emptyList;
 import static org.neo4j.causalclustering.load_balancing.Util.asList;
 import static org.neo4j.causalclustering.load_balancing.Util.extractBoltAddress;
+import static org.neo4j.causalclustering.load_balancing.plugins.server_policies.FilteringPolicyLoader.load;
 
 /**
- * The server policy strategy defines policies on the server-side which
+ * The server policies plugin defines policies on the server-side which
  * can be bound to by a client by supplying a appropriately formed context.
  *
- * An example would be to define a policy for a particular region.
+ * An example would be to define different policies for different regions.
  */
-public class ServerPolicyStrategy implements LoadBalancingStrategy
+public class ServerPoliciesPlugin implements LoadBalancingPlugin
 {
-    private static final String STRATEGY_NAME = "server_policy";
+    private static final String PLUGIN_NAME = "server_policies";
 
     private final TopologyService topologyService;
     private final LeaderLocator leaderLocator;
@@ -58,14 +59,14 @@ public class ServerPolicyStrategy implements LoadBalancingStrategy
     private final boolean allowReadsOnFollowers;
     private final Policies policies;
 
-    public ServerPolicyStrategy( TopologyService topologyService, LeaderLocator leaderLocator,
+    public ServerPoliciesPlugin( TopologyService topologyService, LeaderLocator leaderLocator,
             LogProvider logProvider, Config config ) throws InvalidFilterSpecification
     {
         this.topologyService = topologyService;
         this.leaderLocator = leaderLocator;
         this.timeToLive = config.get( CausalClusteringSettings.cluster_routing_ttl );
         this.allowReadsOnFollowers = config.get( CausalClusteringSettings.cluster_allow_reads_on_followers );
-        this.policies = FilteringPolicyLoader.load( config, STRATEGY_NAME, logProvider );
+        this.policies = load( config, PLUGIN_NAME, logProvider );
     }
 
     @Override

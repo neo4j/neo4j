@@ -17,7 +17,7 @@
  * You should have received a copy of the GNU Affero General Public License
  * along with this program. If not, see <http://www.gnu.org/licenses/>.
  */
-package org.neo4j.causalclustering.load_balancing.strategy.server_policy;
+package org.neo4j.causalclustering.load_balancing.plugins.server_policies;
 
 import org.junit.Test;
 
@@ -30,7 +30,7 @@ import org.neo4j.logging.NullLogProvider;
 import static java.lang.String.format;
 import static org.junit.Assert.assertEquals;
 import static org.neo4j.causalclustering.core.CausalClusteringSettings.load_balancing_config;
-import static org.neo4j.causalclustering.load_balancing.strategy.server_policy.FilterBuilder.filter;
+import static org.neo4j.causalclustering.load_balancing.plugins.server_policies.FilterBuilder.filter;
 import static org.neo4j.helpers.collection.MapUtil.stringMap;
 
 public class FilteringPolicyLoaderTest
@@ -39,7 +39,7 @@ public class FilteringPolicyLoaderTest
     public void shouldLoadConfiguredPolicies() throws Exception
     {
         // given
-        String strategyName = "server_policy";
+        String pluginName = "server_policies";
 
         Object[][] input = {
                 {
@@ -74,11 +74,11 @@ public class FilteringPolicyLoaderTest
         {
             String policyName = (String) row[0];
             String filterSpec = (String) row[1];
-            config = config.augment( stringMap( configNameFor( strategyName, policyName ), filterSpec ) );
+            config = config.augment( stringMap( configNameFor( pluginName, policyName ), filterSpec ) );
         }
 
         // when
-        Policies policies = FilteringPolicyLoader.load( config, strategyName, NullLogProvider.getInstance() );
+        Policies policies = FilteringPolicyLoader.load( config, pluginName, NullLogProvider.getInstance() );
 
         // then
         for ( Object[] row : input )
@@ -96,8 +96,8 @@ public class FilteringPolicyLoaderTest
         return stringMap( Policies.POLICY_KEY, policyName );
     }
 
-    private static String configNameFor( String strategyName, String policyName )
+    private static String configNameFor( String pluginName, String policyName )
     {
-        return format( "%s.%s.%s", load_balancing_config.name(), strategyName, policyName );
+        return format( "%s.%s.%s", load_balancing_config.name(), pluginName, policyName );
     }
 }

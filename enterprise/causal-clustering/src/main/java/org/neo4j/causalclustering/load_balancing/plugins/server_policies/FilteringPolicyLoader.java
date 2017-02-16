@@ -17,7 +17,7 @@
  * You should have received a copy of the GNU Affero General Public License
  * along with this program. If not, see <http://www.gnu.org/licenses/>.
  */
-package org.neo4j.causalclustering.load_balancing.strategy.server_policy;
+package org.neo4j.causalclustering.load_balancing.plugins.server_policies;
 
 import java.util.Map;
 import java.util.Set;
@@ -31,15 +31,15 @@ import static java.lang.String.format;
 import static org.neo4j.causalclustering.core.CausalClusteringSettings.load_balancing_config;
 
 /**
- * Loads filters under the name space of [...]config.strategy.policy_name
+ * Loads filters under the name space of a particular plugin.
  */
 class FilteringPolicyLoader
 {
-    static Policies load( Config config, String strategyName, LogProvider logProvider ) throws InvalidFilterSpecification
+    static Policies load( Config config, String pluginName, LogProvider logProvider ) throws InvalidFilterSpecification
     {
         Policies policies = new Policies( logProvider );
 
-        String prefix = policyPrefix( strategyName );
+        String prefix = policyPrefix( pluginName );
         Map<String,String> rawConfig = config.getRaw();
 
         Set<String> configKeys = rawConfig.keySet().stream()
@@ -58,8 +58,8 @@ class FilteringPolicyLoader
         return policies;
     }
 
-    private static String policyPrefix( String strategyName )
+    private static String policyPrefix( String pluginName )
     {
-        return format( "%s.%s.", load_balancing_config.name(), strategyName );
+        return format( "%s.%s.", load_balancing_config.name(), pluginName );
     }
 }

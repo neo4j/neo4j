@@ -17,7 +17,7 @@
  * You should have received a copy of the GNU Affero General Public License
  * along with this program. If not, see <http://www.gnu.org/licenses/>.
  */
-package org.neo4j.causalclustering.load_balancing.strategy;
+package org.neo4j.causalclustering.load_balancing.plugins;
 
 import org.junit.Test;
 
@@ -27,7 +27,7 @@ import java.util.List;
 
 import org.neo4j.causalclustering.load_balancing.Endpoint;
 import org.neo4j.causalclustering.load_balancing.LoadBalancingResult;
-import org.neo4j.causalclustering.load_balancing.LoadBalancingStrategy;
+import org.neo4j.causalclustering.load_balancing.LoadBalancingPlugin;
 import org.neo4j.helpers.AdvertisedSocketAddress;
 
 import static java.util.Arrays.asList;
@@ -39,13 +39,13 @@ import static org.mockito.Matchers.any;
 import static org.mockito.Mockito.mock;
 import static org.mockito.Mockito.when;
 
-public class ServerShufflingStrategyTest
+public class ServerShufflingPluginTest
 {
     @Test
     public void shouldShuffleServers() throws Exception
     {
         // given
-        LoadBalancingStrategy delegate = mock( LoadBalancingStrategy.class );
+        LoadBalancingPlugin delegate = mock( LoadBalancingPlugin.class );
 
         List<Endpoint> routers = asList(
                 Endpoint.route( new AdvertisedSocketAddress( "route", 1 ) ),
@@ -61,7 +61,7 @@ public class ServerShufflingStrategyTest
                 Endpoint.read( new AdvertisedSocketAddress( "read", 9 ) ) );
 
         long ttl = 1000;
-        LoadBalancingStrategy.Result result = new LoadBalancingResult(
+        LoadBalancingPlugin.Result result = new LoadBalancingResult(
                 new ArrayList<>( routers ),
                 new ArrayList<>( writers ),
                 new ArrayList<>( readers ),
@@ -69,13 +69,13 @@ public class ServerShufflingStrategyTest
 
         when( delegate.run( any() ) ).thenReturn( result );
 
-        ServerShufflingStrategy strategy = new ServerShufflingStrategy( delegate );
+        ServerShufflingPlugin plugin = new ServerShufflingPlugin( delegate );
 
         boolean completeShuffle = false;
         for ( int i = 0; i < 1000; i++ ) // we try many times to make false negatives extremely unlikely
         {
             // when
-            LoadBalancingStrategy.Result shuffledResult = strategy.run( Collections.emptyMap() );
+            LoadBalancingPlugin.Result shuffledResult = plugin.run( Collections.emptyMap() );
 
             // then: should still contain the same endpoints
             assertThat( shuffledResult.routeEndpoints(), containsInAnyOrder( routers.toArray() ) );
