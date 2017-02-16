@@ -19,7 +19,6 @@
  */
 package org.neo4j.graphdb.factory;
 
-import java.util.Iterator;
 import java.util.List;
 import java.util.Map;
 import java.util.concurrent.ConcurrentHashMap;
@@ -75,15 +74,7 @@ public class GraphDatabaseFactoryState
 
     public void removeKernelExtensions( Predicate<KernelExtensionFactory<?>> toRemove )
     {
-        Iterator<KernelExtensionFactory<?>> iterator = kernelExtensions.iterator();
-        while ( iterator.hasNext() )
-        {
-            KernelExtensionFactory<?> extension = iterator.next();
-            if ( toRemove.test( extension ) )
-            {
-                iterator.remove();
-            }
-        }
+        kernelExtensions.removeIf( toRemove );
     }
 
     public void setKernelExtensions( Iterable<KernelExtensionFactory<?>> newKernelExtensions )
