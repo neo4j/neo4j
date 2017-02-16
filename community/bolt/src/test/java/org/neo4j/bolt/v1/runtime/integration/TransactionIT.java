@@ -330,6 +330,71 @@ public class TransactionIT
         }
     }
 
+    @Test
+    public void shouldInterpretEmptyStatementAsReuseLastStatementInAutocommitTransaction() throws Throwable
+    {
+        // Given
+        final BoltStateMachine machine = env.newMachine( CONNECTION_DESCRIPTOR );
+        machine.init( USER_AGENT, emptyMap(), null );
+        BoltResponseRecorder recorder = new BoltResponseRecorder();
+
+        // When
+        machine.run( "RETURN 1", emptyMap(), nullResponseHandler() );
+        machine.pullAll( recorder );
+        machine.run( "", emptyMap(), nullResponseHandler() );
+        machine.pullAll( recorder );
+
+        // Then
+        assertThat( recorder.nextResponse(), succeededWithRecord( 1L ) );
+        assertThat( recorder.nextResponse(), succeededWithRecord( 1L ) );
+    }
+
+    @Test
+    public void shouldInterpretEmptyStatementAsReuseLastStatementInExplicitTransaction() throws Throwable
+    {
+        // Given
+        final BoltStateMachine machine = env.newMachine( CONNECTION_DESCRIPTOR );
+        machine.init( USER_AGENT, emptyMap(), null );
+        BoltResponseRecorder recorder = new BoltResponseRecorder();
+
+        // When
+        machine.run( "BEGIN", emptyMap(), nullResponseHandler() );
+        machine.discardAll( nullResponseHandler() );
+        machine.run( "RETURN 1", emptyMap(), nullResponseHandler() );
+        machine.pullAll( recorder );
+        machine.run( "", emptyMap(), nullResponseHandler() );
+        machine.pullAll( recorder );
+        machine.run( "COMMIT", emptyMap(), nullResponseHandler() );
+        machine.discardAll( nullResponseHandler() );
+
+        // Then
+        assertThat( recorder.nextResponse(), succeededWithRecord( 1L ) );
+        assertThat( recorder.nextResponse(), succeededWithRecord( 1L ) );
+    }
+
+    @Test
+    public void beginShouldNotOverwriteLastStatement() throws Throwable
+    {
+        // Given
+        final BoltStateMachine machine = env.newMachine( CONNECTION_DESCRIPTOR );
+        machine.init( USER_AGENT, emptyMap(), null );
+        BoltResponseRecorder recorder = new BoltResponseRecorder();
+
+        // When
+        machine.run( "RETURN 1", emptyMap(), nullResponseHandler() );
+        machine.pullAll( recorder );
+        machine.run( "BEGIN", emptyMap(), nullResponseHandler() );
+        machine.discardAll( nullResponseHandler() );
+        machine.run( "", emptyMap(), nullResponseHandler() );
+        machine.pullAll( recorder );
+        machine.run( "COMMIT", emptyMap(), nullResponseHandler() );
+        machine.discardAll( nullResponseHandler() );
+
+        // Then
+        assertThat( recorder.nextResponse(), succeededWithRecord( 1L ) );
+        assertThat( recorder.nextResponse(), succeededWithRecord( 1L ) );
+    }
+
     public static Server createHttpServer(
             DoubleLatch latch, Barrier.Control innerBarrier, int firstBatchSize, int otherBatchSize )
     {
