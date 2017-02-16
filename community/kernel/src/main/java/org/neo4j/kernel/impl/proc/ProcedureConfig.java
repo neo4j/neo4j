@@ -51,7 +51,7 @@ public class ProcedureConfig
         this.defaultValue = "";
         this.matchers = Collections.emptyList();
         this.accessPatterns = Collections.emptyList();
-        this.whiteList = Collections.emptyList();
+        this.whiteList = Collections.singletonList( compilePattern( "*" ) );
     }
 
     public ProcedureConfig( Config config )
@@ -111,8 +111,7 @@ public class ProcedureConfig
 
     boolean whiteListed( String procedureName )
     {
-        return whiteList.isEmpty() ||
-                whiteList.stream().anyMatch( pattern -> pattern.matcher( procedureName ).matches() );
+        return whiteList.stream().anyMatch( pattern -> pattern.matcher( procedureName ).matches() );
     }
 
     private static Pattern compilePattern( String procedure )

@@ -525,7 +525,8 @@ public class GraphDatabaseSettings implements LoadableConfig
 
     @Description( "A comma separated list of procedures that are to be loaded. If this setting is left empty all " +
             "procedures will be loaded." )
-    public static final Setting<String> procedure_white_list = setting( "dbms.security.procedures.white_list", Settings.STRING, "" );
+    public static final Setting<String> procedure_white_list =
+            setting( "dbms.security.procedures.white_list", Settings.STRING, "*" );
     // Bolt Settings
 
     @Description("Default network interface to listen for incoming connections. " +
