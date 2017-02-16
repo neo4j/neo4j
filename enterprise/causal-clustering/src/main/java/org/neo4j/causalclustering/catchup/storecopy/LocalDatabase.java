@@ -28,6 +28,8 @@ import java.util.function.Supplier;
 import java.util.stream.Collectors;
 
 import org.neo4j.causalclustering.identity.StoreId;
+import org.neo4j.kernel.AvailabilityGuard;
+import org.neo4j.kernel.AvailabilityGuard.AvailabilityRequirement;
 import org.neo4j.kernel.NeoStoreDataSource;
 import org.neo4j.kernel.impl.api.TransactionCommitProcess;
 import org.neo4j.kernel.impl.api.TransactionRepresentationCommitProcess;
@@ -41,13 +43,18 @@ import org.neo4j.logging.Log;
 import org.neo4j.logging.LogProvider;
 import org.neo4j.storageengine.api.StorageEngine;
 
+import static org.neo4j.kernel.AvailabilityGuard.availabilityRequirement;
+
 public class LocalDatabase implements Lifecycle
 {
+    private static final AvailabilityRequirement NOT_STOPPED = availabilityRequirement( "Database is stopped" );
+
     private final File storeDir;
 
     private final StoreFiles storeFiles;
     private final DataSourceManager dataSourceManager;
     private final Supplier<DatabaseHealth> databaseHealthSupplier;
+    private final AvailabilityGuard availabilityGuard;
     private final Log log;
 
     private volatile StoreId storeId;
@@ -57,13 +64,17 @@ public class LocalDatabase implements Lifecycle
     private volatile TransactionCommitProcess localCommit;
 
     public LocalDatabase( File storeDir, StoreFiles storeFiles, DataSourceManager dataSourceManager,
-                          Supplier<DatabaseHealth> databaseHealthSupplier, LogProvider logProvider )
+            Supplier<DatabaseHealth> databaseHealthSupplier, AvailabilityGuard availabilityGuard,
+            LogProvider logProvider )
     {
         this.storeDir = storeDir;
         this.storeFiles = storeFiles;
         this.dataSourceManager = dataSourceManager;
         this.databaseHealthSupplier = databaseHealthSupplier;
+        this.availabilityGuard = availabilityGuard;
         this.log = logProvider.getLog( getClass() );
+
+        raiseAvailabilityGuard();
     }
 
     @Override
@@ -80,6 +91,7 @@ public class LocalDatabase implements Lifecycle
 
         dataSourceManager.start();
 
+        dropAvailabilityGuard();
         started = true;
     }
 
@@ -91,6 +103,7 @@ public class LocalDatabase implements Lifecycle
         localCommit = null;
         dataSourceManager.stop();
 
+        raiseAvailabilityGuard();
         started = false;
     }
 
@@ -192,5 +205,15 @@ public class LocalDatabase implements Lifecycle
     public TransactionCommitProcess getCommitProcess()
     {
         return localCommit;
+    }
+
+    private void raiseAvailabilityGuard()
+    {
+        availabilityGuard.require( NOT_STOPPED );
+    }
+
+    private void dropAvailabilityGuard()
+    {
+        availabilityGuard.fulfill( NOT_STOPPED );
     }
 }
