@@ -33,9 +33,7 @@ leverage not only data but also its relationships.
 
 # Create neo4j user if it doesn't exist.
 if ! id neo4j > /dev/null 2>&1 ; then
-  adduser --system --home %{neo4jhome} --no-create-home \
-          --no-user-group --shell /bin/bash \
-          neo4j
+  useradd --system --no-user-group --home %{neo4jhome} --shell /bin/bash neo4j
 fi
 
 if [ $1 -gt 1 ]; then
