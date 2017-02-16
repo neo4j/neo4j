@@ -33,6 +33,7 @@ object AggregationConverter {
   def aggregateExpressionConverter(opName: String, groupingVariables: Iterable[Variable], name: String, e: ast.Expression) (implicit context: CodeGenContext): AggregateExpression = {
     val variable = Variable(context.namer.newVarName(), CodeGenType.primitiveInt)
     context.addVariable(name, variable)
+    context.addProjectedVariable(name, variable)
     e match {
       case func: ast.FunctionInvocation => func.function match {
         case ast.functions.Count if groupingVariables.isEmpty =>

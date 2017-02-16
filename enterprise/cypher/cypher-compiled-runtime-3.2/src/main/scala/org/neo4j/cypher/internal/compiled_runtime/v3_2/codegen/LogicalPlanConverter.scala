@@ -523,6 +523,10 @@ object LogicalPlanConverter {
       val opName = context.registerOperator(aggregation)
       val groupingVariables: Iterable[Variable] = aggregation.groupingExpressions.keys.map(context.getVariable)
 
+      // With aggregation we can only retain projected variables that are either grouping variables or aggregation variables.
+      // The aggregation variables will be added to the context below by the aggregateExpressionConverter.
+      context.retainProjectedVariables(aggregation.groupingExpressions.keySet)
+
       val aggregationExpression =
         if (aggregation.aggregationExpression.isEmpty) Seq(Distinct(opName, context.namer.newVarName(), groupingVariables))
         else aggregation.aggregationExpression.map {
@@ -530,8 +534,8 @@ object LogicalPlanConverter {
             aggregateExpressionConverter(opName, groupingVariables, name, e)
         }
 
-      val (methodHandle, innerBlock :: tl) = context.popParent().consume(context, this)
       val instruction = AggregationInstruction(opName, aggregationExpression)
+      val (methodHandle, innerBlock :: tl) = context.popParent().consume(context, this)
       val continuation = aggregationExpression.foldLeft(innerBlock) {
         case (acc, curr) => curr.continuation(acc)
       }
@@ -546,6 +550,11 @@ object LogicalPlanConverter {
     override def produce(context: CodeGenContext): (Option[JoinTableMethod], List[Instruction]) = {
       val variable = Variable(context.namer.newVarName(), CodeGenType(symbols.CTInteger, IntType))
       context.addVariable(nodeCount.idName.name, variable)
+
+      // Only the node count variable is projected from now on
+      context.retainProjectedVariables(Set.empty)
+      context.addProjectedVariable(nodeCount.idName.name, variable)
+
       val (methodHandle, actions :: tl) = context.popParent().consume(context, this)
       val opName = context.registerOperator(logicalPlan)
 
@@ -560,6 +569,11 @@ object LogicalPlanConverter {
     override def produce(context: CodeGenContext): (Option[JoinTableMethod], List[Instruction]) = {
       val variable = Variable(context.namer.newVarName(), CodeGenType(symbols.CTInteger, IntType))
       context.addVariable(relCount.idName.name, variable)
+
+      // Only the relationship count variable is projected from now on
+      context.retainProjectedVariables(Set.empty)
+      context.addProjectedVariable(relCount.idName.name, variable)
+
       val (methodHandle, actions :: tl) = context.popParent().consume(context, this)
       val opName = context.registerOperator(logicalPlan)
 
