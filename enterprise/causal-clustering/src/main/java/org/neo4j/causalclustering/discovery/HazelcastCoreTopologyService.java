@@ -161,7 +161,6 @@ class HazelcastCoreTopologyService extends LifecycleAdapter implements CoreTopol
         {
             tcpIpConfig.addMember( address.toString() );
         }
-        log.info( "Discovering cluster with initial members: " + initialMembers );
 
         Setting<ListenSocketAddress> discovery_listen_address = CausalClusteringSettings.discovery_listen_address;
         ListenSocketAddress hazelcastAddress = config.get( discovery_listen_address );
@@ -187,7 +186,7 @@ class HazelcastCoreTopologyService extends LifecycleAdapter implements CoreTopol
         MemberAttributeConfig memberAttributeConfig = HazelcastClusterTopology.buildMemberAttributesForCore( myself, config );
 
         c.setMemberAttributeConfig( memberAttributeConfig );
-        userLog.info( "Waiting for other members to join cluster before continuing..." );
+        logConnectionInfo( initialMembers );
 
         DelayedLog delayedLog = new DelayedLog( "The server has not been able to connect in a timely fashion to the " +
                 "cluster. Please consult the logs for more details. Rebooting the server may solve the problem", log );
@@ -217,6 +216,25 @@ class HazelcastCoreTopologyService extends LifecycleAdapter implements CoreTopol
         tags.forEach( tag -> tagsMap.put( myself.getUuid().toString(), tag ) );
 
         return hazelcastInstance;
+    }
+
+    private void logConnectionInfo( List<AdvertisedSocketAddress> initialMembers )
+    {
+        userLog.info(   "My connection info: " +
+                        "[\n\tDiscovery:   listen=%s, advertised=%s," +
+                        "\n\tTransaction: listen=%s, advertised=%s, " +
+                        "\n\tRaft:        listen=%s, advertised=%s, " +
+                        "\n\tClient Connector Addresses: %s" +
+                        "\n]",
+                config.get( CausalClusteringSettings.discovery_listen_address ),
+                config.get( CausalClusteringSettings.discovery_advertised_address ),
+                config.get( CausalClusteringSettings.transaction_listen_address ),
+                config.get( CausalClusteringSettings.transaction_advertised_address ),
+                config.get( CausalClusteringSettings.raft_listen_address ),
+                config.get( CausalClusteringSettings.raft_advertised_address ),
+                ClientConnectorAddresses.extractFromConfig( config ) );
+        userLog.info( "Discovering cluster with initial members: " + initialMembers );
+        userLog.info( "Attempting to connect to the other cluster members before continuing..." );
     }
 
     private Integer minimumClusterSizeThatCanTolerateOneFaultForExpectedClusterSize()
