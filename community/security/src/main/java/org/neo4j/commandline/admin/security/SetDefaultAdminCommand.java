@@ -24,6 +24,7 @@ import java.nio.file.Path;
 import java.util.ArrayList;
 import java.util.List;
 import java.util.Optional;
+import java.util.Set;
 
 import org.neo4j.commandline.admin.AdminCommand;
 import org.neo4j.commandline.admin.CommandFailed;
@@ -97,7 +98,7 @@ public class SetDefaultAdminCommand implements AdminCommand
     @Override
     public void execute( String[] args ) throws IncorrectUsage, CommandFailed
     {
-        Args parsedArgs = validateArgs(args);
+        Args parsedArgs = validateArgs( args );
 
         try
         {
@@ -118,31 +119,58 @@ public class SetDefaultAdminCommand implements AdminCommand
         Args parsedArgs = Args.parse( args );
         if ( parsedArgs.orphans().size() < 1 )
         {
-            throw new IncorrectUsage( "No username specified." );
+            throw new IncorrectUsage( "no username specified." );
         }
         if ( parsedArgs.orphans().size() > 1 )
         {
-            throw new IncorrectUsage( "Too many arguments." );
+            throw new IncorrectUsage( "too many arguments." );
         }
         return parsedArgs;
     }
 
     private void setDefaultAdmin( String username ) throws Throwable
     {
+        FileSystemAbstraction fileSystem = outsideWorld.fileSystem();
         Config config = loadNeo4jConfig();
+
+        FileUserRepository users = CommunitySecurityModule.getUserRepository( config, NullLogProvider.getInstance(),
+                fileSystem );
+
+        users.init();
+        users.start();
+        Set<String> userNames = users.getAllUsernames();
+        users.stop();
+        users.shutdown();
+
+        if ( userNames.isEmpty() )
+        {
+            FileUserRepository initialUsers = CommunitySecurityModule.getInitialUserRepository( config,
+                    NullLogProvider.getInstance(),
+                    fileSystem );
+            initialUsers.init();
+            initialUsers.start();
+            userNames = initialUsers.getAllUsernames();
+            initialUsers.stop();
+            initialUsers.shutdown();
+        }
+
+        if ( !userNames.contains( username ) )
+        {
+            throw new CommandFailed( String.format( "no such user: '%s'", username ) );
+        }
+
         File adminIniFile = new File( CommunitySecurityModule.getUserRepositoryFile( config ).getParentFile(),
                 ADMIN_INI );
-        FileSystemAbstraction fileSystem = outsideWorld.fileSystem();
         if ( fileSystem.fileExists( adminIniFile ) )
         {
             fileSystem.deleteFile( adminIniFile );
         }
-        UserRepository users = new FileUserRepository( fileSystem, adminIniFile, NullLogProvider.getInstance() );
-        users.init();
-        users.start();
-        users.create( new User.Builder( username, Credential.INACCESSIBLE ).build() );
-        users.stop();
-        users.shutdown();
+        UserRepository admins = new FileUserRepository( fileSystem, adminIniFile, NullLogProvider.getInstance() );
+        admins.init();
+        admins.start();
+        admins.create( new User.Builder( username, Credential.INACCESSIBLE ).build() );
+        admins.stop();
+        admins.shutdown();
 
         outsideWorld.stdOutLine( "default admin user set to '" + username + "'" );
     }

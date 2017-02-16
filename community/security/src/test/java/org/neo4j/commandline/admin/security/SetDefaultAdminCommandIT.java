@@ -19,10 +19,10 @@
  */
 package org.neo4j.commandline.admin.security;
 
+import java.io.File;
+
 import org.junit.Before;
 import org.junit.Test;
-
-import java.io.File;
 
 import org.neo4j.commandline.admin.AdminTool;
 import org.neo4j.commandline.admin.BlockerLocator;
@@ -31,7 +31,10 @@ import org.neo4j.commandline.admin.OutsideWorld;
 import org.neo4j.graphdb.mockfs.EphemeralFileSystemAbstraction;
 import org.neo4j.io.fs.FileSystemAbstraction;
 import org.neo4j.logging.NullLogProvider;
+import org.neo4j.server.security.auth.CommunitySecurityModule;
+import org.neo4j.server.security.auth.Credential;
 import org.neo4j.server.security.auth.FileUserRepository;
+import org.neo4j.server.security.auth.User;
 
 import static org.hamcrest.MatcherAssert.assertThat;
 import static org.hamcrest.Matchers.containsInAnyOrder;
@@ -69,6 +72,17 @@ public class SetDefaultAdminCommandIT
     @Test
     public void shouldSetDefaultAdmin() throws Throwable
     {
+        insertUser( "jane", false );
+        tool.execute( homeDir.toPath(), confDir.toPath(), SET_ADMIN, "jane" );
+        assertAdminIniFile( "jane" );
+
+        verify( out ).stdOutLine( "default admin user set to 'jane'" );
+    }
+
+    @Test
+    public void shouldSetDefaultAdminForInitialUser() throws Throwable
+    {
+        insertUser( "jane", true );
         tool.execute( homeDir.toPath(), confDir.toPath(), SET_ADMIN, "jane" );
         assertAdminIniFile( "jane" );
 
@@ -78,6 +92,8 @@ public class SetDefaultAdminCommandIT
     @Test
     public void shouldOverwrite() throws Throwable
     {
+        insertUser( "jane", false );
+        insertUser( "janette", false );
         tool.execute( homeDir.toPath(), confDir.toPath(), SET_ADMIN, "jane" );
         assertAdminIniFile( "jane" );
         tool.execute( homeDir.toPath(), confDir.toPath(), SET_ADMIN, "janette" );
@@ -88,12 +104,35 @@ public class SetDefaultAdminCommandIT
     }
 
     @Test
+    public void shouldErrorWithNoSuchUser() throws Throwable
+    {
+        tool.execute( homeDir.toPath(), confDir.toPath(), SET_ADMIN, "bob" );
+        verify( out ).stdErrLine( "command failed: no such user: 'bob'" );
+        verify( out ).exit( 1 );
+        verify( out, times( 0 ) ).stdOutLine( anyString() );
+    }
+
+    @Test
+    public void shouldIgnoreInitialUserIfUsersExist() throws Throwable
+    {
+        insertUser( "jane", false );
+        insertUser( "janette", true );
+        tool.execute( homeDir.toPath(), confDir.toPath(), SET_ADMIN, "jane" );
+        assertAdminIniFile( "jane" );
+        tool.execute( homeDir.toPath(), confDir.toPath(), SET_ADMIN, "janette" );
+
+        verify( out ).stdOutLine( "default admin user set to 'jane'" );
+        verify( out ).stdErrLine( "command failed: no such user: 'janette'" );
+        verify( out ).exit( 1 );
+    }
+
+    @Test
     public void shouldGetUsageOnWrongArguments1() throws Throwable
     {
         tool.execute( homeDir.toPath(), confDir.toPath(), SET_ADMIN );
         assertNoAuthIniFile();
 
-        verify( out ).stdErrLine( "No username specified." );
+        verify( out ).stdErrLine( "no username specified." );
         verify( out, times( 2 ) ).stdErrLine( "" );
         verify( out ).stdErrLine( "usage: neo4j-admin set-default-admin <username>" );
         verify( out, times( 2 ) ).stdErrLine( "" );
@@ -111,7 +150,7 @@ public class SetDefaultAdminCommandIT
         tool.execute( homeDir.toPath(), confDir.toPath(), SET_ADMIN, "foo", "bar" );
         assertNoAuthIniFile();
 
-        verify( out ).stdErrLine( "Too many arguments." );
+        verify( out ).stdErrLine( "too many arguments." );
         verify( out, times( 2 ) ).stdErrLine( "" );
         verify( out ).stdErrLine( "usage: neo4j-admin set-default-admin <username>" );
         verify( out, times( 2 ) ).stdErrLine( "" );
@@ -123,6 +162,19 @@ public class SetDefaultAdminCommandIT
         verify( out, times( 0 ) ).stdOutLine( anyString() );
     }
 
+    private void insertUser( String username, boolean initial ) throws Throwable
+    {
+        File userFile = getAuthFile( initial ? CommunitySecurityModule.INITIAL_USER_STORE_FILENAME :
+                CommunitySecurityModule.USER_STORE_FILENAME );
+        FileUserRepository userRepository = new FileUserRepository( fileSystem, userFile,
+                NullLogProvider.getInstance() );
+        userRepository.start();
+        userRepository.create( new User.Builder( username, Credential.INACCESSIBLE ).build() );
+        assertTrue( userRepository.getAllUsernames().contains( username ) );
+        userRepository.stop();
+        userRepository.shutdown();
+    }
+
     private void assertAdminIniFile( String username ) throws Throwable
     {
         File adminIniFile = getAuthFile( SetDefaultAdminCommand.ADMIN_INI );
@@ -131,6 +183,8 @@ public class SetDefaultAdminCommandIT
                 NullLogProvider.getInstance() );
         userRepository.start();
         assertThat( userRepository.getAllUsernames(), containsInAnyOrder( username ) );
+        userRepository.stop();
+        userRepository.shutdown();
     }
 
     private void assertNoAuthIniFile()
@@ -145,7 +199,7 @@ public class SetDefaultAdminCommandIT
 
     private void resetOutsideWorldMock()
     {
-        reset(out);
+        reset( out );
         when( out.fileSystem() ).thenReturn( fileSystem );
     }
 }
