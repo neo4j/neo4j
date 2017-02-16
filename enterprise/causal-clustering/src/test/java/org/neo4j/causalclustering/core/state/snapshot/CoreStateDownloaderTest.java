@@ -27,9 +27,9 @@ import java.util.UUID;
 
 import org.neo4j.causalclustering.catchup.CatchUpClient;
 import org.neo4j.causalclustering.catchup.storecopy.LocalDatabase;
+import org.neo4j.causalclustering.catchup.storecopy.RemoteStore;
 import org.neo4j.causalclustering.catchup.storecopy.StoreCopyFailedException;
 import org.neo4j.causalclustering.catchup.storecopy.StoreCopyProcess;
-import org.neo4j.causalclustering.catchup.storecopy.RemoteStore;
 import org.neo4j.causalclustering.core.state.CoreState;
 import org.neo4j.causalclustering.core.state.machines.CoreStateMachines;
 import org.neo4j.causalclustering.identity.MemberId;
@@ -100,7 +100,7 @@ public class CoreStateDownloaderTest
 
         // then
         verify( startStopLife ).stop();
-        verify( localDatabase ).stop();
+        verify( localDatabase ).stopForStoreCopy();
         verify( localDatabase ).start();
         verify( startStopLife ).start();
     }

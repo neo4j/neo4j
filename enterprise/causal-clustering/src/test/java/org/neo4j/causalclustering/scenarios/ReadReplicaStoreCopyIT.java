@@ -41,6 +41,7 @@ import org.neo4j.kernel.impl.transaction.log.rotation.LogRotation;
 import org.neo4j.kernel.monitoring.Monitors;
 import org.neo4j.test.causalclustering.ClusterRule;
 
+import static org.hamcrest.Matchers.containsString;
 import static org.hamcrest.Matchers.instanceOf;
 import static org.hamcrest.Matchers.is;
 import static org.junit.Assert.assertThat;
@@ -81,6 +82,7 @@ public class ReadReplicaStoreCopyIT
             catch ( Exception e )
             {
                 assertThat( e, instanceOf( TransactionFailureException.class ) );
+                assertThat( e.getMessage(), containsString( "Database is stopped to copy store" ) );
             }
         }
         finally
