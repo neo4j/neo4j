@@ -72,7 +72,7 @@ public class SetDefaultAdminCommandIT
         tool.execute( homeDir.toPath(), confDir.toPath(), SET_ADMIN, "jane" );
         assertAdminIniFile( "jane" );
 
-        verify( out ).stdOutLine( "Set default admin to 'jane'." );
+        verify( out ).stdOutLine( "default admin user set to 'jane'" );
     }
 
     @Test
@@ -83,8 +83,8 @@ public class SetDefaultAdminCommandIT
         tool.execute( homeDir.toPath(), confDir.toPath(), SET_ADMIN, "janette" );
         assertAdminIniFile( "janette" );
 
-        verify( out ).stdOutLine( "Set default admin to 'jane'." );
-        verify( out ).stdOutLine( "Set default admin to 'janette'." );
+        verify( out ).stdOutLine( "default admin user set to 'jane'" );
+        verify( out ).stdOutLine( "default admin user set to 'janette'" );
     }
 
     @Test

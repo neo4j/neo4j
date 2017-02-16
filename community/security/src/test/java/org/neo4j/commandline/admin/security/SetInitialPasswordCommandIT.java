@@ -138,7 +138,7 @@ public class SetInitialPasswordCommandIT
     }
 
     @Test
-    public void shouldDoNothingAndWarnIfRealUsersAlreadyExist() throws Throwable
+    public void shouldErrorIfRealUsersAlreadyExist() throws Throwable
     {
         // Given
         File authFile = getAuthFile( "auth" );
@@ -150,9 +150,10 @@ public class SetInitialPasswordCommandIT
 
         // Then
         assertNoAuthIniFile();
-        verify( out, times( 1 ) ).stdOutLine( "Warning: Initial password was not set because live Neo4j-users were " +
-                "detected, so the initial password has no effect." );
-        verify( out, times( 0 ) ).stdErrLine( anyString() );
+        verify( out, times( 1 ) )
+                .stdErrLine( "command failed: initial password was not set because live Neo4j-users were detected." );
+        verify( out ).exit( 1 );
+        verify( out, times( 0 ) ).stdOutLine( anyString() );
     }
 
     private void assertAuthIniFile(String password) throws Throwable
