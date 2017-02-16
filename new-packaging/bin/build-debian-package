@@ -56,6 +56,7 @@ cp -r ${extras_directory}/* ${package_directory}
 
 # Update changelog, control and files with package name etc
 DISTRIBUTION=${distribution} DATE=`date -R` PACKAGE_NAME=${package_name} VERSION=${deb_version} envsubst '${DATE} ${DISTRIBUTION} ${PACKAGE_NAME} ${VERSION}' < ${skeleton_directory}/debian/changelog > ${package_directory}/debian/changelog
+DISTRIBUTION=${distribution} DATE=`date -R` PACKAGE_NAME=${package_name} VERSION=${deb_version} envsubst '${DATE} ${DISTRIBUTION} ${PACKAGE_NAME} ${VERSION}' < ${skeleton_directory}/debian/NEWS.Debian > ${package_directory}/debian/NEWS.Debian
 [[ ${package_name} = "neo4j" ]] && replaces="neo4j-enterprise" || replaces="neo4j"
 PACKAGE_NAME=${package_name} REPLACES=${replaces} envsubst '${PACKAGE_NAME} ${REPLACES}' < ${skeleton_directory}/debian/control > ${package_directory}/debian/control
 PACKAGE_NAME=${package_name} VERSION=${deb_version} envsubst '${PACKAGE_NAME} ${VERSION}' < ${skeleton_directory}/debian/files > ${package_directory}/debian/files
