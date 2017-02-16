@@ -226,9 +226,10 @@ public abstract class Command implements StorageCommand
 
         private boolean writeNodeRecord( WritableChannel channel, NodeRecord record ) throws IOException
         {
-            byte flags = bitFlags(  bitFlag( record.inUse(), Record.IN_USE.byteValue() ),
-                                    bitFlag( record.requiresSecondaryUnit(), Record.REQUIRE_SECONDARY_UNIT ),
-                                    bitFlag( record.hasSecondaryUnitId(), Record.HAS_SECONDARY_UNIT ) );
+            byte flags = bitFlags( bitFlag( record.inUse(), Record.IN_USE.byteValue() ),
+                                   bitFlag( record.isCreated(), Record.CREATED_IN_TX ),
+                                   bitFlag( record.requiresSecondaryUnit(), Record.REQUIRE_SECONDARY_UNIT ),
+                                   bitFlag( record.hasSecondaryUnitId(), Record.HAS_SECONDARY_UNIT ) );
             channel.put( flags );
             if ( record.inUse() )
             {
