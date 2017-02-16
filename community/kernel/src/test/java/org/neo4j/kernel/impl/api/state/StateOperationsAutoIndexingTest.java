@@ -33,6 +33,7 @@ import org.neo4j.kernel.impl.api.StateHandlingStatementOperations;
 import org.neo4j.kernel.impl.api.legacyindex.InternalAutoIndexOperations;
 import org.neo4j.kernel.impl.api.legacyindex.InternalAutoIndexing;
 import org.neo4j.kernel.impl.index.LegacyIndexStore;
+import org.neo4j.kernel.impl.locking.Lock;
 import org.neo4j.storageengine.api.NodeItem;
 import org.neo4j.storageengine.api.PropertyItem;
 import org.neo4j.storageengine.api.RelationshipItem;
@@ -58,8 +59,10 @@ public class StateOperationsAutoIndexingTest
     private final StorageStatement storeStmt = mock( StorageStatement.class );
     private final DataWriteOperations writeOps = mock(DataWriteOperations.class);
     private final KernelStatement stmt = mock( KernelStatement.class, RETURNS_MOCKS );
-    private final StateHandlingStatementOperations context = new StateHandlingStatementOperations(
-            mock(StoreReadLayer.class), idx, mock(ConstraintIndexCreator.class), mock(LegacyIndexStore.class) );
+    private final StoreReadLayer storeLayer = mock( StoreReadLayer.class );
+    private final StateHandlingStatementOperations context =
+            new StateHandlingStatementOperations( storeLayer, idx, mock( ConstraintIndexCreator.class ),
+                    mock( LegacyIndexStore.class ) );
 
     @Before
     public void setup() throws InvalidTransactionTypeKernelException
@@ -103,9 +106,10 @@ public class StateOperationsAutoIndexingTest
         DefinedProperty property = property( 1, "Hello!" );
 
         NodeItem node = mock( NodeItem.class );
-        when( node.property( property.propertyKeyId() )).thenReturn( empty() );
         when( node.labels() ).thenReturn( PrimitiveIntCollections.emptySet() );
         when( storeStmt.acquireSingleNodeCursor( 1337 ) ).thenReturn( cursor( node ) );
+        when( storeLayer.nodeGetProperty( eq( storeStmt ), any( NodeItem.class ), eq( property.propertyKeyId() ) ) )
+                .thenReturn( cursor() );
 
         // When
         context.nodeSetProperty( stmt, 1337, property );
@@ -142,9 +146,10 @@ public class StateOperationsAutoIndexingTest
         when(existingProperty.value()).thenReturn( "Goodbye!" );
 
         NodeItem node = mock( NodeItem.class );
-        when( node.property( property.propertyKeyId() )).thenReturn( cursor( existingProperty ) );
         when( node.labels() ).thenReturn( PrimitiveIntCollections.emptySet() );
         when( storeStmt.acquireSingleNodeCursor( 1337 ) ).thenReturn( cursor( node ) );
+        when( storeLayer.nodeGetProperty( eq( storeStmt ), any( NodeItem.class ), eq( property.propertyKeyId() ) ) )
+                .thenReturn( cursor( existingProperty ) );
 
         // When
         context.nodeSetProperty( stmt, 1337, property );
@@ -179,20 +184,21 @@ public class StateOperationsAutoIndexingTest
     {
         // Given
         PropertyItem existingProperty = mock( PropertyItem.class );
-
-        when(existingProperty.propertyKeyId()).thenReturn( 1 );
-        when(existingProperty.value()).thenReturn( "Goodbye!" );
+        when( existingProperty.propertyKeyId() ).thenReturn( 1 );
+        when( existingProperty.value() ).thenReturn( "Goodbye!" );
+        int propertyKeyId = existingProperty.propertyKeyId();
 
         NodeItem node = mock( NodeItem.class );
-        when( node.property( existingProperty.propertyKeyId() )).thenReturn( cursor( existingProperty ) );
+        when( storeLayer.nodeGetProperty( eq( storeStmt ), any( NodeItem.class ), eq( propertyKeyId ) ) )
+                .thenReturn( cursor( existingProperty ) );
         when( node.labels() ).thenReturn( PrimitiveIntCollections.emptySet() );
         when( storeStmt.acquireSingleNodeCursor( 1337 ) ).thenReturn( cursor( node ) );
 
         // When
-        context.nodeRemoveProperty( stmt, 1337, existingProperty.propertyKeyId() );
+        context.nodeRemoveProperty( stmt, 1337, propertyKeyId );
 
         // Then
-        verify( nodeOps ).propertyRemoved( writeOps, 1337L, existingProperty.propertyKeyId() );
+        verify( nodeOps ).propertyRemoved( writeOps, 1337L, propertyKeyId );
     }
 
     @Test

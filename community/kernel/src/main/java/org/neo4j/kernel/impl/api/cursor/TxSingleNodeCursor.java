@@ -24,20 +24,20 @@ import java.util.function.Consumer;
 import org.neo4j.collection.primitive.PrimitiveIntSet;
 import org.neo4j.cursor.Cursor;
 import org.neo4j.kernel.api.StatementConstants;
-import org.neo4j.kernel.api.cursor.EntityItemHelper;
 import org.neo4j.kernel.api.txstate.TransactionState;
+import org.neo4j.kernel.impl.locking.Lock;
 import org.neo4j.storageengine.api.NodeItem;
-import org.neo4j.storageengine.api.PropertyItem;
 import org.neo4j.storageengine.api.txstate.NodeState;
 
 import static org.neo4j.collection.primitive.Primitive.intSet;
+import static org.neo4j.kernel.impl.locking.LockService.NO_LOCK;
+import static org.neo4j.kernel.impl.store.record.Record.NO_NEXT_PROPERTY;
 import static org.neo4j.kernel.impl.store.record.Record.NO_NEXT_RELATIONSHIP;
-import static org.neo4j.kernel.impl.util.Cursors.empty;
 
 /**
  * Overlays transaction state on a {@link NodeItem} cursor.
  */
-public class TxSingleNodeCursor extends EntityItemHelper implements Cursor<NodeItem>, NodeItem
+public class TxSingleNodeCursor implements Cursor<NodeItem>, NodeItem
 {
     private final TransactionState state;
     private final Consumer<TxSingleNodeCursor> cache;
@@ -136,19 +136,6 @@ public class TxSingleNodeCursor extends EntityItemHelper implements Cursor<NodeI
     }
 
     @Override
-    public Cursor<PropertyItem> properties()
-    {
-        return state.augmentPropertyCursor( nodeIsAddedInThisTx ? empty() : cursor.get().properties(), nodeState );
-    }
-
-    @Override
-    public Cursor<PropertyItem> property( int propertyKeyId )
-    {
-        Cursor<PropertyItem> cursor = nodeIsAddedInThisTx ? empty() : this.cursor.get().property( propertyKeyId );
-        return state.augmentSinglePropertyCursor( cursor, nodeState, propertyKeyId );
-    }
-
-    @Override
     public boolean isDense()
     {
         return cursor.get().isDense();
@@ -164,5 +151,17 @@ public class TxSingleNodeCursor extends EntityItemHelper implements Cursor<NodeI
     public long nextRelationshipId()
     {
         return nodeIsAddedInThisTx ? NO_NEXT_RELATIONSHIP.longValue() : cursor.get().nextRelationshipId();
+    }
+
+    @Override
+    public long nextPropertyId()
+    {
+        return nodeIsAddedInThisTx ? NO_NEXT_PROPERTY.longValue() : cursor.get().nextPropertyId();
+    }
+
+    @Override
+    public Lock lock()
+    {
+        return nodeIsAddedInThisTx ? NO_LOCK : cursor.get().lock();
     }
 }

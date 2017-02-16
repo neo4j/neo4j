@@ -22,6 +22,7 @@ package org.neo4j.kernel.impl.enterprise;
 import java.util.ArrayList;
 import java.util.Iterator;
 import java.util.List;
+import java.util.function.BiPredicate;
 
 import org.neo4j.cursor.Cursor;
 import org.neo4j.kernel.api.exceptions.schema.ConstraintValidationException;
@@ -62,7 +63,8 @@ public class EnterpriseConstraintSemantics extends StandardConstraintSemantics
     }
 
     @Override
-    public void validateExistenceConstraint( Iterator<Cursor<NodeItem>> allNodes, LabelSchemaDescriptor descriptor )
+    public void validateNodePropertyExistenceConstraint( Iterator<Cursor<NodeItem>> allNodes,
+            LabelSchemaDescriptor descriptor, BiPredicate<NodeItem,Integer> hasPropertyCheck )
             throws CreateConstraintFailureException
     {
         while ( allNodes.hasNext() )
@@ -72,16 +74,17 @@ public class EnterpriseConstraintSemantics extends StandardConstraintSemantics
                 NodeItem node = cursor.get();
                 for ( int propertyKey : descriptor.getPropertyIds() )
                 {
-                    validateNodePropertyExistenceConstraint( node, propertyKey, descriptor );
+                    validateNodePropertyExistenceConstraint( node, propertyKey, descriptor, hasPropertyCheck );
                 }
             }
         }
     }
 
-    private void validateNodePropertyExistenceConstraint( NodeItem node, int propertyKey, LabelSchemaDescriptor descriptor )
-            throws CreateConstraintFailureException
+    private void validateNodePropertyExistenceConstraint( NodeItem node, int propertyKey,
+        LabelSchemaDescriptor descriptor, BiPredicate<NodeItem, Integer> hasPropertyCheck ) throws
+            CreateConstraintFailureException
     {
-        if ( !node.hasProperty( propertyKey ) )
+        if ( !hasPropertyCheck.test( node, propertyKey ) )
         {
             throw createConstraintFailure(
                 new NodePropertyExistenceException( descriptor, VERIFICATION, node.id() ) );

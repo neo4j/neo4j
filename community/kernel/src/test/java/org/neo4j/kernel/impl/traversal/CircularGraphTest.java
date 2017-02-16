@@ -61,17 +61,13 @@ public class CircularGraphTest extends TraversalTestBase
             Iterator<Node> nodes = getGraphDb().traversalDescription()
                     .depthFirst()
                     .relationships( type, Direction.OUTGOING )
-                    .evaluator( new Evaluator()
+                    .evaluator( path ->
                     {
-                        @Override
-                        public Evaluation evaluate( Path path )
-                        {
-                            Relationship rel = path.lastRelationship();
-                            boolean relIsOfType = rel != null && rel.isType( type );
-                            boolean prune = relIsOfType &&
-                                    ((Long)path.endNode().getProperty( "timestamp" )).longValue() >= timestamp;
-                            return Evaluation.of( relIsOfType, !prune );
-                        }
+                        Relationship rel = path.lastRelationship();
+                        boolean relIsOfType = rel != null && rel.isType( type );
+                        boolean prune =
+                                relIsOfType && (Long) path.endNode().getProperty( "timestamp" ) >= timestamp;
+                        return Evaluation.of( relIsOfType, !prune );
                     } )
                     .traverse( node( "1" ) )
                     .nodes().iterator();

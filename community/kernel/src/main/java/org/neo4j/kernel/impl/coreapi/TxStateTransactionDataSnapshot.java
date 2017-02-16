@@ -44,6 +44,7 @@ import org.neo4j.kernel.impl.api.KernelTransactionImplementation;
 import org.neo4j.kernel.impl.core.NodeProxy;
 import org.neo4j.kernel.impl.core.RelationshipProxy;
 import org.neo4j.kernel.impl.core.RelationshipProxy.RelationshipActions;
+import org.neo4j.kernel.impl.locking.Lock;
 import org.neo4j.storageengine.api.NodeItem;
 import org.neo4j.storageengine.api.PropertyItem;
 import org.neo4j.storageengine.api.RelationshipItem;
@@ -206,7 +207,9 @@ public class TxStateTransactionDataSnapshot implements TransactionData
                 {
                     if ( node.next() )
                     {
-                        try ( Cursor<PropertyItem> properties = node.get().properties() )
+                        Lock lock = node.get().lock();
+                        try ( Cursor<PropertyItem> properties = storeStatement
+                                .acquirePropertyCursor( node.get().nextPropertyId(), lock ) )
                         {
                             while ( properties.next() )
                             {
@@ -281,7 +284,7 @@ public class TxStateTransactionDataSnapshot implements TransactionData
                     DefinedProperty property = (DefinedProperty) added.next();
                     assignedRelationshipProperties.add( new RelationshipPropertyEntryView( relationship,
                             store.propertyKeyGetName( property.propertyKeyId() ), property.value(),
-                            committedValue( store, relState, property.propertyKeyId() ) ) );
+                            committedValue( relState, property.propertyKeyId() ) ) );
                 }
                 Iterator<Integer> removed = relState.removedProperties();
                 while ( removed.hasNext() )
@@ -289,7 +292,7 @@ public class TxStateTransactionDataSnapshot implements TransactionData
                     Integer property = removed.next();
                     removedRelationshipProperties.add( new RelationshipPropertyEntryView( relationship,
                             store.propertyKeyGetName( property ), null,
-                            committedValue( store, relState, property ) ) );
+                            committedValue( relState, property ) ) );
                 }
             }
         }
@@ -362,7 +365,9 @@ public class TxStateTransactionDataSnapshot implements TransactionData
                 return null;
             }
 
-            try ( Cursor<PropertyItem> properties = node.get().property( property ) )
+            Lock lock = node.get().lock();
+            try ( Cursor<PropertyItem> properties = storeStatement
+                    .acquireSinglePropertyCursor( node.get().nextPropertyId(), property, lock ) )
             {
                 if ( properties.next() )
                 {
@@ -374,7 +379,7 @@ public class TxStateTransactionDataSnapshot implements TransactionData
         return null;
     }
 
-    private Object committedValue( StoreReadLayer storeReadLayer, RelationshipState relState, int property )
+    private Object committedValue( RelationshipState relState, int property )
     {
         if ( state.relationshipIsAddedInThisTx( relState.getId() ) )
         {

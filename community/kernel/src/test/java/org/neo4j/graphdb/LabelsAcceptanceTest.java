@@ -591,7 +591,8 @@ public class LabelsAcceptanceTest
             {
                 try ( Cursor<NodeItem> nodeCursor = statement.readOperations().nodeCursorById( node.getId() ) )
                 {
-                    try ( Cursor<PropertyItem> properties = nodeCursor.get().properties() )
+                    try ( Cursor<PropertyItem> properties = statement.readOperations()
+                            .nodeGetProperties( nodeCursor.get() ) )
                     {
                         while ( properties.next() )
                         {

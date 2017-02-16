@@ -23,11 +23,11 @@ import java.util.function.IntPredicate;
 import java.util.function.Supplier;
 
 import org.neo4j.cursor.Cursor;
-import org.neo4j.function.Predicates;
 import org.neo4j.kernel.api.exceptions.index.IndexNotFoundKernelException;
 import org.neo4j.kernel.api.schema_new.index.IndexBoundary;
 import org.neo4j.kernel.api.schema_new.index.NewIndexDescriptor;
 import org.neo4j.kernel.impl.api.IndexReaderFactory;
+import org.neo4j.kernel.impl.locking.Lock;
 import org.neo4j.kernel.impl.locking.LockService;
 import org.neo4j.kernel.impl.store.NeoStores;
 import org.neo4j.kernel.impl.store.NodeStore;
@@ -38,6 +38,7 @@ import org.neo4j.kernel.impl.store.record.RelationshipGroupRecord;
 import org.neo4j.kernel.impl.util.InstanceCache;
 import org.neo4j.storageengine.api.Direction;
 import org.neo4j.storageengine.api.NodeItem;
+import org.neo4j.storageengine.api.PropertyItem;
 import org.neo4j.storageengine.api.RelationshipItem;
 import org.neo4j.storageengine.api.StorageStatement;
 import org.neo4j.storageengine.api.schema.IndexReader;
@@ -55,7 +56,9 @@ public class StoreStatement implements StorageStatement
     private final InstanceCache<StoreSingleNodeCursor> singleNodeCursor;
     private final InstanceCache<StoreSingleRelationshipCursor> singleRelationshipCursor;
     private final InstanceCache<StoreIteratorRelationshipCursor> iteratorRelationshipCursor;
-    private final InstanceCache<StoreNodeRelationshipCursor> nodeRelationshipCursor;
+    private final InstanceCache<StoreNodeRelationshipCursor> nodeRelationshipsCursor;
+    private final InstanceCache<StoreSinglePropertyCursor> singlePropertyCursorCache;
+    private final InstanceCache<StorePropertyCursor> propertyCursorCache;
     private final NeoStores neoStores;
     private final NodeStore nodeStore;
     private final RelationshipStore relationshipStore;
@@ -107,13 +110,30 @@ public class StoreStatement implements StorageStatement
                         lockService );
             }
         };
-        nodeRelationshipCursor = new InstanceCache<StoreNodeRelationshipCursor>()
+        nodeRelationshipsCursor = new InstanceCache<StoreNodeRelationshipCursor>()
         {
             @Override
             protected StoreNodeRelationshipCursor create()
             {
                 return new StoreNodeRelationshipCursor( relationshipStore.newRecord(),
                         relationshipGroupStore.newRecord(), this, recordCursors, lockService );
+            }
+        };
+
+        singlePropertyCursorCache = new InstanceCache<StoreSinglePropertyCursor>()
+        {
+            @Override
+            protected StoreSinglePropertyCursor create()
+            {
+                return new StoreSinglePropertyCursor( recordCursors, this );
+            }
+        };
+        propertyCursorCache = new InstanceCache<StorePropertyCursor>()
+        {
+            @Override
+            protected StorePropertyCursor create()
+            {
+                return new StorePropertyCursor( recordCursors, this );
             }
         };
     }
@@ -145,7 +165,7 @@ public class StoreStatement implements StorageStatement
             Direction direction, IntPredicate relTypeFilter )
     {
         neoStores.assertOpen();
-        return nodeRelationshipCursor.get().init( isDense, relationshipId, nodeId, direction, relTypeFilter );
+        return nodeRelationshipsCursor.get().init( isDense, relationshipId, nodeId, direction, relTypeFilter );
     }
 
     @Override
@@ -153,6 +173,18 @@ public class StoreStatement implements StorageStatement
     {
         neoStores.assertOpen();
         return iteratorRelationshipCursor.get().init( new AllIdIterator( relationshipStore ) );
+    }
+
+    @Override
+    public Cursor<PropertyItem> acquirePropertyCursor( long propertyId, Lock lock )
+    {
+        return propertyCursorCache.get().init( propertyId, lock );
+    }
+
+    @Override
+    public Cursor<PropertyItem> acquireSinglePropertyCursor( long propertyId, int propertyKeyId, Lock lock )
+    {
+        return singlePropertyCursorCache.get().init( propertyId, propertyKeyId, lock );
     }
 
     @Override

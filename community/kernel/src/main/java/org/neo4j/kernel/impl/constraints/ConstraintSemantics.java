@@ -20,6 +20,7 @@
 package org.neo4j.kernel.impl.constraints;
 
 import java.util.Iterator;
+import java.util.function.BiPredicate;
 
 import org.neo4j.cursor.Cursor;
 import org.neo4j.kernel.api.exceptions.schema.CreateConstraintFailureException;
@@ -39,8 +40,8 @@ import org.neo4j.storageengine.api.txstate.TxStateVisitor;
  */
 public interface ConstraintSemantics
 {
-    void validateExistenceConstraint( Iterator<Cursor<NodeItem>> allNodes, LabelSchemaDescriptor descriptor )
-            throws CreateConstraintFailureException;
+    void validateNodePropertyExistenceConstraint( Iterator<Cursor<NodeItem>> allNodes, LabelSchemaDescriptor descriptor,
+            BiPredicate<NodeItem,Integer> hasProperty ) throws CreateConstraintFailureException;
 
     void validateExistenceConstraint( Cursor<RelationshipItem> allRels, RelationTypeSchemaDescriptor descriptor )
             throws CreateConstraintFailureException;

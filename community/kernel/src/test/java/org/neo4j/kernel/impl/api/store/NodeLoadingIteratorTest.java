@@ -30,8 +30,8 @@ import org.neo4j.collection.primitive.PrimitiveLongIterator;
 import org.neo4j.cursor.Cursor;
 import org.neo4j.function.ThrowingLongFunction;
 import org.neo4j.kernel.api.exceptions.EntityNotFoundException;
-import org.neo4j.storageengine.api.EntityItem;
 import org.neo4j.storageengine.api.EntityType;
+import org.neo4j.storageengine.api.NodeItem;
 
 import static org.junit.Assert.assertEquals;
 import static org.junit.Assert.assertFalse;
@@ -40,13 +40,13 @@ import static org.junit.Assert.fail;
 import static org.mockito.Mockito.mock;
 import static org.neo4j.collection.primitive.PrimitiveLongCollections.emptyIterator;
 
-public class EntityLoadingIteratorTest
+public class NodeLoadingIteratorTest
 {
     @Test
     public void shouldHandleAnEmptyIterator() throws Exception
     {
         // given
-        EntityLoadingIterator<EntityItem> iterator = new EntityLoadingIterator<>( emptyIterator(), ( id ) ->
+        NodeLoadingIterator iterator = new NodeLoadingIterator( emptyIterator(), ( id ) ->
         {
             throw new IllegalStateException( "" );
         } );
@@ -59,12 +59,12 @@ public class EntityLoadingIteratorTest
     public void shouldHandleANonEmptyIterator() throws Exception
     {
         // given
-        Map<Long,Cursor<EntityItem>> map = new HashMap<>( 3 );
+        Map<Long,Cursor<NodeItem>> map = new HashMap<>( 3 );
         map.put( 1L, mockCursor() );
         map.put( 2L, mockCursor() );
         map.put( 3L, mockCursor() );
         PrimitiveLongIterator inner = PrimitiveLongCollections.iterator( 1, 2, 3 );
-        EntityLoadingIterator<EntityItem> iterator = new EntityLoadingIterator<>( inner, createMapping( map ) );
+        NodeLoadingIterator iterator = new NodeLoadingIterator( inner, createMapping( map ) );
 
         // when - then
         for ( long i = 1; i <= 3; i++)
@@ -80,12 +80,12 @@ public class EntityLoadingIteratorTest
     public void shouldHandleANonEmptyIteratorWithNotFoundEntities() throws Exception
     {
         // given
-        Map<Long,Cursor<EntityItem>> map = new HashMap<>( 3 );
+        Map<Long,Cursor<NodeItem>> map = new HashMap<>( 3 );
         map.put( 1L, mockCursor() );
         map.put( 2L, null );
         map.put( 3L, mockCursor() );
         PrimitiveLongIterator inner = PrimitiveLongCollections.iterator( 1, 2, 3 );
-        EntityLoadingIterator<EntityItem> iterator = new EntityLoadingIterator<>( inner, createMapping( map ) );
+        NodeLoadingIterator iterator = new NodeLoadingIterator( inner, createMapping( map ) );
 
         // when - then
         for ( long i = 1; i <= 2; i++)
@@ -98,7 +98,7 @@ public class EntityLoadingIteratorTest
         assertNoMoreElements( iterator );
     }
 
-    private void assertNoMoreElements( EntityLoadingIterator<EntityItem> iterator )
+    private void assertNoMoreElements( NodeLoadingIterator iterator )
     {
         assertFalse( iterator.hasNext() );
         try
@@ -112,8 +112,8 @@ public class EntityLoadingIteratorTest
         }
     }
 
-    private ThrowingLongFunction<Cursor<EntityItem>,EntityNotFoundException> createMapping(
-            Map<Long,Cursor<EntityItem>> map )
+    private ThrowingLongFunction<Cursor<NodeItem>,EntityNotFoundException> createMapping(
+            Map<Long,Cursor<NodeItem>> map )
     {
         return ( id ) ->
         {
@@ -121,7 +121,7 @@ public class EntityLoadingIteratorTest
             {
                 throw new IllegalStateException( "wat!?" );
             }
-            Cursor<EntityItem> cursor = map.get( id );
+            Cursor<NodeItem> cursor = map.get( id );
             if ( cursor == null )
             {
                 throw new EntityNotFoundException( EntityType.NODE, id );
@@ -131,8 +131,8 @@ public class EntityLoadingIteratorTest
     }
 
     @SuppressWarnings( "unchecked" )
-    private Cursor<EntityItem> mockCursor()
+    private Cursor<NodeItem> mockCursor()
     {
-        return (Cursor<EntityItem>) mock( Cursor.class );
+        return (Cursor<NodeItem>) mock( Cursor.class );
     }
 }

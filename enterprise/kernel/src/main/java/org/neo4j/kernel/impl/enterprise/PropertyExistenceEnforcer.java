@@ -31,6 +31,7 @@ import org.neo4j.kernel.api.exceptions.schema.NodePropertyExistenceException;
 import org.neo4j.kernel.api.exceptions.schema.RelationshipPropertyExistenceException;
 import org.neo4j.kernel.api.schema_new.LabelSchemaDescriptor;
 import org.neo4j.kernel.api.schema_new.RelationTypeSchemaDescriptor;
+import org.neo4j.kernel.impl.locking.Lock;
 import org.neo4j.storageengine.api.NodeItem;
 import org.neo4j.storageengine.api.PropertyItem;
 import org.neo4j.storageengine.api.RelationshipItem;
@@ -110,7 +111,7 @@ class PropertyExistenceEnforcer extends TxStateVisitor.Delegator
                 PrimitiveIntSet labelIds = node.get().labels();
 
                 propertyKeyIds.clear();
-                try ( Cursor<PropertyItem> properties = node.get().properties() )
+                try ( Cursor<PropertyItem> properties = properties( node.get() ) )
                 {
                     while ( properties.next() )
                     {
@@ -149,6 +150,13 @@ class PropertyExistenceEnforcer extends TxStateVisitor.Delegator
     {
         Cursor<NodeItem> cursor = storeStatement().acquireSingleNodeCursor( id );
         return txState.augmentSingleNodeCursor( cursor, id );
+    }
+
+    private Cursor<PropertyItem> properties( NodeItem nodeItem )
+    {
+        Lock lock = nodeItem.lock();
+        Cursor<PropertyItem> cursor = storeStatement().acquirePropertyCursor( nodeItem.nextPropertyId(), lock );
+        return txState.augmentPropertyCursor( cursor, txState.getNodeState( nodeItem.id() ) );
     }
 
     private StorageStatement storeStatement()

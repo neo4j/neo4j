@@ -26,6 +26,7 @@ import java.lang.reflect.Array;
 import org.neo4j.cursor.Cursor;
 import org.neo4j.kernel.api.properties.Property;
 import org.neo4j.kernel.impl.api.operations.KeyReadOperations;
+import org.neo4j.kernel.impl.locking.Lock;
 import org.neo4j.storageengine.api.NodeItem;
 import org.neo4j.storageengine.api.PropertyItem;
 import org.neo4j.storageengine.api.StorageStatement;
@@ -99,7 +100,9 @@ public class StorageLayerPropertyTest extends StorageLayerTest
             {
                 node.next();
 
-                try ( Cursor<PropertyItem> props = node.get().property( propKey ) )
+                Lock lock = node.get().lock();
+                try ( Cursor<PropertyItem> props = statement
+                        .acquireSinglePropertyCursor( node.get().nextPropertyId(), propKey, lock ) )
                 {
                     if ( props.next() )
                     {

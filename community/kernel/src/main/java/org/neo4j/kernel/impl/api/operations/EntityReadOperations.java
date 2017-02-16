@@ -19,6 +19,7 @@
  */
 package org.neo4j.kernel.impl.api.operations;
 
+import org.neo4j.collection.primitive.PrimitiveIntCollection;
 import org.neo4j.collection.primitive.PrimitiveIntIterator;
 import org.neo4j.collection.primitive.PrimitiveIntSet;
 import org.neo4j.collection.primitive.PrimitiveLongIterator;
@@ -32,6 +33,7 @@ import org.neo4j.kernel.impl.api.KernelStatement;
 import org.neo4j.kernel.impl.api.RelationshipVisitor;
 import org.neo4j.storageengine.api.Direction;
 import org.neo4j.storageengine.api.NodeItem;
+import org.neo4j.storageengine.api.PropertyItem;
 import org.neo4j.storageengine.api.RelationshipItem;
 
 public interface EntityReadOperations
@@ -93,6 +95,14 @@ public interface EntityReadOperations
 
     Cursor<RelationshipItem> nodeGetRelationships( KernelStatement statement, NodeItem node, Direction direction,
             PrimitiveIntSet relTypes );
+
+    Cursor<PropertyItem> nodeGetProperties( KernelStatement statement, NodeItem node );
+
+    Object nodeGetProperty( KernelStatement statement, NodeItem node, int propertyKeyId );
+
+    boolean nodeHasProperty( KernelStatement statement, NodeItem node, int propertyKeyId );
+
+    PrimitiveIntCollection nodeGetPropertyKeys( KernelStatement statement, NodeItem node );
 
     long nodesGetCount( KernelStatement statement );
 
