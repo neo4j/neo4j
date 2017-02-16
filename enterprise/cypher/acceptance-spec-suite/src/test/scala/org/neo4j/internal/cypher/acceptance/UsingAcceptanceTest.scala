@@ -27,7 +27,6 @@ import org.neo4j.graphdb.factory.GraphDatabaseSettings
 import org.neo4j.graphdb.{Node, QueryExecutionException}
 import org.neo4j.kernel.api.exceptions.Status
 
-
 class UsingAcceptanceTest extends ExecutionEngineFunSuite with NewRuntimeTestSupport with RunWithConfigTestSupport {
   override def databaseConfig(): Map[Setting[_], String] = Map(GraphDatabaseSettings.cypher_hints_error -> "true")
 
@@ -42,11 +41,10 @@ class UsingAcceptanceTest extends ExecutionEngineFunSuite with NewRuntimeTestSup
         | WHERE f.id=123
         | RETURN f
       """.stripMargin
-    val result = executeWithCostPlannerOnly(query)
+    val result = executeWithCostPlannerAndCompiledRuntimeOnly(query)
     result.columnAs[Node]("f").toList should equal(List(node))
     result.executionPlanDescription() should includeAtLeastOne(classOf[NodeIndexSeek], withVariable = "f")
   }
-
 
   test("should use index on literal map expression") {
     val nodes = Range(0,125).map(i => createLabeledNode(Map("id" -> i), "Foo"))
@@ -59,7 +57,7 @@ class UsingAcceptanceTest extends ExecutionEngineFunSuite with NewRuntimeTestSup
         | WHERE f.id={id: 123}.id
         | RETURN f
       """.stripMargin
-    val result = executeWithCostPlannerOnly(query)
+    val result = executeWithCostPlannerAndInterpretedRuntimeOnly(query)
     result.columnAs[Node]("f").toSet should equal(Set(nodes(123)))
     result.executionPlanDescription() should includeAtLeastOne(classOf[NodeIndexSeek], withVariable = "f")
   }
@@ -76,7 +74,7 @@ class UsingAcceptanceTest extends ExecutionEngineFunSuite with NewRuntimeTestSup
         | WHERE f.id=row
         | RETURN f
       """.stripMargin
-    val result = executeWithCostPlannerOnly(query)
+    val result = executeWithCostPlannerAndInterpretedRuntimeOnly(query)
     result.columnAs[Node]("f").toList should equal(List(node))
     result.executionPlanDescription() should includeAtLeastOne(classOf[NodeIndexSeek], withVariable = "f")
   }
@@ -409,7 +407,7 @@ class UsingAcceptanceTest extends ExecutionEngineFunSuite with NewRuntimeTestSup
 
     test(s"$plannerName should fail when join hint is applied to an undefined node") {
       val error = intercept[SyntaxException](
-        executeWithCostPlannerOnly(
+        executeWithCostPlannerAndInterpretedRuntimeOnly(
           s"""
              |CYPHER planner=$plannerName
              |MATCH (a:A)-->(b:B)<--(c:C)
@@ -422,7 +420,7 @@ class UsingAcceptanceTest extends ExecutionEngineFunSuite with NewRuntimeTestSup
 
     test(s"$plannerName should fail when join hint is applied to a single node") {
       val error = intercept[SyntaxException](
-        executeWithCostPlannerOnly(
+        executeWithCostPlannerAndInterpretedRuntimeOnly(
           s"""
              |CYPHER planner=$plannerName
              |MATCH (a:A)
@@ -435,7 +433,7 @@ class UsingAcceptanceTest extends ExecutionEngineFunSuite with NewRuntimeTestSup
 
     test(s"$plannerName should fail when join hint is applied to a relationship") {
       val error = intercept[SyntaxException](
-        executeWithCostPlannerOnly(
+        executeWithCostPlannerAndInterpretedRuntimeOnly(
           s"""
              |CYPHER planner=$plannerName
              |MATCH (a:A)-[r1]->(b:B)-[r2]->(c:C)
@@ -448,7 +446,7 @@ class UsingAcceptanceTest extends ExecutionEngineFunSuite with NewRuntimeTestSup
 
     test(s"$plannerName should fail when join hint is applied to a path") {
       val error = intercept[SyntaxException](
-        executeWithCostPlannerOnly(
+        executeWithCostPlannerAndInterpretedRuntimeOnly(
           s"""
              |CYPHER planner=$plannerName
              |MATCH p=(a:A)-->(b:B)-->(c:C)
@@ -471,7 +469,7 @@ class UsingAcceptanceTest extends ExecutionEngineFunSuite with NewRuntimeTestSup
       relate(c, d, "X")
       relate(d, e, "X")
 
-      val result = executeWithCostPlannerOnly(
+      val result = executeWithCostPlannerAndCompiledRuntimeOnly(
         s"""
            |CYPHER planner=$plannerName
            |MATCH (a)-[:X]->(b)-[:X]->(c)-[:X]->(d)-[:X]->(e)
@@ -495,7 +493,7 @@ class UsingAcceptanceTest extends ExecutionEngineFunSuite with NewRuntimeTestSup
       relate(c, d, "X")
       relate(e, d, "Y")
 
-      val result = executeWithCostPlannerOnly(
+      val result = executeWithCostPlannerAndInterpretedRuntimeOnly(
         s"""
            |CYPHER planner=$plannerName
            |MATCH (a:Foo)-[:X*]->(b)<-[:Y]->(c:Bar)
@@ -519,7 +517,7 @@ class UsingAcceptanceTest extends ExecutionEngineFunSuite with NewRuntimeTestSup
       relate(c, d, "X")
       relate(d, e, "X")
 
-      val result = executeWithCostPlannerOnly(
+      val result = executeWithCostPlannerAndCompiledRuntimeOnly(
         s"""
            |CYPHER planner=$plannerName
            |MATCH (a)-[:X]->(b)-[:X]->(c)-[:X]->(d)-[:X]->(e)
@@ -549,7 +547,7 @@ class UsingAcceptanceTest extends ExecutionEngineFunSuite with NewRuntimeTestSup
             |USING JOIN ON x
             |RETURN x""".stripMargin
 
-      val result = executeWithCostPlannerOnly(query)
+      val result = executeWithCostPlannerAndCompiledRuntimeOnly(query)
 
       result.executionPlanDescription() should includeOnlyOneHashJoinOn("x")
     }
@@ -583,7 +581,7 @@ class UsingAcceptanceTest extends ExecutionEngineFunSuite with NewRuntimeTestSup
             |USING JOIN ON x
             |RETURN x""".stripMargin
 
-      val result = executeWithCostPlannerOnly(query)
+      val result = executeWithCostPlannerAndCompiledRuntimeOnly(query)
     }
 
     test(s"$plannerName should work when join hint is applied to x in (a)-->(x)<--(b) where a and b are labeled") {
@@ -613,7 +611,7 @@ class UsingAcceptanceTest extends ExecutionEngineFunSuite with NewRuntimeTestSup
             |USING JOIN ON x
             |RETURN x""".stripMargin
 
-      val result = executeWithCostPlannerOnly(query)
+      val result = executeWithCostPlannerAndCompiledRuntimeOnly(query)
 
       result.executionPlanDescription() should includeOnlyOneHashJoinOn("x")
       result.executionPlanDescription().toString should not include "AllNodesScan"
@@ -650,7 +648,7 @@ class UsingAcceptanceTest extends ExecutionEngineFunSuite with NewRuntimeTestSup
             |USING JOIN ON x
             |RETURN x""".stripMargin
 
-      val result = executeWithCostPlannerOnly(query)
+      val result = executeWithCostPlannerAndCompiledRuntimeOnly(query)
 
       result.executionPlanDescription() should includeOnlyOneHashJoinOn("x")
       result.executionPlanDescription().toString should not include "AllNodesScan"
@@ -685,7 +683,7 @@ class UsingAcceptanceTest extends ExecutionEngineFunSuite with NewRuntimeTestSup
             |USING JOIN ON x
             |RETURN x""".stripMargin
 
-      val result = executeWithCostPlannerOnly(query)
+      val result = executeWithCostPlannerAndCompiledRuntimeOnly(query)
 
       result.executionPlanDescription() should includeOnlyOneHashJoinOn("x")
       result.executionPlanDescription() should includeAtLeastOne(classOf[NodeIndexSeek], withVariable = "x")

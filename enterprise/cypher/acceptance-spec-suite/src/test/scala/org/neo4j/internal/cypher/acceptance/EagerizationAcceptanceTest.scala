@@ -200,7 +200,7 @@ class EagerizationAcceptanceTest
     createNode()
     val query = "MATCH (a), (b) CALL user.mkRel(a, b) YIELD relId WITH * MATCH ()-[rel]->() WHERE id(rel) = relId RETURN rel"
 
-    val result = executeWithCostPlannerOnly(query)
+    val result = executeWithCostPlannerAndInterpretedRuntimeOnly(query)
     result.size should equal(4)
 
     // Correct! Eagerization happens as part of query context operation
@@ -238,7 +238,7 @@ class EagerizationAcceptanceTest
     createNode()
     val query = "MATCH (a), (b) CALL user.mkRel(a, b) MATCH (a)-[rel]->(b) RETURN rel"
 
-    val result = executeWithCostPlannerOnly(query)
+    val result = executeWithCostPlannerAndInterpretedRuntimeOnly(query)
     result.size should equal(4)
     counter.counted should equal(4)
 
@@ -283,7 +283,7 @@ class EagerizationAcceptanceTest
 
     val query = "MATCH (x), (y) CALL user.expand(x, y) YIELD relId RETURN x, y, relId"
 
-    val result = executeWithCostPlannerOnly(query)
+    val result = executeWithCostPlannerAndInterpretedRuntimeOnly(query)
     result.size should equal(2)
 
     // Correct! No eagerization necessary
@@ -328,7 +328,7 @@ class EagerizationAcceptanceTest
 
     val query = "MATCH (x), (y) CALL user.expand(x, y) WITH * MATCH (x)-[rel]->(y) RETURN *"
 
-    val result = executeWithCostPlannerOnly(query)
+    val result = executeWithCostPlannerAndInterpretedRuntimeOnly(query)
     result.size should equal(2)
     counter.counted should equal(2)
 
@@ -702,7 +702,7 @@ class EagerizationAcceptanceTest
 
       val query = "MATCH () CREATE () RETURN count(*)"
 
-      val result = executeWithCostPlannerOnly(query)
+      val result = executeWithCostPlannerAndInterpretedRuntimeOnly(query)
       result.columnAs[Long]("count(*)").next shouldBe 6
       assertStats(result, nodesCreated = 6)
       assertNumberOfEagerness(query, 0)

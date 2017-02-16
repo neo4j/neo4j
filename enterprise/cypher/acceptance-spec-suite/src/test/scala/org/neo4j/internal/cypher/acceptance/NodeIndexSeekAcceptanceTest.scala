@@ -91,7 +91,7 @@ class NodeIndexSeekAcceptanceTest extends ExecutionEngineFunSuite with NewRuntim
     graph.createIndex("Place", "name")
 
     // When
-    val result = executeWithCostPlannerOnly(
+    val result = executeWithCostPlannerAndInterpretedRuntimeOnly(
       """
         |MATCH ()-[f:FRIEND_OF]->()
         |WITH f.placeName AS placeName

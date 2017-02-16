@@ -87,7 +87,7 @@ class IndexNestedLoopJoinAcceptanceTest extends ExecutionEngineFunSuite with New
         | WHERE f.id=row.id
         | RETURN f
       """.stripMargin
-    val result = executeWithCostPlannerOnly(query)
+    val result = executeWithCostPlannerAndInterpretedRuntimeOnly(query)
     result.columnAs[Node]("f").toSet should equal(Set(nodes(122),nodes(123)))
     result.executionPlanDescription() should includeAtLeastOne(classOf[NodeIndexSeek], withVariable = "f")
   }
@@ -104,7 +104,7 @@ class IndexNestedLoopJoinAcceptanceTest extends ExecutionEngineFunSuite with New
         | MATCH (f:Foo) WHERE f.id = b.id
         | RETURN f
       """.stripMargin
-    val result = executeWithCostPlannerOnly(query)
+    val result = executeWithCostPlannerAndInterpretedRuntimeOnly(query)
     result.columnAs[Node]("f").toList should equal(List(nodes(123)))
     result.executionPlanDescription() should includeAtLeastOne(classOf[NodeIndexSeek], withVariable = "f")
   }
@@ -123,7 +123,7 @@ class IndexNestedLoopJoinAcceptanceTest extends ExecutionEngineFunSuite with New
         | MATCH (f:Foo) WHERE f.id = b.id
         | RETURN f
       """.stripMargin
-    val result = executeWithCostPlannerOnly(query)
+    val result = executeWithCostPlannerAndInterpretedRuntimeOnly(query)
     result.columnAs[Node]("f").toSet should equal(Set(nodes(122), nodes(123)))
     result.executionPlanDescription() should includeAtLeastOne(classOf[NodeIndexSeek], withVariable = "f")
   }

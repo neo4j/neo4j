@@ -31,7 +31,7 @@ class PatternComprehensionAcceptanceTest extends ExecutionEngineFunSuite with Ne
 
     val query = "MATCH (n:Start) RETURN [p = (n)-->() | p] AS list"
 
-    val result = executeWithCostPlannerOnly(query)
+    val result = executeWithCostPlannerAndInterpretedRuntimeOnly(query)
 
     result.toList should equal(List(Map("list" -> List(PathImpl(n1, r, n2)))))
   }
@@ -45,7 +45,7 @@ class PatternComprehensionAcceptanceTest extends ExecutionEngineFunSuite with Ne
 
     val query = "MATCH (n:Start) RETURN [p = (n)-->() WHERE last(nodes(p)):End | p] AS list"
 
-    val result = executeWithCostPlannerOnly(query)
+    val result = executeWithCostPlannerAndInterpretedRuntimeOnly(query)
 
     result.toList should equal(List(Map("list" -> List(PathImpl(n1, r, n2)))))
   }
@@ -59,7 +59,7 @@ class PatternComprehensionAcceptanceTest extends ExecutionEngineFunSuite with Ne
 
     val query = "MATCH (n:Start) RETURN [p = (n)-->() where last(nodes(p)):End | p] AS list"
 
-    val result = executeWithCostPlannerOnly(query)
+    val result = executeWithCostPlannerAndInterpretedRuntimeOnly(query)
 
     result.toList should equal(List(Map("list" -> List(PathImpl(n1, r, n2)))))
   }
@@ -71,7 +71,7 @@ class PatternComprehensionAcceptanceTest extends ExecutionEngineFunSuite with Ne
 
     val query = "MATCH (n:Start) RETURN [p = (n)-->(b) WHERE head([p IN ['foo'] | true ]) | p] AS list"
 
-    val result = executeWithCostPlannerOnly(query)
+    val result = executeWithCostPlannerAndInterpretedRuntimeOnly(query)
 
     result.toList should equal(List(Map("list" -> List(PathImpl(n1, r, n2)))))
   }
@@ -83,7 +83,7 @@ class PatternComprehensionAcceptanceTest extends ExecutionEngineFunSuite with Ne
 
     val query = "MATCH (n:Start) RETURN [p = (n)-->() | {path: p, other: [p IN ['foo'] | true ]} ] AS list"
 
-    val result = executeWithCostPlannerOnly(query)
+    val result = executeWithCostPlannerAndInterpretedRuntimeOnly(query)
 
     result.toList should equal(List(Map("list" -> List(Map("path" -> PathImpl(n1, r, n2), "other" -> List(true))))))
   }
@@ -101,7 +101,7 @@ class PatternComprehensionAcceptanceTest extends ExecutionEngineFunSuite with Ne
     relate(n2, n4)
     relate(n2, n5)
 
-    val result = executeWithCostPlannerOnly("match (n:START) return n.x, [(n)-->(other) | other.x] as coll")
+    val result = executeWithCostPlannerAndInterpretedRuntimeOnly("match (n:START) return n.x, [(n)-->(other) | other.x] as coll")
 
     result.toList should equal(List(
       Map("n.x" -> 1, "coll" -> Seq(5, 4, 3)),
@@ -125,7 +125,7 @@ class PatternComprehensionAcceptanceTest extends ExecutionEngineFunSuite with Ne
     relate(n2, n4)
     relate(n2, n6)
 
-    val result = executeWithCostPlannerOnly("match (n:START) return n.x, [(n)-->(other) WHERE other.x % 2 = 0 | other.x] as coll")
+    val result = executeWithCostPlannerAndInterpretedRuntimeOnly("match (n:START) return n.x, [(n)-->(other) WHERE other.x % 2 = 0 | other.x] as coll")
     result.toList should equal(List(
       Map("n.x" -> 1, "coll" -> Seq(6, 4)),
       Map("n.x" -> 2, "coll" -> Seq(6, 4))
@@ -138,7 +138,7 @@ class PatternComprehensionAcceptanceTest extends ExecutionEngineFunSuite with Ne
 
     relate(n1, n1, "x"->"A")
     relate(n1, n1, "x"->"B")
-    val result = executeWithCostPlannerOnly("match (n:START) return n.x, [(n)-[r]->(n) | r.x] as coll")
+    val result = executeWithCostPlannerAndInterpretedRuntimeOnly("match (n:START) return n.x, [(n)-[r]->(n) | r.x] as coll")
 
     result.toList should equal(List(
       Map("n.x" -> 1, "coll" -> Seq("B", "A"))
@@ -147,7 +147,7 @@ class PatternComprehensionAcceptanceTest extends ExecutionEngineFunSuite with Ne
   }
 
   test("pattern comprehension built on a null yields null") {
-    val result = executeWithCostPlannerOnly("optional match (n:MISSING) return [(n)-->(n) | n.x] as coll")
+    val result = executeWithCostPlannerAndInterpretedRuntimeOnly("optional match (n:MISSING) return [(n)-->(n) | n.x] as coll")
     result.toList should equal(List(
       Map("coll" -> null)
     ))
@@ -168,7 +168,7 @@ class PatternComprehensionAcceptanceTest extends ExecutionEngineFunSuite with Ne
     relate(b, createNode("x" -> 6))
 
 
-    val result = executeWithCostPlannerOnly(
+    val result = executeWithCostPlannerAndInterpretedRuntimeOnly(
       """match (n:START)
         |where [(n)-->(other) | other.x] = [3,2,1]
         |return n""".stripMargin)
@@ -194,7 +194,7 @@ class PatternComprehensionAcceptanceTest extends ExecutionEngineFunSuite with Ne
     relate(n2, n4)
     relate(n2, n5)
 
-    val result = executeWithCostPlannerOnly("match (n:START) return count(*), [(n)-->(other) | other.x] as coll")
+    val result = executeWithCostPlannerAndInterpretedRuntimeOnly("match (n:START) return count(*), [(n)-->(other) | other.x] as coll")
     result.toList should equal(List(
       Map("count(*)" -> 2, "coll" -> Seq(5, 4, 3))
     ))
@@ -217,7 +217,7 @@ class PatternComprehensionAcceptanceTest extends ExecutionEngineFunSuite with Ne
     relate(n2, n4)
     relate(n2, n6)
 
-    val result = executeWithCostPlannerOnly(
+    val result = executeWithCostPlannerAndInterpretedRuntimeOnly(
       """match (n:START)
         |return collect( [(n)-->(other) | other.x] ) as coll""".stripMargin)
     result.toList should equal(List(
@@ -248,7 +248,7 @@ class PatternComprehensionAcceptanceTest extends ExecutionEngineFunSuite with Ne
 
     val query = "RETURN size([(:Start)-->() | 1]) AS size"
 
-    val result = executeWithCostPlannerOnly(query)
+    val result = executeWithCostPlannerAndInterpretedRuntimeOnly(query)
     result.toList should equal(List(Map("size" -> 3)))
   }
 
@@ -267,7 +267,7 @@ class PatternComprehensionAcceptanceTest extends ExecutionEngineFunSuite with Ne
 
     val query = """MATCH p = (n:X)-->() RETURN n, [x IN nodes(p) | size([(x)-->(y:Y) | 1])] AS list"""
 
-    val result = executeWithCostPlannerOnly(query)
+    val result = executeWithCostPlannerAndInterpretedRuntimeOnly(query)
     result.toSet should equal(Set(
       Map("n" -> a, "list" -> Seq(1, 2)),
       Map("n" -> b, "list" -> Seq(0, 1))
@@ -277,7 +277,7 @@ class PatternComprehensionAcceptanceTest extends ExecutionEngineFunSuite with Ne
   test("pattern comprehension in RETURN following a WITH") {
     val query = """MATCH (e:X) WITH e LIMIT 5 RETURN [(e) --> (t) | t { .amount }]"""
 
-    executeWithCostPlannerOnly(query).toList //does not throw
+    executeWithCostPlannerAndInterpretedRuntimeOnly(query).toList //does not throw
   }
 
   test("pattern comprehension play nice with map projections") {
@@ -288,7 +288,7 @@ class PatternComprehensionAcceptanceTest extends ExecutionEngineFunSuite with Ne
     relate(actor2, movie, "ACTED_IN")
     val query = """match (m:Movie) return m { .title, cast: [(m)<-[:ACTED_IN]-(p) | p.name] }"""
 
-    executeWithCostPlannerOnly(query).toList //does not throw
+    executeWithCostPlannerAndInterpretedRuntimeOnly(query).toList //does not throw
   }
 
   test("pattern comprehension play nice with OPTIOAL MATCH") {
@@ -306,7 +306,7 @@ class PatternComprehensionAcceptanceTest extends ExecutionEngineFunSuite with Ne
         |optional match (a)-[:ACTED_IN]->(movie:Movie)
         |return a.name as name,  [(a)-[:DIRECTED]->(dirMovie:Movie) | dirMovie.title] as dirMovie""".stripMargin
 
-    val result = executeWithCostPlannerOnly(query)
+    val result = executeWithCostPlannerAndInterpretedRuntimeOnly(query)
     result.toList should equal(List(
       Map("name" -> "Tom Cruise", "dirMovie" -> Seq()),
       Map("name" -> "Ron Howard", "dirMovie" -> Seq("Cocoon")),

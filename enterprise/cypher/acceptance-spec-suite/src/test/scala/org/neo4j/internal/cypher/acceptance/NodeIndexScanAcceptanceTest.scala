@@ -35,7 +35,7 @@ class NodeIndexScanAcceptanceTest extends ExecutionEngineFunSuite with NewRuntim
     graph.createIndex("Person", "name")
 
     // When
-    val result = executeWithCostPlannerOnly(
+    val result = executeWithCostPlannerAndInterpretedRuntimeOnly(
       "MATCH (p:Person) WHERE p.name IS NOT NULL RETURN p")
 
     // Then
@@ -49,7 +49,7 @@ class NodeIndexScanAcceptanceTest extends ExecutionEngineFunSuite with NewRuntim
     graph.createIndex("Person", "name")
 
     // When
-    val result = executeWithCostPlannerOnly(
+    val result = executeWithCostPlannerAndInterpretedRuntimeOnly(
       "MATCH (p:Person) WHERE exists(p.name) RETURN p")
 
     // Then
@@ -73,7 +73,7 @@ class NodeIndexScanAcceptanceTest extends ExecutionEngineFunSuite with NewRuntim
     createLabeledNode(Map("id" -> "139dbf46f0dc8a325e27ffd118331ca2947e34f0", "label" -> "z"), "phone_type", "timed")
 
     // When
-    val result = executeWithCostPlannerOnly("MATCH (n:phone_type:timed) where n.label =~ 'a.' return count(n)")
+    val result = executeWithCostPlannerAndInterpretedRuntimeOnly("MATCH (n:phone_type:timed) where n.label =~ 'a.' return count(n)")
 
     // Then
     result should (use("NodeIndexScan") and evaluateTo(List(Map("count(n)" -> 3))))

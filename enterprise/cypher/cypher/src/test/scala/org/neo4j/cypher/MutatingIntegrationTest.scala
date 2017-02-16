@@ -120,7 +120,7 @@ class MutatingIntegrationTest extends ExecutionEngineFunSuite with Assertions wi
     val b = createNode()
     val c = createNode()
 
-    val result = executeWithCostPlannerOnly("create (n) with n MATCH (x) WHERE id(x) IN [0, 1, 2] create (n)-[:REL]->(x)")
+    val result = executeWithCostPlannerAndInterpretedRuntimeOnly("create (n) with n MATCH (x) WHERE id(x) IN [0, 1, 2] create (n)-[:REL]->(x)")
     assertStats(result,
       nodesCreated = 1,
       relationshipsCreated = 3
@@ -185,7 +185,7 @@ class MutatingIntegrationTest extends ExecutionEngineFunSuite with Assertions wi
   test("delete and return") {
     val a = createNode()
 
-    val result = executeWithCostPlannerOnly("match (n) where id(n) = 0 delete n return n")
+    val result = executeWithCostPlannerAndInterpretedRuntimeOnly("match (n) where id(n) = 0 delete n return n")
 
     result.toList should equal(List(Map("n" -> a)))
   }
@@ -210,7 +210,7 @@ class MutatingIntegrationTest extends ExecutionEngineFunSuite with Assertions wi
       Map("name" -> "Michael", "prefers" -> "Java"),
       Map("name" -> "Peter", "prefers" -> "Java"))
 
-    intercept[CypherTypeException](executeWithCostPlannerOnly("create ({params})", "params" -> maps))
+    intercept[CypherTypeException](executeWithCostPlannerAndInterpretedRuntimeOnly("create ({params})", "params" -> maps))
   }
 
   test("fail to create from two iterables") {
@@ -328,7 +328,7 @@ class MutatingIntegrationTest extends ExecutionEngineFunSuite with Assertions wi
   test("created paths honor directions") {
     val a = createNode()
     val b = createNode()
-    val result = executeWithCostPlannerOnly("match (a), (b) where id(a) = 0 AND id(b) = 1 create p = (a)<-[:X]-(b) return p").toList.head("p").asInstanceOf[Path]
+    val result = executeWithCostPlannerAndInterpretedRuntimeOnly("match (a), (b) where id(a) = 0 AND id(b) = 1 create p = (a)<-[:X]-(b) return p").toList.head("p").asInstanceOf[Path]
 
     result.startNode() should equal(a)
     result.endNode() should equal(b)

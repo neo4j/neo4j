@@ -89,7 +89,7 @@ class UniqueIndexUsageAcceptanceTest extends ExecutionEngineFunSuite with NewRun
     graph.createConstraint("Place", "name")
 
     // When
-    val result = executeWithCostPlannerOnly(
+    val result = executeWithCostPlannerAndInterpretedRuntimeOnly(
       """
         |MATCH ()-[f:FRIEND_OF]->()
         |WITH f.placeName AS placeName

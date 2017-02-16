@@ -307,14 +307,14 @@ class ProfilerAcceptanceTest extends ExecutionEngineFunSuite with CreateTempFile
   test("LIMIT should influence cardinality estimation by default value when expression contains rand()") {
     (0 until 100).map(i => createLabeledNode("Person"))
     // NOTE: We cannot executeWithAllPlanners because of random result
-    val result = executeWithCostPlannerOnly(s"PROFILE MATCH (p:Person) with 10 as x, p RETURN p LIMIT toInt(rand()*10)")
+    val result = executeWithCostPlannerAndInterpretedRuntimeOnly(s"PROFILE MATCH (p:Person) with 10 as x, p RETURN p LIMIT toInt(rand()*10)")
     assertEstimatedRows(GraphStatistics.DEFAULT_LIMIT_CARDINALITY.amount.toInt)(result)("Limit")
   }
 
   test("LIMIT should influence cardinality estimation by default value when expression contains timestamp()") {
     (0 until 100).map(i => createLabeledNode("Person"))
     // NOTE: We cannot executeWithAllPlanners because of random result
-    val result = executeWithCostPlannerOnly(s"PROFILE MATCH (p:Person) with 10 as x, p RETURN p LIMIT timestamp()")
+    val result = executeWithCostPlannerAndInterpretedRuntimeOnly(s"PROFILE MATCH (p:Person) with 10 as x, p RETURN p LIMIT timestamp()")
     assertEstimatedRows(GraphStatistics.DEFAULT_LIMIT_CARDINALITY.amount.toInt)(result)("Limit")
   }
 
@@ -350,7 +350,7 @@ class ProfilerAcceptanceTest extends ExecutionEngineFunSuite with CreateTempFile
     val query = s"USING PERIODIC COMMIT 10 LOAD CSV FROM '$url' AS line CREATE()"
 
     // given
-    executeWithCostPlannerOnly(query).toList
+    executeWithCostPlannerAndInterpretedRuntimeOnly(query).toList
     deleteAllEntities()
     val initialTxCounts = graph.txCounts
 
