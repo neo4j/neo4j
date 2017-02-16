@@ -22,12 +22,14 @@ package org.neo4j.commandline.admin.security;
 import org.junit.Before;
 import org.junit.Rule;
 import org.junit.Test;
+import org.junit.rules.ExpectedException;
 
 import java.io.ByteArrayOutputStream;
 import java.io.File;
 import java.io.IOException;
 import java.io.PrintStream;
 
+import org.neo4j.commandline.admin.CommandFailed;
 import org.neo4j.commandline.admin.CommandLocator;
 import org.neo4j.commandline.admin.IncorrectUsage;
 import org.neo4j.commandline.admin.OutsideWorld;
@@ -61,8 +63,9 @@ public class SetDefaultAdminCommandTest
     private Config config;
 
     @Rule
+    public ExpectedException expect = ExpectedException.none();
+    @Rule
     public TestDirectory testDir = TestDirectory.testDirectory( fileSystem );
-    private UserRepository users;
 
     @Before
     public void setup() throws IOException, InvalidArgumentsException
@@ -72,7 +75,8 @@ public class SetDefaultAdminCommandTest
         setDefaultAdmin = new SetDefaultAdminCommand( testDir.directory( "home" ).toPath(),
                 testDir.directory( "conf" ).toPath(), mock );
         config = setDefaultAdmin.loadNeo4jConfig();
-        users = CommunitySecurityModule.getUserRepository( config, NullLogProvider.getInstance(), fileSystem );
+        UserRepository users = CommunitySecurityModule.getUserRepository( config, NullLogProvider.getInstance(),
+                fileSystem );
         users.create(
                 new User.Builder( "jake", Credential.forPassword( "123" ) )
                         .withRequiredPasswordChange( false )
@@ -85,14 +89,14 @@ public class SetDefaultAdminCommandTest
     public void shouldFailForNoArguments() throws Exception
     {
         assertException( () -> setDefaultAdmin.execute( new String[0] ), IncorrectUsage.class,
-                "No username specified." );
+                "no username specified." );
     }
 
     @Test
     public void shouldFailForTooManyArguments() throws Exception
     {
         String[] arguments = {"", "123", "321"};
-        assertException( () -> setDefaultAdmin.execute( arguments ), IncorrectUsage.class, "Too many arguments." );
+        assertException( () -> setDefaultAdmin.execute( arguments ), IncorrectUsage.class, "too many arguments." );
     }
 
     @Test
@@ -110,17 +114,15 @@ public class SetDefaultAdminCommandTest
     }
 
     @Test
-    public void shouldSetDefaultAdminEvenForNonExistentUser() throws Throwable
+    public void shouldNotSetDefaultAdminForNonExistentUser() throws Throwable
     {
-        // Given
-        assertFalse( fileSystem.fileExists( adminIniFile ) );
+        // Then
+        expect.expect( CommandFailed.class );
+        expect.expectMessage( "no such user: 'noName'" );
 
         // When
         String[] arguments = {"noName"};
         setDefaultAdmin.execute( arguments );
-
-        // Then
-        assertAdminIniFile( "noName" );
     }
 
     @Test
