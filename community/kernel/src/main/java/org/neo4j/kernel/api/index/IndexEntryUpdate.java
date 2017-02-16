@@ -100,16 +100,15 @@ public class IndexEntryUpdate
         {
             return false;
         }
-        if ( !Arrays.equals( before, that.before ) )
+        if ( !Arrays.deepEquals( before, that.before ) )
         {
             return false;
         }
-        if ( !Arrays.equals( values, that.values ) )
+        if ( !Arrays.deepEquals( values, that.values ) )
         {
             return false;
         }
         return descriptor != null ? descriptor.equals( that.descriptor ) : that.descriptor == null;
-
     }
 
     @Override
@@ -117,8 +116,8 @@ public class IndexEntryUpdate
     {
         int result = (int) (entityId ^ (entityId >>> 32));
         result = 31 * result + (updateMode != null ? updateMode.hashCode() : 0);
-        result = 31 * result + Arrays.hashCode( before );
-        result = 31 * result + Arrays.hashCode( values );
+        result = 31 * result + Arrays.deepHashCode( before );
+        result = 31 * result + Arrays.deepHashCode( values );
         result = 31 * result + (descriptor != null ? descriptor.hashCode() : 0);
         return result;
     }

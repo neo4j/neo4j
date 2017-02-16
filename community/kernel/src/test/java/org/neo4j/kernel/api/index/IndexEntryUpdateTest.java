@@ -117,4 +117,21 @@ public class IndexEntryUpdateTest
         assertThat( multiValue, equalTo( multiChange.beforeValues() ) );
         assertThat( multiAfter, equalTo( multiChange.values() ) );
     }
+
+    @Test
+    public void indexEntryUpdatesShouldBeEqualForDeepValues()
+    {
+        Object value1 = arraysOfDepth( 13 );
+        Object value2 = arraysOfDepth( 13 );
+
+        IndexEntryUpdate a = IndexEntryUpdate.add( 0, NewIndexDescriptorFactory.forLabel( 3, 4 ), value1 );
+        IndexEntryUpdate b = IndexEntryUpdate.add( 0, NewIndexDescriptorFactory.forLabel( 3, 4 ), value2 );
+        assertThat( a, equalTo( b ) );
+        assertThat( a.hashCode(), equalTo( b.hashCode() ) );
+    }
+
+    private Object[] arraysOfDepth( int n )
+    {
+        return n == 0 ? new Object[]{"hej"} : new Object[]{arraysOfDepth( n-1 )};
+    }
 }

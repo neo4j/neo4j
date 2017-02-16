@@ -146,7 +146,6 @@ public class BatchInsertTest
     private static final NewIndexDescriptor internalIndex = NewIndexDescriptorFactory.forLabel( 0, 0 );
     private static final NewIndexDescriptor internalUniqueIndex = NewIndexDescriptorFactory.uniqueForLabel( 0, 0 );
 
-
     @Parameterized.Parameters
     public static Collection<Integer> data()
     {
