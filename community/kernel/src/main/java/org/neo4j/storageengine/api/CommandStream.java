@@ -32,7 +32,8 @@ public interface CommandStream
     /**
      * Accepts a visitor into the commands making up this transaction.
      * @param visitor {@link Visitor} which will see the commands.
+     * @return {@code true} if any {@link StorageCommand} visited returned {@code true}, otherwise {@code false}.
      * @throws IOException if there were any problem reading the commands.
      */
-    void accept( Visitor<StorageCommand,IOException> visitor ) throws IOException;
+    boolean accept( Visitor<StorageCommand,IOException> visitor ) throws IOException;
 }
