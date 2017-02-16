@@ -939,7 +939,8 @@ public class BatchInsertTest
         verify( provider ).getPopulator( anyLong(), any( IndexDescriptor.class ), any( IndexConfiguration.class ),
                 any( IndexSamplingConfig.class ) );
         verify( populator ).create();
-        verify( populator ).add( singletonList( IndexEntryUpdate.add( nodeId, any(), "Jakewins" ) ) );
+        verify( populator ).add( singletonList( IndexEntryUpdate.add( nodeId, any( NewIndexDescriptor.class)
+                , "Jakewins" ) ) );
         verify( populator ).verifyDeferredConstraints( any( PropertyAccessor.class ) );
         verify( populator ).close( true );
         verify( provider ).stop();

@@ -85,23 +85,44 @@ public class IndexEntryUpdate
         {
             return true;
         }
-        if ( o != null && o instanceof IndexEntryUpdate )
+        if ( o == null || getClass() != o.getClass() )
         {
-            IndexEntryUpdate other = (IndexEntryUpdate) o;
-            return entityId == other.entityId &&
-                    updateMode == other.updateMode &&
-                    descriptor.equals( other.descriptor ) &&
-                    Arrays.equals( values, other.values );
+            return false;
         }
-        return false;
+
+        IndexEntryUpdate that = (IndexEntryUpdate) o;
+
+        if ( entityId != that.entityId )
+        {
+            return false;
+        }
+        if ( updateMode != that.updateMode )
+        {
+            return false;
+        }
+        // Probably incorrect - comparing Object[] arrays with Arrays.equals
+        if ( !Arrays.equals( before, that.before ) )
+        {
+            return false;
+        }
+        // Probably incorrect - comparing Object[] arrays with Arrays.equals
+        if ( !Arrays.equals( values, that.values ) )
+        {
+            return false;
+        }
+        return descriptor != null ? descriptor.equals( that.descriptor ) : that.descriptor == null;
+
     }
 
     @Override
     public int hashCode()
     {
-        return ((((int)entityId * 31) +
-                       updateMode.ordinal()) * 31 +
-                       Arrays.hashCode( values )) * 31 + descriptor.hashCode();
+        int result = (int) (entityId ^ (entityId >>> 32));
+        result = 31 * result + (updateMode != null ? updateMode.hashCode() : 0);
+        result = 31 * result + Arrays.hashCode( before );
+        result = 31 * result + Arrays.hashCode( values );
+        result = 31 * result + (descriptor != null ? descriptor.hashCode() : 0);
+        return result;
     }
 
     @Override

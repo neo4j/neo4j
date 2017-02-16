@@ -44,6 +44,9 @@ public class NodeUpdates
     private final long[] labelsBefore;
     private final long[] labelsAfter;
     private final LabelChangeSummary labelChangeSummary;
+    private final Map<Integer,Object> propertiesBefore = new HashMap<>();
+    private final Map<Integer,Object> propertiesAfter = new HashMap<>();
+    private final Map<Integer,Object> propertiesUnchanged = new HashMap<>();
 
     public static class Builder
     {
@@ -129,10 +132,6 @@ public class NodeUpdates
     {
         return nodeId;
     }
-
-    private final Map<Integer,Object> propertiesBefore = new HashMap<>();
-    private final Map<Integer,Object> propertiesAfter = new HashMap<>();
-    private final Map<Integer,Object> propertiesUnchanged = new HashMap<>();
 
     public Optional<IndexEntryUpdate> forIndex( NewIndexDescriptor index )
     {
