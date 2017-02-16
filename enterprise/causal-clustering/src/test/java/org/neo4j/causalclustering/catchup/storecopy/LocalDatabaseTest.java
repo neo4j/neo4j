@@ -79,6 +79,22 @@ public class LocalDatabaseTest
         assertDatabaseIsStoppedAndUnavailable( guard );
     }
 
+    @Test
+    public void availabilityGuardRaisedOnStopForStoreCopy() throws Throwable
+    {
+        AvailabilityGuard guard = newAvailabilityGuard();
+        assertTrue( guard.isAvailable() );
+
+        LocalDatabase localDatabase = newLocalDatabase( guard );
+        assertFalse( guard.isAvailable() );
+
+        localDatabase.start();
+        assertTrue( guard.isAvailable() );
+
+        localDatabase.stopForStoreCopy();
+        assertDatabaseIsStoppedForStoreCopyAndUnavailable( guard );
+    }
+
     private static LocalDatabase newLocalDatabase( AvailabilityGuard availabilityGuard )
     {
         return new LocalDatabase( mock( File.class ), mock( StoreFiles.class ), mock( DataSourceManager.class ),
@@ -94,5 +110,11 @@ public class LocalDatabaseTest
     {
         assertFalse( guard.isAvailable() );
         assertThat( guard.describeWhoIsBlocking(), containsString( "Database is stopped" ) );
+    }
+
+    private static void assertDatabaseIsStoppedForStoreCopyAndUnavailable( AvailabilityGuard guard )
+    {
+        assertFalse( guard.isAvailable() );
+        assertThat( guard.describeWhoIsBlocking(), containsString( "Database is stopped to copy store" ) );
     }
 }

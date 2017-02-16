@@ -47,7 +47,10 @@ import static org.neo4j.kernel.AvailabilityGuard.availabilityRequirement;
 
 public class LocalDatabase implements Lifecycle
 {
-    private static final AvailabilityRequirement NOT_STOPPED = availabilityRequirement( "Database is stopped" );
+    private static final AvailabilityRequirement NOT_STOPPED =
+            availabilityRequirement( "Database is stopped" );
+    private static final AvailabilityRequirement NOT_COPYING_STORE =
+            availabilityRequirement( "Database is stopped to copy store from another cluster member" );
 
     private final File storeDir;
 
@@ -59,7 +62,7 @@ public class LocalDatabase implements Lifecycle
 
     private volatile StoreId storeId;
     private volatile DatabaseHealth databaseHealth;
-    private boolean started = false;
+    private AvailabilityRequirement currentRequirement;
 
     private volatile TransactionCommitProcess localCommit;
 
@@ -74,7 +77,7 @@ public class LocalDatabase implements Lifecycle
         this.availabilityGuard = availabilityGuard;
         this.log = logProvider.getLog( getClass() );
 
-        raiseAvailabilityGuard();
+        raiseAvailabilityGuard( NOT_STOPPED );
     }
 
     @Override
@@ -92,24 +95,28 @@ public class LocalDatabase implements Lifecycle
         dataSourceManager.start();
 
         dropAvailabilityGuard();
-        started = true;
     }
 
     @Override
-    public synchronized void stop() throws Throwable
+    public void stop() throws Throwable
     {
-        log.info( "Stopping" );
-        databaseHealth = null;
-        localCommit = null;
-        dataSourceManager.stop();
+        stopWithRequirement( NOT_STOPPED );
+    }
 
-        raiseAvailabilityGuard();
-        started = false;
+    /**
+     * Stop database to perform a store copy. This will raise {@link AvailabilityGuard} with
+     * a more friendly blocking requirement.
+     *
+     * @throws Throwable if any of the components are unable to stop.
+     */
+    public void stopForStoreCopy() throws Throwable
+    {
+        stopWithRequirement( NOT_COPYING_STORE );
     }
 
     public boolean isAvailable()
     {
-        return started;
+        return currentRequirement == null;
     }
 
     @Override
@@ -120,7 +127,7 @@ public class LocalDatabase implements Lifecycle
 
     public synchronized StoreId storeId()
     {
-        if ( started )
+        if ( isAvailable() )
         {
             return storeId;
         }
@@ -207,13 +214,31 @@ public class LocalDatabase implements Lifecycle
         return localCommit;
     }
 
-    private void raiseAvailabilityGuard()
+    private synchronized void stopWithRequirement( AvailabilityRequirement requirement ) throws Throwable
     {
-        availabilityGuard.require( NOT_STOPPED );
+        log.info( "Stopping, reason: " + requirement.description() );
+        databaseHealth = null;
+        localCommit = null;
+        dataSourceManager.stop();
+
+        raiseAvailabilityGuard( requirement );
+    }
+
+    private void raiseAvailabilityGuard( AvailabilityRequirement requirement )
+    {
+        // it is possible for the local database to be created and stopped right after that to perform a store copy
+        // in this case we need to impose new requirement and drop the old one
+        availabilityGuard.require( requirement );
+        if ( currentRequirement != null )
+        {
+            dropAvailabilityGuard();
+        }
+        currentRequirement = requirement;
     }
 
     private void dropAvailabilityGuard()
     {
-        availabilityGuard.fulfill( NOT_STOPPED );
+        availabilityGuard.fulfill( currentRequirement );
+        currentRequirement = null;
     }
 }
