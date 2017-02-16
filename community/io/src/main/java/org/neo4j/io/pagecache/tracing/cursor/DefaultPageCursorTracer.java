@@ -20,7 +20,6 @@
 package org.neo4j.io.pagecache.tracing.cursor;
 
 import java.io.IOException;
-import java.util.Objects;
 
 import org.neo4j.io.pagecache.PageSwapper;
 import org.neo4j.io.pagecache.tracing.EvictionEvent;
@@ -50,7 +49,7 @@ public class DefaultPageCursorTracer implements PageCursorTracer
     private long evictionExceptions;
     private long flushes;
 
-    private PageCacheTracer pageCacheTracer;
+    private PageCacheTracer pageCacheTracer = PageCacheTracer.NULL;
 
     public void init( PageCacheTracer pageCacheTracer )
     {
@@ -59,7 +58,6 @@ public class DefaultPageCursorTracer implements PageCursorTracer
 
     public void reportEvents()
     {
-        Objects.nonNull( pageCacheTracer );
         if (pins > 0)
         {
             pageCacheTracer.pins( pins );

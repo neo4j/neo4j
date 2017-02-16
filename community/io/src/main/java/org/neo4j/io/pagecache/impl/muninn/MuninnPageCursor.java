@@ -52,6 +52,7 @@ abstract class MuninnPageCursor extends PageCursor
     private static final int SIZE_OF_LONG = Long.BYTES;
 
     private final long victimPage;
+    private final PageCursorTracer tracer;
     protected MuninnPagedFile pagedFile;
     protected PageSwapper swapper;
     protected MuninnPage page;
@@ -71,13 +72,11 @@ abstract class MuninnPageCursor extends PageCursor
     // offending code.
     private Object cursorException;
 
-    private final PageCursorTracer pageCursorTracer;
-
-    MuninnPageCursor( long victimPage, PageCursorTracer pageCursorTracer )
+    MuninnPageCursor( long victimPage, PageCursorTracer tracer )
     {
         this.victimPage = victimPage;
         this.pointer = victimPage;
-        this.pageCursorTracer = pageCursorTracer;
+        this.tracer = tracer;
     }
 
     final void initialiseFile( MuninnPagedFile pagedFile )
@@ -132,7 +131,7 @@ abstract class MuninnPageCursor extends PageCursor
             if ( cursor.pagedFile != null )
             {
                 cursor.unpinCurrentPage();
-                cursor.pageCursorTracer.reportEvents();
+                cursor.tracer.reportEvents();
                 cursor.releaseCursor();
                 // We null out the pagedFile field to allow it and its (potentially big) translation table to be garbage
                 // collected when the file is unmapped, since the cursors can stick around in thread local caches, etc.
@@ -211,7 +210,7 @@ abstract class MuninnPageCursor extends PageCursor
      */
     protected void pin( long filePageId, boolean writeLock ) throws IOException
     {
-        pinEvent = pageCursorTracer.beginPin( writeLock, filePageId, swapper );
+        pinEvent = tracer.beginPin( writeLock, filePageId, swapper );
         int chunkId = MuninnPagedFile.computeChunkId( filePageId );
         // The chunkOffset is the addressing offset into the chunk array object for the relevant array slot. Using
         // this, we can access the array slot with Unsafe.
