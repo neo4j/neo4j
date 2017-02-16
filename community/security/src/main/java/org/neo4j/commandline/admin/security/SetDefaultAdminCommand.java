@@ -104,7 +104,7 @@ public class SetDefaultAdminCommand implements AdminCommand
         {
             setDefaultAdmin( parsedArgs.orphans().get( 0 ) );
         }
-        catch ( IncorrectUsage e )
+        catch ( IncorrectUsage | CommandFailed e )
         {
             throw e;
         }

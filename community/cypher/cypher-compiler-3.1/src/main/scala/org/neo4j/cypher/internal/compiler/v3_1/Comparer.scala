@@ -29,15 +29,22 @@ trait Comparer extends CypherSerializer {
 
   import Comparer._
 
-  def compare(l: Any, r: Any)(implicit qtx: QueryState): Int = {
+  def compare(operator: Option[String], l: Any, r: Any)(implicit qtx: QueryState): Int = {
     try {
       if ((isString(l) && isString(r)) || (isNumber(l) && isNumber(r)) || (isBoolean(l) && isBoolean(r)))
         CypherOrdering.DEFAULT.compare(l, r)
       else
-        throw new IncomparableValuesException(serializeWithType(l), serializeWithType(r))
+        throw new IncomparableValuesException(operator.map(reason(l, r)), serializeWithType(l), serializeWithType(r))
     } catch {
       case _: IllegalArgumentException =>
-        throw new IncomparableValuesException(serializeWithType(l), serializeWithType(r))
+        throw new IncomparableValuesException(operator.map(reason(l, r)), serializeWithType(l), serializeWithType(r))
+    }
+  }
+
+  private def reason(l: Any, r: Any)(operator: String): String = {
+    (l, r) match {
+      case (_: List[_], _: List[_]) => s"Cannot perform $operator on lists, consider using UNWIND."
+      case _ => s"Cannot perform $operator on mixed types."
     }
   }
 }

@@ -97,20 +97,19 @@ public class SetInitialPasswordCommand implements AdminCommand
     @Override
     public void execute( String[] args ) throws IncorrectUsage, CommandFailed
     {
-        Args parsedArgs = validateArgs(args);
+        Args parsedArgs = validateArgs( args );
 
         try
         {
             setPassword( parsedArgs.orphans().get( 0 ) );
         }
-        catch ( IncorrectUsage e )
+        catch ( IncorrectUsage | CommandFailed e )
         {
             throw e;
         }
         catch ( Throwable throwable )
         {
-            throw new CommandFailed( "Failed to execute 'set-initial-password' command: " + throwable.getMessage(),
-                    new RuntimeException( throwable ) );
+            throw new CommandFailed( throwable.getMessage(), new RuntimeException( throwable ) );
         }
     }
 
@@ -133,8 +132,7 @@ public class SetInitialPasswordCommand implements AdminCommand
         Config config = loadNeo4jConfig();
         if ( realUsersExist( config ) )
         {
-            outsideWorld.stdOutLine( "Warning: Initial password was not set because live Neo4j-users were " +
-                    "detected, so the initial password has no effect." );
+            throw new CommandFailed( "initial password was not set because live Neo4j-users were detected." );
         }
         else
         {

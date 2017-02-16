@@ -115,6 +115,10 @@ public class FailureStorage
         File failureFile = failureFile();
         try ( StoreChannel channel = fs.open( failureFile, "rw" ) )
         {
+            byte[] existingData = new byte[(int) channel.size()];
+            channel.read( ByteBuffer.wrap( existingData ) );
+            channel.position( lengthOf( existingData ) );
+
             byte[] data = UTF8.encode( failure );
             channel.write( ByteBuffer.wrap( data, 0, Math.min( data.length, MAX_FAILURE_SIZE ) ) );
 
@@ -135,7 +139,6 @@ public class FailureStorage
         {
             byte[] data = new byte[(int) channel.size()];
             int readData = channel.read( ByteBuffer.wrap( data ) );
-            channel.close();
             return readData <= 0 ? "" : UTF8.decode( withoutZeros( data ) );
         }
     }
@@ -149,7 +152,7 @@ public class FailureStorage
 
     private static int lengthOf( byte[] data )
     {
-        for (int i = 0; i < data.length; i++ )
+        for ( int i = 0; i < data.length; i++ )
         {
             if ( 0 == data[i] )
             {

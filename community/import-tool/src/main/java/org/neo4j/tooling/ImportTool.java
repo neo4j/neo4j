@@ -219,7 +219,10 @@ public class ImportTool
                         + "Examples of supported config are:\n"
                         + GraphDatabaseSettings.dense_node_threshold.name() + "\n"
                         + GraphDatabaseSettings.string_block_size.name() + "\n"
-                        + GraphDatabaseSettings.array_block_size.name(), true );
+                        + GraphDatabaseSettings.array_block_size.name(), true ),
+        LEGACY_STYLE_QUOTING( "legacy-style-quoting", Configuration.DEFAULT_LEGACY_STYLE_QUOTING,
+                "<true/false>",
+                "Whether or not backslash-escaped quote e.g. \\\" is interpreted as inner quote." );
 
         private final String key;
         private final Object defaultValue;
@@ -780,6 +783,7 @@ public class ImportTool
         final Boolean multiLineFields = args.getBoolean( Options.MULTILINE_FIELDS.key(), null );
         final Boolean emptyStringsAsNull = args.getBoolean( Options.IGNORE_EMPTY_STRINGS.key(), null );
         final Boolean trimStrings = args.getBoolean( Options.TRIM_STRINGS.key(), null);
+        final Boolean legacyStyleQuoting = args.getBoolean( Options.LEGACY_STYLE_QUOTING.key(), null );
         return new Configuration.Default()
         {
             @Override
@@ -832,8 +836,16 @@ public class ImportTool
             public boolean trimStrings()
             {
                 return trimStrings != null
-                        ? trimStrings.booleanValue()
-                        : defaultConfiguration.trimStrings();
+                       ? trimStrings.booleanValue()
+                       : defaultConfiguration.trimStrings();
+            }
+
+            @Override
+            public boolean legacyStyleQuoting()
+            {
+                return legacyStyleQuoting != null
+                        ? legacyStyleQuoting.booleanValue()
+                        : defaultConfiguration.legacyStyleQuoting();
             }
         };
     }
