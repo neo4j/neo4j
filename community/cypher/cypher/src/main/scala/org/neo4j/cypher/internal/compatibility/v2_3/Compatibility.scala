@@ -64,7 +64,7 @@ trait Compatibility {
   def produceParsedQuery(preParsedQuery: PreParsedQuery, tracer: CompilationPhaseTracer, preParsingNotifications: Set[org.neo4j.graphdb.Notification]) = {
     import org.neo4j.cypher.internal.compatibility.v2_3.helpers.as2_3
     val notificationLogger = new RecordingNotificationLogger
-    val preparedQueryForV_2_3 =
+    val preparedQueryForV_2_3: Try[PreparedQuery] =
       Try(compiler.prepareQuery(preParsedQuery.statement,
         preParsedQuery.rawStatement,
         notificationLogger,
@@ -81,7 +81,7 @@ trait Compatibility {
         (new ExecutionPlanWrapper(planImpl, preParsingNotifications), extractedParameters)
       }
 
-      override protected val trier: Try[PreparedQuery] = preparedQueryForV_2_3
+      override protected val trier = preparedQueryForV_2_3
     }
   }
 

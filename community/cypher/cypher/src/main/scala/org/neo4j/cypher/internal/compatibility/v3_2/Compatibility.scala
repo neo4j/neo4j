@@ -76,7 +76,7 @@ trait Compatibility[C <: CompilerContext] {
         (new ExecutionPlanWrapper(planImpl, preParsingNotifications), extractedParameters)
       }
 
-      override protected val trier: Try[BaseState] = preparedSyntacticQueryForV_3_2
+      override protected val trier = preparedSyntacticQueryForV_3_2
     }
   }
 
