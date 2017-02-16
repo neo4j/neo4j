@@ -33,7 +33,13 @@ leverage not only data but also its relationships.
 
 # Create neo4j user if it doesn't exist.
 if ! id neo4j > /dev/null 2>&1 ; then
-  useradd --system --no-user-group --home %{neo4jhome} --shell /bin/bash neo4j
+  useradd --system --user-group --home %{neo4jhome} --shell /bin/bash neo4j
+else
+  # Make sure a neo4j group exists in case user is upgrading
+  # from older version where no such group was created
+  groupadd --system --force neo4j
+  # Make sure neo4j user's primary group is neo4j
+  usermod --gid neo4j neo4j > /dev/null 2>&1
 fi
 
 if [ $1 -gt 1 ]; then
@@ -133,17 +139,17 @@ install -m 0644 manpages/* %{buildroot}/%{_mandir}/man1
 %dir %{neo4jhome}/plugins
 %dir %{neo4jhome}/import
 %dir %{neo4jhome}/data/databases
-%attr(-,neo4j,root) %dir %{_localstatedir}/run/neo4j
+%attr(-,neo4j,neo4j) %dir %{_localstatedir}/run/neo4j
 
 %{_datadir}/neo4j
 %{_bindir}/*
-%attr(-,neo4j,root) %{neo4jhome}
-%attr(-,neo4j,root) %dir %{_localstatedir}/log/neo4j
+%attr(-,neo4j,neo4j) %{neo4jhome}
+%attr(-,neo4j,neo4j) %dir %{_localstatedir}/log/neo4j
 /lib/systemd/system/neo4j.service
 %{_sysconfdir}/init.d/neo4j
 
 %config(noreplace) %{_sysconfdir}/default/neo4j
-%attr(-,neo4j,root) %config(noreplace) %{_sysconfdir}/neo4j
+%attr(-,neo4j,neo4j) %config(noreplace) %{_sysconfdir}/neo4j
 
 %doc %{_mandir}/man1/*
 %doc %{_datadir}/doc/neo4j/README.txt
