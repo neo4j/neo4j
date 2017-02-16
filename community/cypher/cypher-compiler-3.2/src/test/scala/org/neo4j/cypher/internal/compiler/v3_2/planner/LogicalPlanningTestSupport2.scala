@@ -96,6 +96,16 @@ trait LogicalPlanningTestSupport2 extends CypherTestSupport with AstConstruction
       override def statistics: GraphStatistics =
         config.graphStatistics
 
+      override def indexesGetForLabel(labelId: Int): Iterator[IndexDescriptor] = {
+        val label = config.labelsById(labelId)
+        config.indexes.filter(p => p._1 == label).flatMap(p => getIndexRule(p._1, p._2)).iterator
+      }
+
+      override def uniqueIndexesGetForLabel(labelId: Int): Iterator[IndexDescriptor] = {
+        val label = config.labelsById(labelId)
+        config.uniqueIndexes.filter(p => p._1 == label).flatMap(p => getUniqueIndexRule(p._1, p._2)).iterator
+      }
+
       override def getUniqueIndexRule(labelName: String, propertyKeys: Seq[String]): Option[IndexDescriptor] =
         if (config.uniqueIndexes((labelName, propertyKeys)))
           Some(IndexDescriptor(

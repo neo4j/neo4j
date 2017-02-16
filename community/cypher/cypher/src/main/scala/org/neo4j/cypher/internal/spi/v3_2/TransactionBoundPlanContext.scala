@@ -43,7 +43,10 @@ import scala.collection.JavaConverters._
 class TransactionBoundPlanContext(tc: TransactionalContextWrapper, logger: InternalNotificationLogger)
   extends TransactionBoundTokenContext(tc.statement) with PlanContext with IndexDescriptorCompatibility {
 
-  @Deprecated
+  def indexesGetForLabel(labelId: Int): Iterator[IndexDescriptor] = {
+    tc.statement.readOperations().indexesGetForLabel(labelId).asScala.flatMap(getOnlineIndex)
+  }
+
   def getIndexRule(labelName: String, propertyKeys: Seq[String]): Option[IndexDescriptor] = evalOrNone {
     val descriptor = toNodePropertyDescriptor(tc, labelName, propertyKeys)
     getOnlineIndex(tc.statement.readOperations().indexGetForLabelAndPropertyKey(descriptor))
@@ -56,6 +59,11 @@ class TransactionBoundPlanContext(tc: TransactionalContextWrapper, logger: Inter
     val onlineIndexDescriptors = indexDescriptors.flatMap(getOnlineIndex)
 
     onlineIndexDescriptors.nonEmpty
+  }
+
+  def uniqueIndexesGetForLabel(labelId: Int): Iterator[IndexDescriptor] = {
+    // here we do not need to use getOnlineIndex method because uniqueness constraint creation is synchronous
+    tc.statement.readOperations().uniqueIndexesGetForLabel(labelId).asScala.map(kernelToCypher)
   }
 
   def getUniqueIndexRule(labelName: String, propertyKeys: Seq[String]): Option[IndexDescriptor] = evalOrNone {

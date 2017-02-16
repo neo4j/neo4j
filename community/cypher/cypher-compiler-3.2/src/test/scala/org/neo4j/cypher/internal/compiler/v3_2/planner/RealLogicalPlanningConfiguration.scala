@@ -49,6 +49,7 @@ case class RealLogicalPlanningConfiguration()
   override def uniqueIndexes: Set[(String, Seq[String])] = Set.empty
   override def labelCardinality: Map[String, Cardinality] = Map.empty
   override def knownLabels: Set[String] = Set.empty
+  override def labelsById: Map[Int, String] = Map.empty
 
   override def qg: QueryGraph = ???
 }

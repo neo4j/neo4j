@@ -113,7 +113,42 @@ class IndexSeekLeafPlannerTest extends CypherFunSuite with LogicalPlanningTestSu
     }
   }
 
-  ignore("index scan when there is a composite index on many properties") {
+  test("index scan when there is a composite index on two properties in the presence of other nodes, labels and properties") {
+    new given {
+      val litFoo: Expression = StringLiteral("foo") _
+
+      // MATCH (n:Awesome:Sauce), (m:Awesome)
+      // WHERE n.prop = 42 AND n.prop2 = 6 AND n.prop3 = "foo" AND m.prop = "foo"
+      qg = queryGraph(
+        // node 'n'
+        HasLabels(varFor("n"), Seq(LabelName("Awesome") _)) _,
+        HasLabels(varFor("n"), Seq(LabelName("Sauce") _)) _,
+        In(Property(varFor("n"), PropertyKeyName("prop") _) _, ListLiteral(Seq(lit42)) _) _,
+        In(Property(varFor("n"), PropertyKeyName("prop2") _) _, ListLiteral(Seq(lit6)) _) _,
+        In(Property(varFor("n"), PropertyKeyName("prop3") _) _, ListLiteral(Seq(litFoo)) _) _,
+        // node 'm'
+        HasLabels(varFor("m"), Seq(LabelName("Awesome") _)) _,
+        In(Property(varFor("m"), PropertyKeyName("prop") _) _, ListLiteral(Seq(litFoo)) _) _
+      )
+
+      // CREATE INDEX ON :Awesome(prop,prop2)
+      indexOn("Awesome", Seq("prop", "prop2"))
+
+    }.withLogicalPlanningContext { (cfg, ctx) =>
+
+      // when
+      val resultPlans = indexSeekLeafPlanner(cfg.qg)(ctx)
+
+      // then
+      resultPlans should beLike {
+        case Seq(NodeIndexSeek(`idName`, LabelToken("Awesome", _),
+        Seq(PropertyKeyToken("prop", _), PropertyKeyToken("prop2", _)),
+        ManyQueryExpression(ListLiteral(Seq(`lit42`, `lit6`))), _)) => ()
+      }
+    }
+  }
+
+  test("index scan when there is a composite index on many properties") {
     val propertyNames: Seq[String] = (0 to 10).map(n => s"prop$n")
     val properties: Seq[Expression] = propertyNames.map { n =>
       val prop: Expression = Property(varFor("n"), PropertyKeyName(n) _) _
@@ -142,10 +177,17 @@ class IndexSeekLeafPlannerTest extends CypherFunSuite with LogicalPlanningTestSu
       // then
       resultPlans should beLike {
         case Seq(NodeIndexSeek(`idName`, LabelToken("Awesome", _),
-        Seq(_),
-        ManyQueryExpression(ListLiteral(_)), _)) => ()
+        props@Seq(_*),
+        ManyQueryExpression(ListLiteral(vals@Seq(_*))), _))
+          if assertPropsAndValuesMatch(propertyNames, values, props, vals) => ()
       }
     }
+  }
+
+  private def assertPropsAndValuesMatch(expectedProps: Seq[String], expectedVals: Seq[Expression], foundProps: Seq[PropertyKeyToken], foundVals: Seq[Expression]) = {
+    val expected: Map[String, Expression] = expectedProps.zip(expectedVals).toMap
+    val found: Map[String, Expression] = foundProps.map(_.name).zip(foundVals).toMap
+    found.equals(expected)
   }
 
   test("plans index seeks when variable exists as an argument") {

@@ -58,6 +58,7 @@ object DbStructureLogicalPlanningConfiguration {
 
       override val indexes: Set[(String, Seq[String])] = indexSet(lookup.knownIndices())
       override val knownLabels: Set[String] = resolvedLabels.keys.toSet
+      override val labelsById: Map[Int, String] = resolvedLabels.map(pair => (pair._2.id -> pair._1)).toMap
       override val uniqueIndexes: Set[(String, Seq[String])] = indexSet(lookup.knownUniqueIndices())
     }
   }

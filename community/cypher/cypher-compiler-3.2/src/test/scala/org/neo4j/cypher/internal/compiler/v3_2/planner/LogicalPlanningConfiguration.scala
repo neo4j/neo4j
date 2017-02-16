@@ -36,6 +36,7 @@ trait LogicalPlanningConfiguration {
   def uniqueIndexes: Set[(String, Seq[String])]
   def labelCardinality: Map[String, Cardinality]
   def knownLabels: Set[String]
+  def labelsById: Map[Int, String]
   def qg: QueryGraph
 
   protected def mapCardinality(pf: PartialFunction[PlannerQuery, Double]): PartialFunction[PlannerQuery, Cardinality] = pf.andThen(Cardinality.apply)
@@ -51,6 +52,7 @@ class DelegatingLogicalPlanningConfiguration(val parent: LogicalPlanningConfigur
   override def uniqueIndexes = parent.uniqueIndexes
   override def labelCardinality = parent.labelCardinality
   override def knownLabels = parent.knownLabels
+  override def labelsById = parent.labelsById
   override def qg = parent.qg
 }
 

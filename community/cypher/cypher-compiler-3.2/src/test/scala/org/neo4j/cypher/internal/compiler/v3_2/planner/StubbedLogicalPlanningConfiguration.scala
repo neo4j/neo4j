@@ -42,6 +42,8 @@ class StubbedLogicalPlanningConfiguration(parent: LogicalPlanningConfiguration)
   var indexes: Set[(String, Seq[String])] = Set.empty
   var uniqueIndexes: Set[(String, Seq[String])] = Set.empty
 
+  lazy val labelsById: Map[Int, String] = (indexes ++ uniqueIndexes).map(_._1).zipWithIndex.map(_.swap).toMap
+
   def indexOn(label: String, property: String) {
     indexes = indexes + (label -> Seq(property))
   }
