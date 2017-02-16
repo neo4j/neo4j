@@ -100,12 +100,10 @@ public class IndexEntryUpdate
         {
             return false;
         }
-        // Probably incorrect - comparing Object[] arrays with Arrays.equals
         if ( !Arrays.equals( before, that.before ) )
         {
             return false;
         }
-        // Probably incorrect - comparing Object[] arrays with Arrays.equals
         if ( !Arrays.equals( values, that.values ) )
         {
             return false;

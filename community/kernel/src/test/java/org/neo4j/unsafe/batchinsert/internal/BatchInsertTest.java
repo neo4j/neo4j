@@ -19,7 +19,6 @@
  */
 package org.neo4j.unsafe.batchinsert.internal;
 
-import org.hamcrest.Matchers;
 import org.junit.After;
 import org.junit.AfterClass;
 import org.junit.BeforeClass;
@@ -62,7 +61,6 @@ import org.neo4j.helpers.collection.Pair;
 import org.neo4j.io.pagecache.IOLimiter;
 import org.neo4j.kernel.api.index.IndexConfiguration;
 import org.neo4j.kernel.api.index.IndexEntryUpdate;
-import org.neo4j.kernel.api.schema.IndexDescriptor;
 import org.neo4j.kernel.api.index.IndexPopulator;
 import org.neo4j.kernel.api.index.PreexistingIndexEntryConflictException;
 import org.neo4j.kernel.api.index.PropertyAccessor;
@@ -71,6 +69,7 @@ import org.neo4j.kernel.api.labelscan.AllEntriesLabelScanReader;
 import org.neo4j.kernel.api.labelscan.LabelScanStore;
 import org.neo4j.kernel.api.labelscan.LabelScanWriter;
 import org.neo4j.kernel.api.labelscan.NodeLabelUpdate;
+import org.neo4j.kernel.api.schema.IndexDescriptor;
 import org.neo4j.kernel.api.schema_new.index.NewIndexDescriptor;
 import org.neo4j.kernel.api.schema_new.index.NewIndexDescriptorFactory;
 import org.neo4j.kernel.extension.KernelExtensionFactory;
@@ -106,9 +105,10 @@ import org.neo4j.unsafe.batchinsert.BatchInserter;
 import org.neo4j.unsafe.batchinsert.BatchInserters;
 import org.neo4j.unsafe.batchinsert.BatchRelationship;
 
+import static java.lang.Integer.parseInt;
+import static java.util.Collections.singletonList;
 import static org.hamcrest.CoreMatchers.equalTo;
 import static org.hamcrest.Matchers.arrayContaining;
-import static org.hamcrest.Matchers.contains;
 import static org.hamcrest.Matchers.emptyArray;
 import static org.hamcrest.Matchers.is;
 import static org.junit.Assert.assertArrayEquals;
@@ -123,10 +123,6 @@ import static org.mockito.Mockito.mock;
 import static org.mockito.Mockito.verify;
 import static org.mockito.Mockito.verifyNoMoreInteractions;
 import static org.mockito.Mockito.when;
-
-import static java.lang.Integer.parseInt;
-import static java.util.Collections.singletonList;
-
 import static org.neo4j.graphdb.Label.label;
 import static org.neo4j.helpers.collection.Iterables.addToCollection;
 import static org.neo4j.helpers.collection.Iterables.map;
@@ -146,6 +142,10 @@ import static org.neo4j.test.mockito.matcher.Neo4jMatchers.inTx;
 public class BatchInsertTest
 {
     private final int denseNodeThreshold;
+    // This is the assumed internal index descriptor based on knowledge of what ids get assigned
+    private static final NewIndexDescriptor internalIndex = NewIndexDescriptorFactory.forLabel( 0, 0 );
+    private static final NewIndexDescriptor internalUniqueIndex = NewIndexDescriptorFactory.uniqueForLabel( 0, 0 );
+
 
     @Parameterized.Parameters
     public static Collection<Integer> data()
@@ -939,8 +939,7 @@ public class BatchInsertTest
         verify( provider ).getPopulator( anyLong(), any( IndexDescriptor.class ), any( IndexConfiguration.class ),
                 any( IndexSamplingConfig.class ) );
         verify( populator ).create();
-        verify( populator ).add( singletonList( IndexEntryUpdate.add( nodeId, any( NewIndexDescriptor.class)
-                , "Jakewins" ) ) );
+        verify( populator ).add( singletonList( IndexEntryUpdate.add( nodeId, internalIndex, "Jakewins" ) ) );
         verify( populator ).verifyDeferredConstraints( any( PropertyAccessor.class ) );
         verify( populator ).close( true );
         verify( provider ).stop();
@@ -975,7 +974,8 @@ public class BatchInsertTest
         verify( provider ).getPopulator( anyLong(), any( IndexDescriptor.class ), any( IndexConfiguration.class ),
                 any( IndexSamplingConfig.class ) );
         verify( populator ).create();
-        verify( populator ).add( singletonList( IndexEntryUpdate.add( nodeId, any(), "Jakewins" ) ) );
+        verify( populator ).add( singletonList( IndexEntryUpdate.add( nodeId, internalUniqueIndex,
+                "Jakewins" ) ) );
         verify( populator ).verifyDeferredConstraints( any( PropertyAccessor.class ) );
         verify( populator ).close( true );
         verify( provider ).stop();
@@ -1005,9 +1005,6 @@ public class BatchInsertTest
         inserter.shutdown();
 
         // THEN
-        // This is the assumed internal index descriptor based on knowledge of what ids get assigned
-        NewIndexDescriptor internalIndex = NewIndexDescriptorFactory.forLabel( 0, 0 );
-
         verify( provider ).init();
         verify( provider ).start();
         verify( provider ).getPopulator( anyLong(), any( IndexDescriptor.class ), any( IndexConfiguration.class ),
