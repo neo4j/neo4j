@@ -41,9 +41,9 @@ enum ValueEncoding
     Number
             {
                 @Override
-                String key()
+                String key( int propertyNumber )
                 {
-                    return "number";
+                    return propertyNumber + "number";
                 }
 
                 @Override
@@ -68,16 +68,17 @@ enum ValueEncoding
                 Query encodeQuery( Object value )
                 {
                     Double doubleValue = ((Number) value).doubleValue();
-                    return new ConstantScoreQuery( NumericRangeQuery.newDoubleRange( key(), doubleValue, doubleValue,
+                    return new ConstantScoreQuery( NumericRangeQuery.newDoubleRange( key( 0 ), doubleValue,
+                            doubleValue,
                             true, true ) );
                 }
             },
     Array
             {
                 @Override
-                String key()
+                String key( int propertyNumber )
                 {
-                    return "array";
+                    return propertyNumber + "array";
                 }
 
                 @Override
@@ -101,15 +102,16 @@ enum ValueEncoding
                 @Override
                 Query encodeQuery( Object value )
                 {
-                    return new ConstantScoreQuery( new TermQuery( new Term( key(), ArrayEncoder.encode( value ) ) ) );
+                    return new ConstantScoreQuery( new TermQuery( new Term( key( 0 ), ArrayEncoder.encode( value ) )
+                    ) );
                 }
             },
     Bool
             {
                 @Override
-                String key()
+                String key( int propertyNumber )
                 {
-                    return "bool";
+                    return propertyNumber + "bool";
                 }
 
                 @Override
@@ -133,15 +135,15 @@ enum ValueEncoding
                 @Override
                 Query encodeQuery( Object value )
                 {
-                    return new ConstantScoreQuery( new TermQuery( new Term( key(), value.toString() ) ) );
+                    return new ConstantScoreQuery( new TermQuery( new Term( key( 0 ), value.toString() ) ) );
                 }
             },
     String
             {
                 @Override
-                String key()
+                String key( int propertyNumber )
                 {
-                    return "string";
+                    return propertyNumber + "string";
                 }
 
                 @Override
@@ -166,13 +168,13 @@ enum ValueEncoding
                 @Override
                 Query encodeQuery( Object value )
                 {
-                    return new ConstantScoreQuery( new TermQuery( new Term( key(), value.toString() ) ) );
+                    return new ConstantScoreQuery( new TermQuery( new Term( key( 0 ), value.toString() ) ) );
                 }
             };
 
     private static final ValueEncoding[] AllEncodings = values();
 
-    abstract String key();
+    abstract String key( int propertyNumber );
 
     abstract boolean canEncode( Object value );
 
@@ -186,7 +188,7 @@ enum ValueEncoding
     {
         for ( ValueEncoding encoding : AllEncodings )
         {
-            if ( encoding.key().equals( key ) )
+            if ( encoding.key( 0 ).equals( key ) )
             {
                 return encoding;
             }

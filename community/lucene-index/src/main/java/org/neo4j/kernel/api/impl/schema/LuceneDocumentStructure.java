@@ -86,7 +86,7 @@ public class LuceneDocumentStructure
     public static String encodedStringValue( Object value )
     {
         ValueEncoding encoding = ValueEncoding.forValue( value );
-        Field field = encoding.encodeField( encoding.key(), value );
+        Field field = encoding.encodeField( encoding.key( 0 ), value );
         return field.stringValue();
     }
 
@@ -109,7 +109,7 @@ public class LuceneDocumentStructure
     {
         Double min = lower != null ? lower.doubleValue() : null;
         Double max = upper != null ? upper.doubleValue() : null;
-        return NumericRangeQuery.newDoubleRange( ValueEncoding.Number.key(), min, max, true, true );
+        return NumericRangeQuery.newDoubleRange( ValueEncoding.Number.key( 0 ), min, max, true, true );
     }
 
     public static Query newRangeSeekByStringQuery( String lower, boolean includeLower,
@@ -117,7 +117,7 @@ public class LuceneDocumentStructure
     {
         boolean includeLowerBoundary = StringUtils.EMPTY.equals( lower ) || includeLower;
         boolean includeUpperBoundary = StringUtils.EMPTY.equals( upper ) || includeUpper;
-        TermRangeQuery termRangeQuery = TermRangeQuery.newStringRange( ValueEncoding.String.key(), lower, upper,
+        TermRangeQuery termRangeQuery = TermRangeQuery.newStringRange( ValueEncoding.String.key( 0 ), lower, upper,
                 includeLowerBoundary, includeUpperBoundary );
 
         if ( (includeLowerBoundary != includeLower) || (includeUpperBoundary != includeUpper) )
@@ -126,12 +126,12 @@ public class LuceneDocumentStructure
             builder.setDisableCoord(true);
             if ( includeLowerBoundary != includeLower )
             {
-                builder.add( new TermQuery( new Term( ValueEncoding.String.key(), lower ) ), BooleanClause.Occur
+                builder.add( new TermQuery( new Term( ValueEncoding.String.key( 0 ), lower ) ), BooleanClause.Occur
                         .MUST_NOT );
             }
             if ( includeUpperBoundary != includeUpper )
             {
-                builder.add( new TermQuery( new Term( ValueEncoding.String.key(), upper ) ), BooleanClause.Occur
+                builder.add( new TermQuery( new Term( ValueEncoding.String.key( 0 ), upper ) ), BooleanClause.Occur
                         .MUST_NOT );
             }
             builder.add( termRangeQuery, BooleanClause.Occur.FILTER );
@@ -143,14 +143,14 @@ public class LuceneDocumentStructure
     public static Query newWildCardStringQuery( String searchFor )
     {
         String searchTerm = QueryParser.escape( searchFor );
-        Term term = new Term( ValueEncoding.String.key(), "*" + searchTerm + "*" );
+        Term term = new Term( ValueEncoding.String.key( 0 ), "*" + searchTerm + "*" );
 
         return new WildcardQuery( term );
     }
 
     public static Query newRangeSeekByPrefixQuery( String prefix )
     {
-        Term term = new Term( ValueEncoding.String.key(), prefix );
+        Term term = new Term( ValueEncoding.String.key( 0 ), prefix );
         return USE_LUCENE_STANDARD_PREFIX_QUERY ? new PrefixQuery( term ) :
                                      new PrefixMultiTermsQuery( term );
     }
@@ -158,7 +158,7 @@ public class LuceneDocumentStructure
     public static Query newSuffixStringQuery( String suffix )
     {
         String searchTerm = QueryParser.escape( suffix );
-        Term term = new Term( ValueEncoding.String.key(), "*" + searchTerm );
+        Term term = new Term( ValueEncoding.String.key( 0 ), "*" + searchTerm );
 
         return new WildcardQuery( term );
     }
@@ -180,7 +180,7 @@ public class LuceneDocumentStructure
      * {@link TermsEnum} over all terms for the given field that were created using {@link ValueEncoding}.
      *
      * @param terms the terms to be filtered
-     * @param fieldKey the corresponding {@link ValueEncoding#key() field key}
+     * @param fieldKey the corresponding {@link ValueEncoding#key(int) field key}
      * @return terms enum over all inserted terms
      * @throws IOException if it is not possible to obtain {@link TermsEnum}
      * @see NumericRangeQuery
@@ -267,26 +267,13 @@ public class LuceneDocumentStructure
             idValueField.setLongValue( id );
         }
 
-        private void setValue( Object value )
-        {
-            removeAllValueFields();
-            ValueEncoding encoding = ValueEncoding.forValue( value );
-            Field reusableField = getFieldWithValue( encoding, value );
-            document.add( reusableField );
-        }
-
         private void setValues( Object... values )
         {
-            if( values.length == 1 )
-            {
-                setValue( values[0] );
-                return;
-            }
             removeAllValueFields();
             for ( int i = 0; i < values.length; i++ )
             {
                 ValueEncoding encoding = ValueEncoding.forValue( values[i] );
-                Field reusableField = getFieldWithValue( i, "composite", encoding, values[i] );
+                Field reusableField = getFieldWithValue( i, encoding, values[i] );
                 document.add( reusableField );
             }
         }
@@ -305,21 +292,6 @@ public class LuceneDocumentStructure
             }
         }
 
-        private Field getFieldWithValue( ValueEncoding encoding, Object value )
-        {
-            Field reusableField = valueFields.get( encoding );
-            if ( reusableField == null )
-            {
-                reusableField = encoding.encodeField( encoding.key(), value );
-                valueFields.put( encoding, reusableField );
-            }
-            else
-            {
-                encoding.setFieldValue( value, reusableField );
-            }
-            return reusableField;
-        }
-
         private Map<ValueEncoding,Field> getValueFields( int compositeKey )
         {
             while ( compositeValueFields.size() <= compositeKey )
@@ -329,13 +301,13 @@ public class LuceneDocumentStructure
             return compositeValueFields.get( compositeKey );
         }
 
-        private Field getFieldWithValue( int compositeKey, String name, ValueEncoding encoding, Object value )
+        private Field getFieldWithValue( int propertyNumber, ValueEncoding encoding, Object value )
         {
-            Map<ValueEncoding,Field> compositeValueField = getValueFields( compositeKey );
+            Map<ValueEncoding,Field> compositeValueField = getValueFields( propertyNumber );
             Field reusableField = compositeValueField.get( encoding );
             if ( reusableField == null )
             {
-                reusableField = encoding.encodeField( name, value );
+                reusableField = encoding.encodeField( encoding.key( propertyNumber ), value );
                 compositeValueField.put( encoding, reusableField );
             }
             else

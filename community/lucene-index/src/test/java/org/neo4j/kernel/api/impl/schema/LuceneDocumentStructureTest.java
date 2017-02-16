@@ -55,7 +55,7 @@ public class LuceneDocumentStructureTest
         String longestString = RandomStringUtils.randomAscii( IndexWriter.MAX_TERM_LENGTH );
         Document document = LuceneDocumentStructure
                 .documentRepresentingProperties( (long) 123, longestString );
-        assertEquals( longestString, document.getField( String.key() ).stringValue() );
+        assertEquals( longestString, document.getField( String.key( 0 ) ).stringValue() );
     }
 
     @Test
@@ -66,7 +66,7 @@ public class LuceneDocumentStructureTest
 
         // then
         assertEquals( "123", document.get( NODE_ID_KEY ) );
-        assertEquals( "hello", document.get( String.key() ) );
+        assertEquals( "hello", document.get( String.key( 0 ) ) );
     }
 
     @Test
@@ -78,22 +78,8 @@ public class LuceneDocumentStructureTest
 
         // then
         assertEquals( "123", document.get( NODE_ID_KEY ) );
-        assertThat( document.getValues( "composite" ), equalTo( values ) );
-    }
-
-    @Test
-    public void shouldBuildDocumentRepresentingMultipleIntProperties() throws Exception
-    {
-        // given
-        Integer[] values = new Integer[]{456, 789};
-        Document document = LuceneDocumentStructure.documentRepresentingProperties( 123, values );
-
-        // then
-        assertEquals( "123", document.get( NODE_ID_KEY ) );
-        for ( int i = 0; i < values.length; i++ )
-        {
-            assertThat( document.getFields( "composite" )[i].numericValue(), equalTo( new Double( values[i] ) ) );
-        }
+        assertThat( document.get( String.key( 0 ) ), equalTo( values[0] ) );
+        assertThat( document.get( String.key( 1 ) ), equalTo( values[1] ) );
     }
 
     @Test
@@ -105,8 +91,8 @@ public class LuceneDocumentStructureTest
 
         // then
         assertEquals( "123", document.get( NODE_ID_KEY ) );
-        assertThat( document.getFields( "composite" )[0].stringValue(), equalTo( "hello" ) );
-        assertThat( document.getFields( "composite" )[1].numericValue(), equalTo( new Double(789) ) );
+        assertThat( document.get( String.key( 0 ) ), equalTo( "hello" ) );
+        assertThat( document.get( Number.key( 1 ) ), equalTo( "789.0" ) );
     }
 
     @Test
@@ -117,7 +103,7 @@ public class LuceneDocumentStructureTest
 
         // then
         assertEquals( "123", document.get( NODE_ID_KEY ) );
-        assertEquals( "true", document.get( Bool.key() ) );
+        assertEquals( "true", document.get( Bool.key( 0 ) ) );
     }
 
     @Test
@@ -128,7 +114,7 @@ public class LuceneDocumentStructureTest
 
         // then
         assertEquals( "123", document.get( NODE_ID_KEY ) );
-        assertEquals( 12.0, document.getField( Number.key() ).numericValue().doubleValue() );
+        assertEquals( 12.0, document.getField( Number.key( 0 ) ).numericValue().doubleValue() );
     }
 
     @Test
@@ -140,7 +126,7 @@ public class LuceneDocumentStructureTest
 
         // then
         assertEquals( "123", document.get( NODE_ID_KEY ) );
-        assertEquals( "D1.0|2.0|3.0|", document.get( Array.key() ) );
+        assertEquals( "D1.0|2.0|3.0|", document.get( Array.key( 0 ) ) );
     }
 
     @Test
