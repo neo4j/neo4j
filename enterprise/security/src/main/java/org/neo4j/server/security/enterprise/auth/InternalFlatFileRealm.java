@@ -242,15 +242,16 @@ public class InternalFlatFileRealm extends AuthorizingRealm implements RealmLife
 
             if ( numberOfRoles() == 0 )
             {
-                for ( String role : PredefinedRolesBuilder.roles.keySet() )
-                {
-                    newRole( role );
-                }
-
                 if ( newAdmins.isEmpty() )
                 {
                     Set<String> usernames = userRepository.getAllUsernames();
-                    if ( defaultAdminRepository.numberOfUsers() > 0 )
+                    if ( defaultAdminRepository.numberOfUsers() > 1 )
+                    {
+                        throw new InvalidArgumentsException(
+                                "No roles defined, and multiple users defined as default admin user. Please use `" +
+                                        SetDefaultAdminCommand.COMMAND_NAME + "` to select a valid admin." );
+                    }
+                    else if ( defaultAdminRepository.numberOfUsers() == 1 )
                     {
                         // We currently support only one default admin
                         String newAdminUsername = defaultAdminRepository.getAllUsernames().iterator().next();
@@ -260,7 +261,7 @@ public class InternalFlatFileRealm extends AuthorizingRealm implements RealmLife
                                     "No roles defined, and default admin user '" + newAdminUsername + "' does not exist. " +
                                     "Please use `" + SetDefaultAdminCommand.COMMAND_NAME + "` to select a valid admin." );
                         }
-                        newAdmins.addAll( defaultAdminRepository.getAllUsernames() );
+                        newAdmins.add( newAdminUsername );
                     }
                     else if ( usernames.size() == 1 )
                     {
@@ -276,6 +277,11 @@ public class InternalFlatFileRealm extends AuthorizingRealm implements RealmLife
                                 "No roles defined, and cannot determine which user should be admin. " +
                                 "Please use `" + SetDefaultAdminCommand.COMMAND_NAME + "` to select an admin." );
                     }
+                }
+
+                for ( String role : PredefinedRolesBuilder.roles.keySet() )
+                {
+                    newRole( role );
                 }
             }
 
