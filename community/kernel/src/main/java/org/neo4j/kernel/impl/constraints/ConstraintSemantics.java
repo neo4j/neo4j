@@ -43,7 +43,8 @@ public interface ConstraintSemantics
     void validateNodePropertyExistenceConstraint( Iterator<Cursor<NodeItem>> allNodes, LabelSchemaDescriptor descriptor,
             BiPredicate<NodeItem,Integer> hasProperty ) throws CreateConstraintFailureException;
 
-    void validateExistenceConstraint( Cursor<RelationshipItem> allRels, RelationTypeSchemaDescriptor descriptor )
+    void validateRelationshipPropertyExistenceConstraint( Cursor<RelationshipItem> allRelationships,
+            RelationTypeSchemaDescriptor descriptor, BiPredicate<RelationshipItem,Integer> hasPropertyCheck )
             throws CreateConstraintFailureException;
 
     ConstraintDescriptor readConstraint( ConstraintRule rule );

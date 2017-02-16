@@ -219,6 +219,8 @@ public interface ReadOperations
 
     Cursor<PropertyItem> nodeGetProperties( NodeItem node );
 
+    Cursor<PropertyItem> relationshipGetProperties( RelationshipItem relationship );
+
     //===========================================
     //== SCHEMA OPERATIONS ======================
     //===========================================

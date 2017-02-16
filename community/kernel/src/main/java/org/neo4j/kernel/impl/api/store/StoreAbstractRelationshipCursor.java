@@ -20,15 +20,12 @@
 package org.neo4j.kernel.impl.api.store;
 
 import org.neo4j.cursor.Cursor;
-import org.neo4j.kernel.api.cursor.EntityItemHelper;
 import org.neo4j.kernel.impl.locking.Lock;
 import org.neo4j.kernel.impl.locking.LockService;
 import org.neo4j.kernel.impl.store.RecordCursor;
 import org.neo4j.kernel.impl.store.RecordCursors;
 import org.neo4j.kernel.impl.store.record.Record;
 import org.neo4j.kernel.impl.store.record.RelationshipRecord;
-import org.neo4j.kernel.impl.util.InstanceCache;
-import org.neo4j.storageengine.api.PropertyItem;
 import org.neo4j.storageengine.api.RelationshipItem;
 
 import static org.neo4j.kernel.impl.locking.LockService.NO_LOCK_SERVICE;
@@ -37,38 +34,17 @@ import static org.neo4j.kernel.impl.store.record.RecordLoad.FORCE;
 /**
  * Base cursor for relationships.
  */
-public abstract class StoreAbstractRelationshipCursor extends EntityItemHelper implements Cursor<RelationshipItem>, RelationshipItem
+public abstract class StoreAbstractRelationshipCursor implements Cursor<RelationshipItem>, RelationshipItem
 {
     protected final RelationshipRecord relationshipRecord;
     final RecordCursor<RelationshipRecord> relationshipRecordCursor;
     private final LockService lockService;
-
-    private final InstanceCache<StoreSinglePropertyCursor> singlePropertyCursor;
-    private final InstanceCache<StorePropertyCursor> allPropertyCursor;
-
     StoreAbstractRelationshipCursor( RelationshipRecord relationshipRecord, RecordCursors cursors,
             LockService lockService )
     {
         this.relationshipRecordCursor = cursors.relationship();
         this.relationshipRecord = relationshipRecord;
         this.lockService = lockService;
-
-        singlePropertyCursor = new InstanceCache<StoreSinglePropertyCursor>()
-        {
-            @Override
-            protected StoreSinglePropertyCursor create()
-            {
-                return new StoreSinglePropertyCursor( cursors, this );
-            }
-        };
-        allPropertyCursor = new InstanceCache<StorePropertyCursor>()
-        {
-            @Override
-            protected StorePropertyCursor create()
-            {
-                return new StorePropertyCursor( cursors, this );
-            }
-        };
     }
 
     @Override
@@ -108,7 +84,14 @@ public abstract class StoreAbstractRelationshipCursor extends EntityItemHelper i
                relationshipRecord.getSecondNode() : relationshipRecord.getFirstNode();
     }
 
-    private Lock shortLivedReadLock()
+    @Override
+    public long nextPropertyId()
+    {
+        return relationshipRecord.getNextProp();
+    }
+
+    @Override
+    public Lock lock()
     {
         Lock lock = lockService.acquireRelationshipLock( relationshipRecord.getId(), LockService.LockType.READ_LOCK );
         if ( lockService != NO_LOCK_SERVICE )
@@ -137,17 +120,5 @@ public abstract class StoreAbstractRelationshipCursor extends EntityItemHelper i
             }
         }
         return lock;
-    }
-
-    @Override
-    public Cursor<PropertyItem> properties()
-    {
-        return allPropertyCursor.get().init( relationshipRecord.getNextProp(), shortLivedReadLock() );
-    }
-
-    @Override
-    public Cursor<PropertyItem> property( int propertyKeyId )
-    {
-        return singlePropertyCursor.get().init( relationshipRecord.getNextProp(), propertyKeyId, shortLivedReadLock() );
     }
 }

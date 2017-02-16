@@ -283,6 +283,10 @@ public interface StoreReadLayer
 
     Cursor<PropertyItem> nodeGetProperty( StorageStatement statement, NodeItem node, int propertyKeyId );
 
+    Cursor<PropertyItem> relationshipGetProperties( StorageStatement statement, RelationshipItem relationship );
+
+    Cursor<PropertyItem> relationshipGetProperty( StorageStatement statement, RelationshipItem relationshipItem, int propertyKeyId );
+
     /**
      * Reserves a node id for future use to store a node. The reason for it being exposed here is that
      * internal ids of nodes and relationships are publicly accessible all the way out to the user.

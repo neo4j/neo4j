@@ -27,7 +27,6 @@ import java.util.function.Function;
 import java.util.stream.Stream;
 
 import org.neo4j.collection.RawIterator;
-import org.neo4j.collection.primitive.PrimitiveIntCollection;
 import org.neo4j.collection.primitive.PrimitiveIntIterator;
 import org.neo4j.collection.primitive.PrimitiveLongCollections;
 import org.neo4j.collection.primitive.PrimitiveLongIterator;
@@ -394,7 +393,7 @@ public class OperationsFacade
         }
         try ( Cursor<RelationshipItem> relationship = dataRead().relationshipCursorById( statement, relationshipId ) )
         {
-            return relationship.get().hasProperty( propertyKeyId );
+            return dataRead().relationshipHasProperty( statement, relationship.get(), propertyKeyId );
         }
     }
 
@@ -408,7 +407,7 @@ public class OperationsFacade
         }
         try ( Cursor<RelationshipItem> relationship = dataRead().relationshipCursorById( statement, relationshipId ) )
         {
-            return relationship.get().getProperty( propertyKeyId );
+            return dataRead().relationshipGetProperty( statement, relationship.get(), propertyKeyId );
         }
         finally
         {
@@ -458,8 +457,7 @@ public class OperationsFacade
         statement.assertOpen();
         try ( Cursor<RelationshipItem> relationship = dataRead().relationshipCursorById( statement, relationshipId ) )
         {
-            PrimitiveIntCollection propertyKeys = relationship.get().getPropertyKeys();
-            return propertyKeys.iterator();
+            return dataRead().relationshipGetPropertyKeys( statement, relationship.get() ).iterator();
         }
         finally
         {
@@ -560,6 +558,13 @@ public class OperationsFacade
     {
         statement.assertOpen();
         return dataRead().nodeGetProperties( statement, node );
+    }
+
+    @Override
+    public Cursor<PropertyItem> relationshipGetProperties( RelationshipItem relationship )
+    {
+        statement.assertOpen();
+        return dataRead().relationshipGetProperties( statement, relationship );
     }
 
     // </DataReadCursors>

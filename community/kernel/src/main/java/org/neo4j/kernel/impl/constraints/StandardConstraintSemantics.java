@@ -52,7 +52,8 @@ public class StandardConstraintSemantics implements ConstraintSemantics
     }
 
     @Override
-    public void validateExistenceConstraint( Cursor<RelationshipItem> allRels, RelationTypeSchemaDescriptor descriptor )
+    public void validateRelationshipPropertyExistenceConstraint( Cursor<RelationshipItem> allRelationships,
+            RelationTypeSchemaDescriptor descriptor, BiPredicate<RelationshipItem,Integer> hasPropertyCheck )
             throws CreateConstraintFailureException
     {
         throw propertyExistenceConstraintsNotAllowed( descriptor );

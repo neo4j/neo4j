@@ -152,11 +152,11 @@ class PropertyExistenceEnforcer extends TxStateVisitor.Delegator
         return txState.augmentSingleNodeCursor( cursor, id );
     }
 
-    private Cursor<PropertyItem> properties( NodeItem nodeItem )
+    private Cursor<PropertyItem> properties( NodeItem node )
     {
-        Lock lock = nodeItem.lock();
-        Cursor<PropertyItem> cursor = storeStatement().acquirePropertyCursor( nodeItem.nextPropertyId(), lock );
-        return txState.augmentPropertyCursor( cursor, txState.getNodeState( nodeItem.id() ) );
+        Lock lock = node.lock();
+        Cursor<PropertyItem> cursor = storeStatement().acquirePropertyCursor( node.nextPropertyId(), lock );
+        return txState.augmentPropertyCursor( cursor, txState.getNodeState( node.id() ) );
     }
 
     private StorageStatement storeStatement()
@@ -187,7 +187,7 @@ class PropertyExistenceEnforcer extends TxStateVisitor.Delegator
             {
                 // Iterate all constraints and find property existence constraints that match relationship type
                 propertyKeyIds.clear();
-                try ( Cursor<PropertyItem> properties = relationship.get().properties() )
+                try ( Cursor<PropertyItem> properties = properties( relationship.get() ) )
                 {
                     while ( properties.next() )
                     {
@@ -221,5 +221,12 @@ class PropertyExistenceEnforcer extends TxStateVisitor.Delegator
     {
         Cursor<RelationshipItem> cursor = storeStatement().acquireSingleRelationshipCursor( id );
         return txState.augmentSingleRelationshipCursor( cursor, id );
+    }
+
+    private Cursor<PropertyItem> properties( RelationshipItem relationship )
+    {
+        Lock lock = relationship.lock();
+        Cursor<PropertyItem> cursor = storeStatement().acquirePropertyCursor( relationship.nextPropertyId(), lock );
+        return txState.augmentPropertyCursor( cursor, txState.getRelationshipState( relationship.id() ) );
     }
 }

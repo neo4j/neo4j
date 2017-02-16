@@ -92,21 +92,20 @@ public class EnterpriseConstraintSemantics extends StandardConstraintSemantics
     }
 
     @Override
-    public void validateExistenceConstraint( Cursor<RelationshipItem> allRels, RelationTypeSchemaDescriptor descriptor )
+    public void validateRelationshipPropertyExistenceConstraint( Cursor<RelationshipItem> allRelationships,
+            RelationTypeSchemaDescriptor descriptor, BiPredicate<RelationshipItem,Integer> hasPropertyCheck )
             throws CreateConstraintFailureException
     {
-        while ( allRels.next() )
+        while ( allRelationships.next() )
         {
-            RelationshipItem relationship = allRels.get();
-            if ( relationship.type() == descriptor.getRelTypeId() )
+            RelationshipItem relationship = allRelationships.get();
+            for ( int propertyId : descriptor.getPropertyIds() )
             {
-                for ( int propertyId : descriptor.getPropertyIds() )
+                if ( relationship.type() == descriptor.getRelTypeId() &&
+                        !hasPropertyCheck.test( relationship, propertyId ) )
                 {
-                    if ( !relationship.hasProperty( propertyId ) )
-                    {
-                        throw createConstraintFailure(
-                                new RelationshipPropertyExistenceException( descriptor, VERIFICATION, relationship.id() ) );
-                    }
+                    throw createConstraintFailure(
+                            new RelationshipPropertyExistenceException( descriptor, VERIFICATION, relationship.id() ) );
                 }
             }
         }

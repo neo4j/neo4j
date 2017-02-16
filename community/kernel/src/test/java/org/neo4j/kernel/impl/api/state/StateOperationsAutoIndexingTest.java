@@ -33,7 +33,6 @@ import org.neo4j.kernel.impl.api.StateHandlingStatementOperations;
 import org.neo4j.kernel.impl.api.legacyindex.InternalAutoIndexOperations;
 import org.neo4j.kernel.impl.api.legacyindex.InternalAutoIndexing;
 import org.neo4j.kernel.impl.index.LegacyIndexStore;
-import org.neo4j.kernel.impl.locking.Lock;
 import org.neo4j.storageengine.api.NodeItem;
 import org.neo4j.storageengine.api.PropertyItem;
 import org.neo4j.storageengine.api.RelationshipItem;
@@ -122,11 +121,12 @@ public class StateOperationsAutoIndexingTest
     public void shouldSignalRelationshipPropertyAddedToAutoIndex() throws Exception
     {
         // Given
-        DefinedProperty property = property( 1, "Hello!" );
+        int propertyKeyId = 1;
+        DefinedProperty property = property( propertyKeyId, "Hello!" );
 
-        RelationshipItem rel = mock( RelationshipItem.class );
-        when( rel.property( property.propertyKeyId() )).thenReturn( empty() );
-        when( storeStmt.acquireSingleRelationshipCursor( 1337 ) ).thenReturn( cursor( rel ) );
+        RelationshipItem relationship = mock( RelationshipItem.class );
+        when( storeStmt.acquireSingleRelationshipCursor( 1337 ) ).thenReturn( cursor( relationship ) );
+        when( storeLayer.relationshipGetProperty( storeStmt, relationship, propertyKeyId ) ).thenReturn( empty() );
 
         // When
         context.relationshipSetProperty( stmt, 1337, property );
@@ -162,15 +162,17 @@ public class StateOperationsAutoIndexingTest
     public void shouldSignalRelationshipPropertyChangedToAutoIndex() throws Exception
     {
         // Given
-        DefinedProperty property = property( 1, "Hello!" );
+        int propertyKeyId = 1;
+        DefinedProperty property = property( propertyKeyId, "Hello!" );
         PropertyItem existingProperty = mock( PropertyItem.class );
 
         when(existingProperty.propertyKeyId()).thenReturn( property.propertyKeyId() );
         when(existingProperty.value()).thenReturn( "Goodbye!" );
 
-        RelationshipItem rel = mock( RelationshipItem.class );
-        when( rel.property( property.propertyKeyId() )).thenReturn( cursor( existingProperty ) );
-        when( storeStmt.acquireSingleRelationshipCursor( 1337 ) ).thenReturn( cursor( rel ) );
+        RelationshipItem relationship = mock( RelationshipItem.class );
+        when( storeStmt.acquireSingleRelationshipCursor( 1337 ) ).thenReturn( cursor( relationship ) );
+        when( storeLayer.relationshipGetProperty( storeStmt, relationship, propertyKeyId ) )
+                .thenReturn( cursor( existingProperty ) );
 
         // When
         context.relationshipSetProperty( stmt, 1337, property );
@@ -207,12 +209,15 @@ public class StateOperationsAutoIndexingTest
         // Given
         PropertyItem existingProperty = mock( PropertyItem.class );
 
-        when(existingProperty.propertyKeyId()).thenReturn( 1 );
+        int propertyKeyId = 1;
+        when(existingProperty.propertyKeyId()).thenReturn( propertyKeyId );
         when(existingProperty.value()).thenReturn( "Goodbye!" );
 
-        RelationshipItem rel = mock( RelationshipItem.class );
-        when( rel.property( existingProperty.propertyKeyId() )).thenReturn( cursor( existingProperty ) );
-        when( storeStmt.acquireSingleRelationshipCursor( 1337 ) ).thenReturn( cursor( rel ) );
+        RelationshipItem relationship = mock( RelationshipItem.class );
+        when( storeStmt.acquireSingleRelationshipCursor( 1337 ) ).thenReturn( cursor( relationship ) );
+        when( storeLayer.relationshipGetProperty( storeStmt, relationship, propertyKeyId ) )
+                .thenReturn( cursor( existingProperty ) );
+
 
         // When
         context.relationshipRemoveProperty( stmt, 1337, existingProperty.propertyKeyId() );

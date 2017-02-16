@@ -26,10 +26,8 @@ import org.neo4j.collection.primitive.PrimitiveIntCollections;
 import org.neo4j.collection.primitive.PrimitiveIntSet;
 import org.neo4j.cursor.Cursor;
 import org.neo4j.helpers.collection.Iterables;
-import org.neo4j.kernel.api.cursor.EntityItemHelper;
 import org.neo4j.kernel.api.properties.DefinedProperty;
 import org.neo4j.kernel.impl.locking.Lock;
-import org.neo4j.kernel.impl.util.Cursors;
 import org.neo4j.storageengine.api.NodeItem;
 import org.neo4j.storageengine.api.PropertyItem;
 import org.neo4j.storageengine.api.RelationshipItem;
@@ -135,27 +133,10 @@ public class StubCursors
         }
     }
 
-    private abstract static class TestRelationshipItem extends EntityItemHelper implements RelationshipItem
-    {
-
-    }
-
     public static RelationshipItem relationship( long id, int type, long start, long end )
     {
-        return new TestRelationshipItem()
+        return new RelationshipItem()
         {
-            @Override
-            public Cursor<PropertyItem> property( int propertyKeyId )
-            {
-                return Cursors.empty();
-            }
-
-            @Override
-            public Cursor<PropertyItem> properties()
-            {
-                return Cursors.empty();
-            }
-
             @Override
             public long id()
             {
@@ -175,6 +156,12 @@ public class StubCursors
             }
 
             @Override
+            public long endNode()
+            {
+                return end;
+            }
+
+            @Override
             public long otherNode( long nodeId )
             {
                 if ( nodeId == start )
@@ -189,17 +176,23 @@ public class StubCursors
             }
 
             @Override
-            public long endNode()
+            public long nextPropertyId()
             {
-                return end;
+                throw new UnsupportedOperationException();
+            }
+
+            @Override
+            public Lock lock()
+            {
+                throw new UnsupportedOperationException();
             }
         };
     }
 
     public static Cursor<RelationshipItem> asRelationshipCursor( final long relId, final int type,
-            final long startNode, final long endNode, final Cursor<PropertyItem> propertyCursor )
+            final long startNode, final long endNode, long propertyId )
     {
-        return cursor( new TestRelationshipItem()
+        return cursor( new RelationshipItem()
         {
             @Override
             public long id()
@@ -232,44 +225,15 @@ public class StubCursors
             }
 
             @Override
-            public Cursor<PropertyItem> properties()
+            public long nextPropertyId()
             {
-                return propertyCursor;
+                return propertyId;
             }
 
             @Override
-            public Cursor<PropertyItem> property( final int propertyKeyId )
+            public Lock lock()
             {
-                return new Cursor<PropertyItem>()
-                {
-                    Cursor<PropertyItem> cursor = properties();
-
-                    @Override
-                    public boolean next()
-                    {
-                        while ( cursor.next() )
-                        {
-                            if ( cursor.get().propertyKeyId() == propertyKeyId )
-                            {
-                                return true;
-                            }
-                        }
-
-                        return false;
-                    }
-
-                    @Override
-                    public void close()
-                    {
-                        cursor.close();
-                    }
-
-                    @Override
-                    public PropertyItem get()
-                    {
-                        return cursor.get();
-                    }
-                };
+                return NO_LOCK;
             }
         } );
     }

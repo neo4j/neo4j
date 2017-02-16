@@ -149,8 +149,8 @@ public class TestTransactionEvents
         VerifyingTransactionEventHandler handler = new VerifyingTransactionEventHandler( expectedData );
         GraphDatabaseService db = dbRule.getGraphDatabaseAPI();
         db.registerTransactionEventHandler( handler );
-        Node node1 = null, node2, node3 = null;
-        Relationship rel1 = null, rel2 = null;
+        Node node1, node2, node3;
+        Relationship rel1, rel2;
         try
         {
             try ( Transaction tx = db.beginTx() )

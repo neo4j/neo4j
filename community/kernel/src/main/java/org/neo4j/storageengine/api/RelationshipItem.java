@@ -19,12 +19,19 @@
  */
 package org.neo4j.storageengine.api;
 
+import org.neo4j.kernel.impl.locking.Lock;
+
 /**
  * Represents a single relationship from a cursor.
  */
 public interface RelationshipItem
-        extends EntityItem
 {
+    /**
+     * @return id of current entity
+     * @throws IllegalStateException if no current entity is selected
+     */
+    long id();
+
     /**
      * @return relationship type for current relationship
      */
@@ -46,4 +53,8 @@ public interface RelationshipItem
      * @return end node if start node is passed in, start node if end node is passed
      */
     long otherNode( long nodeId );
+
+    long nextPropertyId();
+
+    Lock lock();
 }

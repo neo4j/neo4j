@@ -201,7 +201,7 @@ public class TxStateTransactionDataSnapshot implements TransactionData
     {
         try
         {
-            for ( Long nodeId : state.addedAndRemovedNodes().getRemoved() )
+            for ( long nodeId : state.addedAndRemovedNodes().getRemoved() )
             {
                 try ( Cursor<NodeItem> node = storeStatement.acquireSingleNodeCursor( nodeId ) )
                 {
@@ -227,14 +227,16 @@ public class TxStateTransactionDataSnapshot implements TransactionData
                     }
                 }
             }
-            for ( Long relId : state.addedAndRemovedRelationships().getRemoved() )
+            for ( long relId : state.addedAndRemovedRelationships().getRemoved() )
             {
                 Relationship relationshipProxy = relationship( relId );
                 try ( Cursor<RelationshipItem> relationship = storeStatement.acquireSingleRelationshipCursor( relId ) )
                 {
                     if ( relationship.next() )
                     {
-                        try ( Cursor<PropertyItem> properties = relationship.get().properties() )
+                        Lock lock = relationship.get().lock();
+                        try ( Cursor<PropertyItem> properties = storeStatement
+                                .acquirePropertyCursor( relationship.get().nextPropertyId(), lock ) )
                         {
                             while ( properties.next() )
                             {
@@ -394,7 +396,9 @@ public class TxStateTransactionDataSnapshot implements TransactionData
                 return null;
             }
 
-            try ( Cursor<PropertyItem> properties = relationship.get().property( property ) )
+            Lock lock = relationship.get().lock();
+            try ( Cursor<PropertyItem> properties = storeStatement
+                    .acquireSinglePropertyCursor( relationship.get().nextPropertyId(), property, lock ) )
             {
                 if ( properties.next() )
                 {
@@ -413,7 +417,7 @@ public class TxStateTransactionDataSnapshot implements TransactionData
         private final Object newValue;
         private final Object oldValue;
 
-        public NodePropertyEntryView( long nodeId, String key, Object newValue, Object oldValue )
+        NodePropertyEntryView( long nodeId, String key, Object newValue, Object oldValue )
         {
             this.nodeId = nodeId;
             this.key = key;
@@ -468,8 +472,7 @@ public class TxStateTransactionDataSnapshot implements TransactionData
         private final Object newValue;
         private final Object oldValue;
 
-        public RelationshipPropertyEntryView( Relationship relationship,
-                String key, Object newValue, Object oldValue )
+        RelationshipPropertyEntryView( Relationship relationship, String key, Object newValue, Object oldValue )
         {
             this.relationship = relationship;
             this.key = key;
@@ -522,7 +525,7 @@ public class TxStateTransactionDataSnapshot implements TransactionData
         private final long nodeId;
         private final Label label;
 
-        public LabelEntryView( long nodeId, String labelName )
+        LabelEntryView( long nodeId, String labelName )
         {
             this.nodeId = nodeId;
             this.label = Label.label( labelName );

@@ -40,7 +40,6 @@ import org.neo4j.kernel.api.security.AuthSubject;
 import org.neo4j.kernel.api.security.SecurityContext;
 import org.neo4j.kernel.api.txstate.TransactionState;
 import org.neo4j.kernel.impl.api.KernelTransactionImplementation;
-import org.neo4j.kernel.impl.api.state.StubCursors;
 import org.neo4j.kernel.impl.api.state.TxState;
 import org.neo4j.kernel.impl.api.store.StoreStatement;
 import org.neo4j.kernel.impl.core.NodeProxy;
@@ -137,11 +136,16 @@ public class TxStateTransactionDataViewTest
         state.relationshipDoDelete( 1L, 1, 1L, 2L );
         state.relationshipDoDelete( 2L, 1, 1L, 1L );
 
+        long noPropertyId = -1L;
         when( storeStatement.acquireSingleRelationshipCursor( 1L ) ).
-                thenReturn( asRelationshipCursor( 1L, 1, 1L, 2L, asPropertyCursor() ) );
+                thenReturn( asRelationshipCursor( 1L, 1, 1L, 2L, noPropertyId ) );
+        when( storeStatement.acquirePropertyCursor( noPropertyId, NO_LOCK ) ).thenReturn( asPropertyCursor() );
+        long propertyId = 40L;
         when( storeStatement.acquireSingleRelationshipCursor( 2L ) ).
-                thenReturn( asRelationshipCursor( 2L, 1, 1L, 1L,
-                        asPropertyCursor( Property.stringProperty( 1, "p" ) ) ) );
+                thenReturn( asRelationshipCursor( 2L, 1, 1L, 1L, propertyId ) );
+        when( storeStatement.acquirePropertyCursor( propertyId, NO_LOCK ) )
+                .thenReturn( asPropertyCursor( Property.stringProperty( 1, "p" ) ) );
+
         when( ops.propertyKeyGetName( 1 ) ).thenReturn( "key" );
 
         // When & Then
@@ -172,8 +176,10 @@ public class TxStateTransactionDataViewTest
 
         Relationship rel = mock( Relationship.class );
         when( rel.getId() ).thenReturn( 1L );
-        when( storeStatement.acquireSingleRelationshipCursor( 1L ) ).thenReturn( asRelationshipCursor( 1L, 1, 1L, 2L,
-                asPropertyCursor() ) );
+        long noPropertyId = -1L;
+        when( storeStatement.acquireSingleRelationshipCursor( 1L ) )
+                .thenReturn( asRelationshipCursor( 1L, 1, 1L, 2L, noPropertyId ) );
+        when( storeStatement.acquirePropertyCursor( noPropertyId, NO_LOCK ) ).thenReturn( asPropertyCursor() );
 
         // When & Then
         assertThat( snapshot().isDeleted( rel ), equalTo( true ) );
@@ -232,12 +238,15 @@ public class TxStateTransactionDataViewTest
     public void shouldListRemovedRelationshipProperties() throws Exception
     {
         // Given
-        DefinedProperty prevValue = stringProperty( 1, "prevValue" );
+        int propertyKeyId = 1;
+        DefinedProperty prevValue = stringProperty( propertyKeyId, "prevValue" );
         state.relationshipDoRemoveProperty( 1L, prevValue );
-        when( ops.propertyKeyGetName( 1 ) ).thenReturn( "theKey" );
-        when( storeStatement.acquireSingleRelationshipCursor( 1 ) ).thenReturn(
-                StubCursors.asRelationshipCursor( 1, 0, 0, 0, asPropertyCursor(
-                        prevValue ) ) );
+        when( ops.propertyKeyGetName( propertyKeyId ) ).thenReturn( "theKey" );
+        long propertyId = 40L;
+        when( storeStatement.acquireSingleRelationshipCursor( 1 ) )
+                .thenReturn( asRelationshipCursor( 1, 0, 0, 0, propertyId ) );
+        when( storeStatement.acquireSinglePropertyCursor( propertyId, propertyKeyId, NO_LOCK ) )
+                .thenReturn( asPropertyCursor( prevValue ) );
 
         // When
         Iterable<PropertyEntry<Relationship>> propertyEntries = snapshot().removedRelationshipProperties();
@@ -253,13 +262,16 @@ public class TxStateTransactionDataViewTest
     public void shouldListAddedRelationshipProperties() throws Exception
     {
         // Given
-        DefinedProperty prevProp = stringProperty( 1, "prevValue" );
-        state.relationshipDoReplaceProperty( 1L, prevProp, stringProperty( 1, "newValue" ) );
+        int propertyKeyId = 1;
+        DefinedProperty prevProp = stringProperty( propertyKeyId, "prevValue" );
+        state.relationshipDoReplaceProperty( 1L, prevProp, stringProperty( propertyKeyId, "newValue" ) );
 
-        when( ops.propertyKeyGetName( 1 ) ).thenReturn( "theKey" );
+        when( ops.propertyKeyGetName( propertyKeyId ) ).thenReturn( "theKey" );
+        long propertyId = 40L;
         when( storeStatement.acquireSingleRelationshipCursor( 1 ) ).thenReturn(
-                StubCursors.asRelationshipCursor( 1, 0, 0, 0, asPropertyCursor(
-                        prevProp ) ) );
+                asRelationshipCursor( 1, 0, 0, 0, propertyId ) );
+        when( storeStatement.acquireSinglePropertyCursor( propertyId, propertyKeyId, NO_LOCK ) )
+                .thenReturn( asPropertyCursor( prevProp ) );
 
         // When
         Iterable<PropertyEntry<Relationship>> propertyEntries = snapshot().assignedRelationshipProperties();

@@ -104,6 +104,14 @@ public interface EntityReadOperations
 
     PrimitiveIntCollection nodeGetPropertyKeys( KernelStatement statement, NodeItem node );
 
+    Cursor<PropertyItem> relationshipGetProperties( KernelStatement statement, RelationshipItem relationship );
+
+    Object relationshipGetProperty( KernelStatement statement, RelationshipItem relationship, int propertyKeyId );
+
+    boolean relationshipHasProperty( KernelStatement statement, RelationshipItem relationship, int propertyKeyId );
+
+    PrimitiveIntCollection relationshipGetPropertyKeys( KernelStatement statement, RelationshipItem relationship );
+
     long nodesGetCount( KernelStatement statement );
 
     long relationshipsGetCount( KernelStatement statement );

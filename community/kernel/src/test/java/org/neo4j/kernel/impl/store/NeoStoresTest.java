@@ -298,16 +298,12 @@ public class NeoStoresTest
         {
             if ( cursor.next() )
             {
-                try ( Cursor<PropertyItem> propertyCursor = statement
-                        .acquireSinglePropertyCursor( cursor.get().nextPropertyId(), key, NO_LOCK ) )
+                if ( cursor.next() )
                 {
-                    if ( propertyCursor.next() )
+                    Property fetched = getProperty( key, statement, cursor.get().nextPropertyId() );
+                    if ( fetched != null )
                     {
-                        Object oldValue = propertyCursor.get().value();
-                        if ( oldValue != null )
-                        {
-                            oldProperty = Property.property( key, oldValue );
-                        }
+                        oldProperty = fetched;
                     }
                 }
             }
@@ -326,15 +322,32 @@ public class NeoStoresTest
         {
             if ( cursor.next() )
             {
-                Object oldValue = cursor.get().getProperty( key );
-                if ( oldValue != null )
+                Property fetched = getProperty( key, statement, cursor.get().nextPropertyId() );
+                if ( fetched != null )
                 {
-                    oldProperty = Property.property( key, oldValue );
+                    oldProperty = fetched;
                 }
             }
         }
+
         transaction.relationshipDoReplaceProperty( relationshipId, oldProperty, property );
         return property;
+    }
+
+    private Property getProperty( int key, StorageStatement statement, long propertyId )
+    {
+        try ( Cursor<PropertyItem> propertyCursor = statement.acquireSinglePropertyCursor( propertyId, key, NO_LOCK ) )
+        {
+            if ( propertyCursor.next() )
+            {
+                Object oldValue = propertyCursor.get().value();
+                if ( oldValue != null )
+                {
+                    return Property.property( key, oldValue );
+                }
+            }
+        }
+        return null;
     }
 
     @Test

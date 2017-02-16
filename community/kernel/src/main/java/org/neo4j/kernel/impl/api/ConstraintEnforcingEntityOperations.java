@@ -423,6 +423,32 @@ public class ConstraintEnforcingEntityOperations implements EntityOperations, Sc
     }
 
     @Override
+    public Cursor<PropertyItem> relationshipGetProperties( KernelStatement statement, RelationshipItem relationship )
+    {
+        return entityReadOperations.relationshipGetProperties( statement, relationship );
+    }
+
+    @Override
+    public Object relationshipGetProperty( KernelStatement statement, RelationshipItem relationship, int propertyKeyId )
+    {
+        return entityReadOperations.relationshipGetProperty( statement, relationship, propertyKeyId );
+    }
+
+    @Override
+    public boolean relationshipHasProperty( KernelStatement statement, RelationshipItem relationship,
+            int propertyKeyId )
+    {
+        return entityReadOperations.relationshipHasProperty( statement, relationship, propertyKeyId );
+    }
+
+    @Override
+    public PrimitiveIntCollection relationshipGetPropertyKeys( KernelStatement statement,
+            RelationshipItem relationship )
+    {
+        return entityReadOperations.relationshipGetPropertyKeys( statement, relationship );
+    }
+
+    @Override
     public Cursor<RelationshipItem> nodeGetRelationships( KernelStatement statement, NodeItem node,
             Direction direction )
     {
@@ -483,7 +509,9 @@ public class ConstraintEnforcingEntityOperations implements EntityOperations, Sc
     {
         try ( Cursor<RelationshipItem> cursor = relationshipCursorGetAll( state ) )
         {
-            constraintSemantics.validateExistenceConstraint( cursor, descriptor );
+            constraintSemantics.validateRelationshipPropertyExistenceConstraint( cursor, descriptor,
+                    ( relationship, propertyKey ) -> entityReadOperations
+                            .relationshipHasProperty( state, relationship, propertyKey ) );
         }
         return schemaWriteOperations.relationshipPropertyExistenceConstraintCreate( state, descriptor );
     }

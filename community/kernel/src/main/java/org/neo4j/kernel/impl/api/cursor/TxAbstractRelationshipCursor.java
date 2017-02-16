@@ -23,18 +23,19 @@ import java.util.function.Consumer;
 
 import org.neo4j.cursor.Cursor;
 import org.neo4j.kernel.api.StatementConstants;
-import org.neo4j.kernel.api.cursor.EntityItemHelper;
 import org.neo4j.kernel.api.txstate.TransactionState;
 import org.neo4j.kernel.impl.api.RelationshipVisitor;
-import org.neo4j.kernel.impl.util.Cursors;
-import org.neo4j.storageengine.api.PropertyItem;
+import org.neo4j.kernel.impl.locking.Lock;
 import org.neo4j.storageengine.api.RelationshipItem;
 import org.neo4j.storageengine.api.txstate.RelationshipState;
+
+import static org.neo4j.kernel.impl.locking.LockService.NO_LOCK;
+import static org.neo4j.kernel.impl.store.record.Record.NO_NEXT_PROPERTY;
 
 /**
  * Overlays transaction state on a {@link RelationshipItem} cursor.
  */
-public abstract class TxAbstractRelationshipCursor extends EntityItemHelper
+public abstract class TxAbstractRelationshipCursor
         implements Cursor<RelationshipItem>, RelationshipVisitor<RuntimeException>, RelationshipItem
 {
     protected final TransactionState state;
@@ -47,10 +48,10 @@ public abstract class TxAbstractRelationshipCursor extends EntityItemHelper
     private long startNodeId;
     private long endNodeId;
 
-    protected RelationshipState relationshipState;
-    protected boolean relationshipIsAddedInThisTx;
+    RelationshipState relationshipState;
+    boolean relationshipIsAddedInThisTx;
 
-    public TxAbstractRelationshipCursor( TransactionState state, Consumer<TxAbstractRelationshipCursor> instanceCache )
+    TxAbstractRelationshipCursor( TransactionState state, Consumer<TxAbstractRelationshipCursor> instanceCache )
     {
         this.state = state;
         this.instanceCache = instanceCache;
@@ -122,18 +123,14 @@ public abstract class TxAbstractRelationshipCursor extends EntityItemHelper
     }
 
     @Override
-    public Cursor<PropertyItem> properties()
+    public long nextPropertyId()
     {
-        return state.augmentPropertyCursor(
-                relationshipIsAddedInThisTx ? Cursors.<PropertyItem>empty() : cursor.get().properties(),
-                relationshipState );
+        return relationshipIsAddedInThisTx ? NO_NEXT_PROPERTY.longValue() : cursor.get().nextPropertyId();
     }
 
     @Override
-    public Cursor<PropertyItem> property( int propertyKeyId )
+    public Lock lock()
     {
-        return state.augmentSinglePropertyCursor(
-                relationshipIsAddedInThisTx ? Cursors.<PropertyItem>empty() : cursor.get().property( propertyKeyId ),
-                relationshipState, propertyKeyId );
+        return relationshipIsAddedInThisTx ? NO_LOCK : cursor.get().lock();
     }
 }

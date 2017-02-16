@@ -433,15 +433,29 @@ public class StorageLayer implements StoreReadLayer
     @Override
     public Cursor<PropertyItem> nodeGetProperties( StorageStatement statement, NodeItem node )
     {
-        Lock lock = node.lock(); // lock before reading the property id, since we might need to reload the node
+        Lock lock = node.lock(); // lock before reading the property id, since we might need to reload the record
         return statement.acquirePropertyCursor( node.nextPropertyId(), lock );
     }
 
     @Override
     public Cursor<PropertyItem> nodeGetProperty( StorageStatement statement, NodeItem node, int propertyKeyId )
     {
-        Lock lock = node.lock(); // lock before reading the property id, since we might need to reload the node
+        Lock lock = node.lock(); // lock before reading the property id, since we might need to reload the record
         return statement.acquireSinglePropertyCursor( node.nextPropertyId(), propertyKeyId, lock );
+    }
+
+    @Override
+    public Cursor<PropertyItem> relationshipGetProperties( StorageStatement statement, RelationshipItem relationship )
+    {
+        Lock lock = relationship.lock(); // lock before reading the property id, since we might need to reload the record
+        return statement.acquirePropertyCursor( relationship.nextPropertyId(), lock );
+    }
+
+    @Override
+    public Cursor<PropertyItem> relationshipGetProperty( StorageStatement statement, RelationshipItem relationship, int propertyKeyId )
+    {
+        Lock lock = relationship.lock(); // lock before reading the property id, since we might need to reload the record
+        return statement.acquireSinglePropertyCursor( relationship.nextPropertyId(), propertyKeyId, lock );
     }
 
     @Override

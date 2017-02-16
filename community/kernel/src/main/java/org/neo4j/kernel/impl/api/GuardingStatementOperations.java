@@ -308,6 +308,36 @@ public class GuardingStatementOperations implements
     }
 
     @Override
+    public Cursor<PropertyItem> relationshipGetProperties( KernelStatement statement, RelationshipItem relationship )
+    {
+        guard.check( statement );
+        return entityReadDelegate.relationshipGetProperties( statement, relationship );
+    }
+
+    @Override
+    public Object relationshipGetProperty( KernelStatement statement, RelationshipItem relationship, int propertyKeyId )
+    {
+        guard.check( statement );
+        return entityReadDelegate.relationshipGetProperty( statement, relationship, propertyKeyId );
+    }
+
+    @Override
+    public boolean relationshipHasProperty( KernelStatement statement, RelationshipItem relationship,
+            int propertyKeyId )
+    {
+        guard.check( statement );
+        return entityReadDelegate.relationshipHasProperty( statement, relationship, propertyKeyId );
+    }
+
+    @Override
+    public PrimitiveIntCollection relationshipGetPropertyKeys( KernelStatement statement,
+            RelationshipItem relationship )
+    {
+        guard.check( statement );
+        return entityReadDelegate.relationshipGetPropertyKeys( statement, relationship );
+    }
+
+    @Override
     public long nodesGetCount( KernelStatement statement )
     {
         guard.check( statement );

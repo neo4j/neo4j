@@ -271,7 +271,8 @@ public class RelationshipProxy implements Relationship, RelationshipVisitor<Runt
         {
             try ( Cursor<RelationshipItem> relationship = statement.readOperations().relationshipCursorById( getId() ) )
             {
-                try ( Cursor<PropertyItem> propertyCursor = relationship.get().properties() )
+                try ( Cursor<PropertyItem> propertyCursor = statement.readOperations()
+                        .relationshipGetProperties( relationship.get() ) )
                 {
                     return PropertyContainerProxyHelper.getProperties( statement, propertyCursor, keys );
                 }
@@ -290,15 +291,16 @@ public class RelationshipProxy implements Relationship, RelationshipVisitor<Runt
         {
             try ( Cursor<RelationshipItem> relationship = statement.readOperations().relationshipCursorById( getId() ) )
             {
-                try ( Cursor<PropertyItem> propertyCursor = relationship.get().properties() )
+                try ( Cursor<PropertyItem> propertyCursor = statement.readOperations()
+                        .relationshipGetProperties( relationship.get() ) )
                 {
-                    Map<String, Object> properties = new HashMap<>();
+                    Map<String,Object> properties = new HashMap<>();
 
                     // Get all properties
                     while ( propertyCursor.next() )
                     {
-                        String name = statement.readOperations().propertyKeyGetName(
-                                propertyCursor.get().propertyKeyId() );
+                        String name =
+                                statement.readOperations().propertyKeyGetName( propertyCursor.get().propertyKeyId() );
                         properties.put( name, propertyCursor.get().value() );
                     }
 
