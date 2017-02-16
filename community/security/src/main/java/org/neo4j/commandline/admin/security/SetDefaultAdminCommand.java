@@ -103,14 +103,13 @@ public class SetDefaultAdminCommand implements AdminCommand
         {
             setDefaultAdmin( parsedArgs.orphans().get( 0 ) );
         }
-        catch ( IncorrectUsage e )
+        catch ( IncorrectUsage | CommandFailed e )
         {
             throw e;
         }
         catch ( Throwable throwable )
         {
-            throw new CommandFailed( "Failed to execute 'set-default-admin' command: " + throwable.getMessage(),
-                    new RuntimeException( throwable ) );
+            throw new CommandFailed( throwable.getMessage(), new RuntimeException( throwable ) );
         }
     }
 
@@ -145,7 +144,7 @@ public class SetDefaultAdminCommand implements AdminCommand
         users.stop();
         users.shutdown();
 
-        outsideWorld.stdOutLine( "Set default admin to '" + username + "'." );
+        outsideWorld.stdOutLine( "default admin user set to '" + username + "'" );
     }
 
     Config loadNeo4jConfig()
