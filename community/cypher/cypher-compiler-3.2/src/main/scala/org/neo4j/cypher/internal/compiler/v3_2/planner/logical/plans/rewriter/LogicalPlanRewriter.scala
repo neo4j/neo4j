@@ -45,7 +45,8 @@ case class PlanRewriter(rewriterSequencer: String => RewriterStepSequencer) exte
     unnestOptional,
     predicateRemovalThroughJoins,
     removeIdenticalPlans,
-    pruningVarExpander
+    pruningVarExpander,
+    useTop
   ).rewriter)
 }
 

@@ -17,18 +17,20 @@
  * You should have received a copy of the GNU General Public License
  * along with this program.  If not, see <http://www.gnu.org/licenses/>.
  */
-package org.neo4j.cypher.internal.compiler.v3_2.planner.logical.plans
+package org.neo4j.cypher.internal.compiler.v3_2.planner.logical.plans.rewriter
 
-import org.neo4j.cypher.internal.compiler.v3_2.planner.logical.SortDescription
-import org.neo4j.cypher.internal.compiler.v3_2.planner.{CardinalityEstimation, PlannerQuery}
-import org.neo4j.cypher.internal.frontend.v3_2.ast.Expression
-import org.neo4j.cypher.internal.ir.v3_2.IdName
+import org.neo4j.cypher.internal.compiler.v3_2.planner.logical.plans.{DoNotIncludeTies, Limit, Sort, Top}
+import org.neo4j.cypher.internal.frontend.v3_2.{Rewriter, bottomUp}
 
-case class Top(left: LogicalPlan, sortItems: Seq[SortDescription], limit: Expression)
-              (val solved: PlannerQuery with CardinalityEstimation) extends LogicalPlan with EagerLogicalPlan {
-  override def lhs: Option[LogicalPlan] = Some(left)
+/**
+  * When doing ORDER BY c1,c2,...,cn LIMIT e, we don't have to sort the full result in one go
+  */
+case object useTop extends Rewriter {
 
-  override def rhs: Option[LogicalPlan] = None
+  private val instance: Rewriter = bottomUp(Rewriter.lift {
+    case o @ Limit(Sort(src, sortDescriptions), limit, DoNotIncludeTies) =>
+      Top(src, sortDescriptions, limit)(o.solved)
+  })
 
-  override def availableSymbols: Set[IdName] = left.availableSymbols
+  override def apply(input: AnyRef): AnyRef = instance.apply(input)
 }

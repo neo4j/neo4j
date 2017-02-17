@@ -894,8 +894,6 @@ object LdbcQueries {
       Map("personId" -> 3, "commentContent" -> "C12", "commentId" -> 12, "personLastName" -> "three-ᚠさ丵פش", "commentCreationDate" -> 2, "personFirstName" -> "friend"),
       Map("personId" -> 3, "commentContent" -> "C01", "commentId" -> 10, "personLastName" -> "three-ᚠさ丵פش", "commentCreationDate" -> 1, "personFirstName" -> "friend"),
       Map("personId" -> 3, "commentContent" -> "C11", "commentId" -> 11, "personLastName" -> "three-ᚠさ丵פش", "commentCreationDate" -> 1, "personFirstName" -> "friend"))
-
-    override def supportedInCompiledRuntime: Boolean = true
   }
 
   object Query9 extends LdbcQuery {
