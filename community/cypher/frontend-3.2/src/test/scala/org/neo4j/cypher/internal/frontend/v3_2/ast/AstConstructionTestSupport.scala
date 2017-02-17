@@ -62,6 +62,4 @@ trait AstConstructionTestSupport extends CypherTestSupport {
       case (k, v) => (PropertyKeyName(k)(pos), SignedDecimalIntegerLiteral(v.toString)(pos))
     })(pos)
 
-  def functionCall(name: String, arguments: Expression*): FunctionInvocation =
-    FunctionInvocation(FunctionName(name)(pos), distinct = false, arguments.toIndexedSeq)(pos)
 }

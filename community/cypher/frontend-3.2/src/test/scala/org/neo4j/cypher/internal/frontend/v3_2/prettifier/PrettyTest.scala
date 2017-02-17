@@ -24,6 +24,8 @@ import org.neo4j.cypher.internal.frontend.v3_2.test_helpers.CypherFunSuite
 
 class PrettyTest extends CypherFunSuite {
 
+  //CATEGORY A: all tests simply change the formatting. The semantics of the query itself remains unaltered.
+  //Moreover, the formatting changes are deemed lightweight enough to be applied across the board: manual, TCK and the browser
   test("handle parentheses in MATCH") {
     actual("match (a)-->(b) return b") should equal(
       expected("MATCH (a)-->(b)%nRETURN b"))
@@ -50,12 +52,6 @@ class PrettyTest extends CypherFunSuite {
       expected("RETURN (1 + 2) * 3"))
   }
 
-  test("hyphens in relationship types converted to underscores") {
-    actual("MATCH (m)-[:OWNS-VEHICLE]->(n) RETURN m.name") should equal(
-      expected("MATCH (m)-[:OWNS_VEHICLE]->(n)%nRETURN m.name")
-    )
-  }
-
   //Casing tests
   test("upper case keywords") {
     actual("create (n)") should equal(
@@ -68,8 +64,8 @@ class PrettyTest extends CypherFunSuite {
   }
 
   test("upper case multiple keywords 2") {
-    actual("match (a) where a.name='A' return a.age as SomethingTotallyDifferent") should equal(
-      expected("MATCH (a)%n  WHERE a.name = 'A'%nRETURN a.age AS SomethingTotallyDifferent")
+    actual("match (a) where a.name='A' return a.age as somethingTotallyDifferent") should equal(
+      expected("MATCH (a)%n  WHERE a.name = 'A'%nRETURN a.age AS somethingTotallyDifferent")
     )
   }
 
@@ -79,63 +75,27 @@ class PrettyTest extends CypherFunSuite {
     )
   }
 
-  test("upper case relationship types") {
-    actual("MATCH (m)-[:likes]->(n) RETURN m.name") should equal(
-      expected("MATCH (m)-[:LIKES]->(n)%nRETURN m.name")
-    )
-  }
-
-  test("upper case multiple relationship types") {
-    actual("MATCH (m)-[:likes|loathes]->(n) RETURN m.name") should equal(
-      expected("MATCH (m)-[:LIKES|LOATHES]->(n)%nRETURN m.name")
-    )
-  }
-
   test("lower case the value `null`") {
     actual("WITH NULL AS n1, Null AS n2 RETURN n1, n2") should equal(
-      expected("WITH null AS n1, null AS n2%RETURN n1, n2")
+      expected("WITH null AS n1, null AS n2%nRETURN n1, n2")
     )
   }
 
   test("upper case `IS [NOT] NULL`") {
-    actual("WITH null AS n1, null AS n2 RETURN n1 is Null, n2 is not null") should equal(
-      expected("WITH null AS n1, null AS n2%RETURN n1 IS NULL, n2 IS NOT NULL")
+    actual("match (n:Vehicle) where n.model is not null and n.make is Null return n.name") should equal(
+      expected("MATCH (n:Vehicle)%n  WHERE n.model IS NOT NULL AND n.make IS NULL%nRETURN n.name")
     )
   }
 
   test("lower case boolean literals") {
-    actual("WITH TRUE AS n1, False AS n2 RETURN n1 && n2") should equal(
-      expected("WITH true AS n1, false AS n2 RETURN n1 && n2")
-    )
-  }
-
-  test("labels in camel case instead of other delimiters, starting with an upper case character") {
-    actual("match (n:editor-in-chief) return n.name") should equal(
-      expected("MATCH (n:EditorInChief)%nRETURN n.name")
+    actual("WITH TRUE AS n1, False AS n2 RETURN n1, n2") should equal(
+      expected("WITH true AS n1, false AS n2%nRETURN n1, n2")
     )
   }
 
   test("start a function name with a lower case character") {
-    actual("return Rand()") should equal(
-      expected("RETURN rand()")
-    )
-  }
-
-  test("start a property key with a lower case character") {
-    actual("match (n {Prop: 0}) return n.Prop") should equal(
-      expected("MATCH (n {prop: 0})%nRETURN n.prop")
-    )
-  }
-
-  test("start a variable name with a lower case character") {
-    actual("match (N) with rand() as MyRand return MyRand") should equal(
-      expected("MATCH (n)%nWITH rand() AS myRand%nRETURN myRand")
-    )
-  }
-
-  test("start a parameter name with a lower case character") {
-    actual("match (n {prop: $Param}) return count(n)") should equal(
-      expected("MATCH (n {prop: $param})%nRETURN count(n)")
+    actual("match (n:Person) where Upper(n.city) = 'JOHANNESBURG' return n.name") should equal(
+      expected("MATCH (n:Person)%n  WHERE upper(n.city) = 'JOHANNESBURG'%nRETURN n.name")
     )
   }
 
@@ -186,7 +146,7 @@ class PrettyTest extends CypherFunSuite {
   }
 
   test("wrapping space around operators") {
-    actual("MATCH (p)=(m)-->(n) WHERE m.age<>n.age RETURN n.name") should equal(
+    actual("MATCH p=(m)-->(n) WHERE m.age<>n.age RETURN n.name") should equal(
       expected("MATCH p = (m)-->(n)%n  WHERE m.age <> n.age%nRETURN n.name"))
   }
 
@@ -198,11 +158,6 @@ class PrettyTest extends CypherFunSuite {
   test("one space after each comma in lists and enumerations") {
     actual("WITH ['a','b',3.14] AS list RETURN list,2,3,4") should equal(
       expected("WITH ['a', 'b', 3.14] AS list%nRETURN list, 2, 3, 4"))
-  }
-
-  test("no space within function call parentheses") {
-    actual("RETURN split( 'original', 'i' )") should equal(
-      expected("RETURN split('original', 'i')"))
   }
 
   //Backtick tests
@@ -268,9 +223,24 @@ class PrettyTest extends CypherFunSuite {
   }
 
   //positive line-breaking tests
-  test("a clause starts on a new line") {
+  test("MATCH, WITH and RETURN start on new lines") {
     actual("match (n) with n as m return m.name") should equal(
       expected("MATCH (n)%nWITH n AS m%nRETURN m.name"))
+  }
+
+  test("SET starts on a new line") {
+    actual("match (n) set n.surname = 'Smith' return n.name") should equal(
+      expected("MATCH (n)%nSET n.surname = 'Smith'%nRETURN n.name"))
+  }
+
+  test("DELETE starts on a new line") {
+    actual("match (n:Cat) delete n") should equal(
+      expected("MATCH (n:Cat)%nDELETE n"))
+  }
+
+  test("REMOVE starts on a new line") {
+    actual("match (n:Cat) remove n.size return n.name") should equal(
+      expected("MATCH (n:Cat)%nREMOVE n.size%nRETURN n.name"))
   }
 
   test("LOAD CSV starts on a new line") {
@@ -317,7 +287,7 @@ class PrettyTest extends CypherFunSuite {
   test("WHERE in comprehensions starts on a new line and is indented for a given width") {
     actualInsideWidth("return [x in range(0,10) where x + 2 = 0 | x^3] as result", 26) should equal(
       expected(
-        "RETURN [x IN RANGE(0, 10)%n" +
+        "RETURN [x IN range(0, 10)%n" +
           "  WHERE x + 2 = 0 | x ^ 3]%n" +
           "  AS result")
     )
@@ -335,18 +305,18 @@ class PrettyTest extends CypherFunSuite {
     )
   }
 
-  test("no break on ASC") {
-    actual("RETURN n order by n.name asc") should equal(
-      expected("RETURN n ORDER BY n.name ASC"))
+  test("no break on DESC") {
+    actual("RETURN n order by n.name desc") should equal(
+      expected("RETURN n%n  ORDER BY n.name DESC"))
   }
 
   test("no break on CREATE in FOREACH") {
     actual("match p=(n) foreach(x in p | create (x)--())") should equal(
       expected(
         "MATCH p = (n)%n" +
-      "FOREACH (x IN p |%n" +
-      "  CREATE (x)--()%n" +
-      ")"))
+          "FOREACH (x IN p |%n" +
+          "  CREATE (x)--()%n" +
+          ")"))
   }
 
   test("no break on CREATE in complex FOREACH") {
@@ -395,7 +365,7 @@ class PrettyTest extends CypherFunSuite {
 
   test("no break on WHERE in comprehensions") {
     actual("return [x in range(0,10) where x + 2 = 0 | x^3] as result") should equal(
-      expected("RETURN [x IN RANGE(0, 10) WHERE x + 2 = 0 | x ^ 3] AS result")
+      expected("RETURN [x IN range(0, 10) WHERE x + 2 = 0 | x ^ 3] AS result")
     )
   }
 
@@ -410,39 +380,122 @@ class PrettyTest extends CypherFunSuite {
     )
   }
 
-  //Do for line breaks wrt keywords... and also for pattern breaking
-  test("experiment") {
-    val pretty = new Pretty(true)
-    val parser = new CypherParser
-    val ast = parser.parse("return 1 as a, 2 as b, 3 as c, 4 as d")
-    val prettyDoc = pretty.show(ast)
+  //CATEGORY B: In contrast to CATEGORY A, these tests reformat the query in more 'drastic' ways.
+  //The semantics remain unaltered (for these, see CATEGORY C), but the changes in this category
+  //change constructs enough such that they ought not to be used to format users' queries in the browser.
+  //These are therefore safe only to be used in the TCK and manual
+  //An example to illustrate: assume we have query Q: "match (N) WITH n.age as SomeAge RETURN rand() as MyRand, SomeAge".
+  //For the manual & TCK, Q' is perfectly legal: "MATCH (n) WITH n.age AS someAge RETURN rand() AS myRand, someAge"
+  //For the browser, Q' is illegal. Instead, Q'' is ok: "MATCH (n) WITH n.age AS SomeAge RETURN rand() AS MyRand, SomeAge"
+  //Thus, in the browser, we do NOT alter aliased variables
 
-    (100 to 0 by -1) foreach { i =>
-      println("*" * i)
-      val prettyString = pretty.pretty(prettyDoc, i)
-      println(prettyString.layout)
-    }
+  //TODO add a test & change Pretty s.t. the query below displays properly wrt aliased cols
+  test("start a variable name with a lower case character and show discrepancy in projected aliased names") {
+    actual("match (N) with rand() as MyRand return N.age, MyRand", false, false) should equal(
+      expected("MATCH (n)%nWITH rand() AS myRand%nRETURN n.age, myRand")
+    )
   }
+
+  //CATEGORY C: In addition to re-formatting the query, changes here also alter the semantics of the query.
+  //Therefore, these actually pertain to the data modelling aspect and ought not to be taken lightly.
+  //The AST is changed as a result of the semantic changes, and so we can't compare the 'before' and 'after' versions
+  //This is only safe to be used in the manual and the TCK, where appropriate
+  test("upper case relationship types") {
+    actual("MATCH (m:Cat)-[:likes]->(n) RETURN m.name", false, false) should equal(
+      expected("MATCH (m:Cat)-[:LIKES]->(n)%nRETURN m.name")
+    )
+  }
+
+  test("upper case multiple relationship types") {
+    actual("MATCH (m)-[:likes|loathes]->(n) RETURN m.name", false, false) should equal(
+      expected("MATCH (m)-[:LIKES|LOATHES]->(n)%nRETURN m.name")
+    )
+  }
+
+  test("labels start with an upper case character") {
+    actual("match (n:editor) return n.name", false, false) should equal(
+      expected("MATCH (n:Editor)%nRETURN n.name")
+    )
+  }
+
+  test("labels in camel case instead of other delimiters") {
+    actual("match (n:editor_in_chief) return n.name", false, false) should equal(
+      expected("MATCH (n:EditorInChief)%nRETURN n.name")
+    )
+  }
+
+  test("start a property key with a lower case character") {
+    actual("match (n {Prop: 0}) return n.Prop", false, false) should equal(
+      expected("MATCH (n {prop: 0})%nRETURN n.prop")
+    )
+  }
+
+  test("start a parameter name with a lower case character") {
+    actual("match (n {prop: $Param}) return count(n)", false, false) should equal(
+      expected("MATCH (n {prop: $param})%nRETURN count(n)")
+    )
+  }
+
+  test("no space within function call parentheses") {
+    actual("RETURN split( 'original', 'i' )", false, false) should equal(
+      expected("RETURN split('original', 'i')"))
+  }
+
+  //END
+
+//  test("for debugging a tricky query") {
+//    val pretty = new Pretty(preserveColumnNames = true) //changeSemanticOK = true / false
+//    val parser = new CypherParser
+//    val query = "match (n)"
+//    val ast = parser.parse(query)
+//    val reformatted = pretty.pretty(pretty.show(ast)).layout
+//    val prettyDoc = pretty.show(ast)
+//
+//    val prettyString = pretty.pretty(prettyDoc, 500)
+//    println("<-*******************")
+//    println(prettyString.layout)
+//    println("********************->")
+//
+//    //    val secondRound = parser.parse(reformatted)
+//    //    ast should equal(secondRound)
+//  }
+
+  //Do for line breaks wrt keywords... and also for pattern breaking
+//  test("experiment") {
+//    val pretty = new Pretty(true)
+//    val parser = new CypherParser
+//    val ast = parser.parse("MATCH (m:cat)-[:likes]->(n) RETURN m.name")
+//    val prettyDoc = pretty.show(ast)
+//
+//    (100 to 0 by -1) foreach { i =>
+//      println("*" * i)
+//      val prettyString = pretty.pretty(prettyDoc, i)
+//      println(prettyString.layout)
+//    }
+//  }
 
   private val parser = new CypherParser
 
-  private def actual(text: String, preserveColumnNames: Boolean = false): String = {
+  private def actual(text: String, preserveColumnNames: Boolean = false, checkSemanticsUnchanged: Boolean = true): String = {
     val pretty = Pretty(preserveColumnNames)
     val ast = parser.parse(text)
     val reformatted = pretty.pretty(pretty.show(ast)).layout
-    println("++++++++")
-    println(text)
-    println("-------")
-    println(reformatted)
-    val secondRound = parser.parse(reformatted)
-    ast should equal(secondRound) // This means that the pretty printed query, when parsed, returns the original AST
+//    println("++++++++")
+//    println(text)
+//    println("-------")
+//    println(reformatted)
+
+    if (checkSemanticsUnchanged)
+      ast should equal(parser.parse(reformatted)) // This means that the pretty printed query, when parsed, returns the original AST
+
     reformatted
   }
+
   private def actualInsideWidth(text: String, width: Int): String = {
     val pretty = Pretty(preserveColumnNames = false)
     val ast = parser.parse(text)
     val reformatted = pretty.pretty(pretty.show(ast), width).layout
-    println(reformatted)
+    //println(reformatted)
     val secondRound = parser.parse(reformatted)
     ast should equal(secondRound) // This means that the pretty printed query, when parsed, returns the original AST
     reformatted

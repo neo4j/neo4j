@@ -32,7 +32,7 @@ import org.neo4j.cypher.internal.frontend.v3_2.{InternalException, SemanticDirec
   */
 case class Pretty(preserveColumnNames: Boolean) extends PrettyPrinter {
 
-  private val functionNameNormaliser: String => String = if (preserveColumnNames) identity else _.toUpperCase
+  private val functionNameNormaliser: String => String = if (preserveColumnNames) identity else _.toString
 
   private val parser = new CypherParser
 
@@ -44,9 +44,9 @@ case class Pretty(preserveColumnNames: Boolean) extends PrettyPrinter {
   }
 
   private def show(name: SymbolicName): Doc = name match {
-    case LabelName(label) => colon <> backtickIfNecessary(label)
-    case RelTypeName(label) => colon <> backtickIfNecessary(label)
-    case PropertyKeyName(prop) => backtickIfNecessary(prop)
+    case LabelName(label) => colon <> formatLabel(label)
+    case RelTypeName(label) => formatRelationshipType(label)
+    case PropertyKeyName(prop) => lowerCaseFirstCharacterOrBacktick(prop)
   }
 
   private def backtickIfNecessary(input: String): Doc = {
@@ -54,6 +54,34 @@ case class Pretty(preserveColumnNames: Boolean) extends PrettyPrinter {
       input
     else
       surround(input, "`")
+  }
+
+  private def lowerCaseFirstCharacter(input: String): String = {
+    Character.toLowerCase(input.charAt(0)) + input.substring(1)
+  }
+
+  private def formatLabel(input: String): Doc = {
+    if (isValidIdentifier(input))
+    {
+      val formattedInput = input.split('_').map(_.capitalize).mkString
+      formattedInput
+    }
+    else
+      backtickIfNecessary(input)
+  }
+
+  private def formatRelationshipType(input: String): Doc = {
+    if (isValidIdentifier(input))
+      input.toUpperCase
+    else
+      backtickIfNecessary(input)
+  }
+
+  private def lowerCaseFirstCharacterOrBacktick(input: String): Doc = {
+    if (isValidIdentifier(input))
+      lowerCaseFirstCharacter(input)
+    else
+      backtickIfNecessary(input)
   }
 
   def show(t: Statement): Doc = t match {
@@ -204,7 +232,7 @@ case class Pretty(preserveColumnNames: Boolean) extends PrettyPrinter {
     val ORDER_BY: Doc = maybe(orderBy, line <> order(_: OrderBy))
     val SKIP = maybe(skip, (s: Skip) => line <> "SKIP" <+> expr(s.expression))
     val LIMIT = maybe(limit, (l: Limit) => line <> "LIMIT" <+> expr(l.expression))
-    group(DISTINCT <+> show(items) <> ORDER_BY <> SKIP <> LIMIT)
+    DISTINCT <+> show(items) <> nest(ORDER_BY <> SKIP <> LIMIT)
   }
 
   private def curlies(d: Doc) = enclose("{", d, "}")
@@ -212,6 +240,8 @@ case class Pretty(preserveColumnNames: Boolean) extends PrettyPrinter {
   private def vlist(docs: Traversable[Doc], sep: Doc = emptyDoc): Doc = vsep(docs.toList, sep)
 
   private def hlist(docs: Traversable[Doc], sep: Doc = emptyDoc): Doc = hsep(docs.toList, sep)
+
+  private def listNoSpace(docs: Traversable[Doc], sep: Doc = emptyDoc): Doc = ssep(docs.toList, sep)
 
   def expr(expression: Expression): Doc = expression match {
     case Parenthesis(inner) => parens(expr(inner))
@@ -223,7 +253,7 @@ case class Pretty(preserveColumnNames: Boolean) extends PrettyPrinter {
     case ListLiteral(elements) => brackets(hlist(elements.map(expr), comma))
     case ListSlice(e, f, t) =>
       expr(e) <> brackets(maybe(f, expr) <> ".." <> maybe(t, expr))
-    case Parameter(name, _) => "$" <> string(name)
+    case Parameter(name, _) => "$" <> string(lowerCaseFirstCharacter(name))
     case HasLabels(e, ls) => expr(e) <> vlist(ls.map(show))
 
     case StringLiteral(lit) =>
@@ -232,7 +262,7 @@ case class Pretty(preserveColumnNames: Boolean) extends PrettyPrinter {
 
     case x: NumberLiteral => x.stringVal
     case lit: Literal => value(lit.value)
-    case Variable(name) => backtickIfNecessary(name)
+    case Variable(name) => lowerCaseFirstCharacterOrBacktick(name)
     case Property(e, prop) => expr(e) <> dot <> show(prop)
     case PatternExpression(pattern) => show(pattern.element)
     case CountStar() => "COUNT(*)"
@@ -327,16 +357,9 @@ case class Pretty(preserveColumnNames: Boolean) extends PrettyPrinter {
       val WHERE = maybe(pred, space <> "WHERE" <+> expr(_: Expression))
       group(brackets(PATH_NAME <> show(pattern.element) <> WHERE <> PROJECT))
 
-    case PatternComprehension(pathName, pattern, pred, proj, _) =>
-
-      val PATH_NAME = maybe(pathName, expr(_: Variable) <+> "=" <> space)
-      val PROJECT = space <> "|" <+> expr(proj)
-      val WHERE = maybe(pred, space <> "WHERE" <+> expr(_: Expression))
-      group(brackets(PATH_NAME <> show(pattern.element) <> WHERE <> PROJECT))
-
     case FunctionInvocation(ns, funcName, _, args) =>
-      val NAME = funcName.name.toUpperCase
-      val QUALIFIED_NAME = fqn(ns, functionNameNormaliser(funcName.name))
+      val NAME = lowerCaseFirstCharacter(funcName.name)
+      val QUALIFIED_NAME = fqn(ns, functionNameNormaliser(NAME))
       val ARGUMENTS = hlist(args.map(expr), comma)
 
       QUALIFIED_NAME <> parens(ARGUMENTS)
@@ -365,7 +388,7 @@ case class Pretty(preserveColumnNames: Boolean) extends PrettyPrinter {
     v.map(f(_)).getOrElse(emptyDoc)
 
   private def si(sortItem: SortItem): Doc = sortItem match {
-    case AscSortItem(e) => expr(e) <+> "ASC"
+    case AscSortItem(e) => expr(e) //we leave out 'ASC' by convention
     case DescSortItem(e) => expr(e) <+> "DESC"
   }
 
@@ -430,7 +453,7 @@ case class Pretty(preserveColumnNames: Boolean) extends PrettyPrinter {
             "*" <> from <> ".." <> to
       }
       val TYPES = if (p.types.isEmpty) emptyDoc else
-        colon <> folddoc(p.types.map(t => backtickIfNecessary(t.name)).toList, _ <> "|" <> _)
+        colon <> folddoc(p.types.map(t => show(t)).toList, _ <> "|" <> _)
 
       val PROPS = maybe(p.properties, space <> expr(_: Expression))
 
@@ -452,7 +475,7 @@ case class Pretty(preserveColumnNames: Boolean) extends PrettyPrinter {
 
   private def show(p: PatternElement): Doc = p match {
     case NodePattern(name, labels, props) =>
-      parens(show(name) <> hlist(labels.map(show)) <> maybe(props, space <> expr(_: Expression)))
+      parens(show(name) <> listNoSpace(labels.map(show)) <> maybe(props, space <> expr(_: Expression)))
 
     case RelationshipChain(el, pat, node) =>
       show(el) <> show(pat) <> show(node)
