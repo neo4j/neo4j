@@ -97,6 +97,7 @@ class LuceneSchemaIndex extends AbstractLuceneIndex
     public void verifyUniqueness( PropertyAccessor accessor, int propertyKeyId )
             throws IOException, IndexEntryConflictException
     {
+        flush( true );
         try ( UniquenessVerifier verifier = createUniquenessVerifier() )
         {
             verifier.verify( accessor, propertyKeyId );
@@ -166,7 +167,7 @@ class LuceneSchemaIndex extends AbstractLuceneIndex
         AbstractIndexPartition partition = getFirstPartition( getPartitions() );
         IndexWriter indexWriter = partition.getIndexWriter();
         indexWriter.setCommitData( ONLINE_COMMIT_USER_DATA );
-        flush();
+        flush( false );
     }
 
     /**

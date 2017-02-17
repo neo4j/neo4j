@@ -123,8 +123,6 @@ public class LuceneIndexAccessor implements IndexAccessor
     public void verifyDeferredConstraints( PropertyAccessor propertyAccessor )
             throws IndexEntryConflictException, IOException
     {
-        luceneIndex.flush();
-        luceneIndex.maybeRefreshBlocking();
         luceneIndex.verifyUniqueness( propertyAccessor, descriptor.getPropertyKeyId() );
     }
 
