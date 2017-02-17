@@ -27,10 +27,8 @@ import org.neo4j.collection.primitive.PrimitiveLongIterator
 import org.neo4j.cypher.internal.compiled_runtime.v3_2.ExecutionPlanBuilder.tracer
 import org.neo4j.cypher.internal.compiler.v3_2.executionplan.InternalExecutionResult
 import org.neo4j.cypher.internal.compiler.v3_2.planner.LogicalPlanningTestSupport
-import org.neo4j.cypher.internal.compiler.v3_2.planner.logical.{Descending, Ascending}
-import org.neo4j.cypher.internal.compiler.v3_2.planner.logical.plans._
-import org.neo4j.cypher.internal.compiler.v3_2.planner.logical.plans.{Projection => PlanProjection}
-import org.neo4j.cypher.internal.compiler.v3_2.planner.logical.plans
+import org.neo4j.cypher.internal.compiler.v3_2.planner.logical.plans.{Projection => PlanProjection, _}
+import org.neo4j.cypher.internal.compiler.v3_2.planner.logical.{Ascending, Descending, plans}
 import org.neo4j.cypher.internal.compiler.v3_2.spi.{InternalResultRow, InternalResultVisitor, QueryContext}
 import org.neo4j.cypher.internal.compiler.v3_2.{CostBasedPlannerName, NormalMode, TaskCloser}
 import org.neo4j.cypher.internal.frontend.v3_2.ast._
@@ -626,7 +624,7 @@ abstract class CodeGeneratorTest extends CypherFunSuite with LogicalPlanningTest
 
   test("project null parameters") {
 
-    val plan = ProduceResult(List("a"), Projection(SingleRow()(solved), Map("a" -> Parameter("FOO", CTAny)(pos)))(solved))
+    val plan = ProduceResult(List("a"), plans.Projection(SingleRow()(solved), Map("a" -> Parameter("FOO", CTAny)(pos)))(solved))
     val compiled = compileAndExecute(plan, Map("FOO" -> null))
 
     //then
@@ -637,11 +635,11 @@ abstract class CodeGeneratorTest extends CypherFunSuite with LogicalPlanningTest
   test("project primitive parameters") {
 
     val plan = ProduceResult(List("a", "r1", "x", "y", "z"),
-      Projection(SingleRow()(solved), Map("a" -> Parameter("FOO_NODE", CTNode)(pos),
-                                          "r1" -> Parameter("FOO_REL",  CTRelationship)(pos),
-                                          "x" -> Parameter("FOO1", CTInteger)(pos),
-                                          "y" -> Parameter("FOO2", CTFloat)(pos),
-                                          "z" -> Parameter("FOO3", CTBoolean)(pos)))(solved))
+      plans.Projection(SingleRow()(solved), Map("a" -> Parameter("FOO_NODE", CTNode)(pos),
+                                                "r1" -> Parameter("FOO_REL",  CTRelationship)(pos),
+                                                "x" -> Parameter("FOO1", CTInteger)(pos),
+                                                "y" -> Parameter("FOO2", CTFloat)(pos),
+                                                "z" -> Parameter("FOO3", CTBoolean)(pos)))(solved))
 
     val compiled = compileAndExecute(plan, Map("FOO_NODE" -> aNode,
                                                "FOO_REL" -> relMap(11L).relationship,
@@ -658,8 +656,8 @@ abstract class CodeGeneratorTest extends CypherFunSuite with LogicalPlanningTest
   test("project null primitive node and relationship parameters") {
 
     val plan = ProduceResult(List("a", "r1"),
-      Projection(SingleRow()(solved), Map("a" -> Parameter("FOO_NODE", CTNode)(pos),
-                                          "r1" -> Parameter("FOO_REL",  CTRelationship)(pos)))(solved))
+      plans.Projection(SingleRow()(solved), Map("a" -> Parameter("FOO_NODE", CTNode)(pos),
+                                               "r1" -> Parameter("FOO_REL",  CTRelationship)(pos)))(solved))
 
     val compiled = compileAndExecute(plan, Map("FOO_NODE" -> null,
                                                "FOO_REL" -> null))
@@ -1626,6 +1624,52 @@ abstract class CodeGeneratorTest extends CypherFunSuite with LogicalPlanningTest
     result.toList should equal(List(
       Map("b" -> 1L,"c" -> 1L),
       Map("b" -> 2L,"c" -> 2L)))
+  }
+
+  test("sort with negative limit from parameter (should use top)") {
+    /* {limit -> -1}
+    UNWIND [3,1,2,4] as x
+    WITH x as a
+    RETURN a
+    ORDER BY a
+    LIMIT {limit}
+    */
+    // given
+    val listLiteral = literalIntList(3, 1, 2, 4)
+
+    val unwind = plans.UnwindCollection(SingleRow()(solved), IdName("x"), listLiteral)(solved)
+    val projection = plans.Projection(unwind, Map("a" -> varFor("x")))(solved)
+    val orderBy = Sort(projection, List(Ascending(IdName("a"))))(solved)
+    val limit = plans.Limit(orderBy, Parameter("limit", CTAny)(pos), DoNotIncludeTies)(solved)
+    val plan = ProduceResult(List("a"), limit)
+
+    // when
+    val compiled = compileAndExecute(plan, Map("limit" -> Long.box(-1L)))
+
+    // then
+    val result = getResult(compiled, "a")
+    result.toList should equal(List.empty)
+  }
+
+  test("negative limit from parameter") {
+    /* {limit -> -1}
+    UNWIND [1,2,3] as x
+    RETURN x
+    LIMIT {limit}
+    */
+    // given
+    val listLiteral = literalIntList(1, 2, 3)
+
+    val unwind = plans.UnwindCollection(SingleRow()(solved), IdName("x"), listLiteral)(solved)
+    val limit = plans.Limit(unwind, Parameter("limit", CTAny)(pos), DoNotIncludeTies)(solved)
+    val plan = ProduceResult(List("x"), limit)
+
+    // when
+    val compiled = compileAndExecute(plan, Map("limit" -> Long.box(-1L)))
+
+    // then
+    val result = getResult(compiled, "x")
+    result.toList should equal(List.empty)
   }
 
   private def compile(plan: LogicalPlan) = {

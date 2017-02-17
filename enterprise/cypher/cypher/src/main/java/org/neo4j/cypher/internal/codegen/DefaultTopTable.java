@@ -52,6 +52,10 @@ public class DefaultTopTable<T extends Comparable<Object>> implements Iterable<T
 
     public DefaultTopTable( int totalCount )
     {
+        if ( totalCount <= 0 )
+        {
+            throw new IllegalArgumentException( "Top table size must be greater than 0" );
+        }
         this.totalCount = totalCount;
 
         heap = new PriorityQueue<>( totalCount, Collections.reverseOrder() );

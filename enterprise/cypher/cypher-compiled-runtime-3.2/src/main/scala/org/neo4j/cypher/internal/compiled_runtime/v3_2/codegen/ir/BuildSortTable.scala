@@ -47,7 +47,14 @@ case class BuildTopTable(opName: String, tableName: String, countExpression: Cod
 {
   override def init[E](generator: MethodStructure[E])(implicit context: CodeGenContext) = {
     countExpression.init(generator)
-    generator.allocateSortTable(tableName, tableDescriptor, countExpression.generateExpression(generator))
+
+    // Return early on limit <= 0 (this unifies the behaviour with the normal limit implementation)
+    val variableName = context.namer.newVarName()
+    generator.declareCounter(variableName, generator.box(countExpression.generateExpression(generator)))
+    generator.ifStatement(generator.checkInteger(variableName, LessThanEqual, 0L)) { onTrue =>
+      onTrue.returnSuccessfully()
+    }
+    generator.allocateSortTable(tableName, tableDescriptor, generator.loadVariable(variableName))
   }
 
   override protected def tableDescriptor = TopTableDescriptor(tupleDescriptor)

@@ -55,3 +55,6 @@ Get node degree via length of pattern expression that specifies a relationship t
 //OrderByAcceptance.feature - Unsupported orderability
 ORDER BY nodes should return null results last in ascending order
 ORDER BY relationships should return null results last in ascending order
+
+//SkipLimitAcceptance.feature - Unsupported limit syntax
+Negative parameter for LIMIT should not generate errors
