@@ -63,7 +63,7 @@ public class LocalDatabase implements Lifecycle
 
     private volatile StoreId storeId;
     private volatile DatabaseHealth databaseHealth;
-    private AvailabilityRequirement currentRequirement;
+    private volatile AvailabilityRequirement currentRequirement;
 
     private volatile TransactionCommitProcess localCommit;
 
