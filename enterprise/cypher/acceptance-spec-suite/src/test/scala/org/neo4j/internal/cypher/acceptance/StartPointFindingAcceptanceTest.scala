@@ -19,10 +19,10 @@
  */
 package org.neo4j.internal.cypher.acceptance
 
-import org.neo4j.cypher.ExecutionEngineFunSuite
+import org.neo4j.cypher.{ExecutionEngineFunSuite, NewPlannerTestSupport}
 import org.neo4j.graphdb.Node
 
-class StartPointFindingAcceptanceTest extends ExecutionEngineFunSuite with NewRuntimeTestSupport {
+class StartPointFindingAcceptanceTest extends ExecutionEngineFunSuite with NewPlannerTestSupport {
 
   // Not TCK material below; use of id() or index-related
 

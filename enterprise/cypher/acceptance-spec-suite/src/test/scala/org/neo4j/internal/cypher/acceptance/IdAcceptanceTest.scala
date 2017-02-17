@@ -22,7 +22,7 @@ package org.neo4j.internal.cypher.acceptance
 import org.neo4j.cypher._
 import org.neo4j.graphdb.Relationship
 
-class IdAcceptanceTest extends ExecutionEngineFunSuite with NewRuntimeTestSupport {
+class IdAcceptanceTest extends ExecutionEngineFunSuite with NewPlannerTestSupport {
 
   test("id on a node should work in both runtimes")  {
     // GIVEN

@@ -24,7 +24,7 @@ import org.neo4j.cypher.internal.compiler.v3_2.planDescription.InternalPlanDescr
 import org.neo4j.cypher.{ExecutionEngineFunSuite, NewPlannerTestSupport, QueryStatisticsTestSupport}
 import org.scalatest.matchers.{MatchResult, Matcher}
 
-class MatchAggregationsBackedByCountStoreAcceptanceTest extends ExecutionEngineFunSuite with QueryStatisticsTestSupport with NewRuntimeTestSupport {
+class MatchAggregationsBackedByCountStoreAcceptanceTest extends ExecutionEngineFunSuite with QueryStatisticsTestSupport with NewPlannerTestSupport {
 
   test("counts nodes using count store") {
     // Given

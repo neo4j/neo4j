@@ -39,7 +39,7 @@ class EagerizationAcceptanceTest
   extends ExecutionEngineFunSuite
   with TableDrivenPropertyChecks
   with QueryStatisticsTestSupport
-  with NewRuntimeTestSupport
+  with NewPlannerTestSupport
   with CreateTempFileTestSupport {
 
   val VERBOSE = false

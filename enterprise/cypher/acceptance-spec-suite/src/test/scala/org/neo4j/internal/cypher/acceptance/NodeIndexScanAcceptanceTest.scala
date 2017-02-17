@@ -26,7 +26,7 @@ import org.neo4j.cypher.{ExecutionEngineFunSuite, NewPlannerTestSupport}
  * If you only want to verify that plans using indexes are actually planned, please use
  * [[org.neo4j.cypher.internal.compiler.v3_1.planner.logical.LeafPlanningIntegrationTest]]
  */
-class NodeIndexScanAcceptanceTest extends ExecutionEngineFunSuite with NewRuntimeTestSupport{
+class NodeIndexScanAcceptanceTest extends ExecutionEngineFunSuite with NewPlannerTestSupport{
 
   test("should use index on IS NOT NULL") {
     // Given

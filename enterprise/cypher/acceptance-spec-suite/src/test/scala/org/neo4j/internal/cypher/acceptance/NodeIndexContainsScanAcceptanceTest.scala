@@ -26,7 +26,7 @@ import org.neo4j.cypher.{CypherTypeException, ExecutionEngineFunSuite, NewPlanne
  * If you only want to verify that plans using indexes are actually planned, please use
  * [[org.neo4j.cypher.internal.compiler.v3_0.planner.logical.LeafPlanningIntegrationTest]]
  */
-class NodeIndexContainsScanAcceptanceTest extends ExecutionEngineFunSuite with NewRuntimeTestSupport{
+class NodeIndexContainsScanAcceptanceTest extends ExecutionEngineFunSuite with NewPlannerTestSupport{
 
   test("should be case sensitive for CONTAINS with indexes") {
     val london = createLabeledNode(Map("name" -> "London"), "Location")

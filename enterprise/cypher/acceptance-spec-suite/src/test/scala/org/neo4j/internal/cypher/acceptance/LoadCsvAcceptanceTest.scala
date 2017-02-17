@@ -38,7 +38,7 @@ import scala.collection.JavaConverters._
 
 class LoadCsvAcceptanceTest
   extends ExecutionEngineFunSuite with BeforeAndAfterAll
-  with QueryStatisticsTestSupport with CreateTempFileTestSupport with NewRuntimeTestSupport {
+  with QueryStatisticsTestSupport with CreateTempFileTestSupport with NewPlannerTestSupport {
 
   def csvUrls(f: PrintWriter => Unit) = Seq(
     createCSVTempFileURL(f),

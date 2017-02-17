@@ -21,7 +21,8 @@ package org.neo4j.internal.cypher.acceptance
 
 import org.neo4j.cypher.{ExecutionEngineFunSuite, NewPlannerTestSupport, QueryStatisticsTestSupport}
 
-class ParameterValuesAcceptanceTest extends ExecutionEngineFunSuite with NewRuntimeTestSupport with QueryStatisticsTestSupport {
+class ParameterValuesAcceptanceTest extends ExecutionEngineFunSuite with NewPlannerTestSupport
+  with QueryStatisticsTestSupport {
 
   test("should be able to send in an array of nodes via parameter") {
     // given
@@ -33,7 +34,7 @@ class ParameterValuesAcceptanceTest extends ExecutionEngineFunSuite with NewRunt
 
   // Not TCK material below; sending graph types or characters as parameters is not supported
 
-  ignore("should not erase the type of an empty array sent as parameter") {
+  test("should not erase the type of an empty array sent as parameter") {
     import Array._
 
     Seq(emptyLongArray, emptyShortArray, emptyByteArray, emptyIntArray,
@@ -50,7 +51,7 @@ class ParameterValuesAcceptanceTest extends ExecutionEngineFunSuite with NewRunt
     }
   }
 
-  ignore("should not erase the type of nonempty arrays sent as parameter") {
+  test("should not erase the type of nonempty arrays sent as parameter") {
     Seq(Array[Long](1l), Array[Short](2), Array[Byte](3), Array[Int](4),
       Array[Double](3.14), Array[Float](5.56f),
       Array[Boolean](false, true), Array[String]("", " ")).foreach { array =>

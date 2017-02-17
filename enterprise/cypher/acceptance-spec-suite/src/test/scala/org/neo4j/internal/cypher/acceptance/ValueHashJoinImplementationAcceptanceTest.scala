@@ -21,7 +21,7 @@ package org.neo4j.internal.cypher.acceptance
 
 import org.neo4j.cypher.{ExecutionEngineFunSuite, NewPlannerTestSupport}
 
-class ValueHashJoinImplementationAcceptanceTest extends ExecutionEngineFunSuite with NewRuntimeTestSupport {
+class ValueHashJoinImplementationAcceptanceTest extends ExecutionEngineFunSuite with NewPlannerTestSupport {
 
   test("find friends of others") {
     // given

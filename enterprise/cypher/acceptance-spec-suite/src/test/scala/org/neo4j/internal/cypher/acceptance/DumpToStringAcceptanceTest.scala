@@ -19,20 +19,10 @@
  */
 package org.neo4j.internal.cypher.acceptance
 
-import org.neo4j.cypher.internal.{CommunityCompatibilityFactory, EnterpriseCompatibilityFactory, ExecutionEngine}
-import org.neo4j.cypher.{ExecutionEngineFunSuite, ExecutionEngineTestSupport, NewPlannerTestSupport}
 import org.neo4j.cypher.internal.frontend.v3_2.test_helpers.WindowsStringSafe
-import org.neo4j.cypher.javacompat.internal.GraphDatabaseCypherService
-import org.neo4j.kernel.GraphDatabaseQueryService
-import org.neo4j.kernel.api.KernelAPI
-import org.neo4j.kernel.monitoring.Monitors
-import org.neo4j.logging.{LogProvider, NullLogProvider}
-import org.neo4j.test.TestEnterpriseGraphDatabaseFactory
-import org.neo4j.kernel.monitoring.{Monitors => KernelMonitors}
+import org.neo4j.cypher.{ExecutionEngineFunSuite, NewPlannerTestSupport}
 
-import collection.JavaConverters._
-
-class DumpToStringAcceptanceTest extends ExecutionEngineFunSuite with NewRuntimeTestSupport {
+class DumpToStringAcceptanceTest extends ExecutionEngineFunSuite with NewPlannerTestSupport {
 
   implicit val windowsSafe = WindowsStringSafe
 
@@ -75,27 +65,3 @@ class DumpToStringAcceptanceTest extends ExecutionEngineFunSuite with NewRuntime
           |""".stripMargin)
   }
 }
-
-trait NewRuntimeTestSupport extends NewPlannerTestSupport {
-    self: ExecutionEngineFunSuite =>
-}
-//  with ExecutionEngineTestSupport {
-//  self: ExecutionEngineFunSuite =>
-//  override protected def createGraphDatabase(): GraphDatabaseCypherService = {
-//    val impermanentDatabase = new TestEnterpriseGraphDatabaseFactory().newImpermanentDatabase(databaseConfig().asJava)
-//    new GraphDatabaseCypherService(impermanentDatabase)
-//  }
-//
-//  override protected def initTest(): Unit = {
-//    eengine = createEngine(graph)
-//  }
-//
-//  def createEngine(graphDatabaseCypherService: GraphDatabaseQueryService, logProvider: LogProvider = NullLogProvider.getInstance()): ExecutionEngine = {
-//    val resolver = graphDatabaseCypherService.getDependencyResolver
-//    val kernel = resolver.resolveDependency(classOf[KernelAPI])
-//    val kernelMonitors: KernelMonitors = resolver.resolveDependency(classOf[KernelMonitors])
-//    val communityCompatibilityFactory = new CommunityCompatibilityFactory(graphDatabaseCypherService, kernel, kernelMonitors, logProvider)
-//    val compatibilityFactory = new EnterpriseCompatibilityFactory(communityCompatibilityFactory, graph, kernel, kernelMonitors, logProvider)
-//    new ExecutionEngine(graphDatabaseCypherService, logProvider, compatibilityFactory)
-//  }
-//}

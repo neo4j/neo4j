@@ -21,7 +21,7 @@ package org.neo4j.internal.cypher.acceptance
 
 import org.neo4j.cypher.{ExecutionEngineFunSuite, NewPlannerTestSupport}
 
-class UpdateReportingAcceptanceTest extends ExecutionEngineFunSuite with NewRuntimeTestSupport {
+class UpdateReportingAcceptanceTest extends ExecutionEngineFunSuite with NewPlannerTestSupport {
   test("creating a node gets reported as such") {
     val output = updateWithBothPlannersAndCompatibilityMode("create (:A)").dumpToString()
 

@@ -24,7 +24,7 @@ import org.scalatest.concurrent.TimeLimitedTests
 import org.scalatest.time.Span
 import org.scalatest.time.SpanSugar._
 
-class PlanningPerformanceAcceptanceTest extends ExecutionEngineFunSuite with QueryStatisticsTestSupport with NewRuntimeTestSupport with TimeLimitedTests {
+class PlanningPerformanceAcceptanceTest extends ExecutionEngineFunSuite with QueryStatisticsTestSupport with NewPlannerTestSupport with TimeLimitedTests {
 
   override def timeLimit: Span = 10 seconds
 

@@ -21,7 +21,7 @@ package org.neo4j.internal.cypher.acceptance
 
 import org.neo4j.cypher.{ExecutionEngineFunSuite, NewPlannerTestSupport, QueryStatisticsTestSupport, SyntaxException}
 
-class ForeachAcceptanceTest extends ExecutionEngineFunSuite with NewRuntimeTestSupport with QueryStatisticsTestSupport {
+class ForeachAcceptanceTest extends ExecutionEngineFunSuite with NewPlannerTestSupport with QueryStatisticsTestSupport {
 
   test("should understand symbols introduced by FOREACH") {
     createLabeledNode("Label")

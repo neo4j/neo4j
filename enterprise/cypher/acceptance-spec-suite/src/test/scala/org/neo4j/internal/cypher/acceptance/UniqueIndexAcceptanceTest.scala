@@ -21,7 +21,7 @@ package org.neo4j.internal.cypher.acceptance
 
 import org.neo4j.cypher.{ExecutionEngineFunSuite, NewPlannerTestSupport}
 
-class UniqueIndexAcceptanceTest extends ExecutionEngineFunSuite with NewRuntimeTestSupport {
+class UniqueIndexAcceptanceTest extends ExecutionEngineFunSuite with NewPlannerTestSupport {
 
   test("should be able to use unique index hints on IN expressions") {
     //GIVEN
