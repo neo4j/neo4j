@@ -1276,7 +1276,7 @@ public class ProcedureIT
         @Procedure
         public Stream<Output> guardMe()
         {
-            termination.mark( Status.Transaction.Terminated  );
+            termination.mark();
             guard.check();
             throw new IllegalStateException( "Should never have executed this!" );
         }

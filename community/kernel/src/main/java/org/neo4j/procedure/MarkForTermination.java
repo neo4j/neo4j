@@ -19,7 +19,6 @@
  */
 package org.neo4j.procedure;
 
-import org.neo4j.kernel.api.exceptions.Status;
 
 /**
  * MarkForTermination allows to mark a transaction for termination, this will make it so that it can not commit.
@@ -31,5 +30,5 @@ public interface MarkForTermination
      * Marks this transaction for termination, such that it cannot commit successfully and will try to be
      * terminated by having other methods throw a specific termination exception.
      */
-    void mark(Status status);
+    void mark();
 }

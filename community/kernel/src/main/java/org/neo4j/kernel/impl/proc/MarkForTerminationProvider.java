@@ -47,9 +47,9 @@ public class MarkForTerminationProvider implements ComponentRegistry.Provider<Ma
         }
 
         @Override
-        public void mark( Status status )
+        public void mark()
         {
-            ktx.markForTermination( status );
+            ktx.markForTermination( Status.Transaction.Terminated );
         }
     }
 }
