@@ -17,22 +17,28 @@
  * You should have received a copy of the GNU General Public License
  * along with this program.  If not, see <http://www.gnu.org/licenses/>.
  */
-package org.neo4j.cypher.internal
+package org.neo4j.kernel.api.query;
 
-import org.neo4j.cypher.internal.spi.v3_2.TransactionalContextWrapper
-import org.neo4j.graphdb.Transaction
-import org.neo4j.kernel.api.Statement
-import org.neo4j.kernel.api.query.PlannerInfo
+import java.util.Map;
 
-final case class TransactionInfo(tx: Transaction, isTopLevelTx: Boolean, statement: Statement)
+public abstract class IndexUsage
+{
+    public static IndexUsage schemaIndexUsage( String identifier, String label, String propertyKey )
+    {
+        return new SchemaIndexUsage( identifier, label, propertyKey );
+    }
 
-trait ExecutionPlan {
+    public static IndexUsage legacyIndexUsage( String identifier, String entityType, String index )
+    {
+        return new LegacyIndexUsage( identifier, index, entityType );
+    }
 
-  def run(transactionalContext: TransactionalContextWrapper, executionMode: CypherExecutionMode, params: Map[String, Any]): ExecutionResult
+    public abstract Map<String,String> asMap();
 
-  def isPeriodicCommit: Boolean
+    final String identifier;
 
-  def isStale(lastCommittedTxId: LastCommittedTxIdProvider, ctx: TransactionalContextWrapper): Boolean
-
-  def plannerInfo: PlannerInfo
+    IndexUsage( String identifier )
+    {
+        this.identifier = identifier;
+    }
 }

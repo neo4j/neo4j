@@ -17,22 +17,31 @@
  * You should have received a copy of the GNU General Public License
  * along with this program.  If not, see <http://www.gnu.org/licenses/>.
  */
-package org.neo4j.cypher.internal
+package org.neo4j.kernel.api.query;
 
-import org.neo4j.cypher.internal.spi.v3_2.TransactionalContextWrapper
-import org.neo4j.graphdb.Transaction
-import org.neo4j.kernel.api.Statement
-import org.neo4j.kernel.api.query.PlannerInfo
+import java.util.HashMap;
+import java.util.Map;
 
-final case class TransactionInfo(tx: Transaction, isTopLevelTx: Boolean, statement: Statement)
+class SchemaIndexUsage extends IndexUsage
+{
+    private final String label;
+    private final String propertyKey;
 
-trait ExecutionPlan {
+    SchemaIndexUsage( String identifier, String label, String propertyKey )
+    {
+        super( identifier );
+        this.label = label;
+        this.propertyKey = propertyKey;
+    }
 
-  def run(transactionalContext: TransactionalContextWrapper, executionMode: CypherExecutionMode, params: Map[String, Any]): ExecutionResult
-
-  def isPeriodicCommit: Boolean
-
-  def isStale(lastCommittedTxId: LastCommittedTxIdProvider, ctx: TransactionalContextWrapper): Boolean
-
-  def plannerInfo: PlannerInfo
+    public Map<String,String> asMap()
+    {
+        Map<String,String> map = new HashMap<>();
+        map.put( "indexType", "SCHEMA INDEX" );
+        map.put( "entityType", "NODE" );
+        map.put( "identifier", identifier );
+        map.put( "label", label );
+        map.put( "propertyKey", propertyKey );
+        return map;
+    }
 }

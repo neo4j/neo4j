@@ -25,7 +25,7 @@ import java.util.function.Function;
 import org.neo4j.graphdb.NotInTransactionException;
 import org.neo4j.graphdb.TransactionTerminatedException;
 import org.neo4j.kernel.api.DataWriteOperations;
-import org.neo4j.kernel.api.ExecutingQuery;
+import org.neo4j.kernel.api.query.ExecutingQuery;
 import org.neo4j.kernel.api.ProcedureCallOperations;
 import org.neo4j.kernel.api.QueryRegistryOperations;
 import org.neo4j.kernel.api.ReadOperations;
@@ -196,7 +196,8 @@ public class KernelStatement implements TxStateHolder, Statement
 
     public LockTracer lockTracer()
     {
-        return executingQueryList.reduce( systemLockTracer, ExecutingQuery::lockTracer, LockTracer::combine );
+        LockTracer tracer = executingQueryList.top( ExecutingQuery::lockTracer );
+        return tracer == null ? systemLockTracer : systemLockTracer.combine( tracer );
     }
 
     public final void acquire()

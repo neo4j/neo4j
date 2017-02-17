@@ -17,22 +17,31 @@
  * You should have received a copy of the GNU General Public License
  * along with this program.  If not, see <http://www.gnu.org/licenses/>.
  */
-package org.neo4j.cypher.internal
+package org.neo4j.kernel.api.query;
 
-import org.neo4j.cypher.internal.spi.v3_2.TransactionalContextWrapper
-import org.neo4j.graphdb.Transaction
-import org.neo4j.kernel.api.Statement
-import org.neo4j.kernel.api.query.PlannerInfo
+import java.util.HashMap;
+import java.util.Map;
 
-final case class TransactionInfo(tx: Transaction, isTopLevelTx: Boolean, statement: Statement)
+class LegacyIndexUsage extends IndexUsage
+{
+    private final String index;
+    private final String entityType;
 
-trait ExecutionPlan {
+    LegacyIndexUsage( String identifier, String index, String entityType )
+    {
+        super( identifier );
+        this.index = index;
+        this.entityType = entityType;
+    }
 
-  def run(transactionalContext: TransactionalContextWrapper, executionMode: CypherExecutionMode, params: Map[String, Any]): ExecutionResult
-
-  def isPeriodicCommit: Boolean
-
-  def isStale(lastCommittedTxId: LastCommittedTxIdProvider, ctx: TransactionalContextWrapper): Boolean
-
-  def plannerInfo: PlannerInfo
+    @Override
+    public Map<String,String> asMap()
+    {
+        Map<String,String> map = new HashMap<>();
+        map.put( "indexType", "LEGACY INDEX" );
+        map.put( "entityType", entityType );
+        map.put( "identifier", identifier );
+        map.put( "indexName", index );
+        return map;
+    }
 }

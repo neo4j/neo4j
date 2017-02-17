@@ -22,6 +22,7 @@ package org.neo4j.kernel.api;
 import java.util.Map;
 import java.util.stream.Stream;
 
+import org.neo4j.kernel.api.query.ExecutingQuery;
 import org.neo4j.kernel.impl.query.clientconnection.ClientConnectionInfo;
 
 

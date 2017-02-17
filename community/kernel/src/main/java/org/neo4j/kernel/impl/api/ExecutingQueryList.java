@@ -19,11 +19,10 @@
  */
 package org.neo4j.kernel.impl.api;
 
-import java.util.function.BiFunction;
 import java.util.function.Function;
 import java.util.stream.Stream;
 
-import org.neo4j.kernel.api.ExecutingQuery;
+import org.neo4j.kernel.api.query.ExecutingQuery;
 
 abstract class ExecutingQueryList
 {
@@ -31,34 +30,46 @@ abstract class ExecutingQueryList
 
     abstract ExecutingQueryList push( ExecutingQuery newExecutingQuery );
 
-    abstract ExecutingQueryList remove( ExecutingQuery executingQuery );
+    final ExecutingQueryList remove( ExecutingQuery executingQuery )
+    {
+        return remove( null, executingQuery );
+    }
 
-    abstract <T> T reduce( T defaultValue, Function<ExecutingQuery,T> accessor, BiFunction<T,T,T> combinator );
+    abstract ExecutingQueryList remove( ExecutingQuery parent, ExecutingQuery target );
+
+    abstract <T> T top( Function<ExecutingQuery,T> accessor );
+
+    abstract void waitsFor( ExecutingQuery query );
 
     static ExecutingQueryList EMPTY = new ExecutingQueryList()
     {
         @Override
-        public Stream<ExecutingQuery> queries()
+        Stream<ExecutingQuery> queries()
         {
             return Stream.empty();
         }
 
         @Override
-        public ExecutingQueryList push( ExecutingQuery newExecutingQuery )
+        ExecutingQueryList push( ExecutingQuery newExecutingQuery )
         {
             return new Entry( newExecutingQuery, this );
         }
 
         @Override
-        public ExecutingQueryList remove( ExecutingQuery executingQuery )
+        ExecutingQueryList remove( ExecutingQuery parent, ExecutingQuery target )
         {
             return this;
         }
 
         @Override
-        <T> T reduce( T defaultValue, Function<ExecutingQuery,T> accessor, BiFunction<T,T,T> combinator )
+        <T> T top( Function<ExecutingQuery,T> accessor )
         {
-            return defaultValue;
+            return null;
+        }
+
+        @Override
+        void waitsFor( ExecutingQuery query )
+        {
         }
     };
 
@@ -74,7 +85,7 @@ abstract class ExecutingQueryList
         }
 
         @Override
-        public Stream<ExecutingQuery> queries()
+        Stream<ExecutingQuery> queries()
         {
             Stream.Builder<ExecutingQuery> builder = Stream.builder();
             ExecutingQueryList entry = this;
@@ -88,22 +99,24 @@ abstract class ExecutingQueryList
         }
 
         @Override
-        public ExecutingQueryList push( ExecutingQuery newExecutingQuery )
+        ExecutingQueryList push( ExecutingQuery newExecutingQuery )
         {
             assert (newExecutingQuery.internalQueryId() > query.internalQueryId());
+            waitsFor( newExecutingQuery );
             return new Entry( newExecutingQuery, this );
         }
 
         @Override
-        public ExecutingQueryList remove( ExecutingQuery executingQuery )
+        ExecutingQueryList remove( ExecutingQuery parent, ExecutingQuery target )
         {
-            if ( executingQuery.equals( query ) )
+            if ( target.equals( query ) )
             {
+                next.waitsFor( parent );
                 return next;
             }
             else
             {
-                ExecutingQueryList removed = next.remove( executingQuery );
+                ExecutingQueryList removed = next.remove( parent, target );
                 if ( removed == next )
                 {
                     return this;
@@ -116,9 +129,15 @@ abstract class ExecutingQueryList
         }
 
         @Override
-        <T> T reduce( T defaultValue, Function<ExecutingQuery,T> accessor, BiFunction<T,T,T> combinator )
+        <T> T top( Function<ExecutingQuery,T> accessor )
         {
-            return next.reduce( combinator.apply( defaultValue, accessor.apply( query ) ), accessor, combinator );
+            return accessor.apply( query );
+        }
+
+        @Override
+        void waitsFor( ExecutingQuery child )
+        {
+            this.query.waitsForQuery( child );
         }
     }
 }

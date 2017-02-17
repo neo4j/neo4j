@@ -25,7 +25,7 @@ import org.neo4j.cypher.internal.ExecutionResult
 import org.neo4j.graphdb
 import org.neo4j.graphdb.ResourceIterator
 import org.neo4j.graphdb.Result.ResultVisitor
-import org.neo4j.kernel.api.ExecutingQuery
+import org.neo4j.kernel.api.query.ExecutingQuery
 import org.neo4j.kernel.impl.query.QueryExecutionMonitor
 
 class ClosingExecutionResult(val query: ExecutingQuery, val inner: ExecutionResult, runSafely: RunSafely)

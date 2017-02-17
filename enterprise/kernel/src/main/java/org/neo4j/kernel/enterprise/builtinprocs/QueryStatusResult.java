@@ -25,8 +25,9 @@ import java.time.ZoneId;
 import java.util.List;
 import java.util.Map;
 
-import org.neo4j.kernel.api.ExecutingQuery;
 import org.neo4j.kernel.api.exceptions.InvalidArgumentsException;
+import org.neo4j.kernel.api.query.ExecutingQuery;
+import org.neo4j.kernel.api.query.QuerySnapshot;
 import org.neo4j.kernel.impl.query.clientconnection.ClientConnectionInfo;
 
 import static java.time.format.DateTimeFormatter.ISO_OFFSET_DATE_TIME;
@@ -40,89 +41,77 @@ public class QueryStatusResult
 {
     public final String queryId;
     public final String username;
+    public final Map<String,Object> metaData;
     public final String query;
     public final Map<String,Object> parameters;
+    /** @since Neo4j 3.2 */
     public final String planner;
+    /** @since Neo4j 3.2 */
     public final String runtime;
+    /** @since Neo4j 3.2 */
+    public final List<Map<String,String>> indexes;
     public final String startTime;
     @Deprecated
     public final String elapsedTime;
-    /** EXPERIMENTAL: added in Neo4j 3.2 */
-    public final long elapsedTimeMillis; // TODO: this field should be of a Duration type (when Cypher supports that)
     @Deprecated
     public final String connectionDetails;
-    /** EXPERIMENTAL: added in Neo4j 3.2 */
+    /** @since Neo4j 3.2 */
     public final String requestScheme;
-    /** EXPERIMENTAL: added in Neo4j 3.2 */
+    /** @since Neo4j 3.2 */
     public final String clientAddress;
-    /** EXPERIMENTAL: added in Neo4j 3.2 */
+    /** @since Neo4j 3.2 */
     public final String requestUri;
-    /** EXPERIMENTAL: added in Neo4j 3.2 */
-    public final long cpuTimeMillis; // TODO: we want this field to be of a Duration type (when Cypher supports that)
-    /** EXPERIMENTAL: added in Neo4j 3.2 */
-    public final Map<String,Object> status;
-    /** EXPERIMENTAL: added in Neo4j 3.2 */
+    /** @since Neo4j 3.2 */
+    public final String status;
+    /** @since Neo4j 3.2 */
+    public final Map<String,Object> resourceInformation;
+    /** @since Neo4j 3.2 */
     public final long activeLockCount;
-    /** EXPERIMENTAL: added in Neo4j 3.2 */
+    /** @since Neo4j 3.2 */
+    public final long elapsedTimeMillis; // TODO: this field should be of a Duration type (when Cypher supports that)
+    /** @since Neo4j 3.2 */
+    public final long cpuTimeMillis; // TODO: we want this field to be of a Duration type (when Cypher supports that)
+    /** @since Neo4j 3.2 */
     public final long waitTimeMillis; // TODO: we want this field to be of a Duration type (when Cypher supports that)
-    public final Map<String,Object> metaData;
-    public final List<Map<String,String>> indexes;
+    /** @since Neo4j 3.2 */
+    public final long idleTimeMillis; // TODO: we want this field to be of a Duration type (when Cypher supports that)
 
-    QueryStatusResult( ExecutingQuery q ) throws InvalidArgumentsException
+    QueryStatusResult( ExecutingQuery query ) throws InvalidArgumentsException
     {
-        this(
-                ofInternalId( q.internalQueryId() ),
-                q.username(),
-                q.query(),
-                q.startTime(),
-                q.elapsedTimeMillis(),
-                q.clientConnection(),
-                q.metaData(),
-                q.cpuTimeMillis(),
-                q.status(),
-                q.activeLockCount(),
-                q.waitTimeMillis() );
+        this( query.snapshot() );
     }
 
-    private QueryStatusResult(
-            QueryId queryId,
-            String username,
-            ExecutingQuery.QueryInfo query,
-            long startTime,
-            long elapsedTime,
-            ClientConnectionInfo clientConnection,
-            Map<String,Object> txMetaData,
-            long cpuTimeMillis,
-            Map<String,Object> status,
-            long activeLockCount,
-            long waitTimeMillis
-    ) {
-        this.queryId = queryId.toString();
-        this.username = username;
-        this.query = query.text;
-        this.parameters = query.parameters;
-        this.startTime = formatTime( startTime );
-        this.elapsedTime = formatInterval( elapsedTime );
-        this.elapsedTimeMillis = elapsedTime;
+    private QueryStatusResult( QuerySnapshot query ) throws InvalidArgumentsException
+    {
+        this.queryId = ofInternalId( query.internalQueryId() ).toString();
+        this.username = query.username();
+        this.query = query.queryText();
+        this.parameters = query.queryParameters();
+        this.startTime = formatTime( query.startTimestampMillis() );
+        this.elapsedTimeMillis = query.elapsedTimeMillis();
+        this.elapsedTime = formatInterval( elapsedTimeMillis );
+        ClientConnectionInfo clientConnection = query.clientConnection();
         this.connectionDetails = clientConnection.asConnectionDetails();
         this.requestScheme = clientConnection.requestScheme();
         this.clientAddress = clientConnection.clientAddress();
         this.requestUri = clientConnection.requestURI();
-        this.metaData = txMetaData;
-        this.cpuTimeMillis = cpuTimeMillis;
-        this.status = status;
-        this.activeLockCount = activeLockCount;
-        this.waitTimeMillis = waitTimeMillis;
-        this.planner = query.planner;
-        this.runtime = query.runtime;
+        this.metaData = query.transactionAnnotationData();
+        this.cpuTimeMillis = query.cpuTimeMillis();
+        this.status = query.status();
+        this.resourceInformation = query.resourceInformation();
+        this.activeLockCount = query.activeLockCount();
+        this.waitTimeMillis = query.waitTimeMillis();
+        this.idleTimeMillis = query.idleTimeMillis();
+        this.planner = query.planner();
+        this.runtime = query.runtime();
         this.indexes = query.indexes();
     }
 
     private static String formatTime( final long startTime )
     {
         return OffsetDateTime
-            .ofInstant( Instant.ofEpochMilli( startTime ), ZoneId.systemDefault() )
-            .format( ISO_OFFSET_DATE_TIME );
+                .ofInstant( Instant.ofEpochMilli( startTime ), ZoneId.systemDefault() )
+                .format( ISO_OFFSET_DATE_TIME );
     }
 
     private static String formatInterval( final long l )

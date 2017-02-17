@@ -17,22 +17,24 @@
  * You should have received a copy of the GNU General Public License
  * along with this program.  If not, see <http://www.gnu.org/licenses/>.
  */
-package org.neo4j.cypher.internal
+package org.neo4j.kernel.api.query;
 
-import org.neo4j.cypher.internal.spi.v3_2.TransactionalContextWrapper
-import org.neo4j.graphdb.Transaction
-import org.neo4j.kernel.api.Statement
-import org.neo4j.kernel.api.query.PlannerInfo
+import org.junit.Test;
 
-final case class TransactionInfo(tx: Transaction, isTopLevelTx: Boolean, statement: Statement)
+import static java.util.Collections.emptyList;
+import static org.hamcrest.core.Is.is;
+import static org.junit.Assert.*;
 
-trait ExecutionPlan {
+public class PlannerInfoTest
+{
+    @Test
+    public void plannerInfoShouldBeInSmallCase() throws Exception
+    {
+        // given
+        PlannerInfo plannerInfo = new PlannerInfo( "PLANNER", "RUNTIME", emptyList() );
 
-  def run(transactionalContext: TransactionalContextWrapper, executionMode: CypherExecutionMode, params: Map[String, Any]): ExecutionResult
-
-  def isPeriodicCommit: Boolean
-
-  def isStale(lastCommittedTxId: LastCommittedTxIdProvider, ctx: TransactionalContextWrapper): Boolean
-
-  def plannerInfo: PlannerInfo
+        // then
+        assertThat( plannerInfo.planner(), is( "planner" ) );
+        assertThat( plannerInfo.runtime(), is( "runtime" ) );
+    }
 }
