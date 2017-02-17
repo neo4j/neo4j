@@ -79,7 +79,6 @@ class CartesianProductNotificationAcceptanceTest extends CypherFunSuite with Gra
   test("this query does not contain a cartesian product") {
     //given
     val logger = mock[InternalNotificationLogger]
-    val compiler = createCompiler()
 
     //when
     runQuery(
