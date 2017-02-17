@@ -40,9 +40,9 @@ import static javax.ws.rs.core.Response.status;
 @Path(CoreDatabaseAvailabilityService.BASE_PATH)
 public class CoreDatabaseAvailabilityService implements AdvertisableService
 {
-    public static final String BASE_PATH = "server/core";
-    public static final String IS_WRITABLE_PATH = "/writable";
-    public static final String IS_AVAILABLE_PATH = "/available";
+    static final String BASE_PATH = "server/core";
+    private static final String IS_WRITABLE_PATH = "/writable";
+    private static final String IS_AVAILABLE_PATH = "/available";
 
     private final OutputFormat output;
     private final CoreGraphDatabase coreDatabase;
@@ -68,9 +68,7 @@ public class CoreDatabaseAvailabilityService implements AdvertisableService
             return status( FORBIDDEN ).build();
         }
 
-        String isSlaveUri = IS_WRITABLE_PATH;
-
-        return output.ok( new CoreDatabaseAvailabilityDiscoveryRepresentation( BASE_PATH, isSlaveUri ) );
+        return output.ok( new CoreDatabaseAvailabilityDiscoveryRepresentation( BASE_PATH, IS_WRITABLE_PATH ) );
     }
 
     @GET
