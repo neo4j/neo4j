@@ -235,6 +235,10 @@ public class DataSourceModule
 
         this.storeId = neoStoreDataSource::getStoreId;
         this.kernelAPI = neoStoreDataSource::getKernel;
+
+        ProcedureGDSFactory gdsFactory = new ProcedureGDSFactory( platformModule, this, deps,
+                editionModule.coreAPIAvailabilityGuard );
+        procedures.registerComponent( GraphDatabaseService.class, gdsFactory::apply, true );
     }
 
     protected RelationshipProxy.RelationshipActions createRelationshipActions(
@@ -366,12 +370,6 @@ public class DataSourceModule
 
         Guard guard = platform.dependencies.resolveDependency( Guard.class );
         procedures.registerComponent( TerminationGuard.class, new TerminationGuardProvider( guard ), true );
-
-        // Register injected private API components: useful to have available in procedures to access the kernel etc.
-        ProcedureGDSFactory gdsFactory = new ProcedureGDSFactory( platform.config, platform.storeDir,
-                platform.dependencies, storeId, this.queryExecutor, editionModule.coreAPIAvailabilityGuard,
-                platform.urlAccessRule );
-        procedures.registerComponent( GraphDatabaseService.class, gdsFactory::apply, true );
 
         // Below components are not public API, but are made available for internal
         // procedures to call, and to provide temporary workarounds for the following

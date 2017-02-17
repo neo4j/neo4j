@@ -37,12 +37,10 @@ import java.util.List;
 import java.util.Map;
 import java.util.concurrent.Executors;
 import java.util.concurrent.ScheduledExecutorService;
-import java.util.concurrent.TimeUnit;
 import java.util.stream.Collectors;
 import java.util.stream.IntStream;
 import java.util.stream.Stream;
 
-import org.neo4j.function.Predicates;
 import org.neo4j.graphdb.GraphDatabaseService;
 import org.neo4j.graphdb.Label;
 import org.neo4j.graphdb.Node;
@@ -53,7 +51,6 @@ import org.neo4j.graphdb.RelationshipType;
 import org.neo4j.graphdb.Result;
 import org.neo4j.graphdb.Transaction;
 import org.neo4j.graphdb.security.AuthorizationViolationException;
-import org.neo4j.helpers.Exceptions;
 import org.neo4j.helpers.collection.Iterators;
 import org.neo4j.io.fs.FileUtils;
 import org.neo4j.kernel.api.KernelTransaction;
@@ -68,7 +65,6 @@ import org.neo4j.test.TestGraphDatabaseFactory;
 
 import static java.util.Collections.singletonList;
 import static org.hamcrest.MatcherAssert.assertThat;
-import static org.hamcrest.Matchers.instanceOf;
 import static org.hamcrest.core.IsEqual.equalTo;
 import static org.junit.Assert.assertEquals;
 import static org.junit.Assert.assertFalse;
@@ -820,11 +816,11 @@ public class ProcedureIT
     private static List<Exception> exceptionsInProcedure = Collections.<Exception>synchronizedList( new ArrayList<>() );
 
     @Test
-    public void shouldGracefullyFailWhenSpawningThreadsCreatingTransactionInProcedures() throws Throwable
+    public void shouldBeAbleToSpawnThreadsCreatingTransactionInProcedures() throws Throwable
     {
         // given
         Runnable doIt = () -> {
-            Result result = db.execute( "CALL org.neo4j.procedure.unsupportedProcedure()" );
+            Result result = db.execute( "CALL org.neo4j.procedure.supportedProcedure()" );
             while ( result.hasNext() )
             {
                 result.next();
@@ -850,17 +846,14 @@ public class ProcedureIT
             threads[i].join();
         }
 
-        // then
-        Predicates.await( () -> exceptionsInProcedure.size() >= numThreads, 5, TimeUnit.SECONDS );
-
-        for ( Exception exceptionInProcedure : exceptionsInProcedure )
+        Result result = db.execute( "MATCH () RETURN count(*) as n" );
+        assertThat( result.hasNext(), equalTo( true ) );
+        while ( result.hasNext() )
         {
-            assertThat( Exceptions.stringify( exceptionInProcedure ),
-                    exceptionInProcedure, instanceOf( UnsupportedOperationException.class ) );
-            assertThat( Exceptions.stringify( exceptionInProcedure ), exceptionInProcedure.getMessage(),
-                    equalTo( "Creating new transactions and/or spawning threads " +
-                             "are not supported operations in store procedures." ) );
+            assertThat( result.next().get( "n" ), equalTo( (long) numThreads ) );
         }
+        result.close();
+        assertThat( "Should be no exceptions in procedures", exceptionsInProcedure.isEmpty(), equalTo( true ) );
     }
 
     @Test
@@ -1542,7 +1535,7 @@ public class ProcedureIT
         }
 
         @Procedure( mode = WRITE )
-        public void unsupportedProcedure()
+        public void supportedProcedure()
         {
             jobs.submit( () -> {
                 try ( Transaction tx = db.beginTx() )
