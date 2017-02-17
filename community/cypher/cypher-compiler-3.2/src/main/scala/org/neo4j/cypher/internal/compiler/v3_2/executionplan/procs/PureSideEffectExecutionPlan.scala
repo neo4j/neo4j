@@ -22,7 +22,8 @@ package org.neo4j.cypher.internal.compiler.v3_2.executionplan.procs
 import org.neo4j.cypher.internal.compiler.v3_2.executionplan.{ExecutionPlan, InternalExecutionResult, InternalQueryType, SCHEMA_WRITE}
 import org.neo4j.cypher.internal.compiler.v3_2.planDescription.{Id, NoChildren, PlanDescriptionImpl}
 import org.neo4j.cypher.internal.compiler.v3_2.spi.{GraphStatistics, PlanContext, QueryContext, UpdateCountingQueryContext}
-import org.neo4j.cypher.internal.compiler.v3_2.{ExecutionMode, ExplainExecutionResult, ExplainMode, PlannerName, ProcedurePlannerName, ProcedureRuntimeName, RuntimeName}
+import org.neo4j.cypher.internal.compiler.v3_2.{ExecutionMode, ExplainExecutionResult, ExplainMode, ProcedurePlannerName, ProcedureRuntimeName, RuntimeName}
+import org.neo4j.cypher.internal.frontend.v3_2.PlannerName
 import org.neo4j.cypher.internal.frontend.v3_2.notification.InternalNotification
 
 /**

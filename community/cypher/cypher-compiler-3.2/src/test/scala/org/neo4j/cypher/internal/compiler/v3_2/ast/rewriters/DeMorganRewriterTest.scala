@@ -20,7 +20,8 @@
 package org.neo4j.cypher.internal.compiler.v3_2.ast.rewriters
 
 import org.neo4j.cypher.internal.compiler.v3_2._
-import org.neo4j.cypher.internal.frontend.v3_2.Rewriter
+import org.neo4j.cypher.internal.frontend.v3_2.{AstRewritingMonitor, Rewriter}
+import org.neo4j.cypher.internal.frontend.v3_2.ast.rewriters.deMorganRewriter
 import org.neo4j.cypher.internal.frontend.v3_2.test_helpers.CypherFunSuite
 
 class DeMorganRewriterTest extends CypherFunSuite with PredicateTestSupport {

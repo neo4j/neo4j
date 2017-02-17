@@ -19,7 +19,7 @@
  */
 package org.neo4j.cypher.internal.compiler.v3_2
 
-import org.neo4j.cypher.internal.frontend.v3_2.Scope
+import org.neo4j.cypher.internal.frontend.v3_2.{Scope, ScopeTreeVerifier}
 import org.neo4j.cypher.internal.frontend.v3_2.helpers.StringHelper._
 import org.neo4j.cypher.internal.frontend.v3_2.test_helpers.CypherFunSuite
 

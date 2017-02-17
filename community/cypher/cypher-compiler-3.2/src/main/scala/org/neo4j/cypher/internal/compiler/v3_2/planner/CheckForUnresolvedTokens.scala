@@ -20,12 +20,12 @@
 package org.neo4j.cypher.internal.compiler.v3_2.planner
 
 import org.neo4j.cypher.internal.frontend.v3_2.phases.CompilationPhaseTracer.CompilationPhase.LOGICAL_PLANNING
-import org.neo4j.cypher.internal.compiler.v3_2.phases.{CompilationState, CompilerContext, VisitorPhase}
+import org.neo4j.cypher.internal.compiler.v3_2.phases.{CompilationState, CompilerContext}
 import org.neo4j.cypher.internal.frontend.v3_2.ast._
 import org.neo4j.cypher.internal.frontend.v3_2.notification.{InternalNotification, MissingLabelNotification, MissingPropertyNameNotification, MissingRelTypeNotification}
-import org.neo4j.cypher.internal.frontend.v3_2.phases.BaseContext
+import org.neo4j.cypher.internal.frontend.v3_2.phases.{BaseContext, VisitorPhase}
 
-object CheckForUnresolvedTokens extends VisitorPhase[BaseContext] {
+object CheckForUnresolvedTokens extends VisitorPhase[BaseContext, CompilationState] {
 
   override def visit(value: CompilationState, context: BaseContext): Unit = {
     val table = value.semanticTable

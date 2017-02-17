@@ -19,9 +19,8 @@
  */
 package org.neo4j.cypher.internal.compiler.v3_2.planner.execution
 
-import org.neo4j.cypher.internal.compiler.v3_2.PlannerName
 import org.neo4j.cypher.internal.compiler.v3_2.planner.logical.Metrics
-import org.neo4j.cypher.internal.frontend.v3_2.SemanticTable
+import org.neo4j.cypher.internal.frontend.v3_2.{PlannerName, SemanticTable}
 
 case class PipeExecutionBuilderContext(cardinality: Metrics.CardinalityModel, semanticTable: SemanticTable,
                                        plannerName: PlannerName)

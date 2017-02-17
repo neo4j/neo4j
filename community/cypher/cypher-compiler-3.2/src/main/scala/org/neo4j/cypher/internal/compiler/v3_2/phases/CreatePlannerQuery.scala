@@ -24,19 +24,19 @@ import org.neo4j.cypher.internal.compiler.v3_2.ast.convert.plannerQuery.Statemen
 import org.neo4j.cypher.internal.compiler.v3_2.planner.UnionQuery
 import org.neo4j.cypher.internal.frontend.v3_2.InternalException
 import org.neo4j.cypher.internal.frontend.v3_2.ast.Query
-import org.neo4j.cypher.internal.frontend.v3_2.phases.BaseContext
+import org.neo4j.cypher.internal.frontend.v3_2.phases.{BaseContext, BaseState, Phase}
 
-object CreatePlannerQuery extends Phase[BaseContext] {
+object CreatePlannerQuery extends Phase[BaseContext, BaseState, CompilationState] {
   override def phase = LOGICAL_PLANNING
 
   override def description = "from the normalized ast, create the corresponding PlannerQuery"
 
-  override def postConditions = Set(Contains[UnionQuery])
+  override def postConditions = Set(CompilationContains[UnionQuery])
 
-  override def process(from: CompilationState, context: BaseContext): CompilationState = from.statement match {
+  override def process(from: BaseState, context: BaseContext): CompilationState = from.statement() match {
     case query: Query =>
-      val unionQuery: UnionQuery = toUnionQuery(query, from.semanticTable)
-      from.copy(maybeUnionQuery = Some(unionQuery))
+      val unionQuery: UnionQuery = toUnionQuery(query, from.semanticTable())
+      CompilationState(from).copy(maybeUnionQuery = Some(unionQuery))
 
     case x => throw new InternalException(s"Expected a Query and not `$x`")
   }

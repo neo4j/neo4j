@@ -22,7 +22,6 @@ package org.neo4j.cypher.internal.compiler.v3_2.ast.convert.commands
 import org.neo4j.cypher.internal.compiler.v3_2._
 import org.neo4j.cypher.internal.compiler.v3_2.ast._
 import org.neo4j.cypher.internal.compiler.v3_2.ast.convert.commands.PatternConverters._
-import org.neo4j.cypher.internal.compiler.v3_2.ast.rewriters.DesugaredMapProjection
 import org.neo4j.cypher.internal.compiler.v3_2.commands.expressions.ProjectedPath._
 import org.neo4j.cypher.internal.compiler.v3_2.commands.expressions.{InequalitySeekRangeExpression, ProjectedPath, Expression => CommandExpression}
 import org.neo4j.cypher.internal.compiler.v3_2.commands.predicates.Predicate
@@ -31,6 +30,7 @@ import org.neo4j.cypher.internal.compiler.v3_2.commands.values.UnresolvedRelType
 import org.neo4j.cypher.internal.compiler.v3_2.commands.{PathExtractorExpression, predicates, expressions => commandexpressions, values => commandvalues}
 import org.neo4j.cypher.internal.frontend.v3_2.ast._
 import org.neo4j.cypher.internal.frontend.v3_2.ast.functions._
+import org.neo4j.cypher.internal.frontend.v3_2.ast.rewriters.DesugaredMapProjection
 import org.neo4j.cypher.internal.frontend.v3_2.helpers.NonEmptyList
 import org.neo4j.cypher.internal.frontend.v3_2.{InternalException, SemanticDirection, ast}
 import org.neo4j.graphdb.Direction

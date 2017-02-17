@@ -20,6 +20,7 @@
 package org.neo4j.cypher.internal.compiler.v3_2.ast.conditions
 
 import org.neo4j.cypher.internal.frontend.v3_2.ast._
+import org.neo4j.cypher.internal.frontend.v3_2.ast.conditions.normalizedEqualsArguments
 import org.neo4j.cypher.internal.frontend.v3_2.test_helpers.CypherFunSuite
 
 class NormalizedEqualsArgumentsTest extends CypherFunSuite with AstConstructionTestSupport {

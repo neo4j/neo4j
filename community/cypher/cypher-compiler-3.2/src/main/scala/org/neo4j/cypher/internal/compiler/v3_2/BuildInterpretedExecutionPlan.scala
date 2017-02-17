@@ -29,14 +29,14 @@ import org.neo4j.cypher.internal.compiler.v3_2.profiler.Profiler
 import org.neo4j.cypher.internal.compiler.v3_2.spi.{GraphStatistics, PlanContext, QueryContext, UpdateCountingQueryContext}
 import org.neo4j.cypher.internal.frontend.v3_2.PeriodicCommitInOpenTransactionException
 import org.neo4j.cypher.internal.frontend.v3_2.notification.InternalNotification
-import org.neo4j.cypher.internal.frontend.v3_2.phases.InternalNotificationLogger
+import org.neo4j.cypher.internal.frontend.v3_2.phases.{InternalNotificationLogger, Phase}
 
-object BuildInterpretedExecutionPlan extends Phase[CompilerContext] {
+object BuildInterpretedExecutionPlan extends Phase[CompilerContext, CompilationState, CompilationState] {
   override def phase = PIPE_BUILDING
 
   override def description = "create interpreted execution plan"
 
-  override def postConditions = Set(Contains[ExecutionPlan])
+  override def postConditions = Set(CompilationContains[ExecutionPlan])
 
   override def process(from: CompilationState, context: CompilerContext): CompilationState = {
     val logicalPlan = from.logicalPlan

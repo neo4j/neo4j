@@ -29,16 +29,18 @@ import org.neo4j.cypher.internal.compiler.v3_2.planDescription.InternalPlanDescr
 import org.neo4j.cypher.internal.compiler.v3_2.planDescription.InternalPlanDescription.Arguments
 import org.neo4j.cypher.internal.compiler.v3_2.planner.CantCompileQueryException
 import org.neo4j.cypher.internal.compiler.v3_2.spi.{GraphStatistics, PlanContext, QueryContext}
+import org.neo4j.cypher.internal.frontend.v3_2.PlannerName
 import org.neo4j.cypher.internal.frontend.v3_2.notification.InternalNotification
 import org.neo4j.cypher.internal.frontend.v3_2.phases.CompilationPhaseTracer.CompilationPhase.CODE_GENERATION
+import org.neo4j.cypher.internal.frontend.v3_2.phases.Phase
 
-object BuildCompiledExecutionPlan extends Phase[CompiledRuntimeContext] {
+object BuildCompiledExecutionPlan extends Phase[CompiledRuntimeContext, CompilationState, CompilationState] {
 
   override def phase = CODE_GENERATION
 
   override def description = "creates runnable byte code"
 
-  override def postConditions: Set[Condition] = Set.empty// Can't yet guarantee that we can build an execution plan
+  override def postConditions = Set.empty// Can't yet guarantee that we can build an execution plan
 
   override def process(from: CompilationState, context: CompiledRuntimeContext): CompilationState =
     try {

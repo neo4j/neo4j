@@ -81,7 +81,7 @@ trait Compatibility {
           (new ExecutionPlanWrapper(planImpl, preParsingNotifications), extractedParameters)
         }
 
-      override protected val trier: Try[PreparedQuerySyntax] = preparedSyntacticQueryForV_3_1
+      override protected val trier = preparedSyntacticQueryForV_3_1
     }
   }
 

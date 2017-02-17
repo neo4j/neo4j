@@ -19,13 +19,7 @@
  */
 package org.neo4j.cypher.internal.compiler.v3_2
 
-/**
- * This class defines the query planners used by cyphers.
- **/
-sealed abstract class PlannerName {
-  def name: String
-  def toTextOutput: String
-}
+import org.neo4j.cypher.internal.frontend.v3_2.PlannerName
 
 sealed abstract class CostBasedPlannerName extends PlannerName {
   val toTextOutput = "COST"
@@ -61,7 +55,7 @@ case object ProcedurePlannerName extends PlannerName {
   override def toTextOutput: String = "PROCEDURE"
 }
 
-object PlannerName {
+object PlannerNameFor {
 
   def apply(name: String): PlannerName = name.toUpperCase match {
     case IDPPlannerName.name => IDPPlannerName

@@ -19,7 +19,7 @@
  */
 package org.neo4j.cypher.internal.compiler.v3_2.planDescription
 
-import org.neo4j.cypher.internal.compiler.v3_2.helpers.UnNamedNameGenerator._
+import org.neo4j.cypher.internal.frontend.v3_2.helpers.UnNamedNameGenerator._
 import org.neo4j.cypher.internal.compiler.v3_2.planDescription.InternalPlanDescription.Arguments._
 import org.neo4j.cypher.internal.frontend.v3_2.SemanticDirection
 

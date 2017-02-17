@@ -20,7 +20,8 @@
 package org.neo4j.cypher.internal.compiler.v3_2.executionplan
 
 import org.neo4j.cypher.internal.compiler.v3_2.spi.{GraphStatistics, PlanContext, QueryContext}
-import org.neo4j.cypher.internal.compiler.v3_2.{ExecutionMode, PlannerName, RuntimeName}
+import org.neo4j.cypher.internal.compiler.v3_2.{ExecutionMode, RuntimeName}
+import org.neo4j.cypher.internal.frontend.v3_2.PlannerName
 import org.neo4j.cypher.internal.frontend.v3_2.notification.InternalNotification
 
 abstract class ExecutionPlan {

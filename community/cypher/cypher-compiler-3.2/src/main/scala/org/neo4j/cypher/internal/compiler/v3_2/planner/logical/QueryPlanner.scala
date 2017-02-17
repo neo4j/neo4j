@@ -24,15 +24,16 @@ import org.neo4j.cypher.internal.compiler.v3_2.phases._
 import org.neo4j.cypher.internal.compiler.v3_2.planner._
 import org.neo4j.cypher.internal.compiler.v3_2.planner.logical.plans.{LogicalPlan, ProduceResult}
 import org.neo4j.cypher.internal.compiler.v3_2.planner.logical.steps.LogicalPlanProducer
+import org.neo4j.cypher.internal.frontend.v3_2.phases.Phase
 import org.neo4j.cypher.internal.ir.v3_2.PeriodicCommit
 
-case class QueryPlanner(planSingleQuery: LogicalPlanningFunction1[PlannerQuery, LogicalPlan] = PlanSingleQuery()) extends Phase[CompilerContext] {
+case class QueryPlanner(planSingleQuery: LogicalPlanningFunction1[PlannerQuery, LogicalPlan] = PlanSingleQuery()) extends Phase[CompilerContext, CompilationState, CompilationState] {
 
   override def phase = LOGICAL_PLANNING
 
   override def description = "using cost estimates, plan the query to a logical plan"
 
-  override def postConditions = Set(Contains[LogicalPlan])
+  override def postConditions = Set(CompilationContains[LogicalPlan])
 
   override def process(from: CompilationState, context: CompilerContext): CompilationState = {
     val logicalPlanProducer = LogicalPlanProducer(context.metrics.cardinality)

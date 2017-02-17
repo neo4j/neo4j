@@ -19,12 +19,12 @@
  */
 package org.neo4j.cypher.internal.compiler.v3_2.phases
 
-import org.neo4j.cypher.internal.compiler.v3_2.PlannerName
 import org.neo4j.cypher.internal.compiler.v3_2.executionplan.ExecutionPlan
 import org.neo4j.cypher.internal.compiler.v3_2.planner.UnionQuery
 import org.neo4j.cypher.internal.compiler.v3_2.planner.logical.plans.LogicalPlan
 import org.neo4j.cypher.internal.frontend.v3_2.ast.{Query, Statement}
-import org.neo4j.cypher.internal.frontend.v3_2.{InputPosition, InternalException, SemanticState, SemanticTable}
+import org.neo4j.cypher.internal.frontend.v3_2.phases.{BaseState, Condition}
+import org.neo4j.cypher.internal.frontend.v3_2.{InputPosition, InternalException, PlannerName, SemanticState, SemanticTable}
 import org.neo4j.cypher.internal.ir.v3_2.PeriodicCommit
 
 /*
@@ -45,24 +45,32 @@ case class CompilationState(queryText: String,
                             maybeUnionQuery: Option[UnionQuery] = None,
                             maybeLogicalPlan: Option[LogicalPlan] = None,
                             maybePeriodicCommit: Option[Option[PeriodicCommit]] = None,
-                            accumulatedConditions: Set[Condition] = Set.empty) {
+                            accumulatedConditions: Set[Condition] = Set.empty) extends BaseState {
 
-  def isPeriodicCommit: Boolean = statement match {
-    case Query(Some(_), _) => true
-    case _ => false
-  }
-
-  def statement = maybeStatement getOrElse fail("Statement")
-  def semantics = maybeSemantics getOrElse fail("Semantics")
-  def extractedParams = maybeExtractedParams getOrElse fail("Extracted parameters")
-  def semanticTable = maybeSemanticTable getOrElse fail("Semantic table")
   def executionPlan = maybeExecutionPlan getOrElse fail("Execution plan")
   def unionQuery = maybeUnionQuery getOrElse fail("Union query")
   def logicalPlan = maybeLogicalPlan getOrElse fail("Logical plan")
   def periodicCommit = maybePeriodicCommit getOrElse fail("Periodic commit")
   def astAsQuery = statement.asInstanceOf[Query]
 
-  private def fail(what: String) = {
-    throw new InternalException(s"$what not yet initialised")
-  }
+  override def withStatement(s: Statement): CompilationState = copy(maybeStatement = Some(s))
+  override def withSemanticTable(s: SemanticTable): CompilationState = copy(maybeSemanticTable = Some(s))
+  override def withSemanticState(s: SemanticState): CompilationState = copy(maybeSemantics = Some(s))
+  override def withParams(p: Map[String, Any]): CompilationState = copy(maybeExtractedParams = Some(p))
+
+  def withMaybeExecutionPlan(opt: Option[ExecutionPlan]): CompilationState = copy(maybeExecutionPlan = opt)
 }
+
+object CompilationState {
+  def apply(state: BaseState): CompilationState =
+    CompilationState(queryText = state.queryText,
+      startPosition = state.startPosition,
+      plannerName = state.plannerName,
+      maybeStatement = state.maybeStatement,
+      maybeSemantics = state.maybeSemantics,
+      maybeExtractedParams = state.maybeExtractedParams,
+      maybeSemanticTable = state.maybeSemanticTable,
+      accumulatedConditions = state.accumulatedConditions)
+}
+
+

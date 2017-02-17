@@ -22,11 +22,11 @@ package org.neo4j.cypher.internal.compiler.v3_2.commands
 import org.neo4j.cypher.internal.compiler.v3_2.commands.expressions.Expression
 import org.neo4j.cypher.internal.compiler.v3_2.commands.predicates.True
 import org.neo4j.cypher.internal.compiler.v3_2.commands.values.KeyToken
-import org.neo4j.cypher.internal.compiler.v3_2.helpers.UnNamedNameGenerator
 import org.neo4j.cypher.internal.compiler.v3_2.mutation.GraphElementPropertyFunctions
 import org.neo4j.cypher.internal.compiler.v3_2.symbols.TypeSafe
 import org.neo4j.cypher.internal.frontend.v3_2.SemanticDirection
 import org.neo4j.cypher.internal.frontend.v3_2.SemanticDirection.{INCOMING, OUTGOING}
+import org.neo4j.cypher.internal.frontend.v3_2.helpers.UnNamedNameGenerator
 import org.neo4j.cypher.internal.frontend.v3_2.symbols._
 
 import scala.collection.{Map, Seq}

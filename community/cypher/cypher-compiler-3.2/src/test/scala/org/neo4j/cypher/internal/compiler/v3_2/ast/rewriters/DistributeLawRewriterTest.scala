@@ -20,9 +20,9 @@
 package org.neo4j.cypher.internal.compiler.v3_2.ast.rewriters
 
 import org.mockito.Mockito._
-import org.neo4j.cypher.internal.compiler.v3_2.AstRewritingMonitor
-import org.neo4j.cypher.internal.frontend.v3_2.Rewriter
+import org.neo4j.cypher.internal.frontend.v3_2.{AstRewritingMonitor, Rewriter}
 import org.neo4j.cypher.internal.frontend.v3_2.ast.Or
+import org.neo4j.cypher.internal.frontend.v3_2.ast.rewriters.distributeLawsRewriter
 import org.neo4j.cypher.internal.frontend.v3_2.test_helpers.CypherFunSuite
 
 class DistributeLawRewriterTest extends CypherFunSuite with PredicateTestSupport {

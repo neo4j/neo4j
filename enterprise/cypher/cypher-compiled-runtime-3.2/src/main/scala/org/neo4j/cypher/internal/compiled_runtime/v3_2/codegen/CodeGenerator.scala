@@ -34,8 +34,8 @@ import org.neo4j.cypher.internal.compiler.v3_2.planner.CantCompileQueryException
 import org.neo4j.cypher.internal.compiler.v3_2.planner.logical.plans._
 import org.neo4j.cypher.internal.compiler.v3_2.planner.logical.{LogicalPlan2PlanDescription, LogicalPlanIdentificationBuilder}
 import org.neo4j.cypher.internal.compiler.v3_2.spi.{InstrumentedGraphStatistics, PlanContext, QueryContext}
-import org.neo4j.cypher.internal.compiler.v3_2.{ExecutionMode, PlannerName, TaskCloser}
-import org.neo4j.cypher.internal.frontend.v3_2.SemanticTable
+import org.neo4j.cypher.internal.compiler.v3_2.{ExecutionMode, TaskCloser}
+import org.neo4j.cypher.internal.frontend.v3_2.{PlannerName, SemanticTable}
 import org.neo4j.cypher.internal.frontend.v3_2.helpers.Eagerly
 
 class CodeGenerator(val structure: CodeStructure[GeneratedQuery], clock: Clock, conf: CodeGenConfiguration = CodeGenConfiguration() ) {

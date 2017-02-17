@@ -21,6 +21,7 @@ package org.neo4j.cypher.internal.compiler.v3_2.planner.logical
 
 import org.neo4j.cypher.internal.frontend.v3_2.ast._
 import org.neo4j.cypher.internal.compiler.v3_2.planner.LogicalPlanningTestSupport2
+import org.neo4j.cypher.internal.frontend.v3_2.ast.rewriters.PatternExpressionPatternElementNamer
 import org.neo4j.cypher.internal.frontend.v3_2.test_helpers.CypherFunSuite
 
 class PatternExpressionPatternElementNamerTest extends CypherFunSuite with LogicalPlanningTestSupport2 {

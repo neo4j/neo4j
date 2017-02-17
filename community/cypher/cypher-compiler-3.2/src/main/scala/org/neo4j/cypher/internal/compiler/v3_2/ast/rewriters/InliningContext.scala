@@ -21,6 +21,7 @@ package org.neo4j.cypher.internal.compiler.v3_2.ast.rewriters
 
 import org.neo4j.cypher.internal.compiler.v3_2.ast.rewriters.InliningContext._
 import org.neo4j.cypher.internal.frontend.v3_2.ast._
+import org.neo4j.cypher.internal.frontend.v3_2.ast.rewriters.copyVariables
 import org.neo4j.cypher.internal.frontend.v3_2.{Rewriter, TypedRewriter, bottomUp}
 
 case class InliningContext(projections: Map[Variable, Expression] = Map.empty,

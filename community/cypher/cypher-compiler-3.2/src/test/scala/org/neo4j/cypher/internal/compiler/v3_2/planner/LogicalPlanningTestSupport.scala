@@ -35,10 +35,11 @@ import org.neo4j.cypher.internal.compiler.v3_2.spi.{GraphStatistics, PlanContext
 import org.neo4j.cypher.internal.compiler.v3_2.test_helpers.ContextHelper
 import org.neo4j.cypher.internal.frontend.v3_2._
 import org.neo4j.cypher.internal.frontend.v3_2.ast._
+import org.neo4j.cypher.internal.frontend.v3_2.ast.rewriters.{ASTRewriter, CNFNormalizer, Namespacer, rewriteEqualityToInPredicate}
 import org.neo4j.cypher.internal.frontend.v3_2.helpers.rewriting.RewriterStepSequencer
 import org.neo4j.cypher.internal.frontend.v3_2.helpers.rewriting.RewriterStepSequencer.newPlain
 import org.neo4j.cypher.internal.frontend.v3_2.parser.CypherParser
-import org.neo4j.cypher.internal.frontend.v3_2.phases.{InternalNotificationLogger, Monitors, devNullLogger}
+import org.neo4j.cypher.internal.frontend.v3_2.phases._
 import org.neo4j.cypher.internal.frontend.v3_2.symbols._
 import org.neo4j.cypher.internal.frontend.v3_2.test_helpers.{CypherFunSuite, CypherTestSupport}
 import org.neo4j.cypher.internal.ir.v3_2._
@@ -195,9 +196,9 @@ trait LogicalPlanningTestSupport extends CypherTestSupport with AstConstructionT
     Do(rewriteStuff _) andThen
     CreatePlannerQuery
 
-  private def rewriteStuff(input: CompilationState, context: CompilerContext): CompilationState = {
-    val newStatement = input.statement.endoRewrite(namePatternPredicatePatternElements)
-    input.copy(maybeStatement = Some(newStatement))
+  private def rewriteStuff(input: BaseState, context: CompilerContext): BaseState = {
+    val newStatement = input.statement().endoRewrite(namePatternPredicatePatternElements)
+    CompilationState(input).copy(maybeStatement = Some(newStatement))
   }
 
   def buildPlannerUnionQuery(query: String, procLookup: Option[QualifiedName => ProcedureSignature] = None,

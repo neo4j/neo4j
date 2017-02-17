@@ -19,12 +19,13 @@
  */
 package org.neo4j.cypher.internal.compiler.v3_2.planner.logical.plans.rewriter
 
-import org.neo4j.cypher.internal.compiler.v3_2.phases.{CompilationState, CompilerContext, Condition, Phase}
+import org.neo4j.cypher.internal.compiler.v3_2.phases.{CompilationState, CompilerContext}
 import org.neo4j.cypher.internal.frontend.v3_2.Rewriter
 import org.neo4j.cypher.internal.frontend.v3_2.helpers.fixedPoint
 import org.neo4j.cypher.internal.frontend.v3_2.helpers.rewriting.RewriterStepSequencer
 import org.neo4j.cypher.internal.frontend.v3_2.phases.CompilationPhaseTracer.CompilationPhase
 import org.neo4j.cypher.internal.frontend.v3_2.phases.CompilationPhaseTracer.CompilationPhase.LOGICAL_PLANNING
+import org.neo4j.cypher.internal.frontend.v3_2.phases.{Condition, Phase}
 
 /*
  * Rewriters that live here are required to adhere to the contract of
@@ -48,7 +49,7 @@ case class PlanRewriter(rewriterSequencer: String => RewriterStepSequencer) exte
   ).rewriter)
 }
 
-trait LogicalPlanRewriter extends Phase[CompilerContext] {
+trait LogicalPlanRewriter extends Phase[CompilerContext, CompilationState, CompilationState] {
   override def phase: CompilationPhase = LOGICAL_PLANNING
 
   def instance(context: CompilerContext): Rewriter
