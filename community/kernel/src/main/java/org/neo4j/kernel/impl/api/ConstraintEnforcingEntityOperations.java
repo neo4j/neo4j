@@ -35,6 +35,7 @@ import org.neo4j.kernel.api.constraints.UniquenessConstraint;
 import org.neo4j.kernel.api.exceptions.EntityNotFoundException;
 import org.neo4j.kernel.api.exceptions.InvalidTransactionTypeKernelException;
 import org.neo4j.kernel.api.exceptions.KernelException;
+import org.neo4j.kernel.api.exceptions.index.IndexNotApplicableKernelException;
 import org.neo4j.kernel.api.exceptions.index.IndexNotFoundKernelException;
 import org.neo4j.kernel.api.exceptions.legacyindex.AutoIndexingKernelException;
 import org.neo4j.kernel.api.exceptions.schema.AlreadyConstrainedException;
@@ -51,6 +52,7 @@ import org.neo4j.kernel.api.properties.Property;
 import org.neo4j.kernel.api.schema.IndexDescriptor;
 import org.neo4j.kernel.api.schema.NodePropertyDescriptor;
 import org.neo4j.kernel.api.schema.RelationshipPropertyDescriptor;
+import org.neo4j.kernel.api.schema_new.CompositeIndexQuery;
 import org.neo4j.kernel.api.schema_new.index.IndexBoundary;
 import org.neo4j.kernel.api.schema_new.index.NewIndexDescriptor;
 import org.neo4j.kernel.impl.api.operations.EntityOperations;
@@ -269,6 +271,13 @@ public class ConstraintEnforcingEntityOperations implements EntityOperations, Sc
             throws IndexNotFoundKernelException
     {
         return entityReadOperations.nodesGetFromIndexSeek( state, index, value );
+    }
+
+    @Override
+    public PrimitiveLongIterator nodesGetFromCompositeIndexSeek( KernelStatement state, NewIndexDescriptor index,
+            CompositeIndexQuery query ) throws IndexNotApplicableKernelException, IndexNotFoundKernelException
+    {
+        return entityReadOperations.nodesGetFromCompositeIndexSeek( state, index, query );
     }
 
     @Override

@@ -34,6 +34,7 @@ import org.neo4j.collection.primitive.PrimitiveLongIterator;
 import org.neo4j.cursor.Cursor;
 import org.neo4j.graphdb.Direction;
 import org.neo4j.kernel.api.DataWriteOperations;
+import org.neo4j.kernel.api.exceptions.index.IndexNotApplicableKernelException;
 import org.neo4j.kernel.api.query.ExecutingQuery;
 import org.neo4j.kernel.api.KernelTransaction;
 import org.neo4j.kernel.api.LegacyIndexHits;
@@ -81,6 +82,7 @@ import org.neo4j.kernel.api.properties.DefinedProperty;
 import org.neo4j.kernel.api.properties.Property;
 import org.neo4j.kernel.api.schema.NodePropertyDescriptor;
 import org.neo4j.kernel.api.schema.RelationshipPropertyDescriptor;
+import org.neo4j.kernel.api.schema_new.CompositeIndexQuery;
 import org.neo4j.kernel.api.schema_new.SchemaBoundary;
 import org.neo4j.kernel.api.schema_new.SchemaDescriptorFactory;
 import org.neo4j.kernel.api.schema_new.index.NewIndexDescriptor;
@@ -231,6 +233,14 @@ public class OperationsFacade
     {
         statement.assertOpen();
         return dataRead().nodesGetFromIndexSeek( statement, index, value );
+    }
+
+    @Override
+    public PrimitiveLongIterator nodesGetFromCompositeIndexSeek( NewIndexDescriptor index, CompositeIndexQuery query )
+            throws IndexNotFoundKernelException, IndexNotApplicableKernelException
+    {
+        statement.assertOpen();
+        return dataRead().nodesGetFromCompositeIndexSeek( statement, index, query);
     }
 
     @Override

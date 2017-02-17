@@ -26,12 +26,14 @@ import org.neo4j.cursor.Cursor;
 import org.neo4j.kernel.api.exceptions.EntityNotFoundException;
 import org.neo4j.kernel.api.exceptions.InvalidTransactionTypeKernelException;
 import org.neo4j.kernel.api.exceptions.KernelException;
+import org.neo4j.kernel.api.exceptions.index.IndexNotApplicableKernelException;
 import org.neo4j.kernel.api.exceptions.index.IndexNotFoundKernelException;
 import org.neo4j.kernel.api.exceptions.legacyindex.AutoIndexingKernelException;
 import org.neo4j.kernel.api.exceptions.schema.ConstraintValidationKernelException;
 import org.neo4j.kernel.api.exceptions.schema.IndexBrokenKernelException;
 import org.neo4j.kernel.api.properties.DefinedProperty;
 import org.neo4j.kernel.api.properties.Property;
+import org.neo4j.kernel.api.schema_new.CompositeIndexQuery;
 import org.neo4j.kernel.api.schema_new.index.NewIndexDescriptor;
 import org.neo4j.kernel.guard.Guard;
 import org.neo4j.kernel.impl.api.operations.EntityReadOperations;
@@ -176,6 +178,14 @@ public class GuardingStatementOperations implements
     {
         guard.check( statement );
         return entityReadDelegate.nodesGetFromIndexSeek( statement, index, value );
+    }
+
+    @Override
+    public PrimitiveLongIterator nodesGetFromCompositeIndexSeek( KernelStatement statement, NewIndexDescriptor index,
+            CompositeIndexQuery query ) throws IndexNotApplicableKernelException, IndexNotFoundKernelException
+    {
+        guard.check( statement );
+        return entityReadDelegate.nodesGetFromIndexSeek( statement, index, query );
     }
 
     @Override

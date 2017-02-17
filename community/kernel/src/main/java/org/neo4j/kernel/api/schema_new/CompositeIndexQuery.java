@@ -19,11 +19,12 @@
  */
 package org.neo4j.kernel.api.schema_new;
 
+import org.neo4j.kernel.api.exceptions.index.IndexNotApplicableKernelException;
 import org.neo4j.kernel.api.schema_new.index.NewIndexDescriptor;
 
 /**
  * This object is used internally to represent index queries on multiple values.
- *
+ * <p>
  * See {@link org.neo4j.kernel.api.ReadOperations#nodesGetFromIndexSeek(NewIndexDescriptor, Object)}
  */
 public class CompositeIndexQuery
@@ -37,13 +38,32 @@ public class CompositeIndexQuery
         this.propertyIds = propertyIds;
     }
 
-    public Object[] values()
+    public Object[] validate( NewIndexDescriptor index ) throws IndexNotApplicableKernelException
     {
-        return values;
-    }
-
-    public int[] propertyIds()
-    {
-        return propertyIds;
+        Object[] orderdValues = new Object[propertyIds.length];
+        int[] propertyIdsFromIndex = index.schema().getPropertyIds();
+        if ( propertyIdsFromIndex.length != propertyIds.length )
+        {
+            throw new IndexNotApplicableKernelException(
+                    String.format( "Expected %d properties, but found %d", propertyIdsFromIndex.length,
+                            propertyIds.length ) );
+        }
+        for ( int i = 0; i < propertyIdsFromIndex.length; i++ )
+        {
+            for ( int j = 0; j < propertyIds.length; j++ )
+            {
+                if ( propertyIdsFromIndex[i] == propertyIds[j] )
+                {
+                    orderdValues[i] = values[j];
+                }
+            }
+            if ( orderdValues[i] == null )
+            {
+                throw new IndexNotApplicableKernelException(
+                        String.format( "PropertyId %d from index %s not supplied.", propertyIdsFromIndex[i],
+                                index.toString() ) );
+            }
+        }
+        return orderdValues;
     }
 }

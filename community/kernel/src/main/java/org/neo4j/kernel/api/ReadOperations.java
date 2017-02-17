@@ -37,6 +37,7 @@ import org.neo4j.kernel.api.exceptions.LabelNotFoundKernelException;
 import org.neo4j.kernel.api.exceptions.ProcedureException;
 import org.neo4j.kernel.api.exceptions.PropertyKeyIdNotFoundKernelException;
 import org.neo4j.kernel.api.exceptions.RelationshipTypeIdNotFoundKernelException;
+import org.neo4j.kernel.api.exceptions.index.IndexNotApplicableKernelException;
 import org.neo4j.kernel.api.exceptions.index.IndexNotFoundKernelException;
 import org.neo4j.kernel.api.exceptions.legacyindex.LegacyIndexNotFoundKernelException;
 import org.neo4j.kernel.api.exceptions.schema.DuplicateSchemaRuleException;
@@ -48,6 +49,7 @@ import org.neo4j.kernel.api.proc.QualifiedName;
 import org.neo4j.kernel.api.proc.UserFunctionSignature;
 import org.neo4j.kernel.api.schema.NodePropertyDescriptor;
 import org.neo4j.kernel.api.schema.RelationshipPropertyDescriptor;
+import org.neo4j.kernel.api.schema_new.CompositeIndexQuery;
 import org.neo4j.kernel.api.schema_new.index.NewIndexDescriptor;
 import org.neo4j.kernel.impl.api.RelationshipVisitor;
 import org.neo4j.kernel.impl.api.store.RelationshipIterator;
@@ -123,6 +125,16 @@ public interface ReadOperations
      */
     PrimitiveLongIterator nodesGetFromIndexSeek( NewIndexDescriptor index, Object value )
             throws IndexNotFoundKernelException;
+
+    /**
+     * Returns an iterator with the matched nodes.
+     *
+     * @throws org.neo4j.kernel.api.exceptions.index.IndexNotFoundKernelException if no such index found.
+     * @throws org.neo4j.kernel.api.exceptions.index.IndexNotApplicableKernelException if the index is not applicable
+     * for the given query.
+     */
+    PrimitiveLongIterator nodesGetFromCompositeIndexSeek( NewIndexDescriptor index, CompositeIndexQuery query )
+            throws IndexNotFoundKernelException, IndexNotApplicableKernelException;
 
     /**
      * Returns an iterator with the matched nodes.

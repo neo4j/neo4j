@@ -310,6 +310,8 @@ public interface Status
                 "Unable to perform operation because it would clash with a pre-existing index." ),
         IndexNotFound( ClientError,
                 "The request (directly or indirectly) referred to an index that does not exist." ),
+        IndexNotApplicable( ClientError,
+                "The request did not contain the properties required by the index." ),
         ForbiddenOnConstraintIndex( ClientError,
                 "A requested operation can not be performed on the specified index because the index is part of a " +
                 "constraint. If you want to drop the index, for instance, you must drop the constraint." ),
