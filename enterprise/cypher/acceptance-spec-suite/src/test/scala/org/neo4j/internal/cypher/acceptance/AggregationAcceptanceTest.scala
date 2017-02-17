@@ -19,7 +19,7 @@
  */
 package org.neo4j.internal.cypher.acceptance
 
-import org.neo4j.cypher.{ExecutionEngineFunSuite, NewPlannerTestSupport}
+import org.neo4j.cypher.ExecutionEngineFunSuite
 
 class AggregationAcceptanceTest extends ExecutionEngineFunSuite with NewRuntimeTestSupport {
 
@@ -87,5 +87,42 @@ class AggregationAcceptanceTest extends ExecutionEngineFunSuite with NewRuntimeT
     val r2 = relate(node1, node3)
     val result = executeWithAllPlannersAndRuntimesAndCompatibilityMode("MATCH (a:Person)-[r]->() WITH r as s WITH count(s) as c RETURN c")
     result.toList should equal(List(Map("c" -> 2L)))
+  }
+
+  test("combine grouping and aggregation with sorting") {
+    val node1 = createNode(Map("prop" -> 1))
+    val node2 = createNode(Map("prop" -> 2))
+    val r1 = relate(node1, node2)
+    val result = executeWithAllPlannersAndRuntimesAndCompatibilityMode("MATCH (a)--(b) RETURN a.prop, count(a) ORDER BY a.prop")
+    result.toList should equal(List(Map("a.prop" -> 1, "count(a)" -> 1), Map("a.prop" -> 2, "count(a)" -> 1)))
+  }
+
+  test("combine simple aggregation on projection with sorting") {
+    val node1 = createNode()
+    val node2 = createNode()
+    val result = executeWithAllPlannersAndRuntimesAndCompatibilityMode("MATCH (a) WITH a as b RETURN count(b) ORDER BY count(b)")
+    result.toList should equal(List(Map("count(b)" -> 2)))
+  }
+
+  test("combine simple aggregation with sorting (cannot use count store)") {
+    val node1 = createNode(Map("prop" -> 1))
+    val node2 = createNode(Map("prop" -> 2))
+    val result = executeWithAllPlannersAndRuntimesAndCompatibilityMode("MATCH (a) RETURN count(a.prop) ORDER BY count(a.prop)")
+    result.toList should equal(List(Map("count(a.prop)" -> 2)))
+  }
+
+  test("combine simple aggregation with sorting (can use node count store)") {
+    val node1 = createNode()
+    val node2 = createNode()
+    val result = executeWithAllPlannersAndRuntimesAndCompatibilityMode("MATCH (a) RETURN count(a) ORDER BY count(a)")
+    result.toList should equal(List(Map("count(a)" -> 2)))
+  }
+
+  test("combine simple aggregation with sorting (can use relationship count store)") {
+    val node1 = createNode()
+    val node2 = createNode()
+    val r1 = relate(node1, node2)
+    val result = executeWithAllPlannersAndRuntimesAndCompatibilityMode("MATCH (a)-[r]-(b) RETURN count(r) ORDER BY count(r)")
+    result.toList should equal(List(Map("count(r)" -> 2)))
   }
 }
