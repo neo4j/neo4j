@@ -36,7 +36,7 @@ case class GetSortedResult(opName: String,
         case (_, FieldAndVariableInfo(fieldName, queryVariableName, incoming, outgoing))
           if variablesToKeep.isDefinedAt(queryVariableName) => (outgoing.name, fieldName)
       }
-      l1.sortTableIterate(sortTableInfo.tableName, sortTableInfo.tupleDescriptor, variablesToGetFromFields) { l2 =>
+      l1.sortTableIterate(sortTableInfo.tableName, sortTableInfo.tableDescriptor, variablesToGetFromFields) { l2 =>
         l2.incrementRows()
         action.body(l2)
       }
