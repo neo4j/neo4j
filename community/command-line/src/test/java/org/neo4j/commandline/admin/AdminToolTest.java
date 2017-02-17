@@ -263,6 +263,12 @@ public class AdminToolTest
             }
 
             @Override
+            public AdminCommandSegment segment()
+            {
+                return AdminCommandSegment.general();
+            }
+
+            @Override
             public AdminCommand create( Path homeDir, Path configDir, OutsideWorld outsideWorld )
             {
                 return command;
@@ -308,6 +314,12 @@ public class AdminToolTest
         public String summary()
         {
             return "";
+        }
+
+        @Override
+        public AdminCommandSegment segment()
+        {
+            return AdminCommandSegment.general();
         }
 
         @Override

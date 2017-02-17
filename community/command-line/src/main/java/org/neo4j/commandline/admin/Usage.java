@@ -19,7 +19,12 @@
  */
 package org.neo4j.commandline.admin;
 
+import java.util.ArrayList;
+import java.util.Comparator;
+import java.util.List;
+import java.util.Map;
 import java.util.function.Consumer;
+import java.util.stream.Collectors;
 
 import org.neo4j.commandline.arguments.Arguments;
 
@@ -42,14 +47,33 @@ public class Usage
         output.accept( "" );
         output.accept( "available commands:" );
 
-        for ( AdminCommand.Provider command : commands.getAllProviders() )
+        Map<AdminCommandSegment,List<AdminCommand.Provider>> groupedProviders = groupProvidersBySegment();
+
+        groupedProviders.entrySet().forEach( entry ->
         {
-            final CommandUsage commandUsage = new CommandUsage( command, scriptName );
-            commandUsage.printIndentedSummary( output );
-        }
+            output.accept( entry.getKey().printable() );
+            printCommandsUnderASegment( output, entry.getValue() );
+        } );
 
         output.accept( "" );
         output.accept( format( "Use %s help <command> for more details.", scriptName ) );
+    }
+
+    private Map<AdminCommandSegment,List<AdminCommand.Provider>> groupProvidersBySegment()
+    {
+        List<AdminCommand.Provider> providers = new ArrayList<>();
+        commands.getAllProviders().forEach( providers::add );
+        return providers.stream().collect( Collectors.groupingBy( AdminCommand.Provider::segment ) );
+    }
+
+    private void printCommandsUnderASegment( Consumer<String> output, List<AdminCommand.Provider> providers )
+    {
+        providers.sort( Comparator.comparing( AdminCommand.Provider::name ) );
+        providers.forEach( command ->
+        {
+            final CommandUsage commandUsage = new CommandUsage( command, scriptName );
+            commandUsage.printIndentedSummary( output );
+        } );
     }
 
     public void printUsageForCommand( AdminCommand.Provider command, Consumer<String> output )
@@ -82,7 +106,7 @@ public class Usage
 
         public void printDetailed( Consumer<String> output )
         {
-            for (Arguments arguments: command.possibleArguments())
+            for ( Arguments arguments : command.possibleArguments() )
             {
                 //Arguments arguments = command.arguments();
 

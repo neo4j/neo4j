@@ -174,7 +174,7 @@ public class RestoreDatabaseCommandTest
             PrintStream ps = new PrintStream( baos );
 
             Usage usage = new Usage( "neo4j-admin", mock( CommandLocator.class ) );
-            usage.printUsageForCommand( new RestoreDatabaseCli.Provider(), ps::println );
+            usage.printUsageForCommand( new RestoreDatabaseCliProvider(), ps::println );
 
             assertEquals( String.format( "usage: neo4j-admin restore --from=<backup-directory> [--database=<name>]%n" +
                             "                           [--force[=<true|false>]]%n" +

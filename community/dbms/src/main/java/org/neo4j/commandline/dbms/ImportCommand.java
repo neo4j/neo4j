@@ -28,6 +28,7 @@ import java.util.Map;
 import java.util.Optional;
 
 import org.neo4j.commandline.admin.AdminCommand;
+import org.neo4j.commandline.admin.AdminCommandSegment;
 import org.neo4j.commandline.admin.CommandFailed;
 import org.neo4j.commandline.admin.IncorrectUsage;
 import org.neo4j.commandline.admin.OutsideWorld;
@@ -124,43 +125,19 @@ public class ImportCommand implements AdminCommand
             .withArgument( new OptionalNamedArg( "input-encoding", "character-set", "UTF-8",
                     "Character set that input data is encoded in." ) );
 
-    public static class Provider extends AdminCommand.Provider
+    public static Arguments databaseArguments()
     {
-        public Provider()
-        {
-            super( "import" );
-        }
+        return databaseArguments;
+    }
 
-        @Override
-        public Arguments allArguments()
-        {
-            return allArguments;
-        }
+    public static Arguments csvArguments()
+    {
+        return csvArguments;
+    }
 
-        @Override
-        public List<Arguments> possibleArguments()
-        {
-            return Arrays.asList( csvArguments, databaseArguments );
-        }
-
-        @Override
-        public String description()
-        {
-            return "Import a collection of CSV files with --mode=csv (default), or a database from " +
-                    "a pre-3.0 installation with --mode=database.";
-        }
-
-        @Override
-        public String summary()
-        {
-            return "Import from a collection of CSV files or a pre-3.0 database.";
-        }
-
-        @Override
-        public AdminCommand create( Path homeDir, Path configDir, OutsideWorld outsideWorld )
-        {
-            return new ImportCommand( homeDir, configDir, outsideWorld );
-        }
+    public static Arguments allArguments()
+    {
+        return allArguments;
     }
 
     private final Path homeDir;
