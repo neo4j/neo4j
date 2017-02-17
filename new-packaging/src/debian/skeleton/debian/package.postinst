@@ -19,6 +19,9 @@ set -e
 
 case "$1" in
     configure)
+        [ -r /etc/default/neo4j ] && . /etc/default/neo4j
+        : ${NEO_USER:=neo4j}
+
         # Create neo4j user if it doesn't exist.
         if ! id neo4j > /dev/null 2>&1 ; then
             useradd --system --user-group --home /var/lib/neo4j --shell /bin/bash neo4j
