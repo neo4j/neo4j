@@ -20,19 +20,44 @@
 package org.neo4j.cypher.internal.compiled_runtime.v3_2.codegen.ir
 
 import org.neo4j.cypher.internal.compiled_runtime.v3_2.codegen._
+import org.neo4j.cypher.internal.compiled_runtime.v3_2.codegen.ir.expressions.CodeGenExpression
 import org.neo4j.cypher.internal.compiled_runtime.v3_2.codegen.spi._
 
 case class BuildSortTable(opName: String, tableName: String, columnVariables: Map[String, Variable],
-                          sortItems: Iterable[SortItem])
+                          sortItems: Iterable[SortItem], estimateCardinality: Double)
                          (implicit context: CodeGenContext)
-  extends Instruction
+  extends BuildSortTableBase(opName, tableName, columnVariables, sortItems)
 {
 
   override def init[E](generator: MethodStructure[E])(implicit context: CodeGenContext) = {
-    val initialCapacity = 128 // TODO: Use value from cardinality estimation if possible
-    generator.allocateSortTable(tableName, initialCapacity, tupleDescriptor)
+    // Use estimated cardinality to decide initial capacity
+    // Since we cannot trust this value we cap it within reasonable limits
+    val initialCapacity = Math.max(128.0, Math.min(estimateCardinality, (Int.MaxValue / 2).toDouble)).toInt
+
+    generator.allocateSortTable(tableName, tableDescriptor, generator.constantExpression(Int.box(initialCapacity)))
   }
 
+  override protected def tableDescriptor = FullSortTableDescriptor(tupleDescriptor)
+}
+
+case class BuildTopTable(opName: String, tableName: String, countExpression: CodeGenExpression,
+                         columnVariables: Map[String, Variable], sortItems: Iterable[SortItem])
+                        (implicit context: CodeGenContext)
+  extends BuildSortTableBase(opName, tableName, columnVariables, sortItems)
+{
+  override def init[E](generator: MethodStructure[E])(implicit context: CodeGenContext) = {
+    countExpression.init(generator)
+    generator.allocateSortTable(tableName, tableDescriptor, countExpression.generateExpression(generator))
+  }
+
+  override protected def tableDescriptor = TopTableDescriptor(tupleDescriptor)
+}
+
+abstract class BuildSortTableBase(opName: String, tableName: String, columnVariables: Map[String, Variable],
+                                  sortItems: Iterable[SortItem])
+                                 (implicit context: CodeGenContext)
+  extends Instruction
+{
   override def body[E](generator: MethodStructure[E])(implicit ignored: CodeGenContext): Unit = {
     generator.trace(opName, Some(this.getClass.getSimpleName)) { body =>
       val tuple = body.newTableValue(context.namer.newVarName(), tupleDescriptor)
@@ -40,13 +65,15 @@ case class BuildSortTable(opName: String, tableName: String, columnVariables: Ma
         case (fieldName: String, info: FieldAndVariableInfo) =>
           body.putField(tupleDescriptor, tuple, fieldName, info.incomingVariable.name)
       }
-      body.sortTableAdd(tableName, tupleDescriptor, tuple)
+      body.sortTableAdd(tableName, tableDescriptor, tuple)
     }
   }
 
   override protected def children = Seq.empty
 
   override protected def operatorId = Set(opName)
+
+  protected def tableDescriptor: SortTableDescriptor
 
   private val fieldToVariableInfo: Map[String, FieldAndVariableInfo] = columnVariables.map {
     case (queryVariableName: String, incoming: Variable) =>
@@ -64,23 +91,23 @@ case class BuildSortTable(opName: String, tableName: String, columnVariables: Ma
       case (fieldName, info) => info.outgoingVariable.name -> info
     }
 
-  private val tupleDescriptor = OrderableTupleDescriptor(
-      structure = fieldToVariableInfo.mapValues(c => c.outgoingVariable.codeGenType),
-      sortItems
+  protected val tupleDescriptor = OrderableTupleDescriptor(
+    structure = fieldToVariableInfo.mapValues(c => c.outgoingVariable.codeGenType),
+    sortItems
   )
 
   val sortTableInfo: SortTableInfo = SortTableInfo(
     tableName,
     fieldToVariableInfo,
     outgoingVariableNameToVariableInfo,
-    tupleDescriptor
+    tableDescriptor
   )
 }
 
 case class SortTableInfo(tableName: String,
                          fieldToVariableInfo: Map[String, FieldAndVariableInfo],
                          outgoingVariableNameToVariableInfo: Map[String, FieldAndVariableInfo],
-                         tupleDescriptor: OrderableTupleDescriptor)
+                         tableDescriptor: SortTableDescriptor)
 
 case class FieldAndVariableInfo(fieldName: String,
                                 queryVariableName: String,
