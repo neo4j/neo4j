@@ -75,8 +75,8 @@ public class CompatibilitySpecSuiteTest
     @CucumberOptions(
             plugin = {
                     DB_CONFIG + "cost-compiled.json",
-                    HTML_REPORT + SUITE_NAME + "/cost-compiled",
-                    JSON_REPORT + SUITE_NAME + "/cost-compiled",
+                    HTML_REPORT + SUITE_NAME + "/cost-compiled-sourcecode",
+                    JSON_REPORT + SUITE_NAME + "/cost-compiled-sourcecode",
                     BLACKLIST_PLUGIN + "cost-compiled.txt",
                     CYPHER_OPTION_PLUGIN + "cost-compiled-sourcecode.txt"
             },
