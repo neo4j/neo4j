@@ -537,7 +537,7 @@ class QueryPlanCompactionAcceptanceTest extends ExecutionEngineFunSuite with Que
         |
         |RETURN TheMatrix
         |;""".stripMargin
-    val result = executeWithCostPlannerOnly(query)
+    val result = executeWithCostPlannerAndInterpretedRuntimeOnly(query)
     assertStats(result, nodesCreated = 171, relationshipsCreated = 253, propertiesWritten = 564, labelsAdded = 171)
     result should havePlanLike(
       """
@@ -729,7 +729,7 @@ class QueryPlanCompactionAcceptanceTest extends ExecutionEngineFunSuite with Que
         |
         |RETURN TheMatrix
         |""".stripMargin
-    val result = executeWithCostPlannerOnly(query)
+    val result = executeWithCostPlannerAndInterpretedRuntimeOnly(query)
     assertStats(result, nodesCreated = 8, relationshipsCreated = 7, propertiesWritten = 21, labelsAdded = 8)
     result should havePlanLike(
       """
@@ -748,7 +748,7 @@ class QueryPlanCompactionAcceptanceTest extends ExecutionEngineFunSuite with Que
   test("Don't compact complex query") {
     val query = "EXPLAIN LOAD CSV WITH HEADERS FROM {csv_filename} AS line MERGE (u1:User {login: line.user1}) MERGE " +
       "(u2:User {login: line.user2}) CREATE (u1)-[:FRIEND]->(u2)"
-    val result = executeWithCostPlannerOnly(query)
+    val result = executeWithCostPlannerAndInterpretedRuntimeOnly(query)
     result should havePlanLike(
       """
         |+-------------------------+----------------+---------------------------+------------------------+
@@ -808,7 +808,7 @@ class QueryPlanCompactionAcceptanceTest extends ExecutionEngineFunSuite with Que
     relate(c,b)
     relate(d,b)
     val query = "MATCH (n:Actor {name:'Keanu Reeves'})-->()-->(b) RETURN b"
-    val result = executeWithCostPlannerOnly(query)
+    val result = executeWithCostPlannerAndCompiledRuntimeOnly(query)
     result should havePlanLike(
       """
         |+------------------+----------------+--------------------------------------+---------------------------+

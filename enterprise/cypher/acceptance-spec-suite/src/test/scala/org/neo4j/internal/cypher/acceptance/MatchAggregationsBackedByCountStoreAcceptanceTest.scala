@@ -678,8 +678,8 @@ class MatchAggregationsBackedByCountStoreAcceptanceTest extends ExecutionEngineF
       """.stripMargin)
 
     graph.inTx {
-      executeWithCostPlannerOnly("MATCH (m:X)-[r]->() DELETE m, r")
-      executeWithCostPlannerOnly(
+      executeWithCostPlannerAndInterpretedRuntimeOnly("MATCH (m:X)-[r]->() DELETE m, r")
+      executeWithCostPlannerAndInterpretedRuntimeOnly(
         s"""
            |MATCH (p:$label1 {name: 'Petra'})
            |MATCH (s:$label2 {name: 'Steve'})
@@ -689,7 +689,7 @@ class MatchAggregationsBackedByCountStoreAcceptanceTest extends ExecutionEngineF
         """.stripMargin)
       val result: InternalExecutionResult =
         if (allRuntimes) executeWithAllPlannersAndRuntimesAndCompatibilityMode(query)
-        else executeWithCostPlannerOnly(query)
+        else executeWithCostPlannerAndInterpretedRuntimeOnly(query)
       result.executionPlanDescription() should includeOperation(expectedLogicalPlan)
       f(result)
     }

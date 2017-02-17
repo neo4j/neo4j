@@ -21,7 +21,7 @@ package org.neo4j.internal.cypher.acceptance
 
 import org.neo4j.cypher.internal.compiler.v3_2.planDescription.InternalPlanDescription
 import org.neo4j.cypher.internal.compiler.v3_2.planDescription.InternalPlanDescription.Arguments.EstimatedRows
-import org.neo4j.cypher.{ExecutionEngineFunSuite, LdbcQueries, NewPlannerTestSupport}
+import org.neo4j.cypher.{ExecutionEngineFunSuite, LdbcQueries}
 
 /**
  * Runs the 14 LDBC queries and checks so that the result is what is expected.
@@ -37,7 +37,10 @@ class LdbcAcceptanceTest extends ExecutionEngineFunSuite with NewRuntimeTestSupp
         ldbcQuery.constraintQueries.foreach(updateWithBothPlannersAndCompatibilityMode(_))
 
         //when
-        val result = executeWithAllPlannersAndCompatibilityMode(ldbcQuery.query, ldbcQuery.params.toSeq: _*).toComparableResult
+        val result = if (ldbcQuery.supportedInCompiledRuntime)
+          executeWithAllPlannersAndRuntimesAndCompatibilityMode(ldbcQuery.query, ldbcQuery.params.toSeq: _*).toComparableResult
+        else
+          executeWithAllPlannersAndCompatibilityMode(ldbcQuery.query, ldbcQuery.params.toSeq: _*).toComparableResult
 
         //then
         result should equal(ldbcQuery.expectedResult)

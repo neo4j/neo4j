@@ -68,14 +68,17 @@ case class RelationshipCountFromCountStoreInstruction(opName: String, variable: 
     startLabel.foreach {
       case (token, name) if token.isEmpty =>
         generator.lookupLabelId(s"${variable.name}StartOf$name", name)
+      case _ => ()
     }
     endLabel.foreach {
       case (token, name) if token.isEmpty =>
         generator.lookupLabelId(s"${variable.name}EndOf$name", name)
+      case _ => ()
     }
     relTypes.foreach {
       case (token, name) if token.isEmpty =>
         generator.lookupRelationshipTypeId(s"${variable.name}TypeOf$name", name)
+      case _ => ()
     }
   }
 

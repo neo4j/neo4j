@@ -36,7 +36,6 @@ import org.neo4j.cypher.internal.compiled_runtime.v3_2.codegen.spi.{CodeStructur
 import org.neo4j.cypher.internal.compiled_runtime.v3_2.executionplan.{GeneratedQuery, GeneratedQueryExecution}
 import org.neo4j.cypher.internal.compiler.v3_2.executionplan._
 import org.neo4j.cypher.internal.compiler.v3_2.planDescription.{Id, InternalPlanDescription}
-import org.neo4j.cypher.internal.compiler.v3_2.planner.CantCompileQueryException
 import org.neo4j.cypher.internal.compiler.v3_2.spi.{InternalResultVisitor, QueryContext}
 import org.neo4j.cypher.internal.compiler.v3_2.{ExecutionMode, ResultRowImpl, TaskCloser}
 import org.neo4j.cypher.internal.frontend.v3_2.helpers.using
@@ -62,11 +61,7 @@ object GeneratedQueryStructure extends CodeStructure[GeneratedQuery] {
       BLANK_OPTION
     }
 
-    try {
-      CodeGenerator.generateCode(classOf[CodeStructure[_]].getClassLoader, mode, option)
-    } catch {
-      case e: Exception => throw new CantCompileQueryException(e.getMessage, e)
-    }
+    CodeGenerator.generateCode(classOf[CodeStructure[_]].getClassLoader, mode, option)
   }
 
   class SourceSaver extends ((Option[(String, String)]) => Unit) {

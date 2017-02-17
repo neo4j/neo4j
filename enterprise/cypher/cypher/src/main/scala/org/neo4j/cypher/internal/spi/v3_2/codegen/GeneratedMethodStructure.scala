@@ -360,14 +360,7 @@ class GeneratedMethodStructure(val fields: Fields, val generator: CodeBlock, aux
     invoke(cast(typeRef[java.util.Map[String, Object]], generator.load(mapName)), mapGet, constantExpression(key))
   }
 
-  override def constantExpression(value: Object) = value match {
-    case n: java.lang.Byte => constant(n.toLong)
-    case n: java.lang.Short => constant(n.toLong)
-    case n: java.lang.Character => constant(n.toLong)
-    case n: java.lang.Integer => constant(n.toLong)
-    case n: java.lang.Float => constant(n.toDouble)
-    case _ => constant(value)
-  }
+  override def constantExpression(value: Object) = constant(value)
 
   override def notExpression(value: Expression): Expression = not(value)
 

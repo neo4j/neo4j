@@ -19,7 +19,7 @@
  */
 package org.neo4j.internal.cypher.acceptance
 
-import org.neo4j.cypher.{ExecutionEngineFunSuite, NewPlannerTestSupport}
+import org.neo4j.cypher.ExecutionEngineFunSuite
 import org.neo4j.graphdb.Node
 
 class StartPointFindingAcceptanceTest extends ExecutionEngineFunSuite with NewRuntimeTestSupport {
@@ -30,14 +30,18 @@ class StartPointFindingAcceptanceTest extends ExecutionEngineFunSuite with NewRu
     createNode("a")
     val node = createNode("b")
 
-    executeScalarWithAllPlannersAndCompatibilityMode[Node](s"match (n) where ${node.getId} = id(n) return n") should equal(node)
+    val result = executeScalarWithAllPlannersAndRuntimesAndCompatibilityMode[Node](
+      s"match (n) where ${node.getId} = id(n) return n")
+    result should equal(node)
   }
 
   test("Seek node by id given on the right") {
     createNode("a")
     val node = createNode("b")
 
-    executeScalarWithAllPlannersAndCompatibilityMode[Node](s"match (n) where id(n) = ${node.getId} return n") should equal(node)
+    val result = executeScalarWithAllPlannersAndRuntimesAndCompatibilityMode[Node](
+      s"match (n) where id(n) = ${node.getId} return n")
+    result should equal(node)
   }
 
   test("Seek node by id with multiple values") {
@@ -53,14 +57,18 @@ class StartPointFindingAcceptanceTest extends ExecutionEngineFunSuite with NewRu
     createLabeledNode("Person")
     val node = createLabeledNode("Person")
 
-    executeScalarWithAllPlannersAndCompatibilityMode[Node](s"match (n) where n:Person and ${node.getId} = id(n) return n") should equal(node)
+    val result = executeScalarWithAllPlannersAndRuntimesAndCompatibilityMode[Node](
+      s"match (n) where n:Person and ${node.getId} = id(n) return n")
+    result should equal(node)
   }
 
   test("Can use both label scan (right) and node by id (left) when there are no indices") {
     createLabeledNode("Person")
     val node = createLabeledNode("Person")
 
-    executeScalarWithAllPlannersAndCompatibilityMode[Node](s"match (n) where ${node.getId} = id(n) and n:Person return n") should equal(node)
+    val result = executeScalarWithAllPlannersAndRuntimesAndCompatibilityMode[Node](
+      s"match (n) where ${node.getId} = id(n) and n:Person return n")
+    result should equal(node)
   }
 
   test("Seek relationship by id given on the left") {
@@ -119,7 +127,8 @@ class StartPointFindingAcceptanceTest extends ExecutionEngineFunSuite with NewRu
     graph.createIndex("Person", "prop")
 
     val node = createLabeledNode(Map("prop" -> 42), "Person")
-    executeScalarWithAllPlannersAndCompatibilityMode[Node](s"match (n:Person) where n.prop = 42 return n") should equal(node)
+    val result = executeScalarWithAllPlannersAndRuntimesAndCompatibilityMode[Node](s"match (n:Person) where n.prop = 42 return n")
+    result should equal(node)
   }
 
   test("Scan index with property given in node pattern") {
@@ -127,7 +136,8 @@ class StartPointFindingAcceptanceTest extends ExecutionEngineFunSuite with NewRu
     graph.createIndex("Person", "prop")
 
     val node = createLabeledNode(Map("prop" -> 42), "Person")
-    executeScalarWithAllPlannersAndCompatibilityMode[Node](s"match (n:Person {prop: 42}) return n") should equal(node)
+    val result = executeScalarWithAllPlannersAndRuntimesAndCompatibilityMode[Node](s"match (n:Person {prop: 42}) return n")
+    result should equal(node)
   }
 
   test("Seek index with property given in where") {
@@ -135,7 +145,8 @@ class StartPointFindingAcceptanceTest extends ExecutionEngineFunSuite with NewRu
     graph.createConstraint("Person", "prop")
 
     val node = createLabeledNode(Map("prop" -> 42), "Person")
-    executeScalarWithAllPlannersAndCompatibilityMode[Node](s"match (n:Person) where n.prop = 42 return n") should equal(node)
+    val result = executeScalarWithAllPlannersAndRuntimesAndCompatibilityMode[Node](s"match (n:Person) where n.prop = 42 return n")
+    result should equal(node)
   }
 
   test("Seek index with property given in node pattern") {
@@ -143,7 +154,8 @@ class StartPointFindingAcceptanceTest extends ExecutionEngineFunSuite with NewRu
     graph.createConstraint("Person", "prop")
 
     val node = createLabeledNode(Map("prop" -> 42), "Person")
-    executeScalarWithAllPlannersAndCompatibilityMode[Node](s"match (n:Person {prop: 42}) return n") should equal(node)
+    val result = executeScalarWithAllPlannersAndRuntimesAndCompatibilityMode[Node](s"match (n:Person {prop: 42}) return n")
+    result should equal(node)
   }
 }
 

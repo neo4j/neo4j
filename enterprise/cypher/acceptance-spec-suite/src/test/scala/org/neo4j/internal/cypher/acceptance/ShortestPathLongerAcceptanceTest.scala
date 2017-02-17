@@ -603,7 +603,7 @@ class ShortestPathLongerAcceptanceTest extends ExecutionEngineFunSuite with NewR
                   |WHERE ALL(id IN wps WHERE id IN EXTRACT(n IN nodes(p) | n.id))
                   |WITH p, size(nodes(p)) as length order by length limit 1
                   |RETURN EXTRACT(n IN nodes(p) | n.id) as nodes""".stripMargin
-    val results = executeWithCostPlannerOnly(query)
+    val results = executeWithCostPlannerAndInterpretedRuntimeOnly(query)
     results.toList should equal(List(Map("nodes" -> List(1,2,3,4,14,13,26))))
   }
 

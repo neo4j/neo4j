@@ -55,7 +55,7 @@ class LoadCsvAcceptanceTest
         writer.println("3, '6', 3, '6'")
     })
 
-    val result = executeWithCostPlannerOnly(
+    val result = executeWithCostPlannerAndInterpretedRuntimeOnly(
       s"""LOAD CSV WITH HEADERS FROM '${urls(0)}' AS row
           | CREATE (user:User{userID: row.USERID})
           | CREATE (order:Order{orderID: row.OrderId})
@@ -66,7 +66,7 @@ class LoadCsvAcceptanceTest
     assertStats(result, nodesCreated = 6, relationshipsCreated = 3, labelsAdded = 6, propertiesWritten = 6)
 
     for (url <- urls) {
-      val result = executeWithCostPlannerOnly(
+      val result = executeWithCostPlannerAndInterpretedRuntimeOnly(
         s"""LOAD CSV WITH HEADERS FROM '$url' AS row
             | MATCH (user:User{userID: row.USERID}) USING INDEX user:User(userID)
             | MATCH (order:Order{orderID: row.OrderId})
@@ -476,7 +476,7 @@ class LoadCsvAcceptanceTest
 
 
       //make sure three unique movies are created
-      val result = executeWithAllPlannersAndCompatibilityMode("match (m:Movie) return m.id AS id ORDER BY m.id").toList
+      val result = executeWithAllPlannersAndRuntimesAndCompatibilityMode("match (m:Movie) return m.id AS id ORDER BY m.id").toList
 
       result should equal(List(Map("id" -> 1), Map("id" -> 2), Map("id" -> 3)))
       //empty database

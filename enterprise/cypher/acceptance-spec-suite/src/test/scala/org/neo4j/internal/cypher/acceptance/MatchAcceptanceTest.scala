@@ -320,8 +320,8 @@ return p""")
     val node = createLabeledNode("FOO")
 
     graph.inTx {
-      executeWithCostPlannerOnly("MATCH (n:FOO) SET n = { first: 'value' }")
-      executeWithCostPlannerOnly("MATCH (n:FOO) SET n = { second: 'value' }")
+      executeWithCostPlannerAndInterpretedRuntimeOnly("MATCH (n:FOO) SET n = { first: 'value' }")
+      executeWithCostPlannerAndInterpretedRuntimeOnly("MATCH (n:FOO) SET n = { second: 'value' }")
     }
 
     graph.inTx {
@@ -378,7 +378,7 @@ return p""")
     graph.createIndex("User", "email")
 
     // when
-    val result = executeWithCostPlannerOnly("MATCH (n:User) USING INDEX n:User(email) WHERE exists(n.email) RETURN n")
+    val result = executeWithCostPlannerAndInterpretedRuntimeOnly("MATCH (n:User) USING INDEX n:User(email) WHERE exists(n.email) RETURN n")
 
     // then
     result.toList should equal(List(Map("n" -> n), Map("n" -> m)))
@@ -393,7 +393,7 @@ return p""")
     graph.createIndex("User", "email")
 
     // when
-    val result = executeWithCostPlannerOnly("MATCH (n:User) USING INDEX n:User(email) WHERE n.email IS NOT NULL RETURN n")
+    val result = executeWithCostPlannerAndInterpretedRuntimeOnly("MATCH (n:User) USING INDEX n:User(email) WHERE n.email IS NOT NULL RETURN n")
 
     // then
     result.toList should equal(List(Map("n" -> n), Map("n" -> m)))
@@ -417,7 +417,7 @@ return p""")
     val nodes = setupIndexScanTest()
 
     // when
-    val result = executeWithCostPlannerOnly("MATCH (n:User) WHERE exists(n.email) RETURN n")
+    val result = executeWithCostPlannerAndInterpretedRuntimeOnly("MATCH (n:User) WHERE exists(n.email) RETURN n")
 
     // then
     result.toList should equal(List(Map("n" -> nodes.head), Map("n" -> nodes(1))))
@@ -429,7 +429,7 @@ return p""")
     val nodes = setupIndexScanTest()
 
     // when
-    val result = executeWithCostPlannerOnly("MATCH (n:User) WHERE exists(n.email) AND n.email = 'me@mine' RETURN n")
+    val result = executeWithCostPlannerAndInterpretedRuntimeOnly("MATCH (n:User) WHERE exists(n.email) AND n.email = 'me@mine' RETURN n")
 
     // then
     result.toList should equal(List(Map("n" -> nodes.head)))
@@ -562,7 +562,7 @@ return p""")
     1.to(1000).foreach(_ => createNode())
 
     // when
-    val result = executeWithCostPlannerOnly(s"profile WITH [$a,$b,$d] AS arr MATCH (n) WHERE id(n) IN arr return count(*)")
+    val result = executeWithCostPlannerAndInterpretedRuntimeOnly(s"profile WITH [$a,$b,$d] AS arr MATCH (n) WHERE id(n) IN arr return count(*)")
 
     // then
     result.toList should equal(List(Map("count(*)" -> 3)))

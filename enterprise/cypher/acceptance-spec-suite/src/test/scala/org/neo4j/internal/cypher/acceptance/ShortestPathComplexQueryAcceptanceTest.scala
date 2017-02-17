@@ -25,7 +25,7 @@ class ShortestPathComplexQueryAcceptanceTest extends ExecutionEngineFunSuite wit
 
   test("allShortestPaths with complex LHS should be planned with exhaustive fallback and include predicate") {
     setupModel()
-    val result = executeWithCostPlannerOnly(
+    val result = executeWithCostPlannerAndInterpretedRuntimeOnly(
       """
         |PROFILE MATCH (charles:Pixie { fname : 'Charles'}),(joey:Pixie { fname : 'Joey'}),(kim:Pixie { fname : 'Kim'})
         |WITH kim AS kimDeal, collect(charles) AS charlesT, collect(joey) AS joeyS
@@ -42,7 +42,7 @@ class ShortestPathComplexQueryAcceptanceTest extends ExecutionEngineFunSuite wit
 
   test("shortestPath with complex LHS should be planned with exhaustive fallback and include predicate") {
     setupModel()
-    val result = executeWithCostPlannerOnly(
+    val result = executeWithCostPlannerAndInterpretedRuntimeOnly(
       """
         |PROFILE MATCH (charles:Pixie { fname : 'Charles'}),(joey:Pixie { fname : 'Joey'}),(kim:Pixie { fname : 'Kim'})
         |WITH kim AS kimDeal, collect(charles) AS charlesT, collect(joey) AS joeyS
@@ -58,7 +58,7 @@ class ShortestPathComplexQueryAcceptanceTest extends ExecutionEngineFunSuite wit
   }
 
   private def setupModel(): Unit = {
-    executeWithCostPlannerOnly(
+    executeWithCostPlannerAndInterpretedRuntimeOnly(
       """
         |MERGE (p1:Pixie {fname:'Charles'})
         |MERGE (p2:Pixie {fname:'Kim'})

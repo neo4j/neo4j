@@ -27,8 +27,17 @@ case class Literal(value: Object) extends CodeGenExpression {
 
   override def init[E](generator: MethodStructure[E])(implicit context: CodeGenContext) = {}
 
-  override def generateExpression[E](structure: MethodStructure[E])(implicit context: CodeGenContext) =
-    structure.constantExpression(value)
+  override def generateExpression[E](structure: MethodStructure[E])(implicit context: CodeGenContext) = {
+    val convertedValue = value match {
+      case n: java.lang.Byte => n.longValue()
+      case n: java.lang.Short => n.longValue()
+      case n: java.lang.Character => n.toLong
+      case n: java.lang.Integer => n.longValue()
+      case n: java.lang.Float => n.doubleValue()
+      case _ => value
+    }
+    structure.constantExpression(convertedValue.asInstanceOf[AnyRef])
+  }
 
   override def nullable(implicit context: CodeGenContext) = value == null
 

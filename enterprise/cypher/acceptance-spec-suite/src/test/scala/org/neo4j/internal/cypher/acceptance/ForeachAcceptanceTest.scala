@@ -181,14 +181,14 @@ class ForeachAcceptanceTest extends ExecutionEngineFunSuite with NewRuntimeTestS
         |FOREACH (x IN mixedTypeCollection | CREATE (n)-[:FOOBAR]->(x) );""".stripMargin
 
     // when
-    val explain = executeWithCostPlannerOnly(s"EXPLAIN $query")
+    val explain = executeWithCostPlannerAndInterpretedRuntimeOnly(s"EXPLAIN $query")
 
     // then
     explain.executionPlanDescription().toString shouldNot include("CreateNode")
 
     // when
     try {
-      val result = executeWithCostPlannerOnly(query)
+      val result = executeWithCostPlannerAndInterpretedRuntimeOnly(query)
     }
     catch {
       case e: Exception => e.getMessage should startWith("Expected to find a node at x but")
