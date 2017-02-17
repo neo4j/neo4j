@@ -21,15 +21,15 @@ package org.neo4j.kernel.impl.api.index;
 
 import java.util.ArrayList;
 
+import org.neo4j.kernel.api.index.IndexEntryUpdate;
 import org.neo4j.kernel.api.index.IndexUpdater;
-import org.neo4j.kernel.api.index.NodePropertyUpdate;
 
 public abstract class CollectingIndexUpdater implements IndexUpdater
 {
-    protected final ArrayList<NodePropertyUpdate> updates = new ArrayList<>();
+    protected final ArrayList<IndexEntryUpdate> updates = new ArrayList<>();
 
     @Override
-    public void process( NodePropertyUpdate update )
+    public void process( IndexEntryUpdate update )
     {
         if ( null != update )
         {

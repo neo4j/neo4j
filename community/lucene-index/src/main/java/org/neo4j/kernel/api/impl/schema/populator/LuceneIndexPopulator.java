@@ -29,8 +29,8 @@ import org.neo4j.kernel.api.exceptions.index.IndexEntryConflictException;
 import org.neo4j.kernel.api.impl.schema.LuceneDocumentStructure;
 import org.neo4j.kernel.api.impl.schema.SchemaIndex;
 import org.neo4j.kernel.api.impl.schema.writer.LuceneIndexWriter;
+import org.neo4j.kernel.api.index.IndexEntryUpdate;
 import org.neo4j.kernel.api.index.IndexPopulator;
-import org.neo4j.kernel.api.index.NodePropertyUpdate;
 
 /**
  * An {@link IndexPopulator} used to create, populate and mark as online a Lucene schema index.
@@ -60,7 +60,7 @@ public abstract class LuceneIndexPopulator implements IndexPopulator
     }
 
     @Override
-    public void add( Collection<NodePropertyUpdate> updates ) throws IndexEntryConflictException, IOException
+    public void add( Collection<IndexEntryUpdate> updates ) throws IndexEntryConflictException, IOException
     {
         // Lucene documents stored in a ThreadLocal and reused so we can't create an eager collection of documents here
         // That is why we create a lazy Iterator and then Iterable
@@ -91,8 +91,8 @@ public abstract class LuceneIndexPopulator implements IndexPopulator
         luceneIndex.markAsFailed( failure );
     }
 
-    private static Document updateAsDocument( NodePropertyUpdate update )
+    private static Document updateAsDocument( IndexEntryUpdate update )
     {
-        return LuceneDocumentStructure.documentRepresentingProperty( update.getNodeId(), update.getValueAfter() );
+        return LuceneDocumentStructure.documentRepresentingProperty( update.getEntityId(), update.values()[0] );
     }
 }

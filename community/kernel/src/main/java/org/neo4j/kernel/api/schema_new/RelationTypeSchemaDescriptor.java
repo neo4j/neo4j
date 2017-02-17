@@ -65,6 +65,16 @@ public class RelationTypeSchemaDescriptor implements SchemaDescriptor
         return propertyIds;
     }
 
+    public int getPropertyId()
+    {
+        if ( propertyIds.length != 1 )
+        {
+            throw new IllegalStateException(
+                    "Single property schema requires one property but had " + propertyIds.length );
+        }
+        return propertyIds[0];
+    }
+
     @Override
     public boolean equals( Object o )
     {

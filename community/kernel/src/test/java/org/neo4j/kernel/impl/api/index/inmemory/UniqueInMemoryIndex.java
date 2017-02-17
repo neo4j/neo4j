@@ -27,8 +27,8 @@ import java.util.Set;
 import org.neo4j.collection.primitive.PrimitiveLongSet;
 import org.neo4j.collection.primitive.PrimitiveLongVisitor;
 import org.neo4j.kernel.api.exceptions.index.IndexEntryConflictException;
+import org.neo4j.kernel.api.index.IndexEntryUpdate;
 import org.neo4j.kernel.api.index.IndexUpdater;
-import org.neo4j.kernel.api.index.NodePropertyUpdate;
 import org.neo4j.kernel.api.index.PreexistingIndexEntryConflictException;
 import org.neo4j.kernel.api.index.PropertyAccessor;
 import org.neo4j.kernel.impl.api.index.IndexUpdateMode;
@@ -60,27 +60,33 @@ class UniqueInMemoryIndex extends InMemoryIndex
         return new UniquePropertyIndexUpdater()
         {
             @Override
-            protected void flushUpdates( Iterable<NodePropertyUpdate> updates )
+            protected void flushUpdates( Iterable<IndexEntryUpdate> updates )
                     throws IOException, IndexEntryConflictException
             {
-                for ( NodePropertyUpdate update : updates )
+                for ( IndexEntryUpdate update : updates )
                 {
-                    switch ( update.getUpdateMode() )
+                    switch ( update.updateMode() )
                     {
                         case CHANGED:
+                            UniqueInMemoryIndex.this.remove( update.getEntityId(), update.beforeValues() );
+                            break;
                         case REMOVED:
-                            UniqueInMemoryIndex.this.remove( update.getNodeId(), update.getValueBefore() );
+                            UniqueInMemoryIndex.this.remove( update.getEntityId(), update.values() );
+                            break;
                         default:
                             break;
                     }
                 }
-                for ( NodePropertyUpdate update : updates )
+                for ( IndexEntryUpdate update : updates )
                 {
-                    switch ( update.getUpdateMode() )
+                    switch ( update.updateMode() )
                     {
                         case ADDED:
+                            add( update.getEntityId(), update.values(), IndexUpdateMode.ONLINE == mode );
+                            break;
                         case CHANGED:
-                            add( update.getNodeId(), update.getValueAfter(), IndexUpdateMode.ONLINE == mode );
+                            add( update.getEntityId(), update.values(), IndexUpdateMode.ONLINE == mode );
+                            break;
                         default:
                             break;
                     }

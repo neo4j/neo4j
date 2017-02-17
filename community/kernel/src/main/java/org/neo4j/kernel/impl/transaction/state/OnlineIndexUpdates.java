@@ -21,33 +21,28 @@ package org.neo4j.kernel.impl.transaction.state;
 
 import java.util.ArrayList;
 import java.util.Collection;
-import java.util.HashMap;
 import java.util.Iterator;
 import java.util.List;
-import java.util.Map;
+import java.util.stream.Stream;
 
 import org.neo4j.collection.primitive.Primitive;
 import org.neo4j.collection.primitive.PrimitiveLongCollections;
+import org.neo4j.collection.primitive.PrimitiveLongIterator;
 import org.neo4j.collection.primitive.PrimitiveLongObjectMap;
-import org.neo4j.collection.primitive.PrimitiveLongObjectVisitor;
 import org.neo4j.collection.primitive.PrimitiveLongSet;
 import org.neo4j.helpers.collection.Iterables;
-import org.neo4j.helpers.collection.Pair;
-import org.neo4j.kernel.api.index.NodePropertyUpdate;
+import org.neo4j.helpers.collection.Iterators;
+import org.neo4j.kernel.api.index.NodeUpdates;
 import org.neo4j.kernel.api.properties.DefinedProperty;
 import org.neo4j.kernel.impl.api.index.PropertyPhysicalToLogicalConverter;
-import org.neo4j.kernel.impl.api.index.UpdateMode;
 import org.neo4j.kernel.impl.core.IteratingPropertyReceiver;
 import org.neo4j.kernel.impl.store.NodeStore;
 import org.neo4j.kernel.impl.store.record.NodeRecord;
 import org.neo4j.kernel.impl.store.record.PropertyRecord;
 import org.neo4j.kernel.impl.store.record.RecordLoad;
-import org.neo4j.kernel.impl.transaction.command.Command.Mode;
 import org.neo4j.kernel.impl.transaction.command.Command.NodeCommand;
 import org.neo4j.kernel.impl.transaction.command.Command.PropertyCommand;
 
-import static org.neo4j.kernel.api.index.NodePropertyUpdate.add;
-import static org.neo4j.kernel.api.index.NodePropertyUpdate.remove;
 import static org.neo4j.kernel.impl.store.NodeLabelsField.parseLabelsField;
 
 /**
@@ -65,7 +60,7 @@ public class OnlineIndexUpdates implements IndexUpdates
     private final NodeStore nodeStore;
     private final PropertyLoader propertyLoader;
     private final PropertyPhysicalToLogicalConverter converter;
-    private final Collection<NodePropertyUpdate> updates = new ArrayList<>();
+    private final Collection<NodeUpdates> updates = new ArrayList<>();
     private NodeRecord nodeRecord;
 
     public OnlineIndexUpdates( NodeStore nodeStore,
@@ -78,7 +73,7 @@ public class OnlineIndexUpdates implements IndexUpdates
     }
 
     @Override
-    public Iterator<NodePropertyUpdate> iterator()
+    public Iterator<NodeUpdates> iterator()
     {
         return updates.iterator();
     }
@@ -93,9 +88,23 @@ public class OnlineIndexUpdates implements IndexUpdates
     public void feed( PrimitiveLongObjectMap<List<PropertyCommand>> propertyCommands,
             PrimitiveLongObjectMap<NodeCommand> nodeCommands )
     {
-        Map<Pair<Long,Integer>,NodePropertyUpdate> propertyChanges = new HashMap<>();
-        gatherUpdatesFromPropertyCommands( nodeCommands, propertyCommands, propertyChanges );
-        gatherUpdatesFromNodeCommands( nodeCommands, propertyCommands, propertyChanges );
+        PrimitiveLongIterator nodeIds = allKeys( nodeCommands, propertyCommands ).iterator();
+        while (nodeIds.hasNext())
+        {
+            long nodeId = nodeIds.next();
+            gatherUpdatesFor( nodeId, nodeCommands.get( nodeId ), propertyCommands.get( nodeId ) );
+        }
+    }
+
+    //TODO: investigate if this is really necessary. Perhaps one is a subset of the other
+    private PrimitiveLongSet allKeys( PrimitiveLongObjectMap... maps )
+    {
+        PrimitiveLongSet union = Primitive.longSet();
+        for ( PrimitiveLongObjectMap map : maps )
+        {
+            union.addAll( map.iterator() );
+        }
+        return union;
     }
 
     @Override
@@ -104,36 +113,26 @@ public class OnlineIndexUpdates implements IndexUpdates
         return !updates.isEmpty();
     }
 
-    private void gatherUpdatesFromPropertyCommands(
-            PrimitiveLongObjectMap<NodeCommand> nodeCommands,
-            PrimitiveLongObjectMap<List<PropertyCommand>> propCommands,
-            final Map<Pair<Long,Integer>,NodePropertyUpdate> propertyLookup )
+    private void gatherUpdatesFor( long nodeId, NodeCommand nodeCommand, List<PropertyCommand> propertyCommands )
     {
-        propCommands.visitEntries( new PrimitiveLongObjectVisitor<List<PropertyCommand>,RuntimeException>()
-        {
-            @Override
-            public boolean visited( long nodeId, List<PropertyCommand> propertyCommands )
-            {
-                gatherUpdatesFromPropertyCommandsForNode( nodeId, nodeCommands, propertyCommands );
-                return false;
-            }
-        } );
+        NodeUpdates.Builder nodePropertyUpdate =
+                gatherUpdatesFromCommandsForNode( nodeId, nodeCommand, propertyCommands );
 
-        for ( NodePropertyUpdate update : updates )
+        if ( nodePropertyUpdate.hasUpdatedLabels() || nodePropertyUpdate.hasUpdates() )
         {
-            if ( update.getUpdateMode() == UpdateMode.CHANGED )
-            {
-                propertyLookup.put( Pair.of( update.getNodeId(), update.getPropertyKeyId() ), update );
-            }
+            //TODO: Do we really need to always load all node properties? This can be a performance impact
+            // At least only load the ones for which there are known indexes
+            Stream<DefinedProperty> properties = Iterators.stream(nodeFullyLoadProperties( nodeId, nodeCommand, propertyCommands ));
+            DefinedProperty[] definedProperties = properties.toArray( DefinedProperty[]::new );
+            updates.add( nodePropertyUpdate.buildWithExistingProperties( definedProperties ) );
         }
     }
 
-    private void gatherUpdatesFromPropertyCommandsForNode( long nodeId,
-            PrimitiveLongObjectMap<NodeCommand> nodeCommands,
+    private NodeUpdates.Builder gatherUpdatesFromCommandsForNode( long nodeId,
+            NodeCommand nodeChanges,
             List<PropertyCommand> propertyCommandsForNode )
     {
         long[] nodeLabelsBefore, nodeLabelsAfter;
-        NodeCommand nodeChanges = nodeCommands.get( nodeId );
         if ( nodeChanges != null )
         {
             nodeLabelsBefore = parseLabelsField( nodeChanges.getBefore() ).get( nodeStore );
@@ -160,25 +159,16 @@ public class OnlineIndexUpdates implements IndexUpdates
             nodeLabelsBefore = nodeLabelsAfter = parseLabelsField( nodeRecord ).get( nodeStore );
         }
 
-        converter.apply( updates,
-                Iterables.<PropertyRecordChange,PropertyCommand>cast( propertyCommandsForNode ),
-                nodeLabelsBefore, nodeLabelsAfter );
-    }
+        // First get possible Label changes
+        NodeUpdates.Builder nodePropertyUpdates =
+                NodeUpdates.forNode( nodeId, nodeLabelsBefore, nodeLabelsAfter );
 
-    private void gatherUpdatesFromNodeCommands(
-            PrimitiveLongObjectMap<NodeCommand> nodeCommands,
-            PrimitiveLongObjectMap<List<PropertyCommand>> propertyCommands,
-            final Map<Pair<Long,Integer>,NodePropertyUpdate> propertyLookup )
-    {
-        nodeCommands.visitEntries( new PrimitiveLongObjectVisitor<NodeCommand,RuntimeException>()
+        // Then look for property changes
+        if ( propertyCommandsForNode != null )
         {
-            @Override
-            public boolean visited( long key, NodeCommand nodeCommand )
-            {
-                gatherUpdatesFromNodeCommand( nodeCommand, nodeCommands, propertyCommands, propertyLookup );
-                return false;
-            }
-        } );
+            converter.convertPropertyRecord( nodeId, Iterables.cast( propertyCommandsForNode ), nodePropertyUpdates );
+        }
+        return nodePropertyUpdates;
     }
 
     private NodeRecord loadNode( long nodeId )
@@ -191,57 +181,15 @@ public class OnlineIndexUpdates implements IndexUpdates
         return nodeRecord;
     }
 
-    private void gatherUpdatesFromNodeCommand( NodeCommand nodeCommand,
-            PrimitiveLongObjectMap<NodeCommand> nodeCommands,
-            PrimitiveLongObjectMap<List<PropertyCommand>> propertyCommands,
-            Map<Pair<Long,Integer>,NodePropertyUpdate> propertyLookup )
-    {
-        long nodeId = nodeCommand.getKey();
-        long[] labelsBefore = parseLabelsField( nodeCommand.getBefore() ).get( nodeStore );
-        long[] labelsAfter = parseLabelsField( nodeCommand.getAfter() ).get( nodeStore );
-
-        if ( nodeCommand.getMode() == Mode.DELETE )
-        {
-            // For deleted nodes rely on the updates from the perspective of properties to cover it all
-            // otherwise we'll get duplicate update during recovery, or cannot load properties if deleted.
-            return;
-        }
-
-        LabelChangeSummary summary = new LabelChangeSummary( labelsBefore, labelsAfter );
-        if ( !summary.hasAddedLabels() && !summary.hasRemovedLabels() )
-        {
-            return;
-        }
-
-        Iterator<DefinedProperty> properties = nodeFullyLoadProperties( nodeId, nodeCommands, propertyCommands );
-        while ( properties.hasNext() )
-        {
-            DefinedProperty property = properties.next();
-            int propertyKeyId = property.propertyKeyId();
-            if ( summary.hasAddedLabels() )
-            {
-                Object value = property.value();
-                updates.add( add( nodeId, propertyKeyId, value, summary.getAddedLabels() ) );
-            }
-            if ( summary.hasRemovedLabels() )
-            {
-                NodePropertyUpdate propertyChange = propertyLookup.get( Pair.of( nodeId, propertyKeyId ) );
-                Object value = propertyChange == null ? property.value() : propertyChange.getValueBefore();
-                updates.add( remove( nodeId, propertyKeyId, value, summary.getRemovedLabels() ) );
-            }
-        }
-    }
-
     private Iterator<DefinedProperty> nodeFullyLoadProperties( long nodeId,
-            PrimitiveLongObjectMap<NodeCommand> nodeCommands,
-            PrimitiveLongObjectMap<List<PropertyCommand>> propertyCommands )
+            NodeCommand nodeCommand,
+            List<PropertyCommand> propertyCommands )
     {
-        NodeCommand nodeCommand = nodeCommands.get( nodeId );
         NodeRecord nodeRecord = (nodeCommand == null) ? loadNode( nodeId ) : nodeCommand.getAfter();
 
         IteratingPropertyReceiver receiver = new IteratingPropertyReceiver();
         PrimitiveLongObjectMap<PropertyRecord> propertiesById =
-                propertiesFromCommandsForNode( propertyCommands.get( nodeId ) );
+                propertiesFromCommandsForNode( propertyCommands );
         propertyLoader.nodeLoadProperties( nodeRecord, propertiesById, receiver );
         return receiver;
     }

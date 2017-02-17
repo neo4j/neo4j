@@ -21,7 +21,6 @@ package org.neo4j.kernel.impl.api.index;
 
 import java.io.IOException;
 import java.util.ArrayList;
-import java.util.Collection;
 import java.util.HashMap;
 import java.util.Iterator;
 import java.util.List;
@@ -42,9 +41,9 @@ import org.neo4j.helpers.Exceptions;
 import org.neo4j.kernel.api.exceptions.index.IndexEntryConflictException;
 import org.neo4j.kernel.api.exceptions.index.IndexPopulationFailedKernelException;
 import org.neo4j.kernel.api.index.IndexConfiguration;
+import org.neo4j.kernel.api.index.IndexEntryUpdate;
 import org.neo4j.kernel.api.schema.IndexDescriptor;
 import org.neo4j.kernel.api.index.IndexPopulator;
-import org.neo4j.kernel.api.index.NodePropertyUpdate;
 import org.neo4j.kernel.api.index.SchemaIndexProvider;
 import org.neo4j.logging.LogProvider;
 import org.neo4j.storageengine.api.schema.PopulationProgress;
@@ -84,7 +83,7 @@ public class BatchingMultipleIndexPopulator extends MultipleIndexPopulator
 
     private final AtomicLong activeTasks = new AtomicLong();
     private final ExecutorService executor;
-    private final Map<IndexPopulation,List<NodePropertyUpdate>> batchedUpdates = new HashMap<>();
+    private final Map<IndexPopulation,List<IndexEntryUpdate>> batchedUpdates = new HashMap<>();
 
     /**
      * Creates a new multi-threaded populator for the given store view.
@@ -174,16 +173,16 @@ public class BatchingMultipleIndexPopulator extends MultipleIndexPopulator
     }
 
     /**
-     * Add given {@link NodePropertyUpdate update} to the list of updates already present for the given
+     * Add given {@link IndexEntryUpdate update} to the list of updates already present for the given
      * {@link IndexPopulation population}. Flushes all updates if {@link #BATCH_SIZE} is reached.
      *
      * @param population the index population.
-     * @param updates updates to add to the batch.
+     * @param update updates to add to the batch.
      */
-    private void batchUpdate( IndexPopulation population, Collection<NodePropertyUpdate> updates )
+    private void batchUpdate( IndexPopulation population, IndexEntryUpdate update )
     {
-        List<NodePropertyUpdate> batch = batchedUpdates.computeIfAbsent( population, key -> newBatch() );
-        batch.addAll( updates );
+        List<IndexEntryUpdate> batch = batchedUpdates.computeIfAbsent( population, key -> newBatch() );
+        batch.add( update );
         flushIfNeeded( population, batch );
     }
 
@@ -193,7 +192,7 @@ public class BatchingMultipleIndexPopulator extends MultipleIndexPopulator
      * @param population the index population.
      * @param batch the list of updates for the index.
      */
-    private void flushIfNeeded( IndexPopulation population, List<NodePropertyUpdate> batch )
+    private void flushIfNeeded( IndexPopulation population, List<IndexEntryUpdate> batch )
     {
         if ( batch.size() >= BATCH_SIZE )
         {
@@ -207,12 +206,12 @@ public class BatchingMultipleIndexPopulator extends MultipleIndexPopulator
      */
     private void flushAll()
     {
-        Iterator<Map.Entry<IndexPopulation,List<NodePropertyUpdate>>> entries = batchedUpdates.entrySet().iterator();
+        Iterator<Map.Entry<IndexPopulation,List<IndexEntryUpdate>>> entries = batchedUpdates.entrySet().iterator();
         while ( entries.hasNext() )
         {
-            Map.Entry<IndexPopulation,List<NodePropertyUpdate>> entry = entries.next();
+            Map.Entry<IndexPopulation,List<IndexEntryUpdate>> entry = entries.next();
             IndexPopulation population = entry.getKey();
-            List<NodePropertyUpdate> updates = entry.getValue();
+            List<IndexEntryUpdate> updates = entry.getValue();
             entries.remove();
             if ( updates != null && !updates.isEmpty() )
             {
@@ -227,7 +226,7 @@ public class BatchingMultipleIndexPopulator extends MultipleIndexPopulator
      * @param population the index population.
      * @param batch the list of updates to insert.
      */
-    private void flush( IndexPopulation population, List<NodePropertyUpdate> batch )
+    private void flush( IndexPopulation population, List<IndexEntryUpdate> batch )
     {
         activeTasks.incrementAndGet();
 
@@ -293,7 +292,7 @@ public class BatchingMultipleIndexPopulator extends MultipleIndexPopulator
         log.warn( "Interrupted while waiting for index population tasks to complete." + EOL + this );
     }
 
-    private List<NodePropertyUpdate> newBatch()
+    private List<IndexEntryUpdate> newBatch()
     {
         return new ArrayList<>( BATCH_SIZE );
     }
@@ -349,7 +348,7 @@ public class BatchingMultipleIndexPopulator extends MultipleIndexPopulator
         }
 
         @Override
-        protected void addApplicable( Collection<NodePropertyUpdate> updates ) throws IOException,
+        protected void add( IndexEntryUpdate updates ) throws IOException,
                 IndexEntryConflictException
         {
             batchUpdate( this, updates );
@@ -403,7 +402,7 @@ public class BatchingMultipleIndexPopulator extends MultipleIndexPopulator
         }
 
         @Override
-        public void acceptUpdate( MultipleIndexUpdater updater, NodePropertyUpdate update,
+        public void acceptUpdate( MultipleIndexUpdater updater, IndexEntryUpdate update,
                 long currentlyIndexedNodeId )
         {
             delegate.acceptUpdate( updater, update, currentlyIndexedNodeId );

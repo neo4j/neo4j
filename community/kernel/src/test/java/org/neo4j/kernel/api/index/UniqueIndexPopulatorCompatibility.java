@@ -24,6 +24,7 @@ import org.junit.Test;
 
 import java.util.Arrays;
 
+import org.neo4j.kernel.api.schema_new.index.IndexBoundary;
 import org.neo4j.kernel.configuration.Config;
 import org.neo4j.kernel.impl.api.index.sampling.IndexSamplingConfig;
 
@@ -58,14 +59,15 @@ public class UniqueIndexPopulatorCompatibility extends IndexProviderCompatibilit
 
         IndexConfiguration indexConfig = IndexConfiguration.UNIQUE;
         IndexSamplingConfig indexSamplingConfig = new IndexSamplingConfig( Config.empty() );
-        IndexPopulator populator = indexProvider.getPopulator( 17, descriptor, indexConfig, indexSamplingConfig );
+        IndexPopulator populator =
+                indexProvider.getPopulator( 17, IndexBoundary.map( descriptor ), indexConfig, indexSamplingConfig );
         populator.create();
-        populator.add( Arrays.asList( NodePropertyUpdate.add( nodeId1, 0, value, new long[]{0} ),
-                NodePropertyUpdate.add( nodeId2, 0, value, new long[]{0} ) ) );
+        populator.add( Arrays.asList( IndexEntryUpdate.add( nodeId1, descriptor, value ),
+                IndexEntryUpdate.add( nodeId2, descriptor, value ) ) );
         try
         {
             PropertyAccessor propertyAccessor = mock( PropertyAccessor.class );
-            int propertyKeyId = descriptor.getPropertyKeyId();
+            int propertyKeyId = descriptor.schema().getPropertyId();
             when( propertyAccessor.getProperty( nodeId1, propertyKeyId )).thenReturn(
                     stringProperty( propertyKeyId, value ) );
             when( propertyAccessor.getProperty( nodeId2, propertyKeyId )).thenReturn(

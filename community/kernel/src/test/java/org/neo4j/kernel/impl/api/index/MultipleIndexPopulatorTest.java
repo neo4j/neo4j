@@ -34,13 +34,15 @@ import java.util.function.IntPredicate;
 import org.neo4j.helpers.collection.Visitor;
 import org.neo4j.kernel.api.exceptions.index.IndexEntryConflictException;
 import org.neo4j.kernel.api.index.IndexConfiguration;
+import org.neo4j.kernel.api.index.IndexEntryUpdate;
 import org.neo4j.kernel.api.schema.IndexDescriptor;
 import org.neo4j.kernel.api.schema.IndexDescriptorFactory;
 import org.neo4j.kernel.api.index.IndexPopulator;
 import org.neo4j.kernel.api.index.IndexUpdater;
-import org.neo4j.kernel.api.index.NodePropertyUpdate;
 import org.neo4j.kernel.api.index.PropertyAccessor;
 import org.neo4j.kernel.api.index.SchemaIndexProvider;
+import org.neo4j.kernel.api.schema_new.index.NewIndexDescriptor;
+import org.neo4j.kernel.api.schema_new.index.NewIndexDescriptorFactory;
 import org.neo4j.kernel.impl.api.index.MultipleIndexPopulator.IndexPopulation;
 import org.neo4j.logging.LogProvider;
 import org.neo4j.storageengine.api.schema.IndexSample;
@@ -63,7 +65,6 @@ import static org.mockito.Mockito.when;
 @RunWith( MockitoJUnitRunner.class )
 public class MultipleIndexPopulatorTest
 {
-
     @Mock
     private IndexStoreView indexStoreView;
     @Mock
@@ -72,6 +73,8 @@ public class MultipleIndexPopulatorTest
     private LogProvider logProvider;
     @InjectMocks
     private MultipleIndexPopulator multipleIndexPopulator;
+
+    private NewIndexDescriptor index1 = NewIndexDescriptorFactory.forLabel( 1, 1 );
 
     @Before
     public void setUp()
@@ -331,7 +334,7 @@ public class MultipleIndexPopulatorTest
 
         IndexUpdater multipleIndexUpdater =
                 multipleIndexPopulator.newPopulatingUpdater( mock( PropertyAccessor.class ) );
-        NodePropertyUpdate propertyUpdate = createNodePropertyUpdate();
+        IndexEntryUpdate propertyUpdate = createNodePropertyUpdate( index1 );
         multipleIndexUpdater.process( propertyUpdate );
 
         checkPopulatorFailure( indexPopulator2 );
@@ -350,7 +353,7 @@ public class MultipleIndexPopulatorTest
         IndexUpdater multipleIndexUpdater =
                 multipleIndexPopulator.newPopulatingUpdater( mock( PropertyAccessor.class ) );
 
-        NodePropertyUpdate propertyUpdate = createNodePropertyUpdate();
+        IndexEntryUpdate propertyUpdate = createNodePropertyUpdate( index1 );
         multipleIndexUpdater.process( propertyUpdate );
 
         verifyZeroInteractions( indexUpdater1 );
@@ -360,7 +363,7 @@ public class MultipleIndexPopulatorTest
     public void testPropertyUpdateFailure()
             throws IOException, IndexEntryConflictException
     {
-        NodePropertyUpdate propertyUpdate = createNodePropertyUpdate();
+        IndexEntryUpdate propertyUpdate = createNodePropertyUpdate( index1 );
         IndexUpdater indexUpdater1 = mock( IndexUpdater.class );
         IndexPopulator indexPopulator1 = createIndexPopulator( indexUpdater1 );
 
@@ -382,14 +385,14 @@ public class MultipleIndexPopulatorTest
             throws IOException, IndexEntryConflictException
     {
         PropertyAccessor propertyAccessor = mock( PropertyAccessor.class );
-        NodePropertyUpdate update1 = NodePropertyUpdate.add( 1, 1, "foo", new long[]{1} );
-        NodePropertyUpdate update2 = NodePropertyUpdate.add( 2, 1, "bar", new long[]{1} );
+        IndexEntryUpdate update1 = IndexEntryUpdate.add( 1, index1, "foo" );
+        IndexEntryUpdate update2 = IndexEntryUpdate.add( 2, index1, "bar" );
         IndexUpdater updater = mock( IndexUpdater.class );
         IndexPopulator populator = createIndexPopulator( updater );
 
         addPopulator( populator, 1 );
 
-        doThrow( getPopulatorException() ).when( updater ).process( any( NodePropertyUpdate.class ) );
+        doThrow( getPopulatorException() ).when( updater ).process( any( IndexEntryUpdate.class ) );
 
         IndexUpdater multipleIndexUpdater = multipleIndexPopulator.newPopulatingUpdater( propertyAccessor );
 
@@ -402,9 +405,9 @@ public class MultipleIndexPopulatorTest
         checkPopulatorFailure( populator );
     }
 
-    private NodePropertyUpdate createNodePropertyUpdate()
+    private IndexEntryUpdate createNodePropertyUpdate( NewIndexDescriptor index )
     {
-        return NodePropertyUpdate.add( 1, 1, null, new long[]{1} );
+        return IndexEntryUpdate.add( 1, index, "theValue" );
     }
 
     private RuntimeException getSampleError()

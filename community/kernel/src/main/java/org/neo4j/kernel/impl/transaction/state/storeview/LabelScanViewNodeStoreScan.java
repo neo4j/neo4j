@@ -24,11 +24,11 @@ import java.util.function.IntPredicate;
 
 import org.neo4j.collection.primitive.PrimitiveLongResourceIterator;
 import org.neo4j.helpers.collection.Visitor;
-import org.neo4j.kernel.api.index.NodePropertyUpdate;
+import org.neo4j.kernel.api.index.IndexEntryUpdate;
+import org.neo4j.kernel.api.index.NodeUpdates;
 import org.neo4j.kernel.api.labelscan.LabelScanStore;
 import org.neo4j.kernel.api.labelscan.NodeLabelUpdate;
 import org.neo4j.kernel.impl.api.index.MultipleIndexPopulator;
-import org.neo4j.kernel.impl.api.index.NodePropertyUpdates;
 import org.neo4j.kernel.impl.locking.LockService;
 import org.neo4j.kernel.impl.store.NodeStore;
 import org.neo4j.kernel.impl.store.PropertyStore;
@@ -47,7 +47,7 @@ public class LabelScanViewNodeStoreScan<FAILURE extends Exception> extends Store
     public LabelScanViewNodeStoreScan( NodeStore nodeStore, LockService locks,
             PropertyStore propertyStore,
             LabelScanStore labelScanStore, Visitor<NodeLabelUpdate,FAILURE> labelUpdateVisitor,
-            Visitor<NodePropertyUpdates,FAILURE> propertyUpdatesVisitor, int[] labelIds,
+            Visitor<NodeUpdates,FAILURE> propertyUpdatesVisitor, int[] labelIds,
             IntPredicate propertyKeyIdFilter )
     {
         super( nodeStore, locks, propertyStore, labelUpdateVisitor, propertyUpdatesVisitor, labelIds,
@@ -68,11 +68,11 @@ public class LabelScanViewNodeStoreScan<FAILURE extends Exception> extends Store
     }
 
     @Override
-    public void acceptUpdate( MultipleIndexPopulator.MultipleIndexUpdater updater, NodePropertyUpdate update,
+    public void acceptUpdate( MultipleIndexPopulator.MultipleIndexUpdater updater, IndexEntryUpdate update,
             long currentlyIndexedNodeId )
     {
         super.acceptUpdate( updater, update, currentlyIndexedNodeId );
-        if ( update.getNodeId() > currentlyIndexedNodeId )
+        if ( update.getEntityId() > currentlyIndexedNodeId )
         {
             markOutdated();
         }

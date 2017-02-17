@@ -26,13 +26,9 @@ import org.junit.Rule;
 import org.junit.Test;
 
 import java.io.File;
-import java.util.ArrayList;
-import java.util.Collection;
-import java.util.Collections;
-import java.util.List;
 
 import org.neo4j.helpers.collection.Iterables;
-import org.neo4j.kernel.api.index.NodePropertyUpdate;
+import org.neo4j.kernel.api.index.NodeUpdates;
 import org.neo4j.kernel.configuration.Config;
 import org.neo4j.kernel.impl.store.NeoStores;
 import org.neo4j.kernel.impl.store.PropertyStore;
@@ -46,7 +42,7 @@ import org.neo4j.test.rule.PageCacheRule;
 import org.neo4j.test.rule.fs.EphemeralFileSystemRule;
 
 import static org.junit.Assert.assertEquals;
-import static org.neo4j.helpers.collection.Iterables.asList;
+import static org.junit.Assert.assertFalse;
 
 
 public class PropertyPhysicalToLogicalConverterTest
@@ -64,107 +60,111 @@ public class PropertyPhysicalToLogicalConverterTest
         PropertyRecord after = propertyRecord( property( key, value ) );
 
         // WHEN
-        List<NodePropertyUpdate> updates = asList( convert( none, none, change( before, after ) ) );
+        NodeUpdates updates = convert( none, none, change( before, after ) );
 
         // THEN
-        assertEquals( Collections.<NodePropertyUpdate>emptyList(), updates );
+        assertFalse( updates.hasIndexingAppropriateUpdates() );
     }
 
     @Test
     public void shouldConvertInlinedChangedProperty() throws Exception
     {
         // GIVEN
-        long key = 10;
+        int key = 10;
         int valueBefore = 12341, valueAfter = 738;
         PropertyRecord before = propertyRecord( property( key, valueBefore ) );
         PropertyRecord after = propertyRecord( property( key, valueAfter ) );
 
         // WHEN
-        NodePropertyUpdate update = Iterables.single( convert( none, none, change( before, after ) ) );
+        NodeUpdates update = convert( none, none, change( before, after ) );
 
         // THEN
-        assertEquals( UpdateMode.CHANGED, update.getUpdateMode() );
+        NodeUpdates expected = NodeUpdates.forNode( 0 ).changed( key, valueBefore, valueAfter ).build();
+        assertEquals( expected, update );
     }
 
     @Test
     public void shouldIgnoreInlinedUnchangedProperty() throws Exception
     {
         // GIVEN
-        long key = 10;
+        int key = 10;
         int value = 12341;
         PropertyRecord before = propertyRecord( property( key, value ) );
         PropertyRecord after = propertyRecord( property( key, value ) );
 
         // WHEN
-        assertEquals( 0, Iterables.count( convert( none, none, change( before, after ) ) ) );
+        assertFalse( convert( none, none, change( before, after ) ).hasIndexingAppropriateUpdates() );
     }
 
     @Test
     public void shouldConvertInlinedRemovedProperty() throws Exception
     {
         // GIVEN
-        long key = 10;
+        int key = 10;
         int value = 12341;
         PropertyRecord before = propertyRecord( property( key, value ) );
         PropertyRecord after = propertyRecord();
 
         // WHEN
-        NodePropertyUpdate update = Iterables.single( convert( none, none, change( before, after ) ) );
+        NodeUpdates update = convert( none, none, change( before, after ) );
 
         // THEN
-        assertEquals( UpdateMode.REMOVED, update.getUpdateMode() );
+        NodeUpdates expected = NodeUpdates.forNode( 0 ).removed( key, value ).build();
+        assertEquals( expected, update );
     }
 
     @Test
     public void shouldNotConvertDynamicAddedProperty() throws Exception
     {
         // GIVEN
-        long key = 10;
+        int key = 10;
         PropertyRecord before = propertyRecord();
         PropertyRecord after = propertyRecord( property( key, longString ) );
 
         // WHEN
-        List<NodePropertyUpdate> updates = asList( convert( none, none, change( before, after ) ) );
+        NodeUpdates update = convert( none, none, change( before, after ) );
 
         // THEN
-        assertEquals( Collections.<NodePropertyUpdate>emptyList(), updates );
+        assertFalse( update.hasIndexingAppropriateUpdates() );
     }
 
     @Test
     public void shouldConvertDynamicChangedProperty() throws Exception
     {
         // GIVEN
-        long key = 10;
+        int key = 10;
         PropertyRecord before = propertyRecord( property( key, longString ) );
         PropertyRecord after = propertyRecord( property( key, longerString ) );
 
         // WHEN
-        NodePropertyUpdate update = Iterables.single( convert( none, none, change( before, after ) ) );
+        NodeUpdates update = convert( none, none, change( before, after ) );
 
         // THEN
-        assertEquals( UpdateMode.CHANGED, update.getUpdateMode() );
+        NodeUpdates expected = NodeUpdates.forNode( 0 ).changed( key, longString, longerString ).build();
+        assertEquals( expected, update );
     }
 
     @Test
     public void shouldConvertDynamicInlinedRemovedProperty() throws Exception
     {
         // GIVEN
-        long key = 10;
+        int key = 10;
         PropertyRecord before = propertyRecord( property( key, longString ) );
         PropertyRecord after = propertyRecord();
 
         // WHEN
-        NodePropertyUpdate update = Iterables.single( convert( none, none, change( before, after ) ) );
+        NodeUpdates update = convert( none, none, change( before, after ) );
 
         // THEN
-        assertEquals( UpdateMode.REMOVED, update.getUpdateMode() );
+        NodeUpdates expected = NodeUpdates.forNode( 0 ).removed( key, longString ).build();
+        assertEquals( expected, update );
     }
 
     @Test
     public void shouldTreatPropertyThatMovedToAnotherRecordAsChange() throws Exception
     {
         // GIVEN
-        long key = 12;
+        int key = 12;
         String oldValue = "value1";
         String newValue = "value two";
         PropertyRecordChange movedFrom = change(
@@ -175,12 +175,11 @@ public class PropertyPhysicalToLogicalConverterTest
                 propertyRecord( property( key, newValue ) ) );
 
         // WHEN
-        NodePropertyUpdate update = Iterables.single( convert( none, none, movedFrom, movedTo ) );
+        NodeUpdates update = convert( none, none, movedFrom, movedTo );
 
         // THEN
-        assertEquals( UpdateMode.CHANGED, update.getUpdateMode() );
-        assertEquals( oldValue, update.getValueBefore() );
-        assertEquals( newValue, update.getValueAfter() );
+        NodeUpdates expected = NodeUpdates.forNode( 0 ).changed( key, oldValue, newValue ).build();
+        assertEquals( expected, update );
     }
 
     private PropertyRecord propertyRecord( PropertyBlock... propertyBlocks )
@@ -194,6 +193,7 @@ public class PropertyPhysicalToLogicalConverterTest
                 record.addPropertyBlock( propertyBlock );
             }
         }
+        record.setNodeId( 0 );
         return record;
     }
 
@@ -213,6 +213,7 @@ public class PropertyPhysicalToLogicalConverterTest
     private final String longerString = "my super looooooooooooooooooooooooooooooooooooooong striiiiiiiiiiiiiiiiiiiiiiingdd";
     private PropertyPhysicalToLogicalConverter converter;
     private final long[] none = new long[0];
+    private final long[] labels = new long[]{11};
 
     @Before
     public void before() throws Exception
@@ -232,19 +233,18 @@ public class PropertyPhysicalToLogicalConverterTest
         neoStores.close();
     }
 
-    private Iterable<NodePropertyUpdate> convert( long[] labelsBefore,
+    private NodeUpdates convert( long[] labelsBefore,
             long[] labelsAfter, PropertyRecordChange change )
     {
         return convert( labelsBefore, labelsAfter, new PropertyRecordChange[] {change} );
     }
 
-    private Iterable<NodePropertyUpdate> convert( long[] labelsBefore,
+    private NodeUpdates convert( long[] labelsBefore,
             long[] labelsAfter, PropertyRecordChange... changes )
     {
-        Collection<NodePropertyUpdate> updates = new ArrayList<>();
-        converter.apply( updates, Iterables.<PropertyRecordChange,PropertyRecordChange>iterable( changes ),
-                labelsBefore, labelsAfter );
-        return updates;
+        NodeUpdates.Builder updates = NodeUpdates.forNode( 0, labelsBefore, labelsAfter);
+        converter.convertPropertyRecord( 0, Iterables.iterable( changes ), updates );
+        return updates.build();
     }
 
     private PropertyRecordChange change( final PropertyRecord before, final PropertyRecord after )

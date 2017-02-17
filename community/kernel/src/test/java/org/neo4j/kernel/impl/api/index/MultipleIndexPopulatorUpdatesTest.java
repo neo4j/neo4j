@@ -36,13 +36,16 @@ import org.neo4j.helpers.collection.Visitor;
 import org.neo4j.kernel.api.exceptions.index.IndexEntryConflictException;
 import org.neo4j.kernel.api.exceptions.index.IndexPopulationFailedKernelException;
 import org.neo4j.kernel.api.index.IndexConfiguration;
+import org.neo4j.kernel.api.index.IndexEntryUpdate;
 import org.neo4j.kernel.api.schema.IndexDescriptor;
 import org.neo4j.kernel.api.schema.IndexDescriptorFactory;
 import org.neo4j.kernel.api.index.IndexPopulator;
 import org.neo4j.kernel.api.index.IndexUpdater;
-import org.neo4j.kernel.api.index.NodePropertyUpdate;
+import org.neo4j.kernel.api.index.NodeUpdates;
 import org.neo4j.kernel.api.index.SchemaIndexProvider;
 import org.neo4j.kernel.api.labelscan.NodeLabelUpdate;
+import org.neo4j.kernel.api.schema_new.index.NewIndexDescriptor;
+import org.neo4j.kernel.api.schema_new.index.NewIndexDescriptorFactory;
 import org.neo4j.kernel.impl.locking.LockService;
 import org.neo4j.kernel.impl.store.InlineNodeLabels;
 import org.neo4j.kernel.impl.store.NeoStores;
@@ -118,7 +121,7 @@ public class MultipleIndexPopulatorUpdatesTest
         StoreScan<IndexPopulationFailedKernelException> storeScan = indexPopulator.indexAllNodes();
         storeScan.run();
 
-        Mockito.verify( indexUpdater, times( 0 ) ).process( any(NodePropertyUpdate.class) );
+        Mockito.verify( indexUpdater, times( 0 ) ).process( any(IndexEntryUpdate.class) );
     }
 
     private NodeRecord getNodeRecord()
@@ -186,10 +189,12 @@ public class MultipleIndexPopulatorUpdatesTest
     private static class NodeUpdateProcessListener implements Listener<NodeRecord>
     {
         private final MultipleIndexPopulator indexPopulator;
+        private final NewIndexDescriptor index;
 
         public NodeUpdateProcessListener( MultipleIndexPopulator indexPopulator )
         {
             this.indexPopulator = indexPopulator;
+            this.index = NewIndexDescriptorFactory.forLabel( 1, 1 );
         }
 
         @Override
@@ -197,7 +202,7 @@ public class MultipleIndexPopulatorUpdatesTest
         {
             if (nodeRecord.getId() == 7)
             {
-                indexPopulator.queue( NodePropertyUpdate.change( 8L, 1, "a", new long[]{1}, "b", new long[]{1} ) );
+                indexPopulator.queue( IndexEntryUpdate.change( 8L, index, "a", "b" ) );
             }
         }
     }
@@ -214,7 +219,7 @@ public class MultipleIndexPopulatorUpdatesTest
         @Override
         public <FAILURE extends Exception> StoreScan<FAILURE> visitNodes( int[] labelIds,
                 IntPredicate propertyKeyIdFilter,
-                Visitor<NodePropertyUpdates,FAILURE> propertyUpdatesVisitor,
+                Visitor<NodeUpdates,FAILURE> propertyUpdatesVisitor,
                 Visitor<NodeLabelUpdate,FAILURE> labelUpdateVisitor )
         {
 
@@ -234,7 +239,7 @@ public class MultipleIndexPopulatorUpdatesTest
 
         ListenableNodeScanViewNodeStoreScan( NodeStore nodeStore, LockService locks,
                 PropertyStore propertyStore, Visitor<NodeLabelUpdate,FAILURE> labelUpdateVisitor,
-                Visitor<NodePropertyUpdates,FAILURE> propertyUpdatesVisitor, int[] labelIds,
+                Visitor<NodeUpdates,FAILURE> propertyUpdatesVisitor, int[] labelIds,
                 IntPredicate propertyKeyIdFilter, Listener<NodeRecord> processListener )
         {
             super( nodeStore, locks, propertyStore, labelUpdateVisitor, propertyUpdatesVisitor,

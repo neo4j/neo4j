@@ -38,8 +38,9 @@ import org.neo4j.graphdb.Direction;
 import org.neo4j.graphdb.factory.GraphDatabaseSettings;
 import org.neo4j.helpers.collection.Iterables;
 import org.neo4j.kernel.api.exceptions.TransactionFailureException;
-import org.neo4j.kernel.api.index.NodePropertyUpdate;
+import org.neo4j.kernel.api.index.NodeUpdates;
 import org.neo4j.kernel.api.properties.DefinedProperty;
+import org.neo4j.kernel.api.properties.Property;
 import org.neo4j.kernel.impl.api.BatchTransactionApplier;
 import org.neo4j.kernel.impl.api.CommandVisitor;
 import org.neo4j.kernel.impl.api.TransactionToApply;
@@ -95,15 +96,11 @@ import static org.mockito.Mockito.mock;
 import static org.mockito.Mockito.reset;
 import static org.mockito.Mockito.times;
 import static org.mockito.Mockito.verify;
-import static org.neo4j.collection.primitive.PrimitiveLongCollections.EMPTY_LONG_ARRAY;
 import static org.neo4j.graphdb.Direction.INCOMING;
 import static org.neo4j.graphdb.Direction.OUTGOING;
 import static org.neo4j.helpers.collection.Iterables.count;
 import static org.neo4j.helpers.collection.Iterables.filter;
 import static org.neo4j.helpers.collection.Iterators.asSet;
-import static org.neo4j.kernel.api.index.NodePropertyUpdate.add;
-import static org.neo4j.kernel.api.index.NodePropertyUpdate.change;
-import static org.neo4j.kernel.api.index.NodePropertyUpdate.remove;
 import static org.neo4j.kernel.api.schema_new.constaints.ConstraintDescriptorFactory.uniqueForLabel;
 import static org.neo4j.kernel.api.schema_new.index.NewIndexDescriptorFactory.forLabel;
 import static org.neo4j.kernel.impl.api.index.TestSchemaIndexProviderDescriptor.PROVIDER_DESCRIPTOR;
@@ -115,6 +112,14 @@ import static org.neo4j.kernel.impl.store.record.RecordLoad.NORMAL;
 public class TransactionRecordStateTest
 {
     private static final String LONG_STRING = "string value long enough not to be stored as a short string";
+    private static final int propertyId1 = 1;
+    private static final int propertyId2 = 2;
+    private static final String value1 = "first";
+    private static final int value2 = 4;
+    private static final long[] noLabels = new long[0];
+    private long[] oneLabelId = new long[]{3};
+    private long[] secondLabelId = new long[]{4};
+    private long[] bothLabelIds = new long[]{3, 4};
 
     public static void assertRelationshipGroupDoesNotExist( RecordChangeSet recordChangeSet, NodeRecord node,
             int type )
@@ -293,24 +298,23 @@ public class TransactionRecordStateTest
         NeoStores neoStores = neoStoresRule.open();
         long nodeId = 0;
         TransactionRecordState recordState = newTransactionRecordState( neoStores );
-        int propertyKey1 = 1, propertyKey2 = 2, labelId = 3;
-        long[] labelIds = new long[]{labelId};
         Object value1 = LONG_STRING, value2 = LONG_STRING.getBytes();
         recordState.nodeCreate( nodeId );
-        recordState.nodeAddProperty( nodeId, propertyKey1, value1 );
-        recordState.nodeAddProperty( nodeId, propertyKey2, value2 );
+        recordState.nodeAddProperty( nodeId, propertyId1, value1 );
+        recordState.nodeAddProperty( nodeId, propertyId2, value2 );
         apply( neoStores, recordState );
 
         // WHEN
         recordState = newTransactionRecordState( neoStores );
-        recordState.addLabelToNode( labelId, nodeId );
-        Iterable<NodePropertyUpdate> indexUpdates = indexUpdatesOf( neoStores, recordState );
+        addLabelsToNode( recordState, nodeId, oneLabelId );
+        Iterable<NodeUpdates> indexUpdates = indexUpdatesOf( neoStores, recordState );
 
         // THEN
-        assertEquals(
-                asSet( add( nodeId, propertyKey1, value1, labelIds ), add( nodeId, propertyKey2, value2, labelIds ) ),
-
-                Iterables.asSet( indexUpdates ) );
+        NodeUpdates expected = NodeUpdates.forNode( nodeId, noLabels, oneLabelId )
+                .buildWithExistingProperties(
+                        Property.stringProperty( propertyId1, LONG_STRING ),
+                        Property.byteArrayProperty( propertyId2, LONG_STRING.getBytes() ) );
+        assertEquals( expected, Iterables.single( indexUpdates ) );
     }
 
     @Test
@@ -320,23 +324,23 @@ public class TransactionRecordStateTest
         NeoStores neoStores = neoStoresRule.open();
         long nodeId = 0;
         TransactionRecordState recordState = newTransactionRecordState( neoStores );
-        int propertyKey1 = 1, propertyKey2 = 2, labelId1 = 3, labelId2 = 4;
-        Object value1 = "first", value2 = 4;
         recordState.nodeCreate( nodeId );
-        recordState.nodeAddProperty( nodeId, propertyKey1, value1 );
-        recordState.addLabelToNode( labelId1, nodeId );
+        recordState.nodeAddProperty( nodeId, propertyId1, value1 );
+        addLabelsToNode( recordState, nodeId, oneLabelId );
         apply( neoStores, recordState );
 
         // WHEN
         recordState = newTransactionRecordState( neoStores );
-        recordState.nodeAddProperty( nodeId, propertyKey2, value2 );
-        recordState.addLabelToNode( labelId2, nodeId );
-        Iterable<NodePropertyUpdate> indexUpdates = indexUpdatesOf( neoStores, recordState );
+        recordState.nodeAddProperty( nodeId, propertyId2, value2 );
+        addLabelsToNode( recordState, nodeId, secondLabelId );
+        Iterable<NodeUpdates> indexUpdates = indexUpdatesOf( neoStores, recordState );
 
         // THEN
-        assertEquals( asSet( add( nodeId, propertyKey1, value1, new long[]{labelId2} ),
-                add( nodeId, propertyKey2, value2, new long[]{labelId2} ),
-                add( nodeId, propertyKey2, value2, new long[]{labelId1} ) ), Iterables.asSet( indexUpdates ) );
+        NodeUpdates expected =
+                NodeUpdates.forNode( nodeId, oneLabelId, bothLabelIds )
+                        .added( propertyId2, value2 )
+                        .buildWithExistingProperties( Property.stringProperty( propertyId1, value1 ) );
+        assertEquals( expected, Iterables.single( indexUpdates ) );
     }
 
     @Test
@@ -346,25 +350,23 @@ public class TransactionRecordStateTest
         NeoStores neoStores = neoStoresRule.open();
         long nodeId = 0;
         TransactionRecordState recordState = newTransactionRecordState( neoStores );
-        int propertyKey1 = 1, propertyKey2 = 2, labelId = 3;
-        long[] labelIds = new long[]{labelId};
-        Object value1 = "first", value2 = 4;
         recordState.nodeCreate( nodeId );
-        recordState.nodeAddProperty( nodeId, propertyKey1, value1 );
-        recordState.nodeAddProperty( nodeId, propertyKey2, value2 );
-        recordState.addLabelToNode( labelId, nodeId );
+        recordState.nodeAddProperty( nodeId, propertyId1, value1 );
+        recordState.nodeAddProperty( nodeId, propertyId2, value2 );
+        addLabelsToNode( recordState, nodeId, oneLabelId );
         apply( neoStores, recordState );
 
         // WHEN
         recordState = newTransactionRecordState( neoStores );
-        recordState.removeLabelFromNode( labelId, nodeId );
-        Iterable<NodePropertyUpdate> indexUpdates = indexUpdatesOf( neoStores, recordState );
+        removeLabelsFromNode( recordState, nodeId, oneLabelId );
+        Iterable<NodeUpdates> indexUpdates = indexUpdatesOf( neoStores, recordState );
 
         // THEN
-        assertEquals( asSet( remove( nodeId, propertyKey1, value1, labelIds ),
-                remove( nodeId, propertyKey2, value2, labelIds ) ),
-
-                Iterables.asSet( indexUpdates ) );
+        NodeUpdates expected = NodeUpdates.forNode( nodeId, oneLabelId, noLabels )
+                .buildWithExistingProperties(
+                        Property.stringProperty( propertyId1, value1 ),
+                        Property.intProperty( propertyId2, value2 ) );
+        assertEquals( expected, Iterables.single( indexUpdates ) );
     }
 
     @Test
@@ -374,26 +376,24 @@ public class TransactionRecordStateTest
         NeoStores neoStores = neoStoresRule.open();
         long nodeId = 0;
         TransactionRecordState recordState = newTransactionRecordState( neoStores );
-        int propertyKey1 = 1, propertyKey2 = 2, labelId1 = 3, labelId2 = 4;
-        Object value1 = "first", value2 = 4;
         recordState.nodeCreate( nodeId );
-        DefinedProperty property1 = recordState.nodeAddProperty( nodeId, propertyKey1, value1 );
-        recordState.nodeAddProperty( nodeId, propertyKey2, value2 );
-        recordState.addLabelToNode( labelId1, nodeId );
-        recordState.addLabelToNode( labelId2, nodeId );
+        DefinedProperty property1 = recordState.nodeAddProperty( nodeId, propertyId1, value1 );
+        DefinedProperty property2 = recordState.nodeAddProperty( nodeId, propertyId2, value2 );
+        addLabelsToNode( recordState, nodeId, bothLabelIds );
         apply( neoStores, recordState );
 
         // WHEN
         recordState = newTransactionRecordState( neoStores );
         recordState.nodeRemoveProperty( nodeId, property1.propertyKeyId() );
-        recordState.removeLabelFromNode( labelId2, nodeId );
-        Iterable<NodePropertyUpdate> indexUpdates = indexUpdatesOf( neoStores, recordState );
+        removeLabelsFromNode( recordState, nodeId, secondLabelId );
+        Iterable<NodeUpdates> indexUpdates = indexUpdatesOf( neoStores, recordState );
 
         // THEN
-        assertEquals( asSet( remove( nodeId, propertyKey1, value1, new long[]{labelId1, labelId2} ),
-                remove( nodeId, propertyKey2, value2, new long[]{labelId2} ) ),
-
-                Iterables.asSet( indexUpdates ) );
+        NodeUpdates expected =
+                NodeUpdates.forNode( nodeId, bothLabelIds, oneLabelId )
+                        .removed( property1.propertyKeyId(), property1.value() )
+                        .buildWithExistingProperties( property2 );
+        assertEquals( expected, Iterables.single( indexUpdates ) );
     }
 
     @Test
@@ -403,26 +403,23 @@ public class TransactionRecordStateTest
         NeoStores neoStores = neoStoresRule.open();
         long nodeId = 0;
         TransactionRecordState recordState = newTransactionRecordState( neoStores );
-        int propertyKey1 = 1, propertyKey2 = 2, labelId1 = 3, labelId2 = 4;
-        Object value1 = "first", value2 = 4;
         recordState.nodeCreate( nodeId );
-        recordState.nodeAddProperty( nodeId, propertyKey1, value1 );
-        recordState.addLabelToNode( labelId1, nodeId );
-        recordState.addLabelToNode( labelId2, nodeId );
+        DefinedProperty property1 = recordState.nodeAddProperty( nodeId, propertyId1, value1 );
+        addLabelsToNode( recordState, nodeId, bothLabelIds );
         apply( neoStores, recordState );
 
         // WHEN
         recordState = newTransactionRecordState( neoStores );
-        recordState.nodeAddProperty( nodeId, propertyKey2, value2 );
-        recordState.removeLabelFromNode( labelId2, nodeId );
-        Iterable<NodePropertyUpdate> indexUpdates = indexUpdatesOf( neoStores, recordState );
+        DefinedProperty property2 = recordState.nodeAddProperty( nodeId, propertyId2, value2 );
+        removeLabelsFromNode( recordState, nodeId, secondLabelId );
+        Iterable<NodeUpdates> indexUpdates = indexUpdatesOf( neoStores, recordState );
 
         // THEN
-        assertEquals( asSet( add( nodeId, propertyKey2, value2, new long[]{labelId1} ),
-                remove( nodeId, propertyKey1, value1, new long[]{labelId2} ),
-                remove( nodeId, propertyKey2, value2, new long[]{labelId2} ) ),
-
-                Iterables.asSet( indexUpdates ) );
+        NodeUpdates expected =
+                NodeUpdates.forNode( nodeId, bothLabelIds, oneLabelId )
+                        .added( property2.propertyKeyId(), property2.value() )
+                        .buildWithExistingProperties( property1, property2 );
+        assertEquals( expected, Iterables.single( indexUpdates ) );
     }
 
     @Test
@@ -432,25 +429,25 @@ public class TransactionRecordStateTest
         NeoStores neoStores = neoStoresRule.open();
         int nodeId = 0;
         TransactionRecordState recordState = newTransactionRecordState( neoStores );
-        int propertyKey1 = 1, propertyKey2 = 2;
-        Object value1 = "first", value2 = 4;
         recordState.nodeCreate( nodeId );
-        DefinedProperty property1 = recordState.nodeAddProperty( nodeId, propertyKey1, value1 );
-        DefinedProperty property2 = recordState.nodeAddProperty( nodeId, propertyKey2, value2 );
+        DefinedProperty property1 = recordState.nodeAddProperty( nodeId, propertyId1, value1 );
+        DefinedProperty property2 = recordState.nodeAddProperty( nodeId, propertyId2, value2 );
         apply( neoStores, transactionRepresentationOf( recordState ) );
 
         // WHEN
-        Object newValue1 = "new", newValue2 = "new 2";
+        String newValue1 = "new", newValue2 = "new 2";
         recordState = newTransactionRecordState( neoStores );
         recordState.nodeChangeProperty( nodeId, property1.propertyKeyId(), newValue1 );
         recordState.nodeChangeProperty( nodeId, property2.propertyKeyId(), newValue2 );
-        Iterable<NodePropertyUpdate> indexUpdates = indexUpdatesOf( neoStores, recordState );
+        Iterable<NodeUpdates> indexUpdates = indexUpdatesOf( neoStores, recordState );
 
         // THEN
-        assertEquals( asSet( change( nodeId, propertyKey1, value1, EMPTY_LONG_ARRAY, newValue1, EMPTY_LONG_ARRAY ),
-                change( nodeId, propertyKey2, value2, EMPTY_LONG_ARRAY, newValue2, EMPTY_LONG_ARRAY ) ),
-
-                Iterables.asSet( indexUpdates ) );
+        NodeUpdates expected =
+                NodeUpdates.forNode( nodeId )
+                        .changed( property1.propertyKeyId(), property1.value(), newValue1 )
+                        .changed( property2.propertyKeyId(), property2.value(), newValue2 )
+                        .build();
+        assertEquals( expected, Iterables.single( indexUpdates ) );
     }
 
     @Test
@@ -460,24 +457,25 @@ public class TransactionRecordStateTest
         NeoStores neoStores = neoStoresRule.open();
         int nodeId = 0;
         TransactionRecordState recordState = newTransactionRecordState( neoStores );
-        int propertyKey1 = 1, propertyKey2 = 2;
-        int labelId = 3;
-        Object value1 = "first", value2 = 4;
         recordState.nodeCreate( nodeId );
-        recordState.addLabelToNode( labelId, nodeId );
-        DefinedProperty property1 = recordState.nodeAddProperty( nodeId, propertyKey1, value1 );
-        DefinedProperty property2 = recordState.nodeAddProperty( nodeId, propertyKey2, value2 );
+        addLabelsToNode( recordState, nodeId, oneLabelId );
+        DefinedProperty property1 = recordState.nodeAddProperty( nodeId, propertyId1, value1 );
+        DefinedProperty property2 = recordState.nodeAddProperty( nodeId, propertyId2, value2 );
         apply( neoStores, transactionRepresentationOf( recordState ) );
 
         // WHEN
         recordState = newTransactionRecordState( neoStores );
         recordState.nodeRemoveProperty( nodeId, property1.propertyKeyId() );
         recordState.nodeRemoveProperty( nodeId, property2.propertyKeyId() );
-        Iterable<NodePropertyUpdate> indexUpdates = indexUpdatesOf( neoStores, recordState );
+        Iterable<NodeUpdates> indexUpdates = indexUpdatesOf( neoStores, recordState );
 
         // THEN
-        assertEquals( asSet( remove( nodeId, propertyKey1, value1, new long[]{labelId} ),
-                remove( nodeId, propertyKey2, value2, new long[]{labelId} ) ), Iterables.asSet( indexUpdates ) );
+        NodeUpdates expected =
+                NodeUpdates.forNode( nodeId, oneLabelId )
+                        .removed( property1.propertyKeyId(), property1.value() )
+                        .removed( property2.propertyKeyId(), property2.value() )
+                        .build();
+        assertEquals( expected, Iterables.single( indexUpdates ) );
     }
 
     @Test
@@ -724,20 +722,20 @@ public class TransactionRecordStateTest
         NeoStores neoStores = neoStoresRule.open();
         long nodeId = 0;
         TransactionRecordState recordState = newTransactionRecordState( neoStores );
-        int labelId = 3;
-        int propertyKey1 = 1, propertyKey2 = 2;
-        Object value1 = "first", value2 = 4;
 
         // WHEN
         recordState.nodeCreate( nodeId );
-        recordState.addLabelToNode( labelId, nodeId );
-        recordState.nodeAddProperty( nodeId, propertyKey1, value1 );
-        recordState.nodeAddProperty( nodeId, propertyKey2, value2 );
-        Iterable<NodePropertyUpdate> updates = indexUpdatesOf( neoStores, recordState );
+        addLabelsToNode( recordState, nodeId, oneLabelId );
+        recordState.nodeAddProperty( nodeId, propertyId1, value1 );
+        recordState.nodeAddProperty( nodeId, propertyId2, value2 );
+        Iterable<NodeUpdates> updates = indexUpdatesOf( neoStores, recordState );
 
         // THEN
-        assertEquals( asSet( add( nodeId, propertyKey1, value1, new long[]{labelId} ),
-                add( nodeId, propertyKey2, value2, new long[]{labelId} ) ), Iterables.asSet( updates ) );
+        NodeUpdates expected =
+                NodeUpdates.forNode( nodeId, noLabels, oneLabelId )
+                        .added( propertyId1, value1 )
+                        .added( propertyId2, value2 ).build();
+        assertEquals( expected, Iterables.single( updates ) );
     }
 
     @Test
@@ -1162,6 +1160,22 @@ public class TransactionRecordStateTest
         assertEquals( 1, groups );
     }
 
+    private void addLabelsToNode( TransactionRecordState recordState, long nodeId, long[] labelIds )
+    {
+        for ( long labelId : labelIds )
+        {
+            recordState.addLabelToNode( (int)labelId, nodeId );
+        }
+    }
+
+    private void removeLabelsFromNode( TransactionRecordState recordState, long nodeId, long[] labelIds )
+    {
+        for ( long labelId : labelIds )
+        {
+            recordState.removeLabelFromNode( (int)labelId, nodeId );
+        }
+    }
+
     private long[] createRelationships( NeoStores neoStores, TransactionRecordState tx, long nodeId, int type,
             Direction direction, int count )
     {
@@ -1199,13 +1213,13 @@ public class TransactionRecordStateTest
         assertEquals( "Not enough relationship group records found in chain for " + node, types.length, cursor );
     }
 
-    private Iterable<NodePropertyUpdate> indexUpdatesOf( NeoStores neoStores, TransactionRecordState state )
+    private Iterable<NodeUpdates> indexUpdatesOf( NeoStores neoStores, TransactionRecordState state )
             throws IOException, TransactionFailureException
     {
         return indexUpdatesOf( neoStores, transactionRepresentationOf( state ) );
     }
 
-    private Iterable<NodePropertyUpdate> indexUpdatesOf( NeoStores neoStores, TransactionRepresentation transaction )
+    private Iterable<NodeUpdates> indexUpdatesOf( NeoStores neoStores, TransactionRepresentation transaction )
             throws IOException
     {
         NodePropertyCommandsExtractor extractor = new NodePropertyCommandsExtractor();

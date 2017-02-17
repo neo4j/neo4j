@@ -25,9 +25,9 @@ import java.util.concurrent.Future;
 import org.neo4j.function.Suppliers;
 import org.neo4j.kernel.api.exceptions.index.IndexPopulationFailedKernelException;
 import org.neo4j.kernel.api.index.IndexConfiguration;
+import org.neo4j.kernel.api.index.IndexEntryUpdate;
 import org.neo4j.kernel.api.schema.IndexDescriptor;
 import org.neo4j.kernel.api.index.IndexPopulator;
-import org.neo4j.kernel.api.index.NodePropertyUpdate;
 import org.neo4j.kernel.api.index.SchemaIndexProvider;
 import org.neo4j.storageengine.api.schema.PopulationProgress;
 
@@ -37,7 +37,7 @@ import static org.neo4j.helpers.FutureAdapter.latchGuardedValue;
 /**
  * A background job for initially populating one or more index over existing data in the database.
  * Use provided store view to scan store. Participating {@link IndexPopulator} are added with
- * {@link #addPopulator(IndexPopulator, IndexDescriptor, IndexConfiguration, org.neo4j.kernel.api.index.SchemaIndexProvider.Descriptor, String, FlippableIndexProxy, FailedIndexProxyFactory)}
+ * {@link #addPopulator(IndexPopulator, long, IndexDescriptor, IndexConfiguration, org.neo4j.kernel.api.index.SchemaIndexProvider.Descriptor, String, FlippableIndexProxy, FailedIndexProxyFactory)}
  * before {@link #run() running} this job.
  */
 public class IndexPopulationJob implements Runnable
@@ -172,9 +172,9 @@ public class IndexPopulationJob implements Runnable
      * A transaction happened that produced the given updates. Let this job incorporate its data,
      * feeding it to the {@link IndexPopulator}.
      *
-     * @param update {@link NodePropertyUpdate} to queue.
+     * @param update {@link IndexEntryUpdate} to queue.
      */
-    public void update( NodePropertyUpdate update )
+    public void update( IndexEntryUpdate update )
     {
         multiPopulator.queue( update );
     }

@@ -23,14 +23,14 @@ import java.util.List;
 
 import org.neo4j.collection.primitive.PrimitiveLongObjectMap;
 import org.neo4j.collection.primitive.PrimitiveLongSet;
-import org.neo4j.kernel.api.index.NodePropertyUpdate;
+import org.neo4j.kernel.api.index.NodeUpdates;
 import org.neo4j.kernel.impl.transaction.command.Command.NodeCommand;
 import org.neo4j.kernel.impl.transaction.command.Command.PropertyCommand;
 
 /**
- * Set of updates ({@link NodePropertyUpdate}) to apply to indexes.
+ * Set of updates ({@link NodeUpdates}) to apply to indexes.
  */
-public interface IndexUpdates extends Iterable<NodePropertyUpdate>
+public interface IndexUpdates extends Iterable<NodeUpdates>
 {
     /**
      * Feeds updates raw material in the form of node/property commands, to create updates from.

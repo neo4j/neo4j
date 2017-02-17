@@ -19,7 +19,6 @@
  */
 package org.neo4j.kernel.impl.transaction.state.storeview;
 
-import org.hamcrest.Matchers;
 import org.junit.Before;
 import org.junit.Rule;
 import org.junit.Test;
@@ -38,10 +37,10 @@ import org.neo4j.helpers.collection.Visitor;
 import org.neo4j.kernel.api.Statement;
 import org.neo4j.kernel.api.exceptions.EntityNotFoundException;
 import org.neo4j.kernel.api.exceptions.KernelException;
-import org.neo4j.kernel.api.index.NodePropertyUpdate;
+import org.neo4j.kernel.api.index.NodeUpdates;
 import org.neo4j.kernel.api.labelscan.NodeLabelUpdate;
 import org.neo4j.kernel.api.properties.Property;
-import org.neo4j.kernel.impl.api.index.NodePropertyUpdates;
+import org.neo4j.kernel.api.schema_new.index.NewIndexDescriptorFactory;
 import org.neo4j.kernel.impl.api.index.StoreScan;
 import org.neo4j.kernel.impl.core.ThreadToStatementContextBridge;
 import org.neo4j.kernel.impl.locking.Lock;
@@ -119,8 +118,8 @@ public class NeoStoreIndexStoreViewTest
         // then
         assertEquals(
             asSet(
-                NodePropertyUpdate.add( alistair.getId(), propertyKeyId, "Alistair", new long[] { labelId } ),
-                NodePropertyUpdate.add( stefan.getId(), propertyKeyId, "Stefan", new long[] { labelId } )
+                add( alistair.getId(), propertyKeyId, "Alistair", new long[] { labelId } ),
+                add( stefan.getId(), propertyKeyId, "Stefan", new long[] { labelId } )
             ), visitor.getUpdates() );
     }
 
@@ -140,7 +139,7 @@ public class NeoStoreIndexStoreViewTest
         storeScan.run();
 
         // then
-        assertEquals( emptySetOf( NodePropertyUpdate.class ), visitor.getUpdates() );
+        assertEquals( emptySetOf( NodeUpdates.class ), visitor.getUpdates() );
     }
 
     @Test
@@ -148,7 +147,7 @@ public class NeoStoreIndexStoreViewTest
     {
         // given
         @SuppressWarnings("unchecked")
-        Visitor<NodePropertyUpdates, Exception> visitor = mock( Visitor.class );
+        Visitor<NodeUpdates, Exception> visitor = mock( Visitor.class );
         StoreScan<Exception> storeScan = storeView.visitNodes( new int[] {labelId}, (id) -> id == propertyKeyId,
                 visitor, null );
 
@@ -190,10 +189,17 @@ public class NeoStoreIndexStoreViewTest
 
         storeViewNodeStoreScan.process( nodeRecord );
 
-        NodePropertyUpdates propertyUpdates = propertyUpdateVisitor.getPropertyUpdates();
-        assertNotNull( "Visitor should containts container with 2 updates.", propertyUpdates );
-        assertThat( "Node should have 2 property and we should get 2 updates",
-                propertyUpdates.getPropertyUpdates(), Matchers.hasSize(2) );
+        NodeUpdates propertyUpdates = propertyUpdateVisitor.getPropertyUpdates();
+        assertNotNull( "Visitor should containts container with updates.", propertyUpdates );
+        assert(propertyUpdates.forIndex( NewIndexDescriptorFactory.forLabel( 0, 0 ) ).isPresent());
+        assert(propertyUpdates.forIndex( NewIndexDescriptorFactory.forLabel( 0, 1 ) ).isPresent());
+        assert(propertyUpdates.forIndex( NewIndexDescriptorFactory.forLabel( 0, 0, 1 ) ).isPresent());
+        assert(!propertyUpdates.forIndex( NewIndexDescriptorFactory.forLabel( 1, 1 ) ).isPresent());
+    }
+
+    NodeUpdates add( long nodeId, int propertyKeyId, Object value, long[] labels)
+    {
+        return NodeUpdates.forNode( nodeId, labels ).added( propertyKeyId, value ).build();
     }
 
     private void createAlistairAndStefanNodes()
@@ -236,38 +242,36 @@ public class NeoStoreIndexStoreViewTest
         }
     }
 
-    private static class CopyUpdateVisitor implements Visitor<NodePropertyUpdates,RuntimeException>
+    private static class CopyUpdateVisitor implements Visitor<NodeUpdates,RuntimeException>
     {
 
-        private NodePropertyUpdates propertyUpdates;
+        private NodeUpdates propertyUpdates;
 
         @Override
-        public boolean visit( NodePropertyUpdates element ) throws RuntimeException
+        public boolean visit( NodeUpdates element ) throws RuntimeException
         {
-            propertyUpdates = new NodePropertyUpdates();
-            propertyUpdates.initForNodeId( element.getNodeId() );
-            propertyUpdates.addAll(element.getPropertyUpdates());
+            propertyUpdates = element;
             return true;
         }
 
-        public NodePropertyUpdates getPropertyUpdates()
+        public NodeUpdates getPropertyUpdates()
         {
             return propertyUpdates;
         }
     }
 
-    class NodeUpdateCollectingVisitor implements Visitor<NodePropertyUpdates, Exception>
+    class NodeUpdateCollectingVisitor implements Visitor<NodeUpdates, Exception>
     {
-        private final Set<NodePropertyUpdate> updates = new HashSet<>();
+        private final Set<NodeUpdates> updates = new HashSet<>();
 
         @Override
-        public boolean visit( NodePropertyUpdates propertyUpdates ) throws Exception
+        public boolean visit( NodeUpdates propertyUpdates ) throws Exception
         {
-            updates.addAll( propertyUpdates.getPropertyUpdates() );
+            updates.add( propertyUpdates );
             return false;
         }
 
-        Set<NodePropertyUpdate> getUpdates()
+        Set<NodeUpdates> getUpdates()
         {
             return updates;
         }

@@ -25,35 +25,35 @@ import java.util.HashMap;
 import java.util.Map;
 
 import org.neo4j.kernel.api.exceptions.index.IndexEntryConflictException;
+import org.neo4j.kernel.api.index.IndexEntryUpdate;
 import org.neo4j.kernel.api.index.IndexUpdater;
-import org.neo4j.kernel.api.index.NodePropertyUpdate;
 import org.neo4j.kernel.impl.util.diffsets.DiffSets;
 
 /**
  * This IndexUpdater ensures that updated properties abide by uniqueness constraints. Updates are grouped up in
- * {@link #process(org.neo4j.kernel.api.index.NodePropertyUpdate)}, and verified in {@link #close()}.
+ * {@link #process(IndexEntryUpdate)}, and verified in {@link #close()}.
  *
  */
 public abstract class UniquePropertyIndexUpdater implements IndexUpdater
 {
     private final Map<Object, DiffSets<Long>> referenceCount = new HashMap<>();
-    private final ArrayList<NodePropertyUpdate> updates = new ArrayList<>();
+    private final ArrayList<IndexEntryUpdate> updates = new ArrayList<>();
 
     @Override
-    public void process( NodePropertyUpdate update )
+    public void process( IndexEntryUpdate update )
     {
         // build uniqueness verification state
-        switch ( update.getUpdateMode() )
+        switch ( update.updateMode() )
         {
             case ADDED:
-                propertyValueDiffSet( update.getValueAfter() ).add( update.getNodeId() );
+                propertyValueDiffSet( update.values() ).add( update.getEntityId() );
                 break;
             case CHANGED:
-                propertyValueDiffSet( update.getValueBefore() ).remove( update.getNodeId() );
-                propertyValueDiffSet( update.getValueAfter() ).add( update.getNodeId() );
+                propertyValueDiffSet( update.beforeValues() ).remove( update.getEntityId() );
+                propertyValueDiffSet( update.values() ).add( update.getEntityId() );
                 break;
             case REMOVED:
-                propertyValueDiffSet( update.getValueBefore() ).remove( update.getNodeId() );
+                propertyValueDiffSet( update.values() ).remove( update.getEntityId() );
                 break;
             default:
                 throw new UnsupportedOperationException();
@@ -70,7 +70,7 @@ public abstract class UniquePropertyIndexUpdater implements IndexUpdater
         flushUpdates( updates );
     }
 
-    protected abstract void flushUpdates( Iterable<NodePropertyUpdate> updates )
+    protected abstract void flushUpdates( Iterable<IndexEntryUpdate> updates )
             throws IOException, IndexEntryConflictException;
 
     private DiffSets<Long> propertyValueDiffSet( Object value )

@@ -35,7 +35,9 @@ import org.neo4j.kernel.api.impl.index.storage.DirectoryFactory;
 import org.neo4j.kernel.api.impl.index.storage.PartitionedIndexStorage;
 import org.neo4j.kernel.api.impl.schema.LuceneSchemaIndexBuilder;
 import org.neo4j.kernel.api.impl.schema.SchemaIndex;
-import org.neo4j.kernel.api.index.NodePropertyUpdate;
+import org.neo4j.kernel.api.index.IndexEntryUpdate;
+import org.neo4j.kernel.api.schema_new.index.NewIndexDescriptor;
+import org.neo4j.kernel.api.schema_new.index.NewIndexDescriptorFactory;
 import org.neo4j.kernel.configuration.Config;
 import org.neo4j.kernel.impl.api.index.sampling.IndexSamplingConfig;
 import org.neo4j.storageengine.api.schema.IndexReader;
@@ -57,6 +59,7 @@ public class NonUniqueDatabaseIndexPopulatorTest
 
     private SchemaIndex index;
     private NonUniqueLuceneIndexPopulator populator;
+    private NewIndexDescriptor indexDescriptor = NewIndexDescriptorFactory.forLabel( 0, 0 );
 
     @Before
     public void setUp() throws Exception
@@ -95,10 +98,10 @@ public class NonUniqueDatabaseIndexPopulatorTest
     {
         populator = newPopulator();
 
-        List<NodePropertyUpdate> updates = Arrays.asList(
-                NodePropertyUpdate.add( 1, 1, "aaa", new long[]{1} ),
-                NodePropertyUpdate.add( 2, 1, "bbb", new long[]{1} ),
-                NodePropertyUpdate.add( 3, 1, "ccc", new long[]{1} ) );
+        List<IndexEntryUpdate> updates = Arrays.asList(
+                IndexEntryUpdate.add( 1, indexDescriptor, "aaa" ),
+                IndexEntryUpdate.add( 2, indexDescriptor, "bbb" ),
+                IndexEntryUpdate.add( 3, indexDescriptor, "ccc" ) );
 
         updates.forEach( populator::includeSample );
 
@@ -112,10 +115,10 @@ public class NonUniqueDatabaseIndexPopulatorTest
     {
         populator = newPopulator();
 
-        List<NodePropertyUpdate> updates = Arrays.asList(
-                NodePropertyUpdate.add( 1, 1, "foo", new long[]{1} ),
-                NodePropertyUpdate.add( 2, 1, "bar", new long[]{1} ),
-                NodePropertyUpdate.add( 3, 1, "foo", new long[]{1} ) );
+        List<IndexEntryUpdate> updates = Arrays.asList(
+                IndexEntryUpdate.add( 1, indexDescriptor, "foo" ),
+                IndexEntryUpdate.add( 2, indexDescriptor, "bar" ),
+                IndexEntryUpdate.add( 3, indexDescriptor, "foo" ) );
 
         updates.forEach( populator::includeSample );
 
@@ -129,10 +132,10 @@ public class NonUniqueDatabaseIndexPopulatorTest
     {
         populator = newPopulator();
 
-        List<NodePropertyUpdate> updates = Arrays.asList(
-                NodePropertyUpdate.add( 1, 1, "foo", new long[]{1} ),
-                NodePropertyUpdate.add( 2, 1, "bar", new long[]{1} ),
-                NodePropertyUpdate.add( 42, 1, "bar", new long[]{1} ) );
+        List<IndexEntryUpdate> updates = Arrays.asList(
+                IndexEntryUpdate.add( 1, indexDescriptor, "foo" ),
+                IndexEntryUpdate.add( 2, indexDescriptor, "bar" ),
+                IndexEntryUpdate.add( 42, indexDescriptor, "bar" ) );
 
         populator.add( updates );
 

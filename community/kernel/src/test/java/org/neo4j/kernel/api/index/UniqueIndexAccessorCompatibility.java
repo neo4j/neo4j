@@ -22,6 +22,9 @@ package org.neo4j.kernel.api.index;
 import org.junit.Ignore;
 import org.junit.Test;
 
+import org.neo4j.kernel.api.schema_new.index.NewIndexDescriptor;
+import org.neo4j.kernel.api.schema_new.index.NewIndexDescriptorFactory;
+
 import static java.util.Arrays.asList;
 import static org.hamcrest.Matchers.equalTo;
 import static org.junit.Assert.assertThat;
@@ -33,7 +36,7 @@ import static org.junit.Assert.assertThat;
         " errors or warnings in some IDEs about test classes needing a public zero-arg constructor." )
 public class UniqueIndexAccessorCompatibility extends IndexAccessorCompatibility
 {
-    private static final int PROPERTY_KEY_ID = 100;
+    private static final NewIndexDescriptor index = NewIndexDescriptorFactory.uniqueForLabel( 1000, 100 );
 
     public UniqueIndexAccessorCompatibility( IndexProviderCompatibilityTestSuite testSuite )
     {
@@ -50,8 +53,8 @@ public class UniqueIndexAccessorCompatibility extends IndexAccessorCompatibility
         // the exact-match filtering we do on index seeks in StateHandlingStatementOperations.
 
         updateAndCommit( asList(
-                NodePropertyUpdate.add( 1L, PROPERTY_KEY_ID, "a", new long[]{1000} ),
-                NodePropertyUpdate.add( 2L, PROPERTY_KEY_ID, "a", new long[]{1000} ) ) );
+                IndexEntryUpdate.add( 1L, index, "a" ),
+                IndexEntryUpdate.add( 2L, index, "a" ) ) );
 
         assertThat( getAllNodesWithProperty( "a" ), equalTo( asList( 1L, 2L ) ) );
     }
@@ -60,9 +63,9 @@ public class UniqueIndexAccessorCompatibility extends IndexAccessorCompatibility
     public void testIndexSeekAndScan() throws Exception
     {
         updateAndCommit( asList(
-                NodePropertyUpdate.add( 1L, PROPERTY_KEY_ID, "a", new long[]{1000} ),
-                NodePropertyUpdate.add( 2L, PROPERTY_KEY_ID, "b", new long[]{1000} ),
-                NodePropertyUpdate.add( 3L, PROPERTY_KEY_ID, "c", new long[]{1000} ) ) );
+                IndexEntryUpdate.add( 1L, index, "a" ),
+                IndexEntryUpdate.add( 2L, index, "b" ),
+                IndexEntryUpdate.add( 3L, index, "c" ) ) );
 
         assertThat( getAllNodesWithProperty( "a" ), equalTo( asList( 1L ) ) );
         assertThat( getAllNodes(), equalTo( asList( 1L, 2L, 3L ) ) );

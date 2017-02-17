@@ -39,7 +39,7 @@ public class IndexBoundary
         {
             return null;
         }
-        return IndexDescriptorFactory.of( descriptor.schema().getLabelId(), descriptor.schema().getPropertyIds()[0] );
+        return IndexDescriptorFactory.of( descriptor.schema().getLabelId(), descriptor.schema().getPropertyIds() );
     }
 
     public static IndexDescriptor map( LabelSchemaDescriptor descriptor )
@@ -57,7 +57,14 @@ public class IndexBoundary
         {
             return null;
         }
-        return NewIndexDescriptorFactory.forLabel( descriptor.getLabelId(), descriptor.getPropertyKeyId() );
+        if ( descriptor.isComposite() )
+        {
+            return NewIndexDescriptorFactory.forLabel( descriptor.getLabelId(), descriptor.getPropertyKeyIds() );
+        }
+        else
+        {
+            return NewIndexDescriptorFactory.forLabel( descriptor.getLabelId(), descriptor.getPropertyKeyId() );
+        }
     }
 
     public static NewIndexDescriptor map( NodePropertyDescriptor descriptor )

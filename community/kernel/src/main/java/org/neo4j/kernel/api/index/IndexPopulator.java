@@ -50,10 +50,10 @@ public interface IndexPopulator
      * of {@link #verifyDeferredConstraints(PropertyAccessor)}.
      *
      * @param updates batch of node property updates that needs to be inserted. Node ids will be retrieved using
-     * {@link NodePropertyUpdate#getNodeId()} method and property values will be retrieved using
-     * {@link NodePropertyUpdate#getValueAfter()} method.
+     * {@link IndexEntryUpdate#getEntityId()} method and property values will be retrieved using
+     * {@link IndexEntryUpdate#value()} method.
      */
-    void add( Collection<NodePropertyUpdate> updates )
+    void add( Collection<IndexEntryUpdate> updates )
             throws IndexEntryConflictException, IOException;
 
     /**
@@ -71,7 +71,7 @@ public interface IndexPopulator
      * from committing transactions, which needs to be applied as well. This populator will only receive updates
      * for nodes that it already has seen. Updates coming in here must be applied idempotently as the same data
      * may have been {@link #add(Collection) added previously}.
-     * Updates can come in two different {@link NodePropertyUpdate#getUpdateMode() modes}.
+     * Updates can come in two different {@link IndexEntryUpdate#updateMode()} modes}.
      * <ol>
      *   <li>{@link UpdateMode#ADDED} means that there's an added property to a node already seen by this
      *   populator and so needs to be added. Note that this addition needs to be applied idempotently.
@@ -104,11 +104,11 @@ public interface IndexPopulator
     void markAsFailed( String failure ) throws IOException;
 
     /**
-     * Add the given {@link NodePropertyUpdate update} to the sampler for this index.
+     * Add the given {@link IndexEntryUpdate update} to the sampler for this index.
      *
      * @param update update to include in sample
      */
-    void includeSample( NodePropertyUpdate update );
+    void includeSample( IndexEntryUpdate update );
 
     /**
      * Configure specific type of sampling that should be used during index population.
@@ -132,7 +132,7 @@ public interface IndexPopulator
         }
 
         @Override
-        public void add( Collection<NodePropertyUpdate> updates ) throws IndexEntryConflictException, IOException
+        public void add( Collection<IndexEntryUpdate> updates ) throws IndexEntryConflictException, IOException
         {
         }
 
@@ -158,7 +158,7 @@ public interface IndexPopulator
         }
 
         @Override
-        public void includeSample( NodePropertyUpdate update )
+        public void includeSample( IndexEntryUpdate update )
         {
         }
 

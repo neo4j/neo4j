@@ -24,9 +24,9 @@ import org.neo4j.kernel.api.schema_new.index.NewIndexDescriptorFactory
 import org.neo4j.kernel.api.schema_new.index.{NewIndexDescriptor => KernelIndexDescriptor}
 
 trait IndexDescriptorCompatibility {
-  implicit def cypherToKernel(index: CypherIndexDescriptor) =
-    NewIndexDescriptorFactory.forLabel(index.label, index.property)
+  implicit def cypherToKernel(index: CypherIndexDescriptor): KernelIndexDescriptor =
+    NewIndexDescriptorFactory.forLabel(index.label.id, index.properties.map(_.id):_*)
 
-  implicit def kernelToCypher(index: KernelIndexDescriptor) =
-    CypherIndexDescriptor(index.schema().getLabelId, index.schema().getPropertyIds()(0))
+  implicit def kernelToCypher(index: KernelIndexDescriptor): CypherIndexDescriptor =
+    CypherIndexDescriptor(index.schema().getLabelId, index.schema().getPropertyIds)
 }

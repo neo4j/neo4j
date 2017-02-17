@@ -27,8 +27,8 @@ import org.junit.runners.Suite;
 import java.io.File;
 
 import org.neo4j.io.fs.FileSystemAbstraction;
-import org.neo4j.kernel.api.schema.IndexDescriptor;
-import org.neo4j.kernel.api.schema.IndexDescriptorFactory;
+import org.neo4j.kernel.api.schema_new.index.NewIndexDescriptor;
+import org.neo4j.kernel.api.schema_new.index.NewIndexDescriptorFactory;
 import org.neo4j.test.rule.TestDirectory;
 import org.neo4j.test.rule.fs.DefaultFileSystemRule;
 import org.neo4j.test.runner.ParameterizedSuiteRunner;
@@ -63,7 +63,7 @@ public abstract class IndexProviderCompatibilityTestSuite
     public abstract static class Compatibility
     {
         protected final SchemaIndexProvider indexProvider;
-        protected IndexDescriptor descriptor = IndexDescriptorFactory.of( 1, 2 );
+        protected NewIndexDescriptor descriptor = NewIndexDescriptorFactory.forLabel( 1, 2 );
 
         public Compatibility( IndexProviderCompatibilityTestSuite testSuite )
         {

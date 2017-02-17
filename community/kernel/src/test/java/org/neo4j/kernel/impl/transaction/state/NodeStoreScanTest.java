@@ -24,7 +24,7 @@ import org.junit.Test;
 import java.util.List;
 import java.util.function.Supplier;
 
-import org.neo4j.kernel.api.index.NodePropertyUpdate;
+import org.neo4j.kernel.api.index.IndexEntryUpdate;
 import org.neo4j.kernel.impl.api.index.MultipleIndexPopulator;
 import org.neo4j.kernel.impl.api.index.StoreScan;
 import org.neo4j.kernel.impl.locking.LockService;
@@ -66,7 +66,7 @@ public class NodeStoreScanTest
             private int read = 0;
 
             @Override
-            public void acceptUpdate( MultipleIndexPopulator.MultipleIndexUpdater updater, NodePropertyUpdate update,
+            public void acceptUpdate( MultipleIndexPopulator.MultipleIndexUpdater updater, IndexEntryUpdate update,
                     long currentlyIndexedNodeId )
             {
                 // no-op

@@ -62,7 +62,17 @@ public class LabelSchemaDescriptor implements SchemaDescriptor
 
     public int[] getPropertyIds()
     {
-        return propertyIds; // TODO: use Iterable or similar?
+        return propertyIds;
+    }
+
+    public int getPropertyId()
+    {
+        if ( propertyIds.length != 1 )
+        {
+            throw new IllegalStateException(
+                    "Single property schema requires one property but had " + propertyIds.length );
+        }
+        return propertyIds[0];
     }
 
     @Override

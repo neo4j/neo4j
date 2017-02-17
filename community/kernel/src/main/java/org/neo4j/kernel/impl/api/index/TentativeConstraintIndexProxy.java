@@ -29,10 +29,10 @@ import org.neo4j.kernel.api.exceptions.index.IndexEntryConflictException;
 import org.neo4j.kernel.api.exceptions.index.IndexNotFoundKernelException;
 import org.neo4j.kernel.api.exceptions.schema.ConstraintVerificationFailedKernelException;
 import org.neo4j.kernel.api.exceptions.schema.UniquenessConstraintVerificationFailedKernelException;
+import org.neo4j.kernel.api.index.IndexEntryUpdate;
 import org.neo4j.kernel.api.schema.IndexDescriptor;
 import org.neo4j.kernel.api.index.IndexUpdater;
 import org.neo4j.kernel.api.index.InternalIndexState;
-import org.neo4j.kernel.api.index.NodePropertyUpdate;
 import org.neo4j.kernel.impl.api.index.updater.DelegatingIndexUpdater;
 import org.neo4j.storageengine.api.schema.IndexReader;
 
@@ -76,7 +76,7 @@ public class TentativeConstraintIndexProxy extends AbstractDelegatingIndexProxy
                 return new DelegatingIndexUpdater( target.accessor.newUpdater( mode ) )
                 {
                     @Override
-                    public void process( NodePropertyUpdate update )
+                    public void process( IndexEntryUpdate update )
                             throws IOException, IndexEntryConflictException
                     {
                         try

@@ -231,11 +231,11 @@ public class IndexingAcceptanceTest
         assertThat( findNodesByLabelAndProperty( LABEL1, "name", "Feynman", beansAPI ), isEmpty() );
 
         assertThat( findNodesByLabelAndProperty( LABEL2, "name", "Hawking", beansAPI ), isEmpty() );
-        assertThat( findNodesByLabelAndProperty( LABEL1, "name", "Einstein", beansAPI ), isEmpty() );
+        assertThat( findNodesByLabelAndProperty( LABEL2, "name", "Einstein", beansAPI ), isEmpty() );
         assertThat( findNodesByLabelAndProperty( LABEL2, "name", "Feynman", beansAPI ), containsOnly( myNode ) );
 
         assertThat( findNodesByLabelAndProperty( LABEL3, "name", "Hawking", beansAPI ), isEmpty() );
-        assertThat( findNodesByLabelAndProperty( LABEL1, "name", "Einstein", beansAPI ), isEmpty() );
+        assertThat( findNodesByLabelAndProperty( LABEL3, "name", "Einstein", beansAPI ), isEmpty() );
         assertThat( findNodesByLabelAndProperty( LABEL3, "name", "Feynman", beansAPI ), containsOnly( myNode ) );
     }
 
