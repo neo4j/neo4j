@@ -20,6 +20,7 @@
 package org.neo4j.causalclustering.catchup.storecopy;
 
 import org.junit.Test;
+import org.mockito.InOrder;
 
 import java.io.File;
 import java.time.Clock;
@@ -35,7 +36,10 @@ import static org.junit.Assert.assertFalse;
 import static org.junit.Assert.assertNotNull;
 import static org.junit.Assert.assertThat;
 import static org.junit.Assert.assertTrue;
+import static org.mockito.Matchers.any;
+import static org.mockito.Mockito.inOrder;
 import static org.mockito.Mockito.mock;
+import static org.mockito.Mockito.times;
 
 public class LocalDatabaseTest
 {
@@ -95,9 +99,45 @@ public class LocalDatabaseTest
         assertDatabaseIsStoppedForStoreCopyAndUnavailable( guard );
     }
 
+    @Test
+    public void availabilityGuardRaisedBeforeDataSourceManagerIsStopped() throws Throwable
+    {
+        AvailabilityGuard guard = mock( AvailabilityGuard.class );
+        DataSourceManager dataSourceManager = mock( DataSourceManager.class );
+
+        LocalDatabase localDatabase = newLocalDatabase( guard, dataSourceManager );
+        localDatabase.stop();
+
+        InOrder inOrder = inOrder( guard, dataSourceManager );
+        // guard should be raised twice - once during construction and once during stop
+        inOrder.verify( guard, times( 2 ) ).require( any() );
+        inOrder.verify( dataSourceManager ).stop();
+    }
+
+    @Test
+    public void availabilityGuardRaisedBeforeDataSourceManagerIsStoppedForStoreCopy() throws Throwable
+    {
+        AvailabilityGuard guard = mock( AvailabilityGuard.class );
+        DataSourceManager dataSourceManager = mock( DataSourceManager.class );
+
+        LocalDatabase localDatabase = newLocalDatabase( guard, dataSourceManager );
+        localDatabase.stopForStoreCopy();
+
+        InOrder inOrder = inOrder( guard, dataSourceManager );
+        // guard should be raised twice - once during construction and once during stop
+        inOrder.verify( guard, times( 2 ) ).require( any() );
+        inOrder.verify( dataSourceManager ).stop();
+    }
+
     private static LocalDatabase newLocalDatabase( AvailabilityGuard availabilityGuard )
     {
-        return new LocalDatabase( mock( File.class ), mock( StoreFiles.class ), mock( DataSourceManager.class ),
+        return newLocalDatabase( availabilityGuard, mock( DataSourceManager.class ) );
+    }
+
+    private static LocalDatabase newLocalDatabase( AvailabilityGuard availabilityGuard,
+            DataSourceManager dataSourceManager )
+    {
+        return new LocalDatabase( mock( File.class ), mock( StoreFiles.class ), dataSourceManager,
                 () -> mock( DatabaseHealth.class ), availabilityGuard, NullLogProvider.getInstance() );
     }
 

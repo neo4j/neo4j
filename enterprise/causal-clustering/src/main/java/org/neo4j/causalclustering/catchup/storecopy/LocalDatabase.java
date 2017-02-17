@@ -217,11 +217,10 @@ public class LocalDatabase implements Lifecycle
     private synchronized void stopWithRequirement( AvailabilityRequirement requirement ) throws Throwable
     {
         log.info( "Stopping, reason: " + requirement.description() );
+        raiseAvailabilityGuard( requirement );
         databaseHealth = null;
         localCommit = null;
         dataSourceManager.stop();
-
-        raiseAvailabilityGuard( requirement );
     }
 
     private void raiseAvailabilityGuard( AvailabilityRequirement requirement )
