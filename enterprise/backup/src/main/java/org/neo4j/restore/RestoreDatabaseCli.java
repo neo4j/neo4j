@@ -106,35 +106,8 @@ public class RestoreDatabaseCli implements AdminCommand
         }
     }
 
-    public static class Provider extends AdminCommand.Provider
+    public static Arguments arguments()
     {
-        public Provider()
-        {
-            super( "restore" );
-        }
-
-        @Override
-        public Arguments allArguments()
-        {
-            return arguments;
-        }
-
-        @Override
-        public String description()
-        {
-            return "Restore a backed up database.";
-        }
-
-        @Override
-        public String summary()
-        {
-            return description();
-        }
-
-        @Override
-        public AdminCommand create( Path homeDir, Path configDir, OutsideWorld outsideWorld )
-        {
-            return new RestoreDatabaseCli( homeDir, configDir );
-        }
+        return arguments;
     }
 }

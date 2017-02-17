@@ -133,7 +133,7 @@ public class SetDefaultAdminCommandTest
             PrintStream ps = new PrintStream( baos );
 
             Usage usage = new Usage( "neo4j-admin", mock( CommandLocator.class ) );
-            usage.printUsageForCommand( new SetDefaultAdminCommand.Provider(), ps::println );
+            usage.printUsageForCommand( new SetDefaultAdminCommandProvider(), ps::println );
 
             assertEquals( String.format( "usage: neo4j-admin set-default-admin <username>%n" +
                             "%n" +

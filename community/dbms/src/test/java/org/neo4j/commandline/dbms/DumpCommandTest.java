@@ -350,7 +350,7 @@ public class DumpCommandTest
             PrintStream ps = new PrintStream( baos );
 
             Usage usage = new Usage( "neo4j-admin", mock( CommandLocator.class ) );
-            usage.printUsageForCommand( new DumpCommand.Provider(), ps::println );
+            usage.printUsageForCommand( new DumpCommandProvider(), ps::println );
 
             assertEquals( String.format( "usage: neo4j-admin dump [--database=<name>] --to=<destination-path>%n" +
                             "%n" +
