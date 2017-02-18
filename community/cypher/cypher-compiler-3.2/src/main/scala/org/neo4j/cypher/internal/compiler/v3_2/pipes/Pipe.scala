@@ -71,7 +71,7 @@ trait Pipe {
 case class SingleRowPipe()(val id: Id = new Id)(implicit val monitor: PipeMonitor) extends Pipe {
 
   def internalCreateResults(state: QueryState) =
-    Iterator(state.initialContext.getOrElse(ExecutionContext.empty))
+    Iterator(state.createEmptyExecutionContext())
 }
 
 abstract class PipeWithSource(source: Pipe, val monitor: PipeMonitor) extends Pipe {

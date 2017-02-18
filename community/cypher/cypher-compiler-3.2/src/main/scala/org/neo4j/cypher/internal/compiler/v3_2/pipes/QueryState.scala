@@ -45,6 +45,8 @@ class QueryState(val query: QueryContext,
                    new SingleThreadedLRUCache(maxSize = 16)) {
   private var _pathValueBuilder: PathValueBuilder = null
 
+  def createEmptyExecutionContext(): ExecutionContext = initialContext.getOrElse(ExecutionContext.empty)
+
   def clearPathValueBuilder = {
     if (_pathValueBuilder == null) {
       _pathValueBuilder = new PathValueBuilder()
