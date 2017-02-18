@@ -243,7 +243,11 @@ class LeafPlanningIntegrationTest extends CypherFunSuite with LogicalPlanningTes
     case (_: AllNodesScan, _) => 1000.0
     case (_: NodeByLabelScan, _) => 50.0
     case (_: NodeIndexScan, _) => 10.0
-    case (_: NodeIndexSeek, _) => 1.0
+    case (nodeIndexSeek: NodeIndexSeek, _) =>
+      val planCardinality = nodeIndexSeek.solved.estimatedCardinality.amount
+      val rowCost = 1.0
+      val costForThisPlan = rowCost * planCardinality / 1000.0
+      costForThisPlan
     case (Selection(_, plan), input) => nodeIndexScanCost((plan, input))
     case _ => Double.MaxValue
   }
