@@ -26,7 +26,7 @@ import org.scalatest.BeforeAndAfterAll
 import sun.net.www.protocol.http.HttpURLConnection
 
 class LoadCsvAcceptanceUserAgentTest
-  extends ExecutionEngineFunSuite with BeforeAndAfterAll with NewRuntimeTestSupport {
+  extends ExecutionEngineFunSuite with BeforeAndAfterAll with NewPlannerTestSupport {
 
   test("should be able to download data from the web") {
     val url = s"http://127.0.0.1:$port/test.csv".cypherEscape

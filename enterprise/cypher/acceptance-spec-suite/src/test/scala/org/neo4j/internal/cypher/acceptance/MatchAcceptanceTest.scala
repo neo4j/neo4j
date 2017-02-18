@@ -26,7 +26,7 @@ import org.neo4j.helpers.collection.Iterators.single
 
 import scala.collection.JavaConverters._
 
-class MatchAcceptanceTest extends ExecutionEngineFunSuite with QueryStatisticsTestSupport with NewRuntimeTestSupport {
+class MatchAcceptanceTest extends ExecutionEngineFunSuite with QueryStatisticsTestSupport with NewPlannerTestSupport {
 
   // Not TCK material -- only one integer type
   test("comparing numbers should work nicely") {

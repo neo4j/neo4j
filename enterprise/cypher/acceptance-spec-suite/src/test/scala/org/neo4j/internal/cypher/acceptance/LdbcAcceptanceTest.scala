@@ -21,12 +21,12 @@ package org.neo4j.internal.cypher.acceptance
 
 import org.neo4j.cypher.internal.compiler.v3_2.planDescription.InternalPlanDescription
 import org.neo4j.cypher.internal.compiler.v3_2.planDescription.InternalPlanDescription.Arguments.EstimatedRows
-import org.neo4j.cypher.{ExecutionEngineFunSuite, LdbcQueries}
+import org.neo4j.cypher.{ExecutionEngineFunSuite, LdbcQueries, NewPlannerTestSupport}
 
 /**
  * Runs the 14 LDBC queries and checks so that the result is what is expected.
  */
-class LdbcAcceptanceTest extends ExecutionEngineFunSuite with NewRuntimeTestSupport {
+class LdbcAcceptanceTest extends ExecutionEngineFunSuite with NewPlannerTestSupport {
   import org.neo4j.cypher.LdbcQueries._
 
   LDBC_QUERIES.foreach { ldbcQuery =>

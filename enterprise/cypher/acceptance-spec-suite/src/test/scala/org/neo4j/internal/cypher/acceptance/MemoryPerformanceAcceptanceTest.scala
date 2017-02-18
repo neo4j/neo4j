@@ -22,7 +22,7 @@ package org.neo4j.internal.cypher.acceptance
 import org.neo4j.cypher.{ExecutionEngineFunSuite, NewPlannerTestSupport}
 
 // Only put tests that assert on memory performance behaviour in this class
-class MemoryPerformanceAcceptanceTest extends ExecutionEngineFunSuite with NewRuntimeTestSupport {
+class MemoryPerformanceAcceptanceTest extends ExecutionEngineFunSuite with NewPlannerTestSupport {
 
   test("check for contents of collection that contains only a single null") {
     createNode()

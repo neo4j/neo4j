@@ -40,7 +40,8 @@ import org.neo4j.test.ImpermanentGraphDatabase
 import scala.collection.JavaConverters._
 import scala.collection.mutable
 
-class MatchLongPatternAcceptanceTest extends ExecutionEngineFunSuite with QueryStatisticsTestSupport with NewRuntimeTestSupport {
+class MatchLongPatternAcceptanceTest extends ExecutionEngineFunSuite with QueryStatisticsTestSupport
+  with NewPlannerTestSupport {
 
   val VERBOSE = false
 

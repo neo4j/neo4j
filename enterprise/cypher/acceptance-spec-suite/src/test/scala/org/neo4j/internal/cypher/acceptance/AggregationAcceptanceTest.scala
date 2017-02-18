@@ -21,7 +21,7 @@ package org.neo4j.internal.cypher.acceptance
 
 import org.neo4j.cypher.ExecutionEngineFunSuite
 
-class AggregationAcceptanceTest extends ExecutionEngineFunSuite with NewRuntimeTestSupport {
+class AggregationAcceptanceTest extends ExecutionEngineFunSuite with NewPlannerTestSupport {
 
   // Non-deterministic query -- needs TCK design
   test("should aggregate using as grouping key expressions using variables in scope and nothing else") {

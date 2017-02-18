@@ -84,7 +84,7 @@ import scala.collection.mutable
  *    ..      ..    ..
  *
  */
-class ShortestPathLongerAcceptanceTest extends ExecutionEngineFunSuite with NewRuntimeTestSupport {
+class ShortestPathLongerAcceptanceTest extends ExecutionEngineFunSuite with NewPlannerTestSupport {
 
   val VERBOSE = false // Lots of debug prints
 

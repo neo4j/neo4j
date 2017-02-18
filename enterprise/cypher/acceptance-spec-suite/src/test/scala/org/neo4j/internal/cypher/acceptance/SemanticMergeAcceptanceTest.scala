@@ -29,7 +29,7 @@ import org.scalacheck.{Gen, Shrink}
  *  - makes sure that whatever pattern we create is returned when doing MATCH on pattern.
  */
 class SemanticMergeAcceptanceTest
-  extends ExecutionEngineFunSuite with PatternGen with NewRuntimeTestSupport with QueryStatisticsTestSupport {
+  extends ExecutionEngineFunSuite with PatternGen with NewPlannerTestSupport with QueryStatisticsTestSupport {
 
   //we don't want scala check to shrink patterns here and leave things in the database
   implicit val dontShrink: Shrink[List[Element]] = Shrink(s => Stream.empty)

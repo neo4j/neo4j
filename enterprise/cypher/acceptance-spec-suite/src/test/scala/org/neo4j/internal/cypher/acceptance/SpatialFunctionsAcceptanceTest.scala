@@ -22,7 +22,7 @@ package org.neo4j.internal.cypher.acceptance
 import org.neo4j.cypher.internal.compiler.v3_2.{CRS, CartesianPoint, GeographicPoint}
 import org.neo4j.cypher.{ExecutionEngineFunSuite, InvalidArgumentException, NewPlannerTestSupport, SyntaxException}
 
-class SpatialFunctionsAcceptanceTest extends ExecutionEngineFunSuite with NewRuntimeTestSupport {
+class SpatialFunctionsAcceptanceTest extends ExecutionEngineFunSuite with NewPlannerTestSupport {
 
   test("point function should work with literal map") {
     val result = executeWithAllPlanners("RETURN point({latitude: 12.78, longitude: 56.7}) as point")

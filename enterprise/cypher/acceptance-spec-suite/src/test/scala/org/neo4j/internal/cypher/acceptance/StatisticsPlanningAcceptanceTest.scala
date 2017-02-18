@@ -23,7 +23,7 @@ import org.neo4j.cypher.internal.compiler.v3_2.planDescription.InternalPlanDescr
 import org.neo4j.cypher.{ExecutionEngineFunSuite, NewPlannerTestSupport}
 import org.scalatest.matchers.{MatchResult, Matcher}
 
-class StatisticsPlanningAcceptanceTest  extends ExecutionEngineFunSuite with NewRuntimeTestSupport {
+class StatisticsPlanningAcceptanceTest  extends ExecutionEngineFunSuite with NewPlannerTestSupport {
 
   test("planning should not take into account transaction state when counting nodes") {
     graph.createIndex("User", "name")

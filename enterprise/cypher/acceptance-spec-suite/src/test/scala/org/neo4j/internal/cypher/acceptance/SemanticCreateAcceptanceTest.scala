@@ -28,7 +28,7 @@ import org.scalacheck.{Gen, Shrink}
  *  - uses updateWithBothPlanners to verify that the statistics match the rule planner
  *  - makes sure that whatever pattern we create is returned when doing MATCH on pattern.
  */
-class SemanticCreateAcceptanceTest extends ExecutionEngineFunSuite with PatternGen with NewRuntimeTestSupport {
+class SemanticCreateAcceptanceTest extends ExecutionEngineFunSuite with PatternGen with NewPlannerTestSupport {
 
   //we don't want scala check to shrink patterns here and leave things in the database
   implicit val dontShrink: Shrink[List[Element]] = Shrink(s => Stream.empty)

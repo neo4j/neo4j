@@ -25,7 +25,7 @@ import org.neo4j.cypher.{ExecutionEngineFunSuite, NewPlannerTestSupport}
 import org.neo4j.kernel.impl.proc.Procedures
 import org.neo4j.procedure.Procedure
 
-class NotificationAcceptanceTest extends ExecutionEngineFunSuite with NewRuntimeTestSupport {
+class NotificationAcceptanceTest extends ExecutionEngineFunSuite with NewPlannerTestSupport {
 
   override def initTest(): Unit = {
     super.initTest()

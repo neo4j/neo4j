@@ -33,7 +33,7 @@ import org.neo4j.graphdb.QueryExecutionException
 
 import scala.reflect.ClassTag
 
-class ProfilerAcceptanceTest extends ExecutionEngineFunSuite with CreateTempFileTestSupport with NewRuntimeTestSupport {
+class ProfilerAcceptanceTest extends ExecutionEngineFunSuite with CreateTempFileTestSupport with NewPlannerTestSupport {
 
   test("profile simple query") {
     createNode()

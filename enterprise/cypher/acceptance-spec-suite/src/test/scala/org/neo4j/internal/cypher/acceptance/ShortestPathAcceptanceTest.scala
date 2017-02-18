@@ -23,7 +23,7 @@ import org.neo4j.cypher.internal.compiler.v3_2.commands.expressions.PathImpl
 import org.neo4j.cypher.{ExecutionEngineFunSuite, NewPlannerTestSupport, SyntaxException}
 import org.neo4j.graphdb.{Node, Path}
 
-class ShortestPathAcceptanceTest extends ExecutionEngineFunSuite with NewRuntimeTestSupport {
+class ShortestPathAcceptanceTest extends ExecutionEngineFunSuite with NewPlannerTestSupport {
 
   var nodeA: Node = _
   var nodeB: Node = _

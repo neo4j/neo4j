@@ -27,7 +27,7 @@ import org.neo4j.graphdb.factory.GraphDatabaseSettings
 import org.neo4j.graphdb.{Node, QueryExecutionException}
 import org.neo4j.kernel.api.exceptions.Status
 
-class UsingAcceptanceTest extends ExecutionEngineFunSuite with NewRuntimeTestSupport with RunWithConfigTestSupport {
+class UsingAcceptanceTest extends ExecutionEngineFunSuite with NewPlannerTestSupport with RunWithConfigTestSupport {
   override def databaseConfig(): Map[Setting[_], String] = Map(GraphDatabaseSettings.cypher_hints_error -> "true")
 
   test("should use index on literal value") {

@@ -28,7 +28,7 @@ import org.neo4j.graphdb.factory.GraphDatabaseSettings
 
 import scala.collection.mutable
 
-class ShortestPathExhaustiveForbiddenAcceptanceTest extends ExecutionEngineFunSuite with NewRuntimeTestSupport {
+class ShortestPathExhaustiveForbiddenAcceptanceTest extends ExecutionEngineFunSuite with NewPlannerTestSupport {
 
   override def databaseConfig(): Map[Setting[_], String] =
     Map(GraphDatabaseSettings.forbid_exhaustive_shortestpath -> "true")

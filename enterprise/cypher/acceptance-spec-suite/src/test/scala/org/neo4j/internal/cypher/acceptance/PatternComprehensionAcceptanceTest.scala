@@ -22,7 +22,7 @@ package org.neo4j.internal.cypher.acceptance
 import org.neo4j.cypher.internal.compiler.v3_2.commands.expressions.PathImpl
 import org.neo4j.cypher.{ExecutionEngineFunSuite, NewPlannerTestSupport}
 
-class PatternComprehensionAcceptanceTest extends ExecutionEngineFunSuite with NewRuntimeTestSupport {
+class PatternComprehensionAcceptanceTest extends ExecutionEngineFunSuite with NewPlannerTestSupport {
 
   test("with named path") {
     val n1 = createLabeledNode("Start")

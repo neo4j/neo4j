@@ -23,7 +23,7 @@ import org.neo4j.cypher.internal.frontend.v3_2.test_helpers.WindowsStringSafe
 import org.neo4j.cypher.{ExecutionEngineFunSuite, NewPlannerTestSupport, QueryStatisticsTestSupport}
 
 class QueryPlanCompactionAcceptanceTest extends ExecutionEngineFunSuite with QueryStatisticsTestSupport
-  with NewRuntimeTestSupport {
+  with NewPlannerTestSupport {
 
   implicit val windowsSafe = WindowsStringSafe
 
