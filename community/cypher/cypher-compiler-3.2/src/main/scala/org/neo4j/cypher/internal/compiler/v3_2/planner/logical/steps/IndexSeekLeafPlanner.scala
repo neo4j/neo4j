@@ -175,12 +175,13 @@ abstract class AbstractIndexSeekLeafPlanner extends LeafPlanner with LeafPlanFro
 
   private def plannablesForIndex(indexDescriptor: IndexDescriptor, plannables: Seq[IndexPlannableExpression])
                                 (implicit semanticTable: SemanticTable): Option[Seq[IndexPlannableExpression]] = {
-    val foundPlannables = plannables.filter { p =>
-      val propertyKeyId: Option[PropertyKeyId] = p.propertyKeyName.id
-      propertyKeyId.isDefined && indexDescriptor.properties.contains(propertyKeyId.get)
+    // TODO: Make sure plannable and expression order matches IndexDescriptor propery order
+    val foundPredicates = indexDescriptor.properties.flatMap { propertyKeyId =>
+      plannables find (p => propertyKeyId == p.propertyKeyName.id.getOrElse(-1))
     }
-    if (foundPlannables.length == indexDescriptor.properties.length)
-      Some(foundPlannables)
+    // Currently we only support using the composite index if ALL properties are specified, but this could be generalized
+    if (foundPredicates.length == indexDescriptor.properties.length)
+      Some(foundPredicates)
     else
       None
   }
