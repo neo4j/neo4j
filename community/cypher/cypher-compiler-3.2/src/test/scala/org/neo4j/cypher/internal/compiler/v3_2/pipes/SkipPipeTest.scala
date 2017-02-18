@@ -19,24 +19,26 @@
  */
 package org.neo4j.cypher.internal.compiler.v3_2.pipes
 
+import org.mockito.Mockito.{never, verify, when}
+import org.mockito.internal.stubbing.defaultanswers.ReturnsMocks
 import org.neo4j.cypher.internal.compiler.v3_2.ExecutionContext
-import org.neo4j.cypher.internal.compiler.v3_2.commands.expressions.{Expression, NumericHelper}
-import org.neo4j.cypher.internal.compiler.v3_2.planDescription.Id
+import org.neo4j.cypher.internal.compiler.v3_2.commands.expressions.Literal
+import org.neo4j.cypher.internal.frontend.v3_2.test_helpers.CypherFunSuite
 
-case class LimitPipe(source: Pipe, exp: Expression)
-                    (val id: Id = new Id)
-                    (implicit pipeMonitor: PipeMonitor)
-  extends PipeWithSource(source, pipeMonitor) with NumericHelper {
-  protected def internalCreateResults(input: Iterator[ExecutionContext], state: QueryState): Iterator[ExecutionContext] = {
+class SkipPipeTest extends CypherFunSuite {
+  test("skip 0 should not actually pull from the input") {
+    // Given
+    val inputIterator = mock[Iterator[ExecutionContext]](new ReturnsMocks)
 
-    if(input.isEmpty)
-      return Iterator.empty
+    when(inputIterator.isEmpty).thenReturn(false)
 
-    //register as parent so that stats are associated with this pipe
-    state.decorator.registerParentPipe(this)
+    val src: Pipe = new DummyPipe(inputIterator)
+    val limitPipe = SkipPipe(src, Literal(0))()(mock[PipeMonitor])
 
-    val limit = asInt(exp(state.createEmptyExecutionContext())(state))
+    // When
+    val result = limitPipe.createResults(QueryStateHelper.empty)
 
-    input.take(limit)
+    // Then
+    verify(inputIterator, never()).next()
   }
 }

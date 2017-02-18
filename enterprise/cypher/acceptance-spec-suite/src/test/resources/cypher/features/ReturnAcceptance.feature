@@ -41,3 +41,15 @@ Feature: ReturnAcceptance
       | []           |
     And no side effects
 
+  Scenario: LIMIT 0 should stop side effects
+    Given an empty graph
+    When executing query:
+      """
+      CREATE (n)
+      RETURN n
+      LIMIT 0
+      """
+    Then the result should be:
+      | n            |
+    And no side effects
+
