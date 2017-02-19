@@ -47,6 +47,7 @@ import java.util.PriorityQueue;
 public class DefaultTopTable<T extends Comparable<Object>> implements Iterable<T> // implements SortTable<T>
 {
     private int totalCount;
+    private int count = -1;
     private PriorityQueue<Object> heap;
     private Object[] array; // TODO: Use Guava's MinMaxPriorityQueue to avoid having this array
 
@@ -87,8 +88,10 @@ public class DefaultTopTable<T extends Comparable<Object>> implements Iterable<T
 
     public void sort()
     {
+        count = heap.size();
+
         // We keep the values in reverse order so that we can write from start to end
-        for ( int i = 0; i < this.totalCount; i++ )
+        for ( int i = 0; i < count; i++ )
         {
             array[i] = heap.poll();
         }
@@ -97,9 +100,14 @@ public class DefaultTopTable<T extends Comparable<Object>> implements Iterable<T
     @Override
     public Iterator<T> iterator()
     {
+        if ( count == -1 )
+        {
+            // This should never happen in generated code but is here to simplify debugging if used incorrectly
+            throw new IllegalStateException( "sort() needs to be called before requesting an iterator" );
+        }
         return new Iterator<T>()
         {
-            private int cursor = totalCount;
+            private int cursor = count;
 
             @Override
             public boolean hasNext()
