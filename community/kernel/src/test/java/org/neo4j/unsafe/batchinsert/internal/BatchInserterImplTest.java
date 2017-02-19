@@ -63,8 +63,8 @@ public class BatchInserterImplTest
         NeoStores neoStores = ReflectionUtil.getPrivateField( inserter, "neoStores", NeoStores.class );
         PageCache pageCache = ReflectionUtil.getPrivateField( neoStores, "pageCache", PageCache.class );
         inserter.shutdown();
-        int mappedMemoryTotalSize = pageCache.maxCachedPages() * pageCache.pageSize();
-        assertThat( "memory mapped config is active", mappedMemoryTotalSize, is( 280 * 1024 ) );
+        long mappedMemoryTotalSize = pageCache.maxCachedPages() * pageCache.pageSize();
+        assertThat( "memory mapped config is active", mappedMemoryTotalSize, is( 280 * 1024L ) );
     }
 
     @Test

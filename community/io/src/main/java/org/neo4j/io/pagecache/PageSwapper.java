@@ -75,7 +75,7 @@ public interface PageSwapper
      * interrupted. If this happens, then implementation must reopen the
      * channel and the operation must be retried.
      */
-    long write( long filePageId, long bufferAddress, int bufferSize ) throws IOException;
+    long write( long filePageId, long bufferAddress ) throws IOException;
 
     /**
      * Write the contents of the given pages, to the concrete file on the file system,
@@ -93,13 +93,13 @@ public interface PageSwapper
      * interrupted. If this happens, then implementation must reopen the
      * channel and the operation must be retried.
      */
-    long write( long startFilePageId, long[] bufferAddresses, int bufferSize, int arrayOffset, int length ) throws IOException;
+    long write( long startFilePageId, long[] bufferAddresses, int arrayOffset, int length ) throws IOException;
 
     /**
      * Notification that a page has been evicted, used to clean up state in structures
      * outside the page table.
      */
-    void evicted( long pageId, Page page );
+    void evicted( long pageId );
 
     /**
      * Get the file that this PageSwapper represents.

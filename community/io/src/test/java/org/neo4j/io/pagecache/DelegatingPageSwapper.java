@@ -46,9 +46,9 @@ public class DelegatingPageSwapper implements PageSwapper
         delegate.close();
     }
 
-    public void evicted( long pageId, Page page )
+    public void evicted( long filePageId )
     {
-        delegate.evicted( pageId, page );
+        delegate.evicted( filePageId );
     }
 
     public void force() throws IOException
@@ -61,9 +61,9 @@ public class DelegatingPageSwapper implements PageSwapper
         return delegate.file();
     }
 
-    public long write( long filePageId, long bufferAddress, int bufferSize ) throws IOException
+    public long write( long filePageId, long bufferAddress ) throws IOException
     {
-        return delegate.write( filePageId, bufferAddress, bufferSize );
+        return delegate.write( filePageId, bufferAddress );
     }
 
     public long getLastPageId() throws IOException
@@ -87,8 +87,8 @@ public class DelegatingPageSwapper implements PageSwapper
         return delegate.read( startFilePageId, bufferAddresses, bufferSize, arrayOffset, length );
     }
 
-    public long write( long startFilePageId, long[] bufferAddresses, int bufferSize, int arrayOffset, int length ) throws IOException
+    public long write( long startFilePageId, long[] bufferAddresses, int arrayOffset, int length ) throws IOException
     {
-        return delegate.write( startFilePageId, bufferAddresses, bufferSize, arrayOffset, length );
+        return delegate.write( startFilePageId, bufferAddresses, arrayOffset, length );
     }
 }

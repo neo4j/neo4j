@@ -109,8 +109,8 @@ public class MuninnPageCacheTest extends PageCacheTest<MuninnPageCache>
             assertEquals( 1, cursorTracer.faults() );
             assertEquals( 1, tracer.faults() );
 
-            int clockArm = pageCache.evictPages( 1, 0, tracer.beginPageEvictions( 1 ) );
-            assertThat( clockArm, is( 1 ) );
+            long clockArm = pageCache.evictPages( 1, 1, tracer.beginPageEvictions( 1 ) );
+            assertThat( clockArm, is( 1L ) );
             assertNotNull( tracer.observe( Evict.class ) );
         }
     }
@@ -137,8 +137,8 @@ public class MuninnPageCacheTest extends PageCacheTest<MuninnPageCache>
             assertEquals( 1, cursorTracer.faults() );
             assertEquals( 1, tracer.faults() );
 
-            int clockArm = pageCache.evictPages( 1, 0, tracer.beginPageEvictions( 1 ) );
-            assertThat( clockArm, is( 1 ) );
+            long clockArm = pageCache.evictPages( 1, 0, tracer.beginPageEvictions( 1 ) );
+            assertThat( clockArm, is( 1L ) );
             assertNotNull( tracer.observe( Evict.class ) );
 
             ByteBuffer buf = readIntoBuffer( "a" );
@@ -168,8 +168,8 @@ public class MuninnPageCacheTest extends PageCacheTest<MuninnPageCache>
             assertEquals( 1, cursorTracer.faults() );
             assertEquals( 1, tracer.faults() );
 
-            int clockArm = pageCache.evictPages( 1, 0, tracer.beginPageEvictions( 1 ) );
-            assertThat( clockArm, is( 1 ) );
+            long clockArm = pageCache.evictPages( 1, 0, tracer.beginPageEvictions( 1 ) );
+            assertThat( clockArm, is( 1L ) );
             assertNotNull( tracer.observe( Evict.class ) );
 
             ByteBuffer buf = readIntoBuffer( "a" );
@@ -203,8 +203,8 @@ public class MuninnPageCacheTest extends PageCacheTest<MuninnPageCache>
             assertEquals( 2, cursorTracer.faults() );
             assertEquals( 2, tracer.faults() );
 
-            int clockArm = pageCache.evictPages( 2, 0, tracer.beginPageEvictions( 2 ) );
-            assertThat( clockArm, is( 2 ) );
+            long clockArm = pageCache.evictPages( 2, 0, tracer.beginPageEvictions( 2 ) );
+            assertThat( clockArm, is( 2L ) );
             assertNotNull( tracer.observe( Evict.class ) );
             assertNotNull( tracer.observe( Evict.class ) );
 
@@ -244,8 +244,8 @@ public class MuninnPageCacheTest extends PageCacheTest<MuninnPageCache>
                 cursor.putLong( value + 1 );
             }
 
-            int clockArm = pageCache.evictPages( 1, 0, EvictionRunEvent.NULL );
-            assertThat( clockArm, is( 1 ) );
+            long clockArm = pageCache.evictPages( 1, 0, EvictionRunEvent.NULL );
+            assertThat( clockArm, is( 1L ) );
 
             ByteBuffer buf = readIntoBuffer( "a" );
             assertThat( buf.getLong(), is( 42L ) );

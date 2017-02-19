@@ -51,6 +51,7 @@ import org.neo4j.io.pagecache.PageSwapper;
 import org.neo4j.io.pagecache.PageSwapperFactory;
 import org.neo4j.io.pagecache.PageSwapperTest;
 import org.neo4j.io.proc.ProcessUtil;
+import org.neo4j.unsafe.impl.internal.dragons.UnsafeUtil;
 
 import static org.hamcrest.Matchers.is;
 import static org.hamcrest.Matchers.not;
@@ -132,6 +133,14 @@ public class SingleFilePageSwapperTest extends PageSwapperTest
         }
     }
 
+    private void putBytes( long page, byte[] data, int srcOffset, int tgtOffset, int length )
+    {
+        for ( int i = 0; i < length; i++ )
+        {
+            UnsafeUtil.putByte( page + srcOffset + i, data[tgtOffset + i] );
+        }
+    }
+
     @Test
     public void swappingInMustFillPageWithData() throws Exception
     {
@@ -142,9 +151,8 @@ public class SingleFilePageSwapperTest extends PageSwapperTest
 
         PageSwapperFactory factory = createSwapperFactory();
         PageSwapper swapper = createSwapper( factory, getFile(), 4, null, false );
-        ByteBuffer target = ByteBuffer.allocateDirect( 4 );
-        ByteBufferPage page = new ByteBufferPage( target );
-        swapper.read( 0, page.address(), page.size() );
+        long target = createPage( 4 );
+        swapper.read( 0, target, sizeOfAsInt( target ) );
 
         assertThat( array( target ), byteArray( bytes ) );
     }
@@ -164,9 +172,8 @@ public class SingleFilePageSwapperTest extends PageSwapperTest
 
         PageSwapperFactory factory = createSwapperFactory();
         PageSwapper swapper = createSwapper( factory, getFile(), 4, null, false );
-        ByteBuffer target = ByteBuffer.allocateDirect( 4 );
-        ByteBufferPage page = new ByteBufferPage( target );
-        swapper.read( 1, page.address(), page.size() );
+        long target = createPage( 4 );
+        swapper.read( 1, target, sizeOfAsInt( target ) );
 
         assertThat( array( target ), byteArray( new byte[]{5, 6, 0, 0} ) );
     }
@@ -177,17 +184,24 @@ public class SingleFilePageSwapperTest extends PageSwapperTest
         getFs().create( getFile() ).close();
 
         byte[] expected = new byte[] { 1, 2, 3, 4 };
-        ByteBufferPage page = new ByteBufferPage( wrap( expected ) );
+        long page = createPage( expected );
 
         PageSwapperFactory factory = createSwapperFactory();
         PageSwapper swapper = createSwapper( factory, getFile(), 4, null, false );
-        swapper.write( 0, page.address(), page.size() );
+        swapper.write( 0, page );
 
         InputStream stream = getFs().openAsInputStream( getFile() );
         byte[] actual = new byte[expected.length];
 
         assertThat( stream.read( actual ), is( actual.length ) );
         assertThat( actual, byteArray( expected ) );
+    }
+
+    private long createPage( byte[] expected )
+    {
+        long page = createPage( expected.length );
+        putBytes( page, expected, 0, 0, expected.length );
+        return page;
     }
 
     @Test
@@ -214,11 +228,11 @@ public class SingleFilePageSwapperTest extends PageSwapperTest
         channel.close();
 
         byte[] change = new byte[] { 8, 7, 6, 5 };
-        ByteBufferPage page = new ByteBufferPage( wrap( change ) );
+        long page = createPage( change );
 
         PageSwapperFactory factory = createSwapperFactory();
         PageSwapper swapper = createSwapper( factory, getFile(), 4, null, false );
-        swapper.write( 1, page.address(), page.size() );
+        swapper.write( 1, page );
 
         InputStream stream = getFs().openAsInputStream( getFile() );
         byte[] actual = new byte[(int) getFs().getFileSize( getFile() )];
@@ -392,13 +406,13 @@ public class SingleFilePageSwapperTest extends PageSwapperTest
         assertThat( openFilesCounter.get(), is( 0 ) );
     }
 
-    private byte[] array( ByteBuffer target )
+    private byte[] array( long page )
     {
-        target.clear();
-        byte[] array = new byte[target.capacity()];
-        while ( target.position() < target.capacity() )
+        int size = sizeOfAsInt( page );
+        byte[] array = new byte[size];
+        for ( int i = 0; i < size; i++ )
         {
-            array[target.position()] = target.get();
+            array[i] = UnsafeUtil.getByte( page + i );
         }
         return array;
     }
@@ -427,8 +441,8 @@ public class SingleFilePageSwapperTest extends PageSwapperTest
         PageSwapper swapper = createSwapper( factory, file, bytesTotal, NO_CALLBACK, true );
         try
         {
-            ByteBufferPage page = new ByteBufferPage( wrap( data ) );
-            swapper.write( 0, page.address(), page.size() );
+            long page = createPage( data );
+            swapper.write( 0, page );
         }
         finally
         {
@@ -439,15 +453,15 @@ public class SingleFilePageSwapperTest extends PageSwapperTest
         factory.open( new AdversarialFileSystemAbstraction( adversary, getFs() ), Configuration.EMPTY );
         swapper = createSwapper( factory, file, bytesTotal, NO_CALLBACK, false );
 
-        ByteBufferPage page = createPage( bytesTotal );
+        long page = createPage( bytesTotal );
 
         try
         {
             for ( int i = 0; i < 10_000; i++ )
             {
                 clear( page );
-                assertThat( swapper.read( 0, page.address(), page.size() ), is( (long) bytesTotal ) );
-                assertThat( array( page.buffer ), is( data ) );
+                assertThat( swapper.read( 0, page, sizeOfAsInt( page ) ), is( (long) bytesTotal ) );
+                assertThat( array( page ), is( data ) );
             }
         }
         finally
@@ -462,7 +476,7 @@ public class SingleFilePageSwapperTest extends PageSwapperTest
         int bytesTotal = 512;
         byte[] data = new byte[bytesTotal];
         ThreadLocalRandom.current().nextBytes( data );
-        ByteBufferPage zeroPage = createPage( bytesTotal );
+        long zeroPage = createPage( bytesTotal );
         clear( zeroPage );
 
         File file = getFile();
@@ -471,21 +485,21 @@ public class SingleFilePageSwapperTest extends PageSwapperTest
         factory.open( new AdversarialFileSystemAbstraction( adversary, getFs() ), Configuration.EMPTY );
         PageSwapper swapper = createSwapper( factory, file, bytesTotal, NO_CALLBACK, true );
 
-        ByteBufferPage page = createPage( bytesTotal );
+        long page = createPage( bytesTotal );
 
         try
         {
             for ( int i = 0; i < 10_000; i++ )
             {
                 adversary.setProbabilityFactor( 0 );
-                swapper.write( 0, zeroPage.address(), zeroPage.size() );
-                page.putBytes( data, 0, 0, data.length );
+                swapper.write( 0, zeroPage );
+                putBytes( page, data, 0, 0, data.length );
                 adversary.setProbabilityFactor( 1 );
-                assertThat( swapper.write( 0, page.address(), page.size() ), is( (long) bytesTotal ) );
+                assertThat( swapper.write( 0, page ), is( (long) bytesTotal ) );
                 clear( page );
                 adversary.setProbabilityFactor( 0 );
-                swapper.read( 0, page.address(), page.size() );
-                assertThat( array( page.buffer ), is( data ) );
+                swapper.read( 0, page, sizeOfAsInt( page ) );
+                assertThat( array( page ), is( data ) );
             }
         }
         finally
@@ -509,8 +523,8 @@ public class SingleFilePageSwapperTest extends PageSwapperTest
         PageSwapper swapper = createSwapper( factory, file, bytesTotal, NO_CALLBACK, true );
         try
         {
-            ByteBufferPage page = new ByteBufferPage( wrap( data ) );
-            swapper.write( 0, page.address(), page.size() );
+            long page = createPage( data );
+            swapper.write( 0, page );
         }
         finally
         {
@@ -521,12 +535,10 @@ public class SingleFilePageSwapperTest extends PageSwapperTest
         factory.open( new AdversarialFileSystemAbstraction( adversary, getFs() ), Configuration.EMPTY );
         swapper = createSwapper( factory, file, bytesPerPage, NO_CALLBACK, false );
 
-        ByteBufferPage[] pages = new ByteBufferPage[pageCount];
-        long[] bufferAddresses = new long[pageCount];
+        long[] pages = new long[pageCount];
         for ( int i = 0; i < pageCount; i++ )
         {
             pages[i] = createPage( bytesPerPage );
-            bufferAddresses[i] = pages[i].address();
         }
 
         byte[] temp = new byte[bytesPerPage];
@@ -534,15 +546,15 @@ public class SingleFilePageSwapperTest extends PageSwapperTest
         {
             for ( int i = 0; i < 10_000; i++ )
             {
-                for ( ByteBufferPage page : pages )
+                for ( long page : pages )
                 {
                     clear( page );
                 }
-                assertThat( swapper.read( 0, bufferAddresses, bytesPerPage, 0, pages.length ), is( (long) bytesTotal ) );
+                assertThat( swapper.read( 0, pages, bytesPerPage, 0, pages.length ), is( (long) bytesTotal ) );
                 for ( int j = 0; j < pageCount; j++ )
                 {
                     System.arraycopy( data, j * bytesPerPage, temp, 0, bytesPerPage );
-                    assertThat( array( pages[j].buffer ), is( temp ) );
+                    assertThat( array( pages[j] ), is( temp ) );
                 }
             }
         }
@@ -560,7 +572,7 @@ public class SingleFilePageSwapperTest extends PageSwapperTest
         int pageCount = bytesTotal / bytesPerPage;
         byte[] data = new byte[bytesTotal];
         ThreadLocalRandom.current().nextBytes( data );
-        ByteBufferPage zeroPage = createPage( bytesPerPage );
+        long zeroPage = createPage( bytesPerPage );
         clear( zeroPage );
 
         File file = getFile();
@@ -569,24 +581,15 @@ public class SingleFilePageSwapperTest extends PageSwapperTest
         factory.open( new AdversarialFileSystemAbstraction( adversary, getFs() ), Configuration.EMPTY );
         PageSwapper swapper = createSwapper( factory, file, bytesPerPage, NO_CALLBACK, true );
 
-        ByteBufferPage[] writePages = new ByteBufferPage[pageCount];
-        ByteBufferPage[] readPages = new ByteBufferPage[pageCount];
-        ByteBufferPage[] zeroPages = new ByteBufferPage[pageCount];
-        long[] writeAddresses = new long[pageCount];
-        long[] readAddresses = new long[pageCount];
-        long[] zeroAddresses = new long[pageCount];
+        long[] writePages = new long[pageCount];
+        long[] readPages = new long[pageCount];
+        long[] zeroPages = new long[pageCount];
         for ( int i = 0; i < pageCount; i++ )
         {
             writePages[i] = createPage( bytesPerPage );
-            writePages[i].putBytes( data, 0, i * bytesPerPage, bytesPerPage );
+            putBytes( writePages[i], data, 0, i * bytesPerPage, bytesPerPage );
             readPages[i] = createPage( bytesPerPage );
             zeroPages[i] = zeroPage;
-        }
-        for ( int i = 0; i < pageCount; i++ )
-        {
-            writeAddresses[i] = writePages[i].address();
-            readAddresses[i] = readPages[i].address();
-            zeroAddresses[i] = zeroPages[i].address();
         }
 
         try
@@ -594,18 +597,18 @@ public class SingleFilePageSwapperTest extends PageSwapperTest
             for ( int i = 0; i < 10_000; i++ )
             {
                 adversary.setProbabilityFactor( 0 );
-                swapper.write( 0, zeroAddresses, bytesPerPage, 0, pageCount );
+                swapper.write( 0, zeroPages, 0, pageCount );
                 adversary.setProbabilityFactor( 1 );
-                swapper.write( 0, writeAddresses, bytesPerPage, 0, pageCount );
-                for ( ByteBufferPage readPage : readPages )
+                swapper.write( 0, writePages, 0, pageCount );
+                for ( long readPage : readPages )
                 {
                     clear( readPage );
                 }
                 adversary.setProbabilityFactor( 0 );
-                assertThat( swapper.read( 0, readAddresses, bytesPerPage, 0, pageCount ), is( (long) bytesTotal ) );
+                assertThat( swapper.read( 0, readPages, bytesPerPage, 0, pageCount ), is( (long) bytesTotal ) );
                 for ( int j = 0; j < pageCount; j++ )
                 {
-                    assertThat( array( readPages[j].buffer ), is( array( writePages[j].buffer ) ) );
+                    assertThat( array( readPages[j] ), is( array( writePages[j] ) ) );
                 }
             }
         }

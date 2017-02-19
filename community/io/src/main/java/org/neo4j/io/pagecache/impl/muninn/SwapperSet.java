@@ -1,5 +1,5 @@
 /*
- * Copyright (c) 2002-2016 "Neo Technology,"
+ * Copyright (c) 2002-2017 "Neo Technology,"
  * Network Engine for Objects in Lund AB [http://neotechnology.com]
  *
  * This file is part of Neo4j.
@@ -30,7 +30,7 @@ import org.neo4j.io.pagecache.PageSwapper;
 final class SwapperSet
 {
     // The sentinel is used to reserve swapper id 0 as a special value.
-    private static final Allocation SENTINEL = new Allocation( 0, 0, null );
+    private static final Allocation SENTINEL = new Allocation( 0, null );
     private volatile Allocation[] allocations = new Allocation[] { SENTINEL };
     private final PrimitiveIntSet free = Primitive.intSet();
     private final Object vacuumLock = new Object();
@@ -38,13 +38,11 @@ final class SwapperSet
     public static final class Allocation
     {
         public final int id;
-        public final int filePageSize;
         public final PageSwapper swapper;
 
-        private Allocation( int id, int filePageSize, PageSwapper swapper )
+        private Allocation( int id, PageSwapper swapper )
         {
             this.id = id;
-            this.filePageSize = filePageSize;
             this.swapper = swapper;
         }
     }
@@ -73,7 +71,7 @@ final class SwapperSet
         return new NullPointerException( "Swapper allocation by id " + id + " does not exist; it might have been freed" );
     }
 
-    public synchronized int allocate( PageSwapper swapper, int filePageSize )
+    public synchronized int allocate( PageSwapper swapper )
     {
         Allocation[] allocations = this.allocations;
 
@@ -89,7 +87,7 @@ final class SwapperSet
                     // there are no pages in the PageList that refers to these ids. The point is, that unmapping a file
                     // only ensures that all of its pages are flushed; not that they are evicted. Vacuuming is the
                     // eviction of the pages that are bound to the now unmapped file.
-                    allocations[i] = new Allocation( i, filePageSize, swapper );
+                    allocations[i] = new Allocation( i, swapper );
                     this.allocations = allocations; // Volatile store synchronizes-with loads in getters.
                     return i;
                 }
@@ -99,7 +97,7 @@ final class SwapperSet
         // No free slot was found above, so we extend the array to make room for a new slot.
         int idx = allocations.length;
         allocations = Arrays.copyOf( allocations, idx + 1 );
-        allocations[idx] = new Allocation( idx, filePageSize, swapper );
+        allocations[idx] = new Allocation( idx, swapper );
         this.allocations = allocations; // Volatile store synchronizes-with loads in getters.
         return idx;
     }

@@ -1,5 +1,5 @@
 /*
- * Copyright (c) 2002-2016 "Neo Technology,"
+ * Copyright (c) 2002-2017 "Neo Technology,"
  * Network Engine for Objects in Lund AB [http://neotechnology.com]
  *
  * This file is part of Neo4j.
@@ -369,5 +369,10 @@ public final class OffHeapPageLock
         long seq = s & SEQ_MASK;
         return "OffHeapPageLock[" +
                "Flush: " + flush + ", Excl: " + excl + ", Mod: " + mod + ", Ws: " + cnt + ", S: " + seq + "]";
+    }
+
+    static String toString( long address )
+    {
+        return describeState( getState( address ) );
     }
 }

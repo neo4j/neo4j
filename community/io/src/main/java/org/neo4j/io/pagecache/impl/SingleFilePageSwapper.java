@@ -37,7 +37,6 @@ import org.neo4j.io.fs.FileSystemAbstraction;
 import org.neo4j.io.fs.StoreChannel;
 import org.neo4j.io.fs.StoreFileChannel;
 import org.neo4j.io.fs.StoreFileChannelUnwrapper;
-import org.neo4j.io.pagecache.Page;
 import org.neo4j.io.pagecache.PageCursor;
 import org.neo4j.io.pagecache.PageEvictionCallback;
 import org.neo4j.io.pagecache.PageSwapper;
@@ -423,7 +422,7 @@ public class SingleFilePageSwapper implements PageSwapper
     }
 
     @Override
-    public long write( long filePageId, long bufferAddress, int bufferSize ) throws IOException
+    public long write( long filePageId, long bufferAddress ) throws IOException
     {
         long fileOffset = pageIdToPosition( filePageId );
         increaseFileSizeTo( fileOffset + filePageSize );
@@ -440,7 +439,7 @@ public class SingleFilePageSwapper implements PageSwapper
             tryReopen( filePageId, e );
             boolean interrupted = Thread.interrupted();
             // Recurse because this is hopefully a very rare occurrence.
-            long bytesWritten = write( filePageId, bufferAddress, bufferSize );
+            long bytesWritten = write( filePageId, bufferAddress );
             if ( interrupted )
             {
                 Thread.currentThread().interrupt();
@@ -450,7 +449,7 @@ public class SingleFilePageSwapper implements PageSwapper
     }
 
     @Override
-    public long write( long startFilePageId, long[] bufferAddresses, int bufferSize, int arrayOffset, int length ) throws IOException
+    public long write( long startFilePageId, long[] bufferAddresses, int arrayOffset, int length ) throws IOException
     {
         if ( positionLockGetter != null && hasPositionLock )
         {
@@ -468,7 +467,7 @@ public class SingleFilePageSwapper implements PageSwapper
                 // isn't exactly an IOException. Instead, we'll try our fallback code and see what it says.
             }
         }
-        return writePositionVectoredFallback( startFilePageId, bufferAddresses, bufferSize, arrayOffset, length );
+        return writePositionVectoredFallback( startFilePageId, bufferAddresses, arrayOffset, length );
     }
 
     private long writePositionedVectoredToFileChannel(
@@ -547,25 +546,25 @@ public class SingleFilePageSwapper implements PageSwapper
         }
     }
 
-    private int writePositionVectoredFallback( long startFilePageId, long[] bufferAddresses, int bufferSize, int arrayOffset, int length )
+    private int writePositionVectoredFallback( long startFilePageId, long[] bufferAddresses, int arrayOffset, int length )
             throws IOException
     {
         int bytes = 0;
         for ( int i = 0; i < length; i++ )
         {
             long address = bufferAddresses[arrayOffset + i];
-            bytes += write( startFilePageId + i, address, bufferSize );
+            bytes += write( startFilePageId + i, address );
         }
         return bytes;
     }
 
     @Override
-    public void evicted( long filePageId, Page page )
+    public void evicted( long filePageId )
     {
         PageEvictionCallback callback = this.onEviction;
         if ( callback != null )
         {
-            callback.onEvict( filePageId, page );
+            callback.onEvict( filePageId );
         }
     }
 

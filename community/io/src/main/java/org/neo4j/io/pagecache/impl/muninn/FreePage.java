@@ -26,13 +26,13 @@ package org.neo4j.io.pagecache.impl.muninn;
  */
 final class FreePage
 {
-    final MuninnPage page;
+    final long pageRef;
     int count;
     FreePage next;
 
-    FreePage( MuninnPage page )
+    FreePage( long pageRef )
     {
-        this.page = page;
+        this.pageRef = pageRef;
     }
 
     void setNext( FreePage next )

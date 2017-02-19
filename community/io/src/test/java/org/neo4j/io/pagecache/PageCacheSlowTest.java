@@ -40,6 +40,7 @@ import org.neo4j.adversaries.fs.AdversarialFileSystemAbstraction;
 import org.neo4j.io.fs.FileSystemAbstraction;
 import org.neo4j.io.pagecache.tracing.PageCacheTracer;
 import org.neo4j.io.pagecache.tracing.cursor.PageCursorTracerSupplier;
+import org.neo4j.io.pagecache.tracing.linear.LinearHistoryPageCacheTracer;
 import org.neo4j.io.pagecache.tracing.linear.LinearHistoryTracerFactory;
 import org.neo4j.io.pagecache.tracing.linear.LinearTracers;
 import org.neo4j.test.rule.RepeatRule;
@@ -136,10 +137,12 @@ public abstract class PageCacheSlowTest<T extends PageCache> extends PageCacheTe
         final AtomicBoolean shouldStop = new AtomicBoolean();
         final int cachePages = 20;
         final int filePages = cachePages * 2;
-        final int threadCount = 8;
+        final int threadCount = 4;
         final int pageSize = threadCount * 4;
 
-        getPageCache( fs, cachePages, pageSize, PageCacheTracer.NULL, PageCursorTracerSupplier.NULL );
+        LinearTracers linearTracers = LinearHistoryTracerFactory.pageCacheTracer();
+        getPageCache( fs, cachePages, pageSize, linearTracers.getPageCacheTracer(),
+                linearTracers.getCursorTracerSupplier() );
         final PagedFile pagedFile = pageCache.map( file( "a" ), pageSize );
 
         ensureAllPagesExists( filePages, pagedFile );
@@ -183,16 +186,36 @@ public abstract class PageCacheSlowTest<T extends PageCache> extends PageCacheTe
                             cursor.setOffset( offset );
                             cursor.putInt( counter );
                         }
+                        if ( cursor.checkAndClearBoundsFlag() )
+                        {
+                            shouldStop.set( true );
+                            throw new IndexOutOfBoundsException(
+                                    "offset = " + offset + ", pageId = " + pageId + ", threadId = " + threadId +
+                                    ", updateCounter = " + updateCounter );
+                        }
                     }
                 }
             };
             futures.add( executor.submit( worker ) );
         }
 
-        Thread.sleep( 40 );
+        Thread.sleep( 10 );
         shouldStop.set( true );
 
-        verifyUpdateResults( filePages, pagedFile, futures );
+        try
+        {
+            verifyUpdateResults( filePages, pagedFile, futures );
+        }
+        catch ( Throwable e )
+        {
+            synchronized ( System.err )
+            {
+                System.err.flush();
+                linearTracers.printHistory( System.err );
+                System.err.flush();
+            }
+            throw e;
+        }
         pagedFile.close();
     }
 

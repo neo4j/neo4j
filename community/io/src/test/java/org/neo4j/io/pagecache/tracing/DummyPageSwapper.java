@@ -22,16 +22,17 @@ package org.neo4j.io.pagecache.tracing;
 import java.io.File;
 import java.io.IOException;
 
-import org.neo4j.io.pagecache.Page;
 import org.neo4j.io.pagecache.PageSwapper;
 
 public class DummyPageSwapper implements PageSwapper
 {
     private final String filename;
+    private final int filePageSize;
 
-    public DummyPageSwapper( String filename )
+    public DummyPageSwapper( String filename, int filePageSize )
     {
         this.filename = filename;
+        this.filePageSize = filePageSize;
     }
 
     @Override
@@ -41,13 +42,13 @@ public class DummyPageSwapper implements PageSwapper
     }
 
     @Override
-    public long write( long filePageId, long bufferAddress, int bufferSize ) throws IOException
+    public long write( long filePageId, long bufferAddress ) throws IOException
     {
-        return bufferSize;
+        return filePageSize;
     }
 
     @Override
-    public void evicted( long pageId, Page page )
+    public void evicted( long filePageId )
     {
     }
 
@@ -90,7 +91,7 @@ public class DummyPageSwapper implements PageSwapper
     }
 
     @Override
-    public long write( long startFilePageId, long[] bufferAddresses, int bufferSize, int arrayOffset, int length ) throws IOException
+    public long write( long startFilePageId, long[] bufferAddresses, int arrayOffset, int length ) throws IOException
     {
         return 0;
     }

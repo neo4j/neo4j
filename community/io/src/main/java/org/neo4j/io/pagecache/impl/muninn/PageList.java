@@ -1,5 +1,5 @@
 /*
- * Copyright (c) 2002-2016 "Neo Technology,"
+ * Copyright (c) 2002-2017 "Neo Technology,"
  * Network Engine for Objects in Lund AB [http://neotechnology.com]
  *
  * This file is part of Neo4j.
@@ -62,14 +62,14 @@ class PageList
     // todo we can alternatively also make use of the lower 12 bits of the address field, because
     // todo the addresses are page aligned, and we can assume them to be at least 4096 bytes in size.
 
-    private final long pageCount;
+    private final int pageCount;
     private final int cachePageSize;
     private final MemoryManager memoryManager;
     private final SwapperSet swappers;
     private final long victimPageAddress;
     private final long baseAddress;
 
-    PageList( long pageCount, int cachePageSize, MemoryManager memoryManager, SwapperSet swappers, long victimPageAddress )
+    PageList( int pageCount, int cachePageSize, MemoryManager memoryManager, SwapperSet swappers, long victimPageAddress )
     {
         this.pageCount = pageCount;
         this.cachePageSize = cachePageSize;
@@ -112,15 +112,36 @@ class PageList
     }
 
     /**
+     * @return The capacity of the page list.
+     */
+    public int getPageCount()
+    {
+        return pageCount;
+    }
+
+    public SwapperSet getSwappers()
+    {
+        return swappers;
+    }
+
+    /**
      * Turn a {@code pageId} into a {@code pageRef} that can be used for accessing and manipulating the given page
      * using the other methods in this class.
      * @param pageId The {@code pageId} to turn into a {@code pageRef}.
      * @return A {@code pageRef} which is an opaque, internal and direct pointer to the meta-data of the given memory
      * page.
      */
-    public long deref( long pageId )
+    public long deref( int pageId )
     {
-        return baseAddress + (pageId * META_DATA_BYTES_PER_PAGE);
+        //noinspection UnnecessaryLocalVariable
+        long id = pageId; // convert to long to avoid int multiplication
+        return baseAddress + (id * META_DATA_BYTES_PER_PAGE);
+    }
+
+    public int toId( long pageRef )
+    {
+        // >> 5 is equivalent to dividing by 32, META_DATA_BYTES_PER_PAGE.
+        return (int) ((pageRef - baseAddress) >> 5);
     }
 
     private long offLock( long pageRef )
@@ -155,7 +176,8 @@ class PageList
 
     public boolean validateReadLock( long pageRef, long stamp )
     {
-        return OffHeapPageLock.validateReadLock( offLock( pageRef ), stamp );
+        boolean valid = OffHeapPageLock.validateReadLock( offLock( pageRef ), stamp );
+        return valid;
     }
 
     public boolean isModified( long pageRef )
@@ -320,7 +342,7 @@ class PageList
         setFilePageId( pageRef, filePageId ); // Page now considered isLoaded()
         long bytesRead = swapper.read( filePageId, getAddress( pageRef ), cachePageSize );
         event.addBytesRead( bytesRead );
-        event.setCachePageId( (int) pageRef );
+        event.setCachePageId( toId( pageRef ) );
         setSwapperId( pageRef, swapperId ); // Page now considered isBoundTo( swapper, filePageId )
     }
 
@@ -372,7 +394,7 @@ class PageList
             try
             {
                 long address = getAddress( pageRef );
-                long bytesWritten = swapper.write( filePageId, address, allocation.filePageSize );
+                long bytesWritten = swapper.write( filePageId, address );
                 explicitlyMarkPageUnmodifiedUnderExclusiveLock( pageRef );
                 flushEvent.addBytesWritten( bytesWritten );
                 flushEvent.addPagesFlushed( 1 );
@@ -386,7 +408,7 @@ class PageList
                 throw e;
             }
         }
-        swapper.evicted( filePageId, null );
+        swapper.evicted( filePageId );
         clearBinding( pageRef );
     }
 
@@ -394,5 +416,22 @@ class PageList
     {
         setFilePageId( pageRef, PageCursor.UNBOUND_PAGE_ID );
         setSwapperId( pageRef, 0 );
+    }
+
+    public String toString( long pageRef )
+    {
+        StringBuilder sb = new StringBuilder();
+        toString( pageRef, sb );
+        return sb.toString();
+    }
+
+    public void toString( long pageRef, StringBuilder sb )
+    {
+        sb.append( "Page[ id = " ).append( toId( pageRef ) );
+        sb.append( ", address = " ).append( getAddress( pageRef ) );
+        sb.append( ", filePageId = " ).append( getFilePageId( pageRef ) );
+        sb.append( ", swapperId = " ).append( getSwapperId( pageRef ) );
+        sb.append( ", usageCounter = " ).append( getUsageCounter( pageRef ) );
+        sb.append( " ] " ).append( OffHeapPageLock.toString( offLock( pageRef ) ) );
     }
 }

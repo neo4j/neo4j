@@ -1,5 +1,5 @@
 /*
- * Copyright (c) 2002-2016 "Neo Technology,"
+ * Copyright (c) 2002-2017 "Neo Technology,"
  * Network Engine for Objects in Lund AB [http://neotechnology.com]
  *
  * This file is part of Neo4j.
@@ -39,10 +39,9 @@ import java.util.concurrent.Future;
 import java.util.concurrent.atomic.AtomicBoolean;
 import java.util.concurrent.atomic.AtomicInteger;
 import java.util.concurrent.atomic.AtomicLong;
-import java.util.function.LongFunction;
+import java.util.function.IntFunction;
 
 import org.neo4j.io.ByteUnit;
-import org.neo4j.io.pagecache.Page;
 import org.neo4j.io.pagecache.PageCursor;
 import org.neo4j.io.pagecache.PageSwapper;
 import org.neo4j.io.pagecache.tracing.DummyPageSwapper;
@@ -72,15 +71,14 @@ public class PageListTest
     private static final long TIMEOUT = 5000;
     private static final int ALIGNMENT = 8;
 
-    private static final long[] pageIds = new long[] {0, 1, 2, 3, 4, 5, 6, 7, 8, 9};
-    private static final DummyPageSwapper DUMMY_SWAPPER = new DummyPageSwapper( "" );
+    private static final int[] pageIds = new int[] {0, 1, 2, 3, 4, 5, 6, 7, 8, 9};
+    private static final DummyPageSwapper DUMMY_SWAPPER = new DummyPageSwapper( "", UnsafeUtil.pageSize() );
 
     @Parameterized.Parameters( name = "pageRef = {0}")
     public static Iterable<Object[]> parameters()
     {
-        LongFunction<Object[]> toArray = x -> new Object[]{x};
+        IntFunction<Object[]> toArray = x -> new Object[]{x};
         return () -> Arrays.stream( pageIds ).mapToObj( toArray ).iterator();
-//        return () -> Arrays.stream( new long[]{0} ).mapToObj( toArray ).iterator();
     }
 
     private static ExecutorService executor;
@@ -104,9 +102,9 @@ public class PageListTest
     @Rule
     public ExpectedException exception = ExpectedException.none();
 
-    private final long pageId;
-    private final long prevPageId;
-    private final long nextPageId;
+    private final int pageId;
+    private final int prevPageId;
+    private final int nextPageId;
     private long pageRef;
     private long prevPageRef;
     private long nextPageRef;
@@ -114,7 +112,7 @@ public class PageListTest
     private SwapperSet swappers;
     private PageList pageList;
 
-    public PageListTest( long pageId )
+    public PageListTest( int pageId )
     {
         this.pageId = pageId;
         this.prevPageId = pageId == 0 ? pageIds.length - 1 : (pageId - 1) % pageIds.length;
@@ -130,6 +128,25 @@ public class PageListTest
         pageRef = pageList.deref( pageId );
         prevPageRef = pageList.deref( prevPageId );
         nextPageRef = pageList.deref( nextPageId );
+    }
+
+    @Test
+    public void mustExposePageCount() throws Exception
+    {
+        int pageCount;
+        long victimPage = VictimPageReference.getVictimPage( pageSize );
+
+        pageCount = 3;
+        assertThat( new PageList( pageCount, pageSize, mman, swappers, victimPage ).getPageCount(), is( pageCount ) );
+
+        pageCount = 42;
+        assertThat( new PageList( pageCount, pageSize, mman, swappers, victimPage ).getPageCount(), is( pageCount ) );
+    }
+
+    @Test
+    public void mustBeAbleToReversePageRedToPageId() throws Exception
+    {
+        assertThat( pageList.toId( pageRef ), is( pageId ) );
     }
 
     // xxx ---[ Sequence lock tests ]---
@@ -960,7 +977,7 @@ public class PageListTest
     @Test
     public void decrementingUsageCounterMustNotInterfereWithAdjacentUsageCounters() throws Exception
     {
-        for ( long id : pageIds )
+        for ( int id : pageIds )
         {
             long ref = pageList.deref( id );
             pageList.incrementUsage( ref );
@@ -1013,7 +1030,7 @@ public class PageListTest
         byte pageByteContents = (byte) 0xF7;
         int swapperId = 1;
         long filePageId = 2;
-        PageSwapper swapper = new DummyPageSwapper( "some file" )
+        PageSwapper swapper = new DummyPageSwapper( "some file", pageSize )
         {
             @Override
             public long read( long fpId, long bufferAddress, int bufferSize ) throws IOException
@@ -1061,7 +1078,7 @@ public class PageListTest
     @Test
     public void pageMustBeLoadedAndNotBoundIfFaultThrows() throws Exception
     {
-        PageSwapper swapper = new DummyPageSwapper( "file" )
+        PageSwapper swapper = new DummyPageSwapper( "file", pageSize )
         {
             @Override
             public long read( long filePageId, long bufferAddress, int bufferSize ) throws IOException
@@ -1117,7 +1134,7 @@ public class PageListTest
     {
         assertTrue( pageList.tryExclusiveLock( pageRef ) );
         pageList.initBuffer( pageRef );
-        DummyPageSwapper swapper = new DummyPageSwapper( "" )
+        DummyPageSwapper swapper = new DummyPageSwapper( "", pageSize )
         {
             @Override
             public long read( long filePageId, long bufferAddress, int bufferSize ) throws IOException
@@ -1143,7 +1160,7 @@ public class PageListTest
         long filePageId = 42;
         assertTrue( pageList.tryExclusiveLock( pageRef ) );
         pageList.initBuffer( pageRef );
-        DummyPageSwapper swapper = new DummyPageSwapper( "" )
+        DummyPageSwapper swapper = new DummyPageSwapper( "", pageSize )
         {
             @Override
             public long read( long filePageId, long bufferAddress, int bufferSize ) throws IOException
@@ -1236,7 +1253,7 @@ public class PageListTest
     @Test
     public void tryEvictMustFailIfPageIsAlreadyExclusivelyLocked() throws Exception
     {
-        int swapperId = swappers.allocate( DUMMY_SWAPPER, pageSize );
+        int swapperId = swappers.allocate( DUMMY_SWAPPER );
         doFault( swapperId, 42 ); // page is now loaded
         // pages are delivered from the fault routine with the exclusive lock already held!
         assertFalse( pageList.tryEvict( pageRef, EvictionRunEvent.NULL ) );
@@ -1245,7 +1262,7 @@ public class PageListTest
     @Test
     public void tryEvictThatFailsOnExclusiveLockMustNotUndoSaidLock() throws Exception
     {
-        int swapperId = swappers.allocate( DUMMY_SWAPPER, pageSize );
+        int swapperId = swappers.allocate( DUMMY_SWAPPER );
         doFault( swapperId, 42 ); // page is now loaded
         // pages are delivered from the fault routine with the exclusive lock already held!
         pageList.tryEvict( pageRef, EvictionRunEvent.NULL ); // This attempt will fail
@@ -1268,7 +1285,7 @@ public class PageListTest
     @Test
     public void tryEvictMustLeavePageExclusivelyLockedOnSuccess() throws Exception
     {
-        int swapperId = swappers.allocate( DUMMY_SWAPPER, pageSize );
+        int swapperId = swappers.allocate( DUMMY_SWAPPER );
         doFault( swapperId, 42 ); // page now bound & exclusively locked
         pageList.unlockExclusive( pageRef ); // no longer exclusively locked; can now be evicted
         assertTrue( pageList.tryEvict( pageRef, EvictionRunEvent.NULL ) );
@@ -1278,7 +1295,7 @@ public class PageListTest
     @Test
     public void pageMustNotBeLoadedAfterSuccessfulEviction() throws Exception
     {
-        int swapperId = swappers.allocate( DUMMY_SWAPPER, pageSize );
+        int swapperId = swappers.allocate( DUMMY_SWAPPER );
         doFault( swapperId, 42 ); // page now bound & exclusively locked
         pageList.unlockExclusive( pageRef ); // no longer exclusively locked; can now be evicted
         assertTrue( pageList.isLoaded( pageRef ) );
@@ -1289,7 +1306,7 @@ public class PageListTest
     @Test
     public void pageMustNotBeBoundAfterSuccessfulEviction() throws Exception
     {
-        int swapperId = swappers.allocate( DUMMY_SWAPPER, pageSize );
+        int swapperId = swappers.allocate( DUMMY_SWAPPER );
         doFault( swapperId, 42 ); // page now bound & exclusively locked
         pageList.unlockExclusive( pageRef ); // no longer exclusively locked; can now be evicted
         assertTrue( pageList.isBoundTo( pageRef, 1, 42 ) );
@@ -1304,7 +1321,7 @@ public class PageListTest
     @Test
     public void pageMustNotBeModifiedAfterSuccessfulEviction() throws Exception
     {
-        int swapperId = swappers.allocate( DUMMY_SWAPPER, pageSize );
+        int swapperId = swappers.allocate( DUMMY_SWAPPER );
         doFault( swapperId, 42 );
         pageList.unlockExclusiveAndTakeWriteLock( pageRef );
         pageList.unlockWrite( pageRef ); // page is now modified
@@ -1318,19 +1335,18 @@ public class PageListTest
     {
         AtomicLong writtenFilePageId = new AtomicLong( -1 );
         AtomicLong writtenBufferAddress = new AtomicLong( -1 );
-        AtomicInteger writtenBufferSize = new AtomicInteger( -1 );
-        PageSwapper swapper = new DummyPageSwapper( "file" )
+//        AtomicInteger writtenBufferSize = new AtomicInteger( -1 );
+        PageSwapper swapper = new DummyPageSwapper( "file", pageSize )
         {
             @Override
-            public long write( long filePageId, long bufferAddress, int bufferSize ) throws IOException
+            public long write( long filePageId, long bufferAddress ) throws IOException
             {
                 assertTrue( writtenFilePageId.compareAndSet( -1, filePageId ) );
                 assertTrue( writtenBufferAddress.compareAndSet( -1, bufferAddress ) );
-                assertTrue( writtenBufferSize.compareAndSet( -1, bufferSize ) );
-                return super.write( filePageId, bufferAddress, bufferSize );
+                return super.write( filePageId, bufferAddress );
             }
         };
-        int swapperId = swappers.allocate( swapper, 313 );
+        int swapperId = swappers.allocate( swapper );
         doFault( swapperId, 42 );
         pageList.unlockExclusiveAndTakeWriteLock( pageRef );
         pageList.unlockWrite( pageRef ); // page is now modified
@@ -1338,23 +1354,23 @@ public class PageListTest
         assertTrue( pageList.tryEvict( pageRef, EvictionRunEvent.NULL ) );
         assertThat( writtenFilePageId.get(), is( 42L ) );
         assertThat( writtenBufferAddress.get(), is( pageList.getAddress( pageRef ) ) );
-        assertThat( writtenBufferSize.get(), is( 313 ) );
+//        assertThat( writtenBufferSize.get(), is( 313 ) );
     }
 
     @Test
     public void tryEvictMustNotFlushPageIfNotModified() throws Exception
     {
         AtomicInteger writes = new AtomicInteger();
-        PageSwapper swapper = new DummyPageSwapper( "a" )
+        PageSwapper swapper = new DummyPageSwapper( "a", 313 )
         {
             @Override
-            public long write( long filePageId, long bufferAddress, int bufferSize ) throws IOException
+            public long write( long filePageId, long bufferAddress ) throws IOException
             {
                 writes.getAndIncrement();
-                return super.write( filePageId, bufferAddress, bufferSize );
+                return super.write( filePageId, bufferAddress );
             }
         };
-        int swapperId = swappers.allocate( swapper, 313 );
+        int swapperId = swappers.allocate( swapper );
         doFault( swapperId, 42 );
         pageList.unlockExclusive( pageRef ); // we take no write lock, so page is not modified
         assertFalse( pageList.isModified( pageRef ) );
@@ -1366,16 +1382,16 @@ public class PageListTest
     public void tryEvictMustNotifySwapperOnSuccess() throws Exception
     {
         AtomicBoolean evictionNotified = new AtomicBoolean();
-        PageSwapper swapper = new DummyPageSwapper( "a" )
+        PageSwapper swapper = new DummyPageSwapper( "a", 313 )
         {
             @Override
-            public void evicted( long pageId, Page page )
+            public void evicted( long filePageId )
             {
                 evictionNotified.set( true );
-                assertThat( pageId, is( 42L ) );
+                assertThat( filePageId, is( 42L ) );
             }
         };
-        int swapperId = swappers.allocate( swapper, 313 );
+        int swapperId = swappers.allocate( swapper );
         doFault( swapperId, 42 );
         pageList.unlockExclusive( pageRef );
         assertTrue( pageList.tryEvict( pageRef, EvictionRunEvent.NULL ) );
@@ -1386,16 +1402,16 @@ public class PageListTest
     public void tryEvictMustNotifySwapperOnSuccessEvenWhenFlushing() throws Exception
     {
         AtomicBoolean evictionNotified = new AtomicBoolean();
-        PageSwapper swapper = new DummyPageSwapper( "a" )
+        PageSwapper swapper = new DummyPageSwapper( "a", 313 )
         {
             @Override
-            public void evicted( long pageId, Page page )
+            public void evicted( long filePageId )
             {
                 evictionNotified.set( true );
-                assertThat( pageId, is( 42L ) );
+                assertThat( filePageId, is( 42L ) );
             }
         };
-        int swapperId = swappers.allocate( swapper, 313 );
+        int swapperId = swappers.allocate( swapper );
         doFault( swapperId, 42 );
         pageList.unlockExclusiveAndTakeWriteLock( pageRef );
         pageList.unlockWrite( pageRef ); // page is now modified
@@ -1408,15 +1424,15 @@ public class PageListTest
     @Test
     public void tryEvictMustLeavePageUnlockedAndLoadedAndBoundAndModifiedIfFlushThrows() throws Exception
     {
-        PageSwapper swapper = new DummyPageSwapper( "a" )
+        PageSwapper swapper = new DummyPageSwapper( "a", 313 )
         {
             @Override
-            public long write( long filePageId, long bufferAddress, int bufferSize ) throws IOException
+            public long write( long filePageId, long bufferAddress ) throws IOException
             {
                 throw new IOException();
             }
         };
-        int swapperId = swappers.allocate( swapper, 313 );
+        int swapperId = swappers.allocate( swapper );
         doFault( swapperId, 42 );
         pageList.unlockExclusiveAndTakeWriteLock( pageRef );
         pageList.unlockWrite( pageRef ); // page is now modified
@@ -1444,21 +1460,21 @@ public class PageListTest
     public void tryEvictMustNotNotifySwapperOfEvictionIfFlushThrows() throws Exception
     {
         AtomicBoolean evictionNotified = new AtomicBoolean();
-        PageSwapper swapper = new DummyPageSwapper( "a" )
+        PageSwapper swapper = new DummyPageSwapper( "a", 313 )
         {
             @Override
-            public long write( long filePageId, long bufferAddress, int bufferSize ) throws IOException
+            public long write( long filePageId, long bufferAddress ) throws IOException
             {
                 throw new IOException();
             }
 
             @Override
-            public void evicted( long pageId, Page page )
+            public void evicted( long filePageId )
             {
                 evictionNotified.set( true );
             }
         };
-        int swapperId = swappers.allocate( swapper, 313 );
+        int swapperId = swappers.allocate( swapper );
         doFault( swapperId, 42 );
         pageList.unlockExclusiveAndTakeWriteLock( pageRef );
         pageList.unlockWrite( pageRef ); // page is now modified
@@ -1566,8 +1582,8 @@ public class PageListTest
     @Test
     public void tryEvictMustReportToEvictionEvent() throws Exception
     {
-        PageSwapper swapper = new DummyPageSwapper( "a" );
-        int swapperId = swappers.allocate( swapper, 313 );
+        PageSwapper swapper = new DummyPageSwapper( "a", 313 );
+        int swapperId = swappers.allocate( swapper );
         doFault( swapperId, 42 );
         pageList.unlockExclusive( pageRef );
         EvictionAndFlushRecorder recorder = new EvictionAndFlushRecorder();
@@ -1586,9 +1602,9 @@ public class PageListTest
     @Test
     public void tryEvictThatFlushesMustReportToEvictionAndFlushEvents() throws Exception
     {
-        PageSwapper swapper = new DummyPageSwapper( "a" );
         int filePageSize = 313;
-        int swapperId = swappers.allocate( swapper, filePageSize );
+        PageSwapper swapper = new DummyPageSwapper( "a", filePageSize );
+        int swapperId = swappers.allocate( swapper );
         doFault( swapperId, 42 );
         pageList.unlockExclusiveAndTakeWriteLock( pageRef );
         pageList.unlockWrite( pageRef ); // page is now modified
@@ -1610,15 +1626,15 @@ public class PageListTest
     public void tryEvictThatFailsMustReportExceptionsToEvictionAndFlushEvents() throws Exception
     {
         IOException ioException = new IOException();
-        PageSwapper swapper = new DummyPageSwapper( "a" )
+        PageSwapper swapper = new DummyPageSwapper( "a", 313 )
         {
             @Override
-            public long write( long filePageId, long bufferAddress, int bufferSize ) throws IOException
+            public long write( long filePageId, long bufferAddress ) throws IOException
             {
                 throw ioException;
             }
         };
-        int swapperId = swappers.allocate( swapper, 313 );
+        int swapperId = swappers.allocate( swapper );
         doFault( swapperId, 42 );
         pageList.unlockExclusiveAndTakeWriteLock( pageRef );
         pageList.unlockWrite( pageRef ); // page is now modified
@@ -1647,8 +1663,8 @@ public class PageListTest
     @Test
     public void tryEvictThatSucceedsMustNotInterfereWithAdjacentPages() throws Exception
     {
-        PageSwapper swapper = new DummyPageSwapper( "a" );
-        int swapperId = swappers.allocate( swapper, 313 );
+        PageSwapper swapper = new DummyPageSwapper( "a", 313 );
+        int swapperId = swappers.allocate( swapper );
         long prevStamp = pageList.tryOptimisticReadLock( prevPageRef );
         long nextStamp = pageList.tryOptimisticReadLock( nextPageRef );
         doFault( swapperId, 42 );
@@ -1661,8 +1677,8 @@ public class PageListTest
     @Test
     public void tryEvictThatFlushesAndSucceedsMustNotInterfereWithAdjacentPages() throws Exception
     {
-        PageSwapper swapper = new DummyPageSwapper( "a" );
-        int swapperId = swappers.allocate( swapper, 313 );
+        PageSwapper swapper = new DummyPageSwapper( "a", 313 );
+        int swapperId = swappers.allocate( swapper );
         long prevStamp = pageList.tryOptimisticReadLock( prevPageRef );
         long nextStamp = pageList.tryOptimisticReadLock( nextPageRef );
         doFault( swapperId, 42 );
@@ -1677,15 +1693,15 @@ public class PageListTest
     @Test
     public void tryEvictThatFailsMustNotInterfereWithAdjacentPages() throws Exception
     {
-        PageSwapper swapper = new DummyPageSwapper( "a" )
+        PageSwapper swapper = new DummyPageSwapper( "a", 313 )
         {
             @Override
-            public long write( long filePageId, long bufferAddress, int bufferSize ) throws IOException
+            public long write( long filePageId, long bufferAddress ) throws IOException
             {
                 throw new IOException();
             }
         };
-        int swapperId = swappers.allocate( swapper, 313 );
+        int swapperId = swappers.allocate( swapper );
         long prevStamp = pageList.tryOptimisticReadLock( prevPageRef );
         long nextStamp = pageList.tryOptimisticReadLock( nextPageRef );
         doFault( swapperId, 42 );

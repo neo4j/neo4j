@@ -93,7 +93,7 @@ public class ExternallyManagedPageCache implements PageCache
     }
 
     @Override
-    public int maxCachedPages()
+    public long maxCachedPages()
     {
         return delegate.maxCachedPages();
     }

@@ -311,7 +311,7 @@ public final class UnsafeUtil
     }
 
     /**
-     * Same as getAndAddInt, but for object references.
+     * Atomically return the current object reference value, and exchange it with the given new reference value.
      */
     public static Object getAndSetObject( Object obj, long offset, Object newValue )
     {

@@ -104,7 +104,7 @@ public abstract class PageCacheTest<T extends PageCache> extends PageCacheTestSu
     public void mustReportConfiguredMaxPages() throws IOException
     {
         configureStandardPageCache();
-        assertThat( pageCache.maxCachedPages(), is( maxPages ) );
+        assertThat( pageCache.maxCachedPages(), is( (long) maxPages ) );
     }
 
     @Test
@@ -4102,18 +4102,18 @@ public abstract class PageCacheTest<T extends PageCache> extends PageCacheTestSu
                 return new DelegatingPageSwapper( swapper )
                 {
                     @Override
-                    public long write( long filePageId, long bufferAddress, int bufferSize ) throws IOException
+                    public long write( long filePageId, long bufferAddress ) throws IOException
                     {
                         flushCounter.getAndIncrement();
-                        return super.write( filePageId, bufferAddress, bufferSize );
+                        return super.write( filePageId, bufferAddress );
                     }
 
                     @Override
-                    public long write( long startFilePageId, long[] bufferAddresses, int bufferSize, int arrayOffset, int length )
+                    public long write( long startFilePageId, long[] bufferAddresses, int arrayOffset, int length )
                             throws IOException
                     {
                         flushCounter.getAndAdd( length );
-                        return super.write( startFilePageId, bufferAddresses, bufferSize, arrayOffset, length );
+                        return super.write( startFilePageId, bufferAddresses, arrayOffset, length );
                     }
                 };
             }
@@ -4455,7 +4455,7 @@ public abstract class PageCacheTest<T extends PageCache> extends PageCacheTestSu
         }
     }
 
-    @Test( timeout = SHORT_TIMEOUT_MILLIS )
+    @Test//( timeout = SHORT_TIMEOUT_MILLIS )
     public void shouldRetryOnParentCursorMustReturnTrueIfLinkedCursorNeedsRetry() throws Exception
     {
         generateFileWithRecords( file( "a" ), recordsPerFilePage * 2, recordSize );

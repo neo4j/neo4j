@@ -26,8 +26,6 @@ import java.nio.BufferUnderflowException;
 import java.nio.ByteBuffer;
 import java.util.concurrent.ThreadLocalRandom;
 
-import org.neo4j.io.pagecache.impl.ByteBufferPage;
-
 /**
  * Utility for testing code that depends on page cursors.
  */
@@ -35,7 +33,7 @@ public class StubPageCursor extends PageCursor
 {
     private final long pageId;
     private final int pageSize;
-    protected ByteBufferPage page;
+    protected ByteBuffer page;
     private int currentOffset;
     private boolean observedOverflow;
     private String cursorErrorMessage;
@@ -53,7 +51,7 @@ public class StubPageCursor extends PageCursor
     {
         this.pageId = initialPageId;
         this.pageSize = buffer.capacity();
-        this.page = new ByteBufferPage( buffer );
+        this.page = buffer;
         this.writeLocked = true;
     }
 
@@ -185,7 +183,7 @@ public class StubPageCursor extends PageCursor
     {
         try
         {
-            return page.getByte( offset );
+            return page.get( offset );
         }
         catch ( IndexOutOfBoundsException | BufferOverflowException | BufferUnderflowException e )
         {
@@ -211,7 +209,7 @@ public class StubPageCursor extends PageCursor
     {
         try
         {
-            page.putByte( value, offset );
+            page.put( offset, value );
         }
         catch ( IndexOutOfBoundsException | BufferOverflowException | BufferUnderflowException e )
         {
@@ -252,7 +250,7 @@ public class StubPageCursor extends PageCursor
     {
         try
         {
-            page.putLong( value, offset );
+            page.putLong( offset, value );
         }
         catch ( IndexOutOfBoundsException | BufferOverflowException | BufferUnderflowException e )
         {
@@ -293,7 +291,7 @@ public class StubPageCursor extends PageCursor
     {
         try
         {
-            page.putInt( value, offset );
+            page.putInt( offset, value );
         }
         catch ( IndexOutOfBoundsException | BufferOverflowException | BufferUnderflowException e )
         {
@@ -312,7 +310,8 @@ public class StubPageCursor extends PageCursor
     {
         try
         {
-            page.getBytes( data, currentOffset, arrayOffset, length );
+            assert arrayOffset == 0 : "please implement support for arrayOffset";
+            page.get( data, currentOffset, length );
             currentOffset += length;
         }
         catch ( IndexOutOfBoundsException | BufferOverflowException | BufferUnderflowException e )
@@ -332,7 +331,8 @@ public class StubPageCursor extends PageCursor
     {
         try
         {
-            page.putBytes( data, currentOffset, arrayOffset, length );
+            assert arrayOffset == 0 : "please implement support for arrayOffset";
+            page.put( data, currentOffset, length );
             currentOffset += length;
         }
         catch ( IndexOutOfBoundsException | BufferOverflowException | BufferUnderflowException e )
@@ -374,7 +374,7 @@ public class StubPageCursor extends PageCursor
     {
         try
         {
-            page.putShort( value, offset );
+            page.putShort( offset, value );
         }
         catch ( IndexOutOfBoundsException | BufferOverflowException | BufferUnderflowException e )
         {
@@ -401,12 +401,10 @@ public class StubPageCursor extends PageCursor
     @Override
     public void zapPage()
     {
-        page.zapPage();
-    }
-
-    public Page getPage()
-    {
-        return page;
+        for ( int i = 0; i < pageSize; i++ )
+        {
+            putByte( i, (byte) 0 );
+        }
     }
 
     @Override
