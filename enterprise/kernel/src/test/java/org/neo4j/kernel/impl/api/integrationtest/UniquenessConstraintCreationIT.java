@@ -45,7 +45,10 @@ import org.neo4j.kernel.api.properties.Property;
 import org.neo4j.kernel.api.schema.IndexDescriptor;
 import org.neo4j.kernel.api.schema.IndexDescriptorFactory;
 import org.neo4j.kernel.api.schema.NodePropertyDescriptor;
+import org.neo4j.kernel.api.schema_new.LabelSchemaDescriptor;
+import org.neo4j.kernel.api.schema_new.SchemaBoundary;
 import org.neo4j.kernel.api.schema_new.SchemaDescriptorFactory;
+import org.neo4j.kernel.api.schema_new.constaints.ConstraintDescriptor;
 import org.neo4j.kernel.api.schema_new.constaints.ConstraintDescriptorFactory;
 import org.neo4j.kernel.api.security.AnonymousContext;
 import org.neo4j.kernel.api.security.SecurityContext;
@@ -210,15 +213,14 @@ public class UniquenessConstraintCreationIT
     {
         // given
         SchemaWriteOperations schemaWriteOperations = schemaWriteOperationsInNewTransaction();
-        NodePropertyExistenceConstraint constraint =
-                schemaWriteOperations.nodePropertyExistenceConstraintCreate( descriptor );
+        schemaWriteOperations.nodePropertyExistenceConstraintCreate( descriptor );
         commit();
 
         // when
         try
         {
             SchemaWriteOperations statement = schemaWriteOperationsInNewTransaction();
-            statement.constraintDrop( new UniquenessConstraint( constraint.descriptor() ) );
+            statement.constraintDrop( new UniquenessConstraint( descriptor ) );
 
             fail( "expected exception" );
         }
@@ -236,10 +238,11 @@ public class UniquenessConstraintCreationIT
         {
             ReadOperations statement = readOperationsInNewTransaction();
 
-            Iterator<NodePropertyConstraint> constraints =
-                    statement.constraintsGetForLabelAndPropertyKey( descriptor );
+            LabelSchemaDescriptor newDescriptor = SchemaBoundary.map( descriptor );
+            Iterator<ConstraintDescriptor> constraints =
+                    statement.constraintsGetForSchema( newDescriptor );
 
-            assertEquals( constraint, single( constraints ) );
+            assertEquals( ConstraintDescriptorFactory.existsForSchema( newDescriptor ), single( constraints ) );
         }
     }
 
@@ -253,7 +256,7 @@ public class UniquenessConstraintCreationIT
 
         // then
         SchemaStorage schema = new SchemaStorage( neoStores().getSchemaStore() );
-        IndexRule indexRule = schema.indexGetForSchema( SchemaDescriptorFactory.forLabel( typeId, propertyKeyId ) );
+        IndexRule indexRule = schema.indexGetForSchema( NewIndexDescriptorFactory.uniqueForLabel( typeId, propertyKeyId ) );
         ConstraintRule constraintRule = schema.constraintsGetSingle(
                 ConstraintDescriptorFactory.uniqueForLabel( typeId, propertyKeyId ) );
         assertEquals( constraintRule.getId(), indexRule.getOwningConstraint().longValue() );

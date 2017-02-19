@@ -50,7 +50,7 @@ import org.neo4j.kernel.api.exceptions.schema.AlreadyConstrainedException;
 import org.neo4j.kernel.api.exceptions.schema.DropConstraintFailureException;
 import org.neo4j.kernel.api.exceptions.schema.NoSuchConstraintException;
 import org.neo4j.kernel.api.schema.EntityPropertyDescriptor;
-import org.neo4j.kernel.api.schema.IndexDescriptor;
+import org.neo4j.kernel.api.schema_new.index.NewIndexDescriptor;
 import org.neo4j.kernel.api.security.SecurityContext;
 import org.neo4j.test.TestEnterpriseGraphDatabaseFactory;
 
@@ -327,7 +327,7 @@ public abstract class AbstractConstraintCreationIT<Constraint extends PropertyCo
         // then
         {
             ReadOperations statement = readOperationsInNewTransaction();
-            assertEquals( emptySetOf( IndexDescriptor.class ), asSet( statement.uniqueIndexesGetAll() ) );
+            assertEquals( emptySetOf( NewIndexDescriptor.class ), asSet( statement.uniqueIndexesGetAll() ) );
             commit();
         }
     }

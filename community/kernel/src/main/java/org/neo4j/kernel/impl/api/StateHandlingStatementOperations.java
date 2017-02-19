@@ -72,6 +72,9 @@ import org.neo4j.kernel.api.schema_new.SchemaBoundary;
 import org.neo4j.kernel.api.schema_new.SchemaDescriptor;
 import org.neo4j.kernel.api.schema_new.SchemaDescriptorFactory;
 import org.neo4j.kernel.api.schema_new.SchemaUtil;
+import org.neo4j.kernel.api.schema_new.constaints.ConstraintBoundary;
+import org.neo4j.kernel.api.schema_new.constaints.ConstraintDescriptor;
+import org.neo4j.kernel.api.schema_new.constaints.ConstraintDescriptorFactory;
 import org.neo4j.kernel.api.schema_new.index.IndexBoundary;
 import org.neo4j.kernel.api.schema_new.index.NewIndexDescriptor;
 import org.neo4j.kernel.api.txstate.TransactionCountingStateVisitor;
@@ -448,11 +451,12 @@ public class StateHandlingStatementOperations implements
     public UniquenessConstraint uniquePropertyConstraintCreate( KernelStatement state, NodePropertyDescriptor descriptor )
             throws CreateConstraintFailureException
     {
-        UniquenessConstraint constraint = new UniquenessConstraint( descriptor );
+        LabelSchemaDescriptor schema = SchemaBoundary.map( descriptor );
+        ConstraintDescriptor constraint = ConstraintDescriptorFactory.uniqueForSchema( schema );
         try
         {
             if ( state.hasTxStateWithChanges() &&
-                 state.txState().constraintIndexDoUnRemove( constraint ) ) // ..., DROP, *CREATE*
+                 state.txState().indexDoUnRemove( constraint.ownedIndexDescriptor() ) ) // ..., DROP, *CREATE*
             { // creation is undoing a drop
                 if ( !state.txState().constraintDoUnRemove( constraint ) ) // CREATE, ..., DROP, *CREATE*
                 { // ... the drop we are undoing did itself undo a prior create...
@@ -462,64 +466,77 @@ public class StateHandlingStatementOperations implements
             }
             else // *CREATE*
             { // create from scratch
-                for ( Iterator<NodePropertyConstraint> it = storeLayer.constraintsGetForLabelAndPropertyKey(
-                        SchemaBoundary.map( descriptor) );
-                        it.hasNext(); )
+                Iterator<ConstraintDescriptor> it = storeLayer.constraintsGetForSchema( schema );
+                while ( it.hasNext() )
                 {
                     if ( it.next().equals( constraint ) )
                     {
-                        return constraint;
+                        return ConstraintBoundary.mapUnique( constraint );
                     }
                 }
-                long indexId = constraintIndexCreator.createUniquenessConstraintIndex( state, this, constraint.descriptor() );
+                long indexId = constraintIndexCreator.createUniquenessConstraintIndex( state, this, schema );
                 state.txState().constraintDoAdd( constraint, indexId );
             }
-            return constraint;
+            return ConstraintBoundary.mapUnique( constraint );
         }
-        catch ( ConstraintVerificationFailedKernelException | DropIndexFailureException | TransactionFailureException
-                e )
+        catch ( ConstraintVerificationFailedKernelException | DropIndexFailureException | TransactionFailureException e )
         {
-            throw new CreateConstraintFailureException( constraint, e );
+            throw new CreateConstraintFailureException( ConstraintBoundary.mapUnique( constraint ), e );
         }
     }
 
     @Override
-    public NodePropertyExistenceConstraint nodePropertyExistenceConstraintCreate( KernelStatement state,
-            NodePropertyDescriptor descriptor )
-            throws CreateConstraintFailureException
+    public NodePropertyExistenceConstraint nodePropertyExistenceConstraintCreate(
+            KernelStatement state,
+            NodePropertyDescriptor descriptor
+    ) throws CreateConstraintFailureException
     {
-        NodePropertyExistenceConstraint constraint = new NodePropertyExistenceConstraint( descriptor );
+        ConstraintDescriptor constraint =
+                ConstraintDescriptorFactory.existsForLabel( descriptor.getLabelId(), descriptor.getPropertyKeyId() );
         state.txState().constraintDoAdd( constraint );
-        return constraint;
+        return (NodePropertyExistenceConstraint)ConstraintBoundary.map( constraint );
     }
 
     @Override
-    public RelationshipPropertyExistenceConstraint relationshipPropertyExistenceConstraintCreate( KernelStatement state,
-            RelationshipPropertyDescriptor descriptor ) throws AlreadyConstrainedException, CreateConstraintFailureException
+    public RelationshipPropertyExistenceConstraint relationshipPropertyExistenceConstraintCreate(
+            KernelStatement state,
+            RelationshipPropertyDescriptor descriptor
+    ) throws AlreadyConstrainedException, CreateConstraintFailureException
     {
-        RelationshipPropertyExistenceConstraint constraint =
-                new RelationshipPropertyExistenceConstraint( descriptor );
+        ConstraintDescriptor constraint =
+                ConstraintDescriptorFactory.existsForRelType( descriptor.getRelationshipTypeId(), descriptor.getPropertyKeyId() );
         state.txState().constraintDoAdd( constraint );
-        return constraint;
+        return (RelationshipPropertyExistenceConstraint)ConstraintBoundary.map( constraint );
     }
 
     @Override
-    public Iterator<NodePropertyConstraint> constraintsGetForLabelAndPropertyKey( KernelStatement state,
-            NodePropertyDescriptor descriptor )
+    public Iterator<ConstraintDescriptor> constraintsGetForSchema( KernelStatement state, SchemaDescriptor descriptor )
     {
-        Iterator<NodePropertyConstraint> constraints =
-                storeLayer.constraintsGetForLabelAndPropertyKey( SchemaBoundary.map( descriptor ) );
+        Iterator<ConstraintDescriptor> constraints = storeLayer.constraintsGetForSchema( descriptor );
         if ( state.hasTxStateWithChanges() )
         {
-            return state.txState().constraintsChangesForLabelAndProperty( descriptor ).apply( constraints );
+            return state.txState().constraintsChangesForSchema( descriptor ).apply( constraints );
         }
         return constraints;
     }
 
     @Override
-    public Iterator<NodePropertyConstraint> constraintsGetForLabel( KernelStatement state, int labelId )
+    public boolean constraintExists( KernelStatement state, ConstraintDescriptor descriptor )
     {
-        Iterator<NodePropertyConstraint> constraints = storeLayer.constraintsGetForLabel( labelId );
+        boolean inStore = storeLayer.constraintExists( descriptor );
+        if ( state.hasTxStateWithChanges() )
+        {
+            ReadableDiffSets<ConstraintDescriptor> diffSet =
+                    state.txState().constraintsChangesForSchema( descriptor.schema() );
+            return diffSet.isAdded( descriptor ) || (inStore && !diffSet.isRemoved( descriptor ));
+        }
+        return inStore;
+    }
+
+    @Override
+    public Iterator<ConstraintDescriptor> constraintsGetForLabel( KernelStatement state, int labelId )
+    {
+        Iterator<ConstraintDescriptor> constraints = storeLayer.constraintsGetForLabel( labelId );
         if ( state.hasTxStateWithChanges() )
         {
             return state.txState().constraintsChangesForLabel( labelId ).apply( constraints );
@@ -528,25 +545,10 @@ public class StateHandlingStatementOperations implements
     }
 
     @Override
-    public Iterator<RelationshipPropertyConstraint> constraintsGetForRelationshipTypeAndPropertyKey(
-            KernelStatement state, RelationshipPropertyDescriptor descriptor )
-    {
-        Iterator<RelationshipPropertyConstraint> constraints =
-                storeLayer.constraintsGetForRelationshipTypeAndPropertyKey( SchemaBoundary.map( descriptor ) );
-        if ( state.hasTxStateWithChanges() )
-        {
-            return state.txState()
-                    .constraintsChangesForRelationshipTypeAndProperty( descriptor )
-                    .apply( constraints );
-        }
-        return constraints;
-    }
-
-    @Override
-    public Iterator<RelationshipPropertyConstraint> constraintsGetForRelationshipType( KernelStatement state,
+    public Iterator<ConstraintDescriptor> constraintsGetForRelationshipType( KernelStatement state,
             int typeId )
     {
-        Iterator<RelationshipPropertyConstraint> constraints = storeLayer.constraintsGetForRelationshipType( typeId );
+        Iterator<ConstraintDescriptor> constraints = storeLayer.constraintsGetForRelationshipType( typeId );
         if ( state.hasTxStateWithChanges() )
         {
             return state.txState().constraintsChangesForRelationshipType( typeId ).apply( constraints );
@@ -555,9 +557,9 @@ public class StateHandlingStatementOperations implements
     }
 
     @Override
-    public Iterator<PropertyConstraint> constraintsGetAll( KernelStatement state )
+    public Iterator<ConstraintDescriptor> constraintsGetAll( KernelStatement state )
     {
-        Iterator<PropertyConstraint> constraints = storeLayer.constraintsGetAll();
+        Iterator<ConstraintDescriptor> constraints = storeLayer.constraintsGetAll();
         if ( state.hasTxStateWithChanges() )
         {
             return state.txState().constraintsChanges().apply( constraints );
@@ -568,14 +570,14 @@ public class StateHandlingStatementOperations implements
     @Override
     public void constraintDrop( KernelStatement state, NodePropertyConstraint constraint )
     {
-        state.txState().constraintDoDrop( constraint );
+        state.txState().constraintDoDrop( ConstraintBoundary.map( constraint ) );
     }
 
     @Override
     public void constraintDrop( KernelStatement state, RelationshipPropertyConstraint constraint )
             throws DropConstraintFailureException
     {
-        state.txState().constraintDoDrop( constraint );
+        state.txState().constraintDoDrop( ConstraintBoundary.map( constraint ) );
     }
 
     @Override

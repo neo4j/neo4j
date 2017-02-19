@@ -19,14 +19,10 @@
  */
 package org.neo4j.kernel.api.txstate;
 
-import org.neo4j.kernel.api.constraints.NodePropertyConstraint;
-import org.neo4j.kernel.api.constraints.NodePropertyExistenceConstraint;
-import org.neo4j.kernel.api.constraints.RelationshipPropertyConstraint;
-import org.neo4j.kernel.api.constraints.RelationshipPropertyExistenceConstraint;
-import org.neo4j.kernel.api.constraints.UniquenessConstraint;
 import org.neo4j.kernel.api.properties.DefinedProperty;
 import org.neo4j.kernel.api.properties.Property;
 import org.neo4j.kernel.api.schema_new.LabelSchemaDescriptor;
+import org.neo4j.kernel.api.schema_new.constaints.ConstraintDescriptor;
 import org.neo4j.kernel.api.schema_new.index.NewIndexDescriptor;
 import org.neo4j.storageengine.api.txstate.ReadableTransactionState;
 
@@ -83,19 +79,15 @@ public interface TransactionState extends ReadableTransactionState
 
     void indexDoDrop( NewIndexDescriptor descriptor );
 
-    void constraintDoAdd( UniquenessConstraint constraint, long indexId );
+    boolean indexDoUnRemove( NewIndexDescriptor constraint );
 
-    void constraintDoAdd( NodePropertyExistenceConstraint constraint );
+    void constraintDoAdd( ConstraintDescriptor constraint );
 
-    void constraintDoAdd( RelationshipPropertyExistenceConstraint constraint );
+    void constraintDoAdd( ConstraintDescriptor constraint, long indexId );
 
-    void constraintDoDrop( NodePropertyConstraint constraint );
+    void constraintDoDrop( ConstraintDescriptor constraint );
 
-    void constraintDoDrop( RelationshipPropertyConstraint constraint );
-
-    boolean constraintDoUnRemove( NodePropertyConstraint constraint );
-
-    boolean constraintIndexDoUnRemove( UniquenessConstraint constraint );
+    boolean constraintDoUnRemove( ConstraintDescriptor constraint );
 
     void indexDoUpdateProperty( LabelSchemaDescriptor descriptor, long nodeId, DefinedProperty before, DefinedProperty after );
 }

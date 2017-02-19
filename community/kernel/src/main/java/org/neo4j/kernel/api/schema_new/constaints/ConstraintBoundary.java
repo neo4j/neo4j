@@ -19,6 +19,9 @@
  */
 package org.neo4j.kernel.api.schema_new.constaints;
 
+import java.util.Iterator;
+
+import org.neo4j.helpers.collection.Iterators;
 import org.neo4j.kernel.api.constraints.NodePropertyConstraint;
 import org.neo4j.kernel.api.constraints.NodePropertyExistenceConstraint;
 import org.neo4j.kernel.api.constraints.PropertyConstraint;
@@ -29,7 +32,9 @@ import org.neo4j.kernel.api.schema.IndexDescriptorFactory;
 import org.neo4j.kernel.api.schema.RelationshipPropertyDescriptor;
 import org.neo4j.kernel.api.schema_new.LabelSchemaDescriptor;
 import org.neo4j.kernel.api.schema_new.RelationTypeSchemaDescriptor;
+import org.neo4j.kernel.api.schema_new.SchemaBoundary;
 import org.neo4j.kernel.api.schema_new.SchemaComputer;
+import org.neo4j.kernel.api.schema_new.SchemaDescriptorFactory;
 
 /**
  * This class represents the boundary of where new constraint descriptors are converted to old constraints. This class
@@ -40,6 +45,11 @@ public class ConstraintBoundary
     public static PropertyConstraint map( ConstraintDescriptor descriptor )
     {
         return descriptor.schema().computeWith( new BoundaryTransformer( descriptor ) );
+    }
+
+    public static UniquenessConstraint mapUnique( ConstraintDescriptor descriptor )
+    {
+        return (UniquenessConstraint) descriptor.schema().computeWith( new BoundaryTransformer( descriptor ) );
     }
 
     public static NodePropertyConstraint mapNode( ConstraintDescriptor descriptor )
@@ -53,7 +63,38 @@ public class ConstraintBoundary
                                                           .computeWith( new BoundaryTransformer( descriptor ) );
     }
 
-    static class BoundaryTransformer implements SchemaComputer<PropertyConstraint>
+    public static ConstraintDescriptor map( PropertyConstraint constraint )
+    {
+        if ( constraint instanceof UniquenessConstraint )
+        {
+            UniquenessConstraint c = (UniquenessConstraint) constraint;
+            return ConstraintDescriptorFactory.uniqueForSchema( SchemaBoundary.map( c.descriptor() ) );
+        }
+        if ( constraint instanceof NodePropertyExistenceConstraint )
+        {
+            NodePropertyExistenceConstraint c = (NodePropertyExistenceConstraint) constraint;
+            return ConstraintDescriptorFactory.existsForSchema( SchemaBoundary.map( c.descriptor() ) );
+        }
+        if ( constraint instanceof RelationshipPropertyExistenceConstraint )
+        {
+            RelationshipPropertyExistenceConstraint c = (RelationshipPropertyExistenceConstraint) constraint;
+            return ConstraintDescriptorFactory.existsForSchema( SchemaBoundary.map( c.descriptor() ) );
+        }
+        throw new IllegalStateException( "Unknown constraint type "+ constraint.getClass().getSimpleName() );
+    }
+
+    public static <T extends PropertyConstraint> Iterator<ConstraintDescriptor> mapToNew(
+            Iterator<T> constraints )
+    {
+        return Iterators.map( ConstraintBoundary::map, constraints );
+    }
+
+    public static Iterator<PropertyConstraint> map( Iterator<ConstraintDescriptor> constraints )
+    {
+        return Iterators.map( ConstraintBoundary::map, constraints );
+    }
+
+    private static class BoundaryTransformer implements SchemaComputer<PropertyConstraint>
     {
         private final ConstraintDescriptor descriptor;
 

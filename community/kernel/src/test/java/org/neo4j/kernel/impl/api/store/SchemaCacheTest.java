@@ -28,17 +28,11 @@ import java.util.Set;
 
 import org.neo4j.helpers.collection.Iterables;
 import org.neo4j.helpers.collection.Iterators;
-import org.neo4j.kernel.api.constraints.NodePropertyConstraint;
-import org.neo4j.kernel.api.constraints.NodePropertyExistenceConstraint;
 import org.neo4j.kernel.api.constraints.PropertyConstraint;
-import org.neo4j.kernel.api.constraints.RelationshipPropertyConstraint;
-import org.neo4j.kernel.api.constraints.RelationshipPropertyExistenceConstraint;
-import org.neo4j.kernel.api.constraints.UniquenessConstraint;
-import org.neo4j.kernel.api.schema.NodePropertyDescriptor;
-import org.neo4j.kernel.api.schema.RelationshipPropertyDescriptor;
 import org.neo4j.kernel.api.schema_new.LabelSchemaDescriptor;
 import org.neo4j.kernel.api.schema_new.SchemaDescriptorFactory;
 import org.neo4j.kernel.api.schema_new.constaints.ConstraintBoundary;
+import org.neo4j.kernel.api.schema_new.constaints.ConstraintDescriptor;
 import org.neo4j.kernel.api.schema_new.constaints.ConstraintDescriptorFactory;
 import org.neo4j.kernel.api.schema_new.index.NewIndexDescriptor;
 import org.neo4j.kernel.api.schema_new.index.NewIndexDescriptorFactory;
@@ -104,32 +98,30 @@ public class SchemaCacheTest
         cache.addSchemaRule( nodePropertyExistenceConstraintRule( 3L, 7, 8 ) );
 
         // THEN
+        ConstraintDescriptor unique1 = ConstraintDescriptorFactory.uniqueForLabel( 1, 2 );
+        ConstraintDescriptor unique2 = ConstraintDescriptorFactory.uniqueForLabel( 3, 4 );
+        ConstraintDescriptor existsRel = ConstraintDescriptorFactory.existsForRelType( 5, 6 );
+        ConstraintDescriptor existsNode = ConstraintDescriptorFactory.existsForLabel( 7, 8 );
+
         assertEquals(
-                asSet( new UniquenessConstraint( new NodePropertyDescriptor( 1, 2 ) ), new UniquenessConstraint( new NodePropertyDescriptor( 3, 4 ) ),
-                        new RelationshipPropertyExistenceConstraint( new RelationshipPropertyDescriptor( 5, 6 ) ),
-                        new NodePropertyExistenceConstraint( new NodePropertyDescriptor( 7, 8 ) ) ),
+                asSet( unique1, unique2, existsRel, existsNode ),
                 asSet( cache.constraints() ) );
 
         assertEquals(
-                asSet( new UniquenessConstraint( new NodePropertyDescriptor( 1, 2 ) ) ),
+                asSet( unique1 ),
                 asSet( cache.constraintsForLabel( 1 ) ) );
 
         assertEquals(
-                asSet( new UniquenessConstraint( new NodePropertyDescriptor( 1, 2 ) ) ),
-                asSet( cache.constraintsForLabelAndProperty( SchemaDescriptorFactory.forLabel( 1, 2 ) ) ) );
+                asSet( unique1 ),
+                asSet( cache.constraintsForSchema( unique1.schema() ) ) );
 
         assertEquals(
                 asSet(),
-                asSet( cache.constraintsForLabelAndProperty( SchemaDescriptorFactory.forLabel( 1, 3 ) ) ) );
+                asSet( cache.constraintsForSchema( SchemaDescriptorFactory.forLabel( 1, 3 ) ) ) );
 
         assertEquals(
-                asSet( new RelationshipPropertyExistenceConstraint( new RelationshipPropertyDescriptor( 5, 6 ) ) ),
+                asSet( existsRel ),
                 asSet( cache.constraintsForRelationshipType( 5 ) ) );
-
-        assertEquals(
-                asSet( new RelationshipPropertyExistenceConstraint( new RelationshipPropertyDescriptor( 5, 6 ) ) ),
-                asSet( cache.constraintsForRelationshipTypeAndProperty( SchemaDescriptorFactory.forRelType( 5, 6 ) )
-                ) );
     }
 
     @Test
@@ -145,8 +137,10 @@ public class SchemaCacheTest
         cache.removeSchemaRule( 0L );
 
         // THEN
+        ConstraintDescriptor dropped = ConstraintDescriptorFactory.uniqueForLabel( 1, 1 );
+        ConstraintDescriptor unique = ConstraintDescriptorFactory.uniqueForLabel( 3, 4 );
         assertEquals(
-                asSet( new UniquenessConstraint( new NodePropertyDescriptor( 3, 4 ) ) ),
+                asSet( unique ),
                 asSet( cache.constraints() ) );
 
         assertEquals(
@@ -155,7 +149,7 @@ public class SchemaCacheTest
 
         assertEquals(
                 asSet(),
-                asSet( cache.constraintsForLabelAndProperty( SchemaDescriptorFactory.forLabel( 1, 2 ) ) ) );
+                asSet( cache.constraintsForSchema( dropped.schema() ) ) );
     }
 
     @Test
@@ -171,7 +165,7 @@ public class SchemaCacheTest
 
         // then
         assertEquals(
-                asList( new UniquenessConstraint( new NodePropertyDescriptor( 1, 2 ) ) ),
+                asList( ConstraintDescriptorFactory.uniqueForLabel( 1, 2 ) ),
                 Iterators.asList( cache.constraints() ) );
     }
 
@@ -217,17 +211,17 @@ public class SchemaCacheTest
         SchemaCache cache = newSchemaCache( rule1, rule2, rule3 );
 
         // When
-        Set<NodePropertyConstraint> listed = asSet( cache.constraintsForLabel( 1 ) );
+        Set<ConstraintDescriptor> listed = asSet( cache.constraintsForLabel( 1 ) );
 
         // Then
-        Set<NodePropertyConstraint> expected = asSet(
-                ConstraintBoundary.mapNode( rule1.getConstraintDescriptor() ),
-                ConstraintBoundary.mapNode( rule3.getConstraintDescriptor() ) );
+        Set<ConstraintDescriptor> expected = asSet(
+                rule1.getConstraintDescriptor(),
+                rule3.getConstraintDescriptor() );
         assertEquals( expected, listed );
     }
 
     @Test
-    public void shouldListConstraintsForLabelAndProperty()
+    public void shouldListConstraintsForSchema()
     {
         // Given
         ConstraintRule rule1 = uniquenessConstraintRule( 0, 1, 1, 0 );
@@ -237,11 +231,10 @@ public class SchemaCacheTest
         SchemaCache cache = newSchemaCache( rule1, rule2, rule3 );
 
         // When
-        Set<NodePropertyConstraint> listed = asSet( cache.constraintsForLabelAndProperty(
-                SchemaDescriptorFactory.forLabel( 1, 2 ) ) );
+        Set<ConstraintDescriptor> listed = asSet( cache.constraintsForSchema( rule3.schema() ) );
 
         // Then
-        assertEquals( singleton( ConstraintBoundary.mapNode( rule3.getConstraintDescriptor() ) ), listed );
+        assertEquals( singleton( rule3.getConstraintDescriptor() ), listed );
     }
 
     @Test
@@ -255,31 +248,11 @@ public class SchemaCacheTest
         SchemaCache cache = newSchemaCache( rule1, rule2, rule3 );
 
         // When
-        Set<RelationshipPropertyConstraint> listed = asSet( cache.constraintsForRelationshipType( 1 ) );
+        Set<ConstraintDescriptor> listed = asSet( cache.constraintsForRelationshipType( 1 ) );
 
         // Then
-        Set<RelationshipPropertyConstraint> expected = asSet(
-                ConstraintBoundary.mapRelationship( rule1.getConstraintDescriptor() ),
-                ConstraintBoundary.mapRelationship( rule3.getConstraintDescriptor() ) );
+        Set<ConstraintDescriptor> expected = asSet( rule1.getConstraintDescriptor(), rule3.getConstraintDescriptor() );
         assertEquals( expected, listed );
-    }
-
-    @Test
-    public void shouldListConstraintsForRelationshipTypeAndProperty()
-    {
-        // Given
-        ConstraintRule rule1 = relPropertyExistenceConstraintRule( 0, 1, 1 );
-        ConstraintRule rule2 = relPropertyExistenceConstraintRule( 0, 2, 1 );
-        ConstraintRule rule3 = relPropertyExistenceConstraintRule( 0, 1, 2 );
-
-        SchemaCache cache = newSchemaCache( rule1, rule2, rule3 );
-
-        // When
-        Set<RelationshipPropertyConstraint> listed = asSet( cache.constraintsForRelationshipTypeAndProperty(
-                SchemaDescriptorFactory.forRelType( 2, 1 ) ) );
-
-        // Then
-        assertEquals( singleton( ConstraintBoundary.mapRelationship( rule2.getConstraintDescriptor() ) ), listed );
     }
 
     private IndexRule newIndexRule( long id, int label, int propertyKey )

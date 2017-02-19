@@ -37,6 +37,9 @@ import org.neo4j.kernel.api.constraints.UniquenessConstraint;
 import org.neo4j.kernel.api.exceptions.KernelException;
 import org.neo4j.kernel.api.exceptions.schema.DropConstraintFailureException;
 import org.neo4j.kernel.api.exceptions.schema.NoSuchConstraintException;
+import org.neo4j.kernel.api.schema_new.SchemaBoundary;
+import org.neo4j.kernel.api.schema_new.constaints.ConstraintBoundary;
+import org.neo4j.kernel.api.schema_new.constaints.ConstraintDescriptor;
 
 import static org.hamcrest.CoreMatchers.instanceOf;
 import static org.junit.Assert.assertEquals;
@@ -139,10 +142,10 @@ public class NodePropertyExistenceConstraintCreationIT
         {
             ReadOperations statement = readOperationsInNewTransaction();
 
-            Iterator<NodePropertyConstraint> constraints =
-                    statement.constraintsGetForLabelAndPropertyKey( descriptor );
+            Iterator<ConstraintDescriptor> constraints =
+                    statement.constraintsGetForSchema( SchemaBoundary.map( descriptor ) );
 
-            assertEquals( constraint, single( constraints ) );
+            assertEquals( ConstraintBoundary.map( constraint ), single( constraints ) );
         }
     }
 }

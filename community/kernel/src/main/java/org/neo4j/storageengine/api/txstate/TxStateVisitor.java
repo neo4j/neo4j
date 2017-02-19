@@ -22,11 +22,9 @@ package org.neo4j.storageengine.api.txstate;
 import java.util.Iterator;
 import java.util.Set;
 
-import org.neo4j.kernel.api.constraints.NodePropertyExistenceConstraint;
-import org.neo4j.kernel.api.constraints.RelationshipPropertyExistenceConstraint;
-import org.neo4j.kernel.api.constraints.UniquenessConstraint;
 import org.neo4j.kernel.api.exceptions.schema.ConstraintValidationKernelException;
 import org.neo4j.kernel.api.exceptions.schema.CreateConstraintFailureException;
+import org.neo4j.kernel.api.schema_new.constaints.ConstraintDescriptor;
 import org.neo4j.kernel.api.schema_new.index.NewIndexDescriptor;
 import org.neo4j.storageengine.api.StorageProperty;
 
@@ -60,19 +58,9 @@ public interface TxStateVisitor extends AutoCloseable
 
     void visitRemovedIndex( NewIndexDescriptor element );
 
-    void visitAddedUniquePropertyConstraint( UniquenessConstraint element );
+    void visitAddedConstraint( ConstraintDescriptor element ) throws CreateConstraintFailureException;
 
-    void visitRemovedUniquePropertyConstraint( UniquenessConstraint element );
-
-    void visitAddedNodePropertyExistenceConstraint( NodePropertyExistenceConstraint element )
-            throws CreateConstraintFailureException;
-
-    void visitRemovedNodePropertyExistenceConstraint( NodePropertyExistenceConstraint element );
-
-    void visitAddedRelationshipPropertyExistenceConstraint( RelationshipPropertyExistenceConstraint element )
-            throws CreateConstraintFailureException;
-
-    void visitRemovedRelationshipPropertyExistenceConstraint( RelationshipPropertyExistenceConstraint element );
+    void visitRemovedConstraint( ConstraintDescriptor element );
 
     void visitCreatedLabelToken( String name, int id );
 
@@ -143,35 +131,12 @@ public interface TxStateVisitor extends AutoCloseable
         }
 
         @Override
-        public void visitAddedUniquePropertyConstraint( UniquenessConstraint element )
+        public void visitAddedConstraint( ConstraintDescriptor element ) throws CreateConstraintFailureException
         {
         }
 
         @Override
-        public void visitRemovedUniquePropertyConstraint( UniquenessConstraint element )
-        {
-        }
-
-        @Override
-        public void visitAddedNodePropertyExistenceConstraint( NodePropertyExistenceConstraint element )
-                throws CreateConstraintFailureException
-        {
-        }
-
-        @Override
-        public void visitRemovedNodePropertyExistenceConstraint( NodePropertyExistenceConstraint element )
-        {
-        }
-
-        @Override
-        public void visitAddedRelationshipPropertyExistenceConstraint( RelationshipPropertyExistenceConstraint element )
-                throws CreateConstraintFailureException
-        {
-        }
-
-        @Override
-        public void
-                visitRemovedRelationshipPropertyExistenceConstraint( RelationshipPropertyExistenceConstraint element )
+        public void visitRemovedConstraint( ConstraintDescriptor element )
         {
         }
 
@@ -276,42 +241,15 @@ public interface TxStateVisitor extends AutoCloseable
         }
 
         @Override
-        public void visitAddedUniquePropertyConstraint( UniquenessConstraint element )
+        public void visitAddedConstraint( ConstraintDescriptor constraint ) throws CreateConstraintFailureException
         {
-            actual.visitAddedUniquePropertyConstraint( element );
+            actual.visitAddedConstraint( constraint );
         }
 
         @Override
-        public void visitRemovedUniquePropertyConstraint( UniquenessConstraint element )
+        public void visitRemovedConstraint( ConstraintDescriptor constraint )
         {
-            actual.visitRemovedUniquePropertyConstraint( element );
-        }
-
-        @Override
-        public void visitAddedNodePropertyExistenceConstraint( NodePropertyExistenceConstraint element )
-                throws CreateConstraintFailureException
-        {
-            actual.visitAddedNodePropertyExistenceConstraint( element );
-        }
-
-        @Override
-        public void visitRemovedNodePropertyExistenceConstraint( NodePropertyExistenceConstraint element )
-        {
-            actual.visitRemovedNodePropertyExistenceConstraint( element );
-        }
-
-        @Override
-        public void visitAddedRelationshipPropertyExistenceConstraint( RelationshipPropertyExistenceConstraint element )
-                throws CreateConstraintFailureException
-        {
-            actual.visitAddedRelationshipPropertyExistenceConstraint( element );
-        }
-
-        @Override
-        public void
-                visitRemovedRelationshipPropertyExistenceConstraint( RelationshipPropertyExistenceConstraint element )
-        {
-            actual.visitRemovedRelationshipPropertyExistenceConstraint( element );
+            actual.visitRemovedConstraint( constraint );
         }
 
         @Override

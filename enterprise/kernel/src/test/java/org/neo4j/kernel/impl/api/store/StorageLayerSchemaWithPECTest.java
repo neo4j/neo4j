@@ -25,6 +25,9 @@ import java.util.Set;
 
 import org.neo4j.SchemaHelper;
 import org.neo4j.graphdb.GraphDatabaseService;
+import org.neo4j.graphdb.Label;
+import org.neo4j.graphdb.Relationship;
+import org.neo4j.graphdb.RelationshipType;
 import org.neo4j.helpers.collection.Iterators;
 import org.neo4j.kernel.api.schema.NodePropertyDescriptor;
 import org.neo4j.kernel.api.schema.RelationshipPropertyDescriptor;
@@ -36,6 +39,8 @@ import org.neo4j.kernel.api.constraints.RelationshipPropertyExistenceConstraint;
 import org.neo4j.kernel.api.constraints.UniquenessConstraint;
 import org.neo4j.kernel.api.schema_new.SchemaBoundary;
 import org.neo4j.kernel.api.schema_new.SchemaDescriptorFactory;
+import org.neo4j.kernel.api.schema_new.constaints.ConstraintDescriptor;
+import org.neo4j.kernel.api.schema_new.constaints.ConstraintDescriptorFactory;
 import org.neo4j.test.TestEnterpriseGraphDatabaseFactory;
 
 import static org.junit.Assert.assertEquals;
@@ -62,7 +67,7 @@ public class StorageLayerSchemaWithPECTest extends StorageLayerTest
         SchemaHelper.awaitIndexes( db );
 
         // When
-        Set<PropertyConstraint> constraints = asSet( disk.constraintsGetAll() );
+        Set<ConstraintDescriptor> constraints = asSet( disk.constraintsGetAll() );
 
         // Then
         int labelId1 = labelId( label1 );
@@ -93,14 +98,12 @@ public class StorageLayerSchemaWithPECTest extends StorageLayerTest
         SchemaHelper.awaitIndexes( db );
 
         // When
-        Set<NodePropertyConstraint> constraints = asSet( disk.constraintsGetForLabel( labelId( label1 ) ) );
+        Set<ConstraintDescriptor> constraints = asSet( disk.constraintsGetForLabel( labelId( label1 ) ) );
 
         // Then
-        Set<NodePropertyConstraint> expectedConstraints = asSet(
-                new UniquenessConstraint(
-                        new NodePropertyDescriptor( labelId( label1 ), propertyKeyId( propertyKey ) ) ),
-                new NodePropertyExistenceConstraint(
-                        new NodePropertyDescriptor( labelId( label1 ), propertyKeyId( propertyKey ) ) ) );
+        Set<ConstraintDescriptor> expectedConstraints = asSet(
+                uniqueConstraintDescriptor( label1, propertyKey ),
+                nodePropertyExistenceDescriptor( label1, propertyKey ) );
 
         assertEquals( expectedConstraints, constraints );
     }
@@ -118,17 +121,15 @@ public class StorageLayerSchemaWithPECTest extends StorageLayerTest
         SchemaHelper.awaitIndexes( db );
 
         // When
-        NodePropertyDescriptor descriptor =
-                new NodePropertyDescriptor( labelId( label1 ), propertyKeyId( propertyKey ) );
-        Set<NodePropertyConstraint> constraints = asSet( disk.constraintsGetForLabelAndPropertyKey(
-                SchemaBoundary.map( descriptor ) ) );
+        Set<ConstraintDescriptor> constraints = asSet( disk.constraintsGetForSchema(
+                SchemaDescriptorFactory.forLabel( labelId( label1 ), propertyKeyId( propertyKey ) ) ) );
 
         // Then
-        Set<NodePropertyConstraint> expectedConstraints = asSet(
-                new UniquenessConstraint( descriptor ),
-                new NodePropertyExistenceConstraint( descriptor ) );
+        Set<ConstraintDescriptor> expected = asSet(
+                uniqueConstraintDescriptor( label1, propertyKey ),
+                nodePropertyExistenceDescriptor( label1, propertyKey ) );
 
-        assertEquals( expectedConstraints, constraints );
+        assertEquals( expected, constraints );
     }
 
     @Test
@@ -140,15 +141,13 @@ public class StorageLayerSchemaWithPECTest extends StorageLayerTest
         SchemaHelper.createRelPropertyExistenceConstraint( db, relType2, otherPropertyKey );
 
         // When
-        int relTypeId = relationshipTypeId( relType2 );
-        Set<RelationshipPropertyConstraint> constraints = asSet( disk.constraintsGetForRelationshipType( relTypeId ) );
+        Set<ConstraintDescriptor> constraints = asSet(
+                disk.constraintsGetForRelationshipType( relationshipTypeId( relType2 ) ) );
 
         // Then
-        Set<RelationshipPropertyConstraint> expectedConstraints = Iterators.asSet(
-                new RelationshipPropertyExistenceConstraint(
-                        new RelationshipPropertyDescriptor( relTypeId, propertyKeyId( propertyKey ) ) ),
-                new RelationshipPropertyExistenceConstraint(
-                        new RelationshipPropertyDescriptor( relTypeId, propertyKeyId( otherPropertyKey ) ) ) );
+        Set<ConstraintDescriptor> expectedConstraints = Iterators.asSet(
+                relationshipPropertyExistenceDescriptor( relType2, propertyKey ),
+                relationshipPropertyExistenceDescriptor( relType2, otherPropertyKey ) );
 
         assertEquals( expectedConstraints, constraints );
     }
@@ -166,15 +165,34 @@ public class StorageLayerSchemaWithPECTest extends StorageLayerTest
         // When
         int relTypeId = relationshipTypeId( relType1 );
         int propKeyId = propertyKeyId( propertyKey );
-        Set<RelationshipPropertyConstraint> constraints = asSet(
-                disk.constraintsGetForRelationshipTypeAndPropertyKey(
-                        SchemaDescriptorFactory.forRelType( relTypeId, propKeyId ) ) );
+        Set<ConstraintDescriptor> constraints = asSet(
+                disk.constraintsGetForSchema( SchemaDescriptorFactory.forRelType( relTypeId, propKeyId ) ) );
 
         // Then
-        Set<RelationshipPropertyConstraint> expectedConstraints = Iterators.asSet(
-                new RelationshipPropertyExistenceConstraint(
-                        new RelationshipPropertyDescriptor( relTypeId, propKeyId ) ) );
+        Set<ConstraintDescriptor> expectedConstraints = Iterators.asSet(
+                relationshipPropertyExistenceDescriptor( relType1, propertyKey ) );
 
         assertEquals( expectedConstraints, constraints );
+    }
+
+    private ConstraintDescriptor uniqueConstraintDescriptor( Label label, String propertyKey )
+    {
+        int labelId = labelId( label );
+        int propKeyId = propertyKeyId( propertyKey );
+        return ConstraintDescriptorFactory.uniqueForLabel( labelId, propKeyId );
+    }
+
+    private ConstraintDescriptor nodePropertyExistenceDescriptor( Label label, String propertyKey )
+    {
+        int labelId = labelId( label );
+        int propKeyId = propertyKeyId( propertyKey );
+        return ConstraintDescriptorFactory.existsForLabel( labelId, propKeyId );
+    }
+
+    private ConstraintDescriptor relationshipPropertyExistenceDescriptor( RelationshipType relType, String propertyKey )
+    {
+        int relTypeId = relationshipTypeId( relType );
+        int propKeyId = propertyKeyId( propertyKey );
+        return ConstraintDescriptorFactory.existsForRelType( relTypeId, propKeyId );
     }
 }

@@ -48,6 +48,8 @@ import org.neo4j.kernel.api.exceptions.schema.SchemaRuleNotFoundException;
 import org.neo4j.kernel.api.index.InternalIndexState;
 import org.neo4j.kernel.api.properties.DefinedProperty;
 import org.neo4j.kernel.api.properties.Property;
+import org.neo4j.kernel.api.schema_new.SchemaDescriptor;
+import org.neo4j.kernel.api.schema_new.constaints.ConstraintDescriptor;
 import org.neo4j.kernel.api.schema_new.index.NewIndexDescriptor;
 import org.neo4j.kernel.impl.api.operations.EntityReadOperations;
 import org.neo4j.kernel.impl.api.operations.EntityWriteOperations;
@@ -370,16 +372,23 @@ public class LockingStatementOperations implements
     }
 
     @Override
-    public Iterator<NodePropertyConstraint> constraintsGetForLabelAndPropertyKey( KernelStatement state,
-            NodePropertyDescriptor descriptor )
+    public Iterator<ConstraintDescriptor> constraintsGetForSchema( KernelStatement state, SchemaDescriptor descriptor )
     {
         acquireSharedSchemaLock( state );
         state.assertOpen();
-        return schemaReadDelegate.constraintsGetForLabelAndPropertyKey( state, descriptor );
+        return schemaReadDelegate.constraintsGetForSchema( state, descriptor );
     }
 
     @Override
-    public Iterator<NodePropertyConstraint> constraintsGetForLabel( KernelStatement state, int labelId )
+    public boolean constraintExists( KernelStatement state, ConstraintDescriptor descriptor )
+    {
+        acquireSharedSchemaLock( state );
+        state.assertOpen();
+        return schemaReadDelegate.constraintExists( state, descriptor );
+    }
+
+    @Override
+    public Iterator<ConstraintDescriptor> constraintsGetForLabel( KernelStatement state, int labelId )
     {
         acquireSharedSchemaLock( state );
         state.assertOpen();
@@ -387,17 +396,7 @@ public class LockingStatementOperations implements
     }
 
     @Override
-    public Iterator<RelationshipPropertyConstraint> constraintsGetForRelationshipTypeAndPropertyKey(
-            KernelStatement state,
-            RelationshipPropertyDescriptor descriptor )
-    {
-        acquireSharedSchemaLock( state );
-        state.assertOpen();
-        return schemaReadDelegate.constraintsGetForRelationshipTypeAndPropertyKey( state, descriptor );
-    }
-
-    @Override
-    public Iterator<RelationshipPropertyConstraint> constraintsGetForRelationshipType( KernelStatement state,
+    public Iterator<ConstraintDescriptor> constraintsGetForRelationshipType( KernelStatement state,
             int typeId )
     {
         acquireSharedSchemaLock( state );
@@ -406,7 +405,7 @@ public class LockingStatementOperations implements
     }
 
     @Override
-    public Iterator<PropertyConstraint> constraintsGetAll( KernelStatement state )
+    public Iterator<ConstraintDescriptor> constraintsGetAll( KernelStatement state )
     {
         acquireSharedSchemaLock( state );
         state.assertOpen();

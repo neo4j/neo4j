@@ -62,6 +62,16 @@ public interface SchemaDescriptor
     String userDescription( TokenNameLookup tokenNameLookup );
 
     /**
+     * This method return the property ids that are relevant to this Schema Descriptor.
+     *
+     * Putting this method here is a convenience that will break if/when we introduce more complicated schema
+     * descriptors like paths, but until that point it is very useful.
+     *
+     * @return the property ids
+     */
+    int[] getPropertyIds();
+
+    /**
      * Create a predicate that checks whether a schema descriptor Supplier supplies the given schema descriptor.
      * @param descriptor The schema descriptor to check equality with.
      * @return A predicate that returns {@code true} if it is given a schema descriptor supplier that supplies the

@@ -27,7 +27,6 @@ import java.util.Optional;
 
 import org.neo4j.kernel.api.KernelAPI;
 import org.neo4j.kernel.api.KernelTransaction;
-import org.neo4j.kernel.api.schema.NodePropertyDescriptor;
 import org.neo4j.kernel.api.Statement;
 import org.neo4j.kernel.api.TransactionHook;
 import org.neo4j.kernel.api.exceptions.ProcedureException;
@@ -41,6 +40,8 @@ import org.neo4j.kernel.api.proc.CallableProcedure;
 import org.neo4j.kernel.api.proc.CallableUserAggregationFunction;
 import org.neo4j.kernel.api.proc.CallableUserFunction;
 import org.neo4j.kernel.api.schema_new.SchemaBoundary;
+import org.neo4j.kernel.api.schema_new.LabelSchemaDescriptor;
+import org.neo4j.kernel.api.schema_new.SchemaDescriptorFactory;
 import org.neo4j.kernel.api.schema_new.index.NewIndexDescriptor;
 import org.neo4j.kernel.api.schema_new.index.NewIndexDescriptorFactory;
 import org.neo4j.kernel.api.security.SecurityContext;
@@ -67,7 +68,7 @@ import static org.neo4j.kernel.impl.api.StatementOperationsTestHelper.mockedStat
 
 public class ConstraintIndexCreatorTest
 {
-    private final NodePropertyDescriptor descriptor = new NodePropertyDescriptor( 123, 456 );
+    private final LabelSchemaDescriptor descriptor = SchemaDescriptorFactory.forLabel( 123, 456 );
     private final NewIndexDescriptor index = NewIndexDescriptorFactory.uniqueForLabel( 123, 456 );
 
     @Test
@@ -118,8 +119,8 @@ public class ConstraintIndexCreatorTest
         IndexProxy indexProxy = mock( IndexProxy.class );
         when( indexingService.getIndexProxy( 2468L ) ).thenReturn( indexProxy );
         PreexistingIndexEntryConflictException cause = new PreexistingIndexEntryConflictException("a", 2, 1);
-        doThrow( new IndexPopulationFailedKernelException( descriptor, "some index", cause) )
-                .when(indexProxy).awaitStoreScanCompleted();
+        doThrow( new IndexPopulationFailedKernelException( SchemaBoundary.map( descriptor ), "some index", cause ) )
+                .when( indexProxy ).awaitStoreScanCompleted();
         PropertyAccessor propertyAccessor = mock( PropertyAccessor.class );
 
         ConstraintIndexCreator creator = new ConstraintIndexCreator( () -> kernel, indexingService, propertyAccessor, false );
@@ -189,8 +190,7 @@ public class ConstraintIndexCreatorTest
         ConstraintIndexCreator creator = new ConstraintIndexCreator( () -> kernel, indexingService, propertyAccessor, true );
 
         // when
-        creator.createUniquenessConstraintIndex( state, constraintCreationContext.schemaReadOperations(),
-                                                SchemaBoundary.map( index.schema() ) );
+        creator.createUniquenessConstraintIndex( state, constraintCreationContext.schemaReadOperations(), index.schema() );
 
         // then
         verify( state.locks().pessimistic() )

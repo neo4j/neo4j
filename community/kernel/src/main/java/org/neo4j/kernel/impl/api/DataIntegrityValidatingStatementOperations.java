@@ -21,6 +21,7 @@ package org.neo4j.kernel.impl.api;
 
 import java.util.Iterator;
 
+import org.neo4j.kernel.api.exceptions.schema.SchemaKernelException;
 import org.neo4j.kernel.api.schema.NodePropertyDescriptor;
 import org.neo4j.kernel.api.schema.RelationshipPropertyDescriptor;
 import org.neo4j.kernel.api.Statement;
@@ -43,6 +44,9 @@ import org.neo4j.kernel.api.exceptions.schema.NoSuchIndexException;
 import org.neo4j.kernel.api.exceptions.schema.SchemaKernelException.OperationContext;
 import org.neo4j.kernel.api.exceptions.schema.TooManyLabelsException;
 import org.neo4j.kernel.api.schema_new.SchemaBoundary;
+import org.neo4j.kernel.api.schema_new.constaints.ConstraintBoundary;
+import org.neo4j.kernel.api.schema_new.constaints.ConstraintDescriptor;
+import org.neo4j.kernel.api.schema_new.constaints.ConstraintDescriptorFactory;
 import org.neo4j.kernel.api.schema_new.index.NewIndexDescriptor;
 import org.neo4j.kernel.impl.api.operations.KeyWriteOperations;
 import org.neo4j.kernel.impl.api.operations.SchemaReadOperations;
@@ -153,17 +157,8 @@ public class DataIntegrityValidatingStatementOperations implements
             NodePropertyDescriptor descriptor )
             throws AlreadyConstrainedException, CreateConstraintFailureException, AlreadyIndexedException
     {
-        Iterator<NodePropertyConstraint> constraints = schemaReadDelegate.constraintsGetForLabelAndPropertyKey(
-                state, descriptor );
-        while ( constraints.hasNext() )
-        {
-            PropertyConstraint constraint = constraints.next();
-            if ( constraint instanceof UniquenessConstraint )
-            {
-                throw new AlreadyConstrainedException( constraint, OperationContext.CONSTRAINT_CREATION,
-                        new StatementTokenNameLookup( state.readOperations() ) );
-            }
-        }
+        ConstraintDescriptor constraint = ConstraintDescriptorFactory.uniqueForSchema( SchemaBoundary.map( descriptor ) );
+        assertConstraintDoesNotExist( state, constraint );
 
         // It is not allowed to create uniqueness constraints on indexed label/property pairs
         checkIndexExistence( state, OperationContext.CONSTRAINT_CREATION, descriptor );
@@ -175,18 +170,8 @@ public class DataIntegrityValidatingStatementOperations implements
     public NodePropertyExistenceConstraint nodePropertyExistenceConstraintCreate( KernelStatement state,
             NodePropertyDescriptor descriptor) throws AlreadyConstrainedException, CreateConstraintFailureException
     {
-        Iterator<NodePropertyConstraint> constraints = schemaReadDelegate.constraintsGetForLabelAndPropertyKey(
-                state, descriptor );
-        while ( constraints.hasNext() )
-        {
-            NodePropertyConstraint constraint = constraints.next();
-            if ( constraint instanceof NodePropertyExistenceConstraint )
-            {
-                throw new AlreadyConstrainedException( constraint, OperationContext.CONSTRAINT_CREATION,
-                        new StatementTokenNameLookup( state.readOperations() ) );
-            }
-        }
-
+        ConstraintDescriptor constraint = ConstraintDescriptorFactory.existsForSchema( SchemaBoundary.map( descriptor ) );
+        assertConstraintDoesNotExist( state, constraint );
         return schemaWriteDelegate.nodePropertyExistenceConstraintCreate( state, descriptor );
     }
 
@@ -194,28 +179,18 @@ public class DataIntegrityValidatingStatementOperations implements
     public RelationshipPropertyExistenceConstraint relationshipPropertyExistenceConstraintCreate( KernelStatement state,
             RelationshipPropertyDescriptor descriptor ) throws AlreadyConstrainedException, CreateConstraintFailureException
     {
-        Iterator<RelationshipPropertyConstraint> constraints =
-                schemaReadDelegate.constraintsGetForRelationshipTypeAndPropertyKey( state, descriptor );
-        while ( constraints.hasNext() )
-        {
-            RelationshipPropertyConstraint constraint = constraints.next();
-            if ( constraint instanceof RelationshipPropertyExistenceConstraint )
-            {
-                throw new AlreadyConstrainedException( constraint, OperationContext.CONSTRAINT_CREATION,
-                        new StatementTokenNameLookup( state.readOperations() ) );
-            }
-        }
-
+        ConstraintDescriptor constraint = ConstraintDescriptorFactory.existsForSchema( SchemaBoundary.map( descriptor ) );
+        assertConstraintDoesNotExist( state, constraint );
         return schemaWriteDelegate.relationshipPropertyExistenceConstraintCreate( state, descriptor );
     }
 
     @Override
     public void constraintDrop( KernelStatement state, NodePropertyConstraint constraint ) throws DropConstraintFailureException
     {
+        ConstraintDescriptor descriptor = ConstraintBoundary.map( constraint );
         try
         {
-            assertConstraintExists( constraint,
-                    schemaReadDelegate.constraintsGetForLabelAndPropertyKey( state, constraint.descriptor() ) );
+            assertConstraintExists( state, descriptor );
         }
         catch ( NoSuchConstraintException e )
         {
@@ -228,10 +203,10 @@ public class DataIntegrityValidatingStatementOperations implements
     public void constraintDrop( KernelStatement state, RelationshipPropertyConstraint constraint )
             throws DropConstraintFailureException
     {
+        ConstraintDescriptor descriptor = ConstraintBoundary.map( constraint );
         try
         {
-            assertConstraintExists( constraint, schemaReadDelegate.constraintsGetForRelationshipTypeAndPropertyKey(
-                    state, constraint.descriptor() ) );
+            assertConstraintExists( state, descriptor );
         }
         catch ( NoSuchConstraintException e )
         {
@@ -266,17 +241,22 @@ public class DataIntegrityValidatingStatementOperations implements
         return name;
     }
 
-    private <C extends PropertyConstraint> void assertConstraintExists( C constraint, Iterator<C> existingConstraints )
+    private void assertConstraintDoesNotExist( KernelStatement state, ConstraintDescriptor constraint )
+            throws AlreadyConstrainedException
+    {
+        if ( schemaReadDelegate.constraintExists( state, constraint ) )
+        {
+            throw new AlreadyConstrainedException( ConstraintBoundary.map( constraint ),
+                    OperationContext.CONSTRAINT_CREATION, new StatementTokenNameLookup( state.readOperations() ) );
+        }
+    }
+
+    private void assertConstraintExists( KernelStatement state, ConstraintDescriptor constraint )
             throws NoSuchConstraintException
     {
-        while ( existingConstraints.hasNext() )
+        if ( !schemaReadDelegate.constraintExists( state, constraint ) )
         {
-            C existing = existingConstraints.next();
-            if ( existing.equals( constraint ) )
-            {
-                return;
-            }
+            throw new NoSuchConstraintException( ConstraintBoundary.map( constraint ) );
         }
-        throw new NoSuchConstraintException( constraint );
     }
 }

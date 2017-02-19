@@ -30,6 +30,8 @@ import org.neo4j.kernel.api.constraints.RelationshipPropertyConstraint;
 import org.neo4j.kernel.api.exceptions.index.IndexNotFoundKernelException;
 import org.neo4j.kernel.api.exceptions.schema.SchemaRuleNotFoundException;
 import org.neo4j.kernel.api.index.InternalIndexState;
+import org.neo4j.kernel.api.schema_new.SchemaDescriptor;
+import org.neo4j.kernel.api.schema_new.constaints.ConstraintDescriptor;
 import org.neo4j.kernel.api.schema_new.index.NewIndexDescriptor;
 import org.neo4j.kernel.impl.api.KernelStatement;
 import org.neo4j.storageengine.api.schema.PopulationProgress;
@@ -91,33 +93,30 @@ public interface SchemaReadOperations
      * Get all constraints applicable to label and propertyKeys. There are only {@link NodePropertyConstraint}
      * for the time being.
      */
-    Iterator<NodePropertyConstraint> constraintsGetForLabelAndPropertyKey( KernelStatement state,
-            NodePropertyDescriptor descriptor );
+    Iterator<ConstraintDescriptor> constraintsGetForSchema( KernelStatement state, SchemaDescriptor descriptor );
+
+    /**
+     * TODO: Write me. {@link ConstraintDescriptor}
+     */
+    boolean constraintExists( KernelStatement state, ConstraintDescriptor descriptor );
 
     /**
      * Get all constraints applicable to label. There are only {@link NodePropertyConstraint}
      * for the time being.
      */
-    Iterator<NodePropertyConstraint> constraintsGetForLabel( KernelStatement state, int labelId );
-
-    /**
-     * Get all constraints applicable to relationship type and propertyKey.
-     * There are only {@link RelationshipPropertyConstraint} for the time being.
-     */
-    Iterator<RelationshipPropertyConstraint> constraintsGetForRelationshipTypeAndPropertyKey( KernelStatement state,
-            RelationshipPropertyDescriptor descriptor );
+    Iterator<ConstraintDescriptor> constraintsGetForLabel( KernelStatement state, int labelId );
 
     /**
      * Get all constraints applicable to relationship type. There are only {@link RelationshipPropertyConstraint}
      * for the time being.
      */
-    Iterator<RelationshipPropertyConstraint> constraintsGetForRelationshipType( KernelStatement state, int typeId );
+    Iterator<ConstraintDescriptor> constraintsGetForRelationshipType( KernelStatement state, int typeId );
 
     /**
      * Get all constraints. There are only {@link PropertyConstraint}
      * for the time being.
      */
-    Iterator<PropertyConstraint> constraintsGetAll( KernelStatement state );
+    Iterator<ConstraintDescriptor> constraintsGetAll( KernelStatement state );
 
     /**
      * Get the owning constraint for a constraint index. Returns null if the index does not have an owning constraint.

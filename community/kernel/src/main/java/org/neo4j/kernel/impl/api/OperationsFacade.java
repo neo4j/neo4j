@@ -83,7 +83,9 @@ import org.neo4j.kernel.api.schema.NodePropertyDescriptor;
 import org.neo4j.kernel.api.schema.RelationshipPropertyDescriptor;
 import org.neo4j.kernel.api.schema_new.IndexQuery;
 import org.neo4j.kernel.api.schema_new.SchemaBoundary;
+import org.neo4j.kernel.api.schema_new.SchemaDescriptor;
 import org.neo4j.kernel.api.schema_new.SchemaDescriptorFactory;
+import org.neo4j.kernel.api.schema_new.constaints.ConstraintDescriptor;
 import org.neo4j.kernel.api.schema_new.index.NewIndexDescriptor;
 import org.neo4j.kernel.api.security.AccessMode;
 import org.neo4j.kernel.api.security.SecurityContext;
@@ -673,36 +675,28 @@ public class OperationsFacade
     }
 
     @Override
-    public Iterator<NodePropertyConstraint> constraintsGetForLabelAndPropertyKey( NodePropertyDescriptor descriptor )
+    public Iterator<ConstraintDescriptor> constraintsGetForSchema( SchemaDescriptor descriptor )
     {
         statement.assertOpen();
-        return schemaRead().constraintsGetForLabelAndPropertyKey( statement, descriptor );
+        return schemaRead().constraintsGetForSchema( statement, descriptor );
     }
 
     @Override
-    public Iterator<NodePropertyConstraint> constraintsGetForLabel( int labelId )
+    public Iterator<ConstraintDescriptor> constraintsGetForLabel( int labelId )
     {
         statement.assertOpen();
         return schemaRead().constraintsGetForLabel( statement, labelId );
     }
 
     @Override
-    public Iterator<RelationshipPropertyConstraint> constraintsGetForRelationshipType( int typeId )
+    public Iterator<ConstraintDescriptor> constraintsGetForRelationshipType( int typeId )
     {
         statement.assertOpen();
         return schemaRead().constraintsGetForRelationshipType( statement, typeId );
     }
 
     @Override
-    public Iterator<RelationshipPropertyConstraint> constraintsGetForRelationshipTypeAndPropertyKey(
-            RelationshipPropertyDescriptor descriptor )
-    {
-        statement.assertOpen();
-        return schemaRead().constraintsGetForRelationshipTypeAndPropertyKey( statement, descriptor );
-    }
-
-    @Override
-    public Iterator<PropertyConstraint> constraintsGetAll()
+    public Iterator<ConstraintDescriptor> constraintsGetAll()
     {
         statement.assertOpen();
         return schemaRead().constraintsGetAll( statement );

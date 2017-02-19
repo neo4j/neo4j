@@ -20,18 +20,18 @@
 package org.neo4j.kernel.impl.enterprise;
 
 import java.util.Iterator;
+import java.util.List;
 import java.util.Set;
 
 import org.neo4j.collection.primitive.Primitive;
 import org.neo4j.collection.primitive.PrimitiveIntSet;
 import org.neo4j.cursor.Cursor;
-import org.neo4j.kernel.api.constraints.NodePropertyExistenceConstraint;
-import org.neo4j.kernel.api.constraints.PropertyConstraint;
-import org.neo4j.kernel.api.constraints.RelationshipPropertyConstraint;
 import org.neo4j.kernel.api.exceptions.schema.ConstraintValidationKernelException;
 import org.neo4j.kernel.api.exceptions.schema.NodePropertyExistenceConstraintViolationKernelException;
 import org.neo4j.kernel.api.exceptions.schema.RelationshipPropertyExistenceConstraintViolationKernelException;
-import org.neo4j.kernel.api.schema.NodePropertyDescriptor;
+import org.neo4j.kernel.api.schema_new.LabelSchemaDescriptor;
+import org.neo4j.kernel.api.schema_new.RelationTypeSchemaDescriptor;
+import org.neo4j.kernel.api.schema_new.SchemaBoundary;
 import org.neo4j.storageengine.api.NodeItem;
 import org.neo4j.storageengine.api.PropertyItem;
 import org.neo4j.storageengine.api.RelationshipItem;
@@ -47,17 +47,22 @@ class PropertyExistenceEnforcer extends TxStateVisitor.Delegator
 {
     private final StoreReadLayer storeLayer;
     private final ReadableTransactionState txState;
+    private final List<LabelSchemaDescriptor> labelExistenceConstraints;
+    private final List<RelationTypeSchemaDescriptor> relTypeExistenceConstraints;
+
     private final PrimitiveIntSet propertyKeyIds = Primitive.intSet();
+
     private StorageStatement storageStatement;
 
-    public PropertyExistenceEnforcer(
-            TxStateVisitor next,
-            ReadableTransactionState txState,
-            StoreReadLayer storeLayer )
+    public PropertyExistenceEnforcer( TxStateVisitor next, ReadableTransactionState txState, StoreReadLayer storeLayer,
+            List<LabelSchemaDescriptor> labelExistenceConstraints,
+            List<RelationTypeSchemaDescriptor> relTypeExistenceConstraints )
     {
         super( next );
         this.txState = txState;
         this.storeLayer = storeLayer;
+        this.labelExistenceConstraints = labelExistenceConstraints;
+        this.relTypeExistenceConstraints = relTypeExistenceConstraints;
     }
 
     @Override
@@ -94,45 +99,33 @@ class PropertyExistenceEnforcer extends TxStateVisitor.Delegator
 
     private void validateNode( long nodeId ) throws ConstraintValidationKernelException
     {
+        if ( labelExistenceConstraints.isEmpty() )
+        {
+            return;
+        }
+
         try ( Cursor<NodeItem> node = nodeCursor( nodeId ) )
         {
             if ( node.next() )
             {
-                // Get all labels into a set for quick lookup
                 PrimitiveIntSet labelIds = node.get().labels();
-                // Iterate all constraints and find property existence constraints that matches labels
-                propertyKeyIds.clear();
-                Iterator<PropertyConstraint> constraints = storeLayer.constraintsGetAll();
-                while ( constraints.hasNext() )
-                {
-                    PropertyConstraint constraint = constraints.next();
-                    if ( constraint instanceof NodePropertyExistenceConstraint && labelIds.contains(
-                            ((NodePropertyExistenceConstraint) constraint).label() ) )
-                    {
-                        if ( propertyKeyIds.isEmpty() )
-                        {
-                            // Get all key ids into a set for quick lookup
-                            try ( Cursor<PropertyItem> properties = node.get().properties() )
-                            {
-                                while ( properties.next() )
-                                {
-                                    propertyKeyIds.add( properties.get().propertyKeyId() );
-                                }
-                            }
-                        }
 
-                        // Check if this node has the mandatory property set
-                        NodePropertyDescriptor descriptor = ((NodePropertyExistenceConstraint) constraint).descriptor();
-                        if ( descriptor.isComposite() )
+                propertyKeyIds.clear();
+                try ( Cursor<PropertyItem> properties = node.get().properties() )
+                {
+                    while ( properties.next() )
+                    {
+                        propertyKeyIds.add( properties.get().propertyKeyId() );
+                    }
+                }
+
+                for ( LabelSchemaDescriptor descriptor : labelExistenceConstraints )
+                {
+                    if ( labelIds.contains( descriptor.getLabelId() ) )
+                    {
+                        for ( int propertyId : descriptor.getPropertyIds() )
                         {
-                            for ( int propertyKey : descriptor.getPropertyKeyIds() )
-                            {
-                                validateNodeProperty( nodeId, propertyKey, descriptor );
-                            }
-                        }
-                        else
-                        {
-                            validateNodeProperty( nodeId, descriptor.getPropertyKeyId(), descriptor );
+                            validateNodeProperty( nodeId, propertyId, descriptor );
                         }
                     }
                 }
@@ -144,12 +137,13 @@ class PropertyExistenceEnforcer extends TxStateVisitor.Delegator
         }
     }
 
-    private void validateNodeProperty( long nodeId, int propertyKey, NodePropertyDescriptor descriptor )
+    private void validateNodeProperty( long nodeId, int propertyKey, LabelSchemaDescriptor descriptor )
             throws ConstraintValidationKernelException
     {
         if ( !propertyKeyIds.contains( propertyKey ) )
         {
-            throw new NodePropertyExistenceConstraintViolationKernelException( descriptor, nodeId );
+            throw new NodePropertyExistenceConstraintViolationKernelException(
+                    SchemaBoundary.map( descriptor ), nodeId );
         }
     }
 
@@ -176,38 +170,39 @@ class PropertyExistenceEnforcer extends TxStateVisitor.Delegator
 
     private void validateRelationship( long id ) throws ConstraintValidationKernelException
     {
+        if ( relTypeExistenceConstraints.isEmpty() )
+        {
+            return;
+        }
+
         try ( Cursor<RelationshipItem> relationship = relationshipCursor( id ) )
         {
             if ( relationship.next() )
             {
-                // Iterate all constraints and find property existence constraints that matche relationship type
+                // Iterate all constraints and find property existence constraints that match relationship type
                 propertyKeyIds.clear();
-                Iterator<RelationshipPropertyConstraint> constraints = storeLayer.constraintsGetForRelationshipType(
-                        relationship.get().type() );
-                while ( constraints.hasNext() )
+                try ( Cursor<PropertyItem> properties = relationship.get().properties() )
                 {
-                    RelationshipPropertyConstraint constraint = constraints.next();
-
-                    if ( propertyKeyIds.isEmpty() )
+                    while ( properties.next() )
                     {
-                        // Get all key ids into a set for quick lookup
-                        try ( Cursor<PropertyItem> properties = relationship.get().properties() )
-                        {
-                            while ( properties.next() )
-                            {
-                                propertyKeyIds.add( properties.get().propertyKeyId() );
-                            }
-                        }
-                    }
-
-                    // Check if this relationship has the mandatory property set
-                    if ( !propertyKeyIds.contains( constraint.descriptor().getPropertyKeyId() ) )
-                    {
-                        throw new RelationshipPropertyExistenceConstraintViolationKernelException(
-                                constraint.descriptor(), id );
+                        propertyKeyIds.add( properties.get().propertyKeyId() );
                     }
                 }
 
+                for ( RelationTypeSchemaDescriptor descriptor : relTypeExistenceConstraints )
+                {
+                    if ( relationship.get().type() == descriptor.getRelTypeId() )
+                    {
+                        for ( int propertyId : descriptor.getPropertyIds() )
+                        {
+                            if ( !propertyKeyIds.contains( propertyId ) )
+                            {
+                                throw new RelationshipPropertyExistenceConstraintViolationKernelException(
+                                        null, id ); // TODO: fix exceptions in next commit
+                            }
+                        }
+                    }
+                }
             }
             else
             {

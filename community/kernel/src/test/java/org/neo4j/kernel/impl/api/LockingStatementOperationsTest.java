@@ -22,23 +22,22 @@ package org.neo4j.kernel.impl.api;
 import org.junit.Test;
 import org.mockito.InOrder;
 
-import java.util.Collections;
 import java.util.Iterator;
 import java.util.Optional;
 import java.util.function.Function;
 
-import org.neo4j.kernel.api.schema.NodePropertyDescriptor;
-import org.neo4j.kernel.api.constraints.NodePropertyConstraint;
 import org.neo4j.kernel.api.constraints.PropertyConstraint;
 import org.neo4j.kernel.api.constraints.UniquenessConstraint;
 import org.neo4j.kernel.api.exceptions.EntityNotFoundException;
 import org.neo4j.kernel.api.exceptions.InvalidTransactionTypeKernelException;
 import org.neo4j.kernel.api.exceptions.KernelException;
 import org.neo4j.kernel.api.exceptions.legacyindex.AutoIndexingKernelException;
-import org.neo4j.kernel.api.schema.IndexDescriptor;
-import org.neo4j.kernel.api.schema.IndexDescriptorFactory;
 import org.neo4j.kernel.api.properties.DefinedProperty;
 import org.neo4j.kernel.api.properties.Property;
+import org.neo4j.kernel.api.schema.NodePropertyDescriptor;
+import org.neo4j.kernel.api.schema_new.LabelSchemaDescriptor;
+import org.neo4j.kernel.api.schema_new.SchemaDescriptorFactory;
+import org.neo4j.kernel.api.schema_new.constaints.ConstraintDescriptor;
 import org.neo4j.kernel.api.schema_new.index.NewIndexDescriptor;
 import org.neo4j.kernel.api.schema_new.index.NewIndexDescriptorFactory;
 import org.neo4j.kernel.api.txstate.LegacyIndexTransactionState;
@@ -59,6 +58,9 @@ import org.neo4j.kernel.impl.locking.SimpleStatementLocks;
 import org.neo4j.kernel.impl.proc.Procedures;
 import org.neo4j.storageengine.api.StorageStatement;
 
+import static java.util.Collections.emptyIterator;
+import static org.hamcrest.MatcherAssert.assertThat;
+import static org.hamcrest.Matchers.empty;
 import static org.junit.Assert.assertSame;
 import static org.mockito.Matchers.any;
 import static org.mockito.Matchers.anyLong;
@@ -69,6 +71,7 @@ import static org.mockito.Mockito.never;
 import static org.mockito.Mockito.reset;
 import static org.mockito.Mockito.times;
 import static org.mockito.Mockito.when;
+import static org.neo4j.helpers.collection.Iterators.asList;
 import static org.neo4j.kernel.impl.api.TwoPhaseNodeForRelationshipLockingTest.returnRelationships;
 import static org.neo4j.kernel.impl.locking.ResourceTypes.schemaResource;
 
@@ -239,7 +242,7 @@ public class LockingStatementOperationsTest
     public void shouldAcquireSchemaReadLockBeforeGettingIndexRules() throws Exception
     {
         // given
-        Iterator<NewIndexDescriptor> rules = Collections.emptyIterator();
+        Iterator<NewIndexDescriptor> rules = emptyIterator();
         when( schemaReadOps.indexesGetAll( state ) ).thenReturn( rules );
 
         // when
@@ -286,31 +289,29 @@ public class LockingStatementOperationsTest
     public void shouldAcquireSchemaReadLockBeforeGettingConstraintsByLabelAndProperty() throws Exception
     {
         // given
-        NodePropertyDescriptor descriptor = new NodePropertyDescriptor( 123, 456 );
-        Iterator<NodePropertyConstraint> constraints = Collections.emptyIterator();
-        when( schemaReadOps.constraintsGetForLabelAndPropertyKey( state, descriptor ) ).thenReturn( constraints );
+        LabelSchemaDescriptor descriptor = SchemaDescriptorFactory.forLabel( 123, 456 );
+        when( schemaReadOps.constraintsGetForSchema( state, descriptor ) ).thenReturn( emptyIterator() );
 
         // when
-        Iterator<NodePropertyConstraint> result = lockingOps.constraintsGetForLabelAndPropertyKey( state, descriptor );
+        Iterator<ConstraintDescriptor> result = lockingOps.constraintsGetForSchema( state, descriptor );
 
         // then
-        assertSame( constraints, result );
+        assertThat( asList( result ), empty() );
         order.verify( locks ).acquireShared( LockTracer.NONE, ResourceTypes.SCHEMA, schemaResource() );
-        order.verify( schemaReadOps ).constraintsGetForLabelAndPropertyKey( state, descriptor );
+        order.verify( schemaReadOps ).constraintsGetForSchema( state, descriptor );
     }
 
     @Test
     public void shouldAcquireSchemaReadLockBeforeGettingConstraintsByLabel() throws Exception
     {
         // given
-        Iterator<NodePropertyConstraint> constraints = Collections.emptyIterator();
-        when( schemaReadOps.constraintsGetForLabel( state, 123 ) ).thenReturn( constraints );
+        when( schemaReadOps.constraintsGetForLabel( state, 123 ) ).thenReturn( emptyIterator() );
 
         // when
-        Iterator<NodePropertyConstraint> result = lockingOps.constraintsGetForLabel( state, 123 );
+        Iterator<ConstraintDescriptor> result = lockingOps.constraintsGetForLabel( state, 123 );
 
         // then
-        assertSame( constraints, result );
+        assertThat( asList( result ), empty() );
         order.verify( locks ).acquireShared( LockTracer.NONE, ResourceTypes.SCHEMA, schemaResource() );
         order.verify( schemaReadOps ).constraintsGetForLabel( state, 123 );
     }
@@ -319,14 +320,13 @@ public class LockingStatementOperationsTest
     public void shouldAcquireSchemaReadLockBeforeGettingAllConstraints() throws Exception
     {
         // given
-        Iterator<PropertyConstraint> constraints = Collections.emptyIterator();
-        when( schemaReadOps.constraintsGetAll( state ) ).thenReturn( constraints );
+        when( schemaReadOps.constraintsGetAll( state ) ).thenReturn( emptyIterator() );
 
         // when
-        Iterator<PropertyConstraint> result = lockingOps.constraintsGetAll( state );
+        Iterator<ConstraintDescriptor> result = lockingOps.constraintsGetAll( state );
 
         // then
-        assertSame( constraints, result );
+        assertThat( asList( result ), empty() );
         order.verify( locks ).acquireShared( LockTracer.NONE, ResourceTypes.SCHEMA, schemaResource() );
         order.verify( schemaReadOps ).constraintsGetAll( state );
     }

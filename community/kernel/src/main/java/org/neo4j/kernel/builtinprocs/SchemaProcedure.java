@@ -43,7 +43,10 @@ import org.neo4j.kernel.api.ReadOperations;
 import org.neo4j.kernel.api.Statement;
 import org.neo4j.kernel.api.StatementTokenNameLookup;
 import org.neo4j.kernel.api.constraints.NodePropertyConstraint;
+import org.neo4j.kernel.api.constraints.PropertyConstraint;
 import org.neo4j.kernel.api.schema.IndexDescriptor;
+import org.neo4j.kernel.api.schema_new.constaints.ConstraintBoundary;
+import org.neo4j.kernel.api.schema_new.constaints.ConstraintDescriptor;
 import org.neo4j.kernel.api.schema_new.index.NewIndexDescriptor;
 import org.neo4j.kernel.impl.coreapi.schema.PropertyNameUtils;
 import org.neo4j.kernel.internal.GraphDatabaseAPI;
@@ -91,13 +94,13 @@ public class SchemaProcedure
                     }
                     properties.put( "indexes", indexes );
 
-                    Iterator<NodePropertyConstraint> nodePropertyConstraintIterator =
+                    Iterator<ConstraintDescriptor> nodePropertyConstraintIterator =
                             readOperations.constraintsGetForLabel( readOperations.labelGetForName( label.name() ) );
                     ArrayList<String> constraints = new ArrayList<>();
                     while ( nodePropertyConstraintIterator.hasNext() )
                     {
-                        constraints.add( nodePropertyConstraintIterator.next()
-                                .userDescription( statementTokenNameLookup ) );
+                        PropertyConstraint constraint = ConstraintBoundary.map( nodePropertyConstraintIterator.next() );
+                        constraints.add(constraint.userDescription( statementTokenNameLookup ) );
                     }
                     properties.put( "constraints", constraints );
 

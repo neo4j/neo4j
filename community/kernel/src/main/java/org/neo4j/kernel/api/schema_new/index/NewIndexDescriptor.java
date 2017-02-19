@@ -44,23 +44,23 @@ public class NewIndexDescriptor implements SchemaDescriptor.Supplier
         GENERAL
                 {
                     @Override
-                    public boolean test( NewIndexDescriptor rule )
+                    public boolean test( NewIndexDescriptor index )
                     {
-                        return rule.type == Type.GENERAL;
+                        return index.type == Type.GENERAL;
                     }
                 },
         UNIQUE
                 {
                     @Override
-                    public boolean test( NewIndexDescriptor rule )
+                    public boolean test( NewIndexDescriptor index )
                     {
-                        return rule.type == Type.UNIQUE;
+                        return index.type == Type.UNIQUE;
                     }
                 },
         ANY
                 {
                     @Override
-                    public boolean test( NewIndexDescriptor rule )
+                    public boolean test( NewIndexDescriptor index )
                     {
                         return true;
                     }

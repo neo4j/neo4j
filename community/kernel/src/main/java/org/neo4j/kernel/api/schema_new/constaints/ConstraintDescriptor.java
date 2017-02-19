@@ -20,9 +20,15 @@
 package org.neo4j.kernel.api.schema_new.constaints;
 
 import org.neo4j.kernel.api.TokenNameLookup;
+import org.neo4j.kernel.api.schema_new.LabelSchemaDescriptor;
+import org.neo4j.kernel.api.schema_new.RelationTypeSchemaDescriptor;
+import org.neo4j.kernel.api.schema_new.SchemaComputer;
 import org.neo4j.kernel.api.schema_new.SchemaDescriptor;
+import org.neo4j.kernel.api.schema_new.index.NewIndexDescriptor;
+import org.neo4j.kernel.api.schema_new.index.NewIndexDescriptorFactory;
 
 import static java.lang.String.format;
+import static org.neo4j.kernel.api.schema_new.constaints.ConstraintDescriptor.Type.UNIQUE;
 
 /**
  * Internal representation of a graph constraint, including the schema unit it targets (eg. label-property combination)
@@ -54,6 +60,15 @@ public class ConstraintDescriptor implements SchemaDescriptor.Supplier
         return schema;
     }
 
+    public NewIndexDescriptor ownedIndexDescriptor()
+    {
+        if ( type == UNIQUE && schema instanceof LabelSchemaDescriptor )
+        {
+            return NewIndexDescriptorFactory.uniqueForSchema( (LabelSchemaDescriptor)schema );
+        }
+        throw new IllegalStateException( "Only unique constraints on label-property combinations are allowed" );
+    }
+
     public Type type()
     {
         return type;
@@ -61,9 +76,8 @@ public class ConstraintDescriptor implements SchemaDescriptor.Supplier
 
     /**
      * @param tokenNameLookup used for looking up names for token ids.
-     * @return a user friendly description of what this index indexes.
+     * @return a user friendly description of this constraint.
      */
-
     public String userDescription( TokenNameLookup tokenNameLookup )
     {
         return format( "Constraint( %s, %s )", type.name(), schema.userDescription( tokenNameLookup ) );
@@ -94,5 +108,66 @@ public class ConstraintDescriptor implements SchemaDescriptor.Supplier
     public int hashCode()
     {
         return type.hashCode() & schema.hashCode();
+    }
+
+    // PRETTY PRINTING
+
+    public String prettyPrint( TokenNameLookup tokenNameLookup )
+    {
+        return schema.computeWith( new ConstraintPrettyPrinter( tokenNameLookup ) );
+    }
+
+    private class ConstraintPrettyPrinter implements SchemaComputer<String>
+    {
+        private final TokenNameLookup tokenNameLookup;
+
+        ConstraintPrettyPrinter( TokenNameLookup tokenNameLookup )
+        {
+            this.tokenNameLookup = tokenNameLookup;
+        }
+
+        @Override
+        public String computeSpecific( LabelSchemaDescriptor schema )
+        {
+            assert schema.getPropertyIds().length == 1;
+            String labelName = labelName( schema.getLabelId(), tokenNameLookup );
+            String boundIdentifier = labelName.toLowerCase();
+            String propertyName = tokenNameLookup.propertyKeyGetName( schema.getPropertyIds()[0] );
+            if ( type == UNIQUE )
+            {
+                return String.format( "CONSTRAINT ON ( %s:%s ) ASSERT %s.%s IS UNIQUE",
+                        boundIdentifier, labelName, boundIdentifier, propertyName );
+            }
+            else
+            {
+                return String.format( "CONSTRAINT ON ( %s:%s ) ASSERT exists(%s.%s)",
+                        boundIdentifier, labelName, boundIdentifier, propertyName );
+            }
+        }
+
+        @Override
+        public String computeSpecific( RelationTypeSchemaDescriptor schema )
+        {
+            assert schema.getPropertyIds().length == 1;
+            String typeName = tokenNameLookup.relationshipTypeGetName( schema.getRelTypeId() );
+            String boundIdentifier = typeName.toLowerCase();
+            String propertyName = tokenNameLookup.propertyKeyGetName( schema.getPropertyIds()[0] );
+            return String.format( "CONSTRAINT ON ()-[ %s:%s ]-() ASSERT exists(%s.%s)",
+                    boundIdentifier, typeName, boundIdentifier, propertyName );
+        }
+
+        private String labelName( int labelId, TokenNameLookup tokenNameLookup )
+        {
+            String labelName = tokenNameLookup.labelGetName( labelId );
+            //if the labelName contains a `:` we must escape it to avoid disambiguation,
+            //e.g. CONSTRAINT on foo:bar:foo:bar
+            if (labelName.contains( ":" )) {
+                return "`" + labelName + "`";
+            }
+            else
+            {
+                return labelName;
+            }
+        }
     }
 }

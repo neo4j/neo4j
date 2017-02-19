@@ -22,18 +22,13 @@ package org.neo4j.kernel.impl.storageengine.impl.recordstorage;
 import java.util.Iterator;
 import java.util.Set;
 
-import org.neo4j.kernel.api.constraints.NodePropertyExistenceConstraint;
-import org.neo4j.kernel.api.constraints.RelationshipPropertyExistenceConstraint;
-import org.neo4j.kernel.api.constraints.UniquenessConstraint;
 import org.neo4j.kernel.api.exceptions.schema.CreateConstraintFailureException;
 import org.neo4j.kernel.api.exceptions.schema.DuplicateSchemaRuleException;
 import org.neo4j.kernel.api.exceptions.schema.SchemaRuleNotFoundException;
 import org.neo4j.kernel.api.index.SchemaIndexProvider;
 import org.neo4j.kernel.api.properties.DefinedProperty;
-import org.neo4j.kernel.api.schema_new.constaints.ConstraintDescriptorFactory;
-import org.neo4j.kernel.api.schema_new.index.IndexBoundary;
+import org.neo4j.kernel.api.schema_new.constaints.ConstraintDescriptor;
 import org.neo4j.kernel.api.schema_new.index.NewIndexDescriptor;
-import org.neo4j.kernel.api.schema_new.index.NewIndexDescriptorFactory;
 import org.neo4j.kernel.impl.api.index.SchemaIndexProviderMap;
 import org.neo4j.kernel.impl.constraints.ConstraintSemantics;
 import org.neo4j.kernel.impl.store.SchemaStorage;
@@ -195,112 +190,52 @@ public class TransactionToRecordStateVisitor extends TxStateVisitor.Adapter
     }
 
     @Override
-    public void visitAddedUniquePropertyConstraint( UniquenessConstraint element )
+    public void visitAddedConstraint( ConstraintDescriptor constraint ) throws CreateConstraintFailureException
     {
         clearSchemaState = true;
         long constraintId = schemaStorage.newRuleId();
-        int propertyKeyId = element.descriptor().getPropertyKeyId();
 
-        IndexRule indexRule = schemaStorage.indexGetForSchema(
-                NewIndexDescriptorFactory.uniqueForLabel( element.label(), propertyKeyId ) );
-        recordState.createSchemaRule(
-                constraintSemantics.writeUniquePropertyConstraint(
-                        constraintId, element.descriptor(), indexRule.getId() ) );
-        recordState.setConstraintIndexOwner( indexRule, constraintId );
+        switch ( constraint.type() )
+        {
+        case UNIQUE:
+            IndexRule indexRule = schemaStorage.indexGetForSchema( constraint.ownedIndexDescriptor() );
+            recordState.createSchemaRule( constraintSemantics.createUniquenessConstraintRule(
+                    constraintId, constraint, indexRule.getId() ) );
+            recordState.setConstraintIndexOwner( indexRule, constraintId );
+            break;
+
+        case EXISTS:
+            recordState.createSchemaRule( constraintSemantics.createExistenceConstraint(
+                    schemaStorage.newRuleId(), constraint ) );
+            break;
+
+        default:
+            throw new IllegalStateException( constraint.type().toString() );
+        }
     }
 
     @Override
-    public void visitRemovedUniquePropertyConstraint( UniquenessConstraint element )
+    public void visitRemovedConstraint( ConstraintDescriptor constraint )
     {
+        clearSchemaState = true;
         try
         {
-            clearSchemaState = true;
-            int propertyKeyId = element.descriptor().getPropertyKeyId();
-
-            recordState.dropSchemaRule( schemaStorage.constraintsGetSingle(
-                    ConstraintDescriptorFactory.uniqueForLabel( element.label(), propertyKeyId )
-                ) );
+            recordState.dropSchemaRule( schemaStorage.constraintsGetSingle( constraint ) );
         }
         catch ( SchemaRuleNotFoundException e )
         {
             throw new IllegalStateException(
                     "Constraint to be removed should exist, since its existence should have been validated earlier " +
-                    "and the schema should have been locked." );
+                            "and the schema should have been locked." );
         }
-        catch ( DuplicateSchemaRuleException de )
+        catch ( DuplicateSchemaRuleException e )
         {
             throw new IllegalStateException( "Multiple constraints found for specified label and property." );
         }
-        // Remove the index for the constraint as well
-        visitRemovedIndex( IndexBoundary.mapUnique( element.indexDescriptor() ) );
-    }
-
-    @Override
-    public void visitAddedNodePropertyExistenceConstraint( NodePropertyExistenceConstraint element )
-            throws CreateConstraintFailureException
-    {
-        clearSchemaState = true;
-        recordState.createSchemaRule( constraintSemantics.writeNodePropertyExistenceConstraint(
-                schemaStorage.newRuleId(), element.descriptor() ) );
-    }
-
-    @Override
-    public void visitRemovedNodePropertyExistenceConstraint( NodePropertyExistenceConstraint element )
-    {
-        try
+        if ( constraint.type() == ConstraintDescriptor.Type.UNIQUE )
         {
-            clearSchemaState = true;
-            int propertyKeyId = element.descriptor().getPropertyKeyId();
-
-            recordState.dropSchemaRule( schemaStorage.constraintsGetSingle(
-                    ConstraintDescriptorFactory.existsForLabel( element.label(), propertyKeyId )
-                ) );
-        }
-        catch ( SchemaRuleNotFoundException e )
-        {
-            throw new IllegalStateException(
-                    "Node property existence constraint to be removed should exist, since its existence should " +
-                    "have been validated earlier and the schema should have been locked." );
-        }
-        catch ( DuplicateSchemaRuleException de )
-        {
-            throw new IllegalStateException( "Multiple node property constraints found for specified label and " +
-                                             "property." );
-        }
-    }
-
-    @Override
-    public void visitAddedRelationshipPropertyExistenceConstraint( RelationshipPropertyExistenceConstraint element )
-            throws CreateConstraintFailureException
-    {
-        clearSchemaState = true;
-        recordState.createSchemaRule( constraintSemantics.writeRelationshipPropertyExistenceConstraint(
-                schemaStorage.newRuleId(), element.descriptor() ) );
-    }
-
-    @Override
-    public void visitRemovedRelationshipPropertyExistenceConstraint( RelationshipPropertyExistenceConstraint element )
-    {
-        try
-        {
-            //TODO: Support composite indexes
-            clearSchemaState = true;
-
-            recordState.dropSchemaRule( schemaStorage.constraintsGetSingle(
-                    ConstraintDescriptorFactory.existsForRelType(
-                            element.descriptor().getRelationshipTypeId(), element.descriptor().getPropertyKeyId() )
-                ) );
-        }
-        catch ( SchemaRuleNotFoundException e )
-        {
-            throw new IllegalStateException(
-                    "Relationship property existence constraint to be removed should exist, since its existence " +
-                    "should have been validated earlier and the schema should have been locked." );
-        }
-        catch ( DuplicateSchemaRuleException re )
-        {
-            throw new IllegalStateException( "Multiple relationship property constraints found for specified " +
-                                             "property and relationship type." );
+            // Remove the index for the constraint as well
+            visitRemovedIndex( constraint.ownedIndexDescriptor() );
         }
     }
 

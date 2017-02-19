@@ -25,12 +25,8 @@ import java.util.Set;
 
 import org.neo4j.graphdb.Label;
 import org.neo4j.graphdb.Transaction;
-import org.neo4j.kernel.api.schema.NodePropertyDescriptor;
-import org.neo4j.kernel.api.constraints.NodePropertyConstraint;
-import org.neo4j.kernel.api.constraints.PropertyConstraint;
-import org.neo4j.kernel.api.constraints.UniquenessConstraint;
-import org.neo4j.kernel.api.schema_new.LabelSchemaDescriptor;
-import org.neo4j.kernel.api.schema_new.SchemaDescriptorFactory;
+import org.neo4j.kernel.api.schema_new.constaints.ConstraintDescriptor;
+import org.neo4j.kernel.api.schema_new.constaints.ConstraintDescriptorFactory;
 
 import static org.junit.Assert.assertEquals;
 import static org.neo4j.helpers.collection.Iterators.asSet;
@@ -45,16 +41,12 @@ public class StorageLayerSchemaTest extends StorageLayerTest
         createUniquenessConstraint( label2, propertyKey );
 
         // When
-        Set<PropertyConstraint> constraints = asSet( disk.constraintsGetAll() );
+        Set<ConstraintDescriptor> constraints = asSet( disk.constraintsGetAll() );
 
         // Then
-        int labelId1 = labelId( label1 );
-        int labelId2 = labelId( label2 );
-        int propKeyId = propertyKeyId( propertyKey );
-
         Set<?> expectedConstraints = asSet(
-                new UniquenessConstraint( new NodePropertyDescriptor( labelId1, propKeyId ) ),
-                new UniquenessConstraint( new NodePropertyDescriptor( labelId2, propKeyId ) ) );
+                uniqueConstraintDescriptor( label1, propertyKey ),
+                uniqueConstraintDescriptor( label2, propertyKey ) );
 
         assertEquals( expectedConstraints, constraints );
     }
@@ -67,10 +59,10 @@ public class StorageLayerSchemaTest extends StorageLayerTest
         createUniquenessConstraint( label2, propertyKey );
 
         // When
-        Set<NodePropertyConstraint> constraints = asSet( disk.constraintsGetForLabel( labelId( label1 ) ) );
+        Set<ConstraintDescriptor> constraints = asSet( disk.constraintsGetForLabel( labelId( label1 ) ) );
 
         // Then
-        Set<?> expectedConstraints = asSet( new UniquenessConstraint( descriptorFrom( label1, propertyKey ) ) );
+        Set<?> expectedConstraints = asSet( uniqueConstraintDescriptor( label1, propertyKey ) );
 
         assertEquals( expectedConstraints, constraints );
     }
@@ -83,12 +75,12 @@ public class StorageLayerSchemaTest extends StorageLayerTest
         createUniquenessConstraint( label1, otherPropertyKey );
 
         // When
-        Set<NodePropertyConstraint> constraints = asSet(
-                disk.constraintsGetForLabelAndPropertyKey( newDescriptorFrom( label1, propertyKey ) ) );
+        Set<ConstraintDescriptor> constraints = asSet(
+                disk.constraintsGetForSchema( uniqueConstraintDescriptor( label1, propertyKey ).schema() ) );
 
         // Then
         Set<?> expectedConstraints = asSet(
-                new UniquenessConstraint( descriptorFrom( label1, propertyKey ) ) );
+                uniqueConstraintDescriptor( label1, propertyKey ) );
 
         assertEquals( expectedConstraints, constraints );
     }
@@ -102,13 +94,10 @@ public class StorageLayerSchemaTest extends StorageLayerTest
         }
     }
 
-    private NodePropertyDescriptor descriptorFrom( Label label, String propertyKey )
+    private ConstraintDescriptor uniqueConstraintDescriptor( Label label, String propertyKey )
     {
-        return new NodePropertyDescriptor( labelId( label ), propertyKeyId( propertyKey ) );
-    }
-
-    private LabelSchemaDescriptor newDescriptorFrom( Label label, String propertyKey )
-    {
-        return SchemaDescriptorFactory.forLabel( labelId( label ), propertyKeyId( propertyKey ) );
+        int labelId = labelId( label );
+        int propKeyId = propertyKeyId( propertyKey );
+        return ConstraintDescriptorFactory.uniqueForLabel( labelId, propKeyId );
     }
 }

@@ -64,6 +64,8 @@ import org.neo4j.kernel.api.index.InternalIndexState;
 import org.neo4j.kernel.api.schema.IndexDescriptorFactory;
 import org.neo4j.kernel.api.schema.NodePropertyDescriptor;
 import org.neo4j.kernel.api.schema.RelationshipPropertyDescriptor;
+import org.neo4j.kernel.api.schema_new.constaints.ConstraintBoundary;
+import org.neo4j.kernel.api.schema_new.constaints.ConstraintDescriptor;
 import org.neo4j.kernel.api.schema_new.index.IndexBoundary;
 import org.neo4j.kernel.api.schema_new.index.NewIndexDescriptor;
 import org.neo4j.kernel.impl.api.operations.KeyReadOperations;
@@ -279,7 +281,7 @@ public class SchemaImpl implements Schema
         actions.assertInOpenTransaction();
         try ( Statement statement = statementContextSupplier.get() )
         {
-            Iterator<PropertyConstraint> constraints = statement.readOperations().constraintsGetAll();
+            Iterator<ConstraintDescriptor> constraints = statement.readOperations().constraintsGetAll();
             return asConstraintDefinitions( constraints, statement.readOperations() );
         }
     }
@@ -296,7 +298,7 @@ public class SchemaImpl implements Schema
             {
                 return emptyList();
             }
-            Iterator<NodePropertyConstraint> constraints = statement.readOperations().constraintsGetForLabel( labelId );
+            Iterator<ConstraintDescriptor> constraints = statement.readOperations().constraintsGetForLabel( labelId );
             return asConstraintDefinitions( constraints, statement.readOperations() );
         }
     }
@@ -312,7 +314,7 @@ public class SchemaImpl implements Schema
             {
                 return emptyList();
             }
-            Iterator<RelationshipPropertyConstraint> constraints =
+            Iterator<ConstraintDescriptor> constraints =
                     statement.readOperations().constraintsGetForRelationshipType( typeId );
             return asConstraintDefinitions( constraints, statement.readOperations() );
         }
@@ -349,7 +351,7 @@ public class SchemaImpl implements Schema
         }
     }
 
-    private Iterable<ConstraintDefinition> asConstraintDefinitions( Iterator<? extends PropertyConstraint> constraints,
+    private Iterable<ConstraintDefinition> asConstraintDefinitions( Iterator<? extends ConstraintDescriptor> constraints,
             ReadOperations readOperations )
     {
         // Intentionally create an eager list so that used statement can be closed
@@ -357,8 +359,8 @@ public class SchemaImpl implements Schema
 
         while ( constraints.hasNext() )
         {
-            PropertyConstraint constraint = constraints.next();
-            definitions.add( asConstraintDefinition( constraint, readOperations ) );
+            ConstraintDescriptor constraint = constraints.next();
+            definitions.add( asConstraintDefinition( ConstraintBoundary.map( constraint ), readOperations ) );
         }
 
         return definitions;
