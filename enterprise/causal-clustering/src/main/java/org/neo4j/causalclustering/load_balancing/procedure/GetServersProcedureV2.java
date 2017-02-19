@@ -22,7 +22,7 @@ package org.neo4j.causalclustering.load_balancing.procedure;
 import java.util.Map;
 
 import org.neo4j.causalclustering.load_balancing.LoadBalancingResult;
-import org.neo4j.causalclustering.load_balancing.LoadBalancingStrategy;
+import org.neo4j.causalclustering.load_balancing.LoadBalancingPlugin;
 import org.neo4j.collection.RawIterator;
 import org.neo4j.kernel.api.exceptions.ProcedureException;
 import org.neo4j.kernel.api.proc.CallableProcedure;
@@ -55,11 +55,11 @@ public class GetServersProcedureV2 implements CallableProcedure
                     .description( DESCRIPTION )
                     .build();
 
-    private final LoadBalancingStrategy loadBalancingStrategy;
+    private final LoadBalancingPlugin loadBalancingPlugin;
 
-    public GetServersProcedureV2( LoadBalancingStrategy loadBalancingStrategy )
+    public GetServersProcedureV2( LoadBalancingPlugin loadBalancingPlugin )
     {
-        this.loadBalancingStrategy = loadBalancingStrategy;
+        this.loadBalancingPlugin = loadBalancingPlugin;
     }
 
     @Override
@@ -74,7 +74,7 @@ public class GetServersProcedureV2 implements CallableProcedure
         @SuppressWarnings( "unchecked" )
         Map<String,String> clientContext = (Map<String,String>) input[0];
 
-        LoadBalancingStrategy.Result result = loadBalancingStrategy.run( clientContext );
+        LoadBalancingPlugin.Result result = loadBalancingPlugin.run( clientContext );
 
         return ResultFormatV1.build( new LoadBalancingResult(
                 result.routeEndpoints(),

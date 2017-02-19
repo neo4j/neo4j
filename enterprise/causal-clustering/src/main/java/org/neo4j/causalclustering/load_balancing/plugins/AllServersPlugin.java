@@ -17,7 +17,7 @@
  * You should have received a copy of the GNU Affero General Public License
  * along with this program. If not, see <http://www.gnu.org/licenses/>.
  */
-package org.neo4j.causalclustering.load_balancing.strategy;
+package org.neo4j.causalclustering.load_balancing.plugins;
 
 import java.util.List;
 import java.util.Map;
@@ -33,7 +33,7 @@ import org.neo4j.causalclustering.discovery.ReadReplicaTopology;
 import org.neo4j.causalclustering.identity.MemberId;
 import org.neo4j.causalclustering.load_balancing.Endpoint;
 import org.neo4j.causalclustering.load_balancing.LoadBalancingResult;
-import org.neo4j.causalclustering.load_balancing.LoadBalancingStrategy;
+import org.neo4j.causalclustering.load_balancing.LoadBalancingPlugin;
 import org.neo4j.kernel.configuration.Config;
 
 import static java.util.Collections.emptyList;
@@ -42,15 +42,15 @@ import static org.neo4j.causalclustering.load_balancing.Util.extractBoltAddress;
 import static org.neo4j.causalclustering.load_balancing.Util.asList;
 
 /**
- * This is just a simple strategy and not intended for actual use. Will be replaced.
+ * This is just a simple plugin and not intended for actual use. Will be replaced.
  */
-public class AllServersStrategy implements LoadBalancingStrategy
+public class AllServersPlugin implements LoadBalancingPlugin
 {
     private final CoreTopologyService topologyService;
     private final LeaderLocator leaderLocator;
     private final Long timeToLive;
 
-    public AllServersStrategy( CoreTopologyService topologyService, LeaderLocator leaderLocator, Config config )
+    public AllServersPlugin( CoreTopologyService topologyService, LeaderLocator leaderLocator, Config config )
     {
         this.topologyService = topologyService;
         this.leaderLocator = leaderLocator;

@@ -30,11 +30,12 @@ import org.neo4j.causalclustering.identity.ClusterId;
 import org.neo4j.causalclustering.identity.MemberId;
 
 import static java.lang.String.format;
+import static java.util.Collections.emptyMap;
 import static java.util.stream.Collectors.toSet;
 
 public class CoreTopology
 {
-    static CoreTopology EMPTY = new CoreTopology( null, false, Collections.emptyMap() );
+    static CoreTopology EMPTY = new CoreTopology( null, false, emptyMap() );
 
     private final ClusterId clusterId;
     private final boolean canBeBootstrapped;

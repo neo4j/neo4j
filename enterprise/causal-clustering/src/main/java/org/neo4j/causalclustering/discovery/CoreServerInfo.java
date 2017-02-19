@@ -30,7 +30,7 @@ public class CoreServerInfo implements CatchupServerAddress, ClientConnector, Ta
     private final AdvertisedSocketAddress raftServer;
     private final AdvertisedSocketAddress catchupServer;
     private final ClientConnectorAddresses clientConnectorAddresses;
-    private Set<String> tags;
+    private final Set<String> tags;
 
     public CoreServerInfo( AdvertisedSocketAddress raftServer, AdvertisedSocketAddress catchupServer,
             ClientConnectorAddresses clientConnectors )

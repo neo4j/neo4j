@@ -17,32 +17,35 @@
  * You should have received a copy of the GNU Affero General Public License
  * along with this program. If not, see <http://www.gnu.org/licenses/>.
  */
-package org.neo4j.causalclustering.load_balancing.filters;
+package org.neo4j.causalclustering.load_balancing.plugins.server_policies;
 
-import java.util.List;
 import java.util.Objects;
 import java.util.Set;
 
-/**
- * Filters the set through each filter of the chain in order.
- */
-public class FilterChain<T> implements Filter<T>
-{
-    private List<Filter<T>> chain;
+import org.neo4j.helpers.AdvertisedSocketAddress;
 
-    public FilterChain( List<Filter<T>> chain )
+/**
+ * Hold the server information that is interesting for load balancing purposes.
+ */
+class ServerInfo
+{
+    private final AdvertisedSocketAddress boltAddress;
+    private Set<String> tags;
+
+    ServerInfo( AdvertisedSocketAddress boltAddress, Set<String> tags )
     {
-        this.chain = chain;
+        this.boltAddress = boltAddress;
+        this.tags = tags;
     }
 
-    @Override
-    public Set<T> apply( Set<T> data )
+    AdvertisedSocketAddress boltAddress()
     {
-        for ( Filter<T> filter : chain )
-        {
-            data = filter.apply( data );
-        }
-        return data;
+        return boltAddress;
+    }
+
+    Set<String> tags()
+    {
+        return tags;
     }
 
     @Override
@@ -52,21 +55,23 @@ public class FilterChain<T> implements Filter<T>
         { return true; }
         if ( o == null || getClass() != o.getClass() )
         { return false; }
-        FilterChain<?> that = (FilterChain<?>) o;
-        return Objects.equals( chain, that.chain );
+        ServerInfo that = (ServerInfo) o;
+        return Objects.equals( boltAddress, that.boltAddress ) &&
+               Objects.equals( tags, that.tags );
     }
 
     @Override
     public int hashCode()
     {
-        return Objects.hash( chain );
+        return Objects.hash( boltAddress, tags );
     }
 
     @Override
     public String toString()
     {
-        return "FilterChain{" +
-               "chain=" + chain +
+        return "ServerInfo{" +
+               "boltAddress=" + boltAddress +
+               ", tags=" + tags +
                '}';
     }
 }

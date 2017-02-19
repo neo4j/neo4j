@@ -17,40 +17,56 @@
  * You should have received a copy of the GNU Affero General Public License
  * along with this program. If not, see <http://www.gnu.org/licenses/>.
  */
-package org.neo4j.causalclustering.load_balancing.strategy.server_policy;
+package org.neo4j.causalclustering.load_balancing.plugins.server_policies;
 
 import java.util.HashMap;
 import java.util.Map;
 
-import org.neo4j.causalclustering.load_balancing.filters.Filter;
+import org.neo4j.causalclustering.load_balancing.filters.IdentityFilter;
 import org.neo4j.logging.Log;
 import org.neo4j.logging.LogProvider;
+
+import static java.lang.String.format;
 
 class Policies
 {
     static final String POLICY_KEY = "load_balancing.policy"; // TODO: move somewhere (driver support package?)
-    private static final Filter<ServerInfo> DEFAULT_POLICY = input -> input;
+    static final String DEFAULT_POLICY_NAME = "default";
+    static final Policy DEFAULT_POLICY = new FilteringPolicy( IdentityFilter.as() );
 
-    private final Map<String,Filter<ServerInfo>> policies = new HashMap<>();
+    private final Map<String,Policy> policies = new HashMap<>();
+
     private final Log log;
 
     Policies( LogProvider logProvider )
     {
         this.log = logProvider.getLog( getClass() );
-        policies.put( null, DEFAULT_POLICY );
     }
 
-    void addPolicy( String policyName, Filter<ServerInfo> filter )
+    void addPolicy( String policyName, Policy policy )
     {
-        Filter<ServerInfo> oldPolicy = policies.putIfAbsent( policyName, filter );
+        Policy oldPolicy = policies.putIfAbsent( policyName, policy );
         if ( oldPolicy != null )
         {
-            log.error( "Policy name conflict for: " + policyName );
+            log.error( format( "Policy name conflict for '%s'.", policyName ) );
         }
     }
 
-    Filter<ServerInfo> selectFor( Map<String,String> context )
+    Policy selectFor( Map<String,String> context )
     {
-        return policies.get( context.get( POLICY_KEY ) );
+        String policyName = context.get( POLICY_KEY );
+        policyName = (policyName != null) ? policyName : DEFAULT_POLICY_NAME;
+
+        Policy selectedPolicy = policies.get( policyName );
+
+        if ( selectedPolicy == null )
+        {
+            log.warn( format( "Policy definition for '%s' could not be found. Will use built-in default instead.", policyName ) );
+            return DEFAULT_POLICY;
+        }
+        else
+        {
+            return selectedPolicy;
+        }
     }
 }

@@ -19,54 +19,34 @@
  */
 package org.neo4j.causalclustering.load_balancing.filters;
 
-import java.util.List;
-import java.util.Objects;
 import java.util.Set;
 
 /**
- * Filters the set through each filter of the chain in order.
+ * Performs no filtering.
  */
-public class FilterChain<T> implements Filter<T>
+public class IdentityFilter<T> implements Filter<T>
 {
-    private List<Filter<T>> chain;
+    public static final IdentityFilter INSTANCE = new IdentityFilter();
 
-    public FilterChain( List<Filter<T>> chain )
+    private IdentityFilter()
     {
-        this.chain = chain;
+    }
+
+    public static <T> IdentityFilter<T> as()
+    {
+        //noinspection unchecked
+        return INSTANCE;
     }
 
     @Override
     public Set<T> apply( Set<T> data )
     {
-        for ( Filter<T> filter : chain )
-        {
-            data = filter.apply( data );
-        }
         return data;
-    }
-
-    @Override
-    public boolean equals( Object o )
-    {
-        if ( this == o )
-        { return true; }
-        if ( o == null || getClass() != o.getClass() )
-        { return false; }
-        FilterChain<?> that = (FilterChain<?>) o;
-        return Objects.equals( chain, that.chain );
-    }
-
-    @Override
-    public int hashCode()
-    {
-        return Objects.hash( chain );
     }
 
     @Override
     public String toString()
     {
-        return "FilterChain{" +
-               "chain=" + chain +
-               '}';
+        return "IdentityFilter{}";
     }
 }

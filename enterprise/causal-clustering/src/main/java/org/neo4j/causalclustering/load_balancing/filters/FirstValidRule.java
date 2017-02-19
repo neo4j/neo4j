@@ -20,6 +20,7 @@
 package org.neo4j.causalclustering.load_balancing.filters;
 
 import java.util.List;
+import java.util.Objects;
 import java.util.Set;
 
 /**
@@ -28,18 +29,18 @@ import java.util.Set;
  */
 public class FirstValidRule<T> implements Filter<T>
 {
-    private List<FilterChain<T>> chains;
+    private List<FilterChain<T>> rules;
 
-    public FirstValidRule( List<FilterChain<T>> chains )
+    public FirstValidRule( List<FilterChain<T>> rules )
     {
-        this.chains = chains;
+        this.rules = rules;
     }
 
     @Override
     public Set<T> apply( Set<T> input )
     {
         Set<T> output = input;
-        for ( Filter<T> chain : chains )
+        for ( Filter<T> chain : rules )
         {
             output = chain.apply( input );
             if ( !output.isEmpty() )
@@ -48,5 +49,30 @@ public class FirstValidRule<T> implements Filter<T>
             }
         }
         return output;
+    }
+
+    @Override
+    public boolean equals( Object o )
+    {
+        if ( this == o )
+        { return true; }
+        if ( o == null || getClass() != o.getClass() )
+        { return false; }
+        FirstValidRule<?> that = (FirstValidRule<?>) o;
+        return Objects.equals( rules, that.rules );
+    }
+
+    @Override
+    public int hashCode()
+    {
+        return Objects.hash( rules );
+    }
+
+    @Override
+    public String toString()
+    {
+        return "FirstValidRule{" +
+               "rules=" + rules +
+               '}';
     }
 }

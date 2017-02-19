@@ -17,17 +17,29 @@
  * You should have received a copy of the GNU Affero General Public License
  * along with this program. If not, see <http://www.gnu.org/licenses/>.
  */
-package org.neo4j.causalclustering.load_balancing.strategy.server_policy;
+package org.neo4j.causalclustering.load_balancing.plugins.server_policies;
 
+import java.util.Objects;
 import java.util.Set;
 import java.util.function.Predicate;
 import java.util.stream.Collectors;
 
 import org.neo4j.causalclustering.load_balancing.filters.Filter;
 
+import static org.neo4j.helpers.collection.Iterators.asSet;
+
+/**
+ * Only returns servers matching any of the supplied tags.
+ */
 public class AnyTagFilter implements Filter<ServerInfo>
 {
     private final Predicate<ServerInfo> matchesAnyTag;
+    private final Set<String> tags;
+
+    AnyTagFilter( String... tags )
+    {
+        this( asSet( tags ) );
+    }
 
     AnyTagFilter( Set<String> tags )
     {
@@ -42,11 +54,37 @@ public class AnyTagFilter implements Filter<ServerInfo>
             }
             return false;
         };
+        this.tags = tags;
     }
 
     @Override
     public Set<ServerInfo> apply( Set<ServerInfo> data )
     {
         return data.stream().filter( matchesAnyTag ).collect( Collectors.toSet() );
+    }
+
+    @Override
+    public boolean equals( Object o )
+    {
+        if ( this == o )
+        { return true; }
+        if ( o == null || getClass() != o.getClass() )
+        { return false; }
+        AnyTagFilter that = (AnyTagFilter) o;
+        return Objects.equals( tags, that.tags );
+    }
+
+    @Override
+    public int hashCode()
+    {
+        return Objects.hash( tags );
+    }
+
+    @Override
+    public String toString()
+    {
+        return "AnyTagFilter{" +
+               "tags=" + tags +
+               '}';
     }
 }

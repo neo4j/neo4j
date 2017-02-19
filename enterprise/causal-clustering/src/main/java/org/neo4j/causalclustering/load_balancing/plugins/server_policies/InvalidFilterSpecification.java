@@ -17,14 +17,17 @@
  * You should have received a copy of the GNU Affero General Public License
  * along with this program. If not, see <http://www.gnu.org/licenses/>.
  */
-package org.neo4j.causalclustering.load_balancing.strategy.server_policy;
+package org.neo4j.causalclustering.load_balancing.plugins.server_policies;
 
-import org.neo4j.kernel.configuration.Config;
-
-public class PolicyLoader
+public class InvalidFilterSpecification extends Exception
 {
-    PolicyLoader( Config config, Policies policies )
+    InvalidFilterSpecification( String message )
     {
-        // TODO: Load policies from config into policies.
+        super( message );
+    }
+
+    InvalidFilterSpecification( String message, NumberFormatException cause )
+    {
+        super( message, cause );
     }
 }

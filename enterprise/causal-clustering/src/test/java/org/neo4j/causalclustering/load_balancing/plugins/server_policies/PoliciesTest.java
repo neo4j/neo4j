@@ -17,40 +17,78 @@
  * You should have received a copy of the GNU Affero General Public License
  * along with this program. If not, see <http://www.gnu.org/licenses/>.
  */
-package org.neo4j.causalclustering.load_balancing.strategy.server_policy;
+package org.neo4j.causalclustering.load_balancing.plugins.server_policies;
 
 import org.junit.Test;
 
 import java.util.Set;
 
-import org.neo4j.causalclustering.load_balancing.filters.Filter;
 import org.neo4j.helpers.AdvertisedSocketAddress;
 import org.neo4j.logging.NullLogProvider;
 
 import static java.util.Collections.emptyMap;
 import static org.junit.Assert.assertEquals;
+import static org.junit.Assert.assertNotEquals;
 import static org.neo4j.helpers.collection.Iterators.asSet;
 import static org.neo4j.helpers.collection.MapUtil.stringMap;
 
 public class PoliciesTest
 {
     @Test
-    public void shouldSupplyDefaultUnfilteredPolicy() throws Exception
+    public void shouldSupplyDefaultUnfilteredPolicyForEmptyContext() throws Exception
     {
         // given
         Policies policies = new Policies( NullLogProvider.getInstance() );
 
         // when
-        Filter<ServerInfo> filter = policies.selectFor( emptyMap() );
+        Policy policy = policies.selectFor( emptyMap() );
         Set<ServerInfo> input = asSet(
                 new ServerInfo( new AdvertisedSocketAddress( "bolt", 1 ), asSet( "tagA" ) ),
                 new ServerInfo( new AdvertisedSocketAddress( "bolt", 2 ), asSet( "tagB" ) )
         );
 
-        Set<ServerInfo> output = filter.apply( input );
+        Set<ServerInfo> output = policy.apply( input );
 
         // then
         assertEquals( input, output );
+        assertEquals( Policies.DEFAULT_POLICY, policy );
+    }
+
+    @Test
+    public void shouldSupplyDefaultUnfilteredPolicyForUnknownPolicyName() throws Exception
+    {
+        // given
+        Policies policies = new Policies( NullLogProvider.getInstance() );
+
+        // when
+        Policy policy = policies.selectFor( stringMap( Policies.POLICY_KEY, "unknown-policy" ) );
+        Set<ServerInfo> input = asSet(
+                new ServerInfo( new AdvertisedSocketAddress( "bolt", 1 ), asSet( "tagA" ) ),
+                new ServerInfo( new AdvertisedSocketAddress( "bolt", 2 ), asSet( "tagB" ) )
+        );
+
+        Set<ServerInfo> output = policy.apply( input );
+
+        // then
+        assertEquals( input, output );
+        assertEquals( Policies.DEFAULT_POLICY, policy );
+    }
+
+    @Test
+    public void shouldAllowOverridingDefaultPolicy() throws Exception
+    {
+        Policies policies = new Policies( NullLogProvider.getInstance() );
+
+        String defaulyPolicyName = Policies.DEFAULT_POLICY_NAME;
+        Policy defaultPolicy = new FilteringPolicy( new AnyTagFilter( "tagA", "tagB" ) );
+
+        // when
+        policies.addPolicy( defaulyPolicyName, defaultPolicy );
+        Policy selectedPolicy = policies.selectFor( emptyMap() );
+
+        // then
+        assertEquals( defaultPolicy, selectedPolicy );
+        assertNotEquals( Policies.DEFAULT_POLICY, selectedPolicy );
     }
 
     @Test
@@ -60,11 +98,11 @@ public class PoliciesTest
         Policies policies = new Policies( NullLogProvider.getInstance() );
 
         String myPolicyName = "china";
-        Filter<ServerInfo> myPolicy = data -> data;
+        Policy myPolicy = data -> data;
 
         // when
         policies.addPolicy( myPolicyName, myPolicy );
-        Filter<ServerInfo> selectedPolicy = policies.selectFor( stringMap( Policies.POLICY_KEY, myPolicyName ) );
+        Policy selectedPolicy = policies.selectFor( stringMap( Policies.POLICY_KEY, myPolicyName ) );
 
         // then
         assertEquals( myPolicy, selectedPolicy );

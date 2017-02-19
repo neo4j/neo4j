@@ -19,10 +19,14 @@
  */
 package org.neo4j.causalclustering.load_balancing.filters;
 
+import java.util.Objects;
 import java.util.Set;
 
 import static java.util.Collections.emptySet;
 
+/**
+ * Only returns a valid (non-empty) result if the minimum count is met.
+ */
 public class MinimumCountFilter<T> implements Filter<T>
 {
     private final int minCount;
@@ -36,5 +40,30 @@ public class MinimumCountFilter<T> implements Filter<T>
     public Set<T> apply( Set<T> data )
     {
         return data.size() >= minCount ? data : emptySet();
+    }
+
+    @Override
+    public boolean equals( Object o )
+    {
+        if ( this == o )
+        { return true; }
+        if ( o == null || getClass() != o.getClass() )
+        { return false; }
+        MinimumCountFilter<?> that = (MinimumCountFilter<?>) o;
+        return minCount == that.minCount;
+    }
+
+    @Override
+    public int hashCode()
+    {
+        return Objects.hash( minCount );
+    }
+
+    @Override
+    public String toString()
+    {
+        return "MinimumCountFilter{" +
+               "minCount=" + minCount +
+               '}';
     }
 }
