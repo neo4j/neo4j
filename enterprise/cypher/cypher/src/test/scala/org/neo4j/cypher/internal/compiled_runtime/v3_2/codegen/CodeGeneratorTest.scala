@@ -1597,6 +1597,37 @@ abstract class CodeGeneratorTest extends CypherFunSuite with LogicalPlanningTest
       Map("b" -> 4L,"c" -> 4L)))
   }
 
+  test("sort and limit projection with list of integers (should use top)") {
+    /*
+    UNWIND [3,1,2,4] as x
+    WITH x AS a, x AS b, x AS c, x AS d
+    RETURN b, c
+    ORDER BY a, b
+    LIMIT 2
+    */
+    // given
+    val listLiteral = literalIntList(3, 1, 2, 4)
+
+    val unwind = plans.UnwindCollection(SingleRow()(solved), IdName("x"), listLiteral)(solved)
+    val projection = plans.Projection(unwind,
+      Map("a" -> varFor("x"),
+        "b" -> varFor("x"),
+        "c" -> varFor("x"),
+        "d" -> varFor("x")))(solved)
+    val orderBy = Sort(projection, List(Ascending(IdName("a")), Descending(IdName("b"))))(solved)
+    val limit = plans.Limit(orderBy, literalInt(2), DoNotIncludeTies)(solved)
+    val plan = ProduceResult(List("b", "c"), limit)
+
+    // when
+    val compiled = compileAndExecute(plan)
+
+    // then
+    val result = getResult(compiled, "b", "c")
+    result.toList should equal(List(
+      Map("b" -> 1L,"c" -> 1L),
+      Map("b" -> 2L,"c" -> 2L)))
+  }
+
   private def compile(plan: LogicalPlan) = {
     generator.generate(plan, newMockedPlanContext, semanticTable, CostBasedPlannerName.default)
   }

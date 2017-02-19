@@ -17,25 +17,39 @@
  * You should have received a copy of the GNU Affero General Public License
  * along with this program. If not, see <http://www.gnu.org/licenses/>.
  */
-package org.neo4j.cypher.internal.compiled_runtime.v3_2.codegen.ir
+package org.neo4j.cypher.internal.codegen;
 
-import org.neo4j.cypher.internal.compiled_runtime.v3_2.codegen.CodeGenContext
-import org.neo4j.cypher.internal.compiled_runtime.v3_2.codegen.spi.MethodStructure
+import org.junit.Test;
 
-case class SortInstruction(opName: String,
-                           sortTableInfo: SortTableInfo)
-  extends Instruction {
+import java.util.Iterator;
 
-  override def init[E](generator: MethodStructure[E])(implicit context: CodeGenContext) = {
-  }
+import static org.junit.Assert.*;
 
-  override def body[E](generator: MethodStructure[E])(implicit context: CodeGenContext) = {
-    generator.trace(opName, Some(this.getClass.getSimpleName)) { body =>
-      body.sortTableSort(sortTableInfo.tableName, sortTableInfo.tableDescriptor)
+public class DefaultTopTableTest
+{
+    private static Long[] testValues = new Long[] {
+        7L, 4L, 5L, 0L, 3L, 4L, 8L, 6L, 1L, 9L, 2L
+    };
+
+    @Test
+    public void shouldOrderValuesCorrectly()
+    {
+        DefaultTopTable table = new DefaultTopTable( 5 );
+        for ( Long i : testValues )
+        {
+            table.add( i );
+        }
+
+        table.sort();
+
+        Iterator<Object> iterator = table.iterator();
+
+        for ( int i = 0; i < 5; i++ )
+        {
+            assertTrue( iterator.hasNext() );
+            long value = (long) iterator.next();
+            assertEquals( i, value );
+        }
+        assertFalse( iterator.hasNext() );
     }
-  }
-
-  override protected def children: Seq[Instruction] = Seq.empty
-
-  override protected def operatorId = Set(opName)
 }
