@@ -43,9 +43,11 @@ import org.neo4j.kernel.impl.api.StatementOperationParts;
 import org.neo4j.kernel.impl.api.index.IndexProxy;
 import org.neo4j.kernel.impl.api.index.IndexingService;
 import org.neo4j.kernel.impl.api.state.ConstraintIndexCreator;
+import org.neo4j.kernel.impl.locking.ResourceTypes;
 
 import static org.junit.Assert.assertEquals;
 import static org.junit.Assert.fail;
+import static org.mockito.Matchers.anyLong;
 import static org.mockito.Mockito.doThrow;
 import static org.mockito.Mockito.mock;
 import static org.mockito.Mockito.verify;
@@ -77,7 +79,7 @@ public class ConstraintIndexCreatorTest
         when( indexingService.getIndexProxy( 2468L ) ).thenReturn( indexProxy );
         PropertyAccessor propertyAccessor = mock( PropertyAccessor.class );
 
-        ConstraintIndexCreator creator = new ConstraintIndexCreator( () -> kernel, indexingService, propertyAccessor );
+        ConstraintIndexCreator creator = new ConstraintIndexCreator( () -> kernel, indexingService, propertyAccessor, false );
 
         // when
         long indexId = creator.createUniquenessConstraintIndex( state, constraintCreationContext.schemaReadOperations(), 123, 456 );
@@ -113,7 +115,7 @@ public class ConstraintIndexCreatorTest
                 .when(indexProxy).awaitStoreScanCompleted();
         PropertyAccessor propertyAccessor = mock( PropertyAccessor.class );
 
-        ConstraintIndexCreator creator = new ConstraintIndexCreator( () -> kernel, indexingService, propertyAccessor );
+        ConstraintIndexCreator creator = new ConstraintIndexCreator( () -> kernel, indexingService, propertyAccessor, false );
 
         // when
         try
@@ -149,7 +151,7 @@ public class ConstraintIndexCreatorTest
         IndexDescriptor descriptor = new IndexDescriptor( 123, 456 );
         PropertyAccessor propertyAccessor = mock( PropertyAccessor.class );
 
-        ConstraintIndexCreator creator = new ConstraintIndexCreator( () -> kernel, indexingService, propertyAccessor );
+        ConstraintIndexCreator creator = new ConstraintIndexCreator( () -> kernel, indexingService, propertyAccessor, false );
 
         // when
         creator.dropUniquenessConstraintIndex( descriptor );
@@ -158,6 +160,33 @@ public class ConstraintIndexCreatorTest
         assertEquals( 1, kernel.statements.size() );
         verify( kernel.statements.get( 0 ).txState() ).constraintIndexDoDrop( descriptor );
         verifyZeroInteractions( indexingService );
+    }
+
+    @Test
+    public void shouldReleaseSchemaLockWhileAwaitingIndexPopulation() throws Exception
+    {
+        // given
+        StubKernel kernel = new StubKernel();
+        IndexingService indexingService = mock( IndexingService.class );
+        StatementOperationParts constraintCreationContext = mockedParts();
+        IndexDescriptor descriptor = new IndexDescriptor( 123, 456 );
+        PropertyAccessor propertyAccessor = mock( PropertyAccessor.class );
+
+        KernelStatement state = mockedState();
+
+        when( constraintCreationContext.schemaReadOperations().indexGetCommittedId( state, descriptor, CONSTRAINT ) )
+                .thenReturn( 2468L );
+        IndexProxy indexProxy = mock( IndexProxy.class );
+        when( indexingService.getIndexProxy( anyLong() ) ).thenReturn( indexProxy );
+
+        ConstraintIndexCreator creator = new ConstraintIndexCreator( () -> kernel, indexingService, propertyAccessor, true );
+
+        // when
+        creator.createUniquenessConstraintIndex( state, constraintCreationContext.schemaReadOperations(), 123, 456 );
+
+        // then
+        verify( state.locks().pessimistic() ).releaseExclusive( ResourceTypes.SCHEMA, ResourceTypes.schemaResource() );
+        verify( state.locks().pessimistic() ).acquireExclusive( ResourceTypes.SCHEMA, ResourceTypes.schemaResource() );
     }
 
     public class StubKernel implements KernelAPI

@@ -42,11 +42,13 @@ public class CommitProcessSwitcher extends AbstractComponentSwitcher<Transaction
     private final DependencyResolver dependencyResolver;
     private final MasterTransactionCommitProcess.Monitor monitor;
     private final Locks locks;
+    private final boolean reacquireSharedSchemaLockOnIncomingTransactions;
 
     public CommitProcessSwitcher( TransactionPropagator txPropagator, Master master,
             DelegateInvocationHandler<TransactionCommitProcess> delegate, RequestContextFactory requestContextFactory,
             Locks locks,
-            Monitors monitors, DependencyResolver dependencyResolver )
+            Monitors monitors, DependencyResolver dependencyResolver,
+            boolean reacquireSharedSchemaLockOnIncomingTransactions )
     {
         super( delegate );
         this.txPropagator = txPropagator;
@@ -54,6 +56,7 @@ public class CommitProcessSwitcher extends AbstractComponentSwitcher<Transaction
         this.requestContextFactory = requestContextFactory;
         this.locks = locks;
         this.dependencyResolver = dependencyResolver;
+        this.reacquireSharedSchemaLockOnIncomingTransactions = reacquireSharedSchemaLockOnIncomingTransactions;
         this.monitor = monitors.newMonitor( MasterTransactionCommitProcess.Monitor.class );
     }
 
@@ -71,6 +74,7 @@ public class CommitProcessSwitcher extends AbstractComponentSwitcher<Transaction
                 dependencyResolver.resolveDependency( StorageEngine.class ) );
 
         IntegrityValidator validator = dependencyResolver.resolveDependency( IntegrityValidator.class );
-        return new MasterTransactionCommitProcess( commitProcess, txPropagator, validator, monitor, locks );
+        return new MasterTransactionCommitProcess( commitProcess, txPropagator, validator, monitor, locks,
+                reacquireSharedSchemaLockOnIncomingTransactions );
     }
 }

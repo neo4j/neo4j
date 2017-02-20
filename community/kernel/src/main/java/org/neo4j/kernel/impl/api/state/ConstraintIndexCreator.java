@@ -42,7 +42,6 @@ import org.neo4j.kernel.impl.api.KernelStatement;
 import org.neo4j.kernel.impl.api.index.IndexingService;
 import org.neo4j.kernel.impl.api.operations.SchemaReadOperations;
 import org.neo4j.kernel.impl.locking.Locks.Client;
-
 import static java.util.Collections.singleton;
 
 import static org.neo4j.kernel.impl.locking.ResourceTypes.SCHEMA;
@@ -54,13 +53,15 @@ public class ConstraintIndexCreator
     private final IndexingService indexingService;
     private final Supplier<KernelAPI> kernelSupplier;
     private final PropertyAccessor propertyAccessor;
+    private final boolean releaseSchemaLockWhenCreatingConstraint;
 
     public ConstraintIndexCreator( Supplier<KernelAPI> kernelSupplier, IndexingService indexingService,
-            PropertyAccessor propertyAccessor )
+            PropertyAccessor propertyAccessor, boolean releaseSchemaLockWhenCreatingConstraint )
     {
         this.kernelSupplier = kernelSupplier;
         this.indexingService = indexingService;
         this.propertyAccessor = propertyAccessor;
+        this.releaseSchemaLockWhenCreatingConstraint = releaseSchemaLockWhenCreatingConstraint;
     }
 
     /**
@@ -101,7 +102,7 @@ public class ConstraintIndexCreator
             // At this point the integrity of the constraint to be created was checked
             // while holding the lock and the index rule backing the soon-to-be-created constraint
             // has been created. Now it's just the population left, which can take a long time
-            locks.releaseExclusive( SCHEMA, schemaResource() );
+            releaseSchemaLock( locks );
 
             awaitIndexPopulation( constraint, indexId );
 
@@ -109,7 +110,7 @@ public class ConstraintIndexCreator
             // Acquire SCHEMA WRITE lock and verify the constraints here in this user transaction
             // and if everything checks out then it will be held until after the constraint has been
             // created and activated.
-            locks.acquireExclusive( SCHEMA, schemaResource() );
+            acquireSchemaLock( locks );
             reacquiredSchemaLock = true;
             indexingService.getIndexProxy( indexId ).verifyDeferredConstraints( propertyAccessor );
 
@@ -135,10 +136,26 @@ public class ConstraintIndexCreator
             {
                 if ( !reacquiredSchemaLock )
                 {
-                    locks.acquireExclusive( SCHEMA, schemaResource() );
+                    acquireSchemaLock( locks );
                 }
                 dropUniquenessConstraintIndex( descriptor );
             }
+        }
+    }
+
+    private void acquireSchemaLock( Client locks )
+    {
+        if ( releaseSchemaLockWhenCreatingConstraint )
+        {
+            locks.acquireExclusive( SCHEMA, schemaResource() );
+        }
+    }
+
+    private void releaseSchemaLock( Client locks )
+    {
+        if ( releaseSchemaLockWhenCreatingConstraint )
+        {
+            locks.releaseExclusive( SCHEMA, schemaResource() );
         }
     }
 

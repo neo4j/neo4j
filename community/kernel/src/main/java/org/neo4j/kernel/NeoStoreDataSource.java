@@ -779,8 +779,11 @@ public class NeoStoreDataSource implements Lifecycle, IndexProviders
          */
         Supplier<KernelAPI> kernelProvider = () -> kernelModule.kernelAPI();
 
+        boolean releaseSchemaLockWhenBuildingConstratinIndexes =
+                config.get( GraphDatabaseSettings.release_schema_lock_while_building_constraint );
         ConstraintIndexCreator constraintIndexCreator =
-                new ConstraintIndexCreator( kernelProvider, indexingService, propertyAccessor );
+                new ConstraintIndexCreator( kernelProvider, indexingService, propertyAccessor,
+                        releaseSchemaLockWhenBuildingConstratinIndexes );
 
         LegacyIndexStore legacyIndexStore = new LegacyIndexStore( config,
                 indexConfigStore, kernelProvider, legacyIndexProviderLookup );

@@ -57,6 +57,7 @@ public class MasterTransactionCommitProcess implements TransactionCommitProcess
     private final IntegrityValidator validator;
     private final Monitor monitor;
     private final Locks locks;
+    private final boolean reacquireSharedSchemaLockOnIncomingTransactions;
 
     public interface Monitor
     {
@@ -64,13 +65,15 @@ public class MasterTransactionCommitProcess implements TransactionCommitProcess
     }
 
     public MasterTransactionCommitProcess( TransactionCommitProcess commitProcess, TransactionPropagator txPropagator,
-            IntegrityValidator validator, Monitor monitor, Locks locks )
+            IntegrityValidator validator, Monitor monitor, Locks locks,
+            boolean reacquireSharedSchemaLockOnIncomingTransactions )
     {
         this.inner = commitProcess;
         this.txPropagator = txPropagator;
         this.validator = validator;
         this.monitor = monitor;
         this.locks = locks;
+        this.reacquireSharedSchemaLockOnIncomingTransactions = reacquireSharedSchemaLockOnIncomingTransactions;
     }
 
     @Override
@@ -102,7 +105,10 @@ public class MasterTransactionCommitProcess implements TransactionCommitProcess
         {
             while ( batch != null )
             {
-                locks = acquireSharedSchemaLockIfTransactionResultsInIndexUpdates( batch, locks );
+                if ( reacquireSharedSchemaLockOnIncomingTransactions )
+                {
+                    locks = acquireSharedSchemaLockIfTransactionResultsInIndexUpdates( batch, locks );
+                }
                 validator.validateTransactionStartKnowledge(
                         batch.transactionRepresentation().getLatestCommittedTxWhenStarted() );
                 batch = batch.next();

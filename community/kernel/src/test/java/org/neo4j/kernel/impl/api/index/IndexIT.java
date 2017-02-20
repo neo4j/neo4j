@@ -136,7 +136,7 @@ public class IndexIT extends KernelIntegrationTest
     {
         // given
         PropertyAccessor propertyAccessor = mock( PropertyAccessor.class );
-        ConstraintIndexCreator creator = new ConstraintIndexCreator( () -> kernel, indexingService, propertyAccessor );
+        ConstraintIndexCreator creator = new ConstraintIndexCreator( () -> kernel, indexingService, propertyAccessor, false );
         creator.createConstraintIndex( labelId, propertyKeyId );
 
         // when
