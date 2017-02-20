@@ -50,11 +50,11 @@ import org.neo4j.graphdb.Relationship;
 import org.neo4j.graphdb.RelationshipType;
 import org.neo4j.graphdb.Result;
 import org.neo4j.graphdb.Transaction;
+import org.neo4j.graphdb.TransactionFailureException;
 import org.neo4j.graphdb.security.AuthorizationViolationException;
 import org.neo4j.helpers.collection.Iterators;
 import org.neo4j.io.fs.FileUtils;
 import org.neo4j.kernel.api.KernelTransaction;
-import org.neo4j.kernel.api.exceptions.Status;
 import org.neo4j.kernel.api.security.AnonymousContext;
 import org.neo4j.kernel.impl.proc.JarBuilder;
 import org.neo4j.kernel.impl.proc.Procedures;
@@ -1122,6 +1122,20 @@ public class ProcedureIT
         db.execute( "CALL org.neo4j.procedure.guardMe" );
     }
 
+    @Test
+    public void shouldMakeTransactionToFail() throws Throwable
+    {
+        //When
+        try ( Transaction ignore = db.beginTx() )
+        {
+            db.createNode( Label.label( "Person" ) );
+        }
+        Result result = db.execute( "CALL org.neo4j.procedure.failure" );
+        //Then
+        exception.expect( TransactionFailureException.class );
+        result.next();
+    }
+
     @Before
     public void setUp() throws IOException
     {
@@ -1271,12 +1285,12 @@ public class ProcedureIT
         public TerminationGuard guard;
 
         @Context
-        public MarkForTermination termination;
+        public ProcedureTransaction procedureTransaction;
 
         @Procedure
         public Stream<Output> guardMe()
         {
-            termination.mark();
+            procedureTransaction.terminate();
             guard.check();
             throw new IllegalStateException( "Should never have executed this!" );
         }
@@ -1285,6 +1299,14 @@ public class ProcedureIT
         public Stream<Output> integrationTestMe()
         {
             return Stream.of( new Output() );
+        }
+
+        @Procedure
+        public Stream<Output> failure()
+        {
+            Result result = db.execute( "MATCH (n:Person) RETURN count(n) as count" );
+            procedureTransaction.failure();
+            return Stream.of( new Output( (Long) result.next().get( "count" ) ) );
         }
 
         @Procedure

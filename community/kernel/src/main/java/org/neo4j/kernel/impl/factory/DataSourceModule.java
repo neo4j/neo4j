@@ -63,7 +63,7 @@ import org.neo4j.kernel.impl.core.StartupStatisticsProvider;
 import org.neo4j.kernel.impl.core.ThreadToStatementContextBridge;
 import org.neo4j.kernel.impl.core.TokenNotFoundException;
 import org.neo4j.kernel.impl.logging.LogService;
-import org.neo4j.kernel.impl.proc.MarkForTerminationProvider;
+import org.neo4j.kernel.impl.proc.ProcedureTransactionProvider;
 import org.neo4j.kernel.impl.proc.ProcedureConfig;
 import org.neo4j.kernel.impl.proc.ProcedureGDSFactory;
 import org.neo4j.kernel.impl.proc.Procedures;
@@ -83,7 +83,7 @@ import org.neo4j.kernel.internal.Version;
 import org.neo4j.kernel.lifecycle.LifeSupport;
 import org.neo4j.kernel.lifecycle.LifecycleAdapter;
 import org.neo4j.logging.Log;
-import org.neo4j.procedure.MarkForTermination;
+import org.neo4j.procedure.ProcedureTransaction;
 import org.neo4j.procedure.TerminationGuard;
 
 import static org.neo4j.kernel.api.proc.Context.KERNEL_TRANSACTION;
@@ -371,7 +371,7 @@ public class DataSourceModule
         procedures.registerComponent( Log.class, ( ctx ) -> proceduresLog, true );
 
         Guard guard = platform.dependencies.resolveDependency( Guard.class );
-        procedures.registerComponent( MarkForTermination.class, new MarkForTerminationProvider(), true );
+        procedures.registerComponent( ProcedureTransaction.class, new ProcedureTransactionProvider(), true );
         procedures.registerComponent( TerminationGuard.class, new TerminationGuardProvider( guard ), true );
 
         // Below components are not public API, but are made available for internal

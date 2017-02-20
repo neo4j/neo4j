@@ -23,33 +23,39 @@ import org.neo4j.kernel.api.KernelTransaction;
 import org.neo4j.kernel.api.exceptions.ProcedureException;
 import org.neo4j.kernel.api.exceptions.Status;
 import org.neo4j.kernel.api.proc.Context;
-import org.neo4j.procedure.MarkForTermination;
+import org.neo4j.procedure.ProcedureTransaction;
 
 import static org.neo4j.kernel.api.proc.Context.KERNEL_TRANSACTION;
 
 
-public class MarkForTerminationProvider implements ComponentRegistry.Provider<MarkForTermination>
+public class ProcedureTransactionProvider implements ComponentRegistry.Provider<ProcedureTransaction>
 {
     @Override
-    public MarkForTermination apply( Context ctx ) throws ProcedureException
+    public ProcedureTransaction apply( Context ctx ) throws ProcedureException
     {
         KernelTransaction ktx = ctx.get( KERNEL_TRANSACTION );
-        return new TerminationTransaction( ktx );
+        return new ProcedureTransactionImpl( ktx );
     }
 
-    private class TerminationTransaction implements MarkForTermination
+    private class ProcedureTransactionImpl implements ProcedureTransaction
     {
         private final KernelTransaction ktx;
 
-        TerminationTransaction( KernelTransaction ktx )
+        ProcedureTransactionImpl( KernelTransaction ktx )
         {
             this.ktx = ktx;
         }
 
         @Override
-        public void mark()
+        public void terminate()
         {
             ktx.markForTermination( Status.Transaction.Terminated );
+        }
+
+        @Override
+        public void failure()
+        {
+            ktx.failure();
         }
     }
 }
