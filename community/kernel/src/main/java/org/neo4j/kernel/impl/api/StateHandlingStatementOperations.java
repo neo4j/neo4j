@@ -753,6 +753,13 @@ public class StateHandlingStatementOperations implements
                     numPred.isFromInclusive(), numPred.getTo(), numPred.isToInclusive(),
                     exactMatches );
         }
+        case rangeString:
+        {
+            IndexQuery.StringRangePredicate strPred = (IndexQuery.StringRangePredicate) predicate;
+            return filterIndexStateChangesForRangeSeekByString(
+                    state, index, strPred.getFrom(), strPred.isFromInclusive(), strPred.getTo(),
+                    strPred.isToInclusive(), committed );
+        }
         }
 
         throw new RuntimeException( "Query not supported: " + Arrays.toString( predicates ) );

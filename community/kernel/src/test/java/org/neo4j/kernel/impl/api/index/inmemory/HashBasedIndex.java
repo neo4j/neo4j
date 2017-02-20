@@ -261,9 +261,11 @@ class HashBasedIndex extends InMemoryIndexImplementation
         case exists: return scan();
         case exact: return seek( ((IndexQuery.ExactPredicate)predicate).value() );
         case rangeNumeric:
-            IndexQuery.NumberRangePredicate numberRangePredicate = (IndexQuery.NumberRangePredicate) predicate;
-            return rangeSeekByNumberInclusive( numberRangePredicate.getFrom(),
-                    numberRangePredicate.getTo() );
+            IndexQuery.NumberRangePredicate np = (IndexQuery.NumberRangePredicate) predicate;
+            return rangeSeekByNumberInclusive( np.getFrom(), np.getTo() );
+        case rangeString:
+            IndexQuery.StringRangePredicate sp = (IndexQuery.StringRangePredicate) predicate;
+            return rangeSeekByString( sp.getFrom(), sp.isFromInclusive(), sp.getTo(), sp.isToInclusive() );
         }
         throw new RuntimeException( "Unsupported query: " + Arrays.toString( predicates ) );
     }

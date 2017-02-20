@@ -37,6 +37,12 @@ public abstract class IndexQuery
         return new NumberRangePredicate( propertyKeyId, from, fromInclusive, to, toInclusive );
     }
 
+    public static StringRangePredicate range( int propertyKeyId, String from, boolean fromInclusive, String to,
+                                              boolean toInclusive )
+    {
+        return new StringRangePredicate( propertyKeyId, from, fromInclusive, to, toInclusive );
+    }
+
     public abstract IndexQueryType type();
 
     public static final class ExistsPredicate extends IndexQuery
@@ -120,7 +126,7 @@ public abstract class IndexQuery
         }
     }
 
-    public static class NumberRangePredicate extends IndexQuery
+    public static final class NumberRangePredicate extends IndexQuery
     {
         private final int propertyKeyId;
         private final Number from;
@@ -163,10 +169,123 @@ public abstract class IndexQuery
         {
             return toInclusive;
         }
+
+        @Override
+        public boolean equals( Object o )
+        {
+            if ( this == o )
+            { return true; }
+            if ( o == null || getClass() != o.getClass() )
+            { return false; }
+
+            NumberRangePredicate that = (NumberRangePredicate) o;
+
+            if ( propertyKeyId != that.propertyKeyId )
+            { return false; }
+            if ( fromInclusive != that.fromInclusive )
+            { return false; }
+            if ( toInclusive != that.toInclusive )
+            { return false; }
+            if ( !from.equals( that.from ) )
+            { return false; }
+            return to.equals( that.to );
+        }
+
+        @Override
+        public int hashCode()
+        {
+            int result = propertyKeyId;
+            result = 31 * result + from.hashCode();
+            result = 31 * result + (fromInclusive ? 1 : 0);
+            result = 31 * result + to.hashCode();
+            result = 31 * result + (toInclusive ? 1 : 0);
+            return result;
+        }
+    }
+
+    public static final class StringRangePredicate extends IndexQuery
+    {
+        private final int propertyKeyId;
+        private final String from;
+        private final boolean fromInclusive;
+        private final String to;
+        private final boolean toInclusive;
+
+        public StringRangePredicate( int propertyKeyId, String from,
+                                     boolean fromInclusive, String to,
+                                     boolean toInclusive )
+        {
+            this.propertyKeyId = propertyKeyId;
+            this.from = from;
+            this.fromInclusive = fromInclusive;
+            this.to = to;
+            this.toInclusive = toInclusive;
+        }
+
+        @Override
+        public IndexQueryType type()
+        {
+            return IndexQueryType.rangeString;
+        }
+
+        public String getFrom()
+        {
+            return from;
+        }
+
+        public boolean isFromInclusive()
+        {
+            return fromInclusive;
+        }
+
+        public String getTo()
+        {
+            return to;
+        }
+
+        public boolean isToInclusive()
+        {
+            return toInclusive;
+        }
+
+        @Override
+        public boolean equals( Object o )
+        {
+            if ( this == o )
+            { return true; }
+            if ( o == null || getClass() != o.getClass() )
+            { return false; }
+
+            StringRangePredicate that = (StringRangePredicate) o;
+
+            if ( propertyKeyId != that.propertyKeyId )
+            { return false; }
+            if ( fromInclusive != that.fromInclusive )
+            { return false; }
+            if ( toInclusive != that.toInclusive )
+            { return false; }
+            if ( !from.equals( that.from ) )
+            { return false; }
+            return to.equals( that.to );
+        }
+
+        @Override
+        public int hashCode()
+        {
+            int result = propertyKeyId;
+            result = 31 * result + from.hashCode();
+            result = 31 * result + (fromInclusive ? 1 : 0);
+            result = 31 * result + to.hashCode();
+            result = 31 * result + (toInclusive ? 1 : 0);
+            return result;
+        }
     }
 
     public enum IndexQueryType
     {
-        exists, exact, rangeNumeric
+        exists,
+        exact,
+        rangeString,
+        rangeNumeric
     }
 }

@@ -479,6 +479,38 @@ public class StateHandlingStatementOperationsTest
     }
 
     @Test
+    public void shouldConsiderTransactionStateDuringIndexBetweenRangeSeekByStringWithIndexQuery() throws Exception
+    {
+        // Given
+        TransactionState txState = mock( TransactionState.class );
+        KernelStatement statement = mock( KernelStatement.class );
+        when( statement.hasTxStateWithChanges() ).thenReturn( true );
+        when( statement.txState() ).thenReturn( txState );
+        when( txState.indexUpdatesForRangeSeekByString( index, "Anne", true, "Bill", false ) ).thenReturn(
+                new DiffSets<>( Collections.singleton( 42L ), Collections.singleton( 44L ) )
+        );
+        when( txState.addedAndRemovedNodes() ).thenReturn(
+                new DiffSets<>( Collections.singleton( 45L ), Collections.singleton( 46L ) )
+        );
+
+        StoreReadLayer storeReadLayer = mock( StoreReadLayer.class );
+        IndexReader indexReader = addMockedIndexReader( statement );
+        IndexQuery.StringRangePredicate rangePredicate =
+                IndexQuery.range( index.schema().getPropertyId(), "Anne", true, "Bill", false );
+        when( indexReader.query( rangePredicate ) ).thenReturn(
+                PrimitiveLongCollections.resourceIterator( PrimitiveLongCollections.iterator( 43L, 44L, 46L ), null ) );
+
+        StateHandlingStatementOperations context = newTxStateOps( storeReadLayer );
+
+        // When
+        PrimitiveLongIterator results = context.indexQuery(
+                statement, index, rangePredicate );
+
+        // Then
+        assertEquals( asSet( 42L, 43L ), PrimitiveLongCollections.toSet( results ) );
+    }
+
+    @Test
     public void nodeGetFromUniqueIndexSeekClosesIndexReader() throws Exception
     {
         KernelStatement kernelStatement = mock( KernelStatement.class );
