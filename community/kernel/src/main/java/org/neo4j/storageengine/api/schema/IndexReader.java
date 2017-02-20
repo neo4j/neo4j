@@ -23,6 +23,7 @@ package org.neo4j.storageengine.api.schema;
 import org.neo4j.collection.primitive.PrimitiveLongCollections;
 import org.neo4j.collection.primitive.PrimitiveLongIterator;
 import org.neo4j.graphdb.Resource;
+import org.neo4j.kernel.api.schema_new.IndexQuery;
 
 
 /**
@@ -99,6 +100,8 @@ public interface IndexReader extends Resource
 
     IndexSampler createSampler();
 
+    PrimitiveLongIterator query( IndexQuery... predicates );
+
     IndexReader EMPTY = new IndexReader()
     {
         @Override
@@ -155,6 +158,12 @@ public interface IndexReader extends Resource
         public IndexSampler createSampler()
         {
             return IndexSampler.EMPTY;
+        }
+
+        @Override
+        public PrimitiveLongIterator query( IndexQuery[] predicates )
+        {
+            return PrimitiveLongCollections.emptyIterator();
         }
 
         @Override

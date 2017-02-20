@@ -53,6 +53,7 @@ import org.neo4j.kernel.api.schema.IndexDescriptor;
 import org.neo4j.kernel.api.schema.NodePropertyDescriptor;
 import org.neo4j.kernel.api.schema.RelationshipPropertyDescriptor;
 import org.neo4j.kernel.api.schema_new.CompositeIndexQuery;
+import org.neo4j.kernel.api.schema_new.IndexQuery;
 import org.neo4j.kernel.api.schema_new.index.IndexBoundary;
 import org.neo4j.kernel.api.schema_new.index.NewIndexDescriptor;
 import org.neo4j.kernel.impl.api.operations.EntityOperations;
@@ -271,6 +272,13 @@ public class ConstraintEnforcingEntityOperations implements EntityOperations, Sc
             throws IndexNotFoundKernelException
     {
         return entityReadOperations.nodesGetFromIndexSeek( state, index, value );
+    }
+
+    @Override
+    public PrimitiveLongIterator indexQuery( KernelStatement statement, NewIndexDescriptor index,
+                                             IndexQuery[] predicates ) throws IndexNotFoundKernelException
+    {
+        return entityReadOperations.indexQuery( statement, index, predicates );
     }
 
     @Override

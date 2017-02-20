@@ -30,8 +30,8 @@ import java.util.List;
 
 import org.neo4j.collection.primitive.PrimitiveLongIterator;
 import org.neo4j.kernel.api.exceptions.index.IndexEntryConflictException;
+import org.neo4j.kernel.api.schema_new.IndexQuery;
 import org.neo4j.kernel.api.schema_new.index.IndexBoundary;
-import org.neo4j.kernel.api.schema_new.index.NewIndexDescriptor;
 import org.neo4j.kernel.configuration.Config;
 import org.neo4j.kernel.impl.api.index.IndexUpdateMode;
 import org.neo4j.kernel.impl.api.index.sampling.IndexSamplingConfig;
@@ -171,6 +171,11 @@ public abstract class IndexAccessorCompatibility extends IndexProviderCompatibil
     protected List<Long> getAllNodes() throws IOException
     {
         return metaGet( IndexReader::scan );
+    }
+
+    protected List<Long> query( IndexQuery... predicates )
+    {
+        return metaGet( reader -> reader.query( predicates ) );
     }
 
     private List<Long> metaGet( ReaderInteraction interaction )

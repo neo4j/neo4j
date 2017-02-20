@@ -50,6 +50,7 @@ import org.neo4j.kernel.api.proc.UserFunctionSignature;
 import org.neo4j.kernel.api.schema.NodePropertyDescriptor;
 import org.neo4j.kernel.api.schema.RelationshipPropertyDescriptor;
 import org.neo4j.kernel.api.schema_new.CompositeIndexQuery;
+import org.neo4j.kernel.api.schema_new.IndexQuery;
 import org.neo4j.kernel.api.schema_new.index.NewIndexDescriptor;
 import org.neo4j.kernel.impl.api.RelationshipVisitor;
 import org.neo4j.kernel.impl.api.store.RelationshipIterator;
@@ -125,6 +126,13 @@ public interface ReadOperations
      */
     PrimitiveLongIterator nodesGetFromIndexSeek( NewIndexDescriptor index, Object value )
             throws IndexNotFoundKernelException;
+
+    /**
+     * Returns an iterator with the matched entities.
+     *
+     * @throws org.neo4j.kernel.api.exceptions.index.IndexNotFoundKernelException if no such index found.
+     */
+    PrimitiveLongIterator indexQuery( NewIndexDescriptor index, IndexQuery... predicates ) throws IndexNotFoundKernelException;
 
     /**
      * Returns an iterator with the matched nodes.

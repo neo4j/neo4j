@@ -19,6 +19,7 @@
  */
 package org.neo4j.kernel.impl.api;
 
+import java.util.Arrays;
 import java.util.Iterator;
 import java.util.Map;
 
@@ -67,6 +68,7 @@ import org.neo4j.kernel.api.properties.PropertyKeyIdIterator;
 import org.neo4j.kernel.api.schema.NodePropertyDescriptor;
 import org.neo4j.kernel.api.schema.RelationshipPropertyDescriptor;
 import org.neo4j.kernel.api.schema_new.CompositeIndexQuery;
+import org.neo4j.kernel.api.schema_new.IndexQuery;
 import org.neo4j.kernel.api.schema_new.LabelSchemaDescriptor;
 import org.neo4j.kernel.api.schema_new.SchemaBoundary;
 import org.neo4j.kernel.api.schema_new.SchemaDescriptor;
@@ -719,6 +721,29 @@ public class StateHandlingStatementOperations implements
         PrimitiveLongIterator committed = reader.seek( value );
         PrimitiveLongIterator exactMatches = filterExactIndexMatches( state, index, value, committed );
         return filterIndexStateChangesForScanOrSeek( state, index, value, exactMatches );
+    }
+
+    @Override
+    public PrimitiveLongIterator indexQuery( KernelStatement state, NewIndexDescriptor index,
+                                             IndexQuery...predicates ) throws IndexNotFoundKernelException
+    {
+        StorageStatement storeStatement = state.getStoreStatement();
+        IndexReader reader = storeStatement.getIndexReader( index );
+        PrimitiveLongIterator committed = reader.query( predicates );
+
+        assert predicates.length == 1: "composite indexes not yet supported";
+        IndexQuery predicate = predicates[0];
+        switch ( predicate.type() )
+        {
+        case exact:
+            Object value = ((IndexQuery.ExactPredicate) predicate).value();
+            PrimitiveLongIterator exactMatches = filterExactIndexMatches( state, index, value, committed );
+            return filterIndexStateChangesForScanOrSeek( state, index, value, exactMatches );
+        case exists:
+            return filterIndexStateChangesForScanOrSeek( state, index, null, committed );
+        }
+
+        throw new RuntimeException( "Query not supported: " + Arrays.toString( predicates ) );
     }
 
     @Override

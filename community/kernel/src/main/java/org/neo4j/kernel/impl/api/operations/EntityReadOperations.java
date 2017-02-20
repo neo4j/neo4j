@@ -28,6 +28,7 @@ import org.neo4j.kernel.api.exceptions.index.IndexNotApplicableKernelException;
 import org.neo4j.kernel.api.exceptions.index.IndexNotFoundKernelException;
 import org.neo4j.kernel.api.exceptions.schema.IndexBrokenKernelException;
 import org.neo4j.kernel.api.schema_new.CompositeIndexQuery;
+import org.neo4j.kernel.api.schema_new.IndexQuery;
 import org.neo4j.kernel.api.schema_new.index.NewIndexDescriptor;
 import org.neo4j.kernel.impl.api.KernelStatement;
 import org.neo4j.kernel.impl.api.RelationshipVisitor;
@@ -49,6 +50,14 @@ public interface EntityReadOperations
      * @throws IndexNotFoundKernelException if no such index found.
      */
     PrimitiveLongIterator nodesGetFromIndexSeek( KernelStatement state, NewIndexDescriptor index, Object value )
+            throws IndexNotFoundKernelException;
+
+    /**
+     * Returns an iterable with the matched entities.
+     *
+     * @throws IndexNotFoundKernelException if no such index found.
+     */
+    PrimitiveLongIterator indexQuery( KernelStatement statement, NewIndexDescriptor index, IndexQuery[] predicates )
             throws IndexNotFoundKernelException;
 
     /**

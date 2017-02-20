@@ -34,6 +34,7 @@ import org.neo4j.kernel.api.exceptions.schema.IndexBrokenKernelException;
 import org.neo4j.kernel.api.properties.DefinedProperty;
 import org.neo4j.kernel.api.properties.Property;
 import org.neo4j.kernel.api.schema_new.CompositeIndexQuery;
+import org.neo4j.kernel.api.schema_new.IndexQuery;
 import org.neo4j.kernel.api.schema_new.index.NewIndexDescriptor;
 import org.neo4j.kernel.guard.Guard;
 import org.neo4j.kernel.impl.api.operations.EntityReadOperations;
@@ -178,6 +179,14 @@ public class GuardingStatementOperations implements
     {
         guard.check( statement );
         return entityReadDelegate.nodesGetFromIndexSeek( statement, index, value );
+    }
+
+    @Override
+    public PrimitiveLongIterator indexQuery( KernelStatement statement, NewIndexDescriptor index,
+                                             IndexQuery[] predicates ) throws IndexNotFoundKernelException
+    {
+        guard.check( statement );
+        return entityReadDelegate.indexQuery( statement, index, predicates );
     }
 
     @Override

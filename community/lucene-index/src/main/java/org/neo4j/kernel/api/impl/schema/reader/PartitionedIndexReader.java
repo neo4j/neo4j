@@ -31,6 +31,7 @@ import org.neo4j.io.IOUtils;
 import org.neo4j.kernel.api.impl.index.partition.PartitionSearcher;
 import org.neo4j.kernel.api.impl.index.sampler.AggregatingIndexSampler;
 import org.neo4j.kernel.api.index.IndexConfiguration;
+import org.neo4j.kernel.api.schema_new.IndexQuery;
 import org.neo4j.kernel.impl.api.index.sampling.IndexSamplingConfig;
 import org.neo4j.storageengine.api.schema.IndexReader;
 import org.neo4j.storageengine.api.schema.IndexSampler;
@@ -66,6 +67,12 @@ public class PartitionedIndexReader implements IndexReader
     public PrimitiveLongIterator seek( Object value )
     {
         return partitionedOperation( reader -> reader.seek( value ) );
+    }
+
+    @Override
+    public PrimitiveLongIterator query( IndexQuery... predicates )
+    {
+        return partitionedOperation( reader -> reader.query( predicates ) );
     }
 
     @Override

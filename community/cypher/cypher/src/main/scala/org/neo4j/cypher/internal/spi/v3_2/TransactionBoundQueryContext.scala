@@ -55,6 +55,7 @@ import org.neo4j.kernel.api.index.InternalIndexState
 import org.neo4j.kernel.api.proc.CallableUserAggregationFunction.Aggregator
 import org.neo4j.kernel.api.proc.{QualifiedName => KernelQualifiedName}
 import org.neo4j.kernel.api.schema.{NodeMultiPropertyDescriptor, NodePropertyDescriptor, RelationshipPropertyDescriptor}
+import org.neo4j.kernel.api.schema_new.IndexQuery
 import org.neo4j.kernel.impl.core.NodeManager
 import org.neo4j.kernel.impl.locking.ResourceTypes
 
@@ -139,7 +140,8 @@ final class TransactionBoundQueryContext(val transactionalContext: Transactional
 
   override def indexSeek(index: IndexDescriptor, value: Any) = {
     indexSearchMonitor.indexSeek(index, value)
-    JavaConversionSupport.mapToScalaENFXSafe(transactionalContext.statement.readOperations().nodesGetFromIndexSeek(index, value))(nodeOps.getById)
+    val predicates = IndexQuery.exact(index.property.id, value)
+    JavaConversionSupport.mapToScalaENFXSafe(transactionalContext.statement.readOperations().indexQuery(index, predicates))(nodeOps.getById)
   }
 
   override def indexSeekByRange(index: IndexDescriptor, value: Any) = value match {

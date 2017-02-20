@@ -19,6 +19,7 @@
  */
 package org.neo4j.kernel.impl.api.index.inmemory;
 
+import java.util.Arrays;
 import java.util.Collection;
 import java.util.HashMap;
 import java.util.HashSet;
@@ -29,6 +30,7 @@ import java.util.Set;
 import org.neo4j.collection.primitive.PrimitiveLongCollections;
 import org.neo4j.collection.primitive.PrimitiveLongIterator;
 import org.neo4j.helpers.collection.Iterables;
+import org.neo4j.kernel.api.schema_new.IndexQuery;
 import org.neo4j.storageengine.api.schema.IndexSampler;
 
 import static org.neo4j.collection.primitive.PrimitiveLongCollections.toPrimitiveIterator;
@@ -247,6 +249,19 @@ class HashBasedIndex extends InMemoryIndexImplementation
     public synchronized IndexSampler createSampler()
     {
         return new HashBasedIndexSampler( data );
+    }
+
+    @Override
+    public PrimitiveLongIterator query( IndexQuery... predicates )
+    {
+        assert predicates.length == 1: "composite indexes not yet supported";
+        IndexQuery predicate = predicates[0];
+        switch ( predicate.type() )
+        {
+        case exists: return scan();
+        case exact: return seek( ((IndexQuery.ExactPredicate)predicate).value() );
+        }
+        throw new RuntimeException( "Unsupported query: " + Arrays.toString( predicates ) );
     }
 
     private interface StringFilter

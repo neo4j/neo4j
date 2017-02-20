@@ -33,9 +33,8 @@ import org.neo4j.kernel.api.constraints.NodePropertyConstraint;
 import org.neo4j.kernel.api.constraints.PropertyConstraint;
 import org.neo4j.kernel.api.constraints.UniquenessConstraint;
 import org.neo4j.kernel.api.exceptions.index.IndexNotFoundKernelException;
-import org.neo4j.kernel.api.schema.IndexDescriptor;
-import org.neo4j.kernel.api.schema.IndexDescriptorFactory;
 import org.neo4j.kernel.api.schema.NodePropertyDescriptor;
+import org.neo4j.kernel.api.schema_new.IndexQuery;
 import org.neo4j.kernel.api.schema_new.SchemaBoundary;
 import org.neo4j.kernel.api.schema_new.index.IndexBoundary;
 import org.neo4j.kernel.api.schema_new.index.NewIndexDescriptor;
@@ -231,6 +230,37 @@ public class StateHandlingStatementOperationsTest
     }
 
     @Test
+    public void shouldConsiderTransactionStateDuringIndexScanWithIndexQuery() throws Exception
+    {
+        // Given
+        TransactionState txState = mock( TransactionState.class );
+        KernelStatement statement = mock( KernelStatement.class );
+        when( statement.hasTxStateWithChanges() ).thenReturn( true );
+        when( statement.txState() ).thenReturn( txState );
+        when( txState.indexUpdatesForScanOrSeek( index, null ) ).thenReturn(
+                new DiffSets<>( Collections.singleton( 42L ), Collections.singleton( 44L ) )
+        );
+        when( txState.addedAndRemovedNodes() ).thenReturn(
+                new DiffSets<>( Collections.singleton( 45L ), Collections.singleton( 46L ) )
+        );
+
+        StoreReadLayer storeReadLayer = mock( StoreReadLayer.class );
+        IndexReader indexReader = addMockedIndexReader( statement );
+        IndexQuery query = IndexQuery.exists( index.schema().getPropertyId() );
+        when( indexReader.query( query ) ).thenReturn(
+                PrimitiveLongCollections.resourceIterator( PrimitiveLongCollections.iterator( 43L, 44L, 46L ), null )
+        );
+
+        StateHandlingStatementOperations context = newTxStateOps( storeReadLayer );
+
+        // When
+        PrimitiveLongIterator results = context.indexQuery( statement, index, query );
+
+        // Then
+        assertEquals( asSet( 42L, 43L ), PrimitiveLongCollections.toSet( results ) );
+    }
+
+    @Test
     public void shouldConsiderTransactionStateDuringIndexSeek() throws Exception
     {
         // Given
@@ -254,6 +284,36 @@ public class StateHandlingStatementOperationsTest
 
         // When
         PrimitiveLongIterator results = context.nodesGetFromIndexSeek( statement, index, "value" );
+
+        // Then
+        assertEquals( asSet( 42L, 43L ), PrimitiveLongCollections.toSet( results ) );
+    }
+
+    @Test
+    public void shouldConsiderTransactionStateDuringIndexSeekWithIndexQuery() throws Exception
+    {
+        // Given
+        TransactionState txState = mock( TransactionState.class );
+        KernelStatement statement = mock( KernelStatement.class );
+        when( statement.hasTxStateWithChanges() ).thenReturn( true );
+        when( statement.txState() ).thenReturn( txState );
+        when( txState.indexUpdatesForScanOrSeek( index, "value" ) ).thenReturn(
+                new DiffSets<>( Collections.singleton( 42L ), Collections.singleton( 44L ) )
+        );
+        when( txState.addedAndRemovedNodes() ).thenReturn(
+                new DiffSets<>( Collections.singleton( 45L ), Collections.singleton( 46L ) )
+        );
+
+        StoreReadLayer storeReadLayer = mock( StoreReadLayer.class );
+        IndexReader indexReader = addMockedIndexReader( statement );
+        IndexQuery.ExactPredicate query = IndexQuery.exact( index.schema().getPropertyId(), "value" );
+        when( indexReader.query( query ) ).thenReturn(
+                PrimitiveLongCollections.resourceIterator( PrimitiveLongCollections.iterator( 43L, 44L, 46L ), null ) );
+
+        StateHandlingStatementOperations context = newTxStateOps( storeReadLayer );
+
+        // When
+        PrimitiveLongIterator results = context.indexQuery( statement, index, query );
 
         // Then
         assertEquals( asSet( 42L, 43L ), PrimitiveLongCollections.toSet( results ) );

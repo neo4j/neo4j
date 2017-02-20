@@ -27,6 +27,7 @@ import org.apache.lucene.search.TermQuery;
 import org.apache.lucene.search.TotalHitCountCollector;
 
 import java.io.IOException;
+import java.util.Arrays;
 
 import org.neo4j.collection.primitive.PrimitiveLongIterator;
 import org.neo4j.helpers.TaskControl;
@@ -37,6 +38,7 @@ import org.neo4j.kernel.api.impl.schema.LuceneDocumentStructure;
 import org.neo4j.kernel.api.impl.schema.sampler.NonUniqueLuceneIndexSampler;
 import org.neo4j.kernel.api.impl.schema.sampler.UniqueLuceneIndexSampler;
 import org.neo4j.kernel.api.index.IndexConfiguration;
+import org.neo4j.kernel.api.schema_new.IndexQuery;
 import org.neo4j.kernel.impl.api.index.sampling.IndexSamplingConfig;
 import org.neo4j.storageengine.api.schema.IndexReader;
 import org.neo4j.storageengine.api.schema.IndexSampler;
@@ -78,6 +80,21 @@ public class SimpleIndexReader implements IndexReader
         {
             return new NonUniqueLuceneIndexSampler( getIndexSearcher(), taskControl, samplingConfig );
         }
+    }
+
+    @Override
+    public PrimitiveLongIterator query( IndexQuery... predicates )
+    {
+        assert predicates.length == 1: "not yet supporting composite queries";
+        IndexQuery predicate = predicates[0];
+        switch ( predicate.type() )
+        {
+        case exact: return seek( ((IndexQuery.ExactPredicate)predicate).value() );
+        case exists: return scan();
+        }
+
+        // todo figure out a more specific exception
+        throw new RuntimeException( "Index query not supported: " + Arrays.toString( predicates ) );
     }
 
     public PrimitiveLongIterator seek( Object value )

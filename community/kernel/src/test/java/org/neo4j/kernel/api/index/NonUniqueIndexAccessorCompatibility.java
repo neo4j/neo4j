@@ -32,6 +32,8 @@ import static java.util.Collections.EMPTY_LIST;
 import static java.util.Collections.singletonList;
 import static org.hamcrest.Matchers.equalTo;
 import static org.junit.Assert.assertThat;
+import static org.neo4j.kernel.api.schema_new.IndexQuery.exact;
+import static org.neo4j.kernel.api.schema_new.IndexQuery.exists;
 
 @Ignore( "Not a test. This is a compatibility suite that provides test cases for verifying" +
         " SchemaIndexProvider implementations. Each index provider that is to be tested by this suite" +
@@ -73,6 +75,18 @@ public class NonUniqueIndexAccessorCompatibility extends IndexAccessorCompatibil
 
         assertThat( getAllNodesWithProperty( "a" ), equalTo( asList( 1L, 2L ) ) );
         assertThat( getAllNodes(), equalTo( asList( 1L, 2L, 3L ) ) );
+    }
+
+    @Test
+    public void testIndexSeekAndScanWithQuery() throws Exception
+    {
+        updateAndCommit( asList(
+                IndexEntryUpdate.add( 1L, index, "a" ),
+                IndexEntryUpdate.add( 2L, index, "a" ),
+                IndexEntryUpdate.add( 3L, index, "b" ) ) );
+
+        assertThat( query( exact( 1, "a" ) ), equalTo( asList( 1L, 2L ) ) );
+        assertThat( query( exists( 1 ) ), equalTo( asList( 1L, 2L, 3L ) ) );
     }
 
     @Test
