@@ -760,9 +760,9 @@ public class StateHandlingStatementOperations implements
                     state, index, strPred.getFrom(), strPred.isFromInclusive(), strPred.getTo(),
                     strPred.isToInclusive(), committed );
         }
+        default:
+            throw new RuntimeException( "Query not supported: " + Arrays.toString( predicates ) );
         }
-
-        throw new RuntimeException( "Query not supported: " + Arrays.toString( predicates ) );
     }
 
     @Override

@@ -266,8 +266,9 @@ class HashBasedIndex extends InMemoryIndexImplementation
         case rangeString:
             IndexQuery.StringRangePredicate sp = (IndexQuery.StringRangePredicate) predicate;
             return rangeSeekByString( sp.getFrom(), sp.isFromInclusive(), sp.getTo(), sp.isToInclusive() );
+        default:
+            throw new RuntimeException( "Unsupported query: " + Arrays.toString( predicates ) );
         }
-        throw new RuntimeException( "Unsupported query: " + Arrays.toString( predicates ) );
     }
 
     private interface StringFilter

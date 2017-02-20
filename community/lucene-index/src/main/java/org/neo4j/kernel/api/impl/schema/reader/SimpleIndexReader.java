@@ -99,10 +99,10 @@ public class SimpleIndexReader implements IndexReader
         case rangeString:
             IndexQuery.StringRangePredicate sp = (IndexQuery.StringRangePredicate) predicate;
             return rangeSeekByString( sp.getFrom(), sp.isFromInclusive(), sp.getTo(), sp.isToInclusive() );
+        default:
+            // todo figure out a more specific exception
+            throw new RuntimeException( "Index query not supported: " + Arrays.toString( predicates ) );
         }
-
-        // todo figure out a more specific exception
-        throw new RuntimeException( "Index query not supported: " + Arrays.toString( predicates ) );
     }
 
     public PrimitiveLongIterator seek( Object value )
