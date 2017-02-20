@@ -26,8 +26,10 @@ import org.neo4j.causalclustering.core.CausalClusteringSettings;
 import org.neo4j.causalclustering.core.consensus.LeaderLocator;
 import org.neo4j.causalclustering.discovery.TopologyService;
 import org.neo4j.causalclustering.load_balancing.plugins.ServerShufflingPlugin;
+import org.neo4j.graphdb.config.InvalidSettingException;
 import org.neo4j.helpers.Service;
 import org.neo4j.kernel.configuration.Config;
+import org.neo4j.logging.Log;
 import org.neo4j.logging.LogProvider;
 
 /**
@@ -40,7 +42,27 @@ public class LoadBalancingPluginLoader
     {
     }
 
-    public static LoadBalancingPlugin load( TopologyService topologyService, LeaderLocator leaderLocator, LogProvider logProvider, Config config ) throws Throwable
+    public static void validate( Config config, Log log ) throws InvalidSettingException
+    {
+        LoadBalancingPlugin plugin = findPlugin( config );
+        plugin.validate( config, log );
+    }
+
+    public static LoadBalancingPlugin load( TopologyService topologyService, LeaderLocator leaderLocator,
+            LogProvider logProvider, Config config ) throws Throwable
+    {
+        LoadBalancingPlugin plugin = findPlugin( config );
+        plugin.init( topologyService, leaderLocator, logProvider, config );
+
+        if ( config.get( CausalClusteringSettings.load_balancing_shuffle ) )
+        {
+            plugin = new ServerShufflingPlugin( plugin );
+        }
+
+        return plugin;
+    }
+
+    private static LoadBalancingPlugin findPlugin( Config config ) throws InvalidSettingException
     {
         Set<String> availableOptions = new HashSet<>();
         Iterable<LoadBalancingPlugin> allImplementationsOnClasspath = Service.load( LoadBalancingPlugin.class );
@@ -51,17 +73,12 @@ public class LoadBalancingPluginLoader
         {
             if ( plugin.pluginName().equals( configuredName ) )
             {
-                plugin.init( topologyService, leaderLocator, logProvider, config );
-                if ( config.get( CausalClusteringSettings.load_balancing_shuffle ) )
-                {
-                    plugin = new ServerShufflingPlugin( plugin );
-                }
                 return plugin;
             }
             availableOptions.add( plugin.pluginName() );
         }
 
-        throw new RuntimeException( String.format( "Could not find load balancing plugin with name: '%s'" +
+        throw new InvalidSettingException( String.format( "Could not find load balancing plugin with name: '%s'" +
                                                    " among available options: %s", configuredName, availableOptions ) );
     }
 }

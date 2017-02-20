@@ -24,21 +24,24 @@ import org.junit.Test;
 import java.util.Set;
 
 import org.neo4j.helpers.AdvertisedSocketAddress;
-import org.neo4j.logging.NullLogProvider;
+import org.neo4j.logging.Log;
 
 import static java.util.Collections.emptyMap;
 import static org.junit.Assert.assertEquals;
 import static org.junit.Assert.assertNotEquals;
+import static org.mockito.Mockito.mock;
 import static org.neo4j.helpers.collection.Iterators.asSet;
 import static org.neo4j.helpers.collection.MapUtil.stringMap;
 
 public class PoliciesTest
 {
+    private Log log = mock( Log.class );
+
     @Test
     public void shouldSupplyDefaultUnfilteredPolicyForEmptyContext() throws Exception
     {
         // given
-        Policies policies = new Policies( NullLogProvider.getInstance() );
+        Policies policies = new Policies( log );
 
         // when
         Policy policy = policies.selectFor( emptyMap() );
@@ -58,7 +61,7 @@ public class PoliciesTest
     public void shouldSupplyDefaultUnfilteredPolicyForUnknownPolicyName() throws Exception
     {
         // given
-        Policies policies = new Policies( NullLogProvider.getInstance() );
+        Policies policies = new Policies( log );
 
         // when
         Policy policy = policies.selectFor( stringMap( Policies.POLICY_KEY, "unknown-policy" ) );
@@ -77,7 +80,7 @@ public class PoliciesTest
     @Test
     public void shouldAllowOverridingDefaultPolicy() throws Exception
     {
-        Policies policies = new Policies( NullLogProvider.getInstance() );
+        Policies policies = new Policies( log );
 
         String defaulyPolicyName = Policies.DEFAULT_POLICY_NAME;
         Policy defaultPolicy = new FilteringPolicy( new AnyTagFilter( "tagA", "tagB" ) );
@@ -95,7 +98,7 @@ public class PoliciesTest
     public void shouldAllowLookupOfAddedPolicy() throws Exception
     {
         // given
-        Policies policies = new Policies( NullLogProvider.getInstance() );
+        Policies policies = new Policies( log );
 
         String myPolicyName = "china";
         Policy myPolicy = data -> data;

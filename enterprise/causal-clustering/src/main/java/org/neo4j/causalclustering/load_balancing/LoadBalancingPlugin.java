@@ -24,7 +24,9 @@ import java.util.Map;
 
 import org.neo4j.causalclustering.core.consensus.LeaderLocator;
 import org.neo4j.causalclustering.discovery.TopologyService;
+import org.neo4j.graphdb.config.InvalidSettingException;
 import org.neo4j.kernel.configuration.Config;
+import org.neo4j.logging.Log;
 import org.neo4j.logging.LogProvider;
 
 /**
@@ -33,6 +35,8 @@ import org.neo4j.logging.LogProvider;
  */
 public interface LoadBalancingPlugin
 {
+    void validate( Config config, Log log ) throws InvalidSettingException;
+
     void init( TopologyService topologyService, LeaderLocator leaderLocator,
             LogProvider logProvider, Config config ) throws Throwable;
 

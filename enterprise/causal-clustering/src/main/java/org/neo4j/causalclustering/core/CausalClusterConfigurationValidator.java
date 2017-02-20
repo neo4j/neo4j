@@ -24,6 +24,7 @@ import java.util.Map;
 import java.util.function.Function;
 import javax.annotation.Nonnull;
 
+import org.neo4j.causalclustering.load_balancing.LoadBalancingPluginLoader;
 import org.neo4j.cluster.ClusterSettings;
 import org.neo4j.cluster.ClusterSettings.Mode;
 import org.neo4j.graphdb.config.InvalidSettingException;
@@ -51,8 +52,14 @@ public class CausalClusterConfigurationValidator implements ConfigurationValidat
 
         validateInitialDiscoveryMembers( rawConfig::get );
         validateBoltConnector( rawConfig );
+        validateLoadBalancing( rawConfig, log );
 
         return rawConfig;
+    }
+
+    private static void validateLoadBalancing( Map<String,String> rawConfig, Log log )
+    {
+        LoadBalancingPluginLoader.validate( Config.defaults().augment( rawConfig ), log );
     }
 
     private static void validateBoltConnector( Map<String,String> rawConfig )

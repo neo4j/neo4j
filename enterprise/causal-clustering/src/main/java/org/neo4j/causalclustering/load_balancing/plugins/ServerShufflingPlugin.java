@@ -25,7 +25,9 @@ import java.util.Map;
 import org.neo4j.causalclustering.core.consensus.LeaderLocator;
 import org.neo4j.causalclustering.discovery.TopologyService;
 import org.neo4j.causalclustering.load_balancing.LoadBalancingPlugin;
+import org.neo4j.graphdb.config.InvalidSettingException;
 import org.neo4j.kernel.configuration.Config;
+import org.neo4j.logging.Log;
 import org.neo4j.logging.LogProvider;
 
 /**
@@ -44,6 +46,11 @@ public class ServerShufflingPlugin implements LoadBalancingPlugin
     public ServerShufflingPlugin( LoadBalancingPlugin delegate )
     {
         this.delegate = delegate;
+    }
+
+    @Override
+    public void validate( Config config, Log log ) throws InvalidSettingException
+    {
     }
 
     @Override

@@ -24,7 +24,6 @@ import java.util.Map;
 
 import org.neo4j.causalclustering.load_balancing.filters.IdentityFilter;
 import org.neo4j.logging.Log;
-import org.neo4j.logging.LogProvider;
 
 import static java.lang.String.format;
 
@@ -38,9 +37,9 @@ class Policies
 
     private final Log log;
 
-    Policies( LogProvider logProvider )
+    Policies( Log log )
     {
-        this.log = logProvider.getLog( getClass() );
+        this.log = log;
     }
 
     void addPolicy( String policyName, Policy policy )
