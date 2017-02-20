@@ -37,6 +37,7 @@ import static org.junit.Assert.assertFalse;
 import static org.junit.Assert.assertNotNull;
 import static org.junit.Assert.assertThat;
 import static org.junit.Assert.assertTrue;
+import static org.mockito.Mockito.RETURNS_MOCKS;
 import static org.mockito.Mockito.mock;
 
 public class LocalDatabaseTest
@@ -99,9 +100,9 @@ public class LocalDatabaseTest
 
     private static LocalDatabase newLocalDatabase( AvailabilityGuard availabilityGuard )
     {
-        return new LocalDatabase( mock( File.class ), mock( StoreFiles.class ), mock( DataSourceManager.class ),
-                mock( PageCache.class ), mock( FileSystemAbstraction.class ), () -> mock( DatabaseHealth.class ),
-                availabilityGuard, NullLogProvider.getInstance() );
+        return new LocalDatabase( new File( "." ), mock( StoreFiles.class ), mock( DataSourceManager.class ),
+                mock( PageCache.class, RETURNS_MOCKS ), mock( FileSystemAbstraction.class ),
+                () -> mock( DatabaseHealth.class ), availabilityGuard, NullLogProvider.getInstance() );
     }
 
     private static AvailabilityGuard newAvailabilityGuard()
