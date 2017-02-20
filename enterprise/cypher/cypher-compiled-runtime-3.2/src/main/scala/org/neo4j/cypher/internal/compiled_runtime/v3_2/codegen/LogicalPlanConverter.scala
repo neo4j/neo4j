@@ -24,10 +24,11 @@ import org.neo4j.cypher.internal.compiled_runtime.v3_2.codegen.ir.aggregation.Ag
 import org.neo4j.cypher.internal.compiled_runtime.v3_2.codegen.ir.aggregation.Distinct
 import org.neo4j.cypher.internal.compiled_runtime.v3_2.codegen.ir.expressions.ExpressionConverter._
 import org.neo4j.cypher.internal.compiled_runtime.v3_2.codegen.ir.expressions._
+import org.neo4j.cypher.internal.compiled_runtime.v3_2.codegen.spi.SortItem
 import org.neo4j.cypher.internal.compiler.v3_2.commands.{ManyQueryExpression, QueryExpression, RangeQueryExpression, SingleQueryExpression}
 import org.neo4j.cypher.internal.compiler.v3_2.helpers.{One, ZeroOneOrMany}
-import org.neo4j.cypher.internal.compiler.v3_2.planner.logical.plans
 import org.neo4j.cypher.internal.compiler.v3_2.planner.logical.plans._
+import org.neo4j.cypher.internal.compiler.v3_2.planner.logical.{SortDescription, plans}
 import org.neo4j.cypher.internal.compiler.v3_2.planner.{CantCompileQueryException, logical}
 import org.neo4j.cypher.internal.frontend.v3_2.ast.Expression
 import org.neo4j.cypher.internal.frontend.v3_2.helpers.Eagerly.immutableMapValues
@@ -48,6 +49,7 @@ object LogicalPlanConverter {
     case p: NodeHashJoin => nodeHashJoinAsCodeGenPlan(p)
     case p: CartesianProduct => cartesianProductAsCodeGenPlan(p)
     case p: Selection => selectionAsCodeGenPlan(p)
+    case p: Top => topAsCodeGenPlan(p)
     case p: plans.Limit => limitAsCodeGenPlan(p)
     case p: plans.Skip => skipAsCodeGenPlan(p)
     case p: ProduceResult => produceResultsAsCodeGenPlan(p)
@@ -625,28 +627,20 @@ object LogicalPlanConverter {
     override val logicalPlan = sort
 
     override def consume(context: CodeGenContext, child: CodeGenPlan) = {
-      val variablesToKeep = context.getProjectedVariables // TODO: Intersect/replace with usedVariables(innerBlock)
-
-      val sortItems = sort.sortItems.map {
-        case logical.Ascending(IdName(name)) => spi.SortItem(name, spi.Ascending)
-        case logical.Descending(IdName(name)) => spi.SortItem(name, spi.Descending)
-      }
-      val additionalSortVariables = sortItems.collect {
-        case spi.SortItem(name, _) if !variablesToKeep.isDefinedAt(name) => (name, context.getVariable(name))
-      }
-      val tupleVariables = variablesToKeep ++ additionalSortVariables
-
       val opName = context.registerOperator(logicalPlan)
 
-      val sortTableName = context.namer.newVarName()
+      val (variablesToKeep: Map[String, Variable],
+           sortItems: Seq[SortItem],
+           tupleVariables: Map[String, Variable],
+           sortTableName: String) = prepareSortTableInfo(context, sort.sortItems)
 
-      val buildSortTableInstruction = BuildSortTable(opName, sortTableName, tupleVariables, sortItems)(context)
+      val estimatedCardinality = sort.solved.estimatedCardinality.amount
+
+      val buildSortTableInstruction =
+        BuildSortTable(opName, sortTableName, tupleVariables, sortItems, estimatedCardinality)(context)
 
       // Update the context for parent consumers to use the new outgoing variable names
-      buildSortTableInstruction.sortTableInfo.fieldToVariableInfo.foreach {
-        case (_, info) =>
-          context.updateVariable(info.queryVariableName, info.outgoingVariable)
-      }
+      updateContextWithSortTableInfo(context, buildSortTableInstruction.sortTableInfo)
 
       val (methodHandle, innerBlock :: tl) = context.popParent().consume(context, this)
 
@@ -654,6 +648,62 @@ object LogicalPlanConverter {
       val continuation = GetSortedResult(opName, variablesToKeep, buildSortTableInstruction.sortTableInfo, innerBlock)
 
       (methodHandle, buildSortTableInstruction :: sortInstruction :: continuation :: tl)
+    }
+  }
+
+  private def topAsCodeGenPlan(top: Top) = new CodeGenPlan with SingleChildPlan {
+
+    override val logicalPlan = top
+
+    override def consume(context: CodeGenContext, child: CodeGenPlan) = {
+      val opName = context.registerOperator(logicalPlan)
+
+      val (variablesToKeep: Map[String, Variable],
+           sortItems: Seq[SortItem],
+           tupleVariables: Map[String, Variable],
+           sortTableName: String) = prepareSortTableInfo(context, top.sortItems)
+
+      val countExpression = createExpression(top.limit)(context)
+
+      val buildTopTableInstruction = BuildTopTable(opName, sortTableName, countExpression, tupleVariables, sortItems)(context)
+
+      // Update the context for parent consumers to use the new outgoing variable names
+      updateContextWithSortTableInfo(context, buildTopTableInstruction.sortTableInfo)
+
+      val (methodHandle, innerBlock :: tl) = context.popParent().consume(context, this)
+
+      val sortInstruction = SortInstruction(opName, buildTopTableInstruction.sortTableInfo)
+      val continuation = GetSortedResult(opName, variablesToKeep, buildTopTableInstruction.sortTableInfo, innerBlock)
+
+      (methodHandle, buildTopTableInstruction :: sortInstruction :: continuation :: tl)
+    }
+  }
+
+  // Helper shared by sortAsCodeGenPlan and topAsCodeGenPlan
+  private def prepareSortTableInfo(context: CodeGenContext, inputSortItems: Seq[SortDescription]):
+    (Map[String, Variable], Seq[SortItem], Map[String, Variable], String) = {
+
+    val variablesToKeep = context.getProjectedVariables // TODO: Intersect/replace with usedVariables(innerBlock)
+
+    val sortItems = inputSortItems.map {
+      case logical.Ascending(IdName(name)) => spi.SortItem(name, spi.Ascending)
+      case logical.Descending(IdName(name)) => spi.SortItem(name, spi.Descending)
+    }
+    val additionalSortVariables = sortItems.collect {
+      case spi.SortItem(name, _) if !variablesToKeep.isDefinedAt(name) => (name, context.getVariable(name))
+    }
+    val tupleVariables = variablesToKeep ++ additionalSortVariables
+
+    val sortTableName = context.namer.newVarName()
+
+    (variablesToKeep, sortItems, tupleVariables, sortTableName)
+  }
+
+  // Helper shared by sortAsCodeGenPlan and topAsCodeGenPlan
+  private def updateContextWithSortTableInfo(context: CodeGenContext, sortTableInfo: SortTableInfo) = {
+    sortTableInfo.fieldToVariableInfo.foreach {
+      case (_, info) =>
+        context.updateVariable(info.queryVariableName, info.outgoingVariable)
     }
   }
 

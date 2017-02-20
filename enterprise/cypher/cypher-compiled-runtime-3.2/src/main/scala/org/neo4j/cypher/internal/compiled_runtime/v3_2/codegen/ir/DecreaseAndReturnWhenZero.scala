@@ -21,7 +21,7 @@ package org.neo4j.cypher.internal.compiled_runtime.v3_2.codegen.ir
 
 import org.neo4j.cypher.internal.compiled_runtime.v3_2.codegen.CodeGenContext
 import org.neo4j.cypher.internal.compiled_runtime.v3_2.codegen.ir.expressions.CodeGenExpression
-import org.neo4j.cypher.internal.compiled_runtime.v3_2.codegen.spi.{Equal, MethodStructure}
+import org.neo4j.cypher.internal.compiled_runtime.v3_2.codegen.spi.{LessThanEqual, MethodStructure}
 
 case class DecreaseAndReturnWhenZero(opName: String, variableName: String, action: Instruction, startValue: CodeGenExpression)
   extends Instruction {
@@ -30,7 +30,7 @@ case class DecreaseAndReturnWhenZero(opName: String, variableName: String, actio
     startValue.init(generator)
     val expression = generator.box(startValue.generateExpression(generator))
     generator.declareCounter(variableName, expression)
-    generator.ifStatement(generator.checkInteger(variableName, Equal, 0L)) { onTrue =>
+    generator.ifStatement(generator.checkInteger(variableName, LessThanEqual, 0L)) { onTrue =>
       onTrue.returnSuccessfully()
     }
     action.init(generator)
@@ -42,7 +42,7 @@ case class DecreaseAndReturnWhenZero(opName: String, variableName: String, actio
     generator.trace(opName) { l1 =>
       l1.incrementRows()
       l1.decrementInteger(variableName)
-      l1.ifStatement(l1.checkInteger(variableName, Equal, 0L)) { l2 =>
+      l1.ifStatement(l1.checkInteger(variableName, LessThanEqual, 0L)) { l2 =>
         l2.returnSuccessfully()
       }
     }

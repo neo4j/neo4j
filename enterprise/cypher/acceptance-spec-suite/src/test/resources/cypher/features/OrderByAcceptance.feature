@@ -106,3 +106,29 @@ Feature: OrderByAcceptance
       |  4  | 'd' |
 
     And no side effects
+
+  Scenario: ORDER BY two node properties with LIMIT
+    Given an empty graph
+    And having executed:
+      """
+      CREATE (:L {a: 3, b: "a"}),
+             (:L {a: 1, b: "b"}),
+             (:L {a: 3, b: "c"}),
+             (:L {a: 4, b: "d"}),
+             (:L {a: 2, b: "e"})
+      """
+    When executing query:
+      """
+      MATCH (n:L)
+      WITH n.a AS a, n.b AS b
+      ORDER BY a, b DESC
+      LIMIT 3
+      RETURN a, b
+      """
+    Then the result should be, in order:
+      |  a  |  b  |
+      |  1  | 'b' |
+      |  2  | 'e' |
+      |  3  | 'c' |
+
+    And no side effects

@@ -293,17 +293,14 @@ case class ActualPipeBuilder(monitors: Monitors, recurse: LogicalPlan => Pipe, r
       case SkipPlan(_, count) =>
         SkipPipe(source, buildExpression(count))(id = id)
 
+      case Top(_, sortItems, SignedDecimalIntegerLiteral("1")) =>
+        Top1Pipe(source, sortItems.map(translateSortDescription).toList)(id = id)
+
+      case Top(_, sortItems, limit) =>
+        TopNPipe(source, sortItems.map(translateSortDescription).toList, buildExpression(limit))(id = id)
+
       case LimitPlan(_, count, DoNotIncludeTies) =>
-        (source, count) match {
-          case (SortPipe(inner, sortDescription), SignedDecimalIntegerLiteral("1")) =>
-            Top1Pipe(inner, sortDescription.toList)(id = id)
-
-          case (SortPipe(inner, sortDescription), _) =>
-            TopNPipe(inner, sortDescription.toList, buildExpression(count))(id = id)
-
-          case _ =>
-            LimitPipe(source, buildExpression(count))(id = id)
-        }
+        LimitPipe(source, buildExpression(count))(id = id)
 
       case LimitPlan(_, count, IncludeTies) =>
         (source, count) match {

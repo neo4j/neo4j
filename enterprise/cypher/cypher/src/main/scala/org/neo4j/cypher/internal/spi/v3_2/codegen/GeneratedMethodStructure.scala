@@ -30,7 +30,7 @@ import org.neo4j.collection.primitive._
 import org.neo4j.collection.primitive.hopscotch.LongKeyIntValueTable
 import org.neo4j.cypher.internal.codegen.CompiledConversionUtils.CompositeKey
 import org.neo4j.cypher.internal.codegen._
-import org.neo4j.cypher.internal.compiled_runtime.v3_2.codegen.ir.expressions.{BoolType, CodeGenType, FloatType, IntType, ReferenceType, Parameter => _, _}
+import org.neo4j.cypher.internal.compiled_runtime.v3_2.codegen.ir.expressions.{BoolType, CodeGenType, FloatType, IntType, Parameter => _, ReferenceType, _}
 import org.neo4j.cypher.internal.compiled_runtime.v3_2.codegen.spi._
 import org.neo4j.cypher.internal.compiled_runtime.v3_2.codegen.{CodeGenContext, QueryExecutionEvent}
 import org.neo4j.cypher.internal.compiler.v3_2.ast.convert.commands.DirectionConverter.toGraphDb
@@ -81,32 +81,29 @@ class GeneratedMethodStructure(val fields: Fields, val generator: CodeBlock, aux
   private case class HashTable(valueType: TypeReference, listType: TypeReference, tableType: TypeReference,
                                get: MethodReference, put: MethodReference, add: MethodReference)
 
-  private implicit class RichTableType(tableType: RecordingJoinTableType) {
+  private def extractHashTable(tableType: RecordingJoinTableType): HashTable = tableType match {
+    case LongToListTable(tupleDescriptor, localMap) =>
+      // compute the participating types
+      val valueType = aux.typeReference(tupleDescriptor)
+      val listType = parameterizedType(classOf[util.ArrayList[_]], valueType)
+      val tableType = parameterizedType(classOf[PrimitiveLongObjectMap[_]], valueType)
+      // the methods we use on those types
+      val get = methodReference(tableType, typeRef[Object], "get", typeRef[Long])
+      val put = methodReference(tableType, typeRef[Object], "put", typeRef[Long], typeRef[Object])
+      val add = methodReference(listType, typeRef[Boolean], "add", typeRef[Object])
 
-    def extractHashTable(): HashTable = tableType match {
-      case LongToListTable(tupleDescriptor, localMap) =>
-        // compute the participating types
-        val valueType = aux.typeReference(tupleDescriptor)
-        val listType = parameterizedType(classOf[util.ArrayList[_]], valueType)
-        val tableType = parameterizedType(classOf[PrimitiveLongObjectMap[_]], valueType)
-        // the methods we use on those types
-        val get = methodReference(tableType, typeRef[Object], "get", typeRef[Long])
-        val put = methodReference(tableType, typeRef[Object], "put", typeRef[Long], typeRef[Object])
-        val add = methodReference(listType, typeRef[Boolean], "add", typeRef[Object])
+      HashTable(valueType, listType, tableType, get, put, add)
 
-        HashTable(valueType, listType, tableType, get, put, add)
-
-      case LongsToListTable(tupleDescriptor, localMap) =>
-        // compute the participating types
-        val valueType = aux.typeReference(tupleDescriptor)
-        val listType = parameterizedType(classOf[util.ArrayList[_]], valueType)
-        val tableType = parameterizedType(classOf[util.HashMap[_, _]], typeRef[CompositeKey], valueType)
-        // the methods we use on those types
-        val get = methodReference(tableType, typeRef[Object], "get", typeRef[Object])
-        val put = methodReference(tableType, typeRef[Object], "put", typeRef[Object], typeRef[Object])
-        val add = methodReference(listType, typeRef[Boolean], "add", typeRef[Object])
-        HashTable(valueType, listType, tableType, get, put, add)
-    }
+    case LongsToListTable(tupleDescriptor, localMap) =>
+      // compute the participating types
+      val valueType = aux.typeReference(tupleDescriptor)
+      val listType = parameterizedType(classOf[util.ArrayList[_]], valueType)
+      val tableType = parameterizedType(classOf[util.HashMap[_, _]], typeRef[CompositeKey], valueType)
+      // the methods we use on those types
+      val get = methodReference(tableType, typeRef[Object], "get", typeRef[Object])
+      val put = methodReference(tableType, typeRef[Object], "put", typeRef[Object], typeRef[Object])
+      val add = methodReference(listType, typeRef[Boolean], "add", typeRef[Object])
+      HashTable(valueType, listType, tableType, get, put, add)
   }
 
   override def nextNode(targetVar: String, iterVar: String) =
@@ -732,29 +729,31 @@ class GeneratedMethodStructure(val fields: Fields, val generator: CodeBlock, aux
     }
   }
 
-  override def allocateSortTable(name: String, initialCapacity: Int, tupleDescriptor: OrderableTupleDescriptor): Unit = {
-    val typ = TypeReference.parameterizedType(classOf[util.ArrayList[_]], aux.comparableTypeReference(tupleDescriptor))
-    val localVariable = generator.declare(typ, name)
+  override def allocateSortTable(name: String, tableDescriptor: SortTableDescriptor, count: Expression): Unit = {
+    val tableType = sortTableType(tableDescriptor)
+    val localVariable = generator.declare(tableType, name)
     locals += name -> localVariable
-    generator.assign(localVariable, createNewInstance(typ, (typeRef[Int], constant(initialCapacity))))
+    generator.assign(localVariable, createNewInstance(tableType, (typeRef[Int], invoke(Methods.mathCastToInt, box(count)))))
   }
 
-  override def sortTableAdd(name: String, tupleDescriptor: OrderableTupleDescriptor, value: Expression): Unit = {
+  override def sortTableAdd(name: String, tableDescriptor: SortTableDescriptor, value: Expression): Unit = {
+    val tableType = sortTableType(tableDescriptor)
     generator.expression(pop(invoke(generator.load(name),
-      method[util.ArrayList[_], Boolean]("add", typeRef[Object]), box(value))))
+      methodReference(tableType, typeRef[Boolean], "add", typeRef[Object]),
+      box(value))))
   }
 
-  override def sortTableSort(name: String, tupleDescriptor: OrderableTupleDescriptor): Unit = {
-    val tupleType = aux.comparableTypeReference(tupleDescriptor)
-    val tableType = TypeReference.parameterizedType(classOf[util.List[_]], tupleType)
-    generator.expression(invoke(
-      method[java.util.Collections, Unit]("sort", tableType), generator.load(name)))
+  override def sortTableSort(name: String, tableDescriptor: SortTableDescriptor): Unit = {
+    val tableType = sortTableType(tableDescriptor)
+    generator.expression(invoke(generator.load(name),
+      methodReference(tableType, typeRef[Unit], "sort")))
   }
 
-  override def sortTableIterate(tableName: String, tupleDescriptor: OrderableTupleDescriptor,
+  override def sortTableIterate(tableName: String, tableDescriptor: SortTableDescriptor,
                                 varNameToField: Map[String, String])
                                (block: (MethodStructure[Expression]) => Unit): Unit = {
-    val tupleType = aux.comparableTypeReference(tupleDescriptor)
+    val tupleDescriptor = tableDescriptor.tupleDescriptor
+    val tupleType = aux.typeReference(tupleDescriptor)
     val elementName = context.namer.newVarName()
 
     using(generator.forEach(Parameter.param(tupleType, elementName), generator.load(tableName))) { body =>
@@ -1105,7 +1104,7 @@ class GeneratedMethodStructure(val fields: Fields, val generator: CodeBlock, aux
       assert(keyVars.size == 1)
       val keyVar = keyVars.head
 
-      val hashTable = tableType.extractHashTable()
+      val hashTable = extractHashTable(tableType)
       // generate the code
       val list = generator.declare(hashTable.listType, context.namer.newVarName())
       val elementName = context.namer.newVarName()
@@ -1123,7 +1122,7 @@ class GeneratedMethodStructure(val fields: Fields, val generator: CodeBlock, aux
       }
 
     case tableType@LongsToListTable(tupleDescriptor, localVars) =>
-      val hashTable = tableType.extractHashTable()
+      val hashTable = extractHashTable(tableType)
       val list = generator.declare(hashTable.listType, context.namer.newVarName())
       val elementName = context.namer.newVarName()
 
@@ -1161,7 +1160,7 @@ class GeneratedMethodStructure(val fields: Fields, val generator: CodeBlock, aux
     case _: LongToListTable =>
       assert(keyVars.size == 1)
       val keyVar = keyVars.head
-      val hashTable = tableType.extractHashTable()
+      val hashTable = extractHashTable(tableType)
       // generate the code
       val listName = context.namer.newVarName()
       val list = generator.declare(hashTable.listType, listName) // ProbeTable list;
@@ -1187,7 +1186,7 @@ class GeneratedMethodStructure(val fields: Fields, val generator: CodeBlock, aux
       )
 
     case _: LongsToListTable =>
-      val hashTable = tableType.extractHashTable()
+      val hashTable = extractHashTable(tableType)
       // generate the code
       val listName = context.namer.newVarName()
       val keyName = context.namer.newVarName()
@@ -1376,5 +1375,17 @@ class GeneratedMethodStructure(val fields: Fields, val generator: CodeBlock, aux
   private def field(tupleDescriptor: TupleDescriptor, fieldName: String) = {
     val fieldType: CodeGenType = tupleDescriptor.structure(fieldName)
     FieldReference.field(aux.typeReference(tupleDescriptor), lowerType(fieldType), fieldName)
+  }
+
+  private def sortTableType(tableDescriptor: SortTableDescriptor): TypeReference = {
+    tableDescriptor match {
+      case FullSortTableDescriptor(tupleDescriptor) =>
+        val tupleType = aux.comparableTypeReference(tupleDescriptor)
+        TypeReference.parameterizedType(classOf[DefaultFullSortTable[_]], tupleType)
+
+      case TopTableDescriptor(tupleDescriptor) =>
+        val tupleType = aux.comparableTypeReference(tupleDescriptor)
+        TypeReference.parameterizedType(classOf[DefaultTopTable[_]], tupleType)
+    }
   }
 }

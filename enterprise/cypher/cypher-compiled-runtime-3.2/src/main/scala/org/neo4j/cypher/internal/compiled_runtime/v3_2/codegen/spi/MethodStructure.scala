@@ -86,10 +86,10 @@ trait MethodStructure[E] {
   def newMapOfSets(name: String, keyTypes: IndexedSeq[CodeGenType], elementType: CodeGenType)
   def checkDistinct(name: String, key: Map[String,(CodeGenType, E)], keyVar: String, value: E, valueType: CodeGenType)(block: MethodStructure[E] => Unit)
 
-  def allocateSortTable(name: String, initialCapacity: Int, tupleDescriptor: OrderableTupleDescriptor): Unit
-  def sortTableAdd(name: String, tupleDescriptor: OrderableTupleDescriptor, value: E): Unit
-  def sortTableSort(name: String, tupleDescriptor: OrderableTupleDescriptor): Unit
-  def sortTableIterate(name: String, tupleDescriptor: OrderableTupleDescriptor,
+  def allocateSortTable(name: String, tableDescriptor: SortTableDescriptor, count: E): Unit
+  def sortTableAdd(name: String, tableDescriptor: SortTableDescriptor, value: E): Unit
+  def sortTableSort(name: String, tableDescriptor: SortTableDescriptor): Unit
+  def sortTableIterate(name: String, tableDescriptor: SortTableDescriptor,
                        varNameToField: Map[String, String])
                       (block: (MethodStructure[E]) => Unit): Unit
 
@@ -222,3 +222,10 @@ case class SimpleTupleDescriptor(structure: Map[String, CodeGenType]) extends Tu
 case class HashableTupleDescriptor(structure: Map[String, CodeGenType]) extends TupleDescriptor
 case class OrderableTupleDescriptor(structure: Map[String, CodeGenType],
                                     sortItems: Iterable[SortItem]) extends TupleDescriptor
+
+sealed trait SortTableDescriptor {
+  val tupleDescriptor: TupleDescriptor
+}
+
+case class FullSortTableDescriptor(tupleDescriptor: OrderableTupleDescriptor) extends SortTableDescriptor
+case class TopTableDescriptor(tupleDescriptor: OrderableTupleDescriptor) extends SortTableDescriptor

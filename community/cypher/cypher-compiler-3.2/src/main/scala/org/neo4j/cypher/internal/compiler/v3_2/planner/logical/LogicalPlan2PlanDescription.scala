@@ -249,6 +249,9 @@ case class LogicalPlan2PlanDescription(idMap: Map[LogicalPlan, Id], readOnly: Bo
       case Sort(_, orderBy) =>
         PlanDescriptionImpl(id, "Sort", children, Seq(KeyNames(orderBy.map(_.id.name))), variables)
 
+      case Top(_, orderBy, limit) =>
+        PlanDescriptionImpl(id, "Top", children, Seq(KeyNames(orderBy.map(_.id.name)), Expression(limit)), variables)
+
       case UnwindCollection(_, _, expression) =>
         PlanDescriptionImpl(id, "Unwind", children, Seq(Expression(expression)), variables)
 
