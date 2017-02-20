@@ -19,23 +19,40 @@
  */
 package org.neo4j.causalclustering.load_balancing;
 
-import org.neo4j.causalclustering.core.consensus.LeaderLocator;
-import org.neo4j.causalclustering.discovery.TopologyService;
-import org.neo4j.graphdb.config.InvalidSettingException;
-import org.neo4j.kernel.configuration.Config;
-import org.neo4j.logging.Log;
-import org.neo4j.logging.LogProvider;
+import java.util.List;
+import java.util.Map;
 
-/**
- * Defines the interface for an implementation of the GetServersV2
- * cluster discovery and load balancing procedure.
- */
-public interface LoadBalancingPlugin extends LoadBalancingProcessor
+public interface LoadBalancingProcessor
 {
-    void validate( Config config, Log log ) throws InvalidSettingException;
+    /**
+     * Runs the procedure using the supplied client context
+     * and returns the result.
+     *
+     * @param context The client supplied context.
+     * @return The result of invoking the procedure.
+     */
+    Result run( Map<String,String> context );
 
-    void init( TopologyService topologyService, LeaderLocator leaderLocator,
-            LogProvider logProvider, Config config ) throws Throwable;
+    interface Result
+    {
+        /**
+         * @return The time-to-live of the returned result.
+         */
+        long getTimeToLiveMillis();
 
-    String pluginName();
+        /**
+         * @return List of ROUTE-capable endpoints.
+         */
+        List<Endpoint> routeEndpoints();
+
+        /**
+         * @return List of WRITE-capable endpoints.
+         */
+        List<Endpoint> writeEndpoints();
+
+        /**
+         * @return List of READ-capable endpoints.
+         */
+        List<Endpoint> readEndpoints();
+    }
 }

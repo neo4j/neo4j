@@ -22,13 +22,7 @@ package org.neo4j.causalclustering.load_balancing.plugins;
 import java.util.Collections;
 import java.util.Map;
 
-import org.neo4j.causalclustering.core.consensus.LeaderLocator;
-import org.neo4j.causalclustering.discovery.TopologyService;
-import org.neo4j.causalclustering.load_balancing.LoadBalancingPlugin;
-import org.neo4j.graphdb.config.InvalidSettingException;
-import org.neo4j.kernel.configuration.Config;
-import org.neo4j.logging.Log;
-import org.neo4j.logging.LogProvider;
+import org.neo4j.causalclustering.load_balancing.LoadBalancingProcessor;
 
 /**
  * Shuffles the servers of the delegate around so that every client
@@ -36,32 +30,13 @@ import org.neo4j.logging.LogProvider;
  *
  * N.B: Lists are shuffled in place.
  */
-
-public class ServerShufflingPlugin implements LoadBalancingPlugin
+public class ServerShufflingProcessor implements LoadBalancingProcessor
 {
-    public static final String PLUGIN_NAME = "server_shuffling";
+    private final LoadBalancingProcessor delegate;
 
-    private final LoadBalancingPlugin delegate;
-
-    public ServerShufflingPlugin( LoadBalancingPlugin delegate )
+    public ServerShufflingProcessor( LoadBalancingProcessor delegate )
     {
         this.delegate = delegate;
-    }
-
-    @Override
-    public void validate( Config config, Log log ) throws InvalidSettingException
-    {
-    }
-
-    @Override
-    public void init( TopologyService topologyService, LeaderLocator leaderLocator, LogProvider logProvider, Config config )
-    {
-    }
-
-    @Override
-    public String pluginName()
-    {
-        return PLUGIN_NAME;
     }
 
     @Override
@@ -76,7 +51,7 @@ public class ServerShufflingPlugin implements LoadBalancingPlugin
         return result;
     }
 
-    public LoadBalancingPlugin delegate()
+    public LoadBalancingProcessor delegate()
     {
         return delegate;
     }

@@ -26,7 +26,7 @@ import java.util.Objects;
  * The outcome of applying a load balancing plugin, which will be used by client
  * software for scheduling work at the endpoints.
  */
-public class LoadBalancingResult implements LoadBalancingPlugin.Result
+public class LoadBalancingResult implements LoadBalancingProcessor.Result
 {
     private final List<Endpoint> routeEndpoints;
     private final List<Endpoint> writeEndpoints;
