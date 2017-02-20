@@ -28,13 +28,14 @@ import org.neo4j.causalclustering.core.CausalClusteringSettings;
 import org.neo4j.causalclustering.core.consensus.LeaderLocator;
 import org.neo4j.causalclustering.core.consensus.NoLeaderFoundException;
 import org.neo4j.causalclustering.discovery.CoreTopology;
-import org.neo4j.causalclustering.discovery.CoreTopologyService;
 import org.neo4j.causalclustering.discovery.ReadReplicaTopology;
+import org.neo4j.causalclustering.discovery.TopologyService;
 import org.neo4j.causalclustering.identity.MemberId;
 import org.neo4j.causalclustering.load_balancing.Endpoint;
 import org.neo4j.causalclustering.load_balancing.LoadBalancingResult;
 import org.neo4j.causalclustering.load_balancing.LoadBalancingPlugin;
 import org.neo4j.kernel.configuration.Config;
+import org.neo4j.logging.LogProvider;
 
 import static java.util.Collections.emptyList;
 import static java.util.stream.Stream.concat;
@@ -46,15 +47,22 @@ import static org.neo4j.causalclustering.load_balancing.Util.asList;
  */
 public class AllServersPlugin implements LoadBalancingPlugin
 {
-    private final CoreTopologyService topologyService;
-    private final LeaderLocator leaderLocator;
-    private final Long timeToLive;
+    private TopologyService topologyService;
+    private LeaderLocator leaderLocator;
+    private Long timeToLive;
 
-    public AllServersPlugin( CoreTopologyService topologyService, LeaderLocator leaderLocator, Config config )
+    @Override
+    public void init( TopologyService topologyService, LeaderLocator leaderLocator, LogProvider logProvider, Config config )
     {
         this.topologyService = topologyService;
         this.leaderLocator = leaderLocator;
         this.timeToLive = config.get( CausalClusteringSettings.cluster_routing_ttl );
+    }
+
+    @Override
+    public String pluginName()
+    {
+        return "all_servers";
     }
 
     @Override
