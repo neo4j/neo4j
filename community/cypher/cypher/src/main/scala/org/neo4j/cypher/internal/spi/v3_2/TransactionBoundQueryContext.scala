@@ -214,18 +214,21 @@ final class TransactionBoundQueryContext(val transactionalContext: Transactional
 
       case rangeLessThan: RangeLessThan[Number] =>
         rangeLessThan.limit(BY_NUMBER).map { limit =>
-          readOps.nodesGetFromIndexRangeSeekByNumber(index, null, false, limit.endPoint, limit.isInclusive)
+          val rangePredicate = IndexQuery.range(index.property, null, false, limit.endPoint, limit.isInclusive)
+          readOps.indexQuery(index, rangePredicate)
         }
 
       case rangeGreaterThan: RangeGreaterThan[Number] =>
         rangeGreaterThan.limit(BY_NUMBER).map { limit =>
-          readOps.nodesGetFromIndexRangeSeekByNumber(index, limit.endPoint, limit.isInclusive, null, false)
+          val rangePredicate = IndexQuery.range(index.property, limit.endPoint, limit.isInclusive, null, false)
+          readOps.indexQuery(index, rangePredicate)
         }
 
       case RangeBetween(rangeGreaterThan, rangeLessThan) =>
         rangeGreaterThan.limit(BY_NUMBER).flatMap { greaterThanLimit =>
           rangeLessThan.limit(BY_NUMBER).map { lessThanLimit =>
-            readOps.nodesGetFromIndexRangeSeekByNumber(index, greaterThanLimit.endPoint, greaterThanLimit.isInclusive, lessThanLimit.endPoint, lessThanLimit.isInclusive)
+            val rangePredicate = IndexQuery.range(index.property, greaterThanLimit.endPoint, greaterThanLimit.isInclusive, lessThanLimit.endPoint, lessThanLimit.isInclusive)
+            readOps.indexQuery(index, rangePredicate)
           }
         }
     }).getOrElse(EMPTY_PRIMITIVE_LONG_COLLECTION.iterator)

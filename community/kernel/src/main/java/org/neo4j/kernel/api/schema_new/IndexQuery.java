@@ -31,6 +31,12 @@ public abstract class IndexQuery
         return new ExactPredicate( propertyKeyId, value );
     }
 
+    public static NumberRangePredicate range( int propertyKeyId, Number from, boolean fromInclusive, Number to,
+                                              boolean toInclusive )
+    {
+        return new NumberRangePredicate( propertyKeyId, from, fromInclusive, to, toInclusive );
+    }
+
     public abstract IndexQueryType type();
 
     public static final class ExistsPredicate extends IndexQuery
@@ -114,8 +120,53 @@ public abstract class IndexQuery
         }
     }
 
+    public static class NumberRangePredicate extends IndexQuery
+    {
+        private final int propertyKeyId;
+        private final Number from;
+        private final boolean fromInclusive;
+        private final Number to;
+        private final boolean toInclusive;
+
+        public NumberRangePredicate( int propertyKeyId, Number from,
+                                     boolean fromInclusive, Number to, boolean toInclusive )
+        {
+            this.propertyKeyId = propertyKeyId;
+            this.from = from;
+            this.fromInclusive = fromInclusive;
+            this.to = to;
+            this.toInclusive = toInclusive;
+        }
+
+        @Override
+        public IndexQueryType type()
+        {
+            return IndexQueryType.rangeNumeric;
+        }
+
+        public Number getFrom()
+        {
+            return from;
+        }
+
+        public Number getTo()
+        {
+            return to;
+        }
+
+        public boolean isFromInclusive()
+        {
+            return fromInclusive;
+        }
+
+        public boolean isToInclusive()
+        {
+            return toInclusive;
+        }
+    }
+
     public enum IndexQueryType
     {
-        exists, exact
+        exists, exact, rangeNumeric
     }
 }

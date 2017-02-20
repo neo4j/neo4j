@@ -736,11 +736,23 @@ public class StateHandlingStatementOperations implements
         switch ( predicate.type() )
         {
         case exact:
+        {
             Object value = ((IndexQuery.ExactPredicate) predicate).value();
             PrimitiveLongIterator exactMatches = filterExactIndexMatches( state, index, value, committed );
             return filterIndexStateChangesForScanOrSeek( state, index, value, exactMatches );
+        }
         case exists:
             return filterIndexStateChangesForScanOrSeek( state, index, null, committed );
+        case rangeNumeric:
+        {
+            IndexQuery.NumberRangePredicate numPred = (IndexQuery.NumberRangePredicate) predicate;
+            PrimitiveLongIterator exactMatches =
+                    filterExactRangeMatches( state, index, committed, numPred.getFrom(), numPred.isFromInclusive(),
+                            numPred.getTo(), numPred.isToInclusive() );
+            return filterIndexStateChangesForRangeSeekByNumber( state, index, numPred.getFrom(),
+                    numPred.isFromInclusive(), numPred.getTo(), numPred.isToInclusive(),
+                    exactMatches );
+        }
         }
 
         throw new RuntimeException( "Query not supported: " + Arrays.toString( predicates ) );

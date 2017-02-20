@@ -397,6 +397,56 @@ public class StateHandlingStatementOperationsTest
         assertEquals( asSet( 42L, 43L ), PrimitiveLongCollections.toSet( results ) );
     }
 
+    @SuppressWarnings( "unchecked" )
+    @Test
+    public void shouldConsiderTransactionStateDuringIndexBetweenRangeSeekByNumberWithIndexQuery() throws Exception
+    {
+        // Given
+        final int propertyKey = 2;
+        final int inRange = 15;
+        int lower = 10;
+        int upper = 20;
+
+        TransactionState txState = mock( TransactionState.class );
+        KernelStatement statement = mock( KernelStatement.class );
+        when( statement.hasTxStateWithChanges() ).thenReturn( true );
+        when( statement.txState() ).thenReturn( txState );
+        StorageStatement storageStatement = mock( StorageStatement.class );
+        when( statement.getStoreStatement() ).thenReturn( storageStatement );
+        when( txState.indexUpdatesForRangeSeekByNumber( index, lower, true, upper, false ) ).thenReturn(
+                new DiffSets<>( Collections.singleton( 42L ), Collections.singleton( 44L ) )
+        );
+        when( txState.addedAndRemovedNodes() ).thenReturn(
+                new DiffSets<>( Collections.singleton( 45L ), Collections.singleton( 46L ) )
+        );
+        when( txState.augmentSingleNodeCursor( any( Cursor.class ), anyLong() ) ).thenAnswer( invocationOnMock ->
+        {
+            long nodeId = (long) invocationOnMock.getArguments()[1];
+            return asNodeCursor( nodeId, asPropertyCursor( intProperty( propertyKey, inRange ) ) );
+        } );
+
+        StoreReadLayer storeReadLayer = mock( StoreReadLayer.class );
+        IndexReader indexReader = addMockedIndexReader( storageStatement );
+        IndexQuery.NumberRangePredicate indexQuery =
+                IndexQuery.range( index.schema().getPropertyId(), lower, true, upper, false );
+        when( indexReader.query( indexQuery ) ).thenReturn(
+                PrimitiveLongCollections.resourceIterator( PrimitiveLongCollections.iterator( 43L, 44L, 46L ), null )
+        );
+        when( storageStatement.acquireSingleNodeCursor( anyLong() ) ).thenAnswer( invocationOnMock ->
+        {
+            long nodeId = (long) invocationOnMock.getArguments()[0];
+            return asNodeCursor( nodeId, asPropertyCursor( intProperty( propertyKey, inRange ) ) );
+        } );
+
+        StateHandlingStatementOperations context = newTxStateOps( storeReadLayer );
+
+        // When
+        PrimitiveLongIterator results = context.indexQuery( statement, index, indexQuery );
+
+        // Then
+        assertEquals( asSet( 42L, 43L ), PrimitiveLongCollections.toSet( results ) );
+    }
+
     @Test
     public void shouldConsiderTransactionStateDuringIndexBetweenRangeSeekByString() throws Exception
     {

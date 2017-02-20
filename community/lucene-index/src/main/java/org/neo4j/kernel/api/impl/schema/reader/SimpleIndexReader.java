@@ -89,8 +89,14 @@ public class SimpleIndexReader implements IndexReader
         IndexQuery predicate = predicates[0];
         switch ( predicate.type() )
         {
-        case exact: return seek( ((IndexQuery.ExactPredicate)predicate).value() );
-        case exists: return scan();
+        case exact:
+            return seek( ((IndexQuery.ExactPredicate) predicate).value() );
+        case exists:
+            return scan();
+        case rangeNumeric:
+            IndexQuery.NumberRangePredicate numberRangePredicate = (IndexQuery.NumberRangePredicate) predicate;
+            return rangeSeekByNumberInclusive( numberRangePredicate.getFrom(),
+                    numberRangePredicate.getTo() );
         }
 
         // todo figure out a more specific exception

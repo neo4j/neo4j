@@ -34,6 +34,7 @@ import static org.hamcrest.Matchers.equalTo;
 import static org.junit.Assert.assertThat;
 import static org.neo4j.kernel.api.schema_new.IndexQuery.exact;
 import static org.neo4j.kernel.api.schema_new.IndexQuery.exists;
+import static org.neo4j.kernel.api.schema_new.IndexQuery.range;
 
 @Ignore( "Not a test. This is a compatibility suite that provides test cases for verifying" +
         " SchemaIndexProvider implementations. Each index provider that is to be tested by this suite" +
@@ -104,6 +105,23 @@ public class NonUniqueIndexAccessorCompatibility extends IndexAccessorCompatibil
         assertThat( getAllNodesFromInclusiveIndexSeekByNumber( -5, 4 ), equalTo( asList( 1L, 2L, 3L ) ) );
         assertThat( getAllNodesFromInclusiveIndexSeekByNumber( -4, 5 ), equalTo( asList( 3L, 4L, 5L ) ) );
         assertThat( getAllNodesFromInclusiveIndexSeekByNumber( -5, 5 ), equalTo( asList( 1L, 2L, 3L, 4L, 5L ) ) );
+    }
+
+    @Test
+    public void testIndexRangeSeekByNumberWithDuplicatesWithQuery() throws Exception
+    {
+        updateAndCommit( asList(
+                IndexEntryUpdate.add( 1L, index, -5 ),
+                IndexEntryUpdate.add( 2L, index, -5 ),
+                IndexEntryUpdate.add( 3L, index, 0 ),
+                IndexEntryUpdate.add( 4L, index, 5 ),
+                IndexEntryUpdate.add( 5L, index, 5 ) ) );
+
+        assertThat( query( range( 1, -5, true, 5, true ) ), equalTo( asList( 1L, 2L, 3L, 4L, 5L ) ) );
+        assertThat( query( range( 1, -3, true, -1, true ) ), equalTo( EMPTY_LIST ) );
+        assertThat( query( range( 1, -5, true, 4, true ) ), equalTo( asList( 1L, 2L, 3L ) ) );
+        assertThat( query( range( 1, -4, true, 5, true ) ), equalTo( asList( 3L, 4L, 5L ) ) );
+        assertThat( query( range( 1, -5, true, 5, true ) ), equalTo( asList( 1L, 2L, 3L, 4L, 5L ) ) );
     }
 
     @Test
