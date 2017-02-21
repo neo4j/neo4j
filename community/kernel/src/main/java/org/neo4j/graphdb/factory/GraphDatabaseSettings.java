@@ -147,13 +147,13 @@ public abstract class GraphDatabaseSettings
 
     @Description( "This setting is associated with performance optimization. The shortest path algorithm does not " +
                   "work when the start and end nodes are the same. With this setting set to `false` no path will " +
-                  "by returned when that happens. The default value of `true` will instead throw an exception. " +
+                  "be returned when that happens. The default value of `true` will instead throw an exception. " +
                   "This can happen if you perform a shortestPath search after a cartesian product that might have " +
-                  "the same start and end nodes for some of the rows passed to shortestPath. If is it preferable " +
+                  "the same start and end nodes for some of the rows passed to shortestPath. If it is preferable " +
                   "to not experience this exception, and acceptable for results to be missing for those rows, then " +
                   "set this to `false`. If you cannot accept missing results, and really want the shortestPath " +
-                  "between two common nodes, then re-write the query using a normal cypher variable length pattern " +
-                  "expression followed by sorting by path length and limiting to one result." )
+                  "between two common nodes, then re-write the query using a standard Cypher variable length pattern " +
+                  "expression followed by ordering by path length and limiting to one result." )
     public static final Setting<Boolean> forbid_shortestpath_common_nodes = setting(
             "cypher.forbid_shortestpath_common_nodes", BOOLEAN, TRUE );
 
