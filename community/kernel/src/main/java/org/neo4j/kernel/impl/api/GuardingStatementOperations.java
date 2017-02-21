@@ -28,7 +28,7 @@ import org.neo4j.kernel.api.exceptions.InvalidTransactionTypeKernelException;
 import org.neo4j.kernel.api.exceptions.KernelException;
 import org.neo4j.kernel.api.exceptions.index.IndexNotFoundKernelException;
 import org.neo4j.kernel.api.exceptions.legacyindex.AutoIndexingKernelException;
-import org.neo4j.kernel.api.exceptions.schema.ConstraintValidationKernelException;
+import org.neo4j.kernel.api.exceptions.schema.ConstraintValidationException;
 import org.neo4j.kernel.api.exceptions.schema.IndexBrokenKernelException;
 import org.neo4j.kernel.api.properties.DefinedProperty;
 import org.neo4j.kernel.api.properties.Property;
@@ -102,7 +102,7 @@ public class GuardingStatementOperations implements
 
     @Override
     public boolean nodeAddLabel( KernelStatement statement, long nodeId, int labelId )
-            throws ConstraintValidationKernelException, EntityNotFoundException
+            throws ConstraintValidationException, EntityNotFoundException
     {
         guard.check( statement );
         return entityWriteDelegate.nodeAddLabel( statement, nodeId, labelId );
@@ -117,7 +117,7 @@ public class GuardingStatementOperations implements
 
     @Override
     public Property nodeSetProperty( KernelStatement statement, long nodeId, DefinedProperty property )
-            throws ConstraintValidationKernelException, EntityNotFoundException, AutoIndexingKernelException,
+            throws ConstraintValidationException, EntityNotFoundException, AutoIndexingKernelException,
             InvalidTransactionTypeKernelException
     {
         guard.check( statement );

@@ -36,7 +36,6 @@ import org.neo4j.kernel.api.LegacyIndexHits;
 import org.neo4j.kernel.api.Statement;
 import org.neo4j.kernel.api.constraints.NodePropertyConstraint;
 import org.neo4j.kernel.api.constraints.NodePropertyExistenceConstraint;
-import org.neo4j.kernel.api.constraints.PropertyConstraint;
 import org.neo4j.kernel.api.constraints.RelationshipPropertyConstraint;
 import org.neo4j.kernel.api.constraints.RelationshipPropertyExistenceConstraint;
 import org.neo4j.kernel.api.constraints.UniquenessConstraint;
@@ -50,8 +49,7 @@ import org.neo4j.kernel.api.exceptions.index.IndexNotFoundKernelException;
 import org.neo4j.kernel.api.exceptions.legacyindex.AutoIndexingKernelException;
 import org.neo4j.kernel.api.exceptions.legacyindex.LegacyIndexNotFoundKernelException;
 import org.neo4j.kernel.api.exceptions.schema.AlreadyConstrainedException;
-import org.neo4j.kernel.api.exceptions.schema.ConstraintValidationKernelException;
-import org.neo4j.kernel.api.exceptions.schema.ConstraintVerificationFailedKernelException;
+import org.neo4j.kernel.api.exceptions.schema.ConstraintValidationException;
 import org.neo4j.kernel.api.exceptions.schema.CreateConstraintFailureException;
 import org.neo4j.kernel.api.exceptions.schema.DropConstraintFailureException;
 import org.neo4j.kernel.api.exceptions.schema.DropIndexFailureException;
@@ -59,6 +57,7 @@ import org.neo4j.kernel.api.exceptions.schema.IllegalTokenNameException;
 import org.neo4j.kernel.api.exceptions.schema.IndexBrokenKernelException;
 import org.neo4j.kernel.api.exceptions.schema.SchemaRuleNotFoundException;
 import org.neo4j.kernel.api.exceptions.schema.TooManyLabelsException;
+import org.neo4j.kernel.api.exceptions.schema.UniquePropertyValueValidationException;
 import org.neo4j.kernel.api.index.InternalIndexState;
 import org.neo4j.kernel.api.legacyindex.AutoIndexing;
 import org.neo4j.kernel.api.properties.DefinedProperty;
@@ -479,9 +478,9 @@ public class StateHandlingStatementOperations implements
             }
             return ConstraintBoundary.mapUnique( constraint );
         }
-        catch ( ConstraintVerificationFailedKernelException | DropIndexFailureException | TransactionFailureException e )
+        catch ( UniquePropertyValueValidationException | DropIndexFailureException | TransactionFailureException e )
         {
-            throw new CreateConstraintFailureException( ConstraintBoundary.mapUnique( constraint ), e );
+            throw new CreateConstraintFailureException( constraint, e );
         }
     }
 
@@ -1102,7 +1101,7 @@ public class StateHandlingStatementOperations implements
                     count += counts.nodeCount( labelId, newDoubleLongRegister() ).readSecond();
                 }
             }
-            catch ( ConstraintValidationKernelException | CreateConstraintFailureException e )
+            catch ( ConstraintValidationException | CreateConstraintFailureException e )
             {
                 throw new IllegalArgumentException( "Unexpected error: " + e.getMessage() );
             }
@@ -1133,7 +1132,7 @@ public class StateHandlingStatementOperations implements
                             .readSecond();
                 }
             }
-            catch ( ConstraintValidationKernelException | CreateConstraintFailureException e )
+            catch ( ConstraintValidationException | CreateConstraintFailureException e )
             {
                 throw new IllegalArgumentException( "Unexpected error: " + e.getMessage() );
             }

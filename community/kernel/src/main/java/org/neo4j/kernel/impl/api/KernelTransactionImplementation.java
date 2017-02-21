@@ -40,7 +40,7 @@ import org.neo4j.kernel.api.exceptions.InvalidTransactionTypeKernelException;
 import org.neo4j.kernel.api.exceptions.Status;
 import org.neo4j.kernel.api.exceptions.TransactionFailureException;
 import org.neo4j.kernel.api.exceptions.TransactionHookException;
-import org.neo4j.kernel.api.exceptions.schema.ConstraintValidationKernelException;
+import org.neo4j.kernel.api.exceptions.schema.ConstraintValidationException;
 import org.neo4j.kernel.api.exceptions.schema.CreateConstraintFailureException;
 import org.neo4j.kernel.api.exceptions.schema.DropIndexFailureException;
 import org.neo4j.kernel.api.schema_new.index.NewIndexDescriptor;
@@ -589,7 +589,7 @@ public class KernelTransactionImplementation implements KernelTransaction, TxSta
             success = true;
             return txId;
         }
-        catch ( ConstraintValidationKernelException | CreateConstraintFailureException e )
+        catch ( ConstraintValidationException | CreateConstraintFailureException e )
         {
             throw new ConstraintViolationTransactionFailureException(
                     e.getUserMessage( new KeyReadTokenNameLookup( currentTransactionOperations.keyReadOperations() ) ), e );
@@ -636,12 +636,13 @@ public class KernelTransactionImplementation implements KernelTransaction, TxSta
 
                         @Override
                         public void visitCreatedRelationship( long id, int type, long startNode, long endNode )
+                                throws ConstraintValidationException
                         {
                             storeLayer.releaseRelationship( id );
                         }
                     } );
                 }
-                catch ( ConstraintValidationKernelException | CreateConstraintFailureException e )
+                catch ( ConstraintValidationException | CreateConstraintFailureException e )
                 {
                     throw new IllegalStateException(
                             "Releasing locks during rollback should perform no constraints checking.", e );

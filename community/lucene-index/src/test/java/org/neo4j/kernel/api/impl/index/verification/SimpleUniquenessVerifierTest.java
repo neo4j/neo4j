@@ -44,7 +44,6 @@ import org.neo4j.kernel.api.impl.index.storage.DirectoryFactory;
 import org.neo4j.kernel.api.impl.schema.LuceneDocumentStructure;
 import org.neo4j.kernel.api.impl.schema.verification.SimpleUniquenessVerifier;
 import org.neo4j.kernel.api.impl.schema.verification.UniquenessVerifier;
-import org.neo4j.kernel.api.index.PreexistingIndexEntryConflictException;
 import org.neo4j.kernel.api.index.PropertyAccessor;
 import org.neo4j.test.rule.TestDirectory;
 
@@ -206,7 +205,7 @@ public class SimpleUniquenessVerifierTest
         }
         catch ( Throwable t )
         {
-            assertThat( t, instanceOf( PreexistingIndexEntryConflictException.class ) );
+            assertThat( t, instanceOf( IndexEntryConflictException.class ) );
         }
 
         verify( indexSearcher ).search( any( Query.class ), any( Collector.class ) );
@@ -257,7 +256,7 @@ public class SimpleUniquenessVerifierTest
         }
         catch ( Throwable t )
         {
-            assertThat( t, instanceOf( PreexistingIndexEntryConflictException.class ) );
+            assertThat( t, instanceOf( IndexEntryConflictException.class ) );
         }
     }
 
@@ -270,7 +269,7 @@ public class SimpleUniquenessVerifierTest
         }
         catch ( Throwable t )
         {
-            assertThat( t, instanceOf( PreexistingIndexEntryConflictException.class ) );
+            assertThat( t, instanceOf( IndexEntryConflictException.class ) );
         }
     }
 

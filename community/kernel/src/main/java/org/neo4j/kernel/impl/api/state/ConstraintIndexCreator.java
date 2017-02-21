@@ -25,18 +25,17 @@ import java.util.function.Supplier;
 import org.neo4j.kernel.api.KernelAPI;
 import org.neo4j.kernel.api.KernelTransaction;
 import org.neo4j.kernel.api.Statement;
-import org.neo4j.kernel.api.constraints.UniquenessConstraint;
 import org.neo4j.kernel.api.exceptions.TransactionFailureException;
 import org.neo4j.kernel.api.exceptions.index.IndexEntryConflictException;
 import org.neo4j.kernel.api.exceptions.index.IndexNotFoundKernelException;
 import org.neo4j.kernel.api.exceptions.index.IndexPopulationFailedKernelException;
-import org.neo4j.kernel.api.exceptions.schema.ConstraintVerificationFailedKernelException;
 import org.neo4j.kernel.api.exceptions.schema.CreateConstraintFailureException;
 import org.neo4j.kernel.api.exceptions.schema.DropIndexFailureException;
 import org.neo4j.kernel.api.exceptions.schema.SchemaRuleNotFoundException;
-import org.neo4j.kernel.api.exceptions.schema.UniquenessConstraintVerificationFailedKernelException;
+import org.neo4j.kernel.api.exceptions.schema.UniquePropertyValueValidationException;
 import org.neo4j.kernel.api.schema_new.LabelSchemaDescriptor;
-import org.neo4j.kernel.api.schema_new.SchemaBoundary;
+import org.neo4j.kernel.api.schema_new.constaints.ConstraintDescriptor;
+import org.neo4j.kernel.api.schema_new.constaints.ConstraintDescriptorFactory;
 import org.neo4j.kernel.api.schema_new.index.NewIndexDescriptor;
 import org.neo4j.kernel.api.index.PropertyAccessor;
 import org.neo4j.kernel.api.schema_new.index.NewIndexDescriptorFactory;
@@ -45,6 +44,8 @@ import org.neo4j.kernel.impl.api.index.IndexingService;
 import org.neo4j.kernel.impl.api.operations.SchemaReadOperations;
 import org.neo4j.kernel.impl.locking.Locks.Client;
 import static java.util.Collections.singleton;
+
+import static org.neo4j.kernel.api.exceptions.schema.ConstraintValidationException.Phase.VERIFICATION;
 import static org.neo4j.kernel.api.security.SecurityContext.AUTH_DISABLED;
 
 import static org.neo4j.kernel.impl.locking.ResourceTypes.SCHEMA;
@@ -87,10 +88,10 @@ public class ConstraintIndexCreator
      */
     public long createUniquenessConstraintIndex(
             KernelStatement state, SchemaReadOperations schema, LabelSchemaDescriptor descriptor
-    ) throws ConstraintVerificationFailedKernelException, TransactionFailureException,
-            CreateConstraintFailureException, DropIndexFailureException
+    ) throws TransactionFailureException, CreateConstraintFailureException,
+            DropIndexFailureException, UniquePropertyValueValidationException
     {
-        UniquenessConstraint constraint = new UniquenessConstraint( SchemaBoundary.map( descriptor ) );
+        ConstraintDescriptor constraint = ConstraintDescriptorFactory.uniqueForSchema( descriptor );
         NewIndexDescriptor index = createConstraintIndex( descriptor );
         boolean success = false;
         boolean reacquiredSchemaLock = false;
@@ -124,7 +125,7 @@ public class ConstraintIndexCreator
         }
         catch ( IndexEntryConflictException e )
         {
-            throw new UniquenessConstraintVerificationFailedKernelException( constraint, singleton( e ) );
+            throw new UniquePropertyValueValidationException( constraint, VERIFICATION, e );
         }
         catch ( InterruptedException | IOException e )
         {
@@ -181,8 +182,8 @@ public class ConstraintIndexCreator
         }
     }
 
-    private void awaitConstrainIndexPopulation( UniquenessConstraint constraint, long indexId )
-            throws InterruptedException, ConstraintVerificationFailedKernelException
+    private void awaitConstrainIndexPopulation( ConstraintDescriptor constraint, long indexId )
+            throws InterruptedException, UniquePropertyValueValidationException
     {
         try
         {
@@ -198,12 +199,12 @@ public class ConstraintIndexCreator
             Throwable cause = e.getCause();
             if ( cause instanceof IndexEntryConflictException )
             {
-                throw new UniquenessConstraintVerificationFailedKernelException( constraint,
-                        singleton( (IndexEntryConflictException) cause ) );
+                throw new UniquePropertyValueValidationException(
+                        constraint, VERIFICATION, (IndexEntryConflictException) cause );
             }
             else
             {
-                throw new UniquenessConstraintVerificationFailedKernelException( constraint, cause );
+                throw new UniquePropertyValueValidationException( constraint, VERIFICATION, cause );
             }
         }
     }

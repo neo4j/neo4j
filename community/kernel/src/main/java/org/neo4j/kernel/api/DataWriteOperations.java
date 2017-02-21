@@ -27,7 +27,7 @@ import org.neo4j.kernel.api.exceptions.KernelException;
 import org.neo4j.kernel.api.exceptions.RelationshipTypeIdNotFoundKernelException;
 import org.neo4j.kernel.api.exceptions.legacyindex.AutoIndexingKernelException;
 import org.neo4j.kernel.api.exceptions.legacyindex.LegacyIndexNotFoundKernelException;
-import org.neo4j.kernel.api.exceptions.schema.ConstraintValidationKernelException;
+import org.neo4j.kernel.api.exceptions.schema.ConstraintValidationException;
 import org.neo4j.kernel.api.properties.DefinedProperty;
 import org.neo4j.kernel.api.properties.Property;
 
@@ -59,7 +59,7 @@ public interface DataWriteOperations
      * org.neo4j.kernel.impl.api.operations.KeyReadOperations#labelGetForName(org.neo4j.kernel.api.Statement, String)}.
      */
     boolean nodeAddLabel( long nodeId, int labelId )
-            throws EntityNotFoundException, ConstraintValidationKernelException;
+            throws EntityNotFoundException, ConstraintValidationException;
 
     /**
      * Removes a label with the corresponding id from a node.
@@ -71,7 +71,8 @@ public interface DataWriteOperations
     boolean nodeRemoveLabel( long nodeId, int labelId ) throws EntityNotFoundException;
 
     Property nodeSetProperty( long nodeId, DefinedProperty property )
-            throws EntityNotFoundException, ConstraintValidationKernelException, AutoIndexingKernelException, InvalidTransactionTypeKernelException;
+            throws EntityNotFoundException, AutoIndexingKernelException,
+                    InvalidTransactionTypeKernelException, ConstraintValidationException;
 
     Property relationshipSetProperty( long relationshipId, DefinedProperty property )
             throws EntityNotFoundException, AutoIndexingKernelException, InvalidTransactionTypeKernelException;

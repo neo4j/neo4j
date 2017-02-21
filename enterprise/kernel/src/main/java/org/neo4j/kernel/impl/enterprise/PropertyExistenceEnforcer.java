@@ -26,12 +26,11 @@ import java.util.Set;
 import org.neo4j.collection.primitive.Primitive;
 import org.neo4j.collection.primitive.PrimitiveIntSet;
 import org.neo4j.cursor.Cursor;
-import org.neo4j.kernel.api.exceptions.schema.ConstraintValidationKernelException;
-import org.neo4j.kernel.api.exceptions.schema.NodePropertyExistenceConstraintViolationKernelException;
-import org.neo4j.kernel.api.exceptions.schema.RelationshipPropertyExistenceConstraintViolationKernelException;
+import org.neo4j.kernel.api.exceptions.schema.ConstraintValidationException;
+import org.neo4j.kernel.api.exceptions.schema.NodePropertyExistenceException;
+import org.neo4j.kernel.api.exceptions.schema.RelationshipPropertyExistenceException;
 import org.neo4j.kernel.api.schema_new.LabelSchemaDescriptor;
 import org.neo4j.kernel.api.schema_new.RelationTypeSchemaDescriptor;
-import org.neo4j.kernel.api.schema_new.SchemaBoundary;
 import org.neo4j.storageengine.api.NodeItem;
 import org.neo4j.storageengine.api.PropertyItem;
 import org.neo4j.storageengine.api.RelationshipItem;
@@ -67,7 +66,7 @@ class PropertyExistenceEnforcer extends TxStateVisitor.Delegator
 
     @Override
     public void visitNodePropertyChanges( long id, Iterator<StorageProperty> added, Iterator<StorageProperty> changed,
-            Iterator<Integer> removed ) throws ConstraintValidationKernelException
+            Iterator<Integer> removed ) throws ConstraintValidationException
     {
         validateNode( id );
         super.visitNodePropertyChanges( id, added, changed, removed );
@@ -75,7 +74,7 @@ class PropertyExistenceEnforcer extends TxStateVisitor.Delegator
 
     @Override
     public void visitNodeLabelChanges( long id, Set<Integer> added, Set<Integer> removed )
-            throws ConstraintValidationKernelException
+            throws ConstraintValidationException
     {
         validateNode( id );
         super.visitNodeLabelChanges( id, added, removed );
@@ -83,7 +82,7 @@ class PropertyExistenceEnforcer extends TxStateVisitor.Delegator
 
     @Override
     public void visitCreatedRelationship( long id, int type, long startNode, long endNode )
-            throws ConstraintValidationKernelException
+            throws ConstraintValidationException
     {
         validateRelationship( id );
         super.visitCreatedRelationship( id, type, startNode, endNode );
@@ -91,13 +90,13 @@ class PropertyExistenceEnforcer extends TxStateVisitor.Delegator
 
     @Override
     public void visitRelPropertyChanges( long id, Iterator<StorageProperty> added, Iterator<StorageProperty> changed,
-            Iterator<Integer> removed ) throws ConstraintValidationKernelException
+            Iterator<Integer> removed ) throws ConstraintValidationException
     {
         validateRelationship( id );
         super.visitRelPropertyChanges( id, added, changed, removed );
     }
 
-    private void validateNode( long nodeId ) throws ConstraintValidationKernelException
+    private void validateNode( long nodeId ) throws NodePropertyExistenceException
     {
         if ( labelExistenceConstraints.isEmpty() )
         {
@@ -138,12 +137,11 @@ class PropertyExistenceEnforcer extends TxStateVisitor.Delegator
     }
 
     private void validateNodeProperty( long nodeId, int propertyKey, LabelSchemaDescriptor descriptor )
-            throws ConstraintValidationKernelException
+            throws NodePropertyExistenceException
     {
         if ( !propertyKeyIds.contains( propertyKey ) )
         {
-            throw new NodePropertyExistenceConstraintViolationKernelException(
-                    SchemaBoundary.map( descriptor ), nodeId );
+            throw new NodePropertyExistenceException( descriptor, ConstraintValidationException.Phase.VALIDATION, nodeId );
         }
     }
 
@@ -168,7 +166,7 @@ class PropertyExistenceEnforcer extends TxStateVisitor.Delegator
         }
     }
 
-    private void validateRelationship( long id ) throws ConstraintValidationKernelException
+    private void validateRelationship( long id ) throws RelationshipPropertyExistenceException
     {
         if ( relTypeExistenceConstraints.isEmpty() )
         {
@@ -197,8 +195,8 @@ class PropertyExistenceEnforcer extends TxStateVisitor.Delegator
                         {
                             if ( !propertyKeyIds.contains( propertyId ) )
                             {
-                                throw new RelationshipPropertyExistenceConstraintViolationKernelException(
-                                        null, id ); // TODO: fix exceptions in next commit
+                                throw new RelationshipPropertyExistenceException( descriptor,
+                                        ConstraintValidationException.Phase.VALIDATION, id );
                             }
                         }
                     }

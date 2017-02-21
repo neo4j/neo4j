@@ -26,7 +26,7 @@ import org.neo4j.collection.primitive.PrimitiveIntSet;
 import org.neo4j.collection.primitive.PrimitiveIntVisitor;
 import org.neo4j.cursor.Cursor;
 import org.neo4j.kernel.api.exceptions.EntityNotFoundException;
-import org.neo4j.kernel.api.exceptions.schema.ConstraintValidationKernelException;
+import org.neo4j.kernel.api.exceptions.schema.ConstraintValidationException;
 import org.neo4j.kernel.impl.api.CountsRecordState;
 import org.neo4j.kernel.impl.api.RelationshipDataExtractor;
 import org.neo4j.storageengine.api.NodeItem;
@@ -86,7 +86,7 @@ public class TransactionCountingStateVisitor extends TxStateVisitor.Delegator
 
     @Override
     public void visitCreatedRelationship( long id, int type, long startNode, long endNode )
-            throws ConstraintValidationKernelException
+            throws ConstraintValidationException
     {
         updateRelationshipCount( startNode, type, endNode, 1 );
         super.visitCreatedRelationship( id, type, startNode, endNode );
@@ -109,7 +109,7 @@ public class TransactionCountingStateVisitor extends TxStateVisitor.Delegator
 
     @Override
     public void visitNodeLabelChanges( long id, final Set<Integer> added, final Set<Integer> removed )
-            throws ConstraintValidationKernelException
+            throws ConstraintValidationException
     {
         // update counts
         if ( !(added.isEmpty() && removed.isEmpty()) )

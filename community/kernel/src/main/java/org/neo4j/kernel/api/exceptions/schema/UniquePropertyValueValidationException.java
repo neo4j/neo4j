@@ -24,40 +24,45 @@ import java.util.Iterator;
 import java.util.Set;
 
 import org.neo4j.kernel.api.TokenNameLookup;
-import org.neo4j.kernel.api.constraints.UniquenessConstraint;
 import org.neo4j.kernel.api.exceptions.index.IndexEntryConflictException;
+import org.neo4j.kernel.api.schema_new.LabelSchemaDescriptor;
+import org.neo4j.kernel.api.schema_new.constaints.ConstraintDescriptor;
 
-public class UniquenessConstraintVerificationFailedKernelException extends ConstraintVerificationFailedKernelException
+public class UniquePropertyValueValidationException extends ConstraintValidationException
 {
-    private final UniquenessConstraint constraint;
     private final Set<IndexEntryConflictException> conflicts;
 
-    public UniquenessConstraintVerificationFailedKernelException( UniquenessConstraint constraint,
-            Set<IndexEntryConflictException> conflicts )
+    public UniquePropertyValueValidationException( ConstraintDescriptor constraint,
+            ConstraintValidationException.Phase phase, IndexEntryConflictException conflict )
     {
-        super( constraint );
-        this.constraint = constraint;
+        this( constraint, phase, Collections.singleton( conflict ) );
+    }
+
+    public UniquePropertyValueValidationException( ConstraintDescriptor constraint,
+            ConstraintValidationException.Phase phase, Set<IndexEntryConflictException> conflicts )
+    {
+        super( constraint, phase, "Existing data" );
         this.conflicts = conflicts;
     }
 
-    public UniquenessConstraintVerificationFailedKernelException( UniquenessConstraint constraint, Throwable cause )
+    public UniquePropertyValueValidationException( ConstraintDescriptor constraint,
+            ConstraintValidationException.Phase phase, Throwable cause )
     {
-        super( constraint, cause );
-        this.constraint = constraint;
+        super( constraint, phase, "Existing data ", cause );
         this.conflicts = Collections.emptySet();
     }
 
     @Override
     public String getUserMessage( TokenNameLookup tokenNameLookup )
     {
+        LabelSchemaDescriptor schema = (LabelSchemaDescriptor)constraint.schema();
         StringBuilder message = new StringBuilder();
         for ( Iterator<IndexEntryConflictException> iterator = conflicts.iterator(); iterator.hasNext(); )
         {
             IndexEntryConflictException conflict = iterator.next();
             message.append( conflict.evidenceMessage(
-                    tokenNameLookup.labelGetName( constraint.label() ),
-                    constraint.descriptor().propertyNameText( tokenNameLookup )
-            ) );
+                    tokenNameLookup.labelGetName( schema.getLabelId() ),
+                    tokenNameLookup.propertyKeyGetName( schema.getPropertyIds()[0] ) ) );
             if ( iterator.hasNext() )
             {
                 message.append( System.lineSeparator() );
@@ -66,9 +71,8 @@ public class UniquenessConstraintVerificationFailedKernelException extends Const
         return message.toString();
     }
 
-    @Override
-    public UniquenessConstraint constraint()
+    public Set<IndexEntryConflictException> conflicts()
     {
-        return constraint;
+        return conflicts;
     }
 }

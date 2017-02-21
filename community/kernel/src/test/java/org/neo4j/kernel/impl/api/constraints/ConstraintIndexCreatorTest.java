@@ -32,10 +32,10 @@ import org.neo4j.kernel.api.TransactionHook;
 import org.neo4j.kernel.api.exceptions.ProcedureException;
 import org.neo4j.kernel.api.exceptions.Status;
 import org.neo4j.kernel.api.exceptions.TransactionFailureException;
+import org.neo4j.kernel.api.exceptions.index.IndexEntryConflictException;
 import org.neo4j.kernel.api.exceptions.index.IndexPopulationFailedKernelException;
-import org.neo4j.kernel.api.exceptions.schema.ConstraintVerificationFailedKernelException;
-import org.neo4j.kernel.api.index.PreexistingIndexEntryConflictException;
 import org.neo4j.kernel.api.index.PropertyAccessor;
+import org.neo4j.kernel.api.exceptions.schema.UniquePropertyValueValidationException;
 import org.neo4j.kernel.api.proc.CallableProcedure;
 import org.neo4j.kernel.api.proc.CallableUserAggregationFunction;
 import org.neo4j.kernel.api.proc.CallableUserFunction;
@@ -118,7 +118,7 @@ public class ConstraintIndexCreatorTest
                 .thenReturn( 2468L );
         IndexProxy indexProxy = mock( IndexProxy.class );
         when( indexingService.getIndexProxy( 2468L ) ).thenReturn( indexProxy );
-        PreexistingIndexEntryConflictException cause = new PreexistingIndexEntryConflictException("a", 2, 1);
+        IndexEntryConflictException cause = new IndexEntryConflictException( 2, 1, "a" );
         doThrow( new IndexPopulationFailedKernelException( SchemaBoundary.map( descriptor ), "some index", cause ) )
                 .when( indexProxy ).awaitStoreScanCompleted();
         PropertyAccessor propertyAccessor = mock( PropertyAccessor.class );
@@ -133,9 +133,9 @@ public class ConstraintIndexCreatorTest
             fail( "expected exception" );
         }
         // then
-        catch ( ConstraintVerificationFailedKernelException e )
+        catch ( UniquePropertyValueValidationException e )
         {
-            assertEquals( "Existing data does not satisfy CONSTRAINT ON ( n:label[123] ) ASSERT n.property[456] IS UNIQUE.",
+            assertEquals( "Existing data does not satisfy CONSTRAINT ON ( label[123]:label[123] ) ASSERT label[123].property[456] IS UNIQUE.",
                           e.getMessage() );
         }
         assertEquals( 2, kernel.statements.size() );

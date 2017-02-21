@@ -131,17 +131,17 @@ public class ConstraintDescriptor implements SchemaDescriptor.Supplier
         {
             assert schema.getPropertyIds().length == 1;
             String labelName = labelName( schema.getLabelId(), tokenNameLookup );
-            String boundIdentifier = labelName.toLowerCase();
+            String nodeName = labelName.toLowerCase();
             String propertyName = tokenNameLookup.propertyKeyGetName( schema.getPropertyIds()[0] );
             if ( type == UNIQUE )
             {
                 return String.format( "CONSTRAINT ON ( %s:%s ) ASSERT %s.%s IS UNIQUE",
-                        boundIdentifier, labelName, boundIdentifier, propertyName );
+                        nodeName, labelName, nodeName, propertyName );
             }
             else
             {
                 return String.format( "CONSTRAINT ON ( %s:%s ) ASSERT exists(%s.%s)",
-                        boundIdentifier, labelName, boundIdentifier, propertyName );
+                        nodeName, labelName, nodeName, propertyName );
             }
         }
 
@@ -150,10 +150,10 @@ public class ConstraintDescriptor implements SchemaDescriptor.Supplier
         {
             assert schema.getPropertyIds().length == 1;
             String typeName = tokenNameLookup.relationshipTypeGetName( schema.getRelTypeId() );
-            String boundIdentifier = typeName.toLowerCase();
+            String relName = typeName.toLowerCase();
             String propertyName = tokenNameLookup.propertyKeyGetName( schema.getPropertyIds()[0] );
             return String.format( "CONSTRAINT ON ()-[ %s:%s ]-() ASSERT exists(%s.%s)",
-                    boundIdentifier, typeName, boundIdentifier, propertyName );
+                    relName, typeName, relName, propertyName );
         }
 
         private String labelName( int labelId, TokenNameLookup tokenNameLookup )

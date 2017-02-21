@@ -23,7 +23,7 @@ import java.util.Set;
 
 import org.neo4j.collection.primitive.PrimitiveIntSet;
 import org.neo4j.collection.primitive.PrimitiveLongIterator;
-import org.neo4j.kernel.api.exceptions.schema.ConstraintValidationKernelException;
+import org.neo4j.kernel.api.exceptions.schema.ConstraintValidationException;
 import org.neo4j.storageengine.api.Direction;
 
 /**
@@ -40,7 +40,7 @@ public interface NodeState extends PropertyContainerState
     interface Visitor extends PropertyContainerState.Visitor
     {
         void visitLabelChanges( long nodeId, Set<Integer> added, Set<Integer> removed )
-                throws ConstraintValidationKernelException;
+                throws ConstraintValidationException;
     }
 
     ReadableDiffSets<Integer> labelDiffSets();
@@ -49,7 +49,7 @@ public interface NodeState extends PropertyContainerState
 
     int augmentDegree( Direction direction, int degree, int typeId );
 
-    void accept( NodeState.Visitor visitor ) throws ConstraintValidationKernelException;
+    void accept( NodeState.Visitor visitor ) throws ConstraintValidationException;
 
     PrimitiveIntSet relationshipTypes();
 

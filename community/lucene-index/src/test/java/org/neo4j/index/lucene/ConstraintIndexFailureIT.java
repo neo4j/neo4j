@@ -28,7 +28,7 @@ import java.io.IOException;
 import org.neo4j.graphdb.ConstraintViolationException;
 import org.neo4j.graphdb.GraphDatabaseService;
 import org.neo4j.graphdb.Transaction;
-import org.neo4j.kernel.api.exceptions.schema.UnableToValidateConstraintKernelException;
+import org.neo4j.kernel.api.exceptions.schema.UnableToValidateConstraintException;
 import org.neo4j.kernel.api.impl.index.builder.LuceneIndexStorageBuilder;
 import org.neo4j.kernel.api.impl.index.storage.PartitionedIndexStorage;
 import org.neo4j.test.TestGraphDatabaseFactory;
@@ -68,7 +68,7 @@ public class ConstraintIndexFailureIT
             // then
             catch ( ConstraintViolationException e )
             {
-                assertThat( e.getCause(), instanceOf( UnableToValidateConstraintKernelException.class ) );
+                assertThat( e.getCause(), instanceOf( UnableToValidateConstraintException.class ) );
                 assertThat( e.getCause().getCause().getMessage(), equalTo( "The index is in a failed state: 'Injected failure'.") );
             }
         }

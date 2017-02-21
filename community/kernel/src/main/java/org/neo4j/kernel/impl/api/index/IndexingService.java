@@ -41,7 +41,7 @@ import org.neo4j.kernel.api.exceptions.index.IndexActivationFailedKernelExceptio
 import org.neo4j.kernel.api.exceptions.index.IndexEntryConflictException;
 import org.neo4j.kernel.api.exceptions.index.IndexNotFoundKernelException;
 import org.neo4j.kernel.api.exceptions.index.IndexPopulationFailedKernelException;
-import org.neo4j.kernel.api.exceptions.schema.ConstraintVerificationFailedKernelException;
+import org.neo4j.kernel.api.exceptions.schema.UniquePropertyValueValidationException;
 import org.neo4j.kernel.api.index.IndexConfiguration;
 import org.neo4j.kernel.api.index.IndexEntryUpdate;
 import org.neo4j.kernel.api.schema.IndexDescriptor;
@@ -639,7 +639,9 @@ public class IndexingService extends LifecycleAdapter
         return indexMapRef.getIndexId( descriptor );
     }
 
-    public void validateIndex( long indexId ) throws IndexNotFoundKernelException, ConstraintVerificationFailedKernelException, IndexPopulationFailedKernelException
+    public void validateIndex( long indexId )
+            throws IndexNotFoundKernelException, IndexPopulationFailedKernelException,
+                    UniquePropertyValueValidationException
     {
         getIndexProxy( indexId ).validate();
     }

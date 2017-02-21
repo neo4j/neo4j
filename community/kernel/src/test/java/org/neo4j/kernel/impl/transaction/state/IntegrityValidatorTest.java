@@ -21,7 +21,9 @@ package org.neo4j.kernel.impl.transaction.state;
 
 import org.junit.Test;
 
-import org.neo4j.kernel.api.exceptions.schema.UniquenessConstraintVerificationFailedKernelException;
+import org.neo4j.kernel.api.exceptions.schema.ConstraintValidationException;
+import org.neo4j.kernel.api.exceptions.schema.UniquePropertyValueValidationException;
+import org.neo4j.kernel.api.schema_new.constaints.ConstraintDescriptor;
 import org.neo4j.kernel.api.schema_new.constaints.ConstraintDescriptorFactory;
 import org.neo4j.kernel.impl.api.index.IndexingService;
 import org.neo4j.kernel.impl.store.MetaDataStore;
@@ -43,12 +45,13 @@ public class IntegrityValidatorTest
         NeoStores store = mock( NeoStores.class );
         IndexingService indexes = mock(IndexingService.class);
         IntegrityValidator validator = new IntegrityValidator(store, indexes);
+        ConstraintDescriptor constraint = ConstraintDescriptorFactory.uniqueForLabel( 1, 1 );
 
-        doThrow( new UniquenessConstraintVerificationFailedKernelException( null, new RuntimeException() ) )
+        doThrow( new UniquePropertyValueValidationException( constraint,
+                ConstraintValidationException.Phase.VERIFICATION, new RuntimeException() ) )
                 .when( indexes ).validateIndex( 2L );
 
-        ConstraintRule record = ConstraintRule.constraintRule( 1L,
-                ConstraintDescriptorFactory.uniqueForLabel( 1, 1 ), 2L );
+        ConstraintRule record = ConstraintRule.constraintRule( 1L, constraint, 2L );
 
         // When
         try

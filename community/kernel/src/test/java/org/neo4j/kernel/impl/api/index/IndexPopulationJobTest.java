@@ -55,7 +55,6 @@ import org.neo4j.kernel.api.index.IndexPopulator;
 import org.neo4j.kernel.api.index.IndexUpdater;
 import org.neo4j.kernel.api.index.InternalIndexState;
 import org.neo4j.kernel.api.index.NodeUpdates;
-import org.neo4j.kernel.api.index.PreexistingIndexEntryConflictException;
 import org.neo4j.kernel.api.index.PropertyAccessor;
 import org.neo4j.kernel.api.labelscan.NodeLabelUpdate;
 import org.neo4j.kernel.api.schema_new.index.NewIndexDescriptor;
@@ -420,7 +419,7 @@ public class IndexPopulationJobTest
         IndexPopulator populator = spy( inMemoryPopulator( false ) );
         IndexPopulationJob job = newIndexPopulationJob( populator, index, indexStoreView, logProvider, true );
 
-        IndexEntryConflictException failure = new PreexistingIndexEntryConflictException( "duplicate value", 0, 1 );
+        IndexEntryConflictException failure = new IndexEntryConflictException( 0, 1, "duplicate value" );
         doThrow( failure ).when( populator ).verifyDeferredConstraints( indexStoreView );
 
         // When

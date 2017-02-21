@@ -32,22 +32,17 @@ import org.neo4j.kernel.api.SchemaWriteOperations;
 import org.neo4j.kernel.api.Statement;
 import org.neo4j.kernel.api.StatementTokenNameLookup;
 import org.neo4j.kernel.api.TokenWriteOperations;
-import org.neo4j.kernel.api.constraints.NodePropertyConstraint;
-import org.neo4j.kernel.api.constraints.NodePropertyExistenceConstraint;
 import org.neo4j.kernel.api.constraints.UniquenessConstraint;
 import org.neo4j.kernel.api.exceptions.KernelException;
 import org.neo4j.kernel.api.exceptions.TransactionFailureException;
-import org.neo4j.kernel.api.exceptions.schema.ConstraintVerificationFailedKernelException;
+import org.neo4j.kernel.api.exceptions.schema.ConstraintValidationException;
 import org.neo4j.kernel.api.exceptions.schema.CreateConstraintFailureException;
 import org.neo4j.kernel.api.exceptions.schema.DropConstraintFailureException;
 import org.neo4j.kernel.api.exceptions.schema.NoSuchConstraintException;
 import org.neo4j.kernel.api.properties.Property;
-import org.neo4j.kernel.api.schema.IndexDescriptor;
-import org.neo4j.kernel.api.schema.IndexDescriptorFactory;
 import org.neo4j.kernel.api.schema.NodePropertyDescriptor;
 import org.neo4j.kernel.api.schema_new.LabelSchemaDescriptor;
 import org.neo4j.kernel.api.schema_new.SchemaBoundary;
-import org.neo4j.kernel.api.schema_new.SchemaDescriptorFactory;
 import org.neo4j.kernel.api.schema_new.constaints.ConstraintDescriptor;
 import org.neo4j.kernel.api.schema_new.constaints.ConstraintDescriptorFactory;
 import org.neo4j.kernel.api.security.AnonymousContext;
@@ -166,12 +161,12 @@ public class UniquenessConstraintCreationIT
         {
             assertEquals( new UniquenessConstraint( descriptor1 ), ex.constraint() );
             Throwable cause = ex.getCause();
-            assertThat( cause, instanceOf( ConstraintVerificationFailedKernelException.class ) );
+            assertThat( cause, instanceOf( ConstraintValidationException.class ) );
 
             String expectedMessage =
                     String.format( "Multiple nodes with label `%s` have property `%s` = '%s':%n  node(%d)%n  node(%d)",
                             "Foo", "name", "foo", node1, node2 );
-            String actualMessage = userMessage( (ConstraintVerificationFailedKernelException) cause );
+            String actualMessage = userMessage( (ConstraintValidationException) cause );
             assertEquals( expectedMessage, actualMessage );
         }
     }
@@ -290,7 +285,7 @@ public class UniquenessConstraintCreationIT
         commit();
     }
 
-    private String userMessage( ConstraintVerificationFailedKernelException cause )
+    private String userMessage( ConstraintValidationException cause )
             throws TransactionFailureException
     {
         StatementTokenNameLookup lookup = new StatementTokenNameLookup( readOperationsInNewTransaction() );

@@ -25,6 +25,7 @@ import org.junit.Test;
 import java.util.Arrays;
 
 import org.neo4j.kernel.api.schema_new.index.IndexBoundary;
+import org.neo4j.kernel.api.exceptions.index.IndexEntryConflictException;
 import org.neo4j.kernel.configuration.Config;
 import org.neo4j.kernel.impl.api.index.sampling.IndexSamplingConfig;
 
@@ -78,7 +79,7 @@ public class UniqueIndexPopulatorCompatibility extends IndexProviderCompatibilit
             fail( "expected exception" );
         }
         // then
-        catch ( PreexistingIndexEntryConflictException conflict )
+        catch ( IndexEntryConflictException conflict )
         {
             assertEquals( nodeId1, conflict.getExistingNodeId() );
             assertEquals( value, conflict.getPropertyValue() );

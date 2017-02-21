@@ -25,7 +25,7 @@ import java.util.function.Predicate;
 
 import org.neo4j.collection.primitive.PrimitiveIntIterator;
 import org.neo4j.collection.primitive.PrimitiveLongIterator;
-import org.neo4j.kernel.api.exceptions.schema.ConstraintValidationKernelException;
+import org.neo4j.kernel.api.exceptions.schema.ConstraintValidationException;
 import org.neo4j.kernel.api.exceptions.schema.CreateConstraintFailureException;
 
 /**
@@ -56,6 +56,5 @@ public interface SuperReadableDiffSets<T,LONGITERATOR extends PrimitiveLongItera
 
     SuperReadableDiffSets<T,LONGITERATOR> filterAdded( Predicate<T> addedFilter );
 
-    void accept( DiffSetsVisitor<T> visitor )
-            throws ConstraintValidationKernelException, CreateConstraintFailureException;
+    void accept( DiffSetsVisitor<T> visitor ) throws ConstraintValidationException, CreateConstraintFailureException;
 }

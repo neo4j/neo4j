@@ -24,7 +24,7 @@ import java.util.Iterator;
 import org.neo4j.collection.primitive.PrimitiveIntSet;
 import org.neo4j.collection.primitive.PrimitiveLongIterator;
 import org.neo4j.cursor.Cursor;
-import org.neo4j.kernel.api.exceptions.schema.ConstraintValidationKernelException;
+import org.neo4j.kernel.api.exceptions.schema.ConstraintValidationException;
 import org.neo4j.kernel.api.exceptions.schema.CreateConstraintFailureException;
 import org.neo4j.kernel.api.schema_new.SchemaDescriptor;
 import org.neo4j.kernel.api.schema_new.constaints.ConstraintDescriptor;
@@ -43,7 +43,7 @@ import org.neo4j.storageengine.api.StorageProperty;
  */
 public interface ReadableTransactionState
 {
-    void accept( TxStateVisitor visitor ) throws ConstraintValidationKernelException, CreateConstraintFailureException;
+    void accept( TxStateVisitor visitor ) throws ConstraintValidationException, CreateConstraintFailureException;
 
     boolean hasChanges();
 

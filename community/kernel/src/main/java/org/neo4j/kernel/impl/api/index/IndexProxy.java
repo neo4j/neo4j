@@ -28,7 +28,7 @@ import org.neo4j.kernel.api.exceptions.index.IndexActivationFailedKernelExceptio
 import org.neo4j.kernel.api.exceptions.index.IndexEntryConflictException;
 import org.neo4j.kernel.api.exceptions.index.IndexNotFoundKernelException;
 import org.neo4j.kernel.api.exceptions.index.IndexPopulationFailedKernelException;
-import org.neo4j.kernel.api.exceptions.schema.ConstraintVerificationFailedKernelException;
+import org.neo4j.kernel.api.exceptions.schema.UniquePropertyValueValidationException;
 import org.neo4j.kernel.api.index.IndexAccessor;
 import org.neo4j.kernel.api.index.IndexConfiguration;
 import org.neo4j.kernel.api.schema.IndexDescriptor;
@@ -106,7 +106,7 @@ public interface IndexProxy
 
     void activate() throws IndexActivationFailedKernelException;
 
-    void validate() throws ConstraintVerificationFailedKernelException, IndexPopulationFailedKernelException;
+    void validate() throws IndexPopulationFailedKernelException, UniquePropertyValueValidationException;
 
     ResourceIterator<File> snapshotFiles() throws IOException;
 

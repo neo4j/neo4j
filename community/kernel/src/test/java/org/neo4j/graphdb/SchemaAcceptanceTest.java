@@ -406,11 +406,10 @@ public class SchemaAcceptanceTest
         catch ( ConstraintViolationException e )
         {
             assertEquals(
-                    format( "Unable to create CONSTRAINT ON ( my_label:MY_LABEL ) ASSERT my_label.my_property_key " +
-                            "IS UNIQUE:%nMultiple nodes with label `MY_LABEL` have property `my_property_key` = " +
-                            "'value1':%n" +
-                            "  node(0)%n" +
-                            "  node(1)" ), e.getMessage() );
+                format(
+                    "Unable to create CONSTRAINT ON ( my_label:MY_LABEL ) ASSERT my_label.my_property_key IS UNIQUE:%n" +
+                    "Both Node(0) and Node(1) have the label `MY_LABEL` and property `my_property_key` = 'value1'" ),
+                e.getMessage() );
         }
     }
 

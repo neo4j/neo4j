@@ -25,10 +25,10 @@ import java.util.List;
 
 import org.neo4j.cursor.Cursor;
 import org.neo4j.kernel.api.constraints.PropertyConstraint;
-import org.neo4j.kernel.api.exceptions.schema.ConstraintVerificationFailedKernelException;
+import org.neo4j.kernel.api.exceptions.schema.ConstraintValidationException;
 import org.neo4j.kernel.api.exceptions.schema.CreateConstraintFailureException;
-import org.neo4j.kernel.api.exceptions.schema.NodePropertyExistenceConstraintVerificationFailedKernelException;
-import org.neo4j.kernel.api.exceptions.schema.RelationshipPropertyExistenceConstraintVerificationFailedKernelException;
+import org.neo4j.kernel.api.exceptions.schema.NodePropertyExistenceException;
+import org.neo4j.kernel.api.exceptions.schema.RelationshipPropertyExistenceException;
 import org.neo4j.kernel.api.schema_new.LabelSchemaDescriptor;
 import org.neo4j.kernel.api.schema_new.RelationTypeSchemaDescriptor;
 import org.neo4j.kernel.api.schema_new.SchemaProcessor;
@@ -42,6 +42,7 @@ import org.neo4j.storageengine.api.StoreReadLayer;
 import org.neo4j.storageengine.api.txstate.ReadableTransactionState;
 import org.neo4j.storageengine.api.txstate.TxStateVisitor;
 
+import static org.neo4j.kernel.api.exceptions.schema.ConstraintValidationException.Phase.VERIFICATION;
 import static org.neo4j.kernel.api.schema_new.constaints.ConstraintDescriptor.Type.EXISTS;
 
 public class EnterpriseConstraintSemantics extends StandardConstraintSemantics
@@ -84,10 +85,8 @@ public class EnterpriseConstraintSemantics extends StandardConstraintSemantics
     {
         if ( !node.hasProperty( propertyKey ) )
         {
-            // TODO: will clean up exceptions in next commit.
             throw createConstraintFailure(
-                new NodePropertyExistenceConstraintVerificationFailedKernelException( null, node.id()
-                ) );
+                new NodePropertyExistenceException( descriptor, VERIFICATION, node.id() ) );
         }
     }
 
@@ -104,16 +103,15 @@ public class EnterpriseConstraintSemantics extends StandardConstraintSemantics
                 {
                     if ( !relationship.hasProperty( propertyId ) )
                     {
-                        // TODO: will clean up exceptions in next commit.
                         throw createConstraintFailure(
-                                new RelationshipPropertyExistenceConstraintVerificationFailedKernelException( null, relationship.id() ) );
+                                new RelationshipPropertyExistenceException( descriptor, VERIFICATION, relationship.id() ) );
                     }
                 }
             }
         }
     }
 
-    private CreateConstraintFailureException createConstraintFailure( ConstraintVerificationFailedKernelException it )
+    private CreateConstraintFailureException createConstraintFailure( ConstraintValidationException it )
     {
         return new CreateConstraintFailureException( it.constraint(), it );
     }

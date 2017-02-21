@@ -28,7 +28,7 @@ import java.util.concurrent.Future;
 import org.neo4j.causalclustering.core.consensus.NoLeaderFoundException;
 import org.neo4j.causalclustering.core.replication.Replicator;
 import org.neo4j.kernel.api.exceptions.TransactionFailureException;
-import org.neo4j.kernel.api.exceptions.schema.ConstraintValidationKernelException;
+import org.neo4j.kernel.api.exceptions.schema.ConstraintValidationException;
 import org.neo4j.kernel.api.exceptions.schema.CreateConstraintFailureException;
 import org.neo4j.kernel.api.txstate.TransactionState;
 import org.neo4j.kernel.impl.api.state.TxState;
@@ -120,7 +120,7 @@ abstract class ReplicatedTokenHolder<TOKEN extends Token> implements TokenHolder
         {
             storageEngine.createCommands( commands, txState, statement, ResourceLocker.NONE, Long.MAX_VALUE );
         }
-        catch ( CreateConstraintFailureException | TransactionFailureException | ConstraintValidationKernelException e )
+        catch ( CreateConstraintFailureException | TransactionFailureException | ConstraintValidationException e )
         {
             throw new RuntimeException( "Unable to create token '" + tokenName + "'", e );
         }

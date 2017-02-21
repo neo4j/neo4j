@@ -77,8 +77,7 @@ public class StandardConstraintSemantics implements ConstraintSemantics
     private CreateConstraintFailureException propertyExistenceConstraintsNotAllowed( ConstraintDescriptor constraint )
     {
         // When creating a Property Existence Constraint in Community Edition
-        return new CreateConstraintFailureException(
-                ConstraintBoundary.map( constraint ), new IllegalStateException( ERROR_MESSAGE ) );
+        return new CreateConstraintFailureException( constraint, new IllegalStateException( ERROR_MESSAGE ) );
     }
 
     @Override

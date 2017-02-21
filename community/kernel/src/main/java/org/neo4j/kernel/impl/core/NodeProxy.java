@@ -49,7 +49,7 @@ import org.neo4j.kernel.api.exceptions.PropertyKeyIdNotFoundKernelException;
 import org.neo4j.kernel.api.exceptions.PropertyNotFoundException;
 import org.neo4j.kernel.api.exceptions.RelationshipTypeIdNotFoundKernelException;
 import org.neo4j.kernel.api.exceptions.legacyindex.AutoIndexingKernelException;
-import org.neo4j.kernel.api.exceptions.schema.ConstraintValidationKernelException;
+import org.neo4j.kernel.api.exceptions.schema.ConstraintValidationException;
 import org.neo4j.kernel.api.exceptions.schema.IllegalTokenNameException;
 import org.neo4j.kernel.api.exceptions.schema.TooManyLabelsException;
 import org.neo4j.kernel.api.properties.Property;
@@ -275,7 +275,7 @@ public class NodeProxy implements Node
             {
                 statement.dataWriteOperations().nodeSetProperty( nodeId, Property.property( propertyKeyId, value ) );
             }
-            catch ( ConstraintValidationKernelException e )
+            catch ( ConstraintValidationException e )
             {
                 throw new ConstraintViolationException(
                         e.getUserMessage( new StatementTokenNameLookup( statement.readOperations() ) ), e );
@@ -569,7 +569,7 @@ public class NodeProxy implements Node
                 statement.dataWriteOperations().nodeAddLabel( getId(),
                         statement.tokenWriteOperations().labelGetOrCreateForName( label.name() ) );
             }
-            catch ( ConstraintValidationKernelException e )
+            catch ( ConstraintValidationException e )
             {
                 throw new ConstraintViolationException(
                         e.getUserMessage( new StatementTokenNameLookup( statement.readOperations() ) ), e );

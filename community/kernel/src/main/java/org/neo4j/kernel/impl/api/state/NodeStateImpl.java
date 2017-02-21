@@ -29,7 +29,7 @@ import org.neo4j.collection.primitive.PrimitiveIntSet;
 import org.neo4j.collection.primitive.PrimitiveLongCollections;
 import org.neo4j.collection.primitive.PrimitiveLongIterator;
 import org.neo4j.helpers.collection.Iterators;
-import org.neo4j.kernel.api.exceptions.schema.ConstraintValidationKernelException;
+import org.neo4j.kernel.api.exceptions.schema.ConstraintValidationException;
 import org.neo4j.kernel.impl.api.state.RelationshipChangesForNode.DiffStrategy;
 import org.neo4j.kernel.impl.util.diffsets.DiffSets;
 import org.neo4j.storageengine.api.Direction;
@@ -147,7 +147,7 @@ public class NodeStateImpl extends PropertyContainerStateImpl implements NodeSta
     }
 
     @Override
-    public void accept( NodeState.Visitor visitor ) throws ConstraintValidationKernelException
+    public void accept( NodeState.Visitor visitor ) throws ConstraintValidationException
     {
         super.accept( visitor );
         if ( labelDiffSets != null )
@@ -278,7 +278,7 @@ public class NodeStateImpl extends PropertyContainerStateImpl implements NodeSta
             }
 
             @Override
-            public void accept( PropertyContainerState.Visitor visitor )
+            public void accept( PropertyContainerState.Visitor visitor ) throws ConstraintValidationException
             {
             }
 

@@ -35,17 +35,18 @@ import org.neo4j.kernel.api.constraints.UniquenessConstraint;
 import org.neo4j.kernel.api.exceptions.EntityNotFoundException;
 import org.neo4j.kernel.api.exceptions.InvalidTransactionTypeKernelException;
 import org.neo4j.kernel.api.exceptions.KernelException;
+import org.neo4j.kernel.api.exceptions.index.IndexEntryConflictException;
 import org.neo4j.kernel.api.exceptions.index.IndexNotFoundKernelException;
 import org.neo4j.kernel.api.exceptions.legacyindex.AutoIndexingKernelException;
 import org.neo4j.kernel.api.exceptions.schema.AlreadyConstrainedException;
 import org.neo4j.kernel.api.exceptions.schema.AlreadyIndexedException;
-import org.neo4j.kernel.api.exceptions.schema.ConstraintValidationKernelException;
+import org.neo4j.kernel.api.exceptions.schema.ConstraintValidationException;
 import org.neo4j.kernel.api.exceptions.schema.CreateConstraintFailureException;
 import org.neo4j.kernel.api.exceptions.schema.DropConstraintFailureException;
 import org.neo4j.kernel.api.exceptions.schema.DropIndexFailureException;
 import org.neo4j.kernel.api.exceptions.schema.IndexBrokenKernelException;
-import org.neo4j.kernel.api.exceptions.schema.UnableToValidateConstraintKernelException;
-import org.neo4j.kernel.api.exceptions.schema.UniquePropertyConstraintViolationKernelException;
+import org.neo4j.kernel.api.exceptions.schema.UnableToValidateConstraintException;
+import org.neo4j.kernel.api.exceptions.schema.UniquePropertyValueValidationException;
 import org.neo4j.kernel.api.properties.DefinedProperty;
 import org.neo4j.kernel.api.properties.Property;
 import org.neo4j.kernel.api.schema.NodePropertyDescriptor;
@@ -96,7 +97,7 @@ public class ConstraintEnforcingEntityOperations implements EntityOperations, Sc
 
     @Override
     public boolean nodeAddLabel( KernelStatement state, long nodeId, int labelId )
-            throws ConstraintValidationKernelException, EntityNotFoundException
+            throws EntityNotFoundException, ConstraintValidationException
     {
         try ( Cursor<NodeItem> cursor = nodeCursorById( state, nodeId ) )
         {
@@ -123,7 +124,8 @@ public class ConstraintEnforcingEntityOperations implements EntityOperations, Sc
 
     @Override
     public Property nodeSetProperty( KernelStatement state, long nodeId, DefinedProperty property )
-            throws ConstraintValidationKernelException, EntityNotFoundException, AutoIndexingKernelException, InvalidTransactionTypeKernelException
+            throws EntityNotFoundException, AutoIndexingKernelException,
+                   InvalidTransactionTypeKernelException, ConstraintValidationException
     {
         try ( Cursor<NodeItem> cursor = nodeCursorById( state, nodeId ) )
         {
@@ -151,7 +153,7 @@ public class ConstraintEnforcingEntityOperations implements EntityOperations, Sc
             ConstraintDescriptor constraint,
             Object value,
             long modifiedNode
-    ) throws ConstraintValidationKernelException
+    ) throws ConstraintValidationException
     {
         try
         {
@@ -169,12 +171,14 @@ public class ConstraintEnforcingEntityOperations implements EntityOperations, Sc
             long existing = entityReadOperations.nodeGetFromUniqueIndexSeek( state, index, value );
             if ( existing != NO_SUCH_NODE && existing != modifiedNode )
             {
-                throw new UniquePropertyConstraintViolationKernelException( labelId, propertyId, value, existing );
+                throw new UniquePropertyValueValidationException( constraint,
+                        ConstraintValidationException.Phase.VALIDATION,
+                        new IndexEntryConflictException( existing, NO_SUCH_NODE, value ) );
             }
         }
         catch ( IndexNotFoundKernelException | IndexBrokenKernelException e )
         {
-            throw new UnableToValidateConstraintKernelException( e );
+            throw new UnableToValidateConstraintException( constraint, e );
         }
     }
 

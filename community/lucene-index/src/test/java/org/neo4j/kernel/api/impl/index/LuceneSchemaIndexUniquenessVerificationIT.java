@@ -48,7 +48,6 @@ import org.neo4j.kernel.api.exceptions.index.IndexEntryConflictException;
 import org.neo4j.kernel.api.impl.schema.LuceneDocumentStructure;
 import org.neo4j.kernel.api.impl.schema.LuceneSchemaIndexBuilder;
 import org.neo4j.kernel.api.impl.schema.SchemaIndex;
-import org.neo4j.kernel.api.index.PreexistingIndexEntryConflictException;
 import org.neo4j.kernel.api.index.PropertyAccessor;
 import org.neo4j.kernel.api.properties.Property;
 import org.neo4j.test.Randoms;
@@ -325,7 +324,7 @@ public class LuceneSchemaIndexUniquenessVerificationIT
         }
         catch ( Throwable t )
         {
-            assertThat( t, instanceOf( PreexistingIndexEntryConflictException.class ) );
+            assertThat( t, instanceOf( IndexEntryConflictException.class ) );
         }
     }
 

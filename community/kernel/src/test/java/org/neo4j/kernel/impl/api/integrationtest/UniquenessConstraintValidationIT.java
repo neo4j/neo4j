@@ -28,10 +28,9 @@ import org.neo4j.kernel.api.StatementTokenNameLookup;
 import org.neo4j.kernel.api.TokenNameLookup;
 import org.neo4j.kernel.api.TokenWriteOperations;
 import org.neo4j.kernel.api.exceptions.KernelException;
-import org.neo4j.kernel.api.exceptions.schema.UniquePropertyConstraintViolationKernelException;
+import org.neo4j.kernel.api.exceptions.schema.UniquePropertyValueValidationException;
 import org.neo4j.kernel.api.properties.DefinedProperty;
 import org.neo4j.kernel.api.schema.NodePropertyDescriptor;
-import org.neo4j.kernel.api.schema_new.index.IndexBoundary;
 import org.neo4j.kernel.api.schema_new.index.NewIndexDescriptor;
 import org.neo4j.kernel.api.security.AnonymousContext;
 
@@ -64,9 +63,9 @@ public class UniquenessConstraintValidationIT extends KernelIntegrationTest
             fail( "should have thrown exception" );
         }
         // then
-        catch ( UniquePropertyConstraintViolationKernelException e )
+        catch ( UniquePropertyValueValidationException e )
         {
-            assertThat( e.getUserMessage( tokenLookup( statement ) ), containsString( "\"key1\"=[value1]" ) );
+            assertThat( e.getUserMessage( tokenLookup( statement ) ), containsString( "`key1` = 'value1'" ) );
         }
     }
 
@@ -117,9 +116,9 @@ public class UniquenessConstraintValidationIT extends KernelIntegrationTest
             fail( "should have thrown exception" );
         }
         // then
-        catch ( UniquePropertyConstraintViolationKernelException e )
+        catch ( UniquePropertyValueValidationException e )
         {
-            assertThat( e.getUserMessage( tokenLookup( statement ) ), containsString( "\"key1\"=[1]" ) );
+            assertThat( e.getUserMessage( tokenLookup( statement ) ), containsString( "`key1` = 1" ) );
         }
     }
 
@@ -141,9 +140,9 @@ public class UniquenessConstraintValidationIT extends KernelIntegrationTest
             fail( "should have thrown exception" );
         }
         // then
-        catch ( UniquePropertyConstraintViolationKernelException e )
+        catch ( UniquePropertyValueValidationException e )
         {
-            assertThat( e.getUserMessage( tokenLookup( statement ) ), containsString( "\"key1\"=[value1]" ) );
+            assertThat( e.getUserMessage( tokenLookup( statement ) ), containsString( "`key1` = 'value1'" ) );
         }
     }
 
@@ -248,9 +247,9 @@ public class UniquenessConstraintValidationIT extends KernelIntegrationTest
             fail( "expected exception" );
         }
         // then
-        catch ( UniquePropertyConstraintViolationKernelException e )
+        catch ( UniquePropertyValueValidationException e )
         {
-            assertThat( e.getUserMessage( tokenLookup( statement ) ), containsString( "\"key1\"=[value2]" ) );
+            assertThat( e.getUserMessage( tokenLookup( statement ) ), containsString( "`key1` = 'value2'" ) );
         }
     }
 

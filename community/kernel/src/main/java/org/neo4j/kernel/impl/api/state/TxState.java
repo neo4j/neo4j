@@ -34,7 +34,7 @@ import org.neo4j.collection.primitive.PrimitiveLongSet;
 import org.neo4j.cursor.Cursor;
 import org.neo4j.helpers.collection.Iterables;
 import org.neo4j.kernel.api.constraints.RelationshipPropertyConstraint;
-import org.neo4j.kernel.api.exceptions.schema.ConstraintValidationKernelException;
+import org.neo4j.kernel.api.exceptions.schema.ConstraintValidationException;
 import org.neo4j.kernel.api.exceptions.schema.CreateConstraintFailureException;
 import org.neo4j.kernel.api.properties.DefinedProperty;
 import org.neo4j.kernel.api.properties.Property;
@@ -161,7 +161,6 @@ public final class TxState implements TransactionState, RelationshipVisitor.Home
     private Map<ConstraintDescriptor, Long> createdConstraintIndexesByConstraint;
 
     private PrimitiveIntObjectMap<Map<DefinedProperty, DiffSets<Long>>> indexUpdates;
-    private PrimitiveIntObjectMap<DiffSets<RelationshipPropertyConstraint>> relationshipConstraintChanges;
 
     private InstanceCache<TxSingleNodeCursor> singleNodeCursor;
     private InstanceCache<TxIteratorRelationshipCursor> iteratorRelationshipCursor;
@@ -218,7 +217,7 @@ public final class TxState implements TransactionState, RelationshipVisitor.Home
 
     @Override
     public void accept( final TxStateVisitor visitor )
-            throws ConstraintValidationKernelException, CreateConstraintFailureException
+            throws ConstraintValidationException, CreateConstraintFailureException
     {
         // Created nodes
         if ( nodes != null )
@@ -333,7 +332,7 @@ public final class TxState implements TransactionState, RelationshipVisitor.Home
         {
             @Override
             protected void visitAddedRelationship( long relationshipId, int type, long startNode, long endNode )
-                    throws ConstraintValidationKernelException
+                    throws ConstraintValidationException
             {
                 visitor.visitCreatedRelationship( relationshipId, type, startNode, endNode );
             }
@@ -355,13 +354,14 @@ public final class TxState implements TransactionState, RelationshipVisitor.Home
         }
 
         @Override
-        public void visitAdded( ConstraintDescriptor constraint ) throws CreateConstraintFailureException
+        public void visitAdded( ConstraintDescriptor constraint )
+                throws ConstraintValidationException, CreateConstraintFailureException
         {
             visitor.visitAddedConstraint( constraint );
         }
 
         @Override
-        public void visitRemoved( ConstraintDescriptor constraint )
+        public void visitRemoved( ConstraintDescriptor constraint ) throws ConstraintValidationException
         {
             visitor.visitRemovedConstraint( constraint );
         }
@@ -373,12 +373,13 @@ public final class TxState implements TransactionState, RelationshipVisitor.Home
         {
             @Override
             public void visitAdded( NewIndexDescriptor index )
+                    throws ConstraintValidationException, CreateConstraintFailureException
             {
                 visitor.visitAddedIndex( index );
             }
 
             @Override
-            public void visitRemoved( NewIndexDescriptor index )
+            public void visitRemoved( NewIndexDescriptor index ) throws ConstraintValidationException
             {
                 visitor.visitRemovedIndex( index );
             }
@@ -391,7 +392,7 @@ public final class TxState implements TransactionState, RelationshipVisitor.Home
         {
             @Override
             public void visitLabelChanges( long nodeId, Set<Integer> added, Set<Integer> removed )
-                    throws ConstraintValidationKernelException
+                    throws ConstraintValidationException
             {
                 visitor.visitNodeLabelChanges( nodeId, added, removed );
             }
@@ -399,7 +400,7 @@ public final class TxState implements TransactionState, RelationshipVisitor.Home
             @Override
             public void visitPropertyChanges( long entityId, Iterator<StorageProperty> added,
                     Iterator<StorageProperty> changed, Iterator<Integer> removed )
-                    throws ConstraintValidationKernelException
+                    throws ConstraintValidationException
             {
                 visitor.visitNodePropertyChanges( entityId, added, changed, removed );
             }

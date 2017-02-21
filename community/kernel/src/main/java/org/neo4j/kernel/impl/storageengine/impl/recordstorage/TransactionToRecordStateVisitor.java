@@ -22,6 +22,7 @@ package org.neo4j.kernel.impl.storageengine.impl.recordstorage;
 import java.util.Iterator;
 import java.util.Set;
 
+import org.neo4j.kernel.api.exceptions.schema.ConstraintValidationException;
 import org.neo4j.kernel.api.exceptions.schema.CreateConstraintFailureException;
 import org.neo4j.kernel.api.exceptions.schema.DuplicateSchemaRuleException;
 import org.neo4j.kernel.api.exceptions.schema.SchemaRuleNotFoundException;
@@ -87,6 +88,7 @@ public class TransactionToRecordStateVisitor extends TxStateVisitor.Adapter
 
     @Override
     public void visitCreatedRelationship( long id, int type, long startNode, long endNode )
+            throws ConstraintValidationException
     {
         // record the state changes to be made to the store
         recordState.relCreate( id, type, startNode, endNode );
@@ -101,7 +103,7 @@ public class TransactionToRecordStateVisitor extends TxStateVisitor.Adapter
 
     @Override
     public void visitNodePropertyChanges( long id, Iterator<StorageProperty> added,
-            Iterator<StorageProperty> changed, Iterator<Integer> removed )
+            Iterator<StorageProperty> changed, Iterator<Integer> removed ) throws ConstraintValidationException
     {
         while ( removed.hasNext() )
         {
@@ -161,6 +163,7 @@ public class TransactionToRecordStateVisitor extends TxStateVisitor.Adapter
 
     @Override
     public void visitNodeLabelChanges( long id, final Set<Integer> added, final Set<Integer> removed )
+            throws ConstraintValidationException
     {
         // record the state changes to be made to the store
         for ( Integer label : removed )
