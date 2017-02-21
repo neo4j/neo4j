@@ -200,36 +200,6 @@ public class StateHandlingStatementOperationsTest
     }
 
     @Test
-    public void shouldConsiderTransactionStateDuringIndexScan() throws Exception
-    {
-        // Given
-        TransactionState txState = mock( TransactionState.class );
-        KernelStatement statement = mock( KernelStatement.class );
-        when( statement.hasTxStateWithChanges() ).thenReturn( true );
-        when( statement.txState() ).thenReturn( txState );
-        when( txState.indexUpdatesForScanOrSeek( index, null ) ).thenReturn(
-                new DiffSets<>( Collections.singleton( 42L ), Collections.singleton( 44L ) )
-        );
-        when( txState.addedAndRemovedNodes() ).thenReturn(
-                new DiffSets<>( Collections.singleton( 45L ), Collections.singleton( 46L ) )
-        );
-
-        StoreReadLayer storeReadLayer = mock( StoreReadLayer.class );
-        IndexReader indexReader = addMockedIndexReader( statement );
-        when( indexReader.scan() ).thenReturn(
-                PrimitiveLongCollections.resourceIterator( PrimitiveLongCollections.iterator( 43L, 44L, 46L ), null )
-        );
-
-        StateHandlingStatementOperations context = newTxStateOps( storeReadLayer );
-
-        // When
-        PrimitiveLongIterator results = context.nodesGetFromIndexScan( statement, index );
-
-        // Then
-        assertEquals( asSet( 42L, 43L ), PrimitiveLongCollections.toSet( results ) );
-    }
-
-    @Test
     public void shouldConsiderTransactionStateDuringIndexScanWithIndexQuery() throws Exception
     {
         // Given

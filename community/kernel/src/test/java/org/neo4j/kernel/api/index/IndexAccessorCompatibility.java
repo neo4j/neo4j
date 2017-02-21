@@ -159,11 +159,6 @@ public abstract class IndexAccessorCompatibility extends IndexProviderCompatibil
         return metaGet( reader -> reader.endsWith( term ) );
     }
 
-    protected List<Long> getAllNodes() throws IOException
-    {
-        return metaGet( IndexReader::scan );
-    }
-
     protected List<Long> query( IndexQuery... predicates )
     {
         return metaGet( reader -> reader.query( predicates ) );

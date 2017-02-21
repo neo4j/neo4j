@@ -136,8 +136,7 @@ public class SimpleIndexReader implements IndexReader
         return query( LuceneDocumentStructure.newRangeSeekByPrefixQuery( prefix ) );
     }
 
-    @Override
-    public PrimitiveLongIterator scan()
+    private PrimitiveLongIterator scan()
     {
         return query( LuceneDocumentStructure.newScanQuery() );
     }

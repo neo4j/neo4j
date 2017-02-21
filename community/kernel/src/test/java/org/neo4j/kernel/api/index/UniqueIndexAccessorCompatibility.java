@@ -22,6 +22,7 @@ package org.neo4j.kernel.api.index;
 import org.junit.Ignore;
 import org.junit.Test;
 
+import org.neo4j.kernel.api.schema_new.IndexQuery;
 import org.neo4j.kernel.api.schema_new.index.NewIndexDescriptor;
 import org.neo4j.kernel.api.schema_new.index.NewIndexDescriptorFactory;
 
@@ -68,6 +69,6 @@ public class UniqueIndexAccessorCompatibility extends IndexAccessorCompatibility
                 IndexEntryUpdate.add( 3L, index, "c" ) ) );
 
         assertThat( getAllNodesWithProperty( "a" ), equalTo( asList( 1L ) ) );
-        assertThat( getAllNodes(), equalTo( asList( 1L, 2L, 3L ) ) );
+        assertThat( query( IndexQuery.exists( 1 ) ), equalTo( asList( 1L, 2L, 3L ) ) );
     }
 }

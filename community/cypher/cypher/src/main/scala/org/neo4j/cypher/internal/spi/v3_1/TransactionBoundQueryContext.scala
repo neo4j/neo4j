@@ -257,7 +257,7 @@ final class TransactionBoundQueryContext(txContext: TransactionalContextWrapper)
   }
 
   override def indexScan(index: IndexDescriptor) =
-    mapToScalaENFXSafe(txContext.statement.readOperations().nodesGetFromIndexScan(index))(nodeOps.getById)
+    mapToScalaENFXSafe(txContext.statement.readOperations().indexQuery(index, IndexQuery.exists(index.property)))(nodeOps.getById)
 
   override def indexScanByContains(index: IndexDescriptor, value: String) =
     mapToScalaENFXSafe(txContext.statement.readOperations().nodesGetFromIndexContainsScan(index, value))(nodeOps.getById)

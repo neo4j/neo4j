@@ -250,14 +250,6 @@ public class OperationsFacade
     }
 
     @Override
-    public PrimitiveLongIterator nodesGetFromIndexScan( NewIndexDescriptor index )
-            throws IndexNotFoundKernelException
-    {
-        statement.assertOpen();
-        return dataRead().nodesGetFromIndexScan( statement, index );
-    }
-
-    @Override
     public PrimitiveLongIterator nodesGetFromIndexContainsScan( NewIndexDescriptor index, String term )
             throws IndexNotFoundKernelException
     {

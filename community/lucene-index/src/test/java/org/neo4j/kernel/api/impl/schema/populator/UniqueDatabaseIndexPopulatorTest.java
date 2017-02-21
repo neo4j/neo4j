@@ -33,6 +33,7 @@ import java.util.Collections;
 import java.util.List;
 
 import org.neo4j.collection.primitive.PrimitiveLongCollections;
+import org.neo4j.collection.primitive.PrimitiveLongIterator;
 import org.neo4j.io.IOUtils;
 import org.neo4j.kernel.api.exceptions.index.IndexEntryConflictException;
 import org.neo4j.kernel.api.impl.index.storage.DirectoryFactory;
@@ -43,6 +44,7 @@ import org.neo4j.kernel.api.index.IndexEntryUpdate;
 import org.neo4j.kernel.api.index.IndexUpdater;
 import org.neo4j.kernel.api.index.PreexistingIndexEntryConflictException;
 import org.neo4j.kernel.api.index.PropertyAccessor;
+import org.neo4j.kernel.api.schema_new.IndexQuery;
 import org.neo4j.kernel.api.schema_new.index.IndexBoundary;
 import org.neo4j.kernel.api.schema_new.index.NewIndexDescriptor;
 import org.neo4j.kernel.api.schema_new.index.NewIndexDescriptorFactory;
@@ -538,7 +540,8 @@ public class UniqueDatabaseIndexPopulatorTest
         index.maybeRefreshBlocking();
         try ( IndexReader reader = index.getIndexReader() )
         {
-            assertArrayEquals( new long[]{1, 2, 3}, PrimitiveLongCollections.asArray( reader.scan() ) );
+            PrimitiveLongIterator allEntities = reader.query( IndexQuery.exists( 1 ) );
+            assertArrayEquals( new long[]{1, 2, 3}, PrimitiveLongCollections.asArray( allEntities ) );
         }
     }
 

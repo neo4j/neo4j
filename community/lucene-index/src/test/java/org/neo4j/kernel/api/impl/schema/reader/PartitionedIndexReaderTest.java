@@ -137,11 +137,12 @@ public class PartitionedIndexReaderTest
     public void scanOverPartitions()
     {
         PartitionedIndexReader indexReader = createPartitionedReaderFromReaders();
-        when( indexReader1.scan() ).thenReturn( PrimitiveLongCollections.iterator( 1 ) );
-        when( indexReader2.scan() ).thenReturn( PrimitiveLongCollections.iterator( 2 ) );
-        when( indexReader3.scan() ).thenReturn( PrimitiveLongCollections.iterator( 3 ) );
+        IndexQuery.ExistsPredicate query = IndexQuery.exists( 1 );
+        when( indexReader1.query( query ) ).thenReturn( PrimitiveLongCollections.iterator( 1 ) );
+        when( indexReader2.query( query ) ).thenReturn( PrimitiveLongCollections.iterator( 2 ) );
+        when( indexReader3.query( query ) ).thenReturn( PrimitiveLongCollections.iterator( 3 ) );
 
-        PrimitiveLongSet results = PrimitiveLongCollections.asSet( indexReader.scan() );
+        PrimitiveLongSet results = PrimitiveLongCollections.asSet( indexReader.query( query ) );
         verifyResult( results );
     }
 

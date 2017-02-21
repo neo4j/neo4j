@@ -30,12 +30,14 @@ import java.util.Arrays;
 import java.util.List;
 
 import org.neo4j.collection.primitive.PrimitiveLongCollections;
+import org.neo4j.collection.primitive.PrimitiveLongIterator;
 import org.neo4j.io.IOUtils;
 import org.neo4j.kernel.api.impl.index.storage.DirectoryFactory;
 import org.neo4j.kernel.api.impl.index.storage.PartitionedIndexStorage;
 import org.neo4j.kernel.api.impl.schema.LuceneSchemaIndexBuilder;
 import org.neo4j.kernel.api.impl.schema.SchemaIndex;
 import org.neo4j.kernel.api.index.IndexEntryUpdate;
+import org.neo4j.kernel.api.schema_new.IndexQuery;
 import org.neo4j.kernel.api.schema_new.index.NewIndexDescriptor;
 import org.neo4j.kernel.api.schema_new.index.NewIndexDescriptorFactory;
 import org.neo4j.kernel.configuration.Config;
@@ -142,7 +144,9 @@ public class NonUniqueDatabaseIndexPopulatorTest
         index.maybeRefreshBlocking();
         try ( IndexReader reader = index.getIndexReader() )
         {
-            assertArrayEquals( new long[]{1, 2, 42}, PrimitiveLongCollections.asArray( reader.scan() ) );
+            int propertyKeyId = indexDescriptor.schema().getPropertyId();
+            PrimitiveLongIterator allEntities = reader.query( IndexQuery.exists( propertyKeyId ) );
+            assertArrayEquals( new long[]{1, 2, 42}, PrimitiveLongCollections.asArray( allEntities ) );
         }
     }
 

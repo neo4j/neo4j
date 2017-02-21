@@ -46,12 +46,6 @@ public class DelegatingIndexReader implements IndexReader
     }
 
     @Override
-    public PrimitiveLongIterator scan()
-    {
-        return delegate.scan();
-    }
-
-    @Override
     public PrimitiveLongIterator containsString( String exactTerm )
     {
         return delegate.containsString( exactTerm );

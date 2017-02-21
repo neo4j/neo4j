@@ -24,6 +24,7 @@ import org.junit.Test;
 
 import java.util.Collections;
 
+import org.neo4j.kernel.api.schema_new.IndexQuery;
 import org.neo4j.kernel.api.schema_new.index.NewIndexDescriptor;
 import org.neo4j.kernel.api.schema_new.index.NewIndexDescriptorFactory;
 
@@ -78,7 +79,7 @@ public class NonUniqueIndexAccessorCompatibility extends IndexAccessorCompatibil
                 IndexEntryUpdate.add( 3L, index, "b" ) ) );
 
         assertThat( getAllNodesWithProperty( "a" ), equalTo( asList( 1L, 2L ) ) );
-        assertThat( getAllNodes(), equalTo( asList( 1L, 2L, 3L ) ) );
+        assertThat( query( IndexQuery.exists( 1 ) ), equalTo( asList( 1L, 2L, 3L ) ) );
     }
 
     @Test

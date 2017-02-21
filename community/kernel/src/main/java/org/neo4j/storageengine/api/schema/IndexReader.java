@@ -49,13 +49,6 @@ public interface IndexReader extends Resource
     PrimitiveLongIterator rangeSeekByPrefix( String prefix );
 
     /**
-     * Scans this index returning all nodes.
-     *
-     * @return node ids in index.
-     */
-    PrimitiveLongIterator scan();
-
-    /**
      * Searches this index for string values containing the exact search string.
      *
      * @param exactTerm the exact string to search for in the index
@@ -92,12 +85,6 @@ public interface IndexReader extends Resource
 
         @Override
         public PrimitiveLongIterator rangeSeekByPrefix( String prefix )
-        {
-            return PrimitiveLongCollections.emptyIterator();
-        }
-
-        @Override
-        public PrimitiveLongIterator scan()
         {
             return PrimitiveLongCollections.emptyIterator();
         }

@@ -155,8 +155,7 @@ class HashBasedIndex extends InMemoryIndexImplementation
         return stringSearch( ( String entry ) -> entry.endsWith( suffix ) );
     }
 
-    @Override
-    public synchronized PrimitiveLongIterator scan()
+    private synchronized PrimitiveLongIterator scan()
     {
         Iterable<Long> all = Iterables.flattenIterable( data.values() );
         return toPrimitiveIterator( all.iterator() );

@@ -247,7 +247,7 @@ final class TransactionBoundQueryContext(tc: TransactionalContextWrapper)
   }
 
   def indexScan(index: IndexDescriptor) =
-    mapToScalaENFXSafe(tc.statement.readOperations().nodesGetFromIndexScan(index))(nodeOps.getById)
+    mapToScalaENFXSafe(tc.statement.readOperations().indexQuery(index, IndexQuery.exists(index.property)))(nodeOps.getById)
 
   override def lockingExactUniqueIndexSearch(index: IndexDescriptor, value: Any): Option[Node] = {
     val nodeId: Long = tc.statement.readOperations().nodeGetFromUniqueIndexSeek(index, value)

@@ -82,12 +82,6 @@ public class PartitionedIndexReader implements IndexReader
     }
 
     @Override
-    public PrimitiveLongIterator scan()
-    {
-        return partitionedOperation( SimpleIndexReader::scan );
-    }
-
-    @Override
     public PrimitiveLongIterator containsString( String exactTerm )
     {
         return partitionedOperation( reader -> reader. containsString( exactTerm ) );
