@@ -25,10 +25,11 @@ import java.util.Map;
 
 import org.neo4j.causalclustering.load_balancing.filters.Filter;
 import org.neo4j.kernel.configuration.Config;
-import org.neo4j.logging.NullLogProvider;
+import org.neo4j.logging.Log;
 
 import static java.lang.String.format;
 import static org.junit.Assert.assertEquals;
+import static org.mockito.Mockito.mock;
 import static org.neo4j.causalclustering.core.CausalClusteringSettings.load_balancing_config;
 import static org.neo4j.causalclustering.load_balancing.plugins.server_policies.FilterBuilder.filter;
 import static org.neo4j.helpers.collection.MapUtil.stringMap;
@@ -78,7 +79,7 @@ public class FilteringPolicyLoaderTest
         }
 
         // when
-        Policies policies = FilteringPolicyLoader.load( config, pluginName, NullLogProvider.getInstance() );
+        Policies policies = FilteringPolicyLoader.load( config, pluginName, mock( Log.class ) );
 
         // then
         for ( Object[] row : input )

@@ -35,7 +35,10 @@ import org.neo4j.causalclustering.identity.MemberId;
 import org.neo4j.causalclustering.load_balancing.Endpoint;
 import org.neo4j.causalclustering.load_balancing.LoadBalancingPlugin;
 import org.neo4j.causalclustering.load_balancing.LoadBalancingResult;
+import org.neo4j.graphdb.config.InvalidSettingException;
+import org.neo4j.helpers.Service;
 import org.neo4j.kernel.configuration.Config;
+import org.neo4j.logging.Log;
 import org.neo4j.logging.LogProvider;
 
 import static java.util.Collections.emptyList;
@@ -49,24 +52,45 @@ import static org.neo4j.causalclustering.load_balancing.plugins.server_policies.
  *
  * An example would be to define different policies for different regions.
  */
+@Service.Implementation( LoadBalancingPlugin.class )
 public class ServerPoliciesPlugin implements LoadBalancingPlugin
 {
-    private static final String PLUGIN_NAME = "server_policies";
+    public static final String PLUGIN_NAME = "server_policies";
 
-    private final TopologyService topologyService;
-    private final LeaderLocator leaderLocator;
-    private final Long timeToLive;
-    private final boolean allowReadsOnFollowers;
-    private final Policies policies;
+    private TopologyService topologyService;
+    private LeaderLocator leaderLocator;
+    private Long timeToLive;
+    private boolean allowReadsOnFollowers;
+    private Policies policies;
 
-    public ServerPoliciesPlugin( TopologyService topologyService, LeaderLocator leaderLocator,
+    @Override
+    public void validate( Config config, Log log ) throws InvalidSettingException
+    {
+        try
+        {
+            load( config, PLUGIN_NAME, log );
+        }
+        catch ( InvalidFilterSpecification e )
+        {
+            throw new InvalidSettingException( "Invalid filter specification", e );
+        }
+    }
+
+    @Override
+    public void init( TopologyService topologyService, LeaderLocator leaderLocator,
             LogProvider logProvider, Config config ) throws InvalidFilterSpecification
     {
         this.topologyService = topologyService;
         this.leaderLocator = leaderLocator;
         this.timeToLive = config.get( CausalClusteringSettings.cluster_routing_ttl );
         this.allowReadsOnFollowers = config.get( CausalClusteringSettings.cluster_allow_reads_on_followers );
-        this.policies = load( config, PLUGIN_NAME, logProvider );
+        this.policies = load( config, PLUGIN_NAME, logProvider.getLog( getClass() ) );
+    }
+
+    @Override
+    public String pluginName()
+    {
+        return PLUGIN_NAME;
     }
 
     @Override
