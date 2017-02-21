@@ -199,8 +199,9 @@ public class InternalFlatFileRealmTest
 
         // Expect
         exception.expect( InvalidArgumentsException.class );
-        exception.expectMessage( "No roles defined, and default admin user 'morpheus' does not exist. Please use `" +
-                SetDefaultAdminCommand.COMMAND_NAME + "` to select a valid admin." );
+        exception.expectMessage(
+                "No roles defined, and default admin user 'morpheus' does not exist. Please use `neo4j-admin " +
+                        SetDefaultAdminCommand.COMMAND_NAME + "` to select a valid admin." );
 
         // When
         realm.initialize();
@@ -216,8 +217,9 @@ public class InternalFlatFileRealmTest
 
         // Expect
         exception.expect( InvalidArgumentsException.class );
-        exception.expectMessage( "No roles defined, and cannot determine which user should be admin. Please use `" +
-                SetDefaultAdminCommand.COMMAND_NAME + "` to select an admin." );
+        exception.expectMessage(
+                "No roles defined, and cannot determine which user should be admin. Please use `neo4j-admin " +
+                        SetDefaultAdminCommand.COMMAND_NAME + "` to select an admin." );
 
         // When
         realm.initialize();
@@ -225,7 +227,7 @@ public class InternalFlatFileRealmTest
     }
 
     @Test
-    public void shouldAssignAdminMultipleDefinedUsers() throws Throwable
+    public void shouldFailToAssignMultipleDefaultAdmins() throws Throwable
     {
         // Given
         InternalFlatFileRealm realm = internalTestRealmWithUsers( Arrays.asList( "morpheus", "trinity", "tank" ),
@@ -233,8 +235,9 @@ public class InternalFlatFileRealmTest
 
         // Expect
         exception.expect( InvalidArgumentsException.class );
-        exception.expectMessage( "No roles defined, and multiple users defined as default admin user. Please use `" +
-                SetDefaultAdminCommand.COMMAND_NAME + "` to select a valid admin." );
+        exception.expectMessage(
+                "No roles defined, and multiple users defined as default admin user. Please use `neo4j-admin " +
+                        SetDefaultAdminCommand.COMMAND_NAME + "` to select a valid admin." );
 
         // When
         realm.initialize();
