@@ -30,12 +30,8 @@ abstract sealed class ComparablePredicate(val left: Expression, val right: Expre
     val l: Any = left(m)
     val r: Any = right(m)
 
-    if (l == null || r == null)
-      return None
-
-    val comparisonResult: Int = compare(None, l, r)(state)
-
-    Some(compare(comparisonResult))
+    if (l == null || r == null) None
+    else compareForComparability(None, l, r)(state).map(result => compare(result))
   }
 
   def sign: String
