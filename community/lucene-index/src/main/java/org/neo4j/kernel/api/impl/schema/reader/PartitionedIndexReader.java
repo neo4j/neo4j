@@ -76,12 +76,6 @@ public class PartitionedIndexReader implements IndexReader
     }
 
     @Override
-    public PrimitiveLongIterator rangeSeekByNumberInclusive( Number lower, Number upper )
-    {
-        return partitionedOperation( reader -> reader.rangeSeekByNumberInclusive( lower, upper ) );
-    }
-
-    @Override
     public PrimitiveLongIterator rangeSeekByString( String lower, boolean includeLower, String upper,
             boolean includeUpper )
     {

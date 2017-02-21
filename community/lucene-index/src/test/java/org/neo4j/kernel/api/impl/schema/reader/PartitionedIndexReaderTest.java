@@ -34,6 +34,7 @@ import org.neo4j.helpers.TaskCoordinator;
 import org.neo4j.kernel.api.exceptions.index.IndexNotFoundKernelException;
 import org.neo4j.kernel.api.impl.index.partition.PartitionSearcher;
 import org.neo4j.kernel.api.index.IndexConfiguration;
+import org.neo4j.kernel.api.schema_new.IndexQuery;
 import org.neo4j.kernel.impl.api.index.sampling.IndexSamplingConfig;
 import org.neo4j.storageengine.api.schema.IndexSample;
 import org.neo4j.storageengine.api.schema.IndexSampler;
@@ -95,12 +96,13 @@ public class PartitionedIndexReaderTest
     {
         PartitionedIndexReader indexReader = createPartitionedReaderFromReaders();
 
-        when( indexReader1.rangeSeekByNumberInclusive( 1, 2 ) ).thenReturn( PrimitiveLongCollections.iterator( 1 ) );
-        when( indexReader2.rangeSeekByNumberInclusive( 1, 2 ) ).thenReturn( PrimitiveLongCollections.iterator( 2 ) );
-        when( indexReader3.rangeSeekByNumberInclusive( 1, 2 ) ).thenReturn( PrimitiveLongCollections.iterator( 3 ) );
+        IndexQuery.NumberRangePredicate query = IndexQuery.range( 1, 1, true, 2, true );
+        when( indexReader1.query( query ) ).thenReturn( PrimitiveLongCollections.iterator( 1 ) );
+        when( indexReader2.query( query ) ).thenReturn( PrimitiveLongCollections.iterator( 2 ) );
+        when( indexReader3.query( query ) ).thenReturn( PrimitiveLongCollections.iterator( 3 ) );
 
         PrimitiveLongSet results =
-                PrimitiveLongCollections.asSet( indexReader.rangeSeekByNumberInclusive( 1, 2 ) );
+                PrimitiveLongCollections.asSet( indexReader.query( query ) );
         verifyResult( results );
     }
 

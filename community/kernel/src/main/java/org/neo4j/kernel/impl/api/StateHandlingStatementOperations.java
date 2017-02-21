@@ -116,7 +116,6 @@ import static org.neo4j.helpers.collection.Iterators.singleOrNull;
 import static org.neo4j.kernel.api.StatementConstants.NO_SUCH_NODE;
 import static org.neo4j.kernel.api.schema_new.index.NewIndexDescriptor.Filter.GENERAL;
 import static org.neo4j.kernel.api.schema_new.index.NewIndexDescriptor.Filter.UNIQUE;
-import static org.neo4j.kernel.impl.api.PropertyValueComparison.COMPARE_NUMBERS;
 import static org.neo4j.kernel.impl.util.Cursors.count;
 import static org.neo4j.kernel.impl.util.Cursors.empty;
 import static org.neo4j.register.Registers.newDoubleLongRegister;
@@ -780,21 +779,7 @@ public class StateHandlingStatementOperations implements
         Object[] values = query.validate( index );
         PrimitiveLongIterator committed = reader.seek( values );
         PrimitiveLongIterator exactMatches = filterExactIndexMatches( state, index, values, committed );
-        return filterIndexStateChangesForScanOrSeek( state, index, values, exactMatches );    }
-
-    @Override
-    public PrimitiveLongIterator nodesGetFromIndexRangeSeekByNumber( KernelStatement state, NewIndexDescriptor index,
-            Number lower, boolean includeLower,
-            Number upper, boolean includeUpper ) throws IndexNotFoundKernelException
-
-    {
-        PrimitiveLongIterator committed = COMPARE_NUMBERS.isEmptyRange( lower, includeLower, upper, includeUpper )
-                ? PrimitiveLongCollections.emptyIterator()
-                : state.getStoreStatement().getIndexReader( index ).rangeSeekByNumberInclusive( lower, upper );
-        PrimitiveLongIterator exactMatches = filterExactRangeMatches( state, index, committed, lower, includeLower,
-                upper, includeUpper );
-        return filterIndexStateChangesForRangeSeekByNumber( state, index, lower, includeLower, upper, includeUpper,
-                exactMatches );
+        return filterIndexStateChangesForScanOrSeek( state, index, values, exactMatches );
     }
 
     @Override

@@ -76,21 +76,6 @@ public interface EntityReadOperations
      * Returns an iterable with the matched nodes.
      *
      * @throws IndexNotFoundKernelException if no such index found.
-     * @throws org.neo4j.kernel.api.exceptions.index.IndexNotApplicableKernelException if the index is not applicable
-     * for the given query.
-     */
-    PrimitiveLongIterator nodesGetFromIndexRangeSeekByNumber( KernelStatement state,
-            NewIndexDescriptor index,
-            Number lower,
-            boolean includeLower,
-            Number upper,
-            boolean includeUpper )
-            throws IndexNotFoundKernelException;
-
-    /**
-     * Returns an iterable with the matched nodes.
-     *
-     * @throws IndexNotFoundKernelException if no such index found.
      */
     PrimitiveLongIterator nodesGetFromIndexRangeSeekByString( KernelStatement state,
             NewIndexDescriptor index,

@@ -41,15 +41,6 @@ public interface IndexReader extends Resource
     PrimitiveLongIterator seek( Object value );
 
     /**
-     * Searches this index for numerics values between {@code lower} and {@code upper}.
-     *
-     * @param lower lower numeric bound of search (inclusive).
-     * @param upper upper numeric bound of search (inclusive).
-     * @return ids of matching nodes.
-     */
-    PrimitiveLongIterator rangeSeekByNumberInclusive( Number lower, Number upper );
-
-    /**
      * Searches this index for string values between {@code lower} and {@code upper}.
      *
      * @param lower lower numeric bound of search.
@@ -106,12 +97,6 @@ public interface IndexReader extends Resource
     {
         @Override
         public PrimitiveLongIterator seek( Object value )
-        {
-            return PrimitiveLongCollections.emptyIterator();
-        }
-
-        @Override
-        public PrimitiveLongIterator rangeSeekByNumberInclusive( Number lower, Number upper )
         {
             return PrimitiveLongCollections.emptyIterator();
         }

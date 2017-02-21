@@ -76,8 +76,7 @@ class HashBasedIndex extends InMemoryIndexImplementation
         return nodes == null ? PrimitiveLongCollections.emptyIterator() : toPrimitiveIterator( nodes.iterator() );
     }
 
-    @Override
-    public synchronized PrimitiveLongIterator rangeSeekByNumberInclusive( Number lower, Number upper )
+    private synchronized PrimitiveLongIterator rangeSeekByNumberInclusive( Number lower, Number upper )
     {
         Set<Long> nodeIds = new HashSet<>();
         for ( Map.Entry<Object,Set<Long>> entry : data.entrySet() )

@@ -119,8 +119,7 @@ public class SimpleIndexReader implements IndexReader
         return query( LuceneDocumentStructure.newSeekQuery( value ) );
     }
 
-    @Override
-    public PrimitiveLongIterator rangeSeekByNumberInclusive( Number lower, Number upper )
+    private PrimitiveLongIterator rangeSeekByNumberInclusive( Number lower, Number upper )
     {
         return query( LuceneDocumentStructure.newInclusiveNumericRangeSeekQuery( lower, upper ) );
     }

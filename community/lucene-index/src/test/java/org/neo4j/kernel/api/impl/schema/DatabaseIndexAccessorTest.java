@@ -58,6 +58,7 @@ import static org.junit.Assert.assertThat;
 import static org.junit.Assert.fail;
 import static org.neo4j.helpers.collection.Iterators.asSet;
 import static org.neo4j.helpers.collection.Iterators.emptySetOf;
+import static org.neo4j.kernel.api.schema_new.IndexQuery.range;
 import static org.neo4j.test.rule.concurrent.ThreadingRule.waitingWhileIn;
 
 @RunWith( Parameterized.class )
@@ -185,22 +186,22 @@ public class DatabaseIndexAccessorTest
 
         IndexReader reader = accessor.newReader();
 
-        PrimitiveLongIterator rangeTwoThree = reader.rangeSeekByNumberInclusive( 2, 3 );
+        PrimitiveLongIterator rangeTwoThree = reader.query( range( 1, 2, true, 3, true ) );
         assertThat( PrimitiveLongCollections.asArray( rangeTwoThree ), LongArrayMatcher.of( 2, 3 ) );
 
-        PrimitiveLongIterator infiniteMaxRange = reader.rangeSeekByNumberInclusive( 2, Long.MAX_VALUE );
+        PrimitiveLongIterator infiniteMaxRange = reader.query( range( 1, 2, true, Long.MAX_VALUE, true ) );
         assertThat( PrimitiveLongCollections.asArray( infiniteMaxRange ), LongArrayMatcher.of( 2, 3, 4 ) );
 
-        PrimitiveLongIterator infiniteMinRange = reader.rangeSeekByNumberInclusive( Long.MIN_VALUE, 3 );
+        PrimitiveLongIterator infiniteMinRange = reader.query( range( 1, Long.MIN_VALUE, true, 3, true ) );
         assertThat( PrimitiveLongCollections.asArray( infiniteMinRange ), LongArrayMatcher.of( 1, 2, 3 ) );
 
-        PrimitiveLongIterator maxNanInterval = reader.rangeSeekByNumberInclusive( 3, Double.NaN );
+        PrimitiveLongIterator maxNanInterval = reader.query( range( 1, 3, true, Double.NaN, true ) );
         assertThat( PrimitiveLongCollections.asArray( maxNanInterval ), LongArrayMatcher.of( 3, 4, 5 ) );
 
-        PrimitiveLongIterator minNanInterval = reader.rangeSeekByNumberInclusive( Double.NaN, 5 );
+        PrimitiveLongIterator minNanInterval = reader.query( range( 1, Double.NaN, true, 5, true ) );
         assertThat( PrimitiveLongCollections.asArray( minNanInterval ), LongArrayMatcher.emptyArrayMatcher() );
 
-        PrimitiveLongIterator nanInterval = reader.rangeSeekByNumberInclusive( Double.NaN, Double.NaN );
+        PrimitiveLongIterator nanInterval = reader.query( range( 1, Double.NaN, true, Double.NaN, true ) );
         assertThat( PrimitiveLongCollections.asArray( nanInterval ), LongArrayMatcher.of( 5 ) );
     }
 

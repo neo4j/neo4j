@@ -94,23 +94,6 @@ public class NonUniqueIndexAccessorCompatibility extends IndexAccessorCompatibil
     }
 
     @Test
-    public void testIndexRangeSeekByNumberWithDuplicates() throws Exception
-    {
-        updateAndCommit( asList(
-                IndexEntryUpdate.add( 1L, index, -5 ),
-                IndexEntryUpdate.add( 2L, index, -5 ),
-                IndexEntryUpdate.add( 3L, index, 0 ),
-                IndexEntryUpdate.add( 4L, index, 5 ),
-                IndexEntryUpdate.add( 5L, index, 5 ) ) );
-
-        assertThat( getAllNodesFromInclusiveIndexSeekByNumber( -5, 5 ), equalTo( asList( 1L, 2L, 3L, 4L, 5L ) ) );
-        assertThat( getAllNodesFromInclusiveIndexSeekByNumber( -3, -1 ), equalTo( EMPTY_LIST ) );
-        assertThat( getAllNodesFromInclusiveIndexSeekByNumber( -5, 4 ), equalTo( asList( 1L, 2L, 3L ) ) );
-        assertThat( getAllNodesFromInclusiveIndexSeekByNumber( -4, 5 ), equalTo( asList( 3L, 4L, 5L ) ) );
-        assertThat( getAllNodesFromInclusiveIndexSeekByNumber( -5, 5 ), equalTo( asList( 1L, 2L, 3L, 4L, 5L ) ) );
-    }
-
-    @Test
     public void testIndexRangeSeekByNumberWithDuplicatesWithQuery() throws Exception
     {
         updateAndCommit( asList(

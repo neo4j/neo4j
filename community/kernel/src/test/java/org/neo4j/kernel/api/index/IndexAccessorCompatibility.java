@@ -42,6 +42,7 @@ import static java.util.Collections.EMPTY_LIST;
 import static java.util.Collections.singletonList;
 import static org.hamcrest.Matchers.equalTo;
 import static org.junit.Assert.assertThat;
+import static org.neo4j.kernel.api.schema_new.IndexQuery.range;
 
 public abstract class IndexAccessorCompatibility extends IndexProviderCompatibilityTestSuite.Compatibility
 {
@@ -83,13 +84,13 @@ public abstract class IndexAccessorCompatibility extends IndexProviderCompatibil
                 IndexEntryUpdate.add( 4L, descriptor, 10.0 ),
                 IndexEntryUpdate.add( 5L, descriptor, 100.0 ) ) );
 
-        assertThat( getAllNodesFromInclusiveIndexSeekByNumber( 0, 10 ), equalTo( asList( 2L, 3L, 4L ) ) );
-        assertThat( getAllNodesFromInclusiveIndexSeekByNumber( 10, null ), equalTo( asList( 4L, 5L ) ) );
-        assertThat( getAllNodesFromInclusiveIndexSeekByNumber( 100, 0 ), equalTo( EMPTY_LIST ) );
-        assertThat( getAllNodesFromInclusiveIndexSeekByNumber( null, 5.5 ), equalTo( asList( 1L, 2L, 3L ) ) );
-        assertThat( getAllNodesFromInclusiveIndexSeekByNumber( null, null ), equalTo( asList( 1L, 2L, 3L, 4L, 5L ) ) );
-        assertThat( getAllNodesFromInclusiveIndexSeekByNumber( -5, 0 ), equalTo( asList( 1L, 2L ) ) );
-        assertThat( getAllNodesFromInclusiveIndexSeekByNumber( -5, 5.5 ), equalTo( asList( 1L, 2L, 3L ) ) );
+        assertThat( query( range( 1, 0, true, 10, true ) ), equalTo( asList( 2L, 3L, 4L ) ) );
+        assertThat( query( range( 1, 10, true, null, true ) ), equalTo( asList( 4L, 5L ) ) );
+        assertThat( query( range( 1, 100, true, 0, true ) ), equalTo( EMPTY_LIST ) );
+        assertThat( query( range( 1, null, true, 5.5, true ) ), equalTo( asList( 1L, 2L, 3L ) ) );
+        assertThat( query( range( 1, (Number)null, true, null, true ) ), equalTo( asList( 1L, 2L, 3L, 4L, 5L ) ) );
+        assertThat( query( range( 1, -5, true, 0, true ) ), equalTo( asList( 1L, 2L ) ) );
+        assertThat( query( range( 1, -5, true, 5.5, true ) ), equalTo( asList( 1L, 2L, 3L ) ) );
     }
 
     @Test
@@ -141,11 +142,6 @@ public abstract class IndexAccessorCompatibility extends IndexProviderCompatibil
     protected List<Long> getAllNodesWithProperty( String propertyValue ) throws IOException
     {
         return metaGet( reader -> reader.seek( propertyValue ));
-    }
-
-    protected List<Long> getAllNodesFromInclusiveIndexSeekByNumber( Number lower, Number upper ) throws IOException
-    {
-        return metaGet( reader -> reader.rangeSeekByNumberInclusive( lower, upper ));
     }
 
     protected List<Long> getAllNodesFromIndexSeekByString( String lower, boolean includeLower, String upper, boolean includeUpper ) throws IOException

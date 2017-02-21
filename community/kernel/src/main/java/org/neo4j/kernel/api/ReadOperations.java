@@ -157,14 +157,6 @@ public interface ReadOperations
      *
      * @throws org.neo4j.kernel.api.exceptions.index.IndexNotFoundKernelException if no such index found.
      */
-    PrimitiveLongIterator nodesGetFromIndexRangeSeekByNumber( NewIndexDescriptor index, Number lower, boolean includeLower, Number upper, boolean includeUpper )
-            throws IndexNotFoundKernelException;
-
-    /**
-     * Returns an iterator with the matched nodes.
-     *
-     * @throws org.neo4j.kernel.api.exceptions.index.IndexNotFoundKernelException if no such index found.
-     */
     PrimitiveLongIterator nodesGetFromIndexRangeSeekByString( NewIndexDescriptor index, String lower, boolean includeLower, String upper, boolean includeUpper )
             throws IndexNotFoundKernelException;
 

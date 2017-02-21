@@ -40,12 +40,6 @@ public class DelegatingIndexReader implements IndexReader
     }
 
     @Override
-    public PrimitiveLongIterator rangeSeekByNumberInclusive( Number lower, Number upper )
-    {
-        return delegate.rangeSeekByNumberInclusive( lower, upper );
-    }
-
-    @Override
     public PrimitiveLongIterator rangeSeekByString( String lower, boolean includeLower,
                                                     String upper, boolean includeUpper )
     {
