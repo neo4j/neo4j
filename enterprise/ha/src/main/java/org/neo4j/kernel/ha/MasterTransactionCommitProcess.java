@@ -118,8 +118,11 @@ public class MasterTransactionCommitProcess implements TransactionCommitProcess
         }
         finally
         {
-            if ( !success )
+            if ( !success && locks != null )
             {
+                // There was an exception which prevents us from returning the Locks.Client to the caller
+                // which ultimately should have been responsible for closing it, but now we can't so
+                // we need to close it ourselves in here before letting the exception propagate further.
                 locks.close();
                 locks = null;
             }
