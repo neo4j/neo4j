@@ -47,10 +47,9 @@ public class UsageTest
     public void shouldPrintUsageForAllCommandsAlphabetically()
     {
         AdminCommand.Provider[] commands = new AdminCommand.Provider[]{
-                new StubProvider( "restore", "Restores a database backed up using the neo4j-backup tool.",
-                        AdminCommandSegment.general() ),
-                new StubProvider( "bam", "A summary", AdminCommandSegment.general() ),
-                new StubProvider( "zzzz-last-one", "Another summary", AdminCommandSegment.general() )};
+                new StubProvider( "restore", "Restores a database backed up using the neo4j-backup tool." ),
+                new StubProvider( "bam", "A summary" ),
+                new StubProvider( "zzzz-last-one", "Another summary" )};
         final Usage usage = new Usage( "neo4j-admin", new CannedLocator( commands ) );
         usage.print( out );
 
@@ -73,13 +72,11 @@ public class UsageTest
     private static class StubProvider extends AdminCommand.Provider
     {
         private final String summary;
-        private AdminCommandSegment general;
 
-        StubProvider( String name, String summary, AdminCommandSegment general )
+        StubProvider( String name, String summary )
         {
             super( name );
             this.summary = summary;
-            this.general = general;
         }
 
         @Override
@@ -103,7 +100,7 @@ public class UsageTest
         @Override
         public AdminCommandSegment segment()
         {
-            return general;
+            return AdminCommandSegment.general();
         }
 
         @Override

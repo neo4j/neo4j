@@ -49,11 +49,12 @@ public class Usage
 
         Map<AdminCommandSegment,List<AdminCommand.Provider>> groupedProviders = groupProvidersBySegment();
 
-        groupedProviders.entrySet().forEach( entry ->
-        {
-            output.accept( entry.getKey().printable() );
-            printCommandsUnderASegment( output, entry.getValue() );
-        } );
+        printCommandSegment( output, AdminCommandSegment.general(),
+                groupedProviders.remove( AdminCommandSegment.general() ) );
+
+        groupedProviders.entrySet().stream()
+                .sorted( Comparator.comparing( o -> o.getKey().printable() ) )
+                .forEach( entry -> printCommandSegment( output, entry.getKey(), entry.getValue() ) );
 
         output.accept( "" );
         output.accept( format( "Use %s help <command> for more details.", scriptName ) );
@@ -64,6 +65,13 @@ public class Usage
         List<AdminCommand.Provider> providers = new ArrayList<>();
         commands.getAllProviders().forEach( providers::add );
         return providers.stream().collect( Collectors.groupingBy( AdminCommand.Provider::segment ) );
+    }
+
+    private void printCommandSegment( Consumer<String> output, AdminCommandSegment segment,
+            List<AdminCommand.Provider> value )
+    {
+        output.accept( segment.printable() );
+        printCommandsUnderASegment( output, value );
     }
 
     private void printCommandsUnderASegment( Consumer<String> output, List<AdminCommand.Provider> providers )

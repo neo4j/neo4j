@@ -41,30 +41,31 @@ public class Neo4jAdminUsageTest
         usageCmd.print( s -> sb.append( s ).append( "\n" ) );
 
         assertEquals("usage: neo4j-admin <command>\n" +
-                        "\n" + "available commands:" +
-                        "\n" + "General\n" +
+                        "\n" + "available commands:\n" +
+                        "General\n" +
                         "    check-consistency\n" +
                         "        Check the consistency of a database.\n" +
                         "    import\n" +
                         "        Import from a collection of CSV files or a pre-3.0 database.\n" +
-                            "Manage online backup\n" +
-                        "    backup\n" +
-                        "        Perform an online backup from a running Neo4j enterprise server.\n" +
-                        "    restore\n" +
-                        "        Restore a backed up database.\n" +
-                            "Manage offline backup\n" +
-                        "    dump\n" +
-                        "        Dump a database into a single-file archive.\n" +
-                        "    load\n" +
-                        "        Load a database from an archive created with the dump command.\n" +
-                            "Authentication\n" +
+                        "Authentication\n" +
                         "    set-default-admin\n" +
                         "        Sets the default admin user when no roles are present.\n" +
                         "    set-initial-password\n" +
                         "        Sets the initial password of the initial admin user ('neo4j').\n" +
-                            "Clustering\n" +
+                        "Clustering\n" +
                         "    unbind\n" +
                         "        Removes cluster state data for the specified database.\n" +
+                        "Manage offline backup\n" +
+                        "    dump\n" +
+                        "        Dump a database into a single-file archive.\n" +
+                        "    load\n" +
+                        "        Load a database from an archive created with the dump command.\n" +
+                        "Manage online backup\n" +
+                        "    backup\n" +
+                        "        Perform an online backup from a running Neo4j enterprise server.\n" +
+                        "    restore\n" +
+                        "        Restore a backed up database.\n" +
+
                         "\n" +
                         "Use neo4j-admin help <command> for more details.\n",
                 sb.toString() );
