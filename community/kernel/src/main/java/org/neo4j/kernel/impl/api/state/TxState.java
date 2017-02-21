@@ -49,7 +49,6 @@ import org.neo4j.kernel.api.txstate.TransactionState;
 import org.neo4j.kernel.impl.api.RelationshipVisitor;
 import org.neo4j.kernel.impl.api.cursor.TxAllPropertyCursor;
 import org.neo4j.kernel.impl.api.cursor.TxIteratorRelationshipCursor;
-import org.neo4j.kernel.impl.api.cursor.TxSingleNodeCursor;
 import org.neo4j.kernel.impl.api.cursor.TxSinglePropertyCursor;
 import org.neo4j.kernel.impl.api.cursor.TxSingleRelationshipCursor;
 import org.neo4j.kernel.impl.api.store.RelationshipIterator;
@@ -57,7 +56,6 @@ import org.neo4j.kernel.impl.util.InstanceCache;
 import org.neo4j.kernel.impl.util.diffsets.DiffSets;
 import org.neo4j.kernel.impl.util.diffsets.RelationshipDiffSets;
 import org.neo4j.storageengine.api.Direction;
-import org.neo4j.storageengine.api.NodeItem;
 import org.neo4j.storageengine.api.PropertyItem;
 import org.neo4j.storageengine.api.RelationshipItem;
 import org.neo4j.storageengine.api.StorageProperty;
@@ -162,7 +160,6 @@ public final class TxState implements TransactionState, RelationshipVisitor.Home
 
     private Map<LabelSchemaDescriptor, Map<OrderedPropertyValues, DiffSets<Long>>> indexUpdates;
 
-    private InstanceCache<TxSingleNodeCursor> singleNodeCursor;
     private InstanceCache<TxIteratorRelationshipCursor> iteratorRelationshipCursor;
     private InstanceCache<TxSingleRelationshipCursor> singleRelationshipCursor;
     private InstanceCache<TxAllPropertyCursor> propertyCursor;
@@ -173,14 +170,6 @@ public final class TxState implements TransactionState, RelationshipVisitor.Home
 
     public TxState()
     {
-        singleNodeCursor = new InstanceCache<TxSingleNodeCursor>()
-        {
-            @Override
-            protected TxSingleNodeCursor create()
-            {
-                return new TxSingleNodeCursor( TxState.this, this );
-            }
-        };
         propertyCursor = new InstanceCache<TxAllPropertyCursor>()
         {
             @Override
@@ -715,12 +704,6 @@ public final class TxState implements TransactionState, RelationshipVisitor.Home
     public RelationshipState getRelationshipState( long id )
     {
         return RELATIONSHIP_STATE.get( this, id );
-    }
-
-    @Override
-    public Cursor<NodeItem> augmentSingleNodeCursor( Cursor<NodeItem> cursor, long nodeId )
-    {
-        return hasChanges ? singleNodeCursor.get().init( cursor, nodeId ) : cursor;
     }
 
     @Override

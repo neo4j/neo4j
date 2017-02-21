@@ -28,6 +28,7 @@ import org.neo4j.kernel.impl.locking.Lock;
 import org.neo4j.kernel.impl.store.RecordCursors;
 import org.neo4j.storageengine.api.schema.IndexReader;
 import org.neo4j.storageengine.api.schema.LabelScanReader;
+import org.neo4j.storageengine.api.txstate.ReadableTransactionState;
 
 /**
  * A statement for accessing data from a {@link StoreReadLayer}. Most data about the entities of a graph
@@ -71,9 +72,10 @@ public interface StorageStatement extends AutoCloseable
      * to place the cursor over the first item and then more calls to move the cursor through the selection.
      *
      * @param nodeId id of node to get cursor for.
+     * @param state the transaction state or null if there are no changes.
      * @return a {@link Cursor} over {@link NodeItem} for the given {@code nodeId}.
      */
-    Cursor<NodeItem> acquireSingleNodeCursor( long nodeId );
+    Cursor<NodeItem> acquireSingleNodeCursor( long nodeId, ReadableTransactionState state );
 
     /**
      * Acquires {@link Cursor} capable of {@link Cursor#get() serving} {@link RelationshipItem} for selected

@@ -211,7 +211,7 @@ class PropertyExistenceEnforcer
             }
 
             PrimitiveIntSet labelIds;
-            try ( Cursor<NodeItem> node = node( nodeId ) )
+            try ( Cursor<NodeItem> node = storeStatement().acquireSingleNodeCursor( nodeId, txState ) )
             {
                 if ( node.next() )
                 {
@@ -281,11 +281,6 @@ class PropertyExistenceEnforcer
             }
         }
 
-        private Cursor<NodeItem> node( long id )
-        {
-            Cursor<NodeItem> cursor = storeStatement().acquireSingleNodeCursor( id );
-            return txState.augmentSingleNodeCursor( cursor, id );
-        }
 
         private Cursor<RelationshipItem> relationship( long id )
         {

@@ -91,7 +91,7 @@ public class StorageLayerNodeAndRelTest extends StorageLayerTest
     {
         try ( StorageStatement statement = disk.newStatement() )
         {
-            try ( Cursor<NodeItem> node = statement.acquireSingleNodeCursor( id ) )
+            try ( Cursor<NodeItem> node = statement.acquireSingleNodeCursor( id, null ) )
             {
                 return node.next();
             }

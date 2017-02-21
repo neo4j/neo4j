@@ -38,6 +38,7 @@ import org.neo4j.storageengine.api.PropertyItem;
 import org.neo4j.storageengine.api.RelationshipItem;
 import org.neo4j.storageengine.api.StorageStatement;
 import org.neo4j.storageengine.api.StoreReadLayer;
+import org.neo4j.storageengine.api.txstate.ReadableTransactionState;
 
 import static org.mockito.Matchers.any;
 import static org.mockito.Matchers.eq;
@@ -75,7 +76,7 @@ public class StateOperationsAutoIndexingTest
     public void shouldSignalNodeRemovedToAutoIndex() throws Exception
     {
         // Given
-        when( storeStmt.acquireSingleNodeCursor( 1337 ) ).thenReturn( cursor( mock( NodeItem.class )) );
+        when( storeStmt.acquireSingleNodeCursor( 1337, null ) ).thenReturn( cursor( mock( NodeItem.class ) ) );
 
         // When
         context.nodeDelete( stmt, 1337 );
@@ -105,7 +106,7 @@ public class StateOperationsAutoIndexingTest
 
         NodeItem node = mock( NodeItem.class );
         when( node.labels() ).thenReturn( PrimitiveIntCollections.emptySet() );
-        when( storeStmt.acquireSingleNodeCursor( 1337 ) ).thenReturn( cursor( node ) );
+        when( storeStmt.acquireSingleNodeCursor( 1337, null ) ).thenReturn( cursor( node ) );
         when( storeLayer.nodeGetProperty( eq( storeStmt ), any( NodeItem.class ), eq( property.propertyKeyId() ) ) )
                 .thenReturn( cursor() );
 
@@ -146,7 +147,7 @@ public class StateOperationsAutoIndexingTest
 
         NodeItem node = mock( NodeItem.class );
         when( node.labels() ).thenReturn( PrimitiveIntCollections.emptySet() );
-        when( storeStmt.acquireSingleNodeCursor( 1337 ) ).thenReturn( cursor( node ) );
+        when( storeStmt.acquireSingleNodeCursor( 1337, null ) ).thenReturn( cursor( node ) );
         when( storeLayer.nodeGetProperty( eq( storeStmt ), any( NodeItem.class ), eq( property.propertyKeyId() ) ) )
                 .thenReturn( cursor( existingProperty ) );
 
@@ -193,7 +194,7 @@ public class StateOperationsAutoIndexingTest
         when( storeLayer.nodeGetProperty( eq( storeStmt ), any( NodeItem.class ), eq( propertyKeyId ) ) )
                 .thenReturn( cursor( existingProperty ) );
         when( node.labels() ).thenReturn( PrimitiveIntCollections.emptySet() );
-        when( storeStmt.acquireSingleNodeCursor( 1337 ) ).thenReturn( cursor( node ) );
+        when( storeStmt.acquireSingleNodeCursor( 1337, null ) ).thenReturn( cursor( node ) );
 
         // When
         context.nodeRemoveProperty( stmt, 1337, propertyKeyId );
