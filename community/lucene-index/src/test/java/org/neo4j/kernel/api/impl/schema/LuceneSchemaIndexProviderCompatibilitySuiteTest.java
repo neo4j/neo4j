@@ -17,19 +17,27 @@
  * You should have received a copy of the GNU General Public License
  * along with this program.  If not, see <http://www.gnu.org/licenses/>.
  */
-package org.neo4j.kernel.impl.api.index.inmemory;
+package org.neo4j.kernel.api.impl.schema;
 
 import java.io.File;
 
 import org.neo4j.io.fs.FileSystemAbstraction;
+import org.neo4j.kernel.api.impl.index.storage.DirectoryFactory;
 import org.neo4j.kernel.api.index.IndexProviderCompatibilityTestSuite;
-import org.neo4j.kernel.api.index.SchemaIndexProvider;
+import org.neo4j.kernel.configuration.Config;
+import org.neo4j.kernel.impl.factory.OperationalMode;
+import org.neo4j.logging.NullLogProvider;
 
-public class InMemoryIndexProviderTest extends IndexProviderCompatibilityTestSuite
+public class LuceneSchemaIndexProviderCompatibilitySuiteTest extends IndexProviderCompatibilityTestSuite
 {
     @Override
-    protected SchemaIndexProvider createIndexProvider( FileSystemAbstraction fs, File graphDbDir )
+    protected LuceneSchemaIndexProvider createIndexProvider( FileSystemAbstraction fs, File graphDbDir )
     {
-        return new InMemoryIndexProvider();
+        DirectoryFactory.InMemoryDirectoryFactory directoryFactory = new DirectoryFactory.InMemoryDirectoryFactory();
+        NullLogProvider logging = NullLogProvider.getInstance();
+        Config config = Config.defaults();
+        OperationalMode mode = OperationalMode.single;
+        return new LuceneSchemaIndexProvider( fs, directoryFactory, graphDbDir, logging, config, mode );
+
     }
 }
