@@ -55,7 +55,6 @@ import org.neo4j.kernel.api.exceptions.LabelNotFoundKernelException;
 import org.neo4j.kernel.api.exceptions.ProcedureException;
 import org.neo4j.kernel.api.exceptions.PropertyKeyIdNotFoundKernelException;
 import org.neo4j.kernel.api.exceptions.RelationshipTypeIdNotFoundKernelException;
-import org.neo4j.kernel.api.exceptions.index.IndexNotApplicableKernelException;
 import org.neo4j.kernel.api.exceptions.index.IndexNotFoundKernelException;
 import org.neo4j.kernel.api.exceptions.legacyindex.AutoIndexingKernelException;
 import org.neo4j.kernel.api.exceptions.legacyindex.LegacyIndexNotFoundKernelException;
@@ -82,7 +81,6 @@ import org.neo4j.kernel.api.properties.Property;
 import org.neo4j.kernel.api.query.ExecutingQuery;
 import org.neo4j.kernel.api.schema.NodePropertyDescriptor;
 import org.neo4j.kernel.api.schema.RelationshipPropertyDescriptor;
-import org.neo4j.kernel.api.schema_new.CompositeIndexQuery;
 import org.neo4j.kernel.api.schema_new.IndexQuery;
 import org.neo4j.kernel.api.schema_new.SchemaBoundary;
 import org.neo4j.kernel.api.schema_new.SchemaDescriptorFactory;
@@ -241,14 +239,6 @@ public class OperationsFacade
     {
         statement.assertOpen();
         return dataRead().indexQuery( statement, index, predicates );
-    }
-
-    @Override
-    public PrimitiveLongIterator nodesGetFromCompositeIndexSeek( NewIndexDescriptor index, CompositeIndexQuery query )
-            throws IndexNotFoundKernelException, IndexNotApplicableKernelException
-    {
-        statement.assertOpen();
-        return dataRead().nodesGetFromCompositeIndexSeek( statement, index, query);
     }
 
     @Override

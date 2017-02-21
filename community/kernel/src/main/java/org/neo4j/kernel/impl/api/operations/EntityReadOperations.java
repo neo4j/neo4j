@@ -24,10 +24,8 @@ import org.neo4j.collection.primitive.PrimitiveIntSet;
 import org.neo4j.collection.primitive.PrimitiveLongIterator;
 import org.neo4j.cursor.Cursor;
 import org.neo4j.kernel.api.exceptions.EntityNotFoundException;
-import org.neo4j.kernel.api.exceptions.index.IndexNotApplicableKernelException;
 import org.neo4j.kernel.api.exceptions.index.IndexNotFoundKernelException;
 import org.neo4j.kernel.api.exceptions.schema.IndexBrokenKernelException;
-import org.neo4j.kernel.api.schema_new.CompositeIndexQuery;
 import org.neo4j.kernel.api.schema_new.IndexQuery;
 import org.neo4j.kernel.api.schema_new.index.NewIndexDescriptor;
 import org.neo4j.kernel.impl.api.KernelStatement;
@@ -59,18 +57,6 @@ public interface EntityReadOperations
      */
     PrimitiveLongIterator indexQuery( KernelStatement statement, NewIndexDescriptor index, IndexQuery[] predicates )
             throws IndexNotFoundKernelException;
-
-    /**
-     * Returns an iterable with the matched nodes.
-     *
-     * @throws IndexNotFoundKernelException if no such index found.
-     * @param statement
-     * @param index
-     * @param query
-     */
-    PrimitiveLongIterator nodesGetFromCompositeIndexSeek( KernelStatement statement, NewIndexDescriptor index,
-            CompositeIndexQuery query )
-            throws IndexNotApplicableKernelException, IndexNotFoundKernelException;
 
     /**
      * Returns an iterable with the matched nodes.

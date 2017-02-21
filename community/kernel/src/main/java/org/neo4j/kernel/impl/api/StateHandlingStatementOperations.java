@@ -46,7 +46,6 @@ import org.neo4j.kernel.api.exceptions.LabelNotFoundKernelException;
 import org.neo4j.kernel.api.exceptions.PropertyKeyIdNotFoundKernelException;
 import org.neo4j.kernel.api.exceptions.RelationshipTypeIdNotFoundKernelException;
 import org.neo4j.kernel.api.exceptions.TransactionFailureException;
-import org.neo4j.kernel.api.exceptions.index.IndexNotApplicableKernelException;
 import org.neo4j.kernel.api.exceptions.index.IndexNotFoundKernelException;
 import org.neo4j.kernel.api.exceptions.legacyindex.AutoIndexingKernelException;
 import org.neo4j.kernel.api.exceptions.legacyindex.LegacyIndexNotFoundKernelException;
@@ -67,7 +66,6 @@ import org.neo4j.kernel.api.properties.Property;
 import org.neo4j.kernel.api.properties.PropertyKeyIdIterator;
 import org.neo4j.kernel.api.schema.NodePropertyDescriptor;
 import org.neo4j.kernel.api.schema.RelationshipPropertyDescriptor;
-import org.neo4j.kernel.api.schema_new.CompositeIndexQuery;
 import org.neo4j.kernel.api.schema_new.IndexQuery;
 import org.neo4j.kernel.api.schema_new.LabelSchemaDescriptor;
 import org.neo4j.kernel.api.schema_new.SchemaBoundary;
@@ -768,18 +766,6 @@ public class StateHandlingStatementOperations implements
         default:
             throw new RuntimeException( "Query not supported: " + Arrays.toString( predicates ) );
         }
-    }
-
-    @Override
-    public PrimitiveLongIterator nodesGetFromCompositeIndexSeek( KernelStatement state, NewIndexDescriptor index,
-            CompositeIndexQuery query ) throws IndexNotFoundKernelException, IndexNotApplicableKernelException
-    {
-        StorageStatement storeStatement = state.getStoreStatement();
-        IndexReader reader = storeStatement.getIndexReader( index );
-        Object[] values = query.validate( index );
-        PrimitiveLongIterator committed = reader.seek( values );
-        PrimitiveLongIterator exactMatches = filterExactIndexMatches( state, index, values, committed );
-        return filterIndexStateChangesForScanOrSeek( state, index, values, exactMatches );
     }
 
     @Override
