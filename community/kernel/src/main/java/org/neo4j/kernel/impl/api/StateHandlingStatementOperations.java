@@ -166,12 +166,8 @@ public class StateHandlingStatementOperations implements
 
     private Cursor<NodeItem> nodeCursor( KernelStatement statement, long nodeId )
     {
-        Cursor<NodeItem> cursor = statement.getStoreStatement().acquireSingleNodeCursor( nodeId );
-        if ( statement.hasTxStateWithChanges() )
-        {
-            return statement.txState().augmentSingleNodeCursor( cursor, nodeId );
-        }
-        return cursor;
+        TransactionState state = statement.hasTxStateWithChanges() ? statement.txState() : null;
+        return statement.getStoreStatement().acquireSingleNodeCursor( nodeId, state );
     }
 
     @Override
