@@ -41,11 +41,17 @@ public class CompositeIndexAccessorCompatibility extends IndexAccessorCompatibil
     @Test
     public void testIndexSeekAndScan() throws Exception
     {
-        updateAndCommit( asList( IndexEntryUpdate.add( 1L, descriptor, "a", "a" ),
-                IndexEntryUpdate.add( 2L, descriptor, "a", "a" ), IndexEntryUpdate.add( 3L, descriptor, "b", "b" ) ) );
+        updateAndCommit( asList(
+                IndexEntryUpdate.add( 1L, descriptor, "a", "a" ),
+                IndexEntryUpdate.add( 2L, descriptor, "a", "a" ),
+                IndexEntryUpdate.add( 3L, descriptor, "b", "b" ),
+                IndexEntryUpdate.add( 4L, descriptor, "a", "b" )
+        ) );
 
         assertThat( query( exact( 0, "a" ), exact( 1, "a" ) ), equalTo( asList( 1L, 2L ) ) );
-        assertThat( query( exists( 1 ) ), equalTo( asList( 1L, 2L, 3L ) ) );
+        assertThat( query( exact( 0, "b" ), exact( 1, "b" ) ), equalTo( asList( 3L ) ) );
+        assertThat( query( exact( 0, "a" ), exact( 1, "b" ) ), equalTo( asList( 4L ) ) );
+        assertThat( query( exists( 1 ) ), equalTo( asList( 1L, 2L, 3L, 4L ) ) );
     }
 
 //TODO: add when supported:

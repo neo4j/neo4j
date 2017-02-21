@@ -75,7 +75,7 @@ public class DatabaseCompositeIndexAccessorTest
 
     private LuceneIndexAccessor accessor;
     private final long nodeId = 1, nodeId2 = 2;
-    private final Object[] value = new String[]{"value", "valuex"}, value2 = new Integer[]{40, 42};
+    private final Object[] values = {"value1", "value2"}, value2 = {40, 42};
     private DirectoryFactory.InMemoryDirectoryFactory dirFactory;
     private static final NewIndexDescriptor indexDescriptor = NewIndexDescriptorFactory
             .forLabel( 0, PROP_ID1, PROP_ID2 );
