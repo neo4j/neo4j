@@ -88,7 +88,8 @@ public class ConsistencyCheckerTest
         cursor.next( idProvider.acquireNewId( stableGeneration, unstableGeneration ) );
         node.initializeLeaf( cursor, stableGeneration, unstableGeneration );
         logic.initialize( cursor );
-        StructurePropagation<MutableLong> structure = new StructurePropagation<>( layout.newKey() );
+        StructurePropagation<MutableLong> structure = new StructurePropagation<>( layout.newKey(), layout.newKey(),
+                layout.newKey() );
         MutableLong key = layout.newKey();
         for ( int g = 0, k = 0; g < 3; g++ )
         {
@@ -97,17 +98,19 @@ public class ConsistencyCheckerTest
                 key.setValue( k );
                 logic.insert( cursor, structure, key, key, ValueMergers.overwrite(),
                         stableGeneration, unstableGeneration );
-                if ( structure.hasSplit )
+                if ( structure.hasRightKeyInsert )
                 {
-                    goTo( cursor, "new root", idProvider.acquireNewId( stableGeneration, unstableGeneration ) );
+                    goTo( cursor, "new root",
+                            idProvider.acquireNewId( stableGeneration, unstableGeneration ) );
                     node.initializeInternal( cursor, stableGeneration, unstableGeneration );
-                    node.insertKeyAt( cursor, structure.primKey, 0, 0 );
+                    node.insertKeyAt( cursor, structure.rightKey, 0, 0 );
                     node.setKeyCount( cursor, 1 );
-                    node.setChildAt( cursor, structure.left, 0, stableGeneration, unstableGeneration );
-                    node.setChildAt( cursor, structure.right, 1, stableGeneration, unstableGeneration );
+                    node.setChildAt( cursor, structure.midChild, 0, stableGeneration, unstableGeneration );
+                    node.setChildAt( cursor, structure.rightChild, 1,
+                            stableGeneration, unstableGeneration );
                     logic.initialize( cursor );
                 }
-                if ( structure.hasNewGen )
+                if ( structure.hasMidChildUpdate )
                 {
                     logic.initialize( cursor );
                 }

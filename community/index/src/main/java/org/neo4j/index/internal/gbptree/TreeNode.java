@@ -237,7 +237,7 @@ class TreeNode<KEY,VALUE>
 
     void insertKeyAt( PageCursor cursor, KEY key, int pos, int keyCount )
     {
-        insertSlotAt( cursor, pos, keyCount, keyOffset( 0 ), keySize );
+        insertKeySlotsAt( cursor, pos, 1, keyCount );
         cursor.setOffset( keyOffset( pos ) );
         layout.writeKey( cursor, key );
     }
@@ -247,26 +247,19 @@ class TreeNode<KEY,VALUE>
         removeSlotAt( cursor, pos, keyCount, keyOffset( 0 ), keySize );
     }
 
-    private void removeSlotAt( PageCursor cursor, int pos, int keyCount, int baseOffset, int itemSize )
+    private void removeSlotAt( PageCursor cursor, int pos, int itemCount, int baseOffset, int itemSize )
     {
         for ( int posToMoveLeft = pos + 1, offset = baseOffset + posToMoveLeft * itemSize;
-                posToMoveLeft < keyCount; posToMoveLeft++, offset += itemSize )
+                posToMoveLeft < itemCount; posToMoveLeft++, offset += itemSize )
         {
             cursor.copyTo( offset, cursor, offset - itemSize, itemSize );
         }
     }
 
-    /**
-     * Moves items (key/value/child) one step to the right, which means rewriting all items of the particular type
-     * from pos - keyCount.
-     */
-    private void insertSlotAt( PageCursor cursor, int pos, int keyCount, int baseOffset, int itemSize )
+    void setKeyAt( PageCursor cursor, KEY key, int pos )
     {
-        for ( int posToMoveRight = keyCount - 1, offset = baseOffset + posToMoveRight * itemSize;
-                posToMoveRight >= pos; posToMoveRight--, offset -= itemSize )
-        {
-            cursor.copyTo( offset, cursor, offset + itemSize, itemSize );
-        }
+        cursor.setOffset( keyOffset( pos ) );
+        layout.writeKey( cursor, key );
     }
 
     VALUE valueAt( PageCursor cursor, VALUE value, int pos )
@@ -278,7 +271,7 @@ class TreeNode<KEY,VALUE>
 
     void insertValueAt( PageCursor cursor, VALUE value, int pos, int keyCount )
     {
-        insertSlotAt( cursor, pos, keyCount, valueOffset( 0 ), valueSize );
+        insertValueSlotsAt( cursor, pos, 1, keyCount );
         setValueAt( cursor, value, pos );
     }
 
@@ -302,8 +295,13 @@ class TreeNode<KEY,VALUE>
     void insertChildAt( PageCursor cursor, long child, int pos, int keyCount,
             long stableGeneration, long unstableGeneration )
     {
-        insertSlotAt( cursor, pos, keyCount + 1, childOffset( 0 ), SIZE_PAGE_REFERENCE );
+        insertChildSlotsAt( cursor, pos, 1, keyCount );
         setChildAt( cursor, child, pos, stableGeneration, unstableGeneration );
+    }
+
+    void removeChildAt( PageCursor cursor, int pos, int keyCount )
+    {
+        removeSlotAt( cursor, pos, keyCount + 1, childOffset( 0 ), childSize() );
     }
 
     void setChildAt( PageCursor cursor, long child, int pos, long stableGeneration, long unstableGeneration )
@@ -315,6 +313,36 @@ class TreeNode<KEY,VALUE>
     void writeChild( PageCursor cursor, long child, long stableGeneration, long unstableGeneration)
     {
         GenSafePointerPair.write( cursor, child, stableGeneration, unstableGeneration );
+    }
+
+    /**
+     * Moves items (key/value/child) one step to the right, which means rewriting all items of the particular type
+     * from pos - itemCount.
+     * itemCount is keyCount for key and value, but keyCount+1 for children.
+     */
+    private void insertSlotsAt( PageCursor cursor, int pos, int numberOfSlots, int itemCount, int baseOffset,
+            int itemSize )
+    {
+        for ( int posToMoveRight = itemCount - 1, offset = baseOffset + posToMoveRight * itemSize;
+              posToMoveRight >= pos; posToMoveRight--, offset -= itemSize )
+        {
+            cursor.copyTo( offset, cursor, offset + itemSize * numberOfSlots, itemSize );
+        }
+    }
+
+    void insertKeySlotsAt( PageCursor cursor, int pos, int numberOfSlots, int keyCount )
+    {
+        insertSlotsAt( cursor, pos, numberOfSlots, keyCount, keyOffset( 0 ), keySize );
+    }
+
+    void insertValueSlotsAt( PageCursor cursor, int pos, int numberOfSlots, int keyCount )
+    {
+        insertSlotsAt( cursor, pos, numberOfSlots, keyCount, valueOffset( 0 ), valueSize );
+    }
+
+    void insertChildSlotsAt( PageCursor cursor, int pos, int numberOfSlots, int keyCount )
+    {
+        insertSlotsAt( cursor, pos, numberOfSlots, keyCount + 1, childOffset( 0 ), childSize() );
     }
 
     int internalMaxKeyCount()

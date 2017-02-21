@@ -21,6 +21,7 @@ package org.neo4j.index.internal.gbptree;
 
 import org.neo4j.io.pagecache.PageCursor;
 
+import static java.lang.String.format;
 import static org.neo4j.index.internal.gbptree.TreeNode.NO_NODE_FLAG;
 
 /**
@@ -32,50 +33,79 @@ import static org.neo4j.index.internal.gbptree.TreeNode.NO_NODE_FLAG;
  */
 class RightmostInChain
 {
-    private long currentRightmost = TreeNode.NO_NODE_FLAG;
-    private long expectedNextRightmost = TreeNode.NO_NODE_FLAG;
-    private long expectedNextRightmostGen;
-    private long currentRightmostGen;
+    private long currentRightmostNode = TreeNode.NO_NODE_FLAG;
+    private long currentRightmostRightSiblingPointer = TreeNode.NO_NODE_FLAG;
+    private long currentRightmostRightSiblingPointerGen;
+    private long currentRightmostNodeGen;
 
-    void assertNext( PageCursor cursor, long gen,
-            long leftSibling, long leftSiblingGen, long rightSibling, long rightSiblingGen )
+    void assertNext( PageCursor cursor, long newRightmostNodeGen,
+            long newRightmostLeftSiblingPointer, long newRightmostLeftSiblingPointerGen,
+            long newRightmostRightSiblingPointer, long newRightmostRightSiblingPointerGen )
     {
-        long pageId = cursor.getCurrentPageId();
+        long newRightmostNode = cursor.getCurrentPageId();
 
         // Assert we have reached expected node and that we agree about being siblings
-        if ( leftSibling != currentRightmost )
+        StringBuilder errorMessageBuilder = new StringBuilder();
+        if ( newRightmostLeftSiblingPointer != currentRightmostNode )
         {
-            cursor.setCursorException( "Sibling pointer does align with tree structure. Expected left sibling to be " +
-                    currentRightmost + " but was " + leftSibling );
+            errorMessageBuilder.append( format( "Sibling pointer does align with tree structure%n" ) );
         }
-        if ( !(leftSiblingGen <= currentRightmostGen || currentRightmost == NO_NODE_FLAG) )
+        if ( currentRightmostNodeGen > newRightmostLeftSiblingPointerGen && currentRightmostNode != NO_NODE_FLAG )
         {
-            cursor.setCursorException( "Sibling pointer gen differs from expected. Expected left sigling gen to be " +
-                    currentRightmostGen + ", but was " + leftSiblingGen );
+            errorMessageBuilder.append( format( "Sibling pointer gen differs from expected%n" ) );
         }
-        if ( !(pageId == expectedNextRightmost ||
-                (expectedNextRightmost == NO_NODE_FLAG && currentRightmost == NO_NODE_FLAG)) )
+        if ( newRightmostNode != currentRightmostRightSiblingPointer &&
+                (currentRightmostRightSiblingPointer != NO_NODE_FLAG || currentRightmostNode != NO_NODE_FLAG) )
         {
-            cursor.setCursorException( "Sibling pointer does not align with tree structure. Expected right sibling to be " +
-                    expectedNextRightmost + " but was " + pageId );
+            errorMessageBuilder.append( format( "Sibling pointer does not align with tree structure%n" ) );
         }
-        if ( !(gen <= expectedNextRightmostGen || expectedNextRightmost == NO_NODE_FLAG) )
+        if ( currentRightmostRightSiblingPointerGen < newRightmostNodeGen &&
+                currentRightmostRightSiblingPointer != NO_NODE_FLAG )
         {
-            cursor.setCursorException(
-                "Sibling pointer gen differs from expected. Expected right sigling gen to be " +
-                expectedNextRightmostGen + ", but was " + gen );
+            errorMessageBuilder.append( format( "Sibling pointer gen differs from expected%n" ) );
         }
 
-        // Update currentRightmost = pageId;
-        currentRightmost = pageId;
-        currentRightmostGen = gen;
-        expectedNextRightmost = rightSibling;
-        expectedNextRightmostGen = rightSiblingGen;
+        String errorMessage = errorMessageBuilder.toString();
+        if ( !errorMessage.equals( "" ) )
+        {
+            setPatternException( cursor, newRightmostNodeGen, newRightmostLeftSiblingPointer, newRightmostLeftSiblingPointerGen, newRightmostNode, errorMessage );
+        }
+
+        // Update currentRightmostNode = newRightmostNode;
+        currentRightmostNode = newRightmostNode;
+        currentRightmostNodeGen = newRightmostNodeGen;
+        currentRightmostRightSiblingPointer = newRightmostRightSiblingPointer;
+        currentRightmostRightSiblingPointerGen = newRightmostRightSiblingPointerGen;
+    }
+
+    private void setPatternException( PageCursor cursor, long newRightmostGen, long leftSibling,
+            long leftSiblingGen, long newRightmost, String errorMessage )
+    {
+        cursor.setCursorException( format( "%s" +
+                        "  Left siblings view:  %s%n" +
+                        "  Right siblings view: %s%n", errorMessage,
+                leftPattern( currentRightmostNode, currentRightmostNodeGen, currentRightmostRightSiblingPointerGen,
+                        currentRightmostRightSiblingPointer ),
+                rightPattern( newRightmost, newRightmostGen, leftSiblingGen, leftSibling ) ) );
+    }
+
+    private String leftPattern( long actualLeftSibling, long actualLeftSiblingGen, long expectedRightSiblingGen,
+            long expectedRightSibling )
+    {
+        return format( "{%d(%d)}-(%d)->{%d}", actualLeftSibling, actualLeftSiblingGen, expectedRightSiblingGen,
+                expectedRightSibling );
+    }
+
+    private String rightPattern( long actualRightSibling, long actualRightSiblingGen, long expectedLeftSiblingGen,
+            long expectedLeftSibling )
+    {
+        return format( "{%d}<-(%d)-{%d(%d)}", expectedLeftSibling, expectedLeftSiblingGen, actualRightSibling,
+                actualRightSiblingGen );
     }
 
     void assertLast()
     {
-        assert expectedNextRightmost == NO_NODE_FLAG : "Expected rightmost right sibling to be " + NO_NODE_FLAG
-                + " but was " + expectedNextRightmost;
+        assert currentRightmostRightSiblingPointer == NO_NODE_FLAG : "Expected rightmost right sibling to be " + NO_NODE_FLAG
+                + " but was " + currentRightmostRightSiblingPointer;
     }
 }

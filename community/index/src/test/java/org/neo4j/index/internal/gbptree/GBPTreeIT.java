@@ -34,6 +34,7 @@ import java.util.concurrent.ExecutorService;
 import java.util.concurrent.Executors;
 
 import org.neo4j.cursor.RawCursor;
+import org.neo4j.io.pagecache.IOLimiter;
 import org.neo4j.io.pagecache.PageCache;
 import org.neo4j.test.rule.PageCacheRule;
 import org.neo4j.test.rule.RandomRule;
@@ -44,7 +45,6 @@ import static org.junit.Assert.assertEquals;
 import static org.junit.Assert.assertTrue;
 import static org.junit.Assert.fail;
 import static org.junit.rules.RuleChain.outerRule;
-
 import static org.neo4j.index.internal.gbptree.GBPTree.NO_MONITOR;
 import static org.neo4j.test.rule.PageCacheRule.config;
 
@@ -80,9 +80,15 @@ public class GBPTreeIT
     @After
     public void consistencyCheckAndClose() throws IOException
     {
-        threadPool.shutdownNow();
-        index.consistencyCheck();
-        index.close();
+        try
+        {
+            threadPool.shutdownNow();
+            index.consistencyCheck();
+        }
+        finally
+        {
+            index.close();
+        }
     }
 
     @Test
@@ -148,6 +154,7 @@ public class GBPTreeIT
                 }
             }
 
+            index.checkpoint( IOLimiter.unlimited() );
             randomlyModifyIndex( index, data, random.random(), (double) round / totalNumberOfRounds );
         }
     }

@@ -560,7 +560,7 @@ class SeekCursor<KEY,VALUE> implements RawCursor<Hit<KEY,VALUE>,IOException>, Hi
                     continue; // in the read loop above so that we can continue reading from next sibling
                 }
             }
-            else if ( insideEndRange() )
+            else if ( 0 <= pos && pos < keyCount && insideEndRange() )
             {
                 if ( isResultKey() )
                 {

@@ -795,7 +795,7 @@ public class GBPTree<KEY,VALUE> implements Closeable
 
         SingleWriter( InternalTreeLogic<KEY,VALUE> treeLogic )
         {
-            this.structurePropagation = new StructurePropagation<>( layout.newKey() );
+            this.structurePropagation = new StructurePropagation<>( layout.newKey(), layout.newKey(), layout.newKey() );
             this.treeLogic = treeLogic;
         }
 
@@ -819,30 +819,33 @@ public class GBPTree<KEY,VALUE> implements Closeable
             treeLogic.insert( cursor, structurePropagation, key, value, valueMerger,
                     stableGeneration, unstableGeneration );
 
-            if ( structurePropagation.hasSplit )
+            if ( structurePropagation.hasRightKeyInsert )
             {
                 // New root
                 long newRootId = freeList.acquireNewId( stableGeneration, unstableGeneration );
                 PageCursorUtil.goTo( cursor, "new root", newRootId );
 
                 bTreeNode.initializeInternal( cursor, stableGeneration, unstableGeneration );
-                bTreeNode.insertKeyAt( cursor, structurePropagation.primKey, 0, 0 );
+                bTreeNode.insertKeyAt( cursor, structurePropagation.rightKey, 0, 0 );
                 bTreeNode.setKeyCount( cursor, 1 );
-                bTreeNode.setChildAt( cursor, structurePropagation.left, 0, stableGeneration, unstableGeneration );
-                bTreeNode.setChildAt( cursor, structurePropagation.right, 1, stableGeneration, unstableGeneration );
+                bTreeNode.setChildAt( cursor, structurePropagation.midChild, 0,
+                        stableGeneration, unstableGeneration );
+                bTreeNode.setChildAt( cursor, structurePropagation.rightChild, 1,
+                        stableGeneration, unstableGeneration );
                 setRoot( newRootId );
             }
-            else if ( structurePropagation.hasNewGen )
+            else if ( structurePropagation.hasMidChildUpdate )
             {
-                setRoot( structurePropagation.left );
+                setRoot( structurePropagation.midChild );
             }
             structurePropagation.clear();
 
             checkOutOfBounds( cursor );
         }
 
-        private void setRoot( long rootId )
+        private void setRoot( long rootPointer )
         {
+            long rootId = GenSafePointerPair.pointer( rootPointer );
             GBPTree.this.setRoot( rootId, unstableGeneration );
             treeLogic.initialize( cursor );
         }
@@ -852,9 +855,9 @@ public class GBPTree<KEY,VALUE> implements Closeable
         {
             VALUE result = treeLogic.remove( cursor, structurePropagation, key, layout.newValue(),
                     stableGeneration, unstableGeneration );
-            if ( structurePropagation.hasNewGen )
+            if ( structurePropagation.hasMidChildUpdate )
             {
-                setRoot( structurePropagation.left );
+                setRoot( structurePropagation.midChild );
             }
             structurePropagation.clear();
 
