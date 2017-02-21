@@ -19,12 +19,12 @@
  */
 package org.neo4j.kernel.impl.transaction.log.checkpoint;
 
-import java.io.IOException;
 import java.util.function.BooleanSupplier;
 
 import org.neo4j.function.Predicates;
 import org.neo4j.kernel.impl.store.UnderlyingStorageException;
 import org.neo4j.kernel.impl.util.JobScheduler;
+import org.neo4j.kernel.internal.DatabaseHealth;
 import org.neo4j.kernel.lifecycle.LifecycleAdapter;
 
 import static java.util.concurrent.TimeUnit.MILLISECONDS;
@@ -32,9 +32,16 @@ import static org.neo4j.kernel.impl.util.JobScheduler.Groups.checkPoint;
 
 public class CheckPointScheduler extends LifecycleAdapter
 {
+    /**
+     * The max number of consecutive check point failures that can be tolerated before treating
+     * check point failures more seriously, with a panic.
+     */
+    static final int MAX_CONSECUTIVE_FAILURES_TOLERANCE = 3;
+
     private final CheckPointer checkPointer;
     private final JobScheduler scheduler;
     private final long recurringPeriodMillis;
+    private final DatabaseHealth health;
     private final Runnable job = new Runnable()
     {
         @Override
@@ -48,11 +55,19 @@ public class CheckPointScheduler extends LifecycleAdapter
                     return;
                 }
                 checkPointer.checkPointIfNeeded( new SimpleTriggerInfo( "scheduler" ) );
+                consecutiveFailures = 0;
             }
-            catch ( IOException e )
+            catch ( Throwable t )
             {
-                // no need to reschedule since the check pointer has raised a kernel panic and a shutdown is expected
-                throw new UnderlyingStorageException( e );
+                failures[consecutiveFailures++] = t;
+
+                // We're counting check pointer to log about the failure itself
+                if ( consecutiveFailures >= MAX_CONSECUTIVE_FAILURES_TOLERANCE )
+                {
+                    UnderlyingStorageException combinedFailure = constructCombinedFailure();
+                    health.panic( combinedFailure );
+                    throw combinedFailure;
+                }
             }
             finally
             {
@@ -64,6 +79,16 @@ public class CheckPointScheduler extends LifecycleAdapter
             {
                 handle = scheduler.schedule( checkPoint, job, recurringPeriodMillis, MILLISECONDS );
             }
+        }
+
+        private UnderlyingStorageException constructCombinedFailure()
+        {
+            UnderlyingStorageException combined = new UnderlyingStorageException( "Error performing check point" );
+            for ( int i = 0; i < consecutiveFailures; i++ )
+            {
+                combined.addSuppressed( failures[i] );
+            }
+            return combined;
         }
     };
 
@@ -78,12 +103,16 @@ public class CheckPointScheduler extends LifecycleAdapter
             return !checkPointing;
         }
     };
+    private volatile Throwable[] failures = new Throwable[MAX_CONSECUTIVE_FAILURES_TOLERANCE];
+    private volatile int consecutiveFailures;
 
-    public CheckPointScheduler( CheckPointer checkPointer, JobScheduler scheduler, long recurringPeriodMillis )
+    public CheckPointScheduler( CheckPointer checkPointer, JobScheduler scheduler, long recurringPeriodMillis,
+            DatabaseHealth health )
     {
         this.checkPointer = checkPointer;
         this.scheduler = scheduler;
         this.recurringPeriodMillis = recurringPeriodMillis;
+        this.health = health;
     }
 
     @Override
