@@ -23,7 +23,6 @@ import org.junit.Ignore;
 import org.junit.Test;
 
 import org.neo4j.kernel.api.schema_new.IndexQuery;
-import org.neo4j.kernel.api.schema_new.index.NewIndexDescriptor;
 import org.neo4j.kernel.api.schema_new.index.NewIndexDescriptorFactory;
 
 import static java.util.Arrays.asList;

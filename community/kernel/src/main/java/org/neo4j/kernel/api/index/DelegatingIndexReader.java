@@ -34,9 +34,9 @@ public class DelegatingIndexReader implements IndexReader
     }
 
     @Override
-    public long countIndexedNodes( long nodeId, Object propertyValue )
+    public long countIndexedNodes( long nodeId, Object... propertyValues )
     {
-        return delegate.countIndexedNodes( nodeId, propertyValue );
+        return delegate.countIndexedNodes( nodeId, propertyValues );
     }
 
     @Override

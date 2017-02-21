@@ -38,7 +38,8 @@ import org.neo4j.test.runner.ParameterizedSuiteRunner;
         UniqueIndexPopulatorCompatibility.class,
         NonUniqueIndexAccessorCompatibility.class,
         UniqueIndexAccessorCompatibility.class,
-        UniqueConstraintCompatibility.class
+        UniqueConstraintCompatibility.class,
+        CompositeIndexAccessorCompatibility.class
 } )
 public abstract class IndexProviderCompatibilityTestSuite
 {

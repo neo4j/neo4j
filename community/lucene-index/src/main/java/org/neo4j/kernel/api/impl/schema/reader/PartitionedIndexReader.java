@@ -70,10 +70,10 @@ public class PartitionedIndexReader implements IndexReader
     }
 
     @Override
-    public long countIndexedNodes( long nodeId, Object propertyValue )
+    public long countIndexedNodes( long nodeId, Object... propertyValues )
     {
         return indexReaders.parallelStream()
-                .mapToLong( reader -> reader.countIndexedNodes( nodeId, propertyValue ) )
+                .mapToLong( reader -> reader.countIndexedNodes( nodeId, propertyValues ) )
                 .sum();
     }
 

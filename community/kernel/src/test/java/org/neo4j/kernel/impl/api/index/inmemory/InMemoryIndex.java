@@ -24,7 +24,6 @@ import java.io.IOException;
 import java.util.Arrays;
 import java.util.Collection;
 
-import org.neo4j.collection.primitive.PrimitiveLongIterator;
 import org.neo4j.collection.primitive.PrimitiveLongSet;
 import org.neo4j.collection.primitive.PrimitiveLongVisitor;
 import org.neo4j.graphdb.ResourceIterator;
@@ -96,27 +95,13 @@ class InMemoryIndex
             throws IndexEntryConflictException, IOException
     {
         assert propertyValues.length > 0;
-        if ( propertyValues.length == 1 )
-        {
-            return indexData.add( nodeId, propertyValues[0], applyIdempotently );
-        }
-        else
-        {
-            return indexData.add( nodeId, propertyValues, applyIdempotently );
-        }
+        return indexData.add( nodeId, applyIdempotently, propertyValues );
     }
 
     protected void remove( long nodeId, Object[] propertyValues )
     {
         assert propertyValues.length > 0;
-        if ( propertyValues.length == 1 )
-        {
-            indexData.remove( nodeId, propertyValues[0] );
-        }
-        else
-        {
-            indexData.remove( nodeId, propertyValues );
-        }
+        indexData.remove( nodeId, propertyValues );
     }
 
     protected void remove( long nodeId )

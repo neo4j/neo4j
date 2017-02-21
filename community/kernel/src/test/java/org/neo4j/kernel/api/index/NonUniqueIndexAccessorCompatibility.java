@@ -24,7 +24,6 @@ import org.junit.Test;
 
 import java.util.Collections;
 
-import org.neo4j.kernel.api.schema_new.index.NewIndexDescriptor;
 import org.neo4j.kernel.api.schema_new.index.NewIndexDescriptorFactory;
 
 import static java.util.Arrays.asList;

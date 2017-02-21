@@ -24,6 +24,7 @@ import java.util.Collection;
 import java.util.HashMap;
 import java.util.HashSet;
 import java.util.Iterator;
+import java.util.List;
 import java.util.Map;
 import java.util.Set;
 
@@ -40,9 +41,9 @@ import static org.neo4j.kernel.impl.api.PropertyValueComparison.SuperType.STRING
 
 class HashBasedIndex extends InMemoryIndexImplementation
 {
-    private Map<Object, Set<Long>> data;
+    private Map<List<Object>,Set<Long>> data;
 
-    public Map<Object, Set<Long>> data()
+    public Map<List<Object>,Set<Long>> data()
     {
         if ( data == null )
         {
@@ -70,18 +71,18 @@ class HashBasedIndex extends InMemoryIndexImplementation
     }
 
     @Override
-    synchronized PrimitiveLongIterator doIndexSeek( Object propertyValue )
+    synchronized PrimitiveLongIterator doIndexSeek( Object... propertyValues )
     {
-        Set<Long> nodes = data().get( propertyValue );
+        Set<Long> nodes = data().get( Arrays.asList( propertyValues ) );
         return nodes == null ? PrimitiveLongCollections.emptyIterator() : toPrimitiveIterator( nodes.iterator() );
     }
 
     private synchronized PrimitiveLongIterator rangeSeekByNumberInclusive( Number lower, Number upper )
     {
         Set<Long> nodeIds = new HashSet<>();
-        for ( Map.Entry<Object,Set<Long>> entry : data.entrySet() )
+        for ( Map.Entry<List<Object>,Set<Long>> entry : data.entrySet() )
         {
-            Object key = entry.getKey();
+            Object key = entry.getKey().get( 0 );
             if ( NUMBER.isSuperTypeOf( key ) )
             {
                 boolean lowerFilter = lower == null || COMPARE_VALUES.compare( key, lower ) >= 0;
@@ -100,9 +101,9 @@ class HashBasedIndex extends InMemoryIndexImplementation
             String upper, boolean includeUpper )
     {
         Set<Long> nodeIds = new HashSet<>();
-        for ( Map.Entry<Object,Set<Long>> entry : data.entrySet() )
+        for ( Map.Entry<List<Object>,Set<Long>> entry : data.entrySet() )
         {
-            Object key = entry.getKey();
+            Object key = entry.getKey().get( 0 );
             if ( STRING.isSuperTypeOf( key ) )
             {
                 boolean lowerFilter;
@@ -159,21 +160,21 @@ class HashBasedIndex extends InMemoryIndexImplementation
     }
 
     @Override
-    synchronized boolean doAdd( Object propertyValue, long nodeId, boolean applyIdempotently )
+    synchronized boolean doAdd( long nodeId, boolean applyIdempotently, Object... propertyValue )
     {
-        Set<Long> nodes = data().get( propertyValue );
+        Set<Long> nodes = data().get( Arrays.asList( propertyValue ) );
         if ( nodes == null )
         {
-            data().put( propertyValue, nodes = new HashSet<>() );
+            data().put( Arrays.asList( propertyValue ), nodes = new HashSet<>() );
         }
         // In this implementation we don't care about idempotency.
         return nodes.add( nodeId );
     }
 
     @Override
-    synchronized void doRemove( Object propertyValue, long nodeId )
+    synchronized void doRemove( long nodeId, Object... propertyValues )
     {
-        Set<Long> nodes = data().get( propertyValue );
+        Set<Long> nodes = data().get( Arrays.asList( propertyValues ) );
         if ( nodes != null )
         {
             nodes.remove( nodeId );
@@ -192,7 +193,7 @@ class HashBasedIndex extends InMemoryIndexImplementation
     @Override
     synchronized void iterateAll( IndexEntryIterator iterator ) throws Exception
     {
-        for ( Map.Entry<Object, Set<Long>> entry : data().entrySet() )
+        for ( Map.Entry<List<Object>,Set<Long>> entry : data().entrySet() )
         {
             iterator.visitEntry( entry.getKey(), entry.getValue() );
         }
@@ -225,7 +226,7 @@ class HashBasedIndex extends InMemoryIndexImplementation
     {
         HashBasedIndex snapshot = new HashBasedIndex();
         snapshot.initialize();
-        for ( Map.Entry<Object, Set<Long>> entry : data().entrySet() )
+        for ( Map.Entry<List<Object>,Set<Long>> entry : data().entrySet() )
         {
             snapshot.data().put( entry.getKey(), new HashSet<>( entry.getValue() ) );
         }
@@ -233,9 +234,9 @@ class HashBasedIndex extends InMemoryIndexImplementation
     }
 
     @Override
-    protected synchronized long doCountIndexedNodes( long nodeId, Object propertyValue )
+    protected synchronized long doCountIndexedNodes( long nodeId, Object... propertyValues )
     {
-        Set<Long> candidates = data().get( propertyValue );
+        Set<Long> candidates = data().get( Arrays.asList( propertyValues ) );
         return candidates != null && candidates.contains( nodeId ) ? 1 : 0;
     }
 
@@ -282,9 +283,9 @@ class HashBasedIndex extends InMemoryIndexImplementation
     private PrimitiveLongIterator stringSearch( StringFilter filter )
     {
         Set<Long> nodeIds = new HashSet<>();
-        for ( Map.Entry<Object,Set<Long>> entry : data.entrySet() )
+        for ( Map.Entry<List<Object>,Set<Long>> entry : data.entrySet() )
         {
-            Object key = entry.getKey();
+            Object key = entry.getKey().get( 0 );
             if ( key instanceof String )
             {
                 if ( filter.test( (String) key ) )

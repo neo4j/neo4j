@@ -152,10 +152,10 @@ public class SimpleIndexReader implements IndexReader
     }
 
     @Override
-    public long countIndexedNodes( long nodeId, Object propertyValue )
+    public long countIndexedNodes( long nodeId, Object... propertyValues )
     {
         Query nodeIdQuery = new TermQuery( LuceneDocumentStructure.newTermForChangeOrRemove( nodeId ) );
-        Query valueQuery = LuceneDocumentStructure.newSeekQuery( propertyValue );
+        Query valueQuery = LuceneDocumentStructure.newSeekQuery( propertyValues );
         BooleanQuery.Builder nodeIdAndValueQuery = new BooleanQuery.Builder().setDisableCoord( true );
         nodeIdAndValueQuery.add( nodeIdQuery, BooleanClause.Occur.MUST );
         nodeIdAndValueQuery.add( valueQuery, BooleanClause.Occur.MUST );

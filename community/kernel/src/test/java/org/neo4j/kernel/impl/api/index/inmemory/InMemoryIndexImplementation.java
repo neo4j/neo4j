@@ -37,29 +37,29 @@ abstract class InMemoryIndexImplementation implements IndexReader, BoundedIterab
         return doIndexSeek( encode( values ) );
     }
 
-    final boolean add( long nodeId, Object propertyValue, boolean applyIdempotently )
+    final boolean add( long nodeId, boolean applyIdempotently, Object... propertyValues )
     {
-        return doAdd( encode( propertyValue ), nodeId, applyIdempotently );
+        return doAdd( nodeId, applyIdempotently, encode( propertyValues ) );
     }
 
-    final void remove( long nodeId, Object propertyValue )
+    final void remove( long nodeId, Object... propertyValues )
     {
-        doRemove( encode( propertyValue ), nodeId );
+        doRemove( nodeId, encode( propertyValues ) );
     }
 
     @Override
-    public final long countIndexedNodes( long nodeId, Object propertyValue )
+    public final long countIndexedNodes( long nodeId, Object... propertyValues )
     {
-        return doCountIndexedNodes( nodeId, encode( propertyValue ) );
+        return doCountIndexedNodes( nodeId, encode( propertyValues ) );
     }
 
-    protected abstract long doCountIndexedNodes( long nodeId, Object encode );
+    protected abstract long doCountIndexedNodes( long nodeId, Object... encode );
 
-    abstract PrimitiveLongIterator doIndexSeek( Object propertyValue );
+    abstract PrimitiveLongIterator doIndexSeek( Object... propertyValue );
 
-    abstract boolean doAdd( Object propertyValue, long nodeId, boolean applyIdempotently );
+    abstract boolean doAdd( long nodeId, boolean applyIdempotently, Object... propertyValue );
 
-    abstract void doRemove( Object propertyValue, long nodeId );
+    abstract void doRemove( long nodeId, Object... propertyValue );
 
     abstract void remove( long nodeId );
 
@@ -70,24 +70,28 @@ abstract class InMemoryIndexImplementation implements IndexReader, BoundedIterab
     {
     }
 
-    private static Object encode( Object propertyValue )
+    private static Object[] encode( Object... propertyValues )
     {
-        if ( propertyValue instanceof Number )
+        for ( int i = 0; i < propertyValues.length; i++ )
         {
-            return ((Number) propertyValue).doubleValue();
+
+            if ( propertyValues[i] instanceof Number )
+            {
+                propertyValues[i] = ((Number) propertyValues[i]).doubleValue();
+            }
+
+            if ( propertyValues[i] instanceof Character )
+            {
+                propertyValues[i] = propertyValues[i].toString();
+            }
+
+            if ( propertyValues[i].getClass().isArray() )
+            {
+                propertyValues[i] = new ArrayKey( ArrayEncoder.encode( propertyValues[i] ) );
+            }
         }
 
-        if ( propertyValue instanceof Character )
-        {
-            return propertyValue.toString();
-        }
-
-        if ( propertyValue.getClass().isArray() )
-        {
-            return new ArrayKey( ArrayEncoder.encode( propertyValue ) );
-        }
-
-        return propertyValue;
+        return propertyValues;
     }
 
     static class ArrayKey
