@@ -46,6 +46,7 @@ import org.neo4j.kernel.impl.index.LegacyIndexStore;
 import org.neo4j.storageengine.api.NodeItem;
 import org.neo4j.storageengine.api.StoreReadLayer;
 import org.neo4j.storageengine.api.schema.IndexReader;
+import org.neo4j.storageengine.api.txstate.ReadableTransactionState;
 
 import static java.util.Arrays.asList;
 import static org.hamcrest.Matchers.equalTo;
@@ -115,7 +116,8 @@ public class IndexQueryTransactionStateTest
         long nodeId = 2L;
         when( indexReader.query( withValue ) ).then( answerAsPrimitiveLongIteratorFrom( asList( 1L, nodeId, 3L ) ) );
 
-        when( statement.acquireSingleNodeCursor( nodeId ) ).thenReturn( asNodeCursor( nodeId ) );
+        when( statement.acquireSingleNodeCursor( eq( nodeId ), any( ReadableTransactionState.class ) ) )
+                .thenReturn( asNodeCursor( nodeId ) );
 
         txContext.nodeDelete( state, nodeId );
 
@@ -133,7 +135,8 @@ public class IndexQueryTransactionStateTest
         long nodeId = 1L;
         when( indexReader.query( withValue ) ).thenReturn( asPrimitiveResourceIterator( nodeId ) );
 
-        when( statement.acquireSingleNodeCursor( nodeId ) ).thenReturn( asNodeCursor( nodeId ) );
+        when( statement.acquireSingleNodeCursor( eq( nodeId ), any( ReadableTransactionState.class ) ) )
+                .thenReturn( asNodeCursor( nodeId ) );
 
         txContext.nodeDelete( state, nodeId );
 
@@ -182,7 +185,8 @@ public class IndexQueryTransactionStateTest
         long nodeId = 1L;
         state.txState().nodeDoAddProperty( nodeId, stringProperty( propertyKeyId, value ) );
 
-        when( statement.acquireSingleNodeCursor( nodeId ) ).thenReturn( asNodeCursor( nodeId, 40L ) );
+        when( statement.acquireSingleNodeCursor( eq( nodeId ), any( ReadableTransactionState.class ) ) )
+                .thenReturn( asNodeCursor( nodeId, 40L ) );
         mockStoreProperty();
 
         when( store.indexesGetForLabel( labelId ) ).thenReturn( indexes.iterator() );
@@ -204,7 +208,8 @@ public class IndexQueryTransactionStateTest
         long nodeId = 1L;
         state.txState().nodeDoAddProperty( nodeId, stringProperty( propertyKeyId, value ) );
 
-        when( statement.acquireSingleNodeCursor( nodeId ) ).thenReturn( asNodeCursor( nodeId, 40L ) );
+        when( statement.acquireSingleNodeCursor( eq( nodeId ), any( ReadableTransactionState.class ) ) )
+                .thenReturn( asNodeCursor( nodeId, 40L ) );
         mockStoreProperty();
 
         when( store.indexesGetForLabel( labelId ) ).thenReturn( indexes.iterator() );
@@ -225,7 +230,8 @@ public class IndexQueryTransactionStateTest
 
         long nodeId = 1L;
 
-        when( statement.acquireSingleNodeCursor( nodeId ) ).thenReturn( asNodeCursor( nodeId, 40L ) );
+        when( statement.acquireSingleNodeCursor( eq( nodeId ), any( ReadableTransactionState.class ) ) )
+                .thenReturn( asNodeCursor( nodeId, 40L ) );
         mockStoreProperty();
 
         when( store.indexesGetForLabel( labelId ) ).thenReturn( indexes.iterator() );
@@ -246,7 +252,8 @@ public class IndexQueryTransactionStateTest
 
         long nodeId = 2L;
 
-        when( statement.acquireSingleNodeCursor( nodeId ) ).thenReturn( asNodeCursor( nodeId, 40L ) );
+        when( statement.acquireSingleNodeCursor( eq( nodeId ), any( ReadableTransactionState.class ) ) )
+                .thenReturn( asNodeCursor( nodeId, 40L ) );
         mockStoreProperty();
 
         when( store.indexesGetForLabel( labelId ) ).thenReturn( indexes.iterator() );
@@ -266,7 +273,7 @@ public class IndexQueryTransactionStateTest
         long nodeId = 1L;
         when( indexReader.query( withValue ) ).then( answerAsPrimitiveLongIteratorFrom( asList( nodeId, 2L, 3L ) ) );
 
-        when( statement.acquireSingleNodeCursor( nodeId ) )
+        when( statement.acquireSingleNodeCursor( eq( nodeId ), any( ReadableTransactionState.class ) ) )
                 .thenReturn( asNodeCursor( nodeId, 40L, labels( labelId ) ) );
         mockStoreProperty();
 
@@ -286,7 +293,7 @@ public class IndexQueryTransactionStateTest
         long nodeId = 1L;
         when( indexReader.query( withValue ) ).thenReturn( asPrimitiveResourceIterator( nodeId ) );
 
-        when( statement.acquireSingleNodeCursor( nodeId ) )
+        when( statement.acquireSingleNodeCursor( eq( nodeId ), any( ReadableTransactionState.class ) ) )
                 .thenReturn( asNodeCursor( nodeId, 40L, labels( labelId ) ) );
         mockStoreProperty();
 
@@ -308,7 +315,7 @@ public class IndexQueryTransactionStateTest
         long nodeId = 1L;
         state.txState().nodeDoAddProperty( nodeId, intProperty( propertyKeyId, 10 ) );
 
-        when( statement.acquireSingleNodeCursor( nodeId ) )
+        when( statement.acquireSingleNodeCursor( eq( nodeId ), any( ReadableTransactionState.class ) ) )
                 .thenReturn( asNodeCursor( nodeId, labels( labelId ) ) );
 
         txContext.nodeAddLabel( state, nodeId, labelId );
@@ -327,7 +334,7 @@ public class IndexQueryTransactionStateTest
         long nodeId = 1L;
         when( indexReader.query( withValue ) ).thenReturn( asPrimitiveResourceIterator( nodeId ) );
 
-        when( statement.acquireSingleNodeCursor( nodeId ) )
+        when( statement.acquireSingleNodeCursor( eq( nodeId ), any( ReadableTransactionState.class ) ) )
                 .thenReturn( asNodeCursor( nodeId, 40, labels( labelId ) ) );
         mockStoreProperty();
 

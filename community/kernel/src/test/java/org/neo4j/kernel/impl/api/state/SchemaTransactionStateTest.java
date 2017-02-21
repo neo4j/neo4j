@@ -45,9 +45,11 @@ import org.neo4j.kernel.impl.api.legacyindex.InternalAutoIndexing;
 import org.neo4j.kernel.impl.api.store.StoreStatement;
 import org.neo4j.kernel.impl.index.LegacyIndexStore;
 import org.neo4j.storageengine.api.StoreReadLayer;
+import org.neo4j.storageengine.api.txstate.ReadableTransactionState;
 
 import static org.junit.Assert.assertEquals;
 import static org.junit.Assert.assertNull;
+import static org.mockito.Matchers.any;
 import static org.mockito.Mockito.mock;
 import static org.mockito.Mockito.verify;
 import static org.mockito.Mockito.verifyNoMoreInteractions;
@@ -55,6 +57,7 @@ import static org.mockito.Mockito.when;
 import static org.neo4j.helpers.collection.Iterables.option;
 import static org.neo4j.helpers.collection.Iterators.asSet;
 import static org.neo4j.helpers.collection.Iterators.emptySetOf;
+import static org.neo4j.kernel.impl.api.state.StubCursors.asNodeCursor;
 
 public class SchemaTransactionStateTest
 {
@@ -284,8 +287,8 @@ public class SchemaTransactionStateTest
         Map<Integer, Collection<Long>> allLabels = new HashMap<>();
         for ( Labels nodeLabels : labels )
         {
-            when( storeStatement.acquireSingleNodeCursor( nodeLabels.nodeId ) ).thenReturn(
-                    StubCursors.asNodeCursor( nodeLabels.nodeId, StubCursors.labels( nodeLabels.labelIds ) ) );
+            when( storeStatement.acquireSingleNodeCursor( nodeLabels.nodeId, null ) )
+                    .thenReturn( asNodeCursor( nodeLabels.nodeId, StubCursors.labels( nodeLabels.labelIds ) ) );
 
             for ( int label : nodeLabels.labelIds )
             {

@@ -203,7 +203,7 @@ public class TxStateTransactionDataSnapshot implements TransactionData
         {
             for ( long nodeId : state.addedAndRemovedNodes().getRemoved() )
             {
-                try ( Cursor<NodeItem> node = storeStatement.acquireSingleNodeCursor( nodeId ) )
+                try ( Cursor<NodeItem> node = storeStatement.acquireSingleNodeCursor( nodeId, null ) )
                 {
                     if ( node.next() )
                     {
@@ -360,7 +360,7 @@ public class TxStateTransactionDataSnapshot implements TransactionData
             return null;
         }
 
-        try ( Cursor<NodeItem> node = storeStatement.acquireSingleNodeCursor( nodeState.getId() ) )
+        try ( Cursor<NodeItem> node = storeStatement.acquireSingleNodeCursor( nodeState.getId(), null ) )
         {
             if ( !node.next() )
             {

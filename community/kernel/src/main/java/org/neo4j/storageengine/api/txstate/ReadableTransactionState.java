@@ -142,8 +142,6 @@ public interface ReadableTransactionState
 
     RelationshipState getRelationshipState( long id );
 
-    Cursor<NodeItem> augmentSingleNodeCursor( Cursor<NodeItem> cursor, long nodeId );
-
     Cursor<PropertyItem> augmentPropertyCursor( Cursor<PropertyItem> cursor,
             PropertyContainerState propertyContainerState );
 
