@@ -103,15 +103,15 @@ public abstract class IndexAccessorCompatibility extends IndexProviderCompatibil
                 IndexEntryUpdate.add( 4L, descriptor, "Harriet" ),
                 IndexEntryUpdate.add( 5L, descriptor, "William" ) ) );
 
-        assertThat( getAllNodesFromIndexSeekByString( "Anna", true, "Harriet", false ), equalTo( asList( 2L, 3L ) ) );
-        assertThat( getAllNodesFromIndexSeekByString( "Harriet", true, null, false ), equalTo( asList( 4L, 5L ) ) );
-        assertThat( getAllNodesFromIndexSeekByString( "Harriet", false, null, true ), equalTo( singletonList( 5L ) ) );
-        assertThat( getAllNodesFromIndexSeekByString( "William", false, "Anna", true ), equalTo( EMPTY_LIST ) );
-        assertThat( getAllNodesFromIndexSeekByString( null, false, "Bob", false ), equalTo( asList( 1L, 2L ) ) );
-        assertThat( getAllNodesFromIndexSeekByString( null, true, "Bob", true ), equalTo( asList( 1L, 2L, 3L ) ) );
-        assertThat( getAllNodesFromIndexSeekByString( null, true, null, true ), equalTo( asList( 1L, 2L, 3L, 4L, 5L ) ) );
-        assertThat( getAllNodesFromIndexSeekByString( "Anabelle", false, "Anna", true ), equalTo( singletonList( 2L ) ) );
-        assertThat( getAllNodesFromIndexSeekByString( "Anabelle", false, "Bob", false ), equalTo( singletonList( 2L ) ) );
+        assertThat( query( range( 1, "Anna", true, "Harriet", false ) ), equalTo( asList( 2L, 3L ) ) );
+        assertThat( query( range( 1, "Harriet", true, null, false ) ), equalTo( asList( 4L, 5L ) ) );
+        assertThat( query( range( 1, "Harriet", false, null, true ) ), equalTo( singletonList( 5L ) ) );
+        assertThat( query( range( 1, "William", false, "Anna", true ) ), equalTo( EMPTY_LIST ) );
+        assertThat( query( range( 1, null, false, "Bob", false ) ), equalTo( asList( 1L, 2L ) ) );
+        assertThat( query( range( 1, null, true, "Bob", true ) ), equalTo( asList( 1L, 2L, 3L ) ) );
+        assertThat( query( range( 1, (String)null, true, null, true ) ), equalTo( asList( 1L, 2L, 3L, 4L, 5L ) ) );
+        assertThat( query( range( 1, "Anabelle", false, "Anna", true ) ), equalTo( singletonList( 2L ) ) );
+        assertThat( query( range( 1, "Anabelle", false, "Bob", false ) ), equalTo( singletonList( 2L ) ) );
     }
 
     @Test
@@ -142,11 +142,6 @@ public abstract class IndexAccessorCompatibility extends IndexProviderCompatibil
     protected List<Long> getAllNodesWithProperty( String propertyValue ) throws IOException
     {
         return metaGet( reader -> reader.seek( propertyValue ));
-    }
-
-    protected List<Long> getAllNodesFromIndexSeekByString( String lower, boolean includeLower, String upper, boolean includeUpper ) throws IOException
-    {
-        return metaGet( reader -> reader.rangeSeekByString( lower, includeLower, upper, includeUpper ));
     }
 
     protected List<Long> getAllNodesFromIndexSeekByPrefix( String prefix ) throws IOException

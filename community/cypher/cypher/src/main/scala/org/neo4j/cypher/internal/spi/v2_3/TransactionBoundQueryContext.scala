@@ -227,18 +227,18 @@ final class TransactionBoundQueryContext(tc: TransactionalContextWrapper)
 
       case rangeLessThan: RangeLessThan[String] =>
         rangeLessThan.limit(BY_STRING).map { limit =>
-          readOps.nodesGetFromIndexRangeSeekByString(index, null, false, limit.endPoint.asInstanceOf[String], limit.isInclusive)
+          readOps.indexQuery(index, IndexQuery.range(index.property, null, false, limit.endPoint.asInstanceOf[String], limit.isInclusive))
         }.getOrElse(EMPTY_PRIMITIVE_LONG_COLLECTION.iterator)
 
       case rangeGreaterThan: RangeGreaterThan[String] =>
         rangeGreaterThan.limit(BY_STRING).map { limit =>
-          readOps.nodesGetFromIndexRangeSeekByString(index, limit.endPoint.asInstanceOf[String], limit.isInclusive, null, false)
+          readOps.indexQuery(index, IndexQuery.range(index.property, limit.endPoint.asInstanceOf[String], limit.isInclusive, null, false))
         }.getOrElse(EMPTY_PRIMITIVE_LONG_COLLECTION.iterator)
 
       case RangeBetween(rangeGreaterThan, rangeLessThan) =>
         rangeGreaterThan.limit(BY_STRING).flatMap { greaterThanLimit =>
           rangeLessThan.limit(BY_STRING).map { lessThanLimit =>
-            readOps.nodesGetFromIndexRangeSeekByString(index, greaterThanLimit.endPoint.asInstanceOf[String], greaterThanLimit.isInclusive, lessThanLimit.endPoint.asInstanceOf[String], lessThanLimit.isInclusive)
+            readOps.indexQuery(index, IndexQuery.range(index.property, greaterThanLimit.endPoint.asInstanceOf[String], greaterThanLimit.isInclusive, lessThanLimit.endPoint.asInstanceOf[String], lessThanLimit.isInclusive))
           }
         }.getOrElse(EMPTY_PRIMITIVE_LONG_COLLECTION.iterator)
     }

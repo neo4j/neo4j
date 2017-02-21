@@ -154,28 +154,28 @@ public class DatabaseIndexAccessorTest
 
         IndexReader reader = accessor.newReader();
 
-        PrimitiveLongIterator rangeFromBInclusive = reader.rangeSeekByString( "B", true, null, false );
+        PrimitiveLongIterator rangeFromBInclusive = reader.query( range( 1, "B", true, null, false ) );
         assertThat( PrimitiveLongCollections.asArray( rangeFromBInclusive ), LongArrayMatcher.of( 2, 3 ) );
 
-        PrimitiveLongIterator rangeFromANonInclusive = reader.rangeSeekByString( "A", false, null, false );
+        PrimitiveLongIterator rangeFromANonInclusive = reader.query( range( 1, "A", false, null, false ) );
         assertThat( PrimitiveLongCollections.asArray( rangeFromANonInclusive ), LongArrayMatcher.of( 2, 3 ) );
 
-        PrimitiveLongIterator emptyLowInclusive = reader.rangeSeekByString( "", true, null, false );
+        PrimitiveLongIterator emptyLowInclusive = reader.query( range( 1, "", true, null, false ) );
         assertThat( PrimitiveLongCollections.asArray( emptyLowInclusive ), LongArrayMatcher.of( 1, 2, 3, 4 ) );
 
-        PrimitiveLongIterator emptyUpperNonInclusive = reader.rangeSeekByString( "B", true, "", false );
+        PrimitiveLongIterator emptyUpperNonInclusive = reader.query( range( 1, "B", true, "", false ) );
         assertThat( PrimitiveLongCollections.asArray( emptyUpperNonInclusive ), LongArrayMatcher.emptyArrayMatcher() );
 
-        PrimitiveLongIterator emptyInterval = reader.rangeSeekByString( "", true, "", true );
+        PrimitiveLongIterator emptyInterval = reader.query( range( 1, "", true, "", true ) );
         assertThat( PrimitiveLongCollections.asArray( emptyInterval ), LongArrayMatcher.of( 4 ) );
 
-        PrimitiveLongIterator emptyAllNonInclusive = reader.rangeSeekByString( "", false, null, false );
+        PrimitiveLongIterator emptyAllNonInclusive = reader.query( range( 1, "", false, null, false ) );
         assertThat( PrimitiveLongCollections.asArray( emptyAllNonInclusive ), LongArrayMatcher.of( 1, 2, 3 ) );
 
-        PrimitiveLongIterator nullNonInclusive = reader.rangeSeekByString( null, false, null, false );
+        PrimitiveLongIterator nullNonInclusive = reader.query( range( 1, (String)null, false, null, false ) );
         assertThat( PrimitiveLongCollections.asArray( nullNonInclusive ), LongArrayMatcher.of( 1, 2, 3, 4 ) );
 
-        PrimitiveLongIterator nullInclusive = reader.rangeSeekByString( null, false, null, false );
+        PrimitiveLongIterator nullInclusive = reader.query( range( 1, (String)null, false, null, false ) );
         assertThat( PrimitiveLongCollections.asArray( nullInclusive ), LongArrayMatcher.of( 1, 2, 3, 4 ) );
     }
 

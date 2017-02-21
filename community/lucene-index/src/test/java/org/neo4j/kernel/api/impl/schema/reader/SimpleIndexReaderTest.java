@@ -38,7 +38,6 @@ import org.neo4j.kernel.api.impl.index.partition.PartitionSearcher;
 import org.neo4j.kernel.api.impl.schema.sampler.NonUniqueLuceneIndexSampler;
 import org.neo4j.kernel.api.impl.schema.sampler.UniqueLuceneIndexSampler;
 import org.neo4j.kernel.api.index.IndexConfiguration;
-import org.neo4j.kernel.api.schema_new.IndexQuery;
 import org.neo4j.kernel.configuration.Config;
 import org.neo4j.kernel.impl.api.index.sampling.IndexSamplingConfig;
 import org.neo4j.storageengine.api.schema.IndexReader;
@@ -48,6 +47,7 @@ import static org.mockito.Matchers.any;
 import static org.mockito.Mockito.mock;
 import static org.mockito.Mockito.verify;
 import static org.mockito.Mockito.when;
+import static org.neo4j.kernel.api.schema_new.IndexQuery.range;
 
 public class SimpleIndexReaderTest
 {
@@ -97,7 +97,7 @@ public class SimpleIndexReaderTest
     {
         IndexReader simpleIndexReader = getUniqueSimpleReader();
 
-        simpleIndexReader.rangeSeekByString( "a", false, "b", true );
+        simpleIndexReader.query( range( 1, "a", false, "b", true ) );
 
         verify( indexSearcher ).search( any( TermQuery.class ), any( DocValuesCollector.class ) );
     }
@@ -117,7 +117,7 @@ public class SimpleIndexReaderTest
     {
         IndexReader simpleIndexReader = getUniqueSimpleReader();
 
-        simpleIndexReader.query( IndexQuery.range( 1, 7, true, 8, true ) );
+        simpleIndexReader.query( range( 1, 7, true, 8, true ) );
 
         verify( indexSearcher ).search( any( NumericRangeQuery.class ), any( DocValuesCollector.class ) );
     }

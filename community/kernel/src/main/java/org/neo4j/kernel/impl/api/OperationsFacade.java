@@ -242,19 +242,6 @@ public class OperationsFacade
     }
 
     @Override
-    public PrimitiveLongIterator nodesGetFromIndexRangeSeekByString( NewIndexDescriptor index,
-            String lower,
-            boolean includeLower,
-            String upper,
-            boolean includeUpper )
-            throws IndexNotFoundKernelException
-    {
-        statement.assertOpen();
-        return dataRead().nodesGetFromIndexRangeSeekByString( statement, index, lower, includeLower, upper,
-                includeUpper );
-    }
-
-    @Override
     public PrimitiveLongIterator nodesGetFromIndexRangeSeekByPrefix( NewIndexDescriptor index, String prefix )
             throws IndexNotFoundKernelException
     {

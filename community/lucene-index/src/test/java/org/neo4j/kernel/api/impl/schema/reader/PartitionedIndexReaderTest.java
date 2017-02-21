@@ -111,12 +111,13 @@ public class PartitionedIndexReaderTest
     {
         PartitionedIndexReader indexReader = createPartitionedReaderFromReaders();
 
-        when( indexReader1.rangeSeekByString( "a", false, "b", true ) ).thenReturn( PrimitiveLongCollections.iterator( 1 ) );
-        when( indexReader2.rangeSeekByString( "a", false, "b", true ) ).thenReturn( PrimitiveLongCollections.iterator( 2 ) );
-        when( indexReader3.rangeSeekByString( "a", false, "b", true ) ).thenReturn( PrimitiveLongCollections.iterator( 3 ) );
+        IndexQuery.StringRangePredicate query = IndexQuery.range( 1, "a", false, "b", true );
+        when( indexReader1.query( query ) ).thenReturn( PrimitiveLongCollections.iterator( 1 ) );
+        when( indexReader2.query( query ) ).thenReturn( PrimitiveLongCollections.iterator( 2 ) );
+        when( indexReader3.query( query ) ).thenReturn( PrimitiveLongCollections.iterator( 3 ) );
 
         PrimitiveLongSet results =
-                PrimitiveLongCollections.asSet( indexReader.rangeSeekByString( "a", false, "b", true ) );
+                PrimitiveLongCollections.asSet( indexReader.query( query ) );
         verifyResult( results );
     }
 

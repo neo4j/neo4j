@@ -96,8 +96,7 @@ class HashBasedIndex extends InMemoryIndexImplementation
         return toPrimitiveIterator( nodeIds.iterator() );
     }
 
-    @Override
-    public synchronized PrimitiveLongIterator rangeSeekByString( String lower, boolean includeLower,
+    private synchronized PrimitiveLongIterator rangeSeekByString( String lower, boolean includeLower,
             String upper, boolean includeUpper )
     {
         Set<Long> nodeIds = new HashSet<>();
