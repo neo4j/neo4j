@@ -52,7 +52,7 @@ class TreePrinter<KEY,VALUE>
      *
      * @param cursor {@link PageCursor} placed at root of tree or sub-tree.
      * @param out target to print tree at.
-     * @param printPosition
+     * @param printPosition whether or not to include positional (slot number) information.
      * @throws IOException on page cache access error.
      */
     void printTree( PageCursor cursor, PrintStream out, boolean printValues, boolean printPosition ) throws IOException

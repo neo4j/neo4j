@@ -1077,30 +1077,30 @@ class InternalTreeLogic<KEY,VALUE>
     private void updateRightmostChildInLeftSibling( PageCursor cursor, long childPointer, long stableGeneration,
             long unstableGeneration ) throws IOException
     {
-        long currentPageId = cursor.getCurrentPageId();
         long leftSibling = bTreeNode.leftSibling( cursor, stableGeneration, unstableGeneration );
         // Left sibling is not allowed to be NO_NODE here because that means there is a child node with no parent
         PointerChecking.checkPointer( leftSibling, false );
 
-        bTreeNode.goTo( cursor, "left sibling", leftSibling );
-        int keyCount = bTreeNode.keyCount( cursor );
-        bTreeNode.setChildAt( cursor, childPointer, keyCount, stableGeneration, unstableGeneration );
-
-        bTreeNode.goTo( cursor, "back to current from left sibling", currentPageId );
+        try ( PageCursor leftSiblingCursor = cursor.openLinkedCursor( leftSibling ) )
+        {
+            bTreeNode.goTo( leftSiblingCursor, "left sibling", leftSibling );
+            int keyCount = bTreeNode.keyCount( leftSiblingCursor );
+            bTreeNode.setChildAt( leftSiblingCursor, childPointer, keyCount, stableGeneration, unstableGeneration );
+        }
     }
 
     private void updateLeftmostChildInRightSibling( PageCursor cursor, long childPointer, long stableGeneration,
             long unstableGeneration ) throws IOException
     {
-        long currentPageId = cursor.getCurrentPageId();
         long rightSibling = bTreeNode.rightSibling( cursor, stableGeneration, unstableGeneration );
         // Left sibling is not allowed to be NO_NODE here because that means there is a child node with no parent
         PointerChecking.checkPointer( rightSibling, false );
 
-        bTreeNode.goTo( cursor, "right sibling", rightSibling );
-        bTreeNode.setChildAt( cursor, childPointer, 0, stableGeneration, unstableGeneration );
-
-        bTreeNode.goTo( cursor, "back to current from right sibling", currentPageId );
+        try ( PageCursor rightSiblingCursor = cursor.openLinkedCursor( rightSibling ) )
+        {
+            bTreeNode.goTo( rightSiblingCursor, "right sibling", rightSibling );
+            bTreeNode.setChildAt( rightSiblingCursor, childPointer, 0, stableGeneration, unstableGeneration );
+        }
     }
 
     /**
@@ -1315,13 +1315,6 @@ class InternalTreeLogic<KEY,VALUE>
         int newKeyCount = keyCount - 1;
         bTreeNode.setKeyCount( cursor, newKeyCount );
         return newKeyCount;
-    }
-
-    void applySecondPhaseUpdate( PageCursor cursor, StructurePropagation<KEY> structurePropagation,
-            long stableGeneration, long unstableGeneration )
-    {
-        // todo
-        throw new UnsupportedOperationException( "Implement me" );
     }
 
     /**
