@@ -29,12 +29,12 @@ import org.neo4j.collection.primitive.PrimitiveLongCollections;
 import org.neo4j.collection.primitive.PrimitiveLongIterator;
 import org.neo4j.collection.primitive.PrimitiveLongResourceIterator;
 import org.neo4j.graphdb.Resource;
-import org.neo4j.kernel.api.constraints.NodePropertyConstraint;
 import org.neo4j.kernel.api.index.InternalIndexState;
 import org.neo4j.kernel.api.properties.Property;
 import org.neo4j.kernel.api.schema.IndexDescriptor;
 import org.neo4j.kernel.api.schema.IndexDescriptorFactory;
 import org.neo4j.kernel.api.schema.NodePropertyDescriptor;
+import org.neo4j.kernel.api.schema_new.IndexQuery;
 import org.neo4j.kernel.api.schema_new.SchemaBoundary;
 import org.neo4j.kernel.api.schema_new.index.IndexBoundary;
 import org.neo4j.kernel.api.schema_new.index.NewIndexDescriptor;
@@ -74,8 +74,9 @@ public class IndexQueryTransactionStateTest
     String value = "My Value";
     NodePropertyDescriptor descriptor = new NodePropertyDescriptor( labelId, propertyKeyId );
     IndexDescriptor indexDescriptor = IndexDescriptorFactory.of( descriptor );
-    private final NewIndexDescriptor newIndexDescriptor = IndexBoundary.map( indexDescriptor );
+    NewIndexDescriptor newIndexDescriptor = IndexBoundary.map( indexDescriptor );
     List<NewIndexDescriptor> indexes = Collections.singletonList( newIndexDescriptor );
+    IndexQuery exactQuery = IndexQuery.exact( propertyKeyId, value );
 
     private StoreReadLayer store;
     private StoreStatement statement;
@@ -98,7 +99,7 @@ public class IndexQueryTransactionStateTest
         when( store.indexesGetForLabel( labelId2 ) ).then( answerAsIteratorFrom( Collections
                 .<IndexDescriptor>emptyList() ) );
         when( store.indexesGetAll() ).then( answerAsIteratorFrom( Collections.<IndexDescriptor>emptyList() ) );
-        when( store.constraintsGetForLabel( labelId ) ).thenReturn( Collections.<NodePropertyConstraint>emptyIterator() );
+        when( store.constraintsGetForLabel( labelId ) ).thenReturn( Collections.emptyIterator() );
         when( store.indexGetForLabelAndPropertyKey( SchemaBoundary.map( descriptor ) ) ).thenReturn( newIndexDescriptor );
 
         statement = mock( StoreStatement.class );
@@ -121,14 +122,14 @@ public class IndexQueryTransactionStateTest
     {
         // Given
         long nodeId = 2L;
-        when( indexReader.seek( value ) ).then( answerAsPrimitiveLongIteratorFrom( asList( 1L, nodeId, 3L ) ) );
+        when( indexReader.query( exactQuery ) ).then( answerAsPrimitiveLongIteratorFrom( asList( 1L, nodeId, 3L ) ) );
 
         when( statement.acquireSingleNodeCursor( nodeId ) ).thenReturn( asNodeCursor( nodeId ) );
 
         txContext.nodeDelete( state, nodeId );
 
         // When
-        PrimitiveLongIterator result = txContext.nodesGetFromIndexSeek( state, newIndexDescriptor, value );
+        PrimitiveLongIterator result = txContext.indexQuery( state, newIndexDescriptor, exactQuery );
 
         // Then
         assertThat( PrimitiveLongCollections.toSet( result ), equalTo( asSet( 1L, 3L ) ) );
@@ -139,7 +140,7 @@ public class IndexQueryTransactionStateTest
     {
         // Given
         long nodeId = 1L;
-        when( indexReader.seek( value ) ).thenReturn( asPrimitiveResourceIterator( nodeId ) );
+        when( indexReader.query( exactQuery ) ).thenReturn( asPrimitiveResourceIterator( nodeId ) );
 
         when( statement.acquireSingleNodeCursor( nodeId ) ).thenReturn( asNodeCursor( nodeId ) );
 
@@ -156,13 +157,13 @@ public class IndexQueryTransactionStateTest
     public void shouldExcludeChangedNodesWithMissingLabelFromIndexQuery() throws Exception
     {
         // Given
-        when( indexReader.seek( value ) ).then( answerAsPrimitiveLongIteratorFrom( asList( 2L, 3L ) ) );
+        when( indexReader.query( exactQuery ) ).then( answerAsPrimitiveLongIteratorFrom( asList( 2L, 3L ) ) );
 
         state.txState().nodeDoReplaceProperty( 1L, Property.noNodeProperty( 1L, propertyKeyId ),
                 Property.intProperty( propertyKeyId, 10 ) );
 
         // When
-        PrimitiveLongIterator result = txContext.nodesGetFromIndexSeek( state, newIndexDescriptor, value );
+        PrimitiveLongIterator result = txContext.indexQuery( state, newIndexDescriptor, exactQuery );
 
         // Then
         assertThat( PrimitiveLongCollections.toSet( result ), equalTo( asSet( 2L, 3L ) ) );
@@ -172,7 +173,7 @@ public class IndexQueryTransactionStateTest
     public void shouldExcludeChangedNodeWithMissingLabelFromUniqueIndexQuery() throws Exception
     {
         // Given
-        when( indexReader.seek( value ) ).thenReturn( asPrimitiveResourceIterator() );
+        when( indexReader.query( exactQuery ) ).thenReturn( asPrimitiveResourceIterator() );
         state.txState().nodeDoReplaceProperty( 1L, Property.noNodeProperty( 1L, propertyKeyId ),
                 Property.intProperty( propertyKeyId, 10 ) );
 
@@ -187,7 +188,7 @@ public class IndexQueryTransactionStateTest
     public void shouldIncludeCreatedNodesWithCorrectLabelAndProperty() throws Exception
     {
         // Given
-        when( indexReader.seek( value ) ).then( answerAsPrimitiveLongIteratorFrom( asList( 2L, 3L ) ) );
+        when( indexReader.query( exactQuery ) ).then( answerAsPrimitiveLongIteratorFrom( asList( 2L, 3L ) ) );
 
         long nodeId = 1L;
         state.txState().nodeDoReplaceProperty( nodeId, noNodeProperty( nodeId, propertyKeyId ),
@@ -200,7 +201,7 @@ public class IndexQueryTransactionStateTest
         txContext.nodeAddLabel( state, nodeId, labelId );
 
         // When
-        PrimitiveLongIterator result = txContext.nodesGetFromIndexSeek( state, newIndexDescriptor, value );
+        PrimitiveLongIterator result = txContext.indexQuery( state, newIndexDescriptor, exactQuery );
 
         // Then
         assertThat( PrimitiveLongCollections.toSet( result ), equalTo( asSet( nodeId, 2L, 3L ) ) );
@@ -210,7 +211,7 @@ public class IndexQueryTransactionStateTest
     public void shouldIncludeUniqueCreatedNodeWithCorrectLabelAndProperty() throws Exception
     {
         // Given
-        when( indexReader.seek( value ) ).thenReturn( asPrimitiveResourceIterator() );
+        when( indexReader.query( exactQuery ) ).thenReturn( asPrimitiveResourceIterator() );
 
         long nodeId = 1L;
         state.txState().nodeDoReplaceProperty( nodeId, noNodeProperty( nodeId, propertyKeyId ),
@@ -233,7 +234,7 @@ public class IndexQueryTransactionStateTest
     public void shouldIncludeExistingNodesWithCorrectPropertyAfterAddingLabel() throws Exception
     {
         // Given
-        when( indexReader.seek( value ) ).then( answerAsPrimitiveLongIteratorFrom( asList( 2L, 3L ) ) );
+        when( indexReader.query( exactQuery ) ).then( answerAsPrimitiveLongIteratorFrom( asList( 2L, 3L ) ) );
 
         long nodeId = 1L;
 
@@ -244,7 +245,7 @@ public class IndexQueryTransactionStateTest
         txContext.nodeAddLabel( state, nodeId, labelId );
 
         // When
-        PrimitiveLongIterator result = txContext.nodesGetFromIndexSeek( state, newIndexDescriptor, value );
+        PrimitiveLongIterator result = txContext.indexQuery( state, newIndexDescriptor, exactQuery );
 
         // Then
         assertThat( PrimitiveLongCollections.toSet( result ), equalTo( asSet( nodeId, 2L, 3L ) ) );
@@ -254,7 +255,7 @@ public class IndexQueryTransactionStateTest
     public void shouldIncludeExistingUniqueNodeWithCorrectPropertyAfterAddingLabel() throws Exception
     {
         // Given
-        when( indexReader.seek( value ) ).thenReturn( asPrimitiveResourceIterator() );
+        when( indexReader.query( exactQuery ) ).thenReturn( asPrimitiveResourceIterator() );
 
         long nodeId = 2L;
 
@@ -277,7 +278,7 @@ public class IndexQueryTransactionStateTest
     {
         // Given
         long nodeId = 1L;
-        when( indexReader.seek( value ) ).then( answerAsPrimitiveLongIteratorFrom( asList( nodeId, 2L, 3L ) ) );
+        when( indexReader.query( exactQuery ) ).then( answerAsPrimitiveLongIteratorFrom( asList( nodeId, 2L, 3L ) ) );
 
         when( statement.acquireSingleNodeCursor( nodeId ) ).thenReturn(
                 asNodeCursor( nodeId,
@@ -287,7 +288,7 @@ public class IndexQueryTransactionStateTest
         txContext.nodeRemoveLabel( state, nodeId, labelId );
 
         // When
-        PrimitiveLongIterator result = txContext.nodesGetFromIndexSeek( state, newIndexDescriptor, value );
+        PrimitiveLongIterator result = txContext.indexQuery( state, newIndexDescriptor, exactQuery );
 
         // Then
         assertThat( PrimitiveLongCollections.toSet( result ), equalTo( asSet( 2L, 3L ) ) );
@@ -298,7 +299,7 @@ public class IndexQueryTransactionStateTest
     {
         // Given
         long nodeId = 1L;
-        when( indexReader.seek( value ) ).thenReturn( asPrimitiveResourceIterator( nodeId ) );
+        when( indexReader.query( exactQuery ) ).thenReturn( asPrimitiveResourceIterator( nodeId ) );
 
         when( statement.acquireSingleNodeCursor( nodeId ) ).thenReturn(
                 asNodeCursor( nodeId,
@@ -318,7 +319,7 @@ public class IndexQueryTransactionStateTest
     public void shouldExcludeNodesWithRemovedProperty() throws Exception
     {
         // Given
-        when( indexReader.seek( value ) ).then( answerAsPrimitiveLongIteratorFrom( asList( 2L, 3L ) ) );
+        when( indexReader.query( exactQuery ) ).then( answerAsPrimitiveLongIteratorFrom( asList( 2L, 3L ) ) );
 
         long nodeId = 1L;
         state.txState().nodeDoReplaceProperty( nodeId, Property.noNodeProperty( nodeId, propertyKeyId ),
@@ -332,7 +333,7 @@ public class IndexQueryTransactionStateTest
         txContext.nodeAddLabel( state, nodeId, labelId );
 
         // When
-        PrimitiveLongIterator result = txContext.nodesGetFromIndexSeek( state, newIndexDescriptor, value );
+        PrimitiveLongIterator result = txContext.indexQuery( state, newIndexDescriptor, exactQuery );
 
         // Then
         assertThat( PrimitiveLongCollections.toSet( result ), equalTo( asSet( 2L, 3L ) ) );
@@ -343,7 +344,7 @@ public class IndexQueryTransactionStateTest
     {
         // Given
         long nodeId = 1L;
-        when( indexReader.seek( value ) ).thenReturn( asPrimitiveResourceIterator( nodeId ) );
+        when( indexReader.query( exactQuery ) ).thenReturn( asPrimitiveResourceIterator( nodeId ) );
 
         when( statement.acquireSingleNodeCursor( nodeId ) ).thenReturn(
                 asNodeCursor( nodeId,

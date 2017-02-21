@@ -59,6 +59,7 @@ import static org.junit.Assert.assertThat;
 import static org.junit.Assert.fail;
 import static org.neo4j.helpers.collection.Iterators.asSet;
 import static org.neo4j.helpers.collection.Iterators.emptySetOf;
+import static org.neo4j.kernel.api.schema_new.IndexQuery.exact;
 import static org.neo4j.kernel.api.schema_new.IndexQuery.range;
 import static org.neo4j.test.rule.concurrent.ThreadingRule.waitingWhileIn;
 
@@ -144,7 +145,7 @@ public class DatabaseIndexAccessorTest
 
         // THEN
         assertEquals( asSet( nodeId, nodeId2 ), PrimitiveLongCollections.toSet( results ) );
-        assertEquals( asSet( nodeId ), PrimitiveLongCollections.toSet( reader.seek( value ) ) );
+        assertEquals( asSet( nodeId ), PrimitiveLongCollections.toSet( reader.query( IndexQuery.exact( 1, value ) ) ) );
         reader.close();
     }
 
@@ -217,7 +218,7 @@ public class DatabaseIndexAccessorTest
         updateAndCommit( asList( remove( nodeId, value ) ) );
 
         // THEN
-        assertEquals( asSet( nodeId ), PrimitiveLongCollections.toSet( reader.seek( value ) ) );
+        assertEquals( asSet( nodeId ), PrimitiveLongCollections.toSet( reader.query( exact( 1, value ) ) ) );
         reader.close();
     }
 
@@ -231,10 +232,10 @@ public class DatabaseIndexAccessorTest
         IndexReader secondReader = accessor.newReader();
 
         // THEN
-        assertEquals( asSet( nodeId ), PrimitiveLongCollections.toSet( firstReader.seek( value ) ) );
-        assertEquals( asSet(  ), PrimitiveLongCollections.toSet( firstReader.seek( value2 ) ) );
-        assertEquals( asSet( nodeId ), PrimitiveLongCollections.toSet( secondReader.seek( value ) ) );
-        assertEquals( asSet( nodeId2 ), PrimitiveLongCollections.toSet( secondReader.seek( value2 ) ) );
+        assertEquals( asSet( nodeId ), PrimitiveLongCollections.toSet( firstReader.query( exact( 1, value ) ) ) );
+        assertEquals( asSet(  ), PrimitiveLongCollections.toSet( firstReader.query( exact( 1,value2 ) ) ) );
+        assertEquals( asSet( nodeId ), PrimitiveLongCollections.toSet( secondReader.query( exact( 1, value ) ) ) );
+        assertEquals( asSet( nodeId2 ), PrimitiveLongCollections.toSet( secondReader.query( exact( 1, value2 ) ) ) );
         firstReader.close();
         secondReader.close();
     }
@@ -249,7 +250,7 @@ public class DatabaseIndexAccessorTest
         IndexReader reader = accessor.newReader();
 
         // THEN
-        assertEquals( asSet( nodeId ), PrimitiveLongCollections.toSet( reader.seek( value ) ) );
+        assertEquals( asSet( nodeId ), PrimitiveLongCollections.toSet( reader.query( exact( 1, value ) ) ) );
         reader.close();
     }
 
@@ -264,8 +265,8 @@ public class DatabaseIndexAccessorTest
         IndexReader reader = accessor.newReader();
 
         // THEN
-        assertEquals( asSet( nodeId ), PrimitiveLongCollections.toSet( reader.seek( value2 ) ) );
-        assertEquals( emptySetOf( Long.class ), PrimitiveLongCollections.toSet( reader.seek( value ) ) );
+        assertEquals( asSet( nodeId ), PrimitiveLongCollections.toSet( reader.query( exact( 1, value2 ) ) ) );
+        assertEquals( emptySetOf( Long.class ), PrimitiveLongCollections.toSet( reader.query( exact( 1, value ) ) ) );
         reader.close();
     }
 
@@ -282,8 +283,8 @@ public class DatabaseIndexAccessorTest
         IndexReader reader = accessor.newReader();
 
         // THEN
-        assertEquals( asSet( nodeId2 ), PrimitiveLongCollections.toSet( reader.seek( value2 ) ) );
-        assertEquals( asSet(  ), PrimitiveLongCollections.toSet( reader.seek( value ) ) );
+        assertEquals( asSet( nodeId2 ), PrimitiveLongCollections.toSet( reader.query( exact( 1, value2 ) ) ) );
+        assertEquals( asSet(  ), PrimitiveLongCollections.toSet( reader.query( exact( 1, value ) ) ) );
         reader.close();
     }
 
@@ -299,14 +300,10 @@ public class DatabaseIndexAccessorTest
         IndexReader indexReader = accessor.newReader(); // needs to be acquired before drop() is called
         IndexSampler indexSampler = indexReader.createSampler();
 
-        Future<Void> drop = threading.executeAndAwait( new IOFunction<Void, Void>()
+        Future<Void> drop = threading.executeAndAwait( (IOFunction<Void,Void>) nothing ->
         {
-            @Override
-            public Void apply( Void nothing ) throws IOException
-            {
-                accessor.drop();
-                return nothing;
-            }
+            accessor.drop();
+            return nothing;
         }, null, waitingWhileIn( TaskCoordinator.class, "awaitCompletion" ), 3, SECONDS );
 
         try ( IndexReader reader = indexReader /* do not inline! */ )

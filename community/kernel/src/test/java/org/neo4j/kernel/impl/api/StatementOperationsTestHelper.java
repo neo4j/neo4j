@@ -26,6 +26,7 @@ import org.mockito.stubbing.Answer;
 import org.neo4j.collection.primitive.PrimitiveLongCollections;
 import org.neo4j.kernel.api.ReadOperations;
 import org.neo4j.kernel.api.exceptions.index.IndexNotFoundKernelException;
+import org.neo4j.kernel.api.schema_new.IndexQuery;
 import org.neo4j.kernel.api.txstate.TransactionState;
 import org.neo4j.kernel.impl.api.operations.CountsOperations;
 import org.neo4j.kernel.impl.api.operations.EntityReadOperations;
@@ -78,7 +79,7 @@ public abstract class StatementOperationsTestHelper
         try
         {
             IndexReader indexReader = mock( IndexReader.class );
-            when( indexReader.seek( Matchers.any() ) ).thenReturn( PrimitiveLongCollections.emptyIterator() );
+            when( indexReader.query( Matchers.isA( IndexQuery.ExactPredicate.class ) ) ).thenReturn( PrimitiveLongCollections.emptyIterator() );
             StorageStatement storageStatement = mock( StorageStatement.class );
             when( storageStatement.getIndexReader( Matchers.any() ) ).thenReturn( indexReader );
             when( state.getStoreStatement() ).thenReturn( storageStatement );

@@ -231,35 +231,6 @@ public class StateHandlingStatementOperationsTest
     }
 
     @Test
-    public void shouldConsiderTransactionStateDuringIndexSeek() throws Exception
-    {
-        // Given
-        TransactionState txState = mock( TransactionState.class );
-        KernelStatement statement = mock( KernelStatement.class );
-        when( statement.hasTxStateWithChanges() ).thenReturn( true );
-        when( statement.txState() ).thenReturn( txState );
-        when( txState.indexUpdatesForScanOrSeek( index, "value" ) ).thenReturn(
-                new DiffSets<>( Collections.singleton( 42L ), Collections.singleton( 44L ) )
-        );
-        when( txState.addedAndRemovedNodes() ).thenReturn(
-                new DiffSets<>( Collections.singleton( 45L ), Collections.singleton( 46L ) )
-        );
-
-        StoreReadLayer storeReadLayer = mock( StoreReadLayer.class );
-        IndexReader indexReader = addMockedIndexReader( statement );
-        when( indexReader.seek( "value" ) ).thenReturn(
-                PrimitiveLongCollections.resourceIterator( PrimitiveLongCollections.iterator( 43L, 44L, 46L ), null ) );
-
-        StateHandlingStatementOperations context = newTxStateOps( storeReadLayer );
-
-        // When
-        PrimitiveLongIterator results = context.nodesGetFromIndexSeek( statement, index, "value" );
-
-        // Then
-        assertEquals( asSet( 42L, 43L ), PrimitiveLongCollections.toSet( results ) );
-    }
-
-    @Test
     public void shouldConsiderTransactionStateDuringIndexSeekWithIndexQuery() throws Exception
     {
         // Given
@@ -491,13 +462,13 @@ public class StateHandlingStatementOperationsTest
     }
 
     @Test
-    public void nodeGetFromUniqueIndexSeekClosesIndexReader() throws Exception
+    public void indexQueryClosesIndexReader() throws Exception
     {
         KernelStatement kernelStatement = mock( KernelStatement.class );
         StoreStatement storeStatement = mock( StoreStatement.class );
         IndexReader indexReader = mock( IndexReader.class );
 
-        when( indexReader.seek( any() ) ).thenReturn( PrimitiveLongCollections.emptyIterator() );
+        when( indexReader.query( any() ) ).thenReturn( PrimitiveLongCollections.emptyIterator() );
         when( storeStatement.getFreshIndexReader( any() ) ).thenReturn( indexReader );
         when( kernelStatement.getStoreStatement() ).thenReturn( storeStatement );
 

@@ -139,11 +139,6 @@ public abstract class IndexAccessorCompatibility extends IndexProviderCompatibil
         assertThat( getAllNodesFromIndexSeekByPrefix( "2" ), equalTo( EMPTY_LIST ) );
     }
 
-    protected List<Long> getAllNodesWithProperty( String propertyValue ) throws IOException
-    {
-        return metaGet( reader -> reader.seek( propertyValue ));
-    }
-
     protected List<Long> getAllNodesFromIndexSeekByPrefix( String prefix ) throws IOException
     {
         return metaGet( reader -> reader.rangeSeekByPrefix( prefix));

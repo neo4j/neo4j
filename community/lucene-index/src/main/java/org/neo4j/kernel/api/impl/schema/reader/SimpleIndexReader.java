@@ -114,7 +114,7 @@ public class SimpleIndexReader implements IndexReader
         }
     }
 
-    public PrimitiveLongIterator seek( Object value )
+    private PrimitiveLongIterator seek( Object value )
     {
         return query( LuceneDocumentStructure.newSeekQuery( value ) );
     }

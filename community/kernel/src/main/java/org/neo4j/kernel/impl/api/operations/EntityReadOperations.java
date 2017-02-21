@@ -43,19 +43,11 @@ public interface EntityReadOperations
     PrimitiveLongIterator nodesGetForLabel( KernelStatement state, int labelId );
 
     /**
-     * Returns an iterable with the matched nodes.
-     *
-     * @throws IndexNotFoundKernelException if no such index found.
-     */
-    PrimitiveLongIterator nodesGetFromIndexSeek( KernelStatement state, NewIndexDescriptor index, Object value )
-            throws IndexNotFoundKernelException;
-
-    /**
      * Returns an iterable with the matched entities.
      *
      * @throws IndexNotFoundKernelException if no such index found.
      */
-    PrimitiveLongIterator indexQuery( KernelStatement statement, NewIndexDescriptor index, IndexQuery[] predicates )
+    PrimitiveLongIterator indexQuery( KernelStatement statement, NewIndexDescriptor index, IndexQuery... predicates )
             throws IndexNotFoundKernelException;
 
     /**

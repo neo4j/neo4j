@@ -38,6 +38,7 @@ import org.neo4j.kernel.api.impl.schema.LuceneSchemaIndexProvider;
 import org.neo4j.kernel.api.index.IndexAccessor;
 import org.neo4j.kernel.api.index.IndexConfiguration;
 import org.neo4j.kernel.api.index.SchemaIndexProvider;
+import org.neo4j.kernel.api.schema_new.IndexQuery;
 import org.neo4j.kernel.configuration.Config;
 import org.neo4j.kernel.impl.api.index.sampling.IndexSamplingConfig;
 import org.neo4j.kernel.impl.factory.CommunityEditionModule;
@@ -141,14 +142,10 @@ public class NonUniqueIndexTests
 
     private static Runnable slowRunnable( final Runnable target )
     {
-        return new Runnable()
+        return () ->
         {
-            @Override
-            public void run()
-            {
-                LockSupport.parkNanos( 100_000_000 );
-                target.run();
-            }
+            LockSupport.parkNanos( 100_000_000 );
+            target.run();
         };
     }
 
@@ -162,7 +159,7 @@ public class NonUniqueIndexTests
         try ( IndexAccessor accessor = indexProvider.getOnlineAccessor( indexId, indexConfig, samplingConfig );
               IndexReader reader = accessor.newReader() )
         {
-            return PrimitiveLongCollections.asList( reader.seek( value ) );
+            return PrimitiveLongCollections.asList( reader.query( IndexQuery.exact( 1, value ) ) );
         }
     }
 }

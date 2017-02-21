@@ -33,14 +33,6 @@ import org.neo4j.kernel.api.schema_new.IndexQuery;
 public interface IndexReader extends Resource
 {
     /**
-     * Searches this index for a certain value.
-     *
-     * @param value property value to search for.
-     * @return ids of matching nodes.
-     */
-    PrimitiveLongIterator seek( Object value );
-
-    /**
      * Searches this index for string values starting with {@code prefix}.
      *
      * @param prefix prefix that matching strings must start with.
@@ -77,12 +69,6 @@ public interface IndexReader extends Resource
 
     IndexReader EMPTY = new IndexReader()
     {
-        @Override
-        public PrimitiveLongIterator seek( Object value )
-        {
-            return PrimitiveLongCollections.emptyIterator();
-        }
-
         @Override
         public PrimitiveLongIterator rangeSeekByPrefix( String prefix )
         {

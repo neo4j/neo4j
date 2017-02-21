@@ -64,12 +64,6 @@ public class PartitionedIndexReader implements IndexReader
     }
 
     @Override
-    public PrimitiveLongIterator seek( Object value )
-    {
-        return partitionedOperation( reader -> reader.seek( value ) );
-    }
-
-    @Override
     public PrimitiveLongIterator query( IndexQuery... predicates )
     {
         return partitionedOperation( reader -> reader.query( predicates ) );

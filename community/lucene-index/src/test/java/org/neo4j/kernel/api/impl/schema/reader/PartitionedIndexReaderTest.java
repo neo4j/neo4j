@@ -83,11 +83,12 @@ public class PartitionedIndexReaderTest
     {
         PartitionedIndexReader indexReader = createPartitionedReaderFromReaders();
 
-        when( indexReader1.seek( "Test" ) ).thenReturn( PrimitiveLongCollections.iterator( 1 ) );
-        when( indexReader2.seek( "Test" ) ).thenReturn( PrimitiveLongCollections.iterator( 2 ) );
-        when( indexReader3.seek( "Test" ) ).thenReturn( PrimitiveLongCollections.iterator( 3 ) );
+        IndexQuery.ExactPredicate query = IndexQuery.exact( 1, "Test" );
+        when( indexReader1.query( query ) ).thenReturn( PrimitiveLongCollections.iterator( 1 ) );
+        when( indexReader2.query( query ) ).thenReturn( PrimitiveLongCollections.iterator( 2 ) );
+        when( indexReader3.query( query ) ).thenReturn( PrimitiveLongCollections.iterator( 3 ) );
 
-        PrimitiveLongSet results = PrimitiveLongCollections.asSet( indexReader.seek( "Test" ) );
+        PrimitiveLongSet results = PrimitiveLongCollections.asSet( indexReader.query( query ) );
         verifyResult( results );
     }
 

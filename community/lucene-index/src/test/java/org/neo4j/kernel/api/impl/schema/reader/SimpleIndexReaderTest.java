@@ -78,7 +78,7 @@ public class SimpleIndexReaderTest
     {
         IndexReader simpleIndexReader = getUniqueSimpleReader();
 
-        simpleIndexReader.seek( "test" );
+        simpleIndexReader.query( IndexQuery.exact( 1, "test" ) );
 
         verify( indexSearcher ).search( any( TermQuery.class ), any( DocValuesCollector.class ) );
     }

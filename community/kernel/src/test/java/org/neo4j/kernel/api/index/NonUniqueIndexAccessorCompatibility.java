@@ -67,7 +67,7 @@ public class NonUniqueIndexAccessorCompatibility extends IndexAccessorCompatibil
                 IndexEntryUpdate.add( 1L, index, "a" ),
                 IndexEntryUpdate.add( 2L, index, "a" ) ) );
 
-        assertThat( getAllNodesWithProperty( "a" ), equalTo( asList( 1L, 2L ) ) );
+        assertThat( query( exact( 1, "a" ) ), equalTo( asList( 1L, 2L ) ) );
     }
 
     @Test
@@ -78,7 +78,7 @@ public class NonUniqueIndexAccessorCompatibility extends IndexAccessorCompatibil
                 IndexEntryUpdate.add( 2L, index, "a" ),
                 IndexEntryUpdate.add( 3L, index, "b" ) ) );
 
-        assertThat( getAllNodesWithProperty( "a" ), equalTo( asList( 1L, 2L ) ) );
+        assertThat( query( exact( 1, "a" ) ), equalTo( asList( 1L, 2L ) ) );
         assertThat( query( IndexQuery.exists( 1 ) ), equalTo( asList( 1L, 2L, 3L ) ) );
     }
 

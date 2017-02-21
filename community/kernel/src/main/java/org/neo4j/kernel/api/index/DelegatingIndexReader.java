@@ -34,12 +34,6 @@ public class DelegatingIndexReader implements IndexReader
     }
 
     @Override
-    public PrimitiveLongIterator seek( Object value )
-    {
-        return delegate.seek( value );
-    }
-
-    @Override
     public PrimitiveLongIterator rangeSeekByPrefix( String prefix )
     {
         return delegate.rangeSeekByPrefix( prefix );

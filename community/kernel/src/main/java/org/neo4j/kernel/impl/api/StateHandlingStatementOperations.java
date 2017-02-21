@@ -703,21 +703,13 @@ public class StateHandlingStatementOperations implements
          * close the IndexReader when done iterating over the lookup result. This is because we get
          * a fresh reader that isn't associated with the current transaction and hence will not be
          * automatically closed. */
-        PrimitiveLongResourceIterator committed = resourceIterator( reader.seek( value ), reader );
+        IndexQuery.ExactPredicate query = IndexQuery.exact( index.schema().getPropertyId(), value );
+        PrimitiveLongResourceIterator committed = resourceIterator(
+                reader.query( query ), reader );
         PrimitiveLongIterator exactMatches = filterExactIndexMatches( state, index, value, committed );
         PrimitiveLongIterator changesFiltered = filterIndexStateChangesForScanOrSeek( state, index, value,
                 exactMatches );
         return single( resourceIterator( changesFiltered, committed ), NO_SUCH_NODE );
-    }
-
-    @Override
-    public PrimitiveLongIterator nodesGetFromIndexSeek( KernelStatement state, NewIndexDescriptor index, Object value )
-            throws IndexNotFoundKernelException
-    {
-        IndexReader reader = state.getStoreStatement().getIndexReader( index );
-        PrimitiveLongIterator committed = reader.seek( value );
-        PrimitiveLongIterator exactMatches = filterExactIndexMatches( state, index, value, committed );
-        return filterIndexStateChangesForScanOrSeek( state, index, value, exactMatches );
     }
 
     @Override
@@ -772,7 +764,8 @@ public class StateHandlingStatementOperations implements
     public PrimitiveLongIterator nodesGetFromIndexRangeSeekByPrefix( KernelStatement state, NewIndexDescriptor index,
             String prefix ) throws IndexNotFoundKernelException
     {
-        IndexReader reader = state.getStoreStatement().getIndexReader( index );
+        StorageStatement storeStatement = state.getStoreStatement();
+        IndexReader reader = storeStatement.getIndexReader( index );
         PrimitiveLongIterator committed = reader.rangeSeekByPrefix( prefix );
         return filterIndexStateChangesForRangeSeekByPrefix( state, index, prefix, committed );
     }
@@ -790,7 +783,8 @@ public class StateHandlingStatementOperations implements
             String term )
             throws IndexNotFoundKernelException
     {
-        IndexReader reader = state.getStoreStatement().getIndexReader( index );
+        StorageStatement storeStatement = state.getStoreStatement();
+        IndexReader reader = storeStatement.getIndexReader( index );
         PrimitiveLongIterator committed = reader.containsString( term );
         return filterIndexStateChangesForScanOrSeek( state, index, null, committed );
     }
@@ -799,7 +793,8 @@ public class StateHandlingStatementOperations implements
     public PrimitiveLongIterator nodesGetFromIndexEndsWithScan( KernelStatement state, NewIndexDescriptor index,
             String suffix ) throws IndexNotFoundKernelException
     {
-        IndexReader reader = state.getStoreStatement().getIndexReader( index );
+        StorageStatement storeStatement = state.getStoreStatement();
+        IndexReader reader = storeStatement.getIndexReader( index );
         PrimitiveLongIterator committed = reader.endsWith( suffix );
         return filterIndexStateChangesForScanOrSeek( state, index, null, committed );
     }

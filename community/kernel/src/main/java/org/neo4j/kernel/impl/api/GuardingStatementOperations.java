@@ -172,14 +172,6 @@ public class GuardingStatementOperations implements
     }
 
     @Override
-    public PrimitiveLongIterator nodesGetFromIndexSeek( KernelStatement statement, NewIndexDescriptor index, Object value )
-            throws IndexNotFoundKernelException
-    {
-        guard.check( statement );
-        return entityReadDelegate.nodesGetFromIndexSeek( statement, index, value );
-    }
-
-    @Override
     public PrimitiveLongIterator indexQuery( KernelStatement statement, NewIndexDescriptor index,
                                              IndexQuery[] predicates ) throws IndexNotFoundKernelException
     {

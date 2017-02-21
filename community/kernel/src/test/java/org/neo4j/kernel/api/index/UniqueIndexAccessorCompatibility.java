@@ -29,6 +29,7 @@ import org.neo4j.kernel.api.schema_new.index.NewIndexDescriptorFactory;
 import static java.util.Arrays.asList;
 import static org.hamcrest.Matchers.equalTo;
 import static org.junit.Assert.assertThat;
+import static org.neo4j.kernel.api.schema_new.IndexQuery.exact;
 
 @Ignore( "Not a test. This is a compatibility suite that provides test cases for verifying" +
         " SchemaIndexProvider implementations. Each index provider that is to be tested by this suite" +
@@ -57,7 +58,7 @@ public class UniqueIndexAccessorCompatibility extends IndexAccessorCompatibility
                 IndexEntryUpdate.add( 1L, index, "a" ),
                 IndexEntryUpdate.add( 2L, index, "a" ) ) );
 
-        assertThat( getAllNodesWithProperty( "a" ), equalTo( asList( 1L, 2L ) ) );
+        assertThat( query( exact( 1, "a" ) ), equalTo( asList( 1L, 2L ) ) );
     }
 
     @Test
@@ -68,7 +69,7 @@ public class UniqueIndexAccessorCompatibility extends IndexAccessorCompatibility
                 IndexEntryUpdate.add( 2L, index, "b" ),
                 IndexEntryUpdate.add( 3L, index, "c" ) ) );
 
-        assertThat( getAllNodesWithProperty( "a" ), equalTo( asList( 1L ) ) );
+        assertThat( query( exact( 1, "a" ) ), equalTo( asList( 1L ) ) );
         assertThat( query( IndexQuery.exists( 1 ) ), equalTo( asList( 1L, 2L, 3L ) ) );
     }
 }
