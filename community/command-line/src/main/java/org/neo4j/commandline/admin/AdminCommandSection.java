@@ -17,22 +17,24 @@
  * You should have received a copy of the GNU General Public License
  * along with this program.  If not, see <http://www.gnu.org/licenses/>.
  */
-package org.neo4j.commandline.admin.security;
+package org.neo4j.commandline.admin;
 
-import org.neo4j.commandline.admin.AdminCommandSegment;
-
-public class AuthenticationCommandSegment extends AdminCommandSegment
+public abstract class AdminCommandSection
 {
-    private static final AuthenticationCommandSegment authenticationCommandSegment = new AuthenticationCommandSegment();
+    private static final AdminCommandSection GENERAL = new GeneralSection();
+    public abstract String printable();
 
-    public static AdminCommandSegment instance()
+    public static AdminCommandSection general()
     {
-        return authenticationCommandSegment;
+        return GENERAL;
     }
 
-    @Override
-    public String printable()
+    static class GeneralSection extends AdminCommandSection
     {
-        return "Authentication";
+        @Override
+        public String printable()
+        {
+            return "General";
+        }
     }
 }

@@ -24,7 +24,7 @@ import java.util.Arrays;
 import java.util.List;
 
 import org.neo4j.commandline.admin.AdminCommand;
-import org.neo4j.commandline.admin.AdminCommandSegment;
+import org.neo4j.commandline.admin.AdminCommandSection;
 import org.neo4j.commandline.admin.OutsideWorld;
 import org.neo4j.commandline.arguments.Arguments;
 
@@ -61,9 +61,9 @@ public class ImportCommandProvider extends AdminCommand.Provider
     }
 
     @Override
-    public AdminCommandSegment segment()
+    public AdminCommandSection commandSection()
     {
-        return AdminCommandSegment.general();
+        return AdminCommandSection.general();
     }
 
     @Override

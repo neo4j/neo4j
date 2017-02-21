@@ -22,7 +22,7 @@ package org.neo4j.commandline.admin.security;
 import java.nio.file.Path;
 
 import org.neo4j.commandline.admin.AdminCommand;
-import org.neo4j.commandline.admin.AdminCommandSegment;
+import org.neo4j.commandline.admin.AdminCommandSection;
 import org.neo4j.commandline.admin.OutsideWorld;
 import org.neo4j.commandline.arguments.Arguments;
 
@@ -55,9 +55,9 @@ public class SetInitialPasswordCommandProvider extends AdminCommand.Provider
     }
 
     @Override
-    public AdminCommandSegment segment()
+    public AdminCommandSection commandSection()
     {
-        return AuthenticationCommandSegment.instance();
+        return AuthenticationCommandSection.instance();
     }
 
     @Override

@@ -263,9 +263,9 @@ public class AdminToolTest
             }
 
             @Override
-            public AdminCommandSegment segment()
+            public AdminCommandSection commandSection()
             {
-                return AdminCommandSegment.general();
+                return AdminCommandSection.general();
             }
 
             @Override
@@ -317,9 +317,9 @@ public class AdminToolTest
         }
 
         @Override
-        public AdminCommandSegment segment()
+        public AdminCommandSection commandSection()
         {
-            return AdminCommandSegment.general();
+            return AdminCommandSection.general();
         }
 
         @Override

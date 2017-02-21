@@ -26,8 +26,6 @@ import java.util.Map;
 import java.util.function.Consumer;
 import java.util.stream.Collectors;
 
-import org.neo4j.commandline.arguments.Arguments;
-
 import static java.lang.String.format;
 
 public class Usage
@@ -47,35 +45,30 @@ public class Usage
         output.accept( "" );
         output.accept( "available commands:" );
 
-        Map<AdminCommandSegment,List<AdminCommand.Provider>> groupedProviders = groupProvidersBySegment();
+        Map<AdminCommandSection,List<AdminCommand.Provider>> groupedProviders = groupProvidersBySegment();
 
-        printCommandSegment( output, AdminCommandSegment.general(),
-                groupedProviders.remove( AdminCommandSegment.general() ) );
+        printAllCommandsUnderSection( output, AdminCommandSection.general(),
+                groupedProviders.remove( AdminCommandSection.general() ) );
 
         groupedProviders.entrySet().stream()
-                .sorted( Comparator.comparing( o -> o.getKey().printable() ) )
-                .forEach( entry -> printCommandSegment( output, entry.getKey(), entry.getValue() ) );
+                .sorted( Comparator.comparing( groupedProvider -> groupedProvider.getKey().printable() ) )
+                .forEach( entry -> printAllCommandsUnderSection( output, entry.getKey(), entry.getValue() ) );
 
         output.accept( "" );
         output.accept( format( "Use %s help <command> for more details.", scriptName ) );
     }
 
-    private Map<AdminCommandSegment,List<AdminCommand.Provider>> groupProvidersBySegment()
+    private Map<AdminCommandSection,List<AdminCommand.Provider>> groupProvidersBySegment()
     {
         List<AdminCommand.Provider> providers = new ArrayList<>();
         commands.getAllProviders().forEach( providers::add );
-        return providers.stream().collect( Collectors.groupingBy( AdminCommand.Provider::segment ) );
+        return providers.stream().collect( Collectors.groupingBy( AdminCommand.Provider::commandSection ) );
     }
 
-    private void printCommandSegment( Consumer<String> output, AdminCommandSegment segment,
-            List<AdminCommand.Provider> value )
+    private void printAllCommandsUnderSection( Consumer<String> output, AdminCommandSection section,
+            List<AdminCommand.Provider> providers )
     {
-        output.accept( segment.printable() );
-        printCommandsUnderASegment( output, value );
-    }
-
-    private void printCommandsUnderASegment( Consumer<String> output, List<AdminCommand.Provider> providers )
-    {
+        output.accept( section.printable() );
         providers.sort( Comparator.comparing( AdminCommand.Provider::name ) );
         providers.forEach( command ->
         {
@@ -88,42 +81,5 @@ public class Usage
     {
         final CommandUsage commandUsage = new CommandUsage( command, scriptName );
         commandUsage.printDetailed( output );
-    }
-
-    public static class CommandUsage
-    {
-        private final AdminCommand.Provider command;
-        private final String scriptName;
-
-        public CommandUsage( AdminCommand.Provider command, String scriptName )
-        {
-            this.command = command;
-            this.scriptName = scriptName;
-        }
-
-        public void printSummary( Consumer<String> output )
-        {
-            output.accept( format( "%s", command.name() ) );
-            output.accept( "    " + command.summary() );
-        }
-
-        public void printIndentedSummary( Consumer<String> output )
-        {
-            printSummary( s -> output.accept( "    " + s ) );
-        }
-
-        public void printDetailed( Consumer<String> output )
-        {
-            for ( Arguments arguments : command.possibleArguments() )
-            {
-                //Arguments arguments = command.arguments();
-
-                String left = format( "usage: %s %s", scriptName, command.name() );
-
-                output.accept( Arguments.rightColumnFormatted( left, arguments.usage(), left.length() + 1 ) );
-            }
-            output.accept( "" );
-            output.accept( command.allArguments().description( command.description() ) );
-        }
     }
 }

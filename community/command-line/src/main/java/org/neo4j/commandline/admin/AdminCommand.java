@@ -81,9 +81,9 @@ public interface AdminCommand
         public abstract String summary();
 
         /**
-         * @return AdminCommandSegment the command using the provider is grouped under
+         * @return AdminCommandSection the command using the provider is grouped under
          */
-        public abstract AdminCommandSegment segment();
+        public abstract AdminCommandSection commandSection();
 
         /**
          * @return A description for the command's help text.

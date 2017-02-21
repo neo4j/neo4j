@@ -98,9 +98,9 @@ public class UsageTest
         }
 
         @Override
-        public AdminCommandSegment segment()
+        public AdminCommandSection commandSection()
         {
-            return AdminCommandSegment.general();
+            return AdminCommandSection.general();
         }
 
         @Override

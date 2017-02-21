@@ -22,7 +22,7 @@ package org.neo4j.consistency;
 import java.nio.file.Path;
 
 import org.neo4j.commandline.admin.AdminCommand;
-import org.neo4j.commandline.admin.AdminCommandSegment;
+import org.neo4j.commandline.admin.AdminCommandSection;
 import org.neo4j.commandline.admin.OutsideWorld;
 import org.neo4j.commandline.arguments.Arguments;
 
@@ -52,9 +52,9 @@ public class CheckConsistencyCommandProvider extends AdminCommand.Provider
     }
 
     @Override
-    public AdminCommandSegment segment()
+    public AdminCommandSection commandSection()
     {
-        return AdminCommandSegment.general();
+        return AdminCommandSection.general();
     }
 
     @Override
