@@ -20,6 +20,7 @@
 package org.neo4j.index.internal.gbptree;
 
 import org.apache.commons.lang3.mutable.MutableLong;
+import org.junit.After;
 import org.junit.Rule;
 import org.junit.Test;
 import org.junit.rules.RuleChain;
@@ -76,80 +77,85 @@ public class GBPTreeIT
                 layout, 0/*use whatever page cache says*/, monitor );
     }
 
-    @Test
-    public void shouldStayCorrectAfterRandomModifications() throws Exception
+    @After
+    public void consistencyCheckAndClose() throws IOException
     {
         try
         {
-            // GIVEN
-            GBPTree<MutableLong,MutableLong> index = createIndex( 256 );
-            Comparator<MutableLong> keyComparator = layout;
-            Map<MutableLong,MutableLong> data = new TreeMap<>( keyComparator );
-            int count = 100;
-            int totalNumberOfRounds = 10;
-            for ( int i = 0; i < count; i++ )
-            {
-                data.put( randomKey( random.random() ), randomKey( random.random() ) );
-            }
-
-            // WHEN
-            try ( Writer<MutableLong,MutableLong> writer = index.writer() )
-            {
-                for ( Map.Entry<MutableLong,MutableLong> entry : data.entrySet() )
-                {
-                    writer.put( entry.getKey(), entry.getValue() );
-                }
-            }
-
-            for ( int round = 0; round < totalNumberOfRounds; round++ )
-            {
-                // THEN
-                for ( int i = 0; i < count; i++ )
-                {
-                    MutableLong first = randomKey( random.random() );
-                    MutableLong second = randomKey( random.random() );
-                    MutableLong from, to;
-                    if ( first.longValue() < second.longValue() )
-                    {
-                        from = first;
-                        to = second;
-                    }
-                    else
-                    {
-                        from = second;
-                        to = first;
-                    }
-                    Map<MutableLong,MutableLong> expectedHits = expectedHits( data, from, to, keyComparator );
-                    try ( RawCursor<Hit<MutableLong,MutableLong>,IOException> result = index.seek( from, to ) )
-                    {
-                        while ( result.next() )
-                        {
-                            MutableLong key = result.get().key();
-                            if ( expectedHits.remove( key ) == null )
-                            {
-                                fail( "Unexpected hit " + key + " when searching for " + from + " - " + to );
-                            }
-
-                            assertTrue( keyComparator.compare( key, from ) >= 0 );
-                            assertTrue( keyComparator.compare( key, to ) < 0 );
-                        }
-                        if ( !expectedHits.isEmpty() )
-                        {
-                            fail( "There were results which were expected to be returned, but weren't:" + expectedHits +
-                                    " when searching range " + from + " - " + to );
-                        }
-                    }
-                }
-
-                index.checkpoint( IOLimiter.unlimited() );
-                randomlyModifyIndex( index, data, random.random(), (double) round / totalNumberOfRounds );
-            }
+            threadPool.shutdownNow();
+            index.consistencyCheck();
         }
         finally
         {
-            threadPool.shutdownNow();
-            index.consistencyCheck();
             index.close();
+        }
+    }
+
+    @Test
+    public void shouldStayCorrectAfterRandomModifications() throws Exception
+    {
+        // GIVEN
+        GBPTree<MutableLong,MutableLong> index = createIndex( 256 );
+        Comparator<MutableLong> keyComparator = layout;
+        Map<MutableLong,MutableLong> data = new TreeMap<>( keyComparator );
+        int count = 100;
+        int totalNumberOfRounds = 10;
+        for ( int i = 0; i < count; i++ )
+        {
+            data.put( randomKey( random.random() ), randomKey( random.random() ) );
+        }
+
+        // WHEN
+        try ( Writer<MutableLong,MutableLong> writer = index.writer() )
+        {
+            for ( Map.Entry<MutableLong,MutableLong> entry : data.entrySet() )
+            {
+                writer.put( entry.getKey(), entry.getValue() );
+            }
+        }
+
+        for ( int round = 0; round < totalNumberOfRounds; round++ )
+        {
+            // THEN
+            for ( int i = 0; i < count; i++ )
+            {
+                MutableLong first = randomKey( random.random() );
+                MutableLong second = randomKey( random.random() );
+                MutableLong from, to;
+                if ( first.longValue() < second.longValue() )
+                {
+                    from = first;
+                    to = second;
+                }
+                else
+                {
+                    from = second;
+                    to = first;
+                }
+                Map<MutableLong,MutableLong> expectedHits = expectedHits( data, from, to, keyComparator );
+                try ( RawCursor<Hit<MutableLong,MutableLong>,IOException> result = index.seek( from, to ) )
+                {
+                    while ( result.next() )
+                    {
+                        MutableLong key = result.get().key();
+                        if ( expectedHits.remove( key ) == null )
+                        {
+                            fail( "Unexpected hit " + key + " when searching for " + from + " - " + to );
+                        }
+
+                        assertTrue( keyComparator.compare( key, from ) >= 0 );
+                        assertTrue( keyComparator.compare( key, to ) < 0 );
+                    }
+                    if ( !expectedHits.isEmpty() )
+                    {
+                        fail( "There were results which were expected to be returned, but weren't:" + expectedHits +
+                                " when searching range " + from + " - " + to );
+                    }
+                }
+            }
+
+            index.checkpoint( IOLimiter.unlimited() );
+            randomlyModifyIndex( index, data, random.random(), (double) round / totalNumberOfRounds );
         }
     }
 
