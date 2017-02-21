@@ -70,13 +70,30 @@ class LeafPlanningIntegrationTest extends CypherFunSuite with LogicalPlanningTes
       cost = nodeIndexScanCost
     } getLogicalPlanFor "MATCH (a:Person) WHERE a.name STARTS WITH 'short' AND a.lastname STARTS WITH 'longer' RETURN a")
       ._2 should equal(
+        Selection(Seq(StartsWith(Property(Variable("a") _, PropertyKeyName("name") _) _, StringLiteral("short") _) _),
+          NodeIndexSeek(
+            "a",
+            LabelToken("Person", LabelId(0)),
+            PropertyKeyToken(PropertyKeyName("lastname") _, PropertyKeyId(1)),
+            RangeQueryExpression(PrefixSeekRangeWrapper(PrefixRange(StringLiteral("longer") _)) _),
+            Set.empty)(solved)
+        )(solved))
+  }
+
+  test("should plan index seek by prefix for prefix search based on multiple STARTS WITHSs combined with AND, and choose the longer prefix even with predicates reversed") {
+    (new given {
+      indexOn("Person", "name")
+      indexOn("Person", "lastname")
+      cost = nodeIndexScanCost
+    } getLogicalPlanFor "MATCH (a:Person) WHERE a.lastname STARTS WITH 'longer' AND a.name STARTS WITH 'short' RETURN a")
+      ._2 should equal(
       Selection(Seq(StartsWith(Property(Variable("a") _, PropertyKeyName("name") _) _, StringLiteral("short") _) _),
-                NodeIndexSeek(
-                  "a",
-                  LabelToken("Person", LabelId(0)),
-                  PropertyKeyToken(PropertyKeyName("lastname") _, PropertyKeyId(1)),
-                  RangeQueryExpression(PrefixSeekRangeWrapper(PrefixRange(StringLiteral("longer") _)) _),
-                  Set.empty)(solved)
+        NodeIndexSeek(
+          "a",
+          LabelToken("Person", LabelId(0)),
+          PropertyKeyToken(PropertyKeyName("lastname") _, PropertyKeyId(1)),
+          RangeQueryExpression(PrefixSeekRangeWrapper(PrefixRange(StringLiteral("longer") _)) _),
+          Set.empty)(solved)
       )(solved))
   }
 
@@ -259,7 +276,11 @@ class LeafPlanningIntegrationTest extends CypherFunSuite with LogicalPlanningTes
     case (_: NodeByLabelScan, _) => 50.0
     case (_: NodeIndexScan, _) => 10.0
     case (_: NodeIndexContainsScan, _) => 10.0
-    case (_: NodeIndexSeek, _) => 1.0
+    case (nodeIndexSeek: NodeIndexSeek, _) =>
+      val planCardinality = nodeIndexSeek.solved.estimatedCardinality.amount
+      val rowCost = 1.0
+      val allNodesCardinality = 1000.0
+      rowCost * planCardinality / allNodesCardinality
     case (Selection(_, plan), input) => nodeIndexScanCost((plan, input))
     case _ => Double.MaxValue
   }
