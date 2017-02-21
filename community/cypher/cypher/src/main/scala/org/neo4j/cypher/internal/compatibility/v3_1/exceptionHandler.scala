@@ -63,6 +63,9 @@ object exceptionHandler extends MapToPublicExceptions[CypherException] {
   override def shortestPathFallbackDisableRuntimeException(message: String, cause: Throwable): CypherException =
     throw new ExhaustiveShortestPathForbiddenException(message, cause)
 
+  def shortestPathCommonEndNodesForbiddenException(message: String, cause: Throwable): CypherException =
+    throw new ShortestPathCommonEndNodesForbiddenException(message, cause)
+
   def invalidSemanticException(message: String, cause: Throwable) = throw new InvalidSemanticsException(message, cause)
 
   def parameterWrongTypeException(message: String, cause: Throwable) = throw new ParameterWrongTypeException(message, cause)

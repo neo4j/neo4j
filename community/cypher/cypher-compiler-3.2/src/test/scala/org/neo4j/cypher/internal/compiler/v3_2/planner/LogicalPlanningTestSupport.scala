@@ -169,6 +169,7 @@ trait LogicalPlanningTestSupport extends CypherTestSupport with AstConstructionT
     idpMaxTableSize = DefaultIDPSolverConfig.maxTableSize,
     idpIterationDuration = DefaultIDPSolverConfig.iterationDurationLimit,
     errorIfShortestPathFallbackUsedAtRuntime = false,
+    errorIfShortestPathHasCommonNodesAtRuntime = true,
     nonIndexedLabelWarningThreshold = 10000
   )
 

@@ -58,7 +58,7 @@ case object planShortestPaths {
       planShortestPathsWithFallback(inner, shortestPaths, predicates, safePredicates, needFallbackPredicates, queryGraph)
     }
     else {
-      context.logicalPlanProducer.planShortestPath(inner, shortestPaths, predicates, false)
+      context.logicalPlanProducer.planShortestPath(inner, shortestPaths, predicates, false, context.errorIfShortestPathHasCommonNodesAtRuntime  )
     }
   }
 
@@ -83,7 +83,7 @@ case object planShortestPaths {
     // Plan FindShortestPaths within an Apply with an Optional so we get null rows when
     // the graph algorithm does not find anything (left-hand-side)
     val lhsArgument = lpp.planArgumentRowFrom(inner)
-    val lhsSp = lpp.planShortestPath(lhsArgument, shortestPath, predicates, true)
+    val lhsSp = lpp.planShortestPath(lhsArgument, shortestPath, predicates, true, context.errorIfShortestPathHasCommonNodesAtRuntime)
     val lhsOption = lpp.planOptional(lhsSp, Set.empty)
     val lhs = lpp.planApply(inner, lhsOption)
 

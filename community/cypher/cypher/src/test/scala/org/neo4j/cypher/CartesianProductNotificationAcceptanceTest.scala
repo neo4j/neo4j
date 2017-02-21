@@ -106,6 +106,7 @@ class CartesianProductNotificationAcceptanceTest extends CypherFunSuite with Gra
         idpMaxTableSize = 128,
         idpIterationDuration = 1000,
         errorIfShortestPathFallbackUsedAtRuntime = false,
+        errorIfShortestPathHasCommonNodesAtRuntime = true,
         nonIndexedLabelWarningThreshold = 10000L
       ),
       Clock.systemUTC(),

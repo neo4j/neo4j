@@ -326,9 +326,9 @@ case class ActualPipeBuilder(monitors: Monitors, recurse: LogicalPlan => Pipe, r
           Eagerly.immutableMapValues[String, ast.Expression, AggregationExpression](aggregatingExpressions, buildExpression(_).asInstanceOf[AggregationExpression])
         )(id = id)
 
-      case FindShortestPaths(_, shortestPathPattern, predicates, withFallBack) =>
+      case FindShortestPaths(_, shortestPathPattern, predicates, withFallBack, disallowSameNode) =>
         val legacyShortestPath = shortestPathPattern.expr.asLegacyPatterns(shortestPathPattern.name.map(_.name)).head
-        ShortestPathPipe(source, legacyShortestPath, predicates.map(toCommandPredicate), withFallBack)(id = id)
+        ShortestPathPipe(source, legacyShortestPath, predicates.map(toCommandPredicate), withFallBack, disallowSameNode)(id = id)
 
       case UnwindCollection(_, variable, collection) =>
         UnwindPipe(source, toCommandExpression(collection), variable.name)(id = id)

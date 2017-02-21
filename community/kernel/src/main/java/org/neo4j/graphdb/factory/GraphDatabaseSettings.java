@@ -159,6 +159,18 @@ public class GraphDatabaseSettings implements LoadableConfig
     public static final Setting<Boolean> forbid_exhaustive_shortestpath = setting(
             "cypher.forbid_exhaustive_shortestpath", BOOLEAN, FALSE );
 
+    @Description( "This setting is associated with performance optimization. The shortest path algorithm does not " +
+                  "work when the start and end nodes are the same. With this setting set to `false` no path will " +
+                  "be returned when that happens. The default value of `true` will instead throw an exception. " +
+                  "This can happen if you perform a shortestPath search after a cartesian product that might have " +
+                  "the same start and end nodes for some of the rows passed to shortestPath. If it is preferable " +
+                  "to not experience this exception, and acceptable for results to be missing for those rows, then " +
+                  "set this to `false`. If you cannot accept missing results, and really want the shortestPath " +
+                  "between two common nodes, then re-write the query using a standard Cypher variable length pattern " +
+                  "expression followed by ordering by path length and limiting to one result." )
+    public static final Setting<Boolean> forbid_shortestpath_common_nodes = setting(
+            "cypher.forbid_shortestpath_common_nodes", BOOLEAN, TRUE );
+
     @Description( "Set this to specify the default runtime for the default language version." )
     @Internal
     public static final Setting<String> cypher_runtime = setting(

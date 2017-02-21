@@ -32,12 +32,12 @@ import scala.collection.JavaConverters._
  * Shortest pipe inserts a single shortest path between two already found nodes
  */
 case class ShortestPathPipe(source: Pipe, shortestPathCommand: ShortestPath, predicates: Seq[Predicate] = Seq.empty,
-                            withFallBack: Boolean = false)
+                            withFallBack: Boolean = false, disallowSameNode: Boolean = true)
                            (val id: Id = new Id)
                            (implicit pipeMonitor: PipeMonitor)
   extends PipeWithSource(source, pipeMonitor) with ListSupport {
   private def pathName = shortestPathCommand.pathName
-  private val shortestPathExpression = ShortestPathExpression(shortestPathCommand, predicates, withFallBack)
+  private val shortestPathExpression = ShortestPathExpression(shortestPathCommand, predicates, withFallBack, disallowSameNode)
 
   protected def internalCreateResults(input:Iterator[ExecutionContext], state: QueryState) =
     input.flatMap(ctx => {

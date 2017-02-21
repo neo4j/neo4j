@@ -140,6 +140,7 @@ case class CypherCompilerConfiguration(queryCacheSize: Int,
                                        idpMaxTableSize: Int,
                                        idpIterationDuration: Long,
                                        errorIfShortestPathFallbackUsedAtRuntime: Boolean,
+                                       errorIfShortestPathHasCommonNodesAtRuntime: Boolean,
                                        nonIndexedLabelWarningThreshold: Long)
 
 

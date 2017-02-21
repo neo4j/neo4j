@@ -224,6 +224,11 @@ class ExecutionEngine(val queryService: GraphDatabaseQueryService,
       queryService, GraphDatabaseSettings.forbid_exhaustive_shortestpath,
       GraphDatabaseSettings.forbid_exhaustive_shortestpath.getDefaultValue.toBoolean
     )
+    val errorIfShortestPathHasCommonNodesAtRuntime = optGraphSetting[java.lang.Boolean](
+      queryService, GraphDatabaseSettings.forbid_shortestpath_common_nodes,
+      GraphDatabaseSettings.forbid_shortestpath_common_nodes.getDefaultValue.toBoolean
+    )
+
     if (((version != CypherVersion.v2_3) || (version != CypherVersion.v3_1) || (version != CypherVersion.v3_2)) &&
       (planner == CypherPlanner.greedy || planner == CypherPlanner.idp || planner == CypherPlanner.dp)) {
       val message = s"Cannot combine configurations: ${GraphDatabaseSettings.cypher_parser_version.name}=${version.name} " +
@@ -235,7 +240,7 @@ class ExecutionEngine(val queryService: GraphDatabaseQueryService,
     val compatibilityCache = new CompatibilityCache(compatibilityFactory)
     new CompilerEngineDelegator(queryService, kernel, kernelMonitors, version, planner, runtime,
       useErrorsOverWarnings, idpMaxTableSize, idpIterationDuration, errorIfShortestPathFallbackUsedAtRuntime,
-      logProvider, compatibilityCache)
+      errorIfShortestPathHasCommonNodesAtRuntime, logProvider, compatibilityCache)
   }
 
   private def getPlanCacheSize: Int =

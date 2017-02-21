@@ -198,7 +198,7 @@ case class LogicalPlan2PlanDescription(idMap: Map[LogicalPlan, Id], readOnly: Bo
       case Skip(_, count) =>
         PlanDescriptionImpl(id, name = "Skip", children, Seq(Expression(count)), variables)
 
-      case FindShortestPaths(_, _, predicates, _) =>
+      case FindShortestPaths(_, _, predicates, _, _) =>
         val args = predicates.zipWithIndex.map { case (p, idx) => s"p$idx" -> p }
         PlanDescriptionImpl(id, "ShortestPath", children, Seq(Expressions(args.toMap)), variables)
 

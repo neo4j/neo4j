@@ -24,7 +24,7 @@ import org.neo4j.cypher.internal.compiler.v3_2.ast.rewriters._
 import org.neo4j.cypher.internal.compiler.v3_2.phases._
 import org.neo4j.cypher.internal.compiler.v3_2.planner.logical.Metrics._
 import org.neo4j.cypher.internal.compiler.v3_2.planner.logical.cardinality.QueryGraphCardinalityModel
-import org.neo4j.cypher.internal.compiler.v3_2.planner.logical.idp.{IDPQueryGraphSolver, IDPQueryGraphSolverMonitor, SingleComponentPlanner, cartesianProductsOrValueJoins}
+import org.neo4j.cypher.internal.compiler.v3_2.planner.logical.idp._
 import org.neo4j.cypher.internal.compiler.v3_2.planner.logical.plans._
 import org.neo4j.cypher.internal.compiler.v3_2.planner.logical.plans.rewriter.unnestApply
 import org.neo4j.cypher.internal.compiler.v3_2.planner.logical.steps.LogicalPlanProducer
@@ -63,7 +63,17 @@ trait LogicalPlanningTestSupport2 extends CypherTestSupport with AstConstruction
   }
   var queryGraphSolver: QueryGraphSolver = new IDPQueryGraphSolver(SingleComponentPlanner(mock[IDPQueryGraphSolverMonitor]), cartesianProductsOrValueJoins, mock[IDPQueryGraphSolverMonitor])
   val realConfig = new RealLogicalPlanningConfiguration
-
+  val cypherCompilerConfig = CypherCompilerConfiguration(
+    queryCacheSize = 100,
+    statsDivergenceThreshold = 0.5,
+    queryPlanTTL = 1000,
+    useErrorsOverWarnings = false,
+    idpMaxTableSize = DefaultIDPSolverConfig.maxTableSize,
+    idpIterationDuration = DefaultIDPSolverConfig.iterationDurationLimit,
+    errorIfShortestPathFallbackUsedAtRuntime = false,
+    errorIfShortestPathHasCommonNodesAtRuntime = true,
+    nonIndexedLabelWarningThreshold = 10000
+  )
   def solvedWithEstimation(cardinality: Cardinality) = CardinalityEstimation.lift(PlannerQuery.empty, cardinality)
 
   implicit class LogicalPlanningEnvironment[C <: LogicalPlanningConfiguration](config: C) {
@@ -150,7 +160,7 @@ trait LogicalPlanningTestSupport2 extends CypherTestSupport with AstConstruction
     def getLogicalPlanFor(queryString: String): (Option[PeriodicCommit], LogicalPlan, SemanticTable) = {
       val mkException = new SyntaxExceptionCreator(queryString, Some(pos))
       val metrics = metricsFactory.newMetrics(planContext.statistics)
-      def context = ContextHelper.create(planContext = planContext, exceptionCreator = mkException, queryGraphSolver = queryGraphSolver, metrics = metrics)
+      def context = ContextHelper.create(planContext = planContext, exceptionCreator = mkException, queryGraphSolver = queryGraphSolver, metrics = metrics, config = cypherCompilerConfig)
 
       val state = CompilationState(queryString, None, IDPPlannerName)
       val output = pipeLine.transform(state, context)

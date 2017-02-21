@@ -24,7 +24,7 @@ import org.neo4j.cypher.internal.compiler.v3_2.commands.predicates._
 import org.neo4j.cypher.internal.compiler.v3_2.commands.{Pattern, ShortestPath, SingleNode, _}
 import org.neo4j.cypher.internal.compiler.v3_2.helpers.RelationshipSupport
 import org.neo4j.cypher.internal.compiler.v3_2.pipes.QueryState
-import org.neo4j.cypher.internal.frontend.v3_2.SyntaxException
+import org.neo4j.cypher.internal.frontend.v3_2.{ShortestPathCommonEndNodesForbiddenException, SyntaxException}
 import org.neo4j.cypher.internal.frontend.v3_2.helpers.NonEmptyList
 import org.neo4j.graphdb.{Node, Path, PropertyContainer}
 
@@ -32,7 +32,7 @@ import scala.collection.JavaConverters._
 import scala.collection.Map
 
 case class ShortestPathExpression(shortestPathPattern: ShortestPath, predicates: Seq[Predicate] = Seq.empty,
-                                  withFallBack: Boolean = false) extends Expression {
+                                  withFallBack: Boolean = false, disallowSameNode: Boolean = true) extends Expression with PathExtractor {
   val pathPattern: Seq[Pattern] = Seq(shortestPathPattern)
   val pathVariables = Set(shortestPathPattern.pathName, shortestPathPattern.relIterator.getOrElse(""))
 
@@ -40,13 +40,14 @@ case class ShortestPathExpression(shortestPathPattern: ShortestPath, predicates:
     if (anyStartpointsContainNull(ctx)) {
       Stream.empty
     } else {
-      getMatches(ctx)
+      val start = getEndPoint(ctx, shortestPathPattern.left)
+      val end = getEndPoint(ctx, shortestPathPattern.right)
+      if (!shortestPathPattern.allowZeroLength && disallowSameNode && start.equals(end)) throw new ShortestPathCommonEndNodesForbiddenException
+      getMatches(ctx, start, end)
     }
   }
 
-  private def getMatches(ctx: ExecutionContext)(implicit state: QueryState): Any = {
-    val start = getEndPoint(ctx, shortestPathPattern.left)
-    val end = getEndPoint(ctx, shortestPathPattern.right)
+  private def getMatches(ctx: ExecutionContext, start: Node, end: Node)(implicit state: QueryState): Any = {
     val (expander, nodePredicates) = addPredicates(ctx, makeRelationshipTypeExpander())
     val maybePredicate = if (predicates.isEmpty) None else Some(Ands(NonEmptyList.from(predicates)))
     /* This test is made after a full shortest path candidate has been produced,
