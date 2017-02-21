@@ -19,15 +19,16 @@
  */
 package org.neo4j.codegen.bytecode;
 
-import org.objectweb.asm.ClassWriter;
-import org.objectweb.asm.Label;
-import org.objectweb.asm.MethodVisitor;
-
 import java.util.Deque;
 import java.util.LinkedList;
 import java.util.function.Consumer;
 
+import org.objectweb.asm.ClassWriter;
+import org.objectweb.asm.Label;
+import org.objectweb.asm.MethodVisitor;
+
 import org.neo4j.codegen.Expression;
+import org.neo4j.codegen.ExpressionVisitor;
 import org.neo4j.codegen.FieldReference;
 import org.neo4j.codegen.LocalVariable;
 import org.neo4j.codegen.MethodDeclaration;
@@ -51,9 +52,6 @@ import static org.objectweb.asm.Opcodes.FRETURN;
 import static org.objectweb.asm.Opcodes.FSTORE;
 import static org.objectweb.asm.Opcodes.GOTO;
 import static org.objectweb.asm.Opcodes.IFEQ;
-import static org.objectweb.asm.Opcodes.IFNE;
-import static org.objectweb.asm.Opcodes.IFNONNULL;
-import static org.objectweb.asm.Opcodes.IFNULL;
 import static org.objectweb.asm.Opcodes.IRETURN;
 import static org.objectweb.asm.Opcodes.ISTORE;
 import static org.objectweb.asm.Opcodes.LRETURN;
@@ -65,7 +63,7 @@ class MethodByteCodeEmitter implements MethodEmitter
 {
     private final MethodVisitor methodVisitor;
     private final MethodDeclaration declaration;
-    private final ByteCodeExpressionVisitor expressionVisitor;
+    private final ExpressionVisitor expressionVisitor;
     private final TypeReference base;
     private Deque<Block> stateStack = new LinkedList<>();
 
@@ -171,42 +169,21 @@ class MethodByteCodeEmitter implements MethodEmitter
     }
 
     @Override
-    public void beginWhile( Expression...tests )
+    public void beginWhile( Expression test )
     {
-        Label l0 = new Label();
-        methodVisitor.visitLabel( l0 );
-        Label l1 = new Label();
-        for ( Expression test : tests )
-        {
-            test.accept( expressionVisitor );
-            methodVisitor.visitJumpInsn( IFEQ, l1 );
-        }
+        Label repeat = new Label(), done = new Label();
+        methodVisitor.visitLabel( repeat );
+        test.accept( new JumpVisitor( expressionVisitor, methodVisitor, done ) );
 
-        stateStack.push( new While( methodVisitor, l0, l1  ) );
+        stateStack.push( new While( methodVisitor, repeat, done  ) );
     }
 
     @Override
-    public void beginIf( Expression... tests )
+    public void beginIf( Expression test )
     {
-        beginConditional( IFEQ, tests );
-    }
-
-    @Override
-    public void beginIfNot( Expression... tests )
-    {
-        beginConditional( IFNE, tests );
-    }
-
-    @Override
-    public void beginIfNull( Expression...tests )
-    {
-        beginConditional( IFNONNULL, tests );
-    }
-
-    @Override
-    public void beginIfNonNull( Expression...tests )
-    {
-        beginConditional( IFNULL, tests );
+        Label after = new Label();
+        test.accept( new JumpVisitor( expressionVisitor, methodVisitor, after ) );
+        stateStack.push( new If( methodVisitor, after ) );
     }
 
     @Override
@@ -228,22 +205,22 @@ class MethodByteCodeEmitter implements MethodEmitter
     @Override
     public <T> void tryCatchBlock( Consumer<T> body, Consumer<T> handler, LocalVariable exception, T block )
     {
-        Label l0 = new Label();
-        Label l1 = new Label();
-        Label l2 = new Label();
-        methodVisitor.visitTryCatchBlock( l0, l1, l2,
+        Label start = new Label();
+        Label end = new Label();
+        Label handle = new Label();
+        Label after = new Label();
+        methodVisitor.visitTryCatchBlock( start, end, handle,
                 byteCodeName( exception.type() ) );
-        methodVisitor.visitLabel( l0 );
+        methodVisitor.visitLabel( start );
         body.accept( block );
-        methodVisitor.visitLabel( l1 );
-        Label l3 = new Label();
-        methodVisitor.visitJumpInsn( GOTO, l3 );
+        methodVisitor.visitLabel( end );
+        methodVisitor.visitJumpInsn( GOTO, after );
         //handle catch
-        methodVisitor.visitLabel( l2 );
+        methodVisitor.visitLabel( handle );
         methodVisitor.visitVarInsn( ASTORE, exception.index() );
 
         handler.accept( block );
-        methodVisitor.visitLabel( l3 );
+        methodVisitor.visitLabel( after );
     }
 
     @Override
@@ -264,16 +241,5 @@ class MethodByteCodeEmitter implements MethodEmitter
     {
         //these are equivalent when it comes to bytecode
         assign( local, value );
-    }
-
-    private void beginConditional(int op, Expression[] tests)
-    {
-        Label l0 = new Label();
-        for ( Expression test : tests )
-        {
-            test.accept( expressionVisitor );
-            methodVisitor.visitJumpInsn( op, l0 );
-        }
-        stateStack.push(new If(methodVisitor, l0));
     }
 }

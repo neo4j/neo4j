@@ -69,6 +69,19 @@ public class TypeReference
         else if (type.isPrimitive())
         {
             simpleName = type.getName();
+            switch ( simpleName )
+            {
+            case "boolean":
+                return BOOLEAN;
+            case "int":
+                return INT;
+            case "long":
+                return LONG;
+            case "double":
+                return DOUBLE;
+            default:
+                // continue through the normal path
+            }
         }
         else
         {

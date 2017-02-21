@@ -19,12 +19,6 @@
  */
 package org.neo4j.codegen;
 
-import org.junit.Before;
-import org.junit.Test;
-import org.junit.runner.RunWith;
-import org.junit.runners.Parameterized;
-import org.mockito.InOrder;
-
 import java.io.IOException;
 import java.lang.invoke.MethodHandle;
 import java.lang.invoke.MethodHandles;
@@ -34,6 +28,13 @@ import java.util.Collection;
 import java.util.Iterator;
 import java.util.List;
 import java.util.function.BiFunction;
+import java.util.function.Function;
+
+import org.junit.Before;
+import org.junit.Test;
+import org.junit.runner.RunWith;
+import org.junit.runners.Parameterized;
+import org.mockito.InOrder;
 
 import org.neo4j.codegen.source.Configuration;
 import org.neo4j.codegen.source.SourceCode;
@@ -59,11 +60,14 @@ import static org.mockito.Mockito.verifyZeroInteractions;
 import static org.neo4j.codegen.Expression.add;
 import static org.neo4j.codegen.Expression.and;
 import static org.neo4j.codegen.Expression.constant;
+import static org.neo4j.codegen.Expression.equal;
 import static org.neo4j.codegen.Expression.invoke;
+import static org.neo4j.codegen.Expression.isNull;
 import static org.neo4j.codegen.Expression.multiply;
 import static org.neo4j.codegen.Expression.newArray;
 import static org.neo4j.codegen.Expression.newInstance;
 import static org.neo4j.codegen.Expression.not;
+import static org.neo4j.codegen.Expression.notNull;
 import static org.neo4j.codegen.Expression.or;
 import static org.neo4j.codegen.Expression.subtract;
 import static org.neo4j.codegen.Expression.ternary;
@@ -491,7 +495,7 @@ public class CodeGenerationTest
             try ( CodeBlock callEach = simple.generateMethod( void.class, "check",
                     param( boolean.class, "a" ), param( boolean.class, "b" ), param( Runnable.class, "runner" ) ) )
             {
-                try ( CodeBlock loop = callEach.whileLoop( callEach.load( "a" ), callEach.load( "b" ) ) )
+                try ( CodeBlock loop = callEach.whileLoop( and( callEach.load( "a" ), callEach.load( "b" ) ) ) )
                 {
                     loop.expression( invoke(
                             loop.load( "runner" ),
@@ -639,18 +643,16 @@ public class CodeGenerationTest
     }
 
     @Test
-    public void shouldGenerateIfWithMultipleTestsStatement() throws Throwable
+    public void shouldGenerateIfEqualsStatement() throws Throwable
     {
         // given
         ClassHandle handle;
         try ( ClassGenerator simple = generateClass( "SimpleClass" ) )
         {
             try ( CodeBlock conditional = simple.generateMethod( void.class, "conditional",
-                    param( boolean.class, "test1" ), param( boolean.class, "test2" ),
-                    param( Runnable.class, "runner" ) ) )
+                    param( Object.class, "lhs" ), param( Object.class, "rhs" ), param( Runnable.class, "runner" ) ) )
             {
-                try ( CodeBlock doStuff = conditional
-                        .ifStatement( conditional.load( "test1" ), conditional.load( "test2" ) ) )
+                try ( CodeBlock doStuff = conditional.ifStatement( equal( conditional.load( "lhs" ), conditional.load( "rhs" ) ) ) )
                 {
                     doStuff.expression(
                             invoke( doStuff.load( "runner" ), RUN ) );
@@ -662,22 +664,50 @@ public class CodeGenerationTest
 
         Runnable runner1 = mock( Runnable.class );
         Runnable runner2 = mock( Runnable.class );
-        Runnable runner3 = mock( Runnable.class );
-        Runnable runner4 = mock( Runnable.class );
+        Object a = "a", b = "b";
 
         // when
-        MethodHandle conditional =
-                instanceMethod( handle.newInstance(), "conditional", boolean.class, boolean.class, Runnable.class );
-        conditional.invoke( true, true, runner1 );
-        conditional.invoke( false, true, runner2 );
-        conditional.invoke( true, false, runner3 );
-        conditional.invoke( false, false, runner4 );
+        MethodHandle conditional = instanceMethod( handle.newInstance(), "conditional", Object.class, Object.class, Runnable.class );
+        conditional.invoke( a, b, runner1 );
+        conditional.invoke( a, a, runner2 );
 
         // then
-        verify( runner1 ).run();
-        verifyZeroInteractions( runner2 );
-        verifyZeroInteractions( runner3 );
-        verifyZeroInteractions( runner4 );
+        verify( runner2 ).run();
+        verifyZeroInteractions( runner1 );
+    }
+
+    @Test
+    public void shouldGenerateIfNotEqualsStatement() throws Throwable
+    {
+        // given
+        ClassHandle handle;
+        try ( ClassGenerator simple = generateClass( "SimpleClass" ) )
+        {
+            try ( CodeBlock conditional = simple.generateMethod( void.class, "conditional",
+                    param( Object.class, "lhs" ), param( Object.class, "rhs" ), param( Runnable.class, "runner" ) ) )
+            {
+                try ( CodeBlock doStuff = conditional.ifStatement( not( equal( conditional.load( "lhs" ), conditional.load( "rhs" ) ) ) ) )
+                {
+                    doStuff.expression(
+                            invoke( doStuff.load( "runner" ), RUN ) );
+                }
+            }
+
+            handle = simple.handle();
+        }
+
+        Runnable runner1 = mock( Runnable.class );
+        Runnable runner2 = mock( Runnable.class );
+        Object a = "a", b = "b";
+
+        // when
+        MethodHandle conditional = instanceMethod( handle.newInstance(), "conditional", Object.class, Object.class, Runnable.class );
+        conditional.invoke( a, a, runner1 );
+        conditional.invoke( a, b, runner2 );
+
+        // then
+        verify( runner2 ).run();
+        verifyZeroInteractions( runner1 );
     }
 
     @Test
@@ -714,39 +744,6 @@ public class CodeGenerationTest
     }
 
     @Test
-    public void shouldGenerateIfNotStatement() throws Throwable
-    {
-        // given
-        ClassHandle handle;
-        try ( ClassGenerator simple = generateClass( "SimpleClass" ) )
-        {
-            try ( CodeBlock conditional = simple.generateMethod( void.class, "conditional",
-                    param( boolean.class, "test" ), param( Runnable.class, "runner" ) ) )
-            {
-                try ( CodeBlock doStuff = conditional.ifNotStatement( conditional.load( "test" ) ) )
-                {
-                    doStuff.expression(
-                            invoke( doStuff.load( "runner" ), RUN ) );
-                }
-            }
-
-            handle = simple.handle();
-        }
-
-        Runnable runner1 = mock( Runnable.class );
-        Runnable runner2 = mock( Runnable.class );
-
-        // when
-        MethodHandle conditional = instanceMethod( handle.newInstance(), "conditional", boolean.class, Runnable.class );
-        conditional.invoke( true, runner1 );
-        conditional.invoke( false, runner2 );
-
-        // then
-        verify( runner2 ).run();
-        verifyZeroInteractions( runner1 );
-    }
-
-    @Test
     public void shouldGenerateIfNullStatement() throws Throwable
     {
         // given
@@ -756,7 +753,7 @@ public class CodeGenerationTest
             try ( CodeBlock conditional = simple.generateMethod( void.class, "conditional",
                     param( Object.class, "test" ), param( Runnable.class, "runner" ) ) )
             {
-                try ( CodeBlock doStuff = conditional.ifNullStatement( conditional.load( "test" ) ) )
+                try ( CodeBlock doStuff = conditional.ifStatement( isNull(conditional.load( "test" ) ) ) )
                 {
                     doStuff.expression(
                             invoke( doStuff.load( "runner" ), RUN ) );
@@ -789,7 +786,7 @@ public class CodeGenerationTest
             try ( CodeBlock conditional = simple.generateMethod( void.class, "conditional",
                     param( Object.class, "test" ), param( Runnable.class, "runner" ) ) )
             {
-                try ( CodeBlock doStuff = conditional.ifNonNullStatement( conditional.load( "test" ) ) )
+                try ( CodeBlock doStuff = conditional.ifStatement( notNull( conditional.load( "test" ) ) ) )
                 {
                     doStuff.expression(
                             invoke( doStuff.load( "runner" ), RUN ) );
@@ -1128,7 +1125,7 @@ public class CodeGenerationTest
                     param( Object.class, "test" ), param( TernaryChecker.class, "check" ) ) )
             {
                 ternaryBlock.returns(
-                        Expression.ternaryOnNull( ternaryBlock.load( "test" ),
+                        ternary( isNull( ternaryBlock.load( "test" ) ),
                                 invoke( ternaryBlock.load( "check" ),
                                         methodReference( TernaryChecker.class, String.class, "onTrue" ) ),
                                 invoke( ternaryBlock.load( "check" ),
@@ -1165,7 +1162,7 @@ public class CodeGenerationTest
                     param( Object.class, "test" ), param( TernaryChecker.class, "check" ) ) )
             {
                 ternaryBlock.returns(
-                        Expression.ternaryOnNonNull( ternaryBlock.load( "test" ),
+                        ternary( notNull( ternaryBlock.load( "test" ) ),
                                 invoke( ternaryBlock.load( "check" ),
                                         methodReference( TernaryChecker.class, String.class, "onTrue" ) ),
                                 invoke( ternaryBlock.load( "check" ),
@@ -1741,6 +1738,11 @@ public class CodeGenerationTest
 
         // when
         return instanceMethod( handle.newInstance(), "box", unboxedType ).invoke( value );
+    }
+
+    private MethodHandle conditional(Function<CodeBlock,Expression> test, Parameter... params)
+    {
+        throw new UnsupportedOperationException( "not implemented" );
     }
 
     static MethodHandle method( Class<?> target, String name, Class<?>... parameters ) throws Exception

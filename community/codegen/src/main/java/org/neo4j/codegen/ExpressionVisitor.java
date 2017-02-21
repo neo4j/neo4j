@@ -41,15 +41,17 @@ public interface ExpressionVisitor
 
     void ternary( Expression test, Expression onTrue, Expression onFalse );
 
-    void ternaryOnNull( Expression test, Expression onTrue, Expression onFalse );
-
-    void ternaryOnNonNull( Expression test, Expression onTrue, Expression onFalse );
-
     void equal( Expression lhs, Expression rhs);
 
-    void or( Expression lhs, Expression rhs );
+    void notEqual( Expression lhs, Expression rhs );
 
-    void and( Expression lhs, Expression rhs );
+    void isNull( Expression expression );
+
+    void notNull( Expression expression );
+
+    void or( Expression... expressions );
+
+    void and( Expression... expressions );
 
     void add( Expression lhs, Expression rhs );
 

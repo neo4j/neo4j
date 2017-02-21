@@ -161,7 +161,7 @@ case class GeneratedMethodStructure(fields: Fields, generator: CodeBlock, aux: A
   }
 
   override def ifNotStatement(test: Expression)(block: (MethodStructure[Expression]) => Unit) = {
-    using(generator.ifNotStatement(test)) { body =>
+    using(generator.ifStatement(not(test))) { body =>
       block(copy(generator = body))
     }
   }
@@ -208,9 +208,9 @@ case class GeneratedMethodStructure(fields: Fields, generator: CodeBlock, aux: A
 
   override def visitorAccept() = tryCatch(generator) { onSuccess =>
     using(
-      onSuccess.ifNotStatement(
+      onSuccess.ifStatement(not(
         invoke(onSuccess.load("visitor"),
-               visit, onSuccess.load("row")))) { body =>
+               visit, onSuccess.load("row"))))) { body =>
       // NOTE: we are in this if-block if the visitor decided to terminate early (by returning false)
       //close all outstanding events
       for (event <- events) {
@@ -238,7 +238,7 @@ case class GeneratedMethodStructure(fields: Fields, generator: CodeBlock, aux: A
         equal(nullValue(codeGenType), generator.load(varName)),
         nullValue(codeGenType),
         onSuccess)
-    case _ => ternaryOnNull(generator.load(varName), constant(null), onSuccess)
+    case _ => ternary(Expression.isNull(generator.load(varName)), constant(null), onSuccess)
   }
 
   override def nullableReference(varName: String, codeGenType: CodeGenType, onSuccess: Expression) = codeGenType match {
@@ -247,7 +247,7 @@ case class GeneratedMethodStructure(fields: Fields, generator: CodeBlock, aux: A
         equal(nullValue(codeGenType), generator.load(varName)),
         constant(null),
         onSuccess)
-    case _ => ternaryOnNull(generator.load(varName), constant(null), onSuccess)
+    case _ => ternary(Expression.isNull(generator.load(varName)), constant(null), onSuccess)
   }
 
   override def materializeRelationship(relIdVar: String) =
@@ -277,7 +277,7 @@ case class GeneratedMethodStructure(fields: Fields, generator: CodeBlock, aux: A
 
   override def expectParameter(key: String, variableName: String) = {
     using(
-      generator.ifNotStatement(invoke(params, mapContains, constant(key)))) { block =>
+      generator.ifStatement(not(invoke(params, mapContains, constant(key))))) { block =>
       block.throwException(parameterNotFoundException(key))
     }
     generator.assign(typeRef[Object], variableName, invoke(loadParameter,
@@ -489,7 +489,7 @@ case class GeneratedMethodStructure(fields: Fields, generator: CodeBlock, aux: A
         pop(
           invoke(generator.load(tableVar), countingTableCompositeKeyPut,
                  generator.load(keyName),
-                 ternaryOnNull(generator.load(countName),
+                 ternary(Expression.isNull(generator.load(countName)),
                                invoke(boxInteger,
                                       constant(1)), invoke(boxInteger,
                                                            add(
@@ -520,8 +520,8 @@ case class GeneratedMethodStructure(fields: Fields, generator: CodeBlock, aux: A
                                           newArray(typeRef[Long],
                                                    keyVars.map(generator.load): _*)))))
       generator.assign(times,
-                       ternaryOnNull(
-                         intermediate,
+                       ternary(
+                         Expression.isNull(intermediate),
                          constant(-1),
                          invoke(intermediate, unboxInteger)))
 
@@ -539,7 +539,7 @@ case class GeneratedMethodStructure(fields: Fields, generator: CodeBlock, aux: A
       val list = generator.declare(hashTable.listType, context.namer.newVarName())
       val elementName = context.namer.newVarName()
       generator.assign(list, invoke(generator.load(tableVar), hashTable.get, generator.load(keyVar)))
-      using(generator.ifNonNullStatement(list)) { onTrue =>
+      using(generator.ifStatement(Expression.notNull(list))) { onTrue =>
         using(onTrue.forEach(Parameter.param(hashTable.valueType, elementName), list)) { forEach =>
           localVars.foreach {
             case (l, f) =>
@@ -563,7 +563,7 @@ case class GeneratedMethodStructure(fields: Fields, generator: CodeBlock, aux: A
                                           newArray(typeRef[Long],
                                                    keyVars.map(generator.load): _*))
                             )))
-      using(generator.ifNonNullStatement(list)) { onTrue =>
+      using(generator.ifStatement(Expression.notNull(list))) { onTrue =>
         using(onTrue.forEach(Parameter.param(hashTable.valueType, elementName), list)) { forEach =>
           localVars.foreach {
             case (l, f) =>
@@ -598,7 +598,7 @@ case class GeneratedMethodStructure(fields: Fields, generator: CodeBlock, aux: A
                             invoke(
                               generator.load(tableVar), hashTable.get,
                               generator.load(keyVar))))
-      using(generator.ifNullStatement(list)) { onTrue => // if (null == list)
+      using(generator.ifStatement(Expression.isNull(list))) { onTrue => // if (null == list)
         // list = new ListType();
         onTrue.assign(list, createNewInstance(hashTable.listType))
         onTrue.expression(
@@ -626,7 +626,7 @@ case class GeneratedMethodStructure(fields: Fields, generator: CodeBlock, aux: A
       generator.assign(list,
                        cast(hashTable.listType,
                             invoke(generator.load(tableVar), hashTable.get, generator.load(keyName))))
-      using(generator.ifNullStatement(generator.load(listName))) { onTrue => // if (null == list)
+      using(generator.ifStatement(Expression.isNull(generator.load(listName)))) { onTrue => // if (null == list)
         // list = new ListType();
         onTrue.assign(list, createNewInstance(hashTable.listType))
         // tableVar.put(keyVar, list);
@@ -710,10 +710,10 @@ case class GeneratedMethodStructure(fields: Fields, generator: CodeBlock, aux: A
 
   override def nodeIdSeek(nodeIdVar: String, expression: Expression)(block: MethodStructure[Expression] => Unit) = {
     generator.assign(typeRef[Long], nodeIdVar, invoke(Methods.mathCastToLong, expression))
-    using(generator.ifStatement(
+    using(generator.ifStatement(and(
       gt(generator.load(nodeIdVar), constant(-1L)),
       invoke(readOperations, nodeExists, generator.load(nodeIdVar))
-    )) { ifBody =>
+    ))) { ifBody =>
       block(copy(generator = ifBody))
     }
   }

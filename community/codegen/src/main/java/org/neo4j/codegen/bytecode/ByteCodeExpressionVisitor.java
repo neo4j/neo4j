@@ -19,10 +19,10 @@
  */
 package org.neo4j.codegen.bytecode;
 
+import java.lang.reflect.Modifier;
+
 import org.objectweb.asm.Label;
 import org.objectweb.asm.MethodVisitor;
-
-import java.lang.reflect.Modifier;
 
 import org.neo4j.codegen.Expression;
 import org.neo4j.codegen.ExpressionVisitor;
@@ -72,7 +72,9 @@ import static org.objectweb.asm.Opcodes.IFLT;
 import static org.objectweb.asm.Opcodes.IFNE;
 import static org.objectweb.asm.Opcodes.IFNONNULL;
 import static org.objectweb.asm.Opcodes.IFNULL;
+import static org.objectweb.asm.Opcodes.IF_ACMPEQ;
 import static org.objectweb.asm.Opcodes.IF_ACMPNE;
+import static org.objectweb.asm.Opcodes.IF_ICMPEQ;
 import static org.objectweb.asm.Opcodes.IF_ICMPGE;
 import static org.objectweb.asm.Opcodes.IF_ICMPGT;
 import static org.objectweb.asm.Opcodes.IF_ICMPLE;
@@ -258,37 +260,63 @@ class ByteCodeExpressionVisitor implements ExpressionVisitor
     @Override
     public void not( Expression expression )
     {
-        expression.accept( this );
-        Label l0 = new Label();
-        methodVisitor.visitJumpInsn( IFNE, l0 );
-        methodVisitor.visitInsn( ICONST_1 );
-        Label l1 = new Label();
-        methodVisitor.visitJumpInsn( GOTO, l1 );
-        methodVisitor.visitLabel( l0 );
-        methodVisitor.visitInsn( ICONST_0 );
-        methodVisitor.visitLabel( l1 );
+        test( IFNE, expression, Expression.TRUE, Expression.FALSE );
+    }
+
+    @Override
+    public void isNull( Expression expression )
+    {
+        test( IFNONNULL, expression, Expression.TRUE, Expression.FALSE );
+    }
+
+    @Override
+    public void notNull( Expression expression )
+    {
+        test( IFNULL, expression, Expression.TRUE, Expression.FALSE );
     }
 
     @Override
     public void ternary( Expression test, Expression onTrue, Expression onFalse )
     {
-        ternaryExpression( IFEQ, test, onTrue, onFalse );
+        test( IFEQ, test, onTrue, onFalse );
     }
 
-    @Override
     public void ternaryOnNull( Expression test, Expression onTrue, Expression onFalse )
     {
-        ternaryExpression( IFNONNULL, test, onTrue, onFalse );
+        test( IFNONNULL, test, onTrue, onFalse );
     }
 
-    @Override
     public void ternaryOnNonNull( Expression test, Expression onTrue, Expression onFalse )
     {
-        ternaryExpression( IFNULL, test, onTrue, onFalse );
+        test( IFNULL, test, onTrue, onFalse );
+    }
+
+    private void test( int test, Expression predicate, Expression onTrue, Expression onFalse )
+    {
+        predicate.accept( this );
+        Label isFalse = new Label();
+        methodVisitor.visitJumpInsn( test, isFalse );
+        onTrue.accept( this );
+        Label after = new Label();
+        methodVisitor.visitJumpInsn( GOTO, after );
+        methodVisitor.visitLabel( isFalse );
+        onFalse.accept( this );
+        methodVisitor.visitLabel( after );
     }
 
     @Override
     public void equal( Expression lhs, Expression rhs )
+    {
+        equal( lhs, rhs, true );
+    }
+
+    @Override
+    public void notEqual( Expression lhs, Expression rhs )
+    {
+        equal( lhs, rhs, false );
+    }
+
+    private void equal( Expression lhs, Expression rhs, boolean equal )
     {
         assertSameType( lhs, rhs, "compare" );
         switch ( lhs.type().simpleName() )
@@ -298,25 +326,27 @@ class ByteCodeExpressionVisitor implements ExpressionVisitor
         case "short":
         case "char":
         case "boolean":
-            compareIntOrReferenceType( lhs, rhs, IF_ICMPNE );
+            compareIntOrReferenceType( lhs, rhs, equal ? IF_ICMPNE : IF_ICMPEQ );
             break;
         case "long":
-            compareLongOrFloatType( lhs, rhs, LCMP, IFNE );
+            compareLongOrFloatType( lhs, rhs, LCMP, equal ? IFNE : IFEQ );
             break;
         case "float":
-            compareLongOrFloatType( lhs, rhs, FCMPL, IFNE );
+            compareLongOrFloatType( lhs, rhs, FCMPL, equal ? IFNE : IFEQ );
             break;
         case "double":
-            compareLongOrFloatType( lhs, rhs, DCMPL, IFNE );
+            compareLongOrFloatType( lhs, rhs, DCMPL, equal ? IFNE : IFEQ );
             break;
         default:
-            compareIntOrReferenceType( lhs, rhs, IF_ACMPNE );
+            compareIntOrReferenceType( lhs, rhs, equal ? IF_ACMPNE : IF_ACMPEQ );
         }
     }
 
     @Override
-    public void or( Expression lhs, Expression rhs )
+    public void or( Expression... expressions )
     {
+        assert expressions.length == 2 : "only supports or(lhs, rhs)";
+        Expression lhs = expressions[0], rhs = expressions[1];
         /*
          * something like:
          *
@@ -346,12 +376,13 @@ class ByteCodeExpressionVisitor implements ExpressionVisitor
         methodVisitor.visitLabel( l1 );
         methodVisitor.visitInsn( ICONST_0 );
         methodVisitor.visitLabel( l2 );
-
     }
 
     @Override
-    public void and( Expression lhs, Expression rhs )
+    public void and( Expression... expressions )
     {
+        assert expressions.length == 2 : "only supports and(lhs, rhs)";
+        Expression lhs = expressions[0], rhs = expressions[1];
         /*
          * something like:
          *
@@ -721,19 +752,6 @@ class ByteCodeExpressionVisitor implements ExpressionVisitor
             methodVisitor.visitInsn( AASTORE );
 
         }
-    }
-
-    private void ternaryExpression( int op, Expression test, Expression onTrue, Expression onFalse )
-    {
-        test.accept( this );
-        Label l0 = new Label();
-        methodVisitor.visitJumpInsn( op, l0 );
-        onTrue.accept( this );
-        Label l1 = new Label();
-        methodVisitor.visitJumpInsn( GOTO, l1 );
-        methodVisitor.visitLabel( l0 );
-        onFalse.accept( this );
-        methodVisitor.visitLabel( l1 );
     }
 
     private void numberOperation( TypeReference type, Runnable onInt, Runnable onLong, Runnable onFloat,

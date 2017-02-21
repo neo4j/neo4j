@@ -26,17 +26,17 @@ import org.objectweb.asm.MethodVisitor;
 public class If implements Block
 {
     private final MethodVisitor methodVisitor;
-    private final Label l0;
+    private final Label after;
 
-    public If( MethodVisitor methodVisitor, Label l0)
+    public If( MethodVisitor methodVisitor, Label after )
     {
         this.methodVisitor = methodVisitor;
-        this.l0 = l0;
+        this.after = after;
     }
 
     @Override
     public void endBlock()
     {
-        methodVisitor.visitLabel( l0 );
+        methodVisitor.visitLabel( after );
     }
 }
