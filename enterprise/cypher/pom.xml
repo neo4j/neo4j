@@ -31,13 +31,23 @@
     <url>https://github.com/neo4j/neo4j</url>
   </scm>
 
-  <modules>
-    <module>spec-suite-tools</module>
-    <module>acceptance-spec-suite</module>
-    <module>compatibility-spec-suite</module>
-    <module>cypher</module>
-    <module>cypher-compiled-runtime-3.2</module>
-  </modules>
+  <profiles>
+    <profile>
+      <id>include-cypher</id>
+      <activation>
+        <property>
+          <name>!skipCypher</name>
+        </property>
+      </activation>
+      <modules>
+        <module>spec-suite-tools</module>
+        <module>acceptance-spec-suite</module>
+        <module>compatibility-spec-suite</module>
+        <module>cypher</module>
+        <module>cypher-compiled-runtime-3.2</module>
+      </modules>
+    </profile>
+  </profiles>
 
   <build>
     <plugins>
