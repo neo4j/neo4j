@@ -21,7 +21,7 @@ package org.neo4j.cypher.internal.compiler.v3_2.planner.logical
 
 import org.neo4j.cypher.internal.compiler.v3_2._
 import org.neo4j.cypher.internal.compiler.v3_2.ast.{InequalitySeekRangeWrapper, PrefixSeekRangeWrapper}
-import org.neo4j.cypher.internal.compiler.v3_2.commands.{ManyQueryExpression, RangeQueryExpression, SingleQueryExpression}
+import org.neo4j.cypher.internal.compiler.v3_2.commands.{CompositeQueryExpression, ManyQueryExpression, RangeQueryExpression, SingleQueryExpression}
 import org.neo4j.cypher.internal.compiler.v3_2.planner.BeLikeMatcher._
 import org.neo4j.cypher.internal.compiler.v3_2.planner.LogicalPlanningTestSupport2
 import org.neo4j.cypher.internal.compiler.v3_2.planner.logical.Metrics.QueryGraphSolverInput
@@ -219,6 +219,7 @@ class LeafPlanningIntegrationTest extends CypherFunSuite with LogicalPlanningTes
       )(solved)
     )
   }
+
   test("should plan index seek by string range for textual inequality predicate") {
     (new given {
       indexOn("Person", "name")
@@ -431,6 +432,67 @@ class LeafPlanningIntegrationTest extends CypherFunSuite with LogicalPlanningTes
       case _: NodeUniqueIndexSeek => ()
     }
   }
+
+  //
+  // Composite indexes
+  //
+
+  test("should plan composite index seek when there is an index on two properties and both are in equality predicates") {
+    implicit val plan = new given {
+      indexOn("Awesome", Seq("prop","prop2"))
+    } getLogicalPlanFor "MATCH (n:Awesome) WHERE n.prop = 42 AND n.prop2 = 'foo' RETURN n"
+
+    plan._2 should equal(
+      NodeIndexSeek(
+        "n",
+        LabelToken("Awesome", LabelId(0)),
+        Seq(
+          PropertyKeyToken(PropertyKeyName("prop") _, PropertyKeyId(0)),
+          PropertyKeyToken(PropertyKeyName("prop2") _, PropertyKeyId(1))),
+        CompositeQueryExpression(ListLiteral(Seq(SignedDecimalIntegerLiteral("42") _, StringLiteral("foo") _)) _),
+        Set.empty)(solved)
+    )
+  }
+
+  test("should plan composite index seek when there is an index on two properties and both are in equality predicates regardless of predicate order") {
+    implicit val plan = new given {
+      indexOn("Awesome", Seq("prop","prop2"))
+    } getLogicalPlanFor "MATCH (n:Awesome) WHERE n.prop2 = 'foo' AND n.prop = 42 RETURN n"
+
+    plan._2 should equal(
+      NodeIndexSeek(
+        "n",
+        LabelToken("Awesome", LabelId(0)),
+        Seq(
+          PropertyKeyToken(PropertyKeyName("prop") _, PropertyKeyId(0)),
+          PropertyKeyToken(PropertyKeyName("prop2") _, PropertyKeyId(1))),
+        CompositeQueryExpression(ListLiteral(Seq(SignedDecimalIntegerLiteral("42") _, StringLiteral("foo") _)) _),
+        Set.empty)(solved)
+    )
+  }
+
+  test("should plan composite index seek and filter when there is an index on two properties and both are in equality predicates together with other predicates") {
+    implicit val plan = new given {
+      indexOn("Awesome", Seq("prop","prop2"))
+    } getLogicalPlanFor "MATCH (n:Awesome) WHERE n.prop2 = 'foo' AND exists(n.name) AND n.prop = 42 RETURN n"
+
+    plan._2 should equal(
+      Selection(Seq(FunctionInvocation(FunctionName("exists") _, Property(varFor("n"), PropertyKeyName("name") _) _) _),
+        NodeIndexSeek(
+          "n",
+          LabelToken("Awesome", LabelId(0)),
+          Seq(
+            PropertyKeyToken(PropertyKeyName("prop") _, PropertyKeyId(0)),
+            PropertyKeyToken(PropertyKeyName("prop2") _, PropertyKeyId(1))),
+          CompositeQueryExpression(ListLiteral(Seq(SignedDecimalIntegerLiteral("42") _, StringLiteral("foo") _)) _),
+          Set.empty)(solved)
+      )(solved)
+    )
+  }
+
+  //
+  // index hints
+  //
 
   test("should plan hinted label scans") {
 

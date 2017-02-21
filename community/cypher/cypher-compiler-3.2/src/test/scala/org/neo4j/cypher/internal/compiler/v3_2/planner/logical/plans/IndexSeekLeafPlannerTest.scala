@@ -20,7 +20,7 @@
 package org.neo4j.cypher.internal.compiler.v3_2.planner.logical.plans
 
 import org.neo4j.cypher.internal.frontend.v3_2.ast._
-import org.neo4j.cypher.internal.compiler.v3_2.commands.{ManyQueryExpression, SingleQueryExpression}
+import org.neo4j.cypher.internal.compiler.v3_2.commands.{CompositeQueryExpression, SingleQueryExpression}
 import org.neo4j.cypher.internal.compiler.v3_2.planner.BeLikeMatcher._
 import org.neo4j.cypher.internal.compiler.v3_2.planner._
 import org.neo4j.cypher.internal.compiler.v3_2.planner.logical.steps.{indexSeekLeafPlanner, uniqueIndexSeekLeafPlanner}
@@ -108,7 +108,7 @@ class IndexSeekLeafPlannerTest extends CypherFunSuite with LogicalPlanningTestSu
       resultPlans should beLike {
         case Seq(NodeIndexSeek(`idName`, LabelToken("Awesome", _),
         Seq(PropertyKeyToken("prop", _), PropertyKeyToken("prop2", _)),
-        ManyQueryExpression(ListLiteral(Seq(`lit42`, `lit6`))), _)) => ()
+        CompositeQueryExpression(ListLiteral(Seq(`lit42`, `lit6`))), _)) => ()
       }
     }
   }
@@ -143,7 +143,7 @@ class IndexSeekLeafPlannerTest extends CypherFunSuite with LogicalPlanningTestSu
       resultPlans should beLike {
         case Seq(NodeIndexSeek(`idName`, LabelToken("Awesome", _),
         Seq(PropertyKeyToken("prop", _), PropertyKeyToken("prop2", _)),
-        ManyQueryExpression(ListLiteral(Seq(`lit42`, `lit6`))), _)) => ()
+        CompositeQueryExpression(ListLiteral(Seq(`lit42`, `lit6`))), _)) => ()
       }
     }
   }
@@ -178,7 +178,7 @@ class IndexSeekLeafPlannerTest extends CypherFunSuite with LogicalPlanningTestSu
       resultPlans should beLike {
         case Seq(NodeIndexSeek(`idName`, LabelToken("Awesome", _),
         props@Seq(_*),
-        ManyQueryExpression(ListLiteral(vals@Seq(_*))), _))
+        CompositeQueryExpression(ListLiteral(vals@Seq(_*))), _))
           if assertPropsAndValuesMatch(propertyNames, values, props, vals) => ()
       }
     }

@@ -19,7 +19,7 @@
  */
 package org.neo4j.cypher.internal.compiler.v3_2.planner.logical.steps
 
-import org.neo4j.cypher.internal.compiler.v3_2.commands.{ManyQueryExpression, QueryExpression, SingleQueryExpression}
+import org.neo4j.cypher.internal.compiler.v3_2.commands.{CompositeQueryExpression, QueryExpression, SingleQueryExpression}
 import org.neo4j.cypher.internal.compiler.v3_2.planner.logical.LeafPlansForVariable.maybeLeafPlans
 import org.neo4j.cypher.internal.compiler.v3_2.planner.logical._
 import org.neo4j.cypher.internal.compiler.v3_2.planner.logical.plans._
@@ -164,7 +164,7 @@ abstract class AbstractIndexSeekLeafPlanner extends LeafPlanner with LeafPlanFro
           plannables.head.queryExpression
         else {
           val pos = plannables.head.queryExpression.expression.position
-          ManyQueryExpression(ListLiteral(plannables.map(_.queryExpression.expression))(pos))
+          CompositeQueryExpression(ListLiteral(plannables.map(_.queryExpression.expression))(pos))
         }
         val entryConstructor: (Seq[Expression]) => LogicalPlan =
           constructPlan(idName, LabelToken(labelName, labelId), propertyKeyTokens,

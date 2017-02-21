@@ -105,6 +105,14 @@ case class RangeQueryExpression[T](expression: T) extends QueryExpression[T] {
   override def map[R](f: (T) => R) = RangeQueryExpression(f(expression))
 }
 
+case class CompositeQueryExpression[T](expression: T) extends QueryExpression[T] {
+  def map[R](f: (T) => R) = CompositeQueryExpression(f(expression))
+}
+
+case class CompositeRangeQueryExpression[T](expression: T) extends QueryExpression[T] {
+  override def map[R](f: (T) => R) = CompositeRangeQueryExpression(f(expression))
+}
+
 case class SchemaIndex(variable: String, label: String, properties: Seq[String], kind: SchemaIndexKind, query: Option[QueryExpression[Expression]])
   extends StartItem(variable, query.map(q => Arguments.LegacyExpression(q.expression)).toIndexedSeq :+ Arguments.Index(label, properties))
   with ReadOnlyStartItem with Hint with NodeStartItemVariables

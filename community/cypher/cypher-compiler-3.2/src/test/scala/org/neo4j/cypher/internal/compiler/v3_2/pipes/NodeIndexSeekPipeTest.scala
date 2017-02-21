@@ -24,7 +24,7 @@ import org.mockito.Matchers.any
 import org.mockito.Mockito._
 import org.neo4j.cypher.internal.compiler.v3_2._
 import org.neo4j.cypher.internal.compiler.v3_2.commands.expressions.{ListLiteral, Literal, Variable}
-import org.neo4j.cypher.internal.compiler.v3_2.commands.{ManyQueryExpression, SingleQueryExpression}
+import org.neo4j.cypher.internal.compiler.v3_2.commands.{CompositeQueryExpression, ManyQueryExpression, SingleQueryExpression}
 import org.neo4j.cypher.internal.compiler.v3_2.spi.QueryContext
 import org.neo4j.cypher.internal.frontend.v3_2.ast._
 import org.neo4j.cypher.internal.frontend.v3_2.test_helpers.{CypherFunSuite, WindowsStringSafe}
@@ -181,6 +181,28 @@ class NodeIndexSeekPipeTest extends CypherFunSuite with AstConstructionTestSuppo
 
     // then
     result.map(_("n")).toList should equal(List(node, node))
+  }
+
+  test("should handle index lookups for composite index lookups over multiple values") {
+    // given
+    val queryState = QueryStateHelper.emptyWith(// WHERE n.prop = 'hello' AND n.prop2 = 'world']
+      query = indexFor(
+        Seq("hello", "world") -> Iterator(node),
+        "hello" -> Iterator(node, node2)
+      )
+    )
+
+    // when
+    val pipe = NodeIndexSeekPipe("n", label,
+      propertyKey :+ PropertyKeyToken(PropertyKeyName("prop2") _, PropertyKeyId(11)),
+      CompositeQueryExpression(ListLiteral(
+        Literal("hello"),
+        Literal("world")
+      )))()
+    val result = pipe.createResults(queryState)
+
+    // then
+    result.map(_("n")).toList should equal(List(node))
   }
 
   test("should give a helpful error message") {

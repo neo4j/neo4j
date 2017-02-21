@@ -37,10 +37,12 @@ object indexQuery extends GraphElementPropertyFunctions {
             labelName: String,
             propertyNames: Seq[String]): Iterator[Node] = queryExpression match {
 
+    // Index exact value seek on single value
     case SingleQueryExpression(inner) =>
       val value = inner(m)(state)
       lookupNodes(value, index).toIterator
 
+    // Index exact value seek on multiple values, by combining the results of multiple index seeks
     case ManyQueryExpression(inner) =>
       inner(m)(state) match {
         case IsList(coll) => coll.toSet.toIndexedSeq.flatMap {
@@ -50,6 +52,19 @@ object indexQuery extends GraphElementPropertyFunctions {
         case _ => throw new CypherTypeException(s"Expected the value for looking up :$labelName(${propertyNames.mkString(",")}) to be a collection but it was not.")
       }
 
+    // Index exact value seek on multiple values, making use of a composite index over all values
+    case CompositeQueryExpression(inner) =>
+      inner(m)(state) match {
+        case IsList(coll) if coll.size == propertyNames.size => index(coll.flatMap{
+          case null => throw new CypherTypeException(s"Cannot handle null value in composite index search: ${propertyNames.zip(coll).map(p => s"${p._1}=${p._2}").mkString(", ")}")
+          case value => Some(makeValueNeoSafe(value))
+        }).toIterator
+        case null => Iterator.empty
+        case IsList(coll) => throw new CypherTypeException(s"Expected ${propertyNames.size} values for looking up :$labelName(${propertyNames.mkString(",")}) but there were only ${coll.size}: ${coll.mkString(",")}")
+        case _ => throw new CypherTypeException(s"Expected the value for looking up :$labelName(${propertyNames.mkString(",")}) to be a collection but it was not.")
+      }
+
+    // Index range seek over range of values
     case RangeQueryExpression(rangeWrapper) =>
       val range = rangeWrapper match {
         case s: PrefixSeekRangeExpression =>
@@ -59,6 +74,10 @@ object indexQuery extends GraphElementPropertyFunctions {
           innerRange.mapBounds(expression => makeValueNeoSafe(expression(m)(state)))
       }
       index(range).toIterator
+
+    // Composite index range seek over ranges of multiple values
+    case RangeQueryExpression(rangeWrapper) =>
+      throw new CypherTypeException("Composite index searches for ranges not yet supported")
   }
 
   private def lookupNodes(value: Any, index: Any => GenTraversableOnce[Node]) = value match {
