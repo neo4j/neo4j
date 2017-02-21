@@ -155,3 +155,5 @@ class LoadCsvStatusWrapCypherException(extraInfo: String, cause: CypherException
 }
 
 class ExhaustiveShortestPathForbiddenException(message: String, cause: Throwable) extends CypherExecutionException(message, cause)
+
+class ShortestPathCommonEndNodesForbiddenException(message: String, cause: Throwable) extends CypherExecutionException(message, cause)

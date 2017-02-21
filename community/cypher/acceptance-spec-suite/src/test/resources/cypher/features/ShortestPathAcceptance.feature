@@ -375,67 +375,6 @@ Feature: ShortestPathAcceptance
       | ['A', 'D', 'C'] |
     And no side effects
 
-  Scenario: Find a shortest path among paths of length 1
-    And having executed:
-      """
-      CREATE (a:A {name: 'A'}), (b:B {name: 'B'}),
-             (c:C {name: 'C'}), (:D {name: 'D'})
-      CREATE (a)-[:REL]->(b),
-             (b)-[:REL]->(c)
-      """
-    When executing query:
-      """
-      MATCH p = shortestPath((src:A)-[*..1]->(dst))
-      UNWIND extract(n IN nodes(p) | n.name) AS node
-      RETURN node
-      """
-    Then the result should be:
-      | node |
-      | 'A'  |
-      | 'B'  |
-    And no side effects
-
-  Scenario: Find a shortest path of length 1 if requested to
-    And having executed:
-      """
-      CREATE (a:A {name: 'A'}), (b:B {name: 'B'}),
-             (c:C {name: 'C'}), (:D {name: 'D'})
-      CREATE (a)-[:REL]->(b),
-             (b)-[:REL]->(c)
-      """
-    When executing query:
-      """
-      MATCH p = shortestPath((src:A)-[*1..1]->(dst))
-      UNWIND extract(n IN nodes(p) | n.name) AS node
-      RETURN node
-      """
-    Then the result should be:
-      | node |
-      | 'A'  |
-      | 'B'  |
-    And no side effects
-
-  Scenario: Find a shortest path among paths matched using a non-variable length pattern
-    And having executed:
-      """
-      CREATE (a:A {name: 'A'}), (b:B {name: 'B'}),
-             (c:C {name: 'C'}), (:D {name: 'D'})
-      CREATE (a)-[:REL]->(b),
-             (b)-[:REL]->(c)
-      """
-    When executing query:
-      """
-      MATCH p = shortestPath((src:A)-[]->(dst))
-      UNWIND extract(n IN nodes(p) | n.name) AS node
-      RETURN node
-      """
-    Then the result should be:
-      | node |
-      | 'A'  |
-      | 'B'  |
-    And no side effects
-
-
   Scenario: Find a combination of a shortest path and a pattern expression
     And having executed:
     """

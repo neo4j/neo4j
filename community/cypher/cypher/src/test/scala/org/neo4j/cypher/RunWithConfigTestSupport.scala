@@ -21,18 +21,18 @@ package org.neo4j.cypher
 
 import java.util
 
-import org.neo4j.graphdb.GraphDatabaseService
+import org.neo4j.cypher.javacompat.internal.GraphDatabaseCypherService
 import org.neo4j.graphdb.config.Setting
 import org.neo4j.test.TestGraphDatabaseFactory
 
 import scala.collection.JavaConverters._
 
 trait RunWithConfigTestSupport {
-  def runWithConfig(m: (Setting[_], String)*)(run: GraphDatabaseService => Unit) = {
+  def runWithConfig(m: (Setting[_], String)*)(run: GraphDatabaseCypherService => Unit) = {
     val config: util.Map[Setting[_], String] = m.toMap.asJava
     val graph = new TestGraphDatabaseFactory().newImpermanentDatabase(config)
     try {
-      run(graph)
+      run(new GraphDatabaseCypherService(graph))
     } finally {
       graph.shutdown()
     }

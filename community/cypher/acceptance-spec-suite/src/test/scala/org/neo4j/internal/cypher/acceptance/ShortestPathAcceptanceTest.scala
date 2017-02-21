@@ -21,6 +21,7 @@ package org.neo4j.internal.cypher.acceptance
 
 import org.neo4j.cypher.internal.compiler.v3_1.commands.expressions.PathImpl
 import org.neo4j.cypher.{ExecutionEngineFunSuite, NewPlannerTestSupport, SyntaxException}
+import org.neo4j.graphdb.factory.GraphDatabaseSettings
 import org.neo4j.graphdb.{Node, Path}
 
 class ShortestPathAcceptanceTest extends ExecutionEngineFunSuite with NewPlannerTestSupport {
@@ -29,6 +30,8 @@ class ShortestPathAcceptanceTest extends ExecutionEngineFunSuite with NewPlanner
   var nodeB: Node = _
   var nodeC: Node = _
   var nodeD: Node = _
+
+  override def databaseConfig = Map(GraphDatabaseSettings.forbid_shortestpath_common_nodes -> "false")
 
   override protected def initTest(): Unit = {
     super.initTest()
@@ -291,8 +294,18 @@ class ShortestPathAcceptanceTest extends ExecutionEngineFunSuite with NewPlanner
     result should equal(Set(List(nodeA), List(nodeA, nodeB)))
   }
 
-  // THESE YET NEED TO BE PORTED TO THE TCK
+  test("if asked for also return paths of length 0, even when no max length is speficied") {
+    /*
+       a-b-c
+     */
+    relate(nodeA, nodeB)
+    relate(nodeB, nodeC)
 
+    val result = executeWithAllPlannersAndCompatibilityMode("match p = shortestpath((a:A)-[r*0..]->(n)) return nodes(p) as nodes").columnAs[List[Node]]("nodes").toSet
+    result should equal(Set(List(nodeA), List(nodeA, nodeB), List(nodeA, nodeB, nodeC)))
+  }
+
+  // THESE YET NEED TO BE PORTED TO THE TCK
 
   test("shortest path should work with predicates that can be applied to relationship expanders") {
     val nodes = shortestPathModel()

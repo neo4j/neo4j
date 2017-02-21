@@ -24,7 +24,7 @@ import org.neo4j.cypher.internal.compiler.v3_1.executionplan.{PlanBuilder, Execu
 import org.neo4j.cypher.internal.compiler.v3_1.pipes.{PipeMonitor, ShortestPathPipe, Pipe}
 import org.neo4j.cypher.internal.compiler.v3_1.spi.PlanContext
 
-class ShortestPathBuilder extends PlanBuilder {
+class ShortestPathBuilder(withFallBack: Boolean, disallowSameNode: Boolean) extends PlanBuilder {
   def apply(plan: ExecutionPlanInProgress, ctx: PlanContext)(implicit pipeMonitor: PipeMonitor) = {
     val q = plan.query
     val p = plan.pipe
@@ -35,7 +35,7 @@ class ShortestPathBuilder extends PlanBuilder {
       case Unsolved(predicate) => predicate
     }
 
-    val shortestPathPipe = new ShortestPathPipe(p, shortestPath, pathPredicates)()
+    val shortestPathPipe = new ShortestPathPipe(p, shortestPath, pathPredicates, withFallBack, disallowSameNode)()
 
     plan.copy(pipe = shortestPathPipe, query = q.copy(patterns = q.patterns.filterNot(_ == item) :+ item.solve))
   }

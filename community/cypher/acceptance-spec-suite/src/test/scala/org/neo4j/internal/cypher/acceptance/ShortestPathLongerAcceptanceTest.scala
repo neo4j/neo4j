@@ -30,6 +30,7 @@ import org.neo4j.cypher.internal.frontend.v3_1.InternalException
 import org.neo4j.cypher.{ExecutionEngineFunSuite, NewPlannerTestSupport}
 import org.neo4j.graphalgo.impl.path.ShortestPath
 import org.neo4j.graphalgo.impl.path.ShortestPath.DataMonitor
+import org.neo4j.graphdb.factory.GraphDatabaseSettings
 import org.neo4j.graphdb.{Node, Path}
 import org.neo4j.kernel.monitoring.Monitors
 import org.scalatest.matchers.{MatchResult, Matcher}
@@ -87,6 +88,8 @@ import scala.collection.mutable
 class ShortestPathLongerAcceptanceTest extends ExecutionEngineFunSuite with NewPlannerTestSupport {
 
   val VERBOSE = false // Lots of debug prints
+
+  override def databaseConfig = Map(GraphDatabaseSettings.forbid_shortestpath_common_nodes -> "false")
 
   test("shortestPath with same start and end node should return zero length path with no fallback") {
     val start = System.currentTimeMillis

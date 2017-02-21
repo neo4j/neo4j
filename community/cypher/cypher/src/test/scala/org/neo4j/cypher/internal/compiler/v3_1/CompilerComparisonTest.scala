@@ -59,7 +59,8 @@ class CompilerComparisonTest extends ExecutionEngineFunSuite with QueryStatistic
     idpMaxTableSize = 128,
     idpIterationDuration = 1000,
     nonIndexedLabelWarningThreshold = 10000,
-    errorIfShortestPathFallbackUsedAtRuntime = true
+    errorIfShortestPathFallbackUsedAtRuntime = true,
+    errorIfShortestPathHasCommonNodesAtRuntime = true
   )
 
   val compilers = Seq[(String, GraphDatabaseQueryService => CypherCompiler)](
