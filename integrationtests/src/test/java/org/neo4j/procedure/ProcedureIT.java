@@ -1130,7 +1130,7 @@ public class ProcedureIT
         {
             db.createNode( Label.label( "Person" ) );
         }
-        Result result = db.execute( "CALL org.neo4j.procedure.failure" );
+        Result result = db.execute( "CALL org.neo4j.procedure.failingPersonCount" );
         //Then
         exception.expect( TransactionFailureException.class );
         result.next();
@@ -1145,7 +1145,6 @@ public class ProcedureIT
         db = new TestGraphDatabaseFactory()
                 .newImpermanentDatabaseBuilder()
                 .setConfig( plugin_dir, plugins.getRoot().getAbsolutePath() )
-                .setConfig( procedure_unrestricted, "org.neo4j.procedure.*" )
                 .newGraphDatabase();
     }
 
@@ -1302,7 +1301,7 @@ public class ProcedureIT
         }
 
         @Procedure
-        public Stream<Output> failure()
+        public Stream<Output> failingPersonCount()
         {
             Result result = db.execute( "MATCH (n:Person) RETURN count(n) as count" );
             procedureTransaction.failure();

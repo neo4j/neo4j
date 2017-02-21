@@ -50,6 +50,8 @@ public interface ProcedureTransaction
      * this method has been invoked, it doesn't matter if
      * {@link Transaction#success()} is invoked afterwards -- the transaction will still be
      * rolled back.
+     *
+     * This method is not thread safe.
      */
     void failure();
 }

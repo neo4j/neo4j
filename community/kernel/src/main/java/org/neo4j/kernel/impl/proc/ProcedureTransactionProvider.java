@@ -27,7 +27,6 @@ import org.neo4j.procedure.ProcedureTransaction;
 
 import static org.neo4j.kernel.api.proc.Context.KERNEL_TRANSACTION;
 
-
 public class ProcedureTransactionProvider implements ComponentRegistry.Provider<ProcedureTransaction>
 {
     @Override
