@@ -262,10 +262,19 @@ class HashBasedIndex extends InMemoryIndexImplementation
         case exact: return seek( ((IndexQuery.ExactPredicate)predicate).value() );
         case rangeNumeric:
             IndexQuery.NumberRangePredicate np = (IndexQuery.NumberRangePredicate) predicate;
-            return rangeSeekByNumberInclusive( np.getFrom(), np.getTo() );
+            return rangeSeekByNumberInclusive( np.from(), np.to() );
         case rangeString:
-            IndexQuery.StringRangePredicate sp = (IndexQuery.StringRangePredicate) predicate;
-            return rangeSeekByString( sp.getFrom(), sp.isFromInclusive(), sp.getTo(), sp.isToInclusive() );
+            IndexQuery.StringRangePredicate srp = (IndexQuery.StringRangePredicate) predicate;
+            return rangeSeekByString( srp.from(), srp.fromInclusive(), srp.to(), srp.toInclusive() );
+        case stringPrefix:
+            IndexQuery.StringPrefixPredicate spp = (IndexQuery.StringPrefixPredicate) predicate;
+            return rangeSeekByPrefix( spp.prefix() );
+        case stringContains:
+            IndexQuery.StringContainsPredicate scp = (IndexQuery.StringContainsPredicate) predicate;
+            return containsString( scp.contains() );
+        case stringSuffix:
+            IndexQuery.StringSuffixPredicate ssp = (IndexQuery.StringSuffixPredicate) predicate;
+            return endsWith( ssp.suffix() );
         default:
             throw new RuntimeException( "Unsupported query: " + Arrays.toString( predicates ) );
         }

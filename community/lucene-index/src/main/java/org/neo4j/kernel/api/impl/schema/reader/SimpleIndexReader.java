@@ -95,10 +95,19 @@ public class SimpleIndexReader implements IndexReader
             return scan();
         case rangeNumeric:
             IndexQuery.NumberRangePredicate np = (IndexQuery.NumberRangePredicate) predicate;
-            return rangeSeekByNumberInclusive( np.getFrom(), np.getTo() );
+            return rangeSeekByNumberInclusive( np.from(), np.to() );
         case rangeString:
             IndexQuery.StringRangePredicate sp = (IndexQuery.StringRangePredicate) predicate;
-            return rangeSeekByString( sp.getFrom(), sp.isFromInclusive(), sp.getTo(), sp.isToInclusive() );
+            return rangeSeekByString( sp.from(), sp.fromInclusive(), sp.to(), sp.toInclusive() );
+        case stringPrefix:
+            IndexQuery.StringPrefixPredicate spp = (IndexQuery.StringPrefixPredicate) predicate;
+            return rangeSeekByPrefix( spp.prefix() );
+        case stringContains:
+            IndexQuery.StringContainsPredicate scp = (IndexQuery.StringContainsPredicate) predicate;
+            return containsString( scp.contains() );
+        case stringSuffix:
+            IndexQuery.StringSuffixPredicate ssp = (IndexQuery.StringSuffixPredicate) predicate;
+            return endsWith( ssp.suffix() );
         default:
             // todo figure out a more specific exception
             throw new RuntimeException( "Index query not supported: " + Arrays.toString( predicates ) );

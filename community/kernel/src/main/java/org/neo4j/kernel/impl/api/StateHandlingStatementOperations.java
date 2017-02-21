@@ -733,32 +733,38 @@ public class StateHandlingStatementOperations implements
 
         assert predicates.length == 1: "composite indexes not yet supported";
         IndexQuery predicate = predicates[0];
+        Object filterValue = null;
         switch ( predicate.type() )
         {
         case exact:
-        {
-            Object value = ((IndexQuery.ExactPredicate) predicate).value();
-            PrimitiveLongIterator exactMatches = filterExactIndexMatches( state, index, value, committed );
-            return filterIndexStateChangesForScanOrSeek( state, index, value, exactMatches );
-        }
+            filterValue = ((IndexQuery.ExactPredicate) predicate).value();
+            committed = filterExactIndexMatches( state, index, filterValue, committed );
+        case stringSuffix:
+        case stringContains:
         case exists:
-            return filterIndexStateChangesForScanOrSeek( state, index, null, committed );
+            return filterIndexStateChangesForScanOrSeek( state, index, filterValue, committed );
+
         case rangeNumeric:
         {
             IndexQuery.NumberRangePredicate numPred = (IndexQuery.NumberRangePredicate) predicate;
             PrimitiveLongIterator exactMatches =
-                    filterExactRangeMatches( state, index, committed, numPred.getFrom(), numPred.isFromInclusive(),
-                            numPred.getTo(), numPred.isToInclusive() );
-            return filterIndexStateChangesForRangeSeekByNumber( state, index, numPred.getFrom(),
-                    numPred.isFromInclusive(), numPred.getTo(), numPred.isToInclusive(),
+                    filterExactRangeMatches( state, index, committed, numPred.from(), numPred.fromInclusive(),
+                            numPred.to(), numPred.toInclusive() );
+            return filterIndexStateChangesForRangeSeekByNumber( state, index, numPred.from(),
+                    numPred.fromInclusive(), numPred.to(), numPred.toInclusive(),
                     exactMatches );
         }
         case rangeString:
         {
             IndexQuery.StringRangePredicate strPred = (IndexQuery.StringRangePredicate) predicate;
             return filterIndexStateChangesForRangeSeekByString(
-                    state, index, strPred.getFrom(), strPred.isFromInclusive(), strPred.getTo(),
-                    strPred.isToInclusive(), committed );
+                    state, index, strPred.from(), strPred.fromInclusive(), strPred.to(),
+                    strPred.toInclusive(), committed );
+        }
+        case stringPrefix:
+        {
+            IndexQuery.StringPrefixPredicate strPred = (IndexQuery.StringPrefixPredicate) predicate;
+            return filterIndexStateChangesForRangeSeekByPrefix( state, index, strPred.prefix(), committed );
         }
         default:
             throw new RuntimeException( "Query not supported: " + Arrays.toString( predicates ) );

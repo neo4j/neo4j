@@ -19,6 +19,11 @@
  */
 package org.neo4j.kernel.api.schema_new;
 
+import org.apache.commons.lang3.builder.EqualsBuilder;
+import org.apache.commons.lang3.builder.HashCodeBuilder;
+import org.apache.commons.lang3.builder.ToStringBuilder;
+import org.apache.commons.lang3.builder.ToStringStyle;
+
 public abstract class IndexQuery
 {
     public static ExistsPredicate exists( int propertyKeyId )
@@ -43,15 +48,73 @@ public abstract class IndexQuery
         return new StringRangePredicate( propertyKeyId, from, fromInclusive, to, toInclusive );
     }
 
+    public static StringPrefixPredicate stringPrefix( int propertyKeyId, String prefix )
+    {
+        return new StringPrefixPredicate( propertyKeyId, prefix );
+    }
+
+    public static StringContainsPredicate stringContains( int propertyKeyId, String contains )
+    {
+        return  new StringContainsPredicate( propertyKeyId, contains );
+    }
+
+    public static StringSuffixPredicate stringSuffix( int propertyKeyId, String suffix )
+    {
+        return new StringSuffixPredicate( propertyKeyId, suffix );
+    }
+
+    private final int propertyKeyId;
+
+    protected IndexQuery( int propertyKeyId )
+    {
+        this.propertyKeyId = propertyKeyId;
+    }
+
     public abstract IndexQueryType type();
+
+    @SuppressWarnings( "EqualsWhichDoesntCheckParameterClass" )
+    @Override
+    public final boolean equals( Object other )
+    {
+        // equals() and hashcode() are only used for testing so we don't care that they are a bit slow.
+        return EqualsBuilder.reflectionEquals( this, other );
+    }
+
+    @Override
+    public final int hashCode()
+    {
+        // equals() and hashcode() are only used for testing so we don't care that they are a bit slow.
+        return HashCodeBuilder.reflectionHashCode( this, false );
+    }
+
+    @Override
+    public final String toString()
+    {
+        // Only used to debugging, it's okay to be a bit slow.
+        return ToStringBuilder.reflectionToString( this, ToStringStyle.SHORT_PREFIX_STYLE );
+    }
+
+    public final int propertyKeyId()
+    {
+        return propertyKeyId;
+    }
+
+    public enum IndexQueryType
+    {
+        exists,
+        exact,
+        rangeString,
+        rangeNumeric,
+        stringPrefix,
+        stringSuffix,
+        stringContains
+    }
 
     public static final class ExistsPredicate extends IndexQuery
     {
-        private final int propertyKeyId;
-
         public ExistsPredicate( int propertyKeyId )
         {
-            this.propertyKeyId = propertyKeyId;
+            super( propertyKeyId );
         }
 
         @Override
@@ -59,35 +122,15 @@ public abstract class IndexQuery
         {
             return IndexQueryType.exists;
         }
-
-        @Override
-        public boolean equals( Object o )
-        {
-            if ( this == o )
-            { return true; }
-            if ( o == null || getClass() != o.getClass() )
-            { return false; }
-
-            ExistsPredicate that = (ExistsPredicate) o;
-
-            return propertyKeyId == that.propertyKeyId;
-        }
-
-        @Override
-        public int hashCode()
-        {
-            return propertyKeyId;
-        }
     }
 
     public static final class ExactPredicate extends IndexQuery
     {
-        private final int propertyKeyId;
         private final Object value;
 
         public ExactPredicate( int propertyKeyId, Object value )
         {
-            this.propertyKeyId = propertyKeyId;
+            super( propertyKeyId );
             this.value = value;
         }
 
@@ -101,34 +144,10 @@ public abstract class IndexQuery
         {
             return value;
         }
-
-        @Override
-        public boolean equals( Object o )
-        {
-            if ( this == o )
-            { return true; }
-            if ( o == null || getClass() != o.getClass() )
-            { return false; }
-
-            ExactPredicate that = (ExactPredicate) o;
-
-            if ( propertyKeyId != that.propertyKeyId )
-            { return false; }
-            return value.equals( that.value );
-        }
-
-        @Override
-        public int hashCode()
-        {
-            int result = propertyKeyId;
-            result = 31 * result + value.hashCode();
-            return result;
-        }
     }
 
     public static final class NumberRangePredicate extends IndexQuery
     {
-        private final int propertyKeyId;
         private final Number from;
         private final boolean fromInclusive;
         private final Number to;
@@ -137,7 +156,7 @@ public abstract class IndexQuery
         public NumberRangePredicate( int propertyKeyId, Number from,
                                      boolean fromInclusive, Number to, boolean toInclusive )
         {
-            this.propertyKeyId = propertyKeyId;
+            super( propertyKeyId );
             this.from = from;
             this.fromInclusive = fromInclusive;
             this.to = to;
@@ -150,62 +169,29 @@ public abstract class IndexQuery
             return IndexQueryType.rangeNumeric;
         }
 
-        public Number getFrom()
+        public Number from()
         {
             return from;
         }
 
-        public Number getTo()
+        public Number to()
         {
             return to;
         }
 
-        public boolean isFromInclusive()
+        public boolean fromInclusive()
         {
             return fromInclusive;
         }
 
-        public boolean isToInclusive()
+        public boolean toInclusive()
         {
             return toInclusive;
-        }
-
-        @Override
-        public boolean equals( Object o )
-        {
-            if ( this == o )
-            { return true; }
-            if ( o == null || getClass() != o.getClass() )
-            { return false; }
-
-            NumberRangePredicate that = (NumberRangePredicate) o;
-
-            if ( propertyKeyId != that.propertyKeyId )
-            { return false; }
-            if ( fromInclusive != that.fromInclusive )
-            { return false; }
-            if ( toInclusive != that.toInclusive )
-            { return false; }
-            if ( !from.equals( that.from ) )
-            { return false; }
-            return to.equals( that.to );
-        }
-
-        @Override
-        public int hashCode()
-        {
-            int result = propertyKeyId;
-            result = 31 * result + from.hashCode();
-            result = 31 * result + (fromInclusive ? 1 : 0);
-            result = 31 * result + to.hashCode();
-            result = 31 * result + (toInclusive ? 1 : 0);
-            return result;
         }
     }
 
     public static final class StringRangePredicate extends IndexQuery
     {
-        private final int propertyKeyId;
         private final String from;
         private final boolean fromInclusive;
         private final String to;
@@ -215,7 +201,7 @@ public abstract class IndexQuery
                                      boolean fromInclusive, String to,
                                      boolean toInclusive )
         {
-            this.propertyKeyId = propertyKeyId;
+            super( propertyKeyId );
             this.from = from;
             this.fromInclusive = fromInclusive;
             this.to = to;
@@ -228,64 +214,90 @@ public abstract class IndexQuery
             return IndexQueryType.rangeString;
         }
 
-        public String getFrom()
+        public String from()
         {
             return from;
         }
 
-        public boolean isFromInclusive()
+        public boolean fromInclusive()
         {
             return fromInclusive;
         }
 
-        public String getTo()
+        public String to()
         {
             return to;
         }
 
-        public boolean isToInclusive()
+        public boolean toInclusive()
         {
             return toInclusive;
         }
+    }
 
-        @Override
-        public boolean equals( Object o )
+    public static final class StringPrefixPredicate extends IndexQuery
+    {
+        private final String prefix;
+
+        public StringPrefixPredicate( int propertyKeyId, String prefix )
         {
-            if ( this == o )
-            { return true; }
-            if ( o == null || getClass() != o.getClass() )
-            { return false; }
-
-            StringRangePredicate that = (StringRangePredicate) o;
-
-            if ( propertyKeyId != that.propertyKeyId )
-            { return false; }
-            if ( fromInclusive != that.fromInclusive )
-            { return false; }
-            if ( toInclusive != that.toInclusive )
-            { return false; }
-            if ( !from.equals( that.from ) )
-            { return false; }
-            return to.equals( that.to );
+            super( propertyKeyId );
+            this.prefix = prefix;
         }
 
         @Override
-        public int hashCode()
+        public IndexQueryType type()
         {
-            int result = propertyKeyId;
-            result = 31 * result + from.hashCode();
-            result = 31 * result + (fromInclusive ? 1 : 0);
-            result = 31 * result + to.hashCode();
-            result = 31 * result + (toInclusive ? 1 : 0);
-            return result;
+            return IndexQueryType.stringPrefix;
+        }
+
+        public String prefix()
+        {
+            return prefix;
         }
     }
 
-    public enum IndexQueryType
+    public static final class StringContainsPredicate extends IndexQuery
     {
-        exists,
-        exact,
-        rangeString,
-        rangeNumeric
+        private final String contains;
+
+        public StringContainsPredicate( int propertyKeyId, String contains )
+        {
+            super( propertyKeyId );
+            this.contains = contains;
+        }
+
+        @Override
+        public IndexQueryType type()
+        {
+            return IndexQueryType.stringContains;
+        }
+
+        public String contains()
+        {
+            return contains;
+        }
+    }
+
+    public static final class StringSuffixPredicate extends IndexQuery
+    {
+        private final String suffix;
+
+        public StringSuffixPredicate( int propertyKeyId, String suffix )
+        {
+            super( propertyKeyId );
+            this.suffix = suffix;
+        }
+
+        @Override
+        public IndexQueryType type()
+        {
+            return IndexQueryType.stringSuffix;
+        }
+
+        public String suffix()
+        {
+            return suffix;
+        }
     }
 }

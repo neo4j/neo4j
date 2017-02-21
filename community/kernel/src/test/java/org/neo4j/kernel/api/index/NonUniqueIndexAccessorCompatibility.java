@@ -35,6 +35,9 @@ import static org.junit.Assert.assertThat;
 import static org.neo4j.kernel.api.schema_new.IndexQuery.exact;
 import static org.neo4j.kernel.api.schema_new.IndexQuery.exists;
 import static org.neo4j.kernel.api.schema_new.IndexQuery.range;
+import static org.neo4j.kernel.api.schema_new.IndexQuery.stringContains;
+import static org.neo4j.kernel.api.schema_new.IndexQuery.stringPrefix;
+import static org.neo4j.kernel.api.schema_new.IndexQuery.stringSuffix;
 
 @Ignore( "Not a test. This is a compatibility suite that provides test cases for verifying" +
         " SchemaIndexProvider implementations. Each index provider that is to be tested by this suite" +
@@ -173,6 +176,20 @@ public class NonUniqueIndexAccessorCompatibility extends IndexAccessorCompatibil
     }
 
     @Test
+    public void testIndexRangeSeekByPrefixWithDuplicatesWithIndexQuery() throws Exception
+    {
+        updateAndCommit( asList(
+                IndexEntryUpdate.add( 1L, index, "a" ),
+                IndexEntryUpdate.add( 2L, index, "A" ),
+                IndexEntryUpdate.add( 3L, index, "apa" ),
+                IndexEntryUpdate.add( 4L, index, "apa" ),
+                IndexEntryUpdate.add( 5L, index, "apa" ) ) );
+
+        assertThat( query( stringPrefix( 1, "a" ) ), equalTo( asList( 1L, 3L, 4L, 5L ) ) );
+        assertThat( query( stringPrefix( 1, "apa" ) ), equalTo( asList( 3L, 4L, 5L ) ) );
+    }
+
+    @Test
     public void testIndexFullSearchWithDuplicates() throws Exception
     {
         updateAndCommit( asList(
@@ -185,6 +202,21 @@ public class NonUniqueIndexAccessorCompatibility extends IndexAccessorCompatibil
         assertThat( getAllNodesFromIndexScanByContains( "a" ), equalTo( asList( 1L, 3L, 4L, 5L ) ) );
         assertThat( getAllNodesFromIndexScanByContains( "apa" ), equalTo( asList( 3L, 4L, 5L ) ) );
         assertThat( getAllNodesFromIndexScanByContains( "apa*" ), equalTo( Collections.emptyList() ) );
+    }
+
+    @Test
+    public void testIndexFullSearchWithDuplicatesWithIndexQuery() throws Exception
+    {
+        updateAndCommit( asList(
+                IndexEntryUpdate.add( 1L, index, "a" ),
+                IndexEntryUpdate.add( 2L, index, "A" ),
+                IndexEntryUpdate.add( 3L, index, "apa" ),
+                IndexEntryUpdate.add( 4L, index, "apa" ),
+                IndexEntryUpdate.add( 5L, index, "apalong" ) ) );
+
+        assertThat( query( stringContains( 1, "a" ) ), equalTo( asList( 1L, 3L, 4L, 5L ) ) );
+        assertThat( query( stringContains( 1, "apa" ) ), equalTo( asList( 3L, 4L, 5L ) ) );
+        assertThat( query( stringContains( 1, "apa*" ) ), equalTo( Collections.emptyList() ) );
     }
 
     @Test
@@ -202,5 +234,22 @@ public class NonUniqueIndexAccessorCompatibility extends IndexAccessorCompatibil
         assertThat( getAllNodesFromIndexScanEndsWith( "apa" ), equalTo( asList( 3L, 4L, 5L ) ) );
         assertThat( getAllNodesFromIndexScanEndsWith( "apa*" ), equalTo( Collections.emptyList() ) );
         assertThat( getAllNodesFromIndexScanEndsWith( "" ), equalTo( asList( 1L, 2L, 3L, 4L, 5L, 6L ) ) );
+    }
+
+    @Test
+    public void testIndexEndsWithWithDuplicatedWithIndexQuery() throws Exception
+    {
+        updateAndCommit( asList(
+                IndexEntryUpdate.add( 1L, index, "a" ),
+                IndexEntryUpdate.add( 2L, index, "A" ),
+                IndexEntryUpdate.add( 3L, index, "apa" ),
+                IndexEntryUpdate.add( 4L, index, "apa" ),
+                IndexEntryUpdate.add( 5L, index, "longapa" ),
+                IndexEntryUpdate.add( 6L, index, "apalong" ) ) );
+
+        assertThat( query( stringSuffix( 1, "a" ) ), equalTo( asList( 1L, 3L, 4L, 5L ) ) );
+        assertThat( query( stringSuffix( 1, "apa" ) ), equalTo( asList( 3L, 4L, 5L ) ) );
+        assertThat( query( stringSuffix( 1, "apa*" ) ), equalTo( Collections.emptyList() ) );
+        assertThat( query( stringSuffix( 1, "" ) ), equalTo( asList( 1L, 2L, 3L, 4L, 5L, 6L ) ) );
     }
 }
