@@ -179,13 +179,14 @@ class ReflectiveProcedureCompiler
                 String definedName = method.getAnnotation( Procedure.class ).name();
                 QualifiedName procName = extractName( procDefinition, method, valueName, definedName );
 
-                if ( !(fullAccess || config.whiteListed( procName.toString() )) )
+                if ( fullAccess || config.isWhitelisted( procName.toString() ) )
                 {
-                    log.warn( String.format( "The procedure '%s' is not white listed.", procName.toString() ) );
+                    out.add( compileProcedure( procDefinition, constructor, method, warning, fullAccess, procName ) );
                 }
                 else
                 {
-                    out.add( compileProcedure( procDefinition, constructor, method, warning, fullAccess, procName ) );
+                    log.warn( String.format( "The procedure '%s' is not on the whitelist and won't be loaded.",
+                            procName.toString() ) );
                 }
             }
             out.sort( Comparator.comparing( a -> a.signature().name().toString() ) );

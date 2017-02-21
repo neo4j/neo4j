@@ -26,7 +26,7 @@ import org.neo4j.kernel.configuration.Config;
 import static org.hamcrest.CoreMatchers.equalTo;
 import static org.hamcrest.MatcherAssert.assertThat;
 import static org.neo4j.graphdb.factory.GraphDatabaseSettings.procedure_unrestricted;
-import static org.neo4j.graphdb.factory.GraphDatabaseSettings.procedure_white_list;
+import static org.neo4j.graphdb.factory.GraphDatabaseSettings.procedure_whitelist;
 import static org.neo4j.helpers.collection.MapUtil.genericMap;
 import static org.neo4j.kernel.impl.proc.ProcedureConfig.PROC_ALLOWED_SETTING_DEFAULT_NAME;
 import static org.neo4j.kernel.impl.proc.ProcedureConfig.PROC_ALLOWED_SETTING_ROLES;
@@ -193,27 +193,83 @@ public class ProcedureConfigTest
     public void shouldBlockWithWhiteListingForProcedures()
     {
         Config config = Config.defaults().with( genericMap( procedure_unrestricted.name(),
-                "test.procedure.name, test.procedure.name2",  procedure_white_list.name(),
+                "test.procedure.name, test.procedure.name2",  procedure_whitelist.name(),
                 "test.procedure.name") );
         ProcedureConfig procConfig = new ProcedureConfig( config );
 
-        assertThat( procConfig.whiteListed( "xyzabc" ), equalTo( false ) );
-        assertThat( procConfig.whiteListed( "test.procedure.name" ), equalTo( true ) );
-        assertThat( procConfig.whiteListed( "test.procedure.name2" ), equalTo( false ) );
+        assertThat( procConfig.isWhitelisted( "xyzabc" ), equalTo( false ) );
+        assertThat( procConfig.isWhitelisted( "test.procedure.name" ), equalTo( true ) );
+        assertThat( procConfig.isWhitelisted( "test.procedure.name2" ), equalTo( false ) );
     }
 
     @Test
     public void shouldAllowWhiteListsWildcardProceduresNames()
     {
-        Config config = Config.defaults().with( genericMap( procedure_white_list.name(),
+        Config config = Config.defaults().with( genericMap( procedure_whitelist.name(),
                 " test.procedure.* ,  test.*.otherName"  ));
         ProcedureConfig procConfig = new ProcedureConfig( config );
 
-        assertThat( procConfig.whiteListed( "xyzabc" ), equalTo( false ) );
-        assertThat( procConfig.whiteListed( "test.procedure.name" ), equalTo( true ) );
-        assertThat( procConfig.whiteListed( "test.procedure.otherName" ), equalTo( true ) );
-        assertThat( procConfig.whiteListed( "test.other.otherName" ), equalTo( true ) );
-        assertThat( procConfig.whiteListed( "test.other.cool.otherName" ), equalTo( true ) );
-        assertThat( procConfig.whiteListed( "test.other.name" ), equalTo( false ) );
+        assertThat( procConfig.isWhitelisted( "xyzabc" ), equalTo( false ) );
+        assertThat( procConfig.isWhitelisted( "test.procedure.name" ), equalTo( true ) );
+        assertThat( procConfig.isWhitelisted( "test.procedure.otherName" ), equalTo( true ) );
+        assertThat( procConfig.isWhitelisted( "test.other.otherName" ), equalTo( true ) );
+        assertThat( procConfig.isWhitelisted( "test.other.cool.otherName" ), equalTo( true ) );
+        assertThat( procConfig.isWhitelisted( "test.other.name" ), equalTo( false ) );
+    }
+
+    @Test
+    public void shouldIgnoreOddRegex()
+    {
+        Config config = Config.defaults().with( genericMap( procedure_whitelist.name(), "[\\db^a]*" ) );
+        ProcedureConfig procConfig = new ProcedureConfig( config );
+        assertThat( procConfig.isWhitelisted( "123" ), equalTo( false ) );
+        assertThat( procConfig.isWhitelisted( "b" ), equalTo( false ) );
+        assertThat( procConfig.isWhitelisted( "a" ), equalTo( false ) );
+
+        config = Config.defaults().with( genericMap( procedure_whitelist.name(), "(abc)" ) );
+        procConfig = new ProcedureConfig( config );
+        assertThat( procConfig.isWhitelisted( "(abc)" ), equalTo( true ) );
+
+        config = Config.defaults().with( genericMap( procedure_whitelist.name(), "^$" ) );
+        procConfig = new ProcedureConfig( config );
+        assertThat( procConfig.isWhitelisted( "^$" ), equalTo( true ) );
+
+        config = Config.defaults().with( genericMap( procedure_whitelist.name(), "\\" ) );
+        procConfig = new ProcedureConfig( config );
+        assertThat( procConfig.isWhitelisted( "\\" ), equalTo( true ) );
+
+        config = Config.defaults().with( genericMap( procedure_whitelist.name(), "&&" ) );
+        procConfig = new ProcedureConfig( config );
+        assertThat( procConfig.isWhitelisted( "&&" ), equalTo( true ) );
+
+        config = Config.defaults().with( genericMap( procedure_whitelist.name(), "\\p{Lower}" ) );
+        procConfig = new ProcedureConfig( config );
+        assertThat( procConfig.isWhitelisted( "a" ), equalTo( false ) );
+        assertThat( procConfig.isWhitelisted( "\\p{Lower}" ), equalTo( true ) );
+
+        config = Config.defaults().with( genericMap( procedure_whitelist.name(), "a+" ) );
+        procConfig = new ProcedureConfig( config );
+        assertThat( procConfig.isWhitelisted( "aaaaaa" ), equalTo( false ) );
+        assertThat( procConfig.isWhitelisted( "a+" ), equalTo( true ) );
+
+        config = Config.defaults().with( genericMap( procedure_whitelist.name(), "a|b" ) );
+        procConfig = new ProcedureConfig( config );
+        assertThat( procConfig.isWhitelisted( "a" ), equalTo( false ) );
+        assertThat( procConfig.isWhitelisted( "b" ), equalTo( false ) );
+        assertThat( procConfig.isWhitelisted( "|" ), equalTo( false ) );
+        assertThat( procConfig.isWhitelisted( "a|b" ), equalTo( true ) );
+
+        config = Config.defaults().with( genericMap( procedure_whitelist.name(), "[a-c]" ) );
+        procConfig = new ProcedureConfig( config );
+        assertThat( procConfig.isWhitelisted( "a" ), equalTo( false ) );
+        assertThat( procConfig.isWhitelisted( "b" ), equalTo( false ) );
+        assertThat( procConfig.isWhitelisted( "c" ), equalTo( false ) );
+        assertThat( procConfig.isWhitelisted( "-" ), equalTo( false ) );
+        assertThat( procConfig.isWhitelisted( "[a-c]" ), equalTo( true ) );
+
+        config = Config.defaults().with( genericMap( procedure_whitelist.name(), "a\tb" ) );
+        procConfig = new ProcedureConfig( config );
+        assertThat( procConfig.isWhitelisted( "a    b" ), equalTo( false ) );
+        assertThat( procConfig.isWhitelisted( "a\tb" ), equalTo( true ) );
     }
 }

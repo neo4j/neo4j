@@ -70,7 +70,7 @@ public class ProcedureConfig
                 parseMatchers( GraphDatabaseSettings.procedure_unrestricted.name(), config, PROCEDURE_DELIMITER,
                         ProcedureConfig::compilePattern );
         this.whiteList =
-                parseMatchers( GraphDatabaseSettings.procedure_white_list.name(), config, PROCEDURE_DELIMITER,
+                parseMatchers( GraphDatabaseSettings.procedure_whitelist.name(), config, PROCEDURE_DELIMITER,
                         ProcedureConfig::compilePattern );
     }
 
@@ -109,13 +109,14 @@ public class ProcedureConfig
         return accessPatterns.stream().anyMatch( pattern -> pattern.matcher( procedureName ).matches() );
     }
 
-    boolean whiteListed( String procedureName )
+    boolean isWhitelisted( String procedureName )
     {
         return whiteList.stream().anyMatch( pattern -> pattern.matcher( procedureName ).matches() );
     }
 
     private static Pattern compilePattern( String procedure )
     {
+        procedure = procedure.replaceAll( "([\\[\\]\\\\?()\\^${}+|\\-&])", "\\\\$1" );
         return Pattern.compile( procedure.trim().replaceAll( "\\.", "\\\\." ).replaceAll( "\\*", ".*" ) );
     }
 
