@@ -19,12 +19,9 @@
  */
 package org.neo4j.internal.cypher.acceptance
 
-import org.hamcrest.CoreMatchers._
-import org.junit.Assert._
 import org.neo4j.cypher.internal.RewindableExecutionResult
 import org.neo4j.cypher.internal.compatibility.ExecutionResultWrapperFor3_0
 import org.neo4j.cypher.{ExecutionEngineFunSuite, NewPlannerTestSupport}
-import org.neo4j.graphdb.Node
 
 class ShortestPathComplexQueryAcceptanceTest extends ExecutionEngineFunSuite with NewPlannerTestSupport {
 

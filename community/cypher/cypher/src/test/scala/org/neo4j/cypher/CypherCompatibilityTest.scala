@@ -19,8 +19,9 @@
  */
 package org.neo4j.cypher
 
+import org.neo4j.cypher.javacompat.internal.GraphDatabaseCypherService
 import org.neo4j.graphdb.factory.GraphDatabaseSettings
-import org.neo4j.graphdb.{GraphDatabaseService, QueryExecutionException}
+import org.neo4j.graphdb.QueryExecutionException
 import org.neo4j.kernel.api.exceptions.Status
 
 import scala.collection.JavaConverters._
@@ -136,7 +137,6 @@ class CypherCompatibilityTest extends ExecutionEngineFunSuite with RunWithConfig
     }
   }
 
-
   test("should not fail nor generate a warning if asked to execute query without specifying runtime, knowing that compiled is default but will fallback silently to interpreted") {
     runWithConfig() {
       db =>
@@ -154,14 +154,14 @@ class CypherCompatibilityTest extends ExecutionEngineFunSuite with RunWithConfig
     }
   }
 
-  private def assertProfiled(db: GraphDatabaseService, q: String) {
+  private def assertProfiled(db: GraphDatabaseCypherService, q: String) {
     val result = db.execute(q)
     result.resultAsString()
     assert(result.getExecutionPlanDescription.hasProfilerStatistics, s"$q was not profiled as expected")
     assert(result.getQueryExecutionType.requestedExecutionPlanDescription(), s"$q was not flagged for planDescription")
   }
 
-  private def assertExplained(db: GraphDatabaseService, q: String) {
+  private def assertExplained(db: GraphDatabaseCypherService, q: String) {
     val result = db.execute(q)
     result.resultAsString()
     assert(!result.getExecutionPlanDescription.hasProfilerStatistics, s"$q was not explained as expected")
