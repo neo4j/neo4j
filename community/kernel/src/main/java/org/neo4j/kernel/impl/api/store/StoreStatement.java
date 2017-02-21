@@ -42,6 +42,7 @@ import org.neo4j.storageengine.api.RelationshipItem;
 import org.neo4j.storageengine.api.StorageStatement;
 import org.neo4j.storageengine.api.schema.IndexReader;
 import org.neo4j.storageengine.api.schema.LabelScanReader;
+import org.neo4j.storageengine.api.txstate.ReadableTransactionState;
 
 /**
  * Statement for store layer. This allows for acquisition of cursors on the store data.
@@ -146,10 +147,10 @@ public class StoreStatement implements StorageStatement
     }
 
     @Override
-    public Cursor<NodeItem> acquireSingleNodeCursor( long nodeId )
+    public Cursor<NodeItem> acquireSingleNodeCursor( long nodeId, ReadableTransactionState state )
     {
         neoStores.assertOpen();
-        return singleNodeCursor.get().init( nodeId );
+        return singleNodeCursor.get().init( nodeId, state );
     }
 
     @Override
