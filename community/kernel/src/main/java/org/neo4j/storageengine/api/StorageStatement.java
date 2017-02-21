@@ -112,7 +112,6 @@ public interface StorageStatement extends AutoCloseable
      -     */
     Cursor<RelationshipItem> relationshipsGetAllCursor();
 
-
     Cursor<PropertyItem> acquirePropertyCursor( long propertyId, Lock shortLivedReadLock );
 
     Cursor<PropertyItem> acquireSinglePropertyCursor( long propertyId, int propertyKeyId, Lock shortLivedReadLock );

@@ -333,7 +333,6 @@ public class IndexQueryTransactionStateTest
         when( statement.acquireSingleNodeCursor( nodeId ) )
                 .thenReturn( asNodeCursor( nodeId, labels( labelId ) ) );
 
-
         txContext.nodeAddLabel( state, nodeId, labelId );
 
         // When

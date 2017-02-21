@@ -218,7 +218,6 @@ public class StateOperationsAutoIndexingTest
         when( storeLayer.relationshipGetProperty( storeStmt, relationship, propertyKeyId ) )
                 .thenReturn( cursor( existingProperty ) );
 
-
         // When
         context.relationshipRemoveProperty( stmt, 1337, existingProperty.propertyKeyId() );
 
