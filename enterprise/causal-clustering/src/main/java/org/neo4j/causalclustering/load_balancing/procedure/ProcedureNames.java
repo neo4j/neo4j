@@ -21,6 +21,8 @@ package org.neo4j.causalclustering.load_balancing.procedure;
 
 import java.util.Arrays;
 
+import static java.lang.String.join;
+
 /**
  * This is part of the cluster / driver interface specification and
  * defines the procedure names involved in the load balancing solution.
@@ -59,5 +61,10 @@ public enum ProcedureNames
         String[] fullyQualifiedProcedureName = Arrays.copyOf( nameSpace, nameSpace.length + 1 );
         fullyQualifiedProcedureName[nameSpace.length] = name;
         return fullyQualifiedProcedureName;
+    }
+
+    public String callName()
+    {
+        return join( ".", nameSpace ) + "." + name;
     }
 }

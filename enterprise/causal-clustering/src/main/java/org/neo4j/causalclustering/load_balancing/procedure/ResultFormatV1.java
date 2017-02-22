@@ -20,6 +20,8 @@
 package org.neo4j.causalclustering.load_balancing.procedure;
 
 import java.util.ArrayList;
+import java.util.Arrays;
+import java.util.Collections;
 import java.util.HashMap;
 import java.util.List;
 import java.util.Map;
@@ -29,9 +31,8 @@ import java.util.stream.Stream;
 import org.neo4j.causalclustering.load_balancing.Endpoint;
 import org.neo4j.causalclustering.load_balancing.LoadBalancingResult;
 import org.neo4j.causalclustering.load_balancing.Role;
-import org.neo4j.collection.RawIterator;
 import org.neo4j.helpers.AdvertisedSocketAddress;
-import org.neo4j.kernel.api.exceptions.ProcedureException;
+import org.neo4j.helpers.SocketAddress;
 
 import static java.util.concurrent.TimeUnit.MILLISECONDS;
 import static java.util.stream.Collectors.toList;
@@ -42,16 +43,16 @@ import static org.neo4j.causalclustering.load_balancing.Role.WRITE;
 /**
  * The result format of GetServersV1 and GetServersV2 procedures.
  */
-class ResultFormatV1
+public class ResultFormatV1
 {
     private static final String ROLE_KEY = "role";
     private static final String ADDRESSES_KEY = "addresses";
 
-    static RawIterator<Object[],ProcedureException> build( LoadBalancingResult result )
+    static Object[] build( LoadBalancingResult result )
     {
-        Object[] routers = result.routeEndpoints().stream().map( Endpoint::address ).toArray();
-        Object[] readers = result.readEndpoints().stream().map( Endpoint::address ).toArray();
-        Object[] writers = result.writeEndpoints().stream().map( Endpoint::address ).toArray();
+        Object[] routers = result.routeEndpoints().stream().map( Endpoint::address ).map( SocketAddress::toString ).toArray();
+        Object[] readers = result.readEndpoints().stream().map( Endpoint::address ).map( SocketAddress::toString ).toArray();
+        Object[] writers = result.writeEndpoints().stream().map( Endpoint::address ).map( SocketAddress::toString ).toArray();
 
         List<Map<String,Object>> servers = new ArrayList<>();
 
@@ -86,26 +87,30 @@ class ResultFormatV1
         }
 
         long timeToLiveSeconds = MILLISECONDS.toSeconds( result.getTimeToLiveMillis() );
-        Object[] row = new Object[]{timeToLiveSeconds, servers};
-        return RawIterator.<Object[],ProcedureException>of( row );
+        return new Object[]{timeToLiveSeconds, servers};
     }
 
-    static LoadBalancingResult parse( RawIterator<Object[],ProcedureException> records ) throws ProcedureException
+    public static LoadBalancingResult parse( Object[] record )
     {
-        Object[] record = records.next();
-
         long timeToLiveSeconds = (long) record[0];
         @SuppressWarnings( "unchecked" )
         List<Map<String,Object>> endpointData = (List<Map<String,Object>>) record[1];
 
         Map<Role,List<Endpoint>> endpoints = parse( endpointData );
-        assert !records.hasNext();
 
         return new LoadBalancingResult(
                 endpoints.get( ROUTE ),
                 endpoints.get( WRITE ),
                 endpoints.get( READ ),
                 timeToLiveSeconds * 1000 );
+    }
+
+    public static LoadBalancingResult parse( Map<String,Object> record )
+    {
+        return parse( new Object[]{
+                record.get( ParameterNames.TTL.parameterName() ),
+                record.get( ParameterNames.SERVERS.parameterName() )
+        } );
     }
 
     private static Map<Role,List<Endpoint>> parse( List<Map<String,Object>> result )
@@ -117,6 +122,9 @@ class ResultFormatV1
             List<Endpoint> addresses = parse( (Object[]) single.get( "addresses" ), role );
             endpoints.put( role, addresses );
         }
+
+        Arrays.stream( Role.values() ).forEach( r -> endpoints.putIfAbsent( r, Collections.emptyList() ) );
+
         return endpoints;
     }
 

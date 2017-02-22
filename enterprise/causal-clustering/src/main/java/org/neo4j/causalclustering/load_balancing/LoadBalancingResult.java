@@ -85,4 +85,15 @@ public class LoadBalancingResult implements LoadBalancingProcessor.Result
     {
         return Objects.hash( routeEndpoints, writeEndpoints, readEndpoints, timeToLiveMillis );
     }
+
+    @Override
+    public String toString()
+    {
+        return "LoadBalancingResult{" +
+               "routeEndpoints=" + routeEndpoints +
+               ", writeEndpoints=" + writeEndpoints +
+               ", readEndpoints=" + readEndpoints +
+               ", timeToLiveMillis=" + timeToLiveMillis +
+               '}';
+    }
 }

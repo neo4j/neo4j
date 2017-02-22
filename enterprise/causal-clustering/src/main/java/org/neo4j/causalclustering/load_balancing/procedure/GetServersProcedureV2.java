@@ -76,10 +76,10 @@ public class GetServersProcedureV2 implements CallableProcedure
 
         LoadBalancingProcessor.Result result = loadBalancingProcessor.run( clientContext );
 
-        return ResultFormatV1.build( new LoadBalancingResult(
+        return RawIterator.<Object[],ProcedureException>of( ResultFormatV1.build( new LoadBalancingResult(
                 result.routeEndpoints(),
                 result.writeEndpoints(),
                 result.readEndpoints(),
-                result.getTimeToLiveMillis() ) );
+                result.getTimeToLiveMillis() ) ) );
     }
 }

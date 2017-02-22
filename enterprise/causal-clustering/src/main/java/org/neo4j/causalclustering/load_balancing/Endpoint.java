@@ -32,15 +32,15 @@ public class Endpoint
     private final AdvertisedSocketAddress address;
     private final Role role;
 
-    public String address()
-    {
-        return address.toString();
-    }
-
     public Endpoint( AdvertisedSocketAddress address, Role role )
     {
         this.address = address;
         this.role = role;
+    }
+
+    public AdvertisedSocketAddress address()
+    {
+        return address;
     }
 
     public static Endpoint write( AdvertisedSocketAddress address )
