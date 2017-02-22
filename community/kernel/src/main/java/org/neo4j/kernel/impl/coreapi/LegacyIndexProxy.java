@@ -336,6 +336,12 @@ public class LegacyIndexProxy<T extends PropertyContainer> implements Index<T>
                 }
                 return null;
             }
+
+            @Override
+            public void close()
+            {
+                ids.close();
+            }
         };
     }
 
