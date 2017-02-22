@@ -30,6 +30,7 @@ import java.util.EnumSet;
 import java.util.List;
 import java.util.function.BiFunction;
 import java.util.function.Function;
+import java.util.Optional;
 import java.util.regex.Pattern;
 
 import org.neo4j.graphdb.config.Configuration;
@@ -476,7 +477,7 @@ public class Settings
         @Override
         public String toString()
         {
-            return "a duration (valid units are `" + DURATION_UNITS.replace( ", ", "`, `" ) + "`; default unit is `ms`)";
+            return "a duration (valid units are `" + DURATION_UNITS.replace( ", ", "`, `" ) + "`; default unit is `s`)";
         }
     };
 
@@ -996,6 +997,12 @@ public class Settings
         public T from( Configuration config )
         {
             return config.get( this );
+        }
+
+        @Override
+        public Optional<Function<String, T>> getParser()
+        {
+            return Optional.of( parser );
         }
 
         @Override
