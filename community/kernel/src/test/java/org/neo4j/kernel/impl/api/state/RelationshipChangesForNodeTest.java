@@ -27,6 +27,7 @@ import org.neo4j.storageengine.api.Direction;
 
 import static org.junit.Assert.assertEquals;
 import static org.mockito.Mockito.mock;
+import static org.neo4j.collection.primitive.PrimitiveIntCollections.asSet;
 import static org.neo4j.kernel.impl.api.store.RelationshipIterator.EMPTY;
 
 public class RelationshipChangesForNodeTest
@@ -45,7 +46,7 @@ public class RelationshipChangesForNodeTest
         changes.addRelationship( REL_1, TYPE_DIR, Direction.OUTGOING );
 
         RelationshipIterator iterator = changes.augmentRelationships(
-                Direction.OUTGOING, new int[]{TYPE_DIR}, EMPTY );
+                Direction.OUTGOING, asSet( new int[]{TYPE_DIR} ), EMPTY );
         assertEquals( true, iterator.hasNext() );
         assertEquals( REL_1, iterator.next() );
         assertEquals( "should have no next relationships but has ", false, iterator.hasNext() );
@@ -59,7 +60,7 @@ public class RelationshipChangesForNodeTest
         changes.addRelationship( REL_1, TYPE_DIR, Direction.INCOMING );
 
         RelationshipIterator iterator = changes.augmentRelationships(
-                Direction.INCOMING, new int[]{TYPE_DIR}, EMPTY );
+                Direction.INCOMING, asSet( new int[]{TYPE_DIR} ), EMPTY );
         assertEquals( true, iterator.hasNext() );
         assertEquals( REL_1, iterator.next() );
         assertEquals( "should have no next relationships but has ", false, iterator.hasNext() );

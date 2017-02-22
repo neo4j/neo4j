@@ -162,51 +162,52 @@ public class TwoPhaseNodeForRelationshipLockingTest
             final boolean skipFirst, final RelationshipData... relIds ) throws EntityNotFoundException
     {
         NodeItem nodeItem = mock( NodeItem.class );
-        when( nodeItem.relationships( Direction.BOTH ) ).thenAnswer( new Answer<Cursor<RelationshipItem>>()
-        {
-            private boolean first = skipFirst;
-
-            @Override
-            public Cursor<RelationshipItem> answer( InvocationOnMock invocation ) throws Throwable
-            {
-                try
+        when( ops.nodeGetRelationships( state, nodeItem, Direction.BOTH ) )
+                .thenAnswer( new Answer<Cursor<RelationshipItem>>()
                 {
-                    return new Cursor<RelationshipItem>()
+                    private boolean first = skipFirst;
+
+                    @Override
+                    public Cursor<RelationshipItem> answer( InvocationOnMock invocation ) throws Throwable
                     {
-                        private int i = first ? 1 : 0;
-                        private RelationshipData relationshipData = null;
-
-                        @Override
-                        public boolean next()
+                        try
                         {
-                            boolean next = i < relIds.length;
-                            relationshipData = next ? relIds[i++] : null;
-                            return next;
-                        }
-
-                        @Override
-                        public RelationshipItem get()
-                        {
-                            if ( relationshipData == null )
+                            return new Cursor<RelationshipItem>()
                             {
-                                throw new NoSuchElementException();
-                            }
+                                private int i = first ? 1 : 0;
+                                private RelationshipData relationshipData = null;
 
-                            return relationshipData.asRelationshipItem();
+                                @Override
+                                public boolean next()
+                                {
+                                    boolean next = i < relIds.length;
+                                    relationshipData = next ? relIds[i++] : null;
+                                    return next;
+                                }
+
+                                @Override
+                                public RelationshipItem get()
+                                {
+                                    if ( relationshipData == null )
+                                    {
+                                        throw new NoSuchElementException();
+                                    }
+
+                                    return relationshipData.asRelationshipItem();
+                                }
+
+                                @Override
+                                public void close()
+                                {
+                                }
+                            };
                         }
-
-                        @Override
-                        public void close()
+                        finally
                         {
+                            first = false;
                         }
-                    };
-                }
-                finally
-                {
-                    first = false;
-                }
-            }
-        } );
+                    }
+                } );
 
         when( ops.nodeCursorById( state, nodeId ) ).thenAnswer( invocationOnMock ->
         {

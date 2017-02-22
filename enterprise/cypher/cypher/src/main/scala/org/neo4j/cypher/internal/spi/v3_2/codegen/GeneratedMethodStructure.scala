@@ -410,18 +410,18 @@ class GeneratedMethodStructure(val fields: Fields, val generator: CodeBlock, aux
 
   override def toFloat(expression: Expression) = toDouble(expression)
 
-  override def nodeGetAllRelationships(iterVar: String, nodeVar: String, direction: SemanticDirection) = {
+  override def nodeGetRelationshipsWithDirection(iterVar: String, nodeVar: String, direction: SemanticDirection) = {
     val local = generator.declare(typeRef[RelationshipIterator], iterVar)
     handleKernelExceptions(generator, fields.ro, _finalizers) { body =>
-      body.assign(local, invoke(readOperations, Methods.nodeGetAllRelationships, body.load(nodeVar), dir(direction)))
+      body.assign(local, invoke(readOperations, Methods.nodeGetRelationshipsWithDirection, body.load(nodeVar), dir(direction)))
     }
   }
 
-  override def nodeGetRelationships(iterVar: String, nodeVar: String, direction: SemanticDirection,
-                                    typeVars: Seq[String]) = {
+  override def nodeGetRelationshipsWithDirectionAndTypes(iterVar: String, nodeVar: String, direction: SemanticDirection,
+                                                         typeVars: Seq[String]) = {
     val local = generator.declare(typeRef[RelationshipIterator], iterVar)
     handleKernelExceptions(generator, fields.ro, _finalizers) { body =>
-      body.assign(local, invoke(readOperations, Methods.nodeGetRelationships,
+      body.assign(local, invoke(readOperations, Methods.nodeGetRelationshipsWithDirectionAndTypes,
                                 body.load(nodeVar), dir(direction),
                                 newArray(typeRef[Int], typeVars.map(body.load): _*)))
     }

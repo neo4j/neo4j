@@ -35,43 +35,6 @@ public interface NodeItem
     PrimitiveIntSet labels();
 
     /**
-     * @return relationship cursor for current node
-     * @throws IllegalStateException if no current node is selected
-     */
-    Cursor<RelationshipItem> relationships( Direction direction, int... typeIds );
-
-    /**
-     * @return relationship cursor for current node
-     * @throws IllegalStateException if no current node is selected
-     */
-    Cursor<RelationshipItem> relationships( Direction direction );
-
-    /**
-     * @return relationship type cursor for relationships attached to this node.
-     * @throws IllegalStateException if no current node is selected
-     */
-    PrimitiveIntSet relationshipTypes();
-
-    /**
-     * Returns degree, e.g. number of relationships for this node.
-     *
-     * @param direction {@link Direction} filter when counting relationships, e.g. only
-     * {@link Direction#OUTGOING outgoing} or {@link Direction#INCOMING incoming}.
-     * @return degree of relationships in the given direction.
-     */
-    int degree( Direction direction );
-
-    /**
-     * Returns degree, e.g. number of relationships for this node.
-     *
-     * @param direction {@link Direction} filter on when counting relationships, e.g. only
-     * {@link Direction#OUTGOING outgoing} or {@link Direction#INCOMING incoming}.
-     * @param typeId relationship type id to filter when counting relationships.
-     * @return degree of relationships in the given direction and relationship type.
-     */
-    int degree( Direction direction, int typeId );
-
-    /**
      * @return whether or not this node has been marked as being dense, i.e. exceeding a certain threshold
      * of number of relationships.
      */
@@ -84,4 +47,6 @@ public interface NodeItem
     boolean hasLabel( int labelId );
 
     long nextGroupId();
+
+    long nextRelationshipId();
 }

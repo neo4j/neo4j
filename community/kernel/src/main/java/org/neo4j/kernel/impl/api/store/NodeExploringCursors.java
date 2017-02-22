@@ -21,35 +21,17 @@ package org.neo4j.kernel.impl.api.store;
 
 import org.neo4j.cursor.Cursor;
 import org.neo4j.kernel.impl.locking.Lock;
-import org.neo4j.kernel.impl.locking.LockService;
 import org.neo4j.kernel.impl.store.RecordCursors;
-import org.neo4j.kernel.impl.store.RecordStore;
-import org.neo4j.kernel.impl.store.RelationshipStore;
-import org.neo4j.kernel.impl.store.record.RelationshipGroupRecord;
 import org.neo4j.kernel.impl.util.InstanceCache;
-import org.neo4j.storageengine.api.Direction;
 import org.neo4j.storageengine.api.PropertyItem;
-import org.neo4j.storageengine.api.RelationshipItem;
 
 class NodeExploringCursors
 {
-    private final InstanceCache<StoreNodeRelationshipCursor> nodeRelationshipCursorCache;
     private final InstanceCache<StoreSinglePropertyCursor> singlePropertyCursorCache;
     private final InstanceCache<StorePropertyCursor> propertyCursorCache;
 
-    NodeExploringCursors( final RecordCursors cursors, final LockService lockService,
-            final RelationshipStore relationshipStore,
-            final RecordStore<RelationshipGroupRecord> relationshipGroupStore )
+    NodeExploringCursors( final RecordCursors cursors )
     {
-        nodeRelationshipCursorCache = new InstanceCache<StoreNodeRelationshipCursor>()
-        {
-            @Override
-            protected StoreNodeRelationshipCursor create()
-            {
-                return new StoreNodeRelationshipCursor( relationshipStore.newRecord(),
-                        relationshipGroupStore.newRecord(), nodeRelationshipCursorCache, cursors, lockService );
-            }
-        };
         singlePropertyCursorCache = new InstanceCache<StoreSinglePropertyCursor>()
         {
             @Override
@@ -76,16 +58,5 @@ class NodeExploringCursors
     public Cursor<PropertyItem> property( long nextProp, int propertyKeyId, Lock lock )
     {
         return singlePropertyCursorCache.get().init( nextProp, propertyKeyId, lock );
-    }
-
-    public Cursor<RelationshipItem> relationships( boolean dense, long nextRel, long id, Direction direction )
-    {
-        return nodeRelationshipCursorCache.get().init( dense, nextRel, id, direction );
-    }
-
-    public Cursor<RelationshipItem> relationships( boolean dense, long nextRel, long id, Direction direction,
-            int... relTypes )
-    {
-        return nodeRelationshipCursorCache.get().init( dense, nextRel, id, direction, relTypes );
     }
 }

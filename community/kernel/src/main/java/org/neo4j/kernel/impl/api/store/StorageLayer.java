@@ -20,10 +20,12 @@
 package org.neo4j.kernel.impl.api.store;
 
 import java.util.Iterator;
+import java.util.function.IntPredicate;
 import java.util.function.Predicate;
 import java.util.function.Supplier;
 
 import org.neo4j.collection.primitive.PrimitiveIntIterator;
+import org.neo4j.collection.primitive.PrimitiveIntSet;
 import org.neo4j.collection.primitive.PrimitiveLongIterator;
 import org.neo4j.cursor.Cursor;
 import org.neo4j.graphdb.TransactionFailureException;
@@ -79,9 +81,12 @@ import org.neo4j.storageengine.api.Token;
 import org.neo4j.storageengine.api.schema.PopulationProgress;
 import org.neo4j.storageengine.api.schema.SchemaRule;
 
+import static org.neo4j.collection.primitive.Primitive.intSet;
+import static org.neo4j.function.Predicates.ALWAYS_TRUE_INT;
 import static org.neo4j.helpers.collection.Iterables.filter;
 import static org.neo4j.kernel.api.schema_new.SchemaDescriptorPredicates.hasLabel;
 import static org.neo4j.kernel.impl.api.store.DegreeCounter.countByFirstPrevPointer;
+import static org.neo4j.kernel.impl.api.store.DegreeCounter.countRelationshipsInGroup;
 import static org.neo4j.kernel.impl.store.record.Record.NO_NEXT_RELATIONSHIP;
 import static org.neo4j.kernel.impl.store.record.RecordLoad.CHECK;
 import static org.neo4j.kernel.impl.store.record.RecordLoad.FORCE;
@@ -409,6 +414,21 @@ public class StorageLayer implements StoreReadLayer
     }
 
     @Override
+    public Cursor<RelationshipItem> nodeGetRelationships( StorageStatement statement, NodeItem nodeItem,
+            Direction direction )
+    {
+        return nodeGetRelationships( statement, nodeItem, direction, ALWAYS_TRUE_INT );
+    }
+
+    @Override
+    public Cursor<RelationshipItem> nodeGetRelationships( StorageStatement statement, NodeItem node,
+            Direction direction, IntPredicate relTypes )
+    {
+        return statement.acquireNodeRelationshipCursor( node.isDense(), node.id(), node.nextRelationshipId(), direction,
+                relTypes );
+    }
+
+    @Override
     public long reserveNode()
     {
         return nodeStore.nextId();
@@ -504,6 +524,30 @@ public class StorageLayer implements StoreReadLayer
     }
 
     @Override
+    public PrimitiveIntSet relationshipTypes( StorageStatement statement, NodeItem node )
+    {
+        PrimitiveIntSet set = intSet();
+        if ( node.isDense() )
+        {
+            RelationshipGroupRecord groupRecord = relationshipGroupStore.newRecord();
+            RecordCursor<RelationshipGroupRecord> cursor = statement.recordCursors().relationshipGroup();
+            for ( long id = node.nextGroupId(); id != NO_NEXT_RELATIONSHIP.intValue(); id = groupRecord.getNext() )
+            {
+                if ( cursor.next( id, groupRecord, FORCE ) )
+                {
+                    set.add( groupRecord.getType() );
+                }
+            }
+        }
+        else
+        {
+            nodeGetRelationships( statement, node, Direction.BOTH )
+                    .forAll( relationship -> set.add( relationship.type() ) );
+        }
+        return set;
+    }
+
+    @Override
     public void degrees( StorageStatement statement, NodeItem nodeItem, DegreeVisitor visitor )
     {
         if ( nodeItem.isDense() )
@@ -512,7 +556,7 @@ public class StorageLayer implements StoreReadLayer
         }
         else
         {
-            visitNode( nodeItem, visitor );
+            visitNode( statement, nodeItem, visitor );
         }
     }
 
@@ -529,9 +573,19 @@ public class StorageLayer implements StoreReadLayer
         return schemaStorage.indexGetForSchema( index.schema(), filter );
     }
 
-    private void visitNode( NodeItem nodeItem, DegreeVisitor visitor )
+    @Override
+    public int degreeRelationshipsInGroup( StorageStatement storeStatement, long nodeId, long groupId,
+            Direction direction, Integer relType )
     {
-        try ( Cursor<RelationshipItem> relationships = nodeItem.relationships( Direction.BOTH ) )
+        RelationshipRecord relationshipRecord = relationshipStore.newRecord();
+        RelationshipGroupRecord relationshipGroupRecord = relationshipGroupStore.newRecord();
+        return countRelationshipsInGroup( groupId, direction, relType, nodeId, relationshipRecord,
+                relationshipGroupRecord, storeStatement.recordCursors() );
+    }
+
+    private void visitNode( StorageStatement statement, NodeItem nodeItem, DegreeVisitor visitor )
+    {
+        try ( Cursor<RelationshipItem> relationships = nodeGetRelationships( statement, nodeItem, Direction.BOTH ) )
         {
             while ( relationships.next() )
             {

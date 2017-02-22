@@ -19,9 +19,7 @@
  */
 package org.neo4j.kernel.impl.api.store;
 
-import java.util.Objects;
 import java.util.function.Consumer;
-import java.util.function.Supplier;
 
 import org.neo4j.collection.primitive.PrimitiveIntCollections;
 import org.neo4j.collection.primitive.PrimitiveIntSet;
@@ -30,29 +28,16 @@ import org.neo4j.kernel.api.StatementConstants;
 import org.neo4j.kernel.api.cursor.EntityItemHelper;
 import org.neo4j.kernel.impl.locking.Lock;
 import org.neo4j.kernel.impl.locking.LockService;
-import org.neo4j.kernel.impl.store.NeoStores;
 import org.neo4j.kernel.impl.store.NodeLabelsField;
-import org.neo4j.kernel.impl.store.RecordCursor;
 import org.neo4j.kernel.impl.store.RecordCursors;
-import org.neo4j.kernel.impl.store.RecordStore;
-import org.neo4j.kernel.impl.store.RelationshipStore;
-import org.neo4j.kernel.impl.store.record.DynamicRecord;
 import org.neo4j.kernel.impl.store.record.NodeRecord;
 import org.neo4j.kernel.impl.store.record.Record;
-import org.neo4j.kernel.impl.store.record.RelationshipGroupRecord;
 import org.neo4j.kernel.impl.util.IoPrimitiveUtils;
-import org.neo4j.storageengine.api.Direction;
 import org.neo4j.storageengine.api.NodeItem;
 import org.neo4j.storageengine.api.PropertyItem;
-import org.neo4j.storageengine.api.RelationshipItem;
 
-import static org.neo4j.collection.primitive.Primitive.intSet;
-import static org.neo4j.kernel.impl.api.store.DegreeCounter.countRelationshipsInGroup;
 import static org.neo4j.kernel.impl.locking.LockService.NO_LOCK_SERVICE;
-import static org.neo4j.kernel.impl.store.record.Record.NO_NEXT_RELATIONSHIP;
 import static org.neo4j.kernel.impl.store.record.RecordLoad.CHECK;
-import static org.neo4j.kernel.impl.store.record.RecordLoad.FORCE;
-import static org.neo4j.kernel.impl.util.Cursors.count;
 import static org.neo4j.kernel.impl.util.IoPrimitiveUtils.safeCastLongToInt;
 
 /**
@@ -60,55 +45,7 @@ import static org.neo4j.kernel.impl.util.IoPrimitiveUtils.safeCastLongToInt;
  */
 public class StoreSingleNodeCursor extends EntityItemHelper implements Cursor<NodeItem>, NodeItem
 {
-    private static class NodeLabelView implements Supplier<PrimitiveIntSet>
-    {
-        private final RecordCursor<DynamicRecord> dynamicLabelRecordCursor;
-        private long[] labels;
-
-        NodeLabelView( RecordCursor<DynamicRecord> dynamicLabelRecordCursor )
-        {
-            this.dynamicLabelRecordCursor = dynamicLabelRecordCursor;
-        }
-
-        NodeLabelView load( NodeRecord nodeRecord )
-        {
-            if ( labels == null )
-            {
-                labels = NodeLabelsField.get( nodeRecord, dynamicLabelRecordCursor );
-            }
-            return this;
-        }
-
-        void clear()
-        {
-            labels = null;
-        }
-
-        boolean hasLabel( int labelId )
-        {
-            Objects.requireNonNull( labels );
-            for ( long label : labels )
-            {
-                if ( safeCastLongToInt( label ) == labelId )
-                {
-                    return true;
-                }
-            }
-            return false;
-        }
-
-        @Override
-        public PrimitiveIntSet get()
-        {
-            Objects.requireNonNull( labels );
-            return PrimitiveIntCollections.asSet( labels, IoPrimitiveUtils::safeCastLongToInt );
-        }
-    }
-
-    private final NodeLabelView labelView;
     private final NodeRecord nodeRecord;
-    private final RelationshipStore relationshipStore;
-    private final RecordStore<RelationshipGroupRecord> relationshipGroupStore;
     private final Consumer<StoreSingleNodeCursor> instanceCache;
 
     private final LockService lockService;
@@ -116,19 +53,16 @@ public class StoreSingleNodeCursor extends EntityItemHelper implements Cursor<No
     private final NodeExploringCursors cursors;
 
     private long nodeId = StatementConstants.NO_SUCH_NODE;
+    private long[] labels;
 
-    StoreSingleNodeCursor( NodeRecord nodeRecord, NeoStores neoStores, Consumer<StoreSingleNodeCursor> instanceCache,
+    StoreSingleNodeCursor( NodeRecord nodeRecord, Consumer<StoreSingleNodeCursor> instanceCache,
             RecordCursors recordCursors, LockService lockService )
     {
         this.nodeRecord = nodeRecord;
         this.recordCursors = recordCursors;
-        this.relationshipStore = neoStores.getRelationshipStore();
-        this.relationshipGroupStore = neoStores.getRelationshipGroupStore();
         this.lockService = lockService;
         this.instanceCache = instanceCache;
-        this.cursors =
-                new NodeExploringCursors( recordCursors, lockService, relationshipStore, relationshipGroupStore );
-        this.labelView = new NodeLabelView( recordCursors.label() );
+        this.cursors = new NodeExploringCursors( recordCursors );
     }
 
     public StoreSingleNodeCursor init( long nodeId )
@@ -146,6 +80,7 @@ public class StoreSingleNodeCursor extends EntityItemHelper implements Cursor<No
     @Override
     public boolean next()
     {
+        labels = null;
         if ( nodeId != StatementConstants.NO_SUCH_NODE )
         {
             try
@@ -158,14 +93,14 @@ public class StoreSingleNodeCursor extends EntityItemHelper implements Cursor<No
             }
         }
 
-        labelView.clear();
         return false;
     }
 
     @Override
     public void close()
     {
-        labelView.clear();
+        labels = null;
+        nodeRecord.clear();
         instanceCache.accept( this );
     }
 
@@ -178,13 +113,30 @@ public class StoreSingleNodeCursor extends EntityItemHelper implements Cursor<No
     @Override
     public PrimitiveIntSet labels()
     {
-        return labelView.load( nodeRecord ).get();
+        ensureLabels();
+        return PrimitiveIntCollections.asSet( labels, IoPrimitiveUtils::safeCastLongToInt );
+    }
+
+    private void ensureLabels()
+    {
+        if ( labels == null )
+        {
+            labels = NodeLabelsField.get( nodeRecord, recordCursors.label() );
+        }
     }
 
     @Override
     public boolean hasLabel( int labelId )
     {
-        return labelView.load( nodeRecord ).hasLabel( labelId );
+        ensureLabels();
+        for ( long label : labels )
+        {
+            if ( safeCastLongToInt( label ) == labelId )
+            {
+                return true;
+            }
+        }
+        return false;
     }
 
     private Lock shortLivedReadLock()
@@ -231,68 +183,6 @@ public class StoreSingleNodeCursor extends EntityItemHelper implements Cursor<No
     }
 
     @Override
-    public Cursor<RelationshipItem> relationships( Direction direction )
-    {
-        return cursors.relationships( isDense(), nextRel(), id(), direction );
-    }
-
-    @Override
-    public Cursor<RelationshipItem> relationships( Direction direction, int... relTypes )
-    {
-        return cursors.relationships( isDense(), nextRel(), id(), direction, relTypes );
-    }
-
-    @Override
-    public PrimitiveIntSet relationshipTypes()
-    {
-        PrimitiveIntSet set = intSet();
-        if ( isDense() )
-        {
-            RelationshipGroupRecord groupRecord = relationshipGroupStore.newRecord();
-            for ( long id = nextGroupId(); id != NO_NEXT_RELATIONSHIP.intValue(); id = groupRecord.getNext() )
-            {
-                if ( recordCursors.relationshipGroup().next( id, groupRecord, FORCE ) )
-                {
-                    set.add( groupRecord.getType() );
-                }
-            }
-        }
-        else
-        {
-            relationships( Direction.BOTH ).forAll( relationship -> set.add( relationship.type() ) );
-        }
-        return set;
-    }
-
-    @Override
-    public int degree( Direction direction )
-    {
-        if ( isDense() )
-        {
-            return countRelationshipsInGroup( nextGroupId(), direction, null, id(), relationshipStore.newRecord(),
-                    relationshipGroupStore.newRecord(), recordCursors );
-        }
-        else
-        {
-            return count( relationships( direction ) );
-        }
-    }
-
-    @Override
-    public int degree( Direction direction, int relType )
-    {
-        if ( isDense() )
-        {
-            return countRelationshipsInGroup( nextGroupId(), direction, relType, id(), relationshipStore.newRecord(),
-                    relationshipGroupStore.newRecord(), recordCursors );
-        }
-        else
-        {
-            return count( relationships( direction, relType ) );
-        }
-    }
-
-    @Override
     public boolean isDense()
     {
         return nodeRecord.isDense();
@@ -302,10 +192,11 @@ public class StoreSingleNodeCursor extends EntityItemHelper implements Cursor<No
     public long nextGroupId()
     {
         assert isDense();
-        return nextRel();
+        return nextRelationshipId();
     }
 
-    private long nextRel()
+    @Override
+    public long nextRelationshipId()
     {
         return nodeRecord.getNextRel();
     }

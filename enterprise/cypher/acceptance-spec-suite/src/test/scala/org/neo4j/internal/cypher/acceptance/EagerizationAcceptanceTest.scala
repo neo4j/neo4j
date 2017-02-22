@@ -24,13 +24,13 @@ import org.neo4j.cypher.internal.compiler.v3_2.executionplan.InternalExecutionRe
 import org.neo4j.cypher.internal.compiler.v3_2.helpers.Counter
 import org.neo4j.cypher.internal.compiler.v3_2.test_helpers.CreateTempFileTestSupport
 import org.neo4j.cypher.{ExecutionEngineFunSuite, NewPlannerTestSupport, QueryStatisticsTestSupport}
-import org.neo4j.graphdb.Node
+import org.neo4j.graphdb.{Direction, Node}
 import org.neo4j.kernel.api.exceptions.ProcedureException
 import org.neo4j.kernel.api.proc
 import org.neo4j.kernel.api.proc.CallableProcedure.BasicProcedure
 import org.neo4j.kernel.api.proc.{Context, Neo4jTypes}
+import org.neo4j.kernel.impl.api.RelationshipVisitor
 import org.neo4j.procedure.Mode
-import org.neo4j.storageengine.api.{Direction, RelationshipItem}
 import org.scalatest.prop.TableDrivenPropertyChecks
 
 import scala.util.matching.Regex
@@ -261,11 +261,13 @@ class EagerizationAcceptanceTest
             val idY = input(1).asInstanceOf[Node].getId
             val nodeCursor = statement.readOperations().nodeCursorById(idX)
             val result = Array.newBuilder[Array[AnyRef]]
-            val relCursor = nodeCursor.get().relationships( Direction.OUTGOING )
-            while (relCursor.next()) {
-              val item: RelationshipItem = relCursor.get()
-              if (item.endNode() == idY)
-                result += Array(new java.lang.Long(item.id()))
+            val relationshipIterator = statement.readOperations().nodeGetRelationships( nodeCursor.get().id(), Direction.OUTGOING )
+            while (relationshipIterator.hasNext) {
+              relationshipIterator.relationshipVisit(relationshipIterator.next(), new RelationshipVisitor[Exception] {
+                override def visit(relationshipId: Long, typeId: Int, startNodeId: Long, endNodeId: Long) {
+                  if (endNodeId == idY)
+                    result += Array(new java.lang.Long(relationshipId))
+              }})
             }
             RawIterator.of(result.result(): _*)
           } finally {
@@ -306,11 +308,14 @@ class EagerizationAcceptanceTest
             val idX = input(0).asInstanceOf[Node].getId
             val idY = input(1).asInstanceOf[Node].getId
             val nodeCursor = statement.readOperations().nodeCursorById(idX)
-            val relCursor = nodeCursor.get().relationships(Direction.OUTGOING)
-            while (relCursor.next()) {
-              val item: RelationshipItem = relCursor.get()
-              if (item.endNode() == idY)
-                counter += 1
+            val relationshipIterator = statement.readOperations().nodeGetRelationships( nodeCursor.get().id(), Direction.OUTGOING )
+            while (relationshipIterator.hasNext) {
+              relationshipIterator.relationshipVisit(relationshipIterator.next(), new RelationshipVisitor[Exception] {
+                override def visit(relationshipId: Long, typeId: Int, startNodeId: Long, endNodeId: Long): Unit = {
+                  if (endNodeId == idY)
+                    counter += 1
+                }
+              })
             }
             RawIterator.empty()
           } finally {

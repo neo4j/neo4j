@@ -29,7 +29,6 @@ import org.neo4j.helpers.collection.Iterables;
 import org.neo4j.kernel.api.cursor.EntityItemHelper;
 import org.neo4j.kernel.api.cursor.RelationshipItemHelper;
 import org.neo4j.kernel.api.properties.DefinedProperty;
-import org.neo4j.storageengine.api.Direction;
 import org.neo4j.storageengine.api.NodeItem;
 import org.neo4j.storageengine.api.PropertyItem;
 import org.neo4j.storageengine.api.RelationshipItem;
@@ -103,6 +102,12 @@ public class StubCursors
         }
 
         @Override
+        public long nextRelationshipId()
+        {
+            throw new UnsupportedOperationException( "not supported" );
+        }
+
+        @Override
         public PrimitiveIntSet labels()
         {
             return labelCursor;
@@ -147,36 +152,6 @@ public class StubCursors
         public Cursor<PropertyItem> properties()
         {
             return propertyCursor;
-        }
-
-        @Override
-        public Cursor<RelationshipItem> relationships( Direction direction, int... relTypes )
-        {
-            throw new UnsupportedOperationException();
-        }
-
-        @Override
-        public Cursor<RelationshipItem> relationships( Direction direction )
-        {
-            throw new UnsupportedOperationException();
-        }
-
-        @Override
-        public PrimitiveIntSet relationshipTypes()
-        {
-            throw new UnsupportedOperationException();
-        }
-
-        @Override
-        public int degree( Direction direction )
-        {
-            throw new UnsupportedOperationException();
-        }
-
-        @Override
-        public int degree( Direction direction, int relType )
-        {
-            throw new UnsupportedOperationException();
         }
 
         @Override

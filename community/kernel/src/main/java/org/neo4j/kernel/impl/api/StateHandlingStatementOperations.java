@@ -22,7 +22,9 @@ package org.neo4j.kernel.impl.api;
 import java.util.Iterator;
 import java.util.Map;
 
+import org.neo4j.collection.primitive.Primitive;
 import org.neo4j.collection.primitive.PrimitiveIntIterator;
+import org.neo4j.collection.primitive.PrimitiveIntSet;
 import org.neo4j.collection.primitive.PrimitiveLongCollections;
 import org.neo4j.collection.primitive.PrimitiveLongIterator;
 import org.neo4j.collection.primitive.PrimitiveLongResourceIterator;
@@ -86,6 +88,7 @@ import org.neo4j.kernel.impl.index.IndexEntityType;
 import org.neo4j.kernel.impl.index.LegacyIndexStore;
 import org.neo4j.kernel.impl.util.Validators;
 import org.neo4j.register.Register.DoubleLongRegister;
+import org.neo4j.storageengine.api.Direction;
 import org.neo4j.storageengine.api.EntityType;
 import org.neo4j.storageengine.api.NodeItem;
 import org.neo4j.storageengine.api.PropertyItem;
@@ -96,9 +99,12 @@ import org.neo4j.storageengine.api.StoreReadLayer;
 import org.neo4j.storageengine.api.Token;
 import org.neo4j.storageengine.api.schema.IndexReader;
 import org.neo4j.storageengine.api.schema.PopulationProgress;
+import org.neo4j.storageengine.api.txstate.NodeState;
 import org.neo4j.storageengine.api.txstate.ReadableDiffSets;
 
 import static java.lang.String.format;
+import static org.neo4j.collection.primitive.PrimitiveIntCollections.filter;
+import static org.neo4j.collection.primitive.PrimitiveLongCollections.resourceIterator;
 import static org.neo4j.collection.primitive.PrimitiveLongCollections.single;
 import static org.neo4j.helpers.collection.Iterators.filter;
 import static org.neo4j.helpers.collection.Iterators.iterator;
@@ -107,6 +113,8 @@ import static org.neo4j.kernel.api.StatementConstants.NO_SUCH_NODE;
 import static org.neo4j.kernel.api.schema_new.index.NewIndexDescriptor.Filter.GENERAL;
 import static org.neo4j.kernel.api.schema_new.index.NewIndexDescriptor.Filter.UNIQUE;
 import static org.neo4j.kernel.impl.api.PropertyValueComparison.COMPARE_NUMBERS;
+import static org.neo4j.kernel.impl.util.Cursors.count;
+import static org.neo4j.kernel.impl.util.Cursors.empty;
 import static org.neo4j.register.Registers.newDoubleLongRegister;
 import static org.neo4j.storageengine.api.txstate.TxStateVisitor.EMPTY;
 
@@ -193,6 +201,48 @@ public class StateHandlingStatementOperations implements
             return statement.txState().augmentRelationshipsGetAllCursor( cursor );
         }
         return cursor;
+    }
+
+    @Override
+    public Cursor<RelationshipItem> nodeGetRelationships( KernelStatement statement, NodeItem node,
+            Direction direction )
+    {
+        Cursor<RelationshipItem> cursor;
+        if ( statement.hasTxStateWithChanges() && statement.txState().nodeIsAddedInThisTx( node.id() ) )
+        {
+            cursor = empty();
+        }
+        else
+        {
+            cursor = storeLayer.nodeGetRelationships( statement.getStoreStatement(), node, direction );
+        }
+        if ( !statement.hasTxStateWithChanges() )
+        {
+            return cursor;
+        }
+        NodeState nodeState = statement.txState().getNodeState( node.id() );
+        return statement.txState().augmentNodeRelationshipCursor( cursor, nodeState, direction );
+    }
+
+    @Override
+    public Cursor<RelationshipItem> nodeGetRelationships( KernelStatement statement, NodeItem node, Direction direction,
+            PrimitiveIntSet relTypes )
+    {
+        Cursor<RelationshipItem> cursor;
+        if ( statement.hasTxStateWithChanges() && statement.txState().nodeIsAddedInThisTx( node.id() ) )
+        {
+            cursor = empty();
+        }
+        else
+        {
+            cursor = storeLayer.nodeGetRelationships( statement.getStoreStatement(), node, direction, relTypes );
+        }
+        if ( !statement.hasTxStateWithChanges() )
+        {
+            return cursor;
+        }
+        NodeState nodeState = statement.txState().getNodeState( node.id() );
+        return statement.txState().augmentNodeRelationshipCursor( cursor, nodeState, direction, relTypes );
     }
 
     // </Cursors>
@@ -645,27 +695,25 @@ public class StateHandlingStatementOperations implements
     public long nodeGetFromUniqueIndexSeek( KernelStatement state, NewIndexDescriptor index, Object value )
             throws IndexNotFoundKernelException, IndexBrokenKernelException
     {
-        StorageStatement storeStatement = state.getStoreStatement();
-        IndexReader reader = storeStatement.getFreshIndexReader( index );
+        IndexReader reader = state.getStoreStatement().getFreshIndexReader( index );
 
         /* Here we have an intricate scenario where we need to return the PrimitiveLongIterator
          * since subsequent filtering will happen outside, but at the same time have the ability to
          * close the IndexReader when done iterating over the lookup result. This is because we get
          * a fresh reader that isn't associated with the current transaction and hence will not be
          * automatically closed. */
-        PrimitiveLongResourceIterator committed = PrimitiveLongCollections.resourceIterator( reader.seek( value ), reader );
+        PrimitiveLongResourceIterator committed = resourceIterator( reader.seek( value ), reader );
         PrimitiveLongIterator exactMatches = filterExactIndexMatches( state, index, value, committed );
         PrimitiveLongIterator changesFiltered = filterIndexStateChangesForScanOrSeek( state, index, value,
                 exactMatches );
-        return single( PrimitiveLongCollections.resourceIterator( changesFiltered, committed ), NO_SUCH_NODE );
+        return single( resourceIterator( changesFiltered, committed ), NO_SUCH_NODE );
     }
 
     @Override
     public PrimitiveLongIterator nodesGetFromIndexSeek( KernelStatement state, NewIndexDescriptor index, Object value )
             throws IndexNotFoundKernelException
     {
-        StorageStatement storeStatement = state.getStoreStatement();
-        IndexReader reader = storeStatement.getIndexReader( index );
+        IndexReader reader = state.getStoreStatement().getIndexReader( index );
         PrimitiveLongIterator committed = reader.seek( value );
         PrimitiveLongIterator exactMatches = filterExactIndexMatches( state, index, value, committed );
         return filterIndexStateChangesForScanOrSeek( state, index, value, exactMatches );
@@ -677,10 +725,9 @@ public class StateHandlingStatementOperations implements
             Number upper, boolean includeUpper ) throws IndexNotFoundKernelException
 
     {
-        StorageStatement storeStatement = state.getStoreStatement();
         PrimitiveLongIterator committed = COMPARE_NUMBERS.isEmptyRange( lower, includeLower, upper, includeUpper )
                 ? PrimitiveLongCollections.emptyIterator()
-                : storeStatement.getIndexReader( index ).rangeSeekByNumberInclusive( lower, upper );
+                : state.getStoreStatement().getIndexReader( index ).rangeSeekByNumberInclusive( lower, upper );
         PrimitiveLongIterator exactMatches = filterExactRangeMatches( state, index, committed, lower, includeLower,
                 upper, includeUpper );
         return filterIndexStateChangesForRangeSeekByNumber( state, index, lower, includeLower, upper, includeUpper,
@@ -693,8 +740,7 @@ public class StateHandlingStatementOperations implements
             String upper, boolean includeUpper ) throws IndexNotFoundKernelException
 
     {
-        StorageStatement storeStatement = state.getStoreStatement();
-        IndexReader reader = storeStatement.getIndexReader( index );
+        IndexReader reader = state.getStoreStatement().getIndexReader( index );
         PrimitiveLongIterator committed = reader.rangeSeekByString( lower, includeLower, upper, includeUpper );
         return filterIndexStateChangesForRangeSeekByString( state, index, lower, includeLower, upper, includeUpper,
                 committed );
@@ -704,8 +750,7 @@ public class StateHandlingStatementOperations implements
     public PrimitiveLongIterator nodesGetFromIndexRangeSeekByPrefix( KernelStatement state, NewIndexDescriptor index,
             String prefix ) throws IndexNotFoundKernelException
     {
-        StorageStatement storeStatement = state.getStoreStatement();
-        IndexReader reader = storeStatement.getIndexReader( index );
+        IndexReader reader = state.getStoreStatement().getIndexReader( index );
         PrimitiveLongIterator committed = reader.rangeSeekByPrefix( prefix );
         return filterIndexStateChangesForRangeSeekByPrefix( state, index, prefix, committed );
     }
@@ -714,8 +759,7 @@ public class StateHandlingStatementOperations implements
     public PrimitiveLongIterator nodesGetFromIndexScan( KernelStatement state, NewIndexDescriptor index )
             throws IndexNotFoundKernelException
     {
-        StorageStatement storeStatement = state.getStoreStatement();
-        IndexReader reader = storeStatement.getIndexReader( index );
+        IndexReader reader = state.getStoreStatement().getIndexReader( index );
         PrimitiveLongIterator committed = reader.scan();
         return filterIndexStateChangesForScanOrSeek( state, index, null, committed );
     }
@@ -733,8 +777,7 @@ public class StateHandlingStatementOperations implements
             String term )
             throws IndexNotFoundKernelException
     {
-        StorageStatement storeStatement = state.getStoreStatement();
-        IndexReader reader = storeStatement.getIndexReader( index );
+        IndexReader reader = state.getStoreStatement().getIndexReader( index );
         PrimitiveLongIterator committed = reader.containsString( term );
         return filterIndexStateChangesForScanOrSeek( state, index, null, committed );
     }
@@ -743,8 +786,7 @@ public class StateHandlingStatementOperations implements
     public PrimitiveLongIterator nodesGetFromIndexEndsWithScan( KernelStatement state, NewIndexDescriptor index,
             String suffix ) throws IndexNotFoundKernelException
     {
-        StorageStatement storeStatement = state.getStoreStatement();
-        IndexReader reader = storeStatement.getIndexReader( index );
+        IndexReader reader = state.getStoreStatement().getIndexReader( index );
         PrimitiveLongIterator committed = reader.endsWith( suffix );
         return filterIndexStateChangesForScanOrSeek( state, index, null, committed );
     }
@@ -1613,6 +1655,67 @@ public class StateHandlingStatementOperations implements
             }
         }
         return storeLayer.nodeExists( id );
+    }
+
+    @Override
+    public PrimitiveIntSet relationshipTypes( KernelStatement statement, NodeItem node )
+    {
+        if ( statement.hasTxStateWithChanges() && statement.txState().nodeIsAddedInThisTx( node.id() ) )
+        {
+            return statement.txState().getNodeState( node.id() ).relationshipTypes();
+        }
+
+        // Read types in the current transaction
+        PrimitiveIntSet types = statement.hasTxStateWithChanges()
+                                ? statement.txState().getNodeState( node.id() ).relationshipTypes()
+                                : Primitive.intSet();
+
+        // Augment with types stored on disk, minus any types where all rels of that type are deleted
+        // in current tx.
+        types.addAll( filter( storeLayer.relationshipTypes( statement.getStoreStatement(), node ).iterator(),
+                ( current ) -> !types.contains( current ) && degree( statement, node, Direction.BOTH, current ) > 0 ) );
+
+        return types;
+    }
+
+    @Override
+    public int degree( KernelStatement statement, NodeItem node, Direction direction )
+    {
+        int degree = statement.hasTxStateWithChanges() && statement.txState().nodeIsAddedInThisTx( node.id() )
+                     ? 0
+                     : computeDegree( statement, node, direction, null );
+
+        return statement.hasTxStateWithChanges()
+                ? statement.txState().getNodeState( node.id() ).augmentDegree( direction, degree )
+                : degree;
+    }
+
+    @Override
+    public int degree( KernelStatement statement, NodeItem node, Direction direction, int relType )
+    {
+        int degree = statement.hasTxStateWithChanges() && statement.txState().nodeIsAddedInThisTx( node.id() )
+                     ? 0
+                     : computeDegree( statement, node, direction, relType );
+
+        return statement.hasTxStateWithChanges()
+               ? statement.txState().getNodeState( node.id() ).augmentDegree( direction, degree, relType )
+               : degree;
+    }
+
+    private int computeDegree( KernelStatement statement, NodeItem node,  Direction direction, Integer relType )
+    {
+        StorageStatement storeStatement = statement.getStoreStatement();
+        if ( node.isDense() )
+        {
+            return storeLayer.degreeRelationshipsInGroup( storeStatement, node.id(), node.nextGroupId(),
+                    direction, relType );
+        }
+        else
+        {
+            return count( relType == null
+                          ? storeLayer.nodeGetRelationships( storeStatement, node, direction )
+                          : storeLayer.nodeGetRelationships( storeStatement, node, direction, (t) -> t == relType ) );
+        }
     }
 
     private static DefinedProperty definedPropertyOrNull( Property existingProperty )

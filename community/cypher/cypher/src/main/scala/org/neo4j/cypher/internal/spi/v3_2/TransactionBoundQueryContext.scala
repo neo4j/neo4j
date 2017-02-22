@@ -132,7 +132,7 @@ final class TransactionBoundQueryContext(val transactionalContext: Transactional
       case None =>
         transactionalContext.statement.readOperations().nodeGetRelationships(node.getId, toGraphDb(dir))
       case Some(typeIds) =>
-        transactionalContext.statement.readOperations().nodeGetRelationships(node.getId, toGraphDb(dir), typeIds: _*)
+        transactionalContext.statement.readOperations().nodeGetRelationships(node.getId, toGraphDb(dir), typeIds.toArray)
     }
     new BeansAPIRelationshipIterator(relationships, entityAccessor)
   }

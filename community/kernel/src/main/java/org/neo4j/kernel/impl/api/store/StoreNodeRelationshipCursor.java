@@ -20,6 +20,7 @@
 package org.neo4j.kernel.impl.api.store;
 
 import java.util.function.Consumer;
+import java.util.function.IntPredicate;
 
 import org.neo4j.kernel.impl.locking.LockService;
 import org.neo4j.kernel.impl.store.InvalidRecordException;
@@ -46,7 +47,7 @@ public class StoreNodeRelationshipCursor extends StoreAbstractRelationshipCursor
     private long relationshipId;
     private long fromNodeId;
     private Direction direction;
-    private int[] relTypes;
+    private IntPredicate allowedTypes;
     private int groupChainIndex;
     private boolean end;
     private final RecordCursors cursors;
@@ -66,22 +67,14 @@ public class StoreNodeRelationshipCursor extends StoreAbstractRelationshipCursor
     public StoreNodeRelationshipCursor init( boolean isDense,
             long firstRelId,
             long fromNodeId,
-            Direction direction )
-    {
-        return init( isDense, firstRelId, fromNodeId, direction, null );
-    }
-
-    public StoreNodeRelationshipCursor init( boolean isDense,
-            long firstRelId,
-            long fromNodeId,
             Direction direction,
-            int... relTypes )
+            IntPredicate allowedTypes )
     {
         this.isDense = isDense;
         this.relationshipId = firstRelId;
         this.fromNodeId = fromNodeId;
         this.direction = direction;
-        this.relTypes = relTypes;
+        this.allowedTypes = allowedTypes;
         this.end = false;
 
         if ( isDense && relationshipId != Record.NO_NEXT_RELATIONSHIP.intValue() )
@@ -141,7 +134,7 @@ public class StoreNodeRelationshipCursor extends StoreAbstractRelationshipCursor
                     }
 
                     // Type check
-                    if ( !checkType( relationshipRecord.getType() ) )
+                    if ( !allowedTypes.test( relationshipRecord.getType() ) )
                     {
                         continue;
                     }
@@ -196,7 +189,7 @@ public class StoreNodeRelationshipCursor extends StoreAbstractRelationshipCursor
             {
                 // We check inUse flag here since we can actually follow pointers in unused records
                 // to guard for and overcome concurrent deletes in the relationship group chain
-                if ( groupRecord.inUse() && checkType( groupRecord.getType() ) )
+                if ( groupRecord.inUse() && allowedTypes.test( groupRecord.getType() ) )
                 {
                     // Go to the next chain (direction) within this group
                     while ( groupChainIndex < GROUP_CHAINS.length )
@@ -227,23 +220,6 @@ public class StoreNodeRelationshipCursor extends StoreAbstractRelationshipCursor
             // Ignore - next line will ensure we're finished anyway
         }
         return NULL_REFERENCE.intValue();
-    }
-
-    private boolean checkType( int type )
-    {
-        if ( relTypes != null )
-        {
-            for ( int relType : relTypes )
-            {
-                if ( type == relType )
-                {
-                    return true;
-                }
-            }
-            return false;
-
-        }
-        return true;
     }
 
     private enum GroupChain

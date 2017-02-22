@@ -176,30 +176,26 @@ public class NodeProxy implements Node
         {
             typeIds = relTypeIds( types, statement );
         }
-        return new ResourceIterable<Relationship>()
+        return () ->
         {
-            @Override
-            public ResourceIterator<Relationship> iterator()
+            Statement statement = actions.statement();
+            try
             {
-                Statement statement = actions.statement();
-                try
-                {
-                    RelationshipConversion result = new RelationshipConversion( actions );
-                    result.iterator = statement.readOperations().nodeGetRelationships(
-                            nodeId, direction, typeIds );
-                    result.statement = statement;
-                    return result;
-                }
-                catch ( EntityNotFoundException e )
-                {
-                    statement.close();
-                    throw new NotFoundException( format( "Node %d not found", nodeId ), e );
-                }
-                catch ( Throwable e )
-                {
-                    statement.close();
-                    throw e;
-                }
+                RelationshipConversion result = new RelationshipConversion( actions );
+                result.iterator = statement.readOperations().nodeGetRelationships(
+                        nodeId, direction, typeIds );
+                result.statement = statement;
+                return result;
+            }
+            catch ( EntityNotFoundException e )
+            {
+                statement.close();
+                throw new NotFoundException( format( "Node %d not found", nodeId ), e );
+            }
+            catch ( Throwable e )
+            {
+                statement.close();
+                throw e;
             }
         };
     }

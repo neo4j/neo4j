@@ -531,19 +531,6 @@ public class PrimitiveIntCollectionsTest
     }
 
     @Test
-    public void shouldDeduplicate() throws Exception
-    {
-        // GIVEN
-        int[] array = new int[] {1, 1, 2, 5, 6, 6};
-
-        // WHEN
-        int[] deduped = PrimitiveIntCollections.deduplicate( array );
-
-        // THEN
-        assertArrayEquals( new int[] {1, 2, 5, 6}, deduped );
-    }
-
-    @Test
     public void shouldNotContinueToCallNextOnHasNextFalse() throws Exception
     {
         // GIVEN

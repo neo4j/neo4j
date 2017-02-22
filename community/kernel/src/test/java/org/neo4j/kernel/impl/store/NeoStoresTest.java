@@ -36,8 +36,8 @@ import java.util.List;
 import java.util.Map;
 import java.util.concurrent.atomic.AtomicReference;
 
-import org.neo4j.collection.primitive.PrimitiveLongIterator;
 import org.neo4j.cursor.Cursor;
+import org.neo4j.function.Predicates;
 import org.neo4j.graphdb.GraphDatabaseService;
 import org.neo4j.graphdb.Node;
 import org.neo4j.graphdb.Relationship;
@@ -100,6 +100,7 @@ import static org.junit.Assert.assertNotNull;
 import static org.junit.Assert.assertNull;
 import static org.junit.Assert.assertTrue;
 import static org.junit.Assert.fail;
+import static org.neo4j.function.Predicates.ALWAYS_TRUE_INT;
 import static org.neo4j.graphdb.factory.GraphDatabaseSettings.counts_store_rotation_timeout;
 import static org.neo4j.helpers.collection.MapUtil.stringMap;
 import static org.neo4j.kernel.api.security.SecurityContext.AUTH_DISABLED;
@@ -107,6 +108,7 @@ import static org.neo4j.kernel.impl.store.RecordStore.getRecord;
 import static org.neo4j.kernel.impl.store.format.standard.MetaDataRecordFormat.FIELD_NOT_PRESENT;
 import static org.neo4j.kernel.impl.store.record.RecordLoad.NORMAL;
 import static org.neo4j.kernel.impl.transaction.log.TransactionIdStore.BASE_TX_COMMIT_TIMESTAMP;
+import static org.neo4j.storageengine.api.Direction.BOTH;
 
 public class NeoStoresTest
 {
@@ -954,7 +956,9 @@ public class NeoStoresTest
         {
             nodeCursor.next();
 
-            try ( Cursor<RelationshipItem> relationships = nodeCursor.get().relationships( Direction.BOTH ) )
+            NodeItem nodeItem = nodeCursor.get();
+            try ( Cursor<RelationshipItem> relationships = statement.getStoreStatement().acquireNodeRelationshipCursor(
+                    nodeItem.isDense(), nodeItem.id(), nodeItem.nextRelationshipId(), BOTH, ALWAYS_TRUE_INT ) )
             {
                 while ( relationships.next() )
                 {
@@ -1035,8 +1039,9 @@ public class NeoStoresTest
               Cursor<NodeItem> nodeCursor = statement.getStoreStatement().acquireSingleNodeCursor( node ) )
         {
             nodeCursor.next();
-
-            try ( Cursor<RelationshipItem> relationships = nodeCursor.get().relationships( Direction.BOTH ) )
+            NodeItem nodeItem = nodeCursor.get();
+            try ( Cursor<RelationshipItem> relationships = statement.getStoreStatement().acquireNodeRelationshipCursor(
+                    nodeItem.isDense(), nodeItem.id(), nodeItem.nextRelationshipId(), BOTH, ALWAYS_TRUE_INT ) )
             {
                 while ( relationships.next() )
                 {
@@ -1332,9 +1337,11 @@ public class NeoStoresTest
               Cursor<NodeItem> nodeCursor = statement.getStoreStatement().acquireSingleNodeCursor( node ) )
         {
             nodeCursor.next();
-            try( Cursor<RelationshipItem> rels = nodeCursor.get().relationships( Direction.BOTH ) )
+            NodeItem nodeItem = nodeCursor.get();
+            try ( Cursor<RelationshipItem> relationships = statement.getStoreStatement().acquireNodeRelationshipCursor(
+                    nodeItem.isDense(), nodeItem.id(), nodeItem.nextRelationshipId(), BOTH, ALWAYS_TRUE_INT ) )
             {
-                assertTrue( rels.next() );
+                assertTrue( relationships.next() );
             }
         }
     }
@@ -1453,7 +1460,10 @@ public class NeoStoresTest
               Cursor<NodeItem> nodeCursor = statement.getStoreStatement().acquireSingleNodeCursor( nodeId ) )
         {
             assertTrue( nodeCursor.next() );
-            nodeCursor.get().relationships( Direction.BOTH ).forAll( rel -> relDelete( rel.id() ) );
+            NodeItem nodeItem = nodeCursor.get();
+            statement.getStoreStatement()
+                    .acquireNodeRelationshipCursor( nodeItem.isDense(), nodeItem.id(), nodeItem.nextRelationshipId(),
+                            BOTH, ALWAYS_TRUE_INT ).forAll( rel -> relDelete( rel.id() ) );
         }
     }
 

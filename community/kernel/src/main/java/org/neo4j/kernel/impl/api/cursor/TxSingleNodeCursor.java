@@ -26,14 +26,11 @@ import org.neo4j.cursor.Cursor;
 import org.neo4j.kernel.api.StatementConstants;
 import org.neo4j.kernel.api.cursor.EntityItemHelper;
 import org.neo4j.kernel.api.txstate.TransactionState;
-import org.neo4j.storageengine.api.Direction;
 import org.neo4j.storageengine.api.NodeItem;
 import org.neo4j.storageengine.api.PropertyItem;
-import org.neo4j.storageengine.api.RelationshipItem;
 import org.neo4j.storageengine.api.txstate.NodeState;
 
 import static org.neo4j.collection.primitive.Primitive.intSet;
-import static org.neo4j.collection.primitive.PrimitiveIntCollections.filter;
 import static org.neo4j.kernel.impl.store.record.Record.NO_NEXT_RELATIONSHIP;
 import static org.neo4j.kernel.impl.util.Cursors.empty;
 
@@ -152,53 +149,6 @@ public class TxSingleNodeCursor extends EntityItemHelper implements Cursor<NodeI
     }
 
     @Override
-    public Cursor<RelationshipItem> relationships( Direction direction, int... relTypes )
-    {
-        Cursor<RelationshipItem> cursor =
-                nodeIsAddedInThisTx ? empty() : this.cursor.get().relationships( direction, relTypes );
-        return state.augmentNodeRelationshipCursor( cursor, nodeState, direction, relTypes );
-    }
-
-    @Override
-    public Cursor<RelationshipItem> relationships( Direction direction )
-    {
-        Cursor<RelationshipItem> cursor = nodeIsAddedInThisTx ? empty() : this.cursor.get().relationships( direction );
-        return state.augmentNodeRelationshipCursor( cursor, nodeState, direction, null );
-    }
-
-    @Override
-    public PrimitiveIntSet relationshipTypes()
-    {
-        if ( nodeIsAddedInThisTx )
-        {
-            return nodeState.relationshipTypes();
-        }
-
-        // Read types in the current transaction
-        PrimitiveIntSet types =  nodeState.relationshipTypes();
-
-        // Augment with types stored on disk, minus any types where all rels of that type are deleted
-        // in current tx.
-        types.addAll( filter( cursor.get().relationshipTypes().iterator(),
-                ( current ) -> !types.contains( current ) && degree( Direction.BOTH, current ) > 0 ) );
-
-        return types;
-    }
-
-    @Override
-    public int degree( Direction direction )
-    {
-        return nodeState.augmentDegree( direction, nodeIsAddedInThisTx ? 0 : cursor.get().degree( direction ) );
-    }
-
-    @Override
-    public int degree( Direction direction, int relType )
-    {
-        int degree = nodeIsAddedInThisTx ? 0 : cursor.get().degree( direction, relType );
-        return nodeState.augmentDegree( direction, degree, relType );
-    }
-
-    @Override
     public boolean isDense()
     {
         return cursor.get().isDense();
@@ -208,5 +158,11 @@ public class TxSingleNodeCursor extends EntityItemHelper implements Cursor<NodeI
     public long nextGroupId()
     {
         return nodeIsAddedInThisTx ? NO_NEXT_RELATIONSHIP.longValue() : cursor.get().nextGroupId();
+    }
+
+    @Override
+    public long nextRelationshipId()
+    {
+        return nodeIsAddedInThisTx ? NO_NEXT_RELATIONSHIP.longValue() : cursor.get().nextRelationshipId();
     }
 }

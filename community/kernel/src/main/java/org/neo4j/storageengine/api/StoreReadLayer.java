@@ -20,9 +20,12 @@
 package org.neo4j.storageengine.api;
 
 import java.util.Iterator;
+import java.util.function.IntPredicate;
 
 import org.neo4j.collection.primitive.PrimitiveIntIterator;
+import org.neo4j.collection.primitive.PrimitiveIntSet;
 import org.neo4j.collection.primitive.PrimitiveLongIterator;
+import org.neo4j.cursor.Cursor;
 import org.neo4j.kernel.api.constraints.NodePropertyConstraint;
 import org.neo4j.kernel.api.constraints.PropertyConstraint;
 import org.neo4j.kernel.api.constraints.RelationshipPropertyConstraint;
@@ -279,6 +282,11 @@ public interface StoreReadLayer
      */
     RelationshipIterator relationshipsGetAll();
 
+    Cursor<RelationshipItem> nodeGetRelationships( StorageStatement statement, NodeItem nodeItem, Direction direction );
+
+    Cursor<RelationshipItem> nodeGetRelationships( StorageStatement statement, NodeItem nodeItem, Direction direction,
+            IntPredicate typeIds );
+
     /**
      * Reserves a node id for future use to store a node. The reason for it being exposed here is that
      * internal ids of nodes and relationships are publicly accessible all the way out to the user.
@@ -370,5 +378,10 @@ public interface StoreReadLayer
 
     boolean nodeExists( long id );
 
+    PrimitiveIntSet relationshipTypes( StorageStatement statement, NodeItem node );
+
     void degrees( StorageStatement statement, NodeItem nodeItem, DegreeVisitor visitor );
+
+    int degreeRelationshipsInGroup( StorageStatement storeStatement, long id, long groupId, Direction direction,
+            Integer relType );
 }

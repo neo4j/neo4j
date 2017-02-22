@@ -65,7 +65,7 @@ public abstract class CompiledExpandUtils
     }
 
     public static RelationshipIterator connectingRelationships( ReadOperations readOperations,
-            long fromNode, Direction direction, long toNode, int... relTypes ) throws EntityNotFoundException
+            long fromNode, Direction direction, long toNode, int[] relTypes ) throws EntityNotFoundException
     {
         int fromDegree = calculateTotalDegree( readOperations, fromNode, direction, relTypes);
         if ( fromDegree == 0 )

@@ -19,9 +19,11 @@
  */
 package org.neo4j.kernel.impl.api.store;
 
+import java.util.function.IntPredicate;
 import java.util.function.Supplier;
 
 import org.neo4j.cursor.Cursor;
+import org.neo4j.function.Predicates;
 import org.neo4j.kernel.api.exceptions.index.IndexNotFoundKernelException;
 import org.neo4j.kernel.api.schema_new.index.IndexBoundary;
 import org.neo4j.kernel.api.schema_new.index.NewIndexDescriptor;
@@ -30,8 +32,11 @@ import org.neo4j.kernel.impl.locking.LockService;
 import org.neo4j.kernel.impl.store.NeoStores;
 import org.neo4j.kernel.impl.store.NodeStore;
 import org.neo4j.kernel.impl.store.RecordCursors;
+import org.neo4j.kernel.impl.store.RecordStore;
 import org.neo4j.kernel.impl.store.RelationshipStore;
+import org.neo4j.kernel.impl.store.record.RelationshipGroupRecord;
 import org.neo4j.kernel.impl.util.InstanceCache;
+import org.neo4j.storageengine.api.Direction;
 import org.neo4j.storageengine.api.NodeItem;
 import org.neo4j.storageengine.api.RelationshipItem;
 import org.neo4j.storageengine.api.StorageStatement;
@@ -50,12 +55,14 @@ public class StoreStatement implements StorageStatement
     private final InstanceCache<StoreSingleNodeCursor> singleNodeCursor;
     private final InstanceCache<StoreSingleRelationshipCursor> singleRelationshipCursor;
     private final InstanceCache<StoreIteratorRelationshipCursor> iteratorRelationshipCursor;
+    private final InstanceCache<StoreNodeRelationshipCursor> nodeRelationshipCursor;
     private final NeoStores neoStores;
     private final NodeStore nodeStore;
     private final RelationshipStore relationshipStore;
     private final Supplier<IndexReaderFactory> indexReaderFactorySupplier;
     private final RecordCursors recordCursors;
     private final Supplier<LabelScanReader> labelScanStore;
+    private final RecordStore<RelationshipGroupRecord> relationshipGroupStore;
 
     private IndexReaderFactory indexReaderFactory;
     private LabelScanReader labelScanReader;
@@ -71,6 +78,7 @@ public class StoreStatement implements StorageStatement
         this.labelScanStore = labelScanReaderSupplier;
         this.nodeStore = neoStores.getNodeStore();
         this.relationshipStore = neoStores.getRelationshipStore();
+        this.relationshipGroupStore = neoStores.getRelationshipGroupStore();
         this.recordCursors = new RecordCursors( neoStores );
 
         singleNodeCursor = new InstanceCache<StoreSingleNodeCursor>()
@@ -78,8 +86,7 @@ public class StoreStatement implements StorageStatement
             @Override
             protected StoreSingleNodeCursor create()
             {
-                return new StoreSingleNodeCursor( nodeStore.newRecord(), neoStores, this,
-                        recordCursors, lockService );
+                return new StoreSingleNodeCursor( nodeStore.newRecord(), this, recordCursors, lockService );
             }
         };
         singleRelationshipCursor = new InstanceCache<StoreSingleRelationshipCursor>()
@@ -98,6 +105,15 @@ public class StoreStatement implements StorageStatement
             {
                 return new StoreIteratorRelationshipCursor( relationshipStore.newRecord(), this, recordCursors,
                         lockService );
+            }
+        };
+        nodeRelationshipCursor = new InstanceCache<StoreNodeRelationshipCursor>()
+        {
+            @Override
+            protected StoreNodeRelationshipCursor create()
+            {
+                return new StoreNodeRelationshipCursor( relationshipStore.newRecord(),
+                        relationshipGroupStore.newRecord(), this, recordCursors, lockService );
             }
         };
     }
@@ -122,6 +138,14 @@ public class StoreStatement implements StorageStatement
     {
         neoStores.assertOpen();
         return singleRelationshipCursor.get().init( relId );
+    }
+
+    @Override
+    public Cursor<RelationshipItem> acquireNodeRelationshipCursor( boolean isDense, long nodeId, long relationshipId,
+            Direction direction, IntPredicate relTypeFilter )
+    {
+        neoStores.assertOpen();
+        return nodeRelationshipCursor.get().init( isDense, relationshipId, nodeId, direction, relTypeFilter );
     }
 
     @Override

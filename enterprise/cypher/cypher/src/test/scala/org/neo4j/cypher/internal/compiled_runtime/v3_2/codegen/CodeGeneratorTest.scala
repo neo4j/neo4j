@@ -1796,12 +1796,12 @@ abstract class CodeGeneratorTest extends CypherFunSuite with LogicalPlanningTest
       getRelsForNode(allNodes(node), dir, Set.empty)
     }
   })
-  when(ro.nodeGetRelationships(anyLong(), any[Direction], anyVararg[Int]())).thenAnswer(new Answer[PrimitiveLongIterator] {
+  when(ro.nodeGetRelationships(anyLong(), any[Direction], any[Array[Int]]())).thenAnswer(new Answer[PrimitiveLongIterator] {
     override def answer(invocationOnMock: InvocationOnMock): PrimitiveLongIterator = {
       val arguments = invocationOnMock.getArguments
       val node = arguments(0).asInstanceOf[Long].toInt
       val dir = arguments(1).asInstanceOf[Direction]
-      val types = (2 until arguments.length).map(arguments(_).asInstanceOf[Int]).toSet
+      val types = arguments(2).asInstanceOf[Array[Int]].toSet
       getRelsForNode(allNodes(node), dir, types)
     }
   })
@@ -1816,7 +1816,7 @@ abstract class CodeGeneratorTest extends CypherFunSuite with LogicalPlanningTest
   when(ro.nodeGetDegree(anyLong(), any())).thenReturn(1)
   when(ro.nodeGetDegree(anyLong(), any(), anyInt())).thenReturn(1)
   when(ro.nodeHasLabel(anyLong(), anyInt())).thenAnswer(new Answer[Boolean] {
-    override def answer(invocationOnMock: InvocationOnMock) = {
+    override def answer(invocationOnMock: InvocationOnMock): Boolean = {
       val nodeId = invocationOnMock.getArguments.apply(0).asInstanceOf[Long]
       val labelId = invocationOnMock.getArguments.apply(1).asInstanceOf[Int]
       val label = labelTokens.map {
@@ -1828,7 +1828,7 @@ abstract class CodeGeneratorTest extends CypherFunSuite with LogicalPlanningTest
     }
   })
 
-  private def mockNode(id: Long, name: String) = {
+  private def mockNode(id: Long, name: String): NodeProxy = {
     val node = mock[NodeProxy]
     when(node.getId).thenReturn(id)
     when(node.toString).thenReturn(name)

@@ -20,6 +20,7 @@
 package org.neo4j.kernel.impl.api.operations;
 
 import org.neo4j.collection.primitive.PrimitiveIntIterator;
+import org.neo4j.collection.primitive.PrimitiveIntSet;
 import org.neo4j.collection.primitive.PrimitiveLongIterator;
 import org.neo4j.cursor.Cursor;
 import org.neo4j.kernel.api.exceptions.EntityNotFoundException;
@@ -28,6 +29,7 @@ import org.neo4j.kernel.api.exceptions.schema.IndexBrokenKernelException;
 import org.neo4j.kernel.api.schema_new.index.NewIndexDescriptor;
 import org.neo4j.kernel.impl.api.KernelStatement;
 import org.neo4j.kernel.impl.api.RelationshipVisitor;
+import org.neo4j.storageengine.api.Direction;
 import org.neo4j.storageengine.api.NodeItem;
 import org.neo4j.storageengine.api.RelationshipItem;
 
@@ -142,9 +144,47 @@ public interface EntityReadOperations
 
     Cursor<RelationshipItem> relationshipCursorGetAll( KernelStatement statement );
 
+    Cursor<RelationshipItem> nodeGetRelationships( KernelStatement statement, NodeItem node, Direction direction );
+
+    Cursor<RelationshipItem> nodeGetRelationships( KernelStatement statement, NodeItem node, Direction direction,
+            PrimitiveIntSet relTypes );
+
     long nodesGetCount( KernelStatement statement );
 
     long relationshipsGetCount( KernelStatement statement );
 
     boolean nodeExists( KernelStatement statement, long id );
+
+    /**
+     * Returns the set of types for relationships attached to this node.
+     *
+     * @param statement the current kernel statement
+     * @param nodeItem the node
+     * @return the set of types for relationships attached to this node.
+     * @throws IllegalStateException if no current node is selected
+     */
+    PrimitiveIntSet relationshipTypes( KernelStatement statement, NodeItem nodeItem );
+
+    /**
+     * Returns degree, e.g. number of relationships for this node.
+     *
+     * @param statement the current kernel statement
+     * @param nodeItem the node
+     * @param direction {@link Direction} filter when counting relationships, e.g. only
+     * {@link Direction#OUTGOING outgoing} or {@link Direction#INCOMING incoming}.
+     * @return degree of relationships in the given direction.
+     */
+    int degree( KernelStatement statement, NodeItem nodeItem, Direction direction );
+
+    /**
+     * Returns degree, e.g. number of relationships for this node.
+     *
+     * @param statement the current kernel statement
+     * @param nodeItem the node
+     * @param direction {@link Direction} filter on when counting relationships, e.g. only
+     * {@link Direction#OUTGOING outgoing} or {@link Direction#INCOMING incoming}.
+     * @param relType relationship type id to filter when counting relationships.
+     * @return degree of relationships in the given direction and relationship type.
+     */
+    int degree( KernelStatement statement, NodeItem nodeItem, Direction direction, int relType );
 }
