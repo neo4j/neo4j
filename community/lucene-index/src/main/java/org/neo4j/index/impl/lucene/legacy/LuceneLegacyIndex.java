@@ -124,9 +124,14 @@ public abstract class LuceneLegacyIndex implements LegacyIndex
         return result;
     }
 
+    static boolean isValidKey( String key )
+    {
+        return !FORBIDDEN_KEYS.contains( key );
+    }
+
     private static void assertValidKey( String key )
     {
-        if ( FORBIDDEN_KEYS.contains( key ) )
+        if ( !isValidKey( key ) )
         {
             throw new IllegalArgumentException( "Key " + key + " forbidden" );
         }

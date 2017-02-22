@@ -84,6 +84,7 @@ import static org.neo4j.helpers.collection.MapUtil.stringMap;
 import static org.neo4j.index.Neo4jTestCase.assertContains;
 import static org.neo4j.index.Neo4jTestCase.assertContainsInOrder;
 import static org.neo4j.index.impl.lucene.legacy.LuceneIndexImplementation.EXACT_CONFIG;
+import static org.neo4j.index.impl.lucene.legacy.LuceneIndexImplementation.FULLTEXT_CONFIG;
 import static org.neo4j.index.lucene.QueryContext.numericRange;
 import static org.neo4j.index.lucene.ValueContext.numeric;
 
@@ -2169,6 +2170,35 @@ public class TestLuceneIndex extends AbstractLuceneIndexTest
         {
             // expected
         }
+    }
+
+    @Test
+    public void shouldRemoveAllMatchingIndexEntriesWhenCallingRemoveWithEntityAndKey() throws Exception
+    {
+        // GIVEN
+        Index<Node> index = nodeIndex( FULLTEXT_CONFIG );
+        String key = "the-key";
+        String value1 = "First";
+        String value2 = "Second";
+        Node node = graphDb.createNode();
+        node.setProperty( key, value1 );
+        index.add( node, key, value1 );
+        restartTx();
+        assertEquals( 1, index.query( "*:*" ).size() );
+
+        // WHEN adding one more property to the index
+        node.setProperty( key, value2 );
+        index.add( node, key, value2 ); // intentionally just add to the index
+        restartTx();
+        assertEquals( 1, index.query( "*:*" ).size() );
+
+        // and WHEN removing by node and key
+        node.removeProperty( key );
+        index.remove( node, key );
+        restartTx();
+
+        // THEN
+        assertEquals( 0, index.query( "*:*" ).size() );
     }
 
     private void queryAndSortNodesByNumericProperty( Index<Node> index, String numericProperty )

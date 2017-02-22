@@ -56,6 +56,8 @@ import org.neo4j.index.lucene.ValueContext;
 import static java.lang.Boolean.FALSE;
 import static java.lang.Boolean.TRUE;
 
+import static org.neo4j.index.impl.lucene.legacy.LuceneLegacyIndex.isValidKey;
+
 public abstract class IndexType
 {
     public static final IndexType EXACT = new IndexType( LuceneDataSource.KEYWORD_ANALYZER, false )
@@ -233,7 +235,8 @@ public abstract class IndexType
 
     protected boolean isStoredField( IndexableField field )
     {
-        return field.fieldType().stored() && !FullTxData.TX_STATE_KEY.equals( field.name() );
+        return isValidKey( field.name() ) &&
+                field.fieldType().stored() && !FullTxData.TX_STATE_KEY.equals( field.name() );
     }
 
     private static boolean parseBoolean( String string, boolean valueIfNull )
