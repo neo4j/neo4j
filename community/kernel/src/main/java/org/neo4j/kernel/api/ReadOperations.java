@@ -125,14 +125,6 @@ public interface ReadOperations
     PrimitiveLongIterator indexQuery( NewIndexDescriptor index, IndexQuery... predicates ) throws IndexNotFoundKernelException;
 
     /**
-     * Returns an iterator with the matched nodes.
-     *
-     * @throws org.neo4j.kernel.api.exceptions.index.IndexNotFoundKernelException if no such index found.
-     */
-    PrimitiveLongIterator nodesGetFromIndexEndsWithScan( NewIndexDescriptor index, String suffix )
-            throws IndexNotFoundKernelException;
-
-    /**
      * @return an iterator over all nodes in the database.
      */
     PrimitiveLongIterator nodesGetAll();

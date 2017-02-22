@@ -145,8 +145,7 @@ public class SimpleIndexReader implements IndexReader
         return query( LuceneDocumentStructure.newWildCardStringQuery( exactTerm ) );
     }
 
-    @Override
-    public PrimitiveLongIterator endsWith( String suffix )
+    private PrimitiveLongIterator endsWith( String suffix )
     {
         return query( LuceneDocumentStructure.newSuffixStringQuery( suffix ) );
     }

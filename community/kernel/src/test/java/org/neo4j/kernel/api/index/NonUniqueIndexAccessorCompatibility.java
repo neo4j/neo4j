@@ -197,10 +197,10 @@ public class NonUniqueIndexAccessorCompatibility extends IndexAccessorCompatibil
                 IndexEntryUpdate.add( 5L, index, "longapa" ),
                 IndexEntryUpdate.add( 6L, index, "apalong" ) ) );
 
-        assertThat( getAllNodesFromIndexScanEndsWith( "a" ), equalTo( asList( 1L, 3L, 4L, 5L ) ) );
-        assertThat( getAllNodesFromIndexScanEndsWith( "apa" ), equalTo( asList( 3L, 4L, 5L ) ) );
-        assertThat( getAllNodesFromIndexScanEndsWith( "apa*" ), equalTo( Collections.emptyList() ) );
-        assertThat( getAllNodesFromIndexScanEndsWith( "" ), equalTo( asList( 1L, 2L, 3L, 4L, 5L, 6L ) ) );
+        assertThat( query( stringSuffix( 1, "a" ) ), equalTo( asList( 1L, 3L, 4L, 5L ) ) );
+        assertThat( query( stringSuffix( 1, "apa" ) ), equalTo( asList( 3L, 4L, 5L ) ) );
+        assertThat( query( stringSuffix( 1, "apa*" ) ), equalTo( Collections.emptyList() ) );
+        assertThat( query( stringSuffix( 1, "" ) ), equalTo( asList( 1L, 2L, 3L, 4L, 5L, 6L ) ) );
     }
 
     @Test

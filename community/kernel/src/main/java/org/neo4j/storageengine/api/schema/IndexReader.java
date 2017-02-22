@@ -33,14 +33,6 @@ import org.neo4j.kernel.api.schema_new.IndexQuery;
 public interface IndexReader extends Resource
 {
     /**
-     * Searches this index for string values ending with the suffix search string.
-     *
-     * @param suffix the string to search for in the index
-     * @return ids of matching nodes.
-     */
-    PrimitiveLongIterator endsWith( String suffix );
-
-    /**
      * @param nodeId node if to match.
      * @param propertyValue property value to match.
      * @return number of index entries for the given {@code nodeId} and {@code propertyValue}.
@@ -53,12 +45,6 @@ public interface IndexReader extends Resource
 
     IndexReader EMPTY = new IndexReader()
     {
-        @Override
-        public PrimitiveLongIterator endsWith(String suffix)
-        {
-            return PrimitiveLongCollections.emptyIterator();
-        }
-
         // Used for checking index correctness
         @Override
         public long countIndexedNodes( long nodeId, Object propertyValue )

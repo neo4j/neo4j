@@ -768,16 +768,6 @@ public class StateHandlingStatementOperations implements
         return reader.countIndexedNodes( nodeId, value );
     }
 
-    @Override
-    public PrimitiveLongIterator nodesGetFromIndexEndsWithScan( KernelStatement state, NewIndexDescriptor index,
-            String suffix ) throws IndexNotFoundKernelException
-    {
-        StorageStatement storeStatement = state.getStoreStatement();
-        IndexReader reader = storeStatement.getIndexReader( index );
-        PrimitiveLongIterator committed = reader.endsWith( suffix );
-        return filterIndexStateChangesForScanOrSeek( state, index, null, committed );
-    }
-
     private PrimitiveLongIterator filterExactIndexMatches( final KernelStatement state, NewIndexDescriptor index,
             Object value, PrimitiveLongIterator committed )
     {

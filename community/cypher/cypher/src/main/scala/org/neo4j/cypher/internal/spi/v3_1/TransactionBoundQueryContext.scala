@@ -263,7 +263,7 @@ final class TransactionBoundQueryContext(txContext: TransactionalContextWrapper)
     mapToScalaENFXSafe(txContext.statement.readOperations().indexQuery(index, IndexQuery.stringContains(index.property, value)))(nodeOps.getById)
 
   override def indexScanByEndsWith(index: IndexDescriptor, value: String) =
-    mapToScalaENFXSafe(txContext.statement.readOperations().nodesGetFromIndexEndsWithScan(index, value))(nodeOps.getById)
+    mapToScalaENFXSafe(txContext.statement.readOperations().indexQuery(index, IndexQuery.stringSuffix(index.property, value)))(nodeOps.getById)
 
   override def lockingUniqueIndexSeek(index: IndexDescriptor, value: Any): Option[Node] = {
     indexSearchMonitor.lockingUniqueIndexSeek(index, value)
