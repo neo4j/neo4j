@@ -104,6 +104,7 @@ import org.neo4j.storageengine.api.schema.IndexReader;
 import org.neo4j.storageengine.api.schema.PopulationProgress;
 import org.neo4j.storageengine.api.txstate.NodeState;
 import org.neo4j.storageengine.api.txstate.ReadableDiffSets;
+import org.neo4j.storageengine.api.txstate.ReadableTransactionState;
 
 import static java.lang.String.format;
 import static org.neo4j.collection.primitive.PrimitiveIntCollections.filter;
@@ -185,13 +186,8 @@ public class StateHandlingStatementOperations implements
 
     private Cursor<RelationshipItem> relationshipCursor( KernelStatement statement, long relationshipId )
     {
-        Cursor<RelationshipItem> cursor =
-                statement.getStoreStatement().acquireSingleRelationshipCursor( relationshipId );
-        if ( statement.hasTxStateWithChanges() )
-        {
-            return statement.txState().augmentSingleRelationshipCursor( cursor, relationshipId );
-        }
-        return cursor;
+        ReadableTransactionState state = statement.hasTxStateWithChanges() ? statement.txState() : null;
+        return statement.getStoreStatement().acquireSingleRelationshipCursor( relationshipId, state );
     }
 
     @Override

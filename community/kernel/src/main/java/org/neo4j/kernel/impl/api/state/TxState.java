@@ -50,7 +50,6 @@ import org.neo4j.kernel.impl.api.RelationshipVisitor;
 import org.neo4j.kernel.impl.api.cursor.TxAllPropertyCursor;
 import org.neo4j.kernel.impl.api.cursor.TxIteratorRelationshipCursor;
 import org.neo4j.kernel.impl.api.cursor.TxSinglePropertyCursor;
-import org.neo4j.kernel.impl.api.cursor.TxSingleRelationshipCursor;
 import org.neo4j.kernel.impl.api.store.RelationshipIterator;
 import org.neo4j.kernel.impl.util.InstanceCache;
 import org.neo4j.kernel.impl.util.diffsets.DiffSets;
@@ -161,7 +160,6 @@ public final class TxState implements TransactionState, RelationshipVisitor.Home
     private Map<LabelSchemaDescriptor, Map<OrderedPropertyValues, DiffSets<Long>>> indexUpdates;
 
     private InstanceCache<TxIteratorRelationshipCursor> iteratorRelationshipCursor;
-    private InstanceCache<TxSingleRelationshipCursor> singleRelationshipCursor;
     private InstanceCache<TxAllPropertyCursor> propertyCursor;
     private InstanceCache<TxSinglePropertyCursor> singlePropertyCursor;
 
@@ -185,15 +183,6 @@ public final class TxState implements TransactionState, RelationshipVisitor.Home
                 return new TxSinglePropertyCursor( (Consumer) this );
             }
         };
-        singleRelationshipCursor = new InstanceCache<TxSingleRelationshipCursor>()
-        {
-            @Override
-            protected TxSingleRelationshipCursor create()
-            {
-                return new TxSingleRelationshipCursor( TxState.this, this );
-            }
-        };
-
         iteratorRelationshipCursor = new InstanceCache<TxIteratorRelationshipCursor>()
         {
             @Override
@@ -731,13 +720,6 @@ public final class TxState implements TransactionState, RelationshipVisitor.Home
             labelDiffSets.getAdded().forEach( labels::add );
         }
         return labels;
-    }
-
-    @Override
-    public Cursor<RelationshipItem> augmentSingleRelationshipCursor( Cursor<RelationshipItem> cursor,
-            long relationshipId )
-    {
-        return hasChanges ? singleRelationshipCursor.get().init( cursor, relationshipId ) : cursor;
     }
 
     @Override

@@ -151,8 +151,6 @@ public interface ReadableTransactionState
 
     PrimitiveIntSet augmentLabels( PrimitiveIntSet cursor, NodeState nodeState );
 
-    Cursor<RelationshipItem> augmentSingleRelationshipCursor( Cursor<RelationshipItem> cursor, long relationshipId );
-
     Cursor<RelationshipItem> augmentNodeRelationshipCursor( Cursor<RelationshipItem> cursor, NodeState nodeState,
             Direction direction );
 

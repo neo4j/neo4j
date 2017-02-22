@@ -230,7 +230,8 @@ public class TxStateTransactionDataSnapshot implements TransactionData
             for ( long relId : state.addedAndRemovedRelationships().getRemoved() )
             {
                 Relationship relationshipProxy = relationship( relId );
-                try ( Cursor<RelationshipItem> relationship = storeStatement.acquireSingleRelationshipCursor( relId ) )
+                try ( Cursor<RelationshipItem> relationship = storeStatement
+                        .acquireSingleRelationshipCursor( relId, null ) )
                 {
                     if ( relationship.next() )
                     {
@@ -388,8 +389,8 @@ public class TxStateTransactionDataSnapshot implements TransactionData
             return null;
         }
 
-        try ( Cursor<RelationshipItem> relationship = storeStatement.acquireSingleRelationshipCursor(
-                relState.getId() ) )
+        try ( Cursor<RelationshipItem> relationship = storeStatement
+                .acquireSingleRelationshipCursor( relState.getId(), null ) )
         {
             if ( !relationship.next() )
             {
