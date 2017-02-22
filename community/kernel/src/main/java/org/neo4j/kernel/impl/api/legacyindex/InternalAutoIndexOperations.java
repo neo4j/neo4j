@@ -220,7 +220,7 @@ public class InternalAutoIndexOperations implements AutoIndexOperations
                 if ( propertyKeysToInclude.get().contains( name ) )
                 {
                     ensureIndexExists( ops );
-                    type.remove( ops, entityId );
+                    type.remove( ops, entityId, name );
                 }
             }
             catch ( LegacyIndexNotFoundKernelException | EntityNotFoundException e )

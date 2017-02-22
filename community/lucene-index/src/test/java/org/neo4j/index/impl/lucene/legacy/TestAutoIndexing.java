@@ -46,6 +46,8 @@ import static org.junit.Assert.assertThat;
 import static org.junit.Assert.assertTrue;
 import static org.junit.Assert.fail;
 
+import static org.neo4j.helpers.collection.Iterators.count;
+
 public class TestAutoIndexing
 {
     private GraphDatabaseAPI graphDb;
@@ -634,5 +636,32 @@ public class TestAutoIndexing
 
         assertThat( graphDb.index().forNodes( "node_auto_index" ).query( "_id_:*" ).size(),
                 equalTo( 0 ) );
+    }
+
+    @Test
+    public void shouldOnlyDeleteAffectedKeyWhenRemovingPropertyFromNode() throws Exception
+    {
+        // GIVEN a node with two auto-indexed properties
+        String key1 = "foo";
+        String key2 = "bar";
+        String value1 = "bip";
+        String value2 = "bop";
+        AutoIndexer<Node> nodeAutoIndexer = graphDb.index().getNodeAutoIndexer();
+        nodeAutoIndexer.startAutoIndexingProperty( key1 );
+        nodeAutoIndexer.startAutoIndexingProperty( key2 );
+        nodeAutoIndexer.setEnabled( true );
+        newTransaction();
+        Node node = graphDb.createNode();
+        node.setProperty( key1, value1 );
+        node.setProperty( key2, value2 );
+        newTransaction();
+
+        // WHEN removing one of them
+        node.removeProperty( key1 );
+        newTransaction();
+
+        // THEN the other one should still be in the index
+        assertEquals( 0, count( nodeAutoIndexer.getAutoIndex().get( key1, value1 ) ) );
+        assertEquals( 1, count( nodeAutoIndexer.getAutoIndex().get( key2, value2 ) ) );
     }
 }
