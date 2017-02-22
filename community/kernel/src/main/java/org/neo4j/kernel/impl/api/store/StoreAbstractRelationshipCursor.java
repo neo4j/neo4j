@@ -20,6 +20,7 @@
 package org.neo4j.kernel.impl.api.store;
 
 import org.neo4j.cursor.Cursor;
+import org.neo4j.kernel.impl.api.RelationshipVisitor;
 import org.neo4j.kernel.impl.locking.Lock;
 import org.neo4j.kernel.impl.locking.LockService;
 import org.neo4j.kernel.impl.store.RecordCursor;
@@ -29,12 +30,14 @@ import org.neo4j.kernel.impl.store.record.RelationshipRecord;
 import org.neo4j.storageengine.api.RelationshipItem;
 
 import static org.neo4j.kernel.impl.locking.LockService.NO_LOCK_SERVICE;
+import static org.neo4j.kernel.impl.store.record.Record.NO_NEXT_PROPERTY;
 import static org.neo4j.kernel.impl.store.record.RecordLoad.FORCE;
 
 /**
  * Base cursor for relationships.
  */
-public abstract class StoreAbstractRelationshipCursor implements Cursor<RelationshipItem>, RelationshipItem
+public abstract class StoreAbstractRelationshipCursor
+        implements RelationshipVisitor<RuntimeException>, Cursor<RelationshipItem>, RelationshipItem
 {
     protected final RelationshipRecord relationshipRecord;
     final RecordCursor<RelationshipRecord> relationshipRecordCursor;
@@ -97,6 +100,16 @@ public abstract class StoreAbstractRelationshipCursor implements Cursor<Relation
     {
         return relationshipRecord.getFirstNode() == nodeId ?
                relationshipRecord.getSecondNode() : relationshipRecord.getFirstNode();
+    }
+
+    @Override
+    public void visit( long relId, int type, long startNode, long endNode ) throws RuntimeException
+    {
+        relationshipRecord.setId( relId );
+        relationshipRecord.setType( type );
+        relationshipRecord.setFirstNode( startNode );
+        relationshipRecord.setSecondNode( endNode );
+        relationshipRecord.setNextProp( NO_NEXT_PROPERTY.longValue() );
     }
 
     @Override

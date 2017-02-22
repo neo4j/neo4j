@@ -140,11 +140,11 @@ public class TxStateTransactionDataViewTest
         state.relationshipDoDelete( 2L, 1, 1L, 1L );
 
         long noPropertyId = -1L;
-        when( storeStatement.acquireSingleRelationshipCursor( 1L ) ).
+        when( storeStatement.acquireSingleRelationshipCursor( 1L , null ) ).
                 thenReturn( asRelationshipCursor( 1L, 1, 1L, 2L, noPropertyId ) );
         when( storeStatement.acquirePropertyCursor( noPropertyId, NO_LOCK ) ).thenReturn( asPropertyCursor() );
         long propertyId = 40L;
-        when( storeStatement.acquireSingleRelationshipCursor( 2L ) ).
+        when( storeStatement.acquireSingleRelationshipCursor( 2L, null ) ).
                 thenReturn( asRelationshipCursor( 2L, 1, 1L, 1L, propertyId ) );
         when( storeStatement.acquirePropertyCursor( propertyId, NO_LOCK ) )
                 .thenReturn( asPropertyCursor( Property.stringProperty( 1, "p" ) ) );
@@ -180,7 +180,7 @@ public class TxStateTransactionDataViewTest
         Relationship rel = mock( Relationship.class );
         when( rel.getId() ).thenReturn( 1L );
         long noPropertyId = -1L;
-        when( storeStatement.acquireSingleRelationshipCursor( 1L ) )
+        when( storeStatement.acquireSingleRelationshipCursor( 1L, null ) )
                 .thenReturn( asRelationshipCursor( 1L, 1, 1L, 2L, noPropertyId ) );
         when( storeStatement.acquirePropertyCursor( noPropertyId, NO_LOCK ) ).thenReturn( asPropertyCursor() );
 
@@ -246,7 +246,7 @@ public class TxStateTransactionDataViewTest
         state.relationshipDoRemoveProperty( 1L, prevValue );
         when( ops.propertyKeyGetName( propertyKeyId ) ).thenReturn( "theKey" );
         long propertyId = 40L;
-        when( storeStatement.acquireSingleRelationshipCursor( 1 ) )
+        when( storeStatement.acquireSingleRelationshipCursor( 1, null ) )
                 .thenReturn( asRelationshipCursor( 1, 0, 0, 0, propertyId ) );
         when( storeStatement.acquireSinglePropertyCursor( propertyId, propertyKeyId, NO_LOCK ) )
                 .thenReturn( asPropertyCursor( prevValue ) );
@@ -271,8 +271,8 @@ public class TxStateTransactionDataViewTest
 
         when( ops.propertyKeyGetName( propertyKeyId ) ).thenReturn( "theKey" );
         long propertyId = 40L;
-        when( storeStatement.acquireSingleRelationshipCursor( 1 ) ).thenReturn(
-                asRelationshipCursor( 1, 0, 0, 0, propertyId ) );
+        when( storeStatement.acquireSingleRelationshipCursor( 1, null ) )
+                .thenReturn( asRelationshipCursor( 1, 0, 0, 0, propertyId ) );
         when( storeStatement.acquireSinglePropertyCursor( propertyId, propertyKeyId, NO_LOCK ) )
                 .thenReturn( asPropertyCursor( prevProp ) );
 

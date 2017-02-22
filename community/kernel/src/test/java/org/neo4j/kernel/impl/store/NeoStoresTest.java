@@ -326,7 +326,7 @@ public class NeoStoresTest
         DefinedProperty property = Property.property( key, value );
         Property oldProperty = Property.noRelationshipProperty( relationshipId, key );
         try ( StorageStatement statement = storeLayer.newStatement();
-                Cursor<RelationshipItem> cursor = statement.acquireSingleRelationshipCursor( relationshipId ) )
+                Cursor<RelationshipItem> cursor = statement.acquireSingleRelationshipCursor( relationshipId, null ) )
         {
             if ( cursor.next() )
             {
@@ -1472,7 +1472,7 @@ public class NeoStoresTest
         {
             for ( long relId : relIds )
             {
-                try ( Cursor<RelationshipItem> relationship = statement.acquireSingleRelationshipCursor( relId ) )
+                try ( Cursor<RelationshipItem> relationship = statement.acquireSingleRelationshipCursor( relId, null ) )
                 {
                     assertFalse( relationship.next() );
                 }
