@@ -214,7 +214,8 @@ public class RotatingFileOutputStreamSupplier implements Supplier<OutputStream>,
 
     private boolean rotationThresholdExceeded()
     {
-        return rotationThresholdBytes == 0 || !fileSystem.fileExists( outputFile ) || fileSystem.getFileSize( outputFile ) >= rotationThresholdBytes;
+        return fileSystem.fileExists( outputFile ) && rotationThresholdBytes > 0 &&
+                fileSystem.getFileSize( outputFile ) >= rotationThresholdBytes;
     }
 
     private boolean rotationDelayExceeded()

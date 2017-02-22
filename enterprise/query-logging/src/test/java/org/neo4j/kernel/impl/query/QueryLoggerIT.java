@@ -159,6 +159,33 @@ public class QueryLoggerIT
     }
 
     @Test
+    public void disabledQueryLogRotation() throws Exception
+    {
+        final File logsDirectory = new File( testDirectory.graphDbDir(), "logs" );
+        final File logFilename = new File( logsDirectory, "query.log" );
+        final File shiftedLogFilename1 = new File( logsDirectory, "query.log.1" );
+        GraphDatabaseService database = databaseBuilder.setConfig( GraphDatabaseSettings.log_queries, Settings.TRUE )
+                .setConfig( GraphDatabaseSettings.logs_directory, logsDirectory.getPath() )
+                .setConfig( GraphDatabaseSettings.log_queries_rotation_threshold, "0" )
+                .newGraphDatabase();
+
+
+        // Logging is done asynchronously, so write many times to make sure we would have rotated something
+        for ( int i = 0; i < 100; i++ )
+        {
+            database.execute( QUERY );
+        }
+
+        database.shutdown();
+
+        assertFalse( "There should not exist a shifted log file because rotation is disabled",
+                shiftedLogFilename1.exists() );
+
+        List<String> lines = readAllLines( logFilename );
+        assertEquals( 100, lines.size() );
+    }
+
+    @Test
     public void queryLogRotation() throws Exception
     {
         final File logsDirectory = new File( testDirectory.graphDbDir(), "logs" );
