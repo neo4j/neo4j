@@ -41,6 +41,12 @@ public interface IndexReader extends Resource
 
     IndexSampler createSampler();
 
+    /**
+     * Queries the index for the given {@link IndexQuery} predicates.
+     *
+     * @param predicates the predicates to query for.
+     * @return the matching entity IDs.
+     */
     PrimitiveLongIterator query( IndexQuery... predicates );
 
     IndexReader EMPTY = new IndexReader()

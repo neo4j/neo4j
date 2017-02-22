@@ -24,40 +24,104 @@ import org.apache.commons.lang3.builder.HashCodeBuilder;
 import org.apache.commons.lang3.builder.ToStringBuilder;
 import org.apache.commons.lang3.builder.ToStringStyle;
 
+import org.neo4j.kernel.api.ReadOperations;
+import org.neo4j.kernel.api.schema_new.index.NewIndexDescriptor;
+
 public abstract class IndexQuery
 {
+    /**
+     * Searches the index for all entries that has the given property.
+     *
+     * @param propertyKeyId the property ID to match.
+     * @return an {@link IndexQuery} instance to be passed to {@link ReadOperations#indexQuery(NewIndexDescriptor,
+     * IndexQuery...)}
+     */
     public static ExistsPredicate exists( int propertyKeyId )
     {
         return new ExistsPredicate( propertyKeyId );
     }
 
+    /**
+     * Searches the index for a certain value.
+     *
+     * @param propertyKeyId the property ID to match.
+     * @param value the property value to search for.
+     * @return an {@link IndexQuery} instance to be passed to {@link ReadOperations#indexQuery(NewIndexDescriptor,
+     * IndexQuery...)}
+     */
     public static ExactPredicate exact( int propertyKeyId, Object value )
     {
         return new ExactPredicate( propertyKeyId, value );
     }
 
+    /**
+     * Searches the index for numeric values between {@code from} and {@code to}.
+     *
+     * @param propertyKeyId the property ID to match.
+     * @param from the lower bound of the property value.
+     * @param fromInclusive the lower bound is inclusive if true.
+     * @param to the upper bound of the property value.
+     * @param toInclusive the upper bound is inclusive if true.
+     * @return an {@link IndexQuery} instance to be passed to {@link ReadOperations#indexQuery(NewIndexDescriptor,
+     * IndexQuery...)}
+     */
     public static NumberRangePredicate range( int propertyKeyId, Number from, boolean fromInclusive, Number to,
                                               boolean toInclusive )
     {
         return new NumberRangePredicate( propertyKeyId, from, fromInclusive, to, toInclusive );
     }
 
+    /**
+     * Searches the index for string values between {@code from} and {@code to}.
+     *
+     * @param propertyKeyId the property ID to match.
+     * @param from the lower bound of the property value.
+     * @param fromInclusive the lower bound is inclusive if true.
+     * @param to the upper bound of the property value.
+     * @param toInclusive the upper bound is inclusive if true.
+     * @return an {@link IndexQuery} instance to be passed to {@link ReadOperations#indexQuery(NewIndexDescriptor,
+     * IndexQuery...)}
+     */
     public static StringRangePredicate range( int propertyKeyId, String from, boolean fromInclusive, String to,
                                               boolean toInclusive )
     {
         return new StringRangePredicate( propertyKeyId, from, fromInclusive, to, toInclusive );
     }
 
+    /**
+     * Searches the index string values starting with {@code prefix}.
+     *
+     * @param propertyKeyId the property ID to match.
+     * @param prefix the string prefix to search for.
+     * @return an {@link IndexQuery} instance to be passed to {@link ReadOperations#indexQuery(NewIndexDescriptor,
+     * IndexQuery...)}
+     */
     public static StringPrefixPredicate stringPrefix( int propertyKeyId, String prefix )
     {
         return new StringPrefixPredicate( propertyKeyId, prefix );
     }
 
+    /**
+     * Searches the index for string values containing the exact search string.
+     *
+     * @param propertyKeyId the property ID to match.
+     * @param contains the string to search for.
+     * @return an {@link IndexQuery} instance to be passed to {@link ReadOperations#indexQuery(NewIndexDescriptor,
+     * IndexQuery...)}
+     */
     public static StringContainsPredicate stringContains( int propertyKeyId, String contains )
     {
         return  new StringContainsPredicate( propertyKeyId, contains );
     }
 
+    /**
+     * Searches the index string values ending with {@code suffix}.
+     *
+     * @param propertyKeyId the property ID to match.
+     * @param suffix the string suffix to search for.
+     * @return an {@link IndexQuery} instance to be passed to {@link ReadOperations#indexQuery(NewIndexDescriptor,
+     * IndexQuery...)}
+     */
     public static StringSuffixPredicate stringSuffix( int propertyKeyId, String suffix )
     {
         return new StringSuffixPredicate( propertyKeyId, suffix );

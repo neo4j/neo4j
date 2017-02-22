@@ -118,9 +118,12 @@ public interface ReadOperations
     PrimitiveLongIterator nodesGetForLabel( int labelId );
 
     /**
-     * Returns an iterator with the matched entities.
+     * Queries the given index with the given index query.
      *
-     * @throws org.neo4j.kernel.api.exceptions.index.IndexNotFoundKernelException if no such index found.
+     * @param index the index to query against.
+     * @param predicates array of the {@link IndexQuery} predicates to query for.
+     * @return ids of the matching nodes
+     * @throws org.neo4j.kernel.api.exceptions.index.IndexNotFoundKernelException if no such index is found.
      */
     PrimitiveLongIterator indexQuery( NewIndexDescriptor index, IndexQuery... predicates ) throws IndexNotFoundKernelException;
 
