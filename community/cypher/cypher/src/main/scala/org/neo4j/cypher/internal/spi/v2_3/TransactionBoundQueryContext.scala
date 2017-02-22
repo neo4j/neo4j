@@ -193,7 +193,7 @@ final class TransactionBoundQueryContext(tc: TransactionalContextWrapper)
   }
 
   private def indexSeekByPrefixRange(index: IndexDescriptor, prefix: String): scala.Iterator[Node] = {
-    val indexedNodes = tc.statement.readOperations().nodesGetFromIndexRangeSeekByPrefix(index, prefix)
+    val indexedNodes = tc.statement.readOperations().indexQuery(index, IndexQuery.stringPrefix(index.property, prefix))
     JavaConversionSupport.mapToScalaENFXSafe(indexedNodes)(nodeOps.getById)
   }
 

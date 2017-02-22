@@ -108,7 +108,7 @@ public class SimpleIndexReaderTest
     {
         IndexReader simpleIndexReader = getUniqueSimpleReader();
 
-        simpleIndexReader.rangeSeekByPrefix( "bb" );
+        simpleIndexReader.query( IndexQuery.stringPrefix( 1, "bb" ) );
 
         verify( indexSearcher ).search( any( PrefixQuery.class ), any( DocValuesCollector.class ) );
     }

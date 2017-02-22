@@ -34,12 +34,6 @@ public class DelegatingIndexReader implements IndexReader
     }
 
     @Override
-    public PrimitiveLongIterator rangeSeekByPrefix( String prefix )
-    {
-        return delegate.rangeSeekByPrefix( prefix );
-    }
-
-    @Override
     public PrimitiveLongIterator containsString( String exactTerm )
     {
         return delegate.containsString( exactTerm );

@@ -277,13 +277,14 @@ public class StateHandlingStatementOperationsTest
 
         StoreReadLayer storeReadLayer = mock( StoreReadLayer.class );
         IndexReader indexReader = addMockedIndexReader( statement );
-        when( indexReader.rangeSeekByPrefix( "prefix" ) )
+        IndexQuery.StringPrefixPredicate query = IndexQuery.stringPrefix( index.schema().getPropertyId(), "prefix" );
+        when( indexReader.query( query ) )
                 .thenReturn( PrimitiveLongCollections.resourceIterator( PrimitiveLongCollections.iterator( 43L, 44L, 46L ), null ) );
 
         StateHandlingStatementOperations context = newTxStateOps( storeReadLayer );
 
         // When
-        PrimitiveLongIterator results = context.nodesGetFromIndexRangeSeekByPrefix( statement, index, "prefix" );
+        PrimitiveLongIterator results = context.indexQuery( statement, index, query );
 
         // Then
         assertEquals( asSet( 42L, 43L ), PrimitiveLongCollections.toSet( results ) );

@@ -124,10 +124,10 @@ public abstract class IndexAccessorCompatibility extends IndexProviderCompatibil
                 IndexEntryUpdate.add( 4L, descriptor, "apA" ),
                 IndexEntryUpdate.add( 5L, descriptor, "b" ) ) );
 
-        assertThat( getAllNodesFromIndexSeekByPrefix( "a" ), equalTo( asList( 1L, 3L, 4L ) ) );
-        assertThat( getAllNodesFromIndexSeekByPrefix( "A" ), equalTo( Collections.singletonList( 2L ) ) );
-        assertThat( getAllNodesFromIndexSeekByPrefix( "ba" ), equalTo( EMPTY_LIST ) );
-        assertThat( getAllNodesFromIndexSeekByPrefix( "" ), equalTo( asList( 1L, 2L, 3L, 4L, 5L ) ) );
+        assertThat( query( IndexQuery.stringPrefix( 1, "a" ) ), equalTo( asList( 1L, 3L, 4L ) ) );
+        assertThat( query( IndexQuery.stringPrefix( 1, "A" ) ), equalTo( Collections.singletonList( 2L ) ) );
+        assertThat( query( IndexQuery.stringPrefix( 1, "ba" ) ), equalTo( EMPTY_LIST ) );
+        assertThat( query( IndexQuery.stringPrefix( 1, "" ) ), equalTo( asList( 1L, 2L, 3L, 4L, 5L ) ) );
     }
 
     @Test
@@ -136,12 +136,7 @@ public abstract class IndexAccessorCompatibility extends IndexProviderCompatibil
         updateAndCommit( asList(
                 IndexEntryUpdate.add( 1L, descriptor, "a" ),
                 IndexEntryUpdate.add( 2L, descriptor, 2L ) ) );
-        assertThat( getAllNodesFromIndexSeekByPrefix( "2" ), equalTo( EMPTY_LIST ) );
-    }
-
-    protected List<Long> getAllNodesFromIndexSeekByPrefix( String prefix ) throws IOException
-    {
-        return metaGet( reader -> reader.rangeSeekByPrefix( prefix));
+        assertThat( query( IndexQuery.stringPrefix( 1, "2" ) ), equalTo( EMPTY_LIST ) );
     }
 
     protected List<Long> getAllNodesFromIndexScanByContains( String term ) throws IOException

@@ -273,14 +273,6 @@ public class ConstraintEnforcingEntityOperations implements EntityOperations, Sc
     }
 
     @Override
-    public PrimitiveLongIterator nodesGetFromIndexRangeSeekByPrefix( KernelStatement state,
-            NewIndexDescriptor index, String prefix )
-            throws IndexNotFoundKernelException
-    {
-        return entityReadOperations.nodesGetFromIndexRangeSeekByPrefix( state, index, prefix );
-    }
-
-    @Override
     public long nodeGetFromUniqueIndexSeek(
             KernelStatement state,
             NewIndexDescriptor index,

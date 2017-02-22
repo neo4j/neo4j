@@ -138,8 +138,8 @@ public class NonUniqueIndexAccessorCompatibility extends IndexAccessorCompatibil
                 IndexEntryUpdate.add( 4L, index, "apa" ),
                 IndexEntryUpdate.add( 5L, index, "apa" ) ) );
 
-        assertThat( getAllNodesFromIndexSeekByPrefix( "a" ), equalTo( asList( 1L, 3L, 4L, 5L ) ) );
-        assertThat( getAllNodesFromIndexSeekByPrefix( "apa" ), equalTo( asList( 3L, 4L, 5L ) ) );
+        assertThat( query( stringPrefix( 1, "a" ) ), equalTo( asList( 1L, 3L, 4L, 5L ) ) );
+        assertThat( query( stringPrefix( 1, "apa" ) ), equalTo( asList( 3L, 4L, 5L ) ) );
     }
 
     @Test

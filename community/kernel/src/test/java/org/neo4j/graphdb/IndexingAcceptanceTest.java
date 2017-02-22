@@ -26,19 +26,18 @@ import org.junit.Test;
 import org.junit.rules.TestName;
 
 import java.util.Map;
+
 import org.neo4j.collection.primitive.Primitive;
 import org.neo4j.collection.primitive.PrimitiveLongIterator;
 import org.neo4j.collection.primitive.PrimitiveLongSet;
 import org.neo4j.graphdb.schema.IndexDefinition;
 import org.neo4j.helpers.collection.Iterators;
-import org.neo4j.kernel.api.schema.NodePropertyDescriptor;
 import org.neo4j.kernel.api.ReadOperations;
 import org.neo4j.kernel.api.Statement;
 import org.neo4j.kernel.api.exceptions.index.IndexNotFoundKernelException;
 import org.neo4j.kernel.api.exceptions.schema.SchemaRuleNotFoundException;
-import org.neo4j.kernel.api.schema.IndexDescriptor;
 import org.neo4j.kernel.api.schema.IndexDescriptorFactory;
-import org.neo4j.kernel.api.schema_new.index.IndexBoundary;
+import org.neo4j.kernel.api.schema.NodePropertyDescriptor;
 import org.neo4j.kernel.api.schema_new.index.NewIndexDescriptor;
 import org.neo4j.kernel.impl.core.ThreadToStatementContextBridge;
 import org.neo4j.kernel.internal.GraphDatabaseAPI;
@@ -51,6 +50,7 @@ import static org.junit.Assert.assertThat;
 import static org.neo4j.helpers.collection.Iterators.asSet;
 import static org.neo4j.helpers.collection.Iterators.count;
 import static org.neo4j.helpers.collection.MapUtil.map;
+import static org.neo4j.kernel.api.schema_new.IndexQuery.stringPrefix;
 import static org.neo4j.test.mockito.matcher.Neo4jMatchers.containsOnly;
 import static org.neo4j.test.mockito.matcher.Neo4jMatchers.findNodesByLabelAndProperty;
 import static org.neo4j.test.mockito.matcher.Neo4jMatchers.hasProperty;
@@ -489,7 +489,8 @@ public class IndexingAcceptanceTest
             Statement statement = getStatement( (GraphDatabaseAPI) db );
             ReadOperations ops = statement.readOperations();
             NewIndexDescriptor descriptor = indexDescriptor( ops, index );
-            found.addAll( ops.nodesGetFromIndexRangeSeekByPrefix( descriptor, "Karl" ) );
+            int propertyKeyId = descriptor.schema().getPropertyId();
+            found.addAll( ops.indexQuery( descriptor, stringPrefix( propertyKeyId, "Karl" ) ) );
         }
 
         // THEN
@@ -514,7 +515,8 @@ public class IndexingAcceptanceTest
             Statement statement = getStatement( (GraphDatabaseAPI) db );
             ReadOperations readOperations = statement.readOperations();
             NewIndexDescriptor descriptor = indexDescriptor( readOperations, index );
-            found.addAll( readOperations.nodesGetFromIndexRangeSeekByPrefix( descriptor, "Carl" ) );
+            int propertyKeyId = descriptor.schema().getPropertyId();
+            found.addAll( readOperations.indexQuery( descriptor, stringPrefix( propertyKeyId, "Carl" ) ) );
         }
         // THEN
         assertThat( found, equalTo( expected ) );
@@ -544,7 +546,8 @@ public class IndexingAcceptanceTest
             Statement statement = getStatement( (GraphDatabaseAPI) db );
             ReadOperations readOperations = statement.readOperations();
             NewIndexDescriptor descriptor = indexDescriptor( readOperations, index );
-            found.addAll( readOperations.nodesGetFromIndexRangeSeekByPrefix( descriptor, "Karl" ) );
+            int propertyKeyId = descriptor.schema().getPropertyId();
+            found.addAll( readOperations.indexQuery( descriptor, stringPrefix( propertyKeyId, "Karl" ) ) );
         }
         // THEN
         assertThat( found, equalTo( expected ) );
@@ -583,7 +586,8 @@ public class IndexingAcceptanceTest
             Statement statement = getStatement( (GraphDatabaseAPI) db );
             ReadOperations readOperations = statement.readOperations();
             NewIndexDescriptor descriptor = indexDescriptor( readOperations, index );
-            found.addAll( readOperations.nodesGetFromIndexRangeSeekByPrefix( descriptor, prefix ) );
+            int propertyKeyId = descriptor.schema().getPropertyId();
+            found.addAll( readOperations.indexQuery( descriptor, stringPrefix( propertyKeyId, prefix ) ) );
         }
         // THEN
         assertThat( found, equalTo( expected ) );
@@ -603,7 +607,7 @@ public class IndexingAcceptanceTest
         return expected;
     }
 
-    private NewIndexDescriptor indexDescriptor(ReadOperations readOperations, IndexDefinition index)
+    private NewIndexDescriptor indexDescriptor( ReadOperations readOperations, IndexDefinition index )
             throws SchemaRuleNotFoundException
     {
         NodePropertyDescriptor descriptor = IndexDescriptorFactory.getTokens( readOperations, index );

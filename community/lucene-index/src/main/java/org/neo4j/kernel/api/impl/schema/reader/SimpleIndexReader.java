@@ -130,8 +130,7 @@ public class SimpleIndexReader implements IndexReader
         return query( LuceneDocumentStructure.newRangeSeekByStringQuery( lower, includeLower, upper, includeUpper ) );
     }
 
-    @Override
-    public PrimitiveLongIterator rangeSeekByPrefix( String prefix )
+    private PrimitiveLongIterator rangeSeekByPrefix( String prefix )
     {
         return query( LuceneDocumentStructure.newRangeSeekByPrefixQuery( prefix ) );
     }

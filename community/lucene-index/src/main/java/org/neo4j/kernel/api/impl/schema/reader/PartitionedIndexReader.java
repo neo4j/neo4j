@@ -70,12 +70,6 @@ public class PartitionedIndexReader implements IndexReader
     }
 
     @Override
-    public PrimitiveLongIterator rangeSeekByPrefix( String prefix )
-    {
-        return partitionedOperation( reader -> reader.rangeSeekByPrefix( prefix ) );
-    }
-
-    @Override
     public PrimitiveLongIterator containsString( String exactTerm )
     {
         return partitionedOperation( reader -> reader. containsString( exactTerm ) );

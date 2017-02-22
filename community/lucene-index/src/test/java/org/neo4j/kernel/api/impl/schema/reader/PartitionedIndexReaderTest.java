@@ -126,11 +126,12 @@ public class PartitionedIndexReaderTest
     public void rangeSeekByPrefixOverPartitions()
     {
         PartitionedIndexReader indexReader = createPartitionedReaderFromReaders();
-        when( indexReader1.rangeSeekByPrefix( "prefix" ) ).thenReturn( PrimitiveLongCollections.iterator( 1 ) );
-        when( indexReader2.rangeSeekByPrefix( "prefix" ) ).thenReturn( PrimitiveLongCollections.iterator( 2 ) );
-        when( indexReader3.rangeSeekByPrefix( "prefix" ) ).thenReturn( PrimitiveLongCollections.iterator( 3 ) );
+        IndexQuery.StringPrefixPredicate query = IndexQuery.stringPrefix( 1, "prefix" );
+        when( indexReader1.query( query ) ).thenReturn( PrimitiveLongCollections.iterator( 1 ) );
+        when( indexReader2.query( query ) ).thenReturn( PrimitiveLongCollections.iterator( 2 ) );
+        when( indexReader3.query( query ) ).thenReturn( PrimitiveLongCollections.iterator( 3 ) );
 
-        PrimitiveLongSet results = PrimitiveLongCollections.asSet( indexReader.rangeSeekByPrefix( "prefix") );
+        PrimitiveLongSet results = PrimitiveLongCollections.asSet( indexReader.query( query ) );
         verifyResult( results );
     }
 

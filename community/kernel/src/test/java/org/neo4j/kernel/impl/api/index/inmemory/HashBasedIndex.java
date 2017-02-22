@@ -137,8 +137,7 @@ class HashBasedIndex extends InMemoryIndexImplementation
         return toPrimitiveIterator( nodeIds.iterator() );
     }
 
-    @Override
-    public synchronized PrimitiveLongIterator rangeSeekByPrefix( String prefix )
+    private synchronized PrimitiveLongIterator rangeSeekByPrefix( String prefix )
     {
         return stringSearch( ( String entry ) -> entry.startsWith( prefix ) );
     }

@@ -761,16 +761,6 @@ public class StateHandlingStatementOperations implements
     }
 
     @Override
-    public PrimitiveLongIterator nodesGetFromIndexRangeSeekByPrefix( KernelStatement state, NewIndexDescriptor index,
-            String prefix ) throws IndexNotFoundKernelException
-    {
-        StorageStatement storeStatement = state.getStoreStatement();
-        IndexReader reader = storeStatement.getIndexReader( index );
-        PrimitiveLongIterator committed = reader.rangeSeekByPrefix( prefix );
-        return filterIndexStateChangesForRangeSeekByPrefix( state, index, prefix, committed );
-    }
-
-    @Override
     public long nodesCountIndexed( KernelStatement statement, NewIndexDescriptor index, long nodeId, Object value )
             throws IndexNotFoundKernelException, IndexBrokenKernelException
     {
