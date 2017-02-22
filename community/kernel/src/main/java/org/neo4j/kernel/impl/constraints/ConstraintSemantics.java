@@ -22,11 +22,11 @@ package org.neo4j.kernel.impl.constraints;
 import java.util.Iterator;
 
 import org.neo4j.cursor.Cursor;
-import org.neo4j.kernel.api.constraints.PropertyConstraint;
 import org.neo4j.kernel.api.exceptions.schema.CreateConstraintFailureException;
 import org.neo4j.kernel.api.schema_new.LabelSchemaDescriptor;
 import org.neo4j.kernel.api.schema_new.RelationTypeSchemaDescriptor;
 import org.neo4j.kernel.api.schema_new.constaints.ConstraintDescriptor;
+import org.neo4j.kernel.api.schema_new.constaints.UniquenessConstraintDescriptor;
 import org.neo4j.kernel.impl.store.record.ConstraintRule;
 import org.neo4j.storageengine.api.NodeItem;
 import org.neo4j.storageengine.api.RelationshipItem;
@@ -45,9 +45,9 @@ public interface ConstraintSemantics
     void validateExistenceConstraint( Cursor<RelationshipItem> allRels, RelationTypeSchemaDescriptor descriptor )
             throws CreateConstraintFailureException;
 
-    PropertyConstraint readConstraint( ConstraintRule rule );
+    ConstraintDescriptor readConstraint( ConstraintRule rule );
 
-    ConstraintRule createUniquenessConstraintRule( long ruleId, ConstraintDescriptor descriptor, long indexId );
+    ConstraintRule createUniquenessConstraintRule( long ruleId, UniquenessConstraintDescriptor descriptor, long indexId );
 
     ConstraintRule createExistenceConstraint( long ruleId, ConstraintDescriptor descriptor )
             throws CreateConstraintFailureException;

@@ -23,6 +23,7 @@ import java.nio.ByteBuffer;
 
 import org.neo4j.kernel.api.schema_new.SchemaDescriptor;
 import org.neo4j.kernel.api.schema_new.constaints.ConstraintDescriptor;
+import org.neo4j.kernel.api.schema_new.constaints.UniquenessConstraintDescriptor;
 import org.neo4j.storageengine.api.schema.SchemaRule;
 
 import static org.neo4j.kernel.api.schema_new.SchemaUtil.idTokenNameLookup;
@@ -46,7 +47,7 @@ public class ConstraintRule implements SchemaRule, ConstraintDescriptor.Supplier
     }
 
     public static ConstraintRule constraintRule(
-            long id, ConstraintDescriptor descriptor, long ownedIndexRule )
+            long id, UniquenessConstraintDescriptor descriptor, long ownedIndexRule )
     {
         return new ConstraintRule( id, descriptor, ownedIndexRule );
     }

@@ -74,6 +74,7 @@ import org.neo4j.kernel.api.schema_new.SchemaUtil;
 import org.neo4j.kernel.api.schema_new.constaints.ConstraintBoundary;
 import org.neo4j.kernel.api.schema_new.constaints.ConstraintDescriptor;
 import org.neo4j.kernel.api.schema_new.constaints.ConstraintDescriptorFactory;
+import org.neo4j.kernel.api.schema_new.constaints.UniquenessConstraintDescriptor;
 import org.neo4j.kernel.api.schema_new.index.IndexBoundary;
 import org.neo4j.kernel.api.schema_new.index.NewIndexDescriptor;
 import org.neo4j.kernel.api.txstate.TransactionCountingStateVisitor;
@@ -451,7 +452,7 @@ public class StateHandlingStatementOperations implements
             throws CreateConstraintFailureException
     {
         LabelSchemaDescriptor schema = SchemaBoundary.map( descriptor );
-        ConstraintDescriptor constraint = ConstraintDescriptorFactory.uniqueForSchema( schema );
+        UniquenessConstraintDescriptor constraint = ConstraintDescriptorFactory.uniqueForSchema( schema );
         try
         {
             if ( state.hasTxStateWithChanges() &&

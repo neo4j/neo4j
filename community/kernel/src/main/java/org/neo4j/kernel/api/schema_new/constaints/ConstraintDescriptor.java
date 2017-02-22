@@ -20,21 +20,15 @@
 package org.neo4j.kernel.api.schema_new.constaints;
 
 import org.neo4j.kernel.api.TokenNameLookup;
-import org.neo4j.kernel.api.schema_new.LabelSchemaDescriptor;
-import org.neo4j.kernel.api.schema_new.RelationTypeSchemaDescriptor;
-import org.neo4j.kernel.api.schema_new.SchemaComputer;
 import org.neo4j.kernel.api.schema_new.SchemaDescriptor;
-import org.neo4j.kernel.api.schema_new.index.NewIndexDescriptor;
-import org.neo4j.kernel.api.schema_new.index.NewIndexDescriptorFactory;
 
 import static java.lang.String.format;
-import static org.neo4j.kernel.api.schema_new.constaints.ConstraintDescriptor.Type.UNIQUE;
 
 /**
  * Internal representation of a graph constraint, including the schema unit it targets (eg. label-property combination)
  * and the how that schema unit is constrained (eg. "has to exist", or "must be unique").
  */
-public class ConstraintDescriptor implements SchemaDescriptor.Supplier
+public abstract class ConstraintDescriptor implements SchemaDescriptor.Supplier
 {
     public enum Type { UNIQUE, EXISTS }
 
@@ -43,31 +37,16 @@ public class ConstraintDescriptor implements SchemaDescriptor.Supplier
         ConstraintDescriptor getConstraintDescriptor();
     }
 
-    private final SchemaDescriptor schema;
     private final ConstraintDescriptor.Type type;
 
-    ConstraintDescriptor( SchemaDescriptor schema, Type type )
+    ConstraintDescriptor( Type type )
     {
-        this.schema = schema;
         this.type = type;
     }
 
     // METHODS
 
-    @Override
-    public SchemaDescriptor schema()
-    {
-        return schema;
-    }
-
-    public NewIndexDescriptor ownedIndexDescriptor()
-    {
-        if ( type == UNIQUE && schema instanceof LabelSchemaDescriptor )
-        {
-            return NewIndexDescriptorFactory.uniqueForSchema( (LabelSchemaDescriptor)schema );
-        }
-        throw new IllegalStateException( "Only unique constraints on label-property combinations are allowed" );
-    }
+    public abstract SchemaDescriptor schema();
 
     public Type type()
     {
@@ -80,7 +59,7 @@ public class ConstraintDescriptor implements SchemaDescriptor.Supplier
      */
     public String userDescription( TokenNameLookup tokenNameLookup )
     {
-        return format( "Constraint( %s, %s )", type.name(), schema.userDescription( tokenNameLookup ) );
+        return format( "Constraint( %s, %s )", type.name(), schema().userDescription( tokenNameLookup ) );
     }
 
     /**
@@ -88,13 +67,13 @@ public class ConstraintDescriptor implements SchemaDescriptor.Supplier
      * @param supplier supplier to get a constraint descriptor from
      * @return true if the supplied constraint descriptor equals this constraint descriptor
      */
-    public boolean isSame( Supplier supplier )
+    public final boolean isSame( Supplier supplier )
     {
         return this.equals( supplier.getConstraintDescriptor() );
     }
 
     @Override
-    public boolean equals( Object o )
+    public final boolean equals( Object o )
     {
         if ( o != null && o instanceof ConstraintDescriptor )
         {
@@ -105,69 +84,23 @@ public class ConstraintDescriptor implements SchemaDescriptor.Supplier
     }
 
     @Override
-    public int hashCode()
+    public final int hashCode()
     {
-        return type.hashCode() & schema.hashCode();
+        return type.hashCode() & schema().hashCode();
     }
 
     // PRETTY PRINTING
 
-    public String prettyPrint( TokenNameLookup tokenNameLookup )
+    public abstract String prettyPrint( TokenNameLookup tokenNameLookup );
+
+    String escapeLabelOrRelTyp( String name )
     {
-        return schema.computeWith( new ConstraintPrettyPrinter( tokenNameLookup ) );
-    }
-
-    private class ConstraintPrettyPrinter implements SchemaComputer<String>
-    {
-        private final TokenNameLookup tokenNameLookup;
-
-        ConstraintPrettyPrinter( TokenNameLookup tokenNameLookup )
-        {
-            this.tokenNameLookup = tokenNameLookup;
+        if (name.contains( ":" )) {
+            return "`" + name + "`";
         }
-
-        @Override
-        public String computeSpecific( LabelSchemaDescriptor schema )
+        else
         {
-            assert schema.getPropertyIds().length == 1;
-            String labelName = labelName( schema.getLabelId(), tokenNameLookup );
-            String nodeName = labelName.toLowerCase();
-            String propertyName = tokenNameLookup.propertyKeyGetName( schema.getPropertyIds()[0] );
-            if ( type == UNIQUE )
-            {
-                return String.format( "CONSTRAINT ON ( %s:%s ) ASSERT %s.%s IS UNIQUE",
-                        nodeName, labelName, nodeName, propertyName );
-            }
-            else
-            {
-                return String.format( "CONSTRAINT ON ( %s:%s ) ASSERT exists(%s.%s)",
-                        nodeName, labelName, nodeName, propertyName );
-            }
-        }
-
-        @Override
-        public String computeSpecific( RelationTypeSchemaDescriptor schema )
-        {
-            assert schema.getPropertyIds().length == 1;
-            String typeName = tokenNameLookup.relationshipTypeGetName( schema.getRelTypeId() );
-            String relName = typeName.toLowerCase();
-            String propertyName = tokenNameLookup.propertyKeyGetName( schema.getPropertyIds()[0] );
-            return String.format( "CONSTRAINT ON ()-[ %s:%s ]-() ASSERT exists(%s.%s)",
-                    relName, typeName, relName, propertyName );
-        }
-
-        private String labelName( int labelId, TokenNameLookup tokenNameLookup )
-        {
-            String labelName = tokenNameLookup.labelGetName( labelId );
-            //if the labelName contains a `:` we must escape it to avoid disambiguation,
-            //e.g. CONSTRAINT on foo:bar:foo:bar
-            if (labelName.contains( ":" )) {
-                return "`" + labelName + "`";
-            }
-            else
-            {
-                return labelName;
-            }
+            return name;
         }
     }
 }

@@ -29,6 +29,7 @@ import org.neo4j.kernel.api.exceptions.schema.SchemaRuleNotFoundException;
 import org.neo4j.kernel.api.index.SchemaIndexProvider;
 import org.neo4j.kernel.api.properties.DefinedProperty;
 import org.neo4j.kernel.api.schema_new.constaints.ConstraintDescriptor;
+import org.neo4j.kernel.api.schema_new.constaints.UniquenessConstraintDescriptor;
 import org.neo4j.kernel.api.schema_new.index.NewIndexDescriptor;
 import org.neo4j.kernel.impl.api.index.SchemaIndexProviderMap;
 import org.neo4j.kernel.impl.constraints.ConstraintSemantics;
@@ -201,9 +202,10 @@ public class TransactionToRecordStateVisitor extends TxStateVisitor.Adapter
         switch ( constraint.type() )
         {
         case UNIQUE:
-            IndexRule indexRule = schemaStorage.indexGetForSchema( constraint.ownedIndexDescriptor() );
+            UniquenessConstraintDescriptor uniqueConstraint = (UniquenessConstraintDescriptor) constraint;
+            IndexRule indexRule = schemaStorage.indexGetForSchema( uniqueConstraint.ownedIndexDescriptor() );
             recordState.createSchemaRule( constraintSemantics.createUniquenessConstraintRule(
-                    constraintId, constraint, indexRule.getId() ) );
+                    constraintId, uniqueConstraint, indexRule.getId() ) );
             recordState.setConstraintIndexOwner( indexRule, constraintId );
             break;
 
@@ -238,7 +240,7 @@ public class TransactionToRecordStateVisitor extends TxStateVisitor.Adapter
         if ( constraint.type() == ConstraintDescriptor.Type.UNIQUE )
         {
             // Remove the index for the constraint as well
-            visitRemovedIndex( constraint.ownedIndexDescriptor() );
+            visitRemovedIndex( ((UniquenessConstraintDescriptor)constraint).ownedIndexDescriptor() );
         }
     }
 

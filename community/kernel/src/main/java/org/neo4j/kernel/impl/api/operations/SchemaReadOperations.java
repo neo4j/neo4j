@@ -96,7 +96,7 @@ public interface SchemaReadOperations
     Iterator<ConstraintDescriptor> constraintsGetForSchema( KernelStatement state, SchemaDescriptor descriptor );
 
     /**
-     * TODO: Write me. {@link ConstraintDescriptor}
+     * Returns true if a constraint exists that matches the given {@link ConstraintDescriptor}.
      */
     boolean constraintExists( KernelStatement state, ConstraintDescriptor descriptor );
 

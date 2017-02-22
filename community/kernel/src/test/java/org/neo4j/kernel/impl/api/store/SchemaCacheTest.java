@@ -287,13 +287,13 @@ public class SchemaCacheTest
     private static class ConstraintSemantics extends StandardConstraintSemantics
     {
         @Override
-        protected PropertyConstraint readNonStandardConstraint( ConstraintRule rule )
+        protected ConstraintDescriptor readNonStandardConstraint( ConstraintRule rule )
         {
             if ( rule.getConstraintDescriptor().type() != EXISTS )
             {
                 throw new IllegalStateException( "Unsupported constraint type: " + rule );
             }
-            return ConstraintBoundary.map( rule.getConstraintDescriptor() );
+            return rule.getConstraintDescriptor();
         }
     }
 }

@@ -24,7 +24,6 @@ import java.util.Iterator;
 import java.util.List;
 
 import org.neo4j.cursor.Cursor;
-import org.neo4j.kernel.api.constraints.PropertyConstraint;
 import org.neo4j.kernel.api.exceptions.schema.ConstraintValidationException;
 import org.neo4j.kernel.api.exceptions.schema.CreateConstraintFailureException;
 import org.neo4j.kernel.api.exceptions.schema.NodePropertyExistenceException;
@@ -32,7 +31,6 @@ import org.neo4j.kernel.api.exceptions.schema.RelationshipPropertyExistenceExcep
 import org.neo4j.kernel.api.schema_new.LabelSchemaDescriptor;
 import org.neo4j.kernel.api.schema_new.RelationTypeSchemaDescriptor;
 import org.neo4j.kernel.api.schema_new.SchemaProcessor;
-import org.neo4j.kernel.api.schema_new.constaints.ConstraintBoundary;
 import org.neo4j.kernel.api.schema_new.constaints.ConstraintDescriptor;
 import org.neo4j.kernel.impl.constraints.StandardConstraintSemantics;
 import org.neo4j.kernel.impl.store.record.ConstraintRule;
@@ -48,13 +46,13 @@ import static org.neo4j.kernel.api.schema_new.constaints.ConstraintDescriptor.Ty
 public class EnterpriseConstraintSemantics extends StandardConstraintSemantics
 {
     @Override
-    protected PropertyConstraint readNonStandardConstraint( ConstraintRule rule )
+    protected ConstraintDescriptor readNonStandardConstraint( ConstraintRule rule )
     {
         if ( rule.getConstraintDescriptor().type() != EXISTS )
         {
             throw new IllegalStateException( "Unsupported constraint type: " + rule );
         }
-        return ConstraintBoundary.map( rule.getConstraintDescriptor() );
+        return rule.getConstraintDescriptor();
     }
 
     @Override

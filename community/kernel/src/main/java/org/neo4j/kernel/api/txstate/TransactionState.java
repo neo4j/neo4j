@@ -23,6 +23,7 @@ import org.neo4j.kernel.api.properties.DefinedProperty;
 import org.neo4j.kernel.api.properties.Property;
 import org.neo4j.kernel.api.schema_new.LabelSchemaDescriptor;
 import org.neo4j.kernel.api.schema_new.constaints.ConstraintDescriptor;
+import org.neo4j.kernel.api.schema_new.constaints.UniquenessConstraintDescriptor;
 import org.neo4j.kernel.api.schema_new.index.NewIndexDescriptor;
 import org.neo4j.storageengine.api.txstate.ReadableTransactionState;
 
@@ -83,7 +84,7 @@ public interface TransactionState extends ReadableTransactionState
 
     void constraintDoAdd( ConstraintDescriptor constraint );
 
-    void constraintDoAdd( ConstraintDescriptor constraint, long indexId );
+    void constraintDoAdd( UniquenessConstraintDescriptor constraint, long indexId );
 
     void constraintDoDrop( ConstraintDescriptor constraint );
 

@@ -22,13 +22,13 @@ package org.neo4j.kernel.impl.store.record;
 import org.junit.Test;
 
 import org.neo4j.kernel.api.schema_new.constaints.ConstraintDescriptor;
+import org.neo4j.kernel.api.schema_new.constaints.UniquenessConstraintDescriptor;
 
 import static org.hamcrest.Matchers.equalTo;
 import static org.junit.Assert.assertThat;
 import static org.neo4j.kernel.api.schema_new.constaints.ConstraintDescriptorFactory.existsForLabel;
 import static org.neo4j.kernel.api.schema_new.constaints.ConstraintDescriptorFactory.existsForRelType;
 import static org.neo4j.kernel.api.schema_new.constaints.ConstraintDescriptorFactory.uniqueForLabel;
-import static org.neo4j.kernel.api.schema_new.constaints.ConstraintDescriptorFactory.uniqueForRelType;
 import static org.neo4j.test.assertion.Assert.assertException;
 
 public class ConstraintRuleTest extends SchemaRuleTestBase
@@ -51,7 +51,7 @@ public class ConstraintRuleTest extends SchemaRuleTestBase
     public void shouldCreateUniquenessConstraintWithOwnedIndex() throws Exception
     {
         // GIVEN
-        ConstraintDescriptor descriptor = uniqueForLabel( LABEL_ID, PROPERTY_ID_1 );
+        UniquenessConstraintDescriptor descriptor = uniqueForLabel( LABEL_ID, PROPERTY_ID_1 );
         ConstraintRule constraintRule = ConstraintRule.constraintRule( RULE_ID, descriptor, RULE_ID_2 );
 
         // THEN
@@ -79,14 +79,21 @@ public class ConstraintRuleTest extends SchemaRuleTestBase
         assertEqualityByDescriptor( existsForLabel( LABEL_ID, PROPERTY_ID_1 ) );
         assertEqualityByDescriptor( uniqueForLabel( LABEL_ID, PROPERTY_ID_1 ) );
         assertEqualityByDescriptor( existsForRelType( REL_TYPE_ID, PROPERTY_ID_1 ) );
-        assertEqualityByDescriptor( uniqueForRelType( REL_TYPE_ID, PROPERTY_ID_1 ) );
         assertEqualityByDescriptor( existsForLabel( LABEL_ID, PROPERTY_ID_1, PROPERTY_ID_2 ) );
         assertEqualityByDescriptor( uniqueForLabel( LABEL_ID, PROPERTY_ID_1, PROPERTY_ID_2 ) );
     }
 
-    private void assertEqualityByDescriptor( ConstraintDescriptor descriptor )
+    private void assertEqualityByDescriptor( UniquenessConstraintDescriptor descriptor )
     {
         ConstraintRule rule1 = ConstraintRule.constraintRule( RULE_ID, descriptor, RULE_ID_2 );
+        ConstraintRule rule2 = ConstraintRule.constraintRule( RULE_ID_2, descriptor );
+
+        assertEquality( rule1, rule2 );
+    }
+
+    private void assertEqualityByDescriptor( ConstraintDescriptor descriptor )
+    {
+        ConstraintRule rule1 = ConstraintRule.constraintRule( RULE_ID, descriptor );
         ConstraintRule rule2 = ConstraintRule.constraintRule( RULE_ID_2, descriptor );
 
         assertEquality( rule1, rule2 );

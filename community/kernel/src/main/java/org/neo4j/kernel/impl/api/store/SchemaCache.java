@@ -134,7 +134,7 @@ public class SchemaCache
         {
             ConstraintRule constraintRule = (ConstraintRule) rule;
             constraintRuleById.put( constraintRule.getId(), constraintRule );
-            constraints.add( ConstraintBoundary.map( constraintSemantics.readConstraint( constraintRule ) ) );
+            constraints.add( constraintSemantics.readConstraint( constraintRule ) );
         }
         else if ( rule instanceof IndexRule )
         {
@@ -166,7 +166,7 @@ public class SchemaCache
         if ( constraintRuleById.containsKey( id ) )
         {
             ConstraintRule rule = constraintRuleById.remove( id );
-            constraints.remove( ConstraintBoundary.map( constraintSemantics.readConstraint( rule ) ) );
+            constraints.remove( constraintSemantics.readConstraint( rule ) );
         }
         else if ( indexRuleById.containsKey( id ) )
         {

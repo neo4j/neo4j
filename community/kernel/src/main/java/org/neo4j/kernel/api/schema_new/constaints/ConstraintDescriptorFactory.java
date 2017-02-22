@@ -19,41 +19,75 @@
  */
 package org.neo4j.kernel.api.schema_new.constaints;
 
+import org.neo4j.kernel.api.schema_new.LabelSchemaDescriptor;
+import org.neo4j.kernel.api.schema_new.RelationTypeSchemaDescriptor;
+import org.neo4j.kernel.api.schema_new.SchemaComputer;
 import org.neo4j.kernel.api.schema_new.SchemaDescriptor;
 import org.neo4j.kernel.api.schema_new.SchemaDescriptorFactory;
+import org.neo4j.kernel.api.schema_new.SchemaUtil;
 
-import static org.neo4j.kernel.api.schema_new.constaints.ConstraintDescriptor.Type.EXISTS;
-import static org.neo4j.kernel.api.schema_new.constaints.ConstraintDescriptor.Type.UNIQUE;
+import static java.lang.String.format;
 
 public class ConstraintDescriptorFactory
 {
-    public static ConstraintDescriptor existsForLabel( int labelId, int... propertyIds )
+    public static NodeExistenceConstraintDescriptor existsForLabel( int labelId, int... propertyIds )
     {
-        return existsForSchema( SchemaDescriptorFactory.forLabel( labelId, propertyIds ) );
+        return new NodeExistenceConstraintDescriptor( SchemaDescriptorFactory.forLabel( labelId, propertyIds ) );
     }
 
-    public static ConstraintDescriptor existsForRelType( int relTypeId, int... propertyIds )
+    public static RelExistenceConstraintDescriptor existsForRelType( int relTypeId, int... propertyIds )
     {
-        return existsForSchema( SchemaDescriptorFactory.forRelType( relTypeId, propertyIds ) );
+        return new RelExistenceConstraintDescriptor( SchemaDescriptorFactory.forRelType( relTypeId, propertyIds ) );
     }
 
-    public static ConstraintDescriptor uniqueForLabel( int labelId, int... propertyIds )
+    public static UniquenessConstraintDescriptor uniqueForLabel( int labelId, int... propertyIds )
     {
-        return uniqueForSchema( SchemaDescriptorFactory.forLabel( labelId, propertyIds ) );
-    }
-
-    public static ConstraintDescriptor uniqueForRelType( int relTypeId, int... propertyIds )
-    {
-        return uniqueForSchema( SchemaDescriptorFactory.forRelType( relTypeId, propertyIds ) );
+        return new UniquenessConstraintDescriptor( SchemaDescriptorFactory.forLabel( labelId, propertyIds ) );
     }
 
     public static ConstraintDescriptor existsForSchema( SchemaDescriptor schema )
     {
-        return new ConstraintDescriptor( schema, EXISTS );
+        return schema.computeWith( convertToExistenceConstraint );
     }
 
-    public static ConstraintDescriptor uniqueForSchema( SchemaDescriptor schema )
+    public static UniquenessConstraintDescriptor uniqueForSchema( SchemaDescriptor schema )
     {
-        return new ConstraintDescriptor( schema, UNIQUE );
+        return schema.computeWith( convertToUniquenessConstraint );
     }
+
+    private static SchemaComputer<ConstraintDescriptor> convertToExistenceConstraint =
+            new SchemaComputer<ConstraintDescriptor>()
+            {
+                @Override
+                public ConstraintDescriptor computeSpecific( LabelSchemaDescriptor schema )
+                {
+                    return new NodeExistenceConstraintDescriptor( schema );
+                }
+
+                @Override
+                public ConstraintDescriptor computeSpecific( RelationTypeSchemaDescriptor schema )
+                {
+                    return new RelExistenceConstraintDescriptor( schema );
+                }
+            };
+
+    private static SchemaComputer<UniquenessConstraintDescriptor> convertToUniquenessConstraint =
+            new SchemaComputer<UniquenessConstraintDescriptor>()
+            {
+                @Override
+                public UniquenessConstraintDescriptor computeSpecific( LabelSchemaDescriptor schema )
+                {
+                    return new UniquenessConstraintDescriptor( schema );
+                }
+
+                @Override
+                public UniquenessConstraintDescriptor computeSpecific( RelationTypeSchemaDescriptor schema )
+                {
+                    throw new UnsupportedOperationException(
+                            format( "Cannot create uniqueness constraint for schema '%s' of type %s",
+                                    schema.userDescription( SchemaUtil.idTokenNameLookup ),
+                                    schema.getClass().getSimpleName()
+                            ) );
+                }
+            };
 }

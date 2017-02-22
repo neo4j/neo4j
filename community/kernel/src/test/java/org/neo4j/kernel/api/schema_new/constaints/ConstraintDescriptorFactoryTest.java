@@ -55,10 +55,6 @@ public class ConstraintDescriptorFactoryTest
         desc = ConstraintDescriptorFactory.uniqueForLabel( LABEL_ID, 1 );
         assertThat( desc.type(), equalTo( ConstraintDescriptor.Type.UNIQUE ) );
         assertThat( desc.schema(), equalTo( SchemaDescriptorFactory.forLabel( LABEL_ID, 1 ) ) );
-
-        desc = ConstraintDescriptorFactory.uniqueForRelType( REL_TYPE_ID, 1 );
-        assertThat( desc.type(), equalTo( ConstraintDescriptor.Type.UNIQUE ) );
-        assertThat( desc.schema(), equalTo( SchemaDescriptorFactory.forRelType( REL_TYPE_ID, 1 ) ) );
     }
 
     @Test
@@ -89,10 +85,6 @@ public class ConstraintDescriptorFactoryTest
         desc2 = ConstraintDescriptorFactory.existsForLabel( LABEL_ID, 1 );
         assertEquality( desc1, desc2 );
 
-        desc1 = ConstraintDescriptorFactory.uniqueForRelType( REL_TYPE_ID, 1 );
-        desc2 = ConstraintDescriptorFactory.uniqueForRelType( REL_TYPE_ID, 1 );
-        assertEquality( desc1, desc2 );
-
         desc1 = ConstraintDescriptorFactory.existsForRelType( LABEL_ID, 1 );
         desc2 = ConstraintDescriptorFactory.existsForRelType( LABEL_ID, 1 );
         assertEquality( desc1, desc2 );
@@ -107,7 +99,5 @@ public class ConstraintDescriptorFactoryTest
                 equalTo( "Constraint( EXISTS, -[:RelType1(property3)]- )" ) );
         assertThat( ConstraintDescriptorFactory.uniqueForLabel( 2, 4 ).userDescription( simpleNameLookup ),
                 equalTo( "Constraint( UNIQUE, :Label2(property4) )" ) );
-        assertThat( ConstraintDescriptorFactory.uniqueForRelType( 2, 5 ).userDescription( simpleNameLookup ),
-                equalTo( "Constraint( UNIQUE, -[:RelType2(property5)]- )" ) );
     }
 }

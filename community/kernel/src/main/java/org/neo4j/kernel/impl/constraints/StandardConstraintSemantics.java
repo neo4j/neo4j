@@ -22,12 +22,13 @@ package org.neo4j.kernel.impl.constraints;
 import java.util.Iterator;
 
 import org.neo4j.cursor.Cursor;
-import org.neo4j.kernel.api.constraints.PropertyConstraint;
 import org.neo4j.kernel.api.exceptions.schema.CreateConstraintFailureException;
 import org.neo4j.kernel.api.schema_new.LabelSchemaDescriptor;
 import org.neo4j.kernel.api.schema_new.RelationTypeSchemaDescriptor;
-import org.neo4j.kernel.api.schema_new.constaints.ConstraintBoundary;
+import org.neo4j.kernel.api.schema_new.SchemaDescriptor;
 import org.neo4j.kernel.api.schema_new.constaints.ConstraintDescriptor;
+import org.neo4j.kernel.api.schema_new.constaints.ConstraintDescriptorFactory;
+import org.neo4j.kernel.api.schema_new.constaints.UniquenessConstraintDescriptor;
 import org.neo4j.kernel.impl.store.record.ConstraintRule;
 import org.neo4j.storageengine.api.NodeItem;
 import org.neo4j.storageengine.api.RelationshipItem;
@@ -45,44 +46,44 @@ public class StandardConstraintSemantics implements ConstraintSemantics
     public void validateExistenceConstraint( Iterator<Cursor<NodeItem>> allNodes, LabelSchemaDescriptor descriptor )
             throws CreateConstraintFailureException
     {
-        // TODO: fix exceptions
-        throw propertyExistenceConstraintsNotAllowed( null );
+        throw propertyExistenceConstraintsNotAllowed( descriptor );
     }
 
     @Override
     public void validateExistenceConstraint( Cursor<RelationshipItem> allRels, RelationTypeSchemaDescriptor descriptor )
             throws CreateConstraintFailureException
     {
-        // TODO: fix exceptions
-        throw propertyExistenceConstraintsNotAllowed( null );
+        throw propertyExistenceConstraintsNotAllowed( descriptor );
     }
 
     @Override
-    public PropertyConstraint readConstraint( ConstraintRule rule )
+    public ConstraintDescriptor readConstraint( ConstraintRule rule )
     {
         ConstraintDescriptor desc = rule.getConstraintDescriptor();
         if ( desc.type() == UNIQUE )
         {
-            return ConstraintBoundary.map( desc );
+            return desc;
         }
         return readNonStandardConstraint( rule );
     }
 
-    protected PropertyConstraint readNonStandardConstraint( ConstraintRule rule )
+    protected ConstraintDescriptor readNonStandardConstraint( ConstraintRule rule )
     {
         // When opening a store in Community Edition that contains a Property Existence Constraint
         throw new IllegalStateException( ERROR_MESSAGE );
     }
 
-    private CreateConstraintFailureException propertyExistenceConstraintsNotAllowed( ConstraintDescriptor constraint )
+    private CreateConstraintFailureException propertyExistenceConstraintsNotAllowed( SchemaDescriptor descriptor )
     {
         // When creating a Property Existence Constraint in Community Edition
-        return new CreateConstraintFailureException( constraint, new IllegalStateException( ERROR_MESSAGE ) );
+        return new CreateConstraintFailureException(
+                    ConstraintDescriptorFactory.existsForSchema( descriptor ),
+                    new IllegalStateException( ERROR_MESSAGE ) );
     }
 
     @Override
-    public ConstraintRule createUniquenessConstraintRule( long ruleId, ConstraintDescriptor descriptor,
-            long indexId )
+    public ConstraintRule createUniquenessConstraintRule(
+            long ruleId, UniquenessConstraintDescriptor descriptor, long indexId )
     {
         return ConstraintRule.constraintRule( ruleId, descriptor, indexId );
     }
@@ -91,7 +92,7 @@ public class StandardConstraintSemantics implements ConstraintSemantics
     public ConstraintRule createExistenceConstraint( long ruleId, ConstraintDescriptor descriptor )
             throws CreateConstraintFailureException
     {
-        throw propertyExistenceConstraintsNotAllowed( descriptor );
+        throw propertyExistenceConstraintsNotAllowed( descriptor.schema() );
     }
 
     @Override

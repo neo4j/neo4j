@@ -55,6 +55,7 @@ import org.neo4j.kernel.api.schema_new.IndexQuery;
 import org.neo4j.kernel.api.schema_new.SchemaBoundary;
 import org.neo4j.kernel.api.schema_new.SchemaDescriptorFactory;
 import org.neo4j.kernel.api.schema_new.constaints.ConstraintDescriptor;
+import org.neo4j.kernel.api.schema_new.constaints.UniquenessConstraintDescriptor;
 import org.neo4j.kernel.api.schema_new.index.NewIndexDescriptor;
 import org.neo4j.kernel.impl.api.operations.EntityOperations;
 import org.neo4j.kernel.impl.api.operations.EntityReadOperations;
@@ -108,12 +109,13 @@ public class ConstraintEnforcingEntityOperations implements EntityOperations, Sc
                 ConstraintDescriptor constraint = constraints.next();
                 if ( constraint.type() == UNIQUE )
                 {
+                    UniquenessConstraintDescriptor uniqueConstraint = (UniquenessConstraintDescriptor) constraint;
                     // TODO: Support composite indexes
-                    Object propertyValue = node.getProperty( constraint.schema().getPropertyIds()[0] );
+                    Object propertyValue = node.getProperty( uniqueConstraint.schema().getPropertyId() );
                     if ( propertyValue != null )
                     {
                         // TODO: Support composite indexes
-                        validateNoExistingNodeWithLabelAndProperty( state, constraint, propertyValue, node.id() );
+                        validateNoExistingNodeWithLabelAndProperty( state, uniqueConstraint, propertyValue, node.id() );
                     }
                 }
             }
@@ -136,10 +138,14 @@ public class ConstraintEnforcingEntityOperations implements EntityOperations, Sc
                 Iterator<ConstraintDescriptor> constraints =
                         schemaReadOperations.constraintsGetForSchema( state,
                                 SchemaDescriptorFactory.forLabel( labelId, propertyKeyId ) );
-                if ( constraints.hasNext() )
+                while ( constraints.hasNext() )
                 {
                     ConstraintDescriptor constraint = constraints.next();
-                    validateNoExistingNodeWithLabelAndProperty( state, constraint, property.value(), node.id() );
+                    if ( constraint.type() == UNIQUE )
+                    {
+                        validateNoExistingNodeWithLabelAndProperty(
+                                state, (UniquenessConstraintDescriptor) constraint, property.value(), node.id() );
+                    }
                 }
                 return false;
             } );
@@ -150,7 +156,7 @@ public class ConstraintEnforcingEntityOperations implements EntityOperations, Sc
 
     private void validateNoExistingNodeWithLabelAndProperty(
             KernelStatement state,
-            ConstraintDescriptor constraint,
+            UniquenessConstraintDescriptor constraint,
             Object value,
             long modifiedNode
     ) throws ConstraintValidationException

@@ -47,6 +47,7 @@ import org.neo4j.kernel.api.schema.NodePropertyDescriptor;
 import org.neo4j.kernel.api.schema.RelationshipPropertyDescriptor;
 import org.neo4j.kernel.api.schema_new.constaints.ConstraintDescriptor;
 import org.neo4j.kernel.api.schema_new.constaints.ConstraintDescriptorFactory;
+import org.neo4j.kernel.api.schema_new.constaints.UniquenessConstraintDescriptor;
 import org.neo4j.kernel.api.schema_new.index.NewIndexDescriptor;
 import org.neo4j.kernel.api.schema_new.index.NewIndexDescriptorFactory;
 import org.neo4j.kernel.api.txstate.TransactionState;
@@ -939,7 +940,7 @@ public class TxStateTest
     public void shouldAddUniquenessConstraint() throws Exception
     {
         // when
-        ConstraintDescriptor constraint = ConstraintDescriptorFactory.uniqueForLabel( 1, 17 );
+        UniquenessConstraintDescriptor constraint = ConstraintDescriptorFactory.uniqueForLabel( 1, 17 );
         state.constraintDoAdd( constraint, 7 );
 
         // then
@@ -953,11 +954,11 @@ public class TxStateTest
     public void addingUniquenessConstraintShouldBeIdempotent() throws Exception
     {
         // given
-        ConstraintDescriptor constraint1 = ConstraintDescriptorFactory.uniqueForLabel( 1, 17 );
+        UniquenessConstraintDescriptor constraint1 = ConstraintDescriptorFactory.uniqueForLabel( 1, 17 );
         state.constraintDoAdd( constraint1, 7 );
 
         // when
-        ConstraintDescriptor constraint2 = ConstraintDescriptorFactory.uniqueForLabel( 1, 17 );
+        UniquenessConstraintDescriptor constraint2 = ConstraintDescriptorFactory.uniqueForLabel( 1, 17 );
         state.constraintDoAdd( constraint2, 19 );
 
         // then
@@ -969,9 +970,9 @@ public class TxStateTest
     public void shouldDifferentiateBetweenUniquenessConstraintsForDifferentLabels() throws Exception
     {
         // when
-        ConstraintDescriptor constraint1 = ConstraintDescriptorFactory.uniqueForLabel( 1, 17 );
+        UniquenessConstraintDescriptor constraint1 = ConstraintDescriptorFactory.uniqueForLabel( 1, 17 );
         state.constraintDoAdd( constraint1, 7 );
-        ConstraintDescriptor constraint2 = ConstraintDescriptorFactory.uniqueForLabel( 2, 17 );
+        UniquenessConstraintDescriptor constraint2 = ConstraintDescriptorFactory.uniqueForLabel( 2, 17 );
         state.constraintDoAdd( constraint2, 19 );
 
         // then

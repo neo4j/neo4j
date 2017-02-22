@@ -36,6 +36,7 @@ import org.neo4j.kernel.api.schema_new.LabelSchemaDescriptor;
 import org.neo4j.kernel.api.schema_new.SchemaBoundary;
 import org.neo4j.kernel.api.schema_new.constaints.ConstraintDescriptor;
 import org.neo4j.kernel.api.schema_new.constaints.ConstraintDescriptorFactory;
+import org.neo4j.kernel.api.schema_new.constaints.UniquenessConstraintDescriptor;
 import org.neo4j.kernel.api.schema_new.index.IndexBoundary;
 import org.neo4j.kernel.api.schema_new.index.NewIndexDescriptor;
 import org.neo4j.kernel.api.schema_new.index.NewIndexDescriptorFactory;
@@ -111,7 +112,7 @@ public class StateHandlingStatementOperationsTest
     public void shouldNotAddConstraintAlreadyExistsInTheStore() throws Exception
     {
         // given
-        ConstraintDescriptor constraint = ConstraintDescriptorFactory.uniqueForLabel( descriptor1
+        UniquenessConstraintDescriptor constraint = ConstraintDescriptorFactory.uniqueForLabel( descriptor1
                 .getLabelId(), descriptor1.getPropertyKeyId() );
         TransactionState txState = mock( TransactionState.class );
         when( txState.nodesWithLabelChanged( anyInt() ) ).thenReturn( new DiffSets<Long>() );
@@ -152,8 +153,8 @@ public class StateHandlingStatementOperationsTest
     public void shouldGetConstraintsByLabel() throws Exception
     {
         // given
-        ConstraintDescriptor constraint1 = ConstraintDescriptorFactory.uniqueForLabel( 2, 3 );
-        ConstraintDescriptor constraint2 = ConstraintDescriptorFactory.uniqueForLabel( 4, 5 );
+        UniquenessConstraintDescriptor constraint1 = ConstraintDescriptorFactory.uniqueForLabel( 2, 3 );
+        UniquenessConstraintDescriptor constraint2 = ConstraintDescriptorFactory.uniqueForLabel( 4, 5 );
 
         TransactionState txState = new TxState();
         KernelStatement state = mockedState( txState );
