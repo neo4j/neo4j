@@ -91,7 +91,7 @@ public class StoreNodeRelationshipCursor extends StoreAbstractRelationshipCursor
     }
 
     @Override
-    public boolean next()
+    protected boolean fetchNext()
     {
         while ( relationshipId != NO_NEXT_RELATIONSHIP.intValue() )
         {
@@ -178,6 +178,7 @@ public class StoreNodeRelationshipCursor extends StoreAbstractRelationshipCursor
     @Override
     public void close()
     {
+        super.close();
         instanceCache.accept( this );
     }
 

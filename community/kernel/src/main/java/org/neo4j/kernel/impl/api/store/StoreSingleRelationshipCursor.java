@@ -49,7 +49,7 @@ public class StoreSingleRelationshipCursor extends StoreAbstractRelationshipCurs
     }
 
     @Override
-    public boolean next()
+    protected boolean fetchNext()
     {
         if ( relationshipId != StatementConstants.NO_SUCH_RELATIONSHIP )
         {
@@ -69,6 +69,7 @@ public class StoreSingleRelationshipCursor extends StoreAbstractRelationshipCurs
     @Override
     public void close()
     {
+        super.close();
         instanceCache.accept( this );
     }
 }
