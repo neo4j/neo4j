@@ -35,7 +35,7 @@ case class LimitPipe(source: Pipe, exp: Expression)
     //register as parent so that stats are associated with this pipe
     state.decorator.registerParentPipe(this)
 
-    val limit = asInt(exp(state.createEmptyExecutionContext())(state))
+    val limit = asInt(exp(state.createOrGetInitialContext())(state))
 
     input.take(limit)
   }

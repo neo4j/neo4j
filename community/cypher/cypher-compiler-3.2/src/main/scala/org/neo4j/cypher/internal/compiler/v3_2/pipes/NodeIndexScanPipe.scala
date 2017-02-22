@@ -36,7 +36,7 @@ case class NodeIndexScanPipe(ident: String,
     //register as parent so that stats are associated with this pipe
     state.decorator.registerParentPipe(this)
 
-    val baseContext = state.createEmptyExecutionContext()
+    val baseContext = state.createOrGetInitialContext()
     val resultNodes = state.query.indexScan(descriptor)
     resultNodes.map(node => baseContext.newWith1(ident, node))
   }
