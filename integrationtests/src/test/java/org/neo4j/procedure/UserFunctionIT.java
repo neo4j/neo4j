@@ -79,6 +79,7 @@ import static org.neo4j.helpers.collection.Iterables.asList;
 import static org.neo4j.helpers.collection.MapUtil.map;
 import static org.neo4j.logging.AssertableLogProvider.inLog;
 import static org.neo4j.procedure.Mode.WRITE;
+import static org.neo4j.procedure.StringMatcherIgnoresNewlines.containsStringIgnoreNewlines;
 
 public class UserFunctionIT
 {
@@ -110,9 +111,9 @@ public class UserFunctionIT
     {
         //Expect
         exception.expect( QueryExecutionException.class );
-        exception.expectMessage( String.format("Function call does not provide the required number of arguments: expected 1 got 0.%n%n" +
+        exception.expectMessage( containsStringIgnoreNewlines(String.format("Function call does not provide the required number of arguments: expected 1 got 0.%n%n" +
                                  "Function org.neo4j.procedure.simpleArgument has signature: org.neo4j.procedure.simpleArgument(someValue :: INTEGER?) :: INTEGER?%n" +
-                                 "meaning that it expects 1 argument of type INTEGER? (line 1, column 8 (offset: 7))" ));
+                                 "meaning that it expects 1 argument of type INTEGER? (line 1, column 8 (offset: 7))" )));
         // When
         try ( Transaction ignore = db.beginTx() )
         {
@@ -125,10 +126,10 @@ public class UserFunctionIT
     {
         //Expect
         exception.expect( QueryExecutionException.class );
-        exception.expectMessage( String.format("Function call does not provide the required number of arguments: expected 1 got 0.%n%n" +
-                                               "Function org.neo4j.procedure.nodeWithDescription has signature: org.neo4j.procedure.nodeWithDescription(someValue :: NODE?) :: NODE?%n" +
-                                               "meaning that it expects 1 argument of type NODE?%n" +
-                                               "Description: This is a description (line 1, column 8 (offset: 7))" ));
+        exception.expectMessage( containsStringIgnoreNewlines(String.format("Function call does not provide the required number of arguments: expected 1 got 0.%n%n" +
+                                 "Function org.neo4j.procedure.nodeWithDescription has signature: org.neo4j.procedure.nodeWithDescription(someValue :: NODE?) :: NODE?%n" +
+                                 "meaning that it expects 1 argument of type NODE?%n" +
+                                 "Description: This is a description (line 1, column 8 (offset: 7))" )));
         // When
         try ( Transaction ignore = db.beginTx() )
         {
