@@ -42,6 +42,8 @@ abstract class RotationState<Key> extends ProgressiveState<Key>
 
     abstract long rotationVersion();
 
+    abstract ProgressiveState<Key> preState();
+
     static final class Rotation<Key> extends RotationState<Key>
     {
         private final ActiveState<Key> preState;
@@ -56,6 +58,7 @@ abstract class RotationState<Key> extends ProgressiveState<Key>
             this.threshold = version;
         }
 
+        @Override
         ActiveState<Key> rotate( boolean force, RotationStrategy strategy, RotationTimerFactory timerFactory,
                                 Consumer<Headers.Builder> headersUpdater ) throws IOException
         {
@@ -89,7 +92,11 @@ abstract class RotationState<Key> extends ProgressiveState<Key>
         @Override
         public void close() throws IOException
         {
-            preState.close();
+            if ( !failed )
+            {
+                // We can't just close the pre-state (the only good state right now) if the rotation failed.
+                preState.close();
+            }
         }
 
         @Override
@@ -209,6 +216,12 @@ abstract class RotationState<Key> extends ProgressiveState<Key>
         protected boolean lookup( Key key, ValueSink sink ) throws IOException
         {
             return postState.lookup( key, sink );
+        }
+
+        @Override
+        ProgressiveState<Key> preState()
+        {
+            return preState;
         }
     }
 }

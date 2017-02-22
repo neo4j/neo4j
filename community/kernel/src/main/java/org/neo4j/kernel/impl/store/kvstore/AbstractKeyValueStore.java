@@ -49,7 +49,7 @@ public abstract class AbstractKeyValueStore<Key> extends LifecycleAdapter
     private final ReadWriteLock updateLock = new ReentrantReadWriteLock( /*fair=*/true );
     private final Format format;
     final RotationStrategy rotationStrategy;
-    private RotationTimerFactory rotationTimerFactory;
+    private final RotationTimerFactory rotationTimerFactory;
     volatile ProgressiveState<Key> state;
     private DataInitializer<EntryUpdater<Key>> stateInitializer;
     private final FileSystemAbstraction fs;
@@ -300,14 +300,27 @@ public abstract class AbstractKeyValueStore<Key> extends LifecycleAdapter
         {
             try( RotationState<Key> rotation = this.rotation )
             {
-                final long version = rotation.rotationVersion();
-                ProgressiveState<Key> next = rotation.rotate( force, rotationStrategy, rotationTimerFactory,
-                        value -> updateHeaders( value, version ) );
-                try ( LockWrapper ignored = writeLock( updateLock ) )
+                try
                 {
-                    state = next;
+                    final long version = rotation.rotationVersion();
+                    ProgressiveState<Key> next = rotation.rotate( force, rotationStrategy, rotationTimerFactory,
+                            value -> updateHeaders( value, version ) );
+                    try ( LockWrapper ignored = writeLock( updateLock ) )
+                    {
+                        state = next;
+                    }
+                    return version;
                 }
-                return version;
+                catch ( Throwable t )
+                {
+                    // Rotation failed. Here we assume that rotation state remembers this so that closing it
+                    // won't close the state as it was before rotation began, which we're reverting to right here.
+                    try ( LockWrapper ignored = writeLock( updateLock ) )
+                    {
+                        state = rotation.preState();
+                    }
+                    throw t;
+                }
             }
         }
     }

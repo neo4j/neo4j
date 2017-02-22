@@ -71,9 +71,9 @@ public class DebugUtil
         }
     }
 
-    public static boolean currentStackTraceContains( Predicate<StackTraceElement> predicate )
+    public static boolean stackTraceContains( Thread thread, Predicate<StackTraceElement> predicate )
     {
-        for ( StackTraceElement element : Thread.currentThread().getStackTrace() )
+        for ( StackTraceElement element : thread.getStackTrace() )
         {
             if ( predicate.test( element ) )
             {
@@ -81,6 +81,11 @@ public class DebugUtil
             }
         }
         return false;
+    }
+
+    public static boolean currentStackTraceContains( Predicate<StackTraceElement> predicate )
+    {
+        return stackTraceContains( Thread.currentThread(), predicate );
     }
 
     public static Predicate<StackTraceElement> classNameIs( final String className )
@@ -107,6 +112,11 @@ public class DebugUtil
     public static Predicate<StackTraceElement> classAndMethodAre( final Class<?> cls, final String methodName )
     {
         return item -> item.getClassName().equals( cls.getName() ) && item.getMethodName().equals( methodName );
+    }
+
+    public static Predicate<StackTraceElement> methodIs( String methodName )
+    {
+        return item -> item.getMethodName().equals( methodName );
     }
 
     public static class StackTracer
