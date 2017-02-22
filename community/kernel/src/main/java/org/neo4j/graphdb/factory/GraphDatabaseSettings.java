@@ -520,12 +520,10 @@ public class GraphDatabaseSettings implements LoadableConfig
     public static final Setting<String> procedure_unrestricted =
             setting( "dbms.security.procedures.unrestricted", Settings.STRING, "" );
 
-
     @Description( "Whether or not to release the exclusive schema lock is while building uniqueness constraints index" )
     @Internal
     public static final Setting<Boolean> release_schema_lock_while_building_constraint = setting(
             "unsupported.dbms.schema.release_lock_while_building_constraint", BOOLEAN, FALSE );
-
 
     @Description( "A list of procedures (comma separated) that are to be loaded. " +
             "The list may contain both fully-qualified procedure names, and partial names with the wildcard '*'. " +

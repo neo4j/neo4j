@@ -116,7 +116,7 @@ public class ProcedureConfig
 
     private static Pattern compilePattern( String procedure )
     {
-        procedure = procedure.replaceAll( "([\\[\\]\\\\?()\\^${}+|\\-&])", "\\\\$1" );
+        procedure = procedure.replaceAll( "([\\[\\]\\\\?()\\^${}+|])", "\\\\$1" );
         return Pattern.compile( procedure.trim().replaceAll( "\\.", "\\\\." ).replaceAll( "\\*", ".*" ) );
     }
 
