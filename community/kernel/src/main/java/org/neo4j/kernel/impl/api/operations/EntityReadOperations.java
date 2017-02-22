@@ -55,14 +55,6 @@ public interface EntityReadOperations
      *
      * @throws IndexNotFoundKernelException if no such index found.
      */
-    PrimitiveLongIterator nodesGetFromIndexContainsScan( KernelStatement state, NewIndexDescriptor index, String term )
-            throws IndexNotFoundKernelException;
-
-    /**
-     * Returns an iterable with the matched nodes.
-     *
-     * @throws IndexNotFoundKernelException if no such index found.
-     */
     PrimitiveLongIterator nodesGetFromIndexEndsWithScan( KernelStatement state, NewIndexDescriptor index, String suffix )
             throws IndexNotFoundKernelException;
 

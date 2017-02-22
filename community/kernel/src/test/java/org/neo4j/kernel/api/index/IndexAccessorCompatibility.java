@@ -139,11 +139,6 @@ public abstract class IndexAccessorCompatibility extends IndexProviderCompatibil
         assertThat( query( IndexQuery.stringPrefix( 1, "2" ) ), equalTo( EMPTY_LIST ) );
     }
 
-    protected List<Long> getAllNodesFromIndexScanByContains( String term ) throws IOException
-    {
-        return metaGet( reader -> reader.containsString( term ) );
-    }
-
     protected List<Long> getAllNodesFromIndexScanEndsWith( String term ) throws IOException
     {
         return metaGet( reader -> reader.endsWith( term ) );

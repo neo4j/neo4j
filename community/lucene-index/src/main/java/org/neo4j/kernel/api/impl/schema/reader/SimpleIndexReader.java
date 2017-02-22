@@ -140,8 +140,7 @@ public class SimpleIndexReader implements IndexReader
         return query( LuceneDocumentStructure.newScanQuery() );
     }
 
-    @Override
-    public PrimitiveLongIterator containsString( String exactTerm )
+    private PrimitiveLongIterator containsString( String exactTerm )
     {
         return query( LuceneDocumentStructure.newWildCardStringQuery( exactTerm ) );
     }

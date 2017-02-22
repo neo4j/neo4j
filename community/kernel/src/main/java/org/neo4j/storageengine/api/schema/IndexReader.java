@@ -33,14 +33,6 @@ import org.neo4j.kernel.api.schema_new.IndexQuery;
 public interface IndexReader extends Resource
 {
     /**
-     * Searches this index for string values containing the exact search string.
-     *
-     * @param exactTerm the exact string to search for in the index
-     * @return ids of matching nodes.
-     */
-    PrimitiveLongIterator containsString( String exactTerm );
-
-    /**
      * Searches this index for string values ending with the suffix search string.
      *
      * @param suffix the string to search for in the index
@@ -61,12 +53,6 @@ public interface IndexReader extends Resource
 
     IndexReader EMPTY = new IndexReader()
     {
-        @Override
-        public PrimitiveLongIterator containsString( String exactTerm )
-        {
-            return PrimitiveLongCollections.emptyIterator();
-        }
-
         @Override
         public PrimitiveLongIterator endsWith(String suffix)
         {

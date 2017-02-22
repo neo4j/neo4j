@@ -70,12 +70,6 @@ public class PartitionedIndexReader implements IndexReader
     }
 
     @Override
-    public PrimitiveLongIterator containsString( String exactTerm )
-    {
-        return partitionedOperation( reader -> reader. containsString( exactTerm ) );
-    }
-
-    @Override
     public PrimitiveLongIterator endsWith( String suffix )
     {
         return partitionedOperation( reader -> reader.endsWith( suffix ) );

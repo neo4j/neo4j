@@ -142,8 +142,7 @@ class HashBasedIndex extends InMemoryIndexImplementation
         return stringSearch( ( String entry ) -> entry.startsWith( prefix ) );
     }
 
-    @Override
-    public synchronized PrimitiveLongIterator containsString( String exactTerm )
+    private synchronized PrimitiveLongIterator containsString( String exactTerm )
     {
         return stringSearch( ( String entry ) -> entry.contains( exactTerm ) );
     }

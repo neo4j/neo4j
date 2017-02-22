@@ -769,17 +769,6 @@ public class StateHandlingStatementOperations implements
     }
 
     @Override
-    public PrimitiveLongIterator nodesGetFromIndexContainsScan( KernelStatement state, NewIndexDescriptor index,
-            String term )
-            throws IndexNotFoundKernelException
-    {
-        StorageStatement storeStatement = state.getStoreStatement();
-        IndexReader reader = storeStatement.getIndexReader( index );
-        PrimitiveLongIterator committed = reader.containsString( term );
-        return filterIndexStateChangesForScanOrSeek( state, index, null, committed );
-    }
-
-    @Override
     public PrimitiveLongIterator nodesGetFromIndexEndsWithScan( KernelStatement state, NewIndexDescriptor index,
             String suffix ) throws IndexNotFoundKernelException
     {
