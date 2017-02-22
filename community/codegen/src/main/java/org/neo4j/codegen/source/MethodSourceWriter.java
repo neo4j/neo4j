@@ -133,68 +133,23 @@ class MethodSourceWriter implements MethodEmitter, ExpressionVisitor
     }
 
     @Override
-    public void beginWhile( Expression...tests )
+    public void beginWhile( Expression test )
     {
         indent().append( "while( " );
-        String sep = "";
-        for (Expression test: tests)
-        {
-            append( sep );
-            test.accept( this );
-            sep = " && ";
-        }
+        test.accept( this );
         append( " )\n" );
         indent().append( "{\n" );
         level.push( LEVEL );
     }
 
     @Override
-    public void beginIf( Expression...tests )
+    public void beginIf( Expression test )
     {
         indent().append( "if ( " );
-        String sep = "";
-        for (Expression test: tests)
-        {
-            append( sep );
-            test.accept( this );
-            sep = " && ";
-        }
+        test.accept( this );
         append( " )\n" );
         indent().append( "{\n" );
         level.push( LEVEL );
-    }
-
-    @Override
-    public void beginIfNot( Expression...tests )
-    {
-        Expression[] nots = new Expression[tests.length];
-        for ( int i = 0; i < tests.length; i++ )
-        {
-            nots[i] = Expression.not( tests[i] );
-        }
-        beginIf( nots );
-    }
-
-    @Override
-    public void beginIfNull( Expression...tests )
-    {
-        Expression[] nulls = new Expression[tests.length];
-        for ( int i = 0; i < tests.length; i++ )
-        {
-            nulls[i] = Expression.equal(tests[i], Expression.constant( null ) );
-        }
-        beginIf(nulls);
-    }
-
-    @Override
-    public void beginIfNonNull( Expression...tests )
-    {
-        Expression[] notNulls = new Expression[tests.length];
-        for ( int i = 0; i < tests.length; i++ )
-        {
-            notNulls[i] = Expression.not(Expression.equal(tests[i], Expression.constant( null ) ));
-        }
-        beginIf(notNulls);
     }
 
     @Override
@@ -361,37 +316,52 @@ class MethodSourceWriter implements MethodEmitter, ExpressionVisitor
     }
 
     @Override
-    public void ternaryOnNull( Expression test, Expression onTrue, Expression onFalse )
-    {
-        ternary( Expression.equal( test, Expression.constant( null ) ),
-                onTrue, onFalse );
-    }
-
-    @Override
-    public void ternaryOnNonNull( Expression test, Expression onTrue, Expression onFalse )
-    {
-        ternary( Expression.not(
-                Expression.equal( test, Expression.constant( null ) )),
-                onTrue, onFalse );
-    }
-
-    @Override
     public void equal( Expression lhs, Expression rhs )
     {
         binaryOperation( lhs, rhs, " == " );
     }
 
     @Override
-    public void or( Expression lhs, Expression rhs )
+    public void notEqual( Expression lhs, Expression rhs )
     {
-        binaryOperation( lhs, rhs, " || " );
+        binaryOperation( lhs, rhs, " != " );
     }
 
     @Override
-    public void and( Expression lhs, Expression rhs )
+    public void isNull( Expression expression )
     {
-        binaryOperation( lhs, rhs, " && " );
+        expression.accept( this );
+        append( " == null" );
+    }
 
+    @Override
+    public void notNull( Expression expression )
+    {
+        expression.accept( this );
+        append( " != null" );
+    }
+
+    @Override
+    public void or( Expression... expressions )
+    {
+        boolOp( expressions, " || ");
+    }
+
+    @Override
+    public void and( Expression... expressions )
+    {
+        boolOp( expressions, " && ");
+    }
+
+    private void boolOp( Expression[] expressions, String op )
+    {
+        String sep = "";
+        for ( Expression expression : expressions )
+        {
+            append( sep );
+            expression.accept( this );
+            sep = op;
+        }
     }
 
     @Override

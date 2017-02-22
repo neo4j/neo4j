@@ -189,7 +189,7 @@ class AuxGenerator(val packageName: String, val generator: CodeGenerator) {
 
                 l2.assign(compareResult,
                   Expression.invoke(method[java.lang.Double, Int]("compare", typeRef[Double], typeRef[Double]), lhs, rhs))
-                using(l2.ifNotStatement(Expression.equal(compareResult, Expression.constant(0)))) { l3 =>
+                using(l2.ifStatement(Expression.notEqual(compareResult, Expression.constant(0)))) { l3 =>
                   l3.returns(compareResult)
                 }
               }
@@ -206,7 +206,7 @@ class AuxGenerator(val packageName: String, val generator: CodeGenerator) {
                 */
                 val (thisValueVariable, otherValueVariable) = assignComparatorVariablesFor(l2, reprType)
 
-                using(l2.ifNotStatement(Expression.equal(thisValueVariable, otherValueVariable))) { l3 =>
+                using(l2.ifStatement(Expression.notEqual(thisValueVariable, otherValueVariable))) { l3 =>
                   l3.returns(Expression.ternary(thisValueVariable,
                     Expression.constant(greaterThanSortResult(sortOrder)),
                     Expression.constant(lessThanSortResult(sortOrder))))
@@ -225,7 +225,7 @@ class AuxGenerator(val packageName: String, val generator: CodeGenerator) {
                 l2.assign(compareResult,
                   Expression.invoke(method[CompiledOrderabilityUtils, Int]("compare", typeRef[Object], typeRef[Object]),
                     lhs, rhs))
-                using(l2.ifNotStatement(Expression.equal(compareResult, Expression.constant(0)))) { l3 =>
+                using(l2.ifStatement(Expression.notEqual(compareResult, Expression.constant(0)))) { l3 =>
                   l3.returns(compareResult)
                 }
               }

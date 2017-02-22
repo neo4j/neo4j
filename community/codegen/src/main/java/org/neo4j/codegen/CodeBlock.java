@@ -20,11 +20,7 @@
 package org.neo4j.codegen;
 
 import java.util.Iterator;
-import java.util.PrimitiveIterator;
 import java.util.function.Consumer;
-import java.util.stream.DoubleStream;
-import java.util.stream.IntStream;
-import java.util.stream.LongStream;
 
 import static org.neo4j.codegen.LocalVariables.copy;
 import static org.neo4j.codegen.MethodReference.methodReference;
@@ -163,33 +159,15 @@ public class CodeBlock implements AutoCloseable
         return block;
     }
 
-    public CodeBlock whileLoop( Expression...tests )
+    public CodeBlock whileLoop( Expression test )
     {
-        emitter.beginWhile( tests );
+        emitter.beginWhile( test );
         return new CodeBlock( this );
     }
 
-    public CodeBlock ifStatement( Expression...tests )
+    public CodeBlock ifStatement( Expression test )
     {
-        emitter.beginIf( tests );
-        return new CodeBlock( this );
-    }
-
-    public CodeBlock ifNotStatement( Expression...tests )
-    {
-        emitter.beginIfNot( tests );
-        return new CodeBlock( this );
-    }
-
-    public CodeBlock ifNullStatement( Expression...tests )
-    {
-        emitter.beginIfNull( tests );
-        return new CodeBlock( this );
-    }
-
-    public CodeBlock ifNonNullStatement( Expression...tests )
-    {
-        emitter.beginIfNonNull( tests );
+        emitter.beginIf( test );
         return new CodeBlock( this );
     }
 
@@ -201,8 +179,7 @@ public class CodeBlock implements AutoCloseable
 
     public void tryCatch( Consumer<CodeBlock> body, Consumer<CodeBlock> onError, Parameter exception )
     {
-        emitter.tryCatchBlock( body, onError, localVariables.createNew( exception.type(), exception.name() ),
-                this );
+        emitter.tryCatchBlock( body, onError, localVariables.createNew( exception.type(), exception.name() ), this );
     }
 
     public void returns()

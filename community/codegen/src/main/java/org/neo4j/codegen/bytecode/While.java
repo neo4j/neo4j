@@ -28,20 +28,20 @@ import static org.objectweb.asm.Opcodes.GOTO;
 public class While implements Block
 {
     private final MethodVisitor methodVisitor;
-    private final Label l0;
-    private final Label l1;
+    private final Label repeat;
+    private final Label done;
 
-    public While( MethodVisitor methodVisitor, Label l0, Label l1 )
+    public While( MethodVisitor methodVisitor, Label repeat, Label done )
     {
         this.methodVisitor = methodVisitor;
-        this.l0 = l0;
-        this.l1 = l1;
+        this.repeat = repeat;
+        this.done = done;
     }
 
     @Override
     public void endBlock()
     {
-        methodVisitor.visitJumpInsn( GOTO, l0 );
-        methodVisitor.visitLabel( l1 );
+        methodVisitor.visitJumpInsn( GOTO, repeat );
+        methodVisitor.visitLabel( done );
     }
 }

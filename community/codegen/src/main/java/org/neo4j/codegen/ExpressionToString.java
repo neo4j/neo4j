@@ -133,21 +133,6 @@ class ExpressionToString implements ExpressionVisitor
     }
 
     @Override
-    public void ternaryOnNull( Expression test, Expression onTrue, Expression onFalse )
-    {
-        ternary( Expression.equal( test, Expression.constant( null ) ),
-                onTrue, onFalse );
-    }
-
-    @Override
-    public void ternaryOnNonNull( Expression test, Expression onTrue, Expression onFalse )
-    {
-        ternary( Expression.not(
-                Expression.equal( test, Expression.constant( null ) ) ),
-                onTrue, onFalse );
-    }
-
-    @Override
     public void equal( Expression lhs, Expression rhs )
     {
         result.append( "equal(" );
@@ -158,9 +143,9 @@ class ExpressionToString implements ExpressionVisitor
     }
 
     @Override
-    public void or( Expression lhs, Expression rhs )
+    public void notEqual( Expression lhs, Expression rhs )
     {
-        result.append( "or(" );
+        result.append( "notEqual(" );
         lhs.accept( this );
         result.append( ", " );
         rhs.accept( this );
@@ -168,12 +153,41 @@ class ExpressionToString implements ExpressionVisitor
     }
 
     @Override
-    public void and( Expression lhs, Expression rhs )
+    public void isNull( Expression expression )
     {
-        result.append( "and(" );
-        lhs.accept( this );
-        result.append( ", " );
-        rhs.accept( this );
+        result.append( "isNull(" );
+        expression.accept( this );
+        result.append( ")" );
+    }
+
+    @Override
+    public void notNull( Expression expression )
+    {
+        result.append( "notNull(" );
+        expression.accept( this );
+        result.append( ")" );
+    }
+
+    @Override
+    public void or( Expression... expressions )
+    {
+        boolOp( "or(", expressions );
+    }
+
+    @Override
+    public void and( Expression... expressions )
+    {
+        boolOp( "and(", expressions );
+    }
+
+    private void boolOp( String sep, Expression[] expressions )
+    {
+        for ( Expression expression : expressions )
+        {
+            result.append( sep );
+            expression.accept( this );
+            sep = ", ";
+        }
         result.append( ")" );
     }
 

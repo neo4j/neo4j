@@ -182,13 +182,13 @@ class GeneratedMethodStructure(val fields: Fields, val generator: CodeBlock, aux
   }
 
   override def ifNotStatement(test: Expression)(block: (MethodStructure[Expression]) => Unit) = {
-    using(generator.ifNotStatement(test)) { body =>
+    using(generator.ifStatement(not(test))) { body =>
       block(copy(generator = body))
     }
   }
 
   override def ifNonNullStatement(test: Expression)(block: (MethodStructure[Expression]) => Unit) = {
-    using(generator.ifNonNullStatement(test)) { body =>
+    using(generator.ifStatement(Expression.notNull(test))) { body =>
       block(copy(generator = body))
     }
   }
@@ -239,9 +239,9 @@ class GeneratedMethodStructure(val fields: Fields, val generator: CodeBlock, aux
 
   override def visitorAccept() = tryCatch(generator) { onSuccess =>
     using(
-      onSuccess.ifNotStatement(
-        invoke(onSuccess.load("visitor"),
-               visit, onSuccess.load("row")))) { body =>
+      onSuccess.ifStatement(
+        not(invoke(onSuccess.load("visitor"),
+               visit, onSuccess.load("row"))))) { body =>
       // NOTE: we are in this if-block if the visitor decided to terminate early (by returning false)
       //close all outstanding events
       for (event <- events) {
@@ -278,7 +278,7 @@ class GeneratedMethodStructure(val fields: Fields, val generator: CodeBlock, aux
         equal(nullValue(codeGenType), generator.load(varName)),
         nullValue(codeGenType),
         onSuccess)
-    case _ => ternaryOnNull(generator.load(varName), constant(null), onSuccess)
+    case _ => ternary(Expression.isNull(generator.load(varName)), constant(null), onSuccess)
   }
 
   override def nullableReference(varName: String, codeGenType: CodeGenType, onSuccess: Expression) = codeGenType match {
@@ -287,7 +287,7 @@ class GeneratedMethodStructure(val fields: Fields, val generator: CodeBlock, aux
         equal(nullValue(codeGenType), generator.load(varName)),
         constant(null),
         onSuccess)
-    case _ => ternaryOnNull(generator.load(varName), constant(null), onSuccess)
+    case _ => ternary(Expression.isNull(generator.load(varName)), constant(null), onSuccess)
   }
 
   override def materializeRelationship(relIdVar: String, codeGenType: CodeGenType) =
@@ -326,7 +326,7 @@ class GeneratedMethodStructure(val fields: Fields, val generator: CodeBlock, aux
 
   override def expectParameter(key: String, variableName: String, codeGenType: CodeGenType) = {
     using(
-      generator.ifNotStatement(invoke(params, mapContains, constant(key)))) { block =>
+      generator.ifStatement(not(invoke(params, mapContains, constant(key))))) { block =>
       block.throwException(parameterNotFoundException(key))
     }
     val invokeLoadParameter = invoke(loadParameter, invoke(params, mapGet, constantExpression(key)))
@@ -622,15 +622,15 @@ class GeneratedMethodStructure(val fields: Fields, val generator: CodeBlock, aux
                                        (block: MethodStructure[Expression] => Unit) = {
     if (structure.size == 1 && structure.head._2._1.repr == IntType) {
       val (_, (_, value)) = structure.head
-      using(generator.ifNotStatement(invoke(generator.load(name),
-                                            method[PrimitiveLongSet, Boolean]("contains", typeRef[Long]), value))) { body =>
+      using(generator.ifStatement(not(invoke(generator.load(name),
+                                             method[PrimitiveLongSet, Boolean]("contains", typeRef[Long]), value)))) { body =>
         body.expression(pop(invoke(generator.load(name), method[PrimitiveLongSet, Boolean]("add", typeRef[Long]), value)))
         block(copy(generator = body))
       }
     } else {
       val tmpName = context.namer.newVarName()
       newUniqueAggregationKey(tmpName, structure)
-      using(generator.ifNotStatement(invoke(generator.load(name), Methods.setContains, generator.load(tmpName)))) { body =>
+      using(generator.ifStatement(not(invoke(generator.load(name), Methods.setContains, generator.load(tmpName))))) { body =>
         body.expression(pop(invoke(loadVariable(name), Methods.setAdd, generator.load(tmpName))))
         block(copy(generator = body))
       }
@@ -812,16 +812,16 @@ class GeneratedMethodStructure(val fields: Fields, val generator: CodeBlock, aux
                                      keyExpression)))
 
 
-        using(generator.ifNullStatement(generator.load(tmp))) { inner =>
+        using(generator.ifStatement(Expression.isNull(generator.load(tmp)))) { inner =>
           inner.assign(localVariable, invoke(method[Primitive, PrimitiveLongSet]("longSet")))
           inner.expression(pop(invoke(generator.load(name),
                                       method[PrimitiveLongObjectMap[Object], Object]("put", typeRef[Long],
                                                                                      typeRef[Object]),
                                       keyExpression, inner.load(tmp))))
         }
-        using(generator.ifNotStatement(invoke(generator.load(tmp),
-                                              method[PrimitiveLongSet, Boolean]("contains", typeRef[Long]),
-                                              value))) { inner =>
+        using(generator.ifStatement(not(invoke(generator.load(tmp),
+                                               method[PrimitiveLongSet, Boolean]("contains", typeRef[Long]),
+                                               value)))) { inner =>
           block(copy(generator = inner))
         }
         generator.expression(pop(invoke(generator.load(tmp),
@@ -833,16 +833,16 @@ class GeneratedMethodStructure(val fields: Fields, val generator: CodeBlock, aux
                               invoke(generator.load(name),
                                      method[PrimitiveLongObjectMap[Object], Object]("get", typeRef[Long]),
                                      keyExpression)))
-        using(generator.ifNullStatement(generator.load(tmp))) { inner =>
+        using(generator.ifStatement(Expression.isNull(generator.load(tmp)))) { inner =>
           inner.assign(localVariable, createNewInstance(typeRef[util.HashSet[Object]]))
           inner.expression(pop(invoke(generator.load(name),
                                       method[PrimitiveLongObjectMap[Object], Object]("put", typeRef[Long],
                                                                                      typeRef[Object]),
                                       keyExpression, inner.load(tmp))))
         }
-        using(generator.ifNotStatement(invoke(generator.load(tmp),
-                                              method[util.HashSet[Object], Boolean]("contains", typeRef[Object]),
-                                              value))) { inner =>
+        using(generator.ifStatement(not(invoke(generator.load(tmp),
+                                               method[util.HashSet[Object], Boolean]("contains", typeRef[Object]),
+                                               value)))) { inner =>
           block(copy(generator = inner))
         }
         generator.expression(pop(invoke(generator.load(tmp),
@@ -859,7 +859,7 @@ class GeneratedMethodStructure(val fields: Fields, val generator: CodeBlock, aux
                               invoke(generator.load(name),
                                      method[util.HashMap[Object, PrimitiveLongSet], Object]("get", typeRef[Object]),
                                      generator.load(keyVar))))
-        using(generator.ifNullStatement(generator.load(setVar))) { inner =>
+        using(generator.ifStatement(Expression.isNull(generator.load(setVar)))) { inner =>
 
           inner.assign(localVariable, invoke(method[Primitive, PrimitiveLongSet]("longSet")))
           inner.expression(pop(invoke(generator.load(name),
@@ -868,9 +868,9 @@ class GeneratedMethodStructure(val fields: Fields, val generator: CodeBlock, aux
                                       generator.load(keyVar), inner.load(setVar))))
         }
 
-        using(generator.ifNotStatement(invoke(generator.load(setVar),
-                                              method[PrimitiveLongSet, Boolean]("contains", typeRef[Long]),
-                                              value))) { inner =>
+        using(generator.ifStatement(not(invoke(generator.load(setVar),
+                                               method[PrimitiveLongSet, Boolean]("contains", typeRef[Long]),
+                                               value)))) { inner =>
           block(copy(generator = inner))
           inner.expression(pop(invoke(generator.load(setVar),
                                       method[PrimitiveLongSet, Boolean]("add", typeRef[Long]),
@@ -885,7 +885,7 @@ class GeneratedMethodStructure(val fields: Fields, val generator: CodeBlock, aux
                               invoke(generator.load(name),
                                      method[util.HashMap[Object, util.HashSet[Object]], Object]("get", typeRef[Object]),
                                      generator.load(keyVar))))
-        using(generator.ifNullStatement(generator.load(setVar))) { inner =>
+        using(generator.ifStatement(Expression.isNull(generator.load(setVar)))) { inner =>
 
           inner.assign(localVariable, createNewInstance(typeRef[util.HashSet[Object]]))
           inner.expression(pop(invoke(generator.load(name),
@@ -896,9 +896,9 @@ class GeneratedMethodStructure(val fields: Fields, val generator: CodeBlock, aux
         val valueVar = context.namer.newVarName()
         newUniqueAggregationKey(valueVar, Map(context.namer.newVarName() -> (valueType -> value)))
 
-        using(generator.ifNotStatement(invoke(generator.load(setVar),
-                                              method[util.HashSet[Object], Boolean]("contains", typeRef[Object]),
-                                              generator.load(valueVar)))) { inner =>
+        using(generator.ifStatement(not(invoke(generator.load(setVar),
+                                               method[util.HashSet[Object], Boolean]("contains", typeRef[Object]),
+                                               generator.load(valueVar))))) { inner =>
           block(copy(generator = inner))
           inner.expression(pop(invoke(generator.load(setVar),
                                       method[util.HashSet[Object], Boolean]("add", typeRef[Object]),
@@ -1064,7 +1064,7 @@ class GeneratedMethodStructure(val fields: Fields, val generator: CodeBlock, aux
         pop(
           invoke(generator.load(tableVar), countingTableCompositeKeyPut,
                  generator.load(keyName),
-                 ternaryOnNull(generator.load(countName),
+                 ternary(Expression.isNull(generator.load(countName)),
                                box(constant(1)), box(add(invoke(generator.load(countName), unboxInteger), constant(1)))))))
   }
 
@@ -1090,8 +1090,8 @@ class GeneratedMethodStructure(val fields: Fields, val generator: CodeBlock, aux
                                           newArray(typeRef[Long],
                                                    keyVars.map(generator.load): _*)))))
       generator.assign(times,
-                       ternaryOnNull(
-                         intermediate,
+                       ternary(
+                         Expression.isNull(intermediate),
                          constant(-1),
                          invoke(intermediate, unboxInteger)))
 
@@ -1109,7 +1109,7 @@ class GeneratedMethodStructure(val fields: Fields, val generator: CodeBlock, aux
       val list = generator.declare(hashTable.listType, context.namer.newVarName())
       val elementName = context.namer.newVarName()
       generator.assign(list, invoke(generator.load(tableVar), hashTable.get, generator.load(keyVar)))
-      using(generator.ifNonNullStatement(list)) { onTrue =>
+      using(generator.ifStatement(Expression.notNull(list))) { onTrue =>
         using(onTrue.forEach(Parameter.param(hashTable.valueType, elementName), list)) { forEach =>
           localVars.foreach {
             case (l, f) =>
@@ -1133,7 +1133,7 @@ class GeneratedMethodStructure(val fields: Fields, val generator: CodeBlock, aux
                                           newArray(typeRef[Long],
                                                    keyVars.map(generator.load): _*))
                             )))
-      using(generator.ifNonNullStatement(list)) { onTrue =>
+      using(generator.ifStatement(Expression.notNull(list))) { onTrue =>
         using(onTrue.forEach(Parameter.param(hashTable.valueType, elementName), list)) { forEach =>
           localVars.foreach {
             case (l, f) =>
@@ -1170,7 +1170,7 @@ class GeneratedMethodStructure(val fields: Fields, val generator: CodeBlock, aux
                             invoke(
                               generator.load(tableVar), hashTable.get,
                               generator.load(keyVar))))
-      using(generator.ifNullStatement(list)) { onTrue => // if (null == list)
+      using(generator.ifStatement(Expression.isNull(list))) { onTrue => // if (null == list)
         // list = new ListType();
         onTrue.assign(list, createNewInstance(hashTable.listType))
         onTrue.expression(
@@ -1198,7 +1198,7 @@ class GeneratedMethodStructure(val fields: Fields, val generator: CodeBlock, aux
       generator.assign(list,
                        cast(hashTable.listType,
                             invoke(generator.load(tableVar), hashTable.get, generator.load(keyName))))
-      using(generator.ifNullStatement(generator.load(listName))) { onTrue => // if (null == list)
+      using(generator.ifStatement(Expression.isNull(generator.load(listName)))) { onTrue => // if (null == list)
         // list = new ListType();
         onTrue.assign(list, createNewInstance(hashTable.listType))
         // tableVar.put(keyVar, list);
@@ -1302,10 +1302,10 @@ class GeneratedMethodStructure(val fields: Fields, val generator: CodeBlock, aux
       case _ =>
         throw new IllegalArgumentException(s"CodeGenType $codeGenType can not be converted to long")
     }
-    using(generator.ifStatement(
+    using(generator.ifStatement(and(
       gt(generator.load(nodeIdVar), constant(-1L)),
       invoke(readOperations, nodeExists, generator.load(nodeIdVar))
-    )) { ifBody =>
+    ))) { ifBody =>
       block(copy(generator = ifBody))
     }
   }

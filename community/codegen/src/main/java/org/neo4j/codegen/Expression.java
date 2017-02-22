@@ -19,6 +19,8 @@
  */
 package org.neo4j.codegen;
 
+import java.util.Arrays;
+
 import static org.neo4j.codegen.TypeReference.BOOLEAN;
 import static org.neo4j.codegen.TypeReference.DOUBLE;
 import static org.neo4j.codegen.TypeReference.INT;
@@ -29,6 +31,22 @@ import static org.neo4j.codegen.TypeReference.typeReference;
 
 public abstract class Expression extends ExpressionTemplate
 {
+    public static final Expression TRUE = new Constant( BOOLEAN, Boolean.TRUE )
+    {
+        @Override
+        Expression not()
+        {
+            return FALSE;
+        }
+    }, FALSE = new Constant( BOOLEAN, Boolean.FALSE )
+    {
+        @Override
+        Expression not()
+        {
+            return TRUE;
+        }
+    }, NULL = new Constant( OBJECT, null );
+
     protected Expression( TypeReference type )
     {
         super( type );
@@ -54,6 +72,12 @@ public abstract class Expression extends ExpressionTemplate
             {
                 visitor.gt( lhs, rhs );
             }
+
+            @Override
+            Expression not()
+            {
+                return lte( lhs, rhs );
+            }
         };
     }
 
@@ -65,6 +89,12 @@ public abstract class Expression extends ExpressionTemplate
             public void accept( ExpressionVisitor visitor )
             {
                 visitor.gte( lhs, rhs );
+            }
+
+            @Override
+            Expression not()
+            {
+                return lt( lhs, rhs );
             }
         };
     }
@@ -78,6 +108,12 @@ public abstract class Expression extends ExpressionTemplate
             {
                 visitor.lt( lhs, rhs );
             }
+
+            @Override
+            Expression not()
+            {
+                return gte( lhs, rhs );
+            }
         };
     }
 
@@ -90,41 +126,228 @@ public abstract class Expression extends ExpressionTemplate
             {
                 visitor.lte( lhs, rhs );
             }
+
+            @Override
+            Expression not()
+            {
+                return gt( lhs, rhs );
+            }
         };
     }
 
     public static Expression and( final Expression lhs, final Expression rhs )
     {
-        return new Expression( BOOLEAN )
+        if ( lhs == FALSE || rhs == FALSE )
         {
-            @Override
-            public void accept( ExpressionVisitor visitor )
+            return FALSE;
+        }
+        if ( lhs == TRUE )
+        {
+            return rhs;
+        }
+        if ( rhs == TRUE )
+        {
+            return lhs;
+        }
+        Expression[] expressions;
+        if ( lhs instanceof And )
+        {
+            if ( rhs instanceof And )
             {
-                visitor.and( lhs, rhs );
+                expressions = expressions( ((And) lhs).expressions, ((And) rhs).expressions );
             }
-        };
+            else
+            {
+                expressions = expressions( ((And) lhs).expressions, rhs );
+            }
+        }
+        else if ( rhs instanceof And )
+        {
+            expressions = expressions( lhs, ((And) rhs).expressions );
+        }
+        else
+        {
+            expressions = new Expression[] {lhs, rhs};
+        }
+        return new And( expressions );
     }
 
     public static Expression or( final Expression lhs, final Expression rhs )
     {
-        return new Expression( BOOLEAN )
+        if ( lhs == TRUE || rhs == TRUE )
         {
-            @Override
-            public void accept( ExpressionVisitor visitor )
+            return TRUE;
+        }
+        if ( lhs == FALSE )
+        {
+            return rhs;
+        }
+        if ( rhs == FALSE )
+        {
+            return lhs;
+        }
+        Expression[] expressions;
+        if ( lhs instanceof Or )
+        {
+            if ( rhs instanceof Or )
             {
-                visitor.or( lhs, rhs );
+                expressions = expressions( ((Or) lhs).expressions, ((Or) rhs).expressions );
             }
-        };
+            else
+            {
+                expressions = expressions( ((Or) lhs).expressions, rhs );
+            }
+        }
+        else if ( rhs instanceof Or )
+        {
+            expressions = expressions( lhs, ((Or) rhs).expressions );
+        }
+        else
+        {
+            expressions = new Expression[] {lhs, rhs};
+        }
+        return new Or( expressions );
+    }
+
+    private static class And extends Expression
+    {
+        private final Expression[] expressions;
+
+        And( Expression[] expressions )
+        {
+            super( BOOLEAN );
+            this.expressions = expressions;
+        }
+
+        @Override
+        public void accept( ExpressionVisitor visitor )
+        {
+            visitor.and( expressions );
+        }
+    }
+
+    private static class Or extends Expression
+    {
+        private final Expression[] expressions;
+
+        Or( Expression[] expressions )
+        {
+            super( BOOLEAN );
+            this.expressions = expressions;
+        }
+
+        @Override
+        public void accept( ExpressionVisitor visitor )
+        {
+            visitor.or( expressions );
+        }
+    }
+
+    private static Expression[] expressions( Expression[] some, Expression[] more )
+    {
+        Expression[] result = Arrays.copyOf( some, some.length + more.length );
+        System.arraycopy( more, 0, result, some.length, more.length );
+        return result;
+    }
+
+    private static Expression[] expressions( Expression[] some, Expression last )
+    {
+        Expression[] result = Arrays.copyOf( some, some.length + 1 );
+        result[some.length] = last;
+        return result;
+    }
+
+    private static Expression[] expressions( Expression first, Expression[] more )
+    {
+        Expression[] result = new Expression[more.length];
+        result[0] = first;
+        System.arraycopy( more, 0, result, 1, more.length );
+        return result;
     }
 
     public static Expression equal( final Expression lhs, final Expression rhs )
     {
+        if ( lhs == NULL )
+        {
+            if ( rhs == NULL )
+            {
+                return constant( true );
+            }
+            else
+            {
+                return isNull( rhs );
+            }
+        }
+        else if ( rhs == NULL )
+        {
+            return isNull( lhs );
+        }
         return new Expression( BOOLEAN )
         {
             @Override
             public void accept( ExpressionVisitor visitor )
             {
                 visitor.equal( lhs, rhs );
+            }
+
+            @Override
+            Expression not()
+            {
+                return notEqual( lhs, rhs );
+            }
+        };
+    }
+
+    public static Expression isNull( final Expression expression )
+    {
+        return new Expression( BOOLEAN )
+        {
+            @Override
+            public void accept( ExpressionVisitor visitor )
+            {
+                visitor.isNull( expression );
+            }
+
+            @Override
+            Expression not()
+            {
+                return notNull( expression );
+            }
+        };
+    }
+
+    public static Expression notNull( final Expression expression )
+    {
+        return new Expression( BOOLEAN )
+        {
+            @Override
+            public void accept( ExpressionVisitor visitor )
+            {
+                visitor.notNull( expression );
+            }
+
+            @Override
+            Expression not()
+            {
+                return isNull( expression );
+            }
+        };
+    }
+
+    public static Expression notEqual( final Expression lhs, final Expression rhs )
+    {
+        return new Expression( BOOLEAN )
+        {
+            @Override
+            public void accept( ExpressionVisitor visitor )
+            {
+                visitor.notEqual( lhs, rhs );
+            }
+
+            @Override
+            Expression not()
+            {
+                return equal( lhs, rhs );
             }
         };
     }
@@ -147,7 +370,7 @@ public abstract class Expression extends ExpressionTemplate
         {
             throw new IllegalArgumentException(
                     String.format( "Cannot add variables with different types. LHS %s, RHS %s", lhs.type.simpleName(),
-                            rhs.type.simpleName() ));
+                            rhs.type.simpleName() ) );
         }
 
         return new Expression( lhs.type )
@@ -165,8 +388,10 @@ public abstract class Expression extends ExpressionTemplate
         if ( !lhs.type.equals( rhs.type ) )
         {
             throw new IllegalArgumentException(
-                    String.format( "Cannot subtract variables with different types. LHS %s, RHS %s", lhs.type.simpleName(),
-                            rhs.type.simpleName() ));
+                    String.format(
+                            "Cannot subtract variables with different types. LHS %s, RHS %s",
+                            lhs.type.simpleName(),
+                            rhs.type.simpleName() ) );
         }
         return new Expression( lhs.type )
         {
@@ -183,8 +408,10 @@ public abstract class Expression extends ExpressionTemplate
         if ( !lhs.type.equals( rhs.type ) )
         {
             throw new IllegalArgumentException(
-                    String.format( "Cannot multiply variables with different types. LHS %s, RHS %s", lhs.type.simpleName(),
-                            rhs.type.simpleName() ));
+                    String.format(
+                            "Cannot multiply variables with different types. LHS %s, RHS %s",
+                            lhs.type.simpleName(),
+                            rhs.type.simpleName() ) );
         }
         return new Expression( lhs.type )
         {
@@ -198,11 +425,10 @@ public abstract class Expression extends ExpressionTemplate
 
     public static Expression constant( final Object value )
     {
-
         TypeReference reference;
         if ( value == null )
         {
-            reference = OBJECT;
+            return NULL;
         }
         else if ( value instanceof String )
         {
@@ -222,7 +448,7 @@ public abstract class Expression extends ExpressionTemplate
         }
         else if ( value instanceof Boolean )
         {
-            reference = BOOLEAN;
+            return (Boolean) value ? TRUE : FALSE;
         }
         else
         {
@@ -237,6 +463,23 @@ public abstract class Expression extends ExpressionTemplate
                 visitor.constant( value );
             }
         };
+    }
+
+    private static class Constant extends Expression
+    {
+        private final Object value;
+
+        Constant( TypeReference type, Object value )
+        {
+            super( type );
+            this.value = value;
+        }
+
+        @Override
+        public void accept( ExpressionVisitor visitor )
+        {
+            visitor.constant( value );
+        }
     }
 
     //TODO deduce type from constants
@@ -266,7 +509,7 @@ public abstract class Expression extends ExpressionTemplate
     }
 
     /** box expression */
-    public static Expression box( final Expression expression)
+    public static Expression box( final Expression expression )
     {
         TypeReference type;
         switch ( expression.type.simpleName() )
@@ -303,13 +546,13 @@ public abstract class Expression extends ExpressionTemplate
             @Override
             public void accept( ExpressionVisitor visitor )
             {
-                visitor.box(expression);
+                visitor.box( expression );
             }
         };
     }
 
     /** unbox expression */
-    public static Expression unbox( final Expression expression)
+    public static Expression unbox( final Expression expression )
     {
         TypeReference type;
         switch ( expression.type.name() )
@@ -346,13 +589,13 @@ public abstract class Expression extends ExpressionTemplate
             @Override
             public void accept( ExpressionVisitor visitor )
             {
-                visitor.unbox(expression);
+                visitor.unbox( expression );
             }
         };
     }
 
     /** get static field */
-    public static Expression getStatic(final FieldReference field )
+    public static Expression getStatic( final FieldReference field )
     {
         return new Expression( field.type() )
         {
@@ -360,33 +603,6 @@ public abstract class Expression extends ExpressionTemplate
             public void accept( ExpressionVisitor visitor )
             {
                 visitor.getStatic( field );
-            }
-        };
-    }
-
-    public static Expression ternaryOnNull( final Expression test, final Expression onTrue, final Expression onFalse )
-    {
-        TypeReference reference = onTrue.type.equals( onFalse.type ) ? onTrue.type : OBJECT;
-        return new Expression( reference )
-        {
-            @Override
-            public void accept( ExpressionVisitor visitor )
-            {
-                visitor.ternaryOnNull( test, onTrue, onFalse );
-            }
-        };
-    }
-
-    public static Expression ternaryOnNonNull( final Expression test, final Expression onTrue,
-            final Expression onFalse )
-    {
-        TypeReference reference = onTrue.type.equals( onFalse.type ) ? onTrue.type : OBJECT;
-        return new Expression( reference )
-        {
-            @Override
-            public void accept( ExpressionVisitor visitor )
-            {
-                visitor.ternaryOnNonNull( test, onTrue, onFalse );
             }
         };
     }
@@ -404,7 +620,8 @@ public abstract class Expression extends ExpressionTemplate
         };
     }
 
-    public static Expression invoke( final Expression target, final MethodReference method,
+    public static Expression invoke(
+            final Expression target, final MethodReference method,
             final Expression... arguments )
     {
         return new Expression( method.returns() )
@@ -465,12 +682,29 @@ public abstract class Expression extends ExpressionTemplate
 
     public static Expression not( final Expression expression )
     {
+        return expression.not();
+    }
+
+    Expression not()
+    {
+        return notExpr( this );
+    }
+
+    private static Expression notExpr( final Expression expression )
+    {
+        assert expression.type == BOOLEAN : "Can only apply not() to boolean expressions";
         return new Expression( BOOLEAN )
         {
             @Override
             public void accept( ExpressionVisitor visitor )
             {
                 visitor.not( expression );
+            }
+
+            @Override
+            Expression not()
+            {
+                return expression;
             }
         };
     }

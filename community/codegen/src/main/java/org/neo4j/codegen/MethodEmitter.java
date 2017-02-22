@@ -35,29 +35,9 @@ public interface MethodEmitter
 
     void assign( LocalVariable local, Expression value );
 
-    /**
-     * Begin a while block,
-     * <code>
-     * while (tests[0] && tests[1]...)
-     * ...
-     * </code>
-     */
-    void beginWhile( Expression...tests );
+    void beginWhile( Expression test );
 
-    /**
-     * Begin an if block,
-     * <code>
-     * if (tests[0] && tests[1]...)
-     * ...
-     * </code>
-     */
-    void beginIf( Expression... tests );
-
-    void beginIfNot( Expression...tests );
-
-    void beginIfNull( Expression...tests );
-
-    void beginIfNonNull( Expression...tests );
+    void beginIf( Expression test );
 
     void beginBlock();
 

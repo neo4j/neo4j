@@ -152,7 +152,7 @@ object Templates {
     val methodBuilder: Builder = MethodDeclaration.method(typeRef[ReadOperations], "getOrLoadReadOperations")
     using(clazz.generate(methodBuilder)) { generate =>
       val ro = Expression.get(generate.self(), fields.ro)
-      using(generate.ifNullStatement(ro)) { block =>
+      using(generate.ifStatement(Expression.isNull(ro))) { block =>
         val transactionalContext: MethodReference = method[QueryContext, QueryTransactionalContext]("transactionalContext")
         val readOperations: MethodReference = method[QueryTransactionalContext, Object]("readOperations")
         val queryContext = Expression.get(block.self(), fields.queryContext)
