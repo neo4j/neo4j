@@ -24,6 +24,7 @@ import org.junit.Test;
 
 import org.neo4j.kernel.api.DataWriteOperations;
 import org.neo4j.kernel.api.legacyindex.AutoIndexOperations;
+import org.neo4j.kernel.api.properties.Property;
 import org.neo4j.kernel.impl.api.legacyindex.InternalAutoIndexOperations;
 import org.neo4j.kernel.impl.core.PropertyKeyTokenHolder;
 import org.neo4j.kernel.impl.core.TokenNotFoundException;
@@ -32,10 +33,13 @@ import org.neo4j.storageengine.api.Token;
 
 import static org.mockito.Mockito.RETURNS_MOCKS;
 import static org.mockito.Mockito.mock;
+import static org.mockito.Mockito.reset;
+import static org.mockito.Mockito.verify;
 import static org.mockito.Mockito.verifyZeroInteractions;
 import static org.mockito.Mockito.when;
 
 import static org.neo4j.kernel.api.properties.Property.property;
+import static org.neo4j.kernel.impl.api.legacyindex.InternalAutoIndexing.NODE_AUTO_INDEX;
 
 public class AutoIndexOperationsTest
 {
@@ -47,13 +51,17 @@ public class AutoIndexOperationsTest
     private final int nonIndexedProperty = 1337;
     private final String nonIndexedPropertyName = "foo";
     private final int indexedProperty = 1338;
+    private final int indexedProperty2 = 1339;
     private final String indexedPropertyName = "bar";
+    private final String indexedPropertyName2 = "baz";
 
     @Before
     public void setup() throws TokenNotFoundException
     {
-        when(tokens.getTokenById( nonIndexedProperty )).thenReturn( new Token( nonIndexedPropertyName, 1337 ) );
-        when(tokens.getTokenById( indexedProperty )).thenReturn( new Token( indexedPropertyName, 1337 ) );
+        when(tokens.getTokenById( nonIndexedProperty )).thenReturn( new Token( nonIndexedPropertyName, nonIndexedProperty ) );
+        when(tokens.getTokenById( indexedProperty )).thenReturn( new Token( indexedPropertyName, indexedProperty ) );
+        when(tokens.getTokenById( indexedProperty2 )).thenReturn( new Token( indexedPropertyName, indexedProperty2 ) );
+        index.enabled( true );
     }
 
     @Test
@@ -67,6 +75,26 @@ public class AutoIndexOperationsTest
 
         // Then
         verifyZeroInteractions( ops );
+    }
+
+    @Test
+    public void shouldRemoveSpecificValueFromIndexForAutoIndexedProperty() throws Exception
+    {
+        // Given
+        long nodeId = 11;
+        int value1 = 1;
+        int value2 = 2;
+        index.startAutoIndexingProperty( indexedPropertyName );
+        index.startAutoIndexingProperty( indexedPropertyName2 );
+        index.propertyAdded( ops, nodeId, Property.intProperty( indexedProperty, value1 ) );
+        index.propertyAdded( ops, nodeId, Property.intProperty( indexedProperty2, value2 ) );
+
+        // When
+        reset( ops );
+        index.propertyRemoved( ops, nodeId, indexedProperty );
+
+        // Then
+        verify( ops ).nodeRemoveFromLegacyIndex( NODE_AUTO_INDEX, nodeId, indexedPropertyName );
     }
 
     @Test
