@@ -247,7 +247,8 @@ class PropertyExistenceEnforcer
 
             int relationshipType;
             int[] required;
-            try ( Cursor<RelationshipItem> relationship = relationship( id ) )
+            try ( Cursor<RelationshipItem> relationship = storeStatement()
+                    .acquireSingleRelationshipCursor( id, txState ) )
             {
                 if ( relationship.next() )
                 {
@@ -279,13 +280,6 @@ class PropertyExistenceEnforcer
                     failRelationship( id, relationshipType, mandatory );
                 }
             }
-        }
-
-
-        private Cursor<RelationshipItem> relationship( long id )
-        {
-            Cursor<RelationshipItem> cursor = storeStatement().acquireSingleRelationshipCursor( id );
-            return txState.augmentSingleRelationshipCursor( cursor, id );
         }
 
         private Cursor<PropertyItem> properties( NodeItem node )

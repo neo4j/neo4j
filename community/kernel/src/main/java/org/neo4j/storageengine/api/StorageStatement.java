@@ -84,9 +84,10 @@ public interface StorageStatement extends AutoCloseable
      * through the selection.
      *
      * @param relationshipId id of relationship to get cursor for.
+     * @param state the transaction state or null if there are no changes.
      * @return a {@link Cursor} over {@link RelationshipItem} for the given {@code relationshipId}.
      */
-    Cursor<RelationshipItem> acquireSingleRelationshipCursor( long relationshipId );
+    Cursor<RelationshipItem> acquireSingleRelationshipCursor( long relationshipId, ReadableTransactionState state );
 
     /**
      * Acquires {@link Cursor} capable of {@link Cursor#get() serving} {@link RelationshipItem} for selected

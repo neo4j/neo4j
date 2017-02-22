@@ -89,7 +89,8 @@ public class StateOperationsAutoIndexingTest
     public void shouldSignalRelationshipRemovedToAutoIndex() throws Exception
     {
         // Given
-        when( storeStmt.acquireSingleRelationshipCursor( 1337 ) ).thenReturn( cursor( mock( RelationshipItem.class )) );
+        when( storeStmt.acquireSingleRelationshipCursor( 1337, null ) )
+                .thenReturn( cursor( mock( RelationshipItem.class ) ) );
 
         // When
         context.relationshipDelete( stmt, 1337 );
@@ -125,7 +126,7 @@ public class StateOperationsAutoIndexingTest
         DefinedProperty property = property( propertyKeyId, "Hello!" );
 
         RelationshipItem relationship = mock( RelationshipItem.class );
-        when( storeStmt.acquireSingleRelationshipCursor( 1337 ) ).thenReturn( cursor( relationship ) );
+        when( storeStmt.acquireSingleRelationshipCursor( 1337, null ) ).thenReturn( cursor( relationship ) );
         when( storeLayer.relationshipGetProperty( storeStmt, relationship, propertyKeyId ) ).thenReturn( empty() );
 
         // When
@@ -170,7 +171,7 @@ public class StateOperationsAutoIndexingTest
         when(existingProperty.value()).thenReturn( "Goodbye!" );
 
         RelationshipItem relationship = mock( RelationshipItem.class );
-        when( storeStmt.acquireSingleRelationshipCursor( 1337 ) ).thenReturn( cursor( relationship ) );
+        when( storeStmt.acquireSingleRelationshipCursor( 1337, null ) ).thenReturn( cursor( relationship ) );
         when( storeLayer.relationshipGetProperty( storeStmt, relationship, propertyKeyId ) )
                 .thenReturn( cursor( existingProperty ) );
 
@@ -214,7 +215,7 @@ public class StateOperationsAutoIndexingTest
         when(existingProperty.value()).thenReturn( "Goodbye!" );
 
         RelationshipItem relationship = mock( RelationshipItem.class );
-        when( storeStmt.acquireSingleRelationshipCursor( 1337 ) ).thenReturn( cursor( relationship ) );
+        when( storeStmt.acquireSingleRelationshipCursor( 1337, null ) ).thenReturn( cursor( relationship ) );
         when( storeLayer.relationshipGetProperty( storeStmt, relationship, propertyKeyId ) )
                 .thenReturn( cursor( existingProperty ) );
 

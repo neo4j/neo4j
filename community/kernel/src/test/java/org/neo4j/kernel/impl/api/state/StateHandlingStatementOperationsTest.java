@@ -541,7 +541,9 @@ public class StateHandlingStatementOperationsTest
         KernelStatement kernelStatement = mock( KernelStatement.class );
         StoreStatement storeStatement = mock( StoreStatement.class );
         Cursor<RelationshipItem> ourRelationship = relationshipCursorWithProperty( propertyKeyId );
-        when( storeStatement.acquireSingleRelationshipCursor( relationshipId ) ).thenReturn( ourRelationship );
+        when( storeStatement
+                .acquireSingleRelationshipCursor( eq( relationshipId ), any( ReadableTransactionState.class ) ) )
+                .thenReturn( ourRelationship );
         when( kernelStatement.getStoreStatement() ).thenReturn( storeStatement );
         InternalAutoIndexing autoIndexing = mock( InternalAutoIndexing.class );
         AutoIndexOperations autoIndexOps = mock( AutoIndexOperations.class );
