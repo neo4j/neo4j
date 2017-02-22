@@ -712,7 +712,12 @@ class UsingAcceptanceTest extends ExecutionEngineFunSuite with NewPlannerTestSup
         |RETURN *""".stripMargin)
     )
 
-    result.getMessage should startWith("Something went when trying to fulfill the index hints of your query")
+    val message = result.getMessage
+
+    message should startWith("Failed to fulfil the hints of the query.")
+    message should (
+         include("Could not solve these hints: `USING INDEX a:PERSON(id)`")
+      or include("Could not solve these hints: `USING INDEX b:PERSON(id)`"))
   }
 
   //---------------------------------------------------------------------------

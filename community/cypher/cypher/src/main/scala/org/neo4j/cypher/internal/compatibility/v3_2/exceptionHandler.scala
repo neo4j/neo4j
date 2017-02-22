@@ -76,6 +76,8 @@ object exceptionHandler extends MapToPublicExceptions[CypherException] {
 
   override def joinHintException(variable: String, message: String, cause: Throwable) = throw new JoinHintException(variable, message, cause)
 
+  override def hintException(message: String, cause: Throwable): CypherException = throw new HintException(message, cause)
+
   override def periodicCommitInOpenTransactionException(cause: Throwable) = throw new PeriodicCommitInOpenTransactionException(cause)
 
   override def failedIndexException(indexName: String, cause: Throwable): CypherException = throw new FailedIndexException(indexName, cause)

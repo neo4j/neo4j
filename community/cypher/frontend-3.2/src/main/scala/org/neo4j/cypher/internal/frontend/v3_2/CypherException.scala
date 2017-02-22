@@ -86,6 +86,10 @@ class JoinHintException(variable: String, message: String) extends CypherExcepti
   override def mapToPublic[T <: Throwable](mapper: MapToPublicExceptions[T]) = mapper.joinHintException(variable, message, this)
 }
 
+class HintException(message: String, cause: Throwable = null) extends CypherException(message, cause) {
+  override def mapToPublic[T <: Throwable](mapper: MapToPublicExceptions[T]): T = mapper.hintException(message, cause)
+}
+
 class InvalidSemanticsException(message: String) extends CypherException {
   override def mapToPublic[T <: Throwable](mapper: MapToPublicExceptions[T]) = mapper.invalidSemanticException(message, this)
 }

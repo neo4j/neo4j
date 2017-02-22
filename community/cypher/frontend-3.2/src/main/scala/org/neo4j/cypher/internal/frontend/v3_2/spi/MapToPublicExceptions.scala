@@ -42,6 +42,8 @@ trait MapToPublicExceptions[T <: Throwable] {
 
   def indexHintException(variable: String, label: String, property: String, message: String, cause: Throwable): T
 
+  def hintException(message: String, cause: Throwable): T
+
   def joinHintException(variable: String, message: String, cause: Throwable): T
 
   def profilerStatisticsNotReadyException(cause: Throwable): T

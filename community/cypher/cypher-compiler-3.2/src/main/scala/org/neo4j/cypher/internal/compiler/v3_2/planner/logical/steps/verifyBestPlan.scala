@@ -24,7 +24,7 @@ import org.neo4j.cypher.internal.compiler.v3_2.planner.logical.{LogicalPlanningC
 import org.neo4j.cypher.internal.compiler.v3_2.spi.PlanContext
 import org.neo4j.cypher.internal.frontend.v3_2.ast._
 import org.neo4j.cypher.internal.frontend.v3_2.notification.{IndexHintUnfulfillableNotification, JoinHintUnfulfillableNotification}
-import org.neo4j.cypher.internal.frontend.v3_2.{IndexHintException, InvalidArgumentException, JoinHintException}
+import org.neo4j.cypher.internal.frontend.v3_2.{HintException, IndexHintException, InternalException, JoinHintException}
 import org.neo4j.cypher.internal.ir.v3_2.PlannerQuery
 
 object verifyBestPlan extends PlanTransformer[PlannerQuery] {
@@ -39,15 +39,29 @@ object verifyBestPlan extends PlanTransformer[PlannerQuery] {
         val b: PlannerQuery = constructed.withoutHints(constructed.allHints)
         if (a != b) {
           // unknown planner issue failed to find plan (without regard for differences in hints)
-          throw new InvalidArgumentException(s"Expected \n$expected \n\n\nInstead, got: \n$constructed")
+          throw new InternalException(s"Expected \n$expected \n\n\nInstead, got: \n$constructed")
         } else {
           // unknown planner issue failed to find plan matching hints (i.e. "implicit hints")
-          val expectedHints = expected.allHints.mkString(System.lineSeparator())
-          val actualHints = constructed.allHints.mkString(System.lineSeparator())
+          val expectedHints = expected.allHints
+          val actualHints = constructed.allHints
+          val missing = expectedHints -- actualHints
+
+          def out(h: Set[Hint]) = h.mkString("`", ", ", "`")
+
+          val details = if (missing.isEmpty)
+            s"""Expected:
+               |${out(expectedHints)}
+               |
+               |Instead, got:
+               |${out(actualHints)}""".stripMargin
+          else
+            s"Could not solve these hints: ${out(missing)}"
+
           val message =
-            s"Something went when trying to fulfill the index hints of your query.\n" +
-            s"Expected: \n$expectedHints \n\n\nInstead, got: \n$actualHints"
-          throw new InvalidArgumentException(message)
+            s"""Failed to fulfil the hints of the query.
+               |$details""".stripMargin
+
+          throw new HintException(message)
         }
       } else {
         processUnfulfilledIndexHints(context, unfulfillableIndexHints)
@@ -82,7 +96,7 @@ object verifyBestPlan extends PlanTransformer[PlannerQuery] {
           context.notificationLogger.log(JoinHintUnfulfillableNotification(hint.variables.map(_.name).toIndexedSeq))
         }
       }
-    } 
+    }
   }
 
   private def findUnfulfillableIndexHints(query: PlannerQuery, planContext: PlanContext): Set[UsingIndexHint] = {

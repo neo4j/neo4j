@@ -29,11 +29,8 @@ import org.neo4j.cypher.internal.frontend.v3_2.ast._
 import org.neo4j.cypher.internal.frontend.v3_2.notification.{IndexHintUnfulfillableNotification, JoinHintUnfulfillableNotification}
 import org.neo4j.cypher.internal.frontend.v3_2.phases.RecordingNotificationLogger
 import org.neo4j.cypher.internal.frontend.v3_2.test_helpers.CypherFunSuite
-import org.neo4j.cypher.internal.frontend.v3_2.{IndexHintException, JoinHintException, SemanticDirection}
-import org.neo4j.cypher.internal.ir.v3_2._
-import org.neo4j.cypher.internal.ir.v3_2.exception.CantHandleQueryException
-import org.neo4j.cypher.internal.frontend.v3_2.{IndexHintException, InvalidArgumentException, JoinHintException, SemanticDirection}
-import org.neo4j.cypher.internal.ir.v3_2.{IdName, PatternRelationship, VarPatternLength}
+import org.neo4j.cypher.internal.frontend.v3_2.{HintException, IndexHintException, InternalException, JoinHintException, SemanticDirection}
+import org.neo4j.cypher.internal.ir.v3_2.{IdName, PatternRelationship, VarPatternLength, _}
 
 class ExtractBestPlanTest extends CypherFunSuite with LogicalPlanningTestSupport {
 
@@ -79,7 +76,7 @@ class ExtractBestPlanTest extends CypherFunSuite with LogicalPlanningTestSupport
       planContext = newMockedPlanContext)
     val plan = newMockedLogicalPlan("b")
 
-    a [InvalidArgumentException] should be thrownBy {
+    a [InternalException] should be thrownBy {
       verifyBestPlan(plan, query)
     }
   }
@@ -96,7 +93,7 @@ class ExtractBestPlanTest extends CypherFunSuite with LogicalPlanningTestSupport
       planContext= newMockedPlanContext
     )
 
-    a [InvalidArgumentException] should be thrownBy {
+    a [InternalException] should be thrownBy {
       verifyBestPlan(getSimpleLogicalPlanWithAandB(), query)
     }
   }
@@ -178,7 +175,7 @@ class ExtractBestPlanTest extends CypherFunSuite with LogicalPlanningTestSupport
     implicit val logicalPlanContext = newMockedLogicalPlanningContext(
       planContext = getPlanContext(true), useErrorsOverWarnings = false)
 
-    a [InvalidArgumentException] should be thrownBy {
+    a [HintException] should be thrownBy {
       verifyBestPlan(getSimpleLogicalPlanWithAandB(), newQueryWithIdxHint())
     }
   }
