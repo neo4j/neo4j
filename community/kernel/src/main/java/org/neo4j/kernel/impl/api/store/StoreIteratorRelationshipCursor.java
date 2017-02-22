@@ -52,7 +52,7 @@ public class StoreIteratorRelationshipCursor extends StoreAbstractRelationshipCu
     }
 
     @Override
-    public boolean next()
+    protected boolean fetchNext()
     {
         while ( iterator != null && iterator.hasNext() )
         {
@@ -68,12 +68,8 @@ public class StoreIteratorRelationshipCursor extends StoreAbstractRelationshipCu
     @Override
     public void close()
     {
-        if ( iterator instanceof Resource )
-        {
-            ((Resource) iterator).close();
-        }
+        super.close();
         iterator = null;
-
         instanceCache.accept( this );
     }
 }
