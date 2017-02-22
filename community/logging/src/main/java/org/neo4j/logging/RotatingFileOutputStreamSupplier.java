@@ -75,6 +75,7 @@ public class RotatingFileOutputStreamSupplier implements Supplier<OutputStream>,
     private final int maxArchives;
     private final RotationListener rotationListener;
     private final Executor rotationExecutor;
+    private final OutputStream streamWrapper;
     private final AtomicBoolean closed = new AtomicBoolean( false );
     private final AtomicBoolean rotating = new AtomicBoolean( false );
     private final AtomicLong earliestRotationTimeRef = new AtomicLong( 0 );
@@ -129,10 +130,49 @@ public class RotatingFileOutputStreamSupplier implements Supplier<OutputStream>,
         this.rotationListener = rotationListener;
         this.rotationExecutor = rotationExecutor;
         this.outRef.set( openOutputFile() );
+        // Wrap the actual reference to prevent race conditions during log rotation
+        this.streamWrapper = new OutputStream()
+        {
+            @Override
+            public void write( int i ) throws IOException
+            {
+                synchronized ( outRef )
+                {
+                    outRef.get().write( i );
+                }
+            }
+
+            @Override
+            public void write( byte[] bytes ) throws IOException
+            {
+                synchronized ( outRef )
+                {
+                    outRef.get().write( bytes );
+                }
+            }
+
+            @Override
+            public void write( byte[] bytes, int off, int len ) throws IOException
+            {
+                synchronized ( outRef )
+                {
+                    outRef.get().write( bytes, off, len );
+                }
+            }
+
+            @Override
+            public void flush() throws IOException
+            {
+                synchronized ( outRef )
+                {
+                    outRef.get().flush();
+                }
+            }
+        };
     }
 
     /**
-     * @return An stream outputting to the latest output file
+     * @return A stream outputting to the latest output file
      */
     @Override
     public OutputStream get()
@@ -144,13 +184,13 @@ public class RotatingFileOutputStreamSupplier implements Supplier<OutputStream>,
                 rotate();
             }
         }
-        return outRef.get();
+        return this.streamWrapper;
     }
 
     @Override
     public void close() throws IOException
     {
-        synchronized (outRef)
+        synchronized ( outRef )
         {
             closed.set( true );
             for ( WeakReference<OutputStream> archivedStream : archivedStreams )
@@ -190,40 +230,58 @@ public class RotatingFileOutputStreamSupplier implements Supplier<OutputStream>,
             return;
         }
 
-        Runnable runnable = () -> {
-            OutputStream newStream;
-            try
-            {
-                if ( fileSystem.fileExists( outputFile ) )
-                {
-                    shiftArchivedOutputFiles();
-                    fileSystem.renameFile( outputFile, archivedOutputFile( 1 ) );
-                }
-                newStream = openOutputFile();
-            }
-            catch ( Exception e )
-            {
-                rotationListener.rotationError( e, outRef.get() );
-                rotating.set( false );
-                return;
-            }
-            OutputStream oldStream = outRef.get();
-            rotationListener.outputFileCreated( newStream, oldStream );
+        Runnable runnable = () ->
+        {
             synchronized ( outRef )
             {
+                OutputStream oldStream = outRef.get();
+
+                // Must close file prior to doing any operations on it or else it won't work on Windows
+                try
+                {
+                    oldStream.flush();
+                    oldStream.close();
+                }
+                catch ( Exception e )
+                {
+                    rotationListener.rotationError( e, outRef.get() );
+                    rotating.set( false );
+                    return;
+                }
+
+                OutputStream newStream;
+                try
+                {
+                    if ( fileSystem.fileExists( outputFile ) )
+                    {
+                        shiftArchivedOutputFiles();
+                        fileSystem.renameFile( outputFile, archivedOutputFile( 1 ) );
+                    }
+                    newStream = openOutputFile();
+                }
+                catch ( Exception e )
+                {
+                    rotationListener.rotationError( e, outRef.get() );
+                    rotating.set( false );
+                    return;
+                }
+
+                rotationListener.outputFileCreated( newStream, oldStream );
+
                 if ( !closed.get() )
                 {
                     outRef.set( newStream );
                     removeCollectedReferences( archivedStreams );
                     archivedStreams.add( new WeakReference<>( oldStream ) );
                 }
+
+                if ( rotationDelay > 0 )
+                {
+                    earliestRotationTimeRef.set( currentTimeSupplier.getAsLong() + rotationDelay );
+                }
+                rotationListener.rotationCompleted( newStream, oldStream );
+                rotating.set( false );
             }
-            if ( rotationDelay > 0 )
-            {
-                earliestRotationTimeRef.set( currentTimeSupplier.getAsLong() + rotationDelay );
-            }
-            rotationListener.rotationCompleted( newStream, oldStream );
-            rotating.set( false );
         };
 
         try
