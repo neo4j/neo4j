@@ -154,10 +154,10 @@ public class StoreStatement implements StorageStatement
     }
 
     @Override
-    public Cursor<RelationshipItem> acquireSingleRelationshipCursor( long relId )
+    public Cursor<RelationshipItem> acquireSingleRelationshipCursor( long relId, ReadableTransactionState state )
     {
         neoStores.assertOpen();
-        return singleRelationshipCursor.get().init( relId );
+        return singleRelationshipCursor.get().init( relId, state );
     }
 
     @Override
