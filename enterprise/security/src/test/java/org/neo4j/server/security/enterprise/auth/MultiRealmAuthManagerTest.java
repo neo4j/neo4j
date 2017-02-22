@@ -158,7 +158,7 @@ public class MultiRealmAuthManagerTest extends InitialUserTests
 
         expect.expect( InvalidArgumentsException.class );
         expect.expectMessage( "No roles defined, and cannot determine which user should be admin. " +
-                              "Please use `" + SetDefaultAdminCommand.COMMAND_NAME + "` to select an admin." );
+                              "Please use `neo4j-admin " + SetDefaultAdminCommand.COMMAND_NAME + "` to select an admin." );
 
         manager.start();
     }
@@ -182,7 +182,7 @@ public class MultiRealmAuthManagerTest extends InitialUserTests
 
         expect.expect( InvalidArgumentsException.class );
         expect.expectMessage( "No roles defined, and default admin user 'foo' does not exist. " +
-                              "Please use `" + SetDefaultAdminCommand.COMMAND_NAME + "` to select a valid admin." );
+                              "Please use `neo4j-admin " + SetDefaultAdminCommand.COMMAND_NAME + "` to select a valid admin." );
 
         manager.start();
     }

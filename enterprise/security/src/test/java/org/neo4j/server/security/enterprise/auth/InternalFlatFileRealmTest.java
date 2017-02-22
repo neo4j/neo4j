@@ -27,30 +27,39 @@ import org.apache.shiro.cache.MemoryConstrainedCacheManager;
 import org.apache.shiro.realm.Realm;
 import org.apache.shiro.subject.PrincipalCollection;
 import org.junit.Before;
+import org.junit.Rule;
 import org.junit.Test;
+import org.junit.rules.ExpectedException;
 
 import java.time.Clock;
+import java.util.Arrays;
 import java.util.Collections;
 import java.util.List;
 
+import org.neo4j.commandline.admin.security.SetDefaultAdminCommand;
+import org.neo4j.kernel.api.exceptions.InvalidArgumentsException;
 import org.neo4j.kernel.api.security.AuthenticationResult;
+import org.neo4j.kernel.api.security.PasswordPolicy;
 import org.neo4j.kernel.api.security.exception.InvalidAuthTokenException;
 import org.neo4j.kernel.enterprise.api.security.EnterpriseSecurityContext;
-import org.neo4j.server.security.enterprise.log.SecurityLog;
+import org.neo4j.kernel.impl.security.Credential;
+import org.neo4j.kernel.impl.security.User;
 import org.neo4j.kernel.impl.util.JobScheduler;
 import org.neo4j.server.security.auth.AuthenticationStrategy;
 import org.neo4j.server.security.auth.BasicPasswordPolicy;
 import org.neo4j.server.security.auth.InMemoryUserRepository;
 import org.neo4j.server.security.auth.ListSnapshot;
-import org.neo4j.kernel.api.security.PasswordPolicy;
 import org.neo4j.server.security.auth.RateLimitedAuthenticationStrategy;
-import org.neo4j.kernel.impl.security.User;
 import org.neo4j.server.security.auth.UserRepository;
+import org.neo4j.server.security.enterprise.auth.plugin.api.PredefinedRoles;
+import org.neo4j.server.security.enterprise.log.SecurityLog;
 import org.neo4j.time.Clocks;
 
+import static org.hamcrest.Matchers.contains;
 import static org.hamcrest.Matchers.equalTo;
 import static org.hamcrest.Matchers.is;
 import static org.junit.Assert.assertThat;
+import static org.junit.Assert.fail;
 import static org.mockito.Matchers.any;
 import static org.mockito.Matchers.anyString;
 import static org.mockito.Mockito.mock;
@@ -62,6 +71,9 @@ import static org.neo4j.server.security.enterprise.auth.AuthTestUtil.listOf;
 
 public class InternalFlatFileRealmTest
 {
+    @Rule
+    public ExpectedException exception = ExpectedException.none();
+
     private MultiRealmAuthManager authManager;
     private TestRealm testRealm;
 
@@ -129,6 +141,177 @@ public class InternalFlatFileRealmTest
         assertSetUsersAndRolesNTimes( false, true, 0, 1 );
         assertSetUsersAndRolesNTimes( true, false, 1, 0 );
         assertSetUsersAndRolesNTimes( true, true, 1, 1 );
+    }
+
+    @Test
+    public void shouldAssignAdminRoleToDefaultUser() throws Throwable
+    {
+        // Given
+        InternalFlatFileRealm realm = internalTestRealmWithUsers( Collections.emptyList(), Collections.emptyList() );
+
+        // When
+        realm.initialize();
+        realm.start();
+
+        // Then
+        assertThat( realm.getUsernamesForRole( PredefinedRoles.ADMIN ),
+                contains( InternalFlatFileRealm.INITIAL_USER_NAME ) );
+    }
+
+    @Test
+    public void shouldAssignAdminRoleToSpecifiedUser() throws Throwable
+    {
+        // Given
+        InternalFlatFileRealm realm = internalTestRealmWithUsers( Arrays.asList( "neo4j", "morpheus", "trinity" ),
+                Collections.singletonList( "morpheus" ) );
+
+        // When
+        realm.initialize();
+        realm.start();
+
+        // Then
+        assertThat( realm.getUsernamesForRole( PredefinedRoles.ADMIN ), contains( "morpheus" ) );
+        assertThat( realm.getUsernamesForRole( PredefinedRoles.ADMIN ).size(), equalTo( 1 ) );
+    }
+
+    @Test
+    public void shouldAssignAdminRoleToOnlyUser() throws Throwable
+    {
+        // Given
+        InternalFlatFileRealm realm =
+                internalTestRealmWithUsers( Collections.singletonList( "morpheus" ), Collections.emptyList() );
+
+        // When
+        realm.initialize();
+        realm.start();
+
+        // Then
+        assertThat( realm.getUsernamesForRole( PredefinedRoles.ADMIN ), contains( "morpheus" ) );
+        assertThat( realm.getUsernamesForRole( PredefinedRoles.ADMIN ).size(), equalTo( 1 ) );
+    }
+
+    @Test
+    public void shouldNotAssignAdminToNonExistentUser() throws Throwable
+    {
+        // Given
+        InternalFlatFileRealm realm = internalTestRealmWithUsers( Collections.singletonList( "neo4j" ),
+                Collections.singletonList( "morpheus" ) );
+
+        // Expect
+        exception.expect( InvalidArgumentsException.class );
+        exception.expectMessage(
+                "No roles defined, and default admin user 'morpheus' does not exist. Please use `neo4j-admin " +
+                        SetDefaultAdminCommand.COMMAND_NAME + "` to select a valid admin." );
+
+        // When
+        realm.initialize();
+        realm.start();
+    }
+
+    @Test
+    public void shouldGiveErrorOnMultipleUsersNoDefault() throws Throwable
+    {
+        // Given
+        InternalFlatFileRealm realm =
+                internalTestRealmWithUsers( Arrays.asList( "morpheus", "trinity" ), Collections.emptyList() );
+
+        // Expect
+        exception.expect( InvalidArgumentsException.class );
+        exception.expectMessage(
+                "No roles defined, and cannot determine which user should be admin. Please use `neo4j-admin " +
+                        SetDefaultAdminCommand.COMMAND_NAME + "` to select an admin." );
+
+        // When
+        realm.initialize();
+        realm.start();
+    }
+
+    @Test
+    public void shouldFailToAssignMultipleDefaultAdmins() throws Throwable
+    {
+        // Given
+        InternalFlatFileRealm realm = internalTestRealmWithUsers( Arrays.asList( "morpheus", "trinity", "tank" ),
+                Arrays.asList( "morpheus", "trinity" ) );
+
+        // Expect
+        exception.expect( InvalidArgumentsException.class );
+        exception.expectMessage(
+                "No roles defined, and multiple users defined as default admin user. Please use `neo4j-admin " +
+                        SetDefaultAdminCommand.COMMAND_NAME + "` to select a valid admin." );
+
+        // When
+        realm.initialize();
+        realm.start();
+    }
+
+    @Test
+    public void shouldAssignAdminRoleAfterBadSetting() throws Throwable
+    {
+        UserRepository userRepository = new InMemoryUserRepository();
+        UserRepository initialUserRepository = new InMemoryUserRepository();
+        UserRepository adminUserRepository = new InMemoryUserRepository();
+        RoleRepository roleRepository = new InMemoryRoleRepository();
+        userRepository.create( newUser( "morpheus", "123", false ) );
+        userRepository.create( newUser( "trinity", "123", false ) );
+
+        InternalFlatFileRealm realm = new InternalFlatFileRealm(
+                userRepository,
+                roleRepository,
+                new BasicPasswordPolicy(),
+                new RateLimitedAuthenticationStrategy( Clocks.systemClock(), 3 ),
+                new InternalFlatFileRealmIT.TestJobScheduler(),
+                initialUserRepository,
+                adminUserRepository
+        );
+
+        try
+        {
+            realm.initialize();
+            realm.start();
+            fail( "Multiple users, no default admin provided" );
+        }
+        catch ( InvalidArgumentsException e )
+        {
+            realm.stop();
+            realm.shutdown();
+        }
+        adminUserRepository.create( new User.Builder( "trinity", Credential.INACCESSIBLE ).build() );
+        realm.initialize();
+        realm.start();
+        assertThat( realm.getUsernamesForRole( PredefinedRoles.ADMIN ).size(), equalTo( 1 ) );
+        assertThat( realm.getUsernamesForRole( PredefinedRoles.ADMIN ), contains( "trinity" ) );
+    }
+
+    private InternalFlatFileRealm internalTestRealmWithUsers( List<String> existing, List<String> defaultAdmin )
+            throws Throwable
+    {
+        UserRepository userRepository = new InMemoryUserRepository();
+        UserRepository initialUserRepository = new InMemoryUserRepository();
+        UserRepository adminUserRepository = new InMemoryUserRepository();
+        RoleRepository roleRepository = new InMemoryRoleRepository();
+        for ( String user : existing )
+        {
+            userRepository.create( newUser( user, "123", false ) );
+        }
+        for ( String user : defaultAdmin )
+        {
+            adminUserRepository.create( new User.Builder( user, Credential.INACCESSIBLE ).build() );
+        }
+        return new InternalFlatFileRealm(
+                userRepository,
+                roleRepository,
+                new BasicPasswordPolicy(),
+                new RateLimitedAuthenticationStrategy( Clocks.systemClock(), 3 ),
+                new InternalFlatFileRealmIT.TestJobScheduler(),
+                initialUserRepository,
+                adminUserRepository
+        );
+    }
+
+    private User newUser( String userName, String password, boolean pwdChange )
+    {
+        return new User.Builder( userName, Credential.forPassword( password ) ).withRequiredPasswordChange( pwdChange )
+            .build();
     }
 
     private void assertSetUsersAndRolesNTimes( boolean usersChanged, boolean rolesChanged,

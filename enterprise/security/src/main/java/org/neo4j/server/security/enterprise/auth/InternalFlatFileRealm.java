@@ -48,13 +48,13 @@ import org.neo4j.commandline.admin.security.SetDefaultAdminCommand;
 import org.neo4j.kernel.api.exceptions.InvalidArgumentsException;
 import org.neo4j.kernel.api.security.AuthToken;
 import org.neo4j.kernel.api.security.AuthenticationResult;
+import org.neo4j.kernel.api.security.PasswordPolicy;
 import org.neo4j.kernel.api.security.exception.InvalidAuthTokenException;
+import org.neo4j.kernel.impl.security.Credential;
+import org.neo4j.kernel.impl.security.User;
 import org.neo4j.kernel.impl.util.JobScheduler;
 import org.neo4j.server.security.auth.AuthenticationStrategy;
-import org.neo4j.kernel.impl.security.Credential;
 import org.neo4j.server.security.auth.ListSnapshot;
-import org.neo4j.kernel.api.security.PasswordPolicy;
-import org.neo4j.kernel.impl.security.User;
 import org.neo4j.server.security.auth.UserRepository;
 import org.neo4j.server.security.auth.exception.ConcurrentModificationException;
 import org.neo4j.server.security.enterprise.auth.plugin.api.PredefinedRoles;
@@ -242,25 +242,28 @@ public class InternalFlatFileRealm extends AuthorizingRealm implements RealmLife
 
             if ( numberOfRoles() == 0 )
             {
-                for ( String role : PredefinedRolesBuilder.roles.keySet() )
-                {
-                    newRole( role );
-                }
-
                 if ( newAdmins.isEmpty() )
                 {
                     Set<String> usernames = userRepository.getAllUsernames();
-                    if ( defaultAdminRepository.numberOfUsers() > 0 )
+                    if ( defaultAdminRepository.numberOfUsers() > 1 )
+                    {
+                        throw new InvalidArgumentsException(
+                                "No roles defined, and multiple users defined as default admin user." +
+                                        " Please use `neo4j-admin " + SetDefaultAdminCommand.COMMAND_NAME +
+                                        "` to select a valid admin." );
+                    }
+                    else if ( defaultAdminRepository.numberOfUsers() == 1 )
                     {
                         // We currently support only one default admin
                         String newAdminUsername = defaultAdminRepository.getAllUsernames().iterator().next();
                         if ( userRepository.getUserByName( newAdminUsername ) == null )
                         {
                             throw new InvalidArgumentsException(
-                                    "No roles defined, and default admin user '" + newAdminUsername + "' does not exist. " +
-                                    "Please use `" + SetDefaultAdminCommand.COMMAND_NAME + "` to select a valid admin." );
+                                    "No roles defined, and default admin user '" + newAdminUsername +
+                                            "' does not exist. Please use `neo4j-admin " +
+                                            SetDefaultAdminCommand.COMMAND_NAME + "` to select a valid admin." );
                         }
-                        newAdmins.addAll( defaultAdminRepository.getAllUsernames() );
+                        newAdmins.add( newAdminUsername );
                     }
                     else if ( usernames.size() == 1 )
                     {
@@ -274,8 +277,14 @@ public class InternalFlatFileRealm extends AuthorizingRealm implements RealmLife
                     {
                         throw new InvalidArgumentsException(
                                 "No roles defined, and cannot determine which user should be admin. " +
-                                "Please use `" + SetDefaultAdminCommand.COMMAND_NAME + "` to select an admin." );
+                                        "Please use `neo4j-admin " + SetDefaultAdminCommand.COMMAND_NAME +
+                                        "` to select an " + "admin." );
                     }
+                }
+
+                for ( String role : PredefinedRolesBuilder.roles.keySet() )
+                {
+                    newRole( role );
                 }
             }
 
