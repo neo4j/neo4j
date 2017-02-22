@@ -160,7 +160,7 @@ public class StoreLogService extends AbstractLogService implements Lifecycle
                     rotationExecutor, new RotatingFileOutputStreamSupplier.RotationListener()
             {
                 @Override
-                public void outputFileCreated( OutputStream newStream, OutputStream oldStream )
+                public void outputFileCreated( OutputStream newStream )
                 {
                     FormattedLogProvider logProvider = internalLogBuilder.toOutputStream( newStream );
                     logProvider.getLog( StoreLogService.class ).info( "Opened new internal log file" );
@@ -168,15 +168,14 @@ public class StoreLogService extends AbstractLogService implements Lifecycle
                 }
 
                 @Override
-                public void rotationCompleted( OutputStream newStream, OutputStream oldStream )
+                public void rotationCompleted( OutputStream newStream )
                 {
                     FormattedLogProvider logProvider = internalLogBuilder.toOutputStream( newStream );
                     logProvider.getLog( StoreLogService.class ).info( "Rotated internal log file" );
                 }
 
                 @Override
-                public void rotationError( @SuppressWarnings( "unused" ) Exception e,
-                        @SuppressWarnings( "unused" ) OutputStream outStream )
+                public void rotationError( Exception e, OutputStream outStream )
                 {
                     FormattedLogProvider logProvider = internalLogBuilder.toOutputStream( outStream );
                     logProvider.getLog( StoreLogService.class ).info( "Rotation of internal log file failed:", e );

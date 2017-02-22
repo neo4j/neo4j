@@ -52,15 +52,15 @@ public class RotatingFileOutputStreamSupplier implements Supplier<OutputStream>,
      */
     public static class RotationListener
     {
-        public void outputFileCreated( OutputStream newStream, OutputStream oldStream )
+        public void outputFileCreated( OutputStream out )
         {
         }
 
-        public void rotationCompleted( OutputStream newStream, OutputStream oldStream )
+        public void rotationCompleted( OutputStream out )
         {
         }
 
-        public void rotationError( @SuppressWarnings("unused") Exception e, @SuppressWarnings("unused") OutputStream out )
+        public void rotationError( Exception e, OutputStream out )
         {
         }
     }
@@ -82,13 +82,23 @@ public class RotatingFileOutputStreamSupplier implements Supplier<OutputStream>,
     private final AtomicReference<OutputStream> outRef = new AtomicReference<>();
     private final List<WeakReference<OutputStream>> archivedStreams = new LinkedList<>();
 
+    // Used only in case no new output file can be created during rotation
+    private static final OutputStream stdErrStream = new OutputStream()
+    {
+        @Override
+        public void write( int i ) throws IOException
+        {
+            System.err.write( i );
+        }
+    };
+
     /**
-     * @param fileSystem             The filesystem to use
-     * @param outputFile             The file that the latest {@link OutputStream} should output to
+     * @param fileSystem The filesystem to use
+     * @param outputFile The file that the latest {@link OutputStream} should output to
      * @param rotationThresholdBytes The size above which the file should be rotated
-     * @param rotationDelay          The minimum time (ms) after last rotation before the file may be rotated again
-     * @param maxArchives            The maximum number of archived output files to keep
-     * @param rotationExecutor       An {@link Executor} for performing the rotation
+     * @param rotationDelay The minimum time (ms) after last rotation before the file may be rotated again
+     * @param maxArchives The maximum number of archived output files to keep
+     * @param rotationExecutor An {@link Executor} for performing the rotation
      * @throws IOException If the output file cannot be created
      */
     public RotatingFileOutputStreamSupplier( FileSystemAbstraction fileSystem, File outputFile,
@@ -100,13 +110,14 @@ public class RotatingFileOutputStreamSupplier implements Supplier<OutputStream>,
     }
 
     /**
-     * @param fileSystem             The filesystem to use
-     * @param outputFile             The file that the latest {@link OutputStream} should output to
+     * @param fileSystem The filesystem to use
+     * @param outputFile The file that the latest {@link OutputStream} should output to
      * @param rotationThresholdBytes The size above which the file should be rotated
-     * @param rotationDelay          The minimum time (ms) after last rotation before the file may be rotated again
-     * @param maxArchives            The maximum number of archived output files to keep
-     * @param rotationExecutor       An {@link Executor} for performing the rotation
-     * @param rotationListener       A {@link org.neo4j.logging.RotatingFileOutputStreamSupplier.RotationListener} that can observe the rotation process and be notified of errors
+     * @param rotationDelay The minimum time (ms) after last rotation before the file may be rotated again
+     * @param maxArchives The maximum number of archived output files to keep
+     * @param rotationExecutor An {@link Executor} for performing the rotation
+     * @param rotationListener A {@link org.neo4j.logging.RotatingFileOutputStreamSupplier.RotationListener} that can
+     * observe the rotation process and be notified of errors
      * @throws IOException If the output file cannot be created
      */
     public RotatingFileOutputStreamSupplier( FileSystemAbstraction fileSystem, File outputFile,
@@ -179,7 +190,9 @@ public class RotatingFileOutputStreamSupplier implements Supplier<OutputStream>,
     {
         if ( !closed.get() && !rotating.get() )
         {
-            if ( rotationDelayExceeded() && rotationThresholdExceeded() )
+            // In case output file doesn't exist, call rotate so that it gets created
+            if ( rotationDelayExceeded() && rotationThresholdExceeded() ||
+                    !fileSystem.fileExists( outputFile ) )
             {
                 rotate();
             }
@@ -236,38 +249,52 @@ public class RotatingFileOutputStreamSupplier implements Supplier<OutputStream>,
             synchronized ( outRef )
             {
                 OutputStream oldStream = outRef.get();
-
-                // Must close file prior to doing any operations on it or else it won't work on Windows
-                try
-                {
-                    oldStream.flush();
-                    oldStream.close();
-                }
-                catch ( Exception e )
-                {
-                    rotationListener.rotationError( e, outRef.get() );
-                    rotating.set( false );
-                    return;
-                }
-
                 OutputStream newStream;
+
                 try
                 {
-                    if ( fileSystem.fileExists( outputFile ) )
+                    // Must close file prior to doing any operations on it or else it won't work on Windows
+                    try
                     {
-                        shiftArchivedOutputFiles();
-                        fileSystem.renameFile( outputFile, archivedOutputFile( 1 ) );
+                        oldStream.flush();
+                        oldStream.close();
                     }
-                    newStream = openOutputFile();
-                }
-                catch ( Exception e )
-                {
-                    rotationListener.rotationError( e, outRef.get() );
-                    rotating.set( false );
-                    return;
-                }
+                    catch ( Exception e )
+                    {
+                        rotationListener.rotationError( e, streamWrapper );
+                        rotating.set( false );
+                        return;
+                    }
 
-                rotationListener.outputFileCreated( newStream, oldStream );
+                    try
+                    {
+                        if ( fileSystem.fileExists( outputFile ) )
+                        {
+                            shiftArchivedOutputFiles();
+                            fileSystem.renameFile( outputFile, archivedOutputFile( 1 ) );
+                        }
+                    }
+                    catch ( Exception e )
+                    {
+                        rotationListener.rotationError( e, streamWrapper );
+                        rotating.set( false );
+                        return;
+                    }
+
+                }
+                finally
+                {
+                    try
+                    {
+                        newStream = openOutputFile();
+                    }
+                    catch ( IOException e )
+                    {
+                        newStream = stdErrStream;
+                        rotationListener.rotationError( e, streamWrapper );
+                        rotating.set( false );
+                    }
+                }
 
                 if ( !closed.get() )
                 {
@@ -276,11 +303,13 @@ public class RotatingFileOutputStreamSupplier implements Supplier<OutputStream>,
                     archivedStreams.add( new WeakReference<>( oldStream ) );
                 }
 
+                rotationListener.outputFileCreated( streamWrapper );
+
                 if ( rotationDelay > 0 )
                 {
                     earliestRotationTimeRef.set( currentTimeSupplier.getAsLong() + rotationDelay );
                 }
-                rotationListener.rotationCompleted( newStream, oldStream );
+                rotationListener.rotationCompleted( streamWrapper );
                 rotating.set( false );
             }
         };
@@ -291,7 +320,7 @@ public class RotatingFileOutputStreamSupplier implements Supplier<OutputStream>,
         }
         catch ( Exception e )
         {
-            rotationListener.rotationError( e, outRef.get() );
+            rotationListener.rotationError( e, streamWrapper );
             rotating.set( false );
         }
     }
@@ -309,7 +338,8 @@ public class RotatingFileOutputStreamSupplier implements Supplier<OutputStream>,
             if ( i >= maxArchives )
             {
                 fileSystem.deleteFile( archive );
-            } else
+            }
+            else
             {
                 fileSystem.renameFile( archive, archivedOutputFile( i + 1 ) );
             }
