@@ -22,21 +22,32 @@ package org.neo4j.kernel.impl.api.store;
 import org.junit.AfterClass;
 import org.junit.BeforeClass;
 import org.junit.ClassRule;
+import org.junit.Rule;
 import org.junit.Test;
 import org.junit.runner.RunWith;
 import org.junit.runners.Parameterized;
 
 import java.io.File;
 import java.util.Arrays;
+import java.util.HashMap;
+import java.util.Iterator;
+import java.util.Map;
+import java.util.Random;
+import java.util.Set;
 import java.util.function.Consumer;
 
+import org.neo4j.collection.primitive.PrimitiveLongIterator;
+import org.neo4j.cursor.Cursor;
+import org.neo4j.helpers.collection.Iterables;
 import org.neo4j.io.fs.DefaultFileSystemAbstraction;
 import org.neo4j.io.fs.FileSystemAbstraction;
 import org.neo4j.io.pagecache.PageCache;
 import org.neo4j.io.pagecache.tracing.cursor.PageCursorTracerSupplier;
 import org.neo4j.kernel.configuration.Config;
+import org.neo4j.kernel.impl.api.state.TxState;
 import org.neo4j.kernel.impl.pagecache.ConfiguringPageCacheFactory;
 import org.neo4j.kernel.impl.store.NeoStores;
+import org.neo4j.kernel.impl.store.RecordCursor;
 import org.neo4j.kernel.impl.store.RecordCursors;
 import org.neo4j.kernel.impl.store.RecordStore;
 import org.neo4j.kernel.impl.store.RelationshipStore;
@@ -48,16 +59,23 @@ import org.neo4j.kernel.impl.store.record.RelationshipRecord;
 import org.neo4j.logging.NullLog;
 import org.neo4j.logging.NullLogProvider;
 import org.neo4j.storageengine.api.Direction;
+import org.neo4j.storageengine.api.RelationshipItem;
+import org.neo4j.test.rule.RandomRule;
 import org.neo4j.test.rule.TestDirectory;
 
 import static org.junit.Assert.assertEquals;
 import static org.junit.Assert.assertFalse;
+import static org.junit.Assert.assertNotNull;
 import static org.junit.Assert.assertTrue;
+import static org.mockito.Matchers.any;
+import static org.mockito.Matchers.anyLong;
+import static org.mockito.Matchers.eq;
 import static org.mockito.Mockito.mock;
-import static org.neo4j.function.Predicates.ALWAYS_TRUE_INT;
+import static org.mockito.Mockito.when;
 import static org.neo4j.graphdb.factory.GraphDatabaseSettings.pagecache_memory;
 import static org.neo4j.helpers.collection.MapUtil.stringMap;
 import static org.neo4j.io.pagecache.tracing.PageCacheTracer.NULL;
+import static org.neo4j.kernel.impl.api.state.StubCursors.relationship;
 import static org.neo4j.kernel.impl.locking.LockService.NO_LOCK_SERVICE;
 import static org.neo4j.kernel.impl.store.record.Record.NO_NEXT_RELATIONSHIP;
 import static org.neo4j.storageengine.api.Direction.BOTH;
@@ -124,13 +142,13 @@ public class StoreNodeRelationshipCursorTest
 
         try ( StoreNodeRelationshipCursor cursor = getNodeRelationshipCursor() )
         {
-            cursor.init( dense, 1L, FIRST_OWNING_NODE, direction, ALWAYS_TRUE_INT );
+            cursor.init( dense, 1L, FIRST_OWNING_NODE, direction, null );
             assertTrue( cursor.next() );
 
-            cursor.init( dense, 2, FIRST_OWNING_NODE, direction, ALWAYS_TRUE_INT );
+            cursor.init( dense, 2, FIRST_OWNING_NODE, direction, null );
             assertTrue( cursor.next() );
 
-            cursor.init( dense, 3, FIRST_OWNING_NODE, direction, ALWAYS_TRUE_INT );
+            cursor.init( dense, 3, FIRST_OWNING_NODE, direction, null );
             assertTrue( cursor.next() );
         }
     }
@@ -142,7 +160,7 @@ public class StoreNodeRelationshipCursorTest
         long expectedNodeId = 1;
         try ( StoreNodeRelationshipCursor cursor = getNodeRelationshipCursor() )
         {
-            cursor.init( dense, 1, FIRST_OWNING_NODE, direction, ALWAYS_TRUE_INT );
+            cursor.init( dense, 1, FIRST_OWNING_NODE, direction, null );
             while ( cursor.next() )
             {
                 assertEquals( "Should load next relationship in a sequence", expectedNodeId++, cursor.get().id() );
@@ -160,7 +178,7 @@ public class StoreNodeRelationshipCursorTest
         int relationshipIndex = 0;
         try ( StoreNodeRelationshipCursor cursor = getNodeRelationshipCursor() )
         {
-            cursor.init( dense, 1, FIRST_OWNING_NODE, direction, ALWAYS_TRUE_INT );
+            cursor.init( dense, 1, FIRST_OWNING_NODE, direction, null );
             while ( cursor.next() )
             {
                 assertEquals( "Should load next relationship in a sequence",
@@ -179,11 +197,236 @@ public class StoreNodeRelationshipCursorTest
         try ( StoreNodeRelationshipCursor cursor = getNodeRelationshipCursor() )
         {
             // WHEN
-            cursor.init( dense, NO_NEXT_RELATIONSHIP.intValue(), FIRST_OWNING_NODE, direction, ALWAYS_TRUE_INT );
+            cursor.init( dense, NO_NEXT_RELATIONSHIP.intValue(), FIRST_OWNING_NODE, direction, null );
 
             // THEN
             assertFalse( cursor.next() );
         }
+    }
+
+    @Rule
+    public final RandomRule random = new RandomRule();
+
+    @Test
+    public void shouldObserveCorrectAugmentedNodeRelationshipsState() throws Exception
+    {
+        // GIVEN random committed state
+        TxState state = new TxState();
+        for ( int i = 0; i < 100; i++ )
+        {
+            state.nodeDoCreate( i );
+        }
+        for ( int i = 0; i < 5; i++ )
+        {
+            state.relationshipTypeDoCreateForName( "Type-" + i, i );
+        }
+        Map<Long,RelationshipItem> committedRelationships = new HashMap<>();
+        long relationshipId = 0;
+        int nodeCount = 100;
+        int relationshipTypeCount = 5;
+        for ( int i = 0; i < 30; i++ )
+        {
+            RelationshipItem relationship = relationship( relationshipId++, random.nextInt(
+                    relationshipTypeCount ),
+                    random.nextInt( nodeCount ), random.nextInt( nodeCount ) );
+            committedRelationships.put( relationship.id(), relationship );
+        }
+        Map<Long,RelationshipItem> allRelationships = new HashMap<>( committedRelationships );
+        // and some random changes to that
+        for ( int i = 0; i < 10; i++ )
+        {
+            if ( random.nextBoolean() )
+            {
+                RelationshipItem relationship = relationship( relationshipId++, random.nextInt( relationshipTypeCount ),
+                        random.nextInt( nodeCount ), random.nextInt( nodeCount ) );
+                allRelationships.put( relationship.id(), relationship );
+                state.relationshipDoCreate( relationship.id(), relationship.type(), relationship.startNode(),
+                        relationship.endNode() );
+            }
+            else
+            {
+                RelationshipItem relationship = Iterables
+                        .fromEnd( committedRelationships.values(), random.nextInt( committedRelationships.size() ) );
+                state.relationshipDoDelete( relationship.id(), relationship.type(), relationship.startNode(),
+                        relationship.endNode() );
+                allRelationships.remove( relationship.id() );
+            }
+        }
+        // WHEN
+        for ( int nodeId = 0; nodeId < nodeCount; nodeId++ )
+        {
+            Direction direction = Direction.values()[random.nextInt( Direction.values().length )];
+            int[] relationshipTypes = randomTypes( relationshipTypeCount, random.random() );
+            Map<Long,RelationshipItem> rels =
+                    relationshipsForNode( nodeId, allRelationships, direction, relationshipTypes );
+            Cursor<RelationshipItem> cursor = cursor( nodeId, rels, state, direction, relationshipTypes );
+
+            Map<Long,RelationshipItem> expectedRelationships =
+                    relationshipsForNode( nodeId, allRelationships, direction, relationshipTypes );
+            // THEN
+            while ( cursor.next() )
+            {
+                RelationshipItem relationship = cursor.get();
+                RelationshipItem actual = expectedRelationships.remove( relationship.id() );
+                assertNotNull( "Augmented cursor returned relationship " + relationship + ", but shouldn't have",
+                        actual );
+                assertRelationshipEquals( actual, relationship );
+            }
+
+            assertTrue( "Augmented cursor didn't return some expected relationships: " + expectedRelationships,
+                    expectedRelationships.isEmpty() );
+        }
+    }
+
+    private void noCache( Cursor<RelationshipItem> cursor )
+    {
+
+    }
+
+    private Cursor<RelationshipItem> cursor( long nodeId, Map<Long,RelationshipItem> rels, TxState state,
+            Direction direction, int[] relationshipTypes )
+    {
+        Iterator<Long> relIds = relsFromDisk( nodeId, rels, state, direction, relationshipTypes );
+        long firstRelId = relIds.hasNext() ? relIds.next() : -1;
+        RelationshipRecord relationshipRecord = new RelationshipRecord( -1 );
+        RecordCursors cursors = mock( RecordCursors.class );
+        @SuppressWarnings( "unchecked" )
+        RecordCursor<RelationshipRecord> recordCursor = mock( RecordCursor.class );
+        when( cursors.relationship() ).thenReturn( recordCursor );
+        when( recordCursor.next( anyLong(), eq( relationshipRecord ), any( RecordLoad.class ) ) ).thenAnswer(
+                invocationOnMock ->
+                {
+                    long id = (long) invocationOnMock.getArguments()[0];
+                    RelationshipRecord record = (RelationshipRecord) invocationOnMock.getArguments()[1];
+                        RelationshipItem relationshipItem = rels.get( id );
+                    if ( relationshipItem != null )
+                    {
+                        record.setInUse( true );
+                        record.setId( id );
+                        record.setType( relationshipItem.type() );
+                        record.setFirstNode( relationshipItem.startNode() );
+                        record.setSecondNode( relationshipItem.endNode() );
+                        long nextRelId = relIds.hasNext() ? relIds.next() : -1;
+                        // this is a trick but it is good enough for this test
+                        record.setFirstNextRel( nextRelId );
+                        record.setSecondNextRel( nextRelId );
+                    }
+                    else
+                    {
+                        record.clear();
+                        record.setFirstNode( nodeId );
+                    }
+                    return relationshipItem != null;
+                } );
+        StoreNodeRelationshipCursor cursor =
+                new StoreNodeRelationshipCursor( relationshipRecord, new RelationshipGroupRecord( -1 ),
+                        this::noCache, cursors, NO_LOCK_SERVICE );
+
+        return relationshipTypes == null
+                ? cursor.init( false, firstRelId, nodeId, direction, state )
+                : cursor.init( false, firstRelId, nodeId, direction, relationshipTypes, state );
+    }
+
+    private Iterator<Long> relsFromDisk( long nodeId, Map<Long,RelationshipItem> rels, TxState state,
+            Direction direction, int[] relationshipTypes )
+    {
+        Set<Long> relationships = rels.keySet();
+        PrimitiveLongIterator iterator = relationshipTypes == null
+                         ? state.getNodeState( nodeId ).getAddedRelationships( direction )
+                         : state.getNodeState( nodeId ).getAddedRelationships( direction, relationshipTypes );
+
+        if ( iterator != null )
+        {
+            while ( iterator.hasNext() )
+            {
+                relationships.remove( iterator.next() );
+            }
+        }
+
+        return relationships.iterator();
+    }
+
+    private Map<Long,RelationshipItem> relationshipsForNode( long nodeId, Map<Long,RelationshipItem> allRelationships,
+            Direction direction, int[] relationshipTypes )
+    {
+        Map<Long,RelationshipItem> result = new HashMap<>();
+        for ( RelationshipItem relationship : allRelationships.values() )
+        {
+            switch ( direction )
+            {
+            case OUTGOING:
+                if ( relationship.startNode() != nodeId )
+                {
+                    continue;
+                }
+                break;
+            case INCOMING:
+                if ( relationship.endNode() != nodeId )
+                {
+                    continue;
+                }
+                break;
+            case BOTH:
+                if ( relationship.startNode() != nodeId && relationship.endNode() != nodeId )
+                {
+                    continue;
+                }
+                break;
+            default:
+                throw new IllegalStateException( "Unknown direction: " + direction );
+            }
+
+            if ( relationshipTypes != null )
+            {
+                if ( !contains( relationshipTypes, relationship.type() ) )
+                {
+                    continue;
+                }
+            }
+
+            result.put( relationship.id(), relationship );
+        }
+        return result;
+    }
+
+    private void assertRelationshipEquals( RelationshipItem expected, RelationshipItem relationship )
+    {
+        assertEquals( expected.id(), relationship.id() );
+        assertEquals( expected.type(), relationship.type() );
+        assertEquals( expected.startNode(), relationship.startNode() );
+        assertEquals( expected.endNode(), relationship.endNode() );
+    }
+
+    private int[] randomTypes( int high, Random random )
+    {
+        int count = random.nextInt( high );
+        if ( count == 0 )
+        {
+            return null;
+        }
+        int[] types = new int[count];
+        Arrays.fill( types, -1 );
+        for ( int i = 0; i < count; )
+        {
+            int candidate = random.nextInt( high );
+            if ( !contains( types, candidate ) )
+            {
+                types[i++] = candidate;
+            }
+        }
+        return types;
+    }
+
+    private boolean contains( int[] array, int candidate )
+    {
+        for ( int i : array )
+        {
+            if ( i == candidate )
+            {
+                return true;
+            }
+        }
+        return false;
     }
 
     private void createNodeRelationships()

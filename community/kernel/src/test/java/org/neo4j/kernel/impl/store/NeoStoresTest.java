@@ -99,7 +99,6 @@ import static org.junit.Assert.assertNotNull;
 import static org.junit.Assert.assertNull;
 import static org.junit.Assert.assertTrue;
 import static org.junit.Assert.fail;
-import static org.neo4j.function.Predicates.ALWAYS_TRUE_INT;
 import static org.neo4j.graphdb.factory.GraphDatabaseSettings.counts_store_rotation_timeout;
 import static org.neo4j.helpers.collection.MapUtil.stringMap;
 import static org.neo4j.kernel.api.properties.DefinedProperty.NO_SUCH_PROPERTY;
@@ -984,7 +983,7 @@ public class NeoStoresTest
 
             NodeItem nodeItem = nodeCursor.get();
             try ( Cursor<RelationshipItem> relationships = statement.getStoreStatement().acquireNodeRelationshipCursor(
-                    nodeItem.isDense(), nodeItem.id(), nodeItem.nextRelationshipId(), BOTH, ALWAYS_TRUE_INT ) )
+                    nodeItem.isDense(), nodeItem.id(), nodeItem.nextRelationshipId(), BOTH, null, null ) )
             {
                 while ( relationships.next() )
                 {
@@ -1067,7 +1066,7 @@ public class NeoStoresTest
             nodeCursor.next();
             NodeItem nodeItem = nodeCursor.get();
             try ( Cursor<RelationshipItem> relationships = statement.getStoreStatement().acquireNodeRelationshipCursor(
-                    nodeItem.isDense(), nodeItem.id(), nodeItem.nextRelationshipId(), BOTH, ALWAYS_TRUE_INT ) )
+                    nodeItem.isDense(), nodeItem.id(), nodeItem.nextRelationshipId(), BOTH, null, null ) )
             {
                 while ( relationships.next() )
                 {
@@ -1365,7 +1364,7 @@ public class NeoStoresTest
             nodeCursor.next();
             NodeItem nodeItem = nodeCursor.get();
             try ( Cursor<RelationshipItem> relationships = statement.getStoreStatement().acquireNodeRelationshipCursor(
-                    nodeItem.isDense(), nodeItem.id(), nodeItem.nextRelationshipId(), BOTH, ALWAYS_TRUE_INT ) )
+                    nodeItem.isDense(), nodeItem.id(), nodeItem.nextRelationshipId(), BOTH, null, null ) )
             {
                 assertTrue( relationships.next() );
             }
@@ -1489,7 +1488,7 @@ public class NeoStoresTest
             NodeItem nodeItem = nodeCursor.get();
             statement.getStoreStatement()
                     .acquireNodeRelationshipCursor( nodeItem.isDense(), nodeItem.id(), nodeItem.nextRelationshipId(),
-                            BOTH, ALWAYS_TRUE_INT ).forAll( rel -> relDelete( rel.id() ) );
+                            BOTH, null, null ).forAll( rel -> relDelete( rel.id() ) );
         }
     }
 

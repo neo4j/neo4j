@@ -22,6 +22,7 @@ package org.neo4j.kernel.impl.api.store;
 import java.util.function.Consumer;
 import java.util.function.IntPredicate;
 
+import org.neo4j.collection.primitive.PrimitiveLongIterator;
 import org.neo4j.kernel.impl.locking.LockService;
 import org.neo4j.kernel.impl.store.InvalidRecordException;
 import org.neo4j.kernel.impl.store.RecordCursors;
@@ -29,7 +30,10 @@ import org.neo4j.kernel.impl.store.record.Record;
 import org.neo4j.kernel.impl.store.record.RelationshipGroupRecord;
 import org.neo4j.kernel.impl.store.record.RelationshipRecord;
 import org.neo4j.storageengine.api.Direction;
+import org.neo4j.storageengine.api.txstate.ReadableTransactionState;
 
+import static org.neo4j.function.Predicates.ALWAYS_TRUE_INT;
+import static org.neo4j.function.Predicates.any;
 import static org.neo4j.kernel.impl.store.record.Record.NO_NEXT_RELATIONSHIP;
 import static org.neo4j.kernel.impl.store.record.Record.NULL_REFERENCE;
 import static org.neo4j.kernel.impl.store.record.RecordLoad.FORCE;
@@ -39,7 +43,7 @@ import static org.neo4j.kernel.impl.store.record.RecordLoad.FORCE;
  * <p/>
  * This cursor handles both dense and non-dense nodes as source.
  */
-public class StoreNodeRelationshipCursor extends StoreAbstractRelationshipCursor
+public class StoreNodeRelationshipCursor extends StoreAbstractIteratorRelationshipCursor
 {
     private final RelationshipGroupRecord groupRecord;
     private final Consumer<StoreNodeRelationshipCursor> instanceCache;
@@ -64,12 +68,25 @@ public class StoreNodeRelationshipCursor extends StoreAbstractRelationshipCursor
         this.cursors = cursors;
     }
 
-    public StoreNodeRelationshipCursor init( boolean isDense,
-            long firstRelId,
-            long fromNodeId,
-            Direction direction,
-            IntPredicate allowedTypes )
+    public StoreNodeRelationshipCursor init( boolean isDense, long firstRelId, long fromNodeId, Direction direction,
+            ReadableTransactionState state )
     {
+        PrimitiveLongIterator addedNodeRelationships = addedNodeRelationships( fromNodeId, direction, null, state );
+        return init( isDense, firstRelId, fromNodeId, direction, ALWAYS_TRUE_INT, state, addedNodeRelationships );
+    }
+
+    public StoreNodeRelationshipCursor init( boolean isDense, long firstRelId, long fromNodeId, Direction direction,
+            int[] allowedTypes, ReadableTransactionState state )
+    {
+        PrimitiveLongIterator addedNodeRelationships =
+                addedNodeRelationships( fromNodeId, direction, allowedTypes, state );
+        return init( isDense, firstRelId, fromNodeId, direction, any( allowedTypes ), state, addedNodeRelationships );
+    }
+
+    private StoreNodeRelationshipCursor init( boolean isDense, long firstRelId, long fromNodeId, Direction direction,
+            IntPredicate allowedTypes, ReadableTransactionState state, PrimitiveLongIterator addedNodeRelationships )
+    {
+        super.init( state, addedNodeRelationships );
         this.isDense = isDense;
         this.relationshipId = firstRelId;
         this.fromNodeId = fromNodeId;
@@ -90,8 +107,20 @@ public class StoreNodeRelationshipCursor extends StoreAbstractRelationshipCursor
         return this;
     }
 
+    private PrimitiveLongIterator addedNodeRelationships( long fromNodeId, Direction direction,
+            int[] allowedTypes, ReadableTransactionState state )
+    {
+        if ( state == null )
+        {
+            return null;
+        }
+
+        return allowedTypes == null ? state.getNodeState( fromNodeId ).getAddedRelationships( direction )
+                                    : state.getNodeState( fromNodeId ).getAddedRelationships( direction, allowedTypes );
+    }
+
     @Override
-    protected boolean fetchNext()
+    protected boolean doFetchNext()
     {
         while ( relationshipId != NO_NEXT_RELATIONSHIP.intValue() )
         {
@@ -274,4 +303,11 @@ public class StoreNodeRelationshipCursor extends StoreAbstractRelationshipCursor
     }
 
     private static final GroupChain[] GROUP_CHAINS = GroupChain.values();
+
+    @Override
+    public String toString()
+    {
+        return String
+                .format( "RelationShipItem[id=%d, type=%d, start=%d, end=%d]", id(), type(), startNode(), endNode() );
+    }
 }

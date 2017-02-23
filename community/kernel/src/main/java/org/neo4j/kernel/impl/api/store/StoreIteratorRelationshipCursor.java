@@ -20,39 +20,45 @@
 package org.neo4j.kernel.impl.api.store;
 
 import org.neo4j.collection.primitive.PrimitiveLongIterator;
-import org.neo4j.graphdb.Resource;
 import org.neo4j.kernel.impl.locking.LockService;
 import org.neo4j.kernel.impl.store.RecordCursors;
 import org.neo4j.kernel.impl.store.record.RelationshipRecord;
 import org.neo4j.kernel.impl.util.InstanceCache;
+import org.neo4j.storageengine.api.txstate.ReadableTransactionState;
 
+import static org.neo4j.collection.primitive.PrimitiveLongCollections.toPrimitiveIterator;
 import static org.neo4j.kernel.impl.store.record.RecordLoad.CHECK;
 
 /**
  * Cursor for iterating a set of relationships.
  */
-public class StoreIteratorRelationshipCursor extends StoreAbstractRelationshipCursor
+public class StoreIteratorRelationshipCursor extends StoreAbstractIteratorRelationshipCursor
 {
     private PrimitiveLongIterator iterator;
     private final InstanceCache<StoreIteratorRelationshipCursor> instanceCache;
 
-    public StoreIteratorRelationshipCursor( RelationshipRecord relationshipRecord,
-            InstanceCache<StoreIteratorRelationshipCursor> instanceCache,
-            RecordCursors cursors,
+    StoreIteratorRelationshipCursor( RelationshipRecord relationshipRecord,
+            InstanceCache<StoreIteratorRelationshipCursor> instanceCache, RecordCursors cursors,
             LockService lockService )
     {
         super( relationshipRecord, cursors, lockService );
         this.instanceCache = instanceCache;
     }
 
-    public StoreIteratorRelationshipCursor init( PrimitiveLongIterator iterator )
+    public StoreIteratorRelationshipCursor init( PrimitiveLongIterator iterator, ReadableTransactionState state )
     {
+        super.init( state, addedRelationships( state ) );
         this.iterator = iterator;
         return this;
     }
 
+    private PrimitiveLongIterator addedRelationships( ReadableTransactionState state )
+    {
+        return state == null ? null : toPrimitiveIterator( state.addedAndRemovedRelationships().getAdded().iterator() );
+    }
+
     @Override
-    protected boolean fetchNext()
+    protected boolean doFetchNext()
     {
         while ( iterator != null && iterator.hasNext() )
         {
