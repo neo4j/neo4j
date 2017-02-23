@@ -56,7 +56,6 @@ import org.neo4j.kernel.impl.util.diffsets.DiffSets;
 import org.neo4j.kernel.impl.util.diffsets.RelationshipDiffSets;
 import org.neo4j.storageengine.api.Direction;
 import org.neo4j.storageengine.api.PropertyItem;
-import org.neo4j.storageengine.api.RelationshipItem;
 import org.neo4j.storageengine.api.StorageProperty;
 import org.neo4j.storageengine.api.txstate.DiffSetsVisitor;
 import org.neo4j.storageengine.api.txstate.NodeState;
@@ -67,7 +66,6 @@ import org.neo4j.storageengine.api.txstate.ReadableTransactionState;
 import org.neo4j.storageengine.api.txstate.RelationshipState;
 import org.neo4j.storageengine.api.txstate.TxStateVisitor;
 
-import static org.neo4j.collection.primitive.PrimitiveLongCollections.toPrimitiveIterator;
 import static org.neo4j.helpers.collection.Iterables.map;
 import static org.neo4j.kernel.impl.api.PropertyValueComparison.SuperType.NUMBER;
 import static org.neo4j.kernel.impl.api.PropertyValueComparison.SuperType.STRING;
@@ -720,34 +718,6 @@ public final class TxState implements TransactionState, RelationshipVisitor.Home
             labelDiffSets.getAdded().forEach( labels::add );
         }
         return labels;
-    }
-
-    @Override
-    public Cursor<RelationshipItem> augmentNodeRelationshipCursor( Cursor<RelationshipItem> cursor,
-            NodeState nodeState,
-            Direction direction )
-    {
-        return nodeState.hasChanges()
-               ? iteratorRelationshipCursor.get().init( cursor, nodeState.getAddedRelationships( direction ) )
-               : cursor;
-    }
-    @Override
-    public Cursor<RelationshipItem> augmentNodeRelationshipCursor( Cursor<RelationshipItem> cursor,
-            NodeState nodeState,
-            Direction direction,
-            int[] relTypes )
-    {
-        return nodeState.hasChanges()
-               ? iteratorRelationshipCursor.get().init( cursor, nodeState.getAddedRelationships( direction, relTypes ) )
-               : cursor;
-    }
-
-    @Override
-    public Cursor<RelationshipItem> augmentRelationshipsGetAllCursor( Cursor<RelationshipItem> cursor )
-    {
-        return hasChanges && relationships != null && !relationships.isEmpty()
-               ? iteratorRelationshipCursor.get().init( cursor, toPrimitiveIterator( relationships.getAdded().iterator() ) )
-               : cursor;
     }
 
     @Override

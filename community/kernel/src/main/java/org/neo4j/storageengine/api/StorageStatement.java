@@ -19,8 +19,6 @@
  */
 package org.neo4j.storageengine.api;
 
-import java.util.function.IntPredicate;
-
 import org.neo4j.cursor.Cursor;
 import org.neo4j.kernel.api.exceptions.index.IndexNotFoundKernelException;
 import org.neo4j.kernel.api.schema.index.IndexDescriptor;
@@ -99,21 +97,23 @@ public interface StorageStatement extends AutoCloseable
      * @param nodeId the id of the node where to start traversing the relationships
      * @param relationshipId the id of the first relationship in the chain
      * @param direction the direction of the relationship wrt the node
-     * @param relTypeFilter the allowed types (it allows all types if unspecified)
+     * @param relTypes the allowed types (it allows all types if null)
+     * @param state the transaction state or null if there are no changes.
      * @return a {@link Cursor} over {@link RelationshipItem} for traversing the relationships associated to the node.
      */
-    Cursor<RelationshipItem> acquireNodeRelationshipCursor(  boolean isDense, long nodeId, long relationshipId,
-            Direction direction, IntPredicate relTypeFilter );
+    Cursor<RelationshipItem> acquireNodeRelationshipCursor( boolean isDense, long nodeId, long relationshipId,
+            Direction direction, int[] relTypes, ReadableTransactionState state );
 
     /**
-     -     * Acquires {@link Cursor} capable of {@link Cursor#get() serving} {@link RelationshipItem} for selected
-     -     * relationships. No relationship is selected when this method returns, a call to {@link Cursor#next()}
-     -     * will have to be made to place the cursor over the first item and then more calls to move the cursor
-     -     * through the selection.
-     -     *
-     -     * @return a {@link Cursor} over all stored relationships.
-     -     */
-    Cursor<RelationshipItem> relationshipsGetAllCursor();
+     * Acquires {@link Cursor} capable of {@link Cursor#get() serving} {@link RelationshipItem} for selected
+     * relationships. No relationship is selected when this method returns, a call to {@link Cursor#next()}
+     * will have to be made to place the cursor over the first item and then more calls to move the cursor
+     * through the selection.
+     *
+     * @param state the transaction state or null if there are no changes.
+     * @return a {@link Cursor} over all stored relationships.
+     */
+    Cursor<RelationshipItem> relationshipsGetAllCursor( ReadableTransactionState state );
 
     Cursor<PropertyItem> acquirePropertyCursor( long propertyId, Lock shortLivedReadLock );
 
