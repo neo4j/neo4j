@@ -19,9 +19,13 @@
  */
 package org.neo4j.cypher.internal.codegen
 
+import java.util
+
 import org.neo4j.cypher.internal.frontend.v3_2.CypherTypeException
 import org.scalatest.prop.TableDrivenPropertyChecks
 import org.scalatest.{Assertions, Matchers, PropSpec}
+
+import scala.collection.JavaConverters._
 
 class CompiledMathHelperTest extends PropSpec with TableDrivenPropertyChecks with Matchers with Assertions {
 
@@ -35,6 +39,7 @@ class CompiledMathHelperTest extends PropSpec with TableDrivenPropertyChecks wit
       3.14 !,
       null,
       "a",
+      List(1,2,3).asJava,
       true !,
       false !
     )
@@ -60,6 +65,10 @@ class CompiledMathHelperTest extends PropSpec with TableDrivenPropertyChecks wit
       case (_: java.lang.Boolean, _: java.lang.Boolean, Left(exception)) => exception shouldBe a [CypherTypeException]
       case (_: java.lang.Boolean, _: Number,            Left(exception)) => exception shouldBe a [CypherTypeException]
 
+      case (l1: util.List[_], l2: util.List[_], Right(result)) => result should equal(concat(l1, l2))
+      case (x, l: util.List[_], Right(result)) => result should equal(prepend(x, l))
+      case (l: util.List[_], x, Right(result)) => result should equal(append(x, l))
+
       case (v1, v2, v3) => fail(s"Unspecified behaviour: $v1 + $v2 => $v3")
     }
   }
@@ -84,6 +93,10 @@ class CompiledMathHelperTest extends PropSpec with TableDrivenPropertyChecks wit
       case (_: Number,            _: java.lang.Boolean, Left(exception)) => exception shouldBe a [CypherTypeException]
       case (_: java.lang.Boolean, _: java.lang.Boolean, Left(exception)) => exception shouldBe a [CypherTypeException]
       case (_: java.lang.Boolean, _: Number,            Left(exception)) => exception shouldBe a [CypherTypeException]
+
+      case (l1: util.List[_], l2: util.List[_], Left(exception)) => exception shouldBe a [CypherTypeException]
+      case (x, l: util.List[_], Left(exception)) => exception shouldBe a [CypherTypeException]
+      case (l: util.List[_], x, Left(exception)) => exception shouldBe a [CypherTypeException]
 
       case (v1, v2, v3) => fail(s"Unspecified behaviour: $v1 + $v2 => $v3")
     }
@@ -115,9 +128,28 @@ class CompiledMathHelperTest extends PropSpec with TableDrivenPropertyChecks wit
 
   val inputs = Table[Any]("Number", 42, 42.1, 42L, 42.3F)
   property("transformToInt") {
-    forAll(inputs) {
-      case x => CompiledMathHelper.transformToInt(x) should equal(42)
-    }
+    forAll(inputs)(x => CompiledMathHelper.transformToInt(x) should equal(42))
+  }
+
+  private def concat(l1: util.List[_], l2: util.List[_]): util.List[Any] = {
+    val newList = new util.ArrayList[Any](l1.size() + l2.size())
+    newList.addAll(l1)
+    newList.addAll(l2)
+    newList
+  }
+
+  private def prepend(x: Any, l: util.List[_]): util.List[Any] = {
+    val newList = new util.ArrayList[Any](l.size() + 1)
+    newList.add(x)
+    newList.addAll(l)
+    newList
+  }
+
+  private def append(x: Any, l: util.List[_]): util.List[Any] = {
+    val newList = new util.ArrayList[Any](l.size() + 1)
+    newList.addAll(l)
+    newList.add(x)
+    newList
   }
 
 }

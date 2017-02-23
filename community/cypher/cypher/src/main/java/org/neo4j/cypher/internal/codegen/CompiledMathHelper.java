@@ -51,11 +51,6 @@ public final class CompiledMathHelper
             return null;
         }
 
-        if ( lhs instanceof String || rhs instanceof String )
-        {
-            return String.valueOf( lhs ) + String.valueOf( rhs );
-        }
-
         //List addition
         if ( lhs instanceof List<?> && rhs instanceof List<?> )
         {
@@ -81,6 +76,11 @@ public final class CompiledMathHelper
             result.add( lhs );
             result.addAll( rhsList );
             return result;
+        }
+
+        if ( lhs instanceof String || rhs instanceof String )
+        {
+            return String.valueOf( lhs ) + String.valueOf( rhs );
         }
 
         // array addition

@@ -84,4 +84,16 @@ class ExpressionAcceptanceTest extends ExecutionEngineFunSuite with QueryStatist
           Map("title" -> "Movie 2"),
           Map("title" -> "Movie 1"))))))
   }
+
+  test("prepending item to a list should behave correctly in all runtimes") {
+    val query = "CYPHER WITH {a:[1,2,3]} AS x RETURN 'a:' + x.a AS r"
+    val result = executeScalarWithAllPlannersAndRuntimesAndCompatibilityMode[Seq[Any]](query)
+    result should equal(List("a:", 1, 2, 3))
+  }
+
+  test("appending item to a list should behave correctly in all runtimes") {
+    val query = "CYPHER WITH {a:[1,2,3]} AS x RETURN x.a + 'a:' AS r"
+    val result = executeScalarWithAllPlannersAndRuntimesAndCompatibilityMode[Seq[Any]](query)
+    result should equal(List(1, 2, 3, "a:"))
+  }
 }
