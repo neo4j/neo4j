@@ -179,7 +179,7 @@ trait NewPlannerTestSupport extends CypherTestSupport {
     } else {
       null
     }
-    val interpretedResult =executeScalar[T](s"CYPHER runtime=interpreted $queryText", params: _*)
+    val interpretedResult = executeScalar[T](s"CYPHER runtime=interpreted $queryText", params: _*)
     val compiledResult = monitoringNewPlanner(executeScalar[T](queryText, params: _*))(failedToUseNewPlanner(queryText))(failedToUseNewRuntime(queryText))
 
     assert( interpretedResult == compiledResult)
