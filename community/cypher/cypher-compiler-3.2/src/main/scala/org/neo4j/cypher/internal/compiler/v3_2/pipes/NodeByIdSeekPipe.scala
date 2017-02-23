@@ -60,7 +60,7 @@ case class NodeByIdSeekPipe(ident: String, nodeIdsExpr: SeekArgs)
     //register as parent so that stats are associated with this pipe
     state.decorator.registerParentPipe(this)
 
-    val ctx = state.initialContext.getOrElse(ExecutionContext.empty)
+    val ctx = state.createOrGetInitialContext()
     val nodeIds = nodeIdsExpr.expressions(ctx, state)
     new NodeIdSeekIterator(ident, ctx, state.query.nodeOps, nodeIds.iterator)
   }

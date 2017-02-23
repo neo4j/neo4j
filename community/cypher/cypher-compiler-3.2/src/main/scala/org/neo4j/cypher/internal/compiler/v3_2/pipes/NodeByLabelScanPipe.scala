@@ -33,7 +33,7 @@ case class NodeByLabelScanPipe(ident: String, label: LazyLabel)
     label.getOptId(state.query) match {
       case Some(labelId) =>
         val nodes = state.query.getNodesByLabel(labelId.id)
-        val baseContext = state.initialContext.getOrElse(ExecutionContext.empty)
+        val baseContext = state.createOrGetInitialContext()
         nodes.map(n => baseContext.newWith1(ident, n))
       case None =>
         Iterator.empty

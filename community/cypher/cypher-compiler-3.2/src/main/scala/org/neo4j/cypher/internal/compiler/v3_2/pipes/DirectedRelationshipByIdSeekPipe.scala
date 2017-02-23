@@ -33,7 +33,7 @@ case class DirectedRelationshipByIdSeekPipe(ident: String, relIdExpr: SeekArgs, 
     //register as parent so that stats are associated with this pipe
     state.decorator.registerParentPipe(this)
 
-    val ctx = state.initialContext.getOrElse(ExecutionContext.empty)
+    val ctx = state.createOrGetInitialContext()
     val relIds = relIdExpr.expressions(ctx, state).flatMap(Option(_))
     new DirectedRelationshipIdSeekIterator(ident, fromNode, toNode, ctx, state.query.relationshipOps, relIds.iterator)
   }

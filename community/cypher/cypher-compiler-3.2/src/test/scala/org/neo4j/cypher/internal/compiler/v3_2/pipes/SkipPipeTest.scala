@@ -19,24 +19,26 @@
  */
 package org.neo4j.cypher.internal.compiler.v3_2.pipes
 
+import org.mockito.Mockito.{never, verify, when}
+import org.mockito.internal.stubbing.defaultanswers.ReturnsMocks
 import org.neo4j.cypher.internal.compiler.v3_2.ExecutionContext
-import org.neo4j.cypher.internal.compiler.v3_2.helpers.ListSupport
-import org.neo4j.cypher.internal.compiler.v3_2.planDescription.Id
+import org.neo4j.cypher.internal.compiler.v3_2.commands.expressions.Literal
+import org.neo4j.cypher.internal.frontend.v3_2.test_helpers.CypherFunSuite
 
-case class UndirectedRelationshipByIdSeekPipe(ident: String, relIdExpr: SeekArgs, toNode: String, fromNode: String)
-                                             (val id: Id = new Id)
-                                             (implicit pipeMonitor: PipeMonitor)
-  extends Pipe
-  with ListSupport
-  {
-  protected def internalCreateResults(state: QueryState): Iterator[ExecutionContext] = {
-    //register as parent so that stats are associated with this pipe
-    state.decorator.registerParentPipe(this)
+class SkipPipeTest extends CypherFunSuite {
+  test("skip 0 should not actually pull from the input") {
+    // Given
+    val inputIterator = mock[Iterator[ExecutionContext]](new ReturnsMocks)
 
-    val ctx = state.createOrGetInitialContext()
-    val relIds = relIdExpr.expressions(ctx, state).flatMap(Option(_))
-    new UndirectedRelationshipIdSeekIterator(ident, fromNode, toNode, ctx, state.query.relationshipOps, relIds.iterator)
+    when(inputIterator.isEmpty).thenReturn(false)
+
+    val src: Pipe = new DummyPipe(inputIterator)
+    val limitPipe = SkipPipe(src, Literal(0))()(mock[PipeMonitor])
+
+    // When
+    val result = limitPipe.createResults(QueryStateHelper.empty)
+
+    // Then
+    verify(inputIterator, never()).next()
   }
-
-  def monitor = pipeMonitor
 }

@@ -43,9 +43,11 @@ class QueryState(val query: QueryContext,
                  val typeConverter: RuntimeTypeConverter = IdentityTypeConverter,
                  val cachedIn: SingleThreadedLRUCache[Any, InCheckContainer] =
                    new SingleThreadedLRUCache(maxSize = 16)) {
-  private var _pathValueBuilder: PathValueBuilder = null
+  private var _pathValueBuilder: PathValueBuilder = _
 
-  def clearPathValueBuilder = {
+  def createOrGetInitialContext(): ExecutionContext = initialContext.getOrElse(ExecutionContext.empty)
+
+  def clearPathValueBuilder: PathValueBuilder = {
     if (_pathValueBuilder == null) {
       _pathValueBuilder = new PathValueBuilder()
     }
@@ -57,7 +59,7 @@ class QueryState(val query: QueryContext,
   def getParam(key: String): Any =
     params.getOrElse(key, throw new ParameterNotFoundException("Expected a parameter named " + key))
 
-  def getStatistics = query.getOptStatistics.getOrElse(QueryState.defaultStatistics)
+  def getStatistics: InternalQueryStatistics = query.getOptStatistics.getOrElse(QueryState.defaultStatistics)
 
   def withDecorator(decorator: PipeDecorator) =
     new QueryState(query, resources, params, decorator, timeReader, initialContext, queryId, triadicState, repeatableReads, typeConverter, cachedIn)
@@ -74,5 +76,5 @@ object QueryState {
 }
 
 class TimeReader {
-  lazy val getTime = System.currentTimeMillis()
+  lazy val getTime: Long = System.currentTimeMillis()
 }

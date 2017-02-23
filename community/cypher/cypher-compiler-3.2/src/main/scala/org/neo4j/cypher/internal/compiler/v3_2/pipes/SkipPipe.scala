@@ -34,27 +34,8 @@ case class SkipPipe(source: Pipe, exp: Expression)
     if(input.isEmpty)
       return Iterator.empty
 
-    implicit val s = state
+    val skip = asInt(exp(state.createOrGetInitialContext())(state))
 
-    val first: ExecutionContext = input.next()
-
-    val count = asInt(exp(first))
-
-    new HeadAndTail(first, input).drop(count)
-  }
-}
-
-class HeadAndTail[T](head: T, tail: Iterator[T]) extends Iterator[T] {
-  var usedHead: Boolean = false
-
-  def headUnused: Boolean = !usedHead
-
-  def hasNext: Boolean = headUnused || tail.hasNext
-
-  def next(): T = if (headUnused) {
-    usedHead = true
-    head
-  } else {
-    tail.next()
+    input.drop(skip)
   }
 }

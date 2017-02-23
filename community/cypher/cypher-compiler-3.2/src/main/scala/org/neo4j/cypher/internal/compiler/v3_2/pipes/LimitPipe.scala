@@ -28,18 +28,15 @@ case class LimitPipe(source: Pipe, exp: Expression)
                     (implicit pipeMonitor: PipeMonitor)
   extends PipeWithSource(source, pipeMonitor) with NumericHelper {
   protected def internalCreateResults(input: Iterator[ExecutionContext], state: QueryState): Iterator[ExecutionContext] = {
+
     if(input.isEmpty)
       return Iterator.empty
 
     //register as parent so that stats are associated with this pipe
     state.decorator.registerParentPipe(this)
 
-    implicit val s = state
+    val limit = asInt(exp(state.createOrGetInitialContext())(state))
 
-    val first: ExecutionContext = input.next()
-
-    val count = asInt(exp(first))
-
-    new HeadAndTail(first, input).take(count)
+    input.take(limit)
   }
 }

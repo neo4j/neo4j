@@ -38,7 +38,7 @@ abstract class AbstractNodeIndexStringScanPipe(ident: String,
     //register as parent so that stats are associated with this pipe
     state.decorator.registerParentPipe(this)
 
-    val baseContext = state.initialContext.getOrElse(ExecutionContext.empty)
+    val baseContext = state.createOrGetInitialContext()
     val value = valueExpr(baseContext)(state)
 
     val resultNodes = value match {
