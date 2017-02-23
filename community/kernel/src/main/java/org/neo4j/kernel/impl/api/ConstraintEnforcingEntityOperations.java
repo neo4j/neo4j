@@ -199,11 +199,6 @@ public class ConstraintEnforcingEntityOperations implements EntityOperations, Sc
         }
     }
 
-    private Iterator<UniquenessConstraint> uniquePropertyConstraints( Iterator<NodePropertyConstraint> constraints )
-    {
-        return new CastingIterator<>( constraints, UniquenessConstraint.class );
-    }
-
     // Simply delegate the rest of the invocations
 
     @Override
