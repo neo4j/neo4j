@@ -108,6 +108,11 @@ class IncomparableValuesException(details: Option[String], lhs: String, rhs: Str
   def this(lhs: String, rhs: String) = this(None, lhs, rhs)
 }
 
+class UnorderableValueException(value: String) extends CypherException {
+  override def mapToPublic[T <: Throwable](mapper: MapToPublicExceptions[T]): T =
+    mapper.unorderableValueException(value)
+}
+
 class PeriodicCommitInOpenTransactionException extends CypherException {
   override def mapToPublic[T <: Throwable](mapper: MapToPublicExceptions[T]) = mapper.periodicCommitInOpenTransactionException(this)
 }

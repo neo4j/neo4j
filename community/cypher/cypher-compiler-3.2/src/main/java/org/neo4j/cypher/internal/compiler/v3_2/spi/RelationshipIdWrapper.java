@@ -17,39 +17,9 @@
  * You should have received a copy of the GNU General Public License
  * along with this program.  If not, see <http://www.gnu.org/licenses/>.
  */
-package org.neo4j.cypher.internal.codegen;
+package org.neo4j.cypher.internal.compiler.v3_2.spi;
 
-public final class NodeIdWrapper
+public interface RelationshipIdWrapper
 {
-    private final long id;
-
-    public NodeIdWrapper( long id )
-    {
-        this.id = id;
-    }
-
-    public long id()
-    {
-        return id;
-    }
-
-    @Override
-    public boolean equals( Object o )
-    {
-        if ( this == o )
-        { return true; }
-        if ( o == null || getClass() != o.getClass() )
-        { return false; }
-
-        NodeIdWrapper that = (NodeIdWrapper) o;
-
-        return id == that.id;
-
-    }
-
-    @Override
-    public int hashCode()
-    {
-        return (int) (id ^ (id >>> 32));
-    }
+    long id();
 }

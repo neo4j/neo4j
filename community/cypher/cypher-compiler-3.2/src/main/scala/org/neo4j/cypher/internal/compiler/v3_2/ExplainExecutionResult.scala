@@ -20,7 +20,7 @@
 package org.neo4j.cypher.internal.compiler.v3_2
 
 import java.io.PrintWriter
-import java.util
+import java.{util => javaUtil}
 import java.util.Collections
 
 import org.neo4j.cypher.internal.compiler.v3_2.executionplan.{InternalExecutionResult, InternalQueryType}
@@ -35,9 +35,9 @@ case class ExplainExecutionResult(columns: List[String],
                                   notifications: Set[InternalNotification])
   extends InternalExecutionResult {
 
-  def javaIterator: ResourceIterator[util.Map[String, Any]] = new EmptyResourceIterator()
+  def javaIterator: ResourceIterator[javaUtil.Map[String, Any]] = new EmptyResourceIterator()
   def columnAs[T](column: String) = Iterator.empty
-  def javaColumns: util.List[String] = Collections.emptyList()
+  def javaColumns: javaUtil.List[String] = Collections.emptyList()
 
   def queryStatistics() = InternalQueryStatistics()
 

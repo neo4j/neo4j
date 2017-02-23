@@ -17,7 +17,7 @@
  * You should have received a copy of the GNU General Public License
  * along with this program.  If not, see <http://www.gnu.org/licenses/>.
  */
-package org.neo4j.cypher.internal.codegen;
+package org.neo4j.cypher.internal.compiler.v3_2.util;
 
 import java.util.Arrays;
 import java.util.Comparator;
@@ -28,8 +28,10 @@ import java.util.stream.DoubleStream;
 import java.util.stream.IntStream;
 import java.util.stream.LongStream;
 
-import org.neo4j.cypher.UnorderableValueException;
+import org.neo4j.cypher.internal.compiler.v3_2.spi.NodeIdWrapper;
+import org.neo4j.cypher.internal.compiler.v3_2.spi.RelationshipIdWrapper;
 import org.neo4j.cypher.internal.frontend.v3_2.IncomparableValuesException;
+import org.neo4j.cypher.internal.frontend.v3_2.UnorderableValueException;
 import org.neo4j.graphdb.Path;
 import org.neo4j.graphdb.PropertyContainer;
 import org.neo4j.helpers.MathUtil;

@@ -31,6 +31,8 @@ import java.util.stream.DoubleStream;
 import java.util.stream.IntStream;
 import java.util.stream.LongStream;
 
+import org.neo4j.cypher.internal.compiler.v3_2.spi.NodeIdWrapper;
+import org.neo4j.cypher.internal.compiler.v3_2.spi.RelationshipIdWrapper;
 import org.neo4j.cypher.internal.frontend.v3_2.CypherTypeException;
 import org.neo4j.cypher.internal.frontend.v3_2.IncomparableValuesException;
 import org.neo4j.graphdb.Node;
@@ -171,11 +173,11 @@ public abstract class CompiledConversionUtils
     {
         if ( value instanceof Node )
         {
-            return new NodeIdWrapper( ((Node) value).getId() );
+            return new NodeIdWrapperImpl( ((Node) value).getId() );
         }
         else if ( value instanceof Relationship )
         {
-            return new RelationshipIdWrapper( ((Relationship) value).getId() );
+            return new RelationshipIdWrapperImpl( ((Relationship) value).getId() );
         }
         else
         {
@@ -349,6 +351,7 @@ public abstract class CompiledConversionUtils
         throw new IllegalArgumentException( format( "Can not be converted to stream: %s", list.getClass().getName() ) );
     }
 
+    @SuppressWarnings( "unused" ) // called from compiled code
     public static long unboxNodeOrNull( NodeIdWrapper value )
     {
         if ( value == null )
@@ -358,6 +361,7 @@ public abstract class CompiledConversionUtils
         return value.id();
     }
 
+    @SuppressWarnings( "unused" ) // called from compiled code
     public static long unboxRelationshipOrNull( RelationshipIdWrapper value )
     {
         if ( value == null )

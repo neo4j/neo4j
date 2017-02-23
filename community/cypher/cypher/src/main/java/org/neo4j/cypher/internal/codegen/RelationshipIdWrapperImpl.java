@@ -19,15 +19,18 @@
  */
 package org.neo4j.cypher.internal.codegen;
 
-public final class RelationshipIdWrapper
+import org.neo4j.cypher.internal.compiler.v3_2.spi.RelationshipIdWrapper;
+
+public final class RelationshipIdWrapperImpl implements RelationshipIdWrapper
 {
     private final long id;
 
-    public RelationshipIdWrapper( long id )
+    public RelationshipIdWrapperImpl( long id )
     {
         this.id = id;
     }
 
+    @Override
     public long id()
     {
         return id;
@@ -41,7 +44,7 @@ public final class RelationshipIdWrapper
         if ( o == null || getClass() != o.getClass() )
         { return false; }
 
-        RelationshipIdWrapper that = (RelationshipIdWrapper) o;
+        RelationshipIdWrapperImpl that = (RelationshipIdWrapperImpl) o;
 
         return id == that.id;
 

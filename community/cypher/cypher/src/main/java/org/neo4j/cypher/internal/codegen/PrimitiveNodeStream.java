@@ -22,8 +22,10 @@ package org.neo4j.cypher.internal.codegen;
 import java.util.Arrays;
 import java.util.Iterator;
 import java.util.List;
+import java.util.function.LongFunction;
 import java.util.stream.LongStream;
 
+import org.neo4j.cypher.internal.compiler.v3_2.spi.NodeIdWrapper;
 import org.neo4j.graphdb.Node;
 
 import static java.lang.String.format;
@@ -61,7 +63,7 @@ public class PrimitiveNodeStream extends PrimitiveEntityStream<NodeIdWrapper>
     // This method is only used when we do not know the element type at compile time, so it has to box the elements
     public Iterator<NodeIdWrapper> iterator()
     {
-        return inner.mapToObj( NodeIdWrapper::new ).iterator();
+        return inner.mapToObj( (LongFunction<NodeIdWrapper>) NodeIdWrapperImpl::new ).iterator();
     }
 
     private static final PrimitiveNodeStream empty = new PrimitiveNodeStream( LongStream.empty() );

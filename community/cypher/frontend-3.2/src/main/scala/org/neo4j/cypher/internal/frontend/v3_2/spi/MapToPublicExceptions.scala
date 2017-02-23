@@ -32,6 +32,8 @@ trait MapToPublicExceptions[T <: Throwable] {
 
   def loadExternalResourceException(message: String, cause: Throwable): T
 
+  def unorderableValueException(value: String): T
+
   def incomparableValuesException(operator: Option[String], lhs: String, rhs: String, cause: Throwable): T
 
   def arithmeticException(message: String, cause: Throwable): T

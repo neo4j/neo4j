@@ -37,6 +37,8 @@ object exceptionHandler extends MapToPublicExceptions[CypherException] {
 
   override def patternException(message: String, cause: Throwable) = new PatternException(message, cause)
 
+  override def unorderableValueException(value: String) = new UnorderableValueException(value)
+
   override def invalidArgumentException(message: String, cause: Throwable) = new InvalidArgumentException(message, cause)
 
   override def mergeConstraintConflictException(message: String, cause: Throwable) = new MergeConstraintConflictException(message, cause)
