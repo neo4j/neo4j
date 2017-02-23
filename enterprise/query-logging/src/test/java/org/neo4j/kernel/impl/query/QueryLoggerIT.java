@@ -34,7 +34,6 @@ import java.util.HashMap;
 import java.util.LinkedHashMap;
 import java.util.List;
 import java.util.Map;
-import java.util.concurrent.TimeUnit;
 
 import org.neo4j.graphdb.GraphDatabaseService;
 import org.neo4j.graphdb.Result;
@@ -44,7 +43,6 @@ import org.neo4j.io.fs.FileSystemAbstraction;
 import org.neo4j.kernel.configuration.Settings;
 import org.neo4j.logging.AssertableLogProvider;
 import org.neo4j.test.DefaultFileSystemRule;
-import org.neo4j.test.EphemeralFileSystemRule;
 import org.neo4j.test.TargetDirectory;
 import org.neo4j.test.TestGraphDatabaseFactory;
 
@@ -53,7 +51,6 @@ import static org.junit.Assert.assertEquals;
 import static org.junit.Assert.assertFalse;
 import static org.junit.Assert.assertThat;
 import static org.junit.Assert.assertTrue;
-import static org.neo4j.function.Predicates.await;
 
 public class QueryLoggerIT
 {
@@ -108,9 +105,9 @@ public class QueryLoggerIT
         Map<String,Object> props = new LinkedHashMap<>(); // to be sure about ordering in the last assertion
         props.put( "name", "Roland" );
         props.put( "position", "Gunslinger" );
-        props.put( "followers", Arrays.asList("Jake", "Eddie", "Susannah") );
+        props.put( "followers", Arrays.asList( "Jake", "Eddie", "Susannah" ) );
 
-        Map<String, Object> params = new HashMap<>();
+        Map<String,Object> params = new HashMap<>();
         params.put( "props", props );
 
         String query = "CREATE ({props})";
@@ -120,7 +117,7 @@ public class QueryLoggerIT
         assertEquals( 1, logLines.size() );
         assertThat( logLines.get( 0 ), endsWith( String.format(
                 " ms: %s - %s - {props: {name: Roland, position: Gunslinger, followers: [Jake, Eddie, Susannah]}}",
-                QueryEngineProvider.embeddedSession( null ), query) ) );
+                QueryEngineProvider.embeddedSession( null ), query ) ) );
     }
 
     @Test
@@ -132,7 +129,7 @@ public class QueryLoggerIT
                 .setConfig( GraphDatabaseSettings.logs_directory, logsDirectory.getPath() )
                 .newGraphDatabase();
 
-        Map<String, Object> params = new HashMap<>();
+        Map<String,Object> params = new HashMap<>();
         params.put( "ids", Arrays.asList( 0, 1, 2 ) );
         String query = "MATCH (n) WHERE id(n) in {ids} RETURN n.name";
         executeQueryAndShutdown( database, query, params );
@@ -142,7 +139,7 @@ public class QueryLoggerIT
         assertThat( logLines.get( 0 ),
                 endsWith( String.format(
                         " ms: %s - %s - {ids: [0, 1, 2]}",
-                        QueryEngineProvider.embeddedSession( null ), query) ) );
+                        QueryEngineProvider.embeddedSession( null ), query ) ) );
     }
 
     @Test
@@ -220,10 +217,10 @@ public class QueryLoggerIT
 
     private void executeQueryAndShutdown( GraphDatabaseService database )
     {
-       executeQueryAndShutdown( database, QUERY, Collections.emptyMap() );
+        executeQueryAndShutdown( database, QUERY, Collections.emptyMap() );
     }
 
-    private void executeQueryAndShutdown( GraphDatabaseService database, String query, Map<String, Object> params )
+    private void executeQueryAndShutdown( GraphDatabaseService database, String query, Map<String,Object> params )
     {
         Result execute = database.execute( query, params );
         execute.close();
@@ -241,7 +238,7 @@ public class QueryLoggerIT
         try ( BufferedReader reader = new BufferedReader(
                 fs.openAsReader( logFilename, StandardCharsets.UTF_8 ) ) )
         {
-            for ( String line; (line = reader.readLine()) != null; )
+            for ( String line; ( line = reader.readLine() ) != null; )
             {
                 logLines.add( line );
             }
