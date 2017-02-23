@@ -200,19 +200,51 @@ public interface PageCacheTracer extends PageCacheCounters
      */
     MajorFlushEvent beginCacheFlush();
 
+    /**
+     * Report number of observed pins
+     * @param pins number of pins
+     */
     void pins( long pins );
 
+    /**
+     * Report number of observed unpins
+     * @param unpins number of unpins
+     */
     void unpins( long unpins );
 
+    /**
+     * Report number of observed faults
+     * @param faults number of faults
+     */
     void faults( long faults );
 
+    /**
+     * Report number of bytes read
+     * @param bytesRead number of read bytes
+     */
     void bytesRead( long bytesRead );
 
+    /**
+     * Report number of observed evictions
+     * @param evictions number of evictions
+     */
     void evictions( long evictions );
 
+    /**
+     * Report number of eviction exceptions
+     * @param evictionExceptions number of eviction exceptions
+     */
     void evictionExceptions( long evictionExceptions );
 
+    /**
+     * Report number of bytes written
+     * @param bytesWritten number of written bytes
+     */
     void bytesWritten( long bytesWritten );
 
+    /**
+     * Report number of flushes
+     * @param flushes number of flushes
+     */
     void flushes( long flushes );
 }

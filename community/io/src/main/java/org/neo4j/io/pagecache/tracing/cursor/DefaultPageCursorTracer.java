@@ -51,6 +51,7 @@ public class DefaultPageCursorTracer implements PageCursorTracer
 
     private PageCacheTracer pageCacheTracer = PageCacheTracer.NULL;
 
+    @Override
     public void init( PageCacheTracer pageCacheTracer )
     {
         this.pageCacheTracer = pageCacheTracer;

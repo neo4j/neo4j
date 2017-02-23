@@ -106,7 +106,16 @@ public interface PageCursorTracer extends PageCursorCounters
 
     PinEvent beginPin( boolean writeLock, long filePageId, PageSwapper swapper );
 
+    /**
+     * Initialize page cursor tracer with required context dependent values.
+     * @param tracer page cache tracer
+     */
     void init( PageCacheTracer tracer );
 
+    /**
+     * Report to global page cache tracer events observed by current page cursor tracer.
+     * As soon as any event will be reported, page cursor tracer reset corresponding counters and completely forgets
+     * about it.
+     */
     void reportEvents();
 }
