@@ -2127,13 +2127,13 @@ public class TestLuceneIndex extends AbstractLuceneIndexTest
         node.setProperty( key, value1 );
         index.add( node, key, value1 );
         restartTx();
-        assertEquals( 1, index.query( "*:*" ).size() );
+        assertEquals( 1, countHits( index.query( "*:*" ) ) );
 
         // WHEN adding one more property to the index
         node.setProperty( key, value2 );
         index.add( node, key, value2 ); // intentionally just add to the index
         restartTx();
-        assertEquals( 1, index.query( "*:*" ).size() );
+        assertEquals( 1, countHits( index.query( "*:*" ) ) );
 
         // and WHEN removing by node and key
         node.removeProperty( key );
@@ -2141,7 +2141,19 @@ public class TestLuceneIndex extends AbstractLuceneIndexTest
         restartTx();
 
         // THEN
-        assertEquals( 0, index.query( "*:*" ).size() );
+        assertEquals( 0, countHits( index.query( "*:*" ) ) );
+    }
+
+    private long countHits( IndexHits<Node> query )
+    {
+        try
+        {
+            return count( query );
+        }
+        finally
+        {
+            query.close();
+        }
     }
 
     private void queryAndSortNodesByNumericProperty( Index<Node> index, String numericProperty )
