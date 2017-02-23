@@ -23,14 +23,11 @@ import java.io.Closeable;
 import java.io.File;
 import java.io.IOException;
 import java.io.OutputStream;
-import java.lang.ref.WeakReference;
-import java.util.Iterator;
-import java.util.LinkedList;
-import java.util.List;
 import java.util.concurrent.Executor;
 import java.util.concurrent.atomic.AtomicBoolean;
 import java.util.concurrent.atomic.AtomicLong;
-import java.util.concurrent.atomic.AtomicReference;
+import java.util.concurrent.locks.ReadWriteLock;
+import java.util.concurrent.locks.ReentrantReadWriteLock;
 import java.util.function.LongSupplier;
 import java.util.function.Supplier;
 
@@ -67,21 +64,6 @@ public class RotatingFileOutputStreamSupplier implements Supplier<OutputStream>,
 
     private static final LongSupplier DEFAULT_CURRENT_TIME_SUPPLIER = System::currentTimeMillis;
 
-    private final LongSupplier currentTimeSupplier;
-    private final FileSystemAbstraction fileSystem;
-    private final File outputFile;
-    private final long rotationThresholdBytes;
-    private final long rotationDelay;
-    private final int maxArchives;
-    private final RotationListener rotationListener;
-    private final Executor rotationExecutor;
-    private final OutputStream streamWrapper;
-    private final AtomicBoolean closed = new AtomicBoolean( false );
-    private final AtomicBoolean rotating = new AtomicBoolean( false );
-    private final AtomicLong earliestRotationTimeRef = new AtomicLong( 0 );
-    private final AtomicReference<OutputStream> outRef = new AtomicReference<>();
-    private final List<WeakReference<OutputStream>> archivedStreams = new LinkedList<>();
-
     // Used only in case no new output file can be created during rotation
     private static final OutputStream nullStream = new OutputStream()
     {
@@ -90,6 +72,22 @@ public class RotatingFileOutputStreamSupplier implements Supplier<OutputStream>,
         {
         }
     };
+
+    private final LongSupplier currentTimeSupplier;
+    private final FileSystemAbstraction fileSystem;
+    private final File outputFile;
+    private final long rotationThresholdBytes;
+    private final long rotationDelay;
+    private final int maxArchives;
+    private final RotationListener rotationListener;
+    private final Executor rotationExecutor;
+    private final ReadWriteLock logFileLock = new ReentrantReadWriteLock( true );
+    private final OutputStream streamWrapper;
+    private final AtomicBoolean closed = new AtomicBoolean( false );
+    private final AtomicBoolean rotating = new AtomicBoolean( false );
+    private final AtomicLong earliestRotationTimeRef = new AtomicLong( 0 );
+    private OutputStream outRef = nullStream;
+
 
     /**
      * @param fileSystem The filesystem to use
@@ -139,43 +137,63 @@ public class RotatingFileOutputStreamSupplier implements Supplier<OutputStream>,
         this.maxArchives = maxArchives;
         this.rotationListener = rotationListener;
         this.rotationExecutor = rotationExecutor;
-        this.outRef.set( openOutputFile() );
+        this.outRef = openOutputFile();
         // Wrap the actual reference to prevent race conditions during log rotation
         this.streamWrapper = new OutputStream()
         {
             @Override
             public void write( int i ) throws IOException
             {
-                synchronized ( outRef )
+                logFileLock.readLock().lock();
+                try
                 {
-                    outRef.get().write( i );
+                    outRef.write( i );
+                }
+                finally
+                {
+                    logFileLock.readLock().unlock();
                 }
             }
 
             @Override
             public void write( byte[] bytes ) throws IOException
             {
-                synchronized ( outRef )
+                logFileLock.readLock().lock();
+                try
                 {
-                    outRef.get().write( bytes );
+                    outRef.write( bytes );
+                }
+                finally
+                {
+                    logFileLock.readLock().unlock();
                 }
             }
 
             @Override
             public void write( byte[] bytes, int off, int len ) throws IOException
             {
-                synchronized ( outRef )
+                logFileLock.readLock().lock();
+                try
                 {
-                    outRef.get().write( bytes, off, len );
+                    outRef.write( bytes, off, len );
+                }
+                finally
+                {
+                    logFileLock.readLock().unlock();
                 }
             }
 
             @Override
             public void flush() throws IOException
             {
-                synchronized ( outRef )
+                logFileLock.readLock().lock();
+                try
                 {
-                    outRef.get().flush();
+                    outRef.flush();
+                }
+                finally
+                {
+                    logFileLock.readLock().unlock();
                 }
             }
         };
@@ -202,25 +220,16 @@ public class RotatingFileOutputStreamSupplier implements Supplier<OutputStream>,
     @Override
     public void close() throws IOException
     {
-        synchronized ( outRef )
+        logFileLock.writeLock().lock();
+        try
         {
             closed.set( true );
-            for ( WeakReference<OutputStream> archivedStream : archivedStreams )
-            {
-                OutputStream outputStream = archivedStream.get();
-                if ( outputStream != null )
-                {
-                    try
-                    {
-                        outputStream.close();
-                    }
-                    catch ( Exception e )
-                    {
-                        // ignore
-                    }
-                }
-            }
-            outRef.get().close();
+            outRef.close();
+        }
+        finally
+        {
+            outRef = nullStream;
+            logFileLock.writeLock().unlock();
         }
     }
 
@@ -245,9 +254,10 @@ public class RotatingFileOutputStreamSupplier implements Supplier<OutputStream>,
 
         Runnable runnable = () ->
         {
-            synchronized ( outRef )
+            logFileLock.writeLock().lock();
+            try
             {
-                OutputStream oldStream = outRef.get();
+                OutputStream oldStream = outRef;
                 OutputStream newStream;
 
                 try
@@ -298,9 +308,7 @@ public class RotatingFileOutputStreamSupplier implements Supplier<OutputStream>,
 
                 if ( !closed.get() )
                 {
-                    outRef.set( newStream );
-                    removeCollectedReferences( archivedStreams );
-                    archivedStreams.add( new WeakReference<>( oldStream ) );
+                    outRef = newStream;
                 }
 
                 rotationListener.outputFileCreated( streamWrapper );
@@ -311,6 +319,10 @@ public class RotatingFileOutputStreamSupplier implements Supplier<OutputStream>,
                 }
                 rotationListener.rotationCompleted( streamWrapper );
                 rotating.set( false );
+            }
+            finally
+            {
+                logFileLock.writeLock().unlock();
             }
         };
 
@@ -359,16 +371,5 @@ public class RotatingFileOutputStreamSupplier implements Supplier<OutputStream>,
     private File archivedOutputFile( int archiveNumber )
     {
         return new File( String.format( "%s.%d", outputFile.getPath(), archiveNumber ) );
-    }
-
-    private static <T> void removeCollectedReferences( List<WeakReference<T>> referenceList )
-    {
-        for ( Iterator<WeakReference<T>> iterator = referenceList.iterator(); iterator.hasNext(); )
-        {
-            if ( iterator.next().get() == null )
-            {
-                iterator.remove();
-            }
-        }
     }
 }

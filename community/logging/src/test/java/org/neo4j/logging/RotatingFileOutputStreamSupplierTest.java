@@ -314,7 +314,19 @@ public class RotatingFileOutputStreamSupplierTest
             }
         } );
 
-        RotatingFileOutputStreamSupplier supplier = new RotatingFileOutputStreamSupplier( fileSystem, logFile, 10, 0,
+        final List<OutputStream> mockStreams = new ArrayList<>();
+        FileSystemAbstraction fs = new DelegatingFileSystemAbstraction( fileSystem )
+        {
+            @Override
+            public OutputStream openAsOutputStream( File fileName, boolean append ) throws IOException
+            {
+                final OutputStream stream = spy( super.openAsOutputStream( fileName, append ) );
+                mockStreams.add( stream );
+                return stream;
+            }
+        };
+
+        RotatingFileOutputStreamSupplier supplier = new RotatingFileOutputStreamSupplier( fs, logFile, 10, 0,
                 10, Executors.newSingleThreadExecutor(), rotationListener );
         OutputStream outputStream = supplier.get();
 
@@ -324,21 +336,32 @@ public class RotatingFileOutputStreamSupplierTest
         allowRotationComplete.countDown();
         supplier.close();
 
-        assertStreamClosed( supplier.get() );
+        assertStreamClosed( mockStreams.get( 0 ) );
     }
 
     @Test
     public void shouldCloseAllOutputStreams() throws Exception
     {
-        RotatingFileOutputStreamSupplier supplier = new RotatingFileOutputStreamSupplier( fileSystem, logFile, 10, 0,
+        final List<OutputStream> mockStreams = new ArrayList<>();
+        FileSystemAbstraction fs = new DelegatingFileSystemAbstraction( fileSystem )
+        {
+            @Override
+            public OutputStream openAsOutputStream( File fileName, boolean append ) throws IOException
+            {
+                final OutputStream stream = spy( super.openAsOutputStream( fileName, append ) );
+                mockStreams.add( stream );
+                return stream;
+            }
+        };
+
+        RotatingFileOutputStreamSupplier supplier = new RotatingFileOutputStreamSupplier( fs, logFile, 10, 0,
                 10, DIRECT_EXECUTOR );
-        OutputStream outputStream = supplier.get();
 
         write( supplier, "A string longer than 10 bytes" );
 
         supplier.close();
 
-        assertStreamClosed( outputStream );
+        assertStreamClosed( mockStreams.get( 0 ) );
     }
 
     @Test
