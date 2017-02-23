@@ -32,6 +32,7 @@ import static org.neo4j.kernel.configuration.Settings.ADVERTISED_SOCKET_ADDRESS;
 import static org.neo4j.kernel.configuration.Settings.BOOLEAN;
 import static org.neo4j.kernel.configuration.Settings.BYTES;
 import static org.neo4j.kernel.configuration.Settings.DURATION;
+import static org.neo4j.kernel.configuration.Settings.FALSE;
 import static org.neo4j.kernel.configuration.Settings.INTEGER;
 import static org.neo4j.kernel.configuration.Settings.MANDATORY;
 import static org.neo4j.kernel.configuration.Settings.STRING;
@@ -53,7 +54,13 @@ public class CausalClusteringSettings
     public static final Setting<Long> leader_election_timeout =
             setting( "causal_clustering.leader_election_timeout", DURATION, "7s" );
 
-    @Description("The maximum batch size when catching up (in unit of entries)")
+    @Description( "Prevents the current instance from volunteering to become Raft leader. Defaults to false, and " +
+            "should only be used in exceptional circumstances by expert users. Using this can result in reduced " +
+            "availability for the cluster." )
+    public static final Setting<Boolean> refuse_to_be_leader =
+            setting( "causal_clustering.refuse_to_be_leader", BOOLEAN, FALSE );
+
+    @Description( "The maximum batch size when catching up (in unit of entries)" )
     public static final Setting<Integer> catchup_batch_size =
             setting( "causal_clustering.catchup_batch_size", INTEGER, "64" );
 
@@ -209,7 +216,7 @@ public class CausalClusteringSettings
             "endpoints or return only read replicas. If there are no read replicas in the cluster, followers are " +
             "returned as read end points regardless the value of this setting." )
     public static final Setting<Boolean> cluster_allow_reads_on_followers =
-            setting( "causal_clustering.cluster_allow_reads_on_followers", BOOLEAN, Settings.FALSE );
+            setting( "causal_clustering.cluster_allow_reads_on_followers", BOOLEAN, FALSE );
 
     @Description( "The size of the ID allocation requests Core servers will make when they run out of NODE IDs. " +
             "Larger values mean less frequent requests but also result in more unused IDs (and unused disk space) " +

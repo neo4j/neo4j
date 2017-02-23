@@ -39,6 +39,7 @@ class HazelcastClient extends LifecycleAdapter implements TopologyService
     private final Log log;
     private final ClientConnectorAddresses connectorAddresses;
     private final HazelcastConnector connector;
+    private final Config config;
     private final RenewableTimeoutService renewableTimeoutService;
     private HazelcastInstance hazelcastInstance;
     private RenewableTimeoutService.RenewableTimeout readReplicaRefreshTimer;
@@ -49,6 +50,7 @@ class HazelcastClient extends LifecycleAdapter implements TopologyService
                      RenewableTimeoutService renewableTimeoutService, long readReplicaTimeToLiveTimeout, long readReplicaRefreshRate )
     {
         this.connector = connector;
+        this.config = config;
         this.renewableTimeoutService = renewableTimeoutService;
         this.readReplicaRefreshRate = readReplicaRefreshRate;
         this.log = logProvider.getLog( getClass() );
@@ -61,8 +63,8 @@ class HazelcastClient extends LifecycleAdapter implements TopologyService
     {
         try
         {
-            return retry( ( hazelcastInstance ) ->
-                    HazelcastClusterTopology.getCoreTopology( hazelcastInstance, log ) );
+            return retry( ( hazelcastInstance ) -> HazelcastClusterTopology.getCoreTopology( hazelcastInstance,
+                    config, log ) );
         }
         catch ( Exception e )
         {

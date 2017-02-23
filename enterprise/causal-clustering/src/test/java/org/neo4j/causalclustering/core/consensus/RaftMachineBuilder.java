@@ -99,7 +99,7 @@ public class RaftMachineBuilder
                         retryTimeMillis, catchupBatchSize, maxAllowedShippingLag, inFlightMap );
         RaftMachine raft = new RaftMachine( member, termState, voteState, raftLog, electionTimeout,
                 heartbeatInterval, renewableTimeoutService, outbound, logProvider,
-                membershipManager, logShipping, inFlightMap, monitors );
+                membershipManager, logShipping, inFlightMap, false, monitors );
         inbound.registerHandler( ( incomingMessage ) -> {
             try
             {
