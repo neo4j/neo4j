@@ -28,8 +28,8 @@ import java.util.SortedMap;
 
 import org.neo4j.causalclustering.core.consensus.log.EntryRecord;
 import org.neo4j.causalclustering.core.replication.ReplicatedContent;
-import org.neo4j.causalclustering.messaging.marshalling.ChannelMarshal;
 import org.neo4j.causalclustering.messaging.EndOfStreamException;
+import org.neo4j.causalclustering.messaging.marshalling.ChannelMarshal;
 import org.neo4j.cursor.IOCursor;
 import org.neo4j.io.fs.FileSystemAbstraction;
 import org.neo4j.io.fs.StoreChannel;
@@ -38,6 +38,7 @@ import org.neo4j.kernel.impl.transaction.log.ReadAheadChannel;
 import org.neo4j.logging.Log;
 import org.neo4j.logging.LogProvider;
 
+import static java.lang.String.format;
 import static java.util.Collections.emptyList;
 
 /**
@@ -82,9 +83,9 @@ class RecoveryProtocol
         List<SegmentFile> segmentFiles = new ArrayList<>();
         SegmentFile segment = null;
 
-        long firstVersion = files.firstKey();
-        long expectedVersion = firstVersion;
+        long expectedVersion = files.firstKey();
         boolean mustRecoverLastHeader = false;
+        boolean skip = true; // the first file is treated the same as a skip
 
         for ( Map.Entry<Long,File> entry : files.entrySet() )
         {
@@ -118,10 +119,17 @@ class RecoveryProtocol
             segment = new SegmentFile( fileSystem, file, readerPool, fileNameVersion, contentMarshal, logProvider, header );
             segmentFiles.add( segment );
 
-            if ( fileNameVersion == firstVersion )
+            if ( segment.header().prevIndex() != segment.header().prevFileLastIndex() )
+            {
+                log.info( format( "Skipping from index %d to %d.", segment.header().prevFileLastIndex(), segment.header().prevIndex() + 1 ) );
+                skip = true;
+            }
+
+            if ( skip )
             {
                 state.prevIndex = segment.header().prevIndex();
                 state.prevTerm = segment.header().prevTerm();
+                skip = false;
             }
 
             expectedVersion++;
@@ -129,7 +137,6 @@ class RecoveryProtocol
 
         assert segment != null;
 
-        state.segments = new Segments( fileSystem, fileNames, readerPool, segmentFiles, contentMarshal, logProvider, segment.header().version() );
         state.appendIndex = segment.header().prevIndex();
         state.terms = new Terms( segment.header().prevIndex(), segment.header().prevTerm() );
 
@@ -154,6 +161,8 @@ class RecoveryProtocol
             segment = new SegmentFile( fileSystem, file, readerPool, expectedVersion, contentMarshal, logProvider, header );
             segmentFiles.add( segment );
         }
+
+        state.segments = new Segments( fileSystem, fileNames, readerPool, segmentFiles, contentMarshal, logProvider, segment.header().version() );
 
         return state;
     }

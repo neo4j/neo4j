@@ -214,6 +214,68 @@ public class RecoveryProtocolTest
         assertEquals(  2, newFile.header().prevTerm() );
     }
 
+    @Test
+    public void shouldRecoverBootstrappedEntry() throws Exception
+    {
+        for ( int bootstrapIndex = 0; bootstrapIndex < 5; bootstrapIndex++ )
+        {
+            for ( long bootstrapTerm = 0; bootstrapTerm < 5; bootstrapTerm++ )
+            {
+                testRecoveryOfBootstrappedEntry( bootstrapIndex, bootstrapTerm );
+            }
+        }
+    }
+
+    private void testRecoveryOfBootstrappedEntry( long bootstrapIndex, long bootstrapTerm ) throws IOException, DamagedLogStorageException, DisposedException
+    {
+        // given
+        createLogFile( fsa, -1, 0, 0, -1, -1 );
+        createLogFile( fsa, -1, 1, 1, bootstrapIndex, bootstrapTerm );
+
+        RecoveryProtocol protocol = new RecoveryProtocol( fsa, fileNames, readerPool, contentMarshal, NullLogProvider.getInstance() );
+
+        // when
+        State state = protocol.run();
+
+        // then
+        assertEquals( bootstrapIndex, state.prevIndex );
+        assertEquals( bootstrapTerm, state.prevTerm );
+
+        assertEquals( -1, state.terms.get( -1 ) );
+        assertEquals( -1, state.terms.get( bootstrapIndex - 1 ) );
+        assertEquals( bootstrapTerm, state.terms.get( bootstrapIndex ) );
+        assertEquals( -1, state.terms.get( bootstrapIndex + 1 ) );
+
+        assertEquals( bootstrapTerm, state.terms.latest() );
+    }
+
+    @Test
+    public void shouldRecoverSeveralSkips() throws Exception
+    {
+        // given
+        createLogFile( fsa, 10, 1, 1, 20, 9 );
+        createLogFile( fsa, 100, 2, 2, 200,  99 );
+        createLogFile( fsa, 1000, 3, 3, 2000,  999 );
+
+        RecoveryProtocol protocol = new RecoveryProtocol( fsa, fileNames, readerPool, contentMarshal, NullLogProvider.getInstance() );
+
+        // when
+        State state = protocol.run();
+
+        // then
+        assertEquals( 2000, state.prevIndex );
+        assertEquals( 999, state.prevTerm );
+
+        assertEquals( -1, state.terms.get( 20 ) );
+        assertEquals( -1, state.terms.get( 200 ) );
+        assertEquals( -1, state.terms.get( 1999 ) );
+
+        assertEquals( 999, state.terms.get( 2000 ) );
+        assertEquals( -1, state.terms.get( 2001 ) );
+
+        assertEquals( 999, state.terms.latest() );
+    }
+
     private void createLogFile( EphemeralFileSystemAbstraction fsa, long prevFileLastIndex, long fileNameVersion, long headerVersion, long prevIndex, long prevTerm ) throws IOException
     {
         StoreChannel channel = fsa.open( fileNames.getForVersion( fileNameVersion ), "w" );
