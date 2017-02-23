@@ -31,6 +31,7 @@ import org.neo4j.io.IOUtils;
 import org.neo4j.kernel.api.impl.index.partition.PartitionSearcher;
 import org.neo4j.kernel.api.impl.index.sampler.AggregatingIndexSampler;
 import org.neo4j.kernel.api.index.IndexConfiguration;
+import org.neo4j.kernel.api.schema_new.IndexQuery;
 import org.neo4j.kernel.impl.api.index.sampling.IndexSamplingConfig;
 import org.neo4j.storageengine.api.schema.IndexReader;
 import org.neo4j.storageengine.api.schema.IndexSampler;
@@ -63,46 +64,9 @@ public class PartitionedIndexReader implements IndexReader
     }
 
     @Override
-    public PrimitiveLongIterator seek( Object value )
+    public PrimitiveLongIterator query( IndexQuery... predicates )
     {
-        return partitionedOperation( reader -> reader.seek( value ) );
-    }
-
-    @Override
-    public PrimitiveLongIterator rangeSeekByNumberInclusive( Number lower, Number upper )
-    {
-        return partitionedOperation( reader -> reader.rangeSeekByNumberInclusive( lower, upper ) );
-    }
-
-    @Override
-    public PrimitiveLongIterator rangeSeekByString( String lower, boolean includeLower, String upper,
-            boolean includeUpper )
-    {
-        return partitionedOperation( reader -> reader.rangeSeekByString( lower, includeLower, upper, includeUpper ) );
-    }
-
-    @Override
-    public PrimitiveLongIterator rangeSeekByPrefix( String prefix )
-    {
-        return partitionedOperation( reader -> reader.rangeSeekByPrefix( prefix ) );
-    }
-
-    @Override
-    public PrimitiveLongIterator scan()
-    {
-        return partitionedOperation( SimpleIndexReader::scan );
-    }
-
-    @Override
-    public PrimitiveLongIterator containsString( String exactTerm )
-    {
-        return partitionedOperation( reader -> reader. containsString( exactTerm ) );
-    }
-
-    @Override
-    public PrimitiveLongIterator endsWith( String suffix )
-    {
-        return partitionedOperation( reader -> reader.endsWith( suffix ) );
+        return partitionedOperation( reader -> reader.query( predicates ) );
     }
 
     @Override

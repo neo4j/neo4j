@@ -34,6 +34,7 @@ import org.neo4j.helpers.TaskCoordinator;
 import org.neo4j.kernel.api.exceptions.index.IndexNotFoundKernelException;
 import org.neo4j.kernel.api.impl.index.partition.PartitionSearcher;
 import org.neo4j.kernel.api.index.IndexConfiguration;
+import org.neo4j.kernel.api.schema_new.IndexQuery;
 import org.neo4j.kernel.impl.api.index.sampling.IndexSamplingConfig;
 import org.neo4j.storageengine.api.schema.IndexSample;
 import org.neo4j.storageengine.api.schema.IndexSampler;
@@ -82,11 +83,12 @@ public class PartitionedIndexReaderTest
     {
         PartitionedIndexReader indexReader = createPartitionedReaderFromReaders();
 
-        when( indexReader1.seek( "Test" ) ).thenReturn( PrimitiveLongCollections.iterator( 1 ) );
-        when( indexReader2.seek( "Test" ) ).thenReturn( PrimitiveLongCollections.iterator( 2 ) );
-        when( indexReader3.seek( "Test" ) ).thenReturn( PrimitiveLongCollections.iterator( 3 ) );
+        IndexQuery.ExactPredicate query = IndexQuery.exact( 1, "Test" );
+        when( indexReader1.query( query ) ).thenReturn( PrimitiveLongCollections.iterator( 1 ) );
+        when( indexReader2.query( query ) ).thenReturn( PrimitiveLongCollections.iterator( 2 ) );
+        when( indexReader3.query( query ) ).thenReturn( PrimitiveLongCollections.iterator( 3 ) );
 
-        PrimitiveLongSet results = PrimitiveLongCollections.asSet( indexReader.seek( "Test" ) );
+        PrimitiveLongSet results = PrimitiveLongCollections.asSet( indexReader.query( query ) );
         verifyResult( results );
     }
 
@@ -95,12 +97,13 @@ public class PartitionedIndexReaderTest
     {
         PartitionedIndexReader indexReader = createPartitionedReaderFromReaders();
 
-        when( indexReader1.rangeSeekByNumberInclusive( 1, 2 ) ).thenReturn( PrimitiveLongCollections.iterator( 1 ) );
-        when( indexReader2.rangeSeekByNumberInclusive( 1, 2 ) ).thenReturn( PrimitiveLongCollections.iterator( 2 ) );
-        when( indexReader3.rangeSeekByNumberInclusive( 1, 2 ) ).thenReturn( PrimitiveLongCollections.iterator( 3 ) );
+        IndexQuery.NumberRangePredicate query = IndexQuery.range( 1, 1, true, 2, true );
+        when( indexReader1.query( query ) ).thenReturn( PrimitiveLongCollections.iterator( 1 ) );
+        when( indexReader2.query( query ) ).thenReturn( PrimitiveLongCollections.iterator( 2 ) );
+        when( indexReader3.query( query ) ).thenReturn( PrimitiveLongCollections.iterator( 3 ) );
 
         PrimitiveLongSet results =
-                PrimitiveLongCollections.asSet( indexReader.rangeSeekByNumberInclusive( 1, 2 ) );
+                PrimitiveLongCollections.asSet( indexReader.query( query ) );
         verifyResult( results );
     }
 
@@ -109,12 +112,13 @@ public class PartitionedIndexReaderTest
     {
         PartitionedIndexReader indexReader = createPartitionedReaderFromReaders();
 
-        when( indexReader1.rangeSeekByString( "a", false, "b", true ) ).thenReturn( PrimitiveLongCollections.iterator( 1 ) );
-        when( indexReader2.rangeSeekByString( "a", false, "b", true ) ).thenReturn( PrimitiveLongCollections.iterator( 2 ) );
-        when( indexReader3.rangeSeekByString( "a", false, "b", true ) ).thenReturn( PrimitiveLongCollections.iterator( 3 ) );
+        IndexQuery.StringRangePredicate query = IndexQuery.range( 1, "a", false, "b", true );
+        when( indexReader1.query( query ) ).thenReturn( PrimitiveLongCollections.iterator( 1 ) );
+        when( indexReader2.query( query ) ).thenReturn( PrimitiveLongCollections.iterator( 2 ) );
+        when( indexReader3.query( query ) ).thenReturn( PrimitiveLongCollections.iterator( 3 ) );
 
         PrimitiveLongSet results =
-                PrimitiveLongCollections.asSet( indexReader.rangeSeekByString( "a", false, "b", true ) );
+                PrimitiveLongCollections.asSet( indexReader.query( query ) );
         verifyResult( results );
     }
 
@@ -122,11 +126,12 @@ public class PartitionedIndexReaderTest
     public void rangeSeekByPrefixOverPartitions()
     {
         PartitionedIndexReader indexReader = createPartitionedReaderFromReaders();
-        when( indexReader1.rangeSeekByPrefix( "prefix" ) ).thenReturn( PrimitiveLongCollections.iterator( 1 ) );
-        when( indexReader2.rangeSeekByPrefix( "prefix" ) ).thenReturn( PrimitiveLongCollections.iterator( 2 ) );
-        when( indexReader3.rangeSeekByPrefix( "prefix" ) ).thenReturn( PrimitiveLongCollections.iterator( 3 ) );
+        IndexQuery.StringPrefixPredicate query = IndexQuery.stringPrefix( 1, "prefix" );
+        when( indexReader1.query( query ) ).thenReturn( PrimitiveLongCollections.iterator( 1 ) );
+        when( indexReader2.query( query ) ).thenReturn( PrimitiveLongCollections.iterator( 2 ) );
+        when( indexReader3.query( query ) ).thenReturn( PrimitiveLongCollections.iterator( 3 ) );
 
-        PrimitiveLongSet results = PrimitiveLongCollections.asSet( indexReader.rangeSeekByPrefix( "prefix") );
+        PrimitiveLongSet results = PrimitiveLongCollections.asSet( indexReader.query( query ) );
         verifyResult( results );
     }
 
@@ -134,11 +139,12 @@ public class PartitionedIndexReaderTest
     public void scanOverPartitions()
     {
         PartitionedIndexReader indexReader = createPartitionedReaderFromReaders();
-        when( indexReader1.scan() ).thenReturn( PrimitiveLongCollections.iterator( 1 ) );
-        when( indexReader2.scan() ).thenReturn( PrimitiveLongCollections.iterator( 2 ) );
-        when( indexReader3.scan() ).thenReturn( PrimitiveLongCollections.iterator( 3 ) );
+        IndexQuery.ExistsPredicate query = IndexQuery.exists( 1 );
+        when( indexReader1.query( query ) ).thenReturn( PrimitiveLongCollections.iterator( 1 ) );
+        when( indexReader2.query( query ) ).thenReturn( PrimitiveLongCollections.iterator( 2 ) );
+        when( indexReader3.query( query ) ).thenReturn( PrimitiveLongCollections.iterator( 3 ) );
 
-        PrimitiveLongSet results = PrimitiveLongCollections.asSet( indexReader.scan() );
+        PrimitiveLongSet results = PrimitiveLongCollections.asSet( indexReader.query( query ) );
         verifyResult( results );
     }
 

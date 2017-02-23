@@ -43,31 +43,32 @@ import org.neo4j.test.runner.ParameterizedSuiteRunner;
 } )
 public abstract class IndexProviderCompatibilityTestSuite
 {
-    @Rule
-    public final DefaultFileSystemRule fileSystemRule = new DefaultFileSystemRule();
-    @Rule
-    public final TestDirectory testDir = TestDirectory.testDirectory( getClass() );
-
-    protected File graphDbDir;
-    protected FileSystemAbstraction fs = fileSystemRule.get();
-
-    @Before
-    public void setup()
-    {
-        fs = fileSystemRule.get();
-        graphDbDir = testDir.graphDbDir();
-    }
-
-    protected abstract SchemaIndexProvider createIndexProvider();
+    protected abstract SchemaIndexProvider createIndexProvider( FileSystemAbstraction fs, File graphDbDir );
 
     public abstract static class Compatibility
     {
-        protected final SchemaIndexProvider indexProvider;
+        @Rule
+        public final DefaultFileSystemRule fileSystemRule = new DefaultFileSystemRule();
+        @Rule
+        public final TestDirectory testDir = TestDirectory.testDirectory( getClass() );
+
+        protected File graphDbDir;
+        protected FileSystemAbstraction fs;
+        protected final IndexProviderCompatibilityTestSuite testSuite;
+        protected SchemaIndexProvider indexProvider;
         protected NewIndexDescriptor descriptor = NewIndexDescriptorFactory.forLabel( 1, 2 );
+
+        @Before
+        public void setup()
+        {
+            fs = fileSystemRule.get();
+            graphDbDir = testDir.graphDbDir();
+            indexProvider = testSuite.createIndexProvider( fs, graphDbDir );
+        }
 
         public Compatibility( IndexProviderCompatibilityTestSuite testSuite )
         {
-            this.indexProvider = testSuite.createIndexProvider();
+            this.testSuite = testSuite;
         }
     }
 }

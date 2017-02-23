@@ -19,6 +19,7 @@
  */
 package org.neo4j.kernel.impl.api.index.inmemory;
 
+import java.util.Arrays;
 import java.util.Collection;
 import java.util.HashMap;
 import java.util.HashSet;
@@ -29,6 +30,7 @@ import java.util.Set;
 import org.neo4j.collection.primitive.PrimitiveLongCollections;
 import org.neo4j.collection.primitive.PrimitiveLongIterator;
 import org.neo4j.helpers.collection.Iterables;
+import org.neo4j.kernel.api.schema_new.IndexQuery;
 import org.neo4j.storageengine.api.schema.IndexSampler;
 
 import static org.neo4j.collection.primitive.PrimitiveLongCollections.toPrimitiveIterator;
@@ -74,8 +76,7 @@ class HashBasedIndex extends InMemoryIndexImplementation
         return nodes == null ? PrimitiveLongCollections.emptyIterator() : toPrimitiveIterator( nodes.iterator() );
     }
 
-    @Override
-    public synchronized PrimitiveLongIterator rangeSeekByNumberInclusive( Number lower, Number upper )
+    private synchronized PrimitiveLongIterator rangeSeekByNumberInclusive( Number lower, Number upper )
     {
         Set<Long> nodeIds = new HashSet<>();
         for ( Map.Entry<Object,Set<Long>> entry : data.entrySet() )
@@ -95,8 +96,7 @@ class HashBasedIndex extends InMemoryIndexImplementation
         return toPrimitiveIterator( nodeIds.iterator() );
     }
 
-    @Override
-    public synchronized PrimitiveLongIterator rangeSeekByString( String lower, boolean includeLower,
+    private synchronized PrimitiveLongIterator rangeSeekByString( String lower, boolean includeLower,
             String upper, boolean includeUpper )
     {
         Set<Long> nodeIds = new HashSet<>();
@@ -137,26 +137,22 @@ class HashBasedIndex extends InMemoryIndexImplementation
         return toPrimitiveIterator( nodeIds.iterator() );
     }
 
-    @Override
-    public synchronized PrimitiveLongIterator rangeSeekByPrefix( String prefix )
+    private synchronized PrimitiveLongIterator rangeSeekByPrefix( String prefix )
     {
         return stringSearch( ( String entry ) -> entry.startsWith( prefix ) );
     }
 
-    @Override
-    public synchronized PrimitiveLongIterator containsString( String exactTerm )
+    private synchronized PrimitiveLongIterator containsString( String exactTerm )
     {
         return stringSearch( ( String entry ) -> entry.contains( exactTerm ) );
     }
 
-    @Override
-    public PrimitiveLongIterator endsWith( String suffix )
+    private PrimitiveLongIterator endsWith( String suffix )
     {
         return stringSearch( ( String entry ) -> entry.endsWith( suffix ) );
     }
 
-    @Override
-    public synchronized PrimitiveLongIterator scan()
+    private synchronized PrimitiveLongIterator scan()
     {
         Iterable<Long> all = Iterables.flattenIterable( data.values() );
         return toPrimitiveIterator( all.iterator() );
@@ -247,6 +243,35 @@ class HashBasedIndex extends InMemoryIndexImplementation
     public synchronized IndexSampler createSampler()
     {
         return new HashBasedIndexSampler( data );
+    }
+
+    @Override
+    public PrimitiveLongIterator query( IndexQuery... predicates )
+    {
+        assert predicates.length == 1: "composite indexes not yet supported";
+        IndexQuery predicate = predicates[0];
+        switch ( predicate.type() )
+        {
+        case exists: return scan();
+        case exact: return seek( ((IndexQuery.ExactPredicate)predicate).value() );
+        case rangeNumeric:
+            IndexQuery.NumberRangePredicate np = (IndexQuery.NumberRangePredicate) predicate;
+            return rangeSeekByNumberInclusive( np.from(), np.to() );
+        case rangeString:
+            IndexQuery.StringRangePredicate srp = (IndexQuery.StringRangePredicate) predicate;
+            return rangeSeekByString( srp.from(), srp.fromInclusive(), srp.to(), srp.toInclusive() );
+        case stringPrefix:
+            IndexQuery.StringPrefixPredicate spp = (IndexQuery.StringPrefixPredicate) predicate;
+            return rangeSeekByPrefix( spp.prefix() );
+        case stringContains:
+            IndexQuery.StringContainsPredicate scp = (IndexQuery.StringContainsPredicate) predicate;
+            return containsString( scp.contains() );
+        case stringSuffix:
+            IndexQuery.StringSuffixPredicate ssp = (IndexQuery.StringSuffixPredicate) predicate;
+            return endsWith( ssp.suffix() );
+        default:
+            throw new RuntimeException( "Unsupported query: " + Arrays.toString( predicates ) );
+        }
     }
 
     private interface StringFilter

@@ -26,6 +26,7 @@ import org.neo4j.cursor.Cursor;
 import org.neo4j.kernel.api.exceptions.EntityNotFoundException;
 import org.neo4j.kernel.api.exceptions.index.IndexNotFoundKernelException;
 import org.neo4j.kernel.api.exceptions.schema.IndexBrokenKernelException;
+import org.neo4j.kernel.api.schema_new.IndexQuery;
 import org.neo4j.kernel.api.schema_new.index.NewIndexDescriptor;
 import org.neo4j.kernel.impl.api.KernelStatement;
 import org.neo4j.kernel.impl.api.RelationshipVisitor;
@@ -42,71 +43,15 @@ public interface EntityReadOperations
     PrimitiveLongIterator nodesGetForLabel( KernelStatement state, int labelId );
 
     /**
-     * Returns an iterable with the matched nodes.
+     * Queries the given index with the given index query.
      *
-     * @throws IndexNotFoundKernelException if no such index found.
+     * @param statement the KernelStatement to use.
+     * @param index the index to query against.
+     * @param predicates the {@link IndexQuery} predicates to query for.
+     * @return ids of the matching nodes
+     * @throws IndexNotFoundKernelException if no such index is found.
      */
-    PrimitiveLongIterator nodesGetFromIndexSeek( KernelStatement state, NewIndexDescriptor index, Object value )
-            throws IndexNotFoundKernelException;
-
-    /**
-     * Returns an iterable with the matched nodes.
-     *
-     * @throws IndexNotFoundKernelException if no such index found.
-     */
-    PrimitiveLongIterator nodesGetFromIndexRangeSeekByNumber( KernelStatement state,
-            NewIndexDescriptor index,
-            Number lower,
-            boolean includeLower,
-            Number upper,
-            boolean includeUpper )
-            throws IndexNotFoundKernelException;
-
-    /**
-     * Returns an iterable with the matched nodes.
-     *
-     * @throws IndexNotFoundKernelException if no such index found.
-     */
-    PrimitiveLongIterator nodesGetFromIndexRangeSeekByString( KernelStatement state,
-            NewIndexDescriptor index,
-            String lower,
-            boolean includeLower,
-            String upper,
-            boolean includeUpper )
-            throws IndexNotFoundKernelException;
-
-    /**
-     * Returns an iterable with the matched nodes.
-     *
-     * @throws IndexNotFoundKernelException if no such index found.
-     */
-    PrimitiveLongIterator nodesGetFromIndexRangeSeekByPrefix( KernelStatement state,
-            NewIndexDescriptor index,
-            String prefix )
-            throws IndexNotFoundKernelException;
-
-    /**
-     * Returns an iterable with the matched nodes.
-     *
-     * @throws IndexNotFoundKernelException if no such index found.
-     */
-    PrimitiveLongIterator nodesGetFromIndexScan( KernelStatement state, NewIndexDescriptor index )
-            throws IndexNotFoundKernelException;
-
-    /**
-     * Returns an iterable with the matched nodes.
-     *
-     * @throws IndexNotFoundKernelException if no such index found.
-     */
-    PrimitiveLongIterator nodesGetFromIndexContainsScan( KernelStatement state, NewIndexDescriptor index, String term )
-            throws IndexNotFoundKernelException;
-
-    /**
-     * Returns an iterable with the matched nodes.
-     *
-     * @throws IndexNotFoundKernelException if no such index found.
-     */
-    PrimitiveLongIterator nodesGetFromIndexEndsWithScan( KernelStatement state, NewIndexDescriptor index, String suffix )
+    PrimitiveLongIterator indexQuery( KernelStatement statement, NewIndexDescriptor index, IndexQuery... predicates )
             throws IndexNotFoundKernelException;
 
     /**

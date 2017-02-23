@@ -34,7 +34,6 @@ import org.neo4j.collection.primitive.PrimitiveLongIterator;
 import org.neo4j.cursor.Cursor;
 import org.neo4j.graphdb.Direction;
 import org.neo4j.kernel.api.DataWriteOperations;
-import org.neo4j.kernel.api.query.ExecutingQuery;
 import org.neo4j.kernel.api.KernelTransaction;
 import org.neo4j.kernel.api.LegacyIndexHits;
 import org.neo4j.kernel.api.ProcedureCallOperations;
@@ -79,8 +78,10 @@ import org.neo4j.kernel.api.proc.QualifiedName;
 import org.neo4j.kernel.api.proc.UserFunctionSignature;
 import org.neo4j.kernel.api.properties.DefinedProperty;
 import org.neo4j.kernel.api.properties.Property;
+import org.neo4j.kernel.api.query.ExecutingQuery;
 import org.neo4j.kernel.api.schema.NodePropertyDescriptor;
 import org.neo4j.kernel.api.schema.RelationshipPropertyDescriptor;
+import org.neo4j.kernel.api.schema_new.IndexQuery;
 import org.neo4j.kernel.api.schema_new.SchemaBoundary;
 import org.neo4j.kernel.api.schema_new.SchemaDescriptorFactory;
 import org.neo4j.kernel.api.schema_new.index.NewIndexDescriptor;
@@ -113,7 +114,6 @@ import org.neo4j.storageengine.api.schema.SchemaRule;
 
 import static java.lang.String.format;
 import static org.neo4j.collection.primitive.PrimitiveIntCollections.asSet;
-import static org.neo4j.collection.primitive.PrimitiveIntCollections.deduplicate;
 
 public class OperationsFacade
         implements ReadOperations, DataWriteOperations, TokenWriteOperations, SchemaWriteOperations,
@@ -226,69 +226,11 @@ public class OperationsFacade
     }
 
     @Override
-    public PrimitiveLongIterator nodesGetFromIndexSeek( NewIndexDescriptor index, Object value )
+    public PrimitiveLongIterator indexQuery( NewIndexDescriptor index, IndexQuery... predicates )
             throws IndexNotFoundKernelException
     {
         statement.assertOpen();
-        return dataRead().nodesGetFromIndexSeek( statement, index, value );
-    }
-
-    @Override
-    public PrimitiveLongIterator nodesGetFromIndexRangeSeekByNumber( NewIndexDescriptor index,
-            Number lower,
-            boolean includeLower,
-            Number upper,
-            boolean includeUpper )
-            throws IndexNotFoundKernelException
-    {
-        statement.assertOpen();
-        return dataRead().nodesGetFromIndexRangeSeekByNumber( statement, index, lower, includeLower, upper,
-                includeUpper );
-    }
-
-    @Override
-    public PrimitiveLongIterator nodesGetFromIndexRangeSeekByString( NewIndexDescriptor index,
-            String lower,
-            boolean includeLower,
-            String upper,
-            boolean includeUpper )
-            throws IndexNotFoundKernelException
-    {
-        statement.assertOpen();
-        return dataRead().nodesGetFromIndexRangeSeekByString( statement, index, lower, includeLower, upper,
-                includeUpper );
-    }
-
-    @Override
-    public PrimitiveLongIterator nodesGetFromIndexRangeSeekByPrefix( NewIndexDescriptor index, String prefix )
-            throws IndexNotFoundKernelException
-    {
-        statement.assertOpen();
-        return dataRead().nodesGetFromIndexRangeSeekByPrefix( statement, index, prefix );
-    }
-
-    @Override
-    public PrimitiveLongIterator nodesGetFromIndexScan( NewIndexDescriptor index )
-            throws IndexNotFoundKernelException
-    {
-        statement.assertOpen();
-        return dataRead().nodesGetFromIndexScan( statement, index );
-    }
-
-    @Override
-    public PrimitiveLongIterator nodesGetFromIndexContainsScan( NewIndexDescriptor index, String term )
-            throws IndexNotFoundKernelException
-    {
-        statement.assertOpen();
-        return dataRead().nodesGetFromIndexContainsScan( statement, index, term );
-    }
-
-    @Override
-    public PrimitiveLongIterator nodesGetFromIndexEndsWithScan( NewIndexDescriptor index, String suffix )
-            throws IndexNotFoundKernelException
-    {
-        statement.assertOpen();
-        return dataRead().nodesGetFromIndexEndsWithScan( statement, index, suffix );
+        return dataRead().indexQuery( statement, index, predicates );
     }
 
     @Override

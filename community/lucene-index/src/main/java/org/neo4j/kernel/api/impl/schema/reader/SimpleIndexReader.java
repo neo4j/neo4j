@@ -27,6 +27,7 @@ import org.apache.lucene.search.TermQuery;
 import org.apache.lucene.search.TotalHitCountCollector;
 
 import java.io.IOException;
+import java.util.Arrays;
 
 import org.neo4j.collection.primitive.PrimitiveLongIterator;
 import org.neo4j.helpers.TaskControl;
@@ -37,6 +38,7 @@ import org.neo4j.kernel.api.impl.schema.LuceneDocumentStructure;
 import org.neo4j.kernel.api.impl.schema.sampler.NonUniqueLuceneIndexSampler;
 import org.neo4j.kernel.api.impl.schema.sampler.UniqueLuceneIndexSampler;
 import org.neo4j.kernel.api.index.IndexConfiguration;
+import org.neo4j.kernel.api.schema_new.IndexQuery;
 import org.neo4j.kernel.impl.api.index.sampling.IndexSamplingConfig;
 import org.neo4j.storageengine.api.schema.IndexReader;
 import org.neo4j.storageengine.api.schema.IndexSampler;
@@ -80,44 +82,70 @@ public class SimpleIndexReader implements IndexReader
         }
     }
 
-    public PrimitiveLongIterator seek( Object value )
+    @Override
+    public PrimitiveLongIterator query( IndexQuery... predicates )
+    {
+        assert predicates.length == 1: "not yet supporting composite queries";
+        IndexQuery predicate = predicates[0];
+        switch ( predicate.type() )
+        {
+        case exact:
+            return seek( ((IndexQuery.ExactPredicate) predicate).value() );
+        case exists:
+            return scan();
+        case rangeNumeric:
+            IndexQuery.NumberRangePredicate np = (IndexQuery.NumberRangePredicate) predicate;
+            return rangeSeekByNumberInclusive( np.from(), np.to() );
+        case rangeString:
+            IndexQuery.StringRangePredicate sp = (IndexQuery.StringRangePredicate) predicate;
+            return rangeSeekByString( sp.from(), sp.fromInclusive(), sp.to(), sp.toInclusive() );
+        case stringPrefix:
+            IndexQuery.StringPrefixPredicate spp = (IndexQuery.StringPrefixPredicate) predicate;
+            return rangeSeekByPrefix( spp.prefix() );
+        case stringContains:
+            IndexQuery.StringContainsPredicate scp = (IndexQuery.StringContainsPredicate) predicate;
+            return containsString( scp.contains() );
+        case stringSuffix:
+            IndexQuery.StringSuffixPredicate ssp = (IndexQuery.StringSuffixPredicate) predicate;
+            return endsWith( ssp.suffix() );
+        default:
+            // todo figure out a more specific exception
+            throw new RuntimeException( "Index query not supported: " + Arrays.toString( predicates ) );
+        }
+    }
+
+    private PrimitiveLongIterator seek( Object value )
     {
         return query( LuceneDocumentStructure.newSeekQuery( value ) );
     }
 
-    @Override
-    public PrimitiveLongIterator rangeSeekByNumberInclusive( Number lower, Number upper )
+    private PrimitiveLongIterator rangeSeekByNumberInclusive( Number lower, Number upper )
     {
         return query( LuceneDocumentStructure.newInclusiveNumericRangeSeekQuery( lower, upper ) );
     }
 
-    @Override
-    public PrimitiveLongIterator rangeSeekByString( String lower, boolean includeLower,
+    private PrimitiveLongIterator rangeSeekByString( String lower, boolean includeLower,
             String upper, boolean includeUpper )
     {
         return query( LuceneDocumentStructure.newRangeSeekByStringQuery( lower, includeLower, upper, includeUpper ) );
     }
 
-    @Override
-    public PrimitiveLongIterator rangeSeekByPrefix( String prefix )
+    private PrimitiveLongIterator rangeSeekByPrefix( String prefix )
     {
         return query( LuceneDocumentStructure.newRangeSeekByPrefixQuery( prefix ) );
     }
 
-    @Override
-    public PrimitiveLongIterator scan()
+    private PrimitiveLongIterator scan()
     {
         return query( LuceneDocumentStructure.newScanQuery() );
     }
 
-    @Override
-    public PrimitiveLongIterator containsString( String exactTerm )
+    private PrimitiveLongIterator containsString( String exactTerm )
     {
         return query( LuceneDocumentStructure.newWildCardStringQuery( exactTerm ) );
     }
 
-    @Override
-    public PrimitiveLongIterator endsWith( String suffix )
+    private PrimitiveLongIterator endsWith( String suffix )
     {
         return query( LuceneDocumentStructure.newSuffixStringQuery( suffix ) );
     }

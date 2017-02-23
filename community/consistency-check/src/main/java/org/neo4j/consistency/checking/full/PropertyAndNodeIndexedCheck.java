@@ -34,6 +34,7 @@ import org.neo4j.consistency.checking.cache.CacheAccess;
 import org.neo4j.consistency.checking.index.IndexAccessors;
 import org.neo4j.consistency.report.ConsistencyReport;
 import org.neo4j.consistency.store.RecordAccess;
+import org.neo4j.kernel.api.schema_new.IndexQuery;
 import org.neo4j.kernel.impl.api.LookupFilter;
 import org.neo4j.kernel.impl.store.record.IndexRule;
 import org.neo4j.kernel.impl.store.record.NodeRecord;
@@ -121,7 +122,7 @@ public class PropertyAndNodeIndexedCheck implements RecordCheck<NodeRecord, Cons
             CheckerEngine<NodeRecord,ConsistencyReport.NodeConsistencyReport> engine, IndexRule indexRule,
             IndexReader reader )
     {
-        PrimitiveLongIterator indexedNodeIds = reader.seek( propertyValue );
+        PrimitiveLongIterator indexedNodeIds = reader.query( IndexQuery.exact( propertyKeyId, propertyValue ) );
 
         // For verifying node indexed uniquely in offline CC, if one match found in the first stage match,
         // then there is no need to filter the result. The result is a exact match.

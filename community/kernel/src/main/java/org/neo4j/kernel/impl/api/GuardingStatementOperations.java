@@ -32,6 +32,7 @@ import org.neo4j.kernel.api.exceptions.schema.ConstraintValidationKernelExceptio
 import org.neo4j.kernel.api.exceptions.schema.IndexBrokenKernelException;
 import org.neo4j.kernel.api.properties.DefinedProperty;
 import org.neo4j.kernel.api.properties.Property;
+import org.neo4j.kernel.api.schema_new.IndexQuery;
 import org.neo4j.kernel.api.schema_new.index.NewIndexDescriptor;
 import org.neo4j.kernel.guard.Guard;
 import org.neo4j.kernel.impl.api.operations.EntityReadOperations;
@@ -171,69 +172,11 @@ public class GuardingStatementOperations implements
     }
 
     @Override
-    public PrimitiveLongIterator nodesGetFromIndexSeek( KernelStatement statement, NewIndexDescriptor index, Object value )
-            throws IndexNotFoundKernelException
+    public PrimitiveLongIterator indexQuery( KernelStatement statement, NewIndexDescriptor index,
+                                             IndexQuery[] predicates ) throws IndexNotFoundKernelException
     {
         guard.check( statement );
-        return entityReadDelegate.nodesGetFromIndexSeek( statement, index, value );
-    }
-
-    @Override
-    public PrimitiveLongIterator nodesGetFromIndexRangeSeekByNumber( KernelStatement statement,
-            NewIndexDescriptor index,
-            Number lower, boolean includeLower,
-            Number upper, boolean includeUpper )
-            throws IndexNotFoundKernelException
-
-    {
-        guard.check( statement );
-        return entityReadDelegate.nodesGetFromIndexRangeSeekByNumber( statement, index, lower, includeLower, upper,
-                includeUpper );
-    }
-
-    @Override
-    public PrimitiveLongIterator nodesGetFromIndexRangeSeekByString( KernelStatement statement,
-            NewIndexDescriptor index,
-            String lower, boolean includeLower,
-            String upper, boolean includeUpper )
-            throws IndexNotFoundKernelException
-
-    {
-        guard.check( statement );
-        return entityReadDelegate.nodesGetFromIndexRangeSeekByString( statement, index, lower, includeLower, upper,
-                includeUpper );
-    }
-
-    @Override
-    public PrimitiveLongIterator nodesGetFromIndexRangeSeekByPrefix( KernelStatement statement, NewIndexDescriptor index,
-            String prefix ) throws IndexNotFoundKernelException
-    {
-        guard.check( statement );
-        return entityReadDelegate.nodesGetFromIndexRangeSeekByPrefix( statement, index, prefix );
-    }
-
-    @Override
-    public PrimitiveLongIterator nodesGetFromIndexScan( KernelStatement statement, NewIndexDescriptor index )
-            throws IndexNotFoundKernelException
-    {
-        guard.check( statement );
-        return entityReadDelegate.nodesGetFromIndexScan( statement, index );
-    }
-
-    @Override
-    public PrimitiveLongIterator nodesGetFromIndexContainsScan( KernelStatement statement, NewIndexDescriptor index,
-            String term ) throws IndexNotFoundKernelException
-    {
-        guard.check( statement );
-        return entityReadDelegate.nodesGetFromIndexContainsScan( statement, index, term );
-    }
-
-    @Override
-    public PrimitiveLongIterator nodesGetFromIndexEndsWithScan( KernelStatement statement, NewIndexDescriptor index,
-            String suffix ) throws IndexNotFoundKernelException
-    {
-        guard.check( statement );
-        return entityReadDelegate.nodesGetFromIndexEndsWithScan( statement, index, suffix );
+        return entityReadDelegate.indexQuery( statement, index, predicates );
     }
 
     @Override

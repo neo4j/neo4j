@@ -26,8 +26,8 @@ import java.util.Arrays;
 
 import org.neo4j.collection.primitive.PrimitiveLongCollections;
 import org.neo4j.collection.primitive.PrimitiveLongIterator;
-import org.neo4j.kernel.api.exceptions.EntityNotFoundException;
 import org.neo4j.kernel.api.properties.Property;
+import org.neo4j.kernel.api.schema_new.IndexQuery;
 import org.neo4j.kernel.api.schema_new.index.IndexBoundary;
 import org.neo4j.kernel.configuration.Config;
 import org.neo4j.kernel.impl.api.index.sampling.IndexSamplingConfig;
@@ -36,8 +36,8 @@ import org.neo4j.storageengine.api.schema.IndexReader;
 import static java.util.Collections.singletonList;
 import static org.junit.Assert.assertEquals;
 import static org.neo4j.helpers.collection.Iterators.asSet;
-import static org.neo4j.kernel.api.index.InternalIndexState.FAILED;
 import static org.neo4j.kernel.api.index.IndexEntryUpdate.add;
+import static org.neo4j.kernel.api.index.InternalIndexState.FAILED;
 
 @Ignore( "Not a test. This is a compatibility suite that provides test cases for verifying" +
         " SchemaIndexProvider implementations. Each index provider that is to be tested by this suite" +
@@ -67,7 +67,7 @@ public class NonUniqueIndexPopulatorCompatibility extends IndexProviderCompatibi
         IndexAccessor accessor = indexProvider.getOnlineAccessor( 17, config, indexSamplingConfig );
         try ( IndexReader reader = accessor.newReader() )
         {
-            PrimitiveLongIterator nodes = reader.seek( "value1" );
+            PrimitiveLongIterator nodes = reader.query( IndexQuery.exact( 1, "value1" ) );
             assertEquals( asSet( 1L, 2L ), PrimitiveLongCollections.toSet( nodes ) );
         }
         accessor.close();
@@ -133,14 +133,8 @@ public class NonUniqueIndexPopulatorCompatibility extends IndexProviderCompatibi
         populator.configureSampling( true );
         long nodeId = 1;
         final String propertyValue = "value1";
-        PropertyAccessor propertyAccessor = new PropertyAccessor()
-        {
-            @Override
-            public Property getProperty( long nodeId, int propertyKeyId ) throws EntityNotFoundException
-            {
-                return Property.stringProperty( propertyKeyId, propertyValue );
-            }
-        };
+        PropertyAccessor propertyAccessor =
+                ( nodeId1, propertyKeyId ) -> Property.stringProperty( propertyKeyId, propertyValue );
 
         // this update (using add())...
         populator.add( singletonList( IndexEntryUpdate.add( nodeId, descriptor, propertyValue ) ) );
@@ -156,7 +150,8 @@ public class NonUniqueIndexPopulatorCompatibility extends IndexProviderCompatibi
         IndexAccessor accessor = indexProvider.getOnlineAccessor( 17, IndexConfiguration.NON_UNIQUE, indexSamplingConfig );
         try ( IndexReader reader = accessor.newReader() )
         {
-            PrimitiveLongIterator nodes = reader.seek( propertyValue );
+            int propertyKeyId = descriptor.schema().getPropertyId();
+            PrimitiveLongIterator nodes = reader.query( IndexQuery.exact( propertyKeyId, propertyValue ) );
             assertEquals( asSet( 1L ), PrimitiveLongCollections.toSet( nodes ) );
         }
         accessor.close();

@@ -17,33 +17,16 @@
  * You should have received a copy of the GNU General Public License
  * along with this program.  If not, see <http://www.gnu.org/licenses/>.
  */
-package org.neo4j.kernel.api.schema_new;
+package org.neo4j.kernel.api.exceptions.index;
 
-import org.neo4j.kernel.api.schema_new.index.NewIndexDescriptor;
+import org.neo4j.kernel.api.exceptions.KernelException;
+import org.neo4j.kernel.api.exceptions.Status;
 
-/**
- * This object is used internally to represent index queries on multiple values.
- *
- * See {@link org.neo4j.kernel.api.ReadOperations#nodesGetFromIndexSeek(NewIndexDescriptor, Object)}
- */
-public class CompositeIndexQuery
+public class IndexNotApplicableKernelException extends KernelException
 {
-    private final Object[] values;
-    private final int[] propertyIds;
-
-    public CompositeIndexQuery( Object[] values, int[] propertyIds )
+    public IndexNotApplicableKernelException( String msg )
     {
-        this.values = values;
-        this.propertyIds = propertyIds;
+        super( Status.Schema.IndexNotApplicable, msg );
     }
 
-    public Object[] values()
-    {
-        return values;
-    }
-
-    public int[] propertyIds()
-    {
-        return propertyIds;
-    }
 }

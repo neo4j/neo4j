@@ -19,6 +19,7 @@
  */
 package org.neo4j.kernel.impl.api;
 
+import java.util.Arrays;
 import java.util.Iterator;
 import java.util.Map;
 
@@ -65,6 +66,7 @@ import org.neo4j.kernel.api.properties.Property;
 import org.neo4j.kernel.api.properties.PropertyKeyIdIterator;
 import org.neo4j.kernel.api.schema.NodePropertyDescriptor;
 import org.neo4j.kernel.api.schema.RelationshipPropertyDescriptor;
+import org.neo4j.kernel.api.schema_new.IndexQuery;
 import org.neo4j.kernel.api.schema_new.LabelSchemaDescriptor;
 import org.neo4j.kernel.api.schema_new.SchemaBoundary;
 import org.neo4j.kernel.api.schema_new.SchemaDescriptor;
@@ -112,7 +114,6 @@ import static org.neo4j.helpers.collection.Iterators.singleOrNull;
 import static org.neo4j.kernel.api.StatementConstants.NO_SUCH_NODE;
 import static org.neo4j.kernel.api.schema_new.index.NewIndexDescriptor.Filter.GENERAL;
 import static org.neo4j.kernel.api.schema_new.index.NewIndexDescriptor.Filter.UNIQUE;
-import static org.neo4j.kernel.impl.api.PropertyValueComparison.COMPARE_NUMBERS;
 import static org.neo4j.kernel.impl.util.Cursors.count;
 import static org.neo4j.kernel.impl.util.Cursors.empty;
 import static org.neo4j.register.Registers.newDoubleLongRegister;
@@ -702,7 +703,9 @@ public class StateHandlingStatementOperations implements
          * close the IndexReader when done iterating over the lookup result. This is because we get
          * a fresh reader that isn't associated with the current transaction and hence will not be
          * automatically closed. */
-        PrimitiveLongResourceIterator committed = resourceIterator( reader.seek( value ), reader );
+        IndexQuery.ExactPredicate query = IndexQuery.exact( index.schema().getPropertyId(), value );
+        PrimitiveLongResourceIterator committed = resourceIterator(
+                reader.query( query ), reader );
         PrimitiveLongIterator exactMatches = filterExactIndexMatches( state, index, value, committed );
         PrimitiveLongIterator changesFiltered = filterIndexStateChangesForScanOrSeek( state, index, value,
                 exactMatches );
@@ -710,58 +713,51 @@ public class StateHandlingStatementOperations implements
     }
 
     @Override
-    public PrimitiveLongIterator nodesGetFromIndexSeek( KernelStatement state, NewIndexDescriptor index, Object value )
-            throws IndexNotFoundKernelException
+    public PrimitiveLongIterator indexQuery( KernelStatement state, NewIndexDescriptor index,
+                                             IndexQuery...predicates ) throws IndexNotFoundKernelException
     {
-        IndexReader reader = state.getStoreStatement().getIndexReader( index );
-        PrimitiveLongIterator committed = reader.seek( value );
-        PrimitiveLongIterator exactMatches = filterExactIndexMatches( state, index, value, committed );
-        return filterIndexStateChangesForScanOrSeek( state, index, value, exactMatches );
-    }
+        StorageStatement storeStatement = state.getStoreStatement();
+        IndexReader reader = storeStatement.getIndexReader( index );
+        PrimitiveLongIterator committed = reader.query( predicates );
 
-    @Override
-    public PrimitiveLongIterator nodesGetFromIndexRangeSeekByNumber( KernelStatement state, NewIndexDescriptor index,
-            Number lower, boolean includeLower,
-            Number upper, boolean includeUpper ) throws IndexNotFoundKernelException
+        assert predicates.length == 1: "composite indexes not yet supported";
+        IndexQuery predicate = predicates[0];
+        Object filterValue = null;
+        switch ( predicate.type() )
+        {
+        case exact:
+            filterValue = ((IndexQuery.ExactPredicate) predicate).value();
+            committed = filterExactIndexMatches( state, index, filterValue, committed );
+        case stringSuffix:
+        case stringContains:
+        case exists:
+            return filterIndexStateChangesForScanOrSeek( state, index, filterValue, committed );
 
-    {
-        PrimitiveLongIterator committed = COMPARE_NUMBERS.isEmptyRange( lower, includeLower, upper, includeUpper )
-                ? PrimitiveLongCollections.emptyIterator()
-                : state.getStoreStatement().getIndexReader( index ).rangeSeekByNumberInclusive( lower, upper );
-        PrimitiveLongIterator exactMatches = filterExactRangeMatches( state, index, committed, lower, includeLower,
-                upper, includeUpper );
-        return filterIndexStateChangesForRangeSeekByNumber( state, index, lower, includeLower, upper, includeUpper,
-                exactMatches );
-    }
-
-    @Override
-    public PrimitiveLongIterator nodesGetFromIndexRangeSeekByString( KernelStatement state, NewIndexDescriptor index,
-            String lower, boolean includeLower,
-            String upper, boolean includeUpper ) throws IndexNotFoundKernelException
-
-    {
-        IndexReader reader = state.getStoreStatement().getIndexReader( index );
-        PrimitiveLongIterator committed = reader.rangeSeekByString( lower, includeLower, upper, includeUpper );
-        return filterIndexStateChangesForRangeSeekByString( state, index, lower, includeLower, upper, includeUpper,
-                committed );
-    }
-
-    @Override
-    public PrimitiveLongIterator nodesGetFromIndexRangeSeekByPrefix( KernelStatement state, NewIndexDescriptor index,
-            String prefix ) throws IndexNotFoundKernelException
-    {
-        IndexReader reader = state.getStoreStatement().getIndexReader( index );
-        PrimitiveLongIterator committed = reader.rangeSeekByPrefix( prefix );
-        return filterIndexStateChangesForRangeSeekByPrefix( state, index, prefix, committed );
-    }
-
-    @Override
-    public PrimitiveLongIterator nodesGetFromIndexScan( KernelStatement state, NewIndexDescriptor index )
-            throws IndexNotFoundKernelException
-    {
-        IndexReader reader = state.getStoreStatement().getIndexReader( index );
-        PrimitiveLongIterator committed = reader.scan();
-        return filterIndexStateChangesForScanOrSeek( state, index, null, committed );
+        case rangeNumeric:
+        {
+            IndexQuery.NumberRangePredicate numPred = (IndexQuery.NumberRangePredicate) predicate;
+            PrimitiveLongIterator exactMatches =
+                    filterExactRangeMatches( state, index, committed, numPred.from(), numPred.fromInclusive(),
+                            numPred.to(), numPred.toInclusive() );
+            return filterIndexStateChangesForRangeSeekByNumber( state, index, numPred.from(),
+                    numPred.fromInclusive(), numPred.to(), numPred.toInclusive(),
+                    exactMatches );
+        }
+        case rangeString:
+        {
+            IndexQuery.StringRangePredicate strPred = (IndexQuery.StringRangePredicate) predicate;
+            return filterIndexStateChangesForRangeSeekByString(
+                    state, index, strPred.from(), strPred.fromInclusive(), strPred.to(),
+                    strPred.toInclusive(), committed );
+        }
+        case stringPrefix:
+        {
+            IndexQuery.StringPrefixPredicate strPred = (IndexQuery.StringPrefixPredicate) predicate;
+            return filterIndexStateChangesForRangeSeekByPrefix( state, index, strPred.prefix(), committed );
+        }
+        default:
+            throw new RuntimeException( "Query not supported: " + Arrays.toString( predicates ) );
+        }
     }
 
     @Override
@@ -770,25 +766,6 @@ public class StateHandlingStatementOperations implements
     {
         IndexReader reader = statement.getStoreStatement().getIndexReader( index );
         return reader.countIndexedNodes( nodeId, value );
-    }
-
-    @Override
-    public PrimitiveLongIterator nodesGetFromIndexContainsScan( KernelStatement state, NewIndexDescriptor index,
-            String term )
-            throws IndexNotFoundKernelException
-    {
-        IndexReader reader = state.getStoreStatement().getIndexReader( index );
-        PrimitiveLongIterator committed = reader.containsString( term );
-        return filterIndexStateChangesForScanOrSeek( state, index, null, committed );
-    }
-
-    @Override
-    public PrimitiveLongIterator nodesGetFromIndexEndsWithScan( KernelStatement state, NewIndexDescriptor index,
-            String suffix ) throws IndexNotFoundKernelException
-    {
-        IndexReader reader = state.getStoreStatement().getIndexReader( index );
-        PrimitiveLongIterator committed = reader.endsWith( suffix );
-        return filterIndexStateChangesForScanOrSeek( state, index, null, committed );
     }
 
     private PrimitiveLongIterator filterExactIndexMatches( final KernelStatement state, NewIndexDescriptor index,

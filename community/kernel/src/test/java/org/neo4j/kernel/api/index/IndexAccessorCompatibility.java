@@ -30,8 +30,8 @@ import java.util.List;
 
 import org.neo4j.collection.primitive.PrimitiveLongIterator;
 import org.neo4j.kernel.api.exceptions.index.IndexEntryConflictException;
+import org.neo4j.kernel.api.schema_new.IndexQuery;
 import org.neo4j.kernel.api.schema_new.index.IndexBoundary;
-import org.neo4j.kernel.api.schema_new.index.NewIndexDescriptor;
 import org.neo4j.kernel.configuration.Config;
 import org.neo4j.kernel.impl.api.index.IndexUpdateMode;
 import org.neo4j.kernel.impl.api.index.sampling.IndexSamplingConfig;
@@ -42,6 +42,7 @@ import static java.util.Collections.EMPTY_LIST;
 import static java.util.Collections.singletonList;
 import static org.hamcrest.Matchers.equalTo;
 import static org.junit.Assert.assertThat;
+import static org.neo4j.kernel.api.schema_new.IndexQuery.range;
 
 public abstract class IndexAccessorCompatibility extends IndexProviderCompatibilityTestSuite.Compatibility
 {
@@ -83,13 +84,13 @@ public abstract class IndexAccessorCompatibility extends IndexProviderCompatibil
                 IndexEntryUpdate.add( 4L, descriptor, 10.0 ),
                 IndexEntryUpdate.add( 5L, descriptor, 100.0 ) ) );
 
-        assertThat( getAllNodesFromInclusiveIndexSeekByNumber( 0, 10 ), equalTo( asList( 2L, 3L, 4L ) ) );
-        assertThat( getAllNodesFromInclusiveIndexSeekByNumber( 10, null ), equalTo( asList( 4L, 5L ) ) );
-        assertThat( getAllNodesFromInclusiveIndexSeekByNumber( 100, 0 ), equalTo( EMPTY_LIST ) );
-        assertThat( getAllNodesFromInclusiveIndexSeekByNumber( null, 5.5 ), equalTo( asList( 1L, 2L, 3L ) ) );
-        assertThat( getAllNodesFromInclusiveIndexSeekByNumber( null, null ), equalTo( asList( 1L, 2L, 3L, 4L, 5L ) ) );
-        assertThat( getAllNodesFromInclusiveIndexSeekByNumber( -5, 0 ), equalTo( asList( 1L, 2L ) ) );
-        assertThat( getAllNodesFromInclusiveIndexSeekByNumber( -5, 5.5 ), equalTo( asList( 1L, 2L, 3L ) ) );
+        assertThat( query( range( 1, 0, true, 10, true ) ), equalTo( asList( 2L, 3L, 4L ) ) );
+        assertThat( query( range( 1, 10, true, null, true ) ), equalTo( asList( 4L, 5L ) ) );
+        assertThat( query( range( 1, 100, true, 0, true ) ), equalTo( EMPTY_LIST ) );
+        assertThat( query( range( 1, null, true, 5.5, true ) ), equalTo( asList( 1L, 2L, 3L ) ) );
+        assertThat( query( range( 1, (Number)null, true, null, true ) ), equalTo( asList( 1L, 2L, 3L, 4L, 5L ) ) );
+        assertThat( query( range( 1, -5, true, 0, true ) ), equalTo( asList( 1L, 2L ) ) );
+        assertThat( query( range( 1, -5, true, 5.5, true ) ), equalTo( asList( 1L, 2L, 3L ) ) );
     }
 
     @Test
@@ -102,15 +103,15 @@ public abstract class IndexAccessorCompatibility extends IndexProviderCompatibil
                 IndexEntryUpdate.add( 4L, descriptor, "Harriet" ),
                 IndexEntryUpdate.add( 5L, descriptor, "William" ) ) );
 
-        assertThat( getAllNodesFromIndexSeekByString( "Anna", true, "Harriet", false ), equalTo( asList( 2L, 3L ) ) );
-        assertThat( getAllNodesFromIndexSeekByString( "Harriet", true, null, false ), equalTo( asList( 4L, 5L ) ) );
-        assertThat( getAllNodesFromIndexSeekByString( "Harriet", false, null, true ), equalTo( singletonList( 5L ) ) );
-        assertThat( getAllNodesFromIndexSeekByString( "William", false, "Anna", true ), equalTo( EMPTY_LIST ) );
-        assertThat( getAllNodesFromIndexSeekByString( null, false, "Bob", false ), equalTo( asList( 1L, 2L ) ) );
-        assertThat( getAllNodesFromIndexSeekByString( null, true, "Bob", true ), equalTo( asList( 1L, 2L, 3L ) ) );
-        assertThat( getAllNodesFromIndexSeekByString( null, true, null, true ), equalTo( asList( 1L, 2L, 3L, 4L, 5L ) ) );
-        assertThat( getAllNodesFromIndexSeekByString( "Anabelle", false, "Anna", true ), equalTo( singletonList( 2L ) ) );
-        assertThat( getAllNodesFromIndexSeekByString( "Anabelle", false, "Bob", false ), equalTo( singletonList( 2L ) ) );
+        assertThat( query( range( 1, "Anna", true, "Harriet", false ) ), equalTo( asList( 2L, 3L ) ) );
+        assertThat( query( range( 1, "Harriet", true, null, false ) ), equalTo( asList( 4L, 5L ) ) );
+        assertThat( query( range( 1, "Harriet", false, null, true ) ), equalTo( singletonList( 5L ) ) );
+        assertThat( query( range( 1, "William", false, "Anna", true ) ), equalTo( EMPTY_LIST ) );
+        assertThat( query( range( 1, null, false, "Bob", false ) ), equalTo( asList( 1L, 2L ) ) );
+        assertThat( query( range( 1, null, true, "Bob", true ) ), equalTo( asList( 1L, 2L, 3L ) ) );
+        assertThat( query( range( 1, (String)null, true, null, true ) ), equalTo( asList( 1L, 2L, 3L, 4L, 5L ) ) );
+        assertThat( query( range( 1, "Anabelle", false, "Anna", true ) ), equalTo( singletonList( 2L ) ) );
+        assertThat( query( range( 1, "Anabelle", false, "Bob", false ) ), equalTo( singletonList( 2L ) ) );
     }
 
     @Test
@@ -123,10 +124,10 @@ public abstract class IndexAccessorCompatibility extends IndexProviderCompatibil
                 IndexEntryUpdate.add( 4L, descriptor, "apA" ),
                 IndexEntryUpdate.add( 5L, descriptor, "b" ) ) );
 
-        assertThat( getAllNodesFromIndexSeekByPrefix( "a" ), equalTo( asList( 1L, 3L, 4L ) ) );
-        assertThat( getAllNodesFromIndexSeekByPrefix( "A" ), equalTo( Collections.singletonList( 2L ) ) );
-        assertThat( getAllNodesFromIndexSeekByPrefix( "ba" ), equalTo( EMPTY_LIST ) );
-        assertThat( getAllNodesFromIndexSeekByPrefix( "" ), equalTo( asList( 1L, 2L, 3L, 4L, 5L ) ) );
+        assertThat( query( IndexQuery.stringPrefix( 1, "a" ) ), equalTo( asList( 1L, 3L, 4L ) ) );
+        assertThat( query( IndexQuery.stringPrefix( 1, "A" ) ), equalTo( Collections.singletonList( 2L ) ) );
+        assertThat( query( IndexQuery.stringPrefix( 1, "ba" ) ), equalTo( EMPTY_LIST ) );
+        assertThat( query( IndexQuery.stringPrefix( 1, "" ) ), equalTo( asList( 1L, 2L, 3L, 4L, 5L ) ) );
     }
 
     @Test
@@ -135,42 +136,12 @@ public abstract class IndexAccessorCompatibility extends IndexProviderCompatibil
         updateAndCommit( asList(
                 IndexEntryUpdate.add( 1L, descriptor, "a" ),
                 IndexEntryUpdate.add( 2L, descriptor, 2L ) ) );
-        assertThat( getAllNodesFromIndexSeekByPrefix( "2" ), equalTo( EMPTY_LIST ) );
+        assertThat( query( IndexQuery.stringPrefix( 1, "2" ) ), equalTo( EMPTY_LIST ) );
     }
 
-    protected List<Long> getAllNodesWithProperty( String propertyValue ) throws IOException
+    protected List<Long> query( IndexQuery... predicates )
     {
-        return metaGet( reader -> reader.seek( propertyValue ));
-    }
-
-    protected List<Long> getAllNodesFromInclusiveIndexSeekByNumber( Number lower, Number upper ) throws IOException
-    {
-        return metaGet( reader -> reader.rangeSeekByNumberInclusive( lower, upper ));
-    }
-
-    protected List<Long> getAllNodesFromIndexSeekByString( String lower, boolean includeLower, String upper, boolean includeUpper ) throws IOException
-    {
-        return metaGet( reader -> reader.rangeSeekByString( lower, includeLower, upper, includeUpper ));
-    }
-
-    protected List<Long> getAllNodesFromIndexSeekByPrefix( String prefix ) throws IOException
-    {
-        return metaGet( reader -> reader.rangeSeekByPrefix( prefix));
-    }
-
-    protected List<Long> getAllNodesFromIndexScanByContains( String term ) throws IOException
-    {
-        return metaGet( reader -> reader.containsString( term ) );
-    }
-
-    protected List<Long> getAllNodesFromIndexScanEndsWith( String term ) throws IOException
-    {
-        return metaGet( reader -> reader.endsWith( term ) );
-    }
-
-    protected List<Long> getAllNodes() throws IOException
-    {
-        return metaGet( IndexReader::scan );
+        return metaGet( reader -> reader.query( predicates ) );
     }
 
     private List<Long> metaGet( ReaderInteraction interaction )

@@ -48,6 +48,7 @@ import org.neo4j.kernel.api.proc.QualifiedName;
 import org.neo4j.kernel.api.proc.UserFunctionSignature;
 import org.neo4j.kernel.api.schema.NodePropertyDescriptor;
 import org.neo4j.kernel.api.schema.RelationshipPropertyDescriptor;
+import org.neo4j.kernel.api.schema_new.IndexQuery;
 import org.neo4j.kernel.api.schema_new.index.NewIndexDescriptor;
 import org.neo4j.kernel.impl.api.RelationshipVisitor;
 import org.neo4j.kernel.impl.api.store.RelationshipIterator;
@@ -117,60 +118,14 @@ public interface ReadOperations
     PrimitiveLongIterator nodesGetForLabel( int labelId );
 
     /**
-     * Returns an iterator with the matched nodes.
+     * Queries the given index with the given index query.
      *
-     * @throws org.neo4j.kernel.api.exceptions.index.IndexNotFoundKernelException if no such index found.
+     * @param index the index to query against.
+     * @param predicates array of the {@link IndexQuery} predicates to query for.
+     * @return ids of the matching nodes
+     * @throws org.neo4j.kernel.api.exceptions.index.IndexNotFoundKernelException if no such index is found.
      */
-    PrimitiveLongIterator nodesGetFromIndexSeek( NewIndexDescriptor index, Object value )
-            throws IndexNotFoundKernelException;
-
-    /**
-     * Returns an iterator with the matched nodes.
-     *
-     * @throws org.neo4j.kernel.api.exceptions.index.IndexNotFoundKernelException if no such index found.
-     */
-    PrimitiveLongIterator nodesGetFromIndexRangeSeekByPrefix( NewIndexDescriptor index, String prefix )
-            throws IndexNotFoundKernelException;
-
-    /**
-     * Returns an iterator with the matched nodes.
-     *
-     * @throws org.neo4j.kernel.api.exceptions.index.IndexNotFoundKernelException if no such index found.
-     */
-    PrimitiveLongIterator nodesGetFromIndexRangeSeekByNumber( NewIndexDescriptor index, Number lower, boolean includeLower, Number upper, boolean includeUpper )
-            throws IndexNotFoundKernelException;
-
-    /**
-     * Returns an iterator with the matched nodes.
-     *
-     * @throws org.neo4j.kernel.api.exceptions.index.IndexNotFoundKernelException if no such index found.
-     */
-    PrimitiveLongIterator nodesGetFromIndexRangeSeekByString( NewIndexDescriptor index, String lower, boolean includeLower, String upper, boolean includeUpper )
-            throws IndexNotFoundKernelException;
-
-    /**
-     * Returns an iterator with the matched nodes.
-     *
-     * @throws org.neo4j.kernel.api.exceptions.index.IndexNotFoundKernelException if no such index found.
-     */
-    PrimitiveLongIterator nodesGetFromIndexScan( NewIndexDescriptor index )
-            throws IndexNotFoundKernelException;
-
-    /**
-     * Returns an iterator with the matched nodes.
-     *
-     * @throws org.neo4j.kernel.api.exceptions.index.IndexNotFoundKernelException if no such index found.
-     */
-    PrimitiveLongIterator nodesGetFromIndexContainsScan( NewIndexDescriptor index, String term )
-            throws IndexNotFoundKernelException;
-
-    /**
-     * Returns an iterator with the matched nodes.
-     *
-     * @throws org.neo4j.kernel.api.exceptions.index.IndexNotFoundKernelException if no such index found.
-     */
-    PrimitiveLongIterator nodesGetFromIndexEndsWithScan( NewIndexDescriptor index, String suffix )
-            throws IndexNotFoundKernelException;
+    PrimitiveLongIterator indexQuery( NewIndexDescriptor index, IndexQuery... predicates ) throws IndexNotFoundKernelException;
 
     /**
      * @return an iterator over all nodes in the database.

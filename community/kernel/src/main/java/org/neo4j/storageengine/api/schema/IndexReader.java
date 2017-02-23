@@ -23,6 +23,7 @@ package org.neo4j.storageengine.api.schema;
 import org.neo4j.collection.primitive.PrimitiveLongCollections;
 import org.neo4j.collection.primitive.PrimitiveLongIterator;
 import org.neo4j.graphdb.Resource;
+import org.neo4j.kernel.api.schema_new.IndexQuery;
 
 
 /**
@@ -32,65 +33,6 @@ import org.neo4j.graphdb.Resource;
 public interface IndexReader extends Resource
 {
     /**
-     * Searches this index for a certain value.
-     *
-     * @param value property value to search for.
-     * @return ids of matching nodes.
-     */
-    PrimitiveLongIterator seek( Object value );
-
-    /**
-     * Searches this index for numerics values between {@code lower} and {@code upper}.
-     *
-     * @param lower lower numeric bound of search (inclusive).
-     * @param upper upper numeric bound of search (inclusive).
-     * @return ids of matching nodes.
-     */
-    PrimitiveLongIterator rangeSeekByNumberInclusive( Number lower, Number upper );
-
-    /**
-     * Searches this index for string values between {@code lower} and {@code upper}.
-     *
-     * @param lower lower numeric bound of search.
-     * @param includeLower whether or not lower bound is inclusive.
-     * @param upper upper numeric bound of search.
-     * @param includeUpper whether or not upper bound is inclusive.
-     * @return ids of matching nodes.
-     */
-    PrimitiveLongIterator rangeSeekByString( String lower, boolean includeLower, String upper, boolean includeUpper );
-
-    /**
-     * Searches this index for string values starting with {@code prefix}.
-     *
-     * @param prefix prefix that matching strings must start with.
-     * @return ids of matching nodes.
-     */
-    PrimitiveLongIterator rangeSeekByPrefix( String prefix );
-
-    /**
-     * Scans this index returning all nodes.
-     *
-     * @return node ids in index.
-     */
-    PrimitiveLongIterator scan();
-
-    /**
-     * Searches this index for string values containing the exact search string.
-     *
-     * @param exactTerm the exact string to search for in the index
-     * @return ids of matching nodes.
-     */
-    PrimitiveLongIterator containsString( String exactTerm );
-
-    /**
-     * Searches this index for string values ending with the suffix search string.
-     *
-     * @param suffix the string to search for in the index
-     * @return ids of matching nodes.
-     */
-    PrimitiveLongIterator endsWith( String suffix );
-
-    /**
      * @param nodeId node if to match.
      * @param propertyValue property value to match.
      * @return number of index entries for the given {@code nodeId} and {@code propertyValue}.
@@ -99,51 +41,16 @@ public interface IndexReader extends Resource
 
     IndexSampler createSampler();
 
+    /**
+     * Queries the index for the given {@link IndexQuery} predicates.
+     *
+     * @param predicates the predicates to query for.
+     * @return the matching entity IDs.
+     */
+    PrimitiveLongIterator query( IndexQuery... predicates );
+
     IndexReader EMPTY = new IndexReader()
     {
-        @Override
-        public PrimitiveLongIterator seek( Object value )
-        {
-            return PrimitiveLongCollections.emptyIterator();
-        }
-
-        @Override
-        public PrimitiveLongIterator rangeSeekByNumberInclusive( Number lower, Number upper )
-        {
-            return PrimitiveLongCollections.emptyIterator();
-        }
-
-        @Override
-        public PrimitiveLongIterator rangeSeekByString( String lower, boolean includeLower,
-                                                        String upper, boolean includeUpper )
-        {
-            return PrimitiveLongCollections.emptyIterator();
-        }
-
-        @Override
-        public PrimitiveLongIterator rangeSeekByPrefix( String prefix )
-        {
-            return PrimitiveLongCollections.emptyIterator();
-        }
-
-        @Override
-        public PrimitiveLongIterator scan()
-        {
-            return PrimitiveLongCollections.emptyIterator();
-        }
-
-        @Override
-        public PrimitiveLongIterator containsString( String exactTerm )
-        {
-            return PrimitiveLongCollections.emptyIterator();
-        }
-
-        @Override
-        public PrimitiveLongIterator endsWith(String suffix)
-        {
-            return PrimitiveLongCollections.emptyIterator();
-        }
-
         // Used for checking index correctness
         @Override
         public long countIndexedNodes( long nodeId, Object propertyValue )
@@ -155,6 +62,12 @@ public interface IndexReader extends Resource
         public IndexSampler createSampler()
         {
             return IndexSampler.EMPTY;
+        }
+
+        @Override
+        public PrimitiveLongIterator query( IndexQuery[] predicates )
+        {
+            return PrimitiveLongCollections.emptyIterator();
         }
 
         @Override

@@ -51,6 +51,7 @@ import org.neo4j.kernel.api.properties.Property;
 import org.neo4j.kernel.api.schema.IndexDescriptor;
 import org.neo4j.kernel.api.schema.NodePropertyDescriptor;
 import org.neo4j.kernel.api.schema.RelationshipPropertyDescriptor;
+import org.neo4j.kernel.api.schema_new.IndexQuery;
 import org.neo4j.kernel.api.schema_new.index.IndexBoundary;
 import org.neo4j.kernel.api.schema_new.index.NewIndexDescriptor;
 import org.neo4j.kernel.impl.api.operations.EntityOperations;
@@ -265,47 +266,10 @@ public class ConstraintEnforcingEntityOperations implements EntityOperations, Sc
     }
 
     @Override
-    public PrimitiveLongIterator nodesGetFromIndexSeek( KernelStatement state, NewIndexDescriptor index, Object value )
-            throws IndexNotFoundKernelException
+    public PrimitiveLongIterator indexQuery( KernelStatement statement, NewIndexDescriptor index,
+                                             IndexQuery[] predicates ) throws IndexNotFoundKernelException
     {
-        return entityReadOperations.nodesGetFromIndexSeek( state, index, value );
-    }
-
-    @Override
-    public PrimitiveLongIterator nodesGetFromIndexRangeSeekByNumber( KernelStatement statement,
-            NewIndexDescriptor index,
-            Number lower, boolean includeLower,
-            Number upper, boolean includeUpper )
-            throws IndexNotFoundKernelException
-    {
-        return entityReadOperations.nodesGetFromIndexRangeSeekByNumber( statement, index, lower, includeLower, upper,
-                includeUpper );
-    }
-
-    @Override
-    public PrimitiveLongIterator nodesGetFromIndexRangeSeekByString( KernelStatement statement,
-            NewIndexDescriptor index,
-            String lower, boolean includeLower,
-            String upper, boolean includeUpper )
-            throws IndexNotFoundKernelException
-    {
-        return entityReadOperations.nodesGetFromIndexRangeSeekByString( statement, index, lower, includeLower, upper,
-                includeUpper );
-    }
-
-    @Override
-    public PrimitiveLongIterator nodesGetFromIndexRangeSeekByPrefix( KernelStatement state,
-            NewIndexDescriptor index, String prefix )
-            throws IndexNotFoundKernelException
-    {
-        return entityReadOperations.nodesGetFromIndexRangeSeekByPrefix( state, index, prefix );
-    }
-
-    @Override
-    public PrimitiveLongIterator nodesGetFromIndexScan( KernelStatement state, NewIndexDescriptor index )
-            throws IndexNotFoundKernelException
-    {
-        return entityReadOperations.nodesGetFromIndexScan( state, index );
+        return entityReadOperations.indexQuery( statement, index, predicates );
     }
 
     @Override
@@ -357,20 +321,6 @@ public class ConstraintEnforcingEntityOperations implements EntityOperations, Sc
             throws IndexNotFoundKernelException, IndexBrokenKernelException
     {
         return entityReadOperations.nodesCountIndexed( statement, index, nodeId, value );
-    }
-
-    @Override
-    public PrimitiveLongIterator nodesGetFromIndexContainsScan( KernelStatement state, NewIndexDescriptor index,
-            String term ) throws IndexNotFoundKernelException
-    {
-        return entityReadOperations.nodesGetFromIndexContainsScan( state, index, term );
-    }
-
-    @Override
-    public PrimitiveLongIterator nodesGetFromIndexEndsWithScan( KernelStatement state, NewIndexDescriptor index,
-            String suffix ) throws IndexNotFoundKernelException
-    {
-        return entityReadOperations.nodesGetFromIndexEndsWithScan( state, index, suffix );
     }
 
     @Override
