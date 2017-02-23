@@ -2115,7 +2115,8 @@ public abstract class PageCacheTest<T extends PageCache> extends PageCacheTestSu
         DefaultPageCacheTracer tracer = new DefaultPageCacheTracer();
         generateFileWithRecords( file( "a" ), recordCount, recordSize );
 
-        getPageCache( fs, maxPages, pageCachePageSize, tracer, DefaultPageCursorTracerSupplier.INSTANCE );
+        DefaultPageCursorTracerSupplier cursorTracerSupplier = DefaultPageCursorTracerSupplier.INSTANCE;
+        getPageCache( fs, maxPages, pageCachePageSize, tracer, cursorTracerSupplier );
 
         long countedPages = 0;
         long countedFaults = 0;
@@ -2145,6 +2146,8 @@ public abstract class PageCacheTest<T extends PageCache> extends PageCacheTestSu
             }
         }
 
+        cursorTracerSupplier.get().reportEvents();
+
         assertThat( "wrong count of pins", tracer.pins(), is( countedPages ) );
         assertThat( "wrong count of unpins", tracer.unpins(), is( countedPages ) );
 
@@ -2172,7 +2175,8 @@ public abstract class PageCacheTest<T extends PageCache> extends PageCacheTestSu
         long pagesToGenerate = 142;
         DefaultPageCacheTracer tracer = new DefaultPageCacheTracer();
 
-        getPageCache( fs, maxPages, pageCachePageSize, tracer, DefaultPageCursorTracerSupplier.INSTANCE );
+        DefaultPageCursorTracerSupplier tracerSupplier = DefaultPageCursorTracerSupplier.INSTANCE;
+        getPageCache( fs, maxPages, pageCachePageSize, tracer, tracerSupplier );
 
         try ( PagedFile pagedFile = pageCache.map( file( "a" ), filePageSize );
               PageCursor cursor = pagedFile.io( 0, PF_SHARED_WRITE_LOCK ) )
@@ -2191,6 +2195,7 @@ public abstract class PageCacheTest<T extends PageCache> extends PageCacheTestSu
             assertTrue( cursor.next( 0 ) );
             assertTrue( cursor.next( 0 ) );
         }
+        tracerSupplier.get().reportEvents();
 
         assertThat( "wrong count of pins", tracer.pins(), is( pagesToGenerate + 1 ) );
         assertThat( "wrong count of unpins", tracer.unpins(), is( pagesToGenerate + 1 ) );

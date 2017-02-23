@@ -49,7 +49,8 @@ import org.neo4j.test.TestGraphDatabaseFactory;
 import org.neo4j.test.rule.RepeatRule;
 import org.neo4j.test.rule.TestDirectory;
 
-import static org.junit.Assert.assertEquals;
+import static org.hamcrest.Matchers.greaterThanOrEqualTo;
+import static org.junit.Assert.assertThat;
 
 public class PageCacheCountersIT
 {
@@ -92,23 +93,23 @@ public class PageCacheCountersIT
         long initialFlushes = pageCacheTracer.flushes();
 
         startNodeCreators( nodeCreators, nodeCreatorFutures );
-        TimeUnit.MILLISECONDS.sleep( 250 );
+        TimeUnit.MILLISECONDS.sleep( 50 );
         stopNodeCreators( nodeCreators, nodeCreatorFutures );
 
-        assertEquals( "Number of pins events in page cache tracer should equal to the sum of pin events in page " +
-                        "cursor tracers.", pageCacheTracer.pins(), sumCounters( nodeCreators, NodeCreator::getPins, initialPins ) );
-        assertEquals( "Number of unpins events in page cache tracer should equal to the sum of unpin events in page " +
-                        "cursor tracers.", pageCacheTracer.unpins(), sumCounters( nodeCreators, NodeCreator::getUnpins, initialUnpins ) );
-        assertEquals( "Number of initialBytesRead in page cache tracer should equal to the sum of initialBytesRead in page " +
-                        "cursor tracers.", pageCacheTracer.bytesRead(), sumCounters( nodeCreators, NodeCreator::getBytesRead, initialBytesRead ) );
-        assertEquals( "Number of bytesWritten in page cache tracer should equal to the sum of bytesWritten in " +
-                        "page cursor tracers.", pageCacheTracer.bytesWritten(), sumCounters( nodeCreators, NodeCreator::getBytesWritten, initialBytesWritten ) );
-        assertEquals( "Number of evictions in page cache tracer should equal to the sum of evictions in " +
-                        "page cursor tracers.", pageCacheTracer.evictions(), sumCounters( nodeCreators, NodeCreator::getEvictions, initialEvictions ) );
-        assertEquals( "Number of faults in page cache tracer should equal to the sum of faults in " + "page cursor tracers.",
-                pageCacheTracer.faults(), sumCounters( nodeCreators, NodeCreator::getFaults, initialFaults ) );
-        assertEquals( "Number of flushes in page cache tracer should equal to the sum of flushes in " +
-                        "page cursor tracers.", pageCacheTracer.flushes(), sumCounters( nodeCreators, NodeCreator::getFlushes, initialFlushes ) );
+        assertThat( "Number of pins events in page cache tracer should equal to the sum of pin events in page cursor tracers.",
+                    pageCacheTracer.pins(), greaterThanOrEqualTo( sumCounters( nodeCreators, NodeCreator::getPins, initialPins ) ) );
+        assertThat( "Number of unpins events in page cache tracer should equal to the sum of unpin events in page cursor tracers.",
+                pageCacheTracer.unpins(), greaterThanOrEqualTo( sumCounters( nodeCreators, NodeCreator::getUnpins, initialUnpins ) ) );
+        assertThat( "Number of initialBytesRead in page cache tracer should equal to the sum of initialBytesRead in page cursor tracers.",
+                pageCacheTracer.bytesRead(), greaterThanOrEqualTo( sumCounters( nodeCreators, NodeCreator::getBytesRead, initialBytesRead ) ) );
+        assertThat( "Number of bytesWritten in page cache tracer should equal to the sum of bytesWritten in page cursor tracers.",
+                pageCacheTracer.bytesWritten(), greaterThanOrEqualTo( sumCounters( nodeCreators, NodeCreator::getBytesWritten, initialBytesWritten ) ) );
+        assertThat( "Number of evictions in page cache tracer should equal to the sum of evictions in page cursor tracers.",
+                pageCacheTracer.evictions(), greaterThanOrEqualTo( sumCounters( nodeCreators, NodeCreator::getEvictions, initialEvictions ) ) );
+        assertThat( "Number of faults in page cache tracer should equal to the sum of faults in " + "page cursor tracers.",
+                pageCacheTracer.faults(), greaterThanOrEqualTo( sumCounters( nodeCreators, NodeCreator::getFaults, initialFaults ) ) );
+        assertThat( "Number of flushes in page cache tracer should equal to the sum of flushes in page cursor tracers.",
+                pageCacheTracer.flushes(), greaterThanOrEqualTo( sumCounters( nodeCreators, NodeCreator::getFlushes, initialFlushes ) ) );
     }
 
     private void stopNodeCreators( List<NodeCreator> nodeCreators, List<Future> nodeCreatorFutures )
@@ -133,7 +134,7 @@ public class PageCacheCountersIT
 
     private long sumCounters(  List<NodeCreator> nodeCreators, ToLongFunction<NodeCreator> mapper, long initialValue )
     {
-        return nodeCreators.stream().mapToLong( mapper ).reduce( initialValue, Long::sum );
+        return nodeCreators.stream().mapToLong( mapper ).sum() + initialValue;
     }
 
     private PageCacheTracer getPageCacheTracer( GraphDatabaseService db )
@@ -169,27 +170,27 @@ public class PageCacheCountersIT
                 try ( Transaction transaction = db.beginTx() )
                 {
                     KernelStatement kernelStatement = getKernelStatement( (GraphDatabaseAPI) db );
-                    pageCursorCounters = kernelStatement.getPageCursorCounters();
+                    pageCursorCounters = kernelStatement.getPageCursorTracer();
                     Node node = db.createNode();
                     node.setProperty( "name", RandomStringUtils.random( localRandom.nextInt( 100 ) ) );
                     node.setProperty( "surname", RandomStringUtils.random( localRandom.nextInt( 100 ) ) );
                     node.setProperty( "age", localRandom.nextInt( 100 ) );
                     transaction.success();
+                    storeCounters( pageCursorCounters );
                 }
-                storeCounters( pageCursorCounters );
             }
         }
 
         private void storeCounters( PageCursorCounters pageCursorCounters )
         {
             Objects.nonNull( pageCursorCounters );
-            pins = pageCursorCounters.pins();
-            unpins = pageCursorCounters.unpins();
-            bytesRead = pageCursorCounters.bytesRead();
-            bytesWritten = pageCursorCounters.bytesWritten();
-            evictions = pageCursorCounters.evictions();
-            faults = pageCursorCounters.faults();
-            flushes = pageCursorCounters.flushes();
+            pins +=pageCursorCounters.pins();
+            unpins += pageCursorCounters.unpins();
+            bytesRead += pageCursorCounters.bytesRead();
+            bytesWritten += pageCursorCounters.bytesWritten();
+            evictions += pageCursorCounters.evictions();
+            faults += pageCursorCounters.faults();
+            flushes += pageCursorCounters.flushes();
         }
 
         @Override

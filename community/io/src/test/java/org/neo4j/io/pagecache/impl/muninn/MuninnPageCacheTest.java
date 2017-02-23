@@ -103,6 +103,7 @@ public class MuninnPageCacheTest extends PageCacheTest<MuninnPageCache>
         {
             assertTrue( cursor.next() );
         }
+        cursorTracer.reportEvents();
         assertNotNull( cursorTracer.observe( Fault.class ) );
         assertEquals( 1, cursorTracer.faults() );
         assertEquals( 1, tracer.faults() );
@@ -140,6 +141,7 @@ public class MuninnPageCacheTest extends PageCacheTest<MuninnPageCache>
             assertTrue( cursor.next() );
             cursor.putLong( 0L );
         }
+        cursorTracer.reportEvents();
         assertNotNull( cursorTracer.observe( Fault.class ) );
         assertEquals( 1, cursorTracer.faults() );
         assertEquals( 1, tracer.faults() );
@@ -173,6 +175,7 @@ public class MuninnPageCacheTest extends PageCacheTest<MuninnPageCache>
             assertTrue( cursor.next() );
             cursor.putLong( 0L );
         }
+        cursorTracer.reportEvents();
         assertNotNull( cursorTracer.observe( Fault.class ) );
         assertEquals( 1, cursorTracer.faults() );
         assertEquals( 1, tracer.faults() );
@@ -209,6 +212,7 @@ public class MuninnPageCacheTest extends PageCacheTest<MuninnPageCache>
             cursor.putLong( 0L );
             assertFalse( cursor.next() );
         }
+        cursorTracer.reportEvents();
         assertNotNull( cursorTracer.observe( Fault.class ) );
         assertNotNull( cursorTracer.observe( Fault.class ) );
         assertEquals( 2, cursorTracer.faults() );

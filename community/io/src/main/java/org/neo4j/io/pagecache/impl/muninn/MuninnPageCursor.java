@@ -131,7 +131,6 @@ abstract class MuninnPageCursor extends PageCursor
             if ( cursor.pagedFile != null )
             {
                 cursor.unpinCurrentPage();
-                cursor.tracer.reportEvents();
                 cursor.releaseCursor();
                 // We null out the pagedFile field to allow it and its (potentially big) translation table to be garbage
                 // collected when the file is unmapped, since the cursors can stick around in thread local caches, etc.

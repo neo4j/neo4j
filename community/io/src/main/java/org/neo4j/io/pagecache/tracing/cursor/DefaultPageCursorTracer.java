@@ -31,15 +31,6 @@ import org.neo4j.io.pagecache.tracing.PinEvent;
 
 public class DefaultPageCursorTracer implements PageCursorTracer
 {
-    private long totalPins = 0L;
-    private long totalUnpins = 0L;
-    private long totalFaults = 0L;
-    private long totalBytesRead = 0L;
-    private long totalBytesWritten = 0L;
-    private long totalEvictions = 0L;
-    private long totalEvictionExceptions = 0L;
-    private long totalFlushes = 0L;
-
     private long pins;
     private long unpins;
     private long faults;
@@ -91,19 +82,11 @@ public class DefaultPageCursorTracer implements PageCursorTracer
         {
             pageCacheTracer.flushes( flushes );
         }
-        updateTotals();
+        reset();
     }
 
-    private void updateTotals()
+    private void reset()
     {
-        this.totalPins += pins;
-        this.totalUnpins += unpins;
-        this.totalFaults += faults;
-        this.totalBytesRead += bytesRead;
-        this.totalBytesWritten += bytesWritten;
-        this.totalEvictions += evictions;
-        this.totalEvictionExceptions += evictionExceptions;
-        this.totalFlushes += flushes;
         pins = 0;
         unpins = 0;
         faults = 0;
@@ -117,49 +100,49 @@ public class DefaultPageCursorTracer implements PageCursorTracer
     @Override
     public long faults()
     {
-        return totalFaults + faults;
+        return faults;
     }
 
     @Override
     public long pins()
     {
-        return totalPins + pins;
+        return pins;
     }
 
     @Override
     public long unpins()
     {
-        return totalUnpins + unpins;
+        return unpins;
     }
 
     @Override
     public long bytesRead()
     {
-        return totalBytesRead + bytesRead;
+        return bytesRead;
     }
 
     @Override
     public long evictions()
     {
-        return totalEvictions + evictions;
+        return evictions;
     }
 
     @Override
     public long evictionExceptions()
     {
-        return totalEvictionExceptions + evictionExceptions;
+        return evictionExceptions;
     }
 
     @Override
     public long bytesWritten()
     {
-        return totalBytesWritten + bytesWritten;
+        return bytesWritten;
     }
 
     @Override
     public long flushes()
     {
-        return totalFlushes + flushes;
+        return flushes;
     }
 
     @Override

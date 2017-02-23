@@ -445,7 +445,6 @@ public class KernelTransactionImplementation implements KernelTransaction, TxSta
     {
         assertTransactionOpen();
         assertTransactionNotClosing();
-        closeCurrentStatementIfAny();
         closing = true;
         try
         {
