@@ -20,11 +20,13 @@
 package org.neo4j.cypher.internal.compiled_runtime.v3_2.codegen.ir.expressions
 
 /**
-  * Type representation of a CodeGenExpression
+  * Type representation of a CodeGenExpression - these are the JVM types that will be used!
   */
 sealed trait RepresentationType
 
 case object IntType extends RepresentationType
+
+case object LongType extends RepresentationType
 
 case object BoolType extends RepresentationType
 
@@ -35,8 +37,8 @@ case object ReferenceType extends RepresentationType
 case class ListReferenceType(inner: RepresentationType) extends RepresentationType
 
 object RepresentationType {
-  def isPrimitive(repr: RepresentationType) = repr match {
-    case IntType | FloatType | BoolType => true
+  def isPrimitive(repr: RepresentationType): Boolean = repr match {
+    case IntType | LongType | FloatType | BoolType => true
     case _ => false
   }
 }

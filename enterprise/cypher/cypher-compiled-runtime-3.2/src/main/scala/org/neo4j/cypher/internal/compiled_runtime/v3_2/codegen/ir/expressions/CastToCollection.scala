@@ -32,5 +32,5 @@ case class CastToCollection(expression: CodeGenExpression) extends CodeGenExpres
 
   override def nullable(implicit context: CodeGenContext) = expression.nullable
 
-  override def codeGenType(implicit context: CodeGenContext) = CodeGenType(CTList(CTAny), ReferenceType)
+  override def codeGenType(implicit context: CodeGenContext) = CypherCodeGenType(CTList(CTAny), ReferenceType)
 }

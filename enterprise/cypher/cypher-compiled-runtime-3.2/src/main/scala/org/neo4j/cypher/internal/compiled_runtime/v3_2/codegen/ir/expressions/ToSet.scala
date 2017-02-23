@@ -21,7 +21,6 @@ package org.neo4j.cypher.internal.compiled_runtime.v3_2.codegen.ir.expressions
 
 import org.neo4j.cypher.internal.compiled_runtime.v3_2.codegen.CodeGenContext
 import org.neo4j.cypher.internal.compiled_runtime.v3_2.codegen.spi.MethodStructure
-import org.neo4j.cypher.internal.frontend.v3_2.symbols._
 
 case class ToSet(expression: CodeGenExpression) extends CodeGenExpression {
 
@@ -32,5 +31,5 @@ case class ToSet(expression: CodeGenExpression) extends CodeGenExpression {
 
   override def nullable(implicit context: CodeGenContext) = false
 
-  override def codeGenType(implicit context: CodeGenContext) = CodeGenType(CTList(CTAny), ReferenceType)
+  override def codeGenType(implicit context: CodeGenContext) = CodeGenType.Any
 }

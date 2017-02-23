@@ -29,7 +29,7 @@ case class Or(lhs: CodeGenExpression, rhs: CodeGenExpression) extends CodeGenExp
 
   override def codeGenType(implicit context: CodeGenContext) =
     if (!nullable) CodeGenType.primitiveBool
-    else CodeGenType(CTBoolean, ReferenceType)
+    else CypherCodeGenType(CTBoolean, ReferenceType)
 
   override final def init[E](generator: MethodStructure[E])(implicit context: CodeGenContext) = {
     lhs.init(generator)
@@ -47,7 +47,7 @@ case class Or(lhs: CodeGenExpression, rhs: CodeGenExpression) extends CodeGenExp
       case _ =>
         structure.unbox(
           structure.threeValuedOrExpression(structure.box(lhs.generateExpression(structure)), structure.box(rhs.generateExpression(structure))),
-          CodeGenType(CTBoolean, ReferenceType))
+          CypherCodeGenType(CTBoolean, ReferenceType))
     }
     else structure.threeValuedOrExpression(structure.box(lhs.generateExpression(structure)),
                                            structure.box(rhs.generateExpression(structure)))

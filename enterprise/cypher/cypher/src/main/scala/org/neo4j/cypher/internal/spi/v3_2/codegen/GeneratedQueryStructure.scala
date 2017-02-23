@@ -221,22 +221,23 @@ object GeneratedQueryStructure extends CodeStructure[GeneratedQuery] {
   }
 
   def lowerType(cType: CodeGenType): TypeReference = cType match {
-    case CodeGenType(symbols.CTNode, IntType) => typeRef[Long]
-    case CodeGenType(symbols.CTRelationship, IntType) => typeRef[Long]
-    case CodeGenType(symbols.CTInteger, IntType) => typeRef[Long]
-    case CodeGenType(symbols.CTFloat, FloatType) => typeRef[Double]
-    case CodeGenType(symbols.CTBoolean, BoolType) => typeRef[Boolean]
-    case CodeGenType(symbols.ListType(symbols.CTNode), ListReferenceType(IntType)) => typeRef[PrimitiveNodeStream]
-    case CodeGenType(symbols.ListType(symbols.CTRelationship), ListReferenceType(IntType)) => typeRef[PrimitiveRelationshipStream]
-    case CodeGenType(symbols.ListType(_), ListReferenceType(IntType)) => typeRef[LongStream]
-    case CodeGenType(symbols.ListType(_), ListReferenceType(FloatType)) => typeRef[DoubleStream]
-    case CodeGenType(symbols.ListType(_), ListReferenceType(BoolType)) => typeRef[IntStream]
+    case CypherCodeGenType(symbols.CTNode, LongType) => typeRef[Long]
+    case CypherCodeGenType(symbols.CTRelationship, LongType) => typeRef[Long]
+    case CypherCodeGenType(symbols.CTInteger, LongType) => typeRef[Long]
+    case CypherCodeGenType(symbols.CTFloat, FloatType) => typeRef[Double]
+    case CypherCodeGenType(symbols.CTBoolean, BoolType) => typeRef[Boolean]
+    case CypherCodeGenType(symbols.ListType(symbols.CTNode), ListReferenceType(LongType)) => typeRef[PrimitiveNodeStream]
+    case CypherCodeGenType(symbols.ListType(symbols.CTRelationship), ListReferenceType(LongType)) => typeRef[PrimitiveRelationshipStream]
+    case CypherCodeGenType(symbols.ListType(_), ListReferenceType(LongType)) => typeRef[LongStream]
+    case CypherCodeGenType(symbols.ListType(_), ListReferenceType(FloatType)) => typeRef[DoubleStream]
+    case CypherCodeGenType(symbols.ListType(_), ListReferenceType(BoolType)) => typeRef[IntStream]
+    case CodeGenType.javaInt => typeRef[Int]
     case _ => typeRef[Object]
   }
 
-  def nullValue(cType: CodeGenType) = cType match {
-    case CodeGenType(symbols.CTNode, IntType) => constant(-1L)
-    case CodeGenType(symbols.CTRelationship, IntType) => constant(-1L)
+  def nullValue(cType: CodeGenType): Expression = cType match {
+    case CypherCodeGenType(symbols.CTNode, LongType) => constant(-1L)
+    case CypherCodeGenType(symbols.CTRelationship, LongType) => constant(-1L)
     case _ => constant(null)
   }
 }

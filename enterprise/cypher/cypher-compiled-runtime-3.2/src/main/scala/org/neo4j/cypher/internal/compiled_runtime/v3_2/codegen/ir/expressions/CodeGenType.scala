@@ -22,23 +22,32 @@ package org.neo4j.cypher.internal.compiled_runtime.v3_2.codegen.ir.expressions
 import org.neo4j.cypher.internal.frontend.v3_2.symbols
 import org.neo4j.cypher.internal.frontend.v3_2.symbols.CypherType
 
-case class CodeGenType(ct: CypherType, repr: RepresentationType) {
+trait CodeGenType {
+  def isPrimitive: Boolean
+
+  def canBeNullable: Boolean
+
+  def repr: RepresentationType
+}
+
+object CodeGenType {
+  val Any = CypherCodeGenType(symbols.CTAny, ReferenceType)
+  val primitiveNode = CypherCodeGenType(symbols.CTNode, LongType)
+  val primitiveRel = CypherCodeGenType(symbols.CTRelationship, LongType)
+  val primitiveInt = CypherCodeGenType(symbols.CTInteger, LongType)
+  val primitiveFloat = CypherCodeGenType(symbols.CTFloat, FloatType)
+  val primitiveBool = CypherCodeGenType(symbols.CTBoolean, BoolType)
+  val javaInt = JavaCodeGenType(IntType)
+}
+
+case class JavaCodeGenType(repr: RepresentationType) extends CodeGenType {
+  override def isPrimitive = RepresentationType.isPrimitive(repr)
+
+  override def canBeNullable: Boolean = false
+}
+
+case class CypherCodeGenType(ct: CypherType, repr: RepresentationType) extends CodeGenType {
   def isPrimitive = RepresentationType.isPrimitive(repr)
 
   def canBeNullable = !isPrimitive || (ct == symbols.CTNode) || (ct == symbols.CTRelationship)
 }
-
-object CodeGenType {
-  val Any = CodeGenType(symbols.CTAny, ReferenceType)
-  val primitiveNode = CodeGenType(symbols.CTNode, IntType)
-  val primitiveRel = CodeGenType(symbols.CTRelationship, IntType)
-  val primitiveInt = CodeGenType(symbols.CTInteger, IntType)
-  val primitiveFloat = CodeGenType(symbols.CTFloat, FloatType)
-  val primitiveBool = CodeGenType(symbols.CTBoolean, BoolType)
-}
-
-
-
-
-
-

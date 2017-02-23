@@ -45,5 +45,5 @@ case class HasLabel(nodeVariable: Variable, labelVariable: String, labelName: St
   override def nullable(implicit context: CodeGenContext) = nodeVariable.nullable
 
   override def codeGenType(implicit context: CodeGenContext) =
-    if (nullable) CodeGenType(CTBoolean, ReferenceType) else CodeGenType(CTBoolean, BoolType)
+    if (nullable) CypherCodeGenType(CTBoolean, ReferenceType) else CodeGenType.primitiveBool
 }

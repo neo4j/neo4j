@@ -41,5 +41,5 @@ case class Not(inner: CodeGenExpression) extends CodeGenExpression {
 
   override def codeGenType(implicit context: CodeGenContext) =
     if (!nullable) CodeGenType.primitiveBool
-    else  CodeGenType(CTBoolean, ReferenceType)
+    else CypherCodeGenType(CTBoolean, ReferenceType)
 }

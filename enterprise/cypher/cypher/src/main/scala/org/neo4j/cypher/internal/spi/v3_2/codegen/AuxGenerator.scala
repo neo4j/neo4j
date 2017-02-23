@@ -24,7 +24,7 @@ import org.neo4j.codegen.Parameter.param
 import org.neo4j.codegen._
 import org.neo4j.cypher.internal.codegen.CompiledEquivalenceUtils
 import org.neo4j.cypher.internal.compiled_runtime.v3_2.codegen.CodeGenContext
-import org.neo4j.cypher.internal.compiled_runtime.v3_2.codegen.ir.expressions.{CodeGenType, ReferenceType, RepresentationType}
+import org.neo4j.cypher.internal.compiled_runtime.v3_2.codegen.ir.expressions.{CodeGenType, CypherCodeGenType, ReferenceType, RepresentationType}
 import org.neo4j.cypher.internal.compiled_runtime.v3_2.codegen.spi._
 import org.neo4j.cypher.internal.compiler.v3_2.common.CypherOrderability
 import org.neo4j.cypher.internal.frontend.v3_2.helpers._
@@ -146,7 +146,7 @@ class AuxGenerator(val packageName: String, val generator: CodeGenerator) {
             codeGenType match {
               // TODO: Primitive nodes and relationships including correct ordering of nulls
               // TODO: Extract shared code between cases
-              case CodeGenType(symbols.CTInteger, reprType) => {
+              case CypherCodeGenType(symbols.CTInteger, reprType) => {
                 /*
                 E.g.
                 long thisValue_a = this.a
@@ -167,7 +167,7 @@ class AuxGenerator(val packageName: String, val generator: CodeGenerator) {
                   l3.returns(Expression.constant(greaterThanSortResult(sortOrder)))
                 }
               }
-              case CodeGenType(symbols.CTFloat, reprType) => {
+              case CypherCodeGenType(symbols.CTFloat, reprType) => {
                 // We use Double.compare(double, double) which handles float equality properly
                 /*
                 E.g.
@@ -194,7 +194,7 @@ class AuxGenerator(val packageName: String, val generator: CodeGenerator) {
                   l3.returns(compareResult)
                 }
               }
-              case CodeGenType(symbols.CTBoolean, reprType) => {
+              case CypherCodeGenType(symbols.CTBoolean, reprType) => {
                 /*
                 E.g.
                 boolean thisValue_a = this.a

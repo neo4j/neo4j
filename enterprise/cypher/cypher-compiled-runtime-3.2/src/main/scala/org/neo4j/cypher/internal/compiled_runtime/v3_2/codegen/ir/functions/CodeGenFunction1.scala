@@ -46,7 +46,7 @@ case object IdCodeGenFunction extends CodeGenFunction1 {
 
     override def nullable(implicit context: CodeGenContext): Boolean = false
 
-    override def codeGenType(implicit context: CodeGenContext): CodeGenType = CodeGenType.primitiveInt
+    override def codeGenType(implicit context: CodeGenContext): CypherCodeGenType = CodeGenType.primitiveInt
   }
 }
 

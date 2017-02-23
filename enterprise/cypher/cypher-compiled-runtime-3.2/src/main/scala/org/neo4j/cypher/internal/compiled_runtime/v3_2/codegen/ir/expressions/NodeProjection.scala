@@ -25,7 +25,8 @@ import org.neo4j.cypher.internal.frontend.v3_2.symbols
 import org.neo4j.cypher.internal.frontend.v3_2.symbols._
 
 case class NodeProjection(nodeIdVar: Variable) extends CodeGenExpression {
-  assert(nodeIdVar.codeGenType.ct == symbols.CTNode)
+
+  assert(nodeIdVar.codeGenType.asInstanceOf[CypherCodeGenType].ct == symbols.CTNode)
 
   override def init[E](generator: MethodStructure[E])(implicit context: CodeGenContext) = {}
 
@@ -39,5 +40,5 @@ case class NodeProjection(nodeIdVar: Variable) extends CodeGenExpression {
 
   override def nullable(implicit context: CodeGenContext) = nodeIdVar.nullable
 
-  override def codeGenType(implicit context: CodeGenContext) = CodeGenType(CTNode, ReferenceType)
+  override def codeGenType(implicit context: CodeGenContext) = CypherCodeGenType(CTNode, ReferenceType)
 }

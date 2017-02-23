@@ -33,5 +33,5 @@ case class RelationshipExpression(relId: Variable) extends CodeGenExpression {
 
   override def nullable(implicit context: CodeGenContext) = relId.nullable
 
-  override def codeGenType(implicit context: CodeGenContext) = relId.codeGenType
+  override def codeGenType(implicit context: CodeGenContext) = CodeGenType.primitiveRel
 }

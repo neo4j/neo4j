@@ -19,65 +19,94 @@
  */
 package org.neo4j.cypher.internal.compiled_runtime.v3_2.codegen.ir
 
+import org.neo4j.cypher.internal.compiled_runtime.v3_2.codegen.ir.expressions.CodeGenType
 import org.neo4j.cypher.internal.compiled_runtime.v3_2.codegen.spi.MethodStructure
 import org.neo4j.cypher.internal.compiled_runtime.v3_2.codegen.{CodeGenContext, Variable}
 
 case class RelationshipCountFromCountStoreInstruction(opName: String, variable: Variable, startLabel: Option[(Option[Int],String)],
                                                       relTypes: Seq[(Option[Int], String)], endLabel: Option[(Option[Int],String)],
                                                       inner: Instruction) extends Instruction {
-  override def body[E](generator: MethodStructure[E])(implicit context: CodeGenContext) = {
+  private val hasTokens = opName + "hasTokens"
+
+  override def body[E](generator: MethodStructure[E])(implicit context: CodeGenContext): Unit = {
+    generator.assign(variable, generator.constantPrimitiveExpression(0))
     generator.trace(opName) { body =>
 
-      val start = startLabel match {
-        case Some((Some(token), _)) =>  body.constantExpression(Int.box(token))
-        case Some((None, name)) => body.loadVariable(s"${variable.name}StartOf$name")
-        case _ => body.wildCardToken
-      }
+      body.ifStatement(body.loadVariable(hasTokens)) { ifBody =>
 
-      val end = endLabel match {
-        case Some((Some(token), _)) =>  body.constantExpression(Int.box(token))
-        case Some((None, name)) => body.loadVariable(s"${variable.name}EndOf$name")
-        case _ => body.wildCardToken
-      }
+        def labelToken(lbl: Option[(Option[Int], String)], varName: String): E = lbl match {
+          // label specified, and token known at compile time
+          case Some((Some(token), _)) =>
+            ifBody.constantExpression(Int.box(token))
 
-      val rels = relTypes.map {
-        case (Some(token), _) =>  body.constantExpression(Int.box(token))
-        case (None, name) => body.loadVariable(s"${variable.name}TypeOf$name")
-      }
+          // label specified, but no token available at compile time
+          case Some((None, labelName)) =>
+            val variableName = s"${variable.name}$varName$labelName"
+            ifBody.loadVariable(variableName)
 
+          // no label specified
+          case _ => ifBody.wildCardToken
+        }
 
-      if (rels.isEmpty) {
-        body.incrementDbHits()
-        body.assign(variable.name, variable.codeGenType,
-                    generator.relCountFromCountStore(start, end, body.wildCardToken))
-      } else {
-        for (i <- 1 to rels.size) body.incrementDbHits()
-        body.assign(variable.name, variable.codeGenType,
-                    generator.relCountFromCountStore(start, end, rels:_*))
+        val start = labelToken(startLabel, "StartOf")
+        val end = labelToken(endLabel, "EndOf")
+
+        if (relTypes.isEmpty)
+          ifBody.incrementInteger(variable.name, ifBody.relCountFromCountStore(start, end, ifBody.wildCardToken))
+        else
+          relTypes.foreach {
+            case (Some(token), _) =>
+              val relType = ifBody.constantPrimitiveExpression(token)
+              ifBody.incrementDbHits()
+              ifBody.incrementInteger(variable.name, ifBody.relCountFromCountStore(start, end, relType))
+
+            case (None, name) =>
+              val relTypeToken = ifBody.loadVariable(s"${variable.name}TypeOf$name")
+              val ifValidToken = ifBody.notExpression(ifBody.equalityExpression(relTypeToken, ifBody.wildCardToken, CodeGenType.javaInt))
+              ifBody.ifStatement(ifValidToken) { inner =>
+                inner.incrementDbHits()
+                inner.incrementInteger(variable.name, inner.relCountFromCountStore(start, end, relTypeToken))
+              }
+          }
       }
-      inner.body(body)
     }
+    inner.body(generator)
   }
 
   override def operatorId: Set[String] = Set(opName)
 
   override def children = Seq(inner)
 
+
   override def init[E](generator: MethodStructure[E])(implicit context: CodeGenContext): Unit = {
     super.init(generator)
+
+    /*
+    When initialising, we check that all label tokens that we need are available. If any are missing,
+    we can simply return 0.
+     */
+    generator.assign(hasTokens, CodeGenType.primitiveBool, generator.constantPrimitiveExpression(true))
+
+    def loadLabelToken(labelName: String, varName: String) = {
+      val variableName = s"${variable.name}$varName$labelName"
+      generator.assign(variableName, CodeGenType.javaInt, generator.lookupLabelIdE(labelName))
+      val isTokenMissing = generator.equalityExpression(generator.loadVariable(variableName), generator.wildCardToken, CodeGenType.primitiveBool)
+      generator.ifStatement(isTokenMissing) { block =>
+        block.assign(hasTokens, CodeGenType.primitiveBool, block.constantPrimitiveExpression(false))
+      }
+    }
+
     startLabel.foreach {
-      case (token, name) if token.isEmpty =>
-        generator.lookupLabelId(s"${variable.name}StartOf$name", name)
+      case (token, name) if token.isEmpty => loadLabelToken(name, "StartOf")
       case _ => ()
     }
     endLabel.foreach {
-      case (token, name) if token.isEmpty =>
-        generator.lookupLabelId(s"${variable.name}EndOf$name", name)
+      case (token, name) if token.isEmpty => loadLabelToken(name, "EndOf")
       case _ => ()
     }
     relTypes.foreach {
       case (token, name) if token.isEmpty =>
-        generator.lookupRelationshipTypeId(s"${variable.name}TypeOf$name", name)
+        generator.assign(s"${variable.name}TypeOf$name", CodeGenType.javaInt, generator.lookupRelationshipTypeIdE(name))
       case _ => ()
     }
   }

@@ -35,18 +35,19 @@ case class Addition(lhs: CodeGenExpression, rhs: CodeGenExpression) extends Code
 
     // Collections
     case (ListType(left), ListType(right)) =>
-      CodeGenType(ListType(left leastUpperBound right), ReferenceType)
+      CypherCodeGenType(ListType(left leastUpperBound right), ReferenceType)
     case (ListType(innerType), singleElement) =>
-      CodeGenType(ListType(innerType leastUpperBound singleElement), ReferenceType)
-    case (singleElement, ListType(innerType)) => CodeGenType(ListType(innerType leastUpperBound singleElement), ReferenceType)
+      CypherCodeGenType(ListType(innerType leastUpperBound singleElement), ReferenceType)
+    case (singleElement, ListType(innerType)) =>
+      CypherCodeGenType(ListType(innerType leastUpperBound singleElement), ReferenceType)
 
     // Strings
-    case (CTString, _) => CodeGenType(CTString, ReferenceType)
-    case (_, CTString) => CodeGenType(CTString, ReferenceType)
+    case (CTString, _) => CypherCodeGenType(CTString, ReferenceType)
+    case (_, CTString) => CypherCodeGenType(CTString, ReferenceType)
 
     // Numbers
-    case (CTInteger, CTInteger) => CodeGenType(CTInteger, ReferenceType)
-    case (Number(_), Number(_)) => CodeGenType(CTFloat, ReferenceType)
+    case (CTInteger, CTInteger) => CypherCodeGenType(CTInteger, ReferenceType)
+    case (Number(_), Number(_)) => CypherCodeGenType(CTFloat, ReferenceType)
 
     // Runtime we'll figure it out
     case _ => CodeGenType.Any

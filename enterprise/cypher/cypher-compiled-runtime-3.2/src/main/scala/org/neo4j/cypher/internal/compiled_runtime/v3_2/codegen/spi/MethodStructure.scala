@@ -19,6 +19,7 @@
  */
 package org.neo4j.cypher.internal.compiled_runtime.v3_2.codegen.spi
 
+import org.neo4j.cypher.internal.compiled_runtime.v3_2.codegen.Variable
 import org.neo4j.cypher.internal.compiled_runtime.v3_2.codegen.ir.expressions.CodeGenType
 import org.neo4j.cypher.internal.frontend.v3_2.SemanticDirection
 
@@ -42,6 +43,7 @@ trait MethodStructure[E] {
   def updateFlag(name: String, newValue: Boolean)
   def declarePredicate(name: String): Unit
   def assign(varName: String, codeGenType: CodeGenType, value: E): Unit
+  def assign(v: Variable, value: E): Unit = assign(v.name, v.codeGenType, value)
   def declareAndInitialize(varName: String, codeGenType: CodeGenType): Unit
   def declare(varName: String, codeGenType: CodeGenType): Unit
   def declareProperty(name: String): Unit
@@ -56,9 +58,11 @@ trait MethodStructure[E] {
 
   def incrementInteger(name: String): Unit
   def decrementInteger(name: String): Unit
+  def incrementInteger(name: String, value: E): Unit
   def checkInteger(variableName: String, comparator: Comparator, value: Long): E
   def newTableValue(targetVar: String, tupleDescriptor: TupleDescriptor): E
-  def constantExpression(value: Object): E
+  def constantExpression(value: AnyRef): E
+  def constantPrimitiveExpression(value: AnyVal): E = constantExpression(value.asInstanceOf[AnyRef])
   def asMap(map: Map[String, E]): E
   def asList(values: Seq[E]): E
   def asPrimitiveStream(values: E, codeGenType: CodeGenType): E
@@ -110,6 +114,7 @@ trait MethodStructure[E] {
   def threeValuedEqualsExpression(lhs: E, rhs: E): E
   def threeValuedPrimitiveEqualsExpression(lhs: E, rhs: E, codeGenType: CodeGenType): E
   def equalityExpression(lhs: E, rhs: E, codeGenType: CodeGenType): E
+  def primitiveEquals(lhs: E, rhs: E): E
   def orExpression(lhs: E, rhs: E): E
   def threeValuedOrExpression(lhs: E, rhs: E): E
 
@@ -139,7 +144,9 @@ trait MethodStructure[E] {
   def hasLabel(nodeVar: String, labelVar: String, predVar: String): E
   def allNodesScan(iterVar: String): Unit
   def lookupLabelId(labelIdVar: String, labelName: String): Unit
+  def lookupLabelIdE(labelName: String): E
   def lookupRelationshipTypeId(typeIdVar: String, typeName: String): Unit
+  def lookupRelationshipTypeIdE(typeName: String): E
   def nodeGetRelationshipsWithDirection(iterVar: String, nodeVar: String, direction: SemanticDirection): Unit
   def nodeGetRelationshipsWithDirectionAndTypes(iterVar: String, nodeVar: String, direction: SemanticDirection, typeVars: Seq[String]): Unit
   def connectingRelationships(iterVar: String, fromNode: String, dir: SemanticDirection, toNode:String)

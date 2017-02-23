@@ -39,14 +39,14 @@ trait BinaryOperator {
 
   override final def generateExpression[E](structure: MethodStructure[E])(implicit context: CodeGenContext) = {
     def isListOf(codeGenType: CodeGenType, cType: CypherType) = codeGenType match {
-      case CodeGenType(ListType(inner),_) if inner == cType => true
+      case CypherCodeGenType(ListType(inner),_) if inner == cType => true
       case _ => false
     }
     (lhs.codeGenType, rhs.codeGenType) match {
-      case (CodeGenType(CTBoolean, _), t) if !(isListOf(t, CTAny) || isListOf(t, CTBoolean)) =>
+      case (CypherCodeGenType(CTBoolean, _), t) if !(isListOf(t, CTAny) || isListOf(t, CTBoolean)) =>
         throw new CypherTypeException(s"Cannot $name a boolean and ${rhs.codeGenType.ct}")
 
-      case (t, CodeGenType(CTBoolean, _)) if !(isListOf(t, CTAny) || isListOf(t, CTBoolean)) =>
+      case (t, CypherCodeGenType(CTBoolean, _)) if !(isListOf(t, CTAny) || isListOf(t, CTBoolean)) =>
         throw new CypherTypeException(s"Cannot $name a ${rhs.codeGenType.ct} and a boolean")
 
       case (t1, t2) if t1.isPrimitive && t2.isPrimitive =>
@@ -67,8 +67,8 @@ trait BinaryOperator {
 
   override def codeGenType(implicit context: CodeGenContext) =
     (lhs.codeGenType.ct, rhs.codeGenType.ct) match {
-      case (CTInteger, CTInteger) => CodeGenType(CTInteger, ReferenceType)
-      case (Number(_), Number(_)) => CodeGenType(CTFloat, ReferenceType)
+      case (CTInteger, CTInteger) => CypherCodeGenType(CTInteger, ReferenceType)
+      case (Number(_), Number(_)) => CypherCodeGenType(CTFloat, ReferenceType)
       // Runtime we'll figure it out - can't store it in a primitive field unless we are 100% of the type
       case _ => CodeGenType.Any
     }

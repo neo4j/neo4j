@@ -25,7 +25,7 @@ import org.neo4j.cypher.internal.frontend.v3_2.symbols
 import org.neo4j.cypher.internal.frontend.v3_2.symbols._
 
 case class RelationshipProjection(relId: Variable) extends CodeGenExpression {
-  assert(relId.codeGenType.ct == symbols.CTRelationship)
+  assert(relId.codeGenType.asInstanceOf[CypherCodeGenType].ct == symbols.CTRelationship)
 
   override def init[E](generator: MethodStructure[E])(implicit context: CodeGenContext) = {}
 
@@ -39,5 +39,5 @@ case class RelationshipProjection(relId: Variable) extends CodeGenExpression {
 
   override def nullable(implicit context: CodeGenContext) = relId.nullable
 
-  override def codeGenType(implicit context: CodeGenContext) = CodeGenType(CTRelationship, ReferenceType)
+  override def codeGenType(implicit context: CodeGenContext) = CypherCodeGenType(CTRelationship, ReferenceType)
 }

@@ -29,7 +29,7 @@ case class Equals(lhs: CodeGenExpression, rhs: CodeGenExpression) extends CodeGe
   override def nullable(implicit context: CodeGenContext) = lhs.nullable || rhs.nullable
 
   override def codeGenType(implicit context: CodeGenContext) =
-    if (nullable) CodeGenType(CTBoolean, ReferenceType)
+    if (nullable) CypherCodeGenType(CTBoolean, ReferenceType)
     else CodeGenType.primitiveBool
 
   override def init[E](generator: MethodStructure[E])(implicit context: CodeGenContext) = {
@@ -92,7 +92,7 @@ case class Equals(lhs: CodeGenExpression, rhs: CodeGenExpression) extends CodeGe
         structure.unbox(
           structure.threeValuedEqualsExpression(structure.box(lhs.generateExpression(structure), lhs.codeGenType),
                                                 structure.box(rhs.generateExpression(structure), rhs.codeGenType)),
-          CodeGenType(CTBoolean, ReferenceType))
+          CypherCodeGenType(CTBoolean, ReferenceType))
       }
   }
 }

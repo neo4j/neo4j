@@ -19,8 +19,8 @@
  */
 package org.neo4j.cypher.internal.compiled_runtime.v3_2.helpers
 
-import org.neo4j.cypher.internal.compiled_runtime.v3_2.codegen.ir.expressions._
 import org.neo4j.cypher.internal.compiled_runtime.v3_2.codegen.ir.expressions
+import org.neo4j.cypher.internal.compiled_runtime.v3_2.codegen.ir.expressions._
 import org.neo4j.cypher.internal.compiler.v3_2.helpers.{IsList, IsMap}
 import org.neo4j.cypher.internal.frontend.v3_2.symbols._
 
@@ -37,19 +37,19 @@ object LiteralTypeSupport {
     case _                                  => CTAny
   }
 
-  def deriveCodeGenType(obj: Any): CodeGenType = deriveCodeGenType(deriveCypherType(obj))
+  def deriveCodeGenType(obj: Any): CypherCodeGenType = deriveCodeGenType(deriveCypherType(obj))
 
-  def deriveCodeGenType(ct: CypherType): CodeGenType = ct match {
-    case ListType(innerCt) => CodeGenType(CTList(innerCt), ListReferenceType(toRepresentationType(innerCt)))
-    case _ => CodeGenType(ct, toRepresentationType(ct))
+  def deriveCodeGenType(ct: CypherType): CypherCodeGenType = ct match {
+    case ListType(innerCt) => CypherCodeGenType(CTList(innerCt), ListReferenceType(toRepresentationType(innerCt)))
+    case _ => CypherCodeGenType(ct, toRepresentationType(ct))
   }
 
   private def toRepresentationType(ct: CypherType): RepresentationType = ct match {
-    case CTInteger => IntType
+    case CTInteger => LongType
     case CTFloat => expressions.FloatType
     case CTBoolean => BoolType
-    case CTNode => IntType
-    case CTRelationship => IntType
+    case CTNode => LongType
+    case CTRelationship => LongType
     case _ => ReferenceType
   }
 }
