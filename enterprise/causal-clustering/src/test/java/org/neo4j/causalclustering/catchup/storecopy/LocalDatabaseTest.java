@@ -25,8 +25,6 @@ import org.mockito.InOrder;
 import java.io.File;
 import java.time.Clock;
 
-import org.neo4j.io.fs.FileSystemAbstraction;
-import org.neo4j.io.pagecache.PageCache;
 import org.neo4j.kernel.AvailabilityGuard;
 import org.neo4j.kernel.impl.transaction.state.DataSourceManager;
 import org.neo4j.kernel.internal.DatabaseHealth;
@@ -39,7 +37,6 @@ import static org.junit.Assert.assertNotNull;
 import static org.junit.Assert.assertThat;
 import static org.junit.Assert.assertTrue;
 import static org.mockito.Matchers.any;
-import static org.mockito.Mockito.RETURNS_MOCKS;
 import static org.mockito.Mockito.inOrder;
 import static org.mockito.Mockito.mock;
 import static org.mockito.Mockito.times;
@@ -141,7 +138,6 @@ public class LocalDatabaseTest
             DataSourceManager dataSourceManager )
     {
         return new LocalDatabase( new File( "." ), mock( StoreFiles.class ), dataSourceManager,
-                mock( PageCache.class, RETURNS_MOCKS ), mock( FileSystemAbstraction.class ),
                 () -> mock( DatabaseHealth.class ), availabilityGuard, NullLogProvider.getInstance() );
     }
 
