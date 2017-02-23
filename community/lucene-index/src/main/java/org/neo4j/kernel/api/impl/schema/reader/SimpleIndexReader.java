@@ -44,6 +44,7 @@ import org.neo4j.storageengine.api.schema.IndexReader;
 import org.neo4j.storageengine.api.schema.IndexSampler;
 
 import static org.neo4j.kernel.api.impl.schema.LuceneDocumentStructure.NODE_ID_KEY;
+import static org.neo4j.kernel.api.schema_new.IndexQuery.IndexQueryType.exact;
 import static org.neo4j.kernel.api.schema_new.index.NewIndexDescriptor.Type.UNIQUE;
 
 /**
@@ -86,7 +87,17 @@ public class SimpleIndexReader implements IndexReader
     @Override
     public PrimitiveLongIterator query( IndexQuery... predicates )
     {
-        assert predicates.length == 1: "not yet supporting composite queries";
+        if ( predicates.length > 1 )
+        {
+            Object[] values = new Object[predicates.length];
+            for ( int i = 0; i < predicates.length; i++ )
+            {
+                assert predicates[i].type() == exact : "composite indexes only supported for seek";
+                values[i] = ((IndexQuery.ExactPredicate)predicates[i]).value();
+            }
+            return seek( values );
+        }
+        assert predicates.length == 1 : "composite indexes not yet supported, except for seek on all properties";
         IndexQuery predicate = predicates[0];
         switch ( predicate.type() )
         {
@@ -115,9 +126,9 @@ public class SimpleIndexReader implements IndexReader
         }
     }
 
-    private PrimitiveLongIterator seek( Object value )
+    private PrimitiveLongIterator seek( Object... values )
     {
-        return query( LuceneDocumentStructure.newSeekQuery( value ) );
+        return query( LuceneDocumentStructure.newSeekQuery( values ) );
     }
 
     private PrimitiveLongIterator rangeSeekByNumberInclusive( Number lower, Number upper )

@@ -35,6 +35,7 @@ import org.neo4j.kernel.api.schema_new.IndexQuery;
 import org.neo4j.storageengine.api.schema.IndexSampler;
 
 import static org.neo4j.collection.primitive.PrimitiveLongCollections.toPrimitiveIterator;
+import static org.neo4j.kernel.api.schema_new.IndexQuery.IndexQueryType.exact;
 import static org.neo4j.kernel.impl.api.PropertyValueComparison.COMPARE_VALUES;
 import static org.neo4j.kernel.impl.api.PropertyValueComparison.SuperType.NUMBER;
 import static org.neo4j.kernel.impl.api.PropertyValueComparison.SuperType.STRING;
@@ -97,8 +98,8 @@ class HashBasedIndex extends InMemoryIndexImplementation
         return toPrimitiveIterator( nodeIds.iterator() );
     }
 
-    private synchronized PrimitiveLongIterator rangeSeekByString( String lower, boolean includeLower,
-            String upper, boolean includeUpper )
+    private synchronized PrimitiveLongIterator rangeSeekByString( String lower, boolean includeLower, String upper,
+            boolean includeUpper )
     {
         Set<Long> nodeIds = new HashSet<>();
         for ( Map.Entry<List<Object>,Set<Long>> entry : data.entrySet() )
@@ -249,12 +250,24 @@ class HashBasedIndex extends InMemoryIndexImplementation
     @Override
     public PrimitiveLongIterator query( IndexQuery... predicates )
     {
-        assert predicates.length == 1: "composite indexes not yet supported";
+        if ( predicates.length > 1 )
+        {
+            Object[] values = new Object[predicates.length];
+            for ( int i = 0; i < predicates.length; i++ )
+            {
+                assert predicates[i].type() == exact : "composite indexes only supported for seek";
+                values[i] = ((IndexQuery.ExactPredicate)predicates[i]).value();
+            }
+            return seek( values );
+        }
+        assert predicates.length == 1 : "composite indexes not yet supported, except for seek on all properties";
         IndexQuery predicate = predicates[0];
         switch ( predicate.type() )
         {
-        case exists: return scan();
-        case exact: return seek( ((IndexQuery.ExactPredicate)predicate).value() );
+        case exists:
+            return scan();
+        case exact:
+            return seek( ((IndexQuery.ExactPredicate) predicate).value() );
         case rangeNumeric:
             IndexQuery.NumberRangePredicate np = (IndexQuery.NumberRangePredicate) predicate;
             return rangeSeekByNumberInclusive( np.from(), np.to() );

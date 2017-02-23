@@ -75,7 +75,7 @@ public class DatabaseCompositeIndexAccessorTest
 
     private LuceneIndexAccessor accessor;
     private final long nodeId = 1, nodeId2 = 2;
-    private final Object[] values = {"value1", "value2"}, value2 = {40, 42};
+    private final Object[] values = {"value1", "values2"}, values2 = {40, 42};
     private DirectoryFactory.InMemoryDirectoryFactory dirFactory;
     private static final NewIndexDescriptor indexDescriptor = NewIndexDescriptorFactory
             .forLabel( 0, PROP_ID1, PROP_ID2 );
@@ -138,7 +138,7 @@ public class DatabaseCompositeIndexAccessorTest
     public void indexReaderShouldSupportScan() throws Exception
     {
         // GIVEN
-        updateAndCommit( asList( add( nodeId, value ), add( nodeId2, value2 ) ) );
+        updateAndCommit( asList( add( nodeId, values ), add( nodeId2, values2 ) ) );
         IndexReader reader = accessor.newReader();
 
         // WHEN
@@ -147,7 +147,7 @@ public class DatabaseCompositeIndexAccessorTest
         // THEN
         assertEquals( asSet( nodeId, nodeId2 ), PrimitiveLongCollections.toSet( results ) );
         assertEquals( asSet( nodeId ), PrimitiveLongCollections.toSet( reader
-                .query( IndexQuery.exact( PROP_ID1, value[0] ), IndexQuery.exact( PROP_ID2, value[1] ) ) ) );
+                .query( IndexQuery.exact( PROP_ID1, values[0] ), IndexQuery.exact( PROP_ID2, values[1] ) ) ) );
         reader.close();
     }
 
@@ -155,8 +155,8 @@ public class DatabaseCompositeIndexAccessorTest
     public void indexReaderShouldSupportSeekOnCompositeIndexUpdatedWithTwoTransactions() throws Exception
     {
         // GIVEN
-        updateAndCommit( asList( add( nodeId, value ), add( nodeId2, value ) ) );
-        updateAndCommit( asList( add( nodeId, value2 ), add( nodeId2, value2 ) ) );
+        updateAndCommit( asList( add( nodeId, values ), add( nodeId2, values ) ) );
+        updateAndCommit( asList( add( nodeId, values2 ), add( nodeId2, values2 ) ) );
         IndexReader reader = accessor.newReader();
 
         // WHEN
@@ -165,7 +165,7 @@ public class DatabaseCompositeIndexAccessorTest
         // THEN
         assertEquals( asSet( nodeId, nodeId2 ), PrimitiveLongCollections.toSet( results ) );
         assertEquals( asSet( nodeId ), PrimitiveLongCollections.toSet( reader
-                .query( IndexQuery.exact( PROP_ID1, value[0] ), IndexQuery.exact( PROP_ID2, value[1] ) ) ) );
+                .query( IndexQuery.exact( PROP_ID1, values[0] ), IndexQuery.exact( PROP_ID2, values[1] ) ) ) );
         reader.close();
     }
 
@@ -173,20 +173,20 @@ public class DatabaseCompositeIndexAccessorTest
     public void multipleIndexReadersFromDifferentPointsInTimeCanSeeDifferentResults() throws Exception
     {
         // WHEN
-        updateAndCommit( asList( add( nodeId, value ) ) );
+        updateAndCommit( asList( add( nodeId, values ) ) );
         IndexReader firstReader = accessor.newReader();
-        updateAndCommit( asList( add( nodeId2, value2 ) ) );
+        updateAndCommit( asList( add( nodeId2, values2 ) ) );
         IndexReader secondReader = accessor.newReader();
 
         // THEN
         assertEquals( asSet( nodeId ), PrimitiveLongCollections.toSet( firstReader
-                .query( IndexQuery.exact( PROP_ID1, value[0] ), IndexQuery.exact( PROP_ID2, value[1] ) ) ) );
+                .query( IndexQuery.exact( PROP_ID1, values[0] ), IndexQuery.exact( PROP_ID2, values[1] ) ) ) );
         assertEquals( asSet(), PrimitiveLongCollections.toSet( firstReader
-                .query( IndexQuery.exact( PROP_ID1, value2[0] ), IndexQuery.exact( PROP_ID2, value2[1] ) ) ) );
+                .query( IndexQuery.exact( PROP_ID1, values2[0] ), IndexQuery.exact( PROP_ID2, values2[1] ) ) ) );
         assertEquals( asSet( nodeId ), PrimitiveLongCollections.toSet( secondReader
-                .query( IndexQuery.exact( PROP_ID1, value[0] ), IndexQuery.exact( PROP_ID2, value[1] ) ) ) );
+                .query( IndexQuery.exact( PROP_ID1, values[0] ), IndexQuery.exact( PROP_ID2, values[1] ) ) ) );
         assertEquals( asSet( nodeId2 ), PrimitiveLongCollections.toSet( secondReader
-                .query( IndexQuery.exact( PROP_ID1, value2[0] ), IndexQuery.exact( PROP_ID2, value2[1] ) ) ) );
+                .query( IndexQuery.exact( PROP_ID1, values2[0] ), IndexQuery.exact( PROP_ID2, values2[1] ) ) ) );
         firstReader.close();
         secondReader.close();
     }
@@ -195,12 +195,12 @@ public class DatabaseCompositeIndexAccessorTest
     public void canAddNewData() throws Exception
     {
         // WHEN
-        updateAndCommit( asList( add( nodeId, value ), add( nodeId2, value2 ) ) );
+        updateAndCommit( asList( add( nodeId, values ), add( nodeId2, values2 ) ) );
         IndexReader reader = accessor.newReader();
 
         // THEN
         assertEquals( asSet( nodeId ), PrimitiveLongCollections.toSet( reader
-                .query( IndexQuery.exact( PROP_ID1, value[0] ), IndexQuery.exact( PROP_ID2, value[1] ) ) ) );
+                .query( IndexQuery.exact( PROP_ID1, values[0] ), IndexQuery.exact( PROP_ID2, values[1] ) ) ) );
         reader.close();
     }
 
@@ -208,17 +208,17 @@ public class DatabaseCompositeIndexAccessorTest
     public void canChangeExistingData() throws Exception
     {
         // GIVEN
-        updateAndCommit( asList( add( nodeId, value ) ) );
+        updateAndCommit( asList( add( nodeId, values ) ) );
 
         // WHEN
-        updateAndCommit( asList( change( nodeId, value, value2 ) ) );
+        updateAndCommit( asList( change( nodeId, values, values2 ) ) );
         IndexReader reader = accessor.newReader();
 
         // THEN
         assertEquals( asSet( nodeId ), PrimitiveLongCollections.toSet( reader
-                .query( IndexQuery.exact( PROP_ID1, value2[0] ), IndexQuery.exact( PROP_ID2, value2[1] ) ) ) );
+                .query( IndexQuery.exact( PROP_ID1, values2[0] ), IndexQuery.exact( PROP_ID2, values2[1] ) ) ) );
         assertEquals( emptySetOf( Long.class ), PrimitiveLongCollections.toSet( reader
-                .query( IndexQuery.exact( PROP_ID1, value[0] ), IndexQuery.exact( PROP_ID2, value[1] ) ) ) );
+                .query( IndexQuery.exact( PROP_ID1, values[0] ), IndexQuery.exact( PROP_ID2, values[1] ) ) ) );
         reader.close();
     }
 
@@ -226,17 +226,17 @@ public class DatabaseCompositeIndexAccessorTest
     public void canRemoveExistingData() throws Exception
     {
         // GIVEN
-        updateAndCommit( asList( add( nodeId, value ), add( nodeId2, value2 ) ) );
+        updateAndCommit( asList( add( nodeId, values ), add( nodeId2, values2 ) ) );
 
         // WHEN
-        updateAndCommit( asList( remove( nodeId, value ) ) );
+        updateAndCommit( asList( remove( nodeId, values ) ) );
         IndexReader reader = accessor.newReader();
 
         // THEN
         assertEquals( asSet( nodeId2 ), PrimitiveLongCollections.toSet( reader
-                .query( IndexQuery.exact( PROP_ID1, value2[0] ), IndexQuery.exact( PROP_ID2, value2[1] ) ) ) );
+                .query( IndexQuery.exact( PROP_ID1, values2[0] ), IndexQuery.exact( PROP_ID2, values2[1] ) ) ) );
         assertEquals( asSet(), PrimitiveLongCollections.toSet( reader
-                .query( IndexQuery.exact( PROP_ID1, value[0] ), IndexQuery.exact( PROP_ID2, value[1] ) ) ) );
+                .query( IndexQuery.exact( PROP_ID1, values[0] ), IndexQuery.exact( PROP_ID2, values[1] ) ) ) );
         reader.close();
     }
 
@@ -244,7 +244,7 @@ public class DatabaseCompositeIndexAccessorTest
     public void shouldStopSamplingWhenIndexIsDropped() throws Exception
     {
         // given
-        updateAndCommit( asList( add( nodeId, value ), add( nodeId2, value2 ) ) );
+        updateAndCommit( asList( add( nodeId, values ), add( nodeId2, values2 ) ) );
 
         // when
         IndexReader indexReader = accessor.newReader(); // needs to be acquired before drop() is called
