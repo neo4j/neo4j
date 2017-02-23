@@ -36,7 +36,7 @@ import org.junit.runner.RunWith;
 import org.junit.runners.Parameterized;
 import org.mockito.InOrder;
 
-import org.neo4j.codegen.source.Configuration;
+import org.neo4j.codegen.bytecode.ByteCode;
 import org.neo4j.codegen.source.SourceCode;
 
 import static org.hamcrest.CoreMatchers.equalTo;
@@ -90,11 +90,11 @@ public class CodeGenerationTest
     @Parameterized.Parameters( name = "{0}" )
     public static Collection<Object[]> generators()
     {
-        return Arrays.asList( new Object[]{SourceCode.SOURCECODE}, new Object[]{SourceCode.BYTECODE} );
+        return Arrays.asList( new Object[]{SourceCode.SOURCECODE}, new Object[]{ByteCode.BYTECODE} );
     }
 
     @Parameterized.Parameter( 0 )
-    public CodeGenerationStrategy<Configuration> strategy;
+    public CodeGenerationStrategy<?> strategy;
 
     @Before
     public void createGenerator()

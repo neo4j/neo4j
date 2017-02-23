@@ -81,12 +81,37 @@ class RootPlanAcceptanceTest extends ExecutionEngineFunSuite {
   test("should show_java_source") {
     val res = eengine.execute("CYPHER debug=generate_java_source debug=show_java_source MATCH (n) RETURN n", Map.empty[String, Object])
     res.size
-    if(!res.executionPlanDescription().arguments.exists {
-      case (name: String, code: String) if name.startsWith("source:") =>
+    shouldContainSourceCode(res.executionPlanDescription())
+  }
+
+  test("should show_bytecode") {
+    val res = eengine.execute("CYPHER debug=show_bytecode MATCH (n) RETURN n", Map.empty[String, Object])
+    res.size
+    shouldContainByteCode(res.executionPlanDescription())
+  }
+
+  test("should show_java_source and show_bytecode") {
+    val res = eengine.execute("CYPHER debug=generate_java_source debug=show_java_source debug=show_bytecode MATCH (n) RETURN n", Map.empty[String, Object])
+    res.size
+    shouldContainSourceCode(res.executionPlanDescription())
+    shouldContainByteCode(res.executionPlanDescription())
+  }
+
+  private def shouldContainSourceCode(planDescription: org.neo4j.cypher.internal.PlanDescription) = {
+    shouldContain("source", planDescription)
+  }
+
+  private def shouldContainByteCode(planDescription: org.neo4j.cypher.internal.PlanDescription) = {
+    shouldContain("bytecode", planDescription)
+  }
+
+  private def shouldContain(argument:String, planDescription: org.neo4j.cypher.internal.PlanDescription) = {
+    if(!planDescription.arguments.exists {
+      case (name: String, code: String) if name.startsWith(s"$argument:") =>
         !code.isEmpty
       case _ => false
     }) {
-      fail("no source present: " + res.executionPlanDescription())
+      fail("no $argument present: " + planDescription)
     }
   }
 

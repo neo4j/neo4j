@@ -27,7 +27,6 @@ import org.neo4j.codegen.ClassEmitter;
 import org.neo4j.codegen.CodeGenerator;
 import org.neo4j.codegen.CompilationFailureException;
 import org.neo4j.codegen.TypeReference;
-import org.neo4j.codegen.source.Configuration;
 
 public class ByteCodeGenerator extends CodeGenerator
 {

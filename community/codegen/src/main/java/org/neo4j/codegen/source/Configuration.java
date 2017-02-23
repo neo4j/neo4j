@@ -34,7 +34,7 @@ import org.neo4j.codegen.CodeGenerationStrategy;
 import org.neo4j.codegen.CodeGenerationStrategyNotSupportedException;
 import org.neo4j.codegen.TypeReference;
 
-public class Configuration
+class Configuration
 {
     private List<Processor> processors = new ArrayList<>();
     private Set<SourceCode> flags = EnumSet.noneOf( SourceCode.class );
@@ -91,7 +91,7 @@ public class Configuration
         return null;
     }
 
-    public Charset chraset()
+    public Charset charset()
     {
         return null;
     }

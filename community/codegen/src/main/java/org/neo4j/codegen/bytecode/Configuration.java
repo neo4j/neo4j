@@ -17,14 +17,12 @@
  * You should have received a copy of the GNU General Public License
  * along with this program.  If not, see <http://www.gnu.org/licenses/>.
  */
-package org.neo4j.codegen;
+package org.neo4j.codegen.bytecode;
 
-public interface CodeGeneratorOption
+class Configuration
 {
-    void applyTo( Object target );
-
-    CodeGeneratorOption BLANK_OPTION = target ->
+    public Configuration withFlag( ByteCode flag )
     {
-    };
-    CodeGeneratorOption PRINT_DISASSEMBLY = ByteCodeVisitor.printer( System.out );
+        return this;
+    }
 }

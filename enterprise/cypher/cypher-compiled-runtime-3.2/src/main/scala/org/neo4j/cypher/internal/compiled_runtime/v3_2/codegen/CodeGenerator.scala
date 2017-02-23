@@ -28,15 +28,14 @@ import org.neo4j.cypher.internal.compiled_runtime.v3_2.codegen.spi.{CodeStructur
 import org.neo4j.cypher.internal.compiled_runtime.v3_2.executionplan.{GeneratedQuery, GeneratedQueryExecution}
 import org.neo4j.cypher.internal.compiled_runtime.v3_2.{CompiledExecutionResult, CompiledPlan, RunnablePlan}
 import org.neo4j.cypher.internal.compiler.v3_2.executionplan.{PlanFingerprint, _}
-import org.neo4j.cypher.internal.compiler.v3_2.planDescription.InternalPlanDescription.Arguments.SourceCode
 import org.neo4j.cypher.internal.compiler.v3_2.planDescription.{Id, InternalPlanDescription}
 import org.neo4j.cypher.internal.compiler.v3_2.planner.CantCompileQueryException
 import org.neo4j.cypher.internal.compiler.v3_2.planner.logical.plans._
 import org.neo4j.cypher.internal.compiler.v3_2.planner.logical.{LogicalPlan2PlanDescription, LogicalPlanIdentificationBuilder}
 import org.neo4j.cypher.internal.compiler.v3_2.spi.{InstrumentedGraphStatistics, PlanContext, QueryContext}
 import org.neo4j.cypher.internal.compiler.v3_2.{ExecutionMode, TaskCloser}
-import org.neo4j.cypher.internal.frontend.v3_2.{PlannerName, SemanticTable}
 import org.neo4j.cypher.internal.frontend.v3_2.helpers.Eagerly
+import org.neo4j.cypher.internal.frontend.v3_2.{PlannerName, SemanticTable}
 
 class CodeGenerator(val structure: CodeStructure[GeneratedQuery], clock: Clock, conf: CodeGenConfiguration = CodeGenConfiguration() ) {
 
@@ -59,8 +58,9 @@ class CodeGenerator(val structure: CodeStructure[GeneratedQuery], clock: Clock, 
             None
         }
 
-        val description: InternalPlanDescription = query.source.foldLeft(LogicalPlan2PlanDescription(plan, idMap)) {
-          case (root, (className, sourceCode)) => root.addArgument(SourceCode(className, sourceCode))
+        val descriptionTree = LogicalPlan2PlanDescription(plan, idMap)
+        val description: InternalPlanDescription = query.code.foldLeft(descriptionTree) {
+          case (descriptionRoot, code) => descriptionRoot.addArgument(code)
         }
 
         val builder = new RunnablePlan {

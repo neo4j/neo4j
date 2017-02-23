@@ -19,6 +19,13 @@
  */
 package org.neo4j.codegen;
 
+import java.io.PrintStream;
+import java.io.PrintWriter;
+import java.lang.reflect.Modifier;
+import java.nio.ByteBuffer;
+import java.util.Arrays;
+import java.util.Objects;
+
 import org.objectweb.asm.ClassReader;
 import org.objectweb.asm.ClassVisitor;
 import org.objectweb.asm.FieldVisitor;
@@ -27,11 +34,7 @@ import org.objectweb.asm.Label;
 import org.objectweb.asm.MethodVisitor;
 import org.objectweb.asm.Opcodes;
 
-import java.io.PrintStream;
-import java.lang.reflect.Modifier;
-import java.nio.ByteBuffer;
-import java.util.Arrays;
-import java.util.Objects;
+import static org.objectweb.asm.Type.getType;
 
 interface ByteCodeVisitor
 {
@@ -40,12 +43,8 @@ interface ByteCodeVisitor
         void addByteCodeVisitor( ByteCodeVisitor visitor );
     }
 
-    ByteCodeVisitor DO_NOTHING = new ByteCodeVisitor()
+    ByteCodeVisitor DO_NOTHING = ( name, bytes ) ->
     {
-        @Override
-        public void visitByteCode( String name, ByteBuffer bytes )
-        {
-        }
     };
 
     void visitByteCode( String name, ByteBuffer bytes );
@@ -69,16 +68,63 @@ interface ByteCodeVisitor
         }
     }
 
-    class Printer extends ClassVisitor implements ByteCodeVisitor
+    static Printer printer( PrintWriter out )
     {
-        public static final int API = Opcodes.ASM4;
-        private final PrintStream out;
+        return new Printer()
+        {
+            @Override
+            void printf( String format, Object... args )
+            {
+                out.format( format, args );
+            }
 
-        Printer( PrintStream out )
+            @Override
+            void println( CharSequence line )
+            {
+                out.println( line );
+            }
+        };
+    }
+
+    static Printer printer( PrintStream out )
+    {
+        return new Printer()
+        {
+            @Override
+            void printf( String format, Object... args )
+            {
+                out.format( format, args );
+            }
+
+            @Override
+            void println( CharSequence line )
+            {
+                out.println( line );
+            }
+        };
+    }
+
+    abstract class Printer extends ClassVisitor implements ByteCodeVisitor, CodeGeneratorOption
+    {
+        private static final int API = Opcodes.ASM4;
+
+        private Printer()
         {
             super( API );
-            this.out = out;
         }
+
+        @Override
+        public void applyTo( Object target )
+        {
+            if ( target instanceof Configurable )
+            {
+                ((Configurable) target).addByteCodeVisitor( this );
+            }
+        }
+
+        abstract void printf( String format, Object... args );
+
+        abstract void println( CharSequence line );
 
         @Override
         public void visitByteCode( String name, ByteBuffer bytes )
@@ -87,8 +133,9 @@ interface ByteCodeVisitor
         }
 
         @Override
-        public void visit( int version, int access, String name, String signature, String superName,
-                           String[] interfaces )
+        public void visit(
+                int version, int access, String name, String signature, String superName,
+                String[] interfaces )
         {
             StringBuilder iFaces = new StringBuilder();
             String prefix = " implements ";
@@ -97,22 +144,24 @@ interface ByteCodeVisitor
                 iFaces.append( prefix ).append( iFace );
                 prefix = ", ";
             }
-            out.format( "%s class %s extends %s%s%n{%n", Modifier.toString( access ), name, superName, iFaces );
+            printf( "%s class %s extends %s%s%n{%n", Modifier.toString( access ), name, superName, iFaces );
         }
 
         @Override
         public FieldVisitor visitField( int access, String name, String desc, String signature, Object value )
         {
-            out.format( "%s %s %s%s;", Modifier.toString( access ), desc, name, value == null ? "" : (" = " + value) );
+            printf( "  %s %s %s%s;%n", Modifier.toString( access ), getType( desc ).getClassName(), name, value == null ? "" : (" = " + value) );
             return super.visitField( access, name, desc, signature, value );
         }
 
         @Override
         public MethodVisitor visitMethod( int access, String name, String desc, String signature, String[] exceptions )
         {
-            out.format( "  %s %s%s%n  {%n", Modifier.toString( access ), name, desc );
+            printf( "  %s %s%s%n  {%n", Modifier.toString( access ), name, desc );
             return new MethodVisitor( API )
             {
+                int offset;
+
                 @Override
                 public void visitFrame( int type, int nLocal, Object[] local, int nStack, Object[] stack )
                 {
@@ -190,128 +239,174 @@ interface ByteCodeVisitor
                         frame.append( prefix ).append( Objects.toString( stack[i] ) );
                         prefix = ", ";
                     }
-                    out.println( frame.append( "]" ) );
+                    println( frame.append( "]" ) );
                 }
 
                 @Override
                 public void visitInsn( int opcode )
                 {
-                    out.format( "    %s%n", opcode( opcode ) );
+                    printf( "    @%03d: %s%n", offset, opcode( opcode ) );
+                    offset += 1;
                 }
 
                 @Override
                 public void visitIntInsn( int opcode, int operand )
                 {
-                    out.format( "    %s %d%n", opcode( opcode ), operand );
+                    printf( "    @%03d: %s %d%n", offset, opcode( opcode ), operand );
+                    offset += opcode == Opcodes.SIPUSH ? 3 : 2;
                 }
 
                 @Override
                 public void visitVarInsn( int opcode, int var )
                 {
-                    out.format( "    %s var:%d%n", opcode( opcode ), var );
+                    printf( "    @%03d: %s var:%d%n", offset, opcode( opcode ), var );
+                    // guessing the most efficient encoding was used:
+                    if ( var <= 0x3 )
+                    {
+                        offset += 1;
+                    }
+                    else if ( var <= 0xFF )
+                    {
+                        offset += 2;
+                    }
+                    else
+                    {
+                        offset += 4;
+                    }
                 }
 
                 @Override
                 public void visitTypeInsn( int opcode, String type )
                 {
-                    out.format( "    %s %s%n", opcode( opcode ), type );
+                    printf( "    @%03d: %s %s%n", offset, opcode( opcode ), type );
+                    offset += 3;
                 }
 
                 @Override
                 public void visitFieldInsn( int opcode, String owner, String name, String desc )
                 {
-                    out.format( "    %s %s.%s:%s%n", opcode( opcode ), owner, name, desc );
+                    printf( "    @%03d: %s %s.%s:%s%n", offset, opcode( opcode ), owner, name, desc );
+                    offset += 3;
                 }
 
                 @Override
                 public void visitMethodInsn( int opcode, String owner, String name, String desc, boolean itf )
                 {
-                    out.format( "    %s %s.%s%s%n", opcode( opcode ), owner, name, desc );
+                    printf( "    @%03d: %s %s.%s%s%n", offset, opcode( opcode ), owner, name, desc );
+                    offset += opcode == Opcodes.INVOKEINTERFACE ? 5 : 3;
                 }
 
                 @Override
                 public void visitInvokeDynamicInsn( String name, String desc, Handle bsm, Object... bsmArgs )
                 {
-                    out.format( "    InvokeDynamic %s%s / bsm:%s%s%n", name, desc, bsm, Arrays.toString( bsmArgs ) );
+                    printf( "    @%03d: InvokeDynamic %s%s / bsm:%s%s%n", offset, name, desc, bsm, Arrays.toString( bsmArgs ) );
+                    offset += 5;
                 }
 
                 @Override
                 public void visitJumpInsn( int opcode, Label label )
                 {
-                    out.format( "    %s %s%n", opcode( opcode ), label );
+                    printf( "    @%03d: %s %s%n", offset, opcode( opcode ), label );
+                    offset += 3; // TODO: how do we tell if a wide (+=5) instruction (GOTO_W=200, JSR_W=201) was used?
+                    // wide instructions get simplified to their basic counterpart, but are used for long jumps
                 }
 
                 @Override
                 public void visitLabel( Label label )
                 {
-                    out.format( "   %s:%n", label );
+                    printf( "   %s:%n", label );
                 }
 
                 @Override
                 public void visitLdcInsn( Object cst )
                 {
-                    out.format( "    LDC %s%n", cst );
+                    printf( "    @%03d: LDC %s%n", offset, cst );
+                    offset += 2; // TODO: how do we tell if the WIDE instruction prefix (+=3) was used?
+                    // we don't know index of the constant in the pool, wide instructions are used for high indexes
                 }
 
                 @Override
                 public void visitIincInsn( int var, int increment )
                 {
-                    out.format( "    IINC %d += %d%n", var, increment );
+                    printf( "    @%03d: IINC %d += %d%n", offset, var, increment );
+                    // guessing the most efficient encoding was used:
+                    if ( var <= 0xFF && increment <= 0xFF )
+                    {
+                        offset += 3;
+                    }
+                    else
+                    {
+                        offset += 6;
+                    }
                 }
 
                 @Override
                 public void visitTableSwitchInsn( int min, int max, Label dflt, Label... labels )
                 {
-                    out.format( "    TABLE_SWITCH(min=%d, max=%d)%n    {%n", min, max );
+                    printf( "    @%03d: TABLE_SWITCH(min=%d, max=%d)%n    {%n", offset, min, max );
                     for ( int i = 0, val = min; i < labels.length; i++, val++ )
                     {
-                        out.format( "      case %d goto %s%n", val, labels[i] );
+                        printf( "      case %d goto %s%n", val, labels[i] );
                     }
-                    out.printf( "      default goto %s%n    }%n", dflt );
+                    printf( "      default goto %s%n    }%n", dflt );
+                    offset += 4 - (offset & 3); // padding bytes, table starts at aligned offset
+                    offset += 12; // default, min, max
+                    offset += 4 * labels.length; // table of offsets
                 }
 
                 @Override
                 public void visitLookupSwitchInsn( Label dflt, int[] keys, Label[] labels )
                 {
-                    out.format( "    LOOKUP_SWITCH%n    {%n" );
+                    printf( "    @%03d: LOOKUP_SWITCH%n    {%n", offset );
                     for ( int i = 0; i < labels.length; i++ )
                     {
-                        out.format( "      case %d goto %s%n", keys[i], labels[i] );
+                        printf( "      case %d goto %s%n", keys[i], labels[i] );
                     }
-                    out.printf( "      default goto %s%n    }%n", dflt );
+                    printf( "      default goto %s%n    }%n", dflt );
+                    offset += 4 - (offset & 3); // padding bytes, table starts at aligned offset
+                    offset += 8; // default, length
+                    offset += 8 * labels.length; // table of key+offset
                 }
 
                 @Override
                 public void visitMultiANewArrayInsn( String desc, int dims )
                 {
-                    out.format( "    MULTI_ANEW_ARRAY %s, dims:%d%n", desc, dims );
+                    printf( "    @%03d: MULTI_ANEW_ARRAY %s, dims:%d%n", offset, desc, dims );
+                    offset += 4;
                 }
 
                 @Override
                 public void visitTryCatchBlock( Label start, Label end, Label handler, String type )
                 {
-                    out.format( "    [try/catch %s start@%s, end@%s, handler@%s]%n", type, start, end, handler );
+                    printf( "    [try/catch %s start@%s, end@%s, handler@%s]%n", type, start, end, handler );
                 }
 
                 @Override
-                public void visitLocalVariable( String name, String desc, String signature, Label start, Label end,
-                                                int index )
+                public void visitLocalVariable(
+                        String name, String desc, String signature, Label start, Label end,
+                        int index )
                 {
-                    out.format( "    [local %s:%s, from %s to %s @offset=%d]%n", name, desc, start, end, index );
+                    printf( "    [local %s:%s, from %s to %s @offset=%d]%n", name, desc, start, end, index );
                 }
 
                 @Override
                 public void visitLineNumber( int line, Label start )
                 {
-                    out.format( "    [line %d @ %s]%n", line, start );
+                    printf( "    [line %d @ %s]%n", line, start );
                 }
 
                 @Override
                 public void visitEnd()
                 {
-                    out.println( "  }" );
+                    println( "  }" );
                 }
             };
+        }
+
+        @Override
+        public void visitEnd()
+        {
+            println( "}" );
         }
 
         private static String opcode( int opcode )
@@ -630,12 +725,6 @@ interface ByteCodeVisitor
             default:
                 throw new IllegalArgumentException( "unknown opcode: " + opcode );
             }
-        }
-
-        @Override
-        public void visitEnd()
-        {
-            out.println( "}" );
         }
     }
 }

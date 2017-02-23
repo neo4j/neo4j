@@ -21,6 +21,7 @@ package org.neo4j.cypher.internal.compiled_runtime.spi.v3_2
 
 import java.util
 
+import org.neo4j.codegen.bytecode.ByteCode
 import org.neo4j.codegen.source.{Configuration, SourceCode}
 import org.neo4j.codegen.{CodeGenerationStrategy, CodeGenerator, Expression, MethodDeclaration}
 import org.neo4j.cypher.internal.compiled_runtime.v3_2.codegen.ir.expressions.{CodeGenType, ReferenceType}
@@ -46,7 +47,7 @@ import org.neo4j.kernel.impl.core.NodeManager
   */
 class GeneratedMethodStructureTest extends CypherFunSuite {
 
-  val modes = Seq(SourceCode.SOURCECODE, SourceCode.BYTECODE)
+  val modes = Seq(SourceCode.SOURCECODE, ByteCode.BYTECODE)
   val ops = Seq(
         Operation("create rel extractor", _.createRelExtractor("foo")),
         Operation("nullable object", m => {
@@ -219,7 +220,7 @@ class GeneratedMethodStructureTest extends CypherFunSuite {
 
   case class Operation[E](name: String, block: GeneratedMethodStructure => Unit)
 
-  private def codeGenerator[E](block: GeneratedMethodStructure => Unit, mode: CodeGenerationStrategy[Configuration]) = {
+  private def codeGenerator[E](block: GeneratedMethodStructure => Unit, mode: CodeGenerationStrategy[_]) = {
     val codeGen = CodeGenerator.generateCode(classOf[CodeStructure[_]].getClassLoader, mode)
     val packageName = "foo"
     implicit val context = new CodeGenContext(SemanticTable(), Map.empty)
