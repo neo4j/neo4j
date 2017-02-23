@@ -181,8 +181,8 @@ public class Cluster
 
     public void shutdown() throws ExecutionException, InterruptedException
     {
-        shutdownCoreMembers();
         shutdownReadReplicas();
+        shutdownCoreMembers();
     }
 
     public void shutdownCoreMembers() throws InterruptedException, ExecutionException
