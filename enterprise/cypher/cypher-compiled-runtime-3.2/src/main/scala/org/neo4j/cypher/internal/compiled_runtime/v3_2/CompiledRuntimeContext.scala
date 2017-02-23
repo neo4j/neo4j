@@ -44,9 +44,10 @@ class CompiledRuntimeContext(override val exceptionCreator: (String, InputPositi
                              override val queryGraphSolver: QueryGraphSolver,
                              override val config: CypherCompilerConfiguration,
                              override val updateStrategy: UpdateStrategy,
+                             override val debugOptions: Set[String],
                              override val clock: Clock,
                              val codeStructure: CodeStructure[GeneratedQuery],
                              val codeGenConfiguration: CodeGenConfiguration)
   extends CompilerContext(exceptionCreator, tracer,
     notificationLogger, planContext, typeConverter, createFingerprintReference, monitors, metrics, queryGraphSolver,
-    config, updateStrategy, clock)
+    config, updateStrategy, debugOptions, clock)

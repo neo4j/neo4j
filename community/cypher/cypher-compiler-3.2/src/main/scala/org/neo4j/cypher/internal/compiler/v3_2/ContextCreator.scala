@@ -34,6 +34,7 @@ trait ContextCreator[Context <: BaseContext] {
              notificationLogger: InternalNotificationLogger,
              planContext: PlanContext,
              queryText: String,
+             debugOptions: Set[String],
              offset: Option[InputPosition],
              monitors: Monitors,
              createFingerprintReference: Option[PlanFingerprint] => PlanFingerprintReference,
@@ -50,6 +51,7 @@ object CommunityContextCreator extends ContextCreator[CompilerContext] {
                       notificationLogger: InternalNotificationLogger,
                       planContext: PlanContext,
                       queryText: String,
+                      debugOptions: Set[String],
                       offset: Option[InputPosition],
                       monitors: Monitors,
                       createFingerprintReference: Option[PlanFingerprint] => PlanFingerprintReference,
@@ -67,6 +69,6 @@ object CommunityContextCreator extends ContextCreator[CompilerContext] {
       metricsFactory.newMetrics(planContext.statistics)
 
     new CompilerContext(exceptionCreator, tracer, notificationLogger, planContext, typeConverter, createFingerprintReference,
-      monitors, metrics, queryGraphSolver, config, updateStrategy, clock)
+      monitors, metrics, queryGraphSolver, config, updateStrategy, debugOptions, clock)
   }
 }

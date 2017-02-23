@@ -39,5 +39,6 @@ case object CompiledRuntimeOption extends RuntimePreParserOption("compiled")
 case object EagerOption extends UpdateStrategyOption("eager")
 case object SourceCodeGenOption extends CodeGenPreParserOption("sourcecode")
 case object ByteCodeGenOption extends CodeGenPreParserOption("bytecode")
+case class DebugOption(key: String) extends PreParserOption
 
 case class ConfigurationOptions(version: Option[VersionOption], options: Seq[PreParserOption]) extends PreParserOption

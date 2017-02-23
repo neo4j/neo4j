@@ -38,6 +38,7 @@ class EnterpriseContextCreator(codeStructure: CodeStructure[GeneratedQuery], cod
                       notificationLogger: InternalNotificationLogger,
                       planContext: PlanContext,
                       queryText: String,
+                      debugOptions: Set[String],
                       offset: Option[InputPosition],
                       monitors: Monitors,
                       createFingerprintReference: Option[PlanFingerprint] => PlanFingerprintReference,
@@ -55,6 +56,6 @@ class EnterpriseContextCreator(codeStructure: CodeStructure[GeneratedQuery], cod
       metricsFactory.newMetrics(planContext.statistics)
 
     new CompiledRuntimeContext(exceptionCreator, tracer, notificationLogger, planContext, typeConverter, createFingerprintReference,
-      monitors, metrics, queryGraphSolver, config, updateStrategy, clock, codeStructure, codeGenConfiguration)
+      monitors, metrics, queryGraphSolver, config, updateStrategy, debugOptions, clock, codeStructure, codeGenConfiguration)
   }
 }

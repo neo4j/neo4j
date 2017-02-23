@@ -50,7 +50,7 @@ class EnterpriseCompatibilityFactory(inner: CompatibilityFactory, graph: GraphDa
           case CypherCodeGenMode.sourceCode => SourceCodeMode
         }
 
-        val codeGenConfiguration: CodeGenConfiguration = CodeGenConfiguration(mode = codeGenMode)
+        val codeGenConfiguration = CodeGenConfiguration(mode = codeGenMode)
 
         val contextCreator = new EnterpriseContextCreator(GeneratedQueryStructure, codeGenConfiguration)
         v3_2.CostCompatibility(config, CompilerEngineDelegator.CLOCK, kernelMonitors, kernelAPI, logProvider.getLog

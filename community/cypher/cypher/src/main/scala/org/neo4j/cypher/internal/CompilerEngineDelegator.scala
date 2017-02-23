@@ -46,7 +46,7 @@ object CompilerEngineDelegator {
 
 case class PreParsedQuery(statement: String, rawStatement: String, version: CypherVersion,
                           executionMode: CypherExecutionMode, planner: CypherPlanner, runtime: CypherRuntime,
-                          codeGenMode: CypherCodeGenMode, updateStrategy: CypherUpdateStrategy)
+                          codeGenMode: CypherCodeGenMode, updateStrategy: CypherUpdateStrategy, debugOptions: Set[String])
                          (val offset: InputPosition) {
   val statementWithVersionAndPlanner: String = {
     val plannerInfo = planner match {
@@ -109,7 +109,7 @@ class CompilerEngineDelegator(graph: GraphDatabaseQueryService,
   @throws(classOf[SyntaxException])
   def preParseQuery(queryText: String): PreParsedQuery = exceptionHandler.runSafely {
     val preParsedStatement = CypherPreParser(queryText)
-    val CypherStatementWithOptions(statement, offset, version, planner, runtime, codeGenMode, updateStrategy, mode) =
+    val CypherStatementWithOptions(statement, offset, version, planner, runtime, codeGenMode, updateStrategy, mode, debugOptions) =
       CypherStatementWithOptions(preParsedStatement)
 
     val cypherVersion = version.getOrElse(configuredVersion)
@@ -123,7 +123,7 @@ class CompilerEngineDelegator(graph: GraphDatabaseQueryService,
     assertValidOptions(CypherStatementWithOptions(preParsedStatement), cypherVersion, pickedExecutionMode, pickedPlanner, pickedRuntime)
 
     PreParsedQuery(statement, queryText, cypherVersion, pickedExecutionMode,
-      pickedPlanner, pickedRuntime, pickedCodeGenMode, pickedUpdateStrategy)(offset)
+      pickedPlanner, pickedRuntime, pickedCodeGenMode, pickedUpdateStrategy, debugOptions)(offset)
   }
 
   private def pick[O <: CypherOption](candidate: Option[O], companion: CypherOptionCompanion[O], configured: Option[O]): O = {
@@ -148,6 +148,7 @@ class CompilerEngineDelegator(graph: GraphDatabaseQueryService,
     val runtime = preParsedQuery.runtime
     val codeGenMode = preParsedQuery.codeGenMode
     val updateStrategy = preParsedQuery.updateStrategy
+    val debugOptions = preParsedQuery.debugOptions
 
     var preParsingNotifications: Set[org.neo4j.graphdb.Notification] = Set.empty
     if (version == CypherVersion.v3_2 && planner == CypherPlanner.rule) {
@@ -161,7 +162,7 @@ class CompilerEngineDelegator(graph: GraphDatabaseQueryService,
 
       case Left(CypherVersion.v3_2) =>
         val parserQuery = compatibilityFactory.
-          create(PlannerSpec_v3_2(planner, runtime, updateStrategy, codeGenMode), config).
+          create(PlannerSpec_v3_2(planner, runtime, updateStrategy, codeGenMode, debugOptions), config).
           produceParsedQuery(preParsedQuery, tracer, preParsingNotifications)
 
         parserQuery.onError {

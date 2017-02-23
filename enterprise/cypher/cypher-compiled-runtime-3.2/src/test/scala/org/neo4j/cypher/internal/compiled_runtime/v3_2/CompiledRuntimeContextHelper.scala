@@ -46,11 +46,12 @@ object CompiledRuntimeContextHelper extends MockitoSugar {
                queryGraphSolver: QueryGraphSolver = mock[QueryGraphSolver],
                config: CypherCompilerConfiguration = mock[CypherCompilerConfiguration],
                updateStrategy: UpdateStrategy = mock[UpdateStrategy],
+               debugOptions: Set[String] = Set.empty,
                clock: Clock = Clock.systemUTC(),
                codeStructure: CodeStructure[GeneratedQuery] = mock[CodeStructure[GeneratedQuery]],
                codeGenConfiguration: CodeGenConfiguration = CodeGenConfiguration()): CompiledRuntimeContext = {
       new CompiledRuntimeContext(exceptionCreator, tracer, notificationLogger, planContext, typeConverter, createFingerprintReference,
-        monitors, metrics, queryGraphSolver, config, updateStrategy, clock, codeStructure, codeGenConfiguration)
+        monitors, metrics, queryGraphSolver, config, updateStrategy, debugOptions, clock, codeStructure, codeGenConfiguration)
     }
 
 }

@@ -56,18 +56,20 @@ case class CypherCompiler[Context <: CompilerContext](createExecutionPlan: Trans
                 context: PlanContext,
                 notificationLogger: InternalNotificationLogger,
                 plannerName: String = "",
+                debugOptions: Set[String] = Set.empty,
                 offset: Option[InputPosition] = None): (ExecutionPlan, Map[String, Any]) = {
-    val state = parseQuery(queryText, queryText, notificationLogger, plannerName, None, CompilationPhaseTracer.NO_TRACING)
-    planPreparedQuery(state, notificationLogger, context, offset, CompilationPhaseTracer.NO_TRACING)
+    val state = parseQuery(queryText, queryText, notificationLogger, plannerName, debugOptions, None, CompilationPhaseTracer.NO_TRACING)
+    planPreparedQuery(state, notificationLogger, context, debugOptions, offset, CompilationPhaseTracer.NO_TRACING)
   }
 
   def planPreparedQuery(state: BaseState,
                         notificationLogger: InternalNotificationLogger,
                         planContext: PlanContext,
+                        debugOptions: Set[String],
                         offset: Option[InputPosition] = None,
                         tracer: CompilationPhaseTracer): (ExecutionPlan, Map[String, Any]) = {
     val context: Context = contextCreation.create(tracer, notificationLogger, planContext, state.queryText,
-      state.startPosition, monitors, createFingerprintReference, typeConverter, metricsFactory,
+      debugOptions, state.startPosition, monitors, createFingerprintReference, typeConverter, metricsFactory,
       queryGraphSolver, config, updateStrategy, clock)
     val preparedCompilationState = prepareForCaching.transform(state, context)
     val cache = provideCache(cacheAccessor, cacheMonitor, planContext)
@@ -83,13 +85,15 @@ case class CypherCompiler[Context <: CompilerContext](createExecutionPlan: Trans
                  rawQueryText: String,
                  notificationLogger: InternalNotificationLogger,
                  plannerNameText: String = IDPPlannerName.name,
+                 debugOptions: Set[String],
                  offset: Option[InputPosition],
                  tracer: CompilationPhaseTracer): BaseState = {
     val plannerName = PlannerNameFor(plannerNameText)
     val startState = CompilationState(queryText, offset, plannerName)
     //TODO: these nulls are a short cut
-    val context = contextCreation.create(tracer, notificationLogger, planContext = null, rawQueryText, offset, monitors,
-      createFingerprintReference, typeConverter, metricsFactory, queryGraphSolver, config, updateStrategy, clock)
+    val context = contextCreation.create(tracer, notificationLogger, planContext = null, rawQueryText, debugOptions,
+      offset, monitors, createFingerprintReference, typeConverter, metricsFactory, queryGraphSolver, config,
+      updateStrategy, clock)
     CompilationPhases.parsing(sequencer).transform(startState, context)
   }
 

@@ -36,7 +36,7 @@ import scala.collection.mutable
 sealed trait PlannerSpec
 final case class PlannerSpec_v2_3(planner: CypherPlanner, runtime: CypherRuntime) extends PlannerSpec
 final case class PlannerSpec_v3_1(planner: CypherPlanner, runtime: CypherRuntime, updateStrategy: CypherUpdateStrategy) extends PlannerSpec
-final case class PlannerSpec_v3_2(planner: CypherPlanner, runtime: CypherRuntime, updateStrategy: CypherUpdateStrategy, codeGenMode: CypherCodeGenMode) extends PlannerSpec
+final case class PlannerSpec_v3_2(planner: CypherPlanner, runtime: CypherRuntime, updateStrategy: CypherUpdateStrategy, codeGenMode: CypherCodeGenMode, debugOptions: Set[String]) extends PlannerSpec
 
 trait CompatibilityFactory {
   def create(spec: PlannerSpec_v2_3, config: CypherCompilerConfiguration): v2_3.Compatibility
