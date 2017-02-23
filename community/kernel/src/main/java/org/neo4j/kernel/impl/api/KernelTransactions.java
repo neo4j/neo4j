@@ -22,6 +22,7 @@ package org.neo4j.kernel.impl.api;
 import java.time.Clock;
 import java.util.Set;
 import java.util.concurrent.ConcurrentHashMap;
+import java.util.concurrent.TimeUnit;
 import java.util.concurrent.locks.ReentrantReadWriteLock;
 import java.util.function.Supplier;
 
@@ -39,7 +40,6 @@ import org.neo4j.kernel.impl.api.state.ConstraintIndexCreator;
 import org.neo4j.kernel.impl.api.state.LegacyIndexTransactionStateImpl;
 import org.neo4j.kernel.impl.factory.AccessCapability;
 import org.neo4j.kernel.impl.index.IndexConfigStore;
-import org.neo4j.kernel.impl.locking.LockTracer;
 import org.neo4j.kernel.impl.locking.StatementLocks;
 import org.neo4j.kernel.impl.locking.StatementLocksFactory;
 import org.neo4j.kernel.impl.proc.Procedures;
@@ -143,20 +143,31 @@ public class KernelTransactions extends LifecycleAdapter implements Supplier<Ker
     {
         assertCurrentThreadIsNotBlockingNewTransactions();
         SecurityContext frozenSecurityContext = securityContext.freeze();
-        newTransactionsLock.readLock().lock();
         try
         {
-            assertDatabaseIsRunning();
-            TransactionId lastCommittedTransaction = transactionIdStore.getLastCommittedTransaction();
-            KernelTransactionImplementation tx = localTxPool.acquire();
-            StatementLocks statementLocks = statementLocksFactory.newInstance();
-            tx.initialize( lastCommittedTransaction.transactionId(),
-                    lastCommittedTransaction.commitTimestamp(), statementLocks, type, frozenSecurityContext, timeout );
-            return tx;
+            while ( !newTransactionsLock.readLock().tryLock( 1, TimeUnit.SECONDS ) )
+            {
+                assertDatabaseIsRunning();
+            }
+            try
+            {
+                assertDatabaseIsRunning();
+                TransactionId lastCommittedTransaction = transactionIdStore.getLastCommittedTransaction();
+                KernelTransactionImplementation tx = localTxPool.acquire();
+                StatementLocks statementLocks = statementLocksFactory.newInstance();
+                tx.initialize( lastCommittedTransaction.transactionId(), lastCommittedTransaction.commitTimestamp(),
+                        statementLocks, type, frozenSecurityContext, timeout );
+                return tx;
+            }
+            finally
+            {
+                newTransactionsLock.readLock().unlock();
+            }
         }
-        finally
+        catch ( InterruptedException ie )
         {
-            newTransactionsLock.readLock().unlock();
+            Thread.interrupted();
+            throw new RuntimeException( ie );
         }
     }
 

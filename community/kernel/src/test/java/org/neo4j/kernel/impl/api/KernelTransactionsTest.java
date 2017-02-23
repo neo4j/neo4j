@@ -19,8 +19,10 @@
  */
 package org.neo4j.kernel.impl.api;
 
+import org.junit.Before;
 import org.junit.Rule;
 import org.junit.Test;
+import org.junit.rules.ExpectedException;
 
 import java.time.Clock;
 import java.util.Collection;
@@ -32,6 +34,7 @@ import java.util.concurrent.TimeUnit;
 import java.util.concurrent.atomic.AtomicBoolean;
 import java.util.concurrent.atomic.AtomicReferenceArray;
 
+import org.neo4j.graphdb.DatabaseShutdownException;
 import org.neo4j.graphdb.security.AuthorizationExpiredException;
 import org.neo4j.kernel.AvailabilityGuard;
 import org.neo4j.kernel.api.KernelTransaction;
@@ -68,7 +71,6 @@ import org.neo4j.storageengine.api.lock.ResourceLocker;
 import org.neo4j.storageengine.api.txstate.ReadableTransactionState;
 import org.neo4j.test.Race;
 import org.neo4j.test.rule.concurrent.OtherThreadRule;
-import org.neo4j.time.Clocks;
 
 import static java.util.concurrent.TimeUnit.MILLISECONDS;
 import static java.util.concurrent.locks.LockSupport.parkNanos;
@@ -101,6 +103,17 @@ public class KernelTransactionsTest
 {
     @Rule
     public final OtherThreadRule<Void> t2 = new OtherThreadRule<>( "T2-" + getClass().getName() );
+    @Rule
+    public final ExpectedException expectedException = ExpectedException.none();
+
+    private static final Clock clock = Clock.systemUTC();
+    private static AvailabilityGuard availabilityGuard;
+
+    @Before
+    public void setUp()
+    {
+        availabilityGuard = new AvailabilityGuard( clock, NullLog.getInstance() );
+    }
 
     @Test
     public void shouldListActiveTransactions() throws Throwable
@@ -393,6 +406,31 @@ public class KernelTransactionsTest
         assertThat("We should not have any transaction", kernelTransactions.activeTransactions(), is(empty()));
     }
 
+    @Test
+    public void exceptionWhenStartingNewTransactionOnShutdownInstance() throws Throwable
+    {
+        KernelTransactions kernelTransactions = newKernelTransactions();
+        SecurityContext securityContext = mock( SecurityContext.class );
+
+        availabilityGuard.shutdown();
+        Executors.newSingleThreadExecutor().submit( () -> stopKernelTransactions( kernelTransactions ) ).get();
+
+        expectedException.expect( DatabaseShutdownException.class );
+        kernelTransactions.newInstance( KernelTransaction.Type.explicit, securityContext, 0L );
+    }
+
+    private void stopKernelTransactions( KernelTransactions kernelTransactions )
+    {
+        try
+        {
+            kernelTransactions.stop();
+        }
+        catch ( Throwable t )
+        {
+            throw new RuntimeException( t );
+        }
+    }
+
     private static void startAndCloseTransaction(KernelTransactions kernelTransactions)
     {
         try
@@ -465,8 +503,6 @@ public class KernelTransactionsTest
         StatementLocksFactory statementLocksFactory = new SimpleStatementLocksFactory( locks );
 
         StatementOperationContainer statementOperationsContianer = new StatementOperationContainer( null, null );
-        Clock clock = Clocks.systemClock();
-        AvailabilityGuard availabilityGuard = new AvailabilityGuard( clock, NullLog.getInstance() );
         KernelTransactions transactions;
         if ( testKernelTransactions )
         {

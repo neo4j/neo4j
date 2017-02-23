@@ -51,7 +51,7 @@ class BackupLoad extends RepeatUntilCallable
         {
             throw new RuntimeException( "Inconsistent backup" );
         }
-        if (backupResult.isTransientErrorOnBackup())
+        if ( backupResult.isTransientErrorOnBackup() )
         {
             LockSupport.parkNanos( TimeUnit.MILLISECONDS.toNanos( 10 ) );
         }
