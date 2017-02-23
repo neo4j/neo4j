@@ -161,7 +161,7 @@ public class CatchUpClient extends LifecycleAdapter
     }
 
     @Override
-    public void stop() throws Throwable
+    public void stop()
     {
         log.info( "CatchUpClient stopping" );
         try
