@@ -22,7 +22,6 @@ package org.neo4j.cypher.internal
 import java.time.Clock
 
 import org.neo4j.cypher.internal.compiled_runtime.v3_2.CompiledRuntimeContext
-import org.neo4j.cypher.internal.compiled_runtime.v3_2.codegen.CodeGenConfiguration
 import org.neo4j.cypher.internal.compiled_runtime.v3_2.codegen.spi.CodeStructure
 import org.neo4j.cypher.internal.compiled_runtime.v3_2.executionplan.GeneratedQuery
 import org.neo4j.cypher.internal.compiler.v3_2.executionplan.{PlanFingerprint, PlanFingerprintReference}
@@ -33,7 +32,7 @@ import org.neo4j.cypher.internal.compiler.v3_2.{ContextCreator, CypherCompilerCo
 import org.neo4j.cypher.internal.frontend.v3_2.InputPosition
 import org.neo4j.cypher.internal.frontend.v3_2.phases.{CompilationPhaseTracer, InternalNotificationLogger, Monitors}
 
-class EnterpriseContextCreator(codeStructure: CodeStructure[GeneratedQuery], codeGenConfiguration: CodeGenConfiguration) extends ContextCreator[CompiledRuntimeContext] {
+class EnterpriseContextCreator(codeStructure: CodeStructure[GeneratedQuery]) extends ContextCreator[CompiledRuntimeContext] {
   override def create(tracer: CompilationPhaseTracer,
                       notificationLogger: InternalNotificationLogger,
                       planContext: PlanContext,
@@ -56,6 +55,6 @@ class EnterpriseContextCreator(codeStructure: CodeStructure[GeneratedQuery], cod
       metricsFactory.newMetrics(planContext.statistics)
 
     new CompiledRuntimeContext(exceptionCreator, tracer, notificationLogger, planContext, typeConverter, createFingerprintReference,
-      monitors, metrics, queryGraphSolver, config, updateStrategy, debugOptions, clock, codeStructure, codeGenConfiguration)
+      monitors, metrics, queryGraphSolver, config, updateStrategy, debugOptions, clock, codeStructure)
   }
 }

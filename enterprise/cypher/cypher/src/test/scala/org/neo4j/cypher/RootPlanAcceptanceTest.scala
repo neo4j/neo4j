@@ -78,6 +78,18 @@ class RootPlanAcceptanceTest extends ExecutionEngineFunSuite {
     }
   }
 
+  test("should show_java_source") {
+    val res = eengine.execute("CYPHER debug=generate_java_source debug=show_java_source MATCH (n) RETURN n", Map.empty[String, Object])
+    res.size
+    if(!res.executionPlanDescription().arguments.exists {
+      case (name: String, code: String) if name.startsWith("source:") =>
+        !code.isEmpty
+      case _ => false
+    }) {
+      fail("no source present: " + res.executionPlanDescription())
+    }
+  }
+
   def given(query: String) = TestQuery(query)
 
   case class TestQuery(query: String,

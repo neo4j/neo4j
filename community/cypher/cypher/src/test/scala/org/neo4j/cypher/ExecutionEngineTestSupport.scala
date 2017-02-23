@@ -27,7 +27,7 @@ import org.neo4j.cypher.ExecutionEngineHelper.createEngine
 import org.neo4j.cypher.internal.compiler.v3_2.executionplan.InternalExecutionResult
 import org.neo4j.cypher.internal.frontend.v3_2.test_helpers.{CypherFunSuite, CypherTestSupport}
 import org.neo4j.cypher.internal.helpers.GraphIcing
-import org.neo4j.cypher.internal.{CompatibilityFactory, ExecutionEngine, RewindableExecutionResult}
+import org.neo4j.cypher.internal.{CompatibilityFactory, ExecutionEngine, ExecutionResult, RewindableExecutionResult}
 import org.neo4j.cypher.javacompat.internal.GraphDatabaseCypherService
 import org.neo4j.graphdb.GraphDatabaseService
 import org.neo4j.kernel.GraphDatabaseQueryService
@@ -122,10 +122,10 @@ trait ExecutionEngineHelper {
   protected class ScalarFailureException(msg: String) extends RuntimeException(msg)
 
   implicit class RichExecutionEngine(engine: ExecutionEngine) {
-    def profile(query: String, params: Map[String, Any]) =
+    def profile(query: String, params: Map[String, Any]): ExecutionResult =
       engine.profile(query, params, engine.queryService.transactionalContext(query = query -> params))
 
-    def execute(query: String, params: Map[String, Any]) =
+    def execute(query: String, params: Map[String, Any]): ExecutionResult =
       engine.execute(query, params, engine.queryService.transactionalContext(query = query -> params))
   }
 }

@@ -118,7 +118,7 @@ object InternalPlanDescription {
     case class CountRelationshipsExpression(ident: String, startLabel: Option[String],
                                             typeNames: Seq[String], endLabel: Option[String]) extends Argument
     case class SourceCode(className: String, sourceCode: String) extends Argument {
-      override def name = className
+      override def name = "source:" + className
     }
   }
 }
