@@ -19,6 +19,8 @@
  */
 package org.neo4j.cypher.internal.compiled_runtime.v3_2.codegen
 
+import org.neo4j.cypher.internal.frontend.v3_2.InternalException
+
 /**
   * Configuration modes for code generation
   */
@@ -38,13 +40,26 @@ case object ByteCodeMode extends CodeGenMode
   * Configuration class for code generation
  *
   * @param mode The mode of code generation
-  * @param saveSource if `true` source code is stored and returned
+  * @param showSource if `true` source code is stored and returned
   * @param packageName The name of the v3_2 the produced code should belong to
   */
 case class CodeGenConfiguration(mode: CodeGenMode = CodeGenMode.default,
-                                saveSource: Boolean = false,
+                                showSource: Boolean = false,
+                                showByteCode: Boolean = false,
                                 packageName: String = "org.neo4j.cypher.internal.compiler.v3_2.generated"
                                )
+
+object CodeGenConfiguration {
+  def apply(debugOptions: Set[String]): CodeGenConfiguration = {
+    val mode = if(debugOptions.contains("generate_java_source")) SourceCodeMode else ByteCodeMode
+    val show_java_source = debugOptions.contains("show_java_source")
+    if (show_java_source && mode != SourceCodeMode) {
+      throw new InternalException("Can only 'debug=show_java_source' if 'debug=generate_java_source'.")
+    }
+    val show_bytecode = debugOptions.contains("show_bytecode")
+    CodeGenConfiguration(mode, show_java_source, show_bytecode)
+  }
+}
 
 object CodeGenMode {
   val default = ByteCodeMode

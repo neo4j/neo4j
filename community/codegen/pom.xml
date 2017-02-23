@@ -53,7 +53,7 @@ the relevant Commercial Agreement.
     <dependency>
       <groupId>org.ow2.asm</groupId>
       <artifactId>asm</artifactId>
-      <version>5.0.4</version>
+      <version>5.2</version>
     </dependency>
     <dependency>
       <groupId>org.apache.commons</groupId>

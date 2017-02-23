@@ -26,11 +26,11 @@ import org.neo4j.cypher.internal.compiler.v3_2.executionplan.{LegacyNodeIndexUsa
 import org.neo4j.cypher.internal.compiler.v3_2.phases.CompilerContext
 import org.neo4j.cypher.internal.compiler.v3_2.{InfoLogger, ExplainMode => ExplainModev3_2, NormalMode => NormalModev3_2, ProfileMode => ProfileModev3_2}
 import org.neo4j.cypher.internal.frontend.v3_2.helpers.rewriting.RewriterStepSequencer
-import org.neo4j.cypher.internal.frontend.v3_2.phases.{BaseState, CompilationPhaseTracer, RecordingNotificationLogger}
+import org.neo4j.cypher.internal.frontend.v3_2.phases.{CompilationPhaseTracer, RecordingNotificationLogger}
 import org.neo4j.cypher.internal.spi.v3_2.TransactionBoundQueryContext.IndexSearchMonitor
 import org.neo4j.cypher.internal.spi.v3_2._
-import org.neo4j.kernel.api.query.IndexUsage.{legacyIndexUsage, schemaIndexUsage}
 import org.neo4j.kernel.api.KernelAPI
+import org.neo4j.kernel.api.query.IndexUsage.{legacyIndexUsage, schemaIndexUsage}
 import org.neo4j.kernel.api.query.PlannerInfo
 import org.neo4j.kernel.impl.query.QueryExecutionMonitor
 import org.neo4j.kernel.monitoring.{Monitors => KernelMonitors}
@@ -62,13 +62,14 @@ trait Compatibility[C <: CompilerContext] {
         preParsedQuery.rawStatement,
         notificationLogger,
         preParsedQuery.planner.name,
+        preParsedQuery.debugOptions,
         Some(preParsedQuery.offset), tracer))
     new ParsedQuery {
       override def plan(transactionalContext: TransactionalContextWrapper, tracer: CompilationPhaseTracer):
         (ExecutionPlan, Map[String, Any]) = exceptionHandler.runSafely {
         val planContext = new ExceptionTranslatingPlanContext(new TransactionBoundPlanContext(transactionalContext, notificationLogger))
         val syntacticQuery = preparedSyntacticQueryForV_3_2.get
-        val (planImpl, extractedParameters) = compiler.planPreparedQuery(syntacticQuery, notificationLogger, planContext, Some(preParsedQuery.offset), tracer)
+        val (planImpl, extractedParameters) = compiler.planPreparedQuery(syntacticQuery, notificationLogger, planContext, preParsedQuery.debugOptions, Some(preParsedQuery.offset), tracer)
 
         // Log notifications/warnings from planning
         planImpl.notifications(planContext).foreach(notificationLogger.log)

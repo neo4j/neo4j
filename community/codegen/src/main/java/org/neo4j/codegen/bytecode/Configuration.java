@@ -17,16 +17,12 @@
  * You should have received a copy of the GNU General Public License
  * along with this program.  If not, see <http://www.gnu.org/licenses/>.
  */
-package org.neo4j.cypher
+package org.neo4j.codegen.bytecode;
 
-
-sealed abstract class CypherCodeGenMode(codeGenMode: String) extends CypherOption(codeGenMode)
-
-case object CypherCodeGenMode extends CypherOptionCompanion[CypherCodeGenMode] {
-
-  case object default extends CypherCodeGenMode("default")
-  case object sourceCode extends CypherCodeGenMode("sourcecode")
-  case object byteCode extends CypherCodeGenMode("bytecode")
-
-  val all: Set[CypherCodeGenMode] = Set(sourceCode, byteCode)
+class Configuration
+{
+    public Configuration withFlag( ByteCode flag )
+    {
+        return this;
+    }
 }

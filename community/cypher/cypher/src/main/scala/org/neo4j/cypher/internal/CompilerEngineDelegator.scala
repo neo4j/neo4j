@@ -46,7 +46,7 @@ object CompilerEngineDelegator {
 
 case class PreParsedQuery(statement: String, rawStatement: String, version: CypherVersion,
                           executionMode: CypherExecutionMode, planner: CypherPlanner, runtime: CypherRuntime,
-                          codeGenMode: CypherCodeGenMode, updateStrategy: CypherUpdateStrategy)
+                          updateStrategy: CypherUpdateStrategy, debugOptions: Set[String])
                          (val offset: InputPosition) {
   val statementWithVersionAndPlanner: String = {
     val plannerInfo = planner match {
@@ -57,16 +57,13 @@ case class PreParsedQuery(statement: String, rawStatement: String, version: Cyph
       case CypherRuntime.default => ""
       case _ => s"runtime=${runtime.name}"
     }
-    val codeGenModeInfo = codeGenMode match {
-      case CypherCodeGenMode.default => ""
-      case _ => s"codeGenMode=${codeGenMode.name}"
-    }
     val updateStrategyInfo = updateStrategy match {
       case CypherUpdateStrategy.default => ""
       case _ => s"updateStrategy=${updateStrategy.name}"
     }
+    val debugFlags = debugOptions.map(flag => s"debug=$flag").mkString(" ")
 
-    s"CYPHER ${version.name} $plannerInfo $runtimeInfo $codeGenModeInfo $updateStrategyInfo $statement".replaceAll("\\s+", " ")
+    s"CYPHER ${version.name} $plannerInfo $runtimeInfo $updateStrategyInfo $debugFlags $statement".replaceAll("\\s+", " ")
   }
 }
 
@@ -109,7 +106,7 @@ class CompilerEngineDelegator(graph: GraphDatabaseQueryService,
   @throws(classOf[SyntaxException])
   def preParseQuery(queryText: String): PreParsedQuery = exceptionHandler.runSafely {
     val preParsedStatement = CypherPreParser(queryText)
-    val CypherStatementWithOptions(statement, offset, version, planner, runtime, codeGenMode, updateStrategy, mode) =
+    val CypherStatementWithOptions(statement, offset, version, planner, runtime, updateStrategy, mode, debugOptions) =
       CypherStatementWithOptions(preParsedStatement)
 
     val cypherVersion = version.getOrElse(configuredVersion)
@@ -117,13 +114,12 @@ class CompilerEngineDelegator(graph: GraphDatabaseQueryService,
 
     val pickedPlanner = pick(planner, CypherPlanner, if (cypherVersion == configuredVersion) Some(configuredPlanner) else None)
     val pickedRuntime = pick(runtime, CypherRuntime, if (cypherVersion == configuredVersion) Some(configuredRuntime) else None)
-    val pickedCodeGenMode = pick(codeGenMode, CypherCodeGenMode, None)
     val pickedUpdateStrategy = pick(updateStrategy, CypherUpdateStrategy, None)
 
     assertValidOptions(CypherStatementWithOptions(preParsedStatement), cypherVersion, pickedExecutionMode, pickedPlanner, pickedRuntime)
 
     PreParsedQuery(statement, queryText, cypherVersion, pickedExecutionMode,
-      pickedPlanner, pickedRuntime, pickedCodeGenMode, pickedUpdateStrategy)(offset)
+      pickedPlanner, pickedRuntime, pickedUpdateStrategy, debugOptions)(offset)
   }
 
   private def pick[O <: CypherOption](candidate: Option[O], companion: CypherOptionCompanion[O], configured: Option[O]): O = {
@@ -146,7 +142,6 @@ class CompilerEngineDelegator(graph: GraphDatabaseQueryService,
     var version = preParsedQuery.version
     val planner = preParsedQuery.planner
     val runtime = preParsedQuery.runtime
-    val codeGenMode = preParsedQuery.codeGenMode
     val updateStrategy = preParsedQuery.updateStrategy
 
     var preParsingNotifications: Set[org.neo4j.graphdb.Notification] = Set.empty
@@ -161,7 +156,7 @@ class CompilerEngineDelegator(graph: GraphDatabaseQueryService,
 
       case Left(CypherVersion.v3_2) =>
         val parserQuery = compatibilityFactory.
-          create(PlannerSpec_v3_2(planner, runtime, updateStrategy, codeGenMode), config).
+          create(PlannerSpec_v3_2(planner, runtime, updateStrategy), config).
           produceParsedQuery(preParsedQuery, tracer, preParsingNotifications)
 
         parserQuery.onError {

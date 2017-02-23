@@ -24,7 +24,7 @@ import org.neo4j.cypher.internal.compatibility.v3_1.helpers._
 import org.neo4j.cypher.internal.compatibility.{v2_3, v3_1, _}
 import org.neo4j.cypher.internal.compiler.v3_2.{CommunityContextCreator, CommunityRuntimeBuilder, CypherCompilerConfiguration}
 import org.neo4j.cypher.internal.frontend.v3_2.InvalidArgumentException
-import org.neo4j.cypher.{CypherCodeGenMode, CypherPlanner, CypherRuntime, CypherUpdateStrategy}
+import org.neo4j.cypher.{CypherPlanner, CypherRuntime, CypherUpdateStrategy}
 import org.neo4j.helpers.Clock
 import org.neo4j.kernel.GraphDatabaseQueryService
 import org.neo4j.kernel.api.KernelAPI
@@ -36,7 +36,7 @@ import scala.collection.mutable
 sealed trait PlannerSpec
 final case class PlannerSpec_v2_3(planner: CypherPlanner, runtime: CypherRuntime) extends PlannerSpec
 final case class PlannerSpec_v3_1(planner: CypherPlanner, runtime: CypherRuntime, updateStrategy: CypherUpdateStrategy) extends PlannerSpec
-final case class PlannerSpec_v3_2(planner: CypherPlanner, runtime: CypherRuntime, updateStrategy: CypherUpdateStrategy, codeGenMode: CypherCodeGenMode) extends PlannerSpec
+final case class PlannerSpec_v3_2(planner: CypherPlanner, runtime: CypherRuntime, updateStrategy: CypherUpdateStrategy) extends PlannerSpec
 
 trait CompatibilityFactory {
   def create(spec: PlannerSpec_v2_3, config: CypherCompilerConfiguration): v2_3.Compatibility

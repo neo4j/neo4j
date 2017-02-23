@@ -40,4 +40,5 @@ class CompilerContext(val exceptionCreator: (String, InputPosition) => CypherExc
                       val queryGraphSolver: QueryGraphSolver,
                       val config: CypherCompilerConfiguration,
                       val updateStrategy: UpdateStrategy,
+                      val debugOptions: Set[String],
                       val clock: Clock) extends BaseContext

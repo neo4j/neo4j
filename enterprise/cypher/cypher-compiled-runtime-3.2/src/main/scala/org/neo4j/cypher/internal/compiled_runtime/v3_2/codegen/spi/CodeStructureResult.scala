@@ -19,7 +19,18 @@
  */
 package org.neo4j.cypher.internal.compiled_runtime.v3_2.codegen.spi
 
+import org.neo4j.cypher.internal.compiler.v3_2.planDescription.Argument
+import org.neo4j.cypher.internal.compiler.v3_2.planDescription.InternalPlanDescription.Arguments.{ByteCode, SourceCode}
+
 trait CodeStructureResult[T] {
   def query: T
-  def source: Option[(String, String)]
+  def code: Seq[Argument] = {
+    source.map {
+      case (className, sourceCode) => SourceCode(className, sourceCode)
+    } ++ bytecode.map {
+      case (className, byteCode) => ByteCode(className, byteCode)
+    }
+  }
+  def source: Seq[(String, String)]
+  def bytecode: Seq[(String, String)]
 }

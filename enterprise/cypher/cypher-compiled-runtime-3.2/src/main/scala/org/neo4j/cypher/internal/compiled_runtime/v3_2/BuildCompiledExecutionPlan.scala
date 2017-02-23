@@ -45,7 +45,7 @@ object BuildCompiledExecutionPlan extends Phase[CompiledRuntimeContext, Compilat
   override def process(from: CompilationState, context: CompiledRuntimeContext): CompilationState = {
     val runtimeSuccessRateMonitor = context.monitors.newMonitor[NewRuntimeSuccessRateMonitor]()
     try {
-      val codeGen = new CodeGenerator(context.codeStructure, context.clock, context.codeGenConfiguration)
+      val codeGen = new CodeGenerator(context.codeStructure, context.clock, CodeGenConfiguration(context.debugOptions))
       val compiled: CompiledPlan = codeGen.generate(from.logicalPlan, context.planContext, from.semanticTable, from.plannerName)
       val executionPlan: ExecutionPlan = createExecutionPlan(context, compiled)
       runtimeSuccessRateMonitor.newPlanSeen(from.logicalPlan)

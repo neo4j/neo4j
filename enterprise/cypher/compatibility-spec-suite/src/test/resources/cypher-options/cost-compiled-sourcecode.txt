@@ -1,2 +1,2 @@
 // Compiled runtime should generate source code
-CYPHER codeGenMode=sourcecode
+CYPHER debug=generate_java_source

@@ -63,7 +63,7 @@ class JdkCompiler implements SourceCompiler
         DiagnosticCollector<JavaFileObject> diagnostics = new DiagnosticCollector<>();
 
         FileManager fileManager = new FileManager(
-                compiler.getStandardFileManager( diagnostics, configuration.locale(), configuration.chraset() ) );
+                compiler.getStandardFileManager( diagnostics, configuration.locale(), configuration.charset() ) );
 
         JavaCompiler.CompilationTask task = compiler.getTask(
                 configuration.errorWriter(), fileManager, diagnostics, configuration.options(), null, sourceFiles );

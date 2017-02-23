@@ -118,7 +118,10 @@ object InternalPlanDescription {
     case class CountRelationshipsExpression(ident: String, startLabel: Option[String],
                                             typeNames: Seq[String], endLabel: Option[String]) extends Argument
     case class SourceCode(className: String, sourceCode: String) extends Argument {
-      override def name = className
+      override def name = "source:" + className
+    }
+    case class ByteCode(className: String, disassembly: String) extends Argument {
+      override def name = "bytecode:" + className
     }
   }
 }
@@ -180,7 +183,8 @@ final case class PlanDescriptionImpl(id: Id,
 
   private def renderSources = {
     arguments.flatMap {
-      case SourceCode(className, sourceCode) => Some(s"=== Compiled: $className ===$NL$sourceCode")
+      case SourceCode(className, sourceCode) => Some(s"=== Java Source: $className ===$NL$sourceCode")
+      case ByteCode(className, byteCode) => Some(s"=== Bytecode: $className ===$NL$byteCode")
       case _ => None
     }.mkString(NL,NL,"")
   }

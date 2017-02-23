@@ -21,7 +21,6 @@ package org.neo4j.cypher.internal.compiled_runtime.v3_2
 
 import java.time.Clock
 
-import org.neo4j.cypher.internal.compiled_runtime.v3_2.codegen.CodeGenConfiguration
 import org.neo4j.cypher.internal.compiled_runtime.v3_2.codegen.spi.CodeStructure
 import org.neo4j.cypher.internal.compiled_runtime.v3_2.executionplan.GeneratedQuery
 import org.neo4j.cypher.internal.compiler.v3_2.executionplan.{PlanFingerprint, PlanFingerprintReference}
@@ -44,9 +43,9 @@ class CompiledRuntimeContext(override val exceptionCreator: (String, InputPositi
                              override val queryGraphSolver: QueryGraphSolver,
                              override val config: CypherCompilerConfiguration,
                              override val updateStrategy: UpdateStrategy,
+                             override val debugOptions: Set[String],
                              override val clock: Clock,
-                             val codeStructure: CodeStructure[GeneratedQuery],
-                             val codeGenConfiguration: CodeGenConfiguration)
+                             val codeStructure: CodeStructure[GeneratedQuery])
   extends CompilerContext(exceptionCreator, tracer,
     notificationLogger, planContext, typeConverter, createFingerprintReference, monitors, metrics, queryGraphSolver,
-    config, updateStrategy, clock)
+    config, updateStrategy, debugOptions, clock)

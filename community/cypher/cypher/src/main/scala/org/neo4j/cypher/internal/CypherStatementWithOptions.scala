@@ -20,7 +20,7 @@
 package org.neo4j.cypher.internal
 
 import org.neo4j.cypher.internal.frontend.v3_2.InputPosition
-import org.neo4j.cypher.{CypherCodeGenMode, CypherPlanner, CypherRuntime, CypherUpdateStrategy, CypherVersion, InvalidArgumentException}
+import org.neo4j.cypher.{CypherPlanner, CypherRuntime, CypherUpdateStrategy, CypherVersion, InvalidArgumentException}
 
 import scala.annotation.tailrec
 
@@ -30,39 +30,38 @@ object CypherStatementWithOptions {
     @tailrec
     def recurse(options: List[PreParserOption], version: Option[CypherVersion],
                 planner: Option[CypherPlanner], runtime: Option[CypherRuntime],
-                codeGenMode: Option[CypherCodeGenMode], updateStrategy: Option[CypherUpdateStrategy],
-                executionMode: Option[CypherExecutionMode]): CypherStatementWithOptions = options match {
+                updateStrategy: Option[CypherUpdateStrategy],
+                executionMode: Option[CypherExecutionMode], debugOptions: Set[String]): CypherStatementWithOptions = options match {
       case Nil => CypherStatementWithOptions(input.statement, input.offset,
-                                             version, planner, runtime, codeGenMode, updateStrategy, executionMode)
+                                             version, planner, runtime, updateStrategy, executionMode, debugOptions)
       case option :: tail =>
         option match {
           case e: ExecutionModePreParserOption =>
             val newExecutionMode = mergeOption(executionMode, CypherExecutionMode(e.name), "Can't specify multiple conflicting Cypher execution modes")
-            recurse(tail, version, planner, runtime, codeGenMode, updateStrategy, newExecutionMode)
+            recurse(tail, version, planner, runtime, updateStrategy, newExecutionMode, debugOptions)
           case VersionOption(v) =>
             val newVersion = mergeOption(version, CypherVersion(v), "Can't specify multiple conflicting Cypher versions")
-            recurse(tail, newVersion, planner, runtime, codeGenMode, updateStrategy, executionMode)
+            recurse(tail, newVersion, planner, runtime, updateStrategy, executionMode, debugOptions)
           case p: PlannerPreParserOption if p.name == GreedyPlannerOption.name =>
             throw new InvalidArgumentException("The greedy planner has been removed in Neo4j 3.1. Please use the cost planner instead.")
           case p: PlannerPreParserOption =>
             val newPlanner = mergeOption(planner, CypherPlanner(p.name), "Can't specify multiple conflicting Cypher planners")
-            recurse(tail, version, newPlanner, runtime, codeGenMode, updateStrategy, executionMode)
+            recurse(tail, version, newPlanner, runtime, updateStrategy, executionMode, debugOptions)
           case r: RuntimePreParserOption =>
             val newRuntime = mergeOption(runtime, CypherRuntime(r.name), "Can't specify multiple conflicting Cypher runtimes")
-            recurse(tail, version, planner, newRuntime, codeGenMode, updateStrategy, executionMode)
-          case c: CodeGenPreParserOption =>
-            val newCodeGenMode = mergeOption(codeGenMode, CypherCodeGenMode(c.name), "Can't specify multiple conflicting code generation modes")
-            recurse(tail, version, planner, runtime, newCodeGenMode, updateStrategy, executionMode)
+            recurse(tail, version, planner, newRuntime, updateStrategy, executionMode, debugOptions)
           case u: UpdateStrategyOption =>
             val newUpdateStrategy = mergeOption(updateStrategy, CypherUpdateStrategy(u.name), "Can't specify multiple conflicting update strategies")
-            recurse(tail, version, planner, runtime, codeGenMode, newUpdateStrategy, executionMode)
+            recurse(tail, version, planner, runtime, newUpdateStrategy, executionMode, debugOptions)
+          case DebugOption(debug) =>
+            recurse(tail, version, planner, runtime, updateStrategy, executionMode, debugOptions + debug.toLowerCase())
           case ConfigurationOptions(v, innerOptions) =>
             val newVersion = v.map(v => mergeOption(version, CypherVersion(v.version), "Can't specify multiple conflicting Cypher versions")).getOrElse(version)
-            recurse(innerOptions.toList ++ tail, newVersion, planner, runtime, codeGenMode, updateStrategy, executionMode)
+            recurse(innerOptions.toList ++ tail, newVersion, planner, runtime, updateStrategy, executionMode, debugOptions)
         }
     }
 
-    recurse(input.options.toList, None, None, None, None, None, None)
+    recurse(input.options.toList, None, None, None, None, None, Set.empty)
   }
 
   private def mergeOption[T](oldValue: Option[T], newValue: T, failureMessage: String): Option[T] = oldValue match {
@@ -75,6 +74,6 @@ case class CypherStatementWithOptions(statement: String, offset: InputPosition,
                                       version: Option[CypherVersion],
                                       planner: Option[CypherPlanner],
                                       runtime: Option[CypherRuntime],
-                                      codeGenMode: Option[CypherCodeGenMode],
                                       updateStrategy: Option[CypherUpdateStrategy],
-                                      executionMode: Option[CypherExecutionMode])
+                                      executionMode: Option[CypherExecutionMode],
+                                      debugOptions: Set[String])

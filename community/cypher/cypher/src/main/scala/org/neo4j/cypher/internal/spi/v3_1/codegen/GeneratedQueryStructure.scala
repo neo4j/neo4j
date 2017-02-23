@@ -24,7 +24,10 @@ import java.util
 
 import org.neo4j.codegen.CodeGeneratorOption._
 import org.neo4j.codegen.TypeReference._
-import org.neo4j.codegen.source.{SourceCode, SourceVisitor}
+import org.neo4j.codegen.bytecode.ByteCode.BYTECODE
+import org.neo4j.codegen.source.SourceCode.SOURCECODE
+import org.neo4j.codegen.source.SourceVisitor
+import org.neo4j.codegen.{CodeGenerator, Parameter, _}
 import org.neo4j.cypher.internal.compiler.v3_1.codegen._
 import org.neo4j.cypher.internal.compiler.v3_1.codegen.ir.expressions.{CodeGenType, FloatType, IntType, ReferenceType}
 import org.neo4j.cypher.internal.compiler.v3_1.executionplan._
@@ -34,7 +37,6 @@ import org.neo4j.cypher.internal.compiler.v3_1.planner.CantCompileQueryException
 import org.neo4j.cypher.internal.compiler.v3_1.spi.{InternalResultVisitor, QueryContext}
 import org.neo4j.cypher.internal.compiler.v3_1.{ExecutionMode, TaskCloser}
 import org.neo4j.cypher.internal.frontend.v3_1.symbols
-import org.neo4j.codegen.{CodeGenerator, Parameter, _}
 import org.neo4j.kernel.api.ReadOperations
 import org.neo4j.kernel.impl.core.NodeManager
 
@@ -46,16 +48,21 @@ object GeneratedQueryStructure extends CodeStructure[GeneratedQuery] {
   case class GeneratedQueryStructureResult(query: GeneratedQuery, source: Option[(String, String)])
     extends CodeStructureResult[GeneratedQuery]
 
-  private def createGenerator(conf: CodeGenConfiguration, source: (Option[(String, String)]) => Unit) = {
+  private def createGenerator(conf: CodeGenConfiguration, source: (String, String) => Unit) = {
     val mode = conf.mode match {
-      case SourceCodeMode => SourceCode.SOURCECODE
-      case ByteCodeMode => SourceCode.BYTECODE
+      case SourceCodeMode => SOURCECODE
+      case ByteCodeMode => BYTECODE
     }
-    val option = if (conf.saveSource) new SourceVisitor {
-      override protected def visitSource(reference: TypeReference,
-                                         sourceCode: CharSequence) = source(Some(reference.name(), sourceCode.toString))
+
+    val option = if(conf.saveSource) {
+      if(mode == SOURCECODE) new SourceVisitor {
+        override protected def visitSource(reference: TypeReference, sourceCode: CharSequence): Unit =
+          source(reference.name(), sourceCode.toString)
+      } else new DisassemblyVisitor {
+        override protected def visitDisassembly(className: String, disassembly: CharSequence): Unit =
+          source(className, disassembly.toString)
+      }
     } else {
-      source(None)
       BLANK_OPTION
     }
 
@@ -66,11 +73,11 @@ object GeneratedQueryStructure extends CodeStructure[GeneratedQuery] {
     }
   }
 
-  class SourceSaver extends ((Option[(String, String)]) => Unit) {
+  class SourceSaver extends ((String, String) => Unit) {
 
     private var _source: Option[(String, String)] = None
 
-    override def apply(v1: Option[(String, String)]) =  _source = v1
+    override def apply(typeName: String, sourceCode: String): Unit =  _source = Some(typeName, sourceCode)
 
     def source: Option[(String, String)] = _source
   }
