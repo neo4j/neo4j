@@ -132,3 +132,59 @@ Feature: OrderByAcceptance
       |  3  | 'c' |
 
     And no side effects
+
+  Scenario: Ordering is well defined across all types, ascending
+    Given an empty graph
+    And having executed:
+      """
+      CREATE (:A)-[:T]->()
+      """
+    When executing query:
+      """
+      MATCH p = (n)-[r]->()
+      WITH [n, r, p, '', 1, 3.14, true, null, [], {}] AS types
+      UNWIND types AS t
+      RETURN t
+        ORDER BY t ASC
+      """
+    Then the result should be, in order:
+      | t               |
+      | {}              |
+      | (:A)            |
+      | [:T]            |
+      | []              |
+      | <(:A)-[:T]->()> |
+      | ''              |
+      | true            |
+      | 1               |
+      | 3.14            |
+      | null            |
+    And no side effects
+
+  Scenario: Ordering is well defined across all types, descending
+    Given an empty graph
+    And having executed:
+      """
+      CREATE (:A)-[:T]->()
+      """
+    When executing query:
+      """
+      MATCH p = (n)-[r]->()
+      WITH [n, r, p, '', 1, 3.14, true, null, [], {}] AS types
+      UNWIND types AS t
+      RETURN t
+        ORDER BY t DESC
+      """
+    Then the result should be, in order:
+      | t               |
+      | null            |
+      | 3.14            |
+      | 1               |
+      | true            |
+      | ''              |
+      | <(:A)-[:T]->()> |
+      | []              |
+      | [:T]            |
+      | (:A)            |
+      | {}              |
+    And no side effects
