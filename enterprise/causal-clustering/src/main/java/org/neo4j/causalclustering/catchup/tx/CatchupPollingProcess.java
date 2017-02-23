@@ -307,7 +307,7 @@ public class CatchupPollingProcess extends LifecycleAdapter
     {
         try
         {
-            localDatabase.stop();
+            localDatabase.stopForStoreCopy();
             startStopOnStoreCopy.stop();
         }
         catch ( Throwable throwable )

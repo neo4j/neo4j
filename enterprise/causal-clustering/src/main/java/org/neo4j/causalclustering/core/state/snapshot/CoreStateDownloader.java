@@ -83,7 +83,7 @@ public class CoreStateDownloader
             }
 
             startStopOnStoreCopy.stop();
-            localDatabase.stop();
+            localDatabase.stopForStoreCopy();
 
             log.info( "Downloading snapshot from core server at %s", source );
 
