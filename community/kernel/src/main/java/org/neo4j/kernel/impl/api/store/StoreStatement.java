@@ -19,9 +19,9 @@
  */
 package org.neo4j.kernel.impl.api.store;
 
-import java.util.function.IntPredicate;
 import java.util.function.Supplier;
 
+import org.neo4j.collection.primitive.PrimitiveIntSet;
 import org.neo4j.cursor.Cursor;
 import org.neo4j.kernel.api.exceptions.index.IndexNotFoundKernelException;
 import org.neo4j.kernel.api.schema.index.IndexDescriptor;
@@ -162,17 +162,19 @@ public class StoreStatement implements StorageStatement
 
     @Override
     public Cursor<RelationshipItem> acquireNodeRelationshipCursor( boolean isDense, long nodeId, long relationshipId,
-            Direction direction, IntPredicate relTypeFilter )
+            Direction direction, int[] relTypes, ReadableTransactionState state )
     {
         neoStores.assertOpen();
-        return nodeRelationshipsCursor.get().init( isDense, relationshipId, nodeId, direction, relTypeFilter );
+        return relTypes == null
+               ? nodeRelationshipsCursor.get().init( isDense, relationshipId, nodeId, direction, state )
+               : nodeRelationshipsCursor.get().init( isDense, relationshipId, nodeId, direction, relTypes, state );
     }
 
     @Override
-    public Cursor<RelationshipItem> relationshipsGetAllCursor()
+    public Cursor<RelationshipItem> relationshipsGetAllCursor( ReadableTransactionState state )
     {
         neoStores.assertOpen();
-        return iteratorRelationshipCursor.get().init( new AllIdIterator( relationshipStore ) );
+        return iteratorRelationshipCursor.get().init( state, new AllIdIterator( relationshipStore ) );
     }
 
     @Override

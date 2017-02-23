@@ -33,9 +33,7 @@ import org.neo4j.kernel.api.schema.index.IndexDescriptor;
 import org.neo4j.kernel.impl.api.RelationshipVisitor;
 import org.neo4j.kernel.impl.api.store.RelationshipIterator;
 import org.neo4j.storageengine.api.Direction;
-import org.neo4j.storageengine.api.NodeItem;
 import org.neo4j.storageengine.api.PropertyItem;
-import org.neo4j.storageengine.api.RelationshipItem;
 import org.neo4j.storageengine.api.StorageProperty;
 
 /**
@@ -150,14 +148,6 @@ public interface ReadableTransactionState
             int propertyKeyId );
 
     PrimitiveIntSet augmentLabels( PrimitiveIntSet cursor, NodeState nodeState );
-
-    Cursor<RelationshipItem> augmentNodeRelationshipCursor( Cursor<RelationshipItem> cursor, NodeState nodeState,
-            Direction direction );
-
-    Cursor<RelationshipItem> augmentNodeRelationshipCursor( Cursor<RelationshipItem> cursor, NodeState nodeState,
-            Direction direction, int[] relTypes );
-
-    Cursor<RelationshipItem> augmentRelationshipsGetAllCursor( Cursor<RelationshipItem> cursor );
 
     /**
      * The way tokens are created is that the first time a token is needed it gets created in its own little

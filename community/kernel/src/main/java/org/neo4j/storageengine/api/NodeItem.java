@@ -22,6 +22,10 @@ package org.neo4j.storageengine.api;
 import org.neo4j.collection.primitive.PrimitiveIntSet;
 import org.neo4j.kernel.impl.locking.Lock;
 
+import static org.neo4j.collection.primitive.PrimitiveIntCollections.emptySet;
+import static org.neo4j.kernel.impl.store.record.Record.NO_NEXT_PROPERTY;
+import static org.neo4j.kernel.impl.store.record.Record.NO_NEXT_RELATIONSHIP;
+
 /**
  * Represents a single node from a cursor.
  */
@@ -58,4 +62,58 @@ public interface NodeItem
     long nextPropertyId();
 
     Lock lock();
+
+    static NodeItem transientNode( long id )
+    {
+        return new NodeItem()
+        {
+            @Override
+            public long id()
+            {
+                return id;
+            }
+
+            @Override
+            public PrimitiveIntSet labels()
+            {
+                return emptySet();
+            }
+
+            @Override
+            public boolean isDense()
+            {
+                return false;
+            }
+
+            @Override
+            public boolean hasLabel( int labelId )
+            {
+                return false;
+            }
+
+            @Override
+            public long nextGroupId()
+            {
+                return nextRelationshipId();
+            }
+
+            @Override
+            public long nextRelationshipId()
+            {
+                return NO_NEXT_RELATIONSHIP.longValue();
+            }
+
+            @Override
+            public long nextPropertyId()
+            {
+                return NO_NEXT_PROPERTY.longValue();
+            }
+
+            @Override
+            public Lock lock()
+            {
+                return null;
+            }
+        };
+    }
 }
