@@ -47,12 +47,11 @@ public class Usage
 
         Map<AdminCommandSection,List<AdminCommand.Provider>> groupedProviders = groupProvidersBySegment();
 
-        printAllCommandsUnderSection( output, AdminCommandSection.general(),
-                groupedProviders.remove( AdminCommandSection.general() ) );
+        AdminCommandSection.general().printAllCommandsUnderSection( output, groupedProviders.remove( AdminCommandSection.general() ), scriptName );
 
         groupedProviders.entrySet().stream()
                 .sorted( Comparator.comparing( groupedProvider -> groupedProvider.getKey().printable() ) )
-                .forEach( entry -> printAllCommandsUnderSection( output, entry.getKey(), entry.getValue() ) );
+                .forEach( entry -> entry.getKey().printAllCommandsUnderSection( output, entry.getValue(), scriptName ) );
 
         output.accept( "" );
         output.accept( format( "Use %s help <command> for more details.", scriptName ) );
@@ -63,18 +62,6 @@ public class Usage
         List<AdminCommand.Provider> providers = new ArrayList<>();
         commands.getAllProviders().forEach( providers::add );
         return providers.stream().collect( Collectors.groupingBy( AdminCommand.Provider::commandSection ) );
-    }
-
-    private void printAllCommandsUnderSection( Consumer<String> output, AdminCommandSection section,
-            List<AdminCommand.Provider> providers )
-    {
-        output.accept( section.printable() );
-        providers.sort( Comparator.comparing( AdminCommand.Provider::name ) );
-        providers.forEach( command ->
-        {
-            final CommandUsage commandUsage = new CommandUsage( command, scriptName );
-            commandUsage.printIndentedSummary( output );
-        } );
     }
 
     public void printUsageForCommand( AdminCommand.Provider command, Consumer<String> output )

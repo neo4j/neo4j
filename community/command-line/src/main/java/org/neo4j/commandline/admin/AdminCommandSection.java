@@ -19,6 +19,10 @@
  */
 package org.neo4j.commandline.admin;
 
+import java.util.Comparator;
+import java.util.List;
+import java.util.function.Consumer;
+
 public abstract class AdminCommandSection
 {
     private static final AdminCommandSection GENERAL = new GeneralSection();
@@ -27,6 +31,18 @@ public abstract class AdminCommandSection
     public static AdminCommandSection general()
     {
         return GENERAL;
+    }
+
+    void printAllCommandsUnderSection( Consumer<String> output, List<AdminCommand.Provider> providers,
+            String scriptName )
+    {
+        output.accept( printable() );
+        providers.sort( Comparator.comparing( AdminCommand.Provider::name ) );
+        providers.forEach( command ->
+        {
+            final CommandUsage commandUsage = new CommandUsage( command, scriptName );
+            commandUsage.printIndentedSummary( output );
+        } );
     }
 
     static class GeneralSection extends AdminCommandSection
