@@ -56,7 +56,6 @@
     <module>shell</module>
     <module>import-tool</module>
     <module>server-api</module>
-    <module>graphviz</module>
     <module>bolt</module>
     <module>server</module>
     <module>server-plugin-test</module>
@@ -150,11 +149,6 @@ the relevant Commercial Agreement.
           <artifactId>neo4j-community</artifactId>
           <version>${project.version}</version>
           <type>pom</type>
-        </dependency>
-        <dependency>
-          <groupId>org.neo4j</groupId>
-          <artifactId>neo4j-graphviz</artifactId>
-          <version>${project.version}</version>
         </dependency>
         <dependency>
           <groupId>org.neo4j</groupId>
