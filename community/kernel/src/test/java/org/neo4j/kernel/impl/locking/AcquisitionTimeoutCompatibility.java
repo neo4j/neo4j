@@ -38,9 +38,9 @@ import org.neo4j.time.Clocks;
 import org.neo4j.time.FakeClock;
 
 import static org.hamcrest.CoreMatchers.instanceOf;
-import static org.junit.Assert.assertFalse;
 import static org.junit.Assert.assertThat;
 import static org.junit.Assert.fail;
+import static org.neo4j.test.rule.concurrent.OtherThreadRule.isWaiting;
 
 @Ignore( "Not a test. This is a compatibility suite, run from LockingCompatibilityTestSuite." )
 public class AcquisitionTimeoutCompatibility extends LockingCompatibilityTestSuite.Compatibility
@@ -92,7 +92,8 @@ public class AcquisitionTimeoutCompatibility extends LockingCompatibilityTestSui
             return true;
         } );
 
-        assertFalse( sharedLockAcquisition.isDone() );
+        assertThat( threadB, isWaiting() );
+
         clock.forward( 101, TimeUnit.MILLISECONDS );
 
         verifyAcquisitionFailure( sharedLockAcquisition );
@@ -108,7 +109,8 @@ public class AcquisitionTimeoutCompatibility extends LockingCompatibilityTestSui
             return true;
         } );
 
-        assertFalse( exclusiveLockAcquisition.isDone() );
+        assertThat( threadB, isWaiting() );
+
         clock.forward( 101, TimeUnit.MILLISECONDS );
 
         verifyAcquisitionFailure( exclusiveLockAcquisition );
@@ -124,7 +126,8 @@ public class AcquisitionTimeoutCompatibility extends LockingCompatibilityTestSui
             return true;
         } );
 
-        assertFalse( exclusiveLockAcquisition.isDone() );
+        assertThat( threadB, isWaiting() );
+
         clock.forward( 101, TimeUnit.MILLISECONDS );
 
         verifyAcquisitionFailure( exclusiveLockAcquisition );
@@ -141,7 +144,8 @@ public class AcquisitionTimeoutCompatibility extends LockingCompatibilityTestSui
             return true;
         } );
 
-        assertFalse( exclusiveLockAcquisition.isDone() );
+        assertThat( threadB, isWaiting() );
+
         clock.forward( 101, TimeUnit.MILLISECONDS );
 
         verifyAcquisitionFailure( exclusiveLockAcquisition );
