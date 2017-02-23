@@ -257,21 +257,18 @@ public class RotatingFileOutputStreamSupplier implements Supplier<OutputStream>,
             logFileLock.writeLock().lock();
             try
             {
-                OutputStream oldStream = outRef;
-                OutputStream newStream;
-
                 try
                 {
                     // Must close file prior to doing any operations on it or else it won't work on Windows
                     try
                     {
-                        oldStream.flush();
-                        oldStream.close();
+                        outRef.flush();
+                        outRef.close();
+                        outRef = nullStream;
                     }
                     catch ( Exception e )
                     {
                         rotationListener.rotationError( e, streamWrapper );
-                        rotating.set( false );
                         return;
                     }
 
@@ -286,42 +283,35 @@ public class RotatingFileOutputStreamSupplier implements Supplier<OutputStream>,
                     catch ( Exception e )
                     {
                         rotationListener.rotationError( e, streamWrapper );
-                        rotating.set( false );
                         return;
                     }
-
                 }
                 finally
                 {
                     try
                     {
-                        newStream = openOutputFile();
+                        if ( !closed.get() && outRef.equals( nullStream ) )
+                        {
+                            outRef = openOutputFile();
+                            rotationListener.outputFileCreated( streamWrapper );
+                        }
                     }
                     catch ( IOException e )
                     {
                         System.err.println( "Failed to open log file after log rotation: " + e.getMessage() );
-                        newStream = nullStream;
                         rotationListener.rotationError( e, streamWrapper );
-                        rotating.set( false );
                     }
                 }
-
-                if ( !closed.get() )
-                {
-                    outRef = newStream;
-                }
-
-                rotationListener.outputFileCreated( streamWrapper );
 
                 if ( rotationDelay > 0 )
                 {
                     earliestRotationTimeRef.set( currentTimeSupplier.getAsLong() + rotationDelay );
                 }
                 rotationListener.rotationCompleted( streamWrapper );
-                rotating.set( false );
             }
             finally
             {
+                rotating.set( false );
                 logFileLock.writeLock().unlock();
             }
         };

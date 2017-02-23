@@ -49,6 +49,7 @@ import org.neo4j.graphdb.mockfs.DelegatingFileSystemAbstraction;
 import org.neo4j.graphdb.mockfs.EphemeralFileSystemAbstraction;
 import org.neo4j.io.fs.FileSystemAbstraction;
 import org.neo4j.logging.RotatingFileOutputStreamSupplier.RotationListener;
+import org.neo4j.test.RepeatRule.Repeat;
 import org.neo4j.test.TargetDirectory;
 
 import static java.util.concurrent.TimeUnit.SECONDS;
@@ -416,7 +417,7 @@ public class RotatingFileOutputStreamSupplierTest
 
         // run cleanly for a while, to allow it to fill any gaps left in log archive numbers
         adversary.setProbabilityFactor( 0 );
-        writeLines( supplier, 1000 );
+        writeLines( supplier, 10000 );
 
         assertThat( fileSystem.fileExists( logFile ), is( true ) );
         assertThat( fileSystem.fileExists( archiveLogFile1 ), is( true ) );
