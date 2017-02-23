@@ -170,7 +170,7 @@ public class CatchupPollingProcessTest
         timeoutService.invokeTimeout( TX_PULLER_TIMEOUT );
 
         // then
-        verify( localDatabase ).stop();
+        verify( localDatabase ).stopForStoreCopy();
         verify( startStopOnStoreCopy ).stop();
         verify( storeCopyProcess ).replaceWithStoreFrom( any( MemberId.class ), eq( storeId ) );
         verify( localDatabase ).start();
