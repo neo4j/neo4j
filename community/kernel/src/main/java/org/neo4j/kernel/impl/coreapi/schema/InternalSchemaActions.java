@@ -51,9 +51,9 @@ public interface InternalSchemaActions
     ConstraintDefinition createPropertyExistenceConstraint( RelationshipType type, String propertyKey )
             throws CreateConstraintFailureException, AlreadyConstrainedException;
 
-    void dropPropertyUniquenessConstraint( IndexDefinition indexDefinition );
+    void dropPropertyUniquenessConstraint( Label label, String[] properties );
 
-    void dropNodePropertyExistenceConstraint( IndexDefinition indexDefinition );
+    void dropNodePropertyExistenceConstraint( Label label, String[] properties );
 
     void dropRelationshipPropertyExistenceConstraint( RelationshipType type, String propertyKey );
 

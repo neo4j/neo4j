@@ -24,15 +24,17 @@ import org.neo4j.graphdb.GraphDatabaseService;
 import org.neo4j.graphdb.Node;
 import org.neo4j.graphdb.Relationship;
 import org.neo4j.kernel.api.TokenWriteOperations;
-import org.neo4j.kernel.api.schema.RelationshipPropertyDescriptor;
 import org.neo4j.kernel.api.SchemaWriteOperations;
-import org.neo4j.kernel.api.constraints.RelationshipPropertyExistenceConstraint;
 import org.neo4j.kernel.api.exceptions.KernelException;
+import org.neo4j.kernel.api.schema_new.RelationTypeSchemaDescriptor;
+import org.neo4j.kernel.api.schema_new.SchemaDescriptorFactory;
+import org.neo4j.kernel.api.schema_new.constaints.ConstraintDescriptorFactory;
+import org.neo4j.kernel.api.schema_new.constaints.RelExistenceConstraintDescriptor;
 
 import static org.neo4j.graphdb.RelationshipType.withName;
 
 public class RelationshipPropertyExistenceConstraintCreationIT
-        extends AbstractConstraintCreationIT<RelationshipPropertyExistenceConstraint,RelationshipPropertyDescriptor>
+        extends AbstractConstraintCreationIT<RelExistenceConstraintDescriptor,RelationTypeSchemaDescriptor>
 {
     @Override
     int initializeLabelOrRelType( TokenWriteOperations tokenWriteOperations, String name ) throws KernelException
@@ -41,8 +43,8 @@ public class RelationshipPropertyExistenceConstraintCreationIT
     }
 
     @Override
-    RelationshipPropertyExistenceConstraint createConstraint( SchemaWriteOperations writeOps,
-            RelationshipPropertyDescriptor descriptor ) throws Exception
+    RelExistenceConstraintDescriptor createConstraint( SchemaWriteOperations writeOps,
+            RelationTypeSchemaDescriptor descriptor ) throws Exception
     {
         return writeOps.relationshipPropertyExistenceConstraintCreate( descriptor );
     }
@@ -54,13 +56,13 @@ public class RelationshipPropertyExistenceConstraintCreationIT
     }
 
     @Override
-    RelationshipPropertyExistenceConstraint newConstraintObject( RelationshipPropertyDescriptor descriptor )
+    RelExistenceConstraintDescriptor newConstraintObject( RelationTypeSchemaDescriptor descriptor )
     {
-        return new RelationshipPropertyExistenceConstraint( descriptor );
+        return ConstraintDescriptorFactory.existsForSchema( descriptor );
     }
 
     @Override
-    void dropConstraint( SchemaWriteOperations writeOps, RelationshipPropertyExistenceConstraint constraint )
+    void dropConstraint( SchemaWriteOperations writeOps, RelExistenceConstraintDescriptor constraint )
             throws Exception
     {
         writeOps.constraintDrop( constraint );
@@ -85,8 +87,8 @@ public class RelationshipPropertyExistenceConstraintCreationIT
     }
 
     @Override
-    RelationshipPropertyDescriptor makeDescriptor( int typeId, int propertyKeyId )
+    RelationTypeSchemaDescriptor makeDescriptor( int typeId, int propertyKeyId )
     {
-        return new RelationshipPropertyDescriptor( typeId, propertyKeyId );
+        return SchemaDescriptorFactory.forRelType( typeId, propertyKeyId );
     }
 }

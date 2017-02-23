@@ -19,18 +19,18 @@
  */
 package org.neo4j.kernel.api;
 
-import org.neo4j.kernel.api.constraints.NodePropertyConstraint;
-import org.neo4j.kernel.api.constraints.NodePropertyExistenceConstraint;
-import org.neo4j.kernel.api.constraints.RelationshipPropertyConstraint;
-import org.neo4j.kernel.api.constraints.RelationshipPropertyExistenceConstraint;
-import org.neo4j.kernel.api.constraints.UniquenessConstraint;
 import org.neo4j.kernel.api.exceptions.schema.AlreadyConstrainedException;
 import org.neo4j.kernel.api.exceptions.schema.AlreadyIndexedException;
 import org.neo4j.kernel.api.exceptions.schema.CreateConstraintFailureException;
 import org.neo4j.kernel.api.exceptions.schema.DropConstraintFailureException;
 import org.neo4j.kernel.api.exceptions.schema.DropIndexFailureException;
 import org.neo4j.kernel.api.schema.NodePropertyDescriptor;
-import org.neo4j.kernel.api.schema.RelationshipPropertyDescriptor;
+import org.neo4j.kernel.api.schema_new.LabelSchemaDescriptor;
+import org.neo4j.kernel.api.schema_new.RelationTypeSchemaDescriptor;
+import org.neo4j.kernel.api.schema_new.constaints.ConstraintDescriptor;
+import org.neo4j.kernel.api.schema_new.constaints.NodeExistenceConstraintDescriptor;
+import org.neo4j.kernel.api.schema_new.constaints.RelExistenceConstraintDescriptor;
+import org.neo4j.kernel.api.schema_new.constaints.UniquenessConstraintDescriptor;
 import org.neo4j.kernel.api.schema_new.index.NewIndexDescriptor;
 
 public interface SchemaWriteOperations
@@ -45,23 +45,21 @@ public interface SchemaWriteOperations
     /** Drops a {@link NewIndexDescriptor} from the database */
     void indexDrop( NewIndexDescriptor descriptor ) throws DropIndexFailureException;
 
-    UniquenessConstraint uniquePropertyConstraintCreate( NodePropertyDescriptor descriptor )
-            throws CreateConstraintFailureException, AlreadyConstrainedException, AlreadyIndexedException;
-
-    NodePropertyExistenceConstraint nodePropertyExistenceConstraintCreate( NodePropertyDescriptor descriptor )
-            throws CreateConstraintFailureException, AlreadyConstrainedException;
-
-    RelationshipPropertyExistenceConstraint relationshipPropertyExistenceConstraintCreate(
-            RelationshipPropertyDescriptor relationshipPropertyDescriptor ) throws
-            CreateConstraintFailureException, AlreadyConstrainedException;
-
-    void constraintDrop( NodePropertyConstraint constraint ) throws DropConstraintFailureException;
-
-    void constraintDrop( RelationshipPropertyConstraint constraint ) throws DropConstraintFailureException;
-
     /**
      * This should not be used, it is exposed to allow an external job to clean up constraint indexes.
      * That external job should become an internal job, at which point this operation should go away.
      */
     void uniqueIndexDrop( NewIndexDescriptor descriptor ) throws DropIndexFailureException;
+
+    UniquenessConstraintDescriptor uniquePropertyConstraintCreate( LabelSchemaDescriptor descriptor )
+            throws CreateConstraintFailureException, AlreadyConstrainedException, AlreadyIndexedException;
+
+    NodeExistenceConstraintDescriptor nodePropertyExistenceConstraintCreate( LabelSchemaDescriptor descriptor )
+            throws CreateConstraintFailureException, AlreadyConstrainedException;
+
+    RelExistenceConstraintDescriptor relationshipPropertyExistenceConstraintCreate(
+            RelationTypeSchemaDescriptor relationshipPropertyDescriptor ) throws
+            CreateConstraintFailureException, AlreadyConstrainedException;
+
+    void constraintDrop( ConstraintDescriptor constraint ) throws DropConstraintFailureException;
 }

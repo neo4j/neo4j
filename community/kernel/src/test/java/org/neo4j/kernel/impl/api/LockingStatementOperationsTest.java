@@ -38,6 +38,8 @@ import org.neo4j.kernel.api.schema.NodePropertyDescriptor;
 import org.neo4j.kernel.api.schema_new.LabelSchemaDescriptor;
 import org.neo4j.kernel.api.schema_new.SchemaDescriptorFactory;
 import org.neo4j.kernel.api.schema_new.constaints.ConstraintDescriptor;
+import org.neo4j.kernel.api.schema_new.constaints.ConstraintDescriptorFactory;
+import org.neo4j.kernel.api.schema_new.constaints.UniquenessConstraintDescriptor;
 import org.neo4j.kernel.api.schema_new.index.NewIndexDescriptor;
 import org.neo4j.kernel.api.schema_new.index.NewIndexDescriptorFactory;
 import org.neo4j.kernel.api.txstate.LegacyIndexTransactionState;
@@ -89,6 +91,8 @@ public class LockingStatementOperationsTest
     private final KernelStatement state = new KernelStatement( transaction, new SimpleTxStateHolder( txState ),
             mock( StorageStatement.class ), new Procedures(), new CanWrite(), LockTracer.NONE );
     private final SchemaStateOperations schemaStateOps;
+
+    private final LabelSchemaDescriptor descriptor = SchemaDescriptorFactory.forLabel( 123, 456 );
 
     public LockingStatementOperationsTest()
     {
@@ -258,12 +262,11 @@ public class LockingStatementOperationsTest
     public void shouldAcquireSchemaWriteLockBeforeCreatingUniquenessConstraint() throws Exception
     {
         // given
-        NodePropertyDescriptor descriptor = new NodePropertyDescriptor( 123, 456 );
-        UniquenessConstraint constraint = new UniquenessConstraint( new NodePropertyDescriptor( 0, 0 ) );
+        UniquenessConstraintDescriptor constraint = ConstraintDescriptorFactory.uniqueForSchema( descriptor );
         when( schemaWriteOps.uniquePropertyConstraintCreate( state, descriptor ) ).thenReturn( constraint );
 
         // when
-        PropertyConstraint result = lockingOps.uniquePropertyConstraintCreate( state, descriptor );
+        UniquenessConstraintDescriptor result = lockingOps.uniquePropertyConstraintCreate( state, descriptor );
 
         // then
         assertSame( constraint, result );
@@ -275,7 +278,7 @@ public class LockingStatementOperationsTest
     public void shouldAcquireSchemaWriteLockBeforeDroppingConstraint() throws Exception
     {
         // given
-        UniquenessConstraint constraint = new UniquenessConstraint( new NodePropertyDescriptor( 1, 2 ) );
+        UniquenessConstraintDescriptor constraint = ConstraintDescriptorFactory.uniqueForSchema( descriptor );
 
         // when
         lockingOps.constraintDrop( state, constraint );
@@ -289,7 +292,6 @@ public class LockingStatementOperationsTest
     public void shouldAcquireSchemaReadLockBeforeGettingConstraintsByLabelAndProperty() throws Exception
     {
         // given
-        LabelSchemaDescriptor descriptor = SchemaDescriptorFactory.forLabel( 123, 456 );
         when( schemaReadOps.constraintsGetForSchema( state, descriptor ) ).thenReturn( emptyIterator() );
 
         // when

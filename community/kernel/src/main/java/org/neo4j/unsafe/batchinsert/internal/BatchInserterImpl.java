@@ -1160,13 +1160,13 @@ public class BatchInserterImpl implements BatchInserter, IndexConfigStoreProvide
         }
 
         @Override
-        public void dropPropertyUniquenessConstraint( IndexDefinition indexDefinition )
+        public void dropPropertyUniquenessConstraint( Label label, String[] properties )
         {
             throw unsupportedException();
         }
 
         @Override
-        public void dropNodePropertyExistenceConstraint( IndexDefinition indexDefinition )
+        public void dropNodePropertyExistenceConstraint( Label label, String[] properties )
         {
             throw unsupportedException();
         }

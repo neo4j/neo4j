@@ -27,7 +27,6 @@ import org.neo4j.cypher.internal.compiler.v3_2.InternalQueryStatistics
 import org.neo4j.cypher.internal.compiler.v3_2.IndexDescriptor
 import org.neo4j.cypher.internal.frontend.v3_2.test_helpers.CypherFunSuite
 import org.neo4j.graphdb.{Node, Relationship}
-import org.neo4j.kernel.api.constraints.{NodePropertyExistenceConstraint, RelationshipPropertyExistenceConstraint, UniquenessConstraint}
 
 class UpdateCountingQueryContextTest extends CypherFunSuite {
 
@@ -57,14 +56,11 @@ class UpdateCountingQueryContextTest extends CypherFunSuite {
     }
   } )
 
-  when(inner.createUniqueConstraint(anyObject()))
-    .thenReturn(IdempotentResult(mock[UniquenessConstraint]))
+  when(inner.createUniqueConstraint(anyObject())).thenReturn(true)
 
-  when( inner.createNodePropertyExistenceConstraint(anyInt(), anyInt()) )
-    .thenReturn(IdempotentResult(mock[NodePropertyExistenceConstraint]))
+  when( inner.createNodePropertyExistenceConstraint(anyInt(), anyInt()) ).thenReturn(true)
 
-  when( inner.createRelationshipPropertyExistenceConstraint(anyInt(), anyInt()) )
-    .thenReturn(IdempotentResult(mock[RelationshipPropertyExistenceConstraint]))
+  when( inner.createRelationshipPropertyExistenceConstraint(anyInt(), anyInt()) ).thenReturn(true)
 
   when(inner.addIndexRule(anyObject()))
     .thenReturn(IdempotentResult(mock[IndexDescriptor]))

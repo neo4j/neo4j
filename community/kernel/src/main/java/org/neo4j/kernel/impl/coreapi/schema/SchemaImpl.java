@@ -64,9 +64,10 @@ import org.neo4j.kernel.api.index.InternalIndexState;
 import org.neo4j.kernel.api.schema.IndexDescriptorFactory;
 import org.neo4j.kernel.api.schema.NodePropertyDescriptor;
 import org.neo4j.kernel.api.schema.RelationshipPropertyDescriptor;
+import org.neo4j.kernel.api.schema_new.SchemaDescriptorFactory;
 import org.neo4j.kernel.api.schema_new.constaints.ConstraintBoundary;
 import org.neo4j.kernel.api.schema_new.constaints.ConstraintDescriptor;
-import org.neo4j.kernel.api.schema_new.index.IndexBoundary;
+import org.neo4j.kernel.api.schema_new.constaints.ConstraintDescriptorFactory;
 import org.neo4j.kernel.api.schema_new.index.NewIndexDescriptor;
 import org.neo4j.kernel.impl.api.operations.KeyReadOperations;
 import org.neo4j.storageengine.api.schema.PopulationProgress;
@@ -477,9 +478,12 @@ public class SchemaImpl implements Schema
             {
                 try
                 {
-                    NodePropertyDescriptor descriptor =
-                            getOrCreateTokens( statement.tokenWriteOperations(), indexDefinition );
-                    statement.schemaWriteOperations().uniquePropertyConstraintCreate( descriptor );
+                    int labelId = statement.tokenWriteOperations().labelGetOrCreateForName(
+                            indexDefinition.getLabel().name() );
+                    int[] propertyKeyIds = PropertyNameUtils.getOrCreatePropertyKeyIds(
+                            statement.tokenWriteOperations(), indexDefinition );
+                    statement.schemaWriteOperations().uniquePropertyConstraintCreate(
+                            SchemaDescriptorFactory.forLabel( labelId, propertyKeyIds ) );
                     return new UniquenessConstraintDefinition( this, indexDefinition );
                 }
                 catch ( AlreadyConstrainedException | CreateConstraintFailureException | AlreadyIndexedException e )
@@ -509,10 +513,11 @@ public class SchemaImpl implements Schema
             {
                 try
                 {
-                    IndexDefinition indexDefinition = new IndexDefinitionImpl( this, label, propertyKeys, false );
-                    NodePropertyDescriptor descriptor =
-                            getOrCreateTokens( statement.tokenWriteOperations(), indexDefinition );
-                    statement.schemaWriteOperations().nodePropertyExistenceConstraintCreate( descriptor );
+                    int labelId = statement.tokenWriteOperations().labelGetOrCreateForName( label.name() );
+                    int[] propertyKeyIds = PropertyNameUtils.getOrCreatePropertyKeyIds(
+                            statement.tokenWriteOperations(), propertyKeys );
+                    statement.schemaWriteOperations().nodePropertyExistenceConstraintCreate(
+                                    SchemaDescriptorFactory.forLabel( labelId, propertyKeyIds ) );
                     return new NodePropertyExistenceConstraintDefinition( this, label, propertyKeys );
                 }
                 catch ( AlreadyConstrainedException | CreateConstraintFailureException e )
@@ -544,9 +549,9 @@ public class SchemaImpl implements Schema
                 try
                 {
                     int typeId = statement.tokenWriteOperations().relationshipTypeGetOrCreateForName( type.name() );
-                    int propertyKeyId = statement.tokenWriteOperations().propertyKeyGetOrCreateForName( propertyKey );
+                    int[] propertyKeyId = PropertyNameUtils.getOrCreatePropertyKeyIds( statement.tokenWriteOperations(), propertyKey );
                     statement.schemaWriteOperations().relationshipPropertyExistenceConstraintCreate(
-                            new RelationshipPropertyDescriptor( typeId, propertyKeyId ) );
+                            SchemaDescriptorFactory.forRelType( typeId, propertyKeyId ) );
                     return new RelationshipPropertyExistenceConstraintDefinition( this, type, propertyKey );
                 }
                 catch ( AlreadyConstrainedException | CreateConstraintFailureException e )
@@ -566,16 +571,16 @@ public class SchemaImpl implements Schema
         }
 
         @Override
-        public void dropPropertyUniquenessConstraint( IndexDefinition indexDefinition )
+        public void dropPropertyUniquenessConstraint( Label label, String[] properties )
         {
             try ( Statement statement = ctxSupplier.get() )
             {
                 try
                 {
-                    NodePropertyDescriptor descriptor = IndexDescriptorFactory
-                            .getTokens( statement.readOperations(), indexDefinition );
-                    NodePropertyConstraint constraint = new UniquenessConstraint( descriptor );
-                    statement.schemaWriteOperations().constraintDrop( constraint );
+                    int labelId = statement.readOperations().labelGetForName( label.name() );
+                    int[] propertyKeyIds = PropertyNameUtils.getPropertyKeyIds( statement.readOperations(), properties );
+                    statement.schemaWriteOperations().constraintDrop(
+                            ConstraintDescriptorFactory.uniqueForLabel( labelId, propertyKeyIds ) );
                 }
                 catch ( DropConstraintFailureException e )
                 {
@@ -590,16 +595,16 @@ public class SchemaImpl implements Schema
         }
 
         @Override
-        public void dropNodePropertyExistenceConstraint( IndexDefinition indexDefinition )
+        public void dropNodePropertyExistenceConstraint( Label label, String[] properties )
         {
             try ( Statement statement = ctxSupplier.get() )
             {
                 try
                 {
-                    NodePropertyDescriptor descriptor = IndexDescriptorFactory
-                            .getTokens( statement.readOperations(), indexDefinition );
-                    NodePropertyConstraint constraint = new NodePropertyExistenceConstraint( descriptor );
-                    statement.schemaWriteOperations().constraintDrop( constraint );
+                    int labelId = statement.readOperations().labelGetForName( label.name() );
+                    int[] propertyKeyIds = PropertyNameUtils.getPropertyKeyIds( statement.readOperations(), properties );
+                    statement.schemaWriteOperations().constraintDrop(
+                            ConstraintDescriptorFactory.existsForLabel( labelId, propertyKeyIds ) );
                 }
                 catch ( DropConstraintFailureException e )
                 {
@@ -622,9 +627,8 @@ public class SchemaImpl implements Schema
                 {
                     int typeId = statement.readOperations().relationshipTypeGetForName( type.name() );
                     int propertyKeyId = statement.readOperations().propertyKeyGetForName( propertyKey );
-                    RelationshipPropertyConstraint constraint = new RelationshipPropertyExistenceConstraint(
-                            new RelationshipPropertyDescriptor( typeId, propertyKeyId ) );
-                    statement.schemaWriteOperations().constraintDrop( constraint );
+                    statement.schemaWriteOperations().constraintDrop(
+                            ConstraintDescriptorFactory.existsForRelType( typeId, propertyKeyId ) );
                 }
                 catch ( DropConstraintFailureException e )
                 {

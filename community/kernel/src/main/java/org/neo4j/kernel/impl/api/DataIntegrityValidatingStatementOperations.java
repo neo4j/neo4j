@@ -19,18 +19,9 @@
  */
 package org.neo4j.kernel.impl.api;
 
-import java.util.Iterator;
-
-import org.neo4j.kernel.api.exceptions.schema.SchemaKernelException;
 import org.neo4j.kernel.api.schema.NodePropertyDescriptor;
-import org.neo4j.kernel.api.schema.RelationshipPropertyDescriptor;
 import org.neo4j.kernel.api.Statement;
 import org.neo4j.kernel.api.StatementTokenNameLookup;
-import org.neo4j.kernel.api.constraints.NodePropertyConstraint;
-import org.neo4j.kernel.api.constraints.NodePropertyExistenceConstraint;
-import org.neo4j.kernel.api.constraints.PropertyConstraint;
-import org.neo4j.kernel.api.constraints.RelationshipPropertyConstraint;
-import org.neo4j.kernel.api.constraints.RelationshipPropertyExistenceConstraint;
 import org.neo4j.kernel.api.constraints.UniquenessConstraint;
 import org.neo4j.kernel.api.exceptions.schema.AlreadyConstrainedException;
 import org.neo4j.kernel.api.exceptions.schema.AlreadyIndexedException;
@@ -43,10 +34,15 @@ import org.neo4j.kernel.api.exceptions.schema.NoSuchConstraintException;
 import org.neo4j.kernel.api.exceptions.schema.NoSuchIndexException;
 import org.neo4j.kernel.api.exceptions.schema.SchemaKernelException.OperationContext;
 import org.neo4j.kernel.api.exceptions.schema.TooManyLabelsException;
+import org.neo4j.kernel.api.schema_new.LabelSchemaDescriptor;
+import org.neo4j.kernel.api.schema_new.RelationTypeSchemaDescriptor;
 import org.neo4j.kernel.api.schema_new.SchemaBoundary;
 import org.neo4j.kernel.api.schema_new.constaints.ConstraintBoundary;
 import org.neo4j.kernel.api.schema_new.constaints.ConstraintDescriptor;
 import org.neo4j.kernel.api.schema_new.constaints.ConstraintDescriptorFactory;
+import org.neo4j.kernel.api.schema_new.constaints.NodeExistenceConstraintDescriptor;
+import org.neo4j.kernel.api.schema_new.constaints.RelExistenceConstraintDescriptor;
+import org.neo4j.kernel.api.schema_new.constaints.UniquenessConstraintDescriptor;
 import org.neo4j.kernel.api.schema_new.index.NewIndexDescriptor;
 import org.neo4j.kernel.impl.api.operations.KeyWriteOperations;
 import org.neo4j.kernel.impl.api.operations.SchemaReadOperations;
@@ -153,66 +149,49 @@ public class DataIntegrityValidatingStatementOperations implements
     }
 
     @Override
-    public UniquenessConstraint uniquePropertyConstraintCreate( KernelStatement state,
-            NodePropertyDescriptor descriptor )
+    public UniquenessConstraintDescriptor uniquePropertyConstraintCreate(
+            KernelStatement state, LabelSchemaDescriptor descriptor )
             throws AlreadyConstrainedException, CreateConstraintFailureException, AlreadyIndexedException
     {
-        ConstraintDescriptor constraint = ConstraintDescriptorFactory.uniqueForSchema( SchemaBoundary.map( descriptor ) );
+        ConstraintDescriptor constraint = ConstraintDescriptorFactory.uniqueForSchema( descriptor );
         assertConstraintDoesNotExist( state, constraint );
 
         // It is not allowed to create uniqueness constraints on indexed label/property pairs
-        checkIndexExistence( state, OperationContext.CONSTRAINT_CREATION, descriptor );
+        checkIndexExistence( state, OperationContext.CONSTRAINT_CREATION, SchemaBoundary.map( descriptor ) );
 
         return schemaWriteDelegate.uniquePropertyConstraintCreate( state, descriptor );
     }
 
     @Override
-    public NodePropertyExistenceConstraint nodePropertyExistenceConstraintCreate( KernelStatement state,
-            NodePropertyDescriptor descriptor) throws AlreadyConstrainedException, CreateConstraintFailureException
+    public NodeExistenceConstraintDescriptor nodePropertyExistenceConstraintCreate( KernelStatement state,
+            LabelSchemaDescriptor descriptor) throws AlreadyConstrainedException, CreateConstraintFailureException
     {
-        ConstraintDescriptor constraint = ConstraintDescriptorFactory.existsForSchema( SchemaBoundary.map( descriptor ) );
+        ConstraintDescriptor constraint = ConstraintDescriptorFactory.existsForSchema( descriptor );
         assertConstraintDoesNotExist( state, constraint );
         return schemaWriteDelegate.nodePropertyExistenceConstraintCreate( state, descriptor );
     }
 
     @Override
-    public RelationshipPropertyExistenceConstraint relationshipPropertyExistenceConstraintCreate( KernelStatement state,
-            RelationshipPropertyDescriptor descriptor ) throws AlreadyConstrainedException, CreateConstraintFailureException
+    public RelExistenceConstraintDescriptor relationshipPropertyExistenceConstraintCreate( KernelStatement state,
+            RelationTypeSchemaDescriptor descriptor ) throws AlreadyConstrainedException, CreateConstraintFailureException
     {
-        ConstraintDescriptor constraint = ConstraintDescriptorFactory.existsForSchema( SchemaBoundary.map( descriptor ) );
+        ConstraintDescriptor constraint = ConstraintDescriptorFactory.existsForSchema( descriptor );
         assertConstraintDoesNotExist( state, constraint );
         return schemaWriteDelegate.relationshipPropertyExistenceConstraintCreate( state, descriptor );
     }
 
     @Override
-    public void constraintDrop( KernelStatement state, NodePropertyConstraint constraint ) throws DropConstraintFailureException
+    public void constraintDrop( KernelStatement state, ConstraintDescriptor descriptor ) throws DropConstraintFailureException
     {
-        ConstraintDescriptor descriptor = ConstraintBoundary.map( constraint );
         try
         {
             assertConstraintExists( state, descriptor );
         }
         catch ( NoSuchConstraintException e )
         {
-            throw new DropConstraintFailureException( constraint, e );
+            throw new DropConstraintFailureException( ConstraintBoundary.map( descriptor ), e );
         }
-        schemaWriteDelegate.constraintDrop( state, constraint );
-    }
-
-    @Override
-    public void constraintDrop( KernelStatement state, RelationshipPropertyConstraint constraint )
-            throws DropConstraintFailureException
-    {
-        ConstraintDescriptor descriptor = ConstraintBoundary.map( constraint );
-        try
-        {
-            assertConstraintExists( state, descriptor );
-        }
-        catch ( NoSuchConstraintException e )
-        {
-            throw new DropConstraintFailureException( constraint, e );
-        }
-        schemaWriteDelegate.constraintDrop( state, constraint );
+        schemaWriteDelegate.constraintDrop( state, descriptor );
     }
 
     private void checkIndexExistence( KernelStatement state, OperationContext context,

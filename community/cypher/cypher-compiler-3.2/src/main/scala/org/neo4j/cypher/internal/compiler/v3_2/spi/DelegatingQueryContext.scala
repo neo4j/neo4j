@@ -110,19 +110,19 @@ class DelegatingQueryContext(val inner: QueryContext) extends QueryContext {
   override def getOrCreateFromSchemaState[K, V](key: K, creator: => V): V =
     singleDbHit(inner.getOrCreateFromSchemaState(key, creator))
 
-  override def createUniqueConstraint(descriptor: IndexDescriptor) =
+  override def createUniqueConstraint(descriptor: IndexDescriptor): Boolean =
     singleDbHit(inner.createUniqueConstraint(descriptor))
 
   override def dropUniqueConstraint(descriptor: IndexDescriptor) =
     singleDbHit(inner.dropUniqueConstraint(descriptor))
 
-  override def createNodePropertyExistenceConstraint(labelId: Int, propertyKeyId: Int) =
+  override def createNodePropertyExistenceConstraint(labelId: Int, propertyKeyId: Int): Boolean =
     singleDbHit(inner.createNodePropertyExistenceConstraint(labelId, propertyKeyId))
 
   override def dropNodePropertyExistenceConstraint(labelId: Int, propertyKeyId: Int) =
     singleDbHit(inner.dropNodePropertyExistenceConstraint(labelId, propertyKeyId))
 
-  override def createRelationshipPropertyExistenceConstraint(relTypeId: Int, propertyKeyId: Int) =
+  override def createRelationshipPropertyExistenceConstraint(relTypeId: Int, propertyKeyId: Int): Boolean =
     singleDbHit(inner.createRelationshipPropertyExistenceConstraint(relTypeId, propertyKeyId))
 
   override def dropRelationshipPropertyExistenceConstraint(relTypeId: Int, propertyKeyId: Int) =

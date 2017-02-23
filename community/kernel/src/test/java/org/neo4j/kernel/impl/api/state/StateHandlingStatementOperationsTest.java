@@ -33,7 +33,7 @@ import org.neo4j.kernel.api.exceptions.index.IndexNotFoundKernelException;
 import org.neo4j.kernel.api.schema.NodePropertyDescriptor;
 import org.neo4j.kernel.api.schema_new.IndexQuery;
 import org.neo4j.kernel.api.schema_new.LabelSchemaDescriptor;
-import org.neo4j.kernel.api.schema_new.SchemaBoundary;
+import org.neo4j.kernel.api.schema_new.SchemaDescriptorFactory;
 import org.neo4j.kernel.api.schema_new.constaints.ConstraintDescriptor;
 import org.neo4j.kernel.api.schema_new.constaints.ConstraintDescriptorFactory;
 import org.neo4j.kernel.api.schema_new.constaints.UniquenessConstraintDescriptor;
@@ -78,8 +78,7 @@ public class StateHandlingStatementOperationsTest
 
     StoreReadLayer inner = mock( StoreReadLayer.class );
 
-    private NodePropertyDescriptor descriptor1 = new NodePropertyDescriptor( 10, 66 );
-    private NodePropertyDescriptor descriptor2 = new NodePropertyDescriptor( 11, 99 );
+    private LabelSchemaDescriptor descriptor = SchemaDescriptorFactory.forLabel( 10, 66 );
     private NewIndexDescriptor index = NewIndexDescriptorFactory.forLabel( 1, 2 );
 
     @Test
@@ -112,8 +111,7 @@ public class StateHandlingStatementOperationsTest
     public void shouldNotAddConstraintAlreadyExistsInTheStore() throws Exception
     {
         // given
-        UniquenessConstraintDescriptor constraint = ConstraintDescriptorFactory.uniqueForLabel( descriptor1
-                .getLabelId(), descriptor1.getPropertyKeyId() );
+        UniquenessConstraintDescriptor constraint = ConstraintDescriptorFactory.uniqueForSchema( descriptor );
         TransactionState txState = mock( TransactionState.class );
         when( txState.nodesWithLabelChanged( anyInt() ) ).thenReturn( new DiffSets<Long>() );
         when( txState.hasChanges() ).thenReturn( true );
@@ -122,7 +120,7 @@ public class StateHandlingStatementOperationsTest
         StateHandlingStatementOperations context = newTxStateOps( inner );
 
         // when
-        context.uniquePropertyConstraintCreate( state, descriptor1 );
+        context.uniquePropertyConstraintCreate( state, descriptor );
 
         // then
         verify( txState ).indexDoUnRemove( eq( constraint.ownedIndexDescriptor() ) );
@@ -132,14 +130,13 @@ public class StateHandlingStatementOperationsTest
     public void shouldGetConstraintsByLabelAndProperty() throws Exception
     {
         // given
-        ConstraintDescriptor constraint = ConstraintDescriptorFactory.uniqueForLabel(
-                descriptor1.getLabelId(), descriptor1.getPropertyKeyId() );
+        ConstraintDescriptor constraint = ConstraintDescriptorFactory.uniqueForSchema( descriptor );
         TransactionState txState = new TxState();
         KernelStatement state = mockedState( txState );
         when( inner.constraintsGetForSchema( constraint.schema() ) )
                 .thenAnswer( invocation -> Iterators.emptyIterator() );
         StateHandlingStatementOperations context = newTxStateOps( inner );
-        context.uniquePropertyConstraintCreate( state, descriptor1 );
+        context.uniquePropertyConstraintCreate( state, descriptor );
 
         // when
         Set<ConstraintDescriptor> result = Iterables.asSet(
@@ -167,10 +164,8 @@ public class StateHandlingStatementOperationsTest
         when( inner.constraintsGetForLabel( 2 ) )
                 .thenAnswer( invocation -> iterator( constraint1 ) );
         StateHandlingStatementOperations context = newTxStateOps( inner );
-        context.uniquePropertyConstraintCreate( state,
-                SchemaBoundary.map( constraint1.ownedIndexDescriptor().schema() ) );
-        context.uniquePropertyConstraintCreate( state,
-                SchemaBoundary.map( constraint2.ownedIndexDescriptor().schema() ));
+        context.uniquePropertyConstraintCreate( state, constraint1.ownedIndexDescriptor().schema() );
+        context.uniquePropertyConstraintCreate( state, constraint2.ownedIndexDescriptor().schema() );
 
         // when
         Set<ConstraintDescriptor> result = Iterables.asSet( asIterable( context.constraintsGetForLabel( state, 2 ) ) );
@@ -183,8 +178,8 @@ public class StateHandlingStatementOperationsTest
     public void shouldGetAllConstraints() throws Exception
     {
         // given
-        ConstraintDescriptor constraint1 = ConstraintDescriptorFactory.uniqueForLabel( 2, 3 );
-        ConstraintDescriptor constraint2 = ConstraintDescriptorFactory.uniqueForLabel( 4, 5 );
+        UniquenessConstraintDescriptor constraint1 = ConstraintDescriptorFactory.uniqueForLabel( 2, 3 );
+        UniquenessConstraintDescriptor constraint2 = ConstraintDescriptorFactory.uniqueForLabel( 4, 5 );
 
         TransactionState txState = new TxState();
         KernelStatement state = mockedState( txState );
@@ -195,8 +190,8 @@ public class StateHandlingStatementOperationsTest
         when( inner.constraintsGetAll() )
                 .thenAnswer( invocation -> iterator( constraint2 ) );
         StateHandlingStatementOperations context = newTxStateOps( inner );
-        context.uniquePropertyConstraintCreate( state, SchemaBoundary.map( (LabelSchemaDescriptor)constraint1.schema() ) );
-        context.uniquePropertyConstraintCreate( state, SchemaBoundary.map( (LabelSchemaDescriptor)constraint2.schema() ) );
+        context.uniquePropertyConstraintCreate( state, constraint1.schema() );
+        context.uniquePropertyConstraintCreate( state, constraint2.schema() );
 
         // when
         Set<ConstraintDescriptor> result = Iterables.asSet( asIterable( context.constraintsGetAll( state ) ) );

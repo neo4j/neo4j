@@ -26,7 +26,6 @@ import org.neo4j.cypher.internal.compiler.v3_2.commands.expressions.{Expander, K
 import org.neo4j.cypher.internal.compiler.v3_2.pipes.matching.PatternNode
 import org.neo4j.cypher.internal.frontend.v3_2.SemanticDirection
 import org.neo4j.graphdb.{Node, Path, PropertyContainer, Relationship}
-import org.neo4j.kernel.api.constraints.{NodePropertyExistenceConstraint, RelationshipPropertyExistenceConstraint, UniquenessConstraint}
 import org.neo4j.cypher.internal.compiler.v3_2.IndexDescriptor
 
 import scala.collection.Iterator
@@ -103,15 +102,18 @@ trait QueryContext extends TokenContext {
 
   def getOrCreateFromSchemaState[K, V](key: K, creator: => V): V
 
-  def createUniqueConstraint(descriptor: IndexDescriptor): IdempotentResult[UniquenessConstraint]
+  /* return true if the constraint was created, false if preexisting, throws if failed */
+  def createUniqueConstraint(descriptor: IndexDescriptor): Boolean
 
   def dropUniqueConstraint(descriptor: IndexDescriptor)
 
-  def createNodePropertyExistenceConstraint(labelId: Int, propertyKeyId: Int): IdempotentResult[NodePropertyExistenceConstraint]
+  /* return true if the constraint was created, false if preexisting, throws if failed */
+  def createNodePropertyExistenceConstraint(labelId: Int, propertyKeyId: Int): Boolean
 
   def dropNodePropertyExistenceConstraint(labelId: Int, propertyKeyId: Int)
 
-  def createRelationshipPropertyExistenceConstraint(relTypeId: Int, propertyKeyId: Int): IdempotentResult[RelationshipPropertyExistenceConstraint]
+  /* return true if the constraint was created, false if preexisting, throws if failed */
+  def createRelationshipPropertyExistenceConstraint(relTypeId: Int, propertyKeyId: Int): Boolean
 
   def dropRelationshipPropertyExistenceConstraint(relTypeId: Int, propertyKeyId: Int)
 

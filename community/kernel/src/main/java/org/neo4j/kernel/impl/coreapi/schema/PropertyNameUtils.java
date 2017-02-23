@@ -97,7 +97,7 @@ public class PropertyNameUtils
         return Iterables.stream( propertyKeys ).mapToInt( statement::propertyKeyGetForName ).toArray();
     }
 
-    public static int[] getOrCreatePropertyKeyIds( TokenWriteOperations statement, String[] propertyKeys )
+    public static int[] getOrCreatePropertyKeyIds( TokenWriteOperations statement, String... propertyKeys )
             throws IllegalTokenNameException
     {
         int[] propertyKeyIds = new int[propertyKeys.length];

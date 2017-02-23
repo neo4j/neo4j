@@ -48,8 +48,10 @@ import org.neo4j.kernel.GraphDatabaseQueryService
 import org.neo4j.kernel.api.constraints.{NodePropertyExistenceConstraint, RelationshipPropertyExistenceConstraint, UniquenessConstraint}
 import org.neo4j.kernel.api.exceptions.schema.{AlreadyConstrainedException, AlreadyIndexedException}
 import org.neo4j.kernel.api.index.InternalIndexState
-import org.neo4j.kernel.api.schema.{NodePropertyDescriptor, RelationshipPropertyDescriptor}
 import org.neo4j.kernel.api.schema_new.IndexQuery
+import org.neo4j.kernel.api.schema.NodePropertyDescriptor
+import org.neo4j.kernel.api.schema_new.SchemaDescriptorFactory
+import org.neo4j.kernel.api.schema_new.constaints.{ConstraintBoundary, ConstraintDescriptorFactory}
 import org.neo4j.kernel.api.schema_new.index.NewIndexDescriptorFactory
 import org.neo4j.kernel.api.{exceptions, _}
 import org.neo4j.kernel.impl.core.NodeManager
@@ -467,41 +469,45 @@ final class TransactionBoundQueryContext(tc: TransactionalContextWrapper)
     tc.statement.schemaWriteOperations().indexDrop(NewIndexDescriptorFactory.forLabel( labelId, propertyKeyId ))
 
   def createUniqueConstraint(labelId: Int, propertyKeyId: Int): IdempotentResult[UniquenessConstraint] = try {
-    IdempotentResult(tc.statement.schemaWriteOperations().uniquePropertyConstraintCreate(new NodePropertyDescriptor(labelId,
-      propertyKeyId)))
+    IdempotentResult(ConstraintBoundary.mapUnique(
+        tc.statement.schemaWriteOperations().uniquePropertyConstraintCreate(
+          SchemaDescriptorFactory.forLabel(labelId, propertyKeyId)
+        )))
   } catch {
     case existing: AlreadyConstrainedException =>
       IdempotentResult(existing.constraint().asInstanceOf[UniquenessConstraint], wasCreated = false)
   }
 
   def dropUniqueConstraint(labelId: Int, propertyKeyId: Int) =
-    tc.statement.schemaWriteOperations().constraintDrop(new UniquenessConstraint(new NodePropertyDescriptor(labelId,
-      propertyKeyId)))
+    tc.statement.schemaWriteOperations().constraintDrop(ConstraintDescriptorFactory.uniqueForLabel(labelId, propertyKeyId))
 
   def createNodePropertyExistenceConstraint(labelId: Int, propertyKeyId: Int): IdempotentResult[NodePropertyExistenceConstraint] =
     try {
-      IdempotentResult(tc.statement.schemaWriteOperations().nodePropertyExistenceConstraintCreate(new NodePropertyDescriptor(labelId,
-        propertyKeyId)))
+      IdempotentResult(ConstraintBoundary.mapNode(
+        tc.statement.schemaWriteOperations().nodePropertyExistenceConstraintCreate(
+          SchemaDescriptorFactory.forLabel(labelId, propertyKeyId)
+        )).asInstanceOf[NodePropertyExistenceConstraint]) // this cast can be resolved with 2.3.10
     } catch {
       case existing: AlreadyConstrainedException =>
         IdempotentResult(existing.constraint().asInstanceOf[NodePropertyExistenceConstraint], wasCreated = false)
     }
 
   def dropNodePropertyExistenceConstraint(labelId: Int, propertyKeyId: Int) =
-    tc.statement.schemaWriteOperations().constraintDrop(new NodePropertyExistenceConstraint(new NodePropertyDescriptor(labelId,
-      propertyKeyId)))
+    tc.statement.schemaWriteOperations().constraintDrop(ConstraintDescriptorFactory.existsForLabel(labelId, propertyKeyId))
 
   def createRelationshipPropertyExistenceConstraint(relTypeId: Int, propertyKeyId: Int): IdempotentResult[RelationshipPropertyExistenceConstraint] =
     try {
-      IdempotentResult(tc.statement.schemaWriteOperations().relationshipPropertyExistenceConstraintCreate(new RelationshipPropertyDescriptor(relTypeId, propertyKeyId)))
+      IdempotentResult(ConstraintBoundary.mapRelationship(
+        tc.statement.schemaWriteOperations().relationshipPropertyExistenceConstraintCreate(
+          SchemaDescriptorFactory.forRelType(relTypeId, propertyKeyId)
+        )).asInstanceOf[RelationshipPropertyExistenceConstraint])
     } catch {
       case existing: AlreadyConstrainedException =>
         IdempotentResult(existing.constraint().asInstanceOf[RelationshipPropertyExistenceConstraint], wasCreated = false)
     }
 
   def dropRelationshipPropertyExistenceConstraint(relTypeId: Int, propertyKeyId: Int) =
-    tc.statement.schemaWriteOperations().constraintDrop(new RelationshipPropertyExistenceConstraint(new
-        RelationshipPropertyDescriptor(relTypeId,propertyKeyId)))
+    tc.statement.schemaWriteOperations().constraintDrop(ConstraintDescriptorFactory.existsForRelType(relTypeId,propertyKeyId))
 
   override def getImportURL(url: URL): Either[String,URL] = tc.graph match {
     case db: GraphDatabaseQueryService =>

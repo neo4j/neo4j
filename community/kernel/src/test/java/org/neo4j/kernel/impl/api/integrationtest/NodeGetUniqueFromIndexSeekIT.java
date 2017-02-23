@@ -35,6 +35,9 @@ import org.neo4j.kernel.api.exceptions.schema.IndexBrokenKernelException;
 import org.neo4j.kernel.api.properties.Property;
 import org.neo4j.kernel.api.schema.IndexDescriptor;
 import org.neo4j.kernel.api.schema.NodePropertyDescriptor;
+import org.neo4j.kernel.api.schema_new.LabelSchemaDescriptor;
+import org.neo4j.kernel.api.schema_new.SchemaBoundary;
+import org.neo4j.kernel.api.schema_new.SchemaDescriptorFactory;
 import org.neo4j.kernel.api.security.SecurityContext;
 import org.neo4j.kernel.api.schema_new.index.IndexBoundary;
 import org.neo4j.kernel.api.schema_new.index.NewIndexDescriptor;
@@ -195,9 +198,10 @@ public class NodeGetUniqueFromIndexSeekIT extends KernelIntegrationTest
     private NewIndexDescriptor createUniquenessConstraint() throws Exception
     {
         Statement statement = statementInNewTransaction( SecurityContext.AUTH_DISABLED );
-        NodePropertyDescriptor descriptor = new NodePropertyDescriptor( labelId, propertyKeyId );
+        LabelSchemaDescriptor descriptor = SchemaDescriptorFactory.forLabel( labelId, propertyKeyId );
         statement.schemaWriteOperations().uniquePropertyConstraintCreate( descriptor );
-        NewIndexDescriptor result = statement.readOperations().uniqueIndexGetForLabelAndPropertyKey( descriptor );
+        NewIndexDescriptor result =
+                statement.readOperations().uniqueIndexGetForLabelAndPropertyKey( SchemaBoundary.map( descriptor ) );
         commit();
         return result;
     }

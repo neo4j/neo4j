@@ -35,6 +35,7 @@ import org.neo4j.kernel.api.exceptions.schema.SchemaKernelException;
 import org.neo4j.kernel.api.schema.IndexDescriptor;
 import org.neo4j.kernel.api.schema.NodePropertyDescriptor;
 import org.neo4j.kernel.api.schema_new.SchemaBoundary;
+import org.neo4j.kernel.api.schema_new.SchemaDescriptorFactory;
 import org.neo4j.kernel.api.security.AnonymousContext;
 import org.neo4j.kernel.api.security.SecurityContext;
 import org.neo4j.kernel.api.schema_new.index.NewIndexDescriptor;
@@ -177,7 +178,7 @@ public class IndexIT extends KernelIntegrationTest
         // given
         {
             SchemaWriteOperations statement = schemaWriteOperationsInNewTransaction();
-            statement.uniquePropertyConstraintCreate( descriptor );
+            statement.uniquePropertyConstraintCreate( SchemaBoundary.map( descriptor ) );
             commit();
         }
 
@@ -204,8 +205,10 @@ public class IndexIT extends KernelIntegrationTest
         // given
         Statement statement = statementInNewTransaction( SecurityContext.AUTH_DISABLED );
         statement.schemaWriteOperations().uniquePropertyConstraintCreate(
-                new NodePropertyDescriptor( statement.tokenWriteOperations().labelGetOrCreateForName( "Label1" ),
-                        statement.tokenWriteOperations().propertyKeyGetOrCreateForName( "property1" ) ) );
+                SchemaDescriptorFactory.forLabel(
+                        statement.tokenWriteOperations().labelGetOrCreateForName( "Label1" ),
+                        statement.tokenWriteOperations().propertyKeyGetOrCreateForName( "property1" )
+                ) );
         commit();
 
         // when
@@ -243,7 +246,7 @@ public class IndexIT extends KernelIntegrationTest
     {
         // given
         SchemaWriteOperations schemaWriteOperations = schemaWriteOperationsInNewTransaction();
-        schemaWriteOperations.uniquePropertyConstraintCreate( descriptor );
+        schemaWriteOperations.uniquePropertyConstraintCreate( SchemaBoundary.map( descriptor ) );
         commit();
 
         // then/when

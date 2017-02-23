@@ -50,6 +50,16 @@ public class ConstraintDescriptorFactory
         return schema.computeWith( convertToExistenceConstraint );
     }
 
+    public static NodeExistenceConstraintDescriptor existsForSchema( LabelSchemaDescriptor schema )
+    {
+        return new NodeExistenceConstraintDescriptor( schema );
+    }
+
+    public static RelExistenceConstraintDescriptor existsForSchema( RelationTypeSchemaDescriptor schema )
+    {
+        return new RelExistenceConstraintDescriptor( schema );
+    }
+
     public static UniquenessConstraintDescriptor uniqueForSchema( SchemaDescriptor schema )
     {
         return schema.computeWith( convertToUniquenessConstraint );

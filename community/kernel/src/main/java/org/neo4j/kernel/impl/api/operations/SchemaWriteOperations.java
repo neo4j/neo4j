@@ -20,18 +20,17 @@
 package org.neo4j.kernel.impl.api.operations;
 
 import org.neo4j.kernel.api.schema.NodePropertyDescriptor;
-import org.neo4j.kernel.api.schema.RelationshipPropertyDescriptor;
-import org.neo4j.kernel.api.constraints.NodePropertyConstraint;
-import org.neo4j.kernel.api.constraints.NodePropertyExistenceConstraint;
-import org.neo4j.kernel.api.constraints.RelationshipPropertyConstraint;
-import org.neo4j.kernel.api.constraints.RelationshipPropertyExistenceConstraint;
-import org.neo4j.kernel.api.constraints.UniquenessConstraint;
 import org.neo4j.kernel.api.exceptions.schema.AlreadyConstrainedException;
 import org.neo4j.kernel.api.exceptions.schema.AlreadyIndexedException;
 import org.neo4j.kernel.api.exceptions.schema.CreateConstraintFailureException;
 import org.neo4j.kernel.api.exceptions.schema.DropConstraintFailureException;
 import org.neo4j.kernel.api.exceptions.schema.DropIndexFailureException;
-import org.neo4j.kernel.api.schema.IndexDescriptor;
+import org.neo4j.kernel.api.schema_new.LabelSchemaDescriptor;
+import org.neo4j.kernel.api.schema_new.RelationTypeSchemaDescriptor;
+import org.neo4j.kernel.api.schema_new.constaints.ConstraintDescriptor;
+import org.neo4j.kernel.api.schema_new.constaints.NodeExistenceConstraintDescriptor;
+import org.neo4j.kernel.api.schema_new.constaints.RelExistenceConstraintDescriptor;
+import org.neo4j.kernel.api.schema_new.constaints.UniquenessConstraintDescriptor;
 import org.neo4j.kernel.api.schema_new.index.NewIndexDescriptor;
 import org.neo4j.kernel.impl.api.KernelStatement;
 
@@ -53,16 +52,14 @@ public interface SchemaWriteOperations
      */
     void uniqueIndexDrop( KernelStatement state, NewIndexDescriptor descriptor ) throws DropIndexFailureException;
 
-    UniquenessConstraint uniquePropertyConstraintCreate( KernelStatement state, NodePropertyDescriptor descriptor )
+    UniquenessConstraintDescriptor uniquePropertyConstraintCreate( KernelStatement state, LabelSchemaDescriptor descriptor )
             throws AlreadyConstrainedException, CreateConstraintFailureException, AlreadyIndexedException;
 
-    NodePropertyExistenceConstraint nodePropertyExistenceConstraintCreate( KernelStatement state,
-            NodePropertyDescriptor descriptor ) throws AlreadyConstrainedException, CreateConstraintFailureException;
+    NodeExistenceConstraintDescriptor nodePropertyExistenceConstraintCreate( KernelStatement state,
+            LabelSchemaDescriptor descriptor ) throws AlreadyConstrainedException, CreateConstraintFailureException;
 
-    RelationshipPropertyExistenceConstraint relationshipPropertyExistenceConstraintCreate( KernelStatement state,
-            RelationshipPropertyDescriptor descriptor ) throws AlreadyConstrainedException, CreateConstraintFailureException;
+    RelExistenceConstraintDescriptor relationshipPropertyExistenceConstraintCreate( KernelStatement state,
+            RelationTypeSchemaDescriptor descriptor ) throws AlreadyConstrainedException, CreateConstraintFailureException;
 
-    void constraintDrop( KernelStatement state, NodePropertyConstraint constraint ) throws DropConstraintFailureException;
-
-    void constraintDrop( KernelStatement state, RelationshipPropertyConstraint constraint ) throws DropConstraintFailureException;
+    void constraintDrop( KernelStatement state, ConstraintDescriptor constraint ) throws DropConstraintFailureException;
 }

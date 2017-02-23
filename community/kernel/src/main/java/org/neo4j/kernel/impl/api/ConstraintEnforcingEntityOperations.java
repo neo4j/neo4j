@@ -28,9 +28,6 @@ import org.neo4j.cursor.Cursor;
 import org.neo4j.helpers.Strings;
 import org.neo4j.helpers.collection.CastingIterator;
 import org.neo4j.kernel.api.constraints.NodePropertyConstraint;
-import org.neo4j.kernel.api.constraints.NodePropertyExistenceConstraint;
-import org.neo4j.kernel.api.constraints.RelationshipPropertyConstraint;
-import org.neo4j.kernel.api.constraints.RelationshipPropertyExistenceConstraint;
 import org.neo4j.kernel.api.constraints.UniquenessConstraint;
 import org.neo4j.kernel.api.exceptions.EntityNotFoundException;
 import org.neo4j.kernel.api.exceptions.InvalidTransactionTypeKernelException;
@@ -50,11 +47,13 @@ import org.neo4j.kernel.api.exceptions.schema.UniquePropertyValueValidationExcep
 import org.neo4j.kernel.api.properties.DefinedProperty;
 import org.neo4j.kernel.api.properties.Property;
 import org.neo4j.kernel.api.schema.NodePropertyDescriptor;
-import org.neo4j.kernel.api.schema.RelationshipPropertyDescriptor;
 import org.neo4j.kernel.api.schema_new.IndexQuery;
-import org.neo4j.kernel.api.schema_new.SchemaBoundary;
+import org.neo4j.kernel.api.schema_new.LabelSchemaDescriptor;
+import org.neo4j.kernel.api.schema_new.RelationTypeSchemaDescriptor;
 import org.neo4j.kernel.api.schema_new.SchemaDescriptorFactory;
 import org.neo4j.kernel.api.schema_new.constaints.ConstraintDescriptor;
+import org.neo4j.kernel.api.schema_new.constaints.NodeExistenceConstraintDescriptor;
+import org.neo4j.kernel.api.schema_new.constaints.RelExistenceConstraintDescriptor;
 import org.neo4j.kernel.api.schema_new.constaints.UniquenessConstraintDescriptor;
 import org.neo4j.kernel.api.schema_new.index.NewIndexDescriptor;
 import org.neo4j.kernel.impl.api.operations.EntityOperations;
@@ -439,16 +438,16 @@ public class ConstraintEnforcingEntityOperations implements EntityOperations, Sc
     }
 
     @Override
-    public UniquenessConstraint uniquePropertyConstraintCreate( KernelStatement state, NodePropertyDescriptor descriptor )
+    public UniquenessConstraintDescriptor uniquePropertyConstraintCreate( KernelStatement state, LabelSchemaDescriptor descriptor )
             throws AlreadyConstrainedException, CreateConstraintFailureException, AlreadyIndexedException
     {
         return schemaWriteOperations.uniquePropertyConstraintCreate( state, descriptor );
     }
 
     @Override
-    public NodePropertyExistenceConstraint nodePropertyExistenceConstraintCreate(
+    public NodeExistenceConstraintDescriptor nodePropertyExistenceConstraintCreate(
                 KernelStatement state,
-                NodePropertyDescriptor descriptor
+                LabelSchemaDescriptor descriptor
     ) throws AlreadyConstrainedException, CreateConstraintFailureException
     {
         Iterator<Cursor<NodeItem>> nodes =
@@ -456,32 +455,25 @@ public class ConstraintEnforcingEntityOperations implements EntityOperations, Sc
                         nodesGetForLabel( state, descriptor.getLabelId() ),
                         ( id ) -> nodeCursorById( state, id )
                 );
-        constraintSemantics.validateExistenceConstraint( nodes, SchemaBoundary.map( descriptor ) );
+        constraintSemantics.validateExistenceConstraint( nodes, descriptor );
         return schemaWriteOperations.nodePropertyExistenceConstraintCreate( state, descriptor );
     }
 
     @Override
-    public RelationshipPropertyExistenceConstraint relationshipPropertyExistenceConstraintCreate(
+    public RelExistenceConstraintDescriptor relationshipPropertyExistenceConstraintCreate(
                 KernelStatement state,
-                RelationshipPropertyDescriptor descriptor
+                RelationTypeSchemaDescriptor descriptor
     ) throws AlreadyConstrainedException, CreateConstraintFailureException
     {
         try ( Cursor<RelationshipItem> cursor = relationshipCursorGetAll( state ) )
         {
-            constraintSemantics.validateExistenceConstraint( cursor, SchemaBoundary.map( descriptor ) );
+            constraintSemantics.validateExistenceConstraint( cursor, descriptor );
         }
         return schemaWriteOperations.relationshipPropertyExistenceConstraintCreate( state, descriptor );
     }
 
     @Override
-    public void constraintDrop( KernelStatement state, NodePropertyConstraint constraint )
-            throws DropConstraintFailureException
-    {
-        schemaWriteOperations.constraintDrop( state, constraint );
-    }
-
-    @Override
-    public void constraintDrop( KernelStatement state, RelationshipPropertyConstraint constraint )
+    public void constraintDrop( KernelStatement state, ConstraintDescriptor constraint )
             throws DropConstraintFailureException
     {
         schemaWriteOperations.constraintDrop( state, constraint );

@@ -31,6 +31,7 @@ import org.neo4j.kernel.api.exceptions.KernelException;
 import org.neo4j.kernel.api.exceptions.schema.UniquePropertyValueValidationException;
 import org.neo4j.kernel.api.properties.DefinedProperty;
 import org.neo4j.kernel.api.schema.NodePropertyDescriptor;
+import org.neo4j.kernel.api.schema_new.SchemaDescriptorFactory;
 import org.neo4j.kernel.api.schema_new.index.NewIndexDescriptor;
 import org.neo4j.kernel.api.security.AnonymousContext;
 
@@ -42,6 +43,7 @@ import static org.junit.Assert.assertThat;
 import static org.junit.Assert.fail;
 import static org.neo4j.collection.primitive.PrimitiveLongCollections.count;
 import static org.neo4j.kernel.api.properties.Property.property;
+import static org.neo4j.kernel.api.schema_new.SchemaDescriptorFactory.forLabel;
 
 public class UniquenessConstraintValidationIT extends KernelIntegrationTest
 {
@@ -392,7 +394,7 @@ public class UniquenessConstraintValidationIT extends KernelIntegrationTest
         commit();
 
         SchemaWriteOperations schemaWriteOperations = schemaWriteOperationsInNewTransaction();
-        schemaWriteOperations.uniquePropertyConstraintCreate( new NodePropertyDescriptor( labelId, propertyKeyId ) );
+        schemaWriteOperations.uniquePropertyConstraintCreate( forLabel( labelId, propertyKeyId ) );
         commit();
     }
 }
