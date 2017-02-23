@@ -83,12 +83,11 @@ public class RotatingFileOutputStreamSupplier implements Supplier<OutputStream>,
     private final List<WeakReference<OutputStream>> archivedStreams = new LinkedList<>();
 
     // Used only in case no new output file can be created during rotation
-    private static final OutputStream stdErrStream = new OutputStream()
+    private static final OutputStream nullStream = new OutputStream()
     {
         @Override
         public void write( int i ) throws IOException
         {
-            System.err.write( i );
         }
     };
 
@@ -290,7 +289,8 @@ public class RotatingFileOutputStreamSupplier implements Supplier<OutputStream>,
                     }
                     catch ( IOException e )
                     {
-                        newStream = stdErrStream;
+                        System.err.println( "Failed to open log file after log rotation: " + e.getMessage() );
+                        newStream = nullStream;
                         rotationListener.rotationError( e, streamWrapper );
                         rotating.set( false );
                     }
