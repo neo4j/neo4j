@@ -150,6 +150,14 @@ class SpatialFunctionsAcceptanceTest extends ExecutionEngineFunSuite with NewPla
     Math.round(result.columnAs("dist").next().asInstanceOf[Double]) should equal(10116214)
   }
 
+  test("distance function should fail if provided with points from different CRS") {
+    val error = intercept[IllegalArgumentException](executeWithAllPlanners(
+      """WITH point({x: 2.3, y: 4.5, crs: 'cartesian'}) as p1, point({longitude: 1.1, latitude: 5.4, crs: 'WGS-84'}) as p2
+        |RETURN distance(p1,p2) as dist""".stripMargin))
+
+    assert(error.getMessage.contains("Invalid points passed to distance(p1, p2)"))
+  }
+
   test("distance function should measure distance from Copenhagen train station to Neo4j in Malmö") {
     val result = executeWithAllPlanners(
       """
