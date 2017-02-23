@@ -31,7 +31,6 @@ import org.neo4j.causalclustering.core.CoreGraphDatabase;
 import org.neo4j.causalclustering.core.consensus.roles.Role;
 import org.neo4j.causalclustering.discovery.Cluster;
 import org.neo4j.causalclustering.discovery.CoreClusterMember;
-import org.neo4j.causalclustering.discovery.HazelcastDiscoveryServiceFactory;
 import org.neo4j.graphdb.Label;
 import org.neo4j.graphdb.Node;
 import org.neo4j.graphdb.Transaction;
@@ -277,29 +276,25 @@ public class CoreReplicationIT
         CountDownLatch latch = new CountDownLatch( 1 );
 
         // when
-        Thread thread = new Thread()
+        Thread thread = new Thread( () ->
         {
-            @Override
-            public void run()
+            try
             {
-                try
+                cluster.coreTx( ( db, tx ) ->
                 {
-                    cluster.coreTx( ( db, tx ) ->
-                    {
-                        db.createNode();
-                        tx.success();
+                    db.createNode();
+                    tx.success();
 
-                        cluster.removeCoreMember( cluster.getDbWithAnyRole( Role.FOLLOWER, Role.CANDIDATE ) );
-                        cluster.removeCoreMember( cluster.getDbWithAnyRole( Role.FOLLOWER, Role.CANDIDATE ) );
-                        latch.countDown();
-                    } );
-                }
-                catch ( Exception e )
-                {
-                    throw new RuntimeException( e );
-                }
+                    cluster.removeCoreMember( cluster.getDbWithAnyRole( Role.FOLLOWER, Role.CANDIDATE ) );
+                    cluster.removeCoreMember( cluster.getDbWithAnyRole( Role.FOLLOWER, Role.CANDIDATE ) );
+                    latch.countDown();
+                } );
             }
-        };
+            catch ( Exception e )
+            {
+                throw new RuntimeException( e );
+            }
+        } );
 
         thread.start();
 

@@ -263,7 +263,7 @@ class HazelcastCoreTopologyService extends LifecycleAdapter implements CoreTopol
     @Override
     public void refreshCoreTopology()
     {
-        CoreTopology newCoreTopology = HazelcastClusterTopology.getCoreTopology( hazelcastInstance, log );
+        CoreTopology newCoreTopology = HazelcastClusterTopology.getCoreTopology( hazelcastInstance, config, log );
 
         if ( coreServers() != null )
         {

@@ -25,9 +25,7 @@ import org.junit.Test;
 import java.io.File;
 import java.util.Optional;
 import java.util.UUID;
-import java.util.concurrent.atomic.AtomicBoolean;
 
-import org.neo4j.causalclustering.catchup.tx.FileCopyMonitor;
 import org.neo4j.causalclustering.core.CausalClusteringSettings;
 import org.neo4j.causalclustering.discovery.Cluster;
 import org.neo4j.causalclustering.discovery.CoreClusterMember;
