@@ -21,7 +21,7 @@ package org.neo4j.cypher.internal.compiler.v3_2
 
 import org.neo4j.cypher.internal.compiler.v3_2.pipes.QueryState
 import org.neo4j.cypher.internal.compiler.v3_2.spi.{NodeIdWrapper, RelationshipIdWrapper}
-import org.neo4j.cypher.internal.compiler.v3_2.util.CypherOrderability
+import org.neo4j.cypher.internal.compiler.v3_2.common.CypherOrderability
 import org.neo4j.graphdb.{Node, Relationship}
 
 import scala.collection.JavaConverters._
