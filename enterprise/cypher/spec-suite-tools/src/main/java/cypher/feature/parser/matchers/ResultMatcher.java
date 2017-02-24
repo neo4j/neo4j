@@ -83,7 +83,7 @@ public class ResultMatcher implements Matcher<Result>
                 matched[0] = false;
                 return true;    // we always want to visit the next row
             }
-            matched[0] = rowMatchers.get( counter[0]++ ).matches( nextRow );
+            matched[0] &= rowMatchers.get( counter[0]++ ).matches( nextRow );
 
             return true;
         } );
