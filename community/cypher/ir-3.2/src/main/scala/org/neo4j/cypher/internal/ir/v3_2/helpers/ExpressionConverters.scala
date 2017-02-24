@@ -17,15 +17,14 @@
  * You should have received a copy of the GNU General Public License
  * along with this program.  If not, see <http://www.gnu.org/licenses/>.
  */
-package org.neo4j.cypher.internal.compiler.v3_2.ast.convert.plannerQuery
+package org.neo4j.cypher.internal.ir.v3_2.helpers
 
-import org.neo4j.cypher.internal.compiler.v3_2.ast.convert.plannerQuery.PatternConverters._
-import org.neo4j.cypher.internal.frontend.v3_2.helpers.UnNamedNameGenerator._
-import org.neo4j.cypher.internal.compiler.v3_2.planner.{Predicate, QueryGraph}
-import org.neo4j.cypher.internal.frontend.v3_2.ast._
 import org.neo4j.cypher.internal.frontend.v3_2.ast.rewriters.{LabelPredicateNormalizer, MatchPredicateNormalizerChain, PropertyPredicateNormalizer, addUniquenessPredicates}
+import org.neo4j.cypher.internal.frontend.v3_2.ast.{Ands, Expression, HasLabels, Not, Ors, PatternComprehension, PatternExpression, Range, RelationshipChain, Variable}
+import org.neo4j.cypher.internal.frontend.v3_2.helpers.UnNamedNameGenerator._
 import org.neo4j.cypher.internal.frontend.v3_2.{Rewriter, topDown}
-import org.neo4j.cypher.internal.ir.v3_2.{IdName, PatternLength, SimplePatternLength, VarPatternLength}
+import org.neo4j.cypher.internal.ir.v3_2._
+import org.neo4j.cypher.internal.ir.v3_2.helpers.PatternConverters._
 
 object ExpressionConverters {
   val normalizer = MatchPredicateNormalizerChain(PropertyPredicateNormalizer, LabelPredicateNormalizer)

@@ -23,7 +23,8 @@ import org.neo4j.cypher.internal.compiler.v3_2.planner._
 import org.neo4j.cypher.internal.compiler.v3_2.planner.logical.plans.{LockNodes, LogicalPlan}
 import org.neo4j.cypher.internal.compiler.v3_2.planner.logical.steps.{LogicalPlanProducer, mergeUniqueIndexSeekLeafPlanner}
 import org.neo4j.cypher.internal.frontend.v3_2.ast.{ContainerIndex, PathExpression, Variable}
-import org.neo4j.cypher.internal.ir.v3_2.IdName
+import org.neo4j.cypher.internal.ir.v3_2._
+import org.neo4j.cypher.internal.ir.v3_2.exception.CantHandleQueryException
 
 /*
  * This coordinates PlannerQuery planning of updates.

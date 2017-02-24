@@ -19,10 +19,9 @@
  */
 package org.neo4j.cypher.internal.compiler.v3_2.planner.logical.plans
 
-import org.neo4j.cypher.internal.compiler.v3_2.planner.{CardinalityEstimation, PlannerQuery}
 import org.neo4j.cypher.internal.frontend.v3_2.SemanticDirection
 import org.neo4j.cypher.internal.frontend.v3_2.ast.{Expression, RelTypeName, Variable}
-import org.neo4j.cypher.internal.ir.v3_2.{IdName, VarPatternLength}
+import org.neo4j.cypher.internal.ir.v3_2.{CardinalityEstimation, IdName, PlannerQuery, VarPatternLength}
 
 case class Expand(left: LogicalPlan,
                   from: IdName,

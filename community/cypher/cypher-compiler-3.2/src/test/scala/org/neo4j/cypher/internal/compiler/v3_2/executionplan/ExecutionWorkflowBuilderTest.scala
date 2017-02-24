@@ -26,11 +26,10 @@ import org.neo4j.cypher.internal.compiler.v3_2.helpers.IdentityTypeConverter
 import org.neo4j.cypher.internal.compiler.v3_2.pipes.Pipe
 import org.neo4j.cypher.internal.compiler.v3_2.planner.execution.FakeIdMap
 import org.neo4j.cypher.internal.compiler.v3_2.planner.logical.plans.SingleRow
-import org.neo4j.cypher.internal.compiler.v3_2.planner.{CardinalityEstimation, PlannerQuery}
 import org.neo4j.cypher.internal.compiler.v3_2.spi.{QueryContext, QueryTransactionalContext}
 import org.neo4j.cypher.internal.frontend.v3_2.phases.devNullLogger
 import org.neo4j.cypher.internal.frontend.v3_2.test_helpers.CypherFunSuite
-import org.neo4j.cypher.internal.ir.v3_2.Cardinality
+import org.neo4j.cypher.internal.ir.v3_2.{Cardinality, CardinalityEstimation, PlannerQuery}
 
 class ExecutionWorkflowBuilderTest extends CypherFunSuite {
   val PlannerName = IDPPlannerName

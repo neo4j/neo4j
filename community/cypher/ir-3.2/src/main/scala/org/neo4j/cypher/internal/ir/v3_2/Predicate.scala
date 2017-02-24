@@ -17,16 +17,19 @@
  * You should have received a copy of the GNU General Public License
  * along with this program.  If not, see <http://www.gnu.org/licenses/>.
  */
-package org.neo4j.cypher.internal.compiler.v3_2.planner.logical.plans
+package org.neo4j.cypher.internal.ir.v3_2
 
-import org.neo4j.cypher.internal.ir.v3_2.{CardinalityEstimation, IdName, PlannerQuery}
+import org.neo4j.cypher.internal.frontend.v3_2.ast.Expression
 
-case class DirectedRelationshipByIdSeek(idName: IdName,
-                                        relIds: SeekableArgs,
-                                        startNode: IdName,
-                                        endNode: IdName,
-                                        argumentIds: Set[IdName])(val solved: PlannerQuery with CardinalityEstimation)
-  extends LogicalLeafPlan {
+case class Predicate(dependencies: Set[IdName], expr: Expression) {
 
-  def availableSymbols: Set[IdName] = argumentIds ++ Set(idName, startNode, endNode)
+  def hasDependenciesMet(symbols: Set[IdName]): Boolean =
+    (dependencies -- symbols).isEmpty
+
+  def hasDependenciesMetForRequiredSymbol(symbols: Set[IdName], required: IdName): Boolean =
+    dependencies.contains(required) && hasDependenciesMet(symbols)
+}
+
+object Predicate {
+  implicit val byPosition = Ordering.by { (predicate: Predicate) => predicate.expr.position }
 }

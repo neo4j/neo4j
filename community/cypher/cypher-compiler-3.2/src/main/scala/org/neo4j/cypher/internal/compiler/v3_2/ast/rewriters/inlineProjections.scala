@@ -20,9 +20,9 @@
 package org.neo4j.cypher.internal.compiler.v3_2.ast.rewriters
 
 import org.neo4j.cypher.internal.frontend.v3_2.ast._
-import org.neo4j.cypher.internal.compiler.v3_2.planner.CantHandleQueryException
 import org.neo4j.cypher.internal.frontend.v3_2.helpers.fixedPoint
-import org.neo4j.cypher.internal.frontend.v3_2.{topDown, Rewriter, TypedRewriter}
+import org.neo4j.cypher.internal.frontend.v3_2.{Rewriter, TypedRewriter, topDown}
+import org.neo4j.cypher.internal.ir.v3_2.exception.CantHandleQueryException
 
 case object inlineProjections extends Rewriter {
 

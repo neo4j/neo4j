@@ -17,16 +17,19 @@
  * You should have received a copy of the GNU General Public License
  * along with this program.  If not, see <http://www.gnu.org/licenses/>.
  */
-package org.neo4j.cypher.internal.compiler.v3_2.planner.logical.plans
+package org.neo4j.cypher.internal.compiler.v3_2.planner
 
-import org.neo4j.cypher.internal.ir.v3_2.{CardinalityEstimation, IdName, PlannerQuery}
+import org.neo4j.cypher.internal.compiler.v3_2.ast.ResolvedCall
+import org.neo4j.cypher.internal.compiler.v3_2.spi.ProcedureReadOnlyAccess
+import org.neo4j.cypher.internal.ir.v3_2._
 
-case class DirectedRelationshipByIdSeek(idName: IdName,
-                                        relIds: SeekableArgs,
-                                        startNode: IdName,
-                                        endNode: IdName,
-                                        argumentIds: Set[IdName])(val solved: PlannerQuery with CardinalityEstimation)
-  extends LogicalLeafPlan {
+case class ProcedureCallProjection(call: ResolvedCall) extends QueryHorizon {
+  override def exposedSymbols(coveredIds: Set[IdName]): Set[IdName] = coveredIds ++ call.callResults.map { result => IdName.fromVariable(result.variable) }
 
-  def availableSymbols: Set[IdName] = argumentIds ++ Set(idName, startNode, endNode)
+  override def dependingExpressions = call.callArguments
+
+  override def preferredStrictness = call.signature.accessMode match {
+    case _:ProcedureReadOnlyAccess => Some(LazyMode)
+    case _ => Some(EagerMode)
+  }
 }

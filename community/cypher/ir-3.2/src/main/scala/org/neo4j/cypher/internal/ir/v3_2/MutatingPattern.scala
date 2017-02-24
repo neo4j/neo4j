@@ -17,11 +17,10 @@
  * You should have received a copy of the GNU General Public License
  * along with this program.  If not, see <http://www.gnu.org/licenses/>.
  */
-package org.neo4j.cypher.internal.compiler.v3_2.planner
+package org.neo4j.cypher.internal.ir.v3_2
 
 import org.neo4j.cypher.internal.frontend.v3_2.SemanticDirection
 import org.neo4j.cypher.internal.frontend.v3_2.ast.{Expression, LabelName, PropertyKeyName, RelTypeName}
-import org.neo4j.cypher.internal.ir.v3_2.IdName
 
 sealed trait MutatingPattern {
   def coveredIds: Set[IdName]
@@ -31,6 +30,22 @@ sealed trait NoSymbols {
   self : MutatingPattern =>
   override def coveredIds = Set.empty[IdName]
 }
+
+sealed trait SetMutatingPattern extends MutatingPattern with NoSymbols
+
+case class SetPropertyPattern(entityExpression: Expression, propertyKeyName: PropertyKeyName, expression: Expression) extends SetMutatingPattern
+
+case class SetRelationshipPropertyPattern(idName: IdName, propertyKey: PropertyKeyName, expression: Expression) extends SetMutatingPattern
+
+case class SetNodePropertiesFromMapPattern(idName: IdName, expression: Expression, removeOtherProps: Boolean) extends SetMutatingPattern
+
+case class SetRelationshipPropertiesFromMapPattern(idName: IdName, expression: Expression, removeOtherProps: Boolean) extends SetMutatingPattern
+
+case class SetNodePropertyPattern(idName: IdName, propertyKey: PropertyKeyName, expression: Expression) extends SetMutatingPattern
+
+case class SetLabelPattern(idName: IdName, labels: Seq[LabelName]) extends SetMutatingPattern
+
+case class RemoveLabelPattern(idName: IdName, labels: Seq[LabelName]) extends MutatingPattern with NoSymbols
 
 case class CreateNodePattern(nodeName: IdName, labels: Seq[LabelName], properties: Option[Expression]) extends MutatingPattern {
   override def coveredIds = Set(nodeName)
@@ -48,25 +63,9 @@ case class CreateRelationshipPattern(relName: IdName, leftNode: IdName, relType:
   override def coveredIds = Set(relName)
 }
 
-sealed trait SetMutatingPattern extends MutatingPattern with NoSymbols
-
-case class SetLabelPattern(idName: IdName, labels: Seq[LabelName]) extends SetMutatingPattern
-
-case class SetNodePropertyPattern(idName: IdName, propertyKey: PropertyKeyName, expression: Expression) extends SetMutatingPattern
-
-case class SetNodePropertiesFromMapPattern(idName: IdName, expression: Expression, removeOtherProps: Boolean) extends SetMutatingPattern
-
-case class SetRelationshipPropertyPattern(idName: IdName, propertyKey: PropertyKeyName, expression: Expression) extends SetMutatingPattern
-
-case class SetRelationshipPropertiesFromMapPattern(idName: IdName, expression: Expression, removeOtherProps: Boolean) extends SetMutatingPattern
-
-case class SetPropertyPattern(entityExpression: Expression, propertyKeyName: PropertyKeyName, expression: Expression) extends SetMutatingPattern
-
-case class RemoveLabelPattern(idName: IdName, labels: Seq[LabelName]) extends MutatingPattern with NoSymbols
-
 case class DeleteExpression(expression: Expression, forced: Boolean) extends MutatingPattern with NoSymbols
 
-trait MergePattern {
+sealed trait MergePattern {
   self : MutatingPattern =>
   def matchGraph: QueryGraph
 }
@@ -82,4 +81,3 @@ case class MergeRelationshipPattern(createNodePatterns: Seq[CreateNodePattern], 
 }
 
 case class ForeachPattern(variable: IdName, expression: Expression, innerUpdates: PlannerQuery) extends MutatingPattern with NoSymbols
-

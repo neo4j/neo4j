@@ -19,7 +19,6 @@
  */
 package org.neo4j.cypher.internal.compiler.v3_2.planner.logical.steps
 
-import org.neo4j.cypher.internal.compiler.v3_2.planner.QueryGraph
 import org.neo4j.cypher.internal.compiler.v3_2.planner.logical.plans.LogicalPlan
 import org.neo4j.cypher.internal.compiler.v3_2.planner.logical.{LogicalPlanningContext, patternExpressionRewriter}
 import org.neo4j.cypher.internal.frontend.v3_2.Rewritable._
@@ -28,7 +27,7 @@ import org.neo4j.cypher.internal.frontend.v3_2.ast.functions.Exists
 import org.neo4j.cypher.internal.frontend.v3_2.ast.rewriters.{PatternExpressionPatternElementNamer, projectNamedPaths}
 import org.neo4j.cypher.internal.frontend.v3_2.helpers.{FreshIdNameGenerator, UnNamedNameGenerator}
 import org.neo4j.cypher.internal.frontend.v3_2.{Rewriter, ast, topDown}
-import org.neo4j.cypher.internal.ir.v3_2.IdName
+import org.neo4j.cypher.internal.ir.v3_2.{IdName, QueryGraph}
 
 import scala.collection.mutable
 import scala.reflect.ClassTag
@@ -126,7 +125,7 @@ object PatternExpressionSolver {
                               pathStepBuilder: EveryPath => PathStep): ListSubQueryExpressionSolver[PatternExpression] = {
 
     def extractQG(source: LogicalPlan, namedExpr: PatternExpression): QueryGraph = {
-      import org.neo4j.cypher.internal.compiler.v3_2.ast.convert.plannerQuery.ExpressionConverters._
+      import org.neo4j.cypher.internal.ir.v3_2.helpers.ExpressionConverters._
 
       val dependencies = namedExpr.
         dependencies.
@@ -161,7 +160,7 @@ object PatternExpressionSolver {
   def solvePatternComprehensions(availableSymbols: Set[IdName], context: LogicalPlanningContext,
                                  pathStepBuilder: EveryPath => PathStep): ListSubQueryExpressionSolver[PatternComprehension] = {
     def extractQG(source: LogicalPlan, namedExpr: PatternComprehension) = {
-      import org.neo4j.cypher.internal.compiler.v3_2.ast.convert.plannerQuery.ExpressionConverters._
+      import org.neo4j.cypher.internal.ir.v3_2.helpers.ExpressionConverters._
 
       val queryGraph = namedExpr.asQueryGraph
       val args = queryGraph.coveredIds intersect availableSymbols

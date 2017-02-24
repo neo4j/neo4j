@@ -22,11 +22,10 @@ package org.neo4j.cypher.internal.compiler.v3_2.planDescription
 import org.neo4j.cypher.internal.compiler.v3_2.commands.expressions.{Literal, NestedPlanExpression}
 import org.neo4j.cypher.internal.compiler.v3_2.planDescription.InternalPlanDescription.Arguments._
 import org.neo4j.cypher.internal.compiler.v3_2.planDescription.PlanDescriptionArgumentSerializer.serialize
-import org.neo4j.cypher.internal.compiler.v3_2.planner.logical.plans.{Argument => LPArgument, LogicalPlan}
-import org.neo4j.cypher.internal.compiler.v3_2.planner.{CardinalityEstimation, PlannerQuery}
+import org.neo4j.cypher.internal.compiler.v3_2.planner.logical.plans.{LogicalPlan, Argument => LPArgument}
 import org.neo4j.cypher.internal.frontend.v3_2.SemanticDirection
 import org.neo4j.cypher.internal.frontend.v3_2.test_helpers.CypherFunSuite
-import org.neo4j.cypher.internal.ir.v3_2.Cardinality
+import org.neo4j.cypher.internal.ir.v3_2.{Cardinality, CardinalityEstimation, PlannerQuery}
 
 class PlanDescriptionArgumentSerializerTests extends CypherFunSuite {
   val solved = CardinalityEstimation.lift(PlannerQuery.empty, Cardinality(1))

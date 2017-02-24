@@ -23,10 +23,9 @@ import org.neo4j.cypher.internal.frontend.v3_2.ast.LabelName
 import org.neo4j.cypher.internal.compiler.v3_2.helpers.MapSupport._
 import org.neo4j.cypher.internal.compiler.v3_2.planner.logical.Metrics.{CardinalityModel, CostModel, QueryGraphCardinalityModel}
 import org.neo4j.cypher.internal.compiler.v3_2.planner.logical.plans.LogicalPlan
-import org.neo4j.cypher.internal.compiler.v3_2.planner.{PlannerQuery, QueryGraph}
 import org.neo4j.cypher.internal.compiler.v3_2.spi.GraphStatistics
 import org.neo4j.cypher.internal.frontend.v3_2.SemanticTable
-import org.neo4j.cypher.internal.ir.v3_2.{Cardinality, Cost, IdName, StrictnessMode}
+import org.neo4j.cypher.internal.ir.v3_2.{PlannerQuery, _}
 
 import scala.language.implicitConversions
 
