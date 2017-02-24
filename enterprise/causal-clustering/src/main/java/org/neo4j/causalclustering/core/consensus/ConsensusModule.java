@@ -74,8 +74,9 @@ public class ConsensusModule
     private final RaftMembershipManager raftMembershipManager;
     private final InFlightMap<RaftLogEntry> inFlightMap = new InFlightMap<>();
 
-    public ConsensusModule( MemberId myself, final PlatformModule platformModule, Outbound<MemberId,RaftMessages.RaftMessage> outbound,
-            File clusterStateDirectory, CoreTopologyService discoveryService )
+    public ConsensusModule( MemberId myself, final PlatformModule platformModule,
+            Outbound<MemberId,RaftMessages.RaftMessage> outbound, File clusterStateDirectory,
+            CoreTopologyService coreTopologyService )
     {
         final Config config = platformModule.config;
         final LogService logging = platformModule.logging;
@@ -86,7 +87,8 @@ public class ConsensusModule
 
         final CoreReplicatedContentMarshal marshal = new CoreReplicatedContentMarshal();
 
-        RaftLog underlyingLog = createRaftLog( config, life, fileSystem, clusterStateDirectory, marshal, logProvider, platformModule.jobScheduler );
+        RaftLog underlyingLog = createRaftLog( config, life, fileSystem, clusterStateDirectory, marshal, logProvider,
+                platformModule.jobScheduler );
 
         raftLog = new MonitoredRaftLog( underlyingLog, platformModule.monitors );
 
@@ -95,20 +97,19 @@ public class ConsensusModule
         StateStorage<RaftMembershipState> raftMembershipStorage;
 
         StateStorage<TermState> durableTermState = life.add(
-                new DurableStateStorage<>( fileSystem, clusterStateDirectory, RAFT_TERM_NAME,
-                        new TermState.Marshal(), config.get( CausalClusteringSettings.term_state_size ), logProvider ) );
+                new DurableStateStorage<>( fileSystem, clusterStateDirectory, RAFT_TERM_NAME, new TermState.Marshal(),
+                        config.get( CausalClusteringSettings.term_state_size ), logProvider ) );
 
         termState = new MonitoredTermStateStorage( durableTermState, platformModule.monitors );
 
-        voteState = life.add(
-                new DurableStateStorage<>( fileSystem, clusterStateDirectory, RAFT_VOTE_NAME,
-                        new VoteState.Marshal( new MemberId.Marshal() ),
-                        config.get( CausalClusteringSettings.vote_state_size ), logProvider ) );
+        voteState = life.add( new DurableStateStorage<>( fileSystem, clusterStateDirectory, RAFT_VOTE_NAME,
+                new VoteState.Marshal( new MemberId.Marshal() ), config.get( CausalClusteringSettings.vote_state_size ),
+                logProvider ) );
 
         raftMembershipStorage = life.add(
                 new DurableStateStorage<>( fileSystem, clusterStateDirectory, RAFT_MEMBERSHIP_NAME,
-                        new RaftMembershipState.Marshal(), config.get( CausalClusteringSettings.raft_membership_state_size ),
-                        logProvider ) );
+                        new RaftMembershipState.Marshal(),
+                        config.get( CausalClusteringSettings.raft_membership_state_size ), logProvider ) );
 
         long electionTimeout = config.get( CausalClusteringSettings.leader_election_timeout );
         long heartbeatInterval = electionTimeout / 3;
@@ -120,55 +121,55 @@ public class ConsensusModule
         SendToMyself leaderOnlyReplicator = new SendToMyself( myself, outbound );
 
         raftMembershipManager = new RaftMembershipManager( leaderOnlyReplicator, memberSetBuilder, raftLog, logProvider,
-                expectedClusterSize, electionTimeout, systemClock(),
-                config.get( join_catch_up_timeout ), raftMembershipStorage
-        );
+                expectedClusterSize, electionTimeout, systemClock(), config.get( join_catch_up_timeout ),
+                raftMembershipStorage );
 
         life.add( raftMembershipManager );
 
         RaftLogShippingManager logShipping =
-                new RaftLogShippingManager( outbound, logProvider, raftLog, systemClock(),
-                        myself, raftMembershipManager, electionTimeout,
-                        config.get( catchup_batch_size ),
+                new RaftLogShippingManager( outbound, logProvider, raftLog, systemClock(), myself,
+                        raftMembershipManager, electionTimeout, config.get( catchup_batch_size ),
                         config.get( log_shipping_max_lag ), inFlightMap );
 
         raftTimeoutService = new DelayedRenewableTimeoutService( systemClock(), logProvider );
 
-        raftMachine =
-                new RaftMachine( myself, termState, voteState, raftLog, electionTimeout,
-                        heartbeatInterval, raftTimeoutService, outbound, logProvider, raftMembershipManager,
-                        logShipping, inFlightMap, platformModule.monitors );
+        raftMachine = new RaftMachine( myself, termState, voteState, raftLog, electionTimeout, heartbeatInterval,
+                raftTimeoutService, outbound, logProvider, raftMembershipManager, logShipping, inFlightMap,
+                config.get( CausalClusteringSettings.refuse_to_be_leader ), platformModule.monitors );
 
-        life.add( new RaftDiscoveryServiceConnector( discoveryService, raftMachine ) );
+        life.add( new RaftDiscoveryServiceConnector( coreTopologyService, raftMachine ) );
 
         life.add( logShipping );
     }
 
     private RaftLog createRaftLog( Config config, LifeSupport life, FileSystemAbstraction fileSystem,
-            File clusterStateDirectory, CoreReplicatedContentMarshal marshal, LogProvider logProvider, JobScheduler scheduler )
+            File clusterStateDirectory, CoreReplicatedContentMarshal marshal, LogProvider logProvider,
+            JobScheduler scheduler )
     {
         EnterpriseCoreEditionModule.RaftLogImplementation raftLogImplementation =
-                EnterpriseCoreEditionModule.RaftLogImplementation.valueOf( config.get( CausalClusteringSettings.raft_log_implementation ) );
+                EnterpriseCoreEditionModule.RaftLogImplementation
+                        .valueOf( config.get( CausalClusteringSettings.raft_log_implementation ) );
         switch ( raftLogImplementation )
         {
-            case IN_MEMORY:
-            {
-                return new InMemoryRaftLog();
-            }
+        case IN_MEMORY:
+        {
+            return new InMemoryRaftLog();
+        }
 
-            case SEGMENTED:
-            {
-                long rotateAtSize = config.get( CausalClusteringSettings.raft_log_rotation_size );
-                int readerPoolSize = config.get( CausalClusteringSettings.raft_log_reader_pool_size );
+        case SEGMENTED:
+        {
+            long rotateAtSize = config.get( CausalClusteringSettings.raft_log_rotation_size );
+            int readerPoolSize = config.get( CausalClusteringSettings.raft_log_reader_pool_size );
 
-                CoreLogPruningStrategy pruningStrategy = new CoreLogPruningStrategyFactory(
-                        config.get( CausalClusteringSettings.raft_log_pruning_strategy ), logProvider ).newInstance();
-                File directory = new File( clusterStateDirectory, RAFT_LOG_DIRECTORY_NAME );
-                return life.add( new SegmentedRaftLog( fileSystem, directory, rotateAtSize, marshal,
-                        logProvider, readerPoolSize, systemClock(), scheduler, pruningStrategy ) );
-            }
-            default:
-                throw new IllegalStateException( "Unknown raft log implementation: " + raftLogImplementation );
+            CoreLogPruningStrategy pruningStrategy =
+                    new CoreLogPruningStrategyFactory( config.get( CausalClusteringSettings.raft_log_pruning_strategy ),
+                            logProvider ).newInstance();
+            File directory = new File( clusterStateDirectory, RAFT_LOG_DIRECTORY_NAME );
+            return life.add( new SegmentedRaftLog( fileSystem, directory, rotateAtSize, marshal, logProvider,
+                    readerPoolSize, systemClock(), scheduler, pruningStrategy ) );
+        }
+        default:
+            throw new IllegalStateException( "Unknown raft log implementation: " + raftLogImplementation );
         }
     }
 

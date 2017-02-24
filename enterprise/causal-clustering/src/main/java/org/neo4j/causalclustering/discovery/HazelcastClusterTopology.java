@@ -20,7 +20,6 @@
 package org.neo4j.causalclustering.discovery;
 
 import java.util.HashMap;
-import java.util.Iterator;
 import java.util.Map;
 import java.util.Set;
 import java.util.UUID;
@@ -56,6 +55,8 @@ class HazelcastClusterTopology
     static final String RAFT_SERVER = "raft_server";
     static final String CLIENT_CONNECTOR_ADDRESSES = "client_connector_addresses";
 
+    private static final String REFUSE_TO_BE_LEADER_KEY = "refuse_to_be_leader";
+
     static ReadReplicaTopology getReadReplicaTopology( HazelcastInstance hazelcastInstance, Log log )
     {
         Set<ReadReplicaAddresses> readReplicas = emptySet();
@@ -74,7 +75,7 @@ class HazelcastClusterTopology
         return new ReadReplicaTopology( clusterId, readReplicas );
     }
 
-    static CoreTopology getCoreTopology( HazelcastInstance hazelcastInstance, Log log )
+    static CoreTopology getCoreTopology( HazelcastInstance hazelcastInstance, Config config, Log log )
     {
         Map<MemberId,CoreAddresses> coreMembers = emptyMap();
         boolean canBeBootstrapped = false;
@@ -83,7 +84,7 @@ class HazelcastClusterTopology
         if ( hazelcastInstance != null )
         {
             Set<Member> hzMembers = hazelcastInstance.getCluster().getMembers();
-            canBeBootstrapped = canBeBootstrapped( hzMembers );
+            canBeBootstrapped = canBeBootstrapped( hazelcastInstance, config );
 
             coreMembers = toCoreMemberMap( hzMembers, log );
 
@@ -121,10 +122,33 @@ class HazelcastClusterTopology
                 .collect( toSet() );
     }
 
-    private static boolean canBeBootstrapped( Set<Member> coreMembers )
+    private static boolean canBeBootstrapped( HazelcastInstance hazelcastInstance, Config config )
     {
-        Iterator<Member> iterator = coreMembers.iterator();
-        return iterator.hasNext() && iterator.next().localMember();
+        Set<Member> members = hazelcastInstance.getCluster().getMembers();
+        Boolean refuseToBeLeader = config.get( CausalClusteringSettings.refuse_to_be_leader );
+
+        if ( refuseToBeLeader )
+        {
+            return false;
+        }
+        else
+        {
+            for ( Member member : members )
+            {
+                if ( !member.getBooleanAttribute( REFUSE_TO_BE_LEADER_KEY ) )
+                {
+                    if ( member.localMember() )
+                    {
+                        return true;
+                    }
+                    else
+                    {
+                        return false;
+                    }
+                }
+            }
+            return false;
+        }
     }
 
     static Map<MemberId,CoreAddresses> toCoreMemberMap( Set<Member> members, Log log )
@@ -165,6 +189,10 @@ class HazelcastClusterTopology
 
         ClientConnectorAddresses clientConnectorAddresses = ClientConnectorAddresses.extractFromConfig( config );
         memberAttributeConfig.setStringAttribute( CLIENT_CONNECTOR_ADDRESSES, clientConnectorAddresses.toString() );
+
+        memberAttributeConfig.setBooleanAttribute( REFUSE_TO_BE_LEADER_KEY,
+                config.get( CausalClusteringSettings.refuse_to_be_leader ) );
+
         return memberAttributeConfig;
     }
 

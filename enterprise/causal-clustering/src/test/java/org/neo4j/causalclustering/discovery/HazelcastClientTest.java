@@ -241,7 +241,7 @@ public class HazelcastClientTest
                 .thenReturn( hazelcastInstance2 );
 
         com.hazelcast.core.Cluster cluster = mock( Cluster.class );
-        when( hazelcastInstance1.getCluster() ).thenReturn( cluster )
+        when( hazelcastInstance1.getCluster() ).thenReturn( cluster ).thenReturn( cluster )
                 .thenThrow( new HazelcastInstanceNotActiveException() );
         when( hazelcastInstance2.getCluster() ).thenReturn( cluster );
 
