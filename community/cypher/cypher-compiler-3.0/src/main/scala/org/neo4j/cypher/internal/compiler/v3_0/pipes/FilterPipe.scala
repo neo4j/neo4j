@@ -27,10 +27,9 @@ case class FilterPipe(source: Pipe, predicate: Predicate)(val estimatedCardinali
                      (implicit pipeMonitor: PipeMonitor) extends PipeWithSource(source, pipeMonitor) with RonjaPipe {
   val symbols = source.symbols
 
-  protected def internalCreateResults(input: Iterator[ExecutionContext],state: QueryState) = {
-    //register as parent so that stats are associated with this pipe
-    state.decorator.registerParentPipe(this)
+  predicate.registerOwningPipe(this)
 
+  protected def internalCreateResults(input: Iterator[ExecutionContext],state: QueryState) = {
     input.filter(ctx => predicate.isTrue(ctx)(state))
   }
 
