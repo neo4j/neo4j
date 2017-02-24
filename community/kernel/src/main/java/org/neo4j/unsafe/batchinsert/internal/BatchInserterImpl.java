@@ -160,6 +160,7 @@ import org.neo4j.unsafe.batchinsert.BatchRelationship;
 import org.neo4j.unsafe.batchinsert.DirectRecordAccessSet;
 
 import static java.lang.Boolean.parseBoolean;
+
 import static org.neo4j.collection.primitive.PrimitiveLongCollections.map;
 import static org.neo4j.graphdb.Label.label;
 import static org.neo4j.kernel.api.schema.IndexDescriptorFactory.getNodePropertyDescriptor;
@@ -488,7 +489,7 @@ public class BatchInserterImpl implements BatchInserter, IndexConfigStoreProvide
         InitialNodeLabelCreationVisitor labelUpdateVisitor = new InitialNodeLabelCreationVisitor();
         StoreScan<IOException> storeScan = indexStoreView.visitNodes( labelIds,
                 (propertyKeyId) -> PrimitiveIntCollections.contains( propertyKeyIds, propertyKeyId ),
-                propertyUpdateVisitor, labelUpdateVisitor );
+                propertyUpdateVisitor, labelUpdateVisitor, true );
         storeScan.run();
 
         for ( IndexPopulator populator : populators )

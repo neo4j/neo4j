@@ -45,10 +45,10 @@ import org.neo4j.logging.NullLogProvider;
 import org.neo4j.storageengine.api.schema.PopulationProgress;
 import org.neo4j.unsafe.impl.internal.dragons.FeatureToggles;
 
-import static java.util.Collections.singletonList;
 import static org.junit.Assert.assertSame;
 import static org.junit.Assert.fail;
 import static org.mockito.Matchers.any;
+import static org.mockito.Matchers.anyBoolean;
 import static org.mockito.Matchers.anyLong;
 import static org.mockito.Mockito.doAnswer;
 import static org.mockito.Mockito.doThrow;
@@ -56,18 +56,21 @@ import static org.mockito.Mockito.mock;
 import static org.mockito.Mockito.never;
 import static org.mockito.Mockito.verify;
 import static org.mockito.Mockito.when;
+
+import static java.util.Collections.singletonList;
+
 import static org.neo4j.kernel.impl.api.index.BatchingMultipleIndexPopulator.AWAIT_TIMEOUT_MINUTES_NAME;
 import static org.neo4j.kernel.impl.api.index.BatchingMultipleIndexPopulator.BATCH_SIZE_NAME;
-import static org.neo4j.kernel.impl.api.index.BatchingMultipleIndexPopulator.QUEUE_THRESHOLD_NAME;
 import static org.neo4j.kernel.impl.api.index.BatchingMultipleIndexPopulator.TASK_QUEUE_SIZE_NAME;
 import static org.neo4j.kernel.impl.api.index.IndexPopulationFailure.failure;
+import static org.neo4j.kernel.impl.api.index.MultipleIndexPopulator.QUEUE_THRESHOLD_NAME;
 
 public class BatchingMultipleIndexPopulatorTest
 {
     public static final int propertyId = 1;
     public static final int labelId = 1;
-    private NewIndexDescriptor index1 = NewIndexDescriptorFactory.forLabel(1, 1);
-    private NewIndexDescriptor index42 = NewIndexDescriptorFactory.forLabel(42, 42);
+    private final NewIndexDescriptor index1 = NewIndexDescriptorFactory.forLabel(1, 1);
+    private final NewIndexDescriptor index42 = NewIndexDescriptorFactory.forLabel(42, 42);
 
     @After
     public void tearDown() throws Exception
@@ -166,7 +169,7 @@ public class BatchingMultipleIndexPopulatorTest
         StoreScan<Exception> failingStoreScan = mock( StoreScan.class );
         RuntimeException scanError = new RuntimeException();
         doThrow( scanError ).when( failingStoreScan ).run();
-        when( storeView.visitNodes( any(), any(), any(), any() ) ).thenReturn( failingStoreScan );
+        when( storeView.visitNodes( any(), any(), any(), any(), anyBoolean() ) ).thenReturn( failingStoreScan );
 
         ExecutorService executor = mock( ExecutorService.class );
         when( executor.awaitTermination( anyLong(), any() ) ).thenReturn( true );
@@ -330,7 +333,7 @@ public class BatchingMultipleIndexPopulatorTest
     private static IndexStoreView newStoreView( NodeUpdates... updates )
     {
         IndexStoreView storeView = mock( IndexStoreView.class );
-        when( storeView.visitNodes( any(), any(), any(), any() ) ).thenAnswer( invocation -> {
+        when( storeView.visitNodes( any(), any(), any(), any(), anyBoolean() ) ).thenAnswer( invocation -> {
             Object visitorArg = invocation.getArguments()[2];
             Visitor<NodeUpdates,IndexPopulationFailedKernelException> visitor =
                     (Visitor<NodeUpdates,IndexPopulationFailedKernelException>) visitorArg;

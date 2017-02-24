@@ -54,10 +54,10 @@ import org.neo4j.test.rule.EmbeddedDatabaseRule;
 
 import static org.junit.Assert.assertEquals;
 import static org.junit.Assert.assertNotNull;
-import static org.junit.Assert.assertThat;
 import static org.junit.Assert.assertTrue;
 import static org.mockito.Mockito.inOrder;
 import static org.mockito.Mockito.mock;
+
 import static org.neo4j.helpers.collection.Iterators.asSet;
 import static org.neo4j.helpers.collection.Iterators.emptySetOf;
 
@@ -110,7 +110,7 @@ public class NeoStoreIndexStoreViewTest
         @SuppressWarnings( "unchecked" )
         Visitor<NodeLabelUpdate,Exception> labelVisitor = mock( Visitor.class );
         StoreScan<Exception> storeScan =
-            storeView.visitNodes( new int[] {labelId}, (id) -> id == propertyKeyId, visitor, labelVisitor );
+            storeView.visitNodes( new int[] {labelId}, (id) -> id == propertyKeyId, visitor, labelVisitor, false );
 
         // when
         storeScan.run();
@@ -133,7 +133,7 @@ public class NeoStoreIndexStoreViewTest
         @SuppressWarnings( "unchecked" )
         Visitor<NodeLabelUpdate,Exception> labelVisitor = mock( Visitor.class );
         StoreScan<Exception> storeScan = storeView.visitNodes( new int[]{labelId}, (id) -> id == propertyKeyId,
-                visitor, labelVisitor );
+                visitor, labelVisitor, false );
 
         // when
         storeScan.run();
@@ -149,7 +149,7 @@ public class NeoStoreIndexStoreViewTest
         @SuppressWarnings("unchecked")
         Visitor<NodeUpdates, Exception> visitor = mock( Visitor.class );
         StoreScan<Exception> storeScan = storeView.visitNodes( new int[] {labelId}, (id) -> id == propertyKeyId,
-                visitor, null );
+                visitor, null, false );
 
         // when
         storeScan.run();
