@@ -37,6 +37,7 @@ import org.neo4j.kernel.api.impl.schema.LuceneSchemaIndexBuilder;
 import org.neo4j.kernel.api.impl.schema.SchemaIndex;
 import org.neo4j.kernel.api.index.IndexEntryUpdate;
 import org.neo4j.kernel.api.index.IndexUpdater;
+import org.neo4j.kernel.api.schema.IndexDescriptorFactory;
 import org.neo4j.kernel.api.schema_new.IndexQuery;
 import org.neo4j.kernel.api.schema_new.index.NewIndexDescriptor;
 import org.neo4j.kernel.api.schema_new.index.NewIndexDescriptorFactory;
@@ -54,7 +55,6 @@ import static org.junit.Assert.assertTrue;
 @RunWith( Parameterized.class )
 public class LuceneSchemaIndexPopulationIT
 {
-
     @Rule
     public TestDirectory testDir = TestDirectory.testDirectory();
     @Rule
@@ -101,7 +101,8 @@ public class LuceneSchemaIndexPopulationIT
             assertEquals( 0, uniqueIndex.allDocumentsReader().maxCount() );
             assertFalse( uniqueIndex.exists() );
 
-            try ( LuceneIndexAccessor indexAccessor = new LuceneIndexAccessor( uniqueIndex ) )
+            try ( LuceneIndexAccessor indexAccessor = new LuceneIndexAccessor( uniqueIndex,
+                    IndexDescriptorFactory.of( 1, 1 ) ) )
             {
                 generateUpdates( indexAccessor, affectedNodes );
                 indexAccessor.force();

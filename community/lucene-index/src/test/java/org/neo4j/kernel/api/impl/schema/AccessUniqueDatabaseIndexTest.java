@@ -33,6 +33,7 @@ import org.neo4j.kernel.api.impl.index.storage.PartitionedIndexStorage;
 import org.neo4j.kernel.api.index.IndexAccessor;
 import org.neo4j.kernel.api.index.IndexEntryUpdate;
 import org.neo4j.kernel.api.index.IndexUpdater;
+import org.neo4j.kernel.api.schema.IndexDescriptorFactory;
 import org.neo4j.kernel.api.schema_new.index.NewIndexDescriptor;
 import org.neo4j.kernel.api.schema_new.index.NewIndexDescriptorFactory;
 import org.neo4j.kernel.impl.api.index.IndexUpdateMode;
@@ -138,7 +139,7 @@ public class AccessUniqueDatabaseIndexTest
                 .uniqueIndex()
                 .build();
         luceneIndex.open();
-        return new LuceneIndexAccessor( luceneIndex );
+        return new LuceneIndexAccessor( luceneIndex, IndexDescriptorFactory.of( 1, 1 ) );
     }
 
     private PartitionedIndexStorage getIndexStorage() throws IOException

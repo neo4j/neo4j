@@ -110,7 +110,7 @@ public class IndexPopulationJob implements Runnable
                 multiPopulator.replaceIndexCounts( 0, 0, 0 );
 
                 indexAllNodes();
-                verifyDeferredConstraints();
+                monitor.indexPopulationScanComplete();
                 if ( cancelled )
                 {
                     multiPopulator.cancel();
@@ -148,12 +148,6 @@ public class IndexPopulationJob implements Runnable
             return PopulationProgress.NONE;
         }
         return storeScan.getProgress();
-    }
-
-    private void verifyDeferredConstraints()
-    {
-        monitor.verifyDeferredConstraints();
-        multiPopulator.verifyAllDeferredConstraints( storeView );
     }
 
     public Future<Void> cancel()

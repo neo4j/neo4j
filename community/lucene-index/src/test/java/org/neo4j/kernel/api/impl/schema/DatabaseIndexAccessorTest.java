@@ -43,6 +43,8 @@ import org.neo4j.kernel.api.exceptions.index.IndexNotFoundKernelException;
 import org.neo4j.kernel.api.impl.index.storage.DirectoryFactory;
 import org.neo4j.kernel.api.index.IndexEntryUpdate;
 import org.neo4j.kernel.api.index.IndexUpdater;
+import org.neo4j.kernel.api.schema.IndexDescriptor;
+import org.neo4j.kernel.api.schema.IndexDescriptorFactory;
 import org.neo4j.kernel.api.schema_new.IndexQuery;
 import org.neo4j.kernel.api.schema_new.index.NewIndexDescriptor;
 import org.neo4j.kernel.api.schema_new.index.NewIndexDescriptorFactory;
@@ -66,6 +68,8 @@ import static org.neo4j.test.rule.concurrent.ThreadingRule.waitingWhileIn;
 @RunWith( Parameterized.class )
 public class DatabaseIndexAccessorTest
 {
+    private static final IndexDescriptor SOME_INDEX_DESCRIPTOR = IndexDescriptorFactory.of( 1, 1 );
+
     @Rule
     public final ThreadingRule threading = new ThreadingRule();
     @ClassRule
@@ -95,7 +99,7 @@ public class DatabaseIndexAccessorTest
 
                     index.create();
                     index.open();
-                    return new LuceneIndexAccessor( index );
+                    return new LuceneIndexAccessor( index, SOME_INDEX_DESCRIPTOR );
                 } ),
                 arg( dirFactory1 -> {
                     SchemaIndex index = LuceneSchemaIndexBuilder.create()
@@ -108,7 +112,7 @@ public class DatabaseIndexAccessorTest
 
                     index.create();
                     index.open();
-                    return new LuceneIndexAccessor( index );
+                    return new LuceneIndexAccessor( index, SOME_INDEX_DESCRIPTOR );
                 } )
         );
     }

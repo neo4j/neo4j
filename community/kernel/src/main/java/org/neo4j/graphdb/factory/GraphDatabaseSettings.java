@@ -518,6 +518,11 @@ public class GraphDatabaseSettings implements LoadableConfig
             " will enable them to bypass security. Use with care.")
     public static final Setting<String> procedure_unrestricted = setting( "dbms.security.procedures.unrestricted", Settings.STRING, "" );
 
+    @Description( "Whether or not to release the exclusive schema lock is while building uniqueness constraints index" )
+    @Internal
+    public static final Setting<Boolean> release_schema_lock_while_building_constraint = setting(
+            "unsupported.dbms.schema.release_lock_while_building_constraint", BOOLEAN, FALSE );
+
     // Bolt Settings
 
     @Description("Default network interface to listen for incoming connections. " +

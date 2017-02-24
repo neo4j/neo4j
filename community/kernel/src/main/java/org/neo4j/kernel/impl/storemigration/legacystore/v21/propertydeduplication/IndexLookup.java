@@ -30,6 +30,7 @@ import org.neo4j.collection.primitive.Primitive;
 import org.neo4j.collection.primitive.PrimitiveIntObjectMap;
 import org.neo4j.kernel.api.index.IndexAccessor;
 import org.neo4j.kernel.api.index.IndexConfiguration;
+import org.neo4j.kernel.api.index.IndexDescriptor;
 import org.neo4j.kernel.api.index.SchemaIndexProvider;
 import org.neo4j.kernel.api.schema_new.SchemaDescriptorPredicates;
 import org.neo4j.kernel.configuration.Config;
@@ -112,7 +113,8 @@ class IndexLookup implements AutoCloseable
         {
             IndexConfiguration indexConfig = IndexConfiguration.of( rule );
             IndexAccessor accessor = schemaIndexProvider.getOnlineAccessor(
-                    rule.getId(), indexConfig, samplingConfig );
+                    rule.getId(), new IndexDescriptor( rule.getLabel(), rule.getPropertyKey() ),
+                    indexConfig, samplingConfig );
             indexAccessors.add( accessor );
             reader = accessor.newReader();
             readerCache.put( rule, reader );

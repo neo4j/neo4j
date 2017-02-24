@@ -31,17 +31,21 @@ import org.neo4j.kernel.api.impl.schema.writer.LuceneIndexWriter;
 import org.neo4j.kernel.api.index.IndexAccessor;
 import org.neo4j.kernel.api.index.IndexEntryUpdate;
 import org.neo4j.kernel.api.index.IndexUpdater;
+import org.neo4j.kernel.api.index.PropertyAccessor;
+import org.neo4j.kernel.api.schema.IndexDescriptor;
 import org.neo4j.kernel.impl.api.index.IndexUpdateMode;
 import org.neo4j.storageengine.api.schema.IndexReader;
 
 public class LuceneIndexAccessor implements IndexAccessor
 {
     private final LuceneIndexWriter writer;
-    private SchemaIndex luceneIndex;
+    private final SchemaIndex luceneIndex;
+    private final IndexDescriptor descriptor;
 
-    public LuceneIndexAccessor( SchemaIndex luceneIndex ) throws IOException
+    public LuceneIndexAccessor( SchemaIndex luceneIndex, IndexDescriptor descriptor ) throws IOException
     {
         this.luceneIndex = luceneIndex;
+        this.descriptor = descriptor;
         this.writer = luceneIndex.isReadOnly() ? null : luceneIndex.getIndexWriter();
     }
 
@@ -113,6 +117,13 @@ public class LuceneIndexAccessor implements IndexAccessor
     public ResourceIterator<File> snapshotFiles() throws IOException
     {
         return luceneIndex.snapshot();
+    }
+
+    @Override
+    public void verifyDeferredConstraints( PropertyAccessor propertyAccessor )
+            throws IndexEntryConflictException, IOException
+    {
+        luceneIndex.verifyUniqueness( propertyAccessor, descriptor.getPropertyKeyId() );
     }
 
     private class LuceneIndexUpdater implements IndexUpdater

@@ -106,9 +106,9 @@ public class TransactionToApply implements CommandsToApply, AutoCloseable
     }
 
     @Override
-    public void accept( Visitor<StorageCommand,IOException> visitor ) throws IOException
+    public boolean accept( Visitor<StorageCommand,IOException> visitor ) throws IOException
     {
-        transactionRepresentation.accept( visitor );
+        return transactionRepresentation.accept( visitor );
     }
 
     public TransactionRepresentation transactionRepresentation()

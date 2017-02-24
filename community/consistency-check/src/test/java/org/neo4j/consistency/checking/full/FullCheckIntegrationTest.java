@@ -75,6 +75,7 @@ import org.neo4j.kernel.api.labelscan.LabelScanStore;
 import org.neo4j.kernel.api.labelscan.LabelScanWriter;
 import org.neo4j.kernel.api.labelscan.NodeLabelUpdate;
 import org.neo4j.kernel.api.schema.IndexDescriptor;
+import org.neo4j.kernel.api.schema.IndexDescriptorFactory;
 import org.neo4j.kernel.api.schema_new.index.IndexBoundary;
 import org.neo4j.kernel.configuration.Config;
 import org.neo4j.kernel.impl.annotations.Documented;
@@ -529,7 +530,8 @@ public class FullCheckIntegrationTest
         {
             IndexRule indexRule = indexRuleIterator.next();
             IndexAccessor accessor = fixture.directStoreAccess().indexes().getOnlineAccessor(
-                    indexRule.getId(), IndexConfiguration.of( indexRule ), samplingConfig );
+                    indexRule.getId(), IndexBoundary.map( indexRule.getIndexDescriptor() ),
+                    IndexConfiguration.of( indexRule ), samplingConfig );
             IndexUpdater updater = accessor.newUpdater( IndexUpdateMode.ONLINE );
             updater.remove( asPrimitiveLongSet( indexedNodes ) );
             updater.close();
@@ -557,7 +559,10 @@ public class FullCheckIntegrationTest
             IndexRule indexRule = indexRuleIterator.next();
             IndexAccessor accessor = fixture.directStoreAccess()
                                             .indexes()
-                                            .getOnlineAccessor( indexRule.getId(), indexConfig, samplingConfig );
+                                            .getOnlineAccessor( indexRule.getId(),
+                                                    IndexBoundary.map( indexRule.getIndexDescriptor() ),
+                                                    indexConfig,
+                                                    samplingConfig );
             IndexUpdater updater = accessor.newUpdater( IndexUpdateMode.ONLINE );
             updater.process( IndexEntryUpdate.add( 42, indexRule.getIndexDescriptor(), "value" ) );
             updater.close();

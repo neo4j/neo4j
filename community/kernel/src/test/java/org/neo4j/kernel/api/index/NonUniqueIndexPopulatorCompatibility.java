@@ -64,7 +64,8 @@ public class NonUniqueIndexPopulatorCompatibility extends IndexProviderCompatibi
         populator.close( true );
 
         // then
-        IndexAccessor accessor = indexProvider.getOnlineAccessor( 17, config, indexSamplingConfig );
+        IndexAccessor accessor = indexProvider.getOnlineAccessor( 17, new IndexDescriptor( 1, 2 ),
+                config, indexSamplingConfig );
         try ( IndexReader reader = accessor.newReader() )
         {
             PrimitiveLongIterator nodes = reader.query( IndexQuery.exact( 1, "value1" ) );
@@ -147,7 +148,8 @@ public class NonUniqueIndexPopulatorCompatibility extends IndexProviderCompatibi
         populator.close( true );
 
         // then
-        IndexAccessor accessor = indexProvider.getOnlineAccessor( 17, IndexConfiguration.NON_UNIQUE, indexSamplingConfig );
+        IndexAccessor accessor = indexProvider.getOnlineAccessor( 17, new IndexDescriptor( labelId, propertyKeyId ),
+                IndexConfiguration.NON_UNIQUE, indexSamplingConfig );
         try ( IndexReader reader = accessor.newReader() )
         {
             int propertyKeyId = descriptor.schema().getPropertyId();

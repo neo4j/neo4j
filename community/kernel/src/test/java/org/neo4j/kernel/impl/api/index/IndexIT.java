@@ -37,16 +37,17 @@ import org.neo4j.kernel.api.schema.IndexDescriptor;
 import org.neo4j.kernel.api.schema.NodePropertyDescriptor;
 import org.neo4j.kernel.api.security.AnonymousContext;
 import org.neo4j.kernel.api.security.SecurityContext;
-import org.neo4j.kernel.api.schema_new.index.IndexBoundary;
 import org.neo4j.kernel.api.schema_new.index.NewIndexDescriptor;
+import org.neo4j.kernel.api.index.PropertyAccessor;
 import org.neo4j.kernel.impl.api.integrationtest.KernelIntegrationTest;
-import org.neo4j.kernel.impl.api.operations.SchemaReadOperations;
 import org.neo4j.kernel.impl.api.state.ConstraintIndexCreator;
 
 import static org.junit.Assert.assertEquals;
 import static org.junit.Assert.assertFalse;
 import static org.junit.Assert.assertTrue;
 import static org.junit.Assert.fail;
+import static org.mockito.Mockito.mock;
+
 import static org.neo4j.helpers.collection.Iterators.asSet;
 import static org.neo4j.helpers.collection.Iterators.emptySetOf;
 
@@ -126,7 +127,8 @@ public class IndexIT extends KernelIntegrationTest
     public void shouldRemoveAConstraintIndexWithoutOwnerInRecovery() throws Exception
     {
         // given
-        ConstraintIndexCreator creator = new ConstraintIndexCreator( () -> kernel, indexingService );
+        PropertyAccessor propertyAccessor = mock( PropertyAccessor.class );
+        ConstraintIndexCreator creator = new ConstraintIndexCreator( () -> kernel, indexingService, propertyAccessor, false );
         creator.createConstraintIndex( new UniquenessConstraint( descriptor ) );
 
         // when

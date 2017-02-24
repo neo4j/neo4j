@@ -62,15 +62,16 @@ public class PhysicalTransactionRepresentation implements TransactionRepresentat
     }
 
     @Override
-    public void accept( Visitor<StorageCommand,IOException> visitor ) throws IOException
+    public boolean accept( Visitor<StorageCommand,IOException> visitor ) throws IOException
     {
         for ( StorageCommand command : commands )
         {
             if ( visitor.visit( command ) )
             {
-                return;
+                return true;
             }
         }
+        return false;
     }
 
     @Override

@@ -28,7 +28,6 @@ import org.neo4j.kernel.api.index.NodeUpdates;
 import org.neo4j.kernel.impl.api.BatchTransactionApplier;
 import org.neo4j.kernel.impl.api.TransactionApplier;
 import org.neo4j.kernel.impl.locking.LockGroup;
-import org.neo4j.kernel.impl.store.record.PropertyRecord;
 import org.neo4j.kernel.impl.transaction.command.Command.NodeCommand;
 import org.neo4j.kernel.impl.transaction.command.Command.PropertyCommand;
 import org.neo4j.storageengine.api.CommandsToApply;
@@ -70,14 +69,14 @@ public class NodePropertyCommandsExtractor extends TransactionApplier.Adapter
     public boolean visitNodeCommand( NodeCommand command ) throws IOException
     {
         nodeCommandsById.put( command.getKey(), command );
-        if ( !hasUpdates && hasLabelChanges( command ) )
+        if ( !hasUpdates && mayResultInIndexUpdates( command ) )
         {
             hasUpdates = true;
         }
         return false;
     }
 
-    private boolean hasLabelChanges( NodeCommand command )
+    public static boolean mayResultInIndexUpdates( NodeCommand command )
     {
         long before = command.getBefore().getLabelField();
         long after = command.getAfter().getLabelField();
@@ -88,11 +87,15 @@ public class NodePropertyCommandsExtractor extends TransactionApplier.Adapter
 
     }
 
+    public static boolean mayResultInIndexUpdates( PropertyCommand command )
+    {
+        return command.getAfter().isNodeSet();
+    }
+
     @Override
     public boolean visitPropertyCommand( PropertyCommand command ) throws IOException
     {
-        PropertyRecord record = command.getAfter();
-        if ( record.isNodeSet() )
+        if ( mayResultInIndexUpdates( command ) )
         {
             long nodeId = command.getAfter().getNodeId();
             List<PropertyCommand> group = propertyCommandsByNodeIds.get( nodeId );

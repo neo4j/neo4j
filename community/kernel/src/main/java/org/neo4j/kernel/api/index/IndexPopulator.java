@@ -57,10 +57,16 @@ public interface IndexPopulator
             throws IndexEntryConflictException, IOException;
 
     /**
-     * Verify constraints for all entries added so far.
+     * Verifies that each value in this index is unique.
+     * This method is called after the index has been fully populated and is guaranteed to not have
+     * concurrent changes while executing.
+     *
+     * @param propertyAccessor {@link PropertyAccessor} for accessing properties from database storage
+     * in the event of conflicting values.
+     * @throws IndexEntryConflictException for first detected uniqueness conflict, if any.
+     * @throws IOException on error reading from source files.
      */
-    @Deprecated // TODO we want to remove this in 2.1, and properly prevent value collisions.
-    void verifyDeferredConstraints( PropertyAccessor accessor )  throws IndexEntryConflictException, IOException;
+    void verifyDeferredConstraints( PropertyAccessor propertyAccessor ) throws IndexEntryConflictException, IOException;
 
     /**
      * Return an updater for applying a set of changes to this index, generally this will be a set of changes from a
@@ -137,11 +143,6 @@ public interface IndexPopulator
         }
 
         @Override
-        public void verifyDeferredConstraints( PropertyAccessor accessor ) throws IndexEntryConflictException, IOException
-        {
-        }
-
-        @Override
         public IndexUpdater newPopulatingUpdater( PropertyAccessor accessor )
         {
             return SwallowingIndexUpdater.INSTANCE;
@@ -171,6 +172,12 @@ public interface IndexPopulator
         public IndexSample sampleResult()
         {
             return new IndexSample();
+        }
+
+        @Override
+        public void verifyDeferredConstraints( PropertyAccessor propertyAccessor )
+                throws IndexEntryConflictException, IOException
+        {
         }
     }
 }

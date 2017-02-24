@@ -118,8 +118,8 @@ public class LuceneSchemaIndexProviderTest
     private IndexAccessor getIndexAccessor( Config readOnlyConfig, LuceneSchemaIndexProvider indexProvider )
             throws IOException
     {
-        return indexProvider.getOnlineAccessor( 1L, IndexConfiguration.NON_UNIQUE,
-                new IndexSamplingConfig( readOnlyConfig ) );
+        return indexProvider.getOnlineAccessor( 1L, new IndexDescriptor( 1, 2 ),
+                IndexConfiguration.NON_UNIQUE, new IndexSamplingConfig( readOnlyConfig ) );
     }
 
     private LuceneSchemaIndexProvider getLuceneSchemaIndexProvider( Config config, DirectoryFactory directoryFactory,
