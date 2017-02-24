@@ -119,8 +119,8 @@ public class IndexRecoveryIT
         verify( mockedIndexProvider, times( 2 ) )
                 .getPopulator( anyLong(), any( IndexDescriptor.class ), any( IndexConfiguration.class ),
                         any( IndexSamplingConfig.class ) );
-        verify( mockedIndexProvider, times( 0 ) ).getOnlineAccessor(
-                anyLong(), any( IndexConfiguration.class ), any( IndexSamplingConfig.class )
+        verify( mockedIndexProvider, times( 0 ) ).getOnlineAccessor( anyLong(), any( IndexDescriptor.class ),
+                any( IndexConfiguration.class ), any( IndexSamplingConfig.class )
         );
         latch.countDown();
     }
@@ -159,8 +159,8 @@ public class IndexRecoveryIT
         verify( mockedIndexProvider, times( 2 ) )
                 .getPopulator( anyLong(), any( IndexDescriptor.class ), any( IndexConfiguration.class ),
                         any( IndexSamplingConfig.class ) );
-        verify( mockedIndexProvider, times( 0 ) ).getOnlineAccessor(
-                anyLong(), any( IndexConfiguration.class ), any( IndexSamplingConfig.class )
+        verify( mockedIndexProvider, times( 0 ) ).getOnlineAccessor( anyLong(), any( IndexDescriptor.class ),
+                any( IndexConfiguration.class ), any( IndexSamplingConfig.class )
         );
         latch.countDown();
     }
@@ -179,8 +179,8 @@ public class IndexRecoveryIT
         when( populator.sampleResult() ).thenReturn( new IndexSample() );
         IndexAccessor mockedAccessor = mock( IndexAccessor.class );
         when( mockedAccessor.newUpdater( any( IndexUpdateMode.class ) ) ).thenReturn( SwallowingIndexUpdater.INSTANCE );
-        when( mockedIndexProvider.getOnlineAccessor(
-                        anyLong(), any( IndexConfiguration.class ), any( IndexSamplingConfig.class ) )
+        when( mockedIndexProvider.getOnlineAccessor( anyLong(), any( IndexDescriptor.class ),
+                any( IndexConfiguration.class ), any( IndexSamplingConfig.class ) )
         ).thenReturn( mockedAccessor );
         createIndexAndAwaitPopulation( myLabel );
         // rotate logs
@@ -192,8 +192,8 @@ public class IndexRecoveryIT
         killDb();
         when( mockedIndexProvider.getInitialState( anyLong() ) ).thenReturn( InternalIndexState.ONLINE );
         GatheringIndexWriter writer = new GatheringIndexWriter();
-        when( mockedIndexProvider.getOnlineAccessor(
-                        anyLong(), any( IndexConfiguration.class ), any( IndexSamplingConfig.class ) )
+        when( mockedIndexProvider.getOnlineAccessor( anyLong(), any( IndexDescriptor.class ),
+                any( IndexConfiguration.class ), any( IndexSamplingConfig.class ) )
         ).thenReturn( writer );
 
         // When
@@ -207,7 +207,8 @@ public class IndexRecoveryIT
                         any( IndexSamplingConfig.class ) );
         int onlineAccessorInvocationCount = 2; // once when we create the index, and once when we restart the db
         verify( mockedIndexProvider, times( onlineAccessorInvocationCount ) )
-                .getOnlineAccessor( anyLong(), any( IndexConfiguration.class ), any( IndexSamplingConfig.class ) );
+                .getOnlineAccessor( anyLong(), any( IndexDescriptor.class ),
+                        any( IndexConfiguration.class ), any( IndexSamplingConfig.class ) );
         assertEquals( expectedUpdates, writer.batchedUpdates );
         for ( NodePropertyUpdate update : writer.batchedUpdates )
         {
@@ -223,8 +224,8 @@ public class IndexRecoveryIT
                 .getPopulator( anyLong(), any( IndexDescriptor.class ), any( IndexConfiguration.class ),
                         any( IndexSamplingConfig.class ) ) )
                 .thenReturn( mock( IndexPopulator.class ) );
-        when( mockedIndexProvider.getOnlineAccessor(
-                        anyLong(), any( IndexConfiguration.class ), any( IndexSamplingConfig.class ) )
+        when( mockedIndexProvider.getOnlineAccessor( anyLong(), any( IndexDescriptor.class ),
+                any( IndexConfiguration.class ), any( IndexSamplingConfig.class ) )
         ).thenReturn( mock( IndexAccessor.class ) );
         startDb();
         createIndex( myLabel );

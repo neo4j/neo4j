@@ -50,8 +50,8 @@ public class LuceneSchemaIndexProvider extends SchemaIndexProvider
 {
     private final IndexStorageFactory indexStorageFactory;
     private final Log log;
-    private Config config;
-    private OperationalMode operationalMode;
+    private final Config config;
+    private final OperationalMode operationalMode;
 
     public LuceneSchemaIndexProvider( FileSystemAbstraction fileSystem, DirectoryFactory directoryFactory,
                                       File storeDir, LogProvider logging, Config config,
@@ -102,8 +102,8 @@ public class LuceneSchemaIndexProvider extends SchemaIndexProvider
     }
 
     @Override
-    public IndexAccessor getOnlineAccessor( long indexId, IndexConfiguration indexConfiguration,
-            IndexSamplingConfig samplingConfig ) throws IOException
+    public IndexAccessor getOnlineAccessor( long indexId, IndexDescriptor descriptor,
+            IndexConfiguration indexConfiguration, IndexSamplingConfig samplingConfig ) throws IOException
     {
         SchemaIndex luceneIndex = LuceneSchemaIndexBuilder.create()
                                             .withIndexConfig( indexConfiguration )
@@ -113,7 +113,7 @@ public class LuceneSchemaIndexProvider extends SchemaIndexProvider
                                             .withIndexStorage( getIndexStorage( indexId ) )
                                             .build();
         luceneIndex.open();
-        return new LuceneIndexAccessor( luceneIndex );
+        return new LuceneIndexAccessor( luceneIndex, descriptor );
     }
 
     @Override

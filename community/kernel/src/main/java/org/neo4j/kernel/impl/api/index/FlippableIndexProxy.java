@@ -40,6 +40,7 @@ import org.neo4j.kernel.api.index.IndexConfiguration;
 import org.neo4j.kernel.api.index.IndexDescriptor;
 import org.neo4j.kernel.api.index.IndexUpdater;
 import org.neo4j.kernel.api.index.InternalIndexState;
+import org.neo4j.kernel.api.index.PropertyAccessor;
 import org.neo4j.kernel.api.index.SchemaIndexProvider;
 import org.neo4j.kernel.impl.api.index.updater.DelegatingIndexUpdater;
 import org.neo4j.storageengine.api.schema.IndexReader;
@@ -439,6 +440,20 @@ public class FlippableIndexProxy implements IndexProxy
         if ( closed )
         {
             throw new IndexProxyAlreadyClosedKernelException( this.getClass() );
+        }
+    }
+
+    @Override
+    public void verifyDeferredConstraints( PropertyAccessor accessor ) throws IndexEntryConflictException, IOException
+    {
+        lock.readLock().lock();
+        try
+        {
+            delegate.verifyDeferredConstraints( accessor );
+        }
+        finally
+        {
+            lock.readLock().unlock();
         }
     }
 

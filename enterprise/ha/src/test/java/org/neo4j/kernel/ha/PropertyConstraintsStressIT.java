@@ -25,6 +25,7 @@ import org.junit.Rule;
 import org.junit.Test;
 import org.junit.runner.RunWith;
 import org.junit.runners.Parameterized;
+import org.junit.runners.Parameterized.Parameter;
 
 import java.util.Arrays;
 import java.util.HashSet;
@@ -43,6 +44,7 @@ import org.neo4j.graphdb.Relationship;
 import org.neo4j.graphdb.Transaction;
 import org.neo4j.graphdb.TransactionFailureException;
 import org.neo4j.graphdb.TransientTransactionFailureException;
+import org.neo4j.graphdb.factory.GraphDatabaseSettings;
 import org.neo4j.graphdb.schema.ConstraintDefinition;
 import org.neo4j.graphdb.schema.IndexDefinition;
 import org.neo4j.helpers.Exceptions;
@@ -54,10 +56,12 @@ import org.neo4j.test.ha.ClusterRule;
 import org.neo4j.test.rule.SuppressOutput;
 import org.neo4j.test.rule.concurrent.OtherThreadRule;
 
-import static java.lang.String.format;
 import static org.hamcrest.Matchers.equalTo;
 import static org.hamcrest.Matchers.greaterThan;
 import static org.junit.Assert.assertThat;
+
+import static java.lang.String.format;
+
 import static org.neo4j.graphdb.Label.label;
 import static org.neo4j.graphdb.RelationshipType.withName;
 import static org.neo4j.helpers.collection.Iterators.loop;
@@ -68,8 +72,11 @@ import static org.neo4j.helpers.collection.Iterators.loop;
 @RunWith( Parameterized.class )
 public class PropertyConstraintsStressIT
 {
-    @Parameterized.Parameter
+    @Parameter( 0 )
     public ConstraintOperations constraintOps;
+
+    @Parameter( 1 )
+    public boolean releaseSchemaLockWhileBuildingIndex;
 
     @Rule
     public final SuppressOutput suppressOutput = SuppressOutput.suppressAll();
@@ -100,20 +107,25 @@ public class PropertyConstraintsStressIT
 
     private final AtomicInteger roundNo = new AtomicInteger( 0 );
 
-    @Parameterized.Parameters( name = "{0}" )
+    @Parameterized.Parameters( name = "{0}:{1}" )
     public static Iterable<Object[]> params()
     {
         return Arrays.asList( new Object[][]{
-                {UNIQUE_PROPERTY_CONSTRAINT_OPS},
-                {NODE_PROPERTY_EXISTENCE_CONSTRAINT_OPS},
-                {REL_PROPERTY_EXISTENCE_CONSTRAINT_OPS},
+                {UNIQUE_PROPERTY_CONSTRAINT_OPS, false},
+                {UNIQUE_PROPERTY_CONSTRAINT_OPS, true},
+                {NODE_PROPERTY_EXISTENCE_CONSTRAINT_OPS, false},
+                {REL_PROPERTY_EXISTENCE_CONSTRAINT_OPS, false},
         } );
     }
 
     @Before
     public void setup() throws Exception
     {
-        cluster = clusterRule.withSharedSetting( HaSettings.pull_interval, "0" ).startCluster();
+        cluster = clusterRule
+                .withSharedSetting( HaSettings.pull_interval, "0" )
+                .withSharedSetting( GraphDatabaseSettings.release_schema_lock_while_building_constraint,
+                        String.valueOf( releaseSchemaLockWhileBuildingIndex ) )
+                .startCluster();
         clearData();
     }
 

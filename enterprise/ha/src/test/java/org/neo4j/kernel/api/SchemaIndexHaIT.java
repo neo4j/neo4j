@@ -509,10 +509,10 @@ public class SchemaIndexHaIT
         }
 
         @Override
-        public IndexAccessor getOnlineAccessor( long indexId, IndexConfiguration config,
-                                                IndexSamplingConfig samplingConfig  ) throws IOException
+        public IndexAccessor getOnlineAccessor( long indexId, IndexDescriptor descriptor,
+                IndexConfiguration config, IndexSamplingConfig samplingConfig  ) throws IOException
         {
-            return delegate.getOnlineAccessor(indexId, config, samplingConfig );
+            return delegate.getOnlineAccessor(indexId, descriptor, config, samplingConfig );
         }
 
         @Override

@@ -612,7 +612,8 @@ public class HighlyAvailableEditionModule
                 TransactionCommitProcess.class );
 
         CommitProcessSwitcher commitProcessSwitcher = new CommitProcessSwitcher( transactionPropagator,
-                master, commitProcessDelegate, requestContextFactory, monitors, dependencies );
+                master, commitProcessDelegate, requestContextFactory, lockManager, monitors, dependencies,
+                config.get( GraphDatabaseSettings.release_schema_lock_while_building_constraint ) );
         componentSwitcherContainer.add( commitProcessSwitcher );
 
         return new HighlyAvailableCommitProcessFactory( commitProcessDelegate );

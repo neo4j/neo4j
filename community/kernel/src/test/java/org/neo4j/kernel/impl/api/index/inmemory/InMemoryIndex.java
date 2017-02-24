@@ -248,6 +248,13 @@ class InMemoryIndex
         {
             return emptyIterator();
         }
+
+        @Override
+        public void verifyDeferredConstraints( PropertyAccessor propertyAccessor )
+                throws IndexEntryConflictException, IOException
+        {
+            InMemoryIndex.this.verifyDeferredConstraints( propertyAccessor );
+        }
     }
 
     protected IndexUpdater newUpdater( IndexUpdateMode mode, boolean populating )

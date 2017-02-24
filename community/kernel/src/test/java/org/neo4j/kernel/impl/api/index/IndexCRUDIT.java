@@ -186,7 +186,8 @@ public class IndexCRUDIT
         ).thenReturn( writer );
         when( mockedIndexProvider.getProviderDescriptor() ).thenReturn( PROVIDER_DESCRIPTOR );
         when( mockedIndexProvider.getOnlineAccessor(
-                anyLong(), any( IndexConfiguration.class ), any( IndexSamplingConfig.class )
+                anyLong(), any( IndexDescriptor.class ), any( IndexConfiguration.class ),
+                any( IndexSamplingConfig.class )
         ) ).thenReturn( writer );
         when( mockedIndexProvider.compareTo( any( SchemaIndexProvider.class ) ) )
                 .thenReturn( 1 ); // always pretend to have highest priority

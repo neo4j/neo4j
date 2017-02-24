@@ -87,7 +87,7 @@ import org.neo4j.kernel.lifecycle.LifecycleAdapter;
  * <h3>Online operation</h3>
  *
  * Once the index is online, the database will move to using the
- * {@link #getOnlineAccessor(long, IndexConfiguration, IndexSamplingConfig) online accessor} to
+ * {@link #getOnlineAccessor(long, IndexDescriptor, IndexConfiguration, IndexSamplingConfig) online accessor} to
  * write to the index.
  */
 public abstract class SchemaIndexProvider extends LifecycleAdapter implements Comparable<SchemaIndexProvider>
@@ -99,8 +99,8 @@ public abstract class SchemaIndexProvider extends LifecycleAdapter implements Co
                 private final IndexPopulator singlePopulator = new IndexPopulator.Adapter();
 
                 @Override
-                public IndexAccessor getOnlineAccessor( long indexId, IndexConfiguration config,
-                                                        IndexSamplingConfig samplingConfig )
+                public IndexAccessor getOnlineAccessor( long indexId, IndexDescriptor descriptor,
+                                                        IndexConfiguration config, IndexSamplingConfig samplingConfig )
                 {
                     return singleWriter;
                 }
@@ -151,8 +151,8 @@ public abstract class SchemaIndexProvider extends LifecycleAdapter implements Co
     /**
      * Used for updating an index once initial population has completed.
      */
-    public abstract IndexAccessor getOnlineAccessor( long indexId, IndexConfiguration config,
-                                                     IndexSamplingConfig samplingConfig ) throws IOException;
+    public abstract IndexAccessor getOnlineAccessor( long indexId, IndexDescriptor descriptor,
+            IndexConfiguration config, IndexSamplingConfig samplingConfig ) throws IOException;
 
     /**
      * Returns a failure previously gotten from {@link IndexPopulator#markAsFailed(String)}

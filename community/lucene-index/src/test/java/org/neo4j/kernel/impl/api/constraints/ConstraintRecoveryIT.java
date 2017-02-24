@@ -70,7 +70,7 @@ public class ConstraintRecoveryIT
         monitors.addMonitorListener( new IndexingService.MonitorAdapter()
         {
             @Override
-            public void verifyDeferredConstraints()
+            public void indexPopulationScanComplete()
             {
                 monitorCalled.set( true );
                 db.getDependencyResolver().resolveDependency( RecordStorageEngine.class )

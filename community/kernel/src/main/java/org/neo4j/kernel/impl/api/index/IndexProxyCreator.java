@@ -94,7 +94,7 @@ public class IndexProxyCreator
             monitor.populationCompleteOn( descriptor );
             OnlineIndexProxy onlineProxy = new OnlineIndexProxy(
                     descriptor, config, onlineAccessorFromProvider( providerDescriptor, ruleId,
-                    config, samplingConfig ), storeView, providerDescriptor, true
+                    descriptor, config, samplingConfig ), storeView, providerDescriptor, true
             );
             if ( flipToTentative )
             {
@@ -125,7 +125,7 @@ public class IndexProxyCreator
         {
             IndexConfiguration config = IndexConfiguration.of( unique );
             IndexAccessor onlineAccessor =
-                    onlineAccessorFromProvider( providerDescriptor, ruleId, config, samplingConfig );
+                    onlineAccessorFromProvider( providerDescriptor, ruleId, descriptor, config, samplingConfig );
             IndexProxy proxy;
             proxy = new OnlineIndexProxy( descriptor, config, onlineAccessor, storeView, providerDescriptor, false );
             proxy = new ContractCheckingIndexProxy( proxy, true );
@@ -179,11 +179,11 @@ public class IndexProxyCreator
         return indexProvider.getPopulator( ruleId, descriptor, indexConfig, samplingConfig );
     }
 
-    private IndexAccessor onlineAccessorFromProvider( SchemaIndexProvider.Descriptor providerDescriptor,
-                                                      long ruleId, IndexConfiguration indexConfig,
-                                                      IndexSamplingConfig samplingConfig ) throws IOException
+    private IndexAccessor onlineAccessorFromProvider( SchemaIndexProvider.Descriptor providerDescriptor, long ruleId,
+            IndexDescriptor descriptor, IndexConfiguration indexConfig, IndexSamplingConfig samplingConfig )
+            throws IOException
     {
         SchemaIndexProvider indexProvider = providerMap.apply( providerDescriptor );
-        return indexProvider.getOnlineAccessor( ruleId, indexConfig, samplingConfig );
+        return indexProvider.getOnlineAccessor( ruleId, descriptor, indexConfig, samplingConfig );
     }
 }

@@ -39,6 +39,7 @@ import org.neo4j.helpers.collection.Iterables;
 import org.neo4j.helpers.collection.Iterators;
 import org.neo4j.kernel.api.exceptions.index.IndexEntryConflictException;
 import org.neo4j.kernel.api.impl.index.LuceneAllDocumentsReader;
+import org.neo4j.kernel.api.index.IndexDescriptor;
 import org.neo4j.kernel.api.index.IndexUpdater;
 import org.neo4j.kernel.api.index.NodePropertyUpdate;
 import org.neo4j.kernel.impl.api.index.IndexUpdateMode;
@@ -244,7 +245,7 @@ public class LuceneSchemaIndexIT
                 .build();
         index.create();
         index.open();
-        return new LuceneIndexAccessor( index );
+        return new LuceneIndexAccessor( index, new IndexDescriptor( 1, 1 ) );
     }
 
     private Map<String,Integer> countTemplateMatches( List<String> nameTemplates, List<String> fileNames )

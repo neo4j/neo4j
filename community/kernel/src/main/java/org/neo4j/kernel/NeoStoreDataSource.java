@@ -41,6 +41,7 @@ import org.neo4j.io.pagecache.PageCache;
 import org.neo4j.kernel.api.KernelAPI;
 import org.neo4j.kernel.api.TokenNameLookup;
 import org.neo4j.kernel.api.exceptions.KernelException;
+import org.neo4j.kernel.api.index.PropertyAccessor;
 import org.neo4j.kernel.api.index.SchemaIndexProvider;
 import org.neo4j.kernel.api.labelscan.LabelScanStore;
 import org.neo4j.kernel.api.legacyindex.AutoIndexing;
@@ -470,12 +471,16 @@ public class NeoStoreDataSource implements Lifecycle, IndexProviders
                     transactionLogModule.logFiles(), startupStatistics,
                     storageEngine, logEntryReader, transactionLogModule.logicalTransactionStore() );
 
+            // At the time of writing this comes from the storage engine (IndexStoreView)
+            PropertyAccessor propertyAccessor = dependencies.resolveDependency( PropertyAccessor.class );
+
             final KernelModule kernelModule = buildKernel(
                     transactionLogModule.transactionAppender(),
                     dependencies.resolveDependency( IndexingService.class ),
                     storageEngine.storeReadLayer(),
                     updateableSchemaState, dependencies.resolveDependency( LabelScanStore.class ),
-                    storageEngine, indexConfigStore, transactionIdStore, clock );
+                    storageEngine, indexConfigStore, transactionIdStore, clock,
+                    propertyAccessor );
 
             // Do these assignments last so that we can ensure no cyclical dependencies exist
             this.storageEngine = storageEngine;
@@ -763,7 +768,8 @@ public class NeoStoreDataSource implements Lifecycle, IndexProviders
                                       StorageEngine storageEngine,
                                       IndexConfigStore indexConfigStore,
                                       TransactionIdStore transactionIdStore,
-                                      Clock clock ) throws KernelException, IOException
+                                      Clock clock,
+                                      PropertyAccessor propertyAccessor ) throws KernelException, IOException
     {
         TransactionCommitProcess transactionCommitProcess = commitProcessFactory.create( appender, storageEngine,
                 config );
@@ -774,8 +780,11 @@ public class NeoStoreDataSource implements Lifecycle, IndexProviders
          */
         Supplier<KernelAPI> kernelProvider = () -> kernelModule.kernelAPI();
 
+        boolean releaseSchemaLockWhenBuildingConstratinIndexes =
+                config.get( GraphDatabaseSettings.release_schema_lock_while_building_constraint );
         ConstraintIndexCreator constraintIndexCreator =
-                new ConstraintIndexCreator( kernelProvider, indexingService );
+                new ConstraintIndexCreator( kernelProvider, indexingService, propertyAccessor,
+                        releaseSchemaLockWhenBuildingConstratinIndexes );
 
         LegacyIndexStore legacyIndexStore = new LegacyIndexStore( config,
                 indexConfigStore, kernelProvider, legacyIndexProviderLookup );
