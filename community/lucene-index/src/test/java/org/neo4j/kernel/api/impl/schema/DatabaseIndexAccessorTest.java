@@ -159,7 +159,7 @@ public class DatabaseIndexAccessorTest
     }
 
     @Test
-    public void indexStringRangeQuery() throws IOException, IndexEntryConflictException
+    public void indexStringRangeQuery() throws Exception
     {
         updateAndCommit( asList( add( PROP_ID, "A" ), add( 2, "B" ), add( 3, "C" ), add( 4, "" ) ) );
 
@@ -191,7 +191,7 @@ public class DatabaseIndexAccessorTest
     }
 
     @Test
-    public void indexNumberRangeQuery() throws IOException, IndexEntryConflictException
+    public void indexNumberRangeQuery() throws Exception
     {
         updateAndCommit( asList( add( 1, 1 ), add( 2, 2 ), add( 3, 3 ), add( 4, 4 ), add( 5, Double.NaN ) ) );
 

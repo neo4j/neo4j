@@ -136,12 +136,12 @@ public abstract class IndexAccessorCompatibility extends IndexProviderCompatibil
         assertThat( query( IndexQuery.stringPrefix( 1, "2" ) ), equalTo( EMPTY_LIST ) );
     }
 
-    protected List<Long> query( IndexQuery... predicates )
+    protected List<Long> query( IndexQuery... predicates ) throws Exception
     {
         return metaGet( reader -> reader.query( predicates ) );
     }
 
-    private List<Long> metaGet( ReaderInteraction interaction )
+    private List<Long> metaGet( ReaderInteraction interaction ) throws Exception
     {
         try ( IndexReader reader = accessor.newReader() )
         {
@@ -157,7 +157,7 @@ public abstract class IndexAccessorCompatibility extends IndexProviderCompatibil
 
     private interface ReaderInteraction
     {
-        PrimitiveLongIterator results( IndexReader reader );
+        PrimitiveLongIterator results( IndexReader reader ) throws Exception;
     }
 
     protected void updateAndCommit( List<IndexEntryUpdate> updates )

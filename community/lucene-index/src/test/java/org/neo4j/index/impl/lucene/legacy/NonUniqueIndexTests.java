@@ -23,7 +23,6 @@ import org.junit.Rule;
 import org.junit.Test;
 
 import java.io.File;
-import java.io.IOException;
 import java.util.List;
 import java.util.Map;
 import java.util.concurrent.locks.LockSupport;
@@ -70,7 +69,7 @@ public class NonUniqueIndexTests
     public final DefaultFileSystemRule fileSystemRule = new DefaultFileSystemRule();
 
     @Test
-    public void concurrentIndexPopulationAndInsertsShouldNotProduceDuplicates() throws IOException
+    public void concurrentIndexPopulationAndInsertsShouldNotProduceDuplicates() throws Exception
     {
         // Given
         GraphDatabaseService db = newEmbeddedGraphDatabaseWithSlowJobScheduler();
@@ -150,7 +149,7 @@ public class NonUniqueIndexTests
         };
     }
 
-    private List<Long> nodeIdsInIndex( int indexId, String value ) throws IOException
+    private List<Long> nodeIdsInIndex( int indexId, String value ) throws Exception
     {
         Config config = Config.empty();
         SchemaIndexProvider indexProvider = new LuceneSchemaIndexProvider( fileSystemRule.get(),

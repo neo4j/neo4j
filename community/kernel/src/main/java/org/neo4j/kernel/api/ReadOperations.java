@@ -37,6 +37,7 @@ import org.neo4j.kernel.api.exceptions.LabelNotFoundKernelException;
 import org.neo4j.kernel.api.exceptions.ProcedureException;
 import org.neo4j.kernel.api.exceptions.PropertyKeyIdNotFoundKernelException;
 import org.neo4j.kernel.api.exceptions.RelationshipTypeIdNotFoundKernelException;
+import org.neo4j.kernel.api.exceptions.index.IndexNotApplicableKernelException;
 import org.neo4j.kernel.api.exceptions.index.IndexNotFoundKernelException;
 import org.neo4j.kernel.api.exceptions.legacyindex.LegacyIndexNotFoundKernelException;
 import org.neo4j.kernel.api.exceptions.schema.DuplicateSchemaRuleException;
@@ -126,7 +127,8 @@ public interface ReadOperations
      * @return ids of the matching nodes
      * @throws org.neo4j.kernel.api.exceptions.index.IndexNotFoundKernelException if no such index is found.
      */
-    PrimitiveLongIterator indexQuery( NewIndexDescriptor index, IndexQuery... predicates ) throws IndexNotFoundKernelException;
+    PrimitiveLongIterator indexQuery( NewIndexDescriptor index, IndexQuery... predicates )
+            throws IndexNotFoundKernelException, IndexNotApplicableKernelException;
 
     /**
      * @return an iterator over all nodes in the database.
@@ -155,8 +157,8 @@ public interface ReadOperations
      *
      * @throws org.neo4j.kernel.api.exceptions.index.IndexNotFoundKernelException if no such index found.
      */
-    long nodeGetFromUniqueIndexSeek( NewIndexDescriptor index, Object value ) throws IndexNotFoundKernelException,
-            IndexBrokenKernelException;
+    long nodeGetFromUniqueIndexSeek( NewIndexDescriptor index, Object value )
+            throws IndexNotFoundKernelException, IndexBrokenKernelException, IndexNotApplicableKernelException;
 
     long nodesCountIndexed( NewIndexDescriptor index, long nodeId, Object value )
             throws IndexNotFoundKernelException, IndexBrokenKernelException;

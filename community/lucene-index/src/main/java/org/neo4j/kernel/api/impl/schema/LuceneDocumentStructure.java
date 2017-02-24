@@ -47,11 +47,11 @@ import org.apache.lucene.util.NumericUtils;
 import org.apache.lucene.util.StringHelper;
 
 import java.io.IOException;
-import java.util.ArrayList;
-import java.util.EnumMap;
+import java.util.Arrays;
 import java.util.HashMap;
 import java.util.Iterator;
 import java.util.Map;
+import java.util.stream.Collectors;
 
 import org.neo4j.unsafe.impl.internal.dragons.FeatureToggles;
 
@@ -65,6 +65,7 @@ public class LuceneDocumentStructure
     public static final String NODE_ID_KEY = "id";
 
     private static final ThreadLocal<DocWithId> perThreadDocument = ThreadLocal.withInitial( DocWithId::new );
+    public static final String DELIMITER = "\u001F";
 
     private LuceneDocumentStructure()
     {
@@ -84,11 +85,12 @@ public class LuceneDocumentStructure
         return document.document;
     }
 
-    public static String encodedStringValue( Object value )
+    public static String encodedStringValuesForSampling( Object... values )
     {
-        ValueEncoding encoding = ValueEncoding.forValue( value );
-        Field field = encoding.encodeField( encoding.key( 0 ), value );
-        return field.stringValue();
+        return Arrays.stream( values ).map( s -> {
+            ValueEncoding encoding = ValueEncoding.forValue( s );
+            return encoding.encodeField( encoding.key(), s ).stringValue();
+        } ).collect( Collectors.joining( DELIMITER ) );
     }
 
     public static MatchAllDocsQuery newScanQuery()

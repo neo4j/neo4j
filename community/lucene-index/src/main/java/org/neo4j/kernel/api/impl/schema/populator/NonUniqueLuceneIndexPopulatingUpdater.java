@@ -40,24 +40,24 @@ public class NonUniqueLuceneIndexPopulatingUpdater extends LuceneIndexPopulating
     @Override
     protected void added( IndexEntryUpdate update )
     {
-        String encodedValue = LuceneDocumentStructure.encodedStringValue( update.values()[0] );
+        String encodedValue = LuceneDocumentStructure.encodedStringValuesForSampling( update.values() );
         sampler.include( encodedValue );
     }
 
     @Override
     protected void changed( IndexEntryUpdate update )
     {
-        String encodedValueBefore = LuceneDocumentStructure.encodedStringValue( update.beforeValues()[0] );
+        String encodedValueBefore = LuceneDocumentStructure.encodedStringValuesForSampling( update.beforeValues() );
         sampler.exclude( encodedValueBefore );
 
-        String encodedValueAfter = LuceneDocumentStructure.encodedStringValue( update.values()[0] );
+        String encodedValueAfter = LuceneDocumentStructure.encodedStringValuesForSampling( update.values() );
         sampler.include( encodedValueAfter );
     }
 
     @Override
     protected void removed( IndexEntryUpdate update )
     {
-        String removedValue = LuceneDocumentStructure.encodedStringValue( update.values()[0] );
+        String removedValue = LuceneDocumentStructure.encodedStringValuesForSampling( update.values() );
         sampler.exclude( removedValue );
     }
 

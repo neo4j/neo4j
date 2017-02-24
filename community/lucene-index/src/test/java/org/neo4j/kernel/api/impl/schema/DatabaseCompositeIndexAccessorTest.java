@@ -152,24 +152,6 @@ public class DatabaseCompositeIndexAccessorTest
     }
 
     @Test
-    public void indexReaderShouldSupportSeekOnCompositeIndexUpdatedWithTwoTransactions() throws Exception
-    {
-        // GIVEN
-        updateAndCommit( asList( add( nodeId, values ), add( nodeId2, values ) ) );
-        updateAndCommit( asList( add( nodeId, values2 ), add( nodeId2, values2 ) ) );
-        IndexReader reader = accessor.newReader();
-
-        // WHEN
-        PrimitiveLongIterator results = reader.query( IndexQuery.exists( PROP_ID1 ), IndexQuery.exists( PROP_ID2 ) );
-
-        // THEN
-        assertEquals( asSet( nodeId, nodeId2 ), PrimitiveLongCollections.toSet( results ) );
-        assertEquals( asSet( nodeId ), PrimitiveLongCollections.toSet( reader
-                .query( IndexQuery.exact( PROP_ID1, values[0] ), IndexQuery.exact( PROP_ID2, values[1] ) ) ) );
-        reader.close();
-    }
-
-    @Test
     public void multipleIndexReadersFromDifferentPointsInTimeCanSeeDifferentResults() throws Exception
     {
         // WHEN
@@ -283,11 +265,6 @@ public class DatabaseCompositeIndexAccessorTest
     private IndexEntryUpdate remove( long nodeId, Object... values )
     {
         return IndexEntryUpdate.remove( nodeId, indexDescriptor, values );
-    }
-
-    private IndexEntryUpdate change( long nodeId, Object valueBefore, Object valueAfter )
-    {
-        return IndexEntryUpdate.change( nodeId, indexDescriptor, valueBefore, valueAfter );
     }
 
     private IndexEntryUpdate change( long nodeId, Object[] valuesBefore, Object[] valuesAfter )

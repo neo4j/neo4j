@@ -28,10 +28,11 @@ import org.neo4j.collection.primitive.PrimitiveLongCollections;
 import org.neo4j.collection.primitive.PrimitiveLongIterator;
 import org.neo4j.helpers.TaskCoordinator;
 import org.neo4j.io.IOUtils;
+import org.neo4j.kernel.api.exceptions.index.IndexNotApplicableKernelException;
 import org.neo4j.kernel.api.impl.index.partition.PartitionSearcher;
 import org.neo4j.kernel.api.impl.index.sampler.AggregatingIndexSampler;
-import org.neo4j.kernel.api.schema_new.index.NewIndexDescriptor;
 import org.neo4j.kernel.api.schema_new.IndexQuery;
+import org.neo4j.kernel.api.schema_new.index.NewIndexDescriptor;
 import org.neo4j.kernel.impl.api.index.sampling.IndexSamplingConfig;
 import org.neo4j.storageengine.api.schema.IndexReader;
 import org.neo4j.storageengine.api.schema.IndexSampler;
@@ -64,9 +65,42 @@ public class PartitionedIndexReader implements IndexReader
     }
 
     @Override
-    public PrimitiveLongIterator query( IndexQuery... predicates )
+    public PrimitiveLongIterator query( IndexQuery... predicates ) throws IndexNotApplicableKernelException
     {
-        return partitionedOperation( reader -> reader.query( predicates ) );
+        try
+        {
+            return partitionedOperation( reader -> innerQuery( reader, predicates ) );
+        }
+        catch ( InnerException e )
+        {
+            throw e.getCause();
+        }
+    }
+
+    private PrimitiveLongIterator innerQuery( IndexReader reader, IndexQuery[] predicates )
+    {
+        try
+        {
+            return reader.query( predicates );
+        }
+        catch ( IndexNotApplicableKernelException e )
+        {
+            throw new InnerException( e );
+        }
+    }
+
+    private static final class InnerException extends RuntimeException
+    {
+        private InnerException( IndexNotApplicableKernelException e )
+        {
+            super( e );
+        }
+
+        @Override
+        public synchronized IndexNotApplicableKernelException getCause()
+        {
+            return (IndexNotApplicableKernelException) super.getCause();
+        }
     }
 
     @Override

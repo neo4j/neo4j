@@ -33,9 +33,9 @@ import org.neo4j.collection.primitive.PrimitiveLongSet;
 import org.neo4j.helpers.TaskCoordinator;
 import org.neo4j.kernel.api.exceptions.index.IndexNotFoundKernelException;
 import org.neo4j.kernel.api.impl.index.partition.PartitionSearcher;
+import org.neo4j.kernel.api.schema_new.IndexQuery;
 import org.neo4j.kernel.api.schema_new.index.NewIndexDescriptor;
 import org.neo4j.kernel.api.schema_new.index.NewIndexDescriptorFactory;
-import org.neo4j.kernel.api.schema_new.IndexQuery;
 import org.neo4j.kernel.impl.api.index.sampling.IndexSamplingConfig;
 import org.neo4j.storageengine.api.schema.IndexSample;
 import org.neo4j.storageengine.api.schema.IndexSampler;
@@ -80,7 +80,7 @@ public class PartitionedIndexReaderTest
     }
 
     @Test
-    public void seekOverAllPartitions()
+    public void seekOverAllPartitions() throws Exception
     {
         PartitionedIndexReader indexReader = createPartitionedReaderFromReaders();
 
@@ -94,7 +94,7 @@ public class PartitionedIndexReaderTest
     }
 
     @Test
-    public void rangeSeekByNumberOverPartitions()
+    public void rangeSeekByNumberOverPartitions() throws Exception
     {
         PartitionedIndexReader indexReader = createPartitionedReaderFromReaders();
 
@@ -109,7 +109,7 @@ public class PartitionedIndexReaderTest
     }
 
     @Test
-    public void rangeSeekByStringOverPartitions()
+    public void rangeSeekByStringOverPartitions() throws Exception
     {
         PartitionedIndexReader indexReader = createPartitionedReaderFromReaders();
 
@@ -124,7 +124,7 @@ public class PartitionedIndexReaderTest
     }
 
     @Test
-    public void rangeSeekByPrefixOverPartitions()
+    public void rangeSeekByPrefixOverPartitions() throws Exception
     {
         PartitionedIndexReader indexReader = createPartitionedReaderFromReaders();
         IndexQuery.StringPrefixPredicate query = IndexQuery.stringPrefix( 1, "prefix" );
@@ -137,7 +137,7 @@ public class PartitionedIndexReaderTest
     }
 
     @Test
-    public void scanOverPartitions()
+    public void scanOverPartitions() throws Exception
     {
         PartitionedIndexReader indexReader = createPartitionedReaderFromReaders();
         IndexQuery.ExistsPredicate query = IndexQuery.exists( 1 );

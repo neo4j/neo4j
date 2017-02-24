@@ -63,6 +63,7 @@ import org.neo4j.kernel.api.ReadOperations;
 import org.neo4j.kernel.api.Statement;
 import org.neo4j.kernel.api.exceptions.EntityNotFoundException;
 import org.neo4j.kernel.api.exceptions.InvalidTransactionTypeKernelException;
+import org.neo4j.kernel.api.exceptions.KernelException;
 import org.neo4j.kernel.api.exceptions.Status;
 import org.neo4j.kernel.api.exceptions.index.IndexNotFoundKernelException;
 import org.neo4j.kernel.api.exceptions.schema.SchemaKernelException;
@@ -602,7 +603,7 @@ public class GraphDatabaseFacade implements GraphDatabaseAPI
                 return map2nodes( readOps.indexQuery( descriptor, query ), statement );
             }
         }
-        catch ( IndexNotFoundKernelException e )
+        catch ( KernelException e )
         {
             // weird at this point but ignore and fallback to a label scan
         }

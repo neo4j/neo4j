@@ -24,6 +24,7 @@ import org.neo4j.collection.primitive.PrimitiveIntSet;
 import org.neo4j.collection.primitive.PrimitiveLongIterator;
 import org.neo4j.cursor.Cursor;
 import org.neo4j.kernel.api.exceptions.EntityNotFoundException;
+import org.neo4j.kernel.api.exceptions.index.IndexNotApplicableKernelException;
 import org.neo4j.kernel.api.exceptions.index.IndexNotFoundKernelException;
 import org.neo4j.kernel.api.exceptions.schema.IndexBrokenKernelException;
 import org.neo4j.kernel.api.schema_new.IndexQuery;
@@ -52,7 +53,7 @@ public interface EntityReadOperations
      * @throws IndexNotFoundKernelException if no such index is found.
      */
     PrimitiveLongIterator indexQuery( KernelStatement statement, NewIndexDescriptor index, IndexQuery... predicates )
-            throws IndexNotFoundKernelException;
+            throws IndexNotFoundKernelException, IndexNotApplicableKernelException;
 
     /**
      * Returns an iterable with the matched node.
@@ -61,7 +62,7 @@ public interface EntityReadOperations
      * @throws IndexBrokenKernelException   if we found an index that was corrupt or otherwise in a failed state.
      */
     long nodeGetFromUniqueIndexSeek( KernelStatement state, NewIndexDescriptor index, Object value )
-            throws IndexNotFoundKernelException, IndexBrokenKernelException;
+            throws IndexNotFoundKernelException, IndexBrokenKernelException, IndexNotApplicableKernelException;
 
     long nodesCountIndexed( KernelStatement statement, NewIndexDescriptor index, long nodeId, Object value )
             throws IndexNotFoundKernelException, IndexBrokenKernelException;

@@ -179,6 +179,10 @@ enum ValueEncoding
 
     String key( int propertyNumber )
     {
+        if( propertyNumber == 0 )
+        {
+            return key();
+        }
         return propertyNumber + key();
     }
 

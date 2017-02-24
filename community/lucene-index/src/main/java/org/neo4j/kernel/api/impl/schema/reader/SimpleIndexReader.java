@@ -32,12 +32,14 @@ import java.util.Arrays;
 import org.neo4j.collection.primitive.PrimitiveLongIterator;
 import org.neo4j.helpers.TaskControl;
 import org.neo4j.helpers.TaskCoordinator;
+import org.neo4j.kernel.api.exceptions.index.IndexNotApplicableKernelException;
 import org.neo4j.kernel.api.impl.index.collector.DocValuesCollector;
 import org.neo4j.kernel.api.impl.index.partition.PartitionSearcher;
 import org.neo4j.kernel.api.impl.schema.LuceneDocumentStructure;
 import org.neo4j.kernel.api.impl.schema.sampler.NonUniqueLuceneIndexSampler;
 import org.neo4j.kernel.api.impl.schema.sampler.UniqueLuceneIndexSampler;
 import org.neo4j.kernel.api.schema_new.IndexQuery;
+import org.neo4j.kernel.api.schema_new.IndexQuery.IndexQueryType;
 import org.neo4j.kernel.api.schema_new.index.NewIndexDescriptor;
 import org.neo4j.kernel.impl.api.index.sampling.IndexSamplingConfig;
 import org.neo4j.storageengine.api.schema.IndexReader;
@@ -85,45 +87,59 @@ public class SimpleIndexReader implements IndexReader
     }
 
     @Override
-    public PrimitiveLongIterator query( IndexQuery... predicates )
+    public PrimitiveLongIterator query( IndexQuery... predicates ) throws IndexNotApplicableKernelException
     {
-        if ( predicates.length > 1 )
-        {
-            Object[] values = new Object[predicates.length];
-            for ( int i = 0; i < predicates.length; i++ )
-            {
-                assert predicates[i].type() == exact : "composite indexes only supported for seek";
-                values[i] = ((IndexQuery.ExactPredicate)predicates[i]).value();
-            }
-            return seek( values );
-        }
-        assert predicates.length == 1 : "composite indexes not yet supported, except for seek on all properties";
         IndexQuery predicate = predicates[0];
         switch ( predicate.type() )
         {
         case exact:
-            return seek( ((IndexQuery.ExactPredicate) predicate).value() );
+            Object[] values = new Object[predicates.length];
+            for ( int i = 0; i < predicates.length; i++ )
+            {
+                assert predicates[i].type() == exact :
+                        "Exact followed by another query predicate type is not supported at this moment.";
+                values[i] = ((IndexQuery.ExactPredicate) predicates[i]).value();
+            }
+            return seek( values );
         case exists:
+            for ( IndexQuery p : predicates )
+            {
+                if ( p.type() != IndexQueryType.exists )
+                {
+                    throw new IndexNotApplicableKernelException(
+                            "Exists followed by another query predicate type is not supported." );
+                }
+            }
             return scan();
         case rangeNumeric:
+            assertNotComposite( predicates );
             IndexQuery.NumberRangePredicate np = (IndexQuery.NumberRangePredicate) predicate;
             return rangeSeekByNumberInclusive( np.from(), np.to() );
         case rangeString:
+            assertNotComposite( predicates );
             IndexQuery.StringRangePredicate sp = (IndexQuery.StringRangePredicate) predicate;
             return rangeSeekByString( sp.from(), sp.fromInclusive(), sp.to(), sp.toInclusive() );
         case stringPrefix:
+            assertNotComposite( predicates );
             IndexQuery.StringPrefixPredicate spp = (IndexQuery.StringPrefixPredicate) predicate;
             return rangeSeekByPrefix( spp.prefix() );
         case stringContains:
+            assertNotComposite( predicates );
             IndexQuery.StringContainsPredicate scp = (IndexQuery.StringContainsPredicate) predicate;
             return containsString( scp.contains() );
         case stringSuffix:
+            assertNotComposite( predicates );
             IndexQuery.StringSuffixPredicate ssp = (IndexQuery.StringSuffixPredicate) predicate;
             return endsWith( ssp.suffix() );
         default:
             // todo figure out a more specific exception
             throw new RuntimeException( "Index query not supported: " + Arrays.toString( predicates ) );
         }
+    }
+
+    private void assertNotComposite( IndexQuery[] predicates )
+    {
+        assert predicates.length == 1 : "composite indexes not yet supported for this operation";
     }
 
     private PrimitiveLongIterator seek( Object... values )

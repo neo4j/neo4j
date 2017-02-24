@@ -211,7 +211,7 @@ public class LuceneDocumentStructureTest
         NumericRangeQuery<Double> query = LuceneDocumentStructure.newInclusiveNumericRangeSeekQuery( 12.0d, null );
 
         // then
-        assertEquals( "0number", query.getField() );
+        assertEquals( "number", query.getField() );
         assertEquals( 12.0, query.getMin() );
         assertEquals( true, query.includesMin() );
         assertEquals( null, query.getMax() );
@@ -226,7 +226,7 @@ public class LuceneDocumentStructureTest
                 .newRangeSeekByStringQuery( "foo", false, null, true );
 
         // then
-        assertEquals( "0string", query.getField() );
+        assertEquals( "string", query.getField() );
         assertEquals( "foo", query.getLowerTerm().utf8ToString() );
         assertEquals( false, query.includesLower() );
         assertEquals( null, query.getUpperTerm() );
@@ -240,7 +240,7 @@ public class LuceneDocumentStructureTest
         WildcardQuery query = (WildcardQuery) LuceneDocumentStructure.newWildCardStringQuery( "foo" );
 
         // then
-        assertEquals( "0string", query.getField() );
+        assertEquals( "string", query.getField() );
     }
 
     @Test
