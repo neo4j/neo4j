@@ -78,12 +78,12 @@ import static java.lang.String.format;
  *
  * TBD: POINT and GEOMETRY
  */
-public class CompiledOrderabilityUtils
+public class CypherOrderability
 {
     /**
      * Do not instantiate this class
      */
-    private CompiledOrderabilityUtils()
+    private CypherOrderability()
     {
         throw new UnsupportedOperationException();
     }
@@ -328,7 +328,7 @@ public class CompiledOrderabilityUtils
             Iterator<PropertyContainer> rhsIter = lhs.iterator();
             while ( lhsIter.hasNext() && rhsIter.hasNext() )
             {
-                int result = CompiledOrderabilityUtils.compare( lhsIter.next(), rhsIter.next() );
+                int result = CypherOrderability.compare( lhsIter.next(), rhsIter.next() );
                 if ( 0 != result )
                 {
                     return result;
@@ -349,7 +349,7 @@ public class CompiledOrderabilityUtils
             Iterator rhsIter = toIterator( rhs );
             while ( lhsIter.hasNext() && rhsIter.hasNext() )
             {
-                int result = CompiledOrderabilityUtils.compare( lhsIter.next(), rhsIter.next() );
+                int result = CypherOrderability.compare( lhsIter.next(), rhsIter.next() );
                 if ( 0 != result )
                 {
                     return result;

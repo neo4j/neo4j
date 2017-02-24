@@ -35,7 +35,7 @@ import static java.lang.String.format;
 /**
  * Inspired by {@link org.neo4j.kernel.impl.api.PropertyValueComparisonTest}
  */
-public class CompiledOrderabilityUtilsTest
+public class CypherOrderabilityTest
 {
     @Rule
     public ExpectedException thrown = ExpectedException.none();
@@ -208,8 +208,8 @@ public class CompiledOrderabilityUtilsTest
     {
         try
         {
-            int cmp1 = CompiledOrderabilityUtils.compare( left, right );
-            int cmp2 = CompiledOrderabilityUtils.compare( right, left );
+            int cmp1 = CypherOrderability.compare( left, right );
+            int cmp2 = CypherOrderability.compare( right, left );
             if ( sign( cmp1 ) != -sign( cmp2 ) )
             {
                 throw new AssertionError( format( "Comparator is not symmetric on %s and %s", left, right ) );

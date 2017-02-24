@@ -21,7 +21,7 @@ package org.neo4j.cypher.internal.compiler.v3_2
 
 import org.neo4j.cypher.internal.compiler.v3_2.pipes.QueryState
 import org.neo4j.cypher.internal.compiler.v3_2.spi.{NodeIdWrapper, RelationshipIdWrapper}
-import org.neo4j.cypher.internal.compiler.v3_2.util.CompiledOrderabilityUtils
+import org.neo4j.cypher.internal.compiler.v3_2.util.CypherOrderability
 import org.neo4j.graphdb.{Node, Relationship}
 
 import scala.collection.JavaConverters._
@@ -34,7 +34,7 @@ trait Comparer extends CypherSerializer {
   import Comparer._
 
   def compareForOrderability(operator: Option[String], l: Any, r: Any)(implicit qtx: QueryState): Int = {
-    CompiledOrderabilityUtils.compare(makeComparable(l), makeComparable(r))
+    CypherOrderability.compare(makeComparable(l), makeComparable(r))
   }
 
   private def makeComparable(a: Any): Any = a match {
