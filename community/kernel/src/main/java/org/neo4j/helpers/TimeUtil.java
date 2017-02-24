@@ -24,7 +24,7 @@ import java.util.function.Function;
 
 public final class TimeUtil
 {
-    private static final TimeUnit DEFAULT_TIME_UNIT = TimeUnit.SECONDS;
+    public static final TimeUnit DEFAULT_TIME_UNIT = TimeUnit.SECONDS;
 
     public static final Function<String, Long> parseTimeMillis = timeWithOrWithoutUnit -> {
         int unitIndex = -1;

@@ -19,6 +19,7 @@
  */
 package org.neo4j.graphdb.config;
 
+import java.util.Optional;
 import java.util.function.Function;
 
 /**
@@ -47,4 +48,14 @@ public interface Setting<T> extends Function<Function<String,String>,T>
     String getDefaultValue();
 
     T from( Configuration config );
+
+    /**
+     * Get the function used to parse this setting.
+     *
+     * @return the parser function
+     */
+    default Optional<Function<String, T>> getParser()
+    {
+        return Optional.empty();
+    }
 }
