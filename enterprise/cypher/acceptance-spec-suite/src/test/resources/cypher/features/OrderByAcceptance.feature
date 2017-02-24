@@ -188,3 +188,71 @@ Feature: OrderByAcceptance
       | (:A)            |
       | {}              |
     And no side effects
+
+  Scenario: Ordering for lists, ascending
+    Given an empty graph
+    And having executed:
+      """
+      UNWIND [1, true, 'foo'] AS element
+      CREATE (n)
+      SET n.list = [element]
+      """
+    When executing query:
+      """
+      MATCH (n)
+      WITH collect(n.list) AS nodeLists
+      WITH nodeLists + [[1], [1, 2], [1, 3, -1], [], [null, 1], ['string', 1], [true, null], [[''], false], [[0], 4], [[{}]]] AS lists
+      UNWIND lists AS l
+      RETURN l
+        ORDER BY l ASC
+      """
+    Then the result should be, in order:
+      | l             |
+      | []            |
+      | [[{}]]        |
+      | [[''], false] |
+      | [[0], 4]      |
+      | ['foo']       |
+      | ['string', 1] |
+      | [true]        |
+      | [true, null]  |
+      | [1]           |
+      | [1]           |
+      | [1, 2]        |
+      | [1, 3, -1]    |
+      | [null, 1]     |
+    And no side effects
+
+  Scenario: Ordering for lists, descending
+    Given an empty graph
+    And having executed:
+      """
+      UNWIND [1, true, 'foo'] AS element
+      CREATE (n)
+      SET n.list = [element]
+      """
+    When executing query:
+      """
+      MATCH (n)
+      WITH collect(n.list) AS nodeLists
+      WITH nodeLists + [[1], [1, 2], [1, 3, -1], [], [null, 1], ['string', 1], [true, null], [[''], false], [[0], 4], [[{}]]] AS lists
+      UNWIND lists AS l
+      RETURN l
+        ORDER BY l DESC
+      """
+    Then the result should be, in order:
+      | l             |
+      | [null, 1]     |
+      | [1, 3, -1]    |
+      | [1, 2]        |
+      | [1]           |
+      | [1]           |
+      | [true, null]  |
+      | [true]        |
+      | ['string', 1] |
+      | ['foo']       |
+      | [[0], 4]      |
+      | [[''], false] |
+      | [[{}]]        |
+      | []            |
+    And no side effects

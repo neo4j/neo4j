@@ -3,3 +3,6 @@ ORDER BY nodes should return null results last in ascending order
 ORDER BY relationships should return null results last in ascending order
 Ordering is well defined across all types, ascending
 Ordering is well defined across all types, descending
+Ordering for lists, ascending
+Ordering for lists, descending
+

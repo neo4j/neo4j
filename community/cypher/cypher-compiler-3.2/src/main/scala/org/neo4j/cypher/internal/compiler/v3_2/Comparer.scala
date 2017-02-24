@@ -37,15 +37,15 @@ trait Comparer extends CypherSerializer {
     CompiledOrderabilityUtils.compare(makeComparable(l), makeComparable(r))
   }
 
-  private def makeComparable(a: Any) = a match {
+  private def makeComparable(a: Any): Any = a match {
     case n: Node => new NodeIdWrapper {
       override def id() = n.getId
     }
     case r: Relationship => new RelationshipIdWrapper {
       override def id() = r.getId
     }
-    case s: Seq[_] => s.asJava
-    case m: Map[_, _] => m.asJava
+    case s: Seq[_] => s.map(makeComparable).asJava
+    case m: Map[_, _] => m.mapValues(makeComparable).asJava
     case x => x
   }
 
