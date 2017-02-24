@@ -340,5 +340,5 @@ public class CausalClusteringSettings implements LoadableConfig
 
     @Description( "Require authorization for access to the Causal Clustering status endpoints." )
     public static final Setting<Boolean> status_auth_enabled =
-            setting( "dbms.security.causal_clustering_status_auth_enabled", BOOLEAN, Settings.TRUE );
+            setting( "dbms.security.causal_clustering_status_auth_enabled", BOOLEAN, TRUE );
 }
