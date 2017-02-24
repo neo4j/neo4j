@@ -38,6 +38,7 @@ import java.util.function.IntFunction;
 import org.neo4j.causalclustering.discovery.Cluster;
 import org.neo4j.causalclustering.discovery.HazelcastDiscoveryServiceFactory;
 import org.neo4j.helpers.AdvertisedSocketAddress;
+import org.neo4j.helpers.Exceptions;
 import org.neo4j.helpers.SocketAddress;
 import org.neo4j.io.fs.FileSystemAbstraction;
 import org.neo4j.io.fs.FileUtils;
@@ -59,7 +60,6 @@ import static org.neo4j.function.Suppliers.untilTimeExpired;
 import static org.neo4j.helper.DatabaseConfiguration.configureTxLogRotationAndPruning;
 import static org.neo4j.helper.StressTestingHelper.ensureExistsAndEmpty;
 import static org.neo4j.helper.StressTestingHelper.fromEnv;
-import static org.neo4j.helper.StressTestingHelper.prettyPrintStackTrace;
 
 public class BackupStoreCopyInteractionStressTesting
 {
@@ -149,9 +149,9 @@ public class BackupStoreCopyInteractionStressTesting
                             backupAddress ) );
 
             long timeout = durationInMinutes + 5;
-            assertNull( prettyPrintStackTrace( workload.get() ), workload.get( timeout, MINUTES ) );
-            assertNull( prettyPrintStackTrace( startStopWorker.get() ), startStopWorker.get( timeout, MINUTES  ) );
-            assertNull( prettyPrintStackTrace( backupWorker.get() ), backupWorker.get( timeout, MINUTES ) );
+            assertNull( Exceptions.stringify( workload.get() ), workload.get( timeout, MINUTES ) );
+            assertNull( Exceptions.stringify( startStopWorker.get() ), startStopWorker.get( timeout, MINUTES  ) );
+            assertNull( Exceptions.stringify( backupWorker.get() ), backupWorker.get( timeout, MINUTES ) );
         }
         finally
         {

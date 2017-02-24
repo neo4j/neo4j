@@ -35,10 +35,11 @@ import java.util.function.BooleanSupplier;
 
 import org.neo4j.causalclustering.discovery.Cluster;
 import org.neo4j.causalclustering.discovery.HazelcastDiscoveryServiceFactory;
+import org.neo4j.helpers.Exceptions;
 import org.neo4j.io.fs.FileSystemAbstraction;
 import org.neo4j.io.fs.FileUtils;
-import org.neo4j.kernel.impl.store.format.standard.Standard;
 import org.neo4j.io.pagecache.PageCache;
+import org.neo4j.kernel.impl.store.format.standard.Standard;
 import org.neo4j.test.rule.PageCacheRule;
 import org.neo4j.test.rule.fs.DefaultFileSystemRule;
 
@@ -55,7 +56,6 @@ import static org.neo4j.function.Suppliers.untilTimeExpired;
 import static org.neo4j.helper.DatabaseConfiguration.configureTxLogRotationAndPruning;
 import static org.neo4j.helper.StressTestingHelper.ensureExistsAndEmpty;
 import static org.neo4j.helper.StressTestingHelper.fromEnv;
-import static org.neo4j.helper.StressTestingHelper.prettyPrintStackTrace;
 
 public class CatchupStoreCopyInteractionStressTesting
 {
@@ -128,9 +128,9 @@ public class CatchupStoreCopyInteractionStressTesting
             Future<Throwable> catchUpWorker = service.submit( new CatchUpLoad( keepGoing, onFailure, cluster ) );
 
             long timeout = durationInMinutes + 5;
-            assertNull( prettyPrintStackTrace( workload.get() ), workload.get( timeout, MINUTES ) );
-            assertNull( prettyPrintStackTrace( startStopWorker.get() ), startStopWorker.get( timeout, MINUTES ) );
-            assertNull( prettyPrintStackTrace( catchUpWorker.get() ), catchUpWorker.get( timeout, MINUTES ) );
+            assertNull( Exceptions.stringify( workload.get() ), workload.get( timeout, MINUTES ) );
+            assertNull( Exceptions.stringify( startStopWorker.get() ), startStopWorker.get( timeout, MINUTES ) );
+            assertNull( Exceptions.stringify( catchUpWorker.get() ), catchUpWorker.get( timeout, MINUTES ) );
         }
         finally
         {

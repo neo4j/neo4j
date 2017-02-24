@@ -20,6 +20,7 @@
 package org.neo4j.backup.stresstests;
 
 
+import java.util.concurrent.TimeUnit;
 import java.util.concurrent.atomic.AtomicReference;
 import java.util.concurrent.locks.LockSupport;
 import java.util.function.BooleanSupplier;
@@ -48,7 +49,7 @@ class StartStop extends RepeatUntilCallable
     {
         GraphDatabaseService db = dbRef.get();
         db.shutdown();
-        LockSupport.parkNanos( 5_000_000_000L );
+        LockSupport.parkNanos( TimeUnit.SECONDS.toNanos( 5 ) );
         boolean replaced = dbRef.compareAndSet( db, factory.newInstance() );
         assertTrue( replaced );
     }

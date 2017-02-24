@@ -24,10 +24,12 @@ import org.junit.Test;
 import java.io.File;
 import java.util.HashMap;
 import java.util.Map;
+import java.util.concurrent.ExecutionException;
 import java.util.concurrent.ExecutorService;
 import java.util.concurrent.Executors;
 import java.util.concurrent.Future;
 import java.util.concurrent.TimeUnit;
+import java.util.concurrent.TimeoutException;
 import java.util.concurrent.atomic.AtomicBoolean;
 import java.util.concurrent.atomic.AtomicReference;
 import java.util.function.BooleanSupplier;
@@ -35,15 +37,17 @@ import java.util.function.BooleanSupplier;
 import org.neo4j.graphdb.GraphDatabaseService;
 import org.neo4j.graphdb.factory.GraphDatabaseBuilder;
 import org.neo4j.graphdb.factory.GraphDatabaseFactory;
-import org.neo4j.io.fs.DefaultFileSystemAbstraction;
-import org.neo4j.io.fs.FileSystemAbstraction;
+import org.neo4j.helpers.Exceptions;
 import org.neo4j.io.fs.FileUtils;
 import org.neo4j.test.ThreadTestUtils;
 
 import static java.lang.Boolean.parseBoolean;
 import static java.lang.Integer.parseInt;
 import static java.lang.Long.parseLong;
+import static java.lang.String.format;
+import static java.lang.System.currentTimeMillis;
 import static java.lang.System.getProperty;
+import static java.util.concurrent.TimeUnit.MILLISECONDS;
 import static java.util.concurrent.TimeUnit.MINUTES;
 import static org.junit.Assert.assertNull;
 import static org.junit.Assert.fail;
@@ -52,7 +56,6 @@ import static org.neo4j.helper.DatabaseConfiguration.configureBackup;
 import static org.neo4j.helper.DatabaseConfiguration.configureTxLogRotationAndPruning;
 import static org.neo4j.helper.StressTestingHelper.ensureExistsAndEmpty;
 import static org.neo4j.helper.StressTestingHelper.fromEnv;
-import static org.neo4j.helper.StressTestingHelper.prettyPrintStackTrace;
 
 /**
  * Notice the class name: this is _not_ going to be run as part of the main build.
@@ -77,8 +80,12 @@ public class BackupServiceStressTesting
         boolean enableIndexes =
                 parseBoolean( fromEnv( "BACKUP_SERVICE_STRESS_ENABLE_INDEXES", DEFAULT_ENABLE_INDEXES ) );
 
-        File storeDirectory = ensureExistsAndEmpty( new File( directory, "store" ) );
-        File workDirectory = ensureExistsAndEmpty( new File( directory, "work" ) );
+        File store = new File( directory, "store" );
+        File work = new File( directory, "work" );
+        FileUtils.deleteRecursively( store );
+        FileUtils.deleteRecursively( work );
+        File storeDirectory = ensureExistsAndEmpty( store );
+        File workDirectory = ensureExistsAndEmpty( work );
 
         final Map<String,String> config =
                 configureBackup( configureTxLogRotationAndPruning( new HashMap<>(), txPrune ), backupHostname,
@@ -107,10 +114,10 @@ public class BackupServiceStressTesting
             Future<Throwable> startStopWorker = service.submit(
                     new StartStop( keepGoingSupplier, onFailure, graphDatabaseBuilder::newGraphDatabase, dbRef ) );
 
-            long timeout = durationInMinutes + 5;
-            assertNull( prettyPrintStackTrace( workload.get() ), workload.get( timeout, MINUTES ) );
-            assertNull( prettyPrintStackTrace( backupWorker.get() ), backupWorker.get( timeout, MINUTES ) );
-            assertNull( prettyPrintStackTrace( startStopWorker.get() ), startStopWorker.get( timeout, MINUTES ) );
+            long expirationTime = currentTimeMillis() + TimeUnit.MINUTES.toMillis( durationInMinutes + 5 );
+            assertSuccessfulExecution( workload, maxWaitTime( expirationTime ), expirationTime  );
+            assertSuccessfulExecution( backupWorker, maxWaitTime( expirationTime ), expirationTime );
+            assertSuccessfulExecution( startStopWorker, maxWaitTime( expirationTime ), expirationTime );
 
             service.shutdown();
             if ( !service.awaitTermination( 30, TimeUnit.SECONDS ) )
@@ -128,5 +135,27 @@ public class BackupServiceStressTesting
         // let's cleanup disk space when everything went well
         FileUtils.deleteRecursively( storeDirectory );
         FileUtils.deleteRecursively( workDirectory );
+    }
+
+    private long maxWaitTime( long expirationTime )
+    {
+        return Math.max( 0, expirationTime - currentTimeMillis() );
+    }
+
+    private void assertSuccessfulExecution( Future<Throwable> future, long timeoutMillis, long expirationTime )
+            throws InterruptedException, ExecutionException, TimeoutException
+    {
+        try
+        {
+            Throwable executionResults = future.get( timeoutMillis, MILLISECONDS );
+            assertNull( Exceptions.stringify( executionResults ), executionResults );
+        }
+        catch ( TimeoutException t )
+        {
+            System.err.println( format( "Timeout waiting task completion. Overtime %d ms. Dumping all threads.",
+                    currentTimeMillis() - expirationTime ) );
+            ThreadTestUtils.dumpAllStackTraces();
+            throw t;
+        }
     }
 }

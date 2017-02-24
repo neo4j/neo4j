@@ -20,8 +20,6 @@
 package org.neo4j.helper;
 
 import java.io.File;
-import java.io.PrintWriter;
-import java.io.StringWriter;
 
 import static java.lang.System.getenv;
 import static org.junit.Assert.assertEquals;
@@ -53,15 +51,4 @@ public class StressTestingHelper
         return environmentVariableValue == null ? defaultValue : environmentVariableValue;
     }
 
-    public static String prettyPrintStackTrace( Throwable throwable )
-    {
-        if ( throwable == null )
-        {
-            return "";
-        }
-
-        StringWriter stringWriter = new StringWriter();
-        throwable.printStackTrace( new PrintWriter( stringWriter ) );
-        return stringWriter.toString();
-    }
 }
