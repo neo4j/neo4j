@@ -26,6 +26,7 @@ import java.util.Iterator;
 
 import org.neo4j.graphdb.ResourceIterator;
 import org.neo4j.helpers.collection.BoundedIterable;
+import org.neo4j.kernel.api.exceptions.index.IndexEntryConflictException;
 import org.neo4j.kernel.impl.api.index.IndexUpdateMode;
 import org.neo4j.kernel.impl.api.index.updater.SwallowingIndexUpdater;
 import org.neo4j.storageengine.api.schema.IndexReader;
@@ -90,6 +91,17 @@ public interface IndexAccessor extends Closeable
      */
     ResourceIterator<File> snapshotFiles() throws IOException;
 
+    /**
+     * Verifies that each value in this index is unique.
+     * Index is guaranteed to not change while this call executes.
+     *
+     * @param propertyAccessor {@link PropertyAccessor} for accessing properties from database storage
+     * in the event of conflicting values.
+     * @throws IndexEntryConflictException for first detected uniqueness conflict, if any.
+     * @throws IOException on error reading from source files.
+     */
+    void verifyDeferredConstraints( PropertyAccessor propertyAccessor ) throws IndexEntryConflictException, IOException;
+
     class Adapter implements IndexAccessor
     {
         @Override
@@ -152,6 +164,12 @@ public interface IndexAccessor extends Closeable
         public ResourceIterator<File> snapshotFiles()
         {
             return emptyIterator();
+        }
+
+        @Override
+        public void verifyDeferredConstraints( PropertyAccessor propertyAccessor )
+                throws IndexEntryConflictException, IOException
+        {
         }
     }
 
@@ -216,6 +234,13 @@ public interface IndexAccessor extends Closeable
         public String toString()
         {
             return delegate.toString();
+        }
+
+        @Override
+        public void verifyDeferredConstraints( PropertyAccessor propertyAccessor )
+                throws IndexEntryConflictException, IOException
+        {
+            delegate.verifyDeferredConstraints( propertyAccessor );
         }
     }
 }

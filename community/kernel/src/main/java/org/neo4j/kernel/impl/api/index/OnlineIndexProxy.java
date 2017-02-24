@@ -24,12 +24,14 @@ import java.io.IOException;
 import java.util.concurrent.Future;
 
 import org.neo4j.graphdb.ResourceIterator;
+import org.neo4j.kernel.api.exceptions.index.IndexEntryConflictException;
 import org.neo4j.kernel.api.exceptions.index.IndexPopulationFailedKernelException;
 import org.neo4j.kernel.api.index.IndexAccessor;
 import org.neo4j.kernel.api.index.IndexConfiguration;
 import org.neo4j.kernel.api.index.IndexDescriptor;
 import org.neo4j.kernel.api.index.IndexUpdater;
 import org.neo4j.kernel.api.index.InternalIndexState;
+import org.neo4j.kernel.api.index.PropertyAccessor;
 import org.neo4j.kernel.api.index.SchemaIndexProvider;
 import org.neo4j.storageengine.api.schema.IndexReader;
 import org.neo4j.storageengine.api.schema.PopulationProgress;
@@ -200,4 +202,10 @@ public class OnlineIndexProxy implements IndexProxy
         return getClass().getSimpleName() + "[accessor:" + accessor + ", descriptor:" + descriptor + "]";
     }
 
+    @Override
+    public void verifyDeferredConstraints( PropertyAccessor propertyAccessor )
+            throws IndexEntryConflictException, IOException
+    {
+        accessor.verifyDeferredConstraints( propertyAccessor );
+    }
 }

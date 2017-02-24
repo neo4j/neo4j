@@ -21,6 +21,7 @@ package org.neo4j.kernel.api.impl.index;
 
 import org.apache.lucene.index.CheckIndex;
 import org.apache.lucene.index.DirectoryReader;
+import org.apache.lucene.index.IndexWriter;
 import org.apache.lucene.store.Directory;
 
 import java.io.File;
@@ -59,7 +60,7 @@ public abstract class AbstractLuceneIndex
 
     protected final PartitionedIndexStorage indexStorage;
     private final IndexPartitionFactory partitionFactory;
-    private List<AbstractIndexPartition> partitions = new CopyOnWriteArrayList<>();
+    private final List<AbstractIndexPartition> partitions = new CopyOnWriteArrayList<>();
     private volatile boolean open;
 
     public AbstractLuceneIndex( PartitionedIndexStorage indexStorage, IndexPartitionFactory partitionFactory )
@@ -187,14 +188,20 @@ public abstract class AbstractLuceneIndex
     /**
      * Commits all index partitions.
      *
-     * @throws IOException
+     * @param merge also merge all segments together. This should be done before reading term frequencies.
+     * @throws IOException on Lucene I/O error.
      */
-    public void flush() throws IOException
+    public void flush( boolean merge ) throws IOException
     {
         List<AbstractIndexPartition> partitions = getPartitions();
         for ( AbstractIndexPartition partition : partitions )
         {
-            partition.getIndexWriter().commit();
+            IndexWriter writer = partition.getIndexWriter();
+            writer.commit();
+            if ( merge )
+            {
+                writer.forceMerge( 1 );
+            }
         }
     }
 

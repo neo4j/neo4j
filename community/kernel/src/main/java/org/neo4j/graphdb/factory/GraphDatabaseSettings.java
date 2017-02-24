@@ -523,6 +523,11 @@ public abstract class GraphDatabaseSettings
     public static final Setting<File> auth_store =
             pathSetting( "unsupported.dbms.security.auth_store.location", NO_DEFAULT );
 
+    @Description( "Whether or not to release the exclusive schema lock is while building uniqueness constraints index" )
+    @Internal
+    public static final Setting<Boolean> release_schema_lock_while_building_constraint = setting(
+            "unsupported.dbms.schema.release_lock_while_building_constraint", BOOLEAN, FALSE );
+
     // Bolt Settings
 
     @Group("dbms.connector")

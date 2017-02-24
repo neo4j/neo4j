@@ -22,7 +22,6 @@ package org.neo4j.consistency.checking.full;
 import org.junit.Test;
 
 import java.io.File;
-import java.io.IOException;
 import java.util.ArrayList;
 import java.util.Collections;
 import java.util.HashMap;
@@ -197,7 +196,7 @@ public class NodeCorrectlyIndexedCheckTest
         return engine;
     }
 
-    private static class IndexAccessorStub implements IndexAccessor
+    private static class IndexAccessorStub extends IndexAccessor.Adapter
     {
         private final Map<Object, long[]> entries;
 
@@ -291,6 +290,7 @@ public class NodeCorrectlyIndexedCheckTest
                     throw new UnsupportedOperationException();
                 }
 
+                @Override
                 public void close()
                 {
                 }
@@ -298,12 +298,7 @@ public class NodeCorrectlyIndexedCheckTest
         }
 
         @Override
-        public void close() throws IOException
-        {
-        }
-
-        @Override
-        public void drop() throws IOException
+        public void drop()
         {
             throw new UnsupportedOperationException();
         }
@@ -315,13 +310,13 @@ public class NodeCorrectlyIndexedCheckTest
         }
 
         @Override
-        public void force() throws IOException
+        public void force()
         {
             throw new UnsupportedOperationException();
         }
 
         @Override
-        public void flush() throws IOException
+        public void flush()
         {
             throw new UnsupportedOperationException();
         }
@@ -333,7 +328,7 @@ public class NodeCorrectlyIndexedCheckTest
         }
 
         @Override
-        public ResourceIterator<File> snapshotFiles() throws IOException
+        public ResourceIterator<File> snapshotFiles()
         {
             throw new UnsupportedOperationException();
         }

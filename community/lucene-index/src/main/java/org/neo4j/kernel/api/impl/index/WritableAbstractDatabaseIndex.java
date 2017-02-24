@@ -126,7 +126,7 @@ public class WritableAbstractDatabaseIndex<T extends AbstractLuceneIndex> implem
         commitCloseLock.lock();
         try
         {
-            luceneIndex.flush();
+            luceneIndex.flush( false );
         }
         finally
         {
