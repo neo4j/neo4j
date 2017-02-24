@@ -134,11 +134,11 @@ Function Get-Neo4jServer
 
     # Set process level environment variables
     #  These should mirror the same paths in neo4j-shared.sh
-    (@{'NEO4J_DATA'    = @{'config_var' = 'dbms.directores.data';    'default' = (Join-Path $Neo4jHome 'data')}
-       'NEO4J_LIB'     = @{'config_var' = 'dbms.directores.lib';     'default' = (Join-Path $Neo4jHome 'lib')}
-       'NEO4J_LOGS'    = @{'config_var' = 'dbms.directores.logs';    'default' = (Join-Path $Neo4jHome 'logs')}
-       'NEO4J_PLUGINS' = @{'config_var' = 'dbms.directores.plugins'; 'default' = (Join-Path $Neo4jHome 'plugins')}
-       'NEO4J_RUN'     = @{'config_var' = 'dbms.directores.run';     'default' = (Join-Path $Neo4jHome 'run')}
+    (@{'NEO4J_DATA'    = @{'config_var' = 'dbms.directories.data';    'default' = (Join-Path $Neo4jHome 'data')}
+       'NEO4J_LIB'     = @{'config_var' = 'dbms.directories.lib';     'default' = (Join-Path $Neo4jHome 'lib')}
+       'NEO4J_LOGS'    = @{'config_var' = 'dbms.directories.logs';    'default' = (Join-Path $Neo4jHome 'logs')}
+       'NEO4J_PLUGINS' = @{'config_var' = 'dbms.directories.plugins'; 'default' = (Join-Path $Neo4jHome 'plugins')}
+       'NEO4J_RUN'     = @{'config_var' = 'dbms.directories.run';     'default' = (Join-Path $Neo4jHome 'run')}
     }).GetEnumerator() | % {
       $setting = (Get-Neo4jSetting -ConfigurationFile 'neo4j.conf' -Name $_.Value.config_var -Neo4jServer $serverObject)
       $value = $_.Value.default
