@@ -24,6 +24,7 @@ import java.util.List;
 import java.util.Map;
 import java.util.function.Consumer;
 import java.util.function.Function;
+import java.util.Optional;
 
 import static java.util.Collections.emptyMap;
 import static java.util.Collections.singletonMap;
@@ -97,5 +98,15 @@ public interface Setting<T> extends Function<Function<String,String>,T>, Setting
     default List<Setting> settings( Map<String,String> params )
     {
         return Collections.singletonList( this );
+    }
+
+    /**
+     * Get the function used to parse this setting.
+     *
+     * @return the parser function
+     */
+    default Optional<Function<String, T>> getParser()
+    {
+        return Optional.empty();
     }
 }
