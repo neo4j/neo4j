@@ -37,7 +37,7 @@ class PropertyExistenceConstraintAcceptanceTest
     val e = intercept[ConstraintValidationException](execute("create (node:Label1)"))
 
     // THEN
-    e.getMessage should endWith("with label \"Label1\" must have the property \"key1\" due to a constraint")
+    e.getMessage should endWith(" with label `Label1` must have the property `key1`")
   }
 
   test("relationship: should enforce constraints on creation") {
@@ -48,7 +48,7 @@ class PropertyExistenceConstraintAcceptanceTest
     val e = intercept[ConstraintValidationException](execute("create (p1:Person)-[:KNOWS]->(p2:Person)"))
 
     // THEN
-    e.getMessage should endWith("with type \"KNOWS\" must have the property \"since\" due to a constraint")
+    e.getMessage should endWith("with type `KNOWS` must have the property `since`")
   }
 
   test("node: should enforce on removing property") {

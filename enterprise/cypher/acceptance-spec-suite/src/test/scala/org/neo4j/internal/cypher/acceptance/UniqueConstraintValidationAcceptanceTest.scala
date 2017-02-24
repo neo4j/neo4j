@@ -41,7 +41,7 @@ class UniqueConstraintValidationAcceptanceTest
     catch
     {
       case e: CypherExecutionException =>
-        assertThat(e.getMessage, containsString( "\"key1\"=[value1]" ))
+        assertThat(e.getMessage, containsString( "`key1` = 'value1'" ))
     }
   }
 
@@ -59,7 +59,7 @@ class UniqueConstraintValidationAcceptanceTest
     catch
     {
       case e: CypherExecutionException =>
-        assertThat(e.getMessage, containsString( "\"key1\"=[value1]" ))
+        assertThat(e.getMessage, containsString( "`key1` = 'value1'" ))
     }
   }
 
@@ -77,7 +77,7 @@ class UniqueConstraintValidationAcceptanceTest
     catch
     {
       case e: CypherExecutionException =>
-        assertThat(e.getMessage, containsString( "\"key1\"=[value1]" ))
+        assertThat(e.getMessage, containsString( "`key1` = 'value1'" ))
     }
   }
 
@@ -94,7 +94,7 @@ class UniqueConstraintValidationAcceptanceTest
     catch
     {
       case e: CypherExecutionException =>
-        assertThat(e.getMessage, containsString( "\"key1\"=[value1]" ))
+        assertThat(e.getMessage, containsString( "`key1` = 'value1'" ))
     }
   }
 

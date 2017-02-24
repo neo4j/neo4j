@@ -26,29 +26,29 @@ import java.util.Set;
 import org.neo4j.kernel.api.TokenNameLookup;
 import org.neo4j.kernel.api.exceptions.index.IndexEntryConflictException;
 import org.neo4j.kernel.api.schema_new.LabelSchemaDescriptor;
-import org.neo4j.kernel.api.schema_new.constaints.ConstraintDescriptor;
+import org.neo4j.kernel.api.schema_new.constaints.UniquenessConstraintDescriptor;
 
 public class UniquePropertyValueValidationException extends ConstraintValidationException
 {
     private final Set<IndexEntryConflictException> conflicts;
 
-    public UniquePropertyValueValidationException( ConstraintDescriptor constraint,
+    public UniquePropertyValueValidationException( UniquenessConstraintDescriptor constraint,
             ConstraintValidationException.Phase phase, IndexEntryConflictException conflict )
     {
         this( constraint, phase, Collections.singleton( conflict ) );
     }
 
-    public UniquePropertyValueValidationException( ConstraintDescriptor constraint,
+    public UniquePropertyValueValidationException( UniquenessConstraintDescriptor constraint,
             ConstraintValidationException.Phase phase, Set<IndexEntryConflictException> conflicts )
     {
-        super( constraint, phase, "Existing data" );
+        super( constraint, phase, phase == Phase.VERIFICATION ? "Existing data" : "New data" );
         this.conflicts = conflicts;
     }
 
-    public UniquePropertyValueValidationException( ConstraintDescriptor constraint,
+    public UniquePropertyValueValidationException( UniquenessConstraintDescriptor constraint,
             ConstraintValidationException.Phase phase, Throwable cause )
     {
-        super( constraint, phase, "Existing data ", cause );
+        super( constraint, phase, phase == Phase.VERIFICATION ? "Existing data" : "New data", cause );
         this.conflicts = Collections.emptySet();
     }
 
@@ -62,7 +62,7 @@ public class UniquePropertyValueValidationException extends ConstraintValidation
             IndexEntryConflictException conflict = iterator.next();
             message.append( conflict.evidenceMessage(
                     tokenNameLookup.labelGetName( schema.getLabelId() ),
-                    tokenNameLookup.propertyKeyGetName( schema.getPropertyIds()[0] ) ) );
+                    tokenNameLookup.propertyKeyGetName( schema.getPropertyId() ) ) );
             if ( iterator.hasNext() )
             {
                 message.append( System.lineSeparator() );

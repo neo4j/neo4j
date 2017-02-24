@@ -42,9 +42,9 @@ public class RelationshipPropertyExistenceException extends ConstraintValidation
     @Override
     public String getUserMessage( TokenNameLookup tokenNameLookup )
     {
-        return format( "Relationship(%s) with type `%s` has no value for property `%s`",
+        return format( "Relationship(%s) with type `%s` must have the property `%s`",
                 relationshipId,
                 tokenNameLookup.relationshipTypeGetName( schema.getRelTypeId() ),
-                tokenNameLookup.propertyKeyGetName( schema.getPropertyIds()[0] ) );
+                tokenNameLookup.propertyKeyGetName( schema.getPropertyId() ) );
     }
 }

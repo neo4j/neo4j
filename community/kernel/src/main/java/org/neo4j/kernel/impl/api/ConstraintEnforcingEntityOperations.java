@@ -166,7 +166,7 @@ public class ConstraintEnforcingEntityOperations implements EntityOperations, Sc
             NewIndexDescriptor index = constraint.ownedIndexDescriptor();
             assertIndexOnline( state, index );
             int labelId = index.schema().getLabelId();
-            int propertyId = index.schema().getPropertyIds()[0];
+            int propertyId = index.schema().getPropertyId();
             state.locks().optimistic().acquireExclusive(
                     state.lockTracer(),
                     INDEX_ENTRY,
@@ -297,7 +297,7 @@ public class ConstraintEnforcingEntityOperations implements EntityOperations, Sc
 
         // TODO: Support composite index, either by allowing value to be an array, or by creating a new method
         int labelId = index.schema().getLabelId();
-        int propertyKeyId = index.schema().getPropertyIds()[0];
+        int propertyKeyId = index.schema().getPropertyId();
         String stringVal = "";
         if ( null != value )
         {

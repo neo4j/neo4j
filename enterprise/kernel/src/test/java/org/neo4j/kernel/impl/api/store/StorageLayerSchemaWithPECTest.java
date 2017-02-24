@@ -26,23 +26,15 @@ import java.util.Set;
 import org.neo4j.SchemaHelper;
 import org.neo4j.graphdb.GraphDatabaseService;
 import org.neo4j.graphdb.Label;
-import org.neo4j.graphdb.Relationship;
 import org.neo4j.graphdb.RelationshipType;
 import org.neo4j.helpers.collection.Iterators;
-import org.neo4j.kernel.api.schema.NodePropertyDescriptor;
-import org.neo4j.kernel.api.schema.RelationshipPropertyDescriptor;
-import org.neo4j.kernel.api.constraints.NodePropertyConstraint;
-import org.neo4j.kernel.api.constraints.NodePropertyExistenceConstraint;
-import org.neo4j.kernel.api.constraints.PropertyConstraint;
-import org.neo4j.kernel.api.constraints.RelationshipPropertyConstraint;
-import org.neo4j.kernel.api.constraints.RelationshipPropertyExistenceConstraint;
-import org.neo4j.kernel.api.constraints.UniquenessConstraint;
-import org.neo4j.kernel.api.schema_new.SchemaBoundary;
 import org.neo4j.kernel.api.schema_new.SchemaDescriptorFactory;
 import org.neo4j.kernel.api.schema_new.constaints.ConstraintDescriptor;
 import org.neo4j.kernel.api.schema_new.constaints.ConstraintDescriptorFactory;
 import org.neo4j.test.TestEnterpriseGraphDatabaseFactory;
 
+import static org.hamcrest.MatcherAssert.assertThat;
+import static org.hamcrest.Matchers.containsInAnyOrder;
 import static org.junit.Assert.assertEquals;
 import static org.neo4j.helpers.collection.Iterators.asSet;
 
@@ -72,18 +64,15 @@ public class StorageLayerSchemaWithPECTest extends StorageLayerTest
         // Then
         int labelId1 = labelId( label1 );
         int labelId2 = labelId( label2 );
+        int relTypeId = relationshipTypeId( relType1 );
         int propKeyId = propertyKeyId( propertyKey );
-        NodePropertyDescriptor descriptor1 = new NodePropertyDescriptor( labelId1, propKeyId );
-        NodePropertyDescriptor descriptor2 = new NodePropertyDescriptor( labelId2, propKeyId );
 
-        Set<PropertyConstraint> expectedConstraints = asSet(
-                new UniquenessConstraint( descriptor1 ),
-                new UniquenessConstraint( descriptor2 ),
-                new NodePropertyExistenceConstraint( descriptor2 ),
-                new RelationshipPropertyExistenceConstraint(
-                        new RelationshipPropertyDescriptor( relationshipTypeId( relType1 ), propKeyId ) ) );
-
-        assertEquals( expectedConstraints, constraints );
+        assertThat( constraints, containsInAnyOrder(
+                ConstraintDescriptorFactory.uniqueForLabel( labelId1, propKeyId ),
+                ConstraintDescriptorFactory.uniqueForLabel( labelId2, propKeyId ),
+                ConstraintDescriptorFactory.existsForLabel( labelId2, propKeyId ),
+                ConstraintDescriptorFactory.existsForRelType( relTypeId, propKeyId )
+            ) );
     }
 
     @Test

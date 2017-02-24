@@ -207,7 +207,7 @@ case class SpecSuiteErrorHandler(typ: String, phase: String, detail: String) ext
       detail should equal(INVALID_ELEMENT_ACCESS)
     else if (msg.matches(".+ can not create a new node due to conflicts with( both)? existing( and missing)? unique nodes.*"))
       detail should equal("CreateBlockedByConstraint")
-    else if (msg.matches("Node [0-9]+ already exists with label .+ and property \".+\"=\\[.+\\]"))
+    else if (msg.matches("Node\\([0-9]+\\) already exists with label `.+` and property `.+` = .+"))
       detail should equal("CreateBlockedByConstraint")
     else if (msg.matches("Cannot delete node\\<\\d+\\>, because it still has relationships. To delete this node, you must first delete its relationships."))
       detail should equal(DELETE_CONNECTED_NODE)

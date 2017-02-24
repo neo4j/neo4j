@@ -163,9 +163,8 @@ public class UniquenessConstraintCreationIT
             Throwable cause = ex.getCause();
             assertThat( cause, instanceOf( ConstraintValidationException.class ) );
 
-            String expectedMessage =
-                    String.format( "Multiple nodes with label `%s` have property `%s` = '%s':%n  node(%d)%n  node(%d)",
-                            "Foo", "name", "foo", node1, node2 );
+            String expectedMessage = String.format(
+                    "Both Node(%d) and Node(%d) have the label `Foo` and property `name` = 'foo'", node1, node2 );
             String actualMessage = userMessage( (ConstraintValidationException) cause );
             assertEquals( expectedMessage, actualMessage );
         }

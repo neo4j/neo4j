@@ -34,8 +34,8 @@ import org.neo4j.kernel.api.exceptions.schema.DropIndexFailureException;
 import org.neo4j.kernel.api.exceptions.schema.SchemaRuleNotFoundException;
 import org.neo4j.kernel.api.exceptions.schema.UniquePropertyValueValidationException;
 import org.neo4j.kernel.api.schema_new.LabelSchemaDescriptor;
-import org.neo4j.kernel.api.schema_new.constaints.ConstraintDescriptor;
 import org.neo4j.kernel.api.schema_new.constaints.ConstraintDescriptorFactory;
+import org.neo4j.kernel.api.schema_new.constaints.UniquenessConstraintDescriptor;
 import org.neo4j.kernel.api.schema_new.index.NewIndexDescriptor;
 import org.neo4j.kernel.api.index.PropertyAccessor;
 import org.neo4j.kernel.api.schema_new.index.NewIndexDescriptorFactory;
@@ -91,7 +91,7 @@ public class ConstraintIndexCreator
     ) throws TransactionFailureException, CreateConstraintFailureException,
             DropIndexFailureException, UniquePropertyValueValidationException
     {
-        ConstraintDescriptor constraint = ConstraintDescriptorFactory.uniqueForSchema( descriptor );
+        UniquenessConstraintDescriptor constraint = ConstraintDescriptorFactory.uniqueForSchema( descriptor );
         NewIndexDescriptor index = createConstraintIndex( descriptor );
         boolean success = false;
         boolean reacquiredSchemaLock = false;
@@ -182,7 +182,7 @@ public class ConstraintIndexCreator
         }
     }
 
-    private void awaitConstrainIndexPopulation( ConstraintDescriptor constraint, long indexId )
+    private void awaitConstrainIndexPopulation( UniquenessConstraintDescriptor constraint, long indexId )
             throws InterruptedException, UniquePropertyValueValidationException
     {
         try

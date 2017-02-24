@@ -200,7 +200,7 @@ class ErrorMessagesTest extends ExecutionEngineFunSuite with CypherSerializer {
     expectError(
       "CREATE CONSTRAINT ON (person:Person) ASSERT person.name IS UNIQUE",
       String.format("Unable to create CONSTRAINT ON ( person:Person ) ASSERT person.name IS UNIQUE:%n" +
-        "Multiple nodes with label `Person` have property `name` = 'A':%n  node(0)%n  node(1)")
+        "Both Node(0) and Node(1) have the label `Person` and property `name` = 'A'")
     )
   }
 

@@ -42,9 +42,9 @@ public class NodePropertyExistenceException extends ConstraintValidationExceptio
     @Override
     public String getUserMessage( TokenNameLookup tokenNameLookup )
     {
-        return format( "Node(%d) with label `%s` has no value for property `%s`",
+        return format( "Node(%d) with label `%s` must have the property `%s`",
                 nodeId,
                 tokenNameLookup.labelGetName( schema.getLabelId() ),
-                tokenNameLookup.propertyKeyGetName( schema.getPropertyIds()[0] ) );
+                tokenNameLookup.propertyKeyGetName( schema.getPropertyId() ) );
     }
 }

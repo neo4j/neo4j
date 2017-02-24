@@ -123,7 +123,7 @@ public class NodePropertyExistenceConstraintCreationIT
         try
         {
             SchemaWriteOperations statement = schemaWriteOperationsInNewTransaction();
-            statement.constraintDrop( constraint );
+            statement.constraintDrop( ConstraintDescriptorFactory.existsForSchema( constraint.schema() ) );
 
             fail( "expected exception" );
         }
@@ -143,7 +143,7 @@ public class NodePropertyExistenceConstraintCreationIT
 
             Iterator<ConstraintDescriptor> constraints = statement.constraintsGetForSchema( descriptor );
 
-            assertEquals( ConstraintBoundary.map( constraint ), single( constraints ) );
+            assertEquals( constraint, single( constraints ) );
         }
     }
 }
