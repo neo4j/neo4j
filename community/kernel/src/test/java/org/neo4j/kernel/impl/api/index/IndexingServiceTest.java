@@ -325,7 +325,8 @@ public class IndexingServiceTest
         // given
         SchemaIndexProvider provider = mock( SchemaIndexProvider.class );
         when( provider.getProviderDescriptor() ).thenReturn( PROVIDER_DESCRIPTOR );
-        when( provider.getOnlineAccessor( anyLong(), any( IndexConfiguration.class ), any( IndexSamplingConfig.class ) ) )
+        when( provider.getOnlineAccessor( anyLong(), any( IndexDescriptor.class ), any( IndexConfiguration.class ),
+                any( IndexSamplingConfig.class ) ) )
                 .thenReturn( mock( IndexAccessor.class ) );
         SchemaIndexProviderMap providerMap = new DefaultSchemaIndexProviderMap( provider );
         TokenNameLookup mockLookup = mock( TokenNameLookup.class );

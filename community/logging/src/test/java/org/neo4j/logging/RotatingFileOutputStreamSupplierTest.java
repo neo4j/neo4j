@@ -19,9 +19,6 @@
  */
 package org.neo4j.logging;
 
-import org.junit.After;
-import org.junit.Test;
-
 import java.io.File;
 import java.io.FileNotFoundException;
 import java.io.IOException;
@@ -34,9 +31,15 @@ import java.util.concurrent.CountDownLatch;
 import java.util.concurrent.Executor;
 import java.util.concurrent.Executors;
 import java.util.concurrent.RejectedExecutionException;
+import java.util.concurrent.TimeUnit;
 import java.util.concurrent.atomic.AtomicLong;
 import java.util.function.LongSupplier;
 import java.util.function.Supplier;
+
+import org.junit.After;
+import org.junit.Before;
+import org.junit.Rule;
+import org.junit.Test;
 
 import org.neo4j.adversaries.Adversary;
 import org.neo4j.adversaries.RandomAdversary;
@@ -47,10 +50,10 @@ import org.neo4j.graphdb.mockfs.DelegatingFileSystemAbstraction;
 import org.neo4j.graphdb.mockfs.EphemeralFileSystemAbstraction;
 import org.neo4j.io.fs.FileSystemAbstraction;
 import org.neo4j.logging.RotatingFileOutputStreamSupplier.RotationListener;
+import org.neo4j.test.rule.TestDirectory;
 
 import static java.util.concurrent.TimeUnit.SECONDS;
 import static org.hamcrest.CoreMatchers.sameInstance;
-import static org.hamcrest.Matchers.not;
 import static org.hamcrest.core.Is.is;
 import static org.junit.Assert.assertThat;
 import static org.junit.Assert.fail;
@@ -67,16 +70,36 @@ public class RotatingFileOutputStreamSupplierTest
     private static final java.util.concurrent.Executor DIRECT_EXECUTOR = Runnable::run;
 
     private FileSystemAbstraction fileSystem = new EphemeralFileSystemAbstraction();
-    private File logFile = new File( "/tmp/logfile.log" );
-    private File archiveLogFile1 = new File( "/tmp/logfile.log.1" );
-    private File archiveLogFile2 = new File( "/tmp/logfile.log.2" );
-    private File archiveLogFile3 = new File( "/tmp/logfile.log.3" );
-    private File archiveLogFile4 = new File( "/tmp/logfile.log.4" );
-    private File archiveLogFile5 = new File( "/tmp/logfile.log.5" );
-    private File archiveLogFile6 = new File( "/tmp/logfile.log.6" );
-    private File archiveLogFile7 = new File( "/tmp/logfile.log.7" );
-    private File archiveLogFile8 = new File( "/tmp/logfile.log.8" );
-    private File archiveLogFile9 = new File( "/tmp/logfile.log.9" );
+
+    @Rule
+    public final TestDirectory testDirectory = TestDirectory.testDirectory( getClass(), fileSystem );
+
+    private File logFile;
+    private File archiveLogFile1;
+    private File archiveLogFile2;
+    private File archiveLogFile3;
+    private File archiveLogFile4;
+    private File archiveLogFile5;
+    private File archiveLogFile6;
+    private File archiveLogFile7;
+    private File archiveLogFile8;
+    private File archiveLogFile9;
+
+    @Before
+    public void setup()
+    {
+        File logDir = testDirectory.directory();
+        logFile = new File( logDir, "logfile.log" );
+        archiveLogFile1 = new File( logDir, "logfile.log.1" );
+        archiveLogFile2 = new File( logDir, "logfile.log.2" );
+        archiveLogFile3 = new File( logDir, "logfile.log.3" );
+        archiveLogFile4 = new File( logDir, "logfile.log.4" );
+        archiveLogFile5 = new File( logDir, "logfile.log.5" );
+        archiveLogFile6 = new File( logDir, "logfile.log.6" );
+        archiveLogFile7 = new File( logDir, "logfile.log.7" );
+        archiveLogFile8 = new File( logDir, "logfile.log.8" );
+        archiveLogFile9 = new File( logDir, "logfile.log.9" );
+    }
 
     @After
     public void tearDown() throws Exception
@@ -94,24 +117,23 @@ public class RotatingFileOutputStreamSupplierTest
     @Test
     public void rotatesLogWhenSizeExceeded() throws Exception
     {
-        RotatingFileOutputStreamSupplier supplier = new RotatingFileOutputStreamSupplier( fileSystem, logFile, 10, 0, 10, DIRECT_EXECUTOR );
-        OutputStream outputStream = supplier.get();
+        RotatingFileOutputStreamSupplier supplier = new RotatingFileOutputStreamSupplier( fileSystem, logFile, 10, 0,
+                10, DIRECT_EXECUTOR );
+
+        write( supplier, "A string longer than 10 bytes" );
+
         assertThat( fileSystem.fileExists( logFile ), is( true ) );
         assertThat( fileSystem.fileExists( archiveLogFile1 ), is( false ) );
 
-        write( outputStream, "A string longer than 10 bytes" );
-        OutputStream outputStream2 = supplier.get();
-        assertThat( outputStream2, not( outputStream ) );
+        write( supplier, "A string longer than 10 bytes" );
+
         assertThat( fileSystem.fileExists( logFile ), is( true ) );
         assertThat( fileSystem.fileExists( archiveLogFile1 ), is( true ) );
         assertThat( fileSystem.fileExists( archiveLogFile2 ), is( false ) );
 
-        write( outputStream2, "Short" );
-        assertThat( supplier.get(), is( outputStream2 ) );
+        write( supplier, "Short" );
+        write( supplier, "A string longer than 10 bytes" );
 
-        write( outputStream2, "A string longer than 10 bytes" );
-        OutputStream outputStream3 = supplier.get();
-        assertThat( outputStream3, not( outputStream2 ) );
         assertThat( fileSystem.fileExists( logFile ), is( true ) );
         assertThat( fileSystem.fileExists( archiveLogFile1 ), is( true ) );
         assertThat( fileSystem.fileExists( archiveLogFile2 ), is( true ) );
@@ -120,26 +142,29 @@ public class RotatingFileOutputStreamSupplierTest
     @Test
     public void limitsNumberOfArchivedLogs() throws Exception
     {
-        RotatingFileOutputStreamSupplier supplier = new RotatingFileOutputStreamSupplier( fileSystem, logFile, 10, 0, 2, DIRECT_EXECUTOR );
-        OutputStream outputStream = supplier.get();
+        RotatingFileOutputStreamSupplier supplier = new RotatingFileOutputStreamSupplier( fileSystem, logFile, 10, 0, 2,
+                DIRECT_EXECUTOR );
+
+        write( supplier, "A string longer than 10 bytes" );
+
         assertThat( fileSystem.fileExists( logFile ), is( true ) );
         assertThat( fileSystem.fileExists( archiveLogFile1 ), is( false ) );
 
-        write( outputStream, "A string longer than 10 bytes" );
-        OutputStream outputStream2 = supplier.get();
+        write( supplier, "A string longer than 10 bytes" );
+
         assertThat( fileSystem.fileExists( logFile ), is( true ) );
         assertThat( fileSystem.fileExists( archiveLogFile1 ), is( true ) );
         assertThat( fileSystem.fileExists( archiveLogFile2 ), is( false ) );
 
-        write( outputStream2, "A string longer than 10 bytes" );
-        OutputStream outputStream3 = supplier.get();
+        write( supplier, "A string longer than 10 bytes" );
+
         assertThat( fileSystem.fileExists( logFile ), is( true ) );
         assertThat( fileSystem.fileExists( archiveLogFile1 ), is( true ) );
         assertThat( fileSystem.fileExists( archiveLogFile2 ), is( true ) );
         assertThat( fileSystem.fileExists( archiveLogFile3 ), is( false ) );
 
-        write( outputStream3, "A string longer than 10 bytes" );
-        supplier.get();
+        write( supplier, "A string longer than 10 bytes" );
+
         assertThat( fileSystem.fileExists( logFile ), is( true ) );
         assertThat( fileSystem.fileExists( archiveLogFile1 ), is( true ) );
         assertThat( fileSystem.fileExists( archiveLogFile2 ), is( true ) );
@@ -147,52 +172,31 @@ public class RotatingFileOutputStreamSupplierTest
     }
 
     @Test
-    public void shouldReturnSameStreamWhilstRotationOccurs() throws Exception
-    {
-        ManualExecutor executor = new ManualExecutor();
-        RotatingFileOutputStreamSupplier supplier = new RotatingFileOutputStreamSupplier( fileSystem, logFile, 10, 0, 10, executor );
-        OutputStream outputStream = supplier.get();
-
-        write( outputStream, "A string longer than 10 bytes" );
-        assertThat( supplier.get(), is( outputStream ) );
-        assertThat( executor.isScheduled(), is( true ) );
-
-        write( outputStream, "A string longer than 10 bytes" );
-        assertThat( supplier.get(), is( outputStream ) );
-
-        executor.runTask();
-
-        assertThat( supplier.get(), not( outputStream ) );
-    }
-
-    @Test
-    public void shouldNotRotatesLogWhenSizeExceededByNotDelay() throws Exception
+    public void shouldNotRotateLogWhenSizeExceededButNotDelay() throws Exception
     {
         UpdatableLongSupplier clock = new UpdatableLongSupplier( System.currentTimeMillis() );
         RotatingFileOutputStreamSupplier supplier = new RotatingFileOutputStreamSupplier( clock, fileSystem, logFile,
                 10, SECONDS.toMillis( 60 ), 10, DIRECT_EXECUTOR, new RotationListener() );
-        OutputStream outputStream = supplier.get();
+
+        write( supplier, "A string longer than 10 bytes" );
+
         assertThat( fileSystem.fileExists( logFile ), is( true ) );
         assertThat( fileSystem.fileExists( archiveLogFile1 ), is( false ) );
 
-        write( outputStream, "A string longer than 10 bytes" );
-        OutputStream outputStream2 = supplier.get();
-        assertThat( outputStream2, not( outputStream ) );
+        write( supplier, "A string longer than 10 bytes" );
+
         assertThat( fileSystem.fileExists( logFile ), is( true ) );
         assertThat( fileSystem.fileExists( archiveLogFile1 ), is( true ) );
         assertThat( fileSystem.fileExists( archiveLogFile2 ), is( false ) );
 
-        write( outputStream2, "A string longer than 10 bytes" );
-        assertThat( supplier.get(), is( outputStream2 ) );
+        write( supplier, "A string longer than 10 bytes" );
 
         clock.setValue( clock.getAsLong() + SECONDS.toMillis( 59 ) );
-        write( outputStream2, "A string longer than 10 bytes" );
-        assertThat( supplier.get(), is( outputStream2 ) );
+        write( supplier, "A string longer than 10 bytes" );
 
         clock.setValue( clock.getAsLong() + SECONDS.toMillis( 1 ) );
-        write( outputStream2, "A string longer than 10 bytes" );
-        OutputStream outputStream3 = supplier.get();
-        assertThat( outputStream3, not( outputStream2 ) );
+        write( supplier, "A string longer than 10 bytes" );
+
         assertThat( fileSystem.fileExists( logFile ), is( true ) );
         assertThat( fileSystem.fileExists( archiveLogFile1 ), is( true ) );
         assertThat( fileSystem.fileExists( archiveLogFile2 ), is( true ) );
@@ -208,38 +212,36 @@ public class RotatingFileOutputStreamSupplierTest
         RotationListener rotationListener = spy( new RotationListener()
         {
             @Override
-            public void outputFileCreated( OutputStream newStream, OutputStream oldStream )
+            public void outputFileCreated( OutputStream out )
             {
                 try
                 {
-                    allowRotationComplete.await();
-                } catch ( InterruptedException e )
+                    allowRotationComplete.await( 1L, TimeUnit.SECONDS );
+                }
+                catch ( InterruptedException e )
                 {
                     throw new RuntimeException( e );
                 }
             }
 
             @Override
-            public void rotationCompleted( OutputStream newStream, OutputStream oldStream )
+            public void rotationCompleted( OutputStream out )
             {
                 rotationComplete.countDown();
             }
         } );
 
-        RotatingFileOutputStreamSupplier supplier = new RotatingFileOutputStreamSupplier( fileSystem, logFile, 10, 0, 10, Executors.newSingleThreadExecutor(), rotationListener );
-        OutputStream outputStream = supplier.get();
+        RotatingFileOutputStreamSupplier supplier = new RotatingFileOutputStreamSupplier( fileSystem, logFile, 10, 0,
+                10, Executors.newSingleThreadExecutor(), rotationListener );
 
-        write( outputStream, "A string longer than 10 bytes" );
-        assertThat( supplier.get(), is( outputStream ) );
+        write( supplier, "A string longer than 10 bytes" );
+        write( supplier, "A string longer than 10 bytes" );
 
         allowRotationComplete.countDown();
-        rotationComplete.await();
+        rotationComplete.await( 1L, TimeUnit.SECONDS );
 
-        OutputStream outputStream2 = supplier.get();
-        assertThat( outputStream2, not( outputStream ) );
-
-        verify( rotationListener ).outputFileCreated( outputStream2, outputStream );
-        verify( rotationListener ).rotationCompleted( outputStream2, outputStream );
+        verify( rotationListener ).outputFileCreated( supplier.get() );
+        verify( rotationListener ).rotationCompleted( supplier.get() );
     }
 
     @Test
@@ -247,13 +249,14 @@ public class RotatingFileOutputStreamSupplierTest
     {
         RotationListener rotationListener = mock( RotationListener.class );
         Executor executor = mock( Executor.class );
-        RotatingFileOutputStreamSupplier supplier = new RotatingFileOutputStreamSupplier( fileSystem, logFile, 10, 0, 10, executor, rotationListener );
+        RotatingFileOutputStreamSupplier supplier = new RotatingFileOutputStreamSupplier( fileSystem, logFile, 10, 0,
+                10, executor, rotationListener );
         OutputStream outputStream = supplier.get();
 
         RejectedExecutionException exception = new RejectedExecutionException( "text exception" );
         doThrow( exception ).when( executor ).execute( any( Runnable.class ) );
 
-        write( outputStream, "A string longer than 10 bytes" );
+        write( supplier, "A string longer than 10 bytes" );
         assertThat( supplier.get(), is( outputStream ) );
 
         verify( rotationListener ).rotationError( exception, outputStream );
@@ -264,13 +267,14 @@ public class RotatingFileOutputStreamSupplierTest
     {
         RotationListener rotationListener = mock( RotationListener.class );
         Executor executor = mock( Executor.class );
-        RotatingFileOutputStreamSupplier supplier = new RotatingFileOutputStreamSupplier( fileSystem, logFile, 10, 0, 10, executor, rotationListener );
+        RotatingFileOutputStreamSupplier supplier = new RotatingFileOutputStreamSupplier( fileSystem, logFile, 10, 0,
+                10, executor, rotationListener );
         OutputStream outputStream = supplier.get();
 
         RejectedExecutionException exception = new RejectedExecutionException( "text exception" );
         doThrow( exception ).when( executor ).execute( any( Runnable.class ) );
 
-        write( outputStream, "A string longer than 10 bytes" );
+        write( supplier, "A string longer than 10 bytes" );
         assertThat( supplier.get(), is( outputStream ) );
         assertThat( supplier.get(), is( outputStream ) );
 
@@ -282,13 +286,14 @@ public class RotatingFileOutputStreamSupplierTest
     {
         RotationListener rotationListener = mock( RotationListener.class );
         FileSystemAbstraction fs = spy( fileSystem );
-        RotatingFileOutputStreamSupplier supplier = new RotatingFileOutputStreamSupplier( fs, logFile, 10, 0, 10, DIRECT_EXECUTOR, rotationListener );
+        RotatingFileOutputStreamSupplier supplier = new RotatingFileOutputStreamSupplier( fs, logFile, 10, 0, 10,
+                DIRECT_EXECUTOR, rotationListener );
         OutputStream outputStream = supplier.get();
 
         IOException exception = new IOException( "text exception" );
         doThrow( exception ).when( fs ).renameFile( any( File.class ), any( File.class ) );
 
-        write( outputStream, "A string longer than 10 bytes" );
+        write( supplier, "A string longer than 10 bytes" );
         assertThat( supplier.get(), is( outputStream ) );
 
         verify( rotationListener ).rotationError( exception, outputStream );
@@ -302,44 +307,67 @@ public class RotatingFileOutputStreamSupplierTest
         RotationListener rotationListener = spy( new RotationListener()
         {
             @Override
-            public void outputFileCreated( OutputStream newStream, OutputStream oldStream )
+            public void outputFileCreated( OutputStream out )
             {
                 try
                 {
                     allowRotationComplete.await();
-                } catch ( InterruptedException e )
+                }
+                catch ( InterruptedException e )
                 {
                     throw new RuntimeException( e );
                 }
             }
         } );
 
-        RotatingFileOutputStreamSupplier supplier = new RotatingFileOutputStreamSupplier( fileSystem, logFile, 10, 0, 10, Executors.newSingleThreadExecutor(), rotationListener );
+        final List<OutputStream> mockStreams = new ArrayList<>();
+        FileSystemAbstraction fs = new DelegatingFileSystemAbstraction( fileSystem )
+        {
+            @Override
+            public OutputStream openAsOutputStream( File fileName, boolean append ) throws IOException
+            {
+                final OutputStream stream = spy( super.openAsOutputStream( fileName, append ) );
+                mockStreams.add( stream );
+                return stream;
+            }
+        };
+
+        RotatingFileOutputStreamSupplier supplier = new RotatingFileOutputStreamSupplier( fs, logFile, 10, 0,
+                10, Executors.newSingleThreadExecutor(), rotationListener );
         OutputStream outputStream = supplier.get();
 
-        write( outputStream, "A string longer than 10 bytes" );
+        write( supplier, "A string longer than 10 bytes" );
         assertThat( supplier.get(), is( outputStream ) );
 
         allowRotationComplete.countDown();
         supplier.close();
 
-        assertStreamClosed( supplier.get() );
+        assertStreamClosed( mockStreams.get( 0 ) );
     }
 
     @Test
     public void shouldCloseAllOutputStreams() throws Exception
     {
-        RotatingFileOutputStreamSupplier supplier = new RotatingFileOutputStreamSupplier( fileSystem, logFile, 10, 0, 10, DIRECT_EXECUTOR );
-        OutputStream outputStream = supplier.get();
+        final List<OutputStream> mockStreams = new ArrayList<>();
+        FileSystemAbstraction fs = new DelegatingFileSystemAbstraction( fileSystem )
+        {
+            @Override
+            public OutputStream openAsOutputStream( File fileName, boolean append ) throws IOException
+            {
+                final OutputStream stream = spy( super.openAsOutputStream( fileName, append ) );
+                mockStreams.add( stream );
+                return stream;
+            }
+        };
 
-        write( outputStream, "A string longer than 10 bytes" );
-        OutputStream outputStream2 = supplier.get();
-        assertThat( outputStream2, not( outputStream ) );
+        RotatingFileOutputStreamSupplier supplier = new RotatingFileOutputStreamSupplier( fs, logFile, 10, 0,
+                10, DIRECT_EXECUTOR );
+
+        write( supplier, "A string longer than 10 bytes" );
 
         supplier.close();
 
-        assertStreamClosed( outputStream );
-        assertStreamClosed( outputStream2 );
+        assertStreamClosed( mockStreams.get( 0 ) );
     }
 
     @Test
@@ -357,19 +385,15 @@ public class RotatingFileOutputStreamSupplierTest
             }
         };
 
-        RotatingFileOutputStreamSupplier supplier = new RotatingFileOutputStreamSupplier( fs, logFile, 10, 0, 10, DIRECT_EXECUTOR );
-        OutputStream outputStream = supplier.get();
-        assertThat( outputStream, sameInstance( mockStreams.get( 0 ) ) );
+        RotatingFileOutputStreamSupplier supplier = new RotatingFileOutputStreamSupplier( fs, logFile, 10, 0, 10,
+                DIRECT_EXECUTOR );
 
-        write( outputStream, "A string longer than 10 bytes" );
-        OutputStream outputStream2 = supplier.get();
-        assertThat( outputStream2, sameInstance( mockStreams.get( 1 ) ) );
+        write( supplier, "A string longer than 10 bytes" );
+        write( supplier, "A string longer than 10 bytes" );
 
-        IOException exception1 = new IOException( "test exception" );
-        doThrow( exception1 ).when( outputStream ).close();
-
-        IOException exception2 = new IOException( "test exception" );
-        doThrow( exception2 ).when( outputStream2 ).close();
+        IOException exception = new IOException( "test exception" );
+        OutputStream mockStream = mockStreams.get( 1 );
+        doThrow( exception ).when( mockStream ).close();
 
         try
         {
@@ -377,9 +401,9 @@ public class RotatingFileOutputStreamSupplierTest
         }
         catch ( IOException e )
         {
-            assertThat( e, sameInstance( exception2 ) );
+            assertThat( e, sameInstance( exception ) );
         }
-        verify( outputStream ).close();
+        verify( mockStream ).close();
     }
 
     @Test
@@ -388,15 +412,17 @@ public class RotatingFileOutputStreamSupplierTest
         final RandomAdversary adversary = new RandomAdversary( 0.1, 0.1, 0 );
         adversary.setProbabilityFactor( 0 );
 
-        AdversarialFileSystemAbstraction adversarialFileSystem = new SensibleAdversarialFileSystemAbstraction( adversary, fileSystem );
-        RotatingFileOutputStreamSupplier supplier = new RotatingFileOutputStreamSupplier( adversarialFileSystem, logFile, 1000, 0, 9, DIRECT_EXECUTOR );
+        AdversarialFileSystemAbstraction adversarialFileSystem = new SensibleAdversarialFileSystemAbstraction(
+                adversary, fileSystem );
+        RotatingFileOutputStreamSupplier supplier = new RotatingFileOutputStreamSupplier( adversarialFileSystem,
+                logFile, 1000, 0, 9, DIRECT_EXECUTOR );
 
         adversary.setProbabilityFactor( 1 );
         writeLines( supplier, 10000 );
 
         // run cleanly for a while, to allow it to fill any gaps left in log archive numbers
         adversary.setProbabilityFactor( 0 );
-        writeLines( supplier, 1000 );
+        writeLines( supplier, 10000 );
 
         assertThat( fileSystem.fileExists( logFile ), is( true ) );
         assertThat( fileSystem.fileExists( archiveLogFile1 ), is( true ) );
@@ -410,9 +436,9 @@ public class RotatingFileOutputStreamSupplierTest
         assertThat( fileSystem.fileExists( archiveLogFile9 ), is( true ) );
     }
 
-    private void write( OutputStream outputStream, String line )
+    private void write( RotatingFileOutputStreamSupplier supplier, String line )
     {
-        PrintWriter writer = new PrintWriter( outputStream );
+        PrintWriter writer = new PrintWriter( supplier.get() );
         writer.println( line );
         writer.flush();
     }
@@ -420,9 +446,10 @@ public class RotatingFileOutputStreamSupplierTest
     private void writeLines( Supplier<OutputStream> outputStreamSupplier, int count ) throws InterruptedException
     {
         Supplier<PrintWriter> printWriterSupplier = Suppliers.adapted( outputStreamSupplier, OUTPUT_STREAM_CONVERTER );
-        for (; count >= 0; --count )
+        for ( ; count >= 0; --count )
         {
-            printWriterSupplier.get().println( "We are what we repeatedly do. Excellence, then, is not an act, but a habit." );
+            printWriterSupplier.get().println(
+                    "We are what we repeatedly do. Excellence, then, is not an act, but a habit." );
             Thread.yield();
         }
     }
@@ -433,7 +460,8 @@ public class RotatingFileOutputStreamSupplierTest
         {
             stream.write( 0 );
             fail( "Expected ClosedChannelException" );
-        } catch ( ClosedChannelException e )
+        }
+        catch ( ClosedChannelException e )
         {
             // expected
         }
