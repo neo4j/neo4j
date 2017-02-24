@@ -76,6 +76,8 @@ public class Certificates
     static final Date NOT_AFTER = new Date( 253402300799000L );
     private static final Provider PROVIDER = new BouncyCastleProvider();
 
+    private static volatile boolean cleanupRequired = true;
+
     static
     {
         Security.addProvider( PROVIDER );
@@ -89,6 +91,7 @@ public class Certificates
     public void createSelfSignedCertificate(File certificatePath, File privateKeyPath, String hostName)
             throws GeneralSecurityException, IOException, OperatorCreationException
     {
+        installCleanupHook(certificatePath, privateKeyPath);
         KeyPairGenerator keyGen = KeyPairGenerator.getInstance( DEFAULT_ENCRYPTION );
         keyGen.initialize( 2048, random );
         KeyPair keypair = keyGen.generateKeyPair();
@@ -109,6 +112,36 @@ public class Certificates
         //write to disk
         writePem( "CERTIFICATE", cert.getEncoded(), certificatePath );
         writePem( "PRIVATE KEY", privateKey.getEncoded(), privateKeyPath );
+        // Mark as done so we don't clean up certificates
+        cleanupRequired = false;
+    }
+
+    /**
+     * Makes sure to delete partially generated certificates. Does nothing if both certificate and private key have
+     * been generated successfully.
+     *
+     * The hook should only be installed prior to generation of self-signed certificate, and not if certificates
+     * already exist.
+     */
+    private static void installCleanupHook( final File certificatePath, final File privateKeyPath )
+    {
+        Runtime.getRuntime().addShutdownHook( new Thread( () ->
+        {
+            if ( cleanupRequired )
+            {
+                System.err.println( "Cleaning up partially generated self-signed certificate..." );
+
+                if ( certificatePath.exists() )
+                {
+                    certificatePath.delete();
+                }
+
+                if ( privateKeyPath.exists() )
+                {
+                    privateKeyPath.delete();
+                }
+            }
+        } ) );
     }
 
     public Certificate[] loadCertificates(File certFile) throws CertificateException, IOException
