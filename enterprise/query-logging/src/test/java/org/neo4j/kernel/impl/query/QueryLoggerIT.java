@@ -34,7 +34,6 @@ import java.util.HashMap;
 import java.util.LinkedHashMap;
 import java.util.List;
 import java.util.Map;
-import java.util.concurrent.TimeUnit;
 
 import org.neo4j.graphdb.GraphDatabaseService;
 import org.neo4j.graphdb.Result;
@@ -43,20 +42,23 @@ import org.neo4j.graphdb.factory.GraphDatabaseSettings;
 import org.neo4j.io.fs.FileSystemAbstraction;
 import org.neo4j.kernel.configuration.Settings;
 import org.neo4j.logging.AssertableLogProvider;
-import org.neo4j.test.EphemeralFileSystemRule;
+import org.neo4j.test.DefaultFileSystemRule;
 import org.neo4j.test.TargetDirectory;
 import org.neo4j.test.TestGraphDatabaseFactory;
 
 import static org.hamcrest.Matchers.endsWith;
 import static org.junit.Assert.assertEquals;
+import static org.junit.Assert.assertFalse;
 import static org.junit.Assert.assertThat;
 import static org.junit.Assert.assertTrue;
 
 public class QueryLoggerIT
 {
 
+    // It is imperitive that this test executes using a real filesystem; otherwise rotation failures will not be
+    // detected on Windows.
     @Rule
-    public final EphemeralFileSystemRule fileSystem = new EphemeralFileSystemRule();
+    public final DefaultFileSystemRule fileSystem = new DefaultFileSystemRule();
     @Rule
     public final TargetDirectory.TestDirectory testDirectory = TargetDirectory.testDirForTest( getClass() );
     private AssertableLogProvider inMemoryLog;
@@ -103,9 +105,9 @@ public class QueryLoggerIT
         Map<String,Object> props = new LinkedHashMap<>(); // to be sure about ordering in the last assertion
         props.put( "name", "Roland" );
         props.put( "position", "Gunslinger" );
-        props.put( "followers", Arrays.asList("Jake", "Eddie", "Susannah") );
+        props.put( "followers", Arrays.asList( "Jake", "Eddie", "Susannah" ) );
 
-        Map<String, Object> params = new HashMap<>();
+        Map<String,Object> params = new HashMap<>();
         params.put( "props", props );
 
         String query = "CREATE ({props})";
@@ -115,7 +117,7 @@ public class QueryLoggerIT
         assertEquals( 1, logLines.size() );
         assertThat( logLines.get( 0 ), endsWith( String.format(
                 " ms: %s - %s - {props: {name: Roland, position: Gunslinger, followers: [Jake, Eddie, Susannah]}}",
-                QueryEngineProvider.embeddedSession( null ), query) ) );
+                QueryEngineProvider.embeddedSession( null ), query ) ) );
     }
 
     @Test
@@ -127,7 +129,7 @@ public class QueryLoggerIT
                 .setConfig( GraphDatabaseSettings.logs_directory, logsDirectory.getPath() )
                 .newGraphDatabase();
 
-        Map<String, Object> params = new HashMap<>();
+        Map<String,Object> params = new HashMap<>();
         params.put( "ids", Arrays.asList( 0, 1, 2 ) );
         String query = "MATCH (n) WHERE id(n) in {ids} RETURN n.name";
         executeQueryAndShutdown( database, query, params );
@@ -137,7 +139,7 @@ public class QueryLoggerIT
         assertThat( logLines.get( 0 ),
                 endsWith( String.format(
                         " ms: %s - %s - {ids: [0, 1, 2]}",
-                        QueryEngineProvider.embeddedSession( null ), query) ) );
+                        QueryEngineProvider.embeddedSession( null ), query ) ) );
     }
 
     @Test
@@ -150,8 +152,34 @@ public class QueryLoggerIT
 
         executeQueryAndShutdown( database );
 
+        assertFalse( "Should not have any queries logged since query log is disabled", logFilename.exists() );
+    }
+
+    @Test
+    public void disabledQueryLogRotation() throws Exception
+    {
+        final File logsDirectory = new File( testDirectory.graphDbDir(), "logs" );
+        final File logFilename = new File( logsDirectory, "query.log" );
+        final File shiftedLogFilename1 = new File( logsDirectory, "query.log.1" );
+        GraphDatabaseService database = databaseBuilder.setConfig( GraphDatabaseSettings.log_queries, Settings.TRUE )
+                .setConfig( GraphDatabaseSettings.logs_directory, logsDirectory.getPath() )
+                .setConfig( GraphDatabaseSettings.log_queries_rotation_threshold, "0" )
+                .newGraphDatabase();
+
+
+        // Logging is done asynchronously, so write many times to make sure we would have rotated something
+        for ( int i = 0; i < 100; i++ )
+        {
+            database.execute( QUERY );
+        }
+
+        database.shutdown();
+
+        assertFalse( "There should not exist a shifted log file because rotation is disabled",
+                shiftedLogFilename1.exists() );
+
         List<String> lines = readAllLines( logFilename );
-        assertTrue( "Should not have any queries logged since query log is disabled", lines.isEmpty() );
+        assertEquals( 100, lines.size() );
     }
 
     @Test
@@ -159,32 +187,40 @@ public class QueryLoggerIT
     {
         final File logsDirectory = new File( testDirectory.graphDbDir(), "logs" );
         final File logFilename = new File( logsDirectory, "query.log" );
-        final File shiftedLogFilename = new File( logsDirectory, "query.log.1" );
+        final File shiftedLogFilename1 = new File( logsDirectory, "query.log.1" );
+        final File shiftedLogFilename2 = new File( logsDirectory, "query.log.2" );
         GraphDatabaseService database = databaseBuilder.setConfig( GraphDatabaseSettings.log_queries, Settings.TRUE )
                 .setConfig( GraphDatabaseSettings.logs_directory, logsDirectory.getPath() )
                 .setConfig( GraphDatabaseSettings.log_queries_rotation_threshold, "1" )
                 .newGraphDatabase();
 
-        database.execute( QUERY );
-        database.execute( QUERY );
-        // wait for file rotation to finish
-        Thread.sleep( TimeUnit.SECONDS.toMillis( 1 ) );
-        // execute one more slow query which should go to new log file
-        database.execute( QUERY );
+
+        // Logging is done asynchronously, and it turns out it's really hard to make it all work the same on Linux
+        // and on Windows, so just write maaaaany times to make sure we rotate several times.
+
+        for ( int i = 0; i < 100; i++ )
+        {
+            database.execute( QUERY );
+        }
+
         database.shutdown();
 
         List<String> lines = readAllLines( logFilename );
-        assertEquals( 1, lines.size() );
-        List<String> shiftedLines = readAllLines( shiftedLogFilename );
-        assertEquals( 2, shiftedLines.size() );
+        assertTrue( "Expected log file to have at least one log entry", lines.size() >= 1 );
+
+        lines = readAllLines( shiftedLogFilename1 );
+        assertTrue( "Expected shifted log file to have at least one log entry", lines.size() >= 1 );
+
+        lines = readAllLines( shiftedLogFilename2 );
+        assertTrue( "Expected second shifted log file to have at least one log entry", lines.size() >= 1 );
     }
 
     private void executeQueryAndShutdown( GraphDatabaseService database )
     {
-       executeQueryAndShutdown( database, QUERY, Collections.emptyMap() );
+        executeQueryAndShutdown( database, QUERY, Collections.emptyMap() );
     }
 
-    private void executeQueryAndShutdown( GraphDatabaseService database, String query, Map<String, Object> params )
+    private void executeQueryAndShutdown( GraphDatabaseService database, String query, Map<String,Object> params )
     {
         Result execute = database.execute( query, params );
         execute.close();
@@ -202,7 +238,7 @@ public class QueryLoggerIT
         try ( BufferedReader reader = new BufferedReader(
                 fs.openAsReader( logFilename, StandardCharsets.UTF_8 ) ) )
         {
-            for ( String line; (line = reader.readLine()) != null; )
+            for ( String line; ( line = reader.readLine() ) != null; )
             {
                 logLines.add( line );
             }
