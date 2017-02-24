@@ -91,6 +91,7 @@ the relevant Commercial Agreement.
     <dependency>
       <groupId>commons-codec</groupId>
       <artifactId>commons-codec</artifactId>
+      <scope>test</scope>
     </dependency>
     <dependency>
       <groupId>com.google.code.findbugs</groupId>
