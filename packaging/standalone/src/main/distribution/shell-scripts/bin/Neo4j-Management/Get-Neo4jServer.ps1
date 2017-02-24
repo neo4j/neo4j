@@ -96,6 +96,7 @@ Function Get-Neo4jServer
     $serverProperties = @{
       'Home' = $Neo4jHome;
       'ConfDir' = $ConfDir;
+      'LogDir' = (Join-Path -Path $Neo4jHome -ChildPath 'logs');
       'ServerVersion' = '';
       'ServerType' = 'Community';
       'DatabaseMode' = '';
@@ -142,8 +143,17 @@ Function Get-Neo4jServer
       $setting = (Get-Neo4jSetting -ConfigurationFile 'neo4j.conf' -Name $_.Value.config_var -Neo4jServer $serverObject)
       $value = $_.Value.default
       if ($setting -ne $null) { $value = $setting.Value }
+      if ($value -ne $null) {
+        if (![System.IO.Path]::IsPathRooted($value)) {
+          $value = (Join-Path -Path $Neo4jHome -ChildPath $value)
+        }
+      }
       Set-Neo4jEnv $_.Name $value
     }
+
+    # Set log dir on server object
+    $serverObject.LogDir = (Get-Neo4jEnv 'NEO4J_LOGS')
+
     #  NEO4J_CONF and NEO4J_HOME are used by the Neo4j Admin Tool
     if ( (Get-Neo4jEnv 'NEO4J_CONF') -eq $null) { Set-Neo4jEnv "NEO4J_CONF" $ConfDir }
     if ( (Get-Neo4jEnv 'NEO4J_HOME') -eq $null) { Set-Neo4jEnv "NEO4J_HOME" $Neo4jHome }
