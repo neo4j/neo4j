@@ -20,12 +20,13 @@
 package org.neo4j.cypher.internal.compiler.v3_2.planner.logical
 
 import org.neo4j.cypher.internal.compiler.v3_2.phases._
+import org.neo4j.cypher.internal.compiler.v3_2.planner.logical.Metrics.{CostModel, QueryGraphSolverInput}
 import org.neo4j.cypher.internal.compiler.v3_2.planner.logical.plans.{LogicalPlan, ProduceResult}
 import org.neo4j.cypher.internal.compiler.v3_2.planner.logical.steps.LogicalPlanProducer
 import org.neo4j.cypher.internal.frontend.v3_2.phases.CompilationPhaseTracer.CompilationPhase.LOGICAL_PLANNING
 import org.neo4j.cypher.internal.frontend.v3_2.phases.Phase
 import org.neo4j.cypher.internal.ir.v3_2.exception.CantHandleQueryException
-import org.neo4j.cypher.internal.ir.v3_2.{PeriodicCommit, PlannerQuery, UnionQuery}
+import org.neo4j.cypher.internal.ir.v3_2.{Cost, PeriodicCommit, PlannerQuery, UnionQuery}
 
 case class QueryPlanner(planSingleQuery: LogicalPlanningFunction1[PlannerQuery, LogicalPlan] = PlanSingleQuery()) extends Phase[CompilerContext, CompilationState, CompilationState] {
 
@@ -40,8 +41,8 @@ case class QueryPlanner(planSingleQuery: LogicalPlanningFunction1[PlannerQuery, 
     val logicalPlanningContext = LogicalPlanningContext(
       planContext = context.planContext,
       logicalPlanProducer = logicalPlanProducer,
-      metrics = context.metrics,
-      semanticTable = from.semanticTable,
+      metrics = getMetricsFrom(context),
+      semanticTable = from.semanticTable(),
       strategy = context.queryGraphSolver,
       notificationLogger = context.notificationLogger,
       useErrorsOverWarnings = context.config.useErrorsOverWarnings,
@@ -54,6 +55,14 @@ case class QueryPlanner(planSingleQuery: LogicalPlanningFunction1[PlannerQuery, 
     val (perCommit, logicalPlan) = plan(from.unionQuery)(logicalPlanningContext)
 
     from.copy(maybePeriodicCommit = Some(perCommit), maybeLogicalPlan = Some(logicalPlan))
+  }
+
+  private def getMetricsFrom(context: CompilerContext) = if (context.debugOptions.contains("inverse_cost")) {
+    context.metrics.copy(cost = new CostModel {
+      override def apply(v1: LogicalPlan, v2: QueryGraphSolverInput): Cost = -context.metrics.cost(v1, v2)
+    })
+  } else {
+    context.metrics
   }
 
   def plan(unionQuery: UnionQuery)(implicit context: LogicalPlanningContext): (Option[PeriodicCommit], LogicalPlan) =
