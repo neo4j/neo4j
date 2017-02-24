@@ -31,7 +31,6 @@
   <modules>
     <module>query-logging</module>
     <module>com</module>
-    <module>cluster</module>
     <module>backup</module>
     <module>kernel</module>
     <module>causal-clustering</module>
@@ -75,17 +74,6 @@ terms of the relevant Commercial Agreement.
       </activation>
       <modules>
         <module>cypher</module>
-      </modules>
-    </profile>
-    <profile>
-      <id>include-ha</id>
-      <activation>
-        <property>
-          <name>!skipHA</name>
-        </property>
-      </activation>
-      <modules>
-        <module>ha</module>
       </modules>
     </profile>
     <profile>
