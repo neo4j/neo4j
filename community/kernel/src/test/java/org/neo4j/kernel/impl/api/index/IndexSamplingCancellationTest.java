@@ -31,7 +31,7 @@ import org.neo4j.kernel.api.exceptions.index.IndexNotFoundKernelException;
 import org.neo4j.kernel.api.index.DelegatingIndexReader;
 import org.neo4j.kernel.api.index.IndexAccessor;
 import org.neo4j.kernel.api.index.IndexConfiguration;
-import org.neo4j.kernel.api.index.IndexDescriptor;
+import org.neo4j.kernel.api.schema.IndexDescriptor;
 import org.neo4j.kernel.impl.api.index.inmemory.InMemoryIndexProvider;
 import org.neo4j.kernel.impl.api.index.inmemory.InMemoryIndexProviderFactory;
 import org.neo4j.kernel.impl.api.index.sampling.IndexSamplingConfig;

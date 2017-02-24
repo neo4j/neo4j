@@ -26,6 +26,7 @@ import org.neo4j.kernel.api.exceptions.TransactionFailureException;
 import org.neo4j.kernel.ha.transaction.TransactionPropagator;
 import org.neo4j.kernel.impl.api.TransactionCommitProcess;
 import org.neo4j.kernel.impl.api.TransactionToApply;
+import org.neo4j.kernel.impl.locking.LockTracer;
 import org.neo4j.kernel.impl.locking.Locks;
 import org.neo4j.kernel.impl.transaction.command.Command.NodeCommand;
 import org.neo4j.kernel.impl.transaction.command.Command.PropertyCommand;
@@ -157,7 +158,7 @@ public class MasterTransactionCommitProcess implements TransactionCommitProcess
                 {
                     locks = this.locks.newClient();
                 }
-                locks.acquireShared( SCHEMA, schemaResource() );
+                locks.acquireShared( LockTracer.NONE, SCHEMA, schemaResource() );
             }
             return locks;
         }

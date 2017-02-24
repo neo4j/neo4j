@@ -64,7 +64,7 @@ public class NonUniqueIndexPopulatorCompatibility extends IndexProviderCompatibi
         populator.close( true );
 
         // then
-        IndexAccessor accessor = indexProvider.getOnlineAccessor( 17, new IndexDescriptor( 1, 2 ),
+        IndexAccessor accessor = indexProvider.getOnlineAccessor( 17, IndexBoundary.map( descriptor ),
                 config, indexSamplingConfig );
         try ( IndexReader reader = accessor.newReader() )
         {
@@ -148,7 +148,7 @@ public class NonUniqueIndexPopulatorCompatibility extends IndexProviderCompatibi
         populator.close( true );
 
         // then
-        IndexAccessor accessor = indexProvider.getOnlineAccessor( 17, new IndexDescriptor( labelId, propertyKeyId ),
+        IndexAccessor accessor = indexProvider.getOnlineAccessor( 17, IndexBoundary.map( descriptor ),
                 IndexConfiguration.NON_UNIQUE, indexSamplingConfig );
         try ( IndexReader reader = accessor.newReader() )
         {

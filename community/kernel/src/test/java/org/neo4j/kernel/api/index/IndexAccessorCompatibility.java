@@ -64,7 +64,7 @@ public abstract class IndexAccessorCompatibility extends IndexProviderCompatibil
         IndexPopulator populator = indexProvider.getPopulator( 17, IndexBoundary.map( descriptor ), indexConfig, indexSamplingConfig );
         populator.create();
         populator.close( true );
-        accessor = indexProvider.getOnlineAccessor( 17, new IndexDescriptor( 1, PROPERTY_KEY_ID ),
+        accessor = indexProvider.getOnlineAccessor( 17, IndexBoundary.map( descriptor ),
                 indexConfig, indexSamplingConfig );
     }
 
