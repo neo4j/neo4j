@@ -277,7 +277,7 @@ public class SimpleUniquenessVerifierTest
     {
         for ( int i = 0; i < data.size(); i++ )
         {
-            Document doc = LuceneDocumentStructure.documentRepresentingProperties( (long) i, data.get( i ) );
+            Document doc = LuceneDocumentStructure.documentRepresentingProperties( i, data.get( i ) );
             writer.addDocument( doc );
         }
         searcherManager.maybeRefreshBlocking();

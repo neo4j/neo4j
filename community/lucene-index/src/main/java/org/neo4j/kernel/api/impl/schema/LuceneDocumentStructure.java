@@ -49,6 +49,7 @@ import org.apache.lucene.util.StringHelper;
 import java.io.IOException;
 import java.util.ArrayList;
 import java.util.EnumMap;
+import java.util.HashMap;
 import java.util.Iterator;
 import java.util.Map;
 
@@ -255,8 +256,7 @@ public class LuceneDocumentStructure
         private final Field idField;
         private final Field idValueField;
 
-        private final Map<ValueEncoding,Field> valueFields = new EnumMap<>( ValueEncoding.class );
-        private final ArrayList<Map<ValueEncoding,Field>> compositeValueFields = new ArrayList<>();
+        private final Map<String,Field> valueFields = new HashMap<>();
 
         private DocWithId() {
             idField = new StringField( NODE_ID_KEY, "", YES );
@@ -297,23 +297,14 @@ public class LuceneDocumentStructure
             }
         }
 
-        private Map<ValueEncoding,Field> getValueFields( int compositeKey )
-        {
-            while ( compositeValueFields.size() <= compositeKey )
-            {
-                compositeValueFields.add( new EnumMap<>( ValueEncoding.class ) );
-            }
-            return compositeValueFields.get( compositeKey );
-        }
-
         private Field getFieldWithValue( int propertyNumber, ValueEncoding encoding, Object value )
         {
-            Map<ValueEncoding,Field> compositeValueField = getValueFields( propertyNumber );
-            Field reusableField = compositeValueField.get( encoding );
+            String key = encoding.key( propertyNumber );
+            Field reusableField = valueFields.get( key );
             if ( reusableField == null )
             {
-                reusableField = encoding.encodeField( encoding.key( propertyNumber ), value );
-                compositeValueField.put( encoding, reusableField );
+                reusableField = encoding.encodeField( key, value );
+                valueFields.put( key, reusableField );
             }
             else
             {

@@ -297,7 +297,7 @@ public class LuceneSchemaIndexUniquenessVerificationIT
         PropertyValue[] dataArray = data.toArray( new PropertyValue[data.size()] );
         for ( int i = 0; i < dataArray.length; i++ )
         {
-            Document doc = LuceneDocumentStructure.documentRepresentingProperties( (long) i, dataArray[i].value );
+            Document doc = LuceneDocumentStructure.documentRepresentingProperties( i, dataArray[i].value );
             index.getIndexWriter().addDocument( doc );
         }
         index.maybeRefreshBlocking();
