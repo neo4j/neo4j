@@ -50,19 +50,19 @@ public class ReadReplica implements ClusterMember
     private final DiscoveryServiceFactory discoveryServiceFactory;
     private final File neo4jHome;
     private final File storeDir;
-    private final int memberId;
+    private final int serverId;
     private final String boltAdvertisedAddress;
     private ReadReplicaGraphDatabase database;
     private Monitors monitors;
 
-    public ReadReplica( File parentDir, int memberId, DiscoveryServiceFactory discoveryServiceFactory,
+    public ReadReplica( File parentDir, int serverId, DiscoveryServiceFactory discoveryServiceFactory,
             List<AdvertisedSocketAddress> coreMemberHazelcastAddresses, Map<String,String> extraParams,
             Map<String,IntFunction<String>> instanceExtraParams, String recordFormat, Monitors monitors )
     {
-        this.memberId = memberId;
-        int boltPort = 9000 + memberId;
-        int httpPort = 11000 + memberId;
-        int txPort = 20000 + memberId;
+        this.serverId = serverId;
+        int boltPort = 9000 + serverId;
+        int httpPort = 11000 + serverId;
+        int txPort = 20000 + serverId;
 
         String initialHosts = coreMemberHazelcastAddresses.stream().map( AdvertisedSocketAddress::toString )
                 .collect( joining( "," ) );
@@ -77,7 +77,7 @@ public class ReadReplica implements ClusterMember
 
         for ( Map.Entry<String,IntFunction<String>> entry : instanceExtraParams.entrySet() )
         {
-            config.put( entry.getKey(), entry.getValue().apply( memberId ) );
+            config.put( entry.getKey(), entry.getValue().apply( serverId ) );
         }
 
         config.put( new BoltConnector( "bolt" ).type.name(), "BOLT" );
@@ -90,7 +90,7 @@ public class ReadReplica implements ClusterMember
         config.put( new HttpConnector( "http", Encryption.NONE ).listen_address.name(), "127.0.0.1:" + httpPort );
         config.put( new HttpConnector( "http", Encryption.NONE ).advertised_address.name(), "127.0.0.1:" + httpPort );
 
-        this.neo4jHome = new File( parentDir, "read-replica-" + memberId );
+        this.neo4jHome = new File( parentDir, "read-replica-" + serverId );
         config.put( GraphDatabaseSettings.neo4j_home.name(), neo4jHome.getAbsolutePath() );
 
         config.put( CausalClusteringSettings.transaction_listen_address.name(), "127.0.0.1:" + txPort );
@@ -155,7 +155,7 @@ public class ReadReplica implements ClusterMember
 
     public String toString()
     {
-        return format( "ReadReplica{memberId=%d}", memberId );
+        return format( "ReadReplica{serverId=%d}", serverId );
     }
 
     public String directURI()
@@ -175,6 +175,11 @@ public class ReadReplica implements ClusterMember
 
     public Optional<MemberId> memberId()
     {
-        return Optional.of( new MemberId( new UUID( memberId, 0 ) ) );
+        return Optional.of( new MemberId( new UUID( serverId, 0 ) ) );
+    }
+
+    public int serverId()
+    {
+        return serverId;
     }
 }

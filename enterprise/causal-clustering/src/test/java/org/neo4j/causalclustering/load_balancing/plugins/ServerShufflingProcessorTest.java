@@ -26,6 +26,7 @@ import java.util.Collections;
 import java.util.List;
 
 import org.neo4j.causalclustering.load_balancing.Endpoint;
+import org.neo4j.causalclustering.load_balancing.LoadBalancingProcessor;
 import org.neo4j.causalclustering.load_balancing.LoadBalancingResult;
 import org.neo4j.causalclustering.load_balancing.LoadBalancingPlugin;
 import org.neo4j.helpers.AdvertisedSocketAddress;
@@ -39,13 +40,13 @@ import static org.mockito.Matchers.any;
 import static org.mockito.Mockito.mock;
 import static org.mockito.Mockito.when;
 
-public class ServerShufflingPluginTest
+public class ServerShufflingProcessorTest
 {
     @Test
     public void shouldShuffleServers() throws Exception
     {
         // given
-        LoadBalancingPlugin delegate = mock( LoadBalancingPlugin.class );
+        LoadBalancingProcessor delegate = mock( LoadBalancingPlugin.class );
 
         List<Endpoint> routers = asList(
                 Endpoint.route( new AdvertisedSocketAddress( "route", 1 ) ),
@@ -61,7 +62,7 @@ public class ServerShufflingPluginTest
                 Endpoint.read( new AdvertisedSocketAddress( "read", 9 ) ) );
 
         long ttl = 1000;
-        LoadBalancingPlugin.Result result = new LoadBalancingResult(
+        LoadBalancingProcessor.Result result = new LoadBalancingResult(
                 new ArrayList<>( routers ),
                 new ArrayList<>( writers ),
                 new ArrayList<>( readers ),
@@ -69,13 +70,13 @@ public class ServerShufflingPluginTest
 
         when( delegate.run( any() ) ).thenReturn( result );
 
-        ServerShufflingPlugin plugin = new ServerShufflingPlugin( delegate );
+        ServerShufflingProcessor plugin = new ServerShufflingProcessor( delegate );
 
         boolean completeShuffle = false;
         for ( int i = 0; i < 1000; i++ ) // we try many times to make false negatives extremely unlikely
         {
             // when
-            LoadBalancingPlugin.Result shuffledResult = plugin.run( Collections.emptyMap() );
+            LoadBalancingProcessor.Result shuffledResult = plugin.run( Collections.emptyMap() );
 
             // then: should still contain the same endpoints
             assertThat( shuffledResult.routeEndpoints(), containsInAnyOrder( routers.toArray() ) );

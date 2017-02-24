@@ -94,8 +94,9 @@ public class GetServersProcedureV1 implements CallableProcedure
         List<Endpoint> writeEndpoints = writeEndpoints();
         List<Endpoint> readEndpoints = readEndpoints();
 
-        return ResultFormatV1.build( new LoadBalancingResult( routeEndpoints, writeEndpoints, readEndpoints,
-                config.get( CausalClusteringSettings.cluster_routing_ttl ) ) );
+        return RawIterator.<Object[],ProcedureException>of( ResultFormatV1.build(
+                new LoadBalancingResult( routeEndpoints, writeEndpoints, readEndpoints,
+                        config.get( CausalClusteringSettings.cluster_routing_ttl ) ) ) );
     }
 
     private Optional<AdvertisedSocketAddress> leaderBoltAddress()

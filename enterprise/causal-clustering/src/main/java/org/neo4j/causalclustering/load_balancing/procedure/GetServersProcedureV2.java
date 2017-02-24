@@ -21,8 +21,8 @@ package org.neo4j.causalclustering.load_balancing.procedure;
 
 import java.util.Map;
 
+import org.neo4j.causalclustering.load_balancing.LoadBalancingProcessor;
 import org.neo4j.causalclustering.load_balancing.LoadBalancingResult;
-import org.neo4j.causalclustering.load_balancing.LoadBalancingPlugin;
 import org.neo4j.collection.RawIterator;
 import org.neo4j.kernel.api.exceptions.ProcedureException;
 import org.neo4j.kernel.api.proc.CallableProcedure;
@@ -55,11 +55,11 @@ public class GetServersProcedureV2 implements CallableProcedure
                     .description( DESCRIPTION )
                     .build();
 
-    private final LoadBalancingPlugin loadBalancingPlugin;
+    private final LoadBalancingProcessor loadBalancingProcessor;
 
-    public GetServersProcedureV2( LoadBalancingPlugin loadBalancingPlugin )
+    public GetServersProcedureV2( LoadBalancingProcessor loadBalancingProcessor )
     {
-        this.loadBalancingPlugin = loadBalancingPlugin;
+        this.loadBalancingProcessor = loadBalancingProcessor;
     }
 
     @Override
@@ -74,12 +74,12 @@ public class GetServersProcedureV2 implements CallableProcedure
         @SuppressWarnings( "unchecked" )
         Map<String,String> clientContext = (Map<String,String>) input[0];
 
-        LoadBalancingPlugin.Result result = loadBalancingPlugin.run( clientContext );
+        LoadBalancingProcessor.Result result = loadBalancingProcessor.run( clientContext );
 
-        return ResultFormatV1.build( new LoadBalancingResult(
+        return RawIterator.<Object[],ProcedureException>of( ResultFormatV1.build( new LoadBalancingResult(
                 result.routeEndpoints(),
                 result.writeEndpoints(),
                 result.readEndpoints(),
-                result.getTimeToLiveMillis() ) );
+                result.getTimeToLiveMillis() ) ) );
     }
 }

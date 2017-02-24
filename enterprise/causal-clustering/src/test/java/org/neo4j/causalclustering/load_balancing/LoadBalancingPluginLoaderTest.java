@@ -27,7 +27,7 @@ import java.util.Optional;
 import org.neo4j.causalclustering.core.CausalClusteringSettings;
 import org.neo4j.causalclustering.core.consensus.LeaderLocator;
 import org.neo4j.causalclustering.discovery.TopologyService;
-import org.neo4j.causalclustering.load_balancing.plugins.ServerShufflingPlugin;
+import org.neo4j.causalclustering.load_balancing.plugins.ServerShufflingProcessor;
 import org.neo4j.causalclustering.load_balancing.plugins.server_policies.ServerPoliciesPlugin;
 import org.neo4j.graphdb.config.InvalidSettingException;
 import org.neo4j.helpers.Service;
@@ -56,15 +56,15 @@ public class LoadBalancingPluginLoaderTest
         config.augment( stringMap( CausalClusteringSettings.load_balancing_shuffle.name(), "false" ) );
 
         // when
-        LoadBalancingPlugin plugin = LoadBalancingPluginLoader.load(
+        LoadBalancingProcessor plugin = LoadBalancingPluginLoader.load(
                 mock( TopologyService.class ),
                 mock( LeaderLocator.class ),
                 NullLogProvider.getInstance(),
                 config );
 
         // then
-        assertEquals( DUMMY_PLUGIN_NAME, plugin.pluginName() );
         assertTrue( plugin instanceof DummyLoadBalancingPlugin );
+        assertEquals( DUMMY_PLUGIN_NAME, ((DummyLoadBalancingPlugin) plugin).pluginName() );
         assertTrue( ((DummyLoadBalancingPlugin) plugin).wasInitialized );
     }
 
@@ -77,16 +77,15 @@ public class LoadBalancingPluginLoaderTest
         config.augment( stringMap( CausalClusteringSettings.load_balancing_shuffle.name(), "true" ) );
 
         // when
-        LoadBalancingPlugin plugin = LoadBalancingPluginLoader.load(
+        LoadBalancingProcessor plugin = LoadBalancingPluginLoader.load(
                 mock( TopologyService.class ),
                 mock( LeaderLocator.class ),
                 NullLogProvider.getInstance(),
                 config );
 
         // then
-        assertEquals( ServerShufflingPlugin.PLUGIN_NAME, plugin.pluginName() );
-        assertTrue( plugin instanceof ServerShufflingPlugin );
-        assertTrue( ((ServerShufflingPlugin) plugin).delegate() instanceof DummyLoadBalancingPlugin );
+        assertTrue( plugin instanceof ServerShufflingProcessor );
+        assertTrue( ((ServerShufflingProcessor) plugin).delegate() instanceof DummyLoadBalancingPlugin );
     }
 
     @Test
@@ -98,15 +97,15 @@ public class LoadBalancingPluginLoaderTest
         config.augment( stringMap( CausalClusteringSettings.load_balancing_shuffle.name(), "false" ) );
 
         // when
-        LoadBalancingPlugin plugin = LoadBalancingPluginLoader.load(
+        LoadBalancingProcessor plugin = LoadBalancingPluginLoader.load(
                 mock( TopologyService.class ),
                 mock( LeaderLocator.class ),
                 NullLogProvider.getInstance(),
                 config );
 
         // then
-        assertEquals( ServerPoliciesPlugin.PLUGIN_NAME, plugin.pluginName() );
         assertTrue( plugin instanceof ServerPoliciesPlugin );
+        assertEquals( ServerPoliciesPlugin.PLUGIN_NAME, ((ServerPoliciesPlugin) plugin).pluginName() );
     }
 
     @Test

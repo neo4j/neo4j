@@ -25,15 +25,12 @@ import java.util.List;
 
 import org.neo4j.causalclustering.load_balancing.Endpoint;
 import org.neo4j.causalclustering.load_balancing.LoadBalancingResult;
-import org.neo4j.collection.RawIterator;
 import org.neo4j.helpers.AdvertisedSocketAddress;
-import org.neo4j.kernel.api.exceptions.ProcedureException;
 
 import static java.util.Arrays.asList;
+import static java.util.Collections.emptyList;
 import static java.util.Collections.singletonList;
 import static org.junit.Assert.assertEquals;
-import static org.junit.Assert.assertFalse;
-import static org.junit.Assert.assertTrue;
 
 public class ResultFormatV1Test
 {
@@ -58,13 +55,31 @@ public class ResultFormatV1Test
         LoadBalancingResult original = new LoadBalancingResult( routers, writers, readers, ttlSeconds * 1000 );
 
         // when
-        RawIterator<Object[],ProcedureException> records = ResultFormatV1.build( original );
+        Object[] record = ResultFormatV1.build( original );
 
         // then
-        assertTrue( records.hasNext() );
-        LoadBalancingResult parsed = ResultFormatV1.parse( records );
+        LoadBalancingResult parsed = ResultFormatV1.parse( record );
 
-        assertFalse( records.hasNext() );
+        assertEquals( original, parsed );
+    }
+
+    @Test
+    public void shouldSerializeToAndFromRecordFormatWithNoEntries() throws Exception
+    {
+        // given
+        List<Endpoint> writers = emptyList();
+        List<Endpoint> readers = emptyList();
+        List<Endpoint> routers = emptyList();
+
+        long ttlSeconds = 0;
+        LoadBalancingResult original = new LoadBalancingResult( routers, writers, readers, ttlSeconds * 1000 );
+
+        // when
+        Object[] record = ResultFormatV1.build( original );
+
+        // then
+        LoadBalancingResult parsed = ResultFormatV1.parse( record );
+
         assertEquals( original, parsed );
     }
 }

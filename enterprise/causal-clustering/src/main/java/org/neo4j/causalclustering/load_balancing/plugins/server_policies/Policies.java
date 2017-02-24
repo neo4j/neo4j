@@ -27,9 +27,9 @@ import org.neo4j.logging.Log;
 
 import static java.lang.String.format;
 
-class Policies
+public class Policies
 {
-    static final String POLICY_KEY = "load_balancing.policy"; // TODO: move somewhere (driver support package?)
+    public static final String POLICY_KEY = "load_balancing.policy"; // TODO: move somewhere (driver support package?)
     static final String DEFAULT_POLICY_NAME = "default";
     static final Policy DEFAULT_POLICY = new FilteringPolicy( IdentityFilter.as() );
 

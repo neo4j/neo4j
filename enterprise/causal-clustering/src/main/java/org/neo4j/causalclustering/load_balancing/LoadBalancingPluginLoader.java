@@ -25,7 +25,7 @@ import java.util.Set;
 import org.neo4j.causalclustering.core.CausalClusteringSettings;
 import org.neo4j.causalclustering.core.consensus.LeaderLocator;
 import org.neo4j.causalclustering.discovery.TopologyService;
-import org.neo4j.causalclustering.load_balancing.plugins.ServerShufflingPlugin;
+import org.neo4j.causalclustering.load_balancing.plugins.ServerShufflingProcessor;
 import org.neo4j.graphdb.config.InvalidSettingException;
 import org.neo4j.helpers.Service;
 import org.neo4j.kernel.configuration.Config;
@@ -48,7 +48,7 @@ public class LoadBalancingPluginLoader
         plugin.validate( config, log );
     }
 
-    public static LoadBalancingPlugin load( TopologyService topologyService, LeaderLocator leaderLocator,
+    public static LoadBalancingProcessor load( TopologyService topologyService, LeaderLocator leaderLocator,
             LogProvider logProvider, Config config ) throws Throwable
     {
         LoadBalancingPlugin plugin = findPlugin( config );
@@ -56,7 +56,7 @@ public class LoadBalancingPluginLoader
 
         if ( config.get( CausalClusteringSettings.load_balancing_shuffle ) )
         {
-            plugin = new ServerShufflingPlugin( plugin );
+            return new ServerShufflingProcessor( plugin );
         }
 
         return plugin;
