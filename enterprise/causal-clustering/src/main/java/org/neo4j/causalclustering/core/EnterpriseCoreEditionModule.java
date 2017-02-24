@@ -178,7 +178,6 @@ public class EnterpriseCoreEditionModule extends EditionModule
                 platformModule.availabilityGuard,
                 logProvider );
 
-
         IdentityModule identityModule = new IdentityModule( platformModule, clusterStateDirectory.get() );
 
         ClusteringModule clusteringModule = new ClusteringModule( discoveryServiceFactory, identityModule.myself(),
