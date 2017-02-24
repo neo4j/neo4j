@@ -45,8 +45,6 @@ import org.neo4j.kernel.api.index.IndexEntryUpdate;
 import org.neo4j.kernel.api.index.IndexUpdater;
 import org.neo4j.kernel.api.schema.IndexDescriptor;
 import org.neo4j.kernel.api.schema.IndexDescriptorFactory;
-import org.neo4j.kernel.api.schema.IndexDescriptor;
-import org.neo4j.kernel.api.schema.IndexDescriptorFactory;
 import org.neo4j.kernel.api.schema_new.IndexQuery;
 import org.neo4j.kernel.api.schema_new.index.NewIndexDescriptor;
 import org.neo4j.kernel.api.schema_new.index.NewIndexDescriptorFactory;
@@ -71,7 +69,7 @@ import static org.neo4j.test.rule.concurrent.ThreadingRule.waitingWhileIn;
 public class DatabaseIndexAccessorTest
 {
     public static final int PROP_ID = 1;
-    private static final IndexDescriptor SOME_INDEX_DESCRIPTOR = IndexDescriptorFactory.of( 1, 1 );
+    private static final NewIndexDescriptor SOME_INDEX_DESCRIPTOR = NewIndexDescriptorFactory.forLabel( 1, PROP_ID );
 
     @Rule
     public final ThreadingRule threading = new ThreadingRule();

@@ -131,10 +131,10 @@ public class IndexSamplingCancellationTest
         }
 
         @Override
-        public IndexAccessor getOnlineAccessor( long indexId, NewIndexDescriptor indexConfig,
+        public IndexAccessor getOnlineAccessor( long indexId, NewIndexDescriptor descriptor,
                 IndexSamplingConfig samplingConfig )
         {
-            return new DelegatingIndexAccessor( super.getOnlineAccessor( indexId, descriptor, indexConfig, samplingConfig ) );
+            return new DelegatingIndexAccessor( super.getOnlineAccessor( indexId, descriptor, samplingConfig ) );
         }
     }
 

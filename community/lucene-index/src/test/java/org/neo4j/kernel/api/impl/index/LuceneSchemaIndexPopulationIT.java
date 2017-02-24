@@ -102,7 +102,7 @@ public class LuceneSchemaIndexPopulationIT
             assertFalse( uniqueIndex.exists() );
 
             try ( LuceneIndexAccessor indexAccessor = new LuceneIndexAccessor( uniqueIndex,
-                    IndexDescriptorFactory.of( 1, 1 ) ) )
+                    NewIndexDescriptorFactory.forLabel( 1, 1 ) ) )
             {
                 generateUpdates( indexAccessor, affectedNodes );
                 indexAccessor.force();

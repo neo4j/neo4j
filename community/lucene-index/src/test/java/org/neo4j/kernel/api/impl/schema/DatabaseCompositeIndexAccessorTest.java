@@ -65,6 +65,7 @@ public class DatabaseCompositeIndexAccessorTest
 {
     private static final int PROP_ID1 = 1;
     private static final int PROP_ID2 = 2;
+    private static final NewIndexDescriptor DESCRIPTOR = NewIndexDescriptorFactory.forLabel( 0, PROP_ID1, PROP_ID2 );
     @Rule
     public final ThreadingRule threading = new ThreadingRule();
     @ClassRule
@@ -97,7 +98,7 @@ public class DatabaseCompositeIndexAccessorTest
 
                     index.create();
                     index.open();
-                    return new LuceneIndexAccessor( index );
+                    return new LuceneIndexAccessor( index, DESCRIPTOR );
                 } ),
                 arg( dirFactory1 -> {
                     SchemaIndex index = LuceneSchemaIndexBuilder.create( uniqueIndexDescriptor )
@@ -109,7 +110,7 @@ public class DatabaseCompositeIndexAccessorTest
 
                     index.create();
                     index.open();
-                    return new LuceneIndexAccessor( index );
+                    return new LuceneIndexAccessor( index, DESCRIPTOR );
                 } )
         );
     }

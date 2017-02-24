@@ -32,7 +32,7 @@ import org.neo4j.kernel.api.index.IndexAccessor;
 import org.neo4j.kernel.api.index.IndexEntryUpdate;
 import org.neo4j.kernel.api.index.IndexUpdater;
 import org.neo4j.kernel.api.index.PropertyAccessor;
-import org.neo4j.kernel.api.schema.IndexDescriptor;
+import org.neo4j.kernel.api.schema_new.index.NewIndexDescriptor;
 import org.neo4j.kernel.impl.api.index.IndexUpdateMode;
 import org.neo4j.storageengine.api.schema.IndexReader;
 
@@ -40,9 +40,9 @@ public class LuceneIndexAccessor implements IndexAccessor
 {
     private final LuceneIndexWriter writer;
     private final SchemaIndex luceneIndex;
-    private final IndexDescriptor descriptor;
+    private final NewIndexDescriptor descriptor;
 
-    public LuceneIndexAccessor( SchemaIndex luceneIndex, IndexDescriptor descriptor ) throws IOException
+    public LuceneIndexAccessor( SchemaIndex luceneIndex, NewIndexDescriptor descriptor ) throws IOException
     {
         this.luceneIndex = luceneIndex;
         this.descriptor = descriptor;
@@ -123,7 +123,8 @@ public class LuceneIndexAccessor implements IndexAccessor
     public void verifyDeferredConstraints( PropertyAccessor propertyAccessor )
             throws IndexEntryConflictException, IOException
     {
-        luceneIndex.verifyUniqueness( propertyAccessor, descriptor.getPropertyKeyId() );
+        //TODO: support composite index.
+        luceneIndex.verifyUniqueness( propertyAccessor, descriptor.schema().getPropertyId() );
     }
 
     private class LuceneIndexUpdater implements IndexUpdater

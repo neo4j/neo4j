@@ -138,7 +138,7 @@ public class AccessUniqueDatabaseIndexTest
                 .withIndexStorage( indexStorage )
                 .build();
         luceneIndex.open();
-        return new LuceneIndexAccessor( luceneIndex, IndexDescriptorFactory.of( 1, 1 ) );
+        return new LuceneIndexAccessor( luceneIndex, NewIndexDescriptorFactory.forLabel( 1, 1 ) );
     }
 
     private PartitionedIndexStorage getIndexStorage() throws IOException
