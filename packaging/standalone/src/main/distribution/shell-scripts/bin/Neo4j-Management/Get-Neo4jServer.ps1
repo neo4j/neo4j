@@ -47,7 +47,7 @@ System.Management.Automation.PSCustomObject
 This is a Neo4j Server Object
 
 .LINK
-Get-Neo4jHome  
+Get-Neo4jHome
 
 .NOTES
 This function is private to the powershell module
@@ -62,11 +62,11 @@ Function Get-Neo4jServer
     [AllowEmptyString()]
     [string]$Neo4jHome = ''
   )
-  
+
   Begin
   {
   }
-  
+
   Process
   {
     # Get and check the Neo4j Home directory
@@ -75,7 +75,7 @@ Function Get-Neo4jServer
       Write-Error "Could not detect the Neo4j Home directory"
       return
     }
-       
+
     if (-not (Test-Path -Path $Neo4jHome))
     {
       Write-Error "$Neo4jHome does not exist"
@@ -96,11 +96,12 @@ Function Get-Neo4jServer
     $serverProperties = @{
       'Home' = $Neo4jHome;
       'ConfDir' = $ConfDir;
+      'LogDir' = (Join-Path -Path $Neo4jHome -ChildPath 'logs');
       'ServerVersion' = '';
       'ServerType' = 'Community';
       'DatabaseMode' = '';
     }
-    
+
     # Check if the lib dir exists
     $libPath = (Join-Path -Path $Neo4jHome -ChildPath 'lib')
     if (-not (Test-Path -Path $libPath))
@@ -108,7 +109,7 @@ Function Get-Neo4jServer
       Write-Error "$Neo4jHome is not a valid Neo4j installation.  Missing $libPath"
       return
     }
-    
+
     # Scan the lib dir...
     Get-ChildItem (Join-Path -Path $Neo4jHome -ChildPath 'lib') | Where-Object { $_.Name -like 'neo4j-server-*.jar' } | ForEach-Object -Process `
     {
@@ -126,14 +127,23 @@ Function Get-Neo4jServer
       Write-Error "Unable to determine the version of the installation at $Neo4jHome"
       return
     }
-    
+
     # Get additional settings...
     $setting = (Get-Neo4jSetting -ConfigurationFile 'neo4j.conf' -Name 'dbms.mode' -Neo4jServer $serverObject)
     if ($setting -ne $null) { $serverObject.DatabaseMode = $setting.Value }
-    
+
+    $setting = (Get-Neo4jSetting -ConfigurationFile 'neo4j.conf' -Name 'dbms.directories.logs' -Neo4jServer $serverObject)
+    if ($setting -ne $null) {
+      if ([System.IO.Path]::IsPathRooted($setting.Value)) {
+        $serverObject.LogDir = $setting.Value
+      } else {
+        $serverObject.LogDir = (Join-Path -Path $Neo4jHome -ChildPath $setting.Value)
+      }
+    }
+
     Write-Output $serverObject
   }
-  
+
   End
   {
   }

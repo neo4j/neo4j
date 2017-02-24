@@ -44,7 +44,7 @@ Function Merge-Neo4jJavaSettings
     [Parameter(Mandatory=$true)]
     [AllowEmptyCollection()]
     [Array]$Source
-        
+
     ,[Parameter(Mandatory=$true,ValueFromPipeline=$false,ParameterSetName='ServerInstallInvoke')]
     [AllowEmptyCollection()]
     [Array]$Additional
@@ -52,7 +52,7 @@ Function Merge-Neo4jJavaSettings
 
   $SettingNameRegEx = '^(?:-D|-XX:[+-]?)([^=]+)(?:$|=.+$)'
 
-  # Populate the initial hashtable with extracted setting anems
+  # Populate the initial hashtable with extracted setting names
   $SettingOutput = @{}
   $Source | ForEach-Object -Process {
     if ($matches -ne $null) { $matches.Clear() }
@@ -65,31 +65,26 @@ Function Merge-Neo4jJavaSettings
 
   $Additional | ForEach-Object -Process {
     $thisSetting = $_
-    If (-not $Source.contains($thisSetting)) {
-      if ($matches -ne $null) { $matches.Clear() }
-      if ($thisSetting -match $SettingNameRegEx) {
-        $thisSettingName = $matches[1]
+    if ($matches -ne $null) { $matches.Clear() }
+    if ($thisSetting -match $SettingNameRegEx) {
+      $thisSettingName = $matches[1]
 
-        $oldValue = $null
-        $SettingOutput.GetEnumerator() | ForEach-Object -Process {
-          if ($_.Value -eq $thisSettingName) { $oldValue = $_.Key}
-        }
-
-        if ($oldValue -eq $null) {
-          Write-Verbose "Adding '$thisSetting'"
-          $SettingOutput.Add($thisSetting,'')
-        } else {
-          Write-Verbose "Merging '$thisSetting'"
-          $SettingOutput.Remove($oldValue)
-          $SettingOutput.Add($thisSetting,$thisSettingName)
-        }
-      } else {
-        Write-Verbose "Adding '$thisSetting'"
-        $SettingOutput.Add($thisSetting,'')
+      $oldValue = $null
+      $SettingOutput.GetEnumerator() | ForEach-Object -Process {
+        if ($_.Value -eq $thisSettingName) { $oldValue = $_.Key}
       }
 
+      if ($oldValue -eq $null) {
+        Write-Verbose "Adding '$thisSetting'"
+        $SettingOutput.Add($thisSetting,'')
+      } else {
+        Write-Verbose "Merging '$thisSetting'"
+        $SettingOutput.Remove($oldValue)
+        $SettingOutput.Add($thisSetting,$thisSettingName)
+      }
     } else {
-      Write-Verbose "Ignoring '$thisSetting' as it is already defined"
+      Write-Verbose "Adding '$thisSetting'"
+      $SettingOutput.Add($thisSetting,'')
     }
   }
 
