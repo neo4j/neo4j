@@ -160,7 +160,7 @@ public class Cluster
     {
         List<AdvertisedSocketAddress> hazelcastAddresses = buildAddresses( coreMembers.keySet() );
         ReadReplica member = new ReadReplica( parentDir, memberId, discoveryServiceFactory,
-                hazelcastAddresses, stringMap(), emptyMap(), recordFormat );
+                hazelcastAddresses, stringMap(), emptyMap(), recordFormat, new Monitors() );
         readReplicas.put( memberId, member );
         return member;
     }
@@ -461,7 +461,7 @@ public class Cluster
         for ( int i = 0; i < noOfReadReplicas; i++ )
         {
             readReplicas.put( i, new ReadReplica( parentDir, i, discoveryServiceFactory, coreMemberAddresses,
-                    extraParams, instanceExtraParams, recordFormat ) );
+                    extraParams, instanceExtraParams, recordFormat, new Monitors() ) );
         }
     }
 

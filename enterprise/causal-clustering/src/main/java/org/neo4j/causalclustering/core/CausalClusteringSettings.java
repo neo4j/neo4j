@@ -27,6 +27,7 @@ import org.neo4j.graphdb.config.Setting;
 import org.neo4j.helpers.AdvertisedSocketAddress;
 import org.neo4j.helpers.ListenSocketAddress;
 import org.neo4j.kernel.configuration.Internal;
+import org.neo4j.kernel.configuration.Settings;
 
 import static org.neo4j.kernel.configuration.Settings.ADVERTISED_SOCKET_ADDRESS;
 import static org.neo4j.kernel.configuration.Settings.BOOLEAN;
@@ -177,7 +178,7 @@ public class CausalClusteringSettings implements LoadableConfig
 
     @Description( "Enable or disable the dump of all network messages pertaining to the RAFT protocol" )
     public static final Setting<Boolean> raft_messages_log_enable =
-            setting( "causal_clustering.raft_messages_log_enable", BOOLEAN, "false" );
+            setting( "causal_clustering.raft_messages_log_enable", BOOLEAN, FALSE);
 
     @Description( "Interval of pulling updates from cores." )
     public static final Setting<Long> pull_interval = setting( "causal_clustering.pull_interval", DURATION, "1s" );
@@ -336,7 +337,7 @@ public class CausalClusteringSettings implements LoadableConfig
 
     @Description( "Enables shuffling of the returned load balancing result." )
     public static final Setting<Boolean> load_balancing_shuffle =
-            setting( "causal_clustering.load_balancing.shuffle", BOOLEAN, "true" );
+            setting( "causal_clustering.load_balancing.shuffle", BOOLEAN, TRUE );
 
     @Description( "Require authorization for access to the Causal Clustering status endpoints." )
     public static final Setting<Boolean> status_auth_enabled =
