@@ -44,7 +44,7 @@ Function Merge-Neo4jJavaSettings
     [Parameter(Mandatory=$true)]
     [AllowEmptyCollection()]
     [Array]$Source
-        
+
     ,[Parameter(Mandatory=$true,ValueFromPipeline=$false,ParameterSetName='ServerInstallInvoke')]
     [AllowEmptyCollection()]
     [Array]$Additional
@@ -52,7 +52,7 @@ Function Merge-Neo4jJavaSettings
 
   $SettingNameRegEx = '^(?:-D|-XX:[+-]?)([^=]+)(?:$|=.+$)'
 
-  # Populate the initial hashtable with extracted setting anems
+  # Populate the initial hashtable with extracted setting names
   $SettingOutput = @{}
   $Source | ForEach-Object -Process {
     if ($matches -ne $null) { $matches.Clear() }

@@ -49,7 +49,7 @@ Function Get-Neo4jPrunsrv
   param (
     [Parameter(Mandatory=$true,ValueFromPipeline=$false)]
     [PSCustomObject]$Neo4jServer
-        
+
     ,[Parameter(Mandatory=$true,ValueFromPipeline=$false,ParameterSetName='ServerInstallInvoke')]
     [switch]$ForServerInstall
 
@@ -59,11 +59,11 @@ Function Get-Neo4jPrunsrv
     ,[Parameter(Mandatory=$true,ValueFromPipeline=$false,ParameterSetName='ConsoleInvoke')]
     [switch]$ForConsole
   )
-  
+
   Begin
   {
   }
-  
+
   Process
   {
     $JavaCMD = Get-Java -Neo4jServer $Neo4jServer -ForServer -ErrorAction Stop
@@ -72,14 +72,14 @@ Function Get-Neo4jPrunsrv
       Write-Error 'Unable to locate Java'
       return 255
     }
-    
+
     # JVMDLL is in %JAVA_HOME%\bin\server\jvm.dll
     $JvmDLL = Join-Path -Path (Join-Path -Path (Split-Path $JavaCMD.java -Parent) -ChildPath 'server') -ChildPath 'jvm.dll'
     if (-Not (Test-Path -Path $JvmDLL)) { Throw "Could not locate JVM.DLL at $JvmDLL" }
 
     # Get the Service Name
     $Name = Get-Neo4jWindowsServiceName -Neo4jServer $Neo4jServer -ErrorAction Stop
-    
+
     # Find PRUNSRV for this architecture
     # This check will return the OS architecture even when running a 32bit app on 64bit OS
     switch ( (Get-WMIObject -Class Win32_Processor | Select-Object -First 1).Addresswidth ) {
@@ -125,9 +125,9 @@ Function Get-Neo4jPrunsrv
           "`"--Description=Neo4j Graph Database - $($Neo4jServer.Home)`"",
           "`"--DisplayName=Neo4j Graph Database - $Name`"",
           "`"--Jvm=$($JvmDLL)`"",
-          '--LogPath=logs',
-          '--StdOutput=logs\neo4j.log',
-          '--StdError=logs\service-error.log',
+          "--LogPath=$($Neo4jServer.LogDir)",
+          "--StdOutput=$(Join-Path -Path $Neo4jServer.LogDir -ChildPath 'neo4j.log')",
+          "--StdError=$(Join-Path -Path $Neo4jServer.LogDir -ChildPath 'service-error.log')",
           '--LogPrefix=neo4j-service',
           '--Classpath=lib/*;plugins/*',
           "`"--JvmOptions=$($JvmOptions -join ';')`"",
@@ -153,7 +153,7 @@ Function Get-Neo4jPrunsrv
         if ($Neo4jServer.ServerType -eq 'Enterprise') { $serverMainClass = 'org.neo4j.server.enterprise.EnterpriseEntryPoint' }
         if ($Neo4jServer.ServerType -eq 'Community') { $serverMainClass = 'org.neo4j.server.CommunityEntryPoint' }
         if ($Neo4jServer.DatabaseMode.ToUpper() -eq 'ARBITER') { $serverMainClass = 'org.neo4j.server.enterprise.ArbiterEntryPoint' }
-        if ($serverMainClass -eq '') { Write-Error "Unable to determine the Server Main Class from the server information"; return $null }    
+        if ($serverMainClass -eq '') { Write-Error "Unable to determine the Server Main Class from the server information"; return $null }
         $PrunArgs += @("--StopClass=$($serverMainClass)",
                        "--StartClass=$($serverMainClass)")
       }
@@ -164,10 +164,10 @@ Function Get-Neo4jPrunsrv
         return $null
       }
     }
-    
+
     Write-Output @{'cmd' = $PrunsrvCMD; 'args' = $PrunArgs}
   }
-  
+
   End
   {
   }
