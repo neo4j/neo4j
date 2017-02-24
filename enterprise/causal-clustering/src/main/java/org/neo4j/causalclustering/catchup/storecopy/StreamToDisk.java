@@ -63,7 +63,7 @@ class StreamToDisk implements StoreFileStreams
         fs.mkdirs( fileName.getParentFile() );
 
         fileCopyMonitor.copyFile( fileName );
-        if ( StoreType.typeOf( destination ).map( StoreType::isRecordStore ).orElse( false ) )
+        if ( StoreType.shouldBeManagedByPageCache( destination ) )
         {
             WritableByteChannel channel = channels.get( destination );
             if ( channel == null )

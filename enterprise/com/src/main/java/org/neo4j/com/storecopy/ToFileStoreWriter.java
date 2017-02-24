@@ -21,33 +21,35 @@ package org.neo4j.com.storecopy;
 
 import java.io.File;
 import java.io.IOException;
-import java.io.RandomAccessFile;
 import java.nio.ByteBuffer;
 import java.nio.channels.ReadableByteChannel;
 import java.nio.channels.WritableByteChannel;
 import java.util.List;
-import java.util.Optional;
 
+import org.neo4j.io.fs.FileSystemAbstraction;
+import org.neo4j.io.fs.StoreChannel;
 import org.neo4j.io.pagecache.PageCache;
 import org.neo4j.io.pagecache.PagedFile;
 import org.neo4j.kernel.impl.store.StoreType;
 
 import static java.nio.file.StandardOpenOption.CREATE;
 import static java.nio.file.StandardOpenOption.WRITE;
-import static org.neo4j.kernel.impl.store.StoreType.typeOf;
+
 import static org.neo4j.kernel.impl.store.format.RecordFormat.NO_RECORD_SIZE;
 
 public class ToFileStoreWriter implements StoreWriter
 {
     private final File basePath;
+    private final FileSystemAbstraction fs;
     private final StoreCopyClient.Monitor monitor;
     private final PageCache pageCache;
     private final List<FileMoveAction> fileMoveActions;
 
-    public ToFileStoreWriter( File graphDbStoreDir, StoreCopyClient.Monitor monitor, PageCache pageCache,
-            List<FileMoveAction> fileMoveActions )
+    public ToFileStoreWriter( File graphDbStoreDir, FileSystemAbstraction fs,
+            StoreCopyClient.Monitor monitor, PageCache pageCache, List<FileMoveAction> fileMoveActions )
     {
         this.basePath = graphDbStoreDir;
+        this.fs = fs;
         this.monitor = monitor;
         this.pageCache = pageCache;
         this.fileMoveActions = fileMoveActions;
@@ -64,14 +66,13 @@ public class ToFileStoreWriter implements StoreWriter
             file.getParentFile().mkdirs();
 
             String filename = file.getName();
-            final Optional<StoreType> storeType = typeOf( filename );
 
             monitor.startReceivingStoreFile( file );
             try
             {
                 // Note that we don't bother checking if the page cache already has a mapping for the given file.
                 // The reason is that we are copying to a temporary store location, and then we'll move the files later.
-                if ( storeType.isPresent() && storeType.get().isRecordStore() )
+                if ( StoreType.shouldBeManagedByPageCache( filename ) )
                 {
                     int filePageSize = filePageSize( requiredElementAlignment );
                     try ( PagedFile pagedFile = pageCache.map( file, filePageSize, CREATE, WRITE ) )
@@ -115,9 +116,9 @@ public class ToFileStoreWriter implements StoreWriter
     private long writeDataThroughFileSystem( File file, ReadableByteChannel data, ByteBuffer temporaryBuffer,
             boolean hasData ) throws IOException
     {
-        try ( RandomAccessFile randomAccessFile = new RandomAccessFile( file, "rw" ) )
+        try ( StoreChannel channel = fs.create( file ) )
         {
-            return writeData( data, temporaryBuffer, hasData, randomAccessFile.getChannel() );
+            return writeData( data, temporaryBuffer, hasData, channel );
         }
     }
 
