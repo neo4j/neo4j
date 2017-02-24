@@ -30,6 +30,7 @@ import org.neo4j.collection.pool.LinkedQueuePool;
 import org.neo4j.collection.pool.MarshlandPool;
 import org.neo4j.function.Factory;
 import org.neo4j.graphdb.DatabaseShutdownException;
+import org.neo4j.graphdb.TransactionFailureException;
 import org.neo4j.kernel.AvailabilityGuard;
 import org.neo4j.kernel.api.KernelTransaction;
 import org.neo4j.kernel.api.KernelTransactionHandle;
@@ -167,7 +168,7 @@ public class KernelTransactions extends LifecycleAdapter implements Supplier<Ker
         catch ( InterruptedException ie )
         {
             Thread.interrupted();
-            throw new RuntimeException( ie );
+            throw new TransactionFailureException( "Fail to start new transaction.", ie );
         }
     }
 
