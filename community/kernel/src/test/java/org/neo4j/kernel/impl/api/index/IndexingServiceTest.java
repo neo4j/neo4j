@@ -1119,7 +1119,7 @@ public class IndexingServiceTest
                 }
 
                 @Override
-                public void configure( List<MultipleIndexPopulator.IndexPopulation> populations )
+                public void configure( Collection<MultipleIndexPopulator.IndexPopulation> populations )
                 {
                     // no-op
                 }

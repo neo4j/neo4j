@@ -19,19 +19,22 @@
  */
 package org.neo4j.kernel.api.index;
 
+import java.util.ArrayList;
 import java.util.Arrays;
-import java.util.HashMap;
-import java.util.HashSet;
-import java.util.Map;
-import java.util.Optional;
-import java.util.Set;
+import java.util.List;
 
+import org.neo4j.collection.primitive.Primitive;
+import org.neo4j.collection.primitive.PrimitiveIntIterator;
+import org.neo4j.collection.primitive.PrimitiveIntObjectMap;
+import org.neo4j.collection.primitive.PrimitiveIntSet;
 import org.neo4j.kernel.api.properties.DefinedProperty;
 import org.neo4j.kernel.api.schema_new.LabelSchemaDescriptor;
-import org.neo4j.kernel.impl.api.index.UpdateMode;
-import org.neo4j.kernel.impl.transaction.state.LabelChangeSummary;
+import org.neo4j.kernel.api.schema_new.index.NewIndexDescriptor;
 
+import static java.lang.String.format;
 import static java.util.Arrays.binarySearch;
+import static org.neo4j.kernel.api.index.NodeUpdates.PropertyValueType.Changed;
+import static org.neo4j.kernel.api.index.NodeUpdates.PropertyValueType.NoValue;
 import static org.neo4j.kernel.impl.store.ShortArray.EMPTY_LONG_ARRAY;
 
 /**
@@ -41,16 +44,15 @@ import static org.neo4j.kernel.impl.store.ShortArray.EMPTY_LONG_ARRAY;
 public class NodeUpdates
 {
     private final long nodeId;
+
+    // ASSUMPTION: these long arrays are actually sorted sets
     private final long[] labelsBefore;
     private final long[] labelsAfter;
-    private final LabelChangeSummary labelChangeSummary;
-    private final Map<Integer,Object> propertiesBefore = new HashMap<>();
-    private final Map<Integer,Object> propertiesAfter = new HashMap<>();
-    private final Map<Integer,Object> propertiesUnchanged = new HashMap<>();
+
+    private final PrimitiveIntObjectMap<PropertyValue> knownProperties;
 
     public static class Builder
     {
-        private PropertyUpdate propertyUpdates;
         private NodeUpdates updates;
 
         private Builder( NodeUpdates updates )
@@ -58,51 +60,42 @@ public class NodeUpdates
             this.updates = updates;
         }
 
-        private void addUpdate( PropertyUpdate update )
-        {
-            update.next = propertyUpdates;
-            propertyUpdates = update;
-        }
-
         public Builder added( int propertyKeyId, Object value )
         {
-            addUpdate( new PropertyAdded( propertyKeyId, value ) );
+            updates.put( propertyKeyId, NodeUpdates.after( value ) );
             return this;
         }
 
         public Builder removed( int propertyKeyId, Object value )
         {
-            addUpdate( new PropertyRemoved( propertyKeyId, value ) );
+            updates.put( propertyKeyId, NodeUpdates.before( value ) );
             return this;
         }
 
         public Builder changed( int propertyKeyId, Object before, Object after )
         {
-            addUpdate( new PropertyChanged( propertyKeyId, before, after ) );
+            updates.put( propertyKeyId, NodeUpdates.changed( before, after ) );
             return this;
         }
 
         public NodeUpdates build()
         {
-            updates.setProperties( propertyUpdates, new DefinedProperty[0] );
             return updates;
         }
 
         public NodeUpdates buildWithExistingProperties( DefinedProperty... definedProperties )
         {
-            updates.setProperties( propertyUpdates, definedProperties );
+            for ( DefinedProperty property : definedProperties )
+            {
+                updates.put( property.propertyKeyId(), NodeUpdates.unchanged( property.value() ) );
+            }
             return updates;
         }
+    }
 
-        public boolean hasUpdatedLabels()
-        {
-            return updates.labelChangeSummary.hasAddedLabels() || updates.labelChangeSummary.hasRemovedLabels();
-        }
-
-        public boolean hasUpdates()
-        {
-            return propertyUpdates != null || updates.hasIndexingAppropriateUpdates();
-        }
+    private void put( int propertyKeyId, PropertyValue propertyValue )
+    {
+        knownProperties.put( propertyKeyId, propertyValue );
     }
 
     public static Builder forNode( long nodeId )
@@ -125,7 +118,7 @@ public class NodeUpdates
         this.nodeId = nodeId;
         this.labelsBefore = labelsBefore;
         this.labelsAfter = labelsAfter;
-        this.labelChangeSummary = new LabelChangeSummary( labelsBefore, labelsAfter );
+        this.knownProperties = Primitive.intObjectMap();
     }
 
     public final long getNodeId()
@@ -133,210 +126,168 @@ public class NodeUpdates
         return nodeId;
     }
 
-    public Optional<IndexEntryUpdate> forIndex( LabelSchemaDescriptor descriptor )
+    public Iterable<IndexEntryUpdate> forIndexes( Iterable<LabelSchemaDescriptor> indexes, PropertyLoader propertyLoader )
     {
-        if ( descriptor.getPropertyIds().length > 1 )
+        List<LabelSchemaDescriptor> potentiallyRelevant = new ArrayList<>();
+        PrimitiveIntSet additionalPropertiesToLoad = Primitive.intSet();
+
+        for ( LabelSchemaDescriptor index : indexes )
         {
-            return getMultiPropertyIndexUpdate( descriptor );
+            if ( atLeastOneRelevantChange( index ) )
+            {
+                potentiallyRelevant.add( index );
+                gatherPropsToLoad( index, additionalPropertiesToLoad );
+            }
         }
-        else
+
+        loadProperties( propertyLoader, additionalPropertiesToLoad );
+
+        List<IndexEntryUpdate> indexUpdates = new ArrayList<>();
+        for ( LabelSchemaDescriptor index : potentiallyRelevant )
         {
-            return getSingePropertyIndexUpdate( descriptor );
+            boolean relevantBefore = relevantBefore( index );
+            boolean relevantAfter = relevantAfter( index );
+            int[] propertyIds = index.getPropertyIds();
+            if ( relevantBefore && !relevantAfter )
+            {
+                indexUpdates.add( IndexEntryUpdate.remove(
+                        nodeId, index, valuesBefore( propertyIds )
+                    ) );
+            }
+            else if ( !relevantBefore && relevantAfter )
+            {
+                indexUpdates.add( IndexEntryUpdate.add(
+                        nodeId, index, valuesAfter( propertyIds )
+                ) );
+            }
+            else if ( relevantBefore && relevantAfter )
+            {
+                if ( valuesChanged( propertyIds ) )
+                {
+                    indexUpdates.add( IndexEntryUpdate.change(
+                            nodeId, index, valuesBefore( propertyIds ), valuesAfter( propertyIds ) ) );
+                }
+            }
+        }
+
+        return indexUpdates;
+    }
+
+    private boolean relevantBefore( LabelSchemaDescriptor schema )
+    {
+        return hasLabel( schema.getLabelId(), labelsBefore ) &&
+                hasPropsBefore( schema.getPropertyIds() );
+    }
+
+    private boolean relevantAfter( LabelSchemaDescriptor schema )
+    {
+        return hasLabel( schema.getLabelId(), labelsAfter ) &&
+                hasPropsAfter( schema.getPropertyIds() );
+    }
+
+    private void loadProperties( PropertyLoader propertyLoader, PrimitiveIntSet additionalPropertiesToLoad )
+    {
+        PrimitiveIntIterator toLoad = additionalPropertiesToLoad.iterator();
+        while ( toLoad.hasNext() )
+        {
+            int propertyId = toLoad.next();
+            Object value = propertyLoader.loadProperty( nodeId, propertyId );
+            knownProperties.put(
+                    propertyId,
+                    value == null ? noValue : unchanged( value )
+                );
         }
     }
 
-    private Optional<IndexEntryUpdate> getMultiPropertyIndexUpdate( LabelSchemaDescriptor descriptor )
+    private void gatherPropsToLoad( LabelSchemaDescriptor schema, PrimitiveIntSet target )
     {
-        int[] propertyKeyIds = descriptor.getPropertyIds();
-        boolean labelExistsBefore = binarySearch( labelsBefore, descriptor.getLabelId() ) >= 0;
-        boolean labelExistsAfter = binarySearch( labelsAfter, descriptor.getLabelId() ) >= 0;
-        Set<Integer> added = new HashSet<>();   // index specific properties added to this node
-        Set<Integer> removed = new HashSet<>(); // index specific properties removed from this node
-        Set<Integer> changed = new HashSet<>(); // index specific properties changed on this node
-        Set<Integer> unchanged = new HashSet<>(); // index specific properties not changed on this node
-        Set<Integer> unknown = new HashSet<>(); // index specific properties not in this node (so cannot index)
-        Object[] before = new Object[propertyKeyIds.length];
-        Object[] after = new Object[propertyKeyIds.length];
-        for ( int i = 0; i < propertyKeyIds.length; i++ )
+        for ( int propertyId : schema.getPropertyIds() )
         {
-            int propertyKeyId = propertyKeyIds[i];
-            before[i] = propertiesBefore.get( propertyKeyId );
-            after[i] = propertiesAfter.get( propertyKeyId );
-            Object unchangedValue = propertiesUnchanged.get( propertyKeyId );
-            if ( before[i] != null )
+            if ( knownProperties.get( propertyId ) == null )
             {
-                if ( after[i] != null )
-                {
-                    changed.add( propertyKeyId );
-                }
-                else
-                {
-                    removed.add( propertyKeyId );
-                }
-            }
-            else if ( after[i] != null )
-            {
-                added.add( propertyKeyId );
-            }
-            else if ( unchangedValue != null )
-            {
-                before[i] = unchangedValue;
-                after[i] = unchangedValue;
-                unchanged.add( propertyKeyId );
-            }
-            else
-            {
-                unknown.add( propertyKeyId );
-                break;
+                target.add( propertyId );
             }
         }
-        if ( unknown.size() == 0 )
-        {
-            if ( added.size() > 0 )
-            {
-                if ( labelExistsAfter )
-                {
-                    // Added one or more properties and the label exists
-                    return Optional.of( IndexEntryUpdate.add( nodeId, descriptor, after ) );
-                }
-            }
-            else if ( removed.size() > 0 )
-            {
-                if ( labelExistsBefore )
-                {
-                    // Removed one or more properties and the label existed
-                    return Optional.of( IndexEntryUpdate.remove( nodeId, descriptor, before ) );
-                }
-            }
-            else if ( changed.size() > 0 )
-            {
-                if ( labelExistsBefore && labelExistsAfter )
-                {
-                    // Changed one or more properties and the label still exists
-                    return Optional.of( IndexEntryUpdate.change( nodeId, descriptor, before, after ) );
-                }
-                else if ( labelExistsAfter )
-                {
-                    // Changed one or more properties and added the label
-                    return Optional.of( IndexEntryUpdate.add( nodeId, descriptor, after ) );
-                }
-                else if ( labelExistsBefore )
-                {
-                    // Changed one or more properties and removed the label
-                    return Optional.of( IndexEntryUpdate.remove( nodeId, descriptor, before ) );
-                }
-            }
-            else if ( unchanged.size() >= 0 )
-            {
-                if ( !labelExistsBefore && labelExistsAfter )
-                {
-                    // Node has the right properties and the label was added
-                    return Optional.of( IndexEntryUpdate.add( nodeId, descriptor, after ) );
-                }
-                else if ( labelExistsBefore && !labelExistsAfter )
-                {
-                    // Node has the right property and the label was removed
-                    return Optional.of( IndexEntryUpdate.remove( nodeId, descriptor, before ) );
-                }
-            }
-        }
-        return Optional.empty();
     }
 
-    private Optional<IndexEntryUpdate> getSingePropertyIndexUpdate( LabelSchemaDescriptor descriptor )
+    private boolean atLeastOneRelevantChange( LabelSchemaDescriptor schema )
     {
-        int propertyKeyId = descriptor.getPropertyId();
-        Object before = propertiesBefore.get( propertyKeyId );
-        Object after = propertiesAfter.get( propertyKeyId );
-        Object unchanged = propertiesUnchanged.get( propertyKeyId );
-        boolean labelExistsBefore = binarySearch( labelsBefore, descriptor.getLabelId() ) >= 0;
-        boolean labelExistsAfter = binarySearch( labelsAfter, descriptor.getLabelId() ) >= 0;
-        if ( before != null )
+        int labelId = schema.getLabelId();
+        boolean labelBefore = hasLabel( labelId, labelsBefore );
+        boolean labelAfter = hasLabel( labelId, labelsAfter );
+        if ( labelBefore && labelAfter )
         {
-            if ( after != null )
+            for ( int propertyId : schema.getPropertyIds() )
             {
-                if ( labelExistsBefore && labelExistsAfter )
+                if ( knownProperties.get( propertyId ) != null )
                 {
-                    // Changed a property and have the label
-                    return Optional.of( IndexEntryUpdate.change( nodeId, descriptor, before, after ) );
-                }
-                else if ( labelExistsAfter )
-                {
-                    // Changed a property and added the label
-                    return Optional.of( IndexEntryUpdate.add( nodeId, descriptor, after ) );
-                }
-                else if ( labelExistsBefore )
-                {
-                    // Changed a property and removed the label
-                    return Optional.of( IndexEntryUpdate.remove( nodeId, descriptor, before ) );
+                    return true;
                 }
             }
-            else
-            {
-                if ( labelExistsBefore )
-                {
-                    // Removed a property and node had the label
-                    return Optional.of( IndexEntryUpdate.remove( nodeId, descriptor, before ) );
-                }
-            }
+            return false;
         }
-        else if ( after != null )
-        {
-            if ( labelExistsAfter )
-            {
-                // Added a property and node has the label
-                return Optional.of( IndexEntryUpdate.add( nodeId, descriptor, after ) );
-            }
-        }
-        else if ( unchanged != null )
-        {
-            if ( !labelExistsBefore && labelExistsAfter )
-            {
-                // Node has the right property and the label was added
-                return Optional.of( IndexEntryUpdate.add( nodeId, descriptor, unchanged ) );
-            }
-            else if ( labelExistsBefore && !labelExistsAfter )
-            {
-                // Node has the right property and the label was removed
-                return Optional.of( IndexEntryUpdate.remove( nodeId, descriptor, unchanged ) );
-            }
-        }
-        return Optional.empty();
+        return labelBefore || labelAfter;
     }
 
-    public void setProperties( PropertyUpdate propertyUpdates, DefinedProperty[] definedProperties )
+    private boolean hasLabel( int labelId, long[] labels )
     {
-        propertiesBefore.clear();
-        propertiesAfter.clear();
-        propertiesUnchanged.clear();
-        PropertyUpdate current = propertyUpdates;
-        while ( current != null )
+        return binarySearch( labels, labelId ) >= 0;
+    }
+
+    private boolean hasPropsBefore( int[] propertyIds )
+    {
+        for ( int propertyId : propertyIds )
         {
-            switch ( current.mode )
+            if ( !knownProperties.get( propertyId ).hasBefore() )
             {
-            case ADDED:
-                propertiesAfter.put( current.propertyKeyId, current.value );
-                break;
-            case REMOVED:
-                propertiesBefore.put( current.propertyKeyId, current.value );
-                break;
-            case CHANGED:
-                propertiesBefore.put( current.propertyKeyId, ((PropertyChanged) current).before );
-                propertiesAfter.put( current.propertyKeyId, current.value );
-                break;
-            default:
-                throw new IllegalStateException( current.mode.toString() );
-            }
-            current = current.next;
-        }
-        for ( DefinedProperty property : definedProperties )
-        {
-            if ( !propertiesAfter.containsKey( property.propertyKeyId() ) &&
-                 !propertiesBefore.containsKey( property.propertyKeyId() ) )
-            {
-                propertiesUnchanged.put( property.propertyKeyId(), property.value() );
+                return false;
             }
         }
+        return true;
+    }
+
+    private boolean hasPropsAfter( int[] propertyIds )
+    {
+        for ( int propertyId : propertyIds )
+        {
+            if ( !knownProperties.get( propertyId ).hasAfter() )
+            {
+                return false;
+            }
+        }
+        return true;
+    }
+
+    private Object[] valuesBefore( int[] propertyIds )
+    {
+        Object[] values = new Object[propertyIds.length];
+        for ( int i = 0; i < propertyIds.length; i++ )
+        {
+            values[i] = knownProperties.get( propertyIds[i] ).before;
+        }
+        return values;
+    }
+
+    private Object[] valuesAfter( int[] propertyIds )
+    {
+        Object[] values = new Object[propertyIds.length];
+        for ( int i = 0; i < propertyIds.length; i++ )
+        {
+            values[i] = knownProperties.get( propertyIds[i] ).after;
+        }
+        return values;
+    }
+
+    private boolean valuesChanged( int[] propertyIds )
+    {
+        for ( int propertyId : propertyIds )
+        {
+            if ( knownProperties.get( propertyId ).type == Changed )
+            {
+                return true;
+            }
+        }
+        return false;
     }
 
     @Override
@@ -345,18 +296,14 @@ public class NodeUpdates
         StringBuilder result = new StringBuilder( getClass().getSimpleName() ).append( "[" ).append( nodeId );
         result.append( ", labelsBefore:" ).append( Arrays.toString( labelsBefore ) );
         result.append( ", labelsAfter:" ).append( Arrays.toString( labelsAfter ) );
-        printProperties( result, "Before", propertiesBefore );
-        printProperties( result, "After", propertiesAfter );
-        printProperties( result, "Unchanged", propertiesUnchanged );
+        knownProperties.visitEntries( ( key, propertyValue ) -> {
+            result.append( ", " );
+            result.append( key );
+            result.append( " -> " );
+            result.append( propertyValue.toString() );
+            return false;
+        } );
         return result.append( "]" ).toString();
-    }
-
-    private void printProperties( StringBuilder result, String suffix, Map<Integer,Object> properties )
-    {
-        for ( Map.Entry<Integer,Object> entry : properties.entrySet() )
-        {
-            result.append( ", Property" + suffix + "[" + entry.getKey() + "]: " + entry.getValue() );
-        }
     }
 
     @Override
@@ -367,16 +314,13 @@ public class NodeUpdates
         result = prime * result + Arrays.hashCode( labelsBefore );
         result = prime * result + Arrays.hashCode( labelsAfter );
         result = prime * result + (int) (nodeId ^ (nodeId >>> 32));
-        result = addPropertiesTohash( prime, result, propertiesBefore );
-        result = addPropertiesTohash( prime, result, propertiesAfter );
-        return result;
-    }
 
-    private int addPropertiesTohash( int prime, int result, Map<Integer,Object> properties )
-    {
-        for ( int propertyKeyId : properties.keySet() )
+        PrimitiveIntIterator propertyKeyIds = knownProperties.iterator();
+        while ( propertyKeyIds.hasNext() )
         {
-            result = prime * result + propertyKeyId;
+            int propertyKeyId = propertyKeyIds.next();
+            result = result * 31 + propertyKeyId;
+            result = result * 31 + knownProperties.get( propertyKeyId ).hashCode();
         }
         return result;
     }
@@ -400,21 +344,22 @@ public class NodeUpdates
         return Arrays.equals( labelsBefore, other.labelsBefore ) &&
                Arrays.equals( labelsAfter, other.labelsAfter ) &&
                nodeId == other.nodeId &&
-               propertyMapEquals( propertiesBefore, other.propertiesBefore ) &&
-               propertyMapEquals( propertiesAfter, other.propertiesAfter ) &&
-               propertyMapEquals( propertiesUnchanged, other.propertiesUnchanged );
+               propertyMapEquals( knownProperties, other.knownProperties );
     }
 
-    private boolean propertyMapEquals( Map<Integer,Object> a, Map<Integer,Object> b )
+    private boolean propertyMapEquals(
+            PrimitiveIntObjectMap<PropertyValue> a,
+            PrimitiveIntObjectMap<PropertyValue> b )
     {
         if ( a.size() != b.size() )
         {
             return false;
         }
-        for ( Map.Entry<Integer,Object> entry : a.entrySet() )
+        PrimitiveIntIterator aIterator = a.iterator();
+        while ( aIterator.hasNext() )
         {
-            int key = entry.getKey();
-            if ( !b.containsKey( key ) || !propertyValueEqual( b.get( key ), entry.getValue() ) )
+            int key = aIterator.next();
+            if ( !a.get( key ).equals( b.get( key ) ) )
             {
                 return false;
             }
@@ -422,19 +367,90 @@ public class NodeUpdates
         return true;
     }
 
-    public boolean hasIndexingAppropriateUpdates()
+    enum PropertyValueType
     {
-        boolean propertiesExistOrAdded = !propertiesAfter.isEmpty() || !propertiesUnchanged.isEmpty();
-        boolean propertiesExistOrRemoved = !propertiesBefore.isEmpty() || !propertiesUnchanged.isEmpty();
-        boolean labelsExistOrAdded = labelChangeSummary.hasAddedLabels() || labelChangeSummary.hasUnchangedLabels();
-        boolean labelsExistOrRemoved = labelChangeSummary.hasRemovedLabels() || labelChangeSummary.hasUnchangedLabels();
+        NoValue,
+        Before,
+        After,
+        UnChanged,
+        Changed;
+    }
 
-        boolean hasLabelsAdded = labelChangeSummary.hasAddedLabels() && propertiesExistOrAdded;
-        boolean hasLabelsRemoved = labelChangeSummary.hasRemovedLabels() && propertiesExistOrRemoved;
-        boolean hasPropertiesAdded = !propertiesAfter.isEmpty() && labelsExistOrAdded;
-        boolean hasPropertiesRemoved = !propertiesBefore.isEmpty() && labelsExistOrRemoved;
+    private static class PropertyValue
+    {
+        private final Object before;
+        private final Object after;
+        private final PropertyValueType type;
 
-        return hasLabelsAdded || hasLabelsRemoved || hasPropertiesAdded || hasPropertiesRemoved;
+        private PropertyValue( Object before, Object after, PropertyValueType type )
+        {
+            this.before = before;
+            this.after = after;
+            this.type = type;
+        }
+
+        boolean hasBefore()
+        {
+            return before != null;
+        }
+
+        boolean hasAfter()
+        {
+            return after != null;
+        }
+
+        @Override
+        public String toString()
+        {
+            switch (type)
+            {
+            case NoValue:   return "NoValue";
+            case Before:    return format( "Before(%s)", before );
+            case After:     return format( "After(%s)", after );
+            case UnChanged: return format( "UnChanged(%s)", after );
+            case Changed:   return format( "Changed(from=%s, to=%s)", before, after );
+            default:        throw new IllegalStateException( "This cannot happen!" );
+            }
+        }
+
+        @Override
+        public boolean equals( Object o )
+        {
+            if ( this == o )
+            {
+                return true;
+            }
+            if ( o == null || getClass() != o.getClass() )
+            {
+                return false;
+            }
+
+            PropertyValue that = (PropertyValue) o;
+            if ( type != that.type )
+            {
+                return false;
+            }
+
+            switch (type)
+            {
+            case NoValue:   return true;
+            case Before:    return propertyValueEqual( before, that.before );
+            case After:     return propertyValueEqual( after, that.after );
+            case UnChanged: return propertyValueEqual( after, that.after );
+            case Changed:   return propertyValueEqual( before, that.before ) &&
+                                    propertyValueEqual( after, that.after );
+            default:        throw new IllegalStateException( "This cannot happen!" );
+            }
+        }
+
+        @Override
+        public int hashCode()
+        {
+            int result = before != null ? before.hashCode() : 0;
+            result = 31 * result + (after != null ? after.hashCode() : 0);
+            result = 31 * result + (type != null ? type.hashCode() : 0);
+            return result;
+        }
     }
 
     private static boolean propertyValueEqual( Object a, Object b )
@@ -487,66 +503,31 @@ public class NodeUpdates
         return a.equals( b );
     }
 
-    private abstract static class PropertyUpdate
+    private static PropertyValue noValue = new PropertyValue( null, null, NoValue );
+
+    private static PropertyValue before( Object value )
     {
-        private final int propertyKeyId;
-        private final Object value;
-        private final UpdateMode mode;
-        private PropertyUpdate next;
-
-        private PropertyUpdate( int propertyKeyId, Object value, UpdateMode mode )
-        {
-            this.propertyKeyId = propertyKeyId;
-            this.value = value;
-            this.mode = mode;
-        }
-
-        public UpdateMode mode()
-        {
-            return mode;
-        }
-
-        public int propertyKeyId()
-        {
-            return propertyKeyId;
-        }
-
-        public Object value()
-        {
-            return value;
-        }
+        return new PropertyValue( value, null, PropertyValueType.Before );
     }
 
-    private static class PropertyAdded extends PropertyUpdate
+    private static PropertyValue after( Object value )
     {
-        private PropertyAdded( int propertyKeyId, Object value )
-        {
-            super( propertyKeyId, value, UpdateMode.ADDED );
-        }
+        return new PropertyValue( null, value, PropertyValueType.After );
     }
 
-    private static class PropertyRemoved extends PropertyUpdate
+    private static PropertyValue unchanged( Object value )
     {
-        private PropertyRemoved( int propertyKeyId, Object value )
-        {
-            super( propertyKeyId, value, UpdateMode.REMOVED );
-        }
+        return new PropertyValue( value, value, PropertyValueType.UnChanged );
     }
 
-    public static class PropertyChanged extends PropertyUpdate
+    private static PropertyValue changed( Object before, Object after )
     {
-        private final Object before;
-
-        private PropertyChanged( int propertyKeyId, Object before, Object after )
-        {
-            super( propertyKeyId, after, UpdateMode.CHANGED );
-            this.before = before;
-        }
-
-        public Object before()
-        {
-            return before;
-        }
+        return new PropertyValue( before, after, PropertyValueType.Changed );
     }
 
+    public interface PropertyLoader {
+        Object loadProperty( long nodeId, int propertyId );
+
+        PropertyLoader NO_UNCHANGED_PROPERTIES = ( nodeId1, propertyId ) -> null;
+    }
 }

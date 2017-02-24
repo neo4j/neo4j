@@ -71,6 +71,12 @@ public abstract class LuceneIndexPopulator implements IndexPopulator
     }
 
     @Override
+    public void add( IndexEntryUpdate update ) throws IndexEntryConflictException, IOException
+    {
+        writer.addDocument( updateAsDocument( update ) );
+    }
+
+    @Override
     public void close( boolean populationCompletedSuccessfully ) throws IOException
     {
         try

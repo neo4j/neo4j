@@ -35,6 +35,7 @@ import org.neo4j.collection.primitive.Primitive;
 import org.neo4j.collection.primitive.PrimitiveLongSet;
 import org.neo4j.collection.primitive.PrimitiveLongVisitor;
 import org.neo4j.graphdb.ResourceIterator;
+import org.neo4j.helpers.collection.Iterables;
 import org.neo4j.helpers.collection.Iterators;
 import org.neo4j.kernel.api.TokenNameLookup;
 import org.neo4j.kernel.api.exceptions.index.IndexActivationFailedKernelException;
@@ -68,6 +69,7 @@ import static java.util.concurrent.TimeUnit.MINUTES;
 import static org.neo4j.helpers.Exceptions.launderedException;
 import static org.neo4j.helpers.collection.Iterables.asList;
 import static org.neo4j.kernel.api.index.InternalIndexState.FAILED;
+import static org.neo4j.kernel.api.index.NodeUpdates.PropertyLoader.NO_UNCHANGED_PROPERTIES;
 import static org.neo4j.kernel.impl.api.index.IndexPopulationFailure.failure;
 import static org.neo4j.kernel.impl.util.JobScheduler.Groups.indexPopulation;
 
@@ -433,13 +435,9 @@ public class IndexingService extends LifecycleAdapter
         {
             for ( NodeUpdates update : updates )
             {
-                for ( LabelSchemaDescriptor descriptor : updaterMap.descriptors() )
+                for ( IndexEntryUpdate indexUpdate : update.forIndexes( updaterMap.descriptors(), NO_UNCHANGED_PROPERTIES ) )
                 {
-                    Optional<IndexEntryUpdate> entry = update.forIndex( descriptor );
-                    if ( entry.isPresent() )
-                    {
-                        updaterMap.getUpdater( descriptor ).process( entry.get() );
-                    }
+                    updaterMap.getUpdater( indexUpdate.descriptor() ).process( indexUpdate );
                 }
             }
         }

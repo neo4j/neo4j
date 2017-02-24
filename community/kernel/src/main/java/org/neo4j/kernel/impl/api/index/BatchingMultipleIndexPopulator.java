@@ -21,6 +21,7 @@ package org.neo4j.kernel.impl.api.index;
 
 import java.io.IOException;
 import java.util.ArrayList;
+import java.util.Collection;
 import java.util.HashMap;
 import java.util.Iterator;
 import java.util.List;
@@ -413,7 +414,7 @@ public class BatchingMultipleIndexPopulator extends MultipleIndexPopulator
         }
 
         @Override
-        public void configure( List<IndexPopulation> populations )
+        public void configure( Collection<IndexPopulation> populations )
         {
             delegate.configure( populations );
         }

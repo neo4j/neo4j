@@ -443,6 +443,13 @@ public class SchemaIndexHaIT
         }
 
         @Override
+        public void add( IndexEntryUpdate update ) throws IndexEntryConflictException, IOException
+        {
+            delegate.add( update );
+            latch.startAndWaitForAllToStartAndFinish();
+        }
+
+        @Override
         public void verifyDeferredConstraints( PropertyAccessor propertyAccessor )
                 throws IndexEntryConflictException, IOException
         {

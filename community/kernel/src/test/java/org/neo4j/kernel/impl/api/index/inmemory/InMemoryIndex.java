@@ -136,6 +136,12 @@ class InMemoryIndex
         }
 
         @Override
+        public void add( IndexEntryUpdate update ) throws IndexEntryConflictException, IOException
+        {
+            InMemoryIndex.this.add( update.getEntityId(), update.values(), false );
+        }
+
+        @Override
         public void verifyDeferredConstraints( PropertyAccessor accessor ) throws IndexEntryConflictException, IOException
         {
             InMemoryIndex.this.verifyDeferredConstraints( accessor );

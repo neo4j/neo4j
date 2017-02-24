@@ -20,7 +20,6 @@
 package org.neo4j.kernel.impl.api.index;
 
 import java.util.Collection;
-import java.util.List;
 import java.util.function.IntPredicate;
 
 import org.neo4j.helpers.collection.Visitor;
@@ -88,7 +87,6 @@ public interface IndexStoreView extends PropertyAccessor
         public void acceptUpdate( MultipleIndexPopulator.MultipleIndexUpdater updater, IndexEntryUpdate update,
                 long currentlyIndexedNodeId )
         {
-
         }
 
         @Override
@@ -98,9 +96,8 @@ public interface IndexStoreView extends PropertyAccessor
         }
 
         @Override
-        public void configure( List list )
+        public void configure( Collection collection )
         {
-
         }
     };
 

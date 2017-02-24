@@ -21,8 +21,8 @@ package org.neo4j.kernel.impl.transaction.state.storeview;
 
 import org.apache.commons.lang3.ArrayUtils;
 
+import java.util.Collection;
 import java.util.Iterator;
-import java.util.List;
 import java.util.function.IntPredicate;
 
 import org.neo4j.collection.primitive.PrimitiveLongResourceIterator;
@@ -93,9 +93,9 @@ public class StoreViewNodeStoreScan<FAILURE extends Exception> extends NodeStore
 
         if ( propertyUpdatesVisitor != null && containsAnyLabel( labelIds, labels ) )
         {
+            // Notify the property update visitor
             // TODO: reuse object instead? Better in terms of speed and GC?
             NodeUpdates.Builder updates = NodeUpdates.forNode( node.getId(), labels );
-            // Notify the property update visitor
             for ( PropertyBlock property : properties( node ) )
             {
                 int propertyKeyId = property.getKeyIndexId();
@@ -107,10 +107,8 @@ public class StoreViewNodeStoreScan<FAILURE extends Exception> extends NodeStore
                     updates.added( propertyKeyId, value );
                 }
             }
-            if ( updates.hasUpdates() )
-            {
-                propertyUpdatesVisitor.visit( updates.build() );
-            }
+            // TODO: only visit if has label change or label + prop change?
+            propertyUpdatesVisitor.visit( updates.build() );
         }
     }
 
@@ -149,7 +147,7 @@ public class StoreViewNodeStoreScan<FAILURE extends Exception> extends NodeStore
     }
 
     @Override
-    public void configure( List<MultipleIndexPopulator.IndexPopulation> populations )
+    public void configure( Collection<MultipleIndexPopulator.IndexPopulation> populations )
     {
         populations.forEach( population -> population.populator.configureSampling( true ) );
     }

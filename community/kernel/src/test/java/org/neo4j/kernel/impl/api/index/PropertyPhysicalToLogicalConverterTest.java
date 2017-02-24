@@ -41,8 +41,9 @@ import org.neo4j.logging.NullLogProvider;
 import org.neo4j.test.rule.PageCacheRule;
 import org.neo4j.test.rule.fs.EphemeralFileSystemRule;
 
+import static org.hamcrest.MatcherAssert.assertThat;
+import static org.hamcrest.Matchers.equalTo;
 import static org.junit.Assert.assertEquals;
-import static org.junit.Assert.assertFalse;
 
 
 public class PropertyPhysicalToLogicalConverterTest
@@ -51,19 +52,18 @@ public class PropertyPhysicalToLogicalConverterTest
     private NeoStores neoStores;
 
     @Test
-    public void shouldNotConvertInlinedAddedProperty() throws Exception
+    public void shouldConvertInlinedAddedProperty() throws Exception
     {
         // GIVEN
-        long key = 10;
+        int key = 10;
         int value = 12345;
         PropertyRecord before = propertyRecord();
         PropertyRecord after = propertyRecord( property( key, value ) );
 
         // WHEN
-        NodeUpdates updates = convert( none, none, change( before, after ) );
-
-        // THEN
-        assertFalse( updates.hasIndexingAppropriateUpdates() );
+        assertThat(
+                convert( none, none, change( before, after ) ),
+                equalTo( NodeUpdates.forNode( 0 ).added( key, value ).build() ) );
     }
 
     @Test
@@ -93,7 +93,9 @@ public class PropertyPhysicalToLogicalConverterTest
         PropertyRecord after = propertyRecord( property( key, value ) );
 
         // WHEN
-        assertFalse( convert( none, none, change( before, after ) ).hasIndexingAppropriateUpdates() );
+        assertThat(
+                convert( none, none, change( before, after ) ),
+                equalTo( NodeUpdates.forNode( 0 ).build() ) );
     }
 
     @Test
@@ -114,18 +116,17 @@ public class PropertyPhysicalToLogicalConverterTest
     }
 
     @Test
-    public void shouldNotConvertDynamicAddedProperty() throws Exception
+    public void shouldConvertDynamicAddedProperty() throws Exception
     {
         // GIVEN
         int key = 10;
         PropertyRecord before = propertyRecord();
         PropertyRecord after = propertyRecord( property( key, longString ) );
 
-        // WHEN
-        NodeUpdates update = convert( none, none, change( before, after ) );
-
         // THEN
-        assertFalse( update.hasIndexingAppropriateUpdates() );
+        assertThat(
+                convert( none, none, change( before, after ) ),
+                equalTo( NodeUpdates.forNode( 0 ).added( key, longerString ).build() ) );
     }
 
     @Test
@@ -242,7 +243,7 @@ public class PropertyPhysicalToLogicalConverterTest
     private NodeUpdates convert( long[] labelsBefore,
             long[] labelsAfter, PropertyRecordChange... changes )
     {
-        NodeUpdates.Builder updates = NodeUpdates.forNode( 0, labelsBefore, labelsAfter);
+        NodeUpdates.Builder updates = NodeUpdates.forNode( 0, labelsBefore, labelsAfter );
         converter.convertPropertyRecord( 0, Iterables.iterable( changes ), updates );
         return updates.build();
     }

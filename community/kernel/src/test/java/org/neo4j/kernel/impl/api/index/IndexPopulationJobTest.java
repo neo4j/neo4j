@@ -29,7 +29,6 @@ import java.io.IOException;
 import java.util.Collection;
 import java.util.HashMap;
 import java.util.HashSet;
-import java.util.List;
 import java.util.Map;
 import java.util.Set;
 import java.util.concurrent.Future;
@@ -275,7 +274,7 @@ public class IndexPopulationJobTest
     {
         // GIVEN
         IndexPopulator failingPopulator = mock( IndexPopulator.class );
-        doThrow( new RuntimeException( "BORK BORK" ) ).when( failingPopulator ).add( any() );
+        doThrow( new RuntimeException( "BORK BORK" ) ).when( failingPopulator ).add( any(Collection.class) );
 
         FlippableIndexProxy index = new FlippableIndexProxy();
 
@@ -440,7 +439,7 @@ public class IndexPopulationJobTest
         }
 
         @Override
-        public void configure( List<MultipleIndexPopulator.IndexPopulation> populations )
+        public void configure( Collection<MultipleIndexPopulator.IndexPopulation> populations )
         {
             // no-op
         }

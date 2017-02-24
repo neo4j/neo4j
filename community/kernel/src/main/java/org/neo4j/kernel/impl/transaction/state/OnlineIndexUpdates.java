@@ -96,7 +96,6 @@ public class OnlineIndexUpdates implements IndexUpdates
         }
     }
 
-    //TODO: investigate if this is really necessary. Perhaps one is a subset of the other
     private PrimitiveLongSet allKeys( PrimitiveLongObjectMap... maps )
     {
         PrimitiveLongSet union = Primitive.longSet();
@@ -118,14 +117,7 @@ public class OnlineIndexUpdates implements IndexUpdates
         NodeUpdates.Builder nodePropertyUpdate =
                 gatherUpdatesFromCommandsForNode( nodeId, nodeCommand, propertyCommands );
 
-        if ( nodePropertyUpdate.hasUpdatedLabels() || nodePropertyUpdate.hasUpdates() )
-        {
-            //TODO: Do we really need to always load all node properties? This can be a performance impact
-            // At least only load the ones for which there are known indexes
-            Stream<DefinedProperty> properties = Iterators.stream(nodeFullyLoadProperties( nodeId, nodeCommand, propertyCommands ));
-            DefinedProperty[] definedProperties = properties.toArray( DefinedProperty[]::new );
-            updates.add( nodePropertyUpdate.buildWithExistingProperties( definedProperties ) );
-        }
+        updates.add( nodePropertyUpdate.build() );
     }
 
     private NodeUpdates.Builder gatherUpdatesFromCommandsForNode( long nodeId,
@@ -181,18 +173,19 @@ public class OnlineIndexUpdates implements IndexUpdates
         return nodeRecord;
     }
 
-    private Iterator<DefinedProperty> nodeFullyLoadProperties( long nodeId,
-            NodeCommand nodeCommand,
-            List<PropertyCommand> propertyCommands )
-    {
-        NodeRecord nodeRecord = (nodeCommand == null) ? loadNode( nodeId ) : nodeCommand.getAfter();
-
-        IteratingPropertyReceiver receiver = new IteratingPropertyReceiver();
-        PrimitiveLongObjectMap<PropertyRecord> propertiesById =
-                propertiesFromCommandsForNode( propertyCommands );
-        propertyLoader.nodeLoadProperties( nodeRecord, propertiesById, receiver );
-        return receiver;
-    }
+//    private Iterator<DefinedProperty> nodeFullyLoadProperties(
+//            long nodeId,
+//            NodeCommand nodeCommand,
+//            List<PropertyCommand> propertyCommands )
+//    {
+//        NodeRecord nodeRecord = (nodeCommand == null) ? loadNode( nodeId ) : nodeCommand.getAfter();
+//
+//        IteratingPropertyReceiver receiver = new IteratingPropertyReceiver();
+//        PrimitiveLongObjectMap<PropertyRecord> propertiesById =
+//                propertiesFromCommandsForNode( propertyCommands );
+//        propertyLoader.nodeLoadProperties( nodeRecord, propertiesById, receiver );
+//        return receiver;
+//    }
 
     private PrimitiveLongObjectMap<PropertyRecord> propertiesFromCommandsForNode(
             List<PropertyCommand> propertyCommands )

@@ -19,7 +19,7 @@
  */
 package org.neo4j.kernel.impl.transaction.state.storeview;
 
-import java.util.List;
+import java.util.Collection;
 import java.util.function.IntPredicate;
 
 import org.neo4j.collection.primitive.PrimitiveLongResourceIterator;
@@ -62,7 +62,7 @@ public class LabelScanViewNodeStoreScan<FAILURE extends Exception> extends Store
     }
 
     @Override
-    public void configure( List<MultipleIndexPopulator.IndexPopulation> populations )
+    public void configure( Collection<MultipleIndexPopulator.IndexPopulation> populations )
     {
         populations.forEach( population -> population.populator.configureSampling( false ) );
     }

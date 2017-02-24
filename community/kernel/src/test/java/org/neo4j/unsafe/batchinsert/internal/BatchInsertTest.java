@@ -105,7 +105,6 @@ import org.neo4j.unsafe.batchinsert.BatchRelationship;
 
 import static java.lang.Integer.parseInt;
 import static java.lang.String.format;
-import static java.util.Collections.singletonList;
 import static org.hamcrest.CoreMatchers.equalTo;
 import static org.hamcrest.Matchers.arrayContaining;
 import static org.hamcrest.Matchers.emptyArray;
@@ -936,7 +935,7 @@ public class BatchInsertTest
         verify( provider ).start();
         verify( provider ).getPopulator( anyLong(), any( NewIndexDescriptor.class ), any( IndexSamplingConfig.class ) );
         verify( populator ).create();
-        verify( populator ).add( singletonList( IndexEntryUpdate.add( nodeId, internalIndex.schema(), "Jakewins" ) ) );
+        verify( populator ).add( IndexEntryUpdate.add( nodeId, internalIndex.schema(), "Jakewins" ) );
         verify( populator ).verifyDeferredConstraints( any( PropertyAccessor.class ) );
         verify( populator ).close( true );
         verify( provider ).stop();
@@ -970,8 +969,7 @@ public class BatchInsertTest
         verify( provider ).start();
         verify( provider ).getPopulator( anyLong(), any( NewIndexDescriptor.class ), any( IndexSamplingConfig.class ) );
         verify( populator ).create();
-        verify( populator ).add( singletonList( IndexEntryUpdate.add( nodeId, internalUniqueIndex.schema(),
-                "Jakewins" ) ) );
+        verify( populator ).add( IndexEntryUpdate.add( nodeId, internalUniqueIndex.schema(), "Jakewins" ) );
         verify( populator ).verifyDeferredConstraints( any( PropertyAccessor.class ) );
         verify( populator ).close( true );
         verify( provider ).stop();
@@ -1005,8 +1003,8 @@ public class BatchInsertTest
         verify( provider ).start();
         verify( provider ).getPopulator( anyLong(), any( NewIndexDescriptor.class ), any( IndexSamplingConfig.class ) );
         verify( populator ).create();
-        verify( populator ).add( singletonList( IndexEntryUpdate.add( jakewins, internalIndex.schema(), "Jakewins" ) ) );
-        verify( populator ).add( singletonList( IndexEntryUpdate.add( boggle, internalIndex.schema(), "b0ggl3" ) ) );
+        verify( populator ).add( IndexEntryUpdate.add( jakewins, internalIndex.schema(), "Jakewins" ) );
+        verify( populator ).add( IndexEntryUpdate.add( boggle, internalIndex.schema(), "b0ggl3" ) );
         verify( populator ).verifyDeferredConstraints( any( PropertyAccessor.class ) );
         verify( populator ).close( true );
         verify( provider ).stop();

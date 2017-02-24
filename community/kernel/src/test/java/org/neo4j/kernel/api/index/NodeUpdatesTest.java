@@ -21,19 +21,21 @@ package org.neo4j.kernel.api.index;
 
 import org.junit.Test;
 
-import java.util.Optional;
+import java.util.Arrays;
+import java.util.Collections;
+import java.util.HashMap;
+import java.util.List;
+import java.util.Map;
 
 import org.neo4j.kernel.api.properties.DefinedProperty;
 import org.neo4j.kernel.api.properties.Property;
 import org.neo4j.kernel.api.schema_new.LabelSchemaDescriptor;
 import org.neo4j.kernel.api.schema_new.SchemaDescriptorFactory;
-import org.neo4j.kernel.api.schema_new.index.NewIndexDescriptor;
-import org.neo4j.kernel.api.schema_new.index.NewIndexDescriptorFactory;
 
 import static org.hamcrest.MatcherAssert.assertThat;
-import static org.hamcrest.Matchers.equalTo;
-import static org.junit.Assert.assertFalse;
-import static org.junit.Assert.assertTrue;
+import static org.hamcrest.Matchers.containsInAnyOrder;
+import static org.hamcrest.Matchers.emptyIterable;
+import static org.junit.Assert.fail;
 
 public class NodeUpdatesTest
 {
@@ -43,9 +45,12 @@ public class NodeUpdatesTest
     private static final int propertyKeyId2 = 1;
     private static final long[] labels = new long[]{labelId};
     private static final long[] empty = new long[]{};
+
     private static final LabelSchemaDescriptor index1 = SchemaDescriptorFactory.forLabel( labelId, propertyKeyId1 );
     private static final LabelSchemaDescriptor index2 = SchemaDescriptorFactory.forLabel( labelId, propertyKeyId2 );
     private static final LabelSchemaDescriptor index12 = SchemaDescriptorFactory.forLabel( labelId, propertyKeyId1, propertyKeyId2 );
+    private static final List<LabelSchemaDescriptor> indexes = Arrays.asList( index1, index2, index12 );
+
     private static final DefinedProperty property1 = Property.stringProperty( propertyKeyId1, "Neo" );
     private static final DefinedProperty property2 = Property.longProperty( propertyKeyId2, 100L );
     private static final Object[] values12 = new Object[]{property1.value(), property2.value()};
@@ -57,10 +62,7 @@ public class NodeUpdatesTest
         NodeUpdates updates = NodeUpdates.forNode( nodeId ).build();
 
         // Then
-        assertFalse( "Expected no updates", updates.hasIndexingAppropriateUpdates() );
-        assertFalse( "Expected no index updates", updates.forIndex( index1 ).isPresent() );
-        assertFalse( "Expected no index updates", updates.forIndex( index2 ).isPresent() );
-        assertFalse( "Expected no index updates", updates.forIndex( index12 ).isPresent() );
+        assertThat( updates.forIndexes( indexes, assertNoLoading() ), emptyIterable() );
     }
 
     @Test
@@ -71,10 +73,7 @@ public class NodeUpdatesTest
                 .buildWithExistingProperties( property1, property2 );
 
         // Then
-        assertFalse( "Expected no updates", updates.hasIndexingAppropriateUpdates() );
-        assertFalse( "Expected no index updates", updates.forIndex( index1 ).isPresent() );
-        assertFalse( "Expected no index updates", updates.forIndex( index2 ).isPresent() );
-        assertFalse( "Expected no index updates", updates.forIndex( index12 ).isPresent() );
+        assertThat( updates.forIndexes( indexes, assertNoLoading() ), emptyIterable() );
     }
 
     @Test
@@ -84,32 +83,21 @@ public class NodeUpdatesTest
         NodeUpdates updates = NodeUpdates.forNode( nodeId, empty, labels ).build();
 
         // Then
-        assertFalse( "Expected no updates", updates.hasIndexingAppropriateUpdates() );
-        assertFalse( "Expected no index updates", updates.forIndex( index1 ).isPresent() );
-        assertFalse( "Expected no index updates", updates.forIndex( index2 ).isPresent() );
-        assertFalse( "Expected no index updates", updates.forIndex( index12 ).isPresent() );
+        assertThat( updates.forIndexes( indexes, propertyLoader() ), emptyIterable() );
     }
 
     @Test
     public void shouldGenerateUpdateForLabelAdditionWithExistingProperty()
     {
         // When
-        NodeUpdates updates =
-                NodeUpdates.forNode( nodeId, empty, labels ).buildWithExistingProperties( property1 );
+        NodeUpdates updates = NodeUpdates.forNode( nodeId, empty, labels ).build();
 
         // Then
-        assertTrue( "Expected to have updates", updates.hasIndexingAppropriateUpdates() );
-
-        // And also
-        Optional<IndexEntryUpdate> indexEntryUpdate = updates.forIndex( index1 );
-        assertTrue( "Expected an index update for index1", indexEntryUpdate.isPresent() );
-        assertThat( indexEntryUpdate.get(), equalTo( IndexEntryUpdate.add( nodeId, index1, property1.value() ) ) );
-
-        // And also
-        assertFalse( "Expected no index updates for index2", updates.forIndex( index2 ).isPresent() );
-
-        // And also
-        assertFalse( "Expected no index updates", updates.forIndex( index12 ).isPresent() );
+        assertThat(
+                updates.forIndexes( indexes, propertyLoader( property1 ) ),
+                containsInAnyOrder(
+                    IndexEntryUpdate.add( nodeId, index1, property1.value() )
+                ) );
     }
 
     @Test
@@ -120,22 +108,13 @@ public class NodeUpdatesTest
                 NodeUpdates.forNode( nodeId, empty, labels ).buildWithExistingProperties( property1, property2 );
 
         // Then
-        assertTrue( "Expected to have updates", updates.hasIndexingAppropriateUpdates() );
-
-        // And also
-        Optional<IndexEntryUpdate> indexEntryUpdate1 = updates.forIndex( index1 );
-        assertTrue( "Expected an index update for index1", indexEntryUpdate1.isPresent() );
-        assertThat( indexEntryUpdate1.get(), equalTo( IndexEntryUpdate.add( nodeId, index1, property1.value() ) ) );
-
-        // And also
-        Optional<IndexEntryUpdate> indexEntryUpdate2 = updates.forIndex( index2 );
-        assertTrue( "Expected an index update for index2", indexEntryUpdate2.isPresent() );
-        assertThat( indexEntryUpdate2.get(), equalTo( IndexEntryUpdate.add( nodeId, index2, property2.value() ) ) );
-
-        // And also
-        Optional<IndexEntryUpdate> indexEntryUpdate12 = updates.forIndex( index12 );
-        assertTrue( "Expected an index update for index12", indexEntryUpdate12.isPresent() );
-        assertThat( indexEntryUpdate12.get(), equalTo( IndexEntryUpdate.add( nodeId, index12, values12 ) ) );
+        assertThat(
+                updates.forIndexes( indexes, propertyLoader( property1, property2 ) ),
+                containsInAnyOrder(
+                        IndexEntryUpdate.add( nodeId, index1, property1.value() ),
+                        IndexEntryUpdate.add( nodeId, index2, property2.value() ),
+                        IndexEntryUpdate.add( nodeId, index12, values12 )
+                ) );
     }
 
     @Test
@@ -145,10 +124,7 @@ public class NodeUpdatesTest
         NodeUpdates updates = NodeUpdates.forNode( nodeId, labels, empty ).build();
 
         // Then
-        assertFalse( "Expected no updates", updates.hasIndexingAppropriateUpdates() );
-        assertFalse( "Expected no index updates", updates.forIndex( index1 ).isPresent() );
-        assertFalse( "Expected no index updates", updates.forIndex( index2 ).isPresent() );
-        assertFalse( "Expected no index updates", updates.forIndex( index12 ).isPresent() );
+        assertThat( updates.forIndexes( indexes, propertyLoader() ), emptyIterable() );
     }
 
     @Test
@@ -156,21 +132,14 @@ public class NodeUpdatesTest
     {
         // When
         NodeUpdates updates =
-                NodeUpdates.forNode( nodeId, labels, empty ).buildWithExistingProperties( property1 );
+                NodeUpdates.forNode( nodeId, labels, empty ).build();
 
         // Then
-        assertTrue( "Expected to have updates", updates.hasIndexingAppropriateUpdates() );
-
-        // And also
-        Optional<IndexEntryUpdate> indexEntryUpdate = updates.forIndex( index1 );
-        assertTrue( "Expected an index update for index1", indexEntryUpdate.isPresent() );
-        assertThat( indexEntryUpdate.get(), equalTo( IndexEntryUpdate.remove( nodeId, index1, property1.value() ) ) );
-
-        // And also
-        assertFalse( "Expected no index updates for index2", updates.forIndex( index2 ).isPresent() );
-
-        // And also
-        assertFalse( "Expected no index updates for index12", updates.forIndex( index12 ).isPresent() );
+        assertThat(
+                updates.forIndexes( indexes, propertyLoader( property1 ) ),
+                containsInAnyOrder(
+                        IndexEntryUpdate.remove( nodeId, index1, property1.value() )
+                ) );
     }
 
     @Test
@@ -178,25 +147,16 @@ public class NodeUpdatesTest
     {
         // When
         NodeUpdates updates =
-                NodeUpdates.forNode( nodeId, labels, empty ).buildWithExistingProperties( property1, property2 );
+                NodeUpdates.forNode( nodeId, labels, empty ).build();
 
         // Then
-        assertTrue( "Expected to have updates", updates.hasIndexingAppropriateUpdates() );
-
-        // And also
-        Optional<IndexEntryUpdate> indexEntryUpdate1 = updates.forIndex( index1 );
-        assertTrue( "Expected an index update for index1", indexEntryUpdate1.isPresent() );
-        assertThat( indexEntryUpdate1.get(), equalTo( IndexEntryUpdate.remove( nodeId, index1, property1.value() ) ) );
-
-        // And also
-        Optional<IndexEntryUpdate> indexEntryUpdate2 = updates.forIndex( index2 );
-        assertTrue( "Expected an index update for index2", indexEntryUpdate2.isPresent() );
-        assertThat( indexEntryUpdate2.get(), equalTo( IndexEntryUpdate.remove( nodeId, index2, property2.value() ) ) );
-
-        // And also
-        Optional<IndexEntryUpdate> indexEntryUpdate12 = updates.forIndex( index12 );
-        assertTrue( "Expected an index update for index12", indexEntryUpdate12.isPresent() );
-        assertThat( indexEntryUpdate12.get(), equalTo( IndexEntryUpdate.remove( nodeId, index12, values12 ) ) );
+        assertThat(
+                updates.forIndexes( indexes, propertyLoader( property1, property2 ) ),
+                containsInAnyOrder(
+                        IndexEntryUpdate.remove( nodeId, index1, property1.value() ),
+                        IndexEntryUpdate.remove( nodeId, index2, property2.value() ),
+                        IndexEntryUpdate.remove( nodeId, index12, values12 )
+                ) );
     }
 
     @Test
@@ -208,10 +168,7 @@ public class NodeUpdatesTest
                 .build();
 
         // Then
-        assertFalse( "Expected no updates", updates.hasIndexingAppropriateUpdates() );
-        assertFalse( "Expected no index updates", updates.forIndex( index1 ).isPresent() );
-        assertFalse( "Expected no index updates", updates.forIndex( index2 ).isPresent() );
-        assertFalse( "Expected no index updates", updates.forIndex( index12 ).isPresent() );
+        assertThat( updates.forIndexes( indexes, assertNoLoading() ), emptyIterable() );
     }
 
     @Test
@@ -223,18 +180,11 @@ public class NodeUpdatesTest
                 .build();
 
         // Then
-        assertTrue( "Expected to have updates", updates.hasIndexingAppropriateUpdates() );
-
-        // And also
-        Optional<IndexEntryUpdate> indexEntryUpdate = updates.forIndex( index1 );
-        assertTrue( "Expected an index update for index1", indexEntryUpdate.isPresent() );
-        assertThat( indexEntryUpdate.get(), equalTo( IndexEntryUpdate.add( nodeId, index1, property1.value() ) ) );
-
-        // And also
-        assertFalse( "Expected no index updates for index2", updates.forIndex( index2 ).isPresent() );
-
-        // And also
-        assertFalse( "Expected no index updates for index12", updates.forIndex( index12 ).isPresent() );
+        assertThat(
+                updates.forIndexes( indexes, propertyLoader() ),
+                containsInAnyOrder(
+                        IndexEntryUpdate.add( nodeId, index1, property1.value() )
+                ) );
     }
 
     @Test
@@ -247,22 +197,13 @@ public class NodeUpdatesTest
                 .build();
 
         // Then
-        assertTrue( "Expected to have updates", updates.hasIndexingAppropriateUpdates() );
-
-        // And also
-        Optional<IndexEntryUpdate> indexEntryUpdate = updates.forIndex( index1 );
-        assertTrue( "Expected an index update for index1", indexEntryUpdate.isPresent() );
-        assertThat( indexEntryUpdate.get(), equalTo( IndexEntryUpdate.add( nodeId, index1, property1.value() ) ) );
-
-        // And also
-        Optional<IndexEntryUpdate> indexEntryUpdate2 = updates.forIndex( index2 );
-        assertTrue( "Expected an index update for index1", indexEntryUpdate2.isPresent() );
-        assertThat( indexEntryUpdate2.get(), equalTo( IndexEntryUpdate.add( nodeId, index2, property2.value() ) ) );
-
-        // And also
-        Optional<IndexEntryUpdate> indexEntryUpdate12 = updates.forIndex( index12 );
-        assertTrue( "Expected an index update for index12", indexEntryUpdate12.isPresent() );
-        assertThat( indexEntryUpdate12.get(), equalTo( IndexEntryUpdate.add( nodeId, index12, values12 ) ) );
+        assertThat(
+                updates.forIndexes( indexes, propertyLoader( property1, property2 ) ),
+                containsInAnyOrder(
+                        IndexEntryUpdate.add( nodeId, index1, property1.value() ),
+                        IndexEntryUpdate.add( nodeId, index2, property2.value() ),
+                        IndexEntryUpdate.add( nodeId, index12, values12 )
+                ) );
     }
 
     @Test
@@ -275,10 +216,7 @@ public class NodeUpdatesTest
                 .build();
 
         // Then
-        assertFalse( "Expected no updates", updates.hasIndexingAppropriateUpdates() );
-        assertFalse( "Expected no index updates", updates.forIndex( index1 ).isPresent() );
-        assertFalse( "Expected no index updates", updates.forIndex( index2 ).isPresent() );
-        assertFalse( "Expected no index updates", updates.forIndex( index12 ).isPresent() );
+        assertThat( updates.forIndexes( indexes, assertNoLoading() ), emptyIterable() );
     }
 
     @Test
@@ -291,10 +229,50 @@ public class NodeUpdatesTest
                 .build();
 
         // Then
-        assertFalse( "Expected no updates", updates.hasIndexingAppropriateUpdates() );
-        assertFalse( "Expected no index updates", updates.forIndex( index1 ).isPresent() );
-        assertFalse( "Expected no index updates", updates.forIndex( index2 ).isPresent() );
-        assertFalse( "Expected no index updates", updates.forIndex( index12 ).isPresent() );
+        assertThat( updates.forIndexes( indexes, assertNoLoading() ), emptyIterable() );
     }
 
+    @Test
+    public void shouldNotLoadPropertyForLabelsAndNoPropertyChanges()
+    {
+        // When
+        NodeUpdates updates = NodeUpdates.forNode( nodeId, labels ).build();
+
+        // Then
+        assertThat(
+                updates.forIndexes( Collections.singleton( index1 ), assertNoLoading() ),
+                emptyIterable() );
+    }
+
+    @Test
+    public void shouldNotLoadPropertyForNoLabelsAndButPropertyAddition()
+    {
+        // When
+        NodeUpdates updates = NodeUpdates.forNode( nodeId, empty )
+                .added( property1.propertyKeyId(), property1.value() )
+                .build();
+
+        // Then
+        assertThat(
+                updates.forIndexes( Collections.singleton( index1 ), assertNoLoading() ),
+                emptyIterable() );
+    }
+
+    private NodeUpdates.PropertyLoader propertyLoader( DefinedProperty... properties )
+    {
+        Map<Integer, Object> propertyMap = new HashMap<>( );
+        for ( DefinedProperty p : properties )
+        {
+            propertyMap.put( p.propertyKeyId(), p.value() );
+        }
+        return ( nodeId1, propertyId ) -> propertyMap.get( propertyId );
+    }
+
+    private NodeUpdates.PropertyLoader assertNoLoading()
+    {
+        return ( nodeId1, propertyId ) -> {
+            fail( "Should never attempt to load properties!" );
+            return null;
+        };
+    }
 }

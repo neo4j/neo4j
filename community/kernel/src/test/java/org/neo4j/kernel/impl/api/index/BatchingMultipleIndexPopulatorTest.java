@@ -23,11 +23,13 @@ import org.junit.After;
 import org.junit.Test;
 
 import java.util.Arrays;
+import java.util.Collection;
 import java.util.List;
 import java.util.concurrent.ExecutorService;
 import java.util.concurrent.Executors;
 import java.util.concurrent.TimeUnit;
 
+import org.neo4j.helpers.collection.Iterables;
 import org.neo4j.helpers.collection.Visitor;
 import org.neo4j.kernel.api.exceptions.index.IndexPopulationFailedKernelException;
 import org.neo4j.kernel.api.index.IndexEntryUpdate;
@@ -56,9 +58,6 @@ import static org.mockito.Mockito.mock;
 import static org.mockito.Mockito.never;
 import static org.mockito.Mockito.verify;
 import static org.mockito.Mockito.when;
-
-import static java.util.Collections.singletonList;
-
 import static org.neo4j.kernel.impl.api.index.BatchingMultipleIndexPopulator.AWAIT_TIMEOUT_MINUTES_NAME;
 import static org.neo4j.kernel.impl.api.index.BatchingMultipleIndexPopulator.BATCH_SIZE_NAME;
 import static org.neo4j.kernel.impl.api.index.BatchingMultipleIndexPopulator.TASK_QUEUE_SIZE_NAME;
@@ -211,11 +210,8 @@ public class BatchingMultipleIndexPopulatorTest
 
         batchingPopulator.indexAllNodes().run();
 
-        verify( populator1 ).add( Arrays.asList(
-                forIndex( update1, index1 ),
-                forIndex( update2, index1 ),
-                forIndex( update3, index1 ) ) );
-        verify( populator42 ).add( singletonList( forIndex( update42, index42 ) ) );
+        verify( populator1 ).add( forUpdates( index1, update1, update2, update3 ) );
+        verify( populator42 ).add( forUpdates( index42, update42 ) );
     }
 
     @Test
@@ -235,8 +231,8 @@ public class BatchingMultipleIndexPopulatorTest
 
         batchingPopulator.indexAllNodes().run();
 
-        verify( populator ).add( Arrays.asList( forIndex( update1, index1 ), forIndex( update2, index1 ) ) );
-        verify( populator ).add( singletonList( forIndex( update3, index1 ) ) );
+        verify( populator ).add( forUpdates( index1, update1, update2 ) );
+        verify( populator ).add( forUpdates( index1, update3 ) );
     }
 
     @Test
@@ -258,8 +254,8 @@ public class BatchingMultipleIndexPopulatorTest
                     NullLogProvider.getInstance() );
 
             populator = addPopulator( batchingPopulator, index1 );
-            doThrow( batchFlushError ).when( populator )
-                    .add( Arrays.asList( forIndex( update1, index1 ), forIndex( update2, index1 ) ) );
+            List<IndexEntryUpdate> expected = forUpdates( index1, update1, update2 );
+            doThrow( batchFlushError ).when( populator ).add( expected );
 
             batchingPopulator.indexAllNodes().run();
         }
@@ -290,20 +286,24 @@ public class BatchingMultipleIndexPopulatorTest
                 sameThreadExecutor(), NullLogProvider.getInstance() );
 
         IndexPopulator populator = addPopulator( batchingPopulator, index1 );
-        doThrow( batchFlushError ).when( populator )
-                .add( Arrays.asList( forIndex( update3, index1 ), forIndex( update4, index1 ) ) );
+        doThrow( batchFlushError ).when( populator ).add( forUpdates( index1, update3, update4 ) );
 
         batchingPopulator.indexAllNodes().run();
 
-        verify( populator ).add( Arrays.asList( forIndex( update1, index1 ), forIndex( update2, index1 ) ) );
-        verify( populator ).add( Arrays.asList( forIndex( update3, index1 ), forIndex( update4, index1 ) ) );
+        verify( populator ).add( forUpdates( index1, update1, update2 ) );
+        verify( populator ).add( forUpdates( index1, update3, update4 ) );
         verify( populator ).markAsFailed( failure( batchFlushError ).asString() );
-        verify( populator, never() ).add( singletonList( forIndex( update5, index1 ) ) );
+        verify( populator, never() ).add( forUpdates( index1, update5 ) );
     }
 
-    private IndexEntryUpdate forIndex( NodeUpdates update1, NewIndexDescriptor index )
+    private List<IndexEntryUpdate> forUpdates( NewIndexDescriptor index, NodeUpdates... updates )
     {
-        return update1.forIndex( index.schema() ).get();
+        return Iterables.asList(
+                Iterables.concat(
+                    Iterables.map(
+                            update -> update.forIndexes( Iterables.asIterable( index.schema() ), null ),
+                            Arrays.asList( updates )
+                    ) ) );
     }
 
     private NodeUpdates nodeUpdates( int nodeId, int propertyId, String propertyValue, long...
@@ -410,7 +410,7 @@ public class BatchingMultipleIndexPopulatorTest
         }
 
         @Override
-        public void configure( List<MultipleIndexPopulator.IndexPopulation> populations )
+        public void configure( Collection<MultipleIndexPopulator.IndexPopulation> populations )
         {
 
         }
