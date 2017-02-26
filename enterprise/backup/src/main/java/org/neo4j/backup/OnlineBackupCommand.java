@@ -52,7 +52,7 @@ import static org.neo4j.kernel.impl.util.Converters.toHostnamePort;
 public class OnlineBackupCommand implements AdminCommand
 {
 
-    public static final Arguments arguments = new Arguments()
+    private static final Arguments arguments = new Arguments()
             .withArgument( new MandatoryCanonicalPath( "backup-dir", "backup-path",
                     "Directory to place backup in." ) )
             .withArgument( new MandatoryNamedArg( "name", "graph.db-backup",
@@ -71,40 +71,9 @@ public class OnlineBackupCommand implements AdminCommand
             .withArgument( new OptionalNamedArg( "timeout", "timeout", "20m",
                     "Timeout in the form <time>[ms|s|m|h], where the default unit is seconds." ) );
 
-    public static class Provider extends AdminCommand.Provider
+    public static Arguments arguments()
     {
-        public Provider()
-        {
-            super( "backup" );
-        }
-
-        @Override
-        public Arguments allArguments()
-        {
-            return arguments;
-        }
-
-        @Override
-        public String description()
-        {
-            return "Perform an online backup from a running Neo4j enterprise server. Neo4j's backup service must have" +
-                    " been configured on the server beforehand. " +
-                    "See https://neo4j.com/docs/operations-manual/current/backup/ for more details.";
-        }
-
-        @Override
-        public String summary()
-        {
-            return "Perform an online backup from a running Neo4j enterprise server.";
-        }
-
-        @Override
-        public AdminCommand create( Path homeDir, Path configDir, OutsideWorld outsideWorld )
-        {
-            return new OnlineBackupCommand(
-                    new BackupService( outsideWorld.errorStream() ), homeDir, configDir,
-                    new ConsistencyCheckService(), outsideWorld );
-        }
+        return arguments;
     }
 
     static final int MAX_OLD_BACKUPS = 1000;

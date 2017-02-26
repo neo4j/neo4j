@@ -56,44 +56,12 @@ import static org.neo4j.dbms.DatabaseManagementSystemSettings.database_path;
 public class CheckConsistencyCommand implements AdminCommand
 {
 
-    public static final Arguments arguments = new Arguments()
+    private static final Arguments arguments = new Arguments()
             .withDatabase()
             .withAdditionalConfig()
             .withArgument( new OptionalBooleanArg( "verbose", false, "Enable verbose output." ) )
             .withArgument( new OptionalCanonicalPath( "report-dir", "directory", ".",
                     "Directory to write report file in.") );
-
-    public static class Provider extends AdminCommand.Provider
-    {
-        public Provider()
-        {
-            super( "check-consistency" );
-        }
-
-        @Override
-        public Arguments allArguments()
-        {
-            return arguments;
-        }
-
-        @Override
-        public String description()
-        {
-            return "Check the consistency of a database.";
-        }
-
-        @Override
-        public String summary()
-        {
-            return "Check the consistency of a database.";
-        }
-
-        @Override
-        public AdminCommand create( Path homeDir, Path configDir, OutsideWorld outsideWorld )
-        {
-            return new CheckConsistencyCommand( homeDir, configDir, outsideWorld );
-        }
-    }
 
     private final Path homeDir;
     private final Path configDir;
@@ -212,5 +180,10 @@ public class CheckConsistencyCommand implements AdminCommand
     {
         return Arrays.asList( GraphDatabaseSettings.class, DatabaseManagementSystemSettings.class,
                 ConsistencyCheckSettings.class );
+    }
+
+    public static Arguments arguments()
+    {
+        return arguments;
     }
 }

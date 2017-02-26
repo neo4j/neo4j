@@ -29,46 +29,12 @@ import static java.lang.String.format;
 
 public class HelpCommand implements AdminCommand
 {
-    public static class Provider extends AdminCommand.Provider
-    {
-        private final Usage usage;
-
-        public Provider( Usage usage )
-        {
-            super( "help" );
-            this.usage = usage;
-        }
-
-        @Override
-        public Arguments allArguments()
-        {
-            return new Arguments().withOptionalPositionalArgument( 0, "command" );
-        }
-
-        @Override
-        public String description()
-        {
-            return "This help text, or help for the command specified in <command>.";
-        }
-
-        @Override
-        public String summary()
-        {
-            return description();
-        }
-
-        @Override
-        public AdminCommand create( Path homeDir, Path configDir, OutsideWorld outsideWorld )
-        {
-            return new HelpCommand( usage, outsideWorld::stdOutLine, CommandLocator.fromServiceLocator() );
-        }
-    }
 
     private final Usage usage;
     private final Consumer<String> output;
     private final CommandLocator locator;
 
-    public HelpCommand( Usage usage, Consumer<String> output, CommandLocator locator )
+    HelpCommand( Usage usage, Consumer<String> output, CommandLocator locator )
     {
         this.usage = usage;
         this.output = output;

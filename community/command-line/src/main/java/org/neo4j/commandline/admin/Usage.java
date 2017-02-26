@@ -19,9 +19,12 @@
  */
 package org.neo4j.commandline.admin;
 
+import java.util.ArrayList;
+import java.util.Comparator;
+import java.util.List;
+import java.util.Map;
 import java.util.function.Consumer;
-
-import org.neo4j.commandline.arguments.Arguments;
+import java.util.stream.Collectors;
 
 import static java.lang.String.format;
 
@@ -42,56 +45,28 @@ public class Usage
         output.accept( "" );
         output.accept( "available commands:" );
 
-        for ( AdminCommand.Provider command : commands.getAllProviders() )
-        {
-            final CommandUsage commandUsage = new CommandUsage( command, scriptName );
-            commandUsage.printIndentedSummary( output );
-        }
+        Map<AdminCommandSection,List<AdminCommand.Provider>> groupedProviders = groupProvidersBySegment();
+
+        AdminCommandSection.general().printAllCommandsUnderSection( output, groupedProviders.remove( AdminCommandSection.general() ), scriptName );
+
+        groupedProviders.entrySet().stream()
+                .sorted( Comparator.comparing( groupedProvider -> groupedProvider.getKey().printable() ) )
+                .forEach( entry -> entry.getKey().printAllCommandsUnderSection( output, entry.getValue(), scriptName ) );
 
         output.accept( "" );
         output.accept( format( "Use %s help <command> for more details.", scriptName ) );
+    }
+
+    private Map<AdminCommandSection,List<AdminCommand.Provider>> groupProvidersBySegment()
+    {
+        List<AdminCommand.Provider> providers = new ArrayList<>();
+        commands.getAllProviders().forEach( providers::add );
+        return providers.stream().collect( Collectors.groupingBy( AdminCommand.Provider::commandSection ) );
     }
 
     public void printUsageForCommand( AdminCommand.Provider command, Consumer<String> output )
     {
         final CommandUsage commandUsage = new CommandUsage( command, scriptName );
         commandUsage.printDetailed( output );
-    }
-
-    public static class CommandUsage
-    {
-        private final AdminCommand.Provider command;
-        private final String scriptName;
-
-        public CommandUsage( AdminCommand.Provider command, String scriptName )
-        {
-            this.command = command;
-            this.scriptName = scriptName;
-        }
-
-        public void printSummary( Consumer<String> output )
-        {
-            output.accept( format( "%s", command.name() ) );
-            output.accept( "    " + command.summary() );
-        }
-
-        public void printIndentedSummary( Consumer<String> output )
-        {
-            printSummary( s -> output.accept( "    " + s ) );
-        }
-
-        public void printDetailed( Consumer<String> output )
-        {
-            for (Arguments arguments: command.possibleArguments())
-            {
-                //Arguments arguments = command.arguments();
-
-                String left = format( "usage: %s %s", scriptName, command.name() );
-
-                output.accept( Arguments.rightColumnFormatted( left, arguments.usage(), left.length() + 1 ) );
-            }
-            output.accept( "" );
-            output.accept( command.allArguments().description( command.description() ) );
-        }
     }
 }
