@@ -1,2 +1,2 @@
-org.neo4j.backup.OnlineBackupCommand$Provider
-org.neo4j.restore.RestoreDatabaseCli$Provider
+org.neo4j.backup.OnlineBackupCommandProvider
+org.neo4j.restore.RestoreDatabaseCliProvider

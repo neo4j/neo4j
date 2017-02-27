@@ -38,19 +38,18 @@ public class UsageTest
     private Consumer<String> out;
 
     @Before
-    public void setUp() {
-        MockitoAnnotations.initMocks(this);
+    public void setUp()
+    {
+        MockitoAnnotations.initMocks( this );
     }
 
     @Test
-    public void shouldPrintUsageForAllCommands()
+    public void shouldPrintUsageForAllCommandsAlphabetically()
     {
-        AdminCommand.Provider[] commands = new AdminCommand.Provider[]
-                {
-                        new StubProvider( "restore",
-                                "Restores a database backed up using the neo4j-backup tool." ),
-                        new StubProvider( "bam", "A summary" )
-                };
+        AdminCommand.Provider[] commands = new AdminCommand.Provider[]{
+                new StubProvider( "restore", "Restores a database backed up using the neo4j-backup tool." ),
+                new StubProvider( "bam", "A summary" ),
+                new StubProvider( "zzzz-last-one", "Another summary" )};
         final Usage usage = new Usage( "neo4j-admin", new CannedLocator( commands ) );
         usage.print( out );
 
@@ -58,11 +57,12 @@ public class UsageTest
         ordered.verify( out ).accept( "usage: neo4j-admin <command>" );
         ordered.verify( out ).accept( "" );
         ordered.verify( out ).accept( "available commands:" );
-        ordered.verify( out )
-                .accept( "    restore" );
-        ordered.verify( out ).accept( "        Restores a database backed up using the neo4j-backup tool." );
         ordered.verify( out ).accept( "    bam" );
         ordered.verify( out ).accept( "        A summary" );
+        ordered.verify( out ).accept( "    restore" );
+        ordered.verify( out ).accept( "        Restores a database backed up using the neo4j-backup tool." );
+        ordered.verify( out ).accept( "    zzzz-last-one" );
+        ordered.verify( out ).accept( "        Another summary" );
         ordered.verify( out ).accept( "" );
         ordered.verify( out ).accept( "Use neo4j-admin help <command> for more details." );
         ordered.verifyNoMoreInteractions();
@@ -72,7 +72,7 @@ public class UsageTest
     {
         private final String summary;
 
-        public StubProvider( String name, String summary )
+        StubProvider( String name, String summary )
         {
             super( name );
             this.summary = summary;

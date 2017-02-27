@@ -42,24 +42,24 @@ public class Neo4jAdminUsageTest
 
         assertEquals("usage: neo4j-admin <command>\n" +
                         "\n" + "available commands:\n" +
-                        "    set-initial-password\n" +
-                        "        Sets the initial password of the initial admin user ('neo4j').\n" +
-                        "    restore\n" +
-                        "        Restore a backed up database.\n" +
-                        "    backup\n" +
-                        "        Perform an online backup from a running Neo4j enterprise server.\n" +
-                        "    unbind\n" +
-                        "        Removes cluster state data for the specified database.\n" +
-                        "    dump\n" +
-                        "        Dump a database into a single-file archive.\n" +
-                        "    load\n" +
-                        "        Load a database from an archive created with the dump command.\n" +
-                        "    set-default-admin\n" +
-                        "        Sets the default admin user when no roles are present.\n" +
-                        "    check-consistency\n" +
-                        "        Check the consistency of a database.\n" +
-                        "    import\n" +
-                        "        Import from a collection of CSV files or a pre-3.0 database.\n" +
+                            "    backup\n" +
+                            "        Perform an online backup from a running Neo4j enterprise server.\n" +
+                            "    check-consistency\n" +
+                            "        Check the consistency of a database.\n" +
+                            "    dump\n" +
+                            "        Dump a database into a single-file archive.\n" +
+                            "    import\n" +
+                            "        Import from a collection of CSV files or a pre-3.0 database.\n" +
+                            "    load\n" +
+                            "        Load a database from an archive created with the dump command.\n" +
+                            "    restore\n" +
+                            "        Restore a backed up database.\n" +
+                            "    set-default-admin\n" +
+                            "        Sets the default admin user when no roles are present.\n" +
+                            "    set-initial-password\n" +
+                            "        Sets the initial password of the initial admin user ('neo4j').\n" +
+                            "    unbind\n" +
+                            "        Removes cluster state data for the specified database.\n" +
                         "\n" +
                         "Use neo4j-admin help <command> for more details.\n",
                 sb.toString() );
