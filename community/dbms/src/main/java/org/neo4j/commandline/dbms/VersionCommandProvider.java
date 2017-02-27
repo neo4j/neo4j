@@ -22,6 +22,7 @@ package org.neo4j.commandline.dbms;
 import java.nio.file.Path;
 
 import org.neo4j.commandline.admin.AdminCommand;
+import org.neo4j.commandline.admin.AdminCommandSection;
 import org.neo4j.commandline.admin.OutsideWorld;
 import org.neo4j.commandline.arguments.Arguments;
 
@@ -43,6 +44,12 @@ public class VersionCommandProvider extends AdminCommand.Provider
     public String summary()
     {
         return "Check the version of a Neo4j database store.";
+    }
+
+    @Override
+    public AdminCommandSection commandSection()
+    {
+        return AdminCommandSection.general();
     }
 
     @Override

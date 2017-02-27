@@ -169,9 +169,8 @@ public class AdminToolTest
         {
             throw new IncorrectUsage( "the-usage-message" );
         };
-        new AdminTool( cannedCommand( "exception", command ), new NullBlockerLocator(), outsideWorld, false ).execute(
-                null, null,
-                "exception" );
+        new AdminTool( cannedCommand( "exception", command ), new NullBlockerLocator(), outsideWorld, false )
+                .execute( null, null, "exception" );
         InOrder inOrder = inOrder( outsideWorld );
         inOrder.verify( outsideWorld ).stdErrLine( "the-usage-message" );
         verify( outsideWorld ).exit( 1 );
@@ -278,6 +277,11 @@ public class AdminToolTest
                 return "";
             }
 
+            public AdminCommandSection commandSection()
+            {
+                return AdminCommandSection.general();
+            }
+
             @Override
             public AdminCommand create( Path homeDir, Path configDir, OutsideWorld outsideWorld )
             {
@@ -327,6 +331,11 @@ public class AdminToolTest
         }
 
         @Override
+        public AdminCommandSection commandSection()
+        {
+            return AdminCommandSection.general();
+        }
+
         public AdminCommand create( Path homeDir, Path configDir, OutsideWorld outsideWorld )
         {
             return args ->

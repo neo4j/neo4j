@@ -19,47 +19,34 @@
  */
 package org.neo4j.commandline.admin;
 
-import java.nio.file.Path;
+import java.util.function.Consumer;
 
 import org.neo4j.commandline.arguments.Arguments;
 
-public class HelpCommandProvider extends AdminCommand.Provider
+import static java.lang.String.format;
+
+class CommandUsage
 {
-    private final Usage usage;
+    private final AdminCommand.Provider command;
+    private final String scriptName;
 
-    public HelpCommandProvider( Usage usage )
+    CommandUsage( AdminCommand.Provider command, String scriptName )
     {
-        super( "help" );
-        this.usage = usage;
+        this.command = command;
+        this.scriptName = scriptName;
     }
 
-    @Override
-    public Arguments allArguments()
+    void printDetailed( Consumer<String> output )
     {
-        return new Arguments().withOptionalPositionalArgument( 0, "command" );
-    }
+        for ( Arguments arguments : command.possibleArguments() )
+        {
+            //Arguments arguments = command.arguments();
 
-    @Override
-    public String description()
-    {
-        return "This help text, or help for the command specified in <command>.";
-    }
+            String left = format( "usage: %s %s", scriptName, command.name() );
 
-    @Override
-    public String summary()
-    {
-        return description();
-    }
-
-    @Override
-    public AdminCommandSection commandSection()
-    {
-        return AdminCommandSection.general();
-    }
-
-    @Override
-    public AdminCommand create( Path homeDir, Path configDir, OutsideWorld outsideWorld )
-    {
-        return new HelpCommand( usage, outsideWorld::stdOutLine, CommandLocator.fromServiceLocator() );
+            output.accept( Arguments.rightColumnFormatted( left, arguments.usage(), left.length() + 1 ) );
+        }
+        output.accept( "" );
+        output.accept( command.allArguments().description( command.description() ) );
     }
 }

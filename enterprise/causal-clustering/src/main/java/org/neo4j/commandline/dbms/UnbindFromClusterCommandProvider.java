@@ -22,6 +22,7 @@ package org.neo4j.commandline.dbms;
 import java.nio.file.Path;
 
 import org.neo4j.commandline.admin.AdminCommand;
+import org.neo4j.commandline.admin.AdminCommandSection;
 import org.neo4j.commandline.admin.OutsideWorld;
 import org.neo4j.commandline.arguments.Arguments;
 
@@ -42,6 +43,12 @@ public class UnbindFromClusterCommandProvider extends AdminCommand.Provider
     public String summary()
     {
         return "Removes cluster state data for the specified database.";
+    }
+
+    @Override
+    public AdminCommandSection commandSection()
+    {
+        return ClusteringCommandSection.instance();
     }
 
     @Override

@@ -17,58 +17,51 @@
  * You should have received a copy of the GNU General Public License
  * along with this program.  If not, see <http://www.gnu.org/licenses/>.
  */
-package org.neo4j.commandline.dbms;
+package org.neo4j.commandline.admin;
 
 import java.nio.file.Path;
-import java.util.Arrays;
-import java.util.List;
 
-import org.neo4j.commandline.admin.AdminCommand;
-import org.neo4j.commandline.admin.AdminCommandSection;
-import org.neo4j.commandline.admin.OutsideWorld;
 import org.neo4j.commandline.arguments.Arguments;
 
-public class ImportCommandProvider extends AdminCommand.Provider
+class StubProvider extends AdminCommand.Provider
 {
-    public ImportCommandProvider()
+    private final String summary;
+    private AdminCommandSection general;
+
+    StubProvider( String name, String summary, AdminCommandSection section )
     {
-        super( "import" );
+        super( name );
+        this.summary = summary;
+        this.general = section;
     }
 
     @Override
     public Arguments allArguments()
     {
-        return ImportCommand.allArguments();
-    }
-
-    @Override
-    public List<Arguments> possibleArguments()
-    {
-        return Arrays.asList( ImportCommand.csvArguments(), ImportCommand.databaseArguments() );
+        return Arguments.NO_ARGS;
     }
 
     @Override
     public String description()
     {
-        return "Import a collection of CSV files with --mode=csv (default), or a database from " +
-                "a pre-3.0 installation with --mode=database.";
+        return "description";
     }
 
     @Override
     public String summary()
     {
-        return "Import from a collection of CSV files or a pre-3.0 database.";
+        return summary;
     }
 
     @Override
     public AdminCommandSection commandSection()
     {
-        return AdminCommandSection.general();
+        return general;
     }
 
     @Override
     public AdminCommand create( Path homeDir, Path configDir, OutsideWorld outsideWorld )
     {
-        return new ImportCommand( homeDir, configDir, outsideWorld );
+        throw new UnsupportedOperationException( "not implemented" );
     }
 }

@@ -21,7 +21,9 @@ package org.neo4j.backup;
 
 import java.nio.file.Path;
 
+import org.neo4j.ManageOnlineBackupCommandSection;
 import org.neo4j.commandline.admin.AdminCommand;
+import org.neo4j.commandline.admin.AdminCommandSection;
 import org.neo4j.commandline.admin.OutsideWorld;
 import org.neo4j.commandline.arguments.Arguments;
 import org.neo4j.consistency.ConsistencyCheckService;
@@ -51,6 +53,12 @@ public class OnlineBackupCommandProvider extends AdminCommand.Provider
     public String summary()
     {
         return "Perform an online backup from a running Neo4j enterprise server.";
+    }
+
+    @Override
+    public AdminCommandSection commandSection()
+    {
+        return ManageOnlineBackupCommandSection.instance();
     }
 
     @Override
