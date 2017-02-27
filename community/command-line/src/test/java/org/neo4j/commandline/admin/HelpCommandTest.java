@@ -126,11 +126,11 @@ public class HelpCommandTest
                             "    NEO4J_CONF    Path to directory which contains neo4j.conf.%n" +
                             "%n" +
                             "available commands:%n" +
-                            "    foo%n" +
-                            "        null%n" +
                             "    bar%n" +
                             "        null%n" +
                             "    baz%n" +
+                            "        null%n" +
+                            "    foo%n" +
                             "        null%n" +
                             "%n" +
                             "Use neo4j-admin help <command> for more details.%n" ),
