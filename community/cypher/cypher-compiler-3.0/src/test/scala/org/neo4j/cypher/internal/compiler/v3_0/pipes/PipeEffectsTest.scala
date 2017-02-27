@@ -58,7 +58,7 @@ class PipeEffectsTest extends CypherFunSuite with TableDrivenPropertyChecks {
   NodeStartPipe(SingleRowPipe(), "n", mock[EntityProducer[Node]])()
     -> Effects(ReadsAllNodes).asLeafEffects,
 
-  LoadCSVPipe(SingleRowPipe(), null, Literal("apa"), "line", None)()
+  LoadCSVPipe(SingleRowPipe(), null, Literal("apa"), "line", None, true)()
     -> Effects(),
 
   EmptyResultPipe(SingleRowPipe())

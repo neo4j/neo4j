@@ -124,7 +124,8 @@ trait LogicalPlanningTestSupport extends CypherTestSupport with AstConstructionT
                                       useErrorsOverWarnings: Boolean = false): LogicalPlanningContext =
     LogicalPlanningContext(planContext, LogicalPlanProducer(metrics.cardinality), metrics, semanticTable,
       strategy, QueryGraphSolverInput(Map.empty, cardinality, strictness),
-      notificationLogger = notificationLogger, useErrorsOverWarnings = useErrorsOverWarnings, config = QueryPlannerConfiguration.default)
+      notificationLogger = notificationLogger, useErrorsOverWarnings = useErrorsOverWarnings,
+      legacyCsvQuoteEscaping = config.legacyCsvQuoteEscaping, config = QueryPlannerConfiguration.default)
 
   def newMockedStatistics = mock[GraphStatistics]
   def hardcodedStatistics = HardcodedGraphStatistics
@@ -184,6 +185,7 @@ trait LogicalPlanningTestSupport extends CypherTestSupport with AstConstructionT
     idpIterationDuration = DefaultIDPSolverConfig.iterationDurationLimit,
     errorIfShortestPathFallbackUsedAtRuntime = false,
     errorIfShortestPathHasCommonNodesAtRuntime = true,
+    legacyCsvQuoteEscaping = true,
     nonIndexedLabelWarningThreshold = 10000
   )
 

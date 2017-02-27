@@ -43,7 +43,8 @@ class RuleExecutablePlanBuilderTest extends CypherFunSuite {
     idpMaxTableSize = DefaultIDPSolverConfig.maxTableSize,
     idpIterationDuration = DefaultIDPSolverConfig.iterationDurationLimit,
     errorIfShortestPathFallbackUsedAtRuntime = false,
-    errorIfShortestPathHasCommonNodesAtRuntime = true
+    errorIfShortestPathHasCommonNodesAtRuntime = true,
+    legacyCsvQuoteEscaping = true
   )
   val planBuilder = new LegacyExecutablePlanBuilder(mock[Monitors], config, RewriterStepSequencer.newValidating,
     typeConverter = IdentityTypeConverter)

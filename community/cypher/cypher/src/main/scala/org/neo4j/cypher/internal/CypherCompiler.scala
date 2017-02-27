@@ -73,6 +73,7 @@ class CypherCompiler(graph: GraphDatabaseQueryService,
                      idpIterationDuration: Long,
                      errorIfShortestPathFallbackUsedAtRuntime: Boolean,
                      errorIfShortestPathHasCommonNodesAtRuntime: Boolean,
+                     legacyCsvQuoteEscaping: Boolean,
                      logProvider: LogProvider) {
   import org.neo4j.cypher.internal.CypherCompiler._
 
@@ -87,6 +88,7 @@ class CypherCompiler(graph: GraphDatabaseQueryService,
     idpIterationDuration = idpIterationDuration,
     errorIfShortestPathFallbackUsedAtRuntime = errorIfShortestPathFallbackUsedAtRuntime,
     errorIfShortestPathHasCommonNodesAtRuntime = errorIfShortestPathHasCommonNodesAtRuntime,
+    legacyCsvQuoteEscaping = legacyCsvQuoteEscaping,
     nonIndexedLabelWarningThreshold = getNonIndexedLabelWarningThreshold
   )
 
