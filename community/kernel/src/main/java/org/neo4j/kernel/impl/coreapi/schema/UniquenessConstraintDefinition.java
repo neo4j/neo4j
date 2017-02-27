@@ -35,7 +35,7 @@ public class UniquenessConstraintDefinition extends NodeConstraintDefinition
     public void drop()
     {
         assertInUnterminatedTransaction();
-        actions.dropPropertyUniquenessConstraint( new IndexDefinitionImpl( actions, label, propertyKeys, true ) );
+        actions.dropPropertyUniquenessConstraint( label, propertyKeys );
     }
 
     @Override

@@ -19,28 +19,32 @@
  */
 package org.neo4j.kernel.api.exceptions.schema;
 
-import org.neo4j.kernel.api.schema.NodePropertyDescriptor;
 import org.neo4j.kernel.api.TokenNameLookup;
+import org.neo4j.kernel.api.schema_new.LabelSchemaDescriptor;
+import org.neo4j.kernel.api.schema_new.constaints.ConstraintDescriptorFactory;
 
 import static java.lang.String.format;
 
-public class NodePropertyExistenceConstraintViolationKernelException extends ConstraintViolationKernelException
+public class NodePropertyExistenceException extends ConstraintValidationException
 {
-    private final NodePropertyDescriptor descriptor;
     private final long nodeId;
+    private final LabelSchemaDescriptor schema;
 
-    public NodePropertyExistenceConstraintViolationKernelException( NodePropertyDescriptor descriptor, long nodeId )
+    public NodePropertyExistenceException( LabelSchemaDescriptor schema,
+            ConstraintValidationException.Phase phase, long nodeId )
     {
-        super( "Node %d with label %d must have the property %d",
-                nodeId, descriptor.getEntityId(), descriptor.getPropertyKeyId() );
-        this.descriptor = descriptor;
+        super( ConstraintDescriptorFactory.existsForSchema( schema ),
+                phase, format( "Node(%d)", nodeId ) );
+        this.schema = schema;
         this.nodeId = nodeId;
     }
 
     @Override
     public String getUserMessage( TokenNameLookup tokenNameLookup )
     {
-        return format( "Node %d with label \"%s\" must have the property \"%s\" due to a constraint", nodeId,
-                descriptor.entityNameText( tokenNameLookup ), descriptor.propertyNameText( tokenNameLookup ) );
+        return format( "Node(%d) with label `%s` must have the property `%s`",
+                nodeId,
+                tokenNameLookup.labelGetName( schema.getLabelId() ),
+                tokenNameLookup.propertyKeyGetName( schema.getPropertyId() ) );
     }
 }

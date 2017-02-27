@@ -20,34 +20,28 @@
 package org.neo4j.kernel.api.exceptions.schema;
 
 import org.neo4j.kernel.api.TokenNameLookup;
-import org.neo4j.kernel.api.constraints.NodePropertyExistenceConstraint;
+import org.neo4j.kernel.api.schema_new.SchemaUtil;
+import org.neo4j.kernel.api.schema_new.constaints.ConstraintDescriptor;
 
-public class NodePropertyExistenceConstraintVerificationFailedKernelException
-        extends ConstraintVerificationFailedKernelException
+import static java.lang.String.format;
+
+/**
+ * Attempting to validate constraints but the apparatus for validation was not available. For example,
+ * this exception is thrown when an index required to implement a uniqueness constraint is not available.
+ */
+public class UnableToValidateConstraintException extends ConstraintValidationException
 {
-    private final NodePropertyExistenceConstraint constraint;
-    private final long nodeId;
-
-    public NodePropertyExistenceConstraintVerificationFailedKernelException( NodePropertyExistenceConstraint constraint,
-            long nodeId )
+    public UnableToValidateConstraintException( ConstraintDescriptor constraint, Throwable cause )
     {
-        super( constraint );
-        this.constraint = constraint;
-        this.nodeId = nodeId;
+        super( constraint, Phase.VERIFICATION,
+                format( "Unable to validate constraint %s",
+                        constraint.userDescription( SchemaUtil.idTokenNameLookup ) ),
+                cause );
     }
 
     @Override
     public String getUserMessage( TokenNameLookup tokenNameLookup )
     {
-        return String.format( "Node(%s) with label `%s` has no value for property `%s`",
-                nodeId,
-                tokenNameLookup.labelGetName( constraint.label() ),
-                constraint.descriptor().propertyNameText( tokenNameLookup ) );
-    }
-
-    @Override
-    public NodePropertyExistenceConstraint constraint()
-    {
-        return constraint;
+        return format( "Unable to validate constraint %s", constraint.userDescription( tokenNameLookup ) );
     }
 }

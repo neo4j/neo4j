@@ -29,8 +29,8 @@ import java.util.Arrays;
 
 import org.neo4j.kernel.api.StatementConstants;
 import org.neo4j.kernel.api.exceptions.KernelException;
+import org.neo4j.kernel.api.exceptions.index.IndexEntryConflictException;
 import org.neo4j.kernel.api.impl.schema.LuceneDocumentStructure;
-import org.neo4j.kernel.api.index.PreexistingIndexEntryConflictException;
 import org.neo4j.kernel.api.index.PropertyAccessor;
 import org.neo4j.kernel.api.properties.Property;
 
@@ -59,13 +59,13 @@ public class DuplicateCheckingCollector extends SimpleCollector
         {
             throw new IllegalStateException( "Indexed node should exist and have the indexed property.", e );
         }
-        catch ( PreexistingIndexEntryConflictException e )
+        catch ( IndexEntryConflictException e )
         {
             throw new IOException( e );
         }
     }
 
-    private void doCollect( int doc ) throws IOException, KernelException, PreexistingIndexEntryConflictException
+    private void doCollect( int doc ) throws IOException, KernelException, IndexEntryConflictException
     {
         Document document = reader.document( doc );
         long nodeId = LuceneDocumentStructure.getNodeId( document );
@@ -93,7 +93,7 @@ public class DuplicateCheckingCollector extends SimpleCollector
                 }
                 else if ( property.valueEquals( value ) )
                 {
-                    throw new PreexistingIndexEntryConflictException( value, current.nodeId[i], nodeId );
+                    throw new IndexEntryConflictException( current.nodeId[i], nodeId, value );
                 }
             }
             current = current.next;

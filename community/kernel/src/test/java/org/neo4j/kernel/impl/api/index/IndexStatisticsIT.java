@@ -24,7 +24,6 @@ import org.junit.Before;
 import org.junit.Rule;
 import org.junit.Test;
 
-import java.util.Iterator;
 import java.util.concurrent.TimeUnit;
 
 import org.neo4j.graphdb.GraphDatabaseService;
@@ -34,12 +33,9 @@ import org.neo4j.graphdb.Transaction;
 import org.neo4j.graphdb.mockfs.EphemeralFileSystemAbstraction;
 import org.neo4j.graphdb.mockfs.UncloseableDelegatingFileSystemAbstraction;
 import org.neo4j.graphdb.schema.IndexDefinition;
-import org.neo4j.kernel.api.schema.NodePropertyDescriptor;
 import org.neo4j.kernel.api.Statement;
-import org.neo4j.kernel.api.schema.IndexDescriptor;
-import org.neo4j.kernel.api.schema.IndexDescriptorFactory;
-import org.neo4j.kernel.api.schema_new.LabelSchemaDescriptor;
-import org.neo4j.kernel.api.schema_new.SchemaDescriptorFactory;
+import org.neo4j.kernel.api.schema_new.index.NewIndexDescriptor;
+import org.neo4j.kernel.api.schema_new.index.NewIndexDescriptorFactory;
 import org.neo4j.kernel.impl.api.CountsAccessor;
 import org.neo4j.kernel.impl.api.index.inmemory.InMemoryIndexProvider;
 import org.neo4j.kernel.impl.api.index.inmemory.InMemoryIndexProviderFactory;
@@ -52,7 +48,6 @@ import org.neo4j.kernel.impl.store.counts.CountsTracker;
 import org.neo4j.kernel.internal.GraphDatabaseAPI;
 import org.neo4j.logging.AssertableLogProvider;
 import org.neo4j.register.Register.DoubleLongRegister;
-import org.neo4j.storageengine.api.schema.SchemaRule;
 import org.neo4j.test.TestGraphDatabaseFactory;
 import org.neo4j.test.rule.fs.EphemeralFileSystemRule;
 
@@ -64,8 +59,8 @@ import static org.neo4j.register.Registers.newDoubleLongRegister;
 
 public class IndexStatisticsIT
 {
-    public static final Label ALIEN = label( "Alien" );
-    public static final String SPECIMEN = "specimen";
+    private static final Label ALIEN = label( "Alien" );
+    private static final String SPECIMEN = "specimen";
 
     @Rule
     public final EphemeralFileSystemRule fsRule = new EphemeralFileSystemRule();
@@ -102,8 +97,9 @@ public class IndexStatisticsIT
         awaitIndexOnline( indexAliensBySpecimen() );
 
         // where ALIEN and SPECIMEN are both the first ids of their kind
-        IndexDescriptor index = IndexDescriptorFactory.of( labelId( ALIEN ), pkId( SPECIMEN ) );
-        long indexId = indexId( index );
+        NewIndexDescriptor index = NewIndexDescriptorFactory.forLabel( labelId( ALIEN ), pkId( SPECIMEN ) );
+        SchemaStorage storage = new SchemaStorage( neoStores().getSchemaStore() );
+        long indexId = storage.indexGetForSchema( index ).getId();
 
         // for which we don't have index counts
         resetIndexCounts( indexId );
@@ -193,14 +189,6 @@ public class IndexStatisticsIT
             tx.success();
             return definition;
         }
-    }
-
-    private long indexId( IndexDescriptor index )
-    {
-        SchemaStorage storage = new SchemaStorage( neoStores().getSchemaStore() );
-        LabelSchemaDescriptor descriptor =
-                SchemaDescriptorFactory.forLabel( index.getLabelId(), index.getPropertyKeyId() );
-        return storage.indexGetForSchema( descriptor ).getId();
     }
 
     private void resetIndexCounts( long indexId )

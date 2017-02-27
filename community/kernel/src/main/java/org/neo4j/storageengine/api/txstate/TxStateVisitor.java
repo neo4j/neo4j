@@ -22,11 +22,10 @@ package org.neo4j.storageengine.api.txstate;
 import java.util.Iterator;
 import java.util.Set;
 
-import org.neo4j.kernel.api.constraints.NodePropertyExistenceConstraint;
-import org.neo4j.kernel.api.constraints.RelationshipPropertyExistenceConstraint;
-import org.neo4j.kernel.api.constraints.UniquenessConstraint;
-import org.neo4j.kernel.api.exceptions.schema.ConstraintValidationKernelException;
+import org.neo4j.kernel.api.exceptions.schema.ConstraintValidationException;
 import org.neo4j.kernel.api.exceptions.schema.CreateConstraintFailureException;
+import org.neo4j.kernel.api.exceptions.schema.RelationshipPropertyExistenceException;
+import org.neo4j.kernel.api.schema_new.constaints.ConstraintDescriptor;
 import org.neo4j.kernel.api.schema_new.index.NewIndexDescriptor;
 import org.neo4j.storageengine.api.StorageProperty;
 
@@ -39,40 +38,30 @@ public interface TxStateVisitor extends AutoCloseable
 
     void visitDeletedNode( long id );
 
-    void visitCreatedRelationship( long id, int type, long startNode, long endNode )
-            throws ConstraintValidationKernelException;
+    void visitCreatedRelationship( long id, int type, long startNode, long endNode ) throws
+            ConstraintValidationException;
 
     void visitDeletedRelationship( long id );
 
     void visitNodePropertyChanges( long id, Iterator<StorageProperty> added, Iterator<StorageProperty> changed,
-                                   Iterator<Integer> removed ) throws ConstraintValidationKernelException;
+                                   Iterator<Integer> removed ) throws ConstraintValidationException;
 
     void visitRelPropertyChanges( long id, Iterator<StorageProperty> added, Iterator<StorageProperty> changed,
-                                  Iterator<Integer> removed ) throws ConstraintValidationKernelException;
+                                  Iterator<Integer> removed ) throws ConstraintValidationException;
 
     void visitGraphPropertyChanges( Iterator<StorageProperty> added, Iterator<StorageProperty> changed,
                                     Iterator<Integer> removed );
 
-    void visitNodeLabelChanges( long id, Set<Integer> added, Set<Integer> removed )
-            throws ConstraintValidationKernelException;
+    void visitNodeLabelChanges( long id, Set<Integer> added, Set<Integer> removed ) throws
+            ConstraintValidationException;
 
     void visitAddedIndex( NewIndexDescriptor element );
 
     void visitRemovedIndex( NewIndexDescriptor element );
 
-    void visitAddedUniquePropertyConstraint( UniquenessConstraint element );
+    void visitAddedConstraint( ConstraintDescriptor element ) throws CreateConstraintFailureException;
 
-    void visitRemovedUniquePropertyConstraint( UniquenessConstraint element );
-
-    void visitAddedNodePropertyExistenceConstraint( NodePropertyExistenceConstraint element )
-            throws CreateConstraintFailureException;
-
-    void visitRemovedNodePropertyExistenceConstraint( NodePropertyExistenceConstraint element );
-
-    void visitAddedRelationshipPropertyExistenceConstraint( RelationshipPropertyExistenceConstraint element )
-            throws CreateConstraintFailureException;
-
-    void visitRemovedRelationshipPropertyExistenceConstraint( RelationshipPropertyExistenceConstraint element );
+    void visitRemovedConstraint( ConstraintDescriptor element );
 
     void visitCreatedLabelToken( String name, int id );
 
@@ -97,7 +86,7 @@ public interface TxStateVisitor extends AutoCloseable
 
         @Override
         public void visitCreatedRelationship( long id, int type, long startNode, long endNode )
-                throws ConstraintValidationKernelException
+                throws ConstraintValidationException
         {
         }
 
@@ -108,15 +97,14 @@ public interface TxStateVisitor extends AutoCloseable
 
         @Override
         public void visitNodePropertyChanges( long id, Iterator<StorageProperty> added,
-                Iterator<StorageProperty> changed, Iterator<Integer> removed )
-                        throws ConstraintValidationKernelException
+                Iterator<StorageProperty> changed, Iterator<Integer> removed ) throws ConstraintValidationException
         {
         }
 
         @Override
         public void visitRelPropertyChanges( long id, Iterator<StorageProperty> added,
                 Iterator<StorageProperty> changed, Iterator<Integer> removed )
-                        throws ConstraintValidationKernelException
+                        throws RelationshipPropertyExistenceException
         {
         }
 
@@ -128,7 +116,7 @@ public interface TxStateVisitor extends AutoCloseable
 
         @Override
         public void visitNodeLabelChanges( long id, Set<Integer> added, Set<Integer> removed )
-                throws ConstraintValidationKernelException
+                throws ConstraintValidationException
         {
         }
 
@@ -143,35 +131,12 @@ public interface TxStateVisitor extends AutoCloseable
         }
 
         @Override
-        public void visitAddedUniquePropertyConstraint( UniquenessConstraint element )
+        public void visitAddedConstraint( ConstraintDescriptor element ) throws CreateConstraintFailureException
         {
         }
 
         @Override
-        public void visitRemovedUniquePropertyConstraint( UniquenessConstraint element )
-        {
-        }
-
-        @Override
-        public void visitAddedNodePropertyExistenceConstraint( NodePropertyExistenceConstraint element )
-                throws CreateConstraintFailureException
-        {
-        }
-
-        @Override
-        public void visitRemovedNodePropertyExistenceConstraint( NodePropertyExistenceConstraint element )
-        {
-        }
-
-        @Override
-        public void visitAddedRelationshipPropertyExistenceConstraint( RelationshipPropertyExistenceConstraint element )
-                throws CreateConstraintFailureException
-        {
-        }
-
-        @Override
-        public void
-                visitRemovedRelationshipPropertyExistenceConstraint( RelationshipPropertyExistenceConstraint element )
+        public void visitRemovedConstraint( ConstraintDescriptor element )
         {
         }
 
@@ -222,7 +187,7 @@ public interface TxStateVisitor extends AutoCloseable
 
         @Override
         public void visitCreatedRelationship( long id, int type, long startNode, long endNode )
-                throws ConstraintValidationKernelException
+                throws ConstraintValidationException
         {
             actual.visitCreatedRelationship( id, type, startNode, endNode );
         }
@@ -235,8 +200,7 @@ public interface TxStateVisitor extends AutoCloseable
 
         @Override
         public void visitNodePropertyChanges( long id, Iterator<StorageProperty> added,
-                Iterator<StorageProperty> changed, Iterator<Integer> removed )
-                        throws ConstraintValidationKernelException
+                Iterator<StorageProperty> changed, Iterator<Integer> removed ) throws ConstraintValidationException
         {
             actual.visitNodePropertyChanges( id, added, changed, removed );
         }
@@ -244,7 +208,7 @@ public interface TxStateVisitor extends AutoCloseable
         @Override
         public void visitRelPropertyChanges( long id, Iterator<StorageProperty> added,
                 Iterator<StorageProperty> changed, Iterator<Integer> removed )
-                        throws ConstraintValidationKernelException
+                        throws ConstraintValidationException
         {
             actual.visitRelPropertyChanges( id, added, changed, removed );
         }
@@ -258,7 +222,7 @@ public interface TxStateVisitor extends AutoCloseable
 
         @Override
         public void visitNodeLabelChanges( long id, Set<Integer> added, Set<Integer> removed )
-                throws ConstraintValidationKernelException
+                throws ConstraintValidationException
         {
             actual.visitNodeLabelChanges( id, added, removed );
         }
@@ -276,42 +240,15 @@ public interface TxStateVisitor extends AutoCloseable
         }
 
         @Override
-        public void visitAddedUniquePropertyConstraint( UniquenessConstraint element )
+        public void visitAddedConstraint( ConstraintDescriptor constraint ) throws CreateConstraintFailureException
         {
-            actual.visitAddedUniquePropertyConstraint( element );
+            actual.visitAddedConstraint( constraint );
         }
 
         @Override
-        public void visitRemovedUniquePropertyConstraint( UniquenessConstraint element )
+        public void visitRemovedConstraint( ConstraintDescriptor constraint )
         {
-            actual.visitRemovedUniquePropertyConstraint( element );
-        }
-
-        @Override
-        public void visitAddedNodePropertyExistenceConstraint( NodePropertyExistenceConstraint element )
-                throws CreateConstraintFailureException
-        {
-            actual.visitAddedNodePropertyExistenceConstraint( element );
-        }
-
-        @Override
-        public void visitRemovedNodePropertyExistenceConstraint( NodePropertyExistenceConstraint element )
-        {
-            actual.visitRemovedNodePropertyExistenceConstraint( element );
-        }
-
-        @Override
-        public void visitAddedRelationshipPropertyExistenceConstraint( RelationshipPropertyExistenceConstraint element )
-                throws CreateConstraintFailureException
-        {
-            actual.visitAddedRelationshipPropertyExistenceConstraint( element );
-        }
-
-        @Override
-        public void
-                visitRemovedRelationshipPropertyExistenceConstraint( RelationshipPropertyExistenceConstraint element )
-        {
-            actual.visitRemovedRelationshipPropertyExistenceConstraint( element );
+            actual.visitRemovedConstraint( constraint );
         }
 
         @Override

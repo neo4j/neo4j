@@ -102,9 +102,9 @@ class UpdateCountingQueryContext(inner: QueryContext) extends DelegatingQueryCon
     indexesRemoved.increase()
   }
 
-  override def createUniqueConstraint(descriptor: IndexDescriptor) = {
+  override def createUniqueConstraint(descriptor: IndexDescriptor): Boolean = {
     val result = inner.createUniqueConstraint(descriptor)
-    result.ifCreated { uniqueConstraintsAdded.increase() }
+    if ( result ) uniqueConstraintsAdded.increase();
     result
   }
 
@@ -113,9 +113,9 @@ class UpdateCountingQueryContext(inner: QueryContext) extends DelegatingQueryCon
     uniqueConstraintsRemoved.increase()
   }
 
-  override def createNodePropertyExistenceConstraint(labelId: Int, propertyKeyId: Int) = {
+  override def createNodePropertyExistenceConstraint(labelId: Int, propertyKeyId: Int): Boolean = {
     val result = inner.createNodePropertyExistenceConstraint(labelId, propertyKeyId)
-    result.ifCreated { propertyExistenceConstraintsAdded.increase() }
+    if ( result ) propertyExistenceConstraintsAdded.increase()
     result
   }
 
@@ -124,9 +124,9 @@ class UpdateCountingQueryContext(inner: QueryContext) extends DelegatingQueryCon
     propertyExistenceConstraintsRemoved.increase()
   }
 
-  override def createRelationshipPropertyExistenceConstraint(relTypeId: Int, propertyKeyId: Int) = {
+  override def createRelationshipPropertyExistenceConstraint(relTypeId: Int, propertyKeyId: Int): Boolean = {
     val result = inner.createRelationshipPropertyExistenceConstraint(relTypeId, propertyKeyId)
-    result.ifCreated { propertyExistenceConstraintsAdded.increase() }
+    if ( result ) propertyExistenceConstraintsAdded.increase()
     result
   }
 

@@ -24,7 +24,7 @@ import org.neo4j.kernel.api.exceptions.Status;
 import org.neo4j.kernel.api.exceptions.TransactionFailureException;
 import org.neo4j.kernel.api.exceptions.index.IndexNotFoundKernelException;
 import org.neo4j.kernel.api.exceptions.index.IndexPopulationFailedKernelException;
-import org.neo4j.kernel.api.exceptions.schema.ConstraintVerificationFailedKernelException;
+import org.neo4j.kernel.api.exceptions.schema.UniquePropertyValueValidationException;
 import org.neo4j.kernel.api.schema_new.constaints.ConstraintDescriptor;
 import org.neo4j.kernel.impl.api.index.IndexingService;
 import org.neo4j.kernel.impl.store.NeoStores;
@@ -88,7 +88,7 @@ public class IntegrityValidator
                 {
                     indexes.validateIndex( constraintRule.getOwnedIndex() );
                 }
-                catch ( ConstraintVerificationFailedKernelException e )
+                catch ( UniquePropertyValueValidationException e )
                 {
                     throw new TransactionFailureException( Status.Transaction.TransactionValidationFailed, e,
                             "Index validation failed" );

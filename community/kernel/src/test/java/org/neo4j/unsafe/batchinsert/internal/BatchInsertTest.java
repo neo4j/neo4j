@@ -59,10 +59,10 @@ import org.neo4j.helpers.collection.Iterables;
 import org.neo4j.helpers.collection.MapUtil;
 import org.neo4j.helpers.collection.Pair;
 import org.neo4j.io.pagecache.IOLimiter;
+import org.neo4j.kernel.api.exceptions.index.IndexEntryConflictException;
 import org.neo4j.kernel.api.index.IndexConfiguration;
 import org.neo4j.kernel.api.index.IndexEntryUpdate;
 import org.neo4j.kernel.api.index.IndexPopulator;
-import org.neo4j.kernel.api.index.PreexistingIndexEntryConflictException;
 import org.neo4j.kernel.api.index.PropertyAccessor;
 import org.neo4j.kernel.api.index.SchemaIndexProvider;
 import org.neo4j.kernel.api.labelscan.AllEntriesLabelScanReader;
@@ -106,6 +106,7 @@ import org.neo4j.unsafe.batchinsert.BatchInserters;
 import org.neo4j.unsafe.batchinsert.BatchRelationship;
 
 import static java.lang.Integer.parseInt;
+import static java.lang.String.format;
 import static java.util.Collections.singletonList;
 import static org.hamcrest.CoreMatchers.equalTo;
 import static org.hamcrest.Matchers.arrayContaining;
@@ -1279,10 +1280,8 @@ public class BatchInsertTest
         }
         catch ( ConstraintViolationException e )
         {
-            assertEquals( e.getMessage(),
-                    "Node 0 already exists with label " + label.name() + " and property \"" + propertyKey + "\"=[" +
-                    duplicatedValue + "]"
-            );
+            assertEquals( format( "Node(0) already exists with label `%s` and property `%s` = '%s'",
+                                    label.name(), propertyKey, duplicatedValue ), e.getMessage() );
         }
         finally
         {
@@ -1386,7 +1385,7 @@ public class BatchInsertTest
         catch ( RuntimeException ex )
         {
             // good
-            assertEquals( new PreexistingIndexEntryConflictException( value, 0, 1 ), ex.getCause() );
+            assertEquals( new IndexEntryConflictException( 0, 1, value ), ex.getCause() );
         }
     }
 

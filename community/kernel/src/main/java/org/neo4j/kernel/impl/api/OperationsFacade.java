@@ -36,18 +36,15 @@ import org.neo4j.graphdb.Direction;
 import org.neo4j.kernel.api.DataWriteOperations;
 import org.neo4j.kernel.api.KernelTransaction;
 import org.neo4j.kernel.api.LegacyIndexHits;
+import org.neo4j.kernel.api.TokenWriteOperations;
+import org.neo4j.kernel.api.exceptions.schema.ConstraintValidationException;
+import org.neo4j.kernel.api.schema.NodePropertyDescriptor;
 import org.neo4j.kernel.api.ProcedureCallOperations;
 import org.neo4j.kernel.api.QueryRegistryOperations;
 import org.neo4j.kernel.api.ReadOperations;
 import org.neo4j.kernel.api.SchemaWriteOperations;
 import org.neo4j.kernel.api.StatementConstants;
-import org.neo4j.kernel.api.TokenWriteOperations;
-import org.neo4j.kernel.api.constraints.NodePropertyConstraint;
-import org.neo4j.kernel.api.constraints.NodePropertyExistenceConstraint;
-import org.neo4j.kernel.api.constraints.PropertyConstraint;
 import org.neo4j.kernel.api.constraints.RelationshipPropertyConstraint;
-import org.neo4j.kernel.api.constraints.RelationshipPropertyExistenceConstraint;
-import org.neo4j.kernel.api.constraints.UniquenessConstraint;
 import org.neo4j.kernel.api.exceptions.EntityNotFoundException;
 import org.neo4j.kernel.api.exceptions.InvalidTransactionTypeKernelException;
 import org.neo4j.kernel.api.exceptions.KernelException;
@@ -60,7 +57,6 @@ import org.neo4j.kernel.api.exceptions.legacyindex.AutoIndexingKernelException;
 import org.neo4j.kernel.api.exceptions.legacyindex.LegacyIndexNotFoundKernelException;
 import org.neo4j.kernel.api.exceptions.schema.AlreadyConstrainedException;
 import org.neo4j.kernel.api.exceptions.schema.AlreadyIndexedException;
-import org.neo4j.kernel.api.exceptions.schema.ConstraintValidationKernelException;
 import org.neo4j.kernel.api.exceptions.schema.CreateConstraintFailureException;
 import org.neo4j.kernel.api.exceptions.schema.DropConstraintFailureException;
 import org.neo4j.kernel.api.exceptions.schema.DropIndexFailureException;
@@ -79,11 +75,16 @@ import org.neo4j.kernel.api.proc.UserFunctionSignature;
 import org.neo4j.kernel.api.properties.DefinedProperty;
 import org.neo4j.kernel.api.properties.Property;
 import org.neo4j.kernel.api.query.ExecutingQuery;
-import org.neo4j.kernel.api.schema.NodePropertyDescriptor;
-import org.neo4j.kernel.api.schema.RelationshipPropertyDescriptor;
 import org.neo4j.kernel.api.schema_new.IndexQuery;
+import org.neo4j.kernel.api.schema_new.LabelSchemaDescriptor;
+import org.neo4j.kernel.api.schema_new.RelationTypeSchemaDescriptor;
 import org.neo4j.kernel.api.schema_new.SchemaBoundary;
+import org.neo4j.kernel.api.schema_new.SchemaDescriptor;
 import org.neo4j.kernel.api.schema_new.SchemaDescriptorFactory;
+import org.neo4j.kernel.api.schema_new.constaints.ConstraintDescriptor;
+import org.neo4j.kernel.api.schema_new.constaints.NodeExistenceConstraintDescriptor;
+import org.neo4j.kernel.api.schema_new.constaints.RelExistenceConstraintDescriptor;
+import org.neo4j.kernel.api.schema_new.constaints.UniquenessConstraintDescriptor;
 import org.neo4j.kernel.api.schema_new.index.NewIndexDescriptor;
 import org.neo4j.kernel.api.security.AccessMode;
 import org.neo4j.kernel.api.security.SecurityContext;
@@ -673,36 +674,28 @@ public class OperationsFacade
     }
 
     @Override
-    public Iterator<NodePropertyConstraint> constraintsGetForLabelAndPropertyKey( NodePropertyDescriptor descriptor )
+    public Iterator<ConstraintDescriptor> constraintsGetForSchema( SchemaDescriptor descriptor )
     {
         statement.assertOpen();
-        return schemaRead().constraintsGetForLabelAndPropertyKey( statement, descriptor );
+        return schemaRead().constraintsGetForSchema( statement, descriptor );
     }
 
     @Override
-    public Iterator<NodePropertyConstraint> constraintsGetForLabel( int labelId )
+    public Iterator<ConstraintDescriptor> constraintsGetForLabel( int labelId )
     {
         statement.assertOpen();
         return schemaRead().constraintsGetForLabel( statement, labelId );
     }
 
     @Override
-    public Iterator<RelationshipPropertyConstraint> constraintsGetForRelationshipType( int typeId )
+    public Iterator<ConstraintDescriptor> constraintsGetForRelationshipType( int typeId )
     {
         statement.assertOpen();
         return schemaRead().constraintsGetForRelationshipType( statement, typeId );
     }
 
     @Override
-    public Iterator<RelationshipPropertyConstraint> constraintsGetForRelationshipTypeAndPropertyKey(
-            RelationshipPropertyDescriptor descriptor )
-    {
-        statement.assertOpen();
-        return schemaRead().constraintsGetForRelationshipTypeAndPropertyKey( statement, descriptor );
-    }
-
-    @Override
-    public Iterator<PropertyConstraint> constraintsGetAll()
+    public Iterator<ConstraintDescriptor> constraintsGetAll()
     {
         statement.assertOpen();
         return schemaRead().constraintsGetAll( statement );
@@ -919,7 +912,7 @@ public class OperationsFacade
 
     @Override
     public boolean nodeAddLabel( long nodeId, int labelId )
-            throws EntityNotFoundException, ConstraintValidationKernelException
+            throws EntityNotFoundException, ConstraintValidationException
     {
         statement.assertOpen();
         return dataWrite().nodeAddLabel( statement, nodeId, labelId );
@@ -934,7 +927,8 @@ public class OperationsFacade
 
     @Override
     public Property nodeSetProperty( long nodeId, DefinedProperty property )
-            throws EntityNotFoundException, ConstraintValidationKernelException, AutoIndexingKernelException, InvalidTransactionTypeKernelException
+            throws EntityNotFoundException, AutoIndexingKernelException,
+                   InvalidTransactionTypeKernelException, ConstraintValidationException
     {
         statement.assertOpen();
         return dataWrite().nodeSetProperty( statement, nodeId, property );
@@ -997,7 +991,7 @@ public class OperationsFacade
     }
 
     @Override
-    public UniquenessConstraint uniquePropertyConstraintCreate( NodePropertyDescriptor descriptor )
+    public UniquenessConstraintDescriptor uniquePropertyConstraintCreate( LabelSchemaDescriptor descriptor )
             throws CreateConstraintFailureException, AlreadyConstrainedException, AlreadyIndexedException
     {
         statement.assertOpen();
@@ -1005,7 +999,7 @@ public class OperationsFacade
     }
 
     @Override
-    public NodePropertyExistenceConstraint nodePropertyExistenceConstraintCreate( NodePropertyDescriptor descriptor )
+    public NodeExistenceConstraintDescriptor nodePropertyExistenceConstraintCreate( LabelSchemaDescriptor descriptor )
             throws CreateConstraintFailureException, AlreadyConstrainedException
     {
         statement.assertOpen();
@@ -1013,8 +1007,8 @@ public class OperationsFacade
     }
 
     @Override
-    public RelationshipPropertyExistenceConstraint relationshipPropertyExistenceConstraintCreate(
-            RelationshipPropertyDescriptor descriptor )
+    public RelExistenceConstraintDescriptor relationshipPropertyExistenceConstraintCreate(
+            RelationTypeSchemaDescriptor descriptor )
             throws CreateConstraintFailureException, AlreadyConstrainedException
     {
         statement.assertOpen();
@@ -1022,14 +1016,7 @@ public class OperationsFacade
     }
 
     @Override
-    public void constraintDrop( NodePropertyConstraint constraint ) throws DropConstraintFailureException
-    {
-        statement.assertOpen();
-        schemaWrite().constraintDrop( statement, constraint );
-    }
-
-    @Override
-    public void constraintDrop( RelationshipPropertyConstraint constraint ) throws DropConstraintFailureException
+    public void constraintDrop( ConstraintDescriptor constraint ) throws DropConstraintFailureException
     {
         statement.assertOpen();
         schemaWrite().constraintDrop( statement, constraint );

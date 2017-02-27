@@ -112,19 +112,19 @@ class ExceptionTranslatingQueryContext(val inner: QueryContext) extends QueryCon
   override def getOrCreateFromSchemaState[K, V](key: K, creator: => V): V =
     translateException(inner.getOrCreateFromSchemaState(key, creator))
 
-  override def createUniqueConstraint(descriptor: IndexDescriptor) =
+  override def createUniqueConstraint(descriptor: IndexDescriptor): Boolean =
     translateException(inner.createUniqueConstraint(descriptor))
 
   override def dropUniqueConstraint(descriptor: IndexDescriptor) =
     translateException(inner.dropUniqueConstraint(descriptor))
 
-  override def createNodePropertyExistenceConstraint(labelId: Int, propertyKeyId: Int) =
+  override def createNodePropertyExistenceConstraint(labelId: Int, propertyKeyId: Int): Boolean =
     translateException(inner.createNodePropertyExistenceConstraint(labelId, propertyKeyId))
 
   override def dropNodePropertyExistenceConstraint(labelId: Int, propertyKeyId: Int) =
     translateException(inner.dropNodePropertyExistenceConstraint(labelId, propertyKeyId))
 
-  override def createRelationshipPropertyExistenceConstraint(relTypeId: Int, propertyKeyId: Int) =
+  override def createRelationshipPropertyExistenceConstraint(relTypeId: Int, propertyKeyId: Int): Boolean =
     translateException(inner.createRelationshipPropertyExistenceConstraint(relTypeId, propertyKeyId))
 
   override def dropRelationshipPropertyExistenceConstraint(relTypeId: Int, propertyKeyId: Int) =

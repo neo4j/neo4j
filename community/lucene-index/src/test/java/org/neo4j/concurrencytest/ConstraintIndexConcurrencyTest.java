@@ -26,9 +26,11 @@ import java.util.function.Supplier;
 
 import org.neo4j.graphdb.Label;
 import org.neo4j.graphdb.Transaction;
+import org.neo4j.helpers.collection.Iterators;
 import org.neo4j.kernel.api.Statement;
-import org.neo4j.kernel.api.exceptions.schema.UniquePropertyConstraintViolationKernelException;
 import org.neo4j.kernel.api.schema_new.IndexQuery;
+import org.neo4j.kernel.api.exceptions.schema.UniquePropertyValueValidationException;
+import org.neo4j.kernel.api.schema_new.constaints.ConstraintDescriptorFactory;
 import org.neo4j.kernel.api.schema_new.index.NewIndexDescriptor;
 import org.neo4j.kernel.api.schema_new.index.NewIndexDescriptorFactory;
 import org.neo4j.kernel.impl.core.ThreadToStatementContextBridge;
@@ -101,11 +103,10 @@ public class ConstraintIndexConcurrencyTest
                 fail( "exception expected" );
             }
             // Then
-            catch ( UniquePropertyConstraintViolationKernelException e )
+            catch ( UniquePropertyValueValidationException e )
             {
-                assertEquals( labelId, e.labelId() );
-                assertEquals( propertyKeyId, e.propertyKeyId() );
-                assertEquals( conflictingValue, e.propertyValue() );
+                assertEquals( ConstraintDescriptorFactory.uniqueForLabel( labelId, propertyKeyId ), e.constraint() );
+                assertEquals( conflictingValue, Iterators.single( e.conflicts().iterator() ).getPropertyValue() );
             }
 
             tx.success();

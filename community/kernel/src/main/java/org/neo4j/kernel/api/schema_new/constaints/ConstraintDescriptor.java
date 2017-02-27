@@ -28,7 +28,7 @@ import static java.lang.String.format;
  * Internal representation of a graph constraint, including the schema unit it targets (eg. label-property combination)
  * and the how that schema unit is constrained (eg. "has to exist", or "must be unique").
  */
-public class ConstraintDescriptor implements SchemaDescriptor.Supplier
+public abstract class ConstraintDescriptor implements SchemaDescriptor.Supplier
 {
     public enum Type { UNIQUE, EXISTS }
 
@@ -37,22 +37,16 @@ public class ConstraintDescriptor implements SchemaDescriptor.Supplier
         ConstraintDescriptor getConstraintDescriptor();
     }
 
-    private final SchemaDescriptor schema;
     private final ConstraintDescriptor.Type type;
 
-    ConstraintDescriptor( SchemaDescriptor schema, Type type )
+    ConstraintDescriptor( Type type )
     {
-        this.schema = schema;
         this.type = type;
     }
 
     // METHODS
 
-    @Override
-    public SchemaDescriptor schema()
-    {
-        return schema;
-    }
+    public abstract SchemaDescriptor schema();
 
     public Type type()
     {
@@ -61,12 +55,11 @@ public class ConstraintDescriptor implements SchemaDescriptor.Supplier
 
     /**
      * @param tokenNameLookup used for looking up names for token ids.
-     * @return a user friendly description of what this index indexes.
+     * @return a user friendly description of this constraint.
      */
-
     public String userDescription( TokenNameLookup tokenNameLookup )
     {
-        return format( "Constraint( %s, %s )", type.name(), schema.userDescription( tokenNameLookup ) );
+        return format( "Constraint( %s, %s )", type.name(), schema().userDescription( tokenNameLookup ) );
     }
 
     /**
@@ -74,13 +67,13 @@ public class ConstraintDescriptor implements SchemaDescriptor.Supplier
      * @param supplier supplier to get a constraint descriptor from
      * @return true if the supplied constraint descriptor equals this constraint descriptor
      */
-    public boolean isSame( Supplier supplier )
+    public final boolean isSame( Supplier supplier )
     {
         return this.equals( supplier.getConstraintDescriptor() );
     }
 
     @Override
-    public boolean equals( Object o )
+    public final boolean equals( Object o )
     {
         if ( o != null && o instanceof ConstraintDescriptor )
         {
@@ -91,8 +84,23 @@ public class ConstraintDescriptor implements SchemaDescriptor.Supplier
     }
 
     @Override
-    public int hashCode()
+    public final int hashCode()
     {
-        return type.hashCode() & schema.hashCode();
+        return type.hashCode() & schema().hashCode();
+    }
+
+    // PRETTY PRINTING
+
+    public abstract String prettyPrint( TokenNameLookup tokenNameLookup );
+
+    String escapeLabelOrRelTyp( String name )
+    {
+        if (name.contains( ":" )) {
+            return "`" + name + "`";
+        }
+        else
+        {
+            return name;
+        }
     }
 }

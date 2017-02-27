@@ -34,12 +34,6 @@ import org.neo4j.kernel.api.DataWriteOperations;
 import org.neo4j.kernel.api.LegacyIndex;
 import org.neo4j.kernel.api.LegacyIndexHits;
 import org.neo4j.kernel.api.Statement;
-import org.neo4j.kernel.api.constraints.NodePropertyConstraint;
-import org.neo4j.kernel.api.constraints.NodePropertyExistenceConstraint;
-import org.neo4j.kernel.api.constraints.PropertyConstraint;
-import org.neo4j.kernel.api.constraints.RelationshipPropertyConstraint;
-import org.neo4j.kernel.api.constraints.RelationshipPropertyExistenceConstraint;
-import org.neo4j.kernel.api.constraints.UniquenessConstraint;
 import org.neo4j.kernel.api.exceptions.EntityNotFoundException;
 import org.neo4j.kernel.api.exceptions.InvalidTransactionTypeKernelException;
 import org.neo4j.kernel.api.exceptions.LabelNotFoundKernelException;
@@ -50,28 +44,32 @@ import org.neo4j.kernel.api.exceptions.index.IndexNotFoundKernelException;
 import org.neo4j.kernel.api.exceptions.legacyindex.AutoIndexingKernelException;
 import org.neo4j.kernel.api.exceptions.legacyindex.LegacyIndexNotFoundKernelException;
 import org.neo4j.kernel.api.exceptions.schema.AlreadyConstrainedException;
-import org.neo4j.kernel.api.exceptions.schema.ConstraintValidationKernelException;
-import org.neo4j.kernel.api.exceptions.schema.ConstraintVerificationFailedKernelException;
+import org.neo4j.kernel.api.exceptions.schema.ConstraintValidationException;
 import org.neo4j.kernel.api.exceptions.schema.CreateConstraintFailureException;
-import org.neo4j.kernel.api.exceptions.schema.DropConstraintFailureException;
 import org.neo4j.kernel.api.exceptions.schema.DropIndexFailureException;
 import org.neo4j.kernel.api.exceptions.schema.IllegalTokenNameException;
 import org.neo4j.kernel.api.exceptions.schema.IndexBrokenKernelException;
 import org.neo4j.kernel.api.exceptions.schema.SchemaRuleNotFoundException;
 import org.neo4j.kernel.api.exceptions.schema.TooManyLabelsException;
+import org.neo4j.kernel.api.exceptions.schema.UniquePropertyValueValidationException;
 import org.neo4j.kernel.api.index.InternalIndexState;
 import org.neo4j.kernel.api.legacyindex.AutoIndexing;
 import org.neo4j.kernel.api.properties.DefinedProperty;
 import org.neo4j.kernel.api.properties.Property;
 import org.neo4j.kernel.api.properties.PropertyKeyIdIterator;
 import org.neo4j.kernel.api.schema.NodePropertyDescriptor;
-import org.neo4j.kernel.api.schema.RelationshipPropertyDescriptor;
 import org.neo4j.kernel.api.schema_new.IndexQuery;
 import org.neo4j.kernel.api.schema_new.LabelSchemaDescriptor;
+import org.neo4j.kernel.api.schema_new.RelationTypeSchemaDescriptor;
 import org.neo4j.kernel.api.schema_new.SchemaBoundary;
 import org.neo4j.kernel.api.schema_new.SchemaDescriptor;
 import org.neo4j.kernel.api.schema_new.SchemaDescriptorFactory;
 import org.neo4j.kernel.api.schema_new.SchemaUtil;
+import org.neo4j.kernel.api.schema_new.constaints.ConstraintDescriptor;
+import org.neo4j.kernel.api.schema_new.constaints.ConstraintDescriptorFactory;
+import org.neo4j.kernel.api.schema_new.constaints.NodeExistenceConstraintDescriptor;
+import org.neo4j.kernel.api.schema_new.constaints.RelExistenceConstraintDescriptor;
+import org.neo4j.kernel.api.schema_new.constaints.UniquenessConstraintDescriptor;
 import org.neo4j.kernel.api.schema_new.index.IndexBoundary;
 import org.neo4j.kernel.api.schema_new.index.NewIndexDescriptor;
 import org.neo4j.kernel.api.txstate.TransactionCountingStateVisitor;
@@ -445,14 +443,14 @@ public class StateHandlingStatementOperations implements
     }
 
     @Override
-    public UniquenessConstraint uniquePropertyConstraintCreate( KernelStatement state, NodePropertyDescriptor descriptor )
+    public UniquenessConstraintDescriptor uniquePropertyConstraintCreate( KernelStatement state, LabelSchemaDescriptor descriptor )
             throws CreateConstraintFailureException
     {
-        UniquenessConstraint constraint = new UniquenessConstraint( descriptor );
+        UniquenessConstraintDescriptor constraint = ConstraintDescriptorFactory.uniqueForSchema( descriptor );
         try
         {
             if ( state.hasTxStateWithChanges() &&
-                 state.txState().constraintIndexDoUnRemove( constraint ) ) // ..., DROP, *CREATE*
+                 state.txState().indexDoUnRemove( constraint.ownedIndexDescriptor() ) ) // ..., DROP, *CREATE*
             { // creation is undoing a drop
                 if ( !state.txState().constraintDoUnRemove( constraint ) ) // CREATE, ..., DROP, *CREATE*
                 { // ... the drop we are undoing did itself undo a prior create...
@@ -462,64 +460,75 @@ public class StateHandlingStatementOperations implements
             }
             else // *CREATE*
             { // create from scratch
-                for ( Iterator<NodePropertyConstraint> it = storeLayer.constraintsGetForLabelAndPropertyKey(
-                        SchemaBoundary.map( descriptor) );
-                        it.hasNext(); )
+                Iterator<ConstraintDescriptor> it = storeLayer.constraintsGetForSchema( descriptor );
+                while ( it.hasNext() )
                 {
                     if ( it.next().equals( constraint ) )
                     {
                         return constraint;
                     }
                 }
-                long indexId = constraintIndexCreator.createUniquenessConstraintIndex( state, this, constraint.descriptor() );
+                long indexId = constraintIndexCreator.createUniquenessConstraintIndex( state, this, descriptor );
                 state.txState().constraintDoAdd( constraint, indexId );
             }
             return constraint;
         }
-        catch ( ConstraintVerificationFailedKernelException | DropIndexFailureException | TransactionFailureException
-                e )
+        catch ( UniquePropertyValueValidationException | DropIndexFailureException | TransactionFailureException e )
         {
             throw new CreateConstraintFailureException( constraint, e );
         }
     }
 
     @Override
-    public NodePropertyExistenceConstraint nodePropertyExistenceConstraintCreate( KernelStatement state,
-            NodePropertyDescriptor descriptor )
-            throws CreateConstraintFailureException
+    public NodeExistenceConstraintDescriptor nodePropertyExistenceConstraintCreate(
+            KernelStatement state,
+            LabelSchemaDescriptor descriptor
+    ) throws CreateConstraintFailureException
     {
-        NodePropertyExistenceConstraint constraint = new NodePropertyExistenceConstraint( descriptor );
+        NodeExistenceConstraintDescriptor constraint = ConstraintDescriptorFactory.existsForSchema( descriptor );
         state.txState().constraintDoAdd( constraint );
         return constraint;
     }
 
     @Override
-    public RelationshipPropertyExistenceConstraint relationshipPropertyExistenceConstraintCreate( KernelStatement state,
-            RelationshipPropertyDescriptor descriptor ) throws AlreadyConstrainedException, CreateConstraintFailureException
+    public RelExistenceConstraintDescriptor relationshipPropertyExistenceConstraintCreate(
+            KernelStatement state,
+            RelationTypeSchemaDescriptor descriptor
+    ) throws AlreadyConstrainedException, CreateConstraintFailureException
     {
-        RelationshipPropertyExistenceConstraint constraint =
-                new RelationshipPropertyExistenceConstraint( descriptor );
+        RelExistenceConstraintDescriptor constraint = ConstraintDescriptorFactory.existsForSchema( descriptor );
         state.txState().constraintDoAdd( constraint );
         return constraint;
     }
 
     @Override
-    public Iterator<NodePropertyConstraint> constraintsGetForLabelAndPropertyKey( KernelStatement state,
-            NodePropertyDescriptor descriptor )
+    public Iterator<ConstraintDescriptor> constraintsGetForSchema( KernelStatement state, SchemaDescriptor descriptor )
     {
-        Iterator<NodePropertyConstraint> constraints =
-                storeLayer.constraintsGetForLabelAndPropertyKey( SchemaBoundary.map( descriptor ) );
+        Iterator<ConstraintDescriptor> constraints = storeLayer.constraintsGetForSchema( descriptor );
         if ( state.hasTxStateWithChanges() )
         {
-            return state.txState().constraintsChangesForLabelAndProperty( descriptor ).apply( constraints );
+            return state.txState().constraintsChangesForSchema( descriptor ).apply( constraints );
         }
         return constraints;
     }
 
     @Override
-    public Iterator<NodePropertyConstraint> constraintsGetForLabel( KernelStatement state, int labelId )
+    public boolean constraintExists( KernelStatement state, ConstraintDescriptor descriptor )
     {
-        Iterator<NodePropertyConstraint> constraints = storeLayer.constraintsGetForLabel( labelId );
+        boolean inStore = storeLayer.constraintExists( descriptor );
+        if ( state.hasTxStateWithChanges() )
+        {
+            ReadableDiffSets<ConstraintDescriptor> diffSet =
+                    state.txState().constraintsChangesForSchema( descriptor.schema() );
+            return diffSet.isAdded( descriptor ) || (inStore && !diffSet.isRemoved( descriptor ));
+        }
+        return inStore;
+    }
+
+    @Override
+    public Iterator<ConstraintDescriptor> constraintsGetForLabel( KernelStatement state, int labelId )
+    {
+        Iterator<ConstraintDescriptor> constraints = storeLayer.constraintsGetForLabel( labelId );
         if ( state.hasTxStateWithChanges() )
         {
             return state.txState().constraintsChangesForLabel( labelId ).apply( constraints );
@@ -528,25 +537,10 @@ public class StateHandlingStatementOperations implements
     }
 
     @Override
-    public Iterator<RelationshipPropertyConstraint> constraintsGetForRelationshipTypeAndPropertyKey(
-            KernelStatement state, RelationshipPropertyDescriptor descriptor )
-    {
-        Iterator<RelationshipPropertyConstraint> constraints =
-                storeLayer.constraintsGetForRelationshipTypeAndPropertyKey( SchemaBoundary.map( descriptor ) );
-        if ( state.hasTxStateWithChanges() )
-        {
-            return state.txState()
-                    .constraintsChangesForRelationshipTypeAndProperty( descriptor )
-                    .apply( constraints );
-        }
-        return constraints;
-    }
-
-    @Override
-    public Iterator<RelationshipPropertyConstraint> constraintsGetForRelationshipType( KernelStatement state,
+    public Iterator<ConstraintDescriptor> constraintsGetForRelationshipType( KernelStatement state,
             int typeId )
     {
-        Iterator<RelationshipPropertyConstraint> constraints = storeLayer.constraintsGetForRelationshipType( typeId );
+        Iterator<ConstraintDescriptor> constraints = storeLayer.constraintsGetForRelationshipType( typeId );
         if ( state.hasTxStateWithChanges() )
         {
             return state.txState().constraintsChangesForRelationshipType( typeId ).apply( constraints );
@@ -555,9 +549,9 @@ public class StateHandlingStatementOperations implements
     }
 
     @Override
-    public Iterator<PropertyConstraint> constraintsGetAll( KernelStatement state )
+    public Iterator<ConstraintDescriptor> constraintsGetAll( KernelStatement state )
     {
-        Iterator<PropertyConstraint> constraints = storeLayer.constraintsGetAll();
+        Iterator<ConstraintDescriptor> constraints = storeLayer.constraintsGetAll();
         if ( state.hasTxStateWithChanges() )
         {
             return state.txState().constraintsChanges().apply( constraints );
@@ -566,14 +560,7 @@ public class StateHandlingStatementOperations implements
     }
 
     @Override
-    public void constraintDrop( KernelStatement state, NodePropertyConstraint constraint )
-    {
-        state.txState().constraintDoDrop( constraint );
-    }
-
-    @Override
-    public void constraintDrop( KernelStatement state, RelationshipPropertyConstraint constraint )
-            throws DropConstraintFailureException
+    public void constraintDrop( KernelStatement state, ConstraintDescriptor constraint )
     {
         state.txState().constraintDoDrop( constraint );
     }
@@ -1100,7 +1087,7 @@ public class StateHandlingStatementOperations implements
                     count += counts.nodeCount( labelId, newDoubleLongRegister() ).readSecond();
                 }
             }
-            catch ( ConstraintValidationKernelException | CreateConstraintFailureException e )
+            catch ( ConstraintValidationException | CreateConstraintFailureException e )
             {
                 throw new IllegalArgumentException( "Unexpected error: " + e.getMessage() );
             }
@@ -1131,7 +1118,7 @@ public class StateHandlingStatementOperations implements
                             .readSecond();
                 }
             }
-            catch ( ConstraintValidationKernelException | CreateConstraintFailureException e )
+            catch ( ConstraintValidationException | CreateConstraintFailureException e )
             {
                 throw new IllegalArgumentException( "Unexpected error: " + e.getMessage() );
             }
@@ -1186,10 +1173,10 @@ public class StateHandlingStatementOperations implements
     }
 
     @Override
-    public long indexGetCommittedId( KernelStatement state, NewIndexDescriptor index, NewIndexDescriptor.Filter filter )
+    public long indexGetCommittedId( KernelStatement state, NewIndexDescriptor index )
             throws SchemaRuleNotFoundException
     {
-        return storeLayer.indexGetCommittedId( index, filter );
+        return storeLayer.indexGetCommittedId( index );
     }
 
     @Override

@@ -21,18 +21,13 @@ package org.neo4j.storageengine.api.txstate;
 
 import java.util.Iterator;
 
-import org.neo4j.collection.primitive.PrimitiveIntIterator;
 import org.neo4j.collection.primitive.PrimitiveIntSet;
 import org.neo4j.collection.primitive.PrimitiveLongIterator;
 import org.neo4j.cursor.Cursor;
-import org.neo4j.kernel.api.constraints.NodePropertyConstraint;
-import org.neo4j.kernel.api.constraints.PropertyConstraint;
-import org.neo4j.kernel.api.constraints.RelationshipPropertyConstraint;
-import org.neo4j.kernel.api.constraints.UniquenessConstraint;
-import org.neo4j.kernel.api.exceptions.schema.ConstraintValidationKernelException;
+import org.neo4j.kernel.api.exceptions.schema.ConstraintValidationException;
 import org.neo4j.kernel.api.exceptions.schema.CreateConstraintFailureException;
-import org.neo4j.kernel.api.schema.NodePropertyDescriptor;
-import org.neo4j.kernel.api.schema.RelationshipPropertyDescriptor;
+import org.neo4j.kernel.api.schema_new.SchemaDescriptor;
+import org.neo4j.kernel.api.schema_new.constaints.ConstraintDescriptor;
 import org.neo4j.kernel.api.schema_new.index.NewIndexDescriptor;
 import org.neo4j.kernel.impl.api.RelationshipVisitor;
 import org.neo4j.kernel.impl.api.store.RelationshipIterator;
@@ -48,7 +43,7 @@ import org.neo4j.storageengine.api.StorageProperty;
  */
 public interface ReadableTransactionState
 {
-    void accept( TxStateVisitor visitor ) throws ConstraintValidationKernelException, CreateConstraintFailureException;
+    void accept( TxStateVisitor visitor ) throws ConstraintValidationException, CreateConstraintFailureException;
 
     boolean hasChanges();
 
@@ -118,18 +113,15 @@ public interface ReadableTransactionState
 
     Iterable<NewIndexDescriptor> constraintIndexesCreatedInTx();
 
-    ReadableDiffSets<PropertyConstraint> constraintsChanges();
+    ReadableDiffSets<ConstraintDescriptor> constraintsChanges();
 
-    ReadableDiffSets<NodePropertyConstraint> constraintsChangesForLabel( int labelId );
+    ReadableDiffSets<ConstraintDescriptor> constraintsChangesForLabel( int labelId );
 
-    ReadableDiffSets<NodePropertyConstraint> constraintsChangesForLabelAndProperty( NodePropertyDescriptor descriptor );
+    ReadableDiffSets<ConstraintDescriptor> constraintsChangesForSchema( SchemaDescriptor descriptor );
 
-    ReadableDiffSets<RelationshipPropertyConstraint> constraintsChangesForRelationshipType( int relTypeId );
+    ReadableDiffSets<ConstraintDescriptor> constraintsChangesForRelationshipType( int relTypeId );
 
-    ReadableDiffSets<RelationshipPropertyConstraint> constraintsChangesForRelationshipTypeAndProperty(
-            RelationshipPropertyDescriptor descriptor );
-
-    Long indexCreatedForConstraint( UniquenessConstraint constraint );
+    Long indexCreatedForConstraint( ConstraintDescriptor constraint );
 
     ReadableDiffSets<Long> indexUpdatesForScanOrSeek( NewIndexDescriptor index, Object value );
 

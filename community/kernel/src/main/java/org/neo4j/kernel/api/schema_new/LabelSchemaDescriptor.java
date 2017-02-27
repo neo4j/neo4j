@@ -23,8 +23,6 @@ import java.util.Arrays;
 
 import org.neo4j.kernel.api.TokenNameLookup;
 
-import static java.lang.String.format;
-
 public class LabelSchemaDescriptor implements SchemaDescriptor
 {
     private final int labelId;
@@ -60,6 +58,7 @@ public class LabelSchemaDescriptor implements SchemaDescriptor
         return labelId;
     }
 
+    @Override
     public int[] getPropertyIds()
     {
         return propertyIds;

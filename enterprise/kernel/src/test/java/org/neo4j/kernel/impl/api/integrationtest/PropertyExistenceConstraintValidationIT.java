@@ -39,8 +39,6 @@ import org.neo4j.kernel.api.exceptions.KernelException;
 import org.neo4j.kernel.api.exceptions.Status;
 import org.neo4j.kernel.api.exceptions.TransactionFailureException;
 import org.neo4j.kernel.api.properties.DefinedProperty;
-import org.neo4j.kernel.api.schema.NodePropertyDescriptor;
-import org.neo4j.kernel.api.schema.RelationshipPropertyDescriptor;
 import org.neo4j.kernel.api.security.AnonymousContext;
 import org.neo4j.test.TestEnterpriseGraphDatabaseFactory;
 
@@ -49,6 +47,8 @@ import static org.junit.Assert.assertEquals;
 import static org.junit.Assert.assertThat;
 import static org.junit.Assert.fail;
 import static org.neo4j.kernel.api.properties.Property.property;
+import static org.neo4j.kernel.api.schema_new.SchemaDescriptorFactory.forLabel;
+import static org.neo4j.kernel.api.schema_new.SchemaDescriptorFactory.forRelType;
 import static org.neo4j.kernel.impl.api.integrationtest.PropertyExistenceConstraintValidationIT.NodePropertyExistenceExistenceConstraintValidationIT;
 import static org.neo4j.kernel.impl.api.integrationtest.PropertyExistenceConstraintValidationIT.RelationshipPropertyExistenceExistenceConstraintValidationIT;
 
@@ -86,7 +86,7 @@ public class PropertyExistenceConstraintValidationIT
             commit();
 
             SchemaWriteOperations schemaWrite = schemaWriteOperationsInNewTransaction();
-            schemaWrite.nodePropertyExistenceConstraintCreate( new NodePropertyDescriptor( label, propertyKey ) );
+            schemaWrite.nodePropertyExistenceConstraintCreate( forLabel( label, propertyKey ) );
             commit();
         }
 
@@ -167,8 +167,7 @@ public class PropertyExistenceConstraintValidationIT
             commit();
 
             SchemaWriteOperations schemaWrite = schemaWriteOperationsInNewTransaction();
-            schemaWrite.relationshipPropertyExistenceConstraintCreate(
-                    new RelationshipPropertyDescriptor( relTypeId, propertyKeyId ) );
+            schemaWrite.relationshipPropertyExistenceConstraintCreate( forRelType( relTypeId, propertyKeyId ) );
             commit();
         }
 

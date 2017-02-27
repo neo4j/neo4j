@@ -26,7 +26,7 @@ import org.neo4j.graphdb.ResourceIterator;
 import org.neo4j.helpers.collection.CombiningIterator;
 import org.neo4j.helpers.collection.FilteringIterator;
 import org.neo4j.helpers.collection.Iterators;
-import org.neo4j.kernel.api.exceptions.schema.ConstraintValidationKernelException;
+import org.neo4j.kernel.api.exceptions.schema.ConstraintValidationException;
 import org.neo4j.kernel.api.properties.DefinedProperty;
 import org.neo4j.kernel.impl.util.VersionedHashMap;
 import org.neo4j.storageengine.api.StorageProperty;
@@ -207,7 +207,7 @@ public class PropertyContainerStateImpl implements PropertyContainerState
     }
 
     @Override
-    public void accept( Visitor visitor ) throws ConstraintValidationKernelException
+    public void accept( Visitor visitor ) throws ConstraintValidationException
     {
         if ( addedProperties != null || removedProperties != null || changedProperties != null )
         {

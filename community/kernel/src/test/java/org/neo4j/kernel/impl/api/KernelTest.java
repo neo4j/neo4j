@@ -29,6 +29,7 @@ import org.neo4j.graphdb.Transaction;
 import org.neo4j.kernel.api.schema.NodePropertyDescriptor;
 import org.neo4j.kernel.api.Statement;
 import org.neo4j.kernel.api.exceptions.InvalidTransactionTypeKernelException;
+import org.neo4j.kernel.api.schema_new.SchemaDescriptorFactory;
 import org.neo4j.kernel.configuration.Config;
 import org.neo4j.kernel.impl.core.ThreadToStatementContextBridge;
 import org.neo4j.kernel.impl.factory.CommunityEditionModule;
@@ -43,6 +44,7 @@ import org.neo4j.test.ImpermanentGraphDatabase;
 import static org.hamcrest.Matchers.containsString;
 import static org.junit.Assert.assertThat;
 import static org.junit.Assert.fail;
+import static org.neo4j.kernel.api.schema_new.SchemaDescriptorFactory.forLabel;
 
 public class KernelTest
 {
@@ -60,7 +62,7 @@ public class KernelTest
 
             try
             {
-                statement.schemaWriteOperations().uniquePropertyConstraintCreate( new NodePropertyDescriptor( 1, 1 ) );
+                statement.schemaWriteOperations().uniquePropertyConstraintCreate( forLabel( 1, 1 ) );
                 fail( "expected exception here" );
             }
             catch ( InvalidTransactionTypeKernelException e )

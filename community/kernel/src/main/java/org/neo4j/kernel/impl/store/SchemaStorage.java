@@ -48,40 +48,27 @@ public class SchemaStorage implements SchemaRuleAccess
     }
 
     /**
-     * Find the IndexRule, of any kind, for the given SchemaDescriptor.
+     * Find the IndexRule that matches the given NewIndexDescriptor.
      *
      * @return  the matching IndexRule, or null if no matching IndexRule was found
      * @throws  IllegalStateException if more than one matching rule.
+     * @param descriptor the target NewIndexDescriptor
      */
-    public IndexRule indexGetForSchema( SchemaDescriptor schemaDescriptor )
+    public IndexRule indexGetForSchema( final NewIndexDescriptor descriptor )
     {
-        return indexGetForSchema( schemaDescriptor, NewIndexDescriptor.Filter.ANY );
-    }
-
-    /**
-     * Find the IndexRule that matches both the given SchemaDescriptor and passed the filter.
-     *
-     * @return  the matching IndexRule, or null if no matching IndexRule was found
-     * @throws  IllegalStateException if more than one matching rule.
-     */
-    public IndexRule indexGetForSchema( final SchemaDescriptor descriptor, NewIndexDescriptor.Filter filter )
-    {
-        Iterator<IndexRule> rules = loadAllSchemaRules( SchemaDescriptor.equalTo( descriptor ), IndexRule.class, false );
+        Iterator<IndexRule> rules = loadAllSchemaRules( descriptor::isSame, IndexRule.class, false );
 
         IndexRule foundRule = null;
 
         while ( rules.hasNext() )
         {
             IndexRule candidate = rules.next();
-            if ( filter.test( candidate.getIndexDescriptor() ) )
+            if ( foundRule != null )
             {
-                if ( foundRule != null )
-                {
-                    throw new IllegalStateException( String.format(
-                            "Found more than one matching index rule, %s and %s", foundRule, candidate ) );
-                }
-                foundRule = candidate;
+                throw new IllegalStateException( String.format(
+                        "Found more than one matching index rule, %s and %s", foundRule, candidate ) );
             }
+            foundRule = candidate;
         }
 
         return foundRule;

@@ -25,7 +25,6 @@ import org.neo4j.cypher.internal.compiler.v3_2.commands.expressions.{Expander, K
 import org.neo4j.cypher.internal.compiler.v3_2.pipes.matching.PatternNode
 import org.neo4j.cypher.internal.frontend.v3_2.SemanticDirection
 import org.neo4j.graphdb.{Node, Path, PropertyContainer, Relationship}
-import org.neo4j.kernel.api.constraints.{NodePropertyExistenceConstraint, RelationshipPropertyExistenceConstraint, UniquenessConstraint}
 import org.neo4j.cypher.internal.compiler.v3_2.IndexDescriptor
 
 trait QueryContextAdaptation {
@@ -37,14 +36,13 @@ trait QueryContextAdaptation {
 
   override def indexScanByEndsWith(index: IndexDescriptor, value: String): Iterator[Node] = ???
 
-  override def createNodePropertyExistenceConstraint(labelId: Int, propertyKeyId: Int): IdempotentResult[NodePropertyExistenceConstraint] = ???
+  override def createNodePropertyExistenceConstraint(labelId: Int, propertyKeyId: Int): Boolean = ???
 
   override def createNode(): Node = ???
 
   override def dropRelationshipPropertyExistenceConstraint(relTypeId: Int, propertyKeyId: Int): Unit = ???
 
-  override def createUniqueConstraint(descriptor: IndexDescriptor):
-  IdempotentResult[UniquenessConstraint] = ???
+  override def createUniqueConstraint(descriptor: IndexDescriptor): Boolean = ???
 
   override def getOrCreateRelTypeId(relTypeName: String): Int = ???
 
@@ -109,7 +107,7 @@ trait QueryContextAdaptation {
 
   override def setLabelsOnNode(node: Long, labelIds: scala.Iterator[Int]): Int = ???
 
-  override def createRelationshipPropertyExistenceConstraint(relTypeId: Int, propertyKeyId: Int): IdempotentResult[RelationshipPropertyExistenceConstraint] = ???
+  override def createRelationshipPropertyExistenceConstraint(relTypeId: Int, propertyKeyId: Int): Boolean = ???
 
   override def relationshipEndNode(rel: Relationship): Node = ???
 

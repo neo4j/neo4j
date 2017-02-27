@@ -21,7 +21,7 @@ package org.neo4j.storageengine.api.txstate;
 
 import java.util.Iterator;
 
-import org.neo4j.kernel.api.exceptions.schema.ConstraintValidationKernelException;
+import org.neo4j.kernel.api.exceptions.schema.ConstraintValidationException;
 import org.neo4j.storageengine.api.StorageProperty;
 
 /**
@@ -44,13 +44,13 @@ public interface PropertyContainerState
 
     Iterator<StorageProperty> augmentProperties( Iterator<StorageProperty> iterator );
 
-    void accept( Visitor visitor ) throws ConstraintValidationKernelException;
+    void accept( Visitor visitor ) throws ConstraintValidationException;
 
     interface Visitor
     {
         void visitPropertyChanges( long entityId, Iterator<StorageProperty> added,
                 Iterator<StorageProperty> changed,
-                Iterator<Integer> removed ) throws ConstraintValidationKernelException;
+                Iterator<Integer> removed ) throws ConstraintValidationException;
     }
 
     boolean hasChanges();

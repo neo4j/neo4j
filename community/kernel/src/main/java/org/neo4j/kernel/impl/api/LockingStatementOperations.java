@@ -23,17 +23,11 @@ import org.apache.commons.lang3.mutable.MutableInt;
 
 import java.util.Iterator;
 import java.util.function.Function;
-import java.util.function.Predicate;
 
+import org.neo4j.kernel.api.exceptions.schema.ConstraintValidationException;
 import org.neo4j.kernel.api.schema.NodePropertyDescriptor;
-import org.neo4j.kernel.api.schema.RelationshipPropertyDescriptor;
 import org.neo4j.kernel.api.Statement;
-import org.neo4j.kernel.api.constraints.NodePropertyConstraint;
-import org.neo4j.kernel.api.constraints.NodePropertyExistenceConstraint;
-import org.neo4j.kernel.api.constraints.PropertyConstraint;
 import org.neo4j.kernel.api.constraints.RelationshipPropertyConstraint;
-import org.neo4j.kernel.api.constraints.RelationshipPropertyExistenceConstraint;
-import org.neo4j.kernel.api.constraints.UniquenessConstraint;
 import org.neo4j.kernel.api.exceptions.EntityNotFoundException;
 import org.neo4j.kernel.api.exceptions.InvalidTransactionTypeKernelException;
 import org.neo4j.kernel.api.exceptions.KernelException;
@@ -41,7 +35,6 @@ import org.neo4j.kernel.api.exceptions.index.IndexNotFoundKernelException;
 import org.neo4j.kernel.api.exceptions.legacyindex.AutoIndexingKernelException;
 import org.neo4j.kernel.api.exceptions.schema.AlreadyConstrainedException;
 import org.neo4j.kernel.api.exceptions.schema.AlreadyIndexedException;
-import org.neo4j.kernel.api.exceptions.schema.ConstraintValidationKernelException;
 import org.neo4j.kernel.api.exceptions.schema.CreateConstraintFailureException;
 import org.neo4j.kernel.api.exceptions.schema.DropConstraintFailureException;
 import org.neo4j.kernel.api.exceptions.schema.DropIndexFailureException;
@@ -49,6 +42,13 @@ import org.neo4j.kernel.api.exceptions.schema.SchemaRuleNotFoundException;
 import org.neo4j.kernel.api.index.InternalIndexState;
 import org.neo4j.kernel.api.properties.DefinedProperty;
 import org.neo4j.kernel.api.properties.Property;
+import org.neo4j.kernel.api.schema_new.LabelSchemaDescriptor;
+import org.neo4j.kernel.api.schema_new.RelationTypeSchemaDescriptor;
+import org.neo4j.kernel.api.schema_new.SchemaDescriptor;
+import org.neo4j.kernel.api.schema_new.constaints.ConstraintDescriptor;
+import org.neo4j.kernel.api.schema_new.constaints.NodeExistenceConstraintDescriptor;
+import org.neo4j.kernel.api.schema_new.constaints.RelExistenceConstraintDescriptor;
+import org.neo4j.kernel.api.schema_new.constaints.UniquenessConstraintDescriptor;
 import org.neo4j.kernel.api.schema_new.index.NewIndexDescriptor;
 import org.neo4j.kernel.impl.api.operations.EntityReadOperations;
 import org.neo4j.kernel.impl.api.operations.EntityWriteOperations;
@@ -97,7 +97,7 @@ public class LockingStatementOperations implements
 
     @Override
     public boolean nodeAddLabel( KernelStatement state, long nodeId, int labelId )
-            throws ConstraintValidationKernelException, EntityNotFoundException
+            throws ConstraintValidationException, EntityNotFoundException
     {
         // TODO (BBC, 22/11/13):
         // In order to enforce constraints we need to check whether this change violates constraints; we therefore need
@@ -243,12 +243,12 @@ public class LockingStatementOperations implements
     }
 
     @Override
-    public long indexGetCommittedId( KernelStatement state, NewIndexDescriptor index, NewIndexDescriptor.Filter filter )
+    public long indexGetCommittedId( KernelStatement state, NewIndexDescriptor index )
             throws SchemaRuleNotFoundException
     {
         acquireSharedSchemaLock( state );
         state.assertOpen();
-        return schemaReadDelegate.indexGetCommittedId( state, index, filter );
+        return schemaReadDelegate.indexGetCommittedId( state, index );
     }
 
     @Override
@@ -344,7 +344,7 @@ public class LockingStatementOperations implements
     }
 
     @Override
-    public UniquenessConstraint uniquePropertyConstraintCreate( KernelStatement state,NodePropertyDescriptor descriptor )
+    public UniquenessConstraintDescriptor uniquePropertyConstraintCreate( KernelStatement state,LabelSchemaDescriptor descriptor )
             throws CreateConstraintFailureException, AlreadyConstrainedException, AlreadyIndexedException
     {
         acquireExclusiveSchemaLock( state );
@@ -353,8 +353,8 @@ public class LockingStatementOperations implements
     }
 
     @Override
-    public NodePropertyExistenceConstraint nodePropertyExistenceConstraintCreate( KernelStatement state,
-            NodePropertyDescriptor descriptor ) throws AlreadyConstrainedException, CreateConstraintFailureException
+    public NodeExistenceConstraintDescriptor nodePropertyExistenceConstraintCreate( KernelStatement state,
+            LabelSchemaDescriptor descriptor ) throws AlreadyConstrainedException, CreateConstraintFailureException
     {
         acquireExclusiveSchemaLock( state );
         state.assertOpen();
@@ -362,8 +362,8 @@ public class LockingStatementOperations implements
     }
 
     @Override
-    public RelationshipPropertyExistenceConstraint relationshipPropertyExistenceConstraintCreate( KernelStatement state,
-            RelationshipPropertyDescriptor descriptor ) throws AlreadyConstrainedException, CreateConstraintFailureException
+    public RelExistenceConstraintDescriptor relationshipPropertyExistenceConstraintCreate( KernelStatement state,
+            RelationTypeSchemaDescriptor descriptor ) throws AlreadyConstrainedException, CreateConstraintFailureException
     {
         acquireExclusiveSchemaLock( state );
         state.assertOpen();
@@ -371,16 +371,23 @@ public class LockingStatementOperations implements
     }
 
     @Override
-    public Iterator<NodePropertyConstraint> constraintsGetForLabelAndPropertyKey( KernelStatement state,
-            NodePropertyDescriptor descriptor )
+    public Iterator<ConstraintDescriptor> constraintsGetForSchema( KernelStatement state, SchemaDescriptor descriptor )
     {
         acquireSharedSchemaLock( state );
         state.assertOpen();
-        return schemaReadDelegate.constraintsGetForLabelAndPropertyKey( state, descriptor );
+        return schemaReadDelegate.constraintsGetForSchema( state, descriptor );
     }
 
     @Override
-    public Iterator<NodePropertyConstraint> constraintsGetForLabel( KernelStatement state, int labelId )
+    public boolean constraintExists( KernelStatement state, ConstraintDescriptor descriptor )
+    {
+        acquireSharedSchemaLock( state );
+        state.assertOpen();
+        return schemaReadDelegate.constraintExists( state, descriptor );
+    }
+
+    @Override
+    public Iterator<ConstraintDescriptor> constraintsGetForLabel( KernelStatement state, int labelId )
     {
         acquireSharedSchemaLock( state );
         state.assertOpen();
@@ -388,17 +395,7 @@ public class LockingStatementOperations implements
     }
 
     @Override
-    public Iterator<RelationshipPropertyConstraint> constraintsGetForRelationshipTypeAndPropertyKey(
-            KernelStatement state,
-            RelationshipPropertyDescriptor descriptor )
-    {
-        acquireSharedSchemaLock( state );
-        state.assertOpen();
-        return schemaReadDelegate.constraintsGetForRelationshipTypeAndPropertyKey( state, descriptor );
-    }
-
-    @Override
-    public Iterator<RelationshipPropertyConstraint> constraintsGetForRelationshipType( KernelStatement state,
+    public Iterator<ConstraintDescriptor> constraintsGetForRelationshipType( KernelStatement state,
             int typeId )
     {
         acquireSharedSchemaLock( state );
@@ -407,7 +404,7 @@ public class LockingStatementOperations implements
     }
 
     @Override
-    public Iterator<PropertyConstraint> constraintsGetAll( KernelStatement state )
+    public Iterator<ConstraintDescriptor> constraintsGetAll( KernelStatement state )
     {
         acquireSharedSchemaLock( state );
         state.assertOpen();
@@ -415,16 +412,7 @@ public class LockingStatementOperations implements
     }
 
     @Override
-    public void constraintDrop( KernelStatement state, NodePropertyConstraint constraint )
-            throws DropConstraintFailureException
-    {
-        acquireExclusiveSchemaLock( state );
-        state.assertOpen();
-        schemaWriteDelegate.constraintDrop( state, constraint );
-    }
-
-    @Override
-    public void constraintDrop( KernelStatement state, RelationshipPropertyConstraint constraint )
+    public void constraintDrop( KernelStatement state, ConstraintDescriptor constraint )
             throws DropConstraintFailureException
     {
         acquireExclusiveSchemaLock( state );
@@ -434,7 +422,7 @@ public class LockingStatementOperations implements
 
     @Override
     public Property nodeSetProperty( KernelStatement state, long nodeId, DefinedProperty property )
-            throws ConstraintValidationKernelException, EntityNotFoundException, AutoIndexingKernelException, InvalidTransactionTypeKernelException
+            throws ConstraintValidationException, EntityNotFoundException, AutoIndexingKernelException, InvalidTransactionTypeKernelException
     {
         // TODO (BBC, 22/11/13):
         // In order to enforce constraints we need to check whether this change violates constraints; we therefore need

@@ -38,6 +38,8 @@ import org.neo4j.kernel.api.constraints.UniquenessConstraint;
 import org.neo4j.kernel.api.exceptions.KernelException;
 import org.neo4j.kernel.api.exceptions.index.IndexNotFoundKernelException;
 import org.neo4j.kernel.api.schema.IndexDescriptor;
+import org.neo4j.kernel.api.schema_new.constaints.ConstraintBoundary;
+import org.neo4j.kernel.api.schema_new.constaints.ConstraintDescriptor;
 import org.neo4j.kernel.api.schema_new.index.NewIndexDescriptor;
 import org.neo4j.kernel.impl.core.ThreadToStatementContextBridge;
 import org.neo4j.kernel.internal.GraphDatabaseAPI;
@@ -164,10 +166,10 @@ public class GraphDbStructureGuide implements Visitable<DbStructureVisitor>
 
     private void showUniqueConstraints( DbStructureVisitor visitor, ReadOperations read, TokenNameLookup nameLookup )
     {
-        Iterator<PropertyConstraint> constraints = read.constraintsGetAll();
+        Iterator<ConstraintDescriptor> constraints = read.constraintsGetAll();
         while ( constraints.hasNext() )
         {
-            PropertyConstraint constraint = constraints.next();
+            PropertyConstraint constraint = ConstraintBoundary.map( constraints.next() );
             String userDescription = constraint.userDescription( nameLookup );
 
             if ( constraint instanceof UniquenessConstraint )

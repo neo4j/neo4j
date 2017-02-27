@@ -37,7 +37,6 @@ import org.neo4j.kernel.api.TokenNameLookup;
 import org.neo4j.kernel.api.exceptions.ProcedureException;
 import org.neo4j.kernel.api.exceptions.Status;
 import org.neo4j.kernel.api.exceptions.index.IndexNotFoundKernelException;
-import org.neo4j.kernel.api.schema.IndexDescriptor;
 import org.neo4j.kernel.api.schema_new.index.NewIndexDescriptor;
 import org.neo4j.kernel.impl.api.TokenAccess;
 import org.neo4j.kernel.impl.api.index.IndexingService;
@@ -185,7 +184,7 @@ public class BuiltInProcedures
 
         return asList( operations.constraintsGetAll() )
                 .stream()
-                .map( ( constraint ) -> constraint.userDescription( tokens ) )
+                .map( ( constraint ) -> constraint.prettyPrint( tokens ) )
                 .sorted()
                 .map( ConstraintResult::new )
                 .onClose( statement::close );

@@ -24,7 +24,7 @@ import java.util.stream.Stream;
 
 import org.neo4j.io.pagecache.IOLimiter;
 import org.neo4j.kernel.api.exceptions.TransactionFailureException;
-import org.neo4j.kernel.api.exceptions.schema.ConstraintValidationKernelException;
+import org.neo4j.kernel.api.exceptions.schema.ConstraintValidationException;
 import org.neo4j.kernel.api.exceptions.schema.CreateConstraintFailureException;
 import org.neo4j.kernel.info.DiagnosticsManager;
 import org.neo4j.storageengine.api.lock.ResourceLocker;
@@ -64,7 +64,7 @@ public interface StorageEngine
      * @throws TransactionFailureException if command generation fails or some prerequisite of some command
      * didn't validate, for example if trying to delete a node that still has relationships.
      * @throws CreateConstraintFailureException if this transaction was set to create a constraint and that failed.
-     * @throws ConstraintValidationKernelException if this transaction was set to create a constraint
+     * @throws ConstraintValidationException if this transaction was set to create a constraint
      * and some data violates that constraint.
      */
     void createCommands(
@@ -73,7 +73,7 @@ public interface StorageEngine
             StorageStatement storageStatement,
             ResourceLocker locks,
             long lastTransactionIdWhenStarted )
-            throws TransactionFailureException, CreateConstraintFailureException, ConstraintValidationKernelException;
+            throws TransactionFailureException, CreateConstraintFailureException, ConstraintValidationException;
 
     /**
      * Apply a batch of groups of commands to this storage.

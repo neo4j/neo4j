@@ -206,27 +206,6 @@ public class MultipleIndexPopulatorTest
     }
 
     @Test
-    public void testVerifyDeferredConstraintFailure() throws Exception
-    {
-        IndexPopulator indexPopulator1 = createIndexPopulator();
-        IndexPopulator indexPopulator2 = createIndexPopulator();
-        IndexPopulator indexPopulator3 = createIndexPopulator();
-
-        addPopulator( indexPopulator1, 1 );
-        addPopulator( indexPopulator2, 2 );
-        addPopulator( indexPopulator3, 3 );
-
-        doThrow( getPopulatorException() ).when( indexPopulator2 )
-                .verifyDeferredConstraints( any( PropertyAccessor.class ) );
-
-        multipleIndexPopulator.verifyAllDeferredConstraints( mock( PropertyAccessor.class ) );
-
-        verify( indexPopulator1 ).verifyDeferredConstraints( any( PropertyAccessor.class ) );
-        verify( indexPopulator3 ).verifyDeferredConstraints( any( PropertyAccessor.class ) );
-        checkPopulatorFailure( indexPopulator2 );
-    }
-
-    @Test
     public void closeMultipleIndexPopulator()
             throws IOException, IndexEntryConflictException
     {

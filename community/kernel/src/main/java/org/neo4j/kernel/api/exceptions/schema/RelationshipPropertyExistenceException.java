@@ -19,37 +19,32 @@
  */
 package org.neo4j.kernel.api.exceptions.schema;
 
-import org.neo4j.kernel.api.schema.RelationshipPropertyDescriptor;
 import org.neo4j.kernel.api.TokenNameLookup;
-import org.neo4j.kernel.api.constraints.RelationshipPropertyExistenceConstraint;
+import org.neo4j.kernel.api.schema_new.RelationTypeSchemaDescriptor;
+import org.neo4j.kernel.api.schema_new.constaints.ConstraintDescriptorFactory;
 
-public class RelationshipPropertyExistenceConstraintVerificationFailedKernelException
-        extends ConstraintVerificationFailedKernelException
+import static java.lang.String.format;
+
+public class RelationshipPropertyExistenceException extends ConstraintValidationException
 {
-    private final RelationshipPropertyExistenceConstraint constraint;
+    private final RelationTypeSchemaDescriptor schema;
     private final long relationshipId;
 
-    public RelationshipPropertyExistenceConstraintVerificationFailedKernelException(
-            RelationshipPropertyExistenceConstraint constraint, long relationshipId )
+    public RelationshipPropertyExistenceException(
+            RelationTypeSchemaDescriptor schema, ConstraintValidationException.Phase phase, long relationshipId )
     {
-        super( constraint );
-        this.constraint = constraint;
+        super( ConstraintDescriptorFactory.existsForSchema( schema ),
+                phase, format( "Relationship(%s)", relationshipId ) );
+        this.schema = schema;
         this.relationshipId = relationshipId;
     }
 
     @Override
     public String getUserMessage( TokenNameLookup tokenNameLookup )
     {
-        RelationshipPropertyDescriptor descriptor = constraint.descriptor();
-        return String.format( "Relationship(%s) with type `%s` has no value for property `%s`",
+        return format( "Relationship(%s) with type `%s` must have the property `%s`",
                 relationshipId,
-                tokenNameLookup.relationshipTypeGetName( descriptor.getRelationshipTypeId() ),
-                tokenNameLookup.propertyKeyGetName( descriptor.getPropertyKeyId() ) );
-    }
-
-    @Override
-    public RelationshipPropertyExistenceConstraint constraint()
-    {
-        return constraint;
+                tokenNameLookup.relationshipTypeGetName( schema.getRelTypeId() ),
+                tokenNameLookup.propertyKeyGetName( schema.getPropertyId() ) );
     }
 }

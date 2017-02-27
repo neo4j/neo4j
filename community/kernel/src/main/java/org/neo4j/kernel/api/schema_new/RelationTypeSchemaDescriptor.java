@@ -60,6 +60,7 @@ public class RelationTypeSchemaDescriptor implements SchemaDescriptor
         return relTypeId;
     }
 
+    @Override
     public int[] getPropertyIds()
     {
         return propertyIds;

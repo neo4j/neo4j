@@ -55,7 +55,6 @@ import org.neo4j.kernel.api.index.IndexPopulator;
 import org.neo4j.kernel.api.index.IndexUpdater;
 import org.neo4j.kernel.api.index.InternalIndexState;
 import org.neo4j.kernel.api.index.NodeUpdates;
-import org.neo4j.kernel.api.index.PreexistingIndexEntryConflictException;
 import org.neo4j.kernel.api.index.PropertyAccessor;
 import org.neo4j.kernel.api.labelscan.NodeLabelUpdate;
 import org.neo4j.kernel.api.schema_new.index.NewIndexDescriptor;
@@ -163,7 +162,6 @@ public class IndexPopulationJobTest
         verify( populator ).configureSampling( true );
         verify( populator ).includeSample( update );
         verify( populator ).add( anyListOf(IndexEntryUpdate.class) );
-        verify( populator ).verifyDeferredConstraints( indexStoreView );
         verify( populator ).sampleResult();
         verify( populator ).close( true );
 
@@ -213,7 +211,6 @@ public class IndexPopulationJobTest
         verify( populator ).includeSample( update1 );
         verify( populator ).includeSample( update2 );
         verify( populator, times( 2 ) ).add( anyListOf(IndexEntryUpdate.class ) );
-        verify( populator ).verifyDeferredConstraints( indexStoreView );
         verify( populator ).sampleResult();
         verify( populator ).close( true );
 
@@ -409,25 +406,6 @@ public class IndexPopulationJobTest
 
         // Then
         verify( populator ).markAsFailed( Matchers.contains( failureMessage ) );
-    }
-
-    @Test
-    public void shouldFailIfDeferredConstraintViolated() throws Exception
-    {
-        createNode( map( name, "irrelephant" ), FIRST );
-        LogProvider logProvider = NullLogProvider.getInstance();
-        FlippableIndexProxy index = new FlippableIndexProxy( mock( IndexProxy.class ) );
-        IndexPopulator populator = spy( inMemoryPopulator( false ) );
-        IndexPopulationJob job = newIndexPopulationJob( populator, index, indexStoreView, logProvider, true );
-
-        IndexEntryConflictException failure = new PreexistingIndexEntryConflictException( "duplicate value", 0, 1 );
-        doThrow( failure ).when( populator ).verifyDeferredConstraints( indexStoreView );
-
-        // When
-        job.run();
-
-        // Then
-        verify( populator ).markAsFailed( Matchers.contains( "duplicate value" ) );
     }
 
     private static class ControlledStoreScan implements StoreScan<RuntimeException>

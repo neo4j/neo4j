@@ -245,11 +245,6 @@ public class MultipleIndexPopulator implements IndexPopulator
         throw new UnsupportedOperationException( "Should not be called directly" );
     }
 
-    public void verifyAllDeferredConstraints( PropertyAccessor accessor )
-    {
-        forEachPopulation( population -> population.populator.verifyDeferredConstraints( accessor ) );
-    }
-
     @Override
     public MultipleIndexUpdater newPopulatingUpdater( PropertyAccessor accessor )
     {

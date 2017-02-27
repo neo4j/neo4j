@@ -38,16 +38,14 @@ import org.neo4j.kernel.api.SchemaWriteOperations;
 import org.neo4j.kernel.api.Statement;
 import org.neo4j.kernel.api.constraints.UniquenessConstraint;
 import org.neo4j.kernel.api.exceptions.InvalidTransactionTypeKernelException;
-import org.neo4j.kernel.api.schema.IndexDescriptor;
-import org.neo4j.kernel.api.schema.IndexDescriptorFactory;
-import org.neo4j.kernel.api.schema_new.index.IndexBoundary;
+import org.neo4j.kernel.api.schema_new.SchemaDescriptorFactory;
+import org.neo4j.kernel.api.schema_new.constaints.ConstraintBoundary;
 import org.neo4j.kernel.api.schema_new.index.NewIndexDescriptor;
 import org.neo4j.kernel.api.schema_new.index.NewIndexDescriptorFactory;
 import org.neo4j.kernel.impl.core.ThreadToStatementContextBridge;
 import org.neo4j.kernel.internal.GraphDatabaseAPI;
 import org.neo4j.test.rule.ImpermanentDatabaseRule;
 
-import static org.mockito.Matchers.eq;
 import static org.mockito.Mockito.mock;
 import static org.mockito.Mockito.verify;
 import static org.neo4j.graphdb.DynamicLabel.label;
@@ -233,7 +231,10 @@ public class GraphDbStructureGuideTest
 
     private UniquenessConstraint createUniqueConstraint( int labelId, int pkId ) throws Exception
     {
-        return schemaWrite().uniquePropertyConstraintCreate( new NodePropertyDescriptor( labelId, pkId ) );
+        return ConstraintBoundary.mapUnique(
+                    schemaWrite().uniquePropertyConstraintCreate(
+                            SchemaDescriptorFactory.forLabel( labelId, pkId ) )
+            );
     }
 
     private int createLabeledNodes( String labelName, int amount ) throws Exception

@@ -28,31 +28,33 @@ import org.neo4j.cursor.Cursor;
 import org.neo4j.helpers.Strings;
 import org.neo4j.helpers.collection.CastingIterator;
 import org.neo4j.kernel.api.constraints.NodePropertyConstraint;
-import org.neo4j.kernel.api.constraints.NodePropertyExistenceConstraint;
-import org.neo4j.kernel.api.constraints.RelationshipPropertyConstraint;
-import org.neo4j.kernel.api.constraints.RelationshipPropertyExistenceConstraint;
 import org.neo4j.kernel.api.constraints.UniquenessConstraint;
 import org.neo4j.kernel.api.exceptions.EntityNotFoundException;
 import org.neo4j.kernel.api.exceptions.InvalidTransactionTypeKernelException;
 import org.neo4j.kernel.api.exceptions.KernelException;
+import org.neo4j.kernel.api.exceptions.index.IndexEntryConflictException;
 import org.neo4j.kernel.api.exceptions.index.IndexNotFoundKernelException;
 import org.neo4j.kernel.api.exceptions.legacyindex.AutoIndexingKernelException;
 import org.neo4j.kernel.api.exceptions.schema.AlreadyConstrainedException;
 import org.neo4j.kernel.api.exceptions.schema.AlreadyIndexedException;
-import org.neo4j.kernel.api.exceptions.schema.ConstraintValidationKernelException;
+import org.neo4j.kernel.api.exceptions.schema.ConstraintValidationException;
 import org.neo4j.kernel.api.exceptions.schema.CreateConstraintFailureException;
 import org.neo4j.kernel.api.exceptions.schema.DropConstraintFailureException;
 import org.neo4j.kernel.api.exceptions.schema.DropIndexFailureException;
 import org.neo4j.kernel.api.exceptions.schema.IndexBrokenKernelException;
-import org.neo4j.kernel.api.exceptions.schema.UnableToValidateConstraintKernelException;
-import org.neo4j.kernel.api.exceptions.schema.UniquePropertyConstraintViolationKernelException;
+import org.neo4j.kernel.api.exceptions.schema.UnableToValidateConstraintException;
+import org.neo4j.kernel.api.exceptions.schema.UniquePropertyValueValidationException;
 import org.neo4j.kernel.api.properties.DefinedProperty;
 import org.neo4j.kernel.api.properties.Property;
-import org.neo4j.kernel.api.schema.IndexDescriptor;
 import org.neo4j.kernel.api.schema.NodePropertyDescriptor;
-import org.neo4j.kernel.api.schema.RelationshipPropertyDescriptor;
 import org.neo4j.kernel.api.schema_new.IndexQuery;
-import org.neo4j.kernel.api.schema_new.index.IndexBoundary;
+import org.neo4j.kernel.api.schema_new.LabelSchemaDescriptor;
+import org.neo4j.kernel.api.schema_new.RelationTypeSchemaDescriptor;
+import org.neo4j.kernel.api.schema_new.SchemaDescriptorFactory;
+import org.neo4j.kernel.api.schema_new.constaints.ConstraintDescriptor;
+import org.neo4j.kernel.api.schema_new.constaints.NodeExistenceConstraintDescriptor;
+import org.neo4j.kernel.api.schema_new.constaints.RelExistenceConstraintDescriptor;
+import org.neo4j.kernel.api.schema_new.constaints.UniquenessConstraintDescriptor;
 import org.neo4j.kernel.api.schema_new.index.NewIndexDescriptor;
 import org.neo4j.kernel.impl.api.operations.EntityOperations;
 import org.neo4j.kernel.impl.api.operations.EntityReadOperations;
@@ -68,6 +70,7 @@ import org.neo4j.storageengine.api.NodeItem;
 import org.neo4j.storageengine.api.RelationshipItem;
 
 import static org.neo4j.kernel.api.StatementConstants.NO_SUCH_NODE;
+import static org.neo4j.kernel.api.schema_new.constaints.ConstraintDescriptor.Type.UNIQUE;
 import static org.neo4j.kernel.impl.locking.ResourceTypes.INDEX_ENTRY;
 import static org.neo4j.kernel.impl.locking.ResourceTypes.indexEntryResourceId;
 
@@ -94,22 +97,25 @@ public class ConstraintEnforcingEntityOperations implements EntityOperations, Sc
 
     @Override
     public boolean nodeAddLabel( KernelStatement state, long nodeId, int labelId )
-            throws ConstraintValidationKernelException, EntityNotFoundException
+            throws EntityNotFoundException, ConstraintValidationException
     {
         try ( Cursor<NodeItem> cursor = nodeCursorById( state, nodeId ) )
         {
             NodeItem node = cursor.get();
-            Iterator<NodePropertyConstraint> allConstraints = schemaReadOperations.constraintsGetForLabel( state, labelId );
-            Iterator<UniquenessConstraint> constraints = uniquePropertyConstraints( allConstraints );
+            Iterator<ConstraintDescriptor> constraints = schemaReadOperations.constraintsGetForLabel( state, labelId );
             while ( constraints.hasNext() )
             {
-                UniquenessConstraint constraint = constraints.next();
-                // TODO: Support composite indexes
-                Object propertyValue = node.getProperty( constraint.descriptor().getPropertyKeyId() );
-                if ( propertyValue != null )
+                ConstraintDescriptor constraint = constraints.next();
+                if ( constraint.type() == UNIQUE )
                 {
+                    UniquenessConstraintDescriptor uniqueConstraint = (UniquenessConstraintDescriptor) constraint;
                     // TODO: Support composite indexes
-                    validateNoExistingNodeWithLabelAndProperty( state, constraint, propertyValue, node.id() );
+                    Object propertyValue = node.getProperty( uniqueConstraint.schema().getPropertyId() );
+                    if ( propertyValue != null )
+                    {
+                        // TODO: Support composite indexes
+                        validateNoExistingNodeWithLabelAndProperty( state, uniqueConstraint, propertyValue, node.id() );
+                    }
                 }
             }
 
@@ -119,7 +125,8 @@ public class ConstraintEnforcingEntityOperations implements EntityOperations, Sc
 
     @Override
     public Property nodeSetProperty( KernelStatement state, long nodeId, DefinedProperty property )
-            throws ConstraintValidationKernelException, EntityNotFoundException, AutoIndexingKernelException, InvalidTransactionTypeKernelException
+            throws EntityNotFoundException, AutoIndexingKernelException,
+                   InvalidTransactionTypeKernelException, ConstraintValidationException
     {
         try ( Cursor<NodeItem> cursor = nodeCursorById( state, nodeId ) )
         {
@@ -127,13 +134,17 @@ public class ConstraintEnforcingEntityOperations implements EntityOperations, Sc
             node.labels().visitKeys( labelId ->
             {
                 int propertyKeyId = property.propertyKeyId();
-                Iterator<UniquenessConstraint> constraintIterator = uniquePropertyConstraints( schemaReadOperations
-                        .constraintsGetForLabelAndPropertyKey( state,
-                                new NodePropertyDescriptor( labelId, propertyKeyId ) ) );
-                if ( constraintIterator.hasNext() )
+                Iterator<ConstraintDescriptor> constraints =
+                        schemaReadOperations.constraintsGetForSchema( state,
+                                SchemaDescriptorFactory.forLabel( labelId, propertyKeyId ) );
+                while ( constraints.hasNext() )
                 {
-                    UniquenessConstraint constraint = constraintIterator.next();
-                    validateNoExistingNodeWithLabelAndProperty( state, constraint, property.value(), node.id() );
+                    ConstraintDescriptor constraint = constraints.next();
+                    if ( constraint.type() == UNIQUE )
+                    {
+                        validateNoExistingNodeWithLabelAndProperty(
+                                state, (UniquenessConstraintDescriptor) constraint, property.value(), node.id() );
+                    }
                 }
                 return false;
             } );
@@ -142,29 +153,37 @@ public class ConstraintEnforcingEntityOperations implements EntityOperations, Sc
         return entityWriteOperations.nodeSetProperty( state, nodeId, property );
     }
 
-    private void validateNoExistingNodeWithLabelAndProperty( KernelStatement state,  UniquenessConstraint constraint,
-            Object value, long modifiedNode ) throws ConstraintValidationKernelException
+    private void validateNoExistingNodeWithLabelAndProperty(
+            KernelStatement state,
+            UniquenessConstraintDescriptor constraint,
+            Object value,
+            long modifiedNode
+    ) throws ConstraintValidationException
     {
         try
         {
             // TODO: Support composite constraints
-            IndexDescriptor index = constraint.indexDescriptor();
-            assertIndexOnline( state, IndexBoundary.map( index ) );
-            state.locks().optimistic().acquireExclusive( state.lockTracer(), INDEX_ENTRY,
-                    indexEntryResourceId( index.getLabelId(), index.getPropertyKeyId(), Strings.prettyPrint( value
-                    ) ) );
+            NewIndexDescriptor index = constraint.ownedIndexDescriptor();
+            assertIndexOnline( state, index );
+            int labelId = index.schema().getLabelId();
+            int propertyId = index.schema().getPropertyId();
+            state.locks().optimistic().acquireExclusive(
+                    state.lockTracer(),
+                    INDEX_ENTRY,
+                    indexEntryResourceId( labelId, propertyId, Strings.prettyPrint( value ) )
+                );
 
-            long existing = entityReadOperations.nodeGetFromUniqueIndexSeek( state, IndexBoundary.map( index ), value );
+            long existing = entityReadOperations.nodeGetFromUniqueIndexSeek( state, index, value );
             if ( existing != NO_SUCH_NODE && existing != modifiedNode )
             {
-                throw new UniquePropertyConstraintViolationKernelException( index.getLabelId(),
-                        index.getPropertyKeyId(),
-                        value, existing );
+                throw new UniquePropertyValueValidationException( constraint,
+                        ConstraintValidationException.Phase.VALIDATION,
+                        new IndexEntryConflictException( existing, NO_SUCH_NODE, value ) );
             }
         }
         catch ( IndexNotFoundKernelException | IndexBrokenKernelException e )
         {
-            throw new UnableToValidateConstraintKernelException( e );
+            throw new UnableToValidateConstraintException( constraint, e );
         }
     }
 
@@ -178,11 +197,6 @@ public class ConstraintEnforcingEntityOperations implements EntityOperations, Sc
             default:
                 throw new IndexBrokenKernelException( schemaReadOperations.indexGetFailure( state, indexDescriptor ) );
         }
-    }
-
-    private Iterator<UniquenessConstraint> uniquePropertyConstraints( Iterator<NodePropertyConstraint> constraints )
-    {
-        return new CastingIterator<>( constraints, UniquenessConstraint.class );
     }
 
     // Simply delegate the rest of the invocations
@@ -283,7 +297,7 @@ public class ConstraintEnforcingEntityOperations implements EntityOperations, Sc
 
         // TODO: Support composite index, either by allowing value to be an array, or by creating a new method
         int labelId = index.schema().getLabelId();
-        int propertyKeyId = index.schema().getPropertyIds()[0];
+        int propertyKeyId = index.schema().getPropertyId();
         String stringVal = "";
         if ( null != value )
         {
@@ -419,41 +433,42 @@ public class ConstraintEnforcingEntityOperations implements EntityOperations, Sc
     }
 
     @Override
-    public UniquenessConstraint uniquePropertyConstraintCreate( KernelStatement state, NodePropertyDescriptor descriptor )
+    public UniquenessConstraintDescriptor uniquePropertyConstraintCreate( KernelStatement state, LabelSchemaDescriptor descriptor )
             throws AlreadyConstrainedException, CreateConstraintFailureException, AlreadyIndexedException
     {
         return schemaWriteOperations.uniquePropertyConstraintCreate( state, descriptor );
     }
 
     @Override
-    public NodePropertyExistenceConstraint nodePropertyExistenceConstraintCreate( KernelStatement state, NodePropertyDescriptor descriptor ) throws AlreadyConstrainedException, CreateConstraintFailureException
+    public NodeExistenceConstraintDescriptor nodePropertyExistenceConstraintCreate(
+                KernelStatement state,
+                LabelSchemaDescriptor descriptor
+    ) throws AlreadyConstrainedException, CreateConstraintFailureException
     {
-        Iterator<Cursor<NodeItem>> nodes = new EntityLoadingIterator<>( nodesGetForLabel( state, descriptor.getLabelId() ),
-                ( id ) -> nodeCursorById( state, id ) );
-        constraintSemantics.validateNodePropertyExistenceConstraint( nodes, descriptor );
+        Iterator<Cursor<NodeItem>> nodes =
+                new EntityLoadingIterator<>(
+                        nodesGetForLabel( state, descriptor.getLabelId() ),
+                        ( id ) -> nodeCursorById( state, id )
+                );
+        constraintSemantics.validateExistenceConstraint( nodes, descriptor );
         return schemaWriteOperations.nodePropertyExistenceConstraintCreate( state, descriptor );
     }
 
     @Override
-    public RelationshipPropertyExistenceConstraint relationshipPropertyExistenceConstraintCreate( KernelStatement state,
-            RelationshipPropertyDescriptor descriptor ) throws AlreadyConstrainedException, CreateConstraintFailureException
+    public RelExistenceConstraintDescriptor relationshipPropertyExistenceConstraintCreate(
+                KernelStatement state,
+                RelationTypeSchemaDescriptor descriptor
+    ) throws AlreadyConstrainedException, CreateConstraintFailureException
     {
         try ( Cursor<RelationshipItem> cursor = relationshipCursorGetAll( state ) )
         {
-            constraintSemantics.validateRelationshipPropertyExistenceConstraint( cursor, descriptor );
+            constraintSemantics.validateExistenceConstraint( cursor, descriptor );
         }
         return schemaWriteOperations.relationshipPropertyExistenceConstraintCreate( state, descriptor );
     }
 
     @Override
-    public void constraintDrop( KernelStatement state, NodePropertyConstraint constraint )
-            throws DropConstraintFailureException
-    {
-        schemaWriteOperations.constraintDrop( state, constraint );
-    }
-
-    @Override
-    public void constraintDrop( KernelStatement state, RelationshipPropertyConstraint constraint )
+    public void constraintDrop( KernelStatement state, ConstraintDescriptor constraint )
             throws DropConstraintFailureException
     {
         schemaWriteOperations.constraintDrop( state, constraint );

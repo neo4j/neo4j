@@ -42,7 +42,6 @@ import org.neo4j.kernel.api.impl.schema.LuceneSchemaIndexBuilder;
 import org.neo4j.kernel.api.impl.schema.SchemaIndex;
 import org.neo4j.kernel.api.index.IndexEntryUpdate;
 import org.neo4j.kernel.api.index.IndexUpdater;
-import org.neo4j.kernel.api.index.PreexistingIndexEntryConflictException;
 import org.neo4j.kernel.api.index.PropertyAccessor;
 import org.neo4j.kernel.api.schema_new.IndexQuery;
 import org.neo4j.kernel.api.schema_new.index.IndexBoundary;
@@ -242,7 +241,7 @@ public class UniqueDatabaseIndexPopulatorTest
             fail( "should have thrown exception" );
         }
         // then
-        catch ( PreexistingIndexEntryConflictException conflict )
+        catch ( IndexEntryConflictException conflict )
         {
             assertEquals( 1, conflict.getExistingNodeId() );
             assertEquals( value, conflict.getPropertyValue() );
@@ -271,7 +270,7 @@ public class UniqueDatabaseIndexPopulatorTest
             fail( "should have thrown exception" );
         }
         // then
-        catch ( PreexistingIndexEntryConflictException conflict )
+        catch ( IndexEntryConflictException conflict )
         {
             assertEquals( 1, conflict.getExistingNodeId() );
             assertEquals( 1, conflict.getPropertyValue() );
@@ -303,7 +302,7 @@ public class UniqueDatabaseIndexPopulatorTest
             fail( "should have thrown exception" );
         }
         // then
-        catch ( PreexistingIndexEntryConflictException conflict )
+        catch ( IndexEntryConflictException conflict )
         {
             assertEquals( 1, conflict.getExistingNodeId() );
             assertEquals( "value1", conflict.getPropertyValue() );
@@ -335,7 +334,7 @@ public class UniqueDatabaseIndexPopulatorTest
             fail( "should have thrown exception" );
         }
         // then
-        catch ( PreexistingIndexEntryConflictException conflict )
+        catch ( IndexEntryConflictException conflict )
         {
             assertEquals( 1, conflict.getExistingNodeId() );
             assertEquals( value, conflict.getPropertyValue() );
@@ -418,7 +417,7 @@ public class UniqueDatabaseIndexPopulatorTest
             fail( "should have thrown exception" );
         }
         // then
-        catch ( PreexistingIndexEntryConflictException conflict )
+        catch ( IndexEntryConflictException conflict )
         {
             assertEquals( 1, conflict.getExistingNodeId() );
             assertEquals( 1, conflict.getPropertyValue() );
@@ -453,7 +452,7 @@ public class UniqueDatabaseIndexPopulatorTest
             fail( "should have thrown exception" );
         }
         // then
-        catch ( PreexistingIndexEntryConflictException conflict )
+        catch ( IndexEntryConflictException conflict )
         {
             assertEquals( 1, conflict.getExistingNodeId() );
             assertEquals( 1, conflict.getPropertyValue() );

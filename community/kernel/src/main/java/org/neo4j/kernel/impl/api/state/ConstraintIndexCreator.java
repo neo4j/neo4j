@@ -24,26 +24,28 @@ import java.util.function.Supplier;
 
 import org.neo4j.kernel.api.KernelAPI;
 import org.neo4j.kernel.api.KernelTransaction;
-import org.neo4j.kernel.api.schema.NodePropertyDescriptor;
 import org.neo4j.kernel.api.Statement;
-import org.neo4j.kernel.api.constraints.UniquenessConstraint;
 import org.neo4j.kernel.api.exceptions.TransactionFailureException;
 import org.neo4j.kernel.api.exceptions.index.IndexEntryConflictException;
 import org.neo4j.kernel.api.exceptions.index.IndexNotFoundKernelException;
 import org.neo4j.kernel.api.exceptions.index.IndexPopulationFailedKernelException;
-import org.neo4j.kernel.api.exceptions.schema.ConstraintVerificationFailedKernelException;
 import org.neo4j.kernel.api.exceptions.schema.CreateConstraintFailureException;
 import org.neo4j.kernel.api.exceptions.schema.DropIndexFailureException;
 import org.neo4j.kernel.api.exceptions.schema.SchemaRuleNotFoundException;
-import org.neo4j.kernel.api.exceptions.schema.UniquenessConstraintVerificationFailedKernelException;
-import org.neo4j.kernel.api.schema_new.index.IndexBoundary;
+import org.neo4j.kernel.api.exceptions.schema.UniquePropertyValueValidationException;
+import org.neo4j.kernel.api.schema_new.LabelSchemaDescriptor;
+import org.neo4j.kernel.api.schema_new.constaints.ConstraintDescriptorFactory;
+import org.neo4j.kernel.api.schema_new.constaints.UniquenessConstraintDescriptor;
 import org.neo4j.kernel.api.schema_new.index.NewIndexDescriptor;
 import org.neo4j.kernel.api.index.PropertyAccessor;
+import org.neo4j.kernel.api.schema_new.index.NewIndexDescriptorFactory;
 import org.neo4j.kernel.impl.api.KernelStatement;
 import org.neo4j.kernel.impl.api.index.IndexingService;
 import org.neo4j.kernel.impl.api.operations.SchemaReadOperations;
 import org.neo4j.kernel.impl.locking.Locks.Client;
 import static java.util.Collections.singleton;
+
+import static org.neo4j.kernel.api.exceptions.schema.ConstraintValidationException.Phase.VERIFICATION;
 import static org.neo4j.kernel.api.security.SecurityContext.AUTH_DISABLED;
 
 import static org.neo4j.kernel.impl.locking.ResourceTypes.SCHEMA;
@@ -84,19 +86,19 @@ public class ConstraintIndexCreator
      * and this tx committed, which will create the uniqueness constraint</li>
      * </ol>
      */
-    public long createUniquenessConstraintIndex( KernelStatement state, SchemaReadOperations schema,
-            NodePropertyDescriptor descriptor )
-            throws ConstraintVerificationFailedKernelException, TransactionFailureException,
-            CreateConstraintFailureException, DropIndexFailureException
+    public long createUniquenessConstraintIndex(
+            KernelStatement state, SchemaReadOperations schema, LabelSchemaDescriptor descriptor
+    ) throws TransactionFailureException, CreateConstraintFailureException,
+            DropIndexFailureException, UniquePropertyValueValidationException
     {
-        UniquenessConstraint constraint = new UniquenessConstraint( descriptor );
-        NewIndexDescriptor index = createConstraintIndex( constraint );
+        UniquenessConstraintDescriptor constraint = ConstraintDescriptorFactory.uniqueForSchema( descriptor );
+        NewIndexDescriptor index = createConstraintIndex( descriptor );
         boolean success = false;
         boolean reacquiredSchemaLock = false;
         Client locks = state.locks().pessimistic();
         try
         {
-            long indexId = schema.indexGetCommittedId( state, index, NewIndexDescriptor.Filter.UNIQUE );
+            long indexId = schema.indexGetCommittedId( state, index );
 
             // Release the SCHEMA WRITE lock during index population.
             // At this point the integrity of the constraint to be created was checked
@@ -123,7 +125,7 @@ public class ConstraintIndexCreator
         }
         catch ( IndexEntryConflictException e )
         {
-            throw new UniquenessConstraintVerificationFailedKernelException( constraint, singleton( e ) );
+            throw new UniquePropertyValueValidationException( constraint, VERIFICATION, e );
         }
         catch ( InterruptedException | IOException e )
         {
@@ -180,8 +182,8 @@ public class ConstraintIndexCreator
         }
     }
 
-    private void awaitConstrainIndexPopulation( UniquenessConstraint constraint, long indexId )
-            throws InterruptedException, ConstraintVerificationFailedKernelException
+    private void awaitConstrainIndexPopulation( UniquenessConstraintDescriptor constraint, long indexId )
+            throws InterruptedException, UniquePropertyValueValidationException
     {
         try
         {
@@ -197,17 +199,17 @@ public class ConstraintIndexCreator
             Throwable cause = e.getCause();
             if ( cause instanceof IndexEntryConflictException )
             {
-                throw new UniquenessConstraintVerificationFailedKernelException( constraint,
-                        singleton( (IndexEntryConflictException) cause ) );
+                throw new UniquePropertyValueValidationException(
+                        constraint, VERIFICATION, (IndexEntryConflictException) cause );
             }
             else
             {
-                throw new UniquenessConstraintVerificationFailedKernelException( constraint, cause );
+                throw new UniquePropertyValueValidationException( constraint, VERIFICATION, cause );
             }
         }
     }
 
-    public NewIndexDescriptor createConstraintIndex( final UniquenessConstraint constraint )
+    public NewIndexDescriptor createConstraintIndex( final LabelSchemaDescriptor schema )
     {
         try ( KernelTransaction transaction =
                       kernelSupplier.get().newTransaction( KernelTransaction.Type.implicit, AUTH_DISABLED );
@@ -220,7 +222,7 @@ public class ConstraintIndexCreator
             // TODO (Ben+Jake): The Transactor is really part of the kernel internals, so it needs access to the
             // internal implementation of Statement. However it is currently used by the external
             // RemoveOrphanConstraintIndexesOnStartup job. This needs revisiting.
-            NewIndexDescriptor index = IndexBoundary.mapUnique( constraint.indexDescriptor() );
+            NewIndexDescriptor index = NewIndexDescriptorFactory.uniqueForSchema( schema );
             ((KernelStatement) statement).txState().indexRuleDoAdd( index );
             transaction.success();
             return index;

@@ -22,7 +22,7 @@ package org.neo4j.internal.cypher.acceptance
 import org.neo4j.cypher.internal.compiler.v3_2.helpers.ListSupport
 import org.neo4j.cypher.{CypherExecutionException, ExecutionEngineFunSuite, QueryStatisticsTestSupport}
 import org.neo4j.kernel.api.exceptions.schema.CreateConstraintFailureException
-import org.neo4j.kernel.api.schema.NodePropertyDescriptor
+import org.neo4j.kernel.api.schema_new.SchemaDescriptorFactory
 import org.neo4j.kernel.impl.api.OperationsFacade
 
 import scala.collection.JavaConverters._
@@ -42,7 +42,7 @@ class UniqueConstraintVerificationAcceptanceTest
         val prop = context.propertyKeyGetForName("propertyKey")
         val label = context.labelGetForName("Label")
 
-        val constraints = context.constraintsGetForLabelAndPropertyKey(new NodePropertyDescriptor(label, prop)).asScala
+        val constraints = context.constraintsGetForSchema(SchemaDescriptorFactory.forLabel(label, prop)).asScala
 
         constraints should have size 1
     }
@@ -61,7 +61,7 @@ class UniqueConstraintVerificationAcceptanceTest
         val prop = context.propertyKeyGetForName("name")
         val label = context.labelGetForName("Person")
 
-        val constraints = context.constraintsGetForLabelAndPropertyKey(new NodePropertyDescriptor(label, prop)).asScala
+        val constraints = context.constraintsGetForSchema(SchemaDescriptorFactory.forLabel(label, prop)).asScala
 
         constraints should have size 1
     }
@@ -82,7 +82,7 @@ class UniqueConstraintVerificationAcceptanceTest
         val prop = context.propertyKeyGetForName("name")
         val label = context.labelGetForName("Person")
 
-        val constraints = context.constraintsGetForLabelAndPropertyKey(new NodePropertyDescriptor(label, prop)).asScala
+        val constraints = context.constraintsGetForSchema(SchemaDescriptorFactory.forLabel(label, prop)).asScala
 
         constraints should have size 1
     }
@@ -101,7 +101,7 @@ class UniqueConstraintVerificationAcceptanceTest
         val prop = context.propertyKeyGetForName("propertyKey")
         val label = context.labelGetForName("Label")
 
-        val constraints = context.constraintsGetForLabelAndPropertyKey(new NodePropertyDescriptor(label, prop)).asScala
+        val constraints = context.constraintsGetForSchema(SchemaDescriptorFactory.forLabel(label, prop)).asScala
 
         constraints shouldBe empty
     }
@@ -130,7 +130,7 @@ class UniqueConstraintVerificationAcceptanceTest
         val prop = context.propertyKeyGetForName("id")
         val label = context.labelGetForName("Person")
 
-        val constraints = context.constraintsGetForLabelAndPropertyKey(new NodePropertyDescriptor(label, prop)).asScala
+        val constraints = context.constraintsGetForSchema(SchemaDescriptorFactory.forLabel(label, prop)).asScala
 
         constraints shouldBe empty
     }

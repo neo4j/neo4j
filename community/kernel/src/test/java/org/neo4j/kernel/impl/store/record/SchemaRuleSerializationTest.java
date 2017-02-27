@@ -67,9 +67,6 @@ public class SchemaRuleSerializationTest extends SchemaRuleTestBase
     ConstraintRule constraintExistsRelType = ConstraintRule.constraintRule( RULE_ID_2,
             ConstraintDescriptorFactory.existsForRelType( REL_TYPE_ID, PROPERTY_ID_1 ) );
 
-    ConstraintRule constraintUniqueRelType = ConstraintRule.constraintRule( RULE_ID,
-            ConstraintDescriptorFactory.uniqueForRelType( REL_TYPE_ID, PROPERTY_ID_1 ), RULE_ID_2 );
-
     ConstraintRule constraintCompositeLabel = ConstraintRule.constraintRule( RULE_ID,
             ConstraintDescriptorFactory.existsForLabel( LABEL_ID, PROPERTY_ID_1, PROPERTY_ID_2 ) );
 
@@ -106,7 +103,6 @@ public class SchemaRuleSerializationTest extends SchemaRuleTestBase
         assertSerializeAndDeserializeConstraintRule( constraintExistsLabel );
         assertSerializeAndDeserializeConstraintRule( constraintUniqueLabel );
         assertSerializeAndDeserializeConstraintRule( constraintExistsRelType );
-        assertSerializeAndDeserializeConstraintRule( constraintUniqueRelType );
     }
 
     @Test

@@ -42,15 +42,15 @@ import org.neo4j.kernel.api.ReadOperations;
 import org.neo4j.kernel.api.SchemaWriteOperations;
 import org.neo4j.kernel.api.Statement;
 import org.neo4j.kernel.api.TokenWriteOperations;
-import org.neo4j.kernel.api.constraints.PropertyConstraint;
 import org.neo4j.kernel.api.exceptions.KernelException;
 import org.neo4j.kernel.api.exceptions.Status;
 import org.neo4j.kernel.api.exceptions.TransactionFailureException;
 import org.neo4j.kernel.api.exceptions.schema.AlreadyConstrainedException;
 import org.neo4j.kernel.api.exceptions.schema.DropConstraintFailureException;
 import org.neo4j.kernel.api.exceptions.schema.NoSuchConstraintException;
-import org.neo4j.kernel.api.schema.EntityPropertyDescriptor;
-import org.neo4j.kernel.api.schema.IndexDescriptor;
+import org.neo4j.kernel.api.schema_new.SchemaDescriptor;
+import org.neo4j.kernel.api.schema_new.constaints.ConstraintDescriptor;
+import org.neo4j.kernel.api.schema_new.index.NewIndexDescriptor;
 import org.neo4j.kernel.api.security.SecurityContext;
 import org.neo4j.test.TestEnterpriseGraphDatabaseFactory;
 
@@ -66,8 +66,7 @@ import static org.neo4j.helpers.collection.Iterators.asSet;
 import static org.neo4j.helpers.collection.Iterators.emptySetOf;
 import static org.neo4j.helpers.collection.Iterators.single;
 
-public abstract class AbstractConstraintCreationIT<Constraint extends PropertyConstraint, DESCRIPTOR extends
-        EntityPropertyDescriptor>
+public abstract class AbstractConstraintCreationIT<Constraint extends ConstraintDescriptor, DESCRIPTOR extends SchemaDescriptor>
         extends KernelIntegrationTest
 {
     static final String KEY = "Foo";
@@ -120,7 +119,7 @@ public abstract class AbstractConstraintCreationIT<Constraint extends PropertyCo
         Statement statement = statementInNewTransaction( SecurityContext.AUTH_DISABLED );
 
         // when
-        PropertyConstraint constraint = createConstraint( statement.schemaWriteOperations(), descriptor );
+        ConstraintDescriptor constraint = createConstraint( statement.schemaWriteOperations(), descriptor );
 
         // then
         assertEquals( constraint, single( statement.readOperations().constraintsGetAll() ) );
@@ -327,7 +326,7 @@ public abstract class AbstractConstraintCreationIT<Constraint extends PropertyCo
         // then
         {
             ReadOperations statement = readOperationsInNewTransaction();
-            assertEquals( emptySetOf( IndexDescriptor.class ), asSet( statement.uniqueIndexesGetAll() ) );
+            assertEquals( emptySetOf( NewIndexDescriptor.class ), asSet( statement.uniqueIndexesGetAll() ) );
             commit();
         }
     }

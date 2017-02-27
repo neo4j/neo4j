@@ -26,9 +26,6 @@ import org.neo4j.collection.primitive.PrimitiveIntIterator;
 import org.neo4j.collection.primitive.PrimitiveIntSet;
 import org.neo4j.collection.primitive.PrimitiveLongIterator;
 import org.neo4j.cursor.Cursor;
-import org.neo4j.kernel.api.constraints.NodePropertyConstraint;
-import org.neo4j.kernel.api.constraints.PropertyConstraint;
-import org.neo4j.kernel.api.constraints.RelationshipPropertyConstraint;
 import org.neo4j.kernel.api.exceptions.EntityNotFoundException;
 import org.neo4j.kernel.api.exceptions.LabelNotFoundKernelException;
 import org.neo4j.kernel.api.exceptions.PropertyKeyIdNotFoundKernelException;
@@ -38,7 +35,8 @@ import org.neo4j.kernel.api.exceptions.schema.SchemaRuleNotFoundException;
 import org.neo4j.kernel.api.exceptions.schema.TooManyLabelsException;
 import org.neo4j.kernel.api.index.InternalIndexState;
 import org.neo4j.kernel.api.schema_new.LabelSchemaDescriptor;
-import org.neo4j.kernel.api.schema_new.RelationTypeSchemaDescriptor;
+import org.neo4j.kernel.api.schema_new.SchemaDescriptor;
+import org.neo4j.kernel.api.schema_new.constaints.ConstraintDescriptor;
 import org.neo4j.kernel.api.schema_new.index.NewIndexDescriptor;
 import org.neo4j.kernel.impl.api.DegreeVisitor;
 import org.neo4j.kernel.impl.api.RelationshipVisitor;
@@ -89,11 +87,10 @@ public interface StoreReadLayer
 
     /**
      * @param index {@link NewIndexDescriptor} to get schema rule id for.
-     * @param filter for type of index to match.
      * @return schema rule id for matching index.
      * @throws SchemaRuleNotFoundException if no such index exists in storage.
      */
-    long indexGetCommittedId( NewIndexDescriptor index, NewIndexDescriptor.Filter filter )
+    long indexGetCommittedId( NewIndexDescriptor index )
             throws SchemaRuleNotFoundException;
 
     /**
@@ -116,31 +113,26 @@ public interface StoreReadLayer
      * @param descriptor describing the label and property key (or keys) defining the requested constraint.
      * @return node property constraints associated with the label and one or more property keys token ids.
      */
-    Iterator<NodePropertyConstraint> constraintsGetForLabelAndPropertyKey( LabelSchemaDescriptor descriptor );
+    Iterator<ConstraintDescriptor> constraintsGetForSchema( SchemaDescriptor descriptor );
+
+    boolean constraintExists( ConstraintDescriptor descriptor );
 
     /**
      * @param labelId label token id.
      * @return node property constraints associated with the label token id.
      */
-    Iterator<NodePropertyConstraint> constraintsGetForLabel( int labelId );
-
-    /**
-     * @param descriptor of the relationship.
-     * @return relationship property constraints associated with the relationship description.
-     */
-    Iterator<RelationshipPropertyConstraint> constraintsGetForRelationshipTypeAndPropertyKey(
-            RelationTypeSchemaDescriptor descriptor );
+    Iterator<ConstraintDescriptor> constraintsGetForLabel( int labelId );
 
     /**
      * @param typeId relationship type token id .
      * @return relationship property constraints associated with the relationship type token id.
      */
-    Iterator<RelationshipPropertyConstraint> constraintsGetForRelationshipType( int typeId );
+    Iterator<ConstraintDescriptor> constraintsGetForRelationshipType( int typeId );
 
     /**
      * @return all stored property constraints.
      */
-    Iterator<PropertyConstraint> constraintsGetAll();
+    Iterator<ConstraintDescriptor> constraintsGetAll();
 
     PrimitiveLongIterator nodesGetForLabel( StorageStatement statement, int labelId );
 

@@ -30,7 +30,9 @@ import org.neo4j.kernel.api.constraints.UniquenessConstraint
 import org.neo4j.kernel.api.exceptions.KernelException
 import org.neo4j.kernel.api.exceptions.schema.SchemaKernelException
 import org.neo4j.kernel.api.index.InternalIndexState
-import org.neo4j.kernel.api.schema.{NodePropertyDescriptor}
+import org.neo4j.kernel.api.schema.NodePropertyDescriptor
+import org.neo4j.kernel.api.schema_new.SchemaDescriptorFactory
+import org.neo4j.kernel.api.schema_new.constaints.{ConstraintBoundary, ConstraintDescriptor}
 import org.neo4j.kernel.api.schema_new.index.{NewIndexDescriptor => KernelIndexDescriptor}
 import org.neo4j.kernel.impl.transaction.log.TransactionIdStore
 
@@ -78,8 +80,11 @@ class TransactionBoundPlanContext(tc: TransactionalContextWrapper)
     val propertyKeyId = tc.statement.readOperations().propertyKeyGetForName(propertyKey)
 
     import scala.collection.JavaConverters._
-    tc.statement.readOperations().constraintsGetForLabelAndPropertyKey(new NodePropertyDescriptor(labelId, propertyKeyId)).asScala.collectFirst {
-      case unique: UniquenessConstraint => unique
+    tc.statement.readOperations().constraintsGetForSchema(
+      SchemaDescriptorFactory.forLabel(labelId, propertyKeyId)
+    ).asScala.collectFirst {
+      case constraint: ConstraintDescriptor if constraint.`type`() == ConstraintDescriptor.Type.UNIQUE =>
+        ConstraintBoundary.map( constraint ).asInstanceOf[UniquenessConstraint]
     }
   } catch {
     case _: KernelException => None

@@ -29,7 +29,6 @@ import org.neo4j.collection.primitive.PrimitiveLongVisitor;
 import org.neo4j.kernel.api.exceptions.index.IndexEntryConflictException;
 import org.neo4j.kernel.api.index.IndexEntryUpdate;
 import org.neo4j.kernel.api.index.IndexUpdater;
-import org.neo4j.kernel.api.index.PreexistingIndexEntryConflictException;
 import org.neo4j.kernel.api.index.PropertyAccessor;
 import org.neo4j.kernel.impl.api.index.IndexUpdateMode;
 import org.neo4j.kernel.impl.api.index.updater.UniquePropertyIndexUpdater;
@@ -119,14 +118,14 @@ class UniqueInMemoryIndex extends InMemoryIndex
                         if ( entries.containsKey( value ) )
                         {
                             long existingNodeId = entries.get( value );
-                            throw new PreexistingIndexEntryConflictException( value, existingNodeId, nodeId );
+                            throw new IndexEntryConflictException( existingNodeId, nodeId, value );
                         }
                         entries.put( value, nodeId );
                     }
                 }
             } );
         }
-        catch ( PreexistingIndexEntryConflictException e )
+        catch ( IndexEntryConflictException e )
         {
             throw e;
         }

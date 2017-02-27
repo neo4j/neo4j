@@ -47,8 +47,9 @@ import org.neo4j.kernel.api.proc.ProcedureSignature;
 import org.neo4j.kernel.api.proc.QualifiedName;
 import org.neo4j.kernel.api.proc.UserFunctionSignature;
 import org.neo4j.kernel.api.schema.NodePropertyDescriptor;
-import org.neo4j.kernel.api.schema.RelationshipPropertyDescriptor;
 import org.neo4j.kernel.api.schema_new.IndexQuery;
+import org.neo4j.kernel.api.schema_new.SchemaDescriptor;
+import org.neo4j.kernel.api.schema_new.constaints.ConstraintDescriptor;
 import org.neo4j.kernel.api.schema_new.index.NewIndexDescriptor;
 import org.neo4j.kernel.impl.api.RelationshipVisitor;
 import org.neo4j.kernel.impl.api.store.RelationshipIterator;
@@ -260,35 +261,24 @@ public interface ReadOperations
     String indexGetFailure( NewIndexDescriptor descriptor ) throws IndexNotFoundKernelException;
 
     /**
-     * Get all constraints applicable to label and propertyKey. There are only {@link NodePropertyConstraint}
-     * for the time being.
+     * Get all constraints applicable to label and propertyKey.
      */
-    Iterator<NodePropertyConstraint> constraintsGetForLabelAndPropertyKey( NodePropertyDescriptor descriptor );
+    Iterator<ConstraintDescriptor> constraintsGetForSchema( SchemaDescriptor descriptor );
 
     /**
-     * Get all constraints applicable to label. There are only {@link NodePropertyConstraint}
-     * for the time being.
+     * Get all constraints applicable to label.
      */
-    Iterator<NodePropertyConstraint> constraintsGetForLabel( int labelId );
+    Iterator<ConstraintDescriptor> constraintsGetForLabel( int labelId );
 
     /**
-     * Get all constraints applicable to relationship type. There are only {@link RelationshipPropertyConstraint}
-     * for the time being.
+     * Get all constraints applicable to relationship type.
      */
-    Iterator<RelationshipPropertyConstraint> constraintsGetForRelationshipType( int typeId );
+    Iterator<ConstraintDescriptor> constraintsGetForRelationshipType( int typeId );
 
     /**
-     * Get all constraints applicable to relationship type and propertyKey.
-     * There are only {@link RelationshipPropertyConstraint} for the time being.
+     * Get all constraints.
      */
-    Iterator<RelationshipPropertyConstraint> constraintsGetForRelationshipTypeAndPropertyKey(
-            RelationshipPropertyDescriptor descriptor );
-
-    /**
-     * Get all constraints. There are only {@link PropertyConstraint}
-     * for the time being.
-     */
-    Iterator<PropertyConstraint> constraintsGetAll();
+    Iterator<ConstraintDescriptor> constraintsGetAll();
 
     /**
      * Get the owning constraint for a constraint index. Returns null if the index does not have an owning constraint.

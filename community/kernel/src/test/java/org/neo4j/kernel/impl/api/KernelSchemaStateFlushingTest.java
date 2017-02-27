@@ -28,14 +28,13 @@ import java.util.concurrent.locks.LockSupport;
 
 import org.neo4j.kernel.api.KernelAPI;
 import org.neo4j.kernel.api.KernelTransaction;
-import org.neo4j.kernel.api.schema.NodePropertyDescriptor;
+import org.neo4j.kernel.api.schema.IndexDescriptorFactory;
 import org.neo4j.kernel.api.Statement;
-import org.neo4j.kernel.api.constraints.UniquenessConstraint;
 import org.neo4j.kernel.api.exceptions.KernelException;
 import org.neo4j.kernel.api.exceptions.TransactionFailureException;
 import org.neo4j.kernel.api.exceptions.index.IndexNotFoundKernelException;
-import org.neo4j.kernel.api.schema.IndexDescriptor;
-import org.neo4j.kernel.api.schema_new.index.IndexBoundary;
+import org.neo4j.kernel.api.schema_new.SchemaDescriptorFactory;
+import org.neo4j.kernel.api.schema_new.constaints.ConstraintDescriptor;
 import org.neo4j.kernel.api.schema_new.index.NewIndexDescriptor;
 import org.neo4j.kernel.impl.api.index.SchemaIndexTestHelper;
 import org.neo4j.kernel.internal.GraphDatabaseAPI;
@@ -52,7 +51,6 @@ public class KernelSchemaStateFlushingTest
 
     private GraphDatabaseAPI db;
     private KernelAPI kernel;
-    private final NodePropertyDescriptor descriptor1 = new NodePropertyDescriptor( 1, 1 );
 
     @Test
     public void shouldKeepSchemaStateIfSchemaIsNotModified() throws TransactionFailureException
@@ -122,7 +120,7 @@ public class KernelSchemaStateFlushingTest
     public void shouldInvalidateSchemaStateOnDropConstraint() throws Exception
     {
         // given
-        UniquenessConstraint descriptor = createConstraint();
+        ConstraintDescriptor descriptor = createConstraint();
 
         commitToSchemaState( "test", "before" );
 
@@ -135,19 +133,20 @@ public class KernelSchemaStateFlushingTest
         assertEquals( "after", after );
     }
 
-    private UniquenessConstraint createConstraint() throws KernelException
+    private ConstraintDescriptor createConstraint() throws KernelException
     {
 
         try ( KernelTransaction transaction = kernel.newTransaction( KernelTransaction.Type.implicit, AUTH_DISABLED );
               Statement statement = transaction.acquireStatement() )
         {
-            UniquenessConstraint descriptor = statement.schemaWriteOperations().uniquePropertyConstraintCreate( descriptor1 );
+            ConstraintDescriptor descriptor = statement.schemaWriteOperations().uniquePropertyConstraintCreate(
+                    SchemaDescriptorFactory.forLabel( 1, 1 ) );
             transaction.success();
             return descriptor;
         }
     }
 
-    private void dropConstraint( UniquenessConstraint descriptor ) throws KernelException
+    private void dropConstraint( ConstraintDescriptor descriptor ) throws KernelException
     {
         try ( KernelTransaction transaction = kernel.newTransaction( KernelTransaction.Type.implicit, AUTH_DISABLED );
               Statement statement = transaction.acquireStatement() )
@@ -162,7 +161,8 @@ public class KernelSchemaStateFlushingTest
         try ( KernelTransaction transaction = kernel.newTransaction( KernelTransaction.Type.implicit, AUTH_DISABLED );
               Statement statement = transaction.acquireStatement() )
         {
-            NewIndexDescriptor descriptor = statement.schemaWriteOperations().indexCreate( descriptor1 );
+            NewIndexDescriptor descriptor = statement.schemaWriteOperations().indexCreate(
+                    IndexDescriptorFactory.getNodePropertyDescriptor( 1, 1 ) );
             transaction.success();
             return descriptor;
         }

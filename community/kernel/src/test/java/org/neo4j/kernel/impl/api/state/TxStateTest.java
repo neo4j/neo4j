@@ -40,14 +40,14 @@ import org.neo4j.collection.primitive.PrimitiveLongIterator;
 import org.neo4j.cursor.Cursor;
 import org.neo4j.helpers.collection.Iterables;
 import org.neo4j.helpers.collection.Pair;
-import org.neo4j.kernel.api.constraints.NodePropertyConstraint;
-import org.neo4j.kernel.api.constraints.RelationshipPropertyExistenceConstraint;
-import org.neo4j.kernel.api.constraints.UniquenessConstraint;
 import org.neo4j.kernel.api.cursor.RelationshipItemHelper;
 import org.neo4j.kernel.api.properties.DefinedProperty;
 import org.neo4j.kernel.api.properties.Property;
 import org.neo4j.kernel.api.schema.NodePropertyDescriptor;
 import org.neo4j.kernel.api.schema.RelationshipPropertyDescriptor;
+import org.neo4j.kernel.api.schema_new.constaints.ConstraintDescriptor;
+import org.neo4j.kernel.api.schema_new.constaints.ConstraintDescriptorFactory;
+import org.neo4j.kernel.api.schema_new.constaints.UniquenessConstraintDescriptor;
 import org.neo4j.kernel.api.schema_new.index.NewIndexDescriptor;
 import org.neo4j.kernel.api.schema_new.index.NewIndexDescriptorFactory;
 import org.neo4j.kernel.api.txstate.TransactionState;
@@ -940,11 +940,11 @@ public class TxStateTest
     public void shouldAddUniquenessConstraint() throws Exception
     {
         // when
-        UniquenessConstraint constraint = new UniquenessConstraint( descriptor1 );
+        UniquenessConstraintDescriptor constraint = ConstraintDescriptorFactory.uniqueForLabel( 1, 17 );
         state.constraintDoAdd( constraint, 7 );
 
         // then
-        ReadableDiffSets<NodePropertyConstraint> diff = state.constraintsChangesForLabel( 1 );
+        ReadableDiffSets<ConstraintDescriptor> diff = state.constraintsChangesForLabel( 1 );
 
         assertEquals( singleton( constraint ), diff.getAdded() );
         assertTrue( diff.getRemoved().isEmpty() );
@@ -954,11 +954,11 @@ public class TxStateTest
     public void addingUniquenessConstraintShouldBeIdempotent() throws Exception
     {
         // given
-        UniquenessConstraint constraint1 = new UniquenessConstraint( descriptor1 );
+        UniquenessConstraintDescriptor constraint1 = ConstraintDescriptorFactory.uniqueForLabel( 1, 17 );
         state.constraintDoAdd( constraint1, 7 );
 
         // when
-        UniquenessConstraint constraint2 = new UniquenessConstraint( descriptor1 );
+        UniquenessConstraintDescriptor constraint2 = ConstraintDescriptorFactory.uniqueForLabel( 1, 17 );
         state.constraintDoAdd( constraint2, 19 );
 
         // then
@@ -970,9 +970,9 @@ public class TxStateTest
     public void shouldDifferentiateBetweenUniquenessConstraintsForDifferentLabels() throws Exception
     {
         // when
-        UniquenessConstraint constraint1 = new UniquenessConstraint( descriptor1 );
+        UniquenessConstraintDescriptor constraint1 = ConstraintDescriptorFactory.uniqueForLabel( 1, 17 );
         state.constraintDoAdd( constraint1, 7 );
-        UniquenessConstraint constraint2 = new UniquenessConstraint( descriptor2 );
+        UniquenessConstraintDescriptor constraint2 = ConstraintDescriptorFactory.uniqueForLabel( 2, 17 );
         state.constraintDoAdd( constraint2, 19 );
 
         // then
@@ -984,7 +984,7 @@ public class TxStateTest
     public void shouldAddRelationshipPropertyExistenceConstraint()
     {
         // Given
-        RelationshipPropertyExistenceConstraint constraint = new RelationshipPropertyExistenceConstraint( relDescriptor1 );
+        ConstraintDescriptor constraint = ConstraintDescriptorFactory.existsForRelType( 1, 42 );
 
         // When
         state.constraintDoAdd( constraint );
@@ -997,8 +997,8 @@ public class TxStateTest
     public void addingRelationshipPropertyExistenceConstraintConstraintShouldBeIdempotent()
     {
         // Given
-        RelationshipPropertyExistenceConstraint constraint1 = new RelationshipPropertyExistenceConstraint( relDescriptor1 );
-        RelationshipPropertyExistenceConstraint constraint2 = new RelationshipPropertyExistenceConstraint( relDescriptor1 );
+        ConstraintDescriptor constraint1 = ConstraintDescriptorFactory.existsForRelType( 1, 42 );
+        ConstraintDescriptor constraint2 = ConstraintDescriptorFactory.existsForRelType( 1, 42 );
 
         // When
         state.constraintDoAdd( constraint1 );
@@ -1013,7 +1013,7 @@ public class TxStateTest
     public void shouldDropRelationshipPropertyExistenceConstraint()
     {
         // Given
-        RelationshipPropertyExistenceConstraint constraint = new RelationshipPropertyExistenceConstraint( relDescriptor1 );
+        ConstraintDescriptor constraint = ConstraintDescriptorFactory.existsForRelType( 1, 42 );
         state.constraintDoAdd( constraint );
 
         // When
@@ -1027,13 +1027,9 @@ public class TxStateTest
     public void shouldDifferentiateRelationshipPropertyExistenceConstraints() throws Exception
     {
         // Given
-        RelationshipPropertyDescriptor rel1 = new RelationshipPropertyDescriptor( 1, 11 );
-        RelationshipPropertyDescriptor rel2 = new RelationshipPropertyDescriptor( 1, 22 );
-        RelationshipPropertyDescriptor rel3 = new RelationshipPropertyDescriptor( 3, 33 );
-
-        RelationshipPropertyExistenceConstraint constraint1 = new RelationshipPropertyExistenceConstraint( rel1 );
-        RelationshipPropertyExistenceConstraint constraint2 = new RelationshipPropertyExistenceConstraint( rel2 );
-        RelationshipPropertyExistenceConstraint constraint3 = new RelationshipPropertyExistenceConstraint( rel3 );
+        ConstraintDescriptor constraint1 = ConstraintDescriptorFactory.existsForRelType( 1, 11 );
+        ConstraintDescriptor constraint2 = ConstraintDescriptorFactory.existsForRelType( 1, 22 );
+        ConstraintDescriptor constraint3 = ConstraintDescriptorFactory.existsForRelType( 3, 33 );
 
         // When
         state.constraintDoAdd( constraint1 );
@@ -1043,12 +1039,12 @@ public class TxStateTest
         // Then
         assertEquals( asSet( constraint1, constraint2 ), state.constraintsChangesForRelationshipType( 1 ).getAdded() );
         assertEquals( singleton( constraint1 ),
-                state.constraintsChangesForRelationshipTypeAndProperty( rel1 ).getAdded() );
+                state.constraintsChangesForSchema( constraint1.schema() ).getAdded() );
         assertEquals( singleton( constraint2 ),
-                state.constraintsChangesForRelationshipTypeAndProperty( rel2 ).getAdded() );
+                state.constraintsChangesForSchema( constraint2.schema() ).getAdded() );
         assertEquals( singleton( constraint3 ), state.constraintsChangesForRelationshipType( 3 ).getAdded() );
         assertEquals( singleton( constraint3 ),
-                state.constraintsChangesForRelationshipTypeAndProperty( rel3 ).getAdded() );
+                state.constraintsChangesForSchema( constraint3.schema() ).getAdded() );
     }
 
     @Test

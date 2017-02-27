@@ -32,7 +32,6 @@ import org.neo4j.graphdb.TransactionFailureException;
 import org.neo4j.helpers.collection.Iterators;
 import org.neo4j.kernel.api.ReadOperations;
 import org.neo4j.kernel.api.constraints.NodePropertyConstraint;
-import org.neo4j.kernel.api.constraints.PropertyConstraint;
 import org.neo4j.kernel.api.constraints.RelationshipPropertyConstraint;
 import org.neo4j.kernel.api.exceptions.EntityNotFoundException;
 import org.neo4j.kernel.api.exceptions.LabelNotFoundKernelException;
@@ -45,6 +44,8 @@ import org.neo4j.kernel.api.index.InternalIndexState;
 import org.neo4j.kernel.api.properties.PropertyKeyIdIterator;
 import org.neo4j.kernel.api.schema_new.LabelSchemaDescriptor;
 import org.neo4j.kernel.api.schema_new.RelationTypeSchemaDescriptor;
+import org.neo4j.kernel.api.schema_new.SchemaDescriptor;
+import org.neo4j.kernel.api.schema_new.constaints.ConstraintDescriptor;
 import org.neo4j.kernel.api.schema_new.index.IndexBoundary;
 import org.neo4j.kernel.api.schema_new.index.NewIndexDescriptor;
 import org.neo4j.kernel.impl.api.DegreeVisitor;
@@ -218,7 +219,7 @@ public class StorageLayer implements StoreReadLayer
     @Override
     public Long indexGetOwningUniquenessConstraintId( NewIndexDescriptor index ) throws SchemaRuleNotFoundException
     {
-        IndexRule rule = indexRule( index, NewIndexDescriptor.Filter.ANY );
+        IndexRule rule = indexRule( index );
         if ( rule != null )
         {
             return rule.getOwningConstraint();
@@ -227,10 +228,10 @@ public class StorageLayer implements StoreReadLayer
     }
 
     @Override
-    public long indexGetCommittedId( NewIndexDescriptor index, NewIndexDescriptor.Filter filter )
+    public long indexGetCommittedId( NewIndexDescriptor index )
             throws SchemaRuleNotFoundException
     {
-        IndexRule rule = indexRule( index, filter );
+        IndexRule rule = indexRule( index );
         if ( rule == null )
         {
             throw new SchemaRuleNotFoundException( SchemaRule.Kind.INDEX_RULE, index.schema() );
@@ -271,32 +272,31 @@ public class StorageLayer implements StoreReadLayer
     }
 
     @Override
-    public Iterator<NodePropertyConstraint> constraintsGetForLabelAndPropertyKey( LabelSchemaDescriptor descriptor )
+    public Iterator<ConstraintDescriptor> constraintsGetForSchema( SchemaDescriptor descriptor )
     {
-        return schemaCache.constraintsForLabelAndProperty( descriptor );
+        return schemaCache.constraintsForSchema( descriptor );
     }
 
     @Override
-    public Iterator<NodePropertyConstraint> constraintsGetForLabel( int labelId )
+    public boolean constraintExists( ConstraintDescriptor descriptor )
+    {
+        return schemaCache.hasConstraintRule( descriptor );
+    }
+
+    @Override
+    public Iterator<ConstraintDescriptor> constraintsGetForLabel( int labelId )
     {
         return schemaCache.constraintsForLabel( labelId );
     }
 
     @Override
-    public Iterator<RelationshipPropertyConstraint> constraintsGetForRelationshipTypeAndPropertyKey(
-            RelationTypeSchemaDescriptor descriptor )
-    {
-        return schemaCache.constraintsForRelationshipTypeAndProperty( descriptor );
-    }
-
-    @Override
-    public Iterator<RelationshipPropertyConstraint> constraintsGetForRelationshipType( int typeId )
+    public Iterator<ConstraintDescriptor> constraintsGetForRelationshipType( int typeId )
     {
         return schemaCache.constraintsForRelationshipType( typeId );
     }
 
     @Override
-    public Iterator<PropertyConstraint> constraintsGetAll()
+    public Iterator<ConstraintDescriptor> constraintsGetAll()
     {
         return schemaCache.constraints();
     }
@@ -560,17 +560,17 @@ public class StorageLayer implements StoreReadLayer
         }
     }
 
-    private IndexRule indexRule( NewIndexDescriptor index, NewIndexDescriptor.Filter filter )
+    private IndexRule indexRule( NewIndexDescriptor index )
     {
         for ( IndexRule rule : schemaCache.indexRules() )
         {
-            if ( filter.test( rule.getIndexDescriptor() ) && rule.schema().equals( index.schema() ) )
+            if ( rule.getIndexDescriptor().equals( index ) )
             {
                 return rule;
             }
         }
 
-        return schemaStorage.indexGetForSchema( index.schema(), filter );
+        return schemaStorage.indexGetForSchema( index );
     }
 
     @Override

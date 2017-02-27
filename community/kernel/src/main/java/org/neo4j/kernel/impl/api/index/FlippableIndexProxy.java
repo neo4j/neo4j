@@ -35,7 +35,7 @@ import org.neo4j.kernel.api.exceptions.index.IndexEntryConflictException;
 import org.neo4j.kernel.api.exceptions.index.IndexNotFoundKernelException;
 import org.neo4j.kernel.api.exceptions.index.IndexPopulationFailedKernelException;
 import org.neo4j.kernel.api.exceptions.index.IndexProxyAlreadyClosedKernelException;
-import org.neo4j.kernel.api.exceptions.schema.ConstraintVerificationFailedKernelException;
+import org.neo4j.kernel.api.exceptions.schema.UniquePropertyValueValidationException;
 import org.neo4j.kernel.api.index.IndexConfiguration;
 import org.neo4j.kernel.api.schema.IndexDescriptor;
 import org.neo4j.kernel.api.index.IndexUpdater;
@@ -310,7 +310,7 @@ public class FlippableIndexProxy implements IndexProxy
     }
 
     @Override
-    public void validate() throws IndexPopulationFailedKernelException, ConstraintVerificationFailedKernelException
+    public void validate() throws IndexPopulationFailedKernelException, UniquePropertyValueValidationException
     {
         lock.readLock().lock();
         try

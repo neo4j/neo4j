@@ -35,7 +35,7 @@ import org.neo4j.io.pagecache.IOLimiter;
 import org.neo4j.io.pagecache.PageCache;
 import org.neo4j.kernel.api.TokenNameLookup;
 import org.neo4j.kernel.api.exceptions.TransactionFailureException;
-import org.neo4j.kernel.api.exceptions.schema.ConstraintValidationKernelException;
+import org.neo4j.kernel.api.exceptions.schema.ConstraintValidationException;
 import org.neo4j.kernel.api.exceptions.schema.CreateConstraintFailureException;
 import org.neo4j.kernel.api.index.SchemaIndexProvider;
 import org.neo4j.kernel.api.labelscan.LabelScanStore;
@@ -301,7 +301,7 @@ public class RecordStorageEngine implements StorageEngine, Lifecycle
             StorageStatement storageStatement,
             ResourceLocker locks,
             long lastTransactionIdWhenStarted )
-            throws TransactionFailureException, CreateConstraintFailureException, ConstraintValidationKernelException
+            throws TransactionFailureException, CreateConstraintFailureException, ConstraintValidationException
     {
         if ( txState != null )
         {

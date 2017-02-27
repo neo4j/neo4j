@@ -46,7 +46,7 @@ import org.neo4j.graphdb.TransactionFailureException;
 import org.neo4j.graphdb.TransientTransactionFailureException;
 import org.neo4j.graphdb.factory.GraphDatabaseSettings;
 import org.neo4j.helpers.Exceptions;
-import org.neo4j.kernel.api.exceptions.schema.ConstraintVerificationFailedKernelException;
+import org.neo4j.kernel.api.exceptions.schema.ConstraintValidationException;
 import org.neo4j.kernel.impl.ha.ClusterManager;
 import org.neo4j.test.GraphDatabaseServiceCleaner;
 import org.neo4j.test.OtherThreadExecutor.WorkerCommand;
@@ -609,7 +609,7 @@ public class PropertyConstraintsStressIT
                 catch ( QueryExecutionException e )
                 {
                     System.out.println( "Constraint failed: " + e.getMessage() );
-                    if ( Exceptions.rootCause( e ) instanceof ConstraintVerificationFailedKernelException )
+                    if ( Exceptions.rootCause( e ) instanceof ConstraintValidationException )
                     {
                         // Unable to create constraint since it is not consistent with existing data
                         constraintCreationFailed = true;
