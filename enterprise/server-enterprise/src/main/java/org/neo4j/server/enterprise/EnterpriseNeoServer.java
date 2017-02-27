@@ -56,8 +56,7 @@ import org.neo4j.server.rest.management.AdvertisableService;
 import org.neo4j.server.web.Jetty9WebServer;
 import org.neo4j.server.web.WebServer;
 
-import static java.util.Arrays.asList;
-import static org.neo4j.helpers.collection.Iterables.mix;
+import static org.neo4j.server.configuration.ServerSettings.jmx_module_enabled;
 import static org.neo4j.server.database.LifecycleManagingDatabase.lifecycleManagingDatabase;
 
 public class EnterpriseNeoServer extends CommunityNeoServer
@@ -153,8 +152,14 @@ public class EnterpriseNeoServer extends CommunityNeoServer
     @Override
     protected Iterable<ServerModule> createServerModules()
     {
-        return mix( asList( new DatabaseRoleInfoServerModule( webServer, getConfig(), logProvider ),
-                new JMXManagementModule( this ) ), super.createServerModules() );
+        List<ServerModule> modules = new ArrayList<>();
+        modules.add( new DatabaseRoleInfoServerModule( webServer, getConfig(), logProvider ) );
+        if ( getConfig().get( jmx_module_enabled ) )
+        {
+            modules.add( new JMXManagementModule( this ) );
+        }
+        super.createServerModules().forEach( modules::add );
+        return modules;
     }
 
     @Override

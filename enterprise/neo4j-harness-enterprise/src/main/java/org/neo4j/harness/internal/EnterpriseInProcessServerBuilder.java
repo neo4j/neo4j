@@ -40,6 +40,11 @@ public class EnterpriseInProcessServerBuilder extends AbstractInProcessServerBui
         super( workingDir );
     }
 
+    public EnterpriseInProcessServerBuilder( File workingDir, String dataSubDir )
+    {
+        super( workingDir, dataSubDir );
+    }
+
     @Override
     protected AbstractNeoServer createNeoServer( Map<String,String> config,
             GraphDatabaseFacadeFactory.Dependencies dependencies, FormattedLogProvider userLogProvider )
