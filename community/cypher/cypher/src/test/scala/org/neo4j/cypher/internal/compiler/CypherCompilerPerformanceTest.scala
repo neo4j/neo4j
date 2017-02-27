@@ -193,6 +193,7 @@ class CypherCompilerPerformanceTest extends GraphDatabaseFunSuite {
         idpIterationDuration = 1000,
         errorIfShortestPathFallbackUsedAtRuntime = false,
         errorIfShortestPathHasCommonNodesAtRuntime = true,
+        legacyCsvQuoteEscaping = true,
         nonIndexedLabelWarningThreshold = 10000L
       ),
       clock = CLOCK,

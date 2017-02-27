@@ -39,7 +39,8 @@ case class LoadCSVPipe(source: Pipe,
                        format: CSVFormat,
                        urlExpression: Expression,
                        variable: String,
-                       fieldTerminator: Option[String])
+                       fieldTerminator: Option[String],
+                       legacyCsvQuoteEscaping: Boolean)
                       (val estimatedCardinality: Option[Double] = None)(implicit pipeMonitor: PipeMonitor)
   extends PipeWithSource(source, pipeMonitor) with RonjaPipe {
 
@@ -105,7 +106,7 @@ case class LoadCSVPipe(source: Pipe,
       val urlString: String = urlExpression(context).asInstanceOf[String]
       val url = getImportURL(urlString, state.query)
 
-      val iterator: Iterator[Array[String]] = state.resources.getCsvIterator(url, fieldTerminator)
+      val iterator: Iterator[Array[String]] = state.resources.getCsvIterator(url, fieldTerminator, legacyCsvQuoteEscaping)
       format match {
         case HasHeaders =>
           val headers = iterator.next().toSeq // First row is headers

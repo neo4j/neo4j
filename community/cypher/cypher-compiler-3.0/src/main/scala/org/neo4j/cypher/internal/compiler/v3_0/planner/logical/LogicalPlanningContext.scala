@@ -37,6 +37,7 @@ case class LogicalPlanningContext(planContext: PlanContext,
                                   useErrorsOverWarnings: Boolean = false,
                                   errorIfShortestPathFallbackUsedAtRuntime: Boolean = false,
                                   errorIfShortestPathHasCommonNodesAtRuntime: Boolean = true,
+                                  legacyCsvQuoteEscaping: Boolean = true,
                                   config: QueryPlannerConfiguration = QueryPlannerConfiguration.default,
                                   leafPlanUpdater: LogicalPlan => LogicalPlan = identity) {
   def withStrictness(strictness: StrictnessMode) = copy(input = input.withPreferredStrictness(strictness))
