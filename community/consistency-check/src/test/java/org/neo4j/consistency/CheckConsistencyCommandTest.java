@@ -279,7 +279,7 @@ public class CheckConsistencyCommandTest
             PrintStream ps = new PrintStream( baos );
 
             Usage usage = new Usage( "neo4j-admin", mock( CommandLocator.class ) );
-            usage.printUsageForCommand( new CheckConsistencyCommand.Provider(), ps::println );
+            usage.printUsageForCommand( new CheckConsistencyCommandProvider(), ps::println );
 
             assertEquals( String.format( "usage: neo4j-admin check-consistency [--database=<name>]%n" +
                             "                                     [--backup=</path/to/backup>]%n" +

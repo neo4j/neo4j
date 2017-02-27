@@ -55,40 +55,6 @@ public class DumpCommand implements AdminCommand
             .withDatabase()
             .withTo( "Destination (file or folder) of database dump." );
 
-    public static class Provider extends AdminCommand.Provider
-    {
-        public Provider()
-        {
-            super( "dump" );
-        }
-
-        @Override
-        public Arguments allArguments()
-        {
-            return arguments;
-        }
-
-        @Override
-        public String description()
-        {
-            return "Dump a database into a single-file archive. The archive can be used by the load command. " +
-                    "<destination-path> can be a file or directory (in which case a file called <database>.dump will " +
-                    "be created). It is not possible to dump a database that is mounted in a running Neo4j server.";
-        }
-
-        @Override
-        public String summary()
-        {
-            return "Dump a database into a single-file archive.";
-        }
-
-        @Override
-        public AdminCommand create( Path homeDir, Path configDir, OutsideWorld outsideWorld )
-        {
-            return new DumpCommand( homeDir, configDir, new Dumper() );
-        }
-    }
-
     private final Path homeDir;
     private final Path configDir;
     private final Dumper dumper;
@@ -184,5 +150,10 @@ public class DumpCommand implements AdminCommand
     {
         throw new CommandFailed(
                 format( "unable to dump database: %s: %s", e.getClass().getSimpleName(), e.getMessage() ), e );
+    }
+
+    public static Arguments arguments()
+    {
+        return arguments;
     }
 }

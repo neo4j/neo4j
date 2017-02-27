@@ -19,7 +19,11 @@
  */
 package org.neo4j.commandline.admin;
 
+import java.util.ArrayList;
+import java.util.Comparator;
+import java.util.List;
 import java.util.function.Consumer;
+import java.util.stream.Collectors;
 
 import org.neo4j.commandline.arguments.Arguments;
 
@@ -48,15 +52,21 @@ public class Usage
         output.accept( "    NEO4J_CONF    Path to directory which contains neo4j.conf." );
         output.accept( "" );
         output.accept( "available commands:" );
+        printCommandsUnderASegment( output );
+        output.accept( "" );
+        output.accept( format( "Use %s help <command> for more details.", scriptName ) );
+    }
 
-        for ( AdminCommand.Provider command : commands.getAllProviders() )
+    private void printCommandsUnderASegment( Consumer<String> output )
+    {
+        List<AdminCommand.Provider> providers = new ArrayList<>();
+        commands.getAllProviders().forEach( providers::add );
+        providers.sort( Comparator.comparing( AdminCommand.Provider::name ) );
+        providers.forEach( command ->
         {
             final CommandUsage commandUsage = new CommandUsage( command, scriptName );
             commandUsage.printIndentedSummary( output );
-        }
-
-        output.accept( "" );
-        output.accept( format( "Use %s help <command> for more details.", scriptName ) );
+        } );
     }
 
     public void printUsageForCommand( AdminCommand.Provider command, Consumer<String> output )
@@ -89,7 +99,7 @@ public class Usage
 
         public void printDetailed( Consumer<String> output )
         {
-            for (Arguments arguments: command.possibleArguments())
+            for ( Arguments arguments : command.possibleArguments() )
             {
                 //Arguments arguments = command.arguments();
 

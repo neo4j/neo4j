@@ -303,7 +303,7 @@ public class LoadCommandTest
             PrintStream ps = new PrintStream( baos );
 
             Usage usage = new Usage( "neo4j-admin", mock( CommandLocator.class ) );
-            usage.printUsageForCommand( new LoadCommand.Provider(), ps::println );
+            usage.printUsageForCommand( new LoadCommandProvider(), ps::println );
 
             assertEquals( String.format( "usage: neo4j-admin load --from=<archive-path> [--database=<name>]%n" +
                             "                        [--force[=<true|false>]]%n" +

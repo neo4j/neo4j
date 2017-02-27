@@ -43,41 +43,7 @@ import static org.neo4j.kernel.api.security.UserManager.INITIAL_USER_NAME;
 public class SetInitialPasswordCommand implements AdminCommand
 {
 
-    public static final Arguments arguments = new Arguments()
-            .withMandatoryPositionalArgument( 0, "password" );
-
-    public static class Provider extends AdminCommand.Provider
-    {
-
-        public Provider()
-        {
-            super( "set-initial-password" );
-        }
-
-        @Override
-        public Arguments allArguments()
-        {
-            return arguments;
-        }
-
-        @Override
-        public String description()
-        {
-            return "Sets the initial password of the initial admin user ('" + INITIAL_USER_NAME + "').";
-        }
-
-        @Override
-        public String summary()
-        {
-            return description();
-        }
-
-        @Override
-        public AdminCommand create( Path homeDir, Path configDir, OutsideWorld outsideWorld )
-        {
-            return new SetInitialPasswordCommand( homeDir, configDir, outsideWorld );
-        }
-    }
+    private static final Arguments arguments = new Arguments().withMandatoryPositionalArgument( 0, "password" );
 
     private final Path homeDir;
     private final Path configDir;
@@ -88,6 +54,11 @@ public class SetInitialPasswordCommand implements AdminCommand
         this.homeDir = homeDir;
         this.configDir = configDir;
         this.outsideWorld = outsideWorld;
+    }
+
+    public static Arguments arguments()
+    {
+        return arguments;
     }
 
     @Override

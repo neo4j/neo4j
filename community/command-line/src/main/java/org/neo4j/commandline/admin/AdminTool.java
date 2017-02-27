@@ -124,7 +124,7 @@ public class AdminTool
 
     private Supplier<AdminCommand.Provider> help()
     {
-        return () -> new HelpCommand.Provider( usage );
+        return () -> new HelpCommandProvider( usage );
     }
 
     private void badUsage( AdminCommand.Provider command, IncorrectUsage e )

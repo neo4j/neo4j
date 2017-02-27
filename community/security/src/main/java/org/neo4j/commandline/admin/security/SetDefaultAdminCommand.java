@@ -44,41 +44,7 @@ public class SetDefaultAdminCommand implements AdminCommand
 {
     public static final String ADMIN_INI = "admin.ini";
     public static final String COMMAND_NAME = "set-default-admin";
-    public static final Arguments arguments = new Arguments()
-            .withMandatoryPositionalArgument( 0, "username" );
-
-    public static class Provider extends AdminCommand.Provider
-    {
-        public Provider()
-        {
-            super( COMMAND_NAME );
-        }
-
-        @Override
-        public Arguments allArguments()
-        {
-            return arguments;
-        }
-
-        @Override
-        public String description()
-        {
-            return "Sets the user to become admin if users but no roles are present, " +
-                    "for example when upgrading to neo4j 3.1 enterprise.";
-        }
-
-        @Override
-        public String summary()
-        {
-            return "Sets the default admin user when no roles are present.";
-        }
-
-        @Override
-        public AdminCommand create( Path homeDir, Path configDir, OutsideWorld outsideWorld )
-        {
-            return new SetDefaultAdminCommand( homeDir, configDir, outsideWorld );
-        }
-    }
+    private static final Arguments arguments = new Arguments().withMandatoryPositionalArgument( 0, "username" );
 
     private final Path homeDir;
     private final Path configDir;
@@ -89,6 +55,11 @@ public class SetDefaultAdminCommand implements AdminCommand
         this.homeDir = homeDir;
         this.configDir = configDir;
         this.outsideWorld = outsideWorld;
+    }
+
+    public static Arguments arguments()
+    {
+        return arguments;
     }
 
     @Override

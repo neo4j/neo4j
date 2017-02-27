@@ -58,6 +58,11 @@ public class UnbindFromClusterCommand implements AdminCommand
         this.outsideWorld = outsideWorld;
     }
 
+    public static Arguments arguments()
+    {
+        return arguments;
+    }
+
     private static Config loadNeo4jConfig( Path homeDir, Path configDir, String databaseName )
     {
         Config config = ConfigLoader.loadConfig( Optional.of( homeDir.toFile() ),
@@ -126,39 +131,6 @@ public class UnbindFromClusterCommand implements AdminCommand
         catch ( IOException e )
         {
             throw new UnbindFailureException( e );
-        }
-    }
-
-    public static class Provider extends AdminCommand.Provider
-    {
-        public Provider()
-        {
-            super( "unbind" );
-        }
-
-        @Override
-        public Arguments allArguments()
-        {
-            return arguments;
-        }
-
-        @Override
-        public String summary()
-        {
-            return "Removes cluster state data for the specified database.";
-        }
-
-        @Override
-        public String description()
-        {
-            return "Removes cluster state data for the specified database, so that the " +
-                   "instance can rebind to a new or recovered cluster.";
-        }
-
-        @Override
-        public AdminCommand create( Path homeDir, Path configDir, OutsideWorld outsideWorld )
-        {
-            return new UnbindFromClusterCommand( homeDir, configDir, outsideWorld );
         }
     }
 

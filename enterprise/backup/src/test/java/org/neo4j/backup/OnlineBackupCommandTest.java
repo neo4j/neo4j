@@ -516,7 +516,7 @@ public class OnlineBackupCommandTest
             PrintStream ps = new PrintStream( baos );
 
             Usage usage = new Usage( "neo4j-admin", mock( CommandLocator.class ) );
-            usage.printUsageForCommand( new OnlineBackupCommand.Provider(), ps::println );
+            usage.printUsageForCommand( new OnlineBackupCommandProvider(), ps::println );
 
             assertEquals(
                     String.format( "usage: neo4j-admin backup --backup-dir=<backup-path> --name=<graph.db-backup>%n" +

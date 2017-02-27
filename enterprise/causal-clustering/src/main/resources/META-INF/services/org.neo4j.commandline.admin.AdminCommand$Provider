@@ -1,1 +1,1 @@
-org.neo4j.commandline.dbms.UnbindFromClusterCommand$Provider
+org.neo4j.commandline.dbms.UnbindFromClusterCommandProvider

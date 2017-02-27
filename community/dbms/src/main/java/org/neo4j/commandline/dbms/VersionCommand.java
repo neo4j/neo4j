@@ -47,40 +47,6 @@ public class VersionCommand implements AdminCommand
             .withArgument( new MandatoryCanonicalPath( "store", "path-to-dir",
                     "Path to database store to check version of." ) );
 
-    public static class Provider extends AdminCommand.Provider
-    {
-
-        public Provider()
-        {
-            super( "version" );
-        }
-
-        @Override
-        public Arguments allArguments()
-        {
-            return arguments;
-        }
-
-        @Override
-        public String summary()
-        {
-            return "Check the version of a Neo4j database store.";
-        }
-
-        @Override
-        public String description()
-        {
-            return "Checks the version of a Neo4j database store. Note that this command expects a path to a store " +
-                    "directory, for example --store=data/databases/graph.db.";
-        }
-
-        @Override
-        public AdminCommand create( Path homeDir, Path configDir, OutsideWorld outsideWorld )
-        {
-            return new VersionCommand( outsideWorld::stdOutLine );
-        }
-    }
-
     private Consumer<String> out;
 
     public VersionCommand( Consumer<String> out )
@@ -120,5 +86,10 @@ public class VersionCommand implements AdminCommand
         {
             throw new CommandFailed( e.getMessage(), e );
         }
+    }
+
+    public static Arguments arguments()
+    {
+        return arguments;
     }
 }

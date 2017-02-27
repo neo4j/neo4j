@@ -58,41 +58,6 @@ public class LoadCommand implements AdminCommand
             .withDatabase()
             .withArgument( new OptionalBooleanArg( "force", false, "If an existing database should be replaced." ) );
 
-    public static class Provider extends AdminCommand.Provider
-    {
-        public Provider()
-        {
-            super( "load" );
-        }
-
-        @Override
-        public Arguments allArguments()
-        {
-            return arguments;
-        }
-
-        @Override
-        public String description()
-        {
-            return "Load a database from an archive. <archive-path> must be an archive created with the dump " +
-                    "command. <database> is the name of the database to create. Existing databases can be replaced " +
-                    "by specifying --force. It is not possible to replace a database that is mounted in a running " +
-                    "Neo4j server.";
-        }
-
-        @Override
-        public String summary()
-        {
-            return "Load a database from an archive created with the dump command.";
-        }
-
-        @Override
-        public AdminCommand create( Path homeDir, Path configDir, OutsideWorld outsideWorld )
-        {
-            return new LoadCommand( homeDir, configDir, new Loader() );
-        }
-    }
-
     private final Path homeDir;
     private final Path configDir;
     private final Loader loader;
@@ -177,5 +142,10 @@ public class LoadCommand implements AdminCommand
         {
             throw new CommandFailed( "Not a valid Neo4j archive: " + archive, incorrectFormat );
         }
+    }
+
+    public static Arguments arguments()
+    {
+        return arguments;
     }
 }

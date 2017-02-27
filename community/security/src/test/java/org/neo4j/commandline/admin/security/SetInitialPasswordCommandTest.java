@@ -135,7 +135,7 @@ public class SetInitialPasswordCommandTest
             PrintStream ps = new PrintStream( baos );
 
             Usage usage = new Usage( "neo4j-admin", mock( CommandLocator.class ) );
-            usage.printUsageForCommand( new SetInitialPasswordCommand.Provider(), ps::println );
+            usage.printUsageForCommand( new SetInitialPasswordCommandProvider(), ps::println );
 
             assertEquals( String.format( "usage: neo4j-admin set-initial-password <password>%n" +
                             "%n" +

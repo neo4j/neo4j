@@ -174,7 +174,7 @@ public class UnbindFromClusterCommandTest
             PrintStream ps = new PrintStream( baos );
 
             Usage usage = new Usage( "neo4j-admin", mock( CommandLocator.class ) );
-            usage.printUsageForCommand( new UnbindFromClusterCommand.Provider(), ps::println );
+            usage.printUsageForCommand( new UnbindFromClusterCommandProvider(), ps::println );
 
             assertThat( baos.toString(), containsString( "usage" ) );
         }
