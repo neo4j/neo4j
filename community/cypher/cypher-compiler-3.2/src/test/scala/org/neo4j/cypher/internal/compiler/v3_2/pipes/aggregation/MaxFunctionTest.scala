@@ -54,8 +54,10 @@ class MaxFunctionTest extends CypherFunSuite with AggregateTest {
     result shouldBe a[java.lang.Integer]
   }
 
-  test("mixed numbers and strings throws") {
-    intercept[IncomparableValuesException](aggregateOn(1, "wut"))
+  test("mixed numbers and strings works fine") {
+    val result = aggregateOn(1, "wut")
+
+    result shouldBe 1
   }
 
   test("aggregating strings work") {
