@@ -524,9 +524,9 @@ public class GraphDatabaseSettings implements LoadableConfig
     public static final Setting<File> auth_store =
             pathSetting( "unsupported.dbms.security.auth_store.location", NO_DEFAULT );
 
-    @Description( "A list of procedures (comma separated) that are allowed full access to the database. " +
-            "The list may contain both fully-qualified procedure names, and partial names with the wildcard '*'. " +
-            "Note that this enables these procedures to bypass security. Use with caution." )
+    @Description( "A list of procedures and user defined functions (comma separated) that are allowed full access to " +
+            "the database. The list may contain both fully-qualified procedure names, and partial names with the " +
+            "wildcard '*'. Note that this enables these procedures to bypass security. Use with caution." )
     public static final Setting<String> procedure_unrestricted =
             setting( "dbms.security.procedures.unrestricted", Settings.STRING, "" );
 

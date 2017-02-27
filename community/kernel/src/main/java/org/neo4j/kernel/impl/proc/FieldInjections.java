@@ -26,7 +26,7 @@ import java.lang.reflect.Modifier;
 import java.util.LinkedList;
 import java.util.List;
 
-import org.neo4j.kernel.api.exceptions.ProcedureInjectionException;
+import org.neo4j.kernel.api.exceptions.ComponentInjectionException;
 import org.neo4j.kernel.api.exceptions.ProcedureException;
 import org.neo4j.kernel.api.exceptions.Status;
 import org.neo4j.procedure.Context;
@@ -122,10 +122,10 @@ class FieldInjections
             ComponentRegistry.Provider<?> provider = components.providerFor( field.getType() );
             if( provider == null )
             {
-                throw new ProcedureInjectionException( Status.Procedure.ProcedureRegistrationFailed,
+                throw new ComponentInjectionException( Status.Procedure.ProcedureRegistrationFailed,
                         "Unable to set up injection for procedure `%s`, the field `%s` " +
                         "has type `%s` which is not a known injectable component.",
-                        cls.getSimpleName(), field.getName(), field.getType());
+                            cls.getSimpleName(), field.getName(), field.getType());
             }
 
             MethodHandle setter = MethodHandles.lookup().unreflectSetter( field );

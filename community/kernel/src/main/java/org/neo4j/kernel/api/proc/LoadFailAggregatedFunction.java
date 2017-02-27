@@ -17,13 +17,22 @@
  * You should have received a copy of the GNU General Public License
  * along with this program.  If not, see <http://www.gnu.org/licenses/>.
  */
-package org.neo4j.kernel.api.exceptions;
+package org.neo4j.kernel.api.proc;
 
-public class ProcedureInjectionException extends ProcedureException
+import org.neo4j.kernel.api.exceptions.ProcedureException;
+import org.neo4j.kernel.api.exceptions.Status;
+
+public class LoadFailAggregatedFunction extends CallableUserAggregationFunction.BasicUserAggregationFunction
 {
-    public ProcedureInjectionException( Status statusCode, String message,
-                               Object... parameters )
+    public LoadFailAggregatedFunction( UserFunctionSignature signature )
     {
-        super( statusCode, message, parameters );
+        super( signature );
+    }
+
+    @Override
+    public Aggregator create( Context ctx ) throws ProcedureException
+    {
+        throw new ProcedureException( Status.Procedure.ProcedureRegistrationFailed,
+                signature().description().orElse( "Failed to load " + signature().name().toString() ) );
     }
 }
