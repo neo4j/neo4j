@@ -40,9 +40,10 @@ import static javax.ws.rs.core.Response.status;
 @Path(CoreDatabaseAvailabilityService.BASE_PATH)
 public class CoreDatabaseAvailabilityService implements AdvertisableService
 {
-    static final String BASE_PATH = "server/core";
-    private static final String IS_WRITABLE_PATH = "/writable";
-    private static final String IS_AVAILABLE_PATH = "/available";
+    public static final String BASE_PATH = "server/core";
+    public static final String IS_WRITABLE_PATH = "/writable";
+    public static final String IS_AVAILABLE_PATH = "/available";
+    public static final String IS_READ_ONLY_PATH = "/read-only";
 
     private final OutputFormat output;
     private final CoreGraphDatabase coreDatabase;
@@ -81,6 +82,23 @@ public class CoreDatabaseAvailabilityService implements AdvertisableService
         }
 
         if ( coreDatabase.getRole() == Role.LEADER )
+        {
+            return positiveResponse();
+        }
+
+        return negativeResponse();
+    }
+
+    @GET
+    @Path(IS_READ_ONLY_PATH)
+    public Response isReadOnly() throws BadInputException
+    {
+        if ( coreDatabase == null )
+        {
+            return status( FORBIDDEN ).build();
+        }
+
+        if ( coreDatabase.getRole() == Role.FOLLOWER || coreDatabase.getRole() == Role.CANDIDATE )
         {
             return positiveResponse();
         }
