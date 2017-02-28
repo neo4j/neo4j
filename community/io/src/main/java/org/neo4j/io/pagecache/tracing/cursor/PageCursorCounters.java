@@ -45,6 +45,11 @@ public interface PageCursorCounters
     long unpins();
 
     /**
+     * @return The number of page hits observed so far.
+     */
+    long hits();
+
+    /**
      * @return The sum total of bytes read in through page faults thus far.
      */
     long bytesRead();

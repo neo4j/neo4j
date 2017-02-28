@@ -62,6 +62,12 @@ public class DelegatingPageCacheTracer implements PageCacheTracer
         return delegate.unpins();
     }
 
+    @Override
+    public long hits()
+    {
+        return delegate.hits();
+    }
+
     public MajorFlushEvent beginCacheFlush()
     {
         return delegate.beginCacheFlush();
@@ -102,6 +108,12 @@ public class DelegatingPageCacheTracer implements PageCacheTracer
     public void unpins( long unpins )
     {
         delegate.unpins( unpins );
+    }
+
+    @Override
+    public void hits( long hits )
+    {
+        delegate.hits( hits );
     }
 
     @Override

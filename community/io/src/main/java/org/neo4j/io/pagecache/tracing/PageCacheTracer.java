@@ -89,6 +89,12 @@ public interface PageCacheTracer extends PageCacheCounters
         }
 
         @Override
+        public long hits()
+        {
+            return 0;
+        }
+
+        @Override
         public long flushes()
         {
             return 0;
@@ -131,6 +137,11 @@ public interface PageCacheTracer extends PageCacheCounters
 
         @Override
         public void unpins( long unpins )
+        {
+        }
+
+        @Override
+        public void hits( long hits )
         {
         }
 
@@ -211,6 +222,12 @@ public interface PageCacheTracer extends PageCacheCounters
      * @param unpins number of unpins
      */
     void unpins( long unpins );
+
+    /**
+     * Report number of observer hits
+     * @param hits number of hits
+     */
+    void hits( long hits );
 
     /**
      * Report number of observed faults

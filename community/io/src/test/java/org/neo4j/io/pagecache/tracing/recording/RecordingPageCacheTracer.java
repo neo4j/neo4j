@@ -108,6 +108,12 @@ public class RecordingPageCacheTracer extends RecordingTracer implements PageCac
     }
 
     @Override
+    public long hits()
+    {
+        return 0;
+    }
+
+    @Override
     public long flushes()
     {
         return 0;
@@ -151,6 +157,11 @@ public class RecordingPageCacheTracer extends RecordingTracer implements PageCac
 
     @Override
     public void unpins( long unpins )
+    {
+    }
+
+    @Override
+    public void hits( long hits )
     {
     }
 

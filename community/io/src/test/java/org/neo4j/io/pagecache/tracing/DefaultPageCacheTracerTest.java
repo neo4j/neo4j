@@ -42,21 +42,6 @@ public class DefaultPageCacheTracerTest
         swapper = new DummyPageSwapper( "filename" );
     }
 
-    private void assertCounts( long pins, long unpins, long faults, long evictions, long evictionExceptions,
-                               long flushes, long bytesRead, long bytesWritten, long filesMapped, long filesUnmapped )
-    {
-        assertThat( "pins", tracer.pins(), is( pins ) );
-        assertThat( "unpins", tracer.unpins(), is( unpins ) );
-        assertThat( "faults", tracer.faults(), is( faults ) );
-        assertThat( "evictions", tracer.evictions(), is( evictions ) );
-        assertThat( "evictionExceptions", tracer.evictionExceptions(), is( evictionExceptions ) );
-        assertThat( "flushes", tracer.flushes(), is( flushes ) );
-        assertThat( "bytesRead", tracer.bytesRead(), is( bytesRead ) );
-        assertThat( "bytesWritten", tracer.bytesWritten(), is( bytesWritten ) );
-        assertThat( "filesMapped", tracer.filesMapped(), is( filesMapped ) );
-        assertThat( "filesUnmapped", tracer.filesUnmapped(), is( filesUnmapped ) );
-    }
-
     @Test
     public void mustCountEvictions()
     {
@@ -88,7 +73,7 @@ public class DefaultPageCacheTracerTest
             evictionRunEvent.beginEviction().close();
         }
 
-        assertCounts( 0, 0, 0, 4, 2, 3, 0, 36, 0, 0 );
+        assertCounts( 0, 0, 0, 0, 4, 2, 3, 0, 36, 0, 0 );
     }
 
     @Test
@@ -96,11 +81,11 @@ public class DefaultPageCacheTracerTest
     {
         tracer.mappedFile( new File( "a" ) );
 
-        assertCounts( 0, 0, 0, 0, 0, 0, 0, 0, 1, 0 );
+        assertCounts( 0, 0, 0, 0, 0, 0, 0, 0, 0, 1, 0 );
 
         tracer.unmappedFile( new File( "a" ) );
 
-        assertCounts( 0, 0, 0, 0, 0, 0, 0, 0, 1, 1 );
+        assertCounts( 0, 0, 0, 0, 0, 0, 0, 0, 0, 1, 1 );
     }
 
     @Test
@@ -113,7 +98,7 @@ public class DefaultPageCacheTracerTest
             cacheFlush.flushEventOpportunity().beginFlush( 0, 0, swapper ).done();
         }
 
-        assertCounts( 0, 0, 0, 0, 0, 3, 0, 0, 0, 0 );
+        assertCounts( 0, 0, 0, 0, 0, 0, 3, 0, 0, 0, 0 );
 
         try ( MajorFlushEvent fileFlush = tracer.beginFileFlush( swapper ) )
         {
@@ -122,6 +107,22 @@ public class DefaultPageCacheTracerTest
             fileFlush.flushEventOpportunity().beginFlush( 0, 0, swapper ).done();
         }
 
-        assertCounts( 0, 0, 0, 0, 0, 6, 0, 0, 0, 0 );
+        assertCounts( 0, 0, 0, 0, 0, 0, 6, 0, 0, 0, 0 );
+    }
+
+    private void assertCounts( long pins, long unpins, long hits, long faults, long evictions, long evictionExceptions,
+            long flushes, long bytesRead, long bytesWritten, long filesMapped, long filesUnmapped )
+    {
+        assertThat( "pins", tracer.pins(), is( pins ) );
+        assertThat( "unpins", tracer.unpins(), is( unpins ) );
+        assertThat( "hits", tracer.hits(), is( hits ) );
+        assertThat( "faults", tracer.faults(), is( faults ) );
+        assertThat( "evictions", tracer.evictions(), is( evictions ) );
+        assertThat( "evictionExceptions", tracer.evictionExceptions(), is( evictionExceptions ) );
+        assertThat( "flushes", tracer.flushes(), is( flushes ) );
+        assertThat( "bytesRead", tracer.bytesRead(), is( bytesRead ) );
+        assertThat( "bytesWritten", tracer.bytesWritten(), is( bytesWritten ) );
+        assertThat( "filesMapped", tracer.filesMapped(), is( filesMapped ) );
+        assertThat( "filesUnmapped", tracer.filesUnmapped(), is( filesUnmapped ) );
     }
 }

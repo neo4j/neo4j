@@ -60,6 +60,12 @@ public class LinearHistoryPageCursorTracer implements PageCursorTracer
     }
 
     @Override
+    public long hits()
+    {
+        return 0;
+    }
+
+    @Override
     public long bytesRead()
     {
         return 0;

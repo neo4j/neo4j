@@ -242,6 +242,7 @@ abstract class MuninnPageCursor extends PageCursor
                 if ( locked & page.isBoundTo( swapper, filePageId ) )
                 {
                     pinCursorToPage( page, filePageId, swapper );
+                    pinEvent.hit();
                     return;
                 }
                 if ( locked )

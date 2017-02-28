@@ -103,6 +103,12 @@ public final class LinearHistoryPageCacheTracer implements PageCacheTracer
     }
 
     @Override
+    public long hits()
+    {
+        return 0;
+    }
+
+    @Override
     public long flushes()
     {
         return 0;
@@ -145,6 +151,11 @@ public final class LinearHistoryPageCacheTracer implements PageCacheTracer
 
     @Override
     public void unpins( long unpins )
+    {
+    }
+
+    @Override
+    public void hits( long hits )
     {
     }
 

@@ -70,6 +70,12 @@ public class RecordingPageCursorTracer extends RecordingTracer implements PageCu
     }
 
     @Override
+    public long hits()
+    {
+        return 0;
+    }
+
+    @Override
     public long bytesRead()
     {
         return 0;
@@ -141,6 +147,11 @@ public class RecordingPageCursorTracer extends RecordingTracer implements PageCu
                     {
                     }
                 };
+            }
+
+            @Override
+            public void hit()
+            {
             }
 
             @Override

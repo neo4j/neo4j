@@ -252,6 +252,11 @@ class HEvents
         }
 
         @Override
+        public void hit()
+        {
+        }
+
+        @Override
         public void done()
         {
             close();
