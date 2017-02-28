@@ -310,7 +310,7 @@ public class CausalClusteringSettings
 
     @Description( "Time between scanning the cluster to refresh current server's view of topology" )
     public static final Setting<Long> cluster_topology_refresh =
-            setting( "causal_clustering.cluster_topology_refresh", DURATION, "1m", min(1_000L) );
+            setting( "causal_clustering.cluster_topology_refresh", DURATION, "5s", min(1_000L) );
 
     @Description( "Require authorization for access to the Causal Clustering status endpoints." )
     public static final Setting<Boolean> status_auth_enabled =

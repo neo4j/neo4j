@@ -83,6 +83,7 @@ public class CoreClusterMember implements ClusterMember
         config.put( CausalClusteringSettings.discovery_listen_address.name(), "127.0.0.1:" + hazelcastPort );
         config.put( CausalClusteringSettings.transaction_listen_address.name(), "127.0.0.1:" + txPort );
         config.put( CausalClusteringSettings.raft_listen_address.name(), "127.0.0.1:" + raftPort );
+        config.put( CausalClusteringSettings.cluster_topology_refresh.name(), "1000ms" );
         config.put( CausalClusteringSettings.expected_core_cluster_size.name(), String.valueOf( clusterSize ) );
         config.put( CausalClusteringSettings.leader_election_timeout.name(), "500ms" );
         config.put( CausalClusteringSettings.raft_messages_log_enable.name(), Settings.TRUE );
