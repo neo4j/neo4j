@@ -40,7 +40,6 @@ import org.neo4j.test.GraphHolder;
 import org.neo4j.test.TestData;
 import org.neo4j.test.server.HTTP;
 import org.neo4j.test.server.SharedServerTestBase;
-import org.neo4j.visualization.asciidoc.AsciidocHelper;
 
 import static java.lang.String.format;
 import static java.net.URLEncoder.encode;
@@ -111,11 +110,6 @@ public class AbstractRestFunctionalTestBase extends SharedServerTestBase impleme
             template = template.replace( "%" + key + "%", idFor( key ).toString() );
         }
         return template;
-    }
-
-    protected String startGraph( String name )
-    {
-        return AsciidocHelper.createGraphVizWithNodeId( "Starting Graph", graphdb(), name );
     }
 
     @Override
