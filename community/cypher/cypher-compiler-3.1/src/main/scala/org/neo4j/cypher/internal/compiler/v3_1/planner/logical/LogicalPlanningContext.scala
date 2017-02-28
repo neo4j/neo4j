@@ -19,6 +19,7 @@
  */
 package org.neo4j.cypher.internal.compiler.v3_1.planner.logical
 
+import org.neo4j.csv.reader.Configuration.DEFAULT_LEGACY_STYLE_QUOTING
 import org.neo4j.cypher.internal.compiler.v3_1.InternalNotificationLogger
 import org.neo4j.cypher.internal.compiler.v3_1.planner.logical.Metrics.QueryGraphSolverInput
 import org.neo4j.cypher.internal.compiler.v3_1.planner.logical.plans.{IdName, LogicalPlan, StrictnessMode}
@@ -37,6 +38,7 @@ case class LogicalPlanningContext(planContext: PlanContext,
                                   useErrorsOverWarnings: Boolean = false,
                                   errorIfShortestPathFallbackUsedAtRuntime: Boolean = false,
                                   errorIfShortestPathHasCommonNodesAtRuntime: Boolean = true,
+                                  legacyCsvQuoteEscaping: Boolean = DEFAULT_LEGACY_STYLE_QUOTING,
                                   config: QueryPlannerConfiguration = QueryPlannerConfiguration.default,
                                   leafPlanUpdater: LogicalPlan => LogicalPlan = identity) {
   def withStrictness(strictness: StrictnessMode) = copy(input = input.withPreferredStrictness(strictness))

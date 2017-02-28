@@ -91,7 +91,8 @@ case class CostBasedExecutablePlanBuilder(monitors: Monitors,
       queryGraphSolver, notificationLogger = notificationLogger, useErrorsOverWarnings = config.useErrorsOverWarnings,
       errorIfShortestPathFallbackUsedAtRuntime = config.errorIfShortestPathFallbackUsedAtRuntime,
       errorIfShortestPathHasCommonNodesAtRuntime = config.errorIfShortestPathHasCommonNodesAtRuntime,
-      config = QueryPlannerConfiguration.default.withUpdateStrategy(updateStrategy))
+      legacyCsvQuoteEscaping = config.legacyCsvQuoteEscaping,
+    config = QueryPlannerConfiguration.default.withUpdateStrategy(updateStrategy))
 
     val (periodicCommit, plan) = queryPlanner.plan(unionQuery)(context)
 

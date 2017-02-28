@@ -227,6 +227,10 @@ class ExecutionEngine(val queryService: GraphDatabaseQueryService, logProvider: 
       queryService, GraphDatabaseSettings.forbid_shortestpath_common_nodes,
       GraphDatabaseSettings.forbid_shortestpath_common_nodes.getDefaultValue.toBoolean
     )
+    val legacyCsvQuoteEscaping = optGraphSetting[java.lang.Boolean](
+      queryService, GraphDatabaseSettings.csv_legacy_quote_escaping,
+      GraphDatabaseSettings.csv_legacy_quote_escaping.getDefaultValue.toBoolean
+    )
 
     if (((version != CypherVersion.v2_3) || (version != CypherVersion.v3_0) || (version != CypherVersion.v3_1)) &&
       (planner == CypherPlanner.greedy || planner == CypherPlanner.idp || planner == CypherPlanner.dp)) {
@@ -235,7 +239,9 @@ class ExecutionEngine(val queryService: GraphDatabaseQueryService, logProvider: 
       log.error(message)
       throw new IllegalStateException(message)
     }
-    new CypherCompiler(queryService, kernel, kernelMonitors, version, planner, runtime, useErrorsOverWarnings, idpMaxTableSize, idpIterationDuration, errorIfShortestPathFallbackUsedAtRuntime, errorIfShortestPathHasCommonNodesAtRuntime, logProvider)
+    new CypherCompiler(queryService, kernel, kernelMonitors, version, planner, runtime, useErrorsOverWarnings,
+      idpMaxTableSize, idpIterationDuration, errorIfShortestPathFallbackUsedAtRuntime,
+      errorIfShortestPathHasCommonNodesAtRuntime, legacyCsvQuoteEscaping, logProvider)
   }
 
   private def getPlanCacheSize: Int =

@@ -41,7 +41,7 @@ object CSVResources {
   val DEFAULT_BUFFER_SIZE: Int =  2 * 1024 * 1024
   val DEFAULT_QUOTE_CHAR: Char = '"'
 
-  private val defaultConfig = new Configuration {
+  private def config(legacyCsvQuoteEscaping: Boolean) = new Configuration {
     override def quotationCharacter(): Char = DEFAULT_QUOTE_CHAR
 
     override def bufferSize(): Int = DEFAULT_BUFFER_SIZE
@@ -51,12 +51,14 @@ object CSVResources {
     override def emptyQuotedStringsAsNull(): Boolean = true
 
     override def trimStrings(): Boolean = false
+
+    override def legacyStyleQuoting(): Boolean = legacyCsvQuoteEscaping
   }
 }
 
 class CSVResources(cleaner: TaskCloser) extends ExternalCSVResource {
 
-  def getCsvIterator(url: URL, fieldTerminator: Option[String] = None): Iterator[Array[String]] = {
+  def getCsvIterator(url: URL, fieldTerminator: Option[String], legacyCsvQuoteEscaping: Boolean): Iterator[Array[String]] = {
     val inputStream = openStream(url)
 
     val reader = if (url.getProtocol == "file") {
@@ -65,7 +67,7 @@ class CSVResources(cleaner: TaskCloser) extends ExternalCSVResource {
       Readables.wrap(inputStream, url.toString, StandardCharsets.UTF_8)
     }
     val delimiter: Char = fieldTerminator.map(_.charAt(0)).getOrElse(CSVResources.DEFAULT_FIELD_TERMINATOR)
-    val seeker = CharSeekers.charSeeker(reader, CSVResources.defaultConfig, true)
+    val seeker = CharSeekers.charSeeker(reader, CSVResources.config(legacyCsvQuoteEscaping), true)
     val extractor = new Extractors(delimiter).string()
     val intDelimiter = delimiter.toInt
     val mark = new Mark
