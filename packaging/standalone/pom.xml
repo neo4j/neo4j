@@ -245,7 +245,7 @@
           <dependency>
             <groupId>org.neo4j.build</groupId>
             <artifactId>licensecheck-config</artifactId>
-            <version>${neo4j.version}</version>
+            <version>${project.version}</version>
           </dependency>
         </dependencies>
       </plugin>
@@ -304,7 +304,7 @@
     <dependency>
       <groupId>org.neo4j</groupId>
       <artifactId>neo4j-import-tool</artifactId>
-      <version>${neo4j.version}</version>
+      <version>${project.version}</version>
     </dependency>
   </dependencies>
 
