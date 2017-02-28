@@ -20,8 +20,8 @@
 package org.neo4j.cypher.internal.frontend.v3_2.ast
 
 import org.neo4j.cypher.internal.frontend.v3_2.helpers.NonEmptyList
-import org.neo4j.cypher.internal.frontend.v3_2.{InputPosition, InternalException, SemanticCheckable}
 import org.neo4j.cypher.internal.frontend.v3_2.symbols._
+import org.neo4j.cypher.internal.frontend.v3_2.{InputPosition, InternalException, SemanticCheckable}
 
 sealed trait Hint extends ASTNode with ASTPhrase with SemanticCheckable {
   def variables: NonEmptyList[Variable]
@@ -55,11 +55,15 @@ sealed trait LegacyIndexHint extends Hint {
 case class UsingIndexHint(variable: Variable, label: LabelName, property: PropertyKeyName)(val position: InputPosition) extends UsingHint with NodeHint {
   def variables = NonEmptyList(variable)
   def semanticCheck = variable.ensureDefined chain variable.expectType(CTNode.covariant)
+
+  override def toString: String = s"USING INDEX ${variable.name}:${label.name}(${property.name})"
 }
 
 case class UsingScanHint(variable: Variable, label: LabelName)(val position: InputPosition) extends UsingHint with NodeHint {
   def variables = NonEmptyList(variable)
   def semanticCheck = variable.ensureDefined chain variable.expectType(CTNode.covariant)
+
+  override def toString: String = s"USING SCAN ${variable.name}:${label.name}"
 }
 
 object UsingJoinHint {
@@ -72,6 +76,8 @@ object UsingJoinHint {
 case class UsingJoinHint(variables: NonEmptyList[Variable])(val position: InputPosition) extends UsingHint with NodeHint {
   def semanticCheck =
     variables.map { variable => variable.ensureDefined chain variable.expectType(CTNode.covariant) }.reduceLeft(_ chain _)
+
+  override def toString: String = s"USING JOIN ON ${variables.map(_.name).toIndexedSeq.mkString(", ")}"
 }
 
 // start items
