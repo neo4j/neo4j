@@ -48,7 +48,6 @@ import org.neo4j.kernel.api.txstate.RelationshipChangeVisitorAdapter;
 import org.neo4j.kernel.api.txstate.TransactionState;
 import org.neo4j.kernel.impl.api.RelationshipVisitor;
 import org.neo4j.kernel.impl.api.cursor.TxAllPropertyCursor;
-import org.neo4j.kernel.impl.api.cursor.TxIteratorRelationshipCursor;
 import org.neo4j.kernel.impl.api.cursor.TxSinglePropertyCursor;
 import org.neo4j.kernel.impl.api.store.RelationshipIterator;
 import org.neo4j.kernel.impl.util.InstanceCache;
@@ -157,7 +156,6 @@ public final class TxState implements TransactionState, RelationshipVisitor.Home
 
     private Map<LabelSchemaDescriptor, Map<OrderedPropertyValues, DiffSets<Long>>> indexUpdates;
 
-    private InstanceCache<TxIteratorRelationshipCursor> iteratorRelationshipCursor;
     private InstanceCache<TxAllPropertyCursor> propertyCursor;
     private InstanceCache<TxSinglePropertyCursor> singlePropertyCursor;
 
@@ -180,14 +178,6 @@ public final class TxState implements TransactionState, RelationshipVisitor.Home
             protected TxSinglePropertyCursor create()
             {
                 return new TxSinglePropertyCursor( (Consumer) this );
-            }
-        };
-        iteratorRelationshipCursor = new InstanceCache<TxIteratorRelationshipCursor>()
-        {
-            @Override
-            protected TxIteratorRelationshipCursor create()
-            {
-                return new TxIteratorRelationshipCursor( TxState.this, this );
             }
         };
     }
