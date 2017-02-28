@@ -164,7 +164,7 @@ public class OnlineBackupCommandIT
         allArgs.addAll( Arrays.asList( args ) );
 
         Process process = Runtime.getRuntime().exec( allArgs.toArray( new String[allArgs.size()] ) );
-        return new ProcessStreamHandler( process, false ).waitForResult();
+        return new ProcessStreamHandler( process, true ).waitForResult();
     }
 
     private DbRepresentation getDbRepresentation()
