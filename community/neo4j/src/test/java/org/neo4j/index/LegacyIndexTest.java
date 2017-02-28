@@ -29,7 +29,7 @@ import java.util.Map;
 import org.neo4j.graphdb.Label;
 import org.neo4j.graphdb.index.IndexManager;
 import org.neo4j.index.lucene.unsafe.batchinsert.LuceneBatchInserterIndexProvider;
-import org.neo4j.test.TargetDirectory;
+import org.neo4j.test.rule.TestDirectory;
 import org.neo4j.unsafe.batchinsert.BatchInserter;
 import org.neo4j.unsafe.batchinsert.BatchInserterIndex;
 import org.neo4j.unsafe.batchinsert.BatchInserters;
@@ -41,7 +41,7 @@ public class LegacyIndexTest
     private static final long TEST_TIMEOUT = 40_000;
 
     @Rule
-    public TargetDirectory.TestDirectory directory = TargetDirectory.testDirForTest( getClass() );
+    public TestDirectory directory = TestDirectory.testDirectory();
 
     @Test( timeout = TEST_TIMEOUT )
     public void legacyIndexPopulationWithBunchOfFields() throws Exception
