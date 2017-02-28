@@ -30,6 +30,8 @@ import java.util.function.Consumer;
 
 import static java.util.Arrays.asList;
 import static org.mockito.Mockito.inOrder;
+import static org.mockito.Mockito.mock;
+import static org.mockito.Mockito.when;
 
 public class AdminCommandSectionTest
 {
@@ -47,10 +49,9 @@ public class AdminCommandSectionTest
     {
         AdminCommandSection generalSection = AdminCommandSection.general();
 
-        List<AdminCommand.Provider> providers = asList(
-                new StubProvider( "restore", "Restore", generalSection ),
-                new StubProvider( "bam", "A summary", generalSection ),
-                new StubProvider( "zzzz-last-one", "Another summary", generalSection ) );
+        List<AdminCommand.Provider> providers = asList( mockCommand( generalSection, "restore", "Restore" ),
+                mockCommand( generalSection, "bam", "A summary" ),
+                mockCommand( generalSection, "zzzz-last-one", "Another summary" ) );
         generalSection.printAllCommandsUnderSection( out, providers );
 
         InOrder ordered = inOrder( out );
@@ -62,5 +63,14 @@ public class AdminCommandSectionTest
         ordered.verify( out ).accept( "    zzzz-last-one" );
         ordered.verify( out ).accept( "        Another summary" );
         ordered.verifyNoMoreInteractions();
+    }
+
+    private AdminCommand.Provider mockCommand( AdminCommandSection section, String name, String summary )
+    {
+            AdminCommand.Provider commandProvider = mock( AdminCommand.Provider.class );
+            when( commandProvider.name() ).thenReturn( name );
+            when( commandProvider.summary() ).thenReturn( summary );
+            when( commandProvider.commandSection() ).thenReturn( AdminCommandSection.general() );
+            return commandProvider;
     }
 }

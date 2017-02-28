@@ -25,9 +25,14 @@ import org.mockito.InOrder;
 import org.mockito.Mock;
 import org.mockito.MockitoAnnotations;
 
+import java.util.Collections;
 import java.util.function.Consumer;
 
+import org.neo4j.commandline.arguments.Arguments;
+
 import static org.mockito.Mockito.inOrder;
+import static org.mockito.Mockito.mock;
+import static org.mockito.Mockito.when;
 
 public class UsageTest
 {
@@ -44,26 +49,24 @@ public class UsageTest
     public void shouldPrintUsageForACommand() throws Exception
     {
         // given
-        StubProvider stubProvider = new StubProvider( "bam", "A summary", AdminCommandSection.general() );
-        AdminCommand.Provider[] commands =
-                new AdminCommand.Provider[]{stubProvider};
+        AdminCommand.Provider commandProvier = mockCommand();
+        AdminCommand.Provider[] commands = new AdminCommand.Provider[]{commandProvier};
         final Usage usage = new Usage( "neo4j-admin", new CannedLocator( commands ) );
 
         // when
-        usage.printUsageForCommand(  stubProvider, out);
+        usage.printUsageForCommand( commandProvier, out );
 
         // then
         InOrder ordered = inOrder( out );
         ordered.verify( out ).accept( "usage: neo4j-admin bam " );
-        ordered.verify(out).accept( "" );
+        ordered.verify( out ).accept( "" );
         ordered.verify( out ).accept( "description" );
     }
 
     @Test
     public void shouldPrintUsageWithConfiguration()
     {
-        AdminCommand.Provider[] commands =
-                new AdminCommand.Provider[]{new StubProvider( "bam", "A summary", AdminCommandSection.general() )};
+        AdminCommand.Provider[] commands = new AdminCommand.Provider[]{mockCommand()};
         final Usage usage = new Usage( "neo4j-admin", new CannedLocator( commands ) );
         usage.print( out );
 
@@ -86,5 +89,17 @@ public class UsageTest
         ordered.verify( out ).accept( "" );
         ordered.verify( out ).accept( "Use neo4j-admin help <command> for more details." );
         ordered.verifyNoMoreInteractions();
+    }
+
+    private AdminCommand.Provider mockCommand()
+    {
+        AdminCommand.Provider commandProvider = mock( AdminCommand.Provider.class );
+        when( commandProvider.name() ).thenReturn( "bam" );
+        when( commandProvider.summary() ).thenReturn( "A summary" );
+        when( commandProvider.allArguments() ).thenReturn( Arguments.NO_ARGS );
+        when( commandProvider.possibleArguments() ).thenReturn( Collections.singletonList( Arguments.NO_ARGS ) );
+        when( commandProvider.description() ).thenReturn( "description" );
+        when( commandProvider.commandSection() ).thenReturn( AdminCommandSection.general() );
+        return commandProvider;
     }
 }
