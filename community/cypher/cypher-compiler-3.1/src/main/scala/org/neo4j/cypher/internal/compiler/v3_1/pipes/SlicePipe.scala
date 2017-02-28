@@ -27,12 +27,12 @@ import org.neo4j.cypher.internal.compiler.v3_1.planDescription.InternalPlanDescr
 case class SlicePipe(source: Pipe, skip: Option[Expression], limit: Option[Expression])
                     (implicit pipeMonitor: PipeMonitor) extends PipeWithSource(source, pipeMonitor) {
 
+  skip.foreach(_.registerOwningPipe(this))
+  limit.foreach(_.registerOwningPipe(this))
+
   val symbols = source.symbols
 
   protected def internalCreateResults(input: Iterator[ExecutionContext], state: QueryState): Iterator[ExecutionContext] = {
-    //register as parent so that stats are associated with this pipe
-    state.decorator.registerParentPipe(this)
-
     implicit val s = state
 
     if(input.isEmpty)

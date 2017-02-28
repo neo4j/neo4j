@@ -44,9 +44,12 @@ import org.apache.lucene.search.similarities.Similarity;
 import org.apache.lucene.util.BytesRef;
 import org.apache.lucene.util.NumericUtils;
 
+import java.util.ArrayList;
 import java.util.Arrays;
+import java.util.Collection;
 import java.util.HashMap;
 import java.util.HashSet;
+import java.util.List;
 import java.util.Map;
 import java.util.Set;
 
@@ -55,7 +58,6 @@ import org.neo4j.index.lucene.ValueContext;
 
 import static java.lang.Boolean.FALSE;
 import static java.lang.Boolean.TRUE;
-
 import static org.neo4j.index.impl.lucene.legacy.LuceneLegacyIndex.isValidKey;
 
 public abstract class IndexType
@@ -392,23 +394,33 @@ public abstract class IndexType
     // Re-add field since their index info is lost after reading the fields from the index store
     void restoreSortFields( Document document )
     {
-        Map<String,Object> fieldsWithoutSortFields = new HashMap<>();
+        Collection<IndexableField> notIndexedStoredFields = getNotIndexedStoredFields( document );
+        for ( IndexableField field : notIndexedStoredFields )
+        {
+            Object fieldValue = getFieldValue( field );
+            String name = field.name();
+            removeFieldsFromDocument( document, name, fieldValue );
+            addNewFieldToDocument( document, name, fieldValue );
+        }
+    }
+
+    private Collection<IndexableField> getNotIndexedStoredFields( Document document )
+    {
+        Map<String,IndexableField> nameFieldMap = new HashMap<>();
+        List<String> indexedFields = new ArrayList<>();
         for ( IndexableField field : document.getFields() )
         {
             if ( isStoredField( field ) )
             {
-                IndexableField[] fields = document.getFields( field.name() );
-                if ( !haveSortField( fields ) )
-                {
-                    fieldsWithoutSortFields.put( field.name(), getFieldValue( field ) );
-                }
+                nameFieldMap.put( field.name(), field );
+            }
+            else if ( !DocValuesType.NONE.equals( field.fieldType().docValuesType() ) )
+            {
+                indexedFields.add( field.name() );
             }
         }
-        for ( Map.Entry<String,Object> entry : fieldsWithoutSortFields.entrySet() )
-        {
-            removeFieldsFromDocument( document, entry.getKey(), entry.getValue() );
-            addNewFieldToDocument( document, entry.getKey(), entry.getValue() );
-        }
+        indexedFields.forEach( nameFieldMap::remove );
+        return nameFieldMap.values();
     }
 
     void removeFieldsFromDocument( Document document, String key, String exactKey, Object value )
@@ -432,18 +444,6 @@ public abstract class IndexType
                 addNewFieldToDocument( document, key, existingValue );
             }
         }
-    }
-
-    private boolean haveSortField( IndexableField[] fields )
-    {
-        for ( IndexableField field : fields )
-        {
-            if ( !DocValuesType.NONE.equals( field.fieldType().docValuesType() ) )
-            {
-                return true;
-            }
-        }
-        return false;
     }
 
     private Object getFieldValue( IndexableField field )

@@ -29,10 +29,9 @@ import scala.collection.JavaConverters._
 case class TraversalMatchPipe(source: Pipe, matcher: TraversalMatcher, trail: Trail)
                              (implicit pipeMonitor: PipeMonitor) extends PipeWithSource(source, pipeMonitor) {
 
-  protected def internalCreateResults(input: Iterator[ExecutionContext], state: QueryState) = {
-    //register as parent so that stats are associated with this pipe
-    state.decorator.registerParentPipe(this)
+  trail.predicates.foreach(_.foreach(_.registerOwningPipe(this)))
 
+  protected def internalCreateResults(input: Iterator[ExecutionContext], state: QueryState) = {
     input.flatMap {
 
       case ctx =>

@@ -49,14 +49,14 @@ case class ProcedureCallPipe(source: Pipe,
                             (implicit monitor: PipeMonitor)
   extends PipeWithSource(source, monitor) with ListSupport with RonjaPipe {
 
+  argExprs.foreach(_.registerOwningPipe(this))
+
   private val rowProcessor = rowProcessing match {
     case FlatMapAndAppendToRow => internalCreateResultsByAppending _
     case PassThroughRow => internalCreateResultsByPassingThrough _
   }
 
   override protected def internalCreateResults(input: Iterator[ExecutionContext], state: QueryState): Iterator[ExecutionContext] = {
-    //register as parent so that stats are associated with this pipe
-    state.decorator.registerParentPipe(this)
     val converter = new RuntimeJavaValueConverter(state.query.isGraphKernelResultValue, state.typeConverter.asPublicType)
 
     rowProcessor(input, state, converter)

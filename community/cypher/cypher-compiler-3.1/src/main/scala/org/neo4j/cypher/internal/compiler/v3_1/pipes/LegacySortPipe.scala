@@ -29,10 +29,9 @@ case class LegacySortPipe(source: Pipe, sortDescription: List[SortItem])
               (implicit pipeMonitor: PipeMonitor) extends PipeWithSource(source, pipeMonitor) with ExecutionContextComparer with NoEffectsPipe {
   def symbols = source.symbols
 
-  protected def internalCreateResults(input: Iterator[ExecutionContext], state: QueryState) = {
-    //register as parent so that stats are associated with this pipe
-    state.decorator.registerParentPipe(this)
+  sortDescription.foreach(_.expression.registerOwningPipe(this))
 
+  protected def internalCreateResults(input: Iterator[ExecutionContext], state: QueryState) = {
     input.toList.
       sortWith((a, b) => compareBy(a, b, sortDescription)(state)).iterator
   }

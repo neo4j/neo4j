@@ -39,14 +39,13 @@ case class NodeIndexSeekPipe(ident: String,
                             (val estimatedCardinality: Option[Double] = None)(implicit pipeMonitor: PipeMonitor)
   extends Pipe with RonjaPipe {
 
+  valueExpr.expression.registerOwningPipe(this)
+
   private val descriptor = IndexDescriptor(label.nameId.id, propertyKey.nameId.id)
 
   private val indexFactory = indexMode.indexFactory(descriptor)
 
   protected def internalCreateResults(state: QueryState): Iterator[ExecutionContext] = {
-    //register as parent so that stats are associated with this pipe
-    state.decorator.registerParentPipe(this)
-
     val index = indexFactory(state)
     val baseContext = state.initialContext.getOrElse(ExecutionContext.empty)
     val resultNodes = indexQuery(valueExpr, baseContext, state, index, label.name, propertyKey.name)

@@ -32,10 +32,9 @@ case class MatchPipe(source: Pipe,
   val symbols = matchingContext.symbols
   val variablesBoundInSource = variablesInClause intersect source.symbols.keys.toSet
 
-  protected def internalCreateResults(input: Iterator[ExecutionContext], state: QueryState) = {
-    //register as parent so that stats are associated with this pipe
-    state.decorator.registerParentPipe(this)
+  predicates.foreach(_.registerOwningPipe(this))
 
+  protected def internalCreateResults(input: Iterator[ExecutionContext], state: QueryState) = {
     input.flatMap {
       ctx =>
         if (variablesBoundInSource.exists(i => ctx(i) == null))
