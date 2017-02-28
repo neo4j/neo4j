@@ -39,7 +39,8 @@ class LoadCSVBuilder extends PlanBuilder {
     val item: LoadCSV = findLoadCSVItem(plan).get
     plan.copy(
       query = plan.query.copy(start = plan.query.start.replace(Unsolved(item), Solved(item))),
-      pipe = new LoadCSVPipe(plan.pipe, if (item.withHeaders) HasHeaders else NoHeaders, item.url, item.variable, item.fieldTerminator)()
+      pipe = new LoadCSVPipe(plan.pipe, if (item.withHeaders) HasHeaders else NoHeaders, item.url, item.variable,
+        item.fieldTerminator, legacyCsvQuoteEscaping = true)()  // Rule planner supports only legacy quotes
     )
   }
 }

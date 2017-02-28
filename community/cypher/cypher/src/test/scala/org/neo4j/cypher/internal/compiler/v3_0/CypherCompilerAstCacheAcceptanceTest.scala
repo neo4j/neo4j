@@ -50,6 +50,7 @@ class CypherCompilerAstCacheAcceptanceTest extends CypherFunSuite with GraphData
         idpIterationDuration = 1000,
         errorIfShortestPathFallbackUsedAtRuntime = false,
         errorIfShortestPathHasCommonNodesAtRuntime = true,
+        legacyCsvQuoteEscaping = false,
         nonIndexedLabelWarningThreshold = 10000L
       ),
       clock,

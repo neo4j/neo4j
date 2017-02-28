@@ -51,7 +51,7 @@ class CSVResourcesTest extends CypherFunSuite with CreateTempFileTestSupport {
     }
 
     //when
-    val result: List[Array[String]] = resources.getCsvIterator(new URL(url)).toList
+    val result: List[Array[String]] = resources.getCsvIterator(new URL(url), None, false).toList
 
     (result zip List(
       Array[String]("1"),
@@ -74,7 +74,7 @@ class CSVResourcesTest extends CypherFunSuite with CreateTempFileTestSupport {
     }
 
     //when
-    val result = resources.getCsvIterator(new URL(url)).toList
+    val result = resources.getCsvIterator(new URL(url), None, false).toList
 
     //then
     (result zip List(
@@ -97,7 +97,7 @@ class CSVResourcesTest extends CypherFunSuite with CreateTempFileTestSupport {
     }
 
     //when
-    val result = resources.getCsvIterator(new URL(url)).toList
+    val result = resources.getCsvIterator(new URL(url), None, false).toList
 
     //then
     (result zip List(
@@ -115,7 +115,7 @@ class CSVResourcesTest extends CypherFunSuite with CreateTempFileTestSupport {
     val url = createCSVTempFileURL(_ => {})
 
     //when
-    val result = resources.getCsvIterator(new URL(url)).toList
+    val result = resources.getCsvIterator(new URL(url), None, false).toList
 
     result should equal(List.empty)
   }
@@ -130,7 +130,7 @@ class CSVResourcesTest extends CypherFunSuite with CreateTempFileTestSupport {
     }
 
     // when
-    resources.getCsvIterator(new URL(url))
+    resources.getCsvIterator(new URL(url), None, false)
 
     // then
     verify(cleaner, times(1)).addTask(any(classOf[Boolean => Unit]))
@@ -147,7 +147,7 @@ class CSVResourcesTest extends CypherFunSuite with CreateTempFileTestSupport {
     }
 
     //when
-    val result: List[Array[String]] = resources.getCsvIterator(new URL(url), Some("\t")).toList
+    val result: List[Array[String]] = resources.getCsvIterator(new URL(url), Some("\t"), false).toList
 
     (result zip List(
       Array[String]("122", "foo"),
@@ -169,7 +169,7 @@ class CSVResourcesTest extends CypherFunSuite with CreateTempFileTestSupport {
     }
 
     //when
-    val result: List[Array[String]] = resources.getCsvIterator(new URL(url)).toList
+    val result: List[Array[String]] = resources.getCsvIterator(new URL(url), None, false).toList
 
     (result zip List(
       Array[String]("Malm\u0246"),
@@ -191,7 +191,7 @@ class CSVResourcesTest extends CypherFunSuite with CreateTempFileTestSupport {
     }
 
     // when
-    val e = intercept[IllegalStateException](resources.getCsvIterator(new URL(url)))
+    val e = intercept[IllegalStateException](resources.getCsvIterator(new URL(url), None, false))
 
     var path = url.replace("file:", "")
     if (SystemUtils.IS_OS_WINDOWS) {
@@ -214,7 +214,7 @@ class CSVResourcesTest extends CypherFunSuite with CreateTempFileTestSupport {
     }
 
     //when
-    val result: List[Array[String]] = resources.getCsvIterator(new URL(url), Some("\t")).toList
+    val result: List[Array[String]] = resources.getCsvIterator(new URL(url), Some("\t"), false).toList
 
     (result zip List(
       Array[String]("a", "b"),
