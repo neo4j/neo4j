@@ -24,6 +24,7 @@ import org.junit.Before;
 import org.junit.Ignore;
 import org.junit.Rule;
 import org.junit.Test;
+import org.junit.rules.RuleChain;
 
 import java.io.File;
 import java.util.Map;
@@ -37,6 +38,7 @@ import org.neo4j.causalclustering.discovery.SharedDiscoveryService;
 import org.neo4j.io.fs.FileSystemAbstraction;
 import org.neo4j.kernel.impl.store.format.standard.Standard;
 import org.neo4j.test.DbRepresentation;
+import org.neo4j.test.rule.SuppressOutput;
 import org.neo4j.test.rule.TestDirectory;
 import org.neo4j.test.rule.fs.DefaultFileSystemRule;
 
@@ -50,14 +52,16 @@ import static org.neo4j.causalclustering.helpers.DataCreator.createEmptyNodes;
 
 public class ClusterSeedingIT
 {
+    private final TestDirectory testDir = TestDirectory.testDirectory();
+    private final DefaultFileSystemRule fileSystemRule = new DefaultFileSystemRule();
+    private final SuppressOutput suppressOutput = SuppressOutput.suppressAll();
+
+    @Rule
+    public RuleChain ruleChain = RuleChain.outerRule( testDir ).around( fileSystemRule ).around( suppressOutput );
+
     private Cluster backupCluster;
     private Cluster cluster;
     private FileSystemAbstraction fsa;
-
-    @Rule
-    public TestDirectory testDir = TestDirectory.testDirectory();
-    @Rule
-    public DefaultFileSystemRule fileSystemRule = new DefaultFileSystemRule();
     private File baseBackupDir;
 
     @Before
