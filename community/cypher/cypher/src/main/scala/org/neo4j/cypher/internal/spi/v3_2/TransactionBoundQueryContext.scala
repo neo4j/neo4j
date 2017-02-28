@@ -141,8 +141,13 @@ final class TransactionBoundQueryContext(val transactionalContext: Transactional
 
   override def indexSeek(index: IndexDescriptor, value: Any) = {
     indexSearchMonitor.indexSeek(index, value)
-    val predicates = IndexQuery.exact(index.property, value)
-    JavaConversionSupport.mapToScalaENFXSafe(transactionalContext.statement.readOperations().indexQuery(index, predicates))(nodeOps.getById)
+    //TODO: Rather make signature always require a Seq
+    val values = if (value.isInstanceOf[Seq[Any]])
+      value.asInstanceOf[Seq[Any]]
+    else
+      Seq[Any](value)
+    val predicates = index.properties.zip(values).map(p => IndexQuery.exact(p._1, p._2))
+    JavaConversionSupport.mapToScalaENFXSafe(transactionalContext.statement.readOperations().indexQuery(index, predicates: _*))(nodeOps.getById)
   }
 
   override def indexSeekByRange(index: IndexDescriptor, value: Any) = value match {
