@@ -34,6 +34,7 @@ import org.neo4j.causalclustering.core.consensus.log.segmented.FileNames;
 import org.neo4j.causalclustering.core.state.ClusterStateDirectory;
 import org.neo4j.causalclustering.core.state.CoreState;
 import org.neo4j.causalclustering.identity.MemberId;
+import org.neo4j.cluster.ClusterSettings;
 import org.neo4j.graphdb.factory.GraphDatabaseSettings;
 import org.neo4j.helpers.AdvertisedSocketAddress;
 import org.neo4j.io.fs.DefaultFileSystemAbstraction;
@@ -79,7 +80,7 @@ public class CoreClusterMember implements ClusterMember
 
         String initialMembers = addresses.stream().map( AdvertisedSocketAddress::toString ).collect( joining( "," ) );
 
-        config.put( "dbms.mode", "CORE" );
+        config.put( ClusterSettings.mode.name(), ClusterSettings.Mode.CORE.name() );
         config.put( GraphDatabaseSettings.default_advertised_address.name(), "localhost" );
         config.put( CausalClusteringSettings.initial_discovery_members.name(), initialMembers );
         config.put( CausalClusteringSettings.discovery_listen_address.name(), "127.0.0.1:" + hazelcastPort );

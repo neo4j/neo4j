@@ -19,10 +19,18 @@
  */
 package org.neo4j.causalclustering.discovery;
 
+import java.util.Arrays;
+import java.util.Map;
+import java.util.UUID;
+import java.util.function.Function;
+import java.util.stream.Collectors;
+
+import org.neo4j.causalclustering.identity.MemberId;
 import org.neo4j.helpers.AdvertisedSocketAddress;
 
 import static java.util.Collections.singletonList;
 import static org.neo4j.causalclustering.discovery.ClientConnectorAddresses.Scheme.bolt;
+import static org.neo4j.helpers.collection.Iterators.asSet;
 
 public class TestTopology
 {
@@ -36,7 +44,8 @@ public class TestTopology
         AdvertisedSocketAddress raftServerAddress = new AdvertisedSocketAddress( "localhost", (3000 + id) );
         AdvertisedSocketAddress catchupServerAddress = new AdvertisedSocketAddress( "localhost", (4000 + id) );
         AdvertisedSocketAddress boltServerAddress = new AdvertisedSocketAddress( "localhost", (5000 + id) );
-        return new CoreServerInfo( raftServerAddress, catchupServerAddress, wrapAsClientConnectorAddresses( boltServerAddress ) );
+        return new CoreServerInfo( raftServerAddress, catchupServerAddress, wrapAsClientConnectorAddresses( boltServerAddress ),
+                asSet( "core", "core" + id ) );
     }
 
     public static ReadReplicaInfo addressesForReadReplica( int id )
@@ -45,6 +54,22 @@ public class TestTopology
         ClientConnectorAddresses clientConnectorAddresses = new ClientConnectorAddresses(
                 singletonList( new ClientConnectorAddresses.ConnectorUri( bolt, advertisedSocketAddress ) ) );
 
-        return new ReadReplicaInfo( clientConnectorAddresses, advertisedSocketAddress );
+        return new ReadReplicaInfo( clientConnectorAddresses, advertisedSocketAddress,
+                asSet( "replica", "replica" + id ) );
+    }
+
+    public static Map<MemberId,ReadReplicaInfo> readReplicaInfoMap( int... ids )
+    {
+        return Arrays.stream( ids ).mapToObj( TestTopology::readReplicaInfo ).collect( Collectors
+                .toMap( ( p ) -> new MemberId( UUID.randomUUID() ), Function.identity() ) );
+    }
+
+    private static ReadReplicaInfo readReplicaInfo( int id )
+    {
+        AdvertisedSocketAddress advertisedSocketAddress = new AdvertisedSocketAddress( "localhost", (6000 + id) );
+        return new ReadReplicaInfo(
+                new ClientConnectorAddresses( singletonList( new ClientConnectorAddresses.ConnectorUri( bolt, advertisedSocketAddress ) ) ),
+                new AdvertisedSocketAddress( "localhost", 4000 + id ),
+                asSet( "replica", "replica" + id ) );
     }
 }
