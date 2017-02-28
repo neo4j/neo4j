@@ -63,6 +63,33 @@ public class PhysicalLogFileTest
             new DeadSimpleTransactionIdStore( 5L, 0, BASE_TX_COMMIT_TIMESTAMP, 0, 0 );
 
     @Test
+    public void skipLogFileWithoutHeader() throws IOException
+    {
+        LifeSupport life = new LifeSupport();
+        FileSystemAbstraction fs = fileSystemRule.get();
+        PhysicalLogFiles physicalLogFiles = new PhysicalLogFiles( directory.directory(), "logs", fs );
+        PhysicalLogFile physicalLogFile = new PhysicalLogFile( fs, physicalLogFiles, 1000,
+                () -> 1L, logVersionRepository,
+                mock( Monitor.class ), new LogHeaderCache( 10 ) );
+        life.add( physicalLogFile );
+        life.start();
+
+        // simulate new file without header presence
+        PhysicalLogFile logFileToSearchFrom = new PhysicalLogFile( fs, physicalLogFiles, 1000,
+                () -> 10L, logVersionRepository, mock( Monitor.class ),
+                new LogHeaderCache( 10 ) );
+        logVersionRepository.incrementAndGetVersion();
+        fs.create( physicalLogFiles.getLogFileForVersion( logVersionRepository.getCurrentLogVersion() ) ).close();
+
+        PhysicalLogicalTransactionStore.LogVersionLocator versionLocator =
+                new PhysicalLogicalTransactionStore.LogVersionLocator( 4L );
+        logFileToSearchFrom.accept( versionLocator );
+
+        LogPosition logPosition = versionLocator.getLogPosition();
+        assertEquals( 1, logPosition.getLogVersion() );
+    }
+
+    @Test
     public void shouldOpenInFreshDirectoryAndFinallyAddHeader() throws Exception
     {
         // GIVEN

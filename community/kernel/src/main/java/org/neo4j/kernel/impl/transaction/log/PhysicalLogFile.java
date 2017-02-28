@@ -342,20 +342,26 @@ public class PhysicalLogFile implements LogFile, Lifecycle
             Long previousLogLastTxId = logHeaderCache.getLogHeader( logVersion );
             if ( previousLogLastTxId == null )
             {
-                LogHeader header = readLogHeader( fileSystem, logFiles.getLogFileForVersion( logVersion ) );
-                assert logVersion == header.logVersion;
-                logHeaderCache.putHeader( header.logVersion, header.lastCommittedTxId );
-                previousLogLastTxId = header.lastCommittedTxId;
+                LogHeader header = readLogHeader( fileSystem, logFiles.getLogFileForVersion( logVersion ), false );
+                if ( header != null )
+                {
+                    assert logVersion == header.logVersion;
+                    logHeaderCache.putHeader( header.logVersion, header.lastCommittedTxId );
+                    previousLogLastTxId = header.lastCommittedTxId;
+                }
             }
 
-            long lowTransactionId = previousLogLastTxId + 1;
-            LogPosition position = LogPosition.start( logVersion );
-            if ( !visitor.visit( position, lowTransactionId, highTransactionId ) )
+            if ( previousLogLastTxId != null )
             {
-                break;
+                long lowTransactionId = previousLogLastTxId + 1;
+                LogPosition position = LogPosition.start( logVersion );
+                if ( !visitor.visit( position, lowTransactionId, highTransactionId ) )
+                {
+                    break;
+                }
+                highTransactionId = previousLogLastTxId;
             }
             logVersion--;
-            highTransactionId = previousLogLastTxId;
         }
     }
 

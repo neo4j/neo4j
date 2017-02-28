@@ -77,6 +77,46 @@ public class PhysicalLogicalTransactionStoreTest
     }
 
     @Test
+    public void extractTransactionFromLogFilesSkippingLastLogFileWithoutHeader() throws IOException
+    {
+        TransactionIdStore transactionIdStore = new DeadSimpleTransactionIdStore();
+        TransactionMetadataCache positionCache = new TransactionMetadataCache( 100 );
+        LogHeaderCache logHeaderCache = new LogHeaderCache( 10 );
+        final byte[] additionalHeader = new byte[]{1, 2, 5};
+        final int masterId = 2, authorId = 1;
+        final long timeStarted = 12345, latestCommittedTxWhenStarted = 4545, timeCommitted = timeStarted + 10;
+        LifeSupport life = new LifeSupport();
+        final PhysicalLogFiles logFiles = new PhysicalLogFiles( testDir, DEFAULT_NAME, fileSystemRule.get() );
+        Monitor monitor = new Monitors().newMonitor( PhysicalLogFile.Monitor.class );
+        LogFile logFile = life.add( new PhysicalLogFile( fileSystemRule.get(), logFiles, 1000,
+                transactionIdStore::getLastCommittedTransactionId, mock( LogVersionRepository.class ), monitor,
+                logHeaderCache ) );
+
+        life.start();
+        try
+        {
+            addATransactionAndRewind(life,  logFile, positionCache, transactionIdStore,
+                    additionalHeader, masterId, authorId, timeStarted, latestCommittedTxWhenStarted, timeCommitted );
+        }
+        finally
+        {
+            life.shutdown();
+        }
+
+        PhysicalLogFile emptyLogFile = new PhysicalLogFile( fileSystemRule.get(), logFiles, 1000,
+                transactionIdStore::getLastCommittedTransactionId, mock( LogVersionRepository.class ), monitor,
+                logHeaderCache );
+        // create empty transaction log file and clear transaction cache to force re-read
+        fileSystemRule.get().create( logFiles.getLogFileForVersion( logFiles.getHighestLogVersion() + 1 ) ).close();
+        positionCache.clear();
+
+        final LogicalTransactionStore store =
+                new PhysicalLogicalTransactionStore( emptyLogFile, positionCache, new VersionAwareLogEntryReader<>() );
+        verifyTransaction( transactionIdStore, positionCache, additionalHeader, masterId, authorId, timeStarted,
+                latestCommittedTxWhenStarted, timeCommitted, store );
+    }
+
+    @Test
     public void shouldOpenCleanStore() throws Exception
     {
         // GIVEN
@@ -233,27 +273,8 @@ public class PhysicalLogicalTransactionStoreTest
         life.start();
         try
         {
-            TransactionMetadata expectedMetadata;
-            try ( TransactionCursor cursor = store.getTransactions( TransactionIdStore.BASE_TX_ID + 1 ) )
-            {
-                boolean hasNext = cursor.next();
-                assertTrue( hasNext );
-                CommittedTransactionRepresentation tx = cursor.get();
-                TransactionRepresentation transaction = tx.getTransactionRepresentation();
-                assertArrayEquals( additionalHeader, transaction.additionalHeader() );
-                assertEquals( masterId, transaction.getMasterId() );
-                assertEquals( authorId, transaction.getAuthorId() );
-                assertEquals( timeStarted, transaction.getTimeStarted() );
-                assertEquals( timeCommitted, transaction.getTimeCommitted() );
-                assertEquals( latestCommittedTxWhenStarted, transaction.getLatestCommittedTxWhenStarted() );
-                expectedMetadata = new TransactionMetadata( masterId, authorId,
-                        tx.getStartEntry().getStartPosition(), tx.getStartEntry().checksum(), timeCommitted );
-            }
-
-            positionCache.clear();
-
-            TransactionMetadata actualMetadata = store.getMetadataFor( txIdStore.getLastCommittedTransactionId() );
-            assertEquals( expectedMetadata, actualMetadata );
+            verifyTransaction( txIdStore, positionCache, additionalHeader, masterId, authorId, timeStarted,
+                    latestCommittedTxWhenStarted, timeCommitted, store );
         }
         finally
         {
@@ -354,6 +375,33 @@ public class PhysicalLogicalTransactionStoreTest
         after.setInUse( true );
         commands.add( new Command.NodeCommand( before, after ) );
         return commands;
+    }
+
+    private void verifyTransaction( TransactionIdStore transactionIdStore, TransactionMetadataCache positionCache,
+            byte[] additionalHeader, int masterId, int authorId, long timeStarted, long latestCommittedTxWhenStarted,
+            long timeCommitted, LogicalTransactionStore store ) throws IOException
+    {
+        TransactionMetadata expectedMetadata;
+        try ( TransactionCursor cursor = store.getTransactions( TransactionIdStore.BASE_TX_ID + 1 ) )
+        {
+            boolean hasNext = cursor.next();
+            assertTrue( hasNext );
+            CommittedTransactionRepresentation tx = cursor.get();
+            TransactionRepresentation transaction = tx.getTransactionRepresentation();
+            assertArrayEquals( additionalHeader, transaction.additionalHeader() );
+            assertEquals( masterId, transaction.getMasterId() );
+            assertEquals( authorId, transaction.getAuthorId() );
+            assertEquals( timeStarted, transaction.getTimeStarted() );
+            assertEquals( timeCommitted, transaction.getTimeCommitted() );
+            assertEquals( latestCommittedTxWhenStarted, transaction.getLatestCommittedTxWhenStarted() );
+            expectedMetadata = new TransactionMetadata( masterId, authorId,
+                    tx.getStartEntry().getStartPosition(), tx.getStartEntry().checksum(), timeCommitted );
+        }
+
+        positionCache.clear();
+
+        TransactionMetadata actualMetadata = store.getMetadataFor( transactionIdStore.getLastCommittedTransactionId() );
+        assertEquals( expectedMetadata, actualMetadata );
     }
 
     private static class FakeRecoveryVisitor implements Visitor<CommittedTransactionRepresentation,Exception>
