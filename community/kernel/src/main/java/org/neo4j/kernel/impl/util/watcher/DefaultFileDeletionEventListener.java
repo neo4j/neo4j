@@ -19,9 +19,10 @@
  */
 package org.neo4j.kernel.impl.util.watcher;
 
+import java.util.function.Predicate;
+
 import org.neo4j.io.fs.watcher.FileWatchEventListener;
 import org.neo4j.kernel.impl.logging.LogService;
-import org.neo4j.kernel.impl.transaction.log.PhysicalLogFile;
 import org.neo4j.logging.Log;
 
 import static java.lang.String.format;
@@ -33,24 +34,21 @@ public class DefaultFileDeletionEventListener implements FileWatchEventListener
 {
 
     private final Log internalLog;
+    private final Predicate<String> fileNameFilter;
 
-    public DefaultFileDeletionEventListener( LogService logService )
+    public DefaultFileDeletionEventListener( LogService logService, Predicate<String> fileNameFilter )
     {
         this.internalLog = logService.getInternalLog( getClass() );
+        this.fileNameFilter = fileNameFilter;
     }
 
     @Override
     public void fileDeleted( String fileName )
     {
-        if ( isMonitoredFile( fileName ) )
+        if ( !fileNameFilter.test( fileName ) )
         {
             internalLog.error( format( "'%s' which belongs to the store was deleted while database was running.",
                     fileName ) );
         }
-    }
-
-    private static boolean isMonitoredFile( String fileName )
-    {
-        return !fileName.startsWith( PhysicalLogFile.DEFAULT_NAME );
     }
 }

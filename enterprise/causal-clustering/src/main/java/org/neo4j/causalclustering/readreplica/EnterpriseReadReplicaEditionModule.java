@@ -21,6 +21,7 @@ package org.neo4j.causalclustering.readreplica;
 
 import java.io.File;
 import java.util.concurrent.TimeUnit;
+import java.util.function.Predicate;
 import java.util.function.Supplier;
 
 import org.neo4j.backup.OnlineBackupKernelExtension;
@@ -45,6 +46,8 @@ import org.neo4j.causalclustering.discovery.TopologyService;
 import org.neo4j.causalclustering.discovery.procedures.ReadReplicaRoleProcedure;
 import org.neo4j.causalclustering.helper.ExponentialBackoffStrategy;
 import org.neo4j.causalclustering.identity.MemberId;
+import org.neo4j.com.storecopy.StoreUtil;
+import org.neo4j.function.Predicates;
 import org.neo4j.graphdb.DependencyResolver;
 import org.neo4j.graphdb.factory.GraphDatabaseSettings;
 import org.neo4j.io.fs.FileSystemAbstraction;
@@ -75,6 +78,7 @@ import org.neo4j.kernel.impl.factory.GraphDatabaseFacade;
 import org.neo4j.kernel.impl.factory.PlatformModule;
 import org.neo4j.kernel.impl.factory.ReadOnly;
 import org.neo4j.kernel.impl.factory.StatementLocksFactorySelector;
+import org.neo4j.kernel.impl.index.IndexConfigStore;
 import org.neo4j.kernel.impl.logging.LogService;
 import org.neo4j.kernel.impl.proc.Procedures;
 import org.neo4j.kernel.impl.store.id.DefaultIdGeneratorFactory;
@@ -82,6 +86,7 @@ import org.neo4j.kernel.impl.store.id.IdReuseEligibility;
 import org.neo4j.kernel.impl.store.stats.IdBasedStoreEntityCounters;
 import org.neo4j.kernel.impl.transaction.TransactionHeaderInformationFactory;
 import org.neo4j.kernel.impl.transaction.log.LogicalTransactionStore;
+import org.neo4j.kernel.impl.transaction.log.PhysicalLogFile;
 import org.neo4j.kernel.impl.transaction.log.TransactionAppender;
 import org.neo4j.kernel.impl.transaction.log.TransactionIdStore;
 import org.neo4j.kernel.impl.transaction.state.DataSourceManager;
@@ -103,13 +108,6 @@ import static org.neo4j.kernel.impl.factory.CommunityEditionModule.createLockMan
  */
 public class EnterpriseReadReplicaEditionModule extends EditionModule
 {
-    @Override
-    public void registerEditionSpecificProcedures( Procedures procedures ) throws KernelException
-    {
-        procedures.registerProcedure( EnterpriseBuiltInDbmsProcedures.class, true );
-        procedures.register( new ReadReplicaRoleProcedure() );
-    }
-
     EnterpriseReadReplicaEditionModule( final PlatformModule platformModule,
             final DiscoveryServiceFactory discoveryServiceFactory, MemberId myself )
     {
@@ -128,6 +126,11 @@ public class EnterpriseReadReplicaEditionModule extends EditionModule
         eligibleForIdReuse = IdReuseEligibility.ALWAYS;
 
         this.accessCapability = new ReadOnly();
+
+        watcherService = createFileSystemWatcherService( fileSystem, storeDir, logging,
+                platformModule.jobScheduler, fileWatcherFileNameFilter() );
+        dependencies.satisfyDependencies( watcherService );
+        life.add( watcherService );
 
         GraphDatabaseFacade graphDatabaseFacade = platformModule.graphDatabaseFacade;
 
@@ -204,9 +207,11 @@ public class EnterpriseReadReplicaEditionModule extends EditionModule
                 new DelayedRenewableTimeoutService( Clocks.systemClock(), logProvider );
 
         StoreFiles storeFiles = new StoreFiles( fileSystem, pageCache );
+
         LocalDatabase localDatabase =
                 new LocalDatabase( platformModule.storeDir, storeFiles, platformModule.dataSourceManager,
-                        databaseHealthSupplier, platformModule.availabilityGuard, logProvider );
+                        databaseHealthSupplier, watcherService, platformModule.availabilityGuard,
+                        logProvider );
 
         RemoteStore remoteStore =
                 new RemoteStore( platformModule.logging.getInternalLogProvider(), fileSystem, platformModule.pageCache,
@@ -285,6 +290,23 @@ public class EnterpriseReadReplicaEditionModule extends EditionModule
         dependencies.satisfyDependency( createSessionTracker() );
 
         life.add( catchupServer ); // must start last and stop first, since it handles external requests
+    }
+
+    static Predicate<String> fileWatcherFileNameFilter()
+    {
+        return Predicates.any(
+                fileName -> fileName.startsWith( PhysicalLogFile.DEFAULT_NAME ),
+                fileName -> fileName.startsWith( IndexConfigStore.INDEX_DB_FILE_NAME ),
+                filename -> filename.startsWith( StoreUtil.BRANCH_SUBDIRECTORY ),
+                filename -> filename.startsWith( StoreUtil.TEMP_COPY_DIRECTORY_NAME )
+        );
+    }
+
+    @Override
+    public void registerEditionSpecificProcedures( Procedures procedures ) throws KernelException
+    {
+        procedures.registerProcedure( EnterpriseBuiltInDbmsProcedures.class, true );
+        procedures.register( new ReadReplicaRoleProcedure() );
     }
 
     private void registerRecovery( final DatabaseInfo databaseInfo, LifeSupport life,

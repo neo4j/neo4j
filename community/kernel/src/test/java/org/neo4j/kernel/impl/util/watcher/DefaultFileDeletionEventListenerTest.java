@@ -54,6 +54,7 @@ public class DefaultFileDeletionEventListenerTest
     private DefaultFileDeletionEventListener buildListener( AssertableLogProvider internalLogProvider )
     {
         SimpleLogService logService = new SimpleLogService( NullLogProvider.getInstance(), internalLogProvider );
-        return new DefaultFileDeletionEventListener( logService );
+        return new DefaultFileDeletionEventListener( logService,
+                filename -> filename.startsWith( PhysicalLogFile.DEFAULT_NAME ) );
     }
 }

@@ -50,8 +50,8 @@ import static org.neo4j.helpers.collection.Iterables.count;
 public class CoreReplicationIT
 {
     @Rule
-    public final ClusterRule clusterRule =
-            new ClusterRule( getClass() ).withNumberOfCoreMembers( 3 ).withNumberOfReadReplicas( 0 );
+    public final ClusterRule clusterRule = new ClusterRule( getClass() )
+                            .withNumberOfCoreMembers( 3 ).withNumberOfReadReplicas( 0 );
     @Rule
     public SuppressOutput suppressOutput = SuppressOutput.suppressAll();
 

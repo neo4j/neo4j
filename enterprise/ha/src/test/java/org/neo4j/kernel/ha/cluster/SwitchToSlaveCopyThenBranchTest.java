@@ -76,6 +76,7 @@ import org.neo4j.kernel.impl.transaction.log.TransactionIdStore;
 import org.neo4j.kernel.impl.transaction.state.DataSourceManager;
 import org.neo4j.kernel.impl.util.Dependencies;
 import org.neo4j.kernel.impl.util.JobScheduler;
+import org.neo4j.kernel.impl.util.watcher.FileSystemWatcherService;
 import org.neo4j.kernel.internal.StoreLockerLifecycleAdapter;
 import org.neo4j.kernel.lifecycle.LifeSupport;
 import org.neo4j.kernel.lifecycle.Lifecycle;
@@ -355,7 +356,8 @@ public class SwitchToSlaveCopyThenBranchTest
                 mock( IndexConfigStore.class ),
                 mock( TransactionCommittingResponseUnpacker.class ),
                 mock( DataSourceManager.class ),
-                mock( StoreLockerLifecycleAdapter.class )
+                mock( StoreLockerLifecycleAdapter.class ),
+                mock( FileSystemWatcherService.class )
                 );
 
         NeoStoreDataSource dataSource = mock( NeoStoreDataSource.class );

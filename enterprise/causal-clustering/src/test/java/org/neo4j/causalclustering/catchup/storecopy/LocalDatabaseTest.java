@@ -27,6 +27,7 @@ import java.time.Clock;
 
 import org.neo4j.kernel.AvailabilityGuard;
 import org.neo4j.kernel.impl.transaction.state.DataSourceManager;
+import org.neo4j.kernel.impl.util.watcher.FileSystemWatcherService;
 import org.neo4j.kernel.internal.DatabaseHealth;
 import org.neo4j.logging.NullLog;
 import org.neo4j.logging.NullLogProvider;
@@ -138,7 +139,8 @@ public class LocalDatabaseTest
             DataSourceManager dataSourceManager )
     {
         return new LocalDatabase( new File( "." ), mock( StoreFiles.class ), dataSourceManager,
-                () -> mock( DatabaseHealth.class ), availabilityGuard, NullLogProvider.getInstance() );
+                () -> mock( DatabaseHealth.class ), FileSystemWatcherService.EMPTY_WATCHER, availabilityGuard,
+                NullLogProvider.getInstance() );
     }
 
     private static AvailabilityGuard newAvailabilityGuard()
