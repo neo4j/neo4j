@@ -22,6 +22,7 @@ package org.neo4j.commandline.dbms;
 import java.nio.file.Path;
 
 import org.neo4j.commandline.admin.AdminCommand;
+import org.neo4j.commandline.admin.AdminCommandSection;
 import org.neo4j.commandline.admin.OutsideWorld;
 import org.neo4j.commandline.arguments.Arguments;
 import org.neo4j.dbms.archive.Loader;
@@ -52,6 +53,12 @@ public class LoadCommandProvider extends AdminCommand.Provider
     public String summary()
     {
         return "Load a database from an archive created with the dump command.";
+    }
+
+    @Override
+    public AdminCommandSection commandSection()
+    {
+        return OffineBackupCommandSection.instance();
     }
 
     @Override

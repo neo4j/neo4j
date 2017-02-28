@@ -121,11 +121,12 @@ public class HelpCommandTest
                             "Manage your Neo4j instance.%n" +
                             "%n" +
                             "environment variables:%n" +
+                            "    NEO4J_CONF    Path to directory which contains neo4j.conf.%n" +
                             "    NEO4J_DEBUG   Set to anything to enable debug output.%n" +
                             "    NEO4J_HOME    Neo4j home directory.%n" +
-                            "    NEO4J_CONF    Path to directory which contains neo4j.conf.%n" +
                             "%n" +
                             "available commands:%n" +
+                            "General%n" +
                             "    bar%n" +
                             "        null%n" +
                             "    baz%n" +
@@ -136,13 +137,6 @@ public class HelpCommandTest
                             "Use neo4j-admin help <command> for more details.%n" ),
                     baos.toString() );
         }
-    }
-
-    private AdminCommand.Provider mockCommand( String name )
-    {
-        AdminCommand.Provider commandProvider = mock( AdminCommand.Provider.class );
-        when( commandProvider.name() ).thenReturn( name );
-        return commandProvider;
     }
 
     @Test
@@ -173,5 +167,13 @@ public class HelpCommandTest
                             "  --database=<name>   Name of database. [default:graph.db]%n" ),
                     baos.toString() );
         }
+    }
+
+    private AdminCommand.Provider mockCommand( String name )
+    {
+        AdminCommand.Provider commandProvider = mock( AdminCommand.Provider.class );
+        when( commandProvider.name() ).thenReturn( name );
+        when( commandProvider.commandSection() ).thenReturn( AdminCommandSection.general() );
+        return commandProvider;
     }
 }

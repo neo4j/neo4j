@@ -22,10 +22,9 @@ package org.neo4j.commandline.admin;
 import java.util.ArrayList;
 import java.util.Comparator;
 import java.util.List;
+import java.util.Map;
 import java.util.function.Consumer;
 import java.util.stream.Collectors;
-
-import org.neo4j.commandline.arguments.Arguments;
 
 import static java.lang.String.format;
 
@@ -40,75 +39,53 @@ public class Usage
         this.commands = commands;
     }
 
-    public void print( Consumer<String> output )
-    {
-        output.accept( format( "usage: %s <command>", scriptName ) );
-        output.accept( "" );
-        output.accept( "Manage your Neo4j instance." );
-        output.accept( "" );
-        output.accept( "environment variables:" );
-        output.accept( "    NEO4J_DEBUG   Set to anything to enable debug output." );
-        output.accept( "    NEO4J_HOME    Neo4j home directory." );
-        output.accept( "    NEO4J_CONF    Path to directory which contains neo4j.conf." );
-        output.accept( "" );
-        output.accept( "available commands:" );
-        printCommandsUnderASegment( output );
-        output.accept( "" );
-        output.accept( format( "Use %s help <command> for more details.", scriptName ) );
-    }
-
-    private void printCommandsUnderASegment( Consumer<String> output )
-    {
-        List<AdminCommand.Provider> providers = new ArrayList<>();
-        commands.getAllProviders().forEach( providers::add );
-        providers.sort( Comparator.comparing( AdminCommand.Provider::name ) );
-        providers.forEach( command ->
-        {
-            final CommandUsage commandUsage = new CommandUsage( command, scriptName );
-            commandUsage.printIndentedSummary( output );
-        } );
-    }
-
     public void printUsageForCommand( AdminCommand.Provider command, Consumer<String> output )
     {
         final CommandUsage commandUsage = new CommandUsage( command, scriptName );
         commandUsage.printDetailed( output );
     }
 
-    public static class CommandUsage
+    public void print( Consumer<String> output )
     {
-        private final AdminCommand.Provider command;
-        private final String scriptName;
+        output.accept( format( "usage: %s <command>", scriptName ) );
+        output.accept( "" );
+        output.accept( "Manage your Neo4j instance." );
+        output.accept( "" );
 
-        public CommandUsage( AdminCommand.Provider command, String scriptName )
-        {
-            this.command = command;
-            this.scriptName = scriptName;
-        }
+        output.accept( "environment variables:" );
+        printEnvironmentVariables( output );
 
-        public void printSummary( Consumer<String> output )
-        {
-            output.accept( format( "%s", command.name() ) );
-            output.accept( "    " + command.summary() );
-        }
+        output.accept( "available commands:" );
+        printCommands( output );
 
-        public void printIndentedSummary( Consumer<String> output )
-        {
-            printSummary( s -> output.accept( "    " + s ) );
-        }
+        output.accept( "" );
+        output.accept( format( "Use %s help <command> for more details.", scriptName ) );
+    }
 
-        public void printDetailed( Consumer<String> output )
-        {
-            for ( Arguments arguments : command.possibleArguments() )
-            {
-                //Arguments arguments = command.arguments();
+    private void printEnvironmentVariables( Consumer<String> output )
+    {
+        output.accept( "    NEO4J_CONF    Path to directory which contains neo4j.conf." );
+        output.accept( "    NEO4J_DEBUG   Set to anything to enable debug output." );
+        output.accept( "    NEO4J_HOME    Neo4j home directory." );
+        output.accept( "" );
+    }
 
-                String left = format( "usage: %s %s", scriptName, command.name() );
+    private void printCommands( Consumer<String> output )
+    {
+        Map<AdminCommandSection,List<AdminCommand.Provider>> groupedProviders = groupProvidersBySection();
 
-                output.accept( Arguments.rightColumnFormatted( left, arguments.usage(), left.length() + 1 ) );
-            }
-            output.accept( "" );
-            output.accept( command.allArguments().description( command.description() ) );
-        }
+        AdminCommandSection.general()
+                .printAllCommandsUnderSection( output, groupedProviders.remove( AdminCommandSection.general() ) );
+
+        groupedProviders.entrySet().stream()
+                .sorted( Comparator.comparing( groupedProvider -> groupedProvider.getKey().printable() ) )
+                .forEach(entry -> entry.getKey().printAllCommandsUnderSection( output, entry.getValue() ) );
+    }
+
+    private Map<AdminCommandSection,List<AdminCommand.Provider>> groupProvidersBySection()
+    {
+        List<AdminCommand.Provider> providers = new ArrayList<>();
+        commands.getAllProviders().forEach( providers::add );
+        return providers.stream().collect( Collectors.groupingBy( ( provider ) -> provider.commandSection() ) );
     }
 }

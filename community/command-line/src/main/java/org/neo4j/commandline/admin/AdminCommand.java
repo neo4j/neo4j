@@ -23,6 +23,7 @@ import java.nio.file.Path;
 import java.util.Arrays;
 import java.util.List;
 import java.util.Set;
+import java.util.function.Consumer;
 
 import org.neo4j.commandline.arguments.Arguments;
 import org.neo4j.helpers.Service;
@@ -81,11 +82,22 @@ public interface AdminCommand
         public abstract String summary();
 
         /**
+         * @return AdminCommandSection the command using the provider is grouped under
+         */
+        public abstract AdminCommandSection commandSection();
+
+        /**
          * @return A description for the command's help text.
          */
         public abstract String description();
 
         public abstract AdminCommand create( Path homeDir, Path configDir, OutsideWorld outsideWorld );
+
+        public final void printSummary( Consumer<String> output )
+        {
+            output.accept( String.format( "%s", name() ) );
+            output.accept( "    " + summary() );
+        }
     }
 
     interface Blocker

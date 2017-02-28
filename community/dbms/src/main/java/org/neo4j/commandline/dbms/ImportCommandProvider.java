@@ -24,6 +24,7 @@ import java.util.Arrays;
 import java.util.List;
 
 import org.neo4j.commandline.admin.AdminCommand;
+import org.neo4j.commandline.admin.AdminCommandSection;
 import org.neo4j.commandline.admin.OutsideWorld;
 import org.neo4j.commandline.arguments.Arguments;
 
@@ -57,6 +58,12 @@ public class ImportCommandProvider extends AdminCommand.Provider
     public String summary()
     {
         return "Import from a collection of CSV files or a pre-3.0 database.";
+    }
+
+    @Override
+    public AdminCommandSection commandSection()
+    {
+        return AdminCommandSection.general();
     }
 
     @Override

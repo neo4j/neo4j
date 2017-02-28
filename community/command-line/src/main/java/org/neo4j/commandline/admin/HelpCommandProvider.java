@@ -52,6 +52,12 @@ public class HelpCommandProvider extends AdminCommand.Provider
     }
 
     @Override
+    public AdminCommandSection commandSection()
+    {
+        return AdminCommandSection.general();
+    }
+
+    @Override
     public AdminCommand create( Path homeDir, Path configDir, OutsideWorld outsideWorld )
     {
         return new HelpCommand( usage, outsideWorld::stdOutLine, CommandLocator.fromServiceLocator() );
