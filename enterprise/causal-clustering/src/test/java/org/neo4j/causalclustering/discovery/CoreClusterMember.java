@@ -42,9 +42,9 @@ import org.neo4j.kernel.GraphDatabaseDependencies;
 import org.neo4j.kernel.configuration.BoltConnector;
 import org.neo4j.kernel.configuration.Config;
 import org.neo4j.kernel.configuration.HttpConnector;
+import org.neo4j.kernel.configuration.HttpConnector.Encryption;
 import org.neo4j.kernel.configuration.Settings;
 import org.neo4j.logging.Level;
-import org.neo4j.kernel.configuration.HttpConnector.Encryption;
 
 import static java.lang.String.format;
 import static java.util.stream.Collectors.joining;
@@ -86,6 +86,7 @@ public class CoreClusterMember implements ClusterMember
         config.put( CausalClusteringSettings.discovery_listen_address.name(), "127.0.0.1:" + hazelcastPort );
         config.put( CausalClusteringSettings.transaction_listen_address.name(), "127.0.0.1:" + txPort );
         config.put( CausalClusteringSettings.raft_listen_address.name(), "127.0.0.1:" + raftPort );
+        config.put( CausalClusteringSettings.cluster_topology_refresh.name(), "1000ms" );
         config.put( CausalClusteringSettings.expected_core_cluster_size.name(), String.valueOf( clusterSize ) );
         config.put( CausalClusteringSettings.leader_election_timeout.name(), "500ms" );
         config.put( CausalClusteringSettings.raft_messages_log_enable.name(), Settings.TRUE );
@@ -118,6 +119,7 @@ public class CoreClusterMember implements ClusterMember
         clusterStateDir = ClusterStateDirectory.withoutInitializing( dataDir ).get();
         raftLogDir = new File( clusterStateDir, RAFT_LOG_DIRECTORY_NAME );
         storeDir = new File( new File( dataDir, "databases" ), "graph.db" );
+        //noinspection ResultOfMethodCallIgnored
         storeDir.mkdirs();
     }
 
