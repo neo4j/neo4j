@@ -38,6 +38,8 @@ case class LoadCSVPipe(source: Pipe,
                       (implicit pipeMonitor: PipeMonitor)
   extends PipeWithSource(source, pipeMonitor) {
 
+  urlExpression.registerOwningPipe(this)
+
   protected def getImportURL(urlString: String, context: QueryContext): URL = {
     val url: URL = try {
       new URL(urlString)
@@ -92,9 +94,6 @@ case class LoadCSVPipe(source: Pipe,
   }
 
   override protected def internalCreateResults(input: Iterator[ExecutionContext], state: QueryState): Iterator[ExecutionContext] = {
-    //register as parent so that stats are associated with this pipe
-    state.decorator.registerParentPipe(this)
-
     input.flatMap(context => {
       implicit val s = state
       val urlString: String = urlExpression(context).asInstanceOf[String]

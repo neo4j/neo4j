@@ -26,10 +26,9 @@ import org.neo4j.cypher.internal.compiler.v3_2.planDescription.Id
 case class FilterPipe(source: Pipe, predicate: Predicate)
                      (val id: Id = new Id)
                      (implicit pipeMonitor: PipeMonitor) extends PipeWithSource(source, pipeMonitor) {
-  protected def internalCreateResults(input: Iterator[ExecutionContext],state: QueryState) = {
-    //register as parent so that stats are associated with this pipe
-    state.decorator.registerParentPipe(this)
 
+  predicate.registerOwningPipe(this)
+
+  protected def internalCreateResults(input: Iterator[ExecutionContext],state: QueryState) =
     input.filter(ctx => predicate.isTrue(ctx)(state))
-  }
 }

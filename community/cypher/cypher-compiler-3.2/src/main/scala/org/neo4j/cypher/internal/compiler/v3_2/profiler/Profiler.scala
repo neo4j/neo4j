@@ -71,25 +71,22 @@ class Profiler extends PipeDecorator {
     }
   }
 
-  def innerDecorator: PipeDecorator = new PipeDecorator {
+  def innerDecorator(owningPipe: Pipe): PipeDecorator = new PipeDecorator {
     innerProfiler =>
 
-    def innerDecorator: PipeDecorator = innerProfiler
+    def innerDecorator(pipe: Pipe): PipeDecorator = innerProfiler
 
     def decorate(pipe: Pipe, state: QueryState): QueryState =
-      outerProfiler.decorate(parentPipe.getOrElse(throw new IllegalStateException("Missing parent pipe")), state)
+      outerProfiler.decorate(owningPipe, state)
 
     def decorate(pipe: Pipe, iter: Iterator[ExecutionContext]): Iterator[ExecutionContext] = iter
 
     def decorate(plan: InternalPlanDescription, isProfileReady: => Boolean): InternalPlanDescription =
       outerProfiler.decorate(plan, isProfileReady)
-
-    def registerParentPipe(pipe: Pipe) {}
   }
 
   def registerParentPipe(pipe: Pipe): Unit =
     parentPipe = Some(pipe)
-
 }
 
 trait Counter {

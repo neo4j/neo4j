@@ -27,16 +27,15 @@ case class DirectedRelationshipByIdSeekPipe(ident: String, relIdExpr: SeekArgs, 
                                            (val id: Id = new Id)
                                            (implicit pipeMonitor: PipeMonitor)
   extends Pipe
-  with ListSupport
-  {
-  protected def internalCreateResults(state: QueryState): Iterator[ExecutionContext] = {
-    //register as parent so that stats are associated with this pipe
-    state.decorator.registerParentPipe(this)
+  with ListSupport {
 
+  relIdExpr.registerOwningPipe(this)
+
+  protected def internalCreateResults(state: QueryState): Iterator[ExecutionContext] = {
     val ctx = state.createOrGetInitialContext()
     val relIds = relIdExpr.expressions(ctx, state).flatMap(Option(_))
     new DirectedRelationshipIdSeekIterator(ident, fromNode, toNode, ctx, state.query.relationshipOps, relIds.iterator)
   }
 
   def monitor = pipeMonitor
-  }
+ }

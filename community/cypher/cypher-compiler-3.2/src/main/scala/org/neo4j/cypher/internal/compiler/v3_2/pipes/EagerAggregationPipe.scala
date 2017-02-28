@@ -34,12 +34,12 @@ case class EagerAggregationPipe(source: Pipe, keyExpressions: Set[String], aggre
                                (val id: Id = new Id)
                                (implicit pipeMonitor: PipeMonitor) extends PipeWithSource(source, pipeMonitor) {
 
+  aggregations.values.foreach(_.registerOwningPipe(this))
+
   protected def internalCreateResults(input: Iterator[ExecutionContext], state: QueryState) = {
-    //register as parent so that stats are associated with this pipe
-    state.decorator.registerParentPipe(this)
+
     implicit val s = state
 
-    // This is the temporary storage used while the aggregation is going on
     val result = MutableMap[Equals, Seq[AggregationFunction]]()
     val keyNames = keyExpressions.toList
     val aggregationNames: Seq[String] = aggregations.keys.toIndexedSeq

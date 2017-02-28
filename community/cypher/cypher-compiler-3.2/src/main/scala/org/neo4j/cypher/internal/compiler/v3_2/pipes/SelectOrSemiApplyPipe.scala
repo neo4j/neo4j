@@ -27,10 +27,10 @@ case class SelectOrSemiApplyPipe(source: Pipe, inner: Pipe, predicate: Predicate
                                 (val id: Id = new Id)
                                 (implicit pipeMonitor: PipeMonitor)
   extends PipeWithSource(source, pipeMonitor) {
-  def internalCreateResults(input: Iterator[ExecutionContext], state: QueryState): Iterator[ExecutionContext] = {
-    //register as parent so that stats are associated with this pipe
-    state.decorator.registerParentPipe(this)
 
+  predicate.registerOwningPipe(this)
+
+  def internalCreateResults(input: Iterator[ExecutionContext], state: QueryState): Iterator[ExecutionContext] = {
     input.filter {
       (outerContext) =>
         predicate.isTrue(outerContext)(state) || {

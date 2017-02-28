@@ -26,11 +26,14 @@ import org.neo4j.cypher.internal.compiler.v3_2.planDescription.Id
 
 sealed trait SeekArgs {
   def expressions(ctx: ExecutionContext, state: QueryState): Iterable[Any]
+  def registerOwningPipe(pipe: Pipe): Unit
 }
 
 object SeekArgs {
   object empty extends SeekArgs {
     def expressions(ctx: ExecutionContext, state: QueryState): Iterable[Any] = Iterable.empty
+
+    override def registerOwningPipe(pipe: Pipe){}
   }
 }
 
@@ -39,6 +42,8 @@ case class SingleSeekArg(expr: Expression) extends SeekArgs {
     expr(ctx)(state) match {
       case value => Iterable(value)
     }
+
+  override def registerOwningPipe(pipe: Pipe): Unit = expr.registerOwningPipe(pipe)
 }
 
 case class ManySeekArgs(coll: Expression) extends SeekArgs {
@@ -47,19 +52,19 @@ case class ManySeekArgs(coll: Expression) extends SeekArgs {
       case IsList(values) => values
     }
   }
+
+  override def registerOwningPipe(pipe: Pipe): Unit = coll.registerOwningPipe(pipe)
 }
 
 case class NodeByIdSeekPipe(ident: String, nodeIdsExpr: SeekArgs)
                            (val id: Id = new Id)
                            (implicit pipeMonitor: PipeMonitor)
   extends Pipe
-  with ListSupport
-  {
+  with ListSupport  {
+
+  nodeIdsExpr.registerOwningPipe(this)
 
   protected def internalCreateResults(state: QueryState): Iterator[ExecutionContext] = {
-    //register as parent so that stats are associated with this pipe
-    state.decorator.registerParentPipe(this)
-
     val ctx = state.createOrGetInitialContext()
     val nodeIds = nodeIdsExpr.expressions(ctx, state)
     new NodeIdSeekIterator(ident, ctx, state.query.nodeOps, nodeIds.iterator)

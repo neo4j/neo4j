@@ -27,10 +27,10 @@ case class SkipPipe(source: Pipe, exp: Expression)
                    (val id: Id = new Id)
                    (implicit pipeMonitor: PipeMonitor)
   extends PipeWithSource(source, pipeMonitor) with NumericHelper {
-  protected def internalCreateResults(input: Iterator[ExecutionContext], state: QueryState): Iterator[ExecutionContext] = {
-    //register as parent so that stats are associated with this pipe
-    state.decorator.registerParentPipe(this)
 
+  exp.registerOwningPipe(this)
+
+  protected def internalCreateResults(input: Iterator[ExecutionContext], state: QueryState): Iterator[ExecutionContext] = {
     if(input.isEmpty)
       return Iterator.empty
 

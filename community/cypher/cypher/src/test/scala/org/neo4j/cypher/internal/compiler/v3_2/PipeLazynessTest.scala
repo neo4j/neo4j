@@ -102,6 +102,15 @@ class PipeLazynessTest extends GraphDatabaseFunSuite with QueryStateTestSupport 
     (pipe, iter)
   }
 
+  private def unionPipe = {
+    val (iter, src) = emptyFakes
+    val (_, src2) = emptyFakes
+
+    val pipe = UnionPipe(src, src2)()
+
+    (pipe, iter)
+  }
+
   private def emptyFakes: (LazyIterator[Map[String, Any]], FakePipe) = {
     val iter = new LazyIterator[Map[String, Any]](10, (x) => Map("x" -> x))
     val src = new FakePipe(iter, "x" -> CTNumber)
