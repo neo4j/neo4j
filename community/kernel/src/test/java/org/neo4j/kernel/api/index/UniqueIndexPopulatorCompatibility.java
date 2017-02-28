@@ -25,7 +25,7 @@ import org.junit.Test;
 import java.util.Arrays;
 
 import org.neo4j.kernel.api.exceptions.index.IndexEntryConflictException;
-import org.neo4j.kernel.api.schema_new.index.NewIndexDescriptor;
+import org.neo4j.kernel.api.schema_new.OrderedPropertyValues;
 import org.neo4j.kernel.api.schema_new.index.NewIndexDescriptorFactory;
 import org.neo4j.kernel.configuration.Config;
 import org.neo4j.kernel.impl.api.index.sampling.IndexSamplingConfig;
@@ -81,7 +81,7 @@ public class UniqueIndexPopulatorCompatibility extends IndexProviderCompatibilit
         catch ( IndexEntryConflictException conflict )
         {
             assertEquals( nodeId1, conflict.getExistingNodeId() );
-            assertEquals( value, conflict.getPropertyValue() );
+            assertEquals( new OrderedPropertyValues( value ), conflict.getPropertyValues() );
             assertEquals( nodeId2, conflict.getAddedNodeId() );
         }
     }

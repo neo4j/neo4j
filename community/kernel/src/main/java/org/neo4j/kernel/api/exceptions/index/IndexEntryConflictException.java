@@ -22,7 +22,10 @@ package org.neo4j.kernel.api.exceptions.index;
 import java.util.Arrays;
 
 import org.neo4j.helpers.Strings;
+import org.neo4j.kernel.api.TokenNameLookup;
 import org.neo4j.kernel.api.exceptions.KernelException;
+import org.neo4j.kernel.api.schema_new.LabelSchemaDescriptor;
+import org.neo4j.kernel.api.schema_new.OrderedPropertyValues;
 import org.neo4j.kernel.api.schema_new.SchemaUtil;
 import org.neo4j.kernel.api.schema_new.index.NewIndexDescriptor;
 
@@ -35,18 +38,17 @@ import static org.neo4j.kernel.api.StatementConstants.NO_SUCH_NODE;
  */
 public class IndexEntryConflictException extends Exception
 {
-    private final Object propertyValue;
+    private final OrderedPropertyValues propertyValues;
     private final long addedNodeId;
     private final long existingNodeId;
 
-    // TODO: support composite indexes
-    public IndexEntryConflictException( long existingNodeId, long addedNodeId, Object propertyValue )
+    public IndexEntryConflictException( long existingNodeId, long addedNodeId, OrderedPropertyValues propertyValues )
     {
         super( format( "Both node %d and node %d share the property value %s",
-                existingNodeId, addedNodeId, quote( propertyValue ) ) );
+                existingNodeId, addedNodeId, quote( propertyValues ) ) );
         this.existingNodeId = existingNodeId;
         this.addedNodeId = addedNodeId;
-        this.propertyValue = propertyValue;
+        this.propertyValues = propertyValues;
     }
 
     /**
@@ -61,23 +63,32 @@ public class IndexEntryConflictException extends Exception
                 descriptor.userDescription( SchemaUtil.idTokenNameLookup ) ), this );
     }
 
-    public String evidenceMessage( String labelName, String propertyKey )
+    public String evidenceMessage( TokenNameLookup tokenNameLookup, LabelSchemaDescriptor schema )
     {
+        assert schema.getPropertyIds().length == propertyValues.values().length;
+
+        String labelName = tokenNameLookup.labelGetName( schema.getLabelId() );
         if ( addedNodeId == NO_SUCH_NODE )
         {
-            return format( "Node(%d) already exists with label `%s` and property `%s` = %s",
-                    existingNodeId, labelName, propertyKey, quote( propertyValue ) );
+            return format( "Node(%d) already exists with label `%s` and %s",
+                    existingNodeId, labelName, propertyString( tokenNameLookup, schema.getPropertyIds() ) );
         }
         else
         {
-            return format( "Both Node(%d) and Node(%d) have the label `%s` and property `%s` = %s",
-                    existingNodeId, addedNodeId, labelName, propertyKey, quote( propertyValue ) );
+            return format( "Both Node(%d) and Node(%d) have the label `%s` and %s",
+                    existingNodeId, addedNodeId, labelName, propertyString( tokenNameLookup, schema.getPropertyIds() ) );
         }
     }
 
-    public Object getPropertyValue()
+    public OrderedPropertyValues getPropertyValues()
     {
-        return propertyValue;
+        return propertyValues;
+    }
+
+    public Object getSinglePropertyValue()
+    {
+        assert propertyValues.values().length == 1;
+        return propertyValues.values()[0];
     }
 
     public long getAddedNodeId()
@@ -106,13 +117,13 @@ public class IndexEntryConflictException extends Exception
 
         return addedNodeId == that.addedNodeId &&
                 existingNodeId == that.existingNodeId &&
-                !(propertyValue != null ? !propertyValue.equals( that.propertyValue ) : that.propertyValue != null);
+                !(propertyValues != null ? !propertyValues.equals( that.propertyValues ) : that.propertyValues != null);
     }
 
     @Override
     public int hashCode()
     {
-        int result = propertyValue != null ? propertyValue.hashCode() : 0;
+        int result = propertyValues != null ? propertyValues.hashCode() : 0;
         result = 31 * result + (int) (addedNodeId ^ (addedNodeId >>> 32));
         result = 31 * result + (int) (existingNodeId ^ (existingNodeId >>> 32));
         return result;
@@ -122,13 +133,43 @@ public class IndexEntryConflictException extends Exception
     public String toString()
     {
         return "IndexEntryConflictException{" +
-               "propertyValue=" + Strings.prettyPrint( propertyValue ) +
-               ", addedNodeId=" + addedNodeId +
-               ", existingNodeId=" + existingNodeId +
-               '}';
+                "propertyValues=" + Strings.prettyPrint( propertyValues.values() ) +
+                ", addedNodeId=" + addedNodeId +
+                ", existingNodeId=" + existingNodeId +
+                '}';
     }
 
-    protected static String quote( Object propertyValue )
+    private String propertyString( TokenNameLookup tokenNameLookup, int[] propertyIds )
+    {
+        StringBuilder sb = new StringBuilder();
+        String sep = propertyIds.length > 1 ? "properties " : "property ";
+        for ( int i = 0; i < propertyIds.length; i++ )
+        {
+            sb.append( sep );
+            sep = ", ";
+            sb.append( '`' );
+            sb.append( tokenNameLookup.propertyKeyGetName( propertyIds[i] ) );
+            sb.append( "` = " );
+            sb.append( quote( propertyValues.values()[i] ) );
+        }
+        return sb.toString();
+    }
+
+    private static String quote( OrderedPropertyValues propertyValues )
+    {
+        StringBuilder sb = new StringBuilder();
+        String sep = "( ";
+        for ( Object value : propertyValues.values() )
+        {
+            sb.append( sep );
+            sep = ", ";
+            sb.append( quote( value ) );
+        }
+        sb.append( " )" );
+        return sb.toString();
+    }
+
+    private static String quote( Object propertyValue )
     {
         if ( propertyValue instanceof String )
         {

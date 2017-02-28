@@ -50,6 +50,7 @@ import org.neo4j.kernel.api.properties.Property;
 import org.neo4j.kernel.api.schema.NodePropertyDescriptor;
 import org.neo4j.kernel.api.schema_new.IndexQuery;
 import org.neo4j.kernel.api.schema_new.LabelSchemaDescriptor;
+import org.neo4j.kernel.api.schema_new.OrderedPropertyValues;
 import org.neo4j.kernel.api.schema_new.RelationTypeSchemaDescriptor;
 import org.neo4j.kernel.api.schema_new.SchemaDescriptorFactory;
 import org.neo4j.kernel.api.schema_new.constaints.ConstraintDescriptor;
@@ -179,7 +180,7 @@ public class ConstraintEnforcingEntityOperations implements EntityOperations, Sc
             {
                 throw new UniquePropertyValueValidationException( constraint,
                         ConstraintValidationException.Phase.VALIDATION,
-                        new IndexEntryConflictException( existing, NO_SUCH_NODE, value ) );
+                        new IndexEntryConflictException( existing, NO_SUCH_NODE, new OrderedPropertyValues( value ) ) );
             }
         }
         catch ( IndexNotFoundKernelException | IndexBrokenKernelException | IndexNotApplicableKernelException e )
