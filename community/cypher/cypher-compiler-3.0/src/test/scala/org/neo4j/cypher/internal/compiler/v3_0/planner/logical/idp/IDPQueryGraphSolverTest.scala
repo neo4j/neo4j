@@ -490,7 +490,7 @@ class IDPQueryGraphSolverTest extends CypherFunSuite with LogicalPlanningTestSup
       new IDPSolverConfig {
         override def solvers(queryGraph: QueryGraph): Seq[(QueryGraph) => IDPSolverStep[PatternRelationship, LogicalPlan, LogicalPlanningContext]] =
           ExpandOnlyWhenPatternIsLong.solvers(queryGraph)
-        override def iterationDurationLimit: Long = 100
+        override def iterationDurationLimit: Long = 50
       },
       new ConfigurableIDPSolverConfig(maxTableSize = 32, iterationDurationLimit = Long.MaxValue), // table limited
       new ConfigurableIDPSolverConfig(maxTableSize = Int.MaxValue, iterationDurationLimit = 500), // time limited

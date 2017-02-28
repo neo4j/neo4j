@@ -171,7 +171,7 @@ class PipeLazynessTest extends GraphDatabaseFunSuite with QueryStateTestSupport 
     val (iter, src) = emptyFakes
     val traversalMatcher = mock[TraversalMatcher]
     val path = mock[Path]
-    val trail = mock[Trail]
+    val trail = mock[Trail](RETURNS_DEEP_STUBS)
 
     when(traversalMatcher.findMatchingPaths(any(), any())).
       thenReturn(Iterator(path))

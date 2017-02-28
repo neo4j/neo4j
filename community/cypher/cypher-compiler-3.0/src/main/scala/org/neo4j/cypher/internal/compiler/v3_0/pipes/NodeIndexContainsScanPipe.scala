@@ -39,10 +39,9 @@ abstract class AbstractNodeIndexStringScanPipe(ident: String,
 
   private val descriptor = new IndexDescriptor(label.nameId.id, propertyKey.nameId.id)
 
-  override protected def internalCreateResults(state: QueryState): Iterator[ExecutionContext] = {
-    //register as parent so that stats are associated with this pipe
-    state.decorator.registerParentPipe(this)
+  valueExpr.registerOwningPipe(this)
 
+  override protected def internalCreateResults(state: QueryState): Iterator[ExecutionContext] = {
     val baseContext = state.initialContext.getOrElse(ExecutionContext.empty)
     val value = valueExpr(baseContext)(state)
 

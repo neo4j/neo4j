@@ -24,7 +24,7 @@ import org.neo4j.cypher.internal.compiler.v3_0.commands._
 import org.neo4j.cypher.internal.compiler.v3_0.commands.predicates.{CoercedPredicate, Predicate}
 import org.neo4j.cypher.internal.compiler.v3_0.executionplan.Effects
 import org.neo4j.cypher.internal.compiler.v3_0.helpers.TypeSafeMathSupport
-import org.neo4j.cypher.internal.compiler.v3_0.pipes.QueryState
+import org.neo4j.cypher.internal.compiler.v3_0.pipes.{Pipe, QueryState}
 import org.neo4j.cypher.internal.compiler.v3_0.symbols.{SymbolTable, TypeSafe, Typed}
 import org.neo4j.cypher.internal.frontend.v3_0.CypherTypeException
 import org.neo4j.cypher.internal.frontend.v3_0.symbols.{CypherType, _}
@@ -53,6 +53,15 @@ abstract class Expression extends Typed with TypeSafe with EffectfulAstNode[Expr
   def containsAggregate = exists(_.isInstanceOf[AggregationExpression])
 
   def apply(ctx: ExecutionContext)(implicit state: QueryState):Any
+
+  private var _owningPipe: Option[Pipe] = None
+
+  def owningPipe: Pipe = _owningPipe.get
+
+  def registerOwningPipe(pipe: Pipe): Unit = rewrite( expr => {
+    expr._owningPipe = Some(pipe)
+    expr
+  })
 
   /*When calculating the type of an expression, the expression should also
   make sure to check the types of any downstream expressions*/

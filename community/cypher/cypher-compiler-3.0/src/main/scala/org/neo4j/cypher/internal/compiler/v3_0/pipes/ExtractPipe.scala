@@ -54,6 +54,9 @@ object ExtractPipe {
 
 case class ExtractPipe(source: Pipe, expressions: Map[String, Expression], hack_remove_this:Boolean)
                       (implicit pipeMonitor: PipeMonitor) extends PipeWithSource(source, pipeMonitor) {
+
+  expressions.values.foreach(_.registerOwningPipe(this))
+
   val symbols: SymbolTable = {
     val newVariables = expressions.map {
       case (name, expression) => name -> expression.getType(source.symbols)
@@ -98,9 +101,6 @@ case class ExtractPipe(source: Pipe, expressions: Map[String, Expression], hack_
   }
 
   protected def internalCreateResults(input: Iterator[ExecutionContext], state: QueryState) = {
-    //register as parent so that stats are associated with this pipe
-    state.decorator.registerParentPipe(this)
-
     input.map( ctx => applyExpressions(ctx, state) )
   }
 

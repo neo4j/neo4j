@@ -596,6 +596,33 @@ class ProfilerAcceptanceTest extends ExecutionEngineFunSuite with CreateTempFile
     assertDbHits(2)(result)("Distinct")
   }
 
+  test("profile with filter using nested expressions pipe should report dbhits correctly") {
+    // GIVEN
+    createLabeledNode(Map("category_type"-> "cat"), "Category")
+    createLabeledNode(Map("category_type"-> "cat"), "Category")
+    val e1 = createLabeledNode(Map("domain_id"-> "1"), "Entity")
+    val e2 = createLabeledNode(Map("domain_id"-> "2"), "Entity")
+    val aNode = createNode()
+    relate(aNode, e1)
+    val anotherNode = createNode()
+    relate(anotherNode, e2)
+
+    relate(aNode, createNode(), "HAS_CATEGORY")
+    relate(anotherNode, createNode(), "HAS_CATEGORY")
+
+    // WHEN
+    val result = profileWithAllPlanners("""MATCH (cat:Category)
+                                          |WITH collect(cat) as categories
+                                          |MATCH (m:Entity)
+                                          |WITH m, categories
+                                          |MATCH (m)<-[r]-(n)
+                                          |WHERE ANY(x IN categories WHERE (n)-[:HAS_CATEGORY]->(x))
+                                          |RETURN count(n)""".stripMargin)
+
+    // THEN
+    assertDbHits(14)(result)("Filter")
+  }
+
   private def assertRows(expectedRows: Int)(result: InternalExecutionResult)(names: String*) {
     getPlanDescriptions(result, names).foreach {
       plan => assert(expectedRows === getArgument[Rows](plan).value, s" wrong row count for plan: ${plan.name}")

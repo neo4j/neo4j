@@ -39,6 +39,8 @@ case class EagerAggregationPipe(source: Pipe, keyExpressions: Set[String], aggre
 
   val symbols: SymbolTable = createSymbols()
 
+  aggregations.values.foreach(_.registerOwningPipe(this))
+
   private def createSymbols() = {
     val keyVariables = keyExpressions.map(id => id -> source.symbols.evaluateType(id, CTAny)).toMap
     val aggrVariables = aggregations.map {
@@ -48,10 +50,7 @@ case class EagerAggregationPipe(source: Pipe, keyExpressions: Set[String], aggre
     SymbolTable(keyVariables ++ aggrVariables)
   }
 
-  protected def internalCreateResults(input: Iterator[ExecutionContext], state: QueryState) = {
-    //register as parent so that stats are associated with this pipe
-    state.decorator.registerParentPipe(this)
-
+  protected def internalCreateResults(input: Iterator[ExecutionContext], state: QueryState): Iterator[ExecutionContext] = {
     // This is the temporary storage used while the aggregation is going on
     val result = MutableMap[Equals, Seq[AggregationFunction]]()
     val keyNames = keyExpressions.toList

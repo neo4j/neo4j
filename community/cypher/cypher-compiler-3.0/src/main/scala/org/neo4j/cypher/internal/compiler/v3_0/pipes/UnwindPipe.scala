@@ -29,10 +29,10 @@ import scala.annotation.tailrec
 case class UnwindPipe(source: Pipe, collection: Expression, variable: String)
                      (val estimatedCardinality: Option[Double] = None)(implicit monitor: PipeMonitor)
   extends PipeWithSource(source, monitor) with ListSupport with RonjaPipe {
-  protected def internalCreateResults(input: Iterator[ExecutionContext], state: QueryState): Iterator[ExecutionContext] = {
-    //register as parent so that stats are associated with this pipe
-    state.decorator.registerParentPipe(this)
 
+  collection.registerOwningPipe(this)
+
+  protected def internalCreateResults(input: Iterator[ExecutionContext], state: QueryState): Iterator[ExecutionContext] = {
     if (input.hasNext) new UnwindIterator(input, state) else Iterator.empty
   }
 

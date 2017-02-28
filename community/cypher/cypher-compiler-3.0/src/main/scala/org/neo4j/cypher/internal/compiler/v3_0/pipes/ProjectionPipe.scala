@@ -30,6 +30,9 @@ It's an additive operation - nothing is lost in the execution context, the pipe 
  */
 case class ProjectionPipe(source: Pipe, expressions: Map[String, Expression])(val estimatedCardinality: Option[Double] = None)
                          (implicit pipeMonitor: PipeMonitor) extends PipeWithSource(source, pipeMonitor) with RonjaPipe {
+
+  expressions.values.foreach(_.registerOwningPipe(this))
+
   val symbols = {
     val newVariables = expressions.map {
       case (name, expression) => name -> expression.getType(source.symbols)
@@ -39,8 +42,6 @@ case class ProjectionPipe(source: Pipe, expressions: Map[String, Expression])(va
   }
 
   protected def internalCreateResults(input: Iterator[ExecutionContext], state: QueryState) = {
-    //register as parent so that stats are associated with this pipe
-    state.decorator.registerParentPipe(this)
     input.map {
       ctx =>
         expressions.foreach {

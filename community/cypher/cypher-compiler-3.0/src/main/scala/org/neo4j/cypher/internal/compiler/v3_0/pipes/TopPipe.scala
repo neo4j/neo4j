@@ -68,10 +68,9 @@ abstract class TopPipe(source: Pipe, sortDescription: List[SortDescription], est
 case class TopNPipe(source: Pipe, sortDescription: List[SortDescription], countExpression: Expression)
 (val estimatedCardinality: Option[Double] = None)(implicit pipeMonitor: PipeMonitor) extends TopPipe(source, sortDescription, estimatedCardinality)(pipeMonitor) {
 
-  protected override def internalCreateResults(input:Iterator[ExecutionContext], state: QueryState): Iterator[ExecutionContext] = {
-    //register as parent so that stats are associated with this pipe
-    state.decorator.registerParentPipe(this)
+  countExpression.registerOwningPipe(this)
 
+  protected override def internalCreateResults(input:Iterator[ExecutionContext], state: QueryState): Iterator[ExecutionContext] = {
     implicit val s = state
     if (input.isEmpty)
       Iterator.empty
@@ -142,9 +141,6 @@ case class Top1Pipe(source: Pipe, sortDescription: List[SortDescription])
 
   protected override def internalCreateResults(input: Iterator[ExecutionContext],
                                       state: QueryState): Iterator[ExecutionContext] = {
-    //register as parent so that stats are associated with this pipe
-    state.decorator.registerParentPipe(this)
-
     implicit val s = state
     if (input.isEmpty)
       Iterator.empty
@@ -190,9 +186,6 @@ case class Top1WithTiesPipe(source: Pipe, sortDescription: List[SortDescription]
 
   protected override def internalCreateResults(input: Iterator[ExecutionContext],
                                                state: QueryState): Iterator[ExecutionContext] = {
-    //register as parent so that stats are associated with this pipe
-    state.decorator.registerParentPipe(this)
-
     implicit val s = state
     if (input.isEmpty)
       Iterator.empty
