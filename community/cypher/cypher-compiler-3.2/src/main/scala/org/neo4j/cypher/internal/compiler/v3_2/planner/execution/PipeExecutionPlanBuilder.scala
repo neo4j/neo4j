@@ -342,8 +342,8 @@ case class ActualPipeBuilder(monitors: Monitors, recurse: LogicalPlan => Pipe, r
         val rowProcessing = ProcedureCallRowProcessing(signature)
         ProcedureCallPipe(source, signature.name, callMode, callArgumentCommands, rowProcessing, call.callResultTypes, call.callResultIndices)(id = id)
 
-      case LoadCSVPlan(_, url, variableName, format, fieldTerminator) =>
-        LoadCSVPipe(source, format, toCommandExpression(url), variableName.name, fieldTerminator)(id = id)
+      case LoadCSVPlan(_, url, variableName, format, fieldTerminator, legacyCsvQuoteEscaping) =>
+        LoadCSVPipe(source, format, toCommandExpression(url), variableName.name, fieldTerminator, legacyCsvQuoteEscaping)(id = id)
 
       case ProduceResult(columns, _) =>
         ProduceResultsPipe(source, columns)(id = id)

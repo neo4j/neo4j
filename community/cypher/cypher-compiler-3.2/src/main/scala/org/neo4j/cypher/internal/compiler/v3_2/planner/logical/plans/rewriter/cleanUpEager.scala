@@ -35,7 +35,7 @@ case object cleanUpEager extends Rewriter {
       unwind.copy(left = eager.copy(inner = source)(eager.solved))(eager.solved)
 
     // E LCSV => LCSV E
-    case eager@Eager(loadCSV@LoadCSV(source, _, _, _, _)) =>
+    case eager@Eager(loadCSV@LoadCSV(source, _, _, _, _, _)) =>
       loadCSV.copy(source = eager.copy(inner = source)(eager.solved))(eager.solved)
   })
 

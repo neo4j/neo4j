@@ -228,6 +228,10 @@ class ExecutionEngine(val queryService: GraphDatabaseQueryService,
       queryService, GraphDatabaseSettings.forbid_shortestpath_common_nodes,
       GraphDatabaseSettings.forbid_shortestpath_common_nodes.getDefaultValue.toBoolean
     )
+    val legacyCsvQuoteEscaping = optGraphSetting[java.lang.Boolean](
+      queryService, GraphDatabaseSettings.csv_legacy_quote_escaping,
+      GraphDatabaseSettings.csv_legacy_quote_escaping.getDefaultValue.toBoolean
+    )
 
     if (((version != CypherVersion.v2_3) || (version != CypherVersion.v3_1) || (version != CypherVersion.v3_2)) &&
       (planner == CypherPlanner.greedy || planner == CypherPlanner.idp || planner == CypherPlanner.dp)) {
@@ -240,7 +244,7 @@ class ExecutionEngine(val queryService: GraphDatabaseQueryService,
     val compatibilityCache = new CompatibilityCache(compatibilityFactory)
     new CompilerEngineDelegator(queryService, kernel, kernelMonitors, version, planner, runtime,
       useErrorsOverWarnings, idpMaxTableSize, idpIterationDuration, errorIfShortestPathFallbackUsedAtRuntime,
-      errorIfShortestPathHasCommonNodesAtRuntime, logProvider, compatibilityCache)
+      errorIfShortestPathHasCommonNodesAtRuntime, legacyCsvQuoteEscaping, logProvider, compatibilityCache)
   }
 
   private def getPlanCacheSize: Int =

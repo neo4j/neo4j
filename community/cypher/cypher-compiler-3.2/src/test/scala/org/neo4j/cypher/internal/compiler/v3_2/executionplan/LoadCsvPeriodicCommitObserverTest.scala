@@ -22,10 +22,12 @@ package org.neo4j.cypher.internal.compiler.v3_2.executionplan
 import java.net.URL
 
 import org.mockito.Matchers
+import org.mockito.Matchers._
 import org.mockito.Mockito._
 import org.neo4j.cypher.internal.compiler.v3_2.pipes.ExternalCSVResource
 import org.neo4j.cypher.internal.compiler.v3_2.spi.{QueryTransactionalContext, QueryContext}
 import org.neo4j.cypher.internal.frontend.v3_2.test_helpers.CypherFunSuite
+
 class LoadCsvPeriodicCommitObserverTest extends CypherFunSuite {
 
   var resourceUnderTest: LoadCsvPeriodicCommitObserver = _
@@ -35,10 +37,10 @@ class LoadCsvPeriodicCommitObserverTest extends CypherFunSuite {
 
   test("writing should not trigger tx restart until next csv line is fetched") {
     // Given
-    when(resource.getCsvIterator(Matchers.eq(url), Matchers.any())).thenReturn(Iterator(Array("yo")))
+    when(resource.getCsvIterator(Matchers.eq(url), any(), any())).thenReturn(Iterator(Array("yo")))
 
     // When
-    val iterator = resourceUnderTest.getCsvIterator(url)
+    val iterator = resourceUnderTest.getCsvIterator(url, None, false)
     verify(transactionalContext, never()).commitAndRestartTx()
 
     iterator.next()
@@ -48,11 +50,11 @@ class LoadCsvPeriodicCommitObserverTest extends CypherFunSuite {
 
   test("multiple iterators are still handled correctly only commit when the first iterator advances") {
     // Given
-    when(resource.getCsvIterator(Matchers.eq(url), Matchers.any())).
+    when(resource.getCsvIterator(Matchers.eq(url), any(), any())).
       thenReturn(Iterator(Array("yo"))).
       thenReturn(Iterator(Array("yo")))
-    val iterator1 = resourceUnderTest.getCsvIterator(url)
-    val iterator2 = resourceUnderTest.getCsvIterator(url)
+    val iterator1 = resourceUnderTest.getCsvIterator(url, None, false)
+    val iterator2 = resourceUnderTest.getCsvIterator(url, None, false)
 
     // When
     iterator2.next()
@@ -65,10 +67,10 @@ class LoadCsvPeriodicCommitObserverTest extends CypherFunSuite {
 
   test("if a custom iterator is specified should be passed to the wrapped resource") {
     // Given
-    resourceUnderTest.getCsvIterator(url, Some(";"))
+    resourceUnderTest.getCsvIterator(url, Some(";"), false)
 
     // When
-    verify(resource, times(1)).getCsvIterator(url, Some(";"))
+    verify(resource, times(1)).getCsvIterator(url, Some(";"), false)
   }
 
   override protected def beforeEach() {

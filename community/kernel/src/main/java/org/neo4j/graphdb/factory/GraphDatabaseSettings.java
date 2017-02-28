@@ -25,6 +25,7 @@ import java.util.concurrent.TimeUnit;
 
 import org.neo4j.configuration.Description;
 import org.neo4j.configuration.LoadableConfig;
+import org.neo4j.csv.reader.Configuration;
 import org.neo4j.graphdb.config.Setting;
 import org.neo4j.helpers.AdvertisedSocketAddress;
 import org.neo4j.helpers.ListenSocketAddress;
@@ -222,6 +223,15 @@ public class GraphDatabaseSettings implements LoadableConfig
     @Description( "Sets the root directory for file URLs used with the Cypher `LOAD CSV` clause. This must be set to a single "
                   + "directory, restricting access to only those files within that directory and its subdirectories." )
     public static Setting<File> load_csv_file_url_root = pathSetting( "dbms.directories.import", NO_DEFAULT );
+
+    @Description( "Selects whether to conform to the standard https://tools.ietf.org/html/rfc4180 for interpreting " +
+                  "escaped quotation characters in CSV files loaded using `LOAD CSV`. Setting this to `false` will use" +
+                  " the standard, interpreting repeated quotes '\"\"' as a single in-lined quote, while `true` will " +
+                  "use the legacy convention originally supported in Neo4j 3.0 and 3.1, allowing a backslash to " +
+                  "include quotes in-lined in fields." )
+    public static Setting<Boolean> csv_legacy_quote_escaping =
+            setting( "dbms.import.csv.legacy_quote_escaping", BOOLEAN,
+                    Boolean.toString( Configuration.DEFAULT_LEGACY_STYLE_QUOTING ) );
 
     @Description( "The maximum amount of time to wait for the database to become available, when " +
                   "starting a new transaction." )

@@ -146,6 +146,7 @@ case class CypherCompilerConfiguration(queryCacheSize: Int,
                                        idpIterationDuration: Long,
                                        errorIfShortestPathFallbackUsedAtRuntime: Boolean,
                                        errorIfShortestPathHasCommonNodesAtRuntime: Boolean,
+                                       legacyCsvQuoteEscaping: Boolean,
                                        nonIndexedLabelWarningThreshold: Long)
 
 

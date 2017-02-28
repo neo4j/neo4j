@@ -72,6 +72,7 @@ trait LogicalPlanningTestSupport2 extends CypherTestSupport with AstConstruction
     idpIterationDuration = DefaultIDPSolverConfig.iterationDurationLimit,
     errorIfShortestPathFallbackUsedAtRuntime = false,
     errorIfShortestPathHasCommonNodesAtRuntime = true,
+    legacyCsvQuoteEscaping = false,
     nonIndexedLabelWarningThreshold = 10000
   )
   def solvedWithEstimation(cardinality: Cardinality) = CardinalityEstimation.lift(PlannerQuery.empty, cardinality)
