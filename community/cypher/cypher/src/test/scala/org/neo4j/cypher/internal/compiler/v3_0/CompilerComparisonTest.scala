@@ -59,7 +59,7 @@ class CompilerComparisonTest extends ExecutionEngineFunSuite with QueryStatistic
     nonIndexedLabelWarningThreshold = 10000,
     errorIfShortestPathFallbackUsedAtRuntime = true,
     errorIfShortestPathHasCommonNodesAtRuntime = true,
-    legacyCsvQuoteEscaping = true
+    legacyCsvQuoteEscaping = false
   )
 
   val compilers = Seq[(String, GraphDatabaseQueryService => CypherCompiler)](

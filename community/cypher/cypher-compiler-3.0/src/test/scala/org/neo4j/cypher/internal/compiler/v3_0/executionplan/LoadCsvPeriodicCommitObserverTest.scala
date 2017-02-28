@@ -40,7 +40,7 @@ class LoadCsvPeriodicCommitObserverTest extends CypherFunSuite {
     when(resource.getCsvIterator(Matchers.eq(url), any(), any())).thenReturn(Iterator(Array("yo")))
 
     // When
-    val iterator = resourceUnderTest.getCsvIterator(url)
+    val iterator = resourceUnderTest.getCsvIterator(url, None, false)
     verify(transactionalContext, never()).commitAndRestartTx()
 
     iterator.next()
@@ -53,8 +53,8 @@ class LoadCsvPeriodicCommitObserverTest extends CypherFunSuite {
     when(resource.getCsvIterator(Matchers.eq(url), any(), any())).
       thenReturn(Iterator(Array("yo"))).
       thenReturn(Iterator(Array("yo")))
-    val iterator1 = resourceUnderTest.getCsvIterator(url)
-    val iterator2 = resourceUnderTest.getCsvIterator(url)
+    val iterator1 = resourceUnderTest.getCsvIterator(url, None, false)
+    val iterator2 = resourceUnderTest.getCsvIterator(url, None, false)
 
     // When
     iterator2.next()
@@ -67,10 +67,10 @@ class LoadCsvPeriodicCommitObserverTest extends CypherFunSuite {
 
   test("if a custom iterator is specified should be passed to the wrapped resource") {
     // Given
-    resourceUnderTest.getCsvIterator(url, Some(";"), true)
+    resourceUnderTest.getCsvIterator(url, Some(";"), false)
 
     // When
-    verify(resource, times(1)).getCsvIterator(url, Some(";"), true)
+    verify(resource, times(1)).getCsvIterator(url, Some(";"), false)
   }
 
   override protected def beforeEach() {

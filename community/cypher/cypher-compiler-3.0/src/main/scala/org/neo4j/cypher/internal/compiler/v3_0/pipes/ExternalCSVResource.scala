@@ -22,11 +22,11 @@ package org.neo4j.cypher.internal.compiler.v3_0.pipes
 import java.net.URL
 
 trait ExternalCSVResource {
-  def getCsvIterator(url: URL, fieldTerminator: Option[String] = None, legacyCsvQuoteEscaping: Boolean = true): Iterator[Array[String]]
+  def getCsvIterator(url: URL, fieldTerminator: Option[String], legacyCsvQuoteEscaping: Boolean): Iterator[Array[String]]
 }
 
 object ExternalCSVResource {
   def empty: ExternalCSVResource = new ExternalCSVResource {
-    override def getCsvIterator(url: URL, fieldTerminator: Option[String], legacyCsvQuoteEscaping: Boolean = true): Iterator[Array[String]] = Iterator.empty
+    override def getCsvIterator(url: URL, fieldTerminator: Option[String], legacyCsvQuoteEscaping: Boolean): Iterator[Array[String]] = Iterator.empty
   }
 }

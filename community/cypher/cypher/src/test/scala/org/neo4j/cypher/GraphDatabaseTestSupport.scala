@@ -256,6 +256,6 @@ trait GraphDatabaseTestSupport extends CypherTestSupport with GraphIcing {
     idpIterationDuration = DefaultIDPSolverConfig.iterationDurationLimit,
     errorIfShortestPathFallbackUsedAtRuntime = false,
     errorIfShortestPathHasCommonNodesAtRuntime = true,
-    legacyCsvQuoteEscaping = true
+    legacyCsvQuoteEscaping = false
   )
 }

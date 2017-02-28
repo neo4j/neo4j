@@ -25,6 +25,7 @@ import java.lang.management.OperatingSystemMXBean;
 import java.lang.reflect.Method;
 import java.util.List;
 
+import org.neo4j.csv.reader.Configuration;
 import org.neo4j.graphdb.config.Setting;
 import org.neo4j.helpers.HostnamePort;
 import org.neo4j.io.ByteUnit;
@@ -215,7 +216,8 @@ public abstract class GraphDatabaseSettings
                   "use the legacy convention originally supported in Neo4j 3.0 and 3.1, allowing a backslash to " +
                   "include quotes in-lined in fields." )
     public static Setting<Boolean> csv_legacy_quote_escaping =
-            setting( "dbms.import.csv.legacy_quote_escaping", BOOLEAN, TRUE );
+            setting( "dbms.import.csv.legacy_quote_escaping", BOOLEAN,
+                    Boolean.toString( Configuration.DEFAULT_LEGACY_STYLE_QUOTING ) );
 
     @Description( "The maximum amount of time to wait for the database to become available, when " +
                   "starting a new transaction." )

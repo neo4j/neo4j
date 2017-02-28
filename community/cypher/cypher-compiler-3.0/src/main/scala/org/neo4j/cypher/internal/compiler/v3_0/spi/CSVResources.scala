@@ -55,7 +55,7 @@ object CSVResources {
 
 class CSVResources(cleaner: TaskCloser) extends ExternalCSVResource {
 
-  def getCsvIterator(url: URL, fieldTerminator: Option[String] = None, legacyCsvQuoteEscaping: Boolean = true): Iterator[Array[String]] = {
+  def getCsvIterator(url: URL, fieldTerminator: Option[String], legacyCsvQuoteEscaping: Boolean): Iterator[Array[String]] = {
     val inputStream = openStream(url)
 
     val reader = if (url.getProtocol == "file") {

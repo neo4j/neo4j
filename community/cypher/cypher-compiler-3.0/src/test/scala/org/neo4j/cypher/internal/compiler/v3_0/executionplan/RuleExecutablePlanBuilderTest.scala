@@ -44,7 +44,7 @@ class RuleExecutablePlanBuilderTest extends CypherFunSuite {
     idpIterationDuration = DefaultIDPSolverConfig.iterationDurationLimit,
     errorIfShortestPathFallbackUsedAtRuntime = false,
     errorIfShortestPathHasCommonNodesAtRuntime = true,
-    legacyCsvQuoteEscaping = true
+    legacyCsvQuoteEscaping = false
   )
   val planBuilder = new LegacyExecutablePlanBuilder(mock[Monitors], config, RewriterStepSequencer.newValidating,
     typeConverter = IdentityTypeConverter)

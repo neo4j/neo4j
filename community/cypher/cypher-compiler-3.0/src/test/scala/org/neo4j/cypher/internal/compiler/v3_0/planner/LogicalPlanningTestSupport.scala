@@ -185,7 +185,7 @@ trait LogicalPlanningTestSupport extends CypherTestSupport with AstConstructionT
     idpIterationDuration = DefaultIDPSolverConfig.iterationDurationLimit,
     errorIfShortestPathFallbackUsedAtRuntime = false,
     errorIfShortestPathHasCommonNodesAtRuntime = true,
-    legacyCsvQuoteEscaping = true,
+    legacyCsvQuoteEscaping = false,
     nonIndexedLabelWarningThreshold = 10000
   )
 

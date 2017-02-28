@@ -31,7 +31,7 @@ class LoadCsvPeriodicCommitObserver(batchRowCount: Long, resources: ExternalCSVR
   val updateCounter = new UpdateCounter
   var outerLoadCSVIterator: Option[LoadCsvIterator] = None
 
-  def getCsvIterator(url: URL, fieldTerminator: Option[String] = None, legacyCsvQuoteEscaping: Boolean = true): Iterator[Array[String]] = {
+  def getCsvIterator(url: URL, fieldTerminator: Option[String], legacyCsvQuoteEscaping: Boolean): Iterator[Array[String]] = {
     val innerIterator = resources.getCsvIterator(url, fieldTerminator, legacyCsvQuoteEscaping)
     if (outerLoadCSVIterator.isEmpty) {
       val iterator = new LoadCsvIterator(url, innerIterator)(onNext())
