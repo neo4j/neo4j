@@ -21,19 +21,19 @@ package org.neo4j;
 
 import org.neo4j.commandline.admin.AdminCommandSection;
 
-public class ManageOnlineBackupCommandSection extends AdminCommandSection
+public class OnlineBackupCommandSection extends AdminCommandSection
 {
-    private static final ManageOnlineBackupCommandSection manageOnlineBackupCommandSection = new ManageOnlineBackupCommandSection();
+    private static final OnlineBackupCommandSection ONLINE_BACKUP_COMMAND_SECTION = new OnlineBackupCommandSection();
 
     public static AdminCommandSection instance()
     {
-        return manageOnlineBackupCommandSection;
+        return ONLINE_BACKUP_COMMAND_SECTION;
     }
 
     @Override
     public String printable()
     {
-        return "Manage online backup";
+        return "Online backup";
     }
 
 }

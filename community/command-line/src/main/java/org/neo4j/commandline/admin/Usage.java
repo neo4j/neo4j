@@ -72,7 +72,7 @@ public class Usage
 
     private void printCommands( Consumer<String> output )
     {
-        Map<AdminCommandSection,List<AdminCommand.Provider>> groupedProviders = groupProvidersBySegment();
+        Map<AdminCommandSection,List<AdminCommand.Provider>> groupedProviders = groupProvidersBySection();
 
         AdminCommandSection.general()
                 .printAllCommandsUnderSection( output, groupedProviders.remove( AdminCommandSection.general() ) );
@@ -82,10 +82,10 @@ public class Usage
                 .forEach(entry -> entry.getKey().printAllCommandsUnderSection( output, entry.getValue() ) );
     }
 
-    private Map<AdminCommandSection,List<AdminCommand.Provider>> groupProvidersBySegment()
+    private Map<AdminCommandSection,List<AdminCommand.Provider>> groupProvidersBySection()
     {
         List<AdminCommand.Provider> providers = new ArrayList<>();
         commands.getAllProviders().forEach( providers::add );
-        return providers.stream().collect( Collectors.groupingBy( AdminCommand.Provider::commandSection ) );
+        return providers.stream().collect( Collectors.groupingBy( ( provider ) -> provider.commandSection() ) );
     }
 }

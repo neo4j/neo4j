@@ -25,10 +25,14 @@ import org.mockito.InOrder;
 import org.mockito.Mock;
 import org.mockito.MockitoAnnotations;
 
+import java.util.HashMap;
 import java.util.List;
 import java.util.function.Consumer;
 
 import static java.util.Arrays.asList;
+import static org.junit.Assert.assertEquals;
+import static org.junit.Assert.assertFalse;
+import static org.junit.Assert.assertTrue;
 import static org.mockito.Mockito.inOrder;
 import static org.mockito.Mockito.mock;
 import static org.mockito.Mockito.when;
@@ -49,9 +53,9 @@ public class AdminCommandSectionTest
     {
         AdminCommandSection generalSection = AdminCommandSection.general();
 
-        List<AdminCommand.Provider> providers = asList( mockCommand( generalSection, "restore", "Restore" ),
-                mockCommand( generalSection, "bam", "A summary" ),
-                mockCommand( generalSection, "zzzz-last-one", "Another summary" ) );
+        List<AdminCommand.Provider> providers =
+                asList( mockCommand( "restore", "Restore" ), mockCommand( "bam", "A summary" ),
+                        mockCommand( "zzzz-last-one", "Another summary" ) );
         generalSection.printAllCommandsUnderSection( out, providers );
 
         InOrder ordered = inOrder( out );
@@ -65,12 +69,55 @@ public class AdminCommandSectionTest
         ordered.verifyNoMoreInteractions();
     }
 
-    private AdminCommand.Provider mockCommand( AdminCommandSection section, String name, String summary )
+    @Test
+    public void equalsUsingReflection() throws Exception
     {
-            AdminCommand.Provider commandProvider = mock( AdminCommand.Provider.class );
-            when( commandProvider.name() ).thenReturn( name );
-            when( commandProvider.summary() ).thenReturn( summary );
-            when( commandProvider.commandSection() ).thenReturn( AdminCommandSection.general() );
-            return commandProvider;
+        assertTrue( AdminCommandSection.general().equals( new TestGeneralSection() ) );
+        assertFalse( AdminCommandSection.general().equals( new TestAnotherGeneralSection() ) );
+    }
+
+    @Test
+    public void hashCodeUsingReflection() throws Exception
+    {
+        TestGeneralSection testGeneralSection = new TestGeneralSection();
+        TestAnotherGeneralSection testAnotherGeneralSection = new TestAnotherGeneralSection();
+        HashMap<AdminCommandSection,String> map = new HashMap<>();
+        map.put( AdminCommandSection.general(), "General-Original" );
+        map.put( testGeneralSection, "General-Test" );
+        map.put( testAnotherGeneralSection, "General-AnotherTest" );
+
+        assertEquals( 2, map.size() );
+        assertEquals( "General-Test", map.get( AdminCommandSection.general() ) );
+        assertEquals( "General-Test", map.get( testGeneralSection ) );
+        assertEquals( "General-AnotherTest", map.get( testAnotherGeneralSection ) );
+    }
+
+    private class TestGeneralSection extends AdminCommandSection
+    {
+
+        @Override
+        public String printable()
+        {
+            return "General";
+        }
+    }
+
+    private class TestAnotherGeneralSection extends AdminCommandSection
+    {
+
+        @Override
+        public String printable()
+        {
+            return "Another Section";
+        }
+    }
+
+    private AdminCommand.Provider mockCommand( String name, String summary )
+    {
+        AdminCommand.Provider commandProvider = mock( AdminCommand.Provider.class );
+        when( commandProvider.name() ).thenReturn( name );
+        when( commandProvider.summary() ).thenReturn( summary );
+        when( commandProvider.commandSection() ).thenReturn( AdminCommandSection.general() );
+        return commandProvider;
     }
 }

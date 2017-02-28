@@ -40,8 +40,6 @@ class CommandUsage
     {
         for ( Arguments arguments : command.possibleArguments() )
         {
-            //Arguments arguments = command.arguments();
-
             String left = format( "usage: %s %s", scriptName, command.name() );
 
             output.accept( Arguments.rightColumnFormatted( left, arguments.usage(), left.length() + 1 ) );

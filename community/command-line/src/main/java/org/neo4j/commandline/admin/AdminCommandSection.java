@@ -34,6 +34,22 @@ public abstract class AdminCommandSection
         return GENERAL;
     }
 
+    @Override
+    public int hashCode()
+    {
+        return this.printable().hashCode();
+    }
+
+    @Override
+    public boolean equals( Object other )
+    {
+        if ( other instanceof AdminCommandSection )
+        {
+            return this.printable().equals( ((AdminCommandSection) other).printable() );
+        }
+        return false;
+    }
+
     public final void printAllCommandsUnderSection( Consumer<String> output, List<AdminCommand.Provider> providers )
     {
         output.accept( printable() );

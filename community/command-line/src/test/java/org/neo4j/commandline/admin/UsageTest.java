@@ -49,7 +49,7 @@ public class UsageTest
     public void shouldPrintUsageForACommand() throws Exception
     {
         // given
-        AdminCommand.Provider commandProvier = mockCommand();
+        AdminCommand.Provider commandProvier = mockCommand( "bam", "A summary", AdminCommandSection.general() );
         AdminCommand.Provider[] commands = new AdminCommand.Provider[]{commandProvier};
         final Usage usage = new Usage( "neo4j-admin", new CannedLocator( commands ) );
 
@@ -66,7 +66,8 @@ public class UsageTest
     @Test
     public void shouldPrintUsageWithConfiguration()
     {
-        AdminCommand.Provider[] commands = new AdminCommand.Provider[]{mockCommand()};
+        AdminCommand.Provider[] commands =
+                new AdminCommand.Provider[]{mockCommand( "bam", "A summary", AdminCommandSection.general() )};
         final Usage usage = new Usage( "neo4j-admin", new CannedLocator( commands ) );
         usage.print( out );
 
@@ -91,15 +92,57 @@ public class UsageTest
         ordered.verifyNoMoreInteractions();
     }
 
-    private AdminCommand.Provider mockCommand()
+    @Test
+    public void commandsUnderSameAdminCommandSectionPrintableSectionShouldAppearTogether()
+    {
+        AdminCommand.Provider[] commands = new AdminCommand.Provider[]{
+                mockCommand( "first-command", "first-command", AdminCommandSection.general() ),
+                mockCommand( "second-command", "second-command", new TestGeneralSection() )};
+        final Usage usage = new Usage( "neo4j-admin", new CannedLocator( commands ) );
+        usage.print( out );
+
+        InOrder ordered = inOrder( out );
+        ordered.verify( out ).accept( "usage: neo4j-admin <command>" );
+        ordered.verify( out ).accept( "" );
+        ordered.verify( out ).accept( "Manage your Neo4j instance." );
+        ordered.verify( out ).accept( "" );
+
+        ordered.verify( out ).accept( "environment variables:" );
+        ordered.verify( out ).accept( "    NEO4J_CONF    Path to directory which contains neo4j.conf." );
+        ordered.verify( out ).accept( "    NEO4J_DEBUG   Set to anything to enable debug output." );
+        ordered.verify( out ).accept( "    NEO4J_HOME    Neo4j home directory." );
+        ordered.verify( out ).accept( "" );
+
+        ordered.verify( out ).accept( "available commands:" );
+        ordered.verify( out ).accept( "General" );
+        ordered.verify( out ).accept( "    first-command" );
+        ordered.verify( out ).accept( "        first-command" );
+        ordered.verify( out ).accept( "    second-command" );
+        ordered.verify( out ).accept( "        second-command" );
+        ordered.verify( out ).accept( "" );
+        ordered.verify( out ).accept( "Use neo4j-admin help <command> for more details." );
+        ordered.verifyNoMoreInteractions();
+    }
+
+    private class TestGeneralSection extends AdminCommandSection
+    {
+
+        @Override
+        public String printable()
+        {
+            return "General";
+        }
+    }
+
+    private AdminCommand.Provider mockCommand( String name, String summary, AdminCommandSection section )
     {
         AdminCommand.Provider commandProvider = mock( AdminCommand.Provider.class );
-        when( commandProvider.name() ).thenReturn( "bam" );
-        when( commandProvider.summary() ).thenReturn( "A summary" );
+        when( commandProvider.name() ).thenReturn( name );
+        when( commandProvider.summary() ).thenReturn( summary );
         when( commandProvider.allArguments() ).thenReturn( Arguments.NO_ARGS );
         when( commandProvider.possibleArguments() ).thenReturn( Collections.singletonList( Arguments.NO_ARGS ) );
         when( commandProvider.description() ).thenReturn( "description" );
-        when( commandProvider.commandSection() ).thenReturn( AdminCommandSection.general() );
+        when( commandProvider.commandSection() ).thenReturn( section );
         return commandProvider;
     }
 }

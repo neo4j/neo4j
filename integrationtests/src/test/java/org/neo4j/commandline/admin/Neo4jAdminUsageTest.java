@@ -65,12 +65,12 @@ public class Neo4jAdminUsageTest
                         "Clustering\n" +
                         "    unbind\n" +
                         "        Removes cluster state data for the specified database.\n" +
-                        "Manage offline backup\n" +
+                        "Offline backup\n" +
                         "    dump\n" +
                         "        Dump a database into a single-file archive.\n" +
                         "    load\n" +
                         "        Load a database from an archive created with the dump command.\n" +
-                        "Manage online backup\n" +
+                        "Online backup\n" +
                         "    backup\n" +
                         "        Perform an online backup from a running Neo4j enterprise server.\n" +
                         "    restore\n" +

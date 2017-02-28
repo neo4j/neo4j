@@ -21,18 +21,18 @@ package org.neo4j.commandline.dbms;
 
 import org.neo4j.commandline.admin.AdminCommandSection;
 
-public class ManageOffineBackupCommandSection extends AdminCommandSection
+public class OffineBackupCommandSection extends AdminCommandSection
 {
-    private static final ManageOffineBackupCommandSection manageOffineBackupCommandSection = new ManageOffineBackupCommandSection();
+    private static final OffineBackupCommandSection OFFINE_BACKUP_COMMAND_SECTION = new OffineBackupCommandSection();
 
     public static AdminCommandSection instance()
     {
-        return manageOffineBackupCommandSection;
+        return OFFINE_BACKUP_COMMAND_SECTION;
     }
 
     @Override
     public String printable()
     {
-        return "Manage offline backup";
+        return "Offline backup";
     }
 }

@@ -139,14 +139,6 @@ public class HelpCommandTest
         }
     }
 
-    private AdminCommand.Provider mockCommand( String name )
-    {
-        AdminCommand.Provider commandProvider = mock( AdminCommand.Provider.class );
-        when( commandProvider.name() ).thenReturn( name );
-        when( commandProvider.commandSection() ).thenReturn( AdminCommandSection.general() );
-        return commandProvider;
-    }
-
     @Test
     public void showsArgumentsAndDescriptionForSpecifiedCommand() throws Exception
     {
@@ -175,5 +167,13 @@ public class HelpCommandTest
                             "  --database=<name>   Name of database. [default:graph.db]%n" ),
                     baos.toString() );
         }
+    }
+
+    private AdminCommand.Provider mockCommand( String name )
+    {
+        AdminCommand.Provider commandProvider = mock( AdminCommand.Provider.class );
+        when( commandProvider.name() ).thenReturn( name );
+        when( commandProvider.commandSection() ).thenReturn( AdminCommandSection.general() );
+        return commandProvider;
     }
 }

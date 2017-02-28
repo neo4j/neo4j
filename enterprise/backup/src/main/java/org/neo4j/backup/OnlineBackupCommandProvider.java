@@ -21,7 +21,7 @@ package org.neo4j.backup;
 
 import java.nio.file.Path;
 
-import org.neo4j.ManageOnlineBackupCommandSection;
+import org.neo4j.OnlineBackupCommandSection;
 import org.neo4j.commandline.admin.AdminCommand;
 import org.neo4j.commandline.admin.AdminCommandSection;
 import org.neo4j.commandline.admin.OutsideWorld;
@@ -58,7 +58,7 @@ public class OnlineBackupCommandProvider extends AdminCommand.Provider
     @Override
     public AdminCommandSection commandSection()
     {
-        return ManageOnlineBackupCommandSection.instance();
+        return OnlineBackupCommandSection.instance();
     }
 
     @Override
