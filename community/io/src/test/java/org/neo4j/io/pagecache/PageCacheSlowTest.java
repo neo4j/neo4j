@@ -39,7 +39,9 @@ import org.neo4j.adversaries.RandomAdversary;
 import org.neo4j.adversaries.fs.AdversarialFileSystemAbstraction;
 import org.neo4j.io.fs.FileSystemAbstraction;
 import org.neo4j.io.pagecache.tracing.PageCacheTracer;
-import org.neo4j.test.LinearHistoryPageCacheTracer;
+import org.neo4j.io.pagecache.tracing.cursor.PageCursorTracerSupplier;
+import org.neo4j.io.pagecache.tracing.linear.LinearHistoryTracerFactory;
+import org.neo4j.io.pagecache.tracing.linear.LinearTracers;
 import org.neo4j.test.rule.RepeatRule;
 
 import static org.hamcrest.Matchers.instanceOf;
@@ -137,7 +139,7 @@ public abstract class PageCacheSlowTest<T extends PageCache> extends PageCacheTe
         final int threadCount = 8;
         final int pageSize = threadCount * 4;
 
-        getPageCache( fs, cachePages, pageSize, PageCacheTracer.NULL );
+        getPageCache( fs, cachePages, pageSize, PageCacheTracer.NULL, PageCursorTracerSupplier.NULL );
         final PagedFile pagedFile = pageCache.map( file( "a" ), pageSize );
 
         ensureAllPagesExists( filePages, pagedFile );
@@ -255,7 +257,7 @@ public abstract class PageCacheSlowTest<T extends PageCache> extends PageCacheTe
         final int maxCursorsPerThread = cachePages / (1 + threadCount);
         assertThat( maxCursorsPerThread * threadCount, lessThan( cachePages ) );
 
-        getPageCache( fs, cachePages, pageSize, PageCacheTracer.NULL );
+        getPageCache( fs, cachePages, pageSize, PageCacheTracer.NULL, PageCursorTracerSupplier.NULL );
         final PagedFile pagedFile = pageCache.map( file( "a" ), pageSize );
 
         ensureAllPagesExists( filePages, pagedFile );
@@ -344,7 +346,7 @@ public abstract class PageCacheSlowTest<T extends PageCache> extends PageCacheTe
         File file = file( "a" );
         generateFileWithRecords( file, recordsPerFilePage * 2, recordSize );
 
-        getPageCache( fs, maxPages, pageCachePageSize, PageCacheTracer.NULL );
+        getPageCache( fs, maxPages, pageCachePageSize, PageCacheTracer.NULL, PageCursorTracerSupplier.NULL );
 
         final PagedFile pf = pageCache.map( file, filePageSize );
         final CountDownLatch hasLockLatch = new CountDownLatch( 1 );
@@ -452,8 +454,9 @@ public abstract class PageCacheSlowTest<T extends PageCache> extends PageCacheTe
 
         // Because our test failures are non-deterministic, we use this tracer to capture a full history of the
         // events leading up to any given failure.
-        LinearHistoryPageCacheTracer tracer = new LinearHistoryPageCacheTracer();
-        getPageCache( fs, maxPages, pageCachePageSize, tracer );
+        LinearTracers linearTracers = LinearHistoryTracerFactory.pageCacheTracer();
+        getPageCache( fs, maxPages, pageCachePageSize, linearTracers.getPageCacheTracer(),
+                linearTracers.getCursorTracerSupplier() );
 
         PagedFile pfA = pageCache.map( existingFile( "a" ), filePageSize );
         PagedFile pfB = pageCache.map( existingFile( "b" ), filePageSize / 2 + 1 );
@@ -522,7 +525,7 @@ public abstract class PageCacheSlowTest<T extends PageCache> extends PageCacheTe
         }
         catch ( Throwable e )
         {
-            tracer.printHistory( System.err );
+            linearTracers.printHistory( System.err );
             throw e;
         }
     }

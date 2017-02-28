@@ -26,7 +26,6 @@ import org.junit.Test;
 import org.junit.rules.ExpectedException;
 import org.junit.rules.RuleChain;
 import org.mockito.InOrder;
-import org.mockito.Mockito;
 
 import java.io.File;
 import java.io.IOException;
@@ -38,8 +37,10 @@ import org.neo4j.io.fs.FileSystemAbstraction;
 import org.neo4j.io.pagecache.PageCache;
 import org.neo4j.io.pagecache.PageCursor;
 import org.neo4j.io.pagecache.PagedFile;
-import org.neo4j.io.pagecache.RecordingPageCacheTracer;
-import org.neo4j.io.pagecache.RecordingPageCacheTracer.Pin;
+import org.neo4j.io.pagecache.tracing.ConfigurablePageCursorTracerSupplier;
+import org.neo4j.io.pagecache.tracing.recording.Event;
+import org.neo4j.io.pagecache.tracing.recording.RecordingPageCacheTracer;
+import org.neo4j.io.pagecache.tracing.recording.RecordingPageCursorTracer;
 import org.neo4j.kernel.configuration.Config;
 import org.neo4j.kernel.configuration.Settings;
 import org.neo4j.kernel.impl.store.format.RecordFormat;
@@ -60,6 +61,7 @@ import org.neo4j.kernel.impl.storemigration.StoreFileType;
 import org.neo4j.logging.LogProvider;
 import org.neo4j.logging.NullLogProvider;
 import org.neo4j.test.rule.ConfigurablePageCacheRule;
+import org.neo4j.test.rule.PageCacheRule;
 import org.neo4j.test.rule.TestDirectory;
 import org.neo4j.test.rule.fs.DefaultFileSystemRule;
 
@@ -84,7 +86,7 @@ import static org.mockito.Mockito.mock;
 import static org.mockito.Mockito.spy;
 import static org.mockito.Mockito.times;
 import static org.mockito.Mockito.when;
-import static org.neo4j.io.pagecache.RecordingPageCacheTracer.Event;
+import static org.neo4j.io.pagecache.tracing.recording.RecordingPageCursorTracer.Pin;
 import static org.neo4j.kernel.impl.store.record.Record.NO_NEXT_PROPERTY;
 import static org.neo4j.kernel.impl.store.record.Record.NO_NEXT_RELATIONSHIP;
 import static org.neo4j.test.rule.PageCacheRule.config;
@@ -192,9 +194,11 @@ public class CommonAbstractStoreTest
     public void recordCursorPinsEachPageItReads() throws Exception
     {
         File storeFile = dir.file( "a" );
-        RecordingPageCacheTracer tracer = new RecordingPageCacheTracer( Pin.class );
-        PageCache pageCache = pageCacheRule.getPageCache( fileSystemRule.get(),
-                config().withTracer( tracer ), Config.empty() );
+        RecordingPageCacheTracer tracer = new RecordingPageCacheTracer();
+        RecordingPageCursorTracer pageCursorTracer = new RecordingPageCursorTracer( Pin.class );
+        PageCacheRule.PageCacheConfig pageCacheConfig = config().withTracer( tracer )
+                                        .withCursorTracerSupplier( pageCursorTracerSupplier( pageCursorTracer ) );
+        PageCache pageCache = pageCacheRule.getPageCache( fileSystemRule.get(), pageCacheConfig, Config.empty() );
 
         try ( NodeStore store = new NodeStore( storeFile, Config.empty(), new DefaultIdGeneratorFactory( fileSystemRule.get() ),
                 pageCache, NullLogProvider.getInstance(), null, Standard.LATEST_RECORD_FORMATS ) )
@@ -202,8 +206,8 @@ public class CommonAbstractStoreTest
             store.initialise( true );
             assertNull( tracer.tryObserve( Event.class ) );
 
-            long nodeId1 = insertNodeRecordAndObservePinEvent( tracer, store );
-            long nodeId2 = insertNodeRecordAndObservePinEvent( tracer, store );
+            long nodeId1 = insertNodeRecordAndObservePinEvent( pageCursorTracer, store );
+            long nodeId2 = insertNodeRecordAndObservePinEvent( pageCursorTracer, store );
 
             try ( RecordCursor<NodeRecord> cursor = store.newRecordCursor( store.newRecord() ) )
             {
@@ -215,8 +219,8 @@ public class CommonAbstractStoreTest
             // event. This pin event will not be observable until after we have closed the cursor. We could
             // alternatively have chosen nodeId2 to be on a different page than nodeId1. In that case, the pin event
             // for nodeId1 would have been visible after our call to cursor.next( nodeId2 ).
-            assertNotNull( tracer.tryObserve( Pin.class ) );
-            assertNull( tracer.tryObserve( Event.class ) );
+            assertNotNull( pageCursorTracer.tryObserve( Pin.class ) );
+            assertNull( pageCursorTracer.tryObserve( Event.class ) );
         }
     }
 
@@ -337,7 +341,7 @@ public class CommonAbstractStoreTest
         return new TheRecord( id );
     }
 
-    private long insertNodeRecordAndObservePinEvent( RecordingPageCacheTracer tracer, NodeStore store )
+    private long insertNodeRecordAndObservePinEvent( RecordingPageCursorTracer tracer, NodeStore store )
     {
         long nodeId = store.nextId();
         NodeRecord record = store.newRecord();
@@ -348,6 +352,12 @@ public class CommonAbstractStoreTest
         assertNotNull( tracer.tryObserve( Pin.class ) );
         assertNull( tracer.tryObserve( Event.class ) );
         return nodeId;
+    }
+
+    private static ConfigurablePageCursorTracerSupplier pageCursorTracerSupplier(
+            RecordingPageCursorTracer pageCursorTracer )
+    {
+        return new ConfigurablePageCursorTracerSupplier( pageCursorTracer );
     }
 
     private static class TheStore extends CommonAbstractStore<TheRecord,NoStoreHeader>

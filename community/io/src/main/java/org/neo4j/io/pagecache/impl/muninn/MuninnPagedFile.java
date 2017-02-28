@@ -38,6 +38,7 @@ import org.neo4j.io.pagecache.tracing.FlushEventOpportunity;
 import org.neo4j.io.pagecache.tracing.MajorFlushEvent;
 import org.neo4j.io.pagecache.tracing.PageCacheTracer;
 import org.neo4j.io.pagecache.tracing.PageFaultEvent;
+import org.neo4j.io.pagecache.tracing.cursor.PageCursorTracerSupplier;
 import org.neo4j.unsafe.impl.internal.dragons.UnsafeUtil;
 
 final class MuninnPagedFile implements PagedFile, Flushable
@@ -96,12 +97,13 @@ final class MuninnPagedFile implements PagedFile, Flushable
             int filePageSize,
             PageSwapperFactory swapperFactory,
             PageCacheTracer tracer,
+            PageCursorTracerSupplier cursorTracerSupplier,
             boolean createIfNotExists,
             boolean truncateExisting ) throws IOException
     {
         this.pageCache = pageCache;
         this.filePageSize = filePageSize;
-        this.cursorPool = new CursorPool( this );
+        this.cursorPool = new CursorPool( this, cursorTracerSupplier, tracer );
         this.tracer = tracer;
 
         // The translation table is an array of arrays of references to either null, MuninnPage objects, or Latch

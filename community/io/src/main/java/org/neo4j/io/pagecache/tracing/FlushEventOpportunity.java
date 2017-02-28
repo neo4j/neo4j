@@ -31,17 +31,10 @@ public interface FlushEventOpportunity
     /**
      * A FlushEventOpportunity that only returns the FlushEvent.NULL.
      */
-    FlushEventOpportunity NULL = new FlushEventOpportunity()
-    {
-        @Override
-        public FlushEvent beginFlush( long filePageId, int cachePageId, PageSwapper swapper )
-        {
-            return FlushEvent.NULL;
-        }
-    };
+    FlushEventOpportunity NULL = ( filePageId, cachePageId, swapper ) -> FlushEvent.NULL;
 
     /**
      * Begin flushing the given page.
      */
-    public FlushEvent beginFlush( long filePageId, int cachePageId, PageSwapper swapper );
+    FlushEvent beginFlush( long filePageId, int cachePageId, PageSwapper swapper );
 }

@@ -17,7 +17,7 @@
  * You should have received a copy of the GNU General Public License
  * along with this program.  If not, see <http://www.gnu.org/licenses/>.
  */
-package org.neo4j.test;
+package org.neo4j.io.pagecache.tracing.linear;
 
 import org.junit.Ignore;
 import org.junit.Test;
@@ -34,18 +34,19 @@ public class LinearHistoryPageCacheTracerTest
     @Test
     public void makeSomeTestOutput() throws Exception
     {
-        final LinearHistoryPageCacheTracer tracer = new LinearHistoryPageCacheTracer();
+        LinearTracers linearTracers = LinearHistoryTracerFactory.pageCacheTracer();
         try ( RandomPageCacheTestHarness harness = new RandomPageCacheTestHarness() )
         {
             harness.setUseAdversarialIO( true );
-            harness.setTracer( tracer );
+            harness.setTracer( linearTracers.getPageCacheTracer() );
+            harness.setCursorTracerSupplier( linearTracers.getCursorTracerSupplier() );
             harness.setCommandCount( 100 );
             harness.setConcurrencyLevel( 2 );
-            harness.setPreparation( ( pageCache, fs, files ) -> tracer.processHistory( hEvent -> {} ) );
+            harness.setPreparation( ( pageCache, fs, files ) -> linearTracers.processHistory( hEvent -> {} ) );
 
             harness.run( 1, TimeUnit.MINUTES );
 
-            tracer.printHistory( System.out );
+            linearTracers.printHistory( System.out );
         }
 
     }

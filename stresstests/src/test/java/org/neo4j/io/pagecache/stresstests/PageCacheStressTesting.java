@@ -26,6 +26,7 @@ import java.io.File;
 import org.neo4j.io.fs.FileUtils;
 import org.neo4j.io.pagecache.stress.PageCacheStressTest;
 import org.neo4j.io.pagecache.tracing.DefaultPageCacheTracer;
+import org.neo4j.io.pagecache.tracing.cursor.DefaultPageCursorTracer;
 
 import static java.lang.Integer.parseInt;
 import static java.lang.System.getProperty;
@@ -39,12 +40,6 @@ import static org.neo4j.io.pagecache.stress.Conditions.timePeriod;
  */
 public class PageCacheStressTesting
 {
-    static {
-        // Pin/Unpin monitoring is disabled by default for performance reasons,
-        // but we have tests that verify that pinned and unpinned are called
-        // correctly.
-        DefaultPageCacheTracer.enablePinUnpinTracing();
-    }
 
     @Test
     public void shouldBehaveCorrectlyUnderStress() throws Exception

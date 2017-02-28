@@ -19,15 +19,23 @@
  */
 package org.neo4j.io.pagecache.impl.muninn;
 
+import org.neo4j.io.pagecache.tracing.PageCacheTracer;
+import org.neo4j.io.pagecache.tracing.cursor.PageCursorTracer;
+import org.neo4j.io.pagecache.tracing.cursor.PageCursorTracerSupplier;
+
 final class CursorPool extends ThreadLocal<CursorPool.CursorSets>
 {
     private final MuninnPagedFile pagedFile;
     private final long victimPage;
+    private final PageCursorTracerSupplier cursorTracerSupplier;
+    private PageCacheTracer tracer;
 
-    CursorPool( MuninnPagedFile pagedFile )
+    CursorPool( MuninnPagedFile pagedFile, PageCursorTracerSupplier cursorTracerSupplier, PageCacheTracer tracer )
     {
         this.pagedFile = pagedFile;
         this.victimPage = pagedFile.pageCache.victimPage;
+        this.cursorTracerSupplier = cursorTracerSupplier;
+        this.tracer = tracer;
     }
 
     @Override
@@ -54,7 +62,7 @@ final class CursorPool extends ThreadLocal<CursorPool.CursorSets>
 
     private MuninnReadPageCursor createReadCursor( CursorSets cursorSets )
     {
-        MuninnReadPageCursor cursor = new MuninnReadPageCursor( cursorSets, victimPage );
+        MuninnReadPageCursor cursor = new MuninnReadPageCursor( cursorSets, victimPage, getPageCursorTracer() );
         cursor.initialiseFile( pagedFile );
         return cursor;
     }
@@ -77,9 +85,16 @@ final class CursorPool extends ThreadLocal<CursorPool.CursorSets>
 
     private MuninnWritePageCursor createWriteCursor( CursorSets cursorSets )
     {
-        MuninnWritePageCursor cursor = new MuninnWritePageCursor( cursorSets, victimPage );
+        MuninnWritePageCursor cursor = new MuninnWritePageCursor( cursorSets, victimPage, getPageCursorTracer() );
         cursor.initialiseFile( pagedFile );
         return cursor;
+    }
+
+    private PageCursorTracer getPageCursorTracer()
+    {
+        PageCursorTracer pageCursorTracer = cursorTracerSupplier.get();
+        pageCursorTracer.init( tracer );
+        return pageCursorTracer;
     }
 
     static class CursorSets

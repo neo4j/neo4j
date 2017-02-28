@@ -22,6 +22,7 @@ package org.neo4j.io.pagecache.impl.muninn;
 import java.io.IOException;
 
 import org.neo4j.io.pagecache.PageSwapper;
+import org.neo4j.io.pagecache.tracing.cursor.PageCursorTracer;
 
 final class MuninnReadPageCursor extends MuninnPageCursor
 {
@@ -29,9 +30,9 @@ final class MuninnReadPageCursor extends MuninnPageCursor
     private long lockStamp;
     MuninnReadPageCursor nextCursor;
 
-    MuninnReadPageCursor( CursorPool.CursorSets cursorSets, long victimPage )
+    MuninnReadPageCursor( CursorPool.CursorSets cursorSets, long victimPage, PageCursorTracer pageCursorTracer )
     {
-        super( victimPage );
+        super( victimPage, pageCursorTracer );
         this.cursorSets = cursorSets;
     }
 

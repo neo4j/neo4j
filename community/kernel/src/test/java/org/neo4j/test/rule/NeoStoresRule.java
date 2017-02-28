@@ -25,6 +25,7 @@ import java.io.IOException;
 import org.neo4j.graphdb.mockfs.EphemeralFileSystemAbstraction;
 import org.neo4j.io.fs.FileSystemAbstraction;
 import org.neo4j.io.pagecache.PageCache;
+import org.neo4j.io.pagecache.tracing.cursor.PageCursorTracerSupplier;
 import org.neo4j.kernel.configuration.Config;
 import org.neo4j.kernel.impl.pagecache.ConfiguringPageCacheFactory;
 import org.neo4j.kernel.impl.store.NeoStores;
@@ -108,7 +109,8 @@ public class NeoStoresRule extends ExternalResource
     private static PageCache getOrCreatePageCache( Config config, FileSystemAbstraction fs )
     {
         Log log = NullLog.getInstance();
-        ConfiguringPageCacheFactory pageCacheFactory = new ConfiguringPageCacheFactory( fs, config, NULL, log );
+        ConfiguringPageCacheFactory pageCacheFactory = new ConfiguringPageCacheFactory( fs, config, NULL,
+                PageCursorTracerSupplier.NULL, log );
         return pageCacheFactory.getOrCreatePageCache();
     }
 }

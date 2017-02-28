@@ -28,6 +28,8 @@ import org.neo4j.io.pagecache.PageSwapperFactory;
 import org.neo4j.io.pagecache.impl.SingleFilePageSwapperFactory;
 import org.neo4j.io.pagecache.impl.muninn.MuninnPageCache;
 import org.neo4j.io.pagecache.tracing.PageCacheTracer;
+import org.neo4j.io.pagecache.tracing.cursor.DefaultPageCursorTracerSupplier;
+import org.neo4j.io.pagecache.tracing.cursor.PageCursorTracerSupplier;
 
 import static org.hamcrest.CoreMatchers.is;
 import static org.hamcrest.Matchers.greaterThanOrEqualTo;
@@ -60,6 +62,7 @@ public class PageCacheStressTest
     private final int cachePageSize;
 
     private final PageCacheTracer tracer;
+    private final PageCursorTracerSupplier pageCursorTracerSupplier;
     private final Condition condition;
 
     private final File workingDirectory;
@@ -73,6 +76,7 @@ public class PageCacheStressTest
         this.cachePageSize = builder.cachePageSize;
 
         this.tracer = builder.tracer;
+        this.pageCursorTracerSupplier = builder.pageCursorTracerSupplier;
         this.condition = builder.condition;
 
         this.workingDirectory = builder.workingDirectory;
@@ -86,7 +90,7 @@ public class PageCacheStressTest
             swapperFactory.setFileSystemAbstraction( fs );
 
             try ( PageCache pageCacheUnderTest = new MuninnPageCache( swapperFactory, numberOfCachePages, cachePageSize,
-                    tracer ) )
+                    tracer, pageCursorTracerSupplier ) )
             {
                 PageCacheStresser pageCacheStresser =
                         new PageCacheStresser( numberOfPages, numberOfThreads, workingDirectory );
@@ -104,6 +108,7 @@ public class PageCacheStressTest
         int cachePageSize = 8192;
 
         PageCacheTracer tracer = NULL;
+        PageCursorTracerSupplier pageCursorTracerSupplier = DefaultPageCursorTracerSupplier.INSTANCE;
         Condition condition;
 
         File workingDirectory;

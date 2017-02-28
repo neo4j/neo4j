@@ -44,6 +44,10 @@ import org.neo4j.io.pagecache.PagedFile;
 import org.neo4j.io.pagecache.impl.SingleFilePageSwapperFactory;
 import org.neo4j.io.pagecache.impl.muninn.MuninnPageCache;
 import org.neo4j.io.pagecache.tracing.PageCacheTracer;
+import org.neo4j.io.pagecache.tracing.cursor.DefaultPageCursorTracerSupplier;
+import org.neo4j.io.pagecache.tracing.cursor.PageCursorTracerSupplier;
+import org.neo4j.io.pagecache.tracing.linear.LinearHistoryPageCacheTracerTest;
+import org.neo4j.io.pagecache.tracing.linear.LinearTracers;
 
 /**
  * The RandomPageCacheTestHarness can plan and run random page cache tests, repeatably if necessary, and verify that
@@ -53,7 +57,7 @@ import org.neo4j.io.pagecache.tracing.PageCacheTracer;
  * before and after executing the planned test respectively, and it can integrate with the adversarial file system
  * for fault injection, and arbitrary PageCacheTracers.
  *
- * See {@link org.neo4j.test.LinearHistoryPageCacheTracerTest} for an example of how to configure and use the harness.
+ * See {@link LinearHistoryPageCacheTracerTest} for an example of how to configure and use the harness.
  */
 public class RandomPageCacheTestHarness implements Closeable
 {
@@ -67,6 +71,7 @@ public class RandomPageCacheTestHarness implements Closeable
     private int filePageCount;
     private int filePageSize;
     private PageCacheTracer tracer;
+    private PageCursorTracerSupplier cursorTracerSupplier;
     private int commandCount;
     private double[] commandProbabilityFactors;
     private long randomSeed;
@@ -90,6 +95,7 @@ public class RandomPageCacheTestHarness implements Closeable
         filePageCount = cachePageCount * 10;
         filePageSize = cachePageSize;
         tracer = PageCacheTracer.NULL;
+        cursorTracerSupplier = DefaultPageCursorTracerSupplier.INSTANCE;
         commandCount = 1000;
 
         Command[] commands = Command.values();
@@ -145,6 +151,14 @@ public class RandomPageCacheTestHarness implements Closeable
     public void setTracer( PageCacheTracer tracer )
     {
         this.tracer = tracer;
+    }
+
+    /**
+     * Set the page cursor tracers supplier.
+     */
+    public void setCursorTracerSupplier( PageCursorTracerSupplier cursorTracerSupplier )
+    {
+        this.cursorTracerSupplier = cursorTracerSupplier;
     }
 
     /**
@@ -224,7 +238,7 @@ public class RandomPageCacheTestHarness implements Closeable
     /**
      * Set the preparation phase to use. This phase is executed before all the planned commands. It can be used to
      * prepare some file contents, or reset some external state, such as the
-     * {@link org.neo4j.test.LinearHistoryPageCacheTracer}.
+     * {@link LinearTracers}.
      *
      * The preparation phase is executed before each iteration.
      */
@@ -369,7 +383,8 @@ public class RandomPageCacheTestHarness implements Closeable
 
         PageSwapperFactory swapperFactory = new SingleFilePageSwapperFactory();
         swapperFactory.setFileSystemAbstraction( fs );
-        MuninnPageCache cache = new MuninnPageCache( swapperFactory, cachePageCount, cachePageSize, tracer );
+        MuninnPageCache cache = new MuninnPageCache( swapperFactory, cachePageCount, cachePageSize, tracer,
+                cursorTracerSupplier );
         cache.setPrintExceptionsOnClose( false );
         Map<File,PagedFile> fileMap = new HashMap<>( files.length );
         for ( int i = 0; i < Math.min( files.length, initialMappedFiles ); i++ )

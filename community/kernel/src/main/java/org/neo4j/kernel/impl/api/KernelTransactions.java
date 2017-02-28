@@ -323,8 +323,8 @@ public class KernelTransactions extends LifecycleAdapter implements Supplier<Ker
                     new KernelTransactionImplementation( statementOperations, schemaWriteGuard, hooks,
                             constraintIndexCreator, procedures, transactionHeaderInformationFactory,
                             transactionCommitProcess, transactionMonitor, legacyIndexTxStateSupplier, localTxPool,
-                            clock, tracers.transactionTracer, tracers.lockTracer, storageEngine, accessCapability );
-
+                            clock, tracers.transactionTracer, tracers.lockTracer, tracers.pageCursorTracerSupplier,
+                            storageEngine, accessCapability );
             this.transactions.add( tx );
             return tx;
         }

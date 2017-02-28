@@ -44,5 +44,5 @@ public interface MajorFlushEvent extends AutoCloseablePageCacheTracerEvent
     /**
      * Mass-flushing obviously imply flushing opportunities.
      */
-    public FlushEventOpportunity flushEventOpportunity();
+    FlushEventOpportunity flushEventOpportunity();
 }

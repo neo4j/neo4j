@@ -82,11 +82,6 @@ public class DelegatingPageCacheTracer implements PageCacheTracer
         return delegate.filesUnmapped();
     }
 
-    public PinEvent beginPin( boolean writeLock, long filePageId, PageSwapper swapper )
-    {
-        return delegate.beginPin( writeLock, filePageId, swapper );
-    }
-
     public void unmappedFile( File file )
     {
         delegate.unmappedFile( file );
@@ -95,6 +90,54 @@ public class DelegatingPageCacheTracer implements PageCacheTracer
     public long evictionExceptions()
     {
         return delegate.evictionExceptions();
+    }
+
+    @Override
+    public void pins( long pins )
+    {
+        delegate.pins( pins );
+    }
+
+    @Override
+    public void unpins( long unpins )
+    {
+        delegate.unpins( unpins );
+    }
+
+    @Override
+    public void faults( long faults )
+    {
+        delegate.faults( faults );
+    }
+
+    @Override
+    public void bytesRead( long bytesRead )
+    {
+        delegate.bytesRead( bytesRead );
+    }
+
+    @Override
+    public void evictions( long evictions )
+    {
+        delegate.evictions( evictions );
+    }
+
+    @Override
+    public void evictionExceptions( long evictionExceptions )
+    {
+        delegate.evictionExceptions( evictionExceptions );
+    }
+
+    @Override
+    public void bytesWritten( long bytesWritten )
+    {
+        delegate.bytesWritten( bytesWritten );
+    }
+
+    @Override
+    public void flushes( long flushes )
+    {
+        delegate.flushes( flushes );
     }
 
     public long filesMapped()

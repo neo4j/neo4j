@@ -47,5 +47,5 @@ public interface EvictionRunEvent extends AutoCloseablePageCacheTracerEvent
     /**
      * An eviction is started as part of this eviction run.
      */
-    public EvictionEvent beginEviction();
+    EvictionEvent beginEviction();
 }

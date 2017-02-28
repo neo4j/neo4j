@@ -24,6 +24,8 @@ import org.neo4j.helpers.collection.MapUtil;
 import org.neo4j.io.fs.FileSystemAbstraction;
 import org.neo4j.io.pagecache.PageCache;
 import org.neo4j.io.pagecache.tracing.PageCacheTracer;
+import org.neo4j.io.pagecache.tracing.cursor.DefaultPageCursorTracerSupplier;
+import org.neo4j.io.pagecache.tracing.cursor.PageCursorTracerSupplier;
 import org.neo4j.kernel.configuration.Config;
 import org.neo4j.logging.FormattedLogProvider;
 
@@ -42,21 +44,24 @@ public final class ConfigurableStandalonePageCacheFactory
 
     public static PageCache createPageCache( FileSystemAbstraction fileSystem )
     {
-        return createPageCache( fileSystem, PageCacheTracer.NULL, Config.defaults() );
+        return createPageCache( fileSystem, PageCacheTracer.NULL, DefaultPageCursorTracerSupplier.INSTANCE,
+                Config.defaults() );
     }
 
     public static PageCache createPageCache( FileSystemAbstraction fileSystem, Config config )
     {
-        return createPageCache( fileSystem, PageCacheTracer.NULL, config );
+        return createPageCache( fileSystem, PageCacheTracer.NULL, DefaultPageCursorTracerSupplier.INSTANCE, config );
     }
 
-    public static PageCache createPageCache( FileSystemAbstraction fileSystem, PageCacheTracer tracer, Config config )
+    public static PageCache createPageCache( FileSystemAbstraction fileSystem, PageCacheTracer tracer,
+            PageCursorTracerSupplier cursorTracerSupplier, Config config )
     {
         Config finalConfig = config.withDefaults( MapUtil.stringMap(
                 GraphDatabaseSettings.pagecache_memory.name(), "8M" ) );
         FormattedLogProvider logProvider = FormattedLogProvider.toOutputStream( System.err );
         ConfiguringPageCacheFactory pageCacheFactory = new ConfiguringPageCacheFactory(
-                fileSystem, finalConfig, tracer, logProvider.getLog( PageCache.class ) );
+                fileSystem, finalConfig, tracer, cursorTracerSupplier,
+                logProvider.getLog( PageCache.class ) );
         return pageCacheFactory.getOrCreatePageCache();
     }
 }

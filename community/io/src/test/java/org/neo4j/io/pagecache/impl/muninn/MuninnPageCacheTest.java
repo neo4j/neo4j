@@ -34,23 +34,27 @@ import org.neo4j.io.fs.StoreChannel;
 import org.neo4j.io.pagecache.PageCacheTest;
 import org.neo4j.io.pagecache.PageCursor;
 import org.neo4j.io.pagecache.PagedFile;
-import org.neo4j.io.pagecache.RecordingPageCacheTracer;
+import org.neo4j.io.pagecache.tracing.ConfigurablePageCursorTracerSupplier;
 import org.neo4j.io.pagecache.tracing.DelegatingPageCacheTracer;
 import org.neo4j.io.pagecache.tracing.EvictionRunEvent;
 import org.neo4j.io.pagecache.tracing.MajorFlushEvent;
 import org.neo4j.io.pagecache.tracing.PageCacheTracer;
+import org.neo4j.io.pagecache.tracing.cursor.DefaultPageCursorTracerSupplier;
+import org.neo4j.io.pagecache.tracing.recording.RecordingPageCacheTracer;
+import org.neo4j.io.pagecache.tracing.recording.RecordingPageCursorTracer;
+import org.neo4j.io.pagecache.tracing.recording.RecordingPageCursorTracer.Fault;
 
 import static org.hamcrest.Matchers.is;
+import static org.junit.Assert.assertEquals;
 import static org.junit.Assert.assertFalse;
 import static org.junit.Assert.assertNotNull;
 import static org.junit.Assert.assertThat;
 import static org.junit.Assert.assertTrue;
 import static org.junit.Assert.fail;
-import static org.neo4j.io.pagecache.PagedFile.PF_SHARED_WRITE_LOCK;
 import static org.neo4j.io.pagecache.PagedFile.PF_NO_GROW;
 import static org.neo4j.io.pagecache.PagedFile.PF_SHARED_READ_LOCK;
-import static org.neo4j.io.pagecache.RecordingPageCacheTracer.Evict;
-import static org.neo4j.io.pagecache.RecordingPageCacheTracer.Fault;
+import static org.neo4j.io.pagecache.PagedFile.PF_SHARED_WRITE_LOCK;
+import static org.neo4j.io.pagecache.tracing.recording.RecordingPageCacheTracer.Evict;
 
 public class MuninnPageCacheTest extends PageCacheTest<MuninnPageCache>
 {
@@ -89,15 +93,20 @@ public class MuninnPageCacheTest extends PageCacheTest<MuninnPageCache>
     {
         writeInitialDataTo( file( "a" ) );
         RecordingPageCacheTracer tracer = new RecordingPageCacheTracer();
+        RecordingPageCursorTracer cursorTracer = new RecordingPageCursorTracer();
+        ConfigurablePageCursorTracerSupplier cursorTracerSupplier = new ConfigurablePageCursorTracerSupplier( cursorTracer );
 
-        MuninnPageCache pageCache = createPageCache( fs, 2, 8, blockCacheFlush( tracer ) );
+        MuninnPageCache pageCache = createPageCache( fs, 2, 8, blockCacheFlush( tracer ), cursorTracerSupplier );
         PagedFile pagedFile = pageCache.map( file( "a" ), 8 );
 
         try ( PageCursor cursor = pagedFile.io( 0, PF_SHARED_READ_LOCK ) )
         {
             assertTrue( cursor.next() );
         }
-        assertNotNull( tracer.observe( Fault.class ) );
+        cursorTracer.reportEvents();
+        assertNotNull( cursorTracer.observe( Fault.class ) );
+        assertEquals( 1, cursorTracer.faults() );
+        assertEquals( 1, tracer.faults() );
 
         int clockArm = pageCache.evictPages( 1, 0, tracer.beginPageEvictions( 1 ) );
         assertThat( clockArm, is( 1 ) );
@@ -120,8 +129,11 @@ public class MuninnPageCacheTest extends PageCacheTest<MuninnPageCache>
     {
         writeInitialDataTo( file( "a" ) );
         RecordingPageCacheTracer tracer = new RecordingPageCacheTracer();
+        RecordingPageCursorTracer cursorTracer = new RecordingPageCursorTracer();
+        ConfigurablePageCursorTracerSupplier cursorTracerSupplier = new ConfigurablePageCursorTracerSupplier( cursorTracer );
 
-        MuninnPageCache pageCache = createPageCache( fs, 2, 8, blockCacheFlush( tracer ) );
+        MuninnPageCache pageCache = createPageCache( fs, 2, 8, blockCacheFlush( tracer ),
+                cursorTracerSupplier );
         PagedFile pagedFile = pageCache.map( file( "a" ), 8 );
 
         try ( PageCursor cursor = pagedFile.io( 0, PF_SHARED_WRITE_LOCK ) )
@@ -129,7 +141,10 @@ public class MuninnPageCacheTest extends PageCacheTest<MuninnPageCache>
             assertTrue( cursor.next() );
             cursor.putLong( 0L );
         }
-        assertNotNull( tracer.observe( Fault.class ) );
+        cursorTracer.reportEvents();
+        assertNotNull( cursorTracer.observe( Fault.class ) );
+        assertEquals( 1, cursorTracer.faults() );
+        assertEquals( 1, tracer.faults() );
 
         int clockArm = pageCache.evictPages( 1, 0, tracer.beginPageEvictions( 1 ) );
         assertThat( clockArm, is( 1 ) );
@@ -148,8 +163,11 @@ public class MuninnPageCacheTest extends PageCacheTest<MuninnPageCache>
     {
         writeInitialDataTo( file( "a" ) );
         RecordingPageCacheTracer tracer = new RecordingPageCacheTracer();
+        RecordingPageCursorTracer cursorTracer = new RecordingPageCursorTracer();
+        ConfigurablePageCursorTracerSupplier cursorTracerSupplier = new ConfigurablePageCursorTracerSupplier( cursorTracer );
 
-        MuninnPageCache pageCache = createPageCache( fs, 2, 8, blockCacheFlush( tracer ) );
+        MuninnPageCache pageCache = createPageCache( fs, 2, 8, blockCacheFlush( tracer ),
+                cursorTracerSupplier );
         PagedFile pagedFile = pageCache.map( file( "a" ), 8 );
 
         try ( PageCursor cursor = pagedFile.io( 1, PF_SHARED_WRITE_LOCK ) )
@@ -157,7 +175,10 @@ public class MuninnPageCacheTest extends PageCacheTest<MuninnPageCache>
             assertTrue( cursor.next() );
             cursor.putLong( 0L );
         }
-        assertNotNull( tracer.observe( Fault.class ) );
+        cursorTracer.reportEvents();
+        assertNotNull( cursorTracer.observe( Fault.class ) );
+        assertEquals( 1, cursorTracer.faults() );
+        assertEquals( 1, tracer.faults() );
 
         int clockArm = pageCache.evictPages( 1, 0, tracer.beginPageEvictions( 1 ) );
         assertThat( clockArm, is( 1 ) );
@@ -176,8 +197,11 @@ public class MuninnPageCacheTest extends PageCacheTest<MuninnPageCache>
     {
         writeInitialDataTo( file( "a" ) );
         RecordingPageCacheTracer tracer = new RecordingPageCacheTracer();
+        RecordingPageCursorTracer cursorTracer = new RecordingPageCursorTracer( Fault.class );
+        ConfigurablePageCursorTracerSupplier cursorTracerSupplier = new ConfigurablePageCursorTracerSupplier( cursorTracer );
 
-        MuninnPageCache pageCache = createPageCache( fs, 4, 8, blockCacheFlush( tracer ) );
+        MuninnPageCache pageCache = createPageCache( fs, 4, 8, blockCacheFlush( tracer ),
+                cursorTracerSupplier );
         PagedFile pagedFile = pageCache.map( file( "a" ), 8 );
 
         try ( PageCursor cursor = pagedFile.io( 0, PF_SHARED_WRITE_LOCK | PF_NO_GROW ) )
@@ -188,8 +212,11 @@ public class MuninnPageCacheTest extends PageCacheTest<MuninnPageCache>
             cursor.putLong( 0L );
             assertFalse( cursor.next() );
         }
-        assertNotNull( tracer.observe( Fault.class ) );
-        assertNotNull( tracer.observe( Fault.class ) );
+        cursorTracer.reportEvents();
+        assertNotNull( cursorTracer.observe( Fault.class ) );
+        assertNotNull( cursorTracer.observe( Fault.class ) );
+        assertEquals( 2, cursorTracer.faults() );
+        assertEquals( 2, tracer.faults() );
 
         int clockArm = pageCache.evictPages( 2, 0, tracer.beginPageEvictions( 2 ) );
         assertThat( clockArm, is( 2 ) );
@@ -209,7 +236,8 @@ public class MuninnPageCacheTest extends PageCacheTest<MuninnPageCache>
     {
         writeInitialDataTo( file( "a" ) );
 
-        final MuninnPageCache pageCache = createPageCache( fs, 2, 8, PageCacheTracer.NULL );
+        final MuninnPageCache pageCache = createPageCache( fs, 2, 8, PageCacheTracer.NULL,
+                DefaultPageCursorTracerSupplier.INSTANCE );
         final PagedFile pagedFile = pageCache.map( file( "a" ), 8 );
 
         Future<?> task = executor.submit( () -> {
@@ -265,7 +293,8 @@ public class MuninnPageCacheTest extends PageCacheTest<MuninnPageCache>
             }
         };
 
-        MuninnPageCache pageCache = createPageCache( fs, 2, 8, PageCacheTracer.NULL );
+        MuninnPageCache pageCache = createPageCache( fs, 2, 8, PageCacheTracer.NULL,
+                DefaultPageCursorTracerSupplier.INSTANCE );
         final PagedFile pagedFile = pageCache.map( file( "a" ), 8 );
 
         // The basic idea is that this loop, which will encounter a lot of page faults, must not block forever even
@@ -290,7 +319,8 @@ public class MuninnPageCacheTest extends PageCacheTest<MuninnPageCache>
     {
         File file = file( "a" );
         writeInitialDataTo( file );
-        MuninnPageCache pageCache = createPageCache( fs, 30, pageCachePageSize, PageCacheTracer.NULL );
+        MuninnPageCache pageCache = createPageCache( fs, 30, pageCachePageSize, PageCacheTracer.NULL,
+                DefaultPageCursorTracerSupplier.NULL );
         PagedFile pf = null;
         int i = 0;
 

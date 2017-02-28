@@ -27,9 +27,9 @@ import org.neo4j.concurrent.BinaryLatch;
 import org.neo4j.io.pagecache.CursorException;
 import org.neo4j.io.pagecache.PageCursor;
 import org.neo4j.io.pagecache.PageSwapper;
-import org.neo4j.io.pagecache.tracing.PageCacheTracer;
 import org.neo4j.io.pagecache.tracing.PageFaultEvent;
 import org.neo4j.io.pagecache.tracing.PinEvent;
+import org.neo4j.io.pagecache.tracing.cursor.PageCursorTracer;
 import org.neo4j.unsafe.impl.internal.dragons.UnsafeUtil;
 
 import static org.neo4j.io.pagecache.PagedFile.PF_SHARED_WRITE_LOCK;
@@ -52,9 +52,9 @@ abstract class MuninnPageCursor extends PageCursor
     private static final int SIZE_OF_LONG = Long.BYTES;
 
     private final long victimPage;
+    private final PageCursorTracer tracer;
     protected MuninnPagedFile pagedFile;
     protected PageSwapper swapper;
-    protected PageCacheTracer tracer;
     protected MuninnPage page;
     protected PinEvent pinEvent;
     protected long pageId;
@@ -72,16 +72,16 @@ abstract class MuninnPageCursor extends PageCursor
     // offending code.
     private Object cursorException;
 
-    MuninnPageCursor( long victimPage )
+    MuninnPageCursor( long victimPage, PageCursorTracer tracer )
     {
         this.victimPage = victimPage;
-        pointer = victimPage;
+        this.pointer = victimPage;
+        this.tracer = tracer;
     }
 
     final void initialiseFile( MuninnPagedFile pagedFile )
     {
         this.swapper = pagedFile.swapper;
-        this.tracer = pagedFile.tracer;
     }
 
     final void initialiseFlags( MuninnPagedFile pagedFile, long pageId, int pf_flags )

@@ -30,6 +30,7 @@ import java.util.function.Consumer;
 
 import org.neo4j.collection.pool.Pool;
 import org.neo4j.graphdb.TransactionTerminatedException;
+import org.neo4j.io.pagecache.tracing.cursor.PageCursorTracerSupplier;
 import org.neo4j.kernel.api.KernelTransaction;
 import org.neo4j.kernel.api.exceptions.Status;
 import org.neo4j.kernel.api.exceptions.TransactionFailureException;
@@ -333,7 +334,8 @@ public class KernelTransactionTerminationTest
                     mock( ConstraintIndexCreator.class ), new Procedures(), TransactionHeaderInformationFactory.DEFAULT,
                     mock( TransactionCommitProcess.class ), monitor, () -> mock( LegacyIndexTransactionState.class ),
                     mock( Pool.class ), Clocks.fakeClock(), TransactionTracer.NULL,
-                    LockTracer.NONE, mock( StorageEngine.class, RETURNS_MOCKS ), new CanWrite() );
+                    LockTracer.NONE, PageCursorTracerSupplier.NULL,
+                            mock( StorageEngine.class, RETURNS_MOCKS ), new CanWrite() );
 
             this.monitor = monitor;
         }

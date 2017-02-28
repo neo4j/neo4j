@@ -53,12 +53,6 @@ public interface PageCacheTracer extends PageCacheCounters
         }
 
         @Override
-        public PinEvent beginPin( boolean writeLock, long filePageId, PageSwapper swapper )
-        {
-            return PinEvent.NULL;
-        }
-
-        @Override
         public MajorFlushEvent beginFileFlush( PageSwapper swapper )
         {
             return MajorFlushEvent.NULL;
@@ -131,6 +125,46 @@ public interface PageCacheTracer extends PageCacheCounters
         }
 
         @Override
+        public void pins( long pins )
+        {
+        }
+
+        @Override
+        public void unpins( long unpins )
+        {
+        }
+
+        @Override
+        public void faults( long faults )
+        {
+        }
+
+        @Override
+        public void bytesRead( long bytesRead )
+        {
+        }
+
+        @Override
+        public void evictions( long evictions )
+        {
+        }
+
+        @Override
+        public void evictionExceptions( long evictionExceptions )
+        {
+        }
+
+        @Override
+        public void bytesWritten( long bytesWritten )
+        {
+        }
+
+        @Override
+        public void flushes( long flushes )
+        {
+        }
+
+        @Override
         public String toString()
         {
             return PageCacheTracer.class.getName() + ".NULL";
@@ -157,11 +191,6 @@ public interface PageCacheTracer extends PageCacheCounters
     EvictionRunEvent beginPageEvictions( int pageCountToEvict );
 
     /**
-     * A page is to be pinned.
-     */
-    PinEvent beginPin( boolean writeLock, long filePageId, PageSwapper swapper );
-
-    /**
      * A PagedFile wants to flush all its bound pages.
      */
     MajorFlushEvent beginFileFlush( PageSwapper swapper );
@@ -170,4 +199,52 @@ public interface PageCacheTracer extends PageCacheCounters
      * The PageCache wants to flush all its bound pages.
      */
     MajorFlushEvent beginCacheFlush();
+
+    /**
+     * Report number of observed pins
+     * @param pins number of pins
+     */
+    void pins( long pins );
+
+    /**
+     * Report number of observed unpins
+     * @param unpins number of unpins
+     */
+    void unpins( long unpins );
+
+    /**
+     * Report number of observed faults
+     * @param faults number of faults
+     */
+    void faults( long faults );
+
+    /**
+     * Report number of bytes read
+     * @param bytesRead number of read bytes
+     */
+    void bytesRead( long bytesRead );
+
+    /**
+     * Report number of observed evictions
+     * @param evictions number of evictions
+     */
+    void evictions( long evictions );
+
+    /**
+     * Report number of eviction exceptions
+     * @param evictionExceptions number of eviction exceptions
+     */
+    void evictionExceptions( long evictionExceptions );
+
+    /**
+     * Report number of bytes written
+     * @param bytesWritten number of written bytes
+     */
+    void bytesWritten( long bytesWritten );
+
+    /**
+     * Report number of flushes
+     * @param flushes number of flushes
+     */
+    void flushes( long flushes );
 }
