@@ -25,6 +25,7 @@ import org.mockito.stubbing.Answer;
 
 import org.neo4j.collection.primitive.PrimitiveLongCollections;
 import org.neo4j.kernel.api.ReadOperations;
+import org.neo4j.kernel.api.exceptions.index.IndexNotApplicableKernelException;
 import org.neo4j.kernel.api.exceptions.index.IndexNotFoundKernelException;
 import org.neo4j.kernel.api.schema_new.IndexQuery;
 import org.neo4j.kernel.api.txstate.TransactionState;
@@ -84,7 +85,7 @@ public abstract class StatementOperationsTestHelper
             when( storageStatement.getIndexReader( Matchers.any() ) ).thenReturn( indexReader );
             when( state.getStoreStatement() ).thenReturn( storageStatement );
         }
-        catch ( IndexNotFoundKernelException e )
+        catch ( IndexNotFoundKernelException | IndexNotApplicableKernelException e )
         {
             throw new Error( e );
         }

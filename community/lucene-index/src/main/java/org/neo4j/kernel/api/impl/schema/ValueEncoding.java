@@ -53,9 +53,9 @@ enum ValueEncoding
                 }
 
                 @Override
-                Field encodeField( Object value )
+                Field encodeField( String name, Object value )
                 {
-                    return new DoubleField( key(), ((Number) value).doubleValue(), NO );
+                    return new DoubleField( name, ((Number) value).doubleValue(), NO );
                 }
 
                 @Override
@@ -65,11 +65,11 @@ enum ValueEncoding
                 }
 
                 @Override
-                Query encodeQuery( Object value )
+                Query encodeQuery( Object value, int propertyNumber )
                 {
                     Double doubleValue = ((Number) value).doubleValue();
-                    return new ConstantScoreQuery( NumericRangeQuery.newDoubleRange( key(), doubleValue, doubleValue,
-                            true, true ) );
+                    return new ConstantScoreQuery( NumericRangeQuery
+                            .newDoubleRange( key( propertyNumber ), doubleValue, doubleValue, true, true ) );
                 }
             },
     Array
@@ -87,9 +87,9 @@ enum ValueEncoding
                 }
 
                 @Override
-                Field encodeField( Object value )
+                Field encodeField( String name, Object value )
                 {
-                    return stringField( key(), ArrayEncoder.encode( value ) );
+                    return stringField( name, ArrayEncoder.encode( value ) );
                 }
 
                 @Override
@@ -99,9 +99,10 @@ enum ValueEncoding
                 }
 
                 @Override
-                Query encodeQuery( Object value )
+                Query encodeQuery( Object value, int propertyNumber )
                 {
-                    return new ConstantScoreQuery( new TermQuery( new Term( key(), ArrayEncoder.encode( value ) ) ) );
+                    return new ConstantScoreQuery(
+                            new TermQuery( new Term( key( propertyNumber ), ArrayEncoder.encode( value ) ) ) );
                 }
             },
     Bool
@@ -119,9 +120,9 @@ enum ValueEncoding
                 }
 
                 @Override
-                Field encodeField( Object value )
+                Field encodeField( String name, Object value )
                 {
-                    return stringField( key(), value.toString() );
+                    return stringField( name, value.toString() );
                 }
 
                 @Override
@@ -131,9 +132,10 @@ enum ValueEncoding
                 }
 
                 @Override
-                Query encodeQuery( Object value )
+                Query encodeQuery( Object value, int propertyNumber )
                 {
-                    return new ConstantScoreQuery( new TermQuery( new Term( key(), value.toString() ) ) );
+                    return new ConstantScoreQuery(
+                            new TermQuery( new Term( key( propertyNumber ), value.toString() ) ) );
                 }
             },
     String
@@ -152,9 +154,9 @@ enum ValueEncoding
                 }
 
                 @Override
-                Field encodeField( Object value )
+                Field encodeField( String name, Object value )
                 {
-                    return stringField( key(), value.toString() );
+                    return stringField( name, value.toString() );
                 }
 
                 @Override
@@ -164,9 +166,10 @@ enum ValueEncoding
                 }
 
                 @Override
-                Query encodeQuery( Object value )
+                Query encodeQuery( Object value, int propertyNumber )
                 {
-                    return new ConstantScoreQuery( new TermQuery( new Term( key(), value.toString() ) ) );
+                    return new ConstantScoreQuery(
+                            new TermQuery( new Term( key( propertyNumber ), value.toString() ) ) );
                 }
             };
 
@@ -174,19 +177,28 @@ enum ValueEncoding
 
     abstract String key();
 
+    String key( int propertyNumber )
+    {
+        if( propertyNumber == 0 )
+        {
+            return key();
+        }
+        return propertyNumber + key();
+    }
+
     abstract boolean canEncode( Object value );
 
-    abstract Field encodeField( Object value );
+    abstract Field encodeField( String name, Object value );
 
     abstract void setFieldValue( Object value, Field field );
 
-    abstract Query encodeQuery( Object value );
+    abstract Query encodeQuery( Object value, int propertyNumber );
 
     public static ValueEncoding forKey( String key )
     {
         for ( ValueEncoding encoding : AllEncodings )
         {
-            if ( encoding.key().equals( key ) )
+            if ( key.endsWith( encoding.key( ) ) )
             {
                 return encoding;
             }

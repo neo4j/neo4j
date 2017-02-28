@@ -24,8 +24,9 @@ import org.junit.Test;
 
 import java.util.Arrays;
 
-import org.neo4j.kernel.api.schema_new.index.IndexBoundary;
 import org.neo4j.kernel.api.exceptions.index.IndexEntryConflictException;
+import org.neo4j.kernel.api.schema_new.index.NewIndexDescriptor;
+import org.neo4j.kernel.api.schema_new.index.NewIndexDescriptorFactory;
 import org.neo4j.kernel.configuration.Config;
 import org.neo4j.kernel.impl.api.index.sampling.IndexSamplingConfig;
 
@@ -44,7 +45,7 @@ public class UniqueIndexPopulatorCompatibility extends IndexProviderCompatibilit
 {
     public UniqueIndexPopulatorCompatibility( IndexProviderCompatibilityTestSuite testSuite )
     {
-        super( testSuite );
+        super( testSuite, NewIndexDescriptorFactory.uniqueForLabel( 1, 2 ) );
     }
 
     /**
@@ -58,10 +59,8 @@ public class UniqueIndexPopulatorCompatibility extends IndexProviderCompatibilit
         int nodeId1 = 1;
         int nodeId2 = 2;
 
-        IndexConfiguration indexConfig = IndexConfiguration.UNIQUE;
         IndexSamplingConfig indexSamplingConfig = new IndexSamplingConfig( Config.empty() );
-        IndexPopulator populator =
-                indexProvider.getPopulator( 17, IndexBoundary.map( descriptor ), indexConfig, indexSamplingConfig );
+        IndexPopulator populator = indexProvider.getPopulator( 17, descriptor, indexSamplingConfig );
         populator.create();
         populator.add( Arrays.asList( IndexEntryUpdate.add( nodeId1, descriptor, value ),
                 IndexEntryUpdate.add( nodeId2, descriptor, value ) ) );

@@ -24,11 +24,10 @@ import java.util.concurrent.Future;
 
 import org.neo4j.function.Suppliers;
 import org.neo4j.kernel.api.exceptions.index.IndexPopulationFailedKernelException;
-import org.neo4j.kernel.api.index.IndexConfiguration;
 import org.neo4j.kernel.api.index.IndexEntryUpdate;
-import org.neo4j.kernel.api.schema.IndexDescriptor;
 import org.neo4j.kernel.api.index.IndexPopulator;
 import org.neo4j.kernel.api.index.SchemaIndexProvider;
+import org.neo4j.kernel.api.schema_new.index.NewIndexDescriptor;
 import org.neo4j.storageengine.api.schema.PopulationProgress;
 
 import static java.lang.Thread.currentThread;
@@ -37,7 +36,7 @@ import static org.neo4j.helpers.FutureAdapter.latchGuardedValue;
 /**
  * A background job for initially populating one or more index over existing data in the database.
  * Use provided store view to scan store. Participating {@link IndexPopulator} are added with
- * {@link #addPopulator(IndexPopulator, long, IndexDescriptor, IndexConfiguration, org.neo4j.kernel.api.index.SchemaIndexProvider.Descriptor, String, FlippableIndexProxy, FailedIndexProxyFactory)}
+ * {@link #addPopulator(IndexPopulator, long, NewIndexDescriptor, org.neo4j.kernel.api.index.SchemaIndexProvider.Descriptor, String, FlippableIndexProxy, FailedIndexProxyFactory)}
  * before {@link #run() running} this job.
  */
 public class IndexPopulationJob implements Runnable
@@ -67,8 +66,7 @@ public class IndexPopulationJob implements Runnable
      * be added before calling {@link #run()}.
      *
      * @param populator {@link IndexPopulator} to participate.
-     * @param descriptor {@link IndexDescriptor} describing the index.
-     * @param config {@link IndexConfiguration} for the index.
+     * @param descriptor {@link NewIndexDescriptor} describing the index.
      * @param providerDescriptor provider of this index.
      * @param indexUserDescription user description of this index.
      * @param flipper {@link FlippableIndexProxy} to call after a successful population.
@@ -76,15 +74,14 @@ public class IndexPopulationJob implements Runnable
      */
     public void addPopulator( IndexPopulator populator,
             long indexId,
-            IndexDescriptor descriptor,
-            IndexConfiguration config,
+            NewIndexDescriptor descriptor,
             SchemaIndexProvider.Descriptor providerDescriptor,
             String indexUserDescription ,
             FlippableIndexProxy flipper,
             FailedIndexProxyFactory failedIndexProxyFactory )
     {
         assert storeScan == null : "Population have already started, too late to add populators at this point";
-        this.multiPopulator.addPopulator( populator, indexId, descriptor, providerDescriptor, config, flipper,
+        this.multiPopulator.addPopulator( populator, indexId, descriptor, providerDescriptor, flipper,
                 failedIndexProxyFactory, indexUserDescription );
     }
 

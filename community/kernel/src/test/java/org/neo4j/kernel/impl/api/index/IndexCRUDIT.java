@@ -41,9 +41,7 @@ import org.neo4j.io.pagecache.PageCache;
 import org.neo4j.kernel.api.ReadOperations;
 import org.neo4j.kernel.api.exceptions.index.IndexEntryConflictException;
 import org.neo4j.kernel.api.index.IndexAccessor;
-import org.neo4j.kernel.api.index.IndexConfiguration;
 import org.neo4j.kernel.api.index.IndexEntryUpdate;
-import org.neo4j.kernel.api.schema.IndexDescriptor;
 import org.neo4j.kernel.api.index.IndexPopulator;
 import org.neo4j.kernel.api.index.IndexUpdater;
 import org.neo4j.kernel.api.index.PropertyAccessor;
@@ -80,7 +78,7 @@ public class IndexCRUDIT
     {
         // Given
         String indexProperty = "indexProperty";
-        GatheringIndexWriter writer = newWriter( indexProperty );
+        GatheringIndexWriter writer = newWriter();
         createIndex( db, myLabel, indexProperty );
 
         // When
@@ -110,7 +108,7 @@ public class IndexCRUDIT
     {
         // GIVEN
         String indexProperty = "indexProperty";
-        GatheringIndexWriter writer = newWriter( indexProperty );
+        GatheringIndexWriter writer = newWriter();
         createIndex( db, myLabel, indexProperty );
 
         // WHEN
@@ -180,18 +178,16 @@ public class IndexCRUDIT
         ctxSupplier = db.getDependencyResolver().resolveDependency( ThreadToStatementContextBridge.class );
     }
 
-    private GatheringIndexWriter newWriter( String propertyKey ) throws IOException
+    private GatheringIndexWriter newWriter() throws IOException
     {
-        GatheringIndexWriter writer = new GatheringIndexWriter( propertyKey );
+        GatheringIndexWriter writer = new GatheringIndexWriter();
         when( mockedIndexProvider.getPopulator(
-                        anyLong(), any( IndexDescriptor.class ), any( IndexConfiguration.class ),
-                        any( IndexSamplingConfig.class ) )
-        ).thenReturn( writer );
+                    anyLong(), any( NewIndexDescriptor.class ), any( IndexSamplingConfig.class ) )
+            ).thenReturn( writer );
         when( mockedIndexProvider.getProviderDescriptor() ).thenReturn( PROVIDER_DESCRIPTOR );
         when( mockedIndexProvider.getOnlineAccessor(
-                anyLong(), any( IndexDescriptor.class ), any( IndexConfiguration.class ),
-                any( IndexSamplingConfig.class )
-        ) ).thenReturn( writer );
+                    anyLong(), any( NewIndexDescriptor.class ), any( IndexSamplingConfig.class )
+            ) ).thenReturn( writer );
         when( mockedIndexProvider.compareTo( any( SchemaIndexProvider.class ) ) )
                 .thenReturn( 1 ); // always pretend to have highest priority
         return writer;
@@ -206,13 +202,7 @@ public class IndexCRUDIT
     private class GatheringIndexWriter extends IndexAccessor.Adapter implements IndexPopulator
     {
         private final Set<IndexEntryUpdate> updatesCommitted = new HashSet<>();
-        private final String propertyKey;
         private final Map<Object,Set<Long>> indexSamples = new HashMap<>();
-
-        public GatheringIndexWriter( String propertyKey )
-        {
-            this.propertyKey = propertyKey;
-        }
 
         @Override
         public void create()
@@ -222,11 +212,7 @@ public class IndexCRUDIT
         @Override
         public void add( Collection<IndexEntryUpdate> updates )
         {
-            for ( IndexEntryUpdate update : updates )
-            {
-                ReadOperations statement = ctxSupplier.get().readOperations();
-                updatesCommitted.add( update );
-            }
+            updatesCommitted.addAll( updates );
         }
 
         @Override

@@ -49,7 +49,7 @@ public class AccessUniqueDatabaseIndexTest
     public final EphemeralFileSystemRule fileSystemRule = new EphemeralFileSystemRule();
     private final DirectoryFactory directoryFactory = new DirectoryFactory.InMemoryDirectoryFactory();
     private final File indexDirectory = new File( "index1" );
-    private final NewIndexDescriptor index = NewIndexDescriptorFactory.forLabel( 1000, 100 );
+    private final NewIndexDescriptor index = NewIndexDescriptorFactory.uniqueForLabel( 1000, 100 );
 
     @Test
     public void shouldAddUniqueEntries() throws Exception
@@ -134,12 +134,11 @@ public class AccessUniqueDatabaseIndexTest
 
     private LuceneIndexAccessor createAccessor( PartitionedIndexStorage indexStorage ) throws IOException
     {
-        SchemaIndex luceneIndex = LuceneSchemaIndexBuilder.create()
+        SchemaIndex luceneIndex = LuceneSchemaIndexBuilder.create( index )
                 .withIndexStorage( indexStorage )
-                .uniqueIndex()
                 .build();
         luceneIndex.open();
-        return new LuceneIndexAccessor( luceneIndex, IndexDescriptorFactory.of( 1, 1 ) );
+        return new LuceneIndexAccessor( luceneIndex, NewIndexDescriptorFactory.forLabel( 1, 1 ) );
     }
 
     private PartitionedIndexStorage getIndexStorage() throws IOException

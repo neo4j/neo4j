@@ -42,8 +42,8 @@ import org.neo4j.kernel.api.impl.schema.verification.SimpleUniquenessVerifier;
 import org.neo4j.kernel.api.impl.schema.verification.UniquenessVerifier;
 import org.neo4j.kernel.api.impl.schema.writer.LuceneIndexWriter;
 import org.neo4j.kernel.api.impl.schema.writer.PartitionedIndexWriter;
-import org.neo4j.kernel.api.index.IndexConfiguration;
 import org.neo4j.kernel.api.index.PropertyAccessor;
+import org.neo4j.kernel.api.schema_new.index.NewIndexDescriptor;
 import org.neo4j.kernel.impl.api.index.sampling.IndexSamplingConfig;
 import org.neo4j.storageengine.api.schema.IndexReader;
 
@@ -58,16 +58,16 @@ class LuceneSchemaIndex extends AbstractLuceneIndex
     private static final String ONLINE = "online";
     private static final Map<String,String> ONLINE_COMMIT_USER_DATA = singletonMap( KEY_STATUS, ONLINE );
 
-    private final IndexConfiguration config;
+    private final NewIndexDescriptor descriptor;
     private final IndexSamplingConfig samplingConfig;
 
     private final TaskCoordinator taskCoordinator = new TaskCoordinator( 10, TimeUnit.MILLISECONDS );
 
-    LuceneSchemaIndex( PartitionedIndexStorage indexStorage, IndexConfiguration config,
+    LuceneSchemaIndex( PartitionedIndexStorage indexStorage, NewIndexDescriptor descriptor,
             IndexSamplingConfig samplingConfig, IndexPartitionFactory partitionFactory )
     {
         super( indexStorage, partitionFactory );
-        this.config = config;
+        this.descriptor = descriptor;
         this.samplingConfig = samplingConfig;
     }
 
@@ -193,7 +193,7 @@ class LuceneSchemaIndex extends AbstractLuceneIndex
     private SimpleIndexReader createSimpleReader( List<AbstractIndexPartition> partitions ) throws IOException
     {
         AbstractIndexPartition singlePartition = getFirstPartition( partitions );
-        return new SimpleIndexReader( singlePartition.acquireSearcher(), config, samplingConfig, taskCoordinator );
+        return new SimpleIndexReader( singlePartition.acquireSearcher(), descriptor, samplingConfig, taskCoordinator );
     }
 
     private UniquenessVerifier createSimpleUniquenessVerifier( List<AbstractIndexPartition> partitions ) throws IOException
@@ -206,7 +206,7 @@ class LuceneSchemaIndex extends AbstractLuceneIndex
     private PartitionedIndexReader createPartitionedReader( List<AbstractIndexPartition> partitions ) throws IOException
     {
         List<PartitionSearcher> searchers = acquireSearchers( partitions );
-        return new PartitionedIndexReader( searchers, config, samplingConfig, taskCoordinator );
+        return new PartitionedIndexReader( searchers, descriptor, samplingConfig, taskCoordinator );
     }
 
     private UniquenessVerifier createPartitionedUniquenessVerifier( List<AbstractIndexPartition> partitions ) throws IOException

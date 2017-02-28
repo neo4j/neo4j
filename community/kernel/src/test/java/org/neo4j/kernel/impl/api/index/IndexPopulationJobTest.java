@@ -47,10 +47,7 @@ import org.neo4j.kernel.api.KernelTransaction;
 import org.neo4j.kernel.api.Statement;
 import org.neo4j.kernel.api.exceptions.TransactionFailureException;
 import org.neo4j.kernel.api.exceptions.index.IndexEntryConflictException;
-import org.neo4j.kernel.api.index.IndexConfiguration;
 import org.neo4j.kernel.api.index.IndexEntryUpdate;
-import org.neo4j.kernel.api.schema.IndexDescriptor;
-import org.neo4j.kernel.api.schema.IndexDescriptorFactory;
 import org.neo4j.kernel.api.index.IndexPopulator;
 import org.neo4j.kernel.api.index.IndexUpdater;
 import org.neo4j.kernel.api.index.InternalIndexState;
@@ -584,10 +581,9 @@ public class IndexPopulationJobTest
 
     private IndexPopulator inMemoryPopulator( boolean constraint ) throws TransactionFailureException
     {
-        IndexConfiguration indexConfig = IndexConfiguration.of( constraint );
         IndexSamplingConfig samplingConfig = new IndexSamplingConfig( Config.empty() );
-        IndexDescriptor descriptor = indexDescriptor( FIRST, name );
-        return new InMemoryIndexProvider().getPopulator( 21, descriptor, indexConfig, samplingConfig );
+        NewIndexDescriptor descriptor = indexDescriptor( FIRST, name, constraint );
+        return new InMemoryIndexProvider().getPopulator( 21, descriptor, samplingConfig );
     }
 
     private IndexPopulationJob newIndexPopulationJob( IndexPopulator populator,
@@ -613,25 +609,27 @@ public class IndexPopulationJobTest
                                                       LogProvider logProvider, boolean constraint )
                                                               throws TransactionFailureException
     {
-        IndexDescriptor descriptor = indexDescriptor( FIRST, name );
+        NewIndexDescriptor descriptor = indexDescriptor( FIRST, name, constraint );
         long indexId = 0;
         flipper.setFlipTarget( mock( IndexProxyFactory.class ) );
 
         MultipleIndexPopulator multiPopulator = new MultipleIndexPopulator( storeView, logProvider );
         IndexPopulationJob job = new IndexPopulationJob( storeView, multiPopulator, NO_MONITOR, stateHolder::clear );
-        job.addPopulator( populator, indexId, descriptor, IndexConfiguration.of( constraint ), PROVIDER_DESCRIPTOR,
+        job.addPopulator( populator, indexId, descriptor, PROVIDER_DESCRIPTOR,
                 format( ":%s(%s)", FIRST.name(), name ), flipper, failureDelegateFactory );
         return job;
     }
 
-    private IndexDescriptor indexDescriptor( Label label, String propertyKey ) throws TransactionFailureException
+    private NewIndexDescriptor indexDescriptor( Label label, String propertyKey, boolean constraint ) throws TransactionFailureException
     {
         try ( KernelTransaction tx = kernel.newTransaction( KernelTransaction.Type.implicit, AnonymousContext.read() );
               Statement statement = tx.acquireStatement() )
         {
             int labelId = statement.readOperations().labelGetForName( label.name() );
             int propertyKeyId = statement.readOperations().propertyKeyGetForName( propertyKey );
-            IndexDescriptor descriptor = IndexDescriptorFactory.of( labelId, propertyKeyId );
+            NewIndexDescriptor descriptor = constraint ?
+                                            NewIndexDescriptorFactory.uniqueForLabel( labelId, propertyKeyId ) :
+                                            NewIndexDescriptorFactory.forLabel( labelId, propertyKeyId );
             tx.success();
             return descriptor;
         }

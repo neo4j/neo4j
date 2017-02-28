@@ -33,7 +33,6 @@ import java.util.function.IntPredicate;
 
 import org.neo4j.helpers.collection.Visitor;
 import org.neo4j.kernel.api.exceptions.index.IndexEntryConflictException;
-import org.neo4j.kernel.api.index.IndexConfiguration;
 import org.neo4j.kernel.api.index.IndexEntryUpdate;
 import org.neo4j.kernel.api.schema.IndexDescriptor;
 import org.neo4j.kernel.api.schema.IndexDescriptorFactory;
@@ -41,6 +40,7 @@ import org.neo4j.kernel.api.index.IndexPopulator;
 import org.neo4j.kernel.api.index.IndexUpdater;
 import org.neo4j.kernel.api.index.PropertyAccessor;
 import org.neo4j.kernel.api.index.SchemaIndexProvider;
+import org.neo4j.kernel.api.schema_new.index.IndexBoundary;
 import org.neo4j.kernel.api.schema_new.index.NewIndexDescriptor;
 import org.neo4j.kernel.api.schema_new.index.NewIndexDescriptorFactory;
 import org.neo4j.kernel.impl.api.index.MultipleIndexPopulator.IndexPopulation;
@@ -433,20 +433,13 @@ public class MultipleIndexPopulatorTest
                 flippableIndexProxy, failedIndexProxyFactory );
     }
 
-    private IndexPopulation addPopulator( MultipleIndexPopulator multipleIndexPopulator, IndexPopulator indexPopulator,
-            long indexId, IndexDescriptor descriptor )
-    {
-        return addPopulator( multipleIndexPopulator, indexId, descriptor, indexPopulator,
-                mock( FlippableIndexProxy.class ), mock( FailedIndexProxyFactory.class ) );
-    }
-
     private IndexPopulation addPopulator(MultipleIndexPopulator multipleIndexPopulator, long indexId,
             IndexDescriptor descriptor, IndexPopulator indexPopulator,
             FlippableIndexProxy flippableIndexProxy, FailedIndexProxyFactory failedIndexProxyFactory )
     {
-        return multipleIndexPopulator.addPopulator( indexPopulator, indexId, descriptor,
-                mock( SchemaIndexProvider.Descriptor.class ), IndexConfiguration.NON_UNIQUE,
-                flippableIndexProxy, failedIndexProxyFactory, "userIndexDescription" );
+        return multipleIndexPopulator.addPopulator( indexPopulator, indexId, IndexBoundary.map( descriptor ),
+                mock( SchemaIndexProvider.Descriptor.class ), flippableIndexProxy,
+                failedIndexProxyFactory, "userIndexDescription" );
     }
 
     private IndexPopulation addPopulator( IndexPopulator indexPopulator, int id )

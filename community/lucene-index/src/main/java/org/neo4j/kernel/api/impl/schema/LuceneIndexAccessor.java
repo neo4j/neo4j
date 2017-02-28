@@ -32,7 +32,7 @@ import org.neo4j.kernel.api.index.IndexAccessor;
 import org.neo4j.kernel.api.index.IndexEntryUpdate;
 import org.neo4j.kernel.api.index.IndexUpdater;
 import org.neo4j.kernel.api.index.PropertyAccessor;
-import org.neo4j.kernel.api.schema.IndexDescriptor;
+import org.neo4j.kernel.api.schema_new.index.NewIndexDescriptor;
 import org.neo4j.kernel.impl.api.index.IndexUpdateMode;
 import org.neo4j.storageengine.api.schema.IndexReader;
 
@@ -40,9 +40,9 @@ public class LuceneIndexAccessor implements IndexAccessor
 {
     private final LuceneIndexWriter writer;
     private final SchemaIndex luceneIndex;
-    private final IndexDescriptor descriptor;
+    private final NewIndexDescriptor descriptor;
 
-    public LuceneIndexAccessor( SchemaIndex luceneIndex, IndexDescriptor descriptor ) throws IOException
+    public LuceneIndexAccessor( SchemaIndex luceneIndex, NewIndexDescriptor descriptor ) throws IOException
     {
         this.luceneIndex = luceneIndex;
         this.descriptor = descriptor;
@@ -123,7 +123,8 @@ public class LuceneIndexAccessor implements IndexAccessor
     public void verifyDeferredConstraints( PropertyAccessor propertyAccessor )
             throws IndexEntryConflictException, IOException
     {
-        luceneIndex.verifyUniqueness( propertyAccessor, descriptor.getPropertyKeyId() );
+        //TODO: support composite index.
+        luceneIndex.verifyUniqueness( propertyAccessor, descriptor.schema().getPropertyId() );
     }
 
     private class LuceneIndexUpdater implements IndexUpdater
@@ -145,15 +146,15 @@ public class LuceneIndexAccessor implements IndexAccessor
             case ADDED:
                 if ( isRecovery )
                 {
-                    addRecovered( update.getEntityId(), update.values()[0] );
+                    addRecovered( update.getEntityId(), update.values() );
                 }
                 else
                 {
-                    add( update.getEntityId(), update.values()[0]  );
+                    add( update.getEntityId(), update.values() );
                 }
                 break;
             case CHANGED:
-                change( update.getEntityId(), update.values()[0]  );
+                change( update.getEntityId(), update.values() );
                 break;
             case REMOVED:
                 remove( update.getEntityId() );
@@ -178,22 +179,22 @@ public class LuceneIndexAccessor implements IndexAccessor
             } );
         }
 
-        private void addRecovered( long nodeId, Object value ) throws IOException
+        private void addRecovered( long nodeId, Object[] values ) throws IOException
         {
 
             writer.updateDocument( LuceneDocumentStructure.newTermForChangeOrRemove( nodeId ),
-                    LuceneDocumentStructure.documentRepresentingProperty( nodeId, value ) );
+                    LuceneDocumentStructure.documentRepresentingProperties( nodeId, values ) );
         }
 
-        private void add( long nodeId, Object value ) throws IOException
+        private void add( long nodeId, Object[] values ) throws IOException
         {
-            writer.addDocument( LuceneDocumentStructure.documentRepresentingProperty( nodeId, value ) );
+            writer.addDocument( LuceneDocumentStructure.documentRepresentingProperties( nodeId, values ) );
         }
 
-        private void change( long nodeId, Object value ) throws IOException
+        private void change( long nodeId, Object[] values ) throws IOException
         {
             writer.updateDocument( LuceneDocumentStructure.newTermForChangeOrRemove( nodeId ),
-                    LuceneDocumentStructure.documentRepresentingProperty( nodeId, value ) );
+                    LuceneDocumentStructure.documentRepresentingProperties( nodeId, values ) );
         }
 
         protected void remove( long nodeId ) throws IOException

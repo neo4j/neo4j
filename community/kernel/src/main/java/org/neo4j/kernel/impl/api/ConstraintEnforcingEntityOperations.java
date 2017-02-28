@@ -33,6 +33,7 @@ import org.neo4j.kernel.api.exceptions.EntityNotFoundException;
 import org.neo4j.kernel.api.exceptions.InvalidTransactionTypeKernelException;
 import org.neo4j.kernel.api.exceptions.KernelException;
 import org.neo4j.kernel.api.exceptions.index.IndexEntryConflictException;
+import org.neo4j.kernel.api.exceptions.index.IndexNotApplicableKernelException;
 import org.neo4j.kernel.api.exceptions.index.IndexNotFoundKernelException;
 import org.neo4j.kernel.api.exceptions.legacyindex.AutoIndexingKernelException;
 import org.neo4j.kernel.api.exceptions.schema.AlreadyConstrainedException;
@@ -181,7 +182,7 @@ public class ConstraintEnforcingEntityOperations implements EntityOperations, Sc
                         new IndexEntryConflictException( existing, NO_SUCH_NODE, value ) );
             }
         }
-        catch ( IndexNotFoundKernelException | IndexBrokenKernelException e )
+        catch ( IndexNotFoundKernelException | IndexBrokenKernelException | IndexNotApplicableKernelException e )
         {
             throw new UnableToValidateConstraintException( constraint, e );
         }
@@ -281,7 +282,8 @@ public class ConstraintEnforcingEntityOperations implements EntityOperations, Sc
 
     @Override
     public PrimitiveLongIterator indexQuery( KernelStatement statement, NewIndexDescriptor index,
-                                             IndexQuery[] predicates ) throws IndexNotFoundKernelException
+            IndexQuery[] predicates )
+            throws IndexNotFoundKernelException, IndexNotApplicableKernelException
     {
         return entityReadOperations.indexQuery( statement, index, predicates );
     }
@@ -291,7 +293,7 @@ public class ConstraintEnforcingEntityOperations implements EntityOperations, Sc
             KernelStatement state,
             NewIndexDescriptor index,
             Object value )
-            throws IndexNotFoundKernelException, IndexBrokenKernelException
+            throws IndexNotFoundKernelException, IndexBrokenKernelException, IndexNotApplicableKernelException
     {
         assertIndexOnline( state, index );
 

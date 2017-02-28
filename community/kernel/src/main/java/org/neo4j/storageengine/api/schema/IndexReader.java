@@ -23,6 +23,7 @@ package org.neo4j.storageengine.api.schema;
 import org.neo4j.collection.primitive.PrimitiveLongCollections;
 import org.neo4j.collection.primitive.PrimitiveLongIterator;
 import org.neo4j.graphdb.Resource;
+import org.neo4j.kernel.api.exceptions.index.IndexNotApplicableKernelException;
 import org.neo4j.kernel.api.schema_new.IndexQuery;
 
 
@@ -34,10 +35,10 @@ public interface IndexReader extends Resource
 {
     /**
      * @param nodeId node if to match.
-     * @param propertyValue property value to match.
+     * @param propertyValues property values to match.
      * @return number of index entries for the given {@code nodeId} and {@code propertyValue}.
      */
-    long countIndexedNodes( long nodeId, Object propertyValue );
+    long countIndexedNodes( long nodeId, Object... propertyValues );
 
     IndexSampler createSampler();
 
@@ -47,13 +48,13 @@ public interface IndexReader extends Resource
      * @param predicates the predicates to query for.
      * @return the matching entity IDs.
      */
-    PrimitiveLongIterator query( IndexQuery... predicates );
+    PrimitiveLongIterator query( IndexQuery... predicates ) throws IndexNotApplicableKernelException;
 
     IndexReader EMPTY = new IndexReader()
     {
         // Used for checking index correctness
         @Override
-        public long countIndexedNodes( long nodeId, Object propertyValue )
+        public long countIndexedNodes( long nodeId, Object... propertyValues )
         {
             return 0;
         }

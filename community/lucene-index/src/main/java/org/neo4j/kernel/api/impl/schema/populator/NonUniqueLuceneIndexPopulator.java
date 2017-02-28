@@ -75,7 +75,7 @@ public class NonUniqueLuceneIndexPopulator extends LuceneIndexPopulator
         if ( updateSampling )
         {
             checkSampler();
-            sampler.include( LuceneDocumentStructure.encodedStringValue( update.values()[0] ) );
+            sampler.include( LuceneDocumentStructure.encodedStringValuesForSampling( update.values() ) );
         }
     }
 

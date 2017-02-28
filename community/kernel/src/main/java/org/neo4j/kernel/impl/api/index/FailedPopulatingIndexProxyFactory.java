@@ -19,26 +19,23 @@
  */
 package org.neo4j.kernel.impl.api.index;
 
-import org.neo4j.kernel.api.index.IndexConfiguration;
-import org.neo4j.kernel.api.schema.IndexDescriptor;
 import org.neo4j.kernel.api.index.IndexPopulator;
 import org.neo4j.kernel.api.index.SchemaIndexProvider;
+import org.neo4j.kernel.api.schema_new.index.NewIndexDescriptor;
 import org.neo4j.logging.LogProvider;
 
 import static org.neo4j.kernel.impl.api.index.IndexPopulationFailure.failure;
 
 public class FailedPopulatingIndexProxyFactory implements FailedIndexProxyFactory
 {
-    private final IndexDescriptor descriptor;
-    private final IndexConfiguration configuration;
+    private final NewIndexDescriptor descriptor;
     private final SchemaIndexProvider.Descriptor providerDescriptor;
     private final IndexPopulator populator;
     private final String indexUserDescription;
     private final IndexCountsRemover indexCountsRemover;
     private final LogProvider logProvider;
 
-    FailedPopulatingIndexProxyFactory( IndexDescriptor descriptor,
-                                       IndexConfiguration configuration,
+    FailedPopulatingIndexProxyFactory( NewIndexDescriptor descriptor,
                                        SchemaIndexProvider.Descriptor providerDescriptor,
                                        IndexPopulator populator,
                                        String indexUserDescription,
@@ -46,7 +43,6 @@ public class FailedPopulatingIndexProxyFactory implements FailedIndexProxyFactor
                                        LogProvider logProvider )
     {
         this.descriptor = descriptor;
-        this.configuration = configuration;
         this.providerDescriptor = providerDescriptor;
         this.populator = populator;
         this.indexUserDescription = indexUserDescription;
@@ -59,7 +55,7 @@ public class FailedPopulatingIndexProxyFactory implements FailedIndexProxyFactor
     {
         return
             new FailedIndexProxy(
-                descriptor, configuration, providerDescriptor,
+                descriptor, providerDescriptor,
                 indexUserDescription, populator, failure( failure ), indexCountsRemover, logProvider );
     }
 }

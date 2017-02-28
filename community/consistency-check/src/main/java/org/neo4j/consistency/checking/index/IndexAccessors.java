@@ -28,7 +28,6 @@ import java.util.List;
 import java.util.Map;
 
 import org.neo4j.kernel.api.index.IndexAccessor;
-import org.neo4j.kernel.api.index.IndexConfiguration;
 import org.neo4j.kernel.api.index.InternalIndexState;
 import org.neo4j.kernel.api.index.SchemaIndexProvider;
 import org.neo4j.kernel.api.schema_new.index.IndexBoundary;
@@ -77,10 +76,7 @@ public class IndexAccessors implements Closeable
         for ( IndexRule indexRule : indexRules )
         {
             long indexId = indexRule.getId();
-            IndexConfiguration indexConfig = IndexConfiguration.of( indexRule );
-            accessors.put( indexId, provider.getOnlineAccessor( indexId,
-                    IndexBoundary.map( indexRule.getIndexDescriptor() ),
-                    indexConfig, samplingConfig ) );
+            accessors.put( indexId, provider.getOnlineAccessor( indexId, indexRule.getIndexDescriptor(), samplingConfig ) );
         }
     }
 

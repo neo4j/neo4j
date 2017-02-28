@@ -37,8 +37,8 @@ import org.neo4j.kernel.api.impl.index.collector.DocValuesCollector;
 import org.neo4j.kernel.api.impl.index.partition.PartitionSearcher;
 import org.neo4j.kernel.api.impl.schema.sampler.NonUniqueLuceneIndexSampler;
 import org.neo4j.kernel.api.impl.schema.sampler.UniqueLuceneIndexSampler;
-import org.neo4j.kernel.api.index.IndexConfiguration;
 import org.neo4j.kernel.api.schema_new.IndexQuery;
+import org.neo4j.kernel.api.schema_new.index.NewIndexDescriptorFactory;
 import org.neo4j.kernel.configuration.Config;
 import org.neo4j.kernel.impl.api.index.sampling.IndexSamplingConfig;
 import org.neo4j.storageengine.api.schema.IndexReader;
@@ -74,7 +74,7 @@ public class SimpleIndexReaderTest
     }
 
     @Test
-    public void seekQueryReachSearcher() throws IOException
+    public void seekQueryReachSearcher() throws Exception
     {
         IndexReader simpleIndexReader = getUniqueSimpleReader();
 
@@ -84,7 +84,7 @@ public class SimpleIndexReaderTest
     }
 
     @Test
-    public void scanQueryReachSearcher() throws IOException
+    public void scanQueryReachSearcher() throws Exception
     {
         IndexReader simpleIndexReader = getUniqueSimpleReader();
 
@@ -94,7 +94,7 @@ public class SimpleIndexReaderTest
     }
 
     @Test
-    public void stringRangeSeekQueryReachSearcher() throws IOException
+    public void stringRangeSeekQueryReachSearcher() throws Exception
     {
         IndexReader simpleIndexReader = getUniqueSimpleReader();
 
@@ -104,7 +104,7 @@ public class SimpleIndexReaderTest
     }
 
     @Test
-    public void prefixRangeSeekQueryReachSearcher() throws IOException
+    public void prefixRangeSeekQueryReachSearcher() throws Exception
     {
         IndexReader simpleIndexReader = getUniqueSimpleReader();
 
@@ -114,7 +114,7 @@ public class SimpleIndexReaderTest
     }
 
     @Test
-    public void numberRangeSeekQueryReachSearcher() throws IOException
+    public void numberRangeSeekQueryReachSearcher() throws Exception
     {
         IndexReader simpleIndexReader = getUniqueSimpleReader();
 
@@ -149,11 +149,13 @@ public class SimpleIndexReaderTest
 
     private SimpleIndexReader getNonUniqueSimpleReader()
     {
-        return new SimpleIndexReader( partitionSearcher, IndexConfiguration.NON_UNIQUE, samplingConfig, taskCoordinator );
+        return new SimpleIndexReader( partitionSearcher, NewIndexDescriptorFactory.forLabel( 0, 0 ), samplingConfig,
+                taskCoordinator );
     }
 
     private SimpleIndexReader getUniqueSimpleReader()
     {
-        return new SimpleIndexReader( partitionSearcher, IndexConfiguration.UNIQUE, samplingConfig, taskCoordinator );
+        return new SimpleIndexReader( partitionSearcher, NewIndexDescriptorFactory.uniqueForLabel( 0, 0 ),
+                samplingConfig, taskCoordinator );
     }
 }

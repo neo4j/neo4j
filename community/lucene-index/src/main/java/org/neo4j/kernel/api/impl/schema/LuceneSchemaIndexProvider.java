@@ -32,11 +32,11 @@ import org.neo4j.kernel.api.impl.index.storage.PartitionedIndexStorage;
 import org.neo4j.kernel.api.impl.schema.populator.NonUniqueLuceneIndexPopulator;
 import org.neo4j.kernel.api.impl.schema.populator.UniqueLuceneIndexPopulator;
 import org.neo4j.kernel.api.index.IndexAccessor;
-import org.neo4j.kernel.api.index.IndexConfiguration;
-import org.neo4j.kernel.api.schema.IndexDescriptor;
 import org.neo4j.kernel.api.index.IndexPopulator;
 import org.neo4j.kernel.api.index.InternalIndexState;
 import org.neo4j.kernel.api.index.SchemaIndexProvider;
+import org.neo4j.kernel.api.schema_new.index.IndexBoundary;
+import org.neo4j.kernel.api.schema_new.index.NewIndexDescriptor;
 import org.neo4j.kernel.configuration.Config;
 import org.neo4j.kernel.impl.api.index.sampling.IndexSamplingConfig;
 import org.neo4j.kernel.impl.api.scan.LabelScanStoreProvider;
@@ -45,6 +45,8 @@ import org.neo4j.kernel.impl.storemigration.StoreMigrationParticipant;
 import org.neo4j.kernel.impl.storemigration.participant.SchemaIndexMigrator;
 import org.neo4j.logging.Log;
 import org.neo4j.logging.LogProvider;
+
+import static org.neo4j.kernel.api.schema_new.index.NewIndexDescriptor.Type.UNIQUE;
 
 public class LuceneSchemaIndexProvider extends SchemaIndexProvider
 {
@@ -78,12 +80,10 @@ public class LuceneSchemaIndexProvider extends SchemaIndexProvider
     }
 
     @Override
-    public IndexPopulator getPopulator( long indexId, IndexDescriptor descriptor,
-            IndexConfiguration indexConfiguration, IndexSamplingConfig samplingConfig )
+    public IndexPopulator getPopulator( long indexId, NewIndexDescriptor descriptor, IndexSamplingConfig samplingConfig )
     {
-        SchemaIndex luceneIndex = LuceneSchemaIndexBuilder.create()
+        SchemaIndex luceneIndex = LuceneSchemaIndexBuilder.create( descriptor )
                                         .withFileSystem( fileSystem )
-                                        .withIndexConfig( indexConfiguration )
                                         .withConfig( config )
                                         .withOperationalMode( operationalMode )
                                         .withSamplingConfig( samplingConfig )
@@ -94,9 +94,9 @@ public class LuceneSchemaIndexProvider extends SchemaIndexProvider
         {
             throw new UnsupportedOperationException( "Can't create populator for read only index" );
         }
-        if ( indexConfiguration.isUnique() )
+        if ( descriptor.type() == UNIQUE )
         {
-            return new UniqueLuceneIndexPopulator( luceneIndex, descriptor );
+            return new UniqueLuceneIndexPopulator( luceneIndex, IndexBoundary.map( descriptor ) );
         }
         else
         {
@@ -105,11 +105,10 @@ public class LuceneSchemaIndexProvider extends SchemaIndexProvider
     }
 
     @Override
-    public IndexAccessor getOnlineAccessor( long indexId, IndexDescriptor descriptor,
-            IndexConfiguration indexConfiguration, IndexSamplingConfig samplingConfig ) throws IOException
+    public IndexAccessor getOnlineAccessor( long indexId, NewIndexDescriptor descriptor,
+            IndexSamplingConfig samplingConfig ) throws IOException
     {
-        SchemaIndex luceneIndex = LuceneSchemaIndexBuilder.create()
-                                            .withIndexConfig( indexConfiguration )
+        SchemaIndex luceneIndex = LuceneSchemaIndexBuilder.create( descriptor )
                                             .withConfig( config )
                                             .withOperationalMode( operationalMode )
                                             .withSamplingConfig( samplingConfig )
@@ -169,7 +168,7 @@ public class LuceneSchemaIndexProvider extends SchemaIndexProvider
 
     private boolean indexIsOnline( PartitionedIndexStorage indexStorage ) throws IOException
     {
-        try ( SchemaIndex index = LuceneSchemaIndexBuilder.create().withIndexStorage( indexStorage ).build() )
+        try ( SchemaIndex index = LuceneSchemaIndexBuilder.create( null ).withIndexStorage( indexStorage ).build() )
         {
             if ( index.exists() )
             {

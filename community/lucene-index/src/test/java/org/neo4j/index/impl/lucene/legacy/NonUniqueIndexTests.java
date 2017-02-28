@@ -23,7 +23,6 @@ import org.junit.Rule;
 import org.junit.Test;
 
 import java.io.File;
-import java.io.IOException;
 import java.util.List;
 import java.util.Map;
 import java.util.concurrent.locks.LockSupport;
@@ -36,10 +35,10 @@ import org.neo4j.graphdb.factory.GraphDatabaseFactoryState;
 import org.neo4j.kernel.api.impl.index.storage.DirectoryFactory;
 import org.neo4j.kernel.api.impl.schema.LuceneSchemaIndexProvider;
 import org.neo4j.kernel.api.index.IndexAccessor;
-import org.neo4j.kernel.api.index.IndexConfiguration;
 import org.neo4j.kernel.api.index.SchemaIndexProvider;
 import org.neo4j.kernel.api.schema.IndexDescriptorFactory;
 import org.neo4j.kernel.api.schema_new.IndexQuery;
+import org.neo4j.kernel.api.schema_new.index.NewIndexDescriptorFactory;
 import org.neo4j.kernel.configuration.Config;
 import org.neo4j.kernel.impl.api.index.sampling.IndexSamplingConfig;
 import org.neo4j.kernel.impl.factory.CommunityEditionModule;
@@ -70,7 +69,7 @@ public class NonUniqueIndexTests
     public final DefaultFileSystemRule fileSystemRule = new DefaultFileSystemRule();
 
     @Test
-    public void concurrentIndexPopulationAndInsertsShouldNotProduceDuplicates() throws IOException
+    public void concurrentIndexPopulationAndInsertsShouldNotProduceDuplicates() throws Exception
     {
         // Given
         GraphDatabaseService db = newEmbeddedGraphDatabaseWithSlowJobScheduler();
@@ -150,15 +149,14 @@ public class NonUniqueIndexTests
         };
     }
 
-    private List<Long> nodeIdsInIndex( int indexId, String value ) throws IOException
+    private List<Long> nodeIdsInIndex( int indexId, String value ) throws Exception
     {
         Config config = Config.empty();
         SchemaIndexProvider indexProvider = new LuceneSchemaIndexProvider( fileSystemRule.get(),
                 DirectoryFactory.PERSISTENT, directory.graphDbDir(), NullLogProvider.getInstance(), Config.empty(), OperationalMode.single );
-        IndexConfiguration indexConfig = IndexConfiguration.NON_UNIQUE;
         IndexSamplingConfig samplingConfig = new IndexSamplingConfig( config );
-        try ( IndexAccessor accessor = indexProvider.getOnlineAccessor( indexId, IndexDescriptorFactory.of( 1, 2 ),
-                indexConfig, samplingConfig );
+        try ( IndexAccessor accessor = indexProvider.getOnlineAccessor( indexId,
+                NewIndexDescriptorFactory.forLabel( 0, 0 ), samplingConfig );
               IndexReader reader = accessor.newReader() )
         {
             return PrimitiveLongCollections.asList( reader.query( IndexQuery.exact( 1, value ) ) );

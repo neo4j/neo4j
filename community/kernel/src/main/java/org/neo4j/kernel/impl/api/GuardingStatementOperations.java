@@ -26,6 +26,7 @@ import org.neo4j.cursor.Cursor;
 import org.neo4j.kernel.api.exceptions.EntityNotFoundException;
 import org.neo4j.kernel.api.exceptions.InvalidTransactionTypeKernelException;
 import org.neo4j.kernel.api.exceptions.KernelException;
+import org.neo4j.kernel.api.exceptions.index.IndexNotApplicableKernelException;
 import org.neo4j.kernel.api.exceptions.index.IndexNotFoundKernelException;
 import org.neo4j.kernel.api.exceptions.legacyindex.AutoIndexingKernelException;
 import org.neo4j.kernel.api.exceptions.schema.ConstraintValidationException;
@@ -173,7 +174,8 @@ public class GuardingStatementOperations implements
 
     @Override
     public PrimitiveLongIterator indexQuery( KernelStatement statement, NewIndexDescriptor index,
-                                             IndexQuery[] predicates ) throws IndexNotFoundKernelException
+            IndexQuery[] predicates )
+            throws IndexNotFoundKernelException, IndexNotApplicableKernelException
     {
         guard.check( statement );
         return entityReadDelegate.indexQuery( statement, index, predicates );
@@ -181,7 +183,7 @@ public class GuardingStatementOperations implements
 
     @Override
     public long nodeGetFromUniqueIndexSeek( KernelStatement statement, NewIndexDescriptor index, Object value )
-            throws IndexNotFoundKernelException, IndexBrokenKernelException
+            throws IndexNotFoundKernelException, IndexBrokenKernelException, IndexNotApplicableKernelException
     {
         guard.check( statement );
         return entityReadDelegate.nodeGetFromUniqueIndexSeek( statement, index, value );

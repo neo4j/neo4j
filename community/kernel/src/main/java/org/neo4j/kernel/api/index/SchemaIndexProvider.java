@@ -26,7 +26,7 @@ import org.neo4j.graphdb.ResourceIterator;
 import org.neo4j.helpers.collection.Iterators;
 import org.neo4j.io.fs.FileSystemAbstraction;
 import org.neo4j.io.pagecache.PageCache;
-import org.neo4j.kernel.api.schema.IndexDescriptor;
+import org.neo4j.kernel.api.schema_new.index.NewIndexDescriptor;
 import org.neo4j.kernel.impl.api.index.IndexingService;
 import org.neo4j.kernel.impl.api.index.sampling.IndexSamplingConfig;
 import org.neo4j.kernel.impl.api.scan.LabelScanStoreProvider;
@@ -43,7 +43,7 @@ import org.neo4j.kernel.lifecycle.LifecycleAdapter;
  *
  * When an index rule is added, the {@link IndexingService} is notified. It will, in turn, ask
  * your {@link SchemaIndexProvider} for a\
- * {@link #getPopulator(long, IndexDescriptor, IndexConfiguration, IndexSamplingConfig) batch index writer}.
+ * {@link #getPopulator(long, NewIndexDescriptor, IndexSamplingConfig) batch index writer}.
  *
  * A background index job is triggered, and all existing data that applies to the new rule, as well as new data
  * from the "outside", will be inserted using the writer. You are guaranteed that usage of this writer,
@@ -88,7 +88,7 @@ import org.neo4j.kernel.lifecycle.LifecycleAdapter;
  * <h3>Online operation</h3>
  *
  * Once the index is online, the database will move to using the
- * {@link #getOnlineAccessor(long, IndexDescriptor, IndexConfiguration, IndexSamplingConfig) online accessor} to
+ * {@link #getOnlineAccessor(long, NewIndexDescriptor, IndexSamplingConfig) online accessor} to
  * write to the index.
  */
 public abstract class SchemaIndexProvider extends LifecycleAdapter implements Comparable<SchemaIndexProvider>
@@ -100,14 +100,14 @@ public abstract class SchemaIndexProvider extends LifecycleAdapter implements Co
                 private final IndexPopulator singlePopulator = new IndexPopulator.Adapter();
 
                 @Override
-                public IndexAccessor getOnlineAccessor( long indexId, IndexDescriptor descriptor,
-                                                        IndexConfiguration config, IndexSamplingConfig samplingConfig )
+                public IndexAccessor getOnlineAccessor( long indexId, NewIndexDescriptor descriptor,
+                                                        IndexSamplingConfig samplingConfig )
                 {
                     return singleWriter;
                 }
 
                 @Override
-                public IndexPopulator getPopulator( long indexId, IndexDescriptor descriptor, IndexConfiguration config,
+                public IndexPopulator getPopulator( long indexId, NewIndexDescriptor descriptor,
                                                     IndexSamplingConfig samplingConfig )
                 {
                     return singlePopulator;
@@ -146,14 +146,14 @@ public abstract class SchemaIndexProvider extends LifecycleAdapter implements Co
     /**
      * Used for initially populating a created index, using batch insertion.
      */
-    public abstract IndexPopulator getPopulator( long indexId, IndexDescriptor descriptor, IndexConfiguration config,
+    public abstract IndexPopulator getPopulator( long indexId, NewIndexDescriptor descriptor,
                                                  IndexSamplingConfig samplingConfig );
 
     /**
      * Used for updating an index once initial population has completed.
      */
-    public abstract IndexAccessor getOnlineAccessor( long indexId, IndexDescriptor descriptor,
-            IndexConfiguration config, IndexSamplingConfig samplingConfig ) throws IOException;
+    public abstract IndexAccessor getOnlineAccessor( long indexId, NewIndexDescriptor descriptor,
+                                                     IndexSamplingConfig samplingConfig ) throws IOException;
 
     /**
      * Returns a failure previously gotten from {@link IndexPopulator#markAsFailed(String)}

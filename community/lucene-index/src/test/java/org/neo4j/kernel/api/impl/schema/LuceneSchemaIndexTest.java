@@ -31,6 +31,8 @@ import java.util.UUID;
 
 import org.neo4j.io.IOUtils;
 import org.neo4j.kernel.api.impl.index.storage.DirectoryFactory;
+import org.neo4j.kernel.api.schema_new.index.NewIndexDescriptor;
+import org.neo4j.kernel.api.schema_new.index.NewIndexDescriptorFactory;
 import org.neo4j.test.rule.TestDirectory;
 import org.neo4j.test.rule.fs.DefaultFileSystemRule;
 
@@ -45,6 +47,7 @@ public class LuceneSchemaIndexTest
 
     private final DirectoryFactory dirFactory = new DirectoryFactory.InMemoryDirectoryFactory();
     private SchemaIndex index;
+    private final NewIndexDescriptor descriptor = NewIndexDescriptorFactory.forLabel( 3, 5 );
 
     @After
     public void closeIndex() throws Exception
@@ -118,7 +121,7 @@ public class LuceneSchemaIndexTest
 
     private SchemaIndex createIndex() throws IOException
     {
-        SchemaIndex schemaIndex = newSchemaIndex( false );
+        SchemaIndex schemaIndex = newSchemaIndex();
         schemaIndex.create();
         schemaIndex.open();
         return schemaIndex;
@@ -126,18 +129,14 @@ public class LuceneSchemaIndexTest
 
     private SchemaIndex openIndex() throws IOException
     {
-        SchemaIndex schemaIndex = newSchemaIndex( false );
+        SchemaIndex schemaIndex = newSchemaIndex();
         schemaIndex.open();
         return schemaIndex;
     }
 
-    private SchemaIndex newSchemaIndex( boolean unique )
+    private SchemaIndex newSchemaIndex()
     {
-        LuceneSchemaIndexBuilder builder = LuceneSchemaIndexBuilder.create();
-        if ( unique )
-        {
-            builder = builder.uniqueIndex();
-        }
+        LuceneSchemaIndexBuilder builder = LuceneSchemaIndexBuilder.create( descriptor );
         return builder
                 .withIndexRootFolder( testDir.directory( "index" ) )
                 .withDirectoryFactory( dirFactory )

@@ -40,6 +40,7 @@ import org.neo4j.kernel.api.exceptions.LabelNotFoundKernelException;
 import org.neo4j.kernel.api.exceptions.PropertyKeyIdNotFoundKernelException;
 import org.neo4j.kernel.api.exceptions.RelationshipTypeIdNotFoundKernelException;
 import org.neo4j.kernel.api.exceptions.TransactionFailureException;
+import org.neo4j.kernel.api.exceptions.index.IndexNotApplicableKernelException;
 import org.neo4j.kernel.api.exceptions.index.IndexNotFoundKernelException;
 import org.neo4j.kernel.api.exceptions.legacyindex.AutoIndexingKernelException;
 import org.neo4j.kernel.api.exceptions.legacyindex.LegacyIndexNotFoundKernelException;
@@ -681,7 +682,7 @@ public class StateHandlingStatementOperations implements
 
     @Override
     public long nodeGetFromUniqueIndexSeek( KernelStatement state, NewIndexDescriptor index, Object value )
-            throws IndexNotFoundKernelException, IndexBrokenKernelException
+            throws IndexNotFoundKernelException, IndexBrokenKernelException, IndexNotApplicableKernelException
     {
         IndexReader reader = state.getStoreStatement().getFreshIndexReader( index );
 
@@ -700,8 +701,8 @@ public class StateHandlingStatementOperations implements
     }
 
     @Override
-    public PrimitiveLongIterator indexQuery( KernelStatement state, NewIndexDescriptor index,
-                                             IndexQuery...predicates ) throws IndexNotFoundKernelException
+    public PrimitiveLongIterator indexQuery( KernelStatement state, NewIndexDescriptor index, IndexQuery... predicates )
+            throws IndexNotFoundKernelException, IndexNotApplicableKernelException
     {
         StorageStatement storeStatement = state.getStoreStatement();
         IndexReader reader = storeStatement.getIndexReader( index );

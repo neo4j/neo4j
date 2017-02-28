@@ -27,6 +27,7 @@ import java.util.function.Predicate;
 
 import org.neo4j.kernel.api.schema.IndexDescriptor;
 import org.neo4j.kernel.api.index.InternalIndexState;
+import org.neo4j.kernel.api.schema_new.index.NewIndexDescriptor;
 import org.neo4j.kernel.impl.api.index.IndexMap;
 import org.neo4j.kernel.impl.api.index.IndexMapSnapshotProvider;
 import org.neo4j.kernel.impl.api.index.IndexProxy;
@@ -106,7 +107,7 @@ public class IndexSamplingController
 
     public interface RecoveryCondition
     {
-        boolean test(long indexId, IndexDescriptor descriptor);
+        boolean test(long indexId, NewIndexDescriptor descriptor);
     }
 
     private void scheduleSampling( IndexSamplingMode mode, IndexMap indexMap )

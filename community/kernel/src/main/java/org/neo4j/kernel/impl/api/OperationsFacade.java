@@ -52,6 +52,7 @@ import org.neo4j.kernel.api.exceptions.LabelNotFoundKernelException;
 import org.neo4j.kernel.api.exceptions.ProcedureException;
 import org.neo4j.kernel.api.exceptions.PropertyKeyIdNotFoundKernelException;
 import org.neo4j.kernel.api.exceptions.RelationshipTypeIdNotFoundKernelException;
+import org.neo4j.kernel.api.exceptions.index.IndexNotApplicableKernelException;
 import org.neo4j.kernel.api.exceptions.index.IndexNotFoundKernelException;
 import org.neo4j.kernel.api.exceptions.legacyindex.AutoIndexingKernelException;
 import org.neo4j.kernel.api.exceptions.legacyindex.LegacyIndexNotFoundKernelException;
@@ -228,7 +229,7 @@ public class OperationsFacade
 
     @Override
     public PrimitiveLongIterator indexQuery( NewIndexDescriptor index, IndexQuery... predicates )
-            throws IndexNotFoundKernelException
+            throws IndexNotFoundKernelException, IndexNotApplicableKernelException
     {
         statement.assertOpen();
         return dataRead().indexQuery( statement, index, predicates );
@@ -236,7 +237,7 @@ public class OperationsFacade
 
     @Override
     public long nodeGetFromUniqueIndexSeek( NewIndexDescriptor index, Object value )
-            throws IndexNotFoundKernelException, IndexBrokenKernelException
+            throws IndexNotFoundKernelException, IndexBrokenKernelException, IndexNotApplicableKernelException
     {
         statement.assertOpen();
         return dataRead().nodeGetFromUniqueIndexSeek( statement, index, value );

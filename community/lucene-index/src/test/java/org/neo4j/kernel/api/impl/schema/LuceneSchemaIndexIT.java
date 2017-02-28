@@ -64,7 +64,7 @@ public class LuceneSchemaIndexIT
     @Rule
     public final DefaultFileSystemRule fileSystemRule = new DefaultFileSystemRule();
 
-    private NewIndexDescriptor index = NewIndexDescriptorFactory.forLabel( 0, 0 );
+    private NewIndexDescriptor descriptor = NewIndexDescriptorFactory.forLabel( 0, 0 );
 
     @Before
     public void before() throws Exception
@@ -125,7 +125,7 @@ public class LuceneSchemaIndexIT
     @Test
     public void updateMultiplePartitionedIndex() throws IOException, IndexEntryConflictException
     {
-        try ( SchemaIndex index = LuceneSchemaIndexBuilder.create()
+        try ( SchemaIndex index = LuceneSchemaIndexBuilder.create( descriptor )
                 .withFileSystem( fileSystemRule.get() )
                 .withIndexRootFolder( testDir.directory() )
                 .withIndexIdentifier( "partitionedIndexForUpdates" )
@@ -136,7 +136,7 @@ public class LuceneSchemaIndexIT
             addDocumentToIndex( index, 45 );
 
             index.getIndexWriter().updateDocument( LuceneDocumentStructure.newTermForChangeOrRemove( 100 ),
-                    LuceneDocumentStructure.documentRepresentingProperty( 100, 100 ) );
+                    LuceneDocumentStructure.documentRepresentingProperties( (long) 100, 100 ) );
             index.maybeRefreshBlocking();
 
             long documentsInIndex = Iterators.count( index.allDocumentsReader().iterator() );
@@ -148,7 +148,7 @@ public class LuceneSchemaIndexIT
     public void createPopulateDropIndex() throws Exception
     {
         File crudOperation = testDir.directory( "indexCRUDOperation" );
-        try ( SchemaIndex crudIndex = LuceneSchemaIndexBuilder.create()
+        try ( SchemaIndex crudIndex = LuceneSchemaIndexBuilder.create( descriptor )
                 .withFileSystem( fileSystemRule.get() )
                 .withIndexRootFolder( crudOperation )
                 .withIndexIdentifier( "crudIndex" )
@@ -172,7 +172,7 @@ public class LuceneSchemaIndexIT
     @Test
     public void createFailPartitionedIndex() throws Exception
     {
-        try ( SchemaIndex failedIndex = LuceneSchemaIndexBuilder.create()
+        try ( SchemaIndex failedIndex = LuceneSchemaIndexBuilder.create( descriptor )
                 .withFileSystem( fileSystemRule.get() )
                 .withIndexRootFolder( testDir.directory( "failedIndexFolder" ) )
                 .withIndexIdentifier( "failedIndex" )
@@ -197,7 +197,7 @@ public class LuceneSchemaIndexIT
         SchemaIndex reopenIndex = null;
         try
         {
-            reopenIndex = LuceneSchemaIndexBuilder.create()
+            reopenIndex = LuceneSchemaIndexBuilder.create( descriptor )
                     .withFileSystem( fileSystemRule.get() )
                     .withIndexRootFolder( testDir.directory( "reopenIndexFolder" ) )
                     .withIndexIdentifier( "reopenIndex" )
@@ -244,20 +244,21 @@ public class LuceneSchemaIndexIT
     {
         for ( int i = 0; i < documents; i++ )
         {
-            index.getIndexWriter().addDocument( LuceneDocumentStructure.documentRepresentingProperty( i, i ) );
+            index.getIndexWriter().addDocument(
+                    LuceneDocumentStructure.documentRepresentingProperties( (long) i, i ) );
         }
     }
 
     private LuceneIndexAccessor createDefaultIndexAccessor() throws IOException
     {
-        SchemaIndex index = LuceneSchemaIndexBuilder.create()
+        SchemaIndex index = LuceneSchemaIndexBuilder.create( descriptor )
                 .withFileSystem( fileSystemRule.get() )
                 .withIndexRootFolder( testDir.directory() )
                 .withIndexIdentifier( "testIndex" )
                 .build();
         index.create();
         index.open();
-        return new LuceneIndexAccessor( index, IndexDescriptorFactory.of( 1, 1 ) );
+        return new LuceneIndexAccessor( index, NewIndexDescriptorFactory.forLabel( 1, 1 ) );
     }
 
     private Map<String,Integer> countTemplateMatches( List<String> nameTemplates, List<String> fileNames )
@@ -309,7 +310,7 @@ public class LuceneSchemaIndexIT
 
     private IndexEntryUpdate add( long nodeId, Object value )
     {
-        return IndexEntryUpdate.add( nodeId, index, value );
+        return IndexEntryUpdate.add( nodeId, descriptor, value );
     }
 
 }

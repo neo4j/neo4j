@@ -25,6 +25,7 @@ import java.util.Map;
 import java.util.function.BiConsumer;
 
 import org.neo4j.kernel.api.schema.IndexDescriptor;
+import org.neo4j.kernel.api.schema_new.index.IndexBoundary;
 
 /**
  * Bundles various mappings to IndexProxy. Used by IndexingService via IndexMapReference.
@@ -68,8 +69,8 @@ public final class IndexMap implements Cloneable
     public void putIndexProxy( long indexId, IndexProxy indexProxy )
     {
         indexesById.put( indexId, indexProxy );
-        indexesByDescriptor.put( indexProxy.getDescriptor(), indexProxy );
-        indexIdsByDescriptor.put( indexProxy.getDescriptor(), indexId );
+        indexesByDescriptor.put( IndexBoundary.map( indexProxy.getDescriptor() ), indexProxy );
+        indexIdsByDescriptor.put( IndexBoundary.map( indexProxy.getDescriptor() ), indexId );
     }
 
     public IndexProxy removeIndexProxy( long indexId )
@@ -77,7 +78,7 @@ public final class IndexMap implements Cloneable
         IndexProxy removedProxy = indexesById.remove( indexId );
         if ( null != removedProxy )
         {
-            indexesByDescriptor.remove( removedProxy.getDescriptor() );
+            indexesByDescriptor.remove( IndexBoundary.map( removedProxy.getDescriptor() ) );
         }
         return removedProxy;
     }

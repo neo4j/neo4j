@@ -32,6 +32,8 @@ import org.neo4j.kernel.api.index.IndexUpdater;
 import org.neo4j.kernel.api.index.InternalIndexState;
 import org.neo4j.kernel.api.exceptions.schema.ConstraintValidationException;
 import org.neo4j.kernel.api.exceptions.schema.UniquePropertyValueValidationException;
+import org.neo4j.kernel.api.schema_new.LabelSchemaDescriptor;
+import org.neo4j.kernel.api.schema_new.SchemaDescriptor;
 import org.neo4j.kernel.api.schema_new.constaints.ConstraintDescriptorFactory;
 import org.neo4j.kernel.impl.api.index.updater.DelegatingIndexUpdater;
 import org.neo4j.storageengine.api.schema.IndexReader;
@@ -141,9 +143,9 @@ public class TentativeConstraintIndexProxy extends AbstractDelegatingIndexProxy
     {
         if ( !failures.isEmpty() )
         {
-            IndexDescriptor descriptor = getDescriptor();
+            LabelSchemaDescriptor descriptor = getDescriptor().schema();
             throw new UniquePropertyValueValidationException(
-                    ConstraintDescriptorFactory.uniqueForLabel( descriptor.getLabelId(), descriptor.getPropertyKeyId() ),
+                    ConstraintDescriptorFactory.uniqueForLabel( descriptor.getLabelId(), descriptor.getPropertyId() ),
                     ConstraintValidationException.Phase.VERIFICATION,
                     new HashSet<>( failures )
                 );

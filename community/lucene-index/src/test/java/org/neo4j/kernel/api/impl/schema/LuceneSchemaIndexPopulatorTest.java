@@ -38,13 +38,11 @@ import java.util.Set;
 
 import org.neo4j.kernel.api.exceptions.index.IndexEntryConflictException;
 import org.neo4j.kernel.api.impl.index.storage.DirectoryFactory;
-import org.neo4j.kernel.api.index.IndexConfiguration;
 import org.neo4j.kernel.api.index.IndexEntryUpdate;
 import org.neo4j.kernel.api.index.IndexPopulator;
 import org.neo4j.kernel.api.index.IndexUpdater;
 import org.neo4j.kernel.api.index.InternalIndexState;
 import org.neo4j.kernel.api.index.PropertyAccessor;
-import org.neo4j.kernel.api.schema_new.index.IndexBoundary;
 import org.neo4j.kernel.api.schema_new.index.NewIndexDescriptor;
 import org.neo4j.kernel.api.schema_new.index.NewIndexDescriptorFactory;
 import org.neo4j.kernel.configuration.Config;
@@ -87,9 +85,8 @@ public class LuceneSchemaIndexPopulatorTest
         provider = new LuceneSchemaIndexProvider( fs.get(), directoryFactory, testDir.directory( "folder" ),
                 NullLogProvider.getInstance(), Config.empty(), OperationalMode.single );
         indexStoreView = mock( IndexStoreView.class );
-        IndexConfiguration indexConfig = IndexConfiguration.NON_UNIQUE;
         IndexSamplingConfig samplingConfig = new IndexSamplingConfig( Config.empty() );
-        indexPopulator = provider.getPopulator( indexId, IndexBoundary.map( index ), indexConfig, samplingConfig );
+        indexPopulator = provider.getPopulator( indexId, index, samplingConfig );
         indexPopulator.create();
         indexPopulator.configureSampling( true );
     }

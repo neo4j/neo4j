@@ -27,8 +27,8 @@ import org.neo4j.kernel.api.impl.index.ReadOnlyAbstractDatabaseIndex;
 import org.neo4j.kernel.api.impl.index.partition.ReadOnlyIndexPartitionFactory;
 import org.neo4j.kernel.api.impl.index.storage.PartitionedIndexStorage;
 import org.neo4j.kernel.api.impl.schema.writer.LuceneIndexWriter;
-import org.neo4j.kernel.api.index.IndexConfiguration;
 import org.neo4j.kernel.api.index.PropertyAccessor;
+import org.neo4j.kernel.api.schema_new.index.NewIndexDescriptor;
 import org.neo4j.kernel.impl.api.index.sampling.IndexSamplingConfig;
 import org.neo4j.storageengine.api.schema.IndexReader;
 
@@ -37,10 +37,10 @@ import org.neo4j.storageengine.api.schema.IndexReader;
  */
 public class ReadOnlyDatabaseSchemaIndex extends ReadOnlyAbstractDatabaseIndex<LuceneSchemaIndex> implements SchemaIndex
 {
-    public ReadOnlyDatabaseSchemaIndex( PartitionedIndexStorage indexStorage, IndexConfiguration indexConfig,
+    public ReadOnlyDatabaseSchemaIndex( PartitionedIndexStorage indexStorage, NewIndexDescriptor descriptor,
             IndexSamplingConfig samplingConfig, ReadOnlyIndexPartitionFactory readOnlyIndexPartitionFactory )
     {
-        super( new LuceneSchemaIndex( indexStorage, indexConfig, samplingConfig, readOnlyIndexPartitionFactory ) );
+        super( new LuceneSchemaIndex( indexStorage, descriptor, samplingConfig, readOnlyIndexPartitionFactory ) );
     }
 
     @Override

@@ -20,6 +20,7 @@
 package org.neo4j.kernel.api.index;
 
 import org.neo4j.collection.primitive.PrimitiveLongIterator;
+import org.neo4j.kernel.api.exceptions.index.IndexNotApplicableKernelException;
 import org.neo4j.kernel.api.schema_new.IndexQuery;
 import org.neo4j.storageengine.api.schema.IndexReader;
 import org.neo4j.storageengine.api.schema.IndexSampler;
@@ -34,9 +35,9 @@ public class DelegatingIndexReader implements IndexReader
     }
 
     @Override
-    public long countIndexedNodes( long nodeId, Object propertyValue )
+    public long countIndexedNodes( long nodeId, Object... propertyValues )
     {
-        return delegate.countIndexedNodes( nodeId, propertyValue );
+        return delegate.countIndexedNodes( nodeId, propertyValues );
     }
 
     @Override
@@ -46,7 +47,7 @@ public class DelegatingIndexReader implements IndexReader
     }
 
     @Override
-    public PrimitiveLongIterator query( IndexQuery... predicates )
+    public PrimitiveLongIterator query( IndexQuery... predicates ) throws IndexNotApplicableKernelException
     {
         return delegate.query( predicates );
     }

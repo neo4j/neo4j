@@ -38,7 +38,6 @@ import org.neo4j.helpers.collection.Visitor;
 import org.neo4j.kernel.api.exceptions.index.FlipFailedKernelException;
 import org.neo4j.kernel.api.exceptions.index.IndexEntryConflictException;
 import org.neo4j.kernel.api.exceptions.index.IndexPopulationFailedKernelException;
-import org.neo4j.kernel.api.index.IndexConfiguration;
 import org.neo4j.kernel.api.index.IndexEntryUpdate;
 import org.neo4j.kernel.api.index.IndexPopulator;
 import org.neo4j.kernel.api.index.IndexUpdater;
@@ -46,8 +45,6 @@ import org.neo4j.kernel.api.index.NodeUpdates;
 import org.neo4j.kernel.api.index.PropertyAccessor;
 import org.neo4j.kernel.api.index.SchemaIndexProvider;
 import org.neo4j.kernel.api.index.SchemaIndexProvider.Descriptor;
-import org.neo4j.kernel.api.schema.IndexDescriptor;
-import org.neo4j.kernel.api.schema_new.index.IndexBoundary;
 import org.neo4j.kernel.api.schema_new.index.NewIndexDescriptor;
 import org.neo4j.logging.Log;
 import org.neo4j.logging.LogProvider;
@@ -76,7 +73,7 @@ import static org.neo4j.kernel.impl.api.index.IndexPopulationFailure.failure;
  * Usage of this class should be something like:
  * <ol>
  * <li>Instantiation.</li>
- * <li>One or more calls to {@link #addPopulator(IndexPopulator, long, IndexDescriptor, Descriptor, IndexConfiguration,
+ * <li>One or more calls to {@link #addPopulator(IndexPopulator, long, NewIndexDescriptor, Descriptor,
  * FlippableIndexProxy, FailedIndexProxyFactory, String)}.</li>
  * <li>Call to {@link #create()} to create data structures and files to start accepting updates.</li>
  * <li>Call to {@link #indexAllNodes()} (blocking call).</li>
@@ -114,23 +111,23 @@ public class MultipleIndexPopulator implements IndexPopulator
     public IndexPopulation addPopulator(
             IndexPopulator populator,
             long indexId,
-            IndexDescriptor descriptor,
-            Descriptor providerDescriptor, IndexConfiguration config,
+            NewIndexDescriptor descriptor,
+            Descriptor providerDescriptor,
             FlippableIndexProxy flipper,
             FailedIndexProxyFactory failedIndexProxyFactory,
             String indexUserDescription )
     {
-        IndexPopulation population = createPopulation( populator, indexId, descriptor, config, providerDescriptor, flipper,
+        IndexPopulation population = createPopulation( populator, indexId, descriptor, providerDescriptor, flipper,
                 failedIndexProxyFactory, indexUserDescription );
         populations.add( population );
         return population;
     }
 
-    protected IndexPopulation createPopulation( IndexPopulator populator, long indexId, IndexDescriptor descriptor,
-            IndexConfiguration config, Descriptor providerDescriptor, FlippableIndexProxy flipper,
+    protected IndexPopulation createPopulation( IndexPopulator populator, long indexId, NewIndexDescriptor descriptor,
+            Descriptor providerDescriptor, FlippableIndexProxy flipper,
             FailedIndexProxyFactory failedIndexProxyFactory, String indexUserDescription )
     {
-        return new IndexPopulation( populator, indexId, descriptor, config, providerDescriptor, flipper, failedIndexProxyFactory,
+        return new IndexPopulation( populator, indexId, descriptor, providerDescriptor, flipper, failedIndexProxyFactory,
                 indexUserDescription );
     }
 
@@ -450,7 +447,6 @@ public class MultipleIndexPopulator implements IndexPopulator
         public final IndexPopulator populator;
         final long indexId;
         final NewIndexDescriptor descriptor;
-        final IndexConfiguration config;
         final SchemaIndexProvider.Descriptor providerDescriptor;
         final IndexCountsRemover indexCountsRemover;
         final FlippableIndexProxy flipper;
@@ -460,8 +456,7 @@ public class MultipleIndexPopulator implements IndexPopulator
         IndexPopulation(
                 IndexPopulator populator,
                 long indexId,
-                IndexDescriptor descriptor,
-                IndexConfiguration config,
+                NewIndexDescriptor descriptor,
                 Descriptor providerDescriptor,
                 FlippableIndexProxy flipper,
                 FailedIndexProxyFactory failedIndexProxyFactory,
@@ -469,8 +464,7 @@ public class MultipleIndexPopulator implements IndexPopulator
         {
             this.populator = populator;
             this.indexId = indexId;
-            this.descriptor = IndexBoundary.map( descriptor );
-            this.config = config;
+            this.descriptor = descriptor;
             this.providerDescriptor = providerDescriptor;
             this.flipper = flipper;
             this.failedIndexProxyFactory = failedIndexProxyFactory;
@@ -480,7 +474,7 @@ public class MultipleIndexPopulator implements IndexPopulator
 
         private void flipToFailed( Throwable t )
         {
-            flipper.flipTo( new FailedIndexProxy( IndexBoundary.map( descriptor ), config,
+            flipper.flipTo( new FailedIndexProxy( descriptor,
                     providerDescriptor, indexUserDescription,
                     populator, failure( t ), indexCountsRemover, logProvider ) );
         }

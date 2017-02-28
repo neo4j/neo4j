@@ -34,6 +34,7 @@ import org.neo4j.graphdb.schema.IndexDefinition;
 import org.neo4j.helpers.collection.Iterators;
 import org.neo4j.kernel.api.ReadOperations;
 import org.neo4j.kernel.api.Statement;
+import org.neo4j.kernel.api.exceptions.index.IndexNotApplicableKernelException;
 import org.neo4j.kernel.api.exceptions.index.IndexNotFoundKernelException;
 import org.neo4j.kernel.api.exceptions.schema.SchemaRuleNotFoundException;
 import org.neo4j.kernel.api.schema.IndexDescriptorFactory;
@@ -474,7 +475,7 @@ public class IndexingAcceptanceTest
 
     @Test
     public void shouldSupportIndexSeekByPrefix()
-            throws SchemaRuleNotFoundException, IndexNotFoundKernelException
+            throws SchemaRuleNotFoundException, IndexNotFoundKernelException, IndexNotApplicableKernelException
     {
         // GIVEN
         GraphDatabaseService db = dbRule.getGraphDatabaseAPI();
@@ -499,7 +500,7 @@ public class IndexingAcceptanceTest
 
     @Test
     public void shouldIncludeNodesCreatedInSameTxInIndexSeekByPrefix()
-            throws SchemaRuleNotFoundException, IndexNotFoundKernelException
+            throws SchemaRuleNotFoundException, IndexNotFoundKernelException, IndexNotApplicableKernelException
     {
         // GIVEN
         GraphDatabaseService db = dbRule.getGraphDatabaseAPI();
@@ -524,7 +525,7 @@ public class IndexingAcceptanceTest
 
     @Test
     public void shouldNotIncludeNodesDeletedInSameTxInIndexSeekByPrefix()
-            throws SchemaRuleNotFoundException, IndexNotFoundKernelException
+            throws SchemaRuleNotFoundException, IndexNotFoundKernelException, IndexNotApplicableKernelException
     {
         // GIVEN
         GraphDatabaseService db = dbRule.getGraphDatabaseAPI();
@@ -555,7 +556,7 @@ public class IndexingAcceptanceTest
 
     @Test
     public void shouldConsiderNodesChangedInSameTxInIndexPrefixSearch()
-            throws SchemaRuleNotFoundException, IndexNotFoundKernelException
+            throws SchemaRuleNotFoundException, IndexNotFoundKernelException, IndexNotApplicableKernelException
     {
         // GIVEN
         GraphDatabaseService db = dbRule.getGraphDatabaseAPI();

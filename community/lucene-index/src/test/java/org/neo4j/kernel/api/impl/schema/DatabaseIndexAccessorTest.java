@@ -68,7 +68,8 @@ import static org.neo4j.test.rule.concurrent.ThreadingRule.waitingWhileIn;
 @RunWith( Parameterized.class )
 public class DatabaseIndexAccessorTest
 {
-    private static final IndexDescriptor SOME_INDEX_DESCRIPTOR = IndexDescriptorFactory.of( 1, 1 );
+    public static final int PROP_ID = 1;
+    private static final NewIndexDescriptor SOME_INDEX_DESCRIPTOR = NewIndexDescriptorFactory.forLabel( 1, PROP_ID );
 
     @Rule
     public final ThreadingRule threading = new ThreadingRule();
@@ -82,7 +83,9 @@ public class DatabaseIndexAccessorTest
     private final long nodeId = 1, nodeId2 = 2;
     private final Object value = "value", value2 = 40;
     private DirectoryFactory.InMemoryDirectoryFactory dirFactory;
-    private NewIndexDescriptor index = NewIndexDescriptorFactory.forLabel( 0, 0 );
+    private static final NewIndexDescriptor indexDescriptor = NewIndexDescriptorFactory.forLabel( 0, PROP_ID );
+    private static final NewIndexDescriptor uniqueIndexDescriptor = NewIndexDescriptorFactory
+            .uniqueForLabel( 1, PROP_ID );
 
     @Parameterized.Parameters( name = "{0}" )
     public static Collection<IOFunction<DirectoryFactory,LuceneIndexAccessor>[]> implementations()
@@ -90,7 +93,7 @@ public class DatabaseIndexAccessorTest
         final File dir = new File( "dir" );
         return Arrays.asList(
                 arg( dirFactory1 -> {
-                    SchemaIndex index = LuceneSchemaIndexBuilder.create()
+                    SchemaIndex index = LuceneSchemaIndexBuilder.create( indexDescriptor )
                             .withFileSystem( fileSystemRule.get() )
                             .withDirectoryFactory( dirFactory1 )
                             .withIndexRootFolder( dir )
@@ -102,8 +105,7 @@ public class DatabaseIndexAccessorTest
                     return new LuceneIndexAccessor( index, SOME_INDEX_DESCRIPTOR );
                 } ),
                 arg( dirFactory1 -> {
-                    SchemaIndex index = LuceneSchemaIndexBuilder.create()
-                            .uniqueIndex()
+                    SchemaIndex index = LuceneSchemaIndexBuilder.create( uniqueIndexDescriptor )
                             .withFileSystem( fileSystemRule.get() )
                             .withDirectoryFactory( dirFactory1 )
                             .withIndexRootFolder( dir )
@@ -145,69 +147,70 @@ public class DatabaseIndexAccessorTest
         IndexReader reader = accessor.newReader();
 
         // WHEN
-        PrimitiveLongIterator results = reader.query( IndexQuery.exists( 1 ) );
+        PrimitiveLongIterator results = reader.query( IndexQuery.exists( PROP_ID ) );
 
         // THEN
         assertEquals( asSet( nodeId, nodeId2 ), PrimitiveLongCollections.toSet( results ) );
-        assertEquals( asSet( nodeId ), PrimitiveLongCollections.toSet( reader.query( IndexQuery.exact( 1, value ) ) ) );
+        assertEquals( asSet( nodeId ),
+                PrimitiveLongCollections.toSet( reader.query( IndexQuery.exact( PROP_ID, value ) ) ) );
         reader.close();
     }
 
     @Test
-    public void indexStringRangeQuery() throws IOException, IndexEntryConflictException
+    public void indexStringRangeQuery() throws Exception
     {
-        updateAndCommit( asList( add( 1, "A" ), add( 2, "B" ), add( 3, "C" ), add( 4, "" ) ) );
+        updateAndCommit( asList( add( PROP_ID, "A" ), add( 2, "B" ), add( 3, "C" ), add( 4, "" ) ) );
 
         IndexReader reader = accessor.newReader();
 
-        PrimitiveLongIterator rangeFromBInclusive = reader.query( range( 1, "B", true, null, false ) );
+        PrimitiveLongIterator rangeFromBInclusive = reader.query( range( PROP_ID, "B", true, null, false ) );
         assertThat( PrimitiveLongCollections.asArray( rangeFromBInclusive ), LongArrayMatcher.of( 2, 3 ) );
 
-        PrimitiveLongIterator rangeFromANonInclusive = reader.query( range( 1, "A", false, null, false ) );
+        PrimitiveLongIterator rangeFromANonInclusive = reader.query( range( PROP_ID, "A", false, null, false ) );
         assertThat( PrimitiveLongCollections.asArray( rangeFromANonInclusive ), LongArrayMatcher.of( 2, 3 ) );
 
-        PrimitiveLongIterator emptyLowInclusive = reader.query( range( 1, "", true, null, false ) );
-        assertThat( PrimitiveLongCollections.asArray( emptyLowInclusive ), LongArrayMatcher.of( 1, 2, 3, 4 ) );
+        PrimitiveLongIterator emptyLowInclusive = reader.query( range( PROP_ID, "", true, null, false ) );
+        assertThat( PrimitiveLongCollections.asArray( emptyLowInclusive ), LongArrayMatcher.of( PROP_ID, 2, 3, 4 ) );
 
-        PrimitiveLongIterator emptyUpperNonInclusive = reader.query( range( 1, "B", true, "", false ) );
+        PrimitiveLongIterator emptyUpperNonInclusive = reader.query( range( PROP_ID, "B", true, "", false ) );
         assertThat( PrimitiveLongCollections.asArray( emptyUpperNonInclusive ), LongArrayMatcher.emptyArrayMatcher() );
 
-        PrimitiveLongIterator emptyInterval = reader.query( range( 1, "", true, "", true ) );
+        PrimitiveLongIterator emptyInterval = reader.query( range( PROP_ID, "", true, "", true ) );
         assertThat( PrimitiveLongCollections.asArray( emptyInterval ), LongArrayMatcher.of( 4 ) );
 
-        PrimitiveLongIterator emptyAllNonInclusive = reader.query( range( 1, "", false, null, false ) );
-        assertThat( PrimitiveLongCollections.asArray( emptyAllNonInclusive ), LongArrayMatcher.of( 1, 2, 3 ) );
+        PrimitiveLongIterator emptyAllNonInclusive = reader.query( range( PROP_ID, "", false, null, false ) );
+        assertThat( PrimitiveLongCollections.asArray( emptyAllNonInclusive ), LongArrayMatcher.of( PROP_ID, 2, 3 ) );
 
-        PrimitiveLongIterator nullNonInclusive = reader.query( range( 1, (String)null, false, null, false ) );
-        assertThat( PrimitiveLongCollections.asArray( nullNonInclusive ), LongArrayMatcher.of( 1, 2, 3, 4 ) );
+        PrimitiveLongIterator nullNonInclusive = reader.query( range( PROP_ID, (String) null, false, null, false ) );
+        assertThat( PrimitiveLongCollections.asArray( nullNonInclusive ), LongArrayMatcher.of( PROP_ID, 2, 3, 4 ) );
 
-        PrimitiveLongIterator nullInclusive = reader.query( range( 1, (String)null, false, null, false ) );
-        assertThat( PrimitiveLongCollections.asArray( nullInclusive ), LongArrayMatcher.of( 1, 2, 3, 4 ) );
+        PrimitiveLongIterator nullInclusive = reader.query( range( PROP_ID, (String) null, false, null, false ) );
+        assertThat( PrimitiveLongCollections.asArray( nullInclusive ), LongArrayMatcher.of( PROP_ID, 2, 3, 4 ) );
     }
 
     @Test
-    public void indexNumberRangeQuery() throws IOException, IndexEntryConflictException
+    public void indexNumberRangeQuery() throws Exception
     {
         updateAndCommit( asList( add( 1, 1 ), add( 2, 2 ), add( 3, 3 ), add( 4, 4 ), add( 5, Double.NaN ) ) );
 
         IndexReader reader = accessor.newReader();
 
-        PrimitiveLongIterator rangeTwoThree = reader.query( range( 1, 2, true, 3, true ) );
+        PrimitiveLongIterator rangeTwoThree = reader.query( range( PROP_ID, 2, true, 3, true ) );
         assertThat( PrimitiveLongCollections.asArray( rangeTwoThree ), LongArrayMatcher.of( 2, 3 ) );
 
-        PrimitiveLongIterator infiniteMaxRange = reader.query( range( 1, 2, true, Long.MAX_VALUE, true ) );
+        PrimitiveLongIterator infiniteMaxRange = reader.query( range( PROP_ID, 2, true, Long.MAX_VALUE, true ) );
         assertThat( PrimitiveLongCollections.asArray( infiniteMaxRange ), LongArrayMatcher.of( 2, 3, 4 ) );
 
-        PrimitiveLongIterator infiniteMinRange = reader.query( range( 1, Long.MIN_VALUE, true, 3, true ) );
-        assertThat( PrimitiveLongCollections.asArray( infiniteMinRange ), LongArrayMatcher.of( 1, 2, 3 ) );
+        PrimitiveLongIterator infiniteMinRange = reader.query( range( PROP_ID, Long.MIN_VALUE, true, 3, true ) );
+        assertThat( PrimitiveLongCollections.asArray( infiniteMinRange ), LongArrayMatcher.of( PROP_ID, 2, 3 ) );
 
-        PrimitiveLongIterator maxNanInterval = reader.query( range( 1, 3, true, Double.NaN, true ) );
+        PrimitiveLongIterator maxNanInterval = reader.query( range( PROP_ID, 3, true, Double.NaN, true ) );
         assertThat( PrimitiveLongCollections.asArray( maxNanInterval ), LongArrayMatcher.of( 3, 4, 5 ) );
 
-        PrimitiveLongIterator minNanInterval = reader.query( range( 1, Double.NaN, true, 5, true ) );
+        PrimitiveLongIterator minNanInterval = reader.query( range( PROP_ID, Double.NaN, true, 5, true ) );
         assertThat( PrimitiveLongCollections.asArray( minNanInterval ), LongArrayMatcher.emptyArrayMatcher() );
 
-        PrimitiveLongIterator nanInterval = reader.query( range( 1, Double.NaN, true, Double.NaN, true ) );
+        PrimitiveLongIterator nanInterval = reader.query( range( PROP_ID, Double.NaN, true, Double.NaN, true ) );
         assertThat( PrimitiveLongCollections.asArray( nanInterval ), LongArrayMatcher.of( 5 ) );
     }
 
@@ -222,7 +225,7 @@ public class DatabaseIndexAccessorTest
         updateAndCommit( asList( remove( nodeId, value ) ) );
 
         // THEN
-        assertEquals( asSet( nodeId ), PrimitiveLongCollections.toSet( reader.query( exact( 1, value ) ) ) );
+        assertEquals( asSet( nodeId ), PrimitiveLongCollections.toSet( reader.query( exact( PROP_ID, value ) ) ) );
         reader.close();
     }
 
@@ -236,10 +239,12 @@ public class DatabaseIndexAccessorTest
         IndexReader secondReader = accessor.newReader();
 
         // THEN
-        assertEquals( asSet( nodeId ), PrimitiveLongCollections.toSet( firstReader.query( exact( 1, value ) ) ) );
-        assertEquals( asSet(  ), PrimitiveLongCollections.toSet( firstReader.query( exact( 1,value2 ) ) ) );
-        assertEquals( asSet( nodeId ), PrimitiveLongCollections.toSet( secondReader.query( exact( 1, value ) ) ) );
-        assertEquals( asSet( nodeId2 ), PrimitiveLongCollections.toSet( secondReader.query( exact( 1, value2 ) ) ) );
+        assertEquals( asSet( nodeId ), PrimitiveLongCollections.toSet( firstReader.query( exact( PROP_ID, value ) ) ) );
+        assertEquals( asSet(), PrimitiveLongCollections.toSet( firstReader.query( exact( PROP_ID, value2 ) ) ) );
+        assertEquals( asSet( nodeId ),
+                PrimitiveLongCollections.toSet( secondReader.query( exact( PROP_ID, value ) ) ) );
+        assertEquals( asSet( nodeId2 ),
+                PrimitiveLongCollections.toSet( secondReader.query( exact( PROP_ID, value2 ) ) ) );
         firstReader.close();
         secondReader.close();
     }
@@ -248,13 +253,11 @@ public class DatabaseIndexAccessorTest
     public void canAddNewData() throws Exception
     {
         // WHEN
-        updateAndCommit( asList(
-                add( nodeId, value ),
-                add( nodeId2, value2 ) ) );
+        updateAndCommit( asList( add( nodeId, value ), add( nodeId2, value2 ) ) );
         IndexReader reader = accessor.newReader();
 
         // THEN
-        assertEquals( asSet( nodeId ), PrimitiveLongCollections.toSet( reader.query( exact( 1, value ) ) ) );
+        assertEquals( asSet( nodeId ), PrimitiveLongCollections.toSet( reader.query( exact( PROP_ID, value ) ) ) );
         reader.close();
     }
 
@@ -269,8 +272,9 @@ public class DatabaseIndexAccessorTest
         IndexReader reader = accessor.newReader();
 
         // THEN
-        assertEquals( asSet( nodeId ), PrimitiveLongCollections.toSet( reader.query( exact( 1, value2 ) ) ) );
-        assertEquals( emptySetOf( Long.class ), PrimitiveLongCollections.toSet( reader.query( exact( 1, value ) ) ) );
+        assertEquals( asSet( nodeId ), PrimitiveLongCollections.toSet( reader.query( exact( PROP_ID, value2 ) ) ) );
+        assertEquals( emptySetOf( Long.class ),
+                PrimitiveLongCollections.toSet( reader.query( exact( PROP_ID, value ) ) ) );
         reader.close();
     }
 
@@ -278,17 +282,15 @@ public class DatabaseIndexAccessorTest
     public void canRemoveExistingData() throws Exception
     {
         // GIVEN
-        updateAndCommit( asList(
-                add( nodeId, value ),
-                add( nodeId2, value2 ) ) );
+        updateAndCommit( asList( add( nodeId, value ), add( nodeId2, value2 ) ) );
 
         // WHEN
         updateAndCommit( asList( remove( nodeId, value ) ) );
         IndexReader reader = accessor.newReader();
 
         // THEN
-        assertEquals( asSet( nodeId2 ), PrimitiveLongCollections.toSet( reader.query( exact( 1, value2 ) ) ) );
-        assertEquals( asSet(  ), PrimitiveLongCollections.toSet( reader.query( exact( 1, value ) ) ) );
+        assertEquals( asSet( nodeId2 ), PrimitiveLongCollections.toSet( reader.query( exact( PROP_ID, value2 ) ) ) );
+        assertEquals( asSet(), PrimitiveLongCollections.toSet( reader.query( exact( PROP_ID, value ) ) ) );
         reader.close();
     }
 
@@ -296,16 +298,13 @@ public class DatabaseIndexAccessorTest
     public void shouldStopSamplingWhenIndexIsDropped() throws Exception
     {
         // given
-        updateAndCommit( asList(
-                add( nodeId, value ),
-                add( nodeId2, value2 ) ) );
+        updateAndCommit( asList( add( nodeId, value ), add( nodeId2, value2 ) ) );
 
         // when
         IndexReader indexReader = accessor.newReader(); // needs to be acquired before drop() is called
         IndexSampler indexSampler = indexReader.createSampler();
 
-        Future<Void> drop = threading.executeAndAwait( (IOFunction<Void,Void>) nothing ->
-        {
+        Future<Void> drop = threading.executeAndAwait( (IOFunction<Void,Void>) nothing -> {
             accessor.drop();
             return nothing;
         }, null, waitingWhileIn( TaskCoordinator.class, "awaitCompletion" ), 3, SECONDS );
@@ -327,17 +326,17 @@ public class DatabaseIndexAccessorTest
 
     private IndexEntryUpdate add( long nodeId, Object value )
     {
-        return IndexEntryUpdate.add( nodeId, index, value );
+        return IndexEntryUpdate.add( nodeId, indexDescriptor, value );
     }
 
     private IndexEntryUpdate remove( long nodeId, Object value )
     {
-        return IndexEntryUpdate.remove( nodeId, index, value );
+        return IndexEntryUpdate.remove( nodeId, indexDescriptor, value );
     }
 
     private IndexEntryUpdate change( long nodeId, Object valueBefore, Object valueAfter )
     {
-        return IndexEntryUpdate.change( nodeId, index, valueBefore, valueAfter );
+        return IndexEntryUpdate.change( nodeId, indexDescriptor, valueBefore, valueAfter );
     }
 
     private void updateAndCommit( List<IndexEntryUpdate> nodePropertyUpdates )
@@ -351,5 +350,4 @@ public class DatabaseIndexAccessorTest
             }
         }
     }
-
 }

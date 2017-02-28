@@ -57,7 +57,6 @@ import org.neo4j.kernel.api.exceptions.KernelException;
 import org.neo4j.kernel.api.exceptions.index.IndexEntryConflictException;
 import org.neo4j.kernel.api.exceptions.schema.AlreadyConstrainedException;
 import org.neo4j.kernel.api.exceptions.schema.CreateConstraintFailureException;
-import org.neo4j.kernel.api.index.IndexConfiguration;
 import org.neo4j.kernel.api.index.IndexEntryUpdate;
 import org.neo4j.kernel.api.index.IndexPopulator;
 import org.neo4j.kernel.api.index.InternalIndexState;
@@ -72,7 +71,6 @@ import org.neo4j.kernel.api.schema_new.LabelSchemaDescriptor;
 import org.neo4j.kernel.api.schema_new.SchemaDescriptorFactory;
 import org.neo4j.kernel.api.schema_new.constaints.ConstraintDescriptor;
 import org.neo4j.kernel.api.schema_new.constaints.ConstraintDescriptorFactory;
-import org.neo4j.kernel.api.schema_new.index.IndexBoundary;
 import org.neo4j.kernel.api.schema_new.index.NewIndexDescriptor;
 import org.neo4j.kernel.api.schema_new.index.NewIndexDescriptorFactory;
 import org.neo4j.kernel.configuration.Config;
@@ -453,10 +451,7 @@ public class BatchInserterImpl implements BatchInserter, IndexConfigStoreProvide
             IndexRule rule = rules[i];
             descriptors[i] = rule.getIndexDescriptor();
             populators[i] = schemaIndexProviders.apply( rule.getProviderDescriptor() )
-                                                .getPopulator( rule.getId(),
-                                                        IndexBoundary.map( descriptors[i] ),
-                                                        IndexConfiguration.of( rule ),
-                                                        new IndexSamplingConfig( config ) );
+                                                .getPopulator( rule.getId(), descriptors[i], new IndexSamplingConfig( config ) );
             populators[i].create();
         }
 

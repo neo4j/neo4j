@@ -56,19 +56,19 @@ public abstract class LuceneIndexPopulatingUpdater implements IndexUpdater
         case ADDED:
             added( update );
             writer.updateDocument( LuceneDocumentStructure.newTermForChangeOrRemove( nodeId ),
-                    LuceneDocumentStructure.documentRepresentingProperty( nodeId, update.values()[0] ) );
+                    LuceneDocumentStructure.documentRepresentingProperties( nodeId, update.values() ) );
             break;
         case CHANGED:
             changed( update );
             writer.updateDocument( LuceneDocumentStructure.newTermForChangeOrRemove( nodeId ),
-                    LuceneDocumentStructure.documentRepresentingProperty( nodeId, update.values()[0] ) );
+                    LuceneDocumentStructure.documentRepresentingProperties( nodeId, update.values() ) );
             break;
         case REMOVED:
             removed( update );
             writer.deleteDocuments( LuceneDocumentStructure.newTermForChangeOrRemove( nodeId ) );
             break;
         default:
-            throw new IllegalStateException( "Unknown update mode " + update.values()[0] );
+            throw new IllegalStateException( "Unknown update mode " + update.values() );
         }
     }
 

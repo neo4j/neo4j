@@ -36,12 +36,11 @@ import org.neo4j.kernel.api.exceptions.index.IndexNotFoundKernelException;
 import org.neo4j.kernel.api.exceptions.index.IndexPopulationFailedKernelException;
 import org.neo4j.kernel.api.exceptions.index.IndexProxyAlreadyClosedKernelException;
 import org.neo4j.kernel.api.exceptions.schema.UniquePropertyValueValidationException;
-import org.neo4j.kernel.api.index.IndexConfiguration;
-import org.neo4j.kernel.api.schema.IndexDescriptor;
 import org.neo4j.kernel.api.index.IndexUpdater;
 import org.neo4j.kernel.api.index.InternalIndexState;
 import org.neo4j.kernel.api.index.PropertyAccessor;
 import org.neo4j.kernel.api.index.SchemaIndexProvider;
+import org.neo4j.kernel.api.schema_new.index.NewIndexDescriptor;
 import org.neo4j.kernel.impl.api.index.updater.DelegatingIndexUpdater;
 import org.neo4j.storageengine.api.schema.IndexReader;
 import org.neo4j.storageengine.api.schema.PopulationProgress;
@@ -211,7 +210,7 @@ public class FlippableIndexProxy implements IndexProxy
     }
 
     @Override
-    public IndexDescriptor getDescriptor()
+    public NewIndexDescriptor getDescriptor()
     {
         lock.readLock().lock();
         try
@@ -412,20 +411,6 @@ public class FlippableIndexProxy implements IndexProxy
         finally
         {
             lock.writeLock().unlock();
-        }
-    }
-
-    @Override
-    public IndexConfiguration config()
-    {
-        lock.readLock().lock();
-        try
-        {
-            return delegate.config();
-        }
-        finally
-        {
-            lock.readLock().unlock();
         }
     }
 

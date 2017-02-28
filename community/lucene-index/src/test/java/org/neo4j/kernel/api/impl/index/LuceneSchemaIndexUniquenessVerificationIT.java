@@ -50,6 +50,8 @@ import org.neo4j.kernel.api.impl.schema.LuceneSchemaIndexBuilder;
 import org.neo4j.kernel.api.impl.schema.SchemaIndex;
 import org.neo4j.kernel.api.index.PropertyAccessor;
 import org.neo4j.kernel.api.properties.Property;
+import org.neo4j.kernel.api.schema_new.index.NewIndexDescriptor;
+import org.neo4j.kernel.api.schema_new.index.NewIndexDescriptorFactory;
 import org.neo4j.test.Randoms;
 import org.neo4j.test.rule.TestDirectory;
 import org.neo4j.test.rule.fs.DefaultFileSystemRule;
@@ -64,6 +66,7 @@ public class LuceneSchemaIndexUniquenessVerificationIT
 {
     private static final int DOCS_PER_PARTITION = ThreadLocalRandom.current().nextInt( 10, 100 );
     private static final int PROPERTY_KEY_ID = 42;
+    private static final NewIndexDescriptor descriptor = NewIndexDescriptorFactory.uniqueForLabel( 0, PROPERTY_KEY_ID );
 
     @Rule
     public TestDirectory testDir = TestDirectory.testDirectory();
@@ -95,8 +98,7 @@ public class LuceneSchemaIndexUniquenessVerificationIT
     {
         System.setProperty( "luceneSchemaIndex.maxPartitionSize", String.valueOf( DOCS_PER_PARTITION ) );
 
-        index = LuceneSchemaIndexBuilder.create()
-                .uniqueIndex()
+        index = LuceneSchemaIndexBuilder.create( descriptor )
                 .withFileSystem( fileSystemRule.get() )
                 .withIndexRootFolder( testDir.directory( "uniquenessVerification" ) )
                 .withIndexIdentifier( "index" )
@@ -295,7 +297,7 @@ public class LuceneSchemaIndexUniquenessVerificationIT
         PropertyValue[] dataArray = data.toArray( new PropertyValue[data.size()] );
         for ( int i = 0; i < dataArray.length; i++ )
         {
-            Document doc = LuceneDocumentStructure.documentRepresentingProperty( i, dataArray[i].value );
+            Document doc = LuceneDocumentStructure.documentRepresentingProperties( i, dataArray[i].value );
             index.getIndexWriter().addDocument( doc );
         }
         index.maybeRefreshBlocking();

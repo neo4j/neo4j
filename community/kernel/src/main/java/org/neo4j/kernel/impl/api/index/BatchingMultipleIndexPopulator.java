@@ -40,11 +40,11 @@ import org.neo4j.function.Predicates;
 import org.neo4j.helpers.Exceptions;
 import org.neo4j.kernel.api.exceptions.index.IndexEntryConflictException;
 import org.neo4j.kernel.api.exceptions.index.IndexPopulationFailedKernelException;
-import org.neo4j.kernel.api.index.IndexConfiguration;
 import org.neo4j.kernel.api.index.IndexEntryUpdate;
 import org.neo4j.kernel.api.schema.IndexDescriptor;
 import org.neo4j.kernel.api.index.IndexPopulator;
 import org.neo4j.kernel.api.index.SchemaIndexProvider;
+import org.neo4j.kernel.api.schema_new.index.NewIndexDescriptor;
 import org.neo4j.logging.LogProvider;
 import org.neo4j.storageengine.api.schema.PopulationProgress;
 import org.neo4j.unsafe.impl.internal.dragons.FeatureToggles;
@@ -121,10 +121,10 @@ public class BatchingMultipleIndexPopulator extends MultipleIndexPopulator
 
     @Override
     protected IndexPopulation createPopulation( IndexPopulator populator, long indexId,
-            IndexDescriptor descriptor, IndexConfiguration config, SchemaIndexProvider.Descriptor providerDescriptor,
+            NewIndexDescriptor descriptor, SchemaIndexProvider.Descriptor providerDescriptor,
             FlippableIndexProxy flipper, FailedIndexProxyFactory failedIndexProxyFactory, String indexUserDescription )
     {
-        return new BatchingIndexPopulation( populator, indexId, descriptor, config, providerDescriptor, flipper,
+        return new BatchingIndexPopulation( populator, indexId, descriptor, providerDescriptor, flipper,
                 failedIndexProxyFactory, indexUserDescription );
     }
 
@@ -338,12 +338,11 @@ public class BatchingMultipleIndexPopulator extends MultipleIndexPopulator
      */
     private class BatchingIndexPopulation extends IndexPopulation
     {
-        BatchingIndexPopulation( IndexPopulator populator, long indexId, IndexDescriptor descriptor,
-                IndexConfiguration config, SchemaIndexProvider.Descriptor providerDescriptor,
-                FlippableIndexProxy flipper, FailedIndexProxyFactory failedIndexProxyFactory,
-                String indexUserDescription )
+        BatchingIndexPopulation( IndexPopulator populator, long indexId, NewIndexDescriptor descriptor,
+                SchemaIndexProvider.Descriptor providerDescriptor, FlippableIndexProxy flipper,
+                FailedIndexProxyFactory failedIndexProxyFactory, String indexUserDescription )
         {
-            super( populator, indexId, descriptor, config, providerDescriptor, flipper, failedIndexProxyFactory,
+            super( populator, indexId, descriptor, providerDescriptor, flipper, failedIndexProxyFactory,
                     indexUserDescription );
         }
 

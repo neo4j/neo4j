@@ -45,8 +45,8 @@ public class SchemaBoundary
         return SchemaDescriptorFactory.forRelType( descriptor.getRelationshipTypeId(), descriptor.getPropertyKeyId() );
     }
 
-    public static NodePropertyDescriptor map( LabelSchemaDescriptor descriptor )
+    public static NodePropertyDescriptor map( LabelSchemaDescriptor schema )
     {
-        return IndexDescriptorFactory.getNodePropertyDescriptor( descriptor.getLabelId(), descriptor.getPropertyIds() );
+        return IndexDescriptorFactory.getNodePropertyDescriptor( schema.getLabelId(), schema.getPropertyIds() );
     }
 }

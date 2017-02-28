@@ -35,10 +35,7 @@ import java.util.function.IntPredicate;
 import org.neo4j.helpers.collection.Visitor;
 import org.neo4j.kernel.api.exceptions.index.IndexEntryConflictException;
 import org.neo4j.kernel.api.exceptions.index.IndexPopulationFailedKernelException;
-import org.neo4j.kernel.api.index.IndexConfiguration;
 import org.neo4j.kernel.api.index.IndexEntryUpdate;
-import org.neo4j.kernel.api.schema.IndexDescriptor;
-import org.neo4j.kernel.api.schema.IndexDescriptorFactory;
 import org.neo4j.kernel.api.index.IndexPopulator;
 import org.neo4j.kernel.api.index.IndexUpdater;
 import org.neo4j.kernel.api.index.NodeUpdates;
@@ -115,7 +112,7 @@ public class MultipleIndexPopulatorUpdatesTest
         IndexUpdater indexUpdater = mock( IndexUpdater.class );
         when( populator.newPopulatingUpdater( storeView ) ).thenReturn( indexUpdater );
 
-        addPopulator( indexPopulator, populator, 1, IndexDescriptorFactory.of( 1, 1 ) );
+        addPopulator( indexPopulator, populator, 1, NewIndexDescriptorFactory.forLabel( 1, 1 ) );
 
         indexPopulator.create();
         StoreScan<IndexPopulationFailedKernelException> storeScan = indexPopulator.indexAllNodes();
@@ -151,19 +148,18 @@ public class MultipleIndexPopulatorUpdatesTest
     }
 
     private MultipleIndexPopulator.IndexPopulation addPopulator( MultipleIndexPopulator multipleIndexPopulator,
-            IndexPopulator indexPopulator, long indexId, IndexDescriptor descriptor )
+            IndexPopulator indexPopulator, long indexId, NewIndexDescriptor descriptor )
     {
-        return addPopulator( multipleIndexPopulator, indexId, descriptor, indexPopulator, mock( FlippableIndexProxy.class ),
-                mock( FailedIndexProxyFactory.class ) );
+        return addPopulator( multipleIndexPopulator, indexId, descriptor, indexPopulator,
+                mock( FlippableIndexProxy.class ), mock( FailedIndexProxyFactory.class ) );
     }
 
     private MultipleIndexPopulator.IndexPopulation addPopulator( MultipleIndexPopulator multipleIndexPopulator,
-            long indexId, IndexDescriptor descriptor,
-            IndexPopulator indexPopulator,
+            long indexId, NewIndexDescriptor descriptor, IndexPopulator indexPopulator,
             FlippableIndexProxy flippableIndexProxy, FailedIndexProxyFactory failedIndexProxyFactory )
     {
         return multipleIndexPopulator.addPopulator( indexPopulator, indexId, descriptor,
-                mock( SchemaIndexProvider.Descriptor.class ), IndexConfiguration.NON_UNIQUE,
+                mock( SchemaIndexProvider.Descriptor.class ),
                 flippableIndexProxy, failedIndexProxyFactory, "userIndexDescription" );
     }
 

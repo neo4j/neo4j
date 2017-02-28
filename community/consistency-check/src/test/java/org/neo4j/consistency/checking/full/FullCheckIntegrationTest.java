@@ -66,7 +66,6 @@ import org.neo4j.kernel.api.exceptions.TransactionFailureException;
 import org.neo4j.kernel.api.exceptions.schema.IllegalTokenNameException;
 import org.neo4j.kernel.api.exceptions.schema.TooManyLabelsException;
 import org.neo4j.kernel.api.index.IndexAccessor;
-import org.neo4j.kernel.api.index.IndexConfiguration;
 import org.neo4j.kernel.api.index.IndexEntryUpdate;
 import org.neo4j.kernel.api.index.IndexPopulator;
 import org.neo4j.kernel.api.index.IndexUpdater;
@@ -74,9 +73,6 @@ import org.neo4j.kernel.api.index.SchemaIndexProvider;
 import org.neo4j.kernel.api.labelscan.LabelScanStore;
 import org.neo4j.kernel.api.labelscan.LabelScanWriter;
 import org.neo4j.kernel.api.labelscan.NodeLabelUpdate;
-import org.neo4j.kernel.api.schema.IndexDescriptor;
-import org.neo4j.kernel.api.schema.IndexDescriptorFactory;
-import org.neo4j.kernel.api.schema_new.index.IndexBoundary;
 import org.neo4j.kernel.configuration.Config;
 import org.neo4j.kernel.impl.annotations.Documented;
 import org.neo4j.kernel.impl.api.KernelStatement;
@@ -414,11 +410,9 @@ public class FullCheckIntegrationTest
         while ( rules.hasNext() )
         {
             IndexRule rule = rules.next();
-            IndexDescriptor descriptor = IndexBoundary.map( rule.getIndexDescriptor() );
-            IndexConfiguration indexConfig = IndexConfiguration.NON_UNIQUE;
             IndexSamplingConfig samplingConfig = new IndexSamplingConfig( Config.empty() );
             IndexPopulator populator =
-                storeAccess.indexes().getPopulator( rule.getId(), descriptor, indexConfig, samplingConfig );
+                storeAccess.indexes().getPopulator( rule.getId(), rule.getIndexDescriptor(), samplingConfig );
             populator.markAsFailed( "Oh noes! I was a shiny index and then I was failed" );
             populator.close( false );
 
@@ -530,8 +524,7 @@ public class FullCheckIntegrationTest
         {
             IndexRule indexRule = indexRuleIterator.next();
             IndexAccessor accessor = fixture.directStoreAccess().indexes().getOnlineAccessor(
-                    indexRule.getId(), IndexBoundary.map( indexRule.getIndexDescriptor() ),
-                    IndexConfiguration.of( indexRule ), samplingConfig );
+                    indexRule.getId(), indexRule.getIndexDescriptor(), samplingConfig );
             IndexUpdater updater = accessor.newUpdater( IndexUpdateMode.ONLINE );
             updater.remove( asPrimitiveLongSet( indexedNodes ) );
             updater.close();
@@ -550,19 +543,14 @@ public class FullCheckIntegrationTest
     public void shouldReportNodesWithDuplicatePropertyValueInUniqueIndex() throws Exception
     {
         // given
-        IndexConfiguration indexConfig = IndexConfiguration.NON_UNIQUE;
         IndexSamplingConfig samplingConfig = new IndexSamplingConfig( Config.empty() );
         Iterator<IndexRule> indexRuleIterator =
                 new SchemaStorage( fixture.directStoreAccess().nativeStores().getSchemaStore() ).indexesGetAll();
         while ( indexRuleIterator.hasNext() )
         {
             IndexRule indexRule = indexRuleIterator.next();
-            IndexAccessor accessor = fixture.directStoreAccess()
-                                            .indexes()
-                                            .getOnlineAccessor( indexRule.getId(),
-                                                    IndexBoundary.map( indexRule.getIndexDescriptor() ),
-                                                    indexConfig,
-                                                    samplingConfig );
+            IndexAccessor accessor = fixture.directStoreAccess().indexes()
+                    .getOnlineAccessor( indexRule.getId(), indexRule.getIndexDescriptor(), samplingConfig );
             IndexUpdater updater = accessor.newUpdater( IndexUpdateMode.ONLINE );
             updater.process( IndexEntryUpdate.add( 42, indexRule.getIndexDescriptor(), "value" ) );
             updater.close();
