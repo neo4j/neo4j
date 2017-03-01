@@ -524,15 +524,22 @@ public class GraphDatabaseSettings implements LoadableConfig
     public static final Setting<File> auth_store =
             pathSetting( "unsupported.dbms.security.auth_store.location", NO_DEFAULT );
 
-    @Description("A comma separated list of procedures that are allowed full access to the database, note that this" +
-            " will enable them to bypass security. Use with care.")
-    public static final Setting<String> procedure_unrestricted = setting( "dbms.security.procedures.unrestricted", Settings.STRING, "" );
+    @Description( "A list of procedures (comma separated) that are allowed full access to the database. " +
+            "The list may contain both fully-qualified procedure names, and partial names with the wildcard '*'. " +
+            "Note that this enables these procedures to bypass security. Use with caution." )
+    public static final Setting<String> procedure_unrestricted =
+            setting( "dbms.security.procedures.unrestricted", Settings.STRING, "" );
 
     @Description( "Whether or not to release the exclusive schema lock is while building uniqueness constraints index" )
     @Internal
     public static final Setting<Boolean> release_schema_lock_while_building_constraint = setting(
             "unsupported.dbms.schema.release_lock_while_building_constraint", BOOLEAN, FALSE );
 
+    @Description( "A list of procedures (comma separated) that are to be loaded. " +
+            "The list may contain both fully-qualified procedure names, and partial names with the wildcard '*'. " +
+            "If this setting is left empty no procedures will be loaded." )
+    public static final Setting<String> procedure_whitelist =
+            setting( "dbms.security.procedures.white_list", Settings.STRING, "*" );
     // Bolt Settings
 
     @Description("Default network interface to listen for incoming connections. " +
