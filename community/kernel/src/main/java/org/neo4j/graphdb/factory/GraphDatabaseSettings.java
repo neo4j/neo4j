@@ -25,6 +25,7 @@ import java.util.concurrent.TimeUnit;
 
 import org.neo4j.configuration.Description;
 import org.neo4j.configuration.LoadableConfig;
+import org.neo4j.configuration.ReplacedBy;
 import org.neo4j.csv.reader.Configuration;
 import org.neo4j.graphdb.config.Setting;
 import org.neo4j.helpers.AdvertisedSocketAddress;
@@ -353,6 +354,7 @@ public class GraphDatabaseSettings implements LoadableConfig
                  "This configuration setting is no longer applicable as from Neo4j 3.0.3. " +
                  "Please use dbms.index_sampling.sample_size_limit instead.")
     @Deprecated
+    @ReplacedBy( "dbms.index_sampling.sample_size_limit" )
     public static final Setting<Long> index_sampling_buffer_size = setting("dbms.index_sampling.buffer_size", BYTES, "64m",
                     min( /* 1m */ 1048576L ), max( (long) Integer.MAX_VALUE ) );
 
