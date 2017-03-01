@@ -86,6 +86,6 @@ public class Usage
     {
         List<AdminCommand.Provider> providers = new ArrayList<>();
         commands.getAllProviders().forEach( providers::add );
-        return providers.stream().collect( Collectors.groupingBy( ( provider ) -> provider.commandSection() ) );
+        return providers.stream().collect( Collectors.groupingBy( AdminCommand.Provider::commandSection ) );
     }
 }

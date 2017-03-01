@@ -25,6 +25,8 @@ import java.util.List;
 import java.util.Set;
 import java.util.function.Consumer;
 
+import javax.annotation.Nonnull;
+
 import org.neo4j.commandline.arguments.Arguments;
 import org.neo4j.helpers.Service;
 import org.neo4j.helpers.collection.Iterables;
@@ -84,6 +86,7 @@ public interface AdminCommand
         /**
          * @return AdminCommandSection the command using the provider is grouped under
          */
+        @Nonnull
         public abstract AdminCommandSection commandSection();
 
         /**

@@ -50,7 +50,10 @@
       <artifactId>neo4j-collections</artifactId>
       <version>${project.version}</version>
     </dependency>
-
+    <dependency>
+      <groupId>com.google.code.findbugs</groupId>
+      <artifactId>annotations</artifactId>
+    </dependency>
     <dependency>
       <groupId>org.hamcrest</groupId>
       <artifactId>hamcrest-all</artifactId>
