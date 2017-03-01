@@ -52,10 +52,34 @@ setup_arbiter_options() {
     MAIN_CLASS="#{neo4j.mainClass}"
 
     print_start_message() {
-      port="${org_neo4j_server_webserver_port:-7474}"
-      NEO4J_SERVER_ADDRESS="${org_neo4j_server_webserver_address:-localhost}"
+      # Global default
+      NEO4J_DEFAULT_ADDRESS="${dbms_connectors_default_listen_address:-localhost}"
 
-      echo "Started neo4j (pid ${NEO4J_PID}). By default, it is available at http://${NEO4J_SERVER_ADDRESS}:${port}/"
+      if [[ "${dbms_connector_http_enabled}" == "false" ]]; then
+        # Only HTTPS connector enabled
+        # First read deprecated 'address' setting
+        NEO4J_SERVER_ADDRESS="${dbms_connector_https_address:-:7473}"
+        # Overridden by newer 'listen_address' if specified
+        NEO4J_SERVER_ADDRESS="${dbms_connector_https_listen_address:-${NEO4J_SERVER_ADDRESS}}"
+        # If it's only a port we need to add the address (it starts with a colon in that case)
+        case ${NEO4J_SERVER_ADDRESS} in
+          :*)
+            NEO4J_SERVER_ADDRESS="${NEO4J_DEFAULT_ADDRESS}${NEO4J_SERVER_ADDRESS}";;
+        esac
+        # Add protocol
+        NEO4J_SERVER_ADDRESS="https://${NEO4J_SERVER_ADDRESS}"
+      else
+        # HTTP connector enabled - same as https but different settings
+        NEO4J_SERVER_ADDRESS="${dbms_connector_http_address:-:7474}"
+        NEO4J_SERVER_ADDRESS="${dbms_connector_http_listen_address:-${NEO4J_SERVER_ADDRESS}}"
+        case ${NEO4J_SERVER_ADDRESS} in
+          :*)
+            NEO4J_SERVER_ADDRESS="${NEO4J_DEFAULT_ADDRESS}${NEO4J_SERVER_ADDRESS}";;
+        esac
+        NEO4J_SERVER_ADDRESS="http://${NEO4J_SERVER_ADDRESS}"
+      fi
+
+      echo "Started neo4j (pid ${NEO4J_PID}). It is available at ${NEO4J_SERVER_ADDRESS}/"
 
       if [[ "$(echo "${dbms_mode:-}" | tr [:lower:] [:upper:])" == "HA" ]]; then
         echo "This HA instance will be operational once it has joined the cluster."
