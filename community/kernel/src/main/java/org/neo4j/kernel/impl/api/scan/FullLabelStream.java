@@ -52,7 +52,7 @@ public class FullLabelStream implements FullStoreChangeStream, Visitor<NodeLabel
         // Keep the write for using it in visit
         this.writer = writer;
         IndexStoreView view = lazyIndexStoreView.get();
-        StoreScan<IOException> scan = view.visitNodes( ArrayUtils.EMPTY_INT_ARRAY, ALWAYS_TRUE_INT, null, this );
+        StoreScan<IOException> scan = view.visitNodes( ArrayUtils.EMPTY_INT_ARRAY, ALWAYS_TRUE_INT, null, this, true );
         scan.run();
         return count;
     }

@@ -87,7 +87,7 @@ public class DynamicIndexStoreViewTest
                 neoStores, NullLogProvider.getInstance() );
 
         StoreScan<Exception> storeScan = storeView
-                .visitNodes( new int[]{1, 2, 3}, propertyKeyIdFilter, propertyUpdateVisitor, labelUpdateVisitor );
+                .visitNodes( new int[]{1, 2, 3}, propertyKeyIdFilter, propertyUpdateVisitor, labelUpdateVisitor, false );
 
         storeScan.run();
 
@@ -114,11 +114,35 @@ public class DynamicIndexStoreViewTest
                 neoStores, NullLogProvider.getInstance() );
 
         StoreScan<Exception> storeScan = storeView
-                .visitNodes( new int[]{2, 6}, propertyKeyIdFilter, propertyUpdateVisitor, labelUpdateVisitor );
+                .visitNodes( new int[]{2, 6}, propertyKeyIdFilter, propertyUpdateVisitor, labelUpdateVisitor, false );
 
         storeScan.run();
 
         Mockito.verify( nodeStore, times( 8 ) )
+                .getRecord( anyLong(), any( NodeRecord.class ), any( RecordLoad.class ) );
+    }
+
+    @Test
+    public void shouldBeAbleToForceStoreScan() throws Exception
+    {
+        when( labelScanStore.newReader() ).thenThrow( new RuntimeException( "Should not be used" ) );
+
+        PrimitiveLongIterator labeledNodesIterator = PrimitiveLongCollections.iterator( 1, 2, 3, 4, 5, 6, 7, 8 );
+        when( nodeStore.getHighestPossibleIdInUse() ).thenReturn( 200L );
+        when( nodeStore.getHighId() ).thenReturn( 20L );
+
+        mockLabelNodeCount( countStore, 2 );
+        mockLabelNodeCount( countStore, 6 );
+
+        DynamicIndexStoreView storeView = new DynamicIndexStoreView( labelScanStore, LockService.NO_LOCK_SERVICE,
+                neoStores, NullLogProvider.getInstance() );
+
+        StoreScan<Exception> storeScan = storeView
+                .visitNodes( new int[]{2, 6}, propertyKeyIdFilter, propertyUpdateVisitor, labelUpdateVisitor, true );
+
+        storeScan.run();
+
+        Mockito.verify( nodeStore, times( 20 ) )
                 .getRecord( anyLong(), any( NodeRecord.class ), any( RecordLoad.class ) );
     }
 

@@ -47,11 +47,11 @@ import org.neo4j.kernel.api.exceptions.index.IndexEntryConflictException;
 import org.neo4j.kernel.api.exceptions.index.IndexNotFoundKernelException;
 import org.neo4j.kernel.api.exceptions.index.IndexPopulationFailedKernelException;
 import org.neo4j.kernel.api.index.IndexEntryUpdate;
-import org.neo4j.kernel.api.schema.IndexDescriptorFactory;
 import org.neo4j.kernel.api.index.NodeUpdates;
 import org.neo4j.kernel.api.index.SchemaIndexProvider;
 import org.neo4j.kernel.api.labelscan.LabelScanStore;
 import org.neo4j.kernel.api.labelscan.NodeLabelUpdate;
+import org.neo4j.kernel.api.schema.IndexDescriptorFactory;
 import org.neo4j.kernel.api.schema_new.index.NewIndexDescriptor;
 import org.neo4j.kernel.api.schema_new.index.NewIndexDescriptorFactory;
 import org.neo4j.kernel.configuration.Config;
@@ -396,10 +396,11 @@ public class MultiIndexPopulationConcurrentUpdatesIT
         public <FAILURE extends Exception> StoreScan<FAILURE> visitNodes( int[] labelIds,
                 IntPredicate propertyKeyIdFilter,
                 Visitor<NodeUpdates,FAILURE> propertyUpdatesVisitor,
-                Visitor<NodeLabelUpdate,FAILURE> labelUpdateVisitor )
+                Visitor<NodeLabelUpdate,FAILURE> labelUpdateVisitor,
+                boolean forceStoreScan )
         {
-            StoreScan<FAILURE> storeScan =
-                    super.visitNodes( labelIds, propertyKeyIdFilter, propertyUpdatesVisitor, labelUpdateVisitor );
+            StoreScan<FAILURE> storeScan = super.visitNodes( labelIds, propertyKeyIdFilter, propertyUpdatesVisitor,
+                    labelUpdateVisitor, forceStoreScan );
             return new LabelScanViewNodeStoreWrapper( nodeStore, locks, propertyStore, getLabelScanStore(),
                     element -> false, propertyUpdatesVisitor, labelIds, propertyKeyIdFilter,
                     (LabelScanViewNodeStoreScan) storeScan, updates);

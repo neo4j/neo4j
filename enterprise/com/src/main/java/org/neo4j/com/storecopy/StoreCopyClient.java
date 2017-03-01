@@ -59,6 +59,7 @@ import org.neo4j.logging.LogProvider;
 import org.neo4j.logging.NullLogProvider;
 
 import static java.lang.Math.max;
+
 import static org.neo4j.helpers.Format.bytes;
 import static org.neo4j.kernel.impl.transaction.log.TransactionIdStore.BASE_TX_ID;
 import static org.neo4j.kernel.impl.transaction.log.entry.LogHeader.LOG_HEADER_SIZE;
@@ -187,7 +188,7 @@ public class StoreCopyClient
             // Request store files and transactions that will need recovery
             monitor.startReceivingStoreFiles();
             try ( Response<?> response = requester.copyStore( decorateWithProgressIndicator(
-                    new ToFileStoreWriter( tempStore, monitor, pageCache, storeFileMoveActions ) ) ) )
+                    new ToFileStoreWriter( tempStore, fs, monitor, pageCache, storeFileMoveActions ) ) ) )
             {
                 monitor.finishReceivingStoreFiles();
                 // Update highest archived log id

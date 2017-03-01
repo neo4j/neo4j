@@ -54,6 +54,8 @@ import org.neo4j.kernel.api.index.InternalIndexState;
 import org.neo4j.kernel.api.index.NodeUpdates;
 import org.neo4j.kernel.api.index.PropertyAccessor;
 import org.neo4j.kernel.api.labelscan.NodeLabelUpdate;
+import org.neo4j.kernel.api.schema.IndexDescriptor;
+import org.neo4j.kernel.api.schema.IndexDescriptorFactory;
 import org.neo4j.kernel.api.schema_new.index.NewIndexDescriptor;
 import org.neo4j.kernel.api.schema_new.index.NewIndexDescriptorFactory;
 import org.neo4j.kernel.api.security.AnonymousContext;
@@ -73,13 +75,13 @@ import org.neo4j.test.OtherThreadExecutor;
 import org.neo4j.test.TestGraphDatabaseFactory;
 import org.neo4j.test.rule.CleanupRule;
 
-import static java.lang.String.format;
 import static org.hamcrest.MatcherAssert.assertThat;
 import static org.hamcrest.Matchers.is;
 import static org.hamcrest.Matchers.sameInstance;
 import static org.hamcrest.core.IsEqual.equalTo;
 import static org.junit.Assert.assertEquals;
 import static org.mockito.Matchers.any;
+import static org.mockito.Matchers.anyBoolean;
 import static org.mockito.Matchers.anyListOf;
 import static org.mockito.Mockito.doThrow;
 import static org.mockito.Mockito.mock;
@@ -88,6 +90,9 @@ import static org.mockito.Mockito.times;
 import static org.mockito.Mockito.verify;
 import static org.mockito.Mockito.verifyNoMoreInteractions;
 import static org.mockito.Mockito.when;
+
+import static java.lang.String.format;
+
 import static org.neo4j.helpers.collection.Iterators.asSet;
 import static org.neo4j.helpers.collection.MapUtil.genericMap;
 import static org.neo4j.helpers.collection.MapUtil.map;
@@ -112,7 +117,7 @@ public class IndexPopulationJobTest
     private KernelAPI kernel;
     private IndexStoreView indexStoreView;
     private KernelSchemaStateStore stateHolder;
-    private InternalSchemaActions actions = mock( InternalSchemaActions.class );
+    private final InternalSchemaActions actions = mock( InternalSchemaActions.class );
 
     private int labelId;
 
@@ -295,7 +300,7 @@ public class IndexPopulationJobTest
         ControlledStoreScan storeScan = new ControlledStoreScan();
         when( storeView.visitNodes( any(int[].class), any( IntPredicate.class ),
                 Matchers.<Visitor<NodeUpdates,RuntimeException>>any(),
-                Matchers.<Visitor<NodeLabelUpdate,RuntimeException>>any()) )
+                Matchers.<Visitor<NodeLabelUpdate,RuntimeException>>any(), anyBoolean() ) )
                 .thenReturn(storeScan );
 
         final IndexPopulationJob job = newIndexPopulationJob( populator, index, storeView,

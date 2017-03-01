@@ -41,12 +41,19 @@ public interface IndexStoreView extends PropertyAccessor
      * one or more of the given property key ids. This scan additionally accepts a visitor
      * for label updates for a joint scan.
      *
+     * @param labelIds array of label ids to generate updates for. Empty array means all.
+     * @param propertyKeyIdFilter property key ids to generate updates for.
+     * @param propertyUpdateVisitor visitor which will see all generated {@link NodeUpdates}.
+     * @param labelUpdateVisitor visitor which will see all generated {@link NodeLabelUpdate}.
+     * @param forceStoreScan overrides decision about which source to scan from. If {@code true}
+     * then store scan will be used, otherwise if {@code false} then the best suited will be used.
      * @return a {@link StoreScan} to start and to stop the scan.
      */
     <FAILURE extends Exception> StoreScan<FAILURE> visitNodes(
             int[] labelIds, IntPredicate propertyKeyIdFilter,
             Visitor<NodeUpdates, FAILURE> propertyUpdateVisitor,
-            Visitor<NodeLabelUpdate, FAILURE> labelUpdateVisitor);
+            Visitor<NodeLabelUpdate, FAILURE> labelUpdateVisitor,
+            boolean forceStoreScan );
 
     /**
      * Produces {@link NodeUpdates} objects from reading node {@code nodeId}, its labels and properties
@@ -108,7 +115,7 @@ public interface IndexStoreView extends PropertyAccessor
         @Override
         public <FAILURE extends Exception> StoreScan<FAILURE> visitNodes( int[] labelIds,
                 IntPredicate propertyKeyIdFilter, Visitor<NodeUpdates,FAILURE> propertyUpdateVisitor,
-                Visitor<NodeLabelUpdate,FAILURE> labelUpdateVisitor )
+                Visitor<NodeLabelUpdate,FAILURE> labelUpdateVisitor, boolean forceStoreScan )
         {
             return EMPTY_SCAN;
         }

@@ -34,12 +34,12 @@ import java.util.function.IntPredicate;
 import org.neo4j.helpers.collection.Visitor;
 import org.neo4j.kernel.api.exceptions.index.IndexEntryConflictException;
 import org.neo4j.kernel.api.index.IndexEntryUpdate;
-import org.neo4j.kernel.api.schema.IndexDescriptor;
-import org.neo4j.kernel.api.schema.IndexDescriptorFactory;
 import org.neo4j.kernel.api.index.IndexPopulator;
 import org.neo4j.kernel.api.index.IndexUpdater;
 import org.neo4j.kernel.api.index.PropertyAccessor;
 import org.neo4j.kernel.api.index.SchemaIndexProvider;
+import org.neo4j.kernel.api.schema.IndexDescriptor;
+import org.neo4j.kernel.api.schema.IndexDescriptorFactory;
 import org.neo4j.kernel.api.schema_new.index.IndexBoundary;
 import org.neo4j.kernel.api.schema_new.index.NewIndexDescriptor;
 import org.neo4j.kernel.api.schema_new.index.NewIndexDescriptorFactory;
@@ -50,6 +50,7 @@ import org.neo4j.storageengine.api.schema.IndexSample;
 import static org.junit.Assert.assertFalse;
 import static org.junit.Assert.assertTrue;
 import static org.mockito.Matchers.any;
+import static org.mockito.Matchers.anyBoolean;
 import static org.mockito.Matchers.anyLong;
 import static org.mockito.Matchers.anyString;
 import static org.mockito.Matchers.eq;
@@ -74,13 +75,13 @@ public class MultipleIndexPopulatorTest
     @InjectMocks
     private MultipleIndexPopulator multipleIndexPopulator;
 
-    private NewIndexDescriptor index1 = NewIndexDescriptorFactory.forLabel( 1, 1 );
+    private final NewIndexDescriptor index1 = NewIndexDescriptorFactory.forLabel( 1, 1 );
 
     @Before
     public void setUp()
     {
         when( indexStoreView.visitNodes( any( int[].class ), any( IntPredicate.class ), any(Visitor.class),
-                any(Visitor.class) )).thenReturn( storeScan );
+                any(Visitor.class), anyBoolean() ) ).thenReturn( storeScan );
     }
 
     @Test
@@ -141,7 +142,8 @@ public class MultipleIndexPopulatorTest
         multipleIndexPopulator.create();
         multipleIndexPopulator.indexAllNodes();
 
-        verify( indexStoreView ).visitNodes( any(int[].class), any( IntPredicate.class ), any( Visitor.class ), any( Visitor.class ) );
+        verify( indexStoreView ).visitNodes( any(int[].class), any( IntPredicate.class ), any( Visitor.class ),
+                any( Visitor.class ), anyBoolean() );
     }
 
     @Test

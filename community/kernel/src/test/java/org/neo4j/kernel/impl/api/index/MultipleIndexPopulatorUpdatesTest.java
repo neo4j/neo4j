@@ -41,6 +41,8 @@ import org.neo4j.kernel.api.index.IndexUpdater;
 import org.neo4j.kernel.api.index.NodeUpdates;
 import org.neo4j.kernel.api.index.SchemaIndexProvider;
 import org.neo4j.kernel.api.labelscan.NodeLabelUpdate;
+import org.neo4j.kernel.api.schema.IndexDescriptor;
+import org.neo4j.kernel.api.schema.IndexDescriptorFactory;
 import org.neo4j.kernel.api.schema_new.index.NewIndexDescriptor;
 import org.neo4j.kernel.api.schema_new.index.NewIndexDescriptorFactory;
 import org.neo4j.kernel.impl.locking.LockService;
@@ -216,7 +218,8 @@ public class MultipleIndexPopulatorUpdatesTest
         public <FAILURE extends Exception> StoreScan<FAILURE> visitNodes( int[] labelIds,
                 IntPredicate propertyKeyIdFilter,
                 Visitor<NodeUpdates,FAILURE> propertyUpdatesVisitor,
-                Visitor<NodeLabelUpdate,FAILURE> labelUpdateVisitor )
+                Visitor<NodeLabelUpdate,FAILURE> labelUpdateVisitor,
+                boolean forceStoreScan )
         {
 
             return new ListenableNodeScanViewNodeStoreScan( nodeStore, locks, propertyStore, labelUpdateVisitor,

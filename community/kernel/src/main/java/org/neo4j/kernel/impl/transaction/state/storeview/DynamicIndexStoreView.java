@@ -64,11 +64,13 @@ public class DynamicIndexStoreView extends NeoStoreIndexStoreView
     @Override
     public <FAILURE extends Exception> StoreScan<FAILURE> visitNodes( int[] labelIds,
             IntPredicate propertyKeyIdFilter, Visitor<NodeUpdates,FAILURE> propertyUpdatesVisitor,
-            Visitor<NodeLabelUpdate,FAILURE> labelUpdateVisitor )
+            Visitor<NodeLabelUpdate,FAILURE> labelUpdateVisitor,
+            boolean forceStoreScan )
     {
-        if ( !USE_LABEL_INDEX_FOR_SCHEMA_INDEX_POPULATION || useAllNodeStoreScan( labelIds ) )
+        if ( forceStoreScan || !USE_LABEL_INDEX_FOR_SCHEMA_INDEX_POPULATION || useAllNodeStoreScan( labelIds ) )
         {
-            return super.visitNodes( labelIds, propertyKeyIdFilter, propertyUpdatesVisitor, labelUpdateVisitor );
+            return super.visitNodes( labelIds, propertyKeyIdFilter, propertyUpdatesVisitor, labelUpdateVisitor,
+                    forceStoreScan );
         }
         return new LabelScanViewNodeStoreScan<>( nodeStore, locks, propertyStore, labelScanStore, labelUpdateVisitor,
                 propertyUpdatesVisitor, labelIds, propertyKeyIdFilter );

@@ -52,6 +52,7 @@ import org.neo4j.storageengine.api.schema.IndexSample;
 import org.neo4j.unsafe.impl.internal.dragons.FeatureToggles;
 
 import static java.lang.String.format;
+
 import static org.neo4j.collection.primitive.PrimitiveIntCollections.contains;
 import static org.neo4j.kernel.impl.api.index.IndexPopulationFailure.failure;
 
@@ -163,7 +164,7 @@ public class MultipleIndexPopulator implements IndexPopulator
         int[] propertyKeyIds = propertyKeyIds();
         IntPredicate propertyKeyIdFilter = (propertyKeyId) -> contains( propertyKeyIds, propertyKeyId );
 
-        storeScan = storeView.visitNodes( labelIds, propertyKeyIdFilter, new NodePopulationVisitor(), null );
+        storeScan = storeView.visitNodes( labelIds, propertyKeyIdFilter, new NodePopulationVisitor(), null, false );
         storeScan.configure(populations);
         return storeScan;
     }

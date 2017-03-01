@@ -19,36 +19,17 @@
  */
 package org.neo4j.test.rule.fs;
 
-import org.junit.rules.ExternalResource;
-
 import java.io.File;
 import java.io.IOException;
-import java.util.function.Supplier;
 
 import org.neo4j.graphdb.mockfs.EphemeralFileSystemAbstraction;
 import org.neo4j.io.fs.FileSystemAbstraction;
 
-public class EphemeralFileSystemRule extends ExternalResource implements Supplier<FileSystemAbstraction>
+public class EphemeralFileSystemRule extends FileSystemRule<EphemeralFileSystemAbstraction>
 {
-    private EphemeralFileSystemAbstraction fs = new EphemeralFileSystemAbstraction();
-
-    @Override
-    protected void after()
+    public EphemeralFileSystemRule()
     {
-        try
-        {
-            fs.close();
-        }
-        catch ( Exception e )
-        {
-            throw new RuntimeException( e );
-        }
-    }
-
-    @Override
-    public final EphemeralFileSystemAbstraction get()
-    {
-        return fs;
+        super( new EphemeralFileSystemAbstraction() );
     }
 
     public EphemeralFileSystemAbstraction snapshot( Runnable action ) throws Exception
@@ -72,27 +53,9 @@ public class EphemeralFileSystemRule extends ExternalResource implements Supplie
         fs = new EphemeralFileSystemAbstraction();
     }
 
-    @Override
-    public int hashCode()
-    {
-        return fs.hashCode();
-    }
-
-    @Override
-    public boolean equals( Object obj )
-    {
-        return fs.equals( obj );
-    }
-
     public void crash()
     {
         fs.crash();
-    }
-
-    @Override
-    public String toString()
-    {
-        return fs.toString();
     }
 
     public EphemeralFileSystemAbstraction snapshot()

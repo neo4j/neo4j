@@ -98,7 +98,8 @@ public class NeoStoreIndexStoreView implements IndexStoreView
     public <FAILURE extends Exception> StoreScan<FAILURE> visitNodes(
             final int[] labelIds, IntPredicate propertyKeyIdFilter,
             final Visitor<NodeUpdates, FAILURE> propertyUpdatesVisitor,
-            final Visitor<NodeLabelUpdate, FAILURE> labelUpdateVisitor )
+            final Visitor<NodeLabelUpdate, FAILURE> labelUpdateVisitor,
+            boolean forceStoreScan )
     {
         return new StoreViewNodeStoreScan<>( nodeStore, locks, propertyStore, labelUpdateVisitor,
                 propertyUpdatesVisitor, labelIds, propertyKeyIdFilter );

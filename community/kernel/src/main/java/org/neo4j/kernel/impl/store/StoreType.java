@@ -23,6 +23,8 @@ import java.io.IOException;
 import java.util.Optional;
 
 import org.neo4j.graphdb.factory.GraphDatabaseSettings;
+import org.neo4j.io.fs.FileSystemAbstraction;
+import org.neo4j.kernel.impl.index.labelscan.NativeLabelScanStore;
 import org.neo4j.kernel.impl.store.counts.CountsTracker;
 import org.neo4j.kernel.impl.store.id.IdType;
 import org.neo4j.kernel.impl.storemigration.StoreFile;
@@ -237,5 +239,18 @@ public enum StoreType
             }
         }
         return Optional.empty();
+    }
+
+    /**
+     * Returns whether or not store file by given file name should be managed by the page cache.
+     * Store files not managed by the page cache will end up on the otherwise specified {@link FileSystemAbstraction}.
+     *
+     * @param storeFileName file name of the store file to check.
+     * @return Returns whether or not store file by given file name should be managed by the page cache.
+     */
+    public static boolean shouldBeManagedByPageCache( String storeFileName )
+    {
+        boolean isLabelScanStore = NativeLabelScanStore.FILE_NAME.equals( storeFileName );
+        return isLabelScanStore || StoreType.typeOf( storeFileName ).map( StoreType::isRecordStore ).orElse( false );
     }
 }
