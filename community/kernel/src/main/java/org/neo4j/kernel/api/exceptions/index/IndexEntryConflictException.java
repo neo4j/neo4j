@@ -19,9 +19,6 @@
  */
 package org.neo4j.kernel.api.exceptions.index;
 
-import java.util.Arrays;
-
-import org.neo4j.helpers.Strings;
 import org.neo4j.kernel.api.TokenNameLookup;
 import org.neo4j.kernel.api.exceptions.KernelException;
 import org.neo4j.kernel.api.schema_new.LabelSchemaDescriptor;
@@ -30,7 +27,6 @@ import org.neo4j.kernel.api.schema_new.SchemaUtil;
 import org.neo4j.kernel.api.schema_new.index.NewIndexDescriptor;
 
 import static java.lang.String.format;
-import static java.lang.String.valueOf;
 import static org.neo4j.kernel.api.StatementConstants.NO_SUCH_NODE;
 
 /**
@@ -42,10 +38,15 @@ public class IndexEntryConflictException extends Exception
     private final long addedNodeId;
     private final long existingNodeId;
 
+    public IndexEntryConflictException( long existingNodeId, long addedNodeId, Object propertyValue )
+    {
+        this( existingNodeId, addedNodeId, OrderedPropertyValues.of( propertyValue ) );
+    }
+
     public IndexEntryConflictException( long existingNodeId, long addedNodeId, OrderedPropertyValues propertyValues )
     {
         super( format( "Both node %d and node %d share the property value %s",
-                existingNodeId, addedNodeId, quote( propertyValues ) ) );
+                existingNodeId, addedNodeId, propertyValues ) );
         this.existingNodeId = existingNodeId;
         this.addedNodeId = addedNodeId;
         this.propertyValues = propertyValues;
@@ -65,7 +66,7 @@ public class IndexEntryConflictException extends Exception
 
     public String evidenceMessage( TokenNameLookup tokenNameLookup, LabelSchemaDescriptor schema )
     {
-        assert schema.getPropertyIds().length == propertyValues.values().length;
+        assert schema.getPropertyIds().length == propertyValues.size();
 
         String labelName = tokenNameLookup.labelGetName( schema.getLabelId() );
         if ( addedNodeId == NO_SUCH_NODE )
@@ -87,8 +88,7 @@ public class IndexEntryConflictException extends Exception
 
     public Object getSinglePropertyValue()
     {
-        assert propertyValues.values().length == 1;
-        return propertyValues.values()[0];
+        return propertyValues.getSinglePropertyValue();
     }
 
     public long getAddedNodeId()
@@ -133,7 +133,7 @@ public class IndexEntryConflictException extends Exception
     public String toString()
     {
         return "IndexEntryConflictException{" +
-                "propertyValues=" + Strings.prettyPrint( propertyValues.values() ) +
+                "propertyValues=" + propertyValues +
                 ", addedNodeId=" + addedNodeId +
                 ", existingNodeId=" + existingNodeId +
                 '}';
@@ -150,61 +150,8 @@ public class IndexEntryConflictException extends Exception
             sb.append( '`' );
             sb.append( tokenNameLookup.propertyKeyGetName( propertyIds[i] ) );
             sb.append( "` = " );
-            sb.append( quote( propertyValues.values()[i] ) );
+            sb.append( OrderedPropertyValues.quote( propertyValues.values()[i] ) );
         }
         return sb.toString();
-    }
-
-    private static String quote( OrderedPropertyValues propertyValues )
-    {
-        StringBuilder sb = new StringBuilder();
-        String sep = "( ";
-        for ( Object value : propertyValues.values() )
-        {
-            sb.append( sep );
-            sep = ", ";
-            sb.append( quote( value ) );
-        }
-        sb.append( " )" );
-        return sb.toString();
-    }
-
-    private static String quote( Object propertyValue )
-    {
-        if ( propertyValue instanceof String )
-        {
-            return format( "'%s'", propertyValue );
-        }
-        else if ( propertyValue.getClass().isArray() )
-        {
-            Class<?> type = propertyValue.getClass().getComponentType();
-            if ( type == Boolean.TYPE )
-            {
-                return Arrays.toString( (boolean[]) propertyValue );
-            } else if ( type == Byte.TYPE )
-            {
-                return Arrays.toString( (byte[]) propertyValue );
-            } else if ( type == Short.TYPE )
-            {
-                return Arrays.toString( (short[]) propertyValue );
-            } else if ( type == Character.TYPE )
-            {
-                return Arrays.toString( (char[]) propertyValue );
-            } else if ( type == Integer.TYPE )
-            {
-                return Arrays.toString( (int[]) propertyValue );
-            } else if ( type == Long.TYPE )
-            {
-                return Arrays.toString( (long[]) propertyValue );
-            } else if ( type == Float.TYPE )
-            {
-                return Arrays.toString( (float[]) propertyValue );
-            } else if ( type == Double.TYPE )
-            {
-                return Arrays.toString( (double[]) propertyValue );
-            }
-            return Arrays.toString( (Object[]) propertyValue );
-        }
-        return valueOf( propertyValue );
     }
 }

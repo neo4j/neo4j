@@ -180,7 +180,7 @@ public class ConstraintEnforcingEntityOperations implements EntityOperations, Sc
             {
                 throw new UniquePropertyValueValidationException( constraint,
                         ConstraintValidationException.Phase.VALIDATION,
-                        new IndexEntryConflictException( existing, NO_SUCH_NODE, new OrderedPropertyValues( value ) ) );
+                        new IndexEntryConflictException( existing, NO_SUCH_NODE, value ) );
             }
         }
         catch ( IndexNotFoundKernelException | IndexBrokenKernelException | IndexNotApplicableKernelException e )

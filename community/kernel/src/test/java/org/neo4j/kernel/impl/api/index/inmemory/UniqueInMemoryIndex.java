@@ -119,8 +119,7 @@ class UniqueInMemoryIndex extends InMemoryIndex
                         if ( entries.containsKey( value ) )
                         {
                             long existingNodeId = entries.get( value );
-                            throw new IndexEntryConflictException( existingNodeId, nodeId,
-                                    new OrderedPropertyValues( value ) );
+                            throw new IndexEntryConflictException( existingNodeId, nodeId, value );
                         }
                         entries.put( value, nodeId );
                     }

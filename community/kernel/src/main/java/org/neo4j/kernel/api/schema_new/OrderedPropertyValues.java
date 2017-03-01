@@ -21,6 +21,9 @@ package org.neo4j.kernel.api.schema_new;
 
 import java.util.Arrays;
 
+import static java.lang.String.format;
+import static java.lang.String.valueOf;
+
 /**
  * Holder for n property values, ordered according to a schema descriptor property id order
  */
@@ -28,7 +31,12 @@ public class OrderedPropertyValues
 {
     private final Object[] values;
 
-    public OrderedPropertyValues( Object... values )
+    public static OrderedPropertyValues of( Object... values )
+    {
+        return new OrderedPropertyValues( values );
+    }
+
+    private OrderedPropertyValues( Object[] values )
     {
         this.values = values;
     }
@@ -59,5 +67,70 @@ public class OrderedPropertyValues
     public int hashCode()
     {
         return Arrays.deepHashCode( values );
+    }
+
+    public int size()
+    {
+        return values.length;
+    }
+
+    public Object getSinglePropertyValue()
+    {
+        assert values.length == 1 : "Assumed single property but had " + values.length;
+        return values[0];
+    }
+
+    @Override
+    public String toString()
+    {
+        StringBuilder sb = new StringBuilder();
+        String sep = "( ";
+        for ( Object value : values )
+        {
+            sb.append( sep );
+            sep = ", ";
+            sb.append( quote( value ) );
+        }
+        sb.append( " )" );
+        return sb.toString();
+    }
+
+    public static String quote( Object propertyValue )
+    {
+        if ( propertyValue instanceof String )
+        {
+            return format( "'%s'", propertyValue );
+        }
+        else if ( propertyValue.getClass().isArray() )
+        {
+            Class<?> type = propertyValue.getClass().getComponentType();
+            if ( type == Boolean.TYPE )
+            {
+                return Arrays.toString( (boolean[]) propertyValue );
+            } else if ( type == Byte.TYPE )
+            {
+                return Arrays.toString( (byte[]) propertyValue );
+            } else if ( type == Short.TYPE )
+            {
+                return Arrays.toString( (short[]) propertyValue );
+            } else if ( type == Character.TYPE )
+            {
+                return Arrays.toString( (char[]) propertyValue );
+            } else if ( type == Integer.TYPE )
+            {
+                return Arrays.toString( (int[]) propertyValue );
+            } else if ( type == Long.TYPE )
+            {
+                return Arrays.toString( (long[]) propertyValue );
+            } else if ( type == Float.TYPE )
+            {
+                return Arrays.toString( (float[]) propertyValue );
+            } else if ( type == Double.TYPE )
+            {
+                return Arrays.toString( (double[]) propertyValue );
+            }
+            return Arrays.toString( (Object[]) propertyValue );
+        }
+        return valueOf( propertyValue );
     }
 }

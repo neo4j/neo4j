@@ -119,7 +119,7 @@ public class ConstraintIndexCreatorTest
                 .thenReturn( 2468L );
         IndexProxy indexProxy = mock( IndexProxy.class );
         when( indexingService.getIndexProxy( 2468L ) ).thenReturn( indexProxy );
-        IndexEntryConflictException cause = new IndexEntryConflictException( 2, 1, new OrderedPropertyValues( "a" ) );
+        IndexEntryConflictException cause = new IndexEntryConflictException( 2, 1, "a" );
         doThrow( new IndexPopulationFailedKernelException( SchemaBoundary.map( descriptor ), "some index", cause ) )
                 .when( indexProxy ).awaitStoreScanCompleted();
         PropertyAccessor propertyAccessor = mock( PropertyAccessor.class );

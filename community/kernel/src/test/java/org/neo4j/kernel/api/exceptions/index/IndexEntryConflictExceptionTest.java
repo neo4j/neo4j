@@ -38,8 +38,7 @@ public class IndexEntryConflictExceptionTest
     public void shouldMakeEntryConflicts()
     {
         LabelSchemaDescriptor schema = SchemaDescriptorFactory.forLabel( labelId, 2 );
-        OrderedPropertyValues values = new OrderedPropertyValues( "hi" );
-        IndexEntryConflictException e = new IndexEntryConflictException( 0L, 1L, values );
+        IndexEntryConflictException e = new IndexEntryConflictException( 0L, 1L, "hi" );
 
         assertThat( e.evidenceMessage( SchemaUtil.idTokenNameLookup, schema ),
                 equalTo( "Both Node(0) and Node(1) have the label `label[1]` and property `property[2]` = 'hi'" ) );
@@ -49,8 +48,7 @@ public class IndexEntryConflictExceptionTest
     public void shouldMakeEntryConflictsForOneNode()
     {
         LabelSchemaDescriptor schema = SchemaDescriptorFactory.forLabel( labelId, 2 );
-        OrderedPropertyValues values = new OrderedPropertyValues( "hi" );
-        IndexEntryConflictException e = new IndexEntryConflictException( 0L, StatementConstants.NO_SUCH_NODE, values );
+        IndexEntryConflictException e = new IndexEntryConflictException( 0L, StatementConstants.NO_SUCH_NODE, "hi" );
 
         assertThat( e.evidenceMessage( SchemaUtil.idTokenNameLookup, schema ),
                 equalTo( "Node(0) already exists with label `label[1]` and property `property[2]` = 'hi'" ) );
@@ -60,7 +58,7 @@ public class IndexEntryConflictExceptionTest
     public void shouldMakeCompositeEntryConflicts()
     {
         LabelSchemaDescriptor schema = SchemaDescriptorFactory.forLabel( labelId, 2, 3, 4 );
-        OrderedPropertyValues values = new OrderedPropertyValues( true, "hi", new long[]{6L, 4L} );
+        OrderedPropertyValues values = OrderedPropertyValues.of( true, "hi", new long[]{6L, 4L} );
         IndexEntryConflictException e = new IndexEntryConflictException( 0L, 1L, values );
 
         assertThat( e.evidenceMessage( SchemaUtil.idTokenNameLookup, schema ),

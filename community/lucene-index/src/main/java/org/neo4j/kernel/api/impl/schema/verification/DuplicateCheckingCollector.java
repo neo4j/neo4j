@@ -94,8 +94,7 @@ public class DuplicateCheckingCollector extends SimpleCollector
                 }
                 else if ( property.valueEquals( value ) )
                 {
-                    throw new IndexEntryConflictException( current.nodeId[i], nodeId,
-                            new OrderedPropertyValues( value ) );
+                    throw new IndexEntryConflictException( current.nodeId[i], nodeId, value );
                 }
             }
             current = current.next;

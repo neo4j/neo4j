@@ -1381,7 +1381,7 @@ public class BatchInsertTest
         catch ( RuntimeException ex )
         {
             // good
-            assertEquals( new IndexEntryConflictException( 0, 1, new OrderedPropertyValues( value ) ), ex.getCause() );
+            assertEquals( new IndexEntryConflictException( 0, 1, value ), ex.getCause() );
         }
     }
 

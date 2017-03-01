@@ -81,7 +81,7 @@ public class UniqueIndexPopulatorCompatibility extends IndexProviderCompatibilit
         catch ( IndexEntryConflictException conflict )
         {
             assertEquals( nodeId1, conflict.getExistingNodeId() );
-            assertEquals( new OrderedPropertyValues( value ), conflict.getPropertyValues() );
+            assertEquals( OrderedPropertyValues.of( value ), conflict.getPropertyValues() );
             assertEquals( nodeId2, conflict.getAddedNodeId() );
         }
     }
