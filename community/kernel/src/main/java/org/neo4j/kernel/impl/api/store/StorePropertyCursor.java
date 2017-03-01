@@ -42,6 +42,7 @@ public class StorePropertyCursor implements Cursor<PropertyItem>, PropertyItem
     private final StorePropertyPayloadCursor payload;
     private final RecordCursor<PropertyRecord> recordCursor;
 
+    private boolean fetched;
     private Lock lock;
     private IntPredicate propertyKeyIds;
 
@@ -59,7 +60,7 @@ public class StorePropertyCursor implements Cursor<PropertyItem>, PropertyItem
 
     public StorePropertyCursor init( int propertyKeyId, long firstPropertyId, Lock lock )
     {
-        return init( (key) -> key == propertyKeyId, firstPropertyId, lock );
+        return init( key -> key == propertyKeyId, firstPropertyId, lock );
     }
 
     public StorePropertyCursor init( IntPredicate propertyKeyIds, long firstPropertyId, Lock lock )
@@ -72,6 +73,11 @@ public class StorePropertyCursor implements Cursor<PropertyItem>, PropertyItem
 
     @Override
     public boolean next()
+    {
+        return fetched = fetchNext();
+    }
+
+    private boolean fetchNext()
     {
         while ( true )
         {
@@ -118,6 +124,10 @@ public class StorePropertyCursor implements Cursor<PropertyItem>, PropertyItem
     @Override
     public PropertyItem get()
     {
+        if ( !fetched )
+        {
+            throw new IllegalStateException();
+        }
         return this;
     }
 
@@ -127,6 +137,7 @@ public class StorePropertyCursor implements Cursor<PropertyItem>, PropertyItem
         try
         {
             propertyKeyIds = null;
+            fetched = false;
             payload.close();
             instanceCache.accept( this );
         }
