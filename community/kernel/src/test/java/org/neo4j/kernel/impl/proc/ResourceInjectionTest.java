@@ -204,7 +204,6 @@ public class ResourceInjectionTest
         proc.create( new BasicContext() ).update( new Object[]{} );
         Object out = proc.create( new BasicContext() ).result();
 
-
         // Then
         assertThat( out, equalTo( "[Bonnie, Clyde]" ) );
     }
@@ -356,7 +355,6 @@ public class ResourceInjectionTest
             }
         }
     }
-
 
     public static class ProcedureWithUnknownAPI
     {
