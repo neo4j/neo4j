@@ -69,7 +69,7 @@ class HazelcastClusterTopology
 
         if ( hazelcastInstance != null )
         {
-            readReplicas = readReplicas( hazelcastInstance );
+            readReplicas = readReplicas( hazelcastInstance, log );
         }
         else
         {
@@ -115,7 +115,7 @@ class HazelcastClusterTopology
         return uuidReference.compareAndSet( null, clusterId.uuid() ) || uuidReference.get().equals( clusterId.uuid() );
     }
 
-    private static Map<MemberId,ReadReplicaInfo> readReplicas( HazelcastInstance hazelcastInstance )
+    private static Map<MemberId,ReadReplicaInfo> readReplicas( HazelcastInstance hazelcastInstance, Log log )
     {
         IMap<String/*uuid*/,String/*boltAddress*/> clientAddressMap =
                 hazelcastInstance.getMap( READ_REPLICA_BOLT_ADDRESS_MAP_NAME );
@@ -133,9 +133,18 @@ class HazelcastClusterTopology
             AdvertisedSocketAddress catchupAddress =
                     socketAddress( txServerMap.get( hzUUID ), AdvertisedSocketAddress::new );
 
-            result.put( new MemberId( UUID.fromString( memberIdMap.get( hzUUID ) ) ),
-                    new ReadReplicaInfo( clientConnectorAddresses, catchupAddress,
-                            asSet( serverTags.get( hzUUID ) ) ) );
+            String memberId = memberIdMap.get( hzUUID );
+
+            if ( memberId != null )
+            {
+                result.put( new MemberId( UUID.fromString( memberId ) ),
+                        new ReadReplicaInfo( clientConnectorAddresses, catchupAddress,
+                                asSet( serverTags.get( hzUUID ) ) ) );
+            }
+            else
+            {
+                log.info( "Unable to find MemberId for read replica %s so it will be excluded from the read replica topology.", hzUUID);
+            }
         }
         return result;
     }
