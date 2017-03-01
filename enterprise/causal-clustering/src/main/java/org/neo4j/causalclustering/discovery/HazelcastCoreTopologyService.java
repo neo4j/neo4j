@@ -55,6 +55,7 @@ import static com.hazelcast.spi.properties.GroupProperty.OPERATION_CALL_TIMEOUT_
 import static com.hazelcast.spi.properties.GroupProperty.WAIT_SECONDS_BEFORE_JOIN;
 import static java.util.concurrent.TimeUnit.MILLISECONDS;
 import static org.neo4j.causalclustering.discovery.HazelcastClusterTopology.SERVER_TAGS_MULTIMAP_NAME;
+import static org.neo4j.causalclustering.discovery.HazelcastClusterTopology.refreshTags;
 import static org.neo4j.kernel.impl.util.JobScheduler.SchedulingStrategy.POOLED;
 
 class HazelcastCoreTopologyService extends LifecycleAdapter implements CoreTopologyService
@@ -99,7 +100,7 @@ class HazelcastCoreTopologyService extends LifecycleAdapter implements CoreTopol
     }
 
     @Override
-    public void start()
+    public void start() throws Throwable
     {
         hazelcastInstance = createHazelcastInstance();
         log.info( "Cluster discovery service started" );
@@ -108,18 +109,9 @@ class HazelcastCoreTopologyService extends LifecycleAdapter implements CoreTopol
         refreshReadReplicaTopology();
         listenerService.notifyListeners( coreServers() );
 
-        try
-        {
-            scheduler.start();
-        }
-        catch ( Throwable throwable )
-        {
-            log.debug( "Failed to start job scheduler." );
-            return;
-        }
-
-        JobScheduler.Group group = new JobScheduler.Group( "Scheduler", POOLED );
-        jobHandle = this.scheduler.scheduleRecurring( group, () ->
+        scheduler.start();
+        JobScheduler.Group group = new JobScheduler.Group( "TopologyRefresh", POOLED );
+        jobHandle = scheduler.scheduleRecurring( group, () ->
         {
             refreshCoreTopology();
             refreshReadReplicaTopology();
@@ -211,9 +203,7 @@ class HazelcastCoreTopologyService extends LifecycleAdapter implements CoreTopol
         }
 
         List<String> tags = config.get( CausalClusteringSettings.server_tags );
-
-        MultiMap<String,String> tagsMap = hazelcastInstance.getMultiMap( SERVER_TAGS_MULTIMAP_NAME );
-        tags.forEach( tag -> tagsMap.put( myself.getUuid().toString(), tag ) );
+        refreshTags( hazelcastInstance, myself.getUuid().toString(), tags );
 
         return hazelcastInstance;
     }

@@ -26,10 +26,13 @@ import com.hazelcast.core.IMap;
 import com.hazelcast.core.Member;
 import com.hazelcast.core.MultiMap;
 
+import java.util.Collection;
 import java.util.HashMap;
+import java.util.List;
 import java.util.Map;
 import java.util.Set;
 import java.util.UUID;
+import java.util.stream.Collectors;
 
 import org.neo4j.causalclustering.core.CausalClusteringSettings;
 import org.neo4j.causalclustering.identity.ClusterId;
@@ -56,9 +59,8 @@ class HazelcastClusterTopology
     // cluster-wide attributes
     private static final String CLUSTER_UUID = "cluster_uuid";
     static final String SERVER_TAGS_MULTIMAP_NAME = "tags";
-    static final String READ_REPLICA_BOLT_ADDRESS_MAP_NAME = "read_replicas";
-    // hz client uuid string -> boltAddress string
     static final String READ_REPLICA_TRANSACTION_SERVER_ADDRESS_MAP_NAME = "read-replica-transaction-servers";
+    static final String READ_REPLICA_BOLT_ADDRESS_MAP_NAME = "read_replicas"; // hz client uuid string -> boltAddress string
     static final String READ_REPLICA_MEMBER_ID_MAP_NAME = "read-replica-member-ids";
 
     static ReadReplicaTopology getReadReplicaTopology( HazelcastInstance hazelcastInstance, Log log )
@@ -194,6 +196,18 @@ class HazelcastClusterTopology
         }
 
         return coreMembers;
+    }
+
+    static void refreshTags( HazelcastInstance hazelcastInstance, String memberId, List<String> tags )
+    {
+        MultiMap<String,String> tagsMap = hazelcastInstance.getMultiMap( SERVER_TAGS_MULTIMAP_NAME );
+        Collection<String> existing = tagsMap.get( memberId );
+
+        Set<String> superfluous = existing.stream().filter( t -> !tags.contains( t ) ).collect( Collectors.toSet() );
+        Set<String> missing = tags.stream().filter( t -> !existing.contains( t ) ).collect( Collectors.toSet() );
+
+        missing.forEach( tag -> tagsMap.put( memberId, tag ) );
+        superfluous.forEach( tag -> tagsMap.remove( memberId, tag ) );
     }
 
     static MemberAttributeConfig buildMemberAttributesForCore( MemberId myself, Config config )

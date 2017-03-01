@@ -298,10 +298,12 @@ public class HazelcastClientTest
         when( clientService.getConnectedClients() ).thenReturn( asSet( client ) );
 
         HazelcastMap hazelcastMap = new HazelcastMap();
+        HazelcastMultiMap hazelcastMultiMap = new HazelcastMultiMap();
 
         HazelcastInstance hazelcastInstance = mock( HazelcastInstance.class );
         when( hazelcastInstance.getAtomicReference( anyString() ) ).thenReturn( mock( IAtomicReference.class ) );
         when( hazelcastInstance.getMap( anyString() ) ).thenReturn( hazelcastMap );
+        when( hazelcastInstance.getMultiMap( anyString() ) ).thenReturn( hazelcastMultiMap );
         when( hazelcastInstance.getLocalEndpoint() ).thenReturn( endpoint );
         when( hazelcastInstance.getExecutorService( anyString() ) ).thenReturn( new StubExecutorService() );
         when( hazelcastInstance.getCluster() ).thenReturn( cluster );
@@ -346,6 +348,7 @@ public class HazelcastClientTest
         HazelcastInstance hazelcastInstance = mock( HazelcastInstance.class );
         when( hazelcastInstance.getAtomicReference( anyString() ) ).thenReturn( mock( IAtomicReference.class ) );
         when( hazelcastInstance.getMap( anyString() ) ).thenReturn( hazelcastMap );
+        when( hazelcastInstance.getMultiMap( anyString() ) ).thenReturn( new HazelcastMultiMap() );
         when( hazelcastInstance.getLocalEndpoint() ).thenReturn( endpoint );
         when( hazelcastInstance.getExecutorService( anyString() ) ).thenReturn( new StubExecutorService() );
         when( hazelcastInstance.getCluster() ).thenReturn( cluster );
@@ -379,6 +382,7 @@ public class HazelcastClientTest
         HazelcastInstance hazelcastInstance = mock( HazelcastInstance.class );
         when( hazelcastInstance.getLocalEndpoint() ).thenReturn( endpoint );
         when( hazelcastInstance.getMap( anyString() ) ).thenReturn( new HazelcastMap() );
+        when( hazelcastInstance.getMultiMap( anyString() ) ).thenReturn( new HazelcastMultiMap() );
         doThrow( new NullPointerException( "boom!!!" ) ).when( hazelcastInstance ).shutdown();
 
         HazelcastConnector connector = mock( HazelcastConnector.class );

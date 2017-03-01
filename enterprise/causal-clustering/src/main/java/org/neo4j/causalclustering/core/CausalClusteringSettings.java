@@ -314,7 +314,7 @@ public class CausalClusteringSettings implements LoadableConfig
 
     @Description( "Time between scanning the cluster to refresh current server's view of topology" )
     public static final Setting<Long> cluster_topology_refresh =
-            setting( "causal_clustering.cluster_topology_refresh", DURATION, "1m", min( 1_000L ) );
+            setting( "causal_clustering.cluster_topology_refresh", DURATION, "5s", min( 1_000L ) );
 
     @Description( "An ordered list in descending preference of the strategy which read replicas use to choose " +
             "upstream database server from which to pull transactional updates." )
@@ -322,17 +322,17 @@ public class CausalClusteringSettings implements LoadableConfig
             setting( "causal_clustering.upstream_selection_strategy", list( ",", STRING ), "default" );
 
     @Description( "Tags for the server used when configuring load balancing and replication policies." )
-    public static Setting<List<String>> server_tags =
+    public static final Setting<List<String>> server_tags =
             setting( "causal_clustering.server_tags", list( ",", STRING ), "" );
 
     @Description( "The load balancing plugin to use." )
-    public static Setting<String> load_balancing_plugin =
+    public static final Setting<String> load_balancing_plugin =
             setting( "causal_clustering.load_balancing.plugin", STRING, "server_policies" );
 
     @Description( "The configuration must be valid for the configured plugin and usually exists" +
             "under matching subkeys, e.g. ..config.server_policies.*" +
             "This is just a top-level placeholder for the plugin-specific configuration." )
-    public static Setting<String> load_balancing_config =
+    public static final Setting<String> load_balancing_config =
             setting( "causal_clustering.load_balancing.config", STRING, "" );
 
     @Description( "Enables shuffling of the returned load balancing result." )

@@ -46,7 +46,6 @@ import org.neo4j.kernel.impl.store.MetaDataStore;
 import org.neo4j.kernel.lifecycle.LifecycleException;
 import org.neo4j.logging.NullLogProvider;
 import org.neo4j.test.causalclustering.ClusterRule;
-import org.neo4j.test.rule.SuppressOutput;
 import org.neo4j.test.rule.fs.DefaultFileSystemRule;
 
 import static org.hamcrest.CoreMatchers.instanceOf;
@@ -57,11 +56,9 @@ import static org.neo4j.causalclustering.TestStoreId.assertAllStoresHaveTheSameS
 import static org.neo4j.causalclustering.core.server.CoreServerModule.CLUSTER_ID_NAME;
 import static org.neo4j.graphdb.Label.label;
 import static org.neo4j.kernel.impl.store.MetaDataStore.Position.RANDOM_NUMBER;
-import static org.neo4j.test.rule.SuppressOutput.suppress;
 
 public class ClusterBindingIT
 {
-    private final SuppressOutput suppressOutput = suppress( SuppressOutput.System.err );
     private final ClusterRule clusterRule = new ClusterRule( ClusterBindingIT.class )
                         .withNumberOfCoreMembers( 3 )
                         .withNumberOfReadReplicas( 0 )
@@ -70,8 +67,7 @@ public class ClusterBindingIT
     private final DefaultFileSystemRule fileSystemRule = new DefaultFileSystemRule();
 
     @Rule
-    public RuleChain ruleChain = RuleChain.outerRule( suppressOutput )
-                                          .around( fileSystemRule ).around( clusterRule );
+    public RuleChain ruleChain = RuleChain.outerRule( fileSystemRule ).around( clusterRule );
 
     private Cluster cluster;
     private FileSystemAbstraction fs;

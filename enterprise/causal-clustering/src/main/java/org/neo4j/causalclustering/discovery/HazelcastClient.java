@@ -21,7 +21,6 @@ package org.neo4j.causalclustering.discovery;
 
 import com.hazelcast.core.HazelcastInstance;
 import com.hazelcast.core.HazelcastInstanceNotActiveException;
-import com.hazelcast.core.MultiMap;
 
 import java.util.List;
 import java.util.function.Function;
@@ -39,9 +38,9 @@ import static java.util.concurrent.TimeUnit.MILLISECONDS;
 import static org.neo4j.causalclustering.discovery.HazelcastClusterTopology.READ_REPLICA_BOLT_ADDRESS_MAP_NAME;
 import static org.neo4j.causalclustering.discovery.HazelcastClusterTopology.READ_REPLICA_MEMBER_ID_MAP_NAME;
 import static org.neo4j.causalclustering.discovery.HazelcastClusterTopology.READ_REPLICA_TRANSACTION_SERVER_ADDRESS_MAP_NAME;
-import static org.neo4j.causalclustering.discovery.HazelcastClusterTopology.SERVER_TAGS_MULTIMAP_NAME;
 import static org.neo4j.causalclustering.discovery.HazelcastClusterTopology.getCoreTopology;
 import static org.neo4j.causalclustering.discovery.HazelcastClusterTopology.getReadReplicaTopology;
+import static org.neo4j.causalclustering.discovery.HazelcastClusterTopology.refreshTags;
 
 class HazelcastClient extends LifecycleAdapter implements TopologyService
 {
@@ -140,8 +139,7 @@ class HazelcastClient extends LifecycleAdapter implements TopologyService
         hazelcastInstance.getMap( READ_REPLICA_MEMBER_ID_MAP_NAME )
                 .put( uuid, myself.getUuid().toString(), readReplicaTimeToLiveTimeout, MILLISECONDS );
 
-        MultiMap<String,String> tagsMap = hazelcastInstance.getMultiMap( SERVER_TAGS_MULTIMAP_NAME );
-        tags.forEach( tag -> tagsMap.put( uuid, tag ) );
+        refreshTags( hazelcastInstance, uuid, tags );
 
         return null; // return value not used.
     }

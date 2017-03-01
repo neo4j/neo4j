@@ -44,6 +44,11 @@ public class ReadReplicaTopology
         return readReplicaMembers.values();
     }
 
+    public Map<MemberId,ReadReplicaInfo> replicaMembers()
+    {
+        return readReplicaMembers;
+    }
+
     Optional<ReadReplicaInfo> find( MemberId memberId )
     {
         return Optional.ofNullable( readReplicaMembers.get( memberId ) );

@@ -22,6 +22,7 @@ package org.neo4j.causalclustering.discovery.procedures;
 import java.net.URI;
 import java.util.ArrayList;
 import java.util.List;
+import java.util.Map;
 import java.util.Optional;
 import java.util.Set;
 import java.util.UUID;
@@ -44,10 +45,14 @@ import org.neo4j.logging.Log;
 import org.neo4j.logging.LogProvider;
 
 import static java.util.Comparator.comparing;
+import static org.neo4j.helpers.collection.Iterables.asList;
 import static org.neo4j.helpers.collection.Iterators.asRawIterator;
 import static org.neo4j.helpers.collection.Iterators.map;
 import static org.neo4j.kernel.api.proc.ProcedureSignature.procedureSignature;
 
+/**
+ * Overview procedure with added support for server tags.
+ */
 public class ClusterOverviewProcedure extends CallableProcedure.BasicProcedure
 {
     private static final String[] PROCEDURE_NAMESPACE = {"dbms", "cluster"};
@@ -60,8 +65,10 @@ public class ClusterOverviewProcedure extends CallableProcedure.BasicProcedure
             LeaderLocator leaderLocator, LogProvider logProvider )
     {
         super( procedureSignature( new QualifiedName( PROCEDURE_NAMESPACE, PROCEDURE_NAME ) )
-                .out( "id", Neo4jTypes.NTString ).out( "addresses", Neo4jTypes.NTList( Neo4jTypes.NTString ) )
+                .out( "id", Neo4jTypes.NTString )
+                .out( "addresses", Neo4jTypes.NTList( Neo4jTypes.NTString ) )
                 .out( "role", Neo4jTypes.NTString )
+                .out( "tags", Neo4jTypes.NTList( Neo4jTypes.NTString ) )
                 .description( "Overview of all currently accessible cluster members and their roles." )
                 .build() );
         this.topologyService = topologyService;
@@ -76,6 +83,7 @@ public class ClusterOverviewProcedure extends CallableProcedure.BasicProcedure
         CoreTopology coreTopology = topologyService.coreServers();
         Set<MemberId> coreMembers = coreTopology.members();
         MemberId leader = null;
+
         try
         {
             leader = leaderLocator.getLeader();
@@ -87,36 +95,42 @@ public class ClusterOverviewProcedure extends CallableProcedure.BasicProcedure
 
         for ( MemberId memberId : coreMembers )
         {
-            Optional<ClientConnectorAddresses> clientConnectorAddresses =
-                    coreTopology.find( memberId ).map( CoreServerInfo::connectors );
-            if ( clientConnectorAddresses.isPresent() )
+            Optional<CoreServerInfo> coreServerInfo = coreTopology.find( memberId );
+            if ( coreServerInfo.isPresent() )
             {
                 Role role = memberId.equals( leader ) ? Role.LEADER : Role.FOLLOWER;
-                endpoints.add( new ReadWriteEndPoint( clientConnectorAddresses.get(), role, memberId.getUuid() ) );
+                endpoints.add( new ReadWriteEndPoint( coreServerInfo.get().connectors(), role, memberId.getUuid(), asList( coreServerInfo.get().tags() ) ) );
             }
             else
             {
                 log.debug( "No Address found for " + memberId );
             }
         }
-        for ( ReadReplicaInfo readReplicaInfo : topologyService.readReplicas().allMemberInfo() )
+
+        for ( Map.Entry<MemberId,ReadReplicaInfo> readReplica : topologyService.readReplicas().replicaMembers().entrySet() )
         {
-            endpoints.add( new ReadWriteEndPoint( readReplicaInfo.connectors(), Role.READ_REPLICA ) );
+            ReadReplicaInfo readReplicaInfo = readReplica.getValue();
+            endpoints.add( new ReadWriteEndPoint( readReplicaInfo.connectors(), Role.READ_REPLICA, readReplica.getKey().getUuid(), asList( readReplicaInfo.tags() ) ) );
         }
 
         endpoints.sort( comparing( o -> o.addresses().toString() ) );
 
-        return map( ( l ) -> new Object[]{l.identifier().toString(), l.addresses().uriList().stream().map( URI::toString ).toArray(), l.role().name()},
+        return map( ( endpoint ) -> new Object[]
+                        {
+                                endpoint.memberId().toString(),
+                                endpoint.addresses().uriList().stream().map( URI::toString ).toArray(),
+                                endpoint.role().name(),
+                                endpoint.tags()
+                        },
                 asRawIterator( endpoints.iterator() ) );
     }
 
-    private static class ReadWriteEndPoint
+    static class ReadWriteEndPoint
     {
-        private static final UUID ZERO_ID = new UUID( 0, 0 );
-
         private final ClientConnectorAddresses clientConnectorAddresses;
         private final Role role;
-        private final UUID identifier;
+        private final UUID memberId;
+        private final List<String> tags;
 
         public ClientConnectorAddresses addresses()
         {
@@ -128,21 +142,22 @@ public class ClusterOverviewProcedure extends CallableProcedure.BasicProcedure
             return role;
         }
 
-        UUID identifier()
+        UUID memberId()
         {
-            return identifier == null ? ZERO_ID : identifier;
+            return memberId;
         }
 
-        ReadWriteEndPoint( ClientConnectorAddresses clientConnectorAddresses, Role role )
+        List<String> tags()
         {
-            this( clientConnectorAddresses, role, null );
+            return tags;
         }
 
-        ReadWriteEndPoint( ClientConnectorAddresses clientConnectorAddresses, Role role, UUID identifier )
+        ReadWriteEndPoint( ClientConnectorAddresses clientConnectorAddresses, Role role, UUID memberId, List<String> tags )
         {
             this.clientConnectorAddresses = clientConnectorAddresses;
             this.role = role;
-            this.identifier = identifier;
+            this.memberId = memberId;
+            this.tags = tags;
         }
     }
 }

@@ -78,6 +78,12 @@ public abstract class AbstractInProcessServerBuilder implements TestServerBuilde
         init( dataDir );
     }
 
+    public AbstractInProcessServerBuilder( File workingDir, String dataSubDir )
+    {
+        File dataDir = new File( workingDir, dataSubDir ).getAbsoluteFile();
+        init( dataDir );
+    }
+
     private void init( File workingDir )
     {
         setDirectory( workingDir );

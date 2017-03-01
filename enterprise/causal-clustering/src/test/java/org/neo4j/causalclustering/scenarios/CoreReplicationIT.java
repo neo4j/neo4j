@@ -36,7 +36,6 @@ import org.neo4j.graphdb.Node;
 import org.neo4j.graphdb.Transaction;
 import org.neo4j.graphdb.security.WriteOperationsNotAllowedException;
 import org.neo4j.test.causalclustering.ClusterRule;
-import org.neo4j.test.rule.SuppressOutput;
 
 import static org.hamcrest.CoreMatchers.containsString;
 import static org.junit.Assert.assertEquals;
@@ -50,10 +49,8 @@ import static org.neo4j.helpers.collection.Iterables.count;
 public class CoreReplicationIT
 {
     @Rule
-    public final ClusterRule clusterRule = new ClusterRule( getClass() )
-                            .withNumberOfCoreMembers( 3 ).withNumberOfReadReplicas( 0 );
-    @Rule
-    public SuppressOutput suppressOutput = SuppressOutput.suppressAll();
+    public final ClusterRule clusterRule =
+            new ClusterRule( getClass() ).withNumberOfCoreMembers( 3 ).withNumberOfReadReplicas( 0 );
 
     private Cluster cluster;
 
@@ -289,10 +286,11 @@ public class CoreReplicationIT
                     cluster.removeCoreMember( cluster.getDbWithAnyRole( Role.FOLLOWER, Role.CANDIDATE ) );
                     latch.countDown();
                 } );
+                fail( "Should have thrown" );
             }
-            catch ( Exception e )
+            catch ( Exception ignored )
             {
-                throw new RuntimeException( e );
+                // expected
             }
         } );
 

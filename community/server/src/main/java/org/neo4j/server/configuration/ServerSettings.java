@@ -196,4 +196,7 @@ public class ServerSettings implements LoadableConfig
 
     @Internal
     public static final Setting<Boolean> console_module_enabled = setting( "unsupported.dbms.console_module.enabled", BOOLEAN, TRUE );
+
+    @Internal
+    public static final Setting<Boolean> jmx_module_enabled = setting( "unsupported.dbms.jmx_module.enabled", BOOLEAN, TRUE );
 }
