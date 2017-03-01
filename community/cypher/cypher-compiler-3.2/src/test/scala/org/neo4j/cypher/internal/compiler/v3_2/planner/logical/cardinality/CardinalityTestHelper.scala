@@ -19,6 +19,7 @@
  */
 package org.neo4j.cypher.internal.compiler.v3_2.planner.logical.cardinality
 
+import org.neo4j.cypher.internal.compiler.v3_2.IndexDescriptor
 import org.neo4j.cypher.internal.compiler.v3_2.helpers.MapSupport._
 import org.neo4j.cypher.internal.compiler.v3_2.helpers.SemanticTableHelper
 import org.neo4j.cypher.internal.compiler.v3_2.planner.logical.QueryGraphProducer
@@ -146,9 +147,10 @@ trait CardinalityTestHelper extends QueryGraphProducer with CardinalityCustomMat
             ).getOrElse(nodesCardinality)
           })
 
-        def indexSelectivity(label: LabelId, property: PropertyKeyId): Option[Selectivity] = {
-          val labelName: Option[String] = getLabelName(label)
-          val propertyName: Option[String] = getPropertyName(property)
+        def indexSelectivity(index: IndexDescriptor): Option[Selectivity] = {
+          val labelName: Option[String] = getLabelName(index.label)
+          val propertyName: Option[String] = getPropertyName(index.property)
+          //TODO: Refactor for composite indexes
           (labelName, propertyName) match {
             case (Some(lName), Some(pName)) =>
               val selectivity = knownIndexSelectivity.get((lName, pName))
@@ -158,9 +160,10 @@ trait CardinalityTestHelper extends QueryGraphProducer with CardinalityCustomMat
           }
         }
 
-        def indexPropertyExistsSelectivity(label: LabelId, property: PropertyKeyId): Option[Selectivity] = {
-          val labelName: Option[String] = getLabelName(label)
-          val propertyName: Option[String] = getPropertyName(property)
+        def indexPropertyExistsSelectivity(index: IndexDescriptor): Option[Selectivity] = {
+          val labelName: Option[String] = getLabelName(index.label)
+          val propertyName: Option[String] = getPropertyName(index.property)
+          //TODO: Refactor for composite indexes
           (labelName, propertyName) match {
             case (Some(lName), Some(pName)) =>
               val selectivity = knownIndexPropertyExistsSelectivity.get((lName, pName))

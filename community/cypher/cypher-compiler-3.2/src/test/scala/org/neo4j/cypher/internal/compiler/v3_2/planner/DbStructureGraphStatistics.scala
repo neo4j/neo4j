@@ -19,6 +19,7 @@
  */
 package org.neo4j.cypher.internal.compiler.v3_2.planner
 
+import org.neo4j.cypher.internal.compiler.v3_2.IndexDescriptor
 import org.neo4j.cypher.internal.compiler.v3_2.spi.GraphStatistics
 import org.neo4j.cypher.internal.frontend.v3_2.{LabelId, NameId, PropertyKeyId, RelTypeId}
 import org.neo4j.cypher.internal.ir.v3_2.{Cardinality, Selectivity}
@@ -39,8 +40,8 @@ class DbStructureGraphStatistics(lookup: DbStructureLookup) extends GraphStatist
 
       indexSelectivity(:X, prop) = s => |MATCH (a:X)| * s = |MATCH (a:X) WHERE x.prop = '*'|
    */
-  override def indexSelectivity( label: LabelId, property: PropertyKeyId ): Option[Selectivity] = {
-    val result = lookup.indexSelectivity( label.id, property.id )
+  override def indexSelectivity( index: IndexDescriptor ): Option[Selectivity] = {
+    val result = lookup.indexSelectivity( index.label.id, index.property.id )
     Selectivity.of(result)
   }
 
@@ -49,8 +50,8 @@ class DbStructureGraphStatistics(lookup: DbStructureLookup) extends GraphStatist
 
       indexPropertyExistsSelectivity(:X, prop) = s => |MATCH (a:X)| * s = |MATCH (a:X) WHERE has(x.prop)|
    */
-  override def indexPropertyExistsSelectivity( label: LabelId, property: PropertyKeyId ): Option[Selectivity] = {
-    val result = lookup.indexPropertyExistsSelectivity( label.id, property.id )
+  override def indexPropertyExistsSelectivity( index: IndexDescriptor ): Option[Selectivity] = {
+    val result = lookup.indexPropertyExistsSelectivity( index.label.id, index.property.id )
     if (result.isNaN) None else Some(Selectivity.of(result).get)
   }
 }

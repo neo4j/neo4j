@@ -22,7 +22,7 @@ package org.neo4j.cypher.internal.compiler.v3_2.planner.logical.cardinality
 import java.math
 import java.math.RoundingMode
 
-import org.neo4j.cypher.internal.compiler.v3_2.PrefixRange
+import org.neo4j.cypher.internal.compiler.v3_2.{IndexDescriptor, PrefixRange}
 import org.neo4j.cypher.internal.compiler.v3_2.planner.logical.plans._
 import org.neo4j.cypher.internal.compiler.v3_2.spi.GraphStatistics
 import org.neo4j.cypher.internal.compiler.v3_2.spi.GraphStatistics._
@@ -135,7 +135,7 @@ case class ExpressionSelectivityCalculator(stats: GraphStatistics, combiner: Sel
       labelName =>
         (labelName.id, propertyKey.id) match {
           case (Some(labelId), Some(propertyKeyId)) =>
-            stats.indexSelectivity(labelId, propertyKeyId)
+            stats.indexSelectivity(IndexDescriptor(labelId, propertyKeyId))
 
           case _ =>
             Some(Selectivity.ZERO)
@@ -206,7 +206,7 @@ case class ExpressionSelectivityCalculator(stats: GraphStatistics, combiner: Sel
       labelName =>
         (labelName.id, propertyKey.id) match {
           case (Some(labelId), Some(propertyKeyId)) =>
-            stats.indexPropertyExistsSelectivity(labelId, propertyKeyId)
+            stats.indexPropertyExistsSelectivity(IndexDescriptor(labelId, propertyKeyId))
 
           case _ =>
             Some(Selectivity.ZERO)

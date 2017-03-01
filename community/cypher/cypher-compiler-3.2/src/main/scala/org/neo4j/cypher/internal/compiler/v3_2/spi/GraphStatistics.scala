@@ -19,7 +19,8 @@
  */
 package org.neo4j.cypher.internal.compiler.v3_2.spi
 
-import org.neo4j.cypher.internal.frontend.v3_2.{LabelId, PropertyKeyId, RelTypeId}
+import org.neo4j.cypher.internal.compiler.v3_2.IndexDescriptor
+import org.neo4j.cypher.internal.frontend.v3_2.{LabelId, RelTypeId}
 import org.neo4j.cypher.internal.ir.v3_2.{Cardinality, Selectivity}
 
 object GraphStatistics {
@@ -45,14 +46,14 @@ trait GraphStatistics {
 
       indexSelectivity(:X, prop) = s => |MATCH (a:X)| * s = |MATCH (a:X) WHERE x.prop = '*'|
    */
-  def indexSelectivity(label: LabelId, property: PropertyKeyId): Option[Selectivity]
+  def indexSelectivity(index: IndexDescriptor): Option[Selectivity]
 
   /*
       Probability of any node with the given label, to have a particular property
 
       indexPropertyExistsSelectivity(:X, prop) = s => |MATCH (a:X)| * s = |MATCH (a:X) WHERE has(x.prop)|
    */
-  def indexPropertyExistsSelectivity(label: LabelId, property: PropertyKeyId): Option[Selectivity]
+  def indexPropertyExistsSelectivity(index: IndexDescriptor): Option[Selectivity]
 }
 
 class DelegatingGraphStatistics(delegate: GraphStatistics) extends GraphStatistics {
@@ -62,11 +63,11 @@ class DelegatingGraphStatistics(delegate: GraphStatistics) extends GraphStatisti
   override def cardinalityByLabelsAndRelationshipType(fromLabel: Option[LabelId], relTypeId: Option[RelTypeId], toLabel: Option[LabelId]): Cardinality =
     delegate.cardinalityByLabelsAndRelationshipType(fromLabel, relTypeId, toLabel)
 
-  override def indexSelectivity(label: LabelId, property: PropertyKeyId): Option[Selectivity] =
-    delegate.indexSelectivity(label, property)
+  override def indexSelectivity(index: IndexDescriptor): Option[Selectivity] =
+    delegate.indexSelectivity(index)
 
-  override def indexPropertyExistsSelectivity(label: LabelId, property: PropertyKeyId): Option[Selectivity] =
-    delegate.indexPropertyExistsSelectivity(label, property)
+  override def indexPropertyExistsSelectivity(index: IndexDescriptor): Option[Selectivity] =
+    delegate.indexPropertyExistsSelectivity(index)
 }
 
 class StatisticsCompletingGraphStatistics(delegate: GraphStatistics)
