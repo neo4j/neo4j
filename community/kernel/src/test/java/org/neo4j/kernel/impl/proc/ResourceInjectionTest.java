@@ -100,7 +100,6 @@ public class ResourceInjectionTest
 
         // Then
         compiler.compileProcedure( ProcedureWithUnknownAPI.class, Optional.empty(), true );
-
     }
 
     @Test
@@ -142,7 +141,6 @@ public class ResourceInjectionTest
                     "org.neo4j.kernel.impl.proc.listCoolPeople is not " +
                             "available due to not having unrestricted access rights, check configuration." ) );
         }
-
     }
 
     @Test
@@ -170,7 +168,6 @@ public class ResourceInjectionTest
 
         // Then
         compiler.compileFunction( FunctionWithUnknownAPI.class );
-
     }
 
     @Test
@@ -195,7 +192,6 @@ public class ResourceInjectionTest
                     "org.neo4j.kernel.impl.proc.listCoolPeople is not " +
                             "available due to not having unrestricted access rights, check configuration." ) );
         }
-
     }
 
     @Test
@@ -224,7 +220,6 @@ public class ResourceInjectionTest
 
         // Then
         compiler.compileAggregationFunction( AggregationFunctionWithUnknownAPI.class );
-
     }
 
     @Test
@@ -250,7 +245,6 @@ public class ResourceInjectionTest
                     "org.neo4j.kernel.impl.proc.listCoolPeople is not " +
                             "available due to not having unrestricted access rights, check configuration." ) );
         }
-
     }
 
     @Test
@@ -266,7 +260,7 @@ public class ResourceInjectionTest
                 .warn( "org.neo4j.kernel.impl.proc.listCoolPeople is not " +
                         "available due to not having unrestricted access rights, check configuration." );
         verify( log )
-                .warn( "org.neo4j.kernel.impl.proc.safeUserFunctionInUnknownAPIClass is not " +
+                .warn( "org.neo4j.kernel.impl.proc.safeUserFunctionInUnsafeAPIClass is not " +
                         "available due to not having unrestricted access rights, check configuration." );
         verify( log )
                 .warn( "org.neo4j.kernel.impl.proc.listCoolPeopleProcedure is not " +
@@ -510,10 +504,9 @@ public class ResourceInjectionTest
         }
 
         @UserFunction
-        public String safeUserFunctionInUnknownAPIClass()
+        public String safeUserFunctionInUnsafeAPIClass()
         {
             return "a safe function";
         }
     }
-
 }

@@ -1148,7 +1148,6 @@ public class ProcedureIT
         db = new TestGraphDatabaseFactory()
                 .newImpermanentDatabaseBuilder()
                 .setConfig( plugin_dir, plugins.getRoot().getAbsolutePath() )
-                .setConfig( GraphDatabaseSettings.procedure_unrestricted, "*" )
                 .newGraphDatabase();
     }
 
@@ -1289,9 +1288,6 @@ public class ProcedureIT
 
         @Context
         public ProcedureTransaction procedureTransaction;
-
-        @Context
-        public GraphDatabaseAPI graphDatabaseAPI;
 
         @Procedure
         public Stream<Output> guardMe()
@@ -1648,11 +1644,8 @@ public class ProcedureIT
 
     public static class ClassWithFunctions
     {
-        @Context
-        public GraphDatabaseAPI graphDatabaseAPI;
-
         @UserFunction()
-        public String getNodeName( @Name( value = "node", defaultValue = "null") Node node )
+        public String getNodeName( @Name( value = "node", defaultValue = "null" ) Node node )
         {
             return "nodeName";
         }
