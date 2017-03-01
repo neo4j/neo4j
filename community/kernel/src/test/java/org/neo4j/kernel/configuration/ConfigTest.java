@@ -19,6 +19,9 @@
  */
 package org.neo4j.kernel.configuration;
 
+import org.junit.Rule;
+import org.junit.Test;
+
 import java.io.File;
 import java.util.Arrays;
 import java.util.Collection;
@@ -27,10 +30,8 @@ import java.util.Map;
 import java.util.Optional;
 import javax.annotation.Nonnull;
 
-import org.junit.Rule;
-import org.junit.Test;
-
 import org.neo4j.configuration.LoadableConfig;
+import org.neo4j.configuration.ReplacedBy;
 import org.neo4j.graphdb.config.InvalidSettingException;
 import org.neo4j.graphdb.config.Setting;
 import org.neo4j.graphdb.config.SettingValidator;
@@ -85,6 +86,12 @@ public class ConfigTest
 
         public static final Setting<Boolean> boolSetting = setting( "bool_setting", BOOLEAN, Settings.TRUE );
 
+        @Deprecated
+        @ReplacedBy( "hello" )
+        public static final Setting<String> oldHello = setting( "old_hello", STRING, "Hello, Bob");
+
+        @Deprecated
+        public static final Setting<String> oldSetting = setting( "some_setting", STRING, "Has no replacement");
     }
 
     private static MyMigratingSettings myMigratingSettings = new MyMigratingSettings();
@@ -186,6 +193,29 @@ public class ConfigTest
         // Then
         verify( log ).warn( "Unknown config option: %s", "dbms.jibberish" );
         verify( log ).warn( "Unknown config option: %s", "ha.jibberish" );
+        verifyNoMoreInteractions( log );
+    }
+
+    @Test
+    public void shouldLogDeprecationWarnings()
+            throws Exception
+    {
+        // Given
+        Log log = mock( Log.class );
+        File confFile = testDirectory.file( "test.conf" );
+        assertTrue( confFile.createNewFile() );
+
+        Config first = Config(
+                stringMap( GraphDatabaseSettings.strict_config_validation.name(), "false",
+                        MySettingsWithDefaults.oldHello.name(), "baah",
+                        MySettingsWithDefaults.oldSetting.name(), "booh" ) );
+
+        // When
+        first.setLogger( log );
+
+        // Then
+        verify( log ).warn( "%s is deprecated. Replaced by %s", MySettingsWithDefaults.oldHello.name(),
+                MySettingsWithDefaults.hello.name() );
         verifyNoMoreInteractions( log );
     }
 
