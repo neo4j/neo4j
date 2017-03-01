@@ -26,7 +26,6 @@ import org.neo4j.kernel.api.StatementConstants;
 import org.neo4j.kernel.api.properties.DefinedProperty;
 import org.neo4j.kernel.api.properties.Property;
 import org.neo4j.storageengine.api.PropertyItem;
-import org.neo4j.storageengine.api.StorageProperty;
 import org.neo4j.storageengine.api.txstate.PropertyContainerState;
 
 /**
@@ -35,7 +34,6 @@ import org.neo4j.storageengine.api.txstate.PropertyContainerState;
 public class TxSinglePropertyCursor extends TxAbstractPropertyCursor
 {
     private int propertyKeyId;
-    private boolean seekFoundIt;
 
     public TxSinglePropertyCursor( Consumer<TxAbstractPropertyCursor> instanceCache )
     {
@@ -47,13 +45,14 @@ public class TxSinglePropertyCursor extends TxAbstractPropertyCursor
     {
         super.init( cursor, state );
         this.propertyKeyId = propertyKeyId;
-
         return this;
     }
 
     @Override
     public boolean next()
     {
+        property = null;
+
         if ( propertyKeyId == StatementConstants.NO_SUCH_PROPERTY_KEY )
         {
             return false;
@@ -61,37 +60,27 @@ public class TxSinglePropertyCursor extends TxAbstractPropertyCursor
 
         try
         {
-            seekFoundIt = false;
-            StorageProperty changedProperty = state.getChangedProperty( propertyKeyId );
-            if ( changedProperty != null )
-            {
-                this.property = (DefinedProperty) changedProperty;
-                return true;
-            }
-
-            StorageProperty addedProperty = state.getAddedProperty( propertyKeyId );
-            if ( addedProperty != null )
-            {
-                this.property = (DefinedProperty) addedProperty;
-                return true;
-            }
-
             if ( state.isPropertyRemoved( propertyKeyId ) )
             {
-                this.property = null;
                 return false;
             }
 
-            if ( cursor.next() )
+            if ( property == null )
             {
-                this.property = null;
-                return seekFoundIt = true;
+                property = (DefinedProperty) state.getChangedProperty( propertyKeyId );
             }
-            else
+
+            if ( property == null )
             {
-                this.property = null;
-                return false;
+                property = (DefinedProperty) state.getAddedProperty( propertyKeyId );
             }
+
+            if ( property == null && cursor.next() )
+            {
+                property = Property.property( cursor.get().propertyKeyId(), cursor.get().value() );
+            }
+
+            return property != null;
         }
         finally
         {
@@ -102,16 +91,10 @@ public class TxSinglePropertyCursor extends TxAbstractPropertyCursor
     @Override
     public PropertyItem get()
     {
-        if ( property == null && !seekFoundIt )
+        if ( property == null )
         {
             throw new IllegalStateException();
         }
-
-        if ( seekFoundIt )
-        {
-            property = Property.property( cursor.get().propertyKeyId(), cursor.get().value() );
-        }
-        seekFoundIt = false;
 
         return super.get();
     }

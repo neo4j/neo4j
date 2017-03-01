@@ -42,24 +42,29 @@ public class TxAllPropertyCursor extends TxAbstractPropertyCursor
     @Override
     public boolean next()
     {
+        property = null;
         if ( added == null )
         {
             while ( cursor.next() )
             {
                 int propertyKeyId = cursor.get().propertyKeyId();
 
-                StorageProperty changedProperty = state.getChangedProperty( propertyKeyId );
-                if ( changedProperty != null )
+                if ( state.isPropertyRemoved( propertyKeyId ) )
                 {
-                    this.property = (DefinedProperty) changedProperty;
-                    return true;
+                    continue;
                 }
 
-                if ( !state.isPropertyRemoved( propertyKeyId ) )
+                if ( property == null )
+                {
+                    this.property = (DefinedProperty) state.getChangedProperty( propertyKeyId );
+                }
+
+                if( property == null )
                 {
                     this.property = Property.property( propertyKeyId, cursor.get().value() );
-                    return true;
                 }
+
+                return property != null;
             }
 
             added = state.addedProperties();
@@ -80,7 +85,7 @@ public class TxAllPropertyCursor extends TxAbstractPropertyCursor
     @Override
     public void close()
     {
-        this.added = null;
         super.close();
+        this.added = null;
     }
 }
