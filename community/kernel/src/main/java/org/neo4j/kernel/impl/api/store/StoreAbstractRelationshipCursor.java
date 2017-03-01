@@ -103,7 +103,7 @@ public abstract class StoreAbstractRelationshipCursor
     }
 
     @Override
-    public void visit( long relId, int type, long startNode, long endNode ) throws RuntimeException
+    public final void visit( long relId, int type, long startNode, long endNode ) throws RuntimeException
     {
         relationshipRecord.setId( relId );
         relationshipRecord.setType( type );

@@ -58,6 +58,7 @@ public class StoreStatement implements StorageStatement
     private final InstanceCache<StoreIteratorRelationshipCursor> iteratorRelationshipCursor;
     private final InstanceCache<StoreNodeRelationshipCursor> nodeRelationshipsCursor;
     private final InstanceCache<StorePropertyCursor> propertyCursorCache;
+    private final InstanceCache<StoreSinglePropertyCursor> singlePropertyCursorCache;
     private final NeoStores neoStores;
     private final NodeStore nodeStore;
     private final RelationshipStore relationshipStore;
@@ -126,6 +127,14 @@ public class StoreStatement implements StorageStatement
                 return new StorePropertyCursor( recordCursors, this );
             }
         };
+        singlePropertyCursorCache = new InstanceCache<StoreSinglePropertyCursor>()
+        {
+            @Override
+            protected StoreSinglePropertyCursor create()
+            {
+                return new StoreSinglePropertyCursor( recordCursors, this );
+            }
+        };
     }
 
     @Override
@@ -176,7 +185,7 @@ public class StoreStatement implements StorageStatement
     @Override
     public Cursor<PropertyItem> acquireSinglePropertyCursor( long propertyId, int propertyKeyId, Lock lock )
     {
-        return propertyCursorCache.get().init( propertyKeyId, propertyId, lock );
+        return singlePropertyCursorCache.get().init( propertyKeyId, propertyId, lock );
     }
 
     @Override

@@ -24,31 +24,26 @@ import java.util.function.Consumer;
 import org.neo4j.kernel.impl.locking.Lock;
 import org.neo4j.kernel.impl.store.RecordCursors;
 
-import static org.neo4j.function.Predicates.ALWAYS_TRUE_INT;
-
-/**
- * Cursor for all properties on a node or relationship.
- */
-public class StorePropertyCursor extends StoreAbstractPropertyCursor
+public class StoreSinglePropertyCursor extends StoreAbstractPropertyCursor
 {
-    private final Consumer<StorePropertyCursor> instanceCache;
+    private final Consumer<StoreSinglePropertyCursor> instanceCache;
 
-    public StorePropertyCursor( RecordCursors cursors, Consumer<StorePropertyCursor> instanceCache )
+    StoreSinglePropertyCursor( RecordCursors cursors, Consumer<StoreSinglePropertyCursor> instanceCache )
     {
         super( cursors  );
         this.instanceCache = instanceCache;
     }
 
-    public StorePropertyCursor init( long firstPropertyId, Lock lock )
+    public StoreSinglePropertyCursor init( int propertyKeyId, long firstPropertyId, Lock lock )
     {
-        initialize( ALWAYS_TRUE_INT, firstPropertyId, lock );
+        initialize( key -> key == propertyKeyId, firstPropertyId, lock );
         return this;
     }
 
     @Override
     protected boolean loop()
     {
-        return true;
+        return !fetched;
     }
 
     @Override
