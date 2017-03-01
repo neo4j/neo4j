@@ -20,6 +20,7 @@
 package org.neo4j.kernel.impl.api.store;
 
 import java.util.function.Consumer;
+import java.util.function.IntPredicate;
 
 import org.neo4j.cursor.Cursor;
 import org.neo4j.kernel.impl.locking.Lock;
@@ -29,6 +30,7 @@ import org.neo4j.kernel.impl.store.record.PropertyRecord;
 import org.neo4j.kernel.impl.store.record.Record;
 import org.neo4j.storageengine.api.PropertyItem;
 
+import static org.neo4j.function.Predicates.ALWAYS_TRUE_INT;
 import static org.neo4j.kernel.impl.store.record.RecordLoad.FORCE;
 
 /**
@@ -41,6 +43,7 @@ public class StorePropertyCursor implements Cursor<PropertyItem>, PropertyItem
     private final RecordCursor<PropertyRecord> recordCursor;
 
     private Lock lock;
+    private IntPredicate propertyKeyIds;
 
     public StorePropertyCursor( RecordCursors cursors, Consumer<StorePropertyCursor> instanceCache )
     {
@@ -49,31 +52,41 @@ public class StorePropertyCursor implements Cursor<PropertyItem>, PropertyItem
         this.recordCursor = cursors.property();
     }
 
-    public StorePropertyCursor init( long firstPropertyId, Lock readLock )
+    public StorePropertyCursor init( long firstPropertyId, Lock lock )
     {
+        return init( ALWAYS_TRUE_INT, firstPropertyId, lock );
+    }
+
+    public StorePropertyCursor init( int propertyKeyId, long firstPropertyId, Lock lock )
+    {
+        return init( (key) -> key == propertyKeyId, firstPropertyId, lock );
+    }
+
+    public StorePropertyCursor init( IntPredicate propertyKeyIds, long firstPropertyId, Lock lock )
+    {
+        this.propertyKeyIds = propertyKeyIds;
         recordCursor.placeAt( firstPropertyId, FORCE );
-        payload.clear();
-        lock = readLock;
+        this.lock = lock;
         return this;
     }
 
     @Override
     public boolean next()
     {
-        // Are there more properties to return for this current record we're at?
-        if ( payload.next() )
-        {
-            return true;
-        }
-
-        // No, OK continue down the chain and hunt for more...
         while ( true )
         {
+            // Are there more properties to return for this current record we're at?
+            if ( payload.next() )
+            {
+                return true;
+            }
+
+            // No, OK continue down the chain and hunt for more...
             if ( recordCursor.next() )
             {
                 // All good, we can get values off of this record
                 PropertyRecord propertyRecord = recordCursor.get();
-                payload.init( propertyRecord.getBlocks(), propertyRecord.getNumberOfBlocks() );
+                payload.init( propertyKeyIds, propertyRecord.getBlocks(), propertyRecord.getNumberOfBlocks() );
                 if ( payload.next() )
                 {
                     return true;
@@ -113,12 +126,14 @@ public class StorePropertyCursor implements Cursor<PropertyItem>, PropertyItem
     {
         try
         {
-            payload.clear();
+            propertyKeyIds = null;
+            payload.close();
             instanceCache.accept( this );
         }
         finally
         {
             lock.release();
+            lock = null;
         }
     }
 }
