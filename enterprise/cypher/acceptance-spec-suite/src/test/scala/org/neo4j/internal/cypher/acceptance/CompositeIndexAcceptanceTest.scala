@@ -68,7 +68,7 @@ class CompositeIndexAcceptanceTest extends ExecutionEngineFunSuite with NewPlann
     // Then
     println(result.executionPlanDescription())
     result should use("NodeIndexSeek")
-    //    result should evaluateTo(List(Map("n" -> n1)))
+    result should evaluateTo(List(Map("n" -> n1)))
   }
 
   ignore("should be able to update composite index when only one property has changed") {
