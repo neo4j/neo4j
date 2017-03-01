@@ -24,22 +24,22 @@ import org.neo4j.cursor.Cursor;
 import org.neo4j.function.ThrowingLongFunction;
 import org.neo4j.helpers.collection.PrefetchingIterator;
 import org.neo4j.kernel.api.exceptions.EntityNotFoundException;
-import org.neo4j.storageengine.api.EntityItem;
+import org.neo4j.storageengine.api.NodeItem;
 
-public class EntityLoadingIterator<T extends EntityItem> extends PrefetchingIterator<Cursor<T>>
+public class NodeLoadingIterator extends PrefetchingIterator<Cursor<NodeItem>>
 {
     private final PrimitiveLongIterator ids;
-    private final ThrowingLongFunction<Cursor<T>,EntityNotFoundException> loader;
+    private final ThrowingLongFunction<Cursor<NodeItem>,EntityNotFoundException> loader;
 
-    public EntityLoadingIterator( PrimitiveLongIterator ids,
-            ThrowingLongFunction<Cursor<T>,EntityNotFoundException> loader )
+    public NodeLoadingIterator( PrimitiveLongIterator ids,
+            ThrowingLongFunction<Cursor<NodeItem>,EntityNotFoundException> loader )
     {
         this.ids = ids;
         this.loader = loader;
     }
 
     @Override
-    protected Cursor<T> fetchNextOrNull()
+    protected Cursor<NodeItem> fetchNextOrNull()
     {
         while ( ids.hasNext() )
         {

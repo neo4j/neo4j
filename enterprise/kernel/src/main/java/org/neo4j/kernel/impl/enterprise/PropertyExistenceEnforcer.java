@@ -31,6 +31,7 @@ import org.neo4j.kernel.api.exceptions.schema.NodePropertyExistenceException;
 import org.neo4j.kernel.api.exceptions.schema.RelationshipPropertyExistenceException;
 import org.neo4j.kernel.api.schema_new.LabelSchemaDescriptor;
 import org.neo4j.kernel.api.schema_new.RelationTypeSchemaDescriptor;
+import org.neo4j.kernel.impl.locking.Lock;
 import org.neo4j.storageengine.api.NodeItem;
 import org.neo4j.storageengine.api.PropertyItem;
 import org.neo4j.storageengine.api.RelationshipItem;
@@ -110,7 +111,7 @@ class PropertyExistenceEnforcer extends TxStateVisitor.Delegator
                 PrimitiveIntSet labelIds = node.get().labels();
 
                 propertyKeyIds.clear();
-                try ( Cursor<PropertyItem> properties = node.get().properties() )
+                try ( Cursor<PropertyItem> properties = properties( node.get() ) )
                 {
                     while ( properties.next() )
                     {
@@ -151,6 +152,13 @@ class PropertyExistenceEnforcer extends TxStateVisitor.Delegator
         return txState.augmentSingleNodeCursor( cursor, id );
     }
 
+    private Cursor<PropertyItem> properties( NodeItem node )
+    {
+        Lock lock = node.lock();
+        Cursor<PropertyItem> cursor = storeStatement().acquirePropertyCursor( node.nextPropertyId(), lock );
+        return txState.augmentPropertyCursor( cursor, txState.getNodeState( node.id() ) );
+    }
+
     private StorageStatement storeStatement()
     {
         return storageStatement == null ? storageStatement = storeLayer.newStatement() : storageStatement;
@@ -179,7 +187,7 @@ class PropertyExistenceEnforcer extends TxStateVisitor.Delegator
             {
                 // Iterate all constraints and find property existence constraints that match relationship type
                 propertyKeyIds.clear();
-                try ( Cursor<PropertyItem> properties = relationship.get().properties() )
+                try ( Cursor<PropertyItem> properties = properties( relationship.get() ) )
                 {
                     while ( properties.next() )
                     {
@@ -213,5 +221,12 @@ class PropertyExistenceEnforcer extends TxStateVisitor.Delegator
     {
         Cursor<RelationshipItem> cursor = storeStatement().acquireSingleRelationshipCursor( id );
         return txState.augmentSingleRelationshipCursor( cursor, id );
+    }
+
+    private Cursor<PropertyItem> properties( RelationshipItem relationship )
+    {
+        Lock lock = relationship.lock();
+        Cursor<PropertyItem> cursor = storeStatement().acquirePropertyCursor( relationship.nextPropertyId(), lock );
+        return txState.augmentPropertyCursor( cursor, txState.getRelationshipState( relationship.id() ) );
     }
 }

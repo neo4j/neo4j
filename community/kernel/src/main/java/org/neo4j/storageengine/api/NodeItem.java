@@ -20,14 +20,19 @@
 package org.neo4j.storageengine.api;
 
 import org.neo4j.collection.primitive.PrimitiveIntSet;
-import org.neo4j.cursor.Cursor;
+import org.neo4j.kernel.impl.locking.Lock;
 
 /**
  * Represents a single node from a cursor.
  */
 public interface NodeItem
-        extends EntityItem
 {
+    /**
+     * @return id of current node
+     * @throws IllegalStateException if no current entity is selected
+     */
+    long id();
+
     /**
      * @return label cursor for current node
      * @throws IllegalStateException if no current node is selected
@@ -49,4 +54,8 @@ public interface NodeItem
     long nextGroupId();
 
     long nextRelationshipId();
+
+    long nextPropertyId();
+
+    Lock lock();
 }

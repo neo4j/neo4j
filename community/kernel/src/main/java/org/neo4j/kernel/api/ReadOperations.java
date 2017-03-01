@@ -56,6 +56,7 @@ import org.neo4j.kernel.impl.api.RelationshipVisitor;
 import org.neo4j.kernel.impl.api.store.RelationshipIterator;
 import org.neo4j.register.Register.DoubleLongRegister;
 import org.neo4j.storageengine.api.NodeItem;
+import org.neo4j.storageengine.api.PropertyItem;
 import org.neo4j.storageengine.api.RelationshipItem;
 import org.neo4j.storageengine.api.Token;
 import org.neo4j.storageengine.api.lock.ResourceType;
@@ -217,6 +218,10 @@ public interface ReadOperations
     Cursor<NodeItem> nodeCursorById( long nodeId ) throws EntityNotFoundException;
 
     Cursor<RelationshipItem> relationshipCursorById( long relId ) throws EntityNotFoundException;
+
+    Cursor<PropertyItem> nodeGetProperties( NodeItem node );
+
+    Cursor<PropertyItem> relationshipGetProperties( RelationshipItem relationship );
 
     //===========================================
     //== SCHEMA OPERATIONS ======================

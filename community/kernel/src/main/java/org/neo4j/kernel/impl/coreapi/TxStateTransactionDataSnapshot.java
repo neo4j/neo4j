@@ -44,6 +44,7 @@ import org.neo4j.kernel.impl.api.KernelTransactionImplementation;
 import org.neo4j.kernel.impl.core.NodeProxy;
 import org.neo4j.kernel.impl.core.RelationshipProxy;
 import org.neo4j.kernel.impl.core.RelationshipProxy.RelationshipActions;
+import org.neo4j.kernel.impl.locking.Lock;
 import org.neo4j.storageengine.api.NodeItem;
 import org.neo4j.storageengine.api.PropertyItem;
 import org.neo4j.storageengine.api.RelationshipItem;
@@ -200,13 +201,15 @@ public class TxStateTransactionDataSnapshot implements TransactionData
     {
         try
         {
-            for ( Long nodeId : state.addedAndRemovedNodes().getRemoved() )
+            for ( long nodeId : state.addedAndRemovedNodes().getRemoved() )
             {
                 try ( Cursor<NodeItem> node = storeStatement.acquireSingleNodeCursor( nodeId ) )
                 {
                     if ( node.next() )
                     {
-                        try ( Cursor<PropertyItem> properties = node.get().properties() )
+                        Lock lock = node.get().lock();
+                        try ( Cursor<PropertyItem> properties = storeStatement
+                                .acquirePropertyCursor( node.get().nextPropertyId(), lock ) )
                         {
                             while ( properties.next() )
                             {
@@ -224,14 +227,16 @@ public class TxStateTransactionDataSnapshot implements TransactionData
                     }
                 }
             }
-            for ( Long relId : state.addedAndRemovedRelationships().getRemoved() )
+            for ( long relId : state.addedAndRemovedRelationships().getRemoved() )
             {
                 Relationship relationshipProxy = relationship( relId );
                 try ( Cursor<RelationshipItem> relationship = storeStatement.acquireSingleRelationshipCursor( relId ) )
                 {
                     if ( relationship.next() )
                     {
-                        try ( Cursor<PropertyItem> properties = relationship.get().properties() )
+                        Lock lock = relationship.get().lock();
+                        try ( Cursor<PropertyItem> properties = storeStatement
+                                .acquirePropertyCursor( relationship.get().nextPropertyId(), lock ) )
                         {
                             while ( properties.next() )
                             {
@@ -281,7 +286,7 @@ public class TxStateTransactionDataSnapshot implements TransactionData
                     DefinedProperty property = (DefinedProperty) added.next();
                     assignedRelationshipProperties.add( new RelationshipPropertyEntryView( relationship,
                             store.propertyKeyGetName( property.propertyKeyId() ), property.value(),
-                            committedValue( store, relState, property.propertyKeyId() ) ) );
+                            committedValue( relState, property.propertyKeyId() ) ) );
                 }
                 Iterator<Integer> removed = relState.removedProperties();
                 while ( removed.hasNext() )
@@ -289,7 +294,7 @@ public class TxStateTransactionDataSnapshot implements TransactionData
                     Integer property = removed.next();
                     removedRelationshipProperties.add( new RelationshipPropertyEntryView( relationship,
                             store.propertyKeyGetName( property ), null,
-                            committedValue( store, relState, property ) ) );
+                            committedValue( relState, property ) ) );
                 }
             }
         }
@@ -362,7 +367,9 @@ public class TxStateTransactionDataSnapshot implements TransactionData
                 return null;
             }
 
-            try ( Cursor<PropertyItem> properties = node.get().property( property ) )
+            Lock lock = node.get().lock();
+            try ( Cursor<PropertyItem> properties = storeStatement
+                    .acquireSinglePropertyCursor( node.get().nextPropertyId(), property, lock ) )
             {
                 if ( properties.next() )
                 {
@@ -374,7 +381,7 @@ public class TxStateTransactionDataSnapshot implements TransactionData
         return null;
     }
 
-    private Object committedValue( StoreReadLayer storeReadLayer, RelationshipState relState, int property )
+    private Object committedValue( RelationshipState relState, int property )
     {
         if ( state.relationshipIsAddedInThisTx( relState.getId() ) )
         {
@@ -389,7 +396,9 @@ public class TxStateTransactionDataSnapshot implements TransactionData
                 return null;
             }
 
-            try ( Cursor<PropertyItem> properties = relationship.get().property( property ) )
+            Lock lock = relationship.get().lock();
+            try ( Cursor<PropertyItem> properties = storeStatement
+                    .acquireSinglePropertyCursor( relationship.get().nextPropertyId(), property, lock ) )
             {
                 if ( properties.next() )
                 {
@@ -408,7 +417,7 @@ public class TxStateTransactionDataSnapshot implements TransactionData
         private final Object newValue;
         private final Object oldValue;
 
-        public NodePropertyEntryView( long nodeId, String key, Object newValue, Object oldValue )
+        NodePropertyEntryView( long nodeId, String key, Object newValue, Object oldValue )
         {
             this.nodeId = nodeId;
             this.key = key;
@@ -463,8 +472,7 @@ public class TxStateTransactionDataSnapshot implements TransactionData
         private final Object newValue;
         private final Object oldValue;
 
-        public RelationshipPropertyEntryView( Relationship relationship,
-                String key, Object newValue, Object oldValue )
+        RelationshipPropertyEntryView( Relationship relationship, String key, Object newValue, Object oldValue )
         {
             this.relationship = relationship;
             this.key = key;
@@ -517,7 +525,7 @@ public class TxStateTransactionDataSnapshot implements TransactionData
         private final long nodeId;
         private final Label label;
 
-        public LabelEntryView( long nodeId, String labelName )
+        LabelEntryView( long nodeId, String labelName )
         {
             this.nodeId = nodeId;
             this.label = Label.label( labelName );

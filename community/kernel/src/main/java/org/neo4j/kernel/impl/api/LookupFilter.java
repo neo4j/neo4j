@@ -29,7 +29,6 @@ import org.neo4j.kernel.api.index.PropertyAccessor;
 import org.neo4j.kernel.api.properties.Property;
 import org.neo4j.kernel.impl.api.operations.EntityOperations;
 import org.neo4j.kernel.impl.api.operations.EntityReadOperations;
-import org.neo4j.storageengine.api.EntityType;
 import org.neo4j.storageengine.api.NodeItem;
 
 /**
@@ -132,7 +131,7 @@ public class LookupFilter
         {
             try ( Cursor<NodeItem> node = readOperations.nodeCursorById( state, nodeId ) )
             {
-                Object value = node.get().getProperty( propertyKeyId );
+                Object value = readOperations.nodeGetProperty( state, node.get(), propertyKeyId );
                 return value == null ? Property.noNodeProperty( nodeId, propertyKeyId )
                                      : Property.property( propertyKeyId, value );
             }
@@ -186,7 +185,7 @@ public class LookupFilter
         {
             try ( Cursor<NodeItem> node = readOperations.nodeCursorById( state, nodeId ) )
             {
-                return inRange( node.get().getProperty( propertyKeyId ) );
+                return inRange( readOperations.nodeGetProperty( state, node.get(), propertyKeyId ) );
             }
             catch ( EntityNotFoundException e )
             {

@@ -24,6 +24,7 @@ import java.util.function.IntPredicate;
 import org.neo4j.cursor.Cursor;
 import org.neo4j.kernel.api.exceptions.index.IndexNotFoundKernelException;
 import org.neo4j.kernel.api.schema_new.index.NewIndexDescriptor;
+import org.neo4j.kernel.impl.locking.Lock;
 import org.neo4j.kernel.impl.store.RecordCursors;
 import org.neo4j.storageengine.api.schema.IndexReader;
 import org.neo4j.storageengine.api.schema.LabelScanReader;
@@ -110,6 +111,10 @@ public interface StorageStatement extends AutoCloseable
      -     * @return a {@link Cursor} over all stored relationships.
      -     */
     Cursor<RelationshipItem> relationshipsGetAllCursor();
+
+    Cursor<PropertyItem> acquirePropertyCursor( long propertyId, Lock shortLivedReadLock );
+
+    Cursor<PropertyItem> acquireSinglePropertyCursor( long propertyId, int propertyKeyId, Lock shortLivedReadLock );
 
     /**
      * @return {@link LabelScanReader} capable of reading nodes for specific label ids.

@@ -29,13 +29,10 @@ import java.util.HashMap;
 import java.util.List;
 import java.util.Map;
 
-import org.neo4j.collection.primitive.Primitive;
 import org.neo4j.collection.primitive.PrimitiveIntCollections;
-import org.neo4j.collection.primitive.PrimitiveIntSet;
 import org.neo4j.collection.primitive.PrimitiveLongCollections;
 import org.neo4j.kernel.api.exceptions.EntityNotFoundException;
 import org.neo4j.kernel.api.schema.IndexDescriptor;
-import org.neo4j.kernel.api.schema.IndexDescriptorFactory;
 import org.neo4j.kernel.api.schema_new.index.NewIndexDescriptor;
 import org.neo4j.kernel.api.schema_new.index.NewIndexDescriptorFactory;
 import org.neo4j.kernel.api.txstate.TransactionState;
@@ -45,14 +42,18 @@ import org.neo4j.kernel.impl.api.StatementOperationsTestHelper;
 import org.neo4j.kernel.impl.api.legacyindex.InternalAutoIndexing;
 import org.neo4j.kernel.impl.api.store.StoreStatement;
 import org.neo4j.kernel.impl.index.LegacyIndexStore;
+import org.neo4j.storageengine.api.NodeItem;
 import org.neo4j.storageengine.api.StoreReadLayer;
 
 import static org.junit.Assert.assertEquals;
 import static org.junit.Assert.assertFalse;
 import static org.junit.Assert.assertTrue;
+import static org.mockito.Matchers.any;
+import static org.mockito.Matchers.eq;
 import static org.mockito.Mockito.mock;
 import static org.mockito.Mockito.when;
 import static org.neo4j.helpers.collection.Iterators.asSet;
+import static org.neo4j.kernel.api.properties.Property.intProperty;
 import static org.neo4j.kernel.impl.api.state.StubCursors.asNodeCursor;
 import static org.neo4j.kernel.impl.api.state.StubCursors.asPropertyCursor;
 import static org.neo4j.test.mockito.answer.Neo4jMockitoAnswers.answerAsIteratorFrom;
@@ -250,6 +251,8 @@ public class LabelTransactionStateTest
     {
         // GIVEN
         when( storeStatement.acquireSingleNodeCursor( 1337 ) ).thenReturn( asNodeCursor( 1337 ) );
+        when( store.nodeGetProperties( eq( storeStatement ), any( NodeItem.class ) ) )
+                .thenReturn( asPropertyCursor() );
 
         // WHEN
         boolean added = txContext.nodeAddLabel( state, 1337, 12 );
@@ -262,8 +265,10 @@ public class LabelTransactionStateTest
     public void should_return_false_when_adding_existing_label() throws Exception
     {
         // GIVEN
-        when( storeStatement.acquireSingleNodeCursor( 1337 ) ).thenReturn( asNodeCursor( 1337, asPropertyCursor(),
+        when( storeStatement.acquireSingleNodeCursor( 1337 ) ).thenReturn( asNodeCursor( 1337,
                 StubCursors.labels( 12 ) ) );
+        when( store.nodeGetProperties( eq( storeStatement ), any( NodeItem.class ) ) )
+                .thenReturn( asPropertyCursor() );
 
         // WHEN
         boolean added = txContext.nodeAddLabel( state, 1337, 12 );
@@ -276,8 +281,10 @@ public class LabelTransactionStateTest
     public void should_return_true_when_removing_existing_label() throws Exception
     {
         // GIVEN
-        when( storeStatement.acquireSingleNodeCursor( 1337 ) ).thenReturn( asNodeCursor( 1337, asPropertyCursor(),
+        when( storeStatement.acquireSingleNodeCursor( 1337 ) ).thenReturn( asNodeCursor( 1337,
                 StubCursors.labels( 12 ) ) );
+        when( store.nodeGetProperties( eq( storeStatement ), any( NodeItem.class ) ) )
+                .thenReturn( asPropertyCursor() );
 
         // WHEN
         boolean added = txContext.nodeRemoveLabel( state, 1337, 12 );
@@ -333,8 +340,10 @@ public class LabelTransactionStateTest
         Map<Integer,Collection<Long>> allLabels = new HashMap<>();
         for ( Labels nodeLabels : labels )
         {
-            when( storeStatement.acquireSingleNodeCursor( nodeLabels.nodeId ) ).thenReturn( StubCursors.asNodeCursor(
-                    nodeLabels.nodeId, asPropertyCursor(), StubCursors.labels( nodeLabels.labelIds ) ) );
+            when( storeStatement.acquireSingleNodeCursor( nodeLabels.nodeId ) )
+                    .thenReturn( asNodeCursor( nodeLabels.nodeId, StubCursors.labels( nodeLabels.labelIds ) ) );
+            when( store.nodeGetProperties( eq( storeStatement ), any( NodeItem.class ) ) )
+                    .thenReturn( asPropertyCursor() );
 
             for ( int label : nodeLabels.labelIds )
             {

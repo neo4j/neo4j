@@ -90,13 +90,7 @@ public abstract class StatementOperationsTestHelper
             throw new Error( e );
         }
         when( state.txState() ).thenReturn( txState );
-        when( state.hasTxStateWithChanges() ).thenAnswer( new Answer<Boolean>() {
-            @Override
-            public Boolean answer( InvocationOnMock invocation ) throws Throwable
-            {
-                return txState.hasChanges();
-            }
-        } );
+        when( state.hasTxStateWithChanges() ).thenAnswer( invocation -> txState.hasChanges() );
         when( state.locks() ).thenReturn( new SimpleStatementLocks( locks ) );
         when( state.readOperations() ).thenReturn( mock( ReadOperations.class ) );
         return state;

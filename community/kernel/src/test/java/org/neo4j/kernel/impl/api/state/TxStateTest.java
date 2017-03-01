@@ -40,7 +40,6 @@ import org.neo4j.collection.primitive.PrimitiveLongIterator;
 import org.neo4j.cursor.Cursor;
 import org.neo4j.helpers.collection.Iterables;
 import org.neo4j.helpers.collection.Pair;
-import org.neo4j.kernel.api.cursor.RelationshipItemHelper;
 import org.neo4j.kernel.api.properties.DefinedProperty;
 import org.neo4j.kernel.api.properties.Property;
 import org.neo4j.kernel.api.schema.NodePropertyDescriptor;
@@ -53,9 +52,7 @@ import org.neo4j.kernel.api.schema_new.index.NewIndexDescriptorFactory;
 import org.neo4j.kernel.api.txstate.TransactionState;
 import org.neo4j.kernel.impl.api.RelationshipVisitor;
 import org.neo4j.kernel.impl.api.store.RelationshipIterator;
-import org.neo4j.kernel.impl.util.Cursors;
 import org.neo4j.storageengine.api.Direction;
-import org.neo4j.storageengine.api.PropertyItem;
 import org.neo4j.storageengine.api.RelationshipItem;
 import org.neo4j.storageengine.api.txstate.ReadableDiffSets;
 import org.neo4j.storageengine.api.txstate.TxStateVisitor;
@@ -82,6 +79,7 @@ import static org.neo4j.kernel.api.properties.Property.numberProperty;
 import static org.neo4j.kernel.api.properties.Property.stringProperty;
 import static org.neo4j.kernel.api.schema_new.index.NewIndexDescriptor.Filter.GENERAL;
 import static org.neo4j.kernel.impl.api.state.StubCursors.cursor;
+import static org.neo4j.kernel.impl.api.state.StubCursors.relationship;
 
 public class TxStateTest
 {
@@ -1557,62 +1555,6 @@ public class TxStateTest
             }
         }
         return false;
-    }
-
-    private RelationshipItem relationship( long id, int type, long start, long end )
-    {
-        return new RelationshipItemHelper()
-        {
-            @Override
-            public Cursor<PropertyItem> property( int propertyKeyId )
-            {
-                return Cursors.empty();
-            }
-
-            @Override
-            public Cursor<PropertyItem> properties()
-            {
-                return Cursors.empty();
-            }
-
-            @Override
-            public long id()
-            {
-                return id;
-            }
-
-            @Override
-            public int type()
-            {
-                return type;
-            }
-
-            @Override
-            public long startNode()
-            {
-                return start;
-            }
-
-            @Override
-            public long otherNode( long nodeId )
-            {
-                if ( nodeId == start )
-                {
-                    return end;
-                }
-                else if ( nodeId == end )
-                {
-                    return start;
-                }
-                throw new IllegalStateException();
-            }
-
-            @Override
-            public long endNode()
-            {
-                return end;
-            }
-        };
     }
 
     //endregion

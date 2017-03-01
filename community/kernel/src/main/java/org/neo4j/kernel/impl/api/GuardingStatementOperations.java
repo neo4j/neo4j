@@ -19,6 +19,7 @@
  */
 package org.neo4j.kernel.impl.api;
 
+import org.neo4j.collection.primitive.PrimitiveIntCollection;
 import org.neo4j.collection.primitive.PrimitiveIntIterator;
 import org.neo4j.collection.primitive.PrimitiveIntSet;
 import org.neo4j.collection.primitive.PrimitiveLongIterator;
@@ -40,6 +41,7 @@ import org.neo4j.kernel.impl.api.operations.EntityReadOperations;
 import org.neo4j.kernel.impl.api.operations.EntityWriteOperations;
 import org.neo4j.storageengine.api.Direction;
 import org.neo4j.storageengine.api.NodeItem;
+import org.neo4j.storageengine.api.PropertyItem;
 import org.neo4j.storageengine.api.RelationshipItem;
 
 public class GuardingStatementOperations implements
@@ -277,6 +279,64 @@ public class GuardingStatementOperations implements
     {
         guard.check( statement );
         return entityReadDelegate.nodeGetRelationships( statement, node, direction, relTypes );
+    }
+
+    @Override
+    public Cursor<PropertyItem> nodeGetProperties( KernelStatement statement, NodeItem node )
+    {
+        guard.check( statement );
+        return entityReadDelegate.nodeGetProperties( statement, node );
+    }
+
+    @Override
+    public Object nodeGetProperty( KernelStatement statement, NodeItem node, int propertyKeyId )
+    {
+        guard.check( statement );
+        return entityReadDelegate.nodeGetProperty( statement, node, propertyKeyId );
+    }
+
+    @Override
+    public boolean nodeHasProperty( KernelStatement statement, NodeItem node, int propertyKeyId )
+    {
+        guard.check( statement );
+        return entityReadDelegate.nodeHasProperty( statement, node, propertyKeyId );
+    }
+
+    @Override
+    public PrimitiveIntCollection nodeGetPropertyKeys( KernelStatement statement, NodeItem node )
+    {
+        guard.check( statement );
+        return entityReadDelegate.nodeGetPropertyKeys( statement, node );
+    }
+
+    @Override
+    public Cursor<PropertyItem> relationshipGetProperties( KernelStatement statement, RelationshipItem relationship )
+    {
+        guard.check( statement );
+        return entityReadDelegate.relationshipGetProperties( statement, relationship );
+    }
+
+    @Override
+    public Object relationshipGetProperty( KernelStatement statement, RelationshipItem relationship, int propertyKeyId )
+    {
+        guard.check( statement );
+        return entityReadDelegate.relationshipGetProperty( statement, relationship, propertyKeyId );
+    }
+
+    @Override
+    public boolean relationshipHasProperty( KernelStatement statement, RelationshipItem relationship,
+            int propertyKeyId )
+    {
+        guard.check( statement );
+        return entityReadDelegate.relationshipHasProperty( statement, relationship, propertyKeyId );
+    }
+
+    @Override
+    public PrimitiveIntCollection relationshipGetPropertyKeys( KernelStatement statement,
+            RelationshipItem relationship )
+    {
+        guard.check( statement );
+        return entityReadDelegate.relationshipGetPropertyKeys( statement, relationship );
     }
 
     @Override

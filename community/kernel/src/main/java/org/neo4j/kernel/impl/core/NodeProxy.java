@@ -390,7 +390,7 @@ public class NodeProxy implements Node
         {
             try ( Cursor<NodeItem> node = statement.readOperations().nodeCursorById( nodeId ) )
             {
-                try ( Cursor<PropertyItem> propertyCursor = node.get().properties() )
+                try ( Cursor<PropertyItem> propertyCursor = statement.readOperations().nodeGetProperties( node.get() ) )
                 {
                     return PropertyContainerProxyHelper.getProperties( statement, propertyCursor, keys );
                 }
@@ -409,7 +409,7 @@ public class NodeProxy implements Node
         {
             try ( Cursor<NodeItem> node = statement.readOperations().nodeCursorById( nodeId ) )
             {
-                try ( Cursor<PropertyItem> propertyCursor = node.get().properties() )
+                try ( Cursor<PropertyItem> propertyCursor = statement.readOperations().nodeGetProperties( node.get() ) )
                 {
                     Map<String, Object> properties = new HashMap<>();
 

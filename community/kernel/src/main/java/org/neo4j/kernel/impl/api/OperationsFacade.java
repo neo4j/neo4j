@@ -27,7 +27,6 @@ import java.util.function.Function;
 import java.util.stream.Stream;
 
 import org.neo4j.collection.RawIterator;
-import org.neo4j.collection.primitive.PrimitiveIntCollection;
 import org.neo4j.collection.primitive.PrimitiveIntIterator;
 import org.neo4j.collection.primitive.PrimitiveLongCollections;
 import org.neo4j.collection.primitive.PrimitiveLongIterator;
@@ -108,6 +107,7 @@ import org.neo4j.kernel.impl.proc.Procedures;
 import org.neo4j.kernel.impl.query.clientconnection.ClientConnectionInfo;
 import org.neo4j.register.Register.DoubleLongRegister;
 import org.neo4j.storageengine.api.NodeItem;
+import org.neo4j.storageengine.api.PropertyItem;
 import org.neo4j.storageengine.api.RelationshipItem;
 import org.neo4j.storageengine.api.Token;
 import org.neo4j.storageengine.api.lock.ResourceType;
@@ -286,7 +286,7 @@ public class OperationsFacade
         }
         try ( Cursor<NodeItem> node = dataRead().nodeCursorById( statement, nodeId ) )
         {
-            return node.get().hasProperty( propertyKeyId );
+            return dataRead().nodeHasProperty( statement, node.get(), propertyKeyId );
         }
     }
 
@@ -300,7 +300,7 @@ public class OperationsFacade
         }
         try ( Cursor<NodeItem> node = dataRead().nodeCursorById( statement, nodeId ) )
         {
-            return node.get().getProperty( propertyKeyId );
+            return dataRead().nodeGetProperty( statement, node.get(), propertyKeyId );
         }
         finally
         {
@@ -394,7 +394,7 @@ public class OperationsFacade
         }
         try ( Cursor<RelationshipItem> relationship = dataRead().relationshipCursorById( statement, relationshipId ) )
         {
-            return relationship.get().hasProperty( propertyKeyId );
+            return dataRead().relationshipHasProperty( statement, relationship.get(), propertyKeyId );
         }
     }
 
@@ -408,7 +408,7 @@ public class OperationsFacade
         }
         try ( Cursor<RelationshipItem> relationship = dataRead().relationshipCursorById( statement, relationshipId ) )
         {
-            return relationship.get().getProperty( propertyKeyId );
+            return dataRead().relationshipGetProperty( statement, relationship.get(), propertyKeyId );
         }
         finally
         {
@@ -444,8 +444,7 @@ public class OperationsFacade
         statement.assertOpen();
         try ( Cursor<NodeItem> node = dataRead().nodeCursorById( statement, nodeId ) )
         {
-            PrimitiveIntCollection propertyKeys = node.get().getPropertyKeys();
-            return propertyKeys.iterator();
+            return dataRead().nodeGetPropertyKeys( statement, node.get() ).iterator();
         }
         finally
         {
@@ -459,8 +458,7 @@ public class OperationsFacade
         statement.assertOpen();
         try ( Cursor<RelationshipItem> relationship = dataRead().relationshipCursorById( statement, relationshipId ) )
         {
-            PrimitiveIntCollection propertyKeys = relationship.get().getPropertyKeys();
-            return propertyKeys.iterator();
+            return dataRead().relationshipGetPropertyKeys( statement, relationship.get() ).iterator();
         }
         finally
         {
@@ -555,6 +553,21 @@ public class OperationsFacade
         statement.assertOpen();
         return dataRead().relationshipCursorById( statement, relId );
     }
+
+    @Override
+    public Cursor<PropertyItem> nodeGetProperties( NodeItem node )
+    {
+        statement.assertOpen();
+        return dataRead().nodeGetProperties( statement, node );
+    }
+
+    @Override
+    public Cursor<PropertyItem> relationshipGetProperties( RelationshipItem relationship )
+    {
+        statement.assertOpen();
+        return dataRead().relationshipGetProperties( statement, relationship );
+    }
+
     // </DataReadCursors>
 
     // <SchemaRead>

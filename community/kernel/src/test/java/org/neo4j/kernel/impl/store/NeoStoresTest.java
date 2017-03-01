@@ -37,7 +37,6 @@ import java.util.Map;
 import java.util.concurrent.atomic.AtomicReference;
 
 import org.neo4j.cursor.Cursor;
-import org.neo4j.function.Predicates;
 import org.neo4j.graphdb.GraphDatabaseService;
 import org.neo4j.graphdb.Node;
 import org.neo4j.graphdb.Relationship;
@@ -76,8 +75,8 @@ import org.neo4j.kernel.impl.transaction.state.PropertyLoader;
 import org.neo4j.kernel.impl.transaction.state.TransactionRecordState.PropertyReceiver;
 import org.neo4j.kernel.impl.util.ArrayMap;
 import org.neo4j.logging.NullLogProvider;
-import org.neo4j.storageengine.api.Direction;
 import org.neo4j.storageengine.api.NodeItem;
+import org.neo4j.storageengine.api.PropertyItem;
 import org.neo4j.storageengine.api.RelationshipItem;
 import org.neo4j.storageengine.api.StorageStatement;
 import org.neo4j.storageengine.api.StoreReadLayer;
@@ -104,6 +103,7 @@ import static org.neo4j.function.Predicates.ALWAYS_TRUE_INT;
 import static org.neo4j.graphdb.factory.GraphDatabaseSettings.counts_store_rotation_timeout;
 import static org.neo4j.helpers.collection.MapUtil.stringMap;
 import static org.neo4j.kernel.api.security.SecurityContext.AUTH_DISABLED;
+import static org.neo4j.kernel.impl.locking.LockService.NO_LOCK;
 import static org.neo4j.kernel.impl.store.RecordStore.getRecord;
 import static org.neo4j.kernel.impl.store.format.standard.MetaDataRecordFormat.FIELD_NOT_PRESENT;
 import static org.neo4j.kernel.impl.store.record.RecordLoad.NORMAL;
@@ -241,10 +241,8 @@ public class NeoStoresTest
         initializeStores( storeDir, stringMap() );
         startTx();
         // validate node
-        validateNodeRel1( node1, n1prop1, n1prop2, n1prop3, rel1, rel2,
-                relType1, relType2 );
-        validateNodeRel2( node2, n2prop1, n2prop2, n2prop3, rel1, rel2,
-                relType1, relType2 );
+        validateNodeRel1( node1, n1prop1, n1prop2, n1prop3, rel1, rel2, relType1, relType2 );
+        validateNodeRel2( node2, n2prop1, n2prop2, n2prop3, rel1, rel2, relType1, relType2 );
         // validate rels
         validateRel1( rel1, r1prop1, r1prop2, r1prop3, node1, node2, relType1 );
         validateRel2( rel2, r2prop1, r2prop2, r2prop3, node2, node1, relType2 );
@@ -300,10 +298,13 @@ public class NeoStoresTest
         {
             if ( cursor.next() )
             {
-                Object oldValue = cursor.get().getProperty( key );
-                if ( oldValue != null )
+                if ( cursor.next() )
                 {
-                    oldProperty = Property.property( key, oldValue );
+                    Property fetched = getProperty( key, statement, cursor.get().nextPropertyId() );
+                    if ( fetched != null )
+                    {
+                        oldProperty = fetched;
+                    }
                 }
             }
         }
@@ -321,15 +322,32 @@ public class NeoStoresTest
         {
             if ( cursor.next() )
             {
-                Object oldValue = cursor.get().getProperty( key );
-                if ( oldValue != null )
+                Property fetched = getProperty( key, statement, cursor.get().nextPropertyId() );
+                if ( fetched != null )
                 {
-                    oldProperty = Property.property( key, oldValue );
+                    oldProperty = fetched;
                 }
             }
         }
+
         transaction.relationshipDoReplaceProperty( relationshipId, oldProperty, property );
         return property;
+    }
+
+    private Property getProperty( int key, StorageStatement statement, long propertyId )
+    {
+        try ( Cursor<PropertyItem> propertyCursor = statement.acquireSinglePropertyCursor( propertyId, key, NO_LOCK ) )
+        {
+            if ( propertyCursor.next() )
+            {
+                Object oldValue = propertyCursor.get().value();
+                if ( oldValue != null )
+                {
+                    return Property.property( key, oldValue );
+                }
+            }
+        }
+        return null;
     }
 
     @Test

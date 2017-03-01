@@ -50,7 +50,7 @@ import org.neo4j.storageengine.api.txstate.ReadableTransactionState;
 public class TransactionEventHandlers
         implements Lifecycle, TransactionHook<TransactionEventHandlers.TransactionHandlerState>
 {
-    protected final Collection<TransactionEventHandler> transactionEventHandlers = new CopyOnWriteArraySet<>();
+    private final Collection<TransactionEventHandler> transactionEventHandlers = new CopyOnWriteArraySet<>();
 
     private final NodeActions nodeActions;
     private final RelationshipActions relationshipActions;

@@ -104,7 +104,7 @@ public class NodeTest
         node.delete();
         try
         {
-            node.setProperty( "key1", new Integer( 1 ) );
+            node.setProperty( "key1", 1 );
             fail( "Adding stuff to deleted node should throw exception" );
         }
         catch ( Exception e )
@@ -128,10 +128,10 @@ public class NodeTest
         String key1 = "key1";
         String key2 = "key2";
         String key3 = "key3";
-        Integer int1 = new Integer( 1 );
-        Integer int2 = new Integer( 2 );
-        String string1 = new String( "1" );
-        String string2 = new String( "2" );
+        Integer int1 = 1;
+        Integer int2 = 2;
+        String string1 = "1";
+        String string2 = "2";
 
         // add property
         node1.setProperty( key1, int1 );
@@ -148,8 +148,6 @@ public class NodeTest
         assertEquals( string1, node2.getProperty( key1 ) );
         assertEquals( string2, node1.getProperty( key2 ) );
         assertEquals( int2, node2.getProperty( key2 ) );
-
-//        getTransaction().failure();
     }
 
     @Test
@@ -157,10 +155,10 @@ public class NodeTest
     {
         String key1 = "key1";
         String key2 = "key2";
-        Integer int1 = new Integer( 1 );
-        Integer int2 = new Integer( 2 );
-        String string1 = new String( "1" );
-        String string2 = new String( "2" );
+        Integer int1 = 1;
+        Integer int2 = 2;
+        String string1 = "1";
+        String string2 = "2";
 
         Node node1 = getGraphDb().createNode();
         Node node2 = getGraphDb().createNode();

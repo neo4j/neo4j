@@ -24,12 +24,15 @@ import java.util.Iterator;
 import java.util.Map;
 
 import org.neo4j.collection.primitive.Primitive;
+import org.neo4j.collection.primitive.PrimitiveIntCollection;
 import org.neo4j.collection.primitive.PrimitiveIntIterator;
 import org.neo4j.collection.primitive.PrimitiveIntSet;
+import org.neo4j.collection.primitive.PrimitiveIntStack;
 import org.neo4j.collection.primitive.PrimitiveLongCollections;
 import org.neo4j.collection.primitive.PrimitiveLongIterator;
 import org.neo4j.collection.primitive.PrimitiveLongResourceIterator;
 import org.neo4j.cursor.Cursor;
+import org.neo4j.graphdb.NotFoundException;
 import org.neo4j.kernel.api.DataWriteOperations;
 import org.neo4j.kernel.api.LegacyIndex;
 import org.neo4j.kernel.api.LegacyIndexHits;
@@ -245,6 +248,166 @@ public class StateHandlingStatementOperations implements
         return statement.txState().augmentNodeRelationshipCursor( cursor, nodeState, direction, relTypes );
     }
 
+    @Override
+    public Cursor<PropertyItem> nodeGetProperties( KernelStatement statement, NodeItem node )
+    {
+        Cursor<PropertyItem> cursor;
+        if ( statement.hasTxStateWithChanges() && statement.txState().nodeIsAddedInThisTx( node.id() ) )
+        {
+            cursor = empty();
+        }
+        else
+        {
+            cursor = storeLayer.nodeGetProperties( statement.getStoreStatement(), node );
+        }
+
+        return statement.hasTxStateWithChanges()
+               ? statement.txState().augmentPropertyCursor( cursor, statement.txState().getNodeState( node.id() ) )
+               : cursor;
+    }
+
+    @Override
+    public PrimitiveIntCollection nodeGetPropertyKeys( KernelStatement statement, NodeItem node )
+    {
+        PrimitiveIntStack keys = new PrimitiveIntStack();
+        try ( Cursor<PropertyItem> properties = nodeGetProperties( statement, node ) )
+        {
+            while ( properties.next() )
+            {
+                keys.push( properties.get().propertyKeyId() );
+            }
+        }
+
+        return keys;
+    }
+
+    @Override
+    public Object nodeGetProperty( KernelStatement statement, NodeItem node, int propertyKeyId )
+    {
+        try ( Cursor<PropertyItem> cursor = nodeGetPropertyCursor( statement, node, propertyKeyId ) )
+        {
+            if ( cursor.next() )
+            {
+                return cursor.get().value();
+            }
+        }
+        catch ( NotFoundException e )
+        {
+            return null;
+        }
+
+        return null;
+    }
+
+    @Override
+    public boolean nodeHasProperty( KernelStatement statement, NodeItem node, int propertyKeyId )
+    {
+        try ( Cursor<PropertyItem> cursor = nodeGetPropertyCursor( statement, node, propertyKeyId ) )
+        {
+            return cursor.next();
+        }
+    }
+
+    private Cursor<PropertyItem> nodeGetPropertyCursor( KernelStatement statement, NodeItem node, int propertyKeyId )
+    {
+
+        Cursor<PropertyItem> cursor;
+        if ( statement.hasTxStateWithChanges() && statement.txState().nodeIsAddedInThisTx( node.id() ) )
+        {
+            cursor = empty();
+        }
+        else
+        {
+            cursor = storeLayer.nodeGetProperty( statement.getStoreStatement(), node, propertyKeyId );
+        }
+
+        return statement.hasTxStateWithChanges()
+               ? statement.txState().augmentSinglePropertyCursor(
+                       cursor, statement.txState().getNodeState( node.id() ), propertyKeyId )
+               : cursor;
+    }
+
+    @Override
+    public Cursor<PropertyItem> relationshipGetProperties( KernelStatement statement, RelationshipItem relationship )
+    {
+        Cursor<PropertyItem> cursor;
+        if ( statement.hasTxStateWithChanges() && statement.txState().relationshipIsAddedInThisTx( relationship.id() ) )
+        {
+            cursor = empty();
+        }
+        else
+        {
+            cursor = storeLayer.relationshipGetProperties( statement.getStoreStatement(), relationship );
+        }
+
+        return statement.hasTxStateWithChanges()
+               ? statement.txState()
+                       .augmentPropertyCursor( cursor, statement.txState().getRelationshipState( relationship.id() ) )
+               : cursor;
+    }
+
+    @Override
+    public PrimitiveIntCollection relationshipGetPropertyKeys( KernelStatement statement,
+            RelationshipItem relationship )
+    {
+        PrimitiveIntStack keys = new PrimitiveIntStack();
+        try ( Cursor<PropertyItem> properties = relationshipGetProperties( statement, relationship ) )
+        {
+            while ( properties.next() )
+            {
+                keys.push( properties.get().propertyKeyId() );
+            }
+        }
+
+        return keys;
+    }
+
+    @Override
+    public Object relationshipGetProperty( KernelStatement statement, RelationshipItem relationship, int propertyKeyId )
+    {
+        try ( Cursor<PropertyItem> cursor = relationshipGetPropertyCursor( statement, relationship, propertyKeyId ) )
+        {
+            if ( cursor.next() )
+            {
+                return cursor.get().value();
+            }
+        }
+        catch ( NotFoundException e )
+        {
+            return null;
+        }
+
+        return null;
+    }
+
+    @Override
+    public boolean relationshipHasProperty( KernelStatement statement, RelationshipItem relationship, int propertyKeyId )
+    {
+        try ( Cursor<PropertyItem> cursor = relationshipGetPropertyCursor( statement, relationship, propertyKeyId ) )
+        {
+            return cursor.next();
+        }
+    }
+
+    private Cursor<PropertyItem> relationshipGetPropertyCursor( KernelStatement statement,
+            RelationshipItem relationship, int propertyKeyId )
+    {
+        Cursor<PropertyItem> cursor;
+        if ( statement.hasTxStateWithChanges() && statement.txState().relationshipIsAddedInThisTx( relationship.id() ) )
+        {
+            cursor = empty();
+        }
+        else
+        {
+            cursor = storeLayer.relationshipGetProperty( statement.getStoreStatement(), relationship, propertyKeyId );
+        }
+
+        return statement.hasTxStateWithChanges()
+               ? statement.txState().augmentSinglePropertyCursor( cursor, statement.txState()
+                        .getRelationshipState( relationship.id() ), propertyKeyId )
+               : cursor;
+    }
+
     // </Cursors>
 
     @Override
@@ -345,7 +508,7 @@ public class StateHandlingStatementOperations implements
 
             state.txState().nodeDoAddLabel( labelId, node.id() );
 
-            try ( Cursor<PropertyItem> properties = node.properties() )
+            try ( Cursor<PropertyItem> properties = nodeGetProperties( state, node ) )
             {
                 while ( properties.next() )
                 {
@@ -381,7 +544,7 @@ public class StateHandlingStatementOperations implements
 
             state.txState().nodeDoRemoveLabel( labelId, node.id() );
 
-            try ( Cursor<PropertyItem> properties = node.properties() )
+            try ( Cursor<PropertyItem> properties = nodeGetProperties( state, node ) )
             {
                 while ( properties.next() )
                 {
@@ -867,7 +1030,7 @@ public class StateHandlingStatementOperations implements
         {
             NodeItem node = cursor.get();
             Property existingProperty;
-            try ( Cursor<PropertyItem> properties = node.property( property.propertyKeyId() ) )
+            try ( Cursor<PropertyItem> properties = nodeGetPropertyCursor( state, node, property.propertyKeyId() ) )
             {
                 if ( !properties.next() )
                 {
@@ -901,13 +1064,14 @@ public class StateHandlingStatementOperations implements
         {
             RelationshipItem relationship = cursor.get();
             Property existingProperty;
-            try ( Cursor<PropertyItem> properties = relationship.property( property.propertyKeyId() ) )
+            try ( Cursor<PropertyItem> properties = relationshipGetPropertyCursor( state, relationship,
+                    property.propertyKeyId() ) )
             {
                 if ( !properties.next() )
                 {
                     autoIndexing.relationships().propertyAdded( ops, relationshipId, property );
-                    existingProperty = Property.noProperty( property.propertyKeyId(), EntityType.RELATIONSHIP,
-                            relationship.id() );
+                    existingProperty =
+                            Property.noProperty( property.propertyKeyId(), EntityType.RELATIONSHIP, relationship.id() );
                 }
                 else
                 {
@@ -941,7 +1105,7 @@ public class StateHandlingStatementOperations implements
         {
             NodeItem node = cursor.get();
             Property existingProperty;
-            try ( Cursor<PropertyItem> properties = node.property( propertyKeyId ) )
+            try ( Cursor<PropertyItem> properties = nodeGetPropertyCursor( state, node, propertyKeyId ) )
             {
                 if ( !properties.next() )
                 {
@@ -972,7 +1136,8 @@ public class StateHandlingStatementOperations implements
         {
             RelationshipItem relationship = cursor.get();
             Property existingProperty;
-            try ( Cursor<PropertyItem> properties = relationship.property( propertyKeyId ) )
+            try ( Cursor<PropertyItem> properties = relationshipGetPropertyCursor( state, relationship,
+                    propertyKeyId ) )
             {
                 if ( !properties.next() )
                 {
@@ -983,8 +1148,8 @@ public class StateHandlingStatementOperations implements
                     existingProperty = Property.property( properties.get().propertyKeyId(), properties.get().value() );
 
                     autoIndexing.relationships().propertyRemoved( ops, relationshipId, propertyKeyId );
-                    state.txState().relationshipDoRemoveProperty( relationship.id(),
-                            (DefinedProperty) existingProperty );
+                    state.txState()
+                            .relationshipDoRemoveProperty( relationship.id(), (DefinedProperty) existingProperty );
                 }
             }
             return existingProperty;

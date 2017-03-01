@@ -21,14 +21,12 @@ package org.neo4j.kernel.impl.api;
 
 import java.util.Iterator;
 
+import org.neo4j.collection.primitive.PrimitiveIntCollection;
 import org.neo4j.collection.primitive.PrimitiveIntIterator;
 import org.neo4j.collection.primitive.PrimitiveIntSet;
 import org.neo4j.collection.primitive.PrimitiveLongIterator;
 import org.neo4j.cursor.Cursor;
 import org.neo4j.helpers.Strings;
-import org.neo4j.helpers.collection.CastingIterator;
-import org.neo4j.kernel.api.constraints.NodePropertyConstraint;
-import org.neo4j.kernel.api.constraints.UniquenessConstraint;
 import org.neo4j.kernel.api.exceptions.EntityNotFoundException;
 import org.neo4j.kernel.api.exceptions.InvalidTransactionTypeKernelException;
 import org.neo4j.kernel.api.exceptions.KernelException;
@@ -62,12 +60,13 @@ import org.neo4j.kernel.impl.api.operations.EntityReadOperations;
 import org.neo4j.kernel.impl.api.operations.EntityWriteOperations;
 import org.neo4j.kernel.impl.api.operations.SchemaReadOperations;
 import org.neo4j.kernel.impl.api.operations.SchemaWriteOperations;
-import org.neo4j.kernel.impl.api.store.EntityLoadingIterator;
+import org.neo4j.kernel.impl.api.store.NodeLoadingIterator;
 import org.neo4j.kernel.impl.constraints.ConstraintSemantics;
 import org.neo4j.kernel.impl.locking.LockTracer;
 import org.neo4j.kernel.impl.locking.Locks;
 import org.neo4j.storageengine.api.Direction;
 import org.neo4j.storageengine.api.NodeItem;
+import org.neo4j.storageengine.api.PropertyItem;
 import org.neo4j.storageengine.api.RelationshipItem;
 
 import static org.neo4j.kernel.api.StatementConstants.NO_SUCH_NODE;
@@ -111,7 +110,7 @@ public class ConstraintEnforcingEntityOperations implements EntityOperations, Sc
                 {
                     UniquenessConstraintDescriptor uniqueConstraint = (UniquenessConstraintDescriptor) constraint;
                     // TODO: Support composite indexes
-                    Object propertyValue = node.getProperty( uniqueConstraint.schema().getPropertyId() );
+                    Object propertyValue = nodeGetProperty( state, node, uniqueConstraint.schema().getPropertyId() );
                     if ( propertyValue != null )
                     {
                         // TODO: Support composite indexes
@@ -402,6 +401,56 @@ public class ConstraintEnforcingEntityOperations implements EntityOperations, Sc
     }
 
     @Override
+    public Cursor<PropertyItem> nodeGetProperties( KernelStatement statement, NodeItem node )
+    {
+        return entityReadOperations.nodeGetProperties( statement, node );
+    }
+
+    @Override
+    public Object nodeGetProperty( KernelStatement statement, NodeItem node, int propertyKeyId )
+    {
+        return entityReadOperations.nodeGetProperty( statement, node, propertyKeyId );
+    }
+
+    @Override
+    public boolean nodeHasProperty( KernelStatement statement, NodeItem node, int propertyKeyId )
+    {
+        return entityReadOperations.nodeHasProperty( statement, node, propertyKeyId );
+    }
+
+    @Override
+    public PrimitiveIntCollection nodeGetPropertyKeys( KernelStatement statement, NodeItem node )
+    {
+        return entityReadOperations.nodeGetPropertyKeys( statement, node );
+    }
+
+    @Override
+    public Cursor<PropertyItem> relationshipGetProperties( KernelStatement statement, RelationshipItem relationship )
+    {
+        return entityReadOperations.relationshipGetProperties( statement, relationship );
+    }
+
+    @Override
+    public Object relationshipGetProperty( KernelStatement statement, RelationshipItem relationship, int propertyKeyId )
+    {
+        return entityReadOperations.relationshipGetProperty( statement, relationship, propertyKeyId );
+    }
+
+    @Override
+    public boolean relationshipHasProperty( KernelStatement statement, RelationshipItem relationship,
+            int propertyKeyId )
+    {
+        return entityReadOperations.relationshipHasProperty( statement, relationship, propertyKeyId );
+    }
+
+    @Override
+    public PrimitiveIntCollection relationshipGetPropertyKeys( KernelStatement statement,
+            RelationshipItem relationship )
+    {
+        return entityReadOperations.relationshipGetPropertyKeys( statement, relationship );
+    }
+
+    @Override
     public Cursor<RelationshipItem> nodeGetRelationships( KernelStatement statement, NodeItem node,
             Direction direction )
     {
@@ -447,12 +496,10 @@ public class ConstraintEnforcingEntityOperations implements EntityOperations, Sc
                 LabelSchemaDescriptor descriptor
     ) throws AlreadyConstrainedException, CreateConstraintFailureException
     {
-        Iterator<Cursor<NodeItem>> nodes =
-                new EntityLoadingIterator<>(
-                        nodesGetForLabel( state, descriptor.getLabelId() ),
-                        ( id ) -> nodeCursorById( state, id )
-                );
-        constraintSemantics.validateExistenceConstraint( nodes, descriptor );
+        Iterator<Cursor<NodeItem>> nodes = new NodeLoadingIterator( nodesGetForLabel( state, descriptor.getLabelId() ),
+                ( id ) -> nodeCursorById( state, id ) );
+        constraintSemantics.validateNodePropertyExistenceConstraint( nodes, descriptor,
+                (node, propertyKey) -> entityReadOperations.nodeHasProperty(state, node, propertyKey) );
         return schemaWriteOperations.nodePropertyExistenceConstraintCreate( state, descriptor );
     }
 
@@ -464,7 +511,9 @@ public class ConstraintEnforcingEntityOperations implements EntityOperations, Sc
     {
         try ( Cursor<RelationshipItem> cursor = relationshipCursorGetAll( state ) )
         {
-            constraintSemantics.validateExistenceConstraint( cursor, descriptor );
+            constraintSemantics.validateRelationshipPropertyExistenceConstraint( cursor, descriptor,
+                    ( relationship, propertyKey ) -> entityReadOperations
+                            .relationshipHasProperty( state, relationship, propertyKey ) );
         }
         return schemaWriteOperations.relationshipPropertyExistenceConstraintCreate( state, descriptor );
     }

@@ -25,7 +25,6 @@ import org.neo4j.collection.primitive.PrimitiveIntCollections;
 import org.neo4j.collection.primitive.PrimitiveIntSet;
 import org.neo4j.cursor.Cursor;
 import org.neo4j.kernel.api.StatementConstants;
-import org.neo4j.kernel.api.cursor.EntityItemHelper;
 import org.neo4j.kernel.impl.locking.Lock;
 import org.neo4j.kernel.impl.locking.LockService;
 import org.neo4j.kernel.impl.store.NodeLabelsField;
@@ -34,7 +33,6 @@ import org.neo4j.kernel.impl.store.record.NodeRecord;
 import org.neo4j.kernel.impl.store.record.Record;
 import org.neo4j.kernel.impl.util.IoPrimitiveUtils;
 import org.neo4j.storageengine.api.NodeItem;
-import org.neo4j.storageengine.api.PropertyItem;
 
 import static org.neo4j.kernel.impl.locking.LockService.NO_LOCK_SERVICE;
 import static org.neo4j.kernel.impl.store.record.RecordLoad.CHECK;
@@ -43,14 +41,13 @@ import static org.neo4j.kernel.impl.util.IoPrimitiveUtils.safeCastLongToInt;
 /**
  * Base cursor for nodes.
  */
-public class StoreSingleNodeCursor extends EntityItemHelper implements Cursor<NodeItem>, NodeItem
+public class StoreSingleNodeCursor implements Cursor<NodeItem>, NodeItem
 {
     private final NodeRecord nodeRecord;
     private final Consumer<StoreSingleNodeCursor> instanceCache;
 
     private final LockService lockService;
     private final RecordCursors recordCursors;
-    private final NodeExploringCursors cursors;
 
     private long nodeId = StatementConstants.NO_SUCH_NODE;
     private long[] labels;
@@ -62,7 +59,6 @@ public class StoreSingleNodeCursor extends EntityItemHelper implements Cursor<No
         this.recordCursors = recordCursors;
         this.lockService = lockService;
         this.instanceCache = instanceCache;
-        this.cursors = new NodeExploringCursors( recordCursors );
     }
 
     public StoreSingleNodeCursor init( long nodeId )
@@ -139,7 +135,33 @@ public class StoreSingleNodeCursor extends EntityItemHelper implements Cursor<No
         return false;
     }
 
-    private Lock shortLivedReadLock()
+    @Override
+    public boolean isDense()
+    {
+        return nodeRecord.isDense();
+    }
+
+    @Override
+    public long nextGroupId()
+    {
+        assert isDense();
+        return nextRelationshipId();
+    }
+
+    @Override
+    public long nextRelationshipId()
+    {
+        return nodeRecord.getNextRel();
+    }
+
+    @Override
+    public long nextPropertyId()
+    {
+        return nodeRecord.getNextProp();
+    }
+
+    @Override
+    public Lock lock()
     {
         Lock lock = lockService.acquireNodeLock( nodeRecord.getId(), LockService.LockType.READ_LOCK );
         if ( lockService != NO_LOCK_SERVICE )
@@ -168,41 +190,5 @@ public class StoreSingleNodeCursor extends EntityItemHelper implements Cursor<No
             }
         }
         return lock;
-    }
-
-    @Override
-    public Cursor<PropertyItem> properties()
-    {
-        return cursors.properties( nextProp(), shortLivedReadLock() );
-    }
-
-    @Override
-    public Cursor<PropertyItem> property( int propertyKeyId )
-    {
-        return cursors.property( nextProp(), propertyKeyId, shortLivedReadLock() );
-    }
-
-    @Override
-    public boolean isDense()
-    {
-        return nodeRecord.isDense();
-    }
-
-    @Override
-    public long nextGroupId()
-    {
-        assert isDense();
-        return nextRelationshipId();
-    }
-
-    @Override
-    public long nextRelationshipId()
-    {
-        return nodeRecord.getNextRel();
-    }
-
-    private long nextProp()
-    {
-        return nodeRecord.getNextProp();
     }
 }
