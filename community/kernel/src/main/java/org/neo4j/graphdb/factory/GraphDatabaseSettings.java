@@ -539,7 +539,7 @@ public class GraphDatabaseSettings implements LoadableConfig
             "The list may contain both fully-qualified procedure names, and partial names with the wildcard '*'. " +
             "If this setting is left empty no procedures will be loaded." )
     public static final Setting<String> procedure_whitelist =
-            setting( "dbms.security.procedures.white_list", Settings.STRING, "*" );
+            setting( "dbms.security.procedures.whitelist", Settings.STRING, "*" );
     // Bolt Settings
 
     @Description("Default network interface to listen for incoming connections. " +

@@ -108,7 +108,18 @@ class ReflectiveProcedureCompiler
             ArrayList<CallableUserFunction> out = new ArrayList<>( procedureMethods.size() );
             for ( Method method : procedureMethods )
             {
-                out.add( compileFunction( fcnDefinition, constructor, method ) );
+                String valueName = method.getAnnotation( UserFunction.class ).value();
+                String definedName = method.getAnnotation( UserFunction.class ).name();
+                QualifiedName procName = extractName( fcnDefinition, method, valueName, definedName );
+                if ( config.isWhitelisted( procName.toString() ) )
+                {
+                    out.add( compileFunction( fcnDefinition, constructor, method,procName ) );
+                }
+                else
+                {
+                    log.warn( String.format( "The function '%s' is not on the whitelist and won't be loaded.",
+                            procName.toString() ) );
+                }
             }
             out.sort( Comparator.comparing( a -> a.signature().name().toString() ) );
             return out;
@@ -142,7 +153,20 @@ class ReflectiveProcedureCompiler
             ArrayList<CallableUserAggregationFunction> out = new ArrayList<>( methods.size() );
             for ( Method method : methods )
             {
-                out.add( compileAggregationFunction( fcnDefinition, constructor, method ) );
+                String valueName = method.getAnnotation( UserAggregationFunction.class ).value();
+                String definedName = method.getAnnotation( UserAggregationFunction.class ).name();
+                QualifiedName funcName = extractName( fcnDefinition, method, valueName, definedName );
+
+                if ( config.isWhitelisted( funcName.toString() ) )
+                {
+                    out.add( compileAggregationFunction( fcnDefinition, constructor, method, funcName ) );
+                }
+                else
+                {
+                    log.warn( String.format( "The function '%s' is not on the whitelist and won't be loaded.",
+                            funcName.toString() ) );
+                }
+
             }
             out.sort( Comparator.comparing( a -> a.signature().name().toString() ) );
             return out;
@@ -258,12 +282,10 @@ class ReflectiveProcedureCompiler
         return new ReflectiveProcedure( signature, constructor, procedureMethod, outputMapper, setters );
     }
 
-    private CallableUserFunction compileFunction( Class<?> procDefinition, MethodHandle constructor, Method method )
+    private CallableUserFunction compileFunction( Class<?> procDefinition, MethodHandle constructor, Method method,
+            QualifiedName procName )
             throws ProcedureException, IllegalAccessException
     {
-        String valueName = method.getAnnotation( UserFunction.class ).value();
-        String definedName = method.getAnnotation( UserFunction.class ).name();
-        QualifiedName procName = extractName( procDefinition, method, valueName, definedName );
 
         if (procName.namespace() == null || procName.namespace().length == 0)
         {
@@ -307,14 +329,11 @@ class ReflectiveProcedureCompiler
         return new ReflectiveUserFunction( signature, constructor, procedureMethod, valueConverter, setters );
     }
 
-    private CallableUserAggregationFunction compileAggregationFunction( Class<?> definition, MethodHandle constructor,
-            Method method ) throws ProcedureException, IllegalAccessException
+    private CallableUserAggregationFunction compileAggregationFunction( Class<?> definition, MethodHandle
+            constructor, Method method, QualifiedName funcName)
+            throws ProcedureException, IllegalAccessException
     {
-        String valueName = method.getAnnotation( UserAggregationFunction.class ).value();
-        String definedName = method.getAnnotation( UserAggregationFunction.class ).name();
-        QualifiedName funcName = extractName( definition, method, valueName, definedName );
-
-        if ( funcName.namespace() == null || funcName.namespace().length == 0 )
+        if (funcName.namespace() == null || funcName.namespace().length == 0)
         {
             throw new ProcedureException( Status.Procedure.ProcedureRegistrationFailed,
                     "It is not allowed to define functions in the root namespace please use a namespace, e.g. `@UserFunction(\"org.example.com.%s\")",
