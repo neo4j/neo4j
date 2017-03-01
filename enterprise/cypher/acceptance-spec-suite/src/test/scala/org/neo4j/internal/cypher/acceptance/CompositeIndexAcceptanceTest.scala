@@ -50,6 +50,28 @@ class CompositeIndexAcceptanceTest extends ExecutionEngineFunSuite with NewPlann
     graph should not(haveIndexes(":Person(firstname,lastname)"))
   }
 
+  // TODO: Check that composite index graph statistics are correctly calculated
+  ignore("should not use composite index when all predicates are present but index cardinality is similar to label cardinality") {
+    System.setProperty("pickBestPlan.VERBOSE", "true")
+    // Given
+    executeWithCostPlannerAndInterpretedRuntimeOnly("CREATE INDEX ON :User(firstname,lastname)")
+    val n1 = createLabeledNode(Map("firstname" -> "Joe", "lastname" -> "Soap"), "User")
+    val n2 = createLabeledNode(Map("firstname" -> "Joe", "lastname" -> "Smoke"), "User")
+    val n3 = createLabeledNode(Map("firstname" -> "Jake", "lastname" -> "Soap"), "User")
+//    for (i <- 1 to 10) {
+//      createLabeledNode(Map("firstname" -> "Joe"), "User")
+//      createLabeledNode(Map("lastname" -> "Soap"), "User")
+//    }
+
+    // When
+    val result = executeWithCostPlannerAndInterpretedRuntimeOnly("CYPHER runtime=interpreted MATCH (n:User) WHERE n.lastname = 'Soap' AND n.firstname = 'Joe' RETURN n")
+
+    // Then
+    println(result.executionPlanDescription())
+    result should not(use("NodeIndexSeek"))
+    result should evaluateTo(List(Map("n" -> n1)))
+  }
+
   test("should use composite index when all predicates are present") {
     // Given
     executeWithCostPlannerAndInterpretedRuntimeOnly("CREATE INDEX ON :User(firstname,lastname)")
@@ -108,6 +130,36 @@ class CompositeIndexAcceptanceTest extends ExecutionEngineFunSuite with NewPlann
     result should useIndex(":User(firstname,lastname)")
     result should not(useIndex(":User(firstname)"))
     result should not(useIndex(":User(lastname)"))
+    result should evaluateTo(List(Map("n" -> n1)))
+  }
+
+  test("should not use composite index when index hint for alternative index is present") {
+    // Given
+    executeWithCostPlannerAndInterpretedRuntimeOnly("CREATE INDEX ON :User(firstname)")
+    executeWithCostPlannerAndInterpretedRuntimeOnly("CREATE INDEX ON :User(lastname)")
+    executeWithCostPlannerAndInterpretedRuntimeOnly("CREATE INDEX ON :User(firstname,lastname)")
+    val n1 = createLabeledNode(Map("firstname" -> "Joe", "lastname" -> "Soap"), "User")
+    val n2 = createLabeledNode(Map("firstname" -> "Joe", "lastname" -> "Smoke"), "User")
+    val n3 = createLabeledNode(Map("firstname" -> "Jake", "lastname" -> "Soap"), "User")
+    for (i <- 1 to 100) {
+      createLabeledNode("User")
+      createLabeledNode("User")
+    }
+
+    // When
+    val result = executeWithCostPlannerAndInterpretedRuntimeOnly(
+      """
+        |CYPHER runtime=interpreted
+        |MATCH (n:User)
+        |USING INDEX n:User(lastname)
+        |WHERE n.lastname = 'Soap' AND n.firstname = 'Joe'
+        |RETURN n
+        |""".stripMargin)
+
+    // Then
+    result should not(useIndex(":User(firstname,lastname)"))
+    result should not(useIndex(":User(firstname)"))
+    result should useIndex(":User(lastname)")
     result should evaluateTo(List(Map("n" -> n1)))
   }
 
