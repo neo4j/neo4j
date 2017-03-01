@@ -19,6 +19,7 @@
  */
 package org.neo4j.kernel.impl.proc;
 
+import jdk.nashorn.internal.codegen.FunctionSignature;
 import org.hamcrest.core.IsEqual;
 import org.junit.Rule;
 import org.junit.Test;
@@ -35,17 +36,21 @@ import java.util.stream.Stream;
 import org.neo4j.kernel.api.exceptions.ProcedureException;
 import org.neo4j.kernel.api.proc.BasicContext;
 import org.neo4j.kernel.api.proc.CallableProcedure;
+import org.neo4j.kernel.api.proc.CallableUserFunction;
 import org.neo4j.kernel.api.proc.ProcedureSignature;
+import org.neo4j.kernel.api.proc.UserFunctionSignature;
 import org.neo4j.kernel.configuration.Config;
 import org.neo4j.logging.Log;
 import org.neo4j.logging.NullLog;
 import org.neo4j.procedure.Context;
 import org.neo4j.procedure.Name;
 import org.neo4j.procedure.Procedure;
+import org.neo4j.procedure.UserFunction;
 
 import static java.util.stream.Collectors.toList;
 import static org.hamcrest.Matchers.contains;
 import static org.hamcrest.Matchers.containsInAnyOrder;
+import static org.hamcrest.Matchers.equalTo;
 import static org.junit.Assert.assertThat;
 import static org.neo4j.graphdb.factory.GraphDatabaseSettings.procedure_unrestricted;
 import static org.mockito.Mockito.mock;
@@ -54,6 +59,7 @@ import static org.neo4j.helpers.collection.Iterators.asList;
 import static org.neo4j.helpers.collection.MapUtil.genericMap;
 import static org.neo4j.kernel.api.proc.Neo4jTypes.NTInteger;
 import static org.neo4j.kernel.api.proc.ProcedureSignature.procedureSignature;
+import static org.neo4j.kernel.api.proc.UserFunctionSignature.functionSignature;
 
 @SuppressWarnings( "WeakerAccess" )
 public class ProcedureJarLoaderTest
@@ -221,7 +227,9 @@ public class ProcedureJarLoaderTest
         verify( log )
                 .warn( "org.neo4j.kernel.impl.proc.unsafeProcedure is not available " +
                         "due to not having unrestricted access rights, check configuration." );
-
+        verify( log )
+                .warn( "org.neo4j.kernel.impl.proc.unsafeFunction is not available " +
+                        "due to not having unrestricted access rights, check configuration." );
     }
 
     @Test
@@ -231,7 +239,9 @@ public class ProcedureJarLoaderTest
         URL jar = createJarFor( ClassWithUnsafeConfiguredComponent.class );
 
         // When
-        List<CallableProcedure> procedures = jarloader.loadProcedures( jar ).procedures();
+        ProcedureJarLoader.Callables callables = jarloader.loadProcedures( jar );
+        List<CallableUserFunction> functions = callables.functions();
+        List<CallableProcedure> procedures = callables.procedures();
 
         // Then
         List<ProcedureSignature> signatures = procedures.stream().map( CallableProcedure::signature ).collect( toList() );
@@ -240,6 +250,14 @@ public class ProcedureJarLoaderTest
 
         assertThat( asList( procedures.get( 0 ).apply( new BasicContext(), new Object[0] ) ),
                 contains( IsEqual.equalTo( new Object[]{7331L} )) );
+
+        List<UserFunctionSignature> functionsSignatures =
+                functions.stream().map( CallableUserFunction::signature ).collect( toList() );
+        assertThat( functionsSignatures, contains(
+                functionSignature( "org", "neo4j", "kernel", "impl", "proc", "unsafeFullAccessFunction" )
+                        .out( NTInteger ).build() ) );
+
+        assertThat( functions.get( 0 ).apply( new BasicContext(), new Object[0] ), equalTo( 7331L ) );
     }
 
     public URL createJarFor( Class<?> ... targets ) throws IOException
@@ -343,6 +361,12 @@ public class ProcedureJarLoaderTest
         {
             return Stream.of( new Output( api.getNumber() ) );
         }
+
+        @UserFunction
+        public long unsafeFunction()
+        {
+            return api.getNumber();
+        }
     }
 
     public static class ClassWithUnsafeConfiguredComponent
@@ -354,6 +378,12 @@ public class ProcedureJarLoaderTest
         public Stream<Output> unsafeFullAccessProcedure()
         {
             return Stream.of( new Output( api.getNumber() ) );
+        }
+
+        @UserFunction
+        public long unsafeFullAccessFunction()
+        {
+            return api.getNumber();
         }
     }
 
@@ -375,7 +405,7 @@ public class ProcedureJarLoaderTest
     private ProcedureConfig procedureConfig()
     {
         Config config = Config.defaults().with(
-                genericMap( procedure_unrestricted.name(), "org.neo4j.kernel.impl.proc.unsafeFullAccessProcedure" ) );
+                genericMap( procedure_unrestricted.name(), "org.neo4j.kernel.impl.proc.unsafeFullAccess*" ) );
         return new ProcedureConfig( config );
     }
 }
