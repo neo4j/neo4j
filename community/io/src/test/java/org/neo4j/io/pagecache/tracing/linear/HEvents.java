@@ -230,12 +230,14 @@ class HEvents
         private long filePageId;
         private File file;
         private int cachePageId;
+        private boolean hit;
 
         PinHEvent( LinearHistoryTracer tracer, boolean exclusiveLock, long filePageId, PageSwapper swapper )
         {
             super( tracer );
             this.exclusiveLock = exclusiveLock;
             this.filePageId = filePageId;
+            this.hit = true;
             this.file = swapper.file();
         }
 
@@ -248,6 +250,7 @@ class HEvents
         @Override
         public PageFaultEvent beginPageFault()
         {
+            hit = false;
             return tracer.add( new PageFaultHEvent( tracer ) );
         }
 
@@ -269,6 +272,8 @@ class HEvents
             out.print( filePageId );
             out.print( ", cachePageId:" );
             out.print( cachePageId );
+            out.print( ", hit:" );
+            out.print( hit );
             print( out, file );
             out.append( ", exclusiveLock:" );
             out.print( exclusiveLock );

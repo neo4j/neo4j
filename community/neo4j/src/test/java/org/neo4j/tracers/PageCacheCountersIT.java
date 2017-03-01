@@ -49,6 +49,7 @@ import org.neo4j.test.TestGraphDatabaseFactory;
 import org.neo4j.test.rule.RepeatRule;
 import org.neo4j.test.rule.TestDirectory;
 
+import static org.hamcrest.Matchers.greaterThan;
 import static org.hamcrest.Matchers.greaterThanOrEqualTo;
 import static org.junit.Assert.assertThat;
 
@@ -85,6 +86,7 @@ public class PageCacheCountersIT
         PageCacheTracer pageCacheTracer = getPageCacheTracer( db );
 
         long initialPins = pageCacheTracer.pins();
+        long initialHits = pageCacheTracer.hits();
         long initialUnpins = pageCacheTracer.unpins();
         long initialBytesRead = pageCacheTracer.bytesRead();
         long initialBytesWritten = pageCacheTracer.bytesWritten();
@@ -95,6 +97,10 @@ public class PageCacheCountersIT
         startNodeCreators( nodeCreators, nodeCreatorFutures );
         TimeUnit.MILLISECONDS.sleep( 50 );
         stopNodeCreators( nodeCreators, nodeCreatorFutures );
+
+        assertThat( pageCacheTracer.pins(), greaterThan( 0L ) );
+        assertThat( pageCacheTracer.faults(), greaterThan( 0L ) );
+        assertThat( pageCacheTracer.pins(), greaterThan( 0L ) );
 
         assertThat( "Number of pins events in page cache tracer should equal to the sum of pin events in page cursor tracers.",
                     pageCacheTracer.pins(), greaterThanOrEqualTo( sumCounters( nodeCreators, NodeCreator::getPins, initialPins ) ) );
@@ -110,6 +116,8 @@ public class PageCacheCountersIT
                 pageCacheTracer.faults(), greaterThanOrEqualTo( sumCounters( nodeCreators, NodeCreator::getFaults, initialFaults ) ) );
         assertThat( "Number of flushes in page cache tracer should equal to the sum of flushes in page cursor tracers.",
                 pageCacheTracer.flushes(), greaterThanOrEqualTo( sumCounters( nodeCreators, NodeCreator::getFlushes, initialFlushes ) ) );
+        assertThat( "Number of hits in page cache tracer should equal to the sum of hits in page cursor tracers.",
+                pageCacheTracer.hits(), greaterThanOrEqualTo( sumCounters( nodeCreators, NodeCreator::getHits, initialHits ) ) );
     }
 
     private void stopNodeCreators( List<NodeCreator> nodeCreators, List<Future> nodeCreatorFutures )
@@ -150,6 +158,7 @@ public class PageCacheCountersIT
         private GraphDatabaseService db;
         private long pins;
         private long unpins;
+        private long hits;
         private long bytesRead;
         private long bytesWritten;
         private long evictions;
@@ -186,6 +195,7 @@ public class PageCacheCountersIT
             Objects.nonNull( pageCursorCounters );
             pins +=pageCursorCounters.pins();
             unpins += pageCursorCounters.unpins();
+            hits += pageCursorCounters.hits();
             bytesRead += pageCursorCounters.bytesRead();
             bytesWritten += pageCursorCounters.bytesWritten();
             evictions += pageCursorCounters.evictions();
@@ -207,6 +217,11 @@ public class PageCacheCountersIT
         long getUnpins()
         {
             return unpins;
+        }
+
+        public long getHits()
+        {
+            return hits;
         }
 
         long getBytesRead()
