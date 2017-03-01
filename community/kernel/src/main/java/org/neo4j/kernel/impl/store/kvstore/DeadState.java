@@ -230,7 +230,7 @@ abstract class DeadState<Key> extends ProgressiveState<Key>
                 }
 
                 @Override
-                ProgressiveState<Key> preState()
+                ProgressiveState<Key> markAsFailed()
                 {
                     return this;
                 }
@@ -300,7 +300,7 @@ abstract class DeadState<Key> extends ProgressiveState<Key>
                 }
 
                 @Override
-                ProgressiveState<Key> preState()
+                ProgressiveState<Key> markAsFailed()
                 {
                     return state;
                 }

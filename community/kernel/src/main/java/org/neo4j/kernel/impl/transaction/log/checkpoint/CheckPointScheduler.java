@@ -19,6 +19,7 @@
  */
 package org.neo4j.kernel.impl.transaction.log.checkpoint;
 
+import java.util.Arrays;
 import java.util.function.BooleanSupplier;
 
 import org.neo4j.function.Predicates;
@@ -42,6 +43,8 @@ public class CheckPointScheduler extends LifecycleAdapter
     private final JobScheduler scheduler;
     private final long recurringPeriodMillis;
     private final DatabaseHealth health;
+    private volatile Throwable[] failures = new Throwable[MAX_CONSECUTIVE_FAILURES_TOLERANCE];
+    private volatile int consecutiveFailures;
     private final Runnable job = new Runnable()
     {
         @Override
@@ -55,7 +58,14 @@ public class CheckPointScheduler extends LifecycleAdapter
                     return;
                 }
                 checkPointer.checkPointIfNeeded( new SimpleTriggerInfo( "scheduler" ) );
-                consecutiveFailures = 0;
+
+                // There were previous unsuccessful attempts, but this attempt was a success
+                // so let's clear those previous errors.
+                if ( consecutiveFailures > 0 )
+                {
+                    Arrays.fill( failures, null );
+                    consecutiveFailures = 0;
+                }
             }
             catch ( Throwable t )
             {
@@ -103,8 +113,6 @@ public class CheckPointScheduler extends LifecycleAdapter
             return !checkPointing;
         }
     };
-    private volatile Throwable[] failures = new Throwable[MAX_CONSECUTIVE_FAILURES_TOLERANCE];
-    private volatile int consecutiveFailures;
 
     public CheckPointScheduler( CheckPointer checkPointer, JobScheduler scheduler, long recurringPeriodMillis,
             DatabaseHealth health )

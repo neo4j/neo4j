@@ -317,7 +317,7 @@ public abstract class AbstractKeyValueStore<Key> extends LifecycleAdapter
                     // won't close the state as it was before rotation began, which we're reverting to right here.
                     try ( LockWrapper ignored = writeLock( updateLock ) )
                     {
-                        state = rotation.preState();
+                        state = rotation.markAsFailed();
                     }
                     throw t;
                 }

@@ -42,14 +42,19 @@ abstract class RotationState<Key> extends ProgressiveState<Key>
 
     abstract long rotationVersion();
 
-    abstract ProgressiveState<Key> preState();
+    /**
+     * Marks state as failed and returns the state as it were before this state.
+     *
+     * @return previous state.
+     */
+    abstract ProgressiveState<Key> markAsFailed();
 
     static final class Rotation<Key> extends RotationState<Key>
     {
         private final ActiveState<Key> preState;
         private final PrototypeState<Key> postState;
         private final long threshold;
-        private boolean failed = false;
+        private boolean failed;
 
         Rotation( ActiveState<Key> preState, PrototypeState<Key> postState, long version )
         {
@@ -70,7 +75,6 @@ abstract class RotationState<Key> extends ProgressiveState<Key>
                 {
                     if ( rotationTimer.isTimedOut() )
                     {
-                        failed = true;
                         throw new RotationTimeoutException( threshold, preState.store.version(),
                                 rotationTimer.getElapsedTimeMillis());
                     }
@@ -219,8 +223,9 @@ abstract class RotationState<Key> extends ProgressiveState<Key>
         }
 
         @Override
-        ProgressiveState<Key> preState()
+        ProgressiveState<Key> markAsFailed()
         {
+            failed = true;
             return preState;
         }
     }
