@@ -19,6 +19,8 @@
  */
 package org.neo4j.commandline.dbms;
 
+import javax.annotation.Nonnull;
+
 import org.neo4j.commandline.admin.AdminCommandSection;
 
 public class OffineBackupCommandSection extends AdminCommandSection
@@ -31,6 +33,7 @@ public class OffineBackupCommandSection extends AdminCommandSection
     }
 
     @Override
+    @Nonnull
     public String printable()
     {
         return "Offline backup";

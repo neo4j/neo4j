@@ -20,6 +20,7 @@
 package org.neo4j.commandline.admin.security;
 
 import java.nio.file.Path;
+import javax.annotation.Nonnull;
 
 import org.neo4j.commandline.admin.AdminCommand;
 import org.neo4j.commandline.admin.AdminCommandSection;
@@ -34,12 +35,14 @@ public class SetDefaultAdminCommandProvider extends AdminCommand.Provider
     }
 
     @Override
+    @Nonnull
     public Arguments allArguments()
     {
         return SetDefaultAdminCommand.arguments();
     }
 
     @Override
+    @Nonnull
     public String description()
     {
         return "Sets the user to become admin if users but no roles are present, " +
@@ -47,18 +50,21 @@ public class SetDefaultAdminCommandProvider extends AdminCommand.Provider
     }
 
     @Override
+    @Nonnull
     public String summary()
     {
         return "Sets the default admin user when no roles are present.";
     }
 
     @Override
+    @Nonnull
     public AdminCommandSection commandSection()
     {
         return AuthenticationCommandSection.instance();
     }
 
     @Override
+    @Nonnull
     public AdminCommand create( Path homeDir, Path configDir, OutsideWorld outsideWorld )
     {
         return new SetDefaultAdminCommand( homeDir, configDir, outsideWorld );

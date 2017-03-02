@@ -22,11 +22,13 @@ package org.neo4j.commandline.admin;
 import java.util.Comparator;
 import java.util.List;
 import java.util.function.Consumer;
+import javax.annotation.Nonnull;
 
 public abstract class AdminCommandSection
 {
     private static final AdminCommandSection GENERAL = new GeneralSection();
 
+    @Nonnull
     public abstract String printable();
 
     public static AdminCommandSection general()
@@ -60,6 +62,7 @@ public abstract class AdminCommandSection
     static class GeneralSection extends AdminCommandSection
     {
         @Override
+        @Nonnull
         public String printable()
         {
             return "General";

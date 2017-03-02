@@ -28,6 +28,7 @@ import org.mockito.MockitoAnnotations;
 import java.util.HashMap;
 import java.util.List;
 import java.util.function.Consumer;
+import javax.annotation.Nonnull;
 
 import static java.util.Arrays.asList;
 import static org.junit.Assert.assertEquals;
@@ -96,6 +97,7 @@ public class AdminCommandSectionTest
     {
 
         @Override
+        @Nonnull
         public String printable()
         {
             return "General";
@@ -106,6 +108,7 @@ public class AdminCommandSectionTest
     {
 
         @Override
+        @Nonnull
         public String printable()
         {
             return "Another Section";

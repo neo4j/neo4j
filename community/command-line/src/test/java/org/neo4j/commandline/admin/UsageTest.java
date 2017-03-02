@@ -27,6 +27,7 @@ import org.mockito.MockitoAnnotations;
 
 import java.util.Collections;
 import java.util.function.Consumer;
+import javax.annotation.Nonnull;
 
 import org.neo4j.commandline.arguments.Arguments;
 
@@ -128,6 +129,7 @@ public class UsageTest
     {
 
         @Override
+        @Nonnull
         public String printable()
         {
             return "General";
