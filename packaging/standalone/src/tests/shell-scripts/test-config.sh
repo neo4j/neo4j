@@ -6,22 +6,86 @@ test_description="Test config parsing"
 fake_install
 
 test_expect_success "should default port and address if none are provided" "
-  test_expect_stdout_matching 'By default, it is available at http://localhost:7474/' run_daemon
+  clear_config &&
+  test_expect_stdout_matching 'It is available at http://localhost:7474/' run_daemon
 "
 
-#test_expect_success "should read port and address from config" "
-#  set_config 'dbms.connector.0.type' 'HTTP' neo4j.conf &&
-#  set_config 'dbms.connector.0.address' 'neo4j.example.com' neo4j.conf &&
-#  set_config 'dbms.connector.0.port' '1234' neo4j.conf &&
-#  test_expect_stdout_matching 'Started at http://neo4j.example.com:1234' run_daemon
-#"
+test_expect_success "http: should read port and address from config" "
+  clear_config &&
+  set_config 'dbms.connector.http.address' '1.2.3.4:1234' neo4j.conf &&
+  set_config 'dbms.connector.http.enabled' 'true' neo4j.conf &&
+  test_expect_stdout_matching 'It is available at http://1.2.3.4:1234/' run_daemon
+"
+
+test_expect_success "http: should read only port from config" "
+  clear_config &&
+  set_config 'dbms.connector.http.address' ':1234' neo4j.conf &&
+  set_config 'dbms.connector.http.enabled' 'true' neo4j.conf &&
+  test_expect_stdout_matching 'It is available at http://localhost:1234/' run_daemon
+"
+
+test_expect_success "http: should fallback to default listening address if defined" "
+  clear_config &&
+  set_config 'dbms.connectors.default_listen_address' '100.200.300.400' neo4j.conf &&
+  set_config 'dbms.connector.http.enabled' 'true' neo4j.conf &&
+  test_expect_stdout_matching 'It is available at http://100.200.300.400:7474/' run_daemon
+"
+
+test_expect_success "http: should read port and address from config and prioritize non-deprecated" "
+  clear_config &&
+  set_config 'dbms.connector.http.address' '1.2.3.4:1234' neo4j.conf &&
+  set_config 'dbms.connector.http.listen_address' 'a.b.c.d:333' neo4j.conf &&
+  set_config 'dbms.connector.http.enabled' 'true' neo4j.conf &&
+  test_expect_stdout_matching 'It is available at http://a.b.c.d:333/' run_daemon
+"
+
+test_expect_success "https: should display default https if http disabled and no other options" "
+  clear_config &&
+  set_config 'dbms.connector.http.enabled' 'false' neo4j.conf &&
+  test_expect_stdout_matching 'It is available at https://localhost:7473/' run_daemon
+"
+
+test_expect_success "https: should read port and address from config" "
+  clear_config &&
+  set_config 'dbms.connector.http.enabled' 'false' neo4j.conf &&
+  set_config 'dbms.connector.https.address' '1.2.3.4:1234' neo4j.conf &&
+  set_config 'dbms.connector.https.enabled' 'true' neo4j.conf &&
+  test_expect_stdout_matching 'It is available at https://1.2.3.4:1234/' run_daemon
+"
+
+test_expect_success "https: should read only port from config" "
+  clear_config &&
+  set_config 'dbms.connector.http.enabled' 'false' neo4j.conf &&
+  set_config 'dbms.connector.https.address' ':1234' neo4j.conf &&
+  set_config 'dbms.connector.https.enabled' 'true' neo4j.conf &&
+  test_expect_stdout_matching 'It is available at https://localhost:1234/' run_daemon
+"
+
+test_expect_success "https: should fallback to default listening address if defined" "
+  clear_config &&
+  set_config 'dbms.connector.http.enabled' 'false' neo4j.conf &&
+  set_config 'dbms.connectors.default_listen_address' '100.200.300.400' neo4j.conf &&
+  set_config 'dbms.connector.https.enabled' 'true' neo4j.conf &&
+  test_expect_stdout_matching 'It is available at https://100.200.300.400:7473/' run_daemon
+"
+
+test_expect_success "https: should read port and address from config and prioritize non-deprecated" "
+  clear_config &&
+  set_config 'dbms.connector.http.enabled' 'false' neo4j.conf &&
+  set_config 'dbms.connector.https.address' '1.2.3.4:1234' neo4j.conf &&
+  set_config 'dbms.connector.https.listen_address' 'a.b.c.d:333' neo4j.conf &&
+  set_config 'dbms.connector.https.enabled' 'true' neo4j.conf &&
+  test_expect_stdout_matching 'It is available at https://a.b.c.d:333/' run_daemon
+"
 
 test_expect_success "should write a specific message in HA mode" "
+  clear_config &&
   set_config 'dbms.mode' 'HA' neo4j.conf &&
   test_expect_stdout_matching 'This HA instance will be operational once it has joined the cluster' run_daemon
 "
 
 test_expect_success "should respect log directory configuration" "
+  clear_config &&
   mkdir -p '$(neo4j_home)/other-log-dir' &&
   set_config 'dbms.directories.logs' 'other-log-dir' neo4j.conf &&
   run_daemon &&
