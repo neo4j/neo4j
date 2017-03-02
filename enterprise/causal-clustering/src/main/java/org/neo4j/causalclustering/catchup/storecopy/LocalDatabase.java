@@ -88,11 +88,16 @@ public class LocalDatabase implements Lifecycle
     public void init() throws Throwable
     {
         dataSourceManager.init();
+        watcherService.init();
     }
 
     @Override
     public synchronized void start() throws Throwable
     {
+        if ( isAvailable() )
+        {
+            return;
+        }
         storeId = readStoreIdFromDisk();
         log.info( "Starting with storeId: " + storeId );
 
@@ -127,6 +132,7 @@ public class LocalDatabase implements Lifecycle
     @Override
     public void shutdown() throws Throwable
     {
+        watcherService.shutdown();
         dataSourceManager.shutdown();
     }
 

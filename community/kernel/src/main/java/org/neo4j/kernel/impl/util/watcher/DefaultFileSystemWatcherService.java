@@ -53,6 +53,7 @@ public class DefaultFileSystemWatcherService implements FileSystemWatcherService
     @Override
     public void start() throws Throwable
     {
+        assert watcher == null;
         watcher = fileWatchers.newThread( eventWatcher );
         watcher.start();
     }
