@@ -46,6 +46,7 @@ import org.neo4j.kernel.impl.index.LegacyIndexStore;
 import org.neo4j.storageengine.api.NodeItem;
 import org.neo4j.storageengine.api.StoreReadLayer;
 import org.neo4j.storageengine.api.schema.IndexReader;
+import org.neo4j.storageengine.api.txstate.PropertyContainerState;
 import org.neo4j.storageengine.api.txstate.ReadableTransactionState;
 
 import static java.util.Arrays.asList;
@@ -349,9 +350,10 @@ public class IndexQueryTransactionStateTest
 
     private void mockStoreProperty()
     {
-        when( store.nodeGetProperties( eq( statement ), any( NodeItem.class ) ) )
+        when( store.nodeGetProperties( eq( statement ), any( NodeItem.class ), any( PropertyContainerState.class ) ) )
                 .thenReturn( asPropertyCursor( stringProperty( propertyKeyId, value ) ) );
-        when( store.nodeGetProperty( eq( statement ), any( NodeItem.class ), eq( propertyKeyId ) ) )
+        when( store.nodeGetProperty( eq( statement ), any( NodeItem.class ), eq( propertyKeyId ),
+                any( PropertyContainerState.class ) ) )
                 .thenReturn( asPropertyCursor( stringProperty( propertyKeyId, value ) ) );
     }
 

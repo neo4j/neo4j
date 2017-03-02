@@ -21,12 +21,15 @@ package org.neo4j.kernel.impl.api.store;
 
 import java.util.function.Consumer;
 
+import org.neo4j.kernel.api.properties.DefinedProperty;
 import org.neo4j.kernel.impl.locking.Lock;
 import org.neo4j.kernel.impl.store.RecordCursors;
+import org.neo4j.storageengine.api.txstate.PropertyContainerState;
 
 public class StoreSinglePropertyCursor extends StoreAbstractPropertyCursor
 {
     private final Consumer<StoreSinglePropertyCursor> instanceCache;
+    private int propertyKeyId;
 
     StoreSinglePropertyCursor( RecordCursors cursors, Consumer<StoreSinglePropertyCursor> instanceCache )
     {
@@ -34,16 +37,24 @@ public class StoreSinglePropertyCursor extends StoreAbstractPropertyCursor
         this.instanceCache = instanceCache;
     }
 
-    public StoreSinglePropertyCursor init( int propertyKeyId, long firstPropertyId, Lock lock )
+    public StoreSinglePropertyCursor init( int propertyKeyId, long firstPropertyId, Lock lock,
+            PropertyContainerState state )
     {
-        initialize( key -> key == propertyKeyId, firstPropertyId, lock );
+        this.propertyKeyId = propertyKeyId;
+        initialize( key -> key == propertyKeyId, firstPropertyId, lock, state );
         return this;
     }
 
     @Override
-    protected boolean loop()
+    protected boolean loadNextFromDisk()
     {
-        return !fetched;
+        return !fetched && (state == null || state.getAddedProperty( propertyKeyId ) == null);
+    }
+
+    @Override
+    protected DefinedProperty nextAdded()
+    {
+        return !fetched && state != null ? (DefinedProperty) state.getAddedProperty( propertyKeyId ) : null;
     }
 
     @Override

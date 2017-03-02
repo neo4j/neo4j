@@ -209,7 +209,7 @@ public class TxStateTransactionDataSnapshot implements TransactionData
                     {
                         Lock lock = node.get().lock();
                         try ( Cursor<PropertyItem> properties = storeStatement
-                                .acquirePropertyCursor( node.get().nextPropertyId(), lock ) )
+                                .acquirePropertyCursor( node.get().nextPropertyId(), lock, null ) )
                         {
                             while ( properties.next() )
                             {
@@ -237,7 +237,7 @@ public class TxStateTransactionDataSnapshot implements TransactionData
                     {
                         Lock lock = relationship.get().lock();
                         try ( Cursor<PropertyItem> properties = storeStatement
-                                .acquirePropertyCursor( relationship.get().nextPropertyId(), lock ) )
+                                .acquirePropertyCursor( relationship.get().nextPropertyId(), lock, null ) )
                         {
                             while ( properties.next() )
                             {
@@ -370,7 +370,7 @@ public class TxStateTransactionDataSnapshot implements TransactionData
 
             Lock lock = node.get().lock();
             try ( Cursor<PropertyItem> properties = storeStatement
-                    .acquireSinglePropertyCursor( node.get().nextPropertyId(), property, lock ) )
+                    .acquireSinglePropertyCursor( node.get().nextPropertyId(), property, lock, null ) )
             {
                 if ( properties.next() )
                 {
@@ -399,7 +399,7 @@ public class TxStateTransactionDataSnapshot implements TransactionData
 
             Lock lock = relationship.get().lock();
             try ( Cursor<PropertyItem> properties = storeStatement
-                    .acquireSinglePropertyCursor( relationship.get().nextPropertyId(), property, lock ) )
+                    .acquireSinglePropertyCursor( relationship.get().nextPropertyId(), property, lock, null ) )
             {
                 if ( properties.next() )
                 {
