@@ -46,6 +46,11 @@ public interface PageCacheCounters
      long unpins();
 
     /**
+     * @return The number of page cache hits so far.
+     */
+    long hits();
+
+    /**
      * @return The number of page flushes observed thus far.
      */
     long flushes();

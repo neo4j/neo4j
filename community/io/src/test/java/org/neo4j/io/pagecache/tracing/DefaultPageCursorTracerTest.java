@@ -56,6 +56,40 @@ public class DefaultPageCursorTracerTest
     }
 
     @Test
+    public void noHitForPinEventWithPageFault()
+    {
+        pinFaultAndHit();
+
+        assertEquals( 1, pageCursorTracer.pins() );
+        assertEquals( 1, pageCursorTracer.faults() );
+        assertEquals( 0, pageCursorTracer.hits() );
+    }
+
+    @Test
+    public void hitForPinEventWithoutPageFault()
+    {
+        pinAndHit();
+
+        assertEquals( 1, pageCursorTracer.pins() );
+        assertEquals( 1, pageCursorTracer.hits() );
+    }
+
+    @Test
+    public void countHitsOnlyForPinEventsWithoutPageFaults()
+    {
+        pinAndHit();
+        pinAndHit();
+        pinAndHit();
+        pinFaultAndHit();
+        pinFaultAndHit();
+        pinAndHit();
+        pinAndHit();
+
+        assertEquals( 7, pageCursorTracer.pins() );
+        assertEquals( 5, pageCursorTracer.hits() );
+    }
+
+    @Test
     public void countPageFaultsAndBytesRead()
     {
         PinEvent pinEvent = pageCursorTracer.beginPin( true, 0, swapper );
@@ -192,5 +226,21 @@ public class DefaultPageCursorTracerTest
         DefaultPageCursorTracer pageCursorTracer = new DefaultPageCursorTracer();
         pageCursorTracer.init( cacheTracer );
         return pageCursorTracer;
+    }
+
+    private void pinAndHit()
+    {
+        PinEvent pinEvent = pageCursorTracer.beginPin( true, 0, swapper );
+        pinEvent.hit();
+        pinEvent.done();
+    }
+
+    private void pinFaultAndHit()
+    {
+        PinEvent pinEvent = pageCursorTracer.beginPin( true, 0, swapper );
+        PageFaultEvent pageFaultEvent = pinEvent.beginPageFault();
+        pinEvent.hit();
+        pageFaultEvent.done();
+        pinEvent.done();
     }
 }

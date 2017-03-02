@@ -33,6 +33,7 @@ public class DefaultPageCursorTracer implements PageCursorTracer
 {
     private long pins;
     private long unpins;
+    private long hits;
     private long faults;
     private long bytesRead;
     private long bytesWritten;
@@ -41,6 +42,7 @@ public class DefaultPageCursorTracer implements PageCursorTracer
     private long flushes;
 
     private PageCacheTracer pageCacheTracer = PageCacheTracer.NULL;
+    private DefaultPinEvent pinTracingEvent = new DefaultPinEvent();
 
     @Override
     public void init( PageCacheTracer pageCacheTracer )
@@ -57,6 +59,10 @@ public class DefaultPageCursorTracer implements PageCursorTracer
         if (unpins > 0)
         {
             pageCacheTracer.unpins( unpins );
+        }
+        if (hits > 0)
+        {
+            pageCacheTracer.hits( hits );
         }
         if ( faults > 0 )
         {
@@ -89,6 +95,7 @@ public class DefaultPageCursorTracer implements PageCursorTracer
     {
         pins = 0;
         unpins = 0;
+        hits = 0;
         faults = 0;
         bytesRead = 0;
         bytesWritten = 0;
@@ -113,6 +120,12 @@ public class DefaultPageCursorTracer implements PageCursorTracer
     public long unpins()
     {
         return unpins;
+    }
+
+    @Override
+    public long hits()
+    {
+        return hits;
     }
 
     @Override
@@ -149,28 +162,9 @@ public class DefaultPageCursorTracer implements PageCursorTracer
     public PinEvent beginPin( boolean writeLock, long filePageId, PageSwapper swapper )
     {
         pins++;
+        pinTracingEvent.eventHits = 1;
         return pinTracingEvent;
     }
-
-    private final PinEvent pinTracingEvent = new PinEvent()
-    {
-        @Override
-        public void setCachePageId( int cachePageId )
-        {
-        }
-
-        @Override
-        public PageFaultEvent beginPageFault()
-        {
-            return pageFaultEvent;
-        }
-
-        @Override
-        public void done()
-        {
-            unpins++;
-        }
-    };
 
     private final EvictionEvent evictionEvent = new EvictionEvent()
     {
@@ -274,4 +268,33 @@ public class DefaultPageCursorTracer implements PageCursorTracer
         {
         }
     };
+
+    private class DefaultPinEvent implements PinEvent
+    {
+        int eventHits = 1;
+
+        @Override
+        public void setCachePageId( int cachePageId )
+        {
+        }
+
+        @Override
+        public PageFaultEvent beginPageFault()
+        {
+            eventHits = 0;
+            return pageFaultEvent;
+        }
+
+        @Override
+        public void hit()
+        {
+            hits += eventHits;
+        }
+
+        @Override
+        public void done()
+        {
+            unpins++;
+        }
+    }
 }

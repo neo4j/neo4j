@@ -56,6 +56,12 @@ public interface PageCursorTracer extends PageCursorCounters
         }
 
         @Override
+        public long hits()
+        {
+            return 0;
+        }
+
+        @Override
         public long bytesRead()
         {
             return 0;

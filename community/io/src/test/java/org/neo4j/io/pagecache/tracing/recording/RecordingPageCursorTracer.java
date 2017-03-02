@@ -70,6 +70,12 @@ public class RecordingPageCursorTracer extends RecordingTracer implements PageCu
     }
 
     @Override
+    public long hits()
+    {
+        return 0;
+    }
+
+    @Override
     public long bytesRead()
     {
         return 0;
@@ -104,6 +110,8 @@ public class RecordingPageCursorTracer extends RecordingTracer implements PageCu
     {
         return new PinEvent()
         {
+            private boolean hit = true;
+
             @Override
             public void setCachePageId( int cachePageId )
             {
@@ -112,6 +120,7 @@ public class RecordingPageCursorTracer extends RecordingTracer implements PageCu
             @Override
             public PageFaultEvent beginPageFault()
             {
+                hit = false;
                 return new PageFaultEvent()
                 {
                     @Override
@@ -144,9 +153,14 @@ public class RecordingPageCursorTracer extends RecordingTracer implements PageCu
             }
 
             @Override
+            public void hit()
+            {
+            }
+
+            @Override
             public void done()
             {
-                pinned( filePageId, swapper );
+                pinned( filePageId, swapper, hit );
             }
         };
     }
@@ -171,10 +185,10 @@ public class RecordingPageCursorTracer extends RecordingTracer implements PageCu
         record( new Fault( swapper, filePageId ) );
     }
 
-    private void pinned( long filePageId, PageSwapper swapper )
+    private void pinned( long filePageId, PageSwapper swapper, boolean hit )
     {
         pins++;
-        record( new Pin( swapper, filePageId ) );
+        record( new Pin( swapper, filePageId, hit ) );
     }
 
     public static class Fault extends Event
@@ -187,9 +201,18 @@ public class RecordingPageCursorTracer extends RecordingTracer implements PageCu
 
     public static class Pin extends Event
     {
-        private Pin( PageSwapper io, long pageId )
+        private boolean hit;
+
+        private Pin( PageSwapper io, long pageId, boolean hit )
         {
             super( io, pageId );
+            this.hit = hit;
+        }
+
+        @Override
+        public String toString()
+        {
+            return String.format( "%s{io=%s, pageId=%s,hit=%s}", getClass().getSimpleName(), io, pageId, hit );
         }
     }
 

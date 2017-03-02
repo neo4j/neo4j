@@ -34,6 +34,7 @@ public class DefaultPageCacheTracer implements PageCacheTracer
     protected final LongAdder evictions = new LongAdder();
     protected final LongAdder pins = new LongAdder();
     protected final LongAdder unpins = new LongAdder();
+    protected final LongAdder hits = new LongAdder();
     protected final LongAdder flushes = new LongAdder();
     protected final LongAdder bytesRead = new LongAdder();
     protected final LongAdder bytesWritten = new LongAdder();
@@ -188,6 +189,12 @@ public class DefaultPageCacheTracer implements PageCacheTracer
     }
 
     @Override
+    public long hits()
+    {
+        return hits.sum();
+    }
+
+    @Override
     public long flushes()
     {
         return flushes.sum();
@@ -233,6 +240,12 @@ public class DefaultPageCacheTracer implements PageCacheTracer
     public void unpins( long unpins )
     {
         this.unpins.add( unpins );
+    }
+
+    @Override
+    public void hits( long hits )
+    {
+        this.hits.add( hits );
     }
 
     @Override

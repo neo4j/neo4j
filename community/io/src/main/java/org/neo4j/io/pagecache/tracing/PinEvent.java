@@ -41,6 +41,11 @@ public interface PinEvent
         }
 
         @Override
+        public void hit()
+        {
+        }
+
+        @Override
         public void done()
         {
         }
@@ -55,6 +60,11 @@ public interface PinEvent
      * The page we want to pin is not in memory, so being a page fault to load it in.
      */
     PageFaultEvent beginPageFault();
+
+    /**
+     * Page found and bounded.
+     */
+    void hit();
 
     /**
      * The pinning has completed and the page is now unpinned.
