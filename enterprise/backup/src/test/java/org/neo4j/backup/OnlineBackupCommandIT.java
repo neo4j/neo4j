@@ -171,7 +171,7 @@ public class OnlineBackupCommandIT
 
         Process process = Runtime.getRuntime().exec( allArgs.toArray( new String[allArgs.size()] ),
                 new String[] {"NEO4J_HOME=" + neo4jHome.getAbsolutePath()} );
-        return new ProcessStreamHandler( process, false ).waitForResult();
+        return new ProcessStreamHandler( process, true ).waitForResult();
     }
 
     private DbRepresentation getDbRepresentation()
