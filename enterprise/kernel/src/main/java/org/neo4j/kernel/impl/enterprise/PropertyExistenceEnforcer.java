@@ -285,15 +285,14 @@ class PropertyExistenceEnforcer
         private Cursor<PropertyItem> properties( NodeItem node )
         {
             Lock lock = node.lock();
-            Cursor<PropertyItem> cursor = storeStatement().acquirePropertyCursor( node.nextPropertyId(), lock );
-            return txState.augmentPropertyCursor( cursor, txState.getNodeState( node.id() ) );
+            return storeStatement().acquirePropertyCursor( node.nextPropertyId(), lock, txState.getNodeState( node.id() ) );
         }
 
         private Cursor<PropertyItem> properties( RelationshipItem relationship )
         {
             Lock lock = relationship.lock();
-            Cursor<PropertyItem> cursor = storeStatement().acquirePropertyCursor( relationship.nextPropertyId(), lock );
-            return txState.augmentPropertyCursor( cursor, txState.getRelationshipState( relationship.id() ) );
+            return storeStatement().acquirePropertyCursor( relationship.nextPropertyId(),
+                    lock, txState.getRelationshipState( relationship.id() ) );
         }
 
         private StorageStatement storeStatement()

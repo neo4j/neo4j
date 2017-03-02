@@ -22,12 +22,14 @@ package org.neo4j.kernel.impl.api.store;
 import java.util.function.IntPredicate;
 
 import org.neo4j.cursor.Cursor;
+import org.neo4j.kernel.api.properties.DefinedProperty;
 import org.neo4j.kernel.impl.locking.Lock;
 import org.neo4j.kernel.impl.store.RecordCursor;
 import org.neo4j.kernel.impl.store.RecordCursors;
 import org.neo4j.kernel.impl.store.record.PropertyRecord;
 import org.neo4j.kernel.impl.store.record.Record;
 import org.neo4j.storageengine.api.PropertyItem;
+import org.neo4j.storageengine.api.txstate.PropertyContainerState;
 
 import static org.neo4j.kernel.impl.store.record.RecordLoad.FORCE;
 
@@ -37,8 +39,10 @@ public abstract class StoreAbstractPropertyCursor implements Cursor<PropertyItem
     private final RecordCursor<PropertyRecord> recordCursor;
 
     protected boolean fetched;
+    private DefinedProperty property;
     private IntPredicate propertyKeyIds;
     private Lock lock;
+    protected PropertyContainerState state;
 
     StoreAbstractPropertyCursor( RecordCursors cursors )
     {
@@ -46,10 +50,12 @@ public abstract class StoreAbstractPropertyCursor implements Cursor<PropertyItem
         this.recordCursor = cursors.property();
     }
 
-    protected final void initialize( IntPredicate propertyKeyIds, long firstPropertyId, Lock lock )
+    protected final void initialize( IntPredicate propertyKeyIds, long firstPropertyId, Lock lock,
+            PropertyContainerState state )
     {
         this.propertyKeyIds = propertyKeyIds;
         this.lock = lock;
+        this.state = state;
         recordCursor.placeAt( firstPropertyId, FORCE );
     }
 
@@ -61,10 +67,10 @@ public abstract class StoreAbstractPropertyCursor implements Cursor<PropertyItem
 
     private boolean fetchNext()
     {
-        while ( loop() )
+        while ( loadNextFromDisk() )
         {
             // Are there more properties to return for this current record we're at?
-            if ( payload.next() )
+            if ( payloadHasNext() )
             {
                 return true;
             }
@@ -72,10 +78,9 @@ public abstract class StoreAbstractPropertyCursor implements Cursor<PropertyItem
             // No, OK continue down the chain and hunt for more...
             if ( recordCursor.next() )
             {
-                // All good, we can get values off of this record
                 PropertyRecord propertyRecord = recordCursor.get();
                 payload.init( propertyKeyIds, propertyRecord.getBlocks(), propertyRecord.getNumberOfBlocks() );
-                if ( payload.next() )
+                if ( payloadHasNext() )
                 {
                     return true;
                 }
@@ -83,16 +88,37 @@ public abstract class StoreAbstractPropertyCursor implements Cursor<PropertyItem
             else if ( Record.NO_NEXT_PROPERTY.is( recordCursor.get().getNextProp() ) )
             {
                 // No more records in this chain, i.e. no more properties.
-                return false;
+                break;
             }
 
             // Sort of alright, this record isn't in use, but could just be due to concurrent delete.
             // Continue to next record in the chain and try there.
         }
-        return false;
+
+        return (property = nextAdded()) != null;
     }
 
-    protected abstract boolean loop();
+    private boolean payloadHasNext()
+    {
+        boolean next = payload.next();
+        if ( next && state != null )
+        {
+            int propertyKeyId = payload.propertyKeyId();
+            if ( state.isPropertyRemoved( propertyKeyId ) )
+            {
+                return false;
+            }
+            if ( property == null )
+            {
+                property = (DefinedProperty) state.getChangedProperty( propertyKeyId );
+            }
+        }
+        return next;
+    }
+
+    protected abstract boolean loadNextFromDisk();
+
+    protected abstract DefinedProperty nextAdded();
 
     @Override
     public final PropertyItem get()
@@ -101,19 +127,20 @@ public abstract class StoreAbstractPropertyCursor implements Cursor<PropertyItem
         {
             throw new IllegalStateException();
         }
+
         return this;
     }
 
     @Override
     public final int propertyKeyId()
     {
-        return payload.propertyKeyId();
+        return property == null ? payload.propertyKeyId() : property.propertyKeyId();
     }
 
     @Override
     public final Object value()
     {
-        return payload.value();
+        return property == null ? payload.value() : property.value();
     }
 
     @Override
@@ -124,6 +151,7 @@ public abstract class StoreAbstractPropertyCursor implements Cursor<PropertyItem
             fetched = false;
             payload.close();
             propertyKeyIds = null;
+            property = null;
             doClose();
         }
         finally

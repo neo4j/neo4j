@@ -102,7 +102,7 @@ public class StorageLayerPropertyTest extends StorageLayerTest
 
                 Lock lock = node.get().lock();
                 try ( Cursor<PropertyItem> props = statement
-                        .acquireSinglePropertyCursor( node.get().nextPropertyId(), propKey, lock ) )
+                        .acquireSinglePropertyCursor( node.get().nextPropertyId(), propKey, lock, null ) )
                 {
                     if ( props.next() )
                     {

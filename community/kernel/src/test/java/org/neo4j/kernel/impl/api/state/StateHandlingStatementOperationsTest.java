@@ -102,7 +102,7 @@ public class StateHandlingStatementOperationsTest
         when( inner.indexesGetForLabel( 0 ) ).thenReturn( iterator( IndexDescriptorFactory.forLabel( 0, 0 ) ) );
         when( storeStatement.acquireSingleNodeCursor( anyLong(), any( ReadableTransactionState.class ) ) )
                 .thenReturn( asNodeCursor( 0 ) );
-        when( inner.nodeGetProperties( eq( storeStatement ), any( NodeItem.class ) ) ).
+        when( inner.nodeGetProperties( eq( storeStatement ), any( NodeItem.class ), eq( null ) ) ).
                 thenReturn( asPropertyCursor() );
 
         StateHandlingStatementOperations ctx = newTxStateOps( inner );
@@ -428,9 +428,8 @@ public class StateHandlingStatementOperationsTest
         {
             long nodeId = (long) invocationOnMock.getArguments()[0];
             ReadableTransactionState state = (ReadableTransactionState) invocationOnMock.getArguments()[1];
-            when( state.augmentSinglePropertyCursor( any( Cursor.class ), any( PropertyContainerState.class ),
-                    eq( propertyKey ) ) ).thenReturn( asPropertyCursor( intProperty( propertyKey, inRange ) ) );
-            when( storeReadLayer.nodeGetProperty( eq( storageStatement ), any( NodeItem.class ), eq( propertyKey ) ) )
+            when( storeReadLayer
+                    .nodeGetProperty( eq( storageStatement ), any( NodeItem.class ), eq( propertyKey ), eq( null ) ) )
                     .thenReturn( asPropertyCursor( intProperty( propertyKey, inRange ) ) );
             return asNodeCursor( nodeId, nodeId + 20000 );
         } );
@@ -516,8 +515,8 @@ public class StateHandlingStatementOperationsTest
         when( autoIndexing.relationships() ).thenReturn( AutoIndexOperations.UNSUPPORTED );
         StoreReadLayer storeReadLayer = mock( StoreReadLayer.class );
         Cursor<PropertyItem> propertyItemCursor = propertyCursor( propertyKeyId, value );
-        when( storeReadLayer.nodeGetProperty( eq( storeStatement ), any( NodeItem.class ),
-                eq( propertyKeyId ) ) ).thenReturn( propertyItemCursor );
+        when( storeReadLayer.nodeGetProperty( eq( storeStatement ), any( NodeItem.class ), eq( propertyKeyId ),
+                any( PropertyContainerState.class ) ) ).thenReturn( propertyItemCursor );
         StateHandlingStatementOperations operations = newTxStateOps( storeReadLayer, autoIndexing );
 
         // WHEN
@@ -551,8 +550,9 @@ public class StateHandlingStatementOperationsTest
         when( autoIndexing.relationships() ).thenReturn( autoIndexOps );
         StoreReadLayer storeReadLayer = mock( StoreReadLayer.class );
         Cursor<PropertyItem> propertyItemCursor = propertyCursor( propertyKeyId, value );
-        when( storeReadLayer.relationshipGetProperty( eq( storeStatement ), any( RelationshipItem.class ),
-                eq( propertyKeyId ) ) ).thenReturn( propertyItemCursor );
+        when( storeReadLayer
+                .relationshipGetProperty( eq( storeStatement ), any( RelationshipItem.class ), eq( propertyKeyId ),
+                        any( PropertyContainerState.class ) ) ).thenReturn( propertyItemCursor );
         StateHandlingStatementOperations operations = newTxStateOps( storeReadLayer, autoIndexing );
 
         // WHEN

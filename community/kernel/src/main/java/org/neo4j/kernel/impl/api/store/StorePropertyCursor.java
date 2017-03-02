@@ -19,10 +19,14 @@
  */
 package org.neo4j.kernel.impl.api.store;
 
+import java.util.Iterator;
 import java.util.function.Consumer;
 
+import org.neo4j.kernel.api.properties.DefinedProperty;
 import org.neo4j.kernel.impl.locking.Lock;
 import org.neo4j.kernel.impl.store.RecordCursors;
+import org.neo4j.storageengine.api.StorageProperty;
+import org.neo4j.storageengine.api.txstate.PropertyContainerState;
 
 import static org.neo4j.function.Predicates.ALWAYS_TRUE_INT;
 
@@ -33,27 +37,48 @@ public class StorePropertyCursor extends StoreAbstractPropertyCursor
 {
     private final Consumer<StorePropertyCursor> instanceCache;
 
+    private boolean fromDisk;
+    private Iterator<StorageProperty> storagePropertyIterator;
+
     public StorePropertyCursor( RecordCursors cursors, Consumer<StorePropertyCursor> instanceCache )
     {
         super( cursors  );
         this.instanceCache = instanceCache;
     }
 
-    public StorePropertyCursor init( long firstPropertyId, Lock lock )
+    public StorePropertyCursor init( long firstPropertyId, Lock lock, PropertyContainerState state )
     {
-        initialize( ALWAYS_TRUE_INT, firstPropertyId, lock );
+        fromDisk = true;
+        storagePropertyIterator = state == null ? null : state.addedProperties();
+        initialize( ALWAYS_TRUE_INT, firstPropertyId, lock, state );
         return this;
     }
 
     @Override
-    protected boolean loop()
+    protected boolean loadNextFromDisk()
     {
-        return true;
+        return fromDisk;
+    }
+
+    @Override
+    protected DefinedProperty nextAdded()
+    {
+        fromDisk = false;
+        if ( storagePropertyIterator != null )
+        {
+            if ( storagePropertyIterator.hasNext() )
+            {
+                return (DefinedProperty) storagePropertyIterator.next();
+            }
+            storagePropertyIterator = null;
+        }
+        return null;
     }
 
     @Override
     protected void doClose()
     {
+        fromDisk = false;
         instanceCache.accept( this );
     }
 }
