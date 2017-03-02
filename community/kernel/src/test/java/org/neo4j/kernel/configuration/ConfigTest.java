@@ -205,17 +205,21 @@ public class ConfigTest
         File confFile = testDirectory.file( "test.conf" );
         assertTrue( confFile.createNewFile() );
 
-        Config first = Config(
-                stringMap( GraphDatabaseSettings.strict_config_validation.name(), "false",
-                        MySettingsWithDefaults.oldHello.name(), "baah",
-                        MySettingsWithDefaults.oldSetting.name(), "booh" ) );
+        Config config =
+                new Config( Optional.of( confFile ),
+                        stringMap( MySettingsWithDefaults.oldHello.name(), "baah",
+                                MySettingsWithDefaults.oldSetting.name(), "booh" ),
+                        s -> {},
+                        Collections.emptyList(), Optional.empty(),
+                        Arrays.asList( mySettingsWithDefaults, myMigratingSettings ) );
 
         // When
-        first.setLogger( log );
+        config.setLogger( log );
 
         // Then
         verify( log ).warn( "%s is deprecated. Replaced by %s", MySettingsWithDefaults.oldHello.name(),
                 MySettingsWithDefaults.hello.name() );
+        verify( log ).warn( "%s is deprecated.", MySettingsWithDefaults.oldSetting.name() );
         verifyNoMoreInteractions( log );
     }
 
