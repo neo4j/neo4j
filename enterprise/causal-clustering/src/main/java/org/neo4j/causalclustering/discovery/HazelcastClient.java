@@ -130,9 +130,6 @@ class HazelcastClient extends LifecycleAdapter implements TopologyService
 
         log.debug( "Adding read replica into cluster (%s -> %s)", uuid, addresses );
 
-        hazelcastInstance.getMap( READ_REPLICA_BOLT_ADDRESS_MAP_NAME )
-                .put( uuid, addresses, readReplicaTimeToLiveTimeout, MILLISECONDS );
-
         hazelcastInstance.getMap(  READ_REPLICA_TRANSACTION_SERVER_ADDRESS_MAP_NAME )
                 .put( uuid, transactionSource.toString(), readReplicaTimeToLiveTimeout, MILLISECONDS );
 
@@ -140,6 +137,11 @@ class HazelcastClient extends LifecycleAdapter implements TopologyService
                 .put( uuid, myself.getUuid().toString(), readReplicaTimeToLiveTimeout, MILLISECONDS );
 
         refreshTags( hazelcastInstance, uuid, tags );
+
+        // this needs to be last as when we read from it in HazelcastClusterTopology.readReplicas
+        // we assume that all the other maps have been populated if an entry exists in this one
+        hazelcastInstance.getMap( READ_REPLICA_BOLT_ADDRESS_MAP_NAME )
+                .put( uuid, addresses, readReplicaTimeToLiveTimeout, MILLISECONDS );
 
         return null; // return value not used.
     }
