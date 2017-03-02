@@ -26,19 +26,19 @@ import java.net.InetSocketAddress;
  */
 public class HttpConnectionInfo extends ClientConnectionInfo
 {
-    private final String scheme;
+    private final String protocol;
     private final InetSocketAddress clientAddress;
     private final InetSocketAddress serverAddress;
     private final String requestPath;
 
     public HttpConnectionInfo(
-            String scheme,
+            String protocol,
             @SuppressWarnings( "unused" ) String userAgent, // useful for achieving parity with BoltConnectionInfo
             InetSocketAddress clientAddress,
             InetSocketAddress serverAddress,
             String requestPath )
     {
-        this.scheme = scheme;
+        this.protocol = protocol;
         this.clientAddress = clientAddress;
         this.serverAddress = serverAddress;
         this.requestPath = requestPath;
@@ -47,13 +47,13 @@ public class HttpConnectionInfo extends ClientConnectionInfo
     @Override
     public String asConnectionDetails()
     {
-        return String.join( "\t", "server-session", scheme, clientAddress.getHostString(), requestPath );
+        return String.join( "\t", "server-session", protocol, clientAddress.getHostString(), requestPath );
     }
 
     @Override
-    public String requestScheme()
+    public String protocol()
     {
-        return scheme;
+        return protocol;
     }
 
     @Override
@@ -67,7 +67,7 @@ public class HttpConnectionInfo extends ClientConnectionInfo
     {
         return serverAddress == null ? requestPath : String.format(
                 "%s://%s:%d%s",
-                scheme,
+                protocol,
                 serverAddress.getHostString(),
                 serverAddress.getPort(),
                 requestPath );
