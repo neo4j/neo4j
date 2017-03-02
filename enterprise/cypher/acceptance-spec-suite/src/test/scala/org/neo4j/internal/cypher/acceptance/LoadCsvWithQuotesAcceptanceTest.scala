@@ -22,11 +22,11 @@ package org.neo4j.internal.cypher.acceptance
 import java.io.PrintWriter
 
 import org.neo4j.csv.reader.MissingEndQuoteException
+import org.neo4j.cypher.internal.RewindableExecutionResult
 import org.neo4j.cypher.internal.compatibility.ClosingExecutionResult
-import org.neo4j.cypher.internal.compiler.v3_1.test_helpers.CreateTempFileTestSupport
-import org.neo4j.cypher.internal.{ExecutionEngine, RewindableExecutionResult}
+import org.neo4j.cypher.internal.compiler.v3_2.test_helpers.CreateTempFileTestSupport
 import org.neo4j.cypher.javacompat.internal.GraphDatabaseCypherService
-import org.neo4j.cypher.{ExecutionEngineFunSuite, NewPlannerTestSupport, RunWithConfigTestSupport}
+import org.neo4j.cypher.{ExecutionEngineFunSuite, ExecutionEngineHelper, NewPlannerTestSupport, RunWithConfigTestSupport}
 import org.neo4j.graphdb.factory.GraphDatabaseSettings
 
 class LoadCsvWithQuotesAcceptanceTest extends ExecutionEngineFunSuite with NewPlannerTestSupport with RunWithConfigTestSupport with CreateTempFileTestSupport {
@@ -48,7 +48,7 @@ class LoadCsvWithQuotesAcceptanceTest extends ExecutionEngineFunSuite with NewPl
           writer.println("'Quotes 4',\"\"\"\"\"\"")
       })
       for (url <- urls) {
-        val result = executeUsingCostPlannerOnly(db, s"LOAD CSV WITH HEADERS FROM '$url' AS line RETURN line.x")
+        val result = executeWithCustomDb(db, s"LOAD CSV WITH HEADERS FROM '$url' AS line RETURN line.x")
         assert(result.toList === List(
           Map("line.x" -> ""),
           Map("line.x" -> "\""),
@@ -72,7 +72,7 @@ class LoadCsvWithQuotesAcceptanceTest extends ExecutionEngineFunSuite with NewPl
           writer.println("'Quotes 4',\"\"\"\"\"\"")
       })
       for (url <- urls) {
-        val result = executeUsingCostPlannerOnly(db, s"LOAD CSV WITH HEADERS FROM '$url' AS line RETURN line.x")
+        val result = executeWithCustomDb(db, s"LOAD CSV WITH HEADERS FROM '$url' AS line RETURN line.x")
         assert(result.toList === List(
           Map("line.x" -> ""),
           Map("line.x" -> "\""),
@@ -95,7 +95,7 @@ class LoadCsvWithQuotesAcceptanceTest extends ExecutionEngineFunSuite with NewPl
           writer.println("'Quotes 5',\"\\\"\"\"")
       })
       for (url <- urls) {
-        val result = executeUsingCostPlannerOnly(db, s"LOAD CSV WITH HEADERS FROM '$url' AS line RETURN line.x")
+        val result = executeWithCustomDb(db, s"LOAD CSV WITH HEADERS FROM '$url' AS line RETURN line.x")
         assert(result.toList === List(
           Map("line.x" -> ""),
           Map("line.x" -> "\""),
@@ -117,14 +117,14 @@ class LoadCsvWithQuotesAcceptanceTest extends ExecutionEngineFunSuite with NewPl
       })
       for (url <- urls) {
         intercept[MissingEndQuoteException] {
-          executeUsingCostPlannerOnly(db, s"LOAD CSV WITH HEADERS FROM '$url' AS line RETURN line.x")
+          executeWithCustomDb(db, s"LOAD CSV WITH HEADERS FROM '$url' AS line RETURN line.x")
         }.getMessage should include("which started on line 2")
       }
     }
   }
 
-  def executeUsingCostPlannerOnly(db: GraphDatabaseCypherService, query: String) =
-    new ExecutionEngine(db).execute(s"CYPHER planner=COST $query", Map.empty[String, Any]) match {
+  def executeWithCustomDb(db: GraphDatabaseCypherService, query: String) =
+    ExecutionEngineHelper.createEngine(db).execute(query, Map.empty[String, Any]) match {
       case e: ClosingExecutionResult => RewindableExecutionResult(e.inner)
     }
 

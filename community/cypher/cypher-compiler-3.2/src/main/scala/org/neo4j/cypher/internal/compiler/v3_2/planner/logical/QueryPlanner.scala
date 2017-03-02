@@ -47,7 +47,9 @@ case class QueryPlanner(planSingleQuery: LogicalPlanningFunction1[PlannerQuery, 
       useErrorsOverWarnings = context.config.useErrorsOverWarnings,
       errorIfShortestPathFallbackUsedAtRuntime = context.config.errorIfShortestPathFallbackUsedAtRuntime,
       errorIfShortestPathHasCommonNodesAtRuntime = context.config.errorIfShortestPathHasCommonNodesAtRuntime,
-      config = QueryPlannerConfiguration.default.withUpdateStrategy(context.updateStrategy))
+      config = QueryPlannerConfiguration.default.withUpdateStrategy(context.updateStrategy),
+      legacyCsvQuoteEscaping = context.config.legacyCsvQuoteEscaping
+    )
 
     val (perCommit, logicalPlan) = plan(from.unionQuery)(logicalPlanningContext)
 
