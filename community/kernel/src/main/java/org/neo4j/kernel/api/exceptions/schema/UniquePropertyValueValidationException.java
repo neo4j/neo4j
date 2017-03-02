@@ -60,9 +60,7 @@ public class UniquePropertyValueValidationException extends ConstraintValidation
         for ( Iterator<IndexEntryConflictException> iterator = conflicts.iterator(); iterator.hasNext(); )
         {
             IndexEntryConflictException conflict = iterator.next();
-            message.append( conflict.evidenceMessage(
-                    tokenNameLookup.labelGetName( schema.getLabelId() ),
-                    tokenNameLookup.propertyKeyGetName( schema.getPropertyId() ) ) );
+            message.append( conflict.evidenceMessage( tokenNameLookup, schema ) );
             if ( iterator.hasNext() )
             {
                 message.append( System.lineSeparator() );

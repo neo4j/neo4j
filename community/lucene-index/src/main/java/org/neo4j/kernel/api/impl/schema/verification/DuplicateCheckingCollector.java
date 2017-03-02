@@ -33,6 +33,7 @@ import org.neo4j.kernel.api.exceptions.index.IndexEntryConflictException;
 import org.neo4j.kernel.api.impl.schema.LuceneDocumentStructure;
 import org.neo4j.kernel.api.index.PropertyAccessor;
 import org.neo4j.kernel.api.properties.Property;
+import org.neo4j.kernel.api.schema_new.OrderedPropertyValues;
 
 public class DuplicateCheckingCollector extends SimpleCollector
 {

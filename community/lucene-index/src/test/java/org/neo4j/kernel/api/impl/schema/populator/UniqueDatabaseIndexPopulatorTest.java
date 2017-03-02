@@ -244,7 +244,7 @@ public class UniqueDatabaseIndexPopulatorTest
         catch ( IndexEntryConflictException conflict )
         {
             assertEquals( 1, conflict.getExistingNodeId() );
-            assertEquals( value, conflict.getPropertyValue() );
+            assertEquals( value, conflict.getSinglePropertyValue() );
             assertEquals( 3, conflict.getAddedNodeId() );
         }
     }
@@ -273,7 +273,7 @@ public class UniqueDatabaseIndexPopulatorTest
         catch ( IndexEntryConflictException conflict )
         {
             assertEquals( 1, conflict.getExistingNodeId() );
-            assertEquals( 1, conflict.getPropertyValue() );
+            assertEquals( 1, conflict.getSinglePropertyValue() );
             assertEquals( 3, conflict.getAddedNodeId() );
         }
     }
@@ -305,7 +305,7 @@ public class UniqueDatabaseIndexPopulatorTest
         catch ( IndexEntryConflictException conflict )
         {
             assertEquals( 1, conflict.getExistingNodeId() );
-            assertEquals( "value1", conflict.getPropertyValue() );
+            assertEquals( "value1", conflict.getSinglePropertyValue() );
             assertEquals( 3, conflict.getAddedNodeId() );
         }
     }
@@ -337,7 +337,7 @@ public class UniqueDatabaseIndexPopulatorTest
         catch ( IndexEntryConflictException conflict )
         {
             assertEquals( 1, conflict.getExistingNodeId() );
-            assertEquals( value, conflict.getPropertyValue() );
+            assertEquals( value, conflict.getSinglePropertyValue() );
             assertEquals( 2, conflict.getAddedNodeId() );
         }
     }
@@ -420,7 +420,7 @@ public class UniqueDatabaseIndexPopulatorTest
         catch ( IndexEntryConflictException conflict )
         {
             assertEquals( 1, conflict.getExistingNodeId() );
-            assertEquals( 1, conflict.getPropertyValue() );
+            assertEquals( 1, conflict.getSinglePropertyValue() );
             assertEquals( iterations, conflict.getAddedNodeId() );
         }
     }
@@ -455,7 +455,7 @@ public class UniqueDatabaseIndexPopulatorTest
         catch ( IndexEntryConflictException conflict )
         {
             assertEquals( 1, conflict.getExistingNodeId() );
-            assertEquals( 1, conflict.getPropertyValue() );
+            assertEquals( 1, conflict.getSinglePropertyValue() );
             assertEquals( iterations, conflict.getAddedNodeId() );
         }
     }
