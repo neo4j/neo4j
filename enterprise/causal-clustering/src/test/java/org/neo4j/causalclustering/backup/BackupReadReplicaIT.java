@@ -39,7 +39,6 @@ import org.neo4j.kernel.configuration.Settings;
 import org.neo4j.kernel.impl.transaction.log.TransactionIdStore;
 import org.neo4j.test.DbRepresentation;
 import org.neo4j.test.causalclustering.ClusterRule;
-import org.neo4j.test.rule.SuppressOutput;
 
 import static org.junit.Assert.assertEquals;
 import static org.junit.Assert.assertNotEquals;
@@ -48,14 +47,10 @@ import static org.neo4j.causalclustering.backup.BackupCoreIT.backupArguments;
 import static org.neo4j.causalclustering.backup.BackupCoreIT.createSomeData;
 import static org.neo4j.causalclustering.backup.BackupCoreIT.getConfig;
 import static org.neo4j.function.Predicates.awaitEx;
-import static org.neo4j.test.rule.SuppressOutput.suppress;
 
 public class BackupReadReplicaIT
 {
     private int backupPort = findFreePort( 22000, 23000);
-
-    @Rule
-    public SuppressOutput suppressOutput = suppress( SuppressOutput.System.out, SuppressOutput.System.err );
 
     @Rule
     public ClusterRule clusterRule = new ClusterRule( BackupReadReplicaIT.class ).withNumberOfCoreMembers( 3 )
@@ -86,8 +81,6 @@ public class BackupReadReplicaIT
     @Test
     public void makeSureBackupCanBePerformed() throws Throwable
     {
-        System.out.println( "backupPort = " + backupPort );
-
         // Run backup
         CoreGraphDatabase leader = createSomeData( cluster );
 
