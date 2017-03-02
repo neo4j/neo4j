@@ -28,6 +28,17 @@ import scala.collection.JavaConverters._
 
 class MatchAcceptanceTest extends ExecutionEngineFunSuite with QueryStatisticsTestSupport with NewPlannerTestSupport {
 
+  test("supports new parameter syntax") {
+    createNode("prop" -> 5)
+    createNode("prop" -> 10)
+
+    val query = "MATCH (n) WHERE n.prop = $param RETURN n.prop AS v"
+
+    val result = executeWithAllPlanners(query, "param" -> 5)
+
+    result.toList should equal(List(Map("v" -> 5)))
+  }
+
   test("make sure non-existing nodes are not returned") {
     executeWithAllPlannersAndCompatibilityMode("match (n) where id(n) = 10 return n") should be(empty)
     executeWithAllPlannersAndCompatibilityMode("match ()-[r]->() where id(r) = 10 return r") should be(empty)
