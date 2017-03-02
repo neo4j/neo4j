@@ -20,6 +20,7 @@
 package org.neo4j.backup;
 
 import java.nio.file.Path;
+import javax.annotation.Nonnull;
 
 import org.neo4j.OnlineBackupCommandSection;
 import org.neo4j.commandline.admin.AdminCommand;
@@ -36,12 +37,14 @@ public class OnlineBackupCommandProvider extends AdminCommand.Provider
     }
 
     @Override
+    @Nonnull
     public Arguments allArguments()
     {
         return OnlineBackupCommand.arguments();
     }
 
     @Override
+    @Nonnull
     public String description()
     {
         return "Perform an online backup from a running Neo4j enterprise server. Neo4j's backup service must have" +
@@ -50,18 +53,21 @@ public class OnlineBackupCommandProvider extends AdminCommand.Provider
     }
 
     @Override
+    @Nonnull
     public String summary()
     {
         return "Perform an online backup from a running Neo4j enterprise server.";
     }
 
     @Override
+    @Nonnull
     public AdminCommandSection commandSection()
     {
         return OnlineBackupCommandSection.instance();
     }
 
     @Override
+    @Nonnull
     public AdminCommand create( Path homeDir, Path configDir, OutsideWorld outsideWorld )
     {
         return new OnlineBackupCommand(

@@ -26,6 +26,7 @@ import java.nio.file.Path;
 import java.util.Arrays;
 import java.util.Collections;
 import java.util.NoSuchElementException;
+import javax.annotation.Nonnull;
 
 import org.neo4j.commandline.arguments.Arguments;
 import org.neo4j.helpers.collection.Iterables;
@@ -260,29 +261,34 @@ public class AdminToolTest
         return new CannedLocator( new AdminCommand.Provider( name )
         {
             @Override
+            @Nonnull
             public Arguments allArguments()
             {
                 return Arguments.NO_ARGS;
             }
 
             @Override
+            @Nonnull
             public String description()
             {
                 return "";
             }
 
             @Override
+            @Nonnull
             public String summary()
             {
                 return "";
             }
 
+            @Nonnull
             public AdminCommandSection commandSection()
             {
                 return AdminCommandSection.general();
             }
 
             @Override
+            @Nonnull
             public AdminCommand create( Path homeDir, Path configDir, OutsideWorld outsideWorld )
             {
                 return command;

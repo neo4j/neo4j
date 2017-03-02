@@ -19,6 +19,8 @@
  */
 package org.neo4j.commandline.dbms;
 
+import javax.annotation.Nonnull;
+
 import org.neo4j.commandline.admin.AdminCommandSection;
 
 public class ClusteringCommandSection extends AdminCommandSection
@@ -31,6 +33,7 @@ public class ClusteringCommandSection extends AdminCommandSection
     }
 
     @Override
+    @Nonnull
     public String printable()
     {
         return "Clustering";

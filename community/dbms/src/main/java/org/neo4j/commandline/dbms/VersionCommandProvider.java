@@ -20,6 +20,7 @@
 package org.neo4j.commandline.dbms;
 
 import java.nio.file.Path;
+import javax.annotation.Nonnull;
 
 import org.neo4j.commandline.admin.AdminCommand;
 import org.neo4j.commandline.admin.AdminCommandSection;
@@ -35,24 +36,28 @@ public class VersionCommandProvider extends AdminCommand.Provider
     }
 
     @Override
+    @Nonnull
     public Arguments allArguments()
     {
         return VersionCommand.arguments();
     }
 
     @Override
+    @Nonnull
     public String summary()
     {
         return "Check the version of a Neo4j database store.";
     }
 
     @Override
+    @Nonnull
     public AdminCommandSection commandSection()
     {
         return AdminCommandSection.general();
     }
 
     @Override
+    @Nonnull
     public String description()
     {
         return "Checks the version of a Neo4j database store. Note that this command expects a path to a store " +
@@ -60,6 +65,7 @@ public class VersionCommandProvider extends AdminCommand.Provider
     }
 
     @Override
+    @Nonnull
     public AdminCommand create( Path homeDir, Path configDir, OutsideWorld outsideWorld )
     {
         return new VersionCommand( outsideWorld::stdOutLine );

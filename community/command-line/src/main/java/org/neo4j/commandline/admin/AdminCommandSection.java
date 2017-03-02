@@ -62,6 +62,7 @@ public abstract class AdminCommandSection
     static class GeneralSection extends AdminCommandSection
     {
         @Override
+        @Nonnull
         public String printable()
         {
             return "General";
