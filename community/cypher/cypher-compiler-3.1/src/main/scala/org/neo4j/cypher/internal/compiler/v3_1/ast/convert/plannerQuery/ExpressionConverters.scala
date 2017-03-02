@@ -101,14 +101,14 @@ object ExpressionConverters {
               acc ++ e.idNames.filter(x => isNamed(x.name))
             case e@Not(_: PatternExpression) =>
               acc ++ e.idNames.filter(x => isNamed(x.name))
-            case e if e.exists { case _: PatternExpression => true} =>
+            case e if e.treeExists { case _: PatternExpression => true} =>
               acc ++ (e.idNames -- unnamedIdNamesInNestedPatternExpressions(e))
             case e =>
               acc ++ e.idNames
           }
         }
         Predicate(newDeps, ors)
-      case Predicate(deps, expr) if expr.exists { case _: PatternExpression => true} =>
+      case Predicate(deps, expr) if expr.treeExists { case _: PatternExpression => true} =>
         Predicate(deps -- unnamedIdNamesInNestedPatternExpressions(expr), expr)
       case p => p
     }

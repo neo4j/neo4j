@@ -87,7 +87,10 @@ object Foldable {
     def reverseTreeFold[R](init: R)(f: PartialFunction[Any, R => (R, Option[R => R])]): R =
       treeFoldAcc(mutable.ArrayStack(that), init, f.lift, new mutable.ArrayStack[(mutable.ArrayStack[Any], R => R)](), reverse = true)
 
-    def exists(f: PartialFunction[Any, Boolean]) =
+    /*
+    Allows searching through object tree and object collections
+     */
+    def treeExists(f: PartialFunction[Any, Boolean]): Boolean =
       existsAcc(mutable.ArrayStack(that), f.lift)
 
     def findByClass[A : ClassTag]: A =
@@ -106,7 +109,7 @@ object Foldable {
         remaining ++= that.reverseChildren
       }
 
-      result.toSeq
+      result
     }
   }
 
