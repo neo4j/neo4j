@@ -140,13 +140,6 @@ public interface ReadableTransactionState
 
     RelationshipState getRelationshipState( long id );
 
-    Cursor<PropertyItem> augmentPropertyCursor( Cursor<PropertyItem> cursor,
-            PropertyContainerState propertyContainerState );
-
-    Cursor<PropertyItem> augmentSinglePropertyCursor( Cursor<PropertyItem> cursor,
-            PropertyContainerState propertyContainerState,
-            int propertyKeyId );
-
     PrimitiveIntSet augmentLabels( PrimitiveIntSet cursor, NodeState nodeState );
 
     /**

@@ -343,7 +343,8 @@ public class NeoStoresTest
 
     private DefinedProperty getProperty( int key, StorageStatement statement, long propertyId )
     {
-        try ( Cursor<PropertyItem> propertyCursor = statement.acquireSinglePropertyCursor( propertyId, key, NO_LOCK ) )
+        try ( Cursor<PropertyItem> propertyCursor = statement
+                .acquireSinglePropertyCursor( propertyId, key, NO_LOCK, null ) )
         {
             if ( propertyCursor.next() )
             {

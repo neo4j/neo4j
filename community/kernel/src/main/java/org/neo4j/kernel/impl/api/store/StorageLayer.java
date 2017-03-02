@@ -78,6 +78,7 @@ import org.neo4j.storageengine.api.StoreReadLayer;
 import org.neo4j.storageengine.api.Token;
 import org.neo4j.storageengine.api.schema.PopulationProgress;
 import org.neo4j.storageengine.api.schema.SchemaRule;
+import org.neo4j.storageengine.api.txstate.PropertyContainerState;
 import org.neo4j.storageengine.api.txstate.ReadableTransactionState;
 
 import static org.neo4j.collection.primitive.Primitive.intSet;
@@ -418,31 +419,35 @@ public class StorageLayer implements StoreReadLayer
     }
 
     @Override
-    public Cursor<PropertyItem> nodeGetProperties( StorageStatement statement, NodeItem node )
+    public Cursor<PropertyItem> nodeGetProperties( StorageStatement statement, NodeItem node,
+            PropertyContainerState state )
     {
         Lock lock = node.lock(); // lock before reading the property id, since we might need to reload the record
-        return statement.acquirePropertyCursor( node.nextPropertyId(), lock );
+        return statement.acquirePropertyCursor( node.nextPropertyId(), lock, state );
     }
 
     @Override
-    public Cursor<PropertyItem> nodeGetProperty( StorageStatement statement, NodeItem node, int propertyKeyId )
+    public Cursor<PropertyItem> nodeGetProperty( StorageStatement statement, NodeItem node, int propertyKeyId,
+            PropertyContainerState state )
     {
         Lock lock = node.lock(); // lock before reading the property id, since we might need to reload the record
-        return statement.acquireSinglePropertyCursor( node.nextPropertyId(), propertyKeyId, lock );
+        return statement.acquireSinglePropertyCursor( node.nextPropertyId(), propertyKeyId, lock, state );
     }
 
     @Override
-    public Cursor<PropertyItem> relationshipGetProperties( StorageStatement statement, RelationshipItem relationship )
+    public Cursor<PropertyItem> relationshipGetProperties( StorageStatement statement, RelationshipItem relationship,
+            PropertyContainerState state )
     {
         Lock lock = relationship.lock(); // lock before reading the property id, since we might need to reload the record
-        return statement.acquirePropertyCursor( relationship.nextPropertyId(), lock );
+        return statement.acquirePropertyCursor( relationship.nextPropertyId(), lock, state );
     }
 
     @Override
-    public Cursor<PropertyItem> relationshipGetProperty( StorageStatement statement, RelationshipItem relationship, int propertyKeyId )
+    public Cursor<PropertyItem> relationshipGetProperty( StorageStatement statement, RelationshipItem relationship,
+            int propertyKeyId, PropertyContainerState state )
     {
         Lock lock = relationship.lock(); // lock before reading the property id, since we might need to reload the record
-        return statement.acquireSinglePropertyCursor( relationship.nextPropertyId(), propertyKeyId, lock );
+        return statement.acquireSinglePropertyCursor( relationship.nextPropertyId(), propertyKeyId, lock, state );
     }
 
     @Override

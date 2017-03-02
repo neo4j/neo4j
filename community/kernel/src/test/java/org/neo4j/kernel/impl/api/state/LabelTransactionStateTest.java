@@ -34,7 +34,6 @@ import org.neo4j.collection.primitive.PrimitiveLongCollections;
 import org.neo4j.kernel.api.exceptions.EntityNotFoundException;
 import org.neo4j.kernel.api.schema.index.IndexDescriptor;
 import org.neo4j.kernel.api.schema.index.IndexDescriptorFactory;
-import org.neo4j.kernel.api.txstate.TransactionState;
 import org.neo4j.kernel.impl.api.KernelStatement;
 import org.neo4j.kernel.impl.api.StateHandlingStatementOperations;
 import org.neo4j.kernel.impl.api.StatementOperationsTestHelper;
@@ -43,6 +42,7 @@ import org.neo4j.kernel.impl.api.store.StoreStatement;
 import org.neo4j.kernel.impl.index.LegacyIndexStore;
 import org.neo4j.storageengine.api.NodeItem;
 import org.neo4j.storageengine.api.StoreReadLayer;
+import org.neo4j.storageengine.api.txstate.PropertyContainerState;
 import org.neo4j.storageengine.api.txstate.ReadableTransactionState;
 
 import static org.junit.Assert.assertEquals;
@@ -247,7 +247,8 @@ public class LabelTransactionStateTest
     {
         // GIVEN
         when( storeStatement.acquireSingleNodeCursor( 1337, null ) ).thenReturn( asNodeCursor( 1337 ) );
-        when( store.nodeGetProperties( eq( storeStatement ), any( NodeItem.class ) ) )
+        when( store
+                .nodeGetProperties( eq( storeStatement ), any( NodeItem.class ), any( PropertyContainerState.class ) ) )
                 .thenReturn( asPropertyCursor() );
 
         // WHEN
@@ -263,7 +264,8 @@ public class LabelTransactionStateTest
         // GIVEN
         when( storeStatement.acquireSingleNodeCursor( 1337, null ) )
                 .thenReturn( asNodeCursor( 1337, StubCursors.labels( 12 ) ) );
-        when( store.nodeGetProperties( eq( storeStatement ), any( NodeItem.class ) ) )
+        when( store
+                .nodeGetProperties( eq( storeStatement ), any( NodeItem.class ), any( PropertyContainerState.class ) ) )
                 .thenReturn( asPropertyCursor() );
 
         // WHEN
@@ -279,7 +281,8 @@ public class LabelTransactionStateTest
         // GIVEN
         when( storeStatement.acquireSingleNodeCursor( 1337, null ) )
                 .thenReturn( asNodeCursor( 1337, StubCursors.labels( 12 ) ) );
-        when( store.nodeGetProperties( eq( storeStatement ), any( NodeItem.class ) ) )
+        when( store
+                .nodeGetProperties( eq( storeStatement ), any( NodeItem.class ), any( PropertyContainerState.class ) ) )
                 .thenReturn( asPropertyCursor() );
 
         // WHEN
@@ -339,7 +342,7 @@ public class LabelTransactionStateTest
             when( storeStatement
                     .acquireSingleNodeCursor( eq( nodeLabels.nodeId ), any( ReadableTransactionState.class ) ) )
                     .thenReturn( asNodeCursor( nodeLabels.nodeId, StubCursors.labels( nodeLabels.labelIds ) ) );
-            when( store.nodeGetProperties( eq( storeStatement ), any( NodeItem.class ) ) )
+            when( store.nodeGetProperties( eq( storeStatement ), any( NodeItem.class ), any(PropertyContainerState.class) ) )
                     .thenReturn( asPropertyCursor() );
 
             for ( int label : nodeLabels.labelIds )

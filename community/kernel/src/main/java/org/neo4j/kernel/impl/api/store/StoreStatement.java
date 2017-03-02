@@ -42,6 +42,7 @@ import org.neo4j.storageengine.api.RelationshipItem;
 import org.neo4j.storageengine.api.StorageStatement;
 import org.neo4j.storageengine.api.schema.IndexReader;
 import org.neo4j.storageengine.api.schema.LabelScanReader;
+import org.neo4j.storageengine.api.txstate.PropertyContainerState;
 import org.neo4j.storageengine.api.txstate.ReadableTransactionState;
 
 /**
@@ -177,15 +178,16 @@ public class StoreStatement implements StorageStatement
     }
 
     @Override
-    public Cursor<PropertyItem> acquirePropertyCursor( long propertyId, Lock lock )
+    public Cursor<PropertyItem> acquirePropertyCursor( long propertyId, Lock lock, PropertyContainerState state )
     {
-        return propertyCursorCache.get().init( propertyId, lock );
+        return propertyCursorCache.get().init( propertyId, lock, state );
     }
 
     @Override
-    public Cursor<PropertyItem> acquireSinglePropertyCursor( long propertyId, int propertyKeyId, Lock lock )
+    public Cursor<PropertyItem> acquireSinglePropertyCursor( long propertyId, int propertyKeyId, Lock lock,
+            PropertyContainerState state )
     {
-        return singlePropertyCursorCache.get().init( propertyKeyId, propertyId, lock );
+        return singlePropertyCursorCache.get().init( propertyKeyId, propertyId, lock, state );
     }
 
     @Override

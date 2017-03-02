@@ -102,8 +102,10 @@ import org.neo4j.storageengine.api.StoreReadLayer;
 import org.neo4j.storageengine.api.Token;
 import org.neo4j.storageengine.api.schema.IndexReader;
 import org.neo4j.storageengine.api.schema.PopulationProgress;
+import org.neo4j.storageengine.api.txstate.NodeState;
 import org.neo4j.storageengine.api.txstate.ReadableDiffSets;
 import org.neo4j.storageengine.api.txstate.ReadableTransactionState;
+import org.neo4j.storageengine.api.txstate.RelationshipState;
 
 import static java.lang.String.format;
 import static org.neo4j.collection.primitive.PrimitiveIntCollections.filter;
@@ -117,7 +119,6 @@ import static org.neo4j.kernel.api.properties.DefinedProperty.NO_SUCH_PROPERTY;
 import static org.neo4j.kernel.impl.api.state.IndexTxStateUpdater.LabelChangeType.ADDED_LABEL;
 import static org.neo4j.kernel.impl.api.state.IndexTxStateUpdater.LabelChangeType.REMOVED_LABEL;
 import static org.neo4j.kernel.impl.util.Cursors.count;
-import static org.neo4j.kernel.impl.util.Cursors.empty;
 import static org.neo4j.register.Registers.newDoubleLongRegister;
 import static org.neo4j.storageengine.api.NodeItem.transientNode;
 import static org.neo4j.storageengine.api.txstate.TxStateVisitor.EMPTY;
@@ -218,19 +219,8 @@ public class StateHandlingStatementOperations
     @Override
     public Cursor<PropertyItem> nodeGetProperties( KernelStatement statement, NodeItem node )
     {
-        Cursor<PropertyItem> cursor;
-        if ( statement.hasTxStateWithChanges() && statement.txState().nodeIsAddedInThisTx( node.id() ) )
-        {
-            cursor = empty();
-        }
-        else
-        {
-            cursor = storeLayer.nodeGetProperties( statement.getStoreStatement(), node );
-        }
-
-        return statement.hasTxStateWithChanges()
-               ? statement.txState().augmentPropertyCursor( cursor, statement.txState().getNodeState( node.id() ) )
-               : cursor;
+        NodeState state = statement.hasTxStateWithChanges() ? statement.txState().getNodeState( node.id() ) : null;
+        return storeLayer.nodeGetProperties( statement.getStoreStatement(), node, state );
     }
 
     @Override
@@ -277,40 +267,17 @@ public class StateHandlingStatementOperations
 
     private Cursor<PropertyItem> nodeGetPropertyCursor( KernelStatement statement, NodeItem node, int propertyKeyId )
     {
-
-        Cursor<PropertyItem> cursor;
-        if ( statement.hasTxStateWithChanges() && statement.txState().nodeIsAddedInThisTx( node.id() ) )
-        {
-            cursor = empty();
-        }
-        else
-        {
-            cursor = storeLayer.nodeGetProperty( statement.getStoreStatement(), node, propertyKeyId );
-        }
-
-        return statement.hasTxStateWithChanges()
-               ? statement.txState().augmentSinglePropertyCursor(
-                       cursor, statement.txState().getNodeState( node.id() ), propertyKeyId )
-               : cursor;
+        NodeState state = statement.hasTxStateWithChanges() ? statement.txState().getNodeState( node.id() ) : null;
+        return storeLayer.nodeGetProperty( statement.getStoreStatement(), node, propertyKeyId, state );
     }
 
     @Override
     public Cursor<PropertyItem> relationshipGetProperties( KernelStatement statement, RelationshipItem relationship )
     {
-        Cursor<PropertyItem> cursor;
-        if ( statement.hasTxStateWithChanges() && statement.txState().relationshipIsAddedInThisTx( relationship.id() ) )
-        {
-            cursor = empty();
-        }
-        else
-        {
-            cursor = storeLayer.relationshipGetProperties( statement.getStoreStatement(), relationship );
-        }
-
-        return statement.hasTxStateWithChanges()
-               ? statement.txState()
-                       .augmentPropertyCursor( cursor, statement.txState().getRelationshipState( relationship.id() ) )
-               : cursor;
+        RelationshipState state = statement.hasTxStateWithChanges()
+                                  ? statement.txState().getRelationshipState( relationship.id() )
+                                  : null;
+        return storeLayer.relationshipGetProperties( statement.getStoreStatement(), relationship, state );
     }
 
     @Override
@@ -360,20 +327,10 @@ public class StateHandlingStatementOperations
     private Cursor<PropertyItem> relationshipGetPropertyCursor( KernelStatement statement,
             RelationshipItem relationship, int propertyKeyId )
     {
-        Cursor<PropertyItem> cursor;
-        if ( statement.hasTxStateWithChanges() && statement.txState().relationshipIsAddedInThisTx( relationship.id() ) )
-        {
-            cursor = empty();
-        }
-        else
-        {
-            cursor = storeLayer.relationshipGetProperty( statement.getStoreStatement(), relationship, propertyKeyId );
-        }
-
-        return statement.hasTxStateWithChanges()
-               ? statement.txState().augmentSinglePropertyCursor( cursor, statement.txState()
-                        .getRelationshipState( relationship.id() ), propertyKeyId )
-               : cursor;
+        RelationshipState state = statement.hasTxStateWithChanges()
+                                  ? statement.txState().getRelationshipState( relationship.id() )
+                                  : null;
+        return storeLayer.relationshipGetProperty( statement.getStoreStatement(), relationship, propertyKeyId, state );
     }
 
     // </Cursors>
