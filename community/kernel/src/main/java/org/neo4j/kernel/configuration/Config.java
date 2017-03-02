@@ -428,22 +428,24 @@ public class Config implements DiagnosticsProvider, Configuration
         params.putAll( validSettings );
 
         // Warn about deprecations
-        configFile.ifPresent(
-                file -> configOptions.stream()
-                        .map( it -> it.asConfigValues( params ) )
-                        .flatMap( List::stream )
-                        .filter( ConfigValue::deprecated )
-                        .forEach( c ->
+        if ( configFile.isPresent() ) {
+            configOptions.stream()
+                    .map( it -> it.asConfigValues( params ) )
+                    .flatMap( List::stream )
+                    .filter( c -> params.containsKey( c.name() ) )
+                    .filter( ConfigValue::deprecated )
+                    .forEach( c ->
+                    {
+                        if ( c.replacement().isPresent() )
                         {
-                            if ( c.replacement().isPresent() )
-                            {
-                                log.warn( "%s is deprecated. Replaced by %s", c.name(), c.replacement().get() );
-                            }
-                            else
-                            {
-                                log.warn( "%s is deprecated.", c.name() );
-                            }
-                        } ) );
+                            log.warn( "%s is deprecated. Replaced by %s", c.name(), c.replacement().get() );
+                        }
+                        else
+                        {
+                            log.warn( "%s is deprecated.", c.name() );
+                        }
+                    } );
+        }
     }
 
     @Nonnull
