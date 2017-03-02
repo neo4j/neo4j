@@ -26,6 +26,7 @@ import org.neo4j.kernel.impl.locking.Lock;
 import org.neo4j.kernel.impl.store.RecordCursors;
 import org.neo4j.storageengine.api.schema.IndexReader;
 import org.neo4j.storageengine.api.schema.LabelScanReader;
+import org.neo4j.storageengine.api.txstate.PropertyContainerState;
 import org.neo4j.storageengine.api.txstate.ReadableTransactionState;
 
 /**
@@ -115,9 +116,9 @@ public interface StorageStatement extends AutoCloseable
      */
     Cursor<RelationshipItem> relationshipsGetAllCursor( ReadableTransactionState state );
 
-    Cursor<PropertyItem> acquirePropertyCursor( long propertyId, Lock shortLivedReadLock );
+    Cursor<PropertyItem> acquirePropertyCursor( long propertyId, Lock shortLivedReadLock, PropertyContainerState state );
 
-    Cursor<PropertyItem> acquireSinglePropertyCursor( long propertyId, int propertyKeyId, Lock shortLivedReadLock );
+    Cursor<PropertyItem> acquireSinglePropertyCursor( long propertyId, int propertyKeyId, Lock shortLivedReadLock, PropertyContainerState state );
 
     /**
      * @return {@link LabelScanReader} capable of reading nodes for specific label ids.
