@@ -55,7 +55,7 @@ setup_arbiter_options() {
       # Global default
       NEO4J_DEFAULT_ADDRESS="${dbms_connectors_default_listen_address:-localhost}"
 
-      if [[ "${dbms_connector_http_enabled}" == "false" ]]; then
+      if [[ "${dbms_connector_http_enabled:-true}" == "false" ]]; then
         # Only HTTPS connector enabled
         # First read deprecated 'address' setting
         NEO4J_SERVER_ADDRESS="${dbms_connector_https_address:-:7473}"
