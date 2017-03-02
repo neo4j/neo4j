@@ -29,6 +29,7 @@ import java.nio.file.StandardOpenOption;
 import java.util.concurrent.atomic.AtomicBoolean;
 import java.util.concurrent.locks.Lock;
 import java.util.concurrent.locks.ReentrantLock;
+import java.util.function.Consumer;
 import java.util.function.LongSupplier;
 import java.util.function.Supplier;
 
@@ -46,6 +47,8 @@ import static java.lang.String.format;
 import static org.neo4j.index.internal.gbptree.Generation.generation;
 import static org.neo4j.index.internal.gbptree.Generation.stableGeneration;
 import static org.neo4j.index.internal.gbptree.Generation.unstableGeneration;
+import static org.neo4j.index.internal.gbptree.Header.CARRY_OVER_PREVIOUS_HEADER;
+import static org.neo4j.index.internal.gbptree.Header.replace;
 import static org.neo4j.index.internal.gbptree.PageCursorUtil.checkOutOfBounds;
 
 /**
@@ -160,6 +163,11 @@ public class GBPTree<KEY,VALUE> implements Closeable
     public static final Monitor NO_MONITOR = new Monitor()
     {   // does nothing
     };
+
+    /**
+     * No-op header reader.
+     */
+    public static final Header.Reader NO_HEADER = (cursor,length) -> {};
 
     /**
      * Paged file in a {@link PageCache} providing the means of storage.
@@ -282,10 +290,12 @@ public class GBPTree<KEY,VALUE> implements Closeable
      * @param tentativePageSize page size, i.e. tree node size. Must be less than or equal to that of the page cache.
      * A pageSize of {@code 0} means to use whatever the page cache has (at creation)
      * @param monitor {@link Monitor} for monitoring {@link GBPTree}.
+     * @param headerReader reads header data, previously written using {@link #checkpoint(IOLimiter, Consumer)}
+     * or {@link #close()}
      * @throws IOException on page cache error
      */
     public GBPTree( PageCache pageCache, File indexFile, Layout<KEY,VALUE> layout, int tentativePageSize,
-            Monitor monitor ) throws IOException
+            Monitor monitor, Header.Reader headerReader ) throws IOException
     {
         this.indexFile = indexFile;
         this.monitor = monitor;
@@ -306,7 +316,7 @@ public class GBPTree<KEY,VALUE> implements Closeable
             }
             else
             {
-                loadState( pagedFile );
+                loadState( pagedFile, headerReader );
             }
         }
         catch ( Throwable t )
@@ -396,10 +406,21 @@ public class GBPTree<KEY,VALUE> implements Closeable
         }
     }
 
-    private void loadState( PagedFile pagedFile ) throws IOException
+    private void loadState( PagedFile pagedFile, Header.Reader headerReader ) throws IOException
     {
         Pair<TreeState,TreeState> states = readStatePages( pagedFile );
         TreeState state = TreeStatePair.selectNewestValidState( states );
+        try ( PageCursor cursor = pagedFile.io( state.pageId(), PagedFile.PF_SHARED_READ_LOCK ) )
+        {
+            PageCursorUtil.goTo( cursor, "header data", state.pageId() );
+            do
+            {
+                TreeState.read( cursor );
+                int length = cursor.getInt();
+                headerReader.read( cursor, length );
+            }
+            while ( cursor.shouldRetry() );
+        }
         generation = Generation.generation( state.stableGeneration(), state.unstableGeneration() );
         setRoot( state.rootId(), state.rootGen() );
 
@@ -411,7 +432,7 @@ public class GBPTree<KEY,VALUE> implements Closeable
         freeList.initialize( lastId, freeListWritePageId, freeListReadPageId, freeListWritePos, freeListReadPos );
     }
 
-    private void writeState( PagedFile pagedFile ) throws IOException
+    private void writeState( PagedFile pagedFile, Header.Writer headerWriter ) throws IOException
     {
         Pair<TreeState,TreeState> states = readStatePages( pagedFile );
         TreeState oldestState = TreeStatePair.selectOldestOrInvalid( states );
@@ -424,8 +445,41 @@ public class GBPTree<KEY,VALUE> implements Closeable
                     root.id(), root.generation(),
                     freeList.lastId(), freeList.writePageId(), freeList.readPageId(),
                     freeList.writePos(), freeList.readPos() );
+
+            // Write/carry over header
+            int headerOffset = cursor.getOffset();
+            int headerDataOffset = headerOffset + Integer.BYTES; // will contain length of written header data (below)
+            TreeState otherState = other( states, oldestState );
+            if ( otherState.isValid() )
+            {
+                PageCursor previousCursor = pagedFile.io( otherState.pageId(), PagedFile.PF_SHARED_READ_LOCK );
+                PageCursorUtil.goTo( previousCursor, "previous state page", otherState.pageId() );
+                do
+                {
+                    // Place the previous state cursor after state data
+                    TreeState.read( previousCursor );
+                    // Read length of previous header
+                    int previousLength = previousCursor.getInt();
+                    // Reserve space to store length
+                    cursor.setOffset( headerDataOffset );
+                    // Write
+                    headerWriter.write( previousCursor, previousLength, cursor );
+                }
+                while ( previousCursor.shouldRetry() );
+                checkOutOfBounds( previousCursor );
+                checkOutOfBounds( cursor );
+
+                int length = cursor.getOffset() - headerDataOffset;
+                cursor.putInt( headerOffset, length );
+            }
+
             checkOutOfBounds( cursor );
         }
+    }
+
+    private static TreeState other( Pair<TreeState,TreeState> states, TreeState state )
+    {
+        return states.getLeft() == state ? states.getRight() : states.getLeft();
     }
 
     private static Pair<TreeState,TreeState> readStatePages( PagedFile pagedFile ) throws IOException
@@ -590,11 +644,30 @@ public class GBPTree<KEY,VALUE> implements Closeable
      * since last call to {@link #checkpoint(IOLimiter)} or since opening this tree.
      *
      * @param ioLimiter for controlling I/O usage.
+     * @param headerWriter hook for writing header data.
      * @throws IOException on error flushing to storage.
+     */
+    public void checkpoint( IOLimiter ioLimiter, Consumer<PageCursor> headerWriter ) throws IOException
+    {
+        checkpoint( ioLimiter, replace( headerWriter ) );
+    }
+
+    /**
+     * Performs a {@link #checkpoint(IOLimiter, Consumer) check point}, keeping any header information
+     * written in previous check point.
+     *
+     * @param ioLimiter for controlling I/O usage.
+     * @throws IOException on error flushing to storage.
+     * @see #checkpoint(IOLimiter, Consumer)
      */
     public void checkpoint( IOLimiter ioLimiter ) throws IOException
     {
-        if ( !changesSinceLastCheckpoint )
+        checkpoint( ioLimiter, CARRY_OVER_PREVIOUS_HEADER );
+    }
+
+    private void checkpoint( IOLimiter ioLimiter, Header.Writer headerWriter ) throws IOException
+    {
+        if ( !changesSinceLastCheckpoint && headerWriter == CARRY_OVER_PREVIOUS_HEADER )
         {
             // No changes has happened since last checkpoint was called, no need to do another checkpoint
             return;
@@ -618,7 +691,7 @@ public class GBPTree<KEY,VALUE> implements Closeable
             // and write the tree state (rootId, lastId, generation a.s.o.) to state page.
             long unstableGeneration = unstableGeneration( generation );
             generation = Generation.generation( unstableGeneration, unstableGeneration + 1 );
-            writeState( pagedFile );
+            writeState( pagedFile, headerWriter );
 
             // Flush the state page.
             pagedFile.flushAndForce();
@@ -647,13 +720,29 @@ public class GBPTree<KEY,VALUE> implements Closeable
     @Override
     public void close() throws IOException
     {
+        close( CARRY_OVER_PREVIOUS_HEADER );
+    }
+
+    /**
+     * Closes the {@link GBPTree} also writing header using the supplied writer.
+     *
+     * @param headerWriter hook for writing header data.
+     * @throws IOException on error either checkpointing or closing resources.
+     */
+    public void close( Consumer<PageCursor> headerWriter ) throws IOException
+    {
+        close( replace( headerWriter ) );
+    }
+
+    private void close( Header.Writer headerWriter ) throws IOException
+    {
         writer.close();
 
         try
         {
             // Perform a checkpoint before closing. If no changes has happened since last checkpoint,
             // no new checkpoint will be created.
-            checkpoint( IOLimiter.unlimited() );
+            checkpoint( IOLimiter.unlimited(), headerWriter );
         }
         finally
         {
@@ -732,7 +821,7 @@ public class GBPTree<KEY,VALUE> implements Closeable
         // Increment unstable generation, widening the gap between stable and unstable generation
         // so that generations in between are considered crash generation(s).
         generation = generation( stableGeneration( generation ), unstableGeneration( generation ) + 1 );
-        writeState( pagedFile );
+        writeState( pagedFile, CARRY_OVER_PREVIOUS_HEADER );
         pagedFile.flushAndForce();
     }
 

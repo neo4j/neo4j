@@ -45,6 +45,7 @@ import org.neo4j.storageengine.api.schema.LabelScanReader;
 import static org.neo4j.helpers.collection.Iterables.single;
 import static org.neo4j.helpers.collection.Iterators.asResourceIterator;
 import static org.neo4j.helpers.collection.Iterators.iterator;
+import static org.neo4j.index.internal.gbptree.GBPTree.NO_HEADER;
 import static org.neo4j.kernel.impl.store.MetaDataStore.DEFAULT_NAME;
 
 /**
@@ -318,7 +319,7 @@ public class NativeLabelScanStore implements LabelScanStore
 
     private void instantiateTree() throws IOException
     {
-        index = new GBPTree<>( pageCache, storeFile, new LabelScanLayout(), pageSize, GBPTree.NO_MONITOR );
+        index = new GBPTree<>( pageCache, storeFile, new LabelScanLayout(), pageSize, GBPTree.NO_MONITOR, NO_HEADER );
     }
 
     private void drop() throws IOException
