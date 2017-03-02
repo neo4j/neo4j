@@ -19,6 +19,7 @@
  */
 package org.neo4j.logging;
 
+import java.io.ByteArrayOutputStream;
 import java.io.Closeable;
 import java.io.File;
 import java.io.IOException;
@@ -243,7 +244,7 @@ public class RotatingFileOutputStreamSupplier implements Supplier<OutputStream>,
         return earliestRotationTimeRef.get() <= currentTimeSupplier.getAsLong();
     }
 
-    private void rotate()
+    void rotate()
     {
         if ( rotating.getAndSet( true ) )
         {
@@ -251,6 +252,7 @@ public class RotatingFileOutputStreamSupplier implements Supplier<OutputStream>,
             return;
         }
 
+        ByteArrayOutputStream bufferingOutputStream = new ByteArrayOutputStream();
         Runnable runnable = () ->
         {
             logFileLock.writeLock().lock();
@@ -267,7 +269,7 @@ public class RotatingFileOutputStreamSupplier implements Supplier<OutputStream>,
                     }
                     catch ( Exception e )
                     {
-                        rotationListener.rotationError( e, streamWrapper );
+                        rotationListener.rotationError( e, bufferingOutputStream );
                         return;
                     }
 
@@ -281,7 +283,7 @@ public class RotatingFileOutputStreamSupplier implements Supplier<OutputStream>,
                     }
                     catch ( Exception e )
                     {
-                        rotationListener.rotationError( e, streamWrapper );
+                        rotationListener.rotationError( e, bufferingOutputStream );
                         return;
                     }
                 }
@@ -292,13 +294,13 @@ public class RotatingFileOutputStreamSupplier implements Supplier<OutputStream>,
                         if ( !closed.get() && outRef.equals( nullStream ) )
                         {
                             outRef = openOutputFile();
-                            rotationListener.outputFileCreated( streamWrapper );
+                            rotationListener.outputFileCreated( bufferingOutputStream );
                         }
                     }
                     catch ( IOException e )
                     {
                         System.err.println( "Failed to open log file after log rotation: " + e.getMessage() );
-                        rotationListener.rotationError( e, streamWrapper );
+                        rotationListener.rotationError( e, bufferingOutputStream );
                     }
                 }
 
@@ -306,12 +308,20 @@ public class RotatingFileOutputStreamSupplier implements Supplier<OutputStream>,
                 {
                     earliestRotationTimeRef.set( currentTimeSupplier.getAsLong() + rotationDelay );
                 }
-                rotationListener.rotationCompleted( streamWrapper );
+                rotationListener.rotationCompleted( bufferingOutputStream );
             }
             finally
             {
                 rotating.set( false );
                 logFileLock.writeLock().unlock();
+                try
+                {
+                    bufferingOutputStream.writeTo( streamWrapper );
+                }
+                catch ( IOException e )
+                {
+                    rotationListener.rotationError( e, streamWrapper );
+                }
             }
         };
 

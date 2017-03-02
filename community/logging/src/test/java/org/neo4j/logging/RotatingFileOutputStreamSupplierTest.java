@@ -19,27 +19,31 @@
  */
 package org.neo4j.logging;
 
+import org.junit.After;
+import org.junit.Before;
+import org.junit.Rule;
+import org.junit.Test;
+
 import java.io.File;
 import java.io.FileNotFoundException;
 import java.io.IOException;
 import java.io.OutputStream;
 import java.io.PrintWriter;
 import java.nio.channels.ClosedChannelException;
+import java.nio.file.Files;
 import java.util.ArrayList;
 import java.util.List;
+import java.util.concurrent.Callable;
 import java.util.concurrent.CountDownLatch;
 import java.util.concurrent.Executor;
+import java.util.concurrent.ExecutorService;
 import java.util.concurrent.Executors;
 import java.util.concurrent.RejectedExecutionException;
 import java.util.concurrent.TimeUnit;
 import java.util.concurrent.atomic.AtomicLong;
+import java.util.concurrent.atomic.AtomicReference;
 import java.util.function.LongSupplier;
 import java.util.function.Supplier;
-
-import org.junit.After;
-import org.junit.Before;
-import org.junit.Rule;
-import org.junit.Test;
 
 import org.neo4j.adversaries.Adversary;
 import org.neo4j.adversaries.RandomAdversary;
@@ -48,6 +52,7 @@ import org.neo4j.adversaries.fs.AdversarialOutputStream;
 import org.neo4j.function.Suppliers;
 import org.neo4j.graphdb.mockfs.DelegatingFileSystemAbstraction;
 import org.neo4j.graphdb.mockfs.EphemeralFileSystemAbstraction;
+import org.neo4j.io.fs.DefaultFileSystemAbstraction;
 import org.neo4j.io.fs.FileSystemAbstraction;
 import org.neo4j.logging.RotatingFileOutputStreamSupplier.RotationListener;
 import org.neo4j.test.rule.TestDirectory;
@@ -55,9 +60,12 @@ import org.neo4j.test.rule.TestDirectory;
 import static java.util.concurrent.TimeUnit.SECONDS;
 import static org.hamcrest.CoreMatchers.sameInstance;
 import static org.hamcrest.core.Is.is;
+import static org.junit.Assert.assertEquals;
+import static org.junit.Assert.assertNull;
 import static org.junit.Assert.assertThat;
 import static org.junit.Assert.fail;
 import static org.mockito.Matchers.any;
+import static org.mockito.Matchers.eq;
 import static org.mockito.Mockito.doThrow;
 import static org.mockito.Mockito.mock;
 import static org.mockito.Mockito.spy;
@@ -171,6 +179,68 @@ public class RotatingFileOutputStreamSupplierTest
         assertThat( fileSystem.fileExists( archiveLogFile3 ), is( false ) );
     }
 
+    @Test( timeout = 10_000 )
+    public void rotationShouldNotDeadlockOnListener() throws Exception
+    {
+        String logContent = "Output file created";
+        final AtomicReference<Exception> listenerException = new AtomicReference<>( null );
+        CountDownLatch latch = new CountDownLatch( 1 );
+        RotationListener listener = new RotationListener()
+        {
+            @Override
+            public void outputFileCreated( OutputStream out )
+            {
+                try
+                {
+                    Thread thread = new Thread( () ->
+                    {
+                        try
+                        {
+                            out.write( logContent.getBytes() );
+                            out.flush();
+                        }
+                        catch ( IOException e )
+                        {
+                            listenerException.set( e );
+                        }
+                    } );
+                    thread.start();
+                    thread.join();
+                }
+                catch ( Exception e )
+                {
+                    listenerException.set( e );
+                }
+                super.outputFileCreated( out );
+            }
+
+            @Override
+            public void rotationCompleted( OutputStream out )
+            {
+                latch.countDown();
+            }
+        };
+        ExecutorService executor = Executors.newSingleThreadExecutor();
+        DefaultFileSystemAbstraction defaultFileSystemAbstraction = new DefaultFileSystemAbstraction();
+        RotatingFileOutputStreamSupplier supplier = new RotatingFileOutputStreamSupplier( defaultFileSystemAbstraction,
+                logFile, 0, 0, 10, executor, listener );
+
+        OutputStream outputStream = supplier.get();
+        LockingPrintWriter lockingPrintWriter = new LockingPrintWriter( outputStream );
+        lockingPrintWriter.withLock( () ->
+        {
+            supplier.rotate();
+            latch.await();
+            return Void.TYPE;
+        } );
+
+        executor.shutdown();
+
+        List<String> strings = Files.readAllLines( logFile.toPath() );
+        assertEquals( logContent, String.join( "", strings ) );
+        assertNull( listenerException.get() );
+    }
+
     @Test
     public void shouldNotRotateLogWhenSizeExceededButNotDelay() throws Exception
     {
@@ -208,6 +278,8 @@ public class RotatingFileOutputStreamSupplierTest
     {
         final CountDownLatch allowRotationComplete = new CountDownLatch( 1 );
         final CountDownLatch rotationComplete = new CountDownLatch( 1 );
+        String outputFileCreatedMessage = "Output file created";
+        String rotationCompleteMessage = "Rotation complete";
 
         RotationListener rotationListener = spy( new RotationListener()
         {
@@ -217,8 +289,9 @@ public class RotatingFileOutputStreamSupplierTest
                 try
                 {
                     allowRotationComplete.await( 1L, TimeUnit.SECONDS );
+                    out.write( outputFileCreatedMessage.getBytes() );
                 }
-                catch ( InterruptedException e )
+                catch ( InterruptedException | IOException e )
                 {
                     throw new RuntimeException( e );
                 }
@@ -228,6 +301,14 @@ public class RotatingFileOutputStreamSupplierTest
             public void rotationCompleted( OutputStream out )
             {
                 rotationComplete.countDown();
+                try
+                {
+                    out.write( rotationCompleteMessage.getBytes() );
+                }
+                catch ( IOException e )
+                {
+                    throw new RuntimeException( e );
+                }
             }
         } );
 
@@ -240,8 +321,8 @@ public class RotatingFileOutputStreamSupplierTest
         allowRotationComplete.countDown();
         rotationComplete.await( 1L, TimeUnit.SECONDS );
 
-        verify( rotationListener ).outputFileCreated( supplier.get() );
-        verify( rotationListener ).rotationCompleted( supplier.get() );
+        verify( rotationListener ).outputFileCreated( any( OutputStream.class ) );
+        verify( rotationListener ).rotationCompleted( any( OutputStream.class ) );
     }
 
     @Test
@@ -296,7 +377,7 @@ public class RotatingFileOutputStreamSupplierTest
         write( supplier, "A string longer than 10 bytes" );
         assertThat( supplier.get(), is( outputStream ) );
 
-        verify( rotationListener ).rotationError( exception, outputStream );
+        verify( rotationListener ).rotationError( eq( exception ), any( OutputStream.class ) );
     }
 
     @Test
@@ -467,33 +548,21 @@ public class RotatingFileOutputStreamSupplierTest
         }
     }
 
-    private class ManualExecutor implements Executor
+    private class LockingPrintWriter extends PrintWriter
     {
-        private Runnable task;
-
-        @Override
-        public void execute( Runnable task )
+        LockingPrintWriter( OutputStream out )
         {
-            if ( isScheduled() )
-            {
-                throw new IllegalStateException( "task already scheduled with Executor" );
-            }
-            this.task = task;
+            super( out );
+            lock = new Object();
+
         }
 
-        public boolean isScheduled()
+        void withLock(Callable callable) throws Exception
         {
-            return task != null;
-        }
-
-        public void runTask()
-        {
-            if ( !isScheduled() )
+            synchronized ( lock )
             {
-                throw new IllegalStateException( "task not scheduled with Executor" );
+                callable.call();
             }
-            task.run();
-            task = null;
         }
     }
 
@@ -506,7 +575,7 @@ public class RotatingFileOutputStreamSupplierTest
             this.longValue = new AtomicLong( value );
         }
 
-        public long setValue( long value )
+        long setValue( long value )
         {
             return longValue.getAndSet( value );
         }
