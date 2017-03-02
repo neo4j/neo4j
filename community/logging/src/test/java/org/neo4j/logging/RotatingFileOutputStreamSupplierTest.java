@@ -64,6 +64,7 @@ import static org.junit.Assert.assertNull;
 import static org.junit.Assert.assertThat;
 import static org.junit.Assert.fail;
 import static org.mockito.Matchers.any;
+import static org.mockito.Matchers.eq;
 import static org.mockito.Mockito.doThrow;
 import static org.mockito.Mockito.mock;
 import static org.mockito.Mockito.spy;
@@ -270,6 +271,8 @@ public class RotatingFileOutputStreamSupplierTest
     {
         final CountDownLatch allowRotationComplete = new CountDownLatch( 1 );
         final CountDownLatch rotationComplete = new CountDownLatch( 1 );
+        String outputFileCreatedMessage = "Output file created";
+        String rotationCompleteMessage = "Rotation complete";
 
         RotationListener rotationListener = spy( new RotationListener()
         {
@@ -279,8 +282,9 @@ public class RotatingFileOutputStreamSupplierTest
                 try
                 {
                     allowRotationComplete.await( 1L, TimeUnit.SECONDS );
+                    out.write( outputFileCreatedMessage.getBytes() );
                 }
-                catch ( InterruptedException e )
+                catch ( InterruptedException | IOException e )
                 {
                     throw new RuntimeException( e );
                 }
@@ -290,6 +294,14 @@ public class RotatingFileOutputStreamSupplierTest
             public void rotationCompleted( OutputStream out )
             {
                 rotationComplete.countDown();
+                try
+                {
+                    out.write( rotationCompleteMessage.getBytes() );
+                }
+                catch ( IOException e )
+                {
+                    throw new RuntimeException( e );
+                }
             }
         } );
 
@@ -302,8 +314,8 @@ public class RotatingFileOutputStreamSupplierTest
         allowRotationComplete.countDown();
         rotationComplete.await( 1L, TimeUnit.SECONDS );
 
-        verify( rotationListener ).outputFileCreated( supplier.get() );
-        verify( rotationListener ).rotationCompleted( supplier.get() );
+        verify( rotationListener ).outputFileCreated( any( OutputStream.class ) );
+        verify( rotationListener ).rotationCompleted( any( OutputStream.class ) );
     }
 
     @Test
@@ -358,7 +370,7 @@ public class RotatingFileOutputStreamSupplierTest
         write( supplier, "A string longer than 10 bytes" );
         assertThat( supplier.get(), is( outputStream ) );
 
-        verify( rotationListener ).rotationError( exception, outputStream );
+        verify( rotationListener ).rotationError( eq( exception ), any( OutputStream.class ) );
     }
 
     @Test
