@@ -24,6 +24,8 @@ import org.junit.Test;
 
 import org.neo4j.io.pagecache.tracing.DefaultPageCacheTracer;
 import org.neo4j.io.pagecache.tracing.PageCacheTracer;
+import org.neo4j.io.pagecache.tracing.cursor.DefaultPageCursorTracerSupplier;
+import org.neo4j.io.pagecache.tracing.cursor.PageCursorTracerSupplier;
 import org.neo4j.kernel.impl.api.DefaultTransactionTracer;
 import org.neo4j.kernel.impl.transaction.log.checkpoint.DefaultCheckPointerTracer;
 import org.neo4j.kernel.impl.transaction.tracing.TransactionTracer;
@@ -57,6 +59,7 @@ public class TracersTest
     {
         Tracers tracers = new Tracers( "null", log, monitors, jobScheduler );
         assertThat( tracers.pageCacheTracer, is( PageCacheTracer.NULL ) );
+        assertThat( tracers.pageCursorTracerSupplier, is( PageCursorTracerSupplier.NULL ) );
         assertThat( tracers.transactionTracer, is( TransactionTracer.NULL ) );
         assertNoWarning();
     }
@@ -66,6 +69,7 @@ public class TracersTest
     {
         Tracers tracers = new Tracers( "NuLl", log, monitors, jobScheduler );
         assertThat( tracers.pageCacheTracer, is( PageCacheTracer.NULL ) );
+        assertThat( tracers.pageCursorTracerSupplier, is( PageCursorTracerSupplier.NULL ) );
         assertThat( tracers.transactionTracer, is( TransactionTracer.NULL ) );
         assertNoWarning();
     }
@@ -107,6 +111,7 @@ public class TracersTest
         assertThat( tracers.pageCacheTracer, instanceOf( DefaultPageCacheTracer.class ) );
         assertThat( tracers.transactionTracer, instanceOf( DefaultTransactionTracer.class ) );
         assertThat( tracers.checkPointTracer, instanceOf( DefaultCheckPointerTracer.class ) );
+        assertThat( tracers.pageCursorTracerSupplier, instanceOf( DefaultPageCursorTracerSupplier.class ) );
     }
 
     private void assertNoWarning()
