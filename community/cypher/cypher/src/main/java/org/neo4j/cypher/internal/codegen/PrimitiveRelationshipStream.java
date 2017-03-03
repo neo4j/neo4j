@@ -22,8 +22,10 @@ package org.neo4j.cypher.internal.codegen;
 import java.util.Arrays;
 import java.util.Iterator;
 import java.util.List;
+import java.util.function.LongFunction;
 import java.util.stream.LongStream;
 
+import org.neo4j.cypher.internal.compiler.v3_2.spi.RelationshipIdWrapper;
 import org.neo4j.graphdb.Relationship;
 
 import static java.lang.String.format;
@@ -63,7 +65,7 @@ public class PrimitiveRelationshipStream extends PrimitiveEntityStream<Relations
     // This method is only used when we do not know the element type at compile time, so it has to box the elements
     public Iterator<RelationshipIdWrapper> iterator()
     {
-        return inner.mapToObj( RelationshipIdWrapper::new ).iterator();
+        return inner.mapToObj( (LongFunction<RelationshipIdWrapper>) RelationshipIdWrapperImpl::new ).iterator();
     }
 
     private static final PrimitiveRelationshipStream empty = new PrimitiveRelationshipStream( LongStream.empty() );

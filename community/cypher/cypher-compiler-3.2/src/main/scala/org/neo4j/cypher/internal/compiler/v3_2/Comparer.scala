@@ -20,7 +20,11 @@
 package org.neo4j.cypher.internal.compiler.v3_2
 
 import org.neo4j.cypher.internal.compiler.v3_2.pipes.QueryState
-import org.neo4j.cypher.internal.frontend.v3_2.IncomparableValuesException
+import org.neo4j.cypher.internal.compiler.v3_2.spi.{NodeIdWrapper, RelationshipIdWrapper}
+import org.neo4j.cypher.internal.compiler.v3_2.common.CypherOrderability
+import org.neo4j.graphdb.{Node, Relationship}
+
+import scala.collection.JavaConverters._
 
 /**
  * Comparer is a trait that enables it's subclasses to compare to AnyRef with each other.
@@ -30,22 +34,19 @@ trait Comparer extends CypherSerializer {
   import Comparer._
 
   def compareForOrderability(operator: Option[String], l: Any, r: Any)(implicit qtx: QueryState): Int = {
-    try {
-      if ((isString(l) && isString(r)) || (isNumber(l) && isNumber(r)) || (isBoolean(l) && isBoolean(r)))
-        CypherOrdering.DEFAULT.compare(l, r)
-      else
-        throw new IncomparableValuesException(operator.map(reason(l, r)), serializeWithType(l), serializeWithType(r))
-    } catch {
-      case _: IllegalArgumentException =>
-        throw new IncomparableValuesException(operator.map(reason(l, r)), serializeWithType(l), serializeWithType(r))
-    }
+    CypherOrderability.compare(makeComparable(l), makeComparable(r))
   }
 
-  private def reason(l: Any, r: Any)(operator: String): String = {
-    (l, r) match {
-      case (_: List[_], _: List[_]) => s"Cannot perform $operator on lists, consider using UNWIND."
-      case _ => s"Cannot perform $operator on mixed types."
+  private def makeComparable(a: Any): Any = a match {
+    case n: Node => new NodeIdWrapper {
+      override def id() = n.getId
     }
+    case r: Relationship => new RelationshipIdWrapper {
+      override def id() = r.getId
+    }
+    case s: Seq[_] => s.map(makeComparable).asJava
+    case m: Map[_, _] => m.mapValues(makeComparable).asJava
+    case x => x
   }
 
   def compareForComparability(operator: Option[String], l: Any, r: Any)(implicit qtx: QueryState): Option[Int] = {

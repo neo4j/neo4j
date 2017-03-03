@@ -22,10 +22,11 @@ package org.neo4j.cypher.internal.spi.v3_2.codegen
 import org.neo4j.codegen.FieldReference.field
 import org.neo4j.codegen.Parameter.param
 import org.neo4j.codegen._
-import org.neo4j.cypher.internal.codegen.{CompiledEquivalenceUtils, CompiledOrderabilityUtils}
+import org.neo4j.cypher.internal.codegen.CompiledEquivalenceUtils
 import org.neo4j.cypher.internal.compiled_runtime.v3_2.codegen.CodeGenContext
 import org.neo4j.cypher.internal.compiled_runtime.v3_2.codegen.ir.expressions.{CodeGenType, ReferenceType, RepresentationType}
 import org.neo4j.cypher.internal.compiled_runtime.v3_2.codegen.spi._
+import org.neo4j.cypher.internal.compiler.v3_2.common.CypherOrderability
 import org.neo4j.cypher.internal.frontend.v3_2.helpers._
 import org.neo4j.cypher.internal.frontend.v3_2.symbols
 
@@ -213,7 +214,7 @@ class AuxGenerator(val packageName: String, val generator: CodeGenerator) {
                 }
               }
               case _ => {
-                // Use CompiledOrderabilityUtils.compare which handles mixed-types according to Cypher orderability semantics
+                // Use CypherOrderability.compare which handles mixed-types according to Cypher orderability semantics
                 val compareResultName = s"compare_$sanitizedFieldName"
                 val compareResult = l2.declare(typeRef[Int], compareResultName)
 
@@ -223,7 +224,7 @@ class AuxGenerator(val packageName: String, val generator: CodeGenerator) {
                 val (lhs, rhs) = rearrangeInSortOrder(thisField, otherField, sortOrder)
 
                 l2.assign(compareResult,
-                  Expression.invoke(method[CompiledOrderabilityUtils, Int]("compare", typeRef[Object], typeRef[Object]),
+                  Expression.invoke(method[CypherOrderability, Int]("compare", typeRef[Object], typeRef[Object]),
                     lhs, rhs))
                 using(l2.ifStatement(Expression.notEqual(compareResult, Expression.constant(0)))) { l3 =>
                   l3.returns(compareResult)

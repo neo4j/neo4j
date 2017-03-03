@@ -17,7 +17,7 @@
  * You should have received a copy of the GNU General Public License
  * along with this program.  If not, see <http://www.gnu.org/licenses/>.
  */
-package org.neo4j.cypher.internal.codegen;
+package org.neo4j.cypher.internal.compiler.v3_2.common;
 
 import java.util.Arrays;
 import java.util.Comparator;
@@ -28,8 +28,10 @@ import java.util.stream.DoubleStream;
 import java.util.stream.IntStream;
 import java.util.stream.LongStream;
 
-import org.neo4j.cypher.UnorderableValueException;
+import org.neo4j.cypher.internal.compiler.v3_2.spi.NodeIdWrapper;
+import org.neo4j.cypher.internal.compiler.v3_2.spi.RelationshipIdWrapper;
 import org.neo4j.cypher.internal.frontend.v3_2.IncomparableValuesException;
+import org.neo4j.cypher.internal.frontend.v3_2.UnorderableValueException;
 import org.neo4j.graphdb.Path;
 import org.neo4j.graphdb.PropertyContainer;
 import org.neo4j.helpers.MathUtil;
@@ -76,12 +78,12 @@ import static java.lang.String.format;
  *
  * TBD: POINT and GEOMETRY
  */
-public class CompiledOrderabilityUtils
+public class CypherOrderability
 {
     /**
      * Do not instantiate this class
      */
-    private CompiledOrderabilityUtils()
+    private CypherOrderability()
     {
         throw new UnsupportedOperationException();
     }
@@ -326,7 +328,7 @@ public class CompiledOrderabilityUtils
             Iterator<PropertyContainer> rhsIter = lhs.iterator();
             while ( lhsIter.hasNext() && rhsIter.hasNext() )
             {
-                int result = CompiledOrderabilityUtils.compare( lhsIter.next(), rhsIter.next() );
+                int result = CypherOrderability.compare( lhsIter.next(), rhsIter.next() );
                 if ( 0 != result )
                 {
                     return result;
@@ -347,7 +349,7 @@ public class CompiledOrderabilityUtils
             Iterator rhsIter = toIterator( rhs );
             while ( lhsIter.hasNext() && rhsIter.hasNext() )
             {
-                int result = CompiledOrderabilityUtils.compare( lhsIter.next(), rhsIter.next() );
+                int result = CypherOrderability.compare( lhsIter.next(), rhsIter.next() );
                 if ( 0 != result )
                 {
                     return result;

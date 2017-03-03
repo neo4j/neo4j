@@ -27,7 +27,7 @@ import org.neo4j.cypher.internal.codegen._
 import org.neo4j.cypher.internal.compiled_runtime.v3_2.codegen.{QueryExecutionEvent, QueryExecutionTracer}
 import org.neo4j.cypher.internal.compiler.v3_2.ResultRowImpl
 import org.neo4j.cypher.internal.compiler.v3_2.planDescription.Id
-import org.neo4j.cypher.internal.compiler.v3_2.spi.{InternalResultRow, InternalResultVisitor}
+import org.neo4j.cypher.internal.compiler.v3_2.spi.{InternalResultRow, InternalResultVisitor, NodeIdWrapper, RelationshipIdWrapper}
 import org.neo4j.graphdb.Direction
 import org.neo4j.helpers.collection.MapUtil
 import org.neo4j.kernel.api.ReadOperations

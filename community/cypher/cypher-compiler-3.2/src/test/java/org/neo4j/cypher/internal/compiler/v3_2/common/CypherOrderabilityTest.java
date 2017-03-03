@@ -17,7 +17,7 @@
  * You should have received a copy of the GNU General Public License
  * along with this program.  If not, see <http://www.gnu.org/licenses/>.
  */
-package org.neo4j.cypher.internal.codegen;
+package org.neo4j.cypher.internal.compiler.v3_2.common;
 
 import org.junit.Rule;
 import org.junit.Test;
@@ -26,6 +26,8 @@ import org.junit.rules.ExpectedException;
 import java.util.Arrays;
 import java.util.HashMap;
 
+import org.neo4j.cypher.internal.compiler.v3_2.spi.NodeIdWrapper;
+import org.neo4j.cypher.internal.compiler.v3_2.spi.RelationshipIdWrapper;
 import org.neo4j.cypher.internal.frontend.v3_2.IncomparableValuesException;
 
 import static java.lang.String.format;
@@ -33,7 +35,7 @@ import static java.lang.String.format;
 /**
  * Inspired by {@link org.neo4j.kernel.impl.api.PropertyValueComparisonTest}
  */
-public class CompiledOrderabilityUtilsTest
+public class CypherOrderabilityTest
 {
     @Rule
     public ExpectedException thrown = ExpectedException.none();
@@ -43,12 +45,12 @@ public class CompiledOrderabilityUtilsTest
             new HashMap<Long,Long>(),
 
             // NODE
-            new NodeIdWrapper( 1 ),
-            new NodeIdWrapper( 2 ),
+            (NodeIdWrapper) () -> 1,
+            (NodeIdWrapper) () -> 2,
 
             // RELATIONSHIP
-            new RelationshipIdWrapper( 1 ),
-            new RelationshipIdWrapper( 2 ),
+            (RelationshipIdWrapper) () -> 1,
+            (RelationshipIdWrapper) () -> 2,
 
             // LIST
             new String[]{"boo"},
@@ -65,7 +67,7 @@ public class CompiledOrderabilityUtilsTest
             new long[]{1, 2, 3, Long.MIN_VALUE},
             new int[]{1, 2, 3, Integer.MIN_VALUE},
             new Object[]{1L, 2, 3, Double.NaN},
-            new Object[]{1L, 2, 3, new NodeIdWrapper(-1)},
+            new Object[]{1L, 2, 3, (NodeIdWrapper) () -> -1},
             new Long[]{1L, 2L, 4L},
             new int[]{2},
             new Integer[]{3},
@@ -73,7 +75,7 @@ public class CompiledOrderabilityUtilsTest
             new Double[]{5D},
             new float[]{6},
             new Float[]{7F},
-            new Object[]{new RelationshipIdWrapper(-1)},
+            new Object[]{(RelationshipIdWrapper) () -> -1},
 
             // TODO: PATH
 
@@ -206,8 +208,8 @@ public class CompiledOrderabilityUtilsTest
     {
         try
         {
-            int cmp1 = CompiledOrderabilityUtils.compare( left, right );
-            int cmp2 = CompiledOrderabilityUtils.compare( right, left );
+            int cmp1 = CypherOrderability.compare( left, right );
+            int cmp2 = CypherOrderability.compare( right, left );
             if ( sign( cmp1 ) != -sign( cmp2 ) )
             {
                 throw new AssertionError( format( "Comparator is not symmetric on %s and %s", left, right ) );

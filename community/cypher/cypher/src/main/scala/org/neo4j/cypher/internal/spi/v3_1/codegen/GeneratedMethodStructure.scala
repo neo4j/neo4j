@@ -230,7 +230,7 @@ case class GeneratedMethodStructure(fields: Fields, generator: CodeBlock, aux: A
   override def materializeNode(nodeIdVar: String) =
     invoke(nodeManager, newNodeProxyById, generator.load(nodeIdVar))
 
-  override def node(nodeIdVar: String) = createNewInstance(typeRef[NodeIdWrapper], (typeRef[Long], generator.load(nodeIdVar)))
+  override def node(nodeIdVar: String) = createNewInstance(typeRef[NodeIdWrapperImpl], (typeRef[Long], generator.load(nodeIdVar)))
 
   override def nullablePrimitive(varName: String, codeGenType: CodeGenType, onSuccess: Expression) = codeGenType match {
     case CodeGenType(CTNode, IntType) | CodeGenType(CTRelationship, IntType) =>
@@ -253,7 +253,7 @@ case class GeneratedMethodStructure(fields: Fields, generator: CodeBlock, aux: A
   override def materializeRelationship(relIdVar: String) =
     invoke(nodeManager, newRelationshipProxyById, generator.load(relIdVar))
 
-  override def relationship(relIdVar: String) = createNewInstance(typeRef[RelationshipIdWrapper],
+  override def relationship(relIdVar: String) = createNewInstance(typeRef[RelationshipIdWrapperImpl],
                                                                   (typeRef[Long], generator.load(relIdVar)))
 
   override def trace[V](planStepId: String)(block: MethodStructure[Expression] => V) = if (!tracing) block(this)
