@@ -53,26 +53,6 @@ public class FormattedLogTest
     }
 
     @Test
-    public void logShouldFailAndWriteNothingForNullMessage()
-    {
-        // Given
-        StringWriter writer = new StringWriter();
-        Log log = newFormattedLog( writer );
-
-        try
-        {
-            // When
-            log.info( null );
-            fail( "Should have thrown " + RuntimeException.class );
-        }
-        catch ( RuntimeException npe )
-        {
-            // Then
-            assertThat( writer.toString(), equalTo( "" ) );
-        }
-    }
-
-    @Test
     public void logShouldWriteMessageAndThrowable()
     {
         // Given
@@ -89,45 +69,6 @@ public class FormattedLogTest
                         format( "1984-10-26 04:23:24.343+0000 INFO  [test] Hasta la vista, baby " +
                                 "<message>%n<stacktrace>" ) )
         );
-    }
-
-    @Test
-    public void logShouldFailAndWriteNothingForNullMessageAndNotNullThrowable()
-    {
-        // Given
-        StringWriter writer = new StringWriter();
-        Log log = newFormattedLog( writer );
-
-        try
-        {
-            // When
-            log.info( null, newThrowable( "<message>", "<stacktrace>" ) );
-            fail( "Should have thrown " + RuntimeException.class );
-        }
-        catch ( RuntimeException npe )
-        {
-            // Then
-            assertThat( writer.toString(), equalTo( "" ) );
-        }
-    }
-
-    @Test
-    public void logShouldThrowExceptionForNotNullMessageAndNullThrowable()
-    {
-        // Given
-        StringWriter writer = new StringWriter();
-        Log log = newFormattedLog( writer );
-
-        try
-        {
-            // When
-            log.info( "I'll take care of the police", (Throwable) null );
-        }
-        catch ( RuntimeException npe )
-        {
-            // Then
-            assertThat( writer.toString(), equalTo( "" ) );
-        }
     }
 
     @Test
@@ -167,26 +108,6 @@ public class FormattedLogTest
     }
 
     @Test
-    public void logShouldFailAndWriteNothingForNullMessageFormat()
-    {
-        // Given
-        StringWriter writer = new StringWriter();
-        Log log = newFormattedLog( writer );
-
-        try
-        {
-            // When
-            log.info( null, "foo", "bar", "baz" );
-            fail( "Should have thrown " + RuntimeException.class );
-        }
-        catch ( RuntimeException npe )
-        {
-            // Then
-            assertThat( writer.toString(), equalTo( "" ) );
-        }
-    }
-
-    @Test
     public void logShouldWriteNotFormattedMessageWhenNoParametersGiven()
     {
         // Given
@@ -195,23 +116,6 @@ public class FormattedLogTest
 
         // When
         log.info( "Come with me if you %s to live!", new Object[]{} );
-
-        // Then
-        assertThat(
-                writer.toString(),
-                equalTo( format( "1984-10-26 04:23:24.343+0000 INFO  [test] Come with me if you %%s to live!%n" ) )
-        );
-    }
-
-    @Test
-    public void logShouldWriteNotFormattedMessageWhenParametersArrayIsNull()
-    {
-        // Given
-        StringWriter writer = new StringWriter();
-        Log log = newFormattedLog( writer );
-
-        // When
-        log.info( "Come with me if you %s to live!", (Object[]) null );
 
         // Then
         assertThat(
