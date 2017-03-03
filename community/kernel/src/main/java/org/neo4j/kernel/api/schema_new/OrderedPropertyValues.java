@@ -20,6 +20,9 @@
 package org.neo4j.kernel.api.schema_new;
 
 import java.util.Arrays;
+import java.util.Comparator;
+
+import static org.neo4j.kernel.impl.api.PropertyValueComparison.COMPARE_VALUES;
 
 import static java.lang.String.format;
 import static java.lang.String.valueOf;
@@ -29,12 +32,26 @@ import static java.lang.String.valueOf;
  */
 public class OrderedPropertyValues
 {
-    private final Object[] values;
+    // FACTORY METHODS
 
     public static OrderedPropertyValues of( Object... values )
     {
         return new OrderedPropertyValues( values );
     }
+
+    public static OrderedPropertyValues of( IndexQuery.ExactPredicate[] exactPreds )
+    {
+        Object[] values = new Object[exactPreds.length];
+        for ( int i = 0; i < exactPreds.length; i++ )
+        {
+            values[i] = exactPreds[i].value();
+        }
+        return new OrderedPropertyValues( values );
+    }
+
+    // ACTUAL CLASS
+
+    private final Object[] values;
 
     private OrderedPropertyValues( Object[] values )
     {
@@ -95,6 +112,8 @@ public class OrderedPropertyValues
         return sb.toString();
     }
 
+    // STATIC HELPERS
+
     public static String quote( Object propertyValue )
     {
         if ( propertyValue instanceof String )
@@ -133,4 +152,23 @@ public class OrderedPropertyValues
         }
         return valueOf( propertyValue );
     }
+
+    public static final Comparator<OrderedPropertyValues> COMPARATOR = ( left, right ) ->
+    {
+        if ( left.values.length != right.values.length )
+        {
+            throw new IllegalStateException( "Comparing two OrderedPropertyValues of different lengths!" );
+        }
+
+        int compare = 0;
+        for ( int i = 0; i < left.values.length; i++ )
+        {
+            compare = COMPARE_VALUES.compare( left.values[i], right.values[i] );
+            if ( compare != 0 )
+            {
+                return compare;
+            }
+        }
+        return compare;
+    };
 }

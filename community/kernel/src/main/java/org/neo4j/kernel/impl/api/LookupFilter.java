@@ -19,6 +19,7 @@
  */
 package org.neo4j.kernel.impl.api;
 
+import java.util.Arrays;
 import java.util.function.LongPredicate;
 
 import org.neo4j.collection.primitive.PrimitiveLongCollections;
@@ -27,6 +28,7 @@ import org.neo4j.cursor.Cursor;
 import org.neo4j.kernel.api.exceptions.EntityNotFoundException;
 import org.neo4j.kernel.api.index.PropertyAccessor;
 import org.neo4j.kernel.api.properties.Property;
+import org.neo4j.kernel.api.schema_new.IndexQuery;
 import org.neo4j.kernel.impl.api.operations.EntityOperations;
 import org.neo4j.kernel.impl.api.operations.EntityReadOperations;
 import org.neo4j.storageengine.api.NodeItem;
@@ -60,22 +62,57 @@ public class LookupFilter
      * used in "normal" operation
      */
     public static PrimitiveLongIterator exactIndexMatches( EntityOperations operations, KernelStatement state,
-            PrimitiveLongIterator indexedNodeIds, int propertyKeyId, Object value )
+                                                           PrimitiveLongIterator indexedNodeIds, IndexQuery... predicates )
     {
-        if ( isNumberOrArray( value ) )
+        IndexQuery[] numericPredicates =
+                Arrays.stream( predicates )
+                        .filter( LookupFilter::isNumericPredicate )
+                        .toArray( IndexQuery[]::new );
+
+        if ( numericPredicates.length > 0 )
         {
-            return PrimitiveLongCollections.filter( indexedNodeIds, new OperationsBasedExactMatchPredicate( operations,
-                    state, propertyKeyId, value ) );
+            LongPredicate combinedPredicate = nodeId ->
+            {
+                try ( Cursor<NodeItem> node = operations.nodeCursorById( state, nodeId ) )
+                {
+                    NodeItem nodeItem = node.get();
+                    for ( IndexQuery predicate : numericPredicates )
+                    {
+                        int propertyKeyId = predicate.propertyKeyId();
+                        Object value = operations.nodeGetProperty( state, nodeItem, propertyKeyId );
+                        if ( !predicate.test( value ) )
+                        {
+                            return false;
+                        }
+                    }
+                    return true;
+                }
+                catch ( EntityNotFoundException ignored )
+                {
+                    return false;
+                }
+            };
+            return PrimitiveLongCollections.filter( indexedNodeIds, combinedPredicate );
         }
         return indexedNodeIds;
     }
 
-    public static PrimitiveLongIterator exactRangeMatches( EntityOperations operations, KernelStatement state,
-            PrimitiveLongIterator indexedNodeIds, int propertyKeyId,
-            Number lower, boolean includeLower, Number upper, boolean includeUpper )
+    private static boolean isNumericPredicate( IndexQuery predicate )
     {
-        return PrimitiveLongCollections.filter( indexedNodeIds, new NumericRangeMatchPredicate( operations, state,
-                propertyKeyId, lower, includeLower, upper, includeUpper ) );
+
+        if ( predicate.type() == IndexQuery.IndexQueryType.exact )
+        {
+            IndexQuery.ExactPredicate exactPredicate = (IndexQuery.ExactPredicate) predicate;
+            if ( isNumberOrArray( exactPredicate.value() ) )
+            {
+                return true;
+            }
+        }
+        else if ( predicate.type() == IndexQuery.IndexQueryType.rangeNumeric )
+        {
+            return true;
+        }
+        return false;
     }
 
     private static boolean isNumberOrArray( Object value )
@@ -111,6 +148,7 @@ public class LookupFilter
     }
 
     /**
+<<<<<<< HEAD
      * used by "normal" operation
      */
     private static class OperationsBasedExactMatchPredicate extends BaseExactMatchPredicate
@@ -139,6 +177,8 @@ public class LookupFilter
     }
 
     /**
+=======
+>>>>>>> Initial implementation of composite indexes in TxState
      * used by CC
      */
     private static class LookupBasedExactMatchPredicate extends BaseExactMatchPredicate

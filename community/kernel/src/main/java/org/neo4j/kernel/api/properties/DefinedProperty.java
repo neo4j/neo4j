@@ -24,6 +24,7 @@ import java.util.Comparator;
 import org.neo4j.helpers.MathUtil;
 import org.neo4j.helpers.Strings;
 
+import static org.neo4j.kernel.api.StatementConstants.NO_SUCH_PROPERTY_KEY;
 import static org.neo4j.kernel.impl.api.PropertyValueComparison.COMPARE_VALUES;
 
 
@@ -47,7 +48,34 @@ import static org.neo4j.kernel.impl.api.PropertyValueComparison.COMPARE_VALUES;
  */
 public abstract class DefinedProperty extends Property
 {
-    public static Comparator<DefinedProperty> COMPARATOR = new Comparator<DefinedProperty>()
+    public static final DefinedProperty NO_SUCH_PROPERTY = new DefinedProperty( NO_SUCH_PROPERTY_KEY )
+    {
+        @Override
+        public Object value()
+        {
+            throw new UnsupportedOperationException( "This property does not exist!" );
+        }
+
+        @Override
+        int valueHash()
+        {
+            return -1;
+        }
+
+        @Override
+        boolean hasEqualValue( DefinedProperty that )
+        {
+            return false;
+        }
+
+        @Override
+        public boolean valueEquals( Object other )
+        {
+            return false;
+        }
+    };
+
+    public static final Comparator<DefinedProperty> COMPARATOR = new Comparator<DefinedProperty>()
     {
         @Override
         public int compare( DefinedProperty left, DefinedProperty right )

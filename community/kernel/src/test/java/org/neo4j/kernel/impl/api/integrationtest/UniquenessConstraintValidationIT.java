@@ -31,7 +31,6 @@ import org.neo4j.kernel.api.exceptions.KernelException;
 import org.neo4j.kernel.api.exceptions.schema.UniquePropertyValueValidationException;
 import org.neo4j.kernel.api.properties.DefinedProperty;
 import org.neo4j.kernel.api.schema.NodePropertyDescriptor;
-import org.neo4j.kernel.api.schema_new.SchemaDescriptorFactory;
 import org.neo4j.kernel.api.schema_new.index.NewIndexDescriptor;
 import org.neo4j.kernel.api.security.AnonymousContext;
 
@@ -44,6 +43,7 @@ import static org.junit.Assert.fail;
 import static org.neo4j.collection.primitive.PrimitiveLongCollections.count;
 import static org.neo4j.kernel.api.properties.Property.property;
 import static org.neo4j.kernel.api.schema_new.SchemaDescriptorFactory.forLabel;
+import static org.neo4j.kernel.api.schema_new.IndexQuery.exact;
 
 public class UniquenessConstraintValidationIT extends KernelIntegrationTest
 {
@@ -329,15 +329,15 @@ public class UniquenessConstraintValidationIT extends KernelIntegrationTest
         Statement statement = statementInNewTransaction( AnonymousContext.writeToken() );
         ReadOperations readOps = statement.readOperations();
         int person = readOps.labelGetForName( "Person" );
-        int id = readOps.propertyKeyGetForName( "id" );
+        int propId = readOps.propertyKeyGetForName( "id" );
         NewIndexDescriptor idx = readOps
-                .uniqueIndexGetForLabelAndPropertyKey( new NodePropertyDescriptor( person, id ) );
+                .uniqueIndexGetForLabelAndPropertyKey( new NodePropertyDescriptor( person, propId ) );
 
         // when
         createLabeledNode( statement, "Item", "id", 2 );
 
         // then I should find the original node
-        assertThat( readOps.nodeGetFromUniqueIndexSeek( idx, 1 ), equalTo( ourNode ) );
+        assertThat( readOps.nodeGetFromUniqueIndexSeek( idx, exact( propId, 1 ) ), equalTo( ourNode ) );
     }
 
     @Test
@@ -356,15 +356,15 @@ public class UniquenessConstraintValidationIT extends KernelIntegrationTest
         Statement statement = statementInNewTransaction( AnonymousContext.writeToken() );
         ReadOperations readOps = statement.readOperations();
         int person = readOps.labelGetForName( "Person" );
-        int id = readOps.propertyKeyGetForName( "id" );
+        int propId = readOps.propertyKeyGetForName( "id" );
         NewIndexDescriptor idx = readOps
-                .uniqueIndexGetForLabelAndPropertyKey( new NodePropertyDescriptor( person, id ) );
+                .uniqueIndexGetForLabelAndPropertyKey( new NodePropertyDescriptor( person, propId ) );
 
         // when
         createLabeledNode( statement, "Person", "id", 2 );
 
         // then I should find the original node
-        assertThat( readOps.nodeGetFromUniqueIndexSeek( idx, 1 ), equalTo( ourNode ));
+        assertThat( readOps.nodeGetFromUniqueIndexSeek( idx, exact( propId, 1 ) ), equalTo( ourNode ));
     }
 
     private long constrainedNode( String labelName, String propertyKey, Object propertyValue )

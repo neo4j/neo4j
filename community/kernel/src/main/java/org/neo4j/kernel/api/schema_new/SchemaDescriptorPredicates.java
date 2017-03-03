@@ -42,6 +42,11 @@ public class SchemaDescriptorPredicates
         };
     }
 
+    public static <T extends SchemaDescriptor.Supplier> Predicate<T> hasProperty( int propertyId )
+    {
+        return supplier -> hasProperty( supplier, propertyId );
+    }
+
     public static boolean hasLabel( SchemaDescriptor.Supplier supplier, int labelId )
     {
         Optional<Integer> labelOpt = supplier.schema().computeWith( getLabel );
@@ -56,8 +61,15 @@ public class SchemaDescriptorPredicates
 
     public static boolean hasProperty( SchemaDescriptor.Supplier supplier, int propertyId )
     {
-        List<Integer> properties = supplier.schema().computeWith( getProperties );
-        return properties.contains( propertyId );
+        int[] schemaProperties = supplier.schema().getPropertyIds();
+        for ( int schemaProp : schemaProperties )
+        {
+            if ( schemaProp == propertyId )
+            {
+                return true;
+            }
+        }
+        return false;
     }
 
     private static SchemaComputer<Optional<Integer>> getLabel = new SchemaComputer<Optional<Integer>>()
@@ -89,29 +101,4 @@ public class SchemaDescriptorPredicates
             return Optional.of( schema.getRelTypeId() );
         }
     };
-
-    private static SchemaComputer<List<Integer>> getProperties = new SchemaComputer<List<Integer>>()
-    {
-        @Override
-        public List<Integer> computeSpecific( LabelSchemaDescriptor schema )
-        {
-            return asList( schema.getPropertyIds() );
-        }
-
-        @Override
-        public List<Integer> computeSpecific( RelationTypeSchemaDescriptor schema )
-        {
-            return asList( schema.getPropertyIds() );
-        }
-    };
-
-    private static List<Integer> asList( int[] ints )
-    {
-        List<Integer> list = new ArrayList<>();
-        for ( int i : ints )
-        {
-            list.add( i );
-        }
-        return list;
-    }
 }

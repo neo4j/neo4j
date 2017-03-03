@@ -27,6 +27,7 @@ import org.neo4j.collection.primitive.PrimitiveLongLongMap;
 import static org.hamcrest.Matchers.is;
 import static org.junit.Assert.assertThat;
 import static org.junit.Assert.fail;
+import static org.neo4j.kernel.api.schema_new.IndexQuery.exact;
 import static org.neo4j.kernel.impl.locking.ResourceTypes.indexEntryResourceId;
 
 /**
@@ -54,7 +55,7 @@ public class ResourceTypesIT
                     for ( int objectId = 0; objectId < objectCount; objectId++ )
                     {
                         String object = values[objectId];
-                        long resourceId = indexEntryResourceId( labelId, propertyKeyId, object );
+                        long resourceId = indexEntryResourceId( labelId, exact( propertyKeyId, object ) );
 
                         long newValue = packValue( labelId, propertyKeyId, objectId );
                         long oldValue = map.put( resourceId, newValue );
