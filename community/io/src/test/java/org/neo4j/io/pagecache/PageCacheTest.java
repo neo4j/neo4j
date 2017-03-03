@@ -4455,7 +4455,7 @@ public abstract class PageCacheTest<T extends PageCache> extends PageCacheTestSu
         }
     }
 
-    @Test//( timeout = SHORT_TIMEOUT_MILLIS )
+    @Test( timeout = SHORT_TIMEOUT_MILLIS )
     public void shouldRetryOnParentCursorMustReturnTrueIfLinkedCursorNeedsRetry() throws Exception
     {
         generateFileWithRecords( file( "a" ), recordsPerFilePage * 2, recordSize );
@@ -4472,6 +4472,8 @@ public abstract class PageCacheTest<T extends PageCache> extends PageCacheTestSu
 
             // parentReader shouldRetry should be true because the linked cursor needs retry
             assertTrue( parentReader.shouldRetry() );
+            // then, the next read should be consistent
+            assertFalse( parentReader.shouldRetry() );
         }
     }
 
