@@ -52,7 +52,7 @@ public abstract class ClientConnectionInfo
      *
      * @return the scheme used for connecting to the server, or {@code null} if no scheme is available.
      */
-    public String requestScheme()
+    public String protocol()
     {
         return null;
     }
@@ -108,9 +108,9 @@ public abstract class ClientConnectionInfo
         }
 
         @Override
-        public String requestScheme()
+        public String protocol()
         {
-            return source.requestScheme();
+            return source.protocol();
         }
 
         @Override

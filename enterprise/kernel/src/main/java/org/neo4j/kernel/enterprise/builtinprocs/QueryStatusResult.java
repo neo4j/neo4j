@@ -56,7 +56,7 @@ public class QueryStatusResult
     @Deprecated
     public final String connectionDetails;
     /** @since Neo4j 3.2 */
-    public final String requestScheme;
+    public final String protocol;
     /** @since Neo4j 3.2 */
     public final String clientAddress;
     /** @since Neo4j 3.2 */
@@ -92,7 +92,7 @@ public class QueryStatusResult
         this.elapsedTime = formatInterval( elapsedTimeMillis );
         ClientConnectionInfo clientConnection = query.clientConnection();
         this.connectionDetails = clientConnection.asConnectionDetails();
-        this.requestScheme = clientConnection.requestScheme();
+        this.protocol = clientConnection.protocol();
         this.clientAddress = clientConnection.clientAddress();
         this.requestUri = clientConnection.requestURI();
         this.metaData = query.transactionAnnotationData();

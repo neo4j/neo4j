@@ -148,8 +148,8 @@ class CompiledConversionUtilsTest extends CypherFunSuite {
 
   val testLoadParameter = Seq(
     (null, null),
-    (node, new NodeIdWrapper(11L)),
-    (rel, new RelationshipIdWrapper(13L))
+    (node, new NodeIdWrapperImpl(11L)),
+    (rel, new RelationshipIdWrapperImpl(13L))
   )
 
   testLoadParameter.foreach {

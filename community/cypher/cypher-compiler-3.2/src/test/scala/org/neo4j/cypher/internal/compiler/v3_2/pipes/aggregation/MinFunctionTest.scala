@@ -55,8 +55,10 @@ class MinFunctionTest extends CypherFunSuite with AggregateTest {
     result should equal(1)
   }
 
-  test("mixed numbers and strings throws") {
-    intercept[IncomparableValuesException](aggregateOn(1, "wut"))
+  test("mixed numbers and strings works fine") {
+    val result = aggregateOn(1, "wut")
+
+    result shouldBe "wut"
   }
 
   test("aggregating strings work") {

@@ -30,11 +30,12 @@ import org.neo4j.collection.primitive._
 import org.neo4j.collection.primitive.hopscotch.LongKeyIntValueTable
 import org.neo4j.cypher.internal.codegen.CompiledConversionUtils.CompositeKey
 import org.neo4j.cypher.internal.codegen._
-import org.neo4j.cypher.internal.compiled_runtime.v3_2.codegen.ir.expressions.{BoolType, CodeGenType, FloatType, IntType, Parameter => _, ReferenceType, _}
+import org.neo4j.cypher.internal.compiled_runtime.v3_2.codegen.ir.expressions.{BoolType, CodeGenType, FloatType, IntType, ReferenceType, Parameter => _, _}
 import org.neo4j.cypher.internal.compiled_runtime.v3_2.codegen.spi._
 import org.neo4j.cypher.internal.compiled_runtime.v3_2.codegen.{CodeGenContext, QueryExecutionEvent}
 import org.neo4j.cypher.internal.compiler.v3_2.ast.convert.commands.DirectionConverter.toGraphDb
 import org.neo4j.cypher.internal.compiler.v3_2.planDescription.Id
+import org.neo4j.cypher.internal.compiler.v3_2.spi.{NodeIdWrapper, RelationshipIdWrapper}
 import org.neo4j.cypher.internal.frontend.v3_2.helpers._
 import org.neo4j.cypher.internal.frontend.v3_2.symbols.{CTNode, CTRelationship, ListType}
 import org.neo4j.cypher.internal.frontend.v3_2.{ParameterNotFoundException, SemanticDirection, symbols}
@@ -396,9 +397,9 @@ class GeneratedMethodStructure(val fields: Fields, val generator: CodeBlock, aux
 
   override def box(expression: Expression, codeGenType: CodeGenType) = codeGenType match {
     case CodeGenType(symbols.CTNode, IntType) =>
-      createNewInstance(typeRef[NodeIdWrapper], (typeRef[Long], expression))
+      createNewInstance(typeRef[NodeIdWrapperImpl], (typeRef[Long], expression))
     case CodeGenType(symbols.CTRelationship, IntType) =>
-      createNewInstance(typeRef[RelationshipIdWrapper], (typeRef[Long], expression))
+      createNewInstance(typeRef[RelationshipIdWrapperImpl], (typeRef[Long], expression))
     case _ => Expression.box(expression)
   }
 

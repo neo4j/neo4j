@@ -29,7 +29,7 @@ class Top1WithTiesPipeTest extends CypherFunSuite {
 
   test("empty input gives empty output") {
     val source = new FakePipe(List(), "x" -> CTAny)
-    val sortPipe = new Top1WithTiesPipe(source, List(Ascending("x")))()
+    val sortPipe = Top1WithTiesPipe(source, List(Ascending("x")))()
 
     sortPipe.createResults(QueryStateHelper.empty) should be(empty)
   }
@@ -37,7 +37,7 @@ class Top1WithTiesPipeTest extends CypherFunSuite {
   test("simple sorting works as expected") {
     val list = List(Map("x" -> "B"), Map("x" -> "A")).iterator
     val source = new FakePipe(list, "x" -> CTString)
-    val sortPipe = new Top1WithTiesPipe(source, List(Ascending("x")))()
+    val sortPipe = Top1WithTiesPipe(source, List(Ascending("x")))()
 
     sortPipe.createResults(QueryStateHelper.empty).toList should equal(List(Map("x" -> "A")))
   }
@@ -51,7 +51,7 @@ class Top1WithTiesPipeTest extends CypherFunSuite {
     ).iterator
 
     val source = new FakePipe(input, "x" -> CTInteger, "y" -> CTInteger)
-    val sortPipe = new Top1WithTiesPipe(source, List(Ascending("x")))()
+    val sortPipe = Top1WithTiesPipe(source, List(Ascending("x")))()
 
     sortPipe.createResults(QueryStateHelper.empty).toList should equal(List(
       Map("x" -> 1, "y" -> 1),
@@ -65,7 +65,7 @@ class Top1WithTiesPipeTest extends CypherFunSuite {
     ).iterator
 
     val source = new FakePipe(input, "x" -> CTInteger, "y" -> CTInteger)
-    val sortPipe = new Top1WithTiesPipe(source, List(Ascending("x")))()
+    val sortPipe = Top1WithTiesPipe(source, List(Ascending("x")))()
 
     sortPipe.createResults(QueryStateHelper.empty).toList should equal(List(
       Map("x" -> null, "y" -> 1),
@@ -80,33 +80,38 @@ class Top1WithTiesPipeTest extends CypherFunSuite {
     ).iterator
 
     val source = new FakePipe(input, "x" -> CTInteger, "y" -> CTInteger)
-    val sortPipe = new Top1WithTiesPipe(source, List(Ascending("x")))()
+    val sortPipe = Top1WithTiesPipe(source, List(Ascending("x")))()
 
     sortPipe.createResults(QueryStateHelper.empty).toList should equal(List(
       Map("x" -> 1, "y" -> 1)))
   }
 
-  test("trying to compare arrays should fail") {
+  test("comparing arrays") {
+    val smaller = Array(1, 2)
     val input = List(
-      Map[String,Any]("x" -> Array(1,2), "y" -> 1),
-      Map[String,Any]("x" -> Array(3,4), "y" -> 2)
+      Map[String,Any]("x" -> Array(3,4), "y" -> 2),
+      Map[String,Any]("x" -> smaller, "y" -> 1)
     ).iterator
 
     val source = new FakePipe(input, "x" -> CTInteger, "y" -> CTInteger)
-    val sortPipe = new Top1WithTiesPipe(source, List(Ascending("x")))()
+    val sortPipe = Top1WithTiesPipe(source, List(Ascending("x")))()
 
-    intercept[IncomparableValuesException](sortPipe.createResults(QueryStateHelper.empty).toList)
+    sortPipe.createResults(QueryStateHelper.empty).toList should equal(List(
+      Map("x" -> smaller, "y" -> 1)
+    ))
   }
 
-  test("trying to compare numbers and strings should fail") {
+  test("comparing numbers and strings") {
     val input = List(
       Map[String,Any]("x" -> 1, "y" -> 1),
       Map[String,Any]("x" -> "A", "y" -> 2)
     ).iterator
 
     val source = new FakePipe(input, "x" -> CTInteger, "y" -> CTInteger)
-    val sortPipe = new Top1WithTiesPipe(source, List(Ascending("x")))()
+    val sortPipe = Top1WithTiesPipe(source, List(Ascending("x")))()
 
-    intercept[IncomparableValuesException](sortPipe.createResults(QueryStateHelper.empty).toList)
+    sortPipe.createResults(QueryStateHelper.empty).toList should equal(List(
+      Map("x" -> "A", "y" -> 2)
+    ))
   }
 }
