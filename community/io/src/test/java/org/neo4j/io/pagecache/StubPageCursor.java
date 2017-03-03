@@ -311,7 +311,8 @@ public class StubPageCursor extends PageCursor
         try
         {
             assert arrayOffset == 0 : "please implement support for arrayOffset";
-            page.get( data, currentOffset, length );
+            page.position( currentOffset );
+            page.get( data, arrayOffset, length );
             currentOffset += length;
         }
         catch ( IndexOutOfBoundsException | BufferOverflowException | BufferUnderflowException e )
@@ -332,7 +333,8 @@ public class StubPageCursor extends PageCursor
         try
         {
             assert arrayOffset == 0 : "please implement support for arrayOffset";
-            page.put( data, currentOffset, length );
+            page.position( currentOffset );
+            page.put( data, arrayOffset, length );
             currentOffset += length;
         }
         catch ( IndexOutOfBoundsException | BufferOverflowException | BufferUnderflowException e )
