@@ -120,7 +120,8 @@ public class ClusterSettings
             " This value is the default value for the ha.join_timeout and ha.leave_timeout settings." )
     public static final Setting<Long> broadcast_timeout = setting( "ha.broadcast_timeout", DURATION, "30s" );
 
-    @Description( "Timeout for joining a cluster. Defaults to ha.broadcast_timeout." )
+    @Description( "Timeout for joining a cluster. Defaults to ha.broadcast_timeout. " +
+            "Note that if the timeout expires during cluster formation, the operator may have to restart the instance or instances." )
     public static final Setting<Long> join_timeout = setting( "ha.join_timeout", DURATION, broadcast_timeout );
 
     @Description( "Timeout for waiting for configuration from an existing cluster member during cluster join." )
