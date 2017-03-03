@@ -289,7 +289,7 @@ public class TxStateTransactionDataSnapshot implements TransactionData
             RelationshipProxy cached = relationshipsReadFromStore.get( relId );
             if ( cached != null )
             {
-                return relationship;
+                return cached;
             }
 
             try
