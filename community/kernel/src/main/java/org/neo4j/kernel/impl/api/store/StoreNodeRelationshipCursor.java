@@ -86,7 +86,7 @@ public class StoreNodeRelationshipCursor extends StoreAbstractIteratorRelationsh
     private StoreNodeRelationshipCursor init( boolean isDense, long firstRelId, long fromNodeId, Direction direction,
             IntPredicate allowedTypes, ReadableTransactionState state, PrimitiveLongIterator addedNodeRelationships )
     {
-        super.init( state, addedNodeRelationships );
+        internalInitTxState( state, addedNodeRelationships );
         this.isDense = isDense;
         this.relationshipId = firstRelId;
         this.fromNodeId = fromNodeId;

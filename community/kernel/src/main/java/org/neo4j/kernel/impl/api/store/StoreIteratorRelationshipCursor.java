@@ -47,7 +47,7 @@ public class StoreIteratorRelationshipCursor extends StoreAbstractIteratorRelati
 
     public StoreIteratorRelationshipCursor init( PrimitiveLongIterator iterator, ReadableTransactionState state )
     {
-        super.init( state, addedRelationships( state ) );
+        internalInitTxState( state, addedRelationships( state ) );
         this.iterator = iterator;
         return this;
     }
