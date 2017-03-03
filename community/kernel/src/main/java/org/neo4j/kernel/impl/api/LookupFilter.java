@@ -30,7 +30,6 @@ import org.neo4j.kernel.api.index.PropertyAccessor;
 import org.neo4j.kernel.api.properties.Property;
 import org.neo4j.kernel.api.schema_new.IndexQuery;
 import org.neo4j.kernel.impl.api.operations.EntityOperations;
-import org.neo4j.kernel.impl.api.operations.EntityReadOperations;
 import org.neo4j.storageengine.api.NodeItem;
 
 /**
@@ -120,13 +119,18 @@ public class LookupFilter
         return value instanceof Number || value.getClass().isArray();
     }
 
-    private abstract static class BaseExactMatchPredicate implements LongPredicate
+    /**
+     * used by CC
+     */
+    private static class LookupBasedExactMatchPredicate implements LongPredicate
     {
+        final PropertyAccessor accessor;
         private final int propertyKeyId;
         private final Object value;
 
-        BaseExactMatchPredicate( int propertyKeyId, Object value )
+        LookupBasedExactMatchPredicate( PropertyAccessor accessor, int propertyKeyId, Object value )
         {
+            this.accessor = accessor;
             this.propertyKeyId = propertyKeyId;
             this.value = value;
         }
@@ -136,132 +140,12 @@ public class LookupFilter
         {
             try
             {
-                return nodeProperty( nodeId, propertyKeyId ).valueEquals( value );
+                return accessor.getProperty( nodeId, propertyKeyId ).valueEquals( value );
             }
             catch ( EntityNotFoundException ignored )
             {
                 return false;
             }
-        }
-
-        abstract Property nodeProperty( long nodeId, int propertyKeyId ) throws EntityNotFoundException;
-    }
-
-    /**
-<<<<<<< HEAD
-     * used by "normal" operation
-     */
-    private static class OperationsBasedExactMatchPredicate extends BaseExactMatchPredicate
-    {
-        final EntityReadOperations readOperations;
-        final KernelStatement state;
-
-        OperationsBasedExactMatchPredicate( EntityReadOperations readOperations, KernelStatement state,
-                int propertyKeyId, Object value )
-        {
-            super( propertyKeyId, value );
-            this.readOperations = readOperations;
-            this.state = state;
-        }
-
-        @Override
-        Property nodeProperty( long nodeId, int propertyKeyId ) throws EntityNotFoundException
-        {
-            try ( Cursor<NodeItem> node = readOperations.nodeCursorById( state, nodeId ) )
-            {
-                Object value = readOperations.nodeGetProperty( state, node.get(), propertyKeyId );
-                return value == null ? Property.noNodeProperty( nodeId, propertyKeyId )
-                                     : Property.property( propertyKeyId, value );
-            }
-        }
-    }
-
-    /**
-=======
->>>>>>> Initial implementation of composite indexes in TxState
-     * used by CC
-     */
-    private static class LookupBasedExactMatchPredicate extends BaseExactMatchPredicate
-    {
-        final PropertyAccessor accessor;
-
-        LookupBasedExactMatchPredicate( PropertyAccessor accessor, int propertyKeyId, Object value )
-        {
-            super( propertyKeyId, value );
-            this.accessor = accessor;
-        }
-
-        @Override
-        Property nodeProperty( long nodeId, int propertyKeyId ) throws EntityNotFoundException
-        {
-            return accessor.getProperty( nodeId, propertyKeyId );
-        }
-    }
-
-    static class NumericRangeMatchPredicate implements LongPredicate
-    {
-        final EntityOperations readOperations;
-        final KernelStatement state;
-        final int propertyKeyId;
-        final Number lower;
-        final boolean includeLower;
-        final Number upper;
-        final boolean includeUpper;
-
-        NumericRangeMatchPredicate( EntityOperations readOperations, KernelStatement state, int propertyKeyId,
-                Number lower, boolean includeLower, Number upper, boolean includeUpper )
-        {
-            this.readOperations = readOperations;
-            this.state = state;
-            this.propertyKeyId = propertyKeyId;
-            this.lower = lower;
-            this.includeLower = includeLower;
-            this.upper = upper;
-            this.includeUpper = includeUpper;
-        }
-
-        @Override
-        public boolean test( long nodeId )
-        {
-            try ( Cursor<NodeItem> node = readOperations.nodeCursorById( state, nodeId ) )
-            {
-                return inRange( readOperations.nodeGetProperty( state, node.get(), propertyKeyId ) );
-            }
-            catch ( EntityNotFoundException e )
-            {
-                return false;
-            }
-        }
-
-        boolean inRange( Object value )
-        {
-            if ( value == null )
-            {
-                return false;
-            }
-            if ( !(value instanceof Number) )
-            {
-                throw new IllegalStateException( "Unable to verify range for non-numeric property " +
-                                                 "value: " + value + " for property key: " + propertyKeyId );
-            }
-            Number number = (Number) value;
-            if ( lower != null )
-            {
-                int compare = PropertyValueComparison.COMPARE_NUMBERS.compare( number, lower );
-                if ( compare < 0 || !includeLower && compare == 0 )
-                {
-                    return false;
-                }
-            }
-            if ( upper != null )
-            {
-                int compare = PropertyValueComparison.COMPARE_NUMBERS.compare( number, upper );
-                if ( compare > 0 || !includeUpper && compare == 0 )
-                {
-                    return false;
-                }
-            }
-            return true;
         }
     }
 }
