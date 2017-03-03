@@ -381,34 +381,38 @@ class PageList
 
     private void evict( long pageRef, EvictionEvent evictionEvent ) throws IOException
     {
-        int swapperId = getSwapperId( pageRef );
-        SwapperSet.Allocation allocation = swappers.getAllocation( swapperId );
-        PageSwapper swapper = allocation.swapper;
         long filePageId = getFilePageId( pageRef );
         evictionEvent.setFilePageId( filePageId );
         evictionEvent.setCachePageId( pageRef );
-        evictionEvent.setSwapper( swapper );
-        if ( isModified( pageRef ) )
+        int swapperId = getSwapperId( pageRef );
+        if ( swapperId != 0 )
         {
-            FlushEvent flushEvent = evictionEvent.flushEventOpportunity().beginFlush( filePageId, pageRef, swapper );
-            try
+            // If the swapper id is non-zero, then the page was not only loaded, but also bound, and possibly modified.
+            PageSwapper swapper = swappers.getAllocation( swapperId ).swapper;
+            evictionEvent.setSwapper( swapper );
+
+            if ( isModified( pageRef ) )
             {
-                long address = getAddress( pageRef );
-                long bytesWritten = swapper.write( filePageId, address );
-                explicitlyMarkPageUnmodifiedUnderExclusiveLock( pageRef );
-                flushEvent.addBytesWritten( bytesWritten );
-                flushEvent.addPagesFlushed( 1 );
-                flushEvent.done();
+                FlushEvent flushEvent = evictionEvent.flushEventOpportunity().beginFlush( filePageId, pageRef, swapper );
+                try
+                {
+                    long address = getAddress( pageRef );
+                    long bytesWritten = swapper.write( filePageId, address );
+                    explicitlyMarkPageUnmodifiedUnderExclusiveLock( pageRef );
+                    flushEvent.addBytesWritten( bytesWritten );
+                    flushEvent.addPagesFlushed( 1 );
+                    flushEvent.done();
+                }
+                catch ( IOException e )
+                {
+                    unlockExclusive( pageRef );
+                    flushEvent.done( e );
+                    evictionEvent.threwException( e );
+                    throw e;
+                }
             }
-            catch ( IOException e )
-            {
-                unlockExclusive( pageRef );
-                flushEvent.done( e );
-                evictionEvent.threwException( e );
-                throw e;
-            }
+            swapper.evicted( filePageId );
         }
-        swapper.evicted( filePageId );
         clearBinding( pageRef );
     }
 
