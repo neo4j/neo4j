@@ -90,4 +90,10 @@ public class LabelSchemaDescriptor implements SchemaDescriptor
     {
         return Arrays.hashCode( propertyIds ) + 31 * labelId;
     }
+
+    @Override
+    public String toString()
+    {
+        return "LabelSchemaDescriptor( " + userDescription( SchemaUtil.idTokenNameLookup ) + " )";
+    }
 }
