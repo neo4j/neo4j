@@ -25,6 +25,8 @@ import org.junit.After;
 import org.junit.Before;
 import org.junit.Rule;
 import org.junit.Test;
+import org.junit.rules.RuleChain;
+import org.junit.rules.TestName;
 import org.junit.runner.RunWith;
 import org.junit.runners.Parameterized;
 import org.junit.runners.Parameterized.Parameter;
@@ -54,6 +56,7 @@ import org.neo4j.kernel.api.properties.Property;
 import org.neo4j.test.Randoms;
 import org.neo4j.test.rule.TestDirectory;
 
+import static java.lang.String.format;
 import static java.util.stream.Collectors.toSet;
 import static org.hamcrest.Matchers.instanceOf;
 import static org.junit.Assert.assertThat;
@@ -65,8 +68,11 @@ public class LuceneSchemaIndexUniquenessVerificationIT
     private static final int DOCS_PER_PARTITION = ThreadLocalRandom.current().nextInt( 10, 100 );
     private static final int PROPERTY_KEY_ID = 42;
 
+    private TestDirectory testDir = TestDirectory.testDirectory();
+    private TestName testName = new TestName();
+
     @Rule
-    public TestDirectory testDir = TestDirectory.testDirectory();
+    public RuleChain ruleChain = RuleChain.outerRule( testDir ).around( testName );
 
     @Parameter
     public int nodesToCreate;
@@ -91,6 +97,8 @@ public class LuceneSchemaIndexUniquenessVerificationIT
     @Before
     public void setPartitionSize() throws Exception
     {
+        System.out.println( format( "%n### EXECUTING " + testName.getMethodName() ) );
+
         System.setProperty( "luceneSchemaIndex.maxPartitionSize", String.valueOf( DOCS_PER_PARTITION ) );
 
         index = LuceneSchemaIndexBuilder.create()
