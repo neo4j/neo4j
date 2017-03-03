@@ -212,7 +212,7 @@ public class ListQueriesProcedureTest
         Map<String,Object> data = getQueryListing( "CALL dbms.listQueries" );
 
         // then
-        assertThat( data, hasKey( "requestScheme" ) );
+        assertThat( data, hasKey( "protocol" ) );
         assertThat( data, hasKey( "clientAddress" ) );
         assertThat( data, hasKey( "requestUri" ) );
     }

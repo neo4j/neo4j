@@ -56,7 +56,7 @@ public class BoltConnectionInfo extends ClientConnectionInfo
     }
 
     @Override
-    public String requestScheme()
+    public String protocol()
     {
         return "bolt";
     }
