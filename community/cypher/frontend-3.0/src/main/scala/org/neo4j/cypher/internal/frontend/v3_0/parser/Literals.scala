@@ -23,6 +23,8 @@ import org.neo4j.cypher.internal.frontend.v3_0.ast
 import org.neo4j.cypher.internal.frontend.v3_0.symbols._
 import org.parboiled.scala._
 
+import scala.language.postfixOps
+
 trait Literals extends Parser
   with Base with Strings {
 
@@ -60,6 +62,14 @@ trait Literals extends Parser
   }
 
   def Parameter: Rule1[ast.Parameter] = rule("a parameter") {
+    NewParameter | OldParameter
+  }
+
+  def NewParameter: Rule1[ast.Parameter] = rule("a parameter (new syntax") {
+    ((ch('$') ~~ (UnescapedSymbolicNameString | EscapedSymbolicNameString | UnsignedDecimalInteger ~> (_.toString))) memoMismatches) ~~>> (ast.Parameter(_, CTAny))
+  }
+
+  def OldParameter: Rule1[ast.Parameter] = rule("a parameter (old syntax)") {
     ((ch('{') ~~ (UnescapedSymbolicNameString | EscapedSymbolicNameString | UnsignedDecimalInteger ~> (_.toString)) ~~ ch('}')) memoMismatches) ~~>> (ast.Parameter(_, CTAny))
   }
 
