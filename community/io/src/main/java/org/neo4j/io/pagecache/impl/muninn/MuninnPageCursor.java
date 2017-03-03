@@ -277,9 +277,18 @@ abstract class MuninnPageCursor extends PageCursor
         {
             // We managed to inject our latch, so we now own the right to perform the page fault. We also
             // have a duty to eventually release and remove the latch, no matter what happens now.
-            long pageRef = pageFault( filePageId, swapper, chunkOffset, chunk, latch );
-            pinCursorToPage( pageRef, filePageId, swapper );
-            return true;
+            // However, we first have to double-check that a page fault did not complete in-between our initial
+            // check in the translation table, and us getting a latch.
+            if ( UnsafeUtil.getIntVolatile( chunk, chunkOffset ) == UNMAPPED_TTE )
+            {
+                // Sweet, we didn't race with any other fault on this translation table entry.
+                long pageRef = pageFault( filePageId, swapper, chunkOffset, chunk, latch );
+                pinCursorToPage( pageRef, filePageId, swapper );
+                return true;
+            }
+            // Oops, looks like we raced with another page fault on this file page.
+            // Let's release our latch and retry the pin.
+            latch.release();
         }
         // We found a latch, so someone else is already doing a page fault for this page.
         // The `takeOrAwaitLatch` already waited for this latch to be released on our behalf,
