@@ -174,7 +174,7 @@ public class StoreStatement implements StorageStatement
     public Cursor<RelationshipItem> relationshipsGetAllCursor( ReadableTransactionState state )
     {
         neoStores.assertOpen();
-        return iteratorRelationshipCursor.get().init( state, new AllIdIterator( relationshipStore ) );
+        return iteratorRelationshipCursor.get().init( new AllIdIterator( relationshipStore ), state );
     }
 
     @Override

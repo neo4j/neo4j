@@ -67,6 +67,7 @@ public abstract class StoreAbstractPropertyCursor implements Cursor<PropertyItem
 
     private boolean fetchNext()
     {
+        property = null;
         while ( loadNextFromDisk() )
         {
             // Are there more properties to return for this current record we're at?
@@ -95,23 +96,23 @@ public abstract class StoreAbstractPropertyCursor implements Cursor<PropertyItem
             // Continue to next record in the chain and try there.
         }
 
+        assert property == null;
         return (property = nextAdded()) != null;
     }
 
     private boolean payloadHasNext()
     {
         boolean next = payload.next();
-        if ( next && state != null )
+        while ( next && state != null )
         {
             int propertyKeyId = payload.propertyKeyId();
-            if ( state.isPropertyRemoved( propertyKeyId ) )
+            if ( !state.isPropertyRemoved( propertyKeyId ) )
             {
-                return false;
-            }
-            if ( property == null )
-            {
+                assert property == null;
                 property = (DefinedProperty) state.getChangedProperty( propertyKeyId );
+                return true;
             }
+            next = payload.next();
         }
         return next;
     }
