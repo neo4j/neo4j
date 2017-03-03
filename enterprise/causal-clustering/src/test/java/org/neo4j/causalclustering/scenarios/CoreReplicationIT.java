@@ -53,7 +53,7 @@ public class CoreReplicationIT
     private final ClusterRule clusterRule =
             new ClusterRule( getClass() ).withNumberOfCoreMembers( 3 ).withNumberOfReadReplicas( 0 );
     private final VerboseTimeout timeout = VerboseTimeout.builder()
-            .withTimeout( 120, TimeUnit.SECONDS )
+            .withTimeout( 1000, TimeUnit.SECONDS )
             .build();
 
     @Rule
