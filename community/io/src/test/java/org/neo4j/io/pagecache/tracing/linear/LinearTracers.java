@@ -53,7 +53,7 @@ public class LinearTracers
         tracer.printHistory( err );
     }
 
-    void processHistory( Consumer<HEvents.HEvent> processor )
+    public void processHistory( Consumer<HEvents.HEvent> processor )
     {
         tracer.processHistory( processor );
     }
