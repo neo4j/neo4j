@@ -89,8 +89,6 @@ public final class IndexWriterConfigs
         mergePolicy.setMergeFactor( MERGE_POLICY_MERGE_FACTOR );
         writerConfig.setMergePolicy( mergePolicy );
 
-        writerConfig.setInfoStream( System.out );
-
         return writerConfig;
     }
 
