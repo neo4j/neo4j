@@ -55,7 +55,7 @@ public class CoreReplicationIT
             new ClusterRule( getClass() ).withNumberOfCoreMembers( 3 ).withNumberOfReadReplicas( 0 );
     private final SuppressOutput suppressOutput = SuppressOutput.suppressAll();
     private final VerboseTimeout timeout = VerboseTimeout.builder()
-            .withTimeout( 40, TimeUnit.SECONDS )
+            .withTimeout( 120, TimeUnit.SECONDS )
             .build();
     @Rule
     public RuleChain ruleChain = RuleChain.outerRule( timeout ).around( suppressOutput ).around( clusterRule );
