@@ -33,6 +33,7 @@ import java.security.PrivilegedExceptionAction;
 import java.util.Arrays;
 import java.util.List;
 import java.util.Map;
+import java.util.Objects;
 import java.util.concurrent.ConcurrentSkipListMap;
 import java.util.concurrent.atomic.AtomicLong;
 import java.util.stream.Collectors;
@@ -474,9 +475,9 @@ public final class UnsafeUtil
     private static void doCheckAccess( long pointer, int size )
     {
         Map.Entry<Long,Long> fentry = pointers.floorEntry( pointer + size );
-        Map.Entry<Long,Long> centry = pointers.ceilingEntry( pointer );
         if ( fentry == null || fentry.getKey() + fentry.getValue() < pointer + size )
         {
+            Map.Entry<Long,Long> centry = pointers.ceilingEntry( pointer );
             throwBadAccess( pointer, size, fentry, centry );
         }
     }
@@ -496,7 +497,7 @@ public final class UnsafeUtil
         long nsize = floorIsNearest ? fsize : csize;
         long noffset = floorIsNearest ? foffset : coffset;
         List<FreeTrace> recentFrees = Arrays.stream( freeTraces )
-                                            .filter( trace -> trace != null )
+                                            .filter( Objects::nonNull )
                                             .filter( trace -> trace.contains( pointer ) )
                                             .sorted()
                                             .collect( Collectors.toList() );
