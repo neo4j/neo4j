@@ -239,7 +239,7 @@ public class CatchupPollingProcess extends LifecycleAdapter
         long lastQueuedTxId = applier.lastQueuedTxId();
         pullRequestMonitor.txPullRequest( lastQueuedTxId );
         TxPullRequest txPullRequest = new TxPullRequest( lastQueuedTxId, localStoreId );
-        log.debug( "Pull transactions where tx id > %d [batch #%d]", lastQueuedTxId, batchCount );
+        log.debug( "Pull transactions from %s where tx id > %d [batch #%d]", upstream, lastQueuedTxId, batchCount );
 
         TxStreamFinishedResponse response;
         try
@@ -275,7 +275,7 @@ public class CatchupPollingProcess extends LifecycleAdapter
             case SUCCESS_END_OF_BATCH:
                 return true;
             case SUCCESS_END_OF_STREAM:
-                log.debug( "Successfully pulled transactions from %d", lastQueuedTxId  );
+                log.debug( "Successfully pulled transactions from tx id %d", lastQueuedTxId  );
                 upToDateFuture.complete( true );
                 return false;
             case E_TRANSACTION_PRUNED:

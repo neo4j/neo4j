@@ -24,6 +24,9 @@ import java.util.LinkedHashSet;
 import java.util.NoSuchElementException;
 
 import org.neo4j.causalclustering.identity.MemberId;
+import org.neo4j.logging.Log;
+import org.neo4j.logging.LogProvider;
+import org.neo4j.logging.NullLogProvider;
 
 import static org.neo4j.helpers.collection.Iterables.empty;
 
@@ -31,16 +34,20 @@ public class UpstreamDatabaseStrategySelector
 {
     private LinkedHashSet<UpstreamDatabaseSelectionStrategy> strategies = new LinkedHashSet<>();
     private MemberId myself;
+    private Log log;
 
     UpstreamDatabaseStrategySelector( UpstreamDatabaseSelectionStrategy defaultStrategy )
     {
-        this( defaultStrategy, empty(), null );
+        this( defaultStrategy, empty(), null, NullLogProvider.getInstance() );
     }
 
     UpstreamDatabaseStrategySelector( UpstreamDatabaseSelectionStrategy defaultStrategy,
-            Iterable<UpstreamDatabaseSelectionStrategy> otherStrategies, MemberId myself )
+                                      Iterable<UpstreamDatabaseSelectionStrategy> otherStrategies, MemberId myself,
+                                      LogProvider logProvider )
     {
         this.myself = myself;
+        this.log = logProvider.getLog( getClass() );
+
         if ( otherStrategies != null )
         {
             for ( UpstreamDatabaseSelectionStrategy otherStrategy : otherStrategies )
@@ -56,6 +63,7 @@ public class UpstreamDatabaseStrategySelector
         MemberId result = null;
         for ( UpstreamDatabaseSelectionStrategy strategy : strategies )
         {
+            log.debug( "Trying selection strategy [%s]", strategy.toString() );
             try
             {
                 if ( strategy.upstreamDatabase().isPresent() )
@@ -76,6 +84,7 @@ public class UpstreamDatabaseStrategySelector
                     "Could not find an upstream database with which to connect." );
         }
 
+        log.debug( "Selected upstream database [%s]", result );
         return result;
     }
 }
