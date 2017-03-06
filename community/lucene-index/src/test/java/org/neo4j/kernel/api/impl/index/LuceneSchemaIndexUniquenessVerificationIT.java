@@ -25,11 +25,14 @@ import org.junit.After;
 import org.junit.Before;
 import org.junit.Rule;
 import org.junit.Test;
+import org.junit.rules.RuleChain;
+import org.junit.rules.TestName;
 import org.junit.runner.RunWith;
 import org.junit.runners.Parameterized;
 import org.junit.runners.Parameterized.Parameter;
 import org.junit.runners.Parameterized.Parameters;
 
+import java.io.File;
 import java.io.IOException;
 import java.util.ArrayList;
 import java.util.Arrays;
@@ -54,6 +57,7 @@ import org.neo4j.kernel.api.properties.Property;
 import org.neo4j.test.Randoms;
 import org.neo4j.test.rule.TestDirectory;
 
+import static java.lang.String.format;
 import static java.util.stream.Collectors.toSet;
 import static org.hamcrest.Matchers.instanceOf;
 import static org.junit.Assert.assertThat;
@@ -65,8 +69,11 @@ public class LuceneSchemaIndexUniquenessVerificationIT
     private static final int DOCS_PER_PARTITION = ThreadLocalRandom.current().nextInt( 10, 100 );
     private static final int PROPERTY_KEY_ID = 42;
 
+    private TestDirectory testDir = TestDirectory.testDirectory();
+    private TestName testName = new TestName();
+
     @Rule
-    public TestDirectory testDir = TestDirectory.testDirectory();
+    public RuleChain ruleChain = RuleChain.outerRule( testDir ).around( testName );
 
     @Parameter
     public int nodesToCreate;
@@ -88,14 +95,29 @@ public class LuceneSchemaIndexUniquenessVerificationIT
         } );
     }
 
+    // todo System.out here is part of investigation of flaky test that only shows in "real" pipeline
+    // todo should be removed when investigation is finished.
+    // todo date: 2017-03-06
     @Before
     public void setPartitionSize() throws Exception
     {
+        File directory = testDir.directory( "uniquenessVerification" );
+        File[] filesInDirectory = directory.listFiles();
+        boolean directoryIsEmpty = true;
+        if ( filesInDirectory != null )
+        {
+            directoryIsEmpty = filesInDirectory.length == 0;
+        }
+
+        System.out.println( format( "%n### EXECUTING " + testName.getMethodName() ) );
+        System.out.println( "directory=" + directory + ", isEmpty=" + directoryIsEmpty );
+        System.out.println( "DOCS_PER_PARTITION=" + DOCS_PER_PARTITION );
+
         System.setProperty( "luceneSchemaIndex.maxPartitionSize", String.valueOf( DOCS_PER_PARTITION ) );
 
         index = LuceneSchemaIndexBuilder.create()
                 .uniqueIndex()
-                .withIndexRootFolder( testDir.directory( "uniquenessVerification" ) )
+                .withIndexRootFolder( directory )
                 .withIndexIdentifier( "index" )
                 .build();
 
