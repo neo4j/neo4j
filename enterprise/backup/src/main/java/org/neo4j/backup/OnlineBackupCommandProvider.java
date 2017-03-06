@@ -29,6 +29,8 @@ import org.neo4j.commandline.admin.OutsideWorld;
 import org.neo4j.commandline.arguments.Arguments;
 import org.neo4j.consistency.ConsistencyCheckService;
 
+import static java.lang.String.format;
+
 public class OnlineBackupCommandProvider extends AdminCommand.Provider
 {
     public OnlineBackupCommandProvider()
@@ -47,9 +49,14 @@ public class OnlineBackupCommandProvider extends AdminCommand.Provider
     @Nonnull
     public String description()
     {
-        return "Perform an online backup from a running Neo4j enterprise server. Neo4j's backup service must have" +
-                " been configured on the server beforehand. " +
-                "See https://neo4j.com/docs/operations-manual/current/backup/ for more details.";
+        return format( "Perform an online backup from a running Neo4j enterprise server. Neo4j's backup service must " +
+                "have been configured on the server beforehand.%n" +
+                "%n" +
+                "All consistency checks except 'cc-graph' can be quite expensive so it may be useful to turn them off" +
+                " for very large databases. Increasing the heap size can also be a good idea." +
+                " See 'neo4j-admin help' for details.%n" +
+                "%n" +
+                "For more information see: https://neo4j.com/docs/operations-manual/current/backup/" );
     }
 
     @Override

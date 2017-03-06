@@ -89,7 +89,8 @@ public class OnlineBackupCommandTest
         when( outsideWorld.outStream() ).thenReturn( out );
         when( ccResult.isSuccessful() ).thenReturn( true );
         when( consistencyCheckService
-                .runFullConsistencyCheck( any(), any(), any(), any(), any(), anyBoolean(), any() ) )
+                .runFullConsistencyCheck( any(), any(), any(), any(), any(), anyBoolean(), any(), anyBoolean(),
+                        anyBoolean(), anyBoolean(), anyBoolean() ) )
                 .thenReturn( ccResult );
         configDir = testDirectory.directory( "config-dir" ).toPath();
     }
@@ -203,7 +204,8 @@ public class OnlineBackupCommandTest
 
         verify( backupService ).doFullBackup( any(), anyInt(), any(), any(), any(), anyLong(), anyBoolean() );
         verify( consistencyCheckService ).runFullConsistencyCheck( any(), any(), any(), any(), any(),
-                anyBoolean(), eq( new File( "." ).getCanonicalFile() ) );
+                anyBoolean(), eq( new File( "." ).getCanonicalFile() ), anyBoolean(), anyBoolean(),
+                anyBoolean(), anyBoolean() );
     }
 
     @Test
@@ -218,7 +220,8 @@ public class OnlineBackupCommandTest
         verify( backupService ).doIncrementalBackup( any(), anyInt(), any(), anyLong(), any() );
         verifyNoMoreInteractions( backupService );
         verify( consistencyCheckService ).runFullConsistencyCheck( any(), any(), any(), any(), any(),
-                anyBoolean(), eq( new File( "." ).getCanonicalFile() ) );
+                anyBoolean(), eq( new File( "." ).getCanonicalFile() ), anyBoolean(), anyBoolean(),
+                anyBoolean(), anyBoolean() );
     }
 
     @Test
@@ -242,12 +245,26 @@ public class OnlineBackupCommandTest
         final Path path = Paths.get( "/foo/bar" );
 
         when( consistencyCheckService.runFullConsistencyCheck( any(), any(), any(), any(), any(),
-                anyBoolean(), eq( new File( "." ).getCanonicalFile() ) ) ).thenReturn(
+                anyBoolean(), eq( new File( "." ).getCanonicalFile() ), anyBoolean(),
+                anyBoolean(), anyBoolean(), anyBoolean() ) ).thenReturn(
                 ConsistencyCheckService.Result.failure( path.toFile() ) );
 
         expected.expect( CommandFailed.class );
         expected.expectMessage( "Inconsistencies found. See '" + path + "' for details." );
         execute( "--check-consistency=true", backupDir(), "--name=mybackup" );
+    }
+
+    @Test
+    public void shouldPassOnCCParameters() throws Exception
+
+    {
+        execute( "--check-consistency=true", backupDir(), "--name=mybackup", "--cc-graph=false",
+                "--cc-indexes=false", "--cc-label-scan-store=false", "--cc-property-owners=true" );
+
+        verify( backupService ).doFullBackup( any(), anyInt(), any(), any(), any(), anyLong(), anyBoolean() );
+        verify( consistencyCheckService ).runFullConsistencyCheck( any(), any(), any(), any(), any(),
+                anyBoolean(), eq( new File( "." ).getCanonicalFile() ), eq( false ), eq( false ),
+                eq( false ), eq( true ) );
     }
 
     @Test
@@ -409,7 +426,8 @@ public class OnlineBackupCommandTest
 
         verify( backupService ).doFullBackup( any(), anyInt(), any(), any(), any(), anyLong(), anyBoolean() );
         verify( consistencyCheckService ).runFullConsistencyCheck( any(), any(), any(), any(), any(),
-                anyBoolean(), eq( reportDir.getCanonicalFile() ) );
+                anyBoolean(), eq( reportDir.getCanonicalFile() ), anyBoolean(), anyBoolean(), anyBoolean(),
+                anyBoolean() );
     }
 
     @Test
@@ -521,14 +539,24 @@ public class OnlineBackupCommandTest
             assertEquals(
                     String.format( "usage: neo4j-admin backup --backup-dir=<backup-path> --name=<graph.db-backup>%n" +
                             "                          [--from=<address>] [--fallback-to-full[=<true|false>]]%n" +
+                            "                          [--timeout=<timeout>]%n" +
                             "                          [--check-consistency[=<true|false>]]%n" +
                             "                          [--cc-report-dir=<directory>]%n" +
                             "                          [--additional-config=<config-file-path>]%n" +
-                            "                          [--timeout=<timeout>]%n" +
+                            "                          [--cc-graph[=<true|false>]]%n" +
+                            "                          [--cc-indexes[=<true|false>]]%n" +
+                            "                          [--cc-label-scan-store[=<true|false>]]%n" +
+                            "                          [--cc-property-owners[=<true|false>]]%n" +
                             "%n" +
                             "Perform an online backup from a running Neo4j enterprise server. Neo4j's backup%n" +
-                            "service must have been configured on the server beforehand. See%n" +
-                            "https://neo4j.com/docs/operations-manual/current/backup/ for more details.%n" +
+                            "service must have been configured on the server beforehand.%n" +
+                            "%n" +
+                            "All consistency checks except 'cc-graph' can be quite expensive so it may be%n" +
+                            "useful to turn them off for very large databases. Increasing the heap size can%n" +
+                            "also be a good idea. See 'neo4j-admin help' for details.%n" +
+                            "%n" +
+                            "For more information see:%n" +
+                            "https://neo4j.com/docs/operations-manual/current/backup/%n" +
                             "%n" +
                             "options:%n" +
                             "  --backup-dir=<backup-path>               Directory to place backup in.%n" +
@@ -541,16 +569,27 @@ public class OnlineBackupCommandTest
                             "                                           will move the old backup to%n" +
                             "                                           <name>.err.<N> and fallback to a full%n" +
                             "                                           backup instead. [default:true]%n" +
+                            "  --timeout=<timeout>                      Timeout in the form <time>[ms|s|m|h],%n" +
+                            "                                           where the default unit is seconds.%n" +
+                            "                                           [default:20m]%n" +
                             "  --check-consistency=<true|false>         If a consistency check should be%n" +
                             "                                           made. [default:true]%n" +
                             "  --cc-report-dir=<directory>              Directory where consistency report%n" +
                             "                                           will be written. [default:.]%n" +
                             "  --additional-config=<config-file-path>   Configuration file to supply%n" +
-                            "                                           additional configuration in.%n" +
-                            "                                           [default:]%n" +
-                            "  --timeout=<timeout>                      Timeout in the form <time>[ms|s|m|h],%n" +
-                            "                                           where the default unit is seconds.%n" +
-                            "                                           [default:20m]%n" ),
+                            "                                           additional configuration in. This%n" +
+                            "                                           argument is DEPRECATED. [default:]%n" +
+                            "  --cc-graph=<true|false>                  Perform consistency checks between%n" +
+                            "                                           nodes, relationships, properties,%n" +
+                            "                                           types and tokens. [default:true]%n" +
+                            "  --cc-indexes=<true|false>                Perform consistency checks on%n" +
+                            "                                           indexes. [default:true]%n" +
+                            "  --cc-label-scan-store=<true|false>       Perform consistency checks on the%n" +
+                            "                                           label scan store. [default:true]%n" +
+                            "  --cc-property-owners=<true|false>        Perform additional consistency checks%n" +
+                            "                                           on property ownership. This check is%n" +
+                            "                                           *very* expensive in time and memory.%n" +
+                            "                                           [default:false]%n" ),
                     baos.toString() );
         }
     }
