@@ -113,8 +113,15 @@ class HazelcastCoreTopologyService extends LifecycleAdapter implements CoreTopol
         JobScheduler.Group group = new JobScheduler.Group( "TopologyRefresh", POOLED );
         jobHandle = scheduler.scheduleRecurring( group, () ->
         {
-            refreshCoreTopology();
-            refreshReadReplicaTopology();
+            try
+            {
+                refreshCoreTopology();
+                refreshReadReplicaTopology();
+            }
+            catch ( Throwable e )
+            {
+                log.info( "Failed to refresh topology", e );
+            }
         }, config.get( CausalClusteringSettings.cluster_topology_refresh ), MILLISECONDS );
     }
 
