@@ -28,7 +28,7 @@ import org.neo4j.codegen.MethodReference.constructorReference
 import org.neo4j.codegen.TypeReference._
 import org.neo4j.codegen.bytecode.ByteCode.BYTECODE
 import org.neo4j.codegen.source.SourceCode.SOURCECODE
-import org.neo4j.codegen.source.SourceVisitor
+import org.neo4j.codegen.source.{SourceCode, SourceVisitor}
 import org.neo4j.codegen.{CodeGenerator, Parameter, _}
 import org.neo4j.cypher.internal.codegen.{PrimitiveNodeStream, PrimitiveRelationshipStream}
 import org.neo4j.cypher.internal.compiled_runtime.v3_2.codegen._
@@ -58,17 +58,14 @@ object GeneratedQueryStructure extends CodeStructure[GeneratedQuery] {
     }
     val options = mutable.ListBuffer.empty[CodeGeneratorOption]
     if(conf.showSource) {
-      options += new SourceVisitor {
-        override protected def visitSource(reference: TypeReference, sourceCode: CharSequence): Unit =
-          code.addSourceCode(reference.name(), sourceCode.toString)
-      }
+      options += code.saveSourceCode
     }
     if(conf.showByteCode) {
-      options += new DisassemblyVisitor {
-        override protected def visitDisassembly(className: String, disassembly: CharSequence): Unit =
-          code.addByteCode(className, disassembly.toString)
-      }
+      options += code.saveByteCode
     }
+    conf.saveSource.foreach(path => {
+      options += SourceCode.sourceLocation(path)
+    })
 
     CodeGenerator.generateCode(classOf[CodeStructure[_]].getClassLoader, mode, options:_*)
   }
@@ -77,10 +74,17 @@ object GeneratedQueryStructure extends CodeStructure[GeneratedQuery] {
     private var _source: Seq[(String, String)] = Seq.empty
     private var _bytecode: Seq[(String, String)] = Seq.empty
 
-    def addSourceCode(typeName: String, sourceCode: String): Unit =  _source = _source :+ (typeName, sourceCode)
-    def addByteCode(typeName: String, sourceCode: String): Unit =  _bytecode = _bytecode :+ (typeName, sourceCode)
+    def saveSourceCode = new SourceVisitor {
+      override protected def visitSource(reference: TypeReference, sourceCode: CharSequence): Unit =
+        _source = _source :+ (reference.name(), sourceCode.toString)
+    }
 
-    def source: Seq[(String, String)] = _source
+    def saveByteCode = new DisassemblyVisitor {
+      override protected def visitDisassembly(className: String, disassembly: CharSequence): Unit =
+        _bytecode = _bytecode :+ (className, disassembly.toString)
+    }
+
+    def sourceCode: Seq[(String, String)] = _source
     def bytecode: Seq[(String, String)] = _bytecode
   }
 
@@ -133,7 +137,7 @@ object GeneratedQueryStructure extends CodeStructure[GeneratedQuery] {
     operatorIds.foreach {
       case (key, id) => setStaticField(clazz, key, id)
     }
-    GeneratedQueryStructureResult(query, sourceSaver.source, sourceSaver.bytecode)
+    GeneratedQueryStructureResult(query, sourceSaver.sourceCode, sourceSaver.bytecode)
   }
 
   private def addAccept(methodStructure: (MethodStructure[_]) => Unit,
