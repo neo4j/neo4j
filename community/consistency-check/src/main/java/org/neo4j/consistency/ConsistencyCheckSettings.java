@@ -34,19 +34,27 @@ import static org.neo4j.kernel.configuration.Settings.setting;
 @Description( "Consistency check configuration settings" )
 public class ConsistencyCheckSettings implements LoadableConfig
 {
-    @Description("Perform optional additional checking on property ownership. " +
+    @Description("This setting is deprecated. See commandline arguments for neoj4-admin check-consistency " +
+            "instead. Perform optional additional checking on property ownership. " +
             "This can detect a theoretical inconsistency where a property could be owned by multiple entities. " +
             "However, the check is very expensive in time and memory, so it is skipped by default.")
+    @Deprecated
     public static final Setting<Boolean> consistency_check_property_owners = setting( "tools.consistency_checker.check_property_owners", BOOLEAN, FALSE );
 
-    @Description("Perform checks on the label scan store. Checking this store is more expensive than " +
+    @Description("This setting is deprecated. See commandline arguments for neoj4-admin check-consistency " +
+            "instead. Perform checks on the label scan store. Checking this store is more expensive than " +
             "checking the native stores, so it may be useful to turn off this check for very large databases.")
+    @Deprecated
     public static final Setting<Boolean> consistency_check_label_scan_store = setting( "tools.consistency_checker.check_label_scan_store", BOOLEAN, TRUE );
 
-    @Description("Perform checks on indexes. Checking indexes is more expensive than " +
+    @Description("This setting is deprecated. See commandline arguments for neoj4-admin check-consistency " +
+            "instead. Perform checks on indexes. Checking indexes is more expensive than " +
             "checking the native stores, so it may be useful to turn off this check for very large databases.")
+    @Deprecated
     public static final Setting<Boolean> consistency_check_indexes = setting( "tools.consistency_checker.check_indexes", BOOLEAN, TRUE );
 
-    @Description( "Perform checks between nodes, relationships, properties, types and tokens." )
+    @Description( "This setting is deprecated. See commandline arguments for neoj4-admin check-consistency " +
+            "instead. Perform checks between nodes, relationships, properties, types and tokens." )
+    @Deprecated
     public static final Setting<Boolean> consistency_check_graph = setting( "tools.consistency_checker.check_graph", BOOLEAN, TRUE );
 }
