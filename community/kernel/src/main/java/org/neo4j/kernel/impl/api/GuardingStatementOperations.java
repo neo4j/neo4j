@@ -275,7 +275,7 @@ public class GuardingStatementOperations implements
 
     @Override
     public Cursor<RelationshipItem> nodeGetRelationships( KernelStatement statement, NodeItem node, Direction direction,
-            PrimitiveIntSet relTypes )
+            int[] relTypes )
     {
         guard.check( statement );
         return entityReadDelegate.nodeGetRelationships( statement, node, direction, relTypes );

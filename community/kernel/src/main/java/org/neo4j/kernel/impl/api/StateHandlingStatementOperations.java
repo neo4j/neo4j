@@ -22,6 +22,7 @@ package org.neo4j.kernel.impl.api;
 import java.util.Arrays;
 import java.util.Iterator;
 import java.util.Map;
+import java.util.function.IntPredicate;
 
 import org.neo4j.collection.primitive.Primitive;
 import org.neo4j.collection.primitive.PrimitiveIntCollection;
@@ -110,6 +111,7 @@ import static java.lang.String.format;
 import static org.neo4j.collection.primitive.PrimitiveIntCollections.filter;
 import static org.neo4j.collection.primitive.PrimitiveLongCollections.resourceIterator;
 import static org.neo4j.collection.primitive.PrimitiveLongCollections.single;
+import static org.neo4j.function.Predicates.any;
 import static org.neo4j.helpers.collection.Iterators.filter;
 import static org.neo4j.helpers.collection.Iterators.iterator;
 import static org.neo4j.helpers.collection.Iterators.singleOrNull;
@@ -229,7 +231,7 @@ public class StateHandlingStatementOperations implements
 
     @Override
     public Cursor<RelationshipItem> nodeGetRelationships( KernelStatement statement, NodeItem node, Direction direction,
-            PrimitiveIntSet relTypes )
+            int[] relTypes )
     {
         Cursor<RelationshipItem> cursor;
         if ( statement.hasTxStateWithChanges() && statement.txState().nodeIsAddedInThisTx( node.id() ) )
@@ -238,7 +240,7 @@ public class StateHandlingStatementOperations implements
         }
         else
         {
-            cursor = storeLayer.nodeGetRelationships( statement.getStoreStatement(), node, direction, relTypes );
+            cursor = storeLayer.nodeGetRelationships( statement.getStoreStatement(), node, direction, any( relTypes ) );
         }
         if ( !statement.hasTxStateWithChanges() )
         {
@@ -1844,7 +1846,7 @@ public class StateHandlingStatementOperations implements
         {
             return count( relType == null
                           ? storeLayer.nodeGetRelationships( storeStatement, node, direction )
-                          : storeLayer.nodeGetRelationships( storeStatement, node, direction, (t) -> t == relType ) );
+                          : storeLayer.nodeGetRelationships( storeStatement, node, direction, t -> t == relType ) );
         }
     }
 

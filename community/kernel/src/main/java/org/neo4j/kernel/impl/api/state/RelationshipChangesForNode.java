@@ -22,7 +22,6 @@ package org.neo4j.kernel.impl.api.state;
 import java.util.ArrayList;
 import java.util.Collection;
 import java.util.Collections;
-import java.util.HashSet;
 import java.util.Iterator;
 import java.util.Map;
 import java.util.Set;
@@ -41,7 +40,6 @@ import org.neo4j.kernel.impl.api.store.RelationshipIterator;
 import org.neo4j.kernel.impl.util.VersionedHashMap;
 import org.neo4j.storageengine.api.Direction;
 
-import static org.neo4j.collection.primitive.PrimitiveIntCollections.iterator;
 import static org.neo4j.collection.primitive.PrimitiveLongCollections.emptyIterator;
 
 /**
@@ -258,7 +256,7 @@ public class RelationshipChangesForNode
         return augmentRelationships( direction, rels, ALL_TYPES );
     }
 
-    public RelationshipIterator augmentRelationships( Direction direction, PrimitiveIntSet types, RelationshipIterator rels )
+    public RelationshipIterator augmentRelationships( Direction direction, int[] types, RelationshipIterator rels )
     {
         return augmentRelationships( direction, rels, typeFilter( types ) );
     }
@@ -441,11 +439,11 @@ public class RelationshipChangesForNode
         return relTypeToRelsMap;
     }
 
-    private Function<Map<Integer, Set<Long>>, Iterator<Set<Long>>> typeFilter( PrimitiveIntSet types )
+    private Function<Map<Integer, Set<Long>>, Iterator<Set<Long>>> typeFilter( int[] types )
     {
         return relationshipsByType -> new PrefetchingIterator<Set<Long>>()
         {
-            private final PrimitiveIntIterator iterTypes = types.iterator();
+            private final PrimitiveIntIterator iterTypes = PrimitiveIntCollections.iterator( types );
 
             @Override
             protected Set<Long> fetchNextOrNull()
@@ -490,7 +488,7 @@ public class RelationshipChangesForNode
         return getRelationships( direction, ALL_TYPES );
     }
 
-    public PrimitiveLongIterator getRelationships( Direction direction, PrimitiveIntSet types )
+    public PrimitiveLongIterator getRelationships( Direction direction, int[] types )
     {
         return getRelationships( direction, typeFilter( types ) );
     }

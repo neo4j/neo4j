@@ -770,7 +770,7 @@ public final class TxState implements TransactionState, RelationshipVisitor.Home
     public Cursor<RelationshipItem> augmentNodeRelationshipCursor( Cursor<RelationshipItem> cursor,
             NodeState nodeState,
             Direction direction,
-            PrimitiveIntSet relTypes )
+            int[] relTypes )
     {
         return nodeState.hasChanges()
                ? iteratorRelationshipCursor.get().init( cursor, nodeState.getAddedRelationships( direction, relTypes ) )

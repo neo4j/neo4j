@@ -460,7 +460,7 @@ public class ConstraintEnforcingEntityOperations implements EntityOperations, Sc
 
     @Override
     public Cursor<RelationshipItem> nodeGetRelationships( KernelStatement statement, NodeItem node, Direction direction,
-            PrimitiveIntSet relTypes )
+            int[] relTypes )
     {
         return entityReadOperations.nodeGetRelationships( statement, node, direction, relTypes );
     }
