@@ -25,7 +25,9 @@ import org.neo4j.cypher.internal.frontend.v3_2.ast.{HasLabels, Property}
 import org.neo4j.cypher.internal.ir.v3_2._
 
 object CardinalityCostModel extends CostModel {
+  def VERBOSE = java.lang.Boolean.getBoolean("CardinalityCostModel.VERBOSE")
 
+  private val DEFAULT_COST_PER_ROW: CostPerRow = 0.1
   private val PROBE_BUILD_COST: CostPerRow = 3.1
   private val PROBE_SEARCH_COST: CostPerRow = 2.4
   private val EAGERNESS_MULTIPLIER: Multiplier = 2.0
@@ -42,11 +44,15 @@ object CardinalityCostModel extends CostModel {
     => 1.0
 
     // Filtering on labels and properties
-    case Selection(predicates, _) if predicates.exists {
-      case _: Property | _: HasLabels => true
-      case _ => false
-    }
-    => 1.0
+    case Selection(predicates, _) =>
+      val noOfStoreAccesses = predicates.treeCount {
+        case _: Property | _: HasLabels => true
+        case _ => false
+      }
+      if (noOfStoreAccesses > 0)
+        CostPerRow(noOfStoreAccesses)
+      else
+        DEFAULT_COST_PER_ROW
 
     case _: AllNodesScan
     => 1.2
@@ -82,7 +88,7 @@ object CardinalityCostModel extends CostModel {
          _: ValueHashJoin |
          _: UnwindCollection |
          _: ProcedureCall
-    => 0.1
+    => DEFAULT_COST_PER_ROW
 
     case _: FindShortestPaths |
          _: LegacyNodeIndexSeek |
@@ -92,7 +98,7 @@ object CardinalityCostModel extends CostModel {
     => 12.0
 
     case _ // Default
-    => 0.1
+    => DEFAULT_COST_PER_ROW
   }
 
   private def cardinalityForPlan(plan: LogicalPlan): Cardinality = plan match {

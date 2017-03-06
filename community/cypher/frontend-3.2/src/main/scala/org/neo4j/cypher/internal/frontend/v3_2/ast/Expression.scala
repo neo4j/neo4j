@@ -23,7 +23,7 @@ import org.neo4j.cypher.internal.frontend.v3_2.Foldable._
 import org.neo4j.cypher.internal.frontend.v3_2.SemanticCheckResult._
 import org.neo4j.cypher.internal.frontend.v3_2._
 import org.neo4j.cypher.internal.frontend.v3_2.ast.Expression._
-import org.neo4j.cypher.internal.frontend.v3_2.symbols.{CypherType, TypeSpec, _}
+import org.neo4j.cypher.internal.frontend.v3_2.symbols.{TypeSpec, _}
 
 import scala.collection.immutable.Stack
 
@@ -171,7 +171,7 @@ abstract class Expression extends ASTNode with ASTExpression with SemanticChecki
   def typeSwitch(choice: TypeSpec => SemanticCheck): SemanticCheck =
     (state: SemanticState) => choice(types(state))(state)
 
-  def containsAggregate = this.exists {
+  def containsAggregate = this.treeExists {
     case IsAggregate(_) => true
   }
 }

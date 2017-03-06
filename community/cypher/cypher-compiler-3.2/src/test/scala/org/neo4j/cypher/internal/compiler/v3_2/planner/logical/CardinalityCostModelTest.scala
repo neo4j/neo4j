@@ -23,11 +23,11 @@ import org.neo4j.cypher.internal.compiler.v3_2.planner.LogicalPlanningTestSuppor
 import org.neo4j.cypher.internal.compiler.v3_2.planner.logical.Metrics.QueryGraphSolverInput
 import org.neo4j.cypher.internal.compiler.v3_2.planner.logical.plans._
 import org.neo4j.cypher.internal.frontend.v3_2.SemanticDirection
-import org.neo4j.cypher.internal.frontend.v3_2.ast.{HasLabels, LabelName}
+import org.neo4j.cypher.internal.frontend.v3_2.ast.{AstConstructionTestSupport, HasLabels, LabelName}
 import org.neo4j.cypher.internal.frontend.v3_2.test_helpers.CypherFunSuite
 import org.neo4j.cypher.internal.ir.v3_2.{Cost, LazyMode}
 
-class CardinalityCostModelTest extends CypherFunSuite with LogicalPlanningTestSupport {
+class CardinalityCostModelTest extends CypherFunSuite with LogicalPlanningTestSupport with AstConstructionTestSupport {
 
   test("expand should only be counted once") {
     val plan =
@@ -92,4 +92,18 @@ class CardinalityCostModelTest extends CypherFunSuite with LogicalPlanningTestSu
     val pleaseLazy = QueryGraphSolverInput.empty.withPreferredStrictness(LazyMode)
     CardinalityCostModel(lazyPlan, pleaseLazy) should be < CardinalityCostModel(eagerPlan, pleaseLazy)
   }
+
+  test("multiple property expressions are counted for in cost") {
+    val cardinality = 10.0
+    val card10 = solvedWithEstimation(cardinality)
+    val plan =
+      Selection(List(propEquality("a", "prop1", 42), propEquality("a", "prop1", 42), propEquality("a", "prop1", 42)),
+        Argument(Set("a"))(card10)())(card10)
+
+    val numberOfPredicates = 3
+    val costForSelection = cardinality * numberOfPredicates
+    val costForArgument = cardinality *   .1
+    CardinalityCostModel(plan, QueryGraphSolverInput.empty) should equal(Cost(costForSelection + costForArgument))
+  }
+
 }
