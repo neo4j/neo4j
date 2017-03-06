@@ -58,6 +58,8 @@ public class SpectrumExecutionMonitor extends ExecutionMonitor.Adapter
     private final PrintStream out;
     private final int width;
     private long tick;
+    // For tracking delta
+    private long lastProgress;
 
     public SpectrumExecutionMonitor( long interval, TimeUnit unit, PrintStream out, int width )
     {
@@ -79,6 +81,7 @@ public class SpectrumExecutionMonitor extends ExecutionMonitor.Adapter
         }
         out.println();
         tick = 0;
+        lastProgress = 0;
     }
 
     @Override
@@ -176,6 +179,10 @@ public class SpectrumExecutionMonitor extends ExecutionMonitor.Adapter
 
         long progress = lastDoneBatches * execution.getConfig().batchSize();
         builder.append( "]" ).append( fitInProgress( progress ) );
+
+        long currentDelta = progress - lastProgress;
+        builder.append( " ∆" + fitInProgress( currentDelta ) );
+        lastProgress = progress;
     }
 
     private static String fitInProgress( long value )
