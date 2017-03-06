@@ -27,6 +27,8 @@ import org.neo4j.commandline.admin.AdminCommandSection;
 import org.neo4j.commandline.admin.OutsideWorld;
 import org.neo4j.commandline.arguments.Arguments;
 
+import static java.lang.String.format;
+
 public class CheckConsistencyCommandProvider extends AdminCommand.Provider
 {
     public CheckConsistencyCommandProvider()
@@ -45,7 +47,13 @@ public class CheckConsistencyCommandProvider extends AdminCommand.Provider
     @Nonnull
     public String description()
     {
-        return "Check the consistency of a database.";
+        return format(
+                "This command allows for checking the consistency of a database or a backup thereof. It cannot " +
+                        "be used with a database which is currently in use.%n" +
+                        "%n" +
+                        "All checks except 'check-graph' can be quite expensive so it may be useful to turn them off" +
+                        " for very large databases. Increasing the heap size can also be a good idea." +
+                        " See 'neo4j-admin help' for details." );
     }
 
     @Override

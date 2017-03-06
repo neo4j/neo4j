@@ -111,7 +111,11 @@ public class ConsistencyCheckTool
         try
         {
             return consistencyCheckService.runFullConsistencyCheck( storeDir, tuningConfiguration,
-                    ProgressMonitorFactory.textual( System.err ), logProvider, fs, verbose );
+                    ProgressMonitorFactory.textual( System.err ), logProvider, fs, verbose,
+                    tuningConfiguration.get( ConsistencyCheckSettings.consistency_check_graph ),
+                    tuningConfiguration.get( ConsistencyCheckSettings.consistency_check_indexes ),
+                    tuningConfiguration.get( ConsistencyCheckSettings.consistency_check_label_scan_store ),
+                    tuningConfiguration.get( ConsistencyCheckSettings.consistency_check_property_owners ) );
         }
         catch ( ConsistencyCheckIncompleteException e )
         {

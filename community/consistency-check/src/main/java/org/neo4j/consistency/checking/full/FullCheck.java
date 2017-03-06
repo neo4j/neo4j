@@ -67,14 +67,25 @@ public class FullCheck
     public FullCheck( Config tuningConfiguration, ProgressMonitorFactory progressFactory,
             Statistics statistics, int threads )
     {
+        this(progressFactory, statistics, threads,
+                tuningConfiguration.get( ConsistencyCheckSettings.consistency_check_graph ),
+                tuningConfiguration.get( ConsistencyCheckSettings.consistency_check_indexes ),
+                tuningConfiguration.get( ConsistencyCheckSettings.consistency_check_label_scan_store ),
+                tuningConfiguration.get( ConsistencyCheckSettings.consistency_check_property_owners ) );
+    }
+
+    public FullCheck( ProgressMonitorFactory progressFactory,
+            Statistics statistics, int threads, boolean checkGraph, boolean checkIndexes, boolean checkLabelScanStore,
+            boolean checkPropertyOwners )
+    {
         this.statistics = statistics;
         this.threads = threads;
-        this.checkPropertyOwners = tuningConfiguration.get( ConsistencyCheckSettings.consistency_check_property_owners );
-        this.checkLabelScanStore = tuningConfiguration.get( ConsistencyCheckSettings.consistency_check_label_scan_store );
-        this.checkIndexes = tuningConfiguration.get( ConsistencyCheckSettings.consistency_check_indexes );
-        this.checkGraph = tuningConfiguration.get( ConsistencyCheckSettings.consistency_check_graph );
-        this.samplingConfig = new IndexSamplingConfig( tuningConfiguration );
         this.progressFactory = progressFactory;
+        this.samplingConfig = new IndexSamplingConfig( Config.embeddedDefaults() );
+        this.checkGraph = checkGraph;
+        this.checkIndexes = checkIndexes;
+        this.checkLabelScanStore = checkLabelScanStore;
+        this.checkPropertyOwners = checkPropertyOwners;
     }
 
     public ConsistencySummaryStatistics execute( DirectStoreAccess stores, Log log )

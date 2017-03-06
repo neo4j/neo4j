@@ -52,7 +52,10 @@ import static org.neo4j.dbms.DatabaseManagementSystemSettings.database_path;
 
 public class CheckConsistencyCommand implements AdminCommand
 {
-
+    public static final String CHECK_GRAPH = "check-graph";
+    public static final String CHECK_INDEXES = "check-indexes";
+    public static final String CHECK_LABEL_SCAN_STORE = "check-label-scan-store";
+    public static final String CHECK_PROPERTY_OWNERS = "check-property-owners";
     private static final Arguments arguments = new Arguments()
             .withDatabase()
             .withArgument( new OptionalCanonicalPath( "backup", "/path/to/backup", "",
@@ -61,7 +64,16 @@ public class CheckConsistencyCommand implements AdminCommand
             .withArgument( new OptionalCanonicalPath( "report-dir", "directory", ".",
                     "Directory to write report file in.") )
             .withArgument( new OptionalCanonicalPath( "additional-config", "config-file-path", "",
-                    "Configuration file to supply additional configuration in. This argument is DEPRECATED." ) );
+                    "Configuration file to supply additional configuration in. This argument is DEPRECATED." ) )
+            .withArgument( new OptionalBooleanArg( CHECK_GRAPH, true,
+                    "Perform checks between nodes, relationships, properties, types and tokens." ) )
+            .withArgument( new OptionalBooleanArg( CHECK_INDEXES, true,
+                    "Perform checks on indexes." ) )
+            .withArgument( new OptionalBooleanArg( CHECK_LABEL_SCAN_STORE, true,
+                    "Perform checks on the label scan store." ) )
+            .withArgument( new OptionalBooleanArg( CHECK_PROPERTY_OWNERS, false,
+                    "Perform additional checks on property ownership. This check is *very* expensive in time and " +
+                            "memory." ) );
 
     private final Path homeDir;
     private final Path configDir;
@@ -86,10 +98,14 @@ public class CheckConsistencyCommand implements AdminCommand
     public void execute( String[] args ) throws IncorrectUsage, CommandFailed
     {
         final String database;
-        final Boolean verbose;
+        final boolean verbose;
         final Optional<Path> additionalConfigFile;
         final Path reportDir;
         final Optional<Path> backupPath;
+        final boolean checkGraph;
+        final boolean checkIndexes;
+        final boolean checkLabelScanStore;
+        final boolean checkPropertyOwners;
 
         try
         {
@@ -119,6 +135,47 @@ public class CheckConsistencyCommand implements AdminCommand
 
         Config config = loadNeo4jConfig( homeDir, configDir, database, loadAdditionalConfig( additionalConfigFile ) );
 
+        try
+        {
+            // We can remove the loading from config file in 4.0
+            if ( arguments.has( CHECK_GRAPH, args ) )
+            {
+                checkGraph = arguments.parseBoolean( CHECK_GRAPH, args );
+            }
+            else
+            {
+                checkGraph = ConsistencyCheckSettings.consistency_check_graph.from( config );
+            }
+            if ( arguments.has( CHECK_INDEXES, args ) )
+            {
+                checkIndexes = arguments.parseBoolean( CHECK_INDEXES, args );
+            }
+            else
+            {
+                checkIndexes = ConsistencyCheckSettings.consistency_check_indexes.from( config );
+            }
+            if ( arguments.has( CHECK_LABEL_SCAN_STORE, args ) )
+            {
+                checkLabelScanStore = arguments.parseBoolean( CHECK_LABEL_SCAN_STORE, args );
+            }
+            else
+            {
+                checkLabelScanStore = ConsistencyCheckSettings.consistency_check_label_scan_store.from( config );
+            }
+            if ( arguments.has( CHECK_PROPERTY_OWNERS, args ) )
+            {
+                checkPropertyOwners = arguments.parseBoolean( CHECK_PROPERTY_OWNERS, args );
+            }
+            else
+            {
+                checkPropertyOwners = ConsistencyCheckSettings.consistency_check_property_owners.from( config );
+            }
+        }
+        catch ( IllegalArgumentException e )
+        {
+            throw new IncorrectUsage( e.getMessage() );
+        }
+
         try ( FileSystemAbstraction fileSystem = new DefaultFileSystemAbstraction() )
         {
             File storeDir = backupPath.map( Path::toFile ).orElse( config.get( database_path ) );
@@ -126,7 +183,7 @@ public class CheckConsistencyCommand implements AdminCommand
             ConsistencyCheckService.Result consistencyCheckResult = consistencyCheckService
                     .runFullConsistencyCheck( storeDir, config, ProgressMonitorFactory.textual( System.err ),
                             FormattedLogProvider.toOutputStream( System.out ), fileSystem, verbose,
-                            reportDir.toFile() );
+                            reportDir.toFile(), checkGraph, checkIndexes, checkLabelScanStore, checkPropertyOwners );
 
             if ( !consistencyCheckResult.isSuccessful() )
             {

@@ -166,16 +166,18 @@ public class RestartIT
             for ( CoreClusterMember core : cluster.coreMembers() )
             {
                 ConsistencyCheckService.Result result = new ConsistencyCheckService()
-                        .runFullConsistencyCheck( core.storeDir(), Config.defaults(), ProgressMonitorFactory.NONE,
-                                FormattedLogProvider.toOutputStream( System.out ), fileSystem, false );
+                        .runFullConsistencyCheck( core.storeDir(), Config.embeddedDefaults(), ProgressMonitorFactory.NONE,
+                                FormattedLogProvider.toOutputStream( System.out ), fileSystem, false,
+                                true, true, true, false);
                 assertTrue( "Inconsistent: " + core, result.isSuccessful() );
             }
 
             for ( ReadReplica readReplica : cluster.readReplicas() )
             {
                 ConsistencyCheckService.Result result = new ConsistencyCheckService()
-                        .runFullConsistencyCheck( readReplica.storeDir(), Config.defaults(), ProgressMonitorFactory.NONE,
-                                FormattedLogProvider.toOutputStream( System.out ), fileSystem, false );
+                        .runFullConsistencyCheck( readReplica.storeDir(), Config.embeddedDefaults(), ProgressMonitorFactory.NONE,
+                                FormattedLogProvider.toOutputStream( System.out ), fileSystem, false,
+                                true, true, true, false);
                 assertTrue( "Inconsistent: " + readReplica, result.isSuccessful() );
             }
         }
