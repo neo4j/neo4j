@@ -43,9 +43,9 @@ import org.neo4j.kernel.api.proc.CallableUserAggregationFunction;
 import org.neo4j.kernel.api.proc.CallableUserFunction;
 import org.neo4j.kernel.api.proc.Context;
 import org.neo4j.kernel.api.proc.FieldSignature;
-import org.neo4j.kernel.api.proc.LoadFailAggregatedFunction;
-import org.neo4j.kernel.api.proc.LoadFailFunction;
-import org.neo4j.kernel.api.proc.LoadFailProcedure;
+import org.neo4j.kernel.api.proc.FailedLoadAggregatedFunction;
+import org.neo4j.kernel.api.proc.FailedLoadFunction;
+import org.neo4j.kernel.api.proc.FailedLoadProcedure;
 import org.neo4j.kernel.api.proc.ProcedureSignature;
 import org.neo4j.kernel.api.proc.QualifiedName;
 import org.neo4j.kernel.api.proc.UserFunctionSignature;
@@ -243,12 +243,12 @@ class ReflectiveProcedureCompiler
             catch ( ComponentInjectionException e )
             {
                 description = Optional.of( procName.toString() +
-                        " is not available due to not having unrestricted access rights, check configuration." );
+                        " is not available due to having restricted access rights, check configuration." );
                 log.warn( description.get() );
                 ProcedureSignature signature =
                         new ProcedureSignature( procName, inputSignature, outputMapper.signature(), Mode.DEFAULT,
                                 Optional.empty(), new String[0], description, warning );
-                return new LoadFailProcedure( signature );
+                return new FailedLoadProcedure( signature );
             }
         }
 
@@ -291,12 +291,12 @@ class ReflectiveProcedureCompiler
             catch ( ComponentInjectionException e )
             {
                 description = Optional.of( procName.toString() +
-                        " is not available due to not having unrestricted access rights, check configuration." );
+                        " is not available due to having restricted access rights, check configuration." );
                 log.warn( description.get() );
                 UserFunctionSignature signature =
                         new UserFunctionSignature( procName, inputSignature, valueConverter.type(), deprecated,
                                 config.rolesFor( procName.toString() ), description );
-                return new LoadFailFunction( signature );
+                return new FailedLoadFunction( signature );
             }
         }
 
@@ -409,13 +409,13 @@ class ReflectiveProcedureCompiler
             catch ( ComponentInjectionException e )
             {
                 description = Optional.of( funcName.toString() +
-                        " is not available due to not having unrestricted access rights, check configuration." );
+                        " is not available due to having restricted access rights, check configuration." );
                 log.warn( description.get() );
                 UserFunctionSignature signature =
                         new UserFunctionSignature( funcName, inputSignature, valueConverter.type(), deprecated,
                                 config.rolesFor( funcName.toString() ), description );
 
-                return new LoadFailAggregatedFunction( signature );
+                return new FailedLoadAggregatedFunction( signature );
             }
         }
 

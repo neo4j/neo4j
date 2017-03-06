@@ -19,7 +19,6 @@
  */
 package org.neo4j.kernel.impl.proc;
 
-import jdk.nashorn.internal.codegen.FunctionSignature;
 import org.hamcrest.core.IsEqual;
 import org.junit.Rule;
 import org.junit.Test;
@@ -226,10 +225,10 @@ public class ProcedureJarLoaderTest
         // Then
         verify( log )
                 .warn( "org.neo4j.kernel.impl.proc.unsafeProcedure is not available " +
-                        "due to not having unrestricted access rights, check configuration." );
+                        "due to having restricted access rights, check configuration." );
         verify( log )
-                .warn( "org.neo4j.kernel.impl.proc.unsafeFunction is not available " +
-                        "due to not having unrestricted access rights, check configuration." );
+                .warn( "org.neo4j.kernel.impl.proc.unsafeFunction" +
+                        " is not available due to having restricted access rights, check configuration." );
     }
 
     @Test

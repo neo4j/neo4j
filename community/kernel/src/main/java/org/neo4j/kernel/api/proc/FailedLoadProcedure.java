@@ -23,9 +23,9 @@ import org.neo4j.collection.RawIterator;
 import org.neo4j.kernel.api.exceptions.ProcedureException;
 import org.neo4j.kernel.api.exceptions.Status;
 
-public class LoadFailProcedure extends CallableProcedure.BasicProcedure
+public class FailedLoadProcedure extends CallableProcedure.BasicProcedure
 {
-    public LoadFailProcedure( ProcedureSignature signature )
+    public FailedLoadProcedure( ProcedureSignature signature )
     {
         super( signature );
     }
