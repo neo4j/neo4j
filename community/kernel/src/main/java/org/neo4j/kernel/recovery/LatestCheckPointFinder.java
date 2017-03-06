@@ -141,7 +141,7 @@ public class LatestCheckPointFinder
             {
                 // This check point entry targets a previous log file.
                 // Go there and see if there's a transaction. Reader is capped to that log version.
-                startEntryAfterCheckPoint = extractFirstTxIdAfterPosition( target, target.getLogVersion() ) !=
+                startEntryAfterCheckPoint = extractFirstTxIdAfterPosition( target, version ) !=
                         LatestCheckPoint.NO_TRANSACTION_ID;
             }
         }

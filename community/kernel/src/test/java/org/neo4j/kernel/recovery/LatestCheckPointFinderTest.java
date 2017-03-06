@@ -76,7 +76,7 @@ public class LatestCheckPointFinderTest
     @Parameterized.Parameters( name="{0},{1}")
     public static Collection<Object[]> params()
     {
-        return Arrays.asList( new Object[]{0, 1}, new Object[]{42, 43}  );
+        return Arrays.asList( new Object[]{1, 2}, new Object[]{42, 43}  );
     }
 
     @Before
@@ -183,6 +183,24 @@ public class LatestCheckPointFinderTest
 
         // then
         assertLatestCheckPoint( false, true, txId, startLogVersion, latestCheckPoint );
+    }
+
+    @Test
+    public void twoLogFilesCheckPointTargetsPrevious() throws Exception
+    {
+        // given
+        long txId = 6;
+        PositionEntry position = position();
+        setupLogFiles(
+                logFile( start(), commit( txId - 1 ), position ),
+                logFile( start(), commit( txId ) ),
+                logFile( checkPoint( position ) ) );
+
+        // when
+        LatestCheckPoint latestCheckPoint = finder.find( endLogVersion );
+
+        // then
+        assertLatestCheckPoint( true, true, txId, endLogVersion, latestCheckPoint );
     }
 
     @Test
