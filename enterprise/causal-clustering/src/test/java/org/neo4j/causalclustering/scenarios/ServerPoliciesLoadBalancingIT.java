@@ -87,7 +87,7 @@ public class ServerPoliciesLoadBalancingIT
 
         cluster.start();
 
-        assertGetServersEventuallyMatchesOnAllCores( new CountsMatcher( 3, 1, 0, 3 ) );
+        assertGetServersEventuallyMatchesOnAllCores( new CountsMatcher( 3, 1, 2, 3 ) );
     }
 
     @Test
