@@ -52,7 +52,6 @@ public class FreePortIT
                 .setConfig( ShellSettings.remote_shell_enabled, "true" )
                 .setConfig( ShellSettings.remote_shell_host, HOST )
                 .setConfig( ShellSettings.remote_shell_port, Integer.toString( PORT ) ).newGraphDatabase();
-        System.err.println( "Neo4j startup succeeded" );
 
         return db;
     }
@@ -71,9 +70,8 @@ public class FreePortIT
             s.bind( new InetSocketAddress( host, port ) );
             return s.isBound();
         }
-        catch ( Throwable e )
+        catch ( Throwable ignored )
         {
-            System.err.println( e );
         }
         finally
         {
