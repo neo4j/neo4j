@@ -283,9 +283,9 @@ public class CheckConsistencyCommandTest
 
             assertEquals( String.format( "usage: neo4j-admin check-consistency [--database=<name>]%n" +
                             "                                     [--backup=</path/to/backup>]%n" +
-                            "                                     [--additional-config=<config-file-path>]%n" +
                             "                                     [--verbose[=<true|false>]]%n" +
                             "                                     [--report-dir=<directory>]%n" +
+                            "                                     [--additional-config=<config-file-path>]%n" +
                             "%n" +
                             "Check the consistency of a database.%n" +
                             "%n" +
@@ -294,13 +294,13 @@ public class CheckConsistencyCommandTest
                             "  --backup=</path/to/backup>               Path to backup to check consistency%n" +
                             "                                           of. Cannot be used together with%n" +
                             "                                           --database. [default:]%n" +
-                            "  --additional-config=<config-file-path>   Configuration file to supply%n" +
-                            "                                           additional configuration in.%n" +
-                            "                                           [default:]%n" +
                             "  --verbose=<true|false>                   Enable verbose output.%n" +
                             "                                           [default:false]%n" +
                             "  --report-dir=<directory>                 Directory to write report file in.%n" +
-                            "                                           [default:.]%n" ),
+                            "                                           [default:.]%n" +
+                            "  --additional-config=<config-file-path>   Configuration file to supply%n" +
+                            "                                           additional configuration in. This%n" +
+                            "                                           argument is DEPRECATED. [default:]%n" ),
                     baos.toString() );
         }
     }
