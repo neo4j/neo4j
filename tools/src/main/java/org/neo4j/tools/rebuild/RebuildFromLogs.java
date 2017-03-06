@@ -27,8 +27,10 @@ import java.util.List;
 
 import org.neo4j.com.storecopy.ExternallyManagedPageCache;
 import org.neo4j.consistency.ConsistencyCheckService;
+import org.neo4j.consistency.checking.InconsistentStoreException;
 import org.neo4j.consistency.checking.full.ConsistencyCheckIncompleteException;
 import org.neo4j.consistency.checking.full.FullCheck;
+import org.neo4j.consistency.report.ConsistencySummaryStatistics;
 import org.neo4j.consistency.statistics.Statistics;
 import org.neo4j.cursor.IOCursor;
 import org.neo4j.graphdb.DependencyResolver;
@@ -62,7 +64,7 @@ import org.neo4j.kernel.impl.transaction.log.ReaderLogVersionBridge;
 import org.neo4j.kernel.impl.transaction.log.entry.LogEntryReader;
 import org.neo4j.kernel.impl.transaction.log.entry.VersionAwareLogEntryReader;
 import org.neo4j.kernel.internal.GraphDatabaseAPI;
-import org.neo4j.logging.NullLog;
+import org.neo4j.logging.FormattedLog;
 
 import static java.lang.String.format;
 import static org.neo4j.kernel.impl.transaction.log.LogVersionBridge.NO_MORE_CHANNELS;
@@ -85,7 +87,7 @@ class RebuildFromLogs
         this.fs = fs;
     }
 
-    public static void main( String[] args ) throws Exception
+    public static void main( String[] args ) throws Exception, InconsistentStoreException
     {
         if ( args == null )
         {
@@ -142,7 +144,7 @@ class RebuildFromLogs
         return Files.exists( path.resolve( MetaDataStore.DEFAULT_NAME ) );
     }
 
-    public void rebuild( File source, File target, long txId ) throws Exception
+    public void rebuild( File source, File target, long txId ) throws Exception, InconsistentStoreException
     {
         try ( PageCache pageCache = StandalonePageCacheFactory.createPageCache( fs ) )
         {
@@ -177,10 +179,15 @@ class RebuildFromLogs
             MetaDataStore.setRecord( pageCache, new File( target, MetaDataStore.DEFAULT_NAME ),
                     MetaDataStore.Position.LAST_TRANSACTION_ID, lastTxId );
 
-            try ( ConsistencyChecker checker = new ConsistencyChecker( target, pageCache ) )
-            {
-                checker.checkConsistency();
-            }
+            checkConsistency( target, pageCache );
+        }
+    }
+
+    void checkConsistency( File target, PageCache pageCache ) throws Exception, InconsistentStoreException
+    {
+        try ( ConsistencyChecker checker = new ConsistencyChecker( target, pageCache ) )
+        {
+            checker.checkConsistency();
         }
     }
 
@@ -280,7 +287,7 @@ class RebuildFromLogs
             this.indexes = resolver.resolveDependency( SchemaIndexProvider.class );
         }
 
-        private void checkConsistency() throws ConsistencyCheckIncompleteException
+        private void checkConsistency() throws ConsistencyCheckIncompleteException, InconsistentStoreException
         {
             StoreAccess nativeStores = new StoreAccess( graphdb.getDependencyResolver()
                     .resolveDependency( RecordStorageEngine.class ).testAccessNeoStores() ).initialize();
@@ -288,7 +295,13 @@ class RebuildFromLogs
             FullCheck fullCheck = new FullCheck( tuningConfiguration, ProgressMonitorFactory.textual( System.err ),
                     Statistics.NONE, ConsistencyCheckService.defaultConsistencyCheckThreadsNumber() );
 
-            fullCheck.execute( stores, NullLog.getInstance() );
+            ConsistencySummaryStatistics summaryStatistics =
+                    fullCheck.execute( stores, FormattedLog.toOutputStream( System.err ) );
+            if ( !summaryStatistics.isConsistent() )
+            {
+                throw new InconsistentStoreException( summaryStatistics );
+            }
+
         }
 
         @Override
