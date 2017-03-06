@@ -55,6 +55,7 @@ public abstract class AbstractKeyValueStore<Key> extends LifecycleAdapter
     private final FileSystemAbstraction fs;
     final int keySize;
     final int valueSize;
+    private volatile boolean stopped;
 
     public AbstractKeyValueStore( FileSystemAbstraction fs, PageCache pages, File base, RotationMonitor monitor,
             RotationTimerFactory timerFactory, int keySize, int valueSize, HeaderField<?>... headerFields )
@@ -243,7 +244,11 @@ public abstract class AbstractKeyValueStore<Key> extends LifecycleAdapter
     @Override
     public final void shutdown() throws IOException
     {
-        state = state.stop();
+        try ( LockWrapper ignored = writeLock( updateLock ) )
+        {
+            stopped = true;
+            state = state.stop();
+        }
     }
 
     private boolean transfer( EntryVisitor<WritableBuffer> producer, EntryVisitor<ReadableBuffer> consumer )
@@ -317,7 +322,13 @@ public abstract class AbstractKeyValueStore<Key> extends LifecycleAdapter
                     // won't close the state as it was before rotation began, which we're reverting to right here.
                     try ( LockWrapper ignored = writeLock( updateLock ) )
                     {
-                        state = rotation.markAsFailed();
+                        // Only mark as failed if we're still running, because if this store has been stopped
+                        // this rotation task will be the only option to close the preState and marking
+                        // this rotation as failed will prevent preState to be closed.
+                        if ( !stopped )
+                        {
+                            state = rotation.markAsFailed();
+                        }
                     }
                     throw t;
                 }
