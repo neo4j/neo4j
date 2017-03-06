@@ -27,6 +27,7 @@ import java.rmi.Remote;
 import java.rmi.RemoteException;
 import java.rmi.registry.LocateRegistry;
 import java.rmi.registry.Registry;
+import java.rmi.server.UnicastRemoteObject;
 
 /**
  * Class for specifying a location of an RMI object
@@ -37,6 +38,7 @@ public class RmiLocation
 	private final String host;
 	private final int port;
 	private final String name;
+	private Registry registry;
 
 	private RmiLocation( String host, int port, String name )
 	{
@@ -142,7 +144,7 @@ public class RmiLocation
 	 */
 	public void bind( Remote object ) throws RemoteException
 	{
-		ensureRegistryCreated();
+		this.registry = ensureRegistryCreated();
 		try
 		{
 			Naming.rebind( toUrl(), object );
@@ -151,6 +153,11 @@ public class RmiLocation
 		{
 			throw new RemoteException( "Malformed URL", e );
 		}
+	}
+
+	public void unbind() throws RemoteException
+	{
+		UnicastRemoteObject.unexportObject( this.registry, true );
 	}
 
 	/**
