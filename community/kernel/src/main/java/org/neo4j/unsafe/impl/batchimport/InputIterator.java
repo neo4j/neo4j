@@ -24,11 +24,12 @@ import org.neo4j.csv.reader.SourceTraceability;
 import org.neo4j.graphdb.ResourceIterator;
 import org.neo4j.helpers.collection.PrefetchingIterator;
 import org.neo4j.unsafe.impl.batchimport.input.Input;
+import org.neo4j.unsafe.impl.batchimport.staging.Panicable;
 
 /**
  * A {@link ResourceIterator} with added methods suitable for {@link Input} into a {@link BatchImporter}.
  */
-public interface InputIterator<T> extends ResourceIterator<T>, SourceTraceability, Parallelizable
+public interface InputIterator<T> extends ResourceIterator<T>, SourceTraceability, Parallelizable, Panicable
 {
     public static abstract class Adapter<T> extends PrefetchingIterator<T> implements InputIterator<T>
     {
@@ -57,6 +58,11 @@ public interface InputIterator<T> extends ResourceIterator<T>, SourceTraceabilit
         public long position()
         {
             return defaults.position();
+        }
+
+        @Override
+        public void receivePanic( Throwable cause )
+        {
         }
 
         @Override
@@ -108,6 +114,12 @@ public interface InputIterator<T> extends ResourceIterator<T>, SourceTraceabilit
         public int processors( int delta )
         {
             return actual.processors( delta );
+        }
+
+        @Override
+        public void receivePanic( Throwable cause )
+        {
+            actual.receivePanic( cause );
         }
     }
 

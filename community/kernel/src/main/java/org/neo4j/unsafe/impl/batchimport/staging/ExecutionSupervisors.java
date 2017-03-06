@@ -41,7 +41,7 @@ public class ExecutionSupervisors
 
     /**
      * With {@link Configuration#DEFAULT}.
-     * @see #superviseDynamicExecution(ExecutionMonitor, Configuration, Stage...).
+     * @see #superviseDynamicExecution(ExecutionMonitor, Configuration, Stage...)
      */
     public static void superviseDynamicExecution( ExecutionMonitor monitor, Stage... stages )
     {
@@ -49,7 +49,7 @@ public class ExecutionSupervisors
     }
 
     /**
-     * Supervises an execution with the given monitor AND a {@link DynamicProcessorAssigner} to giv
+     * Supervises an execution with the given monitor AND a {@link DynamicProcessorAssigner} to give
      * the execution a dynamic and optimal nature.
      *
      * @see #superviseExecution(ExecutionMonitor, Configuration, Stage...)
@@ -70,9 +70,9 @@ public class ExecutionSupervisors
     public static void superviseExecution( ExecutionMonitor monitor, Configuration config, Stage... stages )
     {
         ExecutionSupervisor supervisor = new ExecutionSupervisor( Clock.SYSTEM_CLOCK, monitor );
+        StageExecution[] executions = new StageExecution[stages.length];
         try
         {
-            StageExecution[] executions = new StageExecution[stages.length];
             for ( int i = 0; i < stages.length; i++ )
             {
                 executions[i] = stages[i].execute();
@@ -84,6 +84,14 @@ public class ExecutionSupervisors
             for ( Stage stage : stages )
             {
                 stage.close();
+            }
+
+            for ( StageExecution execution : executions )
+            {
+                if ( execution != null )
+                {
+                    execution.assertHealthy();
+                }
             }
         }
     }
