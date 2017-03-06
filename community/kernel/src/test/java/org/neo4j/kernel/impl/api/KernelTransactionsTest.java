@@ -69,6 +69,7 @@ import org.neo4j.storageengine.api.StoreReadLayer;
 import org.neo4j.storageengine.api.TransactionApplicationMode;
 import org.neo4j.storageengine.api.lock.ResourceLocker;
 import org.neo4j.storageengine.api.txstate.ReadableTransactionState;
+import org.neo4j.test.OtherThreadExecutor;
 import org.neo4j.test.Race;
 import org.neo4j.test.rule.concurrent.OtherThreadRule;
 
@@ -413,10 +414,60 @@ public class KernelTransactionsTest
         SecurityContext securityContext = mock( SecurityContext.class );
 
         availabilityGuard.shutdown();
-        Executors.newSingleThreadExecutor().submit( () -> stopKernelTransactions( kernelTransactions ) ).get();
+        t2.execute( (OtherThreadExecutor.WorkerCommand<Void,Void>) state ->
+        {
+            stopKernelTransactions( kernelTransactions );
+            return null;
+        } );
 
         expectedException.expect( DatabaseShutdownException.class );
         kernelTransactions.newInstance( KernelTransaction.Type.explicit, securityContext, 0L );
+    }
+
+    @Test
+    public void exceptionWhenStartingNewTransactionOnNonAvailableInstance() throws Throwable
+    {
+        KernelTransactions kernelTransactions = newKernelTransactions();
+        SecurityContext securityContext = mock( SecurityContext.class );
+
+        availabilityGuard.require( AvailabilityGuard.availabilityRequirement( "Perform store copy." ) );
+
+        t2.execute( (OtherThreadExecutor.WorkerCommand<Void,Void>) state ->
+        {
+            stopKernelTransactions( kernelTransactions );
+            return null;
+        } );
+
+        expectedException.expect( DatabaseUnavailableException.class );
+        kernelTransactions.newInstance( KernelTransaction.Type.explicit, securityContext, 0L );
+    }
+
+    @Test
+    public void exceptionWhenStartingNewTransactionOnStoppedKernelTransactions() throws Throwable
+    {
+        KernelTransactions kernelTransactions = newKernelTransactions();
+        SecurityContext securityContext = mock( SecurityContext.class );
+
+        t2.execute( (OtherThreadExecutor.WorkerCommand<Void,Void>) state ->
+        {
+            stopKernelTransactions( kernelTransactions );
+            return null;
+        } );
+
+        expectedException.expect( IllegalStateException.class );
+        kernelTransactions.newInstance( KernelTransaction.Type.explicit, securityContext, 0L );
+    }
+
+    @Test
+    public void startNewTransactionOnRestartedKErnelTransactions() throws Throwable
+    {
+        KernelTransactions kernelTransactions = newKernelTransactions();
+        SecurityContext securityContext = mock( SecurityContext.class );
+
+        kernelTransactions.stop();
+        kernelTransactions.start();
+        assertNotNull( "New transaction created by restarted kernel transactions component.",
+                kernelTransactions.newInstance( KernelTransaction.Type.explicit, securityContext, 0L ) );
     }
 
     private void stopKernelTransactions( KernelTransactions kernelTransactions )

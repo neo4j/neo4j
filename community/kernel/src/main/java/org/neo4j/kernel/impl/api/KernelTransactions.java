@@ -103,6 +103,13 @@ public class KernelTransactions extends LifecycleAdapter implements Supplier<Ker
     // Pool of unused transactions.
     private final MarshlandPool<KernelTransactionImplementation> localTxPool = new MarshlandPool<>( globalTxPool );
 
+    /**
+     * Kernel transactions component status. True when stopped, false when started.
+     * Will not allow to start new transaction by stopped instance of kernel transactions.
+     * Should simplify tracking of stopped component usage by up the stack components.
+     */
+    private volatile boolean stopped = true;
+
     public KernelTransactions( StatementLocksFactory statementLocksFactory,
                                ConstraintIndexCreator constraintIndexCreator,
                                StatementOperationContainer statementOperationContainer,
@@ -148,11 +155,11 @@ public class KernelTransactions extends LifecycleAdapter implements Supplier<Ker
         {
             while ( !newTransactionsLock.readLock().tryLock( 1, TimeUnit.SECONDS ) )
             {
-                assertDatabaseIsRunning();
+                assertRunning();
             }
             try
             {
-                assertDatabaseIsRunning();
+                assertRunning();
                 TransactionId lastCommittedTransaction = transactionIdStore.getLastCommittedTransaction();
                 KernelTransactionImplementation tx = localTxPool.acquire();
                 StatementLocks statementLocks = statementLocksFactory.newInstance();
@@ -219,6 +226,7 @@ public class KernelTransactions extends LifecycleAdapter implements Supplier<Ker
     @Override
     public void start() throws Throwable
     {
+        stopped = false;
         unblockNewTransactions();
     }
 
@@ -226,6 +234,7 @@ public class KernelTransactions extends LifecycleAdapter implements Supplier<Ker
     public void stop() throws Throwable
     {
         blockNewTransactions();
+        stopped = true;
     }
 
     @Override
@@ -290,11 +299,19 @@ public class KernelTransactions extends LifecycleAdapter implements Supplier<Ker
         return allTransactions;
     }
 
-    private void assertDatabaseIsRunning()
+    private void assertRunning()
     {
         if ( availabilityGuard.isShutdown() )
         {
             throw new DatabaseShutdownException();
+        }
+        if ( !availabilityGuard.isAvailable() )
+        {
+            throw new DatabaseUnavailableException();
+        }
+        if ( stopped )
+        {
+            throw new IllegalStateException( "Can't start new transaction with stopped " + getClass() );
         }
     }
 
