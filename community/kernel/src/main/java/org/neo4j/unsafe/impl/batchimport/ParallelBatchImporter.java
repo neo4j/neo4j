@@ -180,7 +180,7 @@ public class ParallelBatchImporter implements BatchImporter
 
             // Stage 1 -- nodes, properties, labels
             NodeStage nodeStage = new NodeStage( config, writeMonitor,
-                    nodes, idMapper, idGenerator, neoStore, inputCache,
+                    nodes, idMapper, idGenerator, neoStore, inputCache, neoStore.getLabelScanStore(),
                     storeUpdateMonitor, nodeRelationshipCache, memoryUsageStats );
             executeStages( nodeStage );
             if ( idMapper.needsPreparation() )

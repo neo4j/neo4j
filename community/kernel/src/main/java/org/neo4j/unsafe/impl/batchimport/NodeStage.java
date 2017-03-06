@@ -65,7 +65,7 @@ public class NodeStage extends Stage
 
     public NodeStage( Configuration config, IoMonitor writeMonitor,
             InputIterable<InputNode> nodes, IdMapper idMapper, IdGenerator idGenerator,
-            BatchingNeoStores neoStore, InputCache inputCache,
+            BatchingNeoStores neoStore, InputCache inputCache, LabelScanStore labelScanStore,
             EntityStoreUpdaterStep.Monitor storeUpdateMonitor,
             NodeRelationshipCache cache,
             StatsProvider memoryUsage ) throws IOException
@@ -83,6 +83,7 @@ public class NodeStage extends Stage
         add( new PropertyEncoderStep<>( control(), config, neoStore.getPropertyKeyRepository(), propertyStore ) );
         add( new NodeEncoderStep( control(), config, idMapper, idGenerator,
                 neoStore.getLabelRepository(), nodeStore, memoryUsage ) );
+        add( new LabelScanStorePopulationStep( control(), config, labelScanStore ) );
         add( new EntityStoreUpdaterStep<>( control(), config, nodeStore, propertyStore, writeMonitor,
                 storeUpdateMonitor ) );
     }

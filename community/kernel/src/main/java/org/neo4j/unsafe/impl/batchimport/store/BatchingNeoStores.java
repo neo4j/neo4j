@@ -30,11 +30,14 @@ import org.neo4j.io.pagecache.tracing.DefaultPageCacheTracer;
 import org.neo4j.io.pagecache.tracing.PageCacheTracer;
 import org.neo4j.io.pagecache.tracing.cursor.DefaultPageCursorTracerSupplier;
 import org.neo4j.io.pagecache.tracing.cursor.PageCursorTracerSupplier;
+import org.neo4j.kernel.api.labelscan.LabelScanStore;
 import org.neo4j.kernel.configuration.Config;
 import org.neo4j.kernel.extension.KernelExtensionFactory;
 import org.neo4j.kernel.extension.KernelExtensions;
 import org.neo4j.kernel.extension.UnsatisfiedDependencyStrategies;
+import org.neo4j.kernel.extension.dependency.NamedLabelScanStoreSelectionStrategy;
 import org.neo4j.kernel.impl.api.index.IndexStoreView;
+import org.neo4j.kernel.impl.api.scan.LabelScanStoreProvider;
 import org.neo4j.kernel.impl.factory.DatabaseInfo;
 import org.neo4j.kernel.impl.logging.LogService;
 import org.neo4j.kernel.impl.pagecache.ConfiguringPageCacheFactory;
@@ -62,6 +65,7 @@ import org.neo4j.unsafe.impl.batchimport.store.io.IoTracer;
 
 import static java.lang.String.valueOf;
 import static java.nio.file.StandardOpenOption.DELETE_ON_CLOSE;
+
 import static org.neo4j.graphdb.factory.GraphDatabaseSettings.dense_node_threshold;
 import static org.neo4j.graphdb.factory.GraphDatabaseSettings.pagecache_memory;
 import static org.neo4j.helpers.collection.MapUtil.stringMap;
@@ -85,13 +89,14 @@ public class BatchingNeoStores implements AutoCloseable
     private final PageCache pageCache;
     private final NeoStores neoStores;
     private final LifeSupport life = new LifeSupport();
+    private final LabelScanStore labelScanStore;
     private final IoTracer ioTracer;
     private final RecordFormats recordFormats;
 
     // Some stores are considered temporary during the import and will be reordered/restructured
     // into the main store. These temporary stores will live here
     private final NeoStores temporaryNeoStores;
-    private boolean externalPageCache;
+    private final boolean externalPageCache;
 
     private BatchingNeoStores( FileSystemAbstraction fileSystem, PageCache pageCache, File storeDir,
             RecordFormats recordFormats, Config neo4jConfig, LogService logService, AdditionalInitialIds initialIds,
@@ -155,12 +160,15 @@ public class BatchingNeoStores implements AutoCloseable
         dependencies.satisfyDependency( this );
         dependencies.satisfyDependency( logService );
         dependencies.satisfyDependency( IndexStoreView.EMPTY );
+        dependencies.satisfyDependency( pageCache );
         KernelContext kernelContext = new SimpleKernelContext( storeDir, DatabaseInfo.UNKNOWN, dependencies );
         @SuppressWarnings( { "unchecked", "rawtypes" } )
         KernelExtensions extensions = life.add( new KernelExtensions(
                 kernelContext, (Iterable) Service.load( KernelExtensionFactory.class ),
                 dependencies, UnsatisfiedDependencyStrategies.ignore() ) );
         life.start();
+        labelScanStore = life.add( extensions.resolveDependency( LabelScanStoreProvider.class,
+                new NamedLabelScanStoreSelectionStrategy( neo4jConfig ) ).getLabelScanStore() );
     }
 
     public static BatchingNeoStores batchingNeoStores( FileSystemAbstraction fileSystem, File storeDir,
@@ -291,6 +299,11 @@ public class BatchingNeoStores implements AutoCloseable
     public long getLastCommittedTransactionId()
     {
         return neoStores.getMetaDataStore().getLastCommittedTransactionId();
+    }
+
+    public LabelScanStore getLabelScanStore()
+    {
+        return labelScanStore;
     }
 
     public NeoStores getNeoStores()
