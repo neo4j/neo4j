@@ -769,8 +769,8 @@ order by a.COL1""")
   }
 
   test("should use predicates in the correct place") {
-    val advertiser = createNode(Map("name" -> "advertiser1"))
-    val thing = createNode(Map("name" -> "Color"))
+    val advertiser = createLabeledNode(Map("name" -> "advertiser1"), "Advertiser")
+    val thing = createLabeledNode(Map("name" -> "Color"), "Thing")
     val red = createNode(Map("name" -> "red"))
     val p1 = createNode(Map("name" -> "product1"))
     val p4 = createNode(Map("name" -> "product4"))
@@ -783,10 +783,9 @@ order by a.COL1""")
 
     //WHEN
     val result = executeWithAllPlannersAndRuntimesAndCompatibilityMode("""
-       MATCH (advertiser) -[:adv_has_product] ->(out) -[:ap_has_value] ->(red)<-[:aa_has_value]- (a)
+       MATCH (advertiser:Advertiser) -[:adv_has_product] ->(out) -[:ap_has_value] ->(red)<-[:aa_has_value]- (thing:Thing)
        WHERE red.name = 'red' AND out.name = 'product1'
-       AND id(advertiser) = {1} AND id(a) = {2}
-       RETURN out.name""", "1" -> advertiser.getId, "2" -> thing.getId)
+       RETURN out.name""", "2" -> thing.getId)
 
     //THEN
     result.toList should equal(List(Map("out.name" -> "product1")))

@@ -32,7 +32,7 @@ case object noUnnamedPatternElementsInPatternComprehension extends Condition {
       acc => (acc :+ s"Expression $expr contains pattern elements which are not named", None)
   }
 
-  private def containsUnNamedPatternElement(expr: RelationshipsPattern) = expr.exists {
+  private def containsUnNamedPatternElement(expr: RelationshipsPattern) = expr.treeExists {
     case p: PatternElement => p.variable.isEmpty
   }
 }

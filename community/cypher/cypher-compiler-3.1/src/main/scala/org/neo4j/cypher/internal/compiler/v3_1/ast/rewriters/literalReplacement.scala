@@ -80,7 +80,7 @@ object literalReplacement {
   }
 
   def apply(term: ASTNode): (Rewriter, Map[String, Any]) = {
-    val containsParameter: Boolean = term.exists {
+    val containsParameter: Boolean = term.treeExists {
       case _:Parameter => true
     }
 

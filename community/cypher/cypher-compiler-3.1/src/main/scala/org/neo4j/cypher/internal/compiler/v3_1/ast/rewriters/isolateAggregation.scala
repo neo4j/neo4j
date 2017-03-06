@@ -122,7 +122,7 @@ case object isolateAggregation extends Rewriter {
     case _ => Set.empty
   }
 
-  private def clauseNeedingWork(c: Clause): Boolean = c.exists {
+  private def clauseNeedingWork(c: Clause): Boolean = c.treeExists {
     case e: Expression => hasAggregateButIsNotAggregate(e)
   }
 }
