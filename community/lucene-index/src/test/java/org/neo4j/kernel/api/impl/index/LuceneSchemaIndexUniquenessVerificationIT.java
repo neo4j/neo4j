@@ -32,6 +32,7 @@ import org.junit.runners.Parameterized;
 import org.junit.runners.Parameterized.Parameter;
 import org.junit.runners.Parameterized.Parameters;
 
+import java.io.File;
 import java.io.IOException;
 import java.util.ArrayList;
 import java.util.Arrays;
@@ -94,16 +95,29 @@ public class LuceneSchemaIndexUniquenessVerificationIT
         } );
     }
 
+    // todo System.out here is part of investigation of flaky test that only shows in "real" pipeline
+    // todo should be removed when investigation is finished.
+    // todo date: 2017-03-06
     @Before
     public void setPartitionSize() throws Exception
     {
+        File directory = testDir.directory( "uniquenessVerification" );
+        File[] filesInDirectory = directory.listFiles();
+        boolean directoryIsEmpty = true;
+        if ( filesInDirectory != null )
+        {
+            directoryIsEmpty = filesInDirectory.length == 0;
+        }
+
         System.out.println( format( "%n### EXECUTING " + testName.getMethodName() ) );
+        System.out.println( "directory=" + directory + ", isEmpty=" + directoryIsEmpty );
+        System.out.println( "DOCS_PER_PARTITION=" + DOCS_PER_PARTITION );
 
         System.setProperty( "luceneSchemaIndex.maxPartitionSize", String.valueOf( DOCS_PER_PARTITION ) );
 
         index = LuceneSchemaIndexBuilder.create()
                 .uniqueIndex()
-                .withIndexRootFolder( testDir.directory( "uniquenessVerification" ) )
+                .withIndexRootFolder( directory )
                 .withIndexIdentifier( "index" )
                 .build();
 
