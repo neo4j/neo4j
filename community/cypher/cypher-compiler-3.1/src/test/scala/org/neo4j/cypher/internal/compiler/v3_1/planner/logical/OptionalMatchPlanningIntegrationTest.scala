@@ -139,7 +139,6 @@ class OptionalMatchPlanningIntegrationTest extends CypherFunSuite with LogicalPl
     val allNodesN: LogicalPlan = NodeByLabelScan(IdName("n"), LabelName("X") _, Set.empty)(solved)
     val propEquality: Expression =
       In(Property(varFor("m"), PropertyKeyName("prop") _) _, ListLiteral(List(SignedDecimalIntegerLiteral("42") _)) _) _
-    In(Property(varFor("m"), PropertyKeyName("prop") _) _, ListLiteral(List(SignedDecimalIntegerLiteral("42") _)) _) _
 
     val labelCheck: Expression =
       HasLabels(varFor("m"), List(LabelName("Y") _)) _

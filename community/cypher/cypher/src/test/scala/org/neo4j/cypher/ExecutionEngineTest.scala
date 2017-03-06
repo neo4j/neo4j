@@ -785,7 +785,7 @@ order by a.COL1""")
     val result = executeWithAllPlannersAndRuntimesAndCompatibilityMode("""
        MATCH (advertiser:Advertiser) -[:adv_has_product] ->(out) -[:ap_has_value] ->(red)<-[:aa_has_value]- (thing:Thing)
        WHERE red.name = 'red' AND out.name = 'product1'
-       RETURN out.name""", "2" -> thing.getId)
+       RETURN out.name""")
 
     //THEN
     result.toList should equal(List(Map("out.name" -> "product1")))
