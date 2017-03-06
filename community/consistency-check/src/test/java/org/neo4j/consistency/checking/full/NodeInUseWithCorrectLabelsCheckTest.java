@@ -39,7 +39,6 @@ import static org.mockito.Mockito.mock;
 import static org.mockito.Mockito.verify;
 import static org.mockito.Mockito.verifyNoMoreInteractions;
 import static org.mockito.Mockito.when;
-
 import static org.neo4j.consistency.checking.RecordCheckTestBase.inUse;
 import static org.neo4j.consistency.checking.RecordCheckTestBase.notInUse;
 import static org.neo4j.kernel.impl.store.DynamicNodeLabels.dynamicPointer;
@@ -150,6 +149,54 @@ public class NodeInUseWithCorrectLabelsCheckTest
 
         // then
         verify( report ).nodeDoesNotHaveExpectedLabel( node, missingLabelId );
+    }
+
+    @Test
+    public void reportNodeWithoutLabelsWhenLabelsAreInlined()
+    {
+        int nodeId = 42;
+        long[] indexLabelIds = {3};
+        long[] storeLabelIds = {};
+        long missingLabelId = 3;
+
+        RecordAccessStub recordAccess = new RecordAccessStub();
+        NodeRecord node = inUse( withInlineLabels( new NodeRecord( nodeId, false, 0, 0 ), storeLabelIds ) );
+
+        ConsistencyReport.LabelScanConsistencyReport report = mock( ConsistencyReport.LabelScanConsistencyReport.class );
+
+        // when
+        CheckerEngine<LabelScanDocument, ConsistencyReport.LabelScanConsistencyReport> engine = recordAccess.engine( null, report );
+        checker( indexLabelIds, true ).checkReference( null, node, engine, recordAccess );
+        recordAccess.checkDeferred();
+
+        // then
+        verify( report ).nodeDoesNotHaveExpectedLabel( node, missingLabelId );
+    }
+
+    @Test
+    public void reportNodeWithoutLabelsWhenLabelsAreDynamic()
+    {
+        int nodeId = 42;
+        long[] indexLabelIds = {3, 7, 9, 10};
+        long[] storeLabelIds = {};
+        long[] missingLabelIds = {3, 7, 9, 10};
+
+        RecordAccessStub recordAccess = new RecordAccessStub();
+        NodeRecord node = inUse( withDynamicLabels( recordAccess, new NodeRecord( nodeId, false, 0, 0 ), storeLabelIds ) );
+
+        ConsistencyReport.LabelScanConsistencyReport report =
+                mock( ConsistencyReport.LabelScanConsistencyReport.class );
+
+        // when
+        CheckerEngine<LabelScanDocument, ConsistencyReport.LabelScanConsistencyReport> engine = recordAccess.engine( null, report );
+        checker( indexLabelIds, true ).checkReference( null, node, engine, recordAccess );
+        recordAccess.checkDeferred();
+
+        // then
+        for ( long missingLabelId : missingLabelIds )
+        {
+            verify( report ).nodeDoesNotHaveExpectedLabel( node, missingLabelId );
+        }
     }
 
     @Test
