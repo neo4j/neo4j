@@ -67,8 +67,8 @@ public class CoarseBoundedProgressExecutionMonitorTest
 
         for ( int i = 0; i < 4; i++ )
         {
-            progressExecutionMonitor.start( singleExecution( 0, config ) );
-            progressExecutionMonitor.check( singleExecution( total / 4, config ) );
+            progressExecutionMonitor.start( execution( 0, config ) );
+            progressExecutionMonitor.check( execution( total / 4, config ) );
         }
         progressExecutionMonitor.done( 0, "Completed" );
 
@@ -77,23 +77,23 @@ public class CoarseBoundedProgressExecutionMonitorTest
 
     private long monitorSingleStageExecution( ProgressExecutionMonitor progressExecutionMonitor, Configuration config )
     {
-        progressExecutionMonitor.start( singleExecution( 0, config ) );
+        progressExecutionMonitor.start( execution( 0, config ) );
         long total = progressExecutionMonitor.total();
         long part = total / 10;
         for ( int i = 0; i < 9; i++ )
         {
-            progressExecutionMonitor.check( singleExecution( part * (i+1), config ) );
+            progressExecutionMonitor.check( execution( part * (i+1), config ) );
             assertTrue( progressExecutionMonitor.getProgress() < total );
         }
         progressExecutionMonitor.done( 0, "Test" );
         return total;
     }
 
-    private StageExecution[] singleExecution( long doneBatches, Configuration config )
+    private StageExecution execution( long doneBatches, Configuration config )
     {
         Step<?> step = ControlledStep.stepWithStats( "Test", 0, done_batches, doneBatches );
         StageExecution execution = new StageExecution( "Test", config, Collections.singletonList( step ), 0 );
-        return new StageExecution[] {execution};
+        return execution;
     }
 
     private Configuration config()

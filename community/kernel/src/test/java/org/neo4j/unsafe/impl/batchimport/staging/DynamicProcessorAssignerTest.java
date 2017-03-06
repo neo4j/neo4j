@@ -47,7 +47,7 @@ public class DynamicProcessorAssignerTest
         ControlledStep<?> slowStep = stepWithStats( "slow", 0, avg_processing_time, 10L, done_batches, 10L );
         ControlledStep<?> fastStep = stepWithStats( "fast", 0, avg_processing_time, 2L, done_batches, 10L );
 
-        StageExecution[] execution = executionOf( config, slowStep, fastStep );
+        StageExecution execution = executionOf( config, slowStep, fastStep );
         assigner.start( execution );
 
         // WHEN
@@ -72,7 +72,7 @@ public class DynamicProcessorAssignerTest
         ControlledStep<?> fastStep = spy( stepWithStats( "fast", 0, avg_processing_time, 2L, done_batches, 10L )
                 .setProcessors( 2 ) );
 
-        StageExecution[] execution = executionOf( config, slowStep, fastStep );
+        StageExecution execution = executionOf( config, slowStep, fastStep );
         assigner.start( execution );
 
         // WHEN checking
@@ -93,7 +93,7 @@ public class DynamicProcessorAssignerTest
         ControlledStep<?> fastStep = spy( stepWithStats( "fast", 0, avg_processing_time, 7L, done_batches, 10L )
                 .setProcessors( 3 ) );
 
-        StageExecution[] execution = executionOf( config, slowStep, fastStep );
+        StageExecution execution = executionOf( config, slowStep, fastStep );
         assigner.start( execution );
 
         // WHEN checking the first time
@@ -114,7 +114,7 @@ public class DynamicProcessorAssignerTest
         ControlledStep<?> aStep = stepWithStats( "slow", 0, avg_processing_time, 0L, done_batches, 0L );
         ControlledStep<?> anotherStep = stepWithStats( "fast", 0, avg_processing_time, 0L, done_batches, 0L );
 
-        StageExecution[] execution = executionOf( config, aStep, anotherStep );
+        StageExecution execution = executionOf( config, aStep, anotherStep );
         assigner.start( execution );
 
         // WHEN
@@ -140,7 +140,7 @@ public class DynamicProcessorAssignerTest
         Step<?> fast = spy( stepWithStats( "fast", 0, avg_processing_time, 100L, done_batches, 20L )
                 .setProcessors( 3 ) );
         Step<?> slow = stepWithStats( "slow", 1, avg_processing_time, 220L, done_batches, 20L );
-        StageExecution[] execution = executionOf( config, slow, wayFastest, fast );
+        StageExecution execution = executionOf( config, slow, wayFastest, fast );
         assigner.start( execution );
 
         // WHEN
@@ -162,9 +162,8 @@ public class DynamicProcessorAssignerTest
         };
     }
 
-    private StageExecution[] executionOf( Configuration config, Step<?>... steps )
+    private StageExecution executionOf( Configuration config, Step<?>... steps )
     {
-        StageExecution execution = new StageExecution( "Test", config, Arrays.asList( steps ), ORDER_SEND_DOWNSTREAM );
-        return new StageExecution[] {execution};
+        return new StageExecution( "Test", config, Arrays.asList( steps ), ORDER_SEND_DOWNSTREAM );
     }
 }

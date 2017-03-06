@@ -44,34 +44,31 @@ public class ProcessorAssignmentStrategies
         return new AbstractAssigner( Clock.SYSTEM_CLOCK, 10, TimeUnit.SECONDS )
         {
             @Override
-            public void start( StageExecution[] executions )
+            public void start( StageExecution execution )
             {
-                saturate( availableProcessor, executions );
-                registerProcessorCount( executions );
+                saturate( availableProcessor, execution );
+                registerProcessorCount( execution );
             }
 
-            private void saturate( final int availableProcessor, StageExecution[] executions )
+            private void saturate( final int availableProcessor, StageExecution execution )
             {
                 Random random = ThreadLocalRandom.current();
                 int processors = availableProcessor;
                 for ( int rounds = 0; rounds < availableProcessor && processors > 0; rounds++ )
                 {
-                    for ( StageExecution execution : executions )
+                    for ( Step<?> step : execution.steps() )
                     {
-                        for ( Step<?> step : execution.steps() )
+                        int before = step.processors( 0 );
+                        if ( random.nextBoolean() && step.processors( 1 ) > before && --processors == 0 )
                         {
-                            int before = step.processors( 0 );
-                            if ( random.nextBoolean() && step.processors( 1 ) > before && --processors == 0 )
-                            {
-                                return;
-                            }
+                            return;
                         }
                     }
                 }
             }
 
             @Override
-            public void check( StageExecution[] executions )
+            public void check( StageExecution execution )
             {   // We do everything in start
             }
         };
@@ -87,13 +84,13 @@ public class ProcessorAssignmentStrategies
             private int processors = availableProcessor;
 
             @Override
-            public void check( StageExecution[] executions )
+            public void check( StageExecution execution )
             {
-                saturate( executions );
-                registerProcessorCount( executions );
+                saturate( execution );
+                registerProcessorCount( execution );
             }
 
-            private void saturate( StageExecution[] executions )
+            private void saturate( StageExecution execution )
             {
                 if ( processors == 0 )
                 {
@@ -102,18 +99,15 @@ public class ProcessorAssignmentStrategies
 
                 Random random = ThreadLocalRandom.current();
                 int maxThisCheck = random.nextInt( processors-1 )+1;
-                for ( StageExecution execution : executions )
+                for ( Step<?> step : execution.steps() )
                 {
-                    for ( Step<?> step : execution.steps() )
+                    int before = step.processors( 0 );
+                    if ( random.nextBoolean() && step.processors( -1 ) < before )
                     {
-                        int before = step.processors( 0 );
-                        if ( random.nextBoolean() && step.processors( -1 ) < before )
+                        processors--;
+                        if ( --maxThisCheck == 0 )
                         {
-                            processors--;
-                            if ( --maxThisCheck == 0 )
-                            {
-                                return;
-                            }
+                            return;
                         }
                     }
                 }
@@ -130,16 +124,13 @@ public class ProcessorAssignmentStrategies
             super( clock, time, unit );
         }
 
-        protected void registerProcessorCount( StageExecution[] executions )
+        protected void registerProcessorCount( StageExecution execution )
         {
-            for ( StageExecution execution : executions )
+            Map<String,Integer> byStage = new HashMap<>();
+            processors.put( execution.getStageName(), byStage );
+            for ( Step<?> step : execution.steps() )
             {
-                Map<String,Integer> byStage = new HashMap<>();
-                processors.put( execution.getStageName(), byStage );
-                for ( Step<?> step : execution.steps() )
-                {
-                    byStage.put( step.name(), step.processors( 0 ) );
-                }
+                byStage.put( step.name(), step.processors( 0 ) );
             }
         }
 
