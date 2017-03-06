@@ -149,8 +149,6 @@ class HazelcastClient extends LifecycleAdapter implements TopologyService
     @Override
     public synchronized void stop() throws Throwable
     {
-        readReplicaRefreshTimer.cancel();
-
         if ( hazelcastInstance != null )
         {
             try
@@ -166,6 +164,8 @@ class HazelcastClient extends LifecycleAdapter implements TopologyService
                 log.warn( "Unable to shutdown Hazelcast", t );
             }
         }
+
+        readReplicaRefreshTimer.cancel();
     }
 
     private synchronized <T> T retry( Function<HazelcastInstance,T> hazelcastOperation )
