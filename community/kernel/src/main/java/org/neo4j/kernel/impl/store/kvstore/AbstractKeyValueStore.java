@@ -322,9 +322,11 @@ public abstract class AbstractKeyValueStore<Key> extends LifecycleAdapter
                     // won't close the state as it was before rotation began, which we're reverting to right here.
                     try ( LockWrapper ignored = writeLock( updateLock ) )
                     {
-                        // Only mark as failed if we're still running, because if this store has been stopped
-                        // this rotation task will be the only option to close the preState and marking
-                        // this rotation as failed will prevent preState to be closed.
+                        // Only mark as failed if we're still running.
+                        // If shutdown has been called while being in rotation state then shutdown will fail
+                        // without closing the store. This means that rotation takes over that responsibility.
+                        // Therefore avoid marking rotation state as failed in this case and let the store
+                        // be naturally closed before leaving this method.
                         if ( !stopped )
                         {
                             state = rotation.markAsFailed();
