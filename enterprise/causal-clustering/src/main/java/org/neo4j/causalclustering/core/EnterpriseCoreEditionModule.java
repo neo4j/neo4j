@@ -169,7 +169,6 @@ public class EnterpriseCoreEditionModule extends EditionModule
         watcherService = createFileSystemWatcherService( fileSystem, storeDir, logging,
                 platformModule.jobScheduler, fileWatcherFileNameFilter() );
         dependencies.satisfyDependencies( watcherService );
-        life.add( watcherService );
         LocalDatabase localDatabase = new LocalDatabase( platformModule.storeDir,
                 new StoreFiles( fileSystem, platformModule.pageCache ),
                 platformModule.dataSourceManager,

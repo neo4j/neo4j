@@ -130,7 +130,6 @@ public class EnterpriseReadReplicaEditionModule extends EditionModule
         watcherService = createFileSystemWatcherService( fileSystem, storeDir, logging,
                 platformModule.jobScheduler, fileWatcherFileNameFilter() );
         dependencies.satisfyDependencies( watcherService );
-        life.add( watcherService );
 
         GraphDatabaseFacade graphDatabaseFacade = platformModule.graphDatabaseFacade;
 
