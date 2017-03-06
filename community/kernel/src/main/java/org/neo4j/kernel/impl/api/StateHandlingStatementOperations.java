@@ -571,8 +571,9 @@ public class StateHandlingStatementOperations implements
     @Override
     public NewIndexDescriptor indexCreate( KernelStatement state, NodePropertyDescriptor descriptor )
     {
-        state.txState().indexRuleDoAdd( IndexBoundary.map( descriptor ) );
-        return IndexBoundary.map( descriptor );
+        NewIndexDescriptor newIndexDescriptor = IndexBoundary.map( descriptor );
+        state.txState().indexRuleDoAdd( newIndexDescriptor );
+        return newIndexDescriptor;
     }
 
     @Override
