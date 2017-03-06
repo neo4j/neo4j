@@ -172,6 +172,20 @@ public class LatestCheckPointFinderTest
     }
 
     @Test
+    public void twoLogFilesNoCheckPointsTwoCommits() throws Throwable
+    {
+        // given
+        long txId = 21;
+        setupLogFiles( logFile(), logFile( start(), commit( txId ), start(), commit( txId + 1 ) ) );
+
+        // when
+        LatestCheckPoint latestCheckPoint = finder.find( endLogVersion );
+
+        // then
+        assertLatestCheckPoint( false, true, txId, startLogVersion, latestCheckPoint );
+    }
+
+    @Test
     public void latestLogFileContainingACheckPointOnly() throws Throwable
     {
         // given

@@ -58,6 +58,7 @@ public class LatestCheckPointFinder
         long version = fromVersionBackwards;
         long versionToSearchForCommits = fromVersionBackwards;
         LogEntryStart latestStartEntry = null;
+        LogEntryStart oldestStartEntry = null;
         long oldestVersionFound = -1;
         while ( version >= INITIAL_LOG_VERSION )
         {
@@ -73,6 +74,7 @@ public class LatestCheckPointFinder
             CheckPoint latestCheckPoint = null;
             ReadableLogChannel recoveredDataChannel =
                     new ReadAheadLogChannel( channel, NO_MORE_CHANNELS );
+            boolean firstStartEntry = true;
 
             try ( LogEntryCursor cursor = new LogEntryCursor( logEntryReader, recoveredDataChannel ) )
             {
@@ -84,37 +86,29 @@ public class LatestCheckPointFinder
                     {
                         latestCheckPoint = entry.as();
                     }
-                    if ( entry instanceof LogEntryStart && ( version == versionToSearchForCommits ) )
+                    if ( entry instanceof LogEntryStart )
                     {
-                        latestStartEntry = entry.as();
+                        LogEntryStart startEntry = entry.as();
+                        if ( version == versionToSearchForCommits )
+                        {
+                            latestStartEntry = startEntry;
+                        }
+
+                        // The scan goes backwards by log version, although forward per log version
+                        // Oldest start entry will be the first in the last log version scanned.
+                        if ( firstStartEntry )
+                        {
+                            oldestStartEntry = startEntry;
+                            firstStartEntry = false;
+                        }
                     }
                 }
             }
 
             if ( latestCheckPoint != null )
             {
-                // Is the latest start entry in this log file version later than what the latest check point targets?
-                LogPosition target = latestCheckPoint.getLogPosition();
-                boolean startEntryAfterCheckPoint = latestStartEntry != null &&
-                        latestStartEntry.getStartPosition().compareTo( target ) >= 0;
-                if ( !startEntryAfterCheckPoint )
-                {
-                    if ( target.getLogVersion() < version )
-                    {
-                        // This check point entry targets a previous log file.
-                        // Go there and see if there's a transaction. Reader is capped to that log version.
-                        startEntryAfterCheckPoint = extractFirstTxIdAfterPosition( target, target.getLogVersion() ) !=
-                                LatestCheckPoint.NO_TRANSACTION_ID;
-                    }
-                }
-
-                // Extract first transaction id after check point target position.
-                // Reader may continue into log files after the initial version.
-                long firstTxIdAfterCheckPoint = startEntryAfterCheckPoint
-                        ? extractFirstTxIdAfterPosition( target, fromVersionBackwards )
-                        : LatestCheckPoint.NO_TRANSACTION_ID;
-                return new LatestCheckPoint( latestCheckPoint, startEntryAfterCheckPoint,
-                        firstTxIdAfterCheckPoint, oldestVersionFound );
+                return latestCheckPoint( fromVersionBackwards, version, latestStartEntry, oldestVersionFound,
+                        latestCheckPoint );
             }
 
             version--;
@@ -126,13 +120,39 @@ public class LatestCheckPointFinder
             }
         }
 
-        boolean commitsAfterCheckPoint = latestStartEntry != null;
+        boolean commitsAfterCheckPoint = oldestStartEntry != null;
         long firstTxAfterPosition = commitsAfterCheckPoint
-                ? extractFirstTxIdAfterPosition( latestStartEntry.getStartPosition(),
-                        latestStartEntry.getStartPosition().getLogVersion() )
+                ? extractFirstTxIdAfterPosition( oldestStartEntry.getStartPosition(), fromVersionBackwards )
                 : LatestCheckPoint.NO_TRANSACTION_ID;
 
         return new LatestCheckPoint( null, commitsAfterCheckPoint, firstTxAfterPosition, oldestVersionFound );
+    }
+
+    private LatestCheckPoint latestCheckPoint( long fromVersionBackwards, long version, LogEntryStart latestStartEntry,
+            long oldestVersionFound, CheckPoint latestCheckPoint ) throws IOException
+    {
+        // Is the latest start entry in this log file version later than what the latest check point targets?
+        LogPosition target = latestCheckPoint.getLogPosition();
+        boolean startEntryAfterCheckPoint = latestStartEntry != null &&
+                latestStartEntry.getStartPosition().compareTo( target ) >= 0;
+        if ( !startEntryAfterCheckPoint )
+        {
+            if ( target.getLogVersion() < version )
+            {
+                // This check point entry targets a previous log file.
+                // Go there and see if there's a transaction. Reader is capped to that log version.
+                startEntryAfterCheckPoint = extractFirstTxIdAfterPosition( target, target.getLogVersion() ) !=
+                        LatestCheckPoint.NO_TRANSACTION_ID;
+            }
+        }
+
+        // Extract first transaction id after check point target position.
+        // Reader may continue into log files after the initial version.
+        long firstTxIdAfterCheckPoint = startEntryAfterCheckPoint
+                ? extractFirstTxIdAfterPosition( target, fromVersionBackwards )
+                : LatestCheckPoint.NO_TRANSACTION_ID;
+        return new LatestCheckPoint( latestCheckPoint, startEntryAfterCheckPoint,
+                firstTxIdAfterCheckPoint, oldestVersionFound );
     }
 
     /**
