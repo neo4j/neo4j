@@ -43,7 +43,7 @@ public class CheckPointScheduler extends LifecycleAdapter
     private final JobScheduler scheduler;
     private final long recurringPeriodMillis;
     private final DatabaseHealth health;
-    private volatile Throwable[] failures = new Throwable[MAX_CONSECUTIVE_FAILURES_TOLERANCE];
+    private final Throwable[] failures = new Throwable[MAX_CONSECUTIVE_FAILURES_TOLERANCE];
     private volatile int consecutiveFailures;
     private final Runnable job = new Runnable()
     {
