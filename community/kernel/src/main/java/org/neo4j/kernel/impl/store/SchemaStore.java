@@ -30,7 +30,7 @@ import java.util.List;
 import org.neo4j.io.pagecache.PageCache;
 import org.neo4j.kernel.api.exceptions.schema.MalformedSchemaRuleException;
 import org.neo4j.kernel.configuration.Config;
-import org.neo4j.kernel.impl.store.allocator.ReusableRecordsAllocator;
+import org.neo4j.kernel.impl.store.allocator.ReusableRecordsCompositeAllocator;
 import org.neo4j.kernel.impl.store.format.RecordFormats;
 import org.neo4j.kernel.impl.store.id.IdGeneratorFactory;
 import org.neo4j.kernel.impl.store.id.IdType;
@@ -40,6 +40,7 @@ import org.neo4j.kernel.impl.store.record.SchemaRuleSerialization;
 import org.neo4j.logging.LogProvider;
 import org.neo4j.storageengine.api.schema.SchemaRule;
 
+import static java.util.Collections.singleton;
 import static org.neo4j.kernel.impl.store.record.RecordLoad.CHECK;
 
 public class SchemaStore extends AbstractDynamicStore implements Iterable<SchemaRule>
@@ -74,7 +75,7 @@ public class SchemaStore extends AbstractDynamicStore implements Iterable<Schema
         serializer = serializer.append( rule );
         List<DynamicRecord> records = new ArrayList<>();
         DynamicRecord record = getRecord( rule.getId(), nextRecord(), CHECK );
-        ReusableRecordsAllocator recordAllocator = new ReusableRecordsAllocator( this.getRecordSize(), record );
+        DynamicRecordAllocator recordAllocator = new ReusableRecordsCompositeAllocator( singleton( record ), this );
         allocateRecordsFromBytes( records, serializer.serialize(), recordAllocator );
         return records;
     }

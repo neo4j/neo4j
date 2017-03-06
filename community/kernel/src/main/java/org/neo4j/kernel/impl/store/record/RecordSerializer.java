@@ -25,7 +25,7 @@ import java.util.List;
 
 public class RecordSerializer
 {
-    private final List<RecordSerializable> serializables = new ArrayList<RecordSerializable>();
+    private final List<RecordSerializable> serializables = new ArrayList<>();
 
     public RecordSerializer append( RecordSerializable serializable )
     {
@@ -35,19 +35,10 @@ public class RecordSerializer
 
     public byte[] serialize()
     {
-        int[] lengths = new int[serializables.size()];
-        int totalLength = 0;
-        for ( int i = 0; i < serializables.size(); i++ )
-        {
-            totalLength += lengths[i] = serializables.get( i ).length();
-        }
-
+        int totalLength = serializables.stream().mapToInt( RecordSerializable::length ).sum();
         byte[] array = new byte[totalLength];
         ByteBuffer target = ByteBuffer.wrap( array );
-        for ( int i = 0; i < serializables.size(); i++ )
-        {
-            serializables.get( i ).serialize( target );
-        }
+        serializables.forEach( s -> s.serialize( target ) );
         return array;
     }
 }
