@@ -31,11 +31,10 @@ import static org.neo4j.kernel.configuration.Settings.setting;
 @Description("Settings available in the Enterprise server")
 public interface EnterpriseServerSettings
 {
-    @Description( "Configure the operating mode of the database -- 'SINGLE' for stand-alone operation, 'HA' for " +
-            "operating as a member in a cluster, 'ARBITER' for an HA-only cluster member with no database, " +
-            "CORE for a core member of a Causal Clustering cluster, or READ_REPLICA for read replica." +
-            " cluster" +
-            ". " )
+    @Description( "Configure the operating mode of the database -- 'SINGLE' for stand-alone operation, " +
+            "'HA' for operating as a member in an HA cluster, 'ARBITER' for a cluster member with no database in an HA cluster, " +
+            "'CORE' for operating as a core member of a Causal Cluster, " +
+            "or 'READ_REPLICA' for operating as a read replica member of a Causal Cluster." )
     Setting<String> mode = setting( "dbms.mode", STRING, "SINGLE" );
 
     @SuppressWarnings("unused") // accessed from the browser
