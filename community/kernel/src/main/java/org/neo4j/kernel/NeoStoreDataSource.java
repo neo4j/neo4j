@@ -44,6 +44,7 @@ import org.neo4j.kernel.api.index.SchemaIndexProvider;
 import org.neo4j.kernel.api.labelscan.LabelScanStore;
 import org.neo4j.kernel.api.legacyindex.AutoIndexing;
 import org.neo4j.kernel.configuration.Config;
+import org.neo4j.kernel.extension.dependency.DeleteStoresFromOtherLabelScanStoreProviders;
 import org.neo4j.kernel.extension.dependency.HighestSelectionStrategy;
 import org.neo4j.kernel.extension.dependency.NamedLabelScanStoreSelectionStrategy;
 import org.neo4j.kernel.guard.Guard;
@@ -405,6 +406,8 @@ public class NeoStoreDataSource implements Lifecycle, IndexProviders
 
         labelScanStoreProvider = dependencyResolver.resolveDependency( LabelScanStoreProvider.class,
                 new NamedLabelScanStoreSelectionStrategy( config ) );
+        dependencyResolver.resolveDependency( LabelScanStoreProvider.class,
+                new DeleteStoresFromOtherLabelScanStoreProviders( labelScanStoreProvider ) );
 
         IndexConfigStore indexConfigStore = new IndexConfigStore( storeDir, fs );
         dependencies.satisfyDependency( lockService );

@@ -321,7 +321,8 @@ public class NativeLabelScanStore implements LabelScanStore
         index = new GBPTree<>( pageCache, storeFile, new LabelScanLayout(), pageSize, GBPTree.NO_MONITOR );
     }
 
-    private void drop() throws IOException
+    @Override
+    public void drop() throws IOException
     {
         storeFileHandle().delete();
     }

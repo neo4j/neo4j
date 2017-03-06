@@ -124,4 +124,11 @@ public interface LabelScanStore extends Lifecycle
      */
     @Override
     void shutdown() throws IOException;
+
+    /**
+     * Drops any persistent storage backing this store.
+     *
+     * @throws IOException on I/O error.
+     */
+    void drop() throws IOException;
 }

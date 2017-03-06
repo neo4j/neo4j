@@ -82,4 +82,9 @@ public class LabelScanStoreProvider extends LifecycleAdapter
             return fullStoreStream.applyTo( writer );
         }
     }
+
+    public void drop() throws IOException
+    {
+        labelScanStore.drop();
+    }
 }
