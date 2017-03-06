@@ -26,6 +26,24 @@ import org.scalatest.matchers.{MatchResult, Matcher}
 
 class MatchAggregationsBackedByCountStoreAcceptanceTest extends ExecutionEngineFunSuite with QueryStatisticsTestSupport with NewPlannerTestSupport {
 
+  test("do not plan counts store lookup for loop matches") {
+    val n = createNode()
+    // two loops
+    relate(n, n)
+    relate(n, n)
+    // one non-loop
+    relate(n, createNode())
+
+    val resultStar = executeWithAllPlannersAndCompatibilityMode("MATCH (a)-->(a) RETURN count(*)")
+    val resultVar = executeWithAllPlannersAndCompatibilityMode("MATCH (a)-[r]->(a) RETURN count(r)")
+
+    resultStar.toList should equal(List(Map("count(*)" -> 2)))
+    resultVar.toList should equal(List(Map("count(r)" -> 2)))
+
+    resultStar.executionPlanDescription() shouldNot includeOperation("RelationshipCountFromCountStore")
+    resultVar.executionPlanDescription() shouldNot includeOperation("RelationshipCountFromCountStore")
+  }
+
   test("counts nodes using count store") {
     // Given
     withModel(
@@ -34,7 +52,7 @@ class MatchAggregationsBackedByCountStoreAcceptanceTest extends ExecutionEngineF
       query = "MATCH (n) RETURN count(n)", f = { result =>
 
         // Then
-        result.columnAs("count(n)").toSet[Int] should equal(Set(2))
+        result.columnAs("count(n)").toSet[Int] should equal(Set(3))
 
     })
   }
@@ -47,7 +65,7 @@ class MatchAggregationsBackedByCountStoreAcceptanceTest extends ExecutionEngineF
       query = "MATCH (n) RETURN COUNT(n)", f = { result =>
 
         // Then
-        result.columnAs("COUNT(n)").toSet[Int] should equal(Set(2))
+        result.columnAs("COUNT(n)").toSet[Int] should equal(Set(3))
 
       })
   }
@@ -60,7 +78,7 @@ class MatchAggregationsBackedByCountStoreAcceptanceTest extends ExecutionEngineF
       query = "MATCH (n) RETURN count(*)", f = { result =>
 
         // Then
-        result.columnAs("count(*)").toSet[Int] should equal(Set(2))
+        result.columnAs("count(*)").toSet[Int] should equal(Set(3))
 
     })
   }
@@ -96,10 +114,10 @@ class MatchAggregationsBackedByCountStoreAcceptanceTest extends ExecutionEngineF
     withModel(
 
       // When
-      query = "MATCH (n) RETURN count(n)/2*5 as someNum", f = { result =>
+      query = "MATCH (n) RETURN count(n)/2.0*5 as someNum", f = { result =>
 
         // Then
-        result.columnAs("someNum").toSet[Int] should equal(Set(5))
+        result.columnAs("someNum").toSet[Int] should equal(Set(7.5))
 
       })
   }
@@ -112,7 +130,7 @@ class MatchAggregationsBackedByCountStoreAcceptanceTest extends ExecutionEngineF
       query = "MATCH ()-[r]->() RETURN count(r)", f = { result =>
 
         // Then
-        result.columnAs("count(r)").toSet[Int] should equal(Set(1))
+        result.columnAs("count(r)").toSet[Int] should equal(Set(2))
 
       })
   }
@@ -125,7 +143,7 @@ class MatchAggregationsBackedByCountStoreAcceptanceTest extends ExecutionEngineF
       query = "MATCH ()-->() RETURN count(*)", f = { result =>
 
         // Then
-        result.columnAs("count(*)").toSet[Int] should equal(Set(1))
+        result.columnAs("count(*)").toSet[Int] should equal(Set(2))
 
       })
   }
@@ -608,6 +626,7 @@ class MatchAggregationsBackedByCountStoreAcceptanceTest extends ExecutionEngineF
          |CREATE (p:$label1 {name: 'Petra'})
          |CREATE (s:$label2 {name: 'Steve'})
          |CREATE (p)-[:$type1]->(s)
+         |CREATE (a)-[:LOOP]->(a)
       """.stripMargin)
 
     val result: InternalExecutionResult = executeWithAllPlannersAndCompatibilityMode(query)

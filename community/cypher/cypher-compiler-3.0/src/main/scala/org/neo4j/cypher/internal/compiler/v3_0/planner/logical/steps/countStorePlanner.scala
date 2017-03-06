@@ -88,12 +88,15 @@ case object countStorePlanner {
       val lpp = context.logicalPlanProducer
       val aggregation1 = lpp.planCountStoreNodeAggregation(query, IdName(columnName), label, argumentIds)(context)
       labelCheck(label)(Some(aggregation1))
-    } else if (patternRelationships.size == 1) { // MATCH ()-[r]->(), MATCH ()-[r:X]->(), MATCH ()-[r:X|Y]->()
+    } else if (patternRelationships.size == 1 && notLoop(patternRelationships.head)) { // MATCH ()-[r]->(), MATCH ()-[r:X]->(), MATCH ()-[r:X|Y]->()
       labelCheck(None)(
         trySolveRelationshipAggregation(query, columnName, variableName, patternRelationships, argumentIds, selections)
       )
     } else None
   }
+
+  // the counts store counts loops twice
+  private def notLoop(r: PatternRelationship) = r.nodes._1 != r.nodes._2
 
   private def trySolveRelationshipAggregation(query: PlannerQuery, columnName: String, variableName: Option[String],
                                               patternRelationships: Set[PatternRelationship], argumentIds: Set[IdName],
