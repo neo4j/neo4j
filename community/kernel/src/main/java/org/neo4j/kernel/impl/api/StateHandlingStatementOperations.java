@@ -139,7 +139,7 @@ public class StateHandlingStatementOperations implements
     private final AutoIndexing autoIndexing;
     private final ConstraintIndexCreator constraintIndexCreator;
     private final LegacyIndexStore legacyIndexStore;
-    private final IndexTxStateUpdater indexUpdater;
+    private final IndexTxStateUpdater indexTxStateUpdater;
 
     public StateHandlingStatementOperations(
             StoreReadLayer storeLayer, AutoIndexing propertyTrackers,
@@ -150,7 +150,7 @@ public class StateHandlingStatementOperations implements
         this.autoIndexing = propertyTrackers;
         this.constraintIndexCreator = constraintIndexCreator;
         this.legacyIndexStore = legacyIndexStore;
-        this.indexUpdater = new IndexTxStateUpdater( this, this );
+        this.indexTxStateUpdater = new IndexTxStateUpdater( this, this );
     }
 
     // <Cursors>
@@ -514,7 +514,7 @@ public class StateHandlingStatementOperations implements
 
             state.txState().nodeDoAddLabel( labelId, node.id() );
 
-            indexUpdater.updateTxStateIndexOnLabelChange( state, labelId, node, ADDED_LABEL );
+            indexTxStateUpdater.onLabelChange( state, labelId, node, ADDED_LABEL );
 
             return true;
         }
@@ -534,7 +534,7 @@ public class StateHandlingStatementOperations implements
 
             state.txState().nodeDoRemoveLabel( labelId, node.id() );
 
-            indexUpdater.updateTxStateIndexOnLabelChange( state, labelId, node, REMOVED_LABEL );
+            indexTxStateUpdater.onLabelChange( state, labelId, node, REMOVED_LABEL );
 
             return true;
         }
@@ -1045,13 +1045,14 @@ public class StateHandlingStatementOperations implements
             if ( existingProperty == NO_SUCH_PROPERTY )
             {
                 state.txState().nodeDoAddProperty( node.id(), property );
-                indexUpdater.updateTxStateIndexOnProperty( state, node, indexUpdater.add( property ) );
+                indexTxStateUpdater.onPropertyChange( state, node, indexTxStateUpdater.add( property ) );
                 return Property.noProperty( property.propertyKeyId(), EntityType.NODE, node.id() );
             }
             else
             {
                 state.txState().nodeDoChangeProperty( node.id(), existingProperty, property );
-                indexUpdater.updateTxStateIndexOnProperty( state, node, indexUpdater.change( existingProperty, property ) );
+                indexTxStateUpdater
+                        .onPropertyChange( state, node, indexTxStateUpdater.change( existingProperty, property ) );
                 return existingProperty;
             }
         }
@@ -1118,7 +1119,7 @@ public class StateHandlingStatementOperations implements
                     autoIndexing.nodes().propertyRemoved( ops, nodeId, propertyKeyId );
                     state.txState().nodeDoRemoveProperty( node.id(), existingProperty );
 
-                    indexUpdater.updateTxStateIndexOnProperty( state, node, indexUpdater.remove( existingProperty ) );
+                    indexTxStateUpdater.onPropertyChange( state, node, indexTxStateUpdater.remove( existingProperty ) );
                 }
             }
 

@@ -54,7 +54,7 @@ public class IndexTxStateUpdater
 
     public enum LabelChangeType { ADDED_LABEL, REMOVED_LABEL };
 
-    public void updateTxStateIndexOnLabelChange( KernelStatement state, int labelId, NodeItem node, LabelChangeType changeType )
+    public void onLabelChange( KernelStatement state, int labelId, NodeItem node, LabelChangeType changeType )
             throws EntityNotFoundException
     {
         PrimitiveIntSet propertyIds = Primitive.intSet();
@@ -183,7 +183,7 @@ public class IndexTxStateUpdater
         };
     }
 
-    public void updateTxStateIndexOnProperty( KernelStatement state, NodeItem node, PropertyUpdate update )
+    public void onPropertyChange( KernelStatement state, NodeItem node, PropertyUpdate update )
             throws EntityNotFoundException
     {
         PrimitiveIntSet nodePropertyIds = null;
