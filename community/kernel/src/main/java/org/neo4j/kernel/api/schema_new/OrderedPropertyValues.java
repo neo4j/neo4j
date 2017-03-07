@@ -24,6 +24,7 @@ import java.util.Comparator;
 
 import org.neo4j.kernel.api.properties.DefinedProperty;
 import org.neo4j.kernel.api.properties.Property;
+import org.neo4j.kernel.impl.util.Validators;
 
 import static org.neo4j.kernel.api.StatementConstants.NO_SUCH_PROPERTY_KEY;
 import static org.neo4j.kernel.impl.api.PropertyValueComparison.COMPARE_VALUES;
@@ -205,4 +206,12 @@ public class OrderedPropertyValues
         }
         return compare;
     };
+
+    public void validate()
+    {
+        for ( DefinedProperty p : properties )
+        {
+            Validators.INDEX_VALUE_VALIDATOR.validate( p.value() );
+        }
+    }
 }

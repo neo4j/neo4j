@@ -105,6 +105,7 @@ public class IndexTxStateUpdater
                         state, nodePropertyIds, index, node, after );
                 if ( values != null )
                 {
+                    values.validate();
                     state.txState().indexDoUpdateEntry( index.schema(), node.id(), null, values );
                 }
             }
