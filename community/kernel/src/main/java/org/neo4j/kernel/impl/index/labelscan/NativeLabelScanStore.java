@@ -292,7 +292,7 @@ public class NativeLabelScanStore implements LabelScanStore
         {
             // GBPTree is corrupt. Try to rebuild.
             monitor.notValidIndex();
-            drop();
+            dropStrict();
             instantiateTree();
             needsRebuild = true;
         }
@@ -323,6 +323,18 @@ public class NativeLabelScanStore implements LabelScanStore
 
     @Override
     public void drop() throws IOException
+    {
+        try
+        {
+            dropStrict();
+        }
+        catch ( NoSuchFileException e )
+        {
+            // Even better, it didn't even exist
+        }
+    }
+
+    private void dropStrict() throws IOException
     {
         storeFileHandle().delete();
     }

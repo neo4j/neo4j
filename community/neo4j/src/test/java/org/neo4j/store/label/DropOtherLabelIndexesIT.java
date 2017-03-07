@@ -22,6 +22,9 @@ package org.neo4j.store.label;
 import org.junit.Rule;
 import org.junit.Test;
 
+import java.util.HashSet;
+import java.util.Set;
+
 import org.neo4j.graphdb.GraphDatabaseService;
 import org.neo4j.graphdb.Node;
 import org.neo4j.graphdb.ResourceIterator;
@@ -30,6 +33,7 @@ import org.neo4j.graphdb.factory.GraphDatabaseSettings;
 import org.neo4j.graphdb.factory.GraphDatabaseSettings.LabelIndex;
 import org.neo4j.test.TestGraphDatabaseFactory;
 import org.neo4j.test.TestLabels;
+import org.neo4j.test.rule.RandomRule;
 import org.neo4j.test.rule.TestDirectory;
 
 import static org.junit.Assert.assertEquals;
@@ -38,6 +42,9 @@ import static org.neo4j.helpers.collection.Iterators.asSet;
 public class DropOtherLabelIndexesIT
 {
     private static final TestLabels LABEL = TestLabels.LABEL_ONE;
+
+    @Rule
+    public final RandomRule random = new RandomRule();
 
     @Rule
     public final TestDirectory directory = TestDirectory.testDirectory();
@@ -50,30 +57,27 @@ public class DropOtherLabelIndexesIT
     public void shouldDropUnselectedLabelIndexes() throws Exception
     {
         // GIVEN
-        GraphDatabaseService db = db( LabelIndex.NATIVE );
-        Node nodeA = createNode( db );
-        assertNodes( db, nodeA );
-        db.shutdown();
+        LabelIndex[] types = LabelIndex.values();
+        Set<Node> expectedNodes = new HashSet<>();
+        for ( int i = 0; i < 5; i++ )
+        {
+            // WHEN
+            GraphDatabaseService db = db( random.among( types ) );
+            Node node = createNode( db );
+            expectedNodes.add( node );
 
-        // WHEN
-        db = db( LabelIndex.LUCENE );
-        Node nodeB = createNode( db );
-        assertNodes( db, nodeA, nodeB );
-        db.shutdown();
-
-        // THEN
-        db = db( LabelIndex.NATIVE );
-        Node nodeC = createNode( db );
-        assertNodes( db, nodeA, nodeB, nodeC );
-        db.shutdown();
+            // THEN
+            assertNodes( db, expectedNodes );
+            db.shutdown();
+        }
     }
 
-    private void assertNodes( GraphDatabaseService db, Node... expectedNodes )
+    private void assertNodes( GraphDatabaseService db, Set<Node> expectedNodes )
     {
         try ( Transaction tx = db.beginTx();
                 ResourceIterator<Node> found = db.findNodes( LABEL ) )
         {
-            assertEquals( asSet( expectedNodes ), asSet( found ) );
+            assertEquals( expectedNodes, asSet( found ) );
             tx.success();
         }
     }
