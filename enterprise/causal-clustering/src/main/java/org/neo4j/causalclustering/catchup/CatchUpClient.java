@@ -31,7 +31,6 @@ import java.time.Clock;
 import java.util.Optional;
 import java.util.concurrent.CompletableFuture;
 
-import org.neo4j.causalclustering.discovery.CatchupServerAddress;
 import org.neo4j.causalclustering.discovery.TopologyService;
 import org.neo4j.causalclustering.identity.MemberId;
 import org.neo4j.causalclustering.messaging.CatchUpRequest;
@@ -72,11 +71,14 @@ public class CatchUpClient extends LifecycleAdapter
             CatchUpResponseCallback<T> responseHandler ) throws CatchUpClientException
     {
         CompletableFuture<T> future = new CompletableFuture<>();
-        Optional<AdvertisedSocketAddress> catchUpAddress =
-                topologyService.allServers().find( upstream ).map( CatchupServerAddress::getCatchupServer );
+        Optional<AdvertisedSocketAddress> catchUpAddress = topologyService.findCatchupAddress( upstream );
 
-        CatchUpChannel channel = pool.acquire( catchUpAddress.orElseThrow(
-                () -> new CatchUpClientException( "Cannot find the target member socket address" ) ) );
+        if ( !catchUpAddress.isPresent() )
+        {
+            throw new CatchUpClientException( "Cannot find the target member socket address" );
+        }
+
+        CatchUpChannel channel = pool.acquire( catchUpAddress.get() );
 
         future.whenComplete( ( result, e ) -> {
             if ( e == null )

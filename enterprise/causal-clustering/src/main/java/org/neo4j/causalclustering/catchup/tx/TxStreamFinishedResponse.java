@@ -28,15 +28,22 @@ import static java.lang.String.format;
 public class TxStreamFinishedResponse
 {
     private final CatchupResult status;
+    private final long latestTxId;
 
     public CatchupResult status()
     {
         return status;
     }
 
-    TxStreamFinishedResponse( CatchupResult status )
+    TxStreamFinishedResponse( CatchupResult status, long latestTxId )
     {
         this.status = status;
+        this.latestTxId = latestTxId;
+    }
+
+    public long latestTxId()
+    {
+        return latestTxId;
     }
 
     @Override
@@ -47,18 +54,22 @@ public class TxStreamFinishedResponse
         if ( o == null || getClass() != o.getClass() )
         { return false; }
         TxStreamFinishedResponse that = (TxStreamFinishedResponse) o;
-        return status == that.status;
+        return latestTxId == that.latestTxId &&
+               status == that.status;
     }
 
     @Override
     public int hashCode()
     {
-        return Objects.hash( status );
+        return Objects.hash( status, latestTxId );
     }
 
     @Override
     public String toString()
     {
-        return format( "TxStreamFinishedResponse{status=%s}", status );
+        return "TxStreamFinishedResponse{" +
+               "status=" + status +
+               ", latestTxId=" + latestTxId +
+               '}';
     }
 }

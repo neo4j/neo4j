@@ -30,5 +30,6 @@ public class TxStreamFinishedResponseEncoder extends MessageToByteEncoder<TxStre
             Exception
     {
         out.writeInt( response.status().ordinal() );
+        out.writeLong( response.latestTxId() );
     }
 }

@@ -34,14 +34,14 @@ public class TxStreamFinishedResponseEncodeDecodeTest
         // given
         EmbeddedChannel channel = new EmbeddedChannel(
                 new TxStreamFinishedResponseEncoder(), new TxStreamFinishedResponseDecoder() );
-        TxStreamFinishedResponse sent = new TxStreamFinishedResponse( SUCCESS_END_OF_STREAM );
+        TxStreamFinishedResponse sent = new TxStreamFinishedResponse( SUCCESS_END_OF_STREAM, 1000 );
 
         // when
         channel.writeOutbound( sent );
         channel.writeInbound( new Object[]{channel.readOutbound()} );
 
         // then
-        TxStreamFinishedResponse received = (TxStreamFinishedResponse) channel.readInbound();
+        TxStreamFinishedResponse received = channel.readInbound();
         assertNotSame( sent, received );
         assertEquals( sent, received );
     }
