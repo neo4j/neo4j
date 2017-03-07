@@ -73,7 +73,7 @@ public class BadCollector implements Collector
     {
         checkTolerance( BAD_RELATIONSHIPS, new ProblemReporter()
         {
-            private final String message = format( "%s refering to missing node %s", relationship, specificValue );
+            private final String message = format( "%s referring to missing node %s", relationship, specificValue );
 
             @Override
             public String message()
