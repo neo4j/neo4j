@@ -17,13 +17,23 @@
  * You should have received a copy of the GNU General Public License
  * along with this program.  If not, see <http://www.gnu.org/licenses/>.
  */
-package org.neo4j.kernel.api.exceptions;
+package org.neo4j.kernel.api.proc;
 
-public class ProcedureInjectionException extends ProcedureException
+import org.neo4j.collection.RawIterator;
+import org.neo4j.kernel.api.exceptions.ProcedureException;
+import org.neo4j.kernel.api.exceptions.Status;
+
+public class FailedLoadFunction extends CallableUserFunction.BasicUserFunction
 {
-    public ProcedureInjectionException( Status statusCode, String message,
-                               Object... parameters )
+    public FailedLoadFunction( UserFunctionSignature signature )
     {
-        super( statusCode, message, parameters );
+        super( signature );
+    }
+
+    @Override
+    public RawIterator<Object[],ProcedureException> apply( Context ctx, Object[] input ) throws ProcedureException
+    {
+        throw new ProcedureException( Status.Procedure.ProcedureRegistrationFailed,
+                signature().description().orElse( "Failed to load " + signature().name().toString() ) );
     }
 }

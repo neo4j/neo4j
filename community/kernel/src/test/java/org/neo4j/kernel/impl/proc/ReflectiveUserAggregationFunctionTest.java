@@ -69,7 +69,7 @@ public class ReflectiveUserAggregationFunctionTest
     public void setUp() throws Exception
     {
         components = new ComponentRegistry();
-        procedureCompiler = new ReflectiveProcedureCompiler( new TypeMappers(), components, new ComponentRegistry(),
+        procedureCompiler = new ReflectiveProcedureCompiler( new TypeMappers(), components, components,
                 NullLog.getInstance(), ProcedureConfig.DEFAULT );
     }
 

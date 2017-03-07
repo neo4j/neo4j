@@ -19,36 +19,21 @@
  */
 package org.neo4j.kernel.api.proc;
 
+import org.neo4j.collection.RawIterator;
 import org.neo4j.kernel.api.exceptions.ProcedureException;
+import org.neo4j.kernel.api.exceptions.Status;
 
-public interface CallableUserAggregationFunction
+public class FailedLoadProcedure extends CallableProcedure.BasicProcedure
 {
-    UserFunctionSignature signature();
-    Aggregator create( Context ctx ) throws ProcedureException;
-
-    interface Aggregator
+    public FailedLoadProcedure( ProcedureSignature signature )
     {
-        void update( Object[] input ) throws ProcedureException;
-
-        Object result() throws ProcedureException;
+        super( signature );
     }
 
-    abstract class BasicUserAggregationFunction implements CallableUserAggregationFunction
+    @Override
+    public RawIterator<Object[],ProcedureException> apply( Context ctx, Object[] input ) throws ProcedureException
     {
-        private final UserFunctionSignature signature;
-
-        protected BasicUserAggregationFunction( UserFunctionSignature signature )
-        {
-            this.signature = signature;
-        }
-
-        @Override
-        public UserFunctionSignature signature()
-        {
-            return signature;
-        }
-
-        @Override
-        public abstract Aggregator create( Context ctx) throws ProcedureException;
+        throw new ProcedureException( Status.Procedure.ProcedureRegistrationFailed,
+                signature().description().orElse( "Failed to load " + signature().name().toString() ) );
     }
 }

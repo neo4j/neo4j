@@ -34,7 +34,7 @@ import java.util.stream.Collectors;
 import java.util.stream.Stream;
 
 import org.neo4j.collection.RawIterator;
-import org.neo4j.kernel.api.exceptions.ProcedureInjectionException;
+import org.neo4j.kernel.api.exceptions.ComponentInjectionException;
 import org.neo4j.kernel.api.exceptions.KernelException;
 import org.neo4j.kernel.api.exceptions.ProcedureException;
 import org.neo4j.kernel.api.exceptions.Status;
@@ -43,7 +43,9 @@ import org.neo4j.kernel.api.proc.CallableUserAggregationFunction;
 import org.neo4j.kernel.api.proc.CallableUserFunction;
 import org.neo4j.kernel.api.proc.Context;
 import org.neo4j.kernel.api.proc.FieldSignature;
-import org.neo4j.kernel.api.proc.LoadFailProcedure;
+import org.neo4j.kernel.api.proc.FailedLoadAggregatedFunction;
+import org.neo4j.kernel.api.proc.FailedLoadFunction;
+import org.neo4j.kernel.api.proc.FailedLoadProcedure;
 import org.neo4j.kernel.api.proc.ProcedureSignature;
 import org.neo4j.kernel.api.proc.QualifiedName;
 import org.neo4j.kernel.api.proc.UserFunctionSignature;
@@ -231,32 +233,32 @@ class ReflectiveProcedureCompiler
         Optional<String> deprecated = deprecated( method, procedure::deprecatedBy,
                 "Use of @Procedure(deprecatedBy) without @Deprecated in " + procName );
 
-        List<FieldInjections.FieldSetter> setters;
-        setters = allFieldInjections.setters( procDefinition );
-        ProcedureSignature signature;
-
+        List<FieldInjections.FieldSetter> setters = allFieldInjections.setters( procDefinition );
         if ( !fullAccess && !config.fullAccessFor( procName.toString() ) )
         {
             try
             {
                 setters = safeFieldInjections.setters( procDefinition );
             }
-            catch ( ProcedureInjectionException e )
+            catch ( ComponentInjectionException e )
             {
                 description = Optional.of( procName.toString() +
-                        " is not available due to not having unrestricted access rights, check configuration." );
-                log.warn( description.get());
-                signature = new ProcedureSignature( procName, inputSignature, outputMapper.signature(), Mode.DEFAULT,
-                        Optional.empty(), new String[0], description, warning );
-                return new LoadFailProcedure( signature );
+                        " is not available due to having restricted access rights, check configuration." );
+                log.warn( description.get() );
+                ProcedureSignature signature =
+                        new ProcedureSignature( procName, inputSignature, outputMapper.signature(), Mode.DEFAULT,
+                                Optional.empty(), new String[0], description, warning );
+                return new FailedLoadProcedure( signature );
             }
         }
-        signature = new ProcedureSignature( procName, inputSignature, outputMapper.signature(), mode, deprecated,
-                config.rolesFor( procName.toString() ), description, warning );
+
+        ProcedureSignature signature =
+                new ProcedureSignature( procName, inputSignature, outputMapper.signature(), mode, deprecated,
+                        config.rolesFor( procName.toString() ), description, warning );
         return new ReflectiveProcedure( signature, constructor, procedureMethod, outputMapper, setters );
     }
 
-    private ReflectiveUserFunction compileFunction( Class<?> procDefinition, MethodHandle constructor, Method method )
+    private CallableUserFunction compileFunction( Class<?> procDefinition, MethodHandle constructor, Method method )
             throws ProcedureException, IllegalAccessException
     {
         String valueName = method.getAnnotation( UserFunction.class ).value();
@@ -274,13 +276,29 @@ class ReflectiveProcedureCompiler
         Class<?> returnType = method.getReturnType();
         TypeMappers.NeoValueConverter valueConverter = typeMappers.converterFor( returnType );
         MethodHandle procedureMethod = lookup.unreflect( method );
-        List<FieldInjections.FieldSetter> setters = safeFieldInjections.setters( procDefinition );
-
         Optional<String> description = description( method );
         UserFunction function = method.getAnnotation( UserFunction.class );
-
         Optional<String> deprecated = deprecated( method, function::deprecatedBy,
                 "Use of @UserFunction(deprecatedBy) without @Deprecated in " + procName );
+
+        List<FieldInjections.FieldSetter> setters = allFieldInjections.setters( procDefinition );
+        if ( !config.fullAccessFor( procName.toString() ) )
+        {
+            try
+            {
+                setters = safeFieldInjections.setters( procDefinition );
+            }
+            catch ( ComponentInjectionException e )
+            {
+                description = Optional.of( procName.toString() +
+                        " is not available due to having restricted access rights, check configuration." );
+                log.warn( description.get() );
+                UserFunctionSignature signature =
+                        new UserFunctionSignature( procName, inputSignature, valueConverter.type(), deprecated,
+                                config.rolesFor( procName.toString() ), description );
+                return new FailedLoadFunction( signature );
+            }
+        }
 
         UserFunctionSignature signature =
                 new UserFunctionSignature( procName, inputSignature, valueConverter.type(), deprecated,
@@ -289,14 +307,14 @@ class ReflectiveProcedureCompiler
         return new ReflectiveUserFunction( signature, constructor, procedureMethod, valueConverter, setters );
     }
 
-    private ReflectiveUserAggregationFunction compileAggregationFunction( Class<?> definition, MethodHandle constructor, Method method )
-            throws ProcedureException, IllegalAccessException
+    private CallableUserAggregationFunction compileAggregationFunction( Class<?> definition, MethodHandle constructor,
+            Method method ) throws ProcedureException, IllegalAccessException
     {
         String valueName = method.getAnnotation( UserAggregationFunction.class ).value();
         String definedName = method.getAnnotation( UserAggregationFunction.class ).name();
         QualifiedName funcName = extractName( definition, method, valueName, definedName );
 
-        if (funcName.namespace() == null || funcName.namespace().length == 0)
+        if ( funcName.namespace() == null || funcName.namespace().length == 0 )
         {
             throw new ProcedureException( Status.Procedure.ProcedureRegistrationFailed,
                     "It is not allowed to define functions in the root namespace please use a namespace, e.g. `@UserFunction(\"org.example.com.%s\")",
@@ -309,18 +327,18 @@ class ReflectiveProcedureCompiler
         Class<?> aggregator = method.getReturnType();
         for ( Method m : aggregator.getDeclaredMethods() )
         {
-           if (m.isAnnotationPresent( UserAggregationUpdate.class ))
-           {
-               if ( update != null )
-               {
-                   throw new ProcedureException( Status.Procedure.ProcedureRegistrationFailed,
-                           "Class '%s' contains multiple methods annotated with '@%s'.", aggregator.getSimpleName(),
-                           UserAggregationUpdate.class.getSimpleName() );
-               }
-               update = m;
+            if ( m.isAnnotationPresent( UserAggregationUpdate.class ) )
+            {
+                if ( update != null )
+                {
+                    throw new ProcedureException( Status.Procedure.ProcedureRegistrationFailed,
+                            "Class '%s' contains multiple methods annotated with '@%s'.", aggregator.getSimpleName(),
+                            UserAggregationUpdate.class.getSimpleName() );
+                }
+                update = m;
 
-           }
-            if (m.isAnnotationPresent( UserAggregationResult.class ))
+            }
+            if ( m.isAnnotationPresent( UserAggregationResult.class ) )
             {
                 if ( result != null )
                 {
@@ -331,39 +349,37 @@ class ReflectiveProcedureCompiler
                 result = m;
             }
         }
-        if ( result == null || update == null)
+        if ( result == null || update == null )
         {
             throw new ProcedureException( Status.Procedure.ProcedureRegistrationFailed,
                     "Class '%s' must contain methods annotated with both '@%s' as well as '@%s'.",
-                    aggregator.getSimpleName(),
-                    UserAggregationResult.class.getSimpleName(),
+                    aggregator.getSimpleName(), UserAggregationResult.class.getSimpleName(),
                     UserAggregationUpdate.class.getSimpleName() );
         }
-        if (update.getReturnType() != void.class)
+        if ( update.getReturnType() != void.class )
         {
             throw new ProcedureException( Status.Procedure.ProcedureRegistrationFailed,
                     "Update method '%s' in %s has type '%s' but must have return type 'void'.", update.getName(),
                     aggregator.getSimpleName(), update.getReturnType().getSimpleName() );
 
         }
-        if ( !Modifier.isPublic(method.getModifiers()))
+        if ( !Modifier.isPublic( method.getModifiers() ) )
         {
             throw new ProcedureException( Status.Procedure.ProcedureRegistrationFailed,
-                    "Aggregation method '%s' in %s must be public.", method.getName(),
-                    definition.getSimpleName() );
+                    "Aggregation method '%s' in %s must be public.", method.getName(), definition.getSimpleName() );
         }
-        if ( !Modifier.isPublic(aggregator.getModifiers()))
+        if ( !Modifier.isPublic( aggregator.getModifiers() ) )
         {
             throw new ProcedureException( Status.Procedure.ProcedureRegistrationFailed,
                     "Aggregation class '%s' must be public.", aggregator.getSimpleName() );
         }
-        if ( !Modifier.isPublic(update.getModifiers()))
+        if ( !Modifier.isPublic( update.getModifiers() ) )
         {
             throw new ProcedureException( Status.Procedure.ProcedureRegistrationFailed,
                     "Aggregation update method '%s' in %s must be public.", method.getName(),
                     aggregator.getSimpleName() );
         }
-        if ( !Modifier.isPublic(result.getModifiers()))
+        if ( !Modifier.isPublic( result.getModifiers() ) )
         {
             throw new ProcedureException( Status.Procedure.ProcedureRegistrationFailed,
                     "Aggregation result method '%s' in %s must be public.", method.getName(),
@@ -376,7 +392,6 @@ class ReflectiveProcedureCompiler
         MethodHandle creator = lookup.unreflect( method );
         MethodHandle updateMethod = lookup.unreflect( update );
         MethodHandle resultMethod = lookup.unreflect( result );
-        List<FieldInjections.FieldSetter> setters = safeFieldInjections.setters( definition );
 
         Optional<String> description = description( method );
         UserAggregationFunction function = method.getAnnotation( UserAggregationFunction.class );
@@ -384,11 +399,32 @@ class ReflectiveProcedureCompiler
         Optional<String> deprecated = deprecated( method, function::deprecatedBy,
                 "Use of @UserAggregationFunction(deprecatedBy) without @Deprecated in " + funcName );
 
+        List<FieldInjections.FieldSetter> setters = allFieldInjections.setters( definition );
+        if ( !config.fullAccessFor( funcName.toString() ) )
+        {
+            try
+            {
+                setters = safeFieldInjections.setters( definition );
+            }
+            catch ( ComponentInjectionException e )
+            {
+                description = Optional.of( funcName.toString() +
+                        " is not available due to having restricted access rights, check configuration." );
+                log.warn( description.get() );
+                UserFunctionSignature signature =
+                        new UserFunctionSignature( funcName, inputSignature, valueConverter.type(), deprecated,
+                                config.rolesFor( funcName.toString() ), description );
+
+                return new FailedLoadAggregatedFunction( signature );
+            }
+        }
+
         UserFunctionSignature signature =
                 new UserFunctionSignature( funcName, inputSignature, valueConverter.type(), deprecated,
                         config.rolesFor( funcName.toString() ), description );
 
-        return new ReflectiveUserAggregationFunction( signature, constructor, creator, updateMethod, resultMethod, valueConverter, setters );
+        return new ReflectiveUserAggregationFunction( signature, constructor, creator, updateMethod, resultMethod,
+                valueConverter, setters );
     }
 
     private Optional<String> deprecated( Method method, Supplier<String> supplier, String warning )
