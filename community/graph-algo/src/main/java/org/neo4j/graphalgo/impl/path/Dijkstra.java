@@ -191,11 +191,12 @@ public class Dijkstra implements PathFinder<WeightedPath>
                     interest.stopAfterLowestCost() );
             dijkstraEvaluator = new DijkstraEvaluator( shortestSoFar, end, costEvaluator );
         }
-        return (lastTraverser = new MonoDirectionalTraversalDescription( )
+        lastTraverser = new MonoDirectionalTraversalDescription( )
                 .uniqueness( Uniqueness.NODE_PATH )
                 .expand( dijkstraExpander, stateFactory )
                 .order( new DijkstraSelectorFactory( interest, costEvaluator ) )
-                .evaluator( dijkstraEvaluator ).traverse( start ) );
+                .evaluator( dijkstraEvaluator ).traverse( start );
+        return lastTraverser;
     }
 
     @Override

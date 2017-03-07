@@ -159,7 +159,7 @@ public class TreeGraphTest extends TraversalTestBase
             for ( Path pos : traverser )
             {
                 encounteredNodes.add( (String) pos.endNode().getProperty( "name" ) );
-                assertEquals( expectedDepth( (12 - i++) ), pos.length() );
+                assertEquals( expectedDepth( 12 - i++ ), pos.length() );
             }
             tx.success();
         }

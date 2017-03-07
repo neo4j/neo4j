@@ -118,7 +118,7 @@ public class CommitPusher extends LifecycleAdapter
         {
             if ( e.getCause() instanceof RuntimeException )
             {
-                throw ((RuntimeException) e.getCause());
+                throw (RuntimeException) e.getCause();
             }
             else
             {

@@ -19,6 +19,9 @@
  */
 package org.neo4j.bolt.v1.runtime;
 
+import org.junit.After;
+import org.junit.Test;
+
 import java.io.IOException;
 import java.net.InetSocketAddress;
 import java.time.Clock;
@@ -27,9 +30,6 @@ import java.util.List;
 import java.util.Map;
 import java.util.Random;
 import java.util.concurrent.atomic.AtomicLong;
-
-import org.junit.After;
-import org.junit.Test;
 
 import org.neo4j.bolt.security.auth.AuthenticationException;
 import org.neo4j.bolt.security.auth.AuthenticationResult;
@@ -119,7 +119,7 @@ public class ResetFuzzTest
             public void onSuccess( Map metadata ) throws IOException
             {
             }
-        }, ( () -> {} ) );
+        }, () -> {} );
 
         // Test random combinations of messages within a small budget of testing time.
         long deadline = System.currentTimeMillis() + 2 * 1000;

@@ -194,10 +194,10 @@ public final class BigEndianByteArrayBuffer implements ReadableBuffer, WritableB
     public int getInt( int offset )
     {
         offset = checkBounds( offset, 4 );
-        return (((0xFF & buffer[offset]) << 24) |
-                ((0xFF & buffer[offset + 1]) << 16) |
-                ((0xFF & buffer[offset + 2]) << 8) |
-                (0xFF & buffer[offset + 3]));
+        return ((0xFF & buffer[offset]) << 24) |
+               ((0xFF & buffer[offset + 1]) << 16) |
+               ((0xFF & buffer[offset + 2]) << 8) |
+                0xFF & buffer[offset + 3];
     }
 
     public BigEndianByteArrayBuffer putInt( int offset, int value )
@@ -208,14 +208,14 @@ public final class BigEndianByteArrayBuffer implements ReadableBuffer, WritableB
     public long getLong( int offset )
     {
         offset = checkBounds( offset, 8 );
-        return (((0xFFL & buffer[offset]) << 56) |
+        return ((0xFFL & buffer[offset]) << 56) |
                 ((0xFFL & buffer[offset + 1]) << 48) |
                 ((0xFFL & buffer[offset + 2]) << 40) |
                 ((0xFFL & buffer[offset + 3]) << 32) |
                 ((0xFFL & buffer[offset + 4]) << 24) |
                 ((0xFFL & buffer[offset + 5]) << 16) |
                 ((0xFFL & buffer[offset + 6]) << 8) |
-                (0xFFL & buffer[offset + 7]));
+                (0xFFL & buffer[offset + 7]);
     }
 
     @Override

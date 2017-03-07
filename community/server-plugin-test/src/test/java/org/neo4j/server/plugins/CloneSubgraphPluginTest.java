@@ -181,7 +181,7 @@ public class CloneSubgraphPluginTest extends ExclusiveServerTestBase
 
         Assert.assertEquals( response.getEntity(), 200, response.getStatus() );
 
-        int doubleTheNumberOfNodes = ( originalCount * 2 );
+        int doubleTheNumberOfNodes = originalCount * 2;
         assertEquals( doubleTheNumberOfNodes, nodeCount() );
     }
 

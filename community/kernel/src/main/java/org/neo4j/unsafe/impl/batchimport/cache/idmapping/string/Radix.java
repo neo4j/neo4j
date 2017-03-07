@@ -113,7 +113,7 @@ public abstract class Radix
 
         private void radixOverflow( long val )
         {
-            long shiftVal = ((val & ~RadixCalculator.LENGTH_BITS) >> (RadixCalculator.RADIX_BITS - 1 + radixShift.intValue()));
+            long shiftVal = (val & ~RadixCalculator.LENGTH_BITS) >> (RadixCalculator.RADIX_BITS - 1 + radixShift.intValue());
             if ( shiftVal > 0 )
             {
                 while ( shiftVal > 0 )

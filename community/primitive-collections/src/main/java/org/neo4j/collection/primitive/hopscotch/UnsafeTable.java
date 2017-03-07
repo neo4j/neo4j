@@ -183,7 +183,7 @@ public abstract class UnsafeTable<VALUE> extends PowerOfTwoQuantizedTable<VALUE>
     {
         long adr = hopBitsAddress( index );
         int hopBits = UnsafeUtil.getInt( adr );
-        hopBits |= (1 << hd);
+        hopBits |= 1 << hd;
         UnsafeUtil.putInt( adr, hopBits );
     }
 

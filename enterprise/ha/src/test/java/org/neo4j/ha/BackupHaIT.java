@@ -36,7 +36,6 @@ import org.neo4j.test.rule.SuppressOutput;
 
 import static org.junit.Assert.assertEquals;
 import static org.junit.Assert.assertNotEquals;
-
 import static org.neo4j.backup.OnlineBackupCommandIT.createSomeData;
 import static org.neo4j.backup.OnlineBackupCommandIT.runBackupToolFromOtherJvmToGetExitCode;
 
@@ -45,7 +44,7 @@ public class BackupHaIT
     @Rule
     public ClusterRule clusterRule = new ClusterRule( getClass() )
             .withSharedSetting( OnlineBackupSettings.online_backup_enabled, Settings.TRUE )
-            .withInstanceSetting( OnlineBackupSettings.online_backup_server, serverId -> (":" + (4444 + serverId)) );
+            .withInstanceSetting( OnlineBackupSettings.online_backup_server, serverId -> ":" + (4444 + serverId) );
     @Rule
     public final SuppressOutput suppressOutput = SuppressOutput.suppressAll();
 

@@ -22,6 +22,12 @@ package org.neo4j.causalclustering.backup;
 import org.junit.Before;
 import org.junit.Rule;
 import org.junit.Test;
+
+import java.io.File;
+import java.net.InetSocketAddress;
+import java.util.ArrayList;
+import java.util.List;
+
 import org.neo4j.backup.OnlineBackupSettings;
 import org.neo4j.causalclustering.core.CausalClusteringSettings;
 import org.neo4j.causalclustering.core.CoreGraphDatabase;
@@ -36,11 +42,6 @@ import org.neo4j.kernel.impl.store.format.standard.Standard;
 import org.neo4j.test.DbRepresentation;
 import org.neo4j.test.causalclustering.ClusterRule;
 
-import java.io.File;
-import java.net.InetSocketAddress;
-import java.util.ArrayList;
-import java.util.List;
-
 import static org.junit.Assert.assertEquals;
 import static org.junit.Assert.assertNotEquals;
 import static org.neo4j.backup.OnlineBackupCommandIT.runBackupToolFromOtherJvmToGetExitCode;
@@ -52,7 +53,7 @@ public class BackupCoreIT
     public ClusterRule clusterRule = new ClusterRule( getClass() )
             .withNumberOfCoreMembers( 3 )
             .withNumberOfReadReplicas( 0 )
-            .withInstanceCoreParam( OnlineBackupSettings.online_backup_server, serverId -> (":" + (8000 + serverId)) );
+            .withInstanceCoreParam( OnlineBackupSettings.online_backup_server, serverId -> ":" + (8000 + serverId) );
 
     private Cluster cluster;
     private File backupsDir;

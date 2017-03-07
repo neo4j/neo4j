@@ -995,8 +995,8 @@ public final class UnsafeUtil
      */
     public static void putShortByteWiseLittleEndian( long p, short value )
     {
-        UnsafeUtil.putByte( p    , (byte)( value      ) );
-        UnsafeUtil.putByte( p + 1, (byte)( value >> 8 ) );
+        UnsafeUtil.putByte( p, (byte) value );
+        UnsafeUtil.putByte( p + 1, (byte) (value >> 8) );
     }
 
     /**
@@ -1010,7 +1010,7 @@ public final class UnsafeUtil
      */
     public static void putIntByteWiseLittleEndian( long p, int value )
     {
-        UnsafeUtil.putByte( p    , (byte)( value       ) );
+        UnsafeUtil.putByte( p, (byte) value );
         UnsafeUtil.putByte( p + 1, (byte)( value >> 8  ) );
         UnsafeUtil.putByte( p + 2, (byte)( value >> 16 ) );
         UnsafeUtil.putByte( p + 3, (byte)( value >> 24 ) );
@@ -1027,7 +1027,7 @@ public final class UnsafeUtil
      */
     public static void putLongByteWiseLittleEndian( long p, long value )
     {
-        UnsafeUtil.putByte( p    , (byte)( value       ) );
+        UnsafeUtil.putByte( p, (byte) value );
         UnsafeUtil.putByte( p + 1, (byte)( value >> 8  ) );
         UnsafeUtil.putByte( p + 2, (byte)( value >> 16 ) );
         UnsafeUtil.putByte( p + 3, (byte)( value >> 24 ) );

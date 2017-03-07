@@ -85,8 +85,8 @@ public class ResourceInjectionTest
         List<Object[]> out = Iterators.asList( proc.apply( new BasicContext(), new Object[0] ) );
 
         // Then
-        assertThat( out.get( 0 ), equalTo( (new Object[]{"Bonnie"}) ) );
-        assertThat( out.get( 1 ), equalTo( (new Object[]{"Clyde"}) ) );
+        assertThat( out.get( 0 ), equalTo( new Object[]{"Bonnie"} ) );
+        assertThat( out.get( 1 ), equalTo( new Object[]{"Clyde"} ) );
     }
 
     @Test
@@ -113,10 +113,10 @@ public class ResourceInjectionTest
         List<Object[]> out = Iterators.asList( proc.apply( new BasicContext(), new Object[0] ) );
 
         // Then
-        assertThat( out.get( 0 ), equalTo( (new Object[]{"Morpheus"}) ) );
-        assertThat( out.get( 1 ), equalTo( (new Object[]{"Trinity"}) ) );
-        assertThat( out.get( 2 ), equalTo( (new Object[]{"Neo"}) ) );
-        assertThat( out.get( 3 ), equalTo( (new Object[]{"Emil"}) ) );
+        assertThat( out.get( 0 ), equalTo( new Object[]{"Morpheus"} ) );
+        assertThat( out.get( 1 ), equalTo( new Object[]{"Trinity"} ) );
+        assertThat( out.get( 2 ), equalTo( new Object[]{"Neo"} ) );
+        assertThat( out.get( 3 ), equalTo( new Object[]{"Emil"} ) );
     }
 
     @Test

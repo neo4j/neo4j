@@ -166,8 +166,8 @@ public class StandardRecordFormat extends RecordFormat
 
         private static int xorshift( int x )
         {
-            x ^= (x << 6);
-            x ^= (x >>> 21);
+            x ^= x << 6;
+            x ^= x >>> 21;
             return x ^ (x << 7);
         }
 

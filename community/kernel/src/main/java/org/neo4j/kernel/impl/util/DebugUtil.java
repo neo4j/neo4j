@@ -324,7 +324,7 @@ public class DebugUtil
     public static String trackTest()
     {
         boolean track = false;
-        assert (track = true) : "A trick to set this variable to true if assertions are enabled";
+        assert track = true : "A trick to set this variable to true if assertions are enabled";
 
         if ( track )
         {
@@ -441,7 +441,7 @@ public class DebugUtil
 
     public static long time( long startTime, String message )
     {
-        System.out.println( duration( (currentTimeMillis() - startTime) ) + ": " + message );
+        System.out.println( duration( currentTimeMillis() - startTime ) + ": " + message );
         return currentTimeMillis();
     }
 }

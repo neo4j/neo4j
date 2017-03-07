@@ -103,9 +103,9 @@ public class HazelcastClusterTopologyTest
         for ( int i = 0; i < 5; i++ )
         {
             CoreServerInfo coreServerInfo = coreMemberMap.get( coreMembers.get( i ) );
-            assertEquals( new AdvertisedSocketAddress( "tx", (i + 1) ), coreServerInfo.getCatchupServer() );
-            assertEquals( new AdvertisedSocketAddress( "raft", (i + 1) ), coreServerInfo.getRaftServer() );
-            assertEquals( new AdvertisedSocketAddress( "bolt", (i + 1) ), coreServerInfo.connectors().boltAddress() );
+            assertEquals( new AdvertisedSocketAddress( "tx", i + 1 ), coreServerInfo.getCatchupServer() );
+            assertEquals( new AdvertisedSocketAddress( "raft", i + 1 ), coreServerInfo.getRaftServer() );
+            assertEquals( new AdvertisedSocketAddress( "bolt", i + 1 ), coreServerInfo.connectors().boltAddress() );
             assertEquals( coreServerInfo.tags(), TAGS );
         }
     }

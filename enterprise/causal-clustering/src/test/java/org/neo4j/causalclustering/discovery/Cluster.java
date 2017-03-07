@@ -396,7 +396,7 @@ public class Cluster
 
     public static AdvertisedSocketAddress socketAddressForServer( int id )
     {
-        return new AdvertisedSocketAddress( "localhost", (5000 + id) );
+        return new AdvertisedSocketAddress( "localhost", 5000 + id );
     }
 
     private void createCoreMembers( final int noOfCoreMembers,

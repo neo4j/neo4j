@@ -177,7 +177,7 @@ public class CountsRecordState implements CountsAccessor, RecordState, CountsAcc
             {
                 return true;
             }
-            if ( (obj instanceof Difference) )
+            if ( obj instanceof Difference )
             {
                 Difference that = (Difference) obj;
                 return actualFirst == that.actualFirst && expectedFirst == that.expectedFirst

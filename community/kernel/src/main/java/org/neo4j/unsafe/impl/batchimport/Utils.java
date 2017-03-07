@@ -66,7 +66,7 @@ public class Utils
         switch ( compareType )
         {
         case EQ:
-            return (dataA == dataB);
+            return dataA == dataB;
         case GE:
             if ( dataA == dataB )
             {
@@ -82,7 +82,7 @@ public class Utils
             }
             // fall through to LT
         case LT:
-            return ((dataA < dataB) ^ ((dataA < 0) != (dataB < 0)));
+            return (dataA < dataB) ^ ((dataA < 0) != (dataB < 0));
         case NE:
             return false;
 

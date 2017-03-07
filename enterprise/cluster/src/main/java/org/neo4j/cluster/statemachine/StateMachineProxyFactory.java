@@ -230,8 +230,8 @@ public class StateMachineProxyFactory
 
         private boolean isResponse( Message response )
         {
-            return (response.getMessageType().name().equals( initiatedByMessageType.name() + "Response" ) ||
-                    response.getMessageType().name().equals( initiatedByMessageType.name() + "Failure" ));
+            return response.getMessageType().name().equals( initiatedByMessageType.name() + "Response" ) ||
+                   response.getMessageType().name().equals( initiatedByMessageType.name() + "Failure" );
         }
 
         @Override

@@ -183,9 +183,9 @@ class PropertyRecordFormat extends BaseOneByteHeaderRecordFormat<PropertyRecord>
 
     private boolean canUseFixedReferences( PropertyRecord record, int recordSize )
     {
-        return ( isRecordBigEnoughForFixedReferences( recordSize ) &&
-                ((record.getNextProp() == NULL) || ((record.getNextProp() & HIGH_DWORD_LOWER_WORD_CHECK_MASK) == 0)) &&
-                ((record.getPrevProp() == NULL) || ((record.getPrevProp() & HIGH_DWORD_LOWER_WORD_CHECK_MASK) == 0)));
+        return isRecordBigEnoughForFixedReferences( recordSize ) &&
+                (record.getNextProp() == NULL || (record.getNextProp() & HIGH_DWORD_LOWER_WORD_CHECK_MASK) == 0) &&
+                (record.getPrevProp() == NULL || (record.getPrevProp() & HIGH_DWORD_LOWER_WORD_CHECK_MASK) == 0);
     }
 
     private boolean isRecordBigEnoughForFixedReferences( int recordSize )

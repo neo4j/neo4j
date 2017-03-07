@@ -340,7 +340,7 @@ public class TestLoopRelationships extends AbstractNeo4jTestCase
         boolean[] loops = new boolean[relationships.length];
         for ( int i = 0; i < relationships.length; i++ )
         {
-            loops[i] = (i == loop);
+            loops[i] = i == loop;
         }
         verifyRelationships( message, root, loops, relationships );
     }

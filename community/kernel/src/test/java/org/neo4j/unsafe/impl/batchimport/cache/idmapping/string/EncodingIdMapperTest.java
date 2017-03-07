@@ -560,7 +560,7 @@ public class EncodingIdMapperTest
         {
             for ( long i = 0; i < high/2; i++ )
             {
-                ids.add( (high-(i+1) ) );
+                ids.add( high - (i + 1) );
                 ids.add( i );
             }
         }

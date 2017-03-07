@@ -77,8 +77,8 @@ public class SequenceLock
     private static final long SEQ_MASK = CNT_UNIT - 1L;
     private static final long SEQ_IMSK = ~SEQ_MASK;
     private static final long CNT_MASK = ((1L << CNT_BITS) - 1L) << SEQ_BITS;
-    private static final long EXL_MASK = (1L << CNT_BITS + SEQ_BITS);
-    private static final long FLS_MASK = (1L << CNT_BITS + SEQ_BITS + 1L);
+    private static final long EXL_MASK = 1L << CNT_BITS + SEQ_BITS;
+    private static final long FLS_MASK = 1L << CNT_BITS + SEQ_BITS + 1L;
     private static final long FLS_IMSK = ~FLS_MASK;
     private static final long FAE_MASK = FLS_MASK + EXL_MASK; // "flush and/or exclusive" mask
     private static final long UNL_MASK = FAE_MASK + CNT_MASK; // unlocked mask

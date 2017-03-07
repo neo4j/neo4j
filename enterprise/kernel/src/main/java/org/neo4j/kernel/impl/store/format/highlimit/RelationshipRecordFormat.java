@@ -123,7 +123,7 @@ class RelationshipRecordFormat extends BaseHighLimitRecordFormat<RelationshipRec
         {
             int typeLowWord = cursor.getShort() & 0xFFFF;
             int typeHighWord = cursor.getByte() & 0xFF;
-            int type = ((typeHighWord << Short.SIZE) | typeLowWord);
+            int type = (typeHighWord << Short.SIZE) | typeLowWord;
             long recordId = record.getId();
             record.initialize( inUse,
                     decodeCompressedReference( cursor, headerByte, HAS_PROPERTY_BIT, NULL ),

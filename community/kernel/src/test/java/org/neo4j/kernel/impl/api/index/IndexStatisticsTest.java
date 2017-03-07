@@ -52,8 +52,6 @@ import org.neo4j.kernel.api.exceptions.index.IndexNotFoundKernelException;
 import org.neo4j.kernel.api.properties.Property;
 import org.neo4j.kernel.api.schema.IndexDescriptor;
 import org.neo4j.kernel.api.schema.NodePropertyDescriptor;
-import org.neo4j.kernel.api.schema_new.LabelSchemaDescriptor;
-import org.neo4j.kernel.api.schema_new.SchemaDescriptorFactory;
 import org.neo4j.kernel.api.schema_new.index.IndexBoundary;
 import org.neo4j.kernel.api.schema_new.index.NewIndexDescriptor;
 import org.neo4j.kernel.impl.core.ThreadToStatementContextBridge;
@@ -213,7 +211,7 @@ public class IndexStatisticsTest
         NewIndexDescriptor index = awaitOnline( createIndex( "Person", "name" ) );
 
         // then
-        double expectedSelectivity = UNIQUE_NAMES / (created);
+        double expectedSelectivity = UNIQUE_NAMES / created;
         assertCorrectIndexSelectivity( expectedSelectivity, indexSelectivity( index ) );
         assertCorrectIndexSize( created, indexSize( index ) );
         assertEquals( 0L, indexUpdates( index ) );
@@ -232,7 +230,7 @@ public class IndexStatisticsTest
 
         // then
         int seenWhilePopulating = initialNodes + updatesTracker.createdDuringPopulation();
-        double expectedSelectivity = UNIQUE_NAMES / (seenWhilePopulating);
+        double expectedSelectivity = UNIQUE_NAMES / seenWhilePopulating;
         assertCorrectIndexSelectivity( expectedSelectivity, indexSelectivity( index ) );
         assertCorrectIndexSize( seenWhilePopulating, indexSize( index ) );
         assertCorrectIndexUpdates( updatesTracker.createdAfterPopulation(), indexUpdates( index ) );
@@ -253,7 +251,7 @@ public class IndexStatisticsTest
         // then
         int seenWhilePopulating =
                 initialNodes + updatesTracker.createdDuringPopulation() - updatesTracker.deletedDuringPopulation();
-        double expectedSelectivity = UNIQUE_NAMES / (seenWhilePopulating);
+        double expectedSelectivity = UNIQUE_NAMES / seenWhilePopulating;
         assertCorrectIndexSelectivity( expectedSelectivity, indexSelectivity( index ) );
         assertCorrectIndexSize( seenWhilePopulating, indexSize( index ) );
         int expectedIndexUpdates = updatesTracker.deletedAfterPopulation() + updatesTracker.createdAfterPopulation();
@@ -274,7 +272,7 @@ public class IndexStatisticsTest
 
         // then
         int seenWhilePopulating = initialNodes + updatesTracker.createdDuringPopulation();
-        double expectedSelectivity = UNIQUE_NAMES / (seenWhilePopulating);
+        double expectedSelectivity = UNIQUE_NAMES / seenWhilePopulating;
         assertCorrectIndexSelectivity( expectedSelectivity, indexSelectivity( index ) );
         assertCorrectIndexSize( seenWhilePopulating, indexSize( index ) );
         assertCorrectIndexUpdates( updatesTracker.createdAfterPopulation(), indexUpdates( index ) );
@@ -322,7 +320,7 @@ public class IndexStatisticsTest
         int tolerance = MISSED_UPDATES_TOLERANCE * threads;
         double doubleTolerance = DOUBLE_ERROR_TOLERANCE * threads;
         int seenWhilePopulating = initialNodes + result.createdDuringPopulation() - result.deletedDuringPopulation();
-        double expectedSelectivity = UNIQUE_NAMES / (seenWhilePopulating);
+        double expectedSelectivity = UNIQUE_NAMES / seenWhilePopulating;
         assertCorrectIndexSelectivity( expectedSelectivity, indexSelectivity( index ), doubleTolerance );
         assertCorrectIndexSize( "Tracker had " + result, seenWhilePopulating, indexSize( index ), tolerance );
         int expectedIndexUpdates = result.deletedAfterPopulation() + result.createdAfterPopulation();

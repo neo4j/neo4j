@@ -398,7 +398,7 @@ public class HighAvailabilityModeSwitcher implements HighAvailabilityMemberListe
                     msgLog.error( "Error while trying to switch to slave", t );
 
                     // Try again later
-                    wait.set( (1 + wait.get() * 2) ); // Exponential backoff
+                    wait.set( 1 + wait.get() * 2 ); // Exponential backoff
                     wait.set( Math.min( wait.get(), 5 * 60 ) ); // Wait maximum 5 minutes
 
                     modeSwitcherFuture = modeSwitcherExecutor.schedule( this, wait.get(), TimeUnit.SECONDS );

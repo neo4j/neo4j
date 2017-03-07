@@ -69,7 +69,7 @@ public abstract class CompiledConversionUtils
         }
         if ( value instanceof Collection<?> )
         {
-            return ((Collection<?>) value);
+            return (Collection<?>) value;
         }
         // TODO: Handle primitive streams
 

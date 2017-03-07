@@ -45,7 +45,9 @@ import org.neo4j.helpers.RunCarefully;
 import org.neo4j.io.fs.FileSystemAbstraction;
 import org.neo4j.kernel.GraphDatabaseQueryService;
 import org.neo4j.kernel.api.security.AuthManager;
+import org.neo4j.kernel.api.security.UserManagerSupplier;
 import org.neo4j.kernel.configuration.Config;
+import org.neo4j.kernel.configuration.HttpConnector;
 import org.neo4j.kernel.configuration.HttpConnector.Encryption;
 import org.neo4j.kernel.impl.factory.GraphDatabaseFacadeFactory;
 import org.neo4j.kernel.impl.query.QueryExecutionEngine;
@@ -56,7 +58,6 @@ import org.neo4j.kernel.lifecycle.LifeSupport;
 import org.neo4j.kernel.lifecycle.LifecycleAdapter;
 import org.neo4j.logging.Log;
 import org.neo4j.logging.LogProvider;
-import org.neo4j.kernel.configuration.HttpConnector;
 import org.neo4j.server.configuration.ServerSettings;
 import org.neo4j.server.database.CypherExecutor;
 import org.neo4j.server.database.CypherExecutorProvider;
@@ -79,7 +80,6 @@ import org.neo4j.server.rest.transactional.TransactionHandleRegistry;
 import org.neo4j.server.rest.transactional.TransactionRegistry;
 import org.neo4j.server.rest.transactional.TransitionalPeriodTransactionMessContainer;
 import org.neo4j.server.rest.web.DatabaseActions;
-import org.neo4j.kernel.api.security.UserManagerSupplier;
 import org.neo4j.server.web.AsyncRequestLog;
 import org.neo4j.server.web.SimpleUriBuilder;
 import org.neo4j.server.web.WebServer;
@@ -363,7 +363,7 @@ public abstract class AbstractNeoServer implements NeoServer
             try
             {
                 // If neither file is specified
-                if ( (!certificatePath.exists() && !privateKeyPath.exists()) )
+                if ( !certificatePath.exists() && !privateKeyPath.exists() )
                 {
                     //noinspection deprecation
                     log.info( "No SSL certificate found, generating a self-signed certificate.." );

@@ -402,7 +402,7 @@ public class ParallelSort
                 int rIndex = radixCalculator.radixOf( comparator.dataValue( dataCache.get( i ) ) );
                 if ( rIndex > lowRadixRange && rIndex <= highRadixRange )
                 {
-                    long trackerIndex = (rangeParams[0] + bucketIndex++);
+                    long trackerIndex = rangeParams[0] + bucketIndex++;
                     assert tracker.get( trackerIndex ) == -1 :
                             "Overlapping buckets i:" + i + ", k:" + threadIndex + ", index:" + trackerIndex;
                     tracker.set( trackerIndex, i );

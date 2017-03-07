@@ -41,16 +41,16 @@ public class TestTopology
 
     public static CoreServerInfo adressesForCore( int id )
     {
-        AdvertisedSocketAddress raftServerAddress = new AdvertisedSocketAddress( "localhost", (3000 + id) );
-        AdvertisedSocketAddress catchupServerAddress = new AdvertisedSocketAddress( "localhost", (4000 + id) );
-        AdvertisedSocketAddress boltServerAddress = new AdvertisedSocketAddress( "localhost", (5000 + id) );
+        AdvertisedSocketAddress raftServerAddress = new AdvertisedSocketAddress( "localhost", 3000 + id );
+        AdvertisedSocketAddress catchupServerAddress = new AdvertisedSocketAddress( "localhost", 4000 + id );
+        AdvertisedSocketAddress boltServerAddress = new AdvertisedSocketAddress( "localhost", 5000 + id );
         return new CoreServerInfo( raftServerAddress, catchupServerAddress, wrapAsClientConnectorAddresses( boltServerAddress ),
                 asSet( "core", "core" + id ) );
     }
 
     public static ReadReplicaInfo addressesForReadReplica( int id )
     {
-        AdvertisedSocketAddress advertisedSocketAddress = new AdvertisedSocketAddress( "localhost", (6000 + id) );
+        AdvertisedSocketAddress advertisedSocketAddress = new AdvertisedSocketAddress( "localhost", 6000 + id );
         ClientConnectorAddresses clientConnectorAddresses = new ClientConnectorAddresses(
                 singletonList( new ClientConnectorAddresses.ConnectorUri( bolt, advertisedSocketAddress ) ) );
 
@@ -66,7 +66,7 @@ public class TestTopology
 
     private static ReadReplicaInfo readReplicaInfo( int id )
     {
-        AdvertisedSocketAddress advertisedSocketAddress = new AdvertisedSocketAddress( "localhost", (6000 + id) );
+        AdvertisedSocketAddress advertisedSocketAddress = new AdvertisedSocketAddress( "localhost", 6000 + id );
         return new ReadReplicaInfo(
                 new ClientConnectorAddresses( singletonList( new ClientConnectorAddresses.ConnectorUri( bolt, advertisedSocketAddress ) ) ),
                 new AdvertisedSocketAddress( "localhost", 4000 + id ),

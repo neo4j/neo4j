@@ -160,7 +160,7 @@ public class StringEncoder implements Encoder
             for ( int k = 1; k <= i; k++ )
             {
                 long prev = val;
-                val = ((val << 4) + prev);//% Integer.MAX_VALUE;
+                val = (val << 4) + prev;//% Integer.MAX_VALUE;
             }
             code += val;
         }

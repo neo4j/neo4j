@@ -169,7 +169,7 @@ public abstract class AbstractShellTest
         StringBuilder builder = new StringBuilder();
         for ( Object entity : entities )
         {
-            builder.append( (builder.length() == 0 ? "" : "-->") );
+            builder.append( builder.length() == 0 ? "" : "-->" );
             if ( entity instanceof Node )
             {
                 builder.append( "(" ).append( ((Node) entity).getId() ).append( ")" );

@@ -57,7 +57,6 @@ import static org.junit.Assert.assertNotNull;
 import static org.junit.Assert.assertTrue;
 import static org.mockito.Mockito.inOrder;
 import static org.mockito.Mockito.mock;
-
 import static org.neo4j.helpers.collection.Iterators.asSet;
 import static org.neo4j.helpers.collection.Iterators.emptySetOf;
 
@@ -191,10 +190,10 @@ public class NeoStoreIndexStoreViewTest
 
         NodeUpdates propertyUpdates = propertyUpdateVisitor.getPropertyUpdates();
         assertNotNull( "Visitor should containts container with updates.", propertyUpdates );
-        assert(propertyUpdates.forIndex( NewIndexDescriptorFactory.forLabel( 0, 0 ) ).isPresent());
-        assert(propertyUpdates.forIndex( NewIndexDescriptorFactory.forLabel( 0, 1 ) ).isPresent());
-        assert(propertyUpdates.forIndex( NewIndexDescriptorFactory.forLabel( 0, 0, 1 ) ).isPresent());
-        assert(!propertyUpdates.forIndex( NewIndexDescriptorFactory.forLabel( 1, 1 ) ).isPresent());
+        assert propertyUpdates.forIndex( NewIndexDescriptorFactory.forLabel( 0, 0 ) ).isPresent();
+        assert propertyUpdates.forIndex( NewIndexDescriptorFactory.forLabel( 0, 1 ) ).isPresent();
+        assert propertyUpdates.forIndex( NewIndexDescriptorFactory.forLabel( 0, 0, 1 ) ).isPresent();
+        assert !propertyUpdates.forIndex( NewIndexDescriptorFactory.forLabel( 1, 1 ) ).isPresent();
     }
 
     NodeUpdates add( long nodeId, int propertyKeyId, Object value, long[] labels)

@@ -64,6 +64,7 @@
       <property name="allowSamelineSingleParameterlessAnnotation" value="false"/>
       <property name="allowSamelineParameterizedAnnotation" value="false"/>
     </module>
+    <module name="UnnecessaryParentheses"/>
 
   </module>
 

@@ -77,13 +77,13 @@ public final class CompiledEquivalenceUtils
                 double right = ((Number) rhs).doubleValue();
                 return left == right;
             }
-            else if ( (lhs instanceof Double || lhs instanceof Float) )
+            else if ( lhs instanceof Double || lhs instanceof Float )
             {
                 double left = ((Number) lhs).doubleValue();
                 long right = ((Number) rhs).longValue();
                 return MathUtil.numbersEqual( left, right );
             }
-            else if ( (rhs instanceof Double || rhs instanceof Float) )
+            else if ( rhs instanceof Double || rhs instanceof Float )
             {
                 long left = ((Number) lhs).longValue();
                 double right = ((Number) rhs).doubleValue();
@@ -210,7 +210,7 @@ public final class CompiledEquivalenceUtils
         }
         else if ( element instanceof Map<?,?> )
         {
-            return hashCode( ((Map<String,Object>) element) );
+            return hashCode( (Map<String,Object>) element );
         }
         else if ( element instanceof Object[] )
         {

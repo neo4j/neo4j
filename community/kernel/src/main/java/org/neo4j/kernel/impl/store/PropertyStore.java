@@ -250,7 +250,7 @@ public class PropertyStore extends CommonAbstractStore<PropertyRecord,NoStoreHea
         }
         else if ( value instanceof Boolean )
         {
-            setSingleBlockValue( block, keyId, PropertyType.BOOL, ((Boolean) value ? 1L : 0L) );
+            setSingleBlockValue( block, keyId, PropertyType.BOOL, (Boolean) value ? 1L : 0L );
         }
         else if ( value instanceof Float )
         {
