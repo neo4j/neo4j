@@ -35,6 +35,7 @@ import org.neo4j.io.fs.FileSystemAbstraction;
 import org.neo4j.kernel.configuration.Config;
 import org.neo4j.tooling.ImportTool;
 import org.neo4j.unsafe.impl.batchimport.Configuration;
+import org.neo4j.unsafe.impl.batchimport.input.BadCollector;
 import org.neo4j.unsafe.impl.batchimport.input.Collector;
 import org.neo4j.unsafe.impl.batchimport.input.csv.CsvInput;
 import org.neo4j.unsafe.impl.batchimport.input.csv.IdType;
@@ -61,6 +62,9 @@ class CsvImporter implements Importer
     private final Args args;
     private final OutsideWorld outsideWorld;
     private final String reportFileName;
+    private final boolean ignoreBadRelationships;
+    private final boolean ignoreDuplicateNodes;
+    private final boolean ignoreExtraColumns;
 
     public static String description()
     {
@@ -89,8 +93,15 @@ class CsvImporter implements Importer
                 "            ACTUAL: (advanced) actual node ids. The default option is STRING.\n" +
                 "        For more information on id handling, please see the Neo4j Manual:\n" +
                 "        https://neo4j.com/docs/operations-manual/current/tools/import/\n" +
-                "--input-encoding <character-set>\n" +
-                "        Character set that input data is encoded in. Defaults to UTF-8.\n";
+                "--input-encoding=<character-set>\n" +
+                "        Character set that input data is encoded in. Defaults to UTF-8.\n" +
+                "--ignore-extra-columns=<true|false>\n" +
+                "        If un-identified columns should be ignored during the import. Defaults to false.\n" +
+                "--ignore-duplicate-nodes=<true|false>\n" +
+                "        If duplicate nodes should be ignored during the import. Defaults to false.\n" +
+                "--ignore-missing-nodes=<true|false>\n" +
+                "        If relationships referring to missing nodes should be ignored during the import.\n" +
+                "        Defaults to false.\n";
     }
 
     public static String arguments()
@@ -100,7 +111,10 @@ class CsvImporter implements Importer
                 "[--relationships[:RELATIONSHIP_TYPE]=\"<file1>,<file2>,...\"] " +
                 "[--id-type=<id-type>] " +
                 "[--input-encoding=<character-set>] " +
-                "[--page-size=<page-size>]";
+                "[--page-size=<page-size>]" +
+                "[--ignore-extra-columns=<true|false>" +
+                "[--ignore-duplicate-nodes=<true|false>" +
+                "[--ignore-missing-nodes=<true|false>";
     }
 
     CsvImporter( Args args, Config config, OutsideWorld outsideWorld ) throws IncorrectUsage
@@ -111,6 +125,9 @@ class CsvImporter implements Importer
         relationshipsFiles = extractInputFiles( args, "relationships", outsideWorld.errorStream() );
         reportFileName =
                 args.interpretOption( "report-file", withDefault( ImportCommand.DEFAULT_REPORT_FILE_NAME ), s -> s );
+        ignoreExtraColumns = args.getBoolean( "ignore-extra-columns", false );
+        ignoreDuplicateNodes = args.getBoolean( "ignore-duplicate-nodes", false );
+        ignoreBadRelationships = args.getBoolean( "ignore-missing-nodes", false );
         try
         {
             validateInputFiles( nodesFiles, relationshipsFiles );
@@ -135,7 +152,8 @@ class CsvImporter implements Importer
         File reportFile = new File( reportFileName );
 
         OutputStream badOutput = new BufferedOutputStream( fs.openAsOutputStream( reportFile, false ) );
-        Collector badCollector = badCollector( badOutput, 1000, collect( true, true, true ) );
+        Collector badCollector = badCollector( badOutput, isIgnoringSomething() ? BadCollector.UNLIMITED_TOLERANCE : 0,
+                collect( ignoreBadRelationships, ignoreDuplicateNodes, ignoreExtraColumns ) );
 
         Configuration configuration = importConfiguration( null, false, config );
         CsvInput input = new CsvInput( nodeData( inputEncoding, nodesFiles ), defaultFormatNodeFileHeader(),
@@ -144,5 +162,10 @@ class CsvImporter implements Importer
 
         ImportTool.doImport( outsideWorld.errorStream(), outsideWorld.errorStream(), storeDir, logsDir, reportFile, fs,
                 nodesFiles, relationshipsFiles, false, input, config, badOutput, configuration );
+    }
+
+    private boolean isIgnoringSomething()
+    {
+        return ignoreBadRelationships | ignoreDuplicateNodes | ignoreExtraColumns;
     }
 }
