@@ -35,7 +35,7 @@ class MatchAggregationsBackedByCountStoreAcceptanceTest extends ExecutionEngineF
     relate(n, createNode())
 
     val resultStar = executeWithAllPlannersAndCompatibilityMode("MATCH (a)-->(a) RETURN count(*)")
-    val resultVar = executeWithAllPlannersAndCompatibilityMode("MATCH (a)-[r]->(a) RETURN count(r)")
+    val resultVar = executeWithAllPlannersAndRuntimesAndCompatibilityMode("MATCH (a)-[r]->(a) RETURN count(r)")
 
     resultStar.toList should equal(List(Map("count(*)" -> 2)))
     resultVar.toList should equal(List(Map("count(r)" -> 2)))
