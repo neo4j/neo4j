@@ -36,6 +36,8 @@ import static org.junit.Assert.assertEquals;
 import static org.junit.Assert.assertTrue;
 import static org.junit.Assert.fail;
 
+import static org.neo4j.unsafe.impl.batchimport.input.BadCollector.COLLECT_ALL;
+import static org.neo4j.unsafe.impl.batchimport.input.BadCollector.UNLIMITED_TOLERANCE;
 import static org.neo4j.unsafe.impl.batchimport.input.BadCollectorTest.InputRelationshipBuilder.inputRelationship;
 
 public class BadCollectorTest
@@ -202,6 +204,23 @@ public class BadCollectorTest
         assertArrayEquals( new long[] {8, 10, 12}, nodeIds );
     }
 
+    @Test
+    public void shouldCollectUnlimitedNumberOfBadEntriesIfToldTo() throws Exception
+    {
+        // GIVEN
+        BadCollector collector = new BadCollector( new NullOutputStream(), UNLIMITED_TOLERANCE, COLLECT_ALL );
+
+        // WHEN
+        int count = 10_000;
+        for ( int i = 0; i < count; i++ )
+        {
+            collector.collectDuplicateNode( i, i, "group", "first", "other" );
+        }
+
+        // THEN
+        assertEquals( count, collector.badEntries() );
+    }
+
     private OutputStream badOutputFile() throws IOException
     {
         File badDataPath = new File( "/tmp/foo2" ).getAbsoluteFile();
@@ -239,5 +258,13 @@ public class BadCollectorTest
         fileSystem.mkdir( badDataPath.getParentFile() );
         fileSystem.create( badDataPath );
         return badDataPath;
+    }
+
+    private static class NullOutputStream extends OutputStream
+    {
+        @Override
+        public void write( int b ) throws IOException
+        {   // Don't
+        }
     }
 }

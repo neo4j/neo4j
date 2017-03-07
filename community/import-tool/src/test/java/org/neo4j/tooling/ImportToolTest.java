@@ -1138,6 +1138,27 @@ public class ImportToolTest
                 "/import/import-tool-header-format/#import-tool-id-spaces" );
     }
 
+    @Test
+    public void shouldCollectUnlimitedNumberOfBadEntries() throws Exception
+    {
+        // GIVEN
+        List<String> nodeIds = new ArrayList<>();
+        for ( int i = 0; i < 10_000; i++ )
+        {
+            nodeIds.add( "A" );
+        }
+
+        // WHEN
+        importTool(
+                "--into", dbRule.getStoreDirAbsolutePath(),
+                "--nodes", nodeData( true, Configuration.COMMAS, nodeIds, TRUE ).getAbsolutePath(),
+                "--skip-duplicate-nodes",
+                "--bad-tolerance", "-" );
+
+        // THEN
+        // all those duplicates should just be accepted using the - for specifying bad tolerance
+    }
+
     private void shouldPrintReferenceLinkAsPartOfErrorMessage( List<String> nodeIds,
             Iterator<RelationshipDataLine> relationshipDataLines, String message ) throws Exception
     {
