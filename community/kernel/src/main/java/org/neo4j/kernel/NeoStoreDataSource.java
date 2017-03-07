@@ -149,6 +149,7 @@ import org.neo4j.kernel.monitoring.Monitors;
 import org.neo4j.kernel.monitoring.tracing.Tracers;
 import org.neo4j.kernel.recovery.DefaultRecoverySPI;
 import org.neo4j.kernel.recovery.LatestCheckPointFinder;
+import org.neo4j.kernel.recovery.PositionToRecoverFrom;
 import org.neo4j.kernel.recovery.Recovery;
 import org.neo4j.kernel.spi.legacyindex.IndexImplementation;
 import org.neo4j.kernel.spi.legacyindex.IndexProviders;
@@ -447,6 +448,7 @@ public class NeoStoreDataSource implements Lifecycle, IndexProviders
                     transactionIdStore,
                     logVersionRepository,
                     monitors.newMonitor( Recovery.Monitor.class ),
+                    monitors.newMonitor( PositionToRecoverFrom.Monitor.class ),
                     transactionLogModule.logFiles(), startupStatistics,
                     storageEngine, logEntryReader, transactionLogModule.logicalTransactionStore() );
 
@@ -672,6 +674,7 @@ public class NeoStoreDataSource implements Lifecycle, IndexProviders
             TransactionIdStore transactionIdStore,
             LogVersionRepository logVersionRepository,
             Recovery.Monitor recoveryMonitor,
+            PositionToRecoverFrom.Monitor positionMonitor,
             final PhysicalLogFiles logFiles,
             final StartupStatisticsProvider startupStatistics,
             StorageEngine storageEngine,
@@ -682,7 +685,7 @@ public class NeoStoreDataSource implements Lifecycle, IndexProviders
                 new LatestCheckPointFinder( logFiles, fileSystemAbstraction, logEntryReader );
         Recovery.SPI spi = new DefaultRecoverySPI(
                 storageEngine, logFiles, fileSystemAbstraction, logVersionRepository,
-                checkPointFinder, transactionIdStore, logicalTransactionStore );
+                checkPointFinder, transactionIdStore, logicalTransactionStore, positionMonitor );
         Recovery recovery = new Recovery( spi, recoveryMonitor );
         monitors.addMonitorListener( new Recovery.Monitor()
         {

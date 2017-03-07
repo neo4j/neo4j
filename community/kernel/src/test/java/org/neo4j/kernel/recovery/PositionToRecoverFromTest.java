@@ -25,27 +25,32 @@ import org.neo4j.kernel.impl.store.UnderlyingStorageException;
 import org.neo4j.kernel.impl.transaction.log.LogPosition;
 import org.neo4j.kernel.impl.transaction.log.entry.CheckPoint;
 import org.neo4j.kernel.recovery.LatestCheckPointFinder.LatestCheckPoint;
+import org.neo4j.kernel.recovery.PositionToRecoverFrom.Monitor;
 
 import static org.junit.Assert.assertEquals;
 import static org.mockito.Mockito.mock;
+import static org.mockito.Mockito.verify;
 import static org.mockito.Mockito.when;
 import static org.neo4j.kernel.impl.transaction.log.LogVersionRepository.INITIAL_LOG_VERSION;
+import static org.neo4j.kernel.recovery.LatestCheckPointFinder.LatestCheckPoint.NO_TRANSACTION_ID;
 
 public class PositionToRecoverFromTest
 {
     private final long logVersion = 2L;
     private final LatestCheckPointFinder finder = mock( LatestCheckPointFinder.class );
+    private final Monitor monitor = mock( Monitor.class );
 
     @Test
     public void shouldReturnUnspecifiedIfThereIsNoNeedForRecovery() throws Throwable
     {
         // given
-        when( finder.find( logVersion ) ).thenReturn( new LatestCheckPoint( null, false, logVersion ) );
+        when( finder.find( logVersion ) ).thenReturn( new LatestCheckPoint( null, false, NO_TRANSACTION_ID, logVersion ) );
 
         // when
-        LogPosition logPosition = new PositionToRecoverFrom( finder ).apply( logVersion );
+        LogPosition logPosition = new PositionToRecoverFrom( finder, monitor ).apply( logVersion );
 
         // then
+        verify( monitor ).noCommitsAfterLastCheckPoint( null );
         assertEquals( LogPosition.UNSPECIFIED, logPosition );
     }
 
@@ -55,12 +60,13 @@ public class PositionToRecoverFromTest
         // given
         LogPosition checkPointLogPosition = new LogPosition( 1L, 4242 );
         when( finder.find( logVersion ) )
-                .thenReturn( new LatestCheckPoint( new CheckPoint( checkPointLogPosition ), true, logVersion ) );
+                .thenReturn( new LatestCheckPoint( new CheckPoint( checkPointLogPosition ), true, 10L, logVersion ) );
 
         // when
-        LogPosition logPosition = new PositionToRecoverFrom( finder ).apply( logVersion );
+        LogPosition logPosition = new PositionToRecoverFrom( finder, monitor ).apply( logVersion );
 
         // then
+        verify( monitor ).commitsAfterLastCheckPoint( checkPointLogPosition, 10L );
         assertEquals( checkPointLogPosition, logPosition );
     }
 
@@ -68,12 +74,13 @@ public class PositionToRecoverFromTest
     public void shouldRecoverFromStartOfLogZeroIfThereAreNoCheckPointAndOldestLogIsVersionZero() throws Throwable
     {
         // given
-        when( finder.find( logVersion ) ).thenReturn( new LatestCheckPoint( null, true, INITIAL_LOG_VERSION ) );
+        when( finder.find( logVersion ) ).thenReturn( new LatestCheckPoint( null, true, 10L, INITIAL_LOG_VERSION ) );
 
         // when
-        LogPosition logPosition = new PositionToRecoverFrom( finder ).apply( logVersion );
+        LogPosition logPosition = new PositionToRecoverFrom( finder, monitor ).apply( logVersion );
 
         // then
+        verify( monitor ).noCheckPointFound();
         assertEquals( LogPosition.start( INITIAL_LOG_VERSION ), logPosition );
     }
 
@@ -82,12 +89,12 @@ public class PositionToRecoverFromTest
     {
         // given
         long oldestLogVersionFound = 1L;
-        when( finder.find( logVersion ) ).thenReturn( new LatestCheckPoint( null, true, oldestLogVersionFound ) );
+        when( finder.find( logVersion ) ).thenReturn( new LatestCheckPoint( null, true, 10L, oldestLogVersionFound ) );
 
         // when
         try
         {
-            new PositionToRecoverFrom( finder ).apply( logVersion );
+            new PositionToRecoverFrom( finder, monitor ).apply( logVersion );
         }
         catch( UnderlyingStorageException ex )
         {

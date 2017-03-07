@@ -54,6 +54,8 @@ public class PhysicalLogFile implements LogFile, Lifecycle
         }
     }
 
+    public static final Monitor NO_MONITOR = new Monitor.Adapter();
+
     public static final String DEFAULT_NAME = "neostore.transaction.db";
     public static final String REGEX_DEFAULT_NAME = "neostore\\.transaction\\.db";
     public static final String DEFAULT_VERSION_SUFFIX = ".";

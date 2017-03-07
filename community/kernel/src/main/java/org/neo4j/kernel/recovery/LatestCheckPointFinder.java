@@ -23,6 +23,7 @@ import java.io.IOException;
 
 import org.neo4j.io.fs.FileSystemAbstraction;
 import org.neo4j.kernel.impl.transaction.log.LogEntryCursor;
+import org.neo4j.kernel.impl.transaction.log.LogPosition;
 import org.neo4j.kernel.impl.transaction.log.LogVersionedStoreChannel;
 import org.neo4j.kernel.impl.transaction.log.PhysicalLogFile;
 import org.neo4j.kernel.impl.transaction.log.PhysicalLogFiles;
@@ -31,6 +32,7 @@ import org.neo4j.kernel.impl.transaction.log.ReadableClosablePositionAwareChanne
 import org.neo4j.kernel.impl.transaction.log.ReadableLogChannel;
 import org.neo4j.kernel.impl.transaction.log.entry.CheckPoint;
 import org.neo4j.kernel.impl.transaction.log.entry.LogEntry;
+import org.neo4j.kernel.impl.transaction.log.entry.LogEntryCommit;
 import org.neo4j.kernel.impl.transaction.log.entry.LogEntryReader;
 import org.neo4j.kernel.impl.transaction.log.entry.LogEntryStart;
 
@@ -56,6 +58,7 @@ public class LatestCheckPointFinder
         long version = fromVersionBackwards;
         long versionToSearchForCommits = fromVersionBackwards;
         LogEntryStart latestStartEntry = null;
+        LogEntryStart oldestStartEntry = null;
         long oldestVersionFound = -1;
         while ( version >= INITIAL_LOG_VERSION )
         {
@@ -71,6 +74,7 @@ public class LatestCheckPointFinder
             CheckPoint latestCheckPoint = null;
             ReadableLogChannel recoveredDataChannel =
                     new ReadAheadLogChannel( channel, NO_MORE_CHANNELS );
+            boolean firstStartEntry = true;
 
             try ( LogEntryCursor cursor = new LogEntryCursor( logEntryReader, recoveredDataChannel ) )
             {
@@ -82,18 +86,29 @@ public class LatestCheckPointFinder
                     {
                         latestCheckPoint = entry.as();
                     }
-                    if ( entry instanceof LogEntryStart && ( version == versionToSearchForCommits ) )
+                    if ( entry instanceof LogEntryStart )
                     {
-                        latestStartEntry = entry.as();
+                        LogEntryStart startEntry = entry.as();
+                        if ( version == versionToSearchForCommits )
+                        {
+                            latestStartEntry = startEntry;
+                        }
+
+                        // The scan goes backwards by log version, although forward per log version
+                        // Oldest start entry will be the first in the last log version scanned.
+                        if ( firstStartEntry )
+                        {
+                            oldestStartEntry = startEntry;
+                            firstStartEntry = false;
+                        }
                     }
                 }
             }
 
             if ( latestCheckPoint != null )
             {
-                boolean commitsAfterCheckPoint = latestStartEntry != null &&
-                        latestStartEntry.getStartPosition().compareTo( latestCheckPoint.getLogPosition() ) >= 0;
-                return new LatestCheckPoint( latestCheckPoint, commitsAfterCheckPoint , oldestVersionFound );
+                return latestCheckPoint( fromVersionBackwards, version, latestStartEntry, oldestVersionFound,
+                        latestCheckPoint );
             }
 
             version--;
@@ -105,19 +120,103 @@ public class LatestCheckPointFinder
             }
         }
 
-        return new LatestCheckPoint( null, latestStartEntry != null, oldestVersionFound );
+        boolean commitsAfterCheckPoint = oldestStartEntry != null;
+        long firstTxAfterPosition = commitsAfterCheckPoint
+                ? extractFirstTxIdAfterPosition( oldestStartEntry.getStartPosition(), fromVersionBackwards )
+                : LatestCheckPoint.NO_TRANSACTION_ID;
+
+        return new LatestCheckPoint( null, commitsAfterCheckPoint, firstTxAfterPosition, oldestVersionFound );
+    }
+
+    private LatestCheckPoint latestCheckPoint( long fromVersionBackwards, long version, LogEntryStart latestStartEntry,
+            long oldestVersionFound, CheckPoint latestCheckPoint ) throws IOException
+    {
+        // Is the latest start entry in this log file version later than what the latest check point targets?
+        LogPosition target = latestCheckPoint.getLogPosition();
+        boolean startEntryAfterCheckPoint = latestStartEntry != null &&
+                latestStartEntry.getStartPosition().compareTo( target ) >= 0;
+        if ( !startEntryAfterCheckPoint )
+        {
+            if ( target.getLogVersion() < version )
+            {
+                // This check point entry targets a previous log file.
+                // Go there and see if there's a transaction. Reader is capped to that log version.
+                startEntryAfterCheckPoint = extractFirstTxIdAfterPosition( target, version ) !=
+                        LatestCheckPoint.NO_TRANSACTION_ID;
+            }
+        }
+
+        // Extract first transaction id after check point target position.
+        // Reader may continue into log files after the initial version.
+        long firstTxIdAfterCheckPoint = startEntryAfterCheckPoint
+                ? extractFirstTxIdAfterPosition( target, fromVersionBackwards )
+                : LatestCheckPoint.NO_TRANSACTION_ID;
+        return new LatestCheckPoint( latestCheckPoint, startEntryAfterCheckPoint,
+                firstTxIdAfterCheckPoint, oldestVersionFound );
+    }
+
+    /**
+     * Extracts txId from first commit entry, when starting reading at the given {@code position}.
+     * If no commit entry found in the version, the reader will continue into next version(s) up till
+     * {@code maxLogVersion} until finding one.
+     *
+     * @param initialPosition {@link LogPosition} to start scan from.
+     * @param maxLogVersion max log version to scan.
+     * @return txId of closes commit entry to {@code initialPosition}, or {@link LatestCheckPoint#NO_TRANSACTION_ID}
+     * if not found.
+     * @throws IOException on I/O error.
+     */
+    private long extractFirstTxIdAfterPosition( LogPosition initialPosition, long maxLogVersion ) throws IOException
+    {
+        LogPosition currentPosition = initialPosition;
+        while ( currentPosition.getLogVersion() <= maxLogVersion )
+        {
+            LogVersionedStoreChannel storeChannel = PhysicalLogFile.tryOpenForVersion( logFiles, fileSystem,
+                    currentPosition.getLogVersion(), false );
+            if ( storeChannel != null )
+            {
+                try
+                {
+                    storeChannel.position( currentPosition.getByteOffset() );
+                    try ( ReadAheadLogChannel logChannel = new ReadAheadLogChannel( storeChannel, NO_MORE_CHANNELS );
+                          LogEntryCursor cursor = new LogEntryCursor( logEntryReader, logChannel ) )
+                    {
+                        while ( cursor.next() )
+                        {
+                            LogEntry entry = cursor.get();
+                            if ( entry instanceof LogEntryCommit )
+                            {
+                                return ((LogEntryCommit) entry).getTxId();
+                            }
+                        }
+                    }
+                }
+                finally
+                {
+                    storeChannel.close();
+                }
+            }
+
+            currentPosition = LogPosition.start( currentPosition.getLogVersion() + 1 );
+        }
+        return LatestCheckPoint.NO_TRANSACTION_ID;
     }
 
     public static class LatestCheckPoint
     {
+        public static long NO_TRANSACTION_ID = -1;
+
         public final CheckPoint checkPoint;
         public final boolean commitsAfterCheckPoint;
+        public final long firstTxIdAfterLastCheckPoint;
         public final long oldestLogVersionFound;
 
-        public LatestCheckPoint( CheckPoint checkPoint, boolean commitsAfterCheckPoint, long oldestLogVersionFound )
+        public LatestCheckPoint( CheckPoint checkPoint, boolean commitsAfterCheckPoint,
+                long firstTxIdAfterLastCheckPoint, long oldestLogVersionFound )
         {
             this.checkPoint = checkPoint;
             this.commitsAfterCheckPoint = commitsAfterCheckPoint;
+            this.firstTxIdAfterLastCheckPoint = firstTxIdAfterLastCheckPoint;
             this.oldestLogVersionFound = oldestLogVersionFound;
         }
 
@@ -136,6 +235,7 @@ public class LatestCheckPointFinder
             LatestCheckPoint that = (LatestCheckPoint) o;
 
             return commitsAfterCheckPoint == that.commitsAfterCheckPoint &&
+                   firstTxIdAfterLastCheckPoint == that.firstTxIdAfterLastCheckPoint &&
                    oldestLogVersionFound == that.oldestLogVersionFound &&
                    (checkPoint == null ? that.checkPoint == null : checkPoint.equals( that.checkPoint ));
         }
@@ -145,7 +245,11 @@ public class LatestCheckPointFinder
         {
             int result = checkPoint != null ? checkPoint.hashCode() : 0;
             result = 31 * result + (commitsAfterCheckPoint ? 1 : 0);
-            result = 31 * result + (int) (oldestLogVersionFound ^ (oldestLogVersionFound >>> 32));
+            if ( commitsAfterCheckPoint )
+            {
+                result = 31 * result + Long.hashCode( firstTxIdAfterLastCheckPoint );
+            }
+            result = 31 * result + Long.hashCode( oldestLogVersionFound );
             return result;
         }
 
@@ -155,6 +259,7 @@ public class LatestCheckPointFinder
             return "LatestCheckPoint{" +
                    "checkPoint=" + checkPoint +
                    ", commitsAfterCheckPoint=" + commitsAfterCheckPoint +
+                   (commitsAfterCheckPoint ? ", firstTxIdAfterLastCheckPoint=" + firstTxIdAfterLastCheckPoint : "") +
                    ", oldestLogVersionFound=" + oldestLogVersionFound +
                    '}';
         }
