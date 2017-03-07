@@ -46,6 +46,7 @@ import static java.util.concurrent.TimeUnit.SECONDS;
 import static org.junit.Assert.assertEquals;
 import static org.junit.Assert.assertFalse;
 import static org.junit.Assert.assertNotNull;
+import static org.junit.Assert.fail;
 import static org.mockito.Mockito.mock;
 import static org.neo4j.kernel.impl.store.kvstore.DataProvider.EMPTY_DATA_PROVIDER;
 import static org.neo4j.test.rule.Resources.InitialLifecycle.STARTED;
@@ -431,6 +432,65 @@ public class AbstractKeyValueStoreTest
         store.prepareRotation( 10L ).rotate();
     }
 
+    @Test
+    @Resources.Life( STARTED )
+    public void shouldLeaveStoreInGoodStateAfterRotationFailure() throws Exception
+    {
+        // GIVEN
+        final Store store = resourceManager.managed( createTestStore( 0 ) );
+        long initialVersion = store.version( store.headers() );
+        // a key/value which is rotated into a persistent version
+        String permanentKey = "permakey";
+        String permanentValue = "here";
+        try ( EntryUpdater<String> updater = store.updater( initialVersion + 1 ).get() )
+        {
+            updater.apply( permanentKey, value( permanentValue ) );
+        }
+        store.prepareRotation( initialVersion + 1 ).rotate();
+
+        // another key/value which is applied to the new version
+        String key = "mykey";
+        String value = "first";
+        try ( EntryUpdater<String> updater = store.updater( initialVersion + 2 ).get() )
+        {
+            updater.apply( key, value( "first" ) );
+        }
+
+        // WHEN rotating a version which doesn't exist
+        try
+        {
+            store.prepareRotation( initialVersion + 3 ).rotate();
+            fail( "Should've failed rotation, since that version doesn't exist yet" );
+        }
+        catch ( RotationTimeoutException e )
+        {
+            // THEN afterwards it should still be possible to read from the counts store
+            assertEquals( permanentValue, store.get( permanentKey ) );
+            assertEquals( value, store.get( key ) );
+
+            // and also continue to make updates
+            try ( EntryUpdater<String> updater = store.updater( initialVersion + 2 ).get() )
+            {
+                updater.apply( key, value( "second" ) );
+            }
+
+            // and eventually rotation again successfully
+            store.prepareRotation( initialVersion + 3 ).rotate();
+        }
+    }
+
+    private static ValueUpdate longValue( long value )
+    {
+        return new ValueUpdate()
+        {
+            @Override
+            public void update( WritableBuffer target )
+            {
+                target.putLong( 0, value );
+            }
+        };
+    }
+
     private Store createTestStore()
     {
         return createTestStore( TimeUnit.SECONDS.toMillis( 100 ) );
@@ -473,7 +533,7 @@ public class AbstractKeyValueStoreTest
         ThrowingConsumer<Long,IOException> update = u -> {
             try ( EntryUpdater<String> updater = store.updater( u ).get() )
             {
-                updater.apply( "key " + u, store.value( "value " + u ) );
+                updater.apply( "key " + u, value( "value " + u ) );
             }
         };
         update.accept( transaction );
@@ -600,15 +660,7 @@ public class AbstractKeyValueStoreTest
         @Override
         protected void writeKey( String key, WritableBuffer buffer )
         {
-            for ( int i = 0; i < key.length(); i++ )
-            {
-                char c = key.charAt( i );
-                if ( c == 0 || c >= 128 )
-                {
-                    throw new IllegalArgumentException( "Only ASCII keys allowed." );
-                }
-                buffer.putByte( i, (byte) c );
-            }
+            awriteKey( key, buffer );
         }
 
         @Override
@@ -656,11 +708,6 @@ public class AbstractKeyValueStoreTest
             }
         }
 
-        ValueUpdate value( final String value )
-        {
-            return target -> writeKey( value, target );
-        }
-
         public String get( String key ) throws IOException
         {
             return lookup( key, new Reader<String>()
@@ -671,6 +718,24 @@ public class AbstractKeyValueStoreTest
                     return readKey( value );
                 }
             } );
+        }
+    }
+
+    private static ValueUpdate value( final String value )
+    {
+        return target -> awriteKey( value, target );
+    }
+
+    private static void awriteKey( String key, WritableBuffer buffer )
+    {
+        for ( int i = 0; i < key.length(); i++ )
+        {
+            char c = key.charAt( i );
+            if ( c == 0 || c >= 128 )
+            {
+                throw new IllegalArgumentException( "Only ASCII keys allowed." );
+            }
+            buffer.putByte( i, (byte) c );
         }
     }
 }

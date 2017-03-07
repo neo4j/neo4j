@@ -228,6 +228,12 @@ abstract class DeadState<Key> extends ProgressiveState<Key>
                 {
                     return state.version();
                 }
+
+                @Override
+                ProgressiveState<Key> markAsFailed()
+                {
+                    return this;
+                }
             };
         }
 
@@ -291,6 +297,12 @@ abstract class DeadState<Key> extends ProgressiveState<Key>
                 long rotationVersion()
                 {
                     return state.rotationVersion();
+                }
+
+                @Override
+                ProgressiveState<Key> markAsFailed()
+                {
+                    return state;
                 }
             };
         }
