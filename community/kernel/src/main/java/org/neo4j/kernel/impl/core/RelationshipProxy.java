@@ -485,14 +485,16 @@ public class RelationshipProxy extends PropertyContainerProxy implements Relatio
         try
         {
             relType = actions.getRelationshipTypeById( typeId() ).name();
+            return format( "(%d)-[%s,%d]->(%d)", sourceId(), relType, getId(), targetId() );
         }
-        catch( NotInTransactionException | DatabaseShutdownException e )
+        catch ( NotInTransactionException | DatabaseShutdownException e )
         {
-            // We don't keep the rel-name lookup if the database is shut down. However, failing on toString would be uncomfortably evil, so we fall
+            // We don't keep the rel-name lookup if the database is shut down. Source ID and target ID also requires
+            // database access in a transaction. However, failing on toString would be uncomfortably evil, so we fall
             // back to noting the relationship type id.
-            relType = "RELTYPE(" + type + ")";
         }
-        return format( "(%d)-[%s,%d]->(%d)", sourceId(), relType, getId(), targetId() );
+        relType = "RELTYPE(" + type + ")";
+        return format( "(?)-[%s,%d]->(?)", relType, getId() );
     }
 
     private void assertInUnterminatedTransaction()
