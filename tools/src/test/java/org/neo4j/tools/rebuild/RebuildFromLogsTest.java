@@ -32,6 +32,7 @@ import java.util.LinkedHashMap;
 import java.util.List;
 import java.util.Set;
 
+import org.neo4j.consistency.checking.InconsistentStoreException;
 import org.neo4j.graphdb.GraphDatabaseService;
 import org.neo4j.graphdb.Node;
 import org.neo4j.helpers.collection.Iterables;
@@ -59,7 +60,7 @@ public class RebuildFromLogsTest
     private final FileSystemAbstraction fs = new DefaultFileSystemAbstraction();
 
     @Test
-    public void shouldRebuildFromLog() throws Exception
+    public void shouldRebuildFromLog() throws Exception, InconsistentStoreException
     {
         // given
         File prototypePath = new File( dir.graphDbDir(), "prototype" );
@@ -90,7 +91,7 @@ public class RebuildFromLogsTest
     }
 
     @Test
-    public void shouldRebuildFromLogUpToATx() throws Exception
+    public void shouldRebuildFromLogUpToATx() throws Exception, InconsistentStoreException
     {
         // given
         File prototypePath = new File( dir.graphDbDir(), "prototype" );
