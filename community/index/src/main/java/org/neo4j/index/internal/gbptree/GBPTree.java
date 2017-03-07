@@ -446,34 +446,39 @@ public class GBPTree<KEY,VALUE> implements Closeable
                     freeList.lastId(), freeList.writePageId(), freeList.readPageId(),
                     freeList.writePos(), freeList.readPos() );
 
-            // Write/carry over header
-            int headerOffset = cursor.getOffset();
-            int headerDataOffset = headerOffset + Integer.BYTES; // will contain length of written header data (below)
-            TreeState otherState = other( states, oldestState );
-            if ( otherState.isValid() )
-            {
-                PageCursor previousCursor = pagedFile.io( otherState.pageId(), PagedFile.PF_SHARED_READ_LOCK );
-                PageCursorUtil.goTo( previousCursor, "previous state page", otherState.pageId() );
-                do
-                {
-                    // Place the previous state cursor after state data
-                    TreeState.read( previousCursor );
-                    // Read length of previous header
-                    int previousLength = previousCursor.getInt();
-                    // Reserve space to store length
-                    cursor.setOffset( headerDataOffset );
-                    // Write
-                    headerWriter.write( previousCursor, previousLength, cursor );
-                }
-                while ( previousCursor.shouldRetry() );
-                checkOutOfBounds( previousCursor );
-                checkOutOfBounds( cursor );
-
-                int length = cursor.getOffset() - headerDataOffset;
-                cursor.putInt( headerOffset, length );
-            }
+            writerHeader( pagedFile, headerWriter, other( states, oldestState ), cursor );
 
             checkOutOfBounds( cursor );
+        }
+    }
+
+    private static void writerHeader( PagedFile pagedFile, Header.Writer headerWriter,
+            TreeState otherState, PageCursor cursor ) throws IOException
+    {
+        // Write/carry over header
+        int headerOffset = cursor.getOffset();
+        int headerDataOffset = headerOffset + Integer.BYTES; // will contain length of written header data (below)
+        if ( otherState.isValid() )
+        {
+            PageCursor previousCursor = pagedFile.io( otherState.pageId(), PagedFile.PF_SHARED_READ_LOCK );
+            PageCursorUtil.goTo( previousCursor, "previous state page", otherState.pageId() );
+            do
+            {
+                // Place the previous state cursor after state data
+                TreeState.read( previousCursor );
+                // Read length of previous header
+                int previousLength = previousCursor.getInt();
+                // Reserve space to store length
+                cursor.setOffset( headerDataOffset );
+                // Write
+                headerWriter.write( previousCursor, previousLength, cursor );
+            }
+            while ( previousCursor.shouldRetry() );
+            checkOutOfBounds( previousCursor );
+            checkOutOfBounds( cursor );
+
+            int length = cursor.getOffset() - headerDataOffset;
+            cursor.putInt( headerOffset, length );
         }
     }
 

@@ -46,8 +46,6 @@ public class Header
         void write( PageCursor from, int length, PageCursor to );
     }
 
-    final Consumer<PageCursor> CARRY_OVER = cursor -> {};
-
     static final Writer CARRY_OVER_PREVIOUS_HEADER = (from,length,to) ->
     {
         from.copyTo( from.getOffset(), to, to.getOffset(), length );
