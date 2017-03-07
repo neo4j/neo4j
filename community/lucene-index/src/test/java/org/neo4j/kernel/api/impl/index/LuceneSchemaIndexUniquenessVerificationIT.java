@@ -79,6 +79,8 @@ public class LuceneSchemaIndexUniquenessVerificationIT
     public int nodesToCreate;
 
     private SchemaIndex index;
+    private static final long MAX_LONG_VALUE = Long.MAX_VALUE >> 10;
+    private static final long MIN_LONG_VALUE = MAX_LONG_VALUE - 20;
 
     @Parameters( name = "created nodes: {0}" )
     public static Iterable<Object[]> data()
@@ -180,7 +182,7 @@ public class LuceneSchemaIndexUniquenessVerificationIT
     @Test
     public void largeLongValuesWithoutDuplicates() throws IOException
     {
-        long max = randomLongInRange( Long.MAX_VALUE - 20, Long.MAX_VALUE );
+        long max = randomLongInRange( MIN_LONG_VALUE, MAX_LONG_VALUE );
         long min = max - nodesToCreate;
         Set<PropertyValue> data = randomLongs( min, max );
 
@@ -192,7 +194,7 @@ public class LuceneSchemaIndexUniquenessVerificationIT
     @Test
     public void largeLongValuesWithDuplicates() throws IOException
     {
-        long max = randomLongInRange( Long.MAX_VALUE - 20, Long.MAX_VALUE );
+        long max = randomLongInRange( MIN_LONG_VALUE, MAX_LONG_VALUE );
         long min = max - nodesToCreate;
         List<PropertyValue> data = withDuplicate( randomLongs( min, max ) );
 
