@@ -288,6 +288,7 @@ class HazelcastCoreTopologyService extends LifecycleAdapter implements CoreTopol
         @Override
         public void memberAttributeChanged( MemberAttributeEvent memberAttributeEvent )
         {
+            log.info( "Core member attribute changed %s", memberAttributeEvent );
         }
     }
 }
