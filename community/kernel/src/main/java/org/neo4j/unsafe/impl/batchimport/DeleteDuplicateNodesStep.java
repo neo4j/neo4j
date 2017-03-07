@@ -20,11 +20,12 @@
 package org.neo4j.unsafe.impl.batchimport;
 
 import java.io.IOException;
-
 import org.neo4j.collection.primitive.PrimitiveLongIterator;
 import org.neo4j.kernel.api.labelscan.LabelScanStore;
 import org.neo4j.kernel.api.labelscan.LabelScanWriter;
+import org.neo4j.kernel.impl.store.NodeLabelsField;
 import org.neo4j.kernel.impl.store.NodeStore;
+import org.neo4j.kernel.impl.store.RecordCursor;
 import org.neo4j.kernel.impl.store.record.NodeRecord;
 import org.neo4j.unsafe.impl.batchimport.staging.Configuration;
 import org.neo4j.unsafe.impl.batchimport.staging.LonelyProcessingStep;
@@ -32,6 +33,7 @@ import org.neo4j.unsafe.impl.batchimport.staging.StageControl;
 
 import static org.neo4j.collection.primitive.PrimitiveLongCollections.EMPTY_LONG_ARRAY;
 import static org.neo4j.kernel.api.labelscan.NodeLabelUpdate.labelChanges;
+import static org.neo4j.kernel.impl.store.record.RecordLoad.NORMAL;
 
 public class DeleteDuplicateNodesStep extends LonelyProcessingStep
 {
@@ -52,12 +54,18 @@ public class DeleteDuplicateNodesStep extends LonelyProcessingStep
     protected void process() throws IOException
     {
         NodeRecord record = nodeStore.newRecord();
+        RecordCursor<NodeRecord> cursor = nodeStore.newRecordCursor( record ).acquire( 0, NORMAL );
         while ( nodeIds.hasNext() )
         {
             long duplicateNodeId = nodeIds.next();
-            record.setId( duplicateNodeId );
+            cursor.next( duplicateNodeId );
+            long[] labels = NodeLabelsField.get( record, nodeStore );
+            record.setInUse( false );
             nodeStore.updateRecord( record );
-            labelScanWriter.write( labelChanges( duplicateNodeId, EMPTY_LONG_ARRAY, EMPTY_LONG_ARRAY ) );
+            if ( labels.length > 0 )
+            {
+                labelScanWriter.write( labelChanges( duplicateNodeId, labels, EMPTY_LONG_ARRAY ) );
+            }
         }
     }
 
