@@ -126,7 +126,7 @@ public class PropertyPhysicalToLogicalConverterTest
         // THEN
         assertThat(
                 convert( none, none, change( before, after ) ),
-                equalTo( NodeUpdates.forNode( 0 ).added( key, longerString ).build() ) );
+                equalTo( NodeUpdates.forNode( 0 ).added( key, longString ).build() ) );
     }
 
     @Test

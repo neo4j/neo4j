@@ -162,7 +162,7 @@ public class IndexPopulationJobTest
         verify( populator ).create();
         verify( populator ).configureSampling( true );
         verify( populator ).includeSample( update );
-        verify( populator ).add( anyListOf(IndexEntryUpdate.class) );
+        verify( populator ).add( any( IndexEntryUpdate.class) );
         verify( populator ).sampleResult();
         verify( populator ).close( true );
 
@@ -211,7 +211,7 @@ public class IndexPopulationJobTest
         verify( populator ).configureSampling( true );
         verify( populator ).includeSample( update1 );
         verify( populator ).includeSample( update2 );
-        verify( populator, times( 2 ) ).add( anyListOf(IndexEntryUpdate.class ) );
+        verify( populator, times( 2 ) ).add( any( IndexEntryUpdate.class ) );
         verify( populator ).sampleResult();
         verify( populator ).close( true );
 
@@ -467,12 +467,18 @@ public class IndexPopulationJobTest
         {
             for ( IndexEntryUpdate update : updates )
             {
-                if ( update.getEntityId() == 2 )
-                {
-                    job.update( IndexEntryUpdate.change( nodeToChange, index, previousValue, newValue ) );
-                }
-                added.add( Pair.of( update.getEntityId(), update.values()[0] ) );
+                add( update );
             }
+        }
+
+        @Override
+        public void add( IndexEntryUpdate update )
+        {
+            if ( update.getEntityId() == 2 )
+            {
+                job.update( IndexEntryUpdate.change( nodeToChange, index, previousValue, newValue ) );
+            }
+            added.add( Pair.of( update.getEntityId(), update.values()[0] ) );
         }
 
         @Override
@@ -539,12 +545,18 @@ public class IndexPopulationJobTest
         {
             for ( IndexEntryUpdate update : updates )
             {
-                if ( update.getEntityId() == 2 )
-                {
-                    job.update( IndexEntryUpdate.remove( nodeToDelete, index, valueToDelete ) );
-                }
-                added.put( update.getEntityId(), update.values()[0] );
+                add( update );
             }
+        }
+
+        @Override
+        public void add( IndexEntryUpdate update )
+        {
+            if ( update.getEntityId() == 2 )
+            {
+                job.update( IndexEntryUpdate.remove( nodeToDelete, index, valueToDelete ) );
+            }
+            added.put( update.getEntityId(), update.values()[0] );
         }
 
         @Override

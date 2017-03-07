@@ -55,6 +55,7 @@ import org.neo4j.unsafe.impl.internal.dragons.FeatureToggles;
 
 import static java.lang.String.format;
 import static org.neo4j.collection.primitive.PrimitiveIntCollections.contains;
+import static org.neo4j.kernel.api.index.NodeUpdates.PropertyLoader.NO_UNCHANGED_PROPERTIES;
 import static org.neo4j.kernel.impl.api.index.IndexPopulationFailure.failure;
 
 /**
@@ -538,7 +539,7 @@ public class MultipleIndexPopulator implements IndexPopulator
 
         private void add( NodeUpdates updates )
         {
-            for ( IndexEntryUpdate indexUpdate : updates.forIndexes( populations.keySet(), null ) )
+            for ( IndexEntryUpdate indexUpdate : updates.forIndexes( populations.keySet(), NO_UNCHANGED_PROPERTIES ) )
             {
                 IndexPopulation population = populations.get( indexUpdate.descriptor() );
                 try

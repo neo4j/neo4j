@@ -250,7 +250,7 @@ public class IndexingServiceTest
         InOrder order = inOrder( populator, accessor, updater);
         order.verify( populator ).create();
         order.verify( populator ).includeSample( add( 1, "value1" ) );
-        order.verify( populator ).add( Mockito.anyListOf( IndexEntryUpdate.class ) );
+        order.verify( populator ).add( any( IndexEntryUpdate.class ) );
 
         // invoked from indexAllNodes(), empty because the id we added (2) is bigger than the one we indexed (1)
         //

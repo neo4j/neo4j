@@ -525,7 +525,8 @@ public class NodeUpdates
         return new PropertyValue( before, after, PropertyValueType.Changed );
     }
 
-    public interface PropertyLoader {
+    public interface PropertyLoader
+    {
         Object loadProperty( long nodeId, int propertyId );
 
         PropertyLoader NO_UNCHANGED_PROPERTIES = ( nodeId1, propertyId ) -> null;
