@@ -92,9 +92,11 @@ public class RemoteClient extends AbstractClient
 		try
 		{
 			if ( !shouldTryToReconnect )
-				server.getName();
+			{
+				server.welcome( initialSession );
+			}
 		}
-		catch ( RemoteException e )
+		catch ( RemoteException | ShellException ignored )
 		{
 			shouldTryToReconnect = true;
 		}
@@ -107,14 +109,11 @@ public class RemoteClient extends AbstractClient
 			{
 				this.server = findRemoteServer();
 				if ( hadServer )
-				    getOutput().println( "[Reconnected to server]" );
+				{
+					getOutput().println( "[Reconnected to server]" );
+				}
 			}
-			catch ( ShellException ee )
-			{
-				// Ok
-				originException = ee;
-			}
-			catch ( RemoteException ee )
+			catch ( ShellException | RemoteException ee )
 			{
 				// Ok
 				originException = ee;
