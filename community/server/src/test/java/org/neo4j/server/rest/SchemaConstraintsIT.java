@@ -223,6 +223,16 @@ public class SchemaConstraintsIT extends AbstractRestFunctionalTestBase
                 .payload( createJsonFrom( definition ) ).post( getSchemaIndexLabelUri( labels.newInstance() ) );
     }
 
+    @Test
+    public void create_compound_schema_constraint()
+    {
+        Map<String,Object> definition = map( "property_keys",
+                asList( properties.newInstance(), properties.newInstance() ) );
+
+        gen.get().expectedStatus( 405 )
+                .payload( createJsonFrom( definition ) ).post( getSchemaConstraintLabelUri( labels.newInstance() ) );
+    }
+
     private ConstraintDefinition createLabelUniquenessPropertyConstraint( String labelName, String propertyKey )
     {
         try ( Transaction tx = graphdb().beginTx() )
