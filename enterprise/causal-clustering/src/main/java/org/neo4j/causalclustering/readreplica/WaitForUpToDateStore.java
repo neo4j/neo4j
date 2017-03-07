@@ -57,7 +57,7 @@ class WaitForUpToDateStore extends LifecycleAdapter
             }
             catch ( TimeoutException e )
             {
-                log.warn( "Waiting for up-to-date store is taking an unusually long time" );
+                log.warn( "Waiting for up-to-date store. State: " + catchupProcess.describeState() );
             }
         }
         while ( !upToDate );

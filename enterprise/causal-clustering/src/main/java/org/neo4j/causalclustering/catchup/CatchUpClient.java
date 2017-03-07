@@ -75,8 +75,12 @@ public class CatchUpClient extends LifecycleAdapter
         Optional<AdvertisedSocketAddress> catchUpAddress =
                 discoveryService.coreServers().find( target ).map( CoreAddresses::getCatchupServer );
 
-        CatchUpChannel channel = pool.acquire( catchUpAddress.orElseThrow(
-                () -> new CatchUpClientException( "Cannot find the target member socket address" ) ) );
+        if ( !catchUpAddress.isPresent() )
+        {
+            throw new CatchUpClientException( "Cannot find the target member socket address" );
+        }
+
+        CatchUpChannel channel = pool.acquire( catchUpAddress.get() );
 
         future.whenComplete( ( result, e ) -> {
             if ( e == null )
