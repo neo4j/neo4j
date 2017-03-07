@@ -66,57 +66,6 @@ class CsvImporter implements Importer
     private final boolean ignoreDuplicateNodes;
     private final boolean ignoreExtraColumns;
 
-    public static String description()
-    {
-        return "--mode=csv\n" +
-                "        Import a database from a collection of CSV files.\n" +
-                "--report-file=<filename>\n" +
-                "        File name in which to store the report of the import.\n" +
-                "        Defaults to " + ImportCommand.DEFAULT_REPORT_FILE_NAME + " in the current directory.\n" +
-                "--nodes[:Label1:Label2]=\"<file1>,<file2>,...\"\n" +
-                "        Node CSV header and data. Multiple files will be logically seen as\n" +
-                "        one big file from the perspective of the importer. The first line\n" +
-                "        must contain the header. Multiple data sources like these can be\n" +
-                "        specified in one import, where each data source has its own header.\n" +
-                "        Note that file groups must be enclosed in quotation marks.\n" +
-                "--relationships[:RELATIONSHIP_TYPE]=\"<file1>,<file2>,...\"\n" +
-                "        Relationship CSV header and data. Multiple files will be logically\n" +
-                "        seen as one big file from the perspective of the importer. The first\n" +
-                "        line must contain the header. Multiple data sources like these can be\n" +
-                "        specified in one import, where each data source has its own header.\n" +
-                "        Note that file groups must be enclosed in quotation marks.\n" +
-                "--id-type=<id-type>\n" +
-                "        Each node must provide a unique id. This is used to find the correct\n" +
-                "        nodes when creating relationships. Must be one of:\n" +
-                "            STRING: (default) arbitrary strings for identifying nodes.\n" +
-                "            INTEGER: arbitrary integer values for identifying nodes.\n" +
-                "            ACTUAL: (advanced) actual node ids. The default option is STRING.\n" +
-                "        For more information on id handling, please see the Neo4j Manual:\n" +
-                "        https://neo4j.com/docs/operations-manual/current/tools/import/\n" +
-                "--input-encoding=<character-set>\n" +
-                "        Character set that input data is encoded in. Defaults to UTF-8.\n" +
-                "--ignore-extra-columns=<true|false>\n" +
-                "        If un-identified columns should be ignored during the import. Defaults to false.\n" +
-                "--ignore-duplicate-nodes=<true|false>\n" +
-                "        If duplicate nodes should be ignored during the import. Defaults to false.\n" +
-                "--ignore-missing-nodes=<true|false>\n" +
-                "        If relationships referring to missing nodes should be ignored during the import.\n" +
-                "        Defaults to false.\n";
-    }
-
-    public static String arguments()
-    {
-        return "[--report-file=<filename>] " +
-                "[--nodes[:Label1:Label2]=\"<file1>,<file2>,...\"] " +
-                "[--relationships[:RELATIONSHIP_TYPE]=\"<file1>,<file2>,...\"] " +
-                "[--id-type=<id-type>] " +
-                "[--input-encoding=<character-set>] " +
-                "[--page-size=<page-size>]" +
-                "[--ignore-extra-columns=<true|false>" +
-                "[--ignore-duplicate-nodes=<true|false>" +
-                "[--ignore-missing-nodes=<true|false>";
-    }
-
     CsvImporter( Args args, Config config, OutsideWorld outsideWorld ) throws IncorrectUsage
     {
         this.args = args;
