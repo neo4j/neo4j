@@ -42,12 +42,19 @@ abstract class RotationState<Key> extends ProgressiveState<Key>
 
     abstract long rotationVersion();
 
+    /**
+     * Marks state as failed and returns the state as it were before this state.
+     *
+     * @return previous state.
+     */
+    abstract ProgressiveState<Key> markAsFailed();
+
     static final class Rotation<Key> extends RotationState<Key>
     {
         private final ActiveState<Key> preState;
         private final PrototypeState<Key> postState;
         private final long threshold;
-        private boolean failed = false;
+        private boolean failed;
 
         Rotation( ActiveState<Key> preState, PrototypeState<Key> postState, long version )
         {
@@ -56,6 +63,7 @@ abstract class RotationState<Key> extends ProgressiveState<Key>
             this.threshold = version;
         }
 
+        @Override
         ActiveState<Key> rotate( boolean force, RotationStrategy strategy, RotationTimerFactory timerFactory,
                                 Consumer<Headers.Builder> headersUpdater ) throws IOException
         {
@@ -67,7 +75,6 @@ abstract class RotationState<Key> extends ProgressiveState<Key>
                 {
                     if ( rotationTimer.isTimedOut() )
                     {
-                        failed = true;
                         throw new RotationTimeoutException( threshold, preState.store.version(),
                                 rotationTimer.getElapsedTimeMillis());
                     }
@@ -89,7 +96,11 @@ abstract class RotationState<Key> extends ProgressiveState<Key>
         @Override
         public void close() throws IOException
         {
-            preState.close();
+            if ( !failed )
+            {
+                // We can't just close the pre-state (the only good state right now) if the rotation failed.
+                preState.close();
+            }
         }
 
         @Override
@@ -209,6 +220,13 @@ abstract class RotationState<Key> extends ProgressiveState<Key>
         protected boolean lookup( Key key, ValueSink sink ) throws IOException
         {
             return postState.lookup( key, sink );
+        }
+
+        @Override
+        ProgressiveState<Key> markAsFailed()
+        {
+            failed = true;
+            return preState;
         }
     }
 }

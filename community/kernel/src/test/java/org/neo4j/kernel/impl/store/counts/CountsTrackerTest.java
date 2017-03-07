@@ -24,33 +24,48 @@ import org.junit.Test;
 
 import java.io.File;
 import java.io.IOException;
+import java.time.Clock;
+import java.util.concurrent.ExecutionException;
 import java.util.concurrent.Future;
+import java.util.function.Predicate;
 
 import org.neo4j.function.IOFunction;
 import org.neo4j.function.ThrowingFunction;
-import org.neo4j.kernel.api.schema.IndexDescriptor;
-import org.neo4j.kernel.api.schema.IndexDescriptorFactory;
+import org.neo4j.graphdb.factory.GraphDatabaseSettings;
 import org.neo4j.kernel.configuration.Config;
 import org.neo4j.kernel.impl.api.CountsAccessor;
 import org.neo4j.kernel.impl.api.CountsVisitor;
 import org.neo4j.kernel.impl.store.CountsOracle;
 import org.neo4j.kernel.impl.store.counts.keys.CountsKey;
+import org.neo4j.kernel.impl.store.counts.keys.CountsKeyFactory;
 import org.neo4j.kernel.impl.store.kvstore.DataInitializer;
 import org.neo4j.kernel.impl.store.kvstore.ReadableBuffer;
+import org.neo4j.kernel.impl.store.kvstore.RotationTimeoutException;
 import org.neo4j.kernel.lifecycle.Lifespan;
+import org.neo4j.register.Register;
 import org.neo4j.register.Registers;
 import org.neo4j.test.Barrier;
 import org.neo4j.test.rule.Resources;
 import org.neo4j.test.rule.concurrent.ThreadingRule;
+import org.neo4j.time.Clocks;
+import org.neo4j.time.FakeClock;
 
-import static java.util.concurrent.TimeUnit.SECONDS;
 import static org.junit.Assert.assertEquals;
 import static org.junit.Assert.assertNotEquals;
 import static org.junit.Assert.assertSame;
 import static org.junit.Assert.assertTrue;
+import static org.junit.Assert.fail;
 import static org.mockito.Mockito.mock;
 import static org.mockito.Mockito.verify;
 import static org.mockito.Mockito.verifyNoMoreInteractions;
+
+import static java.util.concurrent.TimeUnit.MILLISECONDS;
+import static java.util.concurrent.TimeUnit.SECONDS;
+
+import static org.neo4j.function.Predicates.all;
+import static org.neo4j.kernel.impl.util.DebugUtil.classNameContains;
+import static org.neo4j.kernel.impl.util.DebugUtil.methodIs;
+import static org.neo4j.kernel.impl.util.DebugUtil.stackTraceContains;
 import static org.neo4j.test.rule.Resources.InitialLifecycle.STARTED;
 import static org.neo4j.test.rule.Resources.TestPath.FILE_IN_EXISTING_DIRECTORY;
 
@@ -337,10 +352,65 @@ public class CountsTrackerTest
         assertEquals( "final rotation", 5, tracker.rotate( 5 ) );
     }
 
+    @Test
+    @Resources.Life(STARTED)
+    public void shouldNotEndUpInBrokenStateAfterRotationFailure() throws Exception
+    {
+        // GIVEN
+        FakeClock clock = Clocks.fakeClock();
+        CountsTracker tracker = resourceManager.managed( newTracker( clock ) );
+        int labelId = 1;
+        try ( CountsAccessor.Updater tx = tracker.apply( 2 ).get() )
+        {
+            tx.incrementNodeCount( labelId, 1 ); // now at 1
+        }
+
+        // WHEN
+        Predicate<Thread> arrived = thread ->
+            stackTraceContains( thread, all( classNameContains( "Rotation" ), methodIs( "rotate" ) ) );
+        Future<Object> rotation = threading.executeAndAwait( t -> t.rotate( 4 ), tracker, arrived, 100, MILLISECONDS );
+        try ( CountsAccessor.Updater tx = tracker.apply( 3 ).get() )
+        {
+            tx.incrementNodeCount( labelId, 1 ); // now at 2
+        }
+        clock.forward( Config.empty().get( GraphDatabaseSettings.counts_store_rotation_timeout ) * 2, MILLISECONDS );
+        try
+        {
+            rotation.get();
+            fail( "Should've failed rotation due to timeout" );
+        }
+        catch ( ExecutionException e )
+        {
+            // good
+            assertTrue( e.getCause() instanceof RotationTimeoutException );
+        }
+
+        // THEN
+        Register.DoubleLongRegister register = Registers.newDoubleLongRegister();
+        tracker.get( CountsKeyFactory.nodeKey( labelId ), register );
+        assertEquals( 2, register.readSecond() );
+
+        // and WHEN later attempting rotation again
+        try ( CountsAccessor.Updater tx = tracker.apply( 4 ).get() )
+        {
+            tx.incrementNodeCount( labelId, 1 ); // now at 3
+        }
+        tracker.rotate( 4 );
+
+        // THEN
+        tracker.get( CountsKeyFactory.nodeKey( labelId ), register );
+        assertEquals( 3, register.readSecond() );
+    }
+
     private CountsTracker newTracker()
     {
+        return newTracker( Clocks.systemClock() );
+    }
+
+    private CountsTracker newTracker( Clock clock )
+    {
         return new CountsTracker( resourceManager.logProvider(), resourceManager.fileSystem(),
-                resourceManager.pageCache(), Config.empty(), resourceManager.testPath() )
+                resourceManager.pageCache(), Config.empty(), resourceManager.testPath(), clock )
                 .setInitializer( new DataInitializer<CountsAccessor.Updater>()
                 {
                     @Override

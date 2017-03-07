@@ -26,6 +26,9 @@ import java.util.concurrent.TimeUnit;
 import java.util.concurrent.atomic.AtomicBoolean;
 import java.util.concurrent.atomic.AtomicReference;
 
+import org.neo4j.helpers.collection.Iterators;
+import org.neo4j.kernel.impl.store.UnderlyingStorageException;
+import org.neo4j.kernel.internal.DatabaseHealth;
 import org.neo4j.test.DoubleLatch;
 import org.neo4j.test.OnDemandJobScheduler;
 
@@ -34,6 +37,7 @@ import static org.junit.Assert.assertFalse;
 import static org.junit.Assert.assertNotNull;
 import static org.junit.Assert.assertNull;
 import static org.junit.Assert.assertTrue;
+import static org.junit.Assert.fail;
 import static org.mockito.Matchers.any;
 import static org.mockito.Matchers.eq;
 import static org.mockito.Mockito.mock;
@@ -41,18 +45,22 @@ import static org.mockito.Mockito.spy;
 import static org.mockito.Mockito.times;
 import static org.mockito.Mockito.verify;
 import static org.mockito.Mockito.verifyNoMoreInteractions;
+import static org.mockito.Mockito.verifyZeroInteractions;
+import static org.mockito.Mockito.when;
+
 import static org.neo4j.kernel.impl.util.JobScheduler.Groups.checkPoint;
 
 public class CheckPointSchedulerTest
 {
     private final CheckPointer checkPointer = mock( CheckPointer.class );
     private final OnDemandJobScheduler jobScheduler = spy( new OnDemandJobScheduler() );
+    private final DatabaseHealth health = mock( DatabaseHealth.class );
 
     @Test
     public void shouldScheduleTheCheckPointerJobOnStart() throws Throwable
     {
         // given
-        CheckPointScheduler scheduler = new CheckPointScheduler( checkPointer, jobScheduler, 20L );
+        CheckPointScheduler scheduler = new CheckPointScheduler( checkPointer, jobScheduler, 20L, health );
 
         assertNull( jobScheduler.getJob() );
 
@@ -69,7 +77,7 @@ public class CheckPointSchedulerTest
     public void shouldRescheduleTheJobAfterARun() throws Throwable
     {
         // given
-        CheckPointScheduler scheduler = new CheckPointScheduler( checkPointer, jobScheduler, 20L );
+        CheckPointScheduler scheduler = new CheckPointScheduler( checkPointer, jobScheduler, 20L, health );
 
         assertNull( jobScheduler.getJob() );
 
@@ -92,7 +100,7 @@ public class CheckPointSchedulerTest
     public void shouldNotRescheduleAJobWhenStopped() throws Throwable
     {
         // given
-        CheckPointScheduler scheduler = new CheckPointScheduler( checkPointer, jobScheduler, 20L );
+        CheckPointScheduler scheduler = new CheckPointScheduler( checkPointer, jobScheduler, 20L, health );
 
         assertNull( jobScheduler.getJob() );
 
@@ -110,7 +118,7 @@ public class CheckPointSchedulerTest
     @Test
     public void stoppedJobCantBeInvoked() throws Throwable
     {
-        CheckPointScheduler scheduler = new CheckPointScheduler( checkPointer, jobScheduler, 10L );
+        CheckPointScheduler scheduler = new CheckPointScheduler( checkPointer, jobScheduler, 10L, health );
         scheduler.start();
         jobScheduler.runJob();
 
@@ -162,7 +170,7 @@ public class CheckPointSchedulerTest
             }
         };
 
-        final CheckPointScheduler scheduler = new CheckPointScheduler( checkPointer, jobScheduler, 20L );
+        final CheckPointScheduler scheduler = new CheckPointScheduler( checkPointer, jobScheduler, 20L, health );
 
         // when
         scheduler.start();
@@ -212,5 +220,94 @@ public class CheckPointSchedulerTest
         stopper.join(); // just in case
 
         assertNull( ex.get() );
+    }
+
+    @Test
+    public void shouldContinueThroughSporadicFailures() throws Throwable
+    {
+        // GIVEN
+        RuntimeException failure = new RuntimeException( "First" );
+        ControlledCheckPointer checkPointer = new ControlledCheckPointer();
+        CheckPointScheduler scheduler = new CheckPointScheduler( checkPointer, jobScheduler, 1, health );
+        scheduler.start();
+
+        // WHEN/THEN
+        for ( int i = 0; i < CheckPointScheduler.MAX_CONSECUTIVE_FAILURES_TOLERANCE * 2; i++ )
+        {
+            // Fail
+            checkPointer.fail = true;
+            jobScheduler.runJob();
+            verifyZeroInteractions( health );
+
+            // Succeed
+            checkPointer.fail = false;
+            jobScheduler.runJob();
+            verifyZeroInteractions( health );
+        }
+    }
+
+    @Test
+    public void shouldCausePanicAfterSomeFailures() throws Throwable
+    {
+        // GIVEN
+        RuntimeException[] failures = new RuntimeException[] {
+                new RuntimeException( "First" ),
+                new RuntimeException( "Second" ),
+                new RuntimeException( "Third" ) };
+        when( checkPointer.checkPointIfNeeded( any( TriggerInfo.class ) ) ).thenThrow( failures );
+        CheckPointScheduler scheduler = new CheckPointScheduler( checkPointer, jobScheduler, 1, health );
+        scheduler.start();
+
+        // WHEN
+        for ( int i = 0; i < CheckPointScheduler.MAX_CONSECUTIVE_FAILURES_TOLERANCE - 1; i++ )
+        {
+            jobScheduler.runJob();
+            verifyZeroInteractions( health );
+        }
+
+        try
+        {
+            jobScheduler.runJob();
+            fail( "Should have failed" );
+        }
+        catch ( UnderlyingStorageException e )
+        {
+            // THEN
+            assertEquals( Iterators.asSet( failures ), Iterators.asSet( e.getSuppressed() ) );
+            verify( health ).panic( e );
+        }
+    }
+
+    private static class ControlledCheckPointer implements CheckPointer
+    {
+        volatile boolean fail;
+
+        @Override
+        public long checkPointIfNeeded( TriggerInfo triggerInfo ) throws IOException
+        {
+            if ( fail )
+            {
+                throw new IOException( "Just failing" );
+            }
+            return 1;
+        }
+
+        @Override
+        public long tryCheckPoint( TriggerInfo triggerInfo ) throws IOException
+        {
+            throw new UnsupportedOperationException();
+        }
+
+        @Override
+        public long forceCheckPoint( TriggerInfo triggerInfo ) throws IOException
+        {
+            throw new UnsupportedOperationException();
+        }
+
+        @Override
+        public long lastCheckPointedTransactionId()
+        {
+            throw new UnsupportedOperationException();
+        }
     }
 }
