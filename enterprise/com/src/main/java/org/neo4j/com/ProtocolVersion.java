@@ -66,8 +66,8 @@ public final class ProtocolVersion implements Comparable<ProtocolVersion>
     @Override
     public int compareTo( ProtocolVersion that )
     {
-        return (this.applicationProtocol < that.applicationProtocol ? -1
-                : (this.applicationProtocol == that.applicationProtocol ? 0 : 1));
+        return this.applicationProtocol < that.applicationProtocol ? -1
+                : (this.applicationProtocol == that.applicationProtocol ? 0 : 1);
     }
 
     @Override

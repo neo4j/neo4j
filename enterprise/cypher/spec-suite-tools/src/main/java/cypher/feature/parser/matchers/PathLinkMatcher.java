@@ -71,8 +71,8 @@ public class PathLinkMatcher implements ValueMatcher
     public String toString()
     {
         StringBuilder sb = new StringBuilder();
-        sb.append( leftNode ).append( (outgoing ? "-" : "<-") );
-        sb.append( relMatcher ).append( (outgoing ? "->" : "-") );
+        sb.append( leftNode ).append( outgoing ? "-" : "<-" );
+        sb.append( relMatcher ).append( outgoing ? "->" : "-" );
         sb.append( rightNode );
         return sb.toString();
     }

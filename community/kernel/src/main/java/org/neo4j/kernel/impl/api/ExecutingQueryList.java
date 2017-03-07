@@ -101,7 +101,7 @@ abstract class ExecutingQueryList
         @Override
         ExecutingQueryList push( ExecutingQuery newExecutingQuery )
         {
-            assert (newExecutingQuery.internalQueryId() > query.internalQueryId());
+            assert newExecutingQuery.internalQueryId() > query.internalQueryId();
             waitsFor( newExecutingQuery );
             return new Entry( newExecutingQuery, this );
         }

@@ -146,7 +146,7 @@ public abstract class IntArrayBasedKeyTable<VALUE> extends PowerOfTwoQuantizedTa
     @Override
     public void moveHopBit( int index, int hd, int delta )
     {
-        table[index( index )+itemsPerEntry-1] ^= (hopBit( hd ) | hopBit( hd+delta ));
+        table[index( index )+itemsPerEntry-1] ^= hopBit( hd ) | hopBit( hd+delta );
     }
 
     @Override

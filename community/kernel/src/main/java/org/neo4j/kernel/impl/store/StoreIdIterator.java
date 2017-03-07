@@ -85,7 +85,7 @@ public class StoreIdIterator implements PrimitiveLongIterator
         }
         finally
         {
-            id += (forward ? 1 : -1);
+            id += forward ? 1 : -1;
         }
     }
 }

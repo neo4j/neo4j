@@ -32,9 +32,9 @@ public class ConsistencyCheckingError extends DataInconsistencyError
                                      ConsistencySummaryStatistics summary )
     {
         super( String.format( "Inconsistencies in transaction:\n\t%s\n\t%s\n\t%s",
-                              (startEntry == null ? "NO START ENTRY" : startEntry.toString()),
-                              (commitEntry == null ? "NO COMMIT ENTRY" : commitEntry.toString()),
-                              summary ) );
+                               startEntry == null ? "NO START ENTRY" : startEntry.toString(),
+                               commitEntry == null ? "NO COMMIT ENTRY" : commitEntry.toString(),
+                               summary ) );
         this.summary = summary;
     }
 

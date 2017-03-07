@@ -131,7 +131,7 @@ public class EnterpriseSecurityModule extends SecurityModule
     {
         if ( securityContext instanceof EnterpriseSecurityContext )
         {
-            return ((EnterpriseSecurityContext) securityContext);
+            return (EnterpriseSecurityContext) securityContext;
         }
         // TODO: better handling of this possible cast failure
         throw new RuntimeException( "Expected EnterpriseSecurityContext, got " + securityContext.getClass().getName() );
@@ -291,7 +291,7 @@ public class EnterpriseSecurityModule extends SecurityModule
         {
             String missingProvider =
                     ( missingAuthenticatingRealm && missingAuthorizingRealm ) ? "authentication or authorization" :
-                    ( missingAuthenticatingRealm ) ? "authentication" : "authorization";
+                    missingAuthenticatingRealm ? "authentication" : "authorization";
 
             throw illegalConfiguration( format(
                     "No plugin %s provider loaded even though required by configuration.", missingProvider ) );

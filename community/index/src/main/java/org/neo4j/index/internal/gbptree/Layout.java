@@ -158,7 +158,7 @@ public interface Layout<KEY, VALUE> extends Comparator<KEY>
         {
             byte byteValue = (byte) (((byte) aChar) ^ ((byte) (aChar >> 8)));
             upperInt <<= 8;
-            upperInt |= (byteValue & 0xFF);
+            upperInt |= byteValue & 0xFF;
         }
 
         return upperInt << Integer.SIZE | (checksum & 0xFFFFFFFF);

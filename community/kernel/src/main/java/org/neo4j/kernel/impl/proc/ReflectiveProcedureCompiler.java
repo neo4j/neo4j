@@ -42,10 +42,10 @@ import org.neo4j.kernel.api.proc.CallableProcedure;
 import org.neo4j.kernel.api.proc.CallableUserAggregationFunction;
 import org.neo4j.kernel.api.proc.CallableUserFunction;
 import org.neo4j.kernel.api.proc.Context;
-import org.neo4j.kernel.api.proc.FieldSignature;
 import org.neo4j.kernel.api.proc.FailedLoadAggregatedFunction;
 import org.neo4j.kernel.api.proc.FailedLoadFunction;
 import org.neo4j.kernel.api.proc.FailedLoadProcedure;
+import org.neo4j.kernel.api.proc.FieldSignature;
 import org.neo4j.kernel.api.proc.ProcedureSignature;
 import org.neo4j.kernel.api.proc.QualifiedName;
 import org.neo4j.kernel.api.proc.UserFunctionSignature;
@@ -473,7 +473,7 @@ class ReflectiveProcedureCompiler
 
     private QualifiedName extractName( Class<?> procDefinition, Method m, String valueName, String definedName )
     {
-        String procName = (definedName.trim().isEmpty() ? valueName : definedName);
+        String procName = definedName.trim().isEmpty() ? valueName : definedName;
         if ( procName.trim().length() > 0 )
         {
             String[] split = procName.split( "\\." );

@@ -181,7 +181,7 @@ public class BoltQueryLoggingIT
 
     private static byte[] read( DataInputStream dataIn, int howMany ) throws IOException
     {
-        assert( howMany > 0 );
+        assert howMany > 0;
 
         byte[] buffer = new byte[howMany];
         int offset = 0;

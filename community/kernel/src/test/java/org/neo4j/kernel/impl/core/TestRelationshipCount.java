@@ -32,6 +32,7 @@ import java.util.EnumMap;
 import java.util.HashSet;
 import java.util.Map;
 import java.util.Set;
+
 import org.neo4j.graphdb.Direction;
 import org.neo4j.graphdb.GraphDatabaseService;
 import org.neo4j.graphdb.Node;
@@ -45,6 +46,7 @@ import org.neo4j.kernel.configuration.Config;
 import org.neo4j.kernel.impl.MyRelTypes;
 import org.neo4j.kernel.internal.GraphDatabaseAPI;
 import org.neo4j.test.TestGraphDatabaseFactory;
+
 import static java.lang.Integer.parseInt;
 import static java.util.Arrays.asList;
 import static org.junit.Assert.assertEquals;
@@ -364,11 +366,13 @@ public class TestRelationshipCount
                 Node otherNode = null;
                 if ( spec.dir == Direction.OUTGOING )
                 {
-                    me.createRelationshipTo( (otherNode = getGraphDb().createNode()), spec.type );
+                    otherNode = getGraphDb().createNode();
+                    me.createRelationshipTo( otherNode, spec.type );
                 }
                 else if ( spec.dir == Direction.INCOMING )
                 {
-                    (otherNode = getGraphDb().createNode()).createRelationshipTo( me, spec.type );
+                    otherNode = getGraphDb().createNode();
+                    otherNode.createRelationshipTo( me, spec.type );
                 }
                 else
                 {

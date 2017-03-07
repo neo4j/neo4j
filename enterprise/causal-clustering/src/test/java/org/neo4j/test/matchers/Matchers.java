@@ -65,7 +65,7 @@ public final class Matchers
             {
                 List<RaftLogEntry> entries = messages.stream()
                         .filter( message -> message instanceof RaftMessages.AppendEntries.Request )
-                        .map( m -> ((RaftMessages.AppendEntries.Request) m) )
+                        .map( m -> (RaftMessages.AppendEntries.Request) m )
                         .flatMap( x -> Arrays.stream( x.entries() ) )
                         .collect( Collectors.toList() );
 

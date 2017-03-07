@@ -78,7 +78,7 @@ public class ClusterSeedingIT
     {
         return singletonMap(
                 OnlineBackupSettings.online_backup_server.name(),
-                serverId -> (":" + (8000 + serverId)) );
+                serverId -> ":" + (8000 + serverId) );
     }
 
     @After

@@ -514,7 +514,7 @@ public class NodeRelationshipCache implements MemoryStatsVisitor.Visitable
             this.base = base;
             assert chunkSize > 0;
             this.array = arrayFactory.newDynamicByteArray( chunkSize,
-                    minusOneBytes( ID_SIZE/*next*/ + (ID_AND_COUNT_SIZE) * Direction.values().length ) );
+                    minusOneBytes( ID_SIZE/*next*/ + ID_AND_COUNT_SIZE * Direction.values().length ) );
             this.nextFreeId = new AtomicLong( base );
         }
 

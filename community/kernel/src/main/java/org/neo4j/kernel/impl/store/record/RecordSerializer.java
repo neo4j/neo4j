@@ -38,12 +38,16 @@ public class RecordSerializer
         int[] lengths = new int[serializables.size()];
         int totalLength = 0;
         for ( int i = 0; i < serializables.size(); i++ )
-            totalLength += (lengths[i] = serializables.get( i ).length());
+        {
+            totalLength += lengths[i] = serializables.get( i ).length();
+        }
 
         byte[] array = new byte[totalLength];
         ByteBuffer target = ByteBuffer.wrap( array );
         for ( int i = 0; i < serializables.size(); i++ )
+        {
             serializables.get( i ).serialize( target );
+        }
         return array;
     }
 }

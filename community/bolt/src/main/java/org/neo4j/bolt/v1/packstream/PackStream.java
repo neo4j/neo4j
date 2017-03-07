@@ -176,7 +176,7 @@ public class PackStream
             String[] packedChars = new String[size];
             for ( int i = 0; i < size; i++ )
             {
-                packedChars[i] = ( String.valueOf( (char)(i + PACKED_CHAR_START_CHAR) ) );
+                packedChars[i] = String.valueOf( (char) (i + PACKED_CHAR_START_CHAR) );
             }
             return packedChars;
         }

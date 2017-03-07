@@ -304,7 +304,7 @@ public class SubGraphExporter
         }
         if ( value instanceof Iterator )
         {
-            return toString( ((Iterator) value) );
+            return toString( (Iterator) value );
         }
         if ( value instanceof Iterable )
         {

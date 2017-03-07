@@ -407,9 +407,9 @@ public class HopScotchHashingAlgorithm
         @Override
         public int hash( long value )
         {
-            value ^= (value << 21);
-            value ^= (value >>> 35);
-            value ^= (value << 4);
+            value ^= value << 21;
+            value ^= value >>> 35;
+            value ^= value << 4;
 
             return (int) ((value >>> 32) ^ value);
         }

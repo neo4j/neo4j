@@ -479,7 +479,7 @@ public abstract class CommonAbstractStore<RECORD extends AbstractBaseRecord,HEAD
         boolean done = false;
         while ( !done && cursor.next() )
         {
-            long idPageOffset = (cursor.getCurrentPageId() * recordsPerPage);
+            long idPageOffset = cursor.getCurrentPageId() * recordsPerPage;
 
             defragged = 0;
             for ( int i = startingId; i < recordsPerPage; i++ )

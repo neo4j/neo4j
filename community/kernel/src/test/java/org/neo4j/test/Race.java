@@ -183,7 +183,7 @@ public class Race
                 }
                 long time = currentTimeMillis();
                 contestant.join( maxWaitTimeMillis - waitedSoFar );
-                waitedSoFar += (currentTimeMillis() - time);
+                waitedSoFar += currentTimeMillis() - time;
             }
             if ( contestant.error != null )
             {

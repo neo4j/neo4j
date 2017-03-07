@@ -582,7 +582,7 @@ public class TransactionMatchers
             {
                 Map<String, Object> content = response.content();
                 @SuppressWarnings("unchecked")
-                List<Map<String, Object>> errors = ((List<Map<String, Object>>) content.get( "errors" ));
+                List<Map<String, Object>> errors = (List<Map<String, Object>>) content.get( "errors" );
 
                 for ( Map<String, Object> error : errors )
                 {

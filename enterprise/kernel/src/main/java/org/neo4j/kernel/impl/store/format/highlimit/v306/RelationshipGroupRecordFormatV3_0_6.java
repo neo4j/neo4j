@@ -158,12 +158,12 @@ class RelationshipGroupRecordFormatV3_0_6 extends BaseHighLimitRecordFormatV3_0_
     @Override
     protected boolean canUseFixedReferences( RelationshipGroupRecord record, int recordSize )
     {
-        return (isRecordBigEnoughForFixedReferences( recordSize ) &&
-                ((record.getNext() == NULL) || ((record.getNext() & ONE_BIT_OVERFLOW_BIT_MASK) == 0)) &&
-                ((record.getFirstOut() == NULL) || ((record.getFirstOut() & ONE_BIT_OVERFLOW_BIT_MASK) == 0)) &&
-                ((record.getFirstIn() == NULL) || ((record.getFirstIn() & ONE_BIT_OVERFLOW_BIT_MASK) == 0)) &&
-                ((record.getFirstLoop() == NULL) || ((record.getFirstLoop() & ONE_BIT_OVERFLOW_BIT_MASK) == 0)) &&
-                ((record.getOwningNode() == NULL) || ((record.getOwningNode() & ONE_BIT_OVERFLOW_BIT_MASK) == 0)));
+        return isRecordBigEnoughForFixedReferences( recordSize ) &&
+                (record.getNext() == NULL || (record.getNext() & ONE_BIT_OVERFLOW_BIT_MASK) == 0) &&
+                (record.getFirstOut() == NULL || (record.getFirstOut() & ONE_BIT_OVERFLOW_BIT_MASK) == 0) &&
+                (record.getFirstIn() == NULL || (record.getFirstIn() & ONE_BIT_OVERFLOW_BIT_MASK) == 0) &&
+                (record.getFirstLoop() == NULL || (record.getFirstLoop() & ONE_BIT_OVERFLOW_BIT_MASK) == 0) &&
+                (record.getOwningNode() == NULL || (record.getOwningNode() & ONE_BIT_OVERFLOW_BIT_MASK) == 0);
     }
 
     private boolean isRecordBigEnoughForFixedReferences( int recordSize )

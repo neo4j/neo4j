@@ -88,7 +88,7 @@ public class LoggingLogFileMonitor implements
     public void opened( File logFile, long logVersion, long lastTransactionId, boolean clean )
     {
         log.info( format( "Opened logical log [%s] version=%d, lastTxId=%d (%s)",
-                logFile, logVersion, lastTransactionId,  (clean ? "clean" : "recovered") ) );
+                logFile, logVersion, lastTransactionId, clean ? "clean" : "recovered" ) );
     }
 
     @Override

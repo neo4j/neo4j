@@ -46,7 +46,6 @@ import org.neo4j.kernel.impl.store.record.AbstractBaseRecord;
 import org.neo4j.kernel.impl.store.record.IndexRule;
 
 import static java.lang.String.format;
-
 import static org.neo4j.consistency.checking.full.MultiPassStore.ARRAYS;
 import static org.neo4j.consistency.checking.full.MultiPassStore.LABELS;
 import static org.neo4j.consistency.checking.full.MultiPassStore.NODES;
@@ -137,7 +136,7 @@ public class ConsistencyCheckTasks
             PropertyReader propertyReader = new PropertyReader( nativeStores );
             tasks.add( recordScanner( CheckStage.Stage8_PS_Props.name(),
                     new IterableStore<>( nativeStores.getNodeStore(), true ),
-                    new PropertyAndNode2LabelIndexProcessor( reporter, (checkIndexes ? indexes : null ),
+                    new PropertyAndNode2LabelIndexProcessor( reporter, checkIndexes ? indexes : null,
                             propertyReader, cacheAccess, mandatoryProperties.forNodes( reporter ) ),
                     CheckStage.Stage8_PS_Props, ROUND_ROBIN,
                     new IterableStore<>( nativeStores.getPropertyStore(), true ) ) );

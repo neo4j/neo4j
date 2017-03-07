@@ -34,7 +34,6 @@ import org.neo4j.kernel.impl.store.StoreType;
 
 import static java.nio.file.StandardOpenOption.CREATE;
 import static java.nio.file.StandardOpenOption.WRITE;
-
 import static org.neo4j.kernel.impl.store.format.RecordFormat.NO_RECORD_SIZE;
 
 public class ToFileStoreWriter implements StoreWriter
@@ -143,7 +142,7 @@ public class ToFileStoreWriter implements StoreWriter
                 temporaryBuffer.flip();
                 totalToWrite += temporaryBuffer.limit();
                 int bytesWritten;
-                while ( (totalWritten += (bytesWritten = channel.write( temporaryBuffer ))) < totalToWrite )
+                while ( (totalWritten += bytesWritten = channel.write( temporaryBuffer )) < totalToWrite )
                 {
                     if ( bytesWritten < 0 )
                     {

@@ -162,7 +162,7 @@ public abstract class AbstractDynamicStore extends CommonAbstractStore<DynamicRe
             }
 
             byteList.add( record.getData() );
-            totalSize += (record.getData().length - offset);
+            totalSize += record.getData().length - offset;
         }
         byte[] bArray = new byte[totalSize];
         assert header != null :
@@ -173,7 +173,7 @@ public abstract class AbstractDynamicStore extends CommonAbstractStore<DynamicRe
         {
             System.arraycopy( currentArray, sourceOffset, bArray, offset,
                     currentArray.length - sourceOffset );
-            offset += (currentArray.length - sourceOffset);
+            offset += currentArray.length - sourceOffset;
             sourceOffset = 0;
         }
         return Pair.of( header, bArray );

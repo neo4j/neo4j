@@ -133,7 +133,7 @@ public class ServerTest
         Server<Object,Object> server = new Server<Object,Object>( null, conf,
                 getInstance(),
                 DEFAULT_FRAME_LENGTH,
-                new ProtocolVersion( ((byte) 0), ProtocolVersion.INTERNAL_PROTOCOL_VERSION ),
+                new ProtocolVersion( (byte) 0, ProtocolVersion.INTERNAL_PROTOCOL_VERSION ),
                 checksumVerifier, Clocks.systemClock(),
                 mock( ByteCounterMonitor.class ), mock( RequestMonitor.class ) )
         {

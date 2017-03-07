@@ -19,23 +19,23 @@
  */
 package org.neo4j.server.rest.transactional;
 
+import org.codehaus.jackson.JsonGenerator;
+import org.codehaus.jackson.map.ObjectMapper;
+import org.codehaus.jackson.map.SerializationConfig;
+
 import java.io.IOException;
 import java.util.Iterator;
 import java.util.LinkedHashMap;
 import java.util.Map;
 import java.util.Set;
 
-import org.codehaus.jackson.JsonGenerator;
-import org.codehaus.jackson.map.ObjectMapper;
-import org.codehaus.jackson.map.SerializationConfig;
-
 import org.neo4j.graphdb.Node;
 import org.neo4j.graphdb.Path;
 import org.neo4j.graphdb.PropertyContainer;
 import org.neo4j.graphdb.Relationship;
+import org.neo4j.graphdb.spatial.CRS;
 import org.neo4j.graphdb.spatial.Coordinate;
 import org.neo4j.graphdb.spatial.Geometry;
-import org.neo4j.graphdb.spatial.CRS;
 import org.neo4j.graphdb.spatial.Point;
 
 import static org.neo4j.helpers.collection.MapUtil.genericMap;
@@ -230,7 +230,7 @@ public class Neo4jJsonCodec extends ObjectMapper
         }
         else if ( value instanceof Iterable )
         {
-            for ( Object v : ((Iterable) value) )
+            for ( Object v : (Iterable) value )
             {
                 writeMeta( out, v );
             }

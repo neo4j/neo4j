@@ -285,11 +285,11 @@ public final class Bits implements Cloneable
         int lowBitInLong = writePosition % 64;
         int lowBitsAvailable = 64 - lowBitInLong;
         long lowValueMask = rightOverflowMask( Math.min( lowBitsAvailable, steps ) );
-        longs[lowLongIndex] |= (((value) & lowValueMask) << lowBitInLong);
+        longs[lowLongIndex] |= (value & lowValueMask) << lowBitInLong;
         if ( steps > lowBitsAvailable )
         {   // High bits
             long highValueMask = rightOverflowMask( steps - lowBitsAvailable );
-            longs[lowLongIndex + 1] |= ((value) >>> lowBitsAvailable) & highValueMask;
+            longs[lowLongIndex + 1] |= (value >>> lowBitsAvailable) & highValueMask;
         }
         writePosition += steps;
         return this;
@@ -360,7 +360,7 @@ public final class Bits implements Cloneable
         if ( steps > lowBitsAvailable )
         {   // High bits
             long highLongMask = rightOverflowMask( steps - lowBitsAvailable );
-            result |= ((longs[lowLongIndex + 1] & highLongMask) << lowBitsAvailable);
+            result |= (longs[lowLongIndex + 1] & highLongMask) << lowBitsAvailable;
         }
         readPosition += steps;
         return result;

@@ -514,7 +514,7 @@ abstract class MuninnPageCursor extends PageCursor
         UnsafeUtil.putByte( p + 4, (byte)( value >> 24 ) );
         UnsafeUtil.putByte( p + 5, (byte)( value >> 16 ) );
         UnsafeUtil.putByte( p + 6, (byte)( value >> 8  ) );
-        UnsafeUtil.putByte( p + 7, (byte)( value       ) );
+        UnsafeUtil.putByte( p + 7, (byte) value );
     }
 
     @Override
@@ -572,7 +572,7 @@ abstract class MuninnPageCursor extends PageCursor
         UnsafeUtil.putByte( p    , (byte)( value >> 24 ) );
         UnsafeUtil.putByte( p + 1, (byte)( value >> 16 ) );
         UnsafeUtil.putByte( p + 2, (byte)( value >> 8  ) );
-        UnsafeUtil.putByte( p + 3, (byte)( value       ) );
+        UnsafeUtil.putByte( p + 3, (byte) value );
     }
 
     @Override
@@ -667,7 +667,7 @@ abstract class MuninnPageCursor extends PageCursor
     private void putShortBigEndian( short value, long p )
     {
         UnsafeUtil.putByte( p    , (byte)( value >> 8 ) );
-        UnsafeUtil.putByte( p + 1, (byte)( value      ) );
+        UnsafeUtil.putByte( p + 1, (byte) value );
     }
 
     @Override

@@ -318,7 +318,7 @@ public class NetworkReceiver
         {
             if (!bindingDetected)
             {
-                InetSocketAddress local = ((InetSocketAddress)event.getChannel().getLocalAddress());
+                InetSocketAddress local = (InetSocketAddress)event.getChannel().getLocalAddress();
                 bindingDetected = true;
                 listeningAt( getURI( local ) );
             }

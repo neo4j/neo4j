@@ -120,6 +120,6 @@ public class DefaultNonUniqueIndexSampler implements NonUniqueIndexSampler
     private int calculateInitialSetSize( int sampleSizeLimit )
     {
         int basedOnSampleSize = Math.max( 10, (int) (Math.log( sampleSizeLimit ) / Math.log( 2 )) / 2 );
-        return (1 << Math.min( 16, basedOnSampleSize ));
+        return 1 << Math.min( 16, basedOnSampleSize );
     }
 }

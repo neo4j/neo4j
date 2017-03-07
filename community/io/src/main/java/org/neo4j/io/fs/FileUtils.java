@@ -537,7 +537,7 @@ public class FileUtils
         long filePosition = position;
         long expectedEndPosition = filePosition + src.limit() - src.position();
         int bytesWritten;
-        while((filePosition += (bytesWritten = channel.write( src, filePosition ))) < expectedEndPosition)
+        while ( (filePosition += bytesWritten = channel.write( src, filePosition )) < expectedEndPosition )
         {
             if( bytesWritten <= 0 )
             {
@@ -550,7 +550,7 @@ public class FileUtils
     {
         long bytesToWrite = src.limit() - src.position();
         int bytesWritten;
-        while((bytesToWrite -= (bytesWritten = channel.write( src ))) > 0)
+        while ( (bytesToWrite -= bytesWritten = channel.write( src )) > 0 )
         {
             if( bytesWritten <= 0 )
             {

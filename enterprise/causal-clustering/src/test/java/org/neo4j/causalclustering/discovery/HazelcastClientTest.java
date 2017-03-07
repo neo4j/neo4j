@@ -407,10 +407,10 @@ public class HazelcastClientTest
     {
         Member member = mock( Member.class );
         when( member.getStringAttribute( MEMBER_UUID ) ).thenReturn( UUID.randomUUID().toString() );
-        when( member.getStringAttribute( TRANSACTION_SERVER ) ).thenReturn( format( "host%d:%d", id, (7000 + id) ) );
-        when( member.getStringAttribute( RAFT_SERVER ) ).thenReturn( format( "host%d:%d", id, (6000 + id) ) );
+        when( member.getStringAttribute( TRANSACTION_SERVER ) ).thenReturn( format( "host%d:%d", id, 7000 + id ) );
+        when( member.getStringAttribute( RAFT_SERVER ) ).thenReturn( format( "host%d:%d", id, 6000 + id ) );
         when( member.getStringAttribute( CLIENT_CONNECTOR_ADDRESSES ) )
-                .thenReturn( format( "bolt://host%d:%d,http://host%d:%d", id, (5000 + id), id, (5000 + id) ) );
+                .thenReturn( format( "bolt://host%d:%d,http://host%d:%d", id, 5000 + id, id, 5000 + id ) );
         return member;
     }
 

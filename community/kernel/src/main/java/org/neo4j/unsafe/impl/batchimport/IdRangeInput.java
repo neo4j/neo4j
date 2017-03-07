@@ -45,7 +45,7 @@ public class IdRangeInput extends PrefetchingIterator<IdRangeInput.Range>
     @Override
     protected Range fetchNextOrNull()
     {
-        int count = (int) min( batchSize, (max - start) );
+        int count = (int) min( batchSize, max - start );
         if ( count == 0 )
         {
             return null;

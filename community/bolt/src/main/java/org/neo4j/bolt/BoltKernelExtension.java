@@ -57,13 +57,13 @@ import org.neo4j.graphdb.GraphDatabaseService;
 import org.neo4j.graphdb.config.Configuration;
 import org.neo4j.graphdb.config.Setting;
 import org.neo4j.graphdb.factory.GraphDatabaseSettings;
-import org.neo4j.kernel.api.security.UserManagerSupplier;
-import org.neo4j.kernel.configuration.BoltConnector;
 import org.neo4j.helpers.AdvertisedSocketAddress;
 import org.neo4j.helpers.ListenSocketAddress;
 import org.neo4j.helpers.Service;
 import org.neo4j.kernel.api.bolt.BoltConnectionTracker;
 import org.neo4j.kernel.api.security.AuthManager;
+import org.neo4j.kernel.api.security.UserManagerSupplier;
+import org.neo4j.kernel.configuration.BoltConnector;
 import org.neo4j.kernel.configuration.Config;
 import org.neo4j.kernel.configuration.Internal;
 import org.neo4j.kernel.extension.KernelExtensionFactory;
@@ -259,7 +259,7 @@ public class BoltKernelExtension extends KernelExtensionFactory<BoltKernelExtens
         File privateKeyPath = config.get( Settings.tls_key_file ).getAbsoluteFile();
         File certificatePath = config.get( Settings.tls_certificate_file ).getAbsoluteFile();
 
-        if ( (!certificatePath.exists() && !privateKeyPath.exists()) )
+        if ( !certificatePath.exists() && !privateKeyPath.exists() )
         {
             log.info( "No SSL certificate found, generating a self-signed certificate.." );
             Certificates certFactory = new Certificates();

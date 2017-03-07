@@ -128,9 +128,9 @@ class NodeRecordFormat extends BaseHighLimitRecordFormat<NodeRecord>
     @Override
     protected boolean canUseFixedReferences( NodeRecord record, int recordSize )
     {
-        return  (isRecordBigEnoughForFixedReferences( recordSize ) &&
-                 ((record.getNextProp() == NULL) || ((record.getNextProp() & HIGH_DWORD_LOWER_NIBBLE_MASK) == 0)) &&
-                 ((record.getNextRel() == NULL) || ((record.getNextRel() & HIGH_DWORD_LOWER_NIBBLE_MASK) == 0)));
+        return isRecordBigEnoughForFixedReferences( recordSize ) &&
+                (record.getNextProp() == NULL || (record.getNextProp() & HIGH_DWORD_LOWER_NIBBLE_MASK) == 0) &&
+                (record.getNextRel() == NULL || (record.getNextRel() & HIGH_DWORD_LOWER_NIBBLE_MASK) == 0);
     }
 
     private boolean isRecordBigEnoughForFixedReferences( int recordSize )
