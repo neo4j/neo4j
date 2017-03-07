@@ -56,6 +56,34 @@ public class UTF8
         return UTF8.decode( data );
     }
 
+    public static String getDecodedNullTerminatedStringFrom( ByteBuffer source )
+    {
+        int start = source.position();
+        int nullPos = -1;
+        int cursor = start;
+        while ( cursor < source.limit() )
+        {
+            if ( source.get( cursor ) == 0 )
+            {
+                nullPos = cursor;
+                break;
+            }
+            cursor++;
+        }
+        if ( nullPos == -1 )
+        {
+            return null;
+        }
+        int length = nullPos - start;
+        if ( length == 0 )
+        {
+            return "";
+        }
+        byte[] data = new byte[length];
+        source.get( data );
+        return UTF8.decode( data );
+    }
+
     public static void putEncodedStringInto( String text, ByteBuffer target )
     {
         byte[] data = encode( text );
@@ -63,9 +91,21 @@ public class UTF8
         target.put( data );
     }
 
+    public static void putEncodedNullTerminatedStringInto( String text, ByteBuffer target )
+    {
+        byte[] data = encode( text );
+        target.put( data );
+        target.put( (byte) 0 );
+    }
+
     public static int computeRequiredByteBufferSize( String text )
     {
         return encode( text ).length + 4;
+    }
+
+    public static int computeRequiredNullTerminatedByteBufferSize( String text )
+    {
+        return encode( text ).length + 1;
     }
 
     private UTF8()

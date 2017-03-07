@@ -26,23 +26,97 @@ import org.neo4j.kernel.api.schema_new.SchemaComputer;
 import org.neo4j.kernel.api.schema_new.SchemaDescriptor;
 import org.neo4j.kernel.api.schema_new.constaints.ConstraintDescriptor;
 import org.neo4j.kernel.api.schema_new.index.NewIndexDescriptor;
+import org.neo4j.kernel.impl.store.record.ConstraintRule;
+import org.neo4j.kernel.impl.store.record.IndexRule;
 import org.neo4j.kernel.impl.store.record.RecordSerializable;
 
 /**
  * Represents a stored schema rule.
  */
-public interface SchemaRule extends SchemaDescriptor.Supplier, RecordSerializable
+public abstract class SchemaRule implements SchemaDescriptor.Supplier, RecordSerializable
 {
+    protected final long id;
+    protected String name;
+
+    protected SchemaRule( long id )
+    {
+        this.id = id;
+    }
+
     /**
      * The persistence id for this rule.
      */
-    long getId();
+    public final long getId()
+    {
+        return this.id;
+    }
+
+    /**
+     * @return The (possibly user supplied) name of this schema rule.
+     */
+    public final String getName()
+    {
+        if ( name == null )
+        {
+            name = SchemaRule.generateName( this );
+        }
+        return name;
+    }
+
+    /**
+     * Set the name of this rule, if it has not been set already.
+     *
+     * Note that once a name has been observed - either via this method or via {@link #getName()} – for this rule,
+     * it cannot be changed.
+     * @param name The name desired for this rule.
+     * @return {@code true} if the name was set, {@code false} if this rule already has a name.
+     */
+    public final boolean setName( String name )
+    {
+        if ( this.name == null )
+        {
+            if ( name == null )
+            {
+                return true;
+            }
+            if ( name.length() == 0 )
+            {
+                throw new IllegalArgumentException( "Rule name cannot be the empty string" );
+            }
+            for ( int i = 0; i < name.length(); i++ )
+            {
+                char ch = name.charAt( i );
+                if ( ch == 0 )
+                {
+                    throw new IllegalArgumentException( "Illegal rule name: '" + name + "'" );
+                }
+            }
+            this.name = name;
+            return true;
+        }
+        return false;
+    }
+
+    public static String generateName( SchemaRule rule )
+    {
+        Class<? extends SchemaRule> type = rule.getClass();
+        long id = rule.getId();
+        if ( type == IndexRule.class )
+        {
+            return "index_" + id;
+        }
+        if ( type == ConstraintRule.class )
+        {
+            return "constraint_" + id;
+        }
+        return "schema_" + id;
+    }
 
     /**
      * This enum is used for the legacy schema store, and should not be extended.
      */
     @Deprecated
-    enum Kind
+    public enum Kind
     {
         INDEX_RULE( "Index" ),
         CONSTRAINT_INDEX_RULE( "Constraint index" ),

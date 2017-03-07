@@ -32,9 +32,8 @@ import static org.neo4j.kernel.api.schema_new.SchemaUtil.idTokenNameLookup;
 /**
  * A {@link Label} can have zero or more index rules which will have data specified in the rules indexed.
  */
-public class IndexRule implements SchemaRule, NewIndexDescriptor.Supplier
+public class IndexRule extends SchemaRule implements NewIndexDescriptor.Supplier
 {
-    private final long id;
     private final SchemaIndexProvider.Descriptor providerDescriptor;
     private final NewIndexDescriptor descriptor;
     private final Long owningConstraint;
@@ -55,7 +54,7 @@ public class IndexRule implements SchemaRule, NewIndexDescriptor.Supplier
     IndexRule( long id, SchemaIndexProvider.Descriptor providerDescriptor,
             NewIndexDescriptor descriptor, Long owningConstraint )
     {
-        this.id = id;
+        super( id );
         if ( providerDescriptor == null )
         {
             throw new IllegalArgumentException( "null provider descriptor prohibited" );
@@ -105,12 +104,6 @@ public class IndexRule implements SchemaRule, NewIndexDescriptor.Supplier
             throw new IllegalStateException( this + " is not a constraint index" );
         }
         return constraintIndexRule( id, descriptor, providerDescriptor, constraintId );
-    }
-
-    @Override
-    public long getId()
-    {
-        return id;
     }
 
     @Override

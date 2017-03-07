@@ -28,17 +28,10 @@ import org.neo4j.storageengine.api.schema.SchemaRule;
 
 import static org.neo4j.kernel.api.schema_new.SchemaUtil.idTokenNameLookup;
 
-public class ConstraintRule implements SchemaRule, ConstraintDescriptor.Supplier
+public class ConstraintRule extends SchemaRule implements ConstraintDescriptor.Supplier
 {
-    private final long id;
     private final Long ownedIndexRule;
     private final ConstraintDescriptor descriptor;
-
-    @Override
-    public final long getId()
-    {
-        return this.id;
-    }
 
     public static ConstraintRule constraintRule(
             long id, ConstraintDescriptor descriptor )
@@ -54,7 +47,7 @@ public class ConstraintRule implements SchemaRule, ConstraintDescriptor.Supplier
 
     ConstraintRule( long id, ConstraintDescriptor descriptor, Long ownedIndexRule )
     {
-        this.id = id;
+        super( id );
         this.descriptor = descriptor;
         this.ownedIndexRule = ownedIndexRule;
     }
