@@ -328,7 +328,6 @@ public abstract class IndexQuery implements Predicate<Object>
         @Override
         public boolean test( Object value )
         {
-            assert false : "StringRangePredicate.test() has not been tested yet... Add tests and remove assert";
             if ( value == null )
             {
                 return false;
@@ -397,7 +396,6 @@ public abstract class IndexQuery implements Predicate<Object>
         @Override
         public boolean test( Object value )
         {
-            assert false : "StringPrefixPredicate.test() has not been tested yet... Add tests and remove assert";
             return value != null && value instanceof String && ((String)value).startsWith( prefix );
         }
 
@@ -426,7 +424,6 @@ public abstract class IndexQuery implements Predicate<Object>
         @Override
         public boolean test( Object value )
         {
-            assert false : "StringContainsPredicate.test() has not been tested yet... Add tests and remove assert";
             return value != null && value instanceof String && ((String)value).contains( contains );
         }
 
@@ -455,7 +452,6 @@ public abstract class IndexQuery implements Predicate<Object>
         @Override
         public boolean test( Object value )
         {
-            assert false : "StringSuffixPredicate.test() has not been tested yet... Add tests and remove assert";
             return value != null && value instanceof String && ((String)value).endsWith( suffix );
         }
 

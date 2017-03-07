@@ -25,6 +25,10 @@ import org.junit.Test;
 import org.neo4j.kernel.api.schema_new.IndexQuery.ExactPredicate;
 import org.neo4j.kernel.api.schema_new.IndexQuery.ExistsPredicate;
 import org.neo4j.kernel.api.schema_new.IndexQuery.NumberRangePredicate;
+import org.neo4j.kernel.api.schema_new.IndexQuery.StringContainsPredicate;
+import org.neo4j.kernel.api.schema_new.IndexQuery.StringPrefixPredicate;
+import org.neo4j.kernel.api.schema_new.IndexQuery.StringRangePredicate;
+import org.neo4j.kernel.api.schema_new.IndexQuery.StringSuffixPredicate;
 
 import static junit.framework.TestCase.assertFalse;
 import static junit.framework.TestCase.assertTrue;
@@ -162,6 +166,147 @@ public class IndexQueryTest
         NumberRangePredicate p = IndexQuery.range( propId, 9007199254740993L, true, null, true );
 
         Assert.assertFalse( p.test( 9007199254740992D ) );
+    }
+
+    // STRING RANGE
+
+    @Test
+    public void testStringRange_FalseForIrrelevant()
+    {
+        StringRangePredicate p = IndexQuery.range( propId, "bbb", true, "bee", true );
+
+        assertFalseForOtherThings( p );
+    }
+
+    @Test
+    public void testStringRange_InclusiveLowerInclusiveUpper()
+    {
+        StringRangePredicate p = IndexQuery.range( propId, "bbb", true, "bee", true );
+
+        Assert.assertFalse( p.test( "bba" ) );
+        Assert.assertTrue( p.test( "bbb" ) );
+        Assert.assertTrue( p.test( "bee" ) );
+        Assert.assertFalse( p.test( "beea" ) );
+        Assert.assertFalse( p.test( "bef" ) );
+    }
+
+    @Test
+    public void testStringRange_ExclusiveLowerInclusiveUpper()
+    {
+        StringRangePredicate p = IndexQuery.range( propId, "bbb", false, "bee", true );
+
+        Assert.assertFalse( p.test( "bbb" ) );
+        Assert.assertTrue( p.test( "bbba" ) );
+        Assert.assertTrue( p.test( "bee" ) );
+        Assert.assertFalse( p.test( "beea" ) );
+    }
+
+    @Test
+    public void testStringRange_InclusiveLowerExclusiveUpper()
+    {
+        StringRangePredicate p = IndexQuery.range( propId, "bbb", true, "bee", false );
+
+        Assert.assertFalse( p.test( "bba" ) );
+        Assert.assertTrue( p.test( "bbb" ) );
+        Assert.assertTrue( p.test( "bed" ) );
+        Assert.assertFalse( p.test( "bee" ) );
+    }
+
+    @Test
+    public void testStringRange_ExclusiveLowerExclusiveUpper()
+    {
+        StringRangePredicate p = IndexQuery.range( propId, "bbb", false, "bee", false );
+
+        Assert.assertFalse( p.test( "bbb" ) );
+        Assert.assertTrue( p.test( "bbba" ) );
+        Assert.assertTrue( p.test( "bed" ) );
+        Assert.assertFalse( p.test( "bee" ) );
+    }
+
+    @Test
+    public void testStringRange_UpperUnbounded()
+    {
+        StringRangePredicate p = IndexQuery.range( propId, "bbb", false, null, false );
+
+        Assert.assertFalse( p.test( "bbb" ) );
+        Assert.assertTrue( p.test( "bbba" ) );
+        Assert.assertTrue( p.test( "xxxxx" ) );
+    }
+
+    @Test
+    public void testStringRange_LowerUnbounded()
+    {
+        StringRangePredicate p = IndexQuery.range( propId, null, false, "bee", false );
+
+        Assert.assertTrue( p.test( "" ) );
+        Assert.assertTrue( p.test( "bed" ) );
+        Assert.assertFalse( p.test( "bee" ) );
+    }
+
+    // STRING PREFIX
+
+    @Test
+    public void testStringPrefix_FalseForIrrelevant()
+    {
+        StringPrefixPredicate p = IndexQuery.stringPrefix( propId, "dog" );
+
+        assertFalseForOtherThings( p );
+    }
+
+    @Test
+    public void testStringPrefix_SomeValues()
+    {
+        StringPrefixPredicate p = IndexQuery.stringPrefix( propId, "dog" );
+
+        Assert.assertFalse( p.test( "doffington" ) );
+        Assert.assertFalse( p.test( "doh, not this again!" ) );
+        Assert.assertTrue( p.test( "dog" ) );
+        Assert.assertTrue( p.test( "doggidog" ) );
+        Assert.assertTrue( p.test( "doggidogdog" ) );
+    }
+
+    // STRING CONTAINS
+
+    @Test
+    public void testStringContains_FalseForIrrelevant()
+    {
+        StringContainsPredicate p = IndexQuery.stringContains( propId, "cat" );
+
+        assertFalseForOtherThings( p );
+    }
+
+    @Test
+    public void testStringContains_SomeValues()
+    {
+        StringContainsPredicate p = IndexQuery.stringContains( propId, "cat" );
+
+        Assert.assertFalse( p.test( "dog" ) );
+        Assert.assertFalse( p.test( "cameraman" ) );
+        Assert.assertTrue( p.test( "cat" ) );
+        Assert.assertTrue( p.test( "bobcat" ) );
+        Assert.assertTrue( p.test( "scatman" ) );
+    }
+
+    // STRING SUFFIX
+
+    @Test
+    public void testStringSuffix_FalseForIrrelevant()
+    {
+        StringSuffixPredicate p = IndexQuery.stringSuffix( propId, "less" );
+
+        assertFalseForOtherThings( p );
+    }
+
+    @Test
+    public void testStringSuffix_SomeValues()
+    {
+        StringSuffixPredicate p = IndexQuery.stringSuffix( propId, "less" );
+
+        Assert.assertFalse( p.test( "lesser being" ) );
+        Assert.assertFalse( p.test( "make less noise please..." ) );
+        Assert.assertTrue( p.test( "less" ) );
+        Assert.assertTrue( p.test( "clueless" ) );
+        Assert.assertTrue( p.test( "cluelessly clueless" ) );
     }
 
     // HELPERS
