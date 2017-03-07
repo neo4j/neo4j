@@ -33,7 +33,7 @@ abstract class IntegralNumberProperty extends NumberProperty implements DefinedP
     }
 
     @Override
-    final int valueHash()
+    public final int valueHash()
     {
         long value = longValue();
         return (int) (value ^ (value >>> 32));

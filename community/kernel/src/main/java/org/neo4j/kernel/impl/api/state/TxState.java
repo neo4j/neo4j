@@ -1034,23 +1034,23 @@ public final class TxState implements TransactionState, RelationshipVisitor.Home
         //TODO: Get working with composite indexes
         if ( lower == null )
         {
-            selectedLower = OrderedPropertyValues.of( NUMBER.lowLimit.castValue( Number.class ) );
+            selectedLower = OrderedPropertyValues.ofUndefined( NUMBER.lowLimit.castValue( Number.class ) );
             selectedIncludeLower = NUMBER.lowLimit.isInclusive;
         }
         else
         {
-            selectedLower = OrderedPropertyValues.of( lower );
+            selectedLower = OrderedPropertyValues.ofUndefined( lower );
             selectedIncludeLower = includeLower;
         }
 
         if ( upper == null )
         {
-            selectedUpper = OrderedPropertyValues.of( NUMBER.highLimit.castValue( Number.class ) );
+            selectedUpper = OrderedPropertyValues.ofUndefined( NUMBER.highLimit.castValue( Number.class ) );
             selectedIncludeUpper = NUMBER.highLimit.isInclusive;
         }
         else
         {
-            selectedUpper = OrderedPropertyValues.of( upper );
+            selectedUpper = OrderedPropertyValues.ofUndefined( upper );
             selectedIncludeUpper = includeUpper;
         }
 
@@ -1096,23 +1096,23 @@ public final class TxState implements TransactionState, RelationshipVisitor.Home
         //TODO: Get working with composite indexes
         if ( lower == null )
         {
-            selectedLower = OrderedPropertyValues.of( STRING.lowLimit.castValue( String.class ) );
+            selectedLower = OrderedPropertyValues.ofUndefined( STRING.lowLimit.castValue( String.class ) );
             selectedIncludeLower = STRING.lowLimit.isInclusive;
         }
         else
         {
-            selectedLower = OrderedPropertyValues.of( lower );
+            selectedLower = OrderedPropertyValues.ofUndefined( lower );
             selectedIncludeLower = includeLower;
         }
 
         if ( upper == null )
         {
-            selectedUpper = OrderedPropertyValues.of( STRING.highLimit.castValue( Boolean.class ).booleanValue() );
+            selectedUpper = OrderedPropertyValues.ofUndefined( STRING.highLimit.castValue( Boolean.class ).booleanValue() );
             selectedIncludeUpper = STRING.highLimit.isInclusive;
         }
         else
         {
-            selectedUpper = OrderedPropertyValues.of( upper );
+            selectedUpper = OrderedPropertyValues.ofUndefined( upper );
             selectedIncludeUpper = includeUpper;
         }
 
@@ -1142,7 +1142,7 @@ public final class TxState implements TransactionState, RelationshipVisitor.Home
             return null;
         }
         //TODO: get working with composite indexes
-        OrderedPropertyValues floor = OrderedPropertyValues.of( prefix );
+        OrderedPropertyValues floor = OrderedPropertyValues.ofUndefined( prefix );
         DiffSets<Long> diffs = new DiffSets<>();
         for ( Map.Entry<OrderedPropertyValues,DiffSets<Long>> entry : sortedUpdates.tailMap( floor ).entrySet() )
         {

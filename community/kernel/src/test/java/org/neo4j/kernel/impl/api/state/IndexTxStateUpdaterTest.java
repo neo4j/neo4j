@@ -209,7 +209,7 @@ public class IndexTxStateUpdaterTest
 
     private OrderedPropertyValues values( Object... values )
     {
-        return OrderedPropertyValues.of( values );
+        return OrderedPropertyValues.ofUndefined( values );
     }
 
     private void verifyIndexUpdate(

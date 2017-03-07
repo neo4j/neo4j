@@ -58,7 +58,7 @@ public class IndexEntryConflictExceptionTest
     public void shouldMakeCompositeEntryConflicts()
     {
         LabelSchemaDescriptor schema = SchemaDescriptorFactory.forLabel( labelId, 2, 3, 4 );
-        OrderedPropertyValues values = OrderedPropertyValues.of( true, "hi", new long[]{6L, 4L} );
+        OrderedPropertyValues values = OrderedPropertyValues.ofUndefined( true, "hi", new long[]{6L, 4L} );
         IndexEntryConflictException e = new IndexEntryConflictException( 0L, 1L, values );
 
         assertThat( e.evidenceMessage( SchemaUtil.idTokenNameLookup, schema ),

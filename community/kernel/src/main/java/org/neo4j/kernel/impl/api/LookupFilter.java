@@ -63,6 +63,11 @@ public class LookupFilter
     public static PrimitiveLongIterator exactIndexMatches( EntityOperations operations, KernelStatement state,
                                                            PrimitiveLongIterator indexedNodeIds, IndexQuery... predicates )
     {
+        if ( !indexedNodeIds.hasNext() )
+        {
+            return indexedNodeIds;
+        }
+
         IndexQuery[] numericPredicates =
                 Arrays.stream( predicates )
                         .filter( LookupFilter::isNumericPredicate )

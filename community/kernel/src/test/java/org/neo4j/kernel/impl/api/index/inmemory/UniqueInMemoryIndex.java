@@ -147,7 +147,7 @@ class UniqueInMemoryIndex extends InMemoryIndex
                 if ( entries.containsKey( value ) )
                 {
                     long existingNodeId = entries.get( value );
-                    throw new IndexEntryConflictException( existingNodeId, nodeId, OrderedPropertyValues.of( value ) );
+                    throw new IndexEntryConflictException( existingNodeId, nodeId, OrderedPropertyValues.ofUndefined( value ) );
                 }
                 entries.put( value, nodeId );
             }
@@ -187,7 +187,7 @@ class UniqueInMemoryIndex extends InMemoryIndex
             {
                 values[i] = accessor.getProperty( nodeId, propertyIds[i] ).value();
             }
-            return OrderedPropertyValues.of( values );
+            return OrderedPropertyValues.ofUndefined( values );
         }
     }
 }

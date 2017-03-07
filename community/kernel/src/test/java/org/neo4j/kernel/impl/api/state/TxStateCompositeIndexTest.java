@@ -68,7 +68,7 @@ public class TxStateCompositeIndexTest
     {
         // WHEN
         ReadableDiffSets<Long> diffSets =
-                state.indexUpdatesForSeek( indexOn_1_1_2, OrderedPropertyValues.of( "43value1", "43value2" ) );
+                state.indexUpdatesForSeek( indexOn_1_1_2, OrderedPropertyValues.ofUndefined( "43value1", "43value2" ) );
 
         // THEN
         assertTrue( diffSets.isEmpty() );
@@ -97,7 +97,7 @@ public class TxStateCompositeIndexTest
 
         // WHEN
         ReadableDiffSets<Long> diffSets =
-                state.indexUpdatesForSeek( indexOn_1_1_2, OrderedPropertyValues.of( "43value1", "43value2" ) );
+                state.indexUpdatesForSeek( indexOn_1_1_2, OrderedPropertyValues.ofUndefined( "43value1", "43value2" ) );
 
         // THEN
         assertEquals( asSet( 43L ), diffSets.getAdded() );
@@ -112,7 +112,7 @@ public class TxStateCompositeIndexTest
 
         // WHEN
         ReadableDiffSets<Long> diffSets =
-                state.indexUpdatesForSeek( indexOn_1_1_2, OrderedPropertyValues.of( 43001.0, 43002.0 ) );
+                state.indexUpdatesForSeek( indexOn_1_1_2, OrderedPropertyValues.ofUndefined( 43001.0, 43002.0 ) );
 
         // THEN
         assertEquals( asSet( 43L ), diffSets.getAdded() );
@@ -145,7 +145,7 @@ public class TxStateCompositeIndexTest
 
         // WHEN
         ReadableDiffSets<Long> diffSets =
-                state.indexUpdatesForSeek( indexOn_1_1_2, OrderedPropertyValues.of( "43value1", "43value2" ) );
+                state.indexUpdatesForSeek( indexOn_1_1_2, OrderedPropertyValues.ofUndefined( "43value1", "43value2" ) );
 
         // THEN
         assertEquals( asSet( 43L, 44L ), diffSets.getAdded() );
@@ -156,19 +156,19 @@ public class TxStateCompositeIndexTest
     {
         // GIVEN
         OrderedPropertyValues[] values2_1 = Iterators.array(
-                OrderedPropertyValues.of( "hi", 3 ),
-                OrderedPropertyValues.of( 9L, 33L ),
-                OrderedPropertyValues.of( "sneaker", false ) );
+                OrderedPropertyValues.ofUndefined( "hi", 3 ),
+                OrderedPropertyValues.ofUndefined( 9L, 33L ),
+                OrderedPropertyValues.ofUndefined( "sneaker", false ) );
 
         OrderedPropertyValues[] values2_2 = Iterators.array(
-                OrderedPropertyValues.of( true, false ),
-                OrderedPropertyValues.of( new int[]{ 10,100}, "array-buddy" ),
-                OrderedPropertyValues.of( 40.1, 40.2 ) );
+                OrderedPropertyValues.ofUndefined( true, false ),
+                OrderedPropertyValues.ofUndefined( new int[]{ 10,100}, "array-buddy" ),
+                OrderedPropertyValues.ofUndefined( 40.1, 40.2 ) );
 
         OrderedPropertyValues[] values3 = Iterators.array(
-                OrderedPropertyValues.of( "hi", "ho", "hello" ),
-                OrderedPropertyValues.of( true, new long[]{4L}, 33L ),
-                OrderedPropertyValues.of( 2, false, 1 ) );
+                OrderedPropertyValues.ofUndefined( "hi", "ho", "hello" ),
+                OrderedPropertyValues.ofUndefined( true, new long[]{4L}, 33L ),
+                OrderedPropertyValues.ofUndefined( 2, false, 1 ) );
 
         addEntries( indexOn_1_1_2, values2_1, 10 );
         addEntries( indexOn_2_2_3, values2_2, 100 );
@@ -236,7 +236,7 @@ public class TxStateCompositeIndexTest
                     {
                         values[i] = nodeId * 1000.0 + propertyIds[i];
                     }
-                    entries.add( of( nodeId, OrderedPropertyValues.of( values ) ) );
+                    entries.add( of( nodeId, OrderedPropertyValues.ofUndefined( values ) ) );
                 }
                 addEntries( entries );
             }
@@ -280,6 +280,6 @@ public class TxStateCompositeIndexTest
         {
             values[i] = nodeId + "value" + propertyIds[i];
         }
-        return OrderedPropertyValues.of( values );
+        return OrderedPropertyValues.ofUndefined( values );
     }
 }

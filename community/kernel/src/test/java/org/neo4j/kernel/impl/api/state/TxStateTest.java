@@ -225,7 +225,7 @@ public class TxStateTest
         addNodesToIndex( indexOn_1_2 ).withDefaultStringProperties( 44L );
 
         // WHEN
-        ReadableDiffSets<Long> diffSets = state.indexUpdatesForSeek( indexOn_1_1, OrderedPropertyValues.of( "value43"
+        ReadableDiffSets<Long> diffSets = state.indexUpdatesForSeek( indexOn_1_1, OrderedPropertyValues.ofUndefined( "value43"
         ) );
 
         // THEN
@@ -1668,7 +1668,7 @@ public class TxStateTest
                     DefinedProperty propertyAfter = stringProperty( propertyKeyId, entry.other() );
                     state.nodeDoAddProperty( nodeId, propertyAfter );
                     state.indexDoUpdateEntry( descriptor.schema(), nodeId, null,
-                            OrderedPropertyValues.of( propertyAfter.value() ) );
+                            OrderedPropertyValues.ofUndefined( propertyAfter.value() ) );
                 }
             }
 
@@ -1685,7 +1685,7 @@ public class TxStateTest
                     DefinedProperty propertyAfter = numberProperty( propertyKeyId, entry.other() );
                     state.nodeDoAddProperty( nodeId, propertyAfter );
                     state.indexDoUpdateEntry( descriptor.schema(), nodeId, null,
-                            OrderedPropertyValues.of( propertyAfter.value() ) );
+                            OrderedPropertyValues.ofUndefined( propertyAfter.value() ) );
                 }
             }
 
@@ -1702,7 +1702,7 @@ public class TxStateTest
                     DefinedProperty propertyAfter = booleanProperty( propertyKeyId, entry.other() );
                     state.nodeDoAddProperty( nodeId, propertyAfter );
                     state.indexDoUpdateEntry( descriptor.schema(), nodeId, null,
-                            OrderedPropertyValues.of( propertyAfter.value() ) );
+                            OrderedPropertyValues.ofUndefined( propertyAfter.value() ) );
                 }
             }
         };

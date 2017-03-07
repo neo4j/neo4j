@@ -47,7 +47,7 @@ final class BooleanProperty extends DefinedProperty
     }
 
     @Override
-    int valueHash()
+    public int valueHash()
     {
         return value ? -1 : 0;
     }

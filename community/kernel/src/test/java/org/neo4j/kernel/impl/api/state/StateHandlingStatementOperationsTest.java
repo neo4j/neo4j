@@ -243,7 +243,7 @@ public class StateHandlingStatementOperationsTest
         KernelStatement statement = mock( KernelStatement.class );
         when( statement.hasTxStateWithChanges() ).thenReturn( true );
         when( statement.txState() ).thenReturn( txState );
-        when( txState.indexUpdatesForSeek( index, OrderedPropertyValues.of( "value" ) ) ).thenReturn(
+        when( txState.indexUpdatesForSeek( index, OrderedPropertyValues.ofUndefined( "value" ) ) ).thenReturn(
                 new DiffSets<>( Collections.singleton( 42L ), Collections.singleton( 44L ) )
         );
         when( txState.addedAndRemovedNodes() ).thenReturn(
