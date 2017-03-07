@@ -19,16 +19,17 @@
  */
 package org.neo4j.causalclustering.discovery;
 
-import java.util.HashMap;
-import java.util.Map;
-import java.util.Set;
-import java.util.UUID;
-
 import com.hazelcast.config.MemberAttributeConfig;
 import com.hazelcast.core.HazelcastInstance;
 import com.hazelcast.core.IAtomicReference;
 import com.hazelcast.core.IMap;
 import com.hazelcast.core.Member;
+
+import java.util.HashMap;
+import java.util.Map;
+import java.util.Optional;
+import java.util.Set;
+import java.util.UUID;
 
 import org.neo4j.causalclustering.core.CausalClusteringSettings;
 import org.neo4j.causalclustering.identity.ClusterId;
@@ -41,10 +42,9 @@ import org.neo4j.logging.Log;
 import static java.util.Collections.emptyMap;
 import static java.util.Collections.emptySet;
 import static java.util.stream.Collectors.toSet;
-
 import static org.neo4j.helpers.SocketAddressFormat.socketAddress;
 
-class HazelcastClusterTopology
+public class HazelcastClusterTopology
 {
     static final String READ_REPLICA_BOLT_ADDRESS_MAP_NAME = "read-replicas"; // hz client uuid string -> boltAddress
     // string
@@ -72,7 +72,7 @@ class HazelcastClusterTopology
             log.info( "Cannot currently bind to distributed discovery service." );
         }
 
-        return new ReadReplicaTopology( clusterId, readReplicas );
+        return new ReadReplicaTopology( readReplicas );
     }
 
     static CoreTopology getCoreTopology( HazelcastInstance hazelcastInstance, Config config, Log log )
@@ -96,6 +96,19 @@ class HazelcastClusterTopology
         }
 
         return new CoreTopology( clusterId, canBeBootstrapped, coreMembers );
+    }
+
+    public static Map<MemberId,AdvertisedSocketAddress> extractCatchupAddressesMap( CoreTopology coreTopology, ReadReplicaTopology rrTopology )
+    {
+        Map<MemberId,AdvertisedSocketAddress> catchupAddressMap = new HashMap<>();
+
+        for ( MemberId memberId : coreTopology.members() )
+        {
+            Optional<CoreAddresses> coreAddresses = coreTopology.find( memberId );
+            coreAddresses.ifPresent( a -> catchupAddressMap.put( memberId, a.getCatchupServer() ) );
+        }
+
+        return catchupAddressMap;
     }
 
     private static ClusterId getClusterId( HazelcastInstance hazelcastInstance )

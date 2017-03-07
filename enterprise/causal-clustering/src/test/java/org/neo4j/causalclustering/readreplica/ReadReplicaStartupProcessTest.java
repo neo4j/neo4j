@@ -26,12 +26,12 @@ import java.io.File;
 import java.util.UUID;
 
 import org.neo4j.causalclustering.catchup.storecopy.LocalDatabase;
-import org.neo4j.causalclustering.catchup.storecopy.StoreCopyProcess;
 import org.neo4j.causalclustering.catchup.storecopy.RemoteStore;
+import org.neo4j.causalclustering.catchup.storecopy.StoreCopyProcess;
 import org.neo4j.causalclustering.catchup.storecopy.StoreIdDownloadFailedException;
-import org.neo4j.causalclustering.helper.ConstantTimeRetryStrategy;
 import org.neo4j.causalclustering.discovery.CoreTopology;
 import org.neo4j.causalclustering.discovery.TopologyService;
+import org.neo4j.causalclustering.helper.ConstantTimeRetryStrategy;
 import org.neo4j.causalclustering.identity.MemberId;
 import org.neo4j.causalclustering.identity.StoreId;
 import org.neo4j.causalclustering.messaging.routing.AlwaysChooseFirstMember;

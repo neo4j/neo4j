@@ -19,7 +19,6 @@
  */
 package org.neo4j.causalclustering.discovery;
 
-import org.neo4j.causalclustering.core.consensus.schedule.DelayedRenewableTimeoutService;
 import org.neo4j.causalclustering.identity.MemberId;
 import org.neo4j.kernel.configuration.Config;
 import org.neo4j.kernel.impl.util.JobScheduler;
@@ -31,5 +30,5 @@ public interface DiscoveryServiceFactory
             LogProvider logProvider, LogProvider userLogProvider );
 
     TopologyService readReplicaDiscoveryService( Config config, LogProvider logProvider,
-            DelayedRenewableTimeoutService timeoutService, long readReplicaTimeToLiveTimeout, long readReplicaRefreshRate );
+            JobScheduler jobScheduler );
 }

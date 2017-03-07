@@ -98,7 +98,6 @@ public class ClusterIdentity
                     if ( clock.millis() < endTime )
                     {
                         retryWaiter.apply();
-                        topologyService.refreshCoreTopology();
                         topology = topologyService.coreServers();
                     }
                     else

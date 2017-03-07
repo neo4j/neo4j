@@ -19,6 +19,10 @@
  */
 package org.neo4j.causalclustering.discovery;
 
+import java.util.Optional;
+
+import org.neo4j.causalclustering.identity.MemberId;
+import org.neo4j.helpers.AdvertisedSocketAddress;
 import org.neo4j.kernel.configuration.Config;
 import org.neo4j.kernel.lifecycle.LifecycleAdapter;
 import org.neo4j.logging.Log;
@@ -57,5 +61,19 @@ class SharedDiscoveryReadReplicaClient extends LifecycleAdapter implements Topol
         CoreTopology topology = sharedDiscoveryService.coreTopology( null );
         log.info( "Core topology is %s", topology );
         return topology;
+    }
+
+    @Override
+    public ReadReplicaTopology readReplicas()
+    {
+        ReadReplicaTopology topology = sharedDiscoveryService.readReplicaTopology();
+        log.info( "Read replica topology is %s", topology );
+        return topology;
+    }
+
+    @Override
+    public Optional<AdvertisedSocketAddress> findCatchupAddress( MemberId upstream )
+    {
+        return sharedDiscoveryService.coreTopology( null ).find( upstream ).map( CoreAddresses::getCatchupServer );
     }
 }

@@ -19,126 +19,126 @@
  */
 package org.neo4j.causalclustering.discovery;
 
-import com.hazelcast.core.HazelcastInstance;
-import com.hazelcast.core.HazelcastInstanceNotActiveException;
+import java.util.HashMap;
+import java.util.Map;
+import java.util.Optional;
 
-import java.util.function.Function;
-
-import org.neo4j.causalclustering.core.consensus.schedule.RenewableTimeoutService;
+import org.neo4j.causalclustering.core.CausalClusteringSettings;
+import org.neo4j.causalclustering.helper.RobustJobSchedulerWrapper;
+import org.neo4j.causalclustering.identity.MemberId;
+import org.neo4j.helpers.AdvertisedSocketAddress;
 import org.neo4j.kernel.configuration.Config;
+import org.neo4j.kernel.impl.util.JobScheduler;
 import org.neo4j.kernel.lifecycle.LifecycleAdapter;
 import org.neo4j.logging.Log;
 import org.neo4j.logging.LogProvider;
 
 import static java.util.concurrent.TimeUnit.MILLISECONDS;
 import static org.neo4j.causalclustering.discovery.HazelcastClusterTopology.READ_REPLICA_BOLT_ADDRESS_MAP_NAME;
+import static org.neo4j.causalclustering.discovery.HazelcastClusterTopology.extractCatchupAddressesMap;
+import static org.neo4j.causalclustering.discovery.HazelcastClusterTopology.getCoreTopology;
+import static org.neo4j.causalclustering.discovery.HazelcastClusterTopology.getReadReplicaTopology;
 
 class HazelcastClient extends LifecycleAdapter implements TopologyService
 {
-    static final RenewableTimeoutService.TimeoutName REFRESH_READ_REPLICA = () -> "Refresh Read Replica";
     private final Log log;
     private final ClientConnectorAddresses connectorAddresses;
-    private final HazelcastConnector connector;
+    private final RobustHazelcastWrapper hzInstance;
+    private final RobustJobSchedulerWrapper scheduler;
     private final Config config;
-    private final RenewableTimeoutService renewableTimeoutService;
-    private HazelcastInstance hazelcastInstance;
-    private RenewableTimeoutService.RenewableTimeout readReplicaRefreshTimer;
-    private final long readReplicaTimeToLiveTimeout;
-    private final long readReplicaRefreshRate;
 
-    HazelcastClient( HazelcastConnector connector, LogProvider logProvider, Config config,
-                     RenewableTimeoutService renewableTimeoutService, long readReplicaTimeToLiveTimeout, long readReplicaRefreshRate )
+    private final long timeToLive;
+    private final long refreshPeriod;
+
+    private JobScheduler.JobHandle keepAliveJob;
+    private JobScheduler.JobHandle refreshTopologyJob;
+
+    private volatile Map<MemberId,AdvertisedSocketAddress> catchupAddressMap = new HashMap<>();
+    private volatile CoreTopology coreTopology = CoreTopology.EMPTY;
+    private volatile ReadReplicaTopology rrTopology = ReadReplicaTopology.EMPTY;
+
+    HazelcastClient( HazelcastConnector connector, JobScheduler scheduler, LogProvider logProvider, Config config )
     {
-        this.connector = connector;
+        this.hzInstance = new RobustHazelcastWrapper( connector );
         this.config = config;
-        this.renewableTimeoutService = renewableTimeoutService;
-        this.readReplicaRefreshRate = readReplicaRefreshRate;
         this.log = logProvider.getLog( getClass() );
+        this.scheduler = new RobustJobSchedulerWrapper( scheduler, log );
         this.connectorAddresses = ClientConnectorAddresses.extractFromConfig( config );
-        this.readReplicaTimeToLiveTimeout = readReplicaTimeToLiveTimeout;
+        this.timeToLive = config.get( CausalClusteringSettings.read_replica_time_to_live );
+        this.refreshPeriod = config.get( CausalClusteringSettings.cluster_topology_refresh );
     }
 
     @Override
     public CoreTopology coreServers()
     {
-        try
-        {
-            return retry( ( hazelcastInstance ) -> HazelcastClusterTopology.getCoreTopology( hazelcastInstance,
-                    config, log ) );
-        }
-        catch ( Exception e )
-        {
-            log.info( "Failed to read cluster topology from Hazelcast. Continuing with empty (disconnected) topology. "
-                    + "Connection will be reattempted on next polling attempt.", e );
-            return CoreTopology.EMPTY;
-        }
+        return coreTopology;
+    }
+
+    @Override
+    public ReadReplicaTopology readReplicas()
+    {
+        return rrTopology;
+    }
+
+    @Override
+    public Optional<AdvertisedSocketAddress> findCatchupAddress( MemberId memberId )
+    {
+        return Optional.ofNullable( catchupAddressMap.get( memberId ) );
+    }
+
+    /**
+     * Caches the topology so that the lookups are fast.
+     */
+    private void refreshTopology() throws HazelcastInstanceNotActiveException
+    {
+        coreTopology = hzInstance.apply( ( hz ) -> getCoreTopology( hz, config, log ) );
+        rrTopology = hzInstance.apply( ( hz ) -> getReadReplicaTopology( hz, log ) );
+        catchupAddressMap = extractCatchupAddressesMap( coreTopology, rrTopology );
     }
 
     @Override
     public void start() throws Throwable
     {
-        readReplicaRefreshTimer = renewableTimeoutService.create( REFRESH_READ_REPLICA, readReplicaRefreshRate, 0, timeout -> {
-            timeout.renew();
-            retry( this::addReadReplica );
-        } );
-    }
-
-    private Object addReadReplica( HazelcastInstance hazelcastInstance )
-    {
-        String uuid = hazelcastInstance.getLocalEndpoint().getUuid();
-        String addresses = connectorAddresses.toString();
-
-        log.debug( "Adding read replica into cluster (%s -> %s)", uuid, addresses  );
-
-        return hazelcastInstance.getMap( READ_REPLICA_BOLT_ADDRESS_MAP_NAME )
-                .put( uuid, addresses, readReplicaTimeToLiveTimeout, MILLISECONDS );
+        keepAliveJob = scheduler.scheduleRecurring( "KeepAlive", timeToLive / 3, this::keepReadReplicaAlive );
+        refreshTopologyJob = scheduler.scheduleRecurring( "TopologyRefresh", refreshPeriod, this::refreshTopology );
     }
 
     @Override
-    public synchronized void stop() throws Throwable
+    public void stop() throws Throwable
     {
-        readReplicaRefreshTimer.cancel();
+        scheduler.cancelAndWaitTermination( keepAliveJob );
+        scheduler.cancelAndWaitTermination( refreshTopologyJob );
+        disconnectFromCore();
+    }
 
-        if ( hazelcastInstance != null )
+    private void disconnectFromCore()
+    {
+        try
         {
-            try
-            {
-                String uuid = hazelcastInstance.getLocalEndpoint().getUuid();
-                hazelcastInstance.getMap( READ_REPLICA_BOLT_ADDRESS_MAP_NAME ).remove( uuid );
-                hazelcastInstance.shutdown();
-            }
-            catch ( Throwable t )
-            {
-                // Hazelcast is not able to stop correctly sometimes and throws a bunch of different exceptions
-                // let's simply log the current problem but go on with our shutdown
-                log.warn( "Unable to shutdown Hazelcast", t );
-            }
+            String uuid = hzInstance.apply( hzInstance -> hzInstance.getLocalEndpoint().getUuid() );
+            hzInstance.apply( hz -> hz.getMap( READ_REPLICA_BOLT_ADDRESS_MAP_NAME ).remove( uuid ) );
+            hzInstance.shutdown();
+        }
+        catch ( Throwable e )
+        {
+            // Hazelcast is not able to stop correctly sometimes and throws a bunch of different exceptions
+            // let's simply log the current problem but go on with our shutdown
+            log.warn( "Unable to shutdown hazelcast cleanly", e );
         }
     }
 
-    private synchronized <T> T retry( Function<HazelcastInstance, T> hazelcastOperation )
+    private void keepReadReplicaAlive() throws HazelcastInstanceNotActiveException
     {
-        boolean attemptedConnection = false;
-        HazelcastInstanceNotActiveException exception = null;
-
-        while ( !attemptedConnection )
+        hzInstance.perform( hazelcastInstance ->
         {
-            if ( hazelcastInstance == null )
-            {
-                attemptedConnection = true;
-                hazelcastInstance = connector.connectToHazelcast();
-            }
+            String uuid = hazelcastInstance.getLocalEndpoint().getUuid();
+            String addresses = connectorAddresses.toString();
+            log.debug( "Adding read replica into cluster (%s -> %s)", uuid, addresses );
 
-            try
-            {
-                return hazelcastOperation.apply( hazelcastInstance );
-            }
-            catch ( HazelcastInstanceNotActiveException e )
-            {
-                hazelcastInstance = null;
-                exception = e;
-            }
-        }
-        throw exception;
+            // this needs to be last as when we read from it in HazelcastClusterTopology.readReplicas
+            // we assume that all the other maps have been populated if an entry exists in this one
+            hazelcastInstance.getMap( READ_REPLICA_BOLT_ADDRESS_MAP_NAME )
+                    .put( uuid, addresses, timeToLive, MILLISECONDS );
+        } );
     }
 }
