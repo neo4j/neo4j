@@ -23,6 +23,8 @@ import org.junit.Before;
 import org.junit.Test;
 
 import java.io.File;
+import java.util.HashMap;
+import java.util.Map;
 import java.util.Optional;
 import java.io.IOException;
 import java.util.UUID;
@@ -32,13 +34,13 @@ import org.neo4j.causalclustering.catchup.storecopy.LocalDatabase;
 import org.neo4j.causalclustering.catchup.storecopy.RemoteStore;
 import org.neo4j.causalclustering.catchup.storecopy.StoreCopyProcess;
 import org.neo4j.causalclustering.catchup.storecopy.StoreIdDownloadFailedException;
+import org.neo4j.causalclustering.discovery.CoreServerInfo;
 import org.neo4j.causalclustering.discovery.CoreTopology;
 import org.neo4j.causalclustering.discovery.TopologyService;
 import org.neo4j.causalclustering.helper.ConstantTimeRetryStrategy;
 import org.neo4j.causalclustering.identity.MemberId;
 import org.neo4j.causalclustering.identity.StoreId;
 import org.neo4j.helpers.Service;
-import org.neo4j.io.fs.FileSystemAbstraction;
 import org.neo4j.io.pagecache.PageCache;
 import org.neo4j.kernel.lifecycle.Lifecycle;
 import org.neo4j.logging.NullLogProvider;
@@ -52,14 +54,12 @@ import static org.mockito.Mockito.mock;
 import static org.mockito.Mockito.never;
 import static org.mockito.Mockito.verify;
 import static org.mockito.Mockito.when;
-import static org.neo4j.helpers.collection.Iterators.asSet;
 
 public class ReadReplicaStartupProcessTest
 {
     private ConstantTimeRetryStrategy retryStrategy = new ConstantTimeRetryStrategy( 1, MILLISECONDS );
     private StoreCopyProcess storeCopyProcess = mock( StoreCopyProcess.class );
     private RemoteStore remoteStore = mock( RemoteStore.class );
-    private FileSystemAbstraction fs = mock( FileSystemAbstraction.class );
     private final PageCache pageCache = mock( PageCache.class );
     private LocalDatabase localDatabase = mock( LocalDatabase.class );
     private TopologyService topologyService = mock( TopologyService.class );
@@ -74,11 +74,14 @@ public class ReadReplicaStartupProcessTest
     @Before
     public void commonMocking() throws StoreIdDownloadFailedException, IOException
     {
+        Map<MemberId,CoreServerInfo> members = new HashMap<>();
+        members.put( memberId, mock( CoreServerInfo.class ) );
+
         when( pageCache.streamFilesRecursive( any(File.class) ) ).thenAnswer( ( f ) -> Stream.empty() );
         when( localDatabase.storeDir() ).thenReturn( storeDir );
         when( localDatabase.storeId() ).thenReturn( localStoreId );
         when( topologyService.coreServers() ).thenReturn( clusterTopology );
-        when( clusterTopology.members() ).thenReturn( asSet( memberId ) );
+        when( clusterTopology.members() ).thenReturn( members );
     }
 
     @Test
@@ -190,7 +193,7 @@ public class ReadReplicaStartupProcessTest
         public Optional<MemberId> upstreamDatabase() throws UpstreamDatabaseSelectionException
         {
             CoreTopology coreTopology = topologyService.coreServers();
-            return Optional.ofNullable( coreTopology.members().iterator().next() );
+            return Optional.ofNullable( coreTopology.members().keySet().iterator().next() );
         }
     }
 }

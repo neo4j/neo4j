@@ -118,7 +118,7 @@ public class GetServersProcedureV1 implements CallableProcedure
     private List<Endpoint> routeEndpoints()
     {
         Stream<AdvertisedSocketAddress> routers = topologyService.coreServers()
-                .allMemberInfo().stream().map( extractBoltAddress() );
+                .members().values().stream().map( extractBoltAddress() );
         List<Endpoint> routeEndpoints = routers.map( Endpoint::route ).collect( toList() );
         Collections.shuffle( routeEndpoints );
         return routeEndpoints;
@@ -144,9 +144,9 @@ public class GetServersProcedureV1 implements CallableProcedure
     private Stream<AdvertisedSocketAddress> coreReadEndPoints()
     {
         Optional<AdvertisedSocketAddress> leader = leaderBoltAddress();
-        Collection<CoreServerInfo> coreServerInfo = topologyService.coreServers().allMemberInfo();
+        Collection<CoreServerInfo> coreServerInfo = topologyService.coreServers().members().values();
         Stream<AdvertisedSocketAddress> boltAddresses = topologyService.coreServers()
-                .allMemberInfo().stream().map( extractBoltAddress() );
+                .members().values().stream().map( extractBoltAddress() );
 
         // if the leader is present and it is not alone filter it out from the read end points
         if ( leader.isPresent() && coreServerInfo.size() > 1 )

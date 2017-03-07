@@ -84,7 +84,7 @@ public class ClusterBinder implements Supplier<Optional<ClusterId>>
             if ( topology.canBeBootstrapped() )
             {
                 commonClusterId = new ClusterId( UUID.randomUUID() );
-                CoreSnapshot snapshot = coreBootstrapper.bootstrap( topology.members() );
+                CoreSnapshot snapshot = coreBootstrapper.bootstrap( topology.members().keySet() );
                 log.info( String.format( "Bootstrapped with snapshot: %s and clusterId: %s", snapshot, commonClusterId ) );
 
                 snapshotInstaller.accept( snapshot );
@@ -100,7 +100,6 @@ public class ClusterBinder implements Supplier<Optional<ClusterId>>
                     if ( clock.millis() < endTime )
                     {
                         retryWaiter.apply();
-                        topologyService.refreshCoreTopology();
                         topology = topologyService.coreServers();
                     }
                     else

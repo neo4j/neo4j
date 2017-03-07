@@ -20,12 +20,13 @@
 package org.neo4j.causalclustering.discovery;
 
 import java.util.LinkedHashSet;
+import java.util.Optional;
 import java.util.Set;
 
-import org.neo4j.causalclustering.identity.ClusterId;
-import org.neo4j.helpers.AdvertisedSocketAddress;
 import org.neo4j.causalclustering.core.CausalClusteringSettings;
+import org.neo4j.causalclustering.identity.ClusterId;
 import org.neo4j.causalclustering.identity.MemberId;
+import org.neo4j.helpers.AdvertisedSocketAddress;
 import org.neo4j.kernel.configuration.Config;
 import org.neo4j.kernel.lifecycle.LifecycleAdapter;
 import org.neo4j.logging.Log;
@@ -64,12 +65,6 @@ class SharedDiscoveryCoreClient extends LifecycleAdapter implements CoreTopology
     }
 
     @Override
-    public void refreshCoreTopology()
-    {
-        // do nothing
-    }
-
-    @Override
     public void start() throws InterruptedException
     {
         sharedDiscoveryService.registerCoreMember( member, coreServerInfo, this );
@@ -92,9 +87,10 @@ class SharedDiscoveryCoreClient extends LifecycleAdapter implements CoreTopology
     }
 
     @Override
-    public ClusterTopology allServers()
+    public Optional<AdvertisedSocketAddress> findCatchupAddress( MemberId upstream )
     {
-        return new ClusterTopology( coreServers(), readReplicas() );
+        return coreTopology.find( upstream ).map( info -> Optional.of( info.getCatchupServer() ) )
+                .orElseGet( () -> readReplicaTopology.find( upstream ).map( ReadReplicaInfo::getCatchupServer ) );
     }
 
     @Override
