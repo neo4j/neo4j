@@ -19,50 +19,51 @@
  */
 package org.neo4j.kernel.recovery;
 
+import org.junit.Before;
+import org.junit.Rule;
 import org.junit.Test;
 import org.junit.runner.RunWith;
 import org.junit.runners.Parameterized;
-import org.mockito.invocation.InvocationOnMock;
-import org.mockito.stubbing.Answer;
-
 import java.io.File;
 import java.io.IOException;
-import java.nio.ByteBuffer;
+import java.io.UncheckedIOException;
 import java.util.Arrays;
 import java.util.Collection;
+import java.util.HashMap;
+import java.util.Map;
+import java.util.concurrent.atomic.AtomicLong;
+import java.util.function.Supplier;
 
-import org.neo4j.io.fs.FileSystemAbstraction;
-import org.neo4j.io.fs.StoreChannel;
+import org.neo4j.kernel.impl.transaction.DeadSimpleLogVersionRepository;
+import org.neo4j.kernel.impl.transaction.log.FlushablePositionAwareChannel;
+import org.neo4j.kernel.impl.transaction.log.LogHeaderCache;
 import org.neo4j.kernel.impl.transaction.log.LogPosition;
+import org.neo4j.kernel.impl.transaction.log.LogPositionMarker;
+import org.neo4j.kernel.impl.transaction.log.LogVersionRepository;
+import org.neo4j.kernel.impl.transaction.log.PhysicalLogFile;
 import org.neo4j.kernel.impl.transaction.log.PhysicalLogFiles;
 import org.neo4j.kernel.impl.transaction.log.ReadableClosablePositionAwareChannel;
-import org.neo4j.kernel.impl.transaction.log.ReadableLogChannel;
-import org.neo4j.kernel.impl.transaction.log.entry.CheckPoint;
-import org.neo4j.kernel.impl.transaction.log.entry.LogEntry;
 import org.neo4j.kernel.impl.transaction.log.entry.LogEntryReader;
-import org.neo4j.kernel.impl.transaction.log.entry.LogEntryStart;
+import org.neo4j.kernel.impl.transaction.log.entry.LogEntryWriter;
+import org.neo4j.kernel.impl.transaction.log.entry.VersionAwareLogEntryReader;
+import org.neo4j.kernel.lifecycle.LifeSupport;
 import org.neo4j.kernel.recovery.LatestCheckPointFinder.LatestCheckPoint;
+import org.neo4j.test.rule.fs.EphemeralFileSystemRule;
 
 import static org.junit.Assert.assertEquals;
-import static org.mockito.Matchers.any;
-import static org.mockito.Matchers.anyString;
-import static org.mockito.Matchers.eq;
-import static org.mockito.Mockito.mock;
-import static org.mockito.Mockito.when;
-
-import static org.neo4j.kernel.impl.transaction.log.entry.LogHeader.LOG_HEADER_SIZE;
-import static org.neo4j.kernel.impl.transaction.log.entry.LogHeaderWriter.encodeLogVersion;
+import static org.neo4j.io.ByteUnit.mebiBytes;
+import static org.neo4j.kernel.impl.transaction.log.PhysicalLogFile.NO_MONITOR;
+import static org.neo4j.kernel.recovery.LatestCheckPointFinder.LatestCheckPoint.NO_TRANSACTION_ID;
 
 @RunWith( Parameterized.class )
 public class LatestCheckPointFinderTest
 {
-    private final PhysicalLogFiles logFiles = mock( PhysicalLogFiles.class );
-    private final FileSystemAbstraction fs = mock( FileSystemAbstraction.class );
-    @SuppressWarnings( "unchecked" )
-    private final LogEntryReader<ReadableClosablePositionAwareChannel> reader = mock( LogEntryReader.class );
-    private final int olderLogVersion = 0;
-    private final int logVersion = 1;
-
+    @Rule
+    public final EphemeralFileSystemRule fsRule = new EphemeralFileSystemRule();
+    private final File directory = new File( "/somewhere" );
+    private final LogEntryReader<ReadableClosablePositionAwareChannel> reader = new VersionAwareLogEntryReader<>();
+    private LatestCheckPointFinder finder;
+    private PhysicalLogFiles logFiles;
     private final int startLogVersion;
     private final int endLogVersion;
 
@@ -75,330 +76,450 @@ public class LatestCheckPointFinderTest
     @Parameterized.Parameters( name="{0},{1}")
     public static Collection<Object[]> params()
     {
-        return Arrays.asList( new Object[]{0, 1}, new Object[]{42, 43}  );
+        return Arrays.asList( new Object[]{1, 2}, new Object[]{42, 43}  );
+    }
+
+    @Before
+    public void setUp()
+    {
+        fsRule.get().mkdirs( directory );
+        logFiles = new PhysicalLogFiles( directory, fsRule.get() );
+        finder = new LatestCheckPointFinder( logFiles, fsRule.get(), reader );
     }
 
     @Test
     public void noLogFilesFound() throws Throwable
     {
         // given no files
+        setupLogFiles();
         int logVersion = startLogVersion;
-        when( logFiles.getLogFileForVersion( logVersion ) ).thenReturn( mock( File.class ) );
-        when( fs.fileExists( any( File.class ) ) ).thenReturn( false );
-
-        LatestCheckPointFinder finder = new LatestCheckPointFinder( logFiles, fs, reader );
+        LatestCheckPointFinder finder = new LatestCheckPointFinder( logFiles, fsRule.get(), reader );
 
         // when
         LatestCheckPoint latestCheckPoint = finder.find( logVersion );
 
         // then
-        assertEquals( new LatestCheckPoint( null, false, -1 ), latestCheckPoint );
+        assertLatestCheckPoint( false, false, NO_TRANSACTION_ID, -1, latestCheckPoint );
     }
 
     @Test
     public void oneLogFileNoCheckPoints() throws Throwable
     {
         // given
-        int logVersion = startLogVersion;
-        setupLogFiles( logVersion, logVersion );
-        LatestCheckPointFinder finder = new LatestCheckPointFinder( logFiles, fs, reader );
+        int logVersion = endLogVersion;
+        setupLogFiles( logFile() );
 
         // when
         LatestCheckPoint latestCheckPoint = finder.find( logVersion );
 
         // then
-        assertEquals( new LatestCheckPoint( null, false, logVersion ), latestCheckPoint );
+        assertLatestCheckPoint( false, false, NO_TRANSACTION_ID, logVersion, latestCheckPoint );
     }
 
     @Test
     public void oneLogFileNoCheckPointsOneStart() throws Throwable
     {
         // given
-        int logVersion = startLogVersion;
-        setupLogFiles( logVersion, logVersion );
-        LatestCheckPointFinder finder = new LatestCheckPointFinder( logFiles, fs, reader );
-        LogEntryStart start = new LogEntryStart( 0, 0, 0, 0, new byte[0], new LogPosition( olderLogVersion, 16 ) );
-        when( reader.readLogEntry( any( ReadableLogChannel.class ) ) ).thenReturn( start, null );
+        int logVersion = endLogVersion;
+        long txId = 10;
+        setupLogFiles( logFile( start(), commit( txId ) ) );
 
         // when
         LatestCheckPoint latestCheckPoint = finder.find( logVersion );
 
         // then
-        assertEquals( new LatestCheckPoint( null, true, logVersion ), latestCheckPoint );
+        assertLatestCheckPoint( false, true, txId, logVersion, latestCheckPoint );
     }
 
     @Test
     public void twoLogFilesNoCheckPoints() throws Throwable
     {
         // given
-        setupLogFiles( startLogVersion, endLogVersion );
-        LatestCheckPointFinder finder = new LatestCheckPointFinder( logFiles, fs, reader );
+        setupLogFiles( logFile(), logFile() );
 
         // when
         LatestCheckPoint latestCheckPoint = finder.find( endLogVersion );
 
         // then
-        assertEquals( new LatestCheckPoint( null, false, startLogVersion ), latestCheckPoint );
+        assertLatestCheckPoint( false, false, NO_TRANSACTION_ID, startLogVersion, latestCheckPoint );
     }
 
     @Test
     public void twoLogFilesNoCheckPointsOneStart() throws Throwable
     {
         // given
-        setupLogFiles( startLogVersion, endLogVersion );
-        LatestCheckPointFinder finder = new LatestCheckPointFinder( logFiles, fs, reader );
-        LogEntryStart start = new LogEntryStart( 0, 0, 0, 0, new byte[0], new LogPosition( endLogVersion, 16 ) );
-        when( reader.readLogEntry( any( ReadableLogChannel.class ) ) ).thenReturn( start, null );
+        long txId = 21;
+        setupLogFiles( logFile(), logFile( start(), commit( txId ) ) );
 
         // when
         LatestCheckPoint latestCheckPoint = finder.find( endLogVersion );
 
         // then
-        assertEquals( new LatestCheckPoint( null, true, startLogVersion ), latestCheckPoint );
+        assertLatestCheckPoint( false, true, txId, startLogVersion, latestCheckPoint );
+    }
+
+    @Test
+    public void twoLogFilesNoCheckPointsOneStartWithoutCommit() throws Throwable
+    {
+        // given
+        setupLogFiles( logFile(), logFile( start() ) );
+
+        // when
+        LatestCheckPoint latestCheckPoint = finder.find( endLogVersion );
+
+        // then
+        assertLatestCheckPoint( false, true, NO_TRANSACTION_ID, startLogVersion, latestCheckPoint );
+    }
+
+    @Test
+    public void twoLogFilesNoCheckPointsTwoCommits() throws Throwable
+    {
+        // given
+        long txId = 21;
+        setupLogFiles( logFile(), logFile( start(), commit( txId ), start(), commit( txId + 1 ) ) );
+
+        // when
+        LatestCheckPoint latestCheckPoint = finder.find( endLogVersion );
+
+        // then
+        assertLatestCheckPoint( false, true, txId, startLogVersion, latestCheckPoint );
+    }
+
+    @Test
+    public void twoLogFilesCheckPointTargetsPrevious() throws Exception
+    {
+        // given
+        long txId = 6;
+        PositionEntry position = position();
+        setupLogFiles(
+                logFile( start(), commit( txId - 1 ), position ),
+                logFile( start(), commit( txId ) ),
+                logFile( checkPoint( position ) ) );
+
+        // when
+        LatestCheckPoint latestCheckPoint = finder.find( endLogVersion );
+
+        // then
+        assertLatestCheckPoint( true, true, txId, endLogVersion, latestCheckPoint );
     }
 
     @Test
     public void latestLogFileContainingACheckPointOnly() throws Throwable
     {
         // given
-        setupLogFiles( startLogVersion, endLogVersion );
-        LatestCheckPointFinder finder = new LatestCheckPointFinder( logFiles, fs, reader );
-        CheckPoint checkPoint = new CheckPoint( new LogPosition( endLogVersion, 33 ) );
-
-        when( reader.readLogEntry( any( ReadableLogChannel.class ) ) ).thenReturn( checkPoint, null );
+        setupLogFiles( logFile( checkPoint() ) );
 
         // when
         LatestCheckPoint latestCheckPoint = finder.find( endLogVersion );
 
         // then
-        assertEquals( new LatestCheckPoint( checkPoint, false, endLogVersion ), latestCheckPoint );
+        assertLatestCheckPoint( true, false, NO_TRANSACTION_ID, endLogVersion, latestCheckPoint );
     }
 
     @Test
     public void latestLogFileContainingACheckPointAndAStartBefore() throws Throwable
     {
         // given
-        setupLogFiles( startLogVersion, endLogVersion );
-        LatestCheckPointFinder finder = new LatestCheckPointFinder( logFiles, fs, reader );
-        LogEntryStart start = new LogEntryStart( 0, 0, 0, 0, new byte[0], new LogPosition( endLogVersion, 16 ) );
-        CheckPoint checkPoint = new CheckPoint( new LogPosition( endLogVersion, 33 ) );
-        when( reader.readLogEntry( any( ReadableLogChannel.class ) ) ).thenReturn( start, checkPoint, null );
+        setupLogFiles( logFile( start(), checkPoint() ) );
 
         // when
         LatestCheckPoint latestCheckPoint = finder.find( endLogVersion );
 
         // then
-        assertEquals( new LatestCheckPoint( checkPoint, false, endLogVersion ), latestCheckPoint );
+        assertLatestCheckPoint( true, false, NO_TRANSACTION_ID, endLogVersion, latestCheckPoint );
     }
 
     @Test
     public void latestLogFileContainingACheckPointAndAStartAfter() throws Throwable
     {
         // given
-        setupLogFiles( startLogVersion, endLogVersion );
-        LatestCheckPointFinder finder = new LatestCheckPointFinder( logFiles, fs, reader );
-        CheckPoint checkPoint = new CheckPoint( new LogPosition( endLogVersion, 16 ) );
-        LogEntryStart start = new LogEntryStart( 0, 0, 0, 0, new byte[0], new LogPosition( endLogVersion, 33 ) );
-        when( reader.readLogEntry( any( ReadableLogChannel.class ) ) ).thenReturn( start, checkPoint, null );
+        long txId = 35;
+        StartEntry start = start();
+        setupLogFiles( logFile( start, commit( txId ), checkPoint( start ) ) );
 
         // when
         LatestCheckPoint latestCheckPoint = finder.find( endLogVersion );
 
         // then
-        assertEquals( new LatestCheckPoint( checkPoint, true, endLogVersion ), latestCheckPoint );
+        assertLatestCheckPoint( true, true, txId, endLogVersion, latestCheckPoint );
     }
 
     @Test
-    public void latestLogFileContainingACheckPointAndAStartAtSamePosition() throws Throwable
+    public void latestLogFileContainingACheckPointAndAStartWithoutCommitAfter() throws Throwable
     {
         // given
-        setupLogFiles( startLogVersion, endLogVersion );
-        LatestCheckPointFinder finder = new LatestCheckPointFinder( logFiles, fs, reader );
-        CheckPoint checkPoint = new CheckPoint( new LogPosition( endLogVersion, 16 ) );
-        LogEntryStart start = new LogEntryStart( 0, 0, 0, 0, new byte[0], new LogPosition( endLogVersion, 16 ) );
-        when( reader.readLogEntry( any( ReadableLogChannel.class ) ) ).thenReturn( start, checkPoint, null );
+        StartEntry start = start();
+        setupLogFiles( logFile( start, checkPoint( start ) ) );
 
         // when
         LatestCheckPoint latestCheckPoint = finder.find( endLogVersion );
 
         // then
-        assertEquals( new LatestCheckPoint( checkPoint, true, endLogVersion ), latestCheckPoint );
+        assertLatestCheckPoint( true, true, NO_TRANSACTION_ID, endLogVersion, latestCheckPoint );
     }
 
     @Test
     public void latestLogFileContainingMultipleCheckPointsOneStartInBetween() throws Throwable
     {
         // given
-        setupLogFiles( startLogVersion, endLogVersion );
-        LatestCheckPointFinder finder = new LatestCheckPointFinder( logFiles, fs, reader );
-        LogEntryStart start = new LogEntryStart( 0, 0, 0, 0, new byte[0], new LogPosition( endLogVersion, 22 ) );
-        CheckPoint checkPoint = new CheckPoint( new LogPosition( endLogVersion, 33 ) );
-
-        when( reader.readLogEntry( any( ReadableLogChannel.class ) ) ).thenReturn(
-                mock( CheckPoint.class ), start, checkPoint, null );
+        setupLogFiles( logFile( checkPoint(), start(), checkPoint() ) );
 
         // when
         LatestCheckPoint latestCheckPoint = finder.find( endLogVersion );
 
         // then
-        assertEquals( new LatestCheckPoint( checkPoint, false, endLogVersion ), latestCheckPoint );
+        assertLatestCheckPoint( true, false, NO_TRANSACTION_ID, endLogVersion, latestCheckPoint );
     }
 
     @Test
     public void latestLogFileContainingMultipleCheckPointsOneStartAfterBoth() throws Throwable
     {
         // given
-        setupLogFiles( startLogVersion, endLogVersion );
-        LatestCheckPointFinder finder = new LatestCheckPointFinder( logFiles, fs, reader );
-        CheckPoint checkPoint = new CheckPoint( new LogPosition( endLogVersion, 22 ) );
-        LogEntryStart start = new LogEntryStart( 0, 0, 0, 0, new byte[0], new LogPosition( endLogVersion, 33 ) );
-
-        when( reader.readLogEntry( any( ReadableLogChannel.class ) ) ).thenReturn(
-                mock( CheckPoint.class ), checkPoint, start, null );
+        long txId = 11;
+        setupLogFiles( logFile( checkPoint(), checkPoint(), start(), commit( txId ) ) );
 
         // when
         LatestCheckPoint latestCheckPoint = finder.find( endLogVersion );
 
         // then
-        assertEquals( new LatestCheckPoint( checkPoint, true, endLogVersion ), latestCheckPoint );
+        assertLatestCheckPoint( true, true, txId, endLogVersion, latestCheckPoint );
     }
 
     @Test
     public void olderLogFileContainingACheckPointAndNewerFileContainingAStart() throws Throwable
     {
         // given
-        setupLogFiles( startLogVersion, endLogVersion );
-        LatestCheckPointFinder finder = new LatestCheckPointFinder( logFiles, fs, reader );
-        LogEntryStart start1 = new LogEntryStart( 0, 0, 0, 0, new byte[0], new LogPosition( endLogVersion, 22 ) );
-        LogEntryStart start2 = new LogEntryStart( 0, 0, 0, 0, new byte[0], new LogPosition( startLogVersion, 16 ) );
-        CheckPoint checkPoint = new CheckPoint( new LogPosition( startLogVersion, 33 ) );
-
-        when( reader.readLogEntry( any( ReadableLogChannel.class ) ) ).thenReturn(
-                start1, null, // first file
-                start2,  checkPoint, null // second file
-        );
+        long txId = 11;
+        StartEntry start = start();
+        setupLogFiles( logFile( checkPoint() ), logFile( start, commit( txId ) ) );
 
         // when
         LatestCheckPoint latestCheckPoint = finder.find( endLogVersion );
 
         // then
-        assertEquals( new LatestCheckPoint( checkPoint, true, startLogVersion ), latestCheckPoint );
+        assertLatestCheckPoint( true, true, txId, startLogVersion, latestCheckPoint );
     }
 
     @Test
     public void olderLogFileContainingACheckPointAndNewerFileIsEmpty() throws Throwable
     {
         // given
-        setupLogFiles( startLogVersion, endLogVersion );
-        LatestCheckPointFinder finder = new LatestCheckPointFinder( logFiles, fs, reader );
-        LogEntryStart start = new LogEntryStart( 0, 0, 0, 0, new byte[0], new LogPosition( startLogVersion, 16 ) );
-        CheckPoint checkPoint = new CheckPoint( new LogPosition( startLogVersion, 33 ) );
-
-        when( reader.readLogEntry( any( ReadableLogChannel.class ) ) ).thenReturn(
-                null, // first file
-                start,  checkPoint, null // second file
-        );
+        StartEntry start = start();
+        setupLogFiles( logFile( start, checkPoint() ), logFile() );
 
         // when
         LatestCheckPoint latestCheckPoint = finder.find( endLogVersion );
 
         // then
-        assertEquals( new LatestCheckPoint( checkPoint, false, startLogVersion ), latestCheckPoint );
+        assertLatestCheckPoint( true, false, NO_TRANSACTION_ID, startLogVersion, latestCheckPoint );
     }
 
     @Test
     public void olderLogFileContainingAStartAndNewerFileContainingACheckPointPointingToAPreviousPositionThanStart() throws Throwable
     {
         // given
-        setupLogFiles( startLogVersion, endLogVersion );
-        LatestCheckPointFinder finder = new LatestCheckPointFinder( logFiles, fs, reader );
-        LogEntryStart start = new LogEntryStart( 0, 0, 0, 0, new byte[0], new LogPosition( startLogVersion, 22 ) );
-        CheckPoint checkPoint = new CheckPoint( new LogPosition( startLogVersion, 16 ) );
-
-        when( reader.readLogEntry( any( ReadableLogChannel.class ) ) ).thenReturn(
-                checkPoint, // first file
-                start, null // second file
-        );
+        long txId = 123;
+        StartEntry start = start();
+        setupLogFiles( logFile( start, commit( txId ) ), logFile( checkPoint( start ) ) );
 
         // when
         LatestCheckPoint latestCheckPoint = finder.find( endLogVersion );
 
         // then
-        assertEquals( new LatestCheckPoint( checkPoint, true, endLogVersion ), latestCheckPoint );
+        assertLatestCheckPoint( true, true, txId, endLogVersion, latestCheckPoint );
+    }
+
+    @Test
+    public void olderLogFileContainingAStartAndNewerFileContainingACheckPointPointingToAPreviousPositionThanStartWithoutCommit() throws Throwable
+    {
+        // given
+        StartEntry start = start();
+        setupLogFiles( logFile( start ), logFile( checkPoint( start ) ) );
+
+        // when
+        LatestCheckPoint latestCheckPoint = finder.find( endLogVersion );
+
+        // then
+        assertLatestCheckPoint( true, false, NO_TRANSACTION_ID, endLogVersion, latestCheckPoint );
     }
 
     @Test
     public void olderLogFileContainingAStartAndNewerFileContainingACheckPointPointingToALaterPositionThanStart() throws Throwable
     {
         // given
-        setupLogFiles( startLogVersion, endLogVersion );
-        LatestCheckPointFinder finder = new LatestCheckPointFinder( logFiles, fs, reader );
-        LogEntryStart start = new LogEntryStart( 0, 0, 0, 0, new byte[0], new LogPosition( startLogVersion, 22 ) );
-        CheckPoint checkPoint = new CheckPoint( new LogPosition( startLogVersion, 25 ) );
-
-        when( reader.readLogEntry( any( ReadableLogChannel.class ) ) ).thenReturn(
-                checkPoint, // first file
-                start, null // second file
-        );
+        PositionEntry position = position();
+        setupLogFiles( logFile( start(), commit( 3 ), position ), logFile( checkPoint( position ) ) );
 
         // when
         LatestCheckPoint latestCheckPoint = finder.find( endLogVersion );
 
         // then
-        assertEquals( new LatestCheckPoint( checkPoint, false, endLogVersion ), latestCheckPoint );
+        assertLatestCheckPoint( true, false, NO_TRANSACTION_ID, endLogVersion, latestCheckPoint );
     }
 
     @Test
     public void latestLogEmptyStartEntryBeforeAndAfterCheckPointInTheLastButOneLog() throws Throwable
     {
         // given
-        setupLogFiles( startLogVersion, endLogVersion );
-        LatestCheckPointFinder finder = new LatestCheckPointFinder( logFiles, fs, reader );
-        LogEntry firstStart = new LogEntryStart( 0, 0, 0, 0, new byte[0], new LogPosition( startLogVersion, 20 ) );
-        LogEntry secondStart = new LogEntryStart( 0, 0, 0, 0, new byte[0], new LogPosition( startLogVersion, 27 ) );
-        CheckPoint checkPoint = new CheckPoint( new LogPosition( startLogVersion, 25 ) );
-
-        when( reader.readLogEntry( any( ReadableLogChannel.class ) ) ).thenReturn(
-                null, // first file
-                firstStart, checkPoint, secondStart, null // second file
-        );
+        long txId = 432;
+        setupLogFiles( logFile( start(), checkPoint(), start(), commit( txId ) ), logFile() );
 
         // when
         LatestCheckPoint latestCheckPoint = finder.find( endLogVersion );
 
         // then
-        assertEquals( new LatestCheckPoint( checkPoint, true, startLogVersion ), latestCheckPoint );
+        assertLatestCheckPoint( true, true, txId, startLogVersion, latestCheckPoint );
     }
 
-    private void setupLogFiles( int startLogVersion, int endLogVersion ) throws IOException
-    {
-        when( fs.fileExists( any( File.class ) ) ).thenReturn( false );
-        for ( int i = startLogVersion; i <= endLogVersion; i++ )
-        {
-            File file = mock( File.class );
-            when( fs.fileExists( file ) ).thenReturn( true );
-            when( logFiles.getLogFileForVersion( i ) ).thenReturn( file );
-            StoreChannel channel = mock( StoreChannel.class );
-            when( fs.open( eq( file ), anyString() ) ).thenReturn( channel );
-            final int version = i;
-            when( channel.read( any( ByteBuffer.class ) ) ).thenAnswer( new Answer<Object>()
-            {
-                @Override
-                public Object answer( InvocationOnMock invocationOnMock ) throws Throwable
-                {
-                    ByteBuffer buffer = (ByteBuffer) invocationOnMock.getArguments()[0];
-                    buffer.putLong( encodeLogVersion( version ) );
-                    buffer.putLong( 33 );
-                    return LOG_HEADER_SIZE;
-                }
-            } );
-        }
+    // === Below is code for helping the tests above ===
 
-        // to make sure we have a mocked file for the file before startLogVersion to avoid NPE...
-        if ( startLogVersion > 0 )
+    @SafeVarargs
+    private final void setupLogFiles( LogCreator... logFiles ) throws IOException
+    {
+        Map<Entry,LogPosition> positions = new HashMap<>();
+        long version = endLogVersion - logFiles.length;
+        for ( LogCreator logFile : logFiles )
         {
-            File file = mock( File.class );
-            when( logFiles.getLogFileForVersion( startLogVersion - 1 ) ).thenReturn( file );
+            logFile.create( ++version, positions );
         }
+    }
+
+    private LogCreator logFile( Entry... entries )
+    {
+        return (logVersion, positions) ->
+        {
+            try
+            {
+                AtomicLong lastTxId = new AtomicLong();
+                Supplier<Long> lastTxIdSupplier = () -> lastTxId.get();
+                LogVersionRepository logVersionRepository = new DeadSimpleLogVersionRepository( logVersion );
+                LifeSupport life = new LifeSupport();
+                life.start();
+                PhysicalLogFile logFile = life.add( new PhysicalLogFile( fsRule.get(), logFiles, mebiBytes( 1 ),
+                        lastTxIdSupplier, logVersionRepository, NO_MONITOR, new LogHeaderCache( 10 ) ) );
+                try
+                {
+                    FlushablePositionAwareChannel writeChannel = logFile.getWriter();
+                    LogPositionMarker positionMarker = new LogPositionMarker();
+                    LogEntryWriter writer = new LogEntryWriter( writeChannel );
+                    for ( Entry entry : entries )
+                    {
+                        LogPosition currentPosition = writeChannel.getCurrentPosition( positionMarker ).newPosition();
+                        positions.put( entry, currentPosition );
+                        if ( entry instanceof StartEntry )
+                        {
+                            writer.writeStartEntry( 0, 0, 0, 0, new byte[0] );
+                        }
+                        else if ( entry instanceof CommitEntry )
+                        {
+                            CommitEntry commitEntry = (CommitEntry) entry;
+                            writer.writeCommitEntry( commitEntry.txId, 0 );
+                            lastTxId.set( commitEntry.txId );
+                        }
+                        else if ( entry instanceof CheckPointEntry )
+                        {
+                            CheckPointEntry checkPointEntry = (CheckPointEntry) entry;
+                            Entry target = checkPointEntry.withPositionOfEntry;
+                            LogPosition logPosition = target != null ? positions.get( target ) : currentPosition;
+                            assert logPosition != null : "No registered log position for " + target;
+                            writer.writeCheckPointEntry( logPosition );
+                        }
+                        else if ( entry instanceof PositionEntry )
+                        {
+                            // Don't write anything, this entry is just for registering a position so that
+                            // another CheckPointEntry can refer to it
+                        }
+                        else
+                        {
+                            throw new IllegalArgumentException( "Unknown entry " + entry );
+                        }
+
+                    }
+                }
+                finally
+                {
+                    life.shutdown();
+                }
+            }
+            catch ( IOException e )
+            {
+                throw new UncheckedIOException( e );
+            }
+        };
+    }
+
+    interface LogCreator
+    {
+        void create( long version, Map<Entry,LogPosition> positions ) throws IOException;
+    }
+
+    // Marker interface, helping compilation/test creation
+    interface Entry
+    {
+    }
+
+    private static StartEntry start()
+    {
+        return new StartEntry();
+    }
+
+    private static CommitEntry commit( long txId )
+    {
+        return new CommitEntry( txId );
+    }
+
+    private static CheckPointEntry checkPoint()
+    {
+        return checkPoint( null/*means self-position*/ );
+    }
+
+    private static CheckPointEntry checkPoint( Entry forEntry )
+    {
+        return new CheckPointEntry( forEntry );
+    }
+
+    private static PositionEntry position()
+    {
+        return new PositionEntry();
+    }
+
+    private static class StartEntry implements Entry
+    {
+    }
+
+    private static class CommitEntry implements Entry
+    {
+        final long txId;
+
+        CommitEntry( long txId )
+        {
+            this.txId = txId;
+        }
+    }
+
+    private static class CheckPointEntry implements Entry
+    {
+        final Entry withPositionOfEntry;
+
+        CheckPointEntry( Entry withPositionOfEntry )
+        {
+            this.withPositionOfEntry = withPositionOfEntry;
+        }
+    }
+
+    private static class PositionEntry implements Entry
+    {
+    }
+
+    private void assertLatestCheckPoint( boolean hasCheckPointEntry, boolean commitsAfterLastCheckPoint,
+            long firstTxIdAfterLastCheckPoint, long logVersion, LatestCheckPoint latestCheckPoint )
+    {
+        assertEquals( hasCheckPointEntry, latestCheckPoint.checkPoint != null );
+        assertEquals( commitsAfterLastCheckPoint, latestCheckPoint.commitsAfterCheckPoint );
+        if ( commitsAfterLastCheckPoint )
+        {
+            assertEquals( firstTxIdAfterLastCheckPoint, latestCheckPoint.firstTxIdAfterLastCheckPoint );
+        }
+        assertEquals( logVersion, latestCheckPoint.oldestLogVersionFound );
     }
 }

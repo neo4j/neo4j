@@ -34,6 +34,8 @@ import org.neo4j.kernel.impl.transaction.log.entry.VersionAwareLogEntryReader;
 import org.neo4j.kernel.recovery.LatestCheckPointFinder;
 import org.neo4j.kernel.recovery.PositionToRecoverFrom;
 
+import static org.neo4j.kernel.recovery.PositionToRecoverFrom.NO_MONITOR;
+
 /**
  * An external tool that can determine if a given store will need recovery.
  */
@@ -66,6 +68,6 @@ public class RecoveryRequiredChecker
         LogEntryReader<ReadableClosablePositionAwareChannel> reader = new VersionAwareLogEntryReader<>();
 
         LatestCheckPointFinder finder = new LatestCheckPointFinder( logFiles, fs, reader );
-        return new PositionToRecoverFrom( finder ).apply( logVersion ) != LogPosition.UNSPECIFIED;
+        return new PositionToRecoverFrom( finder, NO_MONITOR ).apply( logVersion ) != LogPosition.UNSPECIFIED;
     }
 }

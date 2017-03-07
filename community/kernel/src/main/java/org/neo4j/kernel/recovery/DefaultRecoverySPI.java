@@ -56,7 +56,8 @@ public class DefaultRecoverySPI implements Recovery.SPI
             StorageEngine storageEngine,
             PhysicalLogFiles logFiles, FileSystemAbstraction fs,
             LogVersionRepository logVersionRepository, LatestCheckPointFinder checkPointFinder,
-            TransactionIdStore transactionIdStore, LogicalTransactionStore logicalTransactionStore )
+            TransactionIdStore transactionIdStore, LogicalTransactionStore logicalTransactionStore,
+            PositionToRecoverFrom.Monitor monitor )
     {
         this.storageEngine = storageEngine;
         this.logFiles = logFiles;
@@ -64,7 +65,7 @@ public class DefaultRecoverySPI implements Recovery.SPI
         this.logVersionRepository = logVersionRepository;
         this.transactionIdStore = transactionIdStore;
         this.logicalTransactionStore = logicalTransactionStore;
-        this.positionToRecoverFrom = new PositionToRecoverFrom( checkPointFinder );
+        this.positionToRecoverFrom = new PositionToRecoverFrom( checkPointFinder, monitor );
     }
 
     @Override

@@ -32,11 +32,47 @@ import static org.neo4j.kernel.impl.transaction.log.LogVersionRepository.INITIAL
  */
 public class PositionToRecoverFrom implements ThrowingLongFunction<LogPosition,IOException>
 {
-    private final LatestCheckPointFinder checkPointFinder;
+    public interface Monitor
+    {
+        /**
+         * There's a check point log entry as the last entry in the transaction log.
+         *
+         * @param logPosition {@link LogPosition} of the last check point.
+         */
+        default void noCommitsAfterLastCheckPoint( LogPosition logPosition )
+        {   // no-op by default
+        }
 
-    public PositionToRecoverFrom( LatestCheckPointFinder checkPointFinder )
+        /**
+         * There's a check point log entry, but there are other log entries after it.
+         *
+         * @param logPosition {@link LogPosition} pointing to the first log entry after the last
+         * check pointed transaction.
+         * @param firstTxIdAfterLastCheckPoint transaction id of the first transaction after the last check point.
+         */
+        default void commitsAfterLastCheckPoint( LogPosition logPosition, long firstTxIdAfterLastCheckPoint )
+        {   // no-op by default
+        }
+
+        /**
+         * No check point log entry found in the transaction log.
+         */
+        default void noCheckPointFound()
+        {   // no-op by default
+        }
+    }
+
+    public static final Monitor NO_MONITOR = new Monitor()
+    {
+    };
+
+    private final LatestCheckPointFinder checkPointFinder;
+    private final Monitor monitor;
+
+    public PositionToRecoverFrom( LatestCheckPointFinder checkPointFinder, Monitor monitor )
     {
         this.checkPointFinder = checkPointFinder;
+        this.monitor = monitor;
     }
 
     /**
@@ -53,11 +89,15 @@ public class PositionToRecoverFrom implements ThrowingLongFunction<LogPosition,I
         LatestCheckPointFinder.LatestCheckPoint latestCheckPoint = checkPointFinder.find( currentLogVersion );
         if ( !latestCheckPoint.commitsAfterCheckPoint )
         {
+            monitor.noCommitsAfterLastCheckPoint(
+                    latestCheckPoint.checkPoint != null ? latestCheckPoint.checkPoint.getLogPosition() : null );
             return LogPosition.UNSPECIFIED;
         }
 
         if ( latestCheckPoint.checkPoint != null )
         {
+            monitor.commitsAfterLastCheckPoint( latestCheckPoint.checkPoint.getLogPosition(),
+                    latestCheckPoint.firstTxIdAfterLastCheckPoint );
             return latestCheckPoint.checkPoint.getLogPosition();
         }
         else
@@ -68,6 +108,7 @@ public class PositionToRecoverFrom implements ThrowingLongFunction<LogPosition,I
                 throw new UnderlyingStorageException( "No check point found in any log file from version " +
                                                       fromLogVersion + " to " + currentLogVersion );
             }
+            monitor.noCheckPointFound();
             return LogPosition.start( 0 );
         }
     }

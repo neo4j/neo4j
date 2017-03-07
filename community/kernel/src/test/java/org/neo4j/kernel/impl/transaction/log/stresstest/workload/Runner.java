@@ -127,18 +127,9 @@ public class Runner implements Callable<Long>
                 GraphDatabaseSettings.logical_log_rotation_threshold.getDefaultValue() );
         DeadSimpleLogVersionRepository logVersionRepository = new DeadSimpleLogVersionRepository( 0 );
         return new PhysicalLogFile( fs, logFiles, rotateAtSize,
-                transactionIdStore::getLastCommittedTransactionId, logVersionRepository, NOOP_LOGFILE_MONITOR,
+                transactionIdStore::getLastCommittedTransactionId, logVersionRepository, PhysicalLogFile.NO_MONITOR,
                 logHeaderCache );
     }
-
-    private static final PhysicalLogFile.Monitor NOOP_LOGFILE_MONITOR = new PhysicalLogFile.Monitor()
-    {
-        @Override
-        public void opened( File logFile, long logVersion, long lastTransactionId, boolean clean )
-        {
-
-        }
-    };
 
     private static final LogRotation.Monitor NOOP_LOGROTATION_MONITOR = new LogRotation.Monitor()
     {
