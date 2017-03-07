@@ -19,6 +19,8 @@
  */
 package org.neo4j.kernel.impl.api;
 
+import org.apache.commons.lang3.ArrayUtils;
+
 import java.util.Iterator;
 
 import org.neo4j.collection.primitive.PrimitiveIntCollection;
@@ -162,14 +164,22 @@ public class ConstraintEnforcingEntityOperations implements EntityOperations, Sc
     {
         int[] propertyIds = schema.getPropertyIds();
         ExactPredicate[] values = new ExactPredicate[propertyIds.length];
-        for ( int i = 0; i < values.length; i++ )
+
+        int nMatched = 0;
+        Cursor<PropertyItem> nodePropertyCursor = nodeGetProperties( state, node );
+        while ( nodePropertyCursor.next() )
         {
-            Object value = nodeGetProperty( state, node, propertyIds[i] );
-            if ( value == null )
+            PropertyItem property = nodePropertyCursor.get();
+            int k = ArrayUtils.indexOf( propertyIds, property.propertyKeyId() );
+            if ( k >= 0 )
             {
-                return null;
+                values[k] = IndexQuery.exact( property.propertyKeyId(), property.value() );
+                nMatched++;
             }
-            values[i] = IndexQuery.exact( propertyIds[i], value );
+        }
+        if ( nMatched < values.length )
+        {
+            return null;
         }
         return values;
     }
