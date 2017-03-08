@@ -95,7 +95,7 @@ public interface EntityReadOperations
     Cursor<RelationshipItem> nodeGetRelationships( KernelStatement statement, NodeItem node, Direction direction );
 
     Cursor<RelationshipItem> nodeGetRelationships( KernelStatement statement, NodeItem node, Direction direction,
-            PrimitiveIntSet relTypes );
+            int[] relTypes );
 
     Cursor<PropertyItem> nodeGetProperties( KernelStatement statement, NodeItem node );
 

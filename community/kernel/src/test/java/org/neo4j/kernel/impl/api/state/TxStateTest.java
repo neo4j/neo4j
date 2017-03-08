@@ -35,7 +35,6 @@ import java.util.Map;
 import java.util.Random;
 import java.util.Set;
 
-import org.neo4j.collection.primitive.PrimitiveIntCollections;
 import org.neo4j.collection.primitive.PrimitiveLongIterator;
 import org.neo4j.cursor.Cursor;
 import org.neo4j.helpers.collection.Iterables;
@@ -1456,7 +1455,7 @@ public class TxStateTest
             Cursor<RelationshipItem> augmented = relationshipTypes == null
                     ? state.augmentNodeRelationshipCursor( committed, state.getNodeState( i ), direction )
                     : state.augmentNodeRelationshipCursor( committed, state.getNodeState( i ), direction,
-                             PrimitiveIntCollections.asSet( relationshipTypes ) );
+                             relationshipTypes );
 
             Map<Long,RelationshipItem> expectedRelationships =
                     relationshipsForNode( i, allRelationships, direction, relationshipTypes );

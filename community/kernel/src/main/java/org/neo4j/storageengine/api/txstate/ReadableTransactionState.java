@@ -156,7 +156,7 @@ public interface ReadableTransactionState
             Direction direction );
 
     Cursor<RelationshipItem> augmentNodeRelationshipCursor( Cursor<RelationshipItem> cursor, NodeState nodeState,
-            Direction direction, PrimitiveIntSet relTypes );
+            Direction direction, int[] relTypes );
 
     Cursor<RelationshipItem> augmentRelationshipsGetAllCursor( Cursor<RelationshipItem> cursor );
 
