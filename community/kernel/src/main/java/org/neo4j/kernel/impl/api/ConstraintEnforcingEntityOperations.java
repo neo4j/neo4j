@@ -28,6 +28,8 @@ import org.neo4j.collection.primitive.PrimitiveIntIterator;
 import org.neo4j.collection.primitive.PrimitiveIntSet;
 import org.neo4j.collection.primitive.PrimitiveLongIterator;
 import org.neo4j.cursor.Cursor;
+import org.neo4j.helpers.collection.CastingIterator;
+import org.neo4j.helpers.collection.Iterators;
 import org.neo4j.kernel.api.exceptions.EntityNotFoundException;
 import org.neo4j.kernel.api.exceptions.InvalidTransactionTypeKernelException;
 import org.neo4j.kernel.api.exceptions.KernelException;
@@ -53,7 +55,6 @@ import org.neo4j.kernel.api.schema_new.LabelSchemaDescriptor;
 import org.neo4j.kernel.api.schema_new.OrderedPropertyValues;
 import org.neo4j.kernel.api.schema_new.RelationTypeSchemaDescriptor;
 import org.neo4j.kernel.api.schema_new.SchemaDescriptor;
-import org.neo4j.kernel.api.schema_new.SchemaDescriptorFactory;
 import org.neo4j.kernel.api.schema_new.constaints.ConstraintDescriptor;
 import org.neo4j.kernel.api.schema_new.constaints.NodeExistenceConstraintDescriptor;
 import org.neo4j.kernel.api.schema_new.constaints.RelExistenceConstraintDescriptor;
@@ -64,6 +65,7 @@ import org.neo4j.kernel.impl.api.operations.EntityReadOperations;
 import org.neo4j.kernel.impl.api.operations.EntityWriteOperations;
 import org.neo4j.kernel.impl.api.operations.SchemaReadOperations;
 import org.neo4j.kernel.impl.api.operations.SchemaWriteOperations;
+import org.neo4j.kernel.impl.api.schema.NodeSchemaMatcher;
 import org.neo4j.kernel.impl.api.store.NodeLoadingIterator;
 import org.neo4j.kernel.impl.constraints.ConstraintSemantics;
 import org.neo4j.kernel.impl.locking.LockTracer;
@@ -75,7 +77,9 @@ import org.neo4j.storageengine.api.RelationshipItem;
 
 import static java.lang.String.format;
 import static org.neo4j.kernel.api.StatementConstants.NO_SUCH_NODE;
+import static org.neo4j.kernel.api.StatementConstants.NO_SUCH_PROPERTY_KEY;
 import static org.neo4j.kernel.api.exceptions.schema.ConstraintValidationException.Phase.VALIDATION;
+import static org.neo4j.kernel.api.schema_new.SchemaDescriptorPredicates.hasProperty;
 import static org.neo4j.kernel.api.schema_new.constaints.ConstraintDescriptor.Type.UNIQUE;
 import static org.neo4j.kernel.impl.locking.ResourceTypes.INDEX_ENTRY;
 import static org.neo4j.kernel.impl.locking.ResourceTypes.indexEntryResourceId;
@@ -87,6 +91,7 @@ public class ConstraintEnforcingEntityOperations implements EntityOperations, Sc
     private final SchemaWriteOperations schemaWriteOperations;
     private final SchemaReadOperations schemaReadOperations;
     private final ConstraintSemantics constraintSemantics;
+    private final NodeSchemaMatcher<UniquenessConstraintDescriptor> nodeSchemaMatcher;
 
     public ConstraintEnforcingEntityOperations(
             ConstraintSemantics constraintSemantics, EntityWriteOperations entityWriteOperations,
@@ -99,6 +104,7 @@ public class ConstraintEnforcingEntityOperations implements EntityOperations, Sc
         this.entityReadOperations = entityReadOperations;
         this.schemaWriteOperations = schemaWriteOperations;
         this.schemaReadOperations = schemaReadOperations;
+        nodeSchemaMatcher = new NodeSchemaMatcher( entityReadOperations );
     }
 
     @Override
@@ -133,47 +139,65 @@ public class ConstraintEnforcingEntityOperations implements EntityOperations, Sc
     {
         try ( Cursor<NodeItem> cursor = nodeCursorById( state, nodeId ) )
         {
-            // TODO: support composite indexes
             NodeItem node = cursor.get();
-            node.labels().visitKeys( labelId ->
-            {
-                int propertyKeyId = property.propertyKeyId();
-                Iterator<ConstraintDescriptor> constraints =
-                        schemaReadOperations.constraintsGetForSchema( state,
-                                SchemaDescriptorFactory.forLabel( labelId, propertyKeyId ) );
-                while ( constraints.hasNext() )
-                {
-                    ConstraintDescriptor constraint = constraints.next();
-                    if ( constraint.type() == UNIQUE )
-                    {
-                        validateNoExistingNodeWithExactValues(
-                                state,
-                                (UniquenessConstraintDescriptor) constraint,
-                                new ExactPredicate[]{IndexQuery.exact( propertyKeyId, property.value() )},
+            Iterator<ConstraintDescriptor> constraints = getConstraintsForProperty( state, property.propertyKeyId() );
+            Iterator<UniquenessConstraintDescriptor> uniqueness =
+                    new CastingIterator<>( constraints, UniquenessConstraintDescriptor.class );
+
+            nodeSchemaMatcher.onMatchingSchema( state, uniqueness, node, property.propertyKeyId(),
+                    constraint -> {
+                        validateNoExistingNodeWithExactValues( state, constraint,
+                                getAllPropertyValues( state, constraint.schema(), node, property ),
                                 node.id() );
-                    }
-                }
-                return false;
-            } );
+                    } );
         }
 
         return entityWriteOperations.nodeSetProperty( state, nodeId, property );
     }
 
+    private Iterator<ConstraintDescriptor> getConstraintsForProperty( KernelStatement state, int propertyId )
+    {
+        Iterator<ConstraintDescriptor> allConstraints = schemaReadOperations.constraintsGetAll( state );
+
+        return Iterators.filter( hasProperty( propertyId ), allConstraints );
+    }
+
     private ExactPredicate[] getAllPropertyValues( KernelStatement state, SchemaDescriptor schema, NodeItem node )
     {
-        int[] propertyIds = schema.getPropertyIds();
-        ExactPredicate[] values = new ExactPredicate[propertyIds.length];
+        return getAllPropertyValues( state, schema, node, DefinedProperty.NO_SUCH_PROPERTY );
+    }
+
+    private ExactPredicate[] getAllPropertyValues( KernelStatement state, SchemaDescriptor schema, NodeItem node,
+            DefinedProperty specialProperty )
+    {
+        int[] schemaPropertyIds = schema.getPropertyIds();
+        ExactPredicate[] values = new ExactPredicate[schemaPropertyIds.length];
 
         int nMatched = 0;
         Cursor<PropertyItem> nodePropertyCursor = nodeGetProperties( state, node );
+        int specialPropId = specialProperty.propertyKeyId();
         while ( nodePropertyCursor.next() )
         {
             PropertyItem property = nodePropertyCursor.get();
-            int k = ArrayUtils.indexOf( propertyIds, property.propertyKeyId() );
+
+            int nodePropertyId = property.propertyKeyId();
+            int k = ArrayUtils.indexOf( schemaPropertyIds, nodePropertyId );
             if ( k >= 0 )
             {
-                values[k] = IndexQuery.exact( property.propertyKeyId(), property.value() );
+                if ( nodePropertyId != specialPropId )
+                {
+                    values[k] = IndexQuery.exact( nodePropertyId, property.value() );
+                }
+                nMatched++;
+            }
+        }
+
+        if ( specialPropId != NO_SUCH_PROPERTY_KEY )
+        {
+            int k = ArrayUtils.indexOf( schemaPropertyIds, specialPropId );
+            if ( k >= 0 )
+            {
+                values[k] = IndexQuery.exact( specialPropId, specialProperty.value() );
                 nMatched++;
             }
         }
