@@ -19,10 +19,10 @@
  */
 package org.neo4j.cypher.internal.compiler.v3_2.planner
 
-import org.neo4j.cypher.internal.frontend.v3_2.ast.{Expression, HasLabels}
 import org.neo4j.cypher.internal.compiler.v3_2.planner.logical.Metrics.{CardinalityModel, QueryGraphCardinalityModel, QueryGraphSolverInput}
 import org.neo4j.cypher.internal.compiler.v3_2.planner.logical.plans.LogicalPlan
 import org.neo4j.cypher.internal.compiler.v3_2.spi.GraphStatistics
+import org.neo4j.cypher.internal.frontend.v3_2.ast.{Expression, HasLabels}
 import org.neo4j.cypher.internal.frontend.v3_2.{LabelId, SemanticTable}
 import org.neo4j.cypher.internal.ir.v3_2._
 
@@ -44,19 +44,11 @@ class StubbedLogicalPlanningConfiguration(parent: LogicalPlanningConfiguration)
 
   lazy val labelsById: Map[Int, String] = (indexes ++ uniqueIndexes).map(_._1).zipWithIndex.map(_.swap).toMap
 
-  def indexOn(label: String, property: String) {
-    indexes = indexes + (label -> Seq(property))
-  }
-
-  def indexOn(label: String, properties: Seq[String]) {
+  def indexOn(label: String, properties: String*) {
     indexes = indexes + (label -> properties)
   }
 
-  def uniqueIndexOn(label: String, property: String) {
-    uniqueIndexes = uniqueIndexes + (label -> Seq(property))
-  }
-
-  def uniqueIndexOn(label: String, properties: Seq[String]) {
+  def uniqueIndexOn(label: String, properties: String*) {
     uniqueIndexes = uniqueIndexes + (label -> properties)
   }
 

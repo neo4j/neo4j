@@ -19,21 +19,21 @@
  */
 package org.neo4j.cypher.internal.compiler.v3_2
 
-import org.neo4j.cypher.internal.frontend.v3_2.{PropertyKeyId, LabelId}
+import org.neo4j.cypher.internal.frontend.v3_2.{LabelId, PropertyKeyId}
 
 object IndexDescriptor {
-  def apply(label: Int, property: Int): IndexDescriptor = IndexDescriptor(LabelId(label), Array(PropertyKeyId(property)))
+  def apply(label: Int, property: Int): IndexDescriptor = IndexDescriptor(LabelId(label), Seq(PropertyKeyId(property)))
 
-  def apply(label: Int, properties: Seq[Int]): IndexDescriptor = IndexDescriptor(LabelId(label), properties.toArray.map(PropertyKeyId))
+  def apply(label: Int, properties: Seq[Int]): IndexDescriptor = IndexDescriptor(LabelId(label), properties.toSeq.map(PropertyKeyId))
 
-  def apply(label: LabelId, property: PropertyKeyId): IndexDescriptor = IndexDescriptor(label, Array(property))
+  def apply(label: LabelId, property: PropertyKeyId): IndexDescriptor = IndexDescriptor(label, Seq(property))
 
-  def apply(label: LabelId, properties: Seq[PropertyKeyId]): IndexDescriptor = IndexDescriptor(label, properties.toArray)
+//  def apply(label: LabelId, properties: Seq[PropertyKeyId]): IndexDescriptor = IndexDescriptor(label, properties.toSeq)
 
-  implicit def toKernelEncode(properties: Array[PropertyKeyId]): Array[Int] = properties.map(_.id)
+  implicit def toKernelEncode(properties: Seq[PropertyKeyId]): Array[Int] = properties.map(_.id).toArray
 }
 
-case class IndexDescriptor(label: LabelId, properties: Array[PropertyKeyId]) {
+case class IndexDescriptor(label: LabelId, properties: Seq[PropertyKeyId]) {
   def this(label: Int, property: Int) = this( LabelId(label), Array(PropertyKeyId(property)) )
 
   def isComposite: Boolean = properties.length > 1

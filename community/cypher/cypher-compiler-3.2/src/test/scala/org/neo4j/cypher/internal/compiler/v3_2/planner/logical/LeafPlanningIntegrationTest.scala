@@ -25,7 +25,7 @@ import org.neo4j.cypher.internal.compiler.v3_2.commands.{CompositeQueryExpressio
 import org.neo4j.cypher.internal.compiler.v3_2.planner.BeLikeMatcher._
 import org.neo4j.cypher.internal.compiler.v3_2.planner.LogicalPlanningTestSupport2
 import org.neo4j.cypher.internal.compiler.v3_2.planner.logical.Metrics.QueryGraphSolverInput
-import org.neo4j.cypher.internal.compiler.v3_2.planner.logical.plans._
+import org.neo4j.cypher.internal.compiler.v3_2.planner.logical.plans.{Union, _}
 import org.neo4j.cypher.internal.frontend.v3_2.ast._
 import org.neo4j.cypher.internal.frontend.v3_2.helpers.NonEmptyList
 import org.neo4j.cypher.internal.frontend.v3_2.symbols._
@@ -435,11 +435,11 @@ class LeafPlanningIntegrationTest extends CypherFunSuite with LogicalPlanningTes
 
   //
   // Composite indexes
-  //
+  // WHERE n:Label AND (n.prop = $val1 OR (n.prop = $val2 AND n.bar = $val3))
 
   test("should plan composite index seek when there is an index on two properties and both are in equality predicates") {
     implicit val plan = new given {
-      indexOn("Awesome", Seq("prop","prop2"))
+      indexOn("Awesome", "prop", "prop2")
     } getLogicalPlanFor "MATCH (n:Awesome) WHERE n.prop = 42 AND n.prop2 = 'foo' RETURN n"
 
     plan._2 should equal(
@@ -449,14 +449,14 @@ class LeafPlanningIntegrationTest extends CypherFunSuite with LogicalPlanningTes
         Seq(
           PropertyKeyToken(PropertyKeyName("prop") _, PropertyKeyId(0)),
           PropertyKeyToken(PropertyKeyName("prop2") _, PropertyKeyId(1))),
-        CompositeQueryExpression(ListLiteral(Seq(SignedDecimalIntegerLiteral("42") _, StringLiteral("foo") _)) _),
+        CompositeQueryExpression(Seq(SignedDecimalIntegerLiteral("42") _, StringLiteral("foo") _)),
         Set.empty)(solved)
     )
   }
 
   test("should plan composite index seek when there is an index on two properties and both are in equality predicates regardless of predicate order") {
     implicit val plan = new given {
-      indexOn("Awesome", Seq("prop","prop2"))
+      indexOn("Awesome", "prop", "prop2")
     } getLogicalPlanFor "MATCH (n:Awesome) WHERE n.prop2 = 'foo' AND n.prop = 42 RETURN n"
 
     plan._2 should equal(
@@ -466,14 +466,14 @@ class LeafPlanningIntegrationTest extends CypherFunSuite with LogicalPlanningTes
         Seq(
           PropertyKeyToken(PropertyKeyName("prop") _, PropertyKeyId(0)),
           PropertyKeyToken(PropertyKeyName("prop2") _, PropertyKeyId(1))),
-        CompositeQueryExpression(ListLiteral(Seq(SignedDecimalIntegerLiteral("42") _, StringLiteral("foo") _)) _),
+        CompositeQueryExpression(Seq(SignedDecimalIntegerLiteral("42") _, StringLiteral("foo") _)),
         Set.empty)(solved)
     )
   }
 
   test("should plan composite index seek and filter when there is an index on two properties and both are in equality predicates together with other predicates") {
     implicit val plan = new given {
-      indexOn("Awesome", Seq("prop","prop2"))
+      indexOn("Awesome", "prop", "prop2")
     } getLogicalPlanFor "MATCH (n:Awesome) WHERE n.prop2 = 'foo' AND exists(n.name) AND n.prop = 42 RETURN n"
 
     plan._2 should equal(
@@ -484,7 +484,7 @@ class LeafPlanningIntegrationTest extends CypherFunSuite with LogicalPlanningTes
           Seq(
             PropertyKeyToken(PropertyKeyName("prop") _, PropertyKeyId(0)),
             PropertyKeyToken(PropertyKeyName("prop2") _, PropertyKeyId(1))),
-          CompositeQueryExpression(ListLiteral(Seq(SignedDecimalIntegerLiteral("42") _, StringLiteral("foo") _)) _),
+          CompositeQueryExpression(Seq(SignedDecimalIntegerLiteral("42") _, StringLiteral("foo") _)),
           Set.empty)(solved)
       )(solved)
     )
@@ -626,26 +626,22 @@ class LeafPlanningIntegrationTest extends CypherFunSuite with LogicalPlanningTes
   }
 
   test("should be able to OR together two index seeks") {
-    (new given {
+    val plan = (new given {
       indexOn("Awesome", "prop1")
       indexOn("Awesome", "prop2")
-    } getLogicalPlanFor "MATCH (n:Awesome) WHERE n.prop1 = 42 OR n.prop2 = 'apa' RETURN n")._2 should beLike {
-      case Aggregation(
-        Union(
-          NodeIndexSeek(
-            IdName("n"),
-            LabelToken("Awesome", _),
-            Seq(PropertyKeyToken("prop2", _)),
-            SingleQueryExpression(StringLiteral("apa")), _),
-          NodeIndexSeek(
-            IdName("n"),
-            LabelToken("Awesome", _),
-            Seq(PropertyKeyToken("prop1", _)),
-            SingleQueryExpression(SignedDecimalIntegerLiteral("42")), _)),
-      _,
-      _)
-      => ()
-    }
+    } getLogicalPlanFor "MATCH (n:Awesome) WHERE n.prop1 = 42 OR n.prop2 = 'apa' RETURN n")._2
+
+    val prop1Predicate = SingleQueryExpression(SignedDecimalIntegerLiteral("42")(pos))
+    val prop2Predicate = SingleQueryExpression(StringLiteral("apa")(pos))
+    val prop1 = PropertyKeyToken("prop1", PropertyKeyId(0))
+    val prop2 = PropertyKeyToken("prop2", PropertyKeyId(1))
+    val labelToken = LabelToken("Awesome", LabelId(0))
+    val seek1: NodeIndexSeek = NodeIndexSeek(IdName("n"), labelToken, Seq(prop1), prop1Predicate, Set.empty)(solved)
+    val seek2: NodeIndexSeek = NodeIndexSeek(IdName("n"), labelToken, Seq(prop2), prop2Predicate, Set.empty)(solved)
+    val union: Union = Union(seek2, seek1)(solved)
+    val distinct = Aggregation(union, Map("n" -> varFor("n")), Map.empty)(solved)
+
+    plan should equal(distinct)
   }
 
   test("should be able to OR together two label scans") {

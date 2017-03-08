@@ -19,14 +19,17 @@
  */
 package org.neo4j.cypher.internal.compiler.v3_2.executionplan.builders
 
+import java.util
+
 import org.mockito.Mockito._
-import org.neo4j.cypher.internal.compiler.v3_2.{ExecutionContext, IndexDescriptor}
 import org.neo4j.cypher.internal.compiler.v3_2.commands._
 import org.neo4j.cypher.internal.compiler.v3_2.commands.expressions.Literal
 import org.neo4j.cypher.internal.compiler.v3_2.pipes.QueryStateHelper
-import org.neo4j.cypher.internal.compiler.v3_2.spi.{PlanContext, QueryContext}
+import org.neo4j.cypher.internal.compiler.v3_2.spi.{PlanContext, QueryContext, QueryContextAdaptation}
+import org.neo4j.cypher.internal.compiler.v3_2.{ExecutionContext, IndexDescriptor}
 import org.neo4j.cypher.internal.frontend.v3_2.IndexHintException
 import org.neo4j.cypher.internal.frontend.v3_2.test_helpers.CypherFunSuite
+import org.neo4j.graphdb.Node
 
 class EntityProducerFactoryTest extends CypherFunSuite {
   var planContext: PlanContext = null
@@ -39,7 +42,7 @@ class EntityProducerFactoryTest extends CypherFunSuite {
     factory = new EntityProducerFactory
   }
 
-  test("throws_error_when_index_is_missing") {
+  test("throws error when index is missing") {
     //GIVEN
     val label: String = "label"
     val prop: String = "prop"
@@ -49,7 +52,7 @@ class EntityProducerFactoryTest extends CypherFunSuite {
     intercept[IndexHintException](factory.nodeByIndexHint(readOnly = true)(planContext -> SchemaIndex("id", label, Seq(prop), AnyIndex, None)))
   }
 
-  test("calls_the_right_methods") {
+  test("calls the right methods") {
     //GIVEN
     val label: String = "label"
     val prop: String = "prop"
@@ -58,7 +61,7 @@ class EntityProducerFactoryTest extends CypherFunSuite {
     val queryContext: QueryContext = mock[QueryContext]
     when(planContext.getIndexRule(label, Seq(prop))).thenReturn(Some(index))
     val indexResult = Iterator(null)
-    when(queryContext.indexSeek(index, value)).thenReturn(indexResult)
+    when(queryContext.indexSeek(index, Seq(value))).thenReturn(indexResult)
     val state = QueryStateHelper.emptyWith(query = queryContext)
 
     //WHEN
@@ -66,21 +69,29 @@ class EntityProducerFactoryTest extends CypherFunSuite {
     func(context, state) should equal(indexResult)
   }
 
-  test("should_translate_values_to_neo4j") {
+  test("should translate values to neo4j") {
     //GIVEN
     val labelName = "Label"
     val propertyKey = "prop"
     val index: IndexDescriptor = IndexDescriptor(123, 456)
     when(planContext.getIndexRule(labelName, Seq(propertyKey))).thenReturn(Some(index))
     val producer = factory.nodeByIndexHint(readOnly = true)(planContext -> SchemaIndex("x", labelName, Seq(propertyKey), AnyIndex, Some(SingleQueryExpression(Literal(Seq(1,2,3))))))
-    val queryContext: QueryContext = mock[QueryContext]
+
+
+    var seenValues: Seq[Any] = null
+
+    val queryContext: QueryContext = new QueryContext with QueryContextAdaptation {
+      override def indexSeek(index: IndexDescriptor, values: Seq[Any]): Iterator[Node] = {
+        seenValues = values
+        Iterator.empty
+      }
+    }
     val state = QueryStateHelper.emptyWith(query = queryContext)
-    when(queryContext.indexSeek(index, Array(1,2,3))).thenReturn(Iterator.empty)
 
     //WHEN
     producer.apply(context, state)
 
     //THEN
-    verify(queryContext, times(1)).indexSeek(index, Array(1,2,3))
+    util.Arrays.equals(seenValues.head.asInstanceOf[Array[Int]], Array(1,2,3))
   }
 }

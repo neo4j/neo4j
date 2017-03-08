@@ -25,7 +25,6 @@ import java.util.function.Predicate
 import org.neo4j.collection.RawIterator
 import org.neo4j.collection.primitive.PrimitiveLongIterator
 import org.neo4j.collection.primitive.base.Empty.EMPTY_PRIMITIVE_LONG_COLLECTION
-import org.neo4j.cypher.internal.compiler.v3_2.IndexDescriptor.toKernelEncode
 import org.neo4j.cypher.internal.compiler.v3_2.MinMaxOrdering.{BY_NUMBER, BY_STRING, BY_VALUE}
 import org.neo4j.cypher.internal.compiler.v3_2._
 import org.neo4j.cypher.internal.compiler.v3_2.ast.convert.commands.DirectionConverter.toGraphDb
@@ -53,10 +52,8 @@ import org.neo4j.kernel.api.exceptions.schema.{AlreadyConstrainedException, Alre
 import org.neo4j.kernel.api.index.InternalIndexState
 import org.neo4j.kernel.api.proc.CallableUserAggregationFunction.Aggregator
 import org.neo4j.kernel.api.proc.{QualifiedName => KernelQualifiedName}
-import org.neo4j.kernel.api.schema_new.IndexQuery
-import org.neo4j.kernel.api.schema.{NodeMultiPropertyDescriptor, NodePropertyDescriptor}
-import org.neo4j.kernel.api.schema_new.SchemaDescriptorFactory
 import org.neo4j.kernel.api.schema_new.constaints.ConstraintDescriptorFactory
+import org.neo4j.kernel.api.schema_new.{IndexQuery, SchemaDescriptorFactory}
 import org.neo4j.kernel.impl.core.NodeManager
 import org.neo4j.kernel.impl.locking.ResourceTypes
 
@@ -139,15 +136,11 @@ final class TransactionBoundQueryContext(val transactionalContext: Transactional
     new BeansAPIRelationshipIterator(relationships, entityAccessor)
   }
 
-  override def indexSeek(index: IndexDescriptor, value: Any) = {
-    indexSearchMonitor.indexSeek(index, value)
-    //TODO: Rather make signature always require a Seq
-    val values = if (value.isInstanceOf[Seq[Any]])
-      value.asInstanceOf[Seq[Any]]
-    else
-      Seq[Any](value)
+  override def indexSeek(index: IndexDescriptor, values: Seq[Any]) = {
+    indexSearchMonitor.indexSeek(index, values)
     val predicates = index.properties.zip(values).map(p => IndexQuery.exact(p._1, p._2))
-    JavaConversionSupport.mapToScalaENFXSafe(transactionalContext.statement.readOperations().indexQuery(index, predicates: _*))(nodeOps.getById)
+    val indexResult = transactionalContext.statement.readOperations().indexQuery(index, predicates: _*)
+    JavaConversionSupport.mapToScalaENFXSafe(indexResult)(nodeOps.getById)
   }
 
   override def indexSeekByRange(index: IndexDescriptor, value: Any) = value match {
@@ -748,7 +741,7 @@ final class TransactionBoundQueryContext(val transactionalContext: Transactional
 
 object TransactionBoundQueryContext {
   trait IndexSearchMonitor {
-    def indexSeek(index: IndexDescriptor, value: Any): Unit
+    def indexSeek(index: IndexDescriptor, values: Seq[Any]): Unit
 
     def lockingUniqueIndexSeek(index: IndexDescriptor, value: Any): Unit
   }

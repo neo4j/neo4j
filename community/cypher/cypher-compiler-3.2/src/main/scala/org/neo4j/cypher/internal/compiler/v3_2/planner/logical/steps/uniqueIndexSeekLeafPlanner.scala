@@ -21,39 +21,13 @@ package org.neo4j.cypher.internal.compiler.v3_2.planner.logical.steps
 
 import org.neo4j.cypher.internal.compiler.v3_2.IndexDescriptor
 import org.neo4j.cypher.internal.compiler.v3_2.commands.QueryExpression
+import org.neo4j.cypher.internal.compiler.v3_2.planner.logical.LogicalPlanningContext
 import org.neo4j.cypher.internal.compiler.v3_2.planner.logical.plans.LogicalPlan
-import org.neo4j.cypher.internal.compiler.v3_2.planner.logical.{LeafPlansForVariable, LogicalPlanningContext}
-import org.neo4j.cypher.internal.frontend.v3_2.ast._
-import org.neo4j.cypher.internal.ir.v3_2.{IdName, QueryGraph}
+import org.neo4j.cypher.internal.frontend.v3_2.ast.{Expression, LabelToken, PropertyKeyToken, UsingIndexHint}
+import org.neo4j.cypher.internal.ir.v3_2.IdName
 
-/*
- * Plan the following type of plan
- *
- *  - as := AssertSame
- *  - ui := NodeUniqueIndexSeek)
- *
- *       (as)
- *       /  \
- *    (as) (ui2)
- *    /  \
- * (ui1) (ui2)
- */
-object mergeUniqueIndexSeekLeafPlanner extends AbstractIndexSeekLeafPlanner {
-
-  override def apply(qg: QueryGraph)(implicit context: LogicalPlanningContext): Seq[LogicalPlan] = {
-    val resultPlans: Set[LeafPlansForVariable] = producePlanFor(qg.selections.flatPredicates.toSet, qg)
-    val grouped: Map[IdName, Set[LeafPlansForVariable]] = resultPlans.groupBy(_.id)
-
-    grouped.map {
-      case (id, plans) =>
-        plans.flatMap(_.plans).reduce[LogicalPlan] {
-          case (p1, p2) => context.logicalPlanProducer.planAssertSameNode(id, p1, p2)
-        }
-    }.toSeq
-
-  }
-
-  override def constructPlan(idName: IdName,
+object uniqueIndexSeekLeafPlanner extends AbstractIndexSeekLeafPlanner {
+  protected def constructPlan(idName: IdName,
                               label: LabelToken,
                               propertyKeys: Seq[PropertyKeyToken],
                               valueExpr: QueryExpression[Expression],
@@ -63,9 +37,9 @@ object mergeUniqueIndexSeekLeafPlanner extends AbstractIndexSeekLeafPlanner {
     (predicates: Seq[Expression]) =>
       context.logicalPlanProducer.planNodeUniqueIndexSeek(idName, label, propertyKeys, valueExpr, predicates, hint, argumentIds)
 
-  override def findIndexesForLabel(labelId: Int)(implicit context: LogicalPlanningContext): Iterator[IndexDescriptor] =
+  protected def findIndexesForLabel(labelId: Int)(implicit context: LogicalPlanningContext): Iterator[IndexDescriptor] =
     context.planContext.uniqueIndexesGetForLabel(labelId)
 
-  override def findIndexesFor(label: String, properties: Seq[String])(implicit context: LogicalPlanningContext): Option[IndexDescriptor] =
+  protected def findIndexesFor(label: String, properties: Seq[String])(implicit context: LogicalPlanningContext): Option[IndexDescriptor] =
     context.planContext.getUniqueIndexRule(label, properties)
 }

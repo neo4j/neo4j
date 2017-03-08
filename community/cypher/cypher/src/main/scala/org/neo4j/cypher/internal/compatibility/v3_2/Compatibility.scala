@@ -116,7 +116,7 @@ trait Compatibility[C <: CompilerContext] {
     override def plannerInfo = {
       import scala.collection.JavaConverters._
       new PlannerInfo(inner.plannerUsed.name, inner.runtimeUsed.name, inner.plannedIndexUsage.map {
-        case SchemaIndexSeekUsage(identifier, label, propertyKeys) => schemaIndexUsage(identifier, label, propertyKeys.toArray: _*)
+        case SchemaIndexSeekUsage(identifier, label, propertyKeys) => schemaIndexUsage(identifier, label, propertyKeys: _*)
         case SchemaIndexScanUsage(identifier, label, propertyKey) => schemaIndexUsage(identifier, label, propertyKey)
         case LegacyNodeIndexUsage(identifier, index) => legacyIndexUsage(identifier, "NODE", index)
         case LegacyRelationshipIndexUsage(identifier, index) => legacyIndexUsage(identifier, "RELATIONSHIP", index)

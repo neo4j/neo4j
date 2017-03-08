@@ -21,11 +21,11 @@ package org.neo4j.cypher.internal.compiler.v3_2.spi
 
 import java.net.URL
 
+import org.neo4j.cypher.internal.compiler.v3_2.IndexDescriptor
 import org.neo4j.cypher.internal.compiler.v3_2.commands.expressions.{Expander, KernelPredicate, UserDefinedAggregator}
 import org.neo4j.cypher.internal.compiler.v3_2.pipes.matching.PatternNode
 import org.neo4j.cypher.internal.frontend.v3_2.SemanticDirection
 import org.neo4j.graphdb.{Node, Path, PropertyContainer, Relationship}
-import org.neo4j.cypher.internal.compiler.v3_2.IndexDescriptor
 
 trait QueryContextAdaptation {
   self: QueryContext =>
@@ -70,7 +70,7 @@ trait QueryContextAdaptation {
 
   override def isLabelSetOnNode(label: Int, node: Long): Boolean = ???
 
-  override def indexSeek(index: IndexDescriptor, value: Any): scala.Iterator[Node] = ???
+  override def indexSeek(index: IndexDescriptor, value: Seq[Any]): scala.Iterator[Node] = ???
 
   override def getRelationshipsForIds(node: Node, dir: SemanticDirection, types: Option[Seq[Int]]): scala.Iterator[Relationship] = ???
 

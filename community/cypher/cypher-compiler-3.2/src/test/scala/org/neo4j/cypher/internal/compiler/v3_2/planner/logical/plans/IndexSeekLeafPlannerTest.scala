@@ -19,11 +19,11 @@
  */
 package org.neo4j.cypher.internal.compiler.v3_2.planner.logical.plans
 
-import org.neo4j.cypher.internal.frontend.v3_2.ast._
 import org.neo4j.cypher.internal.compiler.v3_2.commands.{CompositeQueryExpression, SingleQueryExpression}
 import org.neo4j.cypher.internal.compiler.v3_2.planner.BeLikeMatcher._
 import org.neo4j.cypher.internal.compiler.v3_2.planner._
 import org.neo4j.cypher.internal.compiler.v3_2.planner.logical.steps.{indexSeekLeafPlanner, uniqueIndexSeekLeafPlanner}
+import org.neo4j.cypher.internal.frontend.v3_2.ast._
 import org.neo4j.cypher.internal.frontend.v3_2.test_helpers.CypherFunSuite
 import org.neo4j.cypher.internal.ir.v3_2.{IdName, Predicate, QueryGraph, Selections}
 
@@ -99,7 +99,7 @@ class IndexSeekLeafPlannerTest extends CypherFunSuite with LogicalPlanningTestSu
       val inCollectionValue2 = In(property2, ListLiteral(Seq(lit6))_)_
       qg = queryGraph(inCollectionValue, inCollectionValue2, hasLabels)
 
-      indexOn("Awesome", Seq("prop", "prop2"))
+      indexOn("Awesome", "prop", "prop2")
     }.withLogicalPlanningContext { (cfg, ctx) =>
       // when
       val resultPlans = indexSeekLeafPlanner(cfg.qg)(ctx)
@@ -108,7 +108,7 @@ class IndexSeekLeafPlannerTest extends CypherFunSuite with LogicalPlanningTestSu
       resultPlans should beLike {
         case Seq(NodeIndexSeek(`idName`, LabelToken("Awesome", _),
         Seq(PropertyKeyToken("prop", _), PropertyKeyToken("prop2", _)),
-        CompositeQueryExpression(ListLiteral(Seq(`lit42`, `lit6`))), _)) => ()
+        CompositeQueryExpression(Seq(`lit42`, `lit6`)), _)) => ()
       }
     }
   }
@@ -132,7 +132,7 @@ class IndexSeekLeafPlannerTest extends CypherFunSuite with LogicalPlanningTestSu
       )
 
       // CREATE INDEX ON :Awesome(prop,prop2)
-      indexOn("Awesome", Seq("prop", "prop2"))
+      indexOn("Awesome", "prop", "prop2")
 
     }.withLogicalPlanningContext { (cfg, ctx) =>
 
@@ -143,7 +143,7 @@ class IndexSeekLeafPlannerTest extends CypherFunSuite with LogicalPlanningTestSu
       resultPlans should beLike {
         case Seq(NodeIndexSeek(`idName`, LabelToken("Awesome", _),
         Seq(PropertyKeyToken("prop", _), PropertyKeyToken("prop2", _)),
-        CompositeQueryExpression(ListLiteral(Seq(`lit42`, `lit6`))), _)) => ()
+        CompositeQueryExpression(Seq(`lit42`, `lit6`)), _)) => ()
       }
     }
   }
@@ -169,7 +169,7 @@ class IndexSeekLeafPlannerTest extends CypherFunSuite with LogicalPlanningTestSu
         patternNodes = Set(idName)
       )
 
-      indexOn("Awesome", propertyNames)
+      indexOn("Awesome", propertyNames: _*)
     }.withLogicalPlanningContext { (cfg, ctx) =>
       // when
       val resultPlans = indexSeekLeafPlanner(cfg.qg)(ctx)
@@ -178,7 +178,7 @@ class IndexSeekLeafPlannerTest extends CypherFunSuite with LogicalPlanningTestSu
       resultPlans should beLike {
         case Seq(NodeIndexSeek(`idName`, LabelToken("Awesome", _),
         props@Seq(_*),
-        CompositeQueryExpression(ListLiteral(vals@Seq(_*))), _))
+        CompositeQueryExpression(vals@Seq(_*)), _))
           if assertPropsAndValuesMatch(propertyNames, values, props, vals) => ()
       }
     }

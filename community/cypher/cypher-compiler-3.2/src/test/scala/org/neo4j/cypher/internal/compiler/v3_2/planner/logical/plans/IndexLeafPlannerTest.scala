@@ -19,7 +19,7 @@
  */
 package org.neo4j.cypher.internal.compiler.v3_2.planner.logical.plans
 
-import org.neo4j.cypher.internal.compiler.v3_2.commands.SingleQueryExpression
+import org.neo4j.cypher.internal.compiler.v3_2.commands.{CompositeQueryExpression, SingleQueryExpression}
 import org.neo4j.cypher.internal.compiler.v3_2.planner.BeLikeMatcher._
 import org.neo4j.cypher.internal.compiler.v3_2.planner._
 import org.neo4j.cypher.internal.compiler.v3_2.planner.logical.steps.{indexSeekLeafPlanner, mergeUniqueIndexSeekLeafPlanner, uniqueIndexSeekLeafPlanner}
@@ -27,15 +27,16 @@ import org.neo4j.cypher.internal.frontend.v3_2.ast._
 import org.neo4j.cypher.internal.frontend.v3_2.test_helpers.CypherFunSuite
 import org.neo4j.cypher.internal.ir.v3_2.{IdName, Predicate, QueryGraph, Selections}
 
-class IndexLeafPlannerTest extends CypherFunSuite with LogicalPlanningTestSupport2 {
+class IndexLeafPlannerTest extends CypherFunSuite with LogicalPlanningTestSupport2 with AstConstructionTestSupport {
 
   val idName = IdName("n")
-  val hasLabels: Expression = HasLabels(varFor("n"), Seq(LabelName("Awesome") _)) _
-  val property: Expression = Property(varFor("n"), PropertyKeyName("prop") _)_
-  val lit42: Expression = SignedDecimalIntegerLiteral("42") _
-  val lit6: Expression = SignedDecimalIntegerLiteral("6") _
+  val hasLabels: Expression = hasLabels("n", "Awesome")
+  val property1: Expression = prop("n", "prop")
+  val lit42: Expression = literalInt(42)
+  val lit6: Expression = literalInt(6)
 
-  val inCollectionValue = In(property, ListLiteral(Seq(lit42))_)_
+  val inCollectionValue = In(property1, ListLiteral(Seq(lit42))_)_
+  val predicate2 = propEquality("n", "prop2", 43)
 
   private def hasLabel(l: String) = HasLabels(varFor("n"), Seq(LabelName(l) _)) _
 
@@ -85,7 +86,7 @@ class IndexLeafPlannerTest extends CypherFunSuite with LogicalPlanningTestSuppor
     new given {
       // GIVEN 42 as x MATCH a WHERE a.prop IN [x]
       val x = varFor("x")
-      qg = queryGraph(In(property, ListLiteral(Seq(x)) _) _, hasLabels).addArgumentIds(Seq(IdName("x")))
+      qg = queryGraph(In(property1, ListLiteral(Seq(x)) _) _, hasLabels).addArgumentIds(Seq(IdName("x")))
 
       indexOn("Awesome", "prop")
     }.withLogicalPlanningContext { (cfg, ctx) =>
@@ -103,7 +104,7 @@ class IndexLeafPlannerTest extends CypherFunSuite with LogicalPlanningTestSuppor
   test("does not plan an index seek when the RHS expression does not have its dependencies in scope") {
     new given { // MATCH a, x WHERE a.prop IN [x]
        val x = varFor("x")
-      qg = queryGraph(In(property, ListLiteral(Seq(x))_)_, hasLabels)
+      qg = queryGraph(In(property1, ListLiteral(Seq(x))_)_, hasLabels)
 
       indexOn("Awesome", "prop")
     }.withLogicalPlanningContext { (cfg, ctx) =>
@@ -257,6 +258,93 @@ class IndexLeafPlannerTest extends CypherFunSuite with LogicalPlanningTestSuppor
               NodeUniqueIndexSeek(`idName`, LabelToken("Awesomest", _), _, SingleQueryExpression(`lit42`), _)),
             NodeUniqueIndexSeek(`idName`, LabelToken("Awesomestest", _), _, SingleQueryExpression(`lit42`), _)),
           NodeUniqueIndexSeek(`idName`, LabelToken("Awesomer", _), _, SingleQueryExpression(`lit42`), _))) => ()
+      }
+    }
+  }
+
+  test("test with three predicates, a single prop constraint and a two-prop constraint") {
+    // MERGE (a:X {prop1: 42, prop2: 444, prop3: 56})
+    // Unique constraint on :X(prop1, prop2)
+    // Unique constraint on :X(prop3)
+
+    val val1 = literalInt(44)
+    val val2 = literalInt(55)
+    val val3 = literalInt(66)
+    val pred1 = Equals(prop("n", "prop1"), val1)(pos)
+    val pred2 = Equals(prop("n", "prop2"), val2)(pos)
+    val pred3 = Equals(prop("n", "prop3"), val3)(pos)
+    new given {
+      qg = queryGraph(pred1, pred2, pred3, hasLabel("Awesome"))
+
+      uniqueIndexOn("Awesome", "prop1", "prop2")
+      uniqueIndexOn("Awesome", "prop3")
+    }.withLogicalPlanningContext { (cfg, ctx) =>
+      // when
+      val resultPlans = mergeUniqueIndexSeekLeafPlanner(cfg.qg)(ctx)
+
+      // then
+      resultPlans should beLike {
+        case Seq(
+          AssertSameNode(`idName`,
+            NodeUniqueIndexSeek(`idName`, LabelToken("Awesome", _), Seq(PropertyKeyToken("prop1", _), PropertyKeyToken("prop2", _)), CompositeQueryExpression(Seq(`val1`, `val2`)), _),
+            NodeUniqueIndexSeek(`idName`, LabelToken("Awesome", _), _, SingleQueryExpression(`val3`), _))) => ()
+      }
+    }
+  }
+
+  test("test with three predicates, two composite two-prop constraints") {
+    // MERGE (a:X {prop1: 42, prop2: 444, prop3: 56})
+    // Unique constraint on :X(prop1, prop2)
+    // Unique constraint on :X(prop2, prop3)
+
+    val val1 = literalInt(44)
+    val val2 = literalInt(55)
+    val val3 = literalInt(66)
+    val pred1 = Equals(prop("n", "prop1"), val1)(pos)
+    val pred2 = Equals(prop("n", "prop2"), val2)(pos)
+    val pred3 = Equals(prop("n", "prop3"), val3)(pos)
+    new given {
+      qg = queryGraph(pred1, pred2, pred3, hasLabel("Awesome"))
+
+      uniqueIndexOn("Awesome", "prop1", "prop2")
+      uniqueIndexOn("Awesome", "prop2", "prop3")
+    }.withLogicalPlanningContext { (cfg, ctx) =>
+      // when
+      val resultPlans = mergeUniqueIndexSeekLeafPlanner(cfg.qg)(ctx)
+
+      // then
+      resultPlans should beLike {
+        case Seq(
+          AssertSameNode(`idName`,
+            NodeUniqueIndexSeek(`idName`, LabelToken("Awesome", _), Seq(PropertyKeyToken("prop1", _), PropertyKeyToken("prop2", _)), CompositeQueryExpression(Seq(`val1`, `val2`)), _),
+            NodeUniqueIndexSeek(`idName`, LabelToken("Awesome", _), Seq(PropertyKeyToken("prop2", _), PropertyKeyToken("prop3", _)), CompositeQueryExpression(Seq(`val2`, `val3`)), _))) => ()
+      }
+    }
+  }
+
+  test("test with three predicates, single composite three-prop constraints") {
+    // MERGE (a:X {prop1: 42, prop2: 444, prop3: 56})
+    // Unique constraint on :X(prop1, prop2, prop3)
+
+    val val1 = literalInt(44)
+    val val2 = literalInt(55)
+    val val3 = literalInt(66)
+    val pred1 = Equals(prop("n", "prop1"), val1)(pos)
+    val pred2 = Equals(prop("n", "prop2"), val2)(pos)
+    val pred3 = Equals(prop("n", "prop3"), val3)(pos)
+    new given {
+      qg = queryGraph(pred1, pred2, pred3, hasLabel("Awesome"))
+
+      uniqueIndexOn("Awesome", "prop1", "prop2", "prop3")
+    }.withLogicalPlanningContext { (cfg, ctx) =>
+      // when
+      val resultPlans = mergeUniqueIndexSeekLeafPlanner(cfg.qg)(ctx)
+
+      // then
+      resultPlans should beLike {
+        case Seq(
+          NodeUniqueIndexSeek(`idName`, LabelToken("Awesome", _), Seq(PropertyKeyToken("prop1", _), PropertyKeyToken("prop2", _), PropertyKeyToken("prop3", _)), CompositeQueryExpression(Seq(`val1`, `val2`, `val3`)), _)
+        ) => ()
       }
     }
   }

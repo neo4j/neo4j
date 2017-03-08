@@ -85,36 +85,42 @@ case object UniqueIndex extends SchemaIndexKind
 // TODO Unify with Sargable
 
 trait QueryExpression[+T] {
-  def expression: T
+  def expressions: Seq[T]
   def map[R](f: T => R): QueryExpression[R]
 }
 
-case class ScanQueryExpression[T](expression: T) extends QueryExpression[T] {
-  def map[R](f: (T) => R) = ScanQueryExpression(f(expression))
+trait SingleExpression[+T] {
+  def expression: T
+
+  def expressions = Seq(expression)
 }
 
-case class SingleQueryExpression[T](expression: T) extends QueryExpression[T] {
-  def map[R](f: (T) => R) = SingleQueryExpression(f(expression))
+case class ScanQueryExpression[T](expression: T) extends QueryExpression[T] with SingleExpression[T] {
+  def map[R](f: T => R) = ScanQueryExpression(f(expression))
 }
 
-case class ManyQueryExpression[T](expression: T) extends QueryExpression[T] {
-  def map[R](f: (T) => R) = ManyQueryExpression(f(expression))
+case class SingleQueryExpression[T](expression: T) extends QueryExpression[T] with SingleExpression[T] {
+  def map[R](f: T => R) = SingleQueryExpression(f(expression))
 }
 
-case class RangeQueryExpression[T](expression: T) extends QueryExpression[T] {
-  override def map[R](f: (T) => R) = RangeQueryExpression(f(expression))
+case class ManyQueryExpression[T](expression: T) extends QueryExpression[T] with SingleExpression[T] {
+  def map[R](f: T => R) = ManyQueryExpression(f(expression))
 }
 
-case class CompositeQueryExpression[T](expression: T) extends QueryExpression[T] {
-  def map[R](f: (T) => R) = CompositeQueryExpression(f(expression))
+case class RangeQueryExpression[T](expression: T) extends QueryExpression[T] with SingleExpression[T] {
+  override def map[R](f: T => R) = RangeQueryExpression(f(expression))
 }
 
-case class CompositeRangeQueryExpression[T](expression: T) extends QueryExpression[T] {
-  override def map[R](f: (T) => R) = CompositeRangeQueryExpression(f(expression))
+case class CompositeQueryExpression[T](expressions: Seq[T]) extends QueryExpression[T] {
+  def map[R](f: T => R) = CompositeQueryExpression(expressions.map(f))
+}
+
+case class CompositeRangeQueryExpression[T](expressions: Seq[T]) extends QueryExpression[T] {
+  override def map[R](f: T => R) = CompositeRangeQueryExpression(expressions.map(f))
 }
 
 case class SchemaIndex(variable: String, label: String, properties: Seq[String], kind: SchemaIndexKind, query: Option[QueryExpression[Expression]])
-  extends StartItem(variable, query.map(q => Arguments.LegacyExpression(q.expression)).toIndexedSeq :+ Arguments.Index(label, properties))
+  extends StartItem(variable, query.map(q => q.expressions.map(Arguments.LegacyExpression)).getOrElse(Seq.empty) :+ Arguments.Index(label, properties))
   with ReadOnlyStartItem with Hint with NodeStartItemVariables
 
 case class NodeById(varName: String, expression: Expression)

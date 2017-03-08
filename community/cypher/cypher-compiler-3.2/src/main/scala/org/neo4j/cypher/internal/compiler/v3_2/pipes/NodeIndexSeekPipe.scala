@@ -40,7 +40,7 @@ case class NodeIndexSeekPipe(ident: String,
 
   private val indexFactory = indexMode.indexFactory(descriptor)
 
-  valueExpr.expression.registerOwningPipe(this)
+  valueExpr.expressions.foreach(_.registerOwningPipe(this))
 
   protected def internalCreateResults(state: QueryState): Iterator[ExecutionContext] = {
     val index = indexFactory(state)
