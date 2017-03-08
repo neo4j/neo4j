@@ -414,11 +414,6 @@ public class KernelTransactionsTest
         SecurityContext securityContext = mock( SecurityContext.class );
 
         availabilityGuard.shutdown();
-        t2.execute( (OtherThreadExecutor.WorkerCommand<Void,Void>) state ->
-        {
-            stopKernelTransactions( kernelTransactions );
-            return null;
-        } );
 
         expectedException.expect( DatabaseShutdownException.class );
         kernelTransactions.newInstance( KernelTransaction.Type.explicit, securityContext, 0L );
@@ -434,7 +429,7 @@ public class KernelTransactionsTest
         {
             stopKernelTransactions( kernelTransactions );
             return null;
-        } );
+        } ).get();
 
         expectedException.expect( IllegalStateException.class );
         kernelTransactions.newInstance( KernelTransaction.Type.explicit, securityContext, 0L );
