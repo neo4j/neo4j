@@ -31,6 +31,8 @@ import java.io.IOException;
 import java.util.ArrayList;
 import java.util.Arrays;
 import java.util.List;
+import java.util.concurrent.ThreadLocalRandom;
+import java.util.concurrent.atomic.AtomicInteger;
 
 import org.neo4j.collection.primitive.Primitive;
 import org.neo4j.collection.primitive.PrimitiveLongCollections;
@@ -48,6 +50,7 @@ import org.neo4j.test.rule.TestDirectory;
 import org.neo4j.test.rule.fs.DefaultFileSystemRule;
 
 import static org.hamcrest.CoreMatchers.containsString;
+import static org.junit.Assert.assertArrayEquals;
 import static org.junit.Assert.assertEquals;
 import static org.junit.Assert.assertFalse;
 import static org.junit.Assert.assertThat;
@@ -55,6 +58,7 @@ import static org.junit.Assert.assertTrue;
 import static org.junit.Assert.fail;
 import static org.junit.rules.RuleChain.outerRule;
 
+import static org.neo4j.index.internal.gbptree.GBPTree.NO_HEADER;
 import static org.neo4j.index.internal.gbptree.GBPTree.NO_MONITOR;
 import static org.neo4j.index.internal.gbptree.ThrowingRunnable.throwing;
 import static org.neo4j.test.rule.PageCacheRule.config;
@@ -83,8 +87,15 @@ public class GBPTreeTest
     private GBPTree<MutableLong,MutableLong> createIndex( int pageSize, Monitor monitor )
             throws IOException
     {
+        return createIndex( pageSize, monitor, NO_HEADER );
+    }
+
+    private GBPTree<MutableLong,MutableLong> createIndex( int pageSize, Monitor monitor,
+            Header.Reader headerReader ) throws IOException
+    {
         pageCache = createPageCache( pageSize );
-        return index = new GBPTree<>( pageCache, indexFile, layout, 0/*use whatever page cache says*/, monitor );
+        return index = new GBPTree<>( pageCache, indexFile, layout,
+                0/*use whatever page cache says*/, monitor, headerReader );
     }
 
     private PageCache createPageCache( int pageSize )
@@ -119,7 +130,7 @@ public class GBPTreeTest
         }
 
         // WHEN
-        index = new GBPTree<>( pageCache, indexFile, layout, 0, NO_MONITOR );
+        index = new GBPTree<>( pageCache, indexFile, layout, 0, NO_MONITOR, NO_HEADER );
 
         // THEN being able to open validates that the same meta data was read
         // the test also closes the index afterwards
@@ -135,8 +146,8 @@ public class GBPTreeTest
         index = null;
 
         // WHEN
-        try ( GBPTree<MutableLong,MutableLong> index =
-                new GBPTree<>( pageCache, indexFile, new SimpleLongLayout( "Something else" ), 0, NO_MONITOR ) )
+        try ( GBPTree<MutableLong,MutableLong> index = new GBPTree<>( pageCache, indexFile,
+                new SimpleLongLayout( "Something else" ), 0, NO_MONITOR, NO_HEADER ) )
         {
             fail( "Should not load" );
         }
@@ -167,7 +178,7 @@ public class GBPTreeTest
             {
                 return 123456;
             }
-        }, 0, NO_MONITOR ) )
+        }, 0, NO_MONITOR, NO_HEADER ) )
         {
 
             fail( "Should not load" );
@@ -196,7 +207,7 @@ public class GBPTreeTest
                 {
                     return super.majorVersion() + 1;
                 }
-            }, 0, NO_MONITOR ) )
+            }, 0, NO_MONITOR, NO_HEADER ) )
         {
             fail( "Should not load" );
         }
@@ -224,7 +235,7 @@ public class GBPTreeTest
                 {
                     return super.minorVersion() + 1;
                 }
-            }, 0, NO_MONITOR ) )
+            }, 0, NO_MONITOR, NO_HEADER ) )
         {
             fail( "Should not load" );
         }
@@ -247,7 +258,8 @@ public class GBPTreeTest
         // WHEN
         pageCache.close();
         pageCache = createPageCache( pageSize / 2 );
-        try ( GBPTree<MutableLong,MutableLong> index = new GBPTree<>( pageCache, indexFile, layout, 0, NO_MONITOR ) )
+        try ( GBPTree<MutableLong,MutableLong> index =
+                new GBPTree<>( pageCache, indexFile, layout, 0, NO_MONITOR, NO_HEADER ) )
         {
             fail( "Should not load" );
         }
@@ -265,7 +277,7 @@ public class GBPTreeTest
         int pageSize = 512;
         pageCache = createPageCache( pageSize );
         try ( GBPTree<MutableLong,MutableLong> index =
-                new GBPTree<>( pageCache, indexFile, layout, pageSize * 2, NO_MONITOR ) )
+                new GBPTree<>( pageCache, indexFile, layout, pageSize * 2, NO_MONITOR, NO_HEADER ) )
         {
             fail( "Shouldn't have been created" );
         }
@@ -283,7 +295,7 @@ public class GBPTreeTest
         int pageSize = 1024;
         pageCache = createPageCache( pageSize );
         try ( GBPTree<MutableLong,MutableLong> index =
-                new GBPTree<>( pageCache, indexFile, layout, pageSize / 2, NO_MONITOR ) )
+                new GBPTree<>( pageCache, indexFile, layout, pageSize / 2, NO_MONITOR, NO_HEADER ) )
         {
             // Good
         }
@@ -296,14 +308,14 @@ public class GBPTreeTest
         int pageSize = 1024;
         pageCache = createPageCache( pageSize );
         try ( GBPTree<MutableLong,MutableLong> index =
-                new GBPTree<>( pageCache, indexFile, layout, pageSize, NO_MONITOR ) )
+                new GBPTree<>( pageCache, indexFile, layout, pageSize, NO_MONITOR, NO_HEADER ) )
         {
             // Good
         }
 
         pageCache = createPageCache( pageSize / 2 );
         try ( GBPTree<MutableLong, MutableLong> index =
-                new GBPTree<>( pageCache, indexFile, layout, pageSize, NO_MONITOR ) )
+                new GBPTree<>( pageCache, indexFile, layout, pageSize, NO_MONITOR, NO_HEADER ) )
         {
             fail( "Expected to fail" );
         }
@@ -326,7 +338,7 @@ public class GBPTreeTest
             expectedData.add( i );
         }
         try ( GBPTree<MutableLong,MutableLong> index =
-                new GBPTree<>( pageCache, indexFile, layout, pageSize / 2, NO_MONITOR ) )
+                new GBPTree<>( pageCache, indexFile, layout, pageSize / 2, NO_MONITOR, NO_HEADER ) )
         {
             // Insert some data
             try ( Writer<MutableLong, MutableLong> writer = index.writer() )
@@ -345,7 +357,8 @@ public class GBPTreeTest
         }
 
         // THEN
-        try ( GBPTree<MutableLong,MutableLong> index = new GBPTree<>( pageCache, indexFile, layout, 0, NO_MONITOR ) )
+        try ( GBPTree<MutableLong,MutableLong> index =
+                new GBPTree<>( pageCache, indexFile, layout, 0, NO_MONITOR, NO_HEADER ) )
         {
             MutableLong fromInclusive = new MutableLong( 0L );
             MutableLong toExclusive = new MutableLong( 200L );
@@ -377,7 +390,7 @@ public class GBPTreeTest
         try
         {
             // WHEN
-            index = new GBPTree<>( pageCache, indexFile, layout, 0, NO_MONITOR );
+            index = new GBPTree<>( pageCache, indexFile, layout, 0, NO_MONITOR, NO_HEADER );
             fail( "Should have failed" );
         }
         catch ( MetadataMismatchException e )
@@ -434,6 +447,66 @@ public class GBPTreeTest
         writer.close();
 
         // THEN that should be OK
+    }
+
+    @Test
+    public void shouldPutHeaderDataInCheckPoint() throws Exception
+    {
+        // GIVEN
+        byte[] expectedHeader = new byte[12];
+        ThreadLocalRandom.current().nextBytes( expectedHeader );
+        index = createIndex( 256 );
+        index.close( cursor -> cursor.putBytes( expectedHeader ) );
+
+        // WHEN
+        byte[] readHeader = new byte[expectedHeader.length];
+        AtomicInteger length = new AtomicInteger();
+        index = createIndex( 256, NO_MONITOR, (cursor,len) ->
+        {
+            length.set( len );
+            cursor.getBytes( readHeader );
+        } );
+
+        // THEN
+        assertEquals( expectedHeader.length, length.get() );
+        assertArrayEquals( expectedHeader, readHeader );
+    }
+
+    @Test
+    public void shouldCarryOverHeaderDataInNextCheckPoint() throws Exception
+    {
+        // GIVEN
+        byte[] expectedHeader = new byte[12];
+        ThreadLocalRandom.current().nextBytes( expectedHeader );
+        index = createIndex( 256 );
+        index.checkpoint( IOLimiter.unlimited(), cursor -> cursor.putBytes( expectedHeader ) );
+        index.close();
+
+        // WHEN
+        byte[] readHeader = new byte[expectedHeader.length];
+        index = createIndex( 256, NO_MONITOR, (cursor,length) -> cursor.getBytes( readHeader ) );
+
+        // THEN
+        assertArrayEquals( expectedHeader, readHeader );
+    }
+
+    @Test
+    public void shouldReplaceHeaderDataInNextCheckPoint() throws Exception
+    {
+        // GIVEN
+        byte[] expectedHeader = new byte[12];
+        ThreadLocalRandom.current().nextBytes( expectedHeader );
+        index = createIndex( 256 );
+        index.checkpoint( IOLimiter.unlimited(), cursor -> cursor.putBytes( expectedHeader ) );
+        ThreadLocalRandom.current().nextBytes( expectedHeader );
+        index.close( cursor -> cursor.putBytes( expectedHeader ) );
+
+        // WHEN
+        byte[] readHeader = new byte[expectedHeader.length];
+        index = createIndex( 256, NO_MONITOR, (cursor,length) -> cursor.getBytes( readHeader ) );
+
+        // THEN
+        assertArrayEquals( expectedHeader, readHeader );
     }
 
     /* Check-pointing tests */
