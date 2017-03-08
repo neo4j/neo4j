@@ -35,11 +35,35 @@ import org.neo4j.kernel.impl.store.record.IndexRule;
 public abstract class SchemaRule implements SchemaDescriptor.Supplier
 {
     protected final long id;
-    protected String name;
+    protected final String name;
 
     protected SchemaRule( long id )
     {
+        this( id, null );
+    }
+
+    protected SchemaRule( long id, String name )
+    {
         this.id = id;
+        this.name = name == null? generateName( id, getClass() ) : checkName( name );
+    }
+
+    private String checkName( String name )
+    {
+        int length = name.length();
+        if ( length == 0 )
+        {
+            throw new IllegalArgumentException( "Schema rule name cannot be the empty string" );
+        }
+        for ( int i = 0; i < length; i++ )
+        {
+            char ch = name.charAt( i );
+            if ( ch == '\0' )
+            {
+                throw new IllegalArgumentException( "Illegal schema rule name: '" + name + "'" );
+            }
+        }
+        return name;
     }
 
     /**
@@ -55,53 +79,13 @@ public abstract class SchemaRule implements SchemaDescriptor.Supplier
      */
     public final String getName()
     {
-        if ( name == null )
-        {
-            name = SchemaRule.generateName( this );
-        }
         return name;
     }
 
     public abstract byte[] serialize();
 
-    /**
-     * Set the name of this rule, if it has not been set already.
-     *
-     * Note that once a name has been observed - either via this method or via {@link #getName()} – for this rule,
-     * it cannot be changed.
-     * @param name The name desired for this rule.
-     * @return {@code true} if the name was set, {@code false} if this rule already has a name.
-     */
-    public final boolean setName( String name )
+    public static String generateName( long id, Class<? extends SchemaRule> type )
     {
-        if ( this.name == null )
-        {
-            if ( name == null )
-            {
-                return true;
-            }
-            if ( name.length() == 0 )
-            {
-                throw new IllegalArgumentException( "Rule name cannot be the empty string" );
-            }
-            for ( int i = 0; i < name.length(); i++ )
-            {
-                char ch = name.charAt( i );
-                if ( ch == 0 )
-                {
-                    throw new IllegalArgumentException( "Illegal rule name: '" + name + "'" );
-                }
-            }
-            this.name = name;
-            return true;
-        }
-        return false;
-    }
-
-    public static String generateName( SchemaRule rule )
-    {
-        Class<? extends SchemaRule> type = rule.getClass();
-        long id = rule.getId();
         if ( type == IndexRule.class )
         {
             return "index_" + id;

@@ -43,9 +43,26 @@ public class ConstraintRule extends SchemaRule implements ConstraintDescriptor.S
         return new ConstraintRule( id, descriptor, ownedIndexRule );
     }
 
+    public static ConstraintRule constraintRule(
+            long id, ConstraintDescriptor descriptor, String name )
+    {
+        return new ConstraintRule( id, descriptor, null, name );
+    }
+
+    public static ConstraintRule constraintRule(
+            long id, UniquenessConstraintDescriptor descriptor, long ownedIndexRule, String name )
+    {
+        return new ConstraintRule( id, descriptor, ownedIndexRule, name );
+    }
+
     ConstraintRule( long id, ConstraintDescriptor descriptor, Long ownedIndexRule )
     {
-        super( id );
+        this( id, descriptor, ownedIndexRule, null );
+    }
+
+    ConstraintRule( long id, ConstraintDescriptor descriptor, Long ownedIndexRule, String name )
+    {
+        super( id, name );
         this.descriptor = descriptor;
         this.ownedIndexRule = ownedIndexRule;
     }

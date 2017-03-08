@@ -49,10 +49,29 @@ public class IndexRule extends SchemaRule implements NewIndexDescriptor.Supplier
         return new IndexRule( id, providerDescriptor, descriptor, owningConstraint );
     }
 
+    public static IndexRule indexRule( long id, NewIndexDescriptor descriptor,
+                                       SchemaIndexProvider.Descriptor providerDescriptor, String name )
+    {
+        return new IndexRule( id, providerDescriptor, descriptor, null, name );
+    }
+
+    public static IndexRule constraintIndexRule( long id, NewIndexDescriptor descriptor,
+                                                 SchemaIndexProvider.Descriptor providerDescriptor,
+                                                 Long owningConstraint, String name )
+    {
+        return new IndexRule( id, providerDescriptor, descriptor, owningConstraint, name );
+    }
+
     IndexRule( long id, SchemaIndexProvider.Descriptor providerDescriptor,
             NewIndexDescriptor descriptor, Long owningConstraint )
     {
-        super( id );
+        this( id, providerDescriptor, descriptor, owningConstraint, null );
+    }
+
+    IndexRule( long id, SchemaIndexProvider.Descriptor providerDescriptor,
+            NewIndexDescriptor descriptor, Long owningConstraint, String name )
+    {
+        super( id, name );
         if ( providerDescriptor == null )
         {
             throw new IllegalArgumentException( "null provider descriptor prohibited" );

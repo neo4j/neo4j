@@ -221,23 +221,21 @@ public class SchemaRuleSerialization
         SchemaIndexProvider.Descriptor indexProvider = readIndexProviderDescriptor( source );
         LabelSchemaDescriptor schema;
         byte indexRuleType = source.get();
-        IndexRule rule;
+        String name;
         switch ( indexRuleType )
         {
         case GENERAL_INDEX:
             schema = readLabelSchema( source );
-            rule = IndexRule.indexRule( id, NewIndexDescriptorFactory.forSchema( schema ), indexProvider );
-            readRuleName( rule, source );
-            return rule;
+            name = readRuleName( id, IndexRule.class, source );
+            return IndexRule.indexRule( id, NewIndexDescriptorFactory.forSchema( schema ), indexProvider, name );
 
         case UNIQUE_INDEX:
             long owningConstraint = source.getLong();
             schema = readLabelSchema( source );
             NewIndexDescriptor descriptor = NewIndexDescriptorFactory.uniqueForSchema( schema );
-            rule = IndexRule.constraintIndexRule( id, descriptor, indexProvider,
-                    owningConstraint == NO_OWNING_CONSTRAINT_YET ? null : owningConstraint );
-            readRuleName( rule, source );
-            return rule;
+            name = readRuleName( id, IndexRule.class, source );
+            return IndexRule.constraintIndexRule( id, descriptor, indexProvider,
+                    owningConstraint == NO_OWNING_CONSTRAINT_YET ? null : owningConstraint, name );
 
         default:
             throw new MalformedSchemaRuleException( format( "Got unknown index rule type '%d'.", indexRuleType ) );
@@ -268,36 +266,38 @@ public class SchemaRuleSerialization
     {
         SchemaDescriptor schema;
         byte constraintRuleType = source.get();
-        ConstraintRule rule;
+        String name;
         switch ( constraintRuleType )
         {
         case EXISTS_CONSTRAINT:
             schema = readSchema( source );
-            rule = ConstraintRule.constraintRule( id, ConstraintDescriptorFactory.existsForSchema( schema ) );
-            readRuleName( rule, source );
-            return rule;
+            name = readRuleName( id, ConstraintRule.class, source );
+            return ConstraintRule.constraintRule( id, ConstraintDescriptorFactory.existsForSchema( schema ), name );
 
         case UNIQUE_CONSTRAINT:
             long ownedIndex = source.getLong();
             schema = readSchema( source );
             UniquenessConstraintDescriptor descriptor = ConstraintDescriptorFactory.uniqueForSchema( schema );
-            rule = ConstraintRule.constraintRule( id, descriptor, ownedIndex );
-            readRuleName( rule, source );
-            return rule;
+            name = readRuleName( id, ConstraintRule.class, source );
+            return ConstraintRule.constraintRule( id, descriptor, ownedIndex, name );
 
         default:
             throw new MalformedSchemaRuleException( format( "Got unknown constraint rule type '%d'.", constraintRuleType ) );
         }
     }
 
-    private static void readRuleName( SchemaRule rule, ByteBuffer source )
+    private static String readRuleName( long id, Class<? extends SchemaRule> type, ByteBuffer source )
     {
-        String ruleName = UTF8.getDecodedNullTerminatedStringFrom( source );
+        String ruleName = null;
+        if ( source.remaining() > 4 )
+        {
+            ruleName = UTF8.getDecodedNullTerminatedStringFrom( source );
+        }
         if ( ruleName == null || ruleName.isEmpty() )
         {
-            ruleName = SchemaRule.generateName( rule );
+            ruleName = SchemaRule.generateName( id, type );
         }
-        rule.setName( ruleName );
+        return ruleName;
     }
 
     // READ HELP
