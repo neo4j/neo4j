@@ -20,14 +20,9 @@
 package org.neo4j.tooling.procedure;
 
 import com.google.auto.service.AutoService;
-import org.neo4j.tooling.procedure.messages.CompilationMessage;
-import org.neo4j.tooling.procedure.messages.MessagePrinter;
-import org.neo4j.tooling.procedure.validators.DuplicatedProcedureValidator;
-import org.neo4j.tooling.procedure.visitors.StoredProcedureVisitor;
 
 import java.util.Collection;
 import java.util.Collections;
-import java.util.HashSet;
 import java.util.LinkedHashSet;
 import java.util.Optional;
 import java.util.Set;
@@ -45,13 +40,17 @@ import javax.lang.model.util.Elements;
 import javax.lang.model.util.Types;
 
 import org.neo4j.procedure.Procedure;
+import org.neo4j.tooling.procedure.messages.CompilationMessage;
+import org.neo4j.tooling.procedure.messages.MessagePrinter;
+import org.neo4j.tooling.procedure.validators.DuplicatedProcedureValidator;
+import org.neo4j.tooling.procedure.visitors.StoredProcedureVisitor;
 
 @AutoService( Processor.class )
 public class ProcedureProcessor extends AbstractProcessor
 {
 
+    public static final String IGNORE_CONTEXT_WARNINGS_OPTION = "IgnoreContextWarnings";
     private static final Class<Procedure> sprocType = Procedure.class;
-    private static final String IGNORE_CONTEXT_WARNINGS = "IgnoreContextWarnings";
     private final Set<Element> visitedProcedures = new LinkedHashSet<>();
 
     private Function<Collection<Element>,Stream<CompilationMessage>> duplicationPredicate;
@@ -76,15 +75,13 @@ public class ProcedureProcessor extends AbstractProcessor
     @Override
     public Set<String> getSupportedOptions()
     {
-        return Collections.singleton( IGNORE_CONTEXT_WARNINGS );
+        return Collections.singleton( IGNORE_CONTEXT_WARNINGS_OPTION );
     }
 
     @Override
     public Set<String> getSupportedAnnotationTypes()
     {
-        Set<String> types = new HashSet<>();
-        types.add( sprocType.getName() );
-        return types;
+        return Collections.singleton( sprocType.getName() );
     }
 
     @Override
@@ -102,8 +99,8 @@ public class ProcedureProcessor extends AbstractProcessor
 
         visitedProcedures.clear();
         messagePrinter = new MessagePrinter( processingEnv.getMessager() );
-        visitor = new StoredProcedureVisitor( typeUtils, elementUtils, processingEnv.getOptions().containsKey(
-                IGNORE_CONTEXT_WARNINGS) );
+        visitor = new StoredProcedureVisitor( typeUtils, elementUtils,
+                processingEnv.getOptions().containsKey( IGNORE_CONTEXT_WARNINGS_OPTION ) );
         duplicationPredicate =
                 new DuplicatedProcedureValidator<>( elementUtils, sprocType, ProcedureProcessor::getCustomName );
     }

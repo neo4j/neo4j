@@ -23,7 +23,7 @@ import org.neo4j.kernel.internal.GraphDatabaseAPI;
 import org.neo4j.procedure.Context;
 import org.neo4j.procedure.Procedure;
 
-public class BadContextTypeSproc
+public class BadContextRestrictedTypeSproc
 {
 
     @Context

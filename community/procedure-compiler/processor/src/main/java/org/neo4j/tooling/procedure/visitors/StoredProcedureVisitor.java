@@ -19,10 +19,6 @@
  */
 package org.neo4j.tooling.procedure.visitors;
 
-import org.neo4j.tooling.procedure.compilerutils.TypeMirrorUtils;
-import org.neo4j.tooling.procedure.messages.CompilationMessage;
-import org.neo4j.tooling.procedure.messages.ReturnTypeError;
-
 import java.util.List;
 import java.util.function.Function;
 import java.util.stream.Stream;
@@ -38,6 +34,9 @@ import javax.lang.model.util.SimpleElementVisitor8;
 import javax.lang.model.util.Types;
 
 import org.neo4j.procedure.Name;
+import org.neo4j.tooling.procedure.compilerutils.TypeMirrorUtils;
+import org.neo4j.tooling.procedure.messages.CompilationMessage;
+import org.neo4j.tooling.procedure.messages.ReturnTypeError;
 
 public class StoredProcedureVisitor extends SimpleElementVisitor8<Stream<CompilationMessage>,Void>
 {
@@ -48,13 +47,13 @@ public class StoredProcedureVisitor extends SimpleElementVisitor8<Stream<Compila
     private final TypeVisitor<Stream<CompilationMessage>,Void> recordVisitor;
     private final ElementVisitor<Stream<CompilationMessage>,Void> parameterVisitor;
 
-    public StoredProcedureVisitor( Types typeUtils, Elements elementUtils, boolean skipContextWarnings )
+    public StoredProcedureVisitor( Types typeUtils, Elements elementUtils, boolean ignoresWarnings )
     {
         TypeMirrorUtils typeMirrors = new TypeMirrorUtils( typeUtils, elementUtils );
 
         this.typeUtils = typeUtils;
         this.elementUtils = elementUtils;
-        this.classVisitor = new StoredProcedureClassVisitor( typeUtils, elementUtils, skipContextWarnings );
+        this.classVisitor = new StoredProcedureClassVisitor( typeUtils, elementUtils, ignoresWarnings );
         this.recordVisitor = new RecordTypeVisitor( typeUtils, typeMirrors );
         this.parameterVisitor = new ParameterVisitor( new ParameterTypeVisitor( typeUtils, typeMirrors ) );
     }

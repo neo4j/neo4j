@@ -19,9 +19,6 @@
  */
 package org.neo4j.tooling.procedure.visitors;
 
-import org.neo4j.tooling.procedure.messages.CompilationMessage;
-import org.neo4j.tooling.procedure.messages.ProcedureMissingPublicNoArgConstructor;
-
 import java.util.HashSet;
 import java.util.Optional;
 import java.util.Set;
@@ -34,6 +31,9 @@ import javax.lang.model.util.Elements;
 import javax.lang.model.util.SimpleElementVisitor8;
 import javax.lang.model.util.Types;
 
+import org.neo4j.tooling.procedure.messages.CompilationMessage;
+import org.neo4j.tooling.procedure.messages.ProcedureMissingPublicNoArgConstructor;
+
 import static javax.lang.model.util.ElementFilter.constructorsIn;
 
 public class StoredProcedureClassVisitor extends SimpleElementVisitor8<Stream<CompilationMessage>,Void>
@@ -42,9 +42,9 @@ public class StoredProcedureClassVisitor extends SimpleElementVisitor8<Stream<Co
     private final Set<TypeElement> visitedElements = new HashSet<>();
     private final FieldVisitor fieldVisitor;
 
-    public StoredProcedureClassVisitor( Types types, Elements elements, boolean skipContextWarnings )
+    public StoredProcedureClassVisitor( Types types, Elements elements, boolean ignoresWarnings )
     {
-        fieldVisitor = new FieldVisitor( types, elements, skipContextWarnings );
+        fieldVisitor = new FieldVisitor( types, elements, ignoresWarnings );
     }
 
     @Override

@@ -19,23 +19,11 @@
  */
 package org.neo4j.tooling.procedure.visitors.examples;
 
-import org.neo4j.graphdb.GraphDatabaseService;
-import org.neo4j.kernel.internal.GraphDatabaseAPI;
-import org.neo4j.logging.Log;
 import org.neo4j.procedure.Context;
 
-public class UnsupportedInjectedContextTypes
+public class UnknownContextType
 {
 
     @Context
     public String unsupportedType;
-
-    @Context
-    public GraphDatabaseAPI notOfficiallySupported;
-
-    @Context
-    public GraphDatabaseService graphDatabaseService;
-
-    @Context
-    public Log log;
 }
