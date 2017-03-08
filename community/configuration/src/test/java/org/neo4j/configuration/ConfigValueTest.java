@@ -32,34 +32,46 @@ public class ConfigValueTest
     @Test
     public void handlesEmptyValue() throws Exception
     {
-        ConfigValue value = new ConfigValue( "name", Optional.empty(), Optional.empty(), false, Optional.empty() );
+        ConfigValue value = new ConfigValue( "name", Optional.empty(), Optional.empty(), false, false, Optional.empty() );
 
         assertEquals( Optional.empty(), value.value() );
         assertEquals( "null", value.toString() );
         assertFalse( value.deprecated() );
         assertEquals( Optional.empty(), value.replacement() );
+        assertFalse( value.internal() );
+    }
+
+    @Test
+    public void handlesInternal() throws Exception
+    {
+        ConfigValue value = new ConfigValue( "name", Optional.empty(), Optional.empty(), true, false, Optional.empty
+                () );
+
+        assertTrue( value.internal() );
     }
 
     @Test
     public void handlesNonEmptyValue() throws Exception
     {
-        ConfigValue value = new ConfigValue( "name", Optional.empty(), Optional.of( 1 ), false, Optional.empty() );
+        ConfigValue value = new ConfigValue( "name", Optional.empty(), Optional.of( 1 ), false, false, Optional.empty() );
 
         assertEquals( Optional.of( 1 ), value.value() );
         assertEquals( "1", value.toString() );
         assertFalse( value.deprecated() );
         assertEquals( Optional.empty(), value.replacement() );
+        assertFalse( value.internal() );
     }
 
     @Test
     public void handlesDeprecationAndReplacement() throws Exception
     {
-        ConfigValue value = new ConfigValue( "old_name", Optional.empty(), Optional.of( 1 ), true,
+        ConfigValue value = new ConfigValue( "old_name", Optional.empty(), Optional.of( 1 ), false, true,
                 Optional.of( "new_name" ) );
 
         assertEquals( Optional.of( 1 ), value.value() );
         assertEquals( "1", value.toString() );
         assertTrue( value.deprecated() );
         assertEquals( "new_name", value.replacement().get() );
+        assertFalse( value.internal() );
     }
 }

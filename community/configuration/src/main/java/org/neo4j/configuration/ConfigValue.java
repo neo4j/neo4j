@@ -30,15 +30,17 @@ public class ConfigValue
     private final String name;
     private final Optional<String> description;
     private final Optional<?> value;
+    private final boolean internal;
     private final boolean deprecated;
     private final Optional<String> replacement;
 
     public ConfigValue( @Nonnull String name, @Nonnull Optional<String> description, @Nonnull Optional<?> value,
-            boolean deprecated, @Nonnull Optional<String> replacement )
+            boolean internal, boolean deprecated, @Nonnull Optional<String> replacement )
     {
         this.name = name;
         this.description = description;
         this.value = value;
+        this.internal = internal;
         this.deprecated = deprecated;
         this.replacement = replacement;
     }
@@ -76,5 +78,10 @@ public class ConfigValue
     public Optional<String> replacement()
     {
         return replacement;
+    }
+
+    public boolean internal()
+    {
+        return internal;
     }
 }

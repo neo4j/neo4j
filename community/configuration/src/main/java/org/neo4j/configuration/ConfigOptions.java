@@ -71,7 +71,7 @@ public class ConfigOptions
     {
         return settingGroup.values( validConfig ).entrySet().stream()
                 .map( val -> new ConfigValue( val.getKey(), description(), Optional.ofNullable( val.getValue() ),
-                        deprecated, replacement ) )
+                        false, deprecated, replacement ) )
                 .collect( Collectors.toList() );
     }
 
