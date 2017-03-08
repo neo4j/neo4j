@@ -19,29 +19,12 @@
  */
 package org.neo4j.codegen.bytecode;
 
-class Configuration
+import java.util.Collection;
+
+import org.neo4j.codegen.ByteCodes;
+import org.neo4j.codegen.CompilationFailureException;
+
+interface ByteCodeChecker
 {
-    private ByteCodeChecker bytecodeChecker;
-
-    public Configuration withFlag( ByteCode flag )
-    {
-        return this;
-    }
-
-    public void withBytecodeChecker( ByteCodeChecker checker )
-    {
-        if ( bytecodeChecker == null )
-        {
-            bytecodeChecker = checker;
-        }
-        else
-        {
-            throw new UnsupportedOperationException( "multiple bytecode checkers" );
-        }
-    }
-
-    ByteCodeChecker bytecodeChecker()
-    {
-        return bytecodeChecker;
-    }
+    void check( ClassLoader classpathLoader, Collection<ByteCodes> byteCodes ) throws CompilationFailureException;
 }

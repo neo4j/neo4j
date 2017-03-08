@@ -19,13 +19,13 @@
  */
 package org.neo4j.codegen.bytecode;
 
-import org.objectweb.asm.ClassWriter;
-import org.objectweb.asm.Label;
-import org.objectweb.asm.MethodVisitor;
-
 import java.util.Deque;
 import java.util.LinkedList;
 import java.util.function.Consumer;
+
+import org.objectweb.asm.ClassVisitor;
+import org.objectweb.asm.Label;
+import org.objectweb.asm.MethodVisitor;
 
 import org.neo4j.codegen.Expression;
 import org.neo4j.codegen.ExpressionVisitor;
@@ -66,7 +66,7 @@ class MethodByteCodeEmitter implements MethodEmitter
     private final TypeReference base;
     private Deque<Block> stateStack = new LinkedList<>();
 
-    MethodByteCodeEmitter( ClassWriter classWriter, MethodDeclaration declaration, TypeReference base )
+    MethodByteCodeEmitter( ClassVisitor classVisitor, MethodDeclaration declaration, TypeReference base )
     {
         this.declaration = declaration;
         this.base = base;
@@ -75,11 +75,11 @@ class MethodByteCodeEmitter implements MethodEmitter
             TypeReference type = parameter.type();
             if ( type.isInnerClass() && !type.isArray() )
             {
-                classWriter.visitInnerClass( byteCodeName( type ), outerName( type ),
+                classVisitor.visitInnerClass( byteCodeName( type ), outerName( type ),
                         type.simpleName(), type.modifiers() );
             }
         }
-        this.methodVisitor = classWriter.visitMethod( ACC_PUBLIC, declaration.name(), desc( declaration ),
+        this.methodVisitor = classVisitor.visitMethod( ACC_PUBLIC, declaration.name(), desc( declaration ),
                 signature( declaration ), exceptions( declaration ) );
         this.methodVisitor.visitCode();
         this.expressionVisitor = new ByteCodeExpressionVisitor( this.methodVisitor );

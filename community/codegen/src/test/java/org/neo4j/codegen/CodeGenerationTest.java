@@ -1753,7 +1753,7 @@ public class CodeGenerationTest
         return MethodHandles.lookup().unreflect( target.getMethod( name, parameters ) );
     }
 
-    static MethodHandle instanceMethod( Object instance, String name, Class<?>... parameters ) throws Exception
+    public static MethodHandle instanceMethod( Object instance, String name, Class<?>... parameters ) throws Exception
     {
         return method( instance.getClass(), name, parameters ).bindTo( instance );
     }
@@ -1768,7 +1768,7 @@ public class CodeGenerationTest
         return MethodHandles.lookup().unreflectConstructor( target.getConstructor( parameters ) );
     }
 
-    private static final String PACKAGE = "org.neo4j.codegen.test";
+    public static final String PACKAGE = "org.neo4j.codegen.test";
     private CodeGenerator generator;
 
     ClassGenerator generateClass( String name, Class<?> firstInterface, Class<?>... more )

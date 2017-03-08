@@ -46,6 +46,7 @@ public enum ByteCode implements CodeGeneratorOption
             return "BYTECODE";
         }
     };
+    public static final CodeGeneratorOption VERIFY_GENERATED_BYTECODE = load( "Verifier" );
 
     @Override
     public void applyTo( Object target )
@@ -53,6 +54,19 @@ public enum ByteCode implements CodeGeneratorOption
         if ( target instanceof Configuration )
         {
             ((Configuration) target).withFlag( this );
+        }
+    }
+
+    private static CodeGeneratorOption load( String option )
+    {
+        try
+        {
+            return (CodeGeneratorOption) Class.forName( ByteCode.class.getName() + option )
+                    .getDeclaredMethod( "load" + option ).invoke( null );
+        }
+        catch ( Throwable e )
+        {
+            return BLANK_OPTION;
         }
     }
 }
