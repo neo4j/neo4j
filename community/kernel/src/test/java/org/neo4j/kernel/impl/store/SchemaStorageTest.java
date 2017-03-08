@@ -22,7 +22,6 @@ package org.neo4j.kernel.impl.store;
 import org.junit.Before;
 import org.junit.BeforeClass;
 import org.junit.ClassRule;
-import org.junit.Ignore;
 import org.junit.Rule;
 import org.junit.Test;
 import org.junit.rules.ExpectedException;
@@ -38,16 +37,15 @@ import org.neo4j.graphdb.DependencyResolver;
 import org.neo4j.graphdb.GraphDatabaseService;
 import org.neo4j.graphdb.Label;
 import org.neo4j.graphdb.Transaction;
-import org.neo4j.graphdb.schema.ConstraintCreator;
 import org.neo4j.graphdb.schema.IndexCreator;
 import org.neo4j.helpers.collection.Iterators;
-import org.neo4j.kernel.api.schema.NodePropertyDescriptor;
 import org.neo4j.kernel.api.ReadOperations;
-import org.neo4j.kernel.api.schema.RelationshipPropertyDescriptor;
 import org.neo4j.kernel.api.Statement;
 import org.neo4j.kernel.api.TokenNameLookup;
 import org.neo4j.kernel.api.exceptions.schema.DuplicateSchemaRuleException;
 import org.neo4j.kernel.api.exceptions.schema.SchemaRuleNotFoundException;
+import org.neo4j.kernel.api.schema.NodePropertyDescriptor;
+import org.neo4j.kernel.api.schema.RelationshipPropertyDescriptor;
 import org.neo4j.kernel.api.schema_new.LabelSchemaDescriptor;
 import org.neo4j.kernel.api.schema_new.SchemaDescriptorFactory;
 import org.neo4j.kernel.api.schema_new.SchemaDescriptorPredicates;
@@ -142,32 +140,6 @@ public class SchemaStorageTest
         assertEquals( NewIndexDescriptor.Type.GENERAL, rule.getIndexDescriptor().type() );
     }
 
-    @Ignore("it is currently disputed whether constraints should be supported via Core API or not.")
-    @Test
-    public void shouldReturnConstraintRuleForLabelAndPropertyComposite() throws Exception
-    {
-        String a = "a", b = "b", c = "c", d = "d", e = "e", f = "f";
-        createSchema( db ->
-        {
-            db.schema().constraintFor( Label.label( LABEL1 ) )
-              .assertPropertyIsUnique( a ).assertPropertyIsUnique( b ).assertPropertyIsUnique( c )
-              .assertPropertyIsUnique( d ).assertPropertyIsUnique( e ).assertPropertyIsUnique( f ).create();
-        } );
-
-        IndexRule rule = storage.indexGetForSchema( NewIndexDescriptorFactory.forLabel(
-                labelId( LABEL1 ), propId( a ), propId( b ), propId( c ), propId( d ), propId( e ), propId( f ) ) );
-
-        assertNotNull( rule );
-        assertTrue( SchemaDescriptorPredicates.hasLabel( rule, labelId( LABEL1 ) ) );
-        assertTrue( SchemaDescriptorPredicates.hasProperty( rule, propId( a ) ) );
-        assertTrue( SchemaDescriptorPredicates.hasProperty( rule, propId( b ) ) );
-        assertTrue( SchemaDescriptorPredicates.hasProperty( rule, propId( c ) ) );
-        assertTrue( SchemaDescriptorPredicates.hasProperty( rule, propId( d ) ) );
-        assertTrue( SchemaDescriptorPredicates.hasProperty( rule, propId( e ) ) );
-        assertTrue( SchemaDescriptorPredicates.hasProperty( rule, propId( f ) ) );
-        assertEquals( NewIndexDescriptor.Type.UNIQUE, rule.getIndexDescriptor().type() );
-    }
-
     @Test
     public void shouldReturnIndexRuleForLabelAndVeryManyPropertiesComposite() throws Exception
     {
@@ -192,33 +164,6 @@ public class SchemaStorageTest
             assertTrue( SchemaDescriptorPredicates.hasProperty( rule, propId( prop ) ) );
         }
         assertEquals( NewIndexDescriptor.Type.GENERAL, rule.getIndexDescriptor().type() );
-    }
-
-    @Ignore("it is currently disputed whether constraints should be supported via Core API or not.")
-    @Test
-    public void shouldReturnConstraintRuleForLabelAndVeryManyPropertiesComposite() throws Exception
-    {
-        String[] props = "abcdefghijklmnopqrstuvwxyzABCDEFGHJILKMNOPQRSTUVWXYZ".split( "\\B" );
-        createSchema( db ->
-        {
-            ConstraintCreator constraintCreator = db.schema().constraintFor( Label.label( LABEL1 ) );
-            for ( String prop : props )
-            {
-                constraintCreator = constraintCreator.assertPropertyIsUnique( prop );
-            }
-            constraintCreator.create();
-        } );
-
-        IndexRule rule = storage.indexGetForSchema( NewIndexDescriptorFactory.forLabel(
-                labelId( LABEL1 ), Arrays.stream( props ).mapToInt( this::propId ).toArray() ) );
-
-        assertNotNull( rule );
-        assertTrue( SchemaDescriptorPredicates.hasLabel( rule, labelId( LABEL1 ) ) );
-        for ( String prop : props )
-        {
-            assertTrue( SchemaDescriptorPredicates.hasProperty( rule, propId( prop ) ) );
-        }
-        assertEquals( NewIndexDescriptor.Type.UNIQUE, rule.getIndexDescriptor().type() );
     }
 
     @Test
