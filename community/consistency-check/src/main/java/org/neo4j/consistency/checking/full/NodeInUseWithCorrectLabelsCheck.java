@@ -19,6 +19,8 @@
  */
 package org.neo4j.consistency.checking.full;
 
+import org.apache.commons.lang3.ArrayUtils;
+
 import org.neo4j.collection.primitive.PrimitiveLongCollections;
 import org.neo4j.consistency.checking.CheckerEngine;
 import org.neo4j.consistency.checking.ComparativeRecordChecker;
@@ -50,8 +52,12 @@ public class NodeInUseWithCorrectLabelsCheck
 
     private static long[] sortAndDeduplicate( long[] labels )
     {
-        sort( labels );
-        return PrimitiveLongCollections.deduplicate( labels );
+        if ( ArrayUtils.isNotEmpty( labels ) )
+        {
+            sort( labels );
+            return PrimitiveLongCollections.deduplicate( labels );
+        }
+        return labels;
     }
 
     @Override
@@ -91,7 +97,7 @@ public class NodeInUseWithCorrectLabelsCheck
         int indexLabelsCursor = 0;
         int storeLabelsCursor = 0;
 
-        do
+        while ( indexLabelsCursor < indexLabels.length && storeLabelsCursor < storeLabels.length )
         {
             long indexLabel = indexLabels[indexLabelsCursor];
             long storeLabel = storeLabels[storeLabelsCursor];
@@ -111,7 +117,6 @@ public class NodeInUseWithCorrectLabelsCheck
                 storeLabelsCursor++;
             }
         }
-        while ( indexLabelsCursor < indexLabels.length && storeLabelsCursor < storeLabels.length );
 
         while ( indexLabelsCursor < indexLabels.length )
         {
