@@ -54,7 +54,7 @@ public class ClassHandle extends TypeReference
 
     public Class<?> loadClass() throws CompilationFailureException
     {
-        return generator.loadClass( name(), generation );
+        return generator.loadClass( fullName(), generation );
     }
 
     public TypeReference parent()

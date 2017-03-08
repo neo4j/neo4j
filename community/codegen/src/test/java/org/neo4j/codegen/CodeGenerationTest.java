@@ -25,8 +25,10 @@ import java.lang.invoke.MethodHandles;
 import java.lang.reflect.Field;
 import java.util.Arrays;
 import java.util.Collection;
+import java.util.Collections;
 import java.util.Iterator;
 import java.util.List;
+import java.util.Map;
 import java.util.function.BiFunction;
 import java.util.function.Function;
 
@@ -223,6 +225,13 @@ public class CodeGenerationTest
         assertMethodReturningField( double.class, 42D );
         assertMethodReturningField( String.class, "42" );
         assertMethodReturningField( int[].class, new int[]{42} );
+        assertMethodReturningField( Map.Entry[].class, Collections.singletonMap( 42, "42" ).entrySet().toArray( new Map.Entry[0] ) );
+    }
+
+    @Test
+    public void temp() throws Throwable
+    {
+        assertMethodReturningField( Map.Entry[].class, Collections.singletonMap( 42, "42" ).entrySet().toArray( new Map.Entry[0] ) );
     }
 
     @Test
