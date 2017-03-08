@@ -19,6 +19,7 @@
  */
 package org.neo4j.io.fs.watcher;
 
+import com.sun.nio.file.SensitivityWatchEventModifier;
 import org.apache.commons.lang3.StringUtils;
 
 import java.io.File;
@@ -41,6 +42,8 @@ import org.neo4j.io.fs.watcher.resource.WatchedResource;
  */
 public class DefaultFileSystemWatcher implements FileWatcher
 {
+    private static final WatchEvent.Kind[] OBSERVED_EVENTS =
+            new WatchEvent.Kind[]{StandardWatchEventKinds.ENTRY_DELETE, StandardWatchEventKinds.ENTRY_MODIFY};
     private final WatchService watchService;
     private final List<FileWatchEventListener> listeners = new CopyOnWriteArrayList<>();
     private volatile boolean watch;
@@ -57,8 +60,7 @@ public class DefaultFileSystemWatcher implements FileWatcher
         {
             throw new IllegalArgumentException( "Only directories can be registered to be monitored." );
         }
-        WatchKey watchKey = file.toPath()
-                .register( watchService, StandardWatchEventKinds.ENTRY_DELETE, StandardWatchEventKinds.ENTRY_MODIFY );
+        WatchKey watchKey = file.toPath().register( watchService, OBSERVED_EVENTS, SensitivityWatchEventModifier.HIGH );
         return new WatchedFile( watchKey );
     }
 
