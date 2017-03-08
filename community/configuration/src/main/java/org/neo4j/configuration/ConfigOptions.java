@@ -72,8 +72,8 @@ public class ConfigOptions
     public List<ConfigValue> asConfigValues( @Nonnull Map<String,String> validConfig )
     {
         return settingGroup.values( validConfig ).entrySet().stream()
-                .map( val -> new ConfigValue( val.getKey(), description(), Optional.ofNullable( val.getValue() ),
-                        internal, deprecated, replacement ) )
+                .map( val -> new ConfigValue( val.getKey(), description(), documentedDefaultValue(),
+                        Optional.ofNullable( val.getValue() ), internal, deprecated, replacement ) )
                 .collect( Collectors.toList() );
     }
 

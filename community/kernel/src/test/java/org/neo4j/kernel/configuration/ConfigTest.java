@@ -30,6 +30,7 @@ import java.util.Map;
 import java.util.Optional;
 import javax.annotation.Nonnull;
 
+import org.neo4j.configuration.DocumentedDefaultValue;
 import org.neo4j.configuration.Internal;
 import org.neo4j.configuration.LoadableConfig;
 import org.neo4j.configuration.ReplacedBy;
@@ -89,6 +90,7 @@ public class ConfigTest
         public static final Setting<Boolean> boolSetting = setting( "bool_setting", BOOLEAN, Settings.TRUE );
 
         @Internal
+        @DocumentedDefaultValue( "<documented default value>" )
         public static final Setting<Boolean> secretSetting = setting( "secret_setting", BOOLEAN, Settings.TRUE );
 
         @Deprecated
@@ -233,12 +235,8 @@ public class ConfigTest
             throws Exception
     {
         // Given
-        Log log = mock( Log.class );
-        File confFile = testDirectory.file( "test.conf" );
-        assertTrue( confFile.createNewFile() );
-
         Config config =
-                new Config( Optional.of( confFile ),
+                new Config( Optional.empty(),
                         stringMap( MySettingsWithDefaults.secretSetting.name(), "false",
                                 MySettingsWithDefaults.hello.name(), "ABC"),
                         s -> {},
@@ -248,6 +246,27 @@ public class ConfigTest
         // Then
         assertTrue( config.getConfigValues().get( MySettingsWithDefaults.secretSetting.name() ).internal() );
         assertFalse( config.getConfigValues().get( MySettingsWithDefaults.hello.name() ).internal() );
+    }
+
+    @Test
+    public void shouldSetDocumentedDefaultValue()
+            throws Exception
+    {
+        // Given
+        Config config =
+                new Config( Optional.empty(),
+                        stringMap( MySettingsWithDefaults.secretSetting.name(), "false",
+                                MySettingsWithDefaults.hello.name(), "ABC"),
+                        s -> {},
+                        Collections.emptyList(), Optional.empty(),
+                        Arrays.asList( mySettingsWithDefaults, myMigratingSettings ) );
+
+        // Then
+        assertEquals( Optional.of( "<documented default value>" ),
+                config.getConfigValues().get( MySettingsWithDefaults.secretSetting.name() )
+                        .getDocumentedDefaultValue() );
+        assertEquals( Optional.empty(),
+                config.getConfigValues().get( MySettingsWithDefaults.hello.name() ).getDocumentedDefaultValue() );
     }
 
     @Test

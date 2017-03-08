@@ -19,10 +19,10 @@
  */
 package org.neo4j.server.configuration;
 
+import org.junit.Test;
+
 import java.util.List;
 import java.util.Map.Entry;
-
-import org.junit.Test;
 
 import org.neo4j.kernel.configuration.Config;
 
@@ -38,14 +38,16 @@ public class ServerSettingsTest
     {
         Config config = Config.serverDefaults();
 
-        String documentedDefaultValue = config.getDocumentedDefaults().entrySet().stream()
-                .filter( c -> c.getKey().equals( ServerSettings.webserver_max_threads.name() ) )
-                .findAny()
-                .orElseThrow( () -> new RuntimeException( "Setting not present!" ) )
-                .getValue()
-                .orElseThrow( () -> new RuntimeException( "Default value not present!" ) );
+        String documentedDefaultValue =
+                config.getConfigValues().entrySet().stream()
+                        .filter( c -> c.getKey().equals( ServerSettings.webserver_max_threads.name() ) )
+                        .map( Entry::getValue )
+                        .findAny()
+                        .orElseThrow( () -> new RuntimeException( "Setting not present!" ) )
+                        .getDocumentedDefaultValue()
+                        .orElseThrow( () -> new RuntimeException( "Default value not present!" ) );
 
-       assertEquals( "Number of available processors (max 500).", documentedDefaultValue);
+        assertEquals( "Number of available processors (max 500).", documentedDefaultValue );
     }
 
     @Test
