@@ -80,9 +80,10 @@ public class ClusterSettings implements LoadableConfig
         READ_REPLICA
     }
 
-    @Description( "Configure the operating mode of the database -- 'SINGLE' for stand-alone operation, 'HA' for " +
-            "operating as a member in a cluster, 'ARBITER' for an HA-only cluster member with no database, " +
-            "CORE for a core member of a Causal Clustering cluster, or READ_REPLICA for read replica." )
+    @Description( "Configure the operating mode of the database -- 'SINGLE' for stand-alone operation, " +
+            "'HA' for operating as a member in an HA cluster, 'ARBITER' for a cluster member with no database in an HA cluster, " +
+            "'CORE' for operating as a core member of a Causal Cluster, " +
+            "or 'READ_REPLICA' for operating as a read replica member of a Causal Cluster." )
     public static final Setting<Mode> mode = setting( "dbms.mode", options( Mode.class ), Mode.SINGLE.name() );
 
     @Description( "Id for a cluster instance. Must be unique within the cluster." )
