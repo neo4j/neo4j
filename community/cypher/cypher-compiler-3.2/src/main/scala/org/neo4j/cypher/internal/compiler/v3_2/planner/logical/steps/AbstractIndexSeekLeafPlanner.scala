@@ -73,13 +73,6 @@ abstract class AbstractIndexSeekLeafPlanner extends LeafPlanner with LeafPlanFro
     producePlanFor(qg.selections.flatPredicates.toSet, qg).toSeq.flatMap(_.plans)
   }
 
-  protected def collectPlans(predicates: Seq[Expression], argumentIds: Set[IdName], hints: Set[Hint])
-                            (implicit context: LogicalPlanningContext, labelPredicateMap: Map[IdName, Set[HasLabels]]): Seq[(String, Set[LogicalPlan])] = {
-    val arguments: Set[Variable] = argumentIds.map(n => Variable(n.name)(null))
-    val results = predicates.collect(indexPlannableExpression(argumentIds, arguments, hints))
-    results.map(e => (e.name, e.producePlans()))
-  }
-
   private def findNonSeekableIdentifiers(predicates: Seq[Expression])(implicit context: LogicalPlanningContext): Set[Variable] =
     predicates.flatMap {
       // n['some' + n.prop] IN [ ... ]
@@ -109,12 +102,11 @@ abstract class AbstractIndexSeekLeafPlanner extends LeafPlanner with LeafPlanFro
          plannables: Seq[IndexPlannableExpression] <- plannablesForIndex(indexDescriptor, nodePlannables))
       yield {
 
-        // TODO: support for composite hints
         val hint = if (plannables.length == 1) {
           val name = idName.name
           val propertyName = plannables.head.propertyKeyName.name
           hints.collectFirst {
-            case hint@UsingIndexHint(Variable(`name`), `labelName`, PropertyKeyName(`propertyName`)) => hint
+            case hint@UsingIndexHint(Variable(`name`), `labelName`, Seq(PropertyKeyName(`propertyName`))) => hint
           }
         } else None
 
@@ -184,24 +176,5 @@ abstract class AbstractIndexSeekLeafPlanner extends LeafPlanner with LeafPlanFro
   case class IndexPlannableExpression(name: String, propertyKeyName: PropertyKeyName,
                                       propertyPredicate: Expression, queryExpression: QueryExpression[Expression],
                                       hints: Set[Hint], argumentIds: Set[IdName])
-                                     (implicit labelPredicateMap: Map[IdName, Set[HasLabels]]) {
-    def producePlans()(implicit context: LogicalPlanningContext): Set[LogicalPlan] = {
-      implicit val semanticTable = context.semanticTable
-      val idName = IdName(name)
-      for (labelPredicate <- labelPredicateMap.getOrElse(idName, Set.empty);
-           labelName <- labelPredicate.labels;
-           labelId <- labelName.id)
-        yield {
-          val propertyName = propertyKeyName.name
-          val hint = hints.collectFirst {
-            case hint@UsingIndexHint(Variable(`name`), `labelName`, PropertyKeyName(`propertyName`)) => hint
-          }
-          val entryConstructor: (Seq[Expression]) => LogicalPlan =
-            constructPlan(idName, LabelToken(labelName, labelId), Seq(PropertyKeyToken(propertyKeyName, propertyKeyName.id.head)),
-              queryExpression, hint, argumentIds)
-          entryConstructor(Seq(propertyPredicate, labelPredicate))
-        }
-    }
-  }
-
+                                     (implicit labelPredicateMap: Map[IdName, Set[HasLabels]])
 }
