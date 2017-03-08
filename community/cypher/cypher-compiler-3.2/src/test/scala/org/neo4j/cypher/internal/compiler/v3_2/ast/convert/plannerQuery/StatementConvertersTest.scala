@@ -23,10 +23,10 @@ import org.neo4j.cypher.internal.compiler.v3_2.planner.{LogicalPlanningTestSuppo
 import org.neo4j.cypher.internal.compiler.v3_2.spi._
 import org.neo4j.cypher.internal.frontend.v3_2.SemanticDirection.{BOTH, INCOMING, OUTGOING}
 import org.neo4j.cypher.internal.frontend.v3_2.ast._
+import org.neo4j.cypher.internal.frontend.v3_2.helpers.StringHelper._
 import org.neo4j.cypher.internal.frontend.v3_2.symbols._
 import org.neo4j.cypher.internal.frontend.v3_2.test_helpers.CypherFunSuite
 import org.neo4j.cypher.internal.ir.v3_2._
-import org.neo4j.cypher.internal.frontend.v3_2.helpers.StringHelper._
 
 class StatementConvertersTest extends CypherFunSuite with LogicalPlanningTestSupport {
 
@@ -742,7 +742,7 @@ class StatementConvertersTest extends CypherFunSuite with LogicalPlanningTestSup
   test("MATCH (n:Awesome {prop: 42}) USING INDEX n:Awesome(prop) RETURN n") {
     val query = buildPlannerQuery("MATCH (n:Awesome {prop: 42}) USING INDEX n:Awesome(prop) RETURN n")
 
-    query.queryGraph.hints should equal(Set[Hint](UsingIndexHint(varFor("n"), LabelName("Awesome")_, PropertyKeyName("prop")(pos))_))
+    query.queryGraph.hints should equal(Set[Hint](UsingIndexHint(varFor("n"), LabelName("Awesome")_, Seq(PropertyKeyName("prop")(pos)))_))
   }
 
   test("MATCH shortestPath((a)-[r]->(b)) RETURN r") {

@@ -76,10 +76,10 @@ object verifyBestPlan extends PlanTransformer[PlannerQuery] {
       // hints referred to non-existent indexes ("explicit hints")
       if (context.useErrorsOverWarnings) {
         val firstIndexHint = hints.head
-        throw new IndexHintException(firstIndexHint.variable.name, firstIndexHint.label.name, Seq(firstIndexHint.property.name), "No such index")
+        throw new IndexHintException(firstIndexHint.variable.name, firstIndexHint.label.name, firstIndexHint.properties.map(_.name), "No such index")
       } else {
         hints.foreach { hint =>
-          context.notificationLogger.log(IndexHintUnfulfillableNotification(hint.label.name, hint.property.name))
+          context.notificationLogger.log(IndexHintUnfulfillableNotification(hint.label.name, hint.properties.map(_.name)))
         }
       }
     }
@@ -101,12 +101,12 @@ object verifyBestPlan extends PlanTransformer[PlannerQuery] {
 
   private def findUnfulfillableIndexHints(query: PlannerQuery, planContext: PlanContext): Set[UsingIndexHint] = {
     query.allHints.flatMap {
-      // using index name:label(property)
-      case UsingIndexHint(Variable(_), LabelName(label), PropertyKeyName(property))
-        if planContext.indexGet( label, Seq(property) ).isDefined ||
-          planContext.uniqueIndexGet( label, Seq(property) ).isDefined => None
+      // using index name:label(property1,property2)
+      case UsingIndexHint(_, LabelName(label), properties)
+        if planContext.indexGet(label, properties.map(_.name)).isDefined ||
+          planContext.uniqueIndexGet(label, properties.map(_.name)).isDefined => None
       // no such index exists
-      case hint@UsingIndexHint(Variable(_), LabelName(_), PropertyKeyName(_)) => Option(hint)
+      case hint: UsingIndexHint => Some(hint)
       // don't care about other hints
       case _ => None
     }

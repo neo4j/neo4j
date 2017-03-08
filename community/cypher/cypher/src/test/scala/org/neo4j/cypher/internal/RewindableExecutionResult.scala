@@ -189,7 +189,7 @@ object RewindableExecutionResult {
       case notification_2_3.LengthOnNonPathNotification(position) => notification.LengthOnNonPathNotification(InputPosition.apply(position.offset, position.line, position.column))
       case notification_2_3.PlannerUnsupportedNotification => notification.PlannerUnsupportedNotification
       case notification_2_3.RuntimeUnsupportedNotification => notification.RuntimeUnsupportedNotification
-      case notification_2_3.IndexHintUnfulfillableNotification (label, propertyKey) => notification.IndexHintUnfulfillableNotification(label, propertyKey)
+      case notification_2_3.IndexHintUnfulfillableNotification(label, propertyKey) => notification.IndexHintUnfulfillableNotification(label, Seq(propertyKey))
       case notification_2_3.JoinHintUnfulfillableNotification(identified) => notification.JoinHintUnfulfillableNotification(identified)
       case notification_2_3.JoinHintUnsupportedNotification(identified) => notification.JoinHintUnsupportedNotification(identified)
       case notification_2_3.IndexLookupUnfulfillableNotification(labels) => notification.IndexLookupUnfulfillableNotification(labels)
@@ -316,7 +316,7 @@ object RewindableExecutionResult {
       case notification_3_1.LengthOnNonPathNotification(position) => notification.LengthOnNonPathNotification(InputPosition.apply(position.offset, position.line, position.column))
       case notification_3_1.PlannerUnsupportedNotification => notification.PlannerUnsupportedNotification
       case notification_3_1.RuntimeUnsupportedNotification => notification.RuntimeUnsupportedNotification
-      case notification_3_1.IndexHintUnfulfillableNotification (label, propertyKey) => notification.IndexHintUnfulfillableNotification(label, propertyKey)
+      case notification_3_1.IndexHintUnfulfillableNotification(label, propertyKey) => notification.IndexHintUnfulfillableNotification(label, Seq(propertyKey))
       case notification_3_1.JoinHintUnfulfillableNotification(identified) => notification.JoinHintUnfulfillableNotification(identified)
       case notification_3_1.JoinHintUnsupportedNotification(identified) => notification.JoinHintUnsupportedNotification(identified)
       case notification_3_1.IndexLookupUnfulfillableNotification(labels) => notification.IndexLookupUnfulfillableNotification(labels)

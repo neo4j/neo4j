@@ -19,9 +19,9 @@
  */
 package org.neo4j.cypher.internal.compiler.v3_2.planner.logical
 
+import org.neo4j.cypher.internal.compiler.v3_2.planner.LogicalPlanningTestSupport2
 import org.neo4j.cypher.internal.compiler.v3_2.planner.logical.plans.LogicalPlan
 import org.neo4j.cypher.internal.compiler.v3_2.planner.logical.steps.{LogicalPlanProducer, pickBestPlanUsingHintsAndCost}
-import org.neo4j.cypher.internal.compiler.v3_2.planner.LogicalPlanningTestSupport2
 import org.neo4j.cypher.internal.frontend.v3_2.ast.{LabelName, PropertyKeyName, UsingIndexHint}
 import org.neo4j.cypher.internal.frontend.v3_2.phases.devNullLogger
 import org.neo4j.cypher.internal.frontend.v3_2.test_helpers.CypherFunSuite
@@ -35,9 +35,9 @@ class PickBestPlanUsingHintsAndCostTest extends CypherFunSuite with LogicalPlann
     }
   }
 
-  val hint1: UsingIndexHint = UsingIndexHint(varFor("n"), LabelName("Person")_, PropertyKeyName("name")_)_
-  val hint2: UsingIndexHint = UsingIndexHint(varFor("n"), LabelName("Person")_, PropertyKeyName("age")_)_
-  val hint3: UsingIndexHint = UsingIndexHint(varFor("n"), LabelName("Person")_, PropertyKeyName("income")_)_
+  val hint1: UsingIndexHint = UsingIndexHint(varFor("n"), LabelName("Person")_, Seq(PropertyKeyName("name")_))_
+  val hint2: UsingIndexHint = UsingIndexHint(varFor("n"), LabelName("Person")_, Seq(PropertyKeyName("age")_))_
+  val hint3: UsingIndexHint = UsingIndexHint(varFor("n"), LabelName("Person")_, Seq(PropertyKeyName("income")_))_
 
   test("picks the right plan by cost, no matter the cardinality") {
     val a = fakeLogicalPlanFor("a")

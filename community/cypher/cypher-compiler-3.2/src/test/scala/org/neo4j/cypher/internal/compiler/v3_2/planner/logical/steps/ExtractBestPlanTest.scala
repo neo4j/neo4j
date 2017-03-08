@@ -36,7 +36,7 @@ class ExtractBestPlanTest extends CypherFunSuite with LogicalPlanningTestSupport
 
   private implicit val subQueryLookupTable = Map.empty[PatternExpression, QueryGraph]
 
-  private def newIndexHint(): Hint = { UsingIndexHint(varFor("a"), LabelName("User")_, PropertyKeyName("name")(pos))_ }
+  private def newIndexHint(): Hint = { UsingIndexHint(varFor("a"), LabelName("User")_, Seq(PropertyKeyName("name")(pos)))_ }
 
   private def newJoinHint(): Hint = { UsingJoinHint(Seq(varFor("a")))_ }
 
@@ -135,7 +135,7 @@ class ExtractBestPlanTest extends CypherFunSuite with LogicalPlanningTestSupport
       notificationLogger = notificationLogger)
 
     verifyBestPlan(getSimpleLogicalPlanWithAandB(), newQueryWithIdxHint()).availableSymbols should equal(Set(IdName("a"), IdName("b")))
-    notificationLogger.notifications should contain(IndexHintUnfulfillableNotification("User", "name"))
+    notificationLogger.notifications should contain(IndexHintUnfulfillableNotification("User", Seq("name")))
   }
 
   test("should issue warning when finding plan that contains unfulfillable join hint") {
