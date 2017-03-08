@@ -26,7 +26,9 @@ import java.io.File;
 import java.io.IOException;
 import java.util.ArrayList;
 import java.util.Arrays;
+import java.util.HashMap;
 import java.util.List;
+import java.util.Map;
 import java.util.concurrent.CountDownLatch;
 
 import org.neo4j.cluster.ClusterSettings;
@@ -38,13 +40,20 @@ import org.neo4j.cluster.protocol.atomicbroadcast.ObjectStreamFactory;
 import org.neo4j.cluster.protocol.atomicbroadcast.Payload;
 import org.neo4j.graphdb.Node;
 import org.neo4j.graphdb.Transaction;
-import org.neo4j.graphdb.factory.GraphDatabaseBuilder;
 import org.neo4j.graphdb.factory.TestHighlyAvailableGraphDatabaseFactory;
+import org.neo4j.kernel.ha.cluster.member.ClusterMember;
+import org.neo4j.kernel.ha.cluster.member.ClusterMembers;
 import org.neo4j.kernel.ha.cluster.modeswitch.HighAvailabilityModeSwitcher;
 import org.neo4j.test.ProcessStreamHandler;
 import org.neo4j.test.rule.TestDirectory;
 
+import static java.lang.System.currentTimeMillis;
 import static java.util.concurrent.TimeUnit.SECONDS;
+
+import static org.neo4j.kernel.ha.cluster.modeswitch.HighAvailabilityModeSwitcher.MASTER;
+import static org.neo4j.kernel.ha.cluster.modeswitch.HighAvailabilityModeSwitcher.SLAVE;
+import static org.neo4j.kernel.ha.cluster.modeswitch.HighAvailabilityModeSwitcher.UNKNOWN;
+
 import static org.junit.Assert.assertEquals;
 import static org.junit.Assert.assertTrue;
 import static org.junit.Assert.fail;
@@ -64,12 +73,11 @@ public class HardKillIT
         try
         {
             proc = run( 1 );
-            Thread.sleep( 12000 );
             dbWithId2 = startDb( 2, path( 2 ) );
             dbWithId3 = startDb( 3, path( 3 ) );
 
-            assertTrue( !dbWithId2.isMaster() );
-            assertTrue( !dbWithId3.isMaster() );
+            waitUntilAllProperlyAvailable( dbWithId2, 1, MASTER, 2, SLAVE, 3, SLAVE );
+            waitUntilAllProperlyAvailable( dbWithId3, 1, MASTER, 2, SLAVE, 3, SLAVE );
 
             final CountDownLatch newMasterAvailableLatch = new CountDownLatch( 1 );
             dbWithId2.getDependencyResolver().resolveDependency( ClusterClient.class ).addAtomicBroadcastListener(
@@ -106,7 +114,8 @@ public class HardKillIT
             assertTrue( !dbWithId3.isMaster() );
 
             // Ensure that everyone has marked the killed instance as failed, otherwise it cannot rejoin
-            Thread.sleep( 15000 );
+            waitUntilAllProperlyAvailable( dbWithId2, 1, UNKNOWN, 2, MASTER, 3, SLAVE );
+            waitUntilAllProperlyAvailable( dbWithId3, 1, UNKNOWN, 2, MASTER, 3, SLAVE );
 
             oldMaster = startDb( 1, path( 1 ) );
             long oldMasterNode = createNamedNode( oldMaster, "Old master" );
@@ -163,7 +172,7 @@ public class HardKillIT
 
     private Process run( int machineId ) throws IOException
     {
-        List<String> allArgs = new ArrayList<String>( Arrays.asList( "java", "-cp",
+        List<String> allArgs = new ArrayList<>( Arrays.asList( "java", "-cp",
                 System.getProperty( "java.class.path" ), "-Djava.awt.headless=true", HardKillIT.class.getName() ) );
         allArgs.add( "" + machineId );
         allArgs.add( path( machineId ).getAbsolutePath() );
@@ -177,31 +186,68 @@ public class HardKillIT
     /*
      * Used to launch the master instance
      */
-    public static void main( String[] args )
+    public static void main( String[] args ) throws InterruptedException
     {
-        startDb( Integer.parseInt( args[0] ), new File( args[1] ) );
+        HighlyAvailableGraphDatabase db = startDb( Integer.parseInt( args[0] ), new File( args[1] ) );
+        waitUntilAllProperlyAvailable( db, 1, MASTER, 2, SLAVE, 3, SLAVE );
+    }
+
+    private static void waitUntilAllProperlyAvailable( HighlyAvailableGraphDatabase db, Object... expected )
+            throws InterruptedException
+    {
+        ClusterMembers members = db.getDependencyResolver().resolveDependency( ClusterMembers.class );
+        long endTime = currentTimeMillis() + SECONDS.toMillis( 60 );
+        Map<Integer,String> expectedStates = toExpectedStatesMap( expected );
+        while ( currentTimeMillis() < endTime && !allMembersAreAsExpected( members, expectedStates ) )
+        {
+            Thread.sleep( 100 );
+        }
+        if ( !allMembersAreAsExpected( members, expectedStates ) )
+        {
+            throw new IllegalStateException( "Not all members available, according to " + db );
+        }
+    }
+
+    private static boolean allMembersAreAsExpected( ClusterMembers members, Map<Integer,String> expectedStates )
+    {
+        int count = 0;
+        for ( ClusterMember member : members.getMembers() )
+        {
+            int serverId = member.getInstanceId().toIntegerIndex();
+            String expectedRole = expectedStates.get( serverId );
+            boolean whatExpected = (expectedRole.equals( UNKNOWN ) || member.isAlive()) &&
+                    member.getHARole().equals( expectedRole );
+            if ( !whatExpected )
+            {
+                return false;
+            }
+            count++;
+        }
+        return count == expectedStates.size();
+    }
+
+    private static Map<Integer,String> toExpectedStatesMap( Object[] expected )
+    {
+        Map<Integer,String> expectedStates = new HashMap<>();
+        for ( int i = 0; i < expected.length; )
+        {
+            expectedStates.put( (Integer) expected[i++], (String) expected[i++] );
+        }
+        return expectedStates;
     }
 
     private static HighlyAvailableGraphDatabase startDb( int serverId, File path )
     {
-        GraphDatabaseBuilder builder = new TestHighlyAvailableGraphDatabaseFactory()
+        return (HighlyAvailableGraphDatabase) new TestHighlyAvailableGraphDatabaseFactory()
                 .newEmbeddedDatabaseBuilder( path )
                 .setConfig( ClusterSettings.initial_hosts, "127.0.0.1:7102,127.0.0.1:7103" )
                 .setConfig( ClusterSettings.cluster_server, "127.0.0.1:" + (7101 + serverId) )
                 .setConfig( ClusterSettings.server_id, "" + serverId )
+                .setConfig( ClusterSettings.heartbeat_timeout, "5s" )
+                .setConfig( ClusterSettings.default_timeout, "1s" )
                 .setConfig( HaSettings.ha_server, ":" + (7501 + serverId) )
-                .setConfig( HaSettings.tx_push_factor, "0" );
-        HighlyAvailableGraphDatabase db = (HighlyAvailableGraphDatabase) builder.newGraphDatabase();
-        db.beginTx().close();
-        try
-        {
-            Thread.sleep( 2000 );
-        }
-        catch ( InterruptedException e )
-        {
-            throw new RuntimeException( e );
-        }
-        return db;
+                .setConfig( HaSettings.tx_push_factor, "0" )
+                .newGraphDatabase();
     }
 
     private File path( int i )
