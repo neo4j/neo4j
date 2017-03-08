@@ -19,8 +19,6 @@
  */
 package org.neo4j.kernel.impl.store.record;
 
-import java.nio.ByteBuffer;
-
 import org.neo4j.graphdb.Label;
 import org.neo4j.kernel.api.index.SchemaIndexProvider;
 import org.neo4j.kernel.api.schema_new.LabelSchemaDescriptor;
@@ -107,15 +105,9 @@ public class IndexRule extends SchemaRule implements NewIndexDescriptor.Supplier
     }
 
     @Override
-    public int length()
+    public byte[] serialize()
     {
-        return SchemaRuleSerialization.lengthOf( this );
-    }
-
-    @Override
-    public void serialize( ByteBuffer target )
-    {
-        SchemaRuleSerialization.serialize( this, target );
+        return SchemaRuleSerialization.serialize( this );
     }
 
     @Override

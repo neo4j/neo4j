@@ -25,8 +25,8 @@ import java.util.Collection;
 import java.util.Collections;
 import java.util.List;
 
-import org.neo4j.kernel.api.schema.NodePropertyDescriptor;
 import org.neo4j.kernel.api.index.SchemaIndexProvider;
+import org.neo4j.kernel.api.schema.NodePropertyDescriptor;
 import org.neo4j.kernel.api.schema_new.index.NewIndexDescriptorFactory;
 import org.neo4j.kernel.impl.store.DynamicNodeLabels;
 import org.neo4j.kernel.impl.store.PropertyStore;
@@ -38,7 +38,6 @@ import org.neo4j.kernel.impl.store.record.NodeRecord;
 import org.neo4j.kernel.impl.store.record.PropertyBlock;
 import org.neo4j.kernel.impl.store.record.PropertyKeyTokenRecord;
 import org.neo4j.kernel.impl.store.record.PropertyRecord;
-import org.neo4j.kernel.impl.store.record.RecordSerializer;
 import org.neo4j.kernel.impl.store.record.RelationshipGroupRecord;
 import org.neo4j.kernel.impl.store.record.RelationshipRecord;
 import org.neo4j.kernel.impl.store.record.RelationshipTypeTokenRecord;
@@ -56,7 +55,7 @@ import org.neo4j.kernel.impl.transaction.log.PhysicalTransactionRepresentation;
 import org.neo4j.storageengine.api.StorageCommand;
 import org.neo4j.storageengine.api.schema.SchemaRule;
 
-import static java.util.Arrays.asList;
+import static java.util.Collections.singletonList;
 
 public class Commands
 {
@@ -147,13 +146,11 @@ public class Commands
                 id,
                 NewIndexDescriptorFactory.forLabel( descriptor.getLabelId(), descriptor.getPropertyKeyId() ),
                 provider );
-        RecordSerializer serializer = new RecordSerializer();
-        serializer.append( rule );
         DynamicRecord record = new DynamicRecord( id );
         record.setInUse( true );
         record.setCreated();
-        record.setData( serializer.serialize() );
-        return new SchemaRuleCommand( Collections.<DynamicRecord>emptyList(), asList( record ), rule );
+        record.setData( rule.serialize() );
+        return new SchemaRuleCommand( Collections.<DynamicRecord>emptyList(), singletonList( record ), rule );
     }
 
     public static PropertyCommand createProperty( long id, PropertyType type, int key,

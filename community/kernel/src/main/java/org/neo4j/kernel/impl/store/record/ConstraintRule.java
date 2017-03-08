@@ -19,8 +19,6 @@
  */
 package org.neo4j.kernel.impl.store.record;
 
-import java.nio.ByteBuffer;
-
 import org.neo4j.kernel.api.schema_new.SchemaDescriptor;
 import org.neo4j.kernel.api.schema_new.constaints.ConstraintDescriptor;
 import org.neo4j.kernel.api.schema_new.constaints.UniquenessConstraintDescriptor;
@@ -81,15 +79,9 @@ public class ConstraintRule extends SchemaRule implements ConstraintDescriptor.S
     }
 
     @Override
-    public int length()
+    public byte[] serialize()
     {
-        return SchemaRuleSerialization.lengthOf( this );
-    }
-
-    @Override
-    public void serialize( ByteBuffer target )
-    {
-        SchemaRuleSerialization.serialize( this, target );
+        return SchemaRuleSerialization.serialize( this );
     }
 
     @Override

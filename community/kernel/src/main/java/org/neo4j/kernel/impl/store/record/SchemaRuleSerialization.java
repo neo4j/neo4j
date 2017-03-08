@@ -94,11 +94,11 @@ public class SchemaRuleSerialization
     /**
      * Serialize the provided IndexRule onto the target buffer
      * @param indexRule the IndexRule to serialize
-     * @param target the target buffer
      * @throws IllegalStateException if the IndexRule is of type unique, but the owning constrain has not been set
      */
-    public static void serialize( IndexRule indexRule, ByteBuffer target )
+    public static byte[] serialize( IndexRule indexRule )
     {
+        ByteBuffer target = ByteBuffer.allocate( lengthOf( indexRule ) );
         target.putInt( LEGACY_LABEL_OR_REL_TYPE_ID );
         target.put( INDEX_RULE );
 
@@ -128,16 +128,17 @@ public class SchemaRuleSerialization
 
         indexDescriptor.schema().processWith( new SchemaDescriptorSerializer( target ) );
         UTF8.putEncodedNullTerminatedStringInto( indexRule.getName(), target );
+        return target.array();
     }
 
     /**
      * Serialize the provided ConstraintRule onto the target buffer
      * @param constraintRule the ConstraintRule to serialize
-     * @param target the target buffer
      * @throws IllegalStateException if the ConstraintRule is of type unique, but the owned index has not been set
      */
-    public static void serialize( ConstraintRule constraintRule, ByteBuffer target )
+    public static byte[] serialize( ConstraintRule constraintRule )
     {
+        ByteBuffer target = ByteBuffer.allocate( lengthOf( constraintRule ) );
         target.putInt( LEGACY_LABEL_OR_REL_TYPE_ID );
         target.put( CONSTRAINT_RULE );
 
@@ -160,6 +161,7 @@ public class SchemaRuleSerialization
 
         constraintDescriptor.schema().processWith( new SchemaDescriptorSerializer( target ) );
         UTF8.putEncodedNullTerminatedStringInto( constraintRule.getName(), target );
+        return target.array();
     }
 
     /**

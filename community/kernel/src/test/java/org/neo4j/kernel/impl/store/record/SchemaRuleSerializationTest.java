@@ -428,17 +428,13 @@ public class SchemaRuleSerializationTest extends SchemaRuleTestBase
 
     private SchemaRule serialiseAndDeserialise( ConstraintRule constraintRule ) throws MalformedSchemaRuleException
     {
-        ByteBuffer buffer = ByteBuffer.allocate( VERY_LARGE_CAPACITY );
-        SchemaRuleSerialization.serialize( constraintRule, buffer );
-        buffer.flip();
+        ByteBuffer buffer = ByteBuffer.wrap( constraintRule.serialize() );
         return SchemaRuleSerialization.deserialize( constraintRule.getId(), buffer );
     }
 
     private SchemaRule serialiseAndDeserialise( IndexRule indexRule ) throws MalformedSchemaRuleException
     {
-        ByteBuffer buffer = ByteBuffer.allocate( VERY_LARGE_CAPACITY );
-        SchemaRuleSerialization.serialize( indexRule, buffer );
-        buffer.flip();
+        ByteBuffer buffer = ByteBuffer.wrap( indexRule.serialize() );
         return SchemaRuleSerialization.deserialize( indexRule.getId(), buffer );
     }
 
@@ -454,21 +450,19 @@ public class SchemaRuleSerializationTest extends SchemaRuleTestBase
     private void assertCorrectLength( IndexRule indexRule ) throws MalformedSchemaRuleException
     {
         // GIVEN
-        ByteBuffer buffer = ByteBuffer.allocate( VERY_LARGE_CAPACITY );
-        SchemaRuleSerialization.serialize( indexRule, buffer );
+        ByteBuffer buffer = ByteBuffer.wrap( indexRule.serialize() );
 
         // THEN
-        assertThat( SchemaRuleSerialization.lengthOf( indexRule ), equalTo( buffer.position() ) );
+        assertThat( SchemaRuleSerialization.lengthOf( indexRule ), equalTo( buffer.capacity() ) );
     }
 
     private void assertCorrectLength( ConstraintRule constraintRule ) throws MalformedSchemaRuleException
     {
         // GIVEN
-        ByteBuffer buffer = ByteBuffer.allocate( VERY_LARGE_CAPACITY );
-        SchemaRuleSerialization.serialize( constraintRule, buffer );
+        ByteBuffer buffer = ByteBuffer.wrap( constraintRule.serialize() );
 
         // THEN
-        assertThat( SchemaRuleSerialization.lengthOf( constraintRule ), equalTo( buffer.position() ) );
+        assertThat( SchemaRuleSerialization.lengthOf( constraintRule ), equalTo( buffer.capacity() ) );
     }
 
     private byte[] decodeBase64( String serialized )

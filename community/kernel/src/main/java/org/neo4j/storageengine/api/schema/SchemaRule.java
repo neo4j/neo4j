@@ -28,12 +28,11 @@ import org.neo4j.kernel.api.schema_new.constaints.ConstraintDescriptor;
 import org.neo4j.kernel.api.schema_new.index.NewIndexDescriptor;
 import org.neo4j.kernel.impl.store.record.ConstraintRule;
 import org.neo4j.kernel.impl.store.record.IndexRule;
-import org.neo4j.kernel.impl.store.record.RecordSerializable;
 
 /**
  * Represents a stored schema rule.
  */
-public abstract class SchemaRule implements SchemaDescriptor.Supplier, RecordSerializable
+public abstract class SchemaRule implements SchemaDescriptor.Supplier
 {
     protected final long id;
     protected String name;
@@ -62,6 +61,8 @@ public abstract class SchemaRule implements SchemaDescriptor.Supplier, RecordSer
         }
         return name;
     }
+
+    public abstract byte[] serialize();
 
     /**
      * Set the name of this rule, if it has not been set already.
