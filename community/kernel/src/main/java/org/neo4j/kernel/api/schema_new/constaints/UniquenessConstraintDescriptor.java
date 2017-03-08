@@ -24,7 +24,7 @@ import org.neo4j.kernel.api.schema_new.LabelSchemaDescriptor;
 import org.neo4j.kernel.api.schema_new.index.NewIndexDescriptor;
 import org.neo4j.kernel.api.schema_new.index.NewIndexDescriptorFactory;
 
-public class UniquenessConstraintDescriptor extends ConstraintDescriptor
+public class UniquenessConstraintDescriptor extends ConstraintDescriptor implements LabelSchemaDescriptor.Supplier
 {
     private final LabelSchemaDescriptor schema;
 

@@ -96,4 +96,9 @@ public class LabelSchemaDescriptor implements SchemaDescriptor
     {
         return "LabelSchemaDescriptor( " + userDescription( SchemaUtil.idTokenNameLookup ) + " )";
     }
+
+    public interface Supplier extends SchemaDescriptor.Supplier
+    {
+        LabelSchemaDescriptor schema();
+    }
 }
