@@ -31,6 +31,7 @@ import java.util.Map;
 import java.util.Set;
 import java.util.concurrent.TimeUnit;
 import java.util.concurrent.atomic.AtomicInteger;
+import java.util.concurrent.atomic.AtomicReference;
 
 import org.neo4j.graphdb.GraphDatabaseService;
 import org.neo4j.graphdb.Label;
@@ -49,6 +50,7 @@ import org.neo4j.test.DatabaseRule;
 import org.neo4j.test.ImpermanentDatabaseRule;
 import org.neo4j.test.TestLabels;
 
+import static org.hamcrest.CoreMatchers.containsString;
 import static org.hamcrest.Matchers.is;
 import static org.junit.Assert.assertEquals;
 import static org.junit.Assert.assertFalse;
@@ -57,6 +59,9 @@ import static org.junit.Assert.assertNull;
 import static org.junit.Assert.assertThat;
 import static org.junit.Assert.assertTrue;
 import static org.junit.Assert.fail;
+
+import static java.lang.String.format;
+
 import static org.neo4j.graphdb.Label.label;
 import static org.neo4j.graphdb.Neo4jMatchers.hasProperty;
 import static org.neo4j.graphdb.Neo4jMatchers.inTx;
@@ -1075,6 +1080,47 @@ public class TestTransactionEvents
             node.setProperty( "five", "Six" );
             tx.success();
         }
+    }
+
+    @Test
+    public void shouldAllowToStringOnCreatedRelationshipInAfterCommit() throws Exception
+    {
+        // GIVEN
+        Relationship relationship;
+        Node startNode, endNode;
+        RelationshipType type = MyRelTypes.TEST;
+        try ( Transaction tx = dbRule.beginTx() )
+        {
+            startNode = dbRule.createNode();
+            endNode = dbRule.createNode();
+            relationship = startNode.createRelationshipTo( endNode, type );
+            tx.success();
+        }
+
+        // WHEN
+        AtomicReference<String> deletedToString = new AtomicReference<>();
+        dbRule.registerTransactionEventHandler( new TransactionEventHandler.Adapter<Object>()
+        {
+            @Override
+            public void afterCommit( TransactionData data, Object state )
+            {
+                for ( Relationship relationship : data.deletedRelationships() )
+                {
+                    deletedToString.set( relationship.toString() );
+                }
+            }
+        } );
+        try ( Transaction tx = dbRule.beginTx() )
+        {
+            relationship.delete();
+            tx.success();
+        }
+
+        // THEN
+        assertNotNull( deletedToString.get() );
+        assertThat( deletedToString.get(), containsString( type.name() ) );
+        assertThat( deletedToString.get(), containsString( format( "(%d)", startNode.getId() ) ) );
+        assertThat( deletedToString.get(), containsString( format( "(%d)", endNode.getId() ) ) );
     }
 
     private Node createNode( String... properties )
