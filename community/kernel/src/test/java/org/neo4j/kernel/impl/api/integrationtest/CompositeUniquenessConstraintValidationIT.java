@@ -19,6 +19,9 @@
  */
 package org.neo4j.kernel.impl.api.integrationtest;
 
+import org.junit.After;
+import org.junit.Before;
+import org.junit.ClassRule;
 import org.junit.Rule;
 import org.junit.Test;
 import org.junit.rules.TestName;
@@ -29,34 +32,41 @@ import java.io.IOException;
 import java.util.Arrays;
 import java.util.Map;
 
+import org.neo4j.graphdb.Node;
+import org.neo4j.graphdb.Transaction;
 import org.neo4j.helpers.collection.Iterators;
 import org.neo4j.helpers.collection.MapUtil;
+import org.neo4j.kernel.api.KernelAPI;
+import org.neo4j.kernel.api.KernelTransaction;
 import org.neo4j.kernel.api.Statement;
-import org.neo4j.kernel.api.StatementTokenNameLookup;
-import org.neo4j.kernel.api.TokenNameLookup;
 import org.neo4j.kernel.api.exceptions.KernelException;
+import org.neo4j.kernel.api.exceptions.TransactionFailureException;
 import org.neo4j.kernel.api.exceptions.schema.IllegalTokenNameException;
 import org.neo4j.kernel.api.exceptions.schema.TooManyLabelsException;
 import org.neo4j.kernel.api.exceptions.schema.UniquePropertyValueValidationException;
-import org.neo4j.kernel.api.schema_new.index.NewIndexDescriptorFactory;
+import org.neo4j.kernel.api.schema_new.constaints.ConstraintDescriptorFactory;
 import org.neo4j.kernel.api.security.SecurityContext;
+import org.neo4j.kernel.internal.GraphDatabaseAPI;
+import org.neo4j.test.rule.ImpermanentDatabaseRule;
 
 import static org.junit.Assert.assertEquals;
 import static org.junit.Assert.assertNotEquals;
 import static org.junit.Assert.assertThat;
 import static org.junit.Assert.fail;
-import static org.neo4j.kernel.api.CompositeIndexingIT.LABEL_ID;
 import static org.neo4j.kernel.api.properties.Property.property;
 import static org.neo4j.kernel.api.schema_new.SchemaDescriptorFactory.forLabel;
 import static org.neo4j.test.assertion.Assert.assertException;
 
 @RunWith( Parameterized.class )
-public class CompositeUniquenessConstraintValidationIT extends KernelIntegrationTest
+public class CompositeUniquenessConstraintValidationIT
 {
+    @ClassRule
+    public static ImpermanentDatabaseRule dbRule = new ImpermanentDatabaseRule();
+
     @Rule
     public final TestName testName = new TestName();
 
-    @Parameterized.Parameters( name = "Index: {0}" )
+    @Parameterized.Parameters( name = "Collide ({0},{1}) with ({2},{3})" )
     public static Iterable<Object[]> parameterValues() throws IOException
     {
         return Arrays.<Object[]>asList(
@@ -70,10 +80,9 @@ public class CompositeUniquenessConstraintValidationIT extends KernelIntegration
         );
     }
 
-    private static final String prop1 = "key1";
-    private static final String prop2 = "key2";
-    private static final String label = "Label1";
-    private Statement statement;
+    private static final int label = 1;
+    private static final int prop1 = 2;
+    private static final int prop2 = 3;
 
     private final Object valueA1;
     private final Object valueA2;
@@ -89,11 +98,50 @@ public class CompositeUniquenessConstraintValidationIT extends KernelIntegration
         this.valueB2 = valueB2;
     }
 
+    private KernelTransaction transaction;
+    private Statement statement;
+    private GraphDatabaseAPI graphDatabaseAPI;
+    protected KernelAPI kernel;
+
+    @Before
+    public void setup() throws Exception
+    {
+        graphDatabaseAPI = dbRule.getGraphDatabaseAPI();
+        kernel = graphDatabaseAPI.getDependencyResolver().resolveDependency( KernelAPI.class );
+
+        newTransaction();
+        statement.schemaWriteOperations().uniquePropertyConstraintCreate( forLabel( label, prop1, prop2 ) );
+        commit();
+    }
+
+    @After
+    public void clean() throws Exception
+    {
+        if ( transaction != null )
+        {
+            transaction.close();
+        }
+
+        newTransaction();
+        statement.schemaWriteOperations().constraintDrop(
+                ConstraintDescriptorFactory.uniqueForLabel( label, prop1, prop2 ) );
+        commit();
+
+        try ( Transaction tx = graphDatabaseAPI.beginTx() )
+        {
+            for ( Node node : graphDatabaseAPI.getAllNodes() )
+            {
+                node.delete();
+            }
+            tx.success();
+        }
+    }
+
     @Test
     public void shouldEnforceOnSetProperty() throws Exception
     {
         // given
-        constrainedNode( label, MapUtil.map( prop1, valueA1, prop2, valueA2 ) );
+        createNode( label, MapUtil.genericMap( prop1, valueA1, prop2, valueA2 ) );
 
         // when
         newTransaction();
@@ -103,13 +151,14 @@ public class CompositeUniquenessConstraintValidationIT extends KernelIntegration
             setProperty( node, prop2, valueB2 ); // boom!
 
         }, UniquePropertyValueValidationException.class, "" );
+        commit();
     }
 
     @Test
     public void shouldEnforceOnSetLabel() throws Exception
     {
         // given
-        constrainedNode( label, MapUtil.map( prop1, valueA1, prop2, valueA2 ) );
+        createNode( label, MapUtil.genericMap( prop1, valueA1, prop2, valueA2 ) );
 
         // when
         newTransaction();
@@ -120,14 +169,12 @@ public class CompositeUniquenessConstraintValidationIT extends KernelIntegration
             addLabel( node, label ); // boom again
 
         }, UniquePropertyValueValidationException.class, "" );
+        commit();
     }
 
     @Test
     public void shouldEnforceOnSetPropertyInTx() throws Exception
     {
-        // given
-        createConstraint( label, prop1, prop2 );
-
         // when
         newTransaction();
         long nodeA = createLabeledNode( label );
@@ -140,14 +187,12 @@ public class CompositeUniquenessConstraintValidationIT extends KernelIntegration
             setProperty( nodeB, prop2, valueB2 ); // boom!
 
         }, UniquePropertyValueValidationException.class, "" );
+        commit();
     }
 
     @Test
     public void shouldEnforceOnSetLabelInTx() throws Exception
     {
-        // given
-        createConstraint( label, prop1, prop2 );
-
         // when
         newTransaction();
         long nodeA = createLabeledNode( label );
@@ -161,24 +206,35 @@ public class CompositeUniquenessConstraintValidationIT extends KernelIntegration
             addLabel( nodeB, label ); // boom again
 
         }, UniquePropertyValueValidationException.class, "" );
+        commit();
     }
 
     private void newTransaction() throws KernelException
     {
-        statement = statementInNewTransaction( SecurityContext.AUTH_DISABLED );
+        transaction = kernel.newTransaction( KernelTransaction.Type.implicit, SecurityContext.AUTH_DISABLED );
+        statement = transaction.acquireStatement();
     }
 
-    private long createLabeledNode( String label ) throws KernelException
+    protected void commit() throws TransactionFailureException
+    {
+        statement.close();
+        statement = null;
+        transaction.success();
+        try
+        {
+            transaction.close();
+        }
+        finally
+        {
+            transaction = null;
+        }
+    }
+
+    private long createLabeledNode( int labelId ) throws KernelException
     {
         long node = statement.dataWriteOperations().nodeCreate();
-        int labelId = statement.tokenWriteOperations().labelGetOrCreateForName( label );
         statement.dataWriteOperations().nodeAddLabel( node, labelId );
         return node;
-    }
-
-    private void addLabel( long nodeId, String label ) throws KernelException
-    {
-        addLabel( nodeId, getLabelId( label ) );
     }
 
     private void addLabel( long nodeId, int labelId ) throws KernelException
@@ -191,64 +247,22 @@ public class CompositeUniquenessConstraintValidationIT extends KernelIntegration
         statement.dataWriteOperations().nodeSetProperty( nodeId, property( propertyId, value ) );
     }
 
-    private void setProperty( long nodeId, String propertyName, Object value ) throws KernelException
-    {
-        statement.dataWriteOperations().nodeSetProperty( nodeId, property( getPropertyId( propertyName ), value ) );
-    }
-
     private long createNode() throws KernelException
     {
         return statement.dataWriteOperations().nodeCreate();
     }
 
-    private long constrainedNode( String label, Map<String,Object> properties )
+    private long createNode( int labelId, Map<Integer,Object> properties )
             throws KernelException
     {
         newTransaction();
-        int labelId = getLabelId( label );
         long nodeId = createNode();
         addLabel( nodeId, labelId );
-        for ( Map.Entry<String,Object> entry : properties.entrySet() )
+        for ( Map.Entry<Integer,Object> entry : properties.entrySet() )
         {
-            int propertyId = getPropertyId( entry.getKey() );
-            setProperty( nodeId, propertyId, entry.getValue() );
+            setProperty( nodeId, entry.getKey(), entry.getValue() );
         }
         commit();
-
-        createConstraint( label, properties.keySet().toArray( new String[0] ) );
         return nodeId;
-    }
-
-    private void createConstraint( String label, String... propertyNames ) throws KernelException
-    {
-        newTransaction();
-        int labelId = getLabelId( label );
-        int[] propertyIds =
-                Arrays.stream( propertyNames )
-                    .mapToInt( this::getPropertyId )
-                    .toArray();
-
-        commit();
-
-        newTransaction();
-        statement.schemaWriteOperations().uniquePropertyConstraintCreate( forLabel( labelId, propertyIds ) );
-        commit();
-    }
-
-    private int getLabelId( String label ) throws IllegalTokenNameException, TooManyLabelsException
-    {
-        return statement.tokenWriteOperations().labelGetOrCreateForName( label );
-    }
-
-    private int getPropertyId( String propertyName )
-    {
-        try
-        {
-            return statement.tokenWriteOperations().propertyKeyGetOrCreateForName( propertyName );
-        }
-        catch ( IllegalTokenNameException e )
-        {
-            throw new RuntimeException( e );
-        }
     }
 }
