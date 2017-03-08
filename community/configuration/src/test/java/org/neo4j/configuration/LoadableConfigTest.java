@@ -32,27 +32,39 @@ import org.neo4j.helpers.collection.MapUtil;
 
 import static java.util.Collections.emptyMap;
 import static org.junit.Assert.assertEquals;
+import static org.junit.Assert.assertFalse;
+import static org.junit.Assert.assertTrue;
 
 public class LoadableConfigTest
 {
     @Test
     public void getConfigOptions() throws Exception
     {
-        Map<String,String> config = MapUtil.stringMap( "myInt", "123", "myString", "bah" );
+        Map<String,String> config = MapUtil.stringMap( "myInt", "123", "myString", "bah", "myOldString", "moo" );
 
         TestConfig testSettings = new TestConfig();
 
         List<ConfigOptions> options = testSettings.getConfigOptions();
 
-        assertEquals( 2, options.size() );
+        assertEquals( 3, options.size() );
 
         assertEquals( 1, options.get( 0 ).settingGroup().values( emptyMap() ).get( "myInt" ) );
         assertEquals( 123, options.get( 0 ).settingGroup().values( config ).get( "myInt" ) );
         assertEquals( Optional.empty(), options.get( 0 ).description() );
+        assertFalse( options.get(0).deprecated() );
+        assertEquals( Optional.empty(), options.get( 0 ).replacement() );
 
         assertEquals( "bob", options.get( 1 ).settingGroup().values( emptyMap() ).get( "myString" ) );
         assertEquals( "bah", options.get( 1 ).settingGroup().values( config ).get( "myString" ) );
         assertEquals( "A string setting", options.get( 1 ).description().get() );
+        assertFalse( options.get(1).deprecated() );
+        assertEquals( Optional.empty(), options.get( 1 ).replacement() );
+
+        assertEquals( "tim", options.get( 2 ).settingGroup().values( emptyMap() ).get( "myOldString" ) );
+        assertEquals( "moo", options.get( 2 ).settingGroup().values( config ).get( "myOldString" ) );
+        assertEquals( "A deprecated string setting", options.get( 2 ).description().get() );
+        assertTrue( options.get(2).deprecated() );
+        assertEquals( "myString", options.get( 2 ).replacement().get() );
     }
 
     private static class TestConfig implements LoadableConfig
@@ -128,6 +140,49 @@ public class LoadableConfigTest
             public String getDefaultValue()
             {
                 return "bob";
+            }
+
+            @Override
+            public String from( Configuration configuration )
+            {
+                return configuration.get( this );
+            }
+        };
+
+        @SuppressWarnings( "unused" )
+        @Description( "A deprecated string setting" )
+        @Deprecated
+        @ReplacedBy( "myString" )
+        public static final Setting<String> oldString = new Setting<String>()
+        {
+
+            @Override
+            public String apply( Function<String,String> provider )
+            {
+                String val = provider.apply( name() );
+                if ( val == null )
+                {
+                    val = getDefaultValue();
+                }
+                return val;
+            }
+
+            @Override
+            public String name()
+            {
+                return "myOldString";
+            }
+
+            @Override
+            public void withScope( Function<String,String> function )
+            {
+
+            }
+
+            @Override
+            public String getDefaultValue()
+            {
+                return "tim";
             }
 
             @Override

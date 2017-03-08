@@ -35,13 +35,18 @@ public class ConfigOptions
     private final SettingGroup<?> settingGroup;
     private final Optional<String> description;
     private final Optional<String> documentedDefaultValue;
+    private final boolean deprecated;
+    private final Optional<String> replacement;
 
     public ConfigOptions( @Nonnull SettingGroup<?> settingGroup, @Nonnull Optional<String> description,
-            Optional<String> documentedDefaultValue )
+            @Nonnull Optional<String> documentedDefaultValue, boolean deprecated,
+            @Nonnull Optional<String> replacement )
     {
         this.settingGroup = settingGroup;
         this.description = description;
         this.documentedDefaultValue = documentedDefaultValue;
+        this.deprecated = deprecated;
+        this.replacement = replacement;
     }
 
     @Nonnull
@@ -65,7 +70,19 @@ public class ConfigOptions
     public List<ConfigValue> asConfigValues( @Nonnull Map<String,String> validConfig )
     {
         return settingGroup.values( validConfig ).entrySet().stream()
-                .map( val -> new ConfigValue( val.getKey(), description(), Optional.ofNullable( val.getValue() ) ) )
+                .map( val -> new ConfigValue( val.getKey(), description(), Optional.ofNullable( val.getValue() ),
+                        deprecated, replacement ) )
                 .collect( Collectors.toList() );
+    }
+
+    public boolean deprecated()
+    {
+        return deprecated;
+    }
+
+    @Nonnull
+    public Optional<String> replacement()
+    {
+        return replacement;
     }
 }

@@ -416,14 +416,36 @@ public class Config implements DiagnosticsProvider, Configuration
         List<SettingValidator> settingValidators = configOptions.stream()
                 .map( ConfigOptions::settingGroup )
                 .collect( Collectors.toList() );
+        // Validate settings
         validSettings = new IndividualSettingsValidator( warnOnUnknownSettings )
                 .validate( settingValidators, validSettings, log, configFile.isPresent() );
         for ( ConfigurationValidator validator : validators )
         {
             validSettings = validator.validate( settingValidators, validSettings, log, configFile.isPresent() );
         }
+
         params.clear();
         params.putAll( validSettings );
+
+        // Warn about deprecations
+        if ( configFile.isPresent() ) {
+            configOptions.stream()
+                    .map( it -> it.asConfigValues( params ) )
+                    .flatMap( List::stream )
+                    .filter( c -> params.containsKey( c.name() ) )
+                    .filter( ConfigValue::deprecated )
+                    .forEach( c ->
+                    {
+                        if ( c.replacement().isPresent() )
+                        {
+                            log.warn( "%s is deprecated. Replaced by %s", c.name(), c.replacement().get() );
+                        }
+                        else
+                        {
+                            log.warn( "%s is deprecated.", c.name() );
+                        }
+                    } );
+        }
     }
 
     @Nonnull

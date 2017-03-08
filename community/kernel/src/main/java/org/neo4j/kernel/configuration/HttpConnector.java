@@ -20,6 +20,7 @@
 package org.neo4j.kernel.configuration;
 
 import org.neo4j.configuration.Description;
+import org.neo4j.configuration.ReplacedBy;
 import org.neo4j.graphdb.config.Setting;
 import org.neo4j.helpers.AdvertisedSocketAddress;
 import org.neo4j.helpers.ListenSocketAddress;
@@ -42,6 +43,7 @@ public class HttpConnector extends Connector
     @Description( "Address the connector should bind to. " +
             "This setting is deprecated and will be replaced by `+listen_address+`" )
     @Deprecated
+    @ReplacedBy( "dbms.connector.X.listen_address" )
     public final Setting<ListenSocketAddress> address;
 
     @Description( "Address the connector should bind to" )
