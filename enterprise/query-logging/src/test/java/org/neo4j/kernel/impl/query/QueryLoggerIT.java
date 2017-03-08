@@ -59,6 +59,7 @@ import org.neo4j.test.rule.fs.DefaultFileSystemRule;
 
 import static org.hamcrest.Matchers.containsString;
 import static org.hamcrest.Matchers.endsWith;
+import static org.hamcrest.Matchers.greaterThanOrEqualTo;
 import static org.hamcrest.Matchers.hasSize;
 import static org.hamcrest.Matchers.not;
 import static org.junit.Assert.assertEquals;
@@ -313,6 +314,9 @@ public class QueryLoggerIT
         database.shutdown();
 
         File[] queryLogs = fileSystem.get().listFiles( logsDirectory, ( dir, name ) -> name.startsWith( "query.log" ) );
+
+        assertThat( "Expect to have more then one query log file.", queryLogs.length, greaterThanOrEqualTo( 2 ) );
+
         List<String> loggedQueries = Arrays.stream( queryLogs )
                                         .map( this::readAllLinesSilent )
                                         .flatMap( Collection::stream )
