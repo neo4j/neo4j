@@ -26,8 +26,7 @@ import org.neo4j.configuration.LoadableConfig;
 import org.neo4j.graphdb.config.Setting;
 import org.neo4j.helpers.AdvertisedSocketAddress;
 import org.neo4j.helpers.ListenSocketAddress;
-import org.neo4j.kernel.configuration.Internal;
-import org.neo4j.kernel.configuration.Settings;
+import org.neo4j.configuration.Internal;
 
 import static org.neo4j.kernel.configuration.Settings.ADVERTISED_SOCKET_ADDRESS;
 import static org.neo4j.kernel.configuration.Settings.BOOLEAN;

@@ -32,7 +32,7 @@ import org.neo4j.helpers.Exceptions;
 import org.neo4j.kernel.AvailabilityGuard;
 import org.neo4j.kernel.NeoStoreDataSource;
 import org.neo4j.kernel.configuration.Config;
-import org.neo4j.kernel.configuration.Internal;
+import org.neo4j.configuration.Internal;
 import org.neo4j.kernel.configuration.Settings;
 import org.neo4j.kernel.extension.KernelExtensionFactory;
 import org.neo4j.kernel.impl.coreapi.CoreAPIAvailabilityGuard;
