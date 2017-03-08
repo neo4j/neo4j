@@ -425,24 +425,6 @@ public class KernelTransactionsTest
     }
 
     @Test
-    public void exceptionWhenStartingNewTransactionOnNonAvailableInstance() throws Throwable
-    {
-        KernelTransactions kernelTransactions = newKernelTransactions();
-        SecurityContext securityContext = mock( SecurityContext.class );
-
-        availabilityGuard.require( AvailabilityGuard.availabilityRequirement( "Perform store copy." ) );
-
-        t2.execute( (OtherThreadExecutor.WorkerCommand<Void,Void>) state ->
-        {
-            stopKernelTransactions( kernelTransactions );
-            return null;
-        } );
-
-        expectedException.expect( DatabaseUnavailableException.class );
-        kernelTransactions.newInstance( KernelTransaction.Type.explicit, securityContext, 0L );
-    }
-
-    @Test
     public void exceptionWhenStartingNewTransactionOnStoppedKernelTransactions() throws Throwable
     {
         KernelTransactions kernelTransactions = newKernelTransactions();

@@ -305,10 +305,6 @@ public class KernelTransactions extends LifecycleAdapter implements Supplier<Ker
         {
             throw new DatabaseShutdownException();
         }
-        if ( !availabilityGuard.isAvailable() )
-        {
-            throw new DatabaseUnavailableException();
-        }
         if ( stopped )
         {
             throw new IllegalStateException( "Can't start new transaction with stopped " + getClass() );
