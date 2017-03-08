@@ -229,12 +229,6 @@ public class CodeGenerationTest
     }
 
     @Test
-    public void temp() throws Throwable
-    {
-        assertMethodReturningField( Map.Entry[].class, Collections.singletonMap( 42, "42" ).entrySet().toArray( new Map.Entry[0] ) );
-    }
-
-    @Test
     public void shouldGenerateMethodReturningArrayValue() throws Throwable
     {
         // given
