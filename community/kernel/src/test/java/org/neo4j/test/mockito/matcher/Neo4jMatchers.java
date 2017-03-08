@@ -619,9 +619,9 @@ public class Neo4jMatchers
         };
     }
 
-    public static IndexDefinition createIndex( GraphDatabaseService beansAPI, Label label, String... property )
+    public static IndexDefinition createIndex( GraphDatabaseService beansAPI, Label label, String... properties )
     {
-        IndexDefinition indexDef = createIndexNoWait( beansAPI, label, property );
+        IndexDefinition indexDef = createIndexNoWait( beansAPI, label, properties );
 
         waitForIndex( beansAPI, indexDef );
         return indexDef;
