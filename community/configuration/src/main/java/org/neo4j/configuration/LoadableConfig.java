@@ -88,8 +88,11 @@ public interface LoadableConfig
                         replacement = Optional.of( replacedByAnnotation.value() );
                     }
 
+                    final Internal internalAnnotation = f.getAnnotation( Internal.class );
+                    final boolean internal = internalAnnotation != null;
+
                     configOptions.add( new ConfigOptions( (SettingGroup) publicSetting, description,
-                            documentedDefaultValue, deprecated, replacement ) );
+                            documentedDefaultValue, internal, deprecated, replacement ) );
                 }
             }
             catch ( IllegalAccessException ignored )

@@ -35,16 +35,18 @@ public class ConfigOptions
     private final SettingGroup<?> settingGroup;
     private final Optional<String> description;
     private final Optional<String> documentedDefaultValue;
+    private final boolean internal;
     private final boolean deprecated;
     private final Optional<String> replacement;
 
     public ConfigOptions( @Nonnull SettingGroup<?> settingGroup, @Nonnull Optional<String> description,
-            @Nonnull Optional<String> documentedDefaultValue, boolean deprecated,
+            @Nonnull Optional<String> documentedDefaultValue, boolean internal, boolean deprecated,
             @Nonnull Optional<String> replacement )
     {
         this.settingGroup = settingGroup;
         this.description = description;
         this.documentedDefaultValue = documentedDefaultValue;
+        this.internal = internal;
         this.deprecated = deprecated;
         this.replacement = replacement;
     }
@@ -71,7 +73,7 @@ public class ConfigOptions
     {
         return settingGroup.values( validConfig ).entrySet().stream()
                 .map( val -> new ConfigValue( val.getKey(), description(), Optional.ofNullable( val.getValue() ),
-                        false, deprecated, replacement ) )
+                        internal, deprecated, replacement ) )
                 .collect( Collectors.toList() );
     }
 

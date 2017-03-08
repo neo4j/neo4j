@@ -71,7 +71,7 @@ public class ConfigOptionsTest
     @Before
     public void setup()
     {
-        this.configOptions = new ConfigOptions( setting, Optional.empty(), Optional.empty(), false, Optional.empty() );
+        this.configOptions = new ConfigOptions( setting, Optional.empty(), Optional.empty(), false, false, Optional.empty() );
     }
 
     @Test
