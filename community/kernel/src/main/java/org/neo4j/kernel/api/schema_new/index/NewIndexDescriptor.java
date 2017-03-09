@@ -125,8 +125,8 @@ public class NewIndexDescriptor implements LabelSchemaDescriptor.Supplier
     {
         if ( o != null && o instanceof NewIndexDescriptor )
         {
-            NewIndexDescriptor that = (NewIndexDescriptor)o;
-            return this.type() == that.type() && this.schema().equals( that.schema() );
+            NewIndexDescriptor that = (NewIndexDescriptor) o;
+            return this.schema().equals( that.schema() );
         }
         return false;
     }
@@ -134,7 +134,7 @@ public class NewIndexDescriptor implements LabelSchemaDescriptor.Supplier
     @Override
     public int hashCode()
     {
-        return type.hashCode() & schema.hashCode();
+        return schema.hashCode();
     }
 
     @Override

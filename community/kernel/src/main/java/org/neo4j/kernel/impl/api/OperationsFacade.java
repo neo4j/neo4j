@@ -578,7 +578,8 @@ public class OperationsFacade
         NewIndexDescriptor indexDescriptor = schemaRead().indexGetForLabelAndPropertyKey( statement, descriptor );
         if ( indexDescriptor == null )
         {
-            throw new SchemaRuleNotFoundException( SchemaRule.Kind.INDEX_RULE, SchemaBoundary.map( descriptor ) );
+            throw new SchemaRuleNotFoundException( SchemaRule.Kind.INDEX_RULE,
+                    SchemaDescriptorFactory.forLabel( descriptor.getLabelId(), descriptor.getPropertyKeyIds() ) );
         }
         return indexDescriptor;
     }
@@ -623,7 +624,7 @@ public class OperationsFacade
         if ( null == result )
         {
             throw new SchemaRuleNotFoundException( SchemaRule.Kind.CONSTRAINT_INDEX_RULE,
-                    SchemaBoundary.map( descriptor ) );
+                    SchemaDescriptorFactory.forLabel( descriptor.getLabelId(), descriptor.getPropertyKeyId() ) );
         }
 
         return result;
