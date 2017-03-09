@@ -23,8 +23,9 @@ import org.junit.Test;
 
 import java.io.IOException;
 
-import org.neo4j.kernel.api.schema.NodePropertyDescriptor;
 import org.neo4j.kernel.api.constraints.UniquenessConstraint;
+import org.neo4j.kernel.api.schema_new.LabelSchemaDescriptor;
+import org.neo4j.kernel.api.schema_new.SchemaDescriptorFactory;
 import org.neo4j.kernel.api.schema_new.index.NewIndexDescriptorFactory;
 
 import static org.junit.Assert.assertEquals;
@@ -72,8 +73,9 @@ public class DbStructureArgumentFormatterTest
     @Test
     public void shouldFormatUniquenessConstraints()
     {
+        final int[] propertyKeyIds = new int[]{42};
         assertEquals( "new UniquenessConstraint( new NodePropertyDescriptor( 23, 42 ) )",
-                formatArgument( new UniquenessConstraint( new NodePropertyDescriptor( 23, 42 ) ) ) );
+                formatArgument( new UniquenessConstraint( SchemaDescriptorFactory.forLabel( 23, propertyKeyIds ) ) ) );
     }
 
     private String formatArgument( Object arg )

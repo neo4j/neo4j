@@ -45,7 +45,6 @@ import org.neo4j.kernel.api.TokenWriteOperations;
 import org.neo4j.kernel.api.constraints.NodePropertyConstraint;
 import org.neo4j.kernel.api.constraints.NodePropertyExistenceConstraint;
 import org.neo4j.kernel.api.constraints.PropertyConstraint;
-import org.neo4j.kernel.api.constraints.RelationshipPropertyConstraint;
 import org.neo4j.kernel.api.constraints.RelationshipPropertyExistenceConstraint;
 import org.neo4j.kernel.api.constraints.UniquenessConstraint;
 import org.neo4j.kernel.api.exceptions.InvalidTransactionTypeKernelException;
@@ -63,9 +62,8 @@ import org.neo4j.kernel.api.exceptions.schema.RepeatedPropertyInCompositeSchemaE
 import org.neo4j.kernel.api.exceptions.schema.SchemaRuleNotFoundException;
 import org.neo4j.kernel.api.exceptions.schema.TooManyLabelsException;
 import org.neo4j.kernel.api.index.InternalIndexState;
-import org.neo4j.kernel.api.schema.NodeMultiPropertyDescriptor;
-import org.neo4j.kernel.api.schema.RelationshipPropertyDescriptor;
 import org.neo4j.kernel.api.schema_new.LabelSchemaDescriptor;
+import org.neo4j.kernel.api.schema_new.RelationTypeSchemaDescriptor;
 import org.neo4j.kernel.api.schema_new.SchemaDescriptorFactory;
 import org.neo4j.kernel.api.schema_new.constaints.ConstraintBoundary;
 import org.neo4j.kernel.api.schema_new.constaints.ConstraintDescriptor;
@@ -327,11 +325,10 @@ public class SchemaImpl implements Schema
             throws SchemaRuleNotFoundException
     {
         int labelId = readOperations.labelGetForName( index.getLabel().name() );
-        int[] propertyKeyIds = PropertyNameUtils.getPropertyKeyIds( readOperations, index.getPropertyKeys() );
+        int[] propertyKeyIds = PropertyNameUtils.getPropertyIds( readOperations, index.getPropertyKeys() );
         assertValidLabel( index.getLabel(), labelId );
         assertValidProperties( index.getPropertyKeys(), propertyKeyIds );
-        return readOperations.indexGetForLabelAndPropertyKey(
-                new NodeMultiPropertyDescriptor( labelId, propertyKeyIds ) );
+        return readOperations.indexGetForLabelAndPropertyKey( SchemaDescriptorFactory.forLabel( labelId, propertyKeyIds ) );
     }
 
     private static void assertValidLabel( Label label, int labelId )
@@ -397,10 +394,10 @@ public class SchemaImpl implements Schema
         else if ( constraint instanceof RelationshipPropertyExistenceConstraint )
         {
             StatementTokenNameLookup lookup = new StatementTokenNameLookup( readOperations );
-            RelationshipPropertyDescriptor descriptor = ((RelationshipPropertyConstraint) constraint).descriptor();
+            RelationTypeSchemaDescriptor descriptor = (RelationTypeSchemaDescriptor) constraint.descriptor();
             return new RelationshipPropertyExistenceConstraintDefinition( actions,
-                    RelationshipType.withName( lookup.relationshipTypeGetName( descriptor.getRelationshipTypeId() ) ),
-                    lookup.propertyKeyGetName( descriptor.getPropertyKeyId() ) );
+                    RelationshipType.withName( lookup.relationshipTypeGetName( descriptor.getRelTypeId() ) ),
+                    lookup.propertyKeyGetName( descriptor.getPropertyId() ) );
         }
         throw new IllegalArgumentException( "Unknown constraint " + constraint );
     }
@@ -585,7 +582,7 @@ public class SchemaImpl implements Schema
                 try
                 {
                     int labelId = statement.readOperations().labelGetForName( label.name() );
-                    int[] propertyKeyIds = PropertyNameUtils.getPropertyKeyIds( statement.readOperations(), properties );
+                    int[] propertyKeyIds = PropertyNameUtils.getPropertyIds( statement.readOperations(), properties );
                     statement.schemaWriteOperations().constraintDrop(
                             ConstraintDescriptorFactory.uniqueForLabel( labelId, propertyKeyIds ) );
                 }
@@ -609,7 +606,7 @@ public class SchemaImpl implements Schema
                 try
                 {
                     int labelId = statement.readOperations().labelGetForName( label.name() );
-                    int[] propertyKeyIds = PropertyNameUtils.getPropertyKeyIds( statement.readOperations(), properties );
+                    int[] propertyKeyIds = PropertyNameUtils.getPropertyIds( statement.readOperations(), properties );
                     statement.schemaWriteOperations().constraintDrop(
                             ConstraintDescriptorFactory.existsForLabel( labelId, propertyKeyIds ) );
                 }

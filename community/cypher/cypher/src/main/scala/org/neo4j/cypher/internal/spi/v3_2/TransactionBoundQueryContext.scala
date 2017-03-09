@@ -53,7 +53,8 @@ import org.neo4j.kernel.api.exceptions.schema.{AlreadyConstrainedException, Alre
 import org.neo4j.kernel.api.index.InternalIndexState
 import org.neo4j.kernel.api.proc.CallableUserAggregationFunction.Aggregator
 import org.neo4j.kernel.api.proc.{QualifiedName => KernelQualifiedName}
-import org.neo4j.kernel.api.schema.NodePropertyDescriptor
+import org.neo4j.kernel.api.schema_new.IndexQuery
+import org.neo4j.kernel.api.schema_new.SchemaDescriptorFactory
 import org.neo4j.kernel.api.schema_new.constaints.ConstraintDescriptorFactory
 import org.neo4j.kernel.api.schema_new.{IndexQuery, SchemaDescriptorFactory}
 import org.neo4j.kernel.impl.core.NodeManager
@@ -470,7 +471,7 @@ final class TransactionBoundQueryContext(val transactionalContext: Transactional
       IdempotentResult(transactionalContext.statement.schemaWriteOperations().indexCreate( descriptor ))
     } catch {
       case _: AlreadyIndexedException =>
-        val indexDescriptor = transactionalContext.statement.readOperations().indexGetForLabelAndPropertyKey(new NodePropertyDescriptor( descriptor.label, descriptor.property))
+        val indexDescriptor = transactionalContext.statement.readOperations().indexGetForLabelAndPropertyKey (SchemaDescriptorFactory.forLabel(descriptor.getLabelId, descriptor.getPropertyId));
         if(transactionalContext.statement.readOperations().indexGetState(indexDescriptor) == InternalIndexState.FAILED)
           throw new FailedIndexException(indexDescriptor.userDescription(tokenNameLookup))
         IdempotentResult(indexDescriptor, wasCreated = false)

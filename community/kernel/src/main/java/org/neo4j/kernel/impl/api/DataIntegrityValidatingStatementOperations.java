@@ -36,10 +36,8 @@ import org.neo4j.kernel.api.exceptions.schema.NoSuchIndexException;
 import org.neo4j.kernel.api.exceptions.schema.RepeatedPropertyInCompositeSchemaException;
 import org.neo4j.kernel.api.exceptions.schema.SchemaKernelException.OperationContext;
 import org.neo4j.kernel.api.exceptions.schema.TooManyLabelsException;
-import org.neo4j.kernel.api.schema.NodePropertyDescriptor;
 import org.neo4j.kernel.api.schema_new.LabelSchemaDescriptor;
 import org.neo4j.kernel.api.schema_new.RelationTypeSchemaDescriptor;
-import org.neo4j.kernel.api.schema_new.SchemaBoundary;
 import org.neo4j.kernel.api.schema_new.SchemaDescriptor;
 import org.neo4j.kernel.api.schema_new.constaints.ConstraintBoundary;
 import org.neo4j.kernel.api.schema_new.constaints.ConstraintDescriptor;
@@ -118,7 +116,7 @@ public class DataIntegrityValidatingStatementOperations implements
             throws AlreadyIndexedException, AlreadyConstrainedException, RepeatedPropertyInCompositeSchemaException
     {
         assertValidDescriptor( descriptor, OperationContext.INDEX_CREATION );
-        assertIndexDoesNotExist( state, OperationContext.INDEX_CREATION, SchemaBoundary.map( descriptor ) );
+        assertIndexDoesNotExist( state, OperationContext.INDEX_CREATION, descriptor );
         return schemaWriteDelegate.indexCreate( state, descriptor );
     }
 
@@ -128,7 +126,7 @@ public class DataIntegrityValidatingStatementOperations implements
         try
         {
             NewIndexDescriptor existingIndex =
-                    schemaReadDelegate.indexGetForLabelAndPropertyKey( state, SchemaBoundary.map( index.schema() ) );
+                    schemaReadDelegate.indexGetForLabelAndPropertyKey( state, index.schema() );
 
             if ( existingIndex == null )
             {
@@ -164,7 +162,7 @@ public class DataIntegrityValidatingStatementOperations implements
         assertConstraintDoesNotExist( state, constraint );
 
         // It is not allowed to create uniqueness constraints on indexed label/property pairs
-        assertIndexDoesNotExist( state, OperationContext.CONSTRAINT_CREATION, SchemaBoundary.map( descriptor ) );
+        assertIndexDoesNotExist( state, OperationContext.CONSTRAINT_CREATION, descriptor );
 
         return schemaWriteDelegate.uniquePropertyConstraintCreate( state, descriptor );
     }
@@ -207,7 +205,7 @@ public class DataIntegrityValidatingStatementOperations implements
     }
 
     private void assertIndexDoesNotExist( KernelStatement state, OperationContext context,
-            NodePropertyDescriptor descriptor )
+            LabelSchemaDescriptor descriptor )
             throws AlreadyIndexedException, AlreadyConstrainedException
     {
         NewIndexDescriptor existingIndex = schemaReadDelegate.indexGetForLabelAndPropertyKey( state, descriptor );

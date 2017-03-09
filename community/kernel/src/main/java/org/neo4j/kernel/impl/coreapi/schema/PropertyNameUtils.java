@@ -28,7 +28,7 @@ import org.neo4j.kernel.api.TokenNameLookup;
 import org.neo4j.kernel.api.TokenWriteOperations;
 import org.neo4j.kernel.api.exceptions.PropertyKeyIdNotFoundKernelException;
 import org.neo4j.kernel.api.exceptions.schema.IllegalTokenNameException;
-import org.neo4j.kernel.api.schema.NodePropertyDescriptor;
+import org.neo4j.kernel.api.schema_new.LabelSchemaDescriptor;
 
 public class PropertyNameUtils
 {
@@ -36,11 +36,11 @@ public class PropertyNameUtils
     {
     }
 
-    public static String[] getPropertyKeys( ReadOperations readOperations, NodePropertyDescriptor descriptor )
+    public static String[] getPropertyKeys( ReadOperations readOperations, LabelSchemaDescriptor descriptor )
             throws PropertyKeyIdNotFoundKernelException
     {
         int[] propertyKeyIds =
-                descriptor.isComposite() ? descriptor.getPropertyKeyIds() : new int[]{descriptor.getPropertyKeyId()};
+                false ? descriptor.getPropertyIds() : new int[]{descriptor.getPropertyId()};
         String[] propertyKeys = new String[propertyKeyIds.length];
         for ( int i = 0; i < propertyKeyIds.length; i++ )
         {
@@ -49,10 +49,10 @@ public class PropertyNameUtils
         return propertyKeys;
     }
 
-    public static String[] getPropertyKeys( TokenNameLookup tokenNameLookup, NodePropertyDescriptor descriptor )
+    public static String[] getPropertyKeys( TokenNameLookup tokenNameLookup, LabelSchemaDescriptor descriptor )
     {
         int[] propertyKeyIds =
-                descriptor.isComposite() ? descriptor.getPropertyKeyIds() : new int[]{descriptor.getPropertyKeyId()};
+                false ? descriptor.getPropertyIds() : new int[]{descriptor.getPropertyId()};
         String[] propertyKeys = new String[propertyKeyIds.length];
         for ( int i = 0; i < propertyKeyIds.length; i++ )
         {
@@ -82,7 +82,7 @@ public class PropertyNameUtils
         return propertyKeys;
     }
 
-    public static int[] getPropertyKeyIds( ReadOperations statement, String[] propertyKeys )
+    public static int[] getPropertyIds( ReadOperations statement, String[] propertyKeys )
     {
         int[] propertyKeyIds = new int[propertyKeys.length];
         for ( int i = 0; i < propertyKeys.length; i++ )
@@ -92,7 +92,7 @@ public class PropertyNameUtils
         return propertyKeyIds;
     }
 
-    public static int[] getPropertyKeyIds( ReadOperations statement, Iterable<String> propertyKeys )
+    public static int[] getPropertyIds( ReadOperations statement, Iterable<String> propertyKeys )
     {
         return Iterables.stream( propertyKeys ).mapToInt( statement::propertyKeyGetForName ).toArray();
     }

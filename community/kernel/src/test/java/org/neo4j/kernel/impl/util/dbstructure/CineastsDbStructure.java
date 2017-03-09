@@ -20,8 +20,9 @@
 package org.neo4j.kernel.impl.util.dbstructure;
 
 import org.neo4j.helpers.collection.Visitable;
-import org.neo4j.kernel.api.schema.NodePropertyDescriptor;
 import org.neo4j.kernel.api.constraints.UniquenessConstraint;
+import org.neo4j.kernel.api.schema_new.LabelSchemaDescriptor;
+import org.neo4j.kernel.api.schema_new.SchemaDescriptorFactory;
 import org.neo4j.kernel.api.schema_new.index.NewIndexDescriptorFactory;
 
 //
@@ -83,7 +84,8 @@ implements Visitable<DbStructureVisitor>
         visitor.visitIndex( NewIndexDescriptorFactory.forLabel( 3, 5 ), ":Actor(name)", 1.0d, 44689L );
         visitor.visitIndex( NewIndexDescriptorFactory.forLabel( 4, 5 ), ":Director(name)", 1.0d, 6010L );
         visitor.visitUniqueIndex( NewIndexDescriptorFactory.forLabel( 2, 3 ), ":User(login)", 1.0d, 45L );
-        visitor.visitUniqueConstraint( new UniquenessConstraint( new NodePropertyDescriptor( 2, 3 ) ), "CONSTRAINT ON ( user:User ) ASSERT user.login IS UNIQUE" );
+        final int[] propertyKeyIds = new int[]{3};
+        visitor.visitUniqueConstraint( new UniquenessConstraint( SchemaDescriptorFactory.forLabel( 2, propertyKeyIds ) ), "CONSTRAINT ON ( user:User ) ASSERT user.login IS UNIQUE" );
         visitor.visitAllNodesCount( 63042L );
         visitor.visitNodeCount( 0, "Movie", 12862L );
         visitor.visitNodeCount( 1, "Person", 50179L );

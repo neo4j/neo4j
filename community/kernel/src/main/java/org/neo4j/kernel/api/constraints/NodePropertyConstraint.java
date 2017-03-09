@@ -20,7 +20,6 @@
 package org.neo4j.kernel.api.constraints;
 
 import org.neo4j.kernel.api.TokenNameLookup;
-import org.neo4j.kernel.api.schema.NodePropertyDescriptor;
 import org.neo4j.kernel.api.schema_new.LabelSchemaDescriptor;
 
 /**
@@ -28,9 +27,9 @@ import org.neo4j.kernel.api.schema_new.LabelSchemaDescriptor;
  */
 public abstract class NodePropertyConstraint implements PropertyConstraint
 {
-    protected final NodePropertyDescriptor descriptor;
+    protected final LabelSchemaDescriptor descriptor;
 
-    public NodePropertyConstraint( NodePropertyDescriptor descriptor )
+    public NodePropertyConstraint( LabelSchemaDescriptor descriptor )
     {
         this.descriptor = descriptor;
     }
@@ -40,21 +39,16 @@ public abstract class NodePropertyConstraint implements PropertyConstraint
         return descriptor.getLabelId();
     }
 
-    public NodePropertyDescriptor descriptor()
+    public LabelSchemaDescriptor descriptor()
     {
         return descriptor;
-    }
-
-    public boolean matches( NodePropertyDescriptor descriptor )
-    {
-        return this.descriptor.equals( descriptor );
     }
 
     public boolean matches( LabelSchemaDescriptor other )
     {
         return other != null &&
                 descriptor.getLabelId() == other.getLabelId() &&
-                descriptor.getPropertyKeyId() == other.getPropertyIds()[0];
+                descriptor.getPropertyId() == other.getPropertyIds()[0];
         // this is safe because we are replacing this class before introducing composite constraints
     }
 

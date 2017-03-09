@@ -121,7 +121,7 @@ public class MultiIndexPopulationConcurrentUpdatesIT
         labelsIdNameMap = labelsNameIdMap.entrySet()
                 .stream()
                 .collect( Collectors.toMap( Map.Entry::getValue, Map.Entry::getKey ) );
-        propertyId = getPropertyKeyId();
+        propertyId = getPropertyId();
     }
 
     @Test
@@ -269,7 +269,7 @@ public class MultiIndexPopulationConcurrentUpdatesIT
         }
     }
 
-    private int getPropertyKeyId()
+    private int getPropertyId()
     {
         try ( Transaction ignored = embeddedDatabase.beginTx() )
         {

@@ -34,7 +34,6 @@ import org.neo4j.kernel.api.exceptions.index.IndexNotFoundKernelException;
 import org.neo4j.kernel.api.exceptions.schema.IndexBrokenKernelException;
 import org.neo4j.kernel.api.properties.Property;
 import org.neo4j.kernel.api.schema_new.LabelSchemaDescriptor;
-import org.neo4j.kernel.api.schema_new.SchemaBoundary;
 import org.neo4j.kernel.api.schema_new.SchemaDescriptorFactory;
 import org.neo4j.kernel.api.schema_new.index.NewIndexDescriptor;
 import org.neo4j.kernel.api.security.SecurityContext;
@@ -252,7 +251,7 @@ public class NodeGetUniqueFromIndexSeekIT extends KernelIntegrationTest
         LabelSchemaDescriptor descriptor = SchemaDescriptorFactory.forLabel( labelId, propertyIds );
         statement.schemaWriteOperations().uniquePropertyConstraintCreate( descriptor );
         NewIndexDescriptor result =
-                statement.readOperations().uniqueIndexGetForLabelAndPropertyKey( SchemaBoundary.map( descriptor ) );
+                statement.readOperations().uniqueIndexGetForLabelAndPropertyKey( descriptor );
         commit();
         return result;
     }

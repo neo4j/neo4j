@@ -67,8 +67,6 @@ import org.neo4j.kernel.api.labelscan.LabelScanStore;
 import org.neo4j.kernel.api.labelscan.LabelScanWriter;
 import org.neo4j.kernel.api.labelscan.NodeLabelUpdate;
 import org.neo4j.kernel.api.properties.DefinedProperty;
-import org.neo4j.kernel.api.schema.NodeMultiPropertyDescriptor;
-import org.neo4j.kernel.api.schema.NodePropertyDescriptor;
 import org.neo4j.kernel.api.schema_new.LabelSchemaDescriptor;
 import org.neo4j.kernel.api.schema_new.SchemaDescriptorFactory;
 import org.neo4j.kernel.api.schema_new.constaints.ConstraintDescriptor;
@@ -1123,7 +1121,7 @@ public class BatchInserterImpl implements BatchInserter, IndexConfigStoreProvide
         {
             int labelId = getOrCreateLabelId( indexDefinition.getLabel().name() );
             int[] propertyKeyIds = getOrCreatePropertyKeyIds( indexDefinition.getPropertyKeys() );
-            NodePropertyDescriptor descriptor = new NodeMultiPropertyDescriptor( labelId, propertyKeyIds );
+            LabelSchemaDescriptor descriptor = SchemaDescriptorFactory.forLabel( labelId, propertyKeyIds );
 
             validateUniquenessConstraintCanBeCreated( labelId, propertyKeyIds );
             createUniquenessConstraintRule( new UniquenessConstraint( descriptor ) );

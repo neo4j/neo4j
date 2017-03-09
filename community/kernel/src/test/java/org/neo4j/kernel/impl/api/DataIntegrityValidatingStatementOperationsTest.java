@@ -28,16 +28,15 @@ import org.mockito.stubbing.Answer;
 
 import java.util.Iterator;
 
-import org.neo4j.kernel.api.exceptions.schema.RepeatedPropertyInCompositeSchemaException;
 import org.neo4j.kernel.api.exceptions.schema.AlreadyConstrainedException;
 import org.neo4j.kernel.api.exceptions.schema.AlreadyIndexedException;
 import org.neo4j.kernel.api.exceptions.schema.DropIndexFailureException;
 import org.neo4j.kernel.api.exceptions.schema.IllegalTokenNameException;
 import org.neo4j.kernel.api.exceptions.schema.IndexBelongsToConstraintException;
 import org.neo4j.kernel.api.exceptions.schema.NoSuchIndexException;
+import org.neo4j.kernel.api.exceptions.schema.RepeatedPropertyInCompositeSchemaException;
 import org.neo4j.kernel.api.exceptions.schema.SchemaKernelException;
 import org.neo4j.kernel.api.schema_new.LabelSchemaDescriptor;
-import org.neo4j.kernel.api.schema_new.SchemaBoundary;
 import org.neo4j.kernel.api.schema_new.SchemaDescriptorFactory;
 import org.neo4j.kernel.api.schema_new.index.NewIndexDescriptor;
 import org.neo4j.kernel.api.schema_new.index.NewIndexDescriptorFactory;
@@ -82,7 +81,7 @@ public class DataIntegrityValidatingStatementOperationsTest
     public void shouldDisallowReAddingIndex() throws Exception
     {
         // GIVEN
-        when( innerRead.indexGetForLabelAndPropertyKey( state, SchemaBoundary.map( descriptor ) ) ).thenReturn( index );
+        when( innerRead.indexGetForLabelAndPropertyKey( state, descriptor ) ).thenReturn( index );
 
         // WHEN
         try
@@ -103,7 +102,7 @@ public class DataIntegrityValidatingStatementOperationsTest
     public void shouldDisallowAddingIndexWhenConstraintIndexExists() throws Exception
     {
         // GIVEN
-        when( innerRead.indexGetForLabelAndPropertyKey( state, SchemaBoundary.map( descriptor ) ) ).thenReturn( uniqueIndex );
+        when( innerRead.indexGetForLabelAndPropertyKey( state, descriptor ) ).thenReturn( uniqueIndex );
 
         // WHEN
         try
@@ -124,7 +123,7 @@ public class DataIntegrityValidatingStatementOperationsTest
     public void shouldDisallowDroppingIndexThatDoesNotExist() throws Exception
     {
         // GIVEN
-        when( innerRead.indexGetForLabelAndPropertyKey( state, SchemaBoundary.map( descriptor ) ) ).thenReturn( null );
+        when( innerRead.indexGetForLabelAndPropertyKey( state, descriptor ) ).thenReturn( null );
 
         // WHEN
         try
@@ -145,7 +144,7 @@ public class DataIntegrityValidatingStatementOperationsTest
     public void shouldDisallowDroppingIndexWhenConstraintIndexExists() throws Exception
     {
         // GIVEN
-        when( innerRead.indexGetForLabelAndPropertyKey( state, SchemaBoundary.map( descriptor ) ) ).thenReturn( uniqueIndex );
+        when( innerRead.indexGetForLabelAndPropertyKey( state, descriptor ) ).thenReturn( uniqueIndex );
 
         // WHEN
         try
@@ -166,7 +165,7 @@ public class DataIntegrityValidatingStatementOperationsTest
     public void shouldDisallowDroppingConstraintIndexThatDoesNotExists() throws Exception
     {
         // GIVEN
-        when( innerRead.indexGetForLabelAndPropertyKey( state, SchemaBoundary.map( descriptor ) ) ).thenReturn( uniqueIndex );
+        when( innerRead.indexGetForLabelAndPropertyKey( state, descriptor ) ).thenReturn( uniqueIndex );
 
         // WHEN
         try
@@ -187,7 +186,7 @@ public class DataIntegrityValidatingStatementOperationsTest
     public void shouldDisallowDroppingConstraintIndexThatIsReallyJustRegularIndex() throws Exception
     {
         // GIVEN
-        when( innerRead.indexGetForLabelAndPropertyKey( state, SchemaBoundary.map( descriptor ) ) ).thenReturn( uniqueIndex );
+        when( innerRead.indexGetForLabelAndPropertyKey( state, descriptor ) ).thenReturn( uniqueIndex );
 
         // WHEN
         try

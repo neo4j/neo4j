@@ -28,7 +28,6 @@ import org.neo4j.kernel.api.exceptions.index.IndexPopulationFailedKernelExceptio
 import org.neo4j.kernel.api.index.IndexPopulator;
 import org.neo4j.kernel.api.index.InternalIndexState;
 import org.neo4j.kernel.api.index.SchemaIndexProvider;
-import org.neo4j.kernel.api.schema_new.SchemaBoundary;
 import org.neo4j.kernel.api.schema_new.index.NewIndexDescriptor;
 import org.neo4j.logging.Log;
 import org.neo4j.logging.LogProvider;
@@ -78,8 +77,7 @@ public class FailedIndexProxy extends AbstractSwallowingIndexProxy
     @Override
     public boolean awaitStoreScanCompleted() throws IndexPopulationFailedKernelException
     {
-        throw getPopulationFailure().asIndexPopulationFailure(
-                SchemaBoundary.map( getDescriptor().schema() ), indexUserDescription );
+        throw getPopulationFailure().asIndexPopulationFailure( getDescriptor().schema(), indexUserDescription );
     }
 
     @Override
@@ -91,8 +89,7 @@ public class FailedIndexProxy extends AbstractSwallowingIndexProxy
     @Override
     public void validate() throws IndexPopulationFailedKernelException
     {
-        throw getPopulationFailure().asIndexPopulationFailure(
-                SchemaBoundary.map( getDescriptor().schema() ), indexUserDescription );
+        throw getPopulationFailure().asIndexPopulationFailure( getDescriptor().schema(), indexUserDescription );
     }
 
     @Override

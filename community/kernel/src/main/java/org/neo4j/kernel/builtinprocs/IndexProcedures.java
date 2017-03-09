@@ -24,7 +24,6 @@ import java.util.concurrent.TimeoutException;
 
 import org.neo4j.function.Predicates;
 import org.neo4j.kernel.api.KernelTransaction;
-import org.neo4j.kernel.api.schema.NodePropertyDescriptor;
 import org.neo4j.kernel.api.ReadOperations;
 import org.neo4j.kernel.api.Statement;
 import org.neo4j.kernel.api.exceptions.ProcedureException;
@@ -32,6 +31,7 @@ import org.neo4j.kernel.api.exceptions.Status;
 import org.neo4j.kernel.api.exceptions.index.IndexNotFoundKernelException;
 import org.neo4j.kernel.api.exceptions.schema.SchemaRuleNotFoundException;
 import org.neo4j.kernel.api.index.InternalIndexState;
+import org.neo4j.kernel.api.schema_new.SchemaDescriptorFactory;
 import org.neo4j.kernel.api.schema_new.index.NewIndexDescriptor;
 import org.neo4j.kernel.impl.api.index.IndexingService;
 import org.neo4j.kernel.impl.api.index.sampling.IndexSamplingMode;
@@ -54,7 +54,7 @@ public class IndexProcedures implements AutoCloseable
     {
         IndexSpecifier index = parse( indexSpecification );
         int labelId = getLabelId( index.label() );
-        int propertyKeyId = getPropertyKeyId( index.property() );
+        int propertyKeyId = getPropertyId( index.property() );
         //TODO: Support composite indexes
         waitUntilOnline( getIndex( labelId, propertyKeyId, index ), index, timeout, timeoutUnits );
     }
@@ -63,7 +63,7 @@ public class IndexProcedures implements AutoCloseable
     {
         IndexSpecifier index = parse( indexSpecification );
         int labelId = getLabelId( index.label() );
-        int propertyKeyId = getPropertyKeyId( index.property() );
+        int propertyKeyId = getPropertyId( index.property() );
         //TODO: Support composite indexes
         try
         {
@@ -95,7 +95,7 @@ public class IndexProcedures implements AutoCloseable
         return labelId;
     }
 
-    private int getPropertyKeyId( String propertyKeyName ) throws ProcedureException
+    private int getPropertyId( String propertyKeyName ) throws ProcedureException
     {
         int propertyKeyId = operations.propertyKeyGetForName( propertyKeyName );
         if ( propertyKeyId == ReadOperations.NO_SUCH_PROPERTY_KEY )
@@ -111,7 +111,9 @@ public class IndexProcedures implements AutoCloseable
     {
         try
         {
-            return operations.indexGetForLabelAndPropertyKey( new NodePropertyDescriptor( labelId, propertyKeyId ) );
+            final int labelId1 = labelId;
+            final int[] propertyKeyIds = new int[]{propertyKeyId};
+            return operations.indexGetForLabelAndPropertyKey( SchemaDescriptorFactory.forLabel( labelId1, propertyKeyIds ) );
         }
         catch ( SchemaRuleNotFoundException e )
         {
