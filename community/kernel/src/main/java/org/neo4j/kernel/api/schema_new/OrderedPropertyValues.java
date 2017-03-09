@@ -206,12 +206,4 @@ public class OrderedPropertyValues
         }
         return compare;
     };
-
-    public void validate()
-    {
-        for ( DefinedProperty p : properties )
-        {
-            Validators.INDEX_VALUE_VALIDATOR.validate( p.value() );
-        }
-    }
 }

@@ -36,6 +36,7 @@ import org.neo4j.kernel.impl.api.KernelStatement;
 import org.neo4j.kernel.impl.api.operations.EntityReadOperations;
 import org.neo4j.kernel.impl.api.operations.SchemaReadOperations;
 import org.neo4j.kernel.impl.api.schema.NodeSchemaMatcher;
+import org.neo4j.kernel.impl.util.Validators;
 import org.neo4j.storageengine.api.NodeItem;
 import org.neo4j.storageengine.api.PropertyItem;
 
@@ -94,15 +95,13 @@ public class IndexTxStateUpdater
     public void onPropertyAdd( KernelStatement state, NodeItem node, DefinedProperty after )
             throws EntityNotFoundException
     {
+        Validators.INDEX_VALUE_VALIDATOR.validate( after.value() );
         Iterator<NewIndexDescriptor> indexes = getIndexesForProperty( state, after.propertyKeyId() );
         nodeIndexMatcher.onMatchingSchema( state, indexes, node, after.propertyKeyId(),
                 index -> {
-                    OrderedPropertyValues values = getOrderedPropertyValues( state, node, after, index.schema().getPropertyIds() );
-                    if ( values != null )
-                    {
-                        values.validate();
-                        state.txState().indexDoUpdateEntry( index.schema(), node.id(), null, values );
-                    }
+                    OrderedPropertyValues values =
+                            getOrderedPropertyValues( state, node, after, index.schema().getPropertyIds() );
+                    state.txState().indexDoUpdateEntry( index.schema(), node.id(), null, values );
                 });
     }
 
@@ -112,11 +111,9 @@ public class IndexTxStateUpdater
         Iterator<NewIndexDescriptor> indexes = getIndexesForProperty( state, before.propertyKeyId() );
         nodeIndexMatcher.onMatchingSchema( state, indexes, node, before.propertyKeyId(),
                 index -> {
-                    OrderedPropertyValues values = getOrderedPropertyValues( state, node, before, index.schema().getPropertyIds() );
-                    if ( values != null )
-                    {
-                        state.txState().indexDoUpdateEntry( index.schema(), node.id(), values, null );
-                    }
+                    OrderedPropertyValues values =
+                            getOrderedPropertyValues( state, node, before, index.schema().getPropertyIds() );
+                    state.txState().indexDoUpdateEntry( index.schema(), node.id(), values, null );
                 });
     }
 
@@ -124,6 +121,7 @@ public class IndexTxStateUpdater
             throws EntityNotFoundException
     {
         assert before.propertyKeyId() == after.propertyKeyId();
+        Validators.INDEX_VALUE_VALIDATOR.validate( after.value() );
         Iterator<NewIndexDescriptor> indexes = getIndexesForProperty( state, before.propertyKeyId() );
         nodeIndexMatcher.onMatchingSchema( state, indexes, node, before.propertyKeyId(),
                 index -> {
@@ -173,6 +171,15 @@ public class IndexTxStateUpdater
                 values[k] = indexPropertyIds[k] == changedProperty.propertyKeyId()
                             ? changedProperty
                             : Property.property( indexPropertyIds[k], property.value() );
+            }
+        }
+
+        if ( changedProperty != NO_SUCH_PROPERTY )
+        {
+            int k = ArrayUtils.indexOf( indexPropertyIds, changedProperty.propertyKeyId() );
+            if ( k >= 0 )
+            {
+                values[k] = changedProperty;
             }
         }
 
