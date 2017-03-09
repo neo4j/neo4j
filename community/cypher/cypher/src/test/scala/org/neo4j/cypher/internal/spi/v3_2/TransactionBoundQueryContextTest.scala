@@ -33,13 +33,13 @@ import org.neo4j.graphdb.config.Setting
 import org.neo4j.graphdb.factory.GraphDatabaseSettings
 import org.neo4j.io.pagecache.tracing.cursor.PageCursorTracerSupplier
 import org.neo4j.kernel.api._
-import org.neo4j.kernel.api.security.AnonymousContext
 import org.neo4j.kernel.api.security.SecurityContext.AUTH_DISABLED
+import org.neo4j.kernel.api.security.{AnonymousContext, SecurityContext}
 import org.neo4j.kernel.impl.api.{KernelStatement, KernelTransactionImplementation, StatementOperationParts}
 import org.neo4j.kernel.impl.coreapi.{InternalTransaction, PropertyContainerLocker}
 import org.neo4j.kernel.impl.factory.CanWrite
-import org.neo4j.kernel.impl.proc.Procedures
 import org.neo4j.kernel.impl.locking.LockTracer
+import org.neo4j.kernel.impl.proc.Procedures
 import org.neo4j.kernel.impl.query.clientconnection.ClientConnectionInfo
 import org.neo4j.kernel.impl.query.{Neo4jTransactionalContext, Neo4jTransactionalContextFactory}
 import org.neo4j.storageengine.api.StorageStatement
@@ -162,6 +162,30 @@ class TransactionBoundQueryContextTest extends CypherFunSuite {
     context.getImportURL(new URL("file:///tmp/foo/data.csv")) should equal (Left("configuration property 'dbms.security.allow_csv_import_from_file_urls' is false"))
 
     tx.success()
+    tx.close()
+  }
+
+  test("provide access to kernel statement page cache tracer") {
+    val creator = graph.beginTransaction(KernelTransaction.Type.explicit, SecurityContext.AUTH_DISABLED)
+    graph.createNode()
+    graph.createNode()
+    graph.createNode()
+    creator.success()
+    creator.close()
+
+    val tx = graph.beginTransaction(KernelTransaction.Type.explicit, SecurityContext.AUTH_DISABLED)
+    val transactionalContext = TransactionalContextWrapper(createTransactionContext(graph, tx))
+    val context = new TransactionBoundQueryContext(transactionalContext)(indexSearchMonitor)
+
+    val tracer = context.pageCursorTracer()
+    tracer.hits() should equal(0)
+    tracer.pins() should equal(0)
+
+    graph.getNodeById(2)
+    graph.getNodeById(1)
+    tracer.hits() should equal(2)
+    tracer.pins() should equal(2)
+
     tx.close()
   }
 

@@ -75,7 +75,7 @@ trait CodeGenSugar extends MockitoSugar {
       val transactionalContext = TransactionalContextWrapper(contextFactory.newContext(ClientConnectionInfo.EMBEDDED_CONNECTION, tx,
         "no query text exists for this test", Collections.emptyMap()))
       val queryContext = new TransactionBoundQueryContext(transactionalContext)(mock[IndexSearchMonitor])
-      val result = plan.executionResultBuilder(queryContext, mode, tracer(mode), Map.empty, new TaskCloser)
+      val result = plan.executionResultBuilder(queryContext, mode, tracer(mode, queryContext), Map.empty, new TaskCloser)
       tx.success()
       result.size
       result

@@ -115,6 +115,12 @@ class Description implements ExecutionPlanDescription
             }
 
             @Override
+            public long getPageCacheHits()
+            {
+                return statistics.getPageCacheHits();
+            }
+
+            @Override
             public String toString()
             {
                 return statistics.toString();

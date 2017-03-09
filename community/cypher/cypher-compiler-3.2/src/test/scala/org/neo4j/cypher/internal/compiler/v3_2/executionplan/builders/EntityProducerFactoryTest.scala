@@ -30,6 +30,7 @@ import org.neo4j.cypher.internal.compiler.v3_2.{ExecutionContext, IndexDescripto
 import org.neo4j.cypher.internal.frontend.v3_2.IndexHintException
 import org.neo4j.cypher.internal.frontend.v3_2.test_helpers.CypherFunSuite
 import org.neo4j.graphdb.Node
+import org.neo4j.io.pagecache.tracing.cursor.PageCursorTracer
 
 class EntityProducerFactoryTest extends CypherFunSuite {
   var planContext: PlanContext = null
@@ -84,6 +85,10 @@ class EntityProducerFactoryTest extends CypherFunSuite {
       override def indexSeek(index: IndexDescriptor, values: Seq[Any]): Iterator[Node] = {
         seenValues = values
         Iterator.empty
+      }
+
+      override def pageCursorTracer(): PageCursorTracer = {
+        PageCursorTracer.NULL
       }
     }
     val state = QueryStateHelper.emptyWith(query = queryContext)

@@ -19,9 +19,9 @@
  */
 package org.neo4j.cypher.internal.compiler.v3_2.planDescription
 
-import org.neo4j.cypher.internal.frontend.v3_2.helpers.UnNamedNameGenerator._
 import org.neo4j.cypher.internal.compiler.v3_2.planDescription.InternalPlanDescription.Arguments._
 import org.neo4j.cypher.internal.frontend.v3_2.SemanticDirection
+import org.neo4j.cypher.internal.frontend.v3_2.helpers.UnNamedNameGenerator._
 
 
 object PlanDescriptionArgumentSerializer {
@@ -46,6 +46,7 @@ object PlanDescriptionArgumentSerializer {
       case KeyNames(keys) => keys.map(removeGeneratedNames).mkString(SEPARATOR)
       case KeyExpressions(expressions) => expressions.mkString(SEPARATOR)
       case DbHits(value) => Long.box(value)
+      case PageCacheHits(value) => Long.box(value)
       case _: EntityByIdRhs => arg.toString
       case Rows(value) => Long.box(value)
       case Time(value) => Long.box(value)

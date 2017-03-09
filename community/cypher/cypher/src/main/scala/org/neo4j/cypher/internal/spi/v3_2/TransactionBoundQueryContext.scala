@@ -45,6 +45,7 @@ import org.neo4j.graphdb.RelationshipType._
 import org.neo4j.graphdb._
 import org.neo4j.graphdb.security.URLAccessValidationError
 import org.neo4j.graphdb.traversal.{Evaluators, TraversalDescription, Uniqueness}
+import org.neo4j.io.pagecache.tracing.cursor.PageCursorTracer
 import org.neo4j.kernel.GraphDatabaseQueryService
 import org.neo4j.kernel.api._
 import org.neo4j.kernel.api.exceptions.ProcedureException
@@ -55,6 +56,7 @@ import org.neo4j.kernel.api.proc.{QualifiedName => KernelQualifiedName}
 import org.neo4j.kernel.api.schema.NodePropertyDescriptor
 import org.neo4j.kernel.api.schema_new.constaints.ConstraintDescriptorFactory
 import org.neo4j.kernel.api.schema_new.{IndexQuery, SchemaDescriptorFactory}
+import org.neo4j.kernel.impl.api.KernelStatement
 import org.neo4j.kernel.impl.core.NodeManager
 import org.neo4j.kernel.impl.locking.ResourceTypes
 
@@ -737,6 +739,10 @@ final class TransactionBoundQueryContext(val transactionalContext: Transactional
 
   override def assertSchemaWritesAllowed(): Unit =
     transactionalContext.statement.schemaWriteOperations()
+
+  override def pageCursorTracer(): PageCursorTracer = {
+    transactionalContext.statement.asInstanceOf[KernelStatement].getPageCursorTracer
+  }
 }
 
 object TransactionBoundQueryContext {

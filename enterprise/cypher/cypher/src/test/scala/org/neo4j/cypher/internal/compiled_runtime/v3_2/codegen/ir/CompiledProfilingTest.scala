@@ -80,7 +80,7 @@ class CompiledProfilingTest extends CypherFunSuite with CodeGenSugar {
     }
 
     // when
-    val tracer = new ProfilingTracer()
+    val tracer = new ProfilingTracer(queryContext.pageCursorTracer())
     newInstance(compiled, queryContext = queryContext, provider = provider, queryExecutionTracer = tracer).size
 
     // then

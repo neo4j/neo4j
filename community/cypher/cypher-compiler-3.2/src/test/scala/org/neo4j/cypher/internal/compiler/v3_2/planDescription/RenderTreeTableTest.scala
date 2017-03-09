@@ -156,47 +156,53 @@ class RenderTreeTableTest extends CypherFunSuite with BeforeAndAfterAll {
     val leaf1 = PlanDescriptionImpl(new Id, "LEAF1", NoChildren, Seq(
       Rows(42),
       DbHits(33),
+      PageCacheHits(1),
       EstimatedRows(1)), Set())
     val leaf2 = PlanDescriptionImpl(new Id, "LEAF2", NoChildren, Seq(
       Rows(9),
       DbHits(2),
+      PageCacheHits(2),
       EstimatedRows(1)), Set())
     val leaf3 = PlanDescriptionImpl(new Id, "LEAF3", NoChildren, Seq(
       Rows(9),
       DbHits(2),
+      PageCacheHits(3),
       EstimatedRows(1)), Set())
     val pass = PlanDescriptionImpl(new Id, "PASS", SingleChild(leaf2), Seq(
       Rows(4),
       DbHits(0),
+      PageCacheHits(4),
       EstimatedRows(4)), Set())
     val inner = PlanDescriptionImpl(new Id, "INNER", TwoChildren(leaf1, pass), Seq(
       Rows(7),
       DbHits(42),
+      PageCacheHits(5),
       EstimatedRows(6)), Set())
     val plan = PlanDescriptionImpl(new Id, "ROOT", TwoChildren(leaf3, inner), Seq(
       Rows(3),
       DbHits(0),
+      PageCacheHits(7),
       EstimatedRows(1)), Set())
     val parent = PlanDescriptionImpl(new Id, "PARENT", SingleChild(plan), Seq(), Set())
 
     renderAsTreeTable(parent) should equal(
-      """+------------+----------------+------+---------+
-        || Operator   | Estimated Rows | Rows | DB Hits |
-        |+------------+----------------+------+---------+
-        || +PARENT    |                |      |         |
-        || |          +----------------+------+---------+
-        || +ROOT      |              1 |    3 |       0 |
-        || |\         +----------------+------+---------+
-        || | +INNER   |              6 |    7 |      42 |
-        || | |\       +----------------+------+---------+
-        || | | +PASS  |              4 |    4 |       0 |
-        || | | |      +----------------+------+---------+
-        || | | +LEAF2 |              1 |    9 |       2 |
-        || | |        +----------------+------+---------+
-        || | +LEAF1   |              1 |   42 |      33 |
-        || |          +----------------+------+---------+
-        || +LEAF3     |              1 |    9 |       2 |
-        |+------------+----------------+------+---------+
+      """+------------+----------------+------+---------+-----------------+
+        || Operator   | Estimated Rows | Rows | DB Hits | Page Cache Hits |
+        |+------------+----------------+------+---------+-----------------+
+        || +PARENT    |                |      |         |                 |
+        || |          +----------------+------+---------+-----------------+
+        || +ROOT      |              1 |    3 |       0 |               7 |
+        || |\         +----------------+------+---------+-----------------+
+        || | +INNER   |              6 |    7 |      42 |               5 |
+        || | |\       +----------------+------+---------+-----------------+
+        || | | +PASS  |              4 |    4 |       0 |               4 |
+        || | | |      +----------------+------+---------+-----------------+
+        || | | +LEAF2 |              1 |    9 |       2 |               2 |
+        || | |        +----------------+------+---------+-----------------+
+        || | +LEAF1   |              1 |   42 |      33 |               1 |
+        || |          +----------------+------+---------+-----------------+
+        || +LEAF3     |              1 |    9 |       2 |               3 |
+        |+------------+----------------+------+---------+-----------------+
         |""".stripMargin)
   }
 

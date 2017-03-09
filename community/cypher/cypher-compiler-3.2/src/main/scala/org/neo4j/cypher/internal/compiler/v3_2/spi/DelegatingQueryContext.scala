@@ -26,6 +26,7 @@ import org.neo4j.cypher.internal.compiler.v3_2.commands.expressions.{Expander, K
 import org.neo4j.cypher.internal.compiler.v3_2.pipes.matching.PatternNode
 import org.neo4j.cypher.internal.frontend.v3_2.SemanticDirection
 import org.neo4j.graphdb.{Node, Path, PropertyContainer, Relationship}
+import org.neo4j.io.pagecache.tracing.cursor.PageCursorTracer
 
 import scala.collection.Iterator
 
@@ -210,6 +211,8 @@ class DelegatingQueryContext(val inner: QueryContext) extends QueryContext {
   override def detachDeleteNode(node: Node): Int = manyDbHits(inner.detachDeleteNode(node))
 
   override def assertSchemaWritesAllowed(): Unit = inner.assertSchemaWritesAllowed()
+
+  override def pageCursorTracer(): PageCursorTracer = inner.pageCursorTracer()
 }
 
 class DelegatingOperations[T <: PropertyContainer](protected val inner: Operations[T]) extends Operations[T] {
