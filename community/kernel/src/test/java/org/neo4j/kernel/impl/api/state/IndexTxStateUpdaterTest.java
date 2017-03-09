@@ -161,10 +161,10 @@ public class IndexTxStateUpdaterTest
     public void shouldNotUpdateIndexesOnChangedIrrelevantProperty() throws EntityNotFoundException
     {
         // WHEN
-        indexTxUpdater.onPropertyChange( state, node, indexTxUpdater.add( property( unIndexedPropId, "whAt" ) ));
-        indexTxUpdater.onPropertyChange( state, node, indexTxUpdater.remove( property( unIndexedPropId, "whAt" ) ));
-        indexTxUpdater.onPropertyChange( state, node, indexTxUpdater.change(
-                property( unIndexedPropId, "whAt" ), property( unIndexedPropId, "whAt2" ) ));
+        indexTxUpdater.onPropertyAdd( state, node, property( unIndexedPropId, "whAt" ) );
+        indexTxUpdater.onPropertyRemove( state, node, property( unIndexedPropId, "whAt" ) );
+        indexTxUpdater.onPropertyChange( state, node,
+                property( unIndexedPropId, "whAt" ), property( unIndexedPropId, "whAt2" ) );
 
         // THEN
         verify( txState, times( 0 ) ).indexDoUpdateEntry( any(), anyInt(), any(), any() );
@@ -174,7 +174,7 @@ public class IndexTxStateUpdaterTest
     public void shouldUpdateIndexesOnAddedProperty() throws EntityNotFoundException
     {
         // WHEN
-        indexTxUpdater.onPropertyChange( state, node, indexTxUpdater.add( property( newPropId, "newHi" ) ));
+        indexTxUpdater.onPropertyAdd( state, node, property( newPropId, "newHi" ) );
 
         // THEN
         verifyIndexUpdate( indexOn2_new.schema(), node.id(), null, values( "newHi" ) );
@@ -186,7 +186,7 @@ public class IndexTxStateUpdaterTest
     public void shouldUpdateIndexesOnRemovedProperty() throws EntityNotFoundException
     {
         // WHEN
-        indexTxUpdater.onPropertyChange( state, node, indexTxUpdater.remove( property( propId2, "hi2" ) ));
+        indexTxUpdater.onPropertyRemove( state, node, property( propId2, "hi2" ) );
 
         // THEN
         verifyIndexUpdate( uniqueOn1_2.schema(), node.id(), values( "hi2" ), null );
@@ -198,8 +198,8 @@ public class IndexTxStateUpdaterTest
     public void shouldUpdateIndexesOnChangesProperty() throws EntityNotFoundException
     {
         // WHEN
-        indexTxUpdater.onPropertyChange( state, node, indexTxUpdater.change(
-                property( propId2, "hi2" ), property( propId2, "new2" ) ));
+        indexTxUpdater.onPropertyChange( state, node,
+                property( propId2, "hi2" ), property( propId2, "new2" ) );
 
         // THEN
         verifyIndexUpdate( uniqueOn1_2.schema(), node.id(), values( "hi2" ), values( "new2" ) );
