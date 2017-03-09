@@ -104,7 +104,7 @@ public class ConstraintEnforcingEntityOperations implements EntityOperations, Sc
         this.entityReadOperations = entityReadOperations;
         this.schemaWriteOperations = schemaWriteOperations;
         this.schemaReadOperations = schemaReadOperations;
-        nodeSchemaMatcher = new NodeSchemaMatcher( entityReadOperations );
+        nodeSchemaMatcher = new NodeSchemaMatcher<>( entityReadOperations );
     }
 
     @Override
@@ -141,10 +141,10 @@ public class ConstraintEnforcingEntityOperations implements EntityOperations, Sc
         {
             NodeItem node = cursor.get();
             Iterator<ConstraintDescriptor> constraints = getConstraintsForProperty( state, property.propertyKeyId() );
-            Iterator<UniquenessConstraintDescriptor> uniqueness =
+            Iterator<UniquenessConstraintDescriptor> uniquenessConstraints =
                     new CastingIterator<>( constraints, UniquenessConstraintDescriptor.class );
 
-            nodeSchemaMatcher.onMatchingSchema( state, uniqueness, node, property.propertyKeyId(),
+            nodeSchemaMatcher.onMatchingSchema( state, uniquenessConstraints, node, property.propertyKeyId(),
                     constraint -> {
                         validateNoExistingNodeWithExactValues( state, constraint,
                                 getAllPropertyValues( state, constraint.schema(), node, property ),
