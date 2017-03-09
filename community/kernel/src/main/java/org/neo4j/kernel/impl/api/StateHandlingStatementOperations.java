@@ -120,7 +120,6 @@ import static org.neo4j.kernel.impl.api.state.IndexTxStateUpdater.LabelChangeTyp
 import static org.neo4j.kernel.impl.api.state.IndexTxStateUpdater.LabelChangeType.REMOVED_LABEL;
 import static org.neo4j.kernel.impl.util.Cursors.count;
 import static org.neo4j.register.Registers.newDoubleLongRegister;
-import static org.neo4j.storageengine.api.NodeItem.transientNode;
 import static org.neo4j.storageengine.api.txstate.TxStateVisitor.EMPTY;
 
 public class StateHandlingStatementOperations
@@ -193,12 +192,6 @@ public class StateHandlingStatementOperations
     public Cursor<RelationshipItem> nodeGetRelationships( KernelStatement statement, NodeItem node,
             Direction direction )
     {
-        final long id = node.id();
-        if ( statement.hasTxStateWithChanges() && statement.txState().nodeIsAddedInThisTx( id ) )
-        {
-            node = transientNode( id );
-        }
-
         ReadableTransactionState state = statement.hasTxStateWithChanges() ? statement.txState() : null;
         return storeLayer.nodeGetRelationships( statement.getStoreStatement(), node, direction, state );
     }
@@ -207,11 +200,6 @@ public class StateHandlingStatementOperations
     public Cursor<RelationshipItem> nodeGetRelationships( KernelStatement statement, NodeItem node, Direction direction,
             int[] relTypes )
     {
-        final long id = node.id();
-        if ( statement.hasTxStateWithChanges() && statement.txState().nodeIsAddedInThisTx( id ) )
-        {
-            node = transientNode( id );
-        }
         ReadableTransactionState state = statement.hasTxStateWithChanges() ? statement.txState() : null;
         return storeLayer.nodeGetRelationships( statement.getStoreStatement(), node, direction, relTypes, state );
     }
