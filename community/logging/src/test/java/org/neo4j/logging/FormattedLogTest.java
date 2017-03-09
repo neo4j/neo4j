@@ -49,7 +49,7 @@ public class FormattedLogTest
 
         // Then
         assertThat( writer.toString(),
-                equalTo( format( "1984-10-26 04:23:24.343+0000 INFO  [test] Terminator 2%n" ) ) );
+                equalTo( format( "1984-10-26 04:23:24.343+0000 INFO [test] Terminator 2%n" ) ) );
     }
 
     @Test
@@ -66,7 +66,7 @@ public class FormattedLogTest
         assertThat(
                 writer.toString(),
                 equalTo(
-                        format( "1984-10-26 04:23:24.343+0000 INFO  [test] Hasta la vista, baby " +
+                        format( "1984-10-26 04:23:24.343+0000 INFO [test] Hasta la vista, baby " +
                                 "<message>%n<stacktrace>" ) )
         );
     }
@@ -84,7 +84,7 @@ public class FormattedLogTest
         // Then
         assertThat(
                 writer.toString(),
-                equalTo( format( "1984-10-26 04:23:24.343+0000 INFO  [test] Hasta la vista, baby%n<stacktrace>" ) )
+                equalTo( format( "1984-10-26 04:23:24.343+0000 INFO [test] Hasta la vista, baby%n<stacktrace>" ) )
         );
     }
 
@@ -102,7 +102,7 @@ public class FormattedLogTest
         assertThat(
                 writer.toString(),
                 equalTo(
-                        format( "1984-10-26 04:23:24.343+0000 INFO  [test] I need your clothes, your boots and your " +
+                        format( "1984-10-26 04:23:24.343+0000 INFO [test] I need your clothes, your boots and your " +
                                 "motorcycle%n" ) )
         );
     }
@@ -120,7 +120,7 @@ public class FormattedLogTest
         // Then
         assertThat(
                 writer.toString(),
-                equalTo( format( "1984-10-26 04:23:24.343+0000 INFO  [test] Come with me if you %%s to live!%n" ) )
+                equalTo( format( "1984-10-26 04:23:24.343+0000 INFO [test] Come with me if you %%s to live!%n" ) )
         );
     }
 
@@ -163,7 +163,7 @@ public class FormattedLogTest
     {
         // Given
         StringWriter writer = new StringWriter();
-        FormattedLog log = newFormattedLog( writer, Level.INFO );
+        FormattedLog log = newFormattedLog( writer, Level.INFO);
 
         // When
         log.info( "No, it's when there's nothing wrong with you, but you hurt anyway. You get it?" );
@@ -176,9 +176,9 @@ public class FormattedLogTest
         assertThat(
                 writer.toString(),
                 equalTo( format( "%s%n%s%n",
-                        "1984-10-26 04:23:24.343+0000 INFO  [test] No, it's when there's nothing wrong with you, but " +
+                        "1984-10-26 04:23:24.343+0000 INFO [test] No, it's when there's nothing wrong with you, but " +
                                 "you hurt anyway. You get it?",
-                        "1984-10-26 04:23:24.343+0000 INFO  [test] There's 215 bones in the human body. That's one."
+                        "1984-10-26 04:23:24.343+0000 INFO [test] There's 215 bones in the human body. That's one."
                 ) )
         );
     }
