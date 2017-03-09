@@ -61,7 +61,7 @@ public class UpdatePullerSchedulerTest
     @Test
     public void scheduleUpdatePulling() throws Throwable
     {
-        OnDemandJobScheduler jobScheduler = new OnDemandJobScheduler();
+        OnDemandJobScheduler jobScheduler = new OnDemandJobScheduler( false );
         UpdatePullerScheduler pullerScheduler =
                 new UpdatePullerScheduler( jobScheduler, NullLogProvider.getInstance(), updatePuller, 10 );
 
