@@ -115,6 +115,6 @@ class CsvImporter implements Importer
 
     private boolean isIgnoringSomething()
     {
-        return ignoreBadRelationships | ignoreDuplicateNodes | ignoreExtraColumns;
+        return ignoreBadRelationships || ignoreDuplicateNodes || ignoreExtraColumns;
     }
 }
