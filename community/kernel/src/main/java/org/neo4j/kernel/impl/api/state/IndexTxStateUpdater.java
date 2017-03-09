@@ -19,15 +19,17 @@
  */
 package org.neo4j.kernel.impl.api.state;
 
+import org.apache.commons.lang3.ArrayUtils;
+
 import java.util.Iterator;
 
 import org.neo4j.collection.primitive.Primitive;
 import org.neo4j.collection.primitive.PrimitiveIntSet;
+import org.neo4j.cursor.Cursor;
 import org.neo4j.helpers.collection.Iterators;
 import org.neo4j.kernel.api.exceptions.EntityNotFoundException;
 import org.neo4j.kernel.api.properties.DefinedProperty;
 import org.neo4j.kernel.api.properties.Property;
-import org.neo4j.kernel.api.schema_new.LabelSchemaDescriptor;
 import org.neo4j.kernel.api.schema_new.OrderedPropertyValues;
 import org.neo4j.kernel.api.schema_new.index.NewIndexDescriptor;
 import org.neo4j.kernel.impl.api.KernelStatement;
@@ -35,6 +37,7 @@ import org.neo4j.kernel.impl.api.operations.EntityReadOperations;
 import org.neo4j.kernel.impl.api.operations.SchemaReadOperations;
 import org.neo4j.kernel.impl.api.schema.NodeSchemaMatcher;
 import org.neo4j.storageengine.api.NodeItem;
+import org.neo4j.storageengine.api.PropertyItem;
 
 import static org.neo4j.kernel.api.properties.DefinedProperty.NO_SUCH_PROPERTY;
 import static org.neo4j.kernel.api.schema_new.SchemaDescriptorPredicates.hasProperty;
@@ -160,12 +163,17 @@ public class IndexTxStateUpdater
             DefinedProperty changedProperty, int[] indexPropertyIds )
     {
         DefinedProperty[] values = new DefinedProperty[indexPropertyIds.length];
-        for ( int i = 0; i < values.length; i++ )
+        Cursor<PropertyItem> propertyCursor = readOps.nodeGetProperties( state, node );
+        while ( propertyCursor.next() )
         {
-            int indexPropertyId = indexPropertyIds[i];
-            values[i] = indexPropertyId == changedProperty.propertyKeyId()
-                        ? changedProperty
-                        : Property.property( indexPropertyId, readOps.nodeGetProperty( state, node, indexPropertyId ) );
+            PropertyItem property = propertyCursor.get();
+            int k = ArrayUtils.indexOf( indexPropertyIds, property.propertyKeyId() );
+            if ( k >= 0 )
+            {
+                values[k] = indexPropertyIds[k] == changedProperty.propertyKeyId()
+                            ? changedProperty
+                            : Property.property( indexPropertyIds[k], property.value() );
+            }
         }
 
         return OrderedPropertyValues.of( values );
