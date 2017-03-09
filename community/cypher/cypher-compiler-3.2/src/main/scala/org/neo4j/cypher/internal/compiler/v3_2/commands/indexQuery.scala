@@ -75,8 +75,10 @@ object indexQuery extends GraphElementPropertyFunctions {
     // collapses into a null value, which will not match any nodes.
     if (values.contains(null))
       Iterator.empty
-    val neoValues: Seq[Any] = values.map(makeValueNeoSafe)
-    val index1 = index(neoValues)
-    index1.toIterator
+    else {
+      val neoValues: Seq[Any] = values.map(makeValueNeoSafe)
+      val index1 = index(neoValues)
+      index1.toIterator
+    }
   }
 }
