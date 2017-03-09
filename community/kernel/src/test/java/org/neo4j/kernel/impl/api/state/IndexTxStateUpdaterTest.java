@@ -30,6 +30,7 @@ import org.neo4j.collection.primitive.PrimitiveIntCollections;
 import org.neo4j.collection.primitive.PrimitiveIntSet;
 import org.neo4j.cursor.Cursor;
 import org.neo4j.kernel.api.exceptions.EntityNotFoundException;
+import org.neo4j.kernel.api.properties.Property;
 import org.neo4j.kernel.api.schema_new.LabelSchemaDescriptor;
 import org.neo4j.kernel.api.schema_new.OrderedPropertyValues;
 import org.neo4j.kernel.api.schema_new.index.NewIndexDescriptor;
@@ -39,6 +40,7 @@ import org.neo4j.kernel.impl.api.KernelStatement;
 import org.neo4j.kernel.impl.api.operations.EntityReadOperations;
 import org.neo4j.kernel.impl.api.operations.SchemaReadOperations;
 import org.neo4j.storageengine.api.NodeItem;
+import org.neo4j.storageengine.api.PropertyItem;
 
 import static org.mockito.Matchers.any;
 import static org.mockito.Matchers.anyInt;
@@ -111,6 +113,10 @@ public class IndexTxStateUpdaterTest
         PrimitiveIntSet defaultPropertyIds = PrimitiveIntCollections.asSet( new int[]{ propId1, propId2, propId3 } );
         EntityReadOperations readOps = mock( EntityReadOperations.class );
         when( readOps.nodeGetPropertyKeys( state, node ) ).thenReturn( defaultPropertyIds );
+        when( readOps.nodeGetProperties( state, node ) ).thenAnswer( p -> StubCursors.asPropertyCursor(
+                Property.property( propId1, "hi1" ),
+                Property.property( propId2, "hi2" ),
+                Property.property( propId3, "hi3" ) ) );
         when( readOps.nodeGetProperty( state, node, propId1 ) ).thenReturn( "hi1" );
         when( readOps.nodeGetProperty( state, node, propId2 ) ).thenReturn( "hi2" );
         when( readOps.nodeGetProperty( state, node, propId3 ) ).thenReturn( "hi3" );

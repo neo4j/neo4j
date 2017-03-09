@@ -95,10 +95,10 @@ public class IndexTxStateUpdater
     public void onPropertyAdd( KernelStatement state, NodeItem node, DefinedProperty after )
             throws EntityNotFoundException
     {
-        Validators.INDEX_VALUE_VALIDATOR.validate( after.value() );
         Iterator<NewIndexDescriptor> indexes = getIndexesForProperty( state, after.propertyKeyId() );
         nodeIndexMatcher.onMatchingSchema( state, indexes, node, after.propertyKeyId(),
                 index -> {
+                    Validators.INDEX_VALUE_VALIDATOR.validate( after.value() );
                     OrderedPropertyValues values =
                             getOrderedPropertyValues( state, node, after, index.schema().getPropertyIds() );
                     state.txState().indexDoUpdateEntry( index.schema(), node.id(), null, values );
@@ -121,10 +121,10 @@ public class IndexTxStateUpdater
             throws EntityNotFoundException
     {
         assert before.propertyKeyId() == after.propertyKeyId();
-        Validators.INDEX_VALUE_VALIDATOR.validate( after.value() );
         Iterator<NewIndexDescriptor> indexes = getIndexesForProperty( state, before.propertyKeyId() );
         nodeIndexMatcher.onMatchingSchema( state, indexes, node, before.propertyKeyId(),
                 index -> {
+                    Validators.INDEX_VALUE_VALIDATOR.validate( after.value() );
                     int[] indexPropertyIds = index.schema().getPropertyIds();
 
                     Object[] valuesBefore = new Object[indexPropertyIds.length];
