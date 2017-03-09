@@ -1487,7 +1487,7 @@ public class InternalTreeLogicTest
     {
         long currentPageId = cursor.getCurrentPageId();
         cursor.next( rootId );
-        new TreePrinter<>( node, layout, stableGen, unstableGen ).printTree( cursor, System.out, true, true );
+        new TreePrinter<>( node, layout, stableGen, unstableGen ).printTree( cursor, System.out, true, true, true );
         cursor.next( currentPageId );
     }
 

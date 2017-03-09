@@ -738,16 +738,16 @@ public class GBPTree<KEY,VALUE> implements Closeable
 
     void printTree() throws IOException
     {
-        printTree( true, true );
+        printTree( true, true, true );
     }
 
     // Utility method
-    void printTree( boolean printValues, boolean printPosition ) throws IOException
+    void printTree( boolean printValues, boolean printPosition, boolean printState ) throws IOException
     {
         try ( PageCursor cursor = openRootCursor( PagedFile.PF_SHARED_READ_LOCK ) )
         {
             new TreePrinter<>( bTreeNode, layout, stableGeneration( generation ), unstableGeneration( generation ) )
-                .printTree( cursor, System.out, printValues, printPosition );
+                .printTree( cursor, System.out, printValues, printPosition, printState );
         }
     }
 
