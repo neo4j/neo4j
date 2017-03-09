@@ -339,7 +339,7 @@ public class QueryLoggerIT
         EnterpriseAuthManager authManager = database.getDependencyResolver().resolveDependency( EnterpriseAuthManager.class );
         EnterpriseSecurityContext neo = authManager.login( AuthToken.newBasicAuthToken( "neo4j", "neo4j" ) );
 
-        String query = "CALL dbms.changePassword('abc123')";
+        String query = "CALL dbms.security.changePassword('abc123')";
         try ( InternalTransaction tx = database
                 .beginTransaction( KernelTransaction.Type.explicit, neo ) )
         {
@@ -355,9 +355,39 @@ public class QueryLoggerIT
         List<String> logLines = readAllLines( logFilename );
         assertEquals( 1, logLines.size() );
         assertThat( logLines.get( 0 ),
-                endsWith( String.format(
-                        " ms: %s - %s - {} - {}",
-                        querySource( neo.subject().username() ), "CALL dbms.changePassword(*****)") ) );
+                containsString(  "CALL dbms.security.changePassword(******)") ) ;
+        assertThat( logLines.get( 0 ), containsString( neo.subject().username() ) );
+    }
+
+    @Test
+    public void shouldNotLogPasswordEvenIfPasswordIsSilly() throws Exception
+    {
+        GraphDatabaseFacade database = (GraphDatabaseFacade) databaseBuilder
+                .setConfig( GraphDatabaseSettings.log_queries, Settings.TRUE )
+                .setConfig( GraphDatabaseSettings.logs_directory, logsDirectory.getPath() )
+                .setConfig( GraphDatabaseSettings.auth_enabled, Settings.TRUE )
+                .newGraphDatabase();
+
+        EnterpriseAuthManager authManager = database.getDependencyResolver().resolveDependency( EnterpriseAuthManager.class );
+        EnterpriseSecurityContext neo = authManager.login( AuthToken.newBasicAuthToken( "neo4j", "neo4j" ) );
+
+        String query = "CALL dbms.security.changePassword('.changePassword(silly)')";
+        try ( InternalTransaction tx = database
+                .beginTransaction( KernelTransaction.Type.explicit, neo ) )
+        {
+            Result res = database.execute( tx, query, Collections.emptyMap() );
+            res.close();
+            tx.success();
+        }
+        finally
+        {
+            database.shutdown();
+        }
+
+        List<String> logLines = readAllLines( logFilename );
+        assertEquals( 1, logLines.size() );
+        assertThat( logLines.get( 0 ),
+                containsString(  "CALL dbms.security.changePassword(******)") ) ;
         assertThat( logLines.get( 0 ), containsString( neo.subject().username() ) );
     }
 
@@ -389,9 +419,7 @@ public class QueryLoggerIT
         List<String> logLines = readAllLines( logFilename );
         assertEquals( 1, logLines.size() );
         assertThat( logLines.get( 0 ),
-                endsWith( String.format(
-                        " ms: %s - %s - {password: *****} - {}",
-                        querySource( neo.subject().username() ), query ) ) );
+                containsString(  "{password: ******}"));
         assertThat( logLines.get( 0 ), containsString( neo.subject().username() ) );
     }
 

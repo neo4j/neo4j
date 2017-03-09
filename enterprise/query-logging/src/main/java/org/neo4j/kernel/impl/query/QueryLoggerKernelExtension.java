@@ -24,6 +24,8 @@ import java.io.File;
 import java.io.OutputStream;
 import java.time.Clock;
 import java.util.Map;
+import java.util.regex.Matcher;
+import java.util.regex.Pattern;
 
 import org.neo4j.graphdb.factory.GraphDatabaseSettings;
 import org.neo4j.helpers.Service;
@@ -172,9 +174,43 @@ public class QueryLoggerKernelExtension extends KernelExtensionFactory<QueryLogg
             String sourceString = query.querySource().toString();
             String queryText = query.queryText();
             String metaData = mapAsString( query.metaData() );
+
+            String password = "";
+            boolean haveParams = false;
+            if ( queryText.contains( ".changePassword(" ) )
+            {
+                Pattern pattern = Pattern.compile( "\\.changePassword\\((.*)\\)" );
+                Matcher matcher = pattern.matcher( queryText );
+                if ( matcher.find() )
+                {
+                    password = matcher.group( 1 );
+                    if ( password.charAt( 0 ) != '$' )
+                    {
+                        queryText = queryText.replace( password, "******" );
+                    }
+                    else
+                    {
+                        haveParams = true;
+                    }
+
+                }
+            }
+
             if ( logQueryParameters )
             {
                 String params = mapAsString( query.queryParameters() );
+                if ( haveParams )
+                {
+                    password = password.replace( "$", "" );
+
+                    Pattern pattern = Pattern.compile( password + ".*('.*')" );
+                    Matcher matcher = pattern.matcher( params );
+                    if ( matcher.find() )
+                    {
+                        password = matcher.group( 1 );
+                        params = params.replace( password, "******" );
+                    }
+                }
                 return format( "%d ms: %s - %s - %s - %s", time, sourceString, queryText, params, metaData );
             }
             else
