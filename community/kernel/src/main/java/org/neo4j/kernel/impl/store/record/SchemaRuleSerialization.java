@@ -127,7 +127,7 @@ public class SchemaRuleSerialization
         }
 
         indexDescriptor.schema().processWith( new SchemaDescriptorSerializer( target ) );
-        UTF8.putEncodedNullTerminatedStringInto( indexRule.getName(), target );
+        UTF8.putEncodedStringInto( indexRule.getName(), target );
         return target.array();
     }
 
@@ -160,7 +160,7 @@ public class SchemaRuleSerialization
         }
 
         constraintDescriptor.schema().processWith( new SchemaDescriptorSerializer( target ) );
-        UTF8.putEncodedNullTerminatedStringInto( constraintRule.getName(), target );
+        UTF8.putEncodedStringInto( constraintRule.getName(), target );
         return target.array();
     }
 
@@ -186,7 +186,7 @@ public class SchemaRuleSerialization
         }
 
         length += indexDescriptor.schema().computeWith( schemaSizeComputer );
-        length += UTF8.computeRequiredNullTerminatedByteBufferSize( indexRule.getName() );
+        length += UTF8.computeRequiredByteBufferSize( indexRule.getName() );
         return length;
     }
 
@@ -208,7 +208,7 @@ public class SchemaRuleSerialization
         }
 
         length += constraintDescriptor.schema().computeWith( schemaSizeComputer );
-        length += UTF8.computeRequiredNullTerminatedByteBufferSize( constraintRule.getName() );
+        length += UTF8.computeRequiredByteBufferSize( constraintRule.getName() );
         return length;
     }
 
@@ -289,9 +289,9 @@ public class SchemaRuleSerialization
     private static String readRuleName( long id, Class<? extends SchemaRule> type, ByteBuffer source )
     {
         String ruleName = null;
-        if ( source.remaining() > 4 )
+        if ( source.remaining() >= UTF8.MINIMUM_SERIALISED_LENGTH_BYTES )
         {
-            ruleName = UTF8.getDecodedNullTerminatedStringFrom( source );
+            ruleName = UTF8.getDecodedStringFrom( source );
         }
         if ( ruleName == null || ruleName.isEmpty() )
         {

@@ -31,6 +31,7 @@ public class UTF8
     public static final Function<String, byte[]> encode = UTF8::encode;
 
     public static final Function<byte[], String> decode = UTF8::decode;
+    public static final int MINIMUM_SERIALISED_LENGTH_BYTES = Integer.BYTES;
 
     public static byte[] encode( String string )
     {
@@ -51,37 +52,21 @@ public class UTF8
     {
         // Currently only one key is supported although the data format supports multiple
         int count = source.getInt();
+        int remaining = source.remaining();
+        if ( count > remaining )
+        {
+            throw badStringFormatException( count, remaining );
+        }
         byte[] data = new byte[count];
         source.get( data );
         return UTF8.decode( data );
     }
 
-    public static String getDecodedNullTerminatedStringFrom( ByteBuffer source )
+    private static IllegalArgumentException badStringFormatException( int count, int remaining )
     {
-        int start = source.position();
-        int nullPos = -1;
-        int cursor = start;
-        while ( cursor < source.limit() )
-        {
-            if ( source.get( cursor ) == 0 )
-            {
-                nullPos = cursor;
-                break;
-            }
-            cursor++;
-        }
-        if ( nullPos == -1 )
-        {
-            return null;
-        }
-        int length = nullPos - start;
-        if ( length == 0 )
-        {
-            return "";
-        }
-        byte[] data = new byte[length];
-        source.get( data );
-        return UTF8.decode( data );
+        return new IllegalArgumentException(
+                "Bad string format; claims string is " + count + " bytes long, " +
+                "but only " + remaining + " bytes remain in buffer" );
     }
 
     public static void putEncodedStringInto( String text, ByteBuffer target )
@@ -91,21 +76,9 @@ public class UTF8
         target.put( data );
     }
 
-    public static void putEncodedNullTerminatedStringInto( String text, ByteBuffer target )
-    {
-        byte[] data = encode( text );
-        target.put( data );
-        target.put( (byte) 0 );
-    }
-
     public static int computeRequiredByteBufferSize( String text )
     {
         return encode( text ).length + 4;
-    }
-
-    public static int computeRequiredNullTerminatedByteBufferSize( String text )
-    {
-        return encode( text ).length + 1;
     }
 
     private UTF8()

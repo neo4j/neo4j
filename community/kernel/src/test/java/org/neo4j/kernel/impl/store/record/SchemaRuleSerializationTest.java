@@ -308,8 +308,12 @@ public class SchemaRuleSerializationTest extends SchemaRuleTestBase
     {
         assertParseIndexRule( "/////wsAAAAOaW5kZXgtcHJvdmlkZXIAAAAEMjUuMB9bAAACAAABAAAABA==", "index_24" );
         assertParseIndexRule( "AAACAAEAAAAOaW5kZXgtcHJvdmlkZXIAAAAEMjUuMAABAAAAAAAAAAQ=", "index_24" ); // LEGACY
-        assertParseIndexRule( "/////wsAAAAOaW5kZXgtcHJvdmlkZXIAAAAEMjUuMB9bAAACAAABAAAABGN1c3RvbV9uYW1lAA==", "custom_name" ); // named rule
+        assertParseIndexRule( "/////wsAAAAOaW5kZXgtcHJvdmlkZXIAAAAEMjUuMB9bAAACAAABAAAABAAAAAtjdXN0b21fbmFtZQ==", "custom_name" ); // named rule
         assertParseIndexRule( addNullByte( "/////wsAAAAOaW5kZXgtcHJvdmlkZXIAAAAEMjUuMB9bAAACAAABAAAABA==" ), "index_24" ); // empty name
+        assertParseIndexRule( addNullByte( 2, "/////wsAAAAOaW5kZXgtcHJvdmlkZXIAAAAEMjUuMB9bAAACAAABAAAABA==" ), "index_24" ); // empty name
+        assertParseIndexRule( addNullByte( 3, "/////wsAAAAOaW5kZXgtcHJvdmlkZXIAAAAEMjUuMB9bAAACAAABAAAABA==" ), "index_24" ); // empty name
+        assertParseIndexRule( addNullByte( 4, "/////wsAAAAOaW5kZXgtcHJvdmlkZXIAAAAEMjUuMB9bAAACAAABAAAABA==" ), "index_24" ); // empty name
+        assertParseIndexRule( addNullByte( 5, "/////wsAAAAOaW5kZXgtcHJvdmlkZXIAAAAEMjUuMB9bAAACAAABAAAABA==" ), "index_24" ); // empty name
     }
 
     @Test
@@ -317,8 +321,12 @@ public class SchemaRuleSerializationTest extends SchemaRuleTestBase
     {
         assertParseUniqueIndexRule( "/////wsAAAAOaW5kZXgtcHJvdmlkZXIAAAAEMjUuMCAAAAAAAAAAC1sAAAA9AAEAAAPc", "index_33" );
         assertParseUniqueIndexRule( "AAAAPQIAAAAOaW5kZXgtcHJvdmlkZXIAAAAEMjUuMAABAAAAAAAAA9wAAAAAAAAACw==", "index_33" ); // LEGACY
-        assertParseUniqueIndexRule( "/////wsAAAAOaW5kZXgtcHJvdmlkZXIAAAAEMjUuMCAAAAAAAAAAC1sAAAA9AAEAAAPcY3VzdG9tX25hbWUA", "custom_name" ); // named rule
+        assertParseUniqueIndexRule( "/////wsAAAAOaW5kZXgtcHJvdmlkZXIAAAAEMjUuMCAAAAAAAAAAC1sAAAA9AAEAAAPcAAAAC2N1c3RvbV9uYW1l", "custom_name" ); // named rule
         assertParseUniqueIndexRule( addNullByte( "/////wsAAAAOaW5kZXgtcHJvdmlkZXIAAAAEMjUuMCAAAAAAAAAAC1sAAAA9AAEAAAPc" ), "index_33" ); // empty name
+        assertParseUniqueIndexRule( addNullByte( 2, "/////wsAAAAOaW5kZXgtcHJvdmlkZXIAAAAEMjUuMCAAAAAAAAAAC1sAAAA9AAEAAAPc" ), "index_33" ); // empty name
+        assertParseUniqueIndexRule( addNullByte( 3, "/////wsAAAAOaW5kZXgtcHJvdmlkZXIAAAAEMjUuMCAAAAAAAAAAC1sAAAA9AAEAAAPc" ), "index_33" ); // empty name
+        assertParseUniqueIndexRule( addNullByte( 4, "/////wsAAAAOaW5kZXgtcHJvdmlkZXIAAAAEMjUuMCAAAAAAAAAAC1sAAAA9AAEAAAPc" ), "index_33" ); // empty name
+        assertParseUniqueIndexRule( addNullByte( 5, "/////wsAAAAOaW5kZXgtcHJvdmlkZXIAAAAEMjUuMCAAAAAAAAAAC1sAAAA9AAEAAAPc" ), "index_33" ); // empty name
     }
 
     @Test
@@ -326,8 +334,12 @@ public class SchemaRuleSerializationTest extends SchemaRuleTestBase
     {
         assertParseUniqueConstraintRule( "/////ww+AAAAAAAAAAJbAAAANwABAAAAAw==", "constraint_1" );
         assertParseUniqueConstraintRule( "AAAANwMBAAAAAAAAAAMAAAAAAAAAAg==", "constraint_1" ); // LEGACY
-        assertParseUniqueConstraintRule( "/////ww+AAAAAAAAAAJbAAAANwABAAAAA2N1c3RvbV9uYW1lAA==", "custom_name" ); // named rule
+        assertParseUniqueConstraintRule( "/////ww+AAAAAAAAAAJbAAAANwABAAAAAwAAAAtjdXN0b21fbmFtZQ==", "custom_name" ); // named rule
         assertParseUniqueConstraintRule( addNullByte( "/////ww+AAAAAAAAAAJbAAAANwABAAAAAw==" ), "constraint_1" ); // empty name
+        assertParseUniqueConstraintRule( addNullByte( 2, "/////ww+AAAAAAAAAAJbAAAANwABAAAAAw==" ), "constraint_1" ); // empty name
+        assertParseUniqueConstraintRule( addNullByte( 3, "/////ww+AAAAAAAAAAJbAAAANwABAAAAAw==" ), "constraint_1" ); // empty name
+        assertParseUniqueConstraintRule( addNullByte( 4, "/////ww+AAAAAAAAAAJbAAAANwABAAAAAw==" ), "constraint_1" ); // empty name
+        assertParseUniqueConstraintRule( addNullByte( 5, "/////ww+AAAAAAAAAAJbAAAANwABAAAAAw==" ), "constraint_1" ); // empty name
     }
 
     @Test
@@ -335,8 +347,12 @@ public class SchemaRuleSerializationTest extends SchemaRuleTestBase
     {
         assertParseNodePropertyExistsRule( "/////ww9WwAAAC0AAQAAADM=", "constraint_87" );
         assertParseNodePropertyExistsRule( "AAAALQQAAAAz", "constraint_87" ); // LEGACY
-        assertParseNodePropertyExistsRule( "/////ww9WwAAAC0AAQAAADNjdXN0b21fbmFtZQA=", "custom_name" ); // named rule
+        assertParseNodePropertyExistsRule( "/////ww9WwAAAC0AAQAAADMAAAALY3VzdG9tX25hbWU=", "custom_name" ); // named rule
         assertParseNodePropertyExistsRule( addNullByte( "/////ww9WwAAAC0AAQAAADM=" ), "constraint_87" ); // empty name
+        assertParseNodePropertyExistsRule( addNullByte( 2, "/////ww9WwAAAC0AAQAAADM=" ), "constraint_87" ); // empty name
+        assertParseNodePropertyExistsRule( addNullByte( 3, "/////ww9WwAAAC0AAQAAADM=" ), "constraint_87" ); // empty name
+        assertParseNodePropertyExistsRule( addNullByte( 4, "/////ww9WwAAAC0AAQAAADM=" ), "constraint_87" ); // empty name
+        assertParseNodePropertyExistsRule( addNullByte( 5, "/////ww9WwAAAC0AAQAAADM=" ), "constraint_87" ); // empty name
     }
 
     @Test
@@ -344,8 +360,12 @@ public class SchemaRuleSerializationTest extends SchemaRuleTestBase
     {
         assertParseRelationshipPropertyExistsRule( "/////ww9XAAAIUAAAQAAF+c=", "constraint_51" );
         assertParseRelationshipPropertyExistsRule( "AAAhQAUAABfn", "constraint_51" ); // LEGACY6
-        assertParseRelationshipPropertyExistsRule( "/////ww9XAAAIUAAAQAAF+djdXN0b21fbmFtZQA=", "custom_name" ); // named rule
+        assertParseRelationshipPropertyExistsRule( "/////ww9XAAAIUAAAQAAF+cAAAALY3VzdG9tX25hbWU=", "custom_name" ); // named rule
         assertParseRelationshipPropertyExistsRule( addNullByte( "/////ww9XAAAIUAAAQAAF+c=" ), "constraint_51" ); // empty name
+        assertParseRelationshipPropertyExistsRule( addNullByte( 2, "/////ww9XAAAIUAAAQAAF+c=" ), "constraint_51" ); // empty name
+        assertParseRelationshipPropertyExistsRule( addNullByte( 3, "/////ww9XAAAIUAAAQAAF+c=" ), "constraint_51" ); // empty name
+        assertParseRelationshipPropertyExistsRule( addNullByte( 4, "/////ww9XAAAIUAAAQAAF+c=" ), "constraint_51" ); // empty name
+        assertParseRelationshipPropertyExistsRule( addNullByte( 5, "/////ww9XAAAIUAAAQAAF+c=" ), "constraint_51" ); // empty name
     }
 
     private void assertParseIndexRule( String serialized, String name ) throws Exception
@@ -355,6 +375,7 @@ public class SchemaRuleSerializationTest extends SchemaRuleTestBase
         NewIndexDescriptor index = NewIndexDescriptorFactory.forLabel( 512, 4 );
         SchemaIndexProvider.Descriptor indexProvider = new SchemaIndexProvider.Descriptor( "index-provider", "25.0" );
         byte[] bytes = decodeBase64( serialized );
+//        System.out.println( encodeBase64( IndexRule.indexRule( ruleId, index, indexProvider, "custom_name" ).serialize() ) );
 
         // WHEN
         IndexRule deserialized = assertIndexRule( SchemaRuleSerialization.deserialize( ruleId, ByteBuffer.wrap( bytes ) ) );
@@ -376,6 +397,7 @@ public class SchemaRuleSerializationTest extends SchemaRuleTestBase
         NewIndexDescriptor index = NewIndexDescriptorFactory.uniqueForLabel( 61, 988 );
         SchemaIndexProvider.Descriptor indexProvider = new SchemaIndexProvider.Descriptor( "index-provider", "25.0" );
         byte[] bytes = decodeBase64( serialized );
+//        System.out.println( encodeBase64( IndexRule.constraintIndexRule( ruleId, index, indexProvider, constraintId, "custom_name" ).serialize() ) );
 
         // WHEN
         IndexRule deserialized = assertIndexRule( SchemaRuleSerialization.deserialize( ruleId, ByteBuffer.wrap( bytes ) ) );
@@ -398,6 +420,7 @@ public class SchemaRuleSerializationTest extends SchemaRuleTestBase
         long ownedIndexId = 2;
         UniquenessConstraintDescriptor constraint = ConstraintDescriptorFactory.uniqueForLabel( labelId, propertyKey );
         byte[] bytes = decodeBase64( serialized );
+//        System.out.println( encodeBase64( ConstraintRule.constraintRule( ruleId, constraint, ownedIndexId, "custom_name" ).serialize() ) );
 
         // WHEN
         ConstraintRule deserialized = assertConstraintRule( SchemaRuleSerialization.deserialize( ruleId, ByteBuffer.wrap( bytes ) ) );
@@ -418,6 +441,7 @@ public class SchemaRuleSerializationTest extends SchemaRuleTestBase
         int labelId = 45;
         ConstraintDescriptor constraint = ConstraintDescriptorFactory.existsForLabel( labelId, propertyKey );
         byte[] bytes = decodeBase64( serialized );
+//        System.out.println( encodeBase64( ConstraintRule.constraintRule( ruleId, constraint, "custom_name" ).serialize() ) );
 
         // WHEN
         ConstraintRule deserialized = assertConstraintRule( SchemaRuleSerialization.deserialize( ruleId, ByteBuffer.wrap( bytes ) ) );
@@ -438,6 +462,7 @@ public class SchemaRuleSerializationTest extends SchemaRuleTestBase
         int relTypeId = 8512;
         ConstraintDescriptor constraint = ConstraintDescriptorFactory.existsForRelType( relTypeId, propertyKey );
         byte[] bytes = decodeBase64( serialized );
+//        System.out.println( encodeBase64( ConstraintRule.constraintRule( ruleId, constraint, "custom_name" ).serialize() ) );
 
         // WHEN
         ConstraintRule deserialized = assertConstraintRule( SchemaRuleSerialization.deserialize( ruleId, ByteBuffer.wrap( bytes ) ) );
@@ -546,5 +571,18 @@ public class SchemaRuleSerializationTest extends SchemaRuleTestBase
         byte[] inputBytes = decodeBase64( input );
         byte[] outputBytes = Arrays.copyOf( inputBytes, inputBytes.length + 1 );
         return encodeBase64( outputBytes );
+    }
+
+    private String addNullByte( int nullByteCountToAdd, String input )
+    {
+        if ( nullByteCountToAdd < 1 )
+        {
+            return input;
+        }
+        if ( nullByteCountToAdd == 1 )
+        {
+            return addNullByte( input );
+        }
+        return addNullByte( addNullByte( nullByteCountToAdd - 1, input ) );
     }
 }
