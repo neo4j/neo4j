@@ -19,6 +19,8 @@
  */
 package org.neo4j.internal.cypher.acceptance
 
+import java.util.concurrent.TimeUnit
+
 import org.neo4j.cypher.internal.compiler.v3_2.IDPPlannerName
 import org.neo4j.cypher.internal.compiler.v3_2.planner.logical.plans.NodeIndexSeek
 import org.neo4j.cypher.{ExecutionEngineFunSuite, IndexHintException, NewPlannerTestSupport, SyntaxException, _}
@@ -719,6 +721,26 @@ class UsingAcceptanceTest extends ExecutionEngineFunSuite with NewPlannerTestSup
          include("Could not solve these hints: `USING INDEX a:PERSON(id)`")
       or include("Could not solve these hints: `USING INDEX b:PERSON(id)`"))
   }
+
+  test("should accept hint on composite index") {
+    val node = createLabeledNode(Map("bar" -> 5, "baz" -> 3), "Foo")
+    graph.createIndex("Foo", "bar", "baz")
+    graph.inTx {
+      graph.schema().awaitIndexesOnline(10, TimeUnit.SECONDS)
+    }
+
+    val query =
+      """ MATCH (f:Foo)
+        | USING INDEX f:Foo(bar,baz)
+        | WHERE f.bar=5 and f.baz=3
+        | RETURN f
+      """.stripMargin
+    val result = executeWithCostPlannerAndInterpretedRuntimeOnly(query)
+    result.columnAs[Node]("f").toList should equal(List(node))
+    result.executionPlanDescription() should includeAtLeastOne(classOf[NodeIndexSeek], withVariable = "f")
+  }
+
+
 
   //---------------------------------------------------------------------------
   // Verification helpers

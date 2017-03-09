@@ -112,13 +112,14 @@ abstract class AbstractIndexSeekLeafPlanner extends LeafPlanner with LeafPlanFro
                   labelId: LabelId,
                   plannables: Seq[IndexPlannableExpression])
                  (implicit context: LogicalPlanningContext, semanticTable: SemanticTable ): LogicalPlan = {
-    val hint = if (plannables.length == 1) {
+    val hint = {
       val name = idName.name
-      val propertyName = plannables.head.propertyKeyName.name
+      val propertyNames = plannables.map(_.propertyKeyName.name)
       hints.collectFirst {
-        case hint@UsingIndexHint(Variable(`name`), `labelName`, properties) if properties.name == propertyName => hint
+        case hint@UsingIndexHint(Variable(`name`), `labelName`, properties)
+          if properties.map(_.name) == propertyNames => hint
       }
-    } else None
+    }
 
     val queryExpression: QueryExpression[Expression] = mergeQueryExpressionsToSingleOne(plannables)
 

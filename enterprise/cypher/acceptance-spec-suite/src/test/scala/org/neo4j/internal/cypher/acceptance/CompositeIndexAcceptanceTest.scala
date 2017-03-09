@@ -35,8 +35,8 @@ class CompositeIndexAcceptanceTest extends ExecutionEngineFunSuite with NewPlann
 
   test("should succeed in creating and deleting composite index") {
     // When
-    executeWithCostPlannerAndInterpretedRuntimeOnly("CREATE INDEX ON :Person(firstname)")
-    executeWithCostPlannerAndInterpretedRuntimeOnly("CREATE INDEX ON :Person(firstname,lastname)")
+    graph.createIndex("Person", "firstname")
+    graph.createIndex("Person", "firstname","lastname")
 
     // Then
     graph should haveIndexes(":Person(firstname)")
@@ -52,7 +52,7 @@ class CompositeIndexAcceptanceTest extends ExecutionEngineFunSuite with NewPlann
 
   test("should use composite index when all predicates are present") {
     // Given
-    executeWithCostPlannerAndInterpretedRuntimeOnly("CREATE INDEX ON :User(firstname,lastname)")
+    graph.createIndex("User", "firstname","lastname")
     val n1 = createLabeledNode(Map("firstname" -> "Joe", "lastname" -> "Soap"), "User")
     val n2 = createLabeledNode(Map("firstname" -> "Joe", "lastname" -> "Smoke"), "User")
     val n3 = createLabeledNode(Map("firstname" -> "Jake", "lastname" -> "Soap"), "User")
@@ -67,7 +67,7 @@ class CompositeIndexAcceptanceTest extends ExecutionEngineFunSuite with NewPlann
 
   test("should not use composite index when not all predicates are present") {
     // Given
-    executeWithCostPlannerAndInterpretedRuntimeOnly("CREATE INDEX ON :User(firstname,lastname)")
+    graph.createIndex("User", "firstname","lastname")
     val n1 = createLabeledNode(Map("firstname" -> "Joe", "lastname" -> "Soap"), "User")
     val n2 = createLabeledNode(Map("firstname" -> "Joe", "lastname" -> "Smoke"), "User")
     val n3 = createLabeledNode(Map("firstname" -> "Jake", "lastname" -> "Soap"), "User")
@@ -86,9 +86,9 @@ class CompositeIndexAcceptanceTest extends ExecutionEngineFunSuite with NewPlann
 
   test("should use composite index when all predicates are present even in competition with other single property indexes with similar cardinality") {
     // Given
-    executeWithCostPlannerAndInterpretedRuntimeOnly("CREATE INDEX ON :User(firstname)")
-    executeWithCostPlannerAndInterpretedRuntimeOnly("CREATE INDEX ON :User(lastname)")
-    executeWithCostPlannerAndInterpretedRuntimeOnly("CREATE INDEX ON :User(firstname,lastname)")
+    graph.createIndex("User", "firstname")
+    graph.createIndex("User", "lastname")
+    graph.createIndex("User", "firstname","lastname")
     val n1 = createLabeledNode(Map("firstname" -> "Joe", "lastname" -> "Soap"), "User")
     val n2 = createLabeledNode(Map("firstname" -> "Joe", "lastname" -> "Smoke"), "User")
     val n3 = createLabeledNode(Map("firstname" -> "Jake", "lastname" -> "Soap"), "User")
@@ -109,9 +109,9 @@ class CompositeIndexAcceptanceTest extends ExecutionEngineFunSuite with NewPlann
 
   test("should not use composite index when index hint for alternative index is present") {
     // Given
-    executeWithCostPlannerAndInterpretedRuntimeOnly("CREATE INDEX ON :User(firstname)")
-    executeWithCostPlannerAndInterpretedRuntimeOnly("CREATE INDEX ON :User(lastname)")
-    executeWithCostPlannerAndInterpretedRuntimeOnly("CREATE INDEX ON :User(firstname,lastname)")
+    graph.createIndex("User", "firstname")
+    graph.createIndex("User", "lastname")
+    graph.createIndex("User", "firstname","lastname")
     val n1 = createLabeledNode(Map("firstname" -> "Joe", "lastname" -> "Soap"), "User")
     val n2 = createLabeledNode(Map("firstname" -> "Joe", "lastname" -> "Smoke"), "User")
     val n3 = createLabeledNode(Map("firstname" -> "Jake", "lastname" -> "Soap"), "User")
@@ -140,9 +140,9 @@ class CompositeIndexAcceptanceTest extends ExecutionEngineFunSuite with NewPlann
   // TODO: Support existence predicates in indexQuery
   ignore("should use composite index with combined equality and existence predicates") {
     // Given
-    executeWithCostPlannerAndInterpretedRuntimeOnly("CREATE INDEX ON :User(firstname)")
-    executeWithCostPlannerAndInterpretedRuntimeOnly("CREATE INDEX ON :User(lastname)")
-    executeWithCostPlannerAndInterpretedRuntimeOnly("CREATE INDEX ON :User(firstname,lastname)")
+    graph.createIndex("User", "firstname")
+    graph.createIndex("User", "lastname")
+    graph.createIndex("User", "firstname", "lastname")
     val n1 = createLabeledNode(Map("firstname" -> "Joe", "lastname" -> "Soap"), "User")
     val n2 = createLabeledNode(Map("firstname" -> "Joe", "lastname" -> "Smoke"), "User")
     val n3 = createLabeledNode(Map("firstname" -> "Jake", "lastname" -> "Soap"), "User")
@@ -162,7 +162,7 @@ class CompositeIndexAcceptanceTest extends ExecutionEngineFunSuite with NewPlann
   }
 
   test("should be able to update composite index when only one property has changed") {
-    executeWithCostPlannerAndInterpretedRuntimeOnly("CREATE INDEX ON :Person(firstname, lastname)")
+    graph.createIndex("Person", "firstname", "lastname")
     val n = executeWithCostPlannerAndInterpretedRuntimeOnly("CREATE (n:Person {firstname:'Joe', lastname:'Soap'}) RETURN n").columnAs("n").toList(0).asInstanceOf[Node]
     executeWithCostPlannerAndInterpretedRuntimeOnly("MATCH (n:Person) SET n.lastname = 'Bloggs'")
     val result = executeWithCostPlannerAndInterpretedRuntimeOnly("MATCH (n:Person) where n.firstname = 'Joe' and n.lastname = 'Bloggs' RETURN n")
@@ -174,10 +174,8 @@ class CompositeIndexAcceptanceTest extends ExecutionEngineFunSuite with NewPlann
   ignore("should plan a composite index seek for a multiple property predicate expression when index is created after data") {
     executeWithCostPlannerAndInterpretedRuntimeOnly("WITH RANGE(0,10) AS num CREATE (:Person {id:num})") // ensure label cardinality favors index
     executeWithCostPlannerAndInterpretedRuntimeOnly("CREATE (n:Person {firstname:'Joe', lastname:'Soap'})")
-    executeWithCostPlannerAndInterpretedRuntimeOnly("CREATE INDEX ON :Person(firstname)")
-    executeWithCostPlannerAndInterpretedRuntimeOnly("CALL db.awaitIndex(':Person(firstname)')")
-    executeWithCostPlannerAndInterpretedRuntimeOnly("CREATE INDEX ON :Person(firstname, lastname)")
-    executeWithCostPlannerAndInterpretedRuntimeOnly("CALL db.awaitIndex(':Person(firstname,lastname)')")
+    graph.createIndex("Person", "firstname")
+    graph.createIndex("Person", "firstname", "lastname")
     val result = executeWithCostPlannerAndInterpretedRuntimeOnly("MATCH (n:Person) WHERE n.firstname = 'Joe' AND n.lastname = 'Soap' RETURN n")
     result should useIndex(":User(firstname,lastname)")
   }
