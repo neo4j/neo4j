@@ -86,7 +86,7 @@ public class IndexQueryTransactionStateTest
         state = StatementOperationsTestHelper.mockedState( txState );
 
         store = mock( StoreReadLayer.class );
-        when( store.indexGetState( newIndexDescriptor.schema() ) ).thenReturn( InternalIndexState.ONLINE );
+        when( store.indexGetState( newIndexDescriptor ) ).thenReturn( InternalIndexState.ONLINE );
         when( store.indexesGetForLabel( labelId ) ).then( answerAsIteratorFrom( indexes ) );
         when( store.indexesGetAll() ).then( answerAsIteratorFrom( indexes ) );
         when( store.constraintsGetForLabel( labelId ) ).thenReturn( Collections.emptyIterator() );

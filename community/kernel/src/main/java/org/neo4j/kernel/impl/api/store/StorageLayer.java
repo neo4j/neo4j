@@ -239,9 +239,9 @@ public class StorageLayer implements StoreReadLayer
     }
 
     @Override
-    public InternalIndexState indexGetState( LabelSchemaDescriptor descriptor ) throws IndexNotFoundKernelException
+    public InternalIndexState indexGetState( NewIndexDescriptor descriptor ) throws IndexNotFoundKernelException
     {
-        return indexService.getIndexProxy( NewIndexDescriptorFactory.forSchema( descriptor ) ).getState();
+        return indexService.getIndexProxy( descriptor ).getState();
     }
 
     @Override

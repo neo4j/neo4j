@@ -743,7 +743,7 @@ public class StateHandlingStatementOperations implements
             }
         }
 
-        return storeLayer.indexGetState( descriptor.schema() );
+        return storeLayer.indexGetState( descriptor );
     }
 
     @Override
