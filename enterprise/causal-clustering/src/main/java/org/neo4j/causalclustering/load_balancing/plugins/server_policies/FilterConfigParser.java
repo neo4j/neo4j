@@ -31,6 +31,7 @@ import org.neo4j.causalclustering.load_balancing.filters.IdentityFilter;
 import org.neo4j.causalclustering.load_balancing.filters.MinimumCountFilter;
 
 import static java.lang.String.format;
+import static java.util.Collections.singletonList;
 
 class FilterConfigParser
 {
@@ -72,6 +73,12 @@ class FilterConfigParser
                 throw new InvalidFilterSpecification( format( "Invalid number of arguments for filter '%s': %d", filterName, args.length ) );
             }
             return IdentityFilter.as();
+        case "halt":
+            if ( args.length != 0 )
+            {
+                throw new InvalidFilterSpecification( format( "Invalid number of arguments for filter '%s': %d", filterName, args.length ) );
+            }
+            return HaltFilter.INSTANCE;
         default:
             throw new InvalidFilterSpecification( "Unknown filter: " + filterName );
         }
@@ -92,12 +99,14 @@ class FilterConfigParser
             throw new InvalidFilterSpecification( "No rules specified" );
         }
 
+        boolean haltFilterEncountered = false;
         for ( String ruleSpec : ruleSpecs )
         {
             ruleSpec = ruleSpec.trim();
 
             List<Filter<ServerInfo>> filterChain = new ArrayList<>();
-            String[] filterSpecs = ruleSpec.split( "->" );
+            String[] filterSpecs = ruleSpec.split( "->" ); // will split - and > separately, as well as ->
+            boolean allFilterEncountered = false;
             for ( String filterSpec : filterSpecs )
             {
                 filterSpec = filterSpec.trim();
@@ -143,11 +152,56 @@ class FilterConfigParser
                     }
                 }
 
+                if ( haltFilterEncountered )
+                {
+                    if ( filterChain.size() > 0 )
+                    {
+                        throw new InvalidFilterSpecification( format( "Filter 'halt' may not be followed by other filters: '%s'", ruleSpec ) );
+                    }
+                    else
+                    {
+                        throw new InvalidFilterSpecification( format( "Rule 'halt' may not followed by other rules: '%s'", filterConfig ) );
+                    }
+                }
+
                 Filter<ServerInfo> filter = filterFor( filterName, nonEmptyArgs );
-                filterChain.add( filter );
+
+                if ( filter == HaltFilter.INSTANCE )
+                {
+                    if ( filterChain.size() != 0 )
+                    {
+                        throw new InvalidFilterSpecification( format( "Filter 'halt' must be the only filter in a rule: '%s'", ruleSpec ) );
+                    }
+                    haltFilterEncountered = true;
+                }
+                else if ( filter == IdentityFilter.INSTANCE )
+                {
+                    /* The all() filter is implicit and unnecessary, but still allowed in the beginning of a rule for clarity
+                     * and for allowing the actual rule consisting of only all() to be specified. */
+
+                    if ( allFilterEncountered || filterChain.size() != 0 )
+                    {
+                        throw new InvalidFilterSpecification( format( "Filter 'all' is implicit but allowed only first in a rule: '%s'", ruleSpec ) );
+                    }
+
+                    allFilterEncountered = true;
+                }
+                else
+                {
+                    filterChain.add( filter );
+                }
             }
 
-            rules.add( new FilterChain<>( filterChain ) );
+            if ( filterChain.size() > 0 )
+            {
+                rules.add( new FilterChain<>( filterChain ) );
+            }
+        }
+
+        if ( !haltFilterEncountered )
+        {
+            /* we implicitly add the all() rule to the end if there was no explicit halt() */
+            rules.add( new FilterChain<>( singletonList( IdentityFilter.as() ) ) );
         }
 
         return new FirstValidRule<>( rules );
