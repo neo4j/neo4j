@@ -28,8 +28,6 @@ object IndexDescriptor {
 
   def apply(label: LabelId, property: PropertyKeyId): IndexDescriptor = IndexDescriptor(label, Seq(property))
 
-//  def apply(label: LabelId, properties: Seq[PropertyKeyId]): IndexDescriptor = IndexDescriptor(label, properties.toSeq)
-
   implicit def toKernelEncode(properties: Seq[PropertyKeyId]): Array[Int] = properties.map(_.id).toArray
 }
 
@@ -38,5 +36,5 @@ case class IndexDescriptor(label: LabelId, properties: Seq[PropertyKeyId]) {
 
   def isComposite: Boolean = properties.length > 1
 
-  def property = if (isComposite) throw new IllegalArgumentException("Cannot get single property of multi-property index") else properties(0)
+  def property: PropertyKeyId = if (isComposite) throw new IllegalArgumentException("Cannot get single property of multi-property index") else properties(0)
 }

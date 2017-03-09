@@ -32,7 +32,6 @@ import org.neo4j.kernel.api.exceptions.schema.SchemaKernelException
 import org.neo4j.kernel.api.index.InternalIndexState
 import org.neo4j.kernel.api.proc.Neo4jTypes.AnyType
 import org.neo4j.kernel.api.proc.{Neo4jTypes, QualifiedName => KernelQualifiedName}
-import org.neo4j.kernel.api.schema.NodePropertyDescriptor
 import org.neo4j.kernel.api.schema_new.SchemaDescriptorFactory
 import org.neo4j.kernel.api.schema_new.index.{NewIndexDescriptor => KernelIndexDescriptor}
 import org.neo4j.kernel.impl.proc.Neo4jValue
@@ -47,12 +46,12 @@ class TransactionBoundPlanContext(tc: TransactionalContextWrapper, logger: Inter
     tc.statement.readOperations().indexesGetForLabel(labelId).asScala.flatMap(getOnlineIndex)
   }
 
-  def getIndexRule(labelName: String, propertyKeys: Seq[String]): Option[IndexDescriptor] = evalOrNone {
+  def indexGet(labelName: String, propertyKeys: Seq[String]): Option[IndexDescriptor] = evalOrNone {
     val descriptor = toNodePropertyDescriptor(tc, labelName, propertyKeys)
     getOnlineIndex(tc.statement.readOperations().indexGetForLabelAndPropertyKey(descriptor))
   }
 
-  def hasIndexRule(labelName: String): Boolean = {
+  def indexExistsForLabel(labelName: String): Boolean = {
     val labelId = tc.statement.readOperations().labelGetForName(labelName)
 
     val indexDescriptors = tc.statement.readOperations().indexesGetForLabel(labelId).asScala
@@ -66,7 +65,7 @@ class TransactionBoundPlanContext(tc: TransactionalContextWrapper, logger: Inter
     tc.statement.readOperations().uniqueIndexesGetForLabel(labelId).asScala.map(kernelToCypher)
   }
 
-  def getUniqueIndexRule(labelName: String, propertyKeys: Seq[String]): Option[IndexDescriptor] = evalOrNone {
+  def uniqueIndexGet(labelName: String, propertyKeys: Seq[String]): Option[IndexDescriptor] = evalOrNone {
     val descriptor = toNodePropertyDescriptor(tc, labelName, propertyKeys)
 
     // here we do not need to use getOnlineIndex method because uniqueness constraint creation is synchronous

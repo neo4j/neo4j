@@ -103,8 +103,8 @@ object verifyBestPlan extends PlanTransformer[PlannerQuery] {
     query.allHints.flatMap {
       // using index name:label(property)
       case UsingIndexHint(Variable(_), LabelName(label), PropertyKeyName(property))
-        if planContext.getIndexRule( label, Seq(property) ).isDefined ||
-          planContext.getUniqueIndexRule( label, Seq(property) ).isDefined => None
+        if planContext.indexGet( label, Seq(property) ).isDefined ||
+          planContext.uniqueIndexGet( label, Seq(property) ).isDefined => None
       // no such index exists
       case hint@UsingIndexHint(Variable(_), LabelName(_), PropertyKeyName(_)) => Option(hint)
       // don't care about other hints

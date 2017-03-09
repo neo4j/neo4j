@@ -208,7 +208,9 @@ case class ExpressionSelectivityCalculator(stats: GraphStatistics, combiner: Sel
       labelName =>
         (labelName.id, propertyKey.id) match {
           case (Some(labelId), Some(propertyKeyId)) =>
-            stats.indexPropertyExistsSelectivity(IndexDescriptor(labelId, propertyKeyId))
+            val descriptor = IndexDescriptor(labelId, propertyKeyId)
+            val selectivity: Option[Selectivity] = stats.indexPropertyExistsSelectivity(descriptor)
+            selectivity
 
           case _ =>
             Some(Selectivity.ZERO)

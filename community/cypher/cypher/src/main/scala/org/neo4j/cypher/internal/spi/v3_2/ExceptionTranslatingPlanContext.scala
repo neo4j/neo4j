@@ -28,14 +28,14 @@ class ExceptionTranslatingPlanContext(inner: PlanContext) extends PlanContext wi
   override def indexesGetForLabel(labelId: Int): Iterator[IndexDescriptor] =
     translateException(inner.indexesGetForLabel(labelId))
 
-  override def getIndexRule(labelName: String, propertyKeys: Seq[String]): Option[IndexDescriptor] =
-    translateException(inner.getIndexRule(labelName, propertyKeys))
+  override def indexGet(labelName: String, propertyKeys: Seq[String]): Option[IndexDescriptor] =
+    translateException(inner.indexGet(labelName, propertyKeys))
 
   override def uniqueIndexesGetForLabel(labelId: Int): Iterator[IndexDescriptor] =
     translateException(inner.uniqueIndexesGetForLabel(labelId))
 
-  override def getUniqueIndexRule(labelName: String, propertyKeys: Seq[String]): Option[IndexDescriptor] =
-    translateException(inner.getUniqueIndexRule(labelName, propertyKeys))
+  override def uniqueIndexGet(labelName: String, propertyKeys: Seq[String]): Option[IndexDescriptor] =
+    translateException(inner.uniqueIndexGet(labelName, propertyKeys))
 
   override def statistics: GraphStatistics =
     translateException(inner.statistics)
@@ -54,8 +54,8 @@ class ExceptionTranslatingPlanContext(inner: PlanContext) extends PlanContext wi
   override def functionSignature(name: QualifiedName): Option[UserFunctionSignature] =
     translateException(inner.functionSignature(name))
 
-  override def hasIndexRule(labelName: String): Boolean =
-    translateException(inner.hasIndexRule(labelName))
+  override def indexExistsForLabel(labelName: String): Boolean =
+    translateException(inner.indexExistsForLabel(labelName))
 
   override def hasPropertyExistenceConstraint(labelName: String, propertyKey: String): Boolean =
     translateException(inner.hasPropertyExistenceConstraint(labelName, propertyKey))

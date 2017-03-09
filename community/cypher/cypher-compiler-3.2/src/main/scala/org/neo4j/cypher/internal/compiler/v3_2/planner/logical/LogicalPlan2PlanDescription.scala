@@ -369,20 +369,22 @@ case class LogicalPlan2PlanDescription(idMap: Map[LogicalPlan, Id], readOnly: Bo
       case IndexSeekByRange | UniqueIndexSeekByRange =>
         commandExpression match {
           case e: RangeQueryExpression[_] =>
+            assert(propertyKeys.size == 1, "Range queries not yet supported for composite indexes")
+            val propertyKey = propertyKeys.head.name
             e.expression match {
               case PrefixSeekRangeExpression(PrefixRange(prefix)) =>
-                PrefixIndex(label.name, propertyKeys.head.name, prefix)
+                PrefixIndex(label.name, propertyKey, prefix)
 
               case InequalitySeekRangeExpression(RangeLessThan(bounds)) =>
-                InequalityIndex(label.name, propertyKeys.head.name, bounds.map(bound => s"<${bound.inequalitySignSuffix} ${bound.endPoint}").toIndexedSeq)
+                InequalityIndex(label.name, propertyKey, bounds.map(bound => s"<${bound.inequalitySignSuffix} ${bound.endPoint}").toIndexedSeq)
 
               case InequalitySeekRangeExpression(RangeGreaterThan(bounds)) =>
-                InequalityIndex(label.name, propertyKeys.head.name, bounds.map(bound => s">${bound.inequalitySignSuffix} ${bound.endPoint}").toIndexedSeq)
+                InequalityIndex(label.name, propertyKey, bounds.map(bound => s">${bound.inequalitySignSuffix} ${bound.endPoint}").toIndexedSeq)
 
               case InequalitySeekRangeExpression(RangeBetween(greaterThanBounds, lessThanBounds)) =>
                 val greaterThanBoundsText = greaterThanBounds.bounds.map(bound => s">${bound.inequalitySignSuffix} ${bound.endPoint}").toIndexedSeq
                 val lessThanBoundsText = lessThanBounds.bounds.map(bound => s"<${bound.inequalitySignSuffix} ${bound.endPoint}").toIndexedSeq
-                InequalityIndex(label.name, propertyKeys.head.name, greaterThanBoundsText ++ lessThanBoundsText)
+                InequalityIndex(label.name, propertyKey, greaterThanBoundsText ++ lessThanBoundsText)
             }
 
           case _ =>

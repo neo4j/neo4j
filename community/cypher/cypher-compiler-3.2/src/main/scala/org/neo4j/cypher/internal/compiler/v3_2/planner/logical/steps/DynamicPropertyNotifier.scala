@@ -41,5 +41,5 @@ object DynamicPropertyNotifier {
   }
 
   private def withIndex(labelName: LabelName)(implicit context: LogicalPlanningContext) =
-    context.planContext.hasIndexRule(labelName.name)
+    context.planContext.indexExistsForLabel(labelName.name)
 }

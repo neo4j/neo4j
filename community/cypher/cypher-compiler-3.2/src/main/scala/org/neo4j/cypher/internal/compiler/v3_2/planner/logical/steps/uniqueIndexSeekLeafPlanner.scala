@@ -41,5 +41,5 @@ object uniqueIndexSeekLeafPlanner extends AbstractIndexSeekLeafPlanner {
     context.planContext.uniqueIndexesGetForLabel(labelId)
 
   protected def findIndexesFor(label: String, properties: Seq[String])(implicit context: LogicalPlanningContext): Option[IndexDescriptor] =
-    context.planContext.getUniqueIndexRule(label, properties)
+    context.planContext.uniqueIndexGet(label, properties)
 }

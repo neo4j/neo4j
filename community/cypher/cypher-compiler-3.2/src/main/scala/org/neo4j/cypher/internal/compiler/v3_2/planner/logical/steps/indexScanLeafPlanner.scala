@@ -101,5 +101,5 @@ object indexScanLeafPlanner extends LeafPlanner with LeafPlanFromExpression {
   }
 
   private def findIndexesFor(label: String, property: String)(implicit context: LogicalPlanningContext) =
-    context.planContext.getIndexRule(label, Seq(property)) orElse context.planContext.getUniqueIndexRule(label, Seq(property))
+    context.planContext.indexGet(label, Seq(property)) orElse context.planContext.uniqueIndexGet(label, Seq(property))
 }

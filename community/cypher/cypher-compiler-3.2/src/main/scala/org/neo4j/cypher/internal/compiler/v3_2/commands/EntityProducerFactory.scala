@@ -73,7 +73,7 @@ class EntityProducerFactory extends GraphElementPropertyFunctions {
   def nodeByIndexHint(readOnly: Boolean): PartialFunction[(PlanContext, StartItem), EntityProducer[Node]] = {
     case (planContext, startItem @ SchemaIndex(variable, labelName, propertyNames, AnyIndex, Some(ScanQueryExpression(_)))) =>
 
-      val indexGetter = planContext.getIndexRule(labelName, propertyNames)
+      val indexGetter = planContext.indexGet(labelName, propertyNames)
 
       val index = indexGetter getOrElse
         (throw new IndexHintException(variable, labelName, propertyNames, "No such index found."))
@@ -85,7 +85,7 @@ class EntityProducerFactory extends GraphElementPropertyFunctions {
 
     case (planContext, startItem @ SchemaIndex(variable, labelName, propertyNames, AnyIndex, valueExp)) =>
 
-      val indexGetter = planContext.getIndexRule(labelName, propertyNames)
+      val indexGetter = planContext.indexGet(labelName, propertyNames)
 
       val index = indexGetter getOrElse
         (throw new IndexHintException(variable, labelName, propertyNames, "No such index found."))
@@ -102,7 +102,7 @@ class EntityProducerFactory extends GraphElementPropertyFunctions {
 
     case (planContext, startItem @ SchemaIndex(variable, labelName, propertyNames, UniqueIndex, valueExp)) =>
 
-      val indexGetter = planContext.getUniqueIndexRule(labelName, propertyNames)
+      val indexGetter = planContext.uniqueIndexGet(labelName, propertyNames)
 
       val index = indexGetter getOrElse
         (throw new IndexHintException(variable, labelName, propertyNames, "No such index found."))

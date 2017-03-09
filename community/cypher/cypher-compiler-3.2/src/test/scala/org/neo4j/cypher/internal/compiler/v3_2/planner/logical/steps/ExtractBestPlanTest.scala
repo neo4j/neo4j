@@ -57,8 +57,8 @@ class ExtractBestPlanTest extends CypherFunSuite with LogicalPlanningTestSupport
       if (hasIndex) Option(IndexDescriptor(0, 0))
       else None
 
-    when(planContext.getIndexRule(anyString(),any())).thenReturn(indexDescriptor)
-    when(planContext.getUniqueIndexRule(anyString(),any())).thenReturn(None)
+    when(planContext.indexGet(anyString(),any())).thenReturn(indexDescriptor)
+    when(planContext.uniqueIndexGet(anyString(),any())).thenReturn(None)
     planContext
   }
 

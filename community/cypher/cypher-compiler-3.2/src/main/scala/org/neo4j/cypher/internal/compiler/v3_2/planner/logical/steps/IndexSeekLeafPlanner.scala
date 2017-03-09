@@ -45,8 +45,8 @@ object indexSeekLeafPlanner extends AbstractIndexSeekLeafPlanner {
   }
 
   private def anyIndex(label: String, properties: Seq[String])(implicit context: LogicalPlanningContext) =
-    context.planContext.getIndexRule(label, properties)
+    context.planContext.indexGet(label, properties)
 
   private def uniqueIndexDefinedFor(label: String, properties: Seq[String])(implicit context: LogicalPlanningContext) =
-    context.planContext.getUniqueIndexRule(label, properties)
+    context.planContext.uniqueIndexGet(label, properties)
 }
