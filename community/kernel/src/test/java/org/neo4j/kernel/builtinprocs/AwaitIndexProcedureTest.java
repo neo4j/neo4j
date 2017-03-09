@@ -33,12 +33,11 @@ import org.neo4j.kernel.api.exceptions.ProcedureException;
 import org.neo4j.kernel.api.exceptions.Status;
 import org.neo4j.kernel.api.exceptions.index.IndexNotFoundKernelException;
 import org.neo4j.kernel.api.exceptions.schema.SchemaRuleNotFoundException;
-import org.neo4j.kernel.api.schema.IndexDescriptor;
-import org.neo4j.kernel.api.schema.IndexDescriptorFactory;
 import org.neo4j.kernel.api.index.InternalIndexState;
+import org.neo4j.kernel.api.schema_new.SchemaBoundary;
 import org.neo4j.kernel.api.schema_new.SchemaDescriptorFactory;
-import org.neo4j.kernel.api.schema_new.index.IndexBoundary;
 import org.neo4j.kernel.api.schema_new.index.NewIndexDescriptor;
+import org.neo4j.kernel.api.schema_new.index.NewIndexDescriptorFactory;
 
 import static org.hamcrest.Matchers.is;
 import static org.hamcrest.Matchers.not;
@@ -65,7 +64,8 @@ public class AwaitIndexProcedureTest
     private final IndexProcedures procedure = new IndexProcedures( new StubKernelTransaction( operations ), null );
     private final NodePropertyDescriptor descriptor = new NodePropertyDescriptor( 123, 456 );
     private final NodePropertyDescriptor anyDescriptor = new NodePropertyDescriptor( 0, 0 );
-    private final NewIndexDescriptor anyIndex = IndexBoundary.map( anyDescriptor );
+    private final NewIndexDescriptor anyIndex = NewIndexDescriptorFactory.forSchema( SchemaBoundary.map(
+            anyDescriptor ) );
 
     @Test
     public void shouldThrowAnExceptionIfTheLabelDoesntExist() throws ProcedureException

@@ -110,10 +110,10 @@ public class DataIntegrityValidatingStatementOperations implements
     }
 
     @Override
-    public NewIndexDescriptor indexCreate( KernelStatement state, NodePropertyDescriptor descriptor )
+    public NewIndexDescriptor indexCreate( KernelStatement state, LabelSchemaDescriptor descriptor )
             throws AlreadyIndexedException, AlreadyConstrainedException
     {
-        checkIndexExistence( state, OperationContext.INDEX_CREATION, descriptor );
+        checkIndexExistence( state, OperationContext.INDEX_CREATION, SchemaBoundary.map( descriptor ) );
         return schemaWriteDelegate.indexCreate( state, descriptor );
     }
 

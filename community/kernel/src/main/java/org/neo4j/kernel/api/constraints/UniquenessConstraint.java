@@ -19,10 +19,11 @@
  */
 package org.neo4j.kernel.api.constraints;
 
-import org.neo4j.kernel.api.schema.IndexDescriptor;
-import org.neo4j.kernel.api.schema.IndexDescriptorFactory;
 import org.neo4j.kernel.api.schema.NodePropertyDescriptor;
 import org.neo4j.kernel.api.TokenNameLookup;
+import org.neo4j.kernel.api.schema_new.SchemaBoundary;
+import org.neo4j.kernel.api.schema_new.index.NewIndexDescriptor;
+import org.neo4j.kernel.api.schema_new.index.NewIndexDescriptorFactory;
 
 /**
  * Description of uniqueness constraint over nodes given a label and a property key id.
@@ -34,9 +35,9 @@ public class UniquenessConstraint extends NodePropertyConstraint
         super( descriptor );
     }
 
-    public IndexDescriptor indexDescriptor()
+    public NewIndexDescriptor indexDescriptor()
     {
-        return IndexDescriptorFactory.of( descriptor );
+        return NewIndexDescriptorFactory.forSchema( SchemaBoundary.map( descriptor ) );
     }
 
     @Override

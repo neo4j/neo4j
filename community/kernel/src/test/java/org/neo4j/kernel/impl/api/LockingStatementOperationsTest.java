@@ -214,7 +214,7 @@ public class LockingStatementOperationsTest
     public void shouldAcquireSchemaWriteLockBeforeAddingIndexRule() throws Exception
     {
         // given
-        NodePropertyDescriptor descriptor = new NodePropertyDescriptor( 123, 456 );
+        LabelSchemaDescriptor descriptor = SchemaDescriptorFactory.forLabel( 123, 456 );
         NewIndexDescriptor index = NewIndexDescriptorFactory.forLabel( 123, 456 );
         when( schemaWriteOps.indexCreate( state, descriptor ) ).thenReturn( index );
 

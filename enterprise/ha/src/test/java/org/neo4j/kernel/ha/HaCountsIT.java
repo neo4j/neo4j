@@ -31,7 +31,7 @@ import org.neo4j.graphdb.schema.IndexDefinition;
 import org.neo4j.kernel.api.Statement;
 import org.neo4j.kernel.api.exceptions.KernelException;
 import org.neo4j.kernel.api.schema.NodePropertyDescriptor;
-import org.neo4j.kernel.api.schema_new.index.IndexBoundary;
+import org.neo4j.kernel.api.schema_new.SchemaDescriptorFactory;
 import org.neo4j.kernel.api.schema_new.index.NewIndexDescriptor;
 import org.neo4j.kernel.impl.api.index.IndexingService;
 import org.neo4j.kernel.impl.core.ThreadToStatementContextBridge;
@@ -184,7 +184,7 @@ public class HaCountsIT
             int labelId = statement.tokenWriteOperations().labelGetOrCreateForName( label.name() );
             int propertyKeyId = statement.tokenWriteOperations().propertyKeyGetOrCreateForName( propertyName );
             NewIndexDescriptor index = statement.schemaWriteOperations()
-                    .indexCreate( new NodePropertyDescriptor( labelId, propertyKeyId ) );
+                    .indexCreate( SchemaDescriptorFactory.forLabel( labelId, propertyKeyId ) );
             tx.success();
             return index;
         }
@@ -250,7 +250,7 @@ public class HaCountsIT
                 switch ( statement( db ).readOperations().indexGetState( index ) )
                 {
                 case ONLINE:
-                    return indexingService( db ).getIndexId( IndexBoundary.map( index ) );
+                    return indexingService( db ).getIndexId( index );
 
                 case FAILED:
                     throw new IllegalStateException( "Index failed instead of becoming ONLINE" );

@@ -121,9 +121,9 @@ public class IndexingServiceIntegrationTest
         int propertyId = propertyKeyTokenHolder.getIdByName( PROPERTY_NAME );
 
         IndexProxy clothesIndex =
-                indexingService.getIndexProxy( IndexDescriptorFactory.of( clothedLabelId, propertyId ) );
+                indexingService.getIndexProxy( NewIndexDescriptorFactory.forLabel( clothedLabelId, propertyId ) );
         IndexProxy weatherIndex =
-                indexingService.getIndexProxy( IndexDescriptorFactory.of( weatherLabelId, propertyId ) );
+                indexingService.getIndexProxy( NewIndexDescriptorFactory.forLabel( weatherLabelId, propertyId ) );
         assertEquals( InternalIndexState.ONLINE, clothesIndex.getState());
         assertEquals( InternalIndexState.ONLINE, weatherIndex.getState());
     }

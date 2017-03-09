@@ -28,13 +28,14 @@ import org.mockito.stubbing.Answer;
 import java.util.Iterator;
 
 import org.neo4j.kernel.api.schema.NodePropertyDescriptor;
-import org.neo4j.kernel.api.exceptions.schema.AlreadyConstrainedException;
-import org.neo4j.kernel.api.exceptions.schema.AlreadyIndexedException;
 import org.neo4j.kernel.api.exceptions.schema.DropIndexFailureException;
 import org.neo4j.kernel.api.exceptions.schema.IllegalTokenNameException;
 import org.neo4j.kernel.api.exceptions.schema.IndexBelongsToConstraintException;
 import org.neo4j.kernel.api.exceptions.schema.NoSuchIndexException;
 import org.neo4j.kernel.api.exceptions.schema.SchemaKernelException;
+import org.neo4j.kernel.api.schema_new.LabelSchemaDescriptor;
+import org.neo4j.kernel.api.schema_new.SchemaBoundary;
+import org.neo4j.kernel.api.schema_new.SchemaDescriptorFactory;
 import org.neo4j.kernel.api.schema_new.index.NewIndexDescriptor;
 import org.neo4j.kernel.api.schema_new.index.NewIndexDescriptorFactory;
 import org.neo4j.kernel.impl.api.operations.KeyWriteOperations;
@@ -57,7 +58,7 @@ public class DataIntegrityValidatingStatementOperationsTest
     @Rule
     public ExpectedException exception = ExpectedException.none();
 
-    NodePropertyDescriptor descriptor = new NodePropertyDescriptor( 0, 7 );
+    LabelSchemaDescriptor descriptor = SchemaDescriptorFactory.forLabel( 0, 7 );
     NewIndexDescriptor index = NewIndexDescriptorFactory.forLabel( 0, 7 );
     NewIndexDescriptor uniqueIndex = NewIndexDescriptorFactory.uniqueForLabel( 0, 7 );
 
@@ -69,18 +70,11 @@ public class DataIntegrityValidatingStatementOperationsTest
         SchemaWriteOperations innerWrite = mock( SchemaWriteOperations.class );
         DataIntegrityValidatingStatementOperations ctx =
                 new DataIntegrityValidatingStatementOperations( null, innerRead, innerWrite );
-        when( innerRead.indexGetForLabelAndPropertyKey( state, descriptor ) ).thenReturn( index );
+        when( innerRead.indexGetForLabelAndPropertyKey( state, SchemaBoundary.map( descriptor ) ) ).thenReturn( index );
 
         // WHEN
-        try
-        {
-            ctx.indexCreate( state, descriptor );
-            fail( "Should have thrown exception." );
-        }
-        catch ( AlreadyIndexedException e )
-        {
-            // ok
-        }
+        ctx.indexCreate( state, descriptor );
+        fail( "Should have thrown exception." );
 
         // THEN
         verify( innerWrite, never() ).indexCreate( eq( state ), anyObject() );
@@ -94,18 +88,11 @@ public class DataIntegrityValidatingStatementOperationsTest
         SchemaWriteOperations innerWrite = mock( SchemaWriteOperations.class );
         DataIntegrityValidatingStatementOperations ctx =
                 new DataIntegrityValidatingStatementOperations( null, innerRead, innerWrite );
-        when( innerRead.indexGetForLabelAndPropertyKey( state, descriptor ) ).thenReturn( uniqueIndex );
+        when( innerRead.indexGetForLabelAndPropertyKey( state, SchemaBoundary.map( descriptor ) ) ).thenReturn( uniqueIndex );
 
         // WHEN
-        try
-        {
-            ctx.indexCreate( state, descriptor );
-            fail( "Should have thrown exception." );
-        }
-        catch ( AlreadyConstrainedException e )
-        {
-            // ok
-        }
+        ctx.indexCreate( state, descriptor );
+        fail( "Should have thrown exception." );
 
         // THEN
         verify( innerWrite, never() ).indexCreate( eq( state ), anyObject() );
@@ -119,7 +106,7 @@ public class DataIntegrityValidatingStatementOperationsTest
         SchemaWriteOperations innerWrite = mock( SchemaWriteOperations.class );
         DataIntegrityValidatingStatementOperations ctx =
                 new DataIntegrityValidatingStatementOperations( null, innerRead, innerWrite );
-        when( innerRead.indexGetForLabelAndPropertyKey( state, descriptor ) ).thenReturn( null );
+        when( innerRead.indexGetForLabelAndPropertyKey( state, SchemaBoundary.map( descriptor ) ) ).thenReturn( null );
 
         // WHEN
         try
@@ -144,7 +131,7 @@ public class DataIntegrityValidatingStatementOperationsTest
         SchemaWriteOperations innerWrite = mock( SchemaWriteOperations.class );
         DataIntegrityValidatingStatementOperations ctx =
                 new DataIntegrityValidatingStatementOperations( null, innerRead, innerWrite );
-        when( innerRead.indexGetForLabelAndPropertyKey( state, descriptor ) ).thenReturn( uniqueIndex );
+        when( innerRead.indexGetForLabelAndPropertyKey( state, SchemaBoundary.map( descriptor ) ) ).thenReturn( uniqueIndex );
 
         // WHEN
         try
@@ -169,7 +156,7 @@ public class DataIntegrityValidatingStatementOperationsTest
         SchemaWriteOperations innerWrite = mock( SchemaWriteOperations.class );
         DataIntegrityValidatingStatementOperations ctx =
                 new DataIntegrityValidatingStatementOperations( null, innerRead, innerWrite );
-        when( innerRead.indexGetForLabelAndPropertyKey( state, descriptor ) ).thenReturn( uniqueIndex );
+        when( innerRead.indexGetForLabelAndPropertyKey( state, SchemaBoundary.map( descriptor ) ) ).thenReturn( uniqueIndex );
 
         // WHEN
         try
@@ -194,7 +181,7 @@ public class DataIntegrityValidatingStatementOperationsTest
         SchemaWriteOperations innerWrite = mock( SchemaWriteOperations.class );
         DataIntegrityValidatingStatementOperations ctx =
                 new DataIntegrityValidatingStatementOperations( null, innerRead, innerWrite );
-        when( innerRead.indexGetForLabelAndPropertyKey( state, descriptor ) ).thenReturn( uniqueIndex );
+        when( innerRead.indexGetForLabelAndPropertyKey( state, SchemaBoundary.map( descriptor ) ) ).thenReturn( uniqueIndex );
 
         // WHEN
         try

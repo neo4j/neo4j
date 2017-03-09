@@ -51,7 +51,6 @@ import org.neo4j.kernel.api.index.NodeUpdates;
 import org.neo4j.kernel.api.index.SchemaIndexProvider;
 import org.neo4j.kernel.api.labelscan.LabelScanStore;
 import org.neo4j.kernel.api.labelscan.NodeLabelUpdate;
-import org.neo4j.kernel.api.schema.IndexDescriptorFactory;
 import org.neo4j.kernel.api.schema_new.index.NewIndexDescriptor;
 import org.neo4j.kernel.api.schema_new.index.NewIndexDescriptorFactory;
 import org.neo4j.kernel.configuration.Config;
@@ -220,7 +219,8 @@ public class MultiIndexPopulationConcurrentUpdatesIT
 
     private IndexReader getIndexReader( int propertyId, Integer countryLabelId ) throws IndexNotFoundKernelException
     {
-        return indexService.getIndexProxy( IndexDescriptorFactory.of( countryLabelId, propertyId ) ).newReader();
+        return indexService.getIndexProxy( NewIndexDescriptorFactory.forLabel( countryLabelId, propertyId ) )
+                .newReader();
     }
 
     private void launchCustomIndexPopulation( Map<String,Integer> labelNameIdMap, int propertyId,
@@ -287,7 +287,7 @@ public class MultiIndexPopulationConcurrentUpdatesIT
             throws IndexNotFoundKernelException, IndexPopulationFailedKernelException, InterruptedException,
             IndexActivationFailedKernelException
     {
-        IndexProxy indexProxy = indexService.getIndexProxy( IndexDescriptorFactory.of( labelId, propertyId ) );
+        IndexProxy indexProxy = indexService.getIndexProxy( NewIndexDescriptorFactory.forLabel( labelId, propertyId ) );
         indexProxy.awaitStoreScanCompleted();
         indexProxy.activate();
     }

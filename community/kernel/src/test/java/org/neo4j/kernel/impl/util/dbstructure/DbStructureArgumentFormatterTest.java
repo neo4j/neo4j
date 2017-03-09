@@ -25,7 +25,7 @@ import java.io.IOException;
 
 import org.neo4j.kernel.api.schema.NodePropertyDescriptor;
 import org.neo4j.kernel.api.constraints.UniquenessConstraint;
-import org.neo4j.kernel.api.schema.IndexDescriptorFactory;
+import org.neo4j.kernel.api.schema_new.index.NewIndexDescriptorFactory;
 
 import static org.junit.Assert.assertEquals;
 
@@ -66,7 +66,7 @@ public class DbStructureArgumentFormatterTest
     public void shouldFormatIndexDescriptors()
     {
         assertEquals( "IndexDescriptorFactory.of( 23, 42 )",
-                formatArgument( IndexDescriptorFactory.of( 23, 42 ) ) );
+                formatArgument( NewIndexDescriptorFactory.forLabel( 23, 42 ) ) );
     }
 
     @Test

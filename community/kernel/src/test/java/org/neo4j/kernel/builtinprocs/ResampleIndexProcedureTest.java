@@ -26,11 +26,8 @@ import org.neo4j.kernel.api.exceptions.ProcedureException;
 import org.neo4j.kernel.api.exceptions.Status;
 import org.neo4j.kernel.api.exceptions.index.IndexNotFoundKernelException;
 import org.neo4j.kernel.api.exceptions.schema.SchemaRuleNotFoundException;
-import org.neo4j.kernel.api.schema.IndexDescriptor;
-import org.neo4j.kernel.api.schema.IndexDescriptorFactory;
 import org.neo4j.kernel.api.schema.NodePropertyDescriptor;
 import org.neo4j.kernel.api.schema_new.SchemaDescriptorFactory;
-import org.neo4j.kernel.api.schema_new.index.IndexBoundary;
 import org.neo4j.kernel.api.schema_new.index.NewIndexDescriptor;
 import org.neo4j.kernel.api.schema_new.index.NewIndexDescriptorFactory;
 import org.neo4j.kernel.impl.api.index.IndexingService;
@@ -130,7 +127,6 @@ public class ResampleIndexProcedureTest
 
         procedure.resampleIndex( ":Person(name)" );
 
-        verify( indexingService ).triggerIndexSampling( IndexBoundary.map( index ),
-                IndexSamplingMode.TRIGGER_REBUILD_ALL );
+        verify( indexingService ).triggerIndexSampling( index, IndexSamplingMode.TRIGGER_REBUILD_ALL );
     }
 }

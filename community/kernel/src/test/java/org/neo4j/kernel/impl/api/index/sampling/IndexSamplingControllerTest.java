@@ -24,8 +24,6 @@ import org.junit.Test;
 import java.util.concurrent.atomic.AtomicInteger;
 
 import org.neo4j.function.Predicates;
-import org.neo4j.kernel.api.schema.IndexDescriptorFactory;
-import org.neo4j.kernel.api.schema.NodePropertyDescriptor;
 import org.neo4j.kernel.api.schema_new.index.NewIndexDescriptor;
 import org.neo4j.kernel.api.schema_new.index.NewIndexDescriptorFactory;
 import org.neo4j.kernel.impl.api.index.IndexMap;

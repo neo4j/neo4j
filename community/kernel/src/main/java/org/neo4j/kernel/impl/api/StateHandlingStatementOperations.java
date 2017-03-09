@@ -22,7 +22,6 @@ package org.neo4j.kernel.impl.api;
 import java.util.Arrays;
 import java.util.Iterator;
 import java.util.Map;
-import java.util.function.IntPredicate;
 
 import org.neo4j.collection.primitive.Primitive;
 import org.neo4j.collection.primitive.PrimitiveIntCollection;
@@ -74,8 +73,8 @@ import org.neo4j.kernel.api.schema_new.constaints.ConstraintDescriptorFactory;
 import org.neo4j.kernel.api.schema_new.constaints.NodeExistenceConstraintDescriptor;
 import org.neo4j.kernel.api.schema_new.constaints.RelExistenceConstraintDescriptor;
 import org.neo4j.kernel.api.schema_new.constaints.UniquenessConstraintDescriptor;
-import org.neo4j.kernel.api.schema_new.index.IndexBoundary;
 import org.neo4j.kernel.api.schema_new.index.NewIndexDescriptor;
+import org.neo4j.kernel.api.schema_new.index.NewIndexDescriptorFactory;
 import org.neo4j.kernel.api.txstate.TransactionCountingStateVisitor;
 import org.neo4j.kernel.api.txstate.TransactionState;
 import org.neo4j.kernel.impl.api.operations.CountsOperations;
@@ -569,11 +568,11 @@ public class StateHandlingStatementOperations implements
     }
 
     @Override
-    public NewIndexDescriptor indexCreate( KernelStatement state, NodePropertyDescriptor descriptor )
+    public NewIndexDescriptor indexCreate( KernelStatement state, LabelSchemaDescriptor descriptor )
     {
-        NewIndexDescriptor newIndexDescriptor = IndexBoundary.map( descriptor );
-        state.txState().indexRuleDoAdd( newIndexDescriptor );
-        return newIndexDescriptor;
+        NewIndexDescriptor indexDescriptor = NewIndexDescriptorFactory.forSchema( descriptor );
+        state.txState().indexRuleDoAdd( indexDescriptor );
+        return indexDescriptor;
     }
 
     @Override

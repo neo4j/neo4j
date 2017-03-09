@@ -20,7 +20,6 @@
 package org.neo4j.kernel.impl.store.counts.keys;
 
 import static org.neo4j.kernel.impl.util.IdPrettyPrinter.label;
-import org.neo4j.kernel.api.schema.IndexDescriptor;
 
 abstract class IndexKey implements CountsKey
 {

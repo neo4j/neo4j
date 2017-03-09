@@ -47,7 +47,6 @@ import org.neo4j.kernel.api.exceptions.schema.ConstraintValidationException;
 import org.neo4j.kernel.api.index.InternalIndexState;
 import org.neo4j.kernel.api.properties.DefinedProperty;
 import org.neo4j.kernel.api.schema_new.IndexQuery;
-import org.neo4j.kernel.api.schema_new.SchemaBoundary;
 import org.neo4j.kernel.api.schema_new.constaints.ConstraintDescriptorFactory;
 import org.neo4j.kernel.api.schema_new.index.NewIndexDescriptor;
 import org.neo4j.kernel.api.schema_new.index.NewIndexDescriptorFactory;
@@ -90,7 +89,7 @@ public class CompositeIndexingIT
             }
             else
             {
-                statement().schemaWriteOperations().indexCreate( SchemaBoundary.map( index.schema() ) );
+                statement().schemaWriteOperations().indexCreate( index.schema() );
             }
             tx.success();
         }

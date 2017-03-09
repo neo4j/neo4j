@@ -25,9 +25,8 @@ import org.junit.Test;
 import java.io.IOException;
 
 import org.neo4j.kernel.api.index.IndexUpdater;
-import org.neo4j.kernel.api.schema.IndexDescriptor;
-import org.neo4j.kernel.api.schema.IndexDescriptorFactory;
-import org.neo4j.kernel.api.schema_new.index.IndexBoundary;
+import org.neo4j.kernel.api.schema_new.index.NewIndexDescriptor;
+import org.neo4j.kernel.api.schema_new.index.NewIndexDescriptorFactory;
 
 import static org.hamcrest.MatcherAssert.assertThat;
 import static org.hamcrest.Matchers.equalTo;
@@ -46,11 +45,11 @@ public class IndexUpdaterMapTest
     private IndexMap indexMap;
 
     private IndexProxy indexProxy1;
-    private IndexDescriptor indexDescriptor1;
+    private NewIndexDescriptor indexDescriptor1;
     private IndexUpdater indexUpdater1;
 
     private IndexProxy indexProxy2;
-    private IndexDescriptor indexDescriptor2;
+    private NewIndexDescriptor indexDescriptor2;
 
     private IndexUpdaterMap updaterMap;
 
@@ -60,15 +59,15 @@ public class IndexUpdaterMapTest
         indexMap = new IndexMap();
 
         indexProxy1 = mock( IndexProxy.class );
-        indexDescriptor1 = IndexDescriptorFactory.of( 2, 3 );
+        indexDescriptor1 = NewIndexDescriptorFactory.forLabel( 2, 3 );
         indexUpdater1 = mock( IndexUpdater.class );
-        when( indexProxy1.getDescriptor() ).thenReturn( IndexBoundary.map( indexDescriptor1 ) );
+        when( indexProxy1.getDescriptor() ).thenReturn( indexDescriptor1 );
         when( indexProxy1.newUpdater( any( IndexUpdateMode.class ) ) ).thenReturn( indexUpdater1 );
 
         indexProxy2 = mock( IndexProxy.class );
-        indexDescriptor2 = IndexDescriptorFactory.of( 5, 6 );
+        indexDescriptor2 = NewIndexDescriptorFactory.forLabel( 5, 6 );
         IndexUpdater indexUpdater2 = mock( IndexUpdater.class );
-        when( indexProxy2.getDescriptor() ).thenReturn( IndexBoundary.map( indexDescriptor2 ) );
+        when( indexProxy2.getDescriptor() ).thenReturn( indexDescriptor2 );
         when( indexProxy2.newUpdater( any( IndexUpdateMode.class ) ) ).thenReturn( indexUpdater2 );
 
         updaterMap = new IndexUpdaterMap( indexMap, IndexUpdateMode.ONLINE );

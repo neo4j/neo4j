@@ -464,12 +464,11 @@ final class TransactionBoundQueryContext(val transactionalContext: Transactional
   }
 
   override def addIndexRule(descriptor: IndexDescriptor): IdempotentResult[IndexDescriptor] = {
-    val index = toNodePropertyDescriptor(descriptor)
     try {
-      IdempotentResult(transactionalContext.statement.schemaWriteOperations().indexCreate(index))
+      IdempotentResult(transactionalContext.statement.schemaWriteOperations().indexCreate( SchemaDescriptorFactory.forLabel(descriptor.label, descriptor.property)))
     } catch {
       case _: AlreadyIndexedException =>
-        val indexDescriptor = transactionalContext.statement.readOperations().indexGetForLabelAndPropertyKey(index)
+        val indexDescriptor = transactionalContext.statement.readOperations().indexGetForLabelAndPropertyKey(new NodePropertyDescriptor( descriptor.label, descriptor.property))
         if(transactionalContext.statement.readOperations().indexGetState(indexDescriptor) == InternalIndexState.FAILED)
           throw new FailedIndexException(indexDescriptor.userDescription(tokenNameLookup))
         IdempotentResult(indexDescriptor, wasCreated = false)

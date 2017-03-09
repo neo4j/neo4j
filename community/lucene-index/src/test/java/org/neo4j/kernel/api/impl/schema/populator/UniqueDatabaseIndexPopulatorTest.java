@@ -44,7 +44,6 @@ import org.neo4j.kernel.api.index.IndexEntryUpdate;
 import org.neo4j.kernel.api.index.IndexUpdater;
 import org.neo4j.kernel.api.index.PropertyAccessor;
 import org.neo4j.kernel.api.schema_new.IndexQuery;
-import org.neo4j.kernel.api.schema_new.index.IndexBoundary;
 import org.neo4j.kernel.api.schema_new.index.NewIndexDescriptor;
 import org.neo4j.kernel.api.schema_new.index.NewIndexDescriptorFactory;
 import org.neo4j.storageengine.api.schema.IndexReader;
@@ -546,7 +545,7 @@ public class UniqueDatabaseIndexPopulatorTest
 
     private UniqueLuceneIndexPopulator newPopulator() throws IOException
     {
-        UniqueLuceneIndexPopulator populator = new UniqueLuceneIndexPopulator( index, IndexBoundary.map( descriptor ) );
+        UniqueLuceneIndexPopulator populator = new UniqueLuceneIndexPopulator( index, descriptor );
         populator.create();
         return populator;
     }

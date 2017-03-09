@@ -31,8 +31,6 @@ import org.neo4j.cursor.Cursor;
 import org.neo4j.graphdb.TransactionFailureException;
 import org.neo4j.helpers.collection.Iterators;
 import org.neo4j.kernel.api.ReadOperations;
-import org.neo4j.kernel.api.constraints.NodePropertyConstraint;
-import org.neo4j.kernel.api.constraints.RelationshipPropertyConstraint;
 import org.neo4j.kernel.api.exceptions.EntityNotFoundException;
 import org.neo4j.kernel.api.exceptions.LabelNotFoundKernelException;
 import org.neo4j.kernel.api.exceptions.PropertyKeyIdNotFoundKernelException;
@@ -43,11 +41,10 @@ import org.neo4j.kernel.api.exceptions.schema.TooManyLabelsException;
 import org.neo4j.kernel.api.index.InternalIndexState;
 import org.neo4j.kernel.api.properties.PropertyKeyIdIterator;
 import org.neo4j.kernel.api.schema_new.LabelSchemaDescriptor;
-import org.neo4j.kernel.api.schema_new.RelationTypeSchemaDescriptor;
 import org.neo4j.kernel.api.schema_new.SchemaDescriptor;
 import org.neo4j.kernel.api.schema_new.constaints.ConstraintDescriptor;
-import org.neo4j.kernel.api.schema_new.index.IndexBoundary;
 import org.neo4j.kernel.api.schema_new.index.NewIndexDescriptor;
+import org.neo4j.kernel.api.schema_new.index.NewIndexDescriptorFactory;
 import org.neo4j.kernel.impl.api.DegreeVisitor;
 import org.neo4j.kernel.impl.api.RelationshipVisitor;
 import org.neo4j.kernel.impl.api.index.IndexingService;
@@ -244,33 +241,34 @@ public class StorageLayer implements StoreReadLayer
     @Override
     public InternalIndexState indexGetState( LabelSchemaDescriptor descriptor ) throws IndexNotFoundKernelException
     {
-        return indexService.getIndexProxy( IndexBoundary.map( descriptor ) ).getState();
+        return indexService.getIndexProxy( NewIndexDescriptorFactory.forSchema( descriptor ) ).getState();
     }
 
     @Override
     public PopulationProgress indexGetPopulationProgress( LabelSchemaDescriptor descriptor )
             throws IndexNotFoundKernelException
     {
-        return indexService.getIndexProxy( IndexBoundary.map( descriptor ) ).getIndexPopulationProgress();
+        return indexService.getIndexProxy( NewIndexDescriptorFactory.forSchema( descriptor ) ).getIndexPopulationProgress();
     }
 
     @Override
     public long indexSize( LabelSchemaDescriptor descriptor ) throws IndexNotFoundKernelException
     {
-        Register.DoubleLongRegister result = indexService.indexUpdatesAndSize( IndexBoundary.map( descriptor ) );
+        Register.DoubleLongRegister result = indexService.indexUpdatesAndSize( NewIndexDescriptorFactory.forSchema( descriptor
+    ) );
         return result.readSecond();
     }
 
     @Override
     public double indexUniqueValuesPercentage( LabelSchemaDescriptor descriptor ) throws IndexNotFoundKernelException
     {
-        return indexService.indexUniqueValuesPercentage( IndexBoundary.map( descriptor ) );
+        return indexService.indexUniqueValuesPercentage( NewIndexDescriptorFactory.forSchema( descriptor ) );
     }
 
     @Override
     public String indexGetFailure( LabelSchemaDescriptor descriptor ) throws IndexNotFoundKernelException
     {
-        return indexService.getIndexProxy( IndexBoundary.map( descriptor ) ).getPopulationFailure().asString();
+        return indexService.getIndexProxy( NewIndexDescriptorFactory.forSchema( descriptor ) ).getPopulationFailure().asString();
     }
 
     @Override
@@ -544,7 +542,7 @@ public class StorageLayer implements StoreReadLayer
 
     private long tryGetIndexId( LabelSchemaDescriptor descriptor) throws IndexNotFoundKernelException
     {
-        return indexService.getIndexId( IndexBoundary.map( descriptor ) );
+        return indexService.getIndexId( NewIndexDescriptorFactory.forSchema( descriptor ) );
     }
 
     @Override

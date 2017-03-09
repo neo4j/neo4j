@@ -24,9 +24,9 @@ import java.io.IOException;
 import org.neo4j.kernel.api.exceptions.index.IndexEntryConflictException;
 import org.neo4j.kernel.api.impl.schema.SchemaIndex;
 import org.neo4j.kernel.api.index.IndexEntryUpdate;
-import org.neo4j.kernel.api.schema.IndexDescriptor;
 import org.neo4j.kernel.api.index.IndexUpdater;
 import org.neo4j.kernel.api.index.PropertyAccessor;
+import org.neo4j.kernel.api.schema_new.index.NewIndexDescriptor;
 import org.neo4j.kernel.impl.api.index.sampling.UniqueIndexSampler;
 import org.neo4j.storageengine.api.schema.IndexSample;
 
@@ -41,11 +41,11 @@ public class UniqueLuceneIndexPopulator extends LuceneIndexPopulator
     private final int propertyKeyId;
     private final UniqueIndexSampler sampler;
 
-    public UniqueLuceneIndexPopulator( SchemaIndex index, IndexDescriptor descriptor )
+    public UniqueLuceneIndexPopulator( SchemaIndex index, NewIndexDescriptor descriptor )
     {
         super( index );
         //TODO: Composite index make lucene handel Composite indexes
-        this.propertyKeyId = descriptor.getPropertyKeyId();
+        this.propertyKeyId = descriptor.schema().getPropertyId();
         this.sampler = new UniqueIndexSampler();
     }
 

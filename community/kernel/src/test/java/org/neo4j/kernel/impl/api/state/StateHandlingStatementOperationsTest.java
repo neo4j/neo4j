@@ -38,7 +38,6 @@ import org.neo4j.kernel.api.schema_new.SchemaDescriptorFactory;
 import org.neo4j.kernel.api.schema_new.constaints.ConstraintDescriptor;
 import org.neo4j.kernel.api.schema_new.constaints.ConstraintDescriptorFactory;
 import org.neo4j.kernel.api.schema_new.constaints.UniquenessConstraintDescriptor;
-import org.neo4j.kernel.api.schema_new.index.IndexBoundary;
 import org.neo4j.kernel.api.schema_new.index.NewIndexDescriptor;
 import org.neo4j.kernel.api.schema_new.index.NewIndexDescriptorFactory;
 import org.neo4j.kernel.api.txstate.TransactionState;
@@ -100,10 +99,10 @@ public class StateHandlingStatementOperationsTest
         StateHandlingStatementOperations ctx = newTxStateOps( inner );
 
         // When
-        NodePropertyDescriptor descriptor = new NodePropertyDescriptor( 0, 0 );
+        LabelSchemaDescriptor descriptor = SchemaDescriptorFactory.forLabel( 0, 0 );
         ctx.indexCreate( state, descriptor );
         ctx.nodeAddLabel( state, 0, 0 );
-        ctx.indexDrop( state, IndexBoundary.map( descriptor ) );
+        ctx.indexDrop( state, NewIndexDescriptorFactory.forSchema( descriptor ) );
         ctx.nodeRemoveLabel( state, 0, 0 );
 
         // one for add and one for remove

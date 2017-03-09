@@ -29,8 +29,6 @@ import org.neo4j.helpers.Strings;
 import org.neo4j.kernel.api.constraints.NodePropertyExistenceConstraint;
 import org.neo4j.kernel.api.constraints.RelationshipPropertyExistenceConstraint;
 import org.neo4j.kernel.api.constraints.UniquenessConstraint;
-import org.neo4j.kernel.api.schema.IndexDescriptor;
-import org.neo4j.kernel.api.schema.IndexDescriptorFactory;
 import org.neo4j.kernel.api.schema.NodePropertyDescriptor;
 import org.neo4j.kernel.api.schema.RelationshipPropertyDescriptor;
 import org.neo4j.kernel.api.schema_new.index.NewIndexDescriptor;
@@ -45,8 +43,7 @@ public enum DbStructureArgumentFormatter implements ArgumentFormatter
     private static List<String> IMPORTS = Arrays.asList(
             UniquenessConstraint.class.getCanonicalName(),
             NodePropertyDescriptor.class.getCanonicalName(),
-            IndexDescriptorFactory.class.getCanonicalName(),
-            IndexDescriptor.class.getCanonicalName(),
+            NewIndexDescriptor.class.getCanonicalName(),
             NewIndexDescriptorFactory.class.getCanonicalName()
     );
 
@@ -93,12 +90,6 @@ public enum DbStructureArgumentFormatter implements ArgumentFormatter
                 builder.append( arg.toString() );
                 builder.append( 'd' );
             }
-        }
-        else if ( arg instanceof IndexDescriptor )
-        {
-            NodePropertyDescriptor descriptor = (NodePropertyDescriptor) arg;
-            int labelId = descriptor.getLabelId();
-            builder.append( format( "IndexDescriptorFactory.of( %d, %s )", labelId, descriptor.propertyIdText() ) );
         }
         else if ( arg instanceof NewIndexDescriptor )
         {

@@ -50,9 +50,8 @@ import org.neo4j.kernel.api.exceptions.EntityNotFoundException;
 import org.neo4j.kernel.api.exceptions.KernelException;
 import org.neo4j.kernel.api.exceptions.index.IndexNotFoundKernelException;
 import org.neo4j.kernel.api.properties.Property;
-import org.neo4j.kernel.api.schema.IndexDescriptor;
-import org.neo4j.kernel.api.schema.NodePropertyDescriptor;
-import org.neo4j.kernel.api.schema_new.index.IndexBoundary;
+import org.neo4j.kernel.api.schema_new.LabelSchemaDescriptor;
+import org.neo4j.kernel.api.schema_new.SchemaDescriptorFactory;
 import org.neo4j.kernel.api.schema_new.index.NewIndexDescriptor;
 import org.neo4j.kernel.impl.core.ThreadToStatementContextBridge;
 import org.neo4j.kernel.impl.storageengine.impl.recordstorage.RecordStorageEngine;
@@ -437,14 +436,14 @@ public class IndexStatisticsTest
     {
         return ((GraphDatabaseAPI) db).getDependencyResolver()
                                       .resolveDependency( IndexingService.class )
-                                      .indexUpdatesAndSize( IndexBoundary.map( descriptor ) ).readSecond();
+                                      .indexUpdatesAndSize( descriptor ).readSecond();
     }
 
     private long indexUpdates( NewIndexDescriptor descriptor ) throws KernelException
     {
         return ((GraphDatabaseAPI) db).getDependencyResolver()
                                       .resolveDependency( IndexingService.class )
-                                      .indexUpdatesAndSize( IndexBoundary.map( descriptor ) ).readFirst();
+                                      .indexUpdatesAndSize( descriptor ).readFirst();
     }
 
     private double indexSelectivity( NewIndexDescriptor descriptor ) throws KernelException
@@ -495,7 +494,7 @@ public class IndexStatisticsTest
             Statement statement = bridge.get();
             int labelId = statement.tokenWriteOperations().labelGetOrCreateForName( labelName );
             int propertyKeyId = statement.tokenWriteOperations().propertyKeyGetOrCreateForName( propertyKeyName );
-            NodePropertyDescriptor descriptor = new NodePropertyDescriptor( labelId, propertyKeyId );
+            LabelSchemaDescriptor descriptor = SchemaDescriptorFactory.forLabel( labelId, propertyKeyId );
             NewIndexDescriptor index = statement.schemaWriteOperations().indexCreate( descriptor );
             tx.success();
             return index;
@@ -585,9 +584,8 @@ public class IndexStatisticsTest
             updatesTracker.increaseCreated( created );
 
             // check index online
-            IndexDescriptor oldIndex = IndexBoundary.map( index );
             if ( !updatesTracker.isPopulationCompleted() &&
-                    indexOnlineMonitor.isIndexOnline( oldIndex ) )
+                    indexOnlineMonitor.isIndexOnline( index ) )
             {
                 updatesTracker.notifyPopulationCompleted();
             }
@@ -608,7 +606,7 @@ public class IndexStatisticsTest
 
                 // check again index online
                 if ( !updatesTracker.isPopulationCompleted() &&
-                        indexOnlineMonitor.isIndexOnline( oldIndex ) )
+                        indexOnlineMonitor.isIndexOnline( index ) )
                 {
                     updatesTracker.notifyPopulationCompleted();
                 }
@@ -628,7 +626,7 @@ public class IndexStatisticsTest
                 }
 
                 // check again index online
-                if ( !updatesTracker.isPopulationCompleted() && indexOnlineMonitor.isIndexOnline( oldIndex ) )
+                if ( !updatesTracker.isPopulationCompleted() && indexOnlineMonitor.isIndexOnline( index ) )
                 {
                     updatesTracker.notifyPopulationCompleted();
                 }
@@ -690,15 +688,15 @@ public class IndexStatisticsTest
 
     private static class IndexOnlineMonitor extends IndexingService.MonitorAdapter
     {
-        private final Set<IndexDescriptor> onlineIndexes = Collections.newSetFromMap( new ConcurrentHashMap<>() );
+        private final Set<NewIndexDescriptor> onlineIndexes = Collections.newSetFromMap( new ConcurrentHashMap<>() );
 
         @Override
         public void populationCompleteOn( NewIndexDescriptor descriptor )
         {
-            onlineIndexes.add( IndexBoundary.map( descriptor ) );
+            onlineIndexes.add( descriptor );
         }
 
-        public boolean isIndexOnline( IndexDescriptor descriptor )
+        public boolean isIndexOnline( NewIndexDescriptor descriptor )
         {
             return onlineIndexes.contains( descriptor );
         }

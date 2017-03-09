@@ -41,7 +41,6 @@ import org.neo4j.helpers.Exceptions;
 import org.neo4j.kernel.api.exceptions.index.IndexEntryConflictException;
 import org.neo4j.kernel.api.exceptions.index.IndexPopulationFailedKernelException;
 import org.neo4j.kernel.api.index.IndexEntryUpdate;
-import org.neo4j.kernel.api.schema.IndexDescriptor;
 import org.neo4j.kernel.api.index.IndexPopulator;
 import org.neo4j.kernel.api.index.SchemaIndexProvider;
 import org.neo4j.kernel.api.schema_new.index.NewIndexDescriptor;
@@ -221,7 +220,7 @@ public class BatchingMultipleIndexPopulator extends MultipleIndexPopulator
     }
 
     /**
-     * Insert the given batch of updates into the index defined by the given {@link IndexDescriptor}.
+     * Insert the given batch of updates into the index defined by the given {@link IndexPopulation}.
      *
      * @param population the index population.
      * @param batch the list of updates to insert.

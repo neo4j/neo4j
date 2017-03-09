@@ -29,9 +29,8 @@ import java.util.Collections;
 import java.util.List;
 
 import org.neo4j.kernel.api.index.SchemaIndexProvider;
-import org.neo4j.kernel.api.schema.IndexDescriptor;
-import org.neo4j.kernel.api.schema.IndexDescriptorFactory;
-import org.neo4j.kernel.api.schema_new.index.IndexBoundary;
+import org.neo4j.kernel.api.schema_new.index.NewIndexDescriptor;
+import org.neo4j.kernel.api.schema_new.index.NewIndexDescriptorFactory;
 import org.neo4j.kernel.impl.core.RelationshipTypeToken;
 import org.neo4j.kernel.impl.store.LabelTokenStore;
 import org.neo4j.kernel.impl.store.NeoStores;
@@ -71,8 +70,8 @@ public class DumpCountsStoreTest
     private static final String INDEX_PROPERTY = "indexProperty";
 
     private static final long indexId = 0;
-    private static final IndexDescriptor descriptor =
-            IndexDescriptorFactory.of( INDEX_LABEL_ID, INDEX_PROPERTY_KEY_ID );
+    private static final NewIndexDescriptor descriptor =
+            NewIndexDescriptorFactory.forLabel( INDEX_LABEL_ID, INDEX_PROPERTY_KEY_ID );
 
     @Rule
     public SuppressOutput suppressOutput = SuppressOutput.suppressAll();
@@ -155,7 +154,7 @@ public class DumpCountsStoreTest
     {
         SchemaStorage schemaStorage = mock(SchemaStorage.class);
         SchemaIndexProvider.Descriptor providerDescriptor = new SchemaIndexProvider.Descriptor( "in-memory", "1.0" );
-        IndexRule rule = IndexRule.indexRule( indexId, IndexBoundary.map( descriptor ), providerDescriptor );
+        IndexRule rule = IndexRule.indexRule( indexId, descriptor, providerDescriptor );
         ArrayList<IndexRule> rules = new ArrayList<>();
         rules.add( rule );
 

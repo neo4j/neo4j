@@ -30,9 +30,7 @@ import org.neo4j.helpers.collection.Pair;
 import org.neo4j.helpers.collection.PrefetchingIterator;
 import org.neo4j.kernel.api.exceptions.index.IndexEntryConflictException;
 import org.neo4j.kernel.api.index.IndexUpdater;
-import org.neo4j.kernel.api.schema_new.index.IndexBoundary;
 import org.neo4j.kernel.api.schema_new.index.NewIndexDescriptor;
-import org.neo4j.kernel.api.schema.IndexDescriptor;
 import org.neo4j.kernel.impl.store.MultipleUnderlyingStorageExceptions;
 import org.neo4j.kernel.impl.store.UnderlyingStorageException;
 
@@ -49,7 +47,7 @@ class IndexUpdaterMap implements AutoCloseable, Iterable<IndexUpdater>
 {
     private final IndexUpdateMode indexUpdateMode;
     private final IndexMap indexMap;
-    private final Map<IndexDescriptor, IndexUpdater> updaterMap;
+    private final Map<NewIndexDescriptor, IndexUpdater> updaterMap;
 
     IndexUpdaterMap( IndexMap indexMap, IndexUpdateMode indexUpdateMode )
     {
@@ -58,12 +56,12 @@ class IndexUpdaterMap implements AutoCloseable, Iterable<IndexUpdater>
         this.updaterMap = new HashMap<>();
     }
 
-    Iterable<IndexDescriptor> descriptors()
+    Iterable<NewIndexDescriptor> descriptors()
     {
         return indexMap::descriptors;
     }
 
-    IndexUpdater getUpdater( IndexDescriptor descriptor )
+    IndexUpdater getUpdater( NewIndexDescriptor descriptor )
     {
         IndexUpdater updater = updaterMap.get( descriptor );
         if ( null == updater )
@@ -83,7 +81,7 @@ class IndexUpdaterMap implements AutoCloseable, Iterable<IndexUpdater>
     {
         Set<Pair<NewIndexDescriptor, UnderlyingStorageException>> exceptions = null;
 
-        for ( Map.Entry<IndexDescriptor, IndexUpdater> updaterEntry : updaterMap.entrySet() )
+        for ( Map.Entry<NewIndexDescriptor, IndexUpdater> updaterEntry : updaterMap.entrySet() )
         {
             IndexUpdater updater = updaterEntry.getValue();
             try
@@ -96,7 +94,7 @@ class IndexUpdaterMap implements AutoCloseable, Iterable<IndexUpdater>
                 {
                     exceptions = new HashSet<>();
                 }
-                exceptions.add( Pair.of( IndexBoundary.map( updaterEntry.getKey() ),
+                exceptions.add( Pair.of( updaterEntry.getKey(),
                         new UnderlyingStorageException( e ) ) );
             }
         }
@@ -134,7 +132,7 @@ class IndexUpdaterMap implements AutoCloseable, Iterable<IndexUpdater>
     {
         return new PrefetchingIterator<IndexUpdater>()
         {
-            Iterator<IndexDescriptor> descriptors = indexMap.descriptors();
+            Iterator<NewIndexDescriptor> descriptors = indexMap.descriptors();
             @Override
             protected IndexUpdater fetchNextOrNull()
             {
