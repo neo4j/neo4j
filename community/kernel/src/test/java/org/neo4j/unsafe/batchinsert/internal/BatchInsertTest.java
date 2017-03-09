@@ -1543,7 +1543,7 @@ public class BatchInsertTest
     {
         private final LabelScanStore labelScanStore;
 
-        public ControlledLabelScanStore( LabelScanStore labelScanStore )
+        ControlledLabelScanStore( LabelScanStore labelScanStore )
         {
             super( "batch" );
             this.labelScanStore = labelScanStore;

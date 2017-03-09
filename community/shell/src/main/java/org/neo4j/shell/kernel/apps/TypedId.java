@@ -34,7 +34,7 @@ class TypedId
     /**
      * @param typedId the serialized string.
      */
-    public TypedId( String typedId )
+    TypedId( String typedId )
     {
         this( typedId.substring( 0, 1 ),
             Long.parseLong( typedId.substring( 1 ) ) );
@@ -44,7 +44,7 @@ class TypedId
      * @param type the type
      * @param id the object's id.
      */
-    public TypedId( String type, long id )
+    TypedId( String type, long id )
     {
         this.type = type;
         this.id = id;

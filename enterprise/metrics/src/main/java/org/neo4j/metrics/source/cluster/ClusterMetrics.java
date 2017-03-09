@@ -103,7 +103,7 @@ public class ClusterMetrics extends LifecycleAdapter
     {
         private Predicate<String> rolePredicate;
 
-        public RoleGauge( Predicate<String> rolePredicate )
+        RoleGauge( Predicate<String> rolePredicate )
         {
             this.rolePredicate = rolePredicate;
         }

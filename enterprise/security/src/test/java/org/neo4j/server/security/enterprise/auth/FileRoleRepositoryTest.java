@@ -336,7 +336,7 @@ public class FileRoleRepositoryTest
     {
         private final DoubleLatch latch;
 
-        public HangingListSnapshot( DoubleLatch latch, long timestamp, List<RoleRecord> values )
+        HangingListSnapshot( DoubleLatch latch, long timestamp, List<RoleRecord> values )
         {
             super( timestamp, values, true );
             this.latch = latch;

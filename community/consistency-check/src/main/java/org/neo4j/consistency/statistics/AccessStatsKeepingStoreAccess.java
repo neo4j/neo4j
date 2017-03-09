@@ -52,7 +52,7 @@ public class AccessStatsKeepingStoreAccess extends StoreAccess
     {
         private final AccessStats accessStats;
 
-        public AccessStatsKeepingRecordStore( RecordStore<RECORD> actual, AccessStats accessStats )
+        AccessStatsKeepingRecordStore( RecordStore<RECORD> actual, AccessStats accessStats )
         {
             super( actual );
             this.accessStats = accessStats;

@@ -101,7 +101,7 @@ public class PrimitiveIntHashSet extends AbstractIntHopScotchCollection<Object> 
         private final PrimitiveIntHashSet other;
         private boolean equal = true;
 
-        public IntKeyEquality( PrimitiveIntHashSet that )
+        IntKeyEquality( PrimitiveIntHashSet that )
         {
             this.other = that;
         }

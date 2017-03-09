@@ -65,7 +65,7 @@ public class ExternalSettings implements LoadableConfig
         private final String name;
         private final String defaultValue;
 
-        public DummySetting( String name, String defVal )
+        DummySetting( String name, String defVal )
         {
             this.name = name;
             this.defaultValue = defVal;

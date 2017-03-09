@@ -67,7 +67,7 @@ public final class RFC1123
         return format.format( date );
     }
 
-    static final RFC1123 instance()
+    static RFC1123 instance()
     {
         RFC1123 instance = INSTANCES.get();
         if ( null == instance )

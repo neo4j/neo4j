@@ -239,7 +239,7 @@ public class Neo4jJobScheduler extends LifecycleAdapter implements JobScheduler
         private final Future<?> job;
         private final List<CancelListener> cancelListeners = new CopyOnWriteArrayList<>();
 
-        public PooledJobHandle( Future<?> job )
+        PooledJobHandle( Future<?> job )
         {
             this.job = job;
         }
@@ -271,7 +271,7 @@ public class Neo4jJobScheduler extends LifecycleAdapter implements JobScheduler
     {
         private final Thread thread;
 
-        public SingleThreadHandle( Thread thread )
+        SingleThreadHandle( Thread thread )
         {
             this.thread = thread;
         }

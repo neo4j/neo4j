@@ -19,11 +19,11 @@
  */
 package org.neo4j.shell.impl;
 
-import java.rmi.RemoteException;
-import java.util.List;
-
 import jline.console.completer.Completer;
 import jline.console.completer.StringsCompleter;
+
+import java.rmi.RemoteException;
+import java.util.List;
 
 import org.neo4j.shell.ShellClient;
 import org.neo4j.shell.ShellException;
@@ -41,7 +41,7 @@ class ShellTabCompleter implements Completer
     private long timeWhenCached;
     private Completer appNameCompleter;
 
-    public ShellTabCompleter( ShellClient client )
+    ShellTabCompleter( ShellClient client )
     {
         this.client = client;
     }

@@ -84,7 +84,7 @@ public class SlaveClient extends Client<Slave> implements Slave
         private final TargetCaller caller;
         private final ObjectSerializer serializer;
 
-        private SlaveRequestType( TargetCaller caller, ObjectSerializer serializer )
+        SlaveRequestType( TargetCaller caller, ObjectSerializer serializer )
         {
             this.caller = caller;
             this.serializer = serializer;

@@ -64,7 +64,6 @@ import org.neo4j.test.impl.EphemeralIdGenerator;
 
 import static org.mockito.Mockito.mock;
 import static org.mockito.Mockito.when;
-
 import static org.neo4j.test.rule.NeoStoreDataSourceRule.nativeLabelScanStoreProvider;
 
 /**
@@ -185,7 +184,7 @@ public class RecordStorageEngineRule extends ExternalResource
         private final Function<BatchTransactionApplierFacade,BatchTransactionApplierFacade>
                 transactionApplierTransformer;
 
-        public ExtendedRecordStorageEngine( File storeDir, Config config,
+        ExtendedRecordStorageEngine( File storeDir, Config config,
                 IdGeneratorFactory idGeneratorFactory, IdReuseEligibility eligibleForReuse,
                 IdTypeConfigurationProvider idTypeConfigurationProvider,
                 PageCache pageCache, FileSystemAbstraction fs, LogProvider logProvider,

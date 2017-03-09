@@ -36,7 +36,6 @@ import static org.junit.Assert.assertFalse;
 import static org.junit.Assert.assertNotEquals;
 import static org.junit.Assert.assertThat;
 import static org.junit.Assert.assertTrue;
-
 import static org.neo4j.index.internal.gbptree.GenSafePointerPair.FLAG_READ;
 import static org.neo4j.index.internal.gbptree.GenSafePointerPair.FLAG_WRITE;
 import static org.neo4j.index.internal.gbptree.GenSafePointerPair.GEN_COMPARISON_MASK;
@@ -350,7 +349,7 @@ public class GenSafePointerPairTest
          */
         private final byte byteValue;
 
-        private State( byte byteValue )
+        State( byte byteValue )
         {
             this.byteValue = byteValue;
         }
@@ -411,7 +410,7 @@ public class GenSafePointerPairTest
         private final long expectedPointer;
         private final boolean expectedSlot;
 
-        private Success( long expectedPointer, boolean expectedSlot )
+        Success( long expectedPointer, boolean expectedSlot )
         {
             this.expectedPointer = expectedPointer;
             this.expectedSlot = expectedSlot;
@@ -478,7 +477,7 @@ public class GenSafePointerPairTest
 
         private final int genComparison;
 
-        private Fail( int genComparison )
+        Fail( int genComparison )
         {
             this.genComparison = genComparison;
         }

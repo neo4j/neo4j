@@ -221,7 +221,7 @@ public class SchemaProcedure
         private final Node endNode;
         private final RelationshipType relationshipType;
 
-        public RelationshipImpl( final NodeImpl startNode, final NodeImpl endNode, final String type )
+        RelationshipImpl( final NodeImpl startNode, final NodeImpl endNode, final String type )
         {
             this.id = MIN_ID.getAndDecrement();
             this.startNode = startNode;
@@ -348,7 +348,7 @@ public class SchemaProcedure
         private final long id;
         private final Label label;
 
-        public NodeImpl( final String label, Map<String,Object> properties )
+        NodeImpl( final String label, Map<String,Object> properties )
         {
             this.id = MIN_ID.getAndDecrement();
             this.label = Label.label( label );

@@ -155,7 +155,7 @@ public class DuplicatingLog extends AbstractLog
     {
         private final CopyOnWriteArraySet<Logger> loggers;
 
-        public DuplicatingLogger( List<Logger> loggers )
+        DuplicatingLogger( List<Logger> loggers )
         {
             this.loggers = new CopyOnWriteArraySet<>( loggers );
         }

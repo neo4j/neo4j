@@ -19,10 +19,6 @@
  */
 package org.neo4j.tooling.procedure.visitors;
 
-import org.neo4j.tooling.procedure.messages.CompilationMessage;
-import org.neo4j.tooling.procedure.messages.ContextFieldWarning;
-import org.neo4j.tooling.procedure.messages.FieldError;
-
 import java.util.Arrays;
 import java.util.LinkedHashSet;
 import java.util.Set;
@@ -38,6 +34,9 @@ import javax.lang.model.util.Types;
 import org.neo4j.graphdb.GraphDatabaseService;
 import org.neo4j.logging.Log;
 import org.neo4j.procedure.Context;
+import org.neo4j.tooling.procedure.messages.CompilationMessage;
+import org.neo4j.tooling.procedure.messages.ContextFieldWarning;
+import org.neo4j.tooling.procedure.messages.FieldError;
 
 class ContextFieldVisitor extends SimpleElementVisitor8<Stream<CompilationMessage>,Void>
 {
@@ -48,7 +47,7 @@ class ContextFieldVisitor extends SimpleElementVisitor8<Stream<CompilationMessag
     private final Types types;
     private final boolean skipContextWarnings;
 
-    public ContextFieldVisitor( Types types, Elements elements, boolean skipContextWarnings )
+    ContextFieldVisitor( Types types, Elements elements, boolean skipContextWarnings )
     {
         this.elements = elements;
         this.types = types;

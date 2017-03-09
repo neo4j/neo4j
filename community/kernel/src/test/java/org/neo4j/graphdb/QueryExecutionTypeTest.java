@@ -162,7 +162,7 @@ public class QueryExecutionTypeTest
         final boolean convertToQuery;
         boolean isProfiled, requestedExecutionPlanDescription, isExplained, canContainResults, canUpdateData, canUpdateSchema;
 
-        public Assumptions( QueryExecutionType type, boolean convertToQuery )
+        Assumptions( QueryExecutionType type, boolean convertToQuery )
         {
             this.type = type;
             this.convertToQuery = convertToQuery;

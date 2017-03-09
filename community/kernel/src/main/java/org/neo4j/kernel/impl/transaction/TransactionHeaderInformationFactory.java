@@ -27,7 +27,7 @@ public interface TransactionHeaderInformationFactory
 {
     TransactionHeaderInformation create();
 
-    static final TransactionHeaderInformationFactory DEFAULT = new TransactionHeaderInformationFactory.WithRandomBytes()
+    TransactionHeaderInformationFactory DEFAULT = new TransactionHeaderInformationFactory.WithRandomBytes()
     {
         private static final int NO_ID = -1;
 
@@ -38,7 +38,7 @@ public interface TransactionHeaderInformationFactory
         }
     };
 
-    abstract static class WithRandomBytes implements TransactionHeaderInformationFactory
+    abstract class WithRandomBytes implements TransactionHeaderInformationFactory
     {
         private static final int ADDITIONAL_HEADER_SIZE = 8;
 

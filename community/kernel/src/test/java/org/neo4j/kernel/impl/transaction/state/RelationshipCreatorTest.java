@@ -129,7 +129,7 @@ public class RelationshipCreatorTest
         private final Set<Long> relationshipLocksAcquired = new HashSet<>();
         private final Set<Long> changedRelationships = new HashSet<>();
 
-        public Tracker( NeoStores neoStores )
+        Tracker( NeoStores neoStores )
         {
             this.delegate = new DirectRecordAccessSet( neoStores );
             this.relRecords = new TrackingRecordAccess<>( delegate.getRelRecords(), this );

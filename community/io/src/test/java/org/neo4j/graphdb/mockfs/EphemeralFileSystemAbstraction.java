@@ -930,7 +930,7 @@ public class EphemeralFileSystemAbstraction implements FileSystemAbstraction
         private final Clock clock;
         private long lastModified;
 
-        public EphemeralFileData( Clock clock )
+        EphemeralFileData( Clock clock )
         {
             this( new DynamicByteBuffer(), clock );
         }
@@ -1142,7 +1142,7 @@ public class EphemeralFileSystemAbstraction implements FileSystemAbstraction
         private ByteBuffer buf;
         private Exception freeCall;
 
-        public DynamicByteBuffer()
+        DynamicByteBuffer()
         {
             buf = allocate( ByteUnit.kibiBytes( 1 ) );
         }
@@ -1385,12 +1385,12 @@ public class EphemeralFileSystemAbstraction implements FileSystemAbstraction
         private Iterator<? extends Iterator<T>> iterators;
         private Iterator<T> currentIterator;
 
-        public CombiningIterator( Iterable<? extends Iterator<T>> iterators )
+        CombiningIterator( Iterable<? extends Iterator<T>> iterators )
         {
             this( iterators.iterator() );
         }
 
-        public CombiningIterator( Iterator<? extends Iterator<T>> iterators )
+        CombiningIterator( Iterator<? extends Iterator<T>> iterators )
         {
             this.iterators = iterators;
         }

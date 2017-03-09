@@ -159,7 +159,7 @@ public class NodeLabelsCacheTest
         private final int numberOfNodes;
         private int[] scratch = new int[10];
 
-        public LabelGetter( NodeLabelsCache cache, int[][] expectedLabels, int numberOfNodes )
+        LabelGetter( NodeLabelsCache cache, int[][] expectedLabels, int numberOfNodes )
         {
             this.cache = cache;
             this.client = cache.newClient();

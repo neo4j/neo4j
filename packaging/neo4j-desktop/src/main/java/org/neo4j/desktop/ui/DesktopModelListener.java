@@ -28,6 +28,6 @@ import org.neo4j.desktop.model.DesktopModel;
 public interface DesktopModelListener
 {
 
-    public void desktopModelChanged(DesktopModel model);
+    void desktopModelChanged( DesktopModel model );
 
 }

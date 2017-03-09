@@ -36,7 +36,7 @@ abstract class MetadataCollector extends Metadata implements EntryVisitor<BigEnd
     private State state = State.expecting_format_specifier;
     private byte[] catalogue = NO_DATA;
 
-    public MetadataCollector( int entriesPerPage, HeaderField<?>[] headerFields )
+    MetadataCollector( int entriesPerPage, HeaderField<?>[] headerFields )
     {
         this.entriesPerPage = entriesPerPage;
         this.headerFields = headerFields = headerFields.clone();

@@ -62,7 +62,7 @@ public class AbstractCheckPointThresholdTest
         private final boolean reached;
         private final String description;
 
-        public TheAbstractCheckPointThreshold( boolean reached, String description )
+        TheAbstractCheckPointThreshold( boolean reached, String description )
         {
             this.reached = reached;
             this.description = description;

@@ -97,7 +97,7 @@ public class ProfilingTracer implements QueryExecutionTracer
         private long hitCount;
         private long rowCount;
 
-        public ExecutionEvent( Clock clock, Data data )
+        ExecutionEvent( Clock clock, Data data )
         {
             this.clock = clock;
             this.data = data;

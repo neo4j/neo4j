@@ -92,7 +92,7 @@ class RelationshipRecordFormat extends BaseHighLimitRecordFormat<RelationshipRec
 
     private static final long TWO_BIT_FIXED_REFERENCE_BIT_MASK = 0x300000000L;
 
-    public RelationshipRecordFormat()
+    RelationshipRecordFormat()
     {
         this( RECORD_SIZE );
     }

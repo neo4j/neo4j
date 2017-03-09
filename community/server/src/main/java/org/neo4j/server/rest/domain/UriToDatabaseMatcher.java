@@ -84,7 +84,7 @@ public class UriToDatabaseMatcher
         public GraphDatabaseName graphDatabaseName;
         public Pattern pattern;
 
-        public Tuple( Pattern pattern, GraphDatabaseName graphDatabaseName )
+        Tuple( Pattern pattern, GraphDatabaseName graphDatabaseName )
         {
             this.pattern = pattern;
             this.graphDatabaseName = graphDatabaseName;

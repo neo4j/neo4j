@@ -241,7 +241,7 @@ public class LockReentrancyCompatibility extends LockingCompatibilityTestSuite.C
         private final long resourceId;
         private long lockIdentityHashCode;
 
-        public LockIdentityExplorer( ResourceType resourceType, long resourceId )
+        LockIdentityExplorer( ResourceType resourceType, long resourceId )
         {
             this.resourceType = resourceType;
             this.resourceId = resourceId;

@@ -365,7 +365,7 @@ public class CompositeCountsTest
         private final String message;
         private final long count;
 
-        public MatchingRelationships( String message, long count )
+        MatchingRelationships( String message, long count )
         {
             this.message = message;
             this.count = count;

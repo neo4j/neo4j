@@ -43,7 +43,7 @@ public class RotationTimerFactory
         private long startTime;
         private long timeoutTime;
 
-        public RotationTimer( long startTime, long timeoutTime )
+        RotationTimer( long startTime, long timeoutTime )
         {
             this.startTime = startTime;
             this.timeoutTime = timeoutTime;

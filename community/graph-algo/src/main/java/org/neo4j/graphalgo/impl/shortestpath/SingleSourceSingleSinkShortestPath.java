@@ -40,21 +40,21 @@ public interface SingleSourceSingleSinkShortestPath<CostType>
     /**
      * This resets the calculation if we for some reason would like to redo it.
      */
-    public void reset();
+    void reset();
 
     /**
      * This sets the start node. The found paths will start in this node.
      * @param node
      *            The start node.
      */
-    public void setStartNode( Node node );
+    void setStartNode( Node node );
 
     /**
      * This sets the end node. The found paths will end in this node.
      * @param node
      *            The end node.
      */
-    public void setEndNode( Node node );
+    void setEndNode( Node node );
 
     /**
      * A call to this will run the algorithm to find a single shortest path, if
@@ -62,42 +62,42 @@ public interface SingleSourceSingleSinkShortestPath<CostType>
      * Node/Relationship.
      * @return The path as an alternating list of Node/Relationship.
      */
-    public List<PropertyContainer> getPath();
+    List<PropertyContainer> getPath();
 
     /**
      * A call to this will run the algorithm to find a single shortest path, if
      * not already done, and return it as a list of nodes.
      * @return The path as a list of nodes.
      */
-    public List<Node> getPathAsNodes();
+    List<Node> getPathAsNodes();
 
     /**
      * A call to this will run the algorithm to find a single shortest path, if
      * not already done, and return it as a list of Relationships.
      * @return The path as a list of Relationships.
      */
-    public List<Relationship> getPathAsRelationships();
+    List<Relationship> getPathAsRelationships();
 
     /**
      * A call to this will run the algorithm to find all shortest paths, if not
      * already done, and return them as alternating lists of Node/Relationship.
      * @return A list of the paths as alternating lists of Node/Relationship.
      */
-    public List<List<PropertyContainer>> getPaths();
+    List<List<PropertyContainer>> getPaths();
 
     /**
      * A call to this will run the algorithm to find all shortest paths, if not
      * already done, and return them as lists of nodes.
      * @return A list of the paths as lists of nodes.
      */
-    public List<List<Node>> getPathsAsNodes();
+    List<List<Node>> getPathsAsNodes();
 
     /**
      * A call to this will run the algorithm to find all shortest paths, if not
      * already done, and return them as lists of relationships.
      * @return A list of the paths as lists of relationships.
      */
-    public List<List<Relationship>> getPathsAsRelationships();
+    List<List<Relationship>> getPathsAsRelationships();
 
     /**
      * A call to this will run the algorithm to find the cost for the shortest
@@ -105,19 +105,19 @@ public interface SingleSourceSingleSinkShortestPath<CostType>
      * This will usually find a single shortest path.
      * @return The total weight of the shortest path(s).
      */
-    public CostType getCost();
+    CostType getCost();
 
     /**
      * This can be used to retrieve the Direction in which relationships should
      * be in the shortest path(s).
      * @return The direction.
      */
-    public Direction getDirection();
+    Direction getDirection();
 
     /**
      * This can be used to retrieve the types of relationships that are
      * traversed.
      * @return The relationship type(s).
      */
-    public RelationshipType[] getRelationshipTypes();
+    RelationshipType[] getRelationshipTypes();
 }

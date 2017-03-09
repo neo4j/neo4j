@@ -571,7 +571,7 @@ public class GraphDescription implements GraphDefinition
 
         private final String name;
 
-        public DefaultLabel( String name )
+        DefaultLabel( String name )
         {
 
             this.name = name;

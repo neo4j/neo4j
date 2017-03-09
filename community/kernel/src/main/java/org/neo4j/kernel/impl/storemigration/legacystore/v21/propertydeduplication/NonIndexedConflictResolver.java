@@ -44,8 +44,7 @@ class NonIndexedConflictResolver implements PrimitiveLongObjectVisitor<List<Dupl
     private final Map<String, Integer> propertyTokenMap;
     private final PropertyStore store;
 
-    public NonIndexedConflictResolver( PropertyKeyTokenStore keyTokenStore,
-                                       PropertyStore store ) throws IOException
+    NonIndexedConflictResolver( PropertyKeyTokenStore keyTokenStore, PropertyStore store ) throws IOException
     {
         this.keyTokenStore = keyTokenStore;
         this.propertyTokenMap = buildPropertyKeyIndex( keyTokenStore );
@@ -107,7 +106,7 @@ class NonIndexedConflictResolver implements PrimitiveLongObjectVisitor<List<Dupl
         private int index;
         private final PropertyRecord record = store.newRecord();
 
-        public DuplicateNameAssigner( DuplicateCluster duplicateCluster, String oldName )
+        DuplicateNameAssigner( DuplicateCluster duplicateCluster, String oldName )
         {
             this.duplicateCluster = duplicateCluster;
             this.oldName = oldName;

@@ -61,9 +61,9 @@ public interface CheckDecorator
     RecordCheck<RelationshipGroupRecord, ConsistencyReport.RelationshipGroupConsistencyReport> decorateRelationshipGroupChecker(
             RecordCheck<RelationshipGroupRecord, ConsistencyReport.RelationshipGroupConsistencyReport> checker );
 
-    static CheckDecorator NONE = new Adapter();
+    CheckDecorator NONE = new Adapter();
 
-    static class Adapter implements CheckDecorator
+    class Adapter implements CheckDecorator
     {
         @Override
         public void prepare()
@@ -127,7 +127,7 @@ public interface CheckDecorator
         }
     }
 
-    static class ChainCheckDecorator implements CheckDecorator
+    class ChainCheckDecorator implements CheckDecorator
     {
         private final CheckDecorator[] decorators;
 

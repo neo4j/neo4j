@@ -567,7 +567,7 @@ public class TestRelationshipCount
         return new RelationshipDeletionSpec( type, dir, which );
     }
 
-    private static enum RelType implements RelationshipType
+    private enum RelType implements RelationshipType
     {
         INITIAL( false ),
         TYPE1( true ),
@@ -575,7 +575,7 @@ public class TestRelationshipCount
 
         boolean measure;
 
-        private RelType( boolean measure )
+        RelType( boolean measure )
         {
             this.measure = measure;
         }

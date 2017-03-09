@@ -90,7 +90,6 @@ import static java.lang.String.format;
 import static java.util.Arrays.asList;
 import static java.util.Collections.unmodifiableMap;
 import static java.util.concurrent.TimeUnit.SECONDS;
-
 import static org.neo4j.helpers.ArrayUtil.contains;
 import static org.neo4j.helpers.collection.Iterables.asList;
 import static org.neo4j.helpers.collection.Iterables.count;
@@ -1470,7 +1469,7 @@ public class ClusterManager
         private final InstanceId serverId;
         private final ManagedCluster cluster;
 
-        public StartDatabaseAgainKit( ManagedCluster cluster, InstanceId serverId )
+        StartDatabaseAgainKit( ManagedCluster cluster, InstanceId serverId )
         {
             this.cluster = cluster;
             this.serverId = serverId;

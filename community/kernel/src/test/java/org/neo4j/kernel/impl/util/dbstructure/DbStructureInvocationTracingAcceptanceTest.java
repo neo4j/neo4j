@@ -201,7 +201,7 @@ public class DbStructureInvocationTracingAcceptanceTest
         return listener.compiled( success, manager, diagnosticsCollector.getDiagnostics() );
     }
 
-    private static interface CompilationListener<T>
+    private interface CompilationListener<T>
     {
         T compiled( Boolean success, JavaFileManager manager, List<Diagnostic<? extends JavaFileObject>> diagnostics );
     }

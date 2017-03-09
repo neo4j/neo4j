@@ -42,7 +42,7 @@ class CypherAdapterStream extends BoltResult
     private CypherAdapterRecord currentRecord;
     private final Clock clock;
 
-    public CypherAdapterStream( Result delegate, Clock clock )
+    CypherAdapterStream( Result delegate, Clock clock )
     {
         this.delegate = delegate;
         this.fieldNames = delegate.columns().toArray( new String[delegate.columns().size()] );

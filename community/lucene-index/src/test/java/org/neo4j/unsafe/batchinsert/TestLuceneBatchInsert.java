@@ -574,7 +574,7 @@ public class TestLuceneBatchInsert
         private final Setting<?> key;
         private final String value;
 
-        public ConfigurationParameter( Setting<?> key, String value )
+        ConfigurationParameter( Setting<?> key, String value )
         {
             this.key = key;
             this.value = value;

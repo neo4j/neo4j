@@ -22,6 +22,7 @@ package org.neo4j.server.scripting.javascript;
 import org.mozilla.javascript.ClassShutter;
 import org.mozilla.javascript.Context;
 import org.mozilla.javascript.ContextFactory;
+
 import org.neo4j.server.scripting.UserScriptClassWhiteList;
 
 /**
@@ -43,7 +44,7 @@ public class GlobalJavascriptInitializer
 
     private static Mode initializationMode;
 
-    public static enum Mode
+    public enum Mode
     {
         SANDBOXED,
         UNSAFE

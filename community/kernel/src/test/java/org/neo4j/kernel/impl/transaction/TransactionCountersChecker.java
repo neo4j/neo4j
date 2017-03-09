@@ -38,7 +38,7 @@ class TransactionCountersChecker
     private final long numberOfTerminatedTransactions;
     private final long peakConcurrentNumberOfTransactions;
 
-    public TransactionCountersChecker( TransactionCounters pre )
+    TransactionCountersChecker( TransactionCounters pre )
     {
         // Active
         numberOfActiveReadTransactions = pre.getNumberOfActiveReadTransactions();

@@ -77,7 +77,7 @@ public class KernelExtensionsTest
 
     private static class TestingExtensionFactory extends KernelExtensionFactory<TestingDependencies>
     {
-        public TestingExtensionFactory()
+        TestingExtensionFactory()
         {
             super( "testing" );
         }
@@ -91,7 +91,7 @@ public class KernelExtensionsTest
 
     private static class TestingExtension extends LifecycleAdapter
     {
-        public TestingExtension( JobScheduler jobScheduler )
+        TestingExtension( JobScheduler jobScheduler )
         {
             // We don't need it right now
         }

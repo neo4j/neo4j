@@ -24,7 +24,7 @@ import java.util.List;
 
 public class Goal
 {
-    public static interface SubGoal
+    public interface SubGoal
     {
         boolean met();
     }

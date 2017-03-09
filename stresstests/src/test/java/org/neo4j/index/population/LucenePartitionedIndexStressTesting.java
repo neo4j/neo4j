@@ -310,7 +310,7 @@ public class LucenePartitionedIndexStressTesting
         private GraphDatabaseService db;
         private AtomicLong nodesCounter;
 
-        public Populator( int populatorNumber, int step, GraphDatabaseService db, AtomicLong nodesCounter )
+        Populator( int populatorNumber, int step, GraphDatabaseService db, AtomicLong nodesCounter )
         {
             this.populatorNumber = populatorNumber;
             this.step = step;

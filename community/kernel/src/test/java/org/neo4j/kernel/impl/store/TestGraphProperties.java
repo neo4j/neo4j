@@ -331,7 +331,7 @@ public class TestGraphProperties
 
     private static class Worker extends OtherThreadExecutor<State>
     {
-        public Worker( String name, State initialState )
+        Worker( String name, State initialState )
         {
             super( name, initialState );
         }

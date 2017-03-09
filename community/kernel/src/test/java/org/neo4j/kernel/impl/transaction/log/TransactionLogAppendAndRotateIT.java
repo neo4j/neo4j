@@ -198,7 +198,7 @@ public class TransactionLogAppendAndRotateIT
         private volatile LogFile logFile;
         private volatile int rotations;
 
-        public AllTheMonitoring( AtomicBoolean end, int maxNumberOfRotations )
+        AllTheMonitoring( AtomicBoolean end, int maxNumberOfRotations )
         {
             this.end = end;
             this.maxNumberOfRotations = maxNumberOfRotations;

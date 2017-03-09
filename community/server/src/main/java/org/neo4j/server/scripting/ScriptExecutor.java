@@ -30,9 +30,9 @@ import org.neo4j.server.rest.domain.EvaluationException;
 public interface ScriptExecutor
 {
 
-    public interface Factory
+    interface Factory
     {
-        public ScriptExecutor createExecutorForScript( String script ) throws EvaluationException;
+        ScriptExecutor createExecutorForScript( String script ) throws EvaluationException;
     }
 
     /**
@@ -40,6 +40,6 @@ public interface ScriptExecutor
      * @return
      * @param variables Is variables that should be available to the script.
      */
-    public Object execute( Map<String, Object> variables ) throws EvaluationException;
+    Object execute( Map<String,Object> variables ) throws EvaluationException;
 
 }

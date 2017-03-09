@@ -40,9 +40,7 @@ class OnlineIndexSamplingJob implements IndexSamplingJob
     private final Log log;
     private final String indexUserDescription;
 
-    public OnlineIndexSamplingJob( long indexId, IndexProxy indexProxy,
-            IndexStoreView storeView,
-            String indexUserDescription,
+    OnlineIndexSamplingJob( long indexId, IndexProxy indexProxy, IndexStoreView storeView, String indexUserDescription,
             LogProvider logProvider )
     {
         this.indexId = indexId;

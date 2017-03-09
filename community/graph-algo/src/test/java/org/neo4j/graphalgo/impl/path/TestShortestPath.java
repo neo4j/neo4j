@@ -485,13 +485,13 @@ public class TestShortestPath extends Neo4jAlgoTestCase
         private MutableInt nodesVisited;
         private final PathExpander delegate;
 
-        public CountingPathExpander( PathExpander delegate )
+        CountingPathExpander( PathExpander delegate )
         {
             nodesVisited = new MutableInt( 0 );
             this.delegate = delegate;
         }
 
-        public CountingPathExpander( PathExpander delegate, MutableInt nodesVisited )
+        CountingPathExpander( PathExpander delegate, MutableInt nodesVisited )
         {
             this( delegate );
             this.nodesVisited = nodesVisited;

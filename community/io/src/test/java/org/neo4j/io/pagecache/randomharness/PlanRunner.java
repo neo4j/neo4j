@@ -25,7 +25,7 @@ class PlanRunner implements Callable<Void>
 {
     private final Plan plan;
 
-    public PlanRunner( Plan plan )
+    PlanRunner( Plan plan )
     {
         this.plan = plan;
     }

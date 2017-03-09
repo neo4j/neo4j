@@ -70,7 +70,7 @@ public class TestTransactionEventDeadlocks
     {
         private final Node node;
 
-        public RelationshipCounterTransactionEventHandler( Node node )
+        RelationshipCounterTransactionEventHandler( Node node )
         {
             this.node = node;
         }

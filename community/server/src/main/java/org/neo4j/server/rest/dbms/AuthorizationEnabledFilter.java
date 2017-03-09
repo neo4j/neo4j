@@ -192,7 +192,7 @@ public class AuthorizationEnabledFilter extends AuthorizationFilter
                             "code", Status.Security.AuthProviderTimeout.code().serialize(),
                             "message", "An auth provider request timed out." ) ) ) );
 
-    private static final ThrowingConsumer<HttpServletResponse, IOException> invalidAuthToken( final String message )
+    private static ThrowingConsumer<HttpServletResponse, IOException> invalidAuthToken( final String message )
     {
         return error( 401,
                 map( "errors", singletonList( map(

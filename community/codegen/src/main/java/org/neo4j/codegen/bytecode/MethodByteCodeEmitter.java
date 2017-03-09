@@ -19,13 +19,13 @@
  */
 package org.neo4j.codegen.bytecode;
 
-import java.util.Deque;
-import java.util.LinkedList;
-import java.util.function.Consumer;
-
 import org.objectweb.asm.ClassWriter;
 import org.objectweb.asm.Label;
 import org.objectweb.asm.MethodVisitor;
+
+import java.util.Deque;
+import java.util.LinkedList;
+import java.util.function.Consumer;
 
 import org.neo4j.codegen.Expression;
 import org.neo4j.codegen.ExpressionVisitor;
@@ -51,7 +51,6 @@ import static org.objectweb.asm.Opcodes.DSTORE;
 import static org.objectweb.asm.Opcodes.FRETURN;
 import static org.objectweb.asm.Opcodes.FSTORE;
 import static org.objectweb.asm.Opcodes.GOTO;
-import static org.objectweb.asm.Opcodes.IFEQ;
 import static org.objectweb.asm.Opcodes.IRETURN;
 import static org.objectweb.asm.Opcodes.ISTORE;
 import static org.objectweb.asm.Opcodes.LRETURN;
@@ -67,7 +66,7 @@ class MethodByteCodeEmitter implements MethodEmitter
     private final TypeReference base;
     private Deque<Block> stateStack = new LinkedList<>();
 
-    public MethodByteCodeEmitter( ClassWriter classWriter, MethodDeclaration declaration, TypeReference base )
+    MethodByteCodeEmitter( ClassWriter classWriter, MethodDeclaration declaration, TypeReference base )
     {
         this.declaration = declaration;
         this.base = base;

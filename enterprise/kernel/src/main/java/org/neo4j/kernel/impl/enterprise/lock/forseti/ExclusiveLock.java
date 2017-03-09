@@ -25,7 +25,7 @@ class ExclusiveLock implements ForsetiLockManager.Lock
 {
     private final ForsetiClient owner;
 
-    public ExclusiveLock( ForsetiClient owner )
+    ExclusiveLock( ForsetiClient owner )
     {
         this.owner = owner;
     }

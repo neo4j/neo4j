@@ -19,6 +19,13 @@
  */
 package org.neo4j.server.rest.repr.formats;
 
+import org.codehaus.jackson.JsonFactory;
+import org.codehaus.jackson.JsonGenerator;
+import org.codehaus.jackson.impl.Utf8Generator;
+import org.codehaus.jackson.io.IOContext;
+import org.codehaus.jackson.map.ObjectMapper;
+import org.codehaus.jackson.map.SerializationConfig;
+
 import java.io.IOException;
 import java.io.OutputStream;
 import java.net.URI;
@@ -27,13 +34,6 @@ import java.util.Collections;
 import java.util.List;
 import java.util.Map;
 import javax.ws.rs.WebApplicationException;
-
-import org.codehaus.jackson.JsonFactory;
-import org.codehaus.jackson.JsonGenerator;
-import org.codehaus.jackson.impl.Utf8Generator;
-import org.codehaus.jackson.io.IOContext;
-import org.codehaus.jackson.map.ObjectMapper;
-import org.codehaus.jackson.map.SerializationConfig;
 
 import org.neo4j.helpers.Service;
 import org.neo4j.server.rest.domain.JsonHelper;
@@ -200,7 +200,7 @@ public class StreamingJsonFormat extends RepresentationFormat implements Streami
     {
         private final JsonGenerator g;
 
-        public StreamingMappingWriter( JsonGenerator g )
+        StreamingMappingWriter( JsonGenerator g )
         {
             this.g = g;
             try
@@ -213,7 +213,7 @@ public class StreamingJsonFormat extends RepresentationFormat implements Streami
             }
         }
 
-        public StreamingMappingWriter( JsonGenerator g, String key )
+        StreamingMappingWriter( JsonGenerator g, String key )
         {
             this.g = g;
             try
@@ -269,7 +269,7 @@ public class StreamingJsonFormat extends RepresentationFormat implements Streami
     {
         private final JsonGenerator g;
 
-        public StreamingListWriter( JsonGenerator g )
+        StreamingListWriter( JsonGenerator g )
         {
             this.g = g;
             try
@@ -282,7 +282,7 @@ public class StreamingJsonFormat extends RepresentationFormat implements Streami
             }
         }
 
-        public StreamingListWriter( JsonGenerator g, String key )
+        StreamingListWriter( JsonGenerator g, String key )
         {
             this.g = g;
             try

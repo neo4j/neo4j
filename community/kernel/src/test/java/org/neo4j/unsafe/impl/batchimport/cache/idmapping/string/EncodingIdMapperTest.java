@@ -685,7 +685,7 @@ public class EncodingIdMapperTest
         }
     }
 
-    private static enum ValueType
+    private enum ValueType
     {
         LONGS
         {

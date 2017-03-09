@@ -54,7 +54,7 @@ public abstract class BestFirstSelectorFactory<P extends Comparable<P>, D>
         private P cost;
         private int visitCount;
 
-        public Visit( P cost )
+        Visit( P cost )
         {
             this.cost = cost;
         }

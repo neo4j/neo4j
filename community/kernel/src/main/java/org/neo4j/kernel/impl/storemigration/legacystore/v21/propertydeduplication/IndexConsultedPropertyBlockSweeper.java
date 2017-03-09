@@ -40,8 +40,8 @@ class IndexConsultedPropertyBlockSweeper implements PrimitiveLongVisitor<IOExcep
     private final PropertyRecord propertyRecord;
     private final DuplicatePropertyRemover propertyRemover;
 
-    public IndexConsultedPropertyBlockSweeper( int propertyKeyId, IndexLookup.Index index, NodeRecord nodeRecord,
-                                               PropertyStore propertyStore, DuplicatePropertyRemover propertyRemover )
+    IndexConsultedPropertyBlockSweeper( int propertyKeyId, IndexLookup.Index index, NodeRecord nodeRecord,
+            PropertyStore propertyStore, DuplicatePropertyRemover propertyRemover )
     {
         this.propertyKeyId = propertyKeyId;
         this.index = index;

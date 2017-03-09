@@ -143,7 +143,7 @@ public class TraversalAStar implements PathFinder<WeightedPath>
         private final double wayLengthG;
         private final double estimateH;
 
-        public PositionData( double wayLengthG, double estimateH )
+        PositionData( double wayLengthG, double estimateH )
         {
             this.wayLengthG = wayLengthG;
             this.estimateH = estimateH;

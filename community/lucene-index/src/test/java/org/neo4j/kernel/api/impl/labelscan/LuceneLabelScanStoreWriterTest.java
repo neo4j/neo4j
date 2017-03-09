@@ -422,7 +422,7 @@ public class LuceneLabelScanStoreWriterTest
         int currentDoc = -1;
         boolean exhausted;
 
-        public OneDocIdIterator( int docId )
+        OneDocIdIterator( int docId )
         {
             target = docId;
         }

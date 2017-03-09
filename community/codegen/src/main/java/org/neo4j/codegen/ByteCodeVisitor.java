@@ -19,13 +19,6 @@
  */
 package org.neo4j.codegen;
 
-import java.io.PrintStream;
-import java.io.PrintWriter;
-import java.lang.reflect.Modifier;
-import java.nio.ByteBuffer;
-import java.util.Arrays;
-import java.util.Objects;
-
 import org.objectweb.asm.ClassReader;
 import org.objectweb.asm.ClassVisitor;
 import org.objectweb.asm.FieldVisitor;
@@ -33,6 +26,13 @@ import org.objectweb.asm.Handle;
 import org.objectweb.asm.Label;
 import org.objectweb.asm.MethodVisitor;
 import org.objectweb.asm.Opcodes;
+
+import java.io.PrintStream;
+import java.io.PrintWriter;
+import java.lang.reflect.Modifier;
+import java.nio.ByteBuffer;
+import java.util.Arrays;
+import java.util.Objects;
 
 import static org.objectweb.asm.Type.getType;
 
@@ -53,7 +53,7 @@ interface ByteCodeVisitor
     {
         private final ByteCodeVisitor[] visitors;
 
-        public Multiplex( ByteCodeVisitor[] visitors )
+        Multiplex( ByteCodeVisitor[] visitors )
         {
             this.visitors = visitors;
         }

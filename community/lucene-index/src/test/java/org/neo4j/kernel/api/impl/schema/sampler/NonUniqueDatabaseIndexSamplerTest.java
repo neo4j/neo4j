@@ -140,7 +140,7 @@ public class NonUniqueDatabaseIndexSamplerTest
 
         private Map<String,Terms> fieldTermsMap;
 
-        public SamplingFields( Map<String,Terms> fieldTermsMap )
+        SamplingFields( Map<String,Terms> fieldTermsMap )
         {
             this.fieldTermsMap = fieldTermsMap;
         }

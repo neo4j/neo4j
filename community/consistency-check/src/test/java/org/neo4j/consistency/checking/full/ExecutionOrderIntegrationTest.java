@@ -346,7 +346,7 @@ public class ExecutionOrderIntegrationTest
         private final PendingReferenceCheck<T> reporter;
         private final InvocationLog log;
 
-        public ReporterSpy( RecordReference<T> reference, PendingReferenceCheck<T> reporter, InvocationLog log )
+        ReporterSpy( RecordReference<T> reference, PendingReferenceCheck<T> reporter, InvocationLog log )
         {
             this.reference = reference;
             this.reporter = reporter;

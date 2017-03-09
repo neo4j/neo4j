@@ -82,7 +82,7 @@ class RebuildFromLogs
 
     private final FileSystemAbstraction fs;
 
-    public RebuildFromLogs( FileSystemAbstraction fs )
+    RebuildFromLogs( FileSystemAbstraction fs )
     {
         this.fs = fs;
     }

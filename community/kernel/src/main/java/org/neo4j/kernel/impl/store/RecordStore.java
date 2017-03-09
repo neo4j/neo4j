@@ -473,7 +473,7 @@ public interface RecordStore<RECORD extends AbstractBaseRecord> extends IdSequen
      * an explicit choice when to create the record instances passed into it.
      * Also for mocking purposes it's less confusing and error prone having only a single method.
      */
-    public static <R extends AbstractBaseRecord> R getRecord( RecordStore<R> store, long id, RecordLoad mode )
+    static <R extends AbstractBaseRecord> R getRecord( RecordStore<R> store, long id, RecordLoad mode )
     {
         R record = store.newRecord();
         store.getRecord( id, record, mode );
@@ -485,7 +485,7 @@ public interface RecordStore<RECORD extends AbstractBaseRecord> extends IdSequen
      * an explicit choice when to create the record instances passed into it.
      * Also for mocking purposes it's less confusing and error prone having only a single method.
      */
-    public static <R extends AbstractBaseRecord> R getRecord( RecordStore<R> store, long id )
+    static <R extends AbstractBaseRecord> R getRecord( RecordStore<R> store, long id )
     {
         return getRecord( store, id, RecordLoad.NORMAL );
     }

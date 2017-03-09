@@ -30,7 +30,7 @@ class LockWorkerState
     final List<String> completedOperations = new ArrayList<String>();
     String doing;
 
-    public LockWorkerState( Locks locks )
+    LockWorkerState( Locks locks )
     {
         this.grabber = locks;
         this.client = locks.newClient();

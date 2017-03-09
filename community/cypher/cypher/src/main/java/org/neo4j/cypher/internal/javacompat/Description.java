@@ -38,7 +38,7 @@ class Description implements ExecutionPlanDescription
 {
     private final org.neo4j.cypher.internal.PlanDescription description;
 
-    public Description( PlanDescription description )
+    Description( PlanDescription description )
     {
         this.description = description;
     }

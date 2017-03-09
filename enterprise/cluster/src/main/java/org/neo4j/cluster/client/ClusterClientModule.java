@@ -228,7 +228,7 @@ public class ClusterClientModule
         private ScheduledExecutorService scheduler;
         private ScheduledFuture<?> tickFuture;
 
-        public TimeoutTrigger( ProtocolServer server, Monitors monitors )
+        TimeoutTrigger( ProtocolServer server, Monitors monitors )
         {
             this.server = server;
             this.monitors = monitors;

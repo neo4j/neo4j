@@ -26,7 +26,7 @@ import org.neo4j.jmx.ManagementInterface;
 @Description( "The status of Neo4j memory mapping" )
 public interface MemoryMapping
 {
-    final String NAME = "Memory Mapping";
+    String NAME = "Memory Mapping";
 
     @Deprecated
     @Description( "Get information about each pool of memory mapped regions from store files with "

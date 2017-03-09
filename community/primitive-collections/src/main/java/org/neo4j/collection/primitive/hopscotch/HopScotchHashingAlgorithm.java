@@ -328,7 +328,7 @@ public class HopScotchHashingAlgorithm
 
         boolean pulledToFreeIndex( int intendedIndex, long newHopBits, long key, int fromIndex, int toIndex );
 
-        public abstract static class Adapter implements Monitor
+        abstract class Adapter implements Monitor
         {
             @Override
             public boolean placedAtFreedIndex( int intendedIndex, long newHopBits, long key, int actualIndex )

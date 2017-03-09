@@ -45,7 +45,7 @@ class ClusterState
     private final Set<ClusterAction> pendingActions;
     private final List<ClusterInstance> instances = new ArrayList<>();
 
-    public ClusterState( List<ClusterInstance> instances, Set<ClusterAction> pendingActions )
+    ClusterState( List<ClusterInstance> instances, Set<ClusterAction> pendingActions )
     {
         this.pendingActions = pendingActions instanceof LinkedHashSet ? pendingActions
                 : new LinkedHashSet<>( pendingActions );

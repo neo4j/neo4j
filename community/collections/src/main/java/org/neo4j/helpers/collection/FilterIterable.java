@@ -29,7 +29,7 @@ class FilterIterable<T> implements Iterable<T>
 
     private final Predicate<? super T> specification;
 
-    public FilterIterable( Iterable<T> iterable, Predicate<? super T> specification )
+    FilterIterable( Iterable<T> iterable, Predicate<? super T> specification )
     {
         this.iterable = iterable;
         this.specification = specification;
@@ -51,13 +51,13 @@ class FilterIterable<T> implements Iterable<T>
         boolean finished = false;
         boolean nextConsumed = true;
 
-        public FilterIterator( Iterator<T> iterator, Predicate<? super T> specification )
+        FilterIterator( Iterator<T> iterator, Predicate<? super T> specification )
         {
             this.specification = specification;
             this.iterator = iterator;
         }
 
-        public boolean moveToNextValid()
+        boolean moveToNextValid()
         {
             boolean found = false;
             while ( !found && iterator.hasNext() )

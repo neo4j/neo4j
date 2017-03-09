@@ -32,7 +32,7 @@ public interface Action<T,F>
      */
     void printAsCode( T source, LinePrinter out, boolean includeChecks );
 
-    public abstract static class Adapter<T,F> implements Action<T,F>
+    abstract class Adapter<T,F> implements Action<T,F>
     {
         @Override
         public void printAsCode( T source, LinePrinter out, boolean includeChecks )

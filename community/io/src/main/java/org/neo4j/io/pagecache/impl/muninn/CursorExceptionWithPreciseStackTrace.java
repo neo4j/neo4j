@@ -29,7 +29,7 @@ import org.neo4j.io.pagecache.CursorException;
  */
 final class CursorExceptionWithPreciseStackTrace extends CursorException
 {
-    public CursorExceptionWithPreciseStackTrace( String message )
+    CursorExceptionWithPreciseStackTrace( String message )
     {
         super( message );
     }

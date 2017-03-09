@@ -32,8 +32,8 @@ import java.util.stream.Stream;
 
 import org.neo4j.kernel.api.exceptions.ProcedureException;
 import org.neo4j.kernel.api.exceptions.Status;
-import org.neo4j.kernel.api.proc.ProcedureSignature;
 import org.neo4j.kernel.api.proc.FieldSignature;
+import org.neo4j.kernel.api.proc.ProcedureSignature;
 
 import static java.lang.reflect.Modifier.isPublic;
 import static java.lang.reflect.Modifier.isStatic;
@@ -98,7 +98,7 @@ public class OutputMappers
         private final MethodHandle getter;
         private final TypeMappers.NeoValueConverter mapper;
 
-        public FieldMapper( MethodHandle getter, TypeMappers.NeoValueConverter mapper )
+        FieldMapper( MethodHandle getter, TypeMappers.NeoValueConverter mapper )
         {
             this.getter = getter;
             this.mapper = mapper;

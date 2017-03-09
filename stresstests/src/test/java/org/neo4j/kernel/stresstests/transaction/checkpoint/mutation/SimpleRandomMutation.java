@@ -30,8 +30,7 @@ class SimpleRandomMutation implements RandomMutation
     private final Mutation rareMutation;
     private final Mutation commonMutation;
 
-    public SimpleRandomMutation( long nodeCount, GraphDatabaseService db,
-            Mutation rareMutation, Mutation commonMutation )
+    SimpleRandomMutation( long nodeCount, GraphDatabaseService db, Mutation rareMutation, Mutation commonMutation )
     {
         this.nodeCount = nodeCount;
         this.db = db;

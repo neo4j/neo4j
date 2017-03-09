@@ -225,7 +225,7 @@ public class IdGeneratorRebuildFailureEmulationTest
     @SuppressWarnings("deprecation")
     private class Database extends ImpermanentGraphDatabase
     {
-        public Database( File storeDir )
+        Database( File storeDir )
         {
             super( storeDir );
         }

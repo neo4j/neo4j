@@ -57,8 +57,8 @@ class BackupServer extends Server<TheBackupInterface,Object>
     static final int DEFAULT_PORT = 6362;
     static final int FRAME_LENGTH = Protocol.MEGA * 4;
 
-    public BackupServer( TheBackupInterface requestTarget, final HostnamePort server,
-                         LogProvider logProvider, ByteCounterMonitor byteCounterMonitor, RequestMonitor requestMonitor )
+    BackupServer( TheBackupInterface requestTarget, final HostnamePort server, LogProvider logProvider,
+            ByteCounterMonitor byteCounterMonitor, RequestMonitor requestMonitor )
     {
         super( requestTarget, newBackupConfig( FRAME_LENGTH, server ), logProvider, FRAME_LENGTH,
                 BACKUP_PROTOCOL_VERSION, ALWAYS_MATCH, Clocks.systemClock(), byteCounterMonitor, requestMonitor );

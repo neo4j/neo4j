@@ -98,7 +98,7 @@ public class ManagementSupport
         return createObjectName( instanceId, getBeanName( beanInterface ), false, extraNaming );
     }
 
-    private final ObjectName createObjectNameQuery( String instanceId, Class<?> beanInterface )
+    private ObjectName createObjectNameQuery( String instanceId, Class<?> beanInterface )
     {
         return createObjectName( instanceId, getBeanName( beanInterface ), true );
     }

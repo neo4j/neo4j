@@ -48,7 +48,7 @@ class BackupImpl implements TheBackupInterface
     private final LogFileInformation logFileInformation;
     private final Logger logger;
 
-    public BackupImpl( StoreCopyServer storeCopyServer, Monitors monitors,
+    BackupImpl( StoreCopyServer storeCopyServer, Monitors monitors,
             LogicalTransactionStore logicalTransactionStore, TransactionIdStore transactionIdStore,
             LogFileInformation logFileInformation, Supplier<StoreId> storeId, LogProvider logProvider )
     {

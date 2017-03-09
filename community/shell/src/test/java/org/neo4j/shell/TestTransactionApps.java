@@ -185,7 +185,7 @@ public class TestTransactionApps
 class FakeShellServer extends GraphDatabaseShellServer
 {
 
-    public FakeShellServer( GraphDatabaseAPI graphDb ) throws RemoteException
+    FakeShellServer( GraphDatabaseAPI graphDb ) throws RemoteException
     {
         super( graphDb );
     }

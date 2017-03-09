@@ -58,7 +58,7 @@ public class LonelyProcessingStepTest
 
         private volatile boolean panicOnEndUpstream = false;
 
-        public FaultyLonelyProcessingStepTest( List<Step<?>> pipeLine )
+        FaultyLonelyProcessingStepTest( List<Step<?>> pipeLine )
         {
             super( new StageExecution( "Faulty", Configuration.DEFAULT, pipeLine, 0 ),
                     "Faulty", Configuration.DEFAULT );

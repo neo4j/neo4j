@@ -96,7 +96,7 @@ public class BashVariableInterpreter
     /**
      * A replacer which can return a string to replace a variable.
      */
-    public static interface Replacer
+    public interface Replacer
     {
         /**
          * Returns a string to replace something else.
@@ -121,7 +121,7 @@ public class BashVariableInterpreter
          * @param value the value to return from
          * {@link #getReplacement(ShellServer, Session)}.
          */
-        public StaticReplacer( String value )
+        StaticReplacer( String value )
         {
             this.value = value;
         }
@@ -143,7 +143,7 @@ public class BashVariableInterpreter
         /**
          * @param format the date format, see {@link SimpleDateFormat}.
          */
-        public DateReplacer( String format )
+        DateReplacer( String format )
         {
             this.format = new SimpleDateFormat( format );
         }

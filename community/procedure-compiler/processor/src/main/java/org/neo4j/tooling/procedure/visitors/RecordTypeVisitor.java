@@ -19,10 +19,6 @@
  */
 package org.neo4j.tooling.procedure.visitors;
 
-import org.neo4j.tooling.procedure.compilerutils.TypeMirrorUtils;
-import org.neo4j.tooling.procedure.messages.CompilationMessage;
-import org.neo4j.tooling.procedure.messages.RecordTypeError;
-
 import java.util.Set;
 import java.util.stream.Stream;
 import javax.lang.model.element.Element;
@@ -32,6 +28,10 @@ import javax.lang.model.type.TypeMirror;
 import javax.lang.model.type.TypeVisitor;
 import javax.lang.model.util.SimpleTypeVisitor8;
 import javax.lang.model.util.Types;
+
+import org.neo4j.tooling.procedure.compilerutils.TypeMirrorUtils;
+import org.neo4j.tooling.procedure.messages.CompilationMessage;
+import org.neo4j.tooling.procedure.messages.RecordTypeError;
 
 import static javax.lang.model.element.Modifier.PUBLIC;
 import static javax.lang.model.element.Modifier.STATIC;
@@ -43,7 +43,7 @@ class RecordTypeVisitor extends SimpleTypeVisitor8<Stream<CompilationMessage>,Vo
     private final Types typeUtils;
     private final TypeVisitor<Boolean,Void> fieldTypeVisitor;
 
-    public RecordTypeVisitor( Types typeUtils, TypeMirrorUtils typeMirrors )
+    RecordTypeVisitor( Types typeUtils, TypeMirrorUtils typeMirrors )
     {
         this.typeUtils = typeUtils;
         fieldTypeVisitor = new RecordFieldTypeVisitor( typeUtils, typeMirrors );

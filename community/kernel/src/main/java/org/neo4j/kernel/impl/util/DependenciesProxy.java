@@ -55,7 +55,7 @@ public class DependenciesProxy
     {
         private DependencyResolver dependencyResolver;
 
-        public ProxyHandler( DependencyResolver dependencyResolver )
+        ProxyHandler( DependencyResolver dependencyResolver )
         {
             this.dependencyResolver = dependencyResolver;
         }

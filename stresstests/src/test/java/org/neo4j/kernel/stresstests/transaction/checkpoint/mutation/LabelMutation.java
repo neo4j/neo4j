@@ -27,7 +27,7 @@ class LabelMutation implements Mutation
 {
     private final GraphDatabaseService db;
 
-    public LabelMutation( GraphDatabaseService db )
+    LabelMutation( GraphDatabaseService db )
     {
         this.db = db;
     }

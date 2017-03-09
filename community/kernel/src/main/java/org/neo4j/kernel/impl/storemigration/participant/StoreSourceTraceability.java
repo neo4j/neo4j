@@ -32,7 +32,7 @@ class StoreSourceTraceability implements SourceTraceability
     private final int recordSize;
     private long id;
 
-    public StoreSourceTraceability( String description, int recordSize )
+    StoreSourceTraceability( String description, int recordSize )
     {
         this.description = description;
         this.recordSize = recordSize;

@@ -31,13 +31,11 @@ import java.util.concurrent.atomic.AtomicBoolean;
 import org.neo4j.collection.primitive.PrimitiveLongCollections;
 import org.neo4j.collection.primitive.PrimitiveLongIterator;
 import org.neo4j.helpers.collection.Visitor;
-import org.neo4j.kernel.api.schema.NodePropertyDescriptor;
 import org.neo4j.kernel.api.index.InternalIndexState;
 import org.neo4j.kernel.api.schema_new.IndexQuery;
 import org.neo4j.kernel.api.schema_new.LabelSchemaDescriptor;
 import org.neo4j.kernel.api.schema_new.SchemaBoundary;
 import org.neo4j.kernel.api.schema_new.SchemaDescriptorFactory;
-import org.neo4j.kernel.api.schema_new.index.NewIndexDescriptorFactory;
 import org.neo4j.kernel.api.txstate.TransactionState;
 import org.neo4j.kernel.impl.api.TransactionQueue;
 import org.neo4j.kernel.impl.api.TransactionToApply;
@@ -151,7 +149,7 @@ public class IndexWorkSyncTransactionApplicationStressIT
         private final IndexProxy index;
         private int i, base;
 
-        public Worker( int id, AtomicBoolean end, RecordStorageEngine storageEngine, int batchSize, IndexProxy index )
+        Worker( int id, AtomicBoolean end, RecordStorageEngine storageEngine, int batchSize, IndexProxy index )
         {
             this.id = id;
             this.end = end;

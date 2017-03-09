@@ -106,7 +106,7 @@ public class PrimitiveIntObjectHashMap<VALUE> extends AbstractIntHopScotchCollec
         private PrimitiveIntObjectHashMap other;
         private boolean equal = true;
 
-        public IntObjEquality( PrimitiveIntObjectHashMap that )
+        IntObjEquality( PrimitiveIntObjectHashMap that )
         {
             this.other = that;
         }

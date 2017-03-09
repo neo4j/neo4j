@@ -426,8 +426,7 @@ public class CheckPointerImplTest
         private final CountDownLatch startSignal;
         private final CountDownLatch completed;
 
-        public CheckPointerThread( CheckPointerImpl checkPointing, CountDownLatch startSignal,
-                CountDownLatch completed )
+        CheckPointerThread( CheckPointerImpl checkPointing, CountDownLatch startSignal, CountDownLatch completed )
         {
             this.checkPointing = checkPointing;
             this.startSignal = startSignal;

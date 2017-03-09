@@ -70,7 +70,7 @@ public class LabelTokenStoreTest
 
     class UnusedLabelTokenStore extends LabelTokenStore
     {
-        public UnusedLabelTokenStore() throws IOException
+        UnusedLabelTokenStore() throws IOException
         {
             super( file, config, generatorFactory, cache, logProvider, dynamicStringStore,
                     RecordFormatSelector.defaultFormat() );

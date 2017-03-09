@@ -26,6 +26,7 @@ import java.util.concurrent.ExecutorService;
 import java.util.concurrent.Executors;
 import java.util.concurrent.Future;
 import java.util.concurrent.TimeUnit;
+
 import org.neo4j.helpers.Exceptions;
 import org.neo4j.kernel.lifecycle.Lifecycle;
 import org.neo4j.kernel.lifecycle.LifecycleAdapter;
@@ -44,7 +45,7 @@ class ParallelLifecycle extends LifecycleAdapter
     private final long timeout;
     private final TimeUnit unit;
 
-    public ParallelLifecycle( long timeout, TimeUnit unit )
+    ParallelLifecycle( long timeout, TimeUnit unit )
     {
         this.timeout = timeout;
         this.unit = unit;

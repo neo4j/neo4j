@@ -142,7 +142,7 @@ public class LockManagerImplTest
 
         private RWLock lock;
 
-        public MockedLockLockManager( RagManager ragManager, RWLock lock )
+        MockedLockLockManager( RagManager ragManager, RWLock lock )
         {
             super( ragManager, Config.defaults(), Clocks.systemClock() );
             this.lock = lock;

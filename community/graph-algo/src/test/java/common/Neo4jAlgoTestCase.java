@@ -53,7 +53,7 @@ public abstract class Neo4jAlgoTestCase
     protected static SimpleGraphBuilder graph = null;
     protected Transaction tx;
 
-    public static enum MyRelTypes implements RelationshipType
+    public enum MyRelTypes implements RelationshipType
     {
         R1, R2, R3
     }

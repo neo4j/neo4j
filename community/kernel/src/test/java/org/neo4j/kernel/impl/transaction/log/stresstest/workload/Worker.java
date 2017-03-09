@@ -33,7 +33,7 @@ class Worker implements Runnable
     private final TransactionRepresentationFactory factory;
     private final BooleanSupplier condition;
 
-    public Worker( TransactionAppender transactionAppender,
+    Worker( TransactionAppender transactionAppender,
             TransactionRepresentationFactory factory, BooleanSupplier condition )
     {
         this.transactionAppender = transactionAppender;

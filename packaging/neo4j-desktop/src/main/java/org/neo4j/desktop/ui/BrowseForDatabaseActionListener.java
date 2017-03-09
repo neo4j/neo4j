@@ -25,8 +25,6 @@ import java.awt.*;
 import java.awt.event.ActionEvent;
 import java.awt.event.ActionListener;
 import java.io.File;
-import java.io.FileWriter;
-import java.io.IOException;
 import javax.swing.*;
 
 import org.neo4j.desktop.model.DesktopModel;
@@ -47,7 +45,7 @@ class BrowseForDatabaseActionListener implements ActionListener
     private final JTextField directoryDisplay;
     private final DesktopModel model;
 
-    public BrowseForDatabaseActionListener( JFrame frame, JTextField directoryDisplay, DesktopModel model )
+    BrowseForDatabaseActionListener( JFrame frame, JTextField directoryDisplay, DesktopModel model )
     {
         this.model = model;
         this.frame = frame;

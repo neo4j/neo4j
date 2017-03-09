@@ -25,7 +25,7 @@ package org.neo4j.upgrade.loader;
  */
 class EmbeddedJarNotFoundException extends RuntimeException
 {
-    public EmbeddedJarNotFoundException( String message )
+    EmbeddedJarNotFoundException( String message )
     {
         super( message );
     }

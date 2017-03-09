@@ -98,7 +98,7 @@ public class CompactJsonFormat extends RepresentationFormat
         };
         private final String key;
 
-        private MappingTemplate( String key )
+        MappingTemplate( String key )
         {
             this.key = key;
         }
@@ -119,7 +119,7 @@ public class CompactJsonFormat extends RepresentationFormat
     {
         private final MappingTemplate template;
 
-        public CompactJsonWriter( MappingTemplate template )
+        CompactJsonWriter( MappingTemplate template )
         {
             super( new HashMap<String, Object>(), true );
             this.template = template;

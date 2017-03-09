@@ -524,7 +524,7 @@ public class VersionedHashMap<K, V> implements Map<K, V>
         protected int addedInVersion;
         protected boolean removed = false;
 
-        public Record(int hashCode, K key, V value, Record<K,V> next, int addedInVersion)
+        Record(int hashCode, K key, V value, Record<K,V> next, int addedInVersion)
         {
             this.hashCode = hashCode;
             this.key = key;
@@ -594,7 +594,7 @@ public class VersionedHashMap<K, V> implements Map<K, V>
     {
         private Record<K,V> original;
 
-        public CopiedRecord(Record<K,V> original, int hashCode, K key, V value, Record<K,V> next, int addedInVersion)
+        CopiedRecord( Record<K,V> original, int hashCode, K key, V value, Record<K,V> next, int addedInVersion )
         {
             super(hashCode, key, value, next, addedInVersion);
             this.original = original;

@@ -93,7 +93,7 @@ public class StandardRecordFormat extends RecordFormat
         final short fill1;
         final long fill2;
 
-        public StandardRecord( File file, int recordId )
+        StandardRecord( File file, int recordId )
         {
             this.type = 42;
             this.file = file;
@@ -110,7 +110,7 @@ public class StandardRecordFormat extends RecordFormat
             fill2 = d;
         }
 
-        public StandardRecord( byte type, byte fileName, short fill1, int recordId, long fill2 )
+        StandardRecord( byte type, byte fileName, short fill1, int recordId, long fill2 )
         {
             this.type = type;
             this.file = fileName == 0? null : new File( new String( new byte[] {fileName} ) );

@@ -183,7 +183,7 @@ public class HtmlHelper
         return res;
     }
 
-    public static enum ObjectType
+    public enum ObjectType
     {
         NODE,
         RELATIONSHIP,
