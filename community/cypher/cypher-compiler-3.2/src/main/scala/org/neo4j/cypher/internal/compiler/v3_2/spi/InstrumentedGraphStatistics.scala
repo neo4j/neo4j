@@ -25,13 +25,14 @@ import scala.collection.mutable
 import java.lang.Math.abs
 import java.lang.Math.max
 
+import org.neo4j.cypher.internal.compiler.v3_2.IndexDescriptor
 import org.neo4j.cypher.internal.ir.v3_2.{Cardinality, Selectivity}
 
 sealed trait StatisticsKey
 case class NodesWithLabelCardinality(labelId: Option[LabelId]) extends StatisticsKey
 case class CardinalityByLabelsAndRelationshipType(lhs: Option[LabelId], relType: Option[RelTypeId], rhs: Option[LabelId]) extends StatisticsKey
-case class IndexSelectivity(labelId: LabelId, propertyKeyId: PropertyKeyId) extends StatisticsKey
-case class IndexPropertyExistsSelectivity(labelId: LabelId, propertyKeyId: PropertyKeyId) extends StatisticsKey
+case class IndexSelectivity(index: IndexDescriptor) extends StatisticsKey
+case class IndexPropertyExistsSelectivity(index: IndexDescriptor) extends StatisticsKey
 
 class MutableGraphStatisticsSnapshot(val map: mutable.Map[StatisticsKey, Double] = mutable.Map.empty) {
   def freeze: GraphStatisticsSnapshot = GraphStatisticsSnapshot(map.toMap)
@@ -46,10 +47,10 @@ case class GraphStatisticsSnapshot(statsValues: Map[StatisticsKey, Double] = Map
         instrumented.nodesWithLabelCardinality(labelId)
       case CardinalityByLabelsAndRelationshipType(lhs, relType, rhs) =>
         instrumented.cardinalityByLabelsAndRelationshipType(lhs, relType, rhs)
-      case IndexSelectivity(labelId, propertyKeyId) =>
-        instrumented.indexSelectivity(labelId, propertyKeyId)
-      case IndexPropertyExistsSelectivity(labelId, propertyKeyId) =>
-        instrumented.indexPropertyExistsSelectivity(labelId, propertyKeyId)
+      case IndexSelectivity(index) =>
+        instrumented.indexSelectivity(index)
+      case IndexPropertyExistsSelectivity(index) =>
+        instrumented.indexPropertyExistsSelectivity(index)
     }
     snapshot.freeze
   }
@@ -78,15 +79,15 @@ case class InstrumentedGraphStatistics(inner: GraphStatistics, snapshot: Mutable
       inner.cardinalityByLabelsAndRelationshipType(fromLabel, relTypeId, toLabel).amount
     )
 
-  def indexSelectivity(label: LabelId, property: PropertyKeyId): Option[Selectivity] = {
-    val selectivity = inner.indexSelectivity(label, property)
-    snapshot.map.getOrElseUpdate(IndexSelectivity(label, property), selectivity.fold(0.0)(_.factor))
+  def indexSelectivity(index: IndexDescriptor): Option[Selectivity] = {
+    val selectivity = inner.indexSelectivity(index)
+    snapshot.map.getOrElseUpdate(IndexSelectivity(index), selectivity.fold(0.0)(_.factor))
     selectivity
   }
 
-  def indexPropertyExistsSelectivity(label: LabelId, property: PropertyKeyId): Option[Selectivity] = {
-    val selectivity = inner.indexPropertyExistsSelectivity(label, property)
-    snapshot.map.getOrElseUpdate(IndexPropertyExistsSelectivity(label, property), selectivity.fold(0.0)(_.factor))
+  def indexPropertyExistsSelectivity(index: IndexDescriptor): Option[Selectivity] = {
+    val selectivity = inner.indexPropertyExistsSelectivity(index)
+    snapshot.map.getOrElseUpdate(IndexPropertyExistsSelectivity(index), selectivity.fold(0.0)(_.factor))
     selectivity
   }
 }

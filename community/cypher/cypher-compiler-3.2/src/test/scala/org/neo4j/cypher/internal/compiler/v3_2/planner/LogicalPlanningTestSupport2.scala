@@ -42,8 +42,6 @@ import org.neo4j.cypher.internal.frontend.v3_2.test_helpers.{CypherFunSuite, Cyp
 import org.neo4j.cypher.internal.frontend.v3_2.{Foldable, PropertyKeyId, SemanticTable}
 import org.neo4j.cypher.internal.ir.v3_2._
 import org.neo4j.helpers.collection.Visitable
-import org.neo4j.kernel.api.schema.NodePropertyDescriptor
-import org.neo4j.kernel.api.constraints.UniquenessConstraint
 import org.neo4j.kernel.impl.util.dbstructure.DbStructureVisitor
 import org.scalatest.matchers.{BeMatcher, MatchResult}
 
@@ -96,25 +94,35 @@ trait LogicalPlanningTestSupport2 extends CypherTestSupport with AstConstruction
       override def statistics: GraphStatistics =
         config.graphStatistics
 
-      override def getUniqueIndexRule(labelName: String, propertyKey: String): Option[IndexDescriptor] =
-        if (config.uniqueIndexes((labelName, propertyKey)))
+      override def indexesGetForLabel(labelId: Int): Iterator[IndexDescriptor] = {
+        val label = config.labelsById(labelId)
+        config.indexes.filter(p => p._1 == label).flatMap(p => indexGet(p._1, p._2)).iterator
+      }
+
+      override def uniqueIndexesGetForLabel(labelId: Int): Iterator[IndexDescriptor] = {
+        val label = config.labelsById(labelId)
+        config.uniqueIndexes.filter(p => p._1 == label).flatMap(p => uniqueIndexGet(p._1, p._2)).iterator
+      }
+
+      override def uniqueIndexGet(labelName: String, propertyKeys: Seq[String]): Option[IndexDescriptor] =
+        if (config.uniqueIndexes((labelName, propertyKeys)))
           Some(IndexDescriptor(
             semanticTable.resolvedLabelIds(labelName).id,
-            semanticTable.resolvedPropertyKeyNames(propertyKey).id
+            propertyKeys.map(semanticTable.resolvedPropertyKeyNames(_).id)
           ))
         else
           None
 
-      override def getIndexRule(labelName: String, propertyKey: String): Option[IndexDescriptor] =
-        if (config.indexes((labelName, propertyKey)) || config.uniqueIndexes((labelName, propertyKey)))
+      override def indexGet(labelName: String, propertyKeys: Seq[String]): Option[IndexDescriptor] =
+        if (config.indexes((labelName, propertyKeys)) || config.uniqueIndexes((labelName, propertyKeys)))
           Some(IndexDescriptor(
             semanticTable.resolvedLabelIds(labelName).id,
-            semanticTable.resolvedPropertyKeyNames(propertyKey).id
+            propertyKeys.map(semanticTable.resolvedPropertyKeyNames(_).id)
           ))
         else
           None
 
-      override def hasIndexRule(labelName: String): Boolean =
+      override def indexExistsForLabel(labelName: String): Boolean =
         config.indexes.exists(_._1 == labelName) || config.uniqueIndexes.exists(_._1 == labelName)
 
       override def getOptPropertyKeyId(propertyKeyName: String) =

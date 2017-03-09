@@ -27,7 +27,7 @@ import org.neo4j.cypher.internal.ir.v3_2.QueryGraph
 
 object QueryPlannerConfiguration {
 
-  private val leafPlanFromExpressions = IndexedSeq(
+  private val leafPlanFromExpressions: IndexedSeq[LeafPlanner with LeafPlanFromExpressions] = IndexedSeq(
     // MATCH (n) WHERE id(n) IN ... RETURN n
     idSeekLeafPlanner,
 

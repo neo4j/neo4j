@@ -86,7 +86,7 @@ class IndexScanLeafPlannerTest extends CypherFunSuite with LogicalPlanningTestSu
   }
 
   test("plans index scans such that it solves hints") {
-    val hint: UsingIndexHint = UsingIndexHint(varFor("n"), LabelName("Awesome") _, PropertyKeyName("prop")(pos)) _
+    val hint: UsingIndexHint = UsingIndexHint(varFor("n"), LabelName("Awesome") _, Seq(PropertyKeyName("prop")(pos))) _
 
     new given {
       qg = queryGraph(existsPredicate, hasLabels).addHints(Some(hint))
@@ -108,7 +108,7 @@ class IndexScanLeafPlannerTest extends CypherFunSuite with LogicalPlanningTestSu
   }
 
   test("plans unique index scans such that it solves hints") {
-    val hint: UsingIndexHint = UsingIndexHint(varFor("n"), LabelName("Awesome") _, PropertyKeyName("prop")(pos)) _
+    val hint: UsingIndexHint = UsingIndexHint(varFor("n"), LabelName("Awesome") _, Seq(PropertyKeyName("prop")(pos))) _
 
     new given {
       qg = queryGraph(existsPredicate, hasLabels).addHints(Some(hint))
@@ -269,7 +269,7 @@ class IndexScanLeafPlannerTest extends CypherFunSuite with LogicalPlanningTestSu
   }
 
   test("plans index contains scans such that it solves hints") {
-    val hint: UsingIndexHint = UsingIndexHint(varFor("n"), LabelName("Awesome") _, PropertyKeyName("prop")(pos)) _
+    val hint: UsingIndexHint = UsingIndexHint(varFor("n"), LabelName("Awesome") _, Seq(PropertyKeyName("prop")(pos))) _
 
     new given {
       qg = queryGraph(containsPredicate, hasLabels).addHints(Some(hint))
@@ -291,7 +291,7 @@ class IndexScanLeafPlannerTest extends CypherFunSuite with LogicalPlanningTestSu
   }
 
   test("plans unique index contains scans such that it solves hints") {
-    val hint: UsingIndexHint = UsingIndexHint(varFor("n"), LabelName("Awesome") _, PropertyKeyName("prop")(pos)) _
+    val hint: UsingIndexHint = UsingIndexHint(varFor("n"), LabelName("Awesome") _, Seq(PropertyKeyName("prop")(pos))) _
 
     new given {
       qg = queryGraph(containsPredicate, hasLabels).addHints(Some(hint))

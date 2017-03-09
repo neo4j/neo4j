@@ -19,8 +19,10 @@
  */
 package org.neo4j.graphdb.impl.notification;
 
+import java.util.Arrays;
 import java.util.List;
 import java.util.Set;
+import java.util.stream.Collectors;
 
 public interface NotificationDetail
 {
@@ -35,10 +37,11 @@ public interface NotificationDetail
             return createDeprecationNotificationDetail( oldName, newName );
         }
 
-        public static NotificationDetail index( final String labelName, final String propertyKeyName )
+        public static NotificationDetail index( final String labelName, final String... propertyKeyNames )
         {
             return createNotificationDetail( "hinted index",
-                    String.format( "index on :%s(%s)", labelName, propertyKeyName ), true );
+                    String.format( "index on :%s(%s)", labelName,
+                            Arrays.stream( propertyKeyNames ).collect( Collectors.joining( "," ) ) ), true );
         }
 
         public static NotificationDetail label( final String labelName )

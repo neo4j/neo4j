@@ -21,12 +21,11 @@ package org.neo4j.cypher.internal.compiler.v3_2.spi
 
 import java.net.URL
 
-import org.neo4j.cypher.internal.compiler.v3_2.InternalQueryStatistics
 import org.neo4j.cypher.internal.compiler.v3_2.commands.expressions.{Expander, KernelPredicate, UserDefinedAggregator}
 import org.neo4j.cypher.internal.compiler.v3_2.pipes.matching.PatternNode
+import org.neo4j.cypher.internal.compiler.v3_2.{IndexDescriptor, InternalQueryStatistics}
 import org.neo4j.cypher.internal.frontend.v3_2.SemanticDirection
 import org.neo4j.graphdb.{Node, Path, PropertyContainer, Relationship}
-import org.neo4j.cypher.internal.compiler.v3_2.IndexDescriptor
 
 import scala.collection.Iterator
 
@@ -86,7 +85,7 @@ trait QueryContext extends TokenContext {
 
   def dropIndexRule(descriptor: IndexDescriptor)
 
-  def indexSeek(index: IndexDescriptor, value: Any): Iterator[Node]
+  def indexSeek(index: IndexDescriptor, values: Seq[Any]): Iterator[Node]
 
   def indexSeekByRange(index: IndexDescriptor, value: Any): Iterator[Node]
 

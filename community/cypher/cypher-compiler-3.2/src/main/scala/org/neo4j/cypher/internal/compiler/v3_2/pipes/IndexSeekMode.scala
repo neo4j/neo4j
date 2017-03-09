@@ -19,9 +19,11 @@
  */
 package org.neo4j.cypher.internal.compiler.v3_2.pipes
 
-import org.neo4j.cypher.internal.compiler.v3_2.commands.{QueryExpression, RangeQueryExpression}
-import org.neo4j.graphdb.Node
 import org.neo4j.cypher.internal.compiler.v3_2.IndexDescriptor
+import org.neo4j.cypher.internal.compiler.v3_2.commands.{QueryExpression, RangeQueryExpression}
+import org.neo4j.cypher.internal.compiler.v3_2.pipes.IndexSeekMode.{MultipleValueQuery, assertSingleValue}
+import org.neo4j.cypher.internal.frontend.v3_2.InternalException
+import org.neo4j.graphdb.Node
 
 case class IndexSeekModeFactory(unique: Boolean, readOnly: Boolean) {
   def fromQueryExpression[T](qexpr: QueryExpression[T]) = qexpr match {
@@ -33,16 +35,26 @@ case class IndexSeekModeFactory(unique: Boolean, readOnly: Boolean) {
   }
 }
 
+object IndexSeekMode {
+  type MultipleValueQuery = (QueryState) => (Seq[Any]) => Iterator[Node]
+
+  def assertSingleValue(values: Seq[Any]): Any = {
+    if(values.size != 1)
+      throw new InternalException("Composite lookups not yet supported")
+    values.head
+  }
+ }
+
 sealed trait IndexSeekMode {
-  def indexFactory(descriptor: IndexDescriptor): (QueryState) => (Any) => Iterator[Node]
+  def indexFactory(descriptor: IndexDescriptor): MultipleValueQuery
 
   def name: String
 }
 
 sealed trait ExactSeek {
   self: IndexSeekMode =>
-  override def indexFactory(descriptor: IndexDescriptor): (QueryState) => (Any) => Iterator[Node] =
-    (state: QueryState) => (x: Any) => state.query.indexSeek(descriptor, x)
+  override def indexFactory(descriptor: IndexDescriptor): MultipleValueQuery =
+    (state: QueryState) => (values: Seq[Any]) => state.query.indexSeek(descriptor, values)
 }
 
 case object IndexSeek extends IndexSeekMode with ExactSeek {
@@ -55,16 +67,18 @@ case object UniqueIndexSeek extends IndexSeekMode with ExactSeek {
 
 case object LockingUniqueIndexSeek extends IndexSeekMode {
 
-  override def indexFactory(descriptor: IndexDescriptor): (QueryState) => (Any) => Iterator[Node] =
-    (state: QueryState) => (x: Any) => state.query.lockingUniqueIndexSeek(descriptor, x).toIterator
+  override def indexFactory(descriptor: IndexDescriptor): MultipleValueQuery =
+    (state: QueryState) => (x: Seq[Any]) => {
+      state.query.lockingUniqueIndexSeek(descriptor, assertSingleValue(x)).toIterator
+    }
 
   override def name: String = "NodeUniqueIndexSeek(Locking)"
 }
 
 sealed trait SeekByRange {
   self: IndexSeekMode =>
-  override def indexFactory(descriptor: IndexDescriptor): (QueryState) => (Any) => Iterator[Node] =
-    (state: QueryState) => (x: Any) => state.query.indexSeekByRange(descriptor, x)
+  override def indexFactory(descriptor: IndexDescriptor): MultipleValueQuery =
+    (state: QueryState) => (x: Seq[Any]) => state.query.indexSeekByRange(descriptor, assertSingleValue(x))
 }
 
 case object IndexSeekByRange extends IndexSeekMode with SeekByRange {

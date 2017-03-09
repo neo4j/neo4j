@@ -158,7 +158,7 @@ case object cartesianProductsOrValueJoins extends JoinDisconnectedQueryGraphComp
       // The reason is that when this happens, we are producing a cartesian product disguising as an Apply, and
       // this confuses the cost model
       val lhsDependencies = result.leaves.collect {
-        case x: IndexLeafPlan => x.valueExpr.expression.dependencies
+        case x: IndexLeafPlan => x.valueExpr.expressions.flatMap(_.dependencies)
       }.flatten
 
       if (lhsDependencies.nonEmpty)

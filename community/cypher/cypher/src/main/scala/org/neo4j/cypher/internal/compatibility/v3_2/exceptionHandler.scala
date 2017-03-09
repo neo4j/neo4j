@@ -73,8 +73,8 @@ object exceptionHandler extends MapToPublicExceptions[CypherException] {
 
   override def nodeStillHasRelationshipsException(nodeId: Long, cause: Throwable) = throw new NodeStillHasRelationshipsException(nodeId, cause)
 
-  override def indexHintException(variable: String, label: String, property: String, message: String, cause: Throwable) =
-    throw new IndexHintException(variable, label, property, message, cause)
+  def indexHintException(variable: String, label: String, properties: Seq[String], message: String, cause: Throwable) =
+    throw new IndexHintException(variable, label, properties, message, cause)
 
   override def joinHintException(variable: String, message: String, cause: Throwable) = throw new JoinHintException(variable, message, cause)
 

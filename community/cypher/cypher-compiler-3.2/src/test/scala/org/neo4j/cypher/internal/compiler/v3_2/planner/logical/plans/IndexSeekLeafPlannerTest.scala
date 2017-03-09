@@ -19,11 +19,11 @@
  */
 package org.neo4j.cypher.internal.compiler.v3_2.planner.logical.plans
 
-import org.neo4j.cypher.internal.frontend.v3_2.ast._
-import org.neo4j.cypher.internal.compiler.v3_2.commands.SingleQueryExpression
+import org.neo4j.cypher.internal.compiler.v3_2.commands.{CompositeQueryExpression, SingleQueryExpression}
 import org.neo4j.cypher.internal.compiler.v3_2.planner.BeLikeMatcher._
 import org.neo4j.cypher.internal.compiler.v3_2.planner._
 import org.neo4j.cypher.internal.compiler.v3_2.planner.logical.steps.{indexSeekLeafPlanner, uniqueIndexSeekLeafPlanner}
+import org.neo4j.cypher.internal.frontend.v3_2.ast._
 import org.neo4j.cypher.internal.frontend.v3_2.test_helpers.CypherFunSuite
 import org.neo4j.cypher.internal.ir.v3_2.{IdName, Predicate, QueryGraph, Selections}
 
@@ -34,6 +34,7 @@ class IndexSeekLeafPlannerTest extends CypherFunSuite with LogicalPlanningTestSu
   val idName = IdName("n")
   val hasLabels: Expression = HasLabels(varFor("n"), Seq(LabelName("Awesome") _)) _
   val property: Expression = Property(varFor("n"), PropertyKeyName("prop") _)_
+  val property2: Expression = Property(varFor("n"), PropertyKeyName("prop2") _)_
   val lit42: Expression = SignedDecimalIntegerLiteral("42") _
   val lit6: Expression = SignedDecimalIntegerLiteral("6") _
 
@@ -93,6 +94,102 @@ class IndexSeekLeafPlannerTest extends CypherFunSuite with LogicalPlanningTestSu
     }
   }
 
+  test("index scan when there is a composite index on two properties") {
+    new given {
+      val inCollectionValue2 = In(property2, ListLiteral(Seq(lit6))_)_
+      qg = queryGraph(inCollectionValue, inCollectionValue2, hasLabels)
+
+      indexOn("Awesome", "prop", "prop2")
+    }.withLogicalPlanningContext { (cfg, ctx) =>
+      // when
+      val resultPlans = indexSeekLeafPlanner(cfg.qg)(ctx)
+
+      // then
+      resultPlans should beLike {
+        case Seq(NodeIndexSeek(`idName`, LabelToken("Awesome", _),
+        Seq(PropertyKeyToken("prop", _), PropertyKeyToken("prop2", _)),
+        CompositeQueryExpression(Seq(`lit42`, `lit6`)), _)) => ()
+      }
+    }
+  }
+
+  test("index scan when there is a composite index on two properties in the presence of other nodes, labels and properties") {
+    new given {
+      val litFoo: Expression = StringLiteral("foo") _
+
+      // MATCH (n:Awesome:Sauce), (m:Awesome)
+      // WHERE n.prop = 42 AND n.prop2 = 6 AND n.prop3 = "foo" AND m.prop = "foo"
+      qg = queryGraph(
+        // node 'n'
+        HasLabels(varFor("n"), Seq(LabelName("Awesome") _)) _,
+        HasLabels(varFor("n"), Seq(LabelName("Sauce") _)) _,
+        In(Property(varFor("n"), PropertyKeyName("prop") _) _, ListLiteral(Seq(lit42)) _) _,
+        In(Property(varFor("n"), PropertyKeyName("prop2") _) _, ListLiteral(Seq(lit6)) _) _,
+        In(Property(varFor("n"), PropertyKeyName("prop3") _) _, ListLiteral(Seq(litFoo)) _) _,
+        // node 'm'
+        HasLabels(varFor("m"), Seq(LabelName("Awesome") _)) _,
+        In(Property(varFor("m"), PropertyKeyName("prop") _) _, ListLiteral(Seq(litFoo)) _) _
+      )
+
+      // CREATE INDEX ON :Awesome(prop,prop2)
+      indexOn("Awesome", "prop", "prop2")
+
+    }.withLogicalPlanningContext { (cfg, ctx) =>
+
+      // when
+      val resultPlans = indexSeekLeafPlanner(cfg.qg)(ctx)
+
+      // then
+      resultPlans should beLike {
+        case Seq(NodeIndexSeek(`idName`, LabelToken("Awesome", _),
+        Seq(PropertyKeyToken("prop", _), PropertyKeyToken("prop2", _)),
+        CompositeQueryExpression(Seq(`lit42`, `lit6`)), _)) => ()
+      }
+    }
+  }
+
+  test("index scan when there is a composite index on many properties") {
+    val propertyNames: Seq[String] = (0 to 10).map(n => s"prop$n")
+    val properties: Seq[Expression] = propertyNames.map { n =>
+      val prop: Expression = Property(varFor("n"), PropertyKeyName(n) _) _
+      prop
+    }
+    val values: Seq[Expression] = (0 to 10).map { n =>
+      val lit: Expression = SignedDecimalIntegerLiteral((n * 10 + 2).toString) _
+      lit
+    }
+    val predicates = properties.zip(values).map{ pair =>
+      val predicate = In(pair._1, ListLiteral(Seq(pair._2))_ )_
+      Predicate(Set(idName), predicate)
+    }
+
+    new given {
+      qg = QueryGraph(
+        selections = Selections(predicates.toSet + Predicate(Set(idName), hasLabels)),
+        patternNodes = Set(idName)
+      )
+
+      indexOn("Awesome", propertyNames: _*)
+    }.withLogicalPlanningContext { (cfg, ctx) =>
+      // when
+      val resultPlans = indexSeekLeafPlanner(cfg.qg)(ctx)
+
+      // then
+      resultPlans should beLike {
+        case Seq(NodeIndexSeek(`idName`, LabelToken("Awesome", _),
+        props@Seq(_*),
+        CompositeQueryExpression(vals@Seq(_*)), _))
+          if assertPropsAndValuesMatch(propertyNames, values, props, vals) => ()
+      }
+    }
+  }
+
+  private def assertPropsAndValuesMatch(expectedProps: Seq[String], expectedVals: Seq[Expression], foundProps: Seq[PropertyKeyToken], foundVals: Seq[Expression]) = {
+    val expected: Map[String, Expression] = expectedProps.zip(expectedVals).toMap
+    val found: Map[String, Expression] = foundProps.map(_.name).zip(foundVals).toMap
+    found.equals(expected)
+  }
+
   test("plans index seeks when variable exists as an argument") {
     new given {
       // GIVEN 42 as x MATCH a WHERE a.prop IN [x]
@@ -144,7 +241,7 @@ class IndexSeekLeafPlannerTest extends CypherFunSuite with LogicalPlanningTestSu
   }
 
   test("plans index scans such that it solves hints") {
-    val hint: UsingIndexHint = UsingIndexHint(varFor("n"), LabelName("Awesome")_, PropertyKeyName("prop")(pos))_
+    val hint: UsingIndexHint = UsingIndexHint(varFor("n"), LabelName("Awesome")_, Seq(PropertyKeyName("prop")(pos)))_
 
     new given {
       qg = queryGraph(inCollectionValue, hasLabels).addHints(Some(hint))
@@ -166,7 +263,7 @@ class IndexSeekLeafPlannerTest extends CypherFunSuite with LogicalPlanningTestSu
   }
 
   test("plans unique index scans such that it solves hints") {
-    val hint: UsingIndexHint = UsingIndexHint(varFor("n"), LabelName("Awesome")_, PropertyKeyName("prop")(pos))_
+    val hint: UsingIndexHint = UsingIndexHint(varFor("n"), LabelName("Awesome")_, Seq(PropertyKeyName("prop")(pos)))_
 
     new given {
       qg = queryGraph(inCollectionValue, hasLabels).addHints(Some(hint))

@@ -204,13 +204,13 @@ case class ActualPipeBuilder(monitors: Monitors, recurse: LogicalPlan => Pipe, r
       case UndirectedRelationshipByIdSeek(IdName(ident), relIdExpr, IdName(fromNode), IdName(toNode), _) =>
         UndirectedRelationshipByIdSeekPipe(ident, relIdExpr.asCommandSeekArgs, toNode, fromNode)(id = id)
 
-      case NodeIndexSeek(IdName(ident), label, propertyKey, valueExpr, _) =>
+      case NodeIndexSeek(IdName(ident), label, propertyKeys, valueExpr, _) =>
         val indexSeekMode = IndexSeekModeFactory(unique = false, readOnly = readOnly).fromQueryExpression(valueExpr)
-        NodeIndexSeekPipe(ident, label, Seq(propertyKey), valueExpr.map(buildExpression), indexSeekMode)(id = id)
+        NodeIndexSeekPipe(ident, label, propertyKeys, valueExpr.map(buildExpression), indexSeekMode)(id = id)
 
-      case NodeUniqueIndexSeek(IdName(ident), label, propertyKey, valueExpr, _) =>
+      case NodeUniqueIndexSeek(IdName(ident), label, propertyKeys, valueExpr, _) =>
         val indexSeekMode = IndexSeekModeFactory(unique = true, readOnly = readOnly).fromQueryExpression(valueExpr)
-        NodeIndexSeekPipe(ident, label, Seq(propertyKey), valueExpr.map(buildExpression), indexSeekMode)(id = id)
+        NodeIndexSeekPipe(ident, label, propertyKeys, valueExpr.map(buildExpression), indexSeekMode)(id = id)
 
       case NodeIndexScan(IdName(ident), label, propertyKey, _) =>
         NodeIndexScanPipe(ident, label, propertyKey)(id = id)

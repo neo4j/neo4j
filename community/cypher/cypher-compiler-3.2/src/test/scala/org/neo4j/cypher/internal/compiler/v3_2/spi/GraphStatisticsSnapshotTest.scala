@@ -19,6 +19,7 @@
  */
 package org.neo4j.cypher.internal.compiler.v3_2.spi
 
+import org.neo4j.cypher.internal.compiler.v3_2.IndexDescriptor
 import org.neo4j.cypher.internal.frontend.v3_2.test_helpers.CypherFunSuite
 import org.neo4j.cypher.internal.frontend.v3_2.{LabelId, PropertyKeyId, RelTypeId}
 import org.neo4j.cypher.internal.ir.v3_2.{Cardinality, Selectivity}
@@ -26,6 +27,11 @@ import org.neo4j.cypher.internal.ir.v3_2.{Cardinality, Selectivity}
 import scala.language.reflectiveCalls
 
 class GraphStatisticsSnapshotTest extends CypherFunSuite {
+
+  private val label2 = LabelId(2)
+  private val label4 = LabelId(4)
+  private val index = IndexDescriptor(LabelId(0), PropertyKeyId(3))
+
   test("records queries and its observed values") {
     val snapshot = new MutableGraphStatisticsSnapshot()
 
@@ -38,15 +44,15 @@ class GraphStatisticsSnapshotTest extends CypherFunSuite {
       relCardinality = relationships, labeledNodes = nodesWithLabel)
     val instrumentedStatistics = InstrumentedGraphStatistics(statistics, snapshot)
     instrumentedStatistics.nodesWithLabelCardinality(None)
-    instrumentedStatistics.indexSelectivity(LabelId(0), PropertyKeyId(3))
-    instrumentedStatistics.nodesWithLabelCardinality(Some(LabelId(4)))
-    instrumentedStatistics.cardinalityByLabelsAndRelationshipType(Some(LabelId(2)), None, None)
+    instrumentedStatistics.indexSelectivity(index)
+    instrumentedStatistics.nodesWithLabelCardinality(Some(label4))
+    instrumentedStatistics.cardinalityByLabelsAndRelationshipType(Some(label2), None, None)
 
     snapshot.freeze.statsValues should equal(Map(
       NodesWithLabelCardinality(None) -> allNodes,
-      IndexSelectivity(LabelId(0), PropertyKeyId(3)) -> indexSelectivity,
-      NodesWithLabelCardinality(Some(LabelId(4))) -> nodesWithLabel,
-      CardinalityByLabelsAndRelationshipType(Some(LabelId(2)), None, None) -> relationships
+      IndexSelectivity(index) -> indexSelectivity,
+      NodesWithLabelCardinality(Some(label4)) -> nodesWithLabel,
+      CardinalityByLabelsAndRelationshipType(Some(label2), None, None) -> relationships
     ))
   }
 
@@ -54,20 +60,20 @@ class GraphStatisticsSnapshotTest extends CypherFunSuite {
     val snapshot = new MutableGraphStatisticsSnapshot()
     val instrumentedStatistics = InstrumentedGraphStatistics(graphStatistics(), snapshot)
     instrumentedStatistics.nodesWithLabelCardinality(None)
-    instrumentedStatistics.indexSelectivity(LabelId(0), PropertyKeyId(3))
-    instrumentedStatistics.nodesWithLabelCardinality(Some(LabelId(4)))
-    instrumentedStatistics.cardinalityByLabelsAndRelationshipType(Some(LabelId(2)), None, None)
-    instrumentedStatistics.cardinalityByLabelsAndRelationshipType(None, Some(RelTypeId(1)), Some(LabelId(2)))
+    instrumentedStatistics.indexSelectivity(index)
+    instrumentedStatistics.nodesWithLabelCardinality(Some(label4))
+    instrumentedStatistics.cardinalityByLabelsAndRelationshipType(Some(label2), None, None)
+    instrumentedStatistics.cardinalityByLabelsAndRelationshipType(None, Some(RelTypeId(1)), Some(label2))
 
     val snapshot2 = new MutableGraphStatisticsSnapshot()
     val statistics = graphStatistics()
 
     val instrumentedStatistics2 = InstrumentedGraphStatistics(statistics, snapshot2)
-    instrumentedStatistics2.cardinalityByLabelsAndRelationshipType(None, Some(RelTypeId(1)), Some(LabelId(2)))
-    instrumentedStatistics2.cardinalityByLabelsAndRelationshipType(Some(LabelId(2)), None, None)
-    instrumentedStatistics2.indexSelectivity(LabelId(0), PropertyKeyId(3))
+    instrumentedStatistics2.cardinalityByLabelsAndRelationshipType(None, Some(RelTypeId(1)), Some(label2))
+    instrumentedStatistics2.cardinalityByLabelsAndRelationshipType(Some(label2), None, None)
+    instrumentedStatistics2.indexSelectivity(index)
     instrumentedStatistics2.nodesWithLabelCardinality(None)
-    instrumentedStatistics2.nodesWithLabelCardinality(Some(LabelId(4)))
+    instrumentedStatistics2.nodesWithLabelCardinality(Some(label4))
 
     val frozen1 = snapshot.freeze
     val reallySensitiveDivergence: Double = 0.9
@@ -94,16 +100,16 @@ class GraphStatisticsSnapshotTest extends CypherFunSuite {
     val statistics = graphStatistics()
     val instrumentedStatistics1 = InstrumentedGraphStatistics(statistics, snapshot1)
     instrumentedStatistics1.nodesWithLabelCardinality(None)
-    instrumentedStatistics1.indexSelectivity(LabelId(0), PropertyKeyId(3))
-    instrumentedStatistics1.nodesWithLabelCardinality(Some(LabelId(4)))
+    instrumentedStatistics1.indexSelectivity(index)
+    instrumentedStatistics1.nodesWithLabelCardinality(Some(label4))
 
     val snapshot2 = new MutableGraphStatisticsSnapshot()
     val instrumentedStatistics2 = InstrumentedGraphStatistics(statistics, snapshot2)
     instrumentedStatistics2.nodesWithLabelCardinality(None)
-    instrumentedStatistics2.nodesWithLabelCardinality(Some(LabelId(4)))
+    instrumentedStatistics2.nodesWithLabelCardinality(Some(label4))
 
     statistics.factor(2)
-    instrumentedStatistics2.indexSelectivity(LabelId(0), PropertyKeyId(3))
+    instrumentedStatistics2.indexSelectivity(index)
 
     val frozen1 = snapshot1.freeze
     val frozen2 = snapshot2.freeze
@@ -119,16 +125,16 @@ class GraphStatisticsSnapshotTest extends CypherFunSuite {
     val statistics = graphStatistics()
     val instrumentedStatistics1 = InstrumentedGraphStatistics(statistics, snapshot1)
     instrumentedStatistics1.nodesWithLabelCardinality(None)
-    instrumentedStatistics1.indexSelectivity(LabelId(0), PropertyKeyId(3))
-    instrumentedStatistics1.nodesWithLabelCardinality(Some(LabelId(4)))
+    instrumentedStatistics1.indexSelectivity(index)
+    instrumentedStatistics1.nodesWithLabelCardinality(Some(label4))
 
     val snapshot2 = new MutableGraphStatisticsSnapshot()
     val instrumentedStatistics2 = InstrumentedGraphStatistics(statistics, snapshot2)
     instrumentedStatistics2.nodesWithLabelCardinality(None)
-    instrumentedStatistics2.nodesWithLabelCardinality(Some(LabelId(4)))
+    instrumentedStatistics2.nodesWithLabelCardinality(Some(label4))
 
     statistics.factor(Long.MaxValue)
-    instrumentedStatistics2.indexSelectivity(LabelId(0), PropertyKeyId(3))
+    instrumentedStatistics2.indexSelectivity(index)
 
     val frozen1 = snapshot1.freeze
     val frozen2 = snapshot2.freeze
@@ -151,11 +157,11 @@ class GraphStatisticsSnapshotTest extends CypherFunSuite {
     def cardinalityByLabelsAndRelationshipType(fromLabel: Option[LabelId], relTypeId: Option[RelTypeId], toLabel: Option[LabelId]): Cardinality =
       Cardinality(relCardinality * _factor)
 
-    def indexSelectivity(label: LabelId, property: PropertyKeyId): Option[Selectivity] = {
+    def indexSelectivity(index: IndexDescriptor): Option[Selectivity] = {
       Selectivity.of(idxSelectivity / _factor)
     }
 
-    def indexPropertyExistsSelectivity(label: LabelId, property: PropertyKeyId): Option[Selectivity] =
+    def indexPropertyExistsSelectivity(index: IndexDescriptor): Option[Selectivity] =
       Selectivity.of(idxPropertyExistsSelectivity / _factor)
 
     def factor(factor: Double): Unit = {

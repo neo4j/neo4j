@@ -32,7 +32,6 @@ import org.neo4j.kernel.api.exceptions.schema.SchemaKernelException
 import org.neo4j.kernel.api.index.InternalIndexState
 import org.neo4j.kernel.api.proc.Neo4jTypes.AnyType
 import org.neo4j.kernel.api.proc.{Neo4jTypes, QualifiedName => KernelQualifiedName}
-import org.neo4j.kernel.api.schema.NodePropertyDescriptor
 import org.neo4j.kernel.api.schema_new.SchemaDescriptorFactory
 import org.neo4j.kernel.api.schema_new.index.{NewIndexDescriptor => KernelIndexDescriptor}
 import org.neo4j.kernel.impl.proc.Neo4jValue
@@ -41,17 +40,18 @@ import org.neo4j.procedure.Mode
 import scala.collection.JavaConverters._
 
 class TransactionBoundPlanContext(tc: TransactionalContextWrapper, logger: InternalNotificationLogger)
-  extends TransactionBoundTokenContext(tc.statement) with PlanContext {
+  extends TransactionBoundTokenContext(tc.statement) with PlanContext with IndexDescriptorCompatibility {
 
-  @Deprecated
-  def getIndexRule(labelName: String, propertyKey: String): Option[IndexDescriptor] = evalOrNone {
-    val labelId = tc.statement.readOperations().labelGetForName(labelName)
-    val propertyKeyId = tc.statement.readOperations().propertyKeyGetForName(propertyKey)
-
-    getOnlineIndex(tc.statement.readOperations().indexGetForLabelAndPropertyKey(new NodePropertyDescriptor(labelId, propertyKeyId)))
+  def indexesGetForLabel(labelId: Int): Iterator[IndexDescriptor] = {
+    tc.statement.readOperations().indexesGetForLabel(labelId).asScala.flatMap(getOnlineIndex)
   }
 
-  def hasIndexRule(labelName: String): Boolean = {
+  def indexGet(labelName: String, propertyKeys: Seq[String]): Option[IndexDescriptor] = evalOrNone {
+    val descriptor = toNodePropertyDescriptor(tc, labelName, propertyKeys)
+    getOnlineIndex(tc.statement.readOperations().indexGetForLabelAndPropertyKey(descriptor))
+  }
+
+  def indexExistsForLabel(labelName: String): Boolean = {
     val labelId = tc.statement.readOperations().labelGetForName(labelName)
 
     val indexDescriptors = tc.statement.readOperations().indexesGetForLabel(labelId).asScala
@@ -60,13 +60,17 @@ class TransactionBoundPlanContext(tc: TransactionalContextWrapper, logger: Inter
     onlineIndexDescriptors.nonEmpty
   }
 
-  def getUniqueIndexRule(labelName: String, propertyKey: String): Option[IndexDescriptor] = evalOrNone {
-    val labelId = tc.statement.readOperations().labelGetForName(labelName)
-    val propertyKeyId = tc.statement.readOperations().propertyKeyGetForName(propertyKey)
+  def uniqueIndexesGetForLabel(labelId: Int): Iterator[IndexDescriptor] = {
+    // here we do not need to use getOnlineIndex method because uniqueness constraint creation is synchronous
+    tc.statement.readOperations().uniqueIndexesGetForLabel(labelId).asScala.map(kernelToCypher)
+  }
+
+  def uniqueIndexGet(labelName: String, propertyKeys: Seq[String]): Option[IndexDescriptor] = evalOrNone {
+    val descriptor = toNodePropertyDescriptor(tc, labelName, propertyKeys)
 
     // here we do not need to use getOnlineIndex method because uniqueness constraint creation is synchronous
-    val index = tc.statement.readOperations().uniqueIndexGetForLabelAndPropertyKey(new NodePropertyDescriptor(labelId, propertyKeyId))
-    Some(IndexDescriptor(index.schema().getLabelId, index.schema().getPropertyIds()(0)))
+    val index = tc.statement.readOperations().uniqueIndexGetForLabelAndPropertyKey(descriptor)
+    Some(IndexDescriptor(index.schema().getLabelId, index.schema().getPropertyIds()))
   }
 
   private def evalOrNone[T](f: => Option[T]): Option[T] =
@@ -78,7 +82,7 @@ class TransactionBoundPlanContext(tc: TransactionalContextWrapper, logger: Inter
 
   private def getOnlineIndex(descriptor: KernelIndexDescriptor): Option[IndexDescriptor] =
     tc.statement.readOperations().indexGetState(descriptor) match {
-      case InternalIndexState.ONLINE => Some(IndexDescriptor(descriptor.schema().getLabelId, descriptor.schema().getPropertyIds()(0)))
+      case InternalIndexState.ONLINE => Some(IndexDescriptor(descriptor.schema().getLabelId, descriptor.schema().getPropertyIds()))
       case _ => None
     }
 
