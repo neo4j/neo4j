@@ -27,7 +27,6 @@ import org.neo4j.collection.primitive.Primitive;
 import org.neo4j.collection.primitive.PrimitiveIntSet;
 import org.neo4j.collection.primitive.PrimitiveLongCollections;
 import org.neo4j.collection.primitive.PrimitiveLongIterator;
-import org.neo4j.collection.primitive.PrimitiveLongPeekingIterator;
 import org.neo4j.consistency.checking.ChainCheck;
 import org.neo4j.consistency.checking.CheckerEngine;
 import org.neo4j.consistency.checking.RecordCheck;
@@ -37,6 +36,7 @@ import org.neo4j.consistency.report.ConsistencyReport;
 import org.neo4j.consistency.store.RecordAccess;
 import org.neo4j.kernel.api.exceptions.index.IndexNotApplicableKernelException;
 import org.neo4j.kernel.api.schema_new.IndexQuery;
+import org.neo4j.kernel.api.schema_new.LabelSchemaDescriptor;
 import org.neo4j.kernel.impl.api.LookupFilter;
 import org.neo4j.kernel.impl.store.record.IndexRule;
 import org.neo4j.kernel.impl.store.record.NodeRecord;
@@ -44,6 +44,9 @@ import org.neo4j.kernel.impl.store.record.PropertyBlock;
 import org.neo4j.kernel.impl.store.record.PropertyRecord;
 import org.neo4j.kernel.impl.store.record.Record;
 import org.neo4j.storageengine.api.schema.IndexReader;
+
+import static org.neo4j.kernel.api.StatementConstants.NO_SUCH_PROPERTY_KEY;
+import static org.neo4j.kernel.impl.api.schema.NodeSchemaMatcher.nodeHasSchemaProperties;
 
 /**
  * Checks nodes and how they're indexed in one go. Reports any found inconsistencies.
@@ -70,137 +73,96 @@ public class PropertyAndNodeIndexedCheck implements RecordCheck<NodeRecord, Cons
         cacheAccess.client().putPropertiesToCache(properties);
         if ( indexes != null )
         {
-            checkIndexToLabels( record, engine, records, properties );
+            matchIndexesToNode( record, engine, records, properties );
         }
         checkProperty( record, engine, properties );
     }
 
-    private void checkIndexToLabels( NodeRecord record,
-            CheckerEngine<NodeRecord, ConsistencyReport.NodeConsistencyReport> engine,
+    /**
+     * Matches indexes to a node. This implementation mirrors NodeSchemaMatcher.onMatchingSchema(...), but as all
+     * accessor methods are different, a shared implementation was hard to achieve.
+     */
+    private void matchIndexesToNode(
+            NodeRecord record,
+            CheckerEngine<NodeRecord,
+            ConsistencyReport.NodeConsistencyReport> engine,
             RecordAccess records,
-            Collection<PropertyRecord> propertyRecs)
+            Collection<PropertyRecord> propertyRecs )
     {
         Set<Long> labels = NodeLabelReader.getListOfLabels( record, records, engine );
         List<PropertyBlock> properties = null;
+        PrimitiveIntSet nodePropertyIds = null;
         for ( IndexRule indexRule : indexes.rules() )
         {
             long labelId = indexRule.schema().getLabelId();
-            if ( !labels.contains( labelId ) )
+            if ( labels.contains( labelId ) )
             {
-                continue;
-            }
-
-            if ( properties == null )
-            {
-                properties = propertyReader.propertyBlocks( propertyRecs );
-            }
-            int propertyId = indexRule.schema().getPropertyId(); // assuming 1 property always
-            PropertyBlock property = propertyWithKey( properties, propertyId );
-
-            if ( property == null )
-            {
-                continue;
-            }
-
-            try ( IndexReader reader = indexes.accessorFor( indexRule ).newReader() )
-            {
-                Object propertyValue = propertyReader.propertyValue( property ).value();
-                long nodeId = record.getId();
-
-                if ( indexRule.canSupportUniqueConstraint() )
+                if ( properties == null )
                 {
-                    verifyNodeCorrectlyIndexedUniquely( nodeId, property.getKeyIndexId(), propertyValue, engine,
-                            indexRule, reader );
+                    properties = propertyReader.propertyBlocks( propertyRecs );
+                    nodePropertyIds = propertyIds( properties );
                 }
-                else
+
+                int[] indexPropertyIds = indexRule.schema().getPropertyIds();
+                if ( nodeHasSchemaProperties( nodePropertyIds, indexPropertyIds, NO_SUCH_PROPERTY_KEY ) )
                 {
-                    verifyNodeCorrectlyIndexed( nodeId, propertyValue, engine, indexRule, reader );
+                    Object[] values = getPropertyValues( properties, indexPropertyIds );
+                    try ( IndexReader reader = indexes.accessorFor( indexRule ).newReader() )
+                    {
+                        long nodeId = record.getId();
+
+                        if ( indexRule.canSupportUniqueConstraint() )
+                        {
+                            verifyNodeCorrectlyIndexedUniquely( nodeId, values, engine, indexRule, reader );
+                        }
+                        else
+                        {
+                            long count = reader.countIndexedNodes( nodeId, values );
+                            reportIncorrectIndexCount( values, engine, indexRule, count );
+                        }
+                    }
                 }
             }
         }
     }
 
-    private void verifyNodeCorrectlyIndexedUniquely( long nodeId, int propertyKeyId, Object propertyValue,
+    private void verifyNodeCorrectlyIndexedUniquely( long nodeId, Object[] propertyValues,
             CheckerEngine<NodeRecord,ConsistencyReport.NodeConsistencyReport> engine, IndexRule indexRule,
             IndexReader reader )
     {
-        PrimitiveLongIterator indexedNodeIds = null;
-        try
-        {
-            indexedNodeIds = reader.query( IndexQuery.exact( propertyKeyId, propertyValue ) );
-        }
-        catch ( IndexNotApplicableKernelException e )
-        {
-            indexedNodeIds = PrimitiveLongCollections.emptyIterator();
-        }
+        IndexQuery[] query = seek( indexRule.schema(), propertyValues );
 
-        // For verifying node indexed uniquely in offline CC, if one match found in the first stage match,
-        // then there is no need to filter the result. The result is a exact match.
-        // If multiple matches found, we need to filter the result to get exact matches.
-        indexedNodeIds = filterIfMultipleValuesFound( indexedNodeIds, propertyKeyId, propertyValue );
+        PrimitiveLongIterator indexedNodeIds = queryIndexOrEmpty( reader, query );
 
-        boolean found = false;
-
+        long count = 0;
         while ( indexedNodeIds.hasNext() )
         {
             long indexedNodeId = indexedNodeIds.next();
 
             if ( nodeId == indexedNodeId )
             {
-                found = true;
+                count++;
             }
             else
             {
-                engine.report().uniqueIndexNotUnique( indexRule, propertyValue, indexedNodeId );
+                engine.report().uniqueIndexNotUnique( indexRule, propertyValues, indexedNodeId );
             }
         }
 
-        if ( !found )
-        {
-            engine.report().notIndexed( indexRule, propertyValue );
-        }
+        reportIncorrectIndexCount( propertyValues, engine, indexRule, count );
     }
 
-    private PrimitiveLongIterator filterIfMultipleValuesFound( PrimitiveLongIterator indexedNodeIds, int propertyKeyId,
-            Object propertyValue )
+    private void reportIncorrectIndexCount( Object[] propertyValues,
+            CheckerEngine<NodeRecord,ConsistencyReport.NodeConsistencyReport> engine, IndexRule indexRule, long count )
     {
-        PrimitiveLongIterator filteredIndexedNodeIds = new PrimitiveLongPeekingIterator( indexedNodeIds );
-        if ( ((PrimitiveLongPeekingIterator) filteredIndexedNodeIds).hasMultipleValues() )
-        {
-            filteredIndexedNodeIds = LookupFilter.exactIndexMatches( propertyReader, filteredIndexedNodeIds,
-                    propertyKeyId, propertyValue );
-        }
-        return filteredIndexedNodeIds;
-    }
-
-    private void verifyNodeCorrectlyIndexed(
-            long nodeId,
-            Object propertyValue,
-            CheckerEngine<NodeRecord, ConsistencyReport.NodeConsistencyReport> engine,
-            IndexRule indexRule,
-            IndexReader reader )
-    {
-        long count = reader.countIndexedNodes( nodeId, propertyValue );
         if ( count == 0 )
         {
-            engine.report().notIndexed( indexRule, propertyValue );
+            engine.report().notIndexed( indexRule, propertyValues );
         }
         else if ( count != 1 )
         {
-            engine.report().indexedMultipleTimes( indexRule, propertyValue, count );
+            engine.report().indexedMultipleTimes( indexRule, propertyValues, count );
         }
-    }
-
-    private PropertyBlock propertyWithKey( List<PropertyBlock> propertyBlocks, int propertyKey )
-    {
-        for ( PropertyBlock propertyBlock : propertyBlocks )
-        {
-            if ( propertyBlock.getKeyIndexId() == propertyKey )
-            {
-                return propertyBlock;
-            }
-        }
-        return null;
     }
 
     private void checkProperty( NodeRecord record,
@@ -234,5 +196,70 @@ public class PropertyAndNodeIndexedCheck implements RecordCheck<NodeRecord, Cons
                 }
             }
         }
+    }
+
+    private Object[] getPropertyValues( List<PropertyBlock> properties, int[] indexPropertyIds )
+    {
+        Object[] values = new Object[indexPropertyIds.length];
+        for ( int i = 0; i < indexPropertyIds.length; i++ )
+        {
+            PropertyBlock propertyBlock = propertyWithKey( properties, indexPropertyIds[i] );
+            if ( propertyBlock == null )
+            {
+                throw new IllegalStateException( "We should have checked that the index and node match before coming " +
+                        "here, so this should not happen" );
+            }
+            values[i] = propertyReader.propertyValue( propertyBlock ).value();
+        }
+        return values;
+    }
+
+    private PropertyBlock propertyWithKey( List<PropertyBlock> propertyBlocks, int propertyKey )
+    {
+        for ( PropertyBlock propertyBlock : propertyBlocks )
+        {
+            if ( propertyBlock.getKeyIndexId() == propertyKey )
+            {
+                return propertyBlock;
+            }
+        }
+        return null;
+    }
+
+    private PrimitiveIntSet propertyIds( List<PropertyBlock> propertyBlocks )
+    {
+        PrimitiveIntSet propertyIds = Primitive.intSet();
+        for ( PropertyBlock propertyBlock : propertyBlocks )
+        {
+            propertyIds.add( propertyBlock.getKeyIndexId() );
+        }
+        return propertyIds;
+    }
+
+    private IndexQuery[] seek( LabelSchemaDescriptor schema, Object[] propertyValues )
+    {
+        assert schema.getPropertyIds().length == propertyValues.length;
+        IndexQuery[] query = new IndexQuery[propertyValues.length];
+        for ( int i = 0; i < query.length; i++ )
+        {
+            query[i] = IndexQuery.exact( schema.getPropertyIds()[i], propertyValues[i] );
+        }
+        return query;
+    }
+
+    private PrimitiveLongIterator queryIndexOrEmpty( IndexReader reader, IndexQuery[] query )
+    {
+        PrimitiveLongIterator indexedNodeIds;
+        try
+        {
+            indexedNodeIds = reader.query( query );
+        }
+        catch ( IndexNotApplicableKernelException e )
+        {
+            indexedNodeIds = PrimitiveLongCollections.emptyIterator();
+        }
+
+        indexedNodeIds = LookupFilter.exactIndexMatches( propertyReader, indexedNodeIds, query );
+        return indexedNodeIds;
     }
 }

@@ -57,14 +57,14 @@ import org.neo4j.graphdb.Direction;
 import org.neo4j.graphdb.GraphDatabaseService;
 import org.neo4j.graphdb.Node;
 import org.neo4j.graphdb.factory.GraphDatabaseSettings;
+import org.neo4j.helpers.collection.Iterators;
 import org.neo4j.helpers.collection.Pair;
 import org.neo4j.helpers.progress.ProgressMonitorFactory;
 import org.neo4j.kernel.api.ReadOperations;
 import org.neo4j.kernel.api.TokenWriteOperations;
 import org.neo4j.kernel.api.direct.DirectStoreAccess;
+import org.neo4j.kernel.api.exceptions.KernelException;
 import org.neo4j.kernel.api.exceptions.TransactionFailureException;
-import org.neo4j.kernel.api.exceptions.schema.IllegalTokenNameException;
-import org.neo4j.kernel.api.exceptions.schema.TooManyLabelsException;
 import org.neo4j.kernel.api.index.IndexAccessor;
 import org.neo4j.kernel.api.index.IndexEntryUpdate;
 import org.neo4j.kernel.api.index.IndexPopulator;
@@ -73,6 +73,7 @@ import org.neo4j.kernel.api.index.SchemaIndexProvider;
 import org.neo4j.kernel.api.labelscan.LabelScanStore;
 import org.neo4j.kernel.api.labelscan.LabelScanWriter;
 import org.neo4j.kernel.api.labelscan.NodeLabelUpdate;
+import org.neo4j.kernel.api.schema_new.SchemaDescriptorFactory;
 import org.neo4j.kernel.api.schema_new.constaints.ConstraintDescriptorFactory;
 import org.neo4j.kernel.configuration.Config;
 import org.neo4j.kernel.impl.annotations.Documented;
@@ -146,9 +147,14 @@ import static org.neo4j.test.Property.set;
 public class FullCheckIntegrationTest
 {
     private static final SchemaIndexProvider.Descriptor DESCRIPTOR = new SchemaIndexProvider.Descriptor( "lucene", "1.0" );
+    private static final String PROP1 = "key1";
+    private static final String PROP2 = "key2";
+    private static final Object VALUE1 = "value1";
+    private static final Object VALUE2 = "value2";
+
 
     private int label1, label2, label3, label4, draconian;
-    private int key, mandatory;
+    private int key1, key2, mandatory;
     private int C, T, M;
 
     private final List<Long> indexedNodes = new ArrayList<>();
@@ -202,9 +208,21 @@ public class FullCheckIntegrationTest
         {
             try ( org.neo4j.graphdb.Transaction tx = db.beginTx() )
             {
-                db.schema().indexFor( label( "label3" ) ).on( "key" ).create();
-                db.schema().constraintFor( label( "label4" ) ).assertPropertyIsUnique( "key" ).create();
+                db.schema().indexFor( label( "label3" ) ).on( PROP1 ).create();
+
+                // the Core API for composite index creation is not quite merged yet
+                key1 = tokenWriteOperationsOn( db ).propertyKeyGetOrCreateForName( PROP1 );
+                key2 = tokenWriteOperationsOn( db ).propertyKeyGetOrCreateForName( PROP2 );
+                label3 = readOperationsOn( db ).labelGetForName( "label3" );
+                statementOn( db ).schemaWriteOperations().indexCreate(
+                        SchemaDescriptorFactory.forLabel( label3, key1, key2 ) );
+
+                db.schema().constraintFor( label( "label4" ) ).assertPropertyIsUnique( PROP1 ).create();
                 tx.success();
+            }
+            catch ( KernelException e )
+            {
+                throw new RuntimeException( e );
             }
 
             try ( org.neo4j.graphdb.Transaction ignored = db.beginTx() )
@@ -215,12 +233,15 @@ public class FullCheckIntegrationTest
             try ( org.neo4j.graphdb.Transaction tx = db.beginTx() )
             {
                 Node node1 = set( db.createNode( label( "label1" ) ) );
-                Node node2 = set( db.createNode( label( "label2" ) ), property( "key", "value" ) );
+                Node node2 = set( db.createNode( label( "label2" ) ), property( PROP1, VALUE1 ) );
                 node1.createRelationshipTo( node2, withName( "C" ) );
                 // Just to create one more rel type
                 db.createNode().createRelationshipTo( db.createNode(), withName( "T" ) );
-                indexedNodes.add( set( db.createNode( label( "label3" ) ), property( "key", "value" ) ).getId() );
-                set( db.createNode( label( "label4" ) ), property( "key", "value" ) );
+                indexedNodes.add( set( db.createNode( label( "label3" ) ), property( PROP1, VALUE1 ) ).getId() );
+                indexedNodes.add( set( db.createNode( label( "label3" ) ),
+                        property( PROP1, VALUE1 ), property( PROP2, VALUE2 ) ).getId() );
+
+                set( db.createNode( label( "label4" ) ), property( PROP1, VALUE1 ) );
                 tx.success();
 
                 label1 = readOperationsOn( db ).labelGetForName( "label1" );
@@ -228,13 +249,13 @@ public class FullCheckIntegrationTest
                 label3 = readOperationsOn( db ).labelGetForName( "label3" );
                 label4 = readOperationsOn( db ).labelGetForName( "label4" );
                 draconian = tokenWriteOperationsOn( db ).labelGetOrCreateForName( "draconian" );
-                key = readOperationsOn( db ).propertyKeyGetForName( "key" );
+                key1 = readOperationsOn( db ).propertyKeyGetForName( PROP1 );
                 mandatory = tokenWriteOperationsOn( db ).propertyKeyGetOrCreateForName( "mandatory" );
                 C = readOperationsOn( db ).relationshipTypeGetForName( "C" );
                 T = readOperationsOn( db ).relationshipTypeGetForName( "T" );
                 M = tokenWriteOperationsOn( db ).relationshipTypeGetOrCreateForName( "M" );
             }
-            catch ( IllegalTokenNameException | TooManyLabelsException e )
+            catch ( KernelException e )
             {
                 throw new RuntimeException( e );
             }
@@ -392,8 +413,8 @@ public class FullCheckIntegrationTest
         ConsistencySummaryStatistics stats = check();
 
         // then
-        on( stats ).verify( RecordType.INDEX, 1 )
-                   .verify( RecordType.LABEL_SCAN_DOCUMENT, 1 )
+        on( stats ).verify( RecordType.INDEX, 3 ) // 3 index entries are pointing to nodes not in use
+                   .verify( RecordType.LABEL_SCAN_DOCUMENT, 2 ) // the label scan is pointing to 2 nodes not in use
                    .verify( RecordType.COUNTS, 3 )
                    .andThatsAllFolks();
     }
@@ -430,7 +451,7 @@ public class FullCheckIntegrationTest
         ConsistencySummaryStatistics stats = check();
 
         // then
-        on( stats ).verify( RecordType.LABEL_SCAN_DOCUMENT, 1 )
+        on( stats ).verify( RecordType.LABEL_SCAN_DOCUMENT, 2 ) // the label scan is pointing to 2 nodes not in use
                    .verify( RecordType.COUNTS, 3 )
                    .andThatsAllFolks();
     }
@@ -537,7 +558,7 @@ public class FullCheckIntegrationTest
         ConsistencySummaryStatistics stats = check();
 
         // then
-        on( stats ).verify( RecordType.NODE, 1 )
+        on( stats ).verify( RecordType.NODE, 3 ) // 1 node missing from 1 index + 1 node missing from 2 indexes
                    .andThatsAllFolks();
     }
 
@@ -554,7 +575,7 @@ public class FullCheckIntegrationTest
             IndexAccessor accessor = fixture.directStoreAccess().indexes()
                     .getOnlineAccessor( indexRule.getId(), indexRule.getIndexDescriptor(), samplingConfig );
             IndexUpdater updater = accessor.newUpdater( IndexUpdateMode.ONLINE );
-            updater.process( IndexEntryUpdate.add( 42, indexRule.getIndexDescriptor().schema(), "value" ) );
+            updater.process( IndexEntryUpdate.add( 42, indexRule.getIndexDescriptor().schema(), values( indexRule ) ) );
             updater.close();
             accessor.close();
         }
@@ -563,9 +584,19 @@ public class FullCheckIntegrationTest
         ConsistencySummaryStatistics stats = check();
 
         // then
-        on( stats ).verify( RecordType.NODE, 1 )
-                   .verify( RecordType.INDEX, 2 )
+        on( stats ).verify( RecordType.NODE, 1 ) // the duplicate in unique index
+                   .verify( RecordType.INDEX, 3 ) // the index entries pointing to non-existent node 42
                    .andThatsAllFolks();
+    }
+
+    private Object[] values( IndexRule indexRule )
+    {
+        switch ( indexRule.schema().getPropertyIds().length )
+        {
+        case 1: return Iterators.array( VALUE1 );
+        case 2: return Iterators.array( VALUE1, VALUE2 );
+        default: throw new UnsupportedOperationException();
+        }
     }
 
     @Test
@@ -586,7 +617,7 @@ public class FullCheckIntegrationTest
                 PropertyRecord property = new PropertyRecord( node.getNextProp(), node );
                 property.setInUse( true );
                 PropertyBlock block = new PropertyBlock();
-                block.setSingleBlock( key | (((long) PropertyType.INT.intValue()) << 24) | (1337L << 28) );
+                block.setSingleBlock( key1 | (((long) PropertyType.INT.intValue()) << 24) | (1337L << 28) );
                 property.addPropertyBlock( block );
                 tx.create( node );
                 tx.create( property );
@@ -632,7 +663,7 @@ public class FullCheckIntegrationTest
                 PropertyRecord property = new PropertyRecord( propId, relationship );
                 property.setInUse( true );
                 PropertyBlock block = new PropertyBlock();
-                block.setSingleBlock( key | (((long) PropertyType.INT.intValue()) << 24) | (1337L << 28) );
+                block.setSingleBlock( key1 | (((long) PropertyType.INT.intValue()) << 24) | (1337L << 28) );
                 property.addPropertyBlock( block );
 
                 tx.create( node1 );
@@ -947,7 +978,7 @@ public class FullCheckIntegrationTest
                 DynamicRecord schemaBefore = schema.clone();
 
                 schema.setNextBlock( next.schema() ); // Point to a record that isn't in use.
-                IndexRule rule = indexRule( schema.getId(), label1, key, DESCRIPTOR );
+                IndexRule rule = indexRule( schema.getId(), label1, key1, DESCRIPTOR );
                 schema.setData( rule.serialize() );
 
                 tx.createSchema( asList( schemaBefore ), asList( schema ), rule );

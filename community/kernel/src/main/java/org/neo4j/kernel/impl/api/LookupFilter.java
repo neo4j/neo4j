@@ -45,13 +45,40 @@ public class LookupFilter
      * used by the consistency checker
      */
     public static PrimitiveLongIterator exactIndexMatches( PropertyAccessor accessor,
-            PrimitiveLongIterator indexedNodeIds, int propertyKeyId, Object value )
+            PrimitiveLongIterator indexedNodeIds, IndexQuery... predicates )
     {
-        if ( isNumberOrArray( value ) )
+        if ( !indexedNodeIds.hasNext() )
         {
-            return PrimitiveLongCollections.filter( indexedNodeIds,
-                    new LookupBasedExactMatchPredicate( accessor, propertyKeyId,
-                            value ) );
+            return indexedNodeIds;
+        }
+
+        IndexQuery[] numericPredicates =
+                Arrays.stream( predicates )
+                        .filter( LookupFilter::isNumericPredicate )
+                        .toArray( IndexQuery[]::new );
+
+        if ( numericPredicates.length > 0 )
+        {
+            LongPredicate combinedPredicate = nodeId ->
+            {
+                try {
+                    for ( IndexQuery predicate : numericPredicates )
+                    {
+                        int propertyKeyId = predicate.propertyKeyId();
+                        Object value = accessor.getProperty( nodeId, propertyKeyId );
+                        if ( !predicate.test( value ) )
+                        {
+                            return false;
+                        }
+                    }
+                    return true;
+                }
+                catch ( EntityNotFoundException ignored )
+                {
+                    return false;
+                }
+            };
+            return PrimitiveLongCollections.filter( indexedNodeIds, combinedPredicate );
         }
         return indexedNodeIds;
     }
@@ -121,35 +148,5 @@ public class LookupFilter
     private static boolean isNumberOrArray( Object value )
     {
         return value instanceof Number || value.getClass().isArray();
-    }
-
-    /**
-     * used by CC
-     */
-    private static class LookupBasedExactMatchPredicate implements LongPredicate
-    {
-        final PropertyAccessor accessor;
-        private final int propertyKeyId;
-        private final Object value;
-
-        LookupBasedExactMatchPredicate( PropertyAccessor accessor, int propertyKeyId, Object value )
-        {
-            this.accessor = accessor;
-            this.propertyKeyId = propertyKeyId;
-            this.value = value;
-        }
-
-        @Override
-        public boolean test( long nodeId )
-        {
-            try
-            {
-                return accessor.getProperty( nodeId, propertyKeyId ).valueEquals( value );
-            }
-            catch ( EntityNotFoundException ignored )
-            {
-                return false;
-            }
-        }
     }
 }

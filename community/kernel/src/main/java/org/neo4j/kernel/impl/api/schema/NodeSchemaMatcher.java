@@ -89,7 +89,7 @@ public class NodeSchemaMatcher
         }
     }
 
-    private static boolean nodeHasSchemaProperties(
+    public static boolean nodeHasSchemaProperties(
             PrimitiveIntSet nodeProperties, int[] indexPropertyIds, int changedPropertyId )
     {
         for ( int indexPropertyId : indexPropertyIds )
