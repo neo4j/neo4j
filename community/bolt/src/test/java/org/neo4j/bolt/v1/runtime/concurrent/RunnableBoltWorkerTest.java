@@ -121,13 +121,14 @@ public class RunnableBoltWorkerTest
     }
 
     @Test
-    public void protocolBreachesShouldBeLoggedWithoutStackTraces() throws Throwable
+    public void protocolBreachesShouldBeLoggedWithStackTraces() throws Throwable
     {
         // Given
+        BoltProtocolBreachFatality error = new BoltProtocolBreachFatality( "protocol breach fatality" );
         RunnableBoltWorker worker = new RunnableBoltWorker( machine, logService );
         worker.enqueue( s ->
         {
-            throw new BoltProtocolBreachFatality( "protocol breach fatality" );
+            throw error;
         } );
 
         // When
@@ -136,7 +137,7 @@ public class RunnableBoltWorkerTest
         // Then
         verify( machine ).close();
         internalLog.assertExactly( inLog( RunnableBoltWorker.class )
-                .error( "Bolt protocol breach in session 'test-session'" ) );
+                .error( equalTo( "Bolt protocol breach in session 'test-session'" ), equalTo( error ) ) );
         userLog.assertNone( inLog( RunnableBoltWorker.class ).any() );
     }
 
