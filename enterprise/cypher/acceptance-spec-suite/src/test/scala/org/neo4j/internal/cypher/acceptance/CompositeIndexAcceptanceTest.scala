@@ -50,41 +50,15 @@ class CompositeIndexAcceptanceTest extends ExecutionEngineFunSuite with NewPlann
     graph should not(haveIndexes(":Person(firstname,lastname)"))
   }
 
-  // TODO: Check that composite index graph statistics are correctly calculated
-  ignore("should not use composite index when all predicates are present but index cardinality is similar to label cardinality") {
-    System.setProperty("pickBestPlan.VERBOSE", "true")
-    // Given
-    executeWithCostPlannerAndInterpretedRuntimeOnly("CREATE INDEX ON :User(firstname,lastname)")
-    val n1 = createLabeledNode(Map("firstname" -> "Joe", "lastname" -> "Soap"), "User")
-    val n2 = createLabeledNode(Map("firstname" -> "Joe", "lastname" -> "Smoke"), "User")
-    val n3 = createLabeledNode(Map("firstname" -> "Jake", "lastname" -> "Soap"), "User")
-//    for (i <- 1 to 10) {
-//      createLabeledNode(Map("firstname" -> "Joe"), "User")
-//      createLabeledNode(Map("lastname" -> "Soap"), "User")
-//    }
-
-    // When
-    val result = executeWithCostPlannerAndInterpretedRuntimeOnly("CYPHER runtime=interpreted MATCH (n:User) WHERE n.lastname = 'Soap' AND n.firstname = 'Joe' RETURN n")
-
-    // Then
-    println(result.executionPlanDescription())
-    result should not(use("NodeIndexSeek"))
-    result should evaluateTo(List(Map("n" -> n1)))
-  }
-
   test("should use composite index when all predicates are present") {
     // Given
     executeWithCostPlannerAndInterpretedRuntimeOnly("CREATE INDEX ON :User(firstname,lastname)")
     val n1 = createLabeledNode(Map("firstname" -> "Joe", "lastname" -> "Soap"), "User")
     val n2 = createLabeledNode(Map("firstname" -> "Joe", "lastname" -> "Smoke"), "User")
     val n3 = createLabeledNode(Map("firstname" -> "Jake", "lastname" -> "Soap"), "User")
-    for (i <- 1 to 100) {
-      createLabeledNode(Map("firstname" -> "Joe"), "User")
-      createLabeledNode(Map("lastname" -> "Soap"), "User")
-    }
 
     // When
-    val result = executeWithCostPlannerAndInterpretedRuntimeOnly("CYPHER runtime=interpreted MATCH (n:User) WHERE n.lastname = 'Soap' AND n.firstname = 'Joe' RETURN n")
+    val result = executeWithCostPlannerAndInterpretedRuntimeOnly("MATCH (n:User) WHERE n.lastname = 'Soap' AND n.firstname = 'Joe' RETURN n")
 
     // Then
     result should use("NodeIndexSeek")
@@ -103,7 +77,7 @@ class CompositeIndexAcceptanceTest extends ExecutionEngineFunSuite with NewPlann
     }
 
     // When
-    val result = executeWithCostPlannerAndInterpretedRuntimeOnly("CYPHER runtime=interpreted MATCH (n:User) WHERE n.firstname = 'Jake' RETURN n")
+    val result = executeWithAllPlannersAndRuntimesAndCompatibilityMode("MATCH (n:User) WHERE n.firstname = 'Jake' RETURN n")
 
     // Then
     result should not(use("NodeIndexSeek"))
@@ -124,7 +98,7 @@ class CompositeIndexAcceptanceTest extends ExecutionEngineFunSuite with NewPlann
     }
 
     // When
-    val result = executeWithCostPlannerAndInterpretedRuntimeOnly("CYPHER runtime=interpreted MATCH (n:User) WHERE n.lastname = 'Soap' AND n.firstname = 'Joe' RETURN n")
+    val result = executeWithCostPlannerAndInterpretedRuntimeOnly("MATCH (n:User) WHERE n.lastname = 'Soap' AND n.firstname = 'Joe' RETURN n")
 
     // Then
     result should useIndex(":User(firstname,lastname)")
@@ -165,7 +139,6 @@ class CompositeIndexAcceptanceTest extends ExecutionEngineFunSuite with NewPlann
 
   // TODO: Support existence predicates in indexQuery
   ignore("should use composite index with combined equality and existence predicates") {
-    System.setProperty("pickBestPlan.VERBOSE", "true")
     // Given
     executeWithCostPlannerAndInterpretedRuntimeOnly("CREATE INDEX ON :User(firstname)")
     executeWithCostPlannerAndInterpretedRuntimeOnly("CREATE INDEX ON :User(lastname)")
@@ -179,10 +152,9 @@ class CompositeIndexAcceptanceTest extends ExecutionEngineFunSuite with NewPlann
     }
 
     // When
-    val result = executeWithCostPlannerAndInterpretedRuntimeOnly("CYPHER runtime=interpreted MATCH (n:User) WHERE exists(n.lastname) AND n.firstname = 'Jake' RETURN n")
+    val result = executeWithCostPlannerAndInterpretedRuntimeOnly("MATCH (n:User) WHERE exists(n.lastname) AND n.firstname = 'Jake' RETURN n")
 
     // Then
-    println(result.executionPlanDescription())
     result should useIndex(":User(firstname,lastname)")
     result should not(useIndex(":User(firstname)"))
     result should not(useIndex(":User(lastname)"))
@@ -193,7 +165,7 @@ class CompositeIndexAcceptanceTest extends ExecutionEngineFunSuite with NewPlann
     executeWithCostPlannerAndInterpretedRuntimeOnly("CREATE INDEX ON :Person(firstname, lastname)")
     val n = executeWithCostPlannerAndInterpretedRuntimeOnly("CREATE (n:Person {firstname:'Joe', lastname:'Soap'}) RETURN n").columnAs("n").toList(0).asInstanceOf[Node]
     executeWithCostPlannerAndInterpretedRuntimeOnly("MATCH (n:Person) SET n.lastname = 'Bloggs'")
-    val result = executeWithCostPlannerAndInterpretedRuntimeOnly("CYPHER runtime=interpreted MATCH (n:Person) where n.firstname = 'Joe' and n.lastname = 'Bloggs' RETURN n")
+    val result = executeWithCostPlannerAndInterpretedRuntimeOnly("MATCH (n:Person) where n.firstname = 'Joe' and n.lastname = 'Bloggs' RETURN n")
     result should use("NodeIndexSeek")
     result should evaluateTo(List(Map("n" -> n)))
   }

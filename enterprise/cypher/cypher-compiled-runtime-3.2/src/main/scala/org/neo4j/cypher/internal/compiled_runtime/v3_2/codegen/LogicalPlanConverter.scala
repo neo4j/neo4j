@@ -202,7 +202,7 @@ object LogicalPlanConverter {
           case e: CompositeRangeQueryExpression[_] =>
             throw new CantCompileQueryException(s"To be done")
 
-          case e => throw new InternalException(s"$e is not a valid QueryExpression")
+          case e => throw new CantCompileQueryException(s"$e is not a valid QueryExpression")
         }
 
         (methodHandle, indexSeekInstruction :: tl)

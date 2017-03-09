@@ -68,10 +68,6 @@ object indexQuery extends GraphElementPropertyFunctions {
           innerRange.mapBounds(expression => makeValueNeoSafe(expression(m)(state)))
       }
       index(Seq(range)).toIterator
-
-    // Composite index range seek over ranges of multiple values
-    case RangeQueryExpression(rangeWrapper) =>
-      throw new CypherTypeException("Composite index searches for ranges not yet supported")
   }
 
   private def lookupNodes(values: Seq[Any], index: Seq[Any] => GenTraversableOnce[Node]): Iterator[Node] = {
