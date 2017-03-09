@@ -51,6 +51,7 @@ import org.neo4j.graphdb.Transaction;
 import org.neo4j.graphdb.factory.GraphDatabaseSettings;
 import org.neo4j.graphdb.security.AuthorizationViolationException;
 import org.neo4j.helpers.HostnamePort;
+import org.neo4j.kernel.api.ReadOperations;
 import org.neo4j.kernel.api.bolt.BoltConnectionTracker;
 import org.neo4j.kernel.api.bolt.ManagedBoltStateMachine;
 import org.neo4j.kernel.api.exceptions.InvalidArgumentsException;
@@ -539,6 +540,9 @@ public abstract class ProcedureInteractionTestBase<S>
         public GraphDatabaseService db;
 
         @Context
+        public ReadOperations readOperations;
+
+        @Context
         public Log log;
 
         private static final AtomicReference<LatchedRunnables> testLatch = new AtomicReference<>();
@@ -597,6 +601,13 @@ public abstract class ProcedureInteractionTestBase<S>
         public Stream<CountResult> numNodes()
         {
             Long nNodes = db.getAllNodes().stream().count();
+            return Stream.of( new CountResult( nNodes ) );
+        }
+
+        @Procedure( name = "test.readOperations" )
+        public Stream<CountResult> readOperations()
+        {
+            Long nNodes = readOperations.nodesGetCount();
             return Stream.of( new CountResult( nNodes ) );
         }
 
