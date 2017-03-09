@@ -69,8 +69,6 @@ class CommunityCompatibilityFactory(graph: GraphDatabaseQueryService, kernelAPI:
     (spec.planner, spec.runtime) match {
       case (CypherPlanner.rule, _) =>
         throw new InvalidArgumentException("The rule planner is no longer a valid planner option in Neo4j 3.2. If you need to use it, please compatibility mode Cypher 3.1")
-      case (_, CypherRuntime.compiled) =>
-        throw new InvalidArgumentException("The compiled runtime is only available in the Enterprise version of Neo4j")
       case _ =>
         v3_2.CostCompatibility(config, CompilerEngineDelegator.CLOCK, kernelMonitors, kernelAPI, log,
           spec.planner, spec.runtime, spec.updateStrategy, CommunityRuntimeBuilder, CommunityContextCreator)

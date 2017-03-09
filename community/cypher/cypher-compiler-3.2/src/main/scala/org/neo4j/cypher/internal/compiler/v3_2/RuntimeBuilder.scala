@@ -21,7 +21,8 @@ package org.neo4j.cypher.internal.compiler.v3_2
 
 import org.neo4j.cypher.internal.compiler.v3_2.phases._
 import org.neo4j.cypher.internal.frontend.v3_2.InvalidArgumentException
-import org.neo4j.cypher.internal.frontend.v3_2.phases.Transformer
+import org.neo4j.cypher.internal.frontend.v3_2.notification.RuntimeUnsupportedNotification
+import org.neo4j.cypher.internal.frontend.v3_2.phases.{Do, Transformer}
 
 trait RuntimeBuilder[T <: Transformer[_, _, _]] {
   def create(runtimeName: Option[RuntimeName], useErrorsOverWarnings: Boolean): T
@@ -33,6 +34,11 @@ object CommunityRuntimeBuilder extends RuntimeBuilder[Transformer[CompilerContex
     case None | Some(InterpretedRuntimeName) =>
       BuildInterpretedExecutionPlan
 
-    case Some(x) => throw new InvalidArgumentException(s"This version of Neo4j does not support requested runtime: $x")
+    case Some(x) if useErrorsOverWarnings =>
+      throw new InvalidArgumentException(s"This version of Neo4j does not support requested runtime: $x")
+
+    case _ =>
+      Do((_: CompilerContext).notificationLogger.log(RuntimeUnsupportedNotification)) andThen
+        BuildInterpretedExecutionPlan
   }
 }
