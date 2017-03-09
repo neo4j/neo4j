@@ -53,7 +53,6 @@ import org.neo4j.storageengine.api.schema.IndexSample;
 import org.neo4j.unsafe.impl.internal.dragons.FeatureToggles;
 
 import static java.lang.String.format;
-
 import static org.neo4j.collection.primitive.PrimitiveIntCollections.contains;
 import static org.neo4j.kernel.impl.api.index.IndexPopulationFailure.failure;
 
@@ -310,10 +309,13 @@ public class MultipleIndexPopulator implements IndexPopulator
 
     private int[] propertyKeyIds()
     {
-        return populations.stream()
-                .flatMapToInt( population ->
-                        IntStream.of( population.descriptor.schema().getPropertyIds() ) )
-                .toArray();
+        return populations.stream().flatMapToInt( this::propertyKeyIds ).distinct().toArray();
+    }
+
+    private IntStream propertyKeyIds( IndexPopulation population )
+    {
+        NewIndexDescriptor desc = population.descriptor;
+        return IntStream.of( desc.schema().getPropertyIds() );
     }
 
     private int[] labelIds()

@@ -19,11 +19,11 @@
  */
 package org.neo4j.server.rest;
 
+import org.junit.Test;
+
 import java.util.HashMap;
 import java.util.List;
 import java.util.Map;
-
-import org.junit.Test;
 
 import org.neo4j.function.Factory;
 import org.neo4j.graphdb.Transaction;
@@ -35,12 +35,10 @@ import org.neo4j.test.GraphDescription;
 
 import static java.util.Arrays.asList;
 import static java.util.Collections.singletonList;
-
 import static org.hamcrest.Matchers.equalTo;
 import static org.hamcrest.Matchers.hasItem;
 import static org.hamcrest.Matchers.hasItems;
 import static org.junit.Assert.assertThat;
-
 import static org.neo4j.graphdb.Label.label;
 import static org.neo4j.helpers.collection.MapUtil.map;
 import static org.neo4j.server.rest.domain.JsonHelper.createJsonFrom;
@@ -215,17 +213,24 @@ public class SchemaConstraintsIT extends AbstractRestFunctionalTestBase
                 .delete( getSchemaConstraintLabelUniquenessPropertyUri( labelName, propertyKey ) );
     }
 
-    /**
-     * Creating a compound index should not yet be supported.
-     */
     @Test
     public void create_compound_schema_index()
     {
         Map<String,Object> definition = map( "property_keys",
                 asList( properties.newInstance(), properties.newInstance() ) );
 
-        gen.get().expectedStatus( 400 )
+        gen.get().expectedStatus( 200 )
                 .payload( createJsonFrom( definition ) ).post( getSchemaIndexLabelUri( labels.newInstance() ) );
+    }
+
+    @Test
+    public void create_compound_schema_constraint()
+    {
+        Map<String,Object> definition = map( "property_keys",
+                asList( properties.newInstance(), properties.newInstance() ) );
+
+        gen.get().expectedStatus( 405 )
+                .payload( createJsonFrom( definition ) ).post( getSchemaConstraintLabelUri( labels.newInstance() ) );
     }
 
     private ConstraintDefinition createLabelUniquenessPropertyConstraint( String labelName, String propertyKey )

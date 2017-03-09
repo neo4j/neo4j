@@ -95,7 +95,7 @@ public class CompositeIndexingIT
             tx.success();
         }
 
-        try ( Transaction tx = graphDatabaseAPI.beginTx() )
+        try ( Transaction ignore = graphDatabaseAPI.beginTx() )
         {
             while ( statement().readOperations().indexGetState( index ) != InternalIndexState.ONLINE )
             {
@@ -137,8 +137,10 @@ public class CompositeIndexingIT
         return Arrays.asList( Iterators.array( NewIndexDescriptorFactory.forLabel( LABEL_ID, 1 ) ),
                 Iterators.array( NewIndexDescriptorFactory.forLabel( LABEL_ID, 1, 2 ) ),
                 Iterators.array( NewIndexDescriptorFactory.forLabel( LABEL_ID, 1, 2, 3, 4 ) ),
+                Iterators.array( NewIndexDescriptorFactory.forLabel( LABEL_ID, 1, 2, 3, 4, 5, 6, 7 ) ),
                 Iterators.array( NewIndexDescriptorFactory.uniqueForLabel( LABEL_ID, 1 ) ),
-                Iterators.array( NewIndexDescriptorFactory.uniqueForLabel( LABEL_ID, 1, 2 ) )
+                Iterators.array( NewIndexDescriptorFactory.uniqueForLabel( LABEL_ID, 1, 2 ) ),
+                Iterators.array( NewIndexDescriptorFactory.uniqueForLabel( LABEL_ID, 1, 2, 3, 4, 5, 6, 7 ) )
         );
     }
 
@@ -148,9 +150,9 @@ public class CompositeIndexingIT
     }
 
     @Test
-    public void shouldSeeNodeAddedByPropertyToIndexInTransation() throws Exception
+    public void shouldSeeNodeAddedByPropertyToIndexInTranslation() throws Exception
     {
-        try ( Transaction tx = graphDatabaseAPI.beginTx() )
+        try ( Transaction ignore = graphDatabaseAPI.beginTx() )
         {
             DataWriteOperations writeOperations = statement().dataWriteOperations();
             long nodeID = writeOperations.nodeCreate();
@@ -168,7 +170,7 @@ public class CompositeIndexingIT
     @Test
     public void shouldSeeNodeAddedToByLabelIndexInTransaction() throws Exception
     {
-        try ( Transaction tx = graphDatabaseAPI.beginTx() )
+        try ( Transaction ignore = graphDatabaseAPI.beginTx() )
         {
             DataWriteOperations writeOperations = statement().dataWriteOperations();
             long nodeID = writeOperations.nodeCreate();
@@ -187,7 +189,7 @@ public class CompositeIndexingIT
     public void shouldNotSeeNodeThatWasDeletedInTransaction() throws Exception
     {
         long nodeID = createNode();
-        try ( Transaction tx = graphDatabaseAPI.beginTx() )
+        try ( Transaction ignore = graphDatabaseAPI.beginTx() )
         {
             statement().dataWriteOperations().nodeDelete( nodeID );
             assertFalse( seek().hasNext() );
@@ -198,7 +200,7 @@ public class CompositeIndexingIT
     public void shouldNotSeeNodeThatHasItsLabelRemovedInTransaction() throws Exception
     {
         long nodeID = createNode();
-        try ( Transaction tx = graphDatabaseAPI.beginTx() )
+        try ( Transaction ignore = graphDatabaseAPI.beginTx() )
         {
             statement().dataWriteOperations().nodeRemoveLabel( nodeID, LABEL_ID );
             assertFalse( seek().hasNext() );
@@ -209,7 +211,7 @@ public class CompositeIndexingIT
     public void shouldNotSeeNodeThatHasAPropertyRemovedInTransaction() throws Exception
     {
         long nodeID = createNode();
-        try ( Transaction tx = graphDatabaseAPI.beginTx() )
+        try ( Transaction ignore = graphDatabaseAPI.beginTx() )
         {
             statement().dataWriteOperations().nodeRemoveProperty( nodeID, index.schema().getPropertyIds()[0] );
             assertFalse( seek().hasNext() );
@@ -221,7 +223,7 @@ public class CompositeIndexingIT
     {
         if ( index.type() != UNIQUE ) // this test does not make any sense for UNIQUE indexes
         {
-            try ( Transaction tx = graphDatabaseAPI.beginTx() )
+            try ( Transaction ignore = graphDatabaseAPI.beginTx() )
             {
                 long nodeID1 = createNode();
                 long nodeID2 = createNode();
@@ -241,7 +243,7 @@ public class CompositeIndexingIT
             long nodeID1 = createNode();
             long nodeID2 = createNode();
             long nodeID3 = createNode();
-            try ( Transaction tx = graphDatabaseAPI.beginTx() )
+            try ( Transaction ignore = graphDatabaseAPI.beginTx() )
             {
                 PrimitiveLongIterator resultIterator = seek();
                 Set<Long> result = PrimitiveLongCollections.toSet( resultIterator );
@@ -254,7 +256,7 @@ public class CompositeIndexingIT
     public void shouldNotSeeNodesLackingOneProperty() throws Exception
     {
         long nodeID1 = createNode();
-        try ( Transaction tx = graphDatabaseAPI.beginTx() )
+        try ( Transaction ignore = graphDatabaseAPI.beginTx() )
         {
             DataWriteOperations writeOperations = statement().dataWriteOperations();
             long irrelevantNodeID = writeOperations.nodeCreate();

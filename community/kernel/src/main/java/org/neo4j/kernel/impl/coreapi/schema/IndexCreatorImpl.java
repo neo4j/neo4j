@@ -21,6 +21,7 @@ package org.neo4j.kernel.impl.coreapi.schema;
 
 import java.util.ArrayList;
 import java.util.Collection;
+import java.util.Collections;
 
 import org.neo4j.graphdb.ConstraintViolationException;
 import org.neo4j.graphdb.Label;
@@ -54,14 +55,7 @@ public class IndexCreatorImpl implements IndexCreator
     public IndexCreator on( String propertyKey )
     {
         assertInUnterminatedTransaction();
-
-        if ( !propertyKeys.isEmpty() )
-            throw new UnsupportedOperationException(
-                    "Compound indexes are not yet supported, only one property per index is allowed." );
-
-        return
-            new IndexCreatorImpl( actions, label,
-                                  Iterables.addToCollection( asList( propertyKey ), new ArrayList<>( propertyKeys ) ) );
+        return new IndexCreatorImpl( actions, label, copyAndAdd( propertyKeys, propertyKey) );
     }
 
     @Override
@@ -78,5 +72,12 @@ public class IndexCreatorImpl implements IndexCreator
     protected void assertInUnterminatedTransaction()
     {
         actions.assertInOpenTransaction();
+    }
+
+    private Collection<String> copyAndAdd( Collection<String> propertyKeys, String propertyKey )
+    {
+        Collection<String> ret = new ArrayList<>( propertyKeys );
+        ret.add( propertyKey );
+        return ret;
     }
 }

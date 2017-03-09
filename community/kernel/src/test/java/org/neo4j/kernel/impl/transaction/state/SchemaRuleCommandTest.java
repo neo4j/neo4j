@@ -21,7 +21,6 @@ package org.neo4j.kernel.impl.transaction.state;
 
 import org.junit.Test;
 
-import java.util.Arrays;
 import java.util.function.Supplier;
 
 import org.neo4j.concurrent.WorkSync;
@@ -44,7 +43,6 @@ import org.neo4j.kernel.impl.store.SchemaStore;
 import org.neo4j.kernel.impl.store.record.ConstraintRule;
 import org.neo4j.kernel.impl.store.record.DynamicRecord;
 import org.neo4j.kernel.impl.store.record.IndexRule;
-import org.neo4j.kernel.impl.store.record.RecordSerializer;
 import org.neo4j.kernel.impl.store.record.SchemaRecord;
 import org.neo4j.kernel.impl.transaction.command.Command;
 import org.neo4j.kernel.impl.transaction.command.Command.SchemaRuleCommand;
@@ -56,10 +54,10 @@ import org.neo4j.kernel.impl.transaction.command.NeoStoreBatchTransactionApplier
 import org.neo4j.kernel.impl.transaction.command.PhysicalLogCommandReaderV2_2;
 import org.neo4j.kernel.impl.transaction.log.InMemoryClosableChannel;
 import org.neo4j.kernel.impl.transaction.log.PhysicalTransactionRepresentation;
-import org.neo4j.storageengine.api.StorageCommand;
 import org.neo4j.storageengine.api.TransactionApplicationMode;
 import org.neo4j.storageengine.api.schema.SchemaRule;
 
+import static java.util.Collections.singletonList;
 import static org.hamcrest.CoreMatchers.instanceOf;
 import static org.junit.Assert.assertEquals;
 import static org.junit.Assert.assertThat;
@@ -226,10 +224,8 @@ public class SchemaRuleCommandTest
 
     private SchemaRecord serialize( SchemaRule rule, long id, boolean inUse, boolean created )
     {
-        RecordSerializer serializer = new RecordSerializer();
-        serializer = serializer.append( rule );
         DynamicRecord record = new DynamicRecord( id );
-        record.setData( serializer.serialize() );
+        record.setData( rule.serialize() );
         if ( created )
         {
             record.setCreated();
@@ -238,7 +234,7 @@ public class SchemaRuleCommandTest
         {
             record.setInUse( true );
         }
-        return new SchemaRecord( Arrays.asList( record ) );
+        return new SchemaRecord( singletonList( record ) );
     }
 
     private void assertSchemaRule( SchemaRuleCommand readSchemaCommand )
@@ -251,7 +247,7 @@ public class SchemaRuleCommandTest
     private void visitSchemaRuleCommand( BatchTransactionApplier applier, SchemaRuleCommand command ) throws Exception
     {
         TransactionToApply tx = new TransactionToApply(
-                new PhysicalTransactionRepresentation( Arrays.<StorageCommand>asList( command ) ), txId );
+                new PhysicalTransactionRepresentation( singletonList( command ) ), txId );
         CommandHandlerContract.apply( applier, tx );
     }
 }

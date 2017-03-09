@@ -94,7 +94,6 @@ import org.neo4j.kernel.impl.store.record.LabelTokenRecord;
 import org.neo4j.kernel.impl.store.record.NodeRecord;
 import org.neo4j.kernel.impl.store.record.PropertyBlock;
 import org.neo4j.kernel.impl.store.record.PropertyRecord;
-import org.neo4j.kernel.impl.store.record.RecordSerializer;
 import org.neo4j.kernel.impl.store.record.RelationshipGroupRecord;
 import org.neo4j.kernel.impl.store.record.RelationshipRecord;
 import org.neo4j.kernel.impl.store.record.RelationshipTypeTokenRecord;
@@ -946,7 +945,7 @@ public class FullCheckIntegrationTest
 
                 schema.setNextBlock( next.schema() ); // Point to a record that isn't in use.
                 IndexRule rule = indexRule( schema.getId(), label1, key, DESCRIPTOR );
-                schema.setData( new RecordSerializer().append( rule ).serialize() );
+                schema.setData( rule.serialize() );
 
                 tx.createSchema( asList( schemaBefore ), asList( schema ), rule );
             }
@@ -1057,10 +1056,7 @@ public class FullCheckIntegrationTest
 
     public static Collection<DynamicRecord> serializeRule( SchemaRule rule, Collection<DynamicRecord> records )
     {
-        RecordSerializer serializer = new RecordSerializer();
-        serializer.append( rule );
-
-        byte[] data = serializer.serialize();
+        byte[] data = rule.serialize();
         ReusableRecordsAllocator dynamicRecordAllocator = new ReusableRecordsAllocator( data.length, records );
         Collection<DynamicRecord> result = new ArrayList<>();
         AbstractDynamicStore.allocateRecordsFromBytes( result, data, dynamicRecordAllocator );
