@@ -19,9 +19,9 @@
  */
 package org.neo4j.test;
 
-import java.util.ArrayList;
 import java.util.List;
 import java.util.Map;
+import java.util.concurrent.CopyOnWriteArrayList;
 import java.util.concurrent.ExecutionException;
 import java.util.concurrent.Executor;
 import java.util.concurrent.ThreadFactory;
@@ -32,12 +32,21 @@ import org.neo4j.kernel.lifecycle.LifecycleAdapter;
 
 import static org.neo4j.kernel.impl.util.JobScheduler.Group.NO_METADATA;
 
-/**
- * This class is far from perfect when it comes to managing multiple jobs.
- */
 public class OnDemandJobScheduler extends LifecycleAdapter implements JobScheduler
 {
-    private List<Runnable> jobs = new ArrayList<>();
+    private List<Runnable> jobs = new CopyOnWriteArrayList<>();
+
+    private final boolean removeJobsAfterExecution;
+
+    public OnDemandJobScheduler()
+    {
+        this( true );
+    }
+
+    public OnDemandJobScheduler( boolean removeJobsAfterExecution)
+    {
+        this.removeJobsAfterExecution = removeJobsAfterExecution;
+    }
 
     @Override
     public Executor executor( Group group )
@@ -100,11 +109,13 @@ public class OnDemandJobScheduler extends LifecycleAdapter implements JobSchedul
 
     public void runJob()
     {
-        /* some tests modify the scheduler concurrently */
-        Runnable[] copy = this.jobs.toArray( new Runnable[this.jobs.size()] );
-        for ( Runnable job : copy )
+        for ( Runnable job : jobs )
         {
             job.run();
+            if ( removeJobsAfterExecution )
+            {
+                jobs.remove( job );
+            }
         }
     }
 
