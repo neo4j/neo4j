@@ -19,28 +19,18 @@
  */
 package org.neo4j.causalclustering.discovery;
 
-import org.neo4j.causalclustering.identity.ClusterId;
-
 /**
- * Extends upon the topology service with a few extra services, connected to
- * the underlying discovery service.
+ * A checked exception to make exceptions visible.
  */
-public interface CoreTopologyService extends TopologyService
+class HazelcastInstanceNotActiveException extends Exception
 {
-    void addCoreTopologyListener( Listener listener );
-
-    /**
-     * Publishes the cluster ID so that other members might discover it.
-     * Should only succeed to publish if one missing or already the same (CAS logic).
-     *
-     * @param clusterId The cluster ID to publish.
-     *
-     * @return True if the cluster ID was successfully CAS:ed, otherwise false.
-     */
-    boolean setClusterId( ClusterId clusterId );
-
-    interface Listener
+    HazelcastInstanceNotActiveException( String message )
     {
-        void onCoreTopologyChange( CoreTopology coreTopology );
+        super( message );
+    }
+
+    HazelcastInstanceNotActiveException( Throwable cause )
+    {
+        super( cause );
     }
 }

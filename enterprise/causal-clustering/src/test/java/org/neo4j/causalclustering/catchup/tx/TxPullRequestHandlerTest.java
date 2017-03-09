@@ -87,7 +87,7 @@ public class TxPullRequestHandlerTest
         verify( context ).write( new TxPullResponse( storeId, tx( 15 ) ) );
 
         verify( context ).write( ResponseMessageType.TX_STREAM_FINISHED );
-        verify( context ).write( new TxStreamFinishedResponse( SUCCESS_END_OF_STREAM ) );
+        verify( context ).write( new TxStreamFinishedResponse( SUCCESS_END_OF_STREAM, 15L ) );
     }
 
     @Test
@@ -118,7 +118,7 @@ public class TxPullRequestHandlerTest
         verify( context ).write( new TxPullResponse( storeId, tx( 16 ) ) );
 
         verify( context ).write( ResponseMessageType.TX_STREAM_FINISHED );
-        verify( context ).write( new TxStreamFinishedResponse( SUCCESS_END_OF_BATCH ) );
+        verify( context ).write( new TxStreamFinishedResponse( SUCCESS_END_OF_BATCH, 15L ) );
     }
 
     @Test
@@ -142,7 +142,7 @@ public class TxPullRequestHandlerTest
 
         // then
         verify( context ).write( ResponseMessageType.TX_STREAM_FINISHED );
-        verify( context ).write( new TxStreamFinishedResponse( SUCCESS_END_OF_STREAM ) );
+        verify( context ).write( new TxStreamFinishedResponse( SUCCESS_END_OF_STREAM, 14L ) );
     }
 
     @Test
@@ -167,7 +167,7 @@ public class TxPullRequestHandlerTest
         // then
         verify( context, never() ).write( ResponseMessageType.TX );
         verify( context ).write( ResponseMessageType.TX_STREAM_FINISHED );
-        verify( context ).write( new TxStreamFinishedResponse( E_TRANSACTION_PRUNED ) );
+        verify( context ).write( new TxStreamFinishedResponse( E_TRANSACTION_PRUNED, 15L ) );
         logProvider.assertAtLeastOnce( inLog( TxPullRequestHandler.class )
                 .info( "Failed to serve TxPullRequest for tx %d because the transaction does not exist.", 14L ) );
     }
@@ -180,6 +180,7 @@ public class TxPullRequestHandlerTest
         StoreId clientStoreId = new StoreId( 5, 6, 7, 8 );
 
         TransactionIdStore transactionIdStore = mock( TransactionIdStore.class );
+        when( transactionIdStore.getLastCommittedTransactionId() ).thenReturn( 15L );
         LogicalTransactionStore logicalTransactionStore = mock( LogicalTransactionStore.class );
 
         TxPullRequestHandler txPullRequestHandler =
@@ -192,7 +193,7 @@ public class TxPullRequestHandlerTest
         // then
         verify( context, never() ).write( ResponseMessageType.TX );
         verify( context ).write( ResponseMessageType.TX_STREAM_FINISHED );
-        verify( context ).write( new TxStreamFinishedResponse( E_STORE_ID_MISMATCH ) );
+        verify( context ).write( new TxStreamFinishedResponse( E_STORE_ID_MISMATCH, 15L ) );
         logProvider.assertAtLeastOnce( inLog( TxPullRequestHandler.class )
                 .info( "Failed to serve TxPullRequest for tx %d and storeId %s because that storeId is different " +
                         "from this machine with %s", 2L, clientStoreId, serverStoreId ) );
@@ -205,6 +206,7 @@ public class TxPullRequestHandlerTest
         StoreId storeId = new StoreId( 1, 2, 3, 4 );
 
         TransactionIdStore transactionIdStore = mock( TransactionIdStore.class );
+        when( transactionIdStore.getLastCommittedTransactionId() ).thenReturn( 15L );
         LogicalTransactionStore logicalTransactionStore = mock( LogicalTransactionStore.class );
 
         TxPullRequestHandler txPullRequestHandler =
@@ -217,7 +219,7 @@ public class TxPullRequestHandlerTest
         // then
         verify( context, never() ).write( ResponseMessageType.TX );
         verify( context ).write( ResponseMessageType.TX_STREAM_FINISHED );
-        verify( context ).write( new TxStreamFinishedResponse( E_STORE_UNAVAILABLE ) );
+        verify( context ).write( new TxStreamFinishedResponse( E_STORE_UNAVAILABLE, 15L ) );
         logProvider.assertAtLeastOnce( inLog( TxPullRequestHandler.class )
                 .info( "Failed to serve TxPullRequest for tx %d because the local database is unavailable.", 2L ) );
     }

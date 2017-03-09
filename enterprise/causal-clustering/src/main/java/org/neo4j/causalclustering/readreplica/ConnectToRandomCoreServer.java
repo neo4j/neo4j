@@ -49,7 +49,7 @@ public class ConnectToRandomCoreServer extends UpstreamDatabaseSelectionStrategy
 
         int skippedServers = random.nextInt( coreTopology.members().size() );
 
-        final Iterator<MemberId> iterator = coreTopology.members().iterator();
+        final Iterator<MemberId> iterator = coreTopology.members().keySet().iterator();
 
         MemberId member;
         do

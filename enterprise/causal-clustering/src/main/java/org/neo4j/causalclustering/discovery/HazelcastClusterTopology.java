@@ -45,7 +45,7 @@ import static java.util.Collections.emptyMap;
 import static org.neo4j.helpers.SocketAddressFormat.socketAddress;
 import static org.neo4j.helpers.collection.Iterables.asSet;
 
-class HazelcastClusterTopology
+public class HazelcastClusterTopology
 {
     // per server attributes
     private static final String DISCOVERY_SERVER = "discovery_server"; // not currently used
@@ -100,6 +100,23 @@ class HazelcastClusterTopology
         }
 
         return new CoreTopology( clusterId, canBeBootstrapped, coreMembers );
+    }
+
+    public static Map<MemberId,AdvertisedSocketAddress> extractCatchupAddressesMap( CoreTopology coreTopology, ReadReplicaTopology rrTopology )
+    {
+        Map<MemberId,AdvertisedSocketAddress> catchupAddressMap = new HashMap<>();
+
+        for ( Map.Entry<MemberId,CoreServerInfo> entry : coreTopology.members().entrySet() )
+        {
+            catchupAddressMap.put( entry.getKey(), entry.getValue().getCatchupServer() );
+        }
+
+        for ( Map.Entry<MemberId,ReadReplicaInfo> entry : rrTopology.members().entrySet() )
+        {
+            catchupAddressMap.put( entry.getKey(), entry.getValue().getCatchupServer() );
+        }
+
+        return catchupAddressMap;
     }
 
     private static ClusterId getClusterId( HazelcastInstance hazelcastInstance )

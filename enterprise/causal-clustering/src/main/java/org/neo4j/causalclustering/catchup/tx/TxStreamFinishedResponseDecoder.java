@@ -33,7 +33,8 @@ public class TxStreamFinishedResponseDecoder extends ByteToMessageDecoder
     protected void decode( ChannelHandlerContext ctx, ByteBuf msg, List<Object> out ) throws Exception
     {
         int ordinal = msg.readInt();
+        long latestTxid = msg.readLong();
         CatchupResult status = CatchupResult.values()[ordinal];
-        out.add( new TxStreamFinishedResponse( status ) );
+        out.add( new TxStreamFinishedResponse( status, latestTxid ) );
     }
 }

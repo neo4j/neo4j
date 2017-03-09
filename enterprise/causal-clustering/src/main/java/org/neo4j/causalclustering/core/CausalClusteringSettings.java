@@ -208,10 +208,6 @@ public class CausalClusteringSettings implements LoadableConfig
     public static final Setting<Long> read_replica_time_to_live =
             setting( "causal_clustering.read_replica_time_to_live", DURATION, "1m", min( 60_000L ) );
 
-    @Description( "Read replica 'call home' frequency" )
-    public static final Setting<Long> read_replica_refresh_rate =
-            setting( "causal_clustering.read_replica_refresh_rate", DURATION, "5s", min( 5_000L ) );
-
     @Description( "How long drivers should cache the data from the `dbms.cluster.routing.getServers()` procedure." )
     public static final Setting<Long> cluster_routing_ttl =
             setting( "causal_clustering.cluster_routing_ttl", DURATION, "5m", min( 1_000L ) );
