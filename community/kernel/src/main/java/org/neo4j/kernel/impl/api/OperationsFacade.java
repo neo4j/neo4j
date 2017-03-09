@@ -37,6 +37,8 @@ import org.neo4j.kernel.api.DataWriteOperations;
 import org.neo4j.kernel.api.ExecutionStatisticsOperations;
 import org.neo4j.kernel.api.KernelTransaction;
 import org.neo4j.kernel.api.LegacyIndexHits;
+import org.neo4j.kernel.api.TokenWriteOperations;
+import org.neo4j.kernel.api.exceptions.schema.ConstraintValidationException;
 import org.neo4j.kernel.api.ProcedureCallOperations;
 import org.neo4j.kernel.api.QueryRegistryOperations;
 import org.neo4j.kernel.api.ReadOperations;
