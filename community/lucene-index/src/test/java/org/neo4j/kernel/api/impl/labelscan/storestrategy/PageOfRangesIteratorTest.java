@@ -109,8 +109,8 @@ public class PageOfRangesIteratorTest
 
         // then
         assertEquals( asList(
-        /*doc1:*/(1L << format.bitmapFormat().shift),
-        /*doc2:*/(2L << format.bitmapFormat().shift), (2L << format.bitmapFormat().shift) + 1,
+        /*doc1:*/1L << format.bitmapFormat().shift,
+        /*doc2:*/2L << format.bitmapFormat().shift, (2L << format.bitmapFormat().shift) + 1,
         /*doc3:*/(3L << format.bitmapFormat().shift) + 4, (3L << format.bitmapFormat().shift) + 5 ),
                 longs );
 

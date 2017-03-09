@@ -259,12 +259,12 @@ public class CypherOrderability
                 return ((Double) lhs).compareTo( (Double) rhs );
             }
             // Right hand side is neither Float nor Double
-            else if ( (lhs instanceof Double || lhs instanceof Float) )
+            else if ( lhs instanceof Double || lhs instanceof Float )
             {
                 return MathUtil.compareDoubleAgainstLong( lhs.doubleValue(), rhs.longValue() );
             }
             // Left hand side is neither Float nor Double
-            else if ( (rhs instanceof Double || rhs instanceof Float) )
+            else if ( rhs instanceof Double || rhs instanceof Float )
             {
                 return -MathUtil.compareDoubleAgainstLong( rhs.doubleValue(), lhs.longValue() );
             }

@@ -42,7 +42,7 @@ public class LoggingListener implements MonitorListenerInvocationHandler
 
     public LoggingListener( Map<Class<?>, Logger> classes )
     {
-        assert (classes != null);
+        assert classes != null;
         this.classes = classes;
     }
 

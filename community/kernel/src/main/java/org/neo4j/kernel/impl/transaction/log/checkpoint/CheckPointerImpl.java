@@ -139,50 +139,53 @@ public class CheckPointerImpl extends LifecycleAdapter implements CheckPointer
 
     private long doCheckPoint( TriggerInfo triggerInfo, LogCheckPointEvent logCheckPointEvent ) throws IOException
     {
-        long[] lastClosedTransaction = transactionIdStore.getLastClosedTransaction();
-        long lastClosedTransactionId = lastClosedTransaction[0];
-        LogPosition logPosition = new LogPosition( lastClosedTransaction[1], lastClosedTransaction[2] );
-
-        String prefix = triggerInfo.describe( lastClosedTransactionId );
-        msgLog.info( prefix + " Starting check pointing..." );
-
-        /*
-         * Check kernel health before going into waiting for transactions to be closed, to avoid
-         * getting into a scenario where we would await a condition that would potentially never
-         * happen.
-         */
-        databaseHealth.assertHealthy( IOException.class );
-
-        /*
-         * First we flush the store. If we fail now or during the flush, on recovery we'll find the
-         * earlier check point and replay from there all the log entries. Everything will be ok.
-         */
-        msgLog.info( prefix + " Starting store flush..." );
-        storageEngine.flushAndForce( ioLimiter );
-        msgLog.info( prefix + " Store flush completed" );
-
-        /*
-         * Check kernel health before going to write the next check point.  In case of a panic this check point
-         * will be aborted, which is the safest alternative so that the next recovery will have a chance to
-         * repair the damages.
-         */
-        databaseHealth.assertHealthy( IOException.class );
-
-        msgLog.info( prefix + " Starting appending check point entry into the tx log..." );
-        appender.checkPoint( logPosition, logCheckPointEvent );
-        threshold.checkPointHappened( lastClosedTransactionId );
-        msgLog.info( prefix + " Appending check point entry into the tx log completed" );
-
-        msgLog.info( prefix + " Check pointing completed" );
-
-        /*
-         * Prune up to the version pointed from the latest check point,
-         * since it might be an earlier version than the current log version.
-         */
-        logPruning.pruneLogs( logPosition.getLogVersion() );
-
-        lastCheckPointedTx = lastClosedTransactionId;
-        return lastClosedTransactionId;
+        try
+        {
+            long[] lastClosedTransaction = transactionIdStore.getLastClosedTransaction();
+            long lastClosedTransactionId = lastClosedTransaction[0];
+            LogPosition logPosition = new LogPosition( lastClosedTransaction[1], lastClosedTransaction[2] );
+            String prefix = triggerInfo.describe( lastClosedTransactionId );
+            msgLog.info( prefix + " Starting check pointing..." );
+            /*
+             * Check kernel health before going into waiting for transactions to be closed, to avoid
+             * getting into a scenario where we would await a condition that would potentially never
+             * happen.
+             */
+            databaseHealth.assertHealthy( IOException.class );
+            /*
+             * First we flush the store. If we fail now or during the flush, on recovery we'll find the
+             * earlier check point and replay from there all the log entries. Everything will be ok.
+             */
+            msgLog.info( prefix + " Starting store flush..." );
+            storageEngine.flushAndForce( ioLimiter );
+            msgLog.info( prefix + " Store flush completed" );
+            /*
+             * Check kernel health before going to write the next check point.  In case of a panic this check point
+             * will be aborted, which is the safest alternative so that the next recovery will have a chance to
+             * repair the damages.
+             */
+            databaseHealth.assertHealthy( IOException.class );
+            msgLog.info( prefix + " Starting appending check point entry into the tx log..." );
+            appender.checkPoint( logPosition, logCheckPointEvent );
+            threshold.checkPointHappened( lastClosedTransactionId );
+            msgLog.info( prefix + " Appending check point entry into the tx log completed" );
+            msgLog.info( prefix + " Check pointing completed" );
+            /*
+             * Prune up to the version pointed from the latest check point,
+             * since it might be an earlier version than the current log version.
+             */
+            logPruning.pruneLogs( logPosition.getLogVersion() );
+            lastCheckPointedTx = lastClosedTransactionId;
+            return lastClosedTransactionId;
+        }
+        catch ( Throwable t )
+        {
+            // Why only log failure here? It's because check point can potentially be made from various
+            // points of execution e.g. background thread triggering check point if needed and during
+            // shutdown where it's better to have more control over failure handling.
+            msgLog.error( "Error performing check point", t );
+            throw t;
+        }
     }
 
     @Override

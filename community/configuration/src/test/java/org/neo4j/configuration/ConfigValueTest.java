@@ -24,24 +24,42 @@ import org.junit.Test;
 import java.util.Optional;
 
 import static org.junit.Assert.assertEquals;
+import static org.junit.Assert.assertFalse;
+import static org.junit.Assert.assertTrue;
 
 public class ConfigValueTest
 {
     @Test
     public void handlesEmptyValue() throws Exception
     {
-        ConfigValue value = new ConfigValue( "name", Optional.empty(), Optional.empty() );
+        ConfigValue value = new ConfigValue( "name", Optional.empty(), Optional.empty(), false, Optional.empty() );
 
         assertEquals( Optional.empty(), value.value() );
         assertEquals( "null", value.toString() );
+        assertFalse( value.deprecated() );
+        assertEquals( Optional.empty(), value.replacement() );
     }
 
     @Test
     public void handlesNonEmptyValue() throws Exception
     {
-        ConfigValue value = new ConfigValue( "name", Optional.empty(), Optional.of( 1 ) );
+        ConfigValue value = new ConfigValue( "name", Optional.empty(), Optional.of( 1 ), false, Optional.empty() );
 
         assertEquals( Optional.of( 1 ), value.value() );
         assertEquals( "1", value.toString() );
+        assertFalse( value.deprecated() );
+        assertEquals( Optional.empty(), value.replacement() );
+    }
+
+    @Test
+    public void handlesDeprecationAndReplacement() throws Exception
+    {
+        ConfigValue value = new ConfigValue( "old_name", Optional.empty(), Optional.of( 1 ), true,
+                Optional.of( "new_name" ) );
+
+        assertEquals( Optional.of( 1 ), value.value() );
+        assertEquals( "1", value.toString() );
+        assertTrue( value.deprecated() );
+        assertEquals( "new_name", value.replacement().get() );
     }
 }

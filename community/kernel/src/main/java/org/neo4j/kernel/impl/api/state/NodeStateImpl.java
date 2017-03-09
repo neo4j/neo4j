@@ -45,7 +45,7 @@ public class NodeStateImpl extends PropertyContainerStateImpl implements NodeSta
     private DiffSets<Integer> labelDiffSets;
     private RelationshipChangesForNode relationshipsAdded;
     private RelationshipChangesForNode relationshipsRemoved;
-    private Set<DiffSets<Long>> indexDiffs;
+    private Set<DiffSets<Long>> indexDiffs; // TODO: does this really fill any function?
     private final TxState state;
 
     NodeStateImpl( long id, TxState state )
@@ -225,7 +225,7 @@ public class NodeStateImpl extends PropertyContainerStateImpl implements NodeSta
     }
 
     @Override
-    public PrimitiveLongIterator getAddedRelationships( Direction direction, PrimitiveIntSet relTypes )
+    public PrimitiveLongIterator getAddedRelationships( Direction direction, int[] relTypes )
     {
         return relationshipsAdded != null ? relationshipsAdded.getRelationships( direction, relTypes ) :
             PrimitiveLongCollections.emptyIterator();
@@ -348,7 +348,7 @@ public class NodeStateImpl extends PropertyContainerStateImpl implements NodeSta
             }
 
             @Override
-            public PrimitiveLongIterator getAddedRelationships( Direction direction, PrimitiveIntSet relTypes )
+            public PrimitiveLongIterator getAddedRelationships( Direction direction, int[] relTypes )
             {
                 return null;
             }

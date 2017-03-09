@@ -93,7 +93,7 @@ public class AuthProceduresIT
         // Given
         assertEmpty( admin, "CALL dbms.changePassword('abc')" );
 
-        assert( authManager.getUser( "neo4j" ).credentials().matchesPassword( "abc" ) );
+        assert authManager.getUser( "neo4j" ).credentials().matchesPassword( "abc" );
     }
 
     @Test
@@ -266,14 +266,14 @@ public class AuthProceduresIT
     private void assertEmpty( BasicSecurityContext subject, String query )
     {
         assertThat(
-                execute( subject, query, r -> { assert(!r.hasNext() ); } ),
+                execute( subject, query, r -> { assert !r.hasNext(); } ),
                 equalTo( "" ) );
     }
 
     private void assertFail( BasicSecurityContext subject, String query, String partOfErrorMsg )
     {
         assertThat(
-                execute( subject, query, r -> { assert(!r.hasNext() ); } ),
+                execute( subject, query, r -> { assert !r.hasNext(); } ),
                 containsString( partOfErrorMsg ) );
     }
 

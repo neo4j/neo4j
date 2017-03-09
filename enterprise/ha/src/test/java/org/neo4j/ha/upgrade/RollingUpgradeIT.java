@@ -259,7 +259,7 @@ public class RollingUpgradeIT
 
     private int backupPort( int serverId )
     {
-        return (6362+serverId);
+        return 6362 + serverId;
     }
 
     private void rollOverToNewVersion() throws Exception

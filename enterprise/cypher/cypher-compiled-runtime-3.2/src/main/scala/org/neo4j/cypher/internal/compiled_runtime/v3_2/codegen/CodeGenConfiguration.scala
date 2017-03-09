@@ -19,6 +19,8 @@
  */
 package org.neo4j.cypher.internal.compiled_runtime.v3_2.codegen
 
+import java.nio.file.{Path, Paths}
+
 import org.neo4j.cypher.internal.frontend.v3_2.InternalException
 
 /**
@@ -46,6 +48,7 @@ case object ByteCodeMode extends CodeGenMode
 case class CodeGenConfiguration(mode: CodeGenMode = CodeGenMode.default,
                                 showSource: Boolean = false,
                                 showByteCode: Boolean = false,
+                                saveSource: Option[Path] = None,
                                 packageName: String = "org.neo4j.cypher.internal.compiler.v3_2.generated"
                                )
 
@@ -57,7 +60,8 @@ object CodeGenConfiguration {
       throw new InternalException("Can only 'debug=show_java_source' if 'debug=generate_java_source'.")
     }
     val show_bytecode = debugOptions.contains("show_bytecode")
-    CodeGenConfiguration(mode, show_java_source, show_bytecode)
+    val saveSource = Option(System.getProperty("org.neo4j.cypher.DEBUG.generated_source_location")).map(Paths.get(_))
+    CodeGenConfiguration(mode, show_java_source, show_bytecode, saveSource)
   }
 }
 

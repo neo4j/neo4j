@@ -49,12 +49,13 @@ public abstract class AbstractKeyValueStore<Key> extends LifecycleAdapter
     private final ReadWriteLock updateLock = new ReentrantReadWriteLock( /*fair=*/true );
     private final Format format;
     final RotationStrategy rotationStrategy;
-    private RotationTimerFactory rotationTimerFactory;
+    private final RotationTimerFactory rotationTimerFactory;
     volatile ProgressiveState<Key> state;
     private DataInitializer<EntryUpdater<Key>> stateInitializer;
     private final FileSystemAbstraction fs;
     final int keySize;
     final int valueSize;
+    private volatile boolean stopped;
 
     public AbstractKeyValueStore( FileSystemAbstraction fs, PageCache pages, File base, RotationMonitor monitor,
             RotationTimerFactory timerFactory, int keySize, int valueSize, HeaderField<?>... headerFields )
@@ -243,7 +244,11 @@ public abstract class AbstractKeyValueStore<Key> extends LifecycleAdapter
     @Override
     public final void shutdown() throws IOException
     {
-        state = state.stop();
+        try ( LockWrapper ignored = writeLock( updateLock ) )
+        {
+            stopped = true;
+            state = state.stop();
+        }
     }
 
     private boolean transfer( EntryVisitor<WritableBuffer> producer, EntryVisitor<ReadableBuffer> consumer )
@@ -300,14 +305,35 @@ public abstract class AbstractKeyValueStore<Key> extends LifecycleAdapter
         {
             try( RotationState<Key> rotation = this.rotation )
             {
-                final long version = rotation.rotationVersion();
-                ProgressiveState<Key> next = rotation.rotate( force, rotationStrategy, rotationTimerFactory,
-                        value -> updateHeaders( value, version ) );
-                try ( LockWrapper ignored = writeLock( updateLock ) )
+                try
                 {
-                    state = next;
+                    final long version = rotation.rotationVersion();
+                    ProgressiveState<Key> next = rotation.rotate( force, rotationStrategy, rotationTimerFactory,
+                            value -> updateHeaders( value, version ) );
+                    try ( LockWrapper ignored = writeLock( updateLock ) )
+                    {
+                        state = next;
+                    }
+                    return version;
                 }
-                return version;
+                catch ( Throwable t )
+                {
+                    // Rotation failed. Here we assume that rotation state remembers this so that closing it
+                    // won't close the state as it was before rotation began, which we're reverting to right here.
+                    try ( LockWrapper ignored = writeLock( updateLock ) )
+                    {
+                        // Only mark as failed if we're still running.
+                        // If shutdown has been called while being in rotation state then shutdown will fail
+                        // without closing the store. This means that rotation takes over that responsibility.
+                        // Therefore avoid marking rotation state as failed in this case and let the store
+                        // be naturally closed before leaving this method.
+                        if ( !stopped )
+                        {
+                            state = rotation.markAsFailed();
+                        }
+                    }
+                    throw t;
+                }
             }
         }
     }

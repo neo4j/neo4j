@@ -125,7 +125,7 @@ public class ClusterOverviewProcedureTest
 
             String[] boltAddresses = new String[]{"bolt://localhost:" + boltPort};
 
-            if ( !Arrays.equals( boltAddresses, ((Object[]) record[1]) ) )
+            if ( !Arrays.equals( boltAddresses, (Object[]) record[1] ) )
             {
                 return false;
             }

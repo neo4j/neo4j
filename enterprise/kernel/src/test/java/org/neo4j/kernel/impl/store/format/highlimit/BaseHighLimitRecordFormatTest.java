@@ -108,7 +108,7 @@ public class BaseHighLimitRecordFormatTest
             for ( int i = 0; i < shortsPerRecord; i++ )
             {
                 short v = (short) ((cursor.getByte() & 0xFF) << 8);
-                v += (cursor.getByte() & 0xFF);
+                v += cursor.getByte() & 0xFF;
                 record.value = v;
             }
         }

@@ -33,6 +33,7 @@ import org.neo4j.kernel.api.exceptions.index.IndexNotFoundKernelException;
 import org.neo4j.kernel.api.schema.NodePropertyDescriptor;
 import org.neo4j.kernel.api.schema_new.IndexQuery;
 import org.neo4j.kernel.api.schema_new.LabelSchemaDescriptor;
+import org.neo4j.kernel.api.schema_new.OrderedPropertyValues;
 import org.neo4j.kernel.api.schema_new.SchemaDescriptorFactory;
 import org.neo4j.kernel.api.schema_new.constaints.ConstraintDescriptor;
 import org.neo4j.kernel.api.schema_new.constaints.ConstraintDescriptorFactory;
@@ -211,7 +212,7 @@ public class StateHandlingStatementOperationsTest
         KernelStatement statement = mock( KernelStatement.class );
         when( statement.hasTxStateWithChanges() ).thenReturn( true );
         when( statement.txState() ).thenReturn( txState );
-        when( txState.indexUpdatesForScanOrSeek( index, null ) ).thenReturn(
+        when( txState.indexUpdatesForScan( index ) ).thenReturn(
                 new DiffSets<>( Collections.singleton( 42L ), Collections.singleton( 44L ) )
         );
         when( txState.addedAndRemovedNodes() ).thenReturn(
@@ -242,7 +243,7 @@ public class StateHandlingStatementOperationsTest
         KernelStatement statement = mock( KernelStatement.class );
         when( statement.hasTxStateWithChanges() ).thenReturn( true );
         when( statement.txState() ).thenReturn( txState );
-        when( txState.indexUpdatesForScanOrSeek( index, "value" ) ).thenReturn(
+        when( txState.indexUpdatesForSeek( index, OrderedPropertyValues.ofUndefined( "value" ) ) ).thenReturn(
                 new DiffSets<>( Collections.singleton( 42L ), Collections.singleton( 44L ) )
         );
         when( txState.addedAndRemovedNodes() ).thenReturn(
@@ -332,7 +333,7 @@ public class StateHandlingStatementOperationsTest
         KernelStatement statement = mock( KernelStatement.class );
         when( statement.hasTxStateWithChanges() ).thenReturn( true );
         when( statement.txState() ).thenReturn( txState );
-        when( txState.indexUpdatesForScanOrSeek( index, null ) ).thenReturn(
+        when( txState.indexUpdatesForScan( index ) ).thenReturn(
                 new DiffSets<>( Collections.singleton( 42L ), Collections.singleton( 44L ) )
         );
         when( txState.addedAndRemovedNodes() ).thenReturn(
@@ -362,7 +363,7 @@ public class StateHandlingStatementOperationsTest
         KernelStatement statement = mock( KernelStatement.class );
         when( statement.hasTxStateWithChanges() ).thenReturn( true );
         when( statement.txState() ).thenReturn( txState );
-        when( txState.indexUpdatesForScanOrSeek( index, null ) ).thenReturn(
+        when( txState.indexUpdatesForScan( index ) ).thenReturn(
                 new DiffSets<>( Collections.singleton( 42L ), Collections.singleton( 44L ) )
         );
         when( txState.addedAndRemovedNodes() ).thenReturn(
@@ -483,7 +484,10 @@ public class StateHandlingStatementOperationsTest
 
         StateHandlingStatementOperations operations = newTxStateOps( mock( StoreReadLayer.class ) );
 
-        operations.nodeGetFromUniqueIndexSeek( kernelStatement, NewIndexDescriptorFactory.uniqueForLabel( 1, 1 ), "foo" );
+        operations.nodeGetFromUniqueIndexSeek(
+                kernelStatement,
+                NewIndexDescriptorFactory.uniqueForLabel( 1, 1 ),
+                IndexQuery.exact( 1, "foo" ) );
 
         verify( indexReader ).close();
     }

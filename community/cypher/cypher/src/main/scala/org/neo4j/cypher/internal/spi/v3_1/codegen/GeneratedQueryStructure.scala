@@ -57,7 +57,7 @@ object GeneratedQueryStructure extends CodeStructure[GeneratedQuery] {
     val option = if(conf.saveSource) {
       if(mode == SOURCECODE) new SourceVisitor {
         override protected def visitSource(reference: TypeReference, sourceCode: CharSequence): Unit =
-          source(reference.name(), sourceCode.toString)
+          source(reference.fullName(), sourceCode.toString)
       } else new DisassemblyVisitor {
         override protected def visitDisassembly(className: String, disassembly: CharSequence): Unit =
           source(className, disassembly.toString)

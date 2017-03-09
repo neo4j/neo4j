@@ -77,7 +77,7 @@ class StringArrayProperty extends DefinedProperty
     }
 
     @Override
-    int valueHash()
+    public int valueHash()
     {
         return hash( value );
     }

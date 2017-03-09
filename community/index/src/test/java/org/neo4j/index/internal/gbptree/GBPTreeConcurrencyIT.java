@@ -60,6 +60,8 @@ import static java.util.concurrent.TimeUnit.SECONDS;
 import static org.junit.Assert.assertTrue;
 import static org.junit.Assert.fail;
 import static org.junit.rules.RuleChain.outerRule;
+
+import static org.neo4j.index.internal.gbptree.GBPTree.NO_HEADER;
 import static org.neo4j.index.internal.gbptree.GBPTree.NO_MONITOR;
 import static org.neo4j.test.rule.PageCacheRule.config;
 
@@ -105,7 +107,7 @@ public class GBPTreeConcurrencyIT
         PageCache pageCache =
                 pageCacheRule.getPageCache( fs.get(), config().withPageSize( pageSize ).withAccessChecks( true ) );
         return index = new GBPTree<>( pageCache, directory.file( "index" ),
-                layout, 0/*use whatever page cache says*/, monitor );
+                layout, 0/*use whatever page cache says*/, monitor, NO_HEADER );
     }
 
     @After
@@ -219,7 +221,7 @@ public class GBPTreeConcurrencyIT
         // Instructions for reader
         private final boolean forwardsSeek;
         private final double writePercentage;
-        private AtomicReference<ReaderInstruction> currentReaderInstruction;
+        private final AtomicReference<ReaderInstruction> currentReaderInstruction;
         TreeSet<Long> readersShouldSee;
 
         // Progress

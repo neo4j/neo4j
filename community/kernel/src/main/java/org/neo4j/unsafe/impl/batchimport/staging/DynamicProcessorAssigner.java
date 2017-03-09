@@ -101,7 +101,7 @@ public class DynamicProcessorAssigner extends ExecutionMonitor.Adapter
             if ( after > before )
             {
                 lastChangedProcessors.put( bottleNeckStep, doneBatches );
-                usedPermits -= (after-before);
+                usedPermits -= after-before;
             }
         }
         return usedPermits;

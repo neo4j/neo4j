@@ -236,6 +236,7 @@ public class Predicates
         while ( true );
     }
 
+    @SafeVarargs
     public static <T> Predicate<T> in( final T... allowed )
     {
         return in( Arrays.asList( allowed ) );
@@ -260,5 +261,20 @@ public class Predicates
         };
     }
 
-    public static IntPredicate ALWAYS_TRUE_INT = (value) -> true;
+    public static IntPredicate ALWAYS_TRUE_INT = v -> true;
+
+    public static IntPredicate any( int[] values )
+    {
+        return v ->
+        {
+            for ( int value : values )
+            {
+                if ( v == value )
+                {
+                    return true;
+                }
+            }
+            return false;
+        };
+    }
 }

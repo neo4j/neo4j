@@ -90,6 +90,7 @@ import static org.neo4j.unsafe.impl.batchimport.Configuration.BAD_FILE_NAME;
 
 public class ImportToolTest
 {
+    private static final int MAX_LABEL_ID = 4;
     private static final int RELATIONSHIP_COUNT = 10_000;
     private static final int NODE_COUNT = 100;
     private static final IntPredicate TRUE = i -> true;
@@ -862,6 +863,7 @@ public class ImportToolTest
         GraphDatabaseService db = dbRule.getGraphDatabaseAPI();
         try ( Transaction tx = db.beginTx() )
         {
+            // there should not be duplicates of any node
             Iterator<Node> nodes = db.getAllNodes().iterator();
             Iterator<String> expectedIds = FilteringIterator.noDuplicates( nodeIds.iterator() );
             while ( expectedIds.hasNext() )
@@ -870,6 +872,20 @@ public class ImportToolTest
                 assertEquals( expectedIds.next(), nodes.next().getProperty( "id" ) );
             }
             assertFalse( nodes.hasNext() );
+
+            // also all nodes in the label index should exist
+            for ( int i = 0; i < MAX_LABEL_ID; i++ )
+            {
+                Label label = Label.label( labelName( i ) );
+                try ( ResourceIterator<Node> nodesByLabel = db.findNodes( label ) )
+                {
+                    while ( nodesByLabel.hasNext() )
+                    {
+                        assertTrue( nodesByLabel.next().hasLabel( label ) );
+                    }
+                }
+            }
+
             tx.success();
         }
         finally
@@ -1930,9 +1946,14 @@ public class ImportToolTest
             {
                 builder.append( arrayDelimiter );
             }
-            builder.append( "LABEL_" + random.nextInt( 4 ) );
+            builder.append( labelName( random.nextInt( MAX_LABEL_ID ) ) );
         }
         return builder.toString();
+    }
+
+    private String labelName( int number )
+    {
+        return "LABEL_" + number;
     }
 
     private String randomName()

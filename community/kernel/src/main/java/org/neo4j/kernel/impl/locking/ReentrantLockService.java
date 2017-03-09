@@ -171,7 +171,7 @@ public final class ReentrantLockService extends AbstractLockService<ReentrantLoc
             }
             try
             {
-                return (this.owner = first.owner);
+                return this.owner = first.owner;
             }
             finally
             {

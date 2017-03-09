@@ -556,6 +556,19 @@ public class PrimitiveIntCollectionsTest
         assertEquals( -1L, count.get() );
     }
 
+    @Test
+    public void shouldDeduplicate() throws Exception
+    {
+        // GIVEN
+        int[] array = new int[] {1, 6, 2, 5, 6, 1, 6};
+
+        // WHEN
+        int[] deduped = PrimitiveIntCollections.deduplicate( array );
+
+        // THEN
+        assertArrayEquals( new int[] {1, 6, 2, 5}, deduped );
+    }
+
     private void assertNoMoreItems( PrimitiveIntIterator iterator )
     {
         assertFalse( iterator + " should have no more items", iterator.hasNext() );

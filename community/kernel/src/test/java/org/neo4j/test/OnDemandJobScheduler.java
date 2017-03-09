@@ -19,6 +19,8 @@
  */
 package org.neo4j.test;
 
+import java.util.ArrayList;
+import java.util.List;
 import java.util.Map;
 import java.util.concurrent.ExecutionException;
 import java.util.concurrent.Executor;
@@ -30,9 +32,12 @@ import org.neo4j.kernel.lifecycle.LifecycleAdapter;
 
 import static org.neo4j.kernel.impl.util.JobScheduler.Group.NO_METADATA;
 
+/**
+ * This class is far from perfect when it comes to managing multiple jobs.
+ */
 public class OnDemandJobScheduler extends LifecycleAdapter implements JobScheduler
 {
-    private Runnable job;
+    private List<Runnable> jobs = new ArrayList<>();
 
     @Override
     public Executor executor( Group group )
@@ -42,7 +47,7 @@ public class OnDemandJobScheduler extends LifecycleAdapter implements JobSchedul
             @Override
             public void execute( Runnable command )
             {
-                job = command;
+                jobs.add( command );
             }
         };
     }
@@ -62,21 +67,21 @@ public class OnDemandJobScheduler extends LifecycleAdapter implements JobSchedul
     @Override
     public JobHandle schedule( Group group, Runnable job, Map<String,String> metadata )
     {
-        this.job = job;
+        jobs.add( job );
         return new OnDemandJobHandle();
     }
 
     @Override
     public JobHandle schedule( Group group, Runnable job, long initialDelay, TimeUnit timeUnit )
     {
-        this.job = job;
+        jobs.add( job );
         return new OnDemandJobHandle();
     }
 
     @Override
     public JobHandle scheduleRecurring( Group group, Runnable runnable, long period, TimeUnit timeUnit )
     {
-        this.job = runnable;
+        jobs.add( runnable );
         return new OnDemandJobHandle();
     }
 
@@ -84,18 +89,20 @@ public class OnDemandJobScheduler extends LifecycleAdapter implements JobSchedul
     public JobHandle scheduleRecurring( Group group, Runnable runnable, long initialDelay,
             long period, TimeUnit timeUnit )
     {
-        this.job = runnable;
+        jobs.add( runnable );
         return new OnDemandJobHandle();
     }
 
     public Runnable getJob()
     {
-        return job;
+        return jobs.size() > 0 ? jobs.get( 0 ) : null;
     }
 
     public void runJob()
     {
-        if ( job != null )
+        /* some tests modify the scheduler concurrently */
+        Runnable[] copy = this.jobs.toArray( new Runnable[this.jobs.size()] );
+        for ( Runnable job : copy )
         {
             job.run();
         }
@@ -106,7 +113,7 @@ public class OnDemandJobScheduler extends LifecycleAdapter implements JobSchedul
         @Override
         public void cancel( boolean mayInterruptIfRunning )
         {
-            job = null;
+            jobs.clear();
         }
 
         @Override

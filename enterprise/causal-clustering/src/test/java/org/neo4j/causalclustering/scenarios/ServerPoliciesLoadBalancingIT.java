@@ -87,7 +87,7 @@ public class ServerPoliciesLoadBalancingIT
 
         cluster.start();
 
-        assertGetServersEventuallyMatchesOnAllCores( new CountsMatcher( 3, 1, 0, 3 ) );
+        assertGetServersEventuallyMatchesOnAllCores( new CountsMatcher( 3, 1, 2, 3 ) );
     }
 
     @Test
@@ -111,7 +111,7 @@ public class ServerPoliciesLoadBalancingIT
         Map<String,IntFunction<String>> instanceReplicaParams = new HashMap<>();
         instanceReplicaParams.put( CausalClusteringSettings.server_tags.name(), ( id ) -> "replica" + id + ",replica" );
 
-        String defaultPolicy = "tags(core) -> min(3); tags(replica1,replica2) -> min(2); all()";
+        String defaultPolicy = "tags(core) -> min(3); tags(replica1,replica2) -> min(2);";
 
         Map<String,String> coreParams = stringMap(
                 CausalClusteringSettings.cluster_allow_reads_on_followers.name(), "true",
@@ -157,7 +157,7 @@ public class ServerPoliciesLoadBalancingIT
         String defaultPolicySpec = "tags(replica0,replica1)";
         String policyOneTwoSpec = "tags(replica1,replica2)";
         String policyZeroTwoSpec = "tags(replica0,replica2)";
-        String policyAllReplicasSpec = "tags(replica)";
+        String policyAllReplicasSpec = "tags(replica); halt()";
         String allPolicySpec = "all()";
 
         Map<String,String> coreParams = stringMap(

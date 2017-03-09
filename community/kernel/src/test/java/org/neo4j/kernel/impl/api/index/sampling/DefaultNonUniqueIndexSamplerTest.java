@@ -82,7 +82,7 @@ public class DefaultNonUniqueIndexSamplerTest
         sampler.include( "bbb", 3 );
 
         // then
-        int expectedSampledSize = (/*  index size */ 12)  / (/* steps */ 3);
+        int expectedSampledSize = /* index size */ 12  / /* steps */ 3;
         assertSampledValues( sampler, 12, 1, expectedSampledSize );
     }
 

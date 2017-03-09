@@ -82,7 +82,7 @@ public class IterableStore<RECORD extends AbstractBaseRecord> implements Bounded
         while ( id < half )
         {
             store.getRecord( id, record, FORCE );
-            id += (recordsPerPage - 1);
+            id += recordsPerPage - 1;
         }
     }
 }

@@ -113,7 +113,7 @@ public class ServerTestUtils
         StringBuilder builder = new StringBuilder();
         for ( Map.Entry<String, String> property : properties.entrySet() )
         {
-            builder.append( ( builder.length() > 0 ? "," : "" ) );
+            builder.append( builder.length() > 0 ? "," : "" );
             builder.append( property.getKey() ).append( "=" ).append( property.getValue() );
         }
         return builder.toString();

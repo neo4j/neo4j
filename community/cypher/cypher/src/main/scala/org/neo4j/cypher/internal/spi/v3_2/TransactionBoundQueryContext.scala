@@ -275,7 +275,7 @@ final class TransactionBoundQueryContext(val transactionalContext: Transactional
 
   override def lockingUniqueIndexSeek(index: IndexDescriptor, value: Any): Option[Node] = {
     indexSearchMonitor.lockingUniqueIndexSeek(index, value)
-    val nodeId = transactionalContext.statement.readOperations().nodeGetFromUniqueIndexSeek(index, value)
+    val nodeId = transactionalContext.statement.readOperations().nodeGetFromUniqueIndexSeek(index, IndexQuery.exact(index.property, value))
     if (StatementConstants.NO_SUCH_NODE == nodeId) None else Some(nodeOps.getById(nodeId))
   }
 

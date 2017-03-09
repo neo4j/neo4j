@@ -19,13 +19,13 @@
  */
 package org.neo4j.cluster.member.paxos;
 
+import org.junit.Test;
+
 import java.io.ByteArrayInputStream;
 import java.io.ByteArrayOutputStream;
 import java.io.IOException;
 import java.io.ObjectInputStream;
 import java.io.ObjectOutputStream;
-
-import org.junit.Test;
 
 import org.neo4j.cluster.InstanceId;
 import org.neo4j.cluster.protocol.atomicbroadcast.ObjectStreamFactory;
@@ -93,7 +93,7 @@ public class MemberIsUnavailableTest
         {
             ByteArrayInputStream byteArrayInputStream = new ByteArrayInputStream( serialized );
             inputStream = new ObjectStreamFactory().create( byteArrayInputStream );
-            return ((MemberIsUnavailable) inputStream.readObject());
+            return (MemberIsUnavailable) inputStream.readObject();
         }
         finally
         {

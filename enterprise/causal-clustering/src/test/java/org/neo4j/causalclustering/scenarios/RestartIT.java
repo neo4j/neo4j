@@ -39,7 +39,7 @@ import org.neo4j.helpers.progress.ProgressMonitorFactory;
 import org.neo4j.io.fs.DefaultFileSystemAbstraction;
 import org.neo4j.io.fs.FileSystemAbstraction;
 import org.neo4j.kernel.configuration.Config;
-import org.neo4j.logging.FormattedLogProvider;
+import org.neo4j.logging.NullLogProvider;
 import org.neo4j.storageengine.api.lock.AcquireLockTimeoutException;
 import org.neo4j.test.causalclustering.ClusterRule;
 
@@ -167,7 +167,7 @@ public class RestartIT
             {
                 ConsistencyCheckService.Result result = new ConsistencyCheckService()
                         .runFullConsistencyCheck( core.storeDir(), Config.embeddedDefaults(), ProgressMonitorFactory.NONE,
-                                FormattedLogProvider.toOutputStream( System.out ), fileSystem, false,
+                                NullLogProvider.getInstance(), fileSystem, false,
                                 true, true, true, false);
                 assertTrue( "Inconsistent: " + core, result.isSuccessful() );
             }
@@ -176,7 +176,7 @@ public class RestartIT
             {
                 ConsistencyCheckService.Result result = new ConsistencyCheckService()
                         .runFullConsistencyCheck( readReplica.storeDir(), Config.embeddedDefaults(), ProgressMonitorFactory.NONE,
-                                FormattedLogProvider.toOutputStream( System.out ), fileSystem, false,
+                                NullLogProvider.getInstance(), fileSystem, false,
                                 true, true, true, false);
                 assertTrue( "Inconsistent: " + readReplica, result.isSuccessful() );
             }

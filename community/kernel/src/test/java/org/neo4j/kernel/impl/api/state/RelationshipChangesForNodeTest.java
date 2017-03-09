@@ -27,8 +27,9 @@ import org.neo4j.storageengine.api.Direction;
 
 import static org.junit.Assert.assertEquals;
 import static org.mockito.Mockito.mock;
-import static org.neo4j.collection.primitive.PrimitiveIntCollections.asSet;
 import static org.neo4j.kernel.impl.api.store.RelationshipIterator.EMPTY;
+import static org.neo4j.storageengine.api.Direction.INCOMING;
+import static org.neo4j.storageengine.api.Direction.OUTGOING;
 
 public class RelationshipChangesForNodeTest
 {
@@ -43,10 +44,9 @@ public class RelationshipChangesForNodeTest
         RelationshipChangesForNode changes = new RelationshipChangesForNode(
                 RelationshipChangesForNode.DiffStrategy.ADD, mock( RelationshipVisitor.Home.class ) );
         changes.addRelationship( REL_0, TYPE_SELF, Direction.BOTH );
-        changes.addRelationship( REL_1, TYPE_DIR, Direction.OUTGOING );
+        changes.addRelationship( REL_1, TYPE_DIR, OUTGOING );
 
-        RelationshipIterator iterator = changes.augmentRelationships(
-                Direction.OUTGOING, asSet( new int[]{TYPE_DIR} ), EMPTY );
+        RelationshipIterator iterator = changes.augmentRelationships( OUTGOING, new int[]{TYPE_DIR}, EMPTY );
         assertEquals( true, iterator.hasNext() );
         assertEquals( REL_1, iterator.next() );
         assertEquals( "should have no next relationships but has ", false, iterator.hasNext() );
@@ -57,10 +57,9 @@ public class RelationshipChangesForNodeTest
         RelationshipChangesForNode changes = new RelationshipChangesForNode(
                 RelationshipChangesForNode.DiffStrategy.ADD, mock( RelationshipVisitor.Home.class ) );
         changes.addRelationship( REL_0, TYPE_SELF, Direction.BOTH );
-        changes.addRelationship( REL_1, TYPE_DIR, Direction.INCOMING );
+        changes.addRelationship( REL_1, TYPE_DIR, INCOMING );
 
-        RelationshipIterator iterator = changes.augmentRelationships(
-                Direction.INCOMING, asSet( new int[]{TYPE_DIR} ), EMPTY );
+        RelationshipIterator iterator = changes.augmentRelationships( INCOMING, new int[]{TYPE_DIR}, EMPTY );
         assertEquals( true, iterator.hasNext() );
         assertEquals( REL_1, iterator.next() );
         assertEquals( "should have no next relationships but has ", false, iterator.hasNext() );

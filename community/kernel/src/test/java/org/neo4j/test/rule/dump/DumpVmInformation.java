@@ -65,7 +65,7 @@ public class DumpVmInformation
 
     public static void dumpThreadGroupInfo( ThreadGroup tg, PrintStream out )
     {
-        String parentName = (tg.getParent() == null ? null : tg.getParent().getName());
+        String parentName = tg.getParent() == null ? null : tg.getParent().getName();
         // Dump thread group info.
         out.println( "---- GROUP:" + tg.getName() +
                 (parentName != null ? " parent:" + parentName : "" ) +

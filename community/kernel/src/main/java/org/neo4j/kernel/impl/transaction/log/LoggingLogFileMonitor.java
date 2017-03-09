@@ -23,11 +23,16 @@ import java.io.File;
 
 import org.neo4j.kernel.impl.transaction.log.rotation.LogRotation;
 import org.neo4j.kernel.recovery.Recovery;
+import org.neo4j.kernel.recovery.PositionToRecoverFrom;
 import org.neo4j.logging.Log;
 
 import static java.lang.String.format;
 
-public class LoggingLogFileMonitor implements PhysicalLogFile.Monitor, LogRotation.Monitor, Recovery.Monitor
+public class LoggingLogFileMonitor implements
+        PhysicalLogFile.Monitor,
+        LogRotation.Monitor,
+        Recovery.Monitor,
+        PositionToRecoverFrom.Monitor
 {
     private long firstTransactionRecovered = -1, lastTransactionRecovered;
     private final Log log;
@@ -83,6 +88,27 @@ public class LoggingLogFileMonitor implements PhysicalLogFile.Monitor, LogRotati
     public void opened( File logFile, long logVersion, long lastTransactionId, boolean clean )
     {
         log.info( format( "Opened logical log [%s] version=%d, lastTxId=%d (%s)",
-                logFile, logVersion, lastTransactionId,  (clean ? "clean" : "recovered") ) );
+                logFile, logVersion, lastTransactionId, clean ? "clean" : "recovered" ) );
+    }
+
+    @Override
+    public void noCommitsAfterLastCheckPoint( LogPosition logPosition )
+    {
+        log.info( format( "No commits found after last check point (which is at %s)",
+                logPosition != null ? logPosition.toString() : "<no log position given>" ) );
+    }
+
+    @Override
+    public void commitsAfterLastCheckPoint( LogPosition logPosition, long firstTxIdAfterLastCheckPoint )
+    {
+        log.info( format(
+                "Commits found after last check point (which is at %s). First txId after last checkpoint: %d ",
+                logPosition, firstTxIdAfterLastCheckPoint ) );
+    }
+
+    @Override
+    public void noCheckPointFound()
+    {
+        log.info( "No check point found in transaction log" );
     }
 }

@@ -105,7 +105,7 @@ public class ShiroAuthToken implements AuthenticationToken
 
     private String keyValueString( String key )
     {
-        String valueString = ( key.equals( AuthToken.CREDENTIALS ) ? "******" : authToken.get( key ).toString() );
+        String valueString = key.equals( AuthToken.CREDENTIALS ) ? "******" : authToken.get( key ).toString();
         return key + KEY_VALUE_DELIMITER + VALUE_DELIMITER + valueString + VALUE_DELIMITER;
     }
 }

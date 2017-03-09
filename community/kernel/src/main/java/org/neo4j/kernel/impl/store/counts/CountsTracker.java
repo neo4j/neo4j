@@ -21,6 +21,7 @@ package org.neo4j.kernel.impl.store.counts;
 
 import java.io.File;
 import java.io.IOException;
+import java.time.Clock;
 import java.util.Optional;
 
 import org.neo4j.io.fs.FileSystemAbstraction;
@@ -86,6 +87,12 @@ public class CountsTracker extends AbstractKeyValueStore<CountsKey>
     public CountsTracker( final LogProvider logProvider, FileSystemAbstraction fs, PageCache pages, Config config,
             File baseFile )
     {
+        this( logProvider, fs, pages, config, baseFile, Clocks.systemClock() );
+    }
+
+    public CountsTracker( final LogProvider logProvider, FileSystemAbstraction fs, PageCache pages, Config config,
+            File baseFile, Clock clock )
+    {
         super( fs, pages, baseFile, new RotationMonitor()
         {
             final Log log = logProvider.getLog( CountsTracker.class );
@@ -116,7 +123,7 @@ public class CountsTracker extends AbstractKeyValueStore<CountsKey>
                 log.error( format( "Failed to rotate counts store at transaction %d to [%s], from [%s].",
                         headers.get( FileVersion.FILE_VERSION ).txId, target, source ), e );
             }
-        }, new RotationTimerFactory( Clocks.systemClock(),
+        }, new RotationTimerFactory( clock,
                 config.get( counts_store_rotation_timeout ) ), 16, 16, HEADER_FIELDS );
     }
 

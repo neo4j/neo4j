@@ -68,7 +68,7 @@ public enum BitmapFormat
 
         long bitRepresentingNodeIdInBitmap = 1L << normalizedNodeId;
 
-        return ((bitmap & bitRepresentingNodeIdInBitmap) != 0);
+        return (bitmap & bitRepresentingNodeIdInBitmap) != 0;
     }
 
     public void set( Bitmap bitmap, long id, boolean set )

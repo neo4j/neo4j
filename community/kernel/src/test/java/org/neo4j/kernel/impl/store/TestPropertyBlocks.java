@@ -629,7 +629,7 @@ public class TestPropertyBlocks extends AbstractNeo4jTestCase
         {
             for ( int i = 1; i <= PropertyType.getPayloadSizeLongs(); i++ )
             {
-                rel.setProperty( "int" + ( propRecCount * 10 + i ), ( propRecCount * 10 + i ) );
+                rel.setProperty( "int" + ( propRecCount * 10 + i ), propRecCount * 10 + i );
             }
         }
 

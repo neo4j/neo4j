@@ -26,7 +26,6 @@ import java.io.Reader;
 import org.neo4j.csv.reader.Source.Chunk;
 
 import static java.lang.String.format;
-
 import static org.neo4j.csv.reader.Mark.END_OF_LINE_CHARACTER;
 
 /**
@@ -237,7 +236,7 @@ public class BufferedCharSeeker implements CharSeeker
     {
         long from = mark.startPosition();
         long to = mark.position();
-        return extractor.extract( buffer, (int)(from), (int)(to-from), mark.isQuoted() );
+        return extractor.extract( buffer, (int) from, (int)(to-from), mark.isQuoted() );
     }
 
     private int nextChar( int skippedChars ) throws IOException

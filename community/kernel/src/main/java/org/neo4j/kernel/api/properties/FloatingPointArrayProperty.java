@@ -31,7 +31,7 @@ abstract class FloatingPointArrayProperty extends DefinedProperty implements Arr
     public abstract double doubleValue( int index );
 
     @Override
-    final int valueHash()
+    public final int valueHash()
     {
         return hash( this );
     }

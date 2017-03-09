@@ -248,7 +248,7 @@ final class MuninnPage extends SequenceLock implements Page
     public String toString()
     {
         return format( "MuninnPage@%x[%s -> %x, filePageId = %s%s, swapper = %s, usage counter = %s, %s]",
-                hashCode(), getCachePageId(), pointer, filePageId, (isDirty() ? ", dirty" : ""),
+                hashCode(), getCachePageId(), pointer, filePageId, isDirty() ? ", dirty" : "",
                 swapper, getUsageCounter(), super.toString() );
     }
 }

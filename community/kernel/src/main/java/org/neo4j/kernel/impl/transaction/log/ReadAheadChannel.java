@@ -116,7 +116,7 @@ public class ReadAheadChannel<T extends StoreChannel> implements ReadableClosabl
         int bytesGotten = 0;
         while ( bytesGotten < length )
         {   // get max 1024 bytes at the time, so that ensureDataExists functions as it should
-            int chunkSize = min( readAheadSize >> 2, (length - bytesGotten) );
+            int chunkSize = min( readAheadSize >> 2, length - bytesGotten );
             ensureDataExists( chunkSize );
             aheadBuffer.get( bytes, bytesGotten, chunkSize );
             bytesGotten += chunkSize;

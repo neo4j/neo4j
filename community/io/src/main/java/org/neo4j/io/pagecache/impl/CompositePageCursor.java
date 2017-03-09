@@ -126,7 +126,7 @@ public class CompositePageCursor extends PageCursor
                 putByte( offset    , (byte)  (value >> 24) );
                 putByte( offset + 1, (byte) ((value >> 16) & 0xFF) );
                 putByte( offset + 2, (byte) ((value >>  8) & 0xFF) );
-                putByte( offset + 3, (byte) ((value      ) & 0xFF) );
+                putByte( offset + 3, (byte) (value & 0xFF) );
             }
 
             @Override
@@ -140,7 +140,7 @@ public class CompositePageCursor extends PageCursor
             public void putShort( short value )
             {
                 putByte( offset    , (byte)  (value >>  8) );
-                putByte( offset + 1, (byte) ((value      ) & 0xFF) );
+                putByte( offset + 1, (byte) (value & 0xFF) );
             }
 
             @Override
@@ -160,7 +160,7 @@ public class CompositePageCursor extends PageCursor
                 putByte( offset + 4, (byte) ((value >> 24) & 0xFF) );
                 putByte( offset + 5, (byte) ((value >> 16) & 0xFF) );
                 putByte( offset + 6, (byte) ((value >>  8) & 0xFF) );
-                putByte( offset + 7, (byte) ((value      ) & 0xFF) );
+                putByte( offset + 7, (byte) (value & 0xFF) );
             }
 
             @Override

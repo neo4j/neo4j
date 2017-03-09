@@ -57,7 +57,7 @@ public class CoreReplicationIT
             .build();
 
     @Rule
-    public RuleChain ruleChain = RuleChain.outerRule( timeout ).around( clusterRule );
+    public RuleChain ruleChain = RuleChain.outerRule( clusterRule ).around( timeout);
 
     private Cluster cluster;
 

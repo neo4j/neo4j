@@ -38,7 +38,7 @@ class PropertyContainerProxyHelper
         // Create a map which is slightly larger than the list of keys
 
         int numberOfKeys = keys.length;
-        Map<String,Object> properties = new HashMap<>( ((int) (numberOfKeys * 1.3f)) );
+        Map<String,Object> properties = new HashMap<>( (int) (numberOfKeys * 1.3f) );
 
         // Specific properties given
         int[] propertyKeys = getPropertyKeys( statement, keys, numberOfKeys );

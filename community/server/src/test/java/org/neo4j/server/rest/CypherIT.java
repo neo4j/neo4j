@@ -19,12 +19,12 @@
  */
 package org.neo4j.server.rest;
 
+import org.junit.Test;
+
 import java.io.UnsupportedEncodingException;
 import java.util.Collection;
 import java.util.Map;
 import javax.ws.rs.core.Response.Status;
-
-import org.junit.Test;
 
 import org.neo4j.graphdb.GraphDatabaseService;
 import org.neo4j.graphdb.Node;
@@ -50,7 +50,6 @@ import static org.hamcrest.core.IsNot.not;
 import static org.junit.Assert.assertEquals;
 import static org.junit.Assert.assertThat;
 import static org.junit.Assert.assertTrue;
-
 import static org.neo4j.server.rest.domain.JsonHelper.jsonToMap;
 
 public class CypherIT extends AbstractRestFunctionalTestBase {
@@ -351,7 +350,7 @@ public class CypherIT extends AbstractRestFunctionalTestBase {
         assertThat( responseMap.keySet(), containsInAnyOrder(
                 "message", "exception", "fullname", "stackTrace", "cause", "errors" ) );
         assertThat( response, containsString( "message" ) );
-        assertThat( ((String) responseMap.get( "message" )), containsString( "Variable `frien` not defined" ) );
+        assertThat( (String) responseMap.get( "message" ), containsString( "Variable `frien` not defined" ) );
     }
 
     @SafeVarargs

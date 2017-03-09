@@ -234,7 +234,7 @@ public class TestAStar extends Neo4jAlgoTestCase
             @Override
             public Double getCost( Node node, Node goal )
             {
-                return ((Double)node.getProperty( "estimate" ));
+                return (Double) node.getProperty( "estimate" );
             }
         };
         PathFinder<WeightedPath> finder = aStar( PathExpanders.allTypesAndDirections(),

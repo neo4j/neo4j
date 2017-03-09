@@ -52,6 +52,7 @@ import org.neo4j.graphdb.RelationshipType;
 import org.neo4j.graphdb.Result;
 import org.neo4j.graphdb.Transaction;
 import org.neo4j.graphdb.TransactionFailureException;
+import org.neo4j.graphdb.factory.GraphDatabaseSettings;
 import org.neo4j.graphdb.security.AuthorizationViolationException;
 import org.neo4j.helpers.collection.Iterators;
 import org.neo4j.io.fs.FileUtils;
@@ -1644,7 +1645,7 @@ public class ProcedureIT
     public static class ClassWithFunctions
     {
         @UserFunction()
-        public String getNodeName( @Name( value = "node", defaultValue = "null") Node node )
+        public String getNodeName( @Name( value = "node", defaultValue = "null" ) Node node )
         {
             return "nodeName";
         }

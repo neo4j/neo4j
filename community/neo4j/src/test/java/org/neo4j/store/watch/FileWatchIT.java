@@ -97,9 +97,12 @@ public class FileWatchIT
         DeletionLatchEventListener deletionListener = new DeletionLatchEventListener( fileName );
         fileWatcher.addFileWatchEventListener( deletionListener );
 
-        createNode( database );
-        forceCheckpoint( checkpointer );
-        deletionListener.awaitModificationNotification();
+        do
+        {
+            createNode( database );
+            forceCheckpoint( checkpointer );
+        }
+        while ( !deletionListener.awaitModificationNotification() );
 
         deleteFile( storeDir, fileName );
         deletionListener.awaitDeletionNotification();
@@ -140,9 +143,12 @@ public class FileWatchIT
         fileWatcher.addFileWatchEventListener( deletionListener );
         fileWatcher.addFileWatchEventListener( modificationEventListener );
 
-        createNode( database );
-        forceCheckpoint( checkPointer );
-        modificationEventListener.awaitModificationNotification();
+        do
+        {
+            createNode( database );
+            forceCheckpoint( checkPointer );
+        }
+        while ( !modificationEventListener.awaitModificationNotification() );
 
         deleteStoreDirectory( storeDir, monitoredDirectory );
         deletionListener.awaitDeletionNotification();
@@ -168,18 +174,24 @@ public class FileWatchIT
         String propertyName = "propertyName";
         Label testLabel = Label.label( labelName );
         createIndexes( database, propertyName, testLabel );
-        createNode( database, propertyName, testLabel );
-        forceCheckpoint( checkPointer );
-        modificationListener.awaitModificationNotification();
+        do
+        {
+            createNode( database, propertyName, testLabel );
+            forceCheckpoint( checkPointer );
+        }
+        while ( !modificationListener.awaitModificationNotification() );
 
         fileWatcher.removeFileWatchEventListener( modificationListener );
         ModificationEventListener afterRemovalListener = new ModificationEventListener( propertyStoreName );
         fileWatcher.addFileWatchEventListener( afterRemovalListener );
 
         dropAllIndexes( database );
-        createNode( database, propertyName, testLabel );
-        forceCheckpoint( checkPointer );
-        afterRemovalListener.awaitModificationNotification();
+        do
+        {
+            createNode( database, propertyName, testLabel );
+            forceCheckpoint( checkPointer );
+        }
+        while ( !afterRemovalListener.awaitModificationNotification() );
 
         accumulativeListener.assertDoesNotHaveAnyDeletions();
     }
@@ -195,9 +207,12 @@ public class FileWatchIT
                 new ModificationEventListener( MetaDataStore.DEFAULT_NAME );
         fileWatcher.addFileWatchEventListener( modificationEventListener );
 
-        createNode( database );
-        forceCheckpoint( checkpointer );
-        modificationEventListener.awaitModificationNotification();
+        do
+        {
+            createNode( database );
+            forceCheckpoint( checkpointer );
+        }
+        while ( !modificationEventListener.awaitModificationNotification() );
 
         String fileName = PhysicalLogFile.DEFAULT_NAME + ".0";
         DeletionLatchEventListener deletionListener = new DeletionLatchEventListener( fileName );
@@ -222,10 +237,12 @@ public class FileWatchIT
 
         ModificationEventListener modificationListener = new ModificationEventListener( fileName );
         fileWatcher.addFileWatchEventListener( modificationListener );
-        createNode( database );
-        forceCheckpoint( checkpointer );
-
-        modificationListener.awaitModificationNotification();
+        do
+        {
+            createNode( database );
+            forceCheckpoint( checkpointer );
+        }
+        while ( !modificationListener.awaitModificationNotification() );
         fileWatcher.removeFileWatchEventListener( modificationListener );
 
         String storeDirectoryName = TestDirectory.DATABASE_DIRECTORY;
@@ -378,9 +395,9 @@ public class FileWatchIT
             }
         }
 
-        void awaitModificationNotification() throws InterruptedException
+        boolean awaitModificationNotification() throws InterruptedException
         {
-            modificationLatch.await();
+            return modificationLatch.await(1, TimeUnit.SECONDS);
         }
     }
 

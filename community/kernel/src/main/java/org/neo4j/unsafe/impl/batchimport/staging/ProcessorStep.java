@@ -202,7 +202,7 @@ public abstract class ProcessorStep<T> extends AbstractStep<T>
             }
             finally
             {
-                sendTime += (nanoTime() - time);
+                sendTime += nanoTime() - time;
             }
         }
 

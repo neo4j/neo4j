@@ -254,7 +254,7 @@ class NativeAllEntriesLabelScanReader implements AllEntriesLabelScanReader
         public String toString()
         {
             long lowRange = idRange * RANGE_SIZE;
-            long highRange = ((idRange + 1) * RANGE_SIZE);
+            long highRange = (idRange + 1) * RANGE_SIZE;
             String rangeString = lowRange + "-" + highRange;
             StringBuilder result = new StringBuilder( "NodeLabelRange[idRange=" ).append( rangeString );
             result.append( "; {" );

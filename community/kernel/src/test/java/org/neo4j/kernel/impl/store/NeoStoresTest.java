@@ -102,6 +102,7 @@ import static org.junit.Assert.fail;
 import static org.neo4j.function.Predicates.ALWAYS_TRUE_INT;
 import static org.neo4j.graphdb.factory.GraphDatabaseSettings.counts_store_rotation_timeout;
 import static org.neo4j.helpers.collection.MapUtil.stringMap;
+import static org.neo4j.kernel.api.properties.DefinedProperty.NO_SUCH_PROPERTY;
 import static org.neo4j.kernel.api.security.SecurityContext.AUTH_DISABLED;
 import static org.neo4j.kernel.impl.locking.LockService.NO_LOCK;
 import static org.neo4j.kernel.impl.store.RecordStore.getRecord;
@@ -292,7 +293,7 @@ public class NeoStoresTest
     private DefinedProperty nodeAddProperty( long nodeId, int key, Object value )
     {
         DefinedProperty property = Property.property( key, value );
-        Property oldProperty = Property.noNodeProperty( nodeId, key );
+        DefinedProperty oldProperty = NO_SUCH_PROPERTY;
         try ( StorageStatement statement = storeLayer.newStatement();
                 Cursor<NodeItem> cursor = statement.acquireSingleNodeCursor( nodeId ) )
         {
@@ -300,7 +301,7 @@ public class NeoStoresTest
             {
                 if ( cursor.next() )
                 {
-                    Property fetched = getProperty( key, statement, cursor.get().nextPropertyId() );
+                    DefinedProperty fetched = getProperty( key, statement, cursor.get().nextPropertyId() );
                     if ( fetched != null )
                     {
                         oldProperty = fetched;
@@ -309,7 +310,14 @@ public class NeoStoresTest
             }
         }
 
-        transaction.nodeDoReplaceProperty( nodeId, oldProperty, property );
+        if ( oldProperty == NO_SUCH_PROPERTY )
+        {
+            transaction.nodeDoAddProperty( nodeId, property );
+        }
+        else
+        {
+            transaction.nodeDoChangeProperty( nodeId, oldProperty, property );
+        }
         return property;
     }
 
@@ -334,7 +342,7 @@ public class NeoStoresTest
         return property;
     }
 
-    private Property getProperty( int key, StorageStatement statement, long propertyId )
+    private DefinedProperty getProperty( int key, StorageStatement statement, long propertyId )
     {
         try ( Cursor<PropertyItem> propertyCursor = statement.acquireSinglePropertyCursor( propertyId, key, NO_LOCK ) )
         {

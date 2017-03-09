@@ -116,6 +116,7 @@ import org.neo4j.storageengine.api.schema.SchemaRule;
 
 import static java.lang.String.format;
 import static org.neo4j.collection.primitive.PrimitiveIntCollections.asSet;
+import static org.neo4j.collection.primitive.PrimitiveIntCollections.deduplicate;
 
 public class OperationsFacade
         implements ReadOperations, DataWriteOperations, TokenWriteOperations, SchemaWriteOperations,
@@ -236,11 +237,11 @@ public class OperationsFacade
     }
 
     @Override
-    public long nodeGetFromUniqueIndexSeek( NewIndexDescriptor index, Object value )
+    public long nodeGetFromUniqueIndexSeek( NewIndexDescriptor index, IndexQuery.ExactPredicate... predicates )
             throws IndexNotFoundKernelException, IndexBrokenKernelException, IndexNotApplicableKernelException
     {
         statement.assertOpen();
-        return dataRead().nodeGetFromUniqueIndexSeek( statement, index, value );
+        return dataRead().nodeGetFromUniqueIndexSeek( statement, index, predicates );
     }
 
     @Override
@@ -316,8 +317,7 @@ public class OperationsFacade
         try ( Cursor<NodeItem> node = dataRead().nodeCursorById( statement, nodeId ) )
         {
             return new CursorRelationshipIterator( dataRead()
-                    .nodeGetRelationships( statement, node.get(), direction( direction ),
-                            asSet( relTypes, t -> t >= 0 ) ) );
+                    .nodeGetRelationships( statement, node.get(), direction( direction ), deduplicate( relTypes ) ) );
         }
     }
 

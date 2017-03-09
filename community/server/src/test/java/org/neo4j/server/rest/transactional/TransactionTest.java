@@ -19,13 +19,13 @@
  */
 package org.neo4j.server.rest.transactional;
 
+import org.junit.Test;
+
 import java.text.ParseException;
 import java.util.ArrayList;
 import java.util.Iterator;
 import java.util.List;
 import java.util.Map;
-
-import org.junit.Test;
 
 import org.neo4j.kernel.api.exceptions.Status;
 import org.neo4j.kernel.impl.annotations.Documented;
@@ -44,7 +44,6 @@ import static org.hamcrest.collection.IsMapContaining.hasKey;
 import static org.junit.Assert.assertEquals;
 import static org.junit.Assert.assertTrue;
 import static org.junit.Assert.fail;
-
 import static org.neo4j.helpers.collection.Iterators.iterator;
 import static org.neo4j.server.rest.domain.JsonHelper.jsonToMap;
 import static org.neo4j.test.server.HTTP.GET;
@@ -116,7 +115,7 @@ public class TransactionTest extends AbstractRestFunctionalTestBase
         // Then
         Map<String, Object> result = jsonToMap( response.entity() );
         ArrayList rest = (ArrayList) ((Map)((ArrayList)((Map)((ArrayList)result.get("results")).get(0)) .get("data")).get(0)).get("rest");
-        String selfUri = ((String)((Map)rest.get(0)).get("self"));
+        String selfUri = (String) ((Map)rest.get(0)).get("self");
         assertTrue(selfUri.startsWith(getDatabaseUri()));
         assertNoErrors( result );
     }

@@ -56,7 +56,7 @@ final class CharProperty extends DefinedProperty implements DefinedProperty.With
     }
 
     @Override
-    int valueHash()
+    public int valueHash()
     {
         return value;
     }

@@ -196,7 +196,8 @@ public class AStar implements PathFinder<WeightedPath>
                 expand();
             }
 
-            return (lastNode = popLowestScoreNode());
+            lastNode = popLowestScoreNode();
+            return lastNode;
         }
 
         @SuppressWarnings( "unchecked" )

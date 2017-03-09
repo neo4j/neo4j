@@ -248,7 +248,7 @@ public class OtherThreadExecutor<T> implements ThreadFactory, Closeable
     {
         long end = currentTimeMillis() + timeout;
         WaitDetails details = null;
-        while ( !correctWait.test( (details = waitUntil( new AnyThreadState( possibleStates )) ) ) )
+        while ( !correctWait.test( details = waitUntil( new AnyThreadState( possibleStates )) ) )
         {
             LockSupport.parkNanos( MILLISECONDS.toNanos( 20 ) );
             if ( currentTimeMillis() > end )

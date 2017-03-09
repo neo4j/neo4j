@@ -177,7 +177,7 @@ public class TestNetwork<T>
 
                 if ( res == 0 && o1 != o2 )
                 {
-                    res = (o1.seqNum < o2.seqNum ? -1 : 1);
+                    res = o1.seqNum < o2.seqNum ? -1 : 1;
                 }
                 return res;
             } );

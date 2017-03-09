@@ -104,7 +104,7 @@ public class LuceneAllEntriesLabelScanReader implements AllEntriesLabelScanReade
                 i++;
             }
         }
-        assert (rangeId >= 0);
+        assert rangeId >= 0;
 
         final long[] labelIds;
         final Bitmap[] bitmaps;

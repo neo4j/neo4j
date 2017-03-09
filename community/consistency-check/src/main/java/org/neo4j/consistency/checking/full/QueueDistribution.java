@@ -105,8 +105,8 @@ public interface QueueDistribution
         public void distribute( RelationshipRecord relationship, RecordConsumer<RelationshipRecord> consumer )
                 throws InterruptedException
         {
-            int qIndex1 = (int) Math.min( maxAvailableThread, (Math.abs( relationship.getFirstNode() ) / recordsPerCpu) );
-            int qIndex2 = (int) Math.min( maxAvailableThread, (Math.abs( relationship.getSecondNode() ) / recordsPerCpu) );
+            int qIndex1 = (int) Math.min( maxAvailableThread, Math.abs( relationship.getFirstNode() ) / recordsPerCpu );
+            int qIndex2 = (int) Math.min( maxAvailableThread, Math.abs( relationship.getSecondNode() ) / recordsPerCpu );
             try
             {
                 consumer.accept( relationship, qIndex1 );

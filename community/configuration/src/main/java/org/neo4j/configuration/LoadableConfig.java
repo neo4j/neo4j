@@ -74,8 +74,22 @@ public interface LoadableConfig
                         documentedDefaultValue = Optional.of( defValue.value() );
                     }
 
+                    final Deprecated deprecatedAnnotation = f.getAnnotation( Deprecated.class );
+                    final boolean deprecated = deprecatedAnnotation != null;
+
+                    final ReplacedBy replacedByAnnotation = f.getAnnotation( ReplacedBy.class );
+                    final Optional<String> replacement;
+                    if (replacedByAnnotation == null )
+                    {
+                        replacement = Optional.empty();
+                    }
+                    else
+                    {
+                        replacement = Optional.of( replacedByAnnotation.value() );
+                    }
+
                     configOptions.add( new ConfigOptions( (SettingGroup) publicSetting, description,
-                            documentedDefaultValue ) );
+                            documentedDefaultValue, deprecated, replacement ) );
                 }
             }
             catch ( IllegalAccessException ignored )

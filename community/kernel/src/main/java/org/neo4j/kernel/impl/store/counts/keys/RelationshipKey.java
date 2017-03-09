@@ -88,7 +88,7 @@ public final class RelationshipKey implements CountsKey
         {
             return true;
         }
-        if ( (o instanceof RelationshipKey) )
+        if ( o instanceof RelationshipKey )
         {
             RelationshipKey that = (RelationshipKey) o;
             return endLabelId == that.endLabelId && startLabelId == that.startLabelId && typeId == that.typeId;

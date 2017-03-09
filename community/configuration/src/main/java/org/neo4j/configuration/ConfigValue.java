@@ -30,12 +30,17 @@ public class ConfigValue
     private final String name;
     private final Optional<String> description;
     private final Optional<?> value;
+    private final boolean deprecated;
+    private final Optional<String> replacement;
 
-    public ConfigValue( @Nonnull String name, @Nonnull Optional<String> description, @Nonnull Optional<?> value )
+    public ConfigValue( @Nonnull String name, @Nonnull Optional<String> description, @Nonnull Optional<?> value,
+            boolean deprecated, @Nonnull Optional<String> replacement )
     {
         this.name = name;
         this.description = description;
         this.value = value;
+        this.deprecated = deprecated;
+        this.replacement = replacement;
     }
 
     @Nonnull
@@ -60,5 +65,16 @@ public class ConfigValue
     public String toString()
     {
         return value.map( Object::toString ).orElse( "null" );
+    }
+
+    public boolean deprecated()
+    {
+        return deprecated;
+    }
+
+    @Nonnull
+    public Optional<String> replacement()
+    {
+        return replacement;
     }
 }

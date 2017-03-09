@@ -26,6 +26,7 @@ import org.neo4j.collection.primitive.PrimitiveLongIterator;
 import org.neo4j.cursor.Cursor;
 import org.neo4j.kernel.api.exceptions.schema.ConstraintValidationException;
 import org.neo4j.kernel.api.exceptions.schema.CreateConstraintFailureException;
+import org.neo4j.kernel.api.schema_new.OrderedPropertyValues;
 import org.neo4j.kernel.api.schema_new.SchemaDescriptor;
 import org.neo4j.kernel.api.schema_new.constaints.ConstraintDescriptor;
 import org.neo4j.kernel.api.schema_new.index.NewIndexDescriptor;
@@ -123,7 +124,9 @@ public interface ReadableTransactionState
 
     Long indexCreatedForConstraint( ConstraintDescriptor constraint );
 
-    ReadableDiffSets<Long> indexUpdatesForScanOrSeek( NewIndexDescriptor index, Object value );
+    ReadableDiffSets<Long> indexUpdatesForScan( NewIndexDescriptor index );
+
+    ReadableDiffSets<Long> indexUpdatesForSeek( NewIndexDescriptor index, OrderedPropertyValues values );
 
     ReadableDiffSets<Long> indexUpdatesForRangeSeekByNumber( NewIndexDescriptor index,
                                                              Number lower, boolean includeLower,
@@ -156,7 +159,7 @@ public interface ReadableTransactionState
             Direction direction );
 
     Cursor<RelationshipItem> augmentNodeRelationshipCursor( Cursor<RelationshipItem> cursor, NodeState nodeState,
-            Direction direction, PrimitiveIntSet relTypes );
+            Direction direction, int[] relTypes );
 
     Cursor<RelationshipItem> augmentRelationshipsGetAllCursor( Cursor<RelationshipItem> cursor );
 

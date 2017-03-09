@@ -42,7 +42,6 @@ import org.neo4j.test.rule.TestDirectory;
 
 import static org.junit.Assert.assertArrayEquals;
 import static org.junit.rules.RuleChain.outerRule;
-
 import static org.neo4j.collection.primitive.PrimitiveLongCollections.asArray;
 import static org.neo4j.kernel.api.labelscan.NodeLabelUpdate.labelChanges;
 
@@ -100,7 +99,7 @@ public class NativeLabelScanStoreIT
 
     public static long[] nodesWithLabel( long[] expected, int labelId )
     {
-        int mask = (1 << labelId);
+        int mask = 1 << labelId;
         int count = 0;
         for ( long labels : expected )
         {

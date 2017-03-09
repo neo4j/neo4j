@@ -245,7 +245,7 @@ class BoltInteraction implements NeoInteractionLevel<BoltInteraction.BoltSubject
         }
         else if ( message instanceof FailureMessage )
         {
-            FailureMessage failMessage = ((FailureMessage) message);
+            FailureMessage failMessage = (FailureMessage) message;
             // drain ignoredMessage, ack failure, get successMessage
             TransportTestUtil.receiveOneResponseMessage( client );
             client.send( TransportTestUtil.chunk( reset() ) );
@@ -271,7 +271,7 @@ class BoltInteraction implements NeoInteractionLevel<BoltInteraction.BoltSubject
 
         if ( message instanceof FailureMessage )
         {
-            FailureMessage failMessage = ((FailureMessage) message);
+            FailureMessage failMessage = (FailureMessage) message;
             // ack failure, get successMessage
             client.send( TransportTestUtil.chunk( reset() ) );
             TransportTestUtil.receiveOneResponseMessage( client );

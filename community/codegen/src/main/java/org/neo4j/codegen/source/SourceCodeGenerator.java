@@ -81,7 +81,7 @@ class SourceCodeGenerator extends CodeGenerator
             StringBuilder source = entry.getValue();
             configuration.visit( reference, source );
             sourceFiles.add( new JavaSourceFile( configuration.sourceBase().uri(
-                    reference.packageName(), reference.simpleName(), JavaFileObject.Kind.SOURCE ), source ) );
+                    reference.packageName(), reference.name(), JavaFileObject.Kind.SOURCE ), source ) );
         }
         return sourceFiles;
     }

@@ -285,11 +285,6 @@ public class SchemaStorageTest
         assertEquals( type, rule.getConstraintDescriptor().type() );
     }
 
-    private LabelSchemaDescriptor schemaDescriptor( String label, String property )
-    {
-        return SchemaDescriptorFactory.forLabel( labelId( label ), propId( property ) );
-    }
-
     private NewIndexDescriptor indexDescriptor( String label, String property )
     {
         return NewIndexDescriptorFactory.forLabel( labelId( label ), propId( property ) );
@@ -334,26 +329,6 @@ public class SchemaStorageTest
         {
             db.schema().awaitIndexesOnline( 10, TimeUnit.SECONDS );
             tx.success();
-        }
-    }
-
-    private NodePropertyDescriptor nodeDescriptor( String labelName, String propName )
-    {
-        try ( Transaction ignore = db.beginTx() )
-        {
-            return new NodePropertyDescriptor(
-                    readOps().labelGetForName( labelName ),
-                    readOps().propertyKeyGetForName( propName ) );
-        }
-    }
-
-    private RelationshipPropertyDescriptor relDescriptor( String typeName, String propName )
-    {
-        try ( Transaction ignore = db.beginTx() )
-        {
-            return new RelationshipPropertyDescriptor(
-                    readOps().relationshipTypeGetForName( typeName ),
-                    readOps().propertyKeyGetForName( propName ) );
         }
     }
 
