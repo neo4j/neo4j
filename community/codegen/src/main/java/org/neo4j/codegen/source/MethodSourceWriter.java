@@ -113,7 +113,7 @@ class MethodSourceWriter implements MethodEmitter, ExpressionVisitor
     @Override
     public void declare( LocalVariable local )
     {
-        indent().append( local.type().name() ).append( ' ' ).append( local.name() ).append( ";\n" );
+        indent().append( local.type().fullName() ).append( ' ' ).append( local.name() ).append( ";\n" );
     }
 
     @Override
@@ -127,7 +127,7 @@ class MethodSourceWriter implements MethodEmitter, ExpressionVisitor
     @Override
     public void assign( LocalVariable variable, Expression value )
     {
-        indent().append( variable.type().name() ).append( ' ' ).append( variable.name() ).append( " = " );
+        indent().append( variable.type().fullName() ).append( ' ' ).append( variable.name() ).append( " = " );
         value.accept( this );
         append( ";\n" );
     }
@@ -170,7 +170,7 @@ class MethodSourceWriter implements MethodEmitter, ExpressionVisitor
         level.pop();
         indent().append( "}\n" );
         indent().append( "catch ( " )
-                .append( exception.type().name() ).append( " " )
+                .append( exception.type().fullName() ).append( " " )
                 .append( exception.name() )
                 .append( " )\n" );
         indent().append( "{\n" );
@@ -210,7 +210,7 @@ class MethodSourceWriter implements MethodEmitter, ExpressionVisitor
     @Override
     public void invoke( MethodReference method, Expression[] arguments )
     {
-        append( method.owner().name() ).append( '.' ).append( method.name() );
+        append( method.owner().fullName() ).append( '.' ).append( method.name() );
         arglist( arguments );
     }
 
@@ -280,7 +280,7 @@ class MethodSourceWriter implements MethodEmitter, ExpressionVisitor
     @Override
     public void getStatic( FieldReference field )
     {
-        append( field.owner().name() ).append( "." ).append( field.name() );
+        append( field.owner().fullName() ).append( "." ).append( field.name() );
     }
 
     @Override
@@ -292,7 +292,7 @@ class MethodSourceWriter implements MethodEmitter, ExpressionVisitor
     @Override
     public void newInstance( TypeReference type )
     {
-        append( "new " ).append( type.name() );
+        append( "new " ).append( type.fullName() );
     }
 
     @Override
@@ -421,7 +421,7 @@ class MethodSourceWriter implements MethodEmitter, ExpressionVisitor
     public void cast( TypeReference type, Expression expression )
     {
         append( "(" );
-        append( "(" ).append( type.name() ).append( ") " );
+        append( "(" ).append( type.fullName() ).append( ") " );
         expression.accept( this );
         append( ")" );
     }
@@ -429,7 +429,7 @@ class MethodSourceWriter implements MethodEmitter, ExpressionVisitor
     @Override
     public void newArray( TypeReference type, Expression... constants )
     {
-        append( "new " ).append( type.name() ).append( "[]{" );
+        append( "new " ).append( type.fullName() ).append( "[]{" );
         String sep = "";
         for ( Expression constant : constants )
         {

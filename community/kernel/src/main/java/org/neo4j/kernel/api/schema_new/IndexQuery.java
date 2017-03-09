@@ -24,10 +24,15 @@ import org.apache.commons.lang3.builder.HashCodeBuilder;
 import org.apache.commons.lang3.builder.ToStringBuilder;
 import org.apache.commons.lang3.builder.ToStringStyle;
 
-import org.neo4j.kernel.api.ReadOperations;
-import org.neo4j.kernel.api.schema_new.index.NewIndexDescriptor;
+import java.util.function.Predicate;
 
-public abstract class IndexQuery
+import org.neo4j.kernel.api.ReadOperations;
+import org.neo4j.kernel.api.properties.DefinedProperty;
+import org.neo4j.kernel.api.properties.Property;
+import org.neo4j.kernel.api.schema_new.index.NewIndexDescriptor;
+import org.neo4j.kernel.impl.api.PropertyValueComparison;
+
+public abstract class IndexQuery implements Predicate<Object>
 {
     /**
      * Searches the index for all entries that has the given property.
@@ -163,6 +168,8 @@ public abstract class IndexQuery
         return propertyKeyId;
     }
 
+    public abstract boolean test( Object value );
+
     public enum IndexQueryType
     {
         exists,
@@ -176,7 +183,7 @@ public abstract class IndexQuery
 
     public static final class ExistsPredicate extends IndexQuery
     {
-        public ExistsPredicate( int propertyKeyId )
+        ExistsPredicate( int propertyKeyId )
         {
             super( propertyKeyId );
         }
@@ -186,16 +193,22 @@ public abstract class IndexQuery
         {
             return IndexQueryType.exists;
         }
+
+        @Override
+        public boolean test( Object value )
+        {
+            return value != null;
+        }
     }
 
     public static final class ExactPredicate extends IndexQuery
     {
-        private final Object value;
+        private final DefinedProperty exactValue;
 
-        public ExactPredicate( int propertyKeyId, Object value )
+        ExactPredicate( int propertyKeyId, Object value )
         {
             super( propertyKeyId );
-            this.value = value;
+            this.exactValue = Property.property( propertyKeyId, value );
         }
 
         @Override
@@ -204,9 +217,15 @@ public abstract class IndexQuery
             return IndexQueryType.exact;
         }
 
+        @Override
+        public boolean test( Object value )
+        {
+            return exactValue.valueEquals( value );
+        }
+
         public Object value()
         {
-            return value;
+            return exactValue.value();
         }
     }
 
@@ -217,8 +236,7 @@ public abstract class IndexQuery
         private final Number to;
         private final boolean toInclusive;
 
-        public NumberRangePredicate( int propertyKeyId, Number from,
-                                     boolean fromInclusive, Number to, boolean toInclusive )
+        NumberRangePredicate( int propertyKeyId, Number from, boolean fromInclusive, Number to, boolean toInclusive )
         {
             super( propertyKeyId );
             this.from = from;
@@ -231,6 +249,37 @@ public abstract class IndexQuery
         public IndexQueryType type()
         {
             return IndexQueryType.rangeNumeric;
+        }
+
+        @Override
+        public boolean test( Object value )
+        {
+            if ( value == null )
+            {
+                return false;
+            }
+            if ( !(value instanceof Number) )
+            {
+                return false;
+            }
+            Number number = (Number) value;
+            if ( from != null )
+            {
+                int compare = PropertyValueComparison.COMPARE_NUMBERS.compare( number, from );
+                if ( compare < 0 || !fromInclusive && compare == 0 )
+                {
+                    return false;
+                }
+            }
+            if ( to != null )
+            {
+                int compare = PropertyValueComparison.COMPARE_NUMBERS.compare( number, to );
+                if ( compare > 0 || !toInclusive && compare == 0 )
+                {
+                    return false;
+                }
+            }
+            return true;
         }
 
         public Number from()
@@ -261,9 +310,7 @@ public abstract class IndexQuery
         private final String to;
         private final boolean toInclusive;
 
-        public StringRangePredicate( int propertyKeyId, String from,
-                                     boolean fromInclusive, String to,
-                                     boolean toInclusive )
+        StringRangePredicate( int propertyKeyId, String from, boolean fromInclusive, String to, boolean toInclusive )
         {
             super( propertyKeyId );
             this.from = from;
@@ -276,6 +323,37 @@ public abstract class IndexQuery
         public IndexQueryType type()
         {
             return IndexQueryType.rangeString;
+        }
+
+        @Override
+        public boolean test( Object value )
+        {
+            if ( value == null )
+            {
+                return false;
+            }
+            if ( !(value instanceof String) )
+            {
+                return false;
+            }
+            String str = (String) value;
+            if ( from != null )
+            {
+                int compare = PropertyValueComparison.COMPARE_STRINGS.compare( str, from );
+                if ( compare < 0 || !fromInclusive && compare == 0 )
+                {
+                    return false;
+                }
+            }
+            if ( to != null )
+            {
+                int compare = PropertyValueComparison.COMPARE_STRINGS.compare( str, to );
+                if ( compare > 0 || !toInclusive && compare == 0 )
+                {
+                    return false;
+                }
+            }
+            return true;
         }
 
         public String from()
@@ -303,7 +381,7 @@ public abstract class IndexQuery
     {
         private final String prefix;
 
-        public StringPrefixPredicate( int propertyKeyId, String prefix )
+        StringPrefixPredicate( int propertyKeyId, String prefix )
         {
             super( propertyKeyId );
             this.prefix = prefix;
@@ -313,6 +391,12 @@ public abstract class IndexQuery
         public IndexQueryType type()
         {
             return IndexQueryType.stringPrefix;
+        }
+
+        @Override
+        public boolean test( Object value )
+        {
+            return value != null && value instanceof String && ((String)value).startsWith( prefix );
         }
 
         public String prefix()
@@ -325,7 +409,7 @@ public abstract class IndexQuery
     {
         private final String contains;
 
-        public StringContainsPredicate( int propertyKeyId, String contains )
+        StringContainsPredicate( int propertyKeyId, String contains )
         {
             super( propertyKeyId );
             this.contains = contains;
@@ -335,6 +419,12 @@ public abstract class IndexQuery
         public IndexQueryType type()
         {
             return IndexQueryType.stringContains;
+        }
+
+        @Override
+        public boolean test( Object value )
+        {
+            return value != null && value instanceof String && ((String)value).contains( contains );
         }
 
         public String contains()
@@ -347,7 +437,7 @@ public abstract class IndexQuery
     {
         private final String suffix;
 
-        public StringSuffixPredicate( int propertyKeyId, String suffix )
+        StringSuffixPredicate( int propertyKeyId, String suffix )
         {
             super( propertyKeyId );
             this.suffix = suffix;
@@ -357,6 +447,12 @@ public abstract class IndexQuery
         public IndexQueryType type()
         {
             return IndexQueryType.stringSuffix;
+        }
+
+        @Override
+        public boolean test( Object value )
+        {
+            return value != null && value instanceof String && ((String)value).endsWith( suffix );
         }
 
         public String suffix()

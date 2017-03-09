@@ -184,11 +184,11 @@ public class GuardingStatementOperations implements
     }
 
     @Override
-    public long nodeGetFromUniqueIndexSeek( KernelStatement statement, NewIndexDescriptor index, Object value )
+    public long nodeGetFromUniqueIndexSeek( KernelStatement statement, NewIndexDescriptor index, IndexQuery.ExactPredicate... predicates )
             throws IndexNotFoundKernelException, IndexBrokenKernelException, IndexNotApplicableKernelException
     {
         guard.check( statement );
-        return entityReadDelegate.nodeGetFromUniqueIndexSeek( statement, index, value );
+        return entityReadDelegate.nodeGetFromUniqueIndexSeek( statement, index, predicates );
     }
 
     @Override

@@ -57,7 +57,7 @@ final class  StringProperty extends DefinedProperty implements DefinedProperty.W
     }
 
     @Override
-    int valueHash()
+    public int valueHash()
     {
         return value.hashCode();
     }

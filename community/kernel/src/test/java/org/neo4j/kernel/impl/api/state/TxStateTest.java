@@ -35,22 +35,17 @@ import java.util.Map;
 import java.util.Random;
 import java.util.Set;
 
-import org.neo4j.collection.primitive.PrimitiveLongIterator;
 import org.neo4j.cursor.Cursor;
 import org.neo4j.helpers.collection.Iterables;
 import org.neo4j.helpers.collection.Pair;
 import org.neo4j.kernel.api.properties.DefinedProperty;
-import org.neo4j.kernel.api.properties.Property;
-import org.neo4j.kernel.api.schema.NodePropertyDescriptor;
-import org.neo4j.kernel.api.schema.RelationshipPropertyDescriptor;
+import org.neo4j.kernel.api.schema_new.OrderedPropertyValues;
 import org.neo4j.kernel.api.schema_new.constaints.ConstraintDescriptor;
 import org.neo4j.kernel.api.schema_new.constaints.ConstraintDescriptorFactory;
 import org.neo4j.kernel.api.schema_new.constaints.UniquenessConstraintDescriptor;
 import org.neo4j.kernel.api.schema_new.index.NewIndexDescriptor;
 import org.neo4j.kernel.api.schema_new.index.NewIndexDescriptorFactory;
 import org.neo4j.kernel.api.txstate.TransactionState;
-import org.neo4j.kernel.impl.api.RelationshipVisitor;
-import org.neo4j.kernel.impl.api.store.RelationshipIterator;
 import org.neo4j.storageengine.api.Direction;
 import org.neo4j.storageengine.api.RelationshipItem;
 import org.neo4j.storageengine.api.txstate.ReadableDiffSets;
@@ -73,7 +68,6 @@ import static org.neo4j.collection.primitive.PrimitiveIntCollections.toList;
 import static org.neo4j.helpers.collection.Iterators.asSet;
 import static org.neo4j.helpers.collection.Pair.of;
 import static org.neo4j.kernel.api.properties.Property.booleanProperty;
-import static org.neo4j.kernel.api.properties.Property.noNodeProperty;
 import static org.neo4j.kernel.api.properties.Property.numberProperty;
 import static org.neo4j.kernel.api.properties.Property.stringProperty;
 import static org.neo4j.kernel.api.schema_new.index.NewIndexDescriptor.Filter.GENERAL;
@@ -203,7 +197,7 @@ public class TxStateTest
     public void shouldComputeIndexUpdatesForScanOrSeekOnAnEmptyTxState() throws Exception
     {
         // WHEN
-        ReadableDiffSets<Long> diffSets = state.indexUpdatesForScanOrSeek( indexOn_1_1, null );
+        ReadableDiffSets<Long> diffSets = state.indexUpdatesForScan( indexOn_1_1 );
 
         // THEN
         assertTrue( diffSets.isEmpty() );
@@ -217,7 +211,7 @@ public class TxStateTest
         addNodesToIndex( indexOn_1_2 ).withDefaultStringProperties( 44L );
 
         // WHEN
-        ReadableDiffSets<Long> diffSets = state.indexUpdatesForScanOrSeek( indexOn_1_1, null );
+        ReadableDiffSets<Long> diffSets = state.indexUpdatesForScan( indexOn_1_1 );
 
         // THEN
         assertEquals( asSet( 42L, 43L ), diffSets.getAdded() );
@@ -231,7 +225,8 @@ public class TxStateTest
         addNodesToIndex( indexOn_1_2 ).withDefaultStringProperties( 44L );
 
         // WHEN
-        ReadableDiffSets<Long> diffSets = state.indexUpdatesForScanOrSeek( indexOn_1_1, "value43" );
+        ReadableDiffSets<Long> diffSets = state.indexUpdatesForSeek( indexOn_1_1, OrderedPropertyValues.ofUndefined( "value43"
+        ) );
 
         // THEN
         assertEquals( asSet( 43L ), diffSets.getAdded() );
@@ -1622,33 +1617,9 @@ public class TxStateTest
         }
     }
 
-    public static RelationshipIterator wrapInRelationshipIterator( final PrimitiveLongIterator iterator )
-    {
-        return new RelationshipIterator.BaseIterator()
-        {
-            private int cursor;
-
-            @Override
-            public <EXCEPTION extends Exception> boolean relationshipVisit( long relationshipId,
-                    RelationshipVisitor<EXCEPTION> visitor ) throws EXCEPTION
-            {
-                throw new UnsupportedOperationException( "Shouldn't be required" );
-            }
-
-            @Override
-            protected boolean fetchNext()
-            {
-                return iterator.hasNext() && next( iterator.next() );
-            }
-        };
-    }
-
-    private final NodePropertyDescriptor descriptor1 = new NodePropertyDescriptor( 1, 17 );
-    private final NodePropertyDescriptor descriptor2 = new NodePropertyDescriptor( 2, 17 );
-    private final RelationshipPropertyDescriptor relDescriptor1 = new RelationshipPropertyDescriptor( 1, 42 );
-    private final NewIndexDescriptor indexOn_1_1 = NewIndexDescriptorFactory.forLabel( 2, 3 );
-    private final NewIndexDescriptor indexOn_1_2 = NewIndexDescriptorFactory.forLabel( 2, 4 );
-    private final NewIndexDescriptor indexOn_2_1 = NewIndexDescriptorFactory.forLabel( 3, 3 );
+    private final NewIndexDescriptor indexOn_1_1 = NewIndexDescriptorFactory.forLabel( 1, 1 );
+    private final NewIndexDescriptor indexOn_1_2 = NewIndexDescriptorFactory.forLabel( 1, 2 );
+    private final NewIndexDescriptor indexOn_2_1 = NewIndexDescriptorFactory.forLabel( 2, 1 );
 
     private TransactionState state;
 
@@ -1688,16 +1659,16 @@ public class TxStateTest
             public void withStringProperties( Collection<Pair<Long,String>> nodesWithValues )
             {
                 final int labelId = descriptor.schema().getLabelId();
-                final int propertyKeyId = descriptor.schema().getPropertyIds()[0];
+                final int propertyKeyId = descriptor.schema().getPropertyId();
                 for ( Pair<Long,String> entry : nodesWithValues )
                 {
                     long nodeId = entry.first();
                     state.nodeDoCreate( nodeId );
                     state.nodeDoAddLabel( labelId, nodeId );
-                    Property propertyBefore = noNodeProperty( nodeId, propertyKeyId );
                     DefinedProperty propertyAfter = stringProperty( propertyKeyId, entry.other() );
-                    state.nodeDoReplaceProperty( nodeId, propertyBefore, propertyAfter );
-                    state.indexDoUpdateProperty( descriptor.schema(), nodeId, null, propertyAfter );
+                    state.nodeDoAddProperty( nodeId, propertyAfter );
+                    state.indexDoUpdateEntry( descriptor.schema(), nodeId, null,
+                            OrderedPropertyValues.ofUndefined( propertyAfter.value() ) );
                 }
             }
 
@@ -1705,16 +1676,16 @@ public class TxStateTest
             public <T extends Number> void withNumberProperties( Collection<Pair<Long,T>> nodesWithValues )
             {
                 final int labelId = descriptor.schema().getLabelId();
-                final int propertyKeyId = descriptor.schema().getPropertyIds()[0];
+                final int propertyKeyId = descriptor.schema().getPropertyId();
                 for ( Pair<Long,T> entry : nodesWithValues )
                 {
                     long nodeId = entry.first();
                     state.nodeDoCreate( nodeId );
                     state.nodeDoAddLabel( labelId, nodeId );
-                    Property propertyBefore = noNodeProperty( nodeId, propertyKeyId );
                     DefinedProperty propertyAfter = numberProperty( propertyKeyId, entry.other() );
-                    state.nodeDoReplaceProperty( nodeId, propertyBefore, propertyAfter );
-                    state.indexDoUpdateProperty( descriptor.schema(), nodeId, null, propertyAfter );
+                    state.nodeDoAddProperty( nodeId, propertyAfter );
+                    state.indexDoUpdateEntry( descriptor.schema(), nodeId, null,
+                            OrderedPropertyValues.ofUndefined( propertyAfter.value() ) );
                 }
             }
 
@@ -1722,16 +1693,16 @@ public class TxStateTest
             public void withBooleanProperties( Collection<Pair<Long,Boolean>> nodesWithValues )
             {
                 final int labelId = descriptor.schema().getLabelId();
-                final int propertyKeyId = descriptor.schema().getPropertyIds()[0];
+                final int propertyKeyId = descriptor.schema().getPropertyId();
                 for ( Pair<Long,Boolean> entry : nodesWithValues )
                 {
                     long nodeId = entry.first();
                     state.nodeDoCreate( nodeId );
                     state.nodeDoAddLabel( labelId, nodeId );
-                    Property propertyBefore = noNodeProperty( nodeId, propertyKeyId );
                     DefinedProperty propertyAfter = booleanProperty( propertyKeyId, entry.other() );
-                    state.nodeDoReplaceProperty( nodeId, propertyBefore, propertyAfter );
-                    state.indexDoUpdateProperty( descriptor.schema(), nodeId, null, propertyAfter );
+                    state.nodeDoAddProperty( nodeId, propertyAfter );
+                    state.indexDoUpdateEntry( descriptor.schema(), nodeId, null,
+                            OrderedPropertyValues.ofUndefined( propertyAfter.value() ) );
                 }
             }
         };

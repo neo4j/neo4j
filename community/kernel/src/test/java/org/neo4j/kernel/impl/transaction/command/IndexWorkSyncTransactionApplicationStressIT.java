@@ -61,7 +61,6 @@ import org.neo4j.unsafe.impl.batchimport.cache.idmapping.string.Workers;
 import static java.util.Arrays.asList;
 import static org.junit.Assert.assertEquals;
 import static org.neo4j.helpers.TimeUtil.parseTimeMillis;
-import static org.neo4j.kernel.api.properties.Property.noNodeProperty;
 import static org.neo4j.kernel.api.properties.Property.property;
 import static org.neo4j.kernel.impl.transaction.command.Commands.createIndexRule;
 import static org.neo4j.kernel.impl.transaction.command.Commands.transactionRepresentation;
@@ -191,9 +190,7 @@ public class IndexWorkSyncTransactionApplicationStressIT
             long nodeId = nodeIds.nextId();
             txState.nodeDoCreate( nodeId );
             txState.nodeDoAddLabel( descriptor.getLabelId(), nodeId );
-            txState.nodeDoReplaceProperty( nodeId,
-                    noNodeProperty( nodeId, descriptor.getPropertyKeyId() ),
-                    property( descriptor.getPropertyKeyId(), propertyValue( id, progress ) ) );
+            txState.nodeDoAddProperty( nodeId, property( descriptor.getPropertyKeyId(), propertyValue( id, progress ) ) );
             Collection<StorageCommand> commands = new ArrayList<>();
             try ( StorageStatement statement = storageEngine.storeReadLayer().newStatement() )
             {

@@ -35,7 +35,7 @@ class LazyStringProperty extends LazyProperty<String> implements DefinedProperty
     }
 
     @Override
-    int valueHash()
+    public int valueHash()
     {
         return value().hashCode();
     }

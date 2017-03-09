@@ -73,7 +73,14 @@ public class IndexBoundary
         {
             return null;
         }
-        return NewIndexDescriptorFactory.forLabel( descriptor.getLabelId(), descriptor.getPropertyKeyId() );
+        if ( descriptor.isComposite() )
+        {
+            return NewIndexDescriptorFactory.forLabel( descriptor.getLabelId(), descriptor.getPropertyKeyIds() );
+        }
+        else
+        {
+            return NewIndexDescriptorFactory.forLabel( descriptor.getLabelId(), descriptor.getPropertyKeyId() );
+        }
     }
 
     public static NewIndexDescriptor mapUnique( IndexDescriptor descriptor )

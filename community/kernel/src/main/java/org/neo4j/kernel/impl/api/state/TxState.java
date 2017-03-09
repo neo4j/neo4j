@@ -19,6 +19,7 @@
  */
 package org.neo4j.kernel.impl.api.state;
 
+import java.util.Collection;
 import java.util.HashMap;
 import java.util.Iterator;
 import java.util.Map;
@@ -27,7 +28,6 @@ import java.util.TreeMap;
 import java.util.function.Consumer;
 
 import org.neo4j.collection.primitive.Primitive;
-import org.neo4j.collection.primitive.PrimitiveIntObjectMap;
 import org.neo4j.collection.primitive.PrimitiveIntSet;
 import org.neo4j.collection.primitive.PrimitiveLongIterator;
 import org.neo4j.collection.primitive.PrimitiveLongSet;
@@ -38,6 +38,7 @@ import org.neo4j.kernel.api.exceptions.schema.CreateConstraintFailureException;
 import org.neo4j.kernel.api.properties.DefinedProperty;
 import org.neo4j.kernel.api.properties.Property;
 import org.neo4j.kernel.api.schema_new.LabelSchemaDescriptor;
+import org.neo4j.kernel.api.schema_new.OrderedPropertyValues;
 import org.neo4j.kernel.api.schema_new.SchemaDescriptor;
 import org.neo4j.kernel.api.schema_new.SchemaDescriptorPredicates;
 import org.neo4j.kernel.api.schema_new.constaints.ConstraintDescriptor;
@@ -71,7 +72,6 @@ import org.neo4j.storageengine.api.txstate.TxStateVisitor;
 
 import static org.neo4j.collection.primitive.PrimitiveLongCollections.toPrimitiveIterator;
 import static org.neo4j.helpers.collection.Iterables.map;
-import static org.neo4j.kernel.api.properties.Property.numberProperty;
 import static org.neo4j.kernel.impl.api.PropertyValueComparison.SuperType.NUMBER;
 import static org.neo4j.kernel.impl.api.PropertyValueComparison.SuperType.STRING;
 
@@ -160,7 +160,7 @@ public final class TxState implements TransactionState, RelationshipVisitor.Home
 
     private Map<UniquenessConstraintDescriptor, Long> createdConstraintIndexesByConstraint;
 
-    private PrimitiveIntObjectMap<Map<DefinedProperty, DiffSets<Long>>> indexUpdates;
+    private Map<LabelSchemaDescriptor, Map<OrderedPropertyValues, DiffSets<Long>>> indexUpdates;
 
     private InstanceCache<TxSingleNodeCursor> singleNodeCursor;
     private InstanceCache<TxIteratorRelationshipCursor> iteratorRelationshipCursor;
@@ -585,20 +585,20 @@ public final class TxState implements TransactionState, RelationshipVisitor.Home
     }
 
     @Override
-    public void nodeDoReplaceProperty( long nodeId, Property replacedProperty, DefinedProperty newProperty )
+    public void nodeDoAddProperty( long nodeId, DefinedProperty newProperty )
     {
-        if ( replacedProperty.isDefined() )
-        {
-            getOrCreateNodeState( nodeId ).changeProperty( newProperty );
-            nodePropertyChanges().changeProperty( nodeId, replacedProperty.propertyKeyId(),
-                    ((DefinedProperty) replacedProperty).value(), newProperty.value() );
-        }
-        else
-        {
-            NodeStateImpl nodeState = getOrCreateNodeState( nodeId );
-            nodeState.addProperty( newProperty );
-            nodePropertyChanges().addProperty( nodeId, newProperty.propertyKeyId(), newProperty.value() );
-        }
+        NodeStateImpl nodeState = getOrCreateNodeState( nodeId );
+        nodeState.addProperty( newProperty );
+        nodePropertyChanges().addProperty( nodeId, newProperty.propertyKeyId(), newProperty.value() );
+        dataChanged();
+    }
+
+    @Override
+    public void nodeDoChangeProperty( long nodeId, DefinedProperty replacedProperty, DefinedProperty newProperty )
+    {
+        getOrCreateNodeState( nodeId ).changeProperty( newProperty );
+        nodePropertyChanges().changeProperty( nodeId, replacedProperty.propertyKeyId(),
+                replacedProperty.value(), newProperty.value() );
         dataChanged();
     }
 
@@ -819,7 +819,7 @@ public final class TxState implements TransactionState, RelationshipVisitor.Home
     public ReadableDiffSets<NewIndexDescriptor> indexDiffSetsByLabel( int labelId, NewIndexDescriptor.Filter indexType )
     {
         return indexChangesDiffSets().filterAdded( index ->
-                SchemaDescriptorPredicates.hasLabel( labelId ).test( index ) && indexType.test( index ) );
+                SchemaDescriptorPredicates.hasLabel( index, labelId ) && indexType.test( index ) );
     }
 
     @Override
@@ -993,19 +993,16 @@ public final class TxState implements TransactionState, RelationshipVisitor.Home
     }
 
     @Override
-    public ReadableDiffSets<Long> indexUpdatesForScanOrSeek( NewIndexDescriptor descriptor, Object value )
+    public ReadableDiffSets<Long> indexUpdatesForScan( NewIndexDescriptor descriptor )
     {
-        return ReadableDiffSets.Empty.ifNull( (value == null) ?
-            getIndexUpdatesForScanOrSeek(
-                    descriptor.schema().getLabelId(),
-                    descriptor.schema().getPropertyIds()[0]
-            )
-            :
-            getIndexUpdatesForScanOrSeek(
-                    descriptor.schema().getLabelId(), /*create=*/false,
-                    Property.property( descriptor.schema().getPropertyIds()[0], value )
-            )
-        );
+        return ReadableDiffSets.Empty.ifNull( getIndexUpdatesForScan( descriptor.schema() ) );
+    }
+
+    @Override
+    public ReadableDiffSets<Long> indexUpdatesForSeek( NewIndexDescriptor descriptor, OrderedPropertyValues values )
+    {
+        assert values != null;
+        return ReadableDiffSets.Empty.ifNull( getIndexUpdatesForSeek( descriptor.schema(), values, /*create=*/false ) );
     }
 
     @Override
@@ -1022,49 +1019,50 @@ public final class TxState implements TransactionState, RelationshipVisitor.Home
                                                                         Number lower, boolean includeLower,
                                                                         Number upper, boolean includeUpper )
     {
-        TreeMap<DefinedProperty, DiffSets<Long>> sortedUpdates = getSortedIndexUpdates( descriptor.schema() );
+        TreeMap<OrderedPropertyValues, DiffSets<Long>> sortedUpdates = getSortedIndexUpdates( descriptor.schema() );
         if ( sortedUpdates == null )
         {
             return null;
         }
 
-        DefinedProperty selectedLower;
+        OrderedPropertyValues selectedLower;
         boolean selectedIncludeLower;
 
-        DefinedProperty selectedUpper;
+        OrderedPropertyValues selectedUpper;
         boolean selectedIncludeUpper;
 
         //TODO: Get working with composite indexes
-        int propertyKeyId = descriptor.schema().getPropertyIds()[0];
-
         if ( lower == null )
         {
-            selectedLower = DefinedProperty.numberProperty( propertyKeyId, NUMBER.lowLimit.castValue( Number.class ) );
+            selectedLower = OrderedPropertyValues.ofUndefined( NUMBER.lowLimit.castValue( Number.class ) );
             selectedIncludeLower = NUMBER.lowLimit.isInclusive;
         }
         else
         {
-            selectedLower = numberProperty( propertyKeyId, lower );
+            selectedLower = OrderedPropertyValues.ofUndefined( lower );
             selectedIncludeLower = includeLower;
         }
 
         if ( upper == null )
         {
-            selectedUpper = DefinedProperty.numberProperty( propertyKeyId, NUMBER.highLimit.castValue( Number.class ) );
+            selectedUpper = OrderedPropertyValues.ofUndefined( NUMBER.highLimit.castValue( Number.class ) );
             selectedIncludeUpper = NUMBER.highLimit.isInclusive;
         }
         else
         {
-            selectedUpper = numberProperty( propertyKeyId, upper );
+            selectedUpper = OrderedPropertyValues.ofUndefined( upper );
             selectedIncludeUpper = includeUpper;
         }
 
         DiffSets<Long> diffs = new DiffSets<>();
-        for ( Map.Entry<DefinedProperty,DiffSets<Long>> entry : sortedUpdates.subMap( selectedLower, selectedIncludeLower, selectedUpper, selectedIncludeUpper ).entrySet() )
+
+        Collection<DiffSets<Long>> inRange =
+                sortedUpdates.subMap( selectedLower, selectedIncludeLower,
+                                      selectedUpper, selectedIncludeUpper ).values();
+        for ( DiffSets<Long> diffForSpecificValue : inRange )
         {
-            DiffSets<Long> diffSets = entry.getValue();
-            diffs.addAll( diffSets.getAdded().iterator() );
-            diffs.removeAll( diffSets.getRemoved().iterator() );
+            diffs.addAll( diffForSpecificValue.getAdded().iterator() );
+            diffs.removeAll( diffForSpecificValue.getRemoved().iterator() );
         }
         return diffs;
     }
@@ -1083,49 +1081,49 @@ public final class TxState implements TransactionState, RelationshipVisitor.Home
                                                                         String lower, boolean includeLower,
                                                                         String upper, boolean includeUpper )
     {
-        TreeMap<DefinedProperty, DiffSets<Long>> sortedUpdates = getSortedIndexUpdates( descriptor.schema() );
+        TreeMap<OrderedPropertyValues, DiffSets<Long>> sortedUpdates = getSortedIndexUpdates( descriptor.schema() );
         if ( sortedUpdates == null )
         {
             return null;
         }
 
-        DefinedProperty selectedLower;
+        OrderedPropertyValues selectedLower;
         boolean selectedIncludeLower;
 
-        DefinedProperty selectedUpper;
+        OrderedPropertyValues selectedUpper;
         boolean selectedIncludeUpper;
 
         //TODO: Get working with composite indexes
-        int propertyKeyId = descriptor.schema().getPropertyIds()[0];
-
         if ( lower == null )
         {
-            selectedLower = DefinedProperty.stringProperty( propertyKeyId, STRING.lowLimit.castValue( String.class ) );
+            selectedLower = OrderedPropertyValues.ofUndefined( STRING.lowLimit.castValue( String.class ) );
             selectedIncludeLower = STRING.lowLimit.isInclusive;
         }
         else
         {
-            selectedLower = DefinedProperty.stringProperty( propertyKeyId, lower );
+            selectedLower = OrderedPropertyValues.ofUndefined( lower );
             selectedIncludeLower = includeLower;
         }
 
         if ( upper == null )
         {
-            selectedUpper = DefinedProperty.booleanProperty( propertyKeyId, STRING.highLimit.castValue( Boolean.class ).booleanValue() );
+            selectedUpper = OrderedPropertyValues.ofUndefined( STRING.highLimit.castValue( Boolean.class ).booleanValue() );
             selectedIncludeUpper = STRING.highLimit.isInclusive;
         }
         else
         {
-            selectedUpper = DefinedProperty.stringProperty( propertyKeyId, upper );
+            selectedUpper = OrderedPropertyValues.ofUndefined( upper );
             selectedIncludeUpper = includeUpper;
         }
 
         DiffSets<Long> diffs = new DiffSets<>();
-        for ( Map.Entry<DefinedProperty,DiffSets<Long>> entry : sortedUpdates.subMap( selectedLower, selectedIncludeLower, selectedUpper, selectedIncludeUpper ).entrySet() )
+        Collection<DiffSets<Long>> inRange =
+                sortedUpdates.subMap(   selectedLower, selectedIncludeLower,
+                                        selectedUpper, selectedIncludeUpper ).values();
+        for ( DiffSets<Long> diffForSpecificValue : inRange )
         {
-            DiffSets<Long> diffSets = entry.getValue();
-            diffs.addAll( diffSets.getAdded().iterator() );
-            diffs.removeAll( diffSets.getRemoved().iterator() );
+            diffs.addAll( diffForSpecificValue.getAdded().iterator() );
+            diffs.removeAll( diffForSpecificValue.getRemoved().iterator() );
         }
         return diffs;
     }
@@ -1138,19 +1136,18 @@ public final class TxState implements TransactionState, RelationshipVisitor.Home
 
     private ReadableDiffSets<Long> getIndexUpdatesForRangeSeekByPrefix( NewIndexDescriptor descriptor, String prefix )
     {
-        TreeMap<DefinedProperty, DiffSets<Long>> sortedUpdates = getSortedIndexUpdates( descriptor.schema() );
+        TreeMap<OrderedPropertyValues, DiffSets<Long>> sortedUpdates = getSortedIndexUpdates( descriptor.schema() );
         if ( sortedUpdates == null )
         {
             return null;
         }
         //TODO: get working with composite indexes
-        int propertyKeyId = descriptor.schema().getPropertyIds()[0];
-        DefinedProperty floor = Property.stringProperty( propertyKeyId, prefix );
+        OrderedPropertyValues floor = OrderedPropertyValues.ofUndefined( prefix );
         DiffSets<Long> diffs = new DiffSets<>();
-        for ( Map.Entry<DefinedProperty,DiffSets<Long>> entry : sortedUpdates.tailMap( floor ).entrySet() )
+        for ( Map.Entry<OrderedPropertyValues,DiffSets<Long>> entry : sortedUpdates.tailMap( floor ).entrySet() )
         {
-            DefinedProperty key = entry.getKey();
-            if ( key.propertyKeyId() == propertyKeyId && key.value().toString().startsWith( prefix ) )
+            OrderedPropertyValues key = entry.getKey();
+            if ( key.getSinglePropertyValue().toString().startsWith( prefix ) )
             {
                 DiffSets<Long> diffSets = entry.getValue();
                 diffs.addAll( diffSets.getAdded().iterator() );
@@ -1167,38 +1164,39 @@ public final class TxState implements TransactionState, RelationshipVisitor.Home
     // Ensure sorted index updates for a given index. This is needed for range query support and
     // may involve converting the existing hash map first
     //
-    private TreeMap<DefinedProperty, DiffSets<Long>> getSortedIndexUpdates( LabelSchemaDescriptor descriptor )
+    private TreeMap<OrderedPropertyValues, DiffSets<Long>> getSortedIndexUpdates( LabelSchemaDescriptor descriptor )
     {
         if ( indexUpdates == null )
         {
             return null;
         }
-        Map<DefinedProperty, DiffSets<Long>> updates = indexUpdates.get( descriptor.getLabelId() );
+        Map<OrderedPropertyValues, DiffSets<Long>> updates = indexUpdates.get( descriptor );
         if ( updates == null )
         {
             return null;
         }
-        TreeMap<DefinedProperty,DiffSets<Long>> sortedUpdates;
+        TreeMap<OrderedPropertyValues,DiffSets<Long>> sortedUpdates;
         if ( updates instanceof TreeMap )
         {
-            sortedUpdates = (TreeMap<DefinedProperty,DiffSets<Long>>) updates;
+            sortedUpdates = (TreeMap<OrderedPropertyValues,DiffSets<Long>>) updates;
         }
         else
         {
-            sortedUpdates = new TreeMap<>( DefinedProperty.COMPARATOR );
+            sortedUpdates = new TreeMap<>( OrderedPropertyValues.COMPARATOR );
             sortedUpdates.putAll( updates );
-            indexUpdates.put( descriptor.getLabelId(), sortedUpdates );
+            indexUpdates.put( descriptor, sortedUpdates );
         }
         return sortedUpdates;
     }
 
     @Override
-    public void indexDoUpdateProperty( LabelSchemaDescriptor descriptor, long nodeId,
-            DefinedProperty propertyBefore, DefinedProperty propertyAfter )
+    public void indexDoUpdateEntry( LabelSchemaDescriptor descriptor, long nodeId,
+            OrderedPropertyValues propertiesBefore, OrderedPropertyValues propertiesAfter )
     {
-        DiffSets<Long> before = getIndexUpdatesForScanOrSeek( descriptor.getLabelId(), true, propertyBefore );
-        if ( before != null )
+        if ( propertiesBefore != null )
         {
+            DiffSets<Long> before = getIndexUpdatesForSeek( descriptor, propertiesBefore, true );
+            //noinspection ConstantConditions
             before.remove( nodeId );
             if ( before.getRemoved().contains( nodeId ) )
             {
@@ -1210,9 +1208,10 @@ public final class TxState implements TransactionState, RelationshipVisitor.Home
             }
         }
 
-        DiffSets<Long> after = getIndexUpdatesForScanOrSeek( descriptor.getLabelId(), true, propertyAfter );
-        if ( after != null )
+        if ( propertiesAfter != null )
         {
+            DiffSets<Long> after = getIndexUpdatesForSeek( descriptor, propertiesAfter, true );
+            //noinspection ConstantConditions
             after.add( nodeId );
             if ( after.getAdded().contains( nodeId ) )
             {
@@ -1225,57 +1224,50 @@ public final class TxState implements TransactionState, RelationshipVisitor.Home
         }
     }
 
-    private DiffSets<Long> getIndexUpdatesForScanOrSeek( int label, boolean create, DefinedProperty property )
+    private DiffSets<Long> getIndexUpdatesForSeek(
+            LabelSchemaDescriptor schema, OrderedPropertyValues values, boolean create )
     {
-        if ( property == null )
-        {
-            return null;
-        }
         if ( indexUpdates == null )
         {
             if ( !create )
             {
                 return null;
             }
-            indexUpdates = Primitive.intObjectMap();
+            indexUpdates = new HashMap<>();
         }
-        Map<DefinedProperty, DiffSets<Long>> updates = indexUpdates.get( label );
+        Map<OrderedPropertyValues, DiffSets<Long>> updates = indexUpdates.get( schema );
         if ( updates == null )
         {
             if ( !create )
             {
                 return null;
             }
-            indexUpdates.put( label, updates = new HashMap<>() );
+            indexUpdates.put( schema, updates = new HashMap<>() );
         }
-        DiffSets<Long> diffs = updates.get( property );
+        DiffSets<Long> diffs = updates.get( values );
         if ( diffs == null && create )
         {
-            updates.put( property, diffs = new DiffSets<>() );
+            updates.put( values, diffs = new DiffSets<>() );
         }
         return diffs;
     }
 
-    private DiffSets<Long> getIndexUpdatesForScanOrSeek( int label, int propertyId )
+    private DiffSets<Long> getIndexUpdatesForScan( LabelSchemaDescriptor schema )
     {
         if ( indexUpdates == null )
         {
             return null;
         }
-        Map<DefinedProperty, DiffSets<Long>> updates = indexUpdates.get( label );
+        Map<OrderedPropertyValues, DiffSets<Long>> updates = indexUpdates.get( schema );
         if ( updates == null )
         {
             return null;
         }
         DiffSets<Long> diffs = new DiffSets<>();
-        for ( Map.Entry<DefinedProperty, DiffSets<Long>> entry : updates.entrySet() )
+        for ( DiffSets<Long> diffSet : updates.values() )
         {
-            //TODO: Make this work for composite indexes
-            if ( entry.getKey().propertyKeyId() == propertyId )
-            {
-                diffs.addAll( entry.getValue().getAdded().iterator() );
-                diffs.removeAll( entry.getValue().getRemoved().iterator() );
-            }
+            diffs.addAll( diffSet.getAdded().iterator() );
+            diffs.removeAll( diffSet.getRemoved().iterator() );
         }
         return diffs;
     }

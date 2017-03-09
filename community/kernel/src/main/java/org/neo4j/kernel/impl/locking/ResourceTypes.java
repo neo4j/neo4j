@@ -22,6 +22,9 @@ package org.neo4j.kernel.impl.locking;
 import java.util.HashMap;
 import java.util.Map;
 
+import org.neo4j.kernel.api.properties.DefinedProperty;
+import org.neo4j.kernel.api.properties.Property;
+import org.neo4j.kernel.api.schema_new.IndexQuery;
 import org.neo4j.kernel.impl.util.concurrent.LockWaitStrategies;
 import org.neo4j.storageengine.api.lock.ResourceType;
 import org.neo4j.storageengine.api.lock.WaitStrategy;
@@ -80,11 +83,41 @@ public enum ResourceTypes implements ResourceType
     /**
      * This is the schema index entry hashing method used since 2.2.0 and onwards.
      */
-    public static long indexEntryResourceId( long labelId, long propertyKeyId, String propertyValue )
+    public static long indexEntryResourceId( long labelId, IndexQuery.ExactPredicate... predicates )
+    {
+        return indexEntryResourceId( labelId, predicates, 0 );
+    }
+
+    private static long indexEntryResourceId( long labelId, IndexQuery.ExactPredicate[] predicates, int i )
+    {
+        int propertyKeyId = predicates[i].propertyKeyId();
+        Object value = predicates[i].value();
+        // Note:
+        // It is important that single-property indexes only hash with this particular call; no additional hashing!
+        long hash = indexEntryResourceId( labelId, propertyKeyId, stringOf( propertyKeyId, value ) );
+        i++;
+        if ( i < predicates.length )
+        {
+            hash = hash( hash + indexEntryResourceId( labelId, predicates, i ) );
+        }
+        return hash;
+    }
+
+    private static long indexEntryResourceId( long labelId, long propertyKeyId, String propertyValue )
     {
         long hob = hash( labelId + hash( propertyKeyId ) );
         hob <<= 32;
         return hob + propertyValue.hashCode();
+    }
+
+    private static String stringOf( int propertyKeyId, Object value )
+    {
+        if ( null != value )
+        {
+            DefinedProperty property = Property.property( propertyKeyId, value );
+            return property.valueAsString();
+        }
+        return "";
     }
 
     private static int hash( long value )

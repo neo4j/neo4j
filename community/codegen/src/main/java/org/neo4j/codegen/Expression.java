@@ -511,35 +511,38 @@ public abstract class Expression extends ExpressionTemplate
     /** box expression */
     public static Expression box( final Expression expression )
     {
-        TypeReference type;
-        switch ( expression.type.simpleName() )
+        TypeReference type = expression.type;
+        if ( type.isPrimitive() )
         {
-        case "byte":
-            type = TypeReference.typeReference( Byte.class );
-            break;
-        case "short":
-            type = TypeReference.typeReference( Short.class );
-            break;
-        case "int":
-            type = TypeReference.typeReference( Integer.class );
-            break;
-        case "long":
-            type = TypeReference.typeReference( Long.class );
-            break;
-        case "char":
-            type = TypeReference.typeReference( Character.class );
-            break;
-        case "boolean":
-            type = TypeReference.typeReference( Boolean.class );
-            break;
-        case "float":
-            type = TypeReference.typeReference( Float.class );
-            break;
-        case "double":
-            type = TypeReference.typeReference( Double.class );
-            break;
-        default:
-            type = expression.type();
+            switch ( type.name() )
+            {
+            case "byte":
+                type = TypeReference.typeReference( Byte.class );
+                break;
+            case "short":
+                type = TypeReference.typeReference( Short.class );
+                break;
+            case "int":
+                type = TypeReference.typeReference( Integer.class );
+                break;
+            case "long":
+                type = TypeReference.typeReference( Long.class );
+                break;
+            case "char":
+                type = TypeReference.typeReference( Character.class );
+                break;
+            case "boolean":
+                type = TypeReference.typeReference( Boolean.class );
+                break;
+            case "float":
+                type = TypeReference.typeReference( Float.class );
+                break;
+            case "double":
+                type = TypeReference.typeReference( Double.class );
+                break;
+            default:
+                break;
+            }
         }
         return new Expression( type )
         {
@@ -555,7 +558,7 @@ public abstract class Expression extends ExpressionTemplate
     public static Expression unbox( final Expression expression )
     {
         TypeReference type;
-        switch ( expression.type.name() )
+        switch ( expression.type.fullName() )
         {
         case "java.lang.Byte":
             type = TypeReference.typeReference( byte.class );
@@ -582,7 +585,7 @@ public abstract class Expression extends ExpressionTemplate
             type = TypeReference.typeReference( double.class );
             break;
         default:
-            throw new IllegalStateException( "Cannot unbox " + expression.type.name() );
+            throw new IllegalStateException( "Cannot unbox " + expression.type.fullName() );
         }
         return new Expression( type )
         {

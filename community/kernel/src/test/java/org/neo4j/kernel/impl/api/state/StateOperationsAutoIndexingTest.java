@@ -58,10 +58,9 @@ public class StateOperationsAutoIndexingTest
     private final StorageStatement storeStmt = mock( StorageStatement.class );
     private final DataWriteOperations writeOps = mock(DataWriteOperations.class);
     private final KernelStatement stmt = mock( KernelStatement.class, RETURNS_MOCKS );
-    private final StoreReadLayer storeLayer = mock( StoreReadLayer.class );
-    private final StateHandlingStatementOperations context =
-            new StateHandlingStatementOperations( storeLayer, idx, mock( ConstraintIndexCreator.class ),
-                    mock( LegacyIndexStore.class ) );
+    private final StoreReadLayer storeLayer = mock( StoreReadLayer.class, RETURNS_MOCKS );
+    private final StateHandlingStatementOperations context = new StateHandlingStatementOperations(
+            storeLayer, idx, mock(ConstraintIndexCreator.class), mock(LegacyIndexStore.class) );
 
     @Before
     public void setup() throws InvalidTransactionTypeKernelException

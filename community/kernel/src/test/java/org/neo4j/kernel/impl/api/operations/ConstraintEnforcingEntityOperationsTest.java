@@ -23,7 +23,7 @@ import org.junit.Before;
 import org.junit.Test;
 
 import org.neo4j.kernel.api.index.InternalIndexState;
-import org.neo4j.kernel.api.schema_new.index.IndexBoundary;
+import org.neo4j.kernel.api.schema_new.IndexQuery;
 import org.neo4j.kernel.api.schema_new.index.NewIndexDescriptor;
 import org.neo4j.kernel.api.schema_new.index.NewIndexDescriptorFactory;
 import org.neo4j.kernel.impl.api.ConstraintEnforcingEntityOperations;
@@ -40,6 +40,7 @@ import static org.mockito.Mockito.verify;
 import static org.mockito.Mockito.verifyNoMoreInteractions;
 import static org.mockito.Mockito.when;
 import static org.neo4j.kernel.api.StatementConstants.NO_SUCH_NODE;
+import static org.neo4j.kernel.api.schema_new.IndexQuery.exact;
 import static org.neo4j.kernel.impl.locking.ResourceTypes.INDEX_ENTRY;
 import static org.neo4j.kernel.impl.locking.ResourceTypes.indexEntryResourceId;
 
@@ -48,7 +49,9 @@ public class ConstraintEnforcingEntityOperationsTest
     private final int labelId = 1;
     private final int propertyKeyId = 2;
     private final String value = "value";
+    private final long resourceId = indexEntryResourceId( labelId, exact( propertyKeyId, value ) );
     private final NewIndexDescriptor index = NewIndexDescriptorFactory.uniqueForLabel( labelId, propertyKeyId );
+    private final IndexQuery.ExactPredicate withValue = IndexQuery.exact( propertyKeyId, value );
     private EntityReadOperations readOps;
     private KernelStatement state;
     private Locks.Client locks;
@@ -74,16 +77,16 @@ public class ConstraintEnforcingEntityOperationsTest
     {
         // given
         long expectedNodeId = 15;
-        when( readOps.nodeGetFromUniqueIndexSeek( state, index, value ) ).thenReturn( expectedNodeId );
+        when( readOps.nodeGetFromUniqueIndexSeek( state, index, withValue ) ).thenReturn( expectedNodeId );
 
         // when
-        long nodeId = ops.nodeGetFromUniqueIndexSeek( state, index, value );
+        long nodeId = ops.nodeGetFromUniqueIndexSeek( state, index, withValue );
 
         // then
         assertEquals( expectedNodeId, nodeId );
         verify( locks).acquireShared(
                 LockTracer.NONE,
-                INDEX_ENTRY, indexEntryResourceId( labelId, propertyKeyId, value ) );
+                INDEX_ENTRY, resourceId );
         verifyNoMoreInteractions( locks );
     }
 
@@ -91,20 +94,20 @@ public class ConstraintEnforcingEntityOperationsTest
     public void shouldHoldIndexWriteLockIfNodeDoesNotExist() throws Exception
     {
         // given
-        when( readOps.nodeGetFromUniqueIndexSeek( state, index, value ) ).thenReturn( NO_SUCH_NODE );
+        when( readOps.nodeGetFromUniqueIndexSeek( state, index, withValue ) ).thenReturn( NO_SUCH_NODE );
 
         // when
-        long nodeId = ops.nodeGetFromUniqueIndexSeek( state, index, value );
+        long nodeId = ops.nodeGetFromUniqueIndexSeek( state, index, withValue );
 
         // then
         assertEquals( NO_SUCH_NODE, nodeId );
         verify( locks ).acquireShared(
                 LockTracer.NONE,
-                INDEX_ENTRY, indexEntryResourceId( labelId, propertyKeyId, value ) );
+                INDEX_ENTRY, resourceId );
         verify( locks ).acquireExclusive(
                 LockTracer.NONE,
-                INDEX_ENTRY, indexEntryResourceId( labelId, propertyKeyId, value ) );
-        verify( locks ).releaseShared( INDEX_ENTRY, indexEntryResourceId( labelId, propertyKeyId, value ) );
+                INDEX_ENTRY, resourceId );
+        verify( locks ).releaseShared( INDEX_ENTRY, resourceId );
         verifyNoMoreInteractions( locks );
     }
 
@@ -113,23 +116,23 @@ public class ConstraintEnforcingEntityOperationsTest
     {
         // given
         long expectedNodeId = 15;
-        when( readOps.nodeGetFromUniqueIndexSeek( state, index, value ) )
+        when( readOps.nodeGetFromUniqueIndexSeek( state, index, withValue ) )
                 .thenReturn( NO_SUCH_NODE )
                 .thenReturn( expectedNodeId );
 
         // when
-        long nodeId = ops.nodeGetFromUniqueIndexSeek( state, index, value );
+        long nodeId = ops.nodeGetFromUniqueIndexSeek( state, index, withValue );
 
         // then
         assertEquals( expectedNodeId, nodeId );
         verify( locks, times(2) ).acquireShared(
                 LockTracer.NONE,
-                INDEX_ENTRY, indexEntryResourceId( labelId, propertyKeyId, value ) );
+                INDEX_ENTRY, resourceId );
         verify( locks ).acquireExclusive(
                 LockTracer.NONE,
-                INDEX_ENTRY, indexEntryResourceId( labelId, propertyKeyId, value ) );
-        verify( locks ).releaseShared( INDEX_ENTRY, indexEntryResourceId( labelId, propertyKeyId, value ) );
-        verify( locks ).releaseExclusive( INDEX_ENTRY, indexEntryResourceId( labelId, propertyKeyId, value ) );
+                INDEX_ENTRY, resourceId );
+        verify( locks ).releaseShared( INDEX_ENTRY, resourceId );
+        verify( locks ).releaseExclusive( INDEX_ENTRY, resourceId );
         verifyNoMoreInteractions( locks );
     }
 }

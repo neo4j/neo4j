@@ -29,7 +29,7 @@ abstract class FloatingPointNumberProperty extends NumberProperty
     }
 
     @Override
-    final int valueHash()
+    public final int valueHash()
     {
         long value = (long) doubleValue();
         return (int) (value ^ (value >>> 32));

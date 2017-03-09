@@ -22,6 +22,7 @@ package org.neo4j.kernel.api.txstate;
 import org.neo4j.kernel.api.properties.DefinedProperty;
 import org.neo4j.kernel.api.properties.Property;
 import org.neo4j.kernel.api.schema_new.LabelSchemaDescriptor;
+import org.neo4j.kernel.api.schema_new.OrderedPropertyValues;
 import org.neo4j.kernel.api.schema_new.constaints.ConstraintDescriptor;
 import org.neo4j.kernel.api.schema_new.constaints.UniquenessConstraintDescriptor;
 import org.neo4j.kernel.api.schema_new.index.NewIndexDescriptor;
@@ -49,7 +50,9 @@ public interface TransactionState extends ReadableTransactionState
 
     void nodeDoDelete( long nodeId );
 
-    void nodeDoReplaceProperty( long nodeId, Property replacedProperty, DefinedProperty newProperty );
+    void nodeDoAddProperty( long nodeId, DefinedProperty newProperty );
+
+    void nodeDoChangeProperty( long nodeId, DefinedProperty replacedProperty, DefinedProperty newProperty );
 
     void relationshipDoReplaceProperty( long relationshipId,
                                         Property replacedProperty, DefinedProperty newProperty );
@@ -90,5 +93,5 @@ public interface TransactionState extends ReadableTransactionState
 
     boolean constraintDoUnRemove( ConstraintDescriptor constraint );
 
-    void indexDoUpdateProperty( LabelSchemaDescriptor descriptor, long nodeId, DefinedProperty before, DefinedProperty after );
+    void indexDoUpdateEntry( LabelSchemaDescriptor descriptor, long nodeId, OrderedPropertyValues before, OrderedPropertyValues after );
 }

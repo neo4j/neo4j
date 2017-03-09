@@ -53,12 +53,12 @@ class ClassSourceWriter implements ClassEmitter
 
     void publicClass( TypeReference type )
     {
-        append( "public class " ).append( type.simpleName() );
+        append( "public class " ).append( type.name() );
     }
 
     void extendClass( TypeReference base )
     {
-        append( " extends " ).append( base.name() ).append( "\n" );
+        append( " extends " ).append( base.fullName() ).append( "\n" );
     }
 
     void implement( TypeReference[] interfaces )
@@ -66,7 +66,7 @@ class ClassSourceWriter implements ClassEmitter
         String prefix = "    implements ";
         for ( TypeReference iFace : interfaces )
         {
-            append( prefix ).append( iFace.name() );
+            append( prefix ).append( iFace.fullName() );
             prefix = ", ";
         }
         if ( prefix.length() == 2 )
@@ -95,20 +95,20 @@ class ClassSourceWriter implements ClassEmitter
             {
                 target.append( "    " ).append( Modifier.toString( signature.modifiers() ) ).append( " " );
                 typeParameters( target, signature );
-                target.append( signature.declaringClass().simpleName() );
+                target.append( signature.declaringClass().name() );
             }
         }
         else
         {
             target.append( "    " ).append( Modifier.toString( signature.modifiers() ) ).append( " " );
             typeParameters( target, signature );
-            target.append( signature.returnType().name() ).append( " " ).append( signature.name() );
+            target.append( signature.returnType().fullName() ).append( " " ).append( signature.name() );
         }
         target.append( "(" );
         String prefix = " ";
         for ( Parameter parameter : signature.parameters() )
         {
-            target.append( prefix ).append( parameter.type().name() ).append( " " ).append( parameter.name() );
+            target.append( prefix ).append( parameter.type().fullName() ).append( " " ).append( parameter.name() );
             prefix = ", ";
         }
         if ( prefix.length() > 1 )
@@ -119,7 +119,7 @@ class ClassSourceWriter implements ClassEmitter
         String sep = " throws ";
         for ( TypeReference thrown : signature.throwsList() )
         {
-            target.append( sep ).append( thrown.name() );
+            target.append( sep ).append( thrown.fullName() );
             sep = ", ";
         }
         target.append( "\n    {\n" );
@@ -139,11 +139,11 @@ class ClassSourceWriter implements ClassEmitter
                 TypeReference ext = parameter.extendsBound(), sup = parameter.superBound();
                 if ( ext != null )
                 {
-                    target.append( " extends " ).append( ext.name() );
+                    target.append( " extends " ).append( ext.fullName() );
                 }
                 else if ( sup != null )
                 {
-                    target.append( " super " ).append( sup.name() );
+                    target.append( " super " ).append( sup.fullName() );
                 }
                 sep = ", ";
             }
@@ -166,7 +166,7 @@ class ClassSourceWriter implements ClassEmitter
         {
             append( " " );
         }
-        append( field.type().name() ).append( ' ' ).append( field.name() );
+        append( field.type().fullName() ).append( ' ' ).append( field.name() );
         if ( value != null )
         {
             append( " = " );

@@ -74,7 +74,7 @@ class MethodByteCodeEmitter implements MethodEmitter
         for ( Parameter parameter : declaration.parameters() )
         {
             TypeReference type = parameter.type();
-            if ( type.isInnerClass() )
+            if ( type.isInnerClass() && !type.isArray() )
             {
                 classWriter.visitInnerClass( byteCodeName( type ), outerName( type ),
                         type.simpleName(), type.modifiers() );
@@ -118,25 +118,32 @@ class MethodByteCodeEmitter implements MethodEmitter
     public void returns( Expression value )
     {
         value.accept( expressionVisitor );
-        switch ( declaration.returnType().simpleName() )
+        if ( declaration.returnType().isPrimitive() )
         {
-        case "int":
-        case "byte":
-        case "short":
-        case "char":
-        case "boolean":
-            methodVisitor.visitInsn( IRETURN );
-            break;
-        case "long":
-            methodVisitor.visitInsn( LRETURN );
-            break;
-        case "float":
-            methodVisitor.visitInsn( FRETURN );
-            break;
-        case "double":
-            methodVisitor.visitInsn( DRETURN );
-            break;
-        default:
+            switch ( declaration.returnType().name() )
+            {
+            case "int":
+            case "byte":
+            case "short":
+            case "char":
+            case "boolean":
+                methodVisitor.visitInsn( IRETURN );
+                break;
+            case "long":
+                methodVisitor.visitInsn( LRETURN );
+                break;
+            case "float":
+                methodVisitor.visitInsn( FRETURN );
+                break;
+            case "double":
+                methodVisitor.visitInsn( DRETURN );
+                break;
+            default:
+                methodVisitor.visitInsn( ARETURN );
+            }
+        }
+        else
+        {
             methodVisitor.visitInsn( ARETURN );
         }
     }
@@ -145,25 +152,32 @@ class MethodByteCodeEmitter implements MethodEmitter
     public void assign( LocalVariable variable, Expression value )
     {
         value.accept( expressionVisitor );
-        switch ( variable.type().simpleName() )
+        if ( variable.type().isPrimitive() )
         {
-        case "int":
-        case "byte":
-        case "short":
-        case "char":
-        case "boolean":
-            methodVisitor.visitVarInsn( ISTORE, variable.index() );
-            break;
-        case "long":
-            methodVisitor.visitVarInsn( LSTORE, variable.index() );
-            break;
-        case "float":
-            methodVisitor.visitVarInsn( FSTORE, variable.index() );
-            break;
-        case "double":
-            methodVisitor.visitVarInsn( DSTORE, variable.index() );
-            break;
-        default:
+            switch ( variable.type().name() )
+            {
+            case "int":
+            case "byte":
+            case "short":
+            case "char":
+            case "boolean":
+                methodVisitor.visitVarInsn( ISTORE, variable.index() );
+                break;
+            case "long":
+                methodVisitor.visitVarInsn( LSTORE, variable.index() );
+                break;
+            case "float":
+                methodVisitor.visitVarInsn( FSTORE, variable.index() );
+                break;
+            case "double":
+                methodVisitor.visitVarInsn( DSTORE, variable.index() );
+                break;
+            default:
+                methodVisitor.visitVarInsn( ASTORE, variable.index() );
+            }
+        }
+        else
+        {
             methodVisitor.visitVarInsn( ASTORE, variable.index() );
         }
     }

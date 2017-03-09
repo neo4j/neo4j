@@ -123,7 +123,7 @@ class ClassByteCodeWriter implements ClassEmitter
             @Override
             public String name()
             {
-                return type.name();
+                return type.fullName();
             }
 
             @Override

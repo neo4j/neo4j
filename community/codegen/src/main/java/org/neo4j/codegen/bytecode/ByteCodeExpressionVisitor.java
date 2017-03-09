@@ -164,25 +164,32 @@ class ByteCodeExpressionVisitor implements ExpressionVisitor
     @Override
     public void load( LocalVariable variable )
     {
-        switch ( variable.type().simpleName() )
+        if ( variable.type().isPrimitive() )
         {
-        case "int":
-        case "byte":
-        case "short":
-        case "char":
-        case "boolean":
-            methodVisitor.visitVarInsn( ILOAD, variable.index() );
-            break;
-        case "long":
-            methodVisitor.visitVarInsn( LLOAD, variable.index() );
-            break;
-        case "float":
-            methodVisitor.visitVarInsn( FLOAD, variable.index() );
-            break;
-        case "double":
-            methodVisitor.visitVarInsn( DLOAD, variable.index() );
-            break;
-        default:
+            switch ( variable.type().name() )
+            {
+            case "int":
+            case "byte":
+            case "short":
+            case "char":
+            case "boolean":
+                methodVisitor.visitVarInsn( ILOAD, variable.index() );
+                break;
+            case "long":
+                methodVisitor.visitVarInsn( LLOAD, variable.index() );
+                break;
+            case "float":
+                methodVisitor.visitVarInsn( FLOAD, variable.index() );
+                break;
+            case "double":
+                methodVisitor.visitVarInsn( DLOAD, variable.index() );
+                break;
+            default:
+                methodVisitor.visitVarInsn( ALOAD, variable.index() );
+            }
+        }
+        else
+        {
             methodVisitor.visitVarInsn( ALOAD, variable.index() );
         }
     }
@@ -319,25 +326,32 @@ class ByteCodeExpressionVisitor implements ExpressionVisitor
     private void equal( Expression lhs, Expression rhs, boolean equal )
     {
         assertSameType( lhs, rhs, "compare" );
-        switch ( lhs.type().simpleName() )
+        if ( lhs.type().isPrimitive() )
         {
-        case "int":
-        case "byte":
-        case "short":
-        case "char":
-        case "boolean":
-            compareIntOrReferenceType( lhs, rhs, equal ? IF_ICMPNE : IF_ICMPEQ );
-            break;
-        case "long":
-            compareLongOrFloatType( lhs, rhs, LCMP, equal ? IFNE : IFEQ );
-            break;
-        case "float":
-            compareLongOrFloatType( lhs, rhs, FCMPL, equal ? IFNE : IFEQ );
-            break;
-        case "double":
-            compareLongOrFloatType( lhs, rhs, DCMPL, equal ? IFNE : IFEQ );
-            break;
-        default:
+            switch ( lhs.type().name() )
+            {
+            case "int":
+            case "byte":
+            case "short":
+            case "char":
+            case "boolean":
+                compareIntOrReferenceType( lhs, rhs, equal ? IF_ICMPNE : IF_ICMPEQ );
+                break;
+            case "long":
+                compareLongOrFloatType( lhs, rhs, LCMP, equal ? IFNE : IFEQ );
+                break;
+            case "float":
+                compareLongOrFloatType( lhs, rhs, FCMPL, equal ? IFNE : IFEQ );
+                break;
+            case "double":
+                compareLongOrFloatType( lhs, rhs, DCMPL, equal ? IFNE : IFEQ );
+                break;
+            default:
+                compareIntOrReferenceType( lhs, rhs, equal ? IF_ACMPNE : IF_ACMPEQ );
+            }
+        }
+        else
+        {
             compareIntOrReferenceType( lhs, rhs, equal ? IF_ACMPNE : IF_ACMPEQ );
         }
     }
@@ -546,8 +560,10 @@ class ByteCodeExpressionVisitor implements ExpressionVisitor
     public void box( Expression expression )
     {
         expression.accept( this );
-        switch ( expression.type().simpleName() )
+        if ( expression.type().isPrimitive() )
         {
+            switch ( expression.type().name() )
+            {
             case "byte":
                 methodVisitor.visitMethodInsn( INVOKESTATIC, "java/lang/Byte", "valueOf", "(B)Ljava/lang/Byte;", false );
                 break;
@@ -574,6 +590,7 @@ class ByteCodeExpressionVisitor implements ExpressionVisitor
                 break;
             default:
                 //do nothing, expression is already boxed
+            }
         }
     }
 
@@ -581,7 +598,7 @@ class ByteCodeExpressionVisitor implements ExpressionVisitor
     public void unbox( Expression expression )
     {
         expression.accept( this );
-        switch ( expression.type().name() )
+        switch ( expression.type().fullName() )
         {
         case "java.lang.Byte":
             methodVisitor.visitMethodInsn(INVOKEVIRTUAL, "java/lang/Byte", "byteValue", "()B", false);
@@ -608,7 +625,7 @@ class ByteCodeExpressionVisitor implements ExpressionVisitor
             methodVisitor.visitMethodInsn(INVOKEVIRTUAL, "java/lang/Double", "doubleValue", "()D", false);
             break;
         default:
-            throw new IllegalStateException( "Cannot unbox " + expression.type().name() );
+            throw new IllegalStateException( "Cannot unbox " + expression.type().fullName() );
         }
     }
 
@@ -689,75 +706,93 @@ class ByteCodeExpressionVisitor implements ExpressionVisitor
 
     private void createArray( TypeReference reference )
     {
-        switch ( reference.name() )
+        if ( reference.isPrimitive() )
         {
-        case "int":
-            methodVisitor.visitIntInsn( NEWARRAY, T_INT );
-            break;
-        case "long":
-            methodVisitor.visitIntInsn( NEWARRAY, T_LONG );
-            break;
-        case "byte":
-            methodVisitor.visitIntInsn( NEWARRAY, T_BYTE );
-            break;
-        case "short":
-            methodVisitor.visitIntInsn( NEWARRAY, T_SHORT );
-            break;
-        case "char":
-            methodVisitor.visitIntInsn( NEWARRAY, T_CHAR );
-            break;
-        case "float":
-            methodVisitor.visitIntInsn( NEWARRAY, T_FLOAT );
-            break;
-        case "double":
-            methodVisitor.visitIntInsn( NEWARRAY, T_DOUBLE );
-            break;
-        case "boolean":
-            methodVisitor.visitIntInsn( NEWARRAY, T_BOOLEAN );
-            break;
-        default:
+            switch ( reference.name() )
+            {
+            case "int":
+                methodVisitor.visitIntInsn( NEWARRAY, T_INT );
+                break;
+            case "long":
+                methodVisitor.visitIntInsn( NEWARRAY, T_LONG );
+                break;
+            case "byte":
+                methodVisitor.visitIntInsn( NEWARRAY, T_BYTE );
+                break;
+            case "short":
+                methodVisitor.visitIntInsn( NEWARRAY, T_SHORT );
+                break;
+            case "char":
+                methodVisitor.visitIntInsn( NEWARRAY, T_CHAR );
+                break;
+            case "float":
+                methodVisitor.visitIntInsn( NEWARRAY, T_FLOAT );
+                break;
+            case "double":
+                methodVisitor.visitIntInsn( NEWARRAY, T_DOUBLE );
+                break;
+            case "boolean":
+                methodVisitor.visitIntInsn( NEWARRAY, T_BOOLEAN );
+                break;
+            default:
+                methodVisitor.visitTypeInsn( ANEWARRAY, byteCodeName( reference ) );
+            }
+        }
+        else
+        {
             methodVisitor.visitTypeInsn( ANEWARRAY, byteCodeName( reference ) );
         }
     }
 
     private void arrayStore( TypeReference reference )
     {
-        switch ( reference.name() )
+        if ( reference.isPrimitive() )
         {
-        case "int":
-            methodVisitor.visitInsn( IASTORE );
-            break;
-        case "long":
-            methodVisitor.visitInsn( LASTORE );
-            break;
-        case "byte":
-            methodVisitor.visitInsn( BASTORE );
-            break;
-        case "short":
-            methodVisitor.visitInsn( SASTORE );
-            break;
-        case "char":
-            methodVisitor.visitInsn( CASTORE );
-            break;
-        case "float":
-            methodVisitor.visitInsn( FASTORE );
-            break;
-        case "double":
-            methodVisitor.visitInsn( DASTORE );
-            break;
-        case "boolean":
-            methodVisitor.visitInsn( BASTORE );
-            break;
-        default:
+            switch ( reference.name() )
+            {
+            case "int":
+                methodVisitor.visitInsn( IASTORE );
+                break;
+            case "long":
+                methodVisitor.visitInsn( LASTORE );
+                break;
+            case "byte":
+                methodVisitor.visitInsn( BASTORE );
+                break;
+            case "short":
+                methodVisitor.visitInsn( SASTORE );
+                break;
+            case "char":
+                methodVisitor.visitInsn( CASTORE );
+                break;
+            case "float":
+                methodVisitor.visitInsn( FASTORE );
+                break;
+            case "double":
+                methodVisitor.visitInsn( DASTORE );
+                break;
+            case "boolean":
+                methodVisitor.visitInsn( BASTORE );
+                break;
+            default:
+                methodVisitor.visitInsn( AASTORE );
+            }
+        }
+        else
+        {
             methodVisitor.visitInsn( AASTORE );
-
         }
     }
 
     private void numberOperation( TypeReference type, Runnable onInt, Runnable onLong, Runnable onFloat,
             Runnable onDouble )
     {
-        switch ( type.simpleName() )
+        if ( !type.isPrimitive() )
+        {
+            throw new IllegalStateException( "Cannot compare reference types" );
+        }
+
+        switch ( type.name() )
         {
         case "int":
         case "byte":

@@ -237,11 +237,11 @@ public class OperationsFacade
     }
 
     @Override
-    public long nodeGetFromUniqueIndexSeek( NewIndexDescriptor index, Object value )
+    public long nodeGetFromUniqueIndexSeek( NewIndexDescriptor index, IndexQuery.ExactPredicate... predicates )
             throws IndexNotFoundKernelException, IndexBrokenKernelException, IndexNotApplicableKernelException
     {
         statement.assertOpen();
-        return dataRead().nodeGetFromUniqueIndexSeek( statement, index, value );
+        return dataRead().nodeGetFromUniqueIndexSeek( statement, index, predicates );
     }
 
     @Override

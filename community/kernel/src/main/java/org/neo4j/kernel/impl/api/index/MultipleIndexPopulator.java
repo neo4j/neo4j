@@ -30,6 +30,7 @@ import java.util.Queue;
 import java.util.concurrent.CopyOnWriteArrayList;
 import java.util.concurrent.LinkedBlockingQueue;
 import java.util.function.IntPredicate;
+import java.util.stream.IntStream;
 
 import org.neo4j.collection.primitive.PrimitiveLongSet;
 import org.neo4j.function.ThrowingConsumer;
@@ -309,7 +310,10 @@ public class MultipleIndexPopulator implements IndexPopulator
 
     private int[] propertyKeyIds()
     {
-        return populations.stream().mapToInt( population -> population.descriptor.schema().getPropertyId() ).toArray();
+        return populations.stream()
+                .flatMapToInt( population ->
+                        IntStream.of( population.descriptor.schema().getPropertyIds() ) )
+                .toArray();
     }
 
     private int[] labelIds()
