@@ -264,9 +264,9 @@ public class ConfigTest
         // Then
         assertEquals( Optional.of( "<documented default value>" ),
                 config.getConfigValues().get( MySettingsWithDefaults.secretSetting.name() )
-                        .getDocumentedDefaultValue() );
+                        .documentedDefaultValue() );
         assertEquals( Optional.empty(),
-                config.getConfigValues().get( MySettingsWithDefaults.hello.name() ).getDocumentedDefaultValue() );
+                config.getConfigValues().get( MySettingsWithDefaults.hello.name() ).documentedDefaultValue() );
     }
 
     @Test

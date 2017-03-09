@@ -95,7 +95,7 @@ public interface Setting<T> extends Function<Function<String,String>,T>, Setting
     }
 
     @Override
-    default List<Setting> settings( Map<String,String> params )
+    default List<Setting<T>> settings( Map<String,String> params )
     {
         return Collections.singletonList( this );
     }

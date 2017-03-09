@@ -23,10 +23,14 @@ import java.util.Map;
 import java.util.Optional;
 import javax.annotation.Nonnull;
 
+import org.neo4j.graphdb.config.BaseSetting;
 import org.neo4j.graphdb.config.Setting;
 
+import static java.lang.String.format;
 import static org.neo4j.kernel.configuration.BoltConnector.EncryptionLevel.OPTIONAL;
 import static org.neo4j.kernel.configuration.Connector.ConnectorType.BOLT;
+import static org.neo4j.kernel.configuration.Settings.BOOLEAN;
+import static org.neo4j.kernel.configuration.Settings.NO_DEFAULT;
 import static org.neo4j.kernel.configuration.Settings.advertisedAddress;
 import static org.neo4j.kernel.configuration.Settings.listenAddress;
 import static org.neo4j.kernel.configuration.Settings.options;
@@ -41,25 +45,58 @@ public class BoltConnectorValidator extends ConnectorValidator
 
     @Override
     @Nonnull
-    protected Optional<Setting> getSettingFor( @Nonnull String settingName, @Nonnull Map<String,String> params )
+    protected Optional<Setting<Object>> getSettingFor( @Nonnull String settingName, @Nonnull Map<String,String> params )
     {
         // owns has already verified that 'type' is correct and that this split is possible
         String[] parts = settingName.split( "\\." );
+        final String name = parts[2];
         final String subsetting = parts[3];
+
+        BaseSetting setting;
 
         switch ( subsetting )
         {
+        case "enabled":
+            setting = setting( settingName, BOOLEAN, "false" );
+            setting.setDescription( "Enable this connector." );
+            break;
+        case "type":
+            setting = setting( settingName, options( Connector.ConnectorType.class ), NO_DEFAULT );
+            setting.setDeprecated( true );
+            setting.setDescription( "Connector type. This setting is deprecated and its value will instead be " +
+                    "inferred from the name of the connector." );
+            break;
         case "tls_level":
-            return Optional.of( setting( settingName, options( BoltConnector.EncryptionLevel.class ),
-                    OPTIONAL.name() ) );
+            setting = setting( settingName, options( BoltConnector.EncryptionLevel.class ),
+                    OPTIONAL.name() );
+            setting.setDescription( "Encryption level to require this connector to use." );
+            break;
         case "address":
+            setting = listenAddress( settingName, 7687 );
+            setting.setDeprecated( true );
+            setting.setReplacement( "dbms.connector." + name + ".listen_address" );
+            setting.setDescription( "Address the connector should bind to. Deprecated and replaced by "
+                    + setting.replacement().get() + "." );
+            break;
         case "listen_address":
-            return Optional.of( listenAddress( settingName, 7687 ) );
+            setting = listenAddress( settingName, 7687 );
+            setting.setDescription( "Address the connector should bind to." );
+            break;
         case "advertised_address":
-            return Optional.of( advertisedAddress( settingName,
-                    listenAddress( settingName, 7687 ) ) );
+            setting = advertisedAddress( settingName,
+                    listenAddress( settingName, 7687 ) );
+            setting.setDescription( "Advertised address for this connector." );
+            break;
         default:
-            return super.getSettingFor( settingName, params );
+            return Optional.empty();
         }
+
+        // If not deprecated for other reasons
+        if ( isDeprecatedConnectorName( name ) && !setting.deprecated() )
+        {
+            setting.setDeprecated( true );
+            setting.setReplacement( format( "%s.%s.%s.%s", parts[0], parts[1], "bolt", subsetting ) );
+        }
+        return Optional.of( setting );
     }
 }

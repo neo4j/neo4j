@@ -24,6 +24,7 @@ import java.util.List;
 import java.util.Map;
 import java.util.function.Function;
 
+import org.neo4j.graphdb.config.BaseSetting;
 import org.neo4j.graphdb.config.Configuration;
 import org.neo4j.graphdb.config.Setting;
 
@@ -44,31 +45,40 @@ public class ExternalSettings implements LoadableConfig
     public static final Setting<String> additionalJvm = dummySetting( "dbms.jvm.additional" );
 
     @Description( "Initial heap size. By default it is calculated based on available system resources." )
-    public static final Setting<String> initialHeapSize = dummySetting( "dbms.memory.heap.initial_size" );
+    public static final Setting<String> initialHeapSize = dummySetting( "dbms.memory.heap.initial_size",
+            "", "a byte size (valid units are `k`, `K`, `m`, `M`, `g`, `G`)" );
 
     @Description( "Maximum heap size. By default it is calculated based on available system resources." )
-    public static final Setting<String> maxHeapSize = dummySetting( "dbms.memory.heap.max_size" );
+    public static final Setting<String> maxHeapSize = dummySetting( "dbms.memory.heap.max_size", "",
+            "a byte size (valid units are `k`, `K`, `m`, `M`, `g`, `G`)" );
 
-    static final DummySetting dummySetting( String name )
+    private static DummySetting dummySetting( String name )
     {
-        return new DummySetting( name, "" );
+        return new DummySetting( name, "", "a string" );
     }
 
-    static final DummySetting dummySetting( String name, String defVal )
+    private static DummySetting dummySetting( String name, String defVal)
     {
-        return new DummySetting( name, defVal );
+        return new DummySetting( name, defVal, "a string" );
     }
 
-    static class DummySetting implements Setting<String>
+    private static DummySetting dummySetting( String name, String defVal, String valDesc )
+    {
+        return new DummySetting( name, defVal, valDesc );
+    }
+
+    static class DummySetting extends BaseSetting<String>
     {
 
         private final String name;
         private final String defaultValue;
+        private final String valueDescription;
 
-        public DummySetting( String name, String defVal )
+        public DummySetting( String name, String defVal, String valueDescription )
         {
             this.name = name;
             this.defaultValue = defVal;
+            this.valueDescription = valueDescription;
         }
 
         @Override
@@ -102,9 +112,15 @@ public class ExternalSettings implements LoadableConfig
         }
 
         @Override
-        public List<Setting> settings( Map<String,String> params )
+        public List<Setting<String>> settings( Map<String,String> params )
         {
             return Collections.singletonList( this );
+        }
+
+        @Override
+        public String valueDescription()
+        {
+            return valueDescription;
         }
     }
 }

@@ -46,8 +46,8 @@ public class BuiltInDbmsProcedures
     {
         Config config = graph.getDependencyResolver().resolveDependency( Config.class );
         return config.getConfigValues().values().stream()
+                .filter( c -> !c.internal() )
                 .map( ConfigResult::new )
-                .filter( c -> !c.name.toLowerCase().startsWith( "unsupported" ) )
                 .filter( c -> c.name.toLowerCase().contains( searchString.toLowerCase() ) )
                 .sorted( Comparator.comparing( c -> c.name ) );
     }

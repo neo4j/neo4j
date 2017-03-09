@@ -28,11 +28,13 @@ import java.util.ArrayList;
 import java.util.Arrays;
 import java.util.EnumSet;
 import java.util.List;
+import java.util.Optional;
 import java.util.function.BiFunction;
 import java.util.function.Function;
-import java.util.Optional;
 import java.util.regex.Pattern;
+import javax.annotation.Nonnull;
 
+import org.neo4j.graphdb.config.BaseSetting;
 import org.neo4j.graphdb.config.Configuration;
 import org.neo4j.graphdb.config.InvalidSettingException;
 import org.neo4j.graphdb.config.ScopeAwareSetting;
@@ -108,13 +110,13 @@ public class Settings
     public static final String ANY = ".+";
 
     @SuppressWarnings("unchecked")
-    public static <T> Setting<T> setting( final String name, final Function<String, T> parser,
+    public static <T> BaseSetting<T> setting( final String name, final Function<String, T> parser,
                                           final String defaultValue )
     {
         return setting( name, parser, defaultValue, (Setting<T>) null );
     }
 
-    public static <T> Setting<T> setting( final String name, final Function<String, T> parser,
+    public static <T> BaseSetting<T> setting( final String name, final Function<String, T> parser,
                                           final String defaultValue,
                                           final BiFunction<T, Function<String, String>, T>... valueConverters )
     {
@@ -128,7 +130,7 @@ public class Settings
         return setting( name, parser, null, inheritedSetting );
     }
 
-    public static <T> Setting<T> setting( final String name, final Function<String, T> parser,
+    public static <T> BaseSetting<T> setting( final String name, final Function<String, T> parser,
                                           final String defaultValue,
                                           final Setting<T> inheritedSetting, final BiFunction<T, Function<String,
             String>, T>... valueConverters )
@@ -207,6 +209,12 @@ public class Settings
                 }
                 return derivation.apply( in1.apply( config ), in2.apply( config ) );
             }
+
+            @Override
+            public String valueDescription()
+            {
+                return in1.valueDescription();
+            }
         };
     }
 
@@ -244,6 +252,12 @@ public class Settings
                     return overrideConverter.apply( override );
                 }
                 return derivation.apply( in1.apply( config ) );
+            }
+
+            @Override
+            public String valueDescription()
+            {
+                return in1.valueDescription();
             }
         };
     }
@@ -297,7 +311,7 @@ public class Settings
             }
 
             @Override
-            public String toString()
+            public String valueDescription()
             {
                 return "A filesystem path; relative paths are resolved against the installation root, _<neo4j-home>_";
             }
@@ -523,7 +537,7 @@ public class Settings
                 }
             };
 
-    public static Setting<ListenSocketAddress> listenAddress( String name, int defaultPort )
+    public static BaseSetting<ListenSocketAddress> listenAddress( String name, int defaultPort )
     {
         return new ScopeAwareSetting<ListenSocketAddress>()
         {
@@ -556,14 +570,15 @@ public class Settings
             }
 
             @Override
-            public String toString()
+            public String valueDescription()
             {
                 return LISTEN_SOCKET_ADDRESS.toString();
             }
         };
     }
 
-    public static Setting<AdvertisedSocketAddress> advertisedAddress( String name, Setting<ListenSocketAddress> listenAddressSetting )
+    public static BaseSetting<AdvertisedSocketAddress> advertisedAddress( String name,
+            Setting<ListenSocketAddress> listenAddressSetting )
     {
         return new ScopeAwareSetting<AdvertisedSocketAddress>()
         {
@@ -607,7 +622,7 @@ public class Settings
             }
 
             @Override
-            public String toString()
+            public String valueDescription()
             {
                 return ADVERTISED_SOCKET_ADDRESS.toString();
             }
@@ -784,18 +799,29 @@ public class Settings
             @Override
             public String toString()
             {
-                StringBuilder builder = new StringBuilder(  );
-                builder.append( "one of `" );
-                String comma = "";
-                for ( T optionValue : optionValues )
-                {
-                    builder.append( comma ).append( optionValue.toString() );
-                    comma = "`, `";
-                }
-                builder.append( "`" );
-                return builder.toString();
+                return describeOneOf( optionValues );
             }
         };
+    }
+
+    /**
+     *
+     * @param optionValues iterable of objects with descriptive toString methods
+     * @return a string describing possible values like "one of `X, Y, Z`"
+     */
+    @Nonnull
+    public static String describeOneOf( @Nonnull Iterable optionValues )
+    {
+        StringBuilder builder = new StringBuilder();
+        builder.append( "one of `" );
+        String comma = "";
+        for ( Object optionValue : optionValues )
+        {
+            builder.append( comma ).append( optionValue.toString() );
+            comma = "`, `";
+        }
+        builder.append( "`" );
+        return builder.toString();
     }
 
     public static <T> Function<String, List<T>> list( final String separator, final Function<String, T> itemParser )
@@ -1110,9 +1136,39 @@ public class Settings
             }
 
             @Override
-            public String toString()
+            public String valueDescription()
             {
-                return newSetting.toString();
+                return newSetting.valueDescription();
+            }
+
+            @Override
+            public Optional<String> description()
+            {
+                return newSetting.description();
+            }
+
+            @Override
+            public boolean deprecated()
+            {
+                return newSetting.deprecated();
+            }
+
+            @Override
+            public Optional<String> replacement()
+            {
+                return newSetting.replacement();
+            }
+
+            @Override
+            public boolean internal()
+            {
+                return newSetting.internal();
+            }
+
+            @Override
+            public Optional<String> documentedDefaultValue()
+            {
+                return newSetting.documentedDefaultValue();
             }
         };
     }
@@ -1235,7 +1291,7 @@ public class Settings
         }
 
         @Override
-        public String toString()
+        public String valueDescription()
         {
             StringBuilder builder = new StringBuilder(  );
             builder.append( name() ).append( " is " ).append( parser.toString() );

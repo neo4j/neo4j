@@ -243,6 +243,7 @@ public class GraphDatabaseSettings implements LoadableConfig
     @Internal
     @Description( "Please use dbms.transaction.timeout instead." )
     @Deprecated
+    @ReplacedBy( "dbms.transaction.timeout" )
     public static final Setting<Boolean> execution_guard_enabled = setting("unsupported.dbms.executiontime_limit.enabled", BOOLEAN, FALSE );
 
     @Description("The maximum time interval of a transaction within which it should be completed.")
