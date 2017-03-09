@@ -1,6 +1,6 @@
 .DEFAULT: all
 .PHONY: all clean debian neo4j-desktop-mac neo4j-desktop-windows rpm
-
+#TESTSEDR
 ARTIFACTS=../packaging/standalone/target
 COMMUNITY_LICENSE=../community/LICENSE.txt
 COMMUNITY_POM=../community/pom.xml
