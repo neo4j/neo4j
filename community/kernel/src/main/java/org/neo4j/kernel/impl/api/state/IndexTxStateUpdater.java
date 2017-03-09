@@ -95,7 +95,7 @@ public class IndexTxStateUpdater
     public void onPropertyAdd( KernelStatement state, NodeItem node, DefinedProperty after )
             throws EntityNotFoundException
     {
-        Iterator<NewIndexDescriptor> indexes = getIndexesForProperty( state, after.propertyKeyId() );
+        Iterator<NewIndexDescriptor> indexes = getIndexesInvolvingProperty( state, after.propertyKeyId() );
         nodeIndexMatcher.onMatchingSchema( state, indexes, node, after.propertyKeyId(),
                 index -> {
                     Validators.INDEX_VALUE_VALIDATOR.validate( after.value() );
@@ -108,7 +108,7 @@ public class IndexTxStateUpdater
     public void onPropertyRemove( KernelStatement state, NodeItem node, DefinedProperty before )
             throws EntityNotFoundException
     {
-        Iterator<NewIndexDescriptor> indexes = getIndexesForProperty( state, before.propertyKeyId() );
+        Iterator<NewIndexDescriptor> indexes = getIndexesInvolvingProperty( state, before.propertyKeyId() );
         nodeIndexMatcher.onMatchingSchema( state, indexes, node, before.propertyKeyId(),
                 index -> {
                     OrderedPropertyValues values =
@@ -121,7 +121,7 @@ public class IndexTxStateUpdater
             throws EntityNotFoundException
     {
         assert before.propertyKeyId() == after.propertyKeyId();
-        Iterator<NewIndexDescriptor> indexes = getIndexesForProperty( state, before.propertyKeyId() );
+        Iterator<NewIndexDescriptor> indexes = getIndexesInvolvingProperty( state, before.propertyKeyId() );
         nodeIndexMatcher.onMatchingSchema( state, indexes, node, before.propertyKeyId(),
                 index -> {
                     Validators.INDEX_VALUE_VALIDATOR.validate( after.value() );
@@ -200,7 +200,7 @@ public class IndexTxStateUpdater
 
     // Lifting this method to the schemaReadOps layer could allow more efficient finding of indexes, by introducing
     // suitable maps in the SchemaCache. This can be done when we have a benchmarking reason.
-    private Iterator<NewIndexDescriptor> getIndexesForProperty( KernelStatement state, int propertyId )
+    private Iterator<NewIndexDescriptor> getIndexesInvolvingProperty( KernelStatement state, int propertyId )
     {
         Iterator<NewIndexDescriptor> allIndexes =
                 Iterators.concat(

@@ -140,7 +140,7 @@ public class ConstraintEnforcingEntityOperations implements EntityOperations, Sc
         try ( Cursor<NodeItem> cursor = nodeCursorById( state, nodeId ) )
         {
             NodeItem node = cursor.get();
-            Iterator<ConstraintDescriptor> constraints = getConstraintsForProperty( state, property.propertyKeyId() );
+            Iterator<ConstraintDescriptor> constraints = getConstraintsInvolvingProperty( state, property.propertyKeyId() );
             Iterator<UniquenessConstraintDescriptor> uniquenessConstraints =
                     new CastingIterator<>( constraints, UniquenessConstraintDescriptor.class );
 
@@ -155,7 +155,7 @@ public class ConstraintEnforcingEntityOperations implements EntityOperations, Sc
         return entityWriteOperations.nodeSetProperty( state, nodeId, property );
     }
 
-    private Iterator<ConstraintDescriptor> getConstraintsForProperty( KernelStatement state, int propertyId )
+    private Iterator<ConstraintDescriptor> getConstraintsInvolvingProperty( KernelStatement state, int propertyId )
     {
         Iterator<ConstraintDescriptor> allConstraints = schemaReadOperations.constraintsGetAll( state );
 
