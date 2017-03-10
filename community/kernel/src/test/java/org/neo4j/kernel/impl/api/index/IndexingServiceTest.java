@@ -531,7 +531,7 @@ public class IndexingServiceTest
         life.start();
 
         // when
-        indexingService.triggerIndexSampling( descriptor , mode );
+        indexingService.triggerIndexSampling( descriptor.schema() , mode );
 
         // then
         String userDescription = descriptor.schema().userDescription( nameLookup );
@@ -1002,7 +1002,7 @@ public class IndexingServiceTest
 
     private IndexEntryUpdate add( long nodeId, Object propertyValue )
     {
-        return IndexEntryUpdate.add( nodeId, index, propertyValue );
+        return IndexEntryUpdate.add( nodeId, index.schema(), propertyValue );
     }
 
     private IndexingService newIndexingServiceWithMockedDependencies( IndexPopulator populator,

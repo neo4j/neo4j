@@ -324,17 +324,17 @@ public class DatabaseIndexAccessorTest
 
     private IndexEntryUpdate add( long nodeId, Object value )
     {
-        return IndexEntryUpdate.add( nodeId, indexDescriptor, value );
+        return IndexEntryUpdate.add( nodeId, indexDescriptor.schema(), value );
     }
 
     private IndexEntryUpdate remove( long nodeId, Object value )
     {
-        return IndexEntryUpdate.remove( nodeId, indexDescriptor, value );
+        return IndexEntryUpdate.remove( nodeId, indexDescriptor.schema(), value );
     }
 
     private IndexEntryUpdate change( long nodeId, Object valueBefore, Object valueAfter )
     {
-        return IndexEntryUpdate.change( nodeId, indexDescriptor, valueBefore, valueAfter );
+        return IndexEntryUpdate.change( nodeId, indexDescriptor.schema(), valueBefore, valueAfter );
     }
 
     private void updateAndCommit( List<IndexEntryUpdate> nodePropertyUpdates )

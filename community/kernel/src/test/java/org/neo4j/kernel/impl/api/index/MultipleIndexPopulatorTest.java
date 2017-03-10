@@ -38,6 +38,8 @@ import org.neo4j.kernel.api.index.IndexPopulator;
 import org.neo4j.kernel.api.index.IndexUpdater;
 import org.neo4j.kernel.api.index.PropertyAccessor;
 import org.neo4j.kernel.api.index.SchemaIndexProvider;
+import org.neo4j.kernel.api.schema_new.LabelSchemaDescriptor;
+import org.neo4j.kernel.api.schema_new.SchemaDescriptorFactory;
 import org.neo4j.kernel.api.schema_new.index.NewIndexDescriptor;
 import org.neo4j.kernel.api.schema_new.index.NewIndexDescriptorFactory;
 import org.neo4j.kernel.impl.api.index.MultipleIndexPopulator.IndexPopulation;
@@ -72,7 +74,7 @@ public class MultipleIndexPopulatorTest
     @InjectMocks
     private MultipleIndexPopulator multipleIndexPopulator;
 
-    private final NewIndexDescriptor index1 = NewIndexDescriptorFactory.forLabel( 1, 1 );
+    private final LabelSchemaDescriptor index1 = SchemaDescriptorFactory.forLabel( 1, 1 );
 
     @Before
     public void setUp()
@@ -312,7 +314,7 @@ public class MultipleIndexPopulatorTest
 
         IndexUpdater multipleIndexUpdater =
                 multipleIndexPopulator.newPopulatingUpdater( mock( PropertyAccessor.class ) );
-        IndexEntryUpdate propertyUpdate = createNodePropertyUpdate( index1 );
+        IndexEntryUpdate propertyUpdate = createIndexEntryUpdate( index1 );
         multipleIndexUpdater.process( propertyUpdate );
 
         checkPopulatorFailure( indexPopulator2 );
@@ -331,7 +333,7 @@ public class MultipleIndexPopulatorTest
         IndexUpdater multipleIndexUpdater =
                 multipleIndexPopulator.newPopulatingUpdater( mock( PropertyAccessor.class ) );
 
-        IndexEntryUpdate propertyUpdate = createNodePropertyUpdate( index1 );
+        IndexEntryUpdate propertyUpdate = createIndexEntryUpdate( index1 );
         multipleIndexUpdater.process( propertyUpdate );
 
         verifyZeroInteractions( indexUpdater1 );
@@ -341,7 +343,7 @@ public class MultipleIndexPopulatorTest
     public void testPropertyUpdateFailure()
             throws IOException, IndexEntryConflictException
     {
-        IndexEntryUpdate propertyUpdate = createNodePropertyUpdate( index1 );
+        IndexEntryUpdate propertyUpdate = createIndexEntryUpdate( index1 );
         IndexUpdater indexUpdater1 = mock( IndexUpdater.class );
         IndexPopulator indexPopulator1 = createIndexPopulator( indexUpdater1 );
 
@@ -383,9 +385,9 @@ public class MultipleIndexPopulatorTest
         checkPopulatorFailure( populator );
     }
 
-    private IndexEntryUpdate createNodePropertyUpdate( NewIndexDescriptor index )
+    private IndexEntryUpdate createIndexEntryUpdate( LabelSchemaDescriptor schemaDescriptor )
     {
-        return IndexEntryUpdate.add( 1, index, "theValue" );
+        return IndexEntryUpdate.add( 1, schemaDescriptor, "theValue" );
     }
 
     private RuntimeException getSampleError()

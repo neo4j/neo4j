@@ -936,7 +936,7 @@ public class BatchInsertTest
         verify( provider ).start();
         verify( provider ).getPopulator( anyLong(), any( NewIndexDescriptor.class ), any( IndexSamplingConfig.class ) );
         verify( populator ).create();
-        verify( populator ).add( singletonList( IndexEntryUpdate.add( nodeId, internalIndex, "Jakewins" ) ) );
+        verify( populator ).add( singletonList( IndexEntryUpdate.add( nodeId, internalIndex.schema(), "Jakewins" ) ) );
         verify( populator ).verifyDeferredConstraints( any( PropertyAccessor.class ) );
         verify( populator ).close( true );
         verify( provider ).stop();
@@ -970,7 +970,7 @@ public class BatchInsertTest
         verify( provider ).start();
         verify( provider ).getPopulator( anyLong(), any( NewIndexDescriptor.class ), any( IndexSamplingConfig.class ) );
         verify( populator ).create();
-        verify( populator ).add( singletonList( IndexEntryUpdate.add( nodeId, internalUniqueIndex,
+        verify( populator ).add( singletonList( IndexEntryUpdate.add( nodeId, internalUniqueIndex.schema(),
                 "Jakewins" ) ) );
         verify( populator ).verifyDeferredConstraints( any( PropertyAccessor.class ) );
         verify( populator ).close( true );
@@ -1005,8 +1005,8 @@ public class BatchInsertTest
         verify( provider ).start();
         verify( provider ).getPopulator( anyLong(), any( NewIndexDescriptor.class ), any( IndexSamplingConfig.class ) );
         verify( populator ).create();
-        verify( populator ).add( singletonList( IndexEntryUpdate.add( jakewins, internalIndex, "Jakewins" ) ) );
-        verify( populator ).add( singletonList( IndexEntryUpdate.add( boggle, internalIndex, "b0ggl3" ) ) );
+        verify( populator ).add( singletonList( IndexEntryUpdate.add( jakewins, internalIndex.schema(), "Jakewins" ) ) );
+        verify( populator ).add( singletonList( IndexEntryUpdate.add( boggle, internalIndex.schema(), "b0ggl3" ) ) );
         verify( populator ).verifyDeferredConstraints( any( PropertyAccessor.class ) );
         verify( populator ).close( true );
         verify( provider ).stop();

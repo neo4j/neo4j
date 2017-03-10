@@ -58,8 +58,8 @@ public class NonUniqueIndexPopulatorCompatibility extends IndexProviderCompatibi
         IndexSamplingConfig indexSamplingConfig = new IndexSamplingConfig( Config.empty() );
         IndexPopulator populator = indexProvider.getPopulator( 17, descriptor, indexSamplingConfig );
         populator.create();
-        populator.add( Arrays.asList( IndexEntryUpdate.add( 1, descriptor, "value1" ),
-                IndexEntryUpdate.add( 2, descriptor, "value1" ) ) );
+        populator.add( Arrays.asList( IndexEntryUpdate.add( 1, descriptor.schema(), "value1" ),
+                IndexEntryUpdate.add( 2, descriptor.schema(), "value1" ) ) );
         populator.close( true );
 
         // then
@@ -132,11 +132,11 @@ public class NonUniqueIndexPopulatorCompatibility extends IndexProviderCompatibi
                 ( nodeId1, propertyKeyId ) -> Property.stringProperty( propertyKeyId, propertyValue );
 
         // this update (using add())...
-        populator.add( singletonList( IndexEntryUpdate.add( nodeId, descriptor, propertyValue ) ) );
+        populator.add( singletonList( IndexEntryUpdate.add( nodeId, descriptor.schema(), propertyValue ) ) );
         // ...is the same as this update (using update())
         try ( IndexUpdater updater = populator.newPopulatingUpdater( propertyAccessor ) )
         {
-            updater.process( add( nodeId, descriptor, propertyValue ) );
+            updater.process( add( nodeId, descriptor.schema(), propertyValue ) );
         }
 
         populator.close( true );

@@ -44,6 +44,8 @@ import org.neo4j.kernel.api.index.IndexEntryUpdate;
 import org.neo4j.kernel.api.index.IndexUpdater;
 import org.neo4j.kernel.api.index.PropertyAccessor;
 import org.neo4j.kernel.api.schema_new.IndexQuery;
+import org.neo4j.kernel.api.schema_new.LabelSchemaDescriptor;
+import org.neo4j.kernel.api.schema_new.SchemaDescriptorFactory;
 import org.neo4j.kernel.api.schema_new.index.NewIndexDescriptor;
 import org.neo4j.kernel.api.schema_new.index.NewIndexDescriptorFactory;
 import org.neo4j.storageengine.api.schema.IndexReader;
@@ -80,13 +82,15 @@ public class UniqueDatabaseIndexPopulatorTest
     private static final String INDEX_IDENTIFIER = "42";
 
     private final DirectoryFactory directoryFactory = new DirectoryFactory.InMemoryDirectoryFactory();
-    private static final NewIndexDescriptor descriptor = NewIndexDescriptorFactory.forLabel( LABEL_ID, PROPERTY_KEY_ID );
+    private static final NewIndexDescriptor descriptor = NewIndexDescriptorFactory
+            .forLabel( LABEL_ID, PROPERTY_KEY_ID );
 
     private final PropertyAccessor propertyAccessor = mock( PropertyAccessor.class );
 
     private PartitionedIndexStorage indexStorage;
     private SchemaIndex index;
     private UniqueLuceneIndexPopulator populator;
+    private LabelSchemaDescriptor schemaDescriptor;
 
     @Before
     public void setUp() throws Exception
@@ -97,6 +101,7 @@ public class UniqueDatabaseIndexPopulatorTest
         index = LuceneSchemaIndexBuilder.create( descriptor )
                 .withIndexStorage( indexStorage )
                 .build();
+        schemaDescriptor = descriptor.schema();
     }
 
     @After
@@ -146,7 +151,7 @@ public class UniqueDatabaseIndexPopulatorTest
         // when
         IndexUpdater updater = populator.newPopulatingUpdater( propertyAccessor );
 
-        updater.process( IndexEntryUpdate.change( 1, descriptor, "value1", "value2" ) );
+        updater.process( IndexEntryUpdate.change( 1, schemaDescriptor, "value1", "value2" ) );
 
         populator.close( true );
 
@@ -166,8 +171,8 @@ public class UniqueDatabaseIndexPopulatorTest
         // when
         IndexUpdater updater = populator.newPopulatingUpdater( propertyAccessor );
 
-        updater.process( IndexEntryUpdate.remove( 1, descriptor, "value1" ) );
-        updater.process( IndexEntryUpdate.add( 1, descriptor, "value1" ) );
+        updater.process( IndexEntryUpdate.remove( 1, schemaDescriptor, "value1" ) );
+        updater.process( IndexEntryUpdate.add( 1, schemaDescriptor, "value1" ) );
 
         populator.close( true );
 
@@ -186,7 +191,7 @@ public class UniqueDatabaseIndexPopulatorTest
         // when
         IndexUpdater updater = populator.newPopulatingUpdater( propertyAccessor );
 
-        updater.process( IndexEntryUpdate.remove( 1, descriptor, "value1" ) );
+        updater.process( IndexEntryUpdate.remove( 1, schemaDescriptor, "value1" ) );
 
         populator.close( true );
 
@@ -206,8 +211,8 @@ public class UniqueDatabaseIndexPopulatorTest
         // when
         IndexUpdater updater = populator.newPopulatingUpdater( propertyAccessor );
 
-        updater.process( IndexEntryUpdate.change( 1, descriptor, "value1", "value2" ) );
-        updater.process( IndexEntryUpdate.change( 2, descriptor, "value2", "value1" ) );
+        updater.process( IndexEntryUpdate.change( 1, schemaDescriptor, "value1", "value2" ) );
+        updater.process( IndexEntryUpdate.change( 2, schemaDescriptor, "value2", "value1" ) );
 
         populator.close( true );
 
@@ -295,7 +300,7 @@ public class UniqueDatabaseIndexPopulatorTest
         try
         {
             IndexUpdater updater = populator.newPopulatingUpdater( propertyAccessor );
-            updater.process( IndexEntryUpdate.add( 3, descriptor, "value1" ) );
+            updater.process( IndexEntryUpdate.add( 3, schemaDescriptor, "value1" ) );
             updater.close();
 
             fail( "should have thrown exception" );
@@ -317,7 +322,7 @@ public class UniqueDatabaseIndexPopulatorTest
 
         String value = "value1";
         IndexUpdater updater = populator.newPopulatingUpdater( propertyAccessor );
-        updater.process( IndexEntryUpdate.add( 1, descriptor, value ) );
+        updater.process( IndexEntryUpdate.add( 1, schemaDescriptor, value ) );
         addUpdate( populator, 2, value );
 
         when( propertyAccessor.getProperty( 1, PROPERTY_KEY_ID ) ).thenReturn(
@@ -351,8 +356,8 @@ public class UniqueDatabaseIndexPopulatorTest
                 stringProperty( PROPERTY_KEY_ID, "value1" ) );
 
         IndexUpdater updater = populator.newPopulatingUpdater( propertyAccessor );
-        updater.process( IndexEntryUpdate.add( 1, descriptor, "value1" ) );
-        updater.process( IndexEntryUpdate.change( 1, descriptor, "value1", "value1" ) );
+        updater.process( IndexEntryUpdate.add( 1, schemaDescriptor, "value1" ) );
+        updater.process( IndexEntryUpdate.change( 1, schemaDescriptor, "value1", "value1" ) );
         updater.close();
         addUpdate( populator, 2, "value2" );
         addUpdate( populator, 3, "value3" );
@@ -399,13 +404,13 @@ public class UniqueDatabaseIndexPopulatorTest
 
         for ( int nodeId = 0; nodeId < iterations; nodeId++ )
         {
-            updater.process( IndexEntryUpdate.add( nodeId, descriptor, 1 ) );
+            updater.process( IndexEntryUpdate.add( nodeId, schemaDescriptor, 1 ) );
             when( propertyAccessor.getProperty( nodeId, PROPERTY_KEY_ID ) ).thenReturn(
                     intProperty( PROPERTY_KEY_ID, nodeId ) );
         }
 
         // ... and the actual conflicting property:
-        updater.process( IndexEntryUpdate.add( iterations, descriptor, 1 ) );
+        updater.process( IndexEntryUpdate.add( iterations, schemaDescriptor, 1 ) );
         when( propertyAccessor.getProperty( iterations, PROPERTY_KEY_ID ) ).thenReturn(
                 intProperty( PROPERTY_KEY_ID, 1 ) ); // This collision is real!!!
 
@@ -507,13 +512,13 @@ public class UniqueDatabaseIndexPopulatorTest
     @Test
     public void sampleIncludedUpdates() throws Exception
     {
-        NewIndexDescriptor indexDescriptor = NewIndexDescriptorFactory.forLabel( 1, 1 );
+        LabelSchemaDescriptor schemaDescriptor = SchemaDescriptorFactory.forLabel( 1, 1 );
         populator = newPopulator();
         List<IndexEntryUpdate> updates = Arrays.asList(
-                IndexEntryUpdate.add( 1, indexDescriptor, "foo" ),
-                IndexEntryUpdate.add( 2, indexDescriptor, "bar" ),
-                IndexEntryUpdate.add( 3, indexDescriptor, "baz" ),
-                IndexEntryUpdate.add( 4, indexDescriptor, "qux" ) );
+                IndexEntryUpdate.add( 1, schemaDescriptor, "foo" ),
+                IndexEntryUpdate.add( 2, schemaDescriptor, "bar" ),
+                IndexEntryUpdate.add( 3, schemaDescriptor, "baz" ),
+                IndexEntryUpdate.add( 4, schemaDescriptor, "qux" ) );
 
         updates.forEach( populator::includeSample );
 
@@ -525,13 +530,13 @@ public class UniqueDatabaseIndexPopulatorTest
     @Test
     public void addUpdates() throws Exception
     {
-        NewIndexDescriptor indexDescriptor = NewIndexDescriptorFactory.forLabel( 1, 1 );
+        LabelSchemaDescriptor schemaDescriptor = SchemaDescriptorFactory.forLabel( 1, 1 );
         populator = newPopulator();
 
         List<IndexEntryUpdate> updates = Arrays.asList(
-                IndexEntryUpdate.add( 1, indexDescriptor, "aaa" ),
-                IndexEntryUpdate.add( 2, indexDescriptor, "bbb" ),
-                IndexEntryUpdate.add( 3, indexDescriptor, "ccc" ) );
+                IndexEntryUpdate.add( 1, schemaDescriptor, "aaa" ),
+                IndexEntryUpdate.add( 2, schemaDescriptor, "bbb" ),
+                IndexEntryUpdate.add( 3, schemaDescriptor, "ccc" ) );
 
         populator.add( updates );
 
@@ -554,7 +559,7 @@ public class UniqueDatabaseIndexPopulatorTest
             throws IOException, IndexEntryConflictException
     {
         NewIndexDescriptor indexDescriptor = NewIndexDescriptorFactory.forLabel( 0, 0 );
-        IndexEntryUpdate update = IndexEntryUpdate.add( nodeId, indexDescriptor, value );
+        IndexEntryUpdate update = IndexEntryUpdate.add( nodeId, indexDescriptor.schema(), value );
         populator.add( Collections.singletonList( update ) );
     }
 }

@@ -241,34 +241,33 @@ public class StorageLayer implements StoreReadLayer
     @Override
     public InternalIndexState indexGetState( NewIndexDescriptor descriptor ) throws IndexNotFoundKernelException
     {
-        return indexService.getIndexProxy( descriptor ).getState();
+        return indexService.getIndexProxy( descriptor.schema() ).getState();
     }
 
     @Override
     public PopulationProgress indexGetPopulationProgress( LabelSchemaDescriptor descriptor )
             throws IndexNotFoundKernelException
     {
-        return indexService.getIndexProxy( NewIndexDescriptorFactory.forSchema( descriptor ) ).getIndexPopulationProgress();
+        return indexService.getIndexProxy( descriptor ).getIndexPopulationProgress();
     }
 
     @Override
     public long indexSize( LabelSchemaDescriptor descriptor ) throws IndexNotFoundKernelException
     {
-        Register.DoubleLongRegister result = indexService.indexUpdatesAndSize( NewIndexDescriptorFactory.forSchema( descriptor
-    ) );
+        Register.DoubleLongRegister result = indexService.indexUpdatesAndSize( descriptor );
         return result.readSecond();
     }
 
     @Override
     public double indexUniqueValuesPercentage( LabelSchemaDescriptor descriptor ) throws IndexNotFoundKernelException
     {
-        return indexService.indexUniqueValuesPercentage( NewIndexDescriptorFactory.forSchema( descriptor ) );
+        return indexService.indexUniqueValuesPercentage( descriptor );
     }
 
     @Override
     public String indexGetFailure( LabelSchemaDescriptor descriptor ) throws IndexNotFoundKernelException
     {
-        return indexService.getIndexProxy( NewIndexDescriptorFactory.forSchema( descriptor ) ).getPopulationFailure().asString();
+        return indexService.getIndexProxy( descriptor ).getPopulationFailure().asString();
     }
 
     @Override
@@ -542,7 +541,7 @@ public class StorageLayer implements StoreReadLayer
 
     private long tryGetIndexId( LabelSchemaDescriptor descriptor) throws IndexNotFoundKernelException
     {
-        return indexService.getIndexId( NewIndexDescriptorFactory.forSchema( descriptor ) );
+        return indexService.getIndexId( descriptor );
     }
 
     @Override

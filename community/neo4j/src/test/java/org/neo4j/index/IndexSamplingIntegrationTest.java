@@ -32,6 +32,7 @@ import org.neo4j.graphdb.schema.IndexDefinition;
 import org.neo4j.io.fs.FileUtils;
 import org.neo4j.kernel.api.ReadOperations;
 import org.neo4j.kernel.api.exceptions.index.IndexNotFoundKernelException;
+import org.neo4j.kernel.api.schema_new.SchemaDescriptorFactory;
 import org.neo4j.kernel.api.schema_new.index.NewIndexDescriptorFactory;
 import org.neo4j.kernel.impl.api.index.IndexingService;
 import org.neo4j.kernel.impl.core.ThreadToStatementContextBridge;
@@ -195,7 +196,7 @@ public class IndexSamplingIntegrationTest
                             .readOperations();
             int labelId = readOperations.labelGetForName( label.name() );
             int propertyKeyId = readOperations.propertyKeyGetForName( property );
-            long indexId = indexingService.getIndexId( NewIndexDescriptorFactory.forLabel( labelId, propertyKeyId ) );
+            long indexId = indexingService.getIndexId( SchemaDescriptorFactory.forLabel( labelId, propertyKeyId ) );
             tx.success();
             return indexId;
         }

@@ -47,6 +47,7 @@ import org.neo4j.kernel.api.index.NodeUpdates;
 import org.neo4j.kernel.api.index.PropertyAccessor;
 import org.neo4j.kernel.api.index.SchemaIndexProvider;
 import org.neo4j.kernel.api.index.SchemaIndexProvider.Descriptor;
+import org.neo4j.kernel.api.schema_new.LabelSchemaDescriptor;
 import org.neo4j.kernel.api.schema_new.index.NewIndexDescriptor;
 import org.neo4j.logging.Log;
 import org.neo4j.logging.LogProvider;
@@ -247,11 +248,11 @@ public class MultipleIndexPopulator implements IndexPopulator
     @Override
     public MultipleIndexUpdater newPopulatingUpdater( PropertyAccessor accessor )
     {
-        Map<NewIndexDescriptor,Pair<IndexPopulation,IndexUpdater>> updaters = new HashMap<>();
+        Map<LabelSchemaDescriptor,Pair<IndexPopulation,IndexUpdater>> updaters = new HashMap<>();
         forEachPopulation( population ->
         {
             IndexUpdater updater = population.populator.newPopulatingUpdater( accessor );
-            updaters.put( population.descriptor, Pair.of( population, updater ) );
+            updaters.put( population.descriptor.schema(), Pair.of( population, updater ) );
         } );
         return new MultipleIndexUpdater( this, updaters, logProvider );
     }
@@ -382,12 +383,12 @@ public class MultipleIndexPopulator implements IndexPopulator
 
     public static class MultipleIndexUpdater implements IndexUpdater
     {
-        private final Map<NewIndexDescriptor,Pair<IndexPopulation,IndexUpdater>> populationsWithUpdaters;
+        private final Map<LabelSchemaDescriptor,Pair<IndexPopulation,IndexUpdater>> populationsWithUpdaters;
         private final MultipleIndexPopulator multipleIndexPopulator;
         private final Log log;
 
         MultipleIndexUpdater( MultipleIndexPopulator multipleIndexPopulator,
-                Map<NewIndexDescriptor,Pair<IndexPopulation,IndexUpdater>> populationsWithUpdaters, LogProvider logProvider )
+                Map<LabelSchemaDescriptor,Pair<IndexPopulation,IndexUpdater>> populationsWithUpdaters, LogProvider logProvider )
         {
             this.multipleIndexPopulator = multipleIndexPopulator;
             this.populationsWithUpdaters = populationsWithUpdaters;
@@ -490,7 +491,7 @@ public class MultipleIndexPopulator implements IndexPopulator
         private void add( NodeUpdates updates )
                 throws IndexEntryConflictException, IOException
         {
-            Optional<IndexEntryUpdate> updateOpt = updates.forIndex( descriptor );
+            Optional<IndexEntryUpdate> updateOpt = updates.forIndex( descriptor.schema() );
             if ( updateOpt.isPresent() )
             {
                 IndexEntryUpdate update = updateOpt.get();

@@ -31,6 +31,7 @@ import org.neo4j.graphdb.schema.IndexDefinition;
 import org.neo4j.graphdb.schema.Schema.IndexState;
 import org.neo4j.kernel.api.exceptions.index.IndexNotFoundKernelException;
 import org.neo4j.kernel.api.Statement;
+import org.neo4j.kernel.api.schema_new.SchemaDescriptorFactory;
 import org.neo4j.kernel.api.schema_new.index.NewIndexDescriptorFactory;
 import org.neo4j.kernel.impl.api.index.IndexingService;
 import org.neo4j.kernel.impl.api.index.sampling.IndexSamplingMode;
@@ -196,7 +197,7 @@ public class Schema extends TransactionProvidingApp
 
         try
         {
-            indexingService.triggerIndexSampling( NewIndexDescriptorFactory.forLabel( labelKey, propertyKey ),
+            indexingService.triggerIndexSampling( SchemaDescriptorFactory.forLabel( labelKey, propertyKey ),
                     samplingMode );
         }
         catch ( IndexNotFoundKernelException e )

@@ -80,7 +80,7 @@ public class IndexUpdaterMapTest
         indexMap.putIndexProxy( 0, indexProxy1 );
 
         // when
-        IndexUpdater updater = updaterMap.getUpdater( indexDescriptor1 );
+        IndexUpdater updater = updaterMap.getUpdater( indexDescriptor1.schema() );
 
         // then
         assertEquals( indexUpdater1, updater );
@@ -94,7 +94,7 @@ public class IndexUpdaterMapTest
         indexMap.putIndexProxy( 0, indexProxy1 );
 
         // when
-        IndexUpdater updater = updaterMap.getUpdater( indexDescriptor1 );
+        IndexUpdater updater = updaterMap.getUpdater( indexDescriptor1.schema() );
 
         // then
         assertThat( updater, equalTo( indexUpdater1 ) );
@@ -107,8 +107,8 @@ public class IndexUpdaterMapTest
         indexMap.putIndexProxy( 0, indexProxy1 );
 
         // when
-        IndexUpdater updater1 = updaterMap.getUpdater( indexDescriptor1 );
-        IndexUpdater updater2 = updaterMap.getUpdater( indexDescriptor1 );
+        IndexUpdater updater1 = updaterMap.getUpdater( indexDescriptor1.schema() );
+        IndexUpdater updater2 = updaterMap.getUpdater( indexDescriptor1.schema() );
 
         // then
         assertEquals( updater1, updater2 );
@@ -119,7 +119,7 @@ public class IndexUpdaterMapTest
     public void shouldRetrieveNoUpdaterForNonExistingIndex() throws Exception
     {
         // when
-        IndexUpdater updater = updaterMap.getUpdater( indexDescriptor1 );
+        IndexUpdater updater = updaterMap.getUpdater( indexDescriptor1.schema() );
 
         // then
         assertNull( updater );
@@ -133,8 +133,8 @@ public class IndexUpdaterMapTest
         indexMap.putIndexProxy( 0, indexProxy1 );
         indexMap.putIndexProxy( 1, indexProxy2 );
 
-        IndexUpdater updater1 = updaterMap.getUpdater( indexDescriptor1 );
-        IndexUpdater updater2 = updaterMap.getUpdater( indexDescriptor2 );
+        IndexUpdater updater1 = updaterMap.getUpdater( indexDescriptor1.schema() );
+        IndexUpdater updater2 = updaterMap.getUpdater( indexDescriptor2.schema() );
 
         // hen
         updaterMap.close();

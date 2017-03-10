@@ -50,6 +50,8 @@ import org.neo4j.kernel.api.index.IndexPopulator;
 import org.neo4j.kernel.api.index.IndexUpdater;
 import org.neo4j.kernel.api.index.InternalIndexState;
 import org.neo4j.kernel.api.index.SchemaIndexProvider;
+import org.neo4j.kernel.api.schema_new.LabelSchemaDescriptor;
+import org.neo4j.kernel.api.schema_new.SchemaDescriptorFactory;
 import org.neo4j.kernel.api.schema_new.index.NewIndexDescriptor;
 import org.neo4j.kernel.api.schema_new.index.NewIndexDescriptorFactory;
 import org.neo4j.kernel.extension.KernelExtensionFactory;
@@ -347,12 +349,12 @@ public class IndexRecoveryIT
             {
                 int labelId = statement.readOperations().labelGetForName( label.name() );
                 int propertyKeyId = statement.readOperations().propertyKeyGetForName( key );
-                NewIndexDescriptor index = NewIndexDescriptorFactory.forLabel( labelId, propertyKeyId );
+                LabelSchemaDescriptor schemaDescriptor = SchemaDescriptorFactory.forLabel( labelId, propertyKeyId );
                 for ( int number : new int[] {4, 10} )
                 {
                     Node node = db.createNode( label );
                     node.setProperty( key, number );
-                    updates.add( IndexEntryUpdate.add( node.getId(), index, number ) );
+                    updates.add( IndexEntryUpdate.add( node.getId(), schemaDescriptor, number ) );
                 }
             }
             tx.success();

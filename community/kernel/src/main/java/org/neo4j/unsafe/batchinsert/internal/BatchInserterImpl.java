@@ -461,7 +461,7 @@ public class BatchInserterImpl implements BatchInserter, IndexConfigStoreProvide
             // Do a lookup from which property has changed to a list of indexes worried about that property.
             for ( int i = 0; i < descriptors.length; i++ )
             {
-                Optional<IndexEntryUpdate> update = updates.forIndex( descriptors[i] );
+                Optional<IndexEntryUpdate> update = updates.forIndex( descriptors[i].schema() );
                 if ( update.isPresent() )
                 {
                     try

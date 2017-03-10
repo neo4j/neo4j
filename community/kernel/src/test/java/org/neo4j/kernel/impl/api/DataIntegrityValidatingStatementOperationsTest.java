@@ -28,6 +28,8 @@ import org.mockito.stubbing.Answer;
 import java.util.Iterator;
 
 import org.neo4j.kernel.api.schema.NodePropertyDescriptor;
+import org.neo4j.kernel.api.exceptions.schema.AlreadyConstrainedException;
+import org.neo4j.kernel.api.exceptions.schema.AlreadyIndexedException;
 import org.neo4j.kernel.api.exceptions.schema.DropIndexFailureException;
 import org.neo4j.kernel.api.exceptions.schema.IllegalTokenNameException;
 import org.neo4j.kernel.api.exceptions.schema.IndexBelongsToConstraintException;
@@ -73,8 +75,15 @@ public class DataIntegrityValidatingStatementOperationsTest
         when( innerRead.indexGetForLabelAndPropertyKey( state, SchemaBoundary.map( descriptor ) ) ).thenReturn( index );
 
         // WHEN
-        ctx.indexCreate( state, descriptor );
-        fail( "Should have thrown exception." );
+        try
+        {
+            ctx.indexCreate( state, descriptor );
+            fail( "Should have thrown exception." );
+        }
+        catch ( AlreadyIndexedException e )
+        {
+            // ok
+        }
 
         // THEN
         verify( innerWrite, never() ).indexCreate( eq( state ), anyObject() );
@@ -91,8 +100,15 @@ public class DataIntegrityValidatingStatementOperationsTest
         when( innerRead.indexGetForLabelAndPropertyKey( state, SchemaBoundary.map( descriptor ) ) ).thenReturn( uniqueIndex );
 
         // WHEN
-        ctx.indexCreate( state, descriptor );
-        fail( "Should have thrown exception." );
+        try
+        {
+            ctx.indexCreate( state, descriptor );
+            fail( "Should have thrown exception." );
+        }
+        catch ( AlreadyConstrainedException e )
+        {
+            // ok
+        }
 
         // THEN
         verify( innerWrite, never() ).indexCreate( eq( state ), anyObject() );

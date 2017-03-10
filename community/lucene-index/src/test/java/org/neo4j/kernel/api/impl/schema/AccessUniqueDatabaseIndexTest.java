@@ -149,17 +149,17 @@ public class AccessUniqueDatabaseIndexTest
 
     private IndexEntryUpdate add( long nodeId, Object propertyValue )
     {
-        return IndexEntryUpdate.add( nodeId, index, propertyValue );
+        return IndexEntryUpdate.add( nodeId, index.schema(), propertyValue );
     }
 
     private IndexEntryUpdate change( long nodeId, Object oldValue, Object newValue )
     {
-        return IndexEntryUpdate.change( nodeId, index, oldValue, newValue );
+        return IndexEntryUpdate.change( nodeId, index.schema(), oldValue, newValue );
     }
 
     private IndexEntryUpdate remove( long nodeId, Object oldValue )
     {
-        return IndexEntryUpdate.remove( nodeId, index, oldValue );
+        return IndexEntryUpdate.remove( nodeId, index.schema(), oldValue );
     }
 
     private List<Long> getAllNodes( PartitionedIndexStorage indexStorage, String propertyValue ) throws IOException

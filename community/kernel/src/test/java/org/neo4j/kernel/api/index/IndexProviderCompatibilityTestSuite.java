@@ -27,6 +27,7 @@ import org.junit.runners.Suite;
 import java.io.File;
 
 import org.neo4j.io.fs.FileSystemAbstraction;
+import org.neo4j.kernel.api.schema_new.LabelSchemaDescriptor;
 import org.neo4j.kernel.api.schema_new.index.NewIndexDescriptor;
 import org.neo4j.test.rule.TestDirectory;
 import org.neo4j.test.rule.fs.DefaultFileSystemRule;

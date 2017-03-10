@@ -166,7 +166,7 @@ public class IndexProcedures implements AutoCloseable
 
     private void triggerSampling( NewIndexDescriptor index ) throws IndexNotFoundKernelException
     {
-        indexingService.triggerIndexSampling( index, IndexSamplingMode.TRIGGER_REBUILD_ALL );
+        indexingService.triggerIndexSampling( index.schema(), IndexSamplingMode.TRIGGER_REBUILD_ALL );
     }
 
     @Override

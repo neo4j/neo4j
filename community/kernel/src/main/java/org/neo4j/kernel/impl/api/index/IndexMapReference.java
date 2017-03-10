@@ -20,6 +20,7 @@
 package org.neo4j.kernel.impl.api.index;
 
 import org.neo4j.kernel.api.exceptions.index.IndexNotFoundKernelException;
+import org.neo4j.kernel.api.schema_new.LabelSchemaDescriptor;
 import org.neo4j.kernel.api.schema_new.index.NewIndexDescriptor;
 
 public class IndexMapReference implements IndexMapSnapshotProvider
@@ -42,7 +43,7 @@ public class IndexMapReference implements IndexMapSnapshotProvider
         return proxy;
     }
 
-    public IndexProxy getIndexProxy( NewIndexDescriptor descriptor ) throws IndexNotFoundKernelException
+    public IndexProxy getIndexProxy( LabelSchemaDescriptor descriptor ) throws IndexNotFoundKernelException
     {
         IndexProxy proxy = indexMap.getIndexProxy( descriptor );
         if ( proxy == null )
@@ -52,7 +53,7 @@ public class IndexMapReference implements IndexMapSnapshotProvider
         return proxy;
     }
 
-    public long getIndexId( NewIndexDescriptor descriptor ) throws IndexNotFoundKernelException
+    public long getIndexId( LabelSchemaDescriptor descriptor ) throws IndexNotFoundKernelException
     {
         IndexProxy proxy = indexMap.getIndexProxy( descriptor );
         if ( proxy == null )
@@ -62,7 +63,7 @@ public class IndexMapReference implements IndexMapSnapshotProvider
         return indexMap.getIndexId( descriptor );
     }
 
-    public long getOnlineIndexId( NewIndexDescriptor descriptor ) throws IndexNotFoundKernelException
+    public long getOnlineIndexId( LabelSchemaDescriptor descriptor ) throws IndexNotFoundKernelException
     {
         IndexProxy proxy = getIndexProxy( descriptor );
         switch ( proxy.getState() )

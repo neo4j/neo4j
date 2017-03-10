@@ -436,14 +436,14 @@ public class IndexStatisticsTest
     {
         return ((GraphDatabaseAPI) db).getDependencyResolver()
                                       .resolveDependency( IndexingService.class )
-                                      .indexUpdatesAndSize( descriptor ).readSecond();
+                                      .indexUpdatesAndSize( descriptor.schema() ).readSecond();
     }
 
     private long indexUpdates( NewIndexDescriptor descriptor ) throws KernelException
     {
         return ((GraphDatabaseAPI) db).getDependencyResolver()
                                       .resolveDependency( IndexingService.class )
-                                      .indexUpdatesAndSize( descriptor ).readFirst();
+                                      .indexUpdatesAndSize( descriptor.schema() ).readFirst();
     }
 
     private double indexSelectivity( NewIndexDescriptor descriptor ) throws KernelException

@@ -19,11 +19,13 @@
  */
 package org.neo4j.kernel.api.index;
 
+import org.junit.Before;
 import org.junit.Ignore;
 import org.junit.Test;
 
 import java.util.Collections;
 
+import org.neo4j.kernel.api.schema_new.LabelSchemaDescriptor;
 import org.neo4j.kernel.api.schema_new.index.NewIndexDescriptorFactory;
 
 import static java.util.Arrays.asList;
@@ -45,9 +47,18 @@ import static org.neo4j.kernel.api.schema_new.IndexQuery.stringSuffix;
         " errors or warnings in some IDEs about test classes needing a public zero-arg constructor." )
 public class NonUniqueIndexAccessorCompatibility extends IndexAccessorCompatibility
 {
+
+    private LabelSchemaDescriptor labelSchemaDescriptor;
+
     public NonUniqueIndexAccessorCompatibility( IndexProviderCompatibilityTestSuite testSuite )
     {
         super( testSuite, NewIndexDescriptorFactory.forLabel( 1000, 100 ), false );
+    }
+
+    @Before
+    public void setUp() throws Exception
+    {
+        labelSchemaDescriptor = descriptor.schema();
     }
 
     @Test
@@ -60,8 +71,8 @@ public class NonUniqueIndexAccessorCompatibility extends IndexAccessorCompatibil
         // the exact-match filtering we do on index seeks in StateHandlingStatementOperations.
 
         updateAndCommit( asList(
-                IndexEntryUpdate.add( 1L, descriptor, "a" ),
-                IndexEntryUpdate.add( 2L, descriptor, "a" ) ) );
+                IndexEntryUpdate.add( 1L, labelSchemaDescriptor, "a" ),
+                IndexEntryUpdate.add( 2L, labelSchemaDescriptor, "a" ) ) );
 
         assertThat( query( exact( 1, "a" ) ), equalTo( asList( 1L, 2L ) ) );
     }
@@ -70,9 +81,9 @@ public class NonUniqueIndexAccessorCompatibility extends IndexAccessorCompatibil
     public void testIndexSeekAndScan() throws Exception
     {
         updateAndCommit( asList(
-                IndexEntryUpdate.add( 1L, descriptor, "a" ),
-                IndexEntryUpdate.add( 2L, descriptor, "a" ),
-                IndexEntryUpdate.add( 3L, descriptor, "b" ) ) );
+                IndexEntryUpdate.add( 1L, labelSchemaDescriptor, "a" ),
+                IndexEntryUpdate.add( 2L, labelSchemaDescriptor, "a" ),
+                IndexEntryUpdate.add( 3L, labelSchemaDescriptor, "b" ) ) );
 
         assertThat( query( exact( 1, "a" ) ), equalTo( asList( 1L, 2L ) ) );
         assertThat( query( exists( 1 ) ), equalTo( asList( 1L, 2L, 3L ) ) );
@@ -82,11 +93,11 @@ public class NonUniqueIndexAccessorCompatibility extends IndexAccessorCompatibil
     public void testIndexRangeSeekByNumberWithDuplicates() throws Exception
     {
         updateAndCommit( asList(
-                IndexEntryUpdate.add( 1L, descriptor, -5 ),
-                IndexEntryUpdate.add( 2L, descriptor, -5 ),
-                IndexEntryUpdate.add( 3L, descriptor, 0 ),
-                IndexEntryUpdate.add( 4L, descriptor, 5 ),
-                IndexEntryUpdate.add( 5L, descriptor, 5 ) ) );
+                IndexEntryUpdate.add( 1L, labelSchemaDescriptor, -5 ),
+                IndexEntryUpdate.add( 2L, labelSchemaDescriptor, -5 ),
+                IndexEntryUpdate.add( 3L, labelSchemaDescriptor, 0 ),
+                IndexEntryUpdate.add( 4L, labelSchemaDescriptor, 5 ),
+                IndexEntryUpdate.add( 5L, labelSchemaDescriptor, 5 ) ) );
 
         assertThat( query( range( 1, -5, true, 5, true ) ), equalTo( asList( 1L, 2L, 3L, 4L, 5L ) ) );
         assertThat( query( range( 1, -3, true, -1, true ) ), equalTo( EMPTY_LIST ) );
@@ -99,11 +110,11 @@ public class NonUniqueIndexAccessorCompatibility extends IndexAccessorCompatibil
     public void testIndexRangeSeekByStringWithDuplicates() throws Exception
     {
         updateAndCommit( asList(
-                IndexEntryUpdate.add( 1L, descriptor, "Anna" ),
-                IndexEntryUpdate.add( 2L, descriptor, "Anna" ),
-                IndexEntryUpdate.add( 3L, descriptor, "Bob" ),
-                IndexEntryUpdate.add( 4L, descriptor, "William" ),
-                IndexEntryUpdate.add( 5L, descriptor, "William" ) ) );
+                IndexEntryUpdate.add( 1L, labelSchemaDescriptor, "Anna" ),
+                IndexEntryUpdate.add( 2L, labelSchemaDescriptor, "Anna" ),
+                IndexEntryUpdate.add( 3L, labelSchemaDescriptor, "Bob" ),
+                IndexEntryUpdate.add( 4L, labelSchemaDescriptor, "William" ),
+                IndexEntryUpdate.add( 5L, labelSchemaDescriptor, "William" ) ) );
 
         assertThat( query( range( 1, "Anna", false, "William", false ) ), equalTo( singletonList( 3L ) ) );
         assertThat( query( range( 1, "Arabella", false, "Bob", false ) ), equalTo( EMPTY_LIST ) );
@@ -116,11 +127,11 @@ public class NonUniqueIndexAccessorCompatibility extends IndexAccessorCompatibil
     public void testIndexRangeSeekByPrefixWithDuplicates() throws Exception
     {
         updateAndCommit( asList(
-                IndexEntryUpdate.add( 1L, descriptor, "a" ),
-                IndexEntryUpdate.add( 2L, descriptor, "A" ),
-                IndexEntryUpdate.add( 3L, descriptor, "apa" ),
-                IndexEntryUpdate.add( 4L, descriptor, "apa" ),
-                IndexEntryUpdate.add( 5L, descriptor, "apa" ) ) );
+                IndexEntryUpdate.add( 1L, labelSchemaDescriptor, "a" ),
+                IndexEntryUpdate.add( 2L, labelSchemaDescriptor, "A" ),
+                IndexEntryUpdate.add( 3L, labelSchemaDescriptor, "apa" ),
+                IndexEntryUpdate.add( 4L, labelSchemaDescriptor, "apa" ),
+                IndexEntryUpdate.add( 5L, labelSchemaDescriptor, "apa" ) ) );
 
         assertThat( query( stringPrefix( 1, "a" ) ), equalTo( asList( 1L, 3L, 4L, 5L ) ) );
         assertThat( query( stringPrefix( 1, "apa" ) ), equalTo( asList( 3L, 4L, 5L ) ) );
@@ -130,11 +141,11 @@ public class NonUniqueIndexAccessorCompatibility extends IndexAccessorCompatibil
     public void testIndexFullSearchWithDuplicates() throws Exception
     {
         updateAndCommit( asList(
-                IndexEntryUpdate.add( 1L, descriptor, "a" ),
-                IndexEntryUpdate.add( 2L, descriptor, "A" ),
-                IndexEntryUpdate.add( 3L, descriptor, "apa" ),
-                IndexEntryUpdate.add( 4L, descriptor, "apa" ),
-                IndexEntryUpdate.add( 5L, descriptor, "apalong" ) ) );
+                IndexEntryUpdate.add( 1L, labelSchemaDescriptor, "a" ),
+                IndexEntryUpdate.add( 2L, labelSchemaDescriptor, "A" ),
+                IndexEntryUpdate.add( 3L, labelSchemaDescriptor, "apa" ),
+                IndexEntryUpdate.add( 4L, labelSchemaDescriptor, "apa" ),
+                IndexEntryUpdate.add( 5L, labelSchemaDescriptor, "apalong" ) ) );
 
         assertThat( query( stringContains( 1, "a" ) ), equalTo( asList( 1L, 3L, 4L, 5L ) ) );
         assertThat( query( stringContains( 1, "apa" ) ), equalTo( asList( 3L, 4L, 5L ) ) );
@@ -145,12 +156,12 @@ public class NonUniqueIndexAccessorCompatibility extends IndexAccessorCompatibil
     public void testIndexEndsWithWithDuplicated() throws Exception
     {
         updateAndCommit( asList(
-                IndexEntryUpdate.add( 1L, descriptor, "a" ),
-                IndexEntryUpdate.add( 2L, descriptor, "A" ),
-                IndexEntryUpdate.add( 3L, descriptor, "apa" ),
-                IndexEntryUpdate.add( 4L, descriptor, "apa" ),
-                IndexEntryUpdate.add( 5L, descriptor, "longapa" ),
-                IndexEntryUpdate.add( 6L, descriptor, "apalong" ) ) );
+                IndexEntryUpdate.add( 1L, labelSchemaDescriptor, "a" ),
+                IndexEntryUpdate.add( 2L, labelSchemaDescriptor, "A" ),
+                IndexEntryUpdate.add( 3L, labelSchemaDescriptor, "apa" ),
+                IndexEntryUpdate.add( 4L, labelSchemaDescriptor, "apa" ),
+                IndexEntryUpdate.add( 5L, labelSchemaDescriptor, "longapa" ),
+                IndexEntryUpdate.add( 6L, labelSchemaDescriptor, "apalong" ) ) );
 
         assertThat( query( stringSuffix( 1, "a" ) ), equalTo( asList( 1L, 3L, 4L, 5L ) ) );
         assertThat( query( stringSuffix( 1, "apa" ) ), equalTo( asList( 3L, 4L, 5L ) ) );

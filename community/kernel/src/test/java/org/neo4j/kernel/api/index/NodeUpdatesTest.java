@@ -25,6 +25,8 @@ import java.util.Optional;
 
 import org.neo4j.kernel.api.properties.DefinedProperty;
 import org.neo4j.kernel.api.properties.Property;
+import org.neo4j.kernel.api.schema_new.LabelSchemaDescriptor;
+import org.neo4j.kernel.api.schema_new.SchemaDescriptorFactory;
 import org.neo4j.kernel.api.schema_new.index.NewIndexDescriptor;
 import org.neo4j.kernel.api.schema_new.index.NewIndexDescriptorFactory;
 
@@ -41,9 +43,9 @@ public class NodeUpdatesTest
     private static final int propertyKeyId2 = 1;
     private static final long[] labels = new long[]{labelId};
     private static final long[] empty = new long[]{};
-    private static final NewIndexDescriptor index1 = NewIndexDescriptorFactory.forLabel( labelId, propertyKeyId1 );
-    private static final NewIndexDescriptor index2 = NewIndexDescriptorFactory.forLabel( labelId, propertyKeyId2 );
-    private static final NewIndexDescriptor index12 = NewIndexDescriptorFactory.forLabel( labelId, propertyKeyId1, propertyKeyId2 );
+    private static final LabelSchemaDescriptor index1 = SchemaDescriptorFactory.forLabel( labelId, propertyKeyId1 );
+    private static final LabelSchemaDescriptor index2 = SchemaDescriptorFactory.forLabel( labelId, propertyKeyId2 );
+    private static final LabelSchemaDescriptor index12 = SchemaDescriptorFactory.forLabel( labelId, propertyKeyId1, propertyKeyId2 );
     private static final DefinedProperty property1 = Property.stringProperty( propertyKeyId1, "Neo" );
     private static final DefinedProperty property2 = Property.longProperty( propertyKeyId2, 100L );
     private static final Object[] values12 = new Object[]{property1.value(), property2.value()};

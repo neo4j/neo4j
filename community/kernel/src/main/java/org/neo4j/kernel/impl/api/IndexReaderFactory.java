@@ -66,7 +66,7 @@ public interface IndexReaderFactory
         @Override
         public IndexReader newUnCachedReader( NewIndexDescriptor descriptor ) throws IndexNotFoundKernelException
         {
-            IndexProxy index = indexingService.getIndexProxy( descriptor );
+            IndexProxy index = indexingService.getIndexProxy( descriptor.schema() );
             return index.newReader();
         }
 

@@ -51,6 +51,8 @@ import org.neo4j.kernel.api.index.NodeUpdates;
 import org.neo4j.kernel.api.index.SchemaIndexProvider;
 import org.neo4j.kernel.api.labelscan.LabelScanStore;
 import org.neo4j.kernel.api.labelscan.NodeLabelUpdate;
+import org.neo4j.kernel.api.schema_new.LabelSchemaDescriptor;
+import org.neo4j.kernel.api.schema_new.SchemaDescriptorFactory;
 import org.neo4j.kernel.api.schema_new.index.NewIndexDescriptor;
 import org.neo4j.kernel.api.schema_new.index.NewIndexDescriptorFactory;
 import org.neo4j.kernel.configuration.Config;
@@ -219,7 +221,7 @@ public class MultiIndexPopulationConcurrentUpdatesIT
 
     private IndexReader getIndexReader( int propertyId, Integer countryLabelId ) throws IndexNotFoundKernelException
     {
-        return indexService.getIndexProxy( NewIndexDescriptorFactory.forLabel( countryLabelId, propertyId ) )
+        return indexService.getIndexProxy( SchemaDescriptorFactory.forLabel( countryLabelId, propertyId ) )
                 .newReader();
     }
 
@@ -287,7 +289,8 @@ public class MultiIndexPopulationConcurrentUpdatesIT
             throws IndexNotFoundKernelException, IndexPopulationFailedKernelException, InterruptedException,
             IndexActivationFailedKernelException
     {
-        IndexProxy indexProxy = indexService.getIndexProxy( NewIndexDescriptorFactory.forLabel( labelId, propertyId ) );
+        IndexProxy indexProxy = indexService.getIndexProxy( SchemaDescriptorFactory.forLabel( labelId, propertyId
+        ) );
         indexProxy.awaitStoreScanCompleted();
         indexProxy.activate();
     }
@@ -474,8 +477,9 @@ public class MultiIndexPopulationConcurrentUpdatesIT
                         Node node = embeddedDatabase.getNodeById( update.getNodeId() );
                         for ( int labelId : labelsNameIdMap.values() )
                         {
-                            NewIndexDescriptor descriptor = NewIndexDescriptorFactory.forLabel( labelId, propertyId );
-                            Optional<IndexEntryUpdate> indexEntryUpdateOptional = update.forIndex( descriptor );
+                            LabelSchemaDescriptor schemaDescriptor = SchemaDescriptorFactory
+                                    .forLabel( labelId, propertyId );
+                            Optional<IndexEntryUpdate> indexEntryUpdateOptional = update.forIndex( schemaDescriptor );
                             if ( indexEntryUpdateOptional.isPresent() )
                             {
                                 IndexEntryUpdate indexUpdate = indexEntryUpdateOptional.get();
@@ -484,12 +488,12 @@ public class MultiIndexPopulationConcurrentUpdatesIT
                                 case CHANGED:
                                 case ADDED:
                                     node.addLabel(
-                                            Label.label( labelsIdNameMap.get( descriptor.schema().getLabelId() ) ) );
+                                            Label.label( labelsIdNameMap.get( schemaDescriptor.getLabelId() ) ) );
                                     node.setProperty( NAME_PROPERTY, indexUpdate.values()[0] );
                                     break;
                                 case REMOVED:
                                     node.addLabel(
-                                            Label.label( labelsIdNameMap.get( descriptor.schema().getLabelId() ) ) );
+                                            Label.label( labelsIdNameMap.get( schemaDescriptor.getLabelId() ) ) );
                                     node.delete();
                                     break;
                                 default:

@@ -40,6 +40,7 @@ import org.neo4j.kernel.api.exceptions.KernelException;
 import org.neo4j.kernel.api.index.NodeUpdates;
 import org.neo4j.kernel.api.labelscan.NodeLabelUpdate;
 import org.neo4j.kernel.api.properties.Property;
+import org.neo4j.kernel.api.schema_new.SchemaDescriptorFactory;
 import org.neo4j.kernel.api.schema_new.index.NewIndexDescriptorFactory;
 import org.neo4j.kernel.impl.api.index.StoreScan;
 import org.neo4j.kernel.impl.core.ThreadToStatementContextBridge;
@@ -190,10 +191,10 @@ public class NeoStoreIndexStoreViewTest
 
         NodeUpdates propertyUpdates = propertyUpdateVisitor.getPropertyUpdates();
         assertNotNull( "Visitor should containts container with updates.", propertyUpdates );
-        assert propertyUpdates.forIndex( NewIndexDescriptorFactory.forLabel( 0, 0 ) ).isPresent();
-        assert propertyUpdates.forIndex( NewIndexDescriptorFactory.forLabel( 0, 1 ) ).isPresent();
-        assert propertyUpdates.forIndex( NewIndexDescriptorFactory.forLabel( 0, 0, 1 ) ).isPresent();
-        assert !propertyUpdates.forIndex( NewIndexDescriptorFactory.forLabel( 1, 1 ) ).isPresent();
+        assert propertyUpdates.forIndex( SchemaDescriptorFactory.forLabel( 0, 0 ) ).isPresent();
+        assert propertyUpdates.forIndex( SchemaDescriptorFactory.forLabel( 0, 1 ) ).isPresent();
+        assert propertyUpdates.forIndex( SchemaDescriptorFactory.forLabel( 0, 0, 1 ) ).isPresent();
+        assert !propertyUpdates.forIndex( SchemaDescriptorFactory.forLabel( 1, 1 ) ).isPresent();
     }
 
     NodeUpdates add( long nodeId, int propertyKeyId, Object value, long[] labels)

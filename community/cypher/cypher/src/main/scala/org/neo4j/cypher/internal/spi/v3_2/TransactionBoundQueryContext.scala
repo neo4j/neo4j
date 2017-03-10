@@ -52,6 +52,7 @@ import org.neo4j.kernel.api.exceptions.schema.{AlreadyConstrainedException, Alre
 import org.neo4j.kernel.api.index.InternalIndexState
 import org.neo4j.kernel.api.proc.CallableUserAggregationFunction.Aggregator
 import org.neo4j.kernel.api.proc.{QualifiedName => KernelQualifiedName}
+import org.neo4j.kernel.api.schema.NodePropertyDescriptor
 import org.neo4j.kernel.api.schema_new.constaints.ConstraintDescriptorFactory
 import org.neo4j.kernel.api.schema_new.{IndexQuery, SchemaDescriptorFactory}
 import org.neo4j.kernel.impl.core.NodeManager

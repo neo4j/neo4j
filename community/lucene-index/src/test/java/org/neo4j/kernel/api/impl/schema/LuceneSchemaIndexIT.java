@@ -309,7 +309,7 @@ public class LuceneSchemaIndexIT
 
     private IndexEntryUpdate add( long nodeId, Object value )
     {
-        return IndexEntryUpdate.add( nodeId, descriptor, value );
+        return IndexEntryUpdate.add( nodeId, descriptor.schema(), value );
     }
 
 }

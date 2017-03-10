@@ -250,7 +250,7 @@ public class HaCountsIT
                 switch ( statement( db ).readOperations().indexGetState( index ) )
                 {
                 case ONLINE:
-                    return indexingService( db ).getIndexId( index );
+                    return indexingService( db ).getIndexId( index.schema() );
 
                 case FAILED:
                     throw new IllegalStateException( "Index failed instead of becoming ONLINE" );

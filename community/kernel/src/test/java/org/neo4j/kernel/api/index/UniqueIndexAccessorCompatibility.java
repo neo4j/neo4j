@@ -52,8 +52,8 @@ public class UniqueIndexAccessorCompatibility extends IndexAccessorCompatibility
         // the exact-match filtering we do on index seeks in StateHandlingStatementOperations.
 
         updateAndCommit( asList(
-                IndexEntryUpdate.add( 1L, descriptor, "a" ),
-                IndexEntryUpdate.add( 2L, descriptor, "a" ) ) );
+                IndexEntryUpdate.add( 1L, descriptor.schema(), "a" ),
+                IndexEntryUpdate.add( 2L, descriptor.schema(), "a" ) ) );
 
         assertThat( query( exact( 1, "a" ) ), equalTo( asList( 1L, 2L ) ) );
     }
@@ -62,9 +62,9 @@ public class UniqueIndexAccessorCompatibility extends IndexAccessorCompatibility
     public void testIndexSeekAndScan() throws Exception
     {
         updateAndCommit( asList(
-                IndexEntryUpdate.add( 1L, descriptor, "a" ),
-                IndexEntryUpdate.add( 2L, descriptor, "b" ),
-                IndexEntryUpdate.add( 3L, descriptor, "c" ) ) );
+                IndexEntryUpdate.add( 1L, descriptor.schema(), "a" ),
+                IndexEntryUpdate.add( 2L, descriptor.schema(), "b" ),
+                IndexEntryUpdate.add( 3L, descriptor.schema(), "c" ) ) );
 
         assertThat( query( exact( 1, "a" ) ), equalTo( asList( 1L ) ) );
         assertThat( query( IndexQuery.exists( 1 ) ), equalTo( asList( 1L, 2L, 3L ) ) );

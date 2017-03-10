@@ -27,7 +27,7 @@ import org.neo4j.jmx.impl.ManagementData;
 import org.neo4j.jmx.impl.Neo4jMBean;
 import org.neo4j.kernel.NeoStoreDataSource;
 import org.neo4j.kernel.api.exceptions.index.IndexNotFoundKernelException;
-import org.neo4j.kernel.api.schema_new.index.NewIndexDescriptorFactory;
+import org.neo4j.kernel.api.schema_new.SchemaDescriptorFactory;
 import org.neo4j.kernel.impl.api.index.IndexingService;
 import org.neo4j.kernel.impl.api.index.sampling.IndexSamplingMode;
 import org.neo4j.kernel.impl.transaction.state.DataSourceManager;
@@ -130,7 +130,7 @@ public final class IndexSamplingManagerBean extends ManagementBeanProvider
             try
             {
                 state.indexingService.triggerIndexSampling(
-                        NewIndexDescriptorFactory.forLabel( labelKeyId, propertyKeyId ),
+                        SchemaDescriptorFactory.forLabel( labelKeyId, propertyKeyId ),
                         getIndexSamplingMode( forceSample ) );
             }
             catch ( IndexNotFoundKernelException e )

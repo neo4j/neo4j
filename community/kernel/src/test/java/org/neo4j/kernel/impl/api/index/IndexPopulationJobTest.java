@@ -54,6 +54,8 @@ import org.neo4j.kernel.api.index.InternalIndexState;
 import org.neo4j.kernel.api.index.NodeUpdates;
 import org.neo4j.kernel.api.index.PropertyAccessor;
 import org.neo4j.kernel.api.labelscan.NodeLabelUpdate;
+import org.neo4j.kernel.api.schema_new.LabelSchemaDescriptor;
+import org.neo4j.kernel.api.schema_new.SchemaDescriptorFactory;
 import org.neo4j.kernel.api.schema_new.index.NewIndexDescriptor;
 import org.neo4j.kernel.api.schema_new.index.NewIndexDescriptorFactory;
 import org.neo4j.kernel.api.security.AnonymousContext;
@@ -150,13 +152,13 @@ public class IndexPopulationJobTest
         long nodeId = createNode( map( name, value ), FIRST );
         IndexPopulator populator = spy( inMemoryPopulator( false ) );
         IndexPopulationJob job = newIndexPopulationJob( populator, new FlippableIndexProxy(), false );
-        NewIndexDescriptor index = NewIndexDescriptorFactory.forLabel( 0, 0 );
+        LabelSchemaDescriptor descriptor = SchemaDescriptorFactory.forLabel( 0, 0 );
 
         // WHEN
         job.run();
 
         // THEN
-        IndexEntryUpdate update = IndexEntryUpdate.add( nodeId, index, value );
+        IndexEntryUpdate update = IndexEntryUpdate.add( nodeId, descriptor, value );
 
         verify( populator ).create();
         verify( populator ).configureSampling( true );
@@ -197,14 +199,14 @@ public class IndexPopulationJobTest
         long node4 = createNode( map( age, 35, name, value ), FIRST );
         IndexPopulator populator = spy( inMemoryPopulator( false ) );
         IndexPopulationJob job = newIndexPopulationJob( populator, new FlippableIndexProxy(), false );
-        NewIndexDescriptor index = NewIndexDescriptorFactory.forLabel( 0, 0 );
+        LabelSchemaDescriptor descriptor = SchemaDescriptorFactory.forLabel( 0, 0 );
 
         // WHEN
         job.run();
 
         // THEN
-        IndexEntryUpdate update1 = IndexEntryUpdate.add( node1, index, value );
-        IndexEntryUpdate update2 = add( node4, index, value );
+        IndexEntryUpdate update1 = IndexEntryUpdate.add( node1, descriptor, value );
+        IndexEntryUpdate update2 = add( node4, descriptor, value );
 
         verify( populator ).create();
         verify( populator ).configureSampling( true );
@@ -451,14 +453,14 @@ public class IndexPopulationJobTest
         private final long nodeToChange;
         private final Object newValue;
         private final Object previousValue;
-        private final NewIndexDescriptor index;
+        private final LabelSchemaDescriptor index;
 
         NodeChangingWriter( long nodeToChange, int propertyKeyId, Object previousValue, Object newValue, int label )
         {
             this.nodeToChange = nodeToChange;
             this.previousValue = previousValue;
             this.newValue = newValue;
-            this.index = NewIndexDescriptorFactory.forLabel( label, propertyKeyId );
+            this.index = SchemaDescriptorFactory.forLabel( label, propertyKeyId );
         }
 
         @Override
@@ -519,13 +521,13 @@ public class IndexPopulationJobTest
         private final long nodeToDelete;
         private IndexPopulationJob job;
         private final Object valueToDelete;
-        private final NewIndexDescriptor index;
+        private final LabelSchemaDescriptor index;
 
         NodeDeletingWriter( long nodeToDelete, int propertyKeyId, Object valueToDelete, int label )
         {
             this.nodeToDelete = nodeToDelete;
             this.valueToDelete = valueToDelete;
-            this.index = NewIndexDescriptorFactory.forLabel( label, propertyKeyId );
+            this.index = SchemaDescriptorFactory.forLabel( label, propertyKeyId );
         }
 
         public void setJob( IndexPopulationJob job )

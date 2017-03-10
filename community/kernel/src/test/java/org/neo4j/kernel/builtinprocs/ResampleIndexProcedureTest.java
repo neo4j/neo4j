@@ -127,6 +127,6 @@ public class ResampleIndexProcedureTest
 
         procedure.resampleIndex( ":Person(name)" );
 
-        verify( indexingService ).triggerIndexSampling( index, IndexSamplingMode.TRIGGER_REBUILD_ALL );
+        verify( indexingService ).triggerIndexSampling( index.schema(), IndexSamplingMode.TRIGGER_REBUILD_ALL );
     }
 }
