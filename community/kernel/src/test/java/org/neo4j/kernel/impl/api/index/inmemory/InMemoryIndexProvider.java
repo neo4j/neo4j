@@ -56,7 +56,7 @@ public class InMemoryIndexProvider extends SchemaIndexProvider
     }
 
     @Override
-    public InternalIndexState getInitialState( long indexId )
+    public InternalIndexState getInitialState( long indexId, NewIndexDescriptor descriptor )
     {
         InMemoryIndex index = indexes.get( indexId );
         return index != null ? index.getState() : InternalIndexState.POPULATING;

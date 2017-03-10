@@ -114,7 +114,7 @@ public abstract class SchemaIndexProvider extends LifecycleAdapter implements Co
                 }
 
                 @Override
-                public InternalIndexState getInitialState( long indexId )
+                public InternalIndexState getInitialState( long indexId, NewIndexDescriptor descriptor )
                 {
                     return InternalIndexState.POPULATING;
                 }
@@ -168,7 +168,7 @@ public abstract class SchemaIndexProvider extends LifecycleAdapter implements Co
      * the failure accepted by any call to {@link IndexPopulator#markAsFailed(String)} call at the time
      * of failure.
      */
-    public abstract InternalIndexState getInitialState( long indexId );
+    public abstract InternalIndexState getInitialState( long indexId, NewIndexDescriptor descriptor );
 
     /**
      * @return a description of this index provider

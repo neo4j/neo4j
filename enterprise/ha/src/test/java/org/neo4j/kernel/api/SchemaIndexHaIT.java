@@ -518,9 +518,9 @@ public class SchemaIndexHaIT
         }
 
         @Override
-        public InternalIndexState getInitialState( long indexId )
+        public InternalIndexState getInitialState( long indexId, NewIndexDescriptor descriptor )
         {
-            return delegate.getInitialState(indexId);
+            return delegate.getInitialState( indexId, descriptor );
         }
 
         @Override

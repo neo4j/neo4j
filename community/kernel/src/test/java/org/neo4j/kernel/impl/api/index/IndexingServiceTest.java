@@ -338,9 +338,12 @@ public class IndexingServiceTest
                 mock( IndexStoreView.class ), mockLookup, asList( onlineIndex, populatingIndex, failedIndex ),
                 logProvider, IndexingService.NO_MONITOR, DO_NOTHING_CALLBACK ) );
 
-        when( provider.getInitialState( onlineIndex.getId() ) ).thenReturn( ONLINE );
-        when( provider.getInitialState( populatingIndex.getId() ) ).thenReturn( InternalIndexState.POPULATING );
-        when( provider.getInitialState( failedIndex.getId() ) ).thenReturn( InternalIndexState.FAILED );
+        when( provider.getInitialState( onlineIndex.getId(), onlineIndex.getIndexDescriptor() ) )
+                .thenReturn( ONLINE );
+        when( provider.getInitialState( populatingIndex.getId(), populatingIndex.getIndexDescriptor() ) )
+                .thenReturn( InternalIndexState.POPULATING );
+        when( provider.getInitialState( failedIndex.getId(), failedIndex.getIndexDescriptor() ) )
+                .thenReturn( InternalIndexState.FAILED );
 
         when(mockLookup.labelGetName( 1 )).thenReturn( "LabelOne" );
         when( mockLookup.labelGetName( 2 ) ).thenReturn( "LabelTwo" );
@@ -376,9 +379,12 @@ public class IndexingServiceTest
                 asList( onlineIndex, populatingIndex, failedIndex ), logProvider, IndexingService.NO_MONITOR,
                 DO_NOTHING_CALLBACK );
 
-        when( provider.getInitialState( onlineIndex.getId() ) ).thenReturn( ONLINE );
-        when( provider.getInitialState( populatingIndex.getId() ) ).thenReturn( InternalIndexState.POPULATING );
-        when( provider.getInitialState( failedIndex.getId() ) ).thenReturn( InternalIndexState.FAILED );
+        when( provider.getInitialState( onlineIndex.getId(), onlineIndex.getIndexDescriptor() ) )
+                .thenReturn( ONLINE );
+        when( provider.getInitialState( populatingIndex.getId(), populatingIndex.getIndexDescriptor() ) )
+                .thenReturn( InternalIndexState.POPULATING );
+        when( provider.getInitialState( failedIndex.getId(), failedIndex.getIndexDescriptor() ) )
+                .thenReturn( InternalIndexState.FAILED );
 
         indexingService.init();
 
@@ -443,8 +449,8 @@ public class IndexingServiceTest
         File theFile = new File( "Blah" );
 
         when( indexAccessor.snapshotFiles()).thenAnswer( newResourceIterator( theFile ) );
-        when( indexProvider.getInitialState( indexId ) ).thenReturn( ONLINE );
-        when( indexProvider.getInitialState( indexId2 ) ).thenReturn( ONLINE );
+        when( indexProvider.getInitialState( indexId, rule1.getIndexDescriptor() ) ).thenReturn( ONLINE );
+        when( indexProvider.getInitialState( indexId2, rule2.getIndexDescriptor() ) ).thenReturn( ONLINE );
         when( storeView.indexSample( anyLong(), any( DoubleLongRegister.class ) ) )
                 .thenReturn( newDoubleLongRegister( 32L, 32L ) );
 
@@ -475,8 +481,8 @@ public class IndexingServiceTest
 
         doAnswer( waitForLatch( populatorLatch ) ).when( populator ).create();
         when( indexAccessor.snapshotFiles() ).thenAnswer( newResourceIterator( theFile ) );
-        when( indexProvider.getInitialState( indexId ) ).thenReturn( POPULATING );
-        when( indexProvider.getInitialState( indexId2 ) ).thenReturn( ONLINE );
+        when( indexProvider.getInitialState( indexId, rule1.getIndexDescriptor() ) ).thenReturn( POPULATING );
+        when( indexProvider.getInitialState( indexId2, rule2.getIndexDescriptor() ) ).thenReturn( ONLINE );
         when( storeView.indexSample( anyLong(), any( DoubleLongRegister.class ) ) ).thenReturn( newDoubleLongRegister( 32L, 32L ) );
         life.start();
 
@@ -767,7 +773,7 @@ public class IndexingServiceTest
         IndexingService indexing = newIndexingServiceWithMockedDependencies(
                 populator, accessor, withData( update ), index
         );
-        when( indexProvider.getInitialState( indexId ) ).thenReturn( ONLINE );
+        when( indexProvider.getInitialState( indexId, index.getIndexDescriptor() ) ).thenReturn( ONLINE );
         life.init();
 
         // WHEN dropping another index, which happens to have the same label/property... while recovering
@@ -891,14 +897,14 @@ public class IndexingServiceTest
     {
         // given
         long indexId = 1;
-        IndexingService indexing = newIndexingServiceWithMockedDependencies( populator, accessor, withData(),
-                IndexRule.indexRule( indexId, index, PROVIDER_DESCRIPTOR ) );
+        IndexRule indexRule = IndexRule.indexRule( indexId, index, PROVIDER_DESCRIPTOR );
+        IndexingService indexing = newIndexingServiceWithMockedDependencies( populator, accessor, withData(), indexRule );
 
         IOException exception = new IOException( "Expected failure" );
         when( nameLookup.labelGetName( labelId ) ).thenReturn( "TheLabel" );
         when( nameLookup.propertyKeyGetName( propertyKeyId ) ).thenReturn( "propertyKey" );
 
-        when( indexProvider.getInitialState( indexId ) ).thenReturn( POPULATING );
+        when( indexProvider.getInitialState( indexId, indexRule.getIndexDescriptor() ) ).thenReturn( POPULATING );
         when( indexProvider.getOnlineAccessor(
                 eq( indexId ), any( NewIndexDescriptor.class ), any( IndexSamplingConfig.class ) ) )
                 .thenThrow( exception );
@@ -1019,7 +1025,7 @@ public class IndexingServiceTest
                                                                       IndexingService.Monitor monitor,
                                                                       IndexRule... rules ) throws IOException
     {
-        when( indexProvider.getInitialState( anyLong() ) ).thenReturn( ONLINE );
+        when( indexProvider.getInitialState( anyLong(), any( NewIndexDescriptor.class ) ) ).thenReturn( ONLINE );
         when( indexProvider.getProviderDescriptor() ).thenReturn( PROVIDER_DESCRIPTOR );
         when( indexProvider.getPopulator( anyLong(), any( NewIndexDescriptor.class ),
                 any( IndexSamplingConfig.class ) ) ).thenReturn( populator );

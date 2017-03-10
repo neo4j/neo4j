@@ -101,7 +101,7 @@ public class NonUniqueIndexPopulatorCompatibility extends IndexProviderCompatibi
         populator.markAsFailed( failure );
 
         // THEN
-        assertEquals( FAILED, indexProvider.getInitialState( 17 ) );
+        assertEquals( FAILED, indexProvider.getInitialState( 17, descriptor ) );
     }
 
     @Test

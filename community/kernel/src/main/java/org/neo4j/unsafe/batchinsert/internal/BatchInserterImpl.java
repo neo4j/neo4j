@@ -538,7 +538,7 @@ public class BatchInserterImpl implements BatchInserter, IndexConfigStoreProvide
         for ( IndexRule rule : schemaCache.indexRules() )
         {
             SchemaIndexProvider provider = schemaIndexProviders.apply( rule.getProviderDescriptor() );
-            if ( provider.getInitialState( rule.getId() ) != InternalIndexState.FAILED )
+            if ( provider.getInitialState( rule.getId(), rule.getIndexDescriptor() ) != InternalIndexState.FAILED )
             {
                 indexesNeedingPopulation.add( rule );
             }

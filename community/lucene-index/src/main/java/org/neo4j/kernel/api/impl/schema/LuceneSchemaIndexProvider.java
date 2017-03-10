@@ -123,7 +123,7 @@ public class LuceneSchemaIndexProvider extends SchemaIndexProvider
     }
 
     @Override
-    public InternalIndexState getInitialState( long indexId )
+    public InternalIndexState getInitialState( long indexId, NewIndexDescriptor descriptor )
     {
         PartitionedIndexStorage indexStorage = getIndexStorage( indexId );
         String failure = indexStorage.getStoredIndexFailure();
@@ -133,7 +133,7 @@ public class LuceneSchemaIndexProvider extends SchemaIndexProvider
         }
         try
         {
-            return indexIsOnline( indexStorage ) ? InternalIndexState.ONLINE : InternalIndexState.POPULATING;
+            return indexIsOnline( indexStorage, descriptor ) ? InternalIndexState.ONLINE : InternalIndexState.POPULATING;
         }
         catch ( IOException e )
         {
@@ -165,9 +165,9 @@ public class LuceneSchemaIndexProvider extends SchemaIndexProvider
         return indexStorageFactory.indexStorageOf( indexId, config.get( GraphDatabaseSettings.archive_failed_index ) );
     }
 
-    private boolean indexIsOnline( PartitionedIndexStorage indexStorage ) throws IOException
+    private boolean indexIsOnline( PartitionedIndexStorage indexStorage, NewIndexDescriptor descriptor ) throws IOException
     {
-        try ( SchemaIndex index = LuceneSchemaIndexBuilder.create( null ).withIndexStorage( indexStorage ).build() )
+        try ( SchemaIndex index = LuceneSchemaIndexBuilder.create( descriptor ).withIndexStorage( indexStorage ).build() )
         {
             if ( index.exists() )
             {
