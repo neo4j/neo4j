@@ -218,6 +218,7 @@ public class NativeLabelScanStore implements LabelScanStore
     {
         try
         {
+            maybeCompleteRecovery();
             index.checkpoint( limiter );
         }
         catch ( IOException e )
@@ -381,12 +382,18 @@ public class NativeLabelScanStore implements LabelScanStore
             needsRebuild = false;
         }
 
+        maybeCompleteRecovery();
+
+        started = true;
+    }
+
+    private void maybeCompleteRecovery() throws IOException
+    {
         if ( recoveryStarted )
         {
             index.completeRecovery();
+            recoveryStarted = false;
         }
-
-        started = true;
     }
 
     private NativeLabelScanWriter writer() throws IOException
