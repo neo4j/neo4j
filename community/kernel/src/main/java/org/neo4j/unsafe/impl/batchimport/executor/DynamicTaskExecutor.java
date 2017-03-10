@@ -48,7 +48,6 @@ public class DynamicTaskExecutor<LOCAL> implements TaskExecutor<LOCAL>
     @SuppressWarnings( "unchecked" )
     private volatile Processor[] processors = (Processor[]) Array.newInstance( Processor.class, 0 );
     private volatile boolean shutDown;
-    private volatile boolean abortQueued;
     private volatile Throwable panic;
     private final Supplier<LOCAL> initialLocalState;
     private final int maxProcessorCount;
@@ -147,10 +146,6 @@ public class DynamicTaskExecutor<LOCAL> implements TaskExecutor<LOCAL>
             if ( panic != null )
             {
                 throw new TaskExecutionPanicException( "Executor has been shut down in panic", panic );
-            }
-            if ( abortQueued )
-            {
-                throw new TaskExecutionPanicException( "Executor has been shut down, aborting queued" );
             }
         }
     }
