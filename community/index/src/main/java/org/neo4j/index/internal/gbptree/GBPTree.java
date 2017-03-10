@@ -155,6 +155,18 @@ public class GBPTree<KEY,VALUE> implements Closeable
         default void noStoreFile()
         {   // no-op by default
         }
+
+        /**
+         * Called after recovery has completed and cleaning has been done.
+         *
+         * @param numberOfPagesVisited number of pages visited by the cleaner.
+         * @param numberOfCleanedCrashPointers number of cleaned crashed pointers.
+         * @param durationMillis time spent cleaning.
+         */
+        default void recoveryCompleted( long numberOfPagesVisited, long numberOfCleanedCrashPointers,
+                long durationMillis )
+        {   // no-op by default
+        }
     }
 
     /**
@@ -828,6 +840,32 @@ public class GBPTree<KEY,VALUE> implements Closeable
         generation = generation( stableGeneration( generation ), unstableGeneration( generation ) + 1 );
         writeState( pagedFile, CARRY_OVER_PREVIOUS_HEADER );
         pagedFile.flushAndForce();
+    }
+
+    /**
+     * Must be called after all recovered updates have been applied and before doing further work,
+     * be it reading or writing.
+     *
+     * @throws IOException on {@link PageCache} error.
+     */
+    public void completeRecovery() throws IOException
+    {
+        // For the time being there's an issue where update that come in before a crash
+        // may be applied in a different order than when they get recovered.
+        // This may have structural changes be different during recovery than what they were
+        // during normal application. The result of this is that there may be CRASH pointers left
+        // hanging in the tree. A problem with CRASH pointers is that they can only be recognized
+        // while doing recovery, where they are recognized from their generation being STABLE < gen < UNSTABLE,
+        // i.e. recovery creates this gap to be able to distinguish crashed from fixed pointers.
+        // After recovery is completed and the next checkpoint/close happens that gap is closed
+        // and any remaining CRASH pointers cannot be recognized as such anymore.
+        //
+        // The temporary solution right now is to scan through all tree nodes, as performant as possible,
+        // and zero out all CRASH pointers.
+
+        long generation = this.generation;
+        new CrashGenCleaner( pagedFile, bTreeNode, IdSpace.MIN_TREE_NODE_ID,freeList.lastId() + 1,
+                stableGeneration( generation ), unstableGeneration( generation ), monitor ).clean();
     }
 
     void printTree() throws IOException

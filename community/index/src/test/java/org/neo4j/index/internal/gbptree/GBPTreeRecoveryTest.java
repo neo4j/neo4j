@@ -36,6 +36,7 @@ import org.neo4j.cursor.RawCursor;
 import org.neo4j.io.pagecache.PageCache;
 import org.neo4j.test.rule.PageCacheRule;
 import org.neo4j.test.rule.RandomRule;
+import org.neo4j.test.rule.RandomRule.Seed;
 import org.neo4j.test.rule.TestDirectory;
 import org.neo4j.test.rule.fs.EphemeralFileSystemRule;
 
@@ -122,14 +123,13 @@ public class GBPTreeRecoveryTest
     public void shouldRecoverFromAnythingReplayExactFromCheckpoint() throws Exception
     {
         doShouldRecoverFromAnything( true );
-
     }
 
+    @Seed( 1488879322788L )
     @Test
     public void shouldRecoverFromAnythingReplayFromBeforeLastCheckpoint() throws Exception
     {
         doShouldRecoverFromAnything( false );
-
     }
 
     private void doShouldRecoverFromAnything( boolean replayRecoveryExactlyFromCheckpoint ) throws Exception
@@ -200,6 +200,7 @@ public class GBPTreeRecoveryTest
                 GBPTree<MutableLong,MutableLong> index = createIndex( pageCache, file ) )
         {
             recover( recoveryActions, index );
+            index.completeRecovery();
 
             // THEN
             // we should end up with a consistent index containing all the stuff load says

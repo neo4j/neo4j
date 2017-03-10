@@ -47,6 +47,9 @@ import static org.neo4j.index.internal.gbptree.PageCursorUtil.put6BLong;
  */
 class GenSafePointer
 {
+    private static final int EMPTY_POINTER = 0;
+    private static final int EMPTY_GENERATION = 0;
+
     static final long MIN_GENERATION = 1L;
     // unsigned int
     static final long MAX_GENERATION = 0xFFFFFFFFL;
@@ -70,13 +73,23 @@ class GenSafePointer
      * @param generation generation to write.
      * @param pointer pointer to write.
      */
-    public static void write( PageCursor cursor, long generation, long pointer )
+    static void write( PageCursor cursor, long generation, long pointer )
     {
         assertGenerationOnWrite( generation );
         assertPointerOnWrite( pointer );
+        writeGSP( cursor, generation, pointer );
+    }
+
+    private static void writeGSP( PageCursor cursor, long generation, long pointer )
+    {
         cursor.putInt( (int) generation );
         put6BLong( cursor, pointer );
         cursor.putShort( checksumOf( generation, pointer ) );
+    }
+
+    static void clean( PageCursor cursor )
+    {
+        writeGSP( cursor, EMPTY_GENERATION, EMPTY_POINTER );
     }
 
     static void assertGenerationOnWrite( long generation )
@@ -140,6 +153,6 @@ class GenSafePointer
 
     public static boolean isEmpty( long generation, long pointer )
     {
-        return generation == 0 && pointer == 0;
+        return generation == EMPTY_GENERATION && pointer == EMPTY_POINTER;
     }
 }

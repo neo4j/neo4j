@@ -21,6 +21,7 @@ package org.neo4j.kernel.api.labelscan;
 
 import java.io.File;
 import java.io.IOException;
+import java.util.Map;
 
 import org.neo4j.graphdb.ResourceIterator;
 import org.neo4j.io.pagecache.IOLimiter;
@@ -61,6 +62,10 @@ public interface LabelScanStore extends Lifecycle
         }
 
         default void rebuilt( long roughNodeCount )
+        {   // empty
+        }
+
+        default void recoveryCompleted( Map<String,Object> data )
         {   // empty
         }
     }
