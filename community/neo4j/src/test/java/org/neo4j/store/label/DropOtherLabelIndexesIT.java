@@ -72,7 +72,7 @@ public class DropOtherLabelIndexesIT
         }
     }
 
-    private void assertNodes( GraphDatabaseService db, Set<Node> expectedNodes )
+    private static void assertNodes( GraphDatabaseService db, Set<Node> expectedNodes )
     {
         try ( Transaction tx = db.beginTx();
                 ResourceIterator<Node> found = db.findNodes( LABEL ) )
@@ -82,7 +82,7 @@ public class DropOtherLabelIndexesIT
         }
     }
 
-    private Node createNode( GraphDatabaseService db )
+    private static Node createNode( GraphDatabaseService db )
     {
         try ( Transaction tx = db.beginTx() )
         {
