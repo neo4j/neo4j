@@ -26,7 +26,7 @@ import org.neo4j.shell.impl.SameJvmClient;
 import org.neo4j.shell.impl.SystemOutput;
 import org.neo4j.shell.kernel.GraphDatabaseShellServer;
 
-import static org.neo4j.shell.TestRmiPublication.createDefaultConfigFile;
+import static org.neo4j.shell.RmiPublicationIT.createDefaultConfigFile;
 
 public class DontShutdownClient
 {

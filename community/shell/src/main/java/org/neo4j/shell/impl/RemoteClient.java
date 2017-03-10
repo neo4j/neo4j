@@ -36,102 +36,104 @@ import org.neo4j.shell.ShellServer;
  */
 public class RemoteClient extends AbstractClient
 {
-	private ShellServer server;
-	private final RmiLocation serverLocation;
-	private final Output out;
+    private ShellServer server;
+    private final RmiLocation serverLocation;
+    private final Output out;
 
-    public RemoteClient( Map<String, Serializable> initialSession, RmiLocation serverLocation, CtrlCHandler ctrlcHandler ) throws ShellException
+    public RemoteClient( Map<String,Serializable> initialSession, RmiLocation serverLocation,
+            CtrlCHandler ctrlcHandler ) throws ShellException
     {
         this( initialSession, serverLocation, RemoteOutput.newOutput(), ctrlcHandler );
     }
 
-    public RemoteClient( Map<String, Serializable> initialSession, RmiLocation serverLocation, Output output ) throws ShellException
+    public RemoteClient( Map<String,Serializable> initialSession, RmiLocation serverLocation, Output output )
+            throws ShellException
     {
         this( initialSession, serverLocation, output, InterruptSignalHandler.getHandler() );
     }
 
-	/**
-	 * @param serverLocation the RMI location of the server to connect to.
-	 * @throws ShellException if no server was found at the RMI location.
-	 */
-	public RemoteClient( Map<String, Serializable> initialSession, RmiLocation serverLocation, Output out, CtrlCHandler ctrlcHandler ) throws ShellException
-	{
-	    super( initialSession, ctrlcHandler );
-		this.serverLocation = serverLocation;
-		this.out = out;
-		this.server = findRemoteServer();
-	}
+    /**
+     * @param serverLocation the RMI location of the server to connect to.
+     * @throws ShellException if no server was found at the RMI location.
+     */
+    public RemoteClient( Map<String,Serializable> initialSession, RmiLocation serverLocation, Output out,
+            CtrlCHandler ctrlcHandler ) throws ShellException
+    {
+        super( initialSession, ctrlcHandler );
+        this.serverLocation = serverLocation;
+        this.out = out;
+        this.server = findRemoteServer();
+    }
 
-	private ShellServer findRemoteServer() throws ShellException
-	{
-		try
-		{
-			ShellServer result = ( ShellServer ) this.serverLocation.getBoundObject();
-			sayHi( result );
-			updateTimeForMostRecentConnection();
-			return result;
-		}
-		catch ( RemoteException e )
-		{
-			throw ShellException.wrapCause( e );
-		}
-	}
+    private ShellServer findRemoteServer() throws ShellException
+    {
+        try
+        {
+            ShellServer result = (ShellServer) this.serverLocation.getBoundObject();
+            sayHi( result );
+            updateTimeForMostRecentConnection();
+            return result;
+        }
+        catch ( RemoteException e )
+        {
+            throw ShellException.wrapCause( e );
+        }
+    }
 
-	public Output getOutput()
-	{
-		return this.out;
-	}
+    public Output getOutput()
+    {
+        return this.out;
+    }
 
-	public ShellServer getServer()
-	{
-		// Poke the server by calling a method, f.ex. the welcome() method.
-		// If the connection is lost then try to reconnect, using the last
-		// server lookup address.
-	    boolean hadServer = this.server != null;
-		boolean shouldTryToReconnect = this.server == null;
-		try
-		{
-			if ( !shouldTryToReconnect )
-			{
-				server.welcome( initialSession );
-			}
-		}
-		catch ( RemoteException | ShellException ignored )
-		{
-			shouldTryToReconnect = true;
-		}
+    public ShellServer getServer()
+    {
+        // Poke the server by calling a method, f.ex. the welcome() method.
+        // If the connection is lost then try to reconnect, using the last
+        // server lookup address.
+        boolean hadServer = this.server != null;
+        boolean shouldTryToReconnect = this.server == null;
+        try
+        {
+            if ( !shouldTryToReconnect )
+            {
+                server.welcome( initialSession );
+            }
+        }
+        catch ( RemoteException | ShellException ignored )
+        {
+            shouldTryToReconnect = true;
+        }
 
-		Exception originException = null;
-		if ( shouldTryToReconnect )
-		{
-			this.server = null;
-			try
-			{
-				this.server = findRemoteServer();
-				if ( hadServer )
-				{
-					getOutput().println( "[Reconnected to server]" );
-				}
-			}
-			catch ( ShellException | RemoteException ee )
-			{
-				// Ok
-				originException = ee;
-			}
-		}
+        Exception originException = null;
+        if ( shouldTryToReconnect )
+        {
+            this.server = null;
+            try
+            {
+                this.server = findRemoteServer();
+                if ( hadServer )
+                {
+                    getOutput().println( "[Reconnected to server]" );
+                }
+            }
+            catch ( ShellException | RemoteException ee )
+            {
+                // Ok
+                originException = ee;
+            }
+        }
 
-		if ( this.server == null )
-		{
-			throw new RuntimeException(
-				"Server closed or cannot be reached anymore: " +
-				originException.getMessage(), originException );
-		}
-		return this.server;
-	}
-	
-	public void shutdown()
-	{
-	    super.shutdown();
-		tryUnexport( this.out );
-	}
+        if ( this.server == null )
+        {
+            throw new RuntimeException( "Server closed or cannot be reached anymore: " + originException.getMessage(),
+                    originException );
+        }
+        return this.server;
+    }
+
+    public void shutdown()
+    {
+        super.shutdown();
+        tryUnexport( this.out );
+    }
 }

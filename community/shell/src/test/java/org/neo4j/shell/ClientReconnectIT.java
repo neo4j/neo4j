@@ -19,15 +19,16 @@
  */
 package org.neo4j.shell;
 
+import org.junit.Test;
+
 import java.io.Serializable;
 import java.util.Map;
 
-import org.junit.Test;
 import org.neo4j.helpers.collection.MapUtil;
 
-import static org.junit.Assert.*;
+import static org.junit.Assert.assertTrue;
 
-public class TestClientReconnect extends AbstractShellTest
+public class ClientReconnectIT extends AbstractShellIT
 {
     @Test
     public void remoteClientAbleToReconnectAndContinue() throws Exception
@@ -40,14 +41,13 @@ public class TestClientReconnect extends AbstractShellTest
         executeCommand( client, "help", "Available commands" );
         client.shutdown();
     }
-    
+
     @Test
     public void initialSessionValuesSurvivesReconnect() throws Exception
     {
         createRelationshipChain( 2 );
         makeServerRemotelyAvailable();
-        Map<String, Serializable> initialSession = MapUtil.<String, Serializable>genericMap(
-                "TITLE_KEYS", "test" );
+        Map<String,Serializable> initialSession = MapUtil.<String,Serializable>genericMap( "TITLE_KEYS", "test" );
         ShellClient client = newRemoteClient( initialSession );
         String name = "MyTest";
         client.evaluate( "mknode --cd" );
