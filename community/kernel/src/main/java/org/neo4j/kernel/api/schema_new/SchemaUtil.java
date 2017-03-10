@@ -31,10 +31,15 @@ public class SchemaUtil
 
     public static String niceProperties( TokenNameLookup tokenNameLookup, int[] propertyIds )
     {
+        return niceProperties( tokenNameLookup, propertyIds, "" );
+    }
+
+    public static String niceProperties( TokenNameLookup tokenNameLookup, int[] propertyIds, String prefix )
+    {
         String[] properties = new String[propertyIds.length];
         for ( int i = 0; i < propertyIds.length; i++ )
         {
-            properties[i] = tokenNameLookup.propertyKeyGetName( propertyIds[i] );
+            properties[i] = prefix + tokenNameLookup.propertyKeyGetName( propertyIds[i] );
         }
         return String.join( ", ", properties );
     }

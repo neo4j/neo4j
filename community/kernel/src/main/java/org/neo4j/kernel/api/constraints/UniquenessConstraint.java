@@ -19,9 +19,12 @@
  */
 package org.neo4j.kernel.api.constraints;
 
+import java.util.Arrays;
+
 import org.neo4j.kernel.api.TokenNameLookup;
 import org.neo4j.kernel.api.schema_new.LabelSchemaDescriptor;
 import org.neo4j.kernel.api.schema_new.constaints.UniquenessConstraintDescriptor;
+import org.neo4j.kernel.api.schema_new.SchemaUtil;
 import org.neo4j.kernel.api.schema_new.index.NewIndexDescriptor;
 import org.neo4j.kernel.api.schema_new.index.NewIndexDescriptorFactory;
 
@@ -60,15 +63,19 @@ public class UniquenessConstraint extends NodePropertyConstraint
     {
         String labelName = labelName( tokenNameLookup );
         String boundIdentifier = labelName.toLowerCase();
-        return String
-                .format( "CONSTRAINT ON ( %s:%s ) ASSERT %s.%s IS UNIQUE", boundIdentifier, labelName, boundIdentifier,
-                        tokenNameLookup.propertyKeyGetName( descriptor.getPropertyId() ) );
+        String properties =
+                SchemaUtil.niceProperties( tokenNameLookup, descriptor.getPropertyIds(), boundIdentifier + "." );
+        if ( descriptor.getPropertyIds().length > 1 )
+        {
+            properties = "(" + properties + ")";
+        }
+        return String.format( "CONSTRAINT ON ( %s:%s ) ASSERT %s IS UNIQUE", boundIdentifier, labelName, properties );
     }
 
     @Override
     public String toString()
     {
         return String.format( "CONSTRAINT ON ( n:label[%d] ) ASSERT n.property[%d] IS UNIQUE",
-                descriptor.getLabelId(), descriptor.getPropertyId() );
+                descriptor.getLabelId(), Arrays.toString( descriptor.getPropertyIds() ) );
     }
 }
