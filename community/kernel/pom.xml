@@ -138,15 +138,11 @@ the relevant Commercial Agreement.
         <artifactId>clirr-maven-plugin</artifactId>
         <configuration>
           <includes>
-            <include>org/neo4j/graphdb/**</include>
+            <include>org/neo4j/graphdb/factory/*</include>
             <include>org/neo4j/unsafe/batchinsert/*</include>
             <include>org/neo4j/procedure/*</include>
-            <!--<include>org/neo4j/helpers/*</include> broken atm -->
             <include>org/neo4j/helpers/collection/*</include>
           </includes>
-          <excludes>
-            <exclude>org/neo4j/graphdb/impl</exclude>
-          </excludes>
         </configuration>
       </plugin>
     </plugins>
