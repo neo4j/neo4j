@@ -41,8 +41,6 @@ import static org.junit.Assert.assertEquals;
 import static org.junit.Assert.assertNotNull;
 import static org.junit.Assert.assertTrue;
 import static org.junit.Assert.fail;
-import static org.neo4j.unsafe.impl.batchimport.executor.TaskExecutor.SF_ABORT_QUEUED;
-import static org.neo4j.unsafe.impl.batchimport.executor.TaskExecutor.SF_AWAIT_ALL_COMPLETED;
 
 public class DynamicTaskExecutorTest
 {
@@ -73,7 +71,7 @@ public class DynamicTaskExecutorTest
         while ( task1.executed == 0 )
         {   // Busy loop
         }
-        executor.shutdown( SF_AWAIT_ALL_COMPLETED );
+        executor.close();
 
         // THEN
         assertEquals( 1, task1.executed );
@@ -103,7 +101,7 @@ public class DynamicTaskExecutorTest
         while ( task1.executed == 0 )
         {   // Busy loop
         }
-        executor.shutdown( SF_AWAIT_ALL_COMPLETED );
+        executor.close();
 
         // THEN
         assertEquals( 1, task1.executed );
@@ -135,7 +133,7 @@ public class DynamicTaskExecutorTest
         Thread.sleep( 200 ); // gosh, a Thread.sleep...
         assertEquals( 0, task4.executed );
         task3.latch.finish();
-        executor.shutdown( SF_AWAIT_ALL_COMPLETED );
+        executor.close();
 
         // THEN
         assertEquals( 1, task1.executed );
@@ -157,7 +155,7 @@ public class DynamicTaskExecutorTest
         {
             executor.submit( tasks[i] = new ExpensiveTask( 10 ) );
         }
-        executor.shutdown( SF_AWAIT_ALL_COMPLETED );
+        executor.close();
 
         // THEN
         for ( ExpensiveTask task : tasks )
@@ -211,7 +209,7 @@ public class DynamicTaskExecutorTest
 
         // THEN
         assertExceptionOnSubmit( executor, exception );
-        executor.shutdown( SF_ABORT_QUEUED ); // call would block if the shutdown as part of failure doesn't complete properly
+        executor.close(); // call would block if the shutdown as part of failure doesn't complete properly
 
         secondBlockingTask.latch.finish();
     }
@@ -269,11 +267,11 @@ public class DynamicTaskExecutorTest
                 @Override
                 public Void doWork( Void state ) throws Exception
                 {
-                    executor.shutdown( SF_AWAIT_ALL_COMPLETED );
+                    executor.close();
                     return null;
                 }
             } );
-            while ( !closer.waitUntilWaiting().isAt( DynamicTaskExecutor.class, "shutdown" ) )
+            while ( !closer.waitUntilWaiting().isAt( DynamicTaskExecutor.class, "close" ) )
             {
                 Thread.sleep( 10 );
             }
@@ -306,7 +304,7 @@ public class DynamicTaskExecutorTest
         assertEquals( 1, executor.processors( -2 ) );
         assertEquals( 1, executor.processors( -2 ) );
         assertEquals( 1, executor.processors( 0 ) );
-        executor.shutdown( SF_AWAIT_ALL_COMPLETED );
+        executor.close();
     }
 
     @Repeat( times = 10 )
@@ -316,7 +314,7 @@ public class DynamicTaskExecutorTest
         // GIVEN
         TaskExecutor<Void> executor = new DynamicTaskExecutor<>( 1, 2, 2, PARK, "test" );
         Race race = new Race().withRandomStartDelays();
-        race.addContestant( () -> executor.shutdown( SF_AWAIT_ALL_COMPLETED ) );
+        race.addContestant( () -> executor.close() );
         race.addContestant( () -> executor.processors( 1 ) );
 
         // WHEN

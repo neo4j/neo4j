@@ -261,7 +261,7 @@ public class ParallelInputEntityDeserializer<ENTITY extends InputEntity> extends
     @Override
     public void close()
     {
-        processing.shutdown( true );
+        processing.close();
         try
         {
             decorator.close();
@@ -299,5 +299,11 @@ public class ParallelInputEntityDeserializer<ENTITY extends InputEntity> extends
     public long position()
     {
         return last.position();
+    }
+
+    @Override
+    public void receivePanic( Throwable cause )
+    {
+        processing.receivePanic( cause );
     }
 }

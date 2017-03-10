@@ -31,8 +31,6 @@ import static java.lang.System.currentTimeMillis;
 import static java.lang.System.nanoTime;
 import static java.util.concurrent.TimeUnit.MILLISECONDS;
 import static org.neo4j.unsafe.impl.batchimport.executor.DynamicTaskExecutor.DEFAULT_PARK_STRATEGY;
-import static org.neo4j.unsafe.impl.batchimport.executor.TaskExecutor.SF_ABORT_QUEUED;
-import static org.neo4j.unsafe.impl.batchimport.executor.TaskExecutor.SF_AWAIT_ALL_COMPLETED;
 import static org.neo4j.unsafe.impl.batchimport.staging.Processing.await;
 
 /**
@@ -156,7 +154,7 @@ public abstract class ProcessorStep<T> extends AbstractStep<T>
     public void close() throws Exception
     {
         super.close();
-        executor.shutdown( panic == null ? SF_AWAIT_ALL_COMPLETED : SF_ABORT_QUEUED );
+        executor.close();
     }
 
     @Override
