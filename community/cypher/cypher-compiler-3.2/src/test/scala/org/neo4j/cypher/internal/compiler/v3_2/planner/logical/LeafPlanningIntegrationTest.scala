@@ -442,6 +442,10 @@ class LeafPlanningIntegrationTest extends CypherFunSuite with LogicalPlanningTes
       indexOn("Awesome", "prop", "prop2")
     } getLogicalPlanFor "MATCH (n:Awesome) WHERE n.prop = 42 AND n.prop2 = 'foo' RETURN n"
 
+
+    val seek1: SingleQueryExpression[Expression] = SingleQueryExpression(SignedDecimalIntegerLiteral("42")_)
+    val seek2: SingleQueryExpression[Expression] = SingleQueryExpression(StringLiteral("foo")_)
+
     plan._2 should equal(
       NodeIndexSeek(
         "n",
@@ -449,7 +453,7 @@ class LeafPlanningIntegrationTest extends CypherFunSuite with LogicalPlanningTes
         Seq(
           PropertyKeyToken(PropertyKeyName("prop") _, PropertyKeyId(0)),
           PropertyKeyToken(PropertyKeyName("prop2") _, PropertyKeyId(1))),
-        CompositeQueryExpression(Seq(SignedDecimalIntegerLiteral("42") _, StringLiteral("foo") _)),
+        CompositeQueryExpression(Seq(seek1, seek2)),
         Set.empty)(solved)
     )
   }
@@ -459,6 +463,10 @@ class LeafPlanningIntegrationTest extends CypherFunSuite with LogicalPlanningTes
       indexOn("Awesome", "prop", "prop2")
     } getLogicalPlanFor "MATCH (n:Awesome) WHERE n.prop2 = 'foo' AND n.prop = 42 RETURN n"
 
+    val seek1: SingleQueryExpression[Expression] = SingleQueryExpression(SignedDecimalIntegerLiteral("42")_)
+    val seek2: SingleQueryExpression[Expression] = SingleQueryExpression(StringLiteral("foo")_)
+
+
     plan._2 should equal(
       NodeIndexSeek(
         "n",
@@ -466,7 +474,7 @@ class LeafPlanningIntegrationTest extends CypherFunSuite with LogicalPlanningTes
         Seq(
           PropertyKeyToken(PropertyKeyName("prop") _, PropertyKeyId(0)),
           PropertyKeyToken(PropertyKeyName("prop2") _, PropertyKeyId(1))),
-        CompositeQueryExpression(Seq(SignedDecimalIntegerLiteral("42") _, StringLiteral("foo") _)),
+        CompositeQueryExpression(Seq(seek1, seek2)),
         Set.empty)(solved)
     )
   }
@@ -476,6 +484,9 @@ class LeafPlanningIntegrationTest extends CypherFunSuite with LogicalPlanningTes
       indexOn("Awesome", "prop", "prop2")
     } getLogicalPlanFor "MATCH (n:Awesome) WHERE n.prop2 = 'foo' AND exists(n.name) AND n.prop = 42 RETURN n"
 
+    val seek1: SingleQueryExpression[Expression] = SingleQueryExpression(SignedDecimalIntegerLiteral("42")_)
+    val seek2: SingleQueryExpression[Expression] = SingleQueryExpression(StringLiteral("foo")_)
+
     plan._2 should equal(
       Selection(Seq(FunctionInvocation(FunctionName("exists") _, Property(varFor("n"), PropertyKeyName("name") _) _) _),
         NodeIndexSeek(
@@ -484,7 +495,7 @@ class LeafPlanningIntegrationTest extends CypherFunSuite with LogicalPlanningTes
           Seq(
             PropertyKeyToken(PropertyKeyName("prop") _, PropertyKeyId(0)),
             PropertyKeyToken(PropertyKeyName("prop2") _, PropertyKeyId(1))),
-          CompositeQueryExpression(Seq(SignedDecimalIntegerLiteral("42") _, StringLiteral("foo") _)),
+          CompositeQueryExpression(Seq(seek1, seek2)),
           Set.empty)(solved)
       )(solved)
     )

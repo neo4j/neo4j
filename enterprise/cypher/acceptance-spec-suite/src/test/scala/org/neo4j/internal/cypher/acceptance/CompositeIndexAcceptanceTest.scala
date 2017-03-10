@@ -137,8 +137,7 @@ class CompositeIndexAcceptanceTest extends ExecutionEngineFunSuite with NewPlann
     result should evaluateTo(List(Map("n" -> n1)))
   }
 
-  // TODO: Support existence predicates in indexQuery
-  ignore("should use composite index with combined equality and existence predicates") {
+  test("should use composite index with combined equality and existence predicates") {
     // Given
     graph.createIndex("User", "firstname")
     graph.createIndex("User", "lastname")
@@ -155,7 +154,7 @@ class CompositeIndexAcceptanceTest extends ExecutionEngineFunSuite with NewPlann
     val result = executeWithCostPlannerAndInterpretedRuntimeOnly("MATCH (n:User) WHERE exists(n.lastname) AND n.firstname = 'Jake' RETURN n")
 
     // Then
-    result should useIndex(":User(firstname,lastname)")
+    result should not(useIndex(":User(firstname,lastname)")) // TODO: This should change once scans of indexes is supported
     result should not(useIndex(":User(firstname)"))
     result should not(useIndex(":User(lastname)"))
     result should evaluateTo(List(Map("n" -> n3)))
@@ -170,14 +169,78 @@ class CompositeIndexAcceptanceTest extends ExecutionEngineFunSuite with NewPlann
     result should evaluateTo(List(Map("n" -> n)))
   }
 
-  // TODO: Support composite index specifications in IndexSpecifier.java
-  ignore("should plan a composite index seek for a multiple property predicate expression when index is created after data") {
+  test("should plan a composite index seek for a multiple property predicate expression when index is created after data") {
     executeWithCostPlannerAndInterpretedRuntimeOnly("WITH RANGE(0,10) AS num CREATE (:Person {id:num})") // ensure label cardinality favors index
     executeWithCostPlannerAndInterpretedRuntimeOnly("CREATE (n:Person {firstname:'Joe', lastname:'Soap'})")
     graph.createIndex("Person", "firstname")
     graph.createIndex("Person", "firstname", "lastname")
     val result = executeWithCostPlannerAndInterpretedRuntimeOnly("MATCH (n:Person) WHERE n.firstname = 'Joe' AND n.lastname = 'Soap' RETURN n")
-    result should useIndex(":User(firstname,lastname)")
+    result should useIndex(":Person(firstname,lastname)")
+  }
+
+  test("should use composite index correctly given two IN predicates") {
+    // Given
+    graph.createIndex("Foo", "bar", "baz")
+
+    (0 to 9) foreach { bar =>
+      (0 to 9) foreach { baz =>
+        createLabeledNode(Map("bar" -> bar, "baz" -> baz, "idx" -> (bar * 10 + baz)), "Foo")
+      }
+    }
+
+    // When
+    val result = executeWithCostPlannerAndInterpretedRuntimeOnly(
+      """MATCH (n:Foo)
+        |WHERE n.bar IN [0,1,2,3,4,5,6,7,8,9]
+        |  AND n.baz IN [0,1,2,3,4,5,6,7,8,9]
+        |RETURN n.idx as x
+        |ORDER BY x""".stripMargin)
+
+    // Then
+    result should useIndex(":Foo(bar,baz)")
+    result should evaluateTo((0 to 99).map(i => Map("x" -> i)).toList)
+  }
+
+  test("should use composite index correctly with a single exact together with a List of seeks") {
+    // Given
+    graph.createIndex("Foo", "bar", "baz")
+
+    (0 to 9) foreach { baz =>
+      createLabeledNode(Map("bar" -> 1, "baz" -> baz), "Foo")
+    }
+
+    // When
+    val result = executeWithCostPlannerAndInterpretedRuntimeOnly(
+      """MATCH (n:Foo)
+        |WHERE n.bar = 1
+        |  AND n.baz IN [0,1,2,3,4,5,6,7,8,9]
+        |RETURN n.baz as x
+        |ORDER BY x""".stripMargin)
+
+    // Then
+    result should useIndex(":Foo(bar,baz)")
+    result should evaluateTo((0 to 9).map(i => Map("x" -> i)).toList)
+  }
+
+  test("should use composite index correctly with a single exact together with a List of seeks, with the exact seek not being first") {
+    // Given
+    graph.createIndex("Foo", "bar", "baz")
+
+    (0 to 9) foreach { baz =>
+      createLabeledNode(Map("baz" -> (baz % 2), "bar" -> baz), "Foo")
+    }
+
+    // When
+    val result = executeWithCostPlannerAndInterpretedRuntimeOnly(
+      """MATCH (n:Foo)
+        |WHERE n.baz = 1
+        |  AND n.bar IN [0,1,2,3,4,5,6,7,8,9]
+        |RETURN n.bar as x
+        |ORDER BY x""".stripMargin)
+
+    // Then
+    result should useIndex(":Foo(bar,baz)")
+    result should evaluateTo(List(Map("x" -> 1), Map("x" -> 3), Map("x" -> 5), Map("x" -> 7), Map("x" -> 9)))
   }
 
   case class haveIndexes(expectedIndexes: String*) extends Matcher[GraphDatabaseQueryService] {

@@ -130,12 +130,12 @@ abstract class AbstractIndexSeekLeafPlanner extends LeafPlanner with LeafPlanFro
     entryConstructor(plannables.map(p => p.propertyPredicate) :+ labelPredicate)
   }
 
-  private def mergeQueryExpressionsToSingleOne(plannables: Seq[IndexPlannableExpression]) =
+  private def mergeQueryExpressionsToSingleOne(plannables: Seq[IndexPlannableExpression]): QueryExpression[Expression] =
     if (plannables.length == 1)
       plannables.head.queryExpression
     else {
       val expressions: Seq[Expression] = plannables.flatMap(_.queryExpression.expressions)
-      CompositeQueryExpression(expressions)
+      CompositeQueryExpression(plannables.map(_.queryExpression))
     }
 
   private def indexPlannableExpression(argumentIds: Set[IdName],
@@ -176,11 +176,8 @@ abstract class AbstractIndexSeekLeafPlanner extends LeafPlanner with LeafPlanFro
       plannables find (p => p.propertyKeyName.id.contains(propertyKeyId))
     }
 
-    val temporarilyTurnOffCompositeIndexesUntilTheyAreSupportedByTheKernel = true //foundPredicates.length == 1
-
     // Currently we only support using the composite index if ALL properties are specified, but this could be generalized
-    if (foundPredicates.length == indexDescriptor.properties.length &&
-      temporarilyTurnOffCompositeIndexesUntilTheyAreSupportedByTheKernel)
+    if (foundPredicates.length == indexDescriptor.properties.length)
       Some(foundPredicates)
     else
       None
