@@ -24,6 +24,7 @@ import java.util.List;
 import java.util.Set;
 
 import org.neo4j.collection.primitive.Primitive;
+import org.neo4j.collection.primitive.PrimitiveIntObjectMap;
 import org.neo4j.collection.primitive.PrimitiveIntSet;
 import org.neo4j.collection.primitive.PrimitiveLongCollections;
 import org.neo4j.collection.primitive.PrimitiveLongIterator;
@@ -45,7 +46,6 @@ import org.neo4j.kernel.impl.store.record.PropertyRecord;
 import org.neo4j.kernel.impl.store.record.Record;
 import org.neo4j.storageengine.api.schema.IndexReader;
 
-import static org.neo4j.kernel.api.StatementConstants.NO_SUCH_PROPERTY_KEY;
 import static org.neo4j.kernel.impl.api.schema.NodeSchemaMatcher.nodeHasSchemaProperties;
 
 /**
@@ -90,23 +90,21 @@ public class PropertyAndNodeIndexedCheck implements RecordCheck<NodeRecord, Cons
             Collection<PropertyRecord> propertyRecs )
     {
         Set<Long> labels = NodeLabelReader.getListOfLabels( record, records, engine );
-        List<PropertyBlock> properties = null;
-        PrimitiveIntSet nodePropertyIds = null;
+        PrimitiveIntObjectMap<PropertyBlock> nodePropertyMap = null;
         for ( IndexRule indexRule : indexes.rules() )
         {
             long labelId = indexRule.schema().getLabelId();
             if ( labels.contains( labelId ) )
             {
-                if ( properties == null )
+                if ( nodePropertyMap == null )
                 {
-                    properties = propertyReader.propertyBlocks( propertyRecs );
-                    nodePropertyIds = propertyIds( properties );
+                    nodePropertyMap = properties( propertyReader.propertyBlocks( propertyRecs ) );
                 }
 
                 int[] indexPropertyIds = indexRule.schema().getPropertyIds();
-                if ( nodeHasSchemaProperties( nodePropertyIds, indexPropertyIds, NO_SUCH_PROPERTY_KEY ) )
+                if ( nodeHasSchemaProperties( nodePropertyMap, indexPropertyIds ) )
                 {
-                    Object[] values = getPropertyValues( properties, indexPropertyIds );
+                    Object[] values = getPropertyValues( nodePropertyMap, indexPropertyIds );
                     try ( IndexReader reader = indexes.accessorFor( indexRule ).newReader() )
                     {
                         long nodeId = record.getId();
@@ -198,40 +196,23 @@ public class PropertyAndNodeIndexedCheck implements RecordCheck<NodeRecord, Cons
         }
     }
 
-    private Object[] getPropertyValues( List<PropertyBlock> properties, int[] indexPropertyIds )
+    private Object[] getPropertyValues( PrimitiveIntObjectMap<PropertyBlock> propertyMap, int[] indexPropertyIds )
     {
         Object[] values = new Object[indexPropertyIds.length];
         for ( int i = 0; i < indexPropertyIds.length; i++ )
         {
-            PropertyBlock propertyBlock = propertyWithKey( properties, indexPropertyIds[i] );
-            if ( propertyBlock == null )
-            {
-                throw new IllegalStateException( "We should have checked that the index and node match before coming " +
-                        "here, so this should not happen" );
-            }
+            PropertyBlock propertyBlock = propertyMap.get( indexPropertyIds[i] );
             values[i] = propertyReader.propertyValue( propertyBlock ).value();
         }
         return values;
     }
 
-    private PropertyBlock propertyWithKey( List<PropertyBlock> propertyBlocks, int propertyKey )
+    private PrimitiveIntObjectMap<PropertyBlock> properties( List<PropertyBlock> propertyBlocks )
     {
+        PrimitiveIntObjectMap<PropertyBlock> propertyIds = Primitive.intObjectMap();
         for ( PropertyBlock propertyBlock : propertyBlocks )
         {
-            if ( propertyBlock.getKeyIndexId() == propertyKey )
-            {
-                return propertyBlock;
-            }
-        }
-        return null;
-    }
-
-    private PrimitiveIntSet propertyIds( List<PropertyBlock> propertyBlocks )
-    {
-        PrimitiveIntSet propertyIds = Primitive.intSet();
-        for ( PropertyBlock propertyBlock : propertyBlocks )
-        {
-            propertyIds.add( propertyBlock.getKeyIndexId() );
+            propertyIds.put( propertyBlock.getKeyIndexId(), propertyBlock );
         }
         return propertyIds;
     }
@@ -261,5 +242,18 @@ public class PropertyAndNodeIndexedCheck implements RecordCheck<NodeRecord, Cons
 
         indexedNodeIds = LookupFilter.exactIndexMatches( propertyReader, indexedNodeIds, query );
         return indexedNodeIds;
+    }
+
+    public static boolean nodeHasSchemaProperties(
+            PrimitiveIntObjectMap<PropertyBlock> nodePropertyMap, int[] indexPropertyIds )
+    {
+        for ( int indexPropertyId : indexPropertyIds )
+        {
+            if ( !nodePropertyMap.containsKey( indexPropertyId ) )
+            {
+                return false;
+            }
+        }
+        return true;
     }
 }
