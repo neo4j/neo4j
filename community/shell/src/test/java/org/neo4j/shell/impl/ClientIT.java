@@ -37,9 +37,8 @@ import static org.hamcrest.CoreMatchers.equalTo;
 import static org.hamcrest.Matchers.contains;
 import static org.junit.Assert.assertThat;
 
-public class AbstractClientTest
+public class ClientIT
 {
-
     @Test
     public void shouldHandleNormalInput() throws ShellException, RemoteException
     {

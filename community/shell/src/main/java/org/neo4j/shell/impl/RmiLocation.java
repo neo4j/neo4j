@@ -22,11 +22,13 @@ package org.neo4j.shell.impl;
 import java.net.MalformedURLException;
 import java.net.UnknownHostException;
 import java.rmi.Naming;
+import java.rmi.NoSuchObjectException;
 import java.rmi.NotBoundException;
 import java.rmi.Remote;
 import java.rmi.RemoteException;
 import java.rmi.registry.LocateRegistry;
 import java.rmi.registry.Registry;
+import java.rmi.server.UnicastRemoteObject;
 
 /**
  * Class for specifying a location of an RMI object
@@ -34,159 +36,167 @@ import java.rmi.registry.Registry;
  */
 public class RmiLocation
 {
-	private final String host;
-	private final int port;
-	private final String name;
+    private final String host;
+    private final int port;
+    private final String name;
+    private Registry registry;
 
-	private RmiLocation( String host, int port, String name )
-	{
-		this.host = host;
-		this.port = port;
-		this.name = name;
-	}
+    private RmiLocation( String host, int port, String name )
+    {
+        this.host = host;
+        this.port = port;
+        this.name = name;
+    }
 
-	/**
-	 * Creates a new RMI location instance.
-	 * @param host the RMI host, f.ex. "localhost".
-	 * @param port the RMI port.
-	 * @param name the RMI name, f.ex. "shell".
-	 * @return a new {@link RmiLocation} instance.
-	 */
-	public static RmiLocation location( String host, int port, String name )
-	{
-		return new RmiLocation( host, port, name );
-	}
+    /**
+     * Creates a new RMI location instance.
+     *
+     * @param host the RMI host, f.ex. "localhost".
+     * @param port the RMI port.
+     * @param name the RMI name, f.ex. "shell".
+     * @return a new {@link RmiLocation} instance.
+     */
+    public static RmiLocation location( String host, int port, String name )
+    {
+        return new RmiLocation( host, port, name );
+    }
 
-	/**
-	 * @return the host of this RMI location.
-	 */
-	public String getHost()
-	{
-		return this.host;
-	}
+    /**
+     * @return the host of this RMI location.
+     */
+    public String getHost()
+    {
+        return this.host;
+    }
 
-	/**
-	 * @return the port of this RMI location.
-	 */
-	public int getPort()
-	{
-		return this.port;
-	}
+    /**
+     * @return the port of this RMI location.
+     */
+    public int getPort()
+    {
+        return this.port;
+    }
 
-	/**
-	 * @return the name of this RMI location.
-	 */
-	public String getName()
-	{
-		return this.name;
-	}
+    /**
+     * @return the name of this RMI location.
+     */
+    public String getName()
+    {
+        return this.name;
+    }
 
-	private static String getProtocol()
-	{
-		return "rmi://";
-	}
+    private static String getProtocol()
+    {
+        return "rmi://";
+    }
 
-	/**
-	 * @return "short" URL, consisting of protocol, host and port, f.ex.
-	 * "rmi://localhost:8080".
-	 */
-	public String toShortUrl()
-	{
-		return getProtocol() + getHost() + ":" + getPort();
-	}
+    /**
+     * @return "short" URL, consisting of protocol, host and port, f.ex.
+     * "rmi://localhost:8080".
+     */
+    public String toShortUrl()
+    {
+        return getProtocol() + getHost() + ":" + getPort();
+    }
 
-	/**
-	 * @return the full RMI URL, f.ex.
-	 * "rmi://localhost:8080/the/shellname".
-	 */
-	public String toUrl()
-	{
-		return getProtocol() + getHost() + ":" + getPort() + "/" + getName();
-	}
+    /**
+     * @return the full RMI URL, f.ex.
+     * "rmi://localhost:8080/the/shellname".
+     */
+    public String toUrl()
+    {
+        return getProtocol() + getHost() + ":" + getPort() + "/" + getName();
+    }
 
-	/**
-	 * Ensures that the RMI registry is created for this JVM instance and port,
-	 * see {@link #getPort()}.
-	 * @return the registry for the port.
-	 * @throws RemoteException RMI error.
-	 */
-	public Registry ensureRegistryCreated()
-		throws RemoteException
-	{
-		try
-		{
-			Naming.list( toShortUrl() );
-			return LocateRegistry.getRegistry( getHost(), getPort() );
-		}
-		catch ( RemoteException e )
-		{
+    /**
+     * Ensures that the RMI registry is created for this JVM instance and port,
+     * see {@link #getPort()}.
+     *
+     * @return the registry for the port.
+     * @throws RemoteException RMI error.
+     */
+    public Registry ensureRegistryCreated() throws RemoteException
+    {
+        try
+        {
+            Naming.list( toShortUrl() );
+            return LocateRegistry.getRegistry( getHost(), getPort() );
+        }
+        catch ( RemoteException e )
+        {
             try
             {
                 return LocateRegistry.createRegistry( getPort(), null, new HostBoundSocketFactory( host ) );
             }
             catch ( UnknownHostException hostException )
             {
-                throw new RemoteException( "Unable to bind to '"+host+"', unknown hostname.", hostException );
+                throw new RemoteException( "Unable to bind to '" + host + "', unknown hostname.", hostException );
             }
         }
-		catch ( java.net.MalformedURLException e )
-		{
-			throw new RemoteException( "Malformed URL", e );
-		}
-	}
+        catch ( java.net.MalformedURLException e )
+        {
+            throw new RemoteException( "Malformed URL", e );
+        }
+    }
 
-	/**
-	 * Binds an object to the RMI location defined by this instance.
-	 * @param object the object to bind.
-	 * @throws RemoteException RMI error.
-	 */
-	public void bind( Remote object ) throws RemoteException
-	{
-		ensureRegistryCreated();
-		try
-		{
-			Naming.rebind( toUrl(), object );
-		}
-		catch ( MalformedURLException e )
-		{
-			throw new RemoteException( "Malformed URL", e );
-		}
-	}
+    /**
+     * Binds an object to the RMI location defined by this instance.
+     *
+     * @param object the object to bind.
+     * @throws RemoteException RMI error.
+     */
+    public void bind( Remote object ) throws RemoteException
+    {
+        this.registry = ensureRegistryCreated();
+        try
+        {
+            Naming.rebind( toUrl(), object );
+        }
+        catch ( MalformedURLException e )
+        {
+            throw new RemoteException( "Malformed URL", e );
+        }
+    }
 
-	/**
-	 * @return whether or not there's an object bound to the RMI location
-	 * defined by this instance.
-	 */
-	public boolean isBound()
-	{
-		try
-		{
-			getBoundObject();
-			return true;
-		}
-		catch ( RemoteException e )
-		{
-			return false;
-		}
-	}
+    public void unbind() throws RemoteException
+    {
+        UnicastRemoteObject.unexportObject( this.registry, true );
+    }
 
-	/**
-	 * @return the bound object for the RMI location defined by this instance.
-	 * @throws RemoteException if there's no object bound for the RMI location.
-	 */
-	public Remote getBoundObject() throws RemoteException
-	{
-		try
-		{
-			return Naming.lookup( toUrl() );
-		}
-		catch ( NotBoundException e )
-		{
-			throw new RemoteException( "Not bound", e );
-		}
-		catch ( MalformedURLException e )
-		{
-			throw new RemoteException( "Malformed URL", e );
-		}
-	}
+    /**
+     * @return whether or not there's an object bound to the RMI location
+     * defined by this instance.
+     */
+    public boolean isBound()
+    {
+        try
+        {
+            getBoundObject();
+            return true;
+        }
+        catch ( RemoteException e )
+        {
+            return false;
+        }
+    }
+
+    /**
+     * @return the bound object for the RMI location defined by this instance.
+     * @throws RemoteException if there's no object bound for the RMI location.
+     */
+    public Remote getBoundObject() throws RemoteException
+    {
+        try
+        {
+            return Naming.lookup( toUrl() );
+        }
+        catch ( NoSuchObjectException | NotBoundException e )
+        {
+            throw new RemoteException( "Not bound", e );
+        }
+        catch ( MalformedURLException e )
+        {
+            throw new RemoteException( "Malformed URL", e );
+        }
+    }
 }
