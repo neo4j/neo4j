@@ -52,15 +52,13 @@ public class DetailedExecutionMonitor extends ExecutionMonitor.Adapter
     @Override
     public void start( StageExecution execution )
     {
-        StringBuilder names = new StringBuilder();
-        names.append( names.length() > 0 ? ", " : "" ).append( execution.getStageName() );
-        out.println( format( "%n>>>>> EXECUTING STAGE(s) %s <<<<<%n", names ) );
+        out.println( format( "%n>>>>> EXECUTING STAGE %s <<<<<%n", execution.getStageName() ) );
     }
 
     @Override
     public void end( StageExecution execution, long totalTimeMillis )
     {
-        out.println( "Stage total time " + duration( totalTimeMillis ) );
+        out.println( format( "Stage total time %s", duration( totalTimeMillis ) ) );
     }
 
     @Override
