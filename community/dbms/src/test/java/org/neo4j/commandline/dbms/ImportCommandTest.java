@@ -163,6 +163,9 @@ public class ImportCommandTest
                             "                          [--relationships[:RELATIONSHIP_TYPE]=<\"file1,file2,...\">]%n" +
                             "                          [--id-type=<STRING|INTEGER|ACTUAL>]%n" +
                             "                          [--input-encoding=<character-set>]%n" +
+                            "                          [--ignore-extra-columns[=<true|false>]]%n" +
+                            "                          [--ignore-duplicate-nodes[=<true|false>]]%n" +
+                            "                          [--ignore-missing-nodes[=<true|false>]]%n" +
                             "usage: neo4j-admin import --mode=database [--database=<name>]%n" +
                             "                          [--additional-config=<config-file-path>]%n" +
                             "                          [--from=<source-directory>]%n" +
@@ -205,7 +208,15 @@ public class ImportCommandTest
                             "      https://neo4j.com/docs/operations-manual/current/tools/import/%n" +
                             "      [default:STRING]%n" +
                             "  --input-encoding=<character-set>%n" +
-                            "      Character set that input data is encoded in. [default:UTF-8]%n" ),
+                            "      Character set that input data is encoded in. [default:UTF-8]%n" +
+                            "  --ignore-extra-columns=<true|false>%n" +
+                            "      If un-specified columns should be ignored during the import.%n" +
+                            "      [default:false]%n" +
+                            "  --ignore-duplicate-nodes=<true|false>%n" +
+                            "      If duplicate nodes should be ignored during the import. [default:false]%n" +
+                            "  --ignore-missing-nodes=<true|false>%n" +
+                            "      If relationships referring to missing nodes should be ignored during the%n" +
+                            "      import. [default:false]%n" ),
                     baos.toString() );
         }
     }
