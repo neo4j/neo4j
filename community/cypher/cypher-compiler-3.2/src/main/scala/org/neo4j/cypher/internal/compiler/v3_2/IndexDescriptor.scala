@@ -24,7 +24,7 @@ import org.neo4j.cypher.internal.frontend.v3_2.{LabelId, PropertyKeyId}
 object IndexDescriptor {
   def apply(label: Int, property: Int): IndexDescriptor = IndexDescriptor(LabelId(label), Seq(PropertyKeyId(property)))
 
-  def apply(label: Int, properties: Seq[Int]): IndexDescriptor = IndexDescriptor(LabelId(label), properties.toSeq.map(PropertyKeyId))
+  def apply(label: Int, properties: Seq[Int]): IndexDescriptor = IndexDescriptor(LabelId(label), properties.map(PropertyKeyId))
 
   def apply(label: LabelId, property: PropertyKeyId): IndexDescriptor = IndexDescriptor(label, Seq(property))
 

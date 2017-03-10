@@ -51,7 +51,31 @@ trait PropertyConstraintCommand extends Command with SemanticChecking {
       }
 }
 
+trait CompositePropertyConstraintCommand extends Command with SemanticChecking {
+  def variable: Variable
+
+  def properties: Seq[Property]
+
+  def entityType: CypherType
+
+  def semanticCheck =
+    variable.declare(entityType) chain
+      properties.foldSemanticCheck(_.semanticCheck(Expression.SemanticContext.Simple)) chain
+      properties.foldSemanticCheck { property =>
+        when(!property.map.isInstanceOf[ast.Variable]) {
+          SemanticError("Cannot index nested properties", property.position)
+        }
+      }
+}
+
 trait NodePropertyConstraintCommand extends PropertyConstraintCommand {
+
+  val entityType = symbols.CTNode
+
+  def label: LabelName
+}
+
+trait UniquePropertyConstraintCommand extends CompositePropertyConstraintCommand {
 
   val entityType = symbols.CTNode
 
@@ -65,9 +89,9 @@ trait RelationshipPropertyConstraintCommand extends PropertyConstraintCommand {
   def relType: RelTypeName
 }
 
-case class CreateUniquePropertyConstraint(variable: Variable, label: LabelName, property: Property)(val position: InputPosition) extends NodePropertyConstraintCommand
+case class CreateUniquePropertyConstraint(variable: Variable, label: LabelName, properties: Seq[Property])(val position: InputPosition) extends UniquePropertyConstraintCommand
 
-case class DropUniquePropertyConstraint(variable: Variable, label: LabelName, property: Property)(val position: InputPosition) extends NodePropertyConstraintCommand
+case class DropUniquePropertyConstraint(variable: Variable, label: LabelName, properties: Seq[Property])(val position: InputPosition) extends UniquePropertyConstraintCommand
 
 case class CreateNodePropertyExistenceConstraint(variable: Variable, label: LabelName, property: Property)(val position: InputPosition) extends NodePropertyConstraintCommand
 
