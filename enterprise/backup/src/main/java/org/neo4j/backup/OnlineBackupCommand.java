@@ -36,6 +36,8 @@ import org.neo4j.commandline.arguments.OptionalNamedArg;
 import org.neo4j.commandline.arguments.common.MandatoryCanonicalPath;
 import org.neo4j.commandline.arguments.common.OptionalCanonicalPath;
 import org.neo4j.consistency.ConsistencyCheckService;
+import org.neo4j.consistency.ConsistencyCheckSettings;
+import org.neo4j.consistency.checking.full.CheckConsistencyConfig;
 import org.neo4j.helpers.Args;
 import org.neo4j.helpers.HostnamePort;
 import org.neo4j.helpers.collection.MapUtil;
@@ -60,13 +62,23 @@ public class OnlineBackupCommand implements AdminCommand
             .withArgument( new OptionalBooleanArg( "fallback-to-full", true,
                     "If an incremental backup fails backup will move the old backup to <name>.err.<N> and " +
                             "fallback to a full backup instead." ) )
+            .withArgument( new OptionalNamedArg( "timeout", "timeout", "20m",
+                    "Timeout in the form <time>[ms|s|m|h], where the default unit is seconds." ) )
             .withArgument( new OptionalBooleanArg( "check-consistency", true,
                     "If a consistency check should be made." ) )
             .withArgument( new OptionalCanonicalPath( "cc-report-dir", "directory", ".",
                     "Directory where consistency report will be written." ) )
-            .withAdditionalConfig()
-            .withArgument( new OptionalNamedArg( "timeout", "timeout", "20m",
-                    "Timeout in the form <time>[ms|s|m|h], where the default unit is seconds." ) );
+            .withArgument( new OptionalCanonicalPath( "additional-config", "config-file-path", "",
+                    "Configuration file to supply additional configuration in. This argument is DEPRECATED." ) )
+            .withArgument( new OptionalBooleanArg( "cc-graph", true,
+                    "Perform consistency checks between nodes, relationships, properties, types and tokens." ) )
+            .withArgument( new OptionalBooleanArg( "cc-indexes", true,
+                    "Perform consistency checks on indexes." ) )
+            .withArgument( new OptionalBooleanArg( "cc-label-scan-store", true,
+                    "Perform consistency checks on the label scan store." ) )
+            .withArgument( new OptionalBooleanArg( "cc-property-owners", false,
+                    "Perform additional consistency checks on property ownership. This check is *very* expensive in " +
+                            "time and memory." ) );
 
     public static Arguments arguments()
     {
@@ -102,6 +114,10 @@ public class OnlineBackupCommand implements AdminCommand
         final Optional<Path> additionalConfig;
         final Path reportDir;
         final long timeout;
+        final boolean checkGraph;
+        final boolean checkIndexes;
+        final boolean checkLabelScanStore;
+        final boolean checkPropertyOwners;
 
         try
         {
@@ -135,6 +151,47 @@ public class OnlineBackupCommand implements AdminCommand
         File destination = folder.resolve( name ).toFile();
         Config config = loadConfig( additionalConfig );
         boolean done = false;
+
+        try
+        {
+            // We can remove the loading from config file in 4.0
+            if ( arguments.has( "cc-graph", args ) )
+            {
+                checkGraph = arguments.parseBoolean( "cc-graph", args );
+            }
+            else
+            {
+                checkGraph = ConsistencyCheckSettings.consistency_check_graph.from( config );
+            }
+            if ( arguments.has( "cc-indexes", args ) )
+            {
+                checkIndexes = arguments.parseBoolean( "cc-indexes", args );
+            }
+            else
+            {
+                checkIndexes = ConsistencyCheckSettings.consistency_check_indexes.from( config );
+            }
+            if ( arguments.has( "cc-label-scan-store", args ) )
+            {
+                checkLabelScanStore = arguments.parseBoolean( "cc-label-scan-store", args );
+            }
+            else
+            {
+                checkLabelScanStore = ConsistencyCheckSettings.consistency_check_label_scan_store.from( config );
+            }
+            if ( arguments.has( "cc-property-owners", args ) )
+            {
+                checkPropertyOwners = arguments.parseBoolean( "cc-property-owners", args );
+            }
+            else
+            {
+                checkPropertyOwners = ConsistencyCheckSettings.consistency_check_property_owners.from( config );
+            }
+        }
+        catch ( IllegalArgumentException e )
+        {
+            throw new IncorrectUsage( e.getMessage() );
+        }
 
         File[] listFiles = outsideWorld.fileSystem().listFiles( destination );
         if ( listFiles != null && listFiles.length > 0 )
@@ -184,7 +241,9 @@ public class OnlineBackupCommand implements AdminCommand
                                 ProgressMonitorFactory.textual( outsideWorld.errorStream() ),
                                 FormattedLogProvider.toOutputStream( outsideWorld.outStream() ),
                                 outsideWorld.fileSystem(),
-                                false, reportDir.toFile() );
+                                false, reportDir.toFile(),
+                                new CheckConsistencyConfig( checkGraph, checkIndexes, checkLabelScanStore,
+                                        checkPropertyOwners ) );
 
                 if ( !ccResult.isSuccessful() )
                 {
