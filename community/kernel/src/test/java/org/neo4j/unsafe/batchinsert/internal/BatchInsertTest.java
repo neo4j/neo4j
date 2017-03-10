@@ -68,7 +68,6 @@ import org.neo4j.kernel.api.labelscan.AllEntriesLabelScanReader;
 import org.neo4j.kernel.api.labelscan.LabelScanStore;
 import org.neo4j.kernel.api.labelscan.LabelScanWriter;
 import org.neo4j.kernel.api.labelscan.NodeLabelUpdate;
-import org.neo4j.kernel.api.schema_new.OrderedPropertyValues;
 import org.neo4j.kernel.api.schema_new.index.NewIndexDescriptor;
 import org.neo4j.kernel.api.schema_new.index.NewIndexDescriptorFactory;
 import org.neo4j.kernel.extension.KernelExtensionFactory;
@@ -1506,6 +1505,11 @@ public class BatchInsertTest
         }
 
         @Override
+        public void drop() throws IOException
+        {
+        }
+
+        @Override
         public LabelScanWriter newWriter()
         {
             writersCreated++;
@@ -1522,6 +1526,12 @@ public class BatchInsertTest
                 {
                 }
             };
+        }
+
+        @Override
+        public boolean isReadOnly()
+        {
+            return false;
         }
     }
 
