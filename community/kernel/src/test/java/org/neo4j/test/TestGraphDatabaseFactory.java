@@ -301,7 +301,8 @@ public class TestGraphDatabaseFactory extends GraphDatabaseFactory
             }
         }
 
-        private class ImpermanentTestDatabasePlatformModule extends TestDatabasePlatformModule {
+        private class ImpermanentTestDatabasePlatformModule extends TestDatabasePlatformModule
+        {
 
             ImpermanentTestDatabasePlatformModule( File storeDir, Config config,
                     Dependencies dependencies, GraphDatabaseFacade graphDatabaseFacade, DatabaseInfo databaseInfo )

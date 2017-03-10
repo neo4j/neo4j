@@ -44,7 +44,8 @@ public class ValueUnboundRelationship
         packer.pack( rel.getType().name() );
         //TODO: We should mark deleted relationships properly but that requires updates
         // to protocol and clients.
-        try{
+        try
+        {
             Map<String,Object> properties = rel.getAllProperties();
             packer.packRawMap( properties );
         }

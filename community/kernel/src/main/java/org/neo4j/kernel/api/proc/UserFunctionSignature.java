@@ -82,20 +82,25 @@ public class UserFunctionSignature
         return description;
     }
 
-    public String[] allowed() { return allowed; }
+    public String[] allowed()
+    {
+        return allowed;
+    }
 
     @Override
     public boolean equals( Object o )
     {
-        if ( this == o ) { return true; }
-        if ( o == null || getClass() != o.getClass() ) { return false; }
+        if ( this == o )
+        {
+            return true;
+        }
+        if ( o == null || getClass() != o.getClass() )
+        {
+            return false;
+        }
 
         UserFunctionSignature that = (UserFunctionSignature) o;
-
-        return
-                name.equals( that.name ) &&
-                inputSignature.equals( that.inputSignature ) &&
-                type.equals( that.type );
+        return name.equals( that.name ) && inputSignature.equals( that.inputSignature ) && type.equals( that.type );
     }
 
     @Override

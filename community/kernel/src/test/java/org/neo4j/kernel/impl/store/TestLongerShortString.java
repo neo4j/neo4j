@@ -35,7 +35,8 @@ public class TestLongerShortString
 {
 
     @Test
-    public void testMasks() throws Exception {
+    public void testMasks() throws Exception
+    {
         assertEquals( 0, 1 & LongerShortString.invertedBitMask( LongerShortString.NUMERICAL ) );
         assertEquals( 0, 2 & LongerShortString.invertedBitMask( LongerShortString.DATE ) );
         assertEquals( LongerShortString.NUMERICAL.bitMask(),

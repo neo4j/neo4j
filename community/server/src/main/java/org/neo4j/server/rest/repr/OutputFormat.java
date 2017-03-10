@@ -53,12 +53,13 @@ public class OutputFormat
         this.extensions = extensions;
     }
 
-    public void setRepresentationWriteHandler( RepresentationWriteHandler representationWriteHandler ) {
-
+    public void setRepresentationWriteHandler( RepresentationWriteHandler representationWriteHandler )
+    {
         this.representationWriteHandler = representationWriteHandler;
     }
 
-    public RepresentationWriteHandler getRepresentationWriteHandler() {
+    public RepresentationWriteHandler getRepresentationWriteHandler()
+    {
         return this.representationWriteHandler;
     }
 

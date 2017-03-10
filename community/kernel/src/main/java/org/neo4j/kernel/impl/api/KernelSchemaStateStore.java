@@ -50,22 +50,26 @@ public class KernelSchemaStateStore implements UpdateableSchemaState
     public <K, V> V get(K key)
     {
         lock.readLock().lock();
-        try {
+        try
+        {
             return (V) state.get( key );
         }
-        finally {
+        finally
+        {
             lock.readLock().unlock();
         }
     }
 
     @SuppressWarnings("unchecked")
     @Override
-    public <K, V> V getOrCreate(K key, Function<K, V> creator) {
+    public <K, V> V getOrCreate(K key, Function<K, V> creator)
+    {
         V currentValue = get(key);
         if (currentValue == null)
         {
             lock.writeLock().lock();
-            try {
+            try
+            {
                 V lockedValue = (V) state.get( key );
                 if (lockedValue == null)
                 {
@@ -74,23 +78,30 @@ public class KernelSchemaStateStore implements UpdateableSchemaState
                     return newValue;
                 }
                 else
+                {
                     return lockedValue;
+                }
             }
-            finally {
+            finally
+            {
                 lock.writeLock().unlock();
             }
         }
         else
+        {
             return currentValue;
+        }
     }
 
     public void replace(Map<Object, Object> replacement)
     {
         lock.writeLock().lock();
-        try {
+        try
+        {
             state = replacement;
         }
-        finally {
+        finally
+        {
             lock.writeLock().unlock();
         }
     }
@@ -98,10 +109,12 @@ public class KernelSchemaStateStore implements UpdateableSchemaState
     public <K, V> void apply(Map<K, V> updates)
     {
         lock.writeLock().lock();
-        try {
+        try
+        {
             state.putAll( updates );
         }
-        finally {
+        finally
+        {
             lock.writeLock().unlock();
         }
     }
@@ -109,10 +122,12 @@ public class KernelSchemaStateStore implements UpdateableSchemaState
     public void clear()
     {
         lock.writeLock().lock();
-        try {
+        try
+        {
             state.clear();
         }
-        finally {
+        finally
+        {
             lock.writeLock().unlock();
         }
         log.info( "Schema state store has been cleared." );

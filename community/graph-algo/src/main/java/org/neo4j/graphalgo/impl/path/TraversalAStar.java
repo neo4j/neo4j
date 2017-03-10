@@ -109,7 +109,8 @@ public class TraversalAStar implements PathFinder<WeightedPath>
         {
             interest = stopAfterLowestWeight ? PathInterestFactory.allShortest() : PathInterestFactory.all();
         }
-        else {
+        else
+        {
             interest = PathInterestFactory.single();
         }
 

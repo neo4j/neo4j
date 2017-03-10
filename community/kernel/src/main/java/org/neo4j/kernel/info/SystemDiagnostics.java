@@ -276,7 +276,8 @@ enum SystemDiagnostics implements DiagnosticsProvider
                         logger.log( "    address: %s", hostAddress );
                     }
                 }
-            } catch ( SocketException e )
+            }
+            catch ( SocketException e )
             {
                 logger.log( "ERROR: failed to inspect network interfaces and addresses: " + e.getMessage() );
             }
@@ -286,7 +287,8 @@ enum SystemDiagnostics implements DiagnosticsProvider
 
     private final String message;
 
-    private SystemDiagnostics(String message) {
+    private SystemDiagnostics(String message)
+    {
         this.message = message;
     }
 

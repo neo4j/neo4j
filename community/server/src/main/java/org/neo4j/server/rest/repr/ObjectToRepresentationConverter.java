@@ -61,12 +61,15 @@ public class ObjectToRepresentationConverter
     {
         final FirstItemIterable<Representation> results = new FirstItemIterable<>(new IteratorWrapper<Representation, Object>(data) {
             @Override
-            protected Representation underlyingObjectToObject(Object value) {
+            protected Representation underlyingObjectToObject( Object value )
+            {
                 if ( value instanceof Iterable )
                 {
                     FirstItemIterable<Representation> nested = convertValuesToRepresentations( (Iterable) value );
                     return new ListRepresentation( getType( nested ), nested );
-                } else {
+                }
+                else
+                {
                     return getSingleRepresentation( value );
                 }
             }
@@ -83,10 +86,12 @@ public class ObjectToRepresentationConverter
     @SuppressWarnings("unchecked")
     static FirstItemIterable<Representation> convertValuesToRepresentations( Iterable data )
     {
-        return new FirstItemIterable<>(new IterableWrapper<Representation,Object>(data) {
+        return new FirstItemIterable<>(new IterableWrapper<Representation,Object>( data )
+        {
             @Override
-            protected Representation underlyingObjectToObject(Object value) {
-               return convert(value);
+            protected Representation underlyingObjectToObject( Object value )
+            {
+                return convert( value );
             }
         });
     }

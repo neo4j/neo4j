@@ -58,7 +58,8 @@ public abstract class PropertyTypeDispatcher<K, T>
         if( property == null)
         {
             return dispatchNullProperty( param );
-        } else if ( property instanceof String )
+        }
+        else if ( property instanceof String )
         {
             return dispatchStringProperty( (String) property, param );
         }
@@ -210,7 +211,8 @@ public abstract class PropertyTypeDispatcher<K, T>
         }
     }
 
-    protected T dispatchNullProperty( K param ) {
+    protected T dispatchNullProperty( K param )
+    {
         return null;
     }
 
@@ -238,7 +240,8 @@ public abstract class PropertyTypeDispatcher<K, T>
     @SuppressWarnings( "boxing" )
     protected abstract T dispatchBooleanProperty( boolean property, K param );
 
-    protected T dispatchOtherProperty( Object property, K param) {
+    protected T dispatchOtherProperty( Object property, K param)
+    {
         throw new IllegalArgumentException( "Unsupported property type: "
                 + property.getClass() );
     }

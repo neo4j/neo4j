@@ -230,9 +230,12 @@ public class TransactionHandleRegistry implements TransactionRegistry
             TransactionTerminationHandle handle = marker.getActiveTransaction().getTerminationHandle();
             handle.terminate();
 
-            try {
+            try
+            {
                 return acquire( id );
-            } catch (InvalidConcurrentTransactionAccess exception) {
+            }
+            catch ( InvalidConcurrentTransactionAccess exception )
+            {
                 // We could not acquire the transaction. Let the other request clean up.
                 return null;
             }

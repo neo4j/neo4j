@@ -19,18 +19,17 @@
  */
 package org.neo4j.server.rest;
 
+import com.sun.jersey.api.client.ClientResponse;
+import com.sun.jersey.core.util.StringKeyObjectValueIgnoreCaseMultivaluedMap;
+import org.junit.Test;
+
 import java.net.URI;
 import java.util.Collections;
 import java.util.List;
 import java.util.Map;
-
 import javax.ws.rs.core.MediaType;
 import javax.ws.rs.core.MultivaluedMap;
 import javax.ws.rs.core.Response;
-
-import com.sun.jersey.api.client.ClientResponse;
-import com.sun.jersey.core.util.StringKeyObjectValueIgnoreCaseMultivaluedMap;
-import org.junit.Test;
 
 import org.neo4j.logging.NullLogProvider;
 import org.neo4j.server.database.Database;
@@ -48,29 +47,39 @@ public class JaxRsResponse extends Response
 
     private final int status;
     private final MultivaluedMap<String,Object> metaData;
-    private final MultivaluedMap<String, String> headers;
+    private final MultivaluedMap<String,String> headers;
     private final URI location;
     private String data;
     private MediaType type;
 
     public JaxRsResponse( ClientResponse response )
     {
-        this(response, extractContent(response));
+        this( response, extractContent( response ) );
     }
 
-    private static String extractContent(ClientResponse response) {
-        if (response.getStatus() == Status.NO_CONTENT.getStatusCode()) return null;
-        return response.getEntity(String.class);
-    }
-
-    public JaxRsResponse(ClientResponse response, String entity) {
+    public JaxRsResponse( ClientResponse response, String entity )
+    {
         status = response.getStatus();
-        metaData = extractMetaData(response);
-        headers = extractHeaders(response);
+        metaData = extractMetaData( response );
+        headers = extractHeaders( response );
         location = response.getLocation();
         type = response.getType();
         data = entity;
         response.close();
+    }
+
+    private static String extractContent( ClientResponse response )
+    {
+        if ( response.getStatus() == Status.NO_CONTENT.getStatusCode() )
+        {
+            return null;
+        }
+        return response.getEntity( String.class );
+    }
+
+    public static JaxRsResponse extractFrom( ClientResponse clientResponse )
+    {
+        return new JaxRsResponse( clientResponse );
     }
 
     @Override
@@ -86,15 +95,15 @@ public class JaxRsResponse extends Response
     }
 
     @Override
-    public MultivaluedMap<String, Object> getMetadata()
+    public MultivaluedMap<String,Object> getMetadata()
     {
         return metaData;
     }
 
-    private MultivaluedMap<String, Object> extractMetaData(ClientResponse jettyResponse) {
-        MultivaluedMap<String, Object> metadata = new StringKeyObjectValueIgnoreCaseMultivaluedMap();
-        for ( Map.Entry<String, List<String>> header : jettyResponse.getHeaders()
-                .entrySet() )
+    private MultivaluedMap<String,Object> extractMetaData( ClientResponse jettyResponse )
+    {
+        MultivaluedMap<String,Object> metadata = new StringKeyObjectValueIgnoreCaseMultivaluedMap();
+        for ( Map.Entry<String,List<String>> header : jettyResponse.getHeaders().entrySet() )
         {
             for ( Object value : header.getValue() )
             {
@@ -104,12 +113,13 @@ public class JaxRsResponse extends Response
         return metadata;
     }
 
-    public MultivaluedMap<String, String> getHeaders()
+    public MultivaluedMap<String,String> getHeaders()
     {
         return headers;
     }
 
-    private MultivaluedMap<String, String> extractHeaders(ClientResponse jettyResponse) {
+    private MultivaluedMap<String,String> extractHeaders( ClientResponse jettyResponse )
+    {
         return jettyResponse.getHeaders();
     }
 
@@ -124,11 +134,8 @@ public class JaxRsResponse extends Response
 
     }
 
-    public static JaxRsResponse extractFrom(ClientResponse clientResponse) {
-        return new JaxRsResponse(clientResponse);
-    }
-
-    public MediaType getType() {
+    public MediaType getType()
+    {
         return type;
     }
 
@@ -137,15 +144,16 @@ public class JaxRsResponse extends Response
         @Test
         public void shouldProvideAListOfServiceUris() throws Exception
         {
-            ConsoleService consoleService = new ConsoleService( null, mock( Database.class ), NullLogProvider.getInstance(), null );
+            ConsoleService consoleService =
+                    new ConsoleService( null, mock( Database.class ), NullLogProvider.getInstance(), null );
             ServerRootRepresentation srr = new ServerRootRepresentation( new URI( "http://example.org:9999" ),
                     Collections.<AdvertisableService>singletonList( consoleService ) );
-            Map<String, Map<String, String>> map = srr.serialize();
+            Map<String,Map<String,String>> map = srr.serialize();
 
             assertNotNull( map.get( "services" ) );
 
-            assertThat( map.get( "services" )
-                    .get( consoleService.getName() ), containsString( consoleService.getServerPath() ) );
+            assertThat( map.get( "services" ).get( consoleService.getName() ),
+                    containsString( consoleService.getServerPath() ) );
         }
     }
 }

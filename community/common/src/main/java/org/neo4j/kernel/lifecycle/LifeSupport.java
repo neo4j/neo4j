@@ -360,7 +360,8 @@ public class LifeSupport
             if (instance.instance instanceof LifeSupport)
             {
                 ((LifeSupport)instance.instance).toString( indent+3, sb );
-            } else
+            }
+            else
             {
                 for ( int i = 0; i < indent+3; i++ )
                 {

@@ -37,7 +37,11 @@ import static java.lang.String.format;
  */
 public class NewIndexDescriptor implements SchemaDescriptor.Supplier
 {
-    public enum Type { GENERAL, UNIQUE }
+    public enum Type
+    {
+        GENERAL,
+        UNIQUE
+    }
 
     public enum Filter implements Predicate<NewIndexDescriptor>
     {

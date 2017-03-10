@@ -377,8 +377,8 @@ public class InternalJettyServletRequest extends Request
                 String localName,
                 String localAddress,
                 int localPort,
-                String authType
-        ) {
+                String authType )
+        {
             this.remoteAddress = remoteAddress;
             this.isSecure = isSecure;
             this.remotePort = remotePort;

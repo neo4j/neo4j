@@ -22,6 +22,7 @@ package org.neo4j.server.rest.repr;
 import java.net.URI;
 import java.net.URISyntaxException;
 import javax.ws.rs.core.MediaType;
+
 import org.neo4j.graphdb.Node;
 import org.neo4j.graphdb.NotFoundException;
 import org.neo4j.graphdb.Relationship;
@@ -505,6 +506,7 @@ public abstract class RepresentationFormat implements InputFormat
         throw new BadInputException( "Could not convert!" );
     }
 
-    public void complete() {
+    public void complete()
+    {
     }
 }

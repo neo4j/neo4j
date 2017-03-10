@@ -19,18 +19,21 @@
  */
 package org.neo4j.cypher.internal.javacompat;
 
-import static org.junit.Assert.*;
 import org.junit.Test;
+
+import java.util.ServiceLoader;
+
 import org.neo4j.helpers.collection.Iterables;
 import org.neo4j.kernel.impl.query.QueryEngineProvider;
 
-import java.util.ServiceLoader;
+import static org.junit.Assert.assertTrue;
 
 public class CommunityCypherEngineProviderTest
 {
 
     @Test
-    public void shouldServiceLoaderFindCypherEngineProvider() {
+    public void shouldServiceLoaderFindCypherEngineProvider()
+    {
 
         // WHEN
         ServiceLoader<QueryEngineProvider> services = ServiceLoader.load(QueryEngineProvider.class);

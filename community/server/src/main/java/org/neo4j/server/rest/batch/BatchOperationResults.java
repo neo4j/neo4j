@@ -46,7 +46,8 @@ public class BatchOperationResults
     private boolean firstResult = true;
     private Map<Integer, String> locations = new HashMap<Integer, String>();
 
-    public BatchOperationResults() {
+    public BatchOperationResults()
+    {
         results.append( OPENING_BRACKET );
     }
 

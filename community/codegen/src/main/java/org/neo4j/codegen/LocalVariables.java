@@ -37,7 +37,8 @@ public class LocalVariables
         LocalVariable localVariable = new LocalVariable( type, name, counter.getAndIncrement() );
         localVariables.put( name, localVariable );
         //if 64 bit types we need to give it one more index
-        if (type.simpleName().equals( "double" ) || type.simpleName().equals( "long" )) {
+        if (type.simpleName().equals( "double" ) || type.simpleName().equals( "long" ))
+        {
             counter.incrementAndGet();
         }
         return localVariable;

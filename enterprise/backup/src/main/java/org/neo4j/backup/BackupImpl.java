@@ -86,10 +86,12 @@ class BackupImpl implements TheBackupInterface
     {
         try
         {
-            logger.log("Incremental backup started...");
+            logger.log( "Incremental backup started..." );
             return incrementalResponsePacker.packTransactionStreamResponse( context, null );
-        } finally {
-            logger.log("Incremental backup finished.");
+        }
+        finally
+        {
+            logger.log( "Incremental backup finished." );
         }
     }
 }

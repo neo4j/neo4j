@@ -170,7 +170,8 @@ public class TestTransactionApps
         {
             shellClient.evaluate( command, output );
             fail( "Was expecting an exception" );
-        } catch ( ShellException e )
+        }
+        catch ( ShellException e )
         {
             String errorMessage = e.getMessage();
             if ( !errorMessage.toLowerCase().contains( errorMessageShouldContain.toLowerCase() ) )
@@ -181,7 +182,8 @@ public class TestTransactionApps
     }
 }
 
-class FakeShellServer extends GraphDatabaseShellServer {
+class FakeShellServer extends GraphDatabaseShellServer
+{
 
     public FakeShellServer( GraphDatabaseAPI graphDb ) throws RemoteException
     {

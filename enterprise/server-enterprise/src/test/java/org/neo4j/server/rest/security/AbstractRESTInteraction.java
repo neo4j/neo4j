@@ -19,6 +19,13 @@
  */
 package org.neo4j.server.rest.security;
 
+import org.codehaus.jackson.JsonNode;
+import org.codehaus.jackson.node.ArrayNode;
+import org.codehaus.jackson.node.IntNode;
+import org.codehaus.jackson.node.LongNode;
+import org.codehaus.jackson.node.ObjectNode;
+import org.codehaus.jackson.node.TextNode;
+
 import java.io.IOException;
 import java.util.ArrayList;
 import java.util.Iterator;
@@ -26,13 +33,6 @@ import java.util.Map;
 import java.util.TreeMap;
 import java.util.function.Consumer;
 import javax.ws.rs.core.HttpHeaders;
-
-import org.codehaus.jackson.JsonNode;
-import org.codehaus.jackson.node.ArrayNode;
-import org.codehaus.jackson.node.IntNode;
-import org.codehaus.jackson.node.LongNode;
-import org.codehaus.jackson.node.ObjectNode;
-import org.codehaus.jackson.node.TextNode;
 
 import org.neo4j.bolt.BoltKernelExtension;
 import org.neo4j.graphdb.ResourceIterator;
@@ -161,7 +161,9 @@ abstract class AbstractRESTInteraction extends CommunityServerTestBase implement
     }
 
     @Override
-    public void logout( RESTSubject subject ) { }
+    public void logout( RESTSubject subject )
+    {
+    }
 
     @Override
     public void updateAuthToken( RESTSubject subject, String username, String password )

@@ -50,7 +50,8 @@ public class TokenProcedures
     @Description( "Create a RelationshipType" )
     @Procedure( name = "db.createRelationshipType", mode = TOKEN )
     public void createRelationshipType( @Name( "newRelationshipType" ) String newRelationshipType )
-            throws IllegalTokenNameException    {
+            throws IllegalTokenNameException
+    {
         try ( Statement statement = tx.acquireStatement() )
         {
             statement.tokenWriteOperations().relationshipTypeGetOrCreateForName( newRelationshipType );

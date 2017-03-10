@@ -102,7 +102,8 @@ public class MapRepresentation extends MappingRepresentation
 
         Object[] objects = new Object[length];
 
-        for (int i=0; i<length; i++) {
+        for (int i=0; i<length; i++)
+        {
             objects[i] = get( val, i );
         }
 

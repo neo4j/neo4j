@@ -19,15 +19,15 @@
  */
 package org.neo4j.server.helpers;
 
-import java.net.URI;
-import java.util.Arrays;
-import java.util.HashMap;
-import java.util.Map;
-
 import com.sun.jersey.api.client.Client;
 import org.hamcrest.Description;
 import org.hamcrest.Matcher;
 import org.hamcrest.TypeSafeMatcher;
+
+import java.net.URI;
+import java.util.Arrays;
+import java.util.HashMap;
+import java.util.Map;
 
 import org.neo4j.server.NeoServer;
 import org.neo4j.server.rest.JaxRsResponse;
@@ -194,7 +194,8 @@ public final class FunctionalTestHelper
         return dataUri() + "ext";
     }
 
-    public JaxRsResponse get(String path) {
+    public JaxRsResponse get(String path)
+    {
         return request.get(path);
     }
 

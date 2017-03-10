@@ -188,11 +188,13 @@ public class Neo4jRule implements TestRule, TestServerBuilder
         return controls.httpURI();
     }
 
-    public GraphDatabaseService getGraphDatabaseService() {
+    public GraphDatabaseService getGraphDatabaseService()
+    {
         return controls.graph();
     }
 
-    public Configuration getConfig() {
+    public Configuration getConfig()
+    {
         return controls.config();
     }
 }

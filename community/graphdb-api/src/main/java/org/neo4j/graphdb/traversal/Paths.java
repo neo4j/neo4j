@@ -112,8 +112,9 @@ public class Paths
             result.append( builder.relationshipRepresentation( path, current, rel ) );
             current = rel.getOtherNode( current );
         }
-        if ( null != current ) {
-            result.append(builder.nodeRepresentation(path, current));
+        if ( null != current )
+        {
+            result.append( builder.nodeRepresentation( path, current ) );
         }
         return result.toString();
     }

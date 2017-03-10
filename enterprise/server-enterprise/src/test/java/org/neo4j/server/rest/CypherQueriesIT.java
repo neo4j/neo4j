@@ -20,11 +20,13 @@
 package org.neo4j.server.rest;
 
 import org.junit.Test;
+
 import org.neo4j.test.server.HTTP;
 
 import static org.junit.Assert.assertEquals;
 
-public class CypherQueriesIT extends EnterpriseVersionIT {
+public class CypherQueriesIT extends EnterpriseVersionIT
+{
 
     @Test
     public void runningInCompiledRuntime() throws Exception

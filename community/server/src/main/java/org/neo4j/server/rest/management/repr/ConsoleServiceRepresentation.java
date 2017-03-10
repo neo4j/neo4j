@@ -22,7 +22,8 @@ package org.neo4j.server.rest.management.repr;
 import org.neo4j.server.rest.repr.ListRepresentation;
 import org.neo4j.server.rest.repr.MappingSerializer;
 
-public class ConsoleServiceRepresentation extends ServiceDefinitionRepresentation {
+public class ConsoleServiceRepresentation extends ServiceDefinitionRepresentation
+{
 
     private Iterable<String> engines;
 

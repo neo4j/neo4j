@@ -94,7 +94,10 @@ class SessionRule implements TestRule
                             runningMachines.forEach( BoltStateMachine::close );
                         }
                     }
-                    catch ( Throwable e ) { e.printStackTrace(); }
+                    catch ( Throwable e )
+                    {
+                        e.printStackTrace();
+                    }
 
                     gdb.shutdown();
                 }

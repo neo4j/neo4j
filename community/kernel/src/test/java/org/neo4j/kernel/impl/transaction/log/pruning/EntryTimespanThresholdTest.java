@@ -90,10 +90,13 @@ public class EntryTimespanThresholdTest
 
         // when
         threshold.init();
-        try{
+        try
+        {
             threshold.reached( file, version, source );
-            fail("should have thrown");
-        } catch (RuntimeException e) {
+            fail( "should have thrown" );
+        }
+        catch ( RuntimeException e )
+        {
             // then
             assertEquals( ex, e.getCause() );
         }

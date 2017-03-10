@@ -22,7 +22,6 @@ package org.neo4j.server.rest.management.console;
 import java.util.ArrayList;
 import java.util.List;
 import java.util.Map;
-
 import javax.servlet.http.HttpServletRequest;
 import javax.ws.rs.GET;
 import javax.ws.rs.POST;
@@ -38,6 +37,8 @@ import org.neo4j.logging.LogProvider;
 import org.neo4j.server.configuration.ServerSettings;
 import org.neo4j.server.database.CypherExecutor;
 import org.neo4j.server.database.Database;
+import org.neo4j.server.rest.management.AdvertisableService;
+import org.neo4j.server.rest.management.repr.ConsoleServiceRepresentation;
 import org.neo4j.server.rest.repr.BadInputException;
 import org.neo4j.server.rest.repr.InputFormat;
 import org.neo4j.server.rest.repr.ListRepresentation;
@@ -45,8 +46,6 @@ import org.neo4j.server.rest.repr.OutputFormat;
 import org.neo4j.server.rest.repr.Representation;
 import org.neo4j.server.rest.repr.RepresentationType;
 import org.neo4j.server.rest.repr.ValueRepresentation;
-import org.neo4j.server.rest.management.AdvertisableService;
-import org.neo4j.server.rest.management.repr.ConsoleServiceRepresentation;
 
 import static java.util.Arrays.asList;
 
@@ -119,10 +118,13 @@ public class ConsoleService implements AdvertisableService
         }
 
         ScriptSession scriptSession;
-        try {
+        try
+        {
             scriptSession = getSession( args );
-        } catch(IllegalArgumentException e) {
-            return output.badRequest(e);
+        }
+        catch ( IllegalArgumentException e )
+        {
+            return output.badRequest( e );
         }
 
         log.debug( scriptSession.toString() );
@@ -133,7 +135,8 @@ public class ConsoleService implements AdvertisableService
                     asList( ValueRepresentation.string( result.first() ), ValueRepresentation.string( result.other() ) ) );
 
             return output.ok( new ListRepresentation( RepresentationType.STRING, list ) );
-        } catch (Exception e)
+        }
+        catch (Exception e)
         {
             List<Representation> list = new ArrayList<Representation>(
                     asList( ValueRepresentation.string( e.getClass() + " : " + e.getMessage() + "\n"), ValueRepresentation.string( null ) ));

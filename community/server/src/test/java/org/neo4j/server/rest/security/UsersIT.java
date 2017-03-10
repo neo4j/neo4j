@@ -19,14 +19,14 @@
  */
 package org.neo4j.server.rest.security;
 
-import java.io.IOException;
-import javax.ws.rs.core.HttpHeaders;
-
 import com.sun.jersey.core.util.Base64;
 import org.codehaus.jackson.JsonNode;
 import org.junit.After;
 import org.junit.Rule;
 import org.junit.Test;
+
+import java.io.IOException;
+import javax.ws.rs.core.HttpHeaders;
 
 import org.neo4j.graphdb.factory.GraphDatabaseSettings;
 import org.neo4j.kernel.impl.annotations.Documented;
@@ -136,7 +136,10 @@ public class UsersIT extends ExclusiveServerTestBase
     @After
     public void cleanup()
     {
-        if(server != null) {server.stop();}
+        if ( server != null )
+        {
+            server.stop();
+        }
     }
 
     public void startServer(boolean authEnabled) throws IOException

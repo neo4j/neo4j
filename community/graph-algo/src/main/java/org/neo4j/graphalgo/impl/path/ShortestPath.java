@@ -72,7 +72,8 @@ public class ShortestPath implements PathFinder<Path>
     private ShortestPathPredicate predicate;
     private DataMonitor dataMonitor;
 
-    public interface ShortestPathPredicate {
+    public interface ShortestPathPredicate
+    {
         boolean test( Path path );
     }
 

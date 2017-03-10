@@ -79,7 +79,8 @@ public abstract class NodePropertyConstraint implements PropertyConstraint
         String labelName = tokenNameLookup.labelGetName( descriptor.getLabelId() );
         //if the labelName contains a `:` we must escape it to avoid disambiguation,
         //e.g. CONSTRAINT on foo:bar:foo:bar
-        if (labelName.contains( ":" )) {
+        if ( labelName.contains( ":" ) )
+        {
             return "`" + labelName + "`";
         }
         else

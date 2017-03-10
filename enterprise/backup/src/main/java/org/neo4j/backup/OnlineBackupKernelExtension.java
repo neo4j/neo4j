@@ -225,11 +225,13 @@ public class OnlineBackupKernelExtension implements Lifecycle
         }
     }
 
-    private ClusterMemberAvailability getClusterMemberAvailability() {
+    private ClusterMemberAvailability getClusterMemberAvailability()
+    {
         return graphDatabaseAPI.getDependencyResolver().resolveDependency( ClusterMemberAvailability.class );
     }
 
-    private URI createBackupURI() {
+    private URI createBackupURI()
+    {
         String hostString = ServerUtil.getHostString( server.getSocketAddress() );
         String host = hostString.contains( INADDR_ANY ) ? me.getHost() : hostString;
         int port = server.getSocketAddress().getPort();

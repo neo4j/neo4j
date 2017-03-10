@@ -133,7 +133,8 @@ public class AssertableLogProvider extends AbstractLogProvider<Log> implements T
             if ( message != null )
             {
                 builder.append( '\'' ).append( escapeJava( message ) ).append( '\'' );
-            } else
+            }
+            else
             {
                 builder.append( "null" );
             }
@@ -152,7 +153,8 @@ public class AssertableLogProvider extends AbstractLogProvider<Log> implements T
                     builder.append( escapeJava( "" + arg ) );
                 }
                 builder.append( "]" );
-            } else
+            }
+            else
             {
                 builder.append( "null" );
             }
@@ -160,7 +162,8 @@ public class AssertableLogProvider extends AbstractLogProvider<Log> implements T
             if ( throwable != null )
             {
                 builder.append( '\'' ).append( escapeJava( throwable.toString() ) ).append( '\'' );
-            } else
+            }
+            else
             {
                 builder.append( "null" );
             }
@@ -483,7 +486,9 @@ public class AssertableLogProvider extends AbstractLogProvider<Log> implements T
                 if ( arg instanceof Matcher )
                 {
                     matchers.add( (Matcher) arg );
-                } else {
+                }
+                else
+                {
                     matchers.add( equalTo( arg ) );
                 }
             }
@@ -524,7 +529,8 @@ public class AssertableLogProvider extends AbstractLogProvider<Log> implements T
                     {
                         fail( format( "Log call did not match expectation\n  Expected: %s\n  Call was: %s", logMatcher, logCall ) );
                     }
-                } else
+                }
+                else
                 {
                     fail( format( "Got fewer log calls than expected. The missing log calls were:\n%s", describe( expectedIterator ) ) );
                 }

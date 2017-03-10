@@ -32,7 +32,8 @@ public class PositionAwarePhysicalFlushableChannel implements FlushablePositionA
     private LogVersionedStoreChannel logVersionedStoreChannel;
     private final PhysicalFlushableChannel channel;
 
-    public PositionAwarePhysicalFlushableChannel( LogVersionedStoreChannel logVersionedStoreChannel) {
+    public PositionAwarePhysicalFlushableChannel( LogVersionedStoreChannel logVersionedStoreChannel)
+    {
         this.logVersionedStoreChannel = logVersionedStoreChannel;
         this.channel = new PhysicalFlushableChannel( logVersionedStoreChannel );
     }

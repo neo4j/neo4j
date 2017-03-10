@@ -34,7 +34,8 @@ public enum BoltResponseMessage
     FAILURE( 0x7F );
 
     private static BoltResponseMessage[] valuesBySignature =  new BoltResponseMessage[0x80];
-    static {
+    static
+    {
         for ( BoltResponseMessage value : values() )
         {
             valuesBySignature[value.signature()] = value;

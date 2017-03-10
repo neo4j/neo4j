@@ -23,6 +23,8 @@ package org.neo4j.ext.udc;
  * @author mh
  * @since 11.06.12
  */
-public enum Edition {
-   community, enterprise;
+public enum Edition
+{
+   community,
+   enterprise
 }

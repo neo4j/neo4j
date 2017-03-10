@@ -19,14 +19,14 @@
  */
 package org.neo4j.server.rest;
 
+import org.junit.Before;
+import org.junit.BeforeClass;
+import org.junit.Test;
+
 import java.io.IOException;
 import java.net.URI;
 import java.util.HashMap;
 import java.util.Map;
-
-import org.junit.Before;
-import org.junit.BeforeClass;
-import org.junit.Test;
 
 import org.neo4j.kernel.impl.annotations.Documented;
 import org.neo4j.server.helpers.FunctionalTestHelper;
@@ -85,14 +85,16 @@ public class SetRelationshipPropertiesIT extends AbstractRestFunctionalDocTestBa
     }
 
     @Test
-    public void shouldReturn400WhenSendingCorruptJsonProperties() {
+    public void shouldReturn400WhenSendingCorruptJsonProperties()
+    {
         JaxRsResponse response = RestRequest.req().put(propertiesUri.toString(), "this:::Is::notJSON}");
         assertEquals(400, response.getStatus());
         response.close();
     }
 
     @Test
-    public void shouldReturn404WhenPropertiesSentToANodeWhichDoesNotExist() throws JsonParseException {
+    public void shouldReturn404WhenPropertiesSentToANodeWhichDoesNotExist() throws JsonParseException
+    {
         Map<String, Object> map = new HashMap<String, Object>();
         map.put("jim", "tobias");
 
@@ -128,20 +130,23 @@ public class SetRelationshipPropertiesIT extends AbstractRestFunctionalDocTestBa
     }
 
     @Test
-    public void shouldReturn400WhenSendingCorruptJsonProperty() throws Exception {
+    public void shouldReturn400WhenSendingCorruptJsonProperty() throws Exception
+    {
         JaxRsResponse response = RestRequest.req().put(getPropertyUri("foo"), "this:::Is::notJSON}");
         assertEquals(400, response.getStatus());
         response.close();
     }
 
     @Test
-    public void shouldReturn404WhenPropertySentToANodeWhichDoesNotExist() throws Exception {
+    public void shouldReturn404WhenPropertySentToANodeWhichDoesNotExist() throws Exception
+    {
         JaxRsResponse response = RestRequest.req().put(badUri.toString() + "/foo", JsonHelper.createJsonFrom("bar"));
         assertEquals(404, response.getStatus());
         response.close();
     }
 
-    private JaxRsResponse setPropertyOnServer(final String key, final Object value) throws Exception {
+    private JaxRsResponse setPropertyOnServer(final String key, final Object value) throws Exception
+    {
         return RestRequest.req().put(getPropertyUri(key), JsonHelper.createJsonFrom(value));
     }
 }

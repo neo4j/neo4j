@@ -44,7 +44,6 @@ import org.neo4j.graphdb.Label;
 import org.neo4j.graphdb.Node;
 import org.neo4j.graphdb.Transaction;
 import org.neo4j.kernel.api.KernelTransaction;
-import org.neo4j.kernel.api.schema_new.index.NewIndexDescriptor;
 import org.neo4j.kernel.api.schema_new.index.NewIndexDescriptorFactory;
 import org.neo4j.kernel.extension.KernelExtensionFactory;
 import org.neo4j.kernel.impl.core.ThreadToStatementContextBridge;
@@ -1002,7 +1001,8 @@ public class UniqueConstraintCompatibility extends IndexProviderCompatibilityTes
     public TestDirectory testDirectory = TestDirectory.testDirectory( getClass() );
 
     @Before
-    public void setUp() {
+    public void setUp()
+    {
         File storeDir = testDirectory.graphDbDir();
         TestGraphDatabaseFactory dbfactory = new TestGraphDatabaseFactory();
         dbfactory.addKernelExtension( new PredefinedSchemaIndexProviderFactory( indexProvider ) );
@@ -1010,7 +1010,8 @@ public class UniqueConstraintCompatibility extends IndexProviderCompatibilityTes
     }
 
     @After
-    public void tearDown() {
+    public void tearDown()
+    {
         db.shutdown();
     }
 
@@ -1024,7 +1025,8 @@ public class UniqueConstraintCompatibility extends IndexProviderCompatibilityTes
             return indexProvider;
         }
 
-        public interface NoDeps {
+        public interface NoDeps
+        {
         }
 
         public PredefinedSchemaIndexProviderFactory( SchemaIndexProvider indexProvider )

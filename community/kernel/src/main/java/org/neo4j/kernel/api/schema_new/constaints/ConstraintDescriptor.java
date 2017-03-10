@@ -30,7 +30,11 @@ import static java.lang.String.format;
  */
 public abstract class ConstraintDescriptor implements SchemaDescriptor.Supplier
 {
-    public enum Type { UNIQUE, EXISTS }
+    public enum Type
+    {
+        UNIQUE,
+        EXISTS
+    }
 
     public interface Supplier
     {
@@ -95,7 +99,8 @@ public abstract class ConstraintDescriptor implements SchemaDescriptor.Supplier
 
     String escapeLabelOrRelTyp( String name )
     {
-        if (name.contains( ":" )) {
+        if ( name.contains( ":" ) )
+        {
             return "`" + name + "`";
         }
         else

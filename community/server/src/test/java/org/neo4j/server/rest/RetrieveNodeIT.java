@@ -19,12 +19,6 @@
  */
 package org.neo4j.server.rest;
 
-import java.io.IOException;
-import java.net.URI;
-import java.nio.charset.StandardCharsets;
-import java.util.Map;
-import javax.ws.rs.core.MediaType;
-
 import org.apache.commons.io.IOUtils;
 import org.apache.http.HttpEntity;
 import org.apache.http.HttpResponse;
@@ -34,6 +28,12 @@ import org.apache.http.impl.client.DefaultHttpClient;
 import org.junit.Before;
 import org.junit.BeforeClass;
 import org.junit.Test;
+
+import java.io.IOException;
+import java.net.URI;
+import java.nio.charset.StandardCharsets;
+import java.util.Map;
+import javax.ws.rs.core.MediaType;
 
 import org.neo4j.kernel.impl.annotations.Documented;
 import org.neo4j.server.helpers.FunctionalTestHelper;
@@ -82,7 +82,8 @@ public class RetrieveNodeIT extends AbstractRestFunctionalDocTestBase
 
             assertThat( entityBody, containsString( "http://dummy.neo4j.org/db/data/node/" ) );
 
-        } finally
+        }
+        finally
         {
             httpclient.getConnectionManager().shutdown();
         }
@@ -103,7 +104,8 @@ public class RetrieveNodeIT extends AbstractRestFunctionalDocTestBase
             String entityBody = IOUtils.toString( entity.getContent(), StandardCharsets.UTF_8 );
 
             assertThat( entityBody, containsString( nodeUri.toString() ) );
-        } finally
+        }
+        finally
         {
             httpclient.getConnectionManager().shutdown();
         }

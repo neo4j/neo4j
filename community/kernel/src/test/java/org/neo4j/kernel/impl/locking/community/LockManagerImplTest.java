@@ -103,7 +103,8 @@ public class LockManagerImplTest
     }
 
     @Test
-    public void shouldReleaseNotAcquiredLocks() {
+    public void shouldReleaseNotAcquiredLocks()
+    {
 
         // given
         LockResource node = new LockResource( ResourceTypes.NODE, 1L );

@@ -52,7 +52,11 @@ public class IndexTxStateUpdater
 
     // LABEL CHANGES
 
-    public enum LabelChangeType { ADDED_LABEL, REMOVED_LABEL };
+    public enum LabelChangeType
+    {
+        ADDED_LABEL,
+        REMOVED_LABEL
+    };
 
     public void onLabelChange( KernelStatement state, int labelId, NodeItem node, LabelChangeType changeType )
             throws EntityNotFoundException

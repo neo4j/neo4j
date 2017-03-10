@@ -213,7 +213,8 @@ public class CommitContentionTests
             {
                 reference.set( new IllegalStateException( "Second transaction never finished" ) );
             }
-        } catch ( InterruptedException e )
+        }
+        catch ( InterruptedException e )
         {
             reference.set( e );
         }

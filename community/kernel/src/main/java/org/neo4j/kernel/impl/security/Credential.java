@@ -104,7 +104,8 @@ public class Credential
             m.update( salt, 0, salt.length );
             m.update( passwordBytes, 0, passwordBytes.length );
             return m.digest();
-        } catch ( NoSuchAlgorithmException e )
+        }
+        catch ( NoSuchAlgorithmException e )
         {
             throw new RuntimeException( "Hash algorithm is not available on this platform: " + e.getMessage(), e );
         }

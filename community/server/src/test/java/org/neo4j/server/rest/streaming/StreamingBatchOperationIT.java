@@ -60,7 +60,8 @@ public class StreamingBatchOperationIT extends AbstractRestFunctionalTestBase
     @SuppressWarnings( "unchecked" )
     @Test
     @Graph("Joe knows John")
-    public void execute_multiple_operations_in_batch_streaming() throws Exception {
+    public void execute_multiple_operations_in_batch_streaming() throws Exception
+    {
         long idJoe = data.get().get( "Joe" ).getId();
         String jsonString = new PrettyJSON()
             .array()
@@ -143,7 +144,8 @@ public class StreamingBatchOperationIT extends AbstractRestFunctionalTestBase
      * into JSON strings in subsequent job descriptions.
      */
     @Test
-    public void refer_to_items_created_earlier_in_the_same_batch_job_streaming() throws Exception {
+    public void refer_to_items_created_earlier_in_the_same_batch_job_streaming() throws Exception
+    {
         String jsonString = new PrettyJSON()
             .array()
                 .object()
@@ -209,7 +211,8 @@ public class StreamingBatchOperationIT extends AbstractRestFunctionalTestBase
     }
 
     @Test
-    public void shouldGetLocationHeadersWhenCreatingThings() throws Exception {
+    public void shouldGetLocationHeadersWhenCreatingThings() throws Exception
+    {
 
         long originalNodeCount = countNodes();
 
@@ -249,7 +252,8 @@ public class StreamingBatchOperationIT extends AbstractRestFunctionalTestBase
     }
 
     @Test
-    public void shouldForwardUnderlyingErrors() throws Exception {
+    public void shouldForwardUnderlyingErrors() throws Exception
+    {
 
         JaxRsResponse response = RestRequest.req().accept(APPLICATION_JSON_TYPE).header(StreamingFormat.STREAM_HEADER,"true")
 
@@ -282,7 +286,8 @@ public class StreamingBatchOperationIT extends AbstractRestFunctionalTestBase
 
     @Test
     public void shouldRollbackAllWhenGivenIncorrectRequest() throws JsonParseException, ClientHandlerException,
-            UniformInterfaceException, JSONException {
+            UniformInterfaceException, JSONException
+    {
 
         String jsonString = new PrettyJSON()
             .array()
@@ -327,7 +332,8 @@ public class StreamingBatchOperationIT extends AbstractRestFunctionalTestBase
 
     @Test
     @SuppressWarnings("unchecked")
-    public void shouldHandleUnicodeGetCorrectly() throws Exception {
+    public void shouldHandleUnicodeGetCorrectly() throws Exception
+    {
         String asianText = "\u4f8b\u5b50";
         String germanText = "öäüÖÄÜß";
 
@@ -364,7 +370,8 @@ public class StreamingBatchOperationIT extends AbstractRestFunctionalTestBase
     @Test
     @Graph("Peter likes Jazz")
     public void shouldHandleEscapedStrings() throws ClientHandlerException,
-            UniformInterfaceException, JSONException, JsonParseException {
+            UniformInterfaceException, JSONException, JsonParseException
+    {
         String string = "Jazz";
         Node gnode = getNode( string );
         assertThat( gnode, inTx(graphdb(), Neo4jMatchers.hasProperty( "name" ).withValue(string)) );
@@ -411,7 +418,8 @@ public class StreamingBatchOperationIT extends AbstractRestFunctionalTestBase
 
     @Test
     public void shouldRollbackAllWhenInsertingIllegalData() throws JsonParseException, ClientHandlerException,
-            UniformInterfaceException, JSONException {
+            UniformInterfaceException, JSONException
+    {
 
         String jsonString = new PrettyJSON()
             .array()
@@ -452,7 +460,8 @@ public class StreamingBatchOperationIT extends AbstractRestFunctionalTestBase
 
     @Test
     public void shouldRollbackAllOnSingle404() throws JsonParseException, ClientHandlerException,
-            UniformInterfaceException, JSONException {
+            UniformInterfaceException, JSONException
+    {
 
         String jsonString = new PrettyJSON()
             .array()
@@ -484,7 +493,8 @@ public class StreamingBatchOperationIT extends AbstractRestFunctionalTestBase
     }
 
     @Test
-    public void shouldBeAbleToReferToUniquelyCreatedEntities() throws Exception {
+    public void shouldBeAbleToReferToUniquelyCreatedEntities() throws Exception
+    {
         String jsonString = new PrettyJSON()
             .array()
                 .object()
@@ -530,7 +540,8 @@ public class StreamingBatchOperationIT extends AbstractRestFunctionalTestBase
     // It has to be possible to create relationships among created and not-created nodes
     // in batch operation.  Tests the fix for issue #690.
     @Test
-    public void shouldBeAbleToReferToNotCreatedUniqueEntities() throws Exception {
+    public void shouldBeAbleToReferToNotCreatedUniqueEntities() throws Exception
+    {
         String jsonString = new PrettyJSON()
             .array()
                 .object()

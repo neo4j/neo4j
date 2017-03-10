@@ -19,13 +19,14 @@
  */
 package org.neo4j.server.plugins;
 
+import org.junit.Before;
+import org.junit.BeforeClass;
+import org.junit.Test;
+
 import java.io.IOException;
 import java.net.URI;
 import java.util.Map;
 
-import org.junit.Before;
-import org.junit.BeforeClass;
-import org.junit.Test;
 import org.neo4j.server.helpers.FunctionalTestHelper;
 import org.neo4j.server.helpers.ServerHelper;
 import org.neo4j.server.rest.JaxRsResponse;
@@ -35,7 +36,9 @@ import org.neo4j.test.server.SharedServerTestBase;
 
 import static org.hamcrest.Matchers.equalTo;
 import static org.hamcrest.Matchers.hasKey;
-import static org.junit.Assert.*;
+import static org.junit.Assert.assertFalse;
+import static org.junit.Assert.assertNotNull;
+import static org.junit.Assert.assertThat;
 
 public class ExtensionListingFunctionalTest extends SharedServerTestBase
 {
@@ -54,7 +57,8 @@ public class ExtensionListingFunctionalTest extends SharedServerTestBase
     }
 
     @Test
-    public void datarootContainsReferenceToExtensions() throws Exception {
+    public void datarootContainsReferenceToExtensions() throws Exception
+    {
         JaxRsResponse response = RestRequest.req().get(functionalTestHelper.dataUri());
         assertThat(response.getStatus(), equalTo( 200 ));
         Map<String, Object> json = JsonHelper.jsonToMap( response.getEntity() );
@@ -64,7 +68,8 @@ public class ExtensionListingFunctionalTest extends SharedServerTestBase
     }
 
     @Test
-    public void canListAllAvailableServerExtensions() throws Exception {
+    public void canListAllAvailableServerExtensions() throws Exception
+    {
         JaxRsResponse response = RestRequest.req().get(functionalTestHelper.extensionUri());
         assertThat(response.getStatus(), equalTo( 200 ));
         Map<String, Object> json = JsonHelper.jsonToMap( response.getEntity() );
@@ -74,7 +79,8 @@ public class ExtensionListingFunctionalTest extends SharedServerTestBase
 
     @SuppressWarnings( "unchecked" )
     @Test
-    public void canListExtensionMethodsForServerExtension() throws Exception {
+    public void canListExtensionMethodsForServerExtension() throws Exception
+    {
         JaxRsResponse response = RestRequest.req().get(functionalTestHelper.extensionUri());
         assertThat(response.getStatus(), equalTo( 200 ));
 

@@ -67,15 +67,18 @@ public class CypherResultRepresentation extends MappingRepresentation
     {
         final List<String> columns = executionResult.columns();
         Iterable<Map<String, Object>> inner = new RepresentationExceptionHandlingIterable<>( loop( executionResult ) );
-        return new ListRepresentation( "data", new IterableWrapper<Representation,Map<String,Object>>(inner) {
+        return new ListRepresentation( "data", new IterableWrapper<Representation,Map<String,Object>>(inner)
+        {
 
             @Override
-            protected Representation underlyingObjectToObject(final Map<String, Object> row) {
+            protected Representation underlyingObjectToObject(final Map<String, Object> row)
+            {
                 return new ListRepresentation("row",
                  new IterableWrapper<Representation,String>(columns) {
 
                      @Override
-                     protected Representation underlyingObjectToObject(String column) {
+                     protected Representation underlyingObjectToObject(String column)
+                     {
                          return getRepresentation( row.get( column ) );
                      }
                  });
@@ -113,7 +116,8 @@ public class CypherResultRepresentation extends MappingRepresentation
         return REPRESENTATION_DISPATCHER.dispatch( r, "" );
     }
 
-    private Representation handleIterable( Iterable data ) {
+    private Representation handleIterable( Iterable data )
+    {
         final List<Representation> results = new ArrayList<>();
         for ( final Object value : data )
         {

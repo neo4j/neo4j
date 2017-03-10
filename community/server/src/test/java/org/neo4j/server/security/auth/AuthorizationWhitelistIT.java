@@ -19,10 +19,10 @@
  */
 package org.neo4j.server.security.auth;
 
-import java.io.IOException;
-
 import org.junit.After;
 import org.junit.Test;
+
+import java.io.IOException;
 
 import org.neo4j.graphdb.factory.GraphDatabaseSettings;
 import org.neo4j.server.CommunityNeoServer;
@@ -84,7 +84,10 @@ public class AuthorizationWhitelistIT extends ExclusiveServerTestBase
     @After
     public void cleanup()
     {
-        if ( server != null ) { server.stop(); }
+        if ( server != null )
+        {
+            server.stop();
+        }
     }
 
     private boolean browserIsLoaded() throws IOException

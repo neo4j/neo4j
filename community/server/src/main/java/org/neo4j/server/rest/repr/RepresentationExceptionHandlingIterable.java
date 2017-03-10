@@ -23,31 +23,46 @@ import java.util.Iterator;
 
 import org.neo4j.helpers.collection.ExceptionHandlingIterable;
 
-public class RepresentationExceptionHandlingIterable<T> extends ExceptionHandlingIterable<T> {
-    public RepresentationExceptionHandlingIterable(Iterable<T> source) {
-        super(source);
+public class RepresentationExceptionHandlingIterable<T> extends ExceptionHandlingIterable<T>
+{
+    public RepresentationExceptionHandlingIterable( Iterable<T> source )
+    {
+        super( source );
     }
 
     @Override
-    protected Iterator<T> exceptionOnIterator(Throwable t) {
-        if (t instanceof Exception) rethrow(new BadInputException(t));
-        return super.exceptionOnIterator(t);
+    protected Iterator<T> exceptionOnIterator( Throwable t )
+    {
+        if ( t instanceof Exception )
+        {
+            rethrow( new BadInputException( t ) );
+        }
+        return super.exceptionOnIterator( t );
     }
 
     @Override
-    protected T exceptionOnNext(Throwable t) {
-        if (t instanceof Exception) rethrow(new BadInputException(t));
-        return super.exceptionOnNext(t);
+    protected T exceptionOnNext( Throwable t )
+    {
+        if ( t instanceof Exception )
+        {
+            rethrow( new BadInputException( t ) );
+        }
+        return super.exceptionOnNext( t );
     }
 
     @Override
-    protected void exceptionOnRemove(Throwable t) {
-        super.exceptionOnRemove(t);
+    protected void exceptionOnRemove( Throwable t )
+    {
+        super.exceptionOnRemove( t );
     }
 
     @Override
-    protected boolean exceptionOnHasNext(Throwable t) {
-        if (t instanceof Exception) rethrow(new BadInputException(t));
-        return super.exceptionOnHasNext(t);
+    protected boolean exceptionOnHasNext( Throwable t )
+    {
+        if ( t instanceof Exception )
+        {
+            rethrow( new BadInputException( t ) );
+        }
+        return super.exceptionOnHasNext( t );
     }
 }

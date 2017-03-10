@@ -93,7 +93,8 @@ public class PackedOutputArray implements PackOutput
         return this;
     }
 
-    public byte[] bytes() {
+    public byte[] bytes()
+    {
         return raw.toByteArray();
     }
 

@@ -26,11 +26,10 @@ import org.neo4j.kernel.api.properties.DefinedProperty;
 import org.neo4j.kernel.api.properties.Property;
 import org.neo4j.kernel.impl.util.Validators;
 
-import static org.neo4j.kernel.api.StatementConstants.NO_SUCH_PROPERTY_KEY;
-import static org.neo4j.kernel.impl.api.PropertyValueComparison.COMPARE_VALUES;
-
 import static java.lang.String.format;
 import static java.lang.String.valueOf;
+import static org.neo4j.kernel.api.StatementConstants.NO_SUCH_PROPERTY_KEY;
+import static org.neo4j.kernel.impl.api.PropertyValueComparison.COMPARE_VALUES;
 
 /**
  * Holder for n property values, ordered according to a schema descriptor property id order
@@ -161,25 +160,32 @@ public class OrderedPropertyValues
             if ( type == Boolean.TYPE )
             {
                 return Arrays.toString( (boolean[]) propertyValue );
-            } else if ( type == Byte.TYPE )
+            }
+            else if ( type == Byte.TYPE )
             {
                 return Arrays.toString( (byte[]) propertyValue );
-            } else if ( type == Short.TYPE )
+            }
+            else if ( type == Short.TYPE )
             {
                 return Arrays.toString( (short[]) propertyValue );
-            } else if ( type == Character.TYPE )
+            }
+            else if ( type == Character.TYPE )
             {
                 return Arrays.toString( (char[]) propertyValue );
-            } else if ( type == Integer.TYPE )
+            }
+            else if ( type == Integer.TYPE )
             {
                 return Arrays.toString( (int[]) propertyValue );
-            } else if ( type == Long.TYPE )
+            }
+            else if ( type == Long.TYPE )
             {
                 return Arrays.toString( (long[]) propertyValue );
-            } else if ( type == Float.TYPE )
+            }
+            else if ( type == Float.TYPE )
             {
                 return Arrays.toString( (float[]) propertyValue );
-            } else if ( type == Double.TYPE )
+            }
+            else if ( type == Double.TYPE )
             {
                 return Arrays.toString( (double[]) propertyValue );
             }

@@ -472,7 +472,8 @@ public class MasterImplConversationStopFuzzIT
         }
     }
 
-    private class ExposedConversationManager extends ConversationManager {
+    private class ExposedConversationManager extends ConversationManager
+    {
 
         private TimedRepository<RequestContext,Conversation> conversationStore;
 

@@ -56,8 +56,8 @@ public class MultiRealmAuthManagerRule implements TestRule
 
     public MultiRealmAuthManagerRule(
             UserRepository users,
-            AuthenticationStrategy authStrategy
-    ) {
+            AuthenticationStrategy authStrategy )
+    {
         this.users = users;
         this.authStrategy = authStrategy;
     }
@@ -100,7 +100,8 @@ public class MultiRealmAuthManagerRule implements TestRule
     {
         return new Statement() {
             @Override
-            public void evaluate() throws Throwable {
+            public void evaluate() throws Throwable
+            {
                 try
                 {
                     setupAuthManager( authStrategy );

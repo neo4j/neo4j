@@ -64,7 +64,10 @@ public class Neo4jError
                               getClass().getSimpleName(), status.code(), cause );
     }
 
-    public Throwable cause() { return cause; }
+    public Throwable cause()
+    {
+        return cause;
+    }
 
     public Status status()
     {

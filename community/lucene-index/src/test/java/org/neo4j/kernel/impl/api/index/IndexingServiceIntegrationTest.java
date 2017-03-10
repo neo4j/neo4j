@@ -34,9 +34,9 @@ import org.neo4j.graphdb.Transaction;
 import org.neo4j.graphdb.mockfs.EphemeralFileSystemAbstraction;
 import org.neo4j.kernel.api.exceptions.index.IndexNotFoundKernelException;
 import org.neo4j.kernel.api.impl.schema.LuceneSchemaIndexProviderFactory;
-import org.neo4j.kernel.api.schema.IndexDescriptorFactory;
 import org.neo4j.kernel.api.index.InternalIndexState;
 import org.neo4j.kernel.api.index.SchemaIndexProvider;
+import org.neo4j.kernel.api.schema.IndexDescriptorFactory;
 import org.neo4j.kernel.api.schema_new.index.NewIndexDescriptorFactory;
 import org.neo4j.kernel.impl.core.LabelTokenHolder;
 import org.neo4j.kernel.impl.core.PropertyKeyTokenHolder;
@@ -65,7 +65,8 @@ public class IndexingServiceIntegrationTest
     private GraphDatabaseService database;
 
     @Before
-    public void setUp() {
+    public void setUp()
+    {
         EphemeralFileSystemAbstraction fileSystem = fileSystemRule.get();
         database = new TestGraphDatabaseFactory()
                 .setFileSystem( fileSystem )

@@ -56,7 +56,8 @@ public interface NamedArgument
     /**
      * Returns true if this argument was given explicitly on the command line
      */
-    default boolean has( String[] args ) {
+    default boolean has( String[] args )
+    {
         return Args.parse( args ).has( name() );
     }
 }

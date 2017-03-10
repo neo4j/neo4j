@@ -41,7 +41,6 @@ import org.neo4j.test.server.HTTP;
 import static org.hamcrest.CoreMatchers.equalTo;
 import static org.hamcrest.MatcherAssert.assertThat;
 import static org.junit.Assert.assertEquals;
-
 import static org.neo4j.server.ServerTestUtils.getRelativePath;
 import static org.neo4j.server.ServerTestUtils.getSharedTestTemporaryFolder;
 import static org.neo4j.test.server.HTTP.RawPayload.quotedJson;
@@ -113,8 +112,9 @@ public class JUnitRuleTest
         GraphDatabaseService db = new TestGraphDatabaseFactory()
                 .newEmbeddedDatabaseBuilder( testDirectory.directory() )
                 .newGraphDatabase();
-        try {
-            db.execute( "create ()" );
+        try
+        {
+            db.execute( "CREATE ()" );
         }
         finally
         {

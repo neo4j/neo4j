@@ -65,6 +65,12 @@
       <property name="allowSamelineParameterizedAnnotation" value="false"/>
     </module>
     <module name="UnnecessaryParentheses"/>
+    <module name="LeftCurly">
+      <property name="option" value="nl"/>
+    </module>
+    <module name="RightCurly">
+      <property name="option" value="alone"/>
+    </module>
 
   </module>
 

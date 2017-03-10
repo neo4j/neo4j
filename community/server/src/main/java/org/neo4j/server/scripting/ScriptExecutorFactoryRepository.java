@@ -36,7 +36,8 @@ public class ScriptExecutorFactoryRepository
         if(languages.containsKey( language ))
         {
             return languages.get( language );
-        } else
+        }
+        else
         {
             throw new NoSuchScriptLanguageException( "Unknown scripting language '" + language + "'." );
         }

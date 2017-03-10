@@ -36,7 +36,8 @@ public enum BoltRequestMessage
     PULL_ALL( 0x3F );
 
     private static BoltRequestMessage[] valuesBySignature = new BoltRequestMessage[0x40];
-    static {
+    static
+    {
         for ( BoltRequestMessage value : values() )
         {
             valuesBySignature[value.signature()] = value;

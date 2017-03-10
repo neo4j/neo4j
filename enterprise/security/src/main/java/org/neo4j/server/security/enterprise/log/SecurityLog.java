@@ -211,7 +211,8 @@ public class SecurityLog extends LifecycleAdapter implements Log
             return new SecurityLog( config, fileSystem,
                     jobScheduler.executor( JobScheduler.Groups.internalLogRotation ) );
         }
-        catch ( IOException ioe ){
+        catch ( IOException ioe )
+        {
             log.warn( "Unable to create log for auth-manager. Auth logging turned off." );
             return null;
         }

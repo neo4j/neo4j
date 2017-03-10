@@ -67,8 +67,14 @@ public class FieldSignature
     @Override
     public boolean equals( Object o )
     {
-        if ( this == o ) { return true; }
-        if ( o == null || getClass() != o.getClass() ) { return false; }
+        if ( this == o )
+        {
+            return true;
+        }
+        if ( o == null || getClass() != o.getClass() )
+        {
+            return false;
+        }
         FieldSignature that = (FieldSignature) o;
         return name.equals( that.name ) && type.equals( that.type );
     }

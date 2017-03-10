@@ -70,7 +70,8 @@ public class LifeRule implements TestRule
                         failure.addSuppressed( suppressed );
                     }
                     throw failure;
-                } finally
+                }
+                finally
                 {
                     life = new LifeSupport(  );
                 }

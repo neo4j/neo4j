@@ -54,7 +54,11 @@ public class BufferedChannelOutput implements PackOutput
     public BufferedChannelOutput flush() throws IOException
     {
         buffer.flip();
-        do { channel.write( buffer ); } while ( buffer.remaining() > 0 );
+        do
+        {
+            channel.write( buffer );
+        }
+        while ( buffer.remaining() > 0 );
         buffer.clear();
         return this;
     }

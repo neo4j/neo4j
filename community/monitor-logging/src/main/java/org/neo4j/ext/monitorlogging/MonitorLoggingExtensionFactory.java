@@ -30,7 +30,8 @@ import org.neo4j.kernel.lifecycle.Lifecycle;
 import org.neo4j.kernel.monitoring.Monitors;
 
 @Service.Implementation(KernelExtensionFactory.class)
-public class MonitorLoggingExtensionFactory  extends KernelExtensionFactory<MonitorLoggingExtensionFactory.Dependencies> {
+public class MonitorLoggingExtensionFactory  extends KernelExtensionFactory<MonitorLoggingExtensionFactory.Dependencies>
+{
 
     static final String KEY = "kernel monitor logging";
     private static final String filename = "/org/neo4j/ext/monitorlogging/monitorlogging.properties";

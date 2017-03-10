@@ -620,8 +620,9 @@ public final class Iterables
     public static <T, U> Map<T, U> asMap( Iterable<Pair<T, U>> pairs )
     {
         Map<T, U> map = new HashMap<>();
-        for (Pair<T, U> pair: pairs) {
-            map.put(pair.first(), pair.other());
+        for ( Pair<T,U> pair : pairs )
+        {
+            map.put( pair.first(), pair.other() );
         }
         return map;
     }

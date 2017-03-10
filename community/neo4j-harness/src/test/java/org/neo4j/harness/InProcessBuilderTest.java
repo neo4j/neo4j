@@ -19,6 +19,11 @@
  */
 package org.neo4j.harness;
 
+import org.apache.commons.io.FileUtils;
+import org.codehaus.jackson.JsonNode;
+import org.junit.Rule;
+import org.junit.Test;
+
 import java.io.File;
 import java.io.IOException;
 import java.net.URI;
@@ -35,11 +40,6 @@ import javax.net.ssl.HttpsURLConnection;
 import javax.net.ssl.SSLContext;
 import javax.net.ssl.TrustManager;
 import javax.net.ssl.X509TrustManager;
-
-import org.apache.commons.io.FileUtils;
-import org.codehaus.jackson.JsonNode;
-import org.junit.Rule;
-import org.junit.Test;
 
 import org.neo4j.bolt.v1.transport.socket.client.SocketConnection;
 import org.neo4j.dbms.DatabaseManagementSystemSettings;
@@ -68,7 +68,6 @@ import static org.junit.Assert.assertEquals;
 import static org.junit.Assert.assertFalse;
 import static org.junit.Assert.assertTrue;
 import static org.junit.Assert.fail;
-
 import static org.neo4j.harness.TestServerBuilders.newInProcessBuilder;
 import static org.neo4j.helpers.collection.MapUtil.stringMap;
 
@@ -253,14 +252,15 @@ public class InProcessBuilderTest
         File notADirectory = File.createTempFile( "prefix", "suffix" );
         assertFalse( notADirectory.isDirectory() );
 
-        try ( ServerControls ignored = newInProcessBuilder( ).copyFrom( notADirectory )
-                .newServer() )
+        try ( ServerControls ignored = newInProcessBuilder().copyFrom( notADirectory ).newServer() )
         {
-            fail("server should not start");
-        } catch (RuntimeException rte) {
+            fail( "server should not start" );
+        }
+        catch ( RuntimeException rte )
+        {
             Throwable cause = rte.getCause();
-            assertTrue( cause instanceof IOException);
-            assertTrue( cause.getMessage().contains( "exists but is not a directory" ));
+            assertTrue( cause instanceof IOException );
+            assertTrue( cause.getMessage().contains( "exists but is not a directory" ) );
         }
 
     }
