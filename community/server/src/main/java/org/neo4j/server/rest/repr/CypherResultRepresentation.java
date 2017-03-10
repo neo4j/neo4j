@@ -57,10 +57,14 @@ public class CypherResultRepresentation extends MappingRepresentation
         serializer.putList( "columns", columns );
         serializer.putList( "data", resultRepresentation );
 
-        if (statsRepresentation != null)
+        if ( statsRepresentation != null )
+        {
             serializer.putMapping( "stats", statsRepresentation );
-        if (plan != null)
+        }
+        if ( plan != null )
+        {
             serializer.putMapping( "plan", plan );
+        }
     }
 
     private ListRepresentation createResultRepresentation( Result executionResult )
@@ -132,7 +136,9 @@ public class CypherResultRepresentation extends MappingRepresentation
     private RepresentationType getType( List<Representation> representations )
     {
         if ( representations == null || representations.isEmpty() )
+        {
             return RepresentationType.STRING;
+        }
         return representations.get( 0 ).getRepresentationType();
     }
 

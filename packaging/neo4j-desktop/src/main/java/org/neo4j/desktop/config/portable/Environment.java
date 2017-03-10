@@ -19,7 +19,7 @@
  */
 package org.neo4j.desktop.config.portable;
 
-import java.awt.Desktop;
+import java.awt.*;
 import java.io.File;
 import java.io.IOException;
 import java.net.URI;
@@ -32,34 +32,43 @@ public abstract class Environment
 {
     public void editFile( File file ) throws IOException
     {
-        if( isPortableEditFileSupported() )
+        if ( isPortableEditFileSupported() )
         {
-            if( !file.exists() )
+            if ( !file.exists() )
             {
                 file.createNewFile();
             }
 
-            getDesktop().edit(file);
+            getDesktop().edit( file );
         }
-        else throw new UnsupportedOperationException( "Cannot edit " + file + ". Unsupported operation." );
+        else
+        {
+            throw new UnsupportedOperationException( "Cannot edit " + file + ". Unsupported operation." );
+        }
     }
 
     public void openDirectory( File file ) throws IOException
     {
-        if( isPortableOpenSupported() )
+        if ( isPortableOpenSupported() )
         {
             getDesktop().open( file );
         }
-        else throw new UnsupportedOperationException( "Cannot openDirectory " + file + ". Unsupported operation." );
+        else
+        {
+            throw new UnsupportedOperationException( "Cannot openDirectory " + file + ". Unsupported operation." );
+        }
     }
 
     public void browse( String link ) throws IOException, URISyntaxException
     {
-        if( isPortableBrowseSupported() )
+        if ( isPortableBrowseSupported() )
         {
             getDesktop().browse( new URI( link ) );
         }
-        else throw new UnsupportedOperationException( "Cannot browse " + link + ". Unsupported operation." );
+        else
+        {
+            throw new UnsupportedOperationException( "Cannot browse " + link + ". Unsupported operation." );
+        }
     }
 
     public abstract void openCommandPrompt( File binDirectory, File jreBinDirectory, File workingDirectory ) throws

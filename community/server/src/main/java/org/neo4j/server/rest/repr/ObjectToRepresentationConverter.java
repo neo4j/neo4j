@@ -99,7 +99,10 @@ public class ObjectToRepresentationConverter
     static RepresentationType getType( FirstItemIterable<Representation> representations )
     {
         Representation  representation = representations.getFirst();
-        if ( representation == null ) return RepresentationType.STRING;
+        if ( representation == null )
+        {
+            return RepresentationType.STRING;
+        }
         return representation.getRepresentationType();
     }
 

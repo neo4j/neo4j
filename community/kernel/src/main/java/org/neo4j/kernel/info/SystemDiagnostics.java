@@ -153,16 +153,24 @@ enum SystemDiagnostics implements DiagnosticsProvider
             Map<String, String> paths = new HashMap<String, String>();
             assert pathKeys.length == classPaths.length;
             for ( int i = 0; i < classPaths.length; i++ )
+            {
                 for ( String path : classPaths[i].split( File.pathSeparator ) )
+                {
                     paths.put( canonicalize( path ), pathValue( paths, pathKeys[i], path ) );
+                }
+            }
             for ( int level = 0; loader != null; level++ )
             {
                 if ( loader instanceof URLClassLoader )
                 {
                     URLClassLoader urls = (URLClassLoader) loader;
                     for ( URL url : urls.getURLs() )
+                    {
                         if ( "file".equalsIgnoreCase( url.getProtocol() ) )
+                        {
                             paths.put( url.toString(), pathValue( paths, "loader." + level, url.getPath() ) );
+                        }
+                    }
                 }
                 loader = loader.getParent();
             }
@@ -210,8 +218,11 @@ enum SystemDiagnostics implements DiagnosticsProvider
                 if ( property instanceof String )
                 {
                     String key = (String) property;
-                    if ( key.startsWith( "java." ) || key.startsWith( "os." ) || key.endsWith( ".boot.class.path" )
-                         || key.equals( "line.separator" ) ) continue;
+                    if ( key.startsWith( "java." ) || key.startsWith( "os." ) || key.endsWith( ".boot.class.path" ) ||
+                            key.equals( "line.separator" ) )
+                    {
+                        continue;
+                    }
                     logger.log( key + " = " + System.getProperty( key ) );
                 }
             }
@@ -296,7 +307,10 @@ enum SystemDiagnostics implements DiagnosticsProvider
     {
         for ( SystemDiagnostics provider : values() )
         {
-            if ( provider.isApplicable() ) manager.appendProvider( provider );
+            if ( provider.isApplicable() )
+            {
+                manager.appendProvider( provider );
+            }
         }
     }
 

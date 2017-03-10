@@ -21,15 +21,11 @@ package org.neo4j.kernel.impl.coreapi.schema;
 
 import java.util.ArrayList;
 import java.util.Collection;
-import java.util.Collections;
 
 import org.neo4j.graphdb.ConstraintViolationException;
 import org.neo4j.graphdb.Label;
 import org.neo4j.graphdb.schema.IndexCreator;
 import org.neo4j.graphdb.schema.IndexDefinition;
-import org.neo4j.helpers.collection.Iterables;
-
-import static java.util.Arrays.asList;
 
 public class IndexCreatorImpl implements IndexCreator
 {
@@ -64,7 +60,9 @@ public class IndexCreatorImpl implements IndexCreator
         assertInUnterminatedTransaction();
 
         if ( propertyKeys.isEmpty() )
+        {
             throw new ConstraintViolationException( "An index needs at least one property key to index" );
+        }
 
         return actions.createIndexDefinition( label, propertyKeys.toArray( new String[propertyKeys.size()] ) );
     }

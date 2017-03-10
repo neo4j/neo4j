@@ -63,8 +63,10 @@ public class UserSerialization extends FileRepositorySerializer<User>
         for ( String flag : parts[2].split( ",", -1 ))
         {
             String trimmed = flag.trim();
-            if (!trimmed.isEmpty())
+            if ( !trimmed.isEmpty() )
+            {
                 b = b.withFlag( trimmed );
+            }
         }
 
         return  b.build();

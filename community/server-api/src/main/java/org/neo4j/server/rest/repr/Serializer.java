@@ -58,7 +58,10 @@ abstract class Serializer
                     {
                         StringBuilder path = new StringBuilder( "/ext/" ).append( ext.getKey() );
                         path.append( "/" ).append( value.type.valueName );
-                        if ( entityIdentity != null ) path.append( "/" ).append( entityIdentity );
+                        if ( entityIdentity != null )
+                        {
+                            path.append( "/" ).append( entityIdentity );
+                        }
                         path.append( "/" ).append( method );
                         extension.writeValue( RepresentationType.URI, method, joinBaseWithRelativePath( baseUri,
                                 path.toString() ) );

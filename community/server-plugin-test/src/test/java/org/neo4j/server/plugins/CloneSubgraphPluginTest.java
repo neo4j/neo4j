@@ -70,7 +70,10 @@ public class CloneSubgraphPluginTest extends ExclusiveServerTestBase
     {
         try
         {
-            if ( server != null ) server.stop();
+            if ( server != null )
+            {
+                server.stop();
+            }
         }
         finally
         {

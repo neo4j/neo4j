@@ -38,7 +38,9 @@ public class DumpVmInformation
         finally
         {
             if ( out != null )
+            {
                 out.close();
+            }
         }
     }
 
@@ -47,7 +49,9 @@ public class DumpVmInformation
         // Find the top thread group
         ThreadGroup topThreadGroup = Thread.currentThread().getThreadGroup();
         while ( topThreadGroup.getParent() != null )
+        {
             topThreadGroup = topThreadGroup.getParent();
+        }
 
         // Get all the thread groups under the top.
         ThreadGroup[] allGroups = new ThreadGroup[1000];
@@ -57,7 +61,9 @@ public class DumpVmInformation
         for ( ThreadGroup group : allGroups )
         {
             if ( group == null )
+            {
                 break;
+            }
             dumpThreadGroupInfo( group, out );
         }
         dumpThreadGroupInfo( topThreadGroup, out );
@@ -78,7 +84,9 @@ public class DumpVmInformation
         for ( Thread thread : allThreads )
         {
             if ( thread == null )
+            {
                 break;
+            }
             out.println(
                     "\"" + thread.getName() + "\"" +
                     (thread.isDaemon() ? " daemon" : "") +

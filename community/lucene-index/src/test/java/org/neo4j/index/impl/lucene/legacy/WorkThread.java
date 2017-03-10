@@ -74,7 +74,10 @@ public class WorkThread extends OtherThreadExecutor<CommandState>
 
     public void rollback() throws Exception
     {
-        if ( !txOngoing ) return;
+        if ( !txOngoing )
+        {
+            return;
+        }
         execute( new RollbackCommand() );
         txOngoing = false;
     }

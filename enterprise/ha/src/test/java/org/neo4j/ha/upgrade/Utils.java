@@ -64,7 +64,9 @@ public class Utils
 
         StringBuilder classpath = new StringBuilder();
         for ( File file : jarFiles )
+        {
             classpath.append( classpath.length() > 0 ? File.pathSeparator : "" ).append( file.getAbsolutePath() );
+        }
         return classpath.toString();
     }
 
@@ -73,9 +75,13 @@ public class Utils
         for ( File file : directory.listFiles() )
         {
             if ( file.isDirectory() )
+            {
                 gatherFiles( jarFiles, file, filter );
+            }
             else if ( filter.accept( file ) )
+            {
                 jarFiles.add( file );
+            }
         }
     }
 

@@ -80,7 +80,10 @@ public final class FunctionalTestHelper
                 {
                     if ( element == null )
                     {
-                        if ( string == null ) return true;
+                        if ( string == null )
+                        {
+                            return true;
+                        }
                     }
                     else if ( element.equals( string ) )
                     {
@@ -219,7 +222,9 @@ public final class FunctionalTestHelper
             if ( !template.contains( PATH_AUTO_INDEX.replace("{type}", RestfulGraphDatabase.NODE_AUTO_INDEX_TYPE) ) &&
                  !template.contains( PATH_AUTO_INDEX.replace("{type}", RestfulGraphDatabase.RELATIONSHIP_AUTO_INDEX_TYPE) ) &&
                  !template.contains( "_auto_" ) )
+            {
                 result.put( entry.getKey(), entry.getValue() );
+            }
         }
         return result;
     }

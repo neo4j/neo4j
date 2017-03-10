@@ -152,18 +152,30 @@ public class ValueUnboundRelationship
     @Override
     public boolean equals( Object o )
     {
-        if ( this == o ) return true;
-        if ( !(o instanceof ValueUnboundRelationship) ) return false;
-
-        ValueUnboundRelationship that = (ValueUnboundRelationship) o;
-
-        if ( id != that.id ) return false;
-        if ( getAllProperties() != null ? !getAllProperties().equals(
-                that.getAllProperties() ) : that.getAllProperties() != null )
+        if ( this == o )
+        {
+            return true;
+        }
+        if ( !(o instanceof ValueUnboundRelationship) )
         {
             return false;
         }
-        if ( type != null ? !type.equals( that.type ) : that.type != null ) return false;
+
+        ValueUnboundRelationship that = (ValueUnboundRelationship) o;
+
+        if ( id != that.id )
+        {
+            return false;
+        }
+        if ( getAllProperties() != null ? !getAllProperties().equals( that.getAllProperties() )
+                                        : that.getAllProperties() != null )
+        {
+            return false;
+        }
+        if ( type != null ? !type.equals( that.type ) : that.type != null )
+        {
+            return false;
+        }
 
         return true;
     }

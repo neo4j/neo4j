@@ -53,10 +53,14 @@ public class BatchOperationResults
 
     public void addOperationResult( String from, Integer id, String body, String location )
     {
-        if(firstResult)
+        if ( firstResult )
+        {
             firstResult = false;
+        }
         else
-            results.append(',');
+        {
+            results.append( ',' );
+        }
 
         results.append( OPENING_CURLY );
 

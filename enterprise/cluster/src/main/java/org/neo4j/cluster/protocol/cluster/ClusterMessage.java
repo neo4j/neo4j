@@ -333,10 +333,14 @@ public enum ClusterMessage
                 return "Change cluster config, leave:" + leave;
             }
 
-            if (roleWon != null)
+            if ( roleWon != null )
+            {
                 return "Change cluster config, elected:" + winner + " as " + roleWon;
+            }
             else
+            {
                 return "Change cluster config, unelected:" + loser + " as " + roleWon;
+            }
         }
 
         @Override

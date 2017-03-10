@@ -82,7 +82,9 @@ public class TestTransactionEventDeadlocks
             // TODO Hmm, makes me think... should we really call transaction event handlers
             // for these relationship type / property index transasctions?
             if ( Iterables.count( data.createdRelationships() ) == 0 )
+            {
                 return null;
+            }
 
             node.setProperty( "counter", ((Long) node.removeProperty( "counter" )) + 1 );
             return null;

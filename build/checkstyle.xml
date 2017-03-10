@@ -71,6 +71,7 @@
     <module name="RightCurly">
       <property name="option" value="alone"/>
     </module>
+    <module name="NeedBraces"/>
 
   </module>
 

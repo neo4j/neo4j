@@ -635,7 +635,9 @@ public class ShortestPath implements PathFinder<Path>
             set.add( new PathData( connectingNode, new LinkedList<>( Arrays.asList( graphDb
                     .getRelationshipById( rel ) ) ) ) );
             if ( stopAsap )
+            {
                 break;
+            }
         }
         for ( int i = 0; i < levelData.depth - 1; i++ )
         {
@@ -658,7 +660,9 @@ public class ShortestPath implements PathFinder<Path>
                     rels.addFirst( graphDb.getRelationshipById( rel ) );
                     nextSet.add( new PathData( otherNode, rels ) );
                     if ( stopAsap )
+                    {
                         break;
+                    }
                 }
             }
             set = nextSet;

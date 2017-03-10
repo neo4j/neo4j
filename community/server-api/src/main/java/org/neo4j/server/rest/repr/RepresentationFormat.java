@@ -60,7 +60,9 @@ public abstract class RepresentationFormat implements InputFormat
     ListWriter serializeList( RepresentationType type )
     {
         if ( type.listName == null )
+        {
             throw new IllegalStateException( "Invalid list type: " + type );
+        }
         return serializeList( type.listName );
     }
 
@@ -334,8 +336,10 @@ public abstract class RepresentationFormat implements InputFormat
         if ( value instanceof Number && !( value instanceof Float || value instanceof Double ) )
         {
             short primitive = ( (Number) value ).shortValue();
-            if ( primitive != ( (Number) value ).longValue() )
+            if ( primitive != ((Number) value).longValue() )
+            {
                 throw new BadInputException( "Input did not fit in short" );
+            }
             return primitive;
         }
         if ( value instanceof String )
@@ -380,8 +384,10 @@ public abstract class RepresentationFormat implements InputFormat
         if ( value instanceof Number && !( value instanceof Float || value instanceof Double ) )
         {
             int primitive = ( (Number) value ).intValue();
-            if ( primitive != ( (Number) value ).longValue() )
+            if ( primitive != ((Number) value).longValue() )
+            {
                 throw new BadInputException( "Input did not fit in int" );
+            }
             return primitive;
         }
         if ( value instanceof String )
@@ -450,8 +456,10 @@ public abstract class RepresentationFormat implements InputFormat
         if ( value instanceof Number )
         {
             int primitive = ( (Number) value ).intValue();
-            if ( primitive != ( (Number) value ).longValue() || ( primitive > 0xFFFF ) )
+            if ( primitive != ((Number) value).longValue() || (primitive > 0xFFFF) )
+            {
                 throw new BadInputException( "Input did not fit in char" );
+            }
             return Character.valueOf( (char) primitive );
         }
         if ( value instanceof String && ( (String) value ).length() == 1 )
@@ -467,8 +475,10 @@ public abstract class RepresentationFormat implements InputFormat
         if ( value instanceof Number )
         {
             byte primitive = ( (Number) value ).byteValue();
-            if ( primitive != ( (Number) value ).longValue() )
+            if ( primitive != ((Number) value).longValue() )
+            {
                 throw new BadInputException( "Input did not fit in byte" );
+            }
             return primitive;
         }
         if ( value instanceof String )

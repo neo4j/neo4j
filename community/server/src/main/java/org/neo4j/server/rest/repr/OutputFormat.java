@@ -188,7 +188,10 @@ public class OutputFormat
                 {
                     representation.serialize( outputStreamFormat, baseUri, extensions );
 
-                    if ( !mustFail ) representationWriteHandler.onRepresentationWritten();
+                    if ( !mustFail )
+                    {
+                        representationWriteHandler.onRepresentationWritten();
+                    }
                 }
                 catch ( Exception e )
                 {

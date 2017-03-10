@@ -50,7 +50,10 @@ public class TransportTestUtil
         while(in.hasRemaining())
         {
             int chunkSize = in.getShort();
-            if( chunkSize == 0) continue;
+            if ( chunkSize == 0 )
+            {
+                continue;
+            }
 
             byte[] chunk = new byte[chunkSize];
             in.get( chunk );

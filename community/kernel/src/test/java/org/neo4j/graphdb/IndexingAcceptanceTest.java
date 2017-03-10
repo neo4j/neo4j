@@ -658,8 +658,10 @@ public class IndexingAcceptanceTest
         try ( Transaction tx = beansAPI.beginTx() )
         {
             Node node = beansAPI.createNode( labels );
-            for ( Map.Entry<String, Object> property : properties.entrySet() )
+            for ( Map.Entry<String,Object> property : properties.entrySet() )
+            {
                 node.setProperty( property.getKey(), property.getValue() );
+            }
             tx.success();
             return node;
         }

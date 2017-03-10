@@ -321,7 +321,9 @@ public class GraphDescription implements GraphDefinition
             for ( Node node : db.getAllNodes() )
             {
                 for ( Relationship rel : node.getRelationships() )
+                {
                     rel.delete();
+                }
                 node.delete();
             }
             tx.success();

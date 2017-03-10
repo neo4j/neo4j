@@ -34,7 +34,9 @@ public class ChannelOutputStream extends OutputStream
     {
         this.channel = channel;
         if ( append )
+        {
             this.channel.position( this.channel.size() );
+        }
     }
 
     @Override

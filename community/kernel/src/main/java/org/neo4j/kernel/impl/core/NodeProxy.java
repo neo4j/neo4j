@@ -455,8 +455,10 @@ public class NodeProxy implements Node
 
                 Object value = statement.readOperations().nodeGetProperty( nodeId, propertyKeyId );
 
-                if (value == null)
+                if ( value == null )
+                {
                     throw new PropertyNotFoundException( propertyKeyId, EntityType.NODE, nodeId );
+                }
 
                 return value;
 

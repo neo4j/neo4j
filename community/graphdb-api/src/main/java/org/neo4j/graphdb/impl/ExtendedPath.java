@@ -74,7 +74,10 @@ public class ExtendedPath implements Path
                     @Override
                     protected Relationship fetchNextOrNull()
                     {
-                        if ( startRelationships.hasNext() ) return startRelationships.next();
+                        if ( startRelationships.hasNext() )
+                        {
+                            return startRelationships.next();
+                        }
                         if ( !lastReturned )
                         {
                             lastReturned = true;
@@ -131,7 +134,10 @@ public class ExtendedPath implements Path
                     @Override
                     protected Node fetchNextOrNull()
                     {
-                        if ( startNodes.hasNext() ) return startNodes.next();
+                        if ( startNodes.hasNext() )
+                        {
+                            return startNodes.next();
+                        }
                         if ( !lastReturned )
                         {
                             lastReturned = true;
@@ -189,7 +195,10 @@ public class ExtendedPath implements Path
             @Override
             protected PropertyContainer fetchNextOrNull()
             {
-                if ( startEntities.hasNext() ) return startEntities.next();
+                if ( startEntities.hasNext() )
+                {
+                    return startEntities.next();
+                }
                 switch ( lastReturned-- )
                 {
                 case 2: return endNode;

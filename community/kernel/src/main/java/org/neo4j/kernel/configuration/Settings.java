@@ -28,9 +28,9 @@ import java.util.ArrayList;
 import java.util.Arrays;
 import java.util.EnumSet;
 import java.util.List;
+import java.util.Optional;
 import java.util.function.BiFunction;
 import java.util.function.Function;
-import java.util.Optional;
 import java.util.regex.Pattern;
 
 import org.neo4j.graphdb.config.Configuration;
@@ -1246,8 +1246,10 @@ public class Settings
                 for ( int i = 0; i < valueConverters.length; i++ )
                 {
                     BiFunction<T, Function<String, String>, T> valueConverter = valueConverters[i];
-                    if (i > 0)
+                    if ( i > 0 )
+                    {
                         builder.append( ", and " );
+                    }
                     builder.append( valueConverter );
                 }
             }

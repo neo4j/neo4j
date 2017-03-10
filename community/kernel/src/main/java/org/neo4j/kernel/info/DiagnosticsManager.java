@@ -66,9 +66,12 @@ public class DiagnosticsManager implements Iterable<DiagnosticsProvider>, Lifecy
             {
                 Visitor<? super DiagnosticsProvider, ? extends RuntimeException> target =
                         Visitor.SafeGenerics.castOrNull( DiagnosticsProvider.class, RuntimeException.class, visitor );
-                if ( target != null ) for ( DiagnosticsProvider provider : providers )
+                if ( target != null )
                 {
-                    target.visit( provider );
+                    for ( DiagnosticsProvider provider : providers )
+                    {
+                        target.visit( provider );
+                    }
                 }
             }
         } );
@@ -83,7 +86,10 @@ public class DiagnosticsManager implements Iterable<DiagnosticsProvider>, Lifecy
         {
             @SuppressWarnings( "hiding" )
             State state = this.state;
-            if ( !state.startup( this ) ) return;
+            if ( !state.startup( this ) )
+            {
+                return;
+            }
         }
         dumpAll( DiagnosticsPhase.INITIALIZED, getTargetLog() );
     }
@@ -95,7 +101,10 @@ public class DiagnosticsManager implements Iterable<DiagnosticsProvider>, Lifecy
         {
             @SuppressWarnings( "hiding" )
             State state = this.state;
-            if ( !state.startup( this ) ) return;
+            if ( !state.startup( this ) )
+            {
+                return;
+            }
         }
         dumpAll( DiagnosticsPhase.STARTED, getTargetLog() );
     }
@@ -108,7 +117,10 @@ public class DiagnosticsManager implements Iterable<DiagnosticsProvider>, Lifecy
         {
             @SuppressWarnings( "hiding" )
             State state = this.state;
-            if ( !state.shutdown( this ) ) return;
+            if ( !state.shutdown( this ) )
+            {
+                return;
+            }
         }
         dumpAll( DiagnosticsPhase.STOPPING, getTargetLog() );
         providers.clear();
@@ -121,7 +133,10 @@ public class DiagnosticsManager implements Iterable<DiagnosticsProvider>, Lifecy
         {
             @SuppressWarnings( "hiding" )
             State state = this.state;
-            if ( !state.shutdown( this ) ) return;
+            if ( !state.shutdown( this ) )
+            {
+                return;
+            }
         }
         dumpAll( DiagnosticsPhase.SHUTDOWN, getTargetLog() );
         providers.clear();
@@ -228,18 +243,30 @@ public class DiagnosticsManager implements Iterable<DiagnosticsProvider>, Lifecy
     {
         @SuppressWarnings( "hiding" )
         State state = this.state;
-        if ( state == State.STOPPED ) return;
+        if ( state == State.STOPPED )
+        {
+            return;
+        }
         providers.add( 0, provider );
-        if ( state == State.STARTED ) dump( DiagnosticsPhase.STARTED, provider, getTargetLog() );
+        if ( state == State.STARTED )
+        {
+            dump( DiagnosticsPhase.STARTED, provider, getTargetLog() );
+        }
     }
 
     public void appendProvider( DiagnosticsProvider provider )
     {
         @SuppressWarnings( "hiding" )
         State state = this.state;
-        if ( state == State.STOPPED ) return;
+        if ( state == State.STOPPED )
+        {
+            return;
+        }
         providers.add( provider );
-        if ( state == State.STARTED ) dump( DiagnosticsPhase.STARTED, provider, getTargetLog() );
+        if ( state == State.STARTED )
+        {
+            dump( DiagnosticsPhase.STARTED, provider, getTargetLog() );
+        }
     }
 
     private void dump( DiagnosticsPhase phase, DiagnosticsProvider provider, Log log )

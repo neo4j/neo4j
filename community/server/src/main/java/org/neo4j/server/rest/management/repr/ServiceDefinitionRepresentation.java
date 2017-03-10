@@ -53,9 +53,15 @@ public class ServiceDefinitionRepresentation extends MappingRepresentation
     {
         if ( basePath.endsWith( "/" ) )
         {
-            if ( subPath.startsWith( "/" ) ) return basePath + subPath.substring( 1 );
+            if ( subPath.startsWith( "/" ) )
+            {
+                return basePath + subPath.substring( 1 );
+            }
         }
-        else if ( !subPath.startsWith( "/" ) ) return basePath + "/" + subPath;
+        else if ( !subPath.startsWith( "/" ) )
+        {
+            return basePath + "/" + subPath;
+        }
         return basePath + subPath;
     }
 

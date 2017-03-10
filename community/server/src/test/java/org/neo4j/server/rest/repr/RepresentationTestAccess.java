@@ -24,7 +24,6 @@ import java.util.ArrayList;
 import java.util.HashMap;
 import java.util.List;
 import java.util.Map;
-
 import javax.ws.rs.core.MediaType;
 
 import org.neo4j.server.rest.repr.formats.ListWrappingWriter;
@@ -92,7 +91,9 @@ public class RepresentationTestAccess
     {
         int lastSlash = nodeUri.lastIndexOf( '/' );
         if ( lastSlash == -1 )
+        {
             throw new IllegalArgumentException( "'" + nodeUri + "' isn't a node URI" );
+        }
         return Long.parseLong( nodeUri.substring( lastSlash+1 ) );
     }
 

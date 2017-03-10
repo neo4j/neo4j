@@ -47,10 +47,14 @@ public class Neo4jError
 
     public Neo4jError( Status status, Throwable cause )
     {
-        if ( status == null  )
+        if ( status == null )
+        {
             throw new IllegalArgumentException( "statusCode must not be null" );
-        if ( cause == null  )
+        }
+        if ( cause == null )
+        {
             throw new IllegalArgumentException( "cause must not be null" );
+        }
 
         this.status = status;
         this.cause = cause;

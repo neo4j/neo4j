@@ -46,8 +46,10 @@ public class SimpleBitSet implements PrimitiveIntIterable
     {
         int initialCapacity = size / 64;
         int capacity = 1;
-        while (capacity < initialCapacity)
+        while ( capacity < initialCapacity )
+        {
             capacity <<= 1;
+        }
         data = new long[capacity];
     }
 
@@ -67,8 +69,10 @@ public class SimpleBitSet implements PrimitiveIntIterable
     public void put( SimpleBitSet other )
     {
         ensureCapacity( other.data.length - 1 );
-        for(int i=0;i<data.length && i<other.data.length;i++)
+        for ( int i = 0; i < data.length && i < other.data.length; i++ )
+        {
             data[i] = data[i] | other.data[i];
+        }
     }
 
     public void remove( int key )
@@ -82,28 +86,36 @@ public class SimpleBitSet implements PrimitiveIntIterable
 
     public void remove( SimpleBitSet other )
     {
-        for(int i=0;i<data.length;i++)
+        for ( int i = 0; i < data.length; i++ )
+        {
             data[i] = data[i] & ~other.data[i];
+        }
     }
 
     public void clear()
     {
-        for(int i=0;i<data.length;i++)
+        for ( int i = 0; i < data.length; i++ )
+        {
             data[i] = 0L;
+        }
     }
 
     public int size()
     {
         int size = 0;
-        for(int i=0;i<data.length;i++)
+        for ( int i = 0; i < data.length; i++ )
+        {
             size += Long.bitCount( data[i] );
+        }
         return size;
     }
 
     private void ensureCapacity( int arrayIndex )
     {
-        while(data.length <= arrayIndex)
-            data = Arrays.copyOf(data, data.length * 2);
+        while ( data.length <= arrayIndex )
+        {
+            data = Arrays.copyOf( data, data.length * 2 );
+        }
     }
 
     //
@@ -120,8 +132,10 @@ public class SimpleBitSet implements PrimitiveIntIterable
 
             {
                 // Prefetch first
-                while( next < size && !contains( next ) )
+                while ( next < size && !contains( next ) )
+                {
                     next++;
+                }
             }
 
             @Override
@@ -135,7 +149,10 @@ public class SimpleBitSet implements PrimitiveIntIterable
             {
                 int current = next;
                 next++;
-                while( next < size && !contains( next ) ) next++;
+                while ( next < size && !contains( next ) )
+                {
+                    next++;
+                }
                 return current;
             }
         };

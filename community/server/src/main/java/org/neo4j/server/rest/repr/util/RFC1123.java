@@ -60,7 +60,9 @@ public final class RFC1123
     public String format(Date date)
     {
         if ( null == date )
+        {
             throw new IllegalArgumentException( "Date is null" );
+        }
 
         return format.format( date );
     }

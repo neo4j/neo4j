@@ -78,7 +78,10 @@ public abstract class Neo4jMBean extends StandardMBean
     protected String getDescription( MBeanInfo info )
     {
         Description description = describeClass();
-        if ( description != null ) return description.value();
+        if ( description != null )
+        {
+            return description.value();
+        }
         return super.getDescription( info );
     }
 
@@ -86,7 +89,10 @@ public abstract class Neo4jMBean extends StandardMBean
     protected String getDescription( MBeanAttributeInfo info )
     {
         Description description = describeMethod( info, "get", "is" );
-        if ( description != null ) return description.value();
+        if ( description != null )
+        {
+            return description.value();
+        }
         return super.getDescription( info );
     }
 
@@ -94,7 +100,10 @@ public abstract class Neo4jMBean extends StandardMBean
     protected String getDescription( MBeanOperationInfo info )
     {
         Description description = describeMethod( info );
-        if ( description != null ) return description.value();
+        if ( description != null )
+        {
+            return description.value();
+        }
         return super.getDescription( info );
     }
 
@@ -102,7 +111,10 @@ public abstract class Neo4jMBean extends StandardMBean
     protected int getImpact( MBeanOperationInfo info )
     {
         Description description = describeMethod( info );
-        if ( description != null ) return description.impact();
+        if ( description != null )
+        {
+            return description.impact();
+        }
         return super.getImpact( info );
     }
 
@@ -114,7 +126,10 @@ public abstract class Neo4jMBean extends StandardMBean
             for ( Class<?> iface : getClass().getInterfaces() )
             {
                 description = iface.getAnnotation( Description.class );
-                if ( description != null ) break;
+                if ( description != null )
+                {
+                    break;
+                }
             }
         }
         return description;
@@ -128,7 +143,10 @@ public abstract class Neo4jMBean extends StandardMBean
             for ( Class<?> iface : getClass().getInterfaces() )
             {
                 description = describeMethod( iface, info.getName(), prefixes );
-                if ( description != null ) break;
+                if ( description != null )
+                {
+                    break;
+                }
             }
         }
         return description;

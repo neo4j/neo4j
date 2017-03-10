@@ -61,10 +61,15 @@ public class InternalJettyServletRequest extends Request
 
         public int read() throws IOException
         {
-            if ( bytes.length > position ) return (int) bytes[position++];
+            if ( bytes.length > position )
+            {
+                return (int) bytes[position++];
+            }
 
-            if (readListener != null)
+            if ( readListener != null )
+            {
                 readListener.onAllDataRead();
+            }
 
             return -1;
         }

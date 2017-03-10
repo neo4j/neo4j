@@ -35,10 +35,16 @@ abstract class ListParameterExtractor extends ParameterExtractor
         Object[] result = caster.getList( graphDb, parameters, name );
         if ( result != null )
         {
-            if ( type.isPrimitive() ) return caster.convert( result );
+            if ( type.isPrimitive() )
+            {
+                return caster.convert( result );
+            }
             return convert( result );
         }
-        if ( optional ) return null;
+        if ( optional )
+        {
+            return null;
+        }
         throw new IllegalArgumentException( "Mandatory argument \"" + name + "\" not supplied." );
     }
 

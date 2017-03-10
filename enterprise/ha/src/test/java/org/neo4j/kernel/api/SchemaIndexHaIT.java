@@ -602,13 +602,19 @@ public class SchemaIndexHaIT
         void awaitPopulationStarted( GraphDatabaseService db )
         {
             ControlledSchemaIndexProvider provider = (ControlledSchemaIndexProvider) perDbIndexProvider.get( db );
-            if(provider != null ) provider.latch.waitForAllToStart();
+            if ( provider != null )
+            {
+                provider.latch.waitForAllToStart();
+            }
         }
 
         void triggerFinish( GraphDatabaseService db )
         {
             ControlledSchemaIndexProvider provider = (ControlledSchemaIndexProvider) perDbIndexProvider.get( db );
-            if(provider != null ) provider.latch.finish();
+            if ( provider != null )
+            {
+                provider.latch.finish();
+            }
         }
     }
  }

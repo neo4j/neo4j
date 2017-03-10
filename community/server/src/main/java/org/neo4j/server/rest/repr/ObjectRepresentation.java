@@ -127,7 +127,10 @@ public abstract class ObjectRepresentation extends MappingRepresentation
         void putTo( MappingSerializer serializer, ObjectRepresentation object, String key )
         {
             Object value = get( object );
-            if ( value != null ) ( (Representation) value ).putTo( serializer, key );
+            if ( value != null )
+            {
+                ((Representation) value).putTo( serializer, key );
+            }
         }
 
         abstract Object get( ObjectRepresentation object );

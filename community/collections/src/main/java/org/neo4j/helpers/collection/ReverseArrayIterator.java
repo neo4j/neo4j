@@ -40,7 +40,10 @@ public class ReverseArrayIterator<T> implements Iterator<T>
 
     public T next()
     {
-        if ( !hasNext() ) throw new NoSuchElementException();
+        if ( !hasNext() )
+        {
+            throw new NoSuchElementException();
+        }
         return array[index--];
     }
 

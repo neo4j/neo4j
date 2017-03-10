@@ -504,7 +504,9 @@ public abstract class PropertyTypeDispatcher<K, T>
             {
                 byte[] result = new byte[property.length];
                 for ( int i = 0; i < result.length; i++ )
+                {
                     result[i] = property[i];
+                }
                 return result;
             }
         }, param );
@@ -520,7 +522,9 @@ public abstract class PropertyTypeDispatcher<K, T>
             {
                 char[] result = new char[property.length];
                 for ( int i = 0; i < result.length; i++ )
+                {
                     result[i] = property[i];
+                }
                 return result;
             }
         }, param );
@@ -536,7 +540,9 @@ public abstract class PropertyTypeDispatcher<K, T>
             {
                 short[] result = new short[property.length];
                 for ( int i = 0; i < result.length; i++ )
+                {
                     result[i] = property[i];
+                }
                 return result;
             }
         }, param );
@@ -552,7 +558,9 @@ public abstract class PropertyTypeDispatcher<K, T>
             {
                 int[] result = new int[property.length];
                 for ( int i = 0; i < result.length; i++ )
+                {
                     result[i] = property[i];
+                }
                 return result;
             }
         }, param );
@@ -568,7 +576,9 @@ public abstract class PropertyTypeDispatcher<K, T>
             {
                 long[] result = new long[property.length];
                 for ( int i = 0; i < result.length; i++ )
+                {
                     result[i] = property[i];
+                }
                 return result;
             }
         }, param );
@@ -584,7 +594,9 @@ public abstract class PropertyTypeDispatcher<K, T>
             {
                 float[] result = new float[property.length];
                 for ( int i = 0; i < result.length; i++ )
+                {
                     result[i] = property[i];
+                }
                 return result;
             }
         }, param );
@@ -600,7 +612,9 @@ public abstract class PropertyTypeDispatcher<K, T>
             {
                 double[] result = new double[property.length];
                 for ( int i = 0; i < result.length; i++ )
+                {
                     result[i] = property[i];
+                }
                 return result;
             }
         }, param );
@@ -616,7 +630,9 @@ public abstract class PropertyTypeDispatcher<K, T>
             {
                 boolean[] result = new boolean[property.length];
                 for ( int i = 0; i < result.length; i++ )
+                {
                     result[i] = property[i];
+                }
                 return result;
             }
         }, param );
