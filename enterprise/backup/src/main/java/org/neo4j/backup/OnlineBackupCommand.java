@@ -37,6 +37,7 @@ import org.neo4j.commandline.arguments.common.MandatoryCanonicalPath;
 import org.neo4j.commandline.arguments.common.OptionalCanonicalPath;
 import org.neo4j.consistency.ConsistencyCheckService;
 import org.neo4j.consistency.ConsistencyCheckSettings;
+import org.neo4j.consistency.checking.full.CheckConsistencyConfig;
 import org.neo4j.helpers.Args;
 import org.neo4j.helpers.HostnamePort;
 import org.neo4j.helpers.collection.MapUtil;
@@ -240,8 +241,9 @@ public class OnlineBackupCommand implements AdminCommand
                                 ProgressMonitorFactory.textual( outsideWorld.errorStream() ),
                                 FormattedLogProvider.toOutputStream( outsideWorld.outStream() ),
                                 outsideWorld.fileSystem(),
-                                false, reportDir.toFile(), checkGraph, checkIndexes, checkLabelScanStore,
-                                checkPropertyOwners );
+                                false, reportDir.toFile(),
+                                new CheckConsistencyConfig( checkGraph, checkIndexes, checkLabelScanStore,
+                                        checkPropertyOwners ) );
 
                 if ( !ccResult.isSuccessful() )
                 {

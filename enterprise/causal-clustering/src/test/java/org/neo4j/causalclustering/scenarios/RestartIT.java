@@ -31,6 +31,7 @@ import org.neo4j.causalclustering.discovery.Cluster;
 import org.neo4j.causalclustering.discovery.CoreClusterMember;
 import org.neo4j.causalclustering.discovery.ReadReplica;
 import org.neo4j.consistency.ConsistencyCheckService;
+import org.neo4j.consistency.checking.full.CheckConsistencyConfig;
 import org.neo4j.graphdb.GraphDatabaseService;
 import org.neo4j.graphdb.Node;
 import org.neo4j.graphdb.Transaction;
@@ -168,7 +169,7 @@ public class RestartIT
                 ConsistencyCheckService.Result result = new ConsistencyCheckService()
                         .runFullConsistencyCheck( core.storeDir(), Config.embeddedDefaults(), ProgressMonitorFactory.NONE,
                                 NullLogProvider.getInstance(), fileSystem, false,
-                                true, true, true, false);
+                                new CheckConsistencyConfig( true, true, true, false ) );
                 assertTrue( "Inconsistent: " + core, result.isSuccessful() );
             }
 
@@ -177,7 +178,7 @@ public class RestartIT
                 ConsistencyCheckService.Result result = new ConsistencyCheckService()
                         .runFullConsistencyCheck( readReplica.storeDir(), Config.embeddedDefaults(), ProgressMonitorFactory.NONE,
                                 NullLogProvider.getInstance(), fileSystem, false,
-                                true, true, true, false);
+                                new CheckConsistencyConfig( true, true, true, false ) );
                 assertTrue( "Inconsistent: " + readReplica, result.isSuccessful() );
             }
         }

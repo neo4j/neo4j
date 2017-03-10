@@ -33,6 +33,7 @@ import org.neo4j.commandline.admin.OutsideWorld;
 import org.neo4j.commandline.arguments.Arguments;
 import org.neo4j.commandline.arguments.OptionalBooleanArg;
 import org.neo4j.commandline.arguments.common.OptionalCanonicalPath;
+import org.neo4j.consistency.checking.full.CheckConsistencyConfig;
 import org.neo4j.consistency.checking.full.ConsistencyCheckIncompleteException;
 import org.neo4j.dbms.DatabaseManagementSystemSettings;
 import org.neo4j.helpers.Strings;
@@ -183,7 +184,9 @@ public class CheckConsistencyCommand implements AdminCommand
             ConsistencyCheckService.Result consistencyCheckResult = consistencyCheckService
                     .runFullConsistencyCheck( storeDir, config, ProgressMonitorFactory.textual( System.err ),
                             FormattedLogProvider.toOutputStream( System.out ), fileSystem, verbose,
-                            reportDir.toFile(), checkGraph, checkIndexes, checkLabelScanStore, checkPropertyOwners );
+                            reportDir.toFile(),
+                            new CheckConsistencyConfig(
+                                    checkGraph, checkIndexes, checkLabelScanStore, checkPropertyOwners ) );
 
             if ( !consistencyCheckResult.isSuccessful() )
             {

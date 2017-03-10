@@ -22,7 +22,6 @@ package org.neo4j.consistency.checking.full;
 import java.lang.reflect.Array;
 import java.util.List;
 
-import org.neo4j.consistency.ConsistencyCheckSettings;
 import org.neo4j.consistency.checking.CheckDecorator;
 import org.neo4j.consistency.checking.cache.CacheAccess;
 import org.neo4j.consistency.checking.cache.DefaultCacheAccess;
@@ -67,25 +66,20 @@ public class FullCheck
     public FullCheck( Config tuningConfiguration, ProgressMonitorFactory progressFactory,
             Statistics statistics, int threads )
     {
-        this(progressFactory, statistics, threads,
-                tuningConfiguration.get( ConsistencyCheckSettings.consistency_check_graph ),
-                tuningConfiguration.get( ConsistencyCheckSettings.consistency_check_indexes ),
-                tuningConfiguration.get( ConsistencyCheckSettings.consistency_check_label_scan_store ),
-                tuningConfiguration.get( ConsistencyCheckSettings.consistency_check_property_owners ) );
+        this(progressFactory, statistics, threads, new CheckConsistencyConfig(tuningConfiguration) );
     }
 
-    public FullCheck( ProgressMonitorFactory progressFactory,
-            Statistics statistics, int threads, boolean checkGraph, boolean checkIndexes, boolean checkLabelScanStore,
-            boolean checkPropertyOwners )
+    public FullCheck( ProgressMonitorFactory progressFactory, Statistics statistics, int threads,
+            CheckConsistencyConfig checkConsistencyConfig )
     {
         this.statistics = statistics;
         this.threads = threads;
         this.progressFactory = progressFactory;
         this.samplingConfig = new IndexSamplingConfig( Config.embeddedDefaults() );
-        this.checkGraph = checkGraph;
-        this.checkIndexes = checkIndexes;
-        this.checkLabelScanStore = checkLabelScanStore;
-        this.checkPropertyOwners = checkPropertyOwners;
+        this.checkGraph = checkConsistencyConfig.isCheckGraph();
+        this.checkIndexes = checkConsistencyConfig.isCheckIndexes();
+        this.checkLabelScanStore = checkConsistencyConfig.isCheckLabelScanStore();
+        this.checkPropertyOwners = checkConsistencyConfig.isCheckPropertyOwners();
     }
 
     public ConsistencySummaryStatistics execute( DirectStoreAccess stores, Log log )

@@ -39,6 +39,7 @@ import org.neo4j.commandline.admin.IncorrectUsage;
 import org.neo4j.commandline.admin.OutsideWorld;
 import org.neo4j.commandline.admin.Usage;
 import org.neo4j.consistency.ConsistencyCheckService;
+import org.neo4j.consistency.checking.full.CheckConsistencyConfig;
 import org.neo4j.io.fs.DefaultFileSystemAbstraction;
 import org.neo4j.io.fs.FileSystemAbstraction;
 import org.neo4j.kernel.configuration.Config;
@@ -89,8 +90,8 @@ public class OnlineBackupCommandTest
         when( outsideWorld.outStream() ).thenReturn( out );
         when( ccResult.isSuccessful() ).thenReturn( true );
         when( consistencyCheckService
-                .runFullConsistencyCheck( any(), any(), any(), any(), any(), anyBoolean(), any(), anyBoolean(),
-                        anyBoolean(), anyBoolean(), anyBoolean() ) )
+                .runFullConsistencyCheck( any(), any(), any(), any(), any(), anyBoolean(), any(),
+                        any( CheckConsistencyConfig.class ) ) )
                 .thenReturn( ccResult );
         configDir = testDirectory.directory( "config-dir" ).toPath();
     }
@@ -204,8 +205,7 @@ public class OnlineBackupCommandTest
 
         verify( backupService ).doFullBackup( any(), anyInt(), any(), any(), any(), anyLong(), anyBoolean() );
         verify( consistencyCheckService ).runFullConsistencyCheck( any(), any(), any(), any(), any(),
-                anyBoolean(), eq( new File( "." ).getCanonicalFile() ), anyBoolean(), anyBoolean(),
-                anyBoolean(), anyBoolean() );
+                anyBoolean(), eq( new File( "." ).getCanonicalFile() ), any( CheckConsistencyConfig.class ) );
     }
 
     @Test
@@ -220,8 +220,7 @@ public class OnlineBackupCommandTest
         verify( backupService ).doIncrementalBackup( any(), anyInt(), any(), anyLong(), any() );
         verifyNoMoreInteractions( backupService );
         verify( consistencyCheckService ).runFullConsistencyCheck( any(), any(), any(), any(), any(),
-                anyBoolean(), eq( new File( "." ).getCanonicalFile() ), anyBoolean(), anyBoolean(),
-                anyBoolean(), anyBoolean() );
+                anyBoolean(), eq( new File( "." ).getCanonicalFile() ), any( CheckConsistencyConfig.class ) );
     }
 
     @Test
@@ -245,8 +244,7 @@ public class OnlineBackupCommandTest
         final Path path = Paths.get( "/foo/bar" );
 
         when( consistencyCheckService.runFullConsistencyCheck( any(), any(), any(), any(), any(),
-                anyBoolean(), eq( new File( "." ).getCanonicalFile() ), anyBoolean(),
-                anyBoolean(), anyBoolean(), anyBoolean() ) ).thenReturn(
+                anyBoolean(), eq( new File( "." ).getCanonicalFile() ), any( CheckConsistencyConfig.class ) ) ).thenReturn(
                 ConsistencyCheckService.Result.failure( path.toFile() ) );
 
         expected.expect( CommandFailed.class );
@@ -262,9 +260,9 @@ public class OnlineBackupCommandTest
                 "--cc-indexes=false", "--cc-label-scan-store=false", "--cc-property-owners=true" );
 
         verify( backupService ).doFullBackup( any(), anyInt(), any(), any(), any(), anyLong(), anyBoolean() );
-        verify( consistencyCheckService ).runFullConsistencyCheck( any(), any(), any(), any(), any(),
-                anyBoolean(), eq( new File( "." ).getCanonicalFile() ), eq( false ), eq( false ),
-                eq( false ), eq( true ) );
+        verify( consistencyCheckService ).runFullConsistencyCheck( any(), any(), any(), any(), any(), anyBoolean(),
+                eq( new File( "." ).getCanonicalFile() ),
+                eq( new CheckConsistencyConfig( false, false, false, true ) ) );
     }
 
     @Test
@@ -419,15 +417,14 @@ public class OnlineBackupCommandTest
     {
         File reportDir = testDirectory.directory( "ccreport" );
         when( consistencyCheckService.runFullConsistencyCheck( any(), any(), any(), any(), any(), anyBoolean(),
-                any() ) ).thenReturn( ConsistencyCheckService.Result.success( null ) );
+                any(CheckConsistencyConfig.class) ) ).thenReturn( ConsistencyCheckService.Result.success( null ) );
 
         execute( "--check-consistency", backupDir(), "--name=mybackup",
                 "--cc-report-dir=" + reportDir );
 
         verify( backupService ).doFullBackup( any(), anyInt(), any(), any(), any(), anyLong(), anyBoolean() );
         verify( consistencyCheckService ).runFullConsistencyCheck( any(), any(), any(), any(), any(),
-                anyBoolean(), eq( reportDir.getCanonicalFile() ), anyBoolean(), anyBoolean(), anyBoolean(),
-                anyBoolean() );
+                anyBoolean(), eq( reportDir.getCanonicalFile() ), any( CheckConsistencyConfig.class ) );
     }
 
     @Test
