@@ -59,20 +59,20 @@ public class ReadOnlyDatabaseSchemaIndex extends ReadOnlyAbstractDatabaseIndex<L
      * {@inheritDoc}
      */
     @Override
-    public void verifyUniqueness( PropertyAccessor accessor, int propertyKeyId )
+    public void verifyUniqueness( PropertyAccessor accessor, int[] propertyKeyIds )
             throws IOException, IndexEntryConflictException
     {
-        luceneIndex.verifyUniqueness( accessor, propertyKeyId );
+        luceneIndex.verifyUniqueness( accessor, propertyKeyIds );
     }
 
     /**
      * {@inheritDoc}
      */
     @Override
-    public void verifyUniqueness( PropertyAccessor accessor, int propertyKeyId, List<Object> updatedPropertyValues )
+    public void verifyUniqueness( PropertyAccessor accessor, int[] propertyKeyIds, List<Object> updatedPropertyValues )
             throws IOException, IndexEntryConflictException
     {
-        luceneIndex.verifyUniqueness( accessor, propertyKeyId, updatedPropertyValues );
+        luceneIndex.verifyUniqueness( accessor, propertyKeyIds, updatedPropertyValues );
     }
 
     /**

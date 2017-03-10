@@ -68,7 +68,7 @@ public class PartitionedUniquenessVerifierTest
         PartitionedUniquenessVerifier verifier = createPartitionedVerifier();
         PropertyAccessor propertyAccessor = mock( PropertyAccessor.class );
 
-        verifier.verify( propertyAccessor, 42, Arrays.asList( "a", "b" ) );
+        verifier.verify( propertyAccessor, new int[]{42}, Arrays.asList( "a", "b" ) );
 
         verifySearchInvocations( searcher1, "a", "b" );
         verifySearchInvocations( searcher2, "a", "b" );

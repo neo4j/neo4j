@@ -42,25 +42,25 @@ public interface SchemaIndex extends DatabaseIndex
      * Verifies uniqueness of property values present in this index.
      *
      * @param accessor the accessor to retrieve actual property values from the store.
-     * @param propertyKeyId the id of the property to verify.
+     * @param propertyKeyIds the ids of the properties to verify.
      * @throws IndexEntryConflictException if there are duplicates.
      * @throws IOException
-     * @see UniquenessVerifier#verify(PropertyAccessor, int)
+     * @see UniquenessVerifier#verify(PropertyAccessor, int[])
      */
-    void verifyUniqueness( PropertyAccessor accessor, int propertyKeyId )
+    void verifyUniqueness( PropertyAccessor accessor, int[] propertyKeyIds )
             throws IOException, IndexEntryConflictException;
 
     /**
      * Verifies uniqueness of updated property values.
      *
      * @param accessor the accessor to retrieve actual property values from the store.
-     * @param propertyKeyId the id of the property to verify.
+     * @param propertyKeyIds the ids of the properties to verify.
      * @param updatedPropertyValues the values to check uniqueness for.
      * @throws IndexEntryConflictException if there are duplicates.
      * @throws IOException
-     * @see UniquenessVerifier#verify(PropertyAccessor, int, List)
+     * @see UniquenessVerifier#verify(PropertyAccessor, int[], List)
      */
-    void verifyUniqueness( PropertyAccessor accessor, int propertyKeyId, List<Object> updatedPropertyValues )
+    void verifyUniqueness( PropertyAccessor accessor, int[] propertyKeyIds, List<Object> updatedPropertyValues )
                     throws IOException, IndexEntryConflictException;
 
     /**

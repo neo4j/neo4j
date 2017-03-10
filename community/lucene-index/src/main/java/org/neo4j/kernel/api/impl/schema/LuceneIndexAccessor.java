@@ -123,8 +123,7 @@ public class LuceneIndexAccessor implements IndexAccessor
     public void verifyDeferredConstraints( PropertyAccessor propertyAccessor )
             throws IndexEntryConflictException, IOException
     {
-        //TODO: support composite index.
-        luceneIndex.verifyUniqueness( propertyAccessor, descriptor.schema().getPropertyId() );
+        luceneIndex.verifyUniqueness( propertyAccessor, descriptor.schema().getPropertyIds() );
     }
 
     private class LuceneIndexUpdater implements IndexUpdater

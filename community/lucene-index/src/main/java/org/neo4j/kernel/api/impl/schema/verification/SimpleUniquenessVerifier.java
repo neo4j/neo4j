@@ -25,6 +25,7 @@ import org.apache.lucene.index.Term;
 import org.apache.lucene.index.TermsEnum;
 import org.apache.lucene.search.IndexSearcher;
 import org.apache.lucene.search.Query;
+import org.apache.lucene.search.SimpleCollector;
 import org.apache.lucene.search.TermQuery;
 import org.apache.lucene.util.BytesRef;
 
@@ -56,11 +57,11 @@ public class SimpleUniquenessVerifier implements UniquenessVerifier
     }
 
     @Override
-    public void verify( PropertyAccessor accessor, int propKeyId ) throws IndexEntryConflictException, IOException
+    public void verify( PropertyAccessor accessor, int[] propKeyIds ) throws IndexEntryConflictException, IOException
     {
         try
         {
-            DuplicateCheckingCollector collector = new DuplicateCheckingCollector( accessor, propKeyId );
+            DuplicateCheckingCollector collector = DuplicateCheckingCollector.forProperties( accessor, propKeyIds );
             IndexSearcher searcher = indexSearcher();
             for ( LeafReaderContext leafReaderContext : searcher.getIndexReader().leaves() )
             {
@@ -97,12 +98,12 @@ public class SimpleUniquenessVerifier implements UniquenessVerifier
     }
 
     @Override
-    public void verify( PropertyAccessor accessor, int propKeyId, List<Object> updatedPropertyValues )
+    public void verify( PropertyAccessor accessor, int[] propKeyIds, List<Object> updatedPropertyValues )
             throws IndexEntryConflictException, IOException
     {
         try
         {
-            DuplicateCheckingCollector collector = new DuplicateCheckingCollector( accessor, propKeyId );
+            DuplicateCheckingCollector collector = DuplicateCheckingCollector.forProperties( accessor, propKeyIds );
             for ( Object propertyValue : updatedPropertyValues )
             {
                 collector.reset();

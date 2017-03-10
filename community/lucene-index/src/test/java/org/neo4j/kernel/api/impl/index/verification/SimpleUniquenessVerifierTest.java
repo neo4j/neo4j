@@ -60,7 +60,7 @@ import static org.mockito.Mockito.when;
 
 public class SimpleUniquenessVerifierTest
 {
-    private static final int PROPERTY_KEY_ID = 42;
+    private static final int[] PROPERTY_KEY_IDS = new int[]{42};
 
     @Rule
     public TestDirectory testDir = TestDirectory.testDirectory();
@@ -221,7 +221,7 @@ public class SimpleUniquenessVerifierTest
 
             try ( UniquenessVerifier verifier = new SimpleUniquenessVerifier( partitionSearcher ) )
             {
-                verifier.verify( propertyAccessor, PROPERTY_KEY_ID );
+                verifier.verify( propertyAccessor, PROPERTY_KEY_IDS );
             }
         }
         finally
@@ -234,7 +234,7 @@ public class SimpleUniquenessVerifierTest
     {
         try ( UniquenessVerifier verifier = newSimpleUniquenessVerifier() )
         {
-            verifier.verify( propertyAccessor, PROPERTY_KEY_ID );
+            verifier.verify( propertyAccessor, PROPERTY_KEY_IDS );
         }
     }
 
@@ -243,7 +243,7 @@ public class SimpleUniquenessVerifierTest
     {
         try ( UniquenessVerifier verifier = newSimpleUniquenessVerifier() )
         {
-            verifier.verify( propertyAccessor, PROPERTY_KEY_ID, updatedPropertyValues );
+            verifier.verify( propertyAccessor, PROPERTY_KEY_IDS, updatedPropertyValues );
         }
     }
 
@@ -251,7 +251,7 @@ public class SimpleUniquenessVerifierTest
     {
         try ( UniquenessVerifier verifier = newSimpleUniquenessVerifier() )
         {
-            verifier.verify( propertyAccessor, PROPERTY_KEY_ID );
+            verifier.verify( propertyAccessor, PROPERTY_KEY_IDS );
             fail( "Uniqueness verification was successful. This is not expected..." );
         }
         catch ( Throwable t )
@@ -264,7 +264,7 @@ public class SimpleUniquenessVerifierTest
     {
         try ( UniquenessVerifier verifier = newSimpleUniquenessVerifier() )
         {
-            verifier.verify( propertyAccessor, PROPERTY_KEY_ID, updatedPropertyValues );
+            verifier.verify( propertyAccessor, PROPERTY_KEY_IDS, updatedPropertyValues );
             fail( "Uniqueness verification was successful. This is not expected..." );
         }
         catch ( Throwable t )

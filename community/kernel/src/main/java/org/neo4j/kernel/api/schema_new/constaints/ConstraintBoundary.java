@@ -28,6 +28,7 @@ import org.neo4j.kernel.api.constraints.PropertyConstraint;
 import org.neo4j.kernel.api.constraints.RelationshipPropertyConstraint;
 import org.neo4j.kernel.api.constraints.RelationshipPropertyExistenceConstraint;
 import org.neo4j.kernel.api.constraints.UniquenessConstraint;
+import org.neo4j.kernel.api.schema.NodeMultiPropertyDescriptor;
 import org.neo4j.kernel.api.schema.NodePropertyDescriptor;
 import org.neo4j.kernel.api.schema.RelationshipPropertyDescriptor;
 import org.neo4j.kernel.api.schema_new.LabelSchemaDescriptor;
@@ -108,8 +109,11 @@ public class ConstraintBoundary
             switch ( descriptor.type() )
             {
             case UNIQUE:
-                return new UniquenessConstraint(  new NodePropertyDescriptor(
-                        schema.getLabelId(), schema.getPropertyId() ) );
+                return new UniquenessConstraint(
+                    schema.getPropertyIds().length == 1 ?
+                        new NodePropertyDescriptor( schema.getLabelId(), schema.getPropertyId() ) :
+                        new NodeMultiPropertyDescriptor( schema.getLabelId(), schema.getPropertyIds() )
+                    );
 
             case EXISTS:
                 return new NodePropertyExistenceConstraint( new NodePropertyDescriptor(

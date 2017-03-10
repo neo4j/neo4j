@@ -30,6 +30,7 @@ import org.apache.lucene.index.TermsEnum;
 import org.apache.lucene.search.Collector;
 import org.apache.lucene.search.IndexSearcher;
 import org.apache.lucene.search.Query;
+import org.apache.lucene.search.SimpleCollector;
 import org.apache.lucene.search.TermQuery;
 import org.apache.lucene.util.BytesRef;
 
@@ -69,7 +70,7 @@ public class PartitionedUniquenessVerifier implements UniquenessVerifier
     }
 
     @Override
-    public void verify( PropertyAccessor accessor, int propKeyId ) throws IndexEntryConflictException, IOException
+    public void verify( PropertyAccessor accessor, int[] propKeyIds ) throws IndexEntryConflictException, IOException
     {
         for ( String field : allFields() )
         {
@@ -85,20 +86,20 @@ public class PartitionedUniquenessVerifier implements UniquenessVerifier
                 if ( terms.docFreq() > 1 )
                 {
                     TermQuery query = new TermQuery( new Term( field, termsRef ) );
-                    searchForDuplicates( query, accessor, propKeyId );
+                    searchForDuplicates( query, accessor, propKeyIds );
                 }
             }
         }
     }
 
     @Override
-    public void verify( PropertyAccessor accessor, int propKeyId, List<Object> updatedPropertyValues )
+    public void verify( PropertyAccessor accessor, int[] propKeyIds, List<Object> updatedPropertyValues )
             throws IndexEntryConflictException, IOException
     {
         for ( Object propertyValue : updatedPropertyValues )
         {
             Query query = LuceneDocumentStructure.newSeekQuery( propertyValue );
-            searchForDuplicates( query, accessor, propKeyId );
+            searchForDuplicates( query, accessor, propKeyIds );
         }
     }
 
@@ -132,7 +133,7 @@ public class PartitionedUniquenessVerifier implements UniquenessVerifier
         return new MultiTerms( termsArray, readerSlicesArray );
     }
 
-    private void searchForDuplicates( Query query, PropertyAccessor accessor, int propertyKeyId )
+    private void searchForDuplicates( Query query, PropertyAccessor accessor, int[] propertyKeyIds )
             throws IOException, IndexEntryConflictException
     {
         try
@@ -141,7 +142,7 @@ public class PartitionedUniquenessVerifier implements UniquenessVerifier
              * Here {@link DuplicateCheckingCollector#reset()} is deliberately not called to preserve accumulated
              * state (knowledge about duplicates) across all {@link IndexSearcher#search(Query, Collector)} calls.
              */
-            DuplicateCheckingCollector collector = new DuplicateCheckingCollector( accessor, propertyKeyId );
+            SimpleCollector collector = DuplicateCheckingCollector.forProperties( accessor, propertyKeyIds );
             for ( PartitionSearcher searcher : searchers )
             {
                 searcher.getIndexSearcher().search( query, collector );

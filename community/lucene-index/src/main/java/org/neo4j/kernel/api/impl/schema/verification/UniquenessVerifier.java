@@ -29,10 +29,10 @@ import org.neo4j.kernel.api.index.PropertyAccessor;
 /**
  * A component that verifies uniqueness of values in a lucene index.
  * During uniqueness constraint creation we ensure that already existing data is unique using
- * {@link #verify(PropertyAccessor, int)}.
+ * {@link #verify(PropertyAccessor, int[])}.
  * Since updates can be applied while index is being populated we need to verify them as well.
  * Verification does not handle that automatically. They need to be collected in some way and then checked by
- * {@link #verify(PropertyAccessor, int, List)}.
+ * {@link #verify(PropertyAccessor, int[], List)}.
  */
 public interface UniquenessVerifier extends Closeable
 {
@@ -40,21 +40,21 @@ public interface UniquenessVerifier extends Closeable
      * Verifies uniqueness of existing data.
      *
      * @param accessor the accessor to retrieve actual property values from the store.
-     * @param propKeyId the id of the property to verify.
+     * @param propKeyIds the ids of the properties to verify.
      * @throws IndexEntryConflictException if there are duplicates.
      * @throws IOException when Lucene throws {@link IOException}.
      */
-    void verify( PropertyAccessor accessor, int propKeyId ) throws IndexEntryConflictException, IOException;
+    void verify( PropertyAccessor accessor, int[] propKeyIds ) throws IndexEntryConflictException, IOException;
 
     /**
      * Verifies uniqueness of given values and existing data.
      *
      * @param accessor the accessor to retrieve actual property values from the store.
-     * @param propKeyId the id of the property to verify.
+     * @param propKeyIds the ids of the properties to verify.
      * @param updatedPropertyValues the values to check uniqueness for.
      * @throws IndexEntryConflictException if there are duplicates.
      * @throws IOException when Lucene throws {@link IOException}.
      */
-    void verify( PropertyAccessor accessor, int propKeyId, List<Object> updatedPropertyValues )
+    void verify( PropertyAccessor accessor, int[] propKeyIds, List<Object> updatedPropertyValues )
             throws IndexEntryConflictException, IOException;
 }

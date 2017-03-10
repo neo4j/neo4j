@@ -35,72 +35,55 @@ import org.neo4j.kernel.api.index.PropertyAccessor;
 import org.neo4j.kernel.api.properties.Property;
 import org.neo4j.kernel.api.schema_new.OrderedPropertyValues;
 
-public class DuplicateCheckingCollector extends SimpleCollector
+public class CompositeDuplicateCheckingCollector extends DuplicateCheckingCollector
 {
-    protected final PropertyAccessor accessor;
-    private final int propertyKeyId;
-    private EntrySet actualValues;
-    protected LeafReader reader;
+    private final int[] propertyKeyIds;
+    private CompositeEntrySet actualValues;
 
-    public static DuplicateCheckingCollector forProperties( PropertyAccessor accessor, int[] propertyKeyIds )
+    public CompositeDuplicateCheckingCollector( PropertyAccessor accessor, int[] propertyKeyIds )
     {
-        return (propertyKeyIds.length == 1) ? new DuplicateCheckingCollector( accessor, propertyKeyIds[0] )
-                                            : new CompositeDuplicateCheckingCollector( accessor, propertyKeyIds );
-    }
-
-    public DuplicateCheckingCollector( PropertyAccessor accessor, int propertyKeyId )
-    {
-        this.accessor = accessor;
-        this.propertyKeyId = propertyKeyId;
-        actualValues = new EntrySet();
+        super(accessor, -1);
+        this.propertyKeyIds = propertyKeyIds;
+        actualValues = new CompositeEntrySet();
     }
 
     @Override
-    public void collect( int doc ) throws IOException
-    {
-        try
-        {
-            doCollect( doc );
-        }
-        catch ( KernelException e )
-        {
-            throw new IllegalStateException( "Indexed node should exist and have the indexed property.", e );
-        }
-        catch ( IndexEntryConflictException e )
-        {
-            throw new IOException( e );
-        }
-    }
-
     protected void doCollect( int doc ) throws IOException, KernelException, IndexEntryConflictException
     {
         Document document = reader.document( doc );
         long nodeId = LuceneDocumentStructure.getNodeId( document );
-        Property property = accessor.getProperty( nodeId, propertyKeyId );
+        Property[] properties = new Property[propertyKeyIds.length];
+        Object[] values = new Object[propertyKeyIds.length];
+        for ( int i = 0; i < properties.length; i++ )
+        {
+            properties[i] = accessor.getProperty( nodeId, propertyKeyIds[i] );
+            values[i] = properties[i].value();
+        }
 
         // We either have to find the first conflicting entry set element,
         // or append one for the property we just fetched:
-        EntrySet current = actualValues;
+        CompositeEntrySet current = actualValues;
         scan:
         do
         {
-            for ( int i = 0; i < EntrySet.INCREMENT; i++ )
+            for ( int i = 0; i < CompositeEntrySet.INCREMENT; i++ )
             {
-                Object value = current.value[i];
+                Object[] currentValues = current.values[i];
 
                 if ( current.nodeId[i] == StatementConstants.NO_SUCH_NODE )
                 {
-                    current.value[i] = property.value();
+                    current.values[i] = values;
                     current.nodeId[i] = nodeId;
-                    if ( i == EntrySet.INCREMENT - 1 )
+                    if ( i == CompositeEntrySet.INCREMENT - 1 )
                     {
-                        current.next = new EntrySet();
+                        current.next = new CompositeEntrySet();
                     }
                     break scan;
                 }
-                else if ( property.valueEquals( value ) )
+                else if ( propertyValuesEqual( properties, currentValues ) )
                 {
-                    throw new IndexEntryConflictException( current.nodeId[i], nodeId, value );
+                    throw new IndexEntryConflictException( current.nodeId[i], nodeId,
+                            OrderedPropertyValues.ofUndefined( currentValues ) );
                 }
             }
             current = current.next;
@@ -108,10 +91,20 @@ public class DuplicateCheckingCollector extends SimpleCollector
         while ( current != null );
     }
 
-    @Override
-    protected void doSetNextReader( LeafReaderContext context ) throws IOException
+    private boolean propertyValuesEqual( Property[] properties, Object[] values )
     {
-        this.reader = context.reader();
+        if ( properties.length != values.length )
+        {
+            return false;
+        }
+        for ( int i = 0; i < properties.length; i++ )
+        {
+            if ( !properties[i].valueEquals( values[i] ) )
+            {
+                return false;
+            }
+        }
+        return true;
     }
 
     @Override
@@ -122,24 +115,24 @@ public class DuplicateCheckingCollector extends SimpleCollector
 
     public void reset()
     {
-        actualValues = new EntrySet();
+        actualValues = new CompositeEntrySet();
     }
 
     /**
-     * A small struct of arrays of nodeId + property values, with a next pointer.
+     * A small struct of arrays of nodeId + array of property values, with a next pointer.
      * Should exhibit fairly fast linear iteration, small memory overhead and dynamic growth.
      * <p>
      * NOTE: Must always call reset() before use!
      */
-    private static class EntrySet
+    private static class CompositeEntrySet
     {
         static final int INCREMENT = 10000;
 
-        Object[] value = new Object[INCREMENT];
+        Object[][] values = new Object[INCREMENT][];
         long[] nodeId = new long[INCREMENT];
-        EntrySet next;
+        CompositeEntrySet next;
 
-        EntrySet()
+        CompositeEntrySet()
         {
             Arrays.fill( nodeId, StatementConstants.NO_SUCH_NODE );
         }

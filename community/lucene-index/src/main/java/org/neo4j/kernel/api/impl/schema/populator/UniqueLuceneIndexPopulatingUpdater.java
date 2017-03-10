@@ -33,22 +33,22 @@ import org.neo4j.kernel.impl.api.index.sampling.UniqueIndexSampler;
 /**
  * A {@link LuceneIndexPopulatingUpdater} used for unique Lucene schema indexes.
  * Verifies uniqueness of added and changed values when closed using
- * {@link SchemaIndex#verifyUniqueness(PropertyAccessor, int, List)} method.
+ * {@link SchemaIndex#verifyUniqueness(PropertyAccessor, int[], List)} method.
  */
 public class UniqueLuceneIndexPopulatingUpdater extends LuceneIndexPopulatingUpdater
 {
-    private final int propertyKeyId;
+    private final int[] propertyKeyIds;
     private final SchemaIndex luceneIndex;
     private final PropertyAccessor propertyAccessor;
     private final UniqueIndexSampler sampler;
 
     private final List<Object> updatedPropertyValues = new ArrayList<>();
 
-    public UniqueLuceneIndexPopulatingUpdater( LuceneIndexWriter writer, int propertyKeyId,
+    public UniqueLuceneIndexPopulatingUpdater( LuceneIndexWriter writer, int[] propertyKeyIds,
             SchemaIndex luceneIndex, PropertyAccessor propertyAccessor, UniqueIndexSampler sampler )
     {
         super( writer );
-        this.propertyKeyId = propertyKeyId;
+        this.propertyKeyIds = propertyKeyIds;
         this.luceneIndex = luceneIndex;
         this.propertyAccessor = propertyAccessor;
         this.sampler = sampler;
@@ -76,6 +76,6 @@ public class UniqueLuceneIndexPopulatingUpdater extends LuceneIndexPopulatingUpd
     @Override
     public void close() throws IOException, IndexEntryConflictException
     {
-        luceneIndex.verifyUniqueness( propertyAccessor, propertyKeyId, updatedPropertyValues );
+        luceneIndex.verifyUniqueness( propertyAccessor, propertyKeyIds, updatedPropertyValues );
     }
 }
