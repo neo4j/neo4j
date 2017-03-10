@@ -19,8 +19,8 @@
  */
 package org.neo4j.internal.cypher.acceptance
 
-import org.neo4j.cypher.{ExecutionEngineFunSuite, NewPlannerTestSupport}
-import org.neo4j.graphdb.Node
+import org.neo4j.cypher.{CypherExecutionException, ExecutionEngineFunSuite, NewPlannerTestSupport, SyntaxException}
+import org.neo4j.graphdb.{ConstraintViolationException, Node}
 import org.neo4j.kernel.GraphDatabaseQueryService
 import org.scalatest.matchers.{MatchResult, Matcher}
 
@@ -257,6 +257,50 @@ class CompositeIndexAcceptanceTest extends ExecutionEngineFunSuite with NewPlann
     // Then
     graph should haveConstraints("UNIQUENESS:Person(email)")
     graph should not(haveConstraints("UNIQUENESS:Person(firstname,lastname)"))
+  }
+
+  test("composite uniqueness constraint should not block adding nodes with different properties") {
+    // When
+    executeWithCostPlannerAndInterpretedRuntimeOnly("CREATE CONSTRAINT ON (n:User) ASSERT (n.firstname,n.lastname) IS UNIQUE")
+
+    // Then
+    createLabeledNode(Map("firstname" -> "Joe", "lastname" -> "Soap"), "User")
+    createLabeledNode(Map("firstname" -> "Joe", "lastname" -> "Smoke"), "User")
+    createLabeledNode(Map("firstname" -> "Jake", "lastname" -> "Soap"), "User")
+  }
+
+  test("composite uniqueness constraint should block adding nodes with same properties") {
+    // When
+    executeWithCostPlannerAndInterpretedRuntimeOnly("CREATE CONSTRAINT ON (n:User) ASSERT (n.firstname,n.lastname) IS UNIQUE")
+    createLabeledNode(Map("firstname" -> "Joe", "lastname" -> "Soap"), "User")
+    createLabeledNode(Map("firstname" -> "Joe", "lastname" -> "Smoke"), "User")
+
+    // Then
+    a[ConstraintViolationException] should be thrownBy {
+      createLabeledNode(Map("firstname" -> "Joe", "lastname" -> "Soap"), "User")
+    }
+  }
+
+  test("composite uniqueness constraint should not fail when we have nodes with different properties") {
+    // When
+    createLabeledNode(Map("firstname" -> "Joe", "lastname" -> "Soap"), "User")
+    createLabeledNode(Map("firstname" -> "Joe", "lastname" -> "Smoke"), "User")
+    createLabeledNode(Map("firstname" -> "Jake", "lastname" -> "Soap"), "User")
+
+    // Then
+    executeWithCostPlannerAndInterpretedRuntimeOnly("CREATE CONSTRAINT ON (n:User) ASSERT (n.firstname,n.lastname) IS UNIQUE")
+  }
+
+  test("composite uniqueness constraint should fail when we have nodes with same properties") {
+    // When
+    createLabeledNode(Map("firstname" -> "Joe", "lastname" -> "Soap"), "User")
+    createLabeledNode(Map("firstname" -> "Joe", "lastname" -> "Smoke"), "User")
+    createLabeledNode(Map("firstname" -> "Joe", "lastname" -> "Soap"), "User")
+
+    // Then
+    a[CypherExecutionException] should be thrownBy {
+      executeWithCostPlannerAndInterpretedRuntimeOnly("CREATE CONSTRAINT ON (n:User) ASSERT (n.firstname,n.lastname) IS UNIQUE")
+    }
   }
 
   case class haveIndexes(expectedIndexes: String*) extends Matcher[GraphDatabaseQueryService] {
