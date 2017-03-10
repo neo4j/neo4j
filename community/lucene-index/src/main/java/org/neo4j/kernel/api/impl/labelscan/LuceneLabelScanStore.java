@@ -183,4 +183,10 @@ public class LuceneLabelScanStore implements LabelScanStore
     {
         return luceneIndex.getLabelScanWriter();
     }
+
+    @Override
+    public boolean isReadOnly()
+    {
+        return luceneIndex.isReadOnly();
+    }
 }

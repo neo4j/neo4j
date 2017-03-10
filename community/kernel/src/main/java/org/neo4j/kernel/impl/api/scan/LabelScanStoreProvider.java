@@ -83,6 +83,11 @@ public class LabelScanStoreProvider extends LifecycleAdapter
         }
     }
 
+    public boolean isReadOnly()
+    {
+        return labelScanStore.isReadOnly();
+    }
+
     public void drop() throws IOException
     {
         labelScanStore.drop();

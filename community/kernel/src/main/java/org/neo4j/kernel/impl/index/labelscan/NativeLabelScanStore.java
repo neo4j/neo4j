@@ -395,4 +395,10 @@ public class NativeLabelScanStore implements LabelScanStore
     {
         index.close();
     }
+
+    @Override
+    public boolean isReadOnly()
+    {
+        return readOnly;
+    }
 }

@@ -53,7 +53,10 @@ public class DeleteStoresFromOtherLabelScanStoreProviders implements DependencyR
             {
                 try
                 {
-                    provider.drop();
+                    if ( !provider.isReadOnly() )
+                    {
+                        provider.drop();
+                    }
                 }
                 catch ( IOException e )
                 {

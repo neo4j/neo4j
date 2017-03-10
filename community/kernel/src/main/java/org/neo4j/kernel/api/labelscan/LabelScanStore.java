@@ -131,4 +131,9 @@ public interface LabelScanStore extends Lifecycle
      * @throws IOException on I/O error.
      */
     void drop() throws IOException;
+
+    /**
+     * @return whether or not this index is read-only.
+     */
+    boolean isReadOnly();
 }

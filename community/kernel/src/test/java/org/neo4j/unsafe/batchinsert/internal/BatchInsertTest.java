@@ -1527,6 +1527,12 @@ public class BatchInsertTest
                 }
             };
         }
+
+        @Override
+        public boolean isReadOnly()
+        {
+            return false;
+        }
     }
 
     interface NoDependencies
