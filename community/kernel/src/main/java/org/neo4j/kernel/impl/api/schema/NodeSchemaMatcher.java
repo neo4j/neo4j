@@ -23,9 +23,9 @@ import java.util.Iterator;
 
 import org.neo4j.collection.primitive.Primitive;
 import org.neo4j.collection.primitive.PrimitiveIntSet;
+import org.neo4j.function.ThrowingConsumer;
 import org.neo4j.kernel.api.schema_new.LabelSchemaDescriptor;
 import org.neo4j.kernel.api.schema_new.LabelSchemaSupplier;
-import org.neo4j.kernel.api.schema_new.SchemaDescriptor;
 import org.neo4j.kernel.impl.api.KernelStatement;
 import org.neo4j.kernel.impl.api.operations.EntityReadOperations;
 import org.neo4j.storageengine.api.NodeItem;
@@ -43,7 +43,7 @@ public class NodeSchemaMatcher
     }
 
     /**
-     * Iterate over some schema suppliers, and invoke an action for every supplier that matches the node. To match the
+     * Iterate over some schema suppliers, and invoke a callback for every supplier that matches the node. To match the
      * node N the supplier must supply a LabelSchemaDescriptor D, such that N has the label of D, and values for all
      * the properties of D.
      *
@@ -55,7 +55,7 @@ public class NodeSchemaMatcher
      * @param node The node
      * @param specialPropertyId This property id will always count as a match for the descriptor, regardless of
      *                          whether the node has this property or not
-     * @param action The action to take on match
+     * @param callback The action to take on match
      * @param <SUPPLIER> the type to match. Must implement LabelSchemaDescriptor.Supplier
      * @param <EXCEPTION> The type of exception that can be thrown when taking the action
      * @throws EXCEPTION This exception is propagated from the action
@@ -65,7 +65,7 @@ public class NodeSchemaMatcher
             Iterator<SUPPLIER> schemaSuppliers,
             NodeItem node,
             int specialPropertyId,
-            SchemaMatchAction<SUPPLIER, EXCEPTION> action
+            ThrowingConsumer<SUPPLIER, EXCEPTION> callback
     ) throws EXCEPTION
     {
         PrimitiveIntSet nodePropertyIds = null;
@@ -83,7 +83,7 @@ public class NodeSchemaMatcher
 
                 if ( nodeHasSchemaProperties( nodePropertyIds, schema.getPropertyIds(), specialPropertyId ) )
                 {
-                    action.act( schemaSupplier );
+                    callback.accept( schemaSupplier );
                 }
             }
         }
@@ -101,10 +101,4 @@ public class NodeSchemaMatcher
         }
         return true;
     }
-
-    public interface SchemaMatchAction<SUPPLIER extends SchemaDescriptor.Supplier, EXCEPTION extends Exception>
-    {
-        void act( SUPPLIER schemaSupplier ) throws EXCEPTION;
-    }
-
 }
