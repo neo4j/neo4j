@@ -25,9 +25,11 @@ import org.junit.Test;
 import java.io.StringReader;
 import java.util.Set;
 import java.util.concurrent.CopyOnWriteArraySet;
+
 import org.neo4j.csv.reader.CharReadable;
 import org.neo4j.kernel.impl.util.Validators;
 import org.neo4j.test.rule.RandomRule;
+import org.neo4j.unsafe.impl.batchimport.executor.TaskExecutionPanicException;
 import org.neo4j.unsafe.impl.batchimport.input.Collector;
 import org.neo4j.unsafe.impl.batchimport.input.Groups;
 import org.neo4j.unsafe.impl.batchimport.input.InputEntityDecorators;
@@ -42,6 +44,7 @@ import static org.mockito.Mockito.mock;
 import static org.neo4j.csv.reader.Readables.wrap;
 import static org.neo4j.unsafe.impl.batchimport.input.csv.Configuration.COMMAS;
 import static org.neo4j.unsafe.impl.batchimport.input.csv.DataFactories.defaultFormatNodeFileHeader;
+import static org.neo4j.unsafe.impl.batchimport.input.csv.DeserializerFactories.defaultNodeDeserializer;
 import static org.neo4j.unsafe.impl.batchimport.input.csv.IdType.ACTUAL;
 
 public class ParallelInputEntityDeserializerTest
@@ -105,6 +108,54 @@ public class ParallelInputEntityDeserializerTest
             }
             assertFalse( deserializer.hasNext() );
             assertEquals( threads, observedProcessingThreads.size() );
+        }
+    }
+
+    // Timeout is so that if this bug strikes again it will only cause this test to run for a limited time
+    // before failing. Normally this test is really quick
+    @Test( timeout = 10_000 )
+    public void shouldTreatExternalCloseAsPanic() throws Exception
+    {
+        // GIVEN enough data to fill up queues
+        int entities = 500;
+        Data<InputNode> data = testData( entities );
+        Configuration config = new Configuration.Overridden( COMMAS )
+        {
+            @Override
+            public int bufferSize()
+            {
+                return 100;
+            }
+        };
+        IdType idType = ACTUAL;
+        Collector badCollector = mock( Collector.class );
+        Groups groups = new Groups();
+
+        // WHEN closing before having consumed all results
+        DeserializerFactory<InputNode> deserializerFactory =
+                defaultNodeDeserializer( groups, config, idType, badCollector );
+        try ( ParallelInputEntityDeserializer<InputNode> deserializer = new ParallelInputEntityDeserializer<>( data,
+                defaultFormatNodeFileHeader(), config, idType, 3, 3, deserializerFactory,
+                Validators.<InputNode>emptyValidator(), InputNode.class ) )
+        {
+            deserializer.hasNext();
+            deserializer.receivePanic( new RuntimeException() );
+
+            // Why pull some items after it has been closed? The above close() symbolizes a panic from
+            // somewhere, anywhere in the importer. At that point there are still batches that have been
+            // processed and are there for the taking. One of the components in the hang scenario that we want
+            // to test comes from a processor in TicketedProcessing forever trying to offer its processed
+            // result to the result queue (where the loop didn't care if it had been forcefully shut down.
+            // To get one of the processing threads into doing that we need to pull some of the already
+            // processed items so that it wants to go ahead and offer its result.
+            for ( int i = 0; i < 100 && deserializer.hasNext(); i++ )
+            {
+                deserializer.next();
+            }
+        }
+        catch ( TaskExecutionPanicException e )
+        {
+            // THEN it should be able to exit (this exception comes as a side effect)
         }
     }
 

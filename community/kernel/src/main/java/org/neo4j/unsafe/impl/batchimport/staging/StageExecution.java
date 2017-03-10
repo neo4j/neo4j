@@ -42,9 +42,9 @@ public class StageExecution implements StageControl
     private final String stageName;
     private final Configuration config;
     private final Collection<Step<?>> pipeline;
-    private volatile Throwable panicCause;
     private long startTime;
     private final int orderingGuarantees;
+    private volatile Throwable panic;
 
     public StageExecution( String stageName, Configuration config, Collection<Step<?>> pipeline, int orderingGuarantees )
     {
@@ -56,13 +56,6 @@ public class StageExecution implements StageControl
 
     public boolean stillExecuting()
     {
-        Throwable panic = panicCause;
-        if ( panic != null )
-        {
-            String message = panic.getMessage();
-            throw launderedException( message == null? "Panic" : message, panic );
-        }
-
         for ( Step<?> step : pipeline )
         {
             if ( !step.isCompleted() )
@@ -167,12 +160,28 @@ public class StageExecution implements StageControl
     }
 
     @Override
-    public void panic( Throwable cause )
+    public synchronized void panic( Throwable cause )
     {
-        panicCause = cause;
-        for ( Step<?> step : pipeline )
+        if ( panic == null )
         {
-            step.receivePanic( cause );
+            panic = cause;
+            for ( Step<?> step : pipeline )
+            {
+                step.receivePanic( cause );
+            }
+        }
+        else
+        {
+            panic.addSuppressed( cause );
+        }
+    }
+
+    @Override
+    public void assertHealthy()
+    {
+        if ( panic != null )
+        {
+            throw launderedException( panic );
         }
     }
 

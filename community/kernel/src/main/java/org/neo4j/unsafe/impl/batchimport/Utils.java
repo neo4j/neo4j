@@ -135,6 +135,12 @@ public class Utils
                         }
                         return iterator.next().id();
                     }
+
+                    @Override
+                    public void receivePanic( Throwable cause )
+                    {
+                        iterator.receivePanic( cause );
+                    }
                 };
             }
 

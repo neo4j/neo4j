@@ -19,13 +19,11 @@
  */
 package org.neo4j.unsafe.impl.batchimport.staging;
 
-/**
- * Represents a means to control and coordinate lifecycle matters about a {@link Stage} and all its
- * {@link Step steps}.
- */
-public interface StageControl
+public interface Panicable
 {
-    void panic( Throwable cause );
-
-    void assertHealthy();
+    /**
+     * Receives a panic, asking to shut down as soon as possible.
+     * @param cause cause for the panic.
+     */
+    void receivePanic( Throwable cause );
 }
