@@ -167,15 +167,22 @@ public class ConstraintEnforcingEntityOperations implements EntityOperations, Sc
         return getAllPropertyValues( state, schema, node, DefinedProperty.NO_SUCH_PROPERTY );
     }
 
+    /**
+     * Fetch the property values for all properties in schema for a given node. Return these as an exact predicate
+     * array.
+     *
+     * The changedProperty is used to override the store/txState value of the property. This is used when we intend
+     * to change a property, and that to verify that the post-change values do not validate some constraint.
+     */
     private ExactPredicate[] getAllPropertyValues( KernelStatement state, SchemaDescriptor schema, NodeItem node,
-            DefinedProperty specialProperty )
+            DefinedProperty changedProperty )
     {
         int[] schemaPropertyIds = schema.getPropertyIds();
         ExactPredicate[] values = new ExactPredicate[schemaPropertyIds.length];
 
         int nMatched = 0;
         Cursor<PropertyItem> nodePropertyCursor = nodeGetProperties( state, node );
-        int specialPropId = specialProperty.propertyKeyId();
+        int changedPropId = changedProperty.propertyKeyId();
         while ( nodePropertyCursor.next() )
         {
             PropertyItem property = nodePropertyCursor.get();
@@ -184,7 +191,7 @@ public class ConstraintEnforcingEntityOperations implements EntityOperations, Sc
             int k = ArrayUtils.indexOf( schemaPropertyIds, nodePropertyId );
             if ( k >= 0 )
             {
-                if ( nodePropertyId != specialPropId )
+                if ( nodePropertyId != changedPropId )
                 {
                     values[k] = IndexQuery.exact( nodePropertyId, property.value() );
                 }
@@ -192,12 +199,12 @@ public class ConstraintEnforcingEntityOperations implements EntityOperations, Sc
             }
         }
 
-        if ( specialPropId != NO_SUCH_PROPERTY_KEY )
+        if ( changedPropId != NO_SUCH_PROPERTY_KEY )
         {
-            int k = ArrayUtils.indexOf( schemaPropertyIds, specialPropId );
+            int k = ArrayUtils.indexOf( schemaPropertyIds, changedPropId );
             if ( k >= 0 )
             {
-                values[k] = IndexQuery.exact( specialPropId, specialProperty.value() );
+                values[k] = IndexQuery.exact( changedPropId, changedProperty.value() );
                 nMatched++;
             }
         }
