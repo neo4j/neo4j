@@ -28,7 +28,7 @@ import java.io.IOException;
 import java.io.OutputStream;
 import java.io.PrintWriter;
 import java.io.UncheckedIOException;
-import java.nio.charset.Charset;
+import java.nio.charset.StandardCharsets;
 import java.util.function.Supplier;
 
 import org.neo4j.csv.reader.CharReadable;
@@ -125,7 +125,7 @@ public class ImportPanicIT
         {
             try
             {
-                return Readables.wrap( fs.openAsReader( file, Charset.defaultCharset() ) );
+                return Readables.wrap( fs.openAsReader( file, StandardCharsets.UTF_8 ) );
             }
             catch ( IOException e )
             {
@@ -138,7 +138,7 @@ public class ImportPanicIT
     {
         File file = directory.file( "broken-node-data.csv" );
         try ( PrintWriter writer = new PrintWriter(
-                fs.openAsWriter( file, Charset.defaultCharset(), false ) ) )
+                fs.openAsWriter( file, StandardCharsets.UTF_8, false ) ) )
         {
             writer.println( ":ID,name" );
             int numberOfLines = BUFFER_SIZE * 10;
