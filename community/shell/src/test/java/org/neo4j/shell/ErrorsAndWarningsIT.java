@@ -19,58 +19,30 @@
  */
 package org.neo4j.shell;
 
+import org.junit.Before;
+import org.junit.Test;
+
 import java.io.ByteArrayInputStream;
 import java.io.ByteArrayOutputStream;
 import java.io.IOException;
 import java.io.InputStream;
 import java.io.PrintStream;
 
-import org.junit.Rule;
-import org.junit.Test;
-
-import org.neo4j.graphdb.factory.GraphDatabaseBuilder;
-import org.neo4j.graphdb.factory.GraphDatabaseSettings;
-import org.neo4j.kernel.configuration.Settings;
-import org.neo4j.kernel.internal.GraphDatabaseAPI;
-import org.neo4j.test.rule.ImpermanentDatabaseRule;
-
 import static org.hamcrest.CoreMatchers.containsString;
 import static org.hamcrest.Matchers.not;
 import static org.junit.Assert.assertThat;
 
-public class ErrorsAndWarningsTest
+public class ErrorsAndWarningsIT extends AbstractShellIT
 {
-    @Rule
-    public ImpermanentDatabaseRule db = new ImpermanentDatabaseRule()
+    @Before
+    public void setup() throws Exception
     {
-        @Override
-        protected void configure( GraphDatabaseBuilder builder )
-        {
-            builder.setConfig( ShellSettings.remote_shell_enabled, Settings.TRUE );
-            builder.setConfig( GraphDatabaseSettings.cypher_hints_error, "false" );
-        }
-
-        @Override
-        public GraphDatabaseAPI getGraphDatabaseAPI()
-        {
-            try
-            {
-                before();
-            }
-            catch ( Throwable throwable )
-            {
-                throwable.printStackTrace();
-            }
-            return super.getGraphDatabaseAPI();
-        }
-    };
+        makeServerRemotelyAvailable();
+    }
 
     @Test
     public void unsupportedQueryShouldBeSilent() throws IOException
     {
-        // Given
-        // an empty database
-
         // When
         InputStream realStdin = System.in;
         try

@@ -68,7 +68,7 @@ import static org.neo4j.test.mockito.matcher.Neo4jMatchers.hasSize;
 import static org.neo4j.test.mockito.matcher.Neo4jMatchers.inTx;
 import static org.neo4j.test.mockito.matcher.Neo4jMatchers.waitForIndex;
 
-public class TestApps extends AbstractShellTest
+public class AppsIT extends AbstractShellIT
 {
     @Rule
     public SuppressOutput suppressOutput = SuppressOutput.suppressAll();

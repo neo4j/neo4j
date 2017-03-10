@@ -19,36 +19,31 @@
  */
 package org.neo4j.shell;
 
-import java.io.Serializable;
-
-import org.junit.After;
 import org.junit.Before;
 import org.junit.Test;
-import org.neo4j.helpers.collection.MapUtil;
-import org.neo4j.kernel.internal.GraphDatabaseAPI;
-import org.neo4j.shell.impl.SameJvmClient;
-import org.neo4j.shell.impl.SimpleAppServer;
-import org.neo4j.shell.kernel.GraphDatabaseShellServer;
-import org.neo4j.test.ImpermanentGraphDatabase;
 
 import static java.util.regex.Pattern.compile;
-
 import static org.junit.Assert.assertTrue;
 import static org.neo4j.shell.Variables.PROMPT_KEY;
 
-public class ServerClientInteractionTest
+public class ServerClientInteractionIT extends AbstractShellIT
 {
+    private SilentLocalOutput out = new SilentLocalOutput();
 
-    private GraphDatabaseAPI db;
+    @Before
+    public void setup() throws Exception
+    {
+        makeServerRemotelyAvailable();
+    }
 
     @Test
     public void shouldConsiderAndInterpretCustomClientPrompt() throws Exception
     {
         // GIVEN
-        client.setSessionVariable( PROMPT_KEY, "MyPrompt \\d \\t$ " );
+        shellClient.setSessionVariable( PROMPT_KEY, "MyPrompt \\d \\t$ " );
 
         // WHEN
-        Response response = server.interpretLine( client.getId(), "", out );
+        Response response = shellServer.interpretLine( shellClient.getId(), "", out );
 
         // THEN
         String regexPattern = "MyPrompt .{1,3} .{1,3} \\d{1,2} \\d{2}:\\d{2}:\\d{2}\\$";
@@ -56,23 +51,4 @@ public class ServerClientInteractionTest
                 compile( regexPattern ).matcher( response.getPrompt() ).find() );
     }
 
-    private SimpleAppServer server;
-    private ShellClient client;
-    private SilentLocalOutput out;
-
-    @Before
-    public void before() throws Exception
-    {
-        db = new ImpermanentGraphDatabase(  );
-        server = new GraphDatabaseShellServer( db );
-        out = new SilentLocalOutput();
-        client = new SameJvmClient( MapUtil.<String,Serializable>genericMap(), server, out, InterruptSignalHandler.getHandler() );
-    }
-
-    @After
-    public void after() throws Exception
-    {
-        server.shutdown();
-        db.shutdown();
-    }
 }

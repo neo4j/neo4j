@@ -40,12 +40,14 @@ public class RemoteClient extends AbstractClient
     private final RmiLocation serverLocation;
     private final Output out;
 
-    public RemoteClient( Map<String, Serializable> initialSession, RmiLocation serverLocation, CtrlCHandler ctrlcHandler ) throws ShellException
+    public RemoteClient( Map<String,Serializable> initialSession, RmiLocation serverLocation,
+            CtrlCHandler ctrlcHandler ) throws ShellException
     {
         this( initialSession, serverLocation, RemoteOutput.newOutput(), ctrlcHandler );
     }
 
-    public RemoteClient( Map<String, Serializable> initialSession, RmiLocation serverLocation, Output output ) throws ShellException
+    public RemoteClient( Map<String,Serializable> initialSession, RmiLocation serverLocation, Output output )
+            throws ShellException
     {
         this( initialSession, serverLocation, output, InterruptSignalHandler.getHandler() );
     }
@@ -54,7 +56,8 @@ public class RemoteClient extends AbstractClient
      * @param serverLocation the RMI location of the server to connect to.
      * @throws ShellException if no server was found at the RMI location.
      */
-    public RemoteClient( Map<String, Serializable> initialSession, RmiLocation serverLocation, Output out, CtrlCHandler ctrlcHandler ) throws ShellException
+    public RemoteClient( Map<String,Serializable> initialSession, RmiLocation serverLocation, Output out,
+            CtrlCHandler ctrlcHandler ) throws ShellException
     {
         super( initialSession, ctrlcHandler );
         this.serverLocation = serverLocation;
@@ -92,9 +95,11 @@ public class RemoteClient extends AbstractClient
         try
         {
             if ( !shouldTryToReconnect )
-                server.getName();
+            {
+                server.welcome( initialSession );
+            }
         }
-        catch ( RemoteException e )
+        catch ( RemoteException | ShellException ignored )
         {
             shouldTryToReconnect = true;
         }
@@ -107,14 +112,11 @@ public class RemoteClient extends AbstractClient
             {
                 this.server = findRemoteServer();
                 if ( hadServer )
+                {
                     getOutput().println( "[Reconnected to server]" );
+                }
             }
-            catch ( ShellException ee )
-            {
-                // Ok
-                originException = ee;
-            }
-            catch ( RemoteException ee )
+            catch ( ShellException | RemoteException ee )
             {
                 // Ok
                 originException = ee;
@@ -123,9 +125,8 @@ public class RemoteClient extends AbstractClient
 
         if ( this.server == null )
         {
-            throw new RuntimeException(
-                "Server closed or cannot be reached anymore: " +
-                originException.getMessage(), originException );
+            throw new RuntimeException( "Server closed or cannot be reached anymore: " + originException.getMessage(),
+                    originException );
         }
         return this.server;
     }
