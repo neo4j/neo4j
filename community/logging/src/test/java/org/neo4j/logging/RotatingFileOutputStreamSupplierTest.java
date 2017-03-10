@@ -54,6 +54,7 @@ import org.neo4j.graphdb.mockfs.EphemeralFileSystemAbstraction;
 import org.neo4j.io.fs.DefaultFileSystemAbstraction;
 import org.neo4j.io.fs.FileSystemAbstraction;
 import org.neo4j.logging.RotatingFileOutputStreamSupplier.RotationListener;
+import org.neo4j.test.rule.SuppressOutput;
 import org.neo4j.test.rule.TestDirectory;
 
 import static java.util.concurrent.TimeUnit.SECONDS;
@@ -80,6 +81,8 @@ public class RotatingFileOutputStreamSupplierTest
 
     @Rule
     public final TestDirectory testDirectory = TestDirectory.testDirectory( getClass(), fileSystem );
+    @Rule
+    public final SuppressOutput suppressOutput = SuppressOutput.suppressAll();
 
     private File logFile;
     private File archiveLogFile1;
@@ -228,9 +231,15 @@ public class RotatingFileOutputStreamSupplierTest
         } );
 
         executor.shutdown();
+        boolean terminated = executor.awaitTermination( 20, TimeUnit.SECONDS );
+        if ( !terminated )
+        {
+            throw new IllegalStateException( "Rotation execution failed to complete within reasonable time." );
+        }
 
         List<String> strings = Files.readAllLines( logFile.toPath() );
-        assertEquals( logContent, String.join( "", strings ) );
+        String actual = String.join( "", strings );
+        assertEquals( logContent, actual );
         assertNull( listenerException.get() );
     }
 
