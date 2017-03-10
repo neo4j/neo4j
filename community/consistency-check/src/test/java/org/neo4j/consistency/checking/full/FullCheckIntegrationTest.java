@@ -152,7 +152,6 @@ public class FullCheckIntegrationTest
     private static final Object VALUE1 = "value1";
     private static final Object VALUE2 = "value2";
 
-
     private int label1, label2, label3, label4, draconian;
     private int key1, key2, mandatory;
     private int C, T, M;
@@ -1761,6 +1760,24 @@ public class FullCheckIntegrationTest
     }
 
     @Test
+    public void shouldReportDuplicatedCompositeUniquenessConstraintRules() throws Exception
+    {
+        // Given
+        int labelId = createLabel();
+        int propertyKeyId1 = createPropertyKey( "p1" );
+        int propertyKeyId2 = createPropertyKey( "p2" );
+        createUniquenessConstraintRule( labelId, propertyKeyId1, propertyKeyId2 );
+        createUniquenessConstraintRule( labelId, propertyKeyId1, propertyKeyId2 );
+
+        // When
+        ConsistencySummaryStatistics stats = check();
+
+        // Then
+        on( stats ).verify( RecordType.SCHEMA, 2 ) // pair of duplicated indexes & pair of duplicated constraints
+                .andThatsAllFolks();
+    }
+
+    @Test
     public void shouldReportDuplicatedNodePropertyExistenceConstraintRules() throws Exception
     {
         // Given
@@ -1811,9 +1828,9 @@ public class FullCheckIntegrationTest
     public void shouldReportInvalidLabelIdInUniquenessConstraintRule() throws Exception
     {
         // Given
-        int labelId = fixture.idGenerator().label();
+        int badLabelId = fixture.idGenerator().label();
         int propertyKeyId = createPropertyKey();
-        createUniquenessConstraintRule( labelId, propertyKeyId );
+        createUniquenessConstraintRule( badLabelId, propertyKeyId );
 
         // When
         ConsistencySummaryStatistics stats = check();
@@ -1827,9 +1844,9 @@ public class FullCheckIntegrationTest
     public void shouldReportInvalidLabelIdInNodePropertyExistenceConstraintRule() throws Exception
     {
         // Given
-        int labelId = fixture.idGenerator().label();
+        int badLabelId = fixture.idGenerator().label();
         int propertyKeyId = createPropertyKey();
-        createNodePropertyExistenceConstraint( labelId, propertyKeyId );
+        createNodePropertyExistenceConstraint( badLabelId, propertyKeyId );
 
         // When
         ConsistencySummaryStatistics stats = check();
@@ -1907,8 +1924,8 @@ public class FullCheckIntegrationTest
     {
         // Given
         int labelId = createLabel();
-        int propertyKeyId = fixture.idGenerator().propertyKey();
-        createNodePropertyExistenceConstraint( labelId, propertyKeyId );
+        int badPropertyKeyId = fixture.idGenerator().propertyKey();
+        createNodePropertyExistenceConstraint( labelId, badPropertyKeyId );
 
         // When
         ConsistencySummaryStatistics stats = check();
@@ -1921,9 +1938,9 @@ public class FullCheckIntegrationTest
     public void shouldReportInvalidRelTypeIdInRelationshipPropertyExistenceConstraintRule() throws Exception
     {
         // Given
-        int relTypeId = fixture.idGenerator().relationshipType();
+        int badRelTypeId = fixture.idGenerator().relationshipType();
         int propertyKeyId = createPropertyKey();
-        createRelationshipPropertyExistenceConstraint( relTypeId, propertyKeyId );
+        createRelationshipPropertyExistenceConstraint( badRelTypeId, propertyKeyId );
 
         // When
         ConsistencySummaryStatistics stats = check();
