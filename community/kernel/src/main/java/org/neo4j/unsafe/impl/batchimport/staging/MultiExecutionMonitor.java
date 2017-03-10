@@ -45,20 +45,20 @@ public class MultiExecutionMonitor implements ExecutionMonitor
     }
 
     @Override
-    public void start( StageExecution[] executions )
+    public void start( StageExecution execution )
     {
         for ( ExecutionMonitor monitor : monitors )
         {
-            monitor.start( executions );
+            monitor.start( execution );
         }
     }
 
     @Override
-    public void end( StageExecution[] executions, long totalTimeMillis )
+    public void end( StageExecution execution, long totalTimeMillis )
     {
         for ( ExecutionMonitor monitor : monitors )
         {
-            monitor.end( executions, totalTimeMillis );
+            monitor.end( execution, totalTimeMillis );
         }
     }
 
@@ -96,14 +96,14 @@ public class MultiExecutionMonitor implements ExecutionMonitor
     }
 
     @Override
-    public void check( StageExecution[] executions )
+    public void check( StageExecution execution )
     {
         long currentTimeMillis = clock.currentTimeMillis();
         for ( int i = 0; i < monitors.length; i++ )
         {
             if ( currentTimeMillis >= endTimes[i] )
             {
-                monitors[i].check( executions );
+                monitors[i].check( execution );
                 endTimes[i] = monitors[i].nextCheckTime();
             }
         }

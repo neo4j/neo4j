@@ -48,7 +48,6 @@ public class DynamicTaskExecutor<LOCAL> implements TaskExecutor<LOCAL>
     @SuppressWarnings( "unchecked" )
     private volatile Processor[] processors = (Processor[]) Array.newInstance( Processor.class, 0 );
     private volatile boolean shutDown;
-    private volatile boolean abortQueued;
     private volatile Throwable panic;
     private final Supplier<LOCAL> initialLocalState;
     private final int maxProcessorCount;
@@ -148,10 +147,6 @@ public class DynamicTaskExecutor<LOCAL> implements TaskExecutor<LOCAL>
             {
                 throw new TaskExecutionPanicException( "Executor has been shut down in panic", panic );
             }
-            if ( abortQueued )
-            {
-                throw new TaskExecutionPanicException( "Executor has been shut down, aborting queued" );
-            }
         }
     }
 
@@ -164,28 +159,32 @@ public class DynamicTaskExecutor<LOCAL> implements TaskExecutor<LOCAL>
     }
 
     @Override
-    public synchronized void shutdown( int flags )
+    public void receivePanic( Throwable cause )
+    {
+        panic = cause;
+    }
+
+    @Override
+    public synchronized void close()
     {
         if ( shutDown )
         {
             return;
         }
 
-        boolean awaitAllCompleted = (flags & TaskExecutor.SF_AWAIT_ALL_COMPLETED) != 0;
-        while ( awaitAllCompleted && !queue.isEmpty() && panic == null /*all bets are off in the event of panic*/ )
+        while ( !queue.isEmpty() && panic == null /*all bets are off in the event of panic*/ )
         {
             parkAWhile();
         }
         this.shutDown = true;
-        this.abortQueued = (flags & TaskExecutor.SF_ABORT_QUEUED) != 0;
-        while ( awaitAllCompleted && anyAlive() && panic == null /*all bets are off in the event of panic*/ )
+        while ( anyAlive() && panic == null /*all bets are off in the event of panic*/ )
         {
             parkAWhile();
         }
     }
 
     @Override
-    public boolean isShutdown()
+    public boolean isClosed()
     {
         return shutDown;
     }
@@ -244,8 +243,8 @@ public class DynamicTaskExecutor<LOCAL> implements TaskExecutor<LOCAL>
                     }
                     catch ( Throwable e )
                     {
-                        panic = e;
-                        shutdown( TaskExecutor.SF_ABORT_QUEUED );
+                        receivePanic( e );
+                        close();
                         throw launderedException( e );
                     }
                 }

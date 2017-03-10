@@ -46,6 +46,13 @@ public class InputIteratorBatcherStep<T> extends IteratorBatcherStep<T>
     }
 
     @Override
+    public void receivePanic( Throwable cause )
+    {
+        data.receivePanic( cause );
+        super.receivePanic( cause );
+    }
+
+    @Override
     public void close() throws Exception
     {
         data.close();

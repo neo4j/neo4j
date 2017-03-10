@@ -31,7 +31,7 @@ import static java.util.concurrent.TimeUnit.SECONDS;
 public abstract class CoarseBoundedProgressExecutionMonitor extends ExecutionMonitor.Adapter
 {
     private final long totalNumberOfBatches;
-    private long[] prevDoneBatches;
+    private long prevDoneBatches;
     private long totalReportedBatches = 0;
 
     public CoarseBoundedProgressExecutionMonitor( long highNodeId, long highRelationshipId,
@@ -51,26 +51,24 @@ public abstract class CoarseBoundedProgressExecutionMonitor extends ExecutionMon
     }
 
     @Override
-    public void check( StageExecution[] executions )
+    public void check( StageExecution execution )
     {
-        update( executions );
+        update( execution );
     }
 
     @Override
-    public void start( StageExecution[] executions )
+    public void start( StageExecution execution )
     {
-        prevDoneBatches = new long[executions.length];
+        prevDoneBatches = 0;
     }
 
-    private void update( StageExecution[] executions )
+    private void update( StageExecution execution )
     {
         long diff = 0;
-        for ( int i = 0; i < executions.length; i++ )
-        {
-            long doneBatches = doneBatches( executions[i] );
-            diff += doneBatches - prevDoneBatches[i];
-            prevDoneBatches[i] = doneBatches;
-        }
+        long doneBatches = doneBatches( execution );
+        diff += doneBatches - prevDoneBatches;
+        prevDoneBatches = doneBatches;
+
         if ( diff > 0 )
         {
             totalReportedBatches += diff;

@@ -63,7 +63,7 @@ import static org.neo4j.unsafe.impl.batchimport.staging.Processing.await;
  * @param <STATE> thread local state that each processing thread will share between jobs
  * @param <TO> result that a raw material will be processed into
  */
-public class TicketedProcessing<FROM,STATE,TO> implements Parallelizable
+public class TicketedProcessing<FROM,STATE,TO> implements Parallelizable, AutoCloseable, Panicable
 {
     private static final ParkStrategy park = new ParkStrategy.Park( 10, MILLISECONDS );
 
@@ -86,7 +86,7 @@ public class TicketedProcessing<FROM,STATE,TO> implements Parallelizable
         public boolean test( long ticket )
         {
             long queued = submittedTicket.get() - processedTicket.get();
-            return queued <= executor.processors( 0 ) | executor.isShutdown();
+            return queued <= executor.processors( 0 ) | executor.isClosed();
         }
     };
     private final Runnable healthCheck;
@@ -128,7 +128,10 @@ public class TicketedProcessing<FROM,STATE,TO> implements Parallelizable
             await( myTurnToAddToProcessedQueue, ticket, healthCheck, park );
 
             // OK now it's my turn to add this result to the result queue which user will pull from later on
-            while ( !processed.offer( result, 10, MILLISECONDS ) );
+            while ( !processed.offer( result, 10, MILLISECONDS ) )
+            {
+                healthCheck.run();
+            }
 
             // Signal that this ticket has been processed and added to the result queue
             processedTicket.incrementAndGet();
@@ -141,12 +144,12 @@ public class TicketedProcessing<FROM,STATE,TO> implements Parallelizable
      * {@link #next()}.
      *
      * @param input {@link Iterator} of input to process.
-     * @param shutdownAfterAllSubmitted will call {@link #shutdown(boolean)} after all jobs submitted if {@code true}.
+     * @param closeAfterAllSubmitted will call {@link #close()} after all jobs submitted if {@code true}.
      * @return {@link Future} representing the work of submitting the inputs to be processed. When the future
      * is completed all items from the {@code input} {@link Iterator} have been submitted, but some items
      * may still be queued and processed.
      */
-    public Future<Void> slurp( Iterator<FROM> input, boolean shutdownAfterAllSubmitted )
+    public Future<Void> slurp( Iterator<FROM> input, boolean closeAfterAllSubmitted )
     {
         return future( () ->
         {
@@ -154,9 +157,9 @@ public class TicketedProcessing<FROM,STATE,TO> implements Parallelizable
             {
                 submit( input.next() );
             }
-            if ( shutdownAfterAllSubmitted )
+            if ( closeAfterAllSubmitted )
             {
-                shutdown( true );
+                close();
             }
             return null;
         } );
@@ -165,19 +168,23 @@ public class TicketedProcessing<FROM,STATE,TO> implements Parallelizable
     /**
      * Tells this processor that there will be no more submissions and so {@link #next()} will stop blocking,
      * waiting for new processed results.
-     *
-     * @param awaitAllProcessed if {@code true} will block until all submitted jobs have been processed,
-     * otherwise if {@code false} will return immediately, where processing will still commence and complete.
      */
-    public void shutdown( boolean awaitAllProcessed )
+    @Override
+    public void close()
     {
         done = true;
-        executor.shutdown( awaitAllProcessed ? TaskExecutor.SF_AWAIT_ALL_COMPLETED : 0 );
+        executor.close();
+    }
+
+    @Override
+    public void receivePanic( Throwable cause )
+    {
+        executor.receivePanic( cause );
     }
 
     /**
      * @return next processed job (blocking call), or {@code null} if all jobs have been processed
-     * and {@link #shutdown(boolean)} has been called.
+     * and {@link #close()} has been called.
      */
     public TO next()
     {

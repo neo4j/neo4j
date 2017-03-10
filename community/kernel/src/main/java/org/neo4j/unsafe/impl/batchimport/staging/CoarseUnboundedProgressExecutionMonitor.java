@@ -44,19 +44,15 @@ public class CoarseUnboundedProgressExecutionMonitor extends ExecutionMonitor.Ad
     }
 
     @Override
-    public void start( StageExecution[] executions )
+    public void start( StageExecution execution )
     {
         prevN = 0;
     }
 
     @Override
-    public void check( StageExecution[] executions )
+    public void check( StageExecution execution )
     {
-        int n = prevN;
-        for ( StageExecution execution : executions )
-        {
-            n = max( n, n( execution ) );
-        }
+        int n = max( prevN, n( execution ) );
 
         while ( prevN < n )
         {

@@ -52,19 +52,19 @@ public class ExecutionSupervisor
      * Made synchronized to ensure that only one set of executions take place at any given time
      * and also to make sure the calling thread goes through a memory barrier (useful both before and after execution).
      *
-     * @param executions {@link StageExecution} instances to supervise simultaneously.
+     * @param execution {@link StageExecution} instances to supervise simultaneously.
      */
-    public synchronized void supervise( StageExecution... executions )
+    public synchronized void supervise( StageExecution execution )
     {
         long startTime = currentTimeMillis();
-        start( executions );
+        start( execution );
 
-        while ( anyStillExecuting( executions ) )
+        while ( execution.stillExecuting() )
         {
-            finishAwareSleep( executions );
-            monitor.check( executions );
+            finishAwareSleep( execution );
+            monitor.check( execution );
         }
-        end( executions, currentTimeMillis()-startTime );
+        end( execution, currentTimeMillis()-startTime );
     }
 
     private long currentTimeMillis()
@@ -72,34 +72,22 @@ public class ExecutionSupervisor
         return clock.currentTimeMillis();
     }
 
-    private boolean anyStillExecuting( StageExecution[] executions )
+    protected void end( StageExecution execution, long totalTimeMillis )
     {
-        for ( StageExecution execution : executions )
-        {
-            if ( execution.stillExecuting() )
-            {
-                return true;
-            }
-        }
-        return false;
+        monitor.end( execution, totalTimeMillis );
     }
 
-    protected void end( StageExecution[] executions, long totalTimeMillis )
+    protected void start( StageExecution execution )
     {
-        monitor.end( executions, totalTimeMillis );
+        monitor.start( execution );
     }
 
-    protected void start( StageExecution[] executions )
-    {
-        monitor.start( executions );
-    }
-
-    private void finishAwareSleep( StageExecution[] executions )
+    private void finishAwareSleep( StageExecution execution )
     {
         long endTime = monitor.nextCheckTime();
         while ( currentTimeMillis() < endTime )
         {
-            if ( !anyStillExecuting( executions ) )
+            if ( !execution.stillExecuting() )
             {
                 break;
             }
@@ -110,10 +98,7 @@ public class ExecutionSupervisor
             }
             catch ( InterruptedException e )
             {
-                for ( StageExecution execution : executions )
-                {
-                    execution.panic( e );
-                }
+                execution.panic( e );
                 break;
             }
         }

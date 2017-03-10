@@ -105,6 +105,7 @@ public abstract class AbstractStep<T> implements Step<T>
     public void receivePanic( Throwable cause )
     {
         this.panic = cause;
+        this.completed = true;
     }
 
     protected boolean stillWorking()
