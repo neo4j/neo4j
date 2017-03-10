@@ -175,7 +175,7 @@ public class GBPTreeRecoveryTest
         }
         else
         {
-            recoveryActions = recoveryActions( load, random.nextInt( lastCheckPointIndex ) );
+            recoveryActions = recoveryActions( load, random.nextInt( lastCheckPointIndex + 1) );
         }
 
         // first crashing during recovery
