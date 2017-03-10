@@ -21,7 +21,6 @@ package org.neo4j.cluster.protocol.atomicbroadcast.multipaxos;
 
 import org.junit.Test;
 import org.mockito.Matchers;
-import org.mockito.Mockito;
 
 import java.io.Serializable;
 import java.net.URI;
@@ -42,6 +41,7 @@ import static org.mockito.Matchers.any;
 import static org.mockito.Matchers.anyList;
 import static org.mockito.Matchers.argThat;
 import static org.mockito.Matchers.eq;
+import static org.mockito.Mockito.RETURNS_MOCKS;
 import static org.mockito.Mockito.mock;
 import static org.mockito.Mockito.times;
 import static org.mockito.Mockito.verify;
@@ -59,7 +59,7 @@ public class ProposerStateTest
     @Test
     public void ifProposingWithClosedInstanceThenRetryWithNextInstance() throws Throwable
     {
-        ProposerContext context = Mockito.mock(ProposerContext.class);
+        ProposerContext context = mock(ProposerContext.class);
         when(context.getLog( any( Class.class ) )).thenReturn( NullLog.getInstance() );
 
         org.neo4j.cluster.protocol.atomicbroadcast.multipaxos.InstanceId instanceId = new org.neo4j.cluster.protocol.atomicbroadcast.multipaxos.InstanceId( 42 );
@@ -93,15 +93,14 @@ public class ProposerStateTest
     public void something() throws Throwable
     {
         Object acceptorValue = new Object();
-        Object bookedValue = new Object();
 
         org.neo4j.cluster.protocol.atomicbroadcast.multipaxos.InstanceId instanceId = new org.neo4j.cluster.protocol.atomicbroadcast.multipaxos.InstanceId( 42 );
 
         PaxosInstanceStore paxosInstanceStore = new PaxosInstanceStore();
 
-        ProposerContext context = Mockito.mock(ProposerContext.class);
-        when(context.getPaxosInstance( instanceId )).thenReturn( paxosInstanceStore.getPaxosInstance( instanceId ) );
-        when(context.getMinimumQuorumSize( Mockito.anyList() )).thenReturn( 2 );
+        ProposerContext context = mock( ProposerContext.class, RETURNS_MOCKS );
+        when(context.getPaxosInstance( instanceId ) ).thenReturn( paxosInstanceStore.getPaxosInstance( instanceId ) );
+        when(context.getMinimumQuorumSize( anyList() ) ).thenReturn( 2 );
 
         // The instance is closed
         PaxosInstance paxosInstance = new PaxosInstance( paxosInstanceStore, instanceId ); // the instance
@@ -113,10 +112,7 @@ public class ProposerStateTest
         message.setHeader( org.neo4j.cluster.protocol.atomicbroadcast.multipaxos.InstanceId.INSTANCE, instanceId.toString() );
 
         MessageHolder mockHolder = mock( MessageHolder.class );
-        ProposerState.proposer.handle(context, message, mockHolder);
-
-
-
+        ProposerState.proposer.handle( context, message, mockHolder );
     }
 
     @Test
@@ -173,7 +169,7 @@ public class ProposerStateTest
         instance.propose( 1, asList( create( "http://some-guy" ) ) );
         instance.ready( payload, true );
         instance.pending();
-        ProposerContext context = mock( ProposerContext.class );
+        ProposerContext context = mock( ProposerContext.class, RETURNS_MOCKS );
         when( context.getLog( any( Class.class ) ) ).thenReturn( NullLog.getInstance() );
         when( context.getPaxosInstance( any( org.neo4j.cluster.protocol.atomicbroadcast.multipaxos.InstanceId.class ) ) ).thenReturn( instance );
         when( context.getMyId() ).thenReturn( new org.neo4j.cluster.InstanceId( parseInt( instanceId ) ) );
@@ -200,7 +196,7 @@ public class ProposerStateTest
         PaxosInstance instance = new PaxosInstance( mock( PaxosInstanceStore.class ), new org.neo4j.cluster.protocol.atomicbroadcast.multipaxos.InstanceId( instanceId ) );
         instance.propose( 1, asList( create( "http://some-guy" ) ) );
         instance.value_2 = payload; // don't blame me for making it package access.
-        ProposerContext context = mock( ProposerContext.class );
+        ProposerContext context = mock( ProposerContext.class, RETURNS_MOCKS );
         when( context.getPaxosInstance( any( org.neo4j.cluster.protocol.atomicbroadcast.multipaxos.InstanceId.class ) ) ).thenReturn( instance );
         when( context.getMinimumQuorumSize( anyList() ) ).thenReturn( 1 );
         TrackingMessageHolder outgoing = new TrackingMessageHolder();

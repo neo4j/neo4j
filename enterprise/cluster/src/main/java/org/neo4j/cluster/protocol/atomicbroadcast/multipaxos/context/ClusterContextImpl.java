@@ -336,7 +336,7 @@ class ClusterContextImpl
     @Override
     public String toString()
     {
-        return "Me: " + me + " Bound at: " + commonState.boundAt() + " Config:" + commonState.configuration();
+        return "Me: " + me + " Bound at: " + commonState.boundAt() + " Config:" + commonState.configuration() + " Current state: " + commonState;
     }
 
     @Override

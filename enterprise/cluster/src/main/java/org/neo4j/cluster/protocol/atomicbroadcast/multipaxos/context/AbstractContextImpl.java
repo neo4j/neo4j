@@ -131,4 +131,13 @@ class AbstractContextImpl
     {
         return me.equals( server );
     }
+
+    @Override
+    public String toString()
+    {
+        return "AbstractContextImpl{" +
+                "me=" + me +
+                ", commonState=" + commonState +
+                '}';
+    }
 }

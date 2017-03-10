@@ -167,4 +167,16 @@ class CommonContextState
         result = 31 * result + (configuration != null ? configuration.hashCode() : 0);
         return result;
     }
+
+    @Override
+    public String toString()
+    {
+        return "CommonContextState{" +
+                "boundAt=" + boundAt +
+                ", lastKnownLearnedInstanceInCluster=" + lastKnownLearnedInstanceInCluster +
+                ", lastKnownAliveUpToDateInstance=" + lastKnownAliveUpToDateInstance +
+                ", nextInstanceId=" + nextInstanceId +
+                ", maxAcceptors=" + maxAcceptors +
+                '}';
+    }
 }
