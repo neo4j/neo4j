@@ -19,11 +19,11 @@
  */
 package org.neo4j.cluster.protocol.atomicbroadcast.multipaxos.context;
 
-import java.net.URI;
-import java.util.concurrent.Executor;
-
 import org.junit.Test;
 import org.mockito.ArgumentCaptor;
+
+import java.net.URI;
+import java.util.concurrent.Executor;
 
 import org.neo4j.cluster.InstanceId;
 import org.neo4j.cluster.protocol.atomicbroadcast.ObjectInputStreamFactory;
@@ -31,12 +31,15 @@ import org.neo4j.cluster.protocol.atomicbroadcast.ObjectOutputStreamFactory;
 import org.neo4j.cluster.protocol.atomicbroadcast.multipaxos.LearnerContext;
 import org.neo4j.cluster.protocol.cluster.ClusterConfiguration;
 import org.neo4j.cluster.protocol.cluster.ClusterContext;
+import org.neo4j.cluster.protocol.cluster.ClusterMessage;
 import org.neo4j.cluster.protocol.heartbeat.HeartbeatContext;
 import org.neo4j.cluster.protocol.heartbeat.HeartbeatListener;
 import org.neo4j.cluster.timeout.Timeouts;
 import org.neo4j.logging.NullLogProvider;
 
 import static org.junit.Assert.assertEquals;
+import static org.junit.Assert.assertFalse;
+import static org.junit.Assert.assertTrue;
 import static org.mockito.Mockito.RETURNS_MOCKS;
 import static org.mockito.Mockito.mock;
 import static org.mockito.Mockito.verify;
@@ -247,5 +250,119 @@ public class ClusterContextImplTest
         // Then
         assertEquals( context.getLastElector(), elector );
         assertEquals( context.getLastElectorVersion(), 8 );
+    }
+
+    @Test
+    public void shouldGracefullyHandleEmptyDiscoveryHeader() throws Exception
+    {
+        // Given
+        InstanceId me = new InstanceId( 1 );
+        InstanceId joining = new InstanceId( 2 );
+
+        CommonContextState commonContextState = mock( CommonContextState.class, RETURNS_MOCKS );
+        Timeouts timeouts = mock( Timeouts.class );
+        Executor executor = mock( Executor.class );
+
+        HeartbeatContext heartbeatContext = mock ( HeartbeatContext.class );
+
+        ClusterContext context = new ClusterContextImpl(me, commonContextState, NullLogProvider.getInstance(),
+                timeouts, executor, mock( ObjectOutputStreamFactory.class ), mock(
+                ObjectInputStreamFactory.class ), mock( LearnerContext.class ), heartbeatContext );
+
+        ClusterMessage.ConfigurationRequestState request = mock( ClusterMessage.ConfigurationRequestState.class );
+        when ( request.getJoiningId() ).thenReturn( joining );
+
+        // When
+        // Instance 2 contacts us with a request but it is empty
+        context.addContactingInstance( request, "" );
+
+        // Then
+        // The discovery header we generate should still contain that instance
+        assertEquals( "2", context.generateDiscoveryHeader() );
+    }
+
+    @Test
+    public void shouldUpdateDiscoveryHeaderWithContactingInstances() throws Exception
+    {
+        // Given
+        InstanceId me = new InstanceId( 1 );
+        InstanceId joiningOne = new InstanceId( 2 );
+        InstanceId joiningTwo = new InstanceId( 3 );
+
+        CommonContextState commonContextState = mock( CommonContextState.class, RETURNS_MOCKS );
+        Timeouts timeouts = mock( Timeouts.class );
+        Executor executor = mock( Executor.class );
+
+        HeartbeatContext heartbeatContext = mock ( HeartbeatContext.class );
+
+        ClusterContext context = new ClusterContextImpl(me, commonContextState, NullLogProvider.getInstance(),
+                timeouts, executor, mock( ObjectOutputStreamFactory.class ), mock(
+                ObjectInputStreamFactory.class ), mock( LearnerContext.class ), heartbeatContext );
+
+        ClusterMessage.ConfigurationRequestState requestOne = mock( ClusterMessage.ConfigurationRequestState.class );
+        when ( requestOne.getJoiningId() ).thenReturn( joiningOne );
+
+        ClusterMessage.ConfigurationRequestState requestTwo = mock( ClusterMessage.ConfigurationRequestState.class );
+        when ( requestTwo.getJoiningId() ).thenReturn( joiningTwo );
+
+        // When
+        // Instance 2 contacts us twice and Instance 3 contacts us once
+        context.addContactingInstance( requestOne, "4, 5" ); // discovery headers are random here
+        context.addContactingInstance( requestOne, "4, 5" );
+        context.addContactingInstance( requestTwo, "2, 5" );
+
+        // Then
+        // The discovery header we generate should still contain one copy of each instance
+        assertEquals( "2,3", context.generateDiscoveryHeader() );
+    }
+
+    @Test
+    public void shouldKeepTrackOfInstancesWeHaveContacted() throws Exception
+    {
+        // Given
+        InstanceId me = new InstanceId( 1 );
+        InstanceId joiningOne = new InstanceId( 2 );
+        InstanceId joiningTwo = new InstanceId( 3 );
+
+        CommonContextState commonContextState = mock( CommonContextState.class, RETURNS_MOCKS );
+        Timeouts timeouts = mock( Timeouts.class );
+        Executor executor = mock( Executor.class );
+
+        HeartbeatContext heartbeatContext = mock ( HeartbeatContext.class );
+
+        ClusterContext context = new ClusterContextImpl(me, commonContextState, NullLogProvider.getInstance(),
+                timeouts, executor, mock( ObjectOutputStreamFactory.class ), mock(
+                ObjectInputStreamFactory.class ), mock( LearnerContext.class ), heartbeatContext );
+
+        ClusterMessage.ConfigurationRequestState requestOne = mock( ClusterMessage.ConfigurationRequestState.class );
+        when ( requestOne.getJoiningId() ).thenReturn( joiningOne );
+
+        ClusterMessage.ConfigurationRequestState requestTwo = mock( ClusterMessage.ConfigurationRequestState.class );
+        when ( requestTwo.getJoiningId() ).thenReturn( joiningTwo );
+
+        // When
+        // Instance two contacts us but we are not in the header
+        context.addContactingInstance( requestOne, "4, 5" );
+        // Then we haven't contacted instance 2
+        assertFalse(context.haveWeContactedInstance( requestOne ) );
+
+        // When
+        // Instance 2 reports that we have contacted it after all
+        context.addContactingInstance( requestOne, "4, 5, 1" );
+        // Then
+        assertTrue(context.haveWeContactedInstance( requestOne ) );
+
+        // When
+        // Instance 3 says we have contacted it
+        context.addContactingInstance( requestTwo, "2, 5, 1" );
+        // Then
+        assertTrue( context.haveWeContactedInstance( requestTwo ) );
+
+        // When
+        // For some reason we are not in the header of 3 in subsequent responses (a delayed one, for example)
+        context.addContactingInstance( requestTwo, "2, 5" );
+        // Then
+        // The state should still keep the fact we've contacted it already
+        assertTrue( context.haveWeContactedInstance( requestTwo ) );
     }
 }

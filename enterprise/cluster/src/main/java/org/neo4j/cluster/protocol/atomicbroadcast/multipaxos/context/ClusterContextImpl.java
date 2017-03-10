@@ -23,9 +23,13 @@ import java.net.URI;
 import java.util.ArrayList;
 import java.util.Collections;
 import java.util.HashMap;
+import java.util.HashSet;
+import java.util.LinkedList;
 import java.util.List;
 import java.util.Map;
+import java.util.Set;
 import java.util.concurrent.Executor;
+import java.util.stream.Collectors;
 
 import org.neo4j.cluster.InstanceId;
 import org.neo4j.cluster.protocol.atomicbroadcast.ObjectInputStreamFactory;
@@ -54,14 +58,28 @@ class ClusterContextImpl
         extends AbstractContextImpl
         implements ClusterContext
 {
+    private static final String DISCOVERY_HEADER_SEPARATOR = ",";
+
     // ClusterContext
     private Iterable<ClusterListener> clusterListeners = Listeners.newListeners();
-    private final List<ClusterMessage.ConfigurationRequestState> discoveredInstances = new ArrayList<ClusterMessage
-            .ConfigurationRequestState>();
+    /*
+     * Holds instances that we have contacted and which have contacted us. This is achieved by filtering on
+     * receipt via contactingInstances and the DISCOVERED header.
+     * Cleared at the end of each discovery round.
+     */
+    private final List<ClusterMessage.ConfigurationRequestState> discoveredInstances = new LinkedList<>();
+
+    /*
+     * Holds instances that have contacted us, along with a set of the instances they have in turn been contacted
+     * from. This is used to determine which instances that have contacted us have received messages from us and thus
+     * are in our initial_hosts. This is used to filter who goes in discoveredInstances.
+     * This map is also used to create the DISCOVERED header, which is basically the keyset in string form.
+     */
+    private final Map<InstanceId, Set<InstanceId>> contactingInstances = new HashMap<>();
+
     private Iterable<URI> joiningInstances;
     private ClusterMessage.ConfigurationResponseState joinDeniedConfigurationResponseState;
-    private final Map<InstanceId, URI> currentlyJoiningInstances =
-            new HashMap<InstanceId, URI>();
+    private final Map<InstanceId, URI> currentlyJoiningInstances = new HashMap<>();
 
     private final Executor executor;
     private final ObjectOutputStreamFactory objectOutputStreamFactory;
@@ -334,9 +352,64 @@ class ClusterContextImpl
     }
 
     @Override
+    public boolean haveWeContactedInstance( ClusterMessage.ConfigurationRequestState configurationRequested )
+    {
+        return contactingInstances.containsKey( configurationRequested.getJoiningId() ) && contactingInstances.get(
+                configurationRequested.getJoiningId() ).contains( getMyId() );
+    }
+
+    @Override
+    public void addContactingInstance( ClusterMessage.ConfigurationRequestState instance, String discoveryHeader )
+    {
+        Set<InstanceId> contactsOfRemote = contactingInstances.computeIfAbsent( instance.getJoiningId(), k -> new
+                HashSet<>() );
+        // Duplicates of previous calls will be ignored by virtue of this being a set
+        contactsOfRemote.addAll( parseDiscoveryHeader( discoveryHeader ) );
+    }
+
+    @Override
+    public String generateDiscoveryHeader()
+    {
+        /*
+         * Maps the keyset of contacting instances from InstanceId to strings, collects them in a Set and joins them
+         * in a string with the appropriate separator
+         */
+        return String.join( DISCOVERY_HEADER_SEPARATOR, contactingInstances.keySet().stream().map( InstanceId::toString ).collect( Collectors.toSet() ) );
+    }
+
+    private Set<InstanceId> parseDiscoveryHeader( String discoveryHeader )
+    {
+        String[] instanceIds = discoveryHeader.split( DISCOVERY_HEADER_SEPARATOR );
+        Set<InstanceId> result = new HashSet<>();
+        for ( String instanceId : instanceIds )
+        {
+            try
+            {
+                result.add( new InstanceId( Integer.parseInt( instanceId.trim() ) ) );
+            }
+            catch( NumberFormatException e )
+            {
+                /*
+                 * This will happen if the message did not contain a DISCOVERY header. There are two reasons for this.
+                 * One, the first configurationRequest going out from every instance does have the header but
+                 * it is empty, since it's sent before any configurationRequests are processed.
+                 * The other is practically the backwards compatibility code for versions which do not carry this header.
+                 *
+                 * Since the header will be empty (default value for it is empty string), the split above will create
+                 * an array with a single empty string. This fails the integer parse.
+                 */
+                getLog( getClass() ).debug( "Could not parse discovery header for contacted instances, its value was " +
+                        discoveryHeader );
+            }
+        }
+        return result;
+    }
+
+    @Override
     public String toString()
     {
-        return "Me: " + me + " Bound at: " + commonState.boundAt() + " Config:" + commonState.configuration();
+        return "Me: " + me + " Bound at: " + commonState.boundAt() + " Config:" + commonState.configuration() +
+                " Current state: " + commonState;
     }
 
     @Override
@@ -382,7 +455,7 @@ class ClusterContextImpl
     public boolean isInstanceJoiningFromDifferentUri( org.neo4j.cluster.InstanceId joiningId, URI uri )
     {
         return currentlyJoiningInstances.containsKey( joiningId )
-                && !currentlyJoiningInstances.get( joiningId ).equals(uri);
+                && !currentlyJoiningInstances.get( joiningId ).equals( uri );
     }
 
     @Override
@@ -410,7 +483,7 @@ class ClusterContextImpl
     {
         learnerContext.setLastDeliveredInstanceId( id );
         learnerContext.learnedInstanceId( id );
-        learnerContext.setNextInstanceId( id + 1);
+        learnerContext.setNextInstanceId( id + 1 );
     }
 
     @Override
@@ -457,8 +530,8 @@ class ClusterContextImpl
         {
             return false;
         }
-        if ( discoveredInstances != null ? !discoveredInstances.equals( that.discoveredInstances ) : that
-                .discoveredInstances != null )
+        if ( discoveredInstances != null ? !discoveredInstances.equals( that.discoveredInstances ) :
+                that.discoveredInstances != null )
         {
             return false;
         }
@@ -467,8 +540,8 @@ class ClusterContextImpl
         {
             return false;
         }
-        if ( joinDeniedConfigurationResponseState != null ? !joinDeniedConfigurationResponseState.equals( that
-                .joinDeniedConfigurationResponseState ) : that.joinDeniedConfigurationResponseState != null )
+        if ( joinDeniedConfigurationResponseState != null ? !joinDeniedConfigurationResponseState.equals(
+                that.joinDeniedConfigurationResponseState ) : that.joinDeniedConfigurationResponseState != null )
         {
             return false;
         }
