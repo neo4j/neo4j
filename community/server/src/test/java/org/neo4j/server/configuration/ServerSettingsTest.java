@@ -82,6 +82,6 @@ public class ServerSettingsTest
                 .orElseThrow( () -> new RuntimeException( "Setting not present!" ) );
 
         assertTrue( address.deprecated() );
-        assertEquals( Optional.of( "dbms.connector.XX.listen_address" ), address.replacement() );
+        assertEquals( Optional.of( "dbms.connector.http.listen_address" ), address.replacement() );
     }
 }
