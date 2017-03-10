@@ -75,7 +75,9 @@ public class LookupFilter
                 }
                 catch ( EntityNotFoundException ignored )
                 {
-                    return false;
+                    return false; // The node has been deleted but was still reported from the index. CC will catch
+                                  // this through other mechanism (NodeInUseWithCorrectLabelsCheck), so we can
+                                  // silently ignore here
                 }
             };
             return PrimitiveLongCollections.filter( indexedNodeIds, combinedPredicate );
@@ -119,7 +121,8 @@ public class LookupFilter
                 }
                 catch ( EntityNotFoundException ignored )
                 {
-                    return false;
+                    return false; // The node has been deleted but was still reported from the index. We hope that this
+                                  // is some transient problem and just ignore this index entry.
                 }
             };
             return PrimitiveLongCollections.filter( indexedNodeIds, combinedPredicate );
