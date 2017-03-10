@@ -20,10 +20,8 @@
 package org.neo4j.cypher.internal.frontend.v3_2.parser
 
 import org.neo4j.cypher.internal.frontend.v3_2.ast
-import org.neo4j.cypher.internal.frontend.v3_2.ast.Expression
+import org.neo4j.cypher.internal.frontend.v3_2.ast.{Expression, LabelName, Property, Variable}
 import org.parboiled.scala._
-
-import scala.collection.immutable.IndexedSeq
 
 trait Command extends Parser
   with Expressions
@@ -33,14 +31,20 @@ trait Command extends Parser
 
   def Command: Rule1[ast.Command] = rule(
     CreateUniqueConstraint
+      | CreateUniqueCompositeConstraint
       | CreateNodePropertyExistenceConstraint
       | CreateRelationshipPropertyExistenceConstraint
       | CreateIndex
       | DropUniqueConstraint
+      | DropUniqueCompositeConstraint
       | DropNodePropertyExistenceConstraint
       | DropRelationshipPropertyExistenceConstraint
       | DropIndex
   )
+
+  def PropertyExpressions: Rule1[Seq[ast.Property]] = rule("multiple property expressions") {
+    oneOrMore(WS ~ Variable ~ PropertyLookup, separator = CommaSep)
+  }
 
   def CreateIndex: Rule1[ast.CreateIndex] = rule {
     group(keyword("CREATE INDEX ON") ~~ NodeLabel ~~ "(" ~~ PropertyKeyNames ~~ ")") ~~>> (ast.CreateIndex(_, _))
@@ -51,7 +55,12 @@ trait Command extends Parser
   }
 
   def CreateUniqueConstraint: Rule1[ast.CreateUniquePropertyConstraint] = rule {
-    group(keyword("CREATE") ~~ UniqueConstraintSyntax) ~~>> (ast.CreateUniquePropertyConstraint(_, _, _))
+    group(keyword("CREATE") ~~ UniqueConstraintSyntax) ~~>>
+      ((variable, label, property) => ast.CreateUniquePropertyConstraint(variable, label, Seq(property)))
+  }
+
+  def CreateUniqueCompositeConstraint: Rule1[ast.CreateUniquePropertyConstraint] = rule {
+    group(keyword("CREATE") ~~ UniqueCompositeConstraintSyntax) ~~>> (ast.CreateUniquePropertyConstraint(_, _, _))
   }
 
   def CreateNodePropertyExistenceConstraint: Rule1[ast.CreateNodePropertyExistenceConstraint] = rule {
@@ -63,7 +72,12 @@ trait Command extends Parser
   }
 
   def DropUniqueConstraint: Rule1[ast.DropUniquePropertyConstraint] = rule {
-    group(keyword("DROP") ~~ UniqueConstraintSyntax) ~~>> (ast.DropUniquePropertyConstraint(_, _, _))
+    group(keyword("DROP") ~~ UniqueConstraintSyntax) ~~>>
+      ((variable, label, property) => ast.DropUniquePropertyConstraint(variable, label, Seq(property)))
+  }
+
+  def DropUniqueCompositeConstraint: Rule1[ast.DropUniquePropertyConstraint] = rule {
+    group(keyword("DROP") ~~ UniqueCompositeConstraintSyntax) ~~>> (ast.DropUniquePropertyConstraint(_, _, _))
   }
 
   def DropNodePropertyExistenceConstraint: Rule1[ast.DropNodePropertyExistenceConstraint] = rule {
@@ -80,8 +94,11 @@ trait Command extends Parser
     ) ~~> (_.toIndexedSeq))
   }
 
-  private def UniqueConstraintSyntax = keyword("CONSTRAINT ON") ~~ "(" ~~ Variable ~~ NodeLabel ~~ ")" ~~
+  private def UniqueConstraintSyntax: Rule3[Variable, LabelName, Property] = keyword("CONSTRAINT ON") ~~ "(" ~~ Variable ~~ NodeLabel ~~ ")" ~~
     keyword("ASSERT") ~~ PropertyExpression ~~ keyword("IS UNIQUE")
+
+  private def UniqueCompositeConstraintSyntax: Rule3[Variable, LabelName, Seq[Property]] = keyword("CONSTRAINT ON") ~~ "(" ~~ Variable ~~ NodeLabel ~~ ")" ~~
+    keyword("ASSERT") ~~ "(" ~~ PropertyExpressions ~~ ")" ~~ keyword("IS UNIQUE")
 
   private def NodePropertyExistenceConstraintSyntax = keyword("CONSTRAINT ON") ~~ "(" ~~ Variable ~~ NodeLabel ~~ ")" ~~
     keyword("ASSERT EXISTS") ~~ "(" ~~ PropertyExpression ~~ ")"

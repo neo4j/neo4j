@@ -243,6 +243,22 @@ class CompositeIndexAcceptanceTest extends ExecutionEngineFunSuite with NewPlann
     result should evaluateTo(List(Map("x" -> 1), Map("x" -> 3), Map("x" -> 5), Map("x" -> 7), Map("x" -> 9)))
   }
 
+  test("should be able to create and remove composite uniquness constraints") {
+    // When
+    executeWithCostPlannerAndInterpretedRuntimeOnly("CREATE CONSTRAINT ON (n:Person) ASSERT n.email IS UNIQUE")
+    executeWithCostPlannerAndInterpretedRuntimeOnly("CREATE CONSTRAINT ON (n:Person) ASSERT (n.firstname,n.lastname) IS UNIQUE")
+
+    // Then
+    graph should haveConstraints("UNIQUENESS:Person(email)", "UNIQUENESS:Person(firstname,lastname)")
+
+    // When
+    executeWithCostPlannerAndInterpretedRuntimeOnly("DROP CONSTRAINT ON (n:Person) ASSERT (n.firstname,n.lastname) IS UNIQUE")
+
+    // Then
+    graph should haveConstraints("UNIQUENESS:Person(email)")
+    graph should not(haveConstraints("UNIQUENESS:Person(firstname,lastname)"))
+  }
+
   case class haveIndexes(expectedIndexes: String*) extends Matcher[GraphDatabaseQueryService] {
     def apply(graph: GraphDatabaseQueryService): MatchResult = {
       graph.inTx {
@@ -257,4 +273,17 @@ class CompositeIndexAcceptanceTest extends ExecutionEngineFunSuite with NewPlann
     }
   }
 
+  case class haveConstraints(expectedConstraints: String*) extends Matcher[GraphDatabaseQueryService] {
+    def apply(graph: GraphDatabaseQueryService): MatchResult = {
+      graph.inTx {
+        val constraintName = graph.schema().getConstraints.asScala.toList.map(i => s"${i.getConstraintType}:${i.getLabel}(${i.getPropertyKeys.asScala.toList.mkString(",")})")
+        val result = expectedConstraints.forall(i => constraintName.contains(i.toString))
+        MatchResult(
+          result,
+          s"Expected graph to have constraints ${expectedConstraints.mkString(", ")}, but it was ${constraintName.mkString(", ")}",
+          s"Expected graph to not have constraints ${expectedConstraints.mkString(", ")}, but it did."
+        )
+      }
+    }
+  }
 }
