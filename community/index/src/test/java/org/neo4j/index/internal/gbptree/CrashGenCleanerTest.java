@@ -19,6 +19,7 @@
  */
 package org.neo4j.index.internal.gbptree;
 
+import org.apache.commons.lang3.mutable.MutableInt;
 import org.apache.commons.lang3.mutable.MutableLong;
 import org.junit.After;
 import org.junit.Before;
@@ -27,12 +28,16 @@ import org.junit.Test;
 import org.junit.rules.RuleChain;
 
 import java.io.IOException;
+import java.util.ArrayList;
 import java.util.Arrays;
+import java.util.Collections;
+import java.util.List;
 
 import org.neo4j.io.pagecache.PageCache;
 import org.neo4j.io.pagecache.PageCursor;
 import org.neo4j.io.pagecache.PagedFile;
 import org.neo4j.test.rule.PageCacheRule;
+import org.neo4j.test.rule.RandomRule;
 import org.neo4j.test.rule.TestDirectory;
 import org.neo4j.test.rule.fs.DefaultFileSystemRule;
 import org.neo4j.test.rule.fs.FileSystemRule;
@@ -47,8 +52,10 @@ public class CrashGenCleanerTest
     private FileSystemRule fileSystemRule = new DefaultFileSystemRule();
     private PageCacheRule pageCacheRule = new PageCacheRule();
     private TestDirectory testDirectory = TestDirectory.testDirectory( this.getClass(), fileSystemRule.get() );
+    private RandomRule randomRule = new RandomRule();
     @Rule
-    public RuleChain ruleChain = RuleChain.outerRule( fileSystemRule ).around( testDirectory ).around( pageCacheRule );
+    public RuleChain ruleChain = RuleChain
+            .outerRule( fileSystemRule ).around( testDirectory ).around( pageCacheRule ).around( randomRule );
 
     private static final String FILE_NAME = "index";
     private static final int PAGE_SIZE = 256;
@@ -60,6 +67,22 @@ public class CrashGenCleanerTest
     private final int stableGen = 10;
     private final int unstableGen = 12;
     private final int crashGen = 11;
+    private final int firstChildPos = 0;
+    private final int middleChildPos = corruptableTreeNode.internalMaxKeyCount() / 2;
+    private final int lastChildPos = corruptableTreeNode.internalMaxKeyCount();
+    private final List<PageCorruption> possibleCorruptionsInInternal = new ArrayList<>( Arrays.asList(
+            crashed( leftSibling() ),
+            crashed( rightSibling() ),
+            crashed( newGen() ),
+            crashed( child( firstChildPos ) ),
+            crashed( child( middleChildPos ) ),
+            crashed( child( lastChildPos ) )
+    ) );
+    private final List<PageCorruption> possibleCorruptionsInLeaf = new ArrayList<>( Arrays.asList(
+            crashed( leftSibling() ),
+            crashed( rightSibling() ),
+            crashed( newGen() )
+    ) );
 
     private class SimpleMonitor implements GBPTree.Monitor
     {
@@ -96,7 +119,7 @@ public class CrashGenCleanerTest
     public void shouldCleanOneCrashPerPage() throws Exception
     {
         // GIVEN
-        initializeFile( pagedFile, with(
+        Page[] pages = with(
                 /* left sibling */
                 leafWith( crashed( leftSibling() ) ),
                 internalWith( crashed( leftSibling() ) ),
@@ -110,57 +133,72 @@ public class CrashGenCleanerTest
                 internalWith( crashed( newGen() ) ),
 
                 /* child */
-                internalWith( crashed( child( 0 ) ) ),
-                internalWith( crashed( child( corruptableTreeNode.internalMaxKeyCount() ) ) )
-        ) );
+                internalWith( crashed( child( firstChildPos ) ) ),
+                internalWith( crashed( child( middleChildPos ) ) ),
+                internalWith( crashed( child( lastChildPos ) ) )
+        );
+        initializeFile( pagedFile, pages );
 
         // WHEN
         SimpleMonitor monitor = new SimpleMonitor();
-        crashGenCleaner( pagedFile, 0, 8, monitor ).clean();
+        crashGenCleaner( pagedFile, 0, pages.length, monitor ).clean();
 
         // THEN
-        assertPagesVisisted( monitor, 8 );
-        assertCleanedCrashPointers( monitor, 8 );
+        assertPagesVisisted( monitor, pages.length );
+        assertCleanedCrashPointers( monitor, 9 );
     }
 
     @Test
     public void shouldCleanMultipleCrashPerPage() throws Exception
     {
         // GIVEN
-        initializeFile( pagedFile, with(
-                /* left sibling */
+        Page[] pages = with(
                 leafWith(
                         crashed( leftSibling() ),
-                        crashed( rightSibling() ) ),
+                        crashed( rightSibling() ),
+                        crashed( newGen() ) ),
                 internalWith(
                         crashed( leftSibling() ),
                         crashed( rightSibling() ),
-                        crashed( child( 0 ) ),
-                        crashed( child( corruptableTreeNode.internalMaxKeyCount() ) ) )
-        ) );
+                        crashed( newGen() ),
+                        crashed( child( firstChildPos ) ),
+                        crashed( child( middleChildPos ) ),
+                        crashed( child( lastChildPos ) ) )
+        );
+        initializeFile( pagedFile, pages );
 
         // WHEN
         SimpleMonitor monitor = new SimpleMonitor();
-        crashGenCleaner( pagedFile, 0, 2, monitor ).clean();
+        crashGenCleaner( pagedFile, 0, pages.length, monitor ).clean();
 
         // THEN
-        assertPagesVisisted( monitor, 2 );
-        assertCleanedCrashPointers( monitor, 6 );
+        assertPagesVisisted( monitor, pages.length );
+        assertCleanedCrashPointers( monitor, 9 );
     }
 
-    private void assertCleanedCrashPointers( SimpleMonitor monitor,
-            int expectedNumberOfCleanedCrashPointers )
+    @Test
+    public void shouldCleanLargeFile() throws Exception
     {
-        assertEquals( "Expected number of cleaned crash pointers to be " +
-                        expectedNumberOfCleanedCrashPointers + " but was " + monitor.numberOfCleanedCrashPointers,
-                expectedNumberOfCleanedCrashPointers, monitor.numberOfCleanedCrashPointers );
-    }
+        // GIVEN
+        int numberOfPages = randomRule.intBetween( 1_000, 10_000 );
+        int corruptionPercent = randomRule.nextInt( 90 );
+        MutableInt totalNumberOfCorruptions = new MutableInt( 0 );
 
-    private void assertPagesVisisted( SimpleMonitor monitor, int expectedNumberOfPagesVisited )
-    {
-        assertEquals( "Expected number of visited pages to be " + expectedNumberOfPagesVisited +
-                        " but was " + monitor.numberOfPagesVisited,
-                expectedNumberOfPagesVisited, monitor.numberOfPagesVisited );
+        Page[] pages = new Page[numberOfPages];
+        for ( int i = 0; i < numberOfPages; i++ )
+        {
+            Page page = randomPage( corruptionPercent, totalNumberOfCorruptions );
+            pages[i] = page;
+        }
+        initializeFile( pagedFile, pages );
+
+        // WHEN
+        SimpleMonitor monitor = new SimpleMonitor();
+        crashGenCleaner( pagedFile, 0, numberOfPages, monitor ).clean();
+
+        // THEN
+        assertPagesVisisted( monitor, numberOfPages );
+        assertCleanedCrashPointers( monitor, totalNumberOfCorruptions.getValue() );
     }
 
     private CrashGenCleaner crashGenCleaner( PagedFile pagedFile, int lowTreeNodeId, int highTreeNodeId,
@@ -180,6 +218,58 @@ public class CrashGenCleanerTest
                 page.write( cursor, corruptableTreeNode, stableGen, unstableGen, crashGen );
             }
         }
+    }
+
+    /* Assertions */
+    private void assertCleanedCrashPointers( SimpleMonitor monitor,
+            int expectedNumberOfCleanedCrashPointers )
+    {
+        assertEquals( "Expected number of cleaned crash pointers to be " +
+                        expectedNumberOfCleanedCrashPointers + " but was " + monitor.numberOfCleanedCrashPointers,
+                expectedNumberOfCleanedCrashPointers, monitor.numberOfCleanedCrashPointers );
+    }
+
+    private void assertPagesVisisted( SimpleMonitor monitor, int expectedNumberOfPagesVisited )
+    {
+        assertEquals( "Expected number of visited pages to be " + expectedNumberOfPagesVisited +
+                        " but was " + monitor.numberOfPagesVisited,
+                expectedNumberOfPagesVisited, monitor.numberOfPagesVisited );
+    }
+
+    /* Random page */
+    private Page randomPage( int corruptionPercent, MutableInt totalNumberOfCorruptions )
+    {
+        int numberOfCorruptions = 0;
+        boolean internal = randomRule.nextBoolean();
+        if ( randomRule.nextInt( 100 ) < corruptionPercent )
+        {
+            int maxCorruptions = internal ? possibleCorruptionsInInternal.size() : possibleCorruptionsInLeaf.size();
+            numberOfCorruptions = randomRule.intBetween( 1, maxCorruptions );
+            totalNumberOfCorruptions.add( numberOfCorruptions );
+        }
+        return internal ? randomInternal( numberOfCorruptions ) : randomLeaf( numberOfCorruptions );
+    }
+
+    private Page randomLeaf( int numberOfCorruptions )
+    {
+        Collections.shuffle( possibleCorruptionsInLeaf );
+        PageCorruption[] corruptions = new PageCorruption[numberOfCorruptions];
+        for ( int i = 0; i < numberOfCorruptions; i++ )
+        {
+            corruptions[i] = possibleCorruptionsInLeaf.get( i );
+        }
+        return leafWith( corruptions );
+    }
+
+    private Page randomInternal( int numberOfCorruptions )
+    {
+        Collections.shuffle( possibleCorruptionsInInternal );
+        PageCorruption[] corruptions = new PageCorruption[numberOfCorruptions];
+        for ( int i = 0; i < numberOfCorruptions; i++ )
+        {
+            corruptions[i] = possibleCorruptionsInInternal.get( i );
+        }
+        return internalWith( corruptions );
     }
 
     /* Page */
