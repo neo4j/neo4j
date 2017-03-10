@@ -22,11 +22,13 @@ package org.neo4j.shell.impl;
 import java.net.MalformedURLException;
 import java.net.UnknownHostException;
 import java.rmi.Naming;
+import java.rmi.NoSuchObjectException;
 import java.rmi.NotBoundException;
 import java.rmi.Remote;
 import java.rmi.RemoteException;
 import java.rmi.registry.LocateRegistry;
 import java.rmi.registry.Registry;
+import java.rmi.server.UnicastRemoteObject;
 
 /**
  * Class for specifying a location of an RMI object
@@ -37,6 +39,7 @@ public class RmiLocation
     private final String host;
     private final int port;
     private final String name;
+    private Registry registry;
 
     private RmiLocation( String host, int port, String name )
     {
@@ -47,6 +50,7 @@ public class RmiLocation
 
     /**
      * Creates a new RMI location instance.
+     *
      * @param host the RMI host, f.ex. "localhost".
      * @param port the RMI port.
      * @param name the RMI name, f.ex. "shell".
@@ -107,11 +111,11 @@ public class RmiLocation
     /**
      * Ensures that the RMI registry is created for this JVM instance and port,
      * see {@link #getPort()}.
+     *
      * @return the registry for the port.
      * @throws RemoteException RMI error.
      */
-    public Registry ensureRegistryCreated()
-        throws RemoteException
+    public Registry ensureRegistryCreated() throws RemoteException
     {
         try
         {
@@ -126,7 +130,7 @@ public class RmiLocation
             }
             catch ( UnknownHostException hostException )
             {
-                throw new RemoteException( "Unable to bind to '"+host+"', unknown hostname.", hostException );
+                throw new RemoteException( "Unable to bind to '" + host + "', unknown hostname.", hostException );
             }
         }
         catch ( java.net.MalformedURLException e )
@@ -137,12 +141,13 @@ public class RmiLocation
 
     /**
      * Binds an object to the RMI location defined by this instance.
+     *
      * @param object the object to bind.
      * @throws RemoteException RMI error.
      */
     public void bind( Remote object ) throws RemoteException
     {
-        ensureRegistryCreated();
+        this.registry = ensureRegistryCreated();
         try
         {
             Naming.rebind( toUrl(), object );
@@ -151,6 +156,11 @@ public class RmiLocation
         {
             throw new RemoteException( "Malformed URL", e );
         }
+    }
+
+    public void unbind() throws RemoteException
+    {
+        UnicastRemoteObject.unexportObject( this.registry, true );
     }
 
     /**
@@ -180,7 +190,7 @@ public class RmiLocation
         {
             return Naming.lookup( toUrl() );
         }
-        catch ( NotBoundException e )
+        catch ( NoSuchObjectException | NotBoundException e )
         {
             throw new RemoteException( "Not bound", e );
         }

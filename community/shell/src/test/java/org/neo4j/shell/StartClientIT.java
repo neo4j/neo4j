@@ -35,8 +35,6 @@ import java.rmi.RemoteException;
 
 import org.neo4j.bolt.v1.runtime.WorkerFactory;
 import org.neo4j.graphdb.Transaction;
-import org.neo4j.graphdb.factory.GraphDatabaseBuilder;
-import org.neo4j.kernel.configuration.Settings;
 import org.neo4j.logging.AssertableLogProvider;
 import org.neo4j.shell.impl.AbstractClient;
 import org.neo4j.shell.kernel.GraphDatabaseShellServer;
@@ -60,25 +58,15 @@ import static org.neo4j.logging.AssertableLogProvider.inLog;
 import static org.neo4j.test.rule.SuppressOutput.suppressAll;
 
 
-public class StartClientTest
+public class StartClientIT extends AbstractShellIT
 {
     @Rule
     public SuppressOutput mute = suppressAll();
 
-    @Rule
-    public ImpermanentDatabaseRule db = new ImpermanentDatabaseRule()
-    {
-        @Override
-        protected void configure( GraphDatabaseBuilder builder )
-        {
-            builder.setConfig( ShellSettings.remote_shell_enabled, Settings.TRUE );
-        }
-    };
-
     @Before
-    public void startDatabase()
+    public void startDatabase() throws Exception
     {
-        db.getGraphDatabaseAPI();
+        makeServerRemotelyAvailable();
     }
 
     @Test
@@ -88,13 +76,12 @@ public class StartClientTest
         // an empty database
 
         // When
-        StartClient.main(new String[]{"-file", getClass().getResource( "/testshell.txt" ).getFile()});
+        StartClient.main( new String[]{"-file", getClass().getResource( "/testshell.txt" ).getFile()} );
 
         // Then
-        try ( Transaction tx = db.getGraphDatabaseAPI().beginTx() )
+        try ( Transaction tx = db.beginTx() )
         {
-            assertThat( (String) db.getGraphDatabaseAPI().getNodeById( 0 ).getProperty( "foo" ),
-                    equalTo( "bar" ) );
+            assertThat( db.getNodeById( 0 ).getProperty( "foo" ), equalTo( "bar" ) );
             tx.success();
         }
     }
@@ -110,7 +97,7 @@ public class StartClientTest
         try
         {
             System.setIn( new ByteArrayInputStream( "CREATE (n {foo:'bar'});".getBytes() ) );
-            StartClient.main( new String[] { "-file", "-" } );
+            StartClient.main( new String[]{"-file", "-"} );
         }
         finally
         {
@@ -118,10 +105,9 @@ public class StartClientTest
         }
 
         // Then
-        try ( Transaction tx = db.getGraphDatabaseAPI().beginTx() )
+        try ( Transaction tx = db.beginTx() )
         {
-            assertThat( (String) db.getGraphDatabaseAPI().getNodeById( 0 ).getProperty( "foo" ),
-                    equalTo( "bar" ) );
+            assertThat( db.getNodeById( 0 ).getProperty( "foo" ), equalTo( "bar" ) );
             tx.success();
         }
     }
@@ -133,7 +119,7 @@ public class StartClientTest
         String script = getClass().getResource( "/unterminated-cypher-query.txt" ).getFile();
 
         // When running the script with -file
-        String output = runAndCaptureOutput( new String[]{ "-file", script } );
+        String output = runAndCaptureOutput( new String[]{"-file", script} );
 
         // Then we should get a warning
         assertThat( output, containsString( AbstractClient.WARN_UNTERMINATED_INPUT ) );
@@ -146,7 +132,7 @@ public class StartClientTest
         String script = getClass().getResource( "/unterminated-comment.txt" ).getFile();
 
         // When running the script with -file
-        String output = runAndCaptureOutput( new String[]{ "-file", script } );
+        String output = runAndCaptureOutput( new String[]{"-file", script} );
 
         // Then we should get a warning
         assertThat( output, not( containsString( AbstractClient.WARN_UNTERMINATED_INPUT ) ) );
@@ -166,15 +152,15 @@ public class StartClientTest
         StartClient startClient = new StartClient( out, err )
         {
             @Override
-            protected GraphDatabaseShellServer getGraphDatabaseShellServer( File path, boolean readOnly, String configFile ) throws RemoteException
+            protected GraphDatabaseShellServer getGraphDatabaseShellServer( File path, boolean readOnly,
+                    String configFile ) throws RemoteException
             {
                 return databaseShellServer;
             }
         };
 
         // when
-        startClient.start( new String[]{"-path", db.getGraphDatabaseAPI().getStoreDir(),
-                "-c", "CREATE (n {foo:'bar'});"}, ctrlCHandler );
+        startClient.start( new String[]{"-path", db.getStoreDir(), "-c", "CREATE (n {foo:'bar'});"}, ctrlCHandler );
 
         // verify
         verify( databaseShellServer ).shutdown();
@@ -187,12 +173,11 @@ public class StartClientTest
         ByteArrayOutputStream out = new ByteArrayOutputStream();
         ByteArrayOutputStream err = new ByteArrayOutputStream();
         CtrlCHandler ctrlCHandler = mock( CtrlCHandler.class );
-        StartClient client = new StartClient(
-                new PrintStream( out ), new PrintStream( err ) );
+        StartClient client = new StartClient( new PrintStream( out ), new PrintStream( err ) );
 
         // when
-        client.start( new String[]{"-path", db.getGraphDatabaseAPI().getStoreDir(),
-                "-c", "dbinfo -g Configuration unsupported.dbms.edition"}, ctrlCHandler );
+        client.start( new String[]{"-path", db.getStoreDir(), "-c", "dbinfo -g Configuration unsupported.dbms.edition"},
+                ctrlCHandler );
 
         // then
         assertEquals( 0, err.size() );
@@ -206,8 +191,7 @@ public class StartClientTest
         ByteArrayOutputStream out = new ByteArrayOutputStream();
         ByteArrayOutputStream err = new ByteArrayOutputStream();
         CtrlCHandler ctrlCHandler = mock( CtrlCHandler.class );
-        StartClient client = new StartClient(
-                new PrintStream( out ), new PrintStream( err ) );
+        StartClient client = new StartClient( new PrintStream( out ), new PrintStream( err ) );
 
         // when
         client.start( new String[]{"-version"}, ctrlCHandler );
@@ -228,17 +212,14 @@ public class StartClientTest
         new StartClient( System.out, System.err )
         {
             @Override
-            protected GraphDatabaseShellServer getGraphDatabaseShellServer( File path, boolean readOnly, String
-                    configFile ) throws RemoteException
+            protected GraphDatabaseShellServer getGraphDatabaseShellServer( File path, boolean readOnly,
+                    String configFile ) throws RemoteException
             {
-                return new GraphDatabaseShellServer(
-                        new TestGraphDatabaseFactory().setUserLogProvider( log ), path, readOnly, configFile );
+                return new GraphDatabaseShellServer( new TestGraphDatabaseFactory().setUserLogProvider( log ), path,
+                        readOnly, configFile );
             }
-        }.start( new String[]{
-                        "-c", "RETURN 1;",
-                        "-path", db.getGraphDatabaseAPI().getStoreDir(),
-                        "-config", getClass().getResource( "/config-with-bolt-connector.conf" ).getFile()},
-                mock( CtrlCHandler.class ) );
+        }.start( new String[]{"-c", "RETURN 1;", "-path", db.getStoreDir(), "-config",
+                getClass().getResource( "/config-with-bolt-connector.conf" ).getFile()}, mock( CtrlCHandler.class ) );
 
         // Then
         log.assertNone( inLog( startsWith( WorkerFactory.class.getPackage().getName() ) ).any() );

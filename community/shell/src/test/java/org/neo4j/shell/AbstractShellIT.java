@@ -52,7 +52,7 @@ import static org.neo4j.graphdb.RelationshipType.withName;
 import static org.neo4j.shell.ShellLobby.NO_INITIAL_SESSION;
 import static org.neo4j.shell.ShellLobby.remoteLocation;
 
-public abstract class AbstractShellTest
+public abstract class AbstractShellIT
 {
     protected GraphDatabaseAPI db;
     protected ShellServer shellServer;
@@ -75,10 +75,10 @@ public abstract class AbstractShellTest
 
     protected SameJvmClient newShellClient( ShellServer server ) throws ShellException, RemoteException
     {
-        return newShellClient( server, Collections.<String, Serializable>singletonMap( "quiet", true ) );
+        return newShellClient( server, Collections.<String,Serializable>singletonMap( "quiet", true ) );
     }
 
-    protected SameJvmClient newShellClient( ShellServer server, Map<String, Serializable> session )
+    protected SameJvmClient newShellClient( ShellServer server, Map<String,Serializable> session )
             throws ShellException, RemoteException
     {
         return new SameJvmClient( session, server, new CollectingOutput(), InterruptSignalHandler.getHandler() );
@@ -122,10 +122,10 @@ public abstract class AbstractShellTest
         return newRemoteClient( NO_INITIAL_SESSION );
     }
 
-    protected ShellClient newRemoteClient( Map<String, Serializable> initialSession ) throws Exception
+    protected ShellClient newRemoteClient( Map<String,Serializable> initialSession ) throws Exception
     {
-        return new RemoteClient( initialSession, remoteLocation( remotelyAvailableOnPort ),
-                new CollectingOutput(), InterruptSignalHandler.getHandler() );
+        return new RemoteClient( initialSession, remoteLocation( remotelyAvailableOnPort ), new CollectingOutput(),
+                InterruptSignalHandler.getHandler() );
     }
 
     protected void makeServerRemotelyAvailable() throws RemoteException
@@ -187,8 +187,8 @@ public abstract class AbstractShellTest
         executeCommand( shellClient, command, theseLinesMustExistRegEx );
     }
 
-    public void executeCommand( ShellClient client, String command,
-            String... theseLinesMustExistRegEx ) throws Exception
+    public void executeCommand( ShellClient client, String command, String... theseLinesMustExistRegEx )
+            throws Exception
     {
         CollectingOutput output = new CollectingOutput();
         client.evaluate( command, output );
@@ -208,7 +208,7 @@ public abstract class AbstractShellTest
                 }
             }
             assertTrue( "Was expecting a line matching '" + lineThatMustExist + "', but didn't find any from out of " +
-                        Iterables.asCollection( output ), found != negative );
+                    Iterables.asCollection( output ), found != negative );
         }
     }
 
@@ -225,7 +225,8 @@ public abstract class AbstractShellTest
             String errorMessage = e.getMessage();
             if ( !errorMessage.toLowerCase().contains( errorMessageShouldContain.toLowerCase() ) )
             {
-                fail( "Error message '" + errorMessage + "' should have contained '" + errorMessageShouldContain + "'" );
+                fail( "Error message '" + errorMessage + "' should have contained '" + errorMessageShouldContain +
+                        "'" );
             }
         }
     }
@@ -290,7 +291,7 @@ public abstract class AbstractShellTest
 
     protected Relationship[] createRelationshipChain( RelationshipType type, int length )
     {
-        try( Transaction transaction = db.beginTx() )
+        try ( Transaction transaction = db.beginTx() )
         {
             Relationship[] relationshipChain = createRelationshipChain( db.createNode(), type, length );
             transaction.success();
@@ -298,8 +299,7 @@ public abstract class AbstractShellTest
         }
     }
 
-    protected Relationship[] createRelationshipChain( Node startingFromNode, RelationshipType type,
-            int length )
+    protected Relationship[] createRelationshipChain( Node startingFromNode, RelationshipType type, int length )
     {
         try ( Transaction tx = db.beginTx() )
         {

@@ -40,6 +40,7 @@ import org.neo4j.shell.Welcome;
 class RemotelyAvailableServer extends UnicastRemoteObject implements ShellServer
 {
     private final ShellServer actual;
+    private RmiLocation location;
 
     RemotelyAvailableServer( ShellServer actual ) throws RemoteException
     {
@@ -90,6 +91,9 @@ class RemotelyAvailableServer extends UnicastRemoteObject implements ShellServer
     {
         try
         {
+            if (this.location != null) {
+                this.location.unbind();
+            }
             unexportObject( this, true );
         }
         catch ( NoSuchObjectException e )
@@ -107,7 +111,8 @@ class RemotelyAvailableServer extends UnicastRemoteObject implements ShellServer
     @Override
     public void makeRemotelyAvailable( String host, int port, String name ) throws RemoteException
     {
-        RmiLocation.location( host, port, name ).bind( this );
+        this.location = RmiLocation.location( host, port, name );
+        this.location.bind( this );
     }
 
     @Override

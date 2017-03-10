@@ -29,7 +29,7 @@ import org.neo4j.kernel.internal.GraphDatabaseAPI;
 import org.neo4j.shell.kernel.GraphDatabaseShellServer;
 import org.neo4j.shell.kernel.ReadOnlyGraphDatabaseProxy;
 
-public class TestReadOnlyServer extends AbstractShellTest
+public class ReadOnlyServerIT extends AbstractShellIT
 {
     @Override
     protected ShellServer newServer( GraphDatabaseAPI db ) throws ShellException, RemoteException

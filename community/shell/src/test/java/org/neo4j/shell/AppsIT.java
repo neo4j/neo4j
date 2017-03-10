@@ -52,7 +52,7 @@ import static org.neo4j.graphdb.RelationshipType.withName;
 import static org.neo4j.helpers.collection.MapUtil.genericMap;
 import static org.neo4j.test.mockito.matcher.Neo4jMatchers.*;
 
-public class TestApps extends AbstractShellTest
+public class AppsIT extends AbstractShellIT
 {
     @Rule
     public SuppressOutput suppressOutput = SuppressOutput.suppressAll();

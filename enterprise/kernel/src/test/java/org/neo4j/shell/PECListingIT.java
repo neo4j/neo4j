@@ -29,7 +29,7 @@ import org.neo4j.test.TestEnterpriseGraphDatabaseFactory;
 
 import static org.neo4j.graphdb.Label.label;
 
-public class TestPECListing extends AbstractShellTest
+public class PECListingIT extends AbstractShellIT
 {
     @Override
     protected GraphDatabaseAPI newDb()

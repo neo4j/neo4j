@@ -285,5 +285,9 @@ public class GraphDatabaseShellServer extends AbstractAppServer
             transaction.success();
             return welcome;
         }
+        catch ( RuntimeException e )
+        {
+            throw new RemoteException( e.getMessage(), e );
+        }
     }
 }
