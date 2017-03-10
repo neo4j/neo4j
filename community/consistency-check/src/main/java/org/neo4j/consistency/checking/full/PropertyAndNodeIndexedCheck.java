@@ -19,6 +19,7 @@
  */
 package org.neo4j.consistency.checking.full;
 
+import java.util.Arrays;
 import java.util.Collection;
 import java.util.List;
 import java.util.Set;
@@ -26,7 +27,6 @@ import java.util.Set;
 import org.neo4j.collection.primitive.Primitive;
 import org.neo4j.collection.primitive.PrimitiveIntObjectMap;
 import org.neo4j.collection.primitive.PrimitiveIntSet;
-import org.neo4j.collection.primitive.PrimitiveLongCollections;
 import org.neo4j.collection.primitive.PrimitiveLongIterator;
 import org.neo4j.consistency.checking.ChainCheck;
 import org.neo4j.consistency.checking.CheckerEngine;
@@ -46,7 +46,7 @@ import org.neo4j.kernel.impl.store.record.PropertyRecord;
 import org.neo4j.kernel.impl.store.record.Record;
 import org.neo4j.storageengine.api.schema.IndexReader;
 
-import static org.neo4j.kernel.impl.api.schema.NodeSchemaMatcher.nodeHasSchemaProperties;
+import static java.lang.String.format;
 
 /**
  * Checks nodes and how they're indexed in one go. Reports any found inconsistencies.
@@ -237,7 +237,9 @@ public class PropertyAndNodeIndexedCheck implements RecordCheck<NodeRecord, Cons
         }
         catch ( IndexNotApplicableKernelException e )
         {
-            indexedNodeIds = PrimitiveLongCollections.emptyIterator();
+            throw new RuntimeException( format(
+                    "Cannot continue %s, as index provider does not support exact composite query: %s",
+                    this.getClass().getSimpleName(), Arrays.toString( query ) ), e );
         }
 
         indexedNodeIds = LookupFilter.exactIndexMatches( propertyReader, indexedNodeIds, query );
