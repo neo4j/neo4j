@@ -55,6 +55,12 @@ public class ReadOnlyDatabaseSchemaIndex extends ReadOnlyAbstractDatabaseIndex<L
         return luceneIndex.getIndexReader();
     }
 
+    @Override
+    public NewIndexDescriptor getDescriptor()
+    {
+        return luceneIndex.getDescriptor();
+    }
+
     /**
      * {@inheritDoc}
      */

@@ -85,6 +85,11 @@ class LuceneSchemaIndex extends AbstractLuceneIndex
                                                 : createPartitionedReader( partitions );
     }
 
+    public NewIndexDescriptor getDescriptor()
+    {
+        return descriptor;
+    }
+
     /**
      * Verifies uniqueness of property values present in this index.
      *

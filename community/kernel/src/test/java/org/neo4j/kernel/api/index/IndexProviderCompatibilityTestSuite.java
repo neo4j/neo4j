@@ -27,7 +27,6 @@ import org.junit.runners.Suite;
 import java.io.File;
 
 import org.neo4j.io.fs.FileSystemAbstraction;
-import org.neo4j.kernel.api.schema_new.LabelSchemaDescriptor;
 import org.neo4j.kernel.api.schema_new.index.NewIndexDescriptor;
 import org.neo4j.test.rule.TestDirectory;
 import org.neo4j.test.rule.fs.DefaultFileSystemRule;
@@ -35,12 +34,15 @@ import org.neo4j.test.runner.ParameterizedSuiteRunner;
 
 @RunWith( ParameterizedSuiteRunner.class )
 @Suite.SuiteClasses( {
-        NonUniqueIndexPopulatorCompatibility.class,
-        UniqueIndexPopulatorCompatibility.class,
-        NonUniqueIndexAccessorCompatibility.class,
-        UniqueIndexAccessorCompatibility.class,
-        UniqueConstraintCompatibility.class,
-        CompositeIndexAccessorCompatibility.class
+        SimpleIndexPopulatorCompatibility.General.class,
+        SimpleIndexPopulatorCompatibility.Unique.class,
+        CompositeIndexPopulatorCompatibility.General.class,
+        CompositeIndexPopulatorCompatibility.Unique.class,
+        SimpleIndexAccessorCompatibility.General.class,
+        SimpleIndexAccessorCompatibility.Unique.class,
+        CompositeIndexAccessorCompatibility.General.class,
+        CompositeIndexAccessorCompatibility.Unique.class,
+        UniqueConstraintCompatibility.class
 } )
 public abstract class IndexProviderCompatibilityTestSuite
 {

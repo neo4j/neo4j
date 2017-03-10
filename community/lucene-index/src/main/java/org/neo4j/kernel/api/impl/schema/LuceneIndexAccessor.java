@@ -140,6 +140,9 @@ public class LuceneIndexAccessor implements IndexAccessor
         @Override
         public void process( IndexEntryUpdate update ) throws IOException
         {
+            // we do not support adding partial entries
+            assert update.descriptor().equals( descriptor.schema() );
+
             switch ( update.updateMode() )
             {
             case ADDED:

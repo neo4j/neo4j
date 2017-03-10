@@ -31,13 +31,13 @@ import org.neo4j.collection.primitive.PrimitiveLongCollections;
 import org.neo4j.collection.primitive.PrimitiveLongIterator;
 import org.neo4j.collection.primitive.PrimitiveLongResourceIterator;
 import org.neo4j.helpers.collection.Visitor;
-import org.neo4j.kernel.api.index.IndexEntryUpdate;
 import org.neo4j.kernel.api.index.IndexPopulator;
 import org.neo4j.kernel.api.index.NodeUpdates;
 import org.neo4j.kernel.api.index.SchemaIndexProvider;
 import org.neo4j.kernel.api.labelscan.LabelScanStore;
 import org.neo4j.kernel.api.labelscan.NodeLabelUpdate;
 import org.neo4j.kernel.api.schema_new.index.NewIndexDescriptor;
+import org.neo4j.kernel.api.schema_new.index.NewIndexDescriptorFactory;
 import org.neo4j.kernel.impl.api.index.FailedIndexProxyFactory;
 import org.neo4j.kernel.impl.api.index.FlippableIndexProxy;
 import org.neo4j.kernel.impl.api.index.IndexStoreView;
@@ -58,6 +58,9 @@ import static org.mockito.Mockito.times;
 import static org.mockito.Mockito.verify;
 import static org.mockito.Mockito.verifyNoMoreInteractions;
 import static org.mockito.Mockito.when;
+import static org.neo4j.kernel.api.index.IndexEntryUpdate.add;
+import static org.neo4j.kernel.api.index.IndexEntryUpdate.change;
+import static org.neo4j.kernel.api.index.IndexEntryUpdate.remove;
 
 public class LabelScanViewNodeStoreScanTest
 {
@@ -68,6 +71,7 @@ public class LabelScanViewNodeStoreScanTest
     private IntPredicate propertyKeyIdFilter = mock( IntPredicate.class );
     private Visitor<NodeLabelUpdate,Exception> labelUpdateVisitor = mock( Visitor.class );
     private Visitor<NodeUpdates,Exception> propertyUpdateVisitor = mock( Visitor.class );
+    private NewIndexDescriptor index = NewIndexDescriptorFactory.forLabel( 1, 3 );
 
     @Before
     public void setUp()
@@ -147,10 +151,10 @@ public class LabelScanViewNodeStoreScanTest
     private void populateWithConcurrentUpdates( LabelScanViewNodeStoreScan<Exception> scanViewStoreScan )
     {
         MultipleIndexPopulator.MultipleIndexUpdater indexUpdater = mock( MultipleIndexPopulator.MultipleIndexUpdater.class );
-        scanViewStoreScan.acceptUpdate( indexUpdater, IndexEntryUpdate.add( 1, null, "add" ), 0L );
-        scanViewStoreScan.acceptUpdate( indexUpdater, IndexEntryUpdate.change( 2, null, "changeBefore", "changeAfter" ), 0L );
-        scanViewStoreScan.acceptUpdate( indexUpdater, IndexEntryUpdate.change( 2, null, "changeBefore2", "changeAfter2" ), 0L );
-        scanViewStoreScan.acceptUpdate( indexUpdater, IndexEntryUpdate.remove( 3, null, "remove" ), 0L );
+        scanViewStoreScan.acceptUpdate( indexUpdater, add( 1, index.schema(), "add" ), 0L );
+        scanViewStoreScan.acceptUpdate( indexUpdater, change( 2, index.schema(), "changeBefore", "changeAfter" ), 0L );
+        scanViewStoreScan.acceptUpdate( indexUpdater, change( 2, index.schema(), "changeBefore2", "changeAfter2" ), 0L );
+        scanViewStoreScan.acceptUpdate( indexUpdater, remove( 3, index.schema(), "remove" ), 0L );
     }
 
     private MultipleIndexPopulator.IndexPopulation getPopulation( LabelScanTestMultipleIndexPopulator indexPopulator )

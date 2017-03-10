@@ -57,6 +57,12 @@ public class WritableDatabaseSchemaIndex extends WritableAbstractDatabaseIndex<L
         return luceneIndex.getIndexReader();
     }
 
+    @Override
+    public NewIndexDescriptor getDescriptor()
+    {
+        return luceneIndex.getDescriptor();
+    }
+
     /**
      * {@inheritDoc}
      */

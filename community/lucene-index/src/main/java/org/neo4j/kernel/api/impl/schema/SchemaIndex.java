@@ -27,6 +27,7 @@ import org.neo4j.kernel.api.impl.index.DatabaseIndex;
 import org.neo4j.kernel.api.impl.schema.verification.UniquenessVerifier;
 import org.neo4j.kernel.api.impl.schema.writer.LuceneIndexWriter;
 import org.neo4j.kernel.api.index.PropertyAccessor;
+import org.neo4j.kernel.api.schema_new.index.NewIndexDescriptor;
 import org.neo4j.storageengine.api.schema.IndexReader;
 
 /**
@@ -37,6 +38,8 @@ public interface SchemaIndex extends DatabaseIndex
     LuceneIndexWriter getIndexWriter() throws IOException;
 
     IndexReader getIndexReader() throws IOException;
+
+    NewIndexDescriptor getDescriptor();
 
     /**
      * Verifies uniqueness of property values present in this index.
