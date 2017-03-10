@@ -78,34 +78,17 @@ public class TerminationOfSlavesDuringPullUpdatesTest
         return Arrays.<Object>asList( new Object[][]
                 {
                         {new PropertyValueActions( longString( 'a' ), longString( 'b' ), true ),
-                                "NodeStringProperty[txTerminationAwareLocks=yes]"},
-                        {new PropertyValueActions( longString( 'a' ), longString( 'b' ), true ),
-                                "NodeStringProperty[txTerminationAwareLocks=no]"},
-
+                                "StringPropertyOnNode"},
                         {new PropertyValueActions( longString( 'a' ), longString( 'b' ), false ),
-                                "RelationshipStringProperty[txTerminationAwareLocks=yes]"},
-                        {new PropertyValueActions( longString( 'a' ), longString( 'b' ), false ),
-                                "RelationshipStringProperty[txTerminationAwareLocks=no]"},
-
+                                "StringPropertyOnRelationship"},
                         {new PropertyValueActions( longArray( 'a' ), longArray( 'b' ), true ),
-                                "NodeArrayProperty[txTerminationAwareLocks=yes]"},
-                        {new PropertyValueActions( longArray( 'a' ), longArray( 'b' ), true ),
-                                "NodeArrayProperty[txTerminationAwareLocks=no]"},
-
+                                "ArrayPropertyOnNode"},
                         {new PropertyValueActions( longArray( 'a' ), longArray( 'b' ), false ),
-                                "RelationshipArrayProperty[txTerminationAwareLocks=yes]"},
-                        {new PropertyValueActions( longArray( 'a' ), longArray( 'b' ), false ),
-                                "RelationshipArrayProperty[txTerminationAwareLocks=no]"},
-
+                                "ArrayPropertyOnRelationship"},
                         {new PropertyKeyActions( 'a', 'b', true ),
-                                "NodePropertyKeys[txTerminationAwareLocks=yes]"},
-                        {new PropertyKeyActions( 'a', 'b', true ),
-                                "NodePropertyKeys[txTerminationAwareLocks=no]"},
-
+                                "PropertyKeysOnNode"},
                         {new PropertyKeyActions( 'a', 'b', false ),
-                                "RelationshipPropertyKeys[txTerminationAwareLocks=yes]"},
-                        {new PropertyKeyActions( 'a', 'b', false ),
-                                "RelationshipPropertyKeys[txTerminationAwareLocks=no]"}
+                                "PropertyKeysOnRelationship"},
                 }
         );
     }
