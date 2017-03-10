@@ -180,7 +180,7 @@ trait Expressions extends Parser
     Expression1 ~ oneOrMore(WS ~ PropertyLookup)
   }
 
-  private def PropertyLookup: ReductionRule1[ast.Expression, ast.Property] = rule("'.'") {
+  def PropertyLookup: ReductionRule1[ast.Expression, ast.Property] = rule("'.'") {
     operator(".") ~~ (PropertyKeyName ~~>> (ast.Property(_: ast.Expression, _)))
   }
 
