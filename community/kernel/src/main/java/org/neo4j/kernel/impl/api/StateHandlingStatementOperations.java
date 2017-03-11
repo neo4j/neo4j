@@ -1046,14 +1046,13 @@ public class StateHandlingStatementOperations implements
             if ( existingProperty == NO_SUCH_PROPERTY )
             {
                 state.txState().nodeDoAddProperty( node.id(), property );
-                indexTxStateUpdater.onPropertyChange( state, node, indexTxStateUpdater.add( property ) );
+                indexTxStateUpdater.onPropertyAdd( state, node, property );
                 return Property.noProperty( property.propertyKeyId(), EntityType.NODE, node.id() );
             }
             else
             {
                 state.txState().nodeDoChangeProperty( node.id(), existingProperty, property );
-                indexTxStateUpdater
-                        .onPropertyChange( state, node, indexTxStateUpdater.change( existingProperty, property ) );
+                indexTxStateUpdater.onPropertyChange( state, node, existingProperty, property );
                 return existingProperty;
             }
         }
@@ -1120,7 +1119,7 @@ public class StateHandlingStatementOperations implements
                     autoIndexing.nodes().propertyRemoved( ops, nodeId, propertyKeyId );
                     state.txState().nodeDoRemoveProperty( node.id(), existingProperty );
 
-                    indexTxStateUpdater.onPropertyChange( state, node, indexTxStateUpdater.remove( existingProperty ) );
+                    indexTxStateUpdater.onPropertyRemove( state, node, existingProperty );
                 }
             }
 

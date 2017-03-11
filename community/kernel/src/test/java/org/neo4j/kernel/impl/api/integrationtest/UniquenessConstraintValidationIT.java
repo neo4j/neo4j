@@ -48,7 +48,7 @@ import static org.neo4j.kernel.api.schema_new.IndexQuery.exact;
 public class UniquenessConstraintValidationIT extends KernelIntegrationTest
 {
     @Test
-    public void shouldEnforceUniquenessConstraintOnSetProperty() throws Exception
+    public void shouldEnforceOnSetProperty() throws Exception
     {
         // given
         constrainedNode( "Label1", "key1", "value1" );
@@ -162,31 +162,6 @@ public class UniquenessConstraintValidationIT extends KernelIntegrationTest
         commit();
     }
 
-    private long createLabeledNode( Statement statement, String label ) throws KernelException
-    {
-        long node = statement.dataWriteOperations().nodeCreate();
-        int labelId = statement.tokenWriteOperations().labelGetOrCreateForName( label );
-        statement.dataWriteOperations().nodeAddLabel( node, labelId );
-        return node;
-    }
-
-    private long createNode( Statement statement, String key, Object value ) throws KernelException
-    {
-        long node = statement.dataWriteOperations().nodeCreate();
-        int propertyKeyId = statement.tokenWriteOperations().propertyKeyGetOrCreateForName( key );
-        statement.dataWriteOperations().nodeSetProperty( node, property( propertyKeyId, value ) );
-        return node;
-    }
-
-    private long createLabeledNode( Statement statement, String label, String key, Object value )
-            throws KernelException
-    {
-        long node = createLabeledNode( statement, label );
-        int propertyKeyId = statement.tokenWriteOperations().propertyKeyGetOrCreateForName( key );
-        statement.dataWriteOperations().nodeSetProperty( node, property( propertyKeyId, value ) );
-        return node;
-    }
-
     @Test
     public void shouldAllowRemoveAndAddConflictingDataInOneTransaction_RemoveLabel() throws Exception
     {
@@ -253,11 +228,6 @@ public class UniquenessConstraintValidationIT extends KernelIntegrationTest
         {
             assertThat( e.getUserMessage( tokenLookup( statement ) ), containsString( "`key1` = 'value2'" ) );
         }
-    }
-
-    private TokenNameLookup tokenLookup( Statement statement )
-    {
-        return new StatementTokenNameLookup( statement.readOperations() );
     }
 
     @Test
@@ -365,6 +335,36 @@ public class UniquenessConstraintValidationIT extends KernelIntegrationTest
 
         // then I should find the original node
         assertThat( readOps.nodeGetFromUniqueIndexSeek( idx, exact( propId, 1 ) ), equalTo( ourNode ));
+    }
+
+    private TokenNameLookup tokenLookup( Statement statement )
+    {
+        return new StatementTokenNameLookup( statement.readOperations() );
+    }
+
+    private long createLabeledNode( Statement statement, String label ) throws KernelException
+    {
+        long node = statement.dataWriteOperations().nodeCreate();
+        int labelId = statement.tokenWriteOperations().labelGetOrCreateForName( label );
+        statement.dataWriteOperations().nodeAddLabel( node, labelId );
+        return node;
+    }
+
+    private long createNode( Statement statement, String key, Object value ) throws KernelException
+    {
+        long node = statement.dataWriteOperations().nodeCreate();
+        int propertyKeyId = statement.tokenWriteOperations().propertyKeyGetOrCreateForName( key );
+        statement.dataWriteOperations().nodeSetProperty( node, property( propertyKeyId, value ) );
+        return node;
+    }
+
+    private long createLabeledNode( Statement statement, String label, String key, Object value )
+            throws KernelException
+    {
+        long node = createLabeledNode( statement, label );
+        int propertyKeyId = statement.tokenWriteOperations().propertyKeyGetOrCreateForName( key );
+        statement.dataWriteOperations().nodeSetProperty( node, property( propertyKeyId, value ) );
+        return node;
     }
 
     private long constrainedNode( String labelName, String propertyKey, Object propertyValue )

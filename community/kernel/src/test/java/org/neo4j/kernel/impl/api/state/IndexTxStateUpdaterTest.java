@@ -30,6 +30,7 @@ import org.neo4j.collection.primitive.PrimitiveIntCollections;
 import org.neo4j.collection.primitive.PrimitiveIntSet;
 import org.neo4j.cursor.Cursor;
 import org.neo4j.kernel.api.exceptions.EntityNotFoundException;
+import org.neo4j.kernel.api.properties.Property;
 import org.neo4j.kernel.api.schema_new.LabelSchemaDescriptor;
 import org.neo4j.kernel.api.schema_new.OrderedPropertyValues;
 import org.neo4j.kernel.api.schema_new.index.NewIndexDescriptor;
@@ -39,6 +40,7 @@ import org.neo4j.kernel.impl.api.KernelStatement;
 import org.neo4j.kernel.impl.api.operations.EntityReadOperations;
 import org.neo4j.kernel.impl.api.operations.SchemaReadOperations;
 import org.neo4j.storageengine.api.NodeItem;
+import org.neo4j.storageengine.api.PropertyItem;
 
 import static org.mockito.Matchers.any;
 import static org.mockito.Matchers.anyInt;
@@ -111,6 +113,10 @@ public class IndexTxStateUpdaterTest
         PrimitiveIntSet defaultPropertyIds = PrimitiveIntCollections.asSet( new int[]{ propId1, propId2, propId3 } );
         EntityReadOperations readOps = mock( EntityReadOperations.class );
         when( readOps.nodeGetPropertyKeys( state, node ) ).thenReturn( defaultPropertyIds );
+        when( readOps.nodeGetProperties( state, node ) ).thenAnswer( p -> StubCursors.asPropertyCursor(
+                Property.property( propId1, "hi1" ),
+                Property.property( propId2, "hi2" ),
+                Property.property( propId3, "hi3" ) ) );
         when( readOps.nodeGetProperty( state, node, propId1 ) ).thenReturn( "hi1" );
         when( readOps.nodeGetProperty( state, node, propId2 ) ).thenReturn( "hi2" );
         when( readOps.nodeGetProperty( state, node, propId3 ) ).thenReturn( "hi3" );
@@ -161,10 +167,10 @@ public class IndexTxStateUpdaterTest
     public void shouldNotUpdateIndexesOnChangedIrrelevantProperty() throws EntityNotFoundException
     {
         // WHEN
-        indexTxUpdater.onPropertyChange( state, node, indexTxUpdater.add( property( unIndexedPropId, "whAt" ) ));
-        indexTxUpdater.onPropertyChange( state, node, indexTxUpdater.remove( property( unIndexedPropId, "whAt" ) ));
-        indexTxUpdater.onPropertyChange( state, node, indexTxUpdater.change(
-                property( unIndexedPropId, "whAt" ), property( unIndexedPropId, "whAt2" ) ));
+        indexTxUpdater.onPropertyAdd( state, node, property( unIndexedPropId, "whAt" ) );
+        indexTxUpdater.onPropertyRemove( state, node, property( unIndexedPropId, "whAt" ) );
+        indexTxUpdater.onPropertyChange( state, node,
+                property( unIndexedPropId, "whAt" ), property( unIndexedPropId, "whAt2" ) );
 
         // THEN
         verify( txState, times( 0 ) ).indexDoUpdateEntry( any(), anyInt(), any(), any() );
@@ -174,7 +180,7 @@ public class IndexTxStateUpdaterTest
     public void shouldUpdateIndexesOnAddedProperty() throws EntityNotFoundException
     {
         // WHEN
-        indexTxUpdater.onPropertyChange( state, node, indexTxUpdater.add( property( newPropId, "newHi" ) ));
+        indexTxUpdater.onPropertyAdd( state, node, property( newPropId, "newHi" ) );
 
         // THEN
         verifyIndexUpdate( indexOn2_new.schema(), node.id(), null, values( "newHi" ) );
@@ -186,7 +192,7 @@ public class IndexTxStateUpdaterTest
     public void shouldUpdateIndexesOnRemovedProperty() throws EntityNotFoundException
     {
         // WHEN
-        indexTxUpdater.onPropertyChange( state, node, indexTxUpdater.remove( property( propId2, "hi2" ) ));
+        indexTxUpdater.onPropertyRemove( state, node, property( propId2, "hi2" ) );
 
         // THEN
         verifyIndexUpdate( uniqueOn1_2.schema(), node.id(), values( "hi2" ), null );
@@ -198,8 +204,8 @@ public class IndexTxStateUpdaterTest
     public void shouldUpdateIndexesOnChangesProperty() throws EntityNotFoundException
     {
         // WHEN
-        indexTxUpdater.onPropertyChange( state, node, indexTxUpdater.change(
-                property( propId2, "hi2" ), property( propId2, "new2" ) ));
+        indexTxUpdater.onPropertyChange( state, node,
+                property( propId2, "hi2" ), property( propId2, "new2" ) );
 
         // THEN
         verifyIndexUpdate( uniqueOn1_2.schema(), node.id(), values( "hi2" ), values( "new2" ) );
