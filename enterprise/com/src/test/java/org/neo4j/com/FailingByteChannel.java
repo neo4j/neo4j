@@ -36,7 +36,10 @@ public class FailingByteChannel extends KnownDataByteChannel
 
     public int read( ByteBuffer dst ) throws IOException
     {
-        if ( position > sizeToFailAt ) throw new MadeUpException( failWithMessage );
+        if ( position > sizeToFailAt )
+        {
+            throw new MadeUpException( failWithMessage );
+        }
         return super.read( dst );
     }
 }

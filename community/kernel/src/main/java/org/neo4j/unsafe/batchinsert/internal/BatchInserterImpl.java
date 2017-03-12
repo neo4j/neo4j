@@ -160,7 +160,6 @@ import org.neo4j.unsafe.batchinsert.BatchRelationship;
 import org.neo4j.unsafe.batchinsert.DirectRecordAccessSet;
 
 import static java.lang.Boolean.parseBoolean;
-
 import static org.neo4j.collection.primitive.PrimitiveLongCollections.map;
 import static org.neo4j.graphdb.Label.label;
 import static org.neo4j.kernel.api.schema.IndexDescriptorFactory.getNodePropertyDescriptor;
@@ -392,7 +391,8 @@ public class BatchInserterImpl implements BatchInserter, IndexConfigStoreProvide
     {
         LabelSchemaDescriptor schemaDescriptor = SchemaDescriptorFactory.forLabel( labelId, propertyKeyIds );
         ConstraintDescriptor constraintDescriptor = ConstraintDescriptorFactory.uniqueForLabel( labelId, propertyKeyIds );
-        if ( schemaCache.hasIndexRule( schemaDescriptor ) || schemaCache.hasConstraintRule( constraintDescriptor ) ) {
+        if ( schemaCache.hasIndexRule( schemaDescriptor ) || schemaCache.hasConstraintRule( constraintDescriptor ) )
+        {
             throw new ConstraintViolationException( errorMessage );
         }
     }

@@ -237,7 +237,8 @@ public class ValueRepresentation extends Representation
             return toListRepresentation(RepresentationType.SHORT, array);
         }
 
-        private ListRepresentation toListRepresentation(RepresentationType type, PropertyArray<?, ?> array) {
+        private ListRepresentation toListRepresentation(RepresentationType type, PropertyArray<?, ?> array)
+        {
             return new ListRepresentation(type, dispatch(array) );
         }
 

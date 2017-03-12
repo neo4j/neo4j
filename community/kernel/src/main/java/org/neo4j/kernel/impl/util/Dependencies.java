@@ -63,8 +63,10 @@ public class Dependencies extends DependencyResolver.Adapter implements Dependen
         {
             DependencyResolver dependencyResolver = parent.get();
 
-            if (dependencyResolver !=null)
+            if ( dependencyResolver != null )
+            {
                 return dependencyResolver.resolveDependency( type, selector );
+            }
         }
 
         // Out of options

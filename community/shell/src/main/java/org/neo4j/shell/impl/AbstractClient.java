@@ -177,7 +177,9 @@ public abstract class AbstractClient implements ShellClient
         finally
         {
             if ( !success )
+            {
                 endMultiLine();
+            }
         }
     }
 

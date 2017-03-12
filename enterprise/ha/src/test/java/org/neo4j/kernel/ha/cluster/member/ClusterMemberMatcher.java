@@ -170,15 +170,25 @@ public class ClusterMemberMatcher extends BaseMatcher<Iterable<ClusterMemberInfo
         private boolean match( ClusterMemberInfo toMatch )
         {
             if ( !member.toString().equals( toMatch.getInstanceId() ) )
+            {
                 return false;
+            }
             if ( available != null && toMatch.isAvailable() != available )
+            {
                 return false;
+            }
             if ( alive != null && toMatch.isAlive() != alive )
+            {
                 return false;
+            }
             if ( haRole != null && !haRole.equals( toMatch.getHaRole() ) )
+            {
                 return false;
+            }
             if ( uris != null && !uris.equals( new HashSet<String>( asList( toMatch.getUris() ) ) ) )
+            {
                 return false;
+            }
             return true;
         }
 

@@ -30,95 +30,124 @@ import java.util.Enumeration;
 import static org.junit.Assert.assertEquals;
 import static org.junit.Assert.assertTrue;
 
-public class ServiceTest {
+public class ServiceTest
+{
 
     @Test
-    public void shouldLoadServiceInDefaultEnvironment() throws Exception {
-        FooService fooService = Service.load(FooService.class,"foo");
-        assertTrue( fooService instanceof BarService);
+    public void shouldLoadServiceInDefaultEnvironment() throws Exception
+    {
+        FooService fooService = Service.load( FooService.class, "foo" );
+        assertTrue( fooService instanceof BarService );
     }
 
     @Test
-    public void whenContextCallsLoaderBlocksServicesFolderShouldLoadClassFromKernelClassloader() {
+    public void whenContextCallsLoaderBlocksServicesFolderShouldLoadClassFromKernelClassloader()
+    {
         ClassLoader contextClassLoader = Thread.currentThread().getContextClassLoader();
-        try {
-            Thread.currentThread().setContextClassLoader(new ServiceBlockClassLoader(contextClassLoader));
-            FooService fooService = Service.load(FooService.class,"foo");
-            assertTrue( fooService instanceof BarService);
-        } finally {
-            Thread.currentThread().setContextClassLoader(contextClassLoader);
+        try
+        {
+            Thread.currentThread().setContextClassLoader( new ServiceBlockClassLoader( contextClassLoader ) );
+            FooService fooService = Service.load( FooService.class, "foo" );
+            assertTrue( fooService instanceof BarService );
+        }
+        finally
+        {
+            Thread.currentThread().setContextClassLoader( contextClassLoader );
         }
     }
 
     @Test
-    public void whenContextClassLoaderOverridesServiceShouldLoadThatClass() throws Exception {
+    public void whenContextClassLoaderOverridesServiceShouldLoadThatClass() throws Exception
+    {
         ClassLoader contextClassLoader = Thread.currentThread().getContextClassLoader();
-        try {
-            Thread.currentThread().setContextClassLoader(new ServiceRedirectClassLoader(contextClassLoader));
-            FooService fooService = Service.load(FooService.class,"foo");
-            assertTrue( fooService instanceof BazService);
-        } finally {
-            Thread.currentThread().setContextClassLoader(contextClassLoader);
+        try
+        {
+            Thread.currentThread().setContextClassLoader( new ServiceRedirectClassLoader( contextClassLoader ) );
+            FooService fooService = Service.load( FooService.class, "foo" );
+            assertTrue( fooService instanceof BazService );
+        }
+        finally
+        {
+            Thread.currentThread().setContextClassLoader( contextClassLoader );
         }
     }
 
     @Test
-    public void whenContextClassLoaderDuplicatesServiceShouldLoadItOnce() throws Exception {
+    public void whenContextClassLoaderDuplicatesServiceShouldLoadItOnce() throws Exception
+    {
         ClassLoader contextClassLoader = Thread.currentThread().getContextClassLoader();
-        try {
-            Thread.currentThread().setContextClassLoader(Service.class.getClassLoader());
-            Iterable<FooService> services = Service.load(FooService.class);
+        try
+        {
+            Thread.currentThread().setContextClassLoader( Service.class.getClassLoader() );
+            Iterable<FooService> services = Service.load( FooService.class );
             int size = 0;
-            for (FooService fooService : services) {
-                size ++;
+            for ( FooService fooService : services )
+            {
+                size++;
             }
-            assertEquals(1,size);
-        } finally {
-            Thread.currentThread().setContextClassLoader(contextClassLoader);
+            assertEquals( 1, size );
+        }
+        finally
+        {
+            Thread.currentThread().setContextClassLoader( contextClassLoader );
         }
     }
 
-    private static final class ServiceBlockClassLoader extends ClassLoader {
+    private static final class ServiceBlockClassLoader extends ClassLoader
+    {
 
-        public ServiceBlockClassLoader(ClassLoader parent) {
-            super(parent);
+        public ServiceBlockClassLoader( ClassLoader parent )
+        {
+            super( parent );
         }
 
         @Override
-        public URL getResource(String name) {
-            return name.startsWith("META-INF/services") ? null:super.getResource(name);
+        public URL getResource( String name )
+        {
+            return name.startsWith( "META-INF/services" ) ? null : super.getResource( name );
         }
 
         @Override
-        public Enumeration<URL> getResources(String name) throws IOException {
-            return name.startsWith("META-INF/services") ? Collections.enumeration(Collections.<URL>emptySet()): super.getResources(name);
+        public Enumeration<URL> getResources( String name ) throws IOException
+        {
+            return name.startsWith( "META-INF/services" ) ? Collections.enumeration( Collections.<URL>emptySet() )
+                                                          : super.getResources( name );
         }
 
         @Override
-        public InputStream getResourceAsStream(String name) {
-            return name.startsWith("META-INF/services") ? null:super.getResourceAsStream(name);
+        public InputStream getResourceAsStream( String name )
+        {
+            return name.startsWith( "META-INF/services" ) ? null : super.getResourceAsStream( name );
         }
     }
 
-    private static final class ServiceRedirectClassLoader extends ClassLoader {
+    private static final class ServiceRedirectClassLoader extends ClassLoader
+    {
 
-        public ServiceRedirectClassLoader(ClassLoader parent) {
-            super(parent);
+        public ServiceRedirectClassLoader( ClassLoader parent )
+        {
+            super( parent );
         }
 
         @Override
-        public URL getResource(String name) {
-            return name.startsWith("META-INF/services") ? super.getResource("test/"+name):super.getResource(name);
+        public URL getResource( String name )
+        {
+            return name.startsWith( "META-INF/services" ) ? super.getResource( "test/" + name )
+                                                          : super.getResource( name );
         }
 
         @Override
-        public Enumeration<URL> getResources(String name) throws IOException {
-            return name.startsWith("META-INF/services") ? super.getResources("test/"+name): super.getResources(name);
+        public Enumeration<URL> getResources( String name ) throws IOException
+        {
+            return name.startsWith( "META-INF/services" ) ? super.getResources( "test/" + name )
+                                                          : super.getResources( name );
         }
 
         @Override
-        public InputStream getResourceAsStream(String name) {
-            return name.startsWith("META-INF/services") ? super.getResourceAsStream("test/"+name):super.getResourceAsStream(name);
+        public InputStream getResourceAsStream( String name )
+        {
+            return name.startsWith( "META-INF/services" ) ? super.getResourceAsStream( "test/" + name )
+                                                          : super.getResourceAsStream( name );
         }
     }
 }

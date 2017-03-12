@@ -19,13 +19,6 @@
  */
 package org.neo4j.test.server;
 
-import java.net.URI;
-import java.util.Collections;
-import java.util.HashMap;
-import java.util.List;
-import java.util.Map;
-import javax.ws.rs.core.MediaType;
-
 import com.sun.jersey.api.client.Client;
 import com.sun.jersey.api.client.ClientRequest;
 import com.sun.jersey.api.client.ClientResponse;
@@ -33,18 +26,23 @@ import com.sun.jersey.api.client.config.ClientConfig;
 import com.sun.jersey.api.client.config.DefaultClientConfig;
 import org.codehaus.jackson.JsonNode;
 
+import java.net.URI;
+import java.util.Collections;
+import java.util.HashMap;
+import java.util.List;
+import java.util.Map;
+import javax.ws.rs.core.MediaType;
+
 import org.neo4j.helpers.collection.Iterables;
 import org.neo4j.server.rest.domain.JsonHelper;
 import org.neo4j.server.rest.domain.JsonParseException;
 
 import static java.util.Collections.unmodifiableMap;
-
 import static org.hamcrest.Matchers.allOf;
 import static org.hamcrest.Matchers.anyOf;
 import static org.hamcrest.Matchers.containsString;
 import static org.hamcrest.Matchers.not;
 import static org.junit.Assert.assertThat;
-
 import static org.neo4j.helpers.collection.MapUtil.stringMap;
 import static org.neo4j.server.rest.domain.JsonHelper.createJsonFrom;
 
@@ -56,7 +54,8 @@ public class HTTP
 
     private static final Builder BUILDER = new Builder().withHeaders( "Accept", "application/json" );
     private static final Client CLIENT;
-    static {
+    static
+    {
         DefaultClientConfig defaultClientConfig = new DefaultClientConfig();
         defaultClientConfig.getProperties().put( ClientConfig.PROPERTY_FOLLOW_REDIRECTS, Boolean.FALSE );
         CLIENT = Client.create( defaultClientConfig );

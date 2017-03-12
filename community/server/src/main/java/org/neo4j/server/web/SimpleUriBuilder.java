@@ -24,7 +24,8 @@ import java.net.URISyntaxException;
 
 import org.neo4j.helpers.AdvertisedSocketAddress;
 
-public class SimpleUriBuilder {
+public class SimpleUriBuilder
+{
 
     public URI buildURI( AdvertisedSocketAddress address, boolean isSsl )
     {

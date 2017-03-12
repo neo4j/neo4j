@@ -43,7 +43,10 @@ class ParameterExtractor extends DataExtractor
     Object extract( GraphDatabaseAPI graphDb, Object source, ParameterList parameters ) throws BadInputException
     {
         Object result = caster.get( graphDb, parameters, name );
-        if ( optional || result != null ) return result;
+        if ( optional || result != null )
+        {
+            return result;
+        }
         throw new IllegalArgumentException( "Mandatory argument \"" + name + "\" not supplied." );
     }
 

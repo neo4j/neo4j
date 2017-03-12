@@ -83,12 +83,14 @@ public class CypherService
                            @Context HttpServletRequest request,
                            @QueryParam( INCLUDE_STATS_PARAM ) boolean includeStats,
                            @QueryParam( INCLUDE_PLAN_PARAM ) boolean includePlan,
-                           @QueryParam( PROFILE_PARAM ) boolean profile) throws BadInputException {
+                           @QueryParam( PROFILE_PARAM ) boolean profile) throws BadInputException
+    {
 
         usage.get( features ).flag( http_cypher_endpoint );
         Map<String,Object> command = input.readMap( body );
 
-        if( !command.containsKey(QUERY_KEY) ) {
+        if( !command.containsKey(QUERY_KEY) )
+        {
             return output.badRequest( new InvalidArgumentsException( "You have to provide the 'query' parameter." ) );
         }
 
@@ -142,7 +144,8 @@ public class CypherService
             if (e.getCause() instanceof CypherException)
             {
                 return output.badRequest( e.getCause() );
-            } else
+            }
+            else
             {
                 return output.badRequest( e );
             }

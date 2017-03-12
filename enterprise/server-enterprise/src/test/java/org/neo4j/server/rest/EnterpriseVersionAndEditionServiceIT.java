@@ -20,6 +20,7 @@
 package org.neo4j.server.rest;
 
 import org.junit.Test;
+
 import org.neo4j.kernel.internal.KernelData;
 import org.neo4j.server.rest.management.VersionAndEditionService;
 import org.neo4j.test.server.HTTP;
@@ -33,7 +34,8 @@ Note that when running this test from within an IDE, the version field will be a
 code that generates the version identifier is written by Maven as part of the build process(!). The tests will pass
 both in the IDE (where the empty string will be correctly compared).
  */
-public class EnterpriseVersionAndEditionServiceIT extends EnterpriseVersionIT {
+public class EnterpriseVersionAndEditionServiceIT extends EnterpriseVersionIT
+{
 
     @Test
     public void shouldReportEnterpriseEdition() throws Exception

@@ -29,7 +29,8 @@ import javax.ws.rs.core.MediaType;
 import org.neo4j.graphdb.factory.GraphDatabaseSettings;
 import org.neo4j.logging.Log;
 
-public class HttpHeaderUtils {
+public class HttpHeaderUtils
+{
 
     public static final String MAX_EXECUTION_TIME_HEADER = "max-execution-time";
 

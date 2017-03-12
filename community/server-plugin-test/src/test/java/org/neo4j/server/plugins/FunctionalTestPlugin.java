@@ -268,7 +268,8 @@ public class FunctionalTestPlugin extends ServerPlugin
             try
             {
                 node = db.getNodeById( 0L );
-            } catch(NotFoundException e)
+            }
+            catch(NotFoundException e)
             {
                 node = db.createNode();
             }

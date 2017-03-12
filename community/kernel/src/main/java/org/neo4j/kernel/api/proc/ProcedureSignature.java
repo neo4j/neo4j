@@ -72,14 +72,20 @@ public class ProcedureSignature
         return name;
     }
 
-    public Mode mode() { return mode; }
+    public Mode mode()
+    {
+        return mode;
+    }
 
     public Optional<String> deprecated()
     {
         return deprecated;
     }
 
-    public String[] allowed() { return allowed; }
+    public String[] allowed()
+    {
+        return allowed;
+    }
 
     public List<FieldSignature> inputSignature()
     {
@@ -109,16 +115,18 @@ public class ProcedureSignature
     @Override
     public boolean equals( Object o )
     {
-        if ( this == o ) { return true; }
-        if ( o == null || getClass() != o.getClass() ) { return false; }
+        if ( this == o )
+        {
+            return true;
+        }
+        if ( o == null || getClass() != o.getClass() )
+        {
+            return false;
+        }
 
         ProcedureSignature that = (ProcedureSignature) o;
-
-        return
-           name.equals( that.name ) &&
-           inputSignature.equals( that.inputSignature ) &&
-           outputSignature.equals( that.outputSignature ) &&
-           isVoid() == that.isVoid();
+        return name.equals( that.name ) && inputSignature.equals( that.inputSignature ) &&
+                outputSignature.equals( that.outputSignature ) && isVoid() == that.isVoid();
     }
 
     @Override

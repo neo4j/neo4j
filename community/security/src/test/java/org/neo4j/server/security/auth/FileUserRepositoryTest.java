@@ -200,7 +200,8 @@ public class FileUserRepositoryTest
         {
             users.create( user );
             fail( "Expected an IOException" );
-        } catch ( IOException e )
+        }
+        catch ( IOException e )
         {
             assertSame( exception, e );
         }
@@ -249,7 +250,8 @@ public class FileUserRepositoryTest
         {
             users.update( modifiedUser, updatedUser );
             fail( "expected exception not thrown" );
-        } catch ( ConcurrentModificationException e )
+        }
+        catch ( ConcurrentModificationException e )
         {
             // Then continue
         }

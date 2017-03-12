@@ -240,7 +240,8 @@ public enum NotificationCode
         }
 
         @Override
-        public String toString() {
+        public String toString()
+        {
             return "Notification{" +
                     "position=" + position +
                     ", detailedDescription='" + detailedDescription + '\'' +

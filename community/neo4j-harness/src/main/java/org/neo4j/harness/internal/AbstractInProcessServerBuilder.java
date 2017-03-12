@@ -267,12 +267,14 @@ public abstract class AbstractInProcessServerBuilder implements TestServerBuilde
         String propertyString = "";
         int packageCount = extensions.size();
 
-        if( packageCount == 0 )
+        if ( packageCount == 0 )
+        {
             return propertyString;
+        }
         else
         {
             ThirdPartyJaxRsPackage jaxRsPackage;
-            for( int i = 0; i < packageCount - 1; i ++ )
+            for ( int i = 0; i < packageCount - 1; i++ )
             {
                 jaxRsPackage = extensions.get( i );
                 propertyString += jaxRsPackage.getPackageName() + "=" + jaxRsPackage.getMountPoint() + Settings.SEPARATOR;

@@ -112,7 +112,8 @@ public class OnDemandJobScheduler extends LifecycleAdapter implements JobSchedul
         for ( Runnable job : jobs )
         {
             job.run();
-            if ( removeJobsAfterExecution ) {
+            if ( removeJobsAfterExecution )
+            {
                 jobs.remove( job );
             }
         }

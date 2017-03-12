@@ -64,13 +64,17 @@ public class MultiEvaluator<STATE> extends PathEvaluator.Adapter<STATE>
             {
                 includes = false;
                 if ( !continues )
+                {
                     return Evaluation.EXCLUDE_AND_PRUNE;
+                }
             }
             if ( !bla.continues() )
             {
                 continues = false;
                 if ( !includes )
+                {
                     return Evaluation.EXCLUDE_AND_PRUNE;
+                }
             }
         }
         return Evaluation.of( includes, continues );

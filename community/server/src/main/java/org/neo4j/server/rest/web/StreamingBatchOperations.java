@@ -44,7 +44,7 @@ import org.neo4j.server.web.WebServer;
 public class StreamingBatchOperations extends BatchOperations
 {
 
-    private static final Logger LOGGER = Log.getLogger(StreamingBatchOperations.class);
+    private static final Logger LOGGER = Log.getLogger( StreamingBatchOperations.class );
     private StreamingBatchOperationResults results;
 
     public StreamingBatchOperations( WebServer webServer )
@@ -53,60 +53,69 @@ public class StreamingBatchOperations extends BatchOperations
     }
 
     public void readAndExecuteOperations( UriInfo uriInfo, HttpHeaders httpHeaders, HttpServletRequest req,
-                                          InputStream body, ServletOutputStream output ) throws IOException, ServletException {
-        results = new StreamingBatchOperationResults(jsonFactory.createJsonGenerator(output),output);
-        Map<Integer, String> locations = results.getLocations();
+            InputStream body, ServletOutputStream output ) throws IOException, ServletException
+    {
+        results = new StreamingBatchOperationResults( jsonFactory.createJsonGenerator( output ), output );
+        Map<Integer,String> locations = results.getLocations();
         parseAndPerform( uriInfo, httpHeaders, req, body, locations );
         results.close();
     }
 
     @Override
-    protected void invoke(String method,  String path, String body, Integer id, URI targetUri, InternalJettyServletRequest req, InternalJettyServletResponse res ) throws IOException, ServletException
+    protected void invoke( String method, String path, String body, Integer id, URI targetUri,
+            InternalJettyServletRequest req, InternalJettyServletResponse res ) throws IOException, ServletException
     {
-        results.startOperation(path,id);
-        try {
-            res = new BatchInternalJettyServletResponse(results.getServletOutputStream());
-            webServer.invokeDirectly(targetUri.getPath(), req, res);
-        } catch(Exception e) {
+        results.startOperation( path, id );
+        try
+        {
+            res = new BatchInternalJettyServletResponse( results.getServletOutputStream() );
+            webServer.invokeDirectly( targetUri.getPath(), req, res );
+        }
+        catch ( Exception e )
+        {
             LOGGER.warn( e );
             results.writeError( 500, e.getMessage() );
-            throw new BatchOperationFailedException(500, e.getMessage(),e );
+            throw new BatchOperationFailedException( 500, e.getMessage(), e );
 
         }
         final int status = res.getStatus();
-        if (is2XXStatusCode(status))
+        if ( is2XXStatusCode( status ) )
         {
-            results.addOperationResult(status,id,res.getHeader("Location"));
+            results.addOperationResult( status, id, res.getHeader( "Location" ) );
         }
         else
         {
-            final String message = "Error " + status + " executing batch operation: " + ((id!=null) ? id + ". ":"") + method + " " + path + " " + body;
+            final String message = "Error " + status + " executing batch operation: " +
+                    ((id != null) ? id + ". " : "") + method + " " + path + " " + body;
             results.writeError( status, res.getReason() );
             throw new BatchOperationFailedException( status, message, new Exception( res.getReason() ) );
         }
     }
 
-    protected void addHeaders(final InternalJettyServletRequest res,
-            final HttpHeaders httpHeaders)
+    protected void addHeaders( final InternalJettyServletRequest res, final HttpHeaders httpHeaders )
     {
-        super.addHeaders( res,httpHeaders );
-        res.addHeader(StreamingJsonFormat.STREAM_HEADER,"true");
+        super.addHeaders( res, httpHeaders );
+        res.addHeader( StreamingJsonFormat.STREAM_HEADER, "true" );
     }
 
-    private static class BatchInternalJettyServletResponse extends InternalJettyServletResponse {
+    private static class BatchInternalJettyServletResponse extends InternalJettyServletResponse
+    {
         private final ServletOutputStream output;
 
-        public BatchInternalJettyServletResponse(ServletOutputStream output) {
+        public BatchInternalJettyServletResponse( ServletOutputStream output )
+        {
             this.output = output;
         }
 
         @Override
-        public ServletOutputStream getOutputStream() throws IOException {
+        public ServletOutputStream getOutputStream() throws IOException
+        {
             return output;
         }
 
         @Override
-        public PrintWriter getWriter() throws IOException {
+        public PrintWriter getWriter() throws IOException
+        {
             return new PrintWriter( new OutputStreamWriter( output, StandardCharsets.UTF_8 ) );
         }
     }

@@ -31,9 +31,9 @@ import org.neo4j.causalclustering.core.consensus.log.RaftLogEntry;
 import org.neo4j.causalclustering.core.consensus.log.ReadableRaftLog;
 import org.neo4j.causalclustering.core.consensus.log.segmented.InFlightMap;
 import org.neo4j.causalclustering.core.consensus.membership.RaftMembership;
-import org.neo4j.causalclustering.messaging.Outbound;
 import org.neo4j.causalclustering.core.consensus.outcome.ShipCommand;
 import org.neo4j.causalclustering.identity.MemberId;
+import org.neo4j.causalclustering.messaging.Outbound;
 import org.neo4j.kernel.lifecycle.LifecycleAdapter;
 import org.neo4j.logging.LogProvider;
 
@@ -149,7 +149,9 @@ public class RaftLogShippingManager extends LifecycleAdapter implements RaftMemb
     public synchronized void onMembershipChanged()
     {
         if ( lastLeaderContext == null || !running )
+        {
             return;
+        }
 
         HashSet<MemberId> toBeRemoved = new HashSet<>( logShippers.keySet() );
         toBeRemoved.removeAll( membership.replicationMembers() );

@@ -45,9 +45,8 @@ import javax.tools.StandardLocation;
 import javax.tools.ToolProvider;
 
 import org.neo4j.helpers.collection.Visitable;
-import org.neo4j.kernel.api.schema.NodePropertyDescriptor;
 import org.neo4j.kernel.api.constraints.UniquenessConstraint;
-import org.neo4j.kernel.api.schema.IndexDescriptorFactory;
+import org.neo4j.kernel.api.schema.NodePropertyDescriptor;
 import org.neo4j.kernel.api.schema_new.index.NewIndexDescriptorFactory;
 
 import static org.junit.Assert.assertEquals;
@@ -233,7 +232,8 @@ public class DbStructureInvocationTracingAcceptanceTest
             super( URI.create( "mem:///" + className + Kind.CLASS.extension ), Kind.CLASS );
         }
 
-        public byte[] getBytes() {
+        public byte[] getBytes()
+        {
             return byteCodeStream.toByteArray();
         }
 

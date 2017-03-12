@@ -306,7 +306,9 @@ public class PhysicalLogicalTransactionStoreTest
             catch ( NoSuchTransactionException e )
             {   // THEN Good
             }
-        } finally {
+        }
+        finally
+        {
             life.shutdown();
         }
     }
@@ -343,7 +345,8 @@ public class PhysicalLogicalTransactionStoreTest
                 // THEN
                 // We don't get a FileNotFoundException but a NoSuchTransactionException instead
             }
-        } finally
+        }
+        finally
         {
             life.shutdown();
         }

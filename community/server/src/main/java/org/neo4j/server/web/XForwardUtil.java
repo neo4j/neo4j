@@ -19,8 +19,8 @@
  */
 package org.neo4j.server.web;
 
-import javax.ws.rs.core.UriBuilder;
 import java.net.URI;
+import javax.ws.rs.core.UriBuilder;
 
 public class XForwardUtil
 {
@@ -79,7 +79,8 @@ public class XForwardUtil
             try
             {
                 UriBuilder.fromUri( firstHostInXForwardedHostHeader ).build();
-            } catch ( IllegalArgumentException ex )
+            }
+            catch ( IllegalArgumentException ex )
             {
                 this.isValid = false;
                 return;
@@ -127,7 +128,8 @@ public class XForwardUtil
             if ( headerValue != null )
             {
                 this.headerValue = headerValue;
-            } else
+            }
+            else
             {
                 this.headerValue = "";
             }

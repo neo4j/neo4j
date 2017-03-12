@@ -82,7 +82,10 @@ public class PrimitiveIntStack implements PrimitiveIntCollection
             @Override
             public int next()
             {
-                if( !hasNext() ) throw new NoSuchElementException();
+                if ( !hasNext() )
+                {
+                    throw new NoSuchElementException();
+                }
 
                 return array[idx++];
             }

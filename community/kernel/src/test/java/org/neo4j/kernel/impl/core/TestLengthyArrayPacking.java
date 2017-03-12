@@ -78,7 +78,10 @@ public class TestLengthyArrayPacking extends AbstractNeo4jTestCase
     {
         // Exactly 120 bytes: 5b header + (19+4)*5. w/o compression 5+(19*2 + 4)*5
         String[] stringArray = new String[5];
-        for ( int i = 0; i < stringArray.length; i++ ) stringArray[i] = stringOfLength( SOME_LATIN_1_CHARS, 19 );
+        for ( int i = 0; i < stringArray.length; i++ )
+        {
+            stringArray[i] = stringOfLength( SOME_LATIN_1_CHARS, 19 );
+        }
         makeSureRightAmountOfDynamicRecordsUsed( stringArray, 1, ARRAY_RECORD_COUNTER );
     }
 
@@ -86,7 +89,10 @@ public class TestLengthyArrayPacking extends AbstractNeo4jTestCase
     public void makeSureLongUtf8StringArrayUsesLessThanTwoBytePerChar() throws Exception
     {
         String[] stringArray = new String[7];
-        for ( int i = 0; i < stringArray.length; i++ ) stringArray[i] = stringOfLength( SOME_MIXED_CHARS, 20 );
+        for ( int i = 0; i < stringArray.length; i++ )
+        {
+            stringArray[i] = stringOfLength( SOME_MIXED_CHARS, 20 );
+        }
         makeSureRightAmountOfDynamicRecordsUsed( stringArray, 2, ARRAY_RECORD_COUNTER );
     }
 

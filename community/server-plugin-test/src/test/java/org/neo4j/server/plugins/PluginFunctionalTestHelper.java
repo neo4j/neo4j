@@ -19,16 +19,16 @@
  */
 package org.neo4j.server.plugins;
 
-import java.util.List;
-import java.util.Map;
-import javax.ws.rs.core.MediaType;
-
 import org.hamcrest.CoreMatchers;
 import org.hamcrest.Description;
 import org.hamcrest.Factory;
 import org.hamcrest.Matcher;
 import org.hamcrest.TypeSafeMatcher;
 import org.junit.Assert;
+
+import java.util.List;
+import java.util.Map;
+import javax.ws.rs.core.MediaType;
 
 import org.neo4j.server.rest.JaxRsResponse;
 import org.neo4j.server.rest.RestRequest;
@@ -41,7 +41,8 @@ import static org.junit.Assert.assertThat;
 
 public class PluginFunctionalTestHelper
 {
-    public static Map<String, Object> makeGet( String url ) throws JsonParseException {
+    public static Map<String, Object> makeGet( String url ) throws JsonParseException
+    {
         JaxRsResponse response = new RestRequest().get(url);
 
         String body = getResponseText(response);
@@ -94,7 +95,8 @@ public class PluginFunctionalTestHelper
         return deserializeMap( body );
     }
 
-    protected static List<Map<String, Object>> makePostList( String url ) throws JsonParseException {
+    protected static List<Map<String, Object>> makePostList( String url ) throws JsonParseException
+    {
         JaxRsResponse response = new RestRequest().post(url, null);
 
         String body = getResponseText(response);
@@ -104,7 +106,8 @@ public class PluginFunctionalTestHelper
     }
 
     protected static List<Map<String, Object>> makePostList( String url, Map<String, Object> params )
-            throws JsonParseException {
+            throws JsonParseException
+    {
         String json = JsonHelper.createJsonFrom(params);
         JaxRsResponse response = new RestRequest().post(url, json);
 

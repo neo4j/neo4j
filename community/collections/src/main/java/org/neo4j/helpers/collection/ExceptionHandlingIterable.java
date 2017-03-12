@@ -25,79 +25,104 @@ import java.util.Iterator;
  * allows to catch, analyze and react on exceptions that are thrown by the delegate iterable
  * useful for exception conversion on iterator methods
  * Uses sun.misc.Unsafe internally to rethrow original exceptions !
+ *
  * @param <T> the type of elements
  */
-public class ExceptionHandlingIterable<T> implements Iterable<T> {
+public class ExceptionHandlingIterable<T> implements Iterable<T>
+{
     private final Iterable<T> source;
-    public ExceptionHandlingIterable(Iterable<T> source) {
+
+    public ExceptionHandlingIterable( Iterable<T> source )
+    {
         this.source = source;
     }
 
-    @Override
-    public Iterator<T> iterator() {
-        try {
-            final Iterator<T> it = source.iterator();
-            return new Iterator<T>() {
-                @Override
-                public boolean hasNext() {
-                    try {
-                        return it.hasNext();
-                    } catch (Throwable t) {
-                        return exceptionOnHasNext(t);
-                    }
-                }
-
-                @Override
-                public T next() {
-                    try {
-                        return it.next();
-                    } catch (Throwable t) {
-                        return exceptionOnNext(t);
-                    }
-                }
-
-                @Override
-                public void remove() {
-                    try {
-                        it.remove();
-                    } catch (Throwable t) {
-                        exceptionOnRemove(t);
-                    }
-                }
-            };
-        } catch (Throwable t) {
-            return exceptionOnIterator(t);
-        }
-    }
-
-    protected void rethrow(Throwable t)
-    {
-        // TODO it's pretty bad that we have to do this. We should refactor our exception hierarchy
-        // to eliminate the need for this hack.
-        ExceptionHandlingIterable.<RuntimeException>sneakyThrow(t);
-    }
-
-    @SuppressWarnings("unchecked")
-    private static <T extends Throwable> void sneakyThrow(Throwable throwable) throws T
+    @SuppressWarnings( "unchecked" )
+    private static <T extends Throwable> void sneakyThrow( Throwable throwable ) throws T
     {
         throw (T) throwable;
     }
 
-    protected boolean exceptionOnHasNext(Throwable t) {
-        rethrow(t);
+    @Override
+    public Iterator<T> iterator()
+    {
+        try
+        {
+            final Iterator<T> it = source.iterator();
+            return new Iterator<T>()
+            {
+                @Override
+                public boolean hasNext()
+                {
+                    try
+                    {
+                        return it.hasNext();
+                    }
+                    catch ( Throwable t )
+                    {
+                        return exceptionOnHasNext( t );
+                    }
+                }
+
+                @Override
+                public T next()
+                {
+                    try
+                    {
+                        return it.next();
+                    }
+                    catch ( Throwable t )
+                    {
+                        return exceptionOnNext( t );
+                    }
+                }
+
+                @Override
+                public void remove()
+                {
+                    try
+                    {
+                        it.remove();
+                    }
+                    catch ( Throwable t )
+                    {
+                        exceptionOnRemove( t );
+                    }
+                }
+            };
+        }
+        catch ( Throwable t )
+        {
+            return exceptionOnIterator( t );
+        }
+    }
+
+    protected void rethrow( Throwable t )
+    {
+        // TODO it's pretty bad that we have to do this. We should refactor our exception hierarchy
+        // to eliminate the need for this hack.
+        ExceptionHandlingIterable.<RuntimeException>sneakyThrow( t );
+    }
+
+    protected boolean exceptionOnHasNext( Throwable t )
+    {
+        rethrow( t );
         return false;
     }
 
-    protected void exceptionOnRemove(Throwable t) {
+    protected void exceptionOnRemove( Throwable t )
+    {
     }
 
-    protected T exceptionOnNext(Throwable t) {
-        rethrow(t);
+    protected T exceptionOnNext( Throwable t )
+    {
+        rethrow( t );
         return null;
     }
 
-    protected Iterator<T> exceptionOnIterator(Throwable t) {
-        rethrow(t);
+    protected Iterator<T> exceptionOnIterator( Throwable t )
+    {
+        rethrow( t );
         return null;
     }
 }

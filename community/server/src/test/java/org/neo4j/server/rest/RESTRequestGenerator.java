@@ -19,6 +19,11 @@
  */
 package org.neo4j.server.rest;
 
+import com.sun.jersey.api.client.Client;
+import com.sun.jersey.api.client.ClientRequest;
+import com.sun.jersey.api.client.ClientRequest.Builder;
+import com.sun.jersey.api.client.ClientResponse;
+
 import java.net.URI;
 import java.net.URISyntaxException;
 import java.util.ArrayList;
@@ -31,11 +36,6 @@ import java.util.TreeMap;
 import java.util.function.Predicate;
 import javax.ws.rs.core.MediaType;
 import javax.ws.rs.core.MultivaluedMap;
-
-import com.sun.jersey.api.client.Client;
-import com.sun.jersey.api.client.ClientRequest;
-import com.sun.jersey.api.client.ClientRequest.Builder;
-import com.sun.jersey.api.client.ClientResponse;
 
 import org.neo4j.function.Predicates;
 import org.neo4j.helpers.collection.Pair;
@@ -269,8 +269,10 @@ public class RESTRequestGenerator
         return retrieveResponse( uri, responseCode, accept, headerFields, request );
     }
 
-    private <T extends Builder> T withHeaders(T builder) {
-        for (Entry<String, String> entry : addedRequestHeaders.entrySet()) {
+    private <T extends Builder> T withHeaders(T builder)
+    {
+        for (Entry<String, String> entry : addedRequestHeaders.entrySet())
+        {
             builder.header(entry.getKey(),entry.getValue());
         }
         return builder;

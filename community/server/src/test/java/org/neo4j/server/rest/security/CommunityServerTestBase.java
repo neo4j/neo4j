@@ -37,7 +37,10 @@ public class CommunityServerTestBase extends ExclusiveServerTestBase
     @After
     public void cleanup()
     {
-        if(server != null) {server.stop();}
+        if ( server != null )
+        {
+            server.stop();
+        }
     }
 
     protected void startServer( boolean authEnabled ) throws IOException

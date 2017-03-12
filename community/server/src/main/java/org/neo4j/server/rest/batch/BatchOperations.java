@@ -118,7 +118,8 @@ public abstract class BatchOperations
         Matcher matcher = PLACHOLDER_PATTERN.matcher(str);
         StringBuffer sb=new StringBuffer();
         String replacement = null;
-        while (matcher.find()) {
+        while (matcher.find())
+        {
             String id = matcher.group(1);
             try
             {

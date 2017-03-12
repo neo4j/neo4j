@@ -87,7 +87,8 @@ public class ProofDatabase
             {
                 throw new RuntimeException( e );
             }
-        } else
+        }
+        else
         {
             dbDir.getParentFile().mkdirs();
         }

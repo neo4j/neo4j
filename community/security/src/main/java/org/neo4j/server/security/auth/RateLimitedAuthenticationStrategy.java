@@ -81,7 +81,8 @@ public class RateLimitedAuthenticationStrategy implements AuthenticationStrategy
         {
             authMetadata.authSuccess();
             return AuthenticationResult.SUCCESS;
-        } else
+        }
+        else
         {
             authMetadata.authFailed();
             return AuthenticationResult.FAILURE;

@@ -52,14 +52,25 @@ public class FailureMessage implements ResponseMessage
     @Override
     public boolean equals( Object o )
     {
-        if ( this == o ) return true;
-        if ( !(o instanceof FailureMessage) ) return false;
+        if ( this == o )
+        {
+            return true;
+        }
+        if ( !(o instanceof FailureMessage) )
+        {
+            return false;
+        }
 
         FailureMessage that = (FailureMessage) o;
 
         if ( message != null ? !message.equals( that.message ) : that.message != null )
+        {
             return false;
-        if ( status != null ? !status.equals( that.status ) : that.status != null ) return false;
+        }
+        if ( status != null ? !status.equals( that.status ) : that.status != null )
+        {
+            return false;
+        }
 
         return true;
     }

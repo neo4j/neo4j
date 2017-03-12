@@ -81,7 +81,9 @@ import static org.neo4j.server.security.enterprise.auth.LdapRealm.LDAP_AUTHORIZA
 import static org.neo4j.server.security.enterprise.auth.LdapRealm.LDAP_CONNECTION_TIMEOUT_CLIENT_MESSAGE;
 import static org.neo4j.server.security.enterprise.auth.LdapRealm.LDAP_READ_TIMEOUT_CLIENT_MESSAGE;
 
-interface TimeoutTests { /* Category marker */ };
+interface TimeoutTests
+{ /* Category marker */
+};
 
 @RunWith( FrameworkRunner.class )
 @CreateDS(

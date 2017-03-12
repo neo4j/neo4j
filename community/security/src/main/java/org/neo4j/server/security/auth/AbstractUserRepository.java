@@ -129,7 +129,8 @@ public abstract class AbstractUserRepository extends LifecycleAdapter implements
                 {
                     foundUser = true;
                     newUsers.add( updatedUser );
-                } else
+                }
+                else
                 {
                     newUsers.add( other );
                 }

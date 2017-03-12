@@ -220,7 +220,10 @@ public class TestGraphDescription implements GraphHolder
     @AfterClass
     public static void stopDatabase()
     {
-        if ( graphdb != null ) graphdb.shutdown();
+        if ( graphdb != null )
+        {
+            graphdb.shutdown();
+        }
         graphdb = null;
     }
 

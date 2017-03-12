@@ -379,7 +379,8 @@ public class Neo4jPack
                 return EMPTY_MAP;
             }
             Map<String, Object> map;
-            if ( size == UNKNOWN_SIZE ) {
+            if ( size == UNKNOWN_SIZE )
+            {
                 map = new HashMap<>();
                 boolean more = true;
                 while ( more )

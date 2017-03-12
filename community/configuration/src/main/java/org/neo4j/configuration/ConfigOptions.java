@@ -62,7 +62,8 @@ public class ConfigOptions
     }
 
     @Nonnull
-    public Optional<String> documentedDefaultValue() {
+    public Optional<String> documentedDefaultValue()
+    {
         return documentedDefaultValue;
     }
 

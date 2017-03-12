@@ -31,7 +31,6 @@ import org.neo4j.collection.primitive.PrimitiveIntObjectMap;
 import org.neo4j.kernel.api.index.IndexAccessor;
 import org.neo4j.kernel.api.index.SchemaIndexProvider;
 import org.neo4j.kernel.api.schema_new.SchemaDescriptorPredicates;
-import org.neo4j.kernel.api.schema_new.index.IndexBoundary;
 import org.neo4j.kernel.configuration.Config;
 import org.neo4j.kernel.impl.api.index.sampling.IndexSamplingConfig;
 import org.neo4j.kernel.impl.store.SchemaStore;
@@ -119,7 +118,8 @@ class IndexLookup implements AutoCloseable
         return reader;
     }
 
-    public Index getAnyIndexOrNull( final long[] labelIds, final int propertyKeyId ) throws IOException {
+    public Index getAnyIndexOrNull( final long[] labelIds, final int propertyKeyId ) throws IOException
+    {
         List<IndexRule> indexRules = indexRuleIndex.get( propertyKeyId );
         if( indexRules == null )
         {

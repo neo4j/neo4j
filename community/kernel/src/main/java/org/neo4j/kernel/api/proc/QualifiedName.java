@@ -62,8 +62,14 @@ public class QualifiedName
     @Override
     public boolean equals( Object o )
     {
-        if ( this == o ) { return true; }
-        if ( o == null || getClass() != o.getClass() ) { return false; }
+        if ( this == o )
+        {
+            return true;
+        }
+        if ( o == null || getClass() != o.getClass() )
+        {
+            return false;
+        }
 
         QualifiedName that = (QualifiedName) o;
         return Arrays.equals( namespace, that.namespace ) && name.equals( that.name );

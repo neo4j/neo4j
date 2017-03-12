@@ -108,9 +108,13 @@ public class TestShortestPath extends Neo4jAlgoTestCase
             {
                 final Node node = graphDb.createNode( labels[level] );
                 if ( parent != null )
+                {
                     parent.createRelationshipTo( node, relType );
+                }
                 if ( level < desiredLevel )
+                {
                     recursiveSnowFlake( node, level + 1, desiredLevel, branchingFactor, labels, relType );
+                }
             }
         }
         else

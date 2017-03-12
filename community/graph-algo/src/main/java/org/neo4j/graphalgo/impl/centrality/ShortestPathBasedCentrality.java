@@ -167,7 +167,8 @@ public abstract class ShortestPathBasedCentrality<CentralityType,ShortestPathCos
      * the calculate method. This is to allow user defined calculation of
      * the centralities via the processShortestPaths method.
      */
-    public void skipCalculation(){
+    public void skipCalculation()
+    {
         doneCalculation = true;
     }
 
@@ -175,7 +176,8 @@ public abstract class ShortestPathBasedCentrality<CentralityType,ShortestPathCos
      * Checks if the calculation is already done
      * @return    status of the calculation
      */
-    public boolean isCalculated(){
+    public boolean isCalculated()
+    {
         return doneCalculation;
     }
 

@@ -2050,7 +2050,8 @@ public abstract class PageCacheTest<T extends PageCache> extends PageCacheTestSu
         long pageId1 = 0;
         long pageId2 = 0;
         boolean moreWorkToDo;
-        do {
+        do
+        {
             boolean cursorReady1;
             boolean cursorReady2;
 
@@ -2681,7 +2682,8 @@ public abstract class PageCacheTest<T extends PageCache> extends PageCacheTestSu
 
         fork( $close( pagedFile ) ).join();
 
-        try {
+        try
+        {
             cursor.next();
             fail( "Advancing the cursor should have thrown" );
         }
@@ -2710,7 +2712,8 @@ public abstract class PageCacheTest<T extends PageCache> extends PageCacheTestSu
 
         cursor.getByte();
         cursor.shouldRetry();
-        try {
+        try
+        {
             cursor.next();
             fail( "Advancing the cursor should have thrown" );
         }

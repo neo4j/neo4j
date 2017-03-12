@@ -25,7 +25,6 @@ import java.util.Collection;
 import java.util.Hashtable;
 import java.util.List;
 import java.util.NoSuchElementException;
-
 import javax.management.MBeanServerConnection;
 import javax.management.MalformedObjectNameException;
 import javax.management.ObjectInstance;
@@ -91,7 +90,10 @@ public abstract class KernelProxy
             Class<?> beanType = null;
             try
             {
-                if ( className != null ) beanType = Class.forName( className );
+                if ( className != null )
+                {
+                    beanType = Class.forName( className );
+                }
             }
             catch ( Exception ignored )
             {
@@ -229,7 +231,10 @@ public abstract class KernelProxy
         try
         {
             result = new ObjectName( domain, properties );
-            if ( query ) result = ObjectName.getInstance( result.toString() + ",*" );
+            if ( query )
+            {
+                result = ObjectName.getInstance( result.toString() + ",*" );
+            }
         }
         catch ( MalformedObjectNameException e )
         {

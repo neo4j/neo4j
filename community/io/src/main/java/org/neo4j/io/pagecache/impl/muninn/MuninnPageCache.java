@@ -718,7 +718,8 @@ public class MuninnPageCache implements PageCache
             {
                 unparkEvictor();
                 MuninnPage page = cooperativelyEvict( faultEvent );
-                if ( page != null ) {
+                if ( page != null )
+                {
                     return page;
                 }
             }

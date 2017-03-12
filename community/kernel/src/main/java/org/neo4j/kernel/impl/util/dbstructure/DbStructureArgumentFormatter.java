@@ -24,17 +24,15 @@ import java.util.Arrays;
 import java.util.Collection;
 import java.util.List;
 import java.util.stream.Collectors;
-import java.util.stream.StreamSupport;
 
 import org.neo4j.helpers.Strings;
-import org.neo4j.helpers.collection.Iterables;
-import org.neo4j.kernel.api.schema.NodePropertyDescriptor;
-import org.neo4j.kernel.api.schema.RelationshipPropertyDescriptor;
 import org.neo4j.kernel.api.constraints.NodePropertyExistenceConstraint;
 import org.neo4j.kernel.api.constraints.RelationshipPropertyExistenceConstraint;
 import org.neo4j.kernel.api.constraints.UniquenessConstraint;
 import org.neo4j.kernel.api.schema.IndexDescriptor;
 import org.neo4j.kernel.api.schema.IndexDescriptorFactory;
+import org.neo4j.kernel.api.schema.NodePropertyDescriptor;
+import org.neo4j.kernel.api.schema.RelationshipPropertyDescriptor;
 import org.neo4j.kernel.api.schema_new.index.NewIndexDescriptor;
 import org.neo4j.kernel.api.schema_new.index.NewIndexDescriptorFactory;
 
@@ -60,9 +58,11 @@ public enum DbStructureArgumentFormatter implements ArgumentFormatter
 
     public void formatArgument( Appendable builder, Object arg ) throws IOException
     {
-        if ( arg == null ) {
+        if ( arg == null )
+        {
             builder.append( "null" );
-        } else if ( arg instanceof String )
+        }
+        else if ( arg instanceof String )
         {
             builder.append( '"' );
             Strings.escape( builder, arg.toString() );
@@ -83,9 +83,12 @@ public enum DbStructureArgumentFormatter implements ArgumentFormatter
             if ( Double.isNaN( d ) )
             {
                 builder.append( "Double.NaN" );
-            } else if ( Double.isInfinite( d ) ) {
+            }
+            else if ( Double.isInfinite( d ) )
+            {
                 builder.append( d < 0 ? "Double.NEGATIVE_INFINITY" : "Double.POSITIVE_INFINITY" );
-            } else
+            }
+            else
             {
                 builder.append( arg.toString() );
                 builder.append( 'd' );
@@ -95,46 +98,49 @@ public enum DbStructureArgumentFormatter implements ArgumentFormatter
         {
             NodePropertyDescriptor descriptor = (NodePropertyDescriptor) arg;
             int labelId = descriptor.getLabelId();
-            builder.append( format( "IndexDescriptorFactory.of( %d, %s )", labelId, descriptor.propertyIdText( ) ) );
+            builder.append( format( "IndexDescriptorFactory.of( %d, %s )", labelId, descriptor.propertyIdText() ) );
         }
         else if ( arg instanceof NewIndexDescriptor )
         {
             NewIndexDescriptor descriptor = (NewIndexDescriptor) arg;
             int labelId = descriptor.schema().getLabelId();
-            builder.append( format( "NewIndexDescriptorFactory.forLabel( %d, %s )",
-                    labelId, asString( descriptor.schema().getPropertyIds( ) ) ) );
+            builder.append( format( "NewIndexDescriptorFactory.forLabel( %d, %s )", labelId,
+                    asString( descriptor.schema().getPropertyIds() ) ) );
         }
         else if ( arg instanceof NodePropertyDescriptor )
         {
             NodePropertyDescriptor descriptor = (NodePropertyDescriptor) arg;
             int labelId = descriptor.getLabelId();
-            builder.append( format( "new NodePropertyDescriptor( %s, %s )", labelId, descriptor.propertyIdText( ) ) );
+            builder.append( format( "new NodePropertyDescriptor( %s, %s )", labelId, descriptor.propertyIdText() ) );
         }
         else if ( arg instanceof UniquenessConstraint )
         {
             UniquenessConstraint constraint = (UniquenessConstraint) arg;
             int labelId = constraint.label();
-            builder.append( format( "new UniquenessConstraint( new NodePropertyDescriptor( %s, %s ) )", labelId, constraint.descriptor()
-                    .propertyIdText( ) ) );
+            builder.append( format( "new UniquenessConstraint( new NodePropertyDescriptor( %s, %s ) )", labelId,
+                    constraint.descriptor().propertyIdText() ) );
         }
         else if ( arg instanceof NodePropertyExistenceConstraint )
         {
             NodePropertyExistenceConstraint constraint = (NodePropertyExistenceConstraint) arg;
             int labelId = constraint.label();
-            builder.append( format( "new NodePropertyExistenceConstraint( new NodePropertyDescriptor( %s, %s ) )", labelId, constraint.descriptor().propertyIdText( ) ) );
+            builder.append(
+                    format( "new NodePropertyExistenceConstraint( new NodePropertyDescriptor( %s, %s ) )", labelId,
+                            constraint.descriptor().propertyIdText() ) );
         }
         else if ( arg instanceof RelationshipPropertyExistenceConstraint )
         {
             RelationshipPropertyDescriptor descriptor = ((RelationshipPropertyExistenceConstraint) arg).descriptor();
             int relTypeId = descriptor.getRelationshipTypeId();
             int propertyKey = descriptor.getPropertyKeyId();
-            builder.append( format( "new RelationshipPropertyExistenceConstraint( new NodePropertyDescriptor( %s, %s ) )", relTypeId, propertyKey ) );
+            builder.append(
+                    format( "new RelationshipPropertyExistenceConstraint( new NodePropertyDescriptor( %s, %s ) )",
+                            relTypeId, propertyKey ) );
         }
         else
         {
-            throw new IllegalArgumentException( format(
-                "Can't handle argument of type: %s with value: %s", arg.getClass(), arg
-            ) );
+            throw new IllegalArgumentException(
+                    format( "Can't handle argument of type: %s with value: %s", arg.getClass(), arg ) );
         }
     }
 

@@ -96,7 +96,10 @@ public class EmbeddedInteraction implements NeoInteractionLevel<EnterpriseSecuri
     }
 
     @Override
-    public GraphDatabaseFacade getLocalGraph() { return db; }
+    public GraphDatabaseFacade getLocalGraph()
+    {
+        return db;
+    }
 
     @Override
     public FileSystemAbstraction fileSystem()

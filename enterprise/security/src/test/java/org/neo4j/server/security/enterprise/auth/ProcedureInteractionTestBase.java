@@ -210,7 +210,11 @@ public abstract class ProcedureInteractionTestBase<S>
         } );
     }
 
-    void testFailRead( S subject, int count ) { testFailRead( subject, count, READ_OPS_NOT_ALLOWED ); }
+    void testFailRead( S subject, int count )
+    {
+        testFailRead( subject, count, READ_OPS_NOT_ALLOWED );
+    }
+
     void testFailRead( S subject, int count, String errMsg )
     {
         assertFail( subject, "MATCH (n) RETURN count(n)", errMsg );
@@ -221,7 +225,11 @@ public abstract class ProcedureInteractionTestBase<S>
         assertEmpty( subject, "CREATE (:Node)" );
     }
 
-    void testFailWrite( S subject ) { testFailWrite( subject, WRITE_OPS_NOT_ALLOWED ); }
+    void testFailWrite( S subject )
+    {
+        testFailWrite( subject, WRITE_OPS_NOT_ALLOWED );
+    }
+
     void testFailWrite( S subject, String errMsg )
     {
         assertFail( subject, "CREATE (:Node)", errMsg );
@@ -232,7 +240,11 @@ public abstract class ProcedureInteractionTestBase<S>
         assertEmpty( subject, "CREATE INDEX ON :Node(number)" );
     }
 
-    void testFailSchema( S subject ) { testFailSchema( subject, SCHEMA_OPS_NOT_ALLOWED ); }
+    void testFailSchema( S subject )
+    {
+        testFailSchema( subject, SCHEMA_OPS_NOT_ALLOWED );
+    }
+
     void testFailSchema( S subject, String errMsg )
     {
         assertFail( subject, "CREATE INDEX ON :Node(number)", errMsg );
@@ -331,14 +343,17 @@ public abstract class ProcedureInteractionTestBase<S>
         S subjectToUse;
 
         // remove if-else ASAP
-        if ( IS_EMBEDDED ) {
+        if ( IS_EMBEDDED )
+        {
             subjectToUse = subject;
-            builder.append("CALL dbms.security.changePassword('");
+            builder.append( "CALL dbms.security.changePassword('" );
             builder.append( newPassword );
-            builder.append("')" );
-        } else {
+            builder.append( "')" );
+        }
+        else
+        {
             subjectToUse = adminSubject;
-            builder.append("CALL dbms.security.changeUserPassword('");
+            builder.append( "CALL dbms.security.changeUserPassword('" );
             builder.append( neo.nameOf( subject ) );
             builder.append( "', '" );
             builder.append( newPassword );
@@ -707,7 +722,8 @@ public abstract class ProcedureInteractionTestBase<S>
         {
             new Thread( () -> {
                 doubleLatch.start();
-                try ( Transaction tx = db.beginTx() ) {
+                try ( Transaction tx = db.beginTx() )
+                {
                     db.createNode( Label.label( "VeryUniqueLabel" ) );
                     tx.success();
                 }

@@ -42,7 +42,8 @@ public abstract class ConstraintValidationException extends KernelException
      * constraint to see that the modified state does not violate the constraint. If validation fails the modifying
      * transaction is rolled back.
      */
-    public enum Phase {
+    public enum Phase
+    {
         VERIFICATION( Status.Statement.ConstraintVerificationFailed ),
         VALIDATION( Status.Schema.ConstraintValidationFailed );
 
@@ -57,7 +58,7 @@ public abstract class ConstraintValidationException extends KernelException
         {
             return status;
         }
-    };
+    }
 
     protected final ConstraintDescriptor constraint;
 

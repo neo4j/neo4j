@@ -185,7 +185,8 @@ public class BoltQueryLoggingIT
 
         byte[] buffer = new byte[howMany];
         int offset = 0;
-        while (offset < howMany) {
+        while (offset < howMany)
+        {
             int read = dataIn.read( buffer, offset, howMany-offset );
             if (read == 0)
             {

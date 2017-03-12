@@ -25,7 +25,10 @@ import org.neo4j.graphdb.Lock;
 import org.neo4j.graphdb.NotInTransactionException;
 import org.neo4j.graphdb.PropertyContainer;
 import org.neo4j.kernel.GraphDatabaseQueryService;
-import org.neo4j.kernel.api.*;
+import org.neo4j.kernel.api.KernelTransaction;
+import org.neo4j.kernel.api.QueryRegistryOperations;
+import org.neo4j.kernel.api.ReadOperations;
+import org.neo4j.kernel.api.Statement;
 import org.neo4j.kernel.api.dbms.DbmsOperations;
 import org.neo4j.kernel.api.query.ExecutingQuery;
 import org.neo4j.kernel.api.security.SecurityContext;
@@ -61,7 +64,8 @@ public class Neo4jTransactionalContext implements TransactionalContext
         InternalTransaction initialTransaction,
         Statement initialStatement,
         ExecutingQuery executingQuery
-    ) {
+    )
+    {
         this.graph = graph;
         this.statementSupplier = statementSupplier;
         this.guard = guard;
@@ -268,7 +272,8 @@ public class Neo4jTransactionalContext implements TransactionalContext
         return securityContext;
     }
 
-    interface Creator {
+    interface Creator
+    {
         Neo4jTransactionalContext create(
             Supplier<Statement> statementSupplier,
             InternalTransaction tx,

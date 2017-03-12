@@ -19,11 +19,11 @@
  */
 package org.neo4j.com;
 
-import static java.lang.Math.min;
-
 import java.io.IOException;
 import java.nio.ByteBuffer;
 import java.nio.channels.ReadableByteChannel;
+
+import static java.lang.Math.min;
 
 public class DataProducer implements ReadableByteChannel
 {
@@ -45,7 +45,9 @@ public class DataProducer implements ReadableByteChannel
     public void close() throws IOException
     {
         if ( closed )
+        {
             throw new IllegalStateException( "Already closed" );
+        }
         closed = true;
     }
 
@@ -54,10 +56,14 @@ public class DataProducer implements ReadableByteChannel
     {
         int toFill = min( dst.remaining(), bytesLeftToProduce ), leftToFill = toFill;
         if ( toFill <= 0 )
+        {
             return -1;
+        }
 
         while ( leftToFill-- > 0 )
+        {
             dst.put( (byte) 5 );
+        }
         bytesLeftToProduce -= toFill;
         return toFill;
     }

@@ -71,7 +71,10 @@ public class SubGraphExporter
     {
         for ( String command : commands )
         {
-            if ( command == null ) continue;
+            if ( command == null )
+            {
+                continue;
+            }
             out.println( command );
         }
     }

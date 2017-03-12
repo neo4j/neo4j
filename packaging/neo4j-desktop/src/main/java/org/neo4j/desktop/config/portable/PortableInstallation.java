@@ -61,7 +61,8 @@ public abstract class PortableInstallation implements Installation
         for ( File file : locations )
         {
             File candidateFile = file.getAbsoluteFile();
-            if ( candidateFile.exists() && candidateFile.isDirectory() && candidateFile.canWrite() ) {
+            if ( candidateFile.exists() && candidateFile.isDirectory() && candidateFile.canWrite() )
+            {
                 result = candidateFile;
                 break;
             }

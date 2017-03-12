@@ -35,7 +35,8 @@ import org.neo4j.test.rule.EmbeddedDatabaseRule;
 import static org.junit.Assert.assertEquals;
 import static org.neo4j.helpers.collection.Iterators.asSet;
 
-public class TestConcurrentIteratorModification {
+public class TestConcurrentIteratorModification
+{
     @Rule
     public EmbeddedDatabaseRule dbRule = new EmbeddedDatabaseRule();
 
@@ -47,7 +48,8 @@ public class TestConcurrentIteratorModification {
         Label label = Label.label( "Bird" );
 
         Node node1, node2, node3;
-        try ( Transaction tx = graph.beginTx() ) {
+        try ( Transaction tx = graph.beginTx() )
+        {
             node1 = graph.createNode( label );
             node2 = graph.createNode( label );
             tx.success();
@@ -55,7 +57,8 @@ public class TestConcurrentIteratorModification {
 
         // when
         Set<Node> result = new HashSet<>();
-        try ( Transaction tx = graph.beginTx() ) {
+        try ( Transaction tx = graph.beginTx() )
+        {
             node3 = graph.createNode( label );
             ResourceIterator<Node> iterator = graph.findNodes( label );
             node3.removeLabel( label );

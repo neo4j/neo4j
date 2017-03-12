@@ -40,7 +40,11 @@ public class Neo4jTypes
     public static final PathType NTPath = new PathType();
     public static final GeometryType NTGeometry = new GeometryType();
     public static final PointType NTPoint = new PointType();
-    public static ListType NTList( AnyType innerType ) { return new ListType( innerType ); }
+
+    public static ListType NTList( AnyType innerType )
+    {
+        return new ListType( innerType );
+    }
 
     public static class AnyType
     {
@@ -127,8 +131,14 @@ public class Neo4jTypes
         @Override
         public boolean equals( Object o )
         {
-            if ( this == o ) { return true; }
-            if ( o == null || getClass() != o.getClass() ) { return false; }
+            if ( this == o )
+            {
+                return true;
+            }
+            if ( o == null || getClass() != o.getClass() )
+            {
+                return false;
+            }
             ListType listType = (ListType) o;
             return innerType.equals( listType.innerType );
         }

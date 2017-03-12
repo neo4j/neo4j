@@ -47,7 +47,8 @@ public enum ShortArray
                 {
                     result.put( value ? 1 : 0, 1 );
                 }
-            } else
+            }
+            else
             {
                 for ( boolean value : (Boolean[]) array )
                 {
@@ -103,7 +104,8 @@ public enum ShortArray
                 {
                     highest = Math.max( getRequiredBits( value ), highest );
                 }
-            } else
+            }
+            else
             {
                 for ( byte value : (Byte[]) array )
                 {
@@ -123,7 +125,8 @@ public enum ShortArray
                 {
                     result.put( b, requiredBits );
                 }
-            } else
+            }
+            else
             {
                 for ( byte b : (Byte[]) array )
                 {
@@ -180,7 +183,8 @@ public enum ShortArray
                 {
                     highest = Math.max( getRequiredBits( value ), highest );
                 }
-            } else
+            }
+            else
             {
                 for ( short value : (Short[]) array )
                 {
@@ -200,7 +204,8 @@ public enum ShortArray
                 {
                     result.put( value, requiredBits );
                 }
-            } else
+            }
+            else
             {
                 for ( short value : (Short[]) array )
                 {
@@ -256,7 +261,8 @@ public enum ShortArray
                 {
                     highest = Math.max( getRequiredBits( value ), highest );
                 }
-            } else
+            }
+            else
             {
                 for ( char value : (Character[]) array )
                 {
@@ -276,7 +282,8 @@ public enum ShortArray
                 {
                     result.put( value, requiredBits );
                 }
-            } else
+            }
+            else
             {
                 for ( char value : (Character[]) array )
                 {
@@ -332,7 +339,8 @@ public enum ShortArray
                 {
                     highest = Math.max( getRequiredBits( value ), highest );
                 }
-            } else
+            }
+            else
             {
                 for ( int value : (Integer[]) array )
                 {
@@ -352,7 +360,8 @@ public enum ShortArray
                 {
                     result.put( value, requiredBits );
                 }
-            } else
+            }
+            else
             {
                 for ( int value : (Integer[]) array )
                 {
@@ -409,7 +418,8 @@ public enum ShortArray
                 {
                     highest = Math.max( getRequiredBits( value ), highest );
                 }
-            } else
+            }
+            else
             {
                 for ( long value : (Long[]) array )
                 {
@@ -429,7 +439,8 @@ public enum ShortArray
                 {
                     result.put( value, requiredBits );
                 }
-            } else
+            }
+            else
             {
                 for ( long value : (Long[]) array )
                 {
@@ -486,7 +497,8 @@ public enum ShortArray
                 {
                     highest = Math.max( getRequiredBits( value ), highest );
                 }
-            } else
+            }
+            else
             {
                 for ( float value : (Float[]) array )
                 {
@@ -506,7 +518,8 @@ public enum ShortArray
                 {
                     result.put( Float.floatToIntBits( value ), requiredBits );
                 }
-            } else
+            }
+            else
             {
                 for ( float value : (Float[]) array )
                 {
@@ -563,7 +576,8 @@ public enum ShortArray
                 {
                     highest = Math.max( getRequiredBits( value ), highest );
                 }
-            } else
+            }
+            else
             {
                 for ( double value : (Double[]) array )
                 {
@@ -583,7 +597,8 @@ public enum ShortArray
                 {
                     result.put( Double.doubleToLongBits( value ), requiredBits );
                 }
-            } else
+            }
+            else
             {
                 for ( double value : (Double[]) array )
                 {

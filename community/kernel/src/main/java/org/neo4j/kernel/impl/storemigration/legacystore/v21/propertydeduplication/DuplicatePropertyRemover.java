@@ -44,7 +44,8 @@ class DuplicatePropertyRemover
     {
         assert !duplicateRecord.iterator().hasNext();
         long headProp = nodeRecord.getNextProp();
-        if ( duplicateRecord.getId() == headProp ) {
+        if ( duplicateRecord.getId() == headProp )
+        {
             nodeRecord.setNextProp( duplicateRecord.getNextProp() );
             nodeStore.updateRecord( nodeRecord );
         }

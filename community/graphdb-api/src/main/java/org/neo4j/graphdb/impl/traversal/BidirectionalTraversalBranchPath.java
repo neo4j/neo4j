@@ -56,7 +56,9 @@ class BidirectionalTraversalBranchPath implements Path
     {
         // Getting the start node is expensive in some Path implementations, so cache it
         if ( cachedStartNode == null )
+        {
             cachedStartNode = start.startNode();
+        }
         return cachedStartNode;
     }
 
@@ -77,7 +79,9 @@ class BidirectionalTraversalBranchPath implements Path
     {
         // Cache the relationships since we use them in hashCode/equals too.
         if ( cachedRelationships == null )
+        {
             cachedRelationships = gatherRelationships( start, end );
+        }
         return cachedRelationships;
     }
 
@@ -182,7 +186,9 @@ class BidirectionalTraversalBranchPath implements Path
         }
         entities.addFirst( branch.endNode() );
         if ( cachedStartNode == null )
+        {
             cachedStartNode = branch.endNode();
+        }
         if ( end.length() > 0 )
         {
             entities.add( end.lastRelationship() );
@@ -208,9 +214,13 @@ class BidirectionalTraversalBranchPath implements Path
     public boolean equals( Object obj )
     {
         if ( obj == this )
+        {
             return true;
-        if ( !( obj instanceof Path ) )
+        }
+        if ( !(obj instanceof Path) )
+        {
             return false;
+        }
 
         Path other = (Path) obj;
         return relationships().equals( other.relationships() ) && other.startNode().equals( cachedStartNode );

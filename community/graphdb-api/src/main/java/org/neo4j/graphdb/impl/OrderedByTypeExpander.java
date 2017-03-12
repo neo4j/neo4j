@@ -61,9 +61,13 @@ public final class OrderedByTypeExpander extends StandardExpander.RegularExpande
     public StandardExpander remove( RelationshipType type )
     {
         Collection<Pair<RelationshipType, Direction>> newTypes = new ArrayList<Pair<RelationshipType,Direction>>();
-        for ( Pair<RelationshipType, Direction> pair : orderedTypes )
+        for ( Pair<RelationshipType,Direction> pair : orderedTypes )
+        {
             if ( !type.name().equals( pair.first().name() ) )
+            {
                 newTypes.add( pair );
+            }
+        }
         return new OrderedByTypeExpander( newTypes );
     }
 
@@ -77,8 +81,10 @@ public final class OrderedByTypeExpander extends StandardExpander.RegularExpande
     public StandardExpander reverse()
     {
         Collection<Pair<RelationshipType, Direction>> newTypes = new ArrayList<Pair<RelationshipType,Direction>>();
-        for ( Pair<RelationshipType, Direction> pair : orderedTypes )
+        for ( Pair<RelationshipType,Direction> pair : orderedTypes )
+        {
             newTypes.add( Pair.of( pair.first(), pair.other().reverse() ) );
+        }
         return new OrderedByTypeExpander( newTypes );
     }
 

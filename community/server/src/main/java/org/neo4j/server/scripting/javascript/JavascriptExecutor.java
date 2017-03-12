@@ -19,8 +19,6 @@
  */
 package org.neo4j.server.scripting.javascript;
 
-import java.util.Map;
-
 import org.mozilla.javascript.Context;
 import org.mozilla.javascript.ImporterTopLevel;
 import org.mozilla.javascript.NativeJavaObject;
@@ -28,6 +26,9 @@ import org.mozilla.javascript.RhinoException;
 import org.mozilla.javascript.Script;
 import org.mozilla.javascript.Scriptable;
 import org.mozilla.javascript.Undefined;
+
+import java.util.Map;
+
 import org.neo4j.server.rest.domain.EvaluationException;
 import org.neo4j.server.scripting.ScriptExecutor;
 
@@ -50,7 +51,8 @@ public class JavascriptExecutor implements ScriptExecutor
             if(enableSandboxing)
             {
                 GlobalJavascriptInitializer.initialize( GlobalJavascriptInitializer.Mode.SANDBOXED );
-            } else
+            }
+            else
             {
                 GlobalJavascriptInitializer.initialize( GlobalJavascriptInitializer.Mode.UNSAFE );
             }
@@ -70,7 +72,8 @@ public class JavascriptExecutor implements ScriptExecutor
         {
             prototype = createPrototype(cx);
             compiledScript = cx.compileString( script, "Unknown", 0, null );
-        } finally
+        }
+        finally
         {
             Context.exit();
         }
@@ -103,20 +106,24 @@ public class JavascriptExecutor implements ScriptExecutor
             }
 
             Object out = compiledScript.exec( cx, scope );
-            if(out instanceof NativeJavaObject)
+            if ( out instanceof NativeJavaObject )
             {
-                return ((NativeJavaObject)out).unwrap();
-            } else if(out instanceof Undefined )
+                return ((NativeJavaObject) out).unwrap();
+            }
+            else if ( out instanceof Undefined )
             {
                 return null;
-            } else
+            }
+            else
             {
                 return out;
             }
-        } catch( RhinoException e )
+        }
+        catch( RhinoException e )
         {
             throw new EvaluationException( "Failed to execute script, see nested exception.", e );
-        } finally
+        }
+        finally
         {
             Context.exit();
         }

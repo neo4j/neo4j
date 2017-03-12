@@ -70,7 +70,9 @@ public class ConstraintCreationIT
             fail("Should have failed with ConstraintViolationException");
             tx.success();
         }
-        catch ( ConstraintViolationException ignored )  { }
+        catch ( ConstraintViolationException ignored )
+        {
+        }
 
         // then
         try(Transaction ignore = db.beginTx())

@@ -280,7 +280,8 @@ public enum LearnerState
                     if ( lastKnownAliveInstance != null )
                     {
                         return context.getUriForId( lastKnownAliveInstance );
-                    } else
+                    }
+                    else
                     {
                         return new URI(message.getHeader( Message.FROM ));
                     }

@@ -99,7 +99,9 @@ public class ConstraintRecoveryIT
             fail("Should have failed with ConstraintViolationException");
             tx.success();
         }
-        catch ( ConstraintViolationException ignored )  { }
+        catch ( ConstraintViolationException ignored )
+        {
+        }
 
         db.shutdown();
 

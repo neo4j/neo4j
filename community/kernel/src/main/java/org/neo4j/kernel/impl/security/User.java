@@ -60,13 +60,26 @@ public class User
         return credential;
     }
 
-    public boolean hasFlag(String flag) { return flags.contains(flag); }
-    public Iterable<String> getFlags() { return flags; }
+    public boolean hasFlag(String flag)
+    {
+        return flags.contains( flag );
+    }
 
-    public boolean passwordChangeRequired() { return flags.contains( PASSWORD_CHANGE_REQUIRED ); }
+    public Iterable<String> getFlags()
+    {
+        return flags;
+    }
+
+    public boolean passwordChangeRequired()
+    {
+        return flags.contains( PASSWORD_CHANGE_REQUIRED );
+    }
 
     /** Use this user as a base for a new user object */
-    public Builder augment() { return new Builder(this); }
+    public Builder augment()
+    {
+        return new Builder( this );
+    }
 
     @Override
     public boolean equals( Object o )
@@ -123,7 +136,9 @@ public class User
         private Credential credential = Credential.INACCESSIBLE;
         private TreeSet<String> flags = new TreeSet<>();
 
-        public Builder() { }
+        public Builder()
+        {
+        }
 
         public Builder( String name, Credential credential )
         {
@@ -138,10 +153,29 @@ public class User
             flags.addAll( base.flags );
         }
 
-        public Builder withName( String name ) { this.name = name; return this; }
-        public Builder withCredentials( Credential creds ) { this.credential = creds; return this; }
-        public Builder withFlag( String flag ) { this.flags.add(flag); return this; }
-        public Builder withoutFlag( String flag ) { this.flags.remove(flag); return this; }
+        public Builder withName( String name )
+        {
+            this.name = name;
+            return this;
+        }
+
+        public Builder withCredentials( Credential creds )
+        {
+            this.credential = creds;
+            return this;
+        }
+
+        public Builder withFlag( String flag )
+        {
+            this.flags.add( flag );
+            return this;
+        }
+
+        public Builder withoutFlag( String flag )
+        {
+            this.flags.remove( flag );
+            return this;
+        }
 
         public Builder withRequiredPasswordChange( boolean change )
         {

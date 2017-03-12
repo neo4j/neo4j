@@ -32,11 +32,11 @@ import org.neo4j.kernel.api.security.AuthToken;
 import org.neo4j.kernel.api.security.AuthenticationResult;
 import org.neo4j.kernel.api.security.PasswordPolicy;
 import org.neo4j.kernel.api.security.SecurityContext;
-import org.neo4j.kernel.impl.security.Credential;
-import org.neo4j.kernel.impl.security.User;
 import org.neo4j.kernel.api.security.UserManager;
 import org.neo4j.kernel.api.security.UserManagerSupplier;
 import org.neo4j.kernel.api.security.exception.InvalidAuthTokenException;
+import org.neo4j.kernel.impl.security.Credential;
+import org.neo4j.kernel.impl.security.User;
 import org.neo4j.server.security.auth.exception.ConcurrentModificationException;
 
 import static org.neo4j.kernel.api.security.AuthToken.invalidToken;
@@ -207,7 +207,8 @@ public class BasicAuthManager implements AuthManager, UserManager, UserManagerSu
                     .withRequiredPasswordChange( requirePasswordChange )
                     .build();
             userRepository.update( existingUser, updatedUser );
-        } catch ( ConcurrentModificationException e )
+        }
+        catch ( ConcurrentModificationException e )
         {
             // try again
             setUserPassword( username, password, requirePasswordChange );

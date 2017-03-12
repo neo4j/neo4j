@@ -96,13 +96,14 @@ public class StateTransition
     @Override
     public String toString()
     {
-        if (message.getPayload() instanceof String)
-            return getOldState().toString()+
-                   "-["+getMessage().getMessageType()+":"+getMessage().getPayload()+"]->"+
-                   getNewState().toString();
+        if ( message.getPayload() instanceof String )
+        {
+            return getOldState().toString() + "-[" + getMessage().getMessageType() + ":" + getMessage().getPayload() +
+                    "]->" + getNewState().toString();
+        }
         else
-            return getOldState().toString()+
-                   "-["+getMessage().getMessageType()+"]->"+
-                   getNewState().toString();
+        {
+            return getOldState().toString() + "-[" + getMessage().getMessageType() + "]->" + getNewState().toString();
+        }
     }
 }

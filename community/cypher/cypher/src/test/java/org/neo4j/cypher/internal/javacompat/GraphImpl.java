@@ -26,11 +26,13 @@ import org.neo4j.test.GraphDescription.NODE;
 import org.neo4j.test.GraphDescription.REL;
 
 
-public class GraphImpl implements Graph {
+public class GraphImpl implements Graph
+{
 
     private final String[] value;
 
-    public GraphImpl(String[] value){
+    public GraphImpl(String[] value)
+    {
         this.value = value;
 
     }

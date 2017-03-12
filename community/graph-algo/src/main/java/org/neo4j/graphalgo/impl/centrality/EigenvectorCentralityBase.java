@@ -136,7 +136,8 @@ public abstract class EigenvectorCentralityBase implements EigenvectorCentrality
      */
     protected int runIterations( int maxNrIterations )
     {
-        while ( true ) {
+        while ( true )
+        {
             values = new HashMap<Node,Double>();
             totalIterations = 0;
 

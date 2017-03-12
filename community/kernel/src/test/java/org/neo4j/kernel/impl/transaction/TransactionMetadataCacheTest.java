@@ -82,7 +82,9 @@ public class TransactionMetadataCacheTest
         {
             cache.cacheTransactionMetadata( txId, position, masterId, authorId, checksum, timestamp );
             fail();
-        } catch (RuntimeException ex) {
+        }
+        catch (RuntimeException ex)
+        {
             assertEquals( "StartEntry.position is " + position, ex.getMessage() );
         }
     }

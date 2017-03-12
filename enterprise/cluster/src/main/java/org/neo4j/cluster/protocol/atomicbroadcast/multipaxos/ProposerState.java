@@ -378,7 +378,8 @@ public enum ProposerState
                                         outgoing.offer( proposeMessage );
                                     }
                                 }
-                            } else
+                            }
+                            else
                             {
                                 context.getLog( ProposerState.class ).debug( "Instance receiving an accepted is in the wrong state:"+instance );
                             }

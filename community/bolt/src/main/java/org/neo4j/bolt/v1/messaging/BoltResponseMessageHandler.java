@@ -19,10 +19,10 @@
  */
 package org.neo4j.bolt.v1.messaging;
 
+import java.util.Map;
+
 import org.neo4j.bolt.v1.runtime.spi.Record;
 import org.neo4j.kernel.api.exceptions.Status;
-
-import java.util.Map;
 
 /**
  * Interface defining simple handler methods for each defined
@@ -40,5 +40,8 @@ public interface BoltResponseMessageHandler<E extends Exception>
 
     void onFailure( Status status, String message ) throws E;
 
-    default void onFatal( Status status, String message ) throws E { onFailure( status, message ); }
+    default void onFatal( Status status, String message ) throws E
+    {
+        onFailure( status, message );
+    }
 }

@@ -617,7 +617,8 @@ public class GraphDatabaseSettings implements LoadableConfig
             BOLT, HTTP
         }
 
-        public String key() {
+        public String key()
+        {
             return group.groupKey;
         }
     }

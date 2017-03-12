@@ -22,7 +22,6 @@ package org.neo4j.server.security.enterprise.auth.plugin;
 import java.util.Hashtable;
 import java.util.LinkedHashSet;
 import java.util.Set;
-
 import javax.naming.Context;
 import javax.naming.NamingEnumeration;
 import javax.naming.NamingException;
@@ -128,10 +127,22 @@ public class LdapGroupHasUsersAuthPlugin extends AuthPlugin.Adapter
 
     private String getNeo4jRoleForGroupId( String groupId )
     {
-        if ( "500".equals( groupId ) ) return PredefinedRoles.READER;
-        if ( "501".equals( groupId ) ) return PredefinedRoles.PUBLISHER;
-        if ( "502".equals( groupId ) ) return PredefinedRoles.ARCHITECT;
-        if ( "503".equals( groupId ) ) return PredefinedRoles.ADMIN;
+        if ( "500".equals( groupId ) )
+        {
+            return PredefinedRoles.READER;
+        }
+        if ( "501".equals( groupId ) )
+        {
+            return PredefinedRoles.PUBLISHER;
+        }
+        if ( "502".equals( groupId ) )
+        {
+            return PredefinedRoles.ARCHITECT;
+        }
+        if ( "503".equals( groupId ) )
+        {
+            return PredefinedRoles.ADMIN;
+        }
         return null;
     }
 }

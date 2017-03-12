@@ -45,7 +45,8 @@ import static org.neo4j.causalclustering.identity.RaftTestMember.member;
 public class NonFollowerVoteRequestTest
 {
     @Parameterized.Parameters(name = "{0}")
-    public static Collection data() {
+    public static Collection data()
+    {
         return asList( Role.CANDIDATE, Role.LEADER );
     }
 

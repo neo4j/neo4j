@@ -130,7 +130,10 @@ public class Mkrel extends TransactionProvidingApp
                 " created" );
         }
 
-        if ( parser.options().containsKey( "cd" ) ) cdTo( session, node );
+        if ( parser.options().containsKey( "cd" ) )
+        {
+            cdTo( session, node );
+        }
         return Continuation.INPUT_COMPLETE;
     }
 }

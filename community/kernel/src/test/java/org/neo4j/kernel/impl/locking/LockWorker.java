@@ -39,9 +39,13 @@ public class LockWorker extends OtherThreadExecutor<LockWorkerState>
     {
         Future<Void> future = executeDontWait( acquireLockCommand );
         if ( wait )
+        {
             awaitFuture( future );
+        }
         else
+        {
             waitUntilWaiting();
+        }
         return future;
     }
 
@@ -112,7 +116,9 @@ public class LockWorker extends OtherThreadExecutor<LockWorkerState>
         super.dump( logger );
         logger.log( "What have I done up until now?" );
         for ( String op : state.completedOperations )
+        {
             logger.log( op );
+        }
         logger.log( "Doing right now:" );
         logger.log( state.doing == null ? "???" : state.doing );
     }

@@ -1055,7 +1055,10 @@ public class EphemeralFileSystemAbstraction implements FileSystemAbstraction
                     while ( refs.hasNext() )
                     {
                         EphemeralFileChannel channel = refs.next().get();
-                        if ( channel != null ) return channel;
+                        if ( channel != null )
+                        {
+                            return channel;
+                        }
                         refs.remove();
                     }
                     return null;

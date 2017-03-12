@@ -76,7 +76,6 @@ import static org.junit.Assert.assertNull;
 import static org.junit.Assert.assertThat;
 import static org.junit.Assert.assertTrue;
 import static org.junit.Assert.fail;
-
 import static org.neo4j.graphdb.RelationshipType.withName;
 import static org.neo4j.helpers.collection.Iterators.asSet;
 import static org.neo4j.helpers.collection.Iterators.count;
@@ -1240,13 +1239,15 @@ public class TestLuceneIndex extends AbstractLuceneIndexTest
             graphDb.index().setConfiguration( index, IndexManager.PROVIDER, "something" );
             fail( "Shouldn't be able to modify provider" );
         }
-        catch ( IllegalArgumentException e ) { /* Good*/ }
+        catch ( IllegalArgumentException e )
+        { /* Good*/ }
         try
         {
             graphDb.index().removeConfiguration( index, IndexManager.PROVIDER );
             fail( "Shouldn't be able to modify provider" );
         }
-        catch ( IllegalArgumentException e ) { /* Good*/ }
+        catch ( IllegalArgumentException e )
+        { /* Good*/ }
 
         String key = "my-key";
         String value = "my-value";
@@ -1271,7 +1272,8 @@ public class TestLuceneIndex extends AbstractLuceneIndexTest
             nodeIndex( name, MapUtil.stringMap( new HashMap<>( config ), "to_lower_case", "false" ) );
             fail( "Shouldn't be able to get index with these kinds of differences in config" );
         }
-        catch ( IllegalArgumentException e ) { /* */ }
+        catch ( IllegalArgumentException e )
+        { /* */ }
         nodeIndex( name, MapUtil.stringMap( new HashMap<>( config ), "whatever", "something" ) );
     }
 
@@ -1649,7 +1651,8 @@ public class TestLuceneIndex extends AbstractLuceneIndexTest
     }
 
     @Test
-    public void updateIndex() throws Exception {
+    public void updateIndex() throws Exception
+    {
         String TEXT = "text";
         String NUMERIC = "numeric";
         String TEXT_1 = "text_1";

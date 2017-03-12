@@ -428,7 +428,8 @@ public class Config implements DiagnosticsProvider, Configuration
         params.putAll( validSettings );
 
         // Warn about deprecations
-        if ( configFile.isPresent() ) {
+        if ( configFile.isPresent() )
+        {
             configOptions.stream()
                     .map( it -> it.asConfigValues( params ) )
                     .flatMap( List::stream )

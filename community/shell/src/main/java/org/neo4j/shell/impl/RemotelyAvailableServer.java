@@ -91,7 +91,8 @@ class RemotelyAvailableServer extends UnicastRemoteObject implements ShellServer
     {
         try
         {
-            if (this.location != null) {
+            if (this.location != null)
+            {
                 this.location.unbind();
             }
             unexportObject( this, true );

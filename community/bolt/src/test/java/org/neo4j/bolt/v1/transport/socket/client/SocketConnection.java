@@ -80,7 +80,8 @@ public class SocketConnection implements TransportConnection
             {
                 left -= read;
             }
-        } catch( SocketTimeoutException e )
+        }
+        catch( SocketTimeoutException e )
         {
             throw new SocketTimeoutException( "Reading data timed out, missing " + left + " bytes. Buffer: " + HexPrinter.hex( bytes ) );
         }

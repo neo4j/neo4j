@@ -266,7 +266,8 @@ public class DelegatingPageCursor extends PageCursor
         return delegate.isWriteLocked();
     }
 
-    public PageCursor unwrap( ) {
+    public PageCursor unwrap()
+    {
         return delegate;
     }
 

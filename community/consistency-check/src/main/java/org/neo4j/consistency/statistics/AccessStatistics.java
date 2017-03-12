@@ -149,9 +149,13 @@ public class AccessStatistics
         private boolean closeBy( long id1, long id2 )
         {
             if ( id1 < 0 || id2 < 0 )
+            {
                 return true;
+            }
             if ( Math.abs( id2 - id1 ) < this.proximityValue )
+            {
                 return true;
+            }
             return false;
         }
 
