@@ -179,7 +179,7 @@ class IndexSeekLeafPlannerTest extends CypherFunSuite with LogicalPlanningTestSu
         case Seq(NodeIndexSeek(`idName`, LabelToken("Awesome", _),
         props@Seq(_*),
         CompositeQueryExpression(vals@Seq(_*)), _))
-          if assertPropsAndValuesMatch(propertyNames, values, props, vals) => ()
+          if assertPropsAndValuesMatch(propertyNames, values, props, vals.flatMap(_.expressions)) => ()
       }
     }
   }
