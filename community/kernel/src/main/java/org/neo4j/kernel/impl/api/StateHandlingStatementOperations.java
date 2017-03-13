@@ -159,7 +159,7 @@ public class StateHandlingStatementOperations
     private Cursor<NodeItem> nodeCursor( KernelStatement statement, long nodeId )
     {
         TransactionState state = statement.hasTxStateWithChanges() ? statement.txState() : null;
-        return statement.getStoreStatement().acquireSingleNodeCursor( nodeId, state );
+        return storeLayer.nodeCursor( statement.getStoreStatement(), nodeId, state );
     }
 
     @Override
