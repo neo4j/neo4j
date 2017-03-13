@@ -76,6 +76,7 @@ import org.neo4j.storageengine.api.StorageProperty;
 import org.neo4j.storageengine.api.StorageStatement;
 import org.neo4j.storageengine.api.StoreReadLayer;
 import org.neo4j.storageengine.api.Token;
+import org.neo4j.storageengine.api.schema.IndexReader;
 import org.neo4j.storageengine.api.schema.PopulationProgress;
 import org.neo4j.storageengine.api.schema.SchemaRule;
 import org.neo4j.storageengine.api.txstate.PropertyContainerState;
@@ -259,6 +260,13 @@ public class StorageLayer implements StoreReadLayer
     public String indexGetFailure( LabelSchemaDescriptor descriptor ) throws IndexNotFoundKernelException
     {
         return indexService.getIndexProxy( descriptor ).getPopulationFailure().asString();
+    }
+
+    @Override
+    public IndexReader indexGetReader( StorageStatement statement, IndexDescriptor index )
+            throws IndexNotFoundKernelException
+    {
+        return statement.getIndexReader( index );
     }
 
     @Override
