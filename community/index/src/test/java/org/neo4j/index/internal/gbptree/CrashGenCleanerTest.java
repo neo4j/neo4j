@@ -116,6 +116,41 @@ public class CrashGenCleanerTest
     }
 
     @Test
+    public void shouldNotCrashOnEmptyFile() throws Exception
+    {
+        // GIVEN
+        Page[] pages = with();
+        initializeFile( pagedFile, pages );
+
+        // WHEN
+        SimpleMonitor monitor = new SimpleMonitor();
+        crashGenCleaner( pagedFile, 0, pages.length, monitor ).clean();
+
+        // THEN
+        assertPagesVisisted( monitor, pages.length );
+        assertCleanedCrashPointers( monitor, 0 );
+    }
+
+    @Test
+    public void shouldNotReportErrorsOnCleanPages() throws Exception
+    {
+        // GIVEN
+        Page[] pages = with(
+                leafWith(),
+                internalWith()
+        );
+        initializeFile( pagedFile, pages );
+
+        // WHEN
+        SimpleMonitor monitor = new SimpleMonitor();
+        crashGenCleaner( pagedFile, 0, pages.length, monitor ).clean();
+
+        // THEN
+        assertPagesVisisted( monitor, 2 );
+        assertCleanedCrashPointers( monitor, 0 );
+    }
+
+    @Test
     public void shouldCleanOneCrashPerPage() throws Exception
     {
         // GIVEN
