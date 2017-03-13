@@ -55,6 +55,7 @@ import org.neo4j.kernel.impl.coreapi.InternalTransaction;
 import org.neo4j.kernel.impl.factory.GraphDatabaseFacade;
 import org.neo4j.logging.AssertableLogProvider;
 import org.neo4j.server.security.enterprise.auth.EmbeddedInteraction;
+import org.neo4j.server.security.enterprise.auth.EnterpriseAuthAndUserManager;
 import org.neo4j.test.TestEnterpriseGraphDatabaseFactory;
 import org.neo4j.test.rule.TestDirectory;
 import org.neo4j.test.rule.fs.DefaultFileSystemRule;
@@ -360,6 +361,38 @@ public class QueryLoggerIT
     }
 
     @Test
+    public void shouldNotLogChangeUserPassword() throws Exception
+    {
+        GraphDatabaseFacade database = (GraphDatabaseFacade) databaseBuilder
+                .setConfig( GraphDatabaseSettings.log_queries, Settings.TRUE )
+                .setConfig( GraphDatabaseSettings.logs_directory, logsDirectory.getPath() )
+                .setConfig( GraphDatabaseSettings.auth_enabled, Settings.TRUE )
+                .newGraphDatabase();
+
+        EnterpriseAuthManager authManager = database.getDependencyResolver().resolveDependency( EnterpriseAuthManager.class );
+        EnterpriseSecurityContext neo = authManager.login( AuthToken.newBasicAuthToken( "neo4j", "neo4j" ) );
+
+        String query = "CALL dbms.security.changeUserPassword('neo4j', 'abc123')";
+        try ( InternalTransaction tx = database
+                .beginTransaction( KernelTransaction.Type.explicit, neo ) )
+        {
+            Result res = database.execute( tx, query, Collections.emptyMap() );
+            res.close();
+            tx.success();
+        }
+        finally
+        {
+            database.shutdown();
+        }
+
+        List<String> logLines = readAllLines( logFilename );
+        assertEquals( 1, logLines.size() );
+        assertThat( logLines.get( 0 ),
+                containsString(  "CALL dbms.security.changeUserPassword('neo4j', ******)") ) ;
+        assertThat( logLines.get( 0 ), containsString( neo.subject().username() ) );
+    }
+
+    @Test
     public void shouldNotLogPasswordEvenIfPasswordIsSilly() throws Exception
     {
         GraphDatabaseFacade database = (GraphDatabaseFacade) databaseBuilder
@@ -371,7 +404,7 @@ public class QueryLoggerIT
         EnterpriseAuthManager authManager = database.getDependencyResolver().resolveDependency( EnterpriseAuthManager.class );
         EnterpriseSecurityContext neo = authManager.login( AuthToken.newBasicAuthToken( "neo4j", "neo4j" ) );
 
-        String query = "CALL dbms.security.changePassword('.changePassword(silly)')";
+        String query = "CALL dbms.security.changePassword('.changePassword(\\'si\"lly\\')')";
         try ( InternalTransaction tx = database
                 .beginTransaction( KernelTransaction.Type.explicit, neo ) )
         {
@@ -392,6 +425,42 @@ public class QueryLoggerIT
     }
 
     @Test
+    public void shouldNotLogPasswordEvenIfYouDoTwoThingsAtTheSameTime() throws Exception
+    {
+        GraphDatabaseFacade database = (GraphDatabaseFacade) databaseBuilder
+                .setConfig( GraphDatabaseSettings.log_queries, Settings.TRUE )
+                .setConfig( GraphDatabaseSettings.logs_directory, logsDirectory.getPath() )
+                .setConfig( GraphDatabaseSettings.auth_enabled, Settings.TRUE )
+                .newGraphDatabase();
+
+        EnterpriseAuthManager authManager = database.getDependencyResolver().resolveDependency( EnterpriseAuthManager.class );
+        EnterpriseAuthAndUserManager userManager= database.getDependencyResolver().resolveDependency(
+                EnterpriseAuthAndUserManager.class );
+        userManager.getUserManager().newUser( "smith", "himitsu", false );
+        EnterpriseSecurityContext neo = authManager.login( AuthToken.newBasicAuthToken( "neo4j", "neo4j" ) );
+
+        String query = "CALL dbms.security.changeUserPassword('neo4j','.changePassword(silly)') "+
+                "CALL dbms.security.changeUserPassword('smith','other$silly') RETURN 1";
+        try ( InternalTransaction tx = database
+                .beginTransaction( KernelTransaction.Type.explicit, neo ) )
+        {
+            Result res = database.execute( tx, query, Collections.emptyMap() );
+            res.close();
+            tx.success();
+        }
+        finally
+        {
+            database.shutdown();
+        }
+
+        List<String> logLines = readAllLines( logFilename );
+        assertEquals( 1, logLines.size() );
+        assertThat( logLines.get( 0 ),
+                containsString(  "CALL dbms.security.changeUserPassword('neo4j',******) CALL dbms.security.changeUserPassword('smith',******)") ) ;
+        assertThat( logLines.get( 0 ), containsString( neo.subject().username() ) );
+    }
+
+    @Test
     public void shouldNotLogPasswordInParams() throws Exception
     {
         GraphDatabaseFacade database = (GraphDatabaseFacade) databaseBuilder
@@ -404,6 +473,38 @@ public class QueryLoggerIT
         EnterpriseSecurityContext neo = authManager.login( AuthToken.newBasicAuthToken( "neo4j", "neo4j" ) );
 
         String query = "CALL dbms.changePassword($password)";
+        try ( InternalTransaction tx = database
+                .beginTransaction( KernelTransaction.Type.explicit, neo ) )
+        {
+            Result res = database.execute( tx, query, Collections.singletonMap( "password", "abc123" ) );
+            res.close();
+            tx.success();
+        }
+        finally
+        {
+            database.shutdown();
+        }
+
+        List<String> logLines = readAllLines( logFilename );
+        assertEquals( 1, logLines.size() );
+        assertThat( logLines.get( 0 ),
+                containsString(  "{password: ******}"));
+        assertThat( logLines.get( 0 ), containsString( neo.subject().username() ) );
+    }
+
+    @Test
+    public void shouldNotLogPasswordInDeprecatedParams() throws Exception
+    {
+        GraphDatabaseFacade database = (GraphDatabaseFacade) databaseBuilder
+                .setConfig( GraphDatabaseSettings.log_queries, Settings.TRUE )
+                .setConfig( GraphDatabaseSettings.logs_directory, logsDirectory.getPath() )
+                .setConfig( GraphDatabaseSettings.auth_enabled, Settings.TRUE )
+                .newGraphDatabase();
+
+        EnterpriseAuthManager authManager = database.getDependencyResolver().resolveDependency( EnterpriseAuthManager.class );
+        EnterpriseSecurityContext neo = authManager.login( AuthToken.newBasicAuthToken( "neo4j", "neo4j" ) );
+
+        String query = "CALL dbms.changePassword({password})";
         try ( InternalTransaction tx = database
                 .beginTransaction( KernelTransaction.Type.explicit, neo ) )
         {

@@ -139,6 +139,11 @@ public class QueryLoggerKernelExtension extends KernelExtensionFactory<QueryLogg
         private final long thresholdMillis;
         private final boolean logQueryParameters;
 
+        private static final Pattern PASSWORD_PATTERN = Pattern.compile(
+                "(?:(?i)call)\\s+dbms(?:\\.security)?\\.change(?:User)?Password\\(" +
+                        "(?:\\s*(?:'(?:(?<=\\\\)'|[^'])*'|\"(?:(?<=\\\\)\"|[^\"])*\"|\\$\\w*|\\{\\w*\\})\\s*,)?" +
+                        "\\s*('(?:(?<=\\\\)'|[^'])*'|\"(?:(?<=\\\\)\"|[^\"])*\"|\\$\\w*|\\{\\w*\\})\\s*\\)" );
+
         QueryLogger( Clock clock, Log log, long thresholdMillis, boolean logQueryParameters )
         {
             this.clock = clock;
@@ -176,41 +181,30 @@ public class QueryLoggerKernelExtension extends KernelExtensionFactory<QueryLogg
             String metaData = mapAsString( query.metaData() );
 
             String password = "";
-            boolean haveParams = false;
-            if ( queryText.contains( ".changePassword(" ) )
-            {
-                Pattern pattern = Pattern.compile( "\\.changePassword\\((.*)\\)" );
-                Matcher matcher = pattern.matcher( queryText );
-                if ( matcher.find() )
-                {
-                    password = matcher.group( 1 );
-                    if ( password.charAt( 0 ) != '$' )
-                    {
-                        queryText = queryText.replace( password, "******" );
-                    }
-                    else
-                    {
-                        haveParams = true;
-                    }
 
+            Matcher matcher = PASSWORD_PATTERN.matcher( queryText );
+
+            while ( matcher.find() )
+            {
+                password = matcher.group( 1 ).trim();
+                if ( password.charAt( 0 ) == '$' )
+                {
+                    password = password.substring( 1 );
+                }
+                else if ( password.charAt( 0 ) == '{' )
+                {
+                    password = password.substring( 1, password.length() - 1 );
+                }
+                else
+                {
+                    queryText = queryText.replace( password, "******" );
+                    password = "";
                 }
             }
 
             if ( logQueryParameters )
             {
-                String params = mapAsString( query.queryParameters() );
-                if ( haveParams )
-                {
-                    password = password.replace( "$", "" );
-
-                    Pattern pattern = Pattern.compile( password + ".*('.*')" );
-                    Matcher matcher = pattern.matcher( params );
-                    if ( matcher.find() )
-                    {
-                        password = matcher.group( 1 );
-                        params = params.replace( password, "******" );
-                    }
-                }
+                String params = mapAsString( query.queryParameters(), password );
                 return format( "%d ms: %s - %s - %s - %s", time, sourceString, queryText, params, metaData );
             }
             else
@@ -219,8 +213,12 @@ public class QueryLoggerKernelExtension extends KernelExtensionFactory<QueryLogg
             }
         }
 
-        @SuppressWarnings( "unchecked" )
         private static String mapAsString( Map<String,Object> params )
+        {
+            return mapAsString( params, "" );
+        }
+
+        private static String mapAsString( Map<String, Object> params, String obfuscate )
         {
             if ( params == null )
             {
@@ -232,11 +230,18 @@ public class QueryLoggerKernelExtension extends KernelExtensionFactory<QueryLogg
             for ( Map.Entry<String,Object> entry : params.entrySet() )
             {
                 builder
-                    .append( sep )
-                    .append( entry.getKey() )
-                    .append( ": " )
-                    .append( valueToString( entry.getValue() ) );
+                        .append( sep )
+                        .append( entry.getKey() )
+                        .append( ": " );
 
+                if ( entry.getKey().equals( obfuscate ) )
+                {
+                    builder.append( "******" );
+                }
+                else
+                {
+                    builder.append( valueToString( entry.getValue() ) );
+                }
                 sep = ", ";
             }
             builder.append( "}" );
