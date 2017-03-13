@@ -410,6 +410,13 @@ public class StorageLayer implements StoreReadLayer
     }
 
     @Override
+    public Cursor<RelationshipItem> relationshipCursor( StorageStatement statement, long relationshipId,
+            ReadableTransactionState state )
+    {
+        return statement.acquireSingleRelationshipCursor( relationshipId, state );
+    }
+
+    @Override
     public Cursor<RelationshipItem> nodeGetRelationships( StorageStatement statement, NodeItem nodeItem,
             Direction direction, ReadableTransactionState state )
     {
