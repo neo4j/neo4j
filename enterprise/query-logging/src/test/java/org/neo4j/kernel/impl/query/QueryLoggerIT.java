@@ -65,7 +65,6 @@ import static org.hamcrest.Matchers.not;
 import static org.junit.Assert.assertEquals;
 import static org.junit.Assert.assertFalse;
 import static org.junit.Assert.assertThat;
-import static org.junit.Assert.assertTrue;
 import static org.neo4j.helpers.collection.MapUtil.stringMap;
 import static org.neo4j.kernel.api.security.AuthSubject.AUTH_DISABLED;
 
@@ -300,6 +299,7 @@ public class QueryLoggerIT
         final File logsDirectory = new File( testDirectory.graphDbDir(), "logs" );
         GraphDatabaseService database = databaseBuilder.setConfig( GraphDatabaseSettings.log_queries, Settings.TRUE )
                 .setConfig( GraphDatabaseSettings.logs_directory, logsDirectory.getPath() )
+                .setConfig( GraphDatabaseSettings.log_queries_max_archives, "100" )
                 .setConfig( GraphDatabaseSettings.log_queries_rotation_threshold, "1" )
                 .newGraphDatabase();
 
@@ -321,7 +321,7 @@ public class QueryLoggerIT
                                         .map( this::readAllLinesSilent )
                                         .flatMap( Collection::stream )
                                         .collect( Collectors.toList() );
-        assertTrue( "Expected log file to have at least one log entry", loggedQueries.size() >= 1 );
+        assertThat( "Expected log file to have at least one log entry", loggedQueries, hasSize( 100 ) );
     }
 
     private void executeQueryAndShutdown( GraphDatabaseService database )
