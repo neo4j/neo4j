@@ -21,6 +21,9 @@ package org.neo4j.io.pagecache.tracing.cursor;
 
 import java.util.function.Supplier;
 
+/**
+ * Supplier of page cursor tracers {@link PageCursorTracer} that use to provide transaction local page cache counters.
+ */
 public interface PageCursorTracerSupplier extends Supplier<PageCursorTracer>
 {
     PageCursorTracerSupplier NULL = () -> PageCursorTracer.NULL;

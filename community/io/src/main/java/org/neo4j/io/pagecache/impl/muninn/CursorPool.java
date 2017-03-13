@@ -30,6 +30,13 @@ final class CursorPool extends ThreadLocal<CursorPool.CursorSets>
     private final PageCursorTracerSupplier pageCursorTracerSupplier;
     private PageCacheTracer pageCacheTracer;
 
+    /**
+     * Cursor pool construction
+     * @param pagedFile paged file for which pool is created
+     * @param pageCursorTracerSupplier supplier of thread local (transaction local) page cursor tracers that will
+     * provide thread local page cache statistics
+     * @param pageCacheTracer global page cache tracer
+     */
     CursorPool( MuninnPagedFile pagedFile, PageCursorTracerSupplier pageCursorTracerSupplier, PageCacheTracer pageCacheTracer )
     {
         this.pagedFile = pagedFile;

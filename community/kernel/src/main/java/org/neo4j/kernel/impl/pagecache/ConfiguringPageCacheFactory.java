@@ -48,6 +48,15 @@ public class ConfiguringPageCacheFactory
     private PageCache pageCache;
     private PageCursorTracerSupplier pageCursorTracerSupplier;
 
+    /**
+     * Construct configuring page cache factory
+     * @param fs fileSystem file system that page cache will be based on
+     * @param config page swapper configuration
+     * @param pageCacheTracer global page cache tracer
+     * @param pageCursorTracerSupplier supplier of thread local (transaction local) page cursor tracer that will provide
+     * thread local page cache statistics
+     * @param log page cache factory log
+     */
     public ConfiguringPageCacheFactory( FileSystemAbstraction fs, Config config, PageCacheTracer pageCacheTracer,
             PageCursorTracerSupplier pageCursorTracerSupplier, Log log )
     {

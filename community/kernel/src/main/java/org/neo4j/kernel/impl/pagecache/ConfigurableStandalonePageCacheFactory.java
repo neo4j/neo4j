@@ -53,6 +53,15 @@ public final class ConfigurableStandalonePageCacheFactory
         return createPageCache( fileSystem, PageCacheTracer.NULL, DefaultPageCursorTracerSupplier.INSTANCE, config );
     }
 
+    /**
+     * Create page cache
+     * @param fileSystem file system that page cache will be based on
+     * @param pageCacheTracer global page cache tracer
+     * @param pageCursorTracerSupplier supplier of thread local (transaction local) page cursor tracer that will provide
+     * thread local page cache statistics
+     * @param config page cache configuration
+     * @return created page cache instance
+     */
     public static PageCache createPageCache( FileSystemAbstraction fileSystem, PageCacheTracer pageCacheTracer,
             PageCursorTracerSupplier pageCursorTracerSupplier, Config config )
     {

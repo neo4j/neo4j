@@ -91,6 +91,19 @@ final class MuninnPagedFile implements PagedFile, Flushable
     @SuppressWarnings( "unused" ) // Accessed via Unsafe
     private volatile long headerState;
 
+    /**
+     * Create muninn page file
+     * @param file original file
+     * @param pageCache page cache
+     * @param filePageSize file page size
+     * @param swapperFactory page cache swapper factory
+     * @param pageCacheTracer global page cache tracer
+     * @param pageCursorTracerSupplier supplier of thread local (transaction local) page cursor tracer that will provide
+     * thread local page cache statistics
+     * @param createIfNotExists should create file if it does not exists
+     * @param truncateExisting should truncate file if it exists
+     * @throws IOException
+     */
     MuninnPagedFile(
             File file,
             MuninnPageCache pageCache,

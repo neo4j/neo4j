@@ -197,6 +197,15 @@ public class MuninnPageCache implements PageCache
     private boolean printExceptionsOnClose;
     private PageCursorTracerSupplier pageCursorTracerSupplier;
 
+    /**
+     * Create page cache
+     * @param swapperFactory page cache swapper factory
+     * @param maxPages maximum number of pages
+     * @param cachePageSize page cache size
+     * @param pageCacheTracer global page cache tracer
+     * @param pageCursorTracerSupplier supplier of thread local (transaction local) page cursor tracer that will provide
+     * thread local page cache statistics
+     */
     public MuninnPageCache( PageSwapperFactory swapperFactory, int maxPages, int cachePageSize, PageCacheTracer pageCacheTracer,
             PageCursorTracerSupplier pageCursorTracerSupplier )
     {
