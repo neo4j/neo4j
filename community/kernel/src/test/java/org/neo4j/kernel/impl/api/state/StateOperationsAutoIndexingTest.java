@@ -90,7 +90,7 @@ public class StateOperationsAutoIndexingTest
     public void shouldSignalRelationshipRemovedToAutoIndex() throws Exception
     {
         // Given
-        when( storeStmt.acquireSingleRelationshipCursor( 1337, null ) )
+        when( storeLayer.relationshipCursor( any( StorageStatement.class ), eq( 1337L ), eq( null ) ) )
                 .thenReturn( cursor( mock( RelationshipItem.class ) ) );
 
         // When
@@ -129,7 +129,8 @@ public class StateOperationsAutoIndexingTest
         DefinedProperty property = property( propertyKeyId, "Hello!" );
 
         RelationshipItem relationship = mock( RelationshipItem.class );
-        when( storeStmt.acquireSingleRelationshipCursor( 1337, null ) ).thenReturn( cursor( relationship ) );
+        when( storeLayer.relationshipCursor( any( StorageStatement.class ), eq( 1337L ), eq( null ) ) )
+                .thenReturn( cursor( relationship ) );
         when( storeLayer.relationshipGetProperty( storeStmt, relationship, propertyKeyId, null ) )
                 .thenReturn( empty() );
 
@@ -177,7 +178,8 @@ public class StateOperationsAutoIndexingTest
         when(existingProperty.value()).thenReturn( "Goodbye!" );
 
         RelationshipItem relationship = mock( RelationshipItem.class );
-        when( storeStmt.acquireSingleRelationshipCursor( 1337, null ) ).thenReturn( cursor( relationship ) );
+        when( storeLayer.relationshipCursor( any( StorageStatement.class ), eq( 1337L ), eq( null ) ) )
+                .thenReturn( cursor( relationship ) );
         when( storeLayer.relationshipGetProperty( storeStmt, relationship, propertyKeyId, null ) )
                 .thenReturn( cursor( existingProperty ) );
 
@@ -185,7 +187,7 @@ public class StateOperationsAutoIndexingTest
         context.relationshipSetProperty( stmt, 1337, property );
 
         // Then
-        verify( relOps ).propertyChanged( eq(writeOps), eq(1337L), any(Property.class), eq(property) );
+        verify( relOps ).propertyChanged( eq( writeOps ), eq( 1337L ), any( Property.class ), eq( property ) );
     }
 
     @Test
@@ -222,7 +224,8 @@ public class StateOperationsAutoIndexingTest
         when(existingProperty.value()).thenReturn( "Goodbye!" );
 
         RelationshipItem relationship = mock( RelationshipItem.class );
-        when( storeStmt.acquireSingleRelationshipCursor( 1337, null ) ).thenReturn( cursor( relationship ) );
+        when( storeLayer.relationshipCursor( any( StorageStatement.class ), eq( 1337L ), eq( null ) ) )
+                .thenReturn( cursor( relationship ) );
         when( storeLayer.relationshipGetProperty( storeStmt, relationship, propertyKeyId, null ) )
                 .thenReturn( cursor( existingProperty ) );
 
