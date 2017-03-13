@@ -52,7 +52,7 @@ final class FileVersion
         }
     };
 
-    public FileVersion( long txId )
+    FileVersion( long txId )
     {
         this( txId, INITIAL_MINOR_VERSION );
     }

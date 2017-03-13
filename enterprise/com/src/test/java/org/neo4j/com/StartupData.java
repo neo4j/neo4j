@@ -31,8 +31,8 @@ class StartupData implements Serializable
     byte internalProtocolVersion;
     int chunkSize;
 
-    public StartupData( long creationTime, long storeId, byte internalProtocolVersion, byte applicationProtocolVersion,
-                        int chunkSize )
+    StartupData( long creationTime, long storeId, byte internalProtocolVersion, byte applicationProtocolVersion,
+            int chunkSize )
     {
         this.creationTime = creationTime;
         this.storeId = storeId;

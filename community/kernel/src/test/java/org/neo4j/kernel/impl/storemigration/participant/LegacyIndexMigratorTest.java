@@ -163,8 +163,8 @@ public class LegacyIndexMigratorTest
 
         private final boolean successfullMigration;
 
-        public TestLegacyIndexMigrator( FileSystemAbstraction fileSystem,
-                Map<String,IndexImplementation> indexProviders, LogProvider logProvider, boolean successfullMigration )
+        TestLegacyIndexMigrator( FileSystemAbstraction fileSystem, Map<String,IndexImplementation> indexProviders,
+                LogProvider logProvider, boolean successfullMigration )
         {
             super( fileSystem, indexProviders, logProvider );
             this.successfullMigration = successfullMigration;
@@ -182,7 +182,7 @@ public class LegacyIndexMigratorTest
     {
         private final boolean successfulMigration;
 
-        public HumbleLegacyIndexUpgrader( Path indexRootPath, boolean successfulMigration )
+        HumbleLegacyIndexUpgrader( Path indexRootPath, boolean successfulMigration )
         {
             super( indexRootPath, NO_MONITOR );
             this.successfulMigration = successfulMigration;

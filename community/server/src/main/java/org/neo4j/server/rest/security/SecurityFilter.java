@@ -174,7 +174,7 @@ public class SecurityFilter implements Filter
     {
         private final SecurityRule innerRule;
 
-        public ForbiddenRuleDecorator( SecurityRule rule )
+        ForbiddenRuleDecorator( SecurityRule rule )
         {
             this.innerRule = rule;
         }

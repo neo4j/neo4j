@@ -96,7 +96,7 @@ public class DefaultCacheAccess implements CacheAccess
     {
         private final int threadIndex;
 
-        public DefaultClient( int threadIndex )
+        DefaultClient( int threadIndex )
         {
             this.threadIndex = threadIndex;
         }

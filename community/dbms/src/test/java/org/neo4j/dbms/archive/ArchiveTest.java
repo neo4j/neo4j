@@ -19,6 +19,9 @@
  */
 package org.neo4j.dbms.archive;
 
+import org.junit.Rule;
+import org.junit.Test;
+
 import java.io.IOException;
 import java.nio.file.Files;
 import java.nio.file.Path;
@@ -26,16 +29,11 @@ import java.util.Arrays;
 import java.util.HashMap;
 import java.util.Map;
 
-import org.junit.Rule;
-import org.junit.Test;
-
 import org.neo4j.function.Predicates;
 import org.neo4j.test.rule.TestDirectory;
 
 import static java.nio.file.Files.isDirectory;
-
 import static org.junit.Assert.assertEquals;
-
 import static org.neo4j.helpers.collection.Pair.pair;
 
 public class ArchiveTest
@@ -208,7 +206,7 @@ public class ArchiveTest
     {
         private final byte[] bytes;
 
-        public FileDescription( byte[] bytes )
+        FileDescription( byte[] bytes )
         {
             this.bytes = bytes;
         }

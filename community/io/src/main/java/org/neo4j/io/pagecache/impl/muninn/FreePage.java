@@ -30,7 +30,7 @@ final class FreePage
     int count;
     FreePage next;
 
-    public FreePage( MuninnPage page )
+    FreePage( MuninnPage page )
     {
         this.page = page;
     }

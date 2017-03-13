@@ -253,7 +253,7 @@ public class DelayedBufferTest
         private final boolean[] seenIds;
         private int chunkCount;
 
-        public VerifyingConsumer( int size )
+        VerifyingConsumer( int size )
         {
             seenIds = new boolean[size];
         }

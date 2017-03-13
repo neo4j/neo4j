@@ -121,7 +121,7 @@ class ClusterInstance
                 input, output, uri );
     }
 
-    public ClusterInstance( Executor stateMachineExecutor, LogProvider logging, MultiPaxosServerFactory factory,
+    ClusterInstance( Executor stateMachineExecutor, LogProvider logging, MultiPaxosServerFactory factory,
                             ProtocolServer server,
                             MultiPaxosContext ctx, InMemoryAcceptorInstanceStore acceptorInstanceStore,
                             ProverTimeouts timeouts, ClusterInstanceInput input, ClusterInstanceOutput output,
@@ -353,7 +353,7 @@ class ClusterInstance
         private final List<Message<? extends MessageType>> messages = new ArrayList<>();
         private final URI uri;
 
-        public ClusterInstanceOutput( URI uri )
+        ClusterInstanceOutput( URI uri )
         {
             this.uri = uri;
         }

@@ -46,12 +46,12 @@ abstract class SuperDiffSets<T,LONGITERATOR extends PrimitiveLongIterator>
     private Set<T> removedElements;
     private Predicate<T> filter;
 
-    public SuperDiffSets()
+    SuperDiffSets()
     {
         this( null, null );
     }
 
-    public SuperDiffSets( Set<T> addedElements, Set<T> removedElements )
+    SuperDiffSets( Set<T> addedElements, Set<T> removedElements )
     {
         this.addedElements = addedElements;
         this.removedElements = removedElements;

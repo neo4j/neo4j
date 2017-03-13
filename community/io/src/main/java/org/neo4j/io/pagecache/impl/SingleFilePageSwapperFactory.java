@@ -163,7 +163,7 @@ public class SingleFilePageSwapperFactory implements PageSwapperFactory
         private final File baseDirectory;
         private final FileSystemAbstraction fs;
 
-        public WrappingFileHandle( File file, File baseDirectory, FileSystemAbstraction fs )
+        WrappingFileHandle( File file, File baseDirectory, FileSystemAbstraction fs )
         {
             this.file = file;
             this.baseDirectory = baseDirectory;

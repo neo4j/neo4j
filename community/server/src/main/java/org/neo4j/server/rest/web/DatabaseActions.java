@@ -511,7 +511,7 @@ public class DatabaseActions
         out( Direction.OUTGOING );
         final Direction internal;
 
-        private RelationshipDirection( Direction internal )
+        RelationshipDirection( Direction internal )
         {
             this.internal = internal;
         }
@@ -1215,8 +1215,7 @@ public class DatabaseActions
         @SuppressWarnings( "rawtypes" )
         private PathRepresentationCreator representationCreator = PATH_REPRESENTATION_CREATOR;
 
-        public FindParams( final long startId, final long endId,
-                final Map<String,Object> map )
+        FindParams( final long startId, final long endId, final Map<String,Object> map )
         {
             this.startId = startId;
             this.endId = endId;
@@ -1361,7 +1360,7 @@ public class DatabaseActions
         abstract QueryContext updateQueryContext( QueryContext original );
     }
 
-    private final IndexResultOrder getOrdering( String order )
+    private IndexResultOrder getOrdering( String order )
     {
         if ( INDEX_ORDER.equalsIgnoreCase( order ) )
         {

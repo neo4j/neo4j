@@ -27,7 +27,7 @@ class IndexIdentifier
     final String indexName;
     private final int hashCode;
 
-    public IndexIdentifier( IndexEntityType entityType, String indexName )
+    IndexIdentifier( IndexEntityType entityType, String indexName )
     {
         this.entityType = entityType;
         this.indexName = indexName;

@@ -33,7 +33,7 @@ class KeyFormat implements CountsVisitor
     private static final byte NODE_COUNT = 1, RELATIONSHIP_COUNT = 2, INDEX = 127, INDEX_STATS = 1, INDEX_SAMPLE = 2;
     private final WritableBuffer buffer;
 
-    public KeyFormat( WritableBuffer key )
+    KeyFormat( WritableBuffer key )
     {
         assert key.size() >= 16;
         this.buffer = key;

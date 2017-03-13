@@ -971,7 +971,7 @@ public class ReadOnlyGraphDatabaseProxy implements GraphDatabaseService, GraphDa
     {
         private final Schema actual;
 
-        public ReadOnlySchemaProxy( Schema actual )
+        ReadOnlySchemaProxy( Schema actual )
         {
 
             this.actual = actual;

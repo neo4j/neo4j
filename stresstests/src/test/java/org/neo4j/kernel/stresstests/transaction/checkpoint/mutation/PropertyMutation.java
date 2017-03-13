@@ -29,7 +29,7 @@ class PropertyMutation implements Mutation
 {
     private final GraphDatabaseService db;
 
-    public PropertyMutation( GraphDatabaseService db )
+    PropertyMutation( GraphDatabaseService db )
     {
         this.db = db;
     }

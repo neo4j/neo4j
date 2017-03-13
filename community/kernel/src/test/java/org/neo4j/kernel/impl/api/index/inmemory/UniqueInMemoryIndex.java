@@ -51,7 +51,7 @@ class UniqueInMemoryIndex extends InMemoryIndex
         }
     };
 
-    public UniqueInMemoryIndex( LabelSchemaDescriptor schema )
+    UniqueInMemoryIndex( LabelSchemaDescriptor schema )
     {
         this.schema = schema;
     }

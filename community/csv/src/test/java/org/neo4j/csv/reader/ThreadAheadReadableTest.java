@@ -25,10 +25,9 @@ import java.io.CharArrayReader;
 import java.io.IOException;
 import java.util.concurrent.locks.LockSupport;
 
+import static java.util.Arrays.copyOfRange;
 import static org.junit.Assert.assertArrayEquals;
 import static org.junit.Assert.assertEquals;
-
-import static java.util.Arrays.copyOfRange;
 
 public class ThreadAheadReadableTest
 {
@@ -105,7 +104,7 @@ public class ThreadAheadReadableTest
         private volatile int readsCompleted;
         private final CharReadable actual;
 
-        public TrackingReader( int length )
+        TrackingReader( int length )
         {
             this.actual = Readables.wrap( new CharArrayReader( chars( 0, length ) ) );
         }

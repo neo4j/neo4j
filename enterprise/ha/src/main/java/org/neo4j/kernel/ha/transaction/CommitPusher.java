@@ -44,7 +44,7 @@ public class CommitPusher extends LifecycleAdapter
         private final Slave slave;
         private final long txId;
 
-        public PullUpdateFuture( Slave slave, long txId )
+        PullUpdateFuture( Slave slave, long txId )
         {
             super( new Callable<Object>()
             {

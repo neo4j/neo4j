@@ -50,7 +50,7 @@ public class GroupConfigTest
 
         private final GroupSettingSupport group;
 
-        public ConnectorExample( String key )
+        ConnectorExample( String key )
         {
             group = new GroupSettingSupport( ConnectorExample.class, key );
             this.enabled = group.scope( setting( "enabled", BOOLEAN, "false" ) );

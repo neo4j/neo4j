@@ -529,7 +529,7 @@ public class KeyValueStoreFileFormatTest
     {
         private final Map<String,HeaderField<byte[]>> headerFields = new HashMap<>();
 
-        public Format( String... defaultHeaderFields )
+        Format( String... defaultHeaderFields )
         {
             this( StubCollector.headerFields( defaultHeaderFields ) );
         }

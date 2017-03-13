@@ -19,12 +19,12 @@
  */
 package org.neo4j.server.helpers;
 
+import org.apache.commons.io.FileUtils;
+
 import java.io.File;
 import java.io.IOException;
 import java.net.InetAddress;
 import java.net.ServerSocket;
-
-import org.apache.commons.io.FileUtils;
 
 import org.neo4j.graphdb.Node;
 import org.neo4j.graphdb.Relationship;
@@ -139,7 +139,7 @@ public class ServerHelper
     {
         private final GraphDatabaseAPI db;
 
-        public DeleteAllData( GraphDatabaseAPI db )
+        DeleteAllData( GraphDatabaseAPI db )
         {
             this.db = db;
         }
@@ -215,7 +215,7 @@ public class ServerHelper
     {
         private final GraphDatabaseAPI db;
 
-        public DeleteAllSchema( GraphDatabaseAPI db )
+        DeleteAllSchema( GraphDatabaseAPI db )
         {
             this.db = db;
         }

@@ -142,12 +142,12 @@ public class PluginFunctionalTestHelper
 
             abstract boolean match( String pattern, String string );
 
-            private MatchType()
+            MatchType()
             {
                 this.description = name();
             }
 
-            private MatchType( String description )
+            MatchType( String description )
             {
                 this.description = description;
             }

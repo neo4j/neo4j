@@ -39,7 +39,7 @@ class BidirectionalTraversalBranchPath implements Path
     private Node cachedStartNode;
     private LinkedList<Relationship> cachedRelationships;
 
-    public BidirectionalTraversalBranchPath( TraversalBranch start, TraversalBranch end )
+    BidirectionalTraversalBranchPath( TraversalBranch start, TraversalBranch end )
     {
         this.start = start;
         this.end = end;

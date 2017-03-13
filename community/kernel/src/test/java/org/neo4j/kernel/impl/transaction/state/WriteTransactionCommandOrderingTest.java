@@ -203,7 +203,7 @@ public class WriteTransactionCommandOrderingTest
     {
         private final AtomicReference<List<String>> currentRecording;
 
-        public RecordingPropertyStore( AtomicReference<List<String>> currentRecording )
+        RecordingPropertyStore( AtomicReference<List<String>> currentRecording )
         {
             super( null, Config.empty(), null, null, NullLogProvider.getInstance(), null, null, null,
                     Standard.LATEST_RECORD_FORMATS );
@@ -226,7 +226,7 @@ public class WriteTransactionCommandOrderingTest
     {
         private final AtomicReference<List<String>> currentRecording;
 
-        public RecordingNodeStore( AtomicReference<List<String>> currentRecording )
+        RecordingNodeStore( AtomicReference<List<String>> currentRecording )
         {
             super( null, Config.empty(), null, null, NullLogProvider.getInstance(), null, Standard.LATEST_RECORD_FORMATS );
             this.currentRecording = currentRecording;
@@ -256,7 +256,7 @@ public class WriteTransactionCommandOrderingTest
     {
         private final AtomicReference<List<String>> currentRecording;
 
-        public RecordingRelationshipStore( AtomicReference<List<String>> currentRecording )
+        RecordingRelationshipStore( AtomicReference<List<String>> currentRecording )
         {
             super( null, Config.empty(), null, null, NullLogProvider.getInstance(), Standard.LATEST_RECORD_FORMATS );
             this.currentRecording = currentRecording;

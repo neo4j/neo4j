@@ -120,7 +120,7 @@ public class DirectRecordAccess<KEY extends Comparable<KEY>,RECORD extends Abstr
         private boolean changed = false;
         private final boolean created;
 
-        public DirectRecordProxy( KEY key, RECORD record, ADDITIONAL additionalData, boolean created )
+        DirectRecordProxy( KEY key, RECORD record, ADDITIONAL additionalData, boolean created )
         {
             this.key = key;
             this.record = record;

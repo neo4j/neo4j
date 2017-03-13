@@ -337,7 +337,7 @@ public class ExecutionResult implements ResourceIterable<Map<String,Object>>, Re
     {
         private final ResourceIterator<T> inner;
 
-        public ExceptionConversion( ResourceIterator<T> inner )
+        ExceptionConversion( ResourceIterator<T> inner )
         {
             this.inner = inner;
         }

@@ -296,7 +296,7 @@ public class CountsTracker extends AbstractKeyValueStore<CountsKey>
     {
         private final CountsVisitor visitor;
 
-        public DelegatingVisitor( CountsVisitor visitor )
+        DelegatingVisitor( CountsVisitor visitor )
         {
             this.visitor = visitor;
         }

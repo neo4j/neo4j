@@ -27,8 +27,7 @@ class RawMapIterator<FROM, TO, EX extends Exception> implements RawIterator<TO,E
     private final RawIterator<FROM,EX> fromIterator;
     private final ThrowingFunction<? super FROM,? extends TO,EX> function;
 
-    public RawMapIterator( RawIterator<FROM,EX> fromIterator,
-            ThrowingFunction<? super FROM,? extends TO,EX> function )
+    RawMapIterator( RawIterator<FROM,EX> fromIterator, ThrowingFunction<? super FROM,? extends TO,EX> function )
     {
         this.fromIterator = fromIterator;
         this.function = function;

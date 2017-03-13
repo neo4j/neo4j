@@ -83,7 +83,7 @@ public class TokenCreationIT
         private final GraphDatabaseService database;
         private final CountDownLatch createLatch;
 
-        public LabelCreator( GraphDatabaseService database, CountDownLatch createLatch )
+        LabelCreator( GraphDatabaseService database, CountDownLatch createLatch )
         {
             this.database = database;
             this.createLatch = createLatch;

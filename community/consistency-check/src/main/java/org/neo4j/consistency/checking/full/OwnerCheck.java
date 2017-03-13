@@ -414,7 +414,7 @@ class OwnerCheck implements CheckDecorator
         private final RecordCheck<RECORD, REPORT> checker;
         private final ConcurrentMap<Long, DynamicOwner> owners;
 
-        public NameCheckerDecorator( RecordCheck<RECORD, REPORT> checker, ConcurrentMap<Long, DynamicOwner> owners )
+        NameCheckerDecorator( RecordCheck<RECORD,REPORT> checker, ConcurrentMap<Long,DynamicOwner> owners )
         {
             this.checker = checker;
             this.owners = owners;

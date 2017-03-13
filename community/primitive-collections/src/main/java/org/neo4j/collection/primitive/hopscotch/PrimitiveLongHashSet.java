@@ -101,7 +101,7 @@ public class PrimitiveLongHashSet extends AbstractLongHopScotchCollection<Object
         private PrimitiveLongHashSet other;
         private boolean equal = true;
 
-        public LongKeyEquality( PrimitiveLongHashSet that )
+        LongKeyEquality( PrimitiveLongHashSet that )
         {
             this.other = that;
         }

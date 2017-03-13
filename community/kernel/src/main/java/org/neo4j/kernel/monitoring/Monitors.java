@@ -249,7 +249,7 @@ public class Monitors
     {
         private final Object monitorListener;
 
-        public UntaggedMonitorListenerInvocationHandler( Object monitorListener )
+        UntaggedMonitorListenerInvocationHandler( Object monitorListener )
         {
             this.monitorListener = monitorListener;
         }
@@ -272,7 +272,7 @@ public class Monitors
     {
         private final String[] tags;
 
-        public TaggedMonitorListenerInvocationHandler( Object monitorListener, String... tags )
+        TaggedMonitorListenerInvocationHandler( Object monitorListener, String... tags )
         {
             super( monitorListener );
             this.tags = tags;
@@ -302,7 +302,7 @@ public class Monitors
     {
         private String[] tags;
 
-        public MonitorInvocationHandler( String... tags )
+        MonitorInvocationHandler( String... tags )
         {
             this.tags = tags;
         }

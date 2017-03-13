@@ -365,7 +365,7 @@ public class ResourcePoolTest
 
     private static class SomethingResourcePool extends ResourcePool<Something>
     {
-        public SomethingResourcePool( int minSize, CheckStrategy checkStrategy, StatefulMonitor stateMonitor )
+        SomethingResourcePool( int minSize, CheckStrategy checkStrategy, StatefulMonitor stateMonitor )
         {
             super( minSize, checkStrategy, stateMonitor );
         }

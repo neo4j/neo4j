@@ -179,7 +179,7 @@ public enum StoreFile
         this( typeDescriptor, storeFileNamePart, sinceVersion, true );
     }
 
-    private StoreFile( String typeDescriptor, String storeFileNamePart, String sinceVersion, boolean recordStore )
+    StoreFile( String typeDescriptor, String storeFileNamePart, String sinceVersion, boolean recordStore )
     {
         this.typeDescriptor = typeDescriptor;
         this.storeFileNamePart = storeFileNamePart;

@@ -167,8 +167,8 @@ abstract class RotationStrategy
         private static final Pattern SUFFIX = Pattern.compile( "\\.[0-9]+" );
         private final File base;
 
-        public Incrementing( FileSystemAbstraction fs, PageCache pages, ProgressiveFormat format,
-                             RotationMonitor monitor, File base )
+        Incrementing( FileSystemAbstraction fs, PageCache pages, ProgressiveFormat format, RotationMonitor monitor,
+                File base )
         {
             super( fs, pages, format, monitor );
             this.base = base;

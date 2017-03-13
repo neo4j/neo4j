@@ -34,7 +34,7 @@ public interface CountsVisitor
 
     void visitIndexSample( long indexId, long unique, long size );
 
-    public static class Adapter implements CountsVisitor
+    class Adapter implements CountsVisitor
     {
         @Override
         public void visitNodeCount( int labelId, long count )

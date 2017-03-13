@@ -41,7 +41,7 @@ final class Aggregator
     private long totalCount = 0;
     private final Completion completion = new Completion();
 
-    public Aggregator( Indicator indicator )
+    Aggregator( Indicator indicator )
     {
         this.indicator = indicator;
     }

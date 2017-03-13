@@ -75,7 +75,7 @@ class RelationshipGroupRecordFormatV3_0_6 extends BaseHighLimitRecordFormatV3_0_
     private static final long ONE_BIT_OVERFLOW_BIT_MASK = 0xFFFF_FFFE_0000_0000L;
     private static final long HIGH_DWORD_LAST_BIT_MASK = 0x100000000L;
 
-    public RelationshipGroupRecordFormatV3_0_6()
+    RelationshipGroupRecordFormatV3_0_6()
     {
         this( RECORD_SIZE );
     }

@@ -21,7 +21,7 @@ package org.neo4j.backup;
 
 class ConsistencyCheckFailedException extends Exception
 {
-    public ConsistencyCheckFailedException( Throwable cause )
+    ConsistencyCheckFailedException( Throwable cause )
     {
         super( cause );
     }

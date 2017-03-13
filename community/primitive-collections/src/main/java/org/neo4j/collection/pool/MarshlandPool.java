@@ -177,7 +177,7 @@ public class MarshlandPool<T> implements Pool<T>
         private T object;
         private final LocalSlotReference phantomReference;
 
-        public LocalSlot( ReferenceQueue<LocalSlot<T>> referenceQueue )
+        LocalSlot( ReferenceQueue<LocalSlot<T>> referenceQueue )
         {
             phantomReference = new LocalSlotReference( this, referenceQueue );
         }

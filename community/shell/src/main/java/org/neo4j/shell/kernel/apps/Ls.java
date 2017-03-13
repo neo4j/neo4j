@@ -321,7 +321,7 @@ public class Ls extends TransactionProvidingApp
         private int typesMaxedOut = 0;
         private final AtomicBoolean iterationHalted;
 
-        public LimitPerTypeFilter( int maxRelsPerType, Map<String, Direction> types, AtomicBoolean handBreak )
+        LimitPerTypeFilter( int maxRelsPerType, Map<String,Direction> types, AtomicBoolean handBreak )
         {
             this.maxRelsPerType = maxRelsPerType;
             this.iterationHalted = handBreak;

@@ -134,8 +134,7 @@ public class IndexBatchTransactionApplier extends BatchTransactionApplier.Adapte
         private final NodePropertyCommandsExtractor indexUpdatesExtractor = new NodePropertyCommandsExtractor();
         private List<IndexRule> createdIndexes;
 
-        public SingleTransactionApplier( NodeStore nodeStore, PropertyLoader propertyLoader,
-                TransactionApplicationMode mode )
+        SingleTransactionApplier( NodeStore nodeStore, PropertyLoader propertyLoader, TransactionApplicationMode mode )
         {
             this.nodeStore = nodeStore;
             this.propertyLoader = propertyLoader;

@@ -19,17 +19,17 @@
  */
 package org.neo4j.graphalgo.shortestpath;
 
-import static org.junit.Assert.assertEquals;
+import common.Neo4jAlgoTestCase;
+import org.junit.Test;
 
 import java.util.HashMap;
 
-import org.junit.Test;
 import org.neo4j.graphalgo.CostEvaluator;
 import org.neo4j.graphalgo.impl.shortestpath.Dijkstra;
 import org.neo4j.graphdb.Direction;
 import org.neo4j.graphdb.Relationship;
 
-import common.Neo4jAlgoTestCase;
+import static org.junit.Assert.assertEquals;
 
 /**
  * This set of tests is mainly made to test the "backwards" argument to the
@@ -121,8 +121,7 @@ public class DijkstraDirectionTest extends Neo4jAlgoTestCase
     {
         HashMap<Relationship, Direction> dirs;
 
-        public directionSavingCostEvaluator(
-                HashMap<Relationship, Direction> dirs )
+        directionSavingCostEvaluator( HashMap<Relationship,Direction> dirs )
         {
             super();
             this.dirs = dirs;

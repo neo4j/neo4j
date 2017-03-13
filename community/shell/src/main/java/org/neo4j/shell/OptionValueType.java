@@ -43,7 +43,7 @@ public enum OptionValueType
 
     private String description;
 
-    private OptionValueType( String description )
+    OptionValueType( String description )
     {
         this.description = description;
     }

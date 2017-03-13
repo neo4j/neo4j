@@ -102,7 +102,7 @@ public class StreamingBatchOperations extends BatchOperations
     {
         private final ServletOutputStream output;
 
-        public BatchInternalJettyServletResponse( ServletOutputStream output )
+        BatchInternalJettyServletResponse( ServletOutputStream output )
         {
             this.output = output;
         }

@@ -133,7 +133,7 @@ public class KernelExtensions extends DependencyResolver.Adapter implements Life
     {
         private final Class<T> type;
 
-        public TypeFilter( Class<T> type )
+        TypeFilter( Class<T> type )
         {
             this.type = type;
         }
@@ -149,7 +149,7 @@ public class KernelExtensions extends DependencyResolver.Adapter implements Life
     {
         private final Class<T> type;
 
-        public CastFunction( Class<T> type )
+        CastFunction( Class<T> type )
         {
             this.type = type;
         }

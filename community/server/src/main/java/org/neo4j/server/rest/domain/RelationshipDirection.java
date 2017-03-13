@@ -28,7 +28,7 @@ public enum RelationshipDirection
     out( Direction.OUTGOING );
     final Direction internal;
 
-    private RelationshipDirection( Direction internal )
+    RelationshipDirection( Direction internal )
     {
         this.internal = internal;
     }

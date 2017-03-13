@@ -34,7 +34,7 @@ class CommonContextState
     private ClusterConfiguration configuration;
     private final int maxAcceptors;
 
-    public CommonContextState( ClusterConfiguration configuration, int maxAcceptors )
+    CommonContextState( ClusterConfiguration configuration, int maxAcceptors )
     {
         this.configuration = configuration;
         this.maxAcceptors = maxAcceptors;

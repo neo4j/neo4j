@@ -96,9 +96,9 @@ public class ServiceTest
     private static final class ServiceBlockClassLoader extends ClassLoader
     {
 
-        public ServiceBlockClassLoader( ClassLoader parent )
+        ServiceBlockClassLoader( ClassLoader parent )
         {
-            super( parent );
+            super(parent);
         }
 
         @Override
@@ -124,9 +124,9 @@ public class ServiceTest
     private static final class ServiceRedirectClassLoader extends ClassLoader
     {
 
-        public ServiceRedirectClassLoader( ClassLoader parent )
+        ServiceRedirectClassLoader( ClassLoader parent )
         {
-            super( parent );
+            super(parent);
         }
 
         @Override

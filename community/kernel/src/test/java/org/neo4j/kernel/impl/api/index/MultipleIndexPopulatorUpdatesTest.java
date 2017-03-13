@@ -170,7 +170,7 @@ public class MultipleIndexPopulatorUpdatesTest
         private final NodeRecord nodeRecord;
         private final long id;
 
-        public SetNodeIdRecordAnswer( NodeRecord nodeRecord, long id )
+        SetNodeIdRecordAnswer( NodeRecord nodeRecord, long id )
         {
             this.nodeRecord = nodeRecord;
             this.id = id;
@@ -189,7 +189,7 @@ public class MultipleIndexPopulatorUpdatesTest
         private final MultipleIndexPopulator indexPopulator;
         private final LabelSchemaDescriptor index;
 
-        public NodeUpdateProcessListener( MultipleIndexPopulator indexPopulator )
+        NodeUpdateProcessListener( MultipleIndexPopulator indexPopulator )
         {
             this.indexPopulator = indexPopulator;
             this.index = SchemaDescriptorFactory.forLabel( 1, 1 );
@@ -209,7 +209,7 @@ public class MultipleIndexPopulatorUpdatesTest
     {
         private Listener<NodeRecord> processListener;
 
-        public ProcessListenableNeoStoreIndexView( LockService locks, NeoStores neoStores )
+        ProcessListenableNeoStoreIndexView( LockService locks, NeoStores neoStores )
         {
             super( locks, neoStores );
         }

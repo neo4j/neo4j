@@ -39,7 +39,7 @@ public class GraphDescription implements GraphDefinition
         private final String start;
         private final RelationshipType type;
 
-        public RelationshipDescription( String rel )
+        RelationshipDescription( String rel )
         {
             String[] parts = rel.split( " " );
             if ( parts.length != 3 )

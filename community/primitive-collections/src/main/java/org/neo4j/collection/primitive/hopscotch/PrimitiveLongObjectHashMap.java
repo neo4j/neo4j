@@ -106,7 +106,7 @@ public class PrimitiveLongObjectHashMap<VALUE> extends AbstractLongHopScotchColl
         private PrimitiveLongObjectHashMap other;
         private boolean equal = true;
 
-        public LongObjEquality( PrimitiveLongObjectHashMap that )
+        LongObjEquality( PrimitiveLongObjectHashMap that )
         {
             this.other = that;
         }

@@ -60,7 +60,7 @@ final class MuninnPage extends SequenceLock implements Page
     private PageSwapper swapper;
     private long filePageId = PageCursor.UNBOUND_PAGE_ID;
 
-    public MuninnPage( int cachePageSize, MemoryManager memoryManager )
+    MuninnPage( int cachePageSize, MemoryManager memoryManager )
     {
         this.cachePageHeader = (byte) (31 - Integer.numberOfLeadingZeros( cachePageSize ));
         this.memoryManager = memoryManager;

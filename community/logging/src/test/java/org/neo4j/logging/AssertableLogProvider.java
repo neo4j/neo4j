@@ -199,7 +199,7 @@ public class AssertableLogProvider extends AbstractLogProvider<Log> implements T
         private final String context;
         private final Level level;
 
-        public LogCallRecorder( String context, Level level )
+        LogCallRecorder( String context, Level level )
         {
             this.context = context;
             this.level = level;

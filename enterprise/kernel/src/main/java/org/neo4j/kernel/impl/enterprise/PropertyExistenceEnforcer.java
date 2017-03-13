@@ -54,7 +54,7 @@ class PropertyExistenceEnforcer extends TxStateVisitor.Delegator
 
     private StorageStatement storageStatement;
 
-    public PropertyExistenceEnforcer( TxStateVisitor next, ReadableTransactionState txState, StoreReadLayer storeLayer,
+    PropertyExistenceEnforcer( TxStateVisitor next, ReadableTransactionState txState, StoreReadLayer storeLayer,
             List<LabelSchemaDescriptor> labelExistenceConstraints,
             List<RelationTypeSchemaDescriptor> relTypeExistenceConstraints )
     {

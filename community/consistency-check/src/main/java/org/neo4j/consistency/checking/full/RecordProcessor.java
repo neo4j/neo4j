@@ -30,7 +30,7 @@ public interface RecordProcessor<RECORD>
 
     void close();
 
-    public abstract static class Adapter<RECORD> implements RecordProcessor<RECORD>
+    abstract class Adapter<RECORD> implements RecordProcessor<RECORD>
     {
         @Override
         public void init( int id )

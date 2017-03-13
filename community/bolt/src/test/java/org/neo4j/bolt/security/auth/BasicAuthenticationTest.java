@@ -199,7 +199,7 @@ public class BasicAuthenticationTest
     {
         private Status status;
 
-        public HasStatus( Status status )
+        HasStatus( Status status )
         {
             this.status = status;
         }

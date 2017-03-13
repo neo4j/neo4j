@@ -258,7 +258,7 @@ public class DbStructureCollector implements DbStructureVisitor
         public final int relTypeId;
         public final int toLabelId;
 
-        public RelSpecifier( int fromLabelId, int relTypeId, int toLabelId )
+        RelSpecifier( int fromLabelId, int relTypeId, int toLabelId )
         {
             this.fromLabelId = fromLabelId;
             this.relTypeId = relTypeId;
@@ -316,7 +316,7 @@ public class DbStructureCollector implements DbStructureVisitor
         private final String indexType;
         private final Map<LabelSchemaDescriptor, IndexStatistics> indexMap = new HashMap<>();
 
-        public IndexDescriptorMap( String indexType )
+        IndexDescriptorMap( String indexType )
         {
             this.indexType = indexType;
         }
@@ -375,7 +375,7 @@ public class DbStructureCollector implements DbStructureVisitor
         private final Map<Integer, String> forward = new HashMap<>();
         private final Map<String, Integer> backward = new HashMap<>();
 
-        public TokenMap( String tokenType )
+        TokenMap( String tokenType )
         {
             this.tokenType = tokenType;
         }

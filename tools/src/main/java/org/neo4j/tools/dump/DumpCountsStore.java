@@ -265,7 +265,7 @@ public class DumpCountsStore implements CountsVisitor, MetadataVisitor, UnknownK
     private static class VisitableCountsTracker extends CountsTracker
     {
 
-        public VisitableCountsTracker( LogProvider logProvider, FileSystemAbstraction fs,
+        VisitableCountsTracker( LogProvider logProvider, FileSystemAbstraction fs,
                 PageCache pages, Config config, File baseFile )
         {
             super( logProvider, fs, pages, config, baseFile );

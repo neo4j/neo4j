@@ -35,7 +35,7 @@ public enum DiagnosticsPhase
     private final boolean requested;
     private final boolean initial;
 
-    private DiagnosticsPhase( boolean requested, boolean initial )
+    DiagnosticsPhase( boolean requested, boolean initial )
     {
         this.requested = requested;
         this.initial = initial;

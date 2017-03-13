@@ -29,7 +29,6 @@ import org.junit.runners.Parameterized;
 import java.io.IOException;
 import java.util.Arrays;
 import java.util.concurrent.TimeUnit;
-
 import javax.annotation.Nonnull;
 
 import org.neo4j.logging.AssertableLogProvider;
@@ -120,7 +119,7 @@ public class CappedLoggerTest
 
     private static class ExceptionWithoutStackTrace extends Exception
     {
-        public ExceptionWithoutStackTrace( String message )
+        ExceptionWithoutStackTrace( String message )
         {
             super( message );
         }
@@ -134,7 +133,7 @@ public class CappedLoggerTest
 
     private static class ExceptionWithoutStackTrace2 extends Exception
     {
-        public ExceptionWithoutStackTrace2( String message )
+        ExceptionWithoutStackTrace2( String message )
         {
             super( message );
         }

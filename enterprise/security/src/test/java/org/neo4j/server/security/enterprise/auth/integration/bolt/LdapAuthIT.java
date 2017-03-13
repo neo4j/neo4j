@@ -1105,7 +1105,7 @@ public class LdapAuthIT extends EnterpriseAuthenticationTestBase
     {
         private final Interceptor waitOnSearchInterceptor;
 
-        public DirectoryServiceWaitOnSearch( long waitingTimeMillis )
+        DirectoryServiceWaitOnSearch( long waitingTimeMillis )
         {
             waitOnSearchInterceptor = new BaseInterceptor()
             {
@@ -1151,7 +1151,7 @@ public class LdapAuthIT extends EnterpriseAuthenticationTestBase
     {
         private final Interceptor failOnSearchInterceptor;
 
-        public DirectoryServiceFailOnSearch()
+        DirectoryServiceFailOnSearch()
         {
             failOnSearchInterceptor = new BaseInterceptor()
             {
@@ -1236,7 +1236,7 @@ public class LdapAuthIT extends EnterpriseAuthenticationTestBase
         private final String trustStore = System.getProperty( TRUST_STORE );
         private final String trustStorePassword = System.getProperty( TRUST_STORE_PASSWORD );
 
-        public EmbeddedTestCertificates()
+        EmbeddedTestCertificates()
         {
             File keyStoreFile = fileFromResources( "/neo4j_ldap_test_keystore.jks" );
             String keyStorePath = keyStoreFile.getAbsolutePath();

@@ -34,28 +34,28 @@ import org.neo4j.kernel.impl.transaction.TransactionRepresentation;
 
 public interface MasterClient extends Master
 {
-    public static final ProtocolVersion CURRENT = MasterClient320.PROTOCOL_VERSION;
+    ProtocolVersion CURRENT = MasterClient320.PROTOCOL_VERSION;
 
     @Override
-    public Response<Integer> createRelationshipType( RequestContext context, final String name );
+    Response<Integer> createRelationshipType( RequestContext context, final String name );
 
     @Override
-    public Response<Void> newLockSession( RequestContext context );
+    Response<Void> newLockSession( RequestContext context );
 
     @Override
-    public Response<Long> commit( RequestContext context, final TransactionRepresentation channel );
+    Response<Long> commit( RequestContext context, final TransactionRepresentation channel );
 
     @Override
-    public Response<Void> pullUpdates( RequestContext context );
+    Response<Void> pullUpdates( RequestContext context );
 
-    public Response<Void> pullUpdates( RequestContext context, TxHandler txHandler );
+    Response<Void> pullUpdates( RequestContext context, TxHandler txHandler );
 
     @Override
-    public Response<Void> copyStore( RequestContext context, final StoreWriter writer );
+    Response<Void> copyStore( RequestContext context, final StoreWriter writer );
 
-    public void setComExceptionHandler( ComExceptionHandler handler );
+    void setComExceptionHandler( ComExceptionHandler handler );
 
-    public ProtocolVersion getProtocolVersion();
+    ProtocolVersion getProtocolVersion();
 
     ObjectSerializer<LockResult> createLockResultSerializer();
 

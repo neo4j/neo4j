@@ -356,7 +356,7 @@ public class InternalFlatFileRealmTest
         private boolean authenticationFlag = false;
         private boolean authorizationFlag = false;
 
-        public TestRealm( UserRepository userRepository, RoleRepository roleRepository, PasswordPolicy passwordPolicy,
+        TestRealm( UserRepository userRepository, RoleRepository roleRepository, PasswordPolicy passwordPolicy,
                 AuthenticationStrategy authenticationStrategy, JobScheduler jobScheduler,
                 UserRepository initialUserRepository, UserRepository defaultAdminRepository )
         {

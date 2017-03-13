@@ -34,27 +34,27 @@ public interface DijkstraPriorityQueue<CostType>
      * @param node
      * @param value
      */
-    public void insertValue( Node node, CostType value );
+    void insertValue( Node node, CostType value );
 
     /**
      * Used to update a value in the queue (or insert it).
      * @param node
      * @param newValue
      */
-    public void decreaseValue( Node node, CostType newValue );
+    void decreaseValue( Node node, CostType newValue );
 
     /**
      * Retrieve and remove the node with the most optimal value.
      */
-    public Node extractMin();
+    Node extractMin();
 
     /**
      * Retrieve without removing the node with the most optimal value.
      */
-    public Node peek();
+    Node peek();
 
     /**
      * @return True if the queue is empty.
      */
-    public boolean isEmpty();
+    boolean isEmpty();
 }

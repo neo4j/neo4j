@@ -40,7 +40,7 @@ abstract class IndexReference
      */
     private volatile boolean detached;
 
-    public IndexReference( IndexIdentifier identifier, IndexSearcher searcher )
+    IndexReference( IndexIdentifier identifier, IndexSearcher searcher )
     {
         this.identifier = identifier;
         this.searcher = searcher;

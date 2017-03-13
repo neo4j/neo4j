@@ -193,12 +193,12 @@ public class InputEntityDecoratorsTest
     {
         private final boolean mutable;
 
-        public IdentityDecorator()
+        IdentityDecorator()
         {
             this( false );
         }
 
-        public IdentityDecorator( boolean mutable )
+        IdentityDecorator( boolean mutable )
         {
             this.mutable = mutable;
         }

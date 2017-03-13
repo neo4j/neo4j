@@ -31,6 +31,7 @@ import org.neo4j.unsafe.impl.batchimport.staging.BatchSender;
 import org.neo4j.unsafe.impl.batchimport.staging.ProcessorStep;
 import org.neo4j.unsafe.impl.batchimport.staging.Stage;
 import org.neo4j.unsafe.impl.batchimport.staging.StageControl;
+
 import static org.junit.Assert.assertEquals;
 import static org.junit.Assert.assertTrue;
 import static org.neo4j.kernel.impl.store.record.Record.NULL_REFERENCE;
@@ -101,7 +102,7 @@ public class ReadGroupsFromCacheStepTest
         private long lastBatchLastOwningNode = -1;
         private final AtomicInteger processCounter;
 
-        public VerifierStep( StageControl control, Configuration config, AtomicInteger processCounter )
+        VerifierStep( StageControl control, Configuration config, AtomicInteger processCounter )
         {
             super( control, "Verifier", config, 1 );
             this.processCounter = processCounter;

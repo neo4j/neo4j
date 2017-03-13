@@ -88,7 +88,7 @@ public class LogEntryWriter
     {
         private final FlushableChannel channel;
 
-        public StorageCommandSerializer( FlushableChannel channel )
+        StorageCommandSerializer( FlushableChannel channel )
         {
             this.channel = channel;
         }

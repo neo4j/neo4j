@@ -46,7 +46,7 @@ class IndexLookup implements AutoCloseable
     private final PrimitiveIntObjectMap<List<IndexRule>> indexRuleIndex;
     private final IndexSamplingConfig samplingConfig;
 
-    public IndexLookup( SchemaStore store, SchemaIndexProvider schemaIndexProvider )
+    IndexLookup( SchemaStore store, SchemaIndexProvider schemaIndexProvider )
     {
         this.schemaIndexProvider = schemaIndexProvider;
         indexAccessors = new ArrayList<>();

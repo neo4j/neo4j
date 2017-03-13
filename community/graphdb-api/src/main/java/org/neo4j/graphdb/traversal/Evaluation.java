@@ -38,7 +38,7 @@ public enum Evaluation
     private final boolean includes;
     private final boolean continues;
 
-    private Evaluation( boolean includes, boolean continues )
+    Evaluation( boolean includes, boolean continues )
     {
         this.includes = includes;
         this.continues = continues;

@@ -89,7 +89,7 @@ class RelationshipRecordFormatV3_0_6 extends BaseHighLimitRecordFormatV3_0_6<Rel
 
     private static final long TWO_BIT_FIXED_REFERENCE_BIT_MASK = 0x300000000L;
 
-    public RelationshipRecordFormatV3_0_6()
+    RelationshipRecordFormatV3_0_6()
     {
         this( RECORD_SIZE );
     }

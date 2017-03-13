@@ -179,7 +179,7 @@ class LuceneTransactionState implements Closeable
         private TxDataHolder remove;
         final LuceneLegacyIndex index;
 
-        public TxDataBoth( LuceneLegacyIndex index )
+        TxDataBoth( LuceneLegacyIndex index )
         {
             this.index = index;
         }
@@ -219,7 +219,7 @@ class LuceneTransactionState implements Closeable
 
     private class DeletedTxDataBoth extends TxDataBoth
     {
-        public DeletedTxDataBoth( LuceneLegacyIndex index )
+        DeletedTxDataBoth( LuceneLegacyIndex index )
         {
             super( index );
         }

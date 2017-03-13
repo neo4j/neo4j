@@ -31,7 +31,7 @@ import org.neo4j.unsafe.impl.batchimport.staging.Panicable;
  */
 public interface InputIterator<T> extends ResourceIterator<T>, SourceTraceability, Parallelizable, Panicable
 {
-    public abstract static class Adapter<T> extends PrefetchingIterator<T> implements InputIterator<T>
+    abstract class Adapter<T> extends PrefetchingIterator<T> implements InputIterator<T>
     {
         private final SourceTraceability defaults = new SourceTraceability.Adapter()
         {
@@ -71,7 +71,7 @@ public interface InputIterator<T> extends ResourceIterator<T>, SourceTraceabilit
         }
     }
 
-    public static class Delegate<T> extends PrefetchingIterator<T> implements InputIterator<T>
+    class Delegate<T> extends PrefetchingIterator<T> implements InputIterator<T>
     {
         protected final InputIterator<T> actual;
 
@@ -123,7 +123,7 @@ public interface InputIterator<T> extends ResourceIterator<T>, SourceTraceabilit
         }
     }
 
-    public static class Empty<T> extends Adapter<T>
+    class Empty<T> extends Adapter<T>
     {
         @Override
         protected T fetchNextOrNull()

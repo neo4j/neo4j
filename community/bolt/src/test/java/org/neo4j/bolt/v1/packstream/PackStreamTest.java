@@ -66,14 +66,14 @@ public class PackStreamTest
         private final WritableByteChannel writable;
         private final PackStream.Packer packer;
 
-        public Machine()
+        Machine()
         {
             this.output = new ByteArrayOutputStream();
             this.writable = Channels.newChannel( this.output );
             this.packer = new PackStream.Packer( new BufferedChannelOutput( this.writable ) );
         }
 
-        public Machine( int bufferSize )
+        Machine( int bufferSize )
         {
             this.output = new ByteArrayOutputStream();
             this.writable = Channels.newChannel( this.output );

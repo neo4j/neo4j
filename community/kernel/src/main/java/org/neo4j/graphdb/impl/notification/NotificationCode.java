@@ -187,7 +187,7 @@ public enum NotificationCode
         private final InputPosition position;
         private final String detailedDescription;
 
-        public Notification( InputPosition position, NotificationDetail... details )
+        Notification( InputPosition position, NotificationDetail... details )
         {
             this.position = position;
 

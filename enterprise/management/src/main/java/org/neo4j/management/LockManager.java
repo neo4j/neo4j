@@ -29,7 +29,7 @@ import org.neo4j.kernel.info.LockInfo;
 @Description( "Information about the Neo4j lock status" )
 public interface LockManager
 {
-    final String NAME = "Locking";
+    String NAME = "Locking";
 
     @Description( "The number of lock sequences that would have lead to a deadlock situation that "
                   + "Neo4j has detected and averted (by throwing DeadlockDetectedException)." )

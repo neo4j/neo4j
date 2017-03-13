@@ -1123,7 +1123,7 @@ public class HazelcastClientTest
     {
         private Set<Object> delegate;
 
-        public HazelcastSet()
+        HazelcastSet()
         {
             this.delegate = new HashSet<>();
         }

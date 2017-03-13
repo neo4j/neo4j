@@ -1025,11 +1025,11 @@ public class UniqueConstraintCompatibility extends IndexProviderCompatibilityTes
             return indexProvider;
         }
 
-        public interface NoDeps
+        interface NoDeps
         {
         }
 
-        public PredefinedSchemaIndexProviderFactory( SchemaIndexProvider indexProvider )
+        PredefinedSchemaIndexProviderFactory( SchemaIndexProvider indexProvider )
         {
             super( indexProvider.getClass().getSimpleName() );
             this.indexProvider = indexProvider;

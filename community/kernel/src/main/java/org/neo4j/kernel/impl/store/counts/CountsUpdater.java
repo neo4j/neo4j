@@ -37,7 +37,7 @@ final class CountsUpdater implements CountsAccessor.Updater, CountsAccessor.Inde
 {
     private final EntryUpdater<CountsKey> updater;
 
-    public CountsUpdater( EntryUpdater<CountsKey> updater )
+    CountsUpdater( EntryUpdater<CountsKey> updater )
     {
         this.updater = updater;
     }

@@ -201,7 +201,7 @@ public class PartialTransactionFailureIT
 
     private static class TestEmbeddedGraphDatabase extends EmbeddedGraphDatabase
     {
-        public TestEmbeddedGraphDatabase( File storeDir, Map<String, String> params )
+        TestEmbeddedGraphDatabase( File storeDir, Map<String,String> params )
         {
             super( storeDir,
                     params,

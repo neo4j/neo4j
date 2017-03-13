@@ -53,7 +53,7 @@ class ProcedureGDBFacadeSPI implements GraphDatabaseFacade.SPI
     private final ThrowingFunction<URL,URL,URLAccessValidationError> urlValidator;
     private final SecurityContext securityContext;
 
-    public ProcedureGDBFacadeSPI( PlatformModule platform, DataSourceModule sourceModule, DependencyResolver resolver,
+    ProcedureGDBFacadeSPI( PlatformModule platform, DataSourceModule sourceModule, DependencyResolver resolver,
             CoreAPIAvailabilityGuard availability, ThrowingFunction<URL,URL,URLAccessValidationError> urlValidator,
             SecurityContext securityContext )
     {

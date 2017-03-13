@@ -26,7 +26,7 @@ import org.neo4j.jmx.ManagementInterface;
 @Description( "Information about an instance participating in a HA cluster" )
 public interface HighAvailability
 {
-    final String NAME = "High Availability";
+    String NAME = "High Availability";
 
     @Description( "The identifier used to identify this server in the HA cluster" )
     String getInstanceId();

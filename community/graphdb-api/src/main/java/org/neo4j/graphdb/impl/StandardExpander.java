@@ -291,13 +291,13 @@ public abstract class StandardExpander implements PathExpander
         private final String string;
         private final Direction direction;
 
-        private Exclusion( Direction direction, String string )
+        Exclusion( Direction direction, String string )
         {
             this.direction = direction;
             this.string = string;
         }
 
-        private Exclusion( Direction direction )
+        Exclusion( Direction direction )
         {
             this.direction = direction;
             this.string = "!" + name() + ":";

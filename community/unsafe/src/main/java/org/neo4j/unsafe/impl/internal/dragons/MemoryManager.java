@@ -105,7 +105,7 @@ public final class MemoryManager
         private final long alignMask;
         private long nextAlignedPointer;
 
-        public Slab( Slab next, long size, long alignment )
+        Slab( Slab next, long size, long alignment )
         {
             this.next = next;
             this.address = UnsafeUtil.allocateMemory( size );

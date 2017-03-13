@@ -26,7 +26,7 @@ abstract class BackgroundTask implements Runnable
 {
     private final MuninnPageCache pageCache;
 
-    public BackgroundTask( MuninnPageCache pageCache )
+    BackgroundTask( MuninnPageCache pageCache )
     {
         this.pageCache = pageCache;
     }

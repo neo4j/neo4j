@@ -1204,7 +1204,7 @@ public class BatchInserterImpl implements BatchInserter, IndexConfigStoreProvide
         private final int batchSize;
         private int attempts;
 
-        public BatchedFlushStrategy( DirectRecordAccessSet directRecordAccess,  int batchSize )
+        BatchedFlushStrategy( DirectRecordAccessSet directRecordAccess, int batchSize )
         {
             this.directRecordAccess = directRecordAccess;
             this.batchSize = batchSize;

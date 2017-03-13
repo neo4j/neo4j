@@ -22,7 +22,7 @@ package org.neo4j.server.preflight;
 
 public interface PreflightTask
 {
-    public boolean run();
+    boolean run();
 
-    public String getFailureMessage();
+    String getFailureMessage();
 }

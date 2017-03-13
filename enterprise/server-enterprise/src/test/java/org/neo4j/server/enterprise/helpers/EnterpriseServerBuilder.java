@@ -72,7 +72,8 @@ public class EnterpriseServerBuilder extends CommunityServerBuilder
     {
         private final Optional<File> configFile;
 
-        public TestEnterpriseNeoServer( Config config, Optional<File> configFile, GraphDatabaseFacadeFactory.Dependencies dependencies, LogProvider logProvider )
+        TestEnterpriseNeoServer( Config config, Optional<File> configFile,
+                GraphDatabaseFacadeFactory.Dependencies dependencies, LogProvider logProvider )
         {
             super( config, dependencies, logProvider );
             this.configFile = configFile;

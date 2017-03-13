@@ -73,7 +73,7 @@ public class PageCountRecordFormat extends RecordFormat
     {
         private final byte[] bytes;
 
-        public PageCountRecord( int recordId, int recordSize )
+        PageCountRecord( int recordId, int recordSize )
         {
             if ( recordId > Byte.MAX_VALUE )
             {
@@ -89,7 +89,7 @@ public class PageCountRecordFormat extends RecordFormat
             Arrays.fill( bytes, (byte) recordId );
         }
 
-        public PageCountRecord( byte[] bytes )
+        PageCountRecord( byte[] bytes )
         {
             if ( bytes.length == 0 )
             {

@@ -50,6 +50,7 @@ import org.neo4j.test.TestLabels;
 import org.neo4j.test.rule.DatabaseRule;
 import org.neo4j.test.rule.ImpermanentDatabaseRule;
 
+import static java.lang.String.format;
 import static org.hamcrest.CoreMatchers.containsString;
 import static org.hamcrest.Matchers.is;
 import static org.junit.Assert.assertEquals;
@@ -59,9 +60,6 @@ import static org.junit.Assert.assertNull;
 import static org.junit.Assert.assertThat;
 import static org.junit.Assert.assertTrue;
 import static org.junit.Assert.fail;
-
-import static java.lang.String.format;
-
 import static org.neo4j.graphdb.Label.label;
 import static org.neo4j.graphdb.RelationshipType.withName;
 import static org.neo4j.graphdb.index.IndexManager.PROVIDER;
@@ -473,7 +471,7 @@ public class TestTransactionEvents
         private final TransactionEventHandler<T> source;
         private final boolean willFail;
 
-        public FailingEventHandler( TransactionEventHandler<T> source, boolean willFail )
+        FailingEventHandler( TransactionEventHandler<T> source, boolean willFail )
         {
             this.source = source;
             this.willFail = willFail;
@@ -508,12 +506,12 @@ public class TestTransactionEvents
         private final Exception afterCommitException;
         private final Exception afterRollbackException;
 
-        public ExceptionThrowingEventHandler( Exception exceptionForAll )
+        ExceptionThrowingEventHandler( Exception exceptionForAll )
         {
             this( exceptionForAll, exceptionForAll, exceptionForAll );
         }
 
-        public ExceptionThrowingEventHandler( Exception beforeCommitException, Exception afterCommitException,
+        ExceptionThrowingEventHandler( Exception beforeCommitException, Exception afterCommitException,
                 Exception afterRollbackException )
         {
             this.beforeCommitException = beforeCommitException;
@@ -559,7 +557,7 @@ public class TestTransactionEvents
         private int counter;
         private Integer beforeCommit, afterCommit, afterRollback;
 
-        public DummyTransactionEventHandler( T object )
+        DummyTransactionEventHandler( T object )
         {
             this.object = object;
         }

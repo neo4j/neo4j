@@ -409,7 +409,7 @@ public class SchemaImpl implements Schema
     {
         private final Supplier<Statement> ctxSupplier;
 
-        public GDBSchemaActions( Supplier<Statement> statementSupplier )
+        GDBSchemaActions( Supplier<Statement> statementSupplier )
         {
             this.ctxSupplier = statementSupplier;
         }

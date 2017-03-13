@@ -161,7 +161,7 @@ public class ProcessingSource implements Closeable
         private final int length;
         private final String sourceDescription;
 
-        public ProcessingChunk( Buffer buffer, int length, String sourceDescription )
+        ProcessingChunk( Buffer buffer, int length, String sourceDescription )
         {
             this.buffer = buffer;
             this.length = length;

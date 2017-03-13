@@ -514,13 +514,13 @@ public class TestCommunication
         private final TxChecksumVerifier verifier;
         private final StoreId storeId;
 
-        public Builder()
+        Builder()
         {
             this( PORT, FRAME_LENGTH, INTERNAL_PROTOCOL_VERSION, APPLICATION_PROTOCOL_VERSION,
                     ALWAYS_MATCH, storeIdToUse );
         }
 
-        public Builder( int port, int chunkSize, byte internalProtocolVersion, byte applicationProtocolVersion,
+        Builder( int port, int chunkSize, byte internalProtocolVersion, byte applicationProtocolVersion,
                         TxChecksumVerifier verifier, StoreId storeId )
         {
             this.port = port;

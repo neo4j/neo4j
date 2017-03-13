@@ -132,7 +132,7 @@ public class InMemoryCountsStoreIntegrationTest
         private final IntermediateStateTestManager manager;
         private final InMemoryCountsStore countStore;
 
-        public UpdateWorker( AtomicBoolean stop, IntermediateStateTestManager manager, InMemoryCountsStore countStore )
+        UpdateWorker( AtomicBoolean stop, IntermediateStateTestManager manager, InMemoryCountsStore countStore )
         {
             this.stop = stop;
             this.manager = manager;
@@ -163,8 +163,8 @@ public class InMemoryCountsStoreIntegrationTest
         private final InMemoryCountsStore countStore;
         private final int repeatTimes;
 
-        public SnapshotWorker( int repeatTimes, AtomicBoolean stop,
-                IntermediateStateTestManager intermediateStateTestManager, InMemoryCountsStore countStore )
+        SnapshotWorker( int repeatTimes, AtomicBoolean stop, IntermediateStateTestManager intermediateStateTestManager,
+                InMemoryCountsStore countStore )
         {
             this.stop = stop;
             this.intermediateStateTestManager = intermediateStateTestManager;
