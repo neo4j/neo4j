@@ -22,7 +22,9 @@ package org.neo4j.causalclustering.load_balancing.plugins.server_policies;
 import org.junit.Test;
 
 import java.util.Set;
+import java.util.UUID;
 
+import org.neo4j.causalclustering.identity.MemberId;
 import org.neo4j.helpers.AdvertisedSocketAddress;
 import org.neo4j.logging.Log;
 
@@ -46,8 +48,8 @@ public class PoliciesTest
         // when
         Policy policy = policies.selectFor( emptyMap() );
         Set<ServerInfo> input = asSet(
-                new ServerInfo( new AdvertisedSocketAddress( "bolt", 1 ), asSet( "tagA" ) ),
-                new ServerInfo( new AdvertisedSocketAddress( "bolt", 2 ), asSet( "tagB" ) )
+                new ServerInfo( new AdvertisedSocketAddress( "bolt", 1 ), new MemberId( UUID.randomUUID() ), asSet( "tagA" ) ),
+                new ServerInfo( new AdvertisedSocketAddress( "bolt", 2 ), new MemberId( UUID.randomUUID() ), asSet( "tagB" ) )
         );
 
         Set<ServerInfo> output = policy.apply( input );
@@ -66,8 +68,8 @@ public class PoliciesTest
         // when
         Policy policy = policies.selectFor( stringMap( Policies.POLICY_KEY, "unknown-policy" ) );
         Set<ServerInfo> input = asSet(
-                new ServerInfo( new AdvertisedSocketAddress( "bolt", 1 ), asSet( "tagA" ) ),
-                new ServerInfo( new AdvertisedSocketAddress( "bolt", 2 ), asSet( "tagB" ) )
+                new ServerInfo( new AdvertisedSocketAddress( "bolt", 1 ), new MemberId( UUID.randomUUID() ), asSet( "tagA" ) ),
+                new ServerInfo( new AdvertisedSocketAddress( "bolt", 2 ), new MemberId( UUID.randomUUID() ), asSet( "tagB" ) )
         );
 
         Set<ServerInfo> output = policy.apply( input );

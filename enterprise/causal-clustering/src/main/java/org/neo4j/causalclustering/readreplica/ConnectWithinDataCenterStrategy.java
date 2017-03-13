@@ -31,11 +31,11 @@ import org.neo4j.causalclustering.identity.MemberId;
 import org.neo4j.helpers.Service;
 
 @Service.Implementation(UpstreamDatabaseSelectionStrategy.class)
-public class ConnectWithinDataCenter extends UpstreamDatabaseSelectionStrategy
+public class ConnectWithinDataCenterStrategy extends UpstreamDatabaseSelectionStrategy
 {
-    private Random random = new Random();;
+    private Random random = new Random();
 
-    public ConnectWithinDataCenter()
+    public ConnectWithinDataCenterStrategy()
     {
         super( "connect-within-data-center" );
     }

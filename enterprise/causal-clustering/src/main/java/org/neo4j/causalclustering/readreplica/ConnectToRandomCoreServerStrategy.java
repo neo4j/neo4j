@@ -19,49 +19,45 @@
  */
 package org.neo4j.causalclustering.readreplica;
 
+import java.util.Iterator;
 import java.util.Optional;
+import java.util.Random;
 
+import org.neo4j.causalclustering.discovery.CoreTopology;
 import org.neo4j.causalclustering.identity.MemberId;
 import org.neo4j.helpers.Service;
 
 @Service.Implementation( UpstreamDatabaseSelectionStrategy.class )
-public class TypicallyConnectToRandomReadReplica extends UpstreamDatabaseSelectionStrategy
+public class ConnectToRandomCoreServerStrategy extends UpstreamDatabaseSelectionStrategy
 {
-    private final ModuloCounter counter = new ModuloCounter( 10 );
+    private final Random random = new Random();
 
-    public TypicallyConnectToRandomReadReplica()
+    public ConnectToRandomCoreServerStrategy()
     {
-        super( "typically-connect-to-random-read-replica" );
+        super( "connect-to-random-core-server" );
     }
 
     @Override
     public Optional<MemberId> upstreamDatabase() throws UpstreamDatabaseSelectionException
     {
-        if ( counter.shouldReturnCoreMemberId() )
-        {
-            return topologyService.coreServers().anyCoreMemberId();
-        }
-        else
-        {
-            return topologyService.readReplicas().anyReadReplicaMemberId();
-        }
-    }
+        final CoreTopology coreTopology = topologyService.coreServers();
 
-    private static class ModuloCounter
-    {
-        private final int modulo;
-        private int counter = 0;
-
-        ModuloCounter( int modulo )
+        if ( coreTopology.members().size() == 0 )
         {
-            // e.g. every 10th means 0-9
-            this.modulo = modulo - 1;
+            throw new UpstreamDatabaseSelectionException( "No core servers available" );
         }
 
-        boolean shouldReturnCoreMemberId()
+        int skippedServers = random.nextInt( coreTopology.members().size() );
+
+        final Iterator<MemberId> iterator = coreTopology.members().keySet().iterator();
+
+        MemberId member;
+        do
         {
-            counter = (counter + 1) % modulo;
-            return counter == 0;
+            member = iterator.next();
         }
+        while ( skippedServers-- > 0 );
+
+        return Optional.ofNullable( member );
     }
 }

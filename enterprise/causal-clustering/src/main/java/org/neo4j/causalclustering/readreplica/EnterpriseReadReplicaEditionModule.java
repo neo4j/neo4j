@@ -248,7 +248,7 @@ public class EnterpriseReadReplicaEditionModule extends EditionModule
                 new StoreCopyProcess( fileSystem, pageCache, localDatabase, copiedStoreRecovery, remoteStore,
                         logProvider );
 
-        ConnectToRandomCoreServer defaultStrategy = new ConnectToRandomCoreServer();
+        ConnectToRandomCoreServerStrategy defaultStrategy = new ConnectToRandomCoreServerStrategy();
         defaultStrategy.setTopologyService( topologyService );
         defaultStrategy.setConfig( config );
         defaultStrategy.setMyself( myself );

@@ -28,6 +28,7 @@ import java.util.stream.Collectors;
 import org.neo4j.causalclustering.core.CausalClusteringSettings;
 import org.neo4j.causalclustering.core.consensus.LeaderLocator;
 import org.neo4j.causalclustering.core.consensus.NoLeaderFoundException;
+import org.neo4j.causalclustering.discovery.CoreServerInfo;
 import org.neo4j.causalclustering.discovery.CoreTopology;
 import org.neo4j.causalclustering.discovery.ReadReplicaTopology;
 import org.neo4j.causalclustering.discovery.TopologyService;
@@ -130,8 +131,9 @@ public class ServerPoliciesPlugin implements LoadBalancingPlugin
 
     private List<Endpoint> readEndpoints( CoreTopology coreTopology, ReadReplicaTopology rrTopology, Policy policy )
     {
-        Set<ServerInfo> possibleReaders = rrTopology.allMemberInfo().stream()
-                .map( info -> new ServerInfo( info.connectors().boltAddress(), info.tags() ) )
+        Set<ServerInfo> possibleReaders = rrTopology.members().entrySet().stream()
+                .map( entry -> new ServerInfo( entry.getValue().connectors().boltAddress(), entry.getKey(),
+                        entry.getValue().tags() ) )
                 .collect( Collectors.toSet() );
 
         if ( allowReadsOnFollowers || possibleReaders.size() == 0 )
@@ -147,9 +149,16 @@ public class ServerPoliciesPlugin implements LoadBalancingPlugin
                 // we might end up using the leader for reading during this ttl, should be fine in general
             }
 
-            possibleReaders.addAll( validCores.stream().map( coreTopology::find ).map( Optional::get )
-                    .map( info -> new ServerInfo( info.connectors().boltAddress(), info.tags() ) )
-                    .collect( Collectors.toSet() ) );
+            for ( MemberId validCore : validCores )
+            {
+                Optional<CoreServerInfo> coreServerInfo = coreTopology.find( validCore );
+                if ( coreServerInfo.isPresent() )
+                {
+                    CoreServerInfo serverInfo = coreServerInfo.get();
+                    possibleReaders.add(
+                            new ServerInfo( serverInfo.connectors().boltAddress(), validCore, serverInfo.tags() ) );
+                }
+            }
         }
 
         Set<ServerInfo> readers = policy.apply( possibleReaders );

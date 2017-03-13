@@ -33,7 +33,7 @@ import org.neo4j.causalclustering.load_balancing.filters.MinimumCountFilter;
 import static java.lang.String.format;
 import static java.util.Collections.singletonList;
 
-class FilterConfigParser
+public class FilterConfigParser
 {
     private static Filter<ServerInfo> filterFor( String filterName, String[] args ) throws InvalidFilterSpecification
     {
@@ -84,7 +84,7 @@ class FilterConfigParser
         }
     }
 
-    static Filter<ServerInfo> parse( String filterConfig ) throws InvalidFilterSpecification
+    public static Filter<ServerInfo> parse( String filterConfig ) throws InvalidFilterSpecification
     {
         if ( filterConfig.length() == 0 )
         {
