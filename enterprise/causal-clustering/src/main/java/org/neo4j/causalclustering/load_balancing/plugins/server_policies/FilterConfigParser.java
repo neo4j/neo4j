@@ -146,7 +146,7 @@ class FilterConfigParser
 
                 for ( String arg : nonEmptyArgs )
                 {
-                    if ( !arg.matches( "\\w+" ) )
+                    if ( !arg.matches( "[\\w-]+" ) )
                     {
                         throw new InvalidFilterSpecification( format( "Syntax error argument: '%s'", arg ) );
                     }
