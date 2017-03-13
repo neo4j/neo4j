@@ -83,8 +83,8 @@ public class GetServersProcedureV1RoutingTest
         when( coreTopologyService.coreServers() ).thenReturn( clusterTopology );
         when( coreTopologyService.readReplicas() ).thenReturn( new ReadReplicaTopology( emptyMap() ) );
 
-        final GetServersProcedureV1 proc =
-                new GetServersProcedureV1( coreTopologyService, leaderLocator, config, getInstance() );
+        final LegacyGetServersProcedure proc =
+                new LegacyGetServersProcedure( coreTopologyService, leaderLocator, config, getInstance() );
 
         // when
         Object[] endpoints = getEndpoints( proc );
@@ -106,7 +106,7 @@ public class GetServersProcedureV1RoutingTest
         assertFalse( Arrays.deepEquals( endpoints, endpointsInDifferentOrder ) );
     }
 
-    private Object[] getEndpoints( GetServersProcedureV1 proc )
+    private Object[] getEndpoints( LegacyGetServersProcedure proc )
             throws org.neo4j.kernel.api.exceptions.ProcedureException
     {
         List<Object[]> results = asList( proc.apply( null, new Object[0] ) );

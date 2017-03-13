@@ -267,7 +267,6 @@ public class EnterpriseReadReplicaEditionModule extends EditionModule
         UpstreamDatabaseStrategySelector upstreamDatabaseStrategySelector =
                 new UpstreamDatabaseStrategySelector( defaultStrategy, loader, myself, logProvider );
 
-
         CatchupPollingProcess catchupProcess =
                 new CatchupPollingProcess( logProvider, localDatabase, servicesToStopOnStoreCopy, catchUpClient,
                         upstreamDatabaseStrategySelector, catchupTimeoutService,
