@@ -25,6 +25,7 @@ import java.util.function.Predicate
 import org.neo4j.collection.RawIterator
 import org.neo4j.collection.primitive.PrimitiveLongIterator
 import org.neo4j.collection.primitive.base.Empty.EMPTY_PRIMITIVE_LONG_COLLECTION
+import org.neo4j.cypher.internal.compatibility.v3_2.ProfileKernelStatisticProvider
 import org.neo4j.cypher.internal.compiler.v3_2.MinMaxOrdering.{BY_NUMBER, BY_STRING, BY_VALUE}
 import org.neo4j.cypher.internal.compiler.v3_2._
 import org.neo4j.cypher.internal.compiler.v3_2.ast.convert.commands.DirectionConverter.toGraphDb
@@ -45,7 +46,6 @@ import org.neo4j.graphdb.RelationshipType._
 import org.neo4j.graphdb._
 import org.neo4j.graphdb.security.URLAccessValidationError
 import org.neo4j.graphdb.traversal.{Evaluators, TraversalDescription, Uniqueness}
-import org.neo4j.io.pagecache.tracing.cursor.PageCursorTracer
 import org.neo4j.kernel.GraphDatabaseQueryService
 import org.neo4j.kernel.api._
 import org.neo4j.kernel.api.exceptions.ProcedureException
@@ -740,8 +740,8 @@ final class TransactionBoundQueryContext(val transactionalContext: Transactional
   override def assertSchemaWritesAllowed(): Unit =
     transactionalContext.statement.schemaWriteOperations()
 
-  override def pageCursorTracer(): PageCursorTracer = {
-    transactionalContext.statement.asInstanceOf[KernelStatement].getPageCursorTracer
+  override def kernelStatisticProvider(): KernelStatisticProvider = {
+    new ProfileKernelStatisticProvider(transactionalContext.statement.asInstanceOf[KernelStatement].getPageCursorTracer)
   }
 }
 

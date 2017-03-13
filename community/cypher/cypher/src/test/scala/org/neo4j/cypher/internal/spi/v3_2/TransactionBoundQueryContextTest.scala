@@ -177,14 +177,12 @@ class TransactionBoundQueryContextTest extends CypherFunSuite {
     val transactionalContext = TransactionalContextWrapper(createTransactionContext(graph, tx))
     val context = new TransactionBoundQueryContext(transactionalContext)(indexSearchMonitor)
 
-    val tracer = context.pageCursorTracer()
-    tracer.hits() should equal(0)
-    tracer.pins() should equal(0)
+    val tracer = context.kernelStatisticProvider()
+    tracer.getPageCacheHits should equal(0)
 
     graph.getNodeById(2)
     graph.getNodeById(1)
-    tracer.hits() should equal(2)
-    tracer.pins() should equal(2)
+    tracer.getPageCacheHits should equal(2)
 
     tx.close()
   }

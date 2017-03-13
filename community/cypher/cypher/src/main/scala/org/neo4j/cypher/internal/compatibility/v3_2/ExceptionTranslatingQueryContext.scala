@@ -28,7 +28,6 @@ import org.neo4j.cypher.internal.compiler.v3_2.spi.{QualifiedName, _}
 import org.neo4j.cypher.internal.frontend.v3_2.SemanticDirection
 import org.neo4j.cypher.internal.spi.v3_2.ExceptionTranslationSupport
 import org.neo4j.graphdb.{Node, Path, PropertyContainer, Relationship}
-import org.neo4j.io.pagecache.tracing.cursor.PageCursorTracer
 
 import scala.collection.Iterator
 
@@ -236,7 +235,7 @@ class ExceptionTranslatingQueryContext(val inner: QueryContext) extends QueryCon
 
   override def assertSchemaWritesAllowed(): Unit = translateException(inner.assertSchemaWritesAllowed())
 
-  override def pageCursorTracer(): PageCursorTracer = translateException(inner.pageCursorTracer())
+  override def kernelStatisticProvider(): KernelStatisticProvider = translateException(inner.kernelStatisticProvider())
 
   class ExceptionTranslatingOperations[T <: PropertyContainer](inner: Operations[T])
     extends DelegatingOperations[T](inner) {

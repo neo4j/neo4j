@@ -35,7 +35,7 @@ object ExecutionPlanBuilder {
 
   def tracer(mode: ExecutionMode, queryContext: QueryContext): DescriptionProvider = mode match {
     case ProfileMode =>
-      val tracer = new ProfilingTracer(queryContext.pageCursorTracer())
+      val tracer = new ProfilingTracer(queryContext.kernelStatisticProvider())
       (description: InternalPlanDescription) =>
         (new Provider[InternalPlanDescription] {
 

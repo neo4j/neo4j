@@ -26,7 +26,6 @@ import org.neo4j.cypher.internal.compiler.v3_2.pipes.matching.PatternNode
 import org.neo4j.cypher.internal.compiler.v3_2.{IndexDescriptor, InternalQueryStatistics}
 import org.neo4j.cypher.internal.frontend.v3_2.SemanticDirection
 import org.neo4j.graphdb.{Node, Path, PropertyContainer, Relationship}
-import org.neo4j.io.pagecache.tracing.cursor.PageCursorTracer
 
 import scala.collection.Iterator
 
@@ -180,7 +179,7 @@ trait QueryContext extends TokenContext {
 
   def assertSchemaWritesAllowed(): Unit
 
-  def pageCursorTracer() : PageCursorTracer
+  def kernelStatisticProvider() : KernelStatisticProvider
 }
 
 trait Operations[T <: PropertyContainer] {
