@@ -275,6 +275,8 @@ public interface StoreReadLayer
     Cursor<RelationshipItem> relationshipCursor( StorageStatement storeStatement, long relationshipId,
             ReadableTransactionState state );
 
+    Cursor<RelationshipItem> relationshipsGetAllCursor( StorageStatement storeStatement, ReadableTransactionState state );
+
     Cursor<RelationshipItem> nodeGetRelationships( StorageStatement statement, NodeItem nodeItem, Direction direction,
             ReadableTransactionState state );
 

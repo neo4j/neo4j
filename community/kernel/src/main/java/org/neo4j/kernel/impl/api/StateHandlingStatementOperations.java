@@ -185,7 +185,7 @@ public class StateHandlingStatementOperations
     public Cursor<RelationshipItem> relationshipCursorGetAll( KernelStatement statement )
     {
         ReadableTransactionState state = statement.hasTxStateWithChanges() ? statement.txState() : null;
-        return statement.getStoreStatement().relationshipsGetAllCursor( state );
+        return storeLayer.relationshipsGetAllCursor( statement.getStoreStatement(), state );
     }
 
     @Override
