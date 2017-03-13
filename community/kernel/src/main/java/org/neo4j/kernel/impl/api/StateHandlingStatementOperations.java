@@ -718,11 +718,11 @@ public class StateHandlingStatementOperations
     }
 
     @Override
-    public long nodeGetFromUniqueIndexSeek(
-            KernelStatement state, IndexDescriptor index, IndexQuery.ExactPredicate... query )
+    public long nodeGetFromUniqueIndexSeek( KernelStatement statement, IndexDescriptor index,
+            IndexQuery.ExactPredicate... query )
             throws IndexNotFoundKernelException, IndexBrokenKernelException, IndexNotApplicableKernelException
     {
-        IndexReader reader = state.getStoreStatement().getFreshIndexReader( index );
+        IndexReader reader = storeLayer.indexGetFreshReader( statement.getStoreStatement(), index );
 
         /* Here we have an intricate scenario where we need to return the PrimitiveLongIterator
          * since subsequent filtering will happen outside, but at the same time have the ability to
@@ -730,9 +730,9 @@ public class StateHandlingStatementOperations
          * a fresh reader that isn't associated with the current transaction and hence will not be
          * automatically closed. */
         PrimitiveLongResourceIterator committed = resourceIterator( reader.query( query ), reader );
-        PrimitiveLongIterator exactMatches = LookupFilter.exactIndexMatches( this, state, committed, query );
+        PrimitiveLongIterator exactMatches = LookupFilter.exactIndexMatches( this, statement, committed, query );
         PrimitiveLongIterator changesFiltered =
-                filterIndexStateChangesForSeek( state, exactMatches, index, OrderedPropertyValues.of( query ) );
+                filterIndexStateChangesForSeek( statement, exactMatches, index, OrderedPropertyValues.of( query ) );
         return single( resourceIterator( changesFiltered, committed ), NO_SUCH_NODE );
     }
 

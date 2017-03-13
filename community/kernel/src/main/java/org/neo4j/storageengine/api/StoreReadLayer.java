@@ -170,6 +170,9 @@ public interface StoreReadLayer
     IndexReader indexGetReader( StorageStatement statement, IndexDescriptor index )
             throws IndexNotFoundKernelException;
 
+    IndexReader indexGetFreshReader( StorageStatement storeStatement, IndexDescriptor index )
+            throws IndexNotFoundKernelException;
+
     /**
      * @param labelName name of label.
      * @return token id of label.
