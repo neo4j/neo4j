@@ -24,11 +24,12 @@ readonly NEO4J_BIN
 . "${NEO4J_BIN}/neo4j-shared.sh"
 
 setup_java_opts() {
-  JAVA_OPTS=()
+  JAVA_OPTS=("-cp" "${CLASSPATH}" "-Dfile.encoding=UTF-8")
   if [[ -n "${HEAP_SIZE:-}" ]]; then
     JAVA_OPTS+=("-Xmx${HEAP_SIZE}")
     JAVA_OPTS+=("-Xms${HEAP_SIZE}")
   fi
+  readonly JAVA_OPTS
 }
 
 main() {
@@ -37,7 +38,7 @@ main() {
   build_classpath
   setup_java_opts
   export NEO4J_HOME NEO4J_CONF
-  exec "${JAVA_CMD}" -cp "${CLASSPATH}" "${JAVA_OPTS[@]}" -Dfile.encoding=UTF-8 "org.neo4j.commandline.admin.AdminTool" "$@"
+  exec "${JAVA_CMD}" "${JAVA_OPTS[@]}" "org.neo4j.commandline.admin.AdminTool" "$@"
 }
 
 main "$@"
