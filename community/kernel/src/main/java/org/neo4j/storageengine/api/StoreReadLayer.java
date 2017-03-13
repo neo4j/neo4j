@@ -21,7 +21,6 @@ package org.neo4j.storageengine.api;
 
 import java.util.Iterator;
 import java.util.function.Function;
-import java.util.function.IntPredicate;
 
 import org.neo4j.collection.primitive.PrimitiveIntIterator;
 import org.neo4j.collection.primitive.PrimitiveIntSet;
@@ -270,6 +269,8 @@ public interface StoreReadLayer
      * each relationship returned.
      */
     RelationshipIterator relationshipsGetAll();
+
+    Cursor<NodeItem> nodeCursor( StorageStatement storeStatement, long nodeId, ReadableTransactionState state );
 
     Cursor<RelationshipItem> nodeGetRelationships( StorageStatement statement, NodeItem nodeItem, Direction direction,
             ReadableTransactionState state );
