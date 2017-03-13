@@ -108,7 +108,7 @@ class IndexSeekLeafPlannerTest extends CypherFunSuite with LogicalPlanningTestSu
       resultPlans should beLike {
         case Seq(NodeIndexSeek(`idName`, LabelToken("Awesome", _),
         Seq(PropertyKeyToken("prop", _), PropertyKeyToken("prop2", _)),
-        CompositeQueryExpression(Seq(`lit42`, `lit6`)), _)) => ()
+        CompositeQueryExpression(Seq(SingleQueryExpression(`lit42`), SingleQueryExpression(`lit6`))), _)) => ()
       }
     }
   }
@@ -143,7 +143,7 @@ class IndexSeekLeafPlannerTest extends CypherFunSuite with LogicalPlanningTestSu
       resultPlans should beLike {
         case Seq(NodeIndexSeek(`idName`, LabelToken("Awesome", _),
         Seq(PropertyKeyToken("prop", _), PropertyKeyToken("prop2", _)),
-        CompositeQueryExpression(Seq(`lit42`, `lit6`)), _)) => ()
+        CompositeQueryExpression(Seq(SingleQueryExpression(`lit42`), SingleQueryExpression(`lit6`))), _)) => ()
       }
     }
   }
@@ -210,9 +210,10 @@ class IndexSeekLeafPlannerTest extends CypherFunSuite with LogicalPlanningTestSu
   }
 
   test("does not plan an index seek when the RHS expression does not have its dependencies in scope") {
-    new given { // MATCH a, x WHERE a.prop IN [x]
-       val x = varFor("x")
-      qg = queryGraph(In(property, ListLiteral(Seq(x))_)_, hasLabels)
+    new given {
+      // MATCH a, x WHERE a.prop IN [x]
+      val x = varFor("x")
+      qg = queryGraph(In(property, ListLiteral(Seq(x)) _) _, hasLabels)
 
       indexOn("Awesome", "prop")
     }.withLogicalPlanningContext { (cfg, ctx) =>
