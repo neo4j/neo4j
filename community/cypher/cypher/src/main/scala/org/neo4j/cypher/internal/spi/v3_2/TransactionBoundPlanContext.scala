@@ -47,7 +47,7 @@ class TransactionBoundPlanContext(tc: TransactionalContextWrapper, logger: Inter
   }
 
   def indexGet(labelName: String, propertyKeys: Seq[String]): Option[IndexDescriptor] = evalOrNone {
-    val descriptor = toNodePropertyDescriptor(tc, labelName, propertyKeys)
+    val descriptor = toLabelSchemaDescriptor(tc, labelName, propertyKeys)
     getOnlineIndex(tc.statement.readOperations().indexGetForLabelAndPropertyKey(descriptor))
   }
 
@@ -66,7 +66,7 @@ class TransactionBoundPlanContext(tc: TransactionalContextWrapper, logger: Inter
   }
 
   def uniqueIndexGet(labelName: String, propertyKeys: Seq[String]): Option[IndexDescriptor] = evalOrNone {
-    val descriptor = toNodePropertyDescriptor(tc, labelName, propertyKeys)
+    val descriptor = toLabelSchemaDescriptor(tc, labelName, propertyKeys)
 
     // here we do not need to use getOnlineIndex method because uniqueness constraint creation is synchronous
     val index = tc.statement.readOperations().uniqueIndexGetForLabelAndPropertyKey(descriptor)

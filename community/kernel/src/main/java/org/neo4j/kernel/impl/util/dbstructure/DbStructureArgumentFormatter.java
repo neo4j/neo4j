@@ -31,6 +31,7 @@ import org.neo4j.kernel.api.constraints.RelationshipPropertyExistenceConstraint;
 import org.neo4j.kernel.api.constraints.UniquenessConstraint;
 import org.neo4j.kernel.api.schema_new.LabelSchemaDescriptor;
 import org.neo4j.kernel.api.schema_new.RelationTypeSchemaDescriptor;
+import org.neo4j.kernel.api.schema_new.SchemaDescriptorFactory;
 import org.neo4j.kernel.api.schema_new.index.NewIndexDescriptor;
 import org.neo4j.kernel.api.schema_new.index.NewIndexDescriptorFactory;
 
@@ -43,6 +44,7 @@ public enum DbStructureArgumentFormatter implements ArgumentFormatter
     private static List<String> IMPORTS = Arrays.asList(
             UniquenessConstraint.class.getCanonicalName(),
             LabelSchemaDescriptor.class.getCanonicalName(),
+            SchemaDescriptorFactory.class.getCanonicalName(),
             NewIndexDescriptor.class.getCanonicalName(),
             NewIndexDescriptorFactory.class.getCanonicalName()
     );
@@ -102,14 +104,15 @@ public enum DbStructureArgumentFormatter implements ArgumentFormatter
         {
             LabelSchemaDescriptor descriptor = (LabelSchemaDescriptor) arg;
             int labelId = descriptor.getLabelId();
-            builder.append( format( "new NodePropertyDescriptor( %d, %d )", labelId, descriptor.getPropertyId() ) );
+            builder.append( format( "SchemaDescriptorFactory.forLabel( %d, %s )", labelId,
+                    asString( descriptor.getPropertyIds() ) ) );
         }
         else if ( arg instanceof UniquenessConstraint )
         {
             UniquenessConstraint constraint = (UniquenessConstraint) arg;
             int labelId = constraint.label();
-            builder.append( format( "new UniquenessConstraint( new NodePropertyDescriptor( %s, %s ) )", labelId,
-                    constraint.descriptor().getPropertyId() ) );
+            builder.append( format( "new UniquenessConstraint( SchemaDescriptorFactory.forLabel( %d, %s ) )", labelId,
+                    asString( constraint.descriptor().getPropertyIds() ) ) );
         }
         else if ( arg instanceof NodePropertyExistenceConstraint )
         {

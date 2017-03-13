@@ -58,7 +58,7 @@ public class UniquenessConstraint extends NodePropertyConstraint
         String boundIdentifier = labelName.toLowerCase();
         return String
                 .format( "CONSTRAINT ON ( %s:%s ) ASSERT %s.%s IS UNIQUE", boundIdentifier, labelName, boundIdentifier,
-                        tokenNameLookup.labelGetName( descriptor.getLabelId() ) );
+                        tokenNameLookup.propertyKeyGetName( descriptor.getPropertyId() ) );
     }
 
     @Override
