@@ -24,7 +24,6 @@ import java.util.Set;
 import org.neo4j.collection.primitive.PrimitiveIntCollection;
 import org.neo4j.collection.primitive.PrimitiveIntSet;
 import org.neo4j.collection.primitive.PrimitiveIntVisitor;
-import org.neo4j.cursor.Cursor;
 import org.neo4j.kernel.api.exceptions.EntityNotFoundException;
 import org.neo4j.kernel.api.exceptions.schema.ConstraintValidationException;
 import org.neo4j.kernel.impl.api.CountsRecordState;
@@ -67,7 +66,7 @@ public class TransactionCountingStateVisitor extends TxStateVisitor.Delegator
     public void visitDeletedNode( long id )
     {
         counts.incrementNodeCount( ANY_LABEL, -1 );
-        statement.acquireSingleNodeCursor( id, null ).forAll( this::decrementCountForLabelsAndRelationships );
+        storeLayer.nodeCursor( statement, id, null ).forAll( this::decrementCountForLabelsAndRelationships );
         super.visitDeletedNode( id );
     }
 
@@ -124,7 +123,7 @@ public class TransactionCountingStateVisitor extends TxStateVisitor.Delegator
             }
             // get the relationship counts from *before* this transaction,
             // the relationship changes will compensate for what happens during the transaction
-            statement.acquireSingleNodeCursor( id, null )
+            storeLayer.nodeCursor( statement, id, null )
                     .forAll( node -> storeLayer.degrees( statement, node, ( type, out, in ) ->
                     {
                         added.forEach( label -> updateRelationshipsCountsFromDegrees( type, label, out, in ) );
@@ -160,11 +159,6 @@ public class TransactionCountingStateVisitor extends TxStateVisitor.Delegator
 
     private void visitLabels( long nodeId, PrimitiveIntVisitor<RuntimeException> visitor )
     {
-        nodeCursor( statement, nodeId ).forAll( node -> node.labels().visitKeys( visitor ) );
-    }
-
-    private Cursor<NodeItem> nodeCursor( StorageStatement statement, long nodeId )
-    {
-        return statement.acquireSingleNodeCursor( nodeId, txState );
+        storeLayer.nodeCursor( statement, nodeId, txState ).forAll( node -> node.labels().visitKeys( visitor ) );
     }
 }
