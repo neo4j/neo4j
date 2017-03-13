@@ -76,13 +76,14 @@ public class StateOperationsAutoIndexingTest
     public void shouldSignalNodeRemovedToAutoIndex() throws Exception
     {
         // Given
-        when( storeStmt.acquireSingleNodeCursor( 1337, null ) ).thenReturn( cursor( mock( NodeItem.class ) ) );
+        when( storeLayer.nodeCursor( any( StorageStatement.class ), eq( 1337L ), eq( null ) ) )
+                .thenReturn( cursor( mock( NodeItem.class ) ) );
 
         // When
-        context.nodeDelete( stmt, 1337 );
+        context.nodeDelete( stmt, 1337L );
 
         // Then
-        verify( nodeOps ).entityRemoved( writeOps, 1337 );
+        verify( nodeOps ).entityRemoved( writeOps, 1337L );
     }
 
     @Test
@@ -107,16 +108,17 @@ public class StateOperationsAutoIndexingTest
 
         NodeItem node = mock( NodeItem.class );
         when( node.labels() ).thenReturn( PrimitiveIntCollections.emptySet() );
-        when( storeStmt.acquireSingleNodeCursor( 1337, null ) ).thenReturn( cursor( node ) );
+        when( storeLayer.nodeCursor( any( StorageStatement.class ), eq( 1337L ), eq( null ) ) )
+                .thenReturn( cursor( node ) );
         when( storeLayer
                 .nodeGetProperty( eq( storeStmt ), any( NodeItem.class ), eq( property.propertyKeyId() ), eq( null ) ) )
                 .thenReturn( cursor() );
 
         // When
-        context.nodeSetProperty( stmt, 1337, property );
+        context.nodeSetProperty( stmt, 1337L, property );
 
         // Then
-        verify( nodeOps ).propertyAdded( writeOps, 1337, property );
+        verify( nodeOps ).propertyAdded( writeOps, 1337L, property );
     }
 
     @Test
@@ -150,16 +152,17 @@ public class StateOperationsAutoIndexingTest
 
         NodeItem node = mock( NodeItem.class );
         when( node.labels() ).thenReturn( PrimitiveIntCollections.emptySet() );
-        when( storeStmt.acquireSingleNodeCursor( 1337, null ) ).thenReturn( cursor( node ) );
+        when( storeLayer.nodeCursor( any( StorageStatement.class ), eq( 1337L ), eq( null ) ) )
+                .thenReturn( cursor( node ) );
         when( storeLayer
                 .nodeGetProperty( eq( storeStmt ), any( NodeItem.class ), eq( property.propertyKeyId() ), eq( null ) ) )
                 .thenReturn( cursor( existingProperty ) );
 
         // When
-        context.nodeSetProperty( stmt, 1337, property );
+        context.nodeSetProperty( stmt, 1337L, property );
 
         // Then
-        verify( nodeOps ).propertyChanged( eq(writeOps), eq(1337L), any(Property.class), eq(property) );
+        verify( nodeOps ).propertyChanged( eq( writeOps ), eq( 1337L ), any( Property.class ), eq( property ) );
     }
 
     @Test
@@ -198,10 +201,11 @@ public class StateOperationsAutoIndexingTest
         when( storeLayer.nodeGetProperty( eq( storeStmt ), any( NodeItem.class ), eq( propertyKeyId ), eq( null ) ) )
                 .thenReturn( cursor( existingProperty ) );
         when( node.labels() ).thenReturn( PrimitiveIntCollections.emptySet() );
-        when( storeStmt.acquireSingleNodeCursor( 1337, null ) ).thenReturn( cursor( node ) );
+        when( storeLayer.nodeCursor( any( StorageStatement.class ), eq( 1337L ), eq( null ) ) )
+                .thenReturn( cursor( node ) );
 
         // When
-        context.nodeRemoveProperty( stmt, 1337, propertyKeyId );
+        context.nodeRemoveProperty( stmt, 1337L, propertyKeyId );
 
         // Then
         verify( nodeOps ).propertyRemoved( writeOps, 1337L, propertyKeyId );
