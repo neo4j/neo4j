@@ -1,28 +1,11 @@
 #!/usr/bin/env bash
-# Copyright (c) 2016 "Neo Technology,"
-# Network Engine for Objects in Lund AB [http://neotechnology.com]
-#
-# This file is part of Neo4j.
-#
-# Neo4j is free software: you can redistribute it and/or modify
-# it under the terms of the GNU Affero General Public License as
-# published by the Free Software Foundation, either version 3 of the
-# License, or (at your option) any later version.
-#
-# This program is distributed in the hope that it will be useful,
-# but WITHOUT ANY WARRANTY; without even the implied warranty of
-# MERCHANTABILITY or FITNESS FOR A PARTICULAR PURPOSE.  See the
-# GNU Affero General Public License for more details.
-#
-# You should have received a copy of the GNU Affero General Public License
-# along with this program. If not, see <http://www.gnu.org/licenses/>.
+
 set -o errexit -o nounset -o pipefail
 [[ "${TRACE:-}" ]] && set -o xtrace
 
 : "${NEO4J_BIN:=$(dirname "$0")}"
 readonly NEO4J_BIN
-. "${NEO4J_BIN}/neo4j-shared.sh"
-
+placeholder_for_neo4j_shared
 setup_java_opts() {
   JAVA_OPTS=("-cp" "${CLASSPATH}" "-Dfile.encoding=UTF-8")
   if [[ -n "${HEAP_SIZE:-}" ]]; then
@@ -31,14 +14,5 @@ setup_java_opts() {
   fi
   readonly JAVA_OPTS
 }
-
-main() {
-  setup_environment
-  check_java
-  build_classpath
-  setup_java_opts
-  export NEO4J_HOME NEO4J_CONF
-  exec "${JAVA_CMD}" "${JAVA_OPTS[@]}" "org.neo4j.commandline.admin.AdminTool" "$@"
-}
-
-main "$@"
+setup_java_opts
+call_main_class "org.neo4j.commandline.admin.AdminTool" "$@"
