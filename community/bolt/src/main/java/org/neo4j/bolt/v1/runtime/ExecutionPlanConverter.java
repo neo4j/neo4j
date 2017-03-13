@@ -41,6 +41,7 @@ class ExecutionPlanConverter
             ExecutionPlanDescription.ProfilerStatistics profile = plan.getProfilerStatistics();
             out.put( "dbHits", profile.getDbHits() );
             out.put( "pageCacheHits", profile.getPageCacheHits() );
+            out.put( "pageCacheMisses", profile.getPageCacheMisses() );
             out.put( "rows", profile.getRows() );
         }
         return out;

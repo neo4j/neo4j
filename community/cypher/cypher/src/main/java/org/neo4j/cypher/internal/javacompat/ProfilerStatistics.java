@@ -41,4 +41,12 @@ public interface ProfilerStatistics
     {
         return 0;
     }
+
+    /**
+     * @return number of page cache misses caused by executing the associated execution step
+     */
+    default long getPageCacheMisses()
+    {
+        return 0;
+    }
 }

@@ -47,6 +47,7 @@ object PlanDescriptionArgumentSerializer {
       case KeyExpressions(expressions) => expressions.mkString(SEPARATOR)
       case DbHits(value) => Long.box(value)
       case PageCacheHits(value) => Long.box(value)
+      case PageCacheMisses(value) => Long.box(value)
       case _: EntityByIdRhs => arg.toString
       case Rows(value) => Long.box(value)
       case Time(value) => Long.box(value)

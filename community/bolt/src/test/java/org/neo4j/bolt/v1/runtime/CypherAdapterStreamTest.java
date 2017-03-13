@@ -139,8 +139,8 @@ public class CypherAdapterStreamTest
         when( result.getQueryStatistics() ).thenReturn( queryStatistics );
         when( result.getNotifications() ).thenReturn( Collections.emptyList() );
         when( result.getExecutionPlanDescription() ).thenReturn(
-                plan( "Join", map( "arg1", 1 ), 2, 4, 1, singletonList( "id1" ),
-                        plan( "Scan", map( "arg2", 1 ), 2, 4, 1, singletonList( "id2" ) ) ) );
+                plan( "Join", map( "arg1", 1 ), 2, 4, 3, 1, singletonList( "id1" ),
+                        plan( "Scan", map( "arg2", 1 ), 2, 4, 7, 1, singletonList( "id2" ) ) ) );
 
         TransactionalContext tc = mock( TransactionalContext.class );
         CypherAdapterStream stream = new CypherAdapterStream( result, Clock.systemUTC() );
@@ -149,7 +149,8 @@ public class CypherAdapterStreamTest
         Map<String,Object> meta = metadataOf( stream );
 
         // Then
-        assertThat( meta.get( "profile" ).toString(), equalTo( "{args={arg1=1}, children=[{args={arg2=1}, " +
+        assertThat( meta.get( "profile" ).toString(), equalTo( "{args={arg1=1}, pageCacheMisses=3, " +
+                "children=[{args={arg2=1}, pageCacheMisses=7, " +
                 "children=[], dbHits=2, identifiers=[id2], operatorType=Scan, rows=1, pageCacheHits=4}], dbHits=2, " +
                 "identifiers=[id1], operatorType=Join, rows=1, pageCacheHits=4}" ));
     }
@@ -203,7 +204,7 @@ public class CypherAdapterStreamTest
     }
 
     private static ExecutionPlanDescription plan( final String name, final Map<String, Object> args, final long dbHits,
-            final long pageCacheHits, final long rows, final List<String> identifiers,
+            final long pageCacheHits, final long pageCacheMisses, final long rows, final List<String> identifiers,
             final ExecutionPlanDescription... children )
     {
         return plan( name, args, identifiers, new ExecutionPlanDescription.ProfilerStatistics()
@@ -224,6 +225,12 @@ public class CypherAdapterStreamTest
             public long getPageCacheHits()
             {
                 return pageCacheHits;
+            }
+
+            @Override
+            public long getPageCacheMisses()
+            {
+                return pageCacheMisses;
             }
         }, children );
     }

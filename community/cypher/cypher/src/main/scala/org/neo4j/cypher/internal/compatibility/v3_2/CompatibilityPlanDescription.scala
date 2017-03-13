@@ -20,7 +20,7 @@
 package org.neo4j.cypher.internal.compatibility.v3_2
 
 import org.neo4j.cypher.internal.compiler.v3_2.RuntimeName
-import org.neo4j.cypher.internal.compiler.v3_2.planDescription.InternalPlanDescription.Arguments.{DbHits, PageCacheHits, Rows}
+import org.neo4j.cypher.internal.compiler.v3_2.planDescription.InternalPlanDescription.Arguments.{DbHits, PageCacheHits, PageCacheMisses, Rows}
 import org.neo4j.cypher.internal.compiler.v3_2.planDescription.{Argument, InternalPlanDescription, PlanDescriptionArgumentSerializer}
 import org.neo4j.cypher.internal.frontend.v3_2.PlannerName
 import org.neo4j.cypher.internal.javacompat.{PlanDescription, ProfilerStatistics}
@@ -72,6 +72,8 @@ case class CompatibilityPlanDescription(inner: InternalPlanDescription, version:
       def getRows: Long = extract { case Rows(count) => count }
 
       def getPageCacheHits: Long = extract { case PageCacheHits(count) => count }
+
+      def getPageCacheMisses: Long = extract { case PageCacheMisses(count) => count }
 
       private def extract(f: PartialFunction[Argument, Long]): Long =
         inner.arguments.collectFirst(f).getOrElse(throw new InternalException("Don't have profiler stats"))

@@ -121,4 +121,24 @@ class ProfilingTracerTest extends CypherFunSuite {
     val information = tracer.get(operatorId)
     information.pageCacheHits() should equal(100)
   }
+
+  test("report page cache misses as part of profiling statistics") {
+    val operatorId = new Id
+    val cursorTracer = new DefaultPageCursorTracer
+    var tracer = new ProfilingTracer(cursorTracer)
+    val event = tracer.executeOperator(operatorId)
+
+    1 to 17 foreach { _ => {
+      val pin = cursorTracer.beginPin(false, 1, null)
+      val pageFault = pin.beginPageFault()
+      pageFault.done()
+      pin.done()
+    }
+    }
+
+    event.close()
+
+    val information = tracer.get(operatorId)
+    information.pageCacheMisses() should equal(17)
+  }
 }

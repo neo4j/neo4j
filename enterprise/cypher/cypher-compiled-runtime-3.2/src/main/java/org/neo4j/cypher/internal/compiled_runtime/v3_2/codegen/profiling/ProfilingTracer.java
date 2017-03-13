@@ -35,6 +35,7 @@ public class ProfilingTracer implements QueryExecutionTracer
         long dbHits();
         long rows();
         long pageCacheHits();
+        long pageCacheMisses();
     }
 
     public interface Clock
@@ -115,9 +116,10 @@ public class ProfilingTracer implements QueryExecutionTracer
         {
             long executionTime = clock.nanoTime() - start;
             long pageCacheHits = pageCursorTracer.hits();
+            long pageCacheFaults = pageCursorTracer.faults();
             if ( data != null )
             {
-                data.update( executionTime, hitCount, rowCount, pageCacheHits );
+                data.update( executionTime, hitCount, rowCount, pageCacheHits, pageCacheFaults );
             }
         }
 
@@ -140,13 +142,15 @@ public class ProfilingTracer implements QueryExecutionTracer
         private long hits;
         private long rows;
         private long pageCacheHits;
+        private long pageCacheMisses;
 
-        public void update( long time, long hits, long rows, long pageCacheHits )
+        public void update( long time, long hits, long rows, long pageCacheHits, long pageCacheMisses )
         {
             this.time += time;
             this.hits += hits;
             this.rows += rows;
             this.pageCacheHits += pageCacheHits;
+            this.pageCacheMisses += pageCacheMisses;
         }
 
         @Override
@@ -171,6 +175,12 @@ public class ProfilingTracer implements QueryExecutionTracer
         public long pageCacheHits()
         {
             return pageCacheHits;
+        }
+
+        @Override
+        public long pageCacheMisses()
+        {
+            return pageCacheMisses;
         }
     }
 }

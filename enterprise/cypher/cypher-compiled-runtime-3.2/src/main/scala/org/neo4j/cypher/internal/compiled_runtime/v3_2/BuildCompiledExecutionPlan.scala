@@ -104,6 +104,7 @@ object BuildCompiledExecutionPlan extends Phase[CompiledRuntimeContext, Compilat
               plan.
                 addArgument(Arguments.DbHits(data.dbHits())).
                 addArgument(Arguments.PageCacheHits(data.pageCacheHits())).
+                addArgument(Arguments.PageCacheMisses(data.pageCacheMisses())).
                 addArgument(Arguments.Rows(data.rows())).
                 addArgument(Arguments.Time(data.time()))
           }

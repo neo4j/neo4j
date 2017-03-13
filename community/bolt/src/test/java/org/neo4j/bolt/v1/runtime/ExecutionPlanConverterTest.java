@@ -48,7 +48,8 @@ public class ExecutionPlanConverterTest
         assertEquals( convertedMap.get( "rows" ), 1L );
         assertEquals( convertedMap.get( "dbHits" ), 2L );
         assertEquals( convertedMap.get( "pageCacheHits" ), 3L );
-        assertEquals( convertedMap.size(), 7 );
+        assertEquals( convertedMap.get( "pageCacheMisses" ), 2L );
+        assertEquals( convertedMap.size(), 8 );
     }
 
     private Map<String,Object> getArguments()
@@ -63,7 +64,7 @@ public class ExecutionPlanConverterTest
 
     private TestProfilerStatistics getProfilerStatistics()
     {
-        return new TestProfilerStatistics( 1, 2, 3 );
+        return new TestProfilerStatistics( 1, 2, 3, 2 );
     }
 
     private class TestExecutionPlanDescription implements ExecutionPlanDescription
@@ -126,12 +127,14 @@ public class ExecutionPlanConverterTest
         private final long rows;
         private final long dbHits;
         private final long pageCacheHits;
+        private final long pageCacheMisses;
 
-        private TestProfilerStatistics( long rows, long dbHits, long pageCacheHits )
+        private TestProfilerStatistics( long rows, long dbHits, long pageCacheHits, long pageCacheMisses )
         {
             this.rows = rows;
             this.dbHits = dbHits;
             this.pageCacheHits = pageCacheHits;
+            this.pageCacheMisses = pageCacheMisses;
         }
 
         @Override
@@ -150,6 +153,12 @@ public class ExecutionPlanConverterTest
         public long getPageCacheHits()
         {
             return pageCacheHits;
+        }
+
+        @Override
+        public long getPageCacheMisses()
+        {
+            return pageCacheMisses;
         }
     }
 }
