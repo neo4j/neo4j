@@ -737,30 +737,29 @@ public class StateHandlingStatementOperations
     }
 
     @Override
-    public PrimitiveLongIterator indexQuery( KernelStatement state, IndexDescriptor index, IndexQuery... predicates )
-            throws IndexNotFoundKernelException, IndexNotApplicableKernelException
+    public PrimitiveLongIterator indexQuery( KernelStatement statement, IndexDescriptor index,
+            IndexQuery... predicates ) throws IndexNotFoundKernelException, IndexNotApplicableKernelException
     {
-        StorageStatement storeStatement = state.getStoreStatement();
-        IndexReader reader = storeStatement.getIndexReader( index );
+        IndexReader reader = storeLayer.indexGetReader( statement.getStoreStatement(), index );
         PrimitiveLongIterator committed = reader.query( predicates );
-        PrimitiveLongIterator exactMatches = LookupFilter.exactIndexMatches( this, state, committed, predicates );
+        PrimitiveLongIterator exactMatches = LookupFilter.exactIndexMatches( this, statement, committed, predicates );
 
         IndexQuery firstPredicate = predicates[0];
         switch ( firstPredicate.type() )
         {
         case exact:
             IndexQuery.ExactPredicate[] exactPreds = assertOnlyExactPredicates( predicates );
-            return filterIndexStateChangesForSeek( state, exactMatches, index, OrderedPropertyValues.of( exactPreds ) );
+            return filterIndexStateChangesForSeek( statement, exactMatches, index, OrderedPropertyValues.of( exactPreds ) );
         case stringSuffix:
         case stringContains:
         case exists:
-            return filterIndexStateChangesForScan( state, exactMatches, index );
+            return filterIndexStateChangesForScan( statement, exactMatches, index );
 
         case rangeNumeric:
         {
             assertSinglePredicate( predicates );
             IndexQuery.NumberRangePredicate numPred = (IndexQuery.NumberRangePredicate) firstPredicate;
-            return filterIndexStateChangesForRangeSeekByNumber( state, index, numPred.from(),
+            return filterIndexStateChangesForRangeSeekByNumber( statement, index, numPred.from(),
                     numPred.fromInclusive(), numPred.to(), numPred.toInclusive(), exactMatches );
         }
         case rangeString:
@@ -768,14 +767,14 @@ public class StateHandlingStatementOperations
             assertSinglePredicate( predicates );
             IndexQuery.StringRangePredicate strPred = (IndexQuery.StringRangePredicate) firstPredicate;
             return filterIndexStateChangesForRangeSeekByString(
-                    state, index, strPred.from(), strPred.fromInclusive(), strPred.to(),
+                    statement, index, strPred.from(), strPred.fromInclusive(), strPred.to(),
                     strPred.toInclusive(), committed );
         }
         case stringPrefix:
         {
             assertSinglePredicate( predicates );
             IndexQuery.StringPrefixPredicate strPred = (IndexQuery.StringPrefixPredicate) firstPredicate;
-            return filterIndexStateChangesForRangeSeekByPrefix( state, index, strPred.prefix(), committed );
+            return filterIndexStateChangesForRangeSeekByPrefix( statement, index, strPred.prefix(), committed );
         }
         default:
             throw new UnsupportedOperationException( "Query not supported: " + Arrays.toString( predicates ) );
@@ -821,7 +820,7 @@ public class StateHandlingStatementOperations
     public long nodesCountIndexed( KernelStatement statement, IndexDescriptor index, long nodeId, Object value )
             throws IndexNotFoundKernelException, IndexBrokenKernelException
     {
-        IndexReader reader = statement.getStoreStatement().getIndexReader( index );
+        IndexReader reader = storeLayer.indexGetReader( statement.getStoreStatement(), index );
         return reader.countIndexedNodes( nodeId, value );
     }
 

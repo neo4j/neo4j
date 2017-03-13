@@ -42,6 +42,7 @@ import org.neo4j.kernel.impl.api.DegreeVisitor;
 import org.neo4j.kernel.impl.api.RelationshipVisitor;
 import org.neo4j.kernel.impl.api.store.RelationshipIterator;
 import org.neo4j.register.Register.DoubleLongRegister;
+import org.neo4j.storageengine.api.schema.IndexReader;
 import org.neo4j.storageengine.api.schema.PopulationProgress;
 import org.neo4j.storageengine.api.txstate.PropertyContainerState;
 import org.neo4j.storageengine.api.txstate.ReadableTransactionState;
@@ -165,6 +166,9 @@ public interface StoreReadLayer
      * @throws IndexNotFoundKernelException if index not found.
      */
     String indexGetFailure( LabelSchemaDescriptor descriptor ) throws IndexNotFoundKernelException;
+
+    IndexReader indexGetReader( StorageStatement statement, IndexDescriptor index )
+            throws IndexNotFoundKernelException;
 
     /**
      * @param labelName name of label.
