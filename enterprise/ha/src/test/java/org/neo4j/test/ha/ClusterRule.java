@@ -45,7 +45,6 @@ import org.neo4j.kernel.impl.ha.ClusterManager.StoreDirInitializer;
 import org.neo4j.kernel.impl.util.Listener;
 import org.neo4j.test.TargetDirectory;
 
-import static org.neo4j.cluster.ClusterSettings.broadcast_timeout;
 import static org.neo4j.cluster.ClusterSettings.default_timeout;
 import static org.neo4j.cluster.ClusterSettings.join_timeout;
 import static org.neo4j.graphdb.factory.GraphDatabaseSettings.pagecache_memory;
