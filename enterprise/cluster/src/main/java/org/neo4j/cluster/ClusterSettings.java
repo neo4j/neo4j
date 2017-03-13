@@ -165,4 +165,7 @@ public class ClusterSettings
             "any arbitrary half failing is expensive. Therefore you may wish to set this parameter to a value less " +
             "than the cluster size." )
     public static final Setting<Integer> max_acceptors = setting( "ha.max_acceptors", INTEGER, "21", min( 1 ) );
+
+    @Internal
+    public static final Setting<Boolean> strict_initial_hosts = setting( "ha.strict_initial_hosts", BOOLEAN, "false");
 }

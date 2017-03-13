@@ -87,6 +87,12 @@ public interface ClusterContext
 
     List<ClusterMessage.ConfigurationRequestState> getDiscoveredInstances();
 
+    boolean haveWeContactedInstance( ClusterMessage.ConfigurationRequestState configurationRequested );
+
+    void addContactingInstance( ClusterMessage.ConfigurationRequestState instance, String discoveryHeader );
+
+    String generateDiscoveryHeader();
+
     void setBoundAt( URI boundAt );
 
     void joinDenied( ConfigurationResponseState configurationResponseState );
@@ -116,4 +122,6 @@ public interface ClusterContext
     long getLastElectorVersion();
 
     void setLastElectorVersion( long lastElectorVersion );
+
+    boolean shouldFilterContactingInstances();
 }
