@@ -82,6 +82,7 @@ import org.neo4j.kernel.impl.api.index.IndexUpdateMode;
 import org.neo4j.kernel.impl.api.index.sampling.IndexSamplingConfig;
 import org.neo4j.kernel.impl.core.ThreadToStatementContextBridge;
 import org.neo4j.kernel.impl.store.AbstractDynamicStore;
+import org.neo4j.kernel.impl.store.DynamicRecordAllocator;
 import org.neo4j.kernel.impl.store.NodeLabelsField;
 import org.neo4j.kernel.impl.store.PropertyType;
 import org.neo4j.kernel.impl.store.RecordStore;
@@ -89,6 +90,7 @@ import org.neo4j.kernel.impl.store.SchemaStorage;
 import org.neo4j.kernel.impl.store.SchemaStore;
 import org.neo4j.kernel.impl.store.StoreAccess;
 import org.neo4j.kernel.impl.store.allocator.ReusableRecordsAllocator;
+import org.neo4j.kernel.impl.store.allocator.ReusableRecordsCompositeAllocator;
 import org.neo4j.kernel.impl.store.record.ConstraintRule;
 import org.neo4j.kernel.impl.store.record.DynamicRecord;
 import org.neo4j.kernel.impl.store.record.IndexRule;
@@ -1090,11 +1092,29 @@ public class FullCheckIntegrationTest
     public static Collection<DynamicRecord> serializeRule( SchemaRule rule, Collection<DynamicRecord> records )
     {
         byte[] data = rule.serialize();
-        ReusableRecordsAllocator dynamicRecordAllocator = new ReusableRecordsAllocator( data.length, records );
+        DynamicRecordAllocator dynamicRecordAllocator =
+                new ReusableRecordsCompositeAllocator( records, schemaAllocator );
         Collection<DynamicRecord> result = new ArrayList<>();
         AbstractDynamicStore.allocateRecordsFromBytes( result, data, dynamicRecordAllocator );
         return result;
     }
+
+    private static DynamicRecordAllocator schemaAllocator = new DynamicRecordAllocator()
+    {
+        private int next = 10000; // we start high to not conflict with real ids
+
+        @Override
+        public int getRecordDataSize()
+        {
+            return SchemaStore.BLOCK_SIZE;
+        }
+
+        @Override
+        public DynamicRecord nextRecord()
+        {
+            return new DynamicRecord( next++ );
+        }
+    };
 
     @Test
     public void shouldReportArrayPropertyInconsistencies() throws Exception
@@ -2195,8 +2215,8 @@ public class FullCheckIntegrationTest
                 Collection<DynamicRecord> records1 = serializeRule( rule1, record1 );
                 Collection<DynamicRecord> records2 = serializeRule( rule2, record2 );
 
-                assertEquals( asList( record1 ), records1 );
-                assertEquals( asList( record2 ), records2 );
+                assertEquals( record1, records1.iterator().next() );
+                assertEquals( record2, records2.iterator().next() );
 
                 tx.createSchema( asList( record1Before ), records1, rule1 );
                 tx.createSchema( asList( record2Before ), records2, rule2 );
