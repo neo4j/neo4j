@@ -40,7 +40,6 @@ import org.neo4j.kernel.impl.api.StateHandlingStatementOperations;
 import org.neo4j.kernel.impl.api.StatementOperationsTestHelper;
 import org.neo4j.kernel.impl.api.legacyindex.InternalAutoIndexing;
 import org.neo4j.kernel.impl.api.operations.EntityOperations;
-import org.neo4j.kernel.impl.api.store.StoreStatement;
 import org.neo4j.kernel.impl.constraints.StandardConstraintSemantics;
 import org.neo4j.kernel.impl.index.LegacyIndexStore;
 import org.neo4j.storageengine.api.NodeItem;
@@ -98,9 +97,8 @@ public class IndexQueryTransactionStateTest
         indexReader = mock( IndexReader.class );
         when( store.indexGetReader( any( StorageStatement.class ), eq( indexDescriptor ) ) )
                 .thenReturn( indexReader );
-        StoreStatement statement = mock( StoreStatement.class );
-        when( state.getStoreStatement() ).thenReturn( statement );
-        when( statement.getFreshIndexReader( indexDescriptor ) ).thenReturn( indexReader );
+        when( store.indexGetFreshReader( any( StorageStatement.class ), eq( indexDescriptor ) ) )
+                .thenReturn( indexReader );
 
         StateHandlingStatementOperations stateHandlingOperations = new StateHandlingStatementOperations(
                 store,

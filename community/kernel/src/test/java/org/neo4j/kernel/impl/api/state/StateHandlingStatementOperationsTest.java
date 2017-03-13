@@ -472,14 +472,13 @@ public class StateHandlingStatementOperationsTest
     public void indexQueryClosesIndexReader() throws Exception
     {
         KernelStatement kernelStatement = mock( KernelStatement.class );
-        StoreStatement storeStatement = mock( StoreStatement.class );
         IndexReader indexReader = mock( IndexReader.class );
-
         when( indexReader.query( any() ) ).thenReturn( PrimitiveLongCollections.emptyIterator() );
-        when( storeStatement.getFreshIndexReader( any() ) ).thenReturn( indexReader );
-        when( kernelStatement.getStoreStatement() ).thenReturn( storeStatement );
+        StoreReadLayer storeReadLayer = mock( StoreReadLayer.class );
+        when( storeReadLayer.indexGetFreshReader( any( StorageStatement.class ), any( IndexDescriptor.class ) ) )
+                .thenReturn( indexReader );
 
-        StateHandlingStatementOperations operations = newTxStateOps( mock( StoreReadLayer.class ) );
+        StateHandlingStatementOperations operations = newTxStateOps( storeReadLayer );
 
         operations.nodeGetFromUniqueIndexSeek(
                 kernelStatement,
