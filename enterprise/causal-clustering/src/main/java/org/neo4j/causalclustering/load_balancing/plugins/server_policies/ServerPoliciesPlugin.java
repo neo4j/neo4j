@@ -105,7 +105,7 @@ public class ServerPoliciesPlugin implements LoadBalancingPlugin
 
     private List<Endpoint> routeEndpoints( CoreTopology cores )
     {
-        return cores.allMemberInfo().stream().map( extractBoltAddress() )
+        return cores.members().values().stream().map( extractBoltAddress() )
                 .map( Endpoint::route ).collect( Collectors.toList() );
     }
 
@@ -136,7 +136,7 @@ public class ServerPoliciesPlugin implements LoadBalancingPlugin
 
         if ( allowReadsOnFollowers || possibleReaders.size() == 0 )
         {
-            Set<MemberId> validCores = coreTopology.members();
+            Set<MemberId> validCores = coreTopology.members().keySet();
             try
             {
                 MemberId leader = leaderLocator.getLeader();

@@ -84,7 +84,8 @@ public class PortRangeSocketBinderTest
         }
     }
 
-    private int suppressedExceptions( Throwable throwable ) {
+    private int suppressedExceptions( Throwable throwable )
+    {
         int suppressed = 0;
         for ( Throwable ignored : throwable.getSuppressed() )
         {

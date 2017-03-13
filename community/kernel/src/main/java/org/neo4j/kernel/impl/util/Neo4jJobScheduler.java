@@ -38,7 +38,6 @@ import org.neo4j.helpers.Exceptions;
 import org.neo4j.kernel.lifecycle.LifecycleAdapter;
 
 import static java.util.concurrent.Executors.newCachedThreadPool;
-
 import static org.neo4j.helpers.NamedThreadFactory.daemon;
 import static org.neo4j.kernel.impl.util.DebugUtil.trackTest;
 import static org.neo4j.kernel.impl.util.JobScheduler.Group.NO_METADATA;
@@ -81,8 +80,10 @@ public class Neo4jJobScheduler extends LifecycleAdapter implements JobScheduler
     @Override
     public JobHandle schedule( Group group, Runnable job, Map<String,String> metadata )
     {
-        if (globalPool == null)
+        if ( globalPool == null )
+        {
             throw new RejectedExecutionException( "Scheduler is not started" );
+        }
 
         switch( group.strategy() )
         {

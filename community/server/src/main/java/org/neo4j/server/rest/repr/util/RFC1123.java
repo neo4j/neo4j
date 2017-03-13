@@ -34,7 +34,8 @@ public final class RFC1123
 
     private static final Date Y2K_START_DATE;
 
-    static {
+    static
+    {
         Calendar calendar = Calendar.getInstance();
         calendar.setTimeZone( GMT );
         calendar.set( 2000, Calendar.JANUARY, 1, 0, 0, 0 );
@@ -59,7 +60,9 @@ public final class RFC1123
     public String format(Date date)
     {
         if ( null == date )
+        {
             throw new IllegalArgumentException( "Date is null" );
+        }
 
         return format.format( date );
     }

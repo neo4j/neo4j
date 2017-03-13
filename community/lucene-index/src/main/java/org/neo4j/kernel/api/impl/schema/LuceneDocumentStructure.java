@@ -260,7 +260,8 @@ public class LuceneDocumentStructure
 
         private final Map<String,Field> valueFields = new HashMap<>();
 
-        private DocWithId() {
+        private DocWithId()
+        {
             idField = new StringField( NODE_ID_KEY, "", YES );
             idValueField = new NumericDocValuesField( NODE_ID_KEY, 0L );
             document = new Document();

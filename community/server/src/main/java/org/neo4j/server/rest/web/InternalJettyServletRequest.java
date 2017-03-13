@@ -61,10 +61,15 @@ public class InternalJettyServletRequest extends Request
 
         public int read() throws IOException
         {
-            if ( bytes.length > position ) return (int) bytes[position++];
+            if ( bytes.length > position )
+            {
+                return (int) bytes[position++];
+            }
 
-            if (readListener != null)
+            if ( readListener != null )
+            {
                 readListener.onAllDataRead();
+            }
 
             return -1;
         }
@@ -377,8 +382,8 @@ public class InternalJettyServletRequest extends Request
                 String localName,
                 String localAddress,
                 int localPort,
-                String authType
-        ) {
+                String authType )
+        {
             this.remoteAddress = remoteAddress;
             this.isSecure = isSecure;
             this.remotePort = remotePort;

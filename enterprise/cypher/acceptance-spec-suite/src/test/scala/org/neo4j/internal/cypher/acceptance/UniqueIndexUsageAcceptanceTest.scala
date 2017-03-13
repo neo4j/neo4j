@@ -136,7 +136,7 @@ class UniqueIndexUsageAcceptanceTest extends ExecutionEngineFunSuite with NewPla
     lockingIndexSearchCalled = false
 
     val assertReadOnlyMonitorListener = new IndexSearchMonitor {
-      override def indexSeek(index: IndexDescriptor, value: Any): Unit = {}
+      override def indexSeek(index: IndexDescriptor, value: Seq[Any]): Unit = {}
 
       override def lockingUniqueIndexSeek(index: IndexDescriptor, value: Any): Unit = {
         lockingIndexSearchCalled = true

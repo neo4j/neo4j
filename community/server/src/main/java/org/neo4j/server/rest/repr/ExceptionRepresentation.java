@@ -88,7 +88,10 @@ public class ExceptionRepresentation extends MappingRepresentation
             Collection<String> lines = new ArrayList<String>( trace.length );
             for ( StackTraceElement element : trace )
             {
-                if (element.toString().matches( ".*(jetty|jersey|sun\\.reflect|mortbay|javax\\.servlet).*" )) continue;
+                if ( element.toString().matches( ".*(jetty|jersey|sun\\.reflect|mortbay|javax\\.servlet).*" ) )
+                {
+                    continue;
+                }
                 lines.add( element.toString() );
             }
             serializer.putList( "stackTrace", ListRepresentation.string( lines ) );

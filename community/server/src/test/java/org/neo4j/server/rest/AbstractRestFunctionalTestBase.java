@@ -19,14 +19,14 @@
  */
 package org.neo4j.server.rest;
 
+import org.junit.Rule;
+
 import java.io.UnsupportedEncodingException;
 import java.nio.charset.StandardCharsets;
 import java.util.ArrayList;
 import java.util.Collection;
 import java.util.Map;
 import javax.ws.rs.core.Response.Status;
-
-import org.junit.Rule;
 
 import org.neo4j.graphdb.GraphDatabaseService;
 import org.neo4j.graphdb.Node;
@@ -43,9 +43,7 @@ import org.neo4j.test.server.SharedServerTestBase;
 
 import static java.lang.String.format;
 import static java.net.URLEncoder.encode;
-
 import static org.junit.Assert.assertEquals;
-
 import static org.neo4j.server.rest.domain.JsonHelper.createJsonFrom;
 import static org.neo4j.server.rest.web.Surface.PATH_NODES;
 import static org.neo4j.server.rest.web.Surface.PATH_NODE_INDEX;
@@ -219,7 +217,8 @@ public class AbstractRestFunctionalTestBase extends SharedServerTestBase impleme
         return getNodeUri( node )+  "/properties";
     }
 
-    public RESTRequestGenerator gen() {
+    public RESTRequestGenerator gen()
+    {
         return gen.get();
     }
 

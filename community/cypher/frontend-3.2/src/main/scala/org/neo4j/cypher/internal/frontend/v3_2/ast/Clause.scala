@@ -105,9 +105,9 @@ case class Match(optional: Boolean, pattern: Pattern, hints: Seq[UsingHint], whe
 
   private def checkHints: SemanticCheck = {
     val error: Option[SemanticCheck] = hints.collectFirst {
-      case hint@UsingIndexHint(Variable(variable), LabelName(labelName), PropertyKeyName(property))
-        if !containsLabelPredicate(variable, labelName)
-          || !containsPropertyPredicate(variable, property) =>
+      case hint@UsingIndexHint(Variable(variable), LabelName(labelName), properties)
+        if !containsLabelPredicate(variable, labelName) ||
+           !containsPropertyPredicates(variable, properties) =>
         SemanticError(
           """|Cannot use index hint in this context.
             | Index hints are only supported for the following predicates in WHERE
@@ -130,8 +130,8 @@ case class Match(optional: Boolean, pattern: Pattern, hints: Seq[UsingHint], whe
     error.getOrElse(SemanticCheckResult.success)
   }
 
-  private def containsPropertyPredicate(variable: String, property: String): Boolean = {
-    val properties: Seq[String] = (where match {
+  private def containsPropertyPredicates(variable: String, propertiesInHint: Seq[PropertyKeyName]): Boolean = {
+    val propertiesInPredicates: Seq[String] = (where match {
       case Some(w) => w.treeFold(Seq.empty[String]) {
         case Equals(Property(Variable(id), PropertyKeyName(name)), other) if id == variable && applicable(other) =>
           acc => (acc :+ name, None)
@@ -169,7 +169,8 @@ case class Match(optional: Boolean, pattern: Pattern, hints: Seq[UsingHint], whe
       case NodePattern(Some(Variable(id)), _, Some(MapExpression(prop))) if variable == id =>
         acc => (acc ++ prop.map(_._1.name), None)
     }
-    properties.contains(property)
+
+    propertiesInHint.forall(p => propertiesInPredicates.contains(p.name))
   }
 
   /*

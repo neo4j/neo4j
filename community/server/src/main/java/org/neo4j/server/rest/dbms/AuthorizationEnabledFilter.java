@@ -226,7 +226,9 @@ public class AuthorizationEnabledFilter extends AuthorizationFilter
                 responseGen.accept( res );
                 res.addHeader( HttpHeaders.WWW_AUTHENTICATE, "None" );
             };
-        } else {
+        }
+        else
+            {
             return (res) -> {
                 responseGen.accept( res );
                 res.addHeader( HttpHeaders.WWW_AUTHENTICATE, "Basic realm=\"Neo4j\"" );
@@ -262,7 +264,8 @@ public class AuthorizationEnabledFilter extends AuthorizationFilter
         if ( header == null )
         {
             return null;
-        } else
+        }
+        else
         {
             return AuthorizationHeaders.decode( header );
         }

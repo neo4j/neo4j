@@ -33,11 +33,17 @@ public class AuthorizationRepresentation extends ObjectRepresentation
         this.user = user;
     }
 
-    @Mapping("username")
-    public ValueRepresentation user() { return ValueRepresentation.string( user.name() ); }
+    @Mapping( "username" )
+    public ValueRepresentation user()
+    {
+        return ValueRepresentation.string( user.name() );
+    }
 
-    @Mapping("password_change_required")
-    public ValueRepresentation passwordChangeRequired() { return ValueRepresentation.bool( user.passwordChangeRequired() ); }
+    @Mapping( "password_change_required" )
+    public ValueRepresentation passwordChangeRequired()
+    {
+        return ValueRepresentation.bool( user.passwordChangeRequired() );
+    }
 
     @Mapping( "password_change" )
     public ValueRepresentation passwordChange()

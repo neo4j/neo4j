@@ -162,6 +162,9 @@ public class TransportErrorIT
     @After
     public void teardown() throws Exception
     {
-        if(client != null) client.disconnect();
+        if ( client != null )
+        {
+            client.disconnect();
+        }
     }
 }

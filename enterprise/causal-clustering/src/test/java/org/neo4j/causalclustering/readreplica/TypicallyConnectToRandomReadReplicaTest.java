@@ -25,10 +25,10 @@ import java.util.ArrayList;
 import java.util.HashMap;
 import java.util.List;
 import java.util.Map;
+import java.util.Optional;
 import java.util.UUID;
 
 import org.neo4j.causalclustering.discovery.ClientConnectorAddresses;
-import org.neo4j.causalclustering.discovery.ClusterTopology;
 import org.neo4j.causalclustering.discovery.CoreTopology;
 import org.neo4j.causalclustering.discovery.ReadReplicaInfo;
 import org.neo4j.causalclustering.discovery.ReadReplicaTopology;
@@ -39,6 +39,7 @@ import org.neo4j.helpers.AdvertisedSocketAddress;
 import static java.util.Collections.singletonList;
 import static org.hamcrest.CoreMatchers.hasItem;
 import static org.junit.Assert.assertThat;
+import static org.neo4j.causalclustering.discovery.HazelcastClusterTopology.extractCatchupAddressesMap;
 import static org.neo4j.causalclustering.readreplica.ConnectToRandomCoreServerTest.fakeCoreTopology;
 
 public class TypicallyConnectToRandomReadReplicaTest
@@ -71,6 +72,9 @@ public class TypicallyConnectToRandomReadReplicaTest
     {
         return new TopologyService()
         {
+            private Map<MemberId,AdvertisedSocketAddress> catchupAddresses =
+                    extractCatchupAddressesMap( coreTopology, readReplicaTopology );
+
             @Override
             public CoreTopology coreServers()
             {
@@ -84,9 +88,9 @@ public class TypicallyConnectToRandomReadReplicaTest
             }
 
             @Override
-            public ClusterTopology allServers()
+            public Optional<AdvertisedSocketAddress> findCatchupAddress( MemberId upstream )
             {
-                return new ClusterTopology( coreTopology, readReplicaTopology );
+                return Optional.ofNullable( catchupAddresses.get( upstream ) );
             }
 
             @Override

@@ -59,6 +59,7 @@ public class SchemaAcceptanceTest
     private GraphDatabaseService db;
     private Label label = Labels.MY_LABEL;
     private String propertyKey = "my_property_key";
+    private String secondPropertyKey = "my_second_property_key";
 
     private enum Labels implements Label
     {
@@ -77,6 +78,16 @@ public class SchemaAcceptanceTest
     {
         // WHEN
         IndexDefinition index = createIndex( db, label, propertyKey );
+
+        // THEN
+        assertThat( getIndexes( db, label ), containsOnly( index ) );
+    }
+
+    @Test
+    public void addingACompositeIndexingRuleShouldSucceed() throws Exception
+    {
+        // WHEN
+        IndexDefinition index = createIndex( db, label, propertyKey, secondPropertyKey );
 
         // THEN
         assertThat( getIndexes( db, label ), containsOnly( index ) );
@@ -154,25 +165,6 @@ public class SchemaAcceptanceTest
 
         // THEN
         assertThat( caught, not( nullValue() ) );
-    }
-
-    @Test
-    public void shouldThrowConstraintViolationIfAskedToCreateCompoundIndex() throws Exception
-    {
-        // WHEN
-        try ( Transaction tx = db.beginTx() )
-        {
-            Schema schema = db.schema();
-            schema.indexFor( label )
-                    .on( "my_property_key" )
-                    .on( "other_property" ).create();
-            tx.success();
-            fail( "Should not be able to create index on multiple propertyKey keys" );
-        }
-        catch ( UnsupportedOperationException e )
-        {
-            assertThat( e.getMessage(), containsString( "Compound indexes" ) );
-        }
     }
 
     @Test
@@ -294,6 +286,20 @@ public class SchemaAcceptanceTest
     }
 
     @Test
+    public void shouldPopulateIndex() throws Exception
+    {
+        // GIVEN
+        Node node = createNode( db, propertyKey, "Neo", label );
+
+        // create an index
+        IndexDefinition index = createIndex( db, label, propertyKey );
+        waitForIndex( db, index );
+
+        // THEN
+        assertThat( findNodesByLabelAndProperty( label, propertyKey, "Neo", db ), containsOnly( node ) );
+    }
+
+    @Test
     public void shouldRecreateDroppedIndex() throws Exception
     {
         // GIVEN
@@ -405,11 +411,8 @@ public class SchemaAcceptanceTest
         }
         catch ( ConstraintViolationException e )
         {
-            assertEquals(
-                format(
-                    "Unable to create CONSTRAINT ON ( my_label:MY_LABEL ) ASSERT my_label.my_property_key IS UNIQUE:%n" +
-                    "Both Node(0) and Node(1) have the label `MY_LABEL` and property `my_property_key` = 'value1'" ),
-                e.getMessage() );
+            assertThat( e.getMessage(), containsString(
+                    "Unable to create CONSTRAINT ON ( my_label:MY_LABEL ) ASSERT my_label.my_property_key IS UNIQUE" ) );
         }
     }
 
@@ -450,8 +453,7 @@ public class SchemaAcceptanceTest
         {
             assertEquals(
                     "Label 'MY_LABEL' and property 'my_property_key' have a unique constraint defined on them, so an " +
-                    "index is " +
-                    "already created that matches this.", e.getMessage() );
+                    "index is already created that matches this.", e.getMessage() );
         }
     }
 

@@ -91,7 +91,8 @@ object indexScanLeafPlanner extends LeafPlanner with LeafPlanFromExpression {
          labelId <- labelName.id)
       yield {
         val hint = qg.hints.collectFirst {
-          case hint@UsingIndexHint(Variable(`variableName`), `labelName`, PropertyKeyName(`propertyKeyName`)) => hint
+          case hint@UsingIndexHint(Variable(`variableName`), `labelName`, properties)
+            if properties.map(_.name) == Seq(propertyKeyName) => hint
         }
         val keyToken = PropertyKeyToken(property.propertyKey, property.propertyKey.id.head)
         val labelToken = LabelToken(labelName, labelId)
@@ -101,5 +102,5 @@ object indexScanLeafPlanner extends LeafPlanner with LeafPlanFromExpression {
   }
 
   private def findIndexesFor(label: String, property: String)(implicit context: LogicalPlanningContext) =
-    context.planContext.getIndexRule(label, property) orElse context.planContext.getUniqueIndexRule(label, property)
+    context.planContext.indexGet(label, Seq(property)) orElse context.planContext.uniqueIndexGet(label, Seq(property))
 }

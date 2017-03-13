@@ -38,7 +38,7 @@ sealed trait IndexUsage {
   def identifier:String
 }
 
-final case class SchemaIndexSeekUsage(identifier: String, label: String, propertyKey: String) extends IndexUsage
+final case class SchemaIndexSeekUsage(identifier: String, label: String, propertyKeys: Seq[String]) extends IndexUsage
 final case class SchemaIndexScanUsage(identifier: String, label: String, propertyKey: String) extends IndexUsage
 final case class LegacyNodeIndexUsage(identifier: String, index: String) extends IndexUsage
 final case class LegacyRelationshipIndexUsage(identifier: String, index: String) extends IndexUsage

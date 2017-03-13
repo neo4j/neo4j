@@ -237,7 +237,10 @@ public abstract class MapUtil
 
     private static void closeIfNotNull( Closeable closeable ) throws IOException
     {
-        if ( closeable != null ) closeable.close();
+        if ( closeable != null )
+        {
+            closeable.close();
+        }
     }
 
     /**

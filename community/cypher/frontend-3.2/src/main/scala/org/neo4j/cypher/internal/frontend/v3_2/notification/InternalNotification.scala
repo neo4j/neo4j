@@ -34,7 +34,7 @@ case object PlannerUnsupportedNotification extends InternalNotification
 
 case object RuntimeUnsupportedNotification extends InternalNotification
 
-case class IndexHintUnfulfillableNotification(label: String, propertyKey: String) extends InternalNotification
+case class IndexHintUnfulfillableNotification(label: String, propertyKeys: Seq[String]) extends InternalNotification
 
 case class JoinHintUnfulfillableNotification(identified: Seq[String]) extends InternalNotification
 

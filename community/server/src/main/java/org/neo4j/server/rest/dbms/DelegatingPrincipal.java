@@ -40,7 +40,10 @@ public class DelegatingPrincipal implements Principal
         return username;
     }
 
-    public SecurityContext getSecurityContext() { return securityContext; }
+    public SecurityContext getSecurityContext()
+    {
+        return securityContext;
+    }
 
     @Override
     public boolean equals( Object o )

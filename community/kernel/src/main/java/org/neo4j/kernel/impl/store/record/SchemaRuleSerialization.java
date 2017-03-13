@@ -31,6 +31,7 @@ import org.neo4j.kernel.api.schema_new.SchemaDescriptorFactory;
 import org.neo4j.kernel.api.schema_new.SchemaProcessor;
 import org.neo4j.kernel.api.schema_new.constaints.ConstraintDescriptor;
 import org.neo4j.kernel.api.schema_new.constaints.ConstraintDescriptorFactory;
+import org.neo4j.kernel.api.schema_new.constaints.UniquenessConstraintDescriptor;
 import org.neo4j.kernel.api.schema_new.index.NewIndexDescriptor;
 import org.neo4j.kernel.api.schema_new.index.NewIndexDescriptorFactory;
 import org.neo4j.storageengine.api.schema.SchemaRule;
@@ -93,11 +94,11 @@ public class SchemaRuleSerialization
     /**
      * Serialize the provided IndexRule onto the target buffer
      * @param indexRule the IndexRule to serialize
-     * @param target the target buffer
      * @throws IllegalStateException if the IndexRule is of type unique, but the owning constrain has not been set
      */
-    public static void serialize( IndexRule indexRule, ByteBuffer target )
+    public static byte[] serialize( IndexRule indexRule )
     {
+        ByteBuffer target = ByteBuffer.allocate( lengthOf( indexRule ) );
         target.putInt( LEGACY_LABEL_OR_REL_TYPE_ID );
         target.put( INDEX_RULE );
 
@@ -126,16 +127,18 @@ public class SchemaRuleSerialization
         }
 
         indexDescriptor.schema().processWith( new SchemaDescriptorSerializer( target ) );
+        UTF8.putEncodedStringInto( indexRule.getName(), target );
+        return target.array();
     }
 
     /**
      * Serialize the provided ConstraintRule onto the target buffer
      * @param constraintRule the ConstraintRule to serialize
-     * @param target the target buffer
      * @throws IllegalStateException if the ConstraintRule is of type unique, but the owned index has not been set
      */
-    public static void serialize( ConstraintRule constraintRule, ByteBuffer target )
+    public static byte[] serialize( ConstraintRule constraintRule )
     {
+        ByteBuffer target = ByteBuffer.allocate( lengthOf( constraintRule ) );
         target.putInt( LEGACY_LABEL_OR_REL_TYPE_ID );
         target.put( CONSTRAINT_RULE );
 
@@ -157,6 +160,8 @@ public class SchemaRuleSerialization
         }
 
         constraintDescriptor.schema().processWith( new SchemaDescriptorSerializer( target ) );
+        UTF8.putEncodedStringInto( constraintRule.getName(), target );
+        return target.array();
     }
 
     /**
@@ -181,6 +186,7 @@ public class SchemaRuleSerialization
         }
 
         length += indexDescriptor.schema().computeWith( schemaSizeComputer );
+        length += UTF8.computeRequiredByteBufferSize( indexRule.getName() );
         return length;
     }
 
@@ -202,6 +208,7 @@ public class SchemaRuleSerialization
         }
 
         length += constraintDescriptor.schema().computeWith( schemaSizeComputer );
+        length += UTF8.computeRequiredByteBufferSize( constraintRule.getName() );
         return length;
     }
 
@@ -214,26 +221,21 @@ public class SchemaRuleSerialization
         SchemaIndexProvider.Descriptor indexProvider = readIndexProviderDescriptor( source );
         LabelSchemaDescriptor schema;
         byte indexRuleType = source.get();
+        String name;
         switch ( indexRuleType )
         {
         case GENERAL_INDEX:
             schema = readLabelSchema( source );
-            return IndexRule.indexRule(
-                    id,
-                    NewIndexDescriptorFactory.forSchema( schema ),
-                    indexProvider
-                );
+            name = readRuleName( id, IndexRule.class, source );
+            return IndexRule.indexRule( id, NewIndexDescriptorFactory.forSchema( schema ), indexProvider, name );
 
         case UNIQUE_INDEX:
             long owningConstraint = source.getLong();
             schema = readLabelSchema( source );
-
-            return IndexRule.constraintIndexRule(
-                    id,
-                    NewIndexDescriptorFactory.uniqueForSchema( schema ),
-                    indexProvider,
-                    owningConstraint == NO_OWNING_CONSTRAINT_YET ? null : owningConstraint
-                );
+            NewIndexDescriptor descriptor = NewIndexDescriptorFactory.uniqueForSchema( schema );
+            name = readRuleName( id, IndexRule.class, source );
+            return IndexRule.constraintIndexRule( id, descriptor, indexProvider,
+                    owningConstraint == NO_OWNING_CONSTRAINT_YET ? null : owningConstraint, name );
 
         default:
             throw new MalformedSchemaRuleException( format( "Got unknown index rule type '%d'.", indexRuleType ) );
@@ -264,27 +266,38 @@ public class SchemaRuleSerialization
     {
         SchemaDescriptor schema;
         byte constraintRuleType = source.get();
+        String name;
         switch ( constraintRuleType )
         {
         case EXISTS_CONSTRAINT:
             schema = readSchema( source );
-            return ConstraintRule.constraintRule(
-                    id,
-                    ConstraintDescriptorFactory.existsForSchema( schema )
-            );
+            name = readRuleName( id, ConstraintRule.class, source );
+            return ConstraintRule.constraintRule( id, ConstraintDescriptorFactory.existsForSchema( schema ), name );
 
         case UNIQUE_CONSTRAINT:
             long ownedIndex = source.getLong();
             schema = readSchema( source );
-            return ConstraintRule.constraintRule(
-                    id,
-                    ConstraintDescriptorFactory.uniqueForSchema( schema ),
-                    ownedIndex
-            );
+            UniquenessConstraintDescriptor descriptor = ConstraintDescriptorFactory.uniqueForSchema( schema );
+            name = readRuleName( id, ConstraintRule.class, source );
+            return ConstraintRule.constraintRule( id, descriptor, ownedIndex, name );
 
         default:
             throw new MalformedSchemaRuleException( format( "Got unknown constraint rule type '%d'.", constraintRuleType ) );
         }
+    }
+
+    private static String readRuleName( long id, Class<? extends SchemaRule> type, ByteBuffer source )
+    {
+        String ruleName = null;
+        if ( source.remaining() >= UTF8.MINIMUM_SERIALISED_LENGTH_BYTES )
+        {
+            ruleName = UTF8.getDecodedStringFrom( source );
+        }
+        if ( ruleName == null || ruleName.isEmpty() )
+        {
+            ruleName = SchemaRule.generateName( id, type );
+        }
+        return ruleName;
     }
 
     // READ HELP

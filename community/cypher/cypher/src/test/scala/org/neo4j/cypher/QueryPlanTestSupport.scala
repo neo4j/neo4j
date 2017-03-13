@@ -55,13 +55,17 @@ trait QueryPlanTestSupport {
     }
   }
 
-  def useProjectionWith(otherText: String*): Matcher[InternalExecutionResult] = new Matcher[InternalExecutionResult] {
+  def useIndex(otherText: String*): Matcher[InternalExecutionResult] = useOperationWith("NodeIndexSeek", otherText: _*)
+
+  def useProjectionWith(otherText: String*): Matcher[InternalExecutionResult] = useOperationWith("Projection", otherText: _*)
+
+  def useOperationWith(operation:String, otherText: String*): Matcher[InternalExecutionResult] = new Matcher[InternalExecutionResult] {
     override def apply(result: InternalExecutionResult): MatchResult = {
       val plan: InternalPlanDescription = result.executionPlanDescription()
       MatchResult(
-        matches = otherText.forall(o => plan.find("Projection").exists(_.toString.contains(o))),
-        rawFailureMessage = s"Plan should use Projection with ${otherText.mkString(",")}:\n$plan",
-        rawNegatedFailureMessage = s"Plan should not use Projection with ${otherText.mkString(",")}:\n$plan")
+        matches = otherText.forall(o => plan.find(operation).exists(_.toString.contains(o))),
+        rawFailureMessage = s"Plan should use $operation with ${otherText.mkString(",")}:\n$plan",
+        rawNegatedFailureMessage = s"Plan should not use $operation with ${otherText.mkString(",")}:\n$plan")
     }
   }
 

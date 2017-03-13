@@ -114,7 +114,8 @@ public class TransactionErrorIT extends AbstractRestFunctionalTestBase
                             .toString()
                             .contains("on line 3. Possibly the last row committed during import is line 2. Note that this information might not be accurate."));
         }
-        finally {
+        finally
+        {
             file.delete();
         }
     }

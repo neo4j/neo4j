@@ -58,10 +58,10 @@ public abstract class AbstractClient implements ShellClient
     private long timeConnection;
     private volatile boolean end;
     private final Collection<String> multiLine = new ArrayList<>();
-    private Serializable id;
+    protected Serializable id;
     private String prompt;
 
-    private final Map<String, Serializable> initialSession;
+    protected final Map<String, Serializable> initialSession;
 
     public AbstractClient( Map<String, Serializable> initialSession, CtrlCHandler signalHandler )
     {
@@ -177,7 +177,9 @@ public abstract class AbstractClient implements ShellClient
         finally
         {
             if ( !success )
+            {
                 endMultiLine();
+            }
         }
     }
 

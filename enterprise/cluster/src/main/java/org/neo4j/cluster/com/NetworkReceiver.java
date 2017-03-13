@@ -255,8 +255,10 @@ public class NetworkReceiver
         }
 
         // Add name if given
-        if (config.name() != null)
-            uri += "/?name="+config.name();
+        if ( config.name() != null )
+        {
+            uri += "/?name=" + config.name();
+        }
 
         return URI.create( uri );
     }

@@ -59,31 +59,33 @@ public class TicketedProcessingTest
             return from*2;
         };
         int processorCount = Runtime.getRuntime().availableProcessors();
-        TicketedProcessing<Integer,Void,Integer> processing = new TicketedProcessing<>(
-                "Doubler", processorCount, processor, () -> null );
-        processing.processors( processorCount - processing.processors( 0 ) );
+        Future<Void> assertions;
+        try ( TicketedProcessing<Integer,Void,Integer> processing = new TicketedProcessing<>(
+                "Doubler", processorCount, processor, () -> null ) )
+        {
+            processing.processors( processorCount - processing.processors( 0 ) );
 
-        // WHEN
-        Future<Void> assertions = t2.execute( new WorkerCommand<Void,Void>()
-        {
-            @Override
-            public Void doWork( Void state ) throws Exception
+            // WHEN
+            assertions = t2.execute( new WorkerCommand<Void,Void>()
             {
-                for ( int i = 0; i < items; i++ )
+                @Override
+                public Void doWork( Void state ) throws Exception
                 {
-                    Integer next = processing.next();
-                    assertNotNull( next );
-                    assertEquals( i*2, next.intValue() );
+                    for ( int i = 0; i < items; i++ )
+                    {
+                        Integer next = processing.next();
+                        assertNotNull( next );
+                        assertEquals( i*2, next.intValue() );
+                    }
+                    assertNull( processing.next() );
+                    return null;
                 }
-                assertNull( processing.next() );
-                return null;
+            } );
+            for ( int i = 0; i < items; i++ )
+            {
+                processing.submit( i );
             }
-        } );
-        for ( int i = 0; i < items; i++ )
-        {
-            processing.submit( i );
         }
-        processing.shutdown( true );
 
         // THEN
         assertions.get();
@@ -93,40 +95,39 @@ public class TicketedProcessingTest
     public void shouldNotBeAbleToSubmitTooFarAhead() throws Exception
     {
         // GIVEN
-        TicketedProcessing<StringJob,Void,Integer> processing = new TicketedProcessing<>( "Parser", 2,
+        try ( TicketedProcessing<StringJob,Void,Integer> processing = new TicketedProcessing<>( "Parser", 2,
                 (job,state) ->
                 {
                     awaitLatch( job.latch );
                     return parseInt( job.string );
-                }, () -> null );
-        processing.processors( 1 );
-        StringJob firstJob = new StringJob( "1" );
-        processing.submit( firstJob );
-        StringJob secondJob = new StringJob( "2" );
-        processing.submit( secondJob );
-
-        // WHEN
-        StringJob thirdJob = new StringJob( "3" );
-        thirdJob.latch.countDown();
-        Future<Void> thirdSubmit = t2.execute( new WorkerCommand<Void,Void>()
+                }, () -> null ) )
         {
-            @Override
-            public Void doWork( Void state ) throws Exception
-            {
-                processing.submit( thirdJob );
-                return null;
-            }
-        } );
-        t2.get().waitUntilThreadState( Thread.State.TIMED_WAITING, Thread.State.WAITING );
-        firstJob.latch.countDown();
-        assertEquals( 1, processing.next().intValue() );
-        thirdSubmit.get();
-        secondJob.latch.countDown();
-        assertEquals( 2, processing.next().intValue() );
-        assertEquals( 3, processing.next().intValue() );
+            processing.processors( 1 );
+            StringJob firstJob = new StringJob( "1" );
+            processing.submit( firstJob );
+            StringJob secondJob = new StringJob( "2" );
+            processing.submit( secondJob );
 
-        // THEN
-        processing.shutdown( true );
+            // WHEN
+            StringJob thirdJob = new StringJob( "3" );
+            thirdJob.latch.countDown();
+            Future<Void> thirdSubmit = t2.execute( new WorkerCommand<Void,Void>()
+            {
+                @Override
+                public Void doWork( Void state ) throws Exception
+                {
+                    processing.submit( thirdJob );
+                    return null;
+                }
+            } );
+            t2.get().waitUntilThreadState( Thread.State.TIMED_WAITING, Thread.State.WAITING );
+            firstJob.latch.countDown();
+            assertEquals( 1, processing.next().intValue() );
+            thirdSubmit.get();
+            secondJob.latch.countDown();
+            assertEquals( 2, processing.next().intValue() );
+            assertEquals( 3, processing.next().intValue() );
+        }
     }
 
     private static class StringJob

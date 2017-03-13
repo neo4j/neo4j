@@ -19,6 +19,9 @@
  */
 package org.neo4j.server.rest.transactional;
 
+import org.codehaus.jackson.JsonFactory;
+import org.codehaus.jackson.JsonGenerator;
+
 import java.io.IOException;
 import java.io.OutputStream;
 import java.net.URI;
@@ -26,9 +29,6 @@ import java.util.Collections;
 import java.util.Date;
 import java.util.List;
 import java.util.Map;
-
-import org.codehaus.jackson.JsonFactory;
-import org.codehaus.jackson.JsonGenerator;
 
 import org.neo4j.graphdb.ExecutionPlanDescription;
 import org.neo4j.graphdb.InputPosition;
@@ -133,7 +133,10 @@ public class ExecutionResultSerializer
     public void notifications( Iterable<Notification> notifications ) throws IOException
     {
         //don't add anything if notifications are empty
-        if ( !notifications.iterator().hasNext() ) return;
+        if ( !notifications.iterator().hasNext() )
+        {
+            return;
+        }
 
         try
         {
@@ -175,7 +178,10 @@ public class ExecutionResultSerializer
     private void writePosition( InputPosition position ) throws IOException
     {
         //do not add position if empty
-        if ( position == InputPosition.empty ) return;
+        if ( position == InputPosition.empty )
+        {
+            return;
+        }
 
         out.writeObjectFieldStart( "position" );
         try

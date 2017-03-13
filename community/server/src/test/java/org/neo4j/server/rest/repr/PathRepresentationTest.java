@@ -141,7 +141,8 @@ public class PathRepresentationTest
         assertTrue( nodes instanceof List );
         List nodeList = (List) nodes;
         assertEquals( length + 1, nodeList.size() );
-        for ( Object node : nodeList ) {
+        for ( Object node : nodeList )
+        {
             assertUriMatches( NODE_URI_PATTERN, node.toString() );
         }
 
@@ -149,7 +150,8 @@ public class PathRepresentationTest
         assertTrue( rels instanceof List );
         List relList = (List) rels;
         assertEquals( length, relList.size() );
-        for ( Object rel : relList ) {
+        for ( Object rel : relList )
+        {
             assertUriMatches( RELATIONSHIP_URI_PATTERN, rel.toString() );
         }
 

@@ -26,4 +26,6 @@ package org.neo4j.unsafe.impl.batchimport.staging;
 public interface StageControl
 {
     void panic( Throwable cause );
+
+    void assertHealthy();
 }

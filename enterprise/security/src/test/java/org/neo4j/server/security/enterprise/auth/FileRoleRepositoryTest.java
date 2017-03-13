@@ -199,7 +199,8 @@ public class FileRoleRepositoryTest
         {
             roleRepository.create( role );
             fail( "Expected an IOException" );
-        } catch ( IOException e )
+        }
+        catch ( IOException e )
         {
             assertSame( exception, e );
         }
@@ -222,7 +223,8 @@ public class FileRoleRepositoryTest
         {
             roleRepository.update( role, updatedRole );
             fail( "expected exception not thrown" );
-        } catch ( IllegalArgumentException e )
+        }
+        catch ( IllegalArgumentException e )
         {
             // Then continue
         }
@@ -244,7 +246,8 @@ public class FileRoleRepositoryTest
         {
             roleRepository.update( modifiedRole, updatedRole );
             fail( "expected exception not thrown" );
-        } catch ( ConcurrentModificationException e )
+        }
+        catch ( ConcurrentModificationException e )
         {
             // Then continue
         }

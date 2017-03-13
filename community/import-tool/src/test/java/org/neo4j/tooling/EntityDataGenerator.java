@@ -84,7 +84,7 @@ public class EntityDataGenerator<T> extends InputIterator.Adapter<T>
     public void close()
     {
         super.close();
-        processing.shutdown( false );
+        processing.close();
     }
 
     @Override

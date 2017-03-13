@@ -19,8 +19,6 @@
  */
 package org.neo4j.causalclustering.discovery;
 
-import java.util.Collection;
-import java.util.Collections;
 import java.util.HashMap;
 import java.util.Map;
 import java.util.Optional;
@@ -48,19 +46,14 @@ public class CoreTopology
         this.coreMembers = new HashMap<>( coreMembers );
     }
 
-    public Set<MemberId> members()
+    public Map<MemberId,CoreServerInfo> members()
     {
-        return coreMembers.keySet();
+        return coreMembers;
     }
 
     public ClusterId clusterId()
     {
         return clusterId;
-    }
-
-    public Collection<CoreServerInfo> allMemberInfo()
-    {
-        return coreMembers.values();
     }
 
     public boolean canBeBootstrapped()

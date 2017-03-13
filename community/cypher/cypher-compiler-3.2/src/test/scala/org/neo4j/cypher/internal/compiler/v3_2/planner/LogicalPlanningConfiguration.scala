@@ -32,10 +32,11 @@ trait LogicalPlanningConfiguration {
   def cardinalityModel(queryGraphCardinalityModel: QueryGraphCardinalityModel): CardinalityModel
   def costModel(): PartialFunction[(LogicalPlan, QueryGraphSolverInput), Cost]
   def graphStatistics: GraphStatistics
-  def indexes: Set[(String, String)]
-  def uniqueIndexes: Set[(String, String)]
+  def indexes: Set[(String, Seq[String])]
+  def uniqueIndexes: Set[(String, Seq[String])]
   def labelCardinality: Map[String, Cardinality]
   def knownLabels: Set[String]
+  def labelsById: Map[Int, String]
   def qg: QueryGraph
 
   protected def mapCardinality(pf: PartialFunction[PlannerQuery, Double]): PartialFunction[PlannerQuery, Cardinality] = pf.andThen(Cardinality.apply)
@@ -51,6 +52,7 @@ class DelegatingLogicalPlanningConfiguration(val parent: LogicalPlanningConfigur
   override def uniqueIndexes = parent.uniqueIndexes
   override def labelCardinality = parent.labelCardinality
   override def knownLabels = parent.knownLabels
+  override def labelsById = parent.labelsById
   override def qg = parent.qg
 }
 
@@ -65,13 +67,13 @@ trait LogicalPlanningConfigurationAdHocSemanticTable {
       if (!table.resolvedPropertyKeyNames.contains(property))
         table.resolvedPropertyKeyNames.put(property, PropertyKeyId(table.resolvedPropertyKeyNames.size))
 
-    indexes.foreach { case (label, property) =>
+    indexes.foreach { case (label, properties) =>
       addLabelIfUnknown(label)
-      addPropertyKeyIfUnknown(property)
+      properties.foreach(addPropertyKeyIfUnknown(_))
     }
-    uniqueIndexes.foreach { case (label, property) =>
+    uniqueIndexes.foreach { case (label, properties) =>
       addLabelIfUnknown(label)
-      addPropertyKeyIfUnknown(property)
+      properties.foreach(addPropertyKeyIfUnknown(_))
     }
     labelCardinality.keys.foreach(addLabelIfUnknown)
     knownLabels.foreach(addLabelIfUnknown)

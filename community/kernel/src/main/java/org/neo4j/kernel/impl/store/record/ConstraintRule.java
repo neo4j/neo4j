@@ -19,8 +19,6 @@
  */
 package org.neo4j.kernel.impl.store.record;
 
-import java.nio.ByteBuffer;
-
 import org.neo4j.kernel.api.schema_new.SchemaDescriptor;
 import org.neo4j.kernel.api.schema_new.constaints.ConstraintDescriptor;
 import org.neo4j.kernel.api.schema_new.constaints.UniquenessConstraintDescriptor;
@@ -28,17 +26,10 @@ import org.neo4j.storageengine.api.schema.SchemaRule;
 
 import static org.neo4j.kernel.api.schema_new.SchemaUtil.idTokenNameLookup;
 
-public class ConstraintRule implements SchemaRule, ConstraintDescriptor.Supplier
+public class ConstraintRule extends SchemaRule implements ConstraintDescriptor.Supplier
 {
-    private final long id;
     private final Long ownedIndexRule;
     private final ConstraintDescriptor descriptor;
-
-    @Override
-    public final long getId()
-    {
-        return this.id;
-    }
 
     public static ConstraintRule constraintRule(
             long id, ConstraintDescriptor descriptor )
@@ -52,9 +43,26 @@ public class ConstraintRule implements SchemaRule, ConstraintDescriptor.Supplier
         return new ConstraintRule( id, descriptor, ownedIndexRule );
     }
 
+    public static ConstraintRule constraintRule(
+            long id, ConstraintDescriptor descriptor, String name )
+    {
+        return new ConstraintRule( id, descriptor, null, name );
+    }
+
+    public static ConstraintRule constraintRule(
+            long id, UniquenessConstraintDescriptor descriptor, long ownedIndexRule, String name )
+    {
+        return new ConstraintRule( id, descriptor, ownedIndexRule, name );
+    }
+
     ConstraintRule( long id, ConstraintDescriptor descriptor, Long ownedIndexRule )
     {
-        this.id = id;
+        this( id, descriptor, ownedIndexRule, null );
+    }
+
+    ConstraintRule( long id, ConstraintDescriptor descriptor, Long ownedIndexRule, String name )
+    {
+        super( id, name );
         this.descriptor = descriptor;
         this.ownedIndexRule = ownedIndexRule;
     }
@@ -88,15 +96,9 @@ public class ConstraintRule implements SchemaRule, ConstraintDescriptor.Supplier
     }
 
     @Override
-    public int length()
+    public byte[] serialize()
     {
-        return SchemaRuleSerialization.lengthOf( this );
-    }
-
-    @Override
-    public void serialize( ByteBuffer target )
-    {
-        SchemaRuleSerialization.serialize( this, target );
+        return SchemaRuleSerialization.serialize( this );
     }
 
     @Override

@@ -310,7 +310,8 @@ public class PropertyEqualityTest
                 if ( value instanceof Object[] )
                 {
                     valueRepresentation = Arrays.toString( (Object[]) value );
-                } else
+                }
+                else
                 {
                     int length = Array.getLength( value );
                     Object[] objArr = new Object[length];
@@ -320,7 +321,8 @@ public class PropertyEqualityTest
                     }
                     valueRepresentation = Arrays.toString( objArr );
                 }
-            } else
+            }
+            else
             {
                 valueRepresentation = value.toString();
             }

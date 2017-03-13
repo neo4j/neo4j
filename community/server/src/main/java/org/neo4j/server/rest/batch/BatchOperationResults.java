@@ -46,16 +46,21 @@ public class BatchOperationResults
     private boolean firstResult = true;
     private Map<Integer, String> locations = new HashMap<Integer, String>();
 
-    public BatchOperationResults() {
+    public BatchOperationResults()
+    {
         results.append( OPENING_BRACKET );
     }
 
     public void addOperationResult( String from, Integer id, String body, String location )
     {
-        if(firstResult)
+        if ( firstResult )
+        {
             firstResult = false;
+        }
         else
-            results.append(',');
+        {
+            results.append( ',' );
+        }
 
         results.append( OPENING_CURLY );
 

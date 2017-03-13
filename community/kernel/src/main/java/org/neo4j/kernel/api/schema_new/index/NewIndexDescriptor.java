@@ -23,7 +23,6 @@ import java.util.function.Predicate;
 
 import org.neo4j.kernel.api.TokenNameLookup;
 import org.neo4j.kernel.api.schema_new.LabelSchemaDescriptor;
-import org.neo4j.kernel.api.schema_new.SchemaDescriptor;
 import org.neo4j.kernel.api.schema_new.SchemaUtil;
 
 import static java.lang.String.format;
@@ -35,9 +34,13 @@ import static java.lang.String.format;
  * This will be renamed to IndexDescriptor, once the old org.neo4j.kernel.api.schema.IndexDescriptor is completely
  * removed.
  */
-public class NewIndexDescriptor implements SchemaDescriptor.Supplier
+public class NewIndexDescriptor implements LabelSchemaDescriptor.Supplier
 {
-    public enum Type { GENERAL, UNIQUE }
+    public enum Type
+    {
+        GENERAL,
+        UNIQUE
+    }
 
     public enum Filter implements Predicate<NewIndexDescriptor>
     {

@@ -25,7 +25,7 @@ import org.neo4j.cypher.internal.compiled_runtime.v3_2.codegen.ir.aggregation.Di
 import org.neo4j.cypher.internal.compiled_runtime.v3_2.codegen.ir.expressions.ExpressionConverter._
 import org.neo4j.cypher.internal.compiled_runtime.v3_2.codegen.ir.expressions._
 import org.neo4j.cypher.internal.compiled_runtime.v3_2.codegen.spi.SortItem
-import org.neo4j.cypher.internal.compiler.v3_2.commands.{ManyQueryExpression, QueryExpression, RangeQueryExpression, SingleQueryExpression}
+import org.neo4j.cypher.internal.compiler.v3_2.commands._
 import org.neo4j.cypher.internal.compiler.v3_2.helpers.{One, ZeroOneOrMany}
 import org.neo4j.cypher.internal.compiler.v3_2.planner.logical.plans._
 import org.neo4j.cypher.internal.compiler.v3_2.planner.logical.{SortDescription, plans}
@@ -167,10 +167,12 @@ object LogicalPlanConverter {
         val (methodHandle, actions :: tl) = context.popParent().consume(context, this)
         val opName = context.registerOperator(logicalPlan)
         val indexSeekInstruction = valueExpr match {
+
           //single expression, do a index lookup for that value
           case SingleQueryExpression(e) =>
             val expression = createExpression(e)(context)
             indexSeekFun(opName, context.namer.newVarName(), expression, nodeVar, actions)
+
           //collection, create set and for each element of the set do an index lookup
           case ManyQueryExpression(e: ast.ListLiteral) =>
             val expression = ToSet(createExpression(e)(context))
@@ -180,6 +182,7 @@ object LogicalPlanConverter {
             ForEachExpression(expressionVar, expression,
                               indexSeekFun(opName, context.namer.newVarName(), LoadVariable(expressionVar), nodeVar,
                                            actions))
+
           //Unknown, try to cast to collection and then same as above
           case ManyQueryExpression(e) =>
             val expression = ToSet(CastToCollection(createExpression(e)(context)))
@@ -189,10 +192,17 @@ object LogicalPlanConverter {
                               indexSeekFun(opName, context.namer.newVarName(), LoadVariable(expressionVar), nodeVar,
                                            actions))
 
+          //collection used in composite index search, pass entire collection to index seek
+          case CompositeQueryExpression(e: ast.ListLiteral) =>
+            throw new CantCompileQueryException(s"To be done")
+
           case e: RangeQueryExpression[_] =>
             throw new CantCompileQueryException(s"To be done")
 
-          case e => throw new InternalException(s"$e is not a valid QueryExpression")
+          case e: CompositeRangeQueryExpression[_] =>
+            throw new CantCompileQueryException(s"To be done")
+
+          case e => throw new CantCompileQueryException(s"$e is not a valid QueryExpression")
         }
 
         (methodHandle, indexSeekInstruction :: tl)
@@ -238,7 +248,7 @@ object LogicalPlanConverter {
   private def nodeIndexSeekAsCodeGenPlan(indexSeek: NodeIndexSeek) = {
     def indexSeekFun(opName: String, descriptorVar: String, expression: CodeGenExpression,
                      nodeVar: Variable, actions: Instruction) =
-      WhileLoop(nodeVar, IndexSeek(opName, indexSeek.label.name, indexSeek.propertyKey.name,
+      WhileLoop(nodeVar, IndexSeek(opName, indexSeek.label.name, indexSeek.propertyKeys.map(_.name),
                                    descriptorVar, expression), actions)
 
     sharedIndexSeekAsCodeGenPlan(indexSeekFun)(indexSeek.idName.name, indexSeek.valueExpr, indexSeek)
@@ -247,7 +257,7 @@ object LogicalPlanConverter {
   private def nodeUniqueIndexSeekAsCodeGen(indexSeek: NodeUniqueIndexSeek) = {
     def indexSeekFun(opName: String, descriptorVar: String, expression: CodeGenExpression,
                      nodeVar: Variable, actions: Instruction) =
-      IndexUniqueSeek(opName, indexSeek.label.name, indexSeek.propertyKey.name,
+      IndexUniqueSeek(opName, indexSeek.label.name, indexSeek.propertyKeys.map(_.name),
                       descriptorVar, expression, nodeVar, actions)
 
     sharedIndexSeekAsCodeGenPlan(indexSeekFun)(indexSeek.idName.name, indexSeek.valueExpr, indexSeek)

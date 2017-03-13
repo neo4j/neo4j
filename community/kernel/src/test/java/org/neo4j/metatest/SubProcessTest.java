@@ -48,8 +48,10 @@ public class SubProcessTest
         public String call() throws Exception
         {
             while ( !started )
-                // because all calls are asynchronous
+            // because all calls are asynchronous
+            {
                 Thread.sleep( 1 );
+            }
             return message;
         }
     }

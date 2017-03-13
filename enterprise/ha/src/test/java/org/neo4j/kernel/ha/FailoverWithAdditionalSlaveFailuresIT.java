@@ -19,17 +19,17 @@
  */
 package org.neo4j.kernel.ha;
 
-import java.util.ArrayList;
-import java.util.Arrays;
-import java.util.Collection;
-import java.util.List;
-
 import org.junit.Before;
 import org.junit.Rule;
 import org.junit.Test;
 import org.junit.runner.RunWith;
 import org.junit.runners.Parameterized;
 import org.junit.runners.Parameterized.Parameters;
+
+import java.util.ArrayList;
+import java.util.Arrays;
+import java.util.Collection;
+import java.util.List;
 
 import org.neo4j.ha.TestRunConditions;
 import org.neo4j.kernel.impl.ha.ClusterManager;
@@ -38,7 +38,6 @@ import org.neo4j.test.rule.LoggerRule;
 import org.neo4j.test.rule.TestDirectory;
 
 import static org.junit.Assume.assumeTrue;
-
 import static org.neo4j.kernel.impl.ha.ClusterManager.allSeesAllAsAvailable;
 import static org.neo4j.kernel.impl.ha.ClusterManager.masterAvailable;
 
@@ -55,7 +54,8 @@ public class FailoverWithAdditionalSlaveFailuresIT
     private int[] slavesToFail;
 
     @Parameters( name = "{index} clusterSize:{0}")
-    public static Collection<Object[]> data() {
+    public static Collection<Object[]> data()
+    {
         return Arrays.asList(new Object[][] {
                 {5, new int[]{1}},
                 {5, new int[]{2}},

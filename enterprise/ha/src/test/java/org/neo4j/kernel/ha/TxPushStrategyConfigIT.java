@@ -312,9 +312,12 @@ public class TxPushStrategyConfigIT
             if ( txId < this.txId - this.missed || txId > this.txId)
             {
                 if ( failures.length() > 0 )
+                {
                     failures.append( ", " );
-                failures.append( String.format( "tx id on server:%d, expected [%d] but was [%d]",
-                        serverId.toIntegerIndex(), this.txId, txId ) );
+                }
+                failures.append(
+                        String.format( "tx id on server:%d, expected [%d] but was [%d]", serverId.toIntegerIndex(),
+                                this.txId, txId ) );
             }
         }
     }

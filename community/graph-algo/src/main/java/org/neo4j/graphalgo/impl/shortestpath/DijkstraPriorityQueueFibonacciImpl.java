@@ -65,15 +65,30 @@ public class DijkstraPriorityQueueFibonacciImpl<CostType> implements
         @Override
         public boolean equals( Object obj )
         {
-            if ( this == obj ) return true;
-            if ( obj == null ) return false;
-            if ( getClass() != obj.getClass() ) return false;
+            if ( this == obj )
+            {
+                return true;
+            }
+            if ( obj == null )
+            {
+                return false;
+            }
+            if ( getClass() != obj.getClass() )
+            {
+                return false;
+            }
             final HeapObject other = (HeapObject) obj;
             if ( node == null )
             {
-                if ( other.node != null ) return false;
+                if ( other.node != null )
+                {
+                    return false;
+                }
             }
-            else if ( !node.equals( other.node ) ) return false;
+            else if ( !node.equals( other.node ) )
+            {
+                return false;
+            }
             return true;
         }
 

@@ -137,8 +137,10 @@ public class BiggerThanLogTxIT
                     }
 
                     long count = nodeCount( db );
-                    if (expectedNodeCount == count)
+                    if ( expectedNodeCount == count )
+                    {
                         break;
+                    }
 
                     cluster.sync(  );
                 }

@@ -75,7 +75,10 @@ public class MessageMatchers
                 }
                 for ( int i = 0; i < messageMatchers.length; i++ )
                 {
-                    if ( !messageMatchers[i].matches( messages.get( i ) ) ) { return false; }
+                    if ( !messageMatchers[i].matches( messages.get( i ) ) )
+                    {
+                        return false;
+                    }
                 }
                 return true;
             }

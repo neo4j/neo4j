@@ -171,7 +171,7 @@ case class LogicalPlanProducer(cardinalityModel: CardinalityModel) extends ListS
 
   def planNodeIndexSeek(idName: IdName,
                         label: ast.LabelToken,
-                        propertyKey: ast.PropertyKeyToken,
+                        propertyKeys: Seq[ast.PropertyKeyToken],
                         valueExpr: QueryExpression[Expression],
                         solvedPredicates: Seq[Expression] = Seq.empty,
                         solvedHint: Option[UsingIndexHint] = None,
@@ -182,7 +182,7 @@ case class LogicalPlanProducer(cardinalityModel: CardinalityModel) extends ListS
       .addHints(solvedHint)
       .addArgumentIds(argumentIds.toIndexedSeq)
     )
-    NodeIndexSeek(idName, label, propertyKey, valueExpr, argumentIds)(solved)
+    NodeIndexSeek(idName, label, propertyKeys, valueExpr, argumentIds)(solved)
   }
 
   def planNodeIndexScan(idName: IdName,
@@ -272,7 +272,7 @@ case class LogicalPlanProducer(cardinalityModel: CardinalityModel) extends ListS
 
   def planNodeUniqueIndexSeek(idName: IdName,
                               label: ast.LabelToken,
-                              propertyKey: ast.PropertyKeyToken,
+                              propertyKeys: Seq[ast.PropertyKeyToken],
                               valueExpr: QueryExpression[Expression],
                               solvedPredicates: Seq[Expression] = Seq.empty,
                               solvedHint: Option[UsingIndexHint] = None,
@@ -283,7 +283,7 @@ case class LogicalPlanProducer(cardinalityModel: CardinalityModel) extends ListS
       .addHints(solvedHint)
       .addArgumentIds(argumentIds.toIndexedSeq)
     )
-    NodeUniqueIndexSeek(idName, label, propertyKey, valueExpr, argumentIds)(solved)
+    NodeUniqueIndexSeek(idName, label, propertyKeys, valueExpr, argumentIds)(solved)
   }
 
   def planAssertSameNode(node: IdName, left: LogicalPlan, right: LogicalPlan)

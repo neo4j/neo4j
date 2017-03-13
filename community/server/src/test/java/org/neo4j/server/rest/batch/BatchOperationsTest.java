@@ -19,6 +19,8 @@
  */
 package org.neo4j.server.rest.batch;
 
+import org.junit.Test;
+
 import java.io.IOException;
 import java.io.UnsupportedEncodingException;
 import java.net.URI;
@@ -26,8 +28,6 @@ import java.util.Collections;
 import java.util.HashMap;
 import java.util.Map;
 import javax.servlet.ServletException;
-
-import org.junit.Test;
 
 import org.neo4j.server.rest.web.InternalJettyServletRequest;
 import org.neo4j.server.rest.web.InternalJettyServletRequest.RequestData;
@@ -38,16 +38,21 @@ import static org.junit.Assert.assertTrue;
 import static org.mockito.Mockito.mock;
 import static org.neo4j.test.assertion.Assert.assertException;
 
-public class BatchOperationsTest {
+public class BatchOperationsTest
+{
 
-    private final BatchOperations ops = new BatchOperations(null) {
+    private final BatchOperations ops = new BatchOperations(null)
+    {
         @Override
-        protected void invoke(String method, String path, String body, Integer id, URI targetUri, InternalJettyServletRequest req, InternalJettyServletResponse res) throws IOException, ServletException {
+        protected void invoke(String method, String path, String body, Integer id,
+                URI targetUri, InternalJettyServletRequest req, InternalJettyServletResponse res) throws IOException, ServletException
+        {
         }
     };
 
     @Test
-    public void testReplaceLocations() throws Exception {
+    public void testReplaceLocations() throws Exception
+    {
         Map<Integer,String> map=new HashMap<>();
         map.put(100,"bar");
         assertEquals("foo", ops.replaceLocationPlaceholders("foo", map));

@@ -29,7 +29,6 @@ import org.neo4j.collection.primitive.PrimitiveIntCollection;
 import org.neo4j.collection.primitive.PrimitiveIntIterator;
 import org.neo4j.collection.primitive.PrimitiveIntSet;
 import org.neo4j.collection.primitive.PrimitiveIntStack;
-import org.neo4j.collection.primitive.PrimitiveLongCollections;
 import org.neo4j.collection.primitive.PrimitiveLongIterator;
 import org.neo4j.collection.primitive.PrimitiveLongResourceIterator;
 import org.neo4j.cursor.Cursor;
@@ -65,10 +64,10 @@ import org.neo4j.kernel.api.properties.PropertyKeyIdIterator;
 import org.neo4j.kernel.api.schema.NodePropertyDescriptor;
 import org.neo4j.kernel.api.schema_new.IndexQuery;
 import org.neo4j.kernel.api.schema_new.LabelSchemaDescriptor;
+import org.neo4j.kernel.api.schema_new.OrderedPropertyValues;
 import org.neo4j.kernel.api.schema_new.RelationTypeSchemaDescriptor;
 import org.neo4j.kernel.api.schema_new.SchemaBoundary;
 import org.neo4j.kernel.api.schema_new.SchemaDescriptor;
-import org.neo4j.kernel.api.schema_new.SchemaDescriptorFactory;
 import org.neo4j.kernel.api.schema_new.SchemaUtil;
 import org.neo4j.kernel.api.schema_new.constaints.ConstraintDescriptor;
 import org.neo4j.kernel.api.schema_new.constaints.ConstraintDescriptorFactory;
@@ -88,10 +87,10 @@ import org.neo4j.kernel.impl.api.operations.LegacyIndexWriteOperations;
 import org.neo4j.kernel.impl.api.operations.SchemaReadOperations;
 import org.neo4j.kernel.impl.api.operations.SchemaWriteOperations;
 import org.neo4j.kernel.impl.api.state.ConstraintIndexCreator;
+import org.neo4j.kernel.impl.api.state.IndexTxStateUpdater;
 import org.neo4j.kernel.impl.api.store.RelationshipIterator;
 import org.neo4j.kernel.impl.index.IndexEntityType;
 import org.neo4j.kernel.impl.index.LegacyIndexStore;
-import org.neo4j.kernel.impl.util.Validators;
 import org.neo4j.register.Register.DoubleLongRegister;
 import org.neo4j.storageengine.api.Direction;
 import org.neo4j.storageengine.api.EntityType;
@@ -116,8 +115,11 @@ import static org.neo4j.helpers.collection.Iterators.filter;
 import static org.neo4j.helpers.collection.Iterators.iterator;
 import static org.neo4j.helpers.collection.Iterators.singleOrNull;
 import static org.neo4j.kernel.api.StatementConstants.NO_SUCH_NODE;
+import static org.neo4j.kernel.api.properties.DefinedProperty.NO_SUCH_PROPERTY;
 import static org.neo4j.kernel.api.schema_new.index.NewIndexDescriptor.Filter.GENERAL;
 import static org.neo4j.kernel.api.schema_new.index.NewIndexDescriptor.Filter.UNIQUE;
+import static org.neo4j.kernel.impl.api.state.IndexTxStateUpdater.LabelChangeType.ADDED_LABEL;
+import static org.neo4j.kernel.impl.api.state.IndexTxStateUpdater.LabelChangeType.REMOVED_LABEL;
 import static org.neo4j.kernel.impl.util.Cursors.count;
 import static org.neo4j.kernel.impl.util.Cursors.empty;
 import static org.neo4j.register.Registers.newDoubleLongRegister;
@@ -137,6 +139,7 @@ public class StateHandlingStatementOperations implements
     private final AutoIndexing autoIndexing;
     private final ConstraintIndexCreator constraintIndexCreator;
     private final LegacyIndexStore legacyIndexStore;
+    private final IndexTxStateUpdater indexTxStateUpdater;
 
     public StateHandlingStatementOperations(
             StoreReadLayer storeLayer, AutoIndexing propertyTrackers,
@@ -147,6 +150,7 @@ public class StateHandlingStatementOperations implements
         this.autoIndexing = propertyTrackers;
         this.constraintIndexCreator = constraintIndexCreator;
         this.legacyIndexStore = legacyIndexStore;
+        this.indexTxStateUpdater = new IndexTxStateUpdater( this, this );
     }
 
     // <Cursors>
@@ -510,25 +514,9 @@ public class StateHandlingStatementOperations implements
 
             state.txState().nodeDoAddLabel( labelId, node.id() );
 
-            try ( Cursor<PropertyItem> properties = nodeGetProperties( state, node ) )
-            {
-                while ( properties.next() )
-                {
-                    PropertyItem propertyItem = properties.get();
-                    NodePropertyDescriptor nodePropDescriptor =
-                            new NodePropertyDescriptor( labelId, propertyItem.propertyKeyId() );
-                    NewIndexDescriptor descriptor = indexGetForLabelAndPropertyKey( state, nodePropDescriptor );
-                    if ( descriptor != null )
-                    {
-                        DefinedProperty after = Property.property( propertyItem.propertyKeyId(),
-                                propertyItem.value() );
+            indexTxStateUpdater.onLabelChange( state, labelId, node, ADDED_LABEL );
 
-                        state.txState().indexDoUpdateProperty( SchemaBoundary.map( nodePropDescriptor ), node.id(), null, after );
-                    }
-                }
-
-                return true;
-            }
+            return true;
         }
     }
 
@@ -546,16 +534,7 @@ public class StateHandlingStatementOperations implements
 
             state.txState().nodeDoRemoveLabel( labelId, node.id() );
 
-            try ( Cursor<PropertyItem> properties = nodeGetProperties( state, node ) )
-            {
-                while ( properties.next() )
-                {
-                    PropertyItem propItem = properties.get();
-                    DefinedProperty property = Property.property( propItem.propertyKeyId(), propItem.value() );
-                    indexUpdateProperty( state, node.id(),
-                            SchemaDescriptorFactory.forLabel( labelId, property.propertyKeyId() ), property, null );
-                }
-            }
+            indexTxStateUpdater.onLabelChange( state, labelId, node, REMOVED_LABEL );
 
             return true;
         }
@@ -592,8 +571,9 @@ public class StateHandlingStatementOperations implements
     @Override
     public NewIndexDescriptor indexCreate( KernelStatement state, NodePropertyDescriptor descriptor )
     {
-        state.txState().indexRuleDoAdd( IndexBoundary.map( descriptor ) );
-        return IndexBoundary.map( descriptor );
+        NewIndexDescriptor newIndexDescriptor = IndexBoundary.map( descriptor );
+        state.txState().indexRuleDoAdd( newIndexDescriptor );
+        return newIndexDescriptor;
     }
 
     @Override
@@ -846,7 +826,8 @@ public class StateHandlingStatementOperations implements
     }
 
     @Override
-    public long nodeGetFromUniqueIndexSeek( KernelStatement state, NewIndexDescriptor index, Object value )
+    public long nodeGetFromUniqueIndexSeek(
+            KernelStatement state, NewIndexDescriptor index, IndexQuery.ExactPredicate... query )
             throws IndexNotFoundKernelException, IndexBrokenKernelException, IndexNotApplicableKernelException
     {
         IndexReader reader = state.getStoreStatement().getFreshIndexReader( index );
@@ -856,12 +837,10 @@ public class StateHandlingStatementOperations implements
          * close the IndexReader when done iterating over the lookup result. This is because we get
          * a fresh reader that isn't associated with the current transaction and hence will not be
          * automatically closed. */
-        IndexQuery.ExactPredicate query = IndexQuery.exact( index.schema().getPropertyId(), value );
-        PrimitiveLongResourceIterator committed = resourceIterator(
-                reader.query( query ), reader );
-        PrimitiveLongIterator exactMatches = filterExactIndexMatches( state, index, value, committed );
-        PrimitiveLongIterator changesFiltered = filterIndexStateChangesForScanOrSeek( state, index, value,
-                exactMatches );
+        PrimitiveLongResourceIterator committed = resourceIterator( reader.query( query ), reader );
+        PrimitiveLongIterator exactMatches = LookupFilter.exactIndexMatches( this, state, committed, query );
+        PrimitiveLongIterator changesFiltered =
+                filterIndexStateChangesForSeek( state, exactMatches, index, OrderedPropertyValues.of( query ) );
         return single( resourceIterator( changesFiltered, committed ), NO_SUCH_NODE );
     }
 
@@ -872,44 +851,77 @@ public class StateHandlingStatementOperations implements
         StorageStatement storeStatement = state.getStoreStatement();
         IndexReader reader = storeStatement.getIndexReader( index );
         PrimitiveLongIterator committed = reader.query( predicates );
+        PrimitiveLongIterator exactMatches = LookupFilter.exactIndexMatches( this, state, committed, predicates );
 
-        assert predicates.length == 1: "composite indexes not yet supported";
-        IndexQuery predicate = predicates[0];
-        Object filterValue = null;
-        switch ( predicate.type() )
+        IndexQuery firstPredicate = predicates[0];
+        switch ( firstPredicate.type() )
         {
         case exact:
-            filterValue = ((IndexQuery.ExactPredicate) predicate).value();
-            committed = filterExactIndexMatches( state, index, filterValue, committed );
+            IndexQuery.ExactPredicate[] exactPreds = assertOnlyExactPredicates( predicates );
+            return filterIndexStateChangesForSeek( state, exactMatches, index, OrderedPropertyValues.of( exactPreds ) );
         case stringSuffix:
         case stringContains:
         case exists:
-            return filterIndexStateChangesForScanOrSeek( state, index, filterValue, committed );
+            return filterIndexStateChangesForScan( state, exactMatches, index );
 
         case rangeNumeric:
         {
-            IndexQuery.NumberRangePredicate numPred = (IndexQuery.NumberRangePredicate) predicate;
-            PrimitiveLongIterator exactMatches =
-                    filterExactRangeMatches( state, index, committed, numPred.from(), numPred.fromInclusive(),
-                            numPred.to(), numPred.toInclusive() );
+            assertSinglePredicate( predicates );
+            IndexQuery.NumberRangePredicate numPred = (IndexQuery.NumberRangePredicate) firstPredicate;
             return filterIndexStateChangesForRangeSeekByNumber( state, index, numPred.from(),
-                    numPred.fromInclusive(), numPred.to(), numPred.toInclusive(),
-                    exactMatches );
+                    numPred.fromInclusive(), numPred.to(), numPred.toInclusive(), exactMatches );
         }
         case rangeString:
         {
-            IndexQuery.StringRangePredicate strPred = (IndexQuery.StringRangePredicate) predicate;
+            assertSinglePredicate( predicates );
+            IndexQuery.StringRangePredicate strPred = (IndexQuery.StringRangePredicate) firstPredicate;
             return filterIndexStateChangesForRangeSeekByString(
                     state, index, strPred.from(), strPred.fromInclusive(), strPred.to(),
                     strPred.toInclusive(), committed );
         }
         case stringPrefix:
         {
-            IndexQuery.StringPrefixPredicate strPred = (IndexQuery.StringPrefixPredicate) predicate;
+            assertSinglePredicate( predicates );
+            IndexQuery.StringPrefixPredicate strPred = (IndexQuery.StringPrefixPredicate) firstPredicate;
             return filterIndexStateChangesForRangeSeekByPrefix( state, index, strPred.prefix(), committed );
         }
         default:
-            throw new RuntimeException( "Query not supported: " + Arrays.toString( predicates ) );
+            throw new UnsupportedOperationException( "Query not supported: " + Arrays.toString( predicates ) );
+        }
+    }
+
+    private IndexQuery.ExactPredicate[] assertOnlyExactPredicates( IndexQuery[] predicates )
+    {
+        IndexQuery.ExactPredicate[] exactPredicates;
+        if ( predicates.getClass() == IndexQuery.ExactPredicate[].class )
+        {
+            exactPredicates = (IndexQuery.ExactPredicate[]) predicates;
+        }
+        else
+        {
+            exactPredicates = new IndexQuery.ExactPredicate[predicates.length];
+            for ( int i = 0; i < predicates.length; i++ )
+            {
+                if ( predicates[i] instanceof IndexQuery.ExactPredicate )
+                {
+                    exactPredicates[i] = (IndexQuery.ExactPredicate) predicates[i];
+                }
+                else
+                {
+                    // TODO: what to throw?
+                    throw new UnsupportedOperationException( "Query not supported: " + Arrays.toString( predicates ) );
+                }
+            }
+        }
+        return exactPredicates;
+    }
+
+    private void assertSinglePredicate( IndexQuery[] predicates )
+    {
+        if ( predicates.length != 1 )
+        {
+            // TODO: what to throw?
+            throw new UnsupportedOperationException( "Query not supported: " + Arrays.toString( predicates ) );
         }
     }
 
@@ -921,43 +933,29 @@ public class StateHandlingStatementOperations implements
         return reader.countIndexedNodes( nodeId, value );
     }
 
-    private PrimitiveLongIterator filterExactIndexMatches( final KernelStatement state, NewIndexDescriptor index,
-            Object value, PrimitiveLongIterator committed )
-    {
-        // TODO: composite index
-        if ( index.schema().getPropertyIds().length == 1 )
-        {
-            return LookupFilter.exactIndexMatches( this, state, committed, index.schema().getPropertyIds()[0], value );
-        }
-        else
-        {
-            return PrimitiveLongCollections.emptyIterator();
-        }
-    }
-
-    private PrimitiveLongIterator filterExactRangeMatches( final KernelStatement state, NewIndexDescriptor index,
-            PrimitiveLongIterator committed, Number lower, boolean includeLower, Number upper, boolean includeUpper )
-    {
-        // TODO: composite index
-        if ( index.schema().getPropertyIds().length == 1 )
-        {
-            return LookupFilter
-                    .exactRangeMatches( this, state, committed, index.schema().getPropertyIds()[0], lower, includeLower,
-                            upper, includeUpper );
-        }
-        else
-        {
-            return PrimitiveLongCollections.emptyIterator();
-        }
-    }
-
-    private PrimitiveLongIterator filterIndexStateChangesForScanOrSeek( KernelStatement state, NewIndexDescriptor index,
-            Object value, PrimitiveLongIterator nodeIds )
+    private PrimitiveLongIterator filterIndexStateChangesForScan(
+            KernelStatement state, PrimitiveLongIterator nodeIds, NewIndexDescriptor index )
     {
         if ( state.hasTxStateWithChanges() )
         {
             ReadableDiffSets<Long> labelPropertyChanges =
-                    state.txState().indexUpdatesForScanOrSeek( index, value );
+                    state.txState().indexUpdatesForScan( index );
+            ReadableDiffSets<Long> nodes = state.txState().addedAndRemovedNodes();
+
+            // Apply to actual index lookup
+            return nodes.augmentWithRemovals( labelPropertyChanges.augment( nodeIds ) );
+        }
+        return nodeIds;
+    }
+
+    private PrimitiveLongIterator filterIndexStateChangesForSeek(
+            KernelStatement state, PrimitiveLongIterator nodeIds, NewIndexDescriptor index,
+            OrderedPropertyValues propertyValues )
+    {
+        if ( state.hasTxStateWithChanges() )
+        {
+            ReadableDiffSets<Long> labelPropertyChanges =
+                    state.txState().indexUpdatesForSeek( index, propertyValues );
             ReadableDiffSets<Long> nodes = state.txState().addedAndRemovedNodes();
 
             // Apply to actual index lookup
@@ -1031,13 +1029,12 @@ public class StateHandlingStatementOperations implements
         try ( Cursor<NodeItem> cursor = nodeCursorById( state, nodeId ) )
         {
             NodeItem node = cursor.get();
-            Property existingProperty;
+            DefinedProperty existingProperty = NO_SUCH_PROPERTY;
             try ( Cursor<PropertyItem> properties = nodeGetPropertyCursor( state, node, property.propertyKeyId() ) )
             {
                 if ( !properties.next() )
                 {
                     autoIndexing.nodes().propertyAdded( ops, nodeId, property );
-                    existingProperty = Property.noProperty( property.propertyKeyId(), EntityType.NODE, node.id() );
                 }
                 else
                 {
@@ -1046,12 +1043,18 @@ public class StateHandlingStatementOperations implements
                 }
             }
 
-            state.txState().nodeDoReplaceProperty( node.id(), existingProperty, property );
-
-            DefinedProperty before = definedPropertyOrNull( existingProperty );
-            indexesUpdateProperty( state, node, property.propertyKeyId(), before, property );
-
-            return existingProperty;
+            if ( existingProperty == NO_SUCH_PROPERTY )
+            {
+                state.txState().nodeDoAddProperty( node.id(), property );
+                indexTxStateUpdater.onPropertyAdd( state, node, property );
+                return Property.noProperty( property.propertyKeyId(), EntityType.NODE, node.id() );
+            }
+            else
+            {
+                state.txState().nodeDoChangeProperty( node.id(), existingProperty, property );
+                indexTxStateUpdater.onPropertyChange( state, node, existingProperty, property );
+                return existingProperty;
+            }
         }
     }
 
@@ -1106,22 +1109,23 @@ public class StateHandlingStatementOperations implements
         try ( Cursor<NodeItem> cursor = nodeCursorById( state, nodeId ) )
         {
             NodeItem node = cursor.get();
-            Property existingProperty;
+            DefinedProperty existingProperty = NO_SUCH_PROPERTY;
             try ( Cursor<PropertyItem> properties = nodeGetPropertyCursor( state, node, propertyKeyId ) )
             {
-                if ( !properties.next() )
-                {
-                    existingProperty = Property.noProperty( propertyKeyId, EntityType.NODE, node.id() );
-                }
-                else
+                if ( properties.next() )
                 {
                     existingProperty = Property.property( properties.get().propertyKeyId(), properties.get().value() );
 
                     autoIndexing.nodes().propertyRemoved( ops, nodeId, propertyKeyId );
-                    state.txState().nodeDoRemoveProperty( node.id(), (DefinedProperty) existingProperty );
+                    state.txState().nodeDoRemoveProperty( node.id(), existingProperty );
 
-                    indexesUpdateProperty( state, node, propertyKeyId, (DefinedProperty) existingProperty, null );
+                    indexTxStateUpdater.onPropertyRemove( state, node, existingProperty );
                 }
+            }
+
+            if ( existingProperty == NO_SUCH_PROPERTY )
+            {
+                return Property.noProperty( propertyKeyId, EntityType.NODE, node.id() );
             }
             return existingProperty;
         }
@@ -1169,32 +1173,6 @@ public class StateHandlingStatementOperations implements
             return existingProperty;
         }
         return Property.noGraphProperty( propertyKeyId );
-    }
-
-    private void indexesUpdateProperty( KernelStatement state, NodeItem node, int propertyKey, DefinedProperty before,
-            DefinedProperty after )
-    {
-        node.labels().visitKeys( labelId ->
-        {
-            indexUpdateProperty( state, node.id(), SchemaDescriptorFactory.forLabel( labelId, propertyKey ), before, after );
-            return false;
-        } );
-    }
-
-    private void indexUpdateProperty( KernelStatement state, long nodeId, LabelSchemaDescriptor descriptor,
-            DefinedProperty before, DefinedProperty after )
-    {
-        // TODO: Update this to handle composite indexes
-        NewIndexDescriptor indexDescriptor = indexGetForLabelAndPropertyKey( state, descriptor );
-        if ( descriptor != null && indexDescriptor != null )
-        {
-            if (after != null)
-            {
-                Validators.INDEX_VALUE_VALIDATOR.validate( after.value() );
-            }
-
-            state.txState().indexDoUpdateProperty( descriptor, nodeId, before, after );
-        }
     }
 
     @Override
@@ -1848,10 +1826,5 @@ public class StateHandlingStatementOperations implements
                           ? storeLayer.nodeGetRelationships( storeStatement, node, direction )
                           : storeLayer.nodeGetRelationships( storeStatement, node, direction, t -> t == relType ) );
         }
-    }
-
-    private static DefinedProperty definedPropertyOrNull( Property existingProperty )
-    {
-        return existingProperty instanceof DefinedProperty ? (DefinedProperty) existingProperty : null;
     }
 }

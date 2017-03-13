@@ -534,8 +534,10 @@ public class LifeSupportTest
         public void init()
             throws Throwable
         {
-            if (initThrowable != null)
+            if ( initThrowable != null )
+            {
                 throw initThrowable;
+            }
 
             transitions.add(LifecycleStatus.STOPPED);
         }
@@ -544,8 +546,10 @@ public class LifeSupportTest
         public void start()
             throws Throwable
         {
-            if (startThrowable != null)
+            if ( startThrowable != null )
+            {
                 throw startThrowable;
+            }
 
             transitions.add(LifecycleStatus.STARTED);
         }
@@ -556,8 +560,10 @@ public class LifeSupportTest
         {
             transitions.add(LifecycleStatus.STOPPED);
 
-            if (stopThrowable != null)
+            if ( stopThrowable != null )
+            {
                 throw stopThrowable;
+            }
         }
 
         @Override
@@ -566,8 +572,10 @@ public class LifeSupportTest
         {
             transitions.add(LifecycleStatus.SHUTDOWN);
 
-            if (shutdownThrowable != null)
+            if ( shutdownThrowable != null )
+            {
                 throw shutdownThrowable;
+            }
         }
 
         public LifecycleStatus getStatus()

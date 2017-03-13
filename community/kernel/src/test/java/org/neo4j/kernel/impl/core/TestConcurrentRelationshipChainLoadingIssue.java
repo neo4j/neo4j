@@ -85,7 +85,8 @@ public class TestConcurrentRelationshipChainLoadingIssue
 
     private void loadNode( GraphDatabaseAPI db, Node node )
     {
-        try (Transaction ignored = db.beginTx()) {
+        try (Transaction ignored = db.beginTx())
+        {
             Iterables.count( node.getRelationships() );
         }
     }

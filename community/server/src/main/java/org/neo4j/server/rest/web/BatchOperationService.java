@@ -52,7 +52,8 @@ import static org.neo4j.udc.UsageDataKeys.Features.http_batch_endpoint;
 import static org.neo4j.udc.UsageDataKeys.features;
 
 @Path("/batch")
-public class BatchOperationService {
+public class BatchOperationService
+{
 
     private static final Logger LOGGER = Log.getLogger(BatchOperationService.class);
 

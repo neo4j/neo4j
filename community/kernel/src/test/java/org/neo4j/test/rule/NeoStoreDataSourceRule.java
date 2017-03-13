@@ -73,11 +73,11 @@ import org.neo4j.kernel.monitoring.tracing.Tracers;
 import org.neo4j.logging.NullLog;
 import org.neo4j.logging.NullLogProvider;
 import org.neo4j.time.Clocks;
+import org.neo4j.time.SystemNanoClock;
 
 import static org.mockito.Mockito.RETURNS_MOCKS;
 import static org.mockito.Mockito.mock;
 import static org.mockito.Mockito.when;
-
 import static org.neo4j.helpers.Exceptions.launderedException;
 
 public class NeoStoreDataSourceRule extends ExternalResource
@@ -126,6 +126,7 @@ public class NeoStoreDataSourceRule extends ExternalResource
         Monitors monitors = new Monitors();
         LabelScanStoreProvider labelScanStoreProvider =
                 nativeLabelScanStoreProvider( storeDir, fs, pageCache, config, logService );
+        SystemNanoClock clock = Clocks.nanoClock();
         dataSource = new NeoStoreDataSource( storeDir, config, idGeneratorFactory, IdReuseEligibility.ALWAYS,
                 idConfigurationProvider,
                 logService, mock( JobScheduler.class, RETURNS_MOCKS ), mock( TokenNameLookup.class ),
@@ -140,7 +141,7 @@ public class NeoStoreDataSourceRule extends ExternalResource
                 new Tracers( "null", NullLog.getInstance(), monitors, jobScheduler ),
                 mock( Procedures.class ),
                 IOLimiter.unlimited(),
-                mock( AvailabilityGuard.class ), Clocks.nanoClock(),
+                new AvailabilityGuard( clock, NullLog.getInstance() ), clock,
                 new CanWrite(), new StoreCopyCheckPointMutex() );
 
         return dataSource;

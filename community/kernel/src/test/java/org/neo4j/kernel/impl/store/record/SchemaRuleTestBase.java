@@ -26,7 +26,7 @@ import static org.hamcrest.Matchers.equalTo;
 abstract class SchemaRuleTestBase
 {
     protected static final long RULE_ID = 1;
-    protected static final long RULE_ID_2 = 1;
+    protected static final long RULE_ID_2 = 2;
     protected static final int LABEL_ID = 10;
     protected static final int REL_TYPE_ID = 20;
     protected static final int PROPERTY_ID_1 = 30;

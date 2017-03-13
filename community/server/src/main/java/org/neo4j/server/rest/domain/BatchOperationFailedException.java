@@ -19,16 +19,19 @@
  */
 package org.neo4j.server.rest.domain;
 
-public class BatchOperationFailedException extends RuntimeException {
+public class BatchOperationFailedException extends RuntimeException
+{
 
     private int status;
 
-    public BatchOperationFailedException( int status, String message, Exception e ) {
-        super(message,e);
+    public BatchOperationFailedException( int status, String message, Exception e )
+    {
+        super( message, e );
         this.status = status;
     }
 
-    public int getStatus() {
+    public int getStatus()
+    {
         return status;
     }
 }

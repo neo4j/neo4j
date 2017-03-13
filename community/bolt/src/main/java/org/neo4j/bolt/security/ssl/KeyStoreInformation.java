@@ -22,7 +22,8 @@ package org.neo4j.bolt.security.ssl;
 import java.io.File;
 import java.security.KeyStore;
 
-public class KeyStoreInformation {
+public class KeyStoreInformation
+{
 
     private final char[] keyStorePassword;
     private final char[] keyPassword;
@@ -40,11 +41,13 @@ public class KeyStoreInformation {
         this.certificatePath = certificatePath;
     }
 
-    public char[] getKeyStorePassword() {
+    public char[] getKeyStorePassword()
+    {
         return keyStorePassword;
     }
 
-    public char[] getKeyPassword() {
+    public char[] getKeyPassword()
+    {
         return keyPassword;
     }
 

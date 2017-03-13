@@ -73,6 +73,18 @@ case class LeafPlansForVariable(id: IdName, plans: Set[LogicalPlan]) {
   assert(plans.nonEmpty)
 }
 
-trait LeafPlanFromExpression {
-  def producePlanFor(e: Expression, qg: QueryGraph)(implicit context: LogicalPlanningContext): Option[LeafPlansForVariable]
+trait LeafPlanFromExpressions {
+  def producePlanFor(predicates: Set[Expression], qg: QueryGraph)(implicit context: LogicalPlanningContext): Set[LeafPlansForVariable]
+}
+
+trait LeafPlanFromExpression extends LeafPlanFromExpressions {
+
+  def producePlanFor(e: Expression, qg: QueryGraph)
+                    (implicit context: LogicalPlanningContext): Option[LeafPlansForVariable]
+
+
+  override def producePlanFor(predicates: Set[Expression], qg: QueryGraph)
+                             (implicit context: LogicalPlanningContext): Set[LeafPlansForVariable] = {
+    predicates.flatMap(p => producePlanFor(p, qg))
+  }
 }

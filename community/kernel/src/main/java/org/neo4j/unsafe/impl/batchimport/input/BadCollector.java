@@ -59,6 +59,7 @@ public class BadCollector implements Collector
     // volatile since one importer thread calls collect(), where this value is incremented and later the "main"
     // thread calls badEntries() to get a count.
     private volatile int badEntries;
+    public static final int UNLIMITED_TOLERANCE = -1;
 
     public BadCollector( OutputStream out, int tolerance, int collect )
     {
@@ -72,7 +73,7 @@ public class BadCollector implements Collector
     {
         checkTolerance( BAD_RELATIONSHIPS, new ProblemReporter()
         {
-            private final String message = format( "%s refering to missing node %s", relationship, specificValue );
+            private final String message = format( "%s referring to missing node %s", relationship, specificValue );
 
             @Override
             public String message()
@@ -170,7 +171,7 @@ public class BadCollector implements Collector
             badEntries++;
         }
 
-        if ( !collect || badEntries > tolerance )
+        if ( !collect || (tolerance != BadCollector.UNLIMITED_TOLERANCE && badEntries > tolerance) )
         {
             InputException exception = report.exception();
             throw collect

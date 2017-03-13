@@ -25,7 +25,10 @@ import org.apache.shiro.util.ByteSource;
 
 import org.neo4j.kernel.api.security.AuthenticationResult;
 
-import static org.neo4j.kernel.api.security.AuthenticationResult.*;
+import static org.neo4j.kernel.api.security.AuthenticationResult.FAILURE;
+import static org.neo4j.kernel.api.security.AuthenticationResult.PASSWORD_CHANGE_REQUIRED;
+import static org.neo4j.kernel.api.security.AuthenticationResult.SUCCESS;
+import static org.neo4j.kernel.api.security.AuthenticationResult.TOO_MANY_ATTEMPTS;
 
 public class ShiroAuthenticationInfo extends SimpleAuthenticationInfo
 {
@@ -58,7 +61,8 @@ public class ShiroAuthenticationInfo extends SimpleAuthenticationInfo
     @Override
     public void merge( AuthenticationInfo info )
     {
-        if (info == null || info.getPrincipals() == null || info.getPrincipals().isEmpty()) {
+        if (info == null || info.getPrincipals() == null || info.getPrincipals().isEmpty())
+        {
             return;
         }
 

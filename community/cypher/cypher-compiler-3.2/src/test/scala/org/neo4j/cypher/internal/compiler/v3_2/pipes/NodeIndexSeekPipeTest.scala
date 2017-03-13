@@ -24,7 +24,7 @@ import org.mockito.Matchers.any
 import org.mockito.Mockito._
 import org.neo4j.cypher.internal.compiler.v3_2._
 import org.neo4j.cypher.internal.compiler.v3_2.commands.expressions.{ListLiteral, Literal, Variable}
-import org.neo4j.cypher.internal.compiler.v3_2.commands.{ManyQueryExpression, SingleQueryExpression}
+import org.neo4j.cypher.internal.compiler.v3_2.commands.{CompositeQueryExpression, ManyQueryExpression, SingleQueryExpression}
 import org.neo4j.cypher.internal.compiler.v3_2.spi.QueryContext
 import org.neo4j.cypher.internal.frontend.v3_2.ast._
 import org.neo4j.cypher.internal.frontend.v3_2.test_helpers.{CypherFunSuite, WindowsStringSafe}
@@ -38,14 +38,14 @@ class NodeIndexSeekPipeTest extends CypherFunSuite with AstConstructionTestSuppo
 
   val label = LabelToken(LabelName("LabelName") _, LabelId(11))
   val propertyKey = Seq(PropertyKeyToken(PropertyKeyName("PropertyName") _, PropertyKeyId(10)))
-  val descriptor = IndexDescriptor(label.nameId.id, (propertyKey.map(_.nameId.id).toArray))
+  val descriptor = IndexDescriptor(label.nameId.id, propertyKey.map(_.nameId.id))
   val node = mock[Node]
   val node2 = mock[Node]
 
   test("should return nodes found by index lookup when both labelId and property key id are solved at compile time") {
     // given
     val queryState = QueryStateHelper.emptyWith(
-      query = indexFor("hello" -> Iterator(node))
+      query = indexFor(Seq("hello") -> Iterator(node))
     )
 
     // when
@@ -60,8 +60,8 @@ class NodeIndexSeekPipeTest extends CypherFunSuite with AstConstructionTestSuppo
     // given
     val queryState = QueryStateHelper.emptyWith(
       query = indexFor(
-        "hello" -> Iterator(node),
-        "world" -> Iterator(node2)
+        Seq("hello") -> Iterator(node),
+        Seq("world") -> Iterator(node2)
       )
     )
 
@@ -77,8 +77,8 @@ class NodeIndexSeekPipeTest extends CypherFunSuite with AstConstructionTestSuppo
     // given
     val queryState = QueryStateHelper.emptyWith(
       query = indexFor(
-        "hello" -> Iterator(node),
-        "world" -> Iterator(node2)
+        Seq("hello") -> Iterator(node),
+        Seq("world") -> Iterator(node2)
       )
     )
 
@@ -94,7 +94,7 @@ class NodeIndexSeekPipeTest extends CypherFunSuite with AstConstructionTestSuppo
     // given
     val queryState = QueryStateHelper.emptyWith(
       query = indexFor(
-        "hello" -> Iterator(node)
+        Seq("hello") -> Iterator(node)
       )
     )
 
@@ -113,7 +113,7 @@ class NodeIndexSeekPipeTest extends CypherFunSuite with AstConstructionTestSuppo
     // given
     val queryState = QueryStateHelper.emptyWith(
       query = indexFor(
-        "hello" -> Iterator(node)
+        Seq("hello") -> Iterator(node)
       )
     )
 
@@ -132,7 +132,7 @@ class NodeIndexSeekPipeTest extends CypherFunSuite with AstConstructionTestSuppo
     // given
     val queryState = QueryStateHelper.emptyWith(
       query = indexFor(
-        "hello" -> Iterator(node)
+        Seq("hello") -> Iterator(node)
       )
     )
 
@@ -148,7 +148,7 @@ class NodeIndexSeekPipeTest extends CypherFunSuite with AstConstructionTestSuppo
     // given
     val queryState = QueryStateHelper.emptyWith(// WHERE n.prop IN ['hello', 'hello']
       query = indexFor(
-        "hello" -> Iterator(node)
+        Seq("hello") -> Iterator(node)
       )
     )
 
@@ -167,8 +167,8 @@ class NodeIndexSeekPipeTest extends CypherFunSuite with AstConstructionTestSuppo
     // given
     val queryState = QueryStateHelper.emptyWith(// WHERE n.prop IN ['hello', 'hello']
       query = indexFor(
-        "hello" -> Iterator(node),
-        "world" -> Iterator(node)
+        Seq("hello") -> Iterator(node),
+        Seq("world") -> Iterator(node)
       )
     )
 
@@ -181,6 +181,28 @@ class NodeIndexSeekPipeTest extends CypherFunSuite with AstConstructionTestSuppo
 
     // then
     result.map(_("n")).toList should equal(List(node, node))
+  }
+
+  test("should handle index lookups for composite index lookups over multiple values") {
+    // given
+    val queryState = QueryStateHelper.emptyWith(// WHERE n.prop = 'hello' AND n.prop2 = 'world']
+      query = indexFor(
+        Seq("hello", "world") -> Iterator(node),
+        Seq("hello") -> Iterator(node, node2)
+      )
+    )
+
+    // when
+    val pipe = NodeIndexSeekPipe("n", label,
+      propertyKey :+ PropertyKeyToken(PropertyKeyName("prop2") _, PropertyKeyId(11)),
+      CompositeQueryExpression(Seq(
+        Literal("hello"),
+        Literal("world")
+      )))()
+    val result = pipe.createResults(queryState)
+
+    // then
+    result.map(_("n")).toList should equal(List(node))
   }
 
   test("should give a helpful error message") {
@@ -196,7 +218,7 @@ class NodeIndexSeekPipeTest extends CypherFunSuite with AstConstructionTestSuppo
 
   test("should return the node found by the unique index lookup when both labelId and property key id are solved at compile time") {
     // given
-    val queryState = QueryStateHelper.emptyWith(query = indexFor("hello" -> Iterator(node)))
+    val queryState = QueryStateHelper.emptyWith(query = indexFor(Seq("hello") -> Iterator(node)))
 
     // when
     val pipe = NodeIndexSeekPipe("n", label, propertyKey, SingleQueryExpression(Literal("hello")), UniqueIndexSeek)()
@@ -209,7 +231,7 @@ class NodeIndexSeekPipeTest extends CypherFunSuite with AstConstructionTestSuppo
   test("should use existing values from arguments when available") {
     //  GIVEN "hello" as x MATCH a WHERE a.prop = x
     val queryState: QueryState = QueryStateHelper.emptyWith(
-      query = indexFor("hello" -> Iterator(node)),
+      query = indexFor(Seq("hello") -> Iterator(node)),
       initialContext = Some(ExecutionContext.from("x" -> "hello"))
     )
 
@@ -221,7 +243,7 @@ class NodeIndexSeekPipeTest extends CypherFunSuite with AstConstructionTestSuppo
     result.map(_("n")).toList should equal(List(node))
   }
 
-  private def indexFor(values: (Any, Iterator[Node])*): QueryContext = {
+  private def indexFor(values: (Seq[Any], Iterator[Node])*): QueryContext = {
     val query = mock[QueryContext]
     when(query.indexSeek(any(), any())).thenReturn(Iterator.empty)
 

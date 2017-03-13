@@ -118,7 +118,8 @@ class LuceneBatchInserterIndex implements BatchInserterIndex
         return relationshipLookup.lookup( id );
     }
 
-    private void addSingleProperty( long entityId, Document document, String key, Object value ) {
+    private void addSingleProperty( long entityId, Document document, String key, Object value )
+    {
         for ( Object oneValue : IoPrimitiveUtils.asArray(value) )
         {
             boolean isValueContext = oneValue instanceof ValueContext;

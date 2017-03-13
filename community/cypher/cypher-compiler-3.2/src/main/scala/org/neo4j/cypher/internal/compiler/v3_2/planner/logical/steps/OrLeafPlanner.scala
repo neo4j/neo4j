@@ -19,13 +19,12 @@
  */
 package org.neo4j.cypher.internal.compiler.v3_2.planner.logical.steps
 
-import org.neo4j.cypher.internal.compiler.v3_2.planner._
+import org.neo4j.cypher.internal.compiler.v3_2.planner.logical._
 import org.neo4j.cypher.internal.compiler.v3_2.planner.logical.plans.LogicalPlan
-import org.neo4j.cypher.internal.compiler.v3_2.planner.logical.{LeafPlanFromExpression, LeafPlanner, LeafPlansForVariable, LogicalPlanningContext}
 import org.neo4j.cypher.internal.frontend.v3_2.ast.{Expression, Ors}
 import org.neo4j.cypher.internal.ir.v3_2.QueryGraph
 
-case class OrLeafPlanner(inner: Seq[LeafPlanFromExpression]) extends LeafPlanner {
+case class OrLeafPlanner(inner: Seq[LeafPlanFromExpressions]) extends LeafPlanner {
 
   override def apply(qg: QueryGraph)(implicit context: LogicalPlanningContext): Seq[LogicalPlan] = {
     qg.selections.flatPredicates.flatMap {
@@ -33,7 +32,7 @@ case class OrLeafPlanner(inner: Seq[LeafPlanFromExpression]) extends LeafPlanner
 
         // This is a Seq of possible solutions per expression
         val plansPerExpression: Seq[Seq[LeafPlansForVariable]] = exprs.toSeq.map { e =>
-          inner.flatMap(_.producePlanFor(e, qg))
+          inner.flatMap(_.producePlanFor(Set(e), qg))
         }
 
         if (plansPerExpression.exists(_.isEmpty) || {

@@ -33,9 +33,9 @@ import org.neo4j.graphdb.SeverityLevel;
 import static org.hamcrest.CoreMatchers.equalTo;
 import static org.junit.Assert.assertThat;
 import static org.neo4j.graphdb.impl.notification.NotificationCode.CARTESIAN_PRODUCT;
+import static org.neo4j.graphdb.impl.notification.NotificationCode.DEPRECATED_PROCEDURE;
 import static org.neo4j.graphdb.impl.notification.NotificationCode.INDEX_HINT_UNFULFILLABLE;
 import static org.neo4j.graphdb.impl.notification.NotificationCode.JOIN_HINT_UNFULFILLABLE;
-import static org.neo4j.graphdb.impl.notification.NotificationCode.DEPRECATED_PROCEDURE;
 
 public class NotificationCodeTest
 {
@@ -73,7 +73,8 @@ public class NotificationCodeTest
     }
 
     @Test
-    public void shouldConstructNotificationsFor_JOIN_HINT_UNFULFILLABLE() {
+    public void shouldConstructNotificationsFor_JOIN_HINT_UNFULFILLABLE()
+    {
         List<String> idents = new ArrayList<>();
         idents.add( "n" );
         idents.add( "node2" );
@@ -91,7 +92,8 @@ public class NotificationCodeTest
     }
 
     @Test
-    public void shouldConstructNotificationsFor_DEPRECATED_PROCEDURE() {
+    public void shouldConstructNotificationsFor_DEPRECATED_PROCEDURE()
+    {
         NotificationDetail identifierDetail = NotificationDetail.Factory.deprecatedName("oldName", "newName");
         Notification notification = DEPRECATED_PROCEDURE.notification( InputPosition.empty, identifierDetail );
 
@@ -104,7 +106,8 @@ public class NotificationCodeTest
     }
 
     @Test
-    public void shouldConstructNotificationsFor_DEPRECATED_PROCEDURE_with_no_newName() {
+    public void shouldConstructNotificationsFor_DEPRECATED_PROCEDURE_with_no_newName()
+    {
         NotificationDetail identifierDetail = NotificationDetail.Factory.deprecatedName("oldName", "");
         Notification notification = DEPRECATED_PROCEDURE.notification( InputPosition.empty, identifierDetail );
 

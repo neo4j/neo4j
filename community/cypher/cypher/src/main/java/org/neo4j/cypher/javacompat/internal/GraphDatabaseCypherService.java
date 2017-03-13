@@ -96,7 +96,8 @@ public class GraphDatabaseCypherService implements GraphDatabaseQueryService
     }
 
     @Override
-    public DbmsOperations getDbmsOperations() {
+    public DbmsOperations getDbmsOperations()
+    {
         return dbmsOperations;
     }
 

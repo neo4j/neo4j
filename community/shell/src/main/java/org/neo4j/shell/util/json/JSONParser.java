@@ -46,7 +46,8 @@ public class JSONParser
                 return null;
             }
             return value;
-        } catch ( JSONException e )
+        }
+        catch ( JSONException e )
         {
             throw new ShellException( "Could not parse value " + json + " " + e.getMessage() );
         }

@@ -19,13 +19,13 @@
  */
 package org.neo4j.server.rest;
 
-import java.io.IOException;
-import java.util.Collections;
-import javax.ws.rs.core.Response.Status;
-
 import org.junit.Before;
 import org.junit.BeforeClass;
 import org.junit.Test;
+
+import java.io.IOException;
+import java.util.Collections;
+import javax.ws.rs.core.Response.Status;
 
 import org.neo4j.server.helpers.FunctionalTestHelper;
 import org.neo4j.server.rest.domain.GraphDbHelper;
@@ -91,7 +91,8 @@ public class CompactJsonIT extends AbstractRestFunctionalTestBase
     }
 
     @Test
-    public void shouldGetThomasAndersonDirectly() {
+    public void shouldGetThomasAndersonDirectly()
+    {
         JaxRsResponse response = RestRequest.req().get(functionalTestHelper.nodeUri(thomasAnderson), CompactJsonFormat.MEDIA_TYPE);
         assertEquals(Status.OK.getStatusCode(), response.getStatus());
         String entity = response.getEntity();

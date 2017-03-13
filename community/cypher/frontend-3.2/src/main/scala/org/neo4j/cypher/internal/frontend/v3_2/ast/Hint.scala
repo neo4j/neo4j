@@ -52,11 +52,11 @@ sealed trait LegacyIndexHint extends Hint {
   def variables = NonEmptyList(variable)
 }
 
-case class UsingIndexHint(variable: Variable, label: LabelName, property: PropertyKeyName)(val position: InputPosition) extends UsingHint with NodeHint {
+case class UsingIndexHint(variable: Variable, label: LabelName, properties: Seq[PropertyKeyName])(val position: InputPosition) extends UsingHint with NodeHint {
   def variables = NonEmptyList(variable)
   def semanticCheck = variable.ensureDefined chain variable.expectType(CTNode.covariant)
 
-  override def toString: String = s"USING INDEX ${variable.name}:${label.name}(${property.name})"
+  override def toString: String = s"USING INDEX ${variable.name}:${label.name}(${properties.map(_.name).mkString(", ")})"
 }
 
 case class UsingScanHint(variable: Variable, label: LabelName)(val position: InputPosition) extends UsingHint with NodeHint {

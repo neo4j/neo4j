@@ -233,7 +233,9 @@ public final class MonoDirectionalTraversalDescription implements TraversalDescr
             Direction direction )
     {
         if ( expander instanceof StandardExpander )
-            return expand( ((StandardExpander)expander).add( type, direction ) );
+        {
+            return expand( ((StandardExpander) expander).add( type, direction ) );
+        }
         throw new IllegalStateException( "The current expander cannot be added to" );
     }
 

@@ -42,7 +42,7 @@ trait MapToPublicExceptions[T <: Throwable] {
 
   def invalidSemanticException(message: String, cause: Throwable): T
 
-  def indexHintException(variable: String, label: String, property: String, message: String, cause: Throwable): T
+  def indexHintException(variable: String, label: String, properties: Seq[String], message: String, cause: Throwable): T
 
   def hintException(message: String, cause: Throwable): T
 

@@ -69,8 +69,10 @@ public class ExecutorLifecycleAdapter
     @Override
     public void execute( Runnable command )
     {
-        if (executor != null)
+        if ( executor != null )
+        {
             executor.execute( command );
+        }
         else
         {
             command.run();

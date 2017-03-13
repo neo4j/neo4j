@@ -99,7 +99,8 @@ class PageOfRangesIterator extends PrefetchingIterator<PrimitiveLongIterator>
         return new LongPageIterator( new BitmapExtractor( format.bitmapFormat(), rangeMap ) );
     }
 
-    private ValuesIterator getRanges() {
+    private ValuesIterator getRanges()
+    {
         if ( rangesIterator != null )
         {
             return rangesIterator;

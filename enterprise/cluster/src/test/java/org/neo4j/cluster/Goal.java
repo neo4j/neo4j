@@ -49,17 +49,23 @@ public class Goal
     {
         long endTime = System.currentTimeMillis() + maxMillisToWait;
         while ( !goalsAreMet() && System.currentTimeMillis() < endTime )
+        {
             sleep( 100 );
+        }
 
         if ( !goalsAreMet() )
+        {
             throw new GoalNotMetException( subGoals, "timed out awaiting goals" );
+        }
 
         // Wait a while to see if something makes a goal not valid shortly after it has
         // been fulfilled, for example some unexpected state transition.
         sleep( waitAfterAllFulfilled );
 
         if ( !goalsAreMet() )
+        {
             throw new GoalNotMetException( subGoals, "goals became unfulfilled after first being fulfilled" );
+        }
     }
 
     private void sleep( int millis )
@@ -77,8 +83,12 @@ public class Goal
     private boolean goalsAreMet()
     {
         for ( SubGoal subGoal : subGoals )
+        {
             if ( !subGoal.met() )
+            {
                 return false;
+            }
+        }
         return true;
     }
 
@@ -93,8 +103,12 @@ public class Goal
         {
             StringBuilder builder = new StringBuilder( "These goals weren't met (" + additionalMessage + "):" );
             for ( SubGoal subGoal : subGoals )
+            {
                 if ( subGoal.met() )
+                {
                     builder.append( "\n  " + subGoal );
+                }
+            }
             return builder.toString();
         }
     }

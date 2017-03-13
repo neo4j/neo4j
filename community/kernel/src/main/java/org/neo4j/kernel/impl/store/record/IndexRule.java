@@ -19,8 +19,6 @@
  */
 package org.neo4j.kernel.impl.store.record;
 
-import java.nio.ByteBuffer;
-
 import org.neo4j.graphdb.Label;
 import org.neo4j.kernel.api.index.SchemaIndexProvider;
 import org.neo4j.kernel.api.schema_new.LabelSchemaDescriptor;
@@ -32,9 +30,8 @@ import static org.neo4j.kernel.api.schema_new.SchemaUtil.idTokenNameLookup;
 /**
  * A {@link Label} can have zero or more index rules which will have data specified in the rules indexed.
  */
-public class IndexRule implements SchemaRule, NewIndexDescriptor.Supplier
+public class IndexRule extends SchemaRule implements NewIndexDescriptor.Supplier
 {
-    private final long id;
     private final SchemaIndexProvider.Descriptor providerDescriptor;
     private final NewIndexDescriptor descriptor;
     private final Long owningConstraint;
@@ -52,10 +49,29 @@ public class IndexRule implements SchemaRule, NewIndexDescriptor.Supplier
         return new IndexRule( id, providerDescriptor, descriptor, owningConstraint );
     }
 
+    public static IndexRule indexRule( long id, NewIndexDescriptor descriptor,
+                                       SchemaIndexProvider.Descriptor providerDescriptor, String name )
+    {
+        return new IndexRule( id, providerDescriptor, descriptor, null, name );
+    }
+
+    public static IndexRule constraintIndexRule( long id, NewIndexDescriptor descriptor,
+                                                 SchemaIndexProvider.Descriptor providerDescriptor,
+                                                 Long owningConstraint, String name )
+    {
+        return new IndexRule( id, providerDescriptor, descriptor, owningConstraint, name );
+    }
+
     IndexRule( long id, SchemaIndexProvider.Descriptor providerDescriptor,
             NewIndexDescriptor descriptor, Long owningConstraint )
     {
-        this.id = id;
+        this( id, providerDescriptor, descriptor, owningConstraint, null );
+    }
+
+    IndexRule( long id, SchemaIndexProvider.Descriptor providerDescriptor,
+            NewIndexDescriptor descriptor, Long owningConstraint, String name )
+    {
+        super( id, name );
         if ( providerDescriptor == null )
         {
             throw new IllegalArgumentException( "null provider descriptor prohibited" );
@@ -108,21 +124,9 @@ public class IndexRule implements SchemaRule, NewIndexDescriptor.Supplier
     }
 
     @Override
-    public long getId()
+    public byte[] serialize()
     {
-        return id;
-    }
-
-    @Override
-    public int length()
-    {
-        return SchemaRuleSerialization.lengthOf( this );
-    }
-
-    @Override
-    public void serialize( ByteBuffer target )
-    {
-        SchemaRuleSerialization.serialize( this, target );
+        return SchemaRuleSerialization.serialize( this );
     }
 
     @Override

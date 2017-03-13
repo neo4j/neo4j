@@ -293,7 +293,7 @@ public class NativeLabelScanStore implements LabelScanStore
         {
             // GBPTree is corrupt. Try to rebuild.
             monitor.notValidIndex();
-            drop();
+            dropStrict();
             instantiateTree();
             needsRebuild = true;
         }
@@ -322,7 +322,20 @@ public class NativeLabelScanStore implements LabelScanStore
         index = new GBPTree<>( pageCache, storeFile, new LabelScanLayout(), pageSize, GBPTree.NO_MONITOR, NO_HEADER );
     }
 
-    private void drop() throws IOException
+    @Override
+    public void drop() throws IOException
+    {
+        try
+        {
+            dropStrict();
+        }
+        catch ( NoSuchFileException e )
+        {
+            // Even better, it didn't even exist
+        }
+    }
+
+    private void dropStrict() throws IOException
     {
         storeFileHandle().delete();
     }
@@ -382,5 +395,11 @@ public class NativeLabelScanStore implements LabelScanStore
     public void shutdown() throws IOException
     {
         index.close();
+    }
+
+    @Override
+    public boolean isReadOnly()
+    {
+        return readOnly;
     }
 }

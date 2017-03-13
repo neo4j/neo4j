@@ -38,7 +38,8 @@ public class ByteArrayMatcherTest
         try
         {
             assertThat( "a != b", a, byteArray( b ) ); // this must fail
-        } catch ( AssertionError error )
+        }
+        catch ( AssertionError error )
         {
             caughtError = true;
         }

@@ -24,9 +24,9 @@ import java.util.HashSet;
 import java.util.Objects;
 import java.util.Set;
 
-import org.neo4j.causalclustering.messaging.EndOfStreamException;
 import org.neo4j.causalclustering.core.state.storage.SafeStateMarshal;
 import org.neo4j.causalclustering.identity.MemberId;
+import org.neo4j.causalclustering.messaging.EndOfStreamException;
 import org.neo4j.kernel.lifecycle.LifecycleAdapter;
 import org.neo4j.storageengine.api.ReadableChannel;
 import org.neo4j.storageengine.api.WritableChannel;
@@ -86,7 +86,10 @@ public class RaftMembershipState extends LifecycleAdapter
 
     public boolean append( long logIndex, Set<MemberId> members )
     {
-        if ( appended != null && logIndex <= appended.logIndex() ) { return false; }
+        if ( appended != null && logIndex <= appended.logIndex() )
+        {
+            return false;
+        }
 
         if ( committed != null && logIndex <= committed.logIndex() )
         {

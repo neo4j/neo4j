@@ -36,7 +36,8 @@ public class BasicContext implements Context
     public <T> T get( Key<T> key ) throws ProcedureException
     {
         Object o = values.get( key.name() );
-        if( o == null ) {
+        if ( o == null )
+        {
             throw new ProcedureException( Status.Procedure.ProcedureCallFailed, "There is no `%s` in the current procedure call context.", key.name() );
         }
         return (T) o;
@@ -46,7 +47,8 @@ public class BasicContext implements Context
     public <T> T getOrElse( Key<T> key, T orElse )
     {
         Object o = values.get( key.name() );
-        if( o == null ) {
+        if ( o == null )
+        {
             return orElse;
         }
         return (T) o;

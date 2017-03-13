@@ -20,6 +20,7 @@
 package org.neo4j.kernel.impl.api.index;
 
 import java.io.IOException;
+import java.util.Arrays;
 import java.util.Collection;
 import java.util.Collections;
 import java.util.HashMap;
@@ -30,6 +31,7 @@ import java.util.Queue;
 import java.util.concurrent.CopyOnWriteArrayList;
 import java.util.concurrent.LinkedBlockingQueue;
 import java.util.function.IntPredicate;
+import java.util.stream.IntStream;
 
 import org.neo4j.collection.primitive.PrimitiveLongSet;
 import org.neo4j.function.ThrowingConsumer;
@@ -52,7 +54,6 @@ import org.neo4j.storageengine.api.schema.IndexSample;
 import org.neo4j.unsafe.impl.internal.dragons.FeatureToggles;
 
 import static java.lang.String.format;
-
 import static org.neo4j.collection.primitive.PrimitiveIntCollections.contains;
 import static org.neo4j.kernel.impl.api.index.IndexPopulationFailure.failure;
 
@@ -309,7 +310,13 @@ public class MultipleIndexPopulator implements IndexPopulator
 
     private int[] propertyKeyIds()
     {
-        return populations.stream().mapToInt( population -> population.descriptor.schema().getPropertyId() ).toArray();
+        return populations.stream().flatMapToInt( this::propertyKeyIds ).distinct().toArray();
+    }
+
+    private IntStream propertyKeyIds( IndexPopulation population )
+    {
+        NewIndexDescriptor desc = population.descriptor;
+        return IntStream.of( desc.schema().getPropertyIds() );
     }
 
     private int[] labelIds()

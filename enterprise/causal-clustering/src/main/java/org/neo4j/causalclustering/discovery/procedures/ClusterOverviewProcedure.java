@@ -81,7 +81,7 @@ public class ClusterOverviewProcedure extends CallableProcedure.BasicProcedure
     {
         List<ReadWriteEndPoint> endpoints = new ArrayList<>();
         CoreTopology coreTopology = topologyService.coreServers();
-        Set<MemberId> coreMembers = coreTopology.members();
+        Set<MemberId> coreMembers = coreTopology.members().keySet();
         MemberId leader = null;
 
         try
@@ -107,7 +107,7 @@ public class ClusterOverviewProcedure extends CallableProcedure.BasicProcedure
             }
         }
 
-        for ( Map.Entry<MemberId,ReadReplicaInfo> readReplica : topologyService.readReplicas().replicaMembers().entrySet() )
+        for ( Map.Entry<MemberId,ReadReplicaInfo> readReplica : topologyService.readReplicas().members().entrySet() )
         {
             ReadReplicaInfo readReplicaInfo = readReplica.getValue();
             endpoints.add( new ReadWriteEndPoint( readReplicaInfo.connectors(), Role.READ_REPLICA, readReplica.getKey().getUuid(), asList( readReplicaInfo.tags() ) ) );

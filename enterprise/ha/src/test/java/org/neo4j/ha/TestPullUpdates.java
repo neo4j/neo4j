@@ -315,8 +315,10 @@ public class TestPullUpdates
             loop:
             for ( HighlyAvailableGraphDatabase db : cluster.getAllMembers() )
             {
-                for (HighlyAvailableGraphDatabase except: excepts) {
-                    if (db == except){
+                for ( HighlyAvailableGraphDatabase except : excepts )
+                {
+                    if ( db == except )
+                    {
                         continue loop;
                     }
                 }

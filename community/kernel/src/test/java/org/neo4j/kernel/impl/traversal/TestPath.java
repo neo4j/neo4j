@@ -90,7 +90,9 @@ public class TestPath extends TraversalTestBase
         Node[] expectedNodes = new Node[] { e, d, c, b, a };
         int index = 0;
         for ( Relationship rel : path.reverseRelationships() )
+        {
             assertEquals( "For index " + index, expectedNodes[index++], rel.getEndNode() );
+        }
         assertEquals( 4, index );
     }
 

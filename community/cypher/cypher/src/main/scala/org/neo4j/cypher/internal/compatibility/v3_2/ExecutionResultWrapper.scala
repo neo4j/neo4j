@@ -118,8 +118,8 @@ class ExecutionResultWrapper(val inner: InternalExecutionResult, val planner: Pl
       NotificationCode.PLANNER_UNSUPPORTED.notification(graphdb.InputPosition.empty)
     case RuntimeUnsupportedNotification =>
       NotificationCode.RUNTIME_UNSUPPORTED.notification(graphdb.InputPosition.empty)
-    case IndexHintUnfulfillableNotification(label, propertyKey) =>
-      NotificationCode.INDEX_HINT_UNFULFILLABLE.notification(graphdb.InputPosition.empty, NotificationDetail.Factory.index(label, propertyKey))
+    case IndexHintUnfulfillableNotification(label, propertyKeys) =>
+      NotificationCode.INDEX_HINT_UNFULFILLABLE.notification(graphdb.InputPosition.empty, NotificationDetail.Factory.index(label, propertyKeys: _*))
     case JoinHintUnfulfillableNotification(variables) =>
       NotificationCode.JOIN_HINT_UNFULFILLABLE.notification(graphdb.InputPosition.empty, NotificationDetail.Factory.joinKey(variables.asJava))
     case JoinHintUnsupportedNotification(variables) =>

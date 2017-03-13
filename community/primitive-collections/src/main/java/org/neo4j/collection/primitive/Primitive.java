@@ -170,4 +170,24 @@ public class Primitive
             }
         };
     }
+
+    public static PrimitiveIntIterator iterator( final int... ints )
+    {
+        return new PrimitiveIntIterator()
+        {
+            int i;
+
+            @Override
+            public boolean hasNext()
+            {
+                return i < ints.length;
+            }
+
+            @Override
+            public int next()
+            {
+                return ints[i++];
+            }
+        };
+    }
 }

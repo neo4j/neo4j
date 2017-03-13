@@ -83,13 +83,11 @@ trait GraphIcing {
       }
     }
 
-    def createIndex(label: String, property: String) = {
-      val indexDef = inTx {
-        graph.schema().indexFor(Label.label(label)).on(property).create()
-      }
+    def createIndex(label: String, properties: String*) = {
+      graph.execute(s"CREATE INDEX ON :$label(${properties.mkString(",")})")
 
-      inTx {
-        graph.schema().awaitIndexOnline(indexDef, 10, TimeUnit.SECONDS)
+      val indexDef = inTx {
+        graph.schema().awaitIndexesOnline(10, TimeUnit.SECONDS)
       }
 
       indexDef

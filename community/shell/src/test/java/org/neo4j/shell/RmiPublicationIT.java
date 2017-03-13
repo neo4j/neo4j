@@ -37,7 +37,7 @@ import static java.lang.Runtime.getRuntime;
 import static java.lang.System.getProperty;
 import static org.junit.Assert.assertEquals;
 
-public class TestRmiPublication
+public class RmiPublicationIT
 {
     public static File createDefaultConfigFile( File path ) throws IOException
     {
@@ -69,15 +69,16 @@ public class TestRmiPublication
     private int spawnJvm( Class<?> mainClass, String name ) throws Exception
     {
         String dir = testDirectory.directory( name ).getAbsolutePath();
-        return waitForExit( getRuntime().exec( new String[] { "java", "-cp", getProperty( "java.class.path" ),
-                "-Djava.awt.headless=true", mainClass.getName(), dir } ), 20 );
+        return waitForExit( getRuntime()
+                .exec( new String[]{"java", "-cp", getProperty( "java.class.path" ), "-Djava.awt.headless=true",
+                        mainClass.getName(), dir} ), 20 );
     }
 
     private int waitForExit( Process process, int maxSeconds ) throws InterruptedException
     {
         try
         {
-            long endTime = System.currentTimeMillis() + maxSeconds*1000;
+            long endTime = System.currentTimeMillis() + maxSeconds * 1000;
             ProcessStreamHandler streamHandler = new ProcessStreamHandler( process, false );
             streamHandler.launch();
             try
@@ -94,7 +95,7 @@ public class TestRmiPublication
                     }
                 }
 
-                tempHackToGetThreadDump(process);
+                tempHackToGetThreadDump( process );
 
                 throw new RuntimeException( "Process didn't exit on its own." );
             }
@@ -115,12 +116,12 @@ public class TestRmiPublication
         {
             Field pidField = process.getClass().getDeclaredField( "pid" );
             pidField.setAccessible( true );
-            int pid = (int)pidField.get( process );
+            int pid = (int) pidField.get( process );
 
             ProcessBuilder processBuilder = new ProcessBuilder( "/bin/sh", "-c", "kill -3 " + pid );
             processBuilder.redirectErrorStream( true );
             Process dumpProc = processBuilder.start();
-            ProcessStreamHandler streamHandler = new ProcessStreamHandler(dumpProc, false);
+            ProcessStreamHandler streamHandler = new ProcessStreamHandler( dumpProc, false );
             streamHandler.launch();
             try
             {
@@ -131,7 +132,7 @@ public class TestRmiPublication
                 streamHandler.cancel();
             }
         }
-        catch( Throwable e )
+        catch ( Throwable e )
         {
             e.printStackTrace();
         }

@@ -21,9 +21,7 @@ package org.neo4j.commandline.dbms;
 
 import java.io.IOException;
 import java.nio.file.Path;
-import java.util.Arrays;
 import java.util.HashMap;
-import java.util.List;
 import java.util.Map;
 import java.util.Optional;
 
@@ -33,9 +31,9 @@ import org.neo4j.commandline.admin.IncorrectUsage;
 import org.neo4j.commandline.admin.OutsideWorld;
 import org.neo4j.commandline.arguments.Arguments;
 import org.neo4j.commandline.arguments.MandatoryNamedArg;
+import org.neo4j.commandline.arguments.OptionalBooleanArg;
 import org.neo4j.commandline.arguments.OptionalNamedArg;
 import org.neo4j.dbms.DatabaseManagementSystemSettings;
-import org.neo4j.graphdb.factory.GraphDatabaseSettings;
 import org.neo4j.helpers.Args;
 import org.neo4j.helpers.collection.MapUtil;
 import org.neo4j.kernel.configuration.Config;
@@ -91,7 +89,13 @@ public class ImportCommand implements AdminCommand
                     "For more information on id handling, please see the Neo4j Manual: " +
                     "https://neo4j.com/docs/operations-manual/current/tools/import/" ) )
             .withArgument( new OptionalNamedArg( "input-encoding", "character-set", "UTF-8",
-                    "Character set that input data is encoded in." ) );
+                    "Character set that input data is encoded in." ) )
+            .withArgument( new OptionalBooleanArg( "ignore-extra-columns", false,
+                    "If un-specified columns should be ignored during the import." ) )
+            .withArgument( new OptionalBooleanArg( "ignore-duplicate-nodes", false,
+                    "If duplicate nodes should be ignored during the import." ) )
+            .withArgument( new OptionalBooleanArg( "ignore-missing-nodes", false,
+                    "If relationships referring to missing nodes should be ignored during the import." ) );
     private static final Arguments allArguments = new Arguments()
             .withDatabase()
             .withAdditionalConfig()
@@ -122,7 +126,13 @@ public class ImportCommand implements AdminCommand
                     "For more information on id handling, please see the Neo4j Manual: " +
                     "https://neo4j.com/docs/operations-manual/current/tools/import/" ) )
             .withArgument( new OptionalNamedArg( "input-encoding", "character-set", "UTF-8",
-                    "Character set that input data is encoded in." ) );
+                    "Character set that input data is encoded in." ) )
+            .withArgument( new OptionalBooleanArg( "ignore-extra-columns", false,
+                    "If un-specified columns should be ignored during the import." ) )
+            .withArgument( new OptionalBooleanArg( "ignore-duplicate-nodes", false,
+                    "If duplicate nodes should be ignored during the import." ) )
+            .withArgument( new OptionalBooleanArg( "ignore-missing-nodes", false,
+                    "If relationships referring to missing nodes should be ignored during the import." ) );
 
     public static Arguments databaseArguments()
     {

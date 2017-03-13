@@ -26,17 +26,20 @@ import java.util.Set;
 
 import org.neo4j.collection.primitive.PrimitiveLongSet;
 import org.neo4j.collection.primitive.PrimitiveLongVisitor;
+import org.neo4j.kernel.api.exceptions.EntityNotFoundException;
+import org.neo4j.kernel.api.exceptions.PropertyNotFoundException;
 import org.neo4j.kernel.api.exceptions.index.IndexEntryConflictException;
 import org.neo4j.kernel.api.index.IndexEntryUpdate;
 import org.neo4j.kernel.api.index.IndexUpdater;
 import org.neo4j.kernel.api.index.PropertyAccessor;
+import org.neo4j.kernel.api.schema_new.LabelSchemaDescriptor;
 import org.neo4j.kernel.api.schema_new.OrderedPropertyValues;
 import org.neo4j.kernel.impl.api.index.IndexUpdateMode;
 import org.neo4j.kernel.impl.api.index.updater.UniquePropertyIndexUpdater;
 
 class UniqueInMemoryIndex extends InMemoryIndex
 {
-    private final int propertyKeyId;
+    private final LabelSchemaDescriptor schema;
 
     private final PrimitiveLongVisitor<RuntimeException> removeFromIndex = new PrimitiveLongVisitor<RuntimeException>()
     {
@@ -48,10 +51,9 @@ class UniqueInMemoryIndex extends InMemoryIndex
         }
     };
 
-    public UniqueInMemoryIndex( int propertyKeyId )
+    public UniqueInMemoryIndex( LabelSchemaDescriptor schema )
     {
-        //TODO: Consider supporting composite indexes
-        this.propertyKeyId = propertyKeyId;
+        this.schema = schema;
     }
 
     @Override
@@ -107,24 +109,14 @@ class UniqueInMemoryIndex extends InMemoryIndex
     {
         try
         {
-            indexData.iterateAll( new InMemoryIndexImplementation.IndexEntryIterator()
+            if ( schema.getPropertyIds().length == 1 )
             {
-                @Override
-                public void visitEntry( Object key, Set<Long> nodeIds ) throws Exception
-                {
-                    Map<Object,Long> entries = new HashMap<>();
-                    for ( long nodeId : nodeIds )
-                    {
-                        final Object value = accessor.getProperty( nodeId, propertyKeyId ).value();
-                        if ( entries.containsKey( value ) )
-                        {
-                            long existingNodeId = entries.get( value );
-                            throw new IndexEntryConflictException( existingNodeId, nodeId, value );
-                        }
-                        entries.put( value, nodeId );
-                    }
-                }
-            } );
+                indexData.iterateAll( new SinglePropertyValidator( accessor ) );
+            }
+            else
+            {
+                indexData.iterateAll( new MultiPropertyValidator( accessor ) );
+            }
         }
         catch ( IndexEntryConflictException e )
         {
@@ -133,6 +125,69 @@ class UniqueInMemoryIndex extends InMemoryIndex
         catch ( Exception e )
         {
             throw new RuntimeException( e );
+        }
+    }
+
+    private class SinglePropertyValidator implements InMemoryIndexImplementation.IndexEntryIterator
+    {
+        private final PropertyAccessor accessor;
+
+        SinglePropertyValidator( PropertyAccessor accessor )
+        {
+            this.accessor = accessor;
+        }
+
+        @Override
+        public void visitEntry( Object key, Set<Long> nodeIds ) throws Exception
+        {
+            Map<Object,Long> entries = new HashMap<>();
+            for ( long nodeId : nodeIds )
+            {
+                final Object value = accessor.getProperty( nodeId, schema.getPropertyId() ).value();
+                if ( entries.containsKey( value ) )
+                {
+                    long existingNodeId = entries.get( value );
+                    throw new IndexEntryConflictException( existingNodeId, nodeId, OrderedPropertyValues.ofUndefined( value ) );
+                }
+                entries.put( value, nodeId );
+            }
+        }
+    }
+
+    private class MultiPropertyValidator implements InMemoryIndexImplementation.IndexEntryIterator
+    {
+        private final PropertyAccessor accessor;
+
+        MultiPropertyValidator( PropertyAccessor accessor )
+        {
+            this.accessor = accessor;
+        }
+
+        @Override
+        public void visitEntry( Object key, Set<Long> nodeIds ) throws Exception
+        {
+            Map<OrderedPropertyValues,Long> entries = new HashMap<>();
+            for ( long nodeId : nodeIds )
+            {
+                final OrderedPropertyValues values = getValues( nodeId );
+                if ( entries.containsKey( values ) )
+                {
+                    long existingNodeId = entries.get( values );
+                    throw new IndexEntryConflictException( existingNodeId, nodeId, values );
+                }
+                entries.put( values, nodeId );
+            }
+        }
+
+        OrderedPropertyValues getValues( long nodeId ) throws PropertyNotFoundException, EntityNotFoundException
+        {
+            int[] propertyIds = schema.getPropertyIds();
+            Object[] values = new Object[propertyIds.length];
+            for ( int i = 0; i < values.length; i++ )
+            {
+                values[i] = accessor.getProperty( nodeId, propertyIds[i] ).value();
+            }
+            return OrderedPropertyValues.ofUndefined( values );
         }
     }
 }

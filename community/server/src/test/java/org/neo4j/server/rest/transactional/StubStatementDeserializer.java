@@ -70,7 +70,8 @@ public class StubStatementDeserializer extends StatementDeserializer
     }
 
     @Override
-    public Statement peek() {
+    public Statement peek()
+    {
         if ( hasNext )
         {
             return next;

@@ -136,8 +136,12 @@ public class ForeignStoreIdIT
         try ( Transaction transaction = db.beginTx() )
         {
             for ( Node node : db.getAllNodes() )
+            {
                 if ( name.equals( node.getProperty( "name", null ) ) )
+                {
                     return node.getId();
+                }
+            }
             fail( "Didn't find node '" + name + "' in " + db );
             return -1; // will never happen
         }
@@ -154,7 +158,9 @@ public class ForeignStoreIdIT
     private void createNodes( GraphDatabaseService db, int transactions, String prefix )
     {
         for ( int i = 0; i < transactions; i++ )
+        {
             createNode( db, prefix + i );
+        }
     }
 
     private long createNode( GraphDatabaseService db, String name )

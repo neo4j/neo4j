@@ -1302,8 +1302,10 @@ public class Settings
                 for ( int i = 0; i < valueConverters.length; i++ )
                 {
                     BiFunction<T, Function<String, String>, T> valueConverter = valueConverters[i];
-                    if (i > 0)
+                    if ( i > 0 )
+                    {
                         builder.append( ", and " );
+                    }
                     builder.append( valueConverter );
                 }
             }

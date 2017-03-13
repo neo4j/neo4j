@@ -52,7 +52,9 @@ public class LimitingIterator<T> extends PrefetchingIterator<T>
     protected T fetchNextOrNull()
     {
         if ( !source.hasNext() || returned >= limit )
+        {
             return null;
+        }
         try
         {
             return source.next();

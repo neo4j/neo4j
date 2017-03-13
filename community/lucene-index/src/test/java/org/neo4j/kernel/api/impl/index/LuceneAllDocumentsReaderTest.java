@@ -111,7 +111,8 @@ public class LuceneAllDocumentsReaderTest
         return String.valueOf( value + (partition * maxSize) );
     }
 
-    private static Document createDocument(String value) {
+    private static Document createDocument(String value)
+    {
         Document document = new Document();
         document.add( new StoredField( "value",  value) );
         return document;

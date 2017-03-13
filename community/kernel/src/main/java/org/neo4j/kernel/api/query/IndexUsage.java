@@ -23,9 +23,9 @@ import java.util.Map;
 
 public abstract class IndexUsage
 {
-    public static IndexUsage schemaIndexUsage( String identifier, String label, String propertyKey )
+    public static IndexUsage schemaIndexUsage( String identifier, String label, String... propertyKeys )
     {
-        return new SchemaIndexUsage( identifier, label, propertyKey );
+        return new SchemaIndexUsage( identifier, label, propertyKeys );
     }
 
     public static IndexUsage legacyIndexUsage( String identifier, String entityType, String index )

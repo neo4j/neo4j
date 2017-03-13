@@ -25,13 +25,13 @@ import java.util.Map;
 class SchemaIndexUsage extends IndexUsage
 {
     private final String label;
-    private final String propertyKey;
+    private final String[] propertyKeys;
 
-    SchemaIndexUsage( String identifier, String label, String propertyKey )
+    SchemaIndexUsage( String identifier, String label, String[] propertyKeys )
     {
         super( identifier );
         this.label = label;
-        this.propertyKey = propertyKey;
+        this.propertyKeys = propertyKeys;
     }
 
     public Map<String,String> asMap()
@@ -41,7 +41,11 @@ class SchemaIndexUsage extends IndexUsage
         map.put( "entityType", "NODE" );
         map.put( "identifier", identifier );
         map.put( "label", label );
-        map.put( "propertyKey", propertyKey );
+        for ( int i = 0; i < propertyKeys.length; i++ )
+        {
+            String key = (propertyKeys.length > 1) ? "propertyKey_" + i : "propertyKey";
+            map.put( key, propertyKeys[i] );
+        }
         return map;
     }
 }

@@ -36,7 +36,7 @@ import org.neo4j.unsafe.impl.batchimport.stats.StepStats;
  *
  * @param <T> the type of batch objects received from upstream.
  */
-public interface Step<T> extends Parallelizable, AutoCloseable
+public interface Step<T> extends Parallelizable, AutoCloseable, Panicable
 {
     /**
      * Whether or not tickets arrive in {@link #receive(long, Object)} ordered by ticket number.
@@ -87,12 +87,6 @@ public interface Step<T> extends Parallelizable, AutoCloseable
      * @param downstreamStep {@link Step} to send batches to downstream.
      */
     void setDownstream( Step<?> downstreamStep );
-
-    /**
-     * Receives a panic, asking to shut down as soon as possible.
-     * @param cause cause for the panic.
-     */
-    void receivePanic( Throwable cause );
 
     /**
      * Closes any resources kept open by this step. Called after a {@link Stage} is executed, whether successful or not.

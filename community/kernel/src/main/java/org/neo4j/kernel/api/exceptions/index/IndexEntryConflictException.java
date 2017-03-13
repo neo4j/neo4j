@@ -40,7 +40,7 @@ public class IndexEntryConflictException extends Exception
 
     public IndexEntryConflictException( long existingNodeId, long addedNodeId, Object propertyValue )
     {
-        this( existingNodeId, addedNodeId, OrderedPropertyValues.of( propertyValue ) );
+        this( existingNodeId, addedNodeId, OrderedPropertyValues.ofUndefined( propertyValue ) );
     }
 
     public IndexEntryConflictException( long existingNodeId, long addedNodeId, OrderedPropertyValues propertyValues )
@@ -150,7 +150,7 @@ public class IndexEntryConflictException extends Exception
             sb.append( '`' );
             sb.append( tokenNameLookup.propertyKeyGetName( propertyIds[i] ) );
             sb.append( "` = " );
-            sb.append( OrderedPropertyValues.quote( propertyValues.values()[i] ) );
+            sb.append( OrderedPropertyValues.quote( propertyValues.valueAt( i ) ) );
         }
         return sb.toString();
     }

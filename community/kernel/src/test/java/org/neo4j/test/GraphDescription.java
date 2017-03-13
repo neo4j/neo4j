@@ -185,18 +185,22 @@ public class GraphDescription implements GraphDefinition
             }
         },
 
-        ERROR{
-        };
+        ERROR
+                {
+                };
 
-        Class<?> componentClass() {
+        Class<?> componentClass()
+        {
             throw new UnsupportedOperationException( "Not implemented for property type" + name() );
         }
 
-        Object convert( String value ) {
+        Object convert( String value )
+        {
             throw new UnsupportedOperationException( "Not implemented for property type"  + name() );
         }
 
-        Object convert( PropType componentType, String value ) {
+        Object convert( PropType componentType, String value )
+        {
             throw new UnsupportedOperationException( "Not implemented for property type"  + name() );
         }
     }
@@ -259,12 +263,13 @@ public class GraphDescription implements GraphDefinition
                 autoindex.startAutoIndexingProperty( prop.key() );
             }
             PropType tpe = prop.type();
-            switch(tpe) {
-                case ARRAY:
-                    entity.setProperty( prop.key(), tpe.convert( prop.componentType(), prop.value() ) );
-                    break;
-                default:
-                    entity.setProperty( prop.key(), prop.type().convert( prop.value() ) );
+            switch ( tpe )
+            {
+            case ARRAY:
+                entity.setProperty( prop.key(), tpe.convert( prop.componentType(), prop.value() ) );
+                break;
+            default:
+                entity.setProperty( prop.key(), prop.type().convert( prop.value() ) );
             }
         }
         if ( name != null )
@@ -306,14 +311,19 @@ public class GraphDescription implements GraphDefinition
 
     public static void destroy( Map<String, Node> nodes )
     {
-        if ( nodes.isEmpty() ) return;
+        if ( nodes.isEmpty() )
+        {
+            return;
+        }
         GraphDatabaseService db = nodes.values().iterator().next().getGraphDatabase();
         try ( Transaction tx = db.beginTx() )
         {
             for ( Node node : db.getAllNodes() )
             {
                 for ( Relationship rel : node.getRelationships() )
+                {
                     rel.delete();
+                }
                 node.delete();
             }
             tx.success();

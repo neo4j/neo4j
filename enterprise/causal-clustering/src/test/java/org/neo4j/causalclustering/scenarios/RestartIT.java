@@ -31,6 +31,7 @@ import org.neo4j.causalclustering.discovery.Cluster;
 import org.neo4j.causalclustering.discovery.CoreClusterMember;
 import org.neo4j.causalclustering.discovery.ReadReplica;
 import org.neo4j.consistency.ConsistencyCheckService;
+import org.neo4j.consistency.checking.full.CheckConsistencyConfig;
 import org.neo4j.graphdb.GraphDatabaseService;
 import org.neo4j.graphdb.Node;
 import org.neo4j.graphdb.Transaction;
@@ -39,7 +40,7 @@ import org.neo4j.helpers.progress.ProgressMonitorFactory;
 import org.neo4j.io.fs.DefaultFileSystemAbstraction;
 import org.neo4j.io.fs.FileSystemAbstraction;
 import org.neo4j.kernel.configuration.Config;
-import org.neo4j.logging.FormattedLogProvider;
+import org.neo4j.logging.NullLogProvider;
 import org.neo4j.storageengine.api.lock.AcquireLockTimeoutException;
 import org.neo4j.test.causalclustering.ClusterRule;
 
@@ -166,16 +167,18 @@ public class RestartIT
             for ( CoreClusterMember core : cluster.coreMembers() )
             {
                 ConsistencyCheckService.Result result = new ConsistencyCheckService()
-                        .runFullConsistencyCheck( core.storeDir(), Config.defaults(), ProgressMonitorFactory.NONE,
-                                FormattedLogProvider.toOutputStream( System.out ), fileSystem, false );
+                        .runFullConsistencyCheck( core.storeDir(), Config.embeddedDefaults(), ProgressMonitorFactory.NONE,
+                                NullLogProvider.getInstance(), fileSystem, false,
+                                new CheckConsistencyConfig( true, true, true, false ) );
                 assertTrue( "Inconsistent: " + core, result.isSuccessful() );
             }
 
             for ( ReadReplica readReplica : cluster.readReplicas() )
             {
                 ConsistencyCheckService.Result result = new ConsistencyCheckService()
-                        .runFullConsistencyCheck( readReplica.storeDir(), Config.defaults(), ProgressMonitorFactory.NONE,
-                                FormattedLogProvider.toOutputStream( System.out ), fileSystem, false );
+                        .runFullConsistencyCheck( readReplica.storeDir(), Config.embeddedDefaults(), ProgressMonitorFactory.NONE,
+                                NullLogProvider.getInstance(), fileSystem, false,
+                                new CheckConsistencyConfig( true, true, true, false ) );
                 assertTrue( "Inconsistent: " + readReplica, result.isSuccessful() );
             }
         }

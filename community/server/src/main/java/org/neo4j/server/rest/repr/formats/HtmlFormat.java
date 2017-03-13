@@ -27,7 +27,6 @@ import java.util.HashMap;
 import java.util.LinkedHashMap;
 import java.util.List;
 import java.util.Map;
-
 import javax.ws.rs.WebApplicationException;
 import javax.ws.rs.core.MediaType;
 import javax.ws.rs.core.Response;
@@ -142,7 +141,9 @@ public class HtmlFormat extends RepresentationFormat
                 if ( tb != null )
                 {
                     for ( Object el : tb )
+                    {
                         entity.append( "\n\tat " + el );
+                    }
                 }
                 entity.append( "</pre></p>" )
                         .append( "</body></html>" );
@@ -160,7 +161,9 @@ public class HtmlFormat extends RepresentationFormat
         static
         {
             for ( MappingTemplate template : values() )
+            {
                 TEMPLATES.put( template.key, template );
+            }
         }
 
         abstract String render( Map<String, Object> data );

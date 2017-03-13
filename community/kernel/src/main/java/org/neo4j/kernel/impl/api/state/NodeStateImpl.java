@@ -45,7 +45,7 @@ public class NodeStateImpl extends PropertyContainerStateImpl implements NodeSta
     private DiffSets<Integer> labelDiffSets;
     private RelationshipChangesForNode relationshipsAdded;
     private RelationshipChangesForNode relationshipsRemoved;
-    private Set<DiffSets<Long>> indexDiffs;
+    private Set<DiffSets<Long>> indexDiffs; // TODO: does this really fill any function?
     private final TxState state;
 
     NodeStateImpl( long id, TxState state )

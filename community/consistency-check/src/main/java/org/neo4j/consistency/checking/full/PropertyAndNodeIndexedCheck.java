@@ -223,11 +223,13 @@ public class PropertyAndNodeIndexedCheck implements RecordCheck<NodeRecord, Cons
                     engine.report().propertyNotInUse( property );
                 }
                 else
-                for ( int key : ChainCheck.keys( property ) )
                 {
-                    if ( !keys.add( key ) )
+                    for ( int key : ChainCheck.keys( property ) )
                     {
-                        engine.report().propertyKeyNotUniqueInChain();
+                        if ( !keys.add( key ) )
+                        {
+                            engine.report().propertyKeyNotUniqueInChain();
+                        }
                     }
                 }
             }

@@ -182,16 +182,20 @@ public class ServerTestUtils
         return file;
     }
 
-    public interface BlockWithCSVFileURL {
+    public interface BlockWithCSVFileURL
+    {
         void execute(String url) throws Exception;
     }
 
     public static void withCSVFile( int rowCount, BlockWithCSVFileURL block ) throws Exception
     {
         File file = File.createTempFile( "file", ".csv", null );
-        try {
-            try ( PrintWriter writer = new PrintWriter( file ) ) {
-                for (int i = 0; i < rowCount; ++i) {
+        try
+        {
+            try ( PrintWriter writer = new PrintWriter( file ) )
+            {
+                for (int i = 0; i < rowCount; ++i)
+                {
                     writer.println("1,2,3");
                 }
             }

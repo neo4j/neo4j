@@ -39,7 +39,7 @@ public final class ByteCodeUtils
         {
             builder.append( reference.declaringClassName() ).append( '$' );
         }
-        builder.append( reference.simpleName() );
+        builder.append( reference.name() );
         return builder.toString();
     }
 
@@ -155,15 +155,10 @@ public final class ByteCodeUtils
     private static StringBuilder internalType( StringBuilder builder, TypeReference reference,
             boolean showErasure )
     {
-        String name;
+        String name = reference.name();
         if ( reference.isArray() )
         {
             builder.append( "[" );
-            name = reference.simpleName().substring( 0, reference.simpleName().length() - 2 );
-        }
-        else
-        {
-            name = reference.simpleName();
         }
 
         switch ( name )

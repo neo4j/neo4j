@@ -87,6 +87,12 @@ public class LuceneLabelScanStore implements LabelScanStore
     }
 
     @Override
+    public void drop() throws IOException
+    {
+        luceneIndex.drop();
+    }
+
+    @Override
     public void init() throws IOException
     {
         monitor.init();
@@ -102,7 +108,7 @@ public class LuceneLabelScanStore implements LabelScanStore
             else if ( !luceneIndex.isValid() )
             {
                 monitor.notValidIndex();
-                luceneIndex.drop();
+                drop();
                 luceneIndex.create();
                 needsRebuild = true;
             }
@@ -176,5 +182,11 @@ public class LuceneLabelScanStore implements LabelScanStore
     public LabelScanWriter newWriter()
     {
         return luceneIndex.getLabelScanWriter();
+    }
+
+    @Override
+    public boolean isReadOnly()
+    {
+        return luceneIndex.isReadOnly();
     }
 }

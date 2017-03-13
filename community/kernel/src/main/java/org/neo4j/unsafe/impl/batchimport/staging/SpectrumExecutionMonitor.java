@@ -20,8 +20,6 @@
 package org.neo4j.unsafe.impl.batchimport.staging;
 
 import java.io.PrintStream;
-import java.util.ArrayList;
-import java.util.List;
 import java.util.concurrent.TimeUnit;
 
 import org.neo4j.helpers.collection.Pair;
@@ -57,7 +55,6 @@ public class SpectrumExecutionMonitor extends ExecutionMonitor.Adapter
 
     private final PrintStream out;
     private final int width;
-    private long tick;
     // For tracking delta
     private long lastProgress;
 
@@ -69,25 +66,16 @@ public class SpectrumExecutionMonitor extends ExecutionMonitor.Adapter
     }
 
     @Override
-    public void start( StageExecution[] executions )
+    public void start( StageExecution execution )
     {
-        for ( int i = 0; i < executions.length; i++ )
-        {
-            if ( i > 0 )
-            {
-                out.print( ", " );
-            }
-            out.print( executions[i].getStageName() );
-        }
-        out.println();
-        tick = 0;
+        out.println( execution.getStageName() );
         lastProgress = 0;
     }
 
     @Override
-    public void end( StageExecution[] executions, long totalTimeMillis )
+    public void end( StageExecution execution, long totalTimeMillis )
     {
-        check( executions );
+        check( execution );
         out.println();
         out.println( "Done in " + duration( totalTimeMillis ) );
     }
@@ -100,29 +88,11 @@ public class SpectrumExecutionMonitor extends ExecutionMonitor.Adapter
     }
 
     @Override
-    public void check( StageExecution[] executions )
+    public void check( StageExecution execution )
     {
-        StageExecution execution = rotatedExecution( executions );
-        if ( execution != null )
-        {
-            StringBuilder builder = new StringBuilder();
-            printSpectrum( builder, execution, width );
-            out.print( "\r" + builder );
-        }
-    }
-
-    private StageExecution rotatedExecution( StageExecution[] executions )
-    {
-        List<StageExecution> active = new ArrayList<>( executions.length );
-        for ( StageExecution execution : executions )
-        {
-            if ( execution.stillExecuting() )
-            {
-                active.add( execution );
-            }
-        }
-
-        return !active.isEmpty() ? active.get( (int) ((tick++)%active.size()) ) : null;
+        StringBuilder builder = new StringBuilder();
+        printSpectrum( builder, execution, width );
+        out.print( "\r" + builder );
     }
 
     private void printSpectrum( StringBuilder builder, StageExecution execution, int width )

@@ -39,6 +39,7 @@ import org.neo4j.graphdb.PropertyContainer;
 import org.neo4j.graphdb.RelationshipType;
 import org.neo4j.graphdb.Transaction;
 import org.neo4j.graphdb.schema.ConstraintDefinition;
+import org.neo4j.graphdb.schema.IndexCreator;
 import org.neo4j.graphdb.schema.IndexDefinition;
 import org.neo4j.graphdb.schema.Schema;
 import org.neo4j.helpers.collection.Iterables;
@@ -618,20 +619,25 @@ public class Neo4jMatchers
         };
     }
 
-    public static IndexDefinition createIndex( GraphDatabaseService beansAPI, Label label, String property )
+    public static IndexDefinition createIndex( GraphDatabaseService beansAPI, Label label, String... properties )
     {
-        IndexDefinition indexDef = createIndexNoWait( beansAPI, label, property );
+        IndexDefinition indexDef = createIndexNoWait( beansAPI, label, properties );
 
         waitForIndex( beansAPI, indexDef );
         return indexDef;
     }
 
-    public static IndexDefinition createIndexNoWait( GraphDatabaseService beansAPI, Label label, String property )
+    public static IndexDefinition createIndexNoWait( GraphDatabaseService beansAPI, Label label, String... properties )
     {
         IndexDefinition indexDef;
         try ( Transaction tx = beansAPI.beginTx() )
         {
-            indexDef = beansAPI.schema().indexFor( label ).on( property ).create();
+            IndexCreator indexCreator = beansAPI.schema().indexFor( label );
+            for ( String property : properties )
+            {
+                indexCreator = indexCreator.on( property );
+            }
+            indexDef = indexCreator.create();
             tx.success();
         }
         return indexDef;

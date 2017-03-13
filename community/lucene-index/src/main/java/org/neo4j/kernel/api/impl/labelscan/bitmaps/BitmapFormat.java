@@ -32,7 +32,8 @@ public enum BitmapFormat
         this.mask = mask;
     }
 
-    public int rangeSize() {
+    public int rangeSize()
+    {
         return 1 << shift;
     }
 

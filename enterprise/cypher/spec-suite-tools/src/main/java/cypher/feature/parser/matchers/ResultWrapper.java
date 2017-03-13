@@ -158,7 +158,8 @@ public class ResultWrapper implements Result
         inner.forEachRemaining( action );
     }
 
-    private class ResultVisitorWrapper<T extends Exception> implements ResultVisitor<T> {
+    private class ResultVisitorWrapper<T extends Exception> implements ResultVisitor<T>
+    {
 
         private final ResultVisitor<T> inner;
 
@@ -179,7 +180,8 @@ public class ResultWrapper implements Result
         }
     }
 
-    private class ResultRowWrapper implements ResultRow {
+    private class ResultRowWrapper implements ResultRow
+    {
 
         private final ResultRow inner;
 

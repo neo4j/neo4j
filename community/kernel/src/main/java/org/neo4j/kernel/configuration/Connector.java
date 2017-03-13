@@ -66,7 +66,8 @@ public class Connector
         BOLT, HTTP
     }
 
-    public String key() {
+    public String key()
+    {
         return group.groupKey;
     }
 }

@@ -27,12 +27,14 @@ import static org.hamcrest.Matchers.isEmptyString;
 public class AcceptanceSpecSuiteTestConstantsTest
 {
     @Test
-    public void runsAllFeatures() {
+    public void runsAllFeatures()
+    {
         assertThat( AcceptanceSpecSuiteTest.FEATURE_TO_RUN, isEmptyString());
     }
 
     @Test
-    public void runsAllScenarios() {
+    public void runsAllScenarios()
+    {
         assertThat( AcceptanceSpecSuiteTest.SCENARIO_NAME_REQUIRED, isEmptyString());
     }
 }

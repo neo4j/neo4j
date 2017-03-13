@@ -113,7 +113,8 @@ class BidirectionalTraverserIterator extends AbstractTraverserIterator
         return (BidirectionalUniquenessFilter) uniqueness;
     }
 
-    private SideSelector fixedSide( final Direction direction )    {
+    private SideSelector fixedSide( final Direction direction )
+    {
         return new SideSelector()
         {
             @Override

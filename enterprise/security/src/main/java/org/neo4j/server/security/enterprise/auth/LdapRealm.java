@@ -32,7 +32,6 @@ import org.apache.shiro.realm.ldap.JndiLdapRealm;
 import org.apache.shiro.realm.ldap.LdapContextFactory;
 import org.apache.shiro.realm.ldap.LdapUtils;
 import org.apache.shiro.subject.PrincipalCollection;
-import org.apache.shiro.util.CollectionUtils;
 
 import java.io.IOException;
 import java.net.SocketTimeoutException;
@@ -59,9 +58,9 @@ import javax.naming.ldap.LdapContext;
 import javax.naming.ldap.StartTlsRequest;
 import javax.naming.ldap.StartTlsResponse;
 
-import org.neo4j.graphdb.security.AuthorizationExpiredException;
 import org.neo4j.graphdb.security.AuthProviderFailedException;
 import org.neo4j.graphdb.security.AuthProviderTimeoutException;
+import org.neo4j.graphdb.security.AuthorizationExpiredException;
 import org.neo4j.kernel.api.security.AuthToken;
 import org.neo4j.kernel.api.security.AuthenticationResult;
 import org.neo4j.kernel.api.security.exception.InvalidAuthTokenException;
@@ -185,9 +184,9 @@ public class LdapRealm extends JndiLdapRealm implements RealmLifecycle, ShiroAut
 
         LdapContext ctx = null;
 
-        try {
+        try
+        {
             ctx = getLdapContextUsingStartTls( ldapContextFactory, principal, credentials );
-
             return createAuthenticationInfo( token, principal, credentials, ctx );
         }
         finally

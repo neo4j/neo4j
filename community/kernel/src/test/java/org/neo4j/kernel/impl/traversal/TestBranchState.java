@@ -133,7 +133,9 @@ public class TestBranchState extends TraversalTestBase
         {
             assertEquals( path.length()/2, state.getState().intValue() );
             if ( path.length() % 2 == 1 )
+            {
                 state.setState( state.getState() + 1 );
+            }
             return path.endNode().getRelationships( Direction.OUTGOING );
         }
 

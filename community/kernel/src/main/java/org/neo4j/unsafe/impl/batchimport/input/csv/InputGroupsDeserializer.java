@@ -158,4 +158,10 @@ class InputGroupsDeserializer<ENTITY extends InputEntity>
     {
         return currentInput.processors( delta );
     }
+
+    @Override
+    public void receivePanic( Throwable cause )
+    {
+        currentInput.receivePanic( cause );
+    }
 }

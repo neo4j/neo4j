@@ -104,7 +104,7 @@ class RunnableBoltWorker implements Runnable, BoltWorker
         }
         catch ( BoltProtocolBreachFatality e )
         {
-            log.error( "Bolt protocol breach in session '" + machine.key() + "'" );
+            log.error( "Bolt protocol breach in session '" + machine.key() + "'", e );
         }
         catch ( Throwable t )
         {

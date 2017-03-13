@@ -334,12 +334,14 @@ public class RWLockCompatibility extends LockingCompatibilityTestSuite.Compatibi
         for ( StressThread stressThread : stressThreads )
         {
             if ( stressThread.error != null )
+            {
                 throw stressThread.error;
+            }
             else if ( stressThread.isAlive() )
             {
                 for ( StackTraceElement stackTraceElement : stressThread.getStackTrace() )
                 {
-                    System.out.println(stackTraceElement);
+                    System.out.println( stackTraceElement );
                 }
             }
         }
@@ -367,9 +369,13 @@ public class RWLockCompatibility extends LockingCompatibilityTestSuite.Compatibi
         for ( StressThread stressThread : stressThreads )
         {
             if ( stressThread.error != null )
+            {
                 return false;
+            }
             if ( stressThread.isAlive() )
+            {
                 return true;
+            }
         }
         return false;
     }

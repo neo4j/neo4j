@@ -36,13 +36,26 @@ public class CustomStatusType implements Response.StatusType
     {
         this.code = code;
         this.reason = reason;
-        switch(code/100) {
-            case 1: this.family = Family.INFORMATIONAL; break;
-            case 2: this.family = Family.SUCCESSFUL; break;
-            case 3: this.family = Family.REDIRECTION; break;
-            case 4: this.family = Family.CLIENT_ERROR; break;
-            case 5: this.family = Family.SERVER_ERROR; break;
-            default: this.family = Family.OTHER; break;
+        switch ( code / 100 )
+        {
+        case 1:
+            this.family = Family.INFORMATIONAL;
+            break;
+        case 2:
+            this.family = Family.SUCCESSFUL;
+            break;
+        case 3:
+            this.family = Family.REDIRECTION;
+            break;
+        case 4:
+            this.family = Family.CLIENT_ERROR;
+            break;
+        case 5:
+            this.family = Family.SERVER_ERROR;
+            break;
+        default:
+            this.family = Family.OTHER;
+            break;
         }
     }
 

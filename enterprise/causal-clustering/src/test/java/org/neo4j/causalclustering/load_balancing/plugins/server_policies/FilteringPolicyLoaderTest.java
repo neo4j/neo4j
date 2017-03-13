@@ -47,25 +47,31 @@ public class FilteringPolicyLoaderTest
                         "asia_west",
 
                         "tags(asia_west) -> min(2);" +
-                        "tags(asia) -> min(2);" +
-                        "all()",
+                        "tags(asia) -> min(2);",
 
                         filter().tags( "asia_west" ).min( 2 ).newRule()
                                 .tags( "asia" ).min( 2 ).newRule()
-                                .all()
+                                .all() // implicit
                                 .build()
                 },
                 {
                         "asia_east",
 
                         "tags(asia_east) -> min(2);" +
-                        "tags(asia) -> min(2);" +
-                        "all()",
+                        "tags(asia) -> min(2);",
 
                         filter().tags( "asia_east" ).min( 2 ).newRule()
                                 .tags( "asia" ).min( 2 ).newRule()
-                                .all()
+                                .all() // implicit
                                 .build()
+                },
+                {
+                        "asia_only",
+
+                        "tags(asia);" +
+                        "halt();",
+
+                        filter().tags( "asia" ).build()
                 },
         };
 

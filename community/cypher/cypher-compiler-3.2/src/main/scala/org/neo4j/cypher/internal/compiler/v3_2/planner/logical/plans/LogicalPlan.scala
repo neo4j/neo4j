@@ -117,10 +117,10 @@ abstract class LogicalPlan
   def indexUsage: Seq[IndexUsage] = {
     import org.neo4j.cypher.internal.frontend.v3_2.Foldable._
     this.fold(Seq.empty[IndexUsage]) {
-      case NodeIndexSeek(idName, label, propertyKey, _, _) =>
-        (acc) => acc :+ SchemaIndexSeekUsage(idName.name, label.name, propertyKey.name)
-      case NodeUniqueIndexSeek(idName, label, propertyKey, _, _) =>
-        (acc) => acc :+ SchemaIndexSeekUsage(idName.name, label.name, propertyKey.name)
+      case NodeIndexSeek(idName, label, propertyKeys, _, _) =>
+        (acc) => acc :+ SchemaIndexSeekUsage(idName.name, label.name, propertyKeys.map(_.name))
+      case NodeUniqueIndexSeek(idName, label, propertyKeys, _, _) =>
+        (acc) => acc :+ SchemaIndexSeekUsage(idName.name, label.name, propertyKeys.map(_.name))
       case NodeIndexScan(idName, label, propertyKey, _) =>
         (acc) => acc :+ SchemaIndexScanUsage(idName.name, label.name, propertyKey.name)
       case LegacyNodeIndexSeek(idName, NodeByIdentifiedIndex(_, index, _, _), _) =>

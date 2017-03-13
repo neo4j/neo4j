@@ -143,7 +143,8 @@ public class DuplicatingLog extends AbstractLog
                 bulkLogs.add( bulkLog );
                 bulk( remaining, bulkLogs, finalConsumer );
             } );
-        } else
+        }
+        else
         {
             Log log = new DuplicatingLog( bulkLogs );
             finalConsumer.accept( log );
@@ -202,11 +203,13 @@ public class DuplicatingLog extends AbstractLog
             if ( !remaining.isEmpty() )
             {
                 Logger logger = remaining.pop();
-                logger.bulk( bulkLogger -> {
+                logger.bulk( bulkLogger ->
+                {
                     bulkLoggers.add( bulkLogger );
                     bulk( remaining, bulkLoggers, finalConsumer );
                 } );
-            } else
+            }
+            else
             {
                 Logger logger = new DuplicatingLogger( bulkLoggers );
                 finalConsumer.accept( logger );

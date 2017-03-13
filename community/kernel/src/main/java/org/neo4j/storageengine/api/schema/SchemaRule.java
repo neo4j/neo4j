@@ -26,23 +26,82 @@ import org.neo4j.kernel.api.schema_new.SchemaComputer;
 import org.neo4j.kernel.api.schema_new.SchemaDescriptor;
 import org.neo4j.kernel.api.schema_new.constaints.ConstraintDescriptor;
 import org.neo4j.kernel.api.schema_new.index.NewIndexDescriptor;
-import org.neo4j.kernel.impl.store.record.RecordSerializable;
+import org.neo4j.kernel.impl.store.record.ConstraintRule;
+import org.neo4j.kernel.impl.store.record.IndexRule;
 
 /**
  * Represents a stored schema rule.
  */
-public interface SchemaRule extends SchemaDescriptor.Supplier, RecordSerializable
+public abstract class SchemaRule implements SchemaDescriptor.Supplier
 {
+    protected final long id;
+    protected final String name;
+
+    protected SchemaRule( long id )
+    {
+        this( id, null );
+    }
+
+    protected SchemaRule( long id, String name )
+    {
+        this.id = id;
+        this.name = name == null? generateName( id, getClass() ) : checkName( name );
+    }
+
+    private String checkName( String name )
+    {
+        int length = name.length();
+        if ( length == 0 )
+        {
+            throw new IllegalArgumentException( "Schema rule name cannot be the empty string" );
+        }
+        for ( int i = 0; i < length; i++ )
+        {
+            char ch = name.charAt( i );
+            if ( ch == '\0' )
+            {
+                throw new IllegalArgumentException( "Illegal schema rule name: '" + name + "'" );
+            }
+        }
+        return name;
+    }
+
     /**
      * The persistence id for this rule.
      */
-    long getId();
+    public final long getId()
+    {
+        return this.id;
+    }
+
+    /**
+     * @return The (possibly user supplied) name of this schema rule.
+     */
+    public final String getName()
+    {
+        return name;
+    }
+
+    public abstract byte[] serialize();
+
+    public static String generateName( long id, Class<? extends SchemaRule> type )
+    {
+        if ( type == IndexRule.class )
+        {
+            return "index_" + id;
+        }
+        if ( type == ConstraintRule.class )
+        {
+            return "constraint_" + id;
+        }
+        return "schema_" + id;
+    }
 
     /**
      * This enum is used for the legacy schema store, and should not be extended.
      */
     @Deprecated
-    enum Kind
+    public enum Kind
     {
         INDEX_RULE( "Index" ),
         CONSTRAINT_INDEX_RULE( "Constraint index" ),

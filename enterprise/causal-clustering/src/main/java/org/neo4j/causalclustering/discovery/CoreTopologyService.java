@@ -39,8 +39,6 @@ public interface CoreTopologyService extends TopologyService
      */
     boolean setClusterId( ClusterId clusterId );
 
-    void refreshCoreTopology();
-
     interface Listener
     {
         void onCoreTopologyChange( CoreTopology coreTopology );

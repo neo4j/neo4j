@@ -111,7 +111,8 @@ public abstract class KernelDiagnostics implements DiagnosticsProvider
                     logger.log( prefix + filename + ":" );
                     size = logStoreFiles( logger, prefix + "  ", file );
                     filename = "- Total";
-                } else
+                }
+                else
                 {
                     size = file.length();
                 }

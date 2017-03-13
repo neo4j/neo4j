@@ -24,6 +24,10 @@ import io.netty.buffer.UnpooledByteBufAllocator;
 import io.netty.channel.Channel;
 import io.netty.channel.ChannelHandlerContext;
 import org.junit.Test;
+
+import java.io.IOException;
+import java.util.Arrays;
+
 import org.neo4j.bolt.v1.messaging.BoltRequestMessageWriter;
 import org.neo4j.bolt.v1.messaging.Neo4jPack;
 import org.neo4j.bolt.v1.messaging.RecordingByteChannel;
@@ -36,9 +40,6 @@ import org.neo4j.bolt.v1.runtime.SynchronousBoltWorker;
 import org.neo4j.bolt.v1.transport.BoltProtocolV1;
 import org.neo4j.kernel.impl.logging.NullLogService;
 import org.neo4j.kernel.impl.util.HexPrinter;
-
-import java.io.IOException;
-import java.util.Arrays;
 
 import static io.netty.buffer.Unpooled.wrappedBuffer;
 import static org.mockito.Matchers.any;
@@ -149,7 +150,10 @@ public class FragmentedMessageDeliveryTest
         StringBuilder sb = new StringBuilder();
         for ( int i = 0; i < fragments.length; i++ )
         {
-            if ( i > 0 ) { sb.append( "," ); }
+            if ( i > 0 )
+            {
+                sb.append( "," );
+            }
             sb.append( fragments[i].capacity() );
         }
         return sb.toString();

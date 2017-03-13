@@ -44,7 +44,7 @@ public class ReadReplicaTopology
         return readReplicaMembers.values();
     }
 
-    public Map<MemberId,ReadReplicaInfo> replicaMembers()
+    public Map<MemberId,ReadReplicaInfo> members()
     {
         return readReplicaMembers;
     }

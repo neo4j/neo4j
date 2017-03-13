@@ -172,17 +172,11 @@ public class EnterpriseReadReplicaEditionModule extends EditionModule
 
         LogProvider logProvider = platformModule.logging.getInternalLogProvider();
 
-        DelayedRenewableTimeoutService refreshReadReplicaTimeoutService =
-                life.add( new DelayedRenewableTimeoutService( Clocks.systemClock(), logProvider ) );
-
-        long readReplicaTimeToLiveTimeout = config.get( CausalClusteringSettings.read_replica_time_to_live );
-        long readReplicaRefreshRate = config.get( CausalClusteringSettings.read_replica_refresh_rate );
-
         logProvider.getLog( getClass() ).info( String.format( "Generated new id: %s", myself ) );
 
-        TopologyService topologyService = discoveryServiceFactory
-                .topologyService( config, logProvider, refreshReadReplicaTimeoutService,
-                        readReplicaTimeToLiveTimeout, readReplicaRefreshRate, myself );
+        TopologyService topologyService = discoveryServiceFactory.topologyService( config,
+                logProvider, platformModule.jobScheduler, myself );
+
         life.add( dependencies.satisfyDependency( topologyService ) );
 
         long inactivityTimeoutMillis = config.get( CausalClusteringSettings.catch_up_client_inactivity_timeout );

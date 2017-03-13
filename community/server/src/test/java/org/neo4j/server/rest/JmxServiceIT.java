@@ -19,10 +19,10 @@
  */
 package org.neo4j.server.rest;
 
-import java.io.IOException;
-
 import org.junit.BeforeClass;
 import org.junit.Test;
+
+import java.io.IOException;
 
 import org.neo4j.server.helpers.FunctionalTestHelper;
 
@@ -41,7 +41,8 @@ public class JmxServiceIT extends AbstractRestFunctionalTestBase
     }
 
     @Test
-    public void shouldRespondWithJMXResources() throws Exception {
+    public void shouldRespondWithJMXResources() throws Exception
+    {
         String url = functionalTestHelper.managementUri() + "/server/jmx";
         JaxRsResponse resp = RestRequest.req().get(url);
         String json = resp.getEntity();

@@ -57,29 +57,26 @@ public class DynamicProcessorAssigner extends ExecutionMonitor.Adapter
     }
 
     @Override
-    public void start( StageExecution[] executions )
+    public void start( StageExecution execution )
     {   // A new stage begins, any data that we had is irrelevant
         lastChangedProcessors.clear();
     }
 
     @Override
-    public void check( StageExecution[] executions )
+    public void check( StageExecution execution )
     {
-        int permits = availableProcessors - countActiveProcessors( executions );
-        for ( StageExecution execution : executions )
+        int permits = availableProcessors - countActiveProcessors( execution );
+        if ( execution.stillExecuting() )
         {
-            if ( execution.stillExecuting() )
+            if ( permits > 0 )
             {
-                if ( permits > 0 )
-                {
-                    // Be swift at assigning processors to slow steps, i.e. potentially multiple per round
-                    permits -= assignProcessorsToPotentialBottleNeck( execution, permits );
-                }
-                // Be a little more conservative removing processors from too fast steps
-                if ( permits == 0 && removeProcessorFromPotentialIdleStep( execution ) )
-                {
-                    permits++;
-                }
+                // Be swift at assigning processors to slow steps, i.e. potentially multiple per round
+                permits -= assignProcessorsToPotentialBottleNeck( execution, permits );
+            }
+            // Be a little more conservative removing processors from too fast steps
+            if ( permits == 0 && removeProcessorFromPotentialIdleStep( execution ) )
+            {
+                permits++;
             }
         }
     }
@@ -150,24 +147,21 @@ public class DynamicProcessorAssigner extends ExecutionMonitor.Adapter
         return step.stats().stat( Keys.done_batches ).asLong();
     }
 
-    private int countActiveProcessors( StageExecution[] executions )
+    private int countActiveProcessors( StageExecution execution )
     {
         float processors = 0;
-        for ( StageExecution execution : executions )
+        if ( execution.stillExecuting() )
         {
-            if ( execution.stillExecuting() )
+            long highestAverage = avg( execution.stepsOrderedBy(
+                    Keys.avg_processing_time, false ).iterator().next().first() );
+            for ( Step<?> step : execution.steps() )
             {
-                long highestAverage = avg( execution.stepsOrderedBy(
-                        Keys.avg_processing_time, false ).iterator().next().first() );
-                for ( Step<?> step : execution.steps() )
-                {
-                    // Calculate how active each step is so that a step that is very cheap
-                    // and idles a lot counts for less than 1 processor, so that bottlenecks can
-                    // "steal" some of its processing power.
-                    long avg = avg( step );
-                    float factor = (float)avg / (float)highestAverage;
-                    processors += factor * step.processors( 0 );
-                }
+                // Calculate how active each step is so that a step that is very cheap
+                // and idles a lot counts for less than 1 processor, so that bottlenecks can
+                // "steal" some of its processing power.
+                long avg = avg( step );
+                float factor = (float)avg / (float)highestAverage;
+                processors += factor * step.processors( 0 );
             }
         }
         return Math.round( processors );

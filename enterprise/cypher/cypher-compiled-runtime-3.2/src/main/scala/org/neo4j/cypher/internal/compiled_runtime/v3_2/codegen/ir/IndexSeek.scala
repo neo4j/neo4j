@@ -23,15 +23,16 @@ import org.neo4j.cypher.internal.compiled_runtime.v3_2.codegen.ir.expressions.Co
 import org.neo4j.cypher.internal.compiled_runtime.v3_2.codegen.spi.MethodStructure
 import org.neo4j.cypher.internal.compiled_runtime.v3_2.codegen.{CodeGenContext, Variable}
 
-case class IndexSeek(opName: String, labelName: String, propName: String, descriptorVar: String,
+case class IndexSeek(opName: String, labelName: String, propNames: Seq[String], descriptorVar: String,
                      expression: CodeGenExpression) extends LoopDataGenerator {
 
   override def init[E](generator: MethodStructure[E])(implicit context: CodeGenContext) = {
+    assert(propNames.length == 1)
     expression.init(generator)
     val labelVar = context.namer.newVarName()
     val propKeyVar = context.namer.newVarName()
     generator.lookupLabelId(labelVar, labelName)
-    generator.lookupPropertyKey(propName, propKeyVar)
+    generator.lookupPropertyKey(propNames.head, propKeyVar)
     generator.newIndexDescriptor(descriptorVar, labelVar, propKeyVar)
   }
 

@@ -39,7 +39,6 @@ import org.neo4j.kernel.impl.store.id.DefaultIdGeneratorFactory;
 import org.neo4j.kernel.impl.store.record.ConstraintRule;
 import org.neo4j.kernel.impl.store.record.DynamicRecord;
 import org.neo4j.kernel.impl.store.record.IndexRule;
-import org.neo4j.kernel.impl.store.record.RecordSerializer;
 import org.neo4j.kernel.impl.store.record.SchemaRuleSerialization;
 import org.neo4j.logging.NullLogProvider;
 import org.neo4j.storageengine.api.schema.SchemaRule;
@@ -90,8 +89,8 @@ public class SchemaStoreTest
                 NewIndexDescriptorFactory.forLabel( 1, 4 ), PROVIDER_DESCRIPTOR );
 
         // WHEN
-        byte[] serialized = new RecordSerializer().append( indexRule ).serialize();
-        IndexRule readIndexRule = (IndexRule) SchemaRuleSerialization.deserialize( indexRule.getId(), wrap( serialized ) );
+        IndexRule readIndexRule = (IndexRule) SchemaRuleSerialization.deserialize(
+                indexRule.getId(), wrap( indexRule.serialize() ) );
 
         // THEN
         assertEquals( indexRule.getId(), readIndexRule.getId() );
@@ -109,8 +108,8 @@ public class SchemaStoreTest
                 NewIndexDescriptorFactory.forLabel( 2, propertyIds ), PROVIDER_DESCRIPTOR );
 
         // WHEN
-        byte[] serialized = new RecordSerializer().append( indexRule ).serialize();
-        IndexRule readIndexRule = (IndexRule) SchemaRuleSerialization.deserialize( indexRule.getId(), wrap( serialized ) );
+        IndexRule readIndexRule = (IndexRule) SchemaRuleSerialization.deserialize(
+                indexRule.getId(), wrap( indexRule.serialize() ) );
 
         // THEN
         assertEquals( indexRule.getId(), readIndexRule.getId() );
@@ -127,8 +126,8 @@ public class SchemaStoreTest
                 NewIndexDescriptorFactory.forLabel( 2, IntStream.range(1, 200).toArray() ), PROVIDER_DESCRIPTOR );
 
         // WHEN
-        byte[] serialized = new RecordSerializer().append( indexRule ).serialize();
-        IndexRule readIndexRule = (IndexRule) SchemaRuleSerialization.deserialize( indexRule.getId(), wrap( serialized ) );
+        IndexRule readIndexRule = (IndexRule) SchemaRuleSerialization.deserialize(
+                indexRule.getId(), wrap( indexRule.serialize() ) );
 
         // THEN
         assertEquals( indexRule.getId(), readIndexRule.getId() );

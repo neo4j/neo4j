@@ -78,7 +78,8 @@ import org.neo4j.kernel.impl.api.Kernel;
  */
 public interface KernelTransaction extends AutoCloseable
 {
-    enum Type {
+    enum Type
+    {
         implicit,
         explicit
     }

@@ -91,7 +91,8 @@ public class DesktopConfigurator
                 .listen_address.from( config );
     }
 
-    private Pair<String,String>[] pairs( Pair<String,String>... pairs ) {
+    private Pair<String,String>[] pairs( Pair<String,String>... pairs )
+    {
         return pairs;
     }
 }

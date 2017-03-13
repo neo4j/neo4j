@@ -58,6 +58,9 @@ public class AuthorizationDisabledIT extends ExclusiveServerTestBase
     @After
     public void cleanup()
     {
-        if(server != null) { server.stop(); }
+        if ( server != null )
+        {
+            server.stop();
+        }
     }
 }

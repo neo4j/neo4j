@@ -99,10 +99,12 @@ public class RecentK<Type> implements Iterable<Type>
         for ( AtomicLong count : recentItems.values() )
         {
             long prev, next;
-            do {
+            do
+            {
                 prev = count.get();
                 next = Math.max( prev / 2, 1 );
-            } while (!count.compareAndSet(prev, next));
+            }
+            while ( !count.compareAndSet( prev, next ) );
 
         }
     }

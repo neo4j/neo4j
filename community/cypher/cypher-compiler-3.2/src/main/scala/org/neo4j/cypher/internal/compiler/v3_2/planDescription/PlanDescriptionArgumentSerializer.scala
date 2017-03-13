@@ -39,7 +39,7 @@ object PlanDescriptionArgumentSerializer {
       case UpdateActionName(action) => action
       case MergePattern(startPoint) => s"MergePattern($startPoint)"
       case LegacyIndex(index) => index
-      case Index(label, property) => s":$label($property)"
+      case Index(label, properties) => s":$label(${properties.mkString(",")})"
       case PrefixIndex(label, property, prefix) => s":$label($property STARTS WITH $prefix)"
       case InequalityIndex(label, property, bounds) => s":$label($property) ${bounds.mkString(", ")}"
       case LabelName(label) => s":$label"

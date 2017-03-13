@@ -17,13 +17,13 @@
  * You should have received a copy of the GNU General Public License
  * along with this program.  If not, see <http://www.gnu.org/licenses/>.
  */
-package org.neo4j.kernel.impl.store.record;
+package org.neo4j.unsafe.impl.batchimport.staging;
 
-import java.nio.ByteBuffer;
-
-public interface RecordSerializable
+public interface Panicable
 {
-    int length();
-
-    void serialize( ByteBuffer target );
+    /**
+     * Receives a panic, asking to shut down as soon as possible.
+     * @param cause cause for the panic.
+     */
+    void receivePanic( Throwable cause );
 }

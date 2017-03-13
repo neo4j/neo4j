@@ -19,11 +19,14 @@
  */
 package org.neo4j.index.internal.gbptree;
 
+import org.apache.commons.lang3.tuple.Pair;
+
 import java.io.IOException;
 import java.io.PrintStream;
 
 import org.neo4j.io.pagecache.PageCursor;
 
+import static java.lang.String.format;
 import static org.neo4j.index.internal.gbptree.ConsistencyChecker.assertOnTreeNode;
 import static org.neo4j.index.internal.gbptree.GenSafePointerPair.pointer;
 
@@ -53,10 +56,21 @@ class TreePrinter<KEY,VALUE>
      * @param cursor {@link PageCursor} placed at root of tree or sub-tree.
      * @param out target to print tree at.
      * @param printPosition whether or not to include positional (slot number) information.
+     * @param printState
      * @throws IOException on page cache access error.
      */
-    void printTree( PageCursor cursor, PrintStream out, boolean printValues, boolean printPosition ) throws IOException
+    void printTree( PageCursor cursor, PrintStream out, boolean printValues, boolean printPosition, boolean printState )
+            throws IOException
     {
+        if ( printState )
+        {
+            long currentPage = cursor.getCurrentPageId();
+            Pair<TreeState,TreeState> statePair = TreeStatePair.readStatePages(
+                    cursor, IdSpace.STATE_PAGE_A, IdSpace.STATE_PAGE_B );
+            node.goTo( cursor, "back to tree node from reading state", currentPage );
+            out.println( "StateA: " + statePair.getLeft() );
+            out.println( "StateB: " + statePair.getRight() );
+        }
         assertOnTreeNode( cursor );
 
         // Traverse the tree
@@ -77,10 +91,38 @@ class TreePrinter<KEY,VALUE>
         while ( goToLeftmostChild( cursor ) );
     }
 
-    private void printTreeNode( PageCursor cursor, int keyCount, boolean isLeaf, PrintStream out, boolean printValues,
-            boolean printPosition ) throws IOException
+    void printTreeNode( PageCursor cursor, PrintStream out, boolean printValues, boolean printPosition,
+            boolean printHeader ) throws IOException
     {
-        out.print( "{" + cursor.getCurrentPageId() + "} " );
+        boolean isLeaf;
+        int keyCount;
+        do
+        {
+            isLeaf = TreeNode.isLeaf( cursor );
+            keyCount = node.keyCount( cursor );
+            if ( keyCount < 0 || (keyCount > node.internalMaxKeyCount() && keyCount > node.leafMaxKeyCount()) )
+            {
+                cursor.setCursorException( "Unexpected keyCount " + keyCount );
+            }
+        } while ( cursor.shouldRetry() );
+
+        if ( printHeader )
+        {
+            //[TYPE][GEN][KEYCOUNT] ([RIGHTSIBLING][LEFTSIBLING][NEWGEN]))
+            long generation = -1;
+            do
+            {
+                generation = node.gen( cursor );
+
+            } while ( cursor.shouldRetry() );
+            String treeNodeType = isLeaf ? "leaf" : "internal";
+            out.print( format( "{%d,%s,gen=%d,keyCount=%d}",
+                    cursor.getCurrentPageId(), treeNodeType, generation, keyCount ) );
+        }
+        else
+        {
+            out.print( "{" + cursor.getCurrentPageId() + "} " );
+        }
         KEY key = layout.newKey();
         VALUE value = layout.newValue();
         for ( int i = 0; i < keyCount; i++ )
@@ -161,25 +203,17 @@ class TreePrinter<KEY,VALUE>
     private void printLevel( PageCursor cursor, PrintStream out, boolean printValues, boolean printPosition )
             throws IOException
     {
-        int keyCount;
         long rightSibling = -1;
-        boolean isLeaf;
         do
         {
+
+            printTreeNode( cursor, out, printValues, printPosition, false );
+
             do
             {
-                isLeaf = TreeNode.isLeaf( cursor );
-                keyCount = node.keyCount( cursor );
-                if ( keyCount < 0 || (keyCount > node.internalMaxKeyCount() && keyCount > node.leafMaxKeyCount()) )
-                {
-                    cursor.setCursorException( "Unexpected keyCount " + keyCount );
-                    continue;
-                }
                 rightSibling = node.rightSibling( cursor, stableGeneration, unstableGeneration );
             }
             while ( cursor.shouldRetry() );
-
-            printTreeNode( cursor, keyCount, isLeaf, out, printValues, printPosition );
 
             if ( TreeNode.isNode( rightSibling ) )
             {

@@ -31,7 +31,7 @@ abstract class IntegralArrayProperty extends DefinedProperty implements ArrayVal
     public abstract long longValue( int index );
 
     @Override
-    final int valueHash()
+    public final int valueHash()
     {
         return hash( this );
     }

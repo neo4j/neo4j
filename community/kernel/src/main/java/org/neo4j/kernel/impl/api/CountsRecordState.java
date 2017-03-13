@@ -306,7 +306,8 @@ public class CountsRecordState implements CountsAccessor, RecordState, CountsAcc
                     differences.add( new Difference( key, 0, 0, actualFirst, actualSecond ) );
                 }
             }
-            else {
+            else
+            {
                 long expectedFirst = expected.readFirst();
                 long expectedSecond = expected.readSecond();
                 if ( expectedFirst != actualFirst || expectedSecond != actualSecond )

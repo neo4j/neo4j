@@ -30,7 +30,7 @@ import org.neo4j.test.TestGraphDatabaseFactory;
 
 import static org.junit.Assert.assertTrue;
 
-public class TestConfiguration
+public class ConfigurationIT
 {
     private GraphDatabaseAPI db;
     private ShellServer server;

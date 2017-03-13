@@ -68,8 +68,10 @@ public class ListRepresentation extends Representation
         finally
         {
             // Make sure we exhaust this iterator in case it has an internal close mechanism
-            while (contentIterator.hasNext())
+            while ( contentIterator.hasNext() )
+            {
                 contentIterator.next();
+            }
         }
     }
 
@@ -130,7 +132,10 @@ public class ListRepresentation extends Representation
                     @Override
                     protected ValueRepresentation fetchNextOrNull()
                     {
-                        if ( pos >= values.length ) return null;
+                        if ( pos >= values.length )
+                        {
+                            return null;
+                        }
                         return ValueRepresentation.number( values[pos++] );
                     }
                 };
@@ -153,7 +158,10 @@ public class ListRepresentation extends Representation
                             @Override
                             protected ValueRepresentation fetchNextOrNull()
                             {
-                                if ( pos >= values.length ) return null;
+                                if ( pos >= values.length )
+                                {
+                                    return null;
+                                }
                                 return ValueRepresentation.number( values[pos++] );
                             }
                         };

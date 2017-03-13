@@ -122,7 +122,8 @@ public final class Strings
         for ( int i = 0; i < len; i++ )
         {
             char ch = arg.charAt( i );
-            switch (ch) {
+            switch (ch)
+            {
                 case '"':
                     output.append( "\\\"" );
                     break;

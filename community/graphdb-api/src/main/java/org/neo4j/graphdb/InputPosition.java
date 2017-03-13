@@ -39,7 +39,8 @@ public final class InputPosition
      * @param line the line number, starting from 1.
      * @param column the column number, starting from 1.
      */
-    public InputPosition(int offset, int line, int column) {
+    public InputPosition( int offset, int line, int column )
+    {
         this.offset = offset;
         this.line = line;
         this.column = column;

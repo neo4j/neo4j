@@ -20,30 +20,64 @@
 package org.neo4j.kernel.api.schema_new;
 
 import java.util.Arrays;
+import java.util.Comparator;
+
+import org.neo4j.kernel.api.properties.DefinedProperty;
+import org.neo4j.kernel.api.properties.Property;
+import org.neo4j.kernel.impl.util.Validators;
 
 import static java.lang.String.format;
 import static java.lang.String.valueOf;
+import static org.neo4j.kernel.api.StatementConstants.NO_SUCH_PROPERTY_KEY;
+import static org.neo4j.kernel.impl.api.PropertyValueComparison.COMPARE_VALUES;
 
 /**
  * Holder for n property values, ordered according to a schema descriptor property id order
+ *
+ * This implementation uses the Property class hierarchy to achieve correct equality between property values of
+ * different types. However, the propertyKeyId is really not needed and we could consider reimplementing the class if
+ * we make static methods for comparing property values.
  */
 public class OrderedPropertyValues
 {
-    private final Object[] values;
+    // FACTORY METHODS
 
-    public static OrderedPropertyValues of( Object... values )
+    public static OrderedPropertyValues ofUndefined( Object... values )
+    {
+        return new OrderedPropertyValues(
+                Arrays.stream( values )
+                        .map( value -> Property.property( NO_SUCH_PROPERTY_KEY, value ) )
+                        .toArray( DefinedProperty[]::new )
+                );
+    }
+
+    public static OrderedPropertyValues of( DefinedProperty[] values )
     {
         return new OrderedPropertyValues( values );
     }
 
-    private OrderedPropertyValues( Object[] values )
+    public static OrderedPropertyValues of( IndexQuery.ExactPredicate[] exactPreds )
     {
-        this.values = values;
+        DefinedProperty[] values = new DefinedProperty[exactPreds.length];
+        for ( int i = 0; i < exactPreds.length; i++ )
+        {
+            values[i] = Property.property( exactPreds[i].propertyKeyId(), exactPreds[i].value() );
+        }
+        return new OrderedPropertyValues( values );
     }
 
-    public Object[] values()
+    // ACTUAL CLASS
+
+    private final DefinedProperty[] properties;
+
+    private OrderedPropertyValues( DefinedProperty[] properties )
     {
-        return values;
+        this.properties = properties;
+    }
+
+    public Object valueAt( int position )
+    {
+        return properties[position].value();
     }
 
     @Override
@@ -60,24 +94,41 @@ public class OrderedPropertyValues
 
         OrderedPropertyValues that = (OrderedPropertyValues) o;
 
-        return Arrays.deepEquals( values, that.values );
+        if ( that.properties.length != properties.length )
+        {
+            return false;
+        }
+
+        for ( int i = 0; i < properties.length; i++ )
+        {
+            if ( !properties[i].valueEquals( that.properties[i].value() ) )
+            {
+                return false;
+            }
+        }
+        return true;
     }
 
     @Override
     public int hashCode()
     {
-        return Arrays.deepHashCode( values );
+        int result = 0;
+        for ( DefinedProperty property : properties )
+        {
+            result = 31 * ( result + property.valueHash() );
+        }
+        return result;
     }
 
     public int size()
     {
-        return values.length;
+        return properties.length;
     }
 
     public Object getSinglePropertyValue()
     {
-        assert values.length == 1 : "Assumed single property but had " + values.length;
-        return values[0];
+        assert properties.length == 1 : "Assumed single property but had " + properties.length;
+        return properties[0].value();
     }
 
     @Override
@@ -85,15 +136,17 @@ public class OrderedPropertyValues
     {
         StringBuilder sb = new StringBuilder();
         String sep = "( ";
-        for ( Object value : values )
+        for ( DefinedProperty property : properties )
         {
             sb.append( sep );
             sep = ", ";
-            sb.append( quote( value ) );
+            sb.append( quote( property.value() ) );
         }
         sb.append( " )" );
         return sb.toString();
     }
+
+    // STATIC HELPERS
 
     public static String quote( Object propertyValue )
     {
@@ -107,25 +160,32 @@ public class OrderedPropertyValues
             if ( type == Boolean.TYPE )
             {
                 return Arrays.toString( (boolean[]) propertyValue );
-            } else if ( type == Byte.TYPE )
+            }
+            else if ( type == Byte.TYPE )
             {
                 return Arrays.toString( (byte[]) propertyValue );
-            } else if ( type == Short.TYPE )
+            }
+            else if ( type == Short.TYPE )
             {
                 return Arrays.toString( (short[]) propertyValue );
-            } else if ( type == Character.TYPE )
+            }
+            else if ( type == Character.TYPE )
             {
                 return Arrays.toString( (char[]) propertyValue );
-            } else if ( type == Integer.TYPE )
+            }
+            else if ( type == Integer.TYPE )
             {
                 return Arrays.toString( (int[]) propertyValue );
-            } else if ( type == Long.TYPE )
+            }
+            else if ( type == Long.TYPE )
             {
                 return Arrays.toString( (long[]) propertyValue );
-            } else if ( type == Float.TYPE )
+            }
+            else if ( type == Float.TYPE )
             {
                 return Arrays.toString( (float[]) propertyValue );
-            } else if ( type == Double.TYPE )
+            }
+            else if ( type == Double.TYPE )
             {
                 return Arrays.toString( (double[]) propertyValue );
             }
@@ -133,4 +193,23 @@ public class OrderedPropertyValues
         }
         return valueOf( propertyValue );
     }
+
+    public static final Comparator<OrderedPropertyValues> COMPARATOR = ( left, right ) ->
+    {
+        if ( left.properties.length != right.properties.length )
+        {
+            throw new IllegalStateException( "Comparing two OrderedPropertyValues of different lengths!" );
+        }
+
+        int compare = 0;
+        for ( int i = 0; i < left.properties.length; i++ )
+        {
+            compare = COMPARE_VALUES.compare( left.properties[i].value(), right.properties[i].value() );
+            if ( compare != 0 )
+            {
+                return compare;
+            }
+        }
+        return compare;
+    };
 }

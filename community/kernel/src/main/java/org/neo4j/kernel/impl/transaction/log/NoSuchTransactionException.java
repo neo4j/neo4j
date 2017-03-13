@@ -35,7 +35,9 @@ public class NoSuchTransactionException extends MissingLogDataException
     {
         String result = "Unable to find transaction " + missingTxId + " in any of my logical logs";
         if ( additionalInformation != null )
+        {
             result += ": " + additionalInformation;
+        }
         return result;
     }
 }

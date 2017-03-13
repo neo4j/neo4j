@@ -131,7 +131,7 @@ class NotificationAcceptanceTest extends ExecutionEngineFunSuite with NewPlanner
 
   test("warn once when a single index hint cannot be fulfilled") {
     val result = innerExecute("EXPLAIN MATCH (n:Person) USING INDEX n:Person(name) WHERE n.name = 'John' RETURN n")
-    result.notifications.toSet should contain(IndexHintUnfulfillableNotification("Person", "name"))
+    result.notifications.toSet should contain(IndexHintUnfulfillableNotification("Person", Seq("name")))
   }
 
   test("warn for each unfulfillable index hint") {
@@ -143,9 +143,9 @@ class NotificationAcceptanceTest extends ExecutionEngineFunSuite with NewPlanner
         |WHERE n.name = 'John' AND m.city = 'Reykjavik' AND k.species = 'Sloth'
         |RETURN n""".stripMargin)
 
-    result.notifications should contain(IndexHintUnfulfillableNotification("Person", "name"))
-    result.notifications should contain(IndexHintUnfulfillableNotification("Party", "city"))
-    result.notifications should contain(IndexHintUnfulfillableNotification("Animal", "species"))
+    result.notifications should contain(IndexHintUnfulfillableNotification("Person", Seq("name")))
+    result.notifications should contain(IndexHintUnfulfillableNotification("Party", Seq("city")))
+    result.notifications should contain(IndexHintUnfulfillableNotification("Animal", Seq("species")))
   }
 
   test("should warn when join hint is unfulfilled") {

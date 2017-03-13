@@ -19,6 +19,8 @@
  */
 package org.neo4j.kernel.impl.api;
 
+import org.apache.commons.lang3.ArrayUtils;
+
 import java.util.Iterator;
 
 import org.neo4j.collection.primitive.PrimitiveIntCollection;
@@ -26,7 +28,8 @@ import org.neo4j.collection.primitive.PrimitiveIntIterator;
 import org.neo4j.collection.primitive.PrimitiveIntSet;
 import org.neo4j.collection.primitive.PrimitiveLongIterator;
 import org.neo4j.cursor.Cursor;
-import org.neo4j.helpers.Strings;
+import org.neo4j.helpers.collection.CastingIterator;
+import org.neo4j.helpers.collection.Iterators;
 import org.neo4j.kernel.api.exceptions.EntityNotFoundException;
 import org.neo4j.kernel.api.exceptions.InvalidTransactionTypeKernelException;
 import org.neo4j.kernel.api.exceptions.KernelException;
@@ -47,10 +50,11 @@ import org.neo4j.kernel.api.properties.DefinedProperty;
 import org.neo4j.kernel.api.properties.Property;
 import org.neo4j.kernel.api.schema.NodePropertyDescriptor;
 import org.neo4j.kernel.api.schema_new.IndexQuery;
+import org.neo4j.kernel.api.schema_new.IndexQuery.ExactPredicate;
 import org.neo4j.kernel.api.schema_new.LabelSchemaDescriptor;
 import org.neo4j.kernel.api.schema_new.OrderedPropertyValues;
 import org.neo4j.kernel.api.schema_new.RelationTypeSchemaDescriptor;
-import org.neo4j.kernel.api.schema_new.SchemaDescriptorFactory;
+import org.neo4j.kernel.api.schema_new.SchemaDescriptor;
 import org.neo4j.kernel.api.schema_new.constaints.ConstraintDescriptor;
 import org.neo4j.kernel.api.schema_new.constaints.NodeExistenceConstraintDescriptor;
 import org.neo4j.kernel.api.schema_new.constaints.RelExistenceConstraintDescriptor;
@@ -61,6 +65,7 @@ import org.neo4j.kernel.impl.api.operations.EntityReadOperations;
 import org.neo4j.kernel.impl.api.operations.EntityWriteOperations;
 import org.neo4j.kernel.impl.api.operations.SchemaReadOperations;
 import org.neo4j.kernel.impl.api.operations.SchemaWriteOperations;
+import org.neo4j.kernel.impl.api.schema.NodeSchemaMatcher;
 import org.neo4j.kernel.impl.api.store.NodeLoadingIterator;
 import org.neo4j.kernel.impl.constraints.ConstraintSemantics;
 import org.neo4j.kernel.impl.locking.LockTracer;
@@ -70,7 +75,11 @@ import org.neo4j.storageengine.api.NodeItem;
 import org.neo4j.storageengine.api.PropertyItem;
 import org.neo4j.storageengine.api.RelationshipItem;
 
+import static java.lang.String.format;
 import static org.neo4j.kernel.api.StatementConstants.NO_SUCH_NODE;
+import static org.neo4j.kernel.api.StatementConstants.NO_SUCH_PROPERTY_KEY;
+import static org.neo4j.kernel.api.exceptions.schema.ConstraintValidationException.Phase.VALIDATION;
+import static org.neo4j.kernel.api.schema_new.SchemaDescriptorPredicates.hasProperty;
 import static org.neo4j.kernel.api.schema_new.constaints.ConstraintDescriptor.Type.UNIQUE;
 import static org.neo4j.kernel.impl.locking.ResourceTypes.INDEX_ENTRY;
 import static org.neo4j.kernel.impl.locking.ResourceTypes.indexEntryResourceId;
@@ -82,6 +91,7 @@ public class ConstraintEnforcingEntityOperations implements EntityOperations, Sc
     private final SchemaWriteOperations schemaWriteOperations;
     private final SchemaReadOperations schemaReadOperations;
     private final ConstraintSemantics constraintSemantics;
+    private final NodeSchemaMatcher<UniquenessConstraintDescriptor> nodeSchemaMatcher;
 
     public ConstraintEnforcingEntityOperations(
             ConstraintSemantics constraintSemantics, EntityWriteOperations entityWriteOperations,
@@ -94,6 +104,7 @@ public class ConstraintEnforcingEntityOperations implements EntityOperations, Sc
         this.entityReadOperations = entityReadOperations;
         this.schemaWriteOperations = schemaWriteOperations;
         this.schemaReadOperations = schemaReadOperations;
+        nodeSchemaMatcher = new NodeSchemaMatcher<>( entityReadOperations );
     }
 
     @Override
@@ -110,16 +121,13 @@ public class ConstraintEnforcingEntityOperations implements EntityOperations, Sc
                 if ( constraint.type() == UNIQUE )
                 {
                     UniquenessConstraintDescriptor uniqueConstraint = (UniquenessConstraintDescriptor) constraint;
-                    // TODO: Support composite indexes
-                    Object propertyValue = nodeGetProperty( state, node, uniqueConstraint.schema().getPropertyId() );
-                    if ( propertyValue != null )
+                    ExactPredicate[] propertyValues = getAllPropertyValues( state, uniqueConstraint.schema(), node );
+                    if ( propertyValues != null )
                     {
-                        // TODO: Support composite indexes
-                        validateNoExistingNodeWithLabelAndProperty( state, uniqueConstraint, propertyValue, node.id() );
+                        validateNoExistingNodeWithExactValues( state, uniqueConstraint, propertyValues, node.id() );
                     }
                 }
             }
-
         }
         return entityWriteOperations.nodeAddLabel( state, nodeId, labelId );
     }
@@ -132,54 +140,106 @@ public class ConstraintEnforcingEntityOperations implements EntityOperations, Sc
         try ( Cursor<NodeItem> cursor = nodeCursorById( state, nodeId ) )
         {
             NodeItem node = cursor.get();
-            node.labels().visitKeys( labelId ->
-            {
-                int propertyKeyId = property.propertyKeyId();
-                Iterator<ConstraintDescriptor> constraints =
-                        schemaReadOperations.constraintsGetForSchema( state,
-                                SchemaDescriptorFactory.forLabel( labelId, propertyKeyId ) );
-                while ( constraints.hasNext() )
-                {
-                    ConstraintDescriptor constraint = constraints.next();
-                    if ( constraint.type() == UNIQUE )
-                    {
-                        validateNoExistingNodeWithLabelAndProperty(
-                                state, (UniquenessConstraintDescriptor) constraint, property.value(), node.id() );
-                    }
-                }
-                return false;
-            } );
+            Iterator<ConstraintDescriptor> constraints = getConstraintsInvolvingProperty( state, property.propertyKeyId() );
+            Iterator<UniquenessConstraintDescriptor> uniquenessConstraints =
+                    new CastingIterator<>( constraints, UniquenessConstraintDescriptor.class );
+
+            nodeSchemaMatcher.onMatchingSchema( state, uniquenessConstraints, node, property.propertyKeyId(),
+                    constraint -> {
+                        validateNoExistingNodeWithExactValues( state, constraint,
+                                getAllPropertyValues( state, constraint.schema(), node, property ),
+                                node.id() );
+                    } );
         }
 
         return entityWriteOperations.nodeSetProperty( state, nodeId, property );
     }
 
-    private void validateNoExistingNodeWithLabelAndProperty(
+    private Iterator<ConstraintDescriptor> getConstraintsInvolvingProperty( KernelStatement state, int propertyId )
+    {
+        Iterator<ConstraintDescriptor> allConstraints = schemaReadOperations.constraintsGetAll( state );
+
+        return Iterators.filter( hasProperty( propertyId ), allConstraints );
+    }
+
+    private ExactPredicate[] getAllPropertyValues( KernelStatement state, SchemaDescriptor schema, NodeItem node )
+    {
+        return getAllPropertyValues( state, schema, node, DefinedProperty.NO_SUCH_PROPERTY );
+    }
+
+    /**
+     * Fetch the property values for all properties in schema for a given node. Return these as an exact predicate
+     * array.
+     *
+     * The changedProperty is used to override the store/txState value of the property. This is used when we intend
+     * to change a property, and that to verify that the post-change values do not validate some constraint.
+     */
+    private ExactPredicate[] getAllPropertyValues( KernelStatement state, SchemaDescriptor schema, NodeItem node,
+            DefinedProperty changedProperty )
+    {
+        int[] schemaPropertyIds = schema.getPropertyIds();
+        ExactPredicate[] values = new ExactPredicate[schemaPropertyIds.length];
+
+        int nMatched = 0;
+        Cursor<PropertyItem> nodePropertyCursor = nodeGetProperties( state, node );
+        int changedPropId = changedProperty.propertyKeyId();
+        while ( nodePropertyCursor.next() )
+        {
+            PropertyItem property = nodePropertyCursor.get();
+
+            int nodePropertyId = property.propertyKeyId();
+            int k = ArrayUtils.indexOf( schemaPropertyIds, nodePropertyId );
+            if ( k >= 0 )
+            {
+                if ( nodePropertyId != changedPropId )
+                {
+                    values[k] = IndexQuery.exact( nodePropertyId, property.value() );
+                }
+                nMatched++;
+            }
+        }
+
+        if ( changedPropId != NO_SUCH_PROPERTY_KEY )
+        {
+            int k = ArrayUtils.indexOf( schemaPropertyIds, changedPropId );
+            if ( k >= 0 )
+            {
+                values[k] = IndexQuery.exact( changedPropId, changedProperty.value() );
+                nMatched++;
+            }
+        }
+        if ( nMatched < values.length )
+        {
+            return null;
+        }
+        return values;
+    }
+
+    private void validateNoExistingNodeWithExactValues(
             KernelStatement state,
             UniquenessConstraintDescriptor constraint,
-            Object value,
+            ExactPredicate[] propertyValues,
             long modifiedNode
     ) throws ConstraintValidationException
     {
         try
         {
-            // TODO: Support composite constraints
             NewIndexDescriptor index = constraint.ownedIndexDescriptor();
             assertIndexOnline( state, index );
+
             int labelId = index.schema().getLabelId();
-            int propertyId = index.schema().getPropertyId();
             state.locks().optimistic().acquireExclusive(
                     state.lockTracer(),
                     INDEX_ENTRY,
-                    indexEntryResourceId( labelId, propertyId, Strings.prettyPrint( value ) )
+                    indexEntryResourceId( labelId, propertyValues )
                 );
 
-            long existing = entityReadOperations.nodeGetFromUniqueIndexSeek( state, index, value );
+            long existing = entityReadOperations.nodeGetFromUniqueIndexSeek( state, index, propertyValues );
             if ( existing != NO_SUCH_NODE && existing != modifiedNode )
             {
-                throw new UniquePropertyValueValidationException( constraint,
-                        ConstraintValidationException.Phase.VALIDATION,
-                        new IndexEntryConflictException( existing, NO_SUCH_NODE, value ) );
+                throw new UniquePropertyValueValidationException( constraint, VALIDATION,
+                        new IndexEntryConflictException( existing, NO_SUCH_NODE,
+                                OrderedPropertyValues.of( propertyValues ) ) );
             }
         }
         catch ( IndexNotFoundKernelException | IndexBrokenKernelException | IndexNotApplicableKernelException e )
@@ -292,36 +352,28 @@ public class ConstraintEnforcingEntityOperations implements EntityOperations, Sc
     public long nodeGetFromUniqueIndexSeek(
             KernelStatement state,
             NewIndexDescriptor index,
-            Object value )
+            ExactPredicate... predicates )
             throws IndexNotFoundKernelException, IndexBrokenKernelException, IndexNotApplicableKernelException
     {
         assertIndexOnline( state, index );
-
-        // TODO: Support composite index, either by allowing value to be an array, or by creating a new method
+        assertPredicatesMatchSchema( index.schema(), predicates );
         int labelId = index.schema().getLabelId();
-        int propertyKeyId = index.schema().getPropertyId();
-        String stringVal = "";
-        if ( null != value )
-        {
-            DefinedProperty property = Property.property( propertyKeyId, value );
-            stringVal = property.valueAsString();
-        }
 
         // If we find the node - hold a shared lock. If we don't find a node - hold an exclusive lock.
         // If locks are deferred than both shared and exclusive locks will be taken only at commit time.
         Locks.Client locks = state.locks().optimistic();
         LockTracer lockTracer = state.lockTracer();
-        long indexEntryId = indexEntryResourceId( labelId, propertyKeyId, stringVal );
+        long indexEntryId = indexEntryResourceId( labelId, predicates );
 
         locks.acquireShared( lockTracer, INDEX_ENTRY, indexEntryId );
 
-        long nodeId = entityReadOperations.nodeGetFromUniqueIndexSeek( state, index, value );
+        long nodeId = entityReadOperations.nodeGetFromUniqueIndexSeek( state, index, predicates );
         if ( NO_SUCH_NODE == nodeId )
         {
             locks.releaseShared( INDEX_ENTRY, indexEntryId );
             locks.acquireExclusive( lockTracer, INDEX_ENTRY, indexEntryId );
 
-            nodeId = entityReadOperations.nodeGetFromUniqueIndexSeek( state, index, value );
+            nodeId = entityReadOperations.nodeGetFromUniqueIndexSeek( state, index, predicates );
             if ( NO_SUCH_NODE != nodeId ) // we found it under the exclusive lock
             {
                 // downgrade to a shared lock
@@ -330,6 +382,27 @@ public class ConstraintEnforcingEntityOperations implements EntityOperations, Sc
             }
         }
         return nodeId;
+    }
+
+    private void assertPredicatesMatchSchema( LabelSchemaDescriptor schema, ExactPredicate[] predicates )
+            throws IndexNotApplicableKernelException
+    {
+        int[] propertyIds = schema.getPropertyIds();
+        if ( propertyIds.length != predicates.length )
+        {
+            throw new IndexNotApplicableKernelException(
+                    format( "The index specifies %d properties, but only %d lookup predicates were given.",
+                            propertyIds.length, predicates.length ) );
+        }
+        for ( int i = 0; i < predicates.length; i++ )
+        {
+            if ( predicates[i].propertyKeyId() != propertyIds[i] )
+            {
+                throw new IndexNotApplicableKernelException(
+                        format( "The index has the property id %d in position %d, but the lookup property id was %d.",
+                                propertyIds[i], i, predicates[i].propertyKeyId() ) );
+            }
+        }
     }
 
     @Override

@@ -68,9 +68,12 @@ class AsOneStartBranch implements TraversalBranch
         {
             List<TraversalBranch> result = new ArrayList<TraversalBranch>();
             for ( Node node : nodes )
+            {
                 result.add( new StartNodeTraversalBranch( context, this, node, initialState ) );
+            }
             return result.iterator();
-        } else
+        }
+        else
         {
             return new TraversalBranchIterator( nodes.iterator() );
         }

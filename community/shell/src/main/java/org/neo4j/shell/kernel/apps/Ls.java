@@ -217,7 +217,9 @@ public class Ls extends TransactionProvidingApp
     {
         List<String> labelNames = new ArrayList<String>();
         for ( Label label : thing.asNode().getLabels() )
+        {
             labelNames.add( label.name() );
+        }
 
         if ( brief )
         {
@@ -228,7 +230,9 @@ public class Ls extends TransactionProvidingApp
             for ( String label : sortKeys( labelNames ) )
             {
                 if ( filterMatches( filterMap, caseInsensitiveFilters, looseFilters, label, "" ) )
+                {
                     out.println( ":" + label );
+                }
             }
         }
     }
