@@ -93,8 +93,8 @@ public class BatchingMultipleIndexPopulatorTest
         IndexUpdater updater = mock( IndexUpdater.class );
         when( populator.newPopulatingUpdater( any() ) ).thenReturn( updater );
 
-        IndexEntryUpdate update1 = IndexEntryUpdate.add( 1, index1, "foo" );
-        IndexEntryUpdate update2 = IndexEntryUpdate.add( 2, index1, "bar" );
+        IndexEntryUpdate update1 = IndexEntryUpdate.add( 1, index1.schema(), "foo" );
+        IndexEntryUpdate update2 = IndexEntryUpdate.add( 2, index1.schema(), "bar" );
         batchingPopulator.queue( update1 );
         batchingPopulator.queue( update2 );
 
@@ -127,9 +127,9 @@ public class BatchingMultipleIndexPopulatorTest
         when( populator2.newPopulatingUpdater( any() ) ).thenReturn( updater2 );
 
         batchingPopulator.indexAllNodes();
-        IndexEntryUpdate update1 = IndexEntryUpdate.add( 1, index1, "foo" );
-        IndexEntryUpdate update2 = IndexEntryUpdate.add( 2, index42, "bar" );
-        IndexEntryUpdate update3 = IndexEntryUpdate.add( 3, index1, "baz" );
+        IndexEntryUpdate update1 = IndexEntryUpdate.add( 1, index1.schema(), "foo" );
+        IndexEntryUpdate update2 = IndexEntryUpdate.add( 2, index42.schema(), "bar" );
+        IndexEntryUpdate update3 = IndexEntryUpdate.add( 3, index1.schema(), "baz" );
         batchingPopulator.queue( update1 );
         batchingPopulator.queue( update2 );
         batchingPopulator.queue( update3 );
@@ -303,7 +303,7 @@ public class BatchingMultipleIndexPopulatorTest
 
     private IndexEntryUpdate forIndex( NodeUpdates update1, NewIndexDescriptor index )
     {
-        return update1.forIndex( index ).get();
+        return update1.forIndex( index.schema() ).get();
     }
 
     private NodeUpdates nodeUpdates( int nodeId, int propertyId, String propertyValue, long...

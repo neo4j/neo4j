@@ -28,9 +28,10 @@ import java.util.concurrent.TimeUnit;
 import java.util.concurrent.atomic.AtomicBoolean;
 import java.util.concurrent.atomic.AtomicInteger;
 
-import org.neo4j.kernel.api.schema.IndexDescriptor;
-import org.neo4j.kernel.api.schema.IndexDescriptorFactory;
-import org.neo4j.kernel.api.schema.NodePropertyDescriptor;
+import org.neo4j.kernel.api.schema_new.LabelSchemaDescriptor;
+import org.neo4j.kernel.api.schema_new.SchemaDescriptorFactory;
+import org.neo4j.kernel.api.schema_new.index.NewIndexDescriptor;
+import org.neo4j.kernel.api.schema_new.index.NewIndexDescriptorFactory;
 import org.neo4j.kernel.impl.util.JobScheduler;
 import org.neo4j.kernel.impl.util.Neo4jJobScheduler;
 import org.neo4j.test.DoubleLatch;
@@ -47,12 +48,12 @@ import static org.mockito.Mockito.when;
 public class IndexSamplingJobTrackerTest
 {
     private final IndexSamplingConfig config = mock( IndexSamplingConfig.class );
-    NodePropertyDescriptor descriptor11 = new NodePropertyDescriptor( 1, 1 );
-    NodePropertyDescriptor descriptor12 = new NodePropertyDescriptor( 1, 2 );
-    NodePropertyDescriptor descriptor22 = new NodePropertyDescriptor( 2, 2 );
-    IndexDescriptor index11 = IndexDescriptorFactory.of( descriptor11 );
-    IndexDescriptor index12 = IndexDescriptorFactory.of( descriptor12 );
-    IndexDescriptor index22 = IndexDescriptorFactory.of( descriptor22 );
+    LabelSchemaDescriptor descriptor11 = SchemaDescriptorFactory.forLabel( 1, 1 );
+    LabelSchemaDescriptor descriptor12 = SchemaDescriptorFactory.forLabel( 1, 2 );
+    LabelSchemaDescriptor descriptor22 = SchemaDescriptorFactory.forLabel( 2, 2 );
+    NewIndexDescriptor index11 = NewIndexDescriptorFactory.forSchema( descriptor11 );
+    NewIndexDescriptor index12 = NewIndexDescriptorFactory.forSchema( descriptor12 );
+    NewIndexDescriptor index22 = NewIndexDescriptorFactory.forSchema( descriptor22 );
     long indexId11 = 0;
     long indexId12 = 1;
     long indexId22 = 2;

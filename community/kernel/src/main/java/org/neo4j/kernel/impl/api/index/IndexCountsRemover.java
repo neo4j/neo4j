@@ -19,8 +19,6 @@
  */
 package org.neo4j.kernel.impl.api.index;
 
-import org.neo4j.kernel.api.schema.IndexDescriptor;
-
 public class IndexCountsRemover
 {
     private final IndexStoreView storeView;

@@ -75,11 +75,11 @@ public abstract class IndexAccessorCompatibility extends IndexProviderCompatibil
     public void testIndexSeekByNumber() throws Exception
     {
         updateAndCommit( asList(
-                IndexEntryUpdate.add( 1L, descriptor, -5 ),
-                IndexEntryUpdate.add( 2L, descriptor, 0 ),
-                IndexEntryUpdate.add( 3L, descriptor, 5.5 ),
-                IndexEntryUpdate.add( 4L, descriptor, 10.0 ),
-                IndexEntryUpdate.add( 5L, descriptor, 100.0 ) ) );
+                IndexEntryUpdate.add( 1L, descriptor.schema(), -5 ),
+                IndexEntryUpdate.add( 2L, descriptor.schema(), 0 ),
+                IndexEntryUpdate.add( 3L, descriptor.schema(), 5.5 ),
+                IndexEntryUpdate.add( 4L, descriptor.schema(), 10.0 ),
+                IndexEntryUpdate.add( 5L, descriptor.schema(), 100.0 ) ) );
 
         assertThat( query( range( 1, 0, true, 10, true ) ), equalTo( asList( 2L, 3L, 4L ) ) );
         assertThat( query( range( 1, 10, true, null, true ) ), equalTo( asList( 4L, 5L ) ) );
@@ -94,11 +94,11 @@ public abstract class IndexAccessorCompatibility extends IndexProviderCompatibil
     public void testIndexSeekByString() throws Exception
     {
         updateAndCommit( asList(
-                IndexEntryUpdate.add( 1L, descriptor, "Anabelle" ),
-                IndexEntryUpdate.add( 2L, descriptor, "Anna" ),
-                IndexEntryUpdate.add( 3L, descriptor, "Bob" ),
-                IndexEntryUpdate.add( 4L, descriptor, "Harriet" ),
-                IndexEntryUpdate.add( 5L, descriptor, "William" ) ) );
+                IndexEntryUpdate.add( 1L, descriptor.schema(), "Anabelle" ),
+                IndexEntryUpdate.add( 2L, descriptor.schema(), "Anna" ),
+                IndexEntryUpdate.add( 3L, descriptor.schema(), "Bob" ),
+                IndexEntryUpdate.add( 4L, descriptor.schema(), "Harriet" ),
+                IndexEntryUpdate.add( 5L, descriptor.schema(), "William" ) ) );
 
         assertThat( query( range( 1, "Anna", true, "Harriet", false ) ), equalTo( asList( 2L, 3L ) ) );
         assertThat( query( range( 1, "Harriet", true, null, false ) ), equalTo( asList( 4L, 5L ) ) );
@@ -115,11 +115,11 @@ public abstract class IndexAccessorCompatibility extends IndexProviderCompatibil
     public void testIndexSeekByPrefix() throws Exception
     {
         updateAndCommit( asList(
-                IndexEntryUpdate.add( 1L, descriptor, "a" ),
-                IndexEntryUpdate.add( 2L, descriptor, "A" ),
-                IndexEntryUpdate.add( 3L, descriptor, "apa" ),
-                IndexEntryUpdate.add( 4L, descriptor, "apA" ),
-                IndexEntryUpdate.add( 5L, descriptor, "b" ) ) );
+                IndexEntryUpdate.add( 1L, descriptor.schema(), "a" ),
+                IndexEntryUpdate.add( 2L, descriptor.schema(), "A" ),
+                IndexEntryUpdate.add( 3L, descriptor.schema(), "apa" ),
+                IndexEntryUpdate.add( 4L, descriptor.schema(), "apA" ),
+                IndexEntryUpdate.add( 5L, descriptor.schema(), "b" ) ) );
 
         assertThat( query( IndexQuery.stringPrefix( 1, "a" ) ), equalTo( asList( 1L, 3L, 4L ) ) );
         assertThat( query( IndexQuery.stringPrefix( 1, "A" ) ), equalTo( Collections.singletonList( 2L ) ) );
@@ -131,8 +131,8 @@ public abstract class IndexAccessorCompatibility extends IndexProviderCompatibil
     public void testIndexSeekByPrefixOnNonStrings() throws Exception
     {
         updateAndCommit( asList(
-                IndexEntryUpdate.add( 1L, descriptor, "a" ),
-                IndexEntryUpdate.add( 2L, descriptor, 2L ) ) );
+                IndexEntryUpdate.add( 1L, descriptor.schema(), "a" ),
+                IndexEntryUpdate.add( 2L, descriptor.schema(), 2L ) ) );
         assertThat( query( IndexQuery.stringPrefix( 1, "2" ) ), equalTo( EMPTY_LIST ) );
     }
 

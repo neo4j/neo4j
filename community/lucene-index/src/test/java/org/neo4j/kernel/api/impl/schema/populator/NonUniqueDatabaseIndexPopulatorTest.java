@@ -38,7 +38,8 @@ import org.neo4j.kernel.api.impl.schema.LuceneSchemaIndexBuilder;
 import org.neo4j.kernel.api.impl.schema.SchemaIndex;
 import org.neo4j.kernel.api.index.IndexEntryUpdate;
 import org.neo4j.kernel.api.schema_new.IndexQuery;
-import org.neo4j.kernel.api.schema_new.index.NewIndexDescriptor;
+import org.neo4j.kernel.api.schema_new.LabelSchemaDescriptor;
+import org.neo4j.kernel.api.schema_new.SchemaDescriptorFactory;
 import org.neo4j.kernel.api.schema_new.index.NewIndexDescriptorFactory;
 import org.neo4j.kernel.configuration.Config;
 import org.neo4j.kernel.impl.api.index.sampling.IndexSamplingConfig;
@@ -61,7 +62,7 @@ public class NonUniqueDatabaseIndexPopulatorTest
 
     private SchemaIndex index;
     private NonUniqueLuceneIndexPopulator populator;
-    private NewIndexDescriptor indexDescriptor = NewIndexDescriptorFactory.forLabel( 0, 0 );
+    private LabelSchemaDescriptor labelSchemaDescriptor = SchemaDescriptorFactory.forLabel( 0, 0 );
 
     @Before
     public void setUp() throws Exception
@@ -70,7 +71,7 @@ public class NonUniqueDatabaseIndexPopulatorTest
         PartitionedIndexStorage indexStorage = new PartitionedIndexStorage( dirFactory, fileSystemRule.get(), folder,
                 "testIndex", false );
 
-        index = LuceneSchemaIndexBuilder.create( indexDescriptor )
+        index = LuceneSchemaIndexBuilder.create( NewIndexDescriptorFactory.forSchema( labelSchemaDescriptor ) )
                 .withIndexStorage( indexStorage )
                 .build();
     }
@@ -101,9 +102,9 @@ public class NonUniqueDatabaseIndexPopulatorTest
         populator = newPopulator();
 
         List<IndexEntryUpdate> updates = Arrays.asList(
-                IndexEntryUpdate.add( 1, indexDescriptor, "aaa" ),
-                IndexEntryUpdate.add( 2, indexDescriptor, "bbb" ),
-                IndexEntryUpdate.add( 3, indexDescriptor, "ccc" ) );
+                IndexEntryUpdate.add( 1, labelSchemaDescriptor, "aaa" ),
+                IndexEntryUpdate.add( 2, labelSchemaDescriptor, "bbb" ),
+                IndexEntryUpdate.add( 3, labelSchemaDescriptor, "ccc" ) );
 
         updates.forEach( populator::includeSample );
 
@@ -118,9 +119,9 @@ public class NonUniqueDatabaseIndexPopulatorTest
         populator = newPopulator();
 
         List<IndexEntryUpdate> updates = Arrays.asList(
-                IndexEntryUpdate.add( 1, indexDescriptor, "foo" ),
-                IndexEntryUpdate.add( 2, indexDescriptor, "bar" ),
-                IndexEntryUpdate.add( 3, indexDescriptor, "foo" ) );
+                IndexEntryUpdate.add( 1, labelSchemaDescriptor, "foo" ),
+                IndexEntryUpdate.add( 2, labelSchemaDescriptor, "bar" ),
+                IndexEntryUpdate.add( 3, labelSchemaDescriptor, "foo" ) );
 
         updates.forEach( populator::includeSample );
 
@@ -135,16 +136,16 @@ public class NonUniqueDatabaseIndexPopulatorTest
         populator = newPopulator();
 
         List<IndexEntryUpdate> updates = Arrays.asList(
-                IndexEntryUpdate.add( 1, indexDescriptor, "foo" ),
-                IndexEntryUpdate.add( 2, indexDescriptor, "bar" ),
-                IndexEntryUpdate.add( 42, indexDescriptor, "bar" ) );
+                IndexEntryUpdate.add( 1, labelSchemaDescriptor, "foo" ),
+                IndexEntryUpdate.add( 2, labelSchemaDescriptor, "bar" ),
+                IndexEntryUpdate.add( 42, labelSchemaDescriptor, "bar" ) );
 
         populator.add( updates );
 
         index.maybeRefreshBlocking();
         try ( IndexReader reader = index.getIndexReader() )
         {
-            int propertyKeyId = indexDescriptor.schema().getPropertyId();
+            int propertyKeyId = labelSchemaDescriptor.getPropertyId();
             PrimitiveLongIterator allEntities = reader.query( IndexQuery.exists( propertyKeyId ) );
             assertArrayEquals( new long[]{1, 2, 42}, PrimitiveLongCollections.asArray( allEntities ) );
         }

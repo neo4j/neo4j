@@ -43,13 +43,12 @@ import org.neo4j.kernel.api.exceptions.index.IndexNotFoundKernelException;
 import org.neo4j.kernel.api.exceptions.index.IndexPopulationFailedKernelException;
 import org.neo4j.kernel.api.exceptions.schema.UniquePropertyValueValidationException;
 import org.neo4j.kernel.api.index.IndexEntryUpdate;
-import org.neo4j.kernel.api.schema.IndexDescriptor;
 import org.neo4j.kernel.api.index.IndexUpdater;
 import org.neo4j.kernel.api.index.InternalIndexState;
 import org.neo4j.kernel.api.index.NodeUpdates;
 import org.neo4j.kernel.api.index.SchemaIndexProvider;
 import org.neo4j.kernel.api.index.SchemaIndexProvider.Descriptor;
-import org.neo4j.kernel.api.schema_new.index.IndexBoundary;
+import org.neo4j.kernel.api.schema_new.LabelSchemaDescriptor;
 import org.neo4j.kernel.api.schema_new.index.NewIndexDescriptor;
 import org.neo4j.kernel.impl.api.index.sampling.IndexSamplingController;
 import org.neo4j.kernel.impl.api.index.sampling.IndexSamplingMode;
@@ -369,7 +368,7 @@ public class IndexingService extends LifecycleAdapter
         closeAllIndexes();
     }
 
-    public DoubleLongRegister indexUpdatesAndSize( IndexDescriptor descriptor ) throws IndexNotFoundKernelException
+    public DoubleLongRegister indexUpdatesAndSize( LabelSchemaDescriptor descriptor ) throws IndexNotFoundKernelException
     {
         final long indexId = indexMapRef.getOnlineIndexId( descriptor );
         final DoubleLongRegister output = Registers.newDoubleLongRegister();
@@ -377,7 +376,7 @@ public class IndexingService extends LifecycleAdapter
         return output;
     }
 
-    public double indexUniqueValuesPercentage( IndexDescriptor descriptor ) throws IndexNotFoundKernelException
+    public double indexUniqueValuesPercentage( LabelSchemaDescriptor descriptor ) throws IndexNotFoundKernelException
     {
         final long indexId = indexMapRef.getOnlineIndexId( descriptor );
         final DoubleLongRegister output = Registers.newDoubleLongRegister();
@@ -434,9 +433,9 @@ public class IndexingService extends LifecycleAdapter
         {
             for ( NodeUpdates update : updates )
             {
-                for ( IndexDescriptor descriptor : updaterMap.descriptors() )
+                for ( LabelSchemaDescriptor descriptor : updaterMap.descriptors() )
                 {
-                    Optional<IndexEntryUpdate> entry = update.forIndex( IndexBoundary.map( descriptor ) );
+                    Optional<IndexEntryUpdate> entry = update.forIndex( descriptor );
                     if ( entry.isPresent() )
                     {
                         updaterMap.getUpdater( descriptor ).process( entry.get() );
@@ -571,7 +570,7 @@ public class IndexingService extends LifecycleAdapter
         samplingController.sampleIndexes( mode );
     }
 
-    public void triggerIndexSampling( IndexDescriptor descriptor, IndexSamplingMode mode )
+    public void triggerIndexSampling( LabelSchemaDescriptor descriptor, IndexSamplingMode mode )
             throws IndexNotFoundKernelException
     {
         String description = descriptor.userDescription( tokenNameLookup );
@@ -626,12 +625,12 @@ public class IndexingService extends LifecycleAdapter
         return indexMapRef.getIndexProxy( indexId );
     }
 
-    public IndexProxy getIndexProxy( IndexDescriptor descriptor ) throws IndexNotFoundKernelException
+    public IndexProxy getIndexProxy( LabelSchemaDescriptor descriptor ) throws IndexNotFoundKernelException
     {
         return indexMapRef.getIndexProxy( descriptor );
     }
 
-    public long getIndexId( IndexDescriptor descriptor ) throws IndexNotFoundKernelException
+    public long getIndexId( LabelSchemaDescriptor descriptor ) throws IndexNotFoundKernelException
     {
         return indexMapRef.getIndexId( descriptor );
     }

@@ -45,8 +45,8 @@ import javax.tools.StandardLocation;
 import javax.tools.ToolProvider;
 
 import org.neo4j.helpers.collection.Visitable;
-import org.neo4j.kernel.api.constraints.UniquenessConstraint;
 import org.neo4j.kernel.api.schema.NodePropertyDescriptor;
+import org.neo4j.kernel.api.constraints.UniquenessConstraint;
 import org.neo4j.kernel.api.schema_new.index.NewIndexDescriptorFactory;
 
 import static org.junit.Assert.assertEquals;

@@ -24,8 +24,7 @@ import java.util.Iterator;
 import java.util.Map;
 import java.util.function.BiConsumer;
 
-import org.neo4j.kernel.api.schema.IndexDescriptor;
-import org.neo4j.kernel.api.schema_new.index.IndexBoundary;
+import org.neo4j.kernel.api.schema_new.LabelSchemaDescriptor;
 
 /**
  * Bundles various mappings to IndexProxy. Used by IndexingService via IndexMapReference.
@@ -36,15 +35,15 @@ import org.neo4j.kernel.api.schema_new.index.IndexBoundary;
 public final class IndexMap implements Cloneable
 {
     private final Map<Long, IndexProxy> indexesById;
-    private final Map<IndexDescriptor, IndexProxy> indexesByDescriptor;
-    private final Map<IndexDescriptor, Long> indexIdsByDescriptor;
+    private final Map<LabelSchemaDescriptor,IndexProxy> indexesByDescriptor;
+    private final Map<LabelSchemaDescriptor,Long> indexIdsByDescriptor;
 
     public IndexMap()
     {
         this( new HashMap<>(), new HashMap<>(), new HashMap<>() );
     }
 
-    private IndexMap( Map<Long, IndexProxy> indexesById, Map<IndexDescriptor, IndexProxy> indexesByDescriptor, Map<IndexDescriptor, Long> indexIdsByDescriptor )
+    private IndexMap( Map<Long, IndexProxy> indexesById, Map<LabelSchemaDescriptor,IndexProxy> indexesByDescriptor, Map<LabelSchemaDescriptor,Long> indexIdsByDescriptor )
     {
         this.indexesById = indexesById;
         this.indexesByDescriptor = indexesByDescriptor;
@@ -56,12 +55,12 @@ public final class IndexMap implements Cloneable
         return indexesById.get( indexId );
     }
 
-    public IndexProxy getIndexProxy( IndexDescriptor descriptor )
+    public IndexProxy getIndexProxy( LabelSchemaDescriptor descriptor )
     {
         return indexesByDescriptor.get( descriptor );
     }
 
-    public long getIndexId( IndexDescriptor descriptor )
+    public long getIndexId( LabelSchemaDescriptor descriptor )
     {
         return indexIdsByDescriptor.get( descriptor );
     }
@@ -69,8 +68,8 @@ public final class IndexMap implements Cloneable
     public void putIndexProxy( long indexId, IndexProxy indexProxy )
     {
         indexesById.put( indexId, indexProxy );
-        indexesByDescriptor.put( IndexBoundary.map( indexProxy.getDescriptor() ), indexProxy );
-        indexIdsByDescriptor.put( IndexBoundary.map( indexProxy.getDescriptor() ), indexId );
+        indexesByDescriptor.put( indexProxy.getDescriptor().schema(), indexProxy );
+        indexIdsByDescriptor.put( indexProxy.getDescriptor().schema(), indexId );
     }
 
     public IndexProxy removeIndexProxy( long indexId )
@@ -78,7 +77,7 @@ public final class IndexMap implements Cloneable
         IndexProxy removedProxy = indexesById.remove( indexId );
         if ( null != removedProxy )
         {
-            indexesByDescriptor.remove( IndexBoundary.map( removedProxy.getDescriptor() ) );
+            indexesByDescriptor.remove( removedProxy.getDescriptor().schema() );
         }
         return removedProxy;
     }
@@ -110,7 +109,7 @@ public final class IndexMap implements Cloneable
         return shallowCopy;
     }
 
-    public Iterator<IndexDescriptor> descriptors()
+    public Iterator<LabelSchemaDescriptor> descriptors()
     {
         return indexesByDescriptor.keySet().iterator();
     }

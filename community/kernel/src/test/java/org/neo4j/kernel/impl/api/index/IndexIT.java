@@ -32,7 +32,6 @@ import org.neo4j.kernel.api.SchemaWriteOperations;
 import org.neo4j.kernel.api.Statement;
 import org.neo4j.kernel.api.TokenWriteOperations;
 import org.neo4j.kernel.api.exceptions.schema.SchemaKernelException;
-import org.neo4j.kernel.api.schema.IndexDescriptor;
 import org.neo4j.kernel.api.schema.NodePropertyDescriptor;
 import org.neo4j.kernel.api.schema_new.SchemaBoundary;
 import org.neo4j.kernel.api.schema_new.SchemaDescriptorFactory;
@@ -78,7 +77,7 @@ public class IndexIT extends KernelIntegrationTest
         SchemaWriteOperations schemaWriteOperations = schemaWriteOperationsInNewTransaction();
 
         // WHEN
-        NewIndexDescriptor expectedRule = schemaWriteOperations.indexCreate( descriptor );
+        NewIndexDescriptor expectedRule = schemaWriteOperations.indexCreate( SchemaBoundary.map( descriptor ) );
         commit();
 
         // THEN
@@ -93,13 +92,13 @@ public class IndexIT extends KernelIntegrationTest
     {
         // GIVEN
         SchemaWriteOperations schemaWriteOperations = schemaWriteOperationsInNewTransaction();
-        NewIndexDescriptor existingRule = schemaWriteOperations.indexCreate( descriptor );
+        NewIndexDescriptor existingRule = schemaWriteOperations.indexCreate( SchemaBoundary.map( descriptor ) );
         commit();
 
         // WHEN
         Statement statement = statementInNewTransaction( AnonymousContext.AUTH_DISABLED );
         NewIndexDescriptor addedRule = statement.schemaWriteOperations()
-                                            .indexCreate( new NodePropertyDescriptor( labelId, 10 ) );
+                                            .indexCreate( SchemaDescriptorFactory.forLabel( labelId, 10 ) );
         Set<NewIndexDescriptor> indexRulesInTx = asSet( statement.readOperations().indexesGetForLabel( labelId ) );
         commit();
 
@@ -114,13 +113,13 @@ public class IndexIT extends KernelIntegrationTest
         SchemaWriteOperations schemaWriteOperations = schemaWriteOperationsInNewTransaction();
 
         // WHEN
-        schemaWriteOperations.indexCreate( descriptor );
+        schemaWriteOperations.indexCreate( SchemaBoundary.map( descriptor ) );
         // don't mark as success
         rollback();
 
         // THEN
         ReadOperations readOperations = readOperationsInNewTransaction();
-        assertEquals( emptySetOf( IndexDescriptor.class ), asSet( readOperations.indexesGetForLabel( labelId ) ) );
+        assertEquals( emptySetOf( NewIndexDescriptor.class ), asSet( readOperations.indexesGetForLabel( labelId ) ) );
         commit();
     }
 
@@ -137,7 +136,7 @@ public class IndexIT extends KernelIntegrationTest
 
         // then
         ReadOperations readOperations = readOperationsInNewTransaction();
-        assertEquals( emptySetOf( IndexDescriptor.class ), asSet( readOperations.indexesGetForLabel( labelId ) ) );
+        assertEquals( emptySetOf( NewIndexDescriptor.class ), asSet( readOperations.indexesGetForLabel( labelId ) ) );
         commit();
     }
 
@@ -148,7 +147,7 @@ public class IndexIT extends KernelIntegrationTest
         NewIndexDescriptor index;
         {
             SchemaWriteOperations statement = schemaWriteOperationsInNewTransaction();
-            index = statement.indexCreate( descriptor );
+            index = statement.indexCreate( SchemaBoundary.map( descriptor ) );
             commit();
         }
         {
@@ -186,7 +185,7 @@ public class IndexIT extends KernelIntegrationTest
         try
         {
             SchemaWriteOperations statement = schemaWriteOperationsInNewTransaction();
-            statement.indexCreate( descriptor );
+            statement.indexCreate( SchemaBoundary.map( descriptor ) );
             commit();
 
             fail( "expected exception" );
@@ -260,7 +259,7 @@ public class IndexIT extends KernelIntegrationTest
     {
         // given
         SchemaWriteOperations schemaWriteOperations = schemaWriteOperationsInNewTransaction();
-        schemaWriteOperations.indexCreate( descriptor );
+        schemaWriteOperations.indexCreate( SchemaBoundary.map( descriptor ) );
         commit();
 
         // then/when

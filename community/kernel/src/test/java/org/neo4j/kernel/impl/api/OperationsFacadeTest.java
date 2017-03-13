@@ -34,9 +34,7 @@ import org.neo4j.kernel.api.schema.NodePropertyDescriptor;
 import org.neo4j.kernel.api.TokenNameLookup;
 import org.neo4j.kernel.api.exceptions.schema.DuplicateSchemaRuleException;
 import org.neo4j.kernel.api.exceptions.schema.SchemaRuleNotFoundException;
-import org.neo4j.kernel.api.schema.IndexDescriptor;
-import org.neo4j.kernel.api.schema.IndexDescriptorFactory;
-import org.neo4j.kernel.api.schema_new.index.IndexBoundary;
+import org.neo4j.kernel.api.schema_new.SchemaBoundary;
 import org.neo4j.kernel.api.schema_new.index.NewIndexDescriptor;
 import org.neo4j.kernel.api.schema_new.index.NewIndexDescriptorFactory;
 import org.neo4j.kernel.impl.api.operations.SchemaReadOperations;
@@ -88,7 +86,7 @@ public class OperationsFacadeTest
             throws SchemaRuleNotFoundException, DuplicateSchemaRuleException
     {
         SchemaReadOperations readOperations = setupSchemaReadOperations();
-        NewIndexDescriptor index = IndexBoundary.map( descriptor );
+        NewIndexDescriptor index = NewIndexDescriptorFactory.forSchema( SchemaBoundary.map( descriptor ) );
         Mockito.when( readOperations
                 .uniqueIndexesGetForLabel( Mockito.any( KernelStatement.class ), Mockito.eq( descriptor.getLabelId() ) ) )
                 .thenReturn( Iterators.iterator( index, index ) );

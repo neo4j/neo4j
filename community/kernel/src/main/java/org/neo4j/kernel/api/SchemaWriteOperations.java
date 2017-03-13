@@ -24,7 +24,6 @@ import org.neo4j.kernel.api.exceptions.schema.AlreadyIndexedException;
 import org.neo4j.kernel.api.exceptions.schema.CreateConstraintFailureException;
 import org.neo4j.kernel.api.exceptions.schema.DropConstraintFailureException;
 import org.neo4j.kernel.api.exceptions.schema.DropIndexFailureException;
-import org.neo4j.kernel.api.schema.NodePropertyDescriptor;
 import org.neo4j.kernel.api.schema_new.LabelSchemaDescriptor;
 import org.neo4j.kernel.api.schema_new.RelationTypeSchemaDescriptor;
 import org.neo4j.kernel.api.schema_new.constaints.ConstraintDescriptor;
@@ -38,8 +37,9 @@ public interface SchemaWriteOperations
     /**
      * Creates an index, indexing properties with the given {@code propertyKeyId} for nodes with the given
      * {@code labelId}.
+     * @param schemaDescriptor
      */
-    NewIndexDescriptor indexCreate( NodePropertyDescriptor nodeDescriptor )
+    NewIndexDescriptor indexCreate( LabelSchemaDescriptor schemaDescriptor )
             throws AlreadyIndexedException, AlreadyConstrainedException;
 
     /** Drops a {@link NewIndexDescriptor} from the database */

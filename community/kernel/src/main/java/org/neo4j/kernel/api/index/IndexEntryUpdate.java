@@ -21,8 +21,8 @@ package org.neo4j.kernel.api.index;
 
 import java.util.Arrays;
 
+import org.neo4j.kernel.api.schema_new.LabelSchemaDescriptor;
 import org.neo4j.kernel.api.schema_new.SchemaUtil;
-import org.neo4j.kernel.api.schema_new.index.NewIndexDescriptor;
 import org.neo4j.kernel.impl.api.index.UpdateMode;
 
 import static java.lang.String.format;
@@ -38,9 +38,9 @@ public class IndexEntryUpdate
     private final UpdateMode updateMode;
     private final Object[] before;
     private Object[] values;
-    private NewIndexDescriptor descriptor;
+    private LabelSchemaDescriptor descriptor;
 
-    private IndexEntryUpdate( long entityId, NewIndexDescriptor descriptor, UpdateMode updateMode, Object... values )
+    private IndexEntryUpdate( long entityId, LabelSchemaDescriptor descriptor, UpdateMode updateMode, Object... values )
     {
         this.entityId = entityId;
         this.descriptor = descriptor;
@@ -48,7 +48,7 @@ public class IndexEntryUpdate
         this.values = values;
         this.updateMode = updateMode;
     }
-    private IndexEntryUpdate( long entityId, NewIndexDescriptor descriptor, UpdateMode updateMode, Object[] before,
+    private IndexEntryUpdate( long entityId, LabelSchemaDescriptor descriptor, UpdateMode updateMode, Object[] before,
             Object[] values )
     {
         this.entityId = entityId;
@@ -68,7 +68,7 @@ public class IndexEntryUpdate
         return updateMode;
     }
 
-    public NewIndexDescriptor descriptor()
+    public LabelSchemaDescriptor descriptor()
     {
         return descriptor;
     }
@@ -129,22 +129,22 @@ public class IndexEntryUpdate
                 .userDescription( SchemaUtil.idTokenNameLookup ), Arrays.toString(values) );
     }
 
-    public static IndexEntryUpdate add( long nodeId, NewIndexDescriptor descriptor, Object... values )
+    public static IndexEntryUpdate add( long nodeId, LabelSchemaDescriptor descriptor, Object... values )
     {
         return new IndexEntryUpdate( nodeId, descriptor, UpdateMode.ADDED, values );
     }
 
-    public static IndexEntryUpdate remove( long nodeId, NewIndexDescriptor descriptor, Object... values )
+    public static IndexEntryUpdate remove( long nodeId, LabelSchemaDescriptor descriptor, Object... values )
     {
         return new IndexEntryUpdate( nodeId, descriptor, UpdateMode.REMOVED, values );
     }
 
-    public static IndexEntryUpdate change( long nodeId, NewIndexDescriptor descriptor, Object before, Object after )
+    public static IndexEntryUpdate change( long nodeId, LabelSchemaDescriptor descriptor, Object before, Object after )
     {
         return new IndexEntryUpdate( nodeId, descriptor, UpdateMode.CHANGED, new Object[]{before}, new Object[]{after} );
     }
 
-    public static IndexEntryUpdate change( long nodeId, NewIndexDescriptor descriptor, Object[] before, Object[] after )
+    public static IndexEntryUpdate change( long nodeId, LabelSchemaDescriptor descriptor, Object[] before, Object[] after )
     {
         return new IndexEntryUpdate( nodeId, descriptor, UpdateMode.CHANGED, before, after );
     }

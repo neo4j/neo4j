@@ -67,6 +67,7 @@ import org.neo4j.kernel.api.labelscan.LabelScanStore;
 import org.neo4j.kernel.api.labelscan.LabelScanWriter;
 import org.neo4j.kernel.api.labelscan.NodeLabelUpdate;
 import org.neo4j.kernel.api.properties.DefinedProperty;
+import org.neo4j.kernel.api.schema.NodeMultiPropertyDescriptor;
 import org.neo4j.kernel.api.schema.NodePropertyDescriptor;
 import org.neo4j.kernel.api.schema_new.LabelSchemaDescriptor;
 import org.neo4j.kernel.api.schema_new.SchemaDescriptorFactory;
@@ -162,7 +163,6 @@ import org.neo4j.unsafe.batchinsert.DirectRecordAccessSet;
 import static java.lang.Boolean.parseBoolean;
 import static org.neo4j.collection.primitive.PrimitiveLongCollections.map;
 import static org.neo4j.graphdb.Label.label;
-import static org.neo4j.kernel.api.schema.IndexDescriptorFactory.getNodePropertyDescriptor;
 import static org.neo4j.kernel.impl.store.NodeLabelsField.parseLabelsField;
 import static org.neo4j.kernel.impl.store.PropertyStore.encodeString;
 import static org.neo4j.kernel.impl.util.IoPrimitiveUtils.safeCastLongToInt;
@@ -461,7 +461,7 @@ public class BatchInserterImpl implements BatchInserter, IndexConfigStoreProvide
             // Do a lookup from which property has changed to a list of indexes worried about that property.
             for ( int i = 0; i < descriptors.length; i++ )
             {
-                Optional<IndexEntryUpdate> update = updates.forIndex( descriptors[i] );
+                Optional<IndexEntryUpdate> update = updates.forIndex( descriptors[i].schema() );
                 if ( update.isPresent() )
                 {
                     try
@@ -558,7 +558,7 @@ public class BatchInserterImpl implements BatchInserter, IndexConfigStoreProvide
 
         long indexRuleId = schemaStore.nextId();
         long constraintRuleId = schemaStore.nextId();
-        int propertyKeyId = constraint.indexDescriptor().getPropertyKeyId();
+        int propertyKeyId = constraint.indexDescriptor().schema().getPropertyId();
 
         IndexRule indexRule =
                 IndexRule.constraintIndexRule(
@@ -1123,10 +1123,9 @@ public class BatchInserterImpl implements BatchInserter, IndexConfigStoreProvide
         {
             int labelId = getOrCreateLabelId( indexDefinition.getLabel().name() );
             int[] propertyKeyIds = getOrCreatePropertyKeyIds( indexDefinition.getPropertyKeys() );
-            NodePropertyDescriptor descriptor = getNodePropertyDescriptor( labelId, propertyKeyIds );
+            NodePropertyDescriptor descriptor = new NodeMultiPropertyDescriptor( labelId, propertyKeyIds );
 
             validateUniquenessConstraintCanBeCreated( labelId, propertyKeyIds );
-
             createUniquenessConstraintRule( new UniquenessConstraint( descriptor ) );
             return new UniquenessConstraintDefinition( this, indexDefinition );
         }

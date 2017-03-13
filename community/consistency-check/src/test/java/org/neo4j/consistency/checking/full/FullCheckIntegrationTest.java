@@ -551,7 +551,7 @@ public class FullCheckIntegrationTest
             IndexAccessor accessor = fixture.directStoreAccess().indexes()
                     .getOnlineAccessor( indexRule.getId(), indexRule.getIndexDescriptor(), samplingConfig );
             IndexUpdater updater = accessor.newUpdater( IndexUpdateMode.ONLINE );
-            updater.process( IndexEntryUpdate.add( 42, indexRule.getIndexDescriptor(), "value" ) );
+            updater.process( IndexEntryUpdate.add( 42, indexRule.getIndexDescriptor().schema(), "value" ) );
             updater.close();
             accessor.close();
         }

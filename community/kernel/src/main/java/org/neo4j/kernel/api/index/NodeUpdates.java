@@ -27,7 +27,7 @@ import java.util.Optional;
 import java.util.Set;
 
 import org.neo4j.kernel.api.properties.DefinedProperty;
-import org.neo4j.kernel.api.schema_new.index.NewIndexDescriptor;
+import org.neo4j.kernel.api.schema_new.LabelSchemaDescriptor;
 import org.neo4j.kernel.impl.api.index.UpdateMode;
 import org.neo4j.kernel.impl.transaction.state.LabelChangeSummary;
 
@@ -133,23 +133,23 @@ public class NodeUpdates
         return nodeId;
     }
 
-    public Optional<IndexEntryUpdate> forIndex( NewIndexDescriptor index )
+    public Optional<IndexEntryUpdate> forIndex( LabelSchemaDescriptor descriptor )
     {
-        if ( index.schema().getPropertyIds().length > 1 )
+        if ( descriptor.getPropertyIds().length > 1 )
         {
-            return getMultiPropertyIndexUpdate( index );
+            return getMultiPropertyIndexUpdate( descriptor );
         }
         else
         {
-            return getSingePropertyIndexUpdate( index );
+            return getSingePropertyIndexUpdate( descriptor );
         }
     }
 
-    private Optional<IndexEntryUpdate> getMultiPropertyIndexUpdate( NewIndexDescriptor index )
+    private Optional<IndexEntryUpdate> getMultiPropertyIndexUpdate( LabelSchemaDescriptor descriptor )
     {
-        int[] propertyKeyIds = index.schema().getPropertyIds();
-        boolean labelExistsBefore = binarySearch( labelsBefore, index.schema().getLabelId() ) >= 0;
-        boolean labelExistsAfter = binarySearch( labelsAfter, index.schema().getLabelId() ) >= 0;
+        int[] propertyKeyIds = descriptor.getPropertyIds();
+        boolean labelExistsBefore = binarySearch( labelsBefore, descriptor.getLabelId() ) >= 0;
+        boolean labelExistsAfter = binarySearch( labelsAfter, descriptor.getLabelId() ) >= 0;
         Set<Integer> added = new HashSet<>();   // index specific properties added to this node
         Set<Integer> removed = new HashSet<>(); // index specific properties removed from this node
         Set<Integer> changed = new HashSet<>(); // index specific properties changed on this node
@@ -197,7 +197,7 @@ public class NodeUpdates
                 if ( labelExistsAfter )
                 {
                     // Added one or more properties and the label exists
-                    return Optional.of( IndexEntryUpdate.add( nodeId, index, after ) );
+                    return Optional.of( IndexEntryUpdate.add( nodeId, descriptor, after ) );
                 }
             }
             else if ( removed.size() > 0 )
@@ -205,7 +205,7 @@ public class NodeUpdates
                 if ( labelExistsBefore )
                 {
                     // Removed one or more properties and the label existed
-                    return Optional.of( IndexEntryUpdate.remove( nodeId, index, before ) );
+                    return Optional.of( IndexEntryUpdate.remove( nodeId, descriptor, before ) );
                 }
             }
             else if ( changed.size() > 0 )
@@ -213,17 +213,17 @@ public class NodeUpdates
                 if ( labelExistsBefore && labelExistsAfter )
                 {
                     // Changed one or more properties and the label still exists
-                    return Optional.of( IndexEntryUpdate.change( nodeId, index, before, after ) );
+                    return Optional.of( IndexEntryUpdate.change( nodeId, descriptor, before, after ) );
                 }
                 else if ( labelExistsAfter )
                 {
                     // Changed one or more properties and added the label
-                    return Optional.of( IndexEntryUpdate.add( nodeId, index, after ) );
+                    return Optional.of( IndexEntryUpdate.add( nodeId, descriptor, after ) );
                 }
                 else if ( labelExistsBefore )
                 {
                     // Changed one or more properties and removed the label
-                    return Optional.of( IndexEntryUpdate.remove( nodeId, index, before ) );
+                    return Optional.of( IndexEntryUpdate.remove( nodeId, descriptor, before ) );
                 }
             }
             else if ( unchanged.size() >= 0 )
@@ -231,26 +231,26 @@ public class NodeUpdates
                 if ( !labelExistsBefore && labelExistsAfter )
                 {
                     // Node has the right properties and the label was added
-                    return Optional.of( IndexEntryUpdate.add( nodeId, index, after ) );
+                    return Optional.of( IndexEntryUpdate.add( nodeId, descriptor, after ) );
                 }
                 else if ( labelExistsBefore && !labelExistsAfter )
                 {
                     // Node has the right property and the label was removed
-                    return Optional.of( IndexEntryUpdate.remove( nodeId, index, before ) );
+                    return Optional.of( IndexEntryUpdate.remove( nodeId, descriptor, before ) );
                 }
             }
         }
         return Optional.empty();
     }
 
-    private Optional<IndexEntryUpdate> getSingePropertyIndexUpdate( NewIndexDescriptor index )
+    private Optional<IndexEntryUpdate> getSingePropertyIndexUpdate( LabelSchemaDescriptor descriptor )
     {
-        int propertyKeyId = index.schema().getPropertyId();
+        int propertyKeyId = descriptor.getPropertyId();
         Object before = propertiesBefore.get( propertyKeyId );
         Object after = propertiesAfter.get( propertyKeyId );
         Object unchanged = propertiesUnchanged.get( propertyKeyId );
-        boolean labelExistsBefore = binarySearch( labelsBefore, index.schema().getLabelId() ) >= 0;
-        boolean labelExistsAfter = binarySearch( labelsAfter, index.schema().getLabelId() ) >= 0;
+        boolean labelExistsBefore = binarySearch( labelsBefore, descriptor.getLabelId() ) >= 0;
+        boolean labelExistsAfter = binarySearch( labelsAfter, descriptor.getLabelId() ) >= 0;
         if ( before != null )
         {
             if ( after != null )
@@ -258,17 +258,17 @@ public class NodeUpdates
                 if ( labelExistsBefore && labelExistsAfter )
                 {
                     // Changed a property and have the label
-                    return Optional.of( IndexEntryUpdate.change( nodeId, index, before, after ) );
+                    return Optional.of( IndexEntryUpdate.change( nodeId, descriptor, before, after ) );
                 }
                 else if ( labelExistsAfter )
                 {
                     // Changed a property and added the label
-                    return Optional.of( IndexEntryUpdate.add( nodeId, index, after ) );
+                    return Optional.of( IndexEntryUpdate.add( nodeId, descriptor, after ) );
                 }
                 else if ( labelExistsBefore )
                 {
                     // Changed a property and removed the label
-                    return Optional.of( IndexEntryUpdate.remove( nodeId, index, before ) );
+                    return Optional.of( IndexEntryUpdate.remove( nodeId, descriptor, before ) );
                 }
             }
             else
@@ -276,7 +276,7 @@ public class NodeUpdates
                 if ( labelExistsBefore )
                 {
                     // Removed a property and node had the label
-                    return Optional.of( IndexEntryUpdate.remove( nodeId, index, before ) );
+                    return Optional.of( IndexEntryUpdate.remove( nodeId, descriptor, before ) );
                 }
             }
         }
@@ -285,7 +285,7 @@ public class NodeUpdates
             if ( labelExistsAfter )
             {
                 // Added a property and node has the label
-                return Optional.of( IndexEntryUpdate.add( nodeId, index, after ) );
+                return Optional.of( IndexEntryUpdate.add( nodeId, descriptor, after ) );
             }
         }
         else if ( unchanged != null )
@@ -293,12 +293,12 @@ public class NodeUpdates
             if ( !labelExistsBefore && labelExistsAfter )
             {
                 // Node has the right property and the label was added
-                return Optional.of( IndexEntryUpdate.add( nodeId, index, unchanged ) );
+                return Optional.of( IndexEntryUpdate.add( nodeId, descriptor, unchanged ) );
             }
             else if ( labelExistsBefore && !labelExistsAfter )
             {
                 // Node has the right property and the label was removed
-                return Optional.of( IndexEntryUpdate.remove( nodeId, index, unchanged ) );
+                return Optional.of( IndexEntryUpdate.remove( nodeId, descriptor, unchanged ) );
             }
         }
         return Optional.empty();

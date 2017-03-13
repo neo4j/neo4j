@@ -226,7 +226,7 @@ public class GraphDbStructureGuideTest
 
     private NewIndexDescriptor createSchemaIndex( int labelId, int pkId ) throws Exception
     {
-        return schemaWrite().indexCreate( new NodePropertyDescriptor( labelId, pkId ) );
+        return schemaWrite().indexCreate( SchemaDescriptorFactory.forLabel( labelId, pkId ) );
     }
 
     private UniquenessConstraint createUniqueConstraint( int labelId, int pkId ) throws Exception

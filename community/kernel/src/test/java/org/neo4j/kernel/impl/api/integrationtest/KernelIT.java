@@ -43,8 +43,8 @@ import org.neo4j.kernel.api.exceptions.EntityNotFoundException;
 import org.neo4j.kernel.api.exceptions.InvalidTransactionTypeKernelException;
 import org.neo4j.kernel.api.exceptions.Status;
 import org.neo4j.kernel.api.exceptions.schema.SchemaKernelException;
-import org.neo4j.kernel.api.schema.IndexDescriptor;
 import org.neo4j.kernel.api.schema.NodePropertyDescriptor;
+import org.neo4j.kernel.api.schema_new.SchemaDescriptorFactory;
 import org.neo4j.kernel.api.schema_new.index.NewIndexDescriptor;
 import org.neo4j.kernel.api.security.AnonymousContext;
 import org.neo4j.kernel.api.security.SecurityContext;
@@ -631,7 +631,7 @@ public class KernelIT extends KernelIntegrationTest
     private NewIndexDescriptor createIndex( Statement statement )
             throws SchemaKernelException, InvalidTransactionTypeKernelException
     {
-        return statement.schemaWriteOperations().indexCreate( new NodePropertyDescriptor(
+        return statement.schemaWriteOperations().indexCreate( SchemaDescriptorFactory.forLabel(
                 statement.tokenWriteOperations().labelGetOrCreateForName( "hello" ),
                 statement.tokenWriteOperations().propertyKeyGetOrCreateForName( "hepp" ) ) );
     }
