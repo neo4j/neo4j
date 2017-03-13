@@ -43,7 +43,7 @@ public class ConnectWithinDataCenter extends UpstreamDatabaseSelectionStrategy
     @Override
     public Optional<MemberId> upstreamDatabase() throws UpstreamDatabaseSelectionException
     {
-        Map<MemberId, ReadReplicaInfo> replicas = topologyService.readReplicas().replicaMembers();
+        Map<MemberId, ReadReplicaInfo> replicas = topologyService.readReplicas().members();
 
         List<String> tags = config.get( CausalClusteringSettings.server_tags );
         if ( tags.isEmpty() )
