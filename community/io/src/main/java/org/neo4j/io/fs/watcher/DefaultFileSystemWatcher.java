@@ -35,6 +35,8 @@ import java.util.concurrent.CopyOnWriteArrayList;
 import org.neo4j.io.fs.watcher.resource.WatchedFile;
 import org.neo4j.io.fs.watcher.resource.WatchedResource;
 
+import static java.lang.String.format;
+
 /**
  * File watcher that monitors registered directories state using possibilities provided by {@link WatchService}.
  *
@@ -58,7 +60,8 @@ public class DefaultFileSystemWatcher implements FileWatcher
     {
         if ( !file.isDirectory() )
         {
-            throw new IllegalArgumentException( "Only directories can be registered to be monitored." );
+            throw new IllegalArgumentException( format( "File `%s` is not a directory. Only directories can be " +
+                    "registered to be monitored.", file.getCanonicalPath() ) );
         }
         WatchKey watchKey = file.toPath().register( watchService, OBSERVED_EVENTS, SensitivityWatchEventModifier.HIGH );
         return new WatchedFile( watchKey );
