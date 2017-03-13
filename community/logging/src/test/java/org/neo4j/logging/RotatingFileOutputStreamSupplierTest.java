@@ -76,8 +76,8 @@ import static org.neo4j.logging.FormattedLog.OUTPUT_STREAM_CONVERTER;
 
 public class RotatingFileOutputStreamSupplierTest
 {
+    private static final long TEST_TIMEOUT_MILLIS = 10_000;
     private static final java.util.concurrent.Executor DIRECT_EXECUTOR = Runnable::run;
-
     private FileSystemAbstraction fileSystem = new EphemeralFileSystemAbstraction();
 
     @Rule
@@ -182,7 +182,7 @@ public class RotatingFileOutputStreamSupplierTest
         assertThat( fileSystem.fileExists( archiveLogFile3 ), is( false ) );
     }
 
-    @Test( timeout = 10_000 )
+    @Test( timeout = TEST_TIMEOUT_MILLIS )
     public void rotationShouldNotDeadlockOnListener() throws Exception
     {
         String logContent = "Output file created";
@@ -238,7 +238,7 @@ public class RotatingFileOutputStreamSupplierTest
         } );
 
         executor.shutdown();
-        boolean terminated = executor.awaitTermination( 20, TimeUnit.SECONDS );
+        boolean terminated = executor.awaitTermination( TEST_TIMEOUT_MILLIS, TimeUnit.MILLISECONDS);
         if ( !terminated )
         {
             throw new IllegalStateException( "Rotation execution failed to complete within reasonable time." );
