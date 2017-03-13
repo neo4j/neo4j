@@ -24,6 +24,7 @@ import java.util.ArrayList;
 import java.util.List;
 import java.util.concurrent.Executor;
 
+import org.neo4j.cluster.ClusterSettings;
 import org.neo4j.cluster.DelayedDirectExecutor;
 import org.neo4j.cluster.InstanceId;
 import org.neo4j.cluster.MultiPaxosServerFactory;
@@ -50,12 +51,16 @@ import org.neo4j.cluster.protocol.snapshot.SnapshotContext;
 import org.neo4j.cluster.protocol.snapshot.SnapshotMessage;
 import org.neo4j.cluster.statemachine.StateMachine;
 import org.neo4j.helpers.collection.Iterables;
+import org.neo4j.kernel.configuration.Config;
 import org.neo4j.kernel.ha.HighAvailabilityMemberInfoProvider;
 import org.neo4j.kernel.ha.cluster.DefaultElectionCredentialsProvider;
 import org.neo4j.kernel.ha.cluster.HighAvailabilityMemberState;
 import org.neo4j.kernel.impl.core.LastTxIdGetter;
 import org.neo4j.kernel.monitoring.Monitors;
 import org.neo4j.logging.LogProvider;
+
+import static org.mockito.Mockito.mock;
+import static org.mockito.Mockito.when;
 
 class ClusterInstance
 {
@@ -91,15 +96,17 @@ class ClusterInstance
 
         InMemoryAcceptorInstanceStore acceptorInstances = new InMemoryAcceptorInstanceStore();
 
+        Config config = mock( Config.class );
+        when( config.get( ClusterSettings.max_acceptors ) ).thenReturn( maxSurvivableFailedMembers );
+
         DelayedDirectExecutor executor = new DelayedDirectExecutor( logging );
         final MultiPaxosContext context = new MultiPaxosContext( id,
-                maxSurvivableFailedMembers,
                 Iterables.<ElectionRole, ElectionRole>iterable( new ElectionRole( ClusterConfiguration.COORDINATOR ) ),
                 new ClusterConfiguration( configuration.getName(), logging,
                         configuration.getMemberURIs() ),
                 executor, logging, objStreamFactory, objStreamFactory, acceptorInstances, timeouts,
                 new DefaultElectionCredentialsProvider( id, new StateVerifierLastTxIdGetter(),
-                        new MemberInfoProvider() )
+                        new MemberInfoProvider() ), config
         );
         context.getClusterContext().setBoundAt( uri );
 

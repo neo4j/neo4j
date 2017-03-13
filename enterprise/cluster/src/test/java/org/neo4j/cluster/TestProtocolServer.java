@@ -35,7 +35,11 @@ import org.neo4j.cluster.statemachine.StateTransitionListener;
 import org.neo4j.cluster.timeout.TimeoutStrategy;
 import org.neo4j.cluster.timeout.Timeouts;
 import org.neo4j.helpers.Listeners;
+import org.neo4j.kernel.configuration.Config;
 import org.neo4j.logging.LogProvider;
+
+import static org.mockito.Mockito.mock;
+import static org.mockito.Mockito.when;
 
 /**
  * TODO
@@ -60,8 +64,13 @@ public class TestProtocolServer
 
         stateMachineExecutor = new DelayedDirectExecutor( logProvider );
 
-        server = factory.newProtocolServer( instanceId, 10, timeoutStrategy, receiver, sender, acceptorInstanceStore,
-                electionCredentialsProvider, stateMachineExecutor, new ObjectStreamFactory(), new ObjectStreamFactory() );
+        Config config = mock( Config.class );
+        when( config.get( ClusterSettings.max_acceptors ) ).thenReturn( 10 );
+        when( config.get( ClusterSettings.strict_initial_hosts) ).thenReturn( Boolean.FALSE );
+
+        server = factory.newProtocolServer( instanceId, timeoutStrategy, receiver, sender, acceptorInstanceStore,
+                electionCredentialsProvider, stateMachineExecutor, new ObjectStreamFactory(), new ObjectStreamFactory(),
+                config );
 
         server.listeningAt( serverUri );
     }

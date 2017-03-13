@@ -121,10 +121,9 @@ public class NetworkedServerFactory
                         new NamedThreadFactory( "State machine", namedThreadFactoryMonitor ) ) );
 
         final ProtocolServer protocolServer = protocolServerFactory.newProtocolServer(
-                config.get( ClusterSettings.server_id ), config.get( ClusterSettings.max_acceptors ),
-                timeoutStrategy, receiver, sender,
+                config.get( ClusterSettings.server_id ), timeoutStrategy, receiver, sender,
                 acceptorInstanceStore, electionCredentialsProvider, stateMachineExecutor, objectInputStreamFactory,
-                objectOutputStreamFactory );
+                objectOutputStreamFactory, config );
         receiver.addNetworkChannelsListener( new NetworkReceiver.NetworkChannelsListener()
         {
             private StateTransitionLogger logger;

@@ -21,6 +21,7 @@ package org.neo4j.cluster.protocol.atomicbroadcast.multipaxos.context;
 
 import java.util.concurrent.Executor;
 
+import org.neo4j.cluster.ClusterSettings;
 import org.neo4j.cluster.InstanceId;
 import org.neo4j.cluster.protocol.atomicbroadcast.ObjectInputStreamFactory;
 import org.neo4j.cluster.protocol.atomicbroadcast.ObjectOutputStreamFactory;
@@ -36,6 +37,7 @@ import org.neo4j.cluster.protocol.election.ElectionCredentialsProvider;
 import org.neo4j.cluster.protocol.election.ElectionRole;
 import org.neo4j.cluster.protocol.heartbeat.HeartbeatContext;
 import org.neo4j.cluster.timeout.Timeouts;
+import org.neo4j.kernel.configuration.Config;
 import org.neo4j.logging.LogProvider;
 
 /**
@@ -57,7 +59,6 @@ public class MultiPaxosContext
     private final PaxosInstanceStore paxosInstances;
 
     public MultiPaxosContext( InstanceId me,
-                              int maxAcceptors,
                               Iterable<ElectionRole> roles,
                               ClusterConfiguration configuration,
                               Executor executor,
@@ -66,14 +67,15 @@ public class MultiPaxosContext
                               ObjectOutputStreamFactory objectOutputStreamFactory,
                               AcceptorInstanceStore instanceStore,
                               Timeouts timeouts,
-                              ElectionCredentialsProvider electionCredentialsProvider )
+                              ElectionCredentialsProvider electionCredentialsProvider,
+                              Config config )
     {
-        commonState = new CommonContextState( configuration, maxAcceptors );
+        commonState = new CommonContextState( configuration, config.get( ClusterSettings.max_acceptors ) );
         paxosInstances = new PaxosInstanceStore();
 
         heartbeatContext = new HeartbeatContextImpl(me, commonState, logging, timeouts, executor );
         learnerContext = new LearnerContextImpl(me, commonState, logging, timeouts, paxosInstances, instanceStore, objectInputStreamFactory, objectOutputStreamFactory, heartbeatContext );
-        clusterContext = new ClusterContextImpl(me, commonState, logging, timeouts, executor, objectOutputStreamFactory, objectInputStreamFactory, learnerContext, heartbeatContext );
+        clusterContext = new ClusterContextImpl(me, commonState, logging, timeouts, executor, objectOutputStreamFactory, objectInputStreamFactory, learnerContext, heartbeatContext, config );
         electionContext = new ElectionContextImpl( me, commonState, logging, timeouts, roles, clusterContext, heartbeatContext, electionCredentialsProvider );
         proposerContext = new ProposerContextImpl(me, commonState, logging, timeouts, paxosInstances, heartbeatContext );
         acceptorContext = new AcceptorContextImpl(me, commonState, logging, timeouts, instanceStore);
