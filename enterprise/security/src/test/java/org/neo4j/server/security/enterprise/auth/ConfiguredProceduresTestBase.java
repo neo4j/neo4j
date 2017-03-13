@@ -302,7 +302,7 @@ public abstract class ConfiguredProceduresTestBase<S> extends ProcedureInteracti
     {
         configuredSetup( stringMap(
                 SecuritySettings.default_allowed.name(), "default" ) );
-        assertSuccess( readSubject, "CALL test.readOperations",  r -> r.next().containsKey( 0 ));
+        assertSuccess( readSubject, "CALL test.readOperations",  r -> r.next().containsKey( "0" ));
         assertFail( noneSubject, "CALL test.readOperations",  "Read operations are not allowed for user 'noneSubject' with no roles.");
     }
 
