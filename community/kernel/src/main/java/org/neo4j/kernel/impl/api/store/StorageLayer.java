@@ -270,6 +270,13 @@ public class StorageLayer implements StoreReadLayer
     }
 
     @Override
+    public IndexReader indexGetFreshReader( StorageStatement statement, IndexDescriptor index )
+            throws IndexNotFoundKernelException
+    {
+        return statement.getFreshIndexReader( index );
+    }
+
+    @Override
     public Iterator<ConstraintDescriptor> constraintsGetForSchema( SchemaDescriptor descriptor )
     {
         return schemaCache.constraintsForSchema( descriptor );
