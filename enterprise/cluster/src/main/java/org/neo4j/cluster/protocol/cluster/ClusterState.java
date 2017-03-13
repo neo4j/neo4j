@@ -327,20 +327,29 @@ public enum ClusterState
                                         return start;
                                     }
                                 }
-                                if ( context.haveWeContactedInstance( configurationRequested ) )
+                                if ( context.shouldFilterContactingInstances() )
                                 {
-                                    context.getLog( getClass() ).info( format( "%s had header %s which " +
-                                            "contains us. This means we've contacted them and they are in our " +
-                                            "initial hosts.", configurationRequested, message.getHeader( DISCOVERED, "" ) ) );
-                                    discoveredInstances.add( configurationRequested );
+                                    if ( context.haveWeContactedInstance( configurationRequested ) )
+                                    {
+                                        context.getLog( getClass() ).info( format( "%s had header %s which " +
+                                                "contains us. This means we've contacted them and they are in our " +
+                                                "initial hosts.", configurationRequested, message.getHeader( DISCOVERED, "" ) ) );
+
+                                        discoveredInstances.add( configurationRequested );
+                                    }
+                                    else
+                                    {
+                                        context.getLog( getClass() ).warn(
+                                                format( "joining instance %s was not in %s, i will not consider it " +
+                                                                "for " +
+                                                                "purposes of cluster creation",
+                                                        configurationRequested.getJoiningUri(),
+                                                        context.getJoiningInstances() ) );
+                                    }
                                 }
                                 else
                                 {
-                                    context.getLog( getClass() ).warn(
-                                            format( "joining instance %s was not in %s, i will not consider it for " +
-                                                            "purposes of cluster creation",
-                                                    configurationRequested.getJoiningUri(),
-                                                    context.getJoiningInstances() ) );
+                                    discoveredInstances.add( configurationRequested );
                                 }
                             }
                             break;

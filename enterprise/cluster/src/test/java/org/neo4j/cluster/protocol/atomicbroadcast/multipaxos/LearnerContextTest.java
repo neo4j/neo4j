@@ -21,11 +21,13 @@ package org.neo4j.cluster.protocol.atomicbroadcast.multipaxos;
 
 import org.junit.Test;
 
+import org.neo4j.cluster.ClusterSettings;
 import org.neo4j.cluster.InstanceId;
 import org.neo4j.cluster.protocol.atomicbroadcast.multipaxos.context.MultiPaxosContext;
 import org.neo4j.cluster.protocol.cluster.ClusterConfiguration;
 import org.neo4j.cluster.protocol.election.ElectionRole;
 import org.neo4j.helpers.collection.Iterables;
+import org.neo4j.kernel.configuration.Config;
 import org.neo4j.logging.AssertableLogProvider;
 import org.neo4j.logging.LogProvider;
 import org.neo4j.logging.NullLogProvider;
@@ -33,6 +35,7 @@ import org.neo4j.logging.NullLogProvider;
 import static org.hamcrest.MatcherAssert.assertThat;
 import static org.hamcrest.Matchers.equalTo;
 import static org.mockito.Mockito.mock;
+import static org.mockito.Mockito.when;
 
 public class LearnerContextTest
 {
@@ -42,7 +45,14 @@ public class LearnerContextTest
     public void shouldOnlyAllowHigherLastLearnedInstanceId() throws Exception
     {
         // Given
-        MultiPaxosContext mpCtx = new MultiPaxosContext( null, 10, Iterables.<ElectionRole>empty(), mock( ClusterConfiguration.class ), null, NullLogProvider.getInstance(), null, null, null, null, null );
+
+        Config config = mock( Config.class );
+        when( config.get( ClusterSettings.max_acceptors ) ).thenReturn( 10 );
+
+        MultiPaxosContext mpCtx = new MultiPaxosContext( null, Iterables.<ElectionRole>empty(),
+                mock( ClusterConfiguration.class ), null, NullLogProvider.getInstance(),
+                null, null, null, null, null,
+                config );
         LearnerContext state = mpCtx.getLearnerContext();
 
         // When
@@ -57,7 +67,14 @@ public class LearnerContextTest
     public void shouldTrackLastKnownUpToDateAliveInstance() throws Exception
     {
         // Given
-        MultiPaxosContext mpCtx = new MultiPaxosContext( null, 10, Iterables.<ElectionRole>empty(), mock( ClusterConfiguration.class ), null, NullLogProvider.getInstance(), null, null, null, null, null );
+
+        Config config = mock( Config.class );
+        when( config.get( ClusterSettings.max_acceptors ) ).thenReturn( 10 );
+
+        MultiPaxosContext mpCtx = new MultiPaxosContext( null, Iterables.<ElectionRole>empty(),
+                mock( ClusterConfiguration.class ), null, NullLogProvider.getInstance(),
+                null, null, null, null, null,
+                config );
         LearnerContext state = mpCtx.getLearnerContext();
 
         // When
@@ -74,7 +91,13 @@ public class LearnerContextTest
     public void settingLastLearnedInstanceToNegativeOneShouldAlwaysWin() throws Exception
     {
         // Given
-        MultiPaxosContext mpCtx = new MultiPaxosContext( null, 10, Iterables.<ElectionRole>empty(), mock( ClusterConfiguration.class ), null, NullLogProvider.getInstance(), null, null, null, null, null );
+        Config config = mock( Config.class );
+        when( config.get( ClusterSettings.max_acceptors ) ).thenReturn( 10 );
+
+        MultiPaxosContext mpCtx = new MultiPaxosContext( null, Iterables.<ElectionRole>empty(),
+                mock( ClusterConfiguration.class ), null, NullLogProvider.getInstance(),
+                null, null, null, null,
+                null, config );
         LearnerContext state = mpCtx.getLearnerContext();
 
         // When

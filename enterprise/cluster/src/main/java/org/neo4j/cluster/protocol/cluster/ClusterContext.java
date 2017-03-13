@@ -122,4 +122,6 @@ public interface ClusterContext
     long getLastElectorVersion();
 
     void setLastElectorVersion( long lastElectorVersion );
+
+    boolean shouldFilterContactingInstances();
 }

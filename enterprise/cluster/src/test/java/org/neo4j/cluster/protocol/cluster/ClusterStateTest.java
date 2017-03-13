@@ -154,6 +154,7 @@ public class ClusterStateTest
 
         List<ConfigurationRequestState> discoveredInstances = new LinkedList<>();
         when( context.getDiscoveredInstances() ).thenReturn( discoveredInstances );
+        when( context.shouldFilterContactingInstances() ).thenReturn( true );
 
         MessageHolder outgoing = mock( MessageHolder.class );
         ConfigurationRequestState configurationRequestFromTwo = configuration( 2 );
@@ -175,6 +176,44 @@ public class ClusterStateTest
 
         // Then
         assertTrue( discoveredInstances.contains( configurationRequestFromTwo ) );
+    }
+
+    @Test
+    public void discoveredInstancesShouldNotFilterByDefault() throws Throwable
+    {
+        // GIVEN
+        ClusterContext context = mock( ClusterContext.class );
+        when( context.getLog( any( Class.class ) ) ).thenReturn( NullLog.getInstance() );
+        when( context.getUriForId( id( 2 ) ) ).thenReturn( uri( 2 ) );
+        when( context.getUriForId( id( 3 ) ) ).thenReturn( uri( 3 ) );
+
+        List<ConfigurationRequestState> discoveredInstances = new LinkedList<>();
+        when( context.getDiscoveredInstances() ).thenReturn( discoveredInstances );
+
+        MessageHolder outgoing = mock( MessageHolder.class );
+        ConfigurationRequestState configurationRequestFromTwo = configuration( 2 );
+        Message<ClusterMessage> messageFromTwo = to( configurationRequest, uri( 1 ), configurationRequestFromTwo )
+                .setHeader( Message.FROM, uri( 2 ).toString() );
+        ConfigurationRequestState configurationRequestFromThree = configuration( 3 );
+        Message<ClusterMessage> messageFromThree = to( configurationRequest, uri( 1 ), configurationRequestFromThree )
+                .setHeader( Message.FROM, uri( 3 ).toString() );
+
+        // WHEN
+        // We receive a configuration request from an instance which we haven't contacted
+        ClusterState.discovery.handle( context, messageFromTwo, outgoing );
+
+        // THEN
+        // Since the setting is on, it should be added to the list anyway
+        assertTrue( discoveredInstances.contains( configurationRequestFromTwo ) );
+
+        // WHEN
+        // Another contacts us as well
+        ClusterState.discovery.handle( context, messageFromThree, outgoing );
+
+        // Then
+        // That should be in as well
+        assertTrue( discoveredInstances.contains( configurationRequestFromTwo ) );
+        assertTrue( discoveredInstances.contains( configurationRequestFromThree ) );
     }
 
     @Test

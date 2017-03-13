@@ -31,6 +31,7 @@ import java.util.Set;
 import java.util.concurrent.Executor;
 import java.util.stream.Collectors;
 
+import org.neo4j.cluster.ClusterSettings;
 import org.neo4j.cluster.InstanceId;
 import org.neo4j.cluster.protocol.atomicbroadcast.ObjectInputStreamFactory;
 import org.neo4j.cluster.protocol.atomicbroadcast.ObjectOutputStreamFactory;
@@ -45,6 +46,7 @@ import org.neo4j.cluster.protocol.heartbeat.HeartbeatListener;
 import org.neo4j.cluster.timeout.Timeouts;
 import org.neo4j.helpers.Listeners;
 import org.neo4j.helpers.collection.Iterables;
+import org.neo4j.kernel.configuration.Config;
 import org.neo4j.logging.LogProvider;
 
 import static org.neo4j.function.Predicates.in;
@@ -87,6 +89,7 @@ class ClusterContextImpl
 
     private final LearnerContext learnerContext;
     private final HeartbeatContext heartbeatContext;
+    private final Config config;
 
     private long electorVersion;
     private InstanceId lastElector;
@@ -95,7 +98,8 @@ class ClusterContextImpl
                         Timeouts timeouts, Executor executor,
                         ObjectOutputStreamFactory objectOutputStreamFactory,
                         ObjectInputStreamFactory objectInputStreamFactory,
-                        LearnerContext learnerContext, HeartbeatContext heartbeatContext )
+                        LearnerContext learnerContext, HeartbeatContext heartbeatContext,
+                        Config config )
     {
         super( me, commonState, logging, timeouts );
         this.executor = executor;
@@ -103,6 +107,7 @@ class ClusterContextImpl
         this.objectInputStreamFactory = objectInputStreamFactory;
         this.learnerContext = learnerContext;
         this.heartbeatContext = heartbeatContext;
+        this.config = config;
         heartbeatContext.addHeartbeatListener(
 
                 /*
@@ -134,7 +139,7 @@ class ClusterContextImpl
             joinDeniedConfigurationResponseState, Executor executor,
                         ObjectOutputStreamFactory objectOutputStreamFactory,
                         ObjectInputStreamFactory objectInputStreamFactory, LearnerContext learnerContext,
-                        HeartbeatContext heartbeatContext )
+                        HeartbeatContext heartbeatContext, Config config )
     {
         super( me, commonState, logging, timeouts );
         this.joiningInstances = joiningInstances;
@@ -144,6 +149,7 @@ class ClusterContextImpl
         this.objectInputStreamFactory = objectInputStreamFactory;
         this.learnerContext = learnerContext;
         this.heartbeatContext = heartbeatContext;
+        this.config = config;
     }
 
     // Cluster API
@@ -157,6 +163,12 @@ class ClusterContextImpl
     public void setLastElectorVersion( long lastElectorVersion )
     {
         this.electorVersion = lastElectorVersion;
+    }
+
+    @Override
+    public boolean shouldFilterContactingInstances()
+    {
+        return config.get( ClusterSettings.strict_initial_hosts );
     }
 
     @Override
@@ -508,7 +520,7 @@ class ClusterContextImpl
                 joiningInstances == null ? null : new ArrayList<>( asList(joiningInstances)),
                 joinDeniedConfigurationResponseState == null ? null : joinDeniedConfigurationResponseState.snapshot(),
                 executor, objectOutputStreamFactory, objectInputStreamFactory, snapshotLearnerContext,
-                snapshotHeartbeatContext );
+                snapshotHeartbeatContext, config );
     }
 
     @Override

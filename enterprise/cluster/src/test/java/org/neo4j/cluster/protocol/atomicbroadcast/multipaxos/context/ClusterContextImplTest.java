@@ -35,6 +35,7 @@ import org.neo4j.cluster.protocol.cluster.ClusterMessage;
 import org.neo4j.cluster.protocol.heartbeat.HeartbeatContext;
 import org.neo4j.cluster.protocol.heartbeat.HeartbeatListener;
 import org.neo4j.cluster.timeout.Timeouts;
+import org.neo4j.kernel.configuration.Config;
 import org.neo4j.logging.NullLogProvider;
 
 import static org.junit.Assert.assertEquals;
@@ -66,7 +67,8 @@ public class ClusterContextImplTest
 
         ClusterContext context = new ClusterContextImpl(me, commonContextState, NullLogProvider.getInstance(),
                 mock( Timeouts.class ), mock ( Executor.class ), mock( ObjectOutputStreamFactory.class ), mock(
-                ObjectInputStreamFactory.class ), mock( LearnerContext.class ), mock( HeartbeatContext.class ) );
+                ObjectInputStreamFactory.class ), mock( LearnerContext.class ), mock( HeartbeatContext.class ),
+                mock( Config.class ) );
 
           // This means instance 2 was the elector at version 8
         context.setLastElector( elector );
@@ -100,7 +102,8 @@ public class ClusterContextImplTest
 
         ClusterContext context = new ClusterContextImpl(me, commonContextState, NullLogProvider.getInstance(),
                 mock( Timeouts.class ), mock ( Executor.class ), mock( ObjectOutputStreamFactory.class ), mock(
-                ObjectInputStreamFactory.class ), mock( LearnerContext.class ), mock( HeartbeatContext.class ) );
+                ObjectInputStreamFactory.class ), mock( LearnerContext.class ), mock( HeartbeatContext.class ),
+                mock( Config.class ) );
 
           // This means instance 2 was the elector at version 8
         context.setLastElector( elector );
@@ -130,7 +133,8 @@ public class ClusterContextImplTest
 
         ClusterContext context = new ClusterContextImpl(me, commonContextState, NullLogProvider.getInstance(),
                 mock( Timeouts.class ), mock ( Executor.class ), mock( ObjectOutputStreamFactory.class ), mock(
-                ObjectInputStreamFactory.class ), mock( LearnerContext.class ), mock( HeartbeatContext.class ) );
+                ObjectInputStreamFactory.class ), mock( LearnerContext.class ), mock( HeartbeatContext.class ),
+                mock( Config.class ) );
 
         // This means instance 2 was the elector at version 8
         context.setLastElector( elector );
@@ -160,7 +164,8 @@ public class ClusterContextImplTest
 
         ClusterContext context = new ClusterContextImpl(me, commonContextState, NullLogProvider.getInstance(),
                 mock( Timeouts.class ), mock ( Executor.class ), mock( ObjectOutputStreamFactory.class ), mock(
-                ObjectInputStreamFactory.class ), mock( LearnerContext.class ), mock( HeartbeatContext.class ) );
+                ObjectInputStreamFactory.class ), mock( LearnerContext.class ), mock( HeartbeatContext.class ),
+                mock( Config.class ) );
 
         // This means instance 2 was the elector at version 8
         context.setLastElector( elector );
@@ -195,7 +200,7 @@ public class ClusterContextImplTest
 
         ClusterContext context = new ClusterContextImpl(me, commonContextState, NullLogProvider.getInstance(),
                 timeouts, executor, mock( ObjectOutputStreamFactory.class ), mock(
-                ObjectInputStreamFactory.class ), mock( LearnerContext.class ), heartbeatContext );
+                ObjectInputStreamFactory.class ), mock( LearnerContext.class ), heartbeatContext, mock( Config.class ) );
 
         verify( heartbeatContext ).addHeartbeatListener( listenerCaptor.capture() );
 
@@ -234,7 +239,7 @@ public class ClusterContextImplTest
 
         ClusterContext context = new ClusterContextImpl(me, commonContextState, NullLogProvider.getInstance(),
                 timeouts, executor, mock( ObjectOutputStreamFactory.class ), mock(
-                ObjectInputStreamFactory.class ), mock( LearnerContext.class ), heartbeatContext );
+                ObjectInputStreamFactory.class ), mock( LearnerContext.class ), heartbeatContext, mock( Config.class ) );
 
         verify( heartbeatContext ).addHeartbeatListener( listenerCaptor.capture() );
 
@@ -267,7 +272,7 @@ public class ClusterContextImplTest
 
         ClusterContext context = new ClusterContextImpl(me, commonContextState, NullLogProvider.getInstance(),
                 timeouts, executor, mock( ObjectOutputStreamFactory.class ), mock(
-                ObjectInputStreamFactory.class ), mock( LearnerContext.class ), heartbeatContext );
+                ObjectInputStreamFactory.class ), mock( LearnerContext.class ), heartbeatContext, mock( Config.class ) );
 
         ClusterMessage.ConfigurationRequestState request = mock( ClusterMessage.ConfigurationRequestState.class );
         when ( request.getJoiningId() ).thenReturn( joining );
@@ -297,7 +302,7 @@ public class ClusterContextImplTest
 
         ClusterContext context = new ClusterContextImpl(me, commonContextState, NullLogProvider.getInstance(),
                 timeouts, executor, mock( ObjectOutputStreamFactory.class ), mock(
-                ObjectInputStreamFactory.class ), mock( LearnerContext.class ), heartbeatContext );
+                ObjectInputStreamFactory.class ), mock( LearnerContext.class ), heartbeatContext, mock( Config.class ) );
 
         ClusterMessage.ConfigurationRequestState requestOne = mock( ClusterMessage.ConfigurationRequestState.class );
         when ( requestOne.getJoiningId() ).thenReturn( joiningOne );
@@ -332,7 +337,7 @@ public class ClusterContextImplTest
 
         ClusterContext context = new ClusterContextImpl(me, commonContextState, NullLogProvider.getInstance(),
                 timeouts, executor, mock( ObjectOutputStreamFactory.class ), mock(
-                ObjectInputStreamFactory.class ), mock( LearnerContext.class ), heartbeatContext );
+                ObjectInputStreamFactory.class ), mock( LearnerContext.class ), heartbeatContext, mock( Config.class ) );
 
         ClusterMessage.ConfigurationRequestState requestOne = mock( ClusterMessage.ConfigurationRequestState.class );
         when ( requestOne.getJoiningId() ).thenReturn( joiningOne );
