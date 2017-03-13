@@ -42,8 +42,9 @@ public class StoreSingleRelationshipCursor extends StoreAbstractRelationshipCurs
         this.instanceCache = instanceCache;
     }
 
-    public StoreSingleRelationshipCursor init( long relId )
+    public StoreSingleRelationshipCursor init( long relId, Runnable assertOnPropertyValueFetch )
     {
+        initialize( assertOnPropertyValueFetch );
         this.relationshipId = relId;
         return this;
     }

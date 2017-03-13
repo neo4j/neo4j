@@ -45,8 +45,9 @@ public class StoreIteratorRelationshipCursor extends StoreAbstractRelationshipCu
         this.instanceCache = instanceCache;
     }
 
-    public StoreIteratorRelationshipCursor init( PrimitiveLongIterator iterator )
+    public StoreIteratorRelationshipCursor init( PrimitiveLongIterator iterator, Runnable assertOnPropertyValueFetch )
     {
+        initialize( assertOnPropertyValueFetch );
         this.iterator = iterator;
         return this;
     }

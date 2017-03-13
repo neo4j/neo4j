@@ -46,6 +46,7 @@ public abstract class StoreAbstractRelationshipCursor extends EntityItemHelper
 
     private final InstanceCache<StoreSinglePropertyCursor> singlePropertyCursor;
     private final InstanceCache<StorePropertyCursor> allPropertyCursor;
+    private Runnable assertOnPropertyValueFetch;
 
     public StoreAbstractRelationshipCursor( RelationshipRecord relationshipRecord, RecordCursors cursors,
             LockService lockService )
@@ -70,6 +71,11 @@ public abstract class StoreAbstractRelationshipCursor extends EntityItemHelper
                 return new StorePropertyCursor( cursors, this );
             }
         };
+    }
+
+    protected void initialize( Runnable assertOnPropertyValueFetch )
+    {
+        this.assertOnPropertyValueFetch = assertOnPropertyValueFetch;
     }
 
     @Override
@@ -143,12 +149,15 @@ public abstract class StoreAbstractRelationshipCursor extends EntityItemHelper
     @Override
     public Cursor<PropertyItem> properties()
     {
-        return allPropertyCursor.get().init( relationshipRecord.getNextProp(), shortLivedReadLock() );
+        return allPropertyCursor.get()
+                .init( relationshipRecord.getNextProp(), shortLivedReadLock(), assertOnPropertyValueFetch );
     }
 
     @Override
     public Cursor<PropertyItem> property( int propertyKeyId )
     {
-        return singlePropertyCursor.get().init( relationshipRecord.getNextProp(), propertyKeyId, shortLivedReadLock() );
+        return singlePropertyCursor.get()
+                .init( relationshipRecord.getNextProp(), propertyKeyId, shortLivedReadLock(),
+                        assertOnPropertyValueFetch );
     }
 }

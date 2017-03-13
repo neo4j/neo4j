@@ -95,7 +95,7 @@ public class DiskLayerPropertyTest extends DiskLayerTest
             long nodeId = createLabeledNode( db, singletonMap( "prop", value ), label1 ).getId();
 
             // when
-            try ( Cursor<NodeItem> node = statement.acquireSingleNodeCursor( nodeId ) )
+            try ( Cursor<NodeItem> node = statement.acquireSingleNodeCursor( nodeId, () -> {} ) )
             {
                 node.next();
 

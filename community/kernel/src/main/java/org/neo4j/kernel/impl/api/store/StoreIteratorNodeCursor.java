@@ -50,8 +50,9 @@ public class StoreIteratorNodeCursor extends StoreAbstractNodeCursor
         this.instanceCache = instanceCache;
     }
 
-    public StoreIteratorNodeCursor init( PrimitiveLongIterator iterator )
+    public StoreIteratorNodeCursor init( PrimitiveLongIterator iterator, Runnable assertOnPropertyValueFetch )
     {
+        initialize( assertOnPropertyValueFetch );
         this.iterator = iterator;
         return this;
     }

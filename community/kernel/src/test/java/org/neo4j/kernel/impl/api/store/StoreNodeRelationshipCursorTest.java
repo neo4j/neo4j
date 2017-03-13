@@ -118,13 +118,13 @@ public class StoreNodeRelationshipCursorTest
 
         try ( StoreNodeRelationshipCursor cursor = getNodeRelationshipCursor() )
         {
-            cursor.init( dense, 1L, FIRST_OWNING_NODE, direction );
+            cursor.init( dense, 1L, FIRST_OWNING_NODE, direction, () -> {} );
             assertTrue( cursor.next() );
 
-            cursor.init( dense, 2, FIRST_OWNING_NODE, direction );
+            cursor.init( dense, 2, FIRST_OWNING_NODE, direction, () -> {} );
             assertTrue( cursor.next() );
 
-            cursor.init( dense, 3, FIRST_OWNING_NODE, direction );
+            cursor.init( dense, 3, FIRST_OWNING_NODE, direction, () -> {} );
             assertTrue( cursor.next() );
         }
     }
@@ -136,7 +136,7 @@ public class StoreNodeRelationshipCursorTest
         long expectedNodeId = 1;
         try ( StoreNodeRelationshipCursor cursor = getNodeRelationshipCursor() )
         {
-            cursor.init( dense, 1, FIRST_OWNING_NODE, direction );
+            cursor.init( dense, 1, FIRST_OWNING_NODE, direction, () -> {} );
             while ( cursor.next() )
             {
                 assertEquals( "Should load next relationship in a sequence", expectedNodeId++, cursor.get().id() );
@@ -154,7 +154,7 @@ public class StoreNodeRelationshipCursorTest
         int relationshipIndex = 0;
         try ( StoreNodeRelationshipCursor cursor = getNodeRelationshipCursor() )
         {
-            cursor.init( dense, 1, FIRST_OWNING_NODE, direction );
+            cursor.init( dense, 1, FIRST_OWNING_NODE, direction, () -> {} );
             while ( cursor.next() )
             {
                 assertEquals( "Should load next relationship in a sequence",
@@ -173,7 +173,7 @@ public class StoreNodeRelationshipCursorTest
         try ( StoreNodeRelationshipCursor cursor = getNodeRelationshipCursor() )
         {
             // WHEN
-            cursor.init( dense, NO_NEXT_RELATIONSHIP.intValue(), FIRST_OWNING_NODE, direction );
+            cursor.init( dense, NO_NEXT_RELATIONSHIP.intValue(), FIRST_OWNING_NODE, direction, () -> {} );
 
             // THEN
             assertFalse( cursor.next() );

@@ -66,15 +66,17 @@ public class StoreNodeRelationshipCursor extends StoreAbstractRelationshipCursor
     public StoreNodeRelationshipCursor init( boolean isDense,
             long firstRelId,
             long fromNodeId,
-            Direction direction )
+            Direction direction,
+            Runnable assertOnPropertyValueFetch )
     {
-        return init( isDense, firstRelId, fromNodeId, direction, null );
+        return init( isDense, firstRelId, fromNodeId, direction, assertOnPropertyValueFetch, null );
     }
 
-    public StoreNodeRelationshipCursor init( boolean isDense,
+    public final StoreNodeRelationshipCursor init( boolean isDense,
             long firstRelId,
             long fromNodeId,
             Direction direction,
+            Runnable assertOnPropertyValueFetch,
             int... relTypes )
     {
         this.isDense = isDense;
@@ -83,7 +85,7 @@ public class StoreNodeRelationshipCursor extends StoreAbstractRelationshipCursor
         this.direction = direction;
         this.relTypes = relTypes;
         this.end = false;
-
+        initialize( assertOnPropertyValueFetch );
         if ( isDense && relationshipId != Record.NO_NEXT_RELATIONSHIP.intValue() )
         {
             cursors.relationshipGroup().next( firstRelId, groupRecord, FORCE );

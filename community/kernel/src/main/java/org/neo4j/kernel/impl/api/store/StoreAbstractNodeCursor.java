@@ -71,6 +71,7 @@ public abstract class StoreAbstractNodeCursor extends NodeItemHelper implements 
     private final InstanceCache<StoreSinglePropertyCursor> singlePropertyCursor;
     private final InstanceCache<StorePropertyCursor> allPropertyCursor;
     protected final RecordCursors cursors;
+    private Runnable assertOnPropertyValueFetch;
 
     public StoreAbstractNodeCursor( NodeRecord nodeRecord,
             final NeoStores neoStores,
@@ -127,6 +128,11 @@ public abstract class StoreAbstractNodeCursor extends NodeItemHelper implements 
                 return new StorePropertyCursor( cursors, allPropertyCursor );
             }
         };
+    }
+
+    protected void initialize( Runnable assertOnPropertyValueFetch )
+    {
+        this.assertOnPropertyValueFetch = assertOnPropertyValueFetch;
     }
 
     @Override
@@ -187,27 +193,29 @@ public abstract class StoreAbstractNodeCursor extends NodeItemHelper implements 
     @Override
     public Cursor<PropertyItem> properties()
     {
-        return allPropertyCursor.get().init( nodeRecord.getNextProp(), shortLivedReadLock() );
+        return allPropertyCursor.get().init( nodeRecord.getNextProp(), shortLivedReadLock(),
+                assertOnPropertyValueFetch );
     }
 
     @Override
     public Cursor<PropertyItem> property( int propertyKeyId )
     {
-        return singlePropertyCursor.get().init( nodeRecord.getNextProp(), propertyKeyId, shortLivedReadLock() );
+        return singlePropertyCursor.get().init( nodeRecord.getNextProp(), propertyKeyId, shortLivedReadLock(),
+                assertOnPropertyValueFetch );
     }
 
     @Override
     public Cursor<RelationshipItem> relationships( Direction direction )
     {
-        return nodeRelationshipCursor.get().init(  nodeRecord.isDense(), nodeRecord.getNextRel(), nodeRecord.getId(),
-                direction, null );
+        return nodeRelationshipCursor.get().init( nodeRecord.isDense(), nodeRecord.getNextRel(), nodeRecord.getId(),
+                direction, assertOnPropertyValueFetch );
     }
 
     @Override
     public Cursor<RelationshipItem> relationships( Direction direction, int... relTypes )
     {
         return nodeRelationshipCursor.get().init( nodeRecord.isDense(), nodeRecord.getNextRel(), nodeRecord.getId(),
-                direction, relTypes );
+                direction, assertOnPropertyValueFetch, relTypes );
     }
 
     @Override

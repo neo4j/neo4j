@@ -40,7 +40,6 @@ import java.util.Optional;
 import java.util.function.BiConsumer;
 import java.util.function.Predicate;
 import java.util.function.Supplier;
-import java.util.stream.Stream;
 import java.util.stream.StreamSupport;
 
 import org.neo4j.helpers.collection.Iterables;
@@ -690,7 +689,7 @@ public class StoreMigrator extends AbstractStoreMigrationParticipant
         final List<Object> scratch = new ArrayList<>();
         return ( ENTITY entity, RECORD record ) ->
         {
-            cursor.init( record.getNextProp(), LockService.NO_LOCK );
+            cursor.init( record.getNextProp(), LockService.NO_LOCK, () -> {} );
             scratch.clear();
             while ( cursor.next() )
             {

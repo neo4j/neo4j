@@ -149,7 +149,7 @@ class PropertyExistenceEnforcer extends TxStateVisitor.Delegator
 
     private Cursor<NodeItem> nodeCursor( long id )
     {
-        Cursor<NodeItem> cursor = storeStatement().acquireSingleNodeCursor( id );
+        Cursor<NodeItem> cursor = storeStatement().acquireSingleNodeCursor( id, () -> {} );
         return txState.augmentSingleNodeCursor( cursor, id );
     }
 
@@ -213,7 +213,7 @@ class PropertyExistenceEnforcer extends TxStateVisitor.Delegator
 
     private Cursor<RelationshipItem> relationshipCursor( long id )
     {
-        Cursor<RelationshipItem> cursor = storeStatement().acquireSingleRelationshipCursor( id );
+        Cursor<RelationshipItem> cursor = storeStatement().acquireSingleRelationshipCursor( id, () -> {} );
         return txState.augmentSingleRelationshipCursor( cursor, id );
     }
 }

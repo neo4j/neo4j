@@ -37,9 +37,10 @@ public class StoreSinglePropertyCursor extends StorePropertyCursor
         super( cursors, (Consumer) instanceCache );
     }
 
-    public StoreSinglePropertyCursor init( long firstPropertyId, int propertyKeyId, Lock lock )
+    public StoreSinglePropertyCursor init( long firstPropertyId, int propertyKeyId, Lock lock,
+            Runnable assertOnValueFetch )
     {
-        super.init( firstPropertyId, lock );
+        super.init( firstPropertyId, lock, assertOnValueFetch );
         this.propertyKeyId = propertyKeyId;
         return this;
     }

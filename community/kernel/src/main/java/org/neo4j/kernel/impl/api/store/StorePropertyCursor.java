@@ -41,6 +41,7 @@ public class StorePropertyCursor implements Cursor<PropertyItem>, PropertyItem
     private final RecordCursor<PropertyRecord> recordCursor;
 
     private Lock lock;
+    private Runnable assertOnValueFetch;
 
     public StorePropertyCursor( RecordCursors cursors, Consumer<StorePropertyCursor> instanceCache )
     {
@@ -49,11 +50,12 @@ public class StorePropertyCursor implements Cursor<PropertyItem>, PropertyItem
         this.recordCursor = cursors.property();
     }
 
-    public StorePropertyCursor init( long firstPropertyId, Lock readLock )
+    public StorePropertyCursor init( long firstPropertyId, Lock readLock, Runnable assertOnValueFetch )
     {
         recordCursor.placeAt( firstPropertyId, FORCE );
         payload.clear();
         lock = readLock;
+        this.assertOnValueFetch = assertOnValueFetch;
         return this;
     }
 
@@ -99,7 +101,9 @@ public class StorePropertyCursor implements Cursor<PropertyItem>, PropertyItem
     @Override
     public Object value()
     {
-        return payload.value();
+        Object value = payload.value();
+        assertOnValueFetch.run();
+        return value;
     }
 
     @Override

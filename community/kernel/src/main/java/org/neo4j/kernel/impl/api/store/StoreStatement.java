@@ -123,43 +123,46 @@ public class StoreStatement implements StorageStatement
     }
 
     @Override
-    public Cursor<NodeItem> acquireSingleNodeCursor( long nodeId )
+    public Cursor<NodeItem> acquireSingleNodeCursor( long nodeId, Runnable assertOnPropertyValueFetch )
     {
         neoStores.assertOpen();
-        return singleNodeCursor.get().init( nodeId );
+        return singleNodeCursor.get().init( nodeId, assertOnPropertyValueFetch );
     }
 
     @Override
-    public Cursor<NodeItem> acquireIteratorNodeCursor( PrimitiveLongIterator nodeIdIterator )
+    public Cursor<NodeItem> acquireIteratorNodeCursor( PrimitiveLongIterator nodeIdIterator,
+            Runnable assertOnPropertyValueFetch )
     {
         neoStores.assertOpen();
-        return iteratorNodeCursor.get().init( nodeIdIterator );
+        return iteratorNodeCursor.get().init( nodeIdIterator, assertOnPropertyValueFetch );
     }
 
     @Override
-    public Cursor<RelationshipItem> acquireSingleRelationshipCursor( long relId )
+    public Cursor<RelationshipItem> acquireSingleRelationshipCursor( long relId, Runnable assertOnPropertyValueFetch )
     {
         neoStores.assertOpen();
-        return singleRelationshipCursor.get().init( relId );
+        return singleRelationshipCursor.get().init( relId, assertOnPropertyValueFetch );
     }
 
     @Override
-    public Cursor<RelationshipItem> acquireIteratorRelationshipCursor( PrimitiveLongIterator iterator )
+    public Cursor<RelationshipItem> acquireIteratorRelationshipCursor( PrimitiveLongIterator iterator,
+            Runnable assertOnPropertyValueFetch )
     {
         neoStores.assertOpen();
-        return iteratorRelationshipCursor.get().init( iterator );
+        return iteratorRelationshipCursor.get().init( iterator, assertOnPropertyValueFetch );
     }
 
     @Override
-    public Cursor<NodeItem> nodesGetAllCursor()
+    public Cursor<NodeItem> nodesGetAllCursor( Runnable assertOnPropertyValueFetch )
     {
-        return acquireIteratorNodeCursor( new AllStoreIdIterator( nodeStore ) );
+        return acquireIteratorNodeCursor( new AllStoreIdIterator( nodeStore ), assertOnPropertyValueFetch );
     }
 
     @Override
-    public Cursor<RelationshipItem> relationshipsGetAllCursor()
+    public Cursor<RelationshipItem> relationshipsGetAllCursor( Runnable assertOnPropertyValueFetch )
     {
-        return acquireIteratorRelationshipCursor( new AllStoreIdIterator( relationshipStore ) );
+        return acquireIteratorRelationshipCursor( new AllStoreIdIterator( relationshipStore ),
+                assertOnPropertyValueFetch );
     }
 
     @Override

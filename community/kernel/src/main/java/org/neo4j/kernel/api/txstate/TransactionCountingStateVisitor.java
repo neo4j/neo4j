@@ -68,7 +68,7 @@ public class TransactionCountingStateVisitor extends TxStateVisitor.Delegator
     public void visitDeletedNode( long id )
     {
         counts.incrementNodeCount( ANY_LABEL, -1 );
-        try ( Cursor<NodeItem> node = statement.acquireSingleNodeCursor( id ) )
+        try ( Cursor<NodeItem> node = statement.acquireSingleNodeCursor( id, () -> {} ) )
         {
             if ( node.next() )
             {
@@ -141,7 +141,7 @@ public class TransactionCountingStateVisitor extends TxStateVisitor.Delegator
             }
             // get the relationship counts from *before* this transaction,
             // the relationship changes will compensate for what happens during the transaction
-            try ( Cursor<NodeItem> node = statement.acquireSingleNodeCursor( id ) )
+            try ( Cursor<NodeItem> node = statement.acquireSingleNodeCursor( id, () -> {} ) )
             {
                 if ( node.next() )
                 {
@@ -206,7 +206,7 @@ public class TransactionCountingStateVisitor extends TxStateVisitor.Delegator
 
     private Cursor<NodeItem> nodeCursor( StorageStatement statement, long nodeId )
     {
-        Cursor<NodeItem> cursor = statement.acquireSingleNodeCursor( nodeId );
+        Cursor<NodeItem> cursor = statement.acquireSingleNodeCursor( nodeId, () -> {} );
         return txState.augmentSingleNodeCursor( cursor, nodeId );
     }
 }

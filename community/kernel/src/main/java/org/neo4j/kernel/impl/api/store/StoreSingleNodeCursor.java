@@ -48,8 +48,9 @@ public class StoreSingleNodeCursor extends StoreAbstractNodeCursor
         this.instanceCache = instanceCache;
     }
 
-    public StoreSingleNodeCursor init( long nodeId )
+    public StoreSingleNodeCursor init( long nodeId, Runnable assertOnPropertyValueFetch )
     {
+        initialize( assertOnPropertyValueFetch );
         this.nodeId = nodeId;
         return this;
     }

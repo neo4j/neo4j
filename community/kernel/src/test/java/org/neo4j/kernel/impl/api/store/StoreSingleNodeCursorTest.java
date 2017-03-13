@@ -623,7 +623,7 @@ public class StoreSingleNodeCursorTest
                 mock( StoreStatement.class ), mock( Consumer.class ), new RecordCursors( resolveNeoStores() ),
                 NO_LOCK_SERVICE );
 
-        cursor.init( nodeId );
+        cursor.init( nodeId, () -> {} );
         assertTrue( cursor.next() );
 
         return cursor;

@@ -98,7 +98,7 @@ public class StateHandlingStatementOperationsTest
         when( state.txState() ).thenReturn( new TxState() );
         StoreStatement storeStatement = mock( StoreStatement.class );
         when( state.getStoreStatement() ).thenReturn( storeStatement );
-        when( storeStatement.acquireSingleNodeCursor( anyLong() ) ).
+        when( storeStatement.acquireSingleNodeCursor( anyLong(), any( Runnable.class ) ) ).
                 thenReturn( asNodeCursor( 0 ) );
 
         StateHandlingStatementOperations ctx = newTxStateOps( inner );
@@ -110,7 +110,7 @@ public class StateHandlingStatementOperationsTest
         ctx.nodeRemoveLabel( state, 0, 0 );
 
         // one for add and one for remove
-        verify( storeStatement, times( 2 ) ).acquireSingleNodeCursor( 0 );
+        verify( storeStatement, times( 2 ) ).acquireSingleNodeCursor( eq( 0L ), any( Runnable.class ) );
         verifyNoMoreInteractions( storeStatement );
     }
 
@@ -338,7 +338,7 @@ public class StateHandlingStatementOperationsTest
         when( indexReader.rangeSeekByNumberInclusive( lower, upper ) ).thenReturn(
                 PrimitiveLongCollections.resourceIterator( PrimitiveLongCollections.iterator( 43L, 44L, 46L ), null )
         );
-        when( storageStatement.acquireSingleNodeCursor( anyLong() ) ).thenAnswer(
+        when( storageStatement.acquireSingleNodeCursor( anyLong(), any( Runnable.class ) ) ).thenAnswer(
                 new Answer<Cursor<NodeItem>>()
                 {
                     @Override

@@ -57,7 +57,7 @@ abstract class BatchRelationshipIterable<T> implements Iterable<T>
         {
             NodeStore nodeStore = neoStores.getNodeStore();
             NodeRecord nodeRecord = nodeStore.getRecord( nodeId, nodeStore.newRecord(), NORMAL );
-            relationshipCursor.init( nodeRecord.isDense(), nodeRecord.getNextRel(), nodeId, Direction.BOTH );
+            relationshipCursor.init( nodeRecord.isDense(), nodeRecord.getNextRel(), nodeId, Direction.BOTH, () -> {} );
         }
         catch ( InvalidRecordException e )
         {

@@ -33,11 +33,11 @@ import org.neo4j.collection.primitive.PrimitiveLongCollections;
 import org.neo4j.collection.primitive.PrimitiveLongIterator;
 import org.neo4j.cursor.Cursor;
 import org.neo4j.graphdb.Direction;
-import org.neo4j.kernel.api.ProcedureCallOperations;
 import org.neo4j.kernel.api.DataWriteOperations;
 import org.neo4j.kernel.api.ExecutingQuery;
 import org.neo4j.kernel.api.KernelTransaction;
 import org.neo4j.kernel.api.LegacyIndexHits;
+import org.neo4j.kernel.api.ProcedureCallOperations;
 import org.neo4j.kernel.api.QueryRegistryOperations;
 import org.neo4j.kernel.api.ReadOperations;
 import org.neo4j.kernel.api.SchemaWriteOperations;
@@ -359,10 +359,6 @@ public class OperationsFacade
         {
             return node.get().getProperty( propertyKeyId );
         }
-        finally
-        {
-            statement.assertOpen();
-        }
     }
 
     @Override
@@ -465,10 +461,6 @@ public class OperationsFacade
         {
             return relationship.get().getProperty( propertyKeyId );
         }
-        finally
-        {
-            statement.assertOpen();
-        }
     }
 
     @Override
@@ -502,10 +494,6 @@ public class OperationsFacade
             PrimitiveIntCollection propertyKeys = node.get().getPropertyKeys();
             return propertyKeys.iterator();
         }
-        finally
-        {
-            statement.assertOpen();
-        }
     }
 
     @Override
@@ -516,10 +504,6 @@ public class OperationsFacade
         {
             PrimitiveIntCollection propertyKeys = relationship.get().getPropertyKeys();
             return propertyKeys.iterator();
-        }
-        finally
-        {
-            statement.assertOpen();
         }
     }
 
