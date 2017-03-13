@@ -47,10 +47,10 @@ import static org.neo4j.index.internal.gbptree.FreeListIdProvider.NO_MONITOR;
 public class FreeListIdProviderTest
 {
     private static final int PAGE_SIZE = 128;
-    private static final long GENERATION_ONE = GenSafePointer.MIN_GENERATION;
-    private static final long GENERATION_TWO = GENERATION_ONE + 1;
-    private static final long GENERATION_THREE = GENERATION_TWO + 1;
-    private static final long GENERATION_FOUR = GENERATION_THREE + 1;
+    private static final long GEN_ONE = GenSafePointer.MIN_GEN;
+    private static final long GEN_TWO = GEN_ONE + 1;
+    private static final long GEN_THREE = GEN_TWO + 1;
+    private static final long GEN_FOUR = GEN_THREE + 1;
     private static final long BASE_ID = 5;
 
     private final PageAwareByteArrayCursor cursor = new PageAwareByteArrayCursor( PAGE_SIZE );
@@ -77,8 +77,8 @@ public class FreeListIdProviderTest
         fillPageWithRandomBytes( releasedId );
 
         // WHEN
-        freelist.releaseId( GENERATION_ONE, GENERATION_TWO, releasedId );
-        long acquiredId = freelist.acquireNewId( GENERATION_TWO, GENERATION_THREE );
+        freelist.releaseId( GEN_ONE, GEN_TWO, releasedId );
+        long acquiredId = freelist.acquireNewId( GEN_TWO, GEN_THREE );
 
         // THEN
         assertEquals( releasedId, acquiredId );
@@ -94,13 +94,13 @@ public class FreeListIdProviderTest
         long baseId = 101;
         for ( int i = 0; i < entries; i++ )
         {
-            freelist.releaseId( GENERATION_ONE, GENERATION_TWO, baseId + i );
+            freelist.releaseId( GEN_ONE, GEN_TWO, baseId + i );
         }
 
         // WHEN/THEN
         for ( int i = 0; i < entries; i++ )
         {
-            long acquiredId = freelist.acquireNewId( GENERATION_TWO, GENERATION_THREE );
+            long acquiredId = freelist.acquireNewId( GEN_TWO, GEN_THREE );
             assertEquals( baseId + i, acquiredId );
         }
     }
@@ -116,8 +116,8 @@ public class FreeListIdProviderTest
         do
         {
             prevId = acquiredId;
-            acquiredId = freelist.acquireNewId( GENERATION_ONE, GENERATION_TWO );
-            freelist.releaseId( GENERATION_ONE, GENERATION_TWO, acquiredId );
+            acquiredId = freelist.acquireNewId( GEN_ONE, GEN_TWO );
+            freelist.releaseId( GEN_ONE, GEN_TWO, acquiredId );
             released.add( acquiredId );
         }
         while ( acquiredId - prevId == 1 );
@@ -125,12 +125,12 @@ public class FreeListIdProviderTest
         // WHEN
         while ( !released.isEmpty() )
         {
-            long reAcquiredId = freelist.acquireNewId( GENERATION_TWO, GENERATION_THREE );
+            long reAcquiredId = freelist.acquireNewId( GEN_TWO, GEN_THREE );
             released.remove( reAcquiredId );
         }
 
         // THEN
-        assertEquals( freelistPageId, freelist.acquireNewId( GENERATION_THREE, GENERATION_FOUR ) );
+        assertEquals( freelistPageId, freelist.acquireNewId( GEN_THREE, GEN_FOUR ) );
     }
 
     @Test
@@ -139,8 +139,8 @@ public class FreeListIdProviderTest
         // GIVEN
         PrimitiveLongSet acquired = Primitive.longSet();
         List<Long> acquiredList = new ArrayList<>(); // for quickly finding random to remove
-        long stableGeneration = GenSafePointer.MIN_GENERATION;
-        long unstableGeneration = stableGeneration + 1;
+        long stableGen = GenSafePointer.MIN_GEN;
+        long unstableGen = stableGen + 1;
         int iterations = 100;
 
         // WHEN
@@ -154,7 +154,7 @@ public class FreeListIdProviderTest
                     int count = random.intBetween( 5, 10 );
                     for ( int k = 0; k < count; k++ )
                     {
-                        long acquiredId = freelist.acquireNewId( stableGeneration, unstableGeneration );
+                        long acquiredId = freelist.acquireNewId( stableGen, unstableGen );
                         assertTrue( acquired.add( acquiredId ) );
                         acquiredList.add( acquiredId );
                     }
@@ -167,21 +167,21 @@ public class FreeListIdProviderTest
                     {
                         long id = acquiredList.remove( random.nextInt( acquiredList.size() ) );
                         assertTrue( acquired.remove( id ) );
-                        freelist.releaseId( stableGeneration, unstableGeneration, id );
+                        freelist.releaseId( stableGen, unstableGen, id );
                     }
                 }
             }
 
             for ( long id : acquiredList )
             {
-                freelist.releaseId( stableGeneration, unstableGeneration, id );
+                freelist.releaseId( stableGen, unstableGen, id );
             }
             acquiredList.clear();
             acquired.clear();
 
             // checkpoint, sort of
-            stableGeneration = unstableGeneration;
-            unstableGeneration++;
+            stableGen = unstableGen;
+            unstableGen++;
         }
 
         // THEN
@@ -195,22 +195,22 @@ public class FreeListIdProviderTest
         PrimitiveLongSet expected = Primitive.longSet();
         for ( int i = 0; i < 100; i++ )
         {
-            expected.add( freelist.acquireNewId( GENERATION_ONE, GENERATION_TWO ) );
+            expected.add( freelist.acquireNewId( GEN_ONE, GEN_TWO ) );
         }
         expected.visitKeys( id ->
         {
-            freelist.releaseId( GENERATION_ONE, GENERATION_TWO, id );
+            freelist.releaseId( GEN_ONE, GEN_TWO, id );
             return false;
         } );
         // and only a few acquired
         for ( int i = 0; i < 10; i++ )
         {
-            long acquiredId = freelist.acquireNewId( GENERATION_TWO, GENERATION_THREE );
+            long acquiredId = freelist.acquireNewId( GEN_TWO, GEN_THREE );
             assertTrue( expected.remove( acquiredId ) );
         }
 
         // WHEN/THEN
-        freelist.visitUnacquiredIds( unacquiredId -> assertTrue( expected.remove( unacquiredId ) ), GENERATION_THREE );
+        freelist.visitUnacquiredIds( unacquiredId -> assertTrue( expected.remove( unacquiredId ) ), GEN_THREE );
         assertTrue( expected.isEmpty() );
     }
 
@@ -231,8 +231,8 @@ public class FreeListIdProviderTest
         } );
         for ( int i = 0; i < 100; i++ )
         {
-            long id = freelist.acquireNewId( GENERATION_ONE, GENERATION_TWO );
-            freelist.releaseId( GENERATION_ONE, GENERATION_TWO, id );
+            long id = freelist.acquireNewId( GEN_ONE, GEN_TWO );
+            freelist.releaseId( GEN_ONE, GEN_TWO, id );
         }
         assertTrue( expected.size() > 0 );
 

@@ -186,7 +186,7 @@ class SeekCursor<KEY,VALUE> implements RawCursor<Hit<KEY,VALUE>,IOException>, Hi
     /**
      * Retrieves latest generation, only used when noticing that reading given a stale generation.
      */
-    private final LongSupplier generationSupplier;
+    private final LongSupplier genSupplier;
 
     /**
      * Retrieves latest root id and generation, moving the {@link PageCursor} to the root id and returning
@@ -209,14 +209,14 @@ class SeekCursor<KEY,VALUE> implements RawCursor<Hit<KEY,VALUE>,IOException>, Hi
     private boolean first = true;
 
     /**
-     * Current stable generation from this seek cursor's POV. Can be refreshed using {@link #generationSupplier}.
+     * Current stable generation from this seek cursor's POV. Can be refreshed using {@link #genSupplier}.
      */
-    private long stableGeneration;
+    private long stableGen;
 
     /**
-     * Current stable generation from this seek cursor's POV. Can be refreshed using {@link #generationSupplier}.
+     * Current stable generation from this seek cursor's POV. Can be refreshed using {@link #genSupplier}.
      */
-    private long unstableGeneration;
+    private long unstableGen;
 
     // *** Data structures for the current b-tree node ***
 
@@ -354,16 +354,16 @@ class SeekCursor<KEY,VALUE> implements RawCursor<Hit<KEY,VALUE>,IOException>, Hi
     private boolean verifyExpectedFirstAfterGoToNext;
 
     SeekCursor( PageCursor cursor, TreeNode<KEY,VALUE> bTreeNode, KEY fromInclusive, KEY toExclusive,
-            Layout<KEY,VALUE> layout, long stableGeneration, long unstableGeneration, LongSupplier generationSupplier,
+            Layout<KEY,VALUE> layout, long stableGen, long unstableGen, LongSupplier genSupplier,
             Supplier<Root> rootCatchup, long lastFollowedPointerGen ) throws IOException
     {
         this.cursor = cursor;
         this.fromInclusive = fromInclusive;
         this.toExclusive = toExclusive;
         this.layout = layout;
-        this.stableGeneration = stableGeneration;
-        this.unstableGeneration = unstableGeneration;
-        this.generationSupplier = generationSupplier;
+        this.stableGen = stableGen;
+        this.unstableGen = unstableGen;
+        this.genSupplier = genSupplier;
         this.bTreeNode = bTreeNode;
         this.rootCatchup = rootCatchup;
         this.lastFollowedPointerGen = lastFollowedPointerGen;
@@ -415,7 +415,7 @@ class SeekCursor<KEY,VALUE> implements RawCursor<Hit<KEY,VALUE>,IOException>, Hi
 
                 if ( isInternal )
                 {
-                    pointerId = bTreeNode.childAt( cursor, pos, stableGeneration, unstableGeneration );
+                    pointerId = bTreeNode.childAt( cursor, pos, stableGen, unstableGen );
                     pointerGen = readPointerGenOnSuccess( pointerId );
                 }
             }
@@ -627,7 +627,7 @@ class SeekCursor<KEY,VALUE> implements RawCursor<Hit<KEY,VALUE>,IOException>, Hi
      */
     private boolean goTo( long pointerId, long pointerGen, String type, boolean allowNoNode ) throws IOException
     {
-        if ( pointerCheckingWithGenerationCatchup( pointerId, allowNoNode ) )
+        if ( pointerCheckingWithGenCatchup( pointerId, allowNoNode ) )
         {
             concurrentWriteHappened = true;
             return true;
@@ -684,8 +684,8 @@ class SeekCursor<KEY,VALUE> implements RawCursor<Hit<KEY,VALUE>,IOException>, Hi
     private long readPrevSibling()
     {
         return seekForward ?
-               bTreeNode.leftSibling( cursor, stableGeneration, unstableGeneration ) :
-               bTreeNode.rightSibling( cursor, stableGeneration, unstableGeneration );
+               bTreeNode.leftSibling( cursor, stableGen, unstableGen ) :
+               bTreeNode.rightSibling( cursor, stableGen, unstableGen );
     }
 
     /**
@@ -694,8 +694,8 @@ class SeekCursor<KEY,VALUE> implements RawCursor<Hit<KEY,VALUE>,IOException>, Hi
     private long readNextSibling()
     {
         return seekForward ?
-               bTreeNode.rightSibling( cursor, stableGeneration, unstableGeneration ) :
-               bTreeNode.leftSibling( cursor, stableGeneration, unstableGeneration );
+               bTreeNode.rightSibling( cursor, stableGen, unstableGen ) :
+               bTreeNode.leftSibling( cursor, stableGen, unstableGen );
     }
 
     /**
@@ -736,7 +736,7 @@ class SeekCursor<KEY,VALUE> implements RawCursor<Hit<KEY,VALUE>,IOException>, Hi
 
         currentNodeGen = bTreeNode.gen( cursor );
 
-        newGen = bTreeNode.newGen( cursor, stableGeneration, unstableGeneration );
+        newGen = bTreeNode.newGen( cursor, stableGen, unstableGen );
         if ( GenSafePointerPair.isSuccess( newGen ) )
         {
             newGenGen = bTreeNode.pointerGen( cursor, newGen );
@@ -781,7 +781,7 @@ class SeekCursor<KEY,VALUE> implements RawCursor<Hit<KEY,VALUE>,IOException>, Hi
      */
     private boolean goToNextSibling() throws IOException
     {
-        if ( pointerCheckingWithGenerationCatchup( pointerId, true ) )
+        if ( pointerCheckingWithGenCatchup( pointerId, true ) )
         {
             // Reading sibling pointer resulted in a bad read, but generation had changed
             // (a checkpoint has occurred since we started this cursor) so the generation fields in this
@@ -946,7 +946,7 @@ class SeekCursor<KEY,VALUE> implements RawCursor<Hit<KEY,VALUE>,IOException>, Hi
      */
     private void prepareToStartFromRoot() throws IOException
     {
-        generationCatchup();
+        genCatchup();
         lastFollowedPointerGen = rootCatchup.get().goTo( cursor );
         if ( !first )
         {
@@ -988,21 +988,21 @@ class SeekCursor<KEY,VALUE> implements RawCursor<Hit<KEY,VALUE>,IOException>, Hi
 
     /**
      * Checks the provided pointer read and if not successful performs a generation catch-up with
-     * {@link #generationSupplier} to allow reading that same pointer again given the updated generation context.
+     * {@link #genSupplier} to allow reading that same pointer again given the updated generation context.
      *
      * @param pointer read result to check for success.
      * @param allowNoNode whether or not pointer is allowed to be "null".
      * @return {@code true} if there was a generation catch-up called and generation was actually updated,
      * this means that caller should retry its most recent read.
      */
-    private boolean pointerCheckingWithGenerationCatchup( long pointer, boolean allowNoNode )
+    private boolean pointerCheckingWithGenCatchup( long pointer, boolean allowNoNode )
     {
         if ( !GenSafePointerPair.isSuccess( pointer ) )
         {
             // An unexpected sibling read, this could have been caused by a concurrent checkpoint
             // where generation has been incremented. Re-read generation and, if changed since this
             // seek started then update generation locally
-            if ( generationCatchup() )
+            if ( genCatchup() )
             {
                 return true;
             }
@@ -1012,21 +1012,21 @@ class SeekCursor<KEY,VALUE> implements RawCursor<Hit<KEY,VALUE>,IOException>, Hi
     }
 
     /**
-     * Updates generation using the {@link #generationSupplier}. If there has been a generation change
+     * Updates generation using the {@link #genSupplier}. If there has been a generation change
      * since construction of this seeker or since last calling this method the generation context in this
      * seeker is updated.
      *
      * @return {@code true} if generation was updated, which means that caller should retry its most recent read.
      */
-    private boolean generationCatchup()
+    private boolean genCatchup()
     {
-        long newGeneration = generationSupplier.getAsLong();
-        long newStableGeneration = Generation.stableGeneration( newGeneration );
-        long newUnstableGeneration = Generation.unstableGeneration( newGeneration );
-        if ( newStableGeneration != stableGeneration || newUnstableGeneration != unstableGeneration )
+        long newGen = genSupplier.getAsLong();
+        long newStableGen = Gen.stableGen( newGen );
+        long newUnstableGen = Gen.unstableGen( newGen );
+        if ( newStableGen != stableGen || newUnstableGen != unstableGen )
         {
-            stableGeneration = newStableGeneration;
-            unstableGeneration = newUnstableGeneration;
+            stableGen = newStableGen;
+            unstableGen = newUnstableGen;
             return true;
         }
         return false;

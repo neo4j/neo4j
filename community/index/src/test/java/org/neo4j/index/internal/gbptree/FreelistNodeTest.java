@@ -82,16 +82,16 @@ public class FreelistNodeTest
     public void shouldReadAndWriteFreeListEntries() throws Exception
     {
         // GIVEN
-        long generationA = 34;
+        long genA = 34;
         long pointerA = 56;
-        long generationB = 78;
+        long genB = 78;
         long pointerB = 90;
 
         // WHEN
-        freelist.write( cursor, generationA, pointerA, 0 );
-        freelist.write( cursor, generationB, pointerB, 1 );
-        long readPointerA = freelist.read( cursor, generationA + 1, 0 );
-        long readPointerB = freelist.read( cursor, generationB + 1, 1 );
+        freelist.write( cursor, genA, pointerA, 0 );
+        freelist.write( cursor, genB, pointerB, 1 );
+        long readPointerA = freelist.read( cursor, genA + 1, 0 );
+        long readPointerB = freelist.read( cursor, genB + 1, 1 );
 
         // THEN
         assertEquals( pointerA, readPointerA );
@@ -129,12 +129,12 @@ public class FreelistNodeTest
     }
 
     @Test
-    public void shouldFailOnWritingTooBigGeneration() throws Exception
+    public void shouldFailOnWritingTooBigGen() throws Exception
     {
         // WHEN
         try
         {
-            freelist.write( cursor, GenSafePointer.MAX_GENERATION + 1, 1, 0 );
+            freelist.write( cursor, GenSafePointer.MAX_GEN + 1, 1, 0 );
             fail( "Should've failed" );
         }
         catch ( IllegalArgumentException e )
@@ -147,14 +147,14 @@ public class FreelistNodeTest
     public void shouldReturnNoPageOnUnstableEntry() throws Exception
     {
         // GIVEN
-        long stableGeneration = 10;
-        long unstableGeneration = stableGeneration + 1;
+        long stableGen = 10;
+        long unstableGen = stableGen + 1;
         long pageId = 20;
         int pos = 2;
-        freelist.write( cursor, unstableGeneration, pageId, pos );
+        freelist.write( cursor, unstableGen, pageId, pos );
 
         // WHEN
-        long read = freelist.read( cursor, stableGeneration, pos );
+        long read = freelist.read( cursor, stableGen, pos );
 
         // THEN
         assertEquals( FreelistNode.NO_PAGE_ID, read );

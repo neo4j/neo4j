@@ -49,12 +49,12 @@ import static org.neo4j.index.internal.gbptree.ValueMergers.overwrite;
 public class SeekCursorTest
 {
     private static final int PAGE_SIZE = 256;
-    private static final LongSupplier generationSupplier = new LongSupplier()
+    private static final LongSupplier genSupplier = new LongSupplier()
     {
         @Override
         public long getAsLong()
         {
-            return Generation.generation( stableGen, unstableGen );
+            return Gen.gen( stableGen, unstableGen );
         }
     };
     private static final Supplier<Root> failingRootCatchup = () ->
@@ -79,7 +79,7 @@ public class SeekCursorTest
     private final MutableLong from = layout.newKey();
     private final MutableLong to = layout.newKey();
 
-    private static long stableGen = GenSafePointer.MIN_GENERATION;
+    private static long stableGen = GenSafePointer.MIN_GEN;
     private static long unstableGen = stableGen + 1;
 
     private long rootId;
@@ -1834,7 +1834,7 @@ public class SeekCursorTest
     }
 
     @Test
-    public void shouldCatchupRootWhenRootNodeHasTooNewGeneration() throws Exception
+    public void shouldCatchupRootWhenRootNodeHasTooNewGen() throws Exception
     {
         // given
         long id = cursor.getCurrentPageId();
@@ -1848,7 +1848,7 @@ public class SeekCursorTest
 
         // when
         try ( SeekCursor<MutableLong,MutableLong> seek = new SeekCursor<>( cursor, node, from, to, layout,
-                stableGen, unstableGen, generationSupplier, rootCatchup, gen - 1 ) )
+                stableGen, unstableGen, genSupplier, rootCatchup, gen - 1 ) )
         {
             // do nothing
         }
@@ -1858,7 +1858,7 @@ public class SeekCursorTest
     }
 
     @Test
-    public void shouldCatchupRootWhenNodeHasTooNewGenerationWhileTraversingDownTree() throws Exception
+    public void shouldCatchupRootWhenNodeHasTooNewGenWhileTraversingDownTree() throws Exception
     {
         // given
         long gen = node.gen( cursor );
@@ -1904,7 +1904,7 @@ public class SeekCursorTest
         from.setValue( 1L );
         to.setValue( 2L );
         try ( SeekCursor<MutableLong,MutableLong> seek = new SeekCursor<>( cursor, node, from, to, layout,
-                stableGen, unstableGen, generationSupplier, rootCatchup, unstableGen ) )
+                stableGen, unstableGen, genSupplier, rootCatchup, unstableGen ) )
         {
             // do nothing
         }
@@ -1914,7 +1914,7 @@ public class SeekCursorTest
     }
 
     @Test
-    public void shouldCatchupRootWhenNodeHasTooNewGenerationWhileTraversingLeaves() throws Exception
+    public void shouldCatchupRootWhenNodeHasTooNewGenWhileTraversingLeaves() throws Exception
     {
         // given
         MutableBoolean triggered = new MutableBoolean( false );
@@ -1959,7 +1959,7 @@ public class SeekCursorTest
         from.setValue( 1L );
         to.setValue( 20L );
         try ( SeekCursor<MutableLong,MutableLong> seek = new SeekCursor<>( cursor, node, from, to, layout,
-                stableGen - 1, unstableGen - 1, generationSupplier, rootCatchup, unstableGen ) )
+                stableGen - 1, unstableGen - 1, genSupplier, rootCatchup, unstableGen ) )
         {
             while ( seek.next() )
             {
@@ -2159,7 +2159,7 @@ public class SeekCursorTest
     {
         from.setValue( fromInclusive );
         to.setValue( toExclusive );
-        return new SeekCursor<>( pageCursor, node, from, to, layout, stableGen, unstableGen, generationSupplier,
+        return new SeekCursor<>( pageCursor, node, from, to, layout, stableGen, unstableGen, genSupplier,
                 failingRootCatchup, unstableGen );
     }
 

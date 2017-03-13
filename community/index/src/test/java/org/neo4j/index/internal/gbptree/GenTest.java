@@ -23,26 +23,26 @@ import org.junit.Test;
 
 import static org.junit.Assert.assertEquals;
 
-public class GenerationTest
+public class GenTest
 {
     @Test
-    public void shouldSetLowGenerations() throws Exception
+    public void shouldSetLowGen() throws Exception
     {
-        shouldComposeAndDecomposeGeneration( GenSafePointer.MIN_GENERATION, GenSafePointer.MIN_GENERATION + 1 );
+        shouldComposeAndDecomposeGen( GenSafePointer.MIN_GEN, GenSafePointer.MIN_GEN + 1 );
     }
 
     @Test
-    public void shouldSetHighGenerations() throws Exception
+    public void shouldSetHighGen() throws Exception
     {
-        shouldComposeAndDecomposeGeneration( GenSafePointer.MAX_GENERATION - 1, GenSafePointer.MAX_GENERATION );
+        shouldComposeAndDecomposeGen( GenSafePointer.MAX_GEN - 1, GenSafePointer.MAX_GEN );
     }
 
-    private void shouldComposeAndDecomposeGeneration( long stable, long unstable )
+    private void shouldComposeAndDecomposeGen( long stable, long unstable )
     {
         // WHEN
-        long generation = Generation.generation( stable, unstable );
-        long readStable = Generation.stableGeneration( generation );
-        long readUnstable = Generation.unstableGeneration( generation );
+        long gen = Gen.gen( stable, unstable );
+        long readStable = Gen.stableGen( gen );
+        long readUnstable = Gen.unstableGen( gen );
 
         // THEN
         assertEquals( stable, readStable );

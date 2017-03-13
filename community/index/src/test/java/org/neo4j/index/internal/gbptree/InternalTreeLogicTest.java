@@ -74,7 +74,7 @@ public class InternalTreeLogicTest
     private final StructurePropagation<MutableLong> structurePropagation = new StructurePropagation<>(
             layout.newKey(), layout.newKey(), layout.newKey() );
 
-    private static long stableGen = GenSafePointer.MIN_GENERATION;
+    private static long stableGen = GenSafePointer.MIN_GEN;
     private static long unstableGen = stableGen + 1;
 
     @Parameterized.Parameters( name = "{0}" )
@@ -83,17 +83,17 @@ public class InternalTreeLogicTest
         List<Object[]> parameters = new ArrayList<>();
         // Initial state has same generation as update state
         parameters.add( new Object[]{
-                "NoCheckpoint", GenerationManager.NO_OP_GEN, false} );
+                "NoCheckpoint", GenManager.NO_OP_GEN, false} );
         // Update state in next generation
         parameters.add( new Object[]{
-                "Checkpoint", GenerationManager.DEFAULT, true} );
+                "Checkpoint", GenManager.DEFAULT, true} );
         return parameters;
     }
 
     @Parameterized.Parameter( 0 )
     public String name;
     @Parameterized.Parameter( 1 )
-    public GenerationManager generationManager;
+    public GenManager genManager;
     @Parameterized.Parameter( 2 )
     public boolean isCheckpointing;
 
@@ -125,7 +125,7 @@ public class InternalTreeLogicTest
         assertThat( keyCount(), is( 0 ) );
 
         // when
-        generationManager.checkpoint();
+        genManager.checkpoint();
         insert( key, value );
 
         // then
@@ -140,7 +140,7 @@ public class InternalTreeLogicTest
     {
         // given
         initialize();
-        generationManager.checkpoint();
+        genManager.checkpoint();
         for ( int i = 0; i < maxKeyCount; i++ )
         {
             // when
@@ -159,7 +159,7 @@ public class InternalTreeLogicTest
     {
         // given
         initialize();
-        generationManager.checkpoint();
+        genManager.checkpoint();
         for ( int i = 0; i < maxKeyCount; i++ )
         {
             // when
@@ -177,7 +177,7 @@ public class InternalTreeLogicTest
     {
         // given
         initialize();
-        generationManager.checkpoint();
+        genManager.checkpoint();
         for ( int i = 0; i < maxKeyCount; i++ )
         {
             // when
@@ -202,7 +202,7 @@ public class InternalTreeLogicTest
         }
 
         // when
-        generationManager.checkpoint();
+        genManager.checkpoint();
         long middle = maxKeyCount;
         insert( middle, middle );
 
@@ -224,7 +224,7 @@ public class InternalTreeLogicTest
         }
 
         // when
-        generationManager.checkpoint();
+        genManager.checkpoint();
         insert( key, key );
 
         // then
@@ -244,7 +244,7 @@ public class InternalTreeLogicTest
         }
 
         // when
-        generationManager.checkpoint();
+        genManager.checkpoint();
         insert( 0L, 0L );
 
         // then
@@ -265,7 +265,7 @@ public class InternalTreeLogicTest
         }
 
         // First split
-        generationManager.checkpoint();
+        genManager.checkpoint();
         insert( someLargeNumber - i, i );
         i++;
 
@@ -306,7 +306,7 @@ public class InternalTreeLogicTest
         insert( key, value );
 
         // when
-        generationManager.checkpoint();
+        genManager.checkpoint();
         remove( key, readValue );
 
         // then
@@ -325,7 +325,7 @@ public class InternalTreeLogicTest
         }
 
         // when
-        generationManager.checkpoint();
+        genManager.checkpoint();
         remove( 0, readValue );
 
         // then
@@ -349,7 +349,7 @@ public class InternalTreeLogicTest
         }
 
         // when
-        generationManager.checkpoint();
+        genManager.checkpoint();
         remove( middle, readValue );
 
         // then
@@ -373,7 +373,7 @@ public class InternalTreeLogicTest
         }
 
         // when
-        generationManager.checkpoint();
+        genManager.checkpoint();
         remove( maxKeyCount - 1, readValue );
 
         // then
@@ -396,7 +396,7 @@ public class InternalTreeLogicTest
         }
 
         // when
-        generationManager.checkpoint();
+        genManager.checkpoint();
         goTo( readCursor, structurePropagation.midChild );
         assertThat( keyAt( 0 ), is( 0L ) );
         remove( 0, readValue );
@@ -427,7 +427,7 @@ public class InternalTreeLogicTest
         assertThat( keyAt( 0 ), is( keyToRemove ) );
 
         // and we remove it
-        generationManager.checkpoint();
+        genManager.checkpoint();
         remove( keyToRemove, readValue );
 
         // then we should still find it in internal
@@ -453,7 +453,7 @@ public class InternalTreeLogicTest
         }
 
         // when
-        generationManager.checkpoint();
+        genManager.checkpoint();
         assertNull( remove( maxKeyCount, readValue ) );
 
         // then
@@ -487,7 +487,7 @@ public class InternalTreeLogicTest
         assertThat( keyAt( 0 ), is( keyToRemove ) );
 
         // and we remove it
-        generationManager.checkpoint();
+        genManager.checkpoint();
         remove( keyToRemove, readValue ); // Possibly create new gen of right child
         goTo( readCursor, rootId );
         currentRightChild = childAt( readCursor, 1, stableGen, unstableGen );
@@ -581,7 +581,7 @@ public class InternalTreeLogicTest
 
         // when
         // ... after checkpoint
-        generationManager.checkpoint();
+        genManager.checkpoint();
 
         // ... removing keys from right child until rebalance is triggered
         int index = 0;
@@ -640,7 +640,7 @@ public class InternalTreeLogicTest
         assertSiblings( oldLeftChild, oldMiddleChild, oldRightChild );
 
         // WHEN
-        generationManager.checkpoint();
+        genManager.checkpoint();
         long middleKey = keyAt( 0 ) + 1; // Should be located in middle leaf
         remove( middleKey, insertValue );
         allKeys.remove( middleKey );
@@ -706,7 +706,7 @@ public class InternalTreeLogicTest
         assertSiblings( oldLeftChild, oldMiddleChild, oldRightChild );
 
         // WHEN
-        generationManager.checkpoint();
+        genManager.checkpoint();
         long keyInLeftChild = keyAt( 0 ) - 1; // Should be located in left leaf
         remove( keyInLeftChild, insertValue );
         allKeys.remove( keyInLeftChild );
@@ -789,7 +789,7 @@ public class InternalTreeLogicTest
         long keyInOldRight = keyAt( 0 );
 
         // WHEN
-        generationManager.checkpoint();
+        genManager.checkpoint();
         remove( keyInOldRight, readValue );
         allKeysInOldLeftAndOldRight.remove( keyInOldRight );
 
@@ -827,7 +827,7 @@ public class InternalTreeLogicTest
 
         // WHEN
         // removing all keys but one
-        generationManager.checkpoint();
+        genManager.checkpoint();
         for ( int j = 0; j < allKeys.size() - 1; j++ )
         {
             remove( allKeys.get( j ), readValue );
@@ -852,7 +852,7 @@ public class InternalTreeLogicTest
             insert( random.nextLong(), random.nextLong() );
             if ( i == numberOfEntries / 2 )
             {
-                generationManager.checkpoint();
+                genManager.checkpoint();
             }
         }
 
@@ -875,7 +875,7 @@ public class InternalTreeLogicTest
         insert( key, firstValue );
 
         // when
-        generationManager.checkpoint();
+        genManager.checkpoint();
         long secondValue = random.nextLong();
         insert( key, secondValue, ValueMergers.overwrite() );
 
@@ -899,7 +899,7 @@ public class InternalTreeLogicTest
         assertThat( actual, is( firstValue ) );
 
         // when
-        generationManager.checkpoint();
+        genManager.checkpoint();
         long secondValue = random.nextLong();
         insert( key, secondValue, ValueMergers.keepExisting() );
 
@@ -920,7 +920,7 @@ public class InternalTreeLogicTest
         insert( key, baseValue );
 
         // WHEN
-        generationManager.checkpoint();
+        genManager.checkpoint();
         int toAdd = 5;
         insert( key, toAdd, ADDER );
 
@@ -945,7 +945,7 @@ public class InternalTreeLogicTest
         }
 
         // WHEN
-        generationManager.checkpoint();
+        genManager.checkpoint();
         long key = 1;
         int toAdd = 5;
         insert( key, toAdd, ADDER );
@@ -971,7 +971,7 @@ public class InternalTreeLogicTest
         }
 
         // WHEN
-        generationManager.checkpoint();
+        genManager.checkpoint();
         long key = structurePropagation.rightKey.longValue();
         int toAdd = 5;
         insert( key, toAdd, ADDER );
@@ -1004,7 +1004,7 @@ public class InternalTreeLogicTest
         }
 
         // WHEN
-        generationManager.checkpoint();
+        genManager.checkpoint();
         long key = firstSplitPrimKey + 1;
         int toAdd = 5;
         insert( key, toAdd, ADDER );
@@ -1033,7 +1033,7 @@ public class InternalTreeLogicTest
         long oldGenId = cursor.getCurrentPageId();
 
         // WHEN root -[newGen]-> newGen root
-        generationManager.checkpoint();
+        genManager.checkpoint();
         insert( 1L, 1L );
         long newGenId = cursor.getCurrentPageId();
 
@@ -1062,7 +1062,7 @@ public class InternalTreeLogicTest
         long oldGenId = cursor.getCurrentPageId();
 
         // WHEN root -[newGen]-> newGen root
-        generationManager.checkpoint();
+        genManager.checkpoint();
         remove( key, readValue );
         long newGenId = cursor.getCurrentPageId();
 
@@ -1103,7 +1103,7 @@ public class InternalTreeLogicTest
         assertSiblings( leftChild, middleChild, rightChild );
 
         // WHEN
-        generationManager.checkpoint();
+        genManager.checkpoint();
         long middleKey = i / 2; // Should be located in middle leaf
         long newValue = middleKey * 100;
         insert( middleKey, newValue );
@@ -1163,7 +1163,7 @@ public class InternalTreeLogicTest
         assertSiblings( leftChild, middleChild, rightChild );
 
         // WHEN
-        generationManager.checkpoint();
+        genManager.checkpoint();
         long middleKey = i / 2; // Should be located in middle leaf
         remove( middleKey, insertValue );
 
@@ -1221,7 +1221,7 @@ public class InternalTreeLogicTest
         //                  /      |                \
         //                 v       v                 v
         //               left <-> right(newGen) <--> farRight
-        generationManager.checkpoint();
+        genManager.checkpoint();
         insert( i, i );
         assertEquals( 1, numberOfRootNewGens );
         goTo( readCursor, rootId );
@@ -1264,7 +1264,7 @@ public class InternalTreeLogicTest
         long firstKeyInLeaf = keyAt( 0 );
 
         // WHEN
-        generationManager.checkpoint();
+        genManager.checkpoint();
         long targetLastId = id.lastId() + 3; /*one for newGen in leaf, one for split leaf, one for newGen in internal*/
         for ( int i = 0; id.lastId() < targetLastId; i++ )
         {
@@ -1297,13 +1297,13 @@ public class InternalTreeLogicTest
         assumeTrue( isCheckpointing );
         initialize();
         long originalNodeId = rootId;
-        generationManager.checkpoint();
+        genManager.checkpoint();
         insert( 1L, 10L ); // TX1 will create heir
         assertEquals( 1, numberOfRootNewGens );
 
         // WHEN
         // recovery happens
-        generationManager.recovery();
+        genManager.recovery();
         // start up on stable root
         goTo( cursor, originalNodeId );
         treeLogic.initialize( cursor );
@@ -1592,13 +1592,13 @@ public class InternalTreeLogicTest
         return result;
     }
 
-    private interface GenerationManager
+    private interface GenManager
     {
         void checkpoint();
 
         void recovery();
 
-        GenerationManager NO_OP_GEN = new GenerationManager()
+        GenManager NO_OP_GEN = new GenManager()
         {
             @Override
             public void checkpoint()
@@ -1613,7 +1613,7 @@ public class InternalTreeLogicTest
             }
         };
 
-        GenerationManager DEFAULT = new GenerationManager()
+        GenManager DEFAULT = new GenManager()
         {
             @Override
             public void checkpoint()

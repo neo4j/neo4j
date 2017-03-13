@@ -23,7 +23,7 @@ import org.junit.Test;
 
 import static org.junit.Assert.fail;
 
-import static org.neo4j.index.internal.gbptree.GenSafePointer.MIN_GENERATION;
+import static org.neo4j.index.internal.gbptree.GenSafePointer.MIN_GEN;
 import static org.neo4j.index.internal.gbptree.GenSafePointerPair.MAX_GEN_OFFSET_MASK;
 import static org.neo4j.index.internal.gbptree.GenSafePointerPair.read;
 import static org.neo4j.index.internal.gbptree.GenSafePointerPair.write;
@@ -38,20 +38,20 @@ public class GenSafePointerPairAdditionalTest
         int pageSize = (int) kibiBytes( 8 );
         PageAwareByteArrayCursor cursor = new PageAwareByteArrayCursor( pageSize );
         cursor.next( 0 );
-        long firstGeneration = MIN_GENERATION;
-        long secondGeneration = firstGeneration + 1;
-        long thirdGeneration = secondGeneration + 1;
+        long firstGen = MIN_GEN;
+        long secondGen = firstGen + 1;
+        long thirdGen = secondGen + 1;
         int offset = 0;
         cursor.setOffset( offset );
-        write( cursor, 10, firstGeneration, secondGeneration );
+        write( cursor, 10, firstGen, secondGen );
         cursor.setOffset( offset );
-        write( cursor, 11, secondGeneration, thirdGeneration );
+        write( cursor, 11, secondGen, thirdGen );
 
         try
         {
             // WHEN
             cursor.setOffset( offset );
-            read( cursor, secondGeneration, thirdGeneration, (int) (MAX_GEN_OFFSET_MASK + 1) );
+            read( cursor, secondGen, thirdGen, (int) (MAX_GEN_OFFSET_MASK + 1) );
             fail( "Should have failed" );
         }
         catch ( IllegalArgumentException e )

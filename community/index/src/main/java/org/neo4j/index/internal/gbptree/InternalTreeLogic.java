@@ -232,11 +232,11 @@ class InternalTreeLogic<KEY,VALUE>
      *
      * @param cursor {@link PageCursor} to move to the correct location.
      * @param key KEY to make change for.
-     * @param stableGeneration stable generation.
-     * @param unstableGeneration unstable generation.
+     * @param stableGen stable generation.
+     * @param unstableGen unstable generation.
      * @throws IOException on {@link PageCursor} error.
      */
-    private void moveToCorrectLeaf( PageCursor cursor, KEY key, long stableGeneration, long unstableGeneration )
+    private void moveToCorrectLeaf( PageCursor cursor, KEY key, long stableGen, long unstableGen )
             throws IOException
     {
         int previousLevel = currentLevel;
@@ -268,7 +268,7 @@ class InternalTreeLogic<KEY,VALUE>
             // Restrict the key range as the cursor moves down to the next level
             level.childPos = childPos;
             level.lowerIsOpenEnded = childPos == 0 &&
-                    !TreeNode.isNode( bTreeNode.leftSibling( cursor, stableGeneration, unstableGeneration ) );
+                    !TreeNode.isNode( bTreeNode.leftSibling( cursor, stableGen, unstableGen ) );
             if ( !level.lowerIsOpenEnded )
             {
                 if ( childPos == 0 )
@@ -282,7 +282,7 @@ class InternalTreeLogic<KEY,VALUE>
                 }
             }
             level.upperIsOpenEnded = childPos >= keyCount &&
-                    !TreeNode.isNode( bTreeNode.rightSibling( cursor, stableGeneration, unstableGeneration ) );
+                    !TreeNode.isNode( bTreeNode.rightSibling( cursor, stableGen, unstableGen ) );
             if ( !level.upperIsOpenEnded )
             {
                 if ( childPos == keyCount )
@@ -296,7 +296,7 @@ class InternalTreeLogic<KEY,VALUE>
                 }
             }
 
-            long childId = bTreeNode.childAt( cursor, childPos, stableGeneration, unstableGeneration );
+            long childId = bTreeNode.childAt( cursor, childPos, stableGen, unstableGen );
             PointerChecking.checkPointer( childId, false );
 
             bTreeNode.goTo( cursor, "child", childId );
@@ -333,17 +333,17 @@ class InternalTreeLogic<KEY,VALUE>
      * @param key key to be inserted
      * @param value value to be associated with key
      * @param valueMerger {@link ValueMerger} for deciding what to do with existing keys
-     * @param stableGeneration stable generation, i.e. generations <= this generation are considered stable.
-     * @param unstableGeneration unstable generation, i.e. generation which is under development right now.
+     * @param stableGen stable generation, i.e. generations <= this generation are considered stable.
+     * @param unstableGen unstable generation, i.e. generation which is under development right now.
      * @throws IOException on cursor failure
      */
     void insert( PageCursor cursor, StructurePropagation<KEY> structurePropagation, KEY key, VALUE value,
-            ValueMerger<VALUE> valueMerger, long stableGeneration, long unstableGeneration ) throws IOException
+            ValueMerger<VALUE> valueMerger, long stableGen, long unstableGen ) throws IOException
     {
         assert cursorIsAtExpectedLocation( cursor );
-        moveToCorrectLeaf( cursor, key, stableGeneration, unstableGeneration );
+        moveToCorrectLeaf( cursor, key, stableGen, unstableGen );
 
-        insertInLeaf( cursor, structurePropagation, key, value, valueMerger, stableGeneration, unstableGeneration );
+        insertInLeaf( cursor, structurePropagation, key, value, valueMerger, stableGen, unstableGen );
 
         while ( structurePropagation.hasMidChildUpdate || structurePropagation.hasRightKeyInsert )
         {
@@ -356,14 +356,14 @@ class InternalTreeLogic<KEY,VALUE>
 
             if ( structurePropagation.hasMidChildUpdate )
             {
-                updateMidChild( cursor, structurePropagation, pos, stableGeneration, unstableGeneration );
+                updateMidChild( cursor, structurePropagation, pos, stableGen, unstableGen );
             }
             if ( structurePropagation.hasRightKeyInsert )
             {
                 structurePropagation.hasRightKeyInsert = false;
                 insertInInternal( cursor, structurePropagation, bTreeNode.keyCount( cursor ),
                         structurePropagation.rightKey, structurePropagation.rightChild,
-                        stableGeneration, unstableGeneration );
+                        stableGen, unstableGen );
             }
         }
     }
@@ -404,11 +404,11 @@ class InternalTreeLogic<KEY,VALUE>
      * @throws IOException on cursor failure
      */
     private void insertInInternal( PageCursor cursor, StructurePropagation<KEY> structurePropagation, int keyCount,
-            KEY primKey, long rightChild, long stableGeneration, long unstableGeneration )
+            KEY primKey, long rightChild, long stableGen, long unstableGen )
             throws IOException
     {
         createUnstableVersionIfNeeded( cursor, structurePropagation, UPDATE_MID_CHILD,
-                stableGeneration, unstableGeneration );
+                stableGen, unstableGen );
         if ( keyCount < bTreeNode.internalMaxKeyCount() )
         {
             // No overflow
@@ -417,7 +417,7 @@ class InternalTreeLogic<KEY,VALUE>
             bTreeNode.insertKeyAt( cursor, primKey, pos, keyCount );
             // NOTE pos+1 since we never insert a new child before child(0) because its key is really
             // the one from the parent.
-            bTreeNode.insertChildAt( cursor, rightChild, pos + 1, keyCount, stableGeneration, unstableGeneration );
+            bTreeNode.insertChildAt( cursor, rightChild, pos + 1, keyCount, stableGen, unstableGen );
 
             // Increase key count
             bTreeNode.setKeyCount( cursor, keyCount + 1 );
@@ -429,7 +429,7 @@ class InternalTreeLogic<KEY,VALUE>
         // We will overwrite rightKey in structurePropagation, so copy it over to a place holder
         layout.copyKey( structurePropagation.rightKey, newKeyPlaceHolder );
         splitInternal( cursor, structurePropagation, newKeyPlaceHolder, rightChild, keyCount,
-                stableGeneration, unstableGeneration );
+                stableGen, unstableGen );
     }
 
     /**
@@ -445,12 +445,12 @@ class InternalTreeLogic<KEY,VALUE>
      * @throws IOException on cursor failure
      */
     private void splitInternal( PageCursor cursor, StructurePropagation<KEY> structurePropagation, KEY newKey,
-            long newRightChild, int keyCount, long stableGeneration, long unstableGeneration ) throws IOException
+            long newRightChild, int keyCount, long stableGen, long unstableGen ) throws IOException
     {
         long current = cursor.getCurrentPageId();
-        long oldRight = bTreeNode.rightSibling( cursor, stableGeneration, unstableGeneration );
+        long oldRight = bTreeNode.rightSibling( cursor, stableGen, unstableGen );
         PointerChecking.checkPointer( oldRight, true );
-        long newRight = idProvider.acquireNewId( stableGeneration, unstableGeneration );
+        long newRight = idProvider.acquireNewId( stableGen, unstableGen );
 
         // Find position to insert new key
         int pos = positionOf( search( cursor, newKey, readKey, keyCount ) );
@@ -475,9 +475,9 @@ class InternalTreeLogic<KEY,VALUE>
         try ( PageCursor rightCursor = cursor.openLinkedCursor( newRight ) )
         {
             bTreeNode.goTo( rightCursor, "new right sibling in split", newRight );
-            bTreeNode.initializeInternal( rightCursor, stableGeneration, unstableGeneration );
-            bTreeNode.setRightSibling( rightCursor, oldRight, stableGeneration, unstableGeneration );
-            bTreeNode.setLeftSibling( rightCursor, current, stableGeneration, unstableGeneration );
+            bTreeNode.initializeInternal( rightCursor, stableGen, unstableGen );
+            bTreeNode.setRightSibling( rightCursor, oldRight, stableGen, unstableGen );
+            bTreeNode.setLeftSibling( rightCursor, current, stableGen, unstableGen );
             int rightKeyCount = keyCountAfterInsert - middlePos - 1; // -1 because don't keep prim key in internal
 
             if ( pos < middlePos )
@@ -547,7 +547,7 @@ class InternalTreeLogic<KEY,VALUE>
                 }
                 // ... insert
                 bTreeNode.insertChildAt( rightCursor, newRightChild, countBeforePos, countBeforePos,
-                        stableGeneration, unstableGeneration );
+                        stableGen, unstableGen );
                 // ... second copy
                 if ( countAfterPos > 0 )
                 {
@@ -562,7 +562,7 @@ class InternalTreeLogic<KEY,VALUE>
         if ( TreeNode.isNode( oldRight ) )
         {
             bTreeNode.goTo( cursor, "old right sibling", oldRight );
-            bTreeNode.setLeftSibling( cursor, newRight, stableGeneration, unstableGeneration );
+            bTreeNode.setLeftSibling( cursor, newRight, stableGen, unstableGen );
         }
 
         // Update left node
@@ -573,10 +573,10 @@ class InternalTreeLogic<KEY,VALUE>
         {
             bTreeNode.insertKeyAt( cursor, newKey, pos, middlePos - 1 );
             bTreeNode.insertChildAt( cursor, newRightChild, pos + 1, middlePos - 1,
-                    stableGeneration, unstableGeneration );
+                    stableGen, unstableGen );
         }
 
-        bTreeNode.setRightSibling( cursor, newRight, stableGeneration, unstableGeneration );
+        bTreeNode.setRightSibling( cursor, newRight, stableGen, unstableGen );
     }
 
     private static int middle( int keyCountAfterInsert )
@@ -598,7 +598,7 @@ class InternalTreeLogic<KEY,VALUE>
      */
     private void insertInLeaf( PageCursor cursor, StructurePropagation<KEY> structurePropagation,
             KEY key, VALUE value, ValueMerger<VALUE> valueMerger,
-            long stableGeneration, long unstableGeneration ) throws IOException
+            long stableGen, long unstableGen ) throws IOException
     {
         int keyCount = bTreeNode.keyCount( cursor );
         int search = search( cursor, key, readKey, keyCount );
@@ -611,7 +611,7 @@ class InternalTreeLogic<KEY,VALUE>
             if ( mergedValue != null )
             {
                 createUnstableVersionIfNeeded( cursor, structurePropagation, UPDATE_MID_CHILD,
-                        stableGeneration, unstableGeneration );
+                        stableGen, unstableGen );
                 // simple, just write the merged value right in there
                 bTreeNode.setValueAt( cursor, mergedValue, pos );
             }
@@ -619,7 +619,7 @@ class InternalTreeLogic<KEY,VALUE>
         }
 
         createUnstableVersionIfNeeded( cursor, structurePropagation, UPDATE_MID_CHILD,
-                stableGeneration, unstableGeneration );
+                stableGen, unstableGen );
 
         if ( keyCount < bTreeNode.leafMaxKeyCount() )
         {
@@ -631,7 +631,7 @@ class InternalTreeLogic<KEY,VALUE>
             return; // No split has occurred
         }
         // Overflow, split leaf
-        splitLeaf( cursor, structurePropagation, key, value, keyCount, stableGeneration, unstableGeneration );
+        splitLeaf( cursor, structurePropagation, key, value, keyCount, stableGen, unstableGen );
     }
 
     /**
@@ -646,7 +646,7 @@ class InternalTreeLogic<KEY,VALUE>
      * @throws IOException on cursor failure
      */
     private void splitLeaf( PageCursor cursor, StructurePropagation<KEY> structurePropagation,
-            KEY newKey, VALUE newValue, int keyCount, long stableGeneration, long unstableGeneration )
+            KEY newKey, VALUE newValue, int keyCount, long stableGen, long unstableGen )
                     throws IOException
     {
         // To avoid moving cursor between pages we do all operations on left node first.
@@ -665,9 +665,9 @@ class InternalTreeLogic<KEY,VALUE>
         //
 
         long current = cursor.getCurrentPageId();
-        long oldRight = bTreeNode.rightSibling( cursor, stableGeneration, unstableGeneration );
+        long oldRight = bTreeNode.rightSibling( cursor, stableGen, unstableGen );
         PointerChecking.checkPointer( oldRight, true );
-        long newRight = idProvider.acquireNewId( stableGeneration, unstableGeneration );
+        long newRight = idProvider.acquireNewId( stableGen, unstableGen );
 
         // BALANCE KEYS AND VALUES
         // Two different scenarios
@@ -737,9 +737,9 @@ class InternalTreeLogic<KEY,VALUE>
         try ( PageCursor rightCursor = cursor.openLinkedCursor( newRight ) )
         {
             bTreeNode.goTo( rightCursor, "new right sibling in split", newRight );
-            bTreeNode.initializeLeaf( rightCursor, stableGeneration, unstableGeneration );
-            bTreeNode.setRightSibling( rightCursor, oldRight, stableGeneration, unstableGeneration );
-            bTreeNode.setLeftSibling( rightCursor, current, stableGeneration, unstableGeneration );
+            bTreeNode.initializeLeaf( rightCursor, stableGen, unstableGen );
+            bTreeNode.setRightSibling( rightCursor, oldRight, stableGen, unstableGen );
+            bTreeNode.setLeftSibling( rightCursor, current, stableGen, unstableGen );
             int rightKeyCount = keyCountAfterInsert - middlePos;
 
             if ( pos < middlePos )
@@ -781,7 +781,7 @@ class InternalTreeLogic<KEY,VALUE>
             try ( PageCursor oldRightCursor = cursor.openLinkedCursor( oldRight ) )
             {
                 bTreeNode.goTo( oldRightCursor, "old right sibling", oldRight );
-                bTreeNode.setLeftSibling( oldRightCursor, newRight, stableGeneration, unstableGeneration );
+                bTreeNode.setLeftSibling( oldRightCursor, newRight, stableGen, unstableGen );
             }
         }
 
@@ -793,7 +793,7 @@ class InternalTreeLogic<KEY,VALUE>
             bTreeNode.insertValueAt( cursor, newValue, pos, middlePos - 1 );
         }
         bTreeNode.setKeyCount( cursor, middlePos );
-        bTreeNode.setRightSibling( cursor, newRight, stableGeneration, unstableGeneration );
+        bTreeNode.setRightSibling( cursor, newRight, stableGen, unstableGen );
     }
 
     private void copyKeysAndValues( PageCursor fromCursor, int fromPos, PageCursor toCursor, int toPos, int count )
@@ -822,19 +822,19 @@ class InternalTreeLogic<KEY,VALUE>
      * @param structurePropagation {@link StructurePropagation} used to report structure changes between tree levels.
      * @param key key to be removed
      * @param into {@code VALUE} instance to write removed value to
-     * @param stableGeneration stable generation, i.e. generations <= this generation are considered stable.
-     * @param unstableGeneration unstable generation, i.e. generation which is under development right now.
+     * @param stableGen stable generation, i.e. generations <= this generation are considered stable.
+     * @param unstableGen unstable generation, i.e. generation which is under development right now.
      * @return Provided {@code into}, populated with removed value for convenience if {@code key} was removed.
      * Otherwise {@code null}.
      * @throws IOException on cursor failure
      */
     VALUE remove( PageCursor cursor, StructurePropagation<KEY> structurePropagation, KEY key, VALUE into,
-            long stableGeneration, long unstableGeneration ) throws IOException
+            long stableGen, long unstableGen ) throws IOException
     {
         assert cursorIsAtExpectedLocation( cursor );
-        moveToCorrectLeaf( cursor, key, stableGeneration, unstableGeneration );
+        moveToCorrectLeaf( cursor, key, stableGen, unstableGen );
 
-        if ( !removeFromLeaf( cursor, structurePropagation, key, into, stableGeneration, unstableGeneration ) )
+        if ( !removeFromLeaf( cursor, structurePropagation, key, into, stableGen, unstableGen ) )
         {
             return null;
         }
@@ -858,18 +858,18 @@ class InternalTreeLogic<KEY,VALUE>
                 if ( pos == 0 )
                 {
                     updateRightmostChildInLeftSibling( cursor, structurePropagation.leftChild,
-                            stableGeneration, unstableGeneration );
+                            stableGen, unstableGen );
                 }
                 else
                 {
                     bTreeNode.setChildAt( cursor, structurePropagation.leftChild, pos - 1,
-                            stableGeneration, unstableGeneration );
+                            stableGen, unstableGen );
                 }
             }
 
             if ( structurePropagation.hasMidChildUpdate )
             {
-                updateMidChild( cursor, structurePropagation, pos, stableGeneration, unstableGeneration );
+                updateMidChild( cursor, structurePropagation, pos, stableGen, unstableGen );
             }
 
             if ( structurePropagation.hasRightChildUpdate )
@@ -879,12 +879,12 @@ class InternalTreeLogic<KEY,VALUE>
                 if ( pos == keyCount )
                 {
                     updateLeftmostChildInRightSibling( cursor, structurePropagation.rightChild,
-                            stableGeneration, unstableGeneration );
+                            stableGen, unstableGen );
                 }
                 else
                 {
                     bTreeNode.setChildAt( cursor, structurePropagation.rightChild, pos + 1,
-                            stableGeneration, unstableGeneration );
+                            stableGen, unstableGen );
                 }
             }
 
@@ -896,12 +896,12 @@ class InternalTreeLogic<KEY,VALUE>
                 {
                 case REPLACE:
                     createUnstableVersionIfNeeded( cursor, structurePropagation, UPDATE_MID_CHILD,
-                            stableGeneration, unstableGeneration );
+                            stableGen, unstableGen );
                     bTreeNode.setKeyAt( cursor, structurePropagation.leftKey, pos - 1 );
                     break;
                 case BUBBLE:
                     replaceKeyByBubbleRightmostFromSubtree( cursor, structurePropagation, pos - 1,
-                            stableGeneration, unstableGeneration );
+                            stableGen, unstableGen );
                     break;
                 default:
                     throw new IllegalArgumentException( "Unknown KeyReplaceStrategy " +
@@ -917,12 +917,12 @@ class InternalTreeLogic<KEY,VALUE>
                 {
                 case REPLACE:
                     createUnstableVersionIfNeeded( cursor, structurePropagation, UPDATE_MID_CHILD,
-                            stableGeneration, unstableGeneration );
+                            stableGen, unstableGen );
                     bTreeNode.setKeyAt( cursor, structurePropagation.rightKey, pos );
                     break;
                 case BUBBLE:
                     replaceKeyByBubbleRightmostFromSubtree( cursor, structurePropagation, pos,
-                            stableGeneration, unstableGeneration );
+                            stableGen, unstableGen );
                     break;
                 default:
                     throw new IllegalArgumentException( "Unknown KeyReplaceStrategy " +
@@ -933,14 +933,14 @@ class InternalTreeLogic<KEY,VALUE>
 
         if ( currentLevel <= 0 )
         {
-            tryShrinkTree( cursor, structurePropagation, stableGeneration, unstableGeneration );
+            tryShrinkTree( cursor, structurePropagation, stableGen, unstableGen );
         }
 
         return into;
     }
 
     private void tryShrinkTree( PageCursor cursor, StructurePropagation<KEY> structurePropagation,
-            long stableGeneration, long unstableGeneration ) throws IOException
+            long stableGen, long unstableGen ) throws IOException
     {
         // New root will be propagated out. If rootKeyCount is 0 we can shrink the tree.
         int rootKeyCount = bTreeNode.keyCount( cursor );
@@ -948,13 +948,13 @@ class InternalTreeLogic<KEY,VALUE>
         while ( rootKeyCount == 0 && TreeNode.isInternal( cursor ) )
         {
             long oldRoot = cursor.getCurrentPageId();
-            long onlyChildOfRoot = bTreeNode.childAt( cursor, 0, stableGeneration, unstableGeneration );
+            long onlyChildOfRoot = bTreeNode.childAt( cursor, 0, stableGen, unstableGen );
             PointerChecking.checkPointer( onlyChildOfRoot, false );
 
             structurePropagation.hasMidChildUpdate = true;
             structurePropagation.midChild = onlyChildOfRoot;
 
-            idProvider.releaseId( stableGeneration, unstableGeneration, oldRoot );
+            idProvider.releaseId( stableGen, unstableGen, oldRoot );
             bTreeNode.goTo( cursor, "child", onlyChildOfRoot );
 
             rootKeyCount = bTreeNode.keyCount( cursor );
@@ -962,29 +962,29 @@ class InternalTreeLogic<KEY,VALUE>
     }
 
     private void updateMidChild( PageCursor cursor, StructurePropagation<KEY> structurePropagation, int childPos,
-            long stableGeneration, long unstableGeneration )
+            long stableGen, long unstableGen )
     {
         structurePropagation.hasMidChildUpdate = false;
         bTreeNode.setChildAt( cursor, structurePropagation.midChild, childPos,
-                stableGeneration, unstableGeneration );
+                stableGen, unstableGen );
     }
 
     private void replaceKeyByBubbleRightmostFromSubtree( PageCursor cursor,
             StructurePropagation<KEY> structurePropagation, int subtreePosition,
-            long stableGeneration, long unstableGeneration ) throws IOException
+            long stableGen, long unstableGen ) throws IOException
     {
         long currentPageId = cursor.getCurrentPageId();
-        long subtree = bTreeNode.childAt( cursor, subtreePosition, stableGeneration, unstableGeneration );
+        long subtree = bTreeNode.childAt( cursor, subtreePosition, stableGen, unstableGen );
         PointerChecking.checkPointer( subtree, false );
 
         bTreeNode.goTo( cursor, "child", subtree );
         boolean foundKeyBelow = bubbleRightmostKeyRecursive( cursor, structurePropagation, currentPageId,
-                stableGeneration, unstableGeneration );
+                stableGen, unstableGen );
 
         // Propagate structurePropagation from below
         if ( structurePropagation.hasMidChildUpdate )
         {
-            updateMidChild( cursor, structurePropagation, subtreePosition, stableGeneration, unstableGeneration );
+            updateMidChild( cursor, structurePropagation, subtreePosition, stableGen, unstableGen );
         }
 
         if ( foundKeyBelow )
@@ -992,7 +992,7 @@ class InternalTreeLogic<KEY,VALUE>
             // A key has been bubble up to us.
             // It's in structurePropagation.leftKey and should be inserted in subtreePosition.
             createUnstableVersionIfNeeded( cursor, structurePropagation, UPDATE_MID_CHILD,
-                    stableGeneration, unstableGeneration );
+                    stableGen, unstableGen );
             bTreeNode.setKeyAt( cursor, structurePropagation.bubbleKey, subtreePosition );
         }
         else
@@ -1001,14 +1001,14 @@ class InternalTreeLogic<KEY,VALUE>
             // We shift keys and children in this internal node to the left (potentially creating new version of this
             // node).
             createUnstableVersionIfNeeded( cursor, structurePropagation, UPDATE_MID_CHILD,
-                    stableGeneration, unstableGeneration);
+                    stableGen, unstableGen);
             int keyCount = bTreeNode.keyCount( cursor );
             simplyRemoveFromInternal( cursor, keyCount, subtreePosition, subtreePosition );
         }
     }
 
     private boolean bubbleRightmostKeyRecursive( PageCursor cursor, StructurePropagation<KEY> structurePropagation,
-            long previousNode, long stableGeneration, long unstableGeneration ) throws IOException
+            long previousNode, long stableGen, long unstableGen ) throws IOException
     {
         try
         {
@@ -1020,18 +1020,18 @@ class InternalTreeLogic<KEY,VALUE>
             // Recursive case
             long currentPageId = cursor.getCurrentPageId();
             int keyCount = bTreeNode.keyCount( cursor );
-            long rightmostSubtree = bTreeNode.childAt( cursor, keyCount, stableGeneration, unstableGeneration );
+            long rightmostSubtree = bTreeNode.childAt( cursor, keyCount, stableGen, unstableGen );
             PointerChecking.checkPointer( rightmostSubtree, false );
 
             bTreeNode.goTo( cursor, "child", rightmostSubtree );
 
             boolean foundKeyBelow = bubbleRightmostKeyRecursive( cursor, structurePropagation, currentPageId,
-                    stableGeneration, unstableGeneration );
+                    stableGen, unstableGen );
 
             // Propagate structurePropagation from below
             if ( structurePropagation.hasMidChildUpdate )
             {
-                updateMidChild( cursor, structurePropagation, keyCount, stableGeneration, unstableGeneration );
+                updateMidChild( cursor, structurePropagation, keyCount, stableGen, unstableGen );
             }
 
             if ( foundKeyBelow )
@@ -1043,14 +1043,14 @@ class InternalTreeLogic<KEY,VALUE>
             {
                 // This subtree does not contain anything any more
                 // Repoint sibling and add to freelist and return false
-                connectLeftAndRightSibling( cursor, stableGeneration, unstableGeneration );
-                idProvider.releaseId( stableGeneration, unstableGeneration, currentPageId );
+                connectLeftAndRightSibling( cursor, stableGen, unstableGen );
+                idProvider.releaseId( stableGen, unstableGen, currentPageId );
                 return false;
             }
 
             // Create new version of node, save rightmost key in structurePropagation, remove rightmost key and child
             createUnstableVersionIfNeeded( cursor, structurePropagation, UPDATE_MID_CHILD,
-                    stableGeneration, unstableGeneration );
+                    stableGen, unstableGen );
             bTreeNode.keyAt( cursor, structurePropagation.bubbleKey, keyCount - 1 );
             simplyRemoveFromInternal( cursor, keyCount, keyCount - 1, keyCount );
 
@@ -1074,10 +1074,10 @@ class InternalTreeLogic<KEY,VALUE>
         return newKeyCount;
     }
 
-    private void updateRightmostChildInLeftSibling( PageCursor cursor, long childPointer, long stableGeneration,
-            long unstableGeneration ) throws IOException
+    private void updateRightmostChildInLeftSibling( PageCursor cursor, long childPointer, long stableGen,
+            long unstableGen ) throws IOException
     {
-        long leftSibling = bTreeNode.leftSibling( cursor, stableGeneration, unstableGeneration );
+        long leftSibling = bTreeNode.leftSibling( cursor, stableGen, unstableGen );
         // Left sibling is not allowed to be NO_NODE here because that means there is a child node with no parent
         PointerChecking.checkPointer( leftSibling, false );
 
@@ -1085,21 +1085,21 @@ class InternalTreeLogic<KEY,VALUE>
         {
             bTreeNode.goTo( leftSiblingCursor, "left sibling", leftSibling );
             int keyCount = bTreeNode.keyCount( leftSiblingCursor );
-            bTreeNode.setChildAt( leftSiblingCursor, childPointer, keyCount, stableGeneration, unstableGeneration );
+            bTreeNode.setChildAt( leftSiblingCursor, childPointer, keyCount, stableGen, unstableGen );
         }
     }
 
-    private void updateLeftmostChildInRightSibling( PageCursor cursor, long childPointer, long stableGeneration,
-            long unstableGeneration ) throws IOException
+    private void updateLeftmostChildInRightSibling( PageCursor cursor, long childPointer, long stableGen,
+            long unstableGen ) throws IOException
     {
-        long rightSibling = bTreeNode.rightSibling( cursor, stableGeneration, unstableGeneration );
+        long rightSibling = bTreeNode.rightSibling( cursor, stableGen, unstableGen );
         // Left sibling is not allowed to be NO_NODE here because that means there is a child node with no parent
         PointerChecking.checkPointer( rightSibling, false );
 
         try ( PageCursor rightSiblingCursor = cursor.openLinkedCursor( rightSibling ) )
         {
             bTreeNode.goTo( rightSiblingCursor, "right sibling", rightSibling );
-            bTreeNode.setChildAt( rightSiblingCursor, childPointer, 0, stableGeneration, unstableGeneration );
+            bTreeNode.setChildAt( rightSiblingCursor, childPointer, 0, stableGen, unstableGen );
         }
     }
 
@@ -1115,13 +1115,13 @@ class InternalTreeLogic<KEY,VALUE>
      * @param structurePropagation {@link StructurePropagation} used to report structure changes between tree levels.
      * @param key key to be removed
      * @param into {@code VALUE} instance to write removed value to
-     * @param stableGeneration stable generation, i.e. generations <= this generation are considered stable.
-     * @param unstableGeneration unstable generation, i.e. generation which is under development right now.
+     * @param stableGen stable generation, i.e. generations <= this generation are considered stable.
+     * @param unstableGen unstable generation, i.e. generation which is under development right now.
      * @return {@code true} if key was removed, otherwise {@code false}.
      * @throws IOException on cursor failure
      */
     private boolean removeFromLeaf( PageCursor cursor, StructurePropagation<KEY> structurePropagation,
-            KEY key, VALUE into, long stableGeneration, long unstableGeneration ) throws IOException
+            KEY key, VALUE into, long stableGen, long unstableGen ) throws IOException
     {
         int keyCount = bTreeNode.keyCount( cursor );
 
@@ -1134,24 +1134,24 @@ class InternalTreeLogic<KEY,VALUE>
         }
 
         createUnstableVersionIfNeeded( cursor, structurePropagation, UPDATE_MID_CHILD,
-                stableGeneration, unstableGeneration );
+                stableGen, unstableGen );
         keyCount = simplyRemoveFromLeaf( cursor, into, keyCount, pos );
 
         if ( keyCount < (bTreeNode.leafMaxKeyCount() + 1) / 2 )
         {
             // Underflow
-            underflowInLeaf( cursor, structurePropagation, keyCount, stableGeneration, unstableGeneration );
+            underflowInLeaf( cursor, structurePropagation, keyCount, stableGen, unstableGen );
         }
 
         return true;
     }
 
     private void underflowInLeaf( PageCursor cursor, StructurePropagation<KEY> structurePropagation, int keyCount,
-            long stableGeneration, long unstableGeneration ) throws IOException
+            long stableGen, long unstableGen ) throws IOException
     {
-        long leftSibling = bTreeNode.leftSibling( cursor, stableGeneration, unstableGeneration );
+        long leftSibling = bTreeNode.leftSibling( cursor, stableGen, unstableGen );
         PointerChecking.checkPointer( leftSibling, true );
-        long rightSibling = bTreeNode.rightSibling( cursor, stableGeneration, unstableGeneration );
+        long rightSibling = bTreeNode.rightSibling( cursor, stableGen, unstableGen );
         PointerChecking.checkPointer( rightSibling, true );
 
         if ( TreeNode.isNode( leftSibling ) )
@@ -1165,7 +1165,7 @@ class InternalTreeLogic<KEY,VALUE>
                 if ( keyCount + leftSiblingKeyCount >= bTreeNode.leafMaxKeyCount() )
                 {
                     createUnstableVersionIfNeeded( leftSiblingCursor, structurePropagation,
-                            StructurePropagation.UPDATE_LEFT_CHILD, stableGeneration, unstableGeneration );
+                            StructurePropagation.UPDATE_LEFT_CHILD, stableGen, unstableGen );
                     rebalanceLeaf( cursor, leftSiblingCursor, structurePropagation, keyCount, leftSiblingKeyCount );
                 }
                 else
@@ -1173,7 +1173,7 @@ class InternalTreeLogic<KEY,VALUE>
                     // No need to create new unstable version of left sibling.
                     // Parent pointer will be updated later.
                     mergeFromLeftSiblingLeaf( cursor, leftSiblingCursor, structurePropagation, keyCount,
-                            leftSiblingKeyCount, stableGeneration, unstableGeneration );
+                            leftSiblingKeyCount, stableGen, unstableGen );
                 }
             }
         }
@@ -1188,31 +1188,31 @@ class InternalTreeLogic<KEY,VALUE>
                 if ( keyCount + rightSiblingKeyCount <= bTreeNode.leafMaxKeyCount() )
                 {
                     createUnstableVersionIfNeeded( rightSiblingCursor, structurePropagation, UPDATE_RIGHT_CHILD,
-                            stableGeneration, unstableGeneration );
+                            stableGen, unstableGen );
                     mergeToRightSiblingLeaf( cursor, rightSiblingCursor, structurePropagation, keyCount,
-                            rightSiblingKeyCount, stableGeneration, unstableGeneration);
+                            rightSiblingKeyCount, stableGen, unstableGen);
                 }
             }
         }
     }
 
-    private void connectLeftAndRightSibling( PageCursor cursor, long stableGeneration, long unstableGeneration )
+    private void connectLeftAndRightSibling( PageCursor cursor, long stableGen, long unstableGen )
             throws IOException
     {
         long currentId = cursor.getCurrentPageId();
-        long leftSibling = bTreeNode.leftSibling( cursor, stableGeneration, unstableGeneration );
+        long leftSibling = bTreeNode.leftSibling( cursor, stableGen, unstableGen );
         PointerChecking.checkPointer( leftSibling, true );
-        long rightSibling = bTreeNode. rightSibling( cursor, stableGeneration, unstableGeneration );
+        long rightSibling = bTreeNode. rightSibling( cursor, stableGen, unstableGen );
         PointerChecking.checkPointer( rightSibling, true );
         if ( TreeNode.isNode( leftSibling ) )
         {
             bTreeNode.goTo( cursor, "left sibling", leftSibling );
-            bTreeNode.setRightSibling( cursor, rightSibling, stableGeneration, unstableGeneration );
+            bTreeNode.setRightSibling( cursor, rightSibling, stableGen, unstableGen );
         }
         if ( TreeNode.isNode( rightSibling ) )
         {
             bTreeNode.goTo( cursor, "right sibling", rightSibling );
-            bTreeNode.setLeftSibling( cursor, leftSibling, stableGeneration, unstableGeneration );
+            bTreeNode.setLeftSibling( cursor, leftSibling, stableGen, unstableGen );
         }
 
         bTreeNode.goTo( cursor, "back to origin after repointing siblings", currentId );
@@ -1220,9 +1220,9 @@ class InternalTreeLogic<KEY,VALUE>
 
     private void mergeToRightSiblingLeaf( PageCursor cursor, PageCursor rightSiblingCursor,
             StructurePropagation<KEY> structurePropagation, int keyCount, int rightSiblingKeyCount,
-            long stableGeneration, long unstableGeneration ) throws IOException
+            long stableGen, long unstableGen ) throws IOException
     {
-        merge( cursor, keyCount, rightSiblingCursor, rightSiblingKeyCount, stableGeneration, unstableGeneration );
+        merge( cursor, keyCount, rightSiblingCursor, rightSiblingKeyCount, stableGen, unstableGen );
 
         // Propagate change
         // mid child has been merged into right child
@@ -1237,10 +1237,10 @@ class InternalTreeLogic<KEY,VALUE>
 
     private void mergeFromLeftSiblingLeaf( PageCursor cursor, PageCursor leftSiblingCursor,
             StructurePropagation<KEY> structurePropagation, int keyCount, int leftSiblingKeyCount,
-            long stableGeneration, long unstableGeneration ) throws IOException
+            long stableGen, long unstableGen ) throws IOException
     {
         // Move stuff and update key count
-        merge( leftSiblingCursor, leftSiblingKeyCount, cursor, keyCount, stableGeneration, unstableGeneration );
+        merge( leftSiblingCursor, leftSiblingKeyCount, cursor, keyCount, stableGen, unstableGen );
 
         // Propagate change
         // left child has been merged into mid child
@@ -1253,7 +1253,7 @@ class InternalTreeLogic<KEY,VALUE>
     }
 
     private void merge( PageCursor leftSiblingCursor, int leftSiblingKeyCount, PageCursor rightSiblingCursor,
-            int rightSiblingKeyCount, long stableGeneration, long unstableGeneration ) throws IOException
+            int rightSiblingKeyCount, long stableGen, long unstableGen ) throws IOException
     {
         // Push keys in right sibling to the right
         bTreeNode.insertKeySlotsAt( rightSiblingCursor, 0, leftSiblingKeyCount, rightSiblingKeyCount );
@@ -1265,11 +1265,11 @@ class InternalTreeLogic<KEY,VALUE>
 
         // Update new gen of left sibling to be right sibling
         bTreeNode.setNewGen( leftSiblingCursor, rightSiblingCursor.getCurrentPageId(),
-                stableGeneration, unstableGeneration );
+                stableGen, unstableGen );
 
         // Add left sibling to free list
-        connectLeftAndRightSibling( leftSiblingCursor, stableGeneration, unstableGeneration );
-        idProvider.releaseId( stableGeneration, unstableGeneration, leftSiblingCursor.getCurrentPageId() );
+        connectLeftAndRightSibling( leftSiblingCursor, stableGen, unstableGen );
+        idProvider.releaseId( stableGen, unstableGen, leftSiblingCursor.getCurrentPageId() );
     }
 
     private void rebalanceLeaf( PageCursor cursor, PageCursor leftSiblingCursor,
@@ -1319,7 +1319,7 @@ class InternalTreeLogic<KEY,VALUE>
 
     /**
      * Create a new node and copy content from current node (where {@code cursor} sits) if current node is not already
-     * of {@code unstableGeneration}.
+     * of {@code unstableGen}.
      * <p>
      * Neighboring nodes' sibling pointers will be updated to point to new node.
      * <p>
@@ -1332,30 +1332,30 @@ class InternalTreeLogic<KEY,VALUE>
      * @param structurePropagation {@link StructurePropagation} used to report structure changes between tree levels.
      * @param structureUpdate {@link StructurePropagation.StructureUpdate} define how to update structurePropagation
      * if new unstable version is created
-     * @param stableGeneration stable generation, i.e. generations <= this generation are considered stable.
-     * @param unstableGeneration unstable generation, i.e. generation which is under development right now.
+     * @param stableGen stable generation, i.e. generations <= this generation are considered stable.
+     * @param unstableGen unstable generation, i.e. generation which is under development right now.
      * @throws IOException on cursor failure
      */
     private void createUnstableVersionIfNeeded( PageCursor cursor, StructurePropagation<KEY> structurePropagation,
-            StructurePropagation.StructureUpdate structureUpdate, long stableGeneration, long unstableGeneration )
+            StructurePropagation.StructureUpdate structureUpdate, long stableGen, long unstableGen )
             throws IOException
     {
         long oldGenId = cursor.getCurrentPageId();
         long nodeGen = bTreeNode.gen( cursor );
-        if ( nodeGen == unstableGeneration )
+        if ( nodeGen == unstableGen )
         {
             // Don't copy
             return;
         }
 
         // Do copy
-        long newGenId = idProvider.acquireNewId( stableGeneration, unstableGeneration );
+        long newGenId = idProvider.acquireNewId( stableGen, unstableGen );
         try ( PageCursor newGenCursor = cursor.openLinkedCursor( newGenId ) )
         {
             bTreeNode.goTo( newGenCursor, "new gen", newGenId );
             cursor.copyTo( 0, newGenCursor, 0, cursor.getCurrentPageSize() );
-            bTreeNode.setGen( newGenCursor, unstableGeneration );
-            bTreeNode.setNewGen( newGenCursor, TreeNode.NO_NODE_FLAG, stableGeneration, unstableGeneration );
+            bTreeNode.setGen( newGenCursor, unstableGen );
+            bTreeNode.setNewGen( newGenCursor, TreeNode.NO_NODE_FLAG, stableGen, unstableGen );
         }
 
         // Insert new gen pointer in old stable version
@@ -1365,7 +1365,7 @@ class InternalTreeLogic<KEY,VALUE>
         //        |
         //        v
         // (newUnstableNode)
-        bTreeNode.setNewGen( cursor, newGenId, stableGeneration, unstableGeneration );
+        bTreeNode.setNewGen( cursor, newGenId, stableGen, unstableGen );
 
         // Redirect sibling pointers
         //               ---------[leftSibling]---------(stableNode)----------[rightSibling]---------
@@ -1374,19 +1374,19 @@ class InternalTreeLogic<KEY,VALUE>
         //              |                                     |                                      |
         //              v                                     v                                      v
         // (leftSiblingOfStableNode) -[rightSibling]-> (newUnstableNode) <-[leftSibling]- (rightSiblingOfStableNode)
-        long leftSibling = bTreeNode.leftSibling( cursor, stableGeneration, unstableGeneration );
+        long leftSibling = bTreeNode.leftSibling( cursor, stableGen, unstableGen );
         PointerChecking.checkPointer( leftSibling, true );
-        long rightSibling = bTreeNode.rightSibling( cursor, stableGeneration, unstableGeneration );
+        long rightSibling = bTreeNode.rightSibling( cursor, stableGen, unstableGen );
         PointerChecking.checkPointer( rightSibling, true );
         if ( TreeNode.isNode( leftSibling ) )
         {
             bTreeNode.goTo( cursor, "left sibling in split", leftSibling );
-            bTreeNode.setRightSibling( cursor, newGenId, stableGeneration, unstableGeneration );
+            bTreeNode.setRightSibling( cursor, newGenId, stableGen, unstableGen );
         }
         if ( TreeNode.isNode( rightSibling ) )
         {
             bTreeNode.goTo( cursor, "right sibling in split", rightSibling );
-            bTreeNode.setLeftSibling( cursor, newGenId, stableGeneration, unstableGeneration );
+            bTreeNode.setLeftSibling( cursor, newGenId, stableGen, unstableGen );
         }
 
         // Leave cursor at new tree node
@@ -1395,6 +1395,6 @@ class InternalTreeLogic<KEY,VALUE>
         // Propagate structure change
         structureUpdate.update( structurePropagation, newGenId );
 
-        idProvider.releaseId( stableGeneration, unstableGeneration, oldGenId );
+        idProvider.releaseId( stableGen, unstableGen, oldGenId );
     }
 }

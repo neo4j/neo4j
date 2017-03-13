@@ -40,26 +40,26 @@ import static org.neo4j.index.internal.gbptree.PageCursorUtil.put6BLong;
  * the GSP to read, then follows a couple of calls, each advancing the cursor
  * offset themselves:
  * <ol>
- * <li>{@link #readGeneration(PageCursor)}</li>
+ * <li>{@link #readGen(PageCursor)}</li>
  * <li>{@link #readPointer(PageCursor)}</li>
  * <li>{@link #verifyChecksum(PageCursor, long, long)}</li>
  * </ol>
  */
 class GenSafePointer
 {
-    static final long MIN_GENERATION = 1L;
+    static final long MIN_GEN = 1L;
     // unsigned int
-    static final long MAX_GENERATION = 0xFFFFFFFFL;
-    static final long GENERATION_MASK = 0xFFFFFFFFL;
+    static final long MAX_GEN = 0xFFFFFFFFL;
+    static final long GEN_MASK = 0xFFFFFFFFL;
     static final long MIN_POINTER = IdSpace.MIN_TREE_NODE_ID;
     static final long MAX_POINTER = 0xFFFF_FFFFFFFFL;
     static final int UNSIGNED_SHORT_MASK = 0xFFFF;
 
-    static final int GENERATION_SIZE = 4;
+    static final int GEN_SIZE = 4;
     static final int POINTER_SIZE = 6;
     static final int CHECKSUM_SIZE = 2;
     static final int SIZE =
-            GENERATION_SIZE +
+            GEN_SIZE +
             POINTER_SIZE +
             CHECKSUM_SIZE;
 
@@ -67,23 +67,23 @@ class GenSafePointer
      * Writes GSP at the given {@code offset}, the two fields (generation, pointer) + a checksum will be written.
      *
      * @param cursor {@link PageCursor} to write into.
-     * @param generation generation to write.
+     * @param gen generation to write.
      * @param pointer pointer to write.
      */
-    public static void write( PageCursor cursor, long generation, long pointer )
+    public static void write( PageCursor cursor, long gen, long pointer )
     {
-        assertGenerationOnWrite( generation );
+        assertGenOnWrite( gen );
         assertPointerOnWrite( pointer );
-        cursor.putInt( (int) generation );
+        cursor.putInt( (int) gen );
         put6BLong( cursor, pointer );
-        cursor.putShort( checksumOf( generation, pointer ) );
+        cursor.putShort( checksumOf( gen, pointer ) );
     }
 
-    static void assertGenerationOnWrite( long generation )
+    static void assertGenOnWrite( long gen )
     {
-        if ( generation < MIN_GENERATION || generation > MAX_GENERATION )
+        if ( gen < MIN_GEN || gen > MAX_GEN )
         {
-            throw new IllegalArgumentException( "Can not write pointer with generation " + generation +
+            throw new IllegalArgumentException( "Can not write pointer with generation " + gen +
                     " because outside boundary for valid generation." );
         }
     }
@@ -97,7 +97,7 @@ class GenSafePointer
         }
     }
 
-    static long readGeneration( PageCursor cursor )
+    static long readGen( PageCursor cursor )
     {
         return getUnsignedInt( cursor );
     }
@@ -112,34 +112,34 @@ class GenSafePointer
         return cursor.getShort();
     }
 
-    static boolean verifyChecksum( PageCursor cursor, long generation, long pointer )
+    static boolean verifyChecksum( PageCursor cursor, long gen, long pointer )
     {
         short checksum = cursor.getShort();
-        return checksum == checksumOf( generation, pointer );
+        return checksum == checksumOf( gen, pointer );
     }
 
     // package visible for test purposes
     /**
      * Calculates a 2-byte checksum from GSP data.
      *
-     * @param generation generation of the pointer.
+     * @param gen generation of the pointer.
      * @param pointer pointer itself.
      *
      * @return a {@code short} which is the checksum of the gen-pointer.
      */
-    public static short checksumOf( long generation, long pointer )
+    public static short checksumOf( long gen, long pointer )
     {
         short result = 0;
-        result ^= ((short) generation) & UNSIGNED_SHORT_MASK;
-        result ^= ((short) (generation >>> Short.SIZE)) & UNSIGNED_SHORT_MASK;
+        result ^= ((short) gen) & UNSIGNED_SHORT_MASK;
+        result ^= ((short) (gen >>> Short.SIZE)) & UNSIGNED_SHORT_MASK;
         result ^= ((short) pointer) & UNSIGNED_SHORT_MASK;
         result ^= ((short) (pointer >>> Short.SIZE)) & UNSIGNED_SHORT_MASK;
         result ^= ((short) (pointer >>> Integer.SIZE)) & UNSIGNED_SHORT_MASK;
         return result;
     }
 
-    public static boolean isEmpty( long generation, long pointer )
+    public static boolean isEmpty( long gen, long pointer )
     {
-        return generation == 0 && pointer == 0;
+        return gen == 0 && pointer == 0;
     }
 }

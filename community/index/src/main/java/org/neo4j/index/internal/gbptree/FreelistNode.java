@@ -42,7 +42,7 @@ class FreelistNode
     private static final int PAGE_ID_SIZE = GenSafePointer.POINTER_SIZE;
     private static final int BYTE_POS_NEXT = TreeNode.BYTE_POS_NODE_TYPE + Byte.BYTES;
     private static final int HEADER_LENGTH = BYTE_POS_NEXT + PAGE_ID_SIZE;
-    private static final int ENTRY_SIZE = GenSafePointer.GENERATION_SIZE + PAGE_ID_SIZE;
+    private static final int ENTRY_SIZE = GenSafePointer.GEN_SIZE + PAGE_ID_SIZE;
     static final long NO_PAGE_ID = TreeNode.NO_NODE_FLAG;
 
     private final int maxEntries;
@@ -57,16 +57,16 @@ class FreelistNode
         cursor.putByte( TreeNode.BYTE_POS_NODE_TYPE, TreeNode.NODE_TYPE_FREE_LIST_NODE );
     }
 
-    void write( PageCursor cursor, long unstableGeneration, long pageId, int pos )
+    void write( PageCursor cursor, long unstableGen, long pageId, int pos )
     {
         if ( pageId == NO_PAGE_ID )
         {
             throw new IllegalArgumentException( "Tried to write pageId " + pageId + " which means null" );
         }
         assertPos( pos );
-        GenSafePointer.assertGenerationOnWrite( unstableGeneration );
+        GenSafePointer.assertGenOnWrite( unstableGen );
         cursor.setOffset( entryOffset( pos ) );
-        cursor.putInt( (int) unstableGeneration );
+        cursor.putInt( (int) unstableGen );
         put6BLong( cursor, pageId );
     }
 
@@ -82,12 +82,12 @@ class FreelistNode
         }
     }
 
-    long read( PageCursor cursor, long stableGeneration, int pos )
+    long read( PageCursor cursor, long stableGen, int pos )
     {
         assertPos( pos );
         cursor.setOffset( entryOffset( pos ) );
-        long generation = getUnsignedInt( cursor );
-        return generation <= stableGeneration ? get6BLong( cursor ) : NO_PAGE_ID;
+        long gen = getUnsignedInt( cursor );
+        return gen <= stableGen ? get6BLong( cursor ) : NO_PAGE_ID;
     }
 
     private static int entryOffset( int pos )

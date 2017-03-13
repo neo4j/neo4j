@@ -27,45 +27,45 @@ package org.neo4j.index.internal.gbptree;
  *       msb <-------> lsb
  * </pre>
  */
-class Generation
+class Gen
 {
-    private static final long UNSTABLE_GENERATION_MASK = 0xFFFFFFFFL;
-    private static final int STABLE_GENERATION_SHIFT = Integer.SIZE;
+    private static final long UNSTABLE_GEN_MASK = 0xFFFFFFFFL;
+    private static final int STABLE_GEN_SHIFT = Integer.SIZE;
 
     /**
      * Takes one stable and one unstable generation (both unsigned ints) and crams them into one {@code long}.
      *
-     * @param stableGeneration stable generation.
-     * @param unstableGeneration unstable generation.
+     * @param stableGen stable generation.
+     * @param unstableGen unstable generation.
      * @return the two generation numbers as one {@code long}.
      */
-    public static long generation( long stableGeneration, long unstableGeneration )
+    public static long gen( long stableGen, long unstableGen )
     {
-        GenSafePointer.assertGenerationOnWrite( stableGeneration );
-        GenSafePointer.assertGenerationOnWrite( unstableGeneration );
+        GenSafePointer.assertGenOnWrite( stableGen );
+        GenSafePointer.assertGenOnWrite( unstableGen );
 
-        return (stableGeneration << STABLE_GENERATION_SHIFT) | unstableGeneration;
+        return (stableGen << STABLE_GEN_SHIFT) | unstableGen;
     }
 
     /**
      * Extracts and returns unstable generation from generation {@code long}.
      *
-     * @param generation generation variable containing both stable and unstable generations.
+     * @param gen generation variable containing both stable and unstable generations.
      * @return unstable generation from generation.
      */
-    public static long unstableGeneration( long generation )
+    public static long unstableGen( long gen )
     {
-        return generation & UNSTABLE_GENERATION_MASK;
+        return gen & UNSTABLE_GEN_MASK;
     }
 
     /**
      * Extracts and returns stable generation from generation {@code long}.
      *
-     * @param generation generation variable containing both stable and unstable generations.
+     * @param gen generation variable containing both stable and unstable generations.
      * @return stable generation from generation.
      */
-    public static long stableGeneration( long generation )
+    public static long stableGen( long gen )
     {
-        return generation >>> STABLE_GENERATION_SHIFT;
+        return gen >>> STABLE_GEN_SHIFT;
     }
 }

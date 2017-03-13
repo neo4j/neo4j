@@ -133,16 +133,16 @@ class FreeListIdProvider implements IdProvider
     }
 
     @Override
-    public long acquireNewId( long stableGeneration, long unstableGeneration ) throws IOException
+    public long acquireNewId( long stableGen, long unstableGen ) throws IOException
     {
-        return acquireNewId( stableGeneration, unstableGeneration, true );
+        return acquireNewId( stableGen, unstableGen, true );
     }
 
-    private long acquireNewId( long stableGeneration, long unstableGeneration, boolean allowTakeLastFromPage )
+    private long acquireNewId( long stableGen, long unstableGen, boolean allowTakeLastFromPage )
             throws IOException
     {
         // Acquire id from free-list or end of store file
-        long acquiredId = acquireNewIdFromFreelistOrEnd( stableGeneration, unstableGeneration, allowTakeLastFromPage );
+        long acquiredId = acquireNewIdFromFreelistOrEnd( stableGen, unstableGen, allowTakeLastFromPage );
 
         // Zap the page, i.e. set all bytes to zero
         try ( PageCursor cursor = pagedFile.io( acquiredId, PagedFile.PF_SHARED_WRITE_LOCK ) )
@@ -155,7 +155,7 @@ class FreeListIdProvider implements IdProvider
         return acquiredId;
     }
 
-    private long acquireNewIdFromFreelistOrEnd( long stableGeneration, long unstableGeneration,
+    private long acquireNewIdFromFreelistOrEnd( long stableGen, long unstableGen,
             boolean allowTakeLastFromPage ) throws IOException
     {
         if ( (readPageId != writePageId || readPos < writePos) &&
@@ -173,7 +173,7 @@ class FreeListIdProvider implements IdProvider
                 long resultPageId;
                 do
                 {
-                    resultPageId = freelistNode.read( cursor, stableGeneration, readPos );
+                    resultPageId = freelistNode.read( cursor, stableGen, readPos );
                 }
                 while ( cursor.shouldRetry() );
 
@@ -194,7 +194,7 @@ class FreeListIdProvider implements IdProvider
 
                         // Put the exhausted free-list page id itself on the free-list
                         long exhaustedFreelistPageId = cursor.getCurrentPageId();
-                        releaseId( stableGeneration, unstableGeneration, exhaustedFreelistPageId );
+                        releaseId( stableGen, unstableGen, exhaustedFreelistPageId );
                         monitor.releasedFreelistPageId( exhaustedFreelistPageId );
                     }
                     return resultPageId;
@@ -212,19 +212,19 @@ class FreeListIdProvider implements IdProvider
     }
 
     @Override
-    public void releaseId( long stableGeneration, long unstableGeneration, long id ) throws IOException
+    public void releaseId( long stableGen, long unstableGen, long id ) throws IOException
     {
         try ( PageCursor cursor = pagedFile.io( writePageId, PagedFile.PF_SHARED_WRITE_LOCK ) )
         {
             PageCursorUtil.goTo( cursor, "free-list write page", writePageId );
-            freelistNode.write( cursor, unstableGeneration, id, writePos );
+            freelistNode.write( cursor, unstableGen, id, writePos );
             writePos++;
         }
 
         if ( writePos >= freelistNode.maxEntries() )
         {
             // Current free-list write page is full, allocate a new one.
-            long nextFreelistPage = acquireNewId( stableGeneration, unstableGeneration, false );
+            long nextFreelistPage = acquireNewId( stableGen, unstableGen, false );
             try ( PageCursor cursor = pagedFile.io( writePageId, PagedFile.PF_SHARED_WRITE_LOCK ) )
             {
                 PageCursorUtil.goTo( cursor, "free-list write page", writePageId );
@@ -279,7 +279,7 @@ class FreeListIdProvider implements IdProvider
      * @param visitor {@link LongConsumer} getting calls about unacquired ids.
      * @throws IOException on {@link PageCursor} error.
      */
-    void visitUnacquiredIds( LongConsumer visitor, long stableGeneration ) throws IOException
+    void visitUnacquiredIds( LongConsumer visitor, long stableGen ) throws IOException
     {
         if ( readPageId == FreelistNode.NO_PAGE_ID )
         {
@@ -299,7 +299,7 @@ class FreeListIdProvider implements IdProvider
                 long nextFreelistPageId;
                 do
                 {
-                    unacquiredId = freelistNode.read( cursor, stableGeneration, pos );
+                    unacquiredId = freelistNode.read( cursor, stableGen, pos );
                     nextFreelistPageId = FreelistNode.next( cursor );
                 }
                 while ( cursor.shouldRetry() );
