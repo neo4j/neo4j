@@ -93,12 +93,13 @@ public class IndexQueryTransactionStateTest
         when( store.indexesGetAll() ).then( answerAsIteratorFrom( indexes ) );
         when( store.indexesGetRelatedToProperty( propertyKeyId ) ).then( answerAsIteratorFrom( indexes ) );
         when( store.constraintsGetForLabel( labelId ) ).thenReturn( Collections.emptyIterator() );
-        when( store.indexGetForSchema( indexDescriptor.schema() ) ).thenReturn( indexDescriptor );
 
+        when( store.indexGetForSchema( indexDescriptor.schema() ) ).thenReturn( indexDescriptor );
+        indexReader = mock( IndexReader.class );
+        when( store.indexGetReader( any( StorageStatement.class ), eq( indexDescriptor ) ) )
+                .thenReturn( indexReader );
         StoreStatement statement = mock( StoreStatement.class );
         when( state.getStoreStatement() ).thenReturn( statement );
-        indexReader = mock( IndexReader.class );
-        when( statement.getIndexReader( indexDescriptor ) ).thenReturn( indexReader );
         when( statement.getFreshIndexReader( indexDescriptor ) ).thenReturn( indexReader );
 
         StateHandlingStatementOperations stateHandlingOperations = new StateHandlingStatementOperations(
