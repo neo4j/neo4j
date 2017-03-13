@@ -32,6 +32,7 @@ import org.neo4j.causalclustering.discovery.TopologyService;
 import org.neo4j.causalclustering.identity.ClusterId;
 import org.neo4j.causalclustering.identity.MemberId;
 import org.neo4j.helpers.Service;
+import org.neo4j.logging.NullLogProvider;
 
 import static org.junit.Assert.assertEquals;
 import static org.mockito.Mockito.mock;
@@ -59,7 +60,7 @@ public class UpstreamDatabaseStrategySelectorTest
         when( goodOne.upstreamDatabase() ).thenReturn( Optional.of( theMemberId ) );
 
         UpstreamDatabaseStrategySelector selector =
-                new UpstreamDatabaseStrategySelector( badOne, iterable( goodOne, anotherBadOne ), null );
+                new UpstreamDatabaseStrategySelector( badOne, iterable( goodOne, anotherBadOne ), null, NullLogProvider.getInstance() );
 
         // when
         MemberId result = selector.bestUpstreamDatabase();
@@ -104,7 +105,7 @@ public class UpstreamDatabaseStrategySelectorTest
         when( mockStrategy.upstreamDatabase() ).thenReturn( Optional.of( new MemberId( UUID.randomUUID() ) ) );
 
         UpstreamDatabaseStrategySelector selector =
-                new UpstreamDatabaseStrategySelector( shouldNotUse, iterable( mockStrategy ), null );
+                new UpstreamDatabaseStrategySelector( shouldNotUse, iterable( mockStrategy ), null, NullLogProvider.getInstance() );
 
         // when
         selector.bestUpstreamDatabase();

@@ -248,10 +248,12 @@ public class EnterpriseReadReplicaEditionModule extends EditionModule
 
         ConnectToRandomCoreServer defaultStrategy = new ConnectToRandomCoreServer();
         defaultStrategy.setTopologyService( topologyService );
+        defaultStrategy.setConfig( config );
+        defaultStrategy.setMyself( myself );
 
         UpstreamDatabaseStrategySelector upstreamDatabaseStrategySelector =
                 new UpstreamDatabaseStrategySelector( defaultStrategy,
-                        new UpstreamDatabaseStrategiesLoader( topologyService, config ), myself );
+                        new UpstreamDatabaseStrategiesLoader( topologyService, config, myself, logProvider ), myself, logProvider );
 
         CatchupPollingProcess catchupProcess =
                 new CatchupPollingProcess( logProvider, localDatabase, servicesToStopOnStoreCopy, catchUpClient,

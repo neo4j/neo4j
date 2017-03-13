@@ -22,9 +22,12 @@ package org.neo4j.causalclustering.readreplica;
 import org.junit.Test;
 
 import java.util.Set;
+import java.util.UUID;
 
 import org.neo4j.causalclustering.discovery.TopologyService;
+import org.neo4j.causalclustering.identity.MemberId;
 import org.neo4j.kernel.configuration.Config;
+import org.neo4j.logging.NullLogProvider;
 
 import static org.junit.Assert.assertEquals;
 import static org.mockito.Mockito.mock;
@@ -33,6 +36,9 @@ import static org.neo4j.helpers.collection.MapUtil.stringMap;
 
 public class UpstreamDatabaseStrategiesLoaderTest
 {
+
+    private MemberId myself = new MemberId( UUID.randomUUID() );
+
     @Test
     public void shouldReturnConfiguredClassesOnly() throws Exception
     {
@@ -40,8 +46,9 @@ public class UpstreamDatabaseStrategiesLoaderTest
         Config config = Config.defaults();
         config.augment( stringMap( "causal_clustering.upstream_selection_strategy", "dummy" ) );
 
-        UpstreamDatabaseStrategiesLoader
-                strategies = new UpstreamDatabaseStrategiesLoader( mock( TopologyService.class ), config );
+        UpstreamDatabaseStrategiesLoader strategies =
+                new UpstreamDatabaseStrategiesLoader( mock( TopologyService.class ), config,
+                        myself, NullLogProvider.getInstance() );
 
         // when
         Set<UpstreamDatabaseSelectionStrategy> upstreamDatabaseSelectionStrategies = asSet( strategies.iterator() );
@@ -61,8 +68,9 @@ public class UpstreamDatabaseStrategiesLoaderTest
                 stringMap( "causal_clustering.upstream_selection_strategy", "yet-another-dummy,dummy,another-dummy" ) );
 
         // when
-        UpstreamDatabaseStrategiesLoader
-                strategies = new UpstreamDatabaseStrategiesLoader( mock( TopologyService.class ), config );
+        UpstreamDatabaseStrategiesLoader strategies =
+                new UpstreamDatabaseStrategiesLoader( mock( TopologyService.class ), config,
+                        myself, NullLogProvider.getInstance() );
 
         // then
         assertEquals( UpstreamDatabaseStrategySelectorTest.YetAnotherDummyUpstreamDatabaseSelectionStrategy.class,
