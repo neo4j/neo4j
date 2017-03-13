@@ -178,7 +178,7 @@ public class StateHandlingStatementOperations
     private Cursor<RelationshipItem> relationshipCursor( KernelStatement statement, long relationshipId )
     {
         ReadableTransactionState state = statement.hasTxStateWithChanges() ? statement.txState() : null;
-        return statement.getStoreStatement().acquireSingleRelationshipCursor( relationshipId, state );
+        return storeLayer.relationshipCursor( statement.getStoreStatement(), relationshipId, state );
     }
 
     @Override
