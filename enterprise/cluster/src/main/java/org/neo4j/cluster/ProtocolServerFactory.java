@@ -28,6 +28,7 @@ import org.neo4j.cluster.protocol.atomicbroadcast.ObjectOutputStreamFactory;
 import org.neo4j.cluster.protocol.atomicbroadcast.multipaxos.AcceptorInstanceStore;
 import org.neo4j.cluster.protocol.election.ElectionCredentialsProvider;
 import org.neo4j.cluster.timeout.TimeoutStrategy;
+import org.neo4j.kernel.configuration.Config;
 
 /**
  * Factory for instantiating ProtocolServers.
@@ -36,10 +37,11 @@ import org.neo4j.cluster.timeout.TimeoutStrategy;
  */
 public interface ProtocolServerFactory
 {
-    ProtocolServer newProtocolServer( InstanceId me, int maxAcceptors, TimeoutStrategy timeouts, MessageSource input, MessageSender output,
+    ProtocolServer newProtocolServer( InstanceId me, TimeoutStrategy timeouts, MessageSource input, MessageSender output,
                                       AcceptorInstanceStore acceptorInstanceStore,
                                       ElectionCredentialsProvider electionCredentialsProvider,
                                       Executor stateMachineExecutor,
                                       ObjectInputStreamFactory objectInputStreamFactory,
-                                      ObjectOutputStreamFactory objectOutputStreamFactory );
+                                      ObjectOutputStreamFactory objectOutputStreamFactory,
+                                      Config config );
 }

@@ -61,6 +61,7 @@ import org.neo4j.cluster.statemachine.StateMachineRules;
 import org.neo4j.cluster.timeout.TimeoutStrategy;
 import org.neo4j.cluster.timeout.Timeouts;
 import org.neo4j.helpers.collection.Iterables;
+import org.neo4j.kernel.configuration.Config;
 import org.neo4j.logging.LogProvider;
 
 import static org.neo4j.cluster.com.message.Message.internal;
@@ -83,25 +84,26 @@ public class MultiPaxosServerFactory
     }
 
     @Override
-    public ProtocolServer newProtocolServer( InstanceId me, int maxAcceptors,
+    public ProtocolServer newProtocolServer( InstanceId me,
                                              TimeoutStrategy timeoutStrategy, MessageSource input,
                                              MessageSender output, AcceptorInstanceStore acceptorInstanceStore,
                                              ElectionCredentialsProvider electionCredentialsProvider,
                                              Executor stateMachineExecutor,
                                              ObjectInputStreamFactory objectInputStreamFactory,
-                                             ObjectOutputStreamFactory objectOutputStreamFactory )
+                                             ObjectOutputStreamFactory objectOutputStreamFactory,
+                                             Config config )
     {
         DelayedDirectExecutor executor = new DelayedDirectExecutor( logging );
 
         // Create state machines
         Timeouts timeouts = new Timeouts( timeoutStrategy );
 
-        final MultiPaxosContext context = new MultiPaxosContext( me, maxAcceptors,
-                Iterables.<ElectionRole, ElectionRole>iterable( new ElectionRole( ClusterConfiguration.COORDINATOR ) ),
+        final MultiPaxosContext context = new MultiPaxosContext( me,
+                Iterables.iterable( new ElectionRole( ClusterConfiguration.COORDINATOR ) ),
                 new ClusterConfiguration( initialConfig.getName(), logging,
                         initialConfig.getMemberURIs() ),
                 executor, logging, objectInputStreamFactory, objectOutputStreamFactory, acceptorInstanceStore, timeouts,
-                electionCredentialsProvider
+                electionCredentialsProvider, config
         );
 
         SnapshotContext snapshotContext = new SnapshotContext( context.getClusterContext(),
