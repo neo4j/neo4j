@@ -56,7 +56,6 @@ import org.neo4j.kernel.api.proc.{QualifiedName => KernelQualifiedName}
 import org.neo4j.kernel.api.schema.NodePropertyDescriptor
 import org.neo4j.kernel.api.schema_new.constaints.ConstraintDescriptorFactory
 import org.neo4j.kernel.api.schema_new.{IndexQuery, SchemaDescriptorFactory}
-import org.neo4j.kernel.impl.api.KernelStatement
 import org.neo4j.kernel.impl.core.NodeManager
 import org.neo4j.kernel.impl.locking.ResourceTypes
 
@@ -741,7 +740,7 @@ final class TransactionBoundQueryContext(val transactionalContext: Transactional
     transactionalContext.statement.schemaWriteOperations()
 
   override def kernelStatisticProvider(): KernelStatisticProvider = {
-    new ProfileKernelStatisticProvider(transactionalContext.statement.asInstanceOf[KernelStatement].getPageCursorTracer)
+    new ProfileKernelStatisticProvider(transactionalContext.statement.executionStatisticsOperations().getPageCursorTracer)
   }
 }
 
