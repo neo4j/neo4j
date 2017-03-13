@@ -278,7 +278,7 @@ public class NativeLabelScanStore implements LabelScanStore
     {
         monitor.init();
 
-        boolean storeExists = storeExists();
+        boolean storeExists = hasStore();
         try
         {
             needsRebuild = !storeExists;
@@ -299,7 +299,8 @@ public class NativeLabelScanStore implements LabelScanStore
         }
     }
 
-    private boolean storeExists() throws IOException
+    @Override
+    public boolean hasStore() throws IOException
     {
         try
         {

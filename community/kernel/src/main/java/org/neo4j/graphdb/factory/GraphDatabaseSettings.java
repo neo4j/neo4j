@@ -508,8 +508,20 @@ public class GraphDatabaseSettings implements LoadableConfig
 
     public enum LabelIndex
     {
+        /**
+         * Native label index. Generally the best option.
+         */
         NATIVE,
-        LUCENE;
+
+        /**
+         * Label index backed by Lucene.
+         */
+        LUCENE,
+
+        /**
+         * Selects which ever label index is present in a store, or the default (NATIVE) if no label index present.
+         */
+        AUTO;
     }
 
     @Description( "Backend to use for label --> nodes index" )

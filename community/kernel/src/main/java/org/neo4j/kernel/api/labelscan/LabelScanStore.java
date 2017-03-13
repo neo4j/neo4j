@@ -136,4 +136,10 @@ public interface LabelScanStore extends Lifecycle
      * @return whether or not this index is read-only.
      */
     boolean isReadOnly();
+
+    /**
+     * @return whether or not there's an existing store present for this label scan store.
+     * @throws IOException on I/O error checking the presence of a store.
+     */
+    boolean hasStore() throws IOException;
 }

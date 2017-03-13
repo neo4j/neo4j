@@ -98,7 +98,7 @@ public class LuceneLabelScanStore implements LabelScanStore
         monitor.init();
         try
         {
-            if ( !luceneIndex.exists() )
+            if ( !hasStore() )
             {
                 monitor.noIndex();
 
@@ -188,5 +188,11 @@ public class LuceneLabelScanStore implements LabelScanStore
     public boolean isReadOnly()
     {
         return luceneIndex.isReadOnly();
+    }
+
+    @Override
+    public boolean hasStore() throws IOException
+    {
+        return luceneIndex.exists();
     }
 }

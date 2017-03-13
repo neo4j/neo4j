@@ -19,12 +19,14 @@
  */
 package org.neo4j.kernel.extension.dependency;
 
+import java.io.IOException;
 import java.util.ArrayList;
 import java.util.List;
 import java.util.Objects;
-
 import org.neo4j.graphdb.DependencyResolver;
 import org.neo4j.graphdb.factory.GraphDatabaseSettings;
+import org.neo4j.graphdb.factory.GraphDatabaseSettings.LabelIndex;
+import org.neo4j.helpers.Exceptions;
 import org.neo4j.kernel.configuration.Config;
 import org.neo4j.kernel.impl.api.scan.LabelScanStoreProvider;
 
@@ -58,18 +60,80 @@ public class NamedLabelScanStoreSelectionStrategy implements DependencyResolver.
             throw new IllegalArgumentException( "Was expecting " + LabelScanStoreProvider.class );
         }
 
+        String name = specificallyConfigured;
+
+        if ( LabelIndex.AUTO.name().equalsIgnoreCase( name ) )
+        {
+            // Auto-selection works by asking each individual label scan store provider if it has a store
+            // present or not. If there's a single provider it will be selected, but if there are multiple
+            // an exception will be thrown. If there's no provider with present store then default will be used.
+
+            T present = selectSingleProviderWhichHasStore( candidates );
+            if ( present != null )
+            {
+                return present;
+            }
+
+            // There was no label scan store present from any provider, go for the default.
+            // This will reassign the name we're looking for the loop below
+            name = LabelIndex.valueOf( GraphDatabaseSettings.label_index.getDefaultValue() ).name();
+        }
+
         List<String> candidateNames = new ArrayList<>();
         for ( T candidate : candidates )
         {
             LabelScanStoreProvider provider = (LabelScanStoreProvider) candidate;
             String candidateName = provider.getName();
             candidateNames.add( candidateName );
-            if ( specificallyConfigured.equalsIgnoreCase( candidateName ) )
+            if ( name.equalsIgnoreCase( candidateName ) )
             {
                 return candidate;
             }
         }
         throw new IllegalArgumentException( "Configured label index '" + specificallyConfigured +
                 "', but couldn't find it among candidates " + candidateNames );
+    }
+
+    private static <T> T selectSingleProviderWhichHasStore( Iterable<T> candidates )
+    {
+        IOException exception = null;
+        T present = null;
+        for ( T candidate : candidates )
+        {
+            LabelScanStoreProvider provider = (LabelScanStoreProvider) candidate;
+            try
+            {
+                if ( provider.hasStore() )
+                {
+                    if ( present != null )
+                    {
+                        throw new IllegalArgumentException( "There are multiple present label indexes, at least " +
+                                present + " and " + provider + ". Please select a specific " +
+                                GraphDatabaseSettings.label_index.name() + " instead" );
+                    }
+                    present = candidate;
+                }
+            }
+            catch ( IOException e )
+            {
+                exception = Exceptions.combine( exception, e );
+            }
+        }
+
+        if ( present != null )
+        {
+            // Happy case, there was exactly one provider with a present store
+            return present;
+        }
+
+        if ( exception != null )
+        {
+            // There were no provider with present store and there were I/O exceptions trying
+            // to figure out which provider had present store
+            throw new IllegalArgumentException( exception );
+        }
+
+        // No provider has a present store, communicate that using null so that the default selection kicks in
+        return null;
     }
 }

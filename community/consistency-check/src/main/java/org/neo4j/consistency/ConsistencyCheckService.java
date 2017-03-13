@@ -36,6 +36,7 @@ import org.neo4j.consistency.statistics.Statistics;
 import org.neo4j.consistency.statistics.VerboseStatistics;
 import org.neo4j.function.Suppliers;
 import org.neo4j.graphdb.factory.GraphDatabaseSettings;
+import org.neo4j.graphdb.factory.GraphDatabaseSettings.LabelIndex;
 import org.neo4j.helpers.progress.ProgressMonitorFactory;
 import org.neo4j.io.fs.DefaultFileSystemAbstraction;
 import org.neo4j.io.fs.FileSystemAbstraction;
@@ -69,6 +70,7 @@ import org.neo4j.logging.Log;
 import org.neo4j.logging.LogProvider;
 
 import static java.lang.String.format;
+
 import static org.neo4j.helpers.Service.load;
 import static org.neo4j.helpers.collection.MapUtil.stringMap;
 import static org.neo4j.io.file.Files.createOrOpenAsOuputStream;
@@ -212,7 +214,9 @@ public class ConsistencyCheckService
             throws ConsistencyCheckIncompleteException
     {
         Log log = logProvider.getLog( getClass() );
-        config = config.with( stringMap( GraphDatabaseSettings.read_only.name(), TRUE ) );
+        config = config.with( stringMap(
+                GraphDatabaseSettings.read_only.name(), TRUE,
+                GraphDatabaseSettings.label_index.name(), LabelIndex.AUTO.name() ) );
         StoreFactory factory = new StoreFactory( storeDir, config,
                 new DefaultIdGeneratorFactory( fileSystem ), pageCache, fileSystem, logProvider );
 

@@ -92,4 +92,9 @@ public class LabelScanStoreProvider extends LifecycleAdapter
     {
         labelScanStore.drop();
     }
+
+    public boolean hasStore() throws IOException
+    {
+        return labelScanStore.hasStore();
+    }
 }

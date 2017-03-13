@@ -19,6 +19,8 @@
  */
 package org.neo4j.backup;
 
+import org.junit.After;
+import org.junit.Before;
 import org.junit.Rule;
 import org.junit.Test;
 
@@ -42,9 +44,7 @@ import org.neo4j.test.TestGraphDatabaseFactory;
 import org.neo4j.test.TestLabels;
 import org.neo4j.test.rule.RandomRule;
 import org.neo4j.test.rule.TestDirectory;
-
 import static org.junit.Assert.assertEquals;
-
 import static org.neo4j.backup.BackupServer.DEFAULT_PORT;
 import static org.neo4j.helpers.collection.Iterators.asSet;
 import static org.neo4j.helpers.collection.MapUtil.stringMap;
@@ -59,28 +59,52 @@ public class BackupLabelIndexIT
     @Rule
     public final TestDirectory directory = TestDirectory.testDirectory();
 
+    private File sourceDir;
+    private File backupDir;
+
+    private GraphDatabaseService db;
+    private GraphDatabaseService backupDb;
+
+    @Before
+    public void setupDirectoroes()
+    {
+        sourceDir = directory.absolutePath();
+        backupDir = directory.directory( "backup" );
+    }
+
+    @After
+    public void shutdownDbs()
+    {
+        if ( backupDb != null )
+        {
+            backupDb.shutdown();
+        }
+        if ( db != null )
+        {
+            db.shutdown();
+        }
+    }
+
     @Test
     public void shouldHandleBackingUpFromSourceThatSwitchesLabelIndexProviderAllIndexConfigMatching() throws Exception
     {
         // GIVEN
         LabelIndex[] types = LabelIndex.values();
         Set<Node> expectedNodes = new HashSet<>();
-        File sourceDir = directory.absolutePath();
-        File backupDir = directory.directory( "backup" );
         for ( int i = 0; i < 5; i++ )
         {
             // WHEN
             LabelIndex index = random.among( types );
-            GraphDatabaseService db = db( sourceDir, index, true );
+            db = db( sourceDir, index, true );
             Node node = createNode( db );
             expectedNodes.add( node );
 
             // THEN
             backupTo( index, backupDir );
-            GraphDatabaseService backupDb = db( backupDir, index, false );
+            backupDb = db( backupDir, index, false );
             assertNodes( backupDb, expectedNodes );
-            backupDb.shutdown();
-            db.shutdown();
+
+            shutdownDbs();
         }
     }
 
@@ -90,23 +114,21 @@ public class BackupLabelIndexIT
         // GIVEN
         LabelIndex[] types = LabelIndex.values();
         Set<Node> expectedNodes = new HashSet<>();
-        File sourceDir = directory.absolutePath();
-        File backupDir = directory.directory( "backup" );
         for ( int i = 0; i < 5; i++ )
         {
             // WHEN
             LabelIndex index = random.among( types );
-            GraphDatabaseService db = db( sourceDir, index, true );
+            db = db( sourceDir, index, true );
             Node node = createNode( db );
             expectedNodes.add( node );
 
             // THEN
             LabelIndex indexForBackup = random.among( types );
             backupTo( indexForBackup, backupDir );
-            GraphDatabaseService backupDb = db( backupDir, indexForBackup, false );
+            backupDb = db( backupDir, indexForBackup, false );
             assertNodes( backupDb, expectedNodes );
-            backupDb.shutdown();
-            db.shutdown();
+
+            shutdownDbs();
         }
     }
 
@@ -117,22 +139,22 @@ public class BackupLabelIndexIT
         // GIVEN
         LabelIndex[] types = LabelIndex.values();
         Set<Node> expectedNodes = new HashSet<>();
-        File sourceDir = directory.absolutePath();
-        File backupDir = directory.directory( "backup" );
         for ( int i = 0; i < 5; i++ )
         {
             // WHEN
             LabelIndex index = random.among( types );
-            GraphDatabaseService db = db( sourceDir, index, true );
+            db = db( sourceDir, index, true );
             Node node = createNode( db );
             expectedNodes.add( node );
 
             // THEN
-            backupTo( random.among( types ), backupDir );
-            GraphDatabaseService backupDb = db( backupDir, random.among( types ), false );
+            LabelIndex backupIndex = random.among( types );
+            backupTo( backupIndex, backupDir );
+            LabelIndex backupDbIndex = random.among( types );
+            backupDb = db( backupDir, backupDbIndex, false );
             assertNodes( backupDb, expectedNodes );
-            backupDb.shutdown();
-            db.shutdown();
+
+            shutdownDbs();
         }
     }
 
