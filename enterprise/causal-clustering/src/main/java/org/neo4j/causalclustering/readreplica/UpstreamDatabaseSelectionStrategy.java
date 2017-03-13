@@ -48,7 +48,10 @@ public abstract class UpstreamDatabaseSelectionStrategy extends Service
         this.config = config;
     }
 
-    void setMyself(MemberId myself) { this.myself = myself;}
+    void setMyself( MemberId myself )
+    {
+        this.myself = myself;
+    }
 
     public abstract Optional<MemberId> upstreamDatabase() throws UpstreamDatabaseSelectionException;
 
