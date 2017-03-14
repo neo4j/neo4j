@@ -69,11 +69,10 @@ public class CoreTopology
     @Override
     public String toString()
     {
-        return format( "{clusterId=%s, bootstrappable=%s, coreMembers=%s}", clusterId, canBeBootstrapped(),
-                coreMembers );
+        return format( "{clusterId=%s, bootstrappable=%s, coreMembers=%s}", clusterId, canBeBootstrapped(), coreMembers );
     }
 
-    TopologyDifference difference( CoreTopology other )
+    CoreTopologyDifference difference( CoreTopology other )
     {
         Set<MemberId> members = coreMembers.keySet();
         Set<MemberId> otherMembers = other.coreMembers.keySet();
@@ -84,7 +83,7 @@ public class CoreTopology
         Set<Difference> removed = members.stream().filter( m -> !otherMembers.contains( m ) )
                 .map( memberId -> asDifference( CoreTopology.this, memberId ) ).collect( toSet() );
 
-        return new TopologyDifference( added, removed );
+        return new CoreTopologyDifference( added, removed );
     }
 
     private Difference asDifference( CoreTopology topology, MemberId memberId )
@@ -97,12 +96,12 @@ public class CoreTopology
             return coreMembers.keySet().stream().findAny();
     }
 
-    class TopologyDifference
+    class CoreTopologyDifference
     {
         private Set<Difference> added;
         private Set<Difference> removed;
 
-        TopologyDifference( Set<Difference> added, Set<Difference> removed )
+        CoreTopologyDifference( Set<Difference> added, Set<Difference> removed )
         {
             this.added = added;
             this.removed = removed;

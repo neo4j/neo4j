@@ -48,7 +48,7 @@ public class CoreTopologyTest
         CoreTopology topology = new CoreTopology( new ClusterId( UUID.randomUUID() ), true, coreMembers );
 
         // when
-        CoreTopology.TopologyDifference diff =  topology.difference(topology);
+        CoreTopology.CoreTopologyDifference diff =  topology.difference(topology);
 
         // then
         assertThat( diff.added().size(), Matchers.equalTo( 0 ) );
@@ -74,7 +74,7 @@ public class CoreTopologyTest
         CoreTopology topology = new CoreTopology( new ClusterId( UUID.randomUUID() ), true, initialMembers );
 
         // when
-        CoreTopology.TopologyDifference diff =  topology.difference(new CoreTopology( new ClusterId( UUID.randomUUID() ), true, newMembers ));
+        CoreTopology.CoreTopologyDifference diff =  topology.difference(new CoreTopology( new ClusterId( UUID.randomUUID() ), true, newMembers ));
 
         // then
         assertThat( diff.added().size(), Matchers.equalTo( 1 ) );
@@ -98,7 +98,7 @@ public class CoreTopologyTest
         CoreTopology topology = new CoreTopology( new ClusterId( UUID.randomUUID() ), true, initialMembers );
 
         // when
-        CoreTopology.TopologyDifference diff =  topology.difference(new CoreTopology( new ClusterId( UUID.randomUUID() ), true, newMembers ));
+        CoreTopology.CoreTopologyDifference diff =  topology.difference(new CoreTopology( new ClusterId( UUID.randomUUID() ), true, newMembers ));
 
         // then
         assertThat( diff.added().size(), Matchers.equalTo( 0 ) );
@@ -121,7 +121,7 @@ public class CoreTopologyTest
         CoreTopology topology = new CoreTopology( new ClusterId( UUID.randomUUID() ), true, initialMembers );
 
         // when
-        CoreTopology.TopologyDifference diff =  topology.difference(new CoreTopology( new ClusterId( UUID.randomUUID() ), true, newMembers ));
+        CoreTopology.CoreTopologyDifference diff =  topology.difference(new CoreTopology( new ClusterId( UUID.randomUUID() ), true, newMembers ));
 
         // then
         assertThat( diff.added().size(), Matchers.equalTo( 2 ) );
