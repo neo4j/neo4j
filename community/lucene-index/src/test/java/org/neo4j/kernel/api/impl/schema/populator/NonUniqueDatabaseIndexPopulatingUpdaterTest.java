@@ -284,7 +284,7 @@ public class NonUniqueDatabaseIndexPopulatingUpdaterTest
         updater.process( remove( 3, SCHEMA_DESCRIPTOR, "baz" ) );
         verify( writer ).deleteDocuments( newTermForChangeOrRemove( 3 ) );
 
-        updater.process( remove( 4, SCHEMA_DESCRIPTOR, "bit", "baz" ) );
+        updater.process( remove( 4, COMPOSITE_SCHEMA_DESCRIPTOR, "bit", "baz" ) );
         verify( writer ).deleteDocuments( newTermForChangeOrRemove( 4 ) );
     }
 

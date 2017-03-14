@@ -530,13 +530,12 @@ public class UniqueDatabaseIndexPopulatorTest
     @Test
     public void addUpdates() throws Exception
     {
-        LabelSchemaDescriptor schemaDescriptor = SchemaDescriptorFactory.forLabel( 1, 1 );
         populator = newPopulator();
 
         List<IndexEntryUpdate> updates = Arrays.asList(
-                IndexEntryUpdate.add( 1, schemaDescriptor, "aaa" ),
-                IndexEntryUpdate.add( 2, schemaDescriptor, "bbb" ),
-                IndexEntryUpdate.add( 3, schemaDescriptor, "ccc" ) );
+                IndexEntryUpdate.add( 1, descriptor.schema(), "aaa" ),
+                IndexEntryUpdate.add( 2, descriptor.schema(), "bbb" ),
+                IndexEntryUpdate.add( 3, descriptor.schema(), "ccc" ) );
 
         populator.add( updates );
 
@@ -558,8 +557,7 @@ public class UniqueDatabaseIndexPopulatorTest
     private static void addUpdate( UniqueLuceneIndexPopulator populator, long nodeId, Object value )
             throws IOException, IndexEntryConflictException
     {
-        NewIndexDescriptor indexDescriptor = NewIndexDescriptorFactory.forLabel( 0, 0 );
-        IndexEntryUpdate update = IndexEntryUpdate.add( nodeId, indexDescriptor.schema(), value );
+        IndexEntryUpdate update = IndexEntryUpdate.add( nodeId, descriptor.schema(), value );
         populator.add( Collections.singletonList( update ) );
     }
 }

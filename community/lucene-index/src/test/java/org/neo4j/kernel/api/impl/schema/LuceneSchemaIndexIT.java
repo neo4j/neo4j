@@ -257,7 +257,7 @@ public class LuceneSchemaIndexIT
                 .build();
         index.create();
         index.open();
-        return new LuceneIndexAccessor( index, NewIndexDescriptorFactory.forLabel( 1, 1 ) );
+        return new LuceneIndexAccessor( index, descriptor );
     }
 
     private Map<String,Integer> countTemplateMatches( List<String> nameTemplates, List<String> fileNames )

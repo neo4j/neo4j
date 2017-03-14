@@ -67,31 +67,31 @@ import static org.neo4j.test.rule.concurrent.ThreadingRule.waitingWhileIn;
 public class DatabaseIndexAccessorTest
 {
     public static final int PROP_ID = 1;
-    private static final NewIndexDescriptor SOME_INDEX_DESCRIPTOR = NewIndexDescriptorFactory.forLabel( 1, PROP_ID );
 
     @Rule
     public final ThreadingRule threading = new ThreadingRule();
     @ClassRule
     public static final EphemeralFileSystemRule fileSystemRule = new EphemeralFileSystemRule();
 
-    @Parameterized.Parameter
+    @Parameterized.Parameter(0)
+    public NewIndexDescriptor index;
+    @Parameterized.Parameter(1)
     public IOFunction<DirectoryFactory,LuceneIndexAccessor> accessorFactory;
 
     private LuceneIndexAccessor accessor;
     private final long nodeId = 1, nodeId2 = 2;
     private final Object value = "value", value2 = 40;
     private DirectoryFactory.InMemoryDirectoryFactory dirFactory;
-    private static final NewIndexDescriptor indexDescriptor = NewIndexDescriptorFactory.forLabel( 0, PROP_ID );
-    private static final NewIndexDescriptor uniqueIndexDescriptor = NewIndexDescriptorFactory
-            .uniqueForLabel( 1, PROP_ID );
+    private static final NewIndexDescriptor GENERAL_INDEX = NewIndexDescriptorFactory.forLabel( 0, PROP_ID );
+    private static final NewIndexDescriptor UNIQUE_INDEX = NewIndexDescriptorFactory.uniqueForLabel( 1, PROP_ID );
 
     @Parameterized.Parameters( name = "{0}" )
-    public static Collection<IOFunction<DirectoryFactory,LuceneIndexAccessor>[]> implementations()
+    public static Collection<Object[]> implementations()
     {
         final File dir = new File( "dir" );
         return Arrays.asList(
-                arg( dirFactory1 -> {
-                    SchemaIndex index = LuceneSchemaIndexBuilder.create( indexDescriptor )
+                arg( GENERAL_INDEX, dirFactory1 -> {
+                    SchemaIndex index = LuceneSchemaIndexBuilder.create( GENERAL_INDEX )
                             .withFileSystem( fileSystemRule.get() )
                             .withDirectoryFactory( dirFactory1 )
                             .withIndexRootFolder( dir )
@@ -100,10 +100,10 @@ public class DatabaseIndexAccessorTest
 
                     index.create();
                     index.open();
-                    return new LuceneIndexAccessor( index, SOME_INDEX_DESCRIPTOR );
+                    return new LuceneIndexAccessor( index, GENERAL_INDEX );
                 } ),
-                arg( dirFactory1 -> {
-                    SchemaIndex index = LuceneSchemaIndexBuilder.create( uniqueIndexDescriptor )
+                arg( UNIQUE_INDEX, dirFactory1 -> {
+                    SchemaIndex index = LuceneSchemaIndexBuilder.create( UNIQUE_INDEX )
                             .withFileSystem( fileSystemRule.get() )
                             .withDirectoryFactory( dirFactory1 )
                             .withIndexRootFolder( dir )
@@ -112,15 +112,16 @@ public class DatabaseIndexAccessorTest
 
                     index.create();
                     index.open();
-                    return new LuceneIndexAccessor( index, SOME_INDEX_DESCRIPTOR );
+                    return new LuceneIndexAccessor( index, UNIQUE_INDEX );
                 } )
         );
     }
 
-    private static IOFunction<DirectoryFactory,LuceneIndexAccessor>[] arg(
+    private static Object[] arg(
+            NewIndexDescriptor index,
             IOFunction<DirectoryFactory,LuceneIndexAccessor> foo )
     {
-        return new IOFunction[]{foo};
+        return new Object[]{index, foo};
     }
 
     @Before
@@ -324,17 +325,17 @@ public class DatabaseIndexAccessorTest
 
     private IndexEntryUpdate add( long nodeId, Object value )
     {
-        return IndexEntryUpdate.add( nodeId, indexDescriptor.schema(), value );
+        return IndexEntryUpdate.add( nodeId, index.schema(), value );
     }
 
     private IndexEntryUpdate remove( long nodeId, Object value )
     {
-        return IndexEntryUpdate.remove( nodeId, indexDescriptor.schema(), value );
+        return IndexEntryUpdate.remove( nodeId, index.schema(), value );
     }
 
     private IndexEntryUpdate change( long nodeId, Object valueBefore, Object valueAfter )
     {
-        return IndexEntryUpdate.change( nodeId, indexDescriptor.schema(), valueBefore, valueAfter );
+        return IndexEntryUpdate.change( nodeId, index.schema(), valueBefore, valueAfter );
     }
 
     private void updateAndCommit( List<IndexEntryUpdate> nodePropertyUpdates )
