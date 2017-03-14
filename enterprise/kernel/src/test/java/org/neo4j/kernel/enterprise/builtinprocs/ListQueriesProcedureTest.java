@@ -271,6 +271,22 @@ public class ListQueriesProcedureTest
     }
 
     @Test
+    public void shouldContainPageHitsAndPageFaults() throws Exception
+    {
+        // given
+        String query = "MATCH (n) SET n.v = n.v + 1";
+        try ( Resource<Node> test = test( db::createNode, Transaction::acquireWriteLock, query ) )
+        {
+            // when
+            Map<String,Object> data = getQueryListing( query );
+
+            // then
+            assertThat( data, hasEntry( equalTo( "pageHits" ), instanceOf( Long.class ) ) );
+            assertThat( data, hasEntry( equalTo( "pageFaults" ), instanceOf( Long.class ) ) );
+        }
+    }
+
+    @Test
     public void shouldListUsedIndexes() throws Exception
     {
         // given

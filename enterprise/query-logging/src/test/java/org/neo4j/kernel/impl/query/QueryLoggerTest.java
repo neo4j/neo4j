@@ -28,6 +28,7 @@ import java.util.concurrent.TimeUnit;
 
 import org.junit.Test;
 
+import org.neo4j.io.pagecache.tracing.cursor.PageCursorCounters;
 import org.neo4j.kernel.api.query.ExecutingQuery;
 import org.neo4j.kernel.impl.query.QueryLoggerKernelExtension.QueryLogger;
 import org.neo4j.kernel.impl.query.clientconnection.ClientConnectionInfo;
@@ -48,6 +49,7 @@ import static org.hamcrest.core.Is.is;
 import static org.neo4j.helpers.collection.MapUtil.map;
 import static org.neo4j.kernel.impl.query.QueryLoggerKernelExtension.Flag.LOG_ALLOCATED_BYTES;
 import static org.neo4j.kernel.impl.query.QueryLoggerKernelExtension.Flag.LOG_DETAILED_TIME;
+import static org.neo4j.kernel.impl.query.QueryLoggerKernelExtension.Flag.LOG_PAGE_DETAILS;
 import static org.neo4j.kernel.impl.query.QueryLoggerKernelExtension.Flag.LOG_PARAMETERS;
 import static org.neo4j.logging.AssertableLogProvider.inLog;
 
@@ -63,6 +65,7 @@ public class QueryLoggerTest
     private final FakeClock clock = Clocks.fakeClock();
     private final FakeCpuClock cpuClock = new FakeCpuClock();
     private final FakeHeapAllocation heapAllocation = new FakeHeapAllocation();
+    private long pageHits, pageFaults;
 
     @Test
     public void shouldLogQuerySlowerThanThreshold() throws Exception
@@ -442,6 +445,26 @@ public class QueryLoggerTest
                 containsString( "ms: 4096 B - " ) ) );
     }
 
+    @Test
+    public void shouldBeAbleToLogPageHitsAndPageFaults() throws Exception
+    {
+        // given
+        final AssertableLogProvider logProvider = new AssertableLogProvider();
+        QueryLogger queryLogger = queryLogger( logProvider, LOG_PAGE_DETAILS );
+        ExecutingQuery query = query( SESSION_1, "TestUser", QUERY_1 );
+
+        // when
+        queryLogger.startQueryExecution( query );
+        clock.forward( 12, TimeUnit.MILLISECONDS );
+        pageHits = 17;
+        pageFaults = 12;
+        queryLogger.endSuccess( query );
+
+        // then
+        logProvider.assertExactly( inLog( getClass() ).info(
+                containsString( " 17 page hits, 12 page faults - " ) ) );
+    }
+
     private QueryLogger queryLogger( LogProvider logProvider, QueryLoggerKernelExtension.Flag... flags )
     {
         EnumSet<QueryLoggerKernelExtension.Flag> flagSet = EnumSet.noneOf( QueryLoggerKernelExtension.Flag.class );
@@ -478,7 +501,62 @@ public class QueryLoggerTest
                 params,
                 metaData,
                 () -> 0,
-                Thread.currentThread(),
+                new PageCursorCounters()
+                {
+                    @Override
+                    public long faults()
+                    {
+                        return pageFaults;
+                    }
+
+                    @Override
+                    public long hits()
+                    {
+                        return pageHits;
+                    }
+
+                    @Override
+                    public long pins()
+                    {
+                        return 0;
+                    }
+
+                    @Override
+                    public long unpins()
+                    {
+                        return 0;
+                    }
+
+                    @Override
+                    public long bytesRead()
+                    {
+                        return 0;
+                    }
+
+                    @Override
+                    public long evictions()
+                    {
+                        return 0;
+                    }
+
+                    @Override
+                    public long evictionExceptions()
+                    {
+                        return 0;
+                    }
+
+                    @Override
+                    public long bytesWritten()
+                    {
+                        return 0;
+                    }
+
+                    @Override
+                    public long flushes()
+                    {
+                        return 0;
+                    }
+                }, Thread.currentThread(),
                 clock,
                 cpuClock,
                 heapAllocation );

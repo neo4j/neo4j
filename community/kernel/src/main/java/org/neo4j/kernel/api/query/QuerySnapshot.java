@@ -24,6 +24,7 @@ import java.util.List;
 import java.util.Map;
 import java.util.stream.Collectors;
 
+import org.neo4j.io.pagecache.tracing.cursor.PageCursorCounters;
 import org.neo4j.kernel.impl.query.clientconnection.ClientConnectionInfo;
 
 public class QuerySnapshot
@@ -38,10 +39,12 @@ public class QuerySnapshot
     private final Map<String,Object> resourceInfo;
     private final long activeLockCount;
     private final long allocatedBytes;
+    private final PageCounterValues page;
 
     QuerySnapshot(
             ExecutingQuery query,
             PlannerInfo plannerInfo,
+            PageCounterValues page,
             long planningTimeMillis,
             long elapsedTimeMillis,
             long cpuTimeMillis,
@@ -53,6 +56,7 @@ public class QuerySnapshot
     {
         this.query = query;
         this.plannerInfo = plannerInfo;
+        this.page = page;
         this.planningTimeMillis = planningTimeMillis;
         this.elapsedTimeMillis = elapsedTimeMillis;
         this.cpuTimeMillis = cpuTimeMillis;
@@ -61,6 +65,17 @@ public class QuerySnapshot
         this.resourceInfo = resourceInfo;
         this.activeLockCount = activeLockCount;
         this.allocatedBytes = allocatedBytes;
+    }
+
+    static class PageCounterValues
+    {
+        final long hits, faults;
+
+        PageCounterValues( PageCursorCounters page )
+        {
+            this.hits = page.hits();
+            this.faults = page.faults();
+        }
     }
 
     public long internalQueryId()
@@ -202,5 +217,15 @@ public class QuerySnapshot
     public Long allocatedBytes()
     {
         return allocatedBytes < 0 ? null : allocatedBytes;
+    }
+
+    public long pageHits()
+    {
+        return page.hits;
+    }
+
+    public long pageFaults()
+    {
+        return page.faults;
     }
 }

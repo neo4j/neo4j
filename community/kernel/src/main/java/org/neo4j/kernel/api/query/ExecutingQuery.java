@@ -25,6 +25,7 @@ import java.util.Map;
 import java.util.concurrent.atomic.AtomicLongFieldUpdater;
 import java.util.function.LongSupplier;
 
+import org.neo4j.io.pagecache.tracing.cursor.PageCursorCounters;
 import org.neo4j.kernel.impl.locking.ActiveLock;
 import org.neo4j.kernel.impl.locking.LockTracer;
 import org.neo4j.kernel.impl.locking.LockWaitEvent;
@@ -46,6 +47,7 @@ public class ExecutingQuery
             newUpdater( ExecutingQuery.class, "waitTimeNanos" );
     private final long queryId;
     private final LockTracer lockTracer = this::waitForLock;
+    private final PageCursorCounters pageCursorCounters;
     private final String username;
     private final ClientConnectionInfo clientConnection;
     private final String queryText;
@@ -76,6 +78,7 @@ public class ExecutingQuery
             Map<String,Object> queryParameters,
             Map<String,Object> transactionAnnotationData,
             LongSupplier activeLockCount,
+            PageCursorCounters pageCursorCounters,
             Thread threadExecutingTheQuery,
             SystemNanoClock clock,
             CpuClock cpuClock,
@@ -88,6 +91,7 @@ public class ExecutingQuery
         // then continue with assigning fields
         this.queryId = queryId;
         this.clientConnection = clientConnection;
+        this.pageCursorCounters = pageCursorCounters;
         this.username = username;
         this.queryText = queryText;
         this.queryParameters = queryParameters;
@@ -149,6 +153,7 @@ public class ExecutingQuery
         // just needs to be captured at some point...
         long activeLockCount = this.activeLockCount.getAsLong();
         long heapAllocatedBytes = heapAllocation.allocatedBytes( threadExecutingTheQuery );
+        QuerySnapshot.PageCounterValues pageCounters = new QuerySnapshot.PageCounterValues( pageCursorCounters );
 
         // - at this point we are done capturing the "live" state, and can start computing the snapshot -
         long planningTimeNanos = (status.isPlanning() ? currentTimeNanos : planningDoneNanos) - startTimeNanos;
@@ -164,6 +169,7 @@ public class ExecutingQuery
         return new QuerySnapshot(
                 this,
                 planner,
+                pageCounters,
                 NANOSECONDS.toMillis( planningTimeNanos ),
                 NANOSECONDS.toMillis( elapsedTimeNanos ),
                 cpuTimeNanos == 0 && cpuTimeNanosWhenQueryStarted == -1 ? -1 : NANOSECONDS.toMillis( cpuTimeNanos ),

@@ -26,6 +26,7 @@ import java.util.concurrent.TimeUnit;
 
 import org.junit.Test;
 
+import org.neo4j.io.pagecache.tracing.cursor.PageCursorTracer;
 import org.neo4j.kernel.impl.locking.ActiveLock;
 import org.neo4j.storageengine.api.lock.ResourceType;
 import org.neo4j.storageengine.api.lock.WaitStrategy;
@@ -100,7 +101,7 @@ public class ExecutingQueryStatusTest
                                 null,
                                 null,
                                 null,
-                                Thread.currentThread(),
+                                PageCursorTracer.NULL, Thread.currentThread(),
                                 clock,
                                 new FakeCpuClock(),
                                 new FakeHeapAllocation() ), clock.nanos() );

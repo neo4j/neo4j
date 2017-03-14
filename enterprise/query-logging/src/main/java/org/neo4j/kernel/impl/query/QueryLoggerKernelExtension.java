@@ -73,7 +73,8 @@ public class QueryLoggerKernelExtension extends KernelExtensionFactory<QueryLogg
     {
         LOG_PARAMETERS( GraphDatabaseSettings.log_queries_parameter_logging_enabled ),
         LOG_DETAILED_TIME( GraphDatabaseSettings.log_queries_detailed_time_logging_enabled ),
-        LOG_ALLOCATED_BYTES( GraphDatabaseSettings.log_queries_allocation_logging_enabled );
+        LOG_ALLOCATED_BYTES( GraphDatabaseSettings.log_queries_allocation_logging_enabled ),
+        LOG_PAGE_DETAILS( GraphDatabaseSettings.log_queries_page_detail_logging_enabled );
         private final Setting<Boolean> setting;
 
         Flag( Setting<Boolean> setting )
@@ -166,7 +167,7 @@ public class QueryLoggerKernelExtension extends KernelExtensionFactory<QueryLogg
     {
         private final Log log;
         private final long thresholdMillis;
-        private final boolean logQueryParameters, logDetailedTime, logAllocatedBytes;
+        private final boolean logQueryParameters, logDetailedTime, logAllocatedBytes, logPageDetails;
 
         private static final Pattern PASSWORD_PATTERN = Pattern.compile(
                 // call signature
@@ -183,6 +184,7 @@ public class QueryLoggerKernelExtension extends KernelExtensionFactory<QueryLogg
             this.logQueryParameters = flags.contains( Flag.LOG_PARAMETERS );
             this.logDetailedTime = flags.contains( Flag.LOG_DETAILED_TIME );
             this.logAllocatedBytes = flags.contains( Flag.LOG_ALLOCATED_BYTES );
+            this.logPageDetails = flags.contains( Flag.LOG_PAGE_DETAILS );
         }
 
         @Override
@@ -253,6 +255,11 @@ public class QueryLoggerKernelExtension extends KernelExtensionFactory<QueryLogg
                 {
                     result.append( bytes ).append( " B - " );
                 }
+            }
+            if ( logPageDetails )
+            {
+                result.append( query.pageHits() ).append( " page hits, " );
+                result.append( query.pageFaults() ).append( " page faults - " );
             }
             result.append( sourceString ).append( " - " ).append( queryText );
             if ( logQueryParameters )

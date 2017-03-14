@@ -494,6 +494,9 @@ public class GraphDatabaseSettings implements LoadableConfig
     @Description( "Log allocated bytes for executed queries that took longer than the configured threshold." )
     public static final Setting<Boolean> log_queries_allocation_logging_enabled = setting( "dbms.logs.query.allocation_logging_enabled", BOOLEAN, FALSE );
 
+    @Description( "Log page hits and page faults for executed queries that took longer than the configured threshold." )
+    public static final Setting<Boolean> log_queries_page_detail_logging_enabled = setting( "dbms.logs.query.page_logging_enabled", BOOLEAN, FALSE );
+
     @Description("If the execution of query takes more time than this threshold, the query is logged - " +
                  "provided query logging is enabled. Defaults to 0 seconds, that is all queries are logged.")
     public static final Setting<Long> log_queries_threshold = setting("dbms.logs.query.threshold", DURATION, "0s");
