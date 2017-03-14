@@ -52,13 +52,13 @@ public class ConsistencyCheckerTest
 
         cursor.next( 0 );
         treeNode.initializeInternal( cursor, stableGeneration, crashGeneration );
-        treeNode.setNewGen( cursor, pointer, stableGeneration, crashGeneration );
+        treeNode.setHeir( cursor, pointer, stableGeneration, crashGeneration );
 
         // WHEN
         try
         {
             assertNoCrashOrBrokenPointerInGSPP( cursor, stableGeneration, unstableGeneration,
-                    pointerFieldName, TreeNode.BYTE_POS_NEWGEN, treeNode );
+                    pointerFieldName, TreeNode.BYTE_POS_HEIR, treeNode );
             cursor.checkAndClearCursorException();
             fail( "Should have failed" );
         }

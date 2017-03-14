@@ -108,7 +108,7 @@ class TreePrinter<KEY,VALUE>
 
         if ( printHeader )
         {
-            //[TYPE][GEN][KEYCOUNT] ([RIGHTSIBLING][LEFTSIBLING][NEWGEN]))
+            //[TYPE][GEN][KEYCOUNT] ([RIGHTSIBLING][LEFTSIBLING][HEIR]))
             long generation = -1;
             do
             {
