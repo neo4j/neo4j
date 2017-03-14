@@ -848,7 +848,7 @@ public class GBPTree<KEY,VALUE> implements Closeable
      *
      * @throws IOException on {@link PageCache} error.
      */
-    public void cleanCrashPointers() throws IOException
+    public void finishRecovery() throws IOException
     {
         // For the time being there's an issue where update that come in before a crash
         // may be applied in a different order than when they get recovered.

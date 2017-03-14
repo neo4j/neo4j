@@ -100,7 +100,7 @@ public class GBPTreeRecoveryTest
         {
             // this is the mimic:ed recovery
             index.prepareForRecovery();
-            index.cleanCrashPointers();
+            index.finishRecovery();
 
             try ( Writer<MutableLong,MutableLong> writer = index.writer() )
             {
@@ -231,7 +231,7 @@ public class GBPTreeRecoveryTest
                 GBPTree<MutableLong,MutableLong> index = createIndex( pageCache, file ) )
         {
             recover( recoveryActions, index );
-            index.cleanCrashPointers();
+            index.finishRecovery();
 
             // THEN
             // we should end up with a consistent index containing all the stuff load says
