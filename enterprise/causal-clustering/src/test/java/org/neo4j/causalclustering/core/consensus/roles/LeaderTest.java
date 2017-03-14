@@ -353,7 +353,8 @@ public class LeaderTest
     {
         // given
         RaftState state = raftState()
-                .votingMembers( asSet( myself, member1, member2 ) )
+                .votingMembers( myself, member1, member2 )
+                .replicationMembers( myself, member1, member2 )
                 .build();
 
         Leader leader = new Leader();
@@ -377,7 +378,6 @@ public class LeaderTest
                 .build();
 
         Leader leader = new Leader();
-        leader.handle( new RaftMessages.HeartbeatResponse( myself ), state, log() );
         leader.handle( new RaftMessages.Timeout.Election( myself ), state, log() );
 
         // when
@@ -399,11 +399,39 @@ public class LeaderTest
         Leader leader = new Leader();
 
         // when
-        leader.handle( new RaftMessages.HeartbeatResponse( member1 ), state, log() ); //Now we have quorum.
-        Outcome outcome = leader.handle( new RaftMessages.Timeout.Election( myself ), state, log() );
+        Outcome outcome = leader.handle( new RaftMessages.HeartbeatResponse( member1 ), state, log() );
+        state.update( outcome );
+
+        // we now have quorum and should not step down
+        outcome = leader.handle( new RaftMessages.Timeout.Election( myself ), state, log() );
 
         // then
         assertThat( outcome.getRole(), is( LEADER ) );
+    }
+
+    @Test
+    public void oldHeartbeatResponseShouldNotPreventStepdown() throws Exception
+    {
+        // given
+        RaftState state = raftState()
+                .votingMembers( asSet( myself, member1, member2 ) )
+                .build();
+
+        Leader leader = new Leader();
+
+        Outcome outcome = leader.handle( new RaftMessages.HeartbeatResponse( member1 ), state, log() );
+        state.update( outcome );
+
+        outcome = leader.handle( new RaftMessages.Timeout.Election( myself ), state, log() );
+        state.update( outcome );
+
+        assertThat( outcome.getRole(), is( LEADER ) );
+
+        // when
+        outcome = leader.handle( new RaftMessages.Timeout.Election( myself ), state, log() );
+
+        // then
+        assertThat( outcome.getRole(), is( FOLLOWER ) );
     }
 
     @Test

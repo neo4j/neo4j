@@ -20,10 +20,7 @@
 package org.neo4j.causalclustering.core.consensus.roles;
 
 import java.io.IOException;
-import java.util.Collections;
-import java.util.HashSet;
 import java.util.List;
-import java.util.Set;
 
 import org.neo4j.causalclustering.core.consensus.Followers;
 import org.neo4j.causalclustering.core.consensus.RaftMessageHandler;
@@ -47,15 +44,12 @@ import static org.neo4j.causalclustering.core.consensus.roles.Role.LEADER;
 
 public class Leader implements RaftMessageHandler
 {
-    private final Set<MemberId> heartbeatResponses = Collections.synchronizedSet( new HashSet<>() );
-    private boolean receivedHeartbeats = false;
-
     private static Iterable<MemberId> replicationTargets( final ReadableRaftState ctx )
     {
         return new FilteringIterable<>( ctx.replicationMembers(), member -> !member.equals( ctx.myself() ) );
     }
 
-    private static void sendHeartbeats( ReadableRaftState ctx, Outcome outcome ) throws IOException
+    static void sendHeartbeats( ReadableRaftState ctx, Outcome outcome ) throws IOException
     {
         long commitIndex = ctx.commitIndex();
         long commitIndexTerm = ctx.entryLog().readEntryTerm( commitIndex );
@@ -97,24 +91,20 @@ public class Leader implements RaftMessageHandler
 
         case HEARTBEAT_RESPONSE:
         {
-            receivedHeartbeats = true;
-            heartbeatResponses.add( message.from() );
+            outcome.addHeartbeatResponse( message.from() );
             break;
         }
 
         case ELECTION_TIMEOUT:
         {
-            if ( !isQuorum( ctx.votingMembers().size(), heartbeatResponses.size() ) && receivedHeartbeats )
+            if ( !isQuorum( ctx.votingMembers().size(), ctx.heartbeatResponses().size() ) )
             {
                 stepDownToFollower( outcome );
                 log.info( "Moving to FOLLOWER state after not receiving heartbeat responses in this election timeout " +
-                        "period. Heartbeats received: %s", heartbeatResponses );
+                        "period. Heartbeats received: %s", ctx.heartbeatResponses() );
+            }
 
-            }
-            else
-            {
-                heartbeatResponses.clear();
-            }
+            outcome.getHeartbeatResponses().clear();
             break;
         }
 
@@ -277,8 +267,6 @@ public class Leader implements RaftMessageHandler
 
     private void stepDownToFollower( Outcome outcome )
     {
-        heartbeatResponses.clear();
-        receivedHeartbeats = false;
         outcome.steppingDown();
         outcome.setNextRole( FOLLOWER );
         outcome.setLeader( null );
