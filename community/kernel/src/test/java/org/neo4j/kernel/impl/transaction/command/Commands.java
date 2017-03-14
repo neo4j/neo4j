@@ -144,7 +144,7 @@ public class Commands
     {
         SchemaRule rule = IndexRule.indexRule(
                 id,
-                NewIndexDescriptorFactory.forLabel( descriptor.getLabelId(), descriptor.getPropertyId() ),
+                NewIndexDescriptorFactory.forSchema( descriptor ),
                 provider );
         DynamicRecord record = new DynamicRecord( id );
         record.setInUse( true );

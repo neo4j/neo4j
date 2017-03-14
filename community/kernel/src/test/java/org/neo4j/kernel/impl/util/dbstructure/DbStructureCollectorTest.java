@@ -44,8 +44,8 @@ public class DbStructureCollectorTest
         collector.visitRelationshipType( 1, "LIVES_IN" );
         collector.visitRelationshipType( 2, "FRIEND" );
         collector.visitUniqueIndex( NewIndexDescriptorFactory.forLabel( 1, 1 ), ":Person(name)", 1.0d, 1L );
-        final int[] propertyKeyIds = new int[]{1};
-        collector.visitUniqueConstraint( new UniquenessConstraint( SchemaDescriptorFactory.forLabel( 2, propertyKeyIds ) ), ":Person(name)" );
+        collector.visitUniqueConstraint( new UniquenessConstraint( SchemaDescriptorFactory.forLabel( 2, 1 ) ),
+                ":Person(name)" );
         collector.visitIndex( NewIndexDescriptorFactory.forLabel( 2, 2 ), ":City(income)", 0.2d, 1L );
         collector.visitAllNodesCount( 50 );
         collector.visitNodeCount( 1, "Person", 20 );

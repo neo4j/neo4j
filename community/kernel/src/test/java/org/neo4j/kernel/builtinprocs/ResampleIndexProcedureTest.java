@@ -94,8 +94,7 @@ public class ResampleIndexProcedureTest
 
         procedure.resampleIndex( ":Person(name)" );
 
-        final int[] propertyKeyIds = new int[]{456};
-        verify( operations ).indexGetForLabelAndPropertyKey( SchemaDescriptorFactory.forLabel( 123, propertyKeyIds ) );
+        verify( operations ).indexGetForLabelAndPropertyKey( SchemaDescriptorFactory.forLabel( 123, 456 ) );
     }
 
     @Test

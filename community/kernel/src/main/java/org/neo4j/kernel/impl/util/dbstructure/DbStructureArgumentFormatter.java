@@ -118,9 +118,8 @@ public enum DbStructureArgumentFormatter implements ArgumentFormatter
         {
             NodePropertyExistenceConstraint constraint = (NodePropertyExistenceConstraint) arg;
             int labelId = constraint.label();
-            builder.append(
-                    format( "new NodePropertyExistenceConstraint( new NodePropertyDescriptor( %s, %s ) )", labelId,
-                            constraint.descriptor().getPropertyId() ) );
+            builder.append( format( "new NodePropertyExistenceConstraint( SchemaDescriptorFactory.forLabel( %d, %s ) )",
+                    labelId, asString( constraint.descriptor().getPropertyIds() ) ) );
         }
         else if ( arg instanceof RelationshipPropertyExistenceConstraint )
         {
@@ -128,10 +127,9 @@ public enum DbStructureArgumentFormatter implements ArgumentFormatter
                     (RelationshipPropertyExistenceConstraint) arg)
                     .descriptor();
             int relTypeId = descriptor.getRelTypeId();
-            int propertyKey = descriptor.getPropertyId();
             builder.append(
-                    format( "new RelationshipPropertyExistenceConstraint( new NodePropertyDescriptor( %s, %s ) )",
-                            relTypeId, propertyKey ) );
+                    format( "new RelationshipPropertyExistenceConstraint( SchemaDescriptorFactory.forLabel( %d, %s ) )",
+                            relTypeId, asString( descriptor.getPropertyIds() ) ) );
         }
         else
         {

@@ -39,8 +39,7 @@ public class PropertyNameUtils
     public static String[] getPropertyKeys( ReadOperations readOperations, LabelSchemaDescriptor descriptor )
             throws PropertyKeyIdNotFoundKernelException
     {
-        int[] propertyKeyIds =
-                false ? descriptor.getPropertyIds() : new int[]{descriptor.getPropertyId()};
+        int[] propertyKeyIds = descriptor.getPropertyIds();
         String[] propertyKeys = new String[propertyKeyIds.length];
         for ( int i = 0; i < propertyKeyIds.length; i++ )
         {
@@ -51,8 +50,7 @@ public class PropertyNameUtils
 
     public static String[] getPropertyKeys( TokenNameLookup tokenNameLookup, LabelSchemaDescriptor descriptor )
     {
-        int[] propertyKeyIds =
-                false ? descriptor.getPropertyIds() : new int[]{descriptor.getPropertyId()};
+        int[] propertyKeyIds = descriptor.getPropertyIds();
         String[] propertyKeys = new String[propertyKeyIds.length];
         for ( int i = 0; i < propertyKeyIds.length; i++ )
         {

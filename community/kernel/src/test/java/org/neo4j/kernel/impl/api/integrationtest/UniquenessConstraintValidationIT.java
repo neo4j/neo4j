@@ -301,10 +301,8 @@ public class UniquenessConstraintValidationIT extends KernelIntegrationTest
         ReadOperations readOps = statement.readOperations();
         int person = readOps.labelGetForName( "Person" );
         int propId = readOps.propertyKeyGetForName( "id" );
-        final int labelId = person;
-        final int[] propertyKeyIds = new int[]{propId};
         NewIndexDescriptor idx = readOps
-                .uniqueIndexGetForLabelAndPropertyKey( SchemaDescriptorFactory.forLabel( labelId, propertyKeyIds ) );
+                .uniqueIndexGetForLabelAndPropertyKey( SchemaDescriptorFactory.forLabel( person, propId ) );
 
         // when
         createLabeledNode( statement, "Item", "id", 2 );
@@ -330,10 +328,8 @@ public class UniquenessConstraintValidationIT extends KernelIntegrationTest
         ReadOperations readOps = statement.readOperations();
         int person = readOps.labelGetForName( "Person" );
         int propId = readOps.propertyKeyGetForName( "id" );
-        final int labelId = person;
-        final int[] propertyKeyIds = new int[]{propId};
         NewIndexDescriptor idx = readOps
-                .uniqueIndexGetForLabelAndPropertyKey( SchemaDescriptorFactory.forLabel( labelId, propertyKeyIds ) );
+                .uniqueIndexGetForLabelAndPropertyKey( SchemaDescriptorFactory.forLabel( person, propId ) );
 
         // when
         createLabeledNode( statement, "Person", "id", 2 );

@@ -75,12 +75,10 @@ public class HighIdTransactionApplierTest
         tracker.visitRelationshipGroupCommand( Commands.createRelationshipGroup( 20, 2 ) );
 
         // Schema rules
-        final int[] propertyKeyIds = new int[]{1};
         tracker.visitSchemaRuleCommand( Commands.createIndexRule(
-                NO_INDEX_PROVIDER.getProviderDescriptor(), 10, SchemaDescriptorFactory.forLabel( 0, propertyKeyIds ) ) );
-        final int[] propertyKeyIds1 = new int[]{2};
+                NO_INDEX_PROVIDER.getProviderDescriptor(), 10, SchemaDescriptorFactory.forLabel( 0, 1 ) ) );
         tracker.visitSchemaRuleCommand( Commands.createIndexRule(
-                NO_INDEX_PROVIDER.getProviderDescriptor(), 20, SchemaDescriptorFactory.forLabel( 1, propertyKeyIds1 ) ) );
+                NO_INDEX_PROVIDER.getProviderDescriptor(), 20, SchemaDescriptorFactory.forLabel( 1, 2 ) ) );
 
         // Properties
         tracker.visitPropertyCommand( Commands.createProperty( 10, PropertyType.STRING, 0, 6, 7 ) );

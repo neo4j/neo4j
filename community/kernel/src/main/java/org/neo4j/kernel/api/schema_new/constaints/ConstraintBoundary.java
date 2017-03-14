@@ -107,14 +107,10 @@ public class ConstraintBoundary
             switch ( descriptor.type() )
             {
             case UNIQUE:
-                final int labelId = schema.getLabelId();
-                final int[] propertyKeyIds = new int[]{schema.getPropertyId()};
-                return new UniquenessConstraint( SchemaDescriptorFactory.forLabel( labelId, propertyKeyIds ) );
+                return new UniquenessConstraint( schema );
 
             case EXISTS:
-                final int labelId1 = schema.getLabelId();
-                final int[] propertyKeyIds1 = new int[]{schema.getPropertyId()};
-                return new NodePropertyExistenceConstraint( SchemaDescriptorFactory.forLabel( labelId1, propertyKeyIds1 ) );
+                return new NodePropertyExistenceConstraint( schema );
 
             default:
                 throw new UnsupportedOperationException( "Although we cannot get here, this has not been implemented." );

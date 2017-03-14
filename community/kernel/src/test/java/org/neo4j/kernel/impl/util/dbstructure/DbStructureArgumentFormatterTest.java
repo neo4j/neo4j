@@ -73,9 +73,8 @@ public class DbStructureArgumentFormatterTest
     @Test
     public void shouldFormatUniquenessConstraints()
     {
-        final int[] propertyKeyIds = new int[]{42};
         assertEquals( "new UniquenessConstraint( SchemaDescriptorFactory.forLabel( 23, 42 ) )",
-                formatArgument( new UniquenessConstraint( SchemaDescriptorFactory.forLabel( 23, propertyKeyIds ) ) ) );
+                formatArgument( new UniquenessConstraint( SchemaDescriptorFactory.forLabel( 23, 42 ) ) ) );
     }
 
     private String formatArgument( Object arg )

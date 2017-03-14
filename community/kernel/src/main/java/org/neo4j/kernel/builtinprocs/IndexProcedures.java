@@ -111,9 +111,8 @@ public class IndexProcedures implements AutoCloseable
     {
         try
         {
-            final int labelId1 = labelId;
-            final int[] propertyKeyIds = new int[]{propertyKeyId};
-            return operations.indexGetForLabelAndPropertyKey( SchemaDescriptorFactory.forLabel( labelId1, propertyKeyIds ) );
+            return operations
+                    .indexGetForLabelAndPropertyKey( SchemaDescriptorFactory.forLabel( labelId, propertyKeyId ) );
         }
         catch ( SchemaRuleNotFoundException e )
         {

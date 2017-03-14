@@ -65,9 +65,7 @@ public class IndexIT extends KernelIntegrationTest
         TokenWriteOperations tokenWrites = tokenWriteOperationsInNewTransaction();
         labelId = tokenWrites.labelGetOrCreateForName( LABEL );
         propertyKeyId = tokenWrites.propertyKeyGetOrCreateForName( PROPERTY_KEY );
-        final int labelId1 = labelId;
-        final int[] propertyKeyIds = new int[]{propertyKeyId};
-        descriptor = SchemaDescriptorFactory.forLabel( labelId1, propertyKeyIds );
+        descriptor = SchemaDescriptorFactory.forLabel( labelId, propertyKeyId );
         commit();
     }
 

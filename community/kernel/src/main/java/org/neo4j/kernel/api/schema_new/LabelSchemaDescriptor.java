@@ -28,7 +28,7 @@ public class LabelSchemaDescriptor implements SchemaDescriptor
     private final int labelId;
     private final int[] propertyIds;
 
-    public LabelSchemaDescriptor( int labelId, int... propertyIds )
+    LabelSchemaDescriptor( int labelId, int... propertyIds )
     {
         this.labelId = labelId;
         this.propertyIds = propertyIds;
