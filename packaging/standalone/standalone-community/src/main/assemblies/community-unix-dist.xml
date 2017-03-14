@@ -49,6 +49,7 @@
       </includes>
     </fileSet>
     <!-- filter and chmod 755 shell scripts -->
+    <!-- filter m4 scripts-->
     <fileSet>
       <directory>${project.parent.basedir}/src/main/distribution/shell-scripts</directory>
       <outputDirectory/>
@@ -56,6 +57,7 @@
       <fileMode>0755</fileMode>
       <excludes>
         <exclude>**/*.bat</exclude>
+        <exclude>**/*.m4</exclude>
         <exclude>**/neo4j-backup*</exclude>
         <exclude>**/*.psd1</exclude>
         <exclude>**/*.psm1</exclude>
