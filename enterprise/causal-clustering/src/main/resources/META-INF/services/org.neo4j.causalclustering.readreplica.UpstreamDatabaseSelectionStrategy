@@ -1,2 +1,2 @@
-org.neo4j.causalclustering.readreplica.ConnectToRandomCoreServer
-org.neo4j.causalclustering.readreplica.ConnectWithinDataCenter
+org.neo4j.causalclustering.readreplica.ConnectToRandomCoreServerStrategy
+org.neo4j.causalclustering.readreplica.ConnectWithinDataCenterStrategy

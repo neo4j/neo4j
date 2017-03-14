@@ -22,20 +22,28 @@ package org.neo4j.causalclustering.load_balancing.plugins.server_policies;
 import java.util.Objects;
 import java.util.Set;
 
+import org.neo4j.causalclustering.identity.MemberId;
 import org.neo4j.helpers.AdvertisedSocketAddress;
 
 /**
  * Hold the server information that is interesting for load balancing purposes.
  */
-class ServerInfo
+public class ServerInfo
 {
     private final AdvertisedSocketAddress boltAddress;
+    private MemberId memberId;
     private Set<String> tags;
 
-    ServerInfo( AdvertisedSocketAddress boltAddress, Set<String> tags )
+    public ServerInfo( AdvertisedSocketAddress boltAddress, MemberId memberId, Set<String> tags )
     {
         this.boltAddress = boltAddress;
+        this.memberId = memberId;
         this.tags = tags;
+    }
+
+    public MemberId memberId()
+    {
+        return memberId;
     }
 
     AdvertisedSocketAddress boltAddress()
@@ -56,22 +64,19 @@ class ServerInfo
         if ( o == null || getClass() != o.getClass() )
         { return false; }
         ServerInfo that = (ServerInfo) o;
-        return Objects.equals( boltAddress, that.boltAddress ) &&
+        return Objects.equals( boltAddress, that.boltAddress ) && Objects.equals( memberId, that.memberId ) &&
                Objects.equals( tags, that.tags );
     }
 
     @Override
     public int hashCode()
     {
-        return Objects.hash( boltAddress, tags );
+        return Objects.hash( boltAddress, memberId, tags );
     }
 
     @Override
     public String toString()
     {
-        return "ServerInfo{" +
-               "boltAddress=" + boltAddress +
-               ", tags=" + tags +
-               '}';
+        return "ServerInfo{" + "boltAddress=" + boltAddress + ", memberId=" + memberId + ", tags=" + tags + '}';
     }
 }

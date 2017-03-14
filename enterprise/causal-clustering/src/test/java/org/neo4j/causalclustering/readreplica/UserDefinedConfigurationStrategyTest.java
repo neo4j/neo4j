@@ -21,13 +21,14 @@ package org.neo4j.causalclustering.readreplica;
 
 import org.junit.Test;
 
-import java.util.ArrayList;
 import java.util.HashMap;
-import java.util.List;
 import java.util.Map;
 import java.util.Optional;
+import java.util.Random;
+import java.util.Set;
 import java.util.UUID;
 
+import org.neo4j.causalclustering.core.CausalClusteringSettings;
 import org.neo4j.causalclustering.discovery.ClientConnectorAddresses;
 import org.neo4j.causalclustering.discovery.CoreTopology;
 import org.neo4j.causalclustering.discovery.ReadReplicaInfo;
@@ -35,40 +36,65 @@ import org.neo4j.causalclustering.discovery.ReadReplicaTopology;
 import org.neo4j.causalclustering.discovery.TopologyService;
 import org.neo4j.causalclustering.identity.MemberId;
 import org.neo4j.helpers.AdvertisedSocketAddress;
+import org.neo4j.helpers.collection.MapUtil;
+import org.neo4j.kernel.configuration.Config;
 
 import static java.util.Collections.singletonList;
-import static org.hamcrest.CoreMatchers.hasItem;
-import static org.junit.Assert.assertThat;
+import static org.junit.Assert.assertEquals;
 import static org.neo4j.causalclustering.discovery.HazelcastClusterTopology.extractCatchupAddressesMap;
-import static org.neo4j.causalclustering.readreplica.ConnectToRandomCoreServerTest.fakeCoreTopology;
+import static org.neo4j.causalclustering.readreplica.ConnectToRandomCoreServerStrategyTest.fakeCoreTopology;
+import static org.neo4j.helpers.collection.Iterators.asSet;
+import static org.neo4j.helpers.collection.MapUtil.stringMap;
 
-public class TypicallyConnectToRandomReadReplicaTest
+
+public class UserDefinedConfigurationStrategyTest
 {
     @Test
-    public void shouldConnectToCoreOneInTenTimesByDefault() throws Exception
+    public void shouldPickTheFirstMatchingServer() throws Exception
     {
         // given
         MemberId theCoreMemberId = new MemberId( UUID.randomUUID() );
-        TopologyService topologyService =
-                fakeTopologyService( fakeCoreTopology( theCoreMemberId ), fakeReadReplicaTopology( memberIDs( 100 ) ) );
+        TopologyService topologyService = fakeTopologyService( fakeCoreTopology( theCoreMemberId ),
+                fakeReadReplicaTopology( memberIDs( 100 ), new NoEastTagGenerator() ) );
 
-        TypicallyConnectToRandomReadReplica connectionStrategy = new TypicallyConnectToRandomReadReplica();
-        connectionStrategy.setTopologyService( topologyService );
+        UserDefinedConfigurationStrategy strategy = new UserDefinedConfigurationStrategy();
+        Config config = Config.defaults()
+                .with( stringMap( CausalClusteringSettings.user_defined_upstream_selection_strategy.name(),
+                        "tags(east); tags(core); halt()" ) );
 
-        List<MemberId> responses = new ArrayList<>();
+        strategy.setConfig( config );
+        strategy.setTopologyService( topologyService );
 
-        // when
-        for ( int i = 0; i < 10; i++ )
-        {
-            responses.add( connectionStrategy.upstreamDatabase().get() );
-        }
+        //when
+
+        Optional<MemberId> memberId = strategy.upstreamDatabase();
 
         // then
-        assertThat( responses, hasItem( theCoreMemberId ) );
+        assertEquals( theCoreMemberId, memberId.get() );
     }
 
-    private TopologyService fakeTopologyService( CoreTopology coreTopology,
-            ReadReplicaTopology readReplicaTopology )
+    private ReadReplicaTopology fakeReadReplicaTopology( MemberId[] readReplicaIds, NoEastTagGenerator tagGenerator )
+    {
+        assert readReplicaIds.length > 0;
+
+        Map<MemberId,ReadReplicaInfo> readReplicas = new HashMap<>();
+
+        int offset = 0;
+
+        for ( MemberId memberId : readReplicaIds )
+        {
+            readReplicas.put( memberId, new ReadReplicaInfo( new ClientConnectorAddresses( singletonList(
+                    new ClientConnectorAddresses.ConnectorUri( ClientConnectorAddresses.Scheme.bolt,
+                            new AdvertisedSocketAddress( "localhost", 11000 + offset ) ) ) ),
+                    new AdvertisedSocketAddress( "localhost", 10000 + offset ), tagGenerator.get( memberId ) ) );
+
+            offset++;
+        }
+
+        return new ReadReplicaTopology( readReplicas );
+    }
+
+    static TopologyService fakeTopologyService( CoreTopology coreTopology, ReadReplicaTopology readReplicaTopology )
     {
         return new TopologyService()
         {
@@ -119,7 +145,7 @@ public class TypicallyConnectToRandomReadReplicaTest
         };
     }
 
-    private MemberId[] memberIDs( int howMany )
+    static MemberId[] memberIDs( int howMany )
     {
         MemberId[] result = new MemberId[howMany];
 
@@ -131,7 +157,7 @@ public class TypicallyConnectToRandomReadReplicaTest
         return result;
     }
 
-    private ReadReplicaTopology fakeReadReplicaTopology( MemberId... readReplicaIds )
+    static ReadReplicaTopology fakeReadReplicaTopology( MemberId... readReplicaIds )
     {
         assert readReplicaIds.length > 0;
 
@@ -150,5 +176,16 @@ public class TypicallyConnectToRandomReadReplicaTest
         }
 
         return new ReadReplicaTopology( readReplicas );
+    }
+
+    private static class NoEastTagGenerator
+    {
+        private static final String[] SOME_ORDINALS = {"north", "south", "west"};
+        private static final Random random = new Random();
+
+        public Set<String> get( MemberId memberId )
+        {
+            return asSet( SOME_ORDINALS[random.nextInt( SOME_ORDINALS.length )] );
+        }
     }
 }

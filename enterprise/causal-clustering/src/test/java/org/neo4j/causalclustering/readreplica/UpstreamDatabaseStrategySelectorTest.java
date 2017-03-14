@@ -78,7 +78,7 @@ public class UpstreamDatabaseStrategySelectorTest
         when( topologyService.coreServers() ).thenReturn( new CoreTopology( new ClusterId( UUID.randomUUID() ), false,
                 mapOf( memberId, mock( CoreServerInfo.class ) ) ) );
 
-        ConnectToRandomCoreServer defaultStrategy = new ConnectToRandomCoreServer();
+        ConnectToRandomCoreServerStrategy defaultStrategy = new ConnectToRandomCoreServerStrategy();
         defaultStrategy.setTopologyService( topologyService );
 
         UpstreamDatabaseStrategySelector selector = new UpstreamDatabaseStrategySelector( defaultStrategy );
@@ -99,7 +99,7 @@ public class UpstreamDatabaseStrategySelectorTest
         when( topologyService.coreServers() ).thenReturn( new CoreTopology( new ClusterId( UUID.randomUUID() ), false,
                 mapOf( memberId, mock( CoreServerInfo.class ) ) ) );
 
-        ConnectToRandomCoreServer shouldNotUse = new ConnectToRandomCoreServer();
+        ConnectToRandomCoreServerStrategy shouldNotUse = new ConnectToRandomCoreServerStrategy();
 
         UpstreamDatabaseSelectionStrategy mockStrategy = mock( UpstreamDatabaseSelectionStrategy.class );
         when( mockStrategy.upstreamDatabase() ).thenReturn( Optional.of( new MemberId( UUID.randomUUID() ) ) );

@@ -41,8 +41,9 @@ import static org.junit.Assert.assertThat;
 import static org.junit.Assert.assertTrue;
 import static org.mockito.Mockito.mock;
 import static org.mockito.Mockito.when;
+import static org.neo4j.helpers.collection.Iterators.asSet;
 
-public class ConnectToRandomCoreServerTest
+public class ConnectToRandomCoreServerStrategyTest
 {
     @Test
     public void shouldConnectToRandomCoreServer() throws Exception
@@ -56,7 +57,7 @@ public class ConnectToRandomCoreServerTest
         when( topologyService.coreServers() )
                 .thenReturn( fakeCoreTopology( memberId1, memberId2, memberId3 ) );
 
-        ConnectToRandomCoreServer connectionStrategy = new ConnectToRandomCoreServer();
+        ConnectToRandomCoreServerStrategy connectionStrategy = new ConnectToRandomCoreServerStrategy();
         connectionStrategy.setTopologyService( topologyService );
 
         // when
@@ -81,7 +82,7 @@ public class ConnectToRandomCoreServerTest
             coreMembers.put( memberId, new CoreServerInfo( new AdvertisedSocketAddress( "localhost", 5000 + offset ),
                     new AdvertisedSocketAddress( "localhost", 6000 + offset ), new ClientConnectorAddresses(
                     singletonList( new ClientConnectorAddresses.ConnectorUri( ClientConnectorAddresses.Scheme.bolt,
-                            new AdvertisedSocketAddress( "localhost", 7000 + offset ) ) ) ) ) );
+                            new AdvertisedSocketAddress( "localhost", 7000 + offset ) ) ) ), asSet( "core" ) ) );
 
             offset++;
         }
