@@ -291,7 +291,9 @@ public class TransactionHandleRegistry implements TransactionRegistry
             try
             {
                 handle.forceRollback();
-                log.info( format( "Transaction with id %d has been automatically rolled back.", id ) );
+                log.info(
+                        format( "Transaction with id %d has been automatically rolled back due to transaction timeout.",
+                                id ) );
             }
             catch ( Throwable e )
             {

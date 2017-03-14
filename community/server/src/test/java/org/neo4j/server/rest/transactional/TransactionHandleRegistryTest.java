@@ -167,7 +167,8 @@ public class TransactionHandleRegistryTest
         }
 
         logProvider.assertExactly(
-                inLog( TransactionHandleRegistry.class ).info( "Transaction with id 1 has been automatically rolled back." )
+                inLog( TransactionHandleRegistry.class ).info( "Transaction with id 1 has been automatically rolled " +
+                        "back due to transaction timeout." )
         );
     }
 
