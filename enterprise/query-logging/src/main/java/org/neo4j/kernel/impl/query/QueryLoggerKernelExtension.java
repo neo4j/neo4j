@@ -22,20 +22,22 @@ package org.neo4j.kernel.impl.query;
 import java.io.Closeable;
 import java.io.File;
 import java.io.OutputStream;
-import java.time.Clock;
 import java.util.Collection;
 import java.util.Collections;
+import java.util.EnumSet;
 import java.util.HashSet;
 import java.util.Map;
 import java.util.Set;
 import java.util.regex.Matcher;
 import java.util.regex.Pattern;
 
+import org.neo4j.graphdb.config.Setting;
 import org.neo4j.graphdb.factory.GraphDatabaseSettings;
 import org.neo4j.helpers.Service;
 import org.neo4j.helpers.Strings;
 import org.neo4j.io.fs.FileSystemAbstraction;
 import org.neo4j.kernel.api.query.ExecutingQuery;
+import org.neo4j.kernel.api.query.QuerySnapshot;
 import org.neo4j.kernel.configuration.Config;
 import org.neo4j.kernel.extension.KernelExtensionFactory;
 import org.neo4j.kernel.impl.logging.LogService;
@@ -47,7 +49,6 @@ import org.neo4j.kernel.monitoring.Monitors;
 import org.neo4j.logging.FormattedLog;
 import org.neo4j.logging.Log;
 import org.neo4j.logging.RotatingFileOutputStreamSupplier;
-import org.neo4j.time.Clocks;
 
 import static java.lang.String.format;
 import static org.neo4j.io.file.Files.createOrOpenAsOuputStream;
@@ -66,6 +67,24 @@ public class QueryLoggerKernelExtension extends KernelExtensionFactory<QueryLogg
         LogService logger();
 
         JobScheduler jobScheduler();
+    }
+
+    enum Flag
+    {
+        LOG_PARAMETERS( GraphDatabaseSettings.log_queries_parameter_logging_enabled ),
+        LOG_DETAILED_TIME( GraphDatabaseSettings.log_queries_detailed_time_logging_enabled ),
+        LOG_ALLOCATED_BYTES( GraphDatabaseSettings.log_queries_allocation_logging_enabled );
+        private final Setting<Boolean> setting;
+
+        Flag( Setting<Boolean> setting )
+        {
+            this.setting = setting;
+        }
+
+        boolean enabledIn( Config config )
+        {
+            return config.get( setting );
+        }
     }
 
     public QueryLoggerKernelExtension()
@@ -99,7 +118,14 @@ public class QueryLoggerKernelExtension extends KernelExtensionFactory<QueryLogg
                 Long thresholdMillis = config.get( GraphDatabaseSettings.log_queries_threshold );
                 Long rotationThreshold = config.get( GraphDatabaseSettings.log_queries_rotation_threshold );
                 int maxArchives = config.get( GraphDatabaseSettings.log_queries_max_archives );
-                boolean logQueryParameters = config.get( GraphDatabaseSettings.log_queries_parameter_logging_enabled );
+                EnumSet<Flag> flags = EnumSet.noneOf( Flag.class );
+                for ( Flag flag : Flag.values() )
+                {
+                    if (flag.enabledIn(config))
+                    {
+                        flags.add( flag );
+                    }
+                }
 
                 FormattedLog.Builder logBuilder = FormattedLog.withUTCTimeZone();
                 Log log;
@@ -119,7 +145,7 @@ public class QueryLoggerKernelExtension extends KernelExtensionFactory<QueryLogg
                     closable = rotatingSupplier;
                 }
 
-                QueryLogger logger = new QueryLogger( Clocks.systemClock(), log, thresholdMillis, logQueryParameters );
+                QueryLogger logger = new QueryLogger( log, thresholdMillis, flags );
                 monitoring.addMonitorListener( logger );
             }
 
@@ -138,10 +164,9 @@ public class QueryLoggerKernelExtension extends KernelExtensionFactory<QueryLogg
 
     static class QueryLogger implements QueryExecutionMonitor
     {
-        private final Clock clock;
         private final Log log;
         private final long thresholdMillis;
-        private final boolean logQueryParameters;
+        private final boolean logQueryParameters, logDetailedTime, logAllocatedBytes;
 
         private static final Pattern PASSWORD_PATTERN = Pattern.compile(
                 // call signature
@@ -151,12 +176,13 @@ public class QueryLoggerKernelExtension extends KernelExtensionFactory<QueryLogg
                 // password parameter, in single, double quotes, or parametrized
                 "\\s*('(?:(?<=\\\\)'|[^'])*'|\"(?:(?<=\\\\)\"|[^\"])*\"|\\$\\w*|\\{\\w*\\})\\s*\\)" );
 
-        QueryLogger( Clock clock, Log log, long thresholdMillis, boolean logQueryParameters )
+        QueryLogger( Log log, long thresholdMillis, EnumSet<Flag> flags )
         {
-            this.clock = clock;
             this.log = log;
             this.thresholdMillis = thresholdMillis;
-            this.logQueryParameters = logQueryParameters;
+            this.logQueryParameters = flags.contains( Flag.LOG_PARAMETERS );
+            this.logDetailedTime = flags.contains( Flag.LOG_DETAILED_TIME );
+            this.logAllocatedBytes = flags.contains( Flag.LOG_ALLOCATED_BYTES );
         }
 
         @Override
@@ -167,23 +193,22 @@ public class QueryLoggerKernelExtension extends KernelExtensionFactory<QueryLogg
         @Override
         public void endFailure( ExecutingQuery query, Throwable failure )
         {
-            long time = clock.millis() - query.startTimestampMillis();
-            log.error( logEntry( time, query ), failure );
+            log.error( logEntry( query.snapshot() ), failure );
         }
 
         @Override
         public void endSuccess( ExecutingQuery query )
         {
-            long time = clock.millis() - query.startTimestampMillis();
-            if ( time >= thresholdMillis )
+            QuerySnapshot snapshot = query.snapshot();
+            if ( snapshot.elapsedTimeMillis() >= thresholdMillis )
             {
-                log.info( logEntry( time, query ) );
+                log.info( logEntry( snapshot ) );
             }
         }
 
-        private String logEntry( long time, ExecutingQuery query )
+        private String logEntry( QuerySnapshot query )
         {
-            String sourceString = query.connectionDetailsForLogging();
+            String sourceString = query.clientConnection().asConnectionDetails();
             String queryText = query.queryText();
             String metaData = mapAsString( query.transactionAnnotationData() );
 
@@ -208,15 +233,34 @@ public class QueryLoggerKernelExtension extends KernelExtensionFactory<QueryLogg
                 }
             }
 
+            StringBuilder result = new StringBuilder();
+            result.append( query.elapsedTimeMillis() ).append( " ms: " );
+            if ( logDetailedTime )
+            {
+                result.append( "(planning: " ).append( query.planningTimeMillis() );
+                Long cpuTime = query.cpuTimeMillis();
+                if ( cpuTime != null )
+                {
+                    result.append( ", cpu: " ).append( cpuTime );
+                }
+                result.append( ", waiting: " ).append( query.waitTimeMillis() );
+                result.append( ") - " );
+            }
+            if ( logAllocatedBytes )
+            {
+                Long bytes = query.allocatedBytes();
+                if ( bytes != null )
+                {
+                    result.append( bytes ).append( " B - " );
+                }
+            }
+            result.append( sourceString ).append( " - " ).append( queryText );
             if ( logQueryParameters )
             {
-                String params = mapAsString( query.queryParameters(), passwordParams );
-                return format( "%d ms: %s - %s - %s - %s", time, sourceString, queryText, params, metaData );
+                result.append( " - " ).append( mapAsString( query.queryParameters(), passwordParams ) );
             }
-            else
-            {
-                return format( "%d ms: %s - %s - %s", time, sourceString, queryText, metaData );
-            }
+            result.append( " - " ).append( metaData );
+            return result.toString();
         }
 
         private static String mapAsString( Map<String,Object> params )

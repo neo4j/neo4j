@@ -243,11 +243,6 @@ public class ExecutingQuery
         return clientConnection;
     }
 
-    public String connectionDetailsForLogging()
-    {
-        return clientConnection.asConnectionDetails();
-    }
-
     private LockWaitEvent waitForLock( boolean exclusive, ResourceType resourceType, long[] resourceIds )
     {
         WaitingOnLockEvent event = new WaitingOnLockEvent(
