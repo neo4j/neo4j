@@ -31,7 +31,7 @@ import static org.junit.Assert.assertThat;
 import static org.junit.Assert.fail;
 
 import static org.neo4j.index.internal.gbptree.ConsistencyChecker.assertNoCrashOrBrokenPointerInGSPP;
-import static org.neo4j.index.internal.gbptree.GenSafePointer.MIN_GENERATION;
+import static org.neo4j.index.internal.gbptree.GenerationSafePointer.MIN_GENERATION;
 import static org.neo4j.index.internal.gbptree.PageCursorUtil.goTo;
 
 public class ConsistencyCheckerTest
@@ -80,7 +80,7 @@ public class ConsistencyCheckerTest
         int pageSize = 256;
         Layout<MutableLong,MutableLong> layout = new SimpleLongLayout();
         TreeNode<MutableLong,MutableLong> node = new TreeNode<>( pageSize, layout );
-        long stableGeneration = GenSafePointer.MIN_GENERATION;
+        long stableGeneration = GenerationSafePointer.MIN_GENERATION;
         long unstableGeneration = stableGeneration + 1;
         SimpleIdProvider idProvider = new SimpleIdProvider();
         InternalTreeLogic<MutableLong,MutableLong> logic = new InternalTreeLogic<>( idProvider, node, layout );

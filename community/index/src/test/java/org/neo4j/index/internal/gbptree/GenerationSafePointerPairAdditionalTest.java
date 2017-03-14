@@ -23,16 +23,16 @@ import org.junit.Test;
 
 import static org.junit.Assert.fail;
 
-import static org.neo4j.index.internal.gbptree.GenSafePointer.MIN_GENERATION;
-import static org.neo4j.index.internal.gbptree.GenSafePointerPair.MAX_GEN_OFFSET_MASK;
-import static org.neo4j.index.internal.gbptree.GenSafePointerPair.read;
-import static org.neo4j.index.internal.gbptree.GenSafePointerPair.write;
+import static org.neo4j.index.internal.gbptree.GenerationSafePointer.MIN_GENERATION;
+import static org.neo4j.index.internal.gbptree.GenerationSafePointerPair.MAX_GENERATION_OFFSET_MASK;
+import static org.neo4j.index.internal.gbptree.GenerationSafePointerPair.read;
+import static org.neo4j.index.internal.gbptree.GenerationSafePointerPair.write;
 import static org.neo4j.io.ByteUnit.kibiBytes;
 
-public class GenSafePointerPairAdditionalTest
+public class GenerationSafePointerPairAdditionalTest
 {
     @Test
-    public void shouldFailFastOnTooLargeGenOffset() throws Exception
+    public void shouldFailFastOnTooLargeGenerationOffset() throws Exception
     {
         // GIVEN
         int pageSize = (int) kibiBytes( 8 );
@@ -51,7 +51,7 @@ public class GenSafePointerPairAdditionalTest
         {
             // WHEN
             cursor.setOffset( offset );
-            read( cursor, secondGeneration, thirdGeneration, (int) (MAX_GEN_OFFSET_MASK + 1) );
+            read( cursor, secondGeneration, thirdGeneration, (int) (MAX_GENERATION_OFFSET_MASK + 1) );
             fail( "Should have failed" );
         }
         catch ( IllegalArgumentException e )

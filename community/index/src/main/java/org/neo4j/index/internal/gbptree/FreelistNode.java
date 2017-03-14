@@ -39,10 +39,10 @@ import static org.neo4j.index.internal.gbptree.PageCursorUtil.put6BLong;
  */
 class FreelistNode
 {
-    private static final int PAGE_ID_SIZE = GenSafePointer.POINTER_SIZE;
+    private static final int PAGE_ID_SIZE = GenerationSafePointer.POINTER_SIZE;
     private static final int BYTE_POS_NEXT = TreeNode.BYTE_POS_NODE_TYPE + Byte.BYTES;
     private static final int HEADER_LENGTH = BYTE_POS_NEXT + PAGE_ID_SIZE;
-    private static final int ENTRY_SIZE = GenSafePointer.GENERATION_SIZE + PAGE_ID_SIZE;
+    private static final int ENTRY_SIZE = GenerationSafePointer.GENERATION_SIZE + PAGE_ID_SIZE;
     static final long NO_PAGE_ID = TreeNode.NO_NODE_FLAG;
 
     private final int maxEntries;
@@ -64,7 +64,7 @@ class FreelistNode
             throw new IllegalArgumentException( "Tried to write pageId " + pageId + " which means null" );
         }
         assertPos( pos );
-        GenSafePointer.assertGenerationOnWrite( unstableGeneration );
+        GenerationSafePointer.assertGenerationOnWrite( unstableGeneration );
         cursor.setOffset( entryOffset( pos ) );
         cursor.putInt( (int) unstableGeneration );
         put6BLong( cursor, pageId );

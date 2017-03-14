@@ -28,7 +28,7 @@ import org.neo4j.io.pagecache.PageCursor;
 
 import static java.lang.String.format;
 import static org.neo4j.index.internal.gbptree.ConsistencyChecker.assertOnTreeNode;
-import static org.neo4j.index.internal.gbptree.GenSafePointerPair.pointer;
+import static org.neo4j.index.internal.gbptree.GenerationSafePointerPair.pointer;
 
 /**
  * Utility class for printing a {@link GBPTree}, either whole or sub-tree.
@@ -112,11 +112,11 @@ class TreePrinter<KEY,VALUE>
             long generation = -1;
             do
             {
-                generation = node.gen( cursor );
+                generation = node.generation( cursor );
 
             } while ( cursor.shouldRetry() );
             String treeNodeType = isLeaf ? "leaf" : "internal";
-            out.print( format( "{%d,%s,gen=%d,keyCount=%d}",
+            out.print( format( "{%d,%s,generation=%d,keyCount=%d}",
                     cursor.getCurrentPageId(), treeNodeType, generation, keyCount ) );
         }
         else

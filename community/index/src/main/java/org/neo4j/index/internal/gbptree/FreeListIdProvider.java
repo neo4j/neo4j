@@ -74,8 +74,8 @@ class FreeListIdProvider implements IdProvider
      * About the free-list id/offset variables below:
      * <pre>
      * Every cell in picture contains generation, page id is omitted for briefness.
-     * StableGen   = 1
-     * UnstableGen = 2
+     * StableGeneration   = 1
+     * UnstableGeneration = 2
      *
      *        {@link #readPos}                         {@link #writePos}
      *        v                               v
