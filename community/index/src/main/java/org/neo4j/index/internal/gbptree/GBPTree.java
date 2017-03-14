@@ -41,6 +41,7 @@ import org.neo4j.io.pagecache.IOLimiter;
 import org.neo4j.io.pagecache.PageCache;
 import org.neo4j.io.pagecache.PageCursor;
 import org.neo4j.io.pagecache.PagedFile;
+import org.neo4j.kernel.Health;
 
 import static java.lang.String.format;
 
@@ -295,6 +296,11 @@ public class GBPTree<KEY,VALUE> implements Closeable
     private boolean closed;
 
     /**
+     * To check database health during close
+     */
+    private final Health health;
+
+    /**
      * Opens an index {@code indexFile} in the {@code pageCache}, creating and initializing it if it doesn't exist.
      * If the index doesn't exist it will be created and the {@link Layout} and {@code pageSize} will
      * be written in index header.
@@ -310,14 +316,16 @@ public class GBPTree<KEY,VALUE> implements Closeable
      * @param monitor {@link Monitor} for monitoring {@link GBPTree}.
      * @param headerReader reads header data, previously written using {@link #checkpoint(IOLimiter, Consumer)}
      * or {@link #close()}
+     * @param health Database {@link Health}
      * @throws IOException on page cache error
      */
     public GBPTree( PageCache pageCache, File indexFile, Layout<KEY,VALUE> layout, int tentativePageSize,
-            Monitor monitor, Header.Reader headerReader ) throws IOException
+            Monitor monitor, Header.Reader headerReader, Health health ) throws IOException
     {
         this.indexFile = indexFile;
         this.monitor = monitor;
         this.generation = Generation.generation( GenerationSafePointer.MIN_GENERATION, GenerationSafePointer.MIN_GENERATION + 1 );
+        this.health = health;
         long rootId = IdSpace.MIN_TREE_NODE_ID;
         setRoot( rootId, Generation.unstableGeneration( generation ) );
         this.layout = layout;
@@ -771,9 +779,12 @@ public class GBPTree<KEY,VALUE> implements Closeable
             {
                 writer.close();
 
-                // Perform a checkpoint before closing. If no changes has happened since last checkpoint,
-                // no new checkpoint will be created.
-                checkpoint( IOLimiter.unlimited(), headerWriter );
+                if ( health.isHealthy() )
+                {
+                    // Perform a checkpoint before closing. If no changes has happened since last checkpoint,
+                    // no new checkpoint will be created.
+                    checkpoint( IOLimiter.unlimited(), headerWriter );
+                }
             }
             finally
             {

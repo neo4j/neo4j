@@ -24,9 +24,10 @@ import java.util.function.Supplier;
 import org.neo4j.graphdb.factory.GraphDatabaseSettings;
 import org.neo4j.graphdb.factory.GraphDatabaseSettings.LabelIndex;
 import org.neo4j.io.pagecache.PageCache;
-import org.neo4j.kernel.api.labelscan.LoggingMonitor;
+import org.neo4j.kernel.Health;
 import org.neo4j.kernel.api.labelscan.LabelScanStore;
 import org.neo4j.kernel.api.labelscan.LabelScanStore.Monitor;
+import org.neo4j.kernel.api.labelscan.LoggingMonitor;
 import org.neo4j.kernel.configuration.Config;
 import org.neo4j.kernel.extension.KernelExtensionFactory;
 import org.neo4j.kernel.impl.api.index.IndexStoreView;
@@ -51,6 +52,8 @@ public class NativeLabelScanStoreExtension extends
         Supplier<IndexStoreView> indexStoreView();
 
         LogService getLogService();
+
+        Health getHealth();
     }
 
     public NativeLabelScanStoreExtension()
@@ -74,7 +77,8 @@ public class NativeLabelScanStoreExtension extends
                 context.storeDir(),
                 new FullLabelStream( dependencies.indexStoreView() ),
                 dependencies.getConfig().get( GraphDatabaseSettings.read_only ),
-                monitor );
+                monitor,
+                dependencies.getHealth() );
         return new LabelScanStoreProvider( NAME, labelScanStore );
     }
 }

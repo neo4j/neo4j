@@ -17,40 +17,20 @@
  * You should have received a copy of the GNU General Public License
  * along with this program.  If not, see <http://www.gnu.org/licenses/>.
  */
-package org.neo4j.kernel;
+package org.neo4j.index.internal.gbptree;
 
-public interface Health
+public class CheckpointCounter implements GBPTree.Monitor
 {
-    /**
-     * Asserts that the database is in good health. If that is not the case then the cause of the
-     * unhealthy state is wrapped in an exception of the given type, i.e. the panic disguise.
-     *
-     * @param panicDisguise the cause of the unhealthy state wrapped in an exception of this type.
-     * @throws EXCEPTION exception type to wrap cause in.
-     */
-    default <EXCEPTION extends Throwable> void assertHealthy( Class<EXCEPTION> panicDisguise ) throws EXCEPTION
+    private int count;
+
+    @Override
+    public void checkpointCompleted()
     {
+        count++;
     }
 
-    default void panic( Throwable cause )
+    public int count()
     {
-    }
-
-    default boolean isHealthy()
-    {
-        return true;
-    }
-
-    default void healed()
-    {
-    }
-
-    default Throwable cause()
-    {
-        return null;
-    }
-
-    public class Adapter implements Health
-    {
+        return count;
     }
 }

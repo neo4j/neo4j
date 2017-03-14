@@ -38,6 +38,7 @@ import java.util.zip.ZipOutputStream;
 import org.neo4j.cursor.RawCursor;
 import org.neo4j.io.pagecache.IOLimiter;
 import org.neo4j.io.pagecache.PageCache;
+import org.neo4j.kernel.Health;
 import org.neo4j.test.rule.PageCacheRule;
 import org.neo4j.test.rule.TestDirectory;
 import org.neo4j.test.rule.fs.DefaultFileSystemRule;
@@ -97,8 +98,7 @@ public class FormatCompatibilityTest
         // WHEN reading from the tree
         // THEN everything should work, otherwise there has likely been a format change
         PageCache pageCache = pageCacheRule.getPageCache( fsRule.get() );
-        try ( GBPTree<MutableLong,MutableLong> tree =
-                new GBPTree<>( pageCache, storeFile, new SimpleLongLayout(), 0, NO_MONITOR, NO_HEADER ) )
+        try ( GBPTree<MutableLong,MutableLong> tree = gbpTree( storeFile, pageCache ) )
         {
             try
             {
@@ -134,6 +134,12 @@ public class FormatCompatibilityTest
 
             tellDeveloperToCommitThisFormatVersion();
         }
+    }
+
+    private GBPTree<MutableLong,MutableLong> gbpTree( File storeFile, PageCache pageCache ) throws IOException
+    {
+        return new GBPTree<>( pageCache, storeFile, new SimpleLongLayout(), 0, NO_MONITOR, NO_HEADER,
+                new Health.Adapter() );
     }
 
     private void tellDeveloperToCommitThisFormatVersion()
@@ -173,8 +179,7 @@ public class FormatCompatibilityTest
     private void createAndZipTree( File storeFile ) throws IOException
     {
         PageCache pageCache = pageCacheRule.getPageCache( fsRule.get() );
-        try ( GBPTree<MutableLong,MutableLong> tree =
-                new GBPTree<>( pageCache, storeFile, new SimpleLongLayout(), 0, NO_MONITOR, NO_HEADER ) )
+        try ( GBPTree<MutableLong,MutableLong> tree = gbpTree( storeFile, pageCache ) )
         {
             MutableLong insertKey = new MutableLong();
             MutableLong insertValue = new MutableLong();
