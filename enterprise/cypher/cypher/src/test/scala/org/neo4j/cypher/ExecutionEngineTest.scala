@@ -40,7 +40,7 @@ import org.neo4j.kernel.impl.coreapi.TopLevelTransaction
 import org.neo4j.test.{TestEnterpriseGraphDatabaseFactory, TestGraphDatabaseFactory}
 
 import scala.collection.JavaConverters._
-import scala.collection.{Map, mutable}
+import scala.collection.{mutable}
 
 class ExecutionEngineTest extends ExecutionEngineFunSuite with QueryStatisticsTestSupport with CreateTempFileTestSupport with NewPlannerTestSupport {
   test("shouldGetRelationshipById") {
@@ -964,7 +964,7 @@ order by a.COL1""")
     result should have size 2
   }
 
-  override protected def createGraphDatabase(config: Map[Setting[_], String]): GraphDatabaseCypherService = {
+  override protected def createGraphDatabase(config: collection.Map[Setting[_], String]): GraphDatabaseCypherService = {
     new GraphDatabaseCypherService(new TestEnterpriseGraphDatabaseFactory().newImpermanentDatabase(databaseConfig().asJava))
   }
 
