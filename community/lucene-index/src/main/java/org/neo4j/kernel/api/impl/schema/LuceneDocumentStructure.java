@@ -87,10 +87,16 @@ public class LuceneDocumentStructure
 
     public static String encodedStringValuesForSampling( Object... values )
     {
-        return Arrays.stream( values ).map( s -> {
-            ValueEncoding encoding = ValueEncoding.forValue( s );
-            return encoding.encodeField( encoding.key(), s ).stringValue();
-        } ).collect( Collectors.joining( DELIMITER ) );
+        StringBuilder sb = new StringBuilder();
+        String sep = "";
+        for ( Object value : values )
+        {
+            sb.append( sep );
+            sep = DELIMITER;
+            ValueEncoding encoding = ValueEncoding.forValue( value );
+            sb.append( encoding.encodeField( encoding.key(), value ).stringValue() );
+        }
+        return sb.toString();
     }
 
     public static MatchAllDocsQuery newScanQuery()
