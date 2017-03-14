@@ -253,7 +253,7 @@ class HazelcastCoreTopologyService extends LifecycleAdapter implements CoreTopol
     {
         CoreTopology newCoreTopology = getCoreTopology( hazelcastInstance, config, log );
 
-        CoreTopology.CoreTopologyDifference difference = coreTopology.difference( newCoreTopology );
+        TopologyDifference difference = coreTopology.difference( newCoreTopology );
         if ( difference.hasChanges() )
         {
             log.info( "Core topology changed %s", difference );
@@ -267,7 +267,7 @@ class HazelcastCoreTopologyService extends LifecycleAdapter implements CoreTopol
     {
         ReadReplicaTopology newReadReplicaTopology = getReadReplicaTopology( hazelcastInstance, log );
 
-        ReadReplicaTopology.ReadReplicaTopologyDifference difference = readReplicaTopology.difference( newReadReplicaTopology );
+        TopologyDifference difference = readReplicaTopology.difference( newReadReplicaTopology );
         if ( difference.hasChanges() )
         {
             log.info( "Read replica topology changed %s", difference );

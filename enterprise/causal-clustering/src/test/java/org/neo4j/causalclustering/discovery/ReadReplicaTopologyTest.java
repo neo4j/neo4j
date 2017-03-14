@@ -26,7 +26,6 @@ import java.util.UUID;
 import org.hamcrest.Matchers;
 import org.junit.Test;
 
-import org.neo4j.causalclustering.identity.ClusterId;
 import org.neo4j.causalclustering.identity.MemberId;
 
 import static org.hamcrest.MatcherAssert.assertThat;
@@ -48,7 +47,7 @@ public class ReadReplicaTopologyTest
         ReadReplicaTopology topology = new ReadReplicaTopology( readReplicaMembers );
 
         // when
-        ReadReplicaTopology.ReadReplicaTopologyDifference diff =  topology.difference(topology);
+        TopologyDifference diff =  topology.difference(topology);
 
         // then
         assertThat( diff.added().size(), Matchers.equalTo( 0 ) );
@@ -74,7 +73,7 @@ public class ReadReplicaTopologyTest
         ReadReplicaTopology topology = new ReadReplicaTopology( initialMembers );
 
         // when
-        ReadReplicaTopology.ReadReplicaTopologyDifference diff =  topology.difference(new ReadReplicaTopology( newMembers ));
+        TopologyDifference diff =  topology.difference(new ReadReplicaTopology( newMembers ));
 
         // then
         assertThat( diff.added().size(), Matchers.equalTo( 1 ) );
@@ -98,7 +97,7 @@ public class ReadReplicaTopologyTest
         ReadReplicaTopology topology = new ReadReplicaTopology( initialMembers );
 
         // when
-        ReadReplicaTopology.ReadReplicaTopologyDifference diff =  topology.difference(new ReadReplicaTopology( newMembers ));
+        TopologyDifference diff =  topology.difference(new ReadReplicaTopology( newMembers ));
 
         // then
         assertThat( diff.added().size(), Matchers.equalTo( 0 ) );
@@ -121,7 +120,7 @@ public class ReadReplicaTopologyTest
         ReadReplicaTopology topology = new ReadReplicaTopology( initialMembers );
 
         // when
-        ReadReplicaTopology.ReadReplicaTopologyDifference diff =  topology.difference(new ReadReplicaTopology( newMembers ));
+        TopologyDifference diff =  topology.difference(new ReadReplicaTopology( newMembers ));
 
         // then
         assertThat( diff.added().size(), Matchers.equalTo( 2 ) );

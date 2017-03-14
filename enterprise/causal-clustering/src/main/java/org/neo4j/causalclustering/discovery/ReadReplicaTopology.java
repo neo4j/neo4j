@@ -29,6 +29,8 @@ import org.neo4j.causalclustering.identity.MemberId;
 import static java.util.Collections.emptyMap;
 import static java.util.stream.Collectors.toSet;
 
+import static org.neo4j.causalclustering.discovery.Difference.asDifference;
+
 
 public class ReadReplicaTopology
 {
@@ -74,73 +76,17 @@ public class ReadReplicaTopology
         }
     }
 
-    ReadReplicaTopologyDifference difference( ReadReplicaTopology other )
+    TopologyDifference difference( ReadReplicaTopology other )
     {
         Set<MemberId> members = readReplicaMembers.keySet();
         Set<MemberId> otherMembers = other.readReplicaMembers.keySet();
 
-        Set<ReadReplicaTopology.Difference> added = otherMembers.stream().filter( m -> !members.contains( m ) )
+        Set<Difference> added = otherMembers.stream().filter( m -> !members.contains( m ) )
                 .map( memberId -> asDifference( other, memberId ) ).collect( toSet() );
 
-        Set<ReadReplicaTopology.Difference> removed = members.stream().filter( m -> !otherMembers.contains( m ) )
+        Set<Difference> removed = members.stream().filter( m -> !otherMembers.contains( m ) )
                 .map( memberId -> asDifference( ReadReplicaTopology.this, memberId ) ).collect( toSet() );
 
-        return new ReadReplicaTopologyDifference( added, removed );
-    }
-
-    private ReadReplicaTopology.Difference asDifference( ReadReplicaTopology topology, MemberId memberId )
-    {
-        return new ReadReplicaTopology.Difference( memberId, topology.find( memberId ).orElse( null ) );
-    }
-
-    class ReadReplicaTopologyDifference
-    {
-        private Set<ReadReplicaTopology.Difference> added;
-        private Set<ReadReplicaTopology.Difference> removed;
-
-        ReadReplicaTopologyDifference( Set<ReadReplicaTopology.Difference> added, Set<ReadReplicaTopology.Difference> removed )
-        {
-            this.added = added;
-            this.removed = removed;
-        }
-
-        Set<ReadReplicaTopology.Difference> added()
-        {
-            return added;
-        }
-
-        Set<ReadReplicaTopology.Difference> removed()
-        {
-            return removed;
-        }
-
-        boolean hasChanges()
-        {
-            return added.size() > 0 || removed.size() > 0;
-        }
-
-        @Override
-        public String toString()
-        {
-            return String.format( "{added=%s, removed=%s}", added, removed );
-        }
-    }
-
-    private class Difference
-    {
-        private MemberId memberId;
-        private ReadReplicaInfo readReplicaInfo;
-
-        Difference( MemberId memberId, ReadReplicaInfo readReplicaInfo )
-        {
-            this.memberId = memberId;
-            this.readReplicaInfo = readReplicaInfo;
-        }
-
-        @Override
-        public String toString()
-        {
-            return String.format( "{memberId=%s, readReplicaInfo=%s}", memberId, readReplicaInfo );
-        }
+        return new TopologyDifference( added, removed );
     }
 }

@@ -72,23 +72,18 @@ public class CoreTopology
         return format( "{clusterId=%s, bootstrappable=%s, coreMembers=%s}", clusterId, canBeBootstrapped(), coreMembers );
     }
 
-    CoreTopologyDifference difference( CoreTopology other )
+    TopologyDifference difference( CoreTopology other )
     {
         Set<MemberId> members = coreMembers.keySet();
         Set<MemberId> otherMembers = other.coreMembers.keySet();
 
         Set<Difference> added = otherMembers.stream().filter( m -> !members.contains( m ) )
-                .map( memberId -> asDifference( other, memberId ) ).collect( toSet() );
+                .map( memberId -> Difference.asDifference( other, memberId ) ).collect( toSet() );
 
         Set<Difference> removed = members.stream().filter( m -> !otherMembers.contains( m ) )
-                .map( memberId -> asDifference( CoreTopology.this, memberId ) ).collect( toSet() );
+                .map( memberId -> Difference.asDifference( CoreTopology.this, memberId ) ).collect( toSet() );
 
-        return new CoreTopologyDifference( added, removed );
-    }
-
-    private Difference asDifference( CoreTopology topology, MemberId memberId )
-    {
-        return new Difference( memberId, topology.find( memberId ).orElse( null ) );
+        return new TopologyDifference( added, removed );
     }
 
     public Optional<MemberId> anyCoreMemberId()
@@ -96,54 +91,4 @@ public class CoreTopology
             return coreMembers.keySet().stream().findAny();
     }
 
-    class CoreTopologyDifference
-    {
-        private Set<Difference> added;
-        private Set<Difference> removed;
-
-        CoreTopologyDifference( Set<Difference> added, Set<Difference> removed )
-        {
-            this.added = added;
-            this.removed = removed;
-        }
-
-        Set<Difference> added()
-        {
-            return added;
-        }
-
-        Set<Difference> removed()
-        {
-            return removed;
-        }
-
-        boolean hasChanges()
-        {
-            return added.size() > 0 || removed.size() > 0;
-        }
-
-        @Override
-        public String toString()
-        {
-            return String.format( "{added=%s, removed=%s}", added, removed );
-        }
-    }
-
-    private class Difference
-    {
-        private MemberId memberId;
-        private CoreServerInfo coreServerInfo;
-
-        Difference( MemberId memberId, CoreServerInfo coreServerInfo )
-        {
-            this.memberId = memberId;
-            this.coreServerInfo = coreServerInfo;
-        }
-
-        @Override
-        public String toString()
-        {
-            return String.format( "{memberId=%s, coreServerInfo=%s}", memberId, coreServerInfo );
-        }
-    }
 }
