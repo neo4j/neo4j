@@ -147,7 +147,7 @@ public class QueryLoggerKernelExtension extends KernelExtensionFactory<QueryLogg
                 // call signature
                 "(?:(?i)call)\\s+dbms(?:\\.security)?\\.change(?:User)?Password\\(" +
                 // optional username parameter, in single, double quotes, or parametrized
-                "(?:\\s*(?:'(?:(?<=\\\\)'|[^'])*'|\"(?:(?<=\\\\)\"|[^\"])*\"|\\$\\w*|\\{\\w*\\})\\s*,)?" +
+                "(?:\\s*(?:'(?:(?<=\\\\)'|[^'])*'|\"(?:(?<=\\\\)\"|[^\"])*\"|[^,]*)\\s*,)?" +
                 // password parameter, in single, double quotes, or parametrized
                 "\\s*('(?:(?<=\\\\)'|[^'])*'|\"(?:(?<=\\\\)\"|[^\"])*\"|\\$\\w*|\\{\\w*\\})\\s*\\)" );
 
