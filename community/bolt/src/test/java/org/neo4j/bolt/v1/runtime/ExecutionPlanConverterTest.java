@@ -75,8 +75,8 @@ public class ExecutionPlanConverterTest
         private final Set<String> identifiers;
         private final Map<String,Object> arguments;
 
-        public TestExecutionPlanDescription( String name, ProfilerStatistics profilerStatistics,
-                Set<String> identifiers, Map<String,Object> arguments )
+        TestExecutionPlanDescription( String name, ProfilerStatistics profilerStatistics, Set<String> identifiers,
+                Map<String,Object> arguments )
         {
             this.name = name;
             this.profilerStatistics = profilerStatistics;
