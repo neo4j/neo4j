@@ -23,7 +23,7 @@ class ExpressionToString implements ExpressionVisitor
 {
     private final StringBuilder result;
 
-    public ExpressionToString( StringBuilder result )
+    ExpressionToString( StringBuilder result )
     {
         this.result = result;
     }

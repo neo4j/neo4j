@@ -31,10 +31,11 @@ import java.util.concurrent.atomic.AtomicBoolean;
 import org.neo4j.collection.primitive.PrimitiveLongCollections;
 import org.neo4j.collection.primitive.PrimitiveLongIterator;
 import org.neo4j.helpers.collection.Visitor;
-import org.neo4j.kernel.api.schema.NodePropertyDescriptor;
-import org.neo4j.kernel.api.schema.IndexDescriptorFactory;
 import org.neo4j.kernel.api.index.InternalIndexState;
 import org.neo4j.kernel.api.schema_new.IndexQuery;
+import org.neo4j.kernel.api.schema_new.LabelSchemaDescriptor;
+import org.neo4j.kernel.api.schema_new.SchemaBoundary;
+import org.neo4j.kernel.api.schema_new.SchemaDescriptorFactory;
 import org.neo4j.kernel.api.txstate.TransactionState;
 import org.neo4j.kernel.impl.api.TransactionQueue;
 import org.neo4j.kernel.impl.api.TransactionToApply;
@@ -79,7 +80,7 @@ public class IndexWorkSyncTransactionApplicationStressIT
                                           .around( pageCacheRule )
                                           .around( storageEngineRule );
 
-    private final NodePropertyDescriptor descriptor = new NodePropertyDescriptor( 0, 0 );
+    private final LabelSchemaDescriptor descriptor = SchemaDescriptorFactory.forLabel( 0, 0 );
 
     @Test
     public void shouldApplyIndexUpdatesInWorkSyncedBatches() throws Exception
@@ -94,12 +95,12 @@ public class IndexWorkSyncTransactionApplicationStressIT
                 .indexProvider( new InMemoryIndexProvider() )
                 .build();
         storageEngine.apply( tx( asList( createIndexRule(
-                InMemoryIndexProviderFactory.PROVIDER_DESCRIPTOR, 1, descriptor ) ) ),
+                InMemoryIndexProviderFactory.PROVIDER_DESCRIPTOR, 1, SchemaBoundary.map( descriptor ) ) ) ),
                 TransactionApplicationMode.EXTERNAL );
         Dependencies dependencies = new Dependencies();
         storageEngine.satisfyDependencies( dependencies );
         IndexProxy index = dependencies.resolveDependency( IndexingService.class )
-                .getIndexProxy( IndexDescriptorFactory.of( descriptor ) );
+                .getIndexProxy( descriptor );
         awaitOnline( index );
 
         // WHEN
@@ -148,7 +149,7 @@ public class IndexWorkSyncTransactionApplicationStressIT
         private final IndexProxy index;
         private int i, base;
 
-        public Worker( int id, AtomicBoolean end, RecordStorageEngine storageEngine, int batchSize, IndexProxy index )
+        Worker( int id, AtomicBoolean end, RecordStorageEngine storageEngine, int batchSize, IndexProxy index )
         {
             this.id = id;
             this.end = end;
@@ -190,7 +191,7 @@ public class IndexWorkSyncTransactionApplicationStressIT
             long nodeId = nodeIds.nextId();
             txState.nodeDoCreate( nodeId );
             txState.nodeDoAddLabel( descriptor.getLabelId(), nodeId );
-            txState.nodeDoAddProperty( nodeId, property( descriptor.getPropertyKeyId(), propertyValue( id, progress ) ) );
+            txState.nodeDoAddProperty( nodeId, property( descriptor.getPropertyId(), propertyValue( id, progress ) ) );
             Collection<StorageCommand> commands = new ArrayList<>();
             try ( StorageStatement statement = storageEngine.storeReadLayer().newStatement() )
             {
@@ -209,7 +210,7 @@ public class IndexWorkSyncTransactionApplicationStressIT
                     tx.transactionRepresentation().accept( visitor.clear() );
 
                     Object propertyValue = propertyValue( id, base + i );
-                    IndexQuery.ExactPredicate query = IndexQuery.exact( descriptor.getPropertyKeyId(), propertyValue );
+                    IndexQuery.ExactPredicate query = IndexQuery.exact( descriptor.getPropertyId(), propertyValue );
                     PrimitiveLongIterator hits = reader.query( query );
                     assertEquals( "Index doesn't contain " + visitor.nodeId + " " + propertyValue,
                             visitor.nodeId, PrimitiveLongCollections.single( hits, -1 ) );

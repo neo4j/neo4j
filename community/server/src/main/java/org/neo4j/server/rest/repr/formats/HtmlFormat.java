@@ -152,7 +152,7 @@ public class HtmlFormat extends RepresentationFormat
         };
         private final String key;
 
-        private MappingTemplate( String key )
+        MappingTemplate( String key )
         {
             this.key = key;
         }
@@ -283,7 +283,7 @@ public class HtmlFormat extends RepresentationFormat
     {
         private final MappingTemplate template;
 
-        public HtmlMap( MappingTemplate template )
+        HtmlMap( MappingTemplate template )
         {
             super( new HashMap<String, Object>(), true );
             this.template = template;
@@ -299,7 +299,7 @@ public class HtmlFormat extends RepresentationFormat
     {
         private final ListTemplate template;
 
-        public HtmlList( ListTemplate template )
+        HtmlList( ListTemplate template )
         {
             super( new ArrayList<Object>(), true );
             this.template = template;

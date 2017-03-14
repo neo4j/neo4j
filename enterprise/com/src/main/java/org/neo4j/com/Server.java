@@ -630,7 +630,7 @@ public abstract class Server<T, R> extends SimpleChannelHandler implements Chann
         final ChannelBuffer buffer;
         final RequestType<T> type;
 
-        public PartialRequest( RequestType<T> type, RequestContext context, ChannelBuffer buffer )
+        PartialRequest( RequestType<T> type, RequestContext context, ChannelBuffer buffer )
         {
             this.type = type;
             this.context = context;

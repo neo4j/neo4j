@@ -19,10 +19,9 @@
  */
 package org.neo4j.causalclustering.core.consensus;
 
-import java.io.IOException;
-import java.util.concurrent.atomic.AtomicBoolean;
-
 import org.junit.Test;
+
+import java.io.IOException;
 
 import org.neo4j.causalclustering.core.consensus.log.InMemoryRaftLog;
 import org.neo4j.causalclustering.core.consensus.log.RaftLog;
@@ -35,14 +34,8 @@ import org.neo4j.causalclustering.core.state.snapshot.RaftCoreState;
 import org.neo4j.causalclustering.identity.MemberId;
 import org.neo4j.causalclustering.identity.RaftTestMemberSetBuilder;
 import org.neo4j.causalclustering.messaging.Inbound;
-import org.neo4j.kernel.impl.core.DatabasePanicEventGenerator;
-import org.neo4j.kernel.impl.util.Listener;
-import org.neo4j.kernel.internal.DatabaseHealth;
-import org.neo4j.kernel.internal.KernelEventHandlers;
 import org.neo4j.kernel.monitoring.Monitors;
-import org.neo4j.logging.NullLog;
 
-import static junit.framework.TestCase.assertFalse;
 import static org.hamcrest.CoreMatchers.equalTo;
 import static org.hamcrest.CoreMatchers.hasItem;
 import static org.hamcrest.CoreMatchers.instanceOf;
@@ -51,7 +44,6 @@ import static org.hamcrest.core.Is.is;
 import static org.junit.Assert.assertEquals;
 import static org.junit.Assert.assertTrue;
 import static org.junit.Assert.fail;
-
 import static org.neo4j.causalclustering.core.consensus.RaftMachine.Timeouts.ELECTION;
 import static org.neo4j.causalclustering.core.consensus.TestMessageBuilders.appendEntriesRequest;
 import static org.neo4j.causalclustering.core.consensus.TestMessageBuilders.voteRequest;
@@ -516,29 +508,6 @@ public class RaftMachineTest
         public void startExploding()
         {
             startExploding = true;
-        }
-    }
-
-    private static class TestDatabaseHealth extends DatabaseHealth
-    {
-
-        private boolean hasPanicked = false;
-
-        public TestDatabaseHealth()
-        {
-            super( new DatabasePanicEventGenerator( new KernelEventHandlers( NullLog.getInstance() ) ),
-                    NullLog.getInstance() );
-        }
-
-        @Override
-        public void panic( Throwable cause )
-        {
-            this.hasPanicked = true;
-        }
-
-        public boolean hasPanicked()
-        {
-            return hasPanicked;
         }
     }
 

@@ -30,8 +30,7 @@ public class InputIteratorBatcherStep<T> extends IteratorBatcherStep<T>
 {
     private final InputIterator<T> data;
 
-    public InputIteratorBatcherStep( StageControl control, Configuration config,
-            InputIterator<T> data, Class<T> itemClass )
+    InputIteratorBatcherStep( StageControl control, Configuration config, InputIterator<T> data, Class<T> itemClass )
     {
         super( control, config, data, itemClass );
         this.data = data;

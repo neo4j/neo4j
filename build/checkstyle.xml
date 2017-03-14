@@ -72,6 +72,7 @@
       <property name="option" value="alone"/>
     </module>
     <module name="NeedBraces"/>
+    <module name="RedundantModifier"/>
 
   </module>
 

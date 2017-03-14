@@ -120,7 +120,7 @@ public class SlaveLocksClientConcurrentTest
     {
         private final Response lockResult;
 
-        public LockedOnMasterAnswer()
+        LockedOnMasterAnswer()
         {
             lockResult = Mockito.mock( Response.class );
             when( lockResult.response() ).thenReturn( new LockResult( LockStatus.OK_LOCKED ) );
@@ -138,7 +138,7 @@ public class SlaveLocksClientConcurrentTest
         private final CountDownLatch resourceLatch;
         private final CountDownLatch resourceReleaseLatch;
 
-        public WaitLatchAnswer( CountDownLatch resourceLatch, CountDownLatch resourceReleaseLatch )
+        WaitLatchAnswer( CountDownLatch resourceLatch, CountDownLatch resourceReleaseLatch )
         {
             this.resourceLatch = resourceLatch;
             this.resourceReleaseLatch = resourceReleaseLatch;
@@ -159,7 +159,7 @@ public class SlaveLocksClientConcurrentTest
 
     private class ResourceWriter extends ResourceWorker
     {
-        public ResourceWriter( SlaveLocksClient locksClient, ResourceType resourceType, long id )
+        ResourceWriter( SlaveLocksClient locksClient, ResourceType resourceType, long id )
         {
             super( locksClient, resourceType, id );
         }
@@ -177,8 +177,8 @@ public class SlaveLocksClientConcurrentTest
         private final CountDownLatch resourceLatch;
         private final CountDownLatch resourceReleaseLatch;
 
-        public ResourceReader( SlaveLocksClient locksClient, ResourceType resourceType, long id, CountDownLatch
-                resourceLatch, CountDownLatch resourceReleaseLatch )
+        ResourceReader( SlaveLocksClient locksClient, ResourceType resourceType, long id, CountDownLatch resourceLatch,
+                CountDownLatch resourceReleaseLatch )
         {
             super( locksClient, resourceType, id );
             this.resourceLatch = resourceLatch;
@@ -208,7 +208,7 @@ public class SlaveLocksClientConcurrentTest
         protected final ResourceType resourceType;
         protected final long id;
 
-        public ResourceWorker( SlaveLocksClient locksClient, ResourceType resourceType, long id )
+        ResourceWorker( SlaveLocksClient locksClient, ResourceType resourceType, long id )
         {
             this.locksClient = locksClient;
             this.resourceType = resourceType;

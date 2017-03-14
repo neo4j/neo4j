@@ -63,7 +63,7 @@ public interface ElectionContext
 
     int getNeededVoteCount();
 
-    public void forgetElection( String role );
+    void forgetElection( String role );
 
     Iterable<String> getRolesRequiringElection();
 

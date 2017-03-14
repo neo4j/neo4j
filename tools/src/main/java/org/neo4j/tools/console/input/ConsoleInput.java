@@ -30,7 +30,6 @@ import org.neo4j.kernel.impl.util.Listener;
 import org.neo4j.kernel.lifecycle.LifecycleAdapter;
 
 import static java.util.Arrays.copyOfRange;
-
 import static org.neo4j.tools.console.input.ConsoleUtil.tokenizeStringWithQuotes;
 
 /**
@@ -118,7 +117,7 @@ public class ConsoleInput extends LifecycleAdapter
     {
         private volatile boolean halted;
 
-        public Reactor()
+        Reactor()
         {
             super( ConsoleInput.class.getSimpleName() + " reactor" );
         }

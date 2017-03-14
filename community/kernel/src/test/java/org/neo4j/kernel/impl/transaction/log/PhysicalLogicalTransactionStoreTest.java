@@ -417,8 +417,8 @@ public class PhysicalLogicalTransactionStoreTest
         private final long latestCommittedTxWhenStarted;
         private int visitedTransactions;
 
-        public FakeRecoveryVisitor( byte[] additionalHeader, int masterId,
-                int authorId, long timeStarted, long timeCommitted, long latestCommittedTxWhenStarted )
+        FakeRecoveryVisitor( byte[] additionalHeader, int masterId, int authorId, long timeStarted, long timeCommitted,
+                long latestCommittedTxWhenStarted )
         {
             this.additionalHeader = additionalHeader;
             this.masterId = masterId;

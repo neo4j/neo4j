@@ -260,17 +260,17 @@ public class DatabaseCompositeIndexAccessorTest
 
     private IndexEntryUpdate add( long nodeId, Object... values )
     {
-        return IndexEntryUpdate.add( nodeId, indexDescriptor, values );
+        return IndexEntryUpdate.add( nodeId, indexDescriptor.schema(), values );
     }
 
     private IndexEntryUpdate remove( long nodeId, Object... values )
     {
-        return IndexEntryUpdate.remove( nodeId, indexDescriptor, values );
+        return IndexEntryUpdate.remove( nodeId, indexDescriptor.schema(), values );
     }
 
     private IndexEntryUpdate change( long nodeId, Object[] valuesBefore, Object[] valuesAfter )
     {
-        return IndexEntryUpdate.change( nodeId, indexDescriptor, valuesBefore, valuesAfter );
+        return IndexEntryUpdate.change( nodeId, indexDescriptor.schema(), valuesBefore, valuesAfter );
     }
 
     private void updateAndCommit( List<IndexEntryUpdate> nodePropertyUpdates )

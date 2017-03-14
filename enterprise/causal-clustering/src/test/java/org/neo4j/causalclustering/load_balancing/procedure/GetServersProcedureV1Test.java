@@ -109,8 +109,8 @@ public class GetServersProcedureV1Test
         // set the TTL in minutes
         config = config.augment( stringMap( cluster_routing_ttl.name(), "10m" ) );
 
-        final GetServersProcedureV1 proc =
-                new GetServersProcedureV1( coreTopologyService, leaderLocator, config, getInstance() );
+        final LegacyGetServersProcedure proc =
+                new LegacyGetServersProcedure( coreTopologyService, leaderLocator, config, getInstance() );
 
         // when
         List<Object[]> results = asList( proc.apply( null, new Object[0] ) );
@@ -125,7 +125,7 @@ public class GetServersProcedureV1Test
     public void shouldHaveCorrectSignature() throws Exception
     {
         // given
-        final GetServersProcedureV1 proc = new GetServersProcedureV1( null, null, config, getInstance() );
+        final LegacyGetServersProcedure proc = new LegacyGetServersProcedure( null, null, config, getInstance() );
 
         // when
         ProcedureSignature signature = proc.signature();
@@ -151,8 +151,8 @@ public class GetServersProcedureV1Test
         when( coreTopologyService.coreServers() ).thenReturn( clusterTopology );
         when( coreTopologyService.readReplicas() ).thenReturn( new ReadReplicaTopology( emptyMap() ) );
 
-        final GetServersProcedureV1 proc =
-                new GetServersProcedureV1( coreTopologyService, leaderLocator, config, getInstance() );
+        final LegacyGetServersProcedure proc =
+                new LegacyGetServersProcedure( coreTopologyService, leaderLocator, config, getInstance() );
 
         // when
         ClusterView clusterView = run( proc );
@@ -183,8 +183,8 @@ public class GetServersProcedureV1Test
         when( coreTopologyService.coreServers() ).thenReturn( clusterTopology );
         when( coreTopologyService.readReplicas() ).thenReturn( new ReadReplicaTopology( emptyMap() ) );
 
-        final GetServersProcedureV1 proc =
-                new GetServersProcedureV1( coreTopologyService, leaderLocator, config, getInstance() );
+        final LegacyGetServersProcedure proc =
+                new LegacyGetServersProcedure( coreTopologyService, leaderLocator, config, getInstance() );
 
         // when
         ClusterView clusterView = run( proc );
@@ -217,8 +217,8 @@ public class GetServersProcedureV1Test
         when( coreTopologyService.coreServers() ).thenReturn( clusterTopology );
         when( coreTopologyService.readReplicas() ).thenReturn( new ReadReplicaTopology( emptyMap() ) );
 
-        final GetServersProcedureV1 proc =
-                new GetServersProcedureV1( coreTopologyService, leaderLocator, config, getInstance() );
+        final LegacyGetServersProcedure proc =
+                new LegacyGetServersProcedure( coreTopologyService, leaderLocator, config, getInstance() );
 
         // when
         ClusterView clusterView = run( proc );
@@ -248,8 +248,8 @@ public class GetServersProcedureV1Test
         LeaderLocator leaderLocator = mock( LeaderLocator.class );
         when( leaderLocator.getLeader() ).thenReturn( theLeader );
 
-        GetServersProcedureV1 procedure =
-                new GetServersProcedureV1( topologyService, leaderLocator, config, getInstance() );
+        LegacyGetServersProcedure procedure =
+                new LegacyGetServersProcedure( topologyService, leaderLocator, config, getInstance() );
 
         // when
         ClusterView clusterView = run( procedure );
@@ -283,8 +283,8 @@ public class GetServersProcedureV1Test
         LeaderLocator leaderLocator = mock( LeaderLocator.class );
         when( leaderLocator.getLeader() ).thenReturn( theLeader );
 
-        GetServersProcedureV1 procedure =
-                new GetServersProcedureV1( topologyService, leaderLocator, config, getInstance() );
+        LegacyGetServersProcedure procedure =
+                new LegacyGetServersProcedure( topologyService, leaderLocator, config, getInstance() );
 
         // when
         ClusterView clusterView = run( procedure );
@@ -313,8 +313,8 @@ public class GetServersProcedureV1Test
         LeaderLocator leaderLocator = mock( LeaderLocator.class );
         when( leaderLocator.getLeader() ).thenThrow( new NoLeaderFoundException() );
 
-        GetServersProcedureV1 procedure =
-                new GetServersProcedureV1( topologyService, leaderLocator, config, getInstance() );
+        LegacyGetServersProcedure procedure =
+                new LegacyGetServersProcedure( topologyService, leaderLocator, config, getInstance() );
 
         // when
         ClusterView clusterView = run( procedure );
@@ -342,8 +342,8 @@ public class GetServersProcedureV1Test
         LeaderLocator leaderLocator = mock( LeaderLocator.class );
         when( leaderLocator.getLeader() ).thenReturn( member( 1 ) );
 
-        GetServersProcedureV1 procedure =
-                new GetServersProcedureV1( topologyService, leaderLocator, config, getInstance() );
+        LegacyGetServersProcedure procedure =
+                new LegacyGetServersProcedure( topologyService, leaderLocator, config, getInstance() );
 
         // when
         ClusterView clusterView = run( procedure );
@@ -358,7 +358,7 @@ public class GetServersProcedureV1Test
     }
 
     @SuppressWarnings( "unchecked" )
-    private ClusterView run( GetServersProcedureV1 proc ) throws ProcedureException
+    private ClusterView run( LegacyGetServersProcedure proc ) throws ProcedureException
     {
         final Object[] rows = asList( proc.apply( null, new Object[0] ) ).get( 0 );
         assertEquals( config.get( cluster_routing_ttl ) / 1000, /* ttl */(long) rows[0] );

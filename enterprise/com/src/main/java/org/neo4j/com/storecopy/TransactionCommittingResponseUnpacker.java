@@ -210,7 +210,7 @@ public class TransactionCommittingResponseUnpacker extends LifecycleAdapter impl
     {
         private final DependencyResolver resolver;
 
-        public ResolvableDependencies( DependencyResolver resolver )
+        ResolvableDependencies( DependencyResolver resolver )
         {
             this.resolver = resolver;
         }

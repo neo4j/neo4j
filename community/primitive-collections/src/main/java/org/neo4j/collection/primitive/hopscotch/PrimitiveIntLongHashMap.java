@@ -122,7 +122,7 @@ public class PrimitiveIntLongHashMap extends AbstractIntHopScotchCollection<long
         private PrimitiveIntLongHashMap other;
         private boolean equal = true;
 
-        public IntLongEquality( PrimitiveIntLongHashMap that )
+        IntLongEquality( PrimitiveIntLongHashMap that )
         {
             this.other = that;
         }

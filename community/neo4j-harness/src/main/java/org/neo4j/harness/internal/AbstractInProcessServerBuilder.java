@@ -299,7 +299,7 @@ public abstract class AbstractInProcessServerBuilder implements TestServerBuilde
 
         private HarnessRegisteredProcs userProcs;
 
-        public Neo4jHarnessExtensions( HarnessRegisteredProcs userProcs )
+        Neo4jHarnessExtensions( HarnessRegisteredProcs userProcs )
         {
             super("harness");
             this.userProcs = userProcs;

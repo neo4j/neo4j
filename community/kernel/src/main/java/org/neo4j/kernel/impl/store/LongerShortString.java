@@ -619,7 +619,7 @@ public enum LongerShortString
     final long mask;
     final int step;
 
-    private LongerShortString( int encodingHeader, int step )
+    LongerShortString( int encodingHeader, int step )
     {
         this.encodingHeader = encodingHeader;
         this.mask = Bits.rightOverflowMask( step );

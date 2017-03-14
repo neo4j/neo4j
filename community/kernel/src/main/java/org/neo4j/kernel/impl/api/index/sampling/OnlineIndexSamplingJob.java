@@ -20,7 +20,6 @@
 package org.neo4j.kernel.impl.api.index.sampling;
 
 import org.neo4j.kernel.api.exceptions.index.IndexNotFoundKernelException;
-import org.neo4j.kernel.api.schema.IndexDescriptor;
 import org.neo4j.kernel.impl.api.index.IndexProxy;
 import org.neo4j.kernel.impl.api.index.IndexStoreView;
 import org.neo4j.kernel.impl.util.DurationLogger;
@@ -41,9 +40,7 @@ class OnlineIndexSamplingJob implements IndexSamplingJob
     private final Log log;
     private final String indexUserDescription;
 
-    public OnlineIndexSamplingJob( long indexId, IndexProxy indexProxy,
-            IndexStoreView storeView,
-            String indexUserDescription,
+    OnlineIndexSamplingJob( long indexId, IndexProxy indexProxy, IndexStoreView storeView, String indexUserDescription,
             LogProvider logProvider )
     {
         this.indexId = indexId;

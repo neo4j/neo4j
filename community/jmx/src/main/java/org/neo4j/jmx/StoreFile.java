@@ -23,7 +23,7 @@ package org.neo4j.jmx;
 @Description( "Information about the sizes of the different parts of the Neo4j graph store" )
 public interface StoreFile
 {
-    final String NAME = "Store file sizes";
+    String NAME = "Store file sizes";
 
     @Description( "The amount of disk space used by the current Neo4j logical log, in bytes." )
     long getLogicalLogSize();

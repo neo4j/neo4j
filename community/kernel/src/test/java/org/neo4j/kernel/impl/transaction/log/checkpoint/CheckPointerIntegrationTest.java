@@ -240,7 +240,7 @@ public class CheckPointerIntegrationTest
         private final FileSystemAbstraction fileSystem;
         private final LogEntryReader<ReadableClosablePositionAwareChannel> logEntryReader;
 
-        public CheckPointCollector( File directory, FileSystemAbstraction fileSystem )
+        CheckPointCollector( File directory, FileSystemAbstraction fileSystem )
         {
             this.fileSystem = fileSystem;
             this.logFiles = new PhysicalLogFiles( directory, fileSystem );

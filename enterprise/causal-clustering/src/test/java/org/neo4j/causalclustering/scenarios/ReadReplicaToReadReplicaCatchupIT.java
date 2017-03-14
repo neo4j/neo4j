@@ -81,9 +81,6 @@ public class ReadReplicaToReadReplicaCatchupIT
 
         ReadReplica firstReadReplica = cluster.addReadReplicaWithIdAndMonitors( 101, new Monitors() );
 
-        File labelScanStore = LabelScanStoreProvider
-                .getStoreDirectory( new File( firstReadReplica.storeDir(), TEMP_COPY_DIRECTORY_NAME ) );
-
         firstReadReplica.start();
 
         checkDataHasReplicatedToReadReplicas( cluster, numberOfNodesToCreate );
@@ -124,8 +121,6 @@ public class ReadReplicaToReadReplicaCatchupIT
 
         ReadReplica firstReadReplica =
                 cluster.addReadReplicaWithIdAndMonitors( firstReadReplicaLocalMemberId, new Monitors() );
-        File labelScanStore = LabelScanStoreProvider
-                .getStoreDirectory( new File( firstReadReplica.storeDir(), TEMP_COPY_DIRECTORY_NAME ) );
 
         firstReadReplica.start();
 
@@ -155,7 +150,7 @@ public class ReadReplicaToReadReplicaCatchupIT
         checkDataHasReplicatedToReadReplicas( cluster, numberOfNodes * 2 );
     }
 
-    private void checkDataHasReplicatedToReadReplicas( Cluster cluster, long numberOfNodes ) throws Exception
+    static void checkDataHasReplicatedToReadReplicas( Cluster cluster, long numberOfNodes ) throws Exception
     {
         for ( final ReadReplica server : cluster.readReplicas() )
         {

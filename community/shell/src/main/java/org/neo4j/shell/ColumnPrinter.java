@@ -87,7 +87,7 @@ public class ColumnPrinter
         protected final List<String> cells = new ArrayList<String>();
         protected final String prefix;
 
-        public Column( String prefix )
+        Column( String prefix )
         {
             this.prefix = prefix;
         }
@@ -113,7 +113,7 @@ public class ColumnPrinter
 
     private static class RawColumn extends Column
     {
-        public RawColumn( int indentation )
+        RawColumn( int indentation )
         {
             super( multiply( " ", indentation ) );
         }

@@ -29,7 +29,7 @@ class SystemExitError extends Error
 {
     private int statusCode;
 
-    public SystemExitError( int statusCode )
+    SystemExitError( int statusCode )
     {
         this.statusCode = statusCode;
     }

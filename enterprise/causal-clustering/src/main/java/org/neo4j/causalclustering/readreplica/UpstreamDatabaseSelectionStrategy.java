@@ -24,10 +24,13 @@ import java.util.Optional;
 import org.neo4j.causalclustering.discovery.TopologyService;
 import org.neo4j.causalclustering.identity.MemberId;
 import org.neo4j.helpers.Service;
+import org.neo4j.kernel.configuration.Config;
 
 public abstract class UpstreamDatabaseSelectionStrategy extends Service
 {
-    TopologyService topologyService;
+    protected TopologyService topologyService;
+    protected Config config;
+    protected MemberId myself;
 
     public UpstreamDatabaseSelectionStrategy( String key, String... altKeys )
     {
@@ -40,5 +43,40 @@ public abstract class UpstreamDatabaseSelectionStrategy extends Service
         this.topologyService = topologyService;
     }
 
+    void setConfig( Config config )
+    {
+        this.config = config;
+    }
+
+    void setMyself( MemberId myself )
+    {
+        this.myself = myself;
+    }
+
     public abstract Optional<MemberId> upstreamDatabase() throws UpstreamDatabaseSelectionException;
+
+    @Override
+    public String toString()
+    {
+        return nicelyCommaSeparatedList( getKeys() );
+    }
+
+    private static String nicelyCommaSeparatedList( Iterable<String> keys )
+    {
+        StringBuilder sb = new StringBuilder();
+        for ( String key : keys )
+        {
+            sb.append( key );
+            sb.append( "," );
+            sb.append( " " );
+        }
+
+        int trimThese = sb.lastIndexOf( ", " );
+        if ( trimThese > 1 )
+        {
+            sb.replace( trimThese, sb.length(), "" );
+        }
+
+        return sb.toString();
+    }
 }

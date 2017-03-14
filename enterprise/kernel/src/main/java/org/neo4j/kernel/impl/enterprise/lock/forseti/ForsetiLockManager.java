@@ -267,7 +267,7 @@ public class ForsetiLockManager implements Locks
         private final WaitStrategy<AcquireLockTimeoutException>[] waitStrategies;
         private final DeadlockResolutionStrategy deadlockResolutionStrategy = DeadlockStrategies.DEFAULT;
 
-        public ForsetiClientFlyweightPool( Config config, Clock clock, ConcurrentMap<Long,Lock>[] lockMaps,
+        ForsetiClientFlyweightPool( Config config, Clock clock, ConcurrentMap<Long,Lock>[] lockMaps,
                 WaitStrategy<AcquireLockTimeoutException>[] waitStrategies )
         {
             super( 128, null );

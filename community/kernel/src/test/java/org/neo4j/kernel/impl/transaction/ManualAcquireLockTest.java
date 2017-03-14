@@ -157,7 +157,7 @@ public class ManualAcquireLockTest
         private final GraphDatabaseService graphDb;
         private Transaction tx;
 
-        public State( GraphDatabaseService graphDb )
+        State( GraphDatabaseService graphDb )
         {
             this.graphDb = graphDb;
         }
@@ -165,7 +165,7 @@ public class ManualAcquireLockTest
 
     private class Worker extends OtherThreadExecutor<State>
     {
-        public Worker()
+        Worker()
         {
             super( "other thread", new State( getGraphDb() ) );
         }

@@ -26,7 +26,7 @@ class CodeLoader extends ClassLoader
 {
     private final Map<String/*class name*/,ByteCodes> bytecodes = new HashMap<>();
 
-    public CodeLoader( ClassLoader parent )
+    CodeLoader( ClassLoader parent )
     {
         super( parent );
     }

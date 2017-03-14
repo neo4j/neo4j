@@ -142,7 +142,7 @@ public class NodeInUseWithCorrectLabelsCheck
     {
         private final NodeRecord nodeRecord;
 
-        public ExpectedNodeLabelsChecker( NodeRecord nodeRecord )
+        ExpectedNodeLabelsChecker( NodeRecord nodeRecord )
         {
             this.nodeRecord = nodeRecord;
         }

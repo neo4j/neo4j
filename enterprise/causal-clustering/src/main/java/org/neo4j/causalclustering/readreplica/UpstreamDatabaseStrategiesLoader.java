@@ -19,13 +19,17 @@
  */
 package org.neo4j.causalclustering.readreplica;
 
+import java.util.Collection;
 import java.util.Iterator;
 import java.util.LinkedHashSet;
 
 import org.neo4j.causalclustering.core.CausalClusteringSettings;
 import org.neo4j.causalclustering.discovery.TopologyService;
+import org.neo4j.causalclustering.identity.MemberId;
 import org.neo4j.helpers.Service;
 import org.neo4j.kernel.configuration.Config;
+import org.neo4j.logging.Log;
+import org.neo4j.logging.LogProvider;
 
 /**
  * Loads and initialises any service implementations of <class>UpstreamDatabaseSelectionStrategy</class>.
@@ -35,11 +39,15 @@ public class UpstreamDatabaseStrategiesLoader implements Iterable<UpstreamDataba
 {
     private final TopologyService topologyService;
     private final Config config;
+    private final MemberId myself;
+    private final Log log;
 
-    UpstreamDatabaseStrategiesLoader( TopologyService topologyService, Config config )
+    UpstreamDatabaseStrategiesLoader( TopologyService topologyService, Config config, MemberId myself, LogProvider logProvider )
     {
         this.topologyService = topologyService;
         this.config = config;
+        this.myself = myself;
+        this.log = logProvider.getLog( this.getClass() );
     }
 
     @Override
@@ -57,10 +65,40 @@ public class UpstreamDatabaseStrategiesLoader implements Iterable<UpstreamDataba
                 if ( candidate.getKeys().iterator().next().equals( key ) )
                 {
                     candidate.setTopologyService( topologyService );
+                    candidate.setConfig( config );
+                    candidate.setMyself( myself );
                     candidates.add( candidate );
                 }
             }
         }
+
+        log( candidates );
+
         return candidates.iterator();
+    }
+
+    private void log( LinkedHashSet<UpstreamDatabaseSelectionStrategy> candidates )
+    {
+        log.debug( "Upstream database strategies loaded in order of precedence: " +
+                nicelyCommaSeparatedList( candidates ) );
+    }
+
+    private static String nicelyCommaSeparatedList( Collection<UpstreamDatabaseSelectionStrategy> items )
+    {
+        StringBuilder sb = new StringBuilder();
+        for ( UpstreamDatabaseSelectionStrategy strategy : items )
+        {
+            sb.append( strategy.toString() );
+            sb.append( "," );
+            sb.append( " " );
+        }
+
+        int trimThese = sb.lastIndexOf( ", " );
+        if ( trimThese > 1 )
+        {
+            sb.replace( trimThese, sb.length(), "" );
+        }
+
+        return sb.toString();
     }
 }

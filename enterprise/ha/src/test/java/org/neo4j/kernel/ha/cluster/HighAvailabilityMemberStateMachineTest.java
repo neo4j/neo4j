@@ -29,6 +29,7 @@ import java.net.URI;
 import java.util.ArrayList;
 import java.util.Arrays;
 import java.util.Collections;
+import java.util.LinkedList;
 import java.util.List;
 import java.util.concurrent.CountDownLatch;
 import java.util.concurrent.atomic.AtomicBoolean;
@@ -180,7 +181,7 @@ public class HighAvailabilityMemberStateMachineTest
     }
 
     @Test
-    public void whenInMasterStateLosingQuorumShouldPutInPending() throws Throwable
+    public void whenInMasterStateLosingQuorumFromTwoInstancesShouldRemainMaster() throws Throwable
     {
         // Given
         InstanceId me = new InstanceId( 1 );
@@ -189,6 +190,46 @@ public class HighAvailabilityMemberStateMachineTest
 
         AvailabilityGuard guard = mock( AvailabilityGuard.class );
         ObservedClusterMembers members = mockClusterMembers( me, emptyList(), singletonList( other ) );
+
+        ClusterMemberEvents events = mock( ClusterMemberEvents.class );
+        ClusterMemberListenerContainer memberListenerContainer = mockAddClusterMemberListener( events );
+
+        HighAvailabilityMemberStateMachine stateMachine = buildMockedStateMachine( context, events, members, guard );
+
+        stateMachine.init();
+        ClusterMemberListener memberListener = memberListenerContainer.get();
+        HAStateChangeListener probe = new HAStateChangeListener();
+        stateMachine.addHighAvailabilityMemberListener( probe );
+
+        // Send it to MASTER
+        memberListener.coordinatorIsElected( me );
+        memberListener.memberIsAvailable( MASTER, me, URI.create( "ha://whatever" ), StoreId.DEFAULT );
+
+        assertThat( stateMachine.getCurrentState(), equalTo( HighAvailabilityMemberState.MASTER ) );
+
+        // When
+        memberListener.memberIsFailed( new InstanceId( 2 ) );
+
+        // Then
+        assertThat( stateMachine.getCurrentState(), equalTo( HighAvailabilityMemberState.MASTER ) );
+        assertThat( probe.instanceStops, is( false ) );
+        assertThat( probe.instanceDetached, is( false ) );
+    }
+
+    @Test
+    public void whenInMasterStateLosingQuorumFromThreeInstancesShouldGoToPending() throws Throwable
+    {
+        // Given
+        InstanceId me = new InstanceId( 1 );
+        InstanceId other1 = new InstanceId( 2 );
+        InstanceId other2 = new InstanceId( 3 );
+        HighAvailabilityMemberContext context = new SimpleHighAvailabilityMemberContext( me, false );
+
+        AvailabilityGuard guard = mock( AvailabilityGuard.class );
+        List<InstanceId> otherInstances = new LinkedList();
+        otherInstances.add( other1 );
+        otherInstances.add( other2 );
+        ObservedClusterMembers members = mockClusterMembers( me, emptyList(), otherInstances );
 
         ClusterMemberEvents events = mock( ClusterMemberEvents.class );
         ClusterMemberListenerContainer memberListenerContainer = mockAddClusterMemberListener( events );
@@ -253,7 +294,7 @@ public class HighAvailabilityMemberStateMachineTest
     }
 
     @Test
-    public void whenInSlaveStateLosingMasterShouldPutInPending() throws Throwable
+    public void whenInSlaveStateWith3MemberClusterLosingMasterShouldPutInPending() throws Throwable
     {
         // Given
         InstanceId me = new InstanceId( 1 );
@@ -278,6 +319,43 @@ public class HighAvailabilityMemberStateMachineTest
         memberListener.memberIsAvailable( MASTER, master, URI.create( "ha://whatever" ), StoreId.DEFAULT );
         memberListener.memberIsAvailable( SLAVE, me, URI.create( "ha://whatever3" ), StoreId.DEFAULT );
         memberListener.memberIsAvailable( SLAVE, otherSlave, URI.create( "ha://whatever2" ), StoreId.DEFAULT );
+
+        assertThat( stateMachine.getCurrentState(), equalTo( HighAvailabilityMemberState.SLAVE ) );
+
+        // When
+        memberListener.memberIsFailed( master );
+
+        // Then
+        assertThat( stateMachine.getCurrentState(), equalTo( HighAvailabilityMemberState.PENDING ) );
+        assertThat( probe.instanceStops, is( false ) );
+        assertThat( probe.instanceDetached, is( true ) );
+        verify( guard, times( 1 ) ).require( any( AvailabilityRequirement.class ) );
+    }
+
+    @Test
+    public void whenInSlaveStateWith2MemberClusterLosingMasterShouldPutInPending() throws Throwable
+    {
+        // Given
+        InstanceId me = new InstanceId( 1 );
+        InstanceId master = new InstanceId( 2 );
+        HighAvailabilityMemberContext context = new SimpleHighAvailabilityMemberContext( me, false );
+        AvailabilityGuard guard = mock( AvailabilityGuard.class );
+        ObservedClusterMembers members = mockClusterMembers( me, emptyList(), singletonList( master ) );
+
+        ClusterMemberEvents events = mock( ClusterMemberEvents.class );
+        ClusterMemberListenerContainer memberListenerContainer = mockAddClusterMemberListener( events );
+
+        HighAvailabilityMemberStateMachine stateMachine = buildMockedStateMachine( context, events, members, guard );
+
+        stateMachine.init();
+        ClusterMemberListener memberListener = memberListenerContainer.get();
+        HAStateChangeListener probe = new HAStateChangeListener();
+        stateMachine.addHighAvailabilityMemberListener( probe );
+
+        // Send it to MASTER
+        memberListener.coordinatorIsElected( master );
+        memberListener.memberIsAvailable( MASTER, master, URI.create( "ha://whatever" ), StoreId.DEFAULT );
+        memberListener.memberIsAvailable( SLAVE, me, URI.create( "ha://whatever3" ), StoreId.DEFAULT );
 
         assertThat( stateMachine.getCurrentState(), equalTo( HighAvailabilityMemberState.SLAVE ) );
 

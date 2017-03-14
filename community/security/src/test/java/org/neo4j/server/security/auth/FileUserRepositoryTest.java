@@ -321,7 +321,7 @@ public class FileUserRepositoryTest
     {
         private final DoubleLatch latch;
 
-        public HangingListSnapshot( DoubleLatch latch, long timestamp, List<User> values )
+        HangingListSnapshot( DoubleLatch latch, long timestamp, List<User> values )
         {
             super( timestamp, values, true );
             this.latch = latch;

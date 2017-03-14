@@ -54,7 +54,8 @@ class ClassicCoreSPI implements GraphDatabaseFacade.SPI
     private final Logger msgLog;
     private final CoreAPIAvailabilityGuard availability;
 
-    public ClassicCoreSPI(PlatformModule platform, DataSourceModule dataSource, Logger msgLog, CoreAPIAvailabilityGuard availability )
+    ClassicCoreSPI( PlatformModule platform, DataSourceModule dataSource, Logger msgLog,
+            CoreAPIAvailabilityGuard availability )
     {
         this.platform = platform;
         this.dataSource = dataSource;

@@ -116,7 +116,7 @@ public interface Source extends Closeable
         }
     };
 
-    public static Source singleChunk( Chunk chunk )
+    static Source singleChunk( Chunk chunk )
     {
         return new Source()
         {

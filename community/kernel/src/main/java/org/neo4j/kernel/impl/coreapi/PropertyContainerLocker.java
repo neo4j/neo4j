@@ -139,7 +139,7 @@ public class PropertyContainerLocker
         private final long resourceId;
         private boolean released = false;
 
-        public CoreAPILock( Supplier<Statement> stmtProvider, ResourceType type, long resourceId )
+        CoreAPILock( Supplier<Statement> stmtProvider, ResourceType type, long resourceId )
         {
             this.stmtProvider = stmtProvider;
             this.type = type;

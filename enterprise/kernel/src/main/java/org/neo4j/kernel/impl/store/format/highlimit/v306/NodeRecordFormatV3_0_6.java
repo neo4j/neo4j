@@ -66,7 +66,7 @@ class NodeRecordFormatV3_0_6 extends BaseHighLimitRecordFormatV3_0_6<NodeRecord>
     private static final long LOWER_NIBBLE_READ_MASK = 0xFL;
     private static final long HIGHER_NIBBLE_READ_MASK = 0xF0L;
 
-    public NodeRecordFormatV3_0_6()
+    NodeRecordFormatV3_0_6()
     {
         this( RECORD_SIZE );
     }

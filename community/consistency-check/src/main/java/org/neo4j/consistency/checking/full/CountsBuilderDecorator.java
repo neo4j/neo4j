@@ -122,7 +122,7 @@ class CountsBuilderDecorator extends CheckDecorator.Adapter
         }
     };
 
-    public CountsBuilderDecorator( StoreAccess storeAccess )
+    CountsBuilderDecorator( StoreAccess storeAccess )
     {
         this.storeAccess = storeAccess;
         this.nodeStore = storeAccess.getRawNeoStores().getNodeStore();
@@ -196,7 +196,7 @@ class CountsBuilderDecorator extends CheckDecorator.Adapter
         private final Predicate<NodeRecord> countUpdateCondition;
         private final OwningRecordCheck<NodeRecord,NodeConsistencyReport> inner;
 
-        public NodeCounts( RecordStore<NodeRecord> nodeStore, MultiSet<CountsKey> counts,
+        NodeCounts( RecordStore<NodeRecord> nodeStore, MultiSet<CountsKey> counts,
                 Predicate<NodeRecord> countUpdateCondition, OwningRecordCheck<NodeRecord,NodeConsistencyReport> inner )
         {
             this.nodeStore = nodeStore;
@@ -247,9 +247,9 @@ class CountsBuilderDecorator extends CheckDecorator.Adapter
         private final Predicate<RelationshipRecord> countUpdateCondition;
         private final OwningRecordCheck<RelationshipRecord,RelationshipConsistencyReport> inner;
 
-        public RelationshipCounts( StoreAccess storeAccess, MultiSet<CountsKey> counts,
-                                   Predicate<RelationshipRecord> countUpdateCondition,
-                                   OwningRecordCheck<RelationshipRecord,RelationshipConsistencyReport> inner )
+        RelationshipCounts( StoreAccess storeAccess, MultiSet<CountsKey> counts,
+                Predicate<RelationshipRecord> countUpdateCondition,
+                OwningRecordCheck<RelationshipRecord,RelationshipConsistencyReport> inner )
         {
             this.nodeStore = storeAccess.getRawNeoStores().getNodeStore();
             this.counts = counts;
@@ -338,7 +338,7 @@ class CountsBuilderDecorator extends CheckDecorator.Adapter
         // The same thread updates this every time, the TaskExecutor. Other threads read it
         private volatile int stage = -1;
 
-        public MultiPassAvoidanceCondition( int activeStage )
+        MultiPassAvoidanceCondition( int activeStage )
         {
             this.activeStage = activeStage;
         }

@@ -26,7 +26,6 @@ import java.util.Optional;
 
 import org.neo4j.io.fs.FileSystemAbstraction;
 import org.neo4j.io.pagecache.PageCache;
-import org.neo4j.kernel.api.schema.IndexDescriptor;
 import org.neo4j.kernel.configuration.Config;
 import org.neo4j.kernel.impl.api.CountsAccessor;
 import org.neo4j.kernel.impl.api.CountsVisitor;
@@ -297,7 +296,7 @@ public class CountsTracker extends AbstractKeyValueStore<CountsKey>
     {
         private final CountsVisitor visitor;
 
-        public DelegatingVisitor( CountsVisitor visitor )
+        DelegatingVisitor( CountsVisitor visitor )
         {
             this.visitor = visitor;
         }

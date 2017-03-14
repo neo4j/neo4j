@@ -27,7 +27,7 @@ import org.neo4j.cluster.com.message.MessageType;
  */
 public interface NetworkLatencyStrategy
 {
-    public static long LOST = -1;
+    long LOST = -1;
 
     long messageDelay(Message<? extends MessageType> message, String serverIdTo);
 }

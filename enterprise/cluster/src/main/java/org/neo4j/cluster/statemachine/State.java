@@ -44,6 +44,5 @@ public interface State<CONTEXT, MESSAGETYPE extends MessageType>
      * @return the new state
      * @throws Throwable
      */
-    public State<?, ?> handle( CONTEXT context, Message<MESSAGETYPE> message, MessageHolder outgoing ) throws
-            Throwable;
+    State<?, ?> handle( CONTEXT context, Message<MESSAGETYPE> message, MessageHolder outgoing ) throws Throwable;
 }

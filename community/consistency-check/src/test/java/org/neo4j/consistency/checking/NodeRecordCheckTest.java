@@ -473,7 +473,7 @@ public class NodeRecordCheckTest
     private class NotUsedReusableRecordsAllocator extends ReusableRecordsAllocator
     {
 
-        public NotUsedReusableRecordsAllocator( int recordSize, Collection<DynamicRecord> records )
+        NotUsedReusableRecordsAllocator( int recordSize, Collection<DynamicRecord> records )
         {
             super( recordSize, records );
         }

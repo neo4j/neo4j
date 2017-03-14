@@ -41,6 +41,7 @@ import org.neo4j.helpers.collection.Iterables;
 import org.neo4j.kernel.api.ReadOperations;
 import org.neo4j.kernel.api.Statement;
 import org.neo4j.kernel.api.StatementTokenNameLookup;
+import org.neo4j.kernel.api.TokenWriteOperations;
 import org.neo4j.kernel.api.constraints.NodePropertyConstraint;
 import org.neo4j.kernel.api.constraints.NodePropertyExistenceConstraint;
 import org.neo4j.kernel.api.constraints.PropertyConstraint;
@@ -61,9 +62,10 @@ import org.neo4j.kernel.api.exceptions.schema.IllegalTokenNameException;
 import org.neo4j.kernel.api.exceptions.schema.SchemaRuleNotFoundException;
 import org.neo4j.kernel.api.exceptions.schema.TooManyLabelsException;
 import org.neo4j.kernel.api.index.InternalIndexState;
-import org.neo4j.kernel.api.schema.IndexDescriptorFactory;
+import org.neo4j.kernel.api.schema.NodeMultiPropertyDescriptor;
 import org.neo4j.kernel.api.schema.NodePropertyDescriptor;
 import org.neo4j.kernel.api.schema.RelationshipPropertyDescriptor;
+import org.neo4j.kernel.api.schema_new.LabelSchemaDescriptor;
 import org.neo4j.kernel.api.schema_new.SchemaDescriptorFactory;
 import org.neo4j.kernel.api.schema_new.constaints.ConstraintBoundary;
 import org.neo4j.kernel.api.schema_new.constaints.ConstraintDescriptor;
@@ -81,7 +83,7 @@ import static org.neo4j.graphdb.schema.Schema.IndexState.POPULATING;
 import static org.neo4j.helpers.collection.Iterators.addToCollection;
 import static org.neo4j.helpers.collection.Iterators.asCollection;
 import static org.neo4j.helpers.collection.Iterators.map;
-import static org.neo4j.kernel.api.schema.IndexDescriptorFactory.getOrCreateTokens;
+import static org.neo4j.kernel.impl.coreapi.schema.PropertyNameUtils.getOrCreatePropertyKeyIds;
 import static org.neo4j.kernel.impl.coreapi.schema.PropertyNameUtils.getPropertyKeys;
 
 public class SchemaImpl implements Schema
@@ -329,7 +331,7 @@ public class SchemaImpl implements Schema
         assertValidLabel( index.getLabel(), labelId );
         assertValidProperties( index.getPropertyKeys(), propertyKeyIds );
         return readOperations.indexGetForLabelAndPropertyKey(
-                IndexDescriptorFactory.getNodePropertyDescriptor( labelId, propertyKeyIds ) );
+                new NodeMultiPropertyDescriptor( labelId, propertyKeyIds ) );
     }
 
     private static void assertValidLabel( Label label, int labelId )
@@ -407,7 +409,7 @@ public class SchemaImpl implements Schema
     {
         private final Supplier<Statement> ctxSupplier;
 
-        public GDBSchemaActions( Supplier<Statement> statementSupplier )
+        GDBSchemaActions( Supplier<Statement> statementSupplier )
         {
             this.ctxSupplier = statementSupplier;
         }
@@ -420,8 +422,10 @@ public class SchemaImpl implements Schema
                 try
                 {
                     IndexDefinition indexDefinition = new IndexDefinitionImpl( this, label, propertyKeys, false );
-                    NodePropertyDescriptor descriptor =
-                            getOrCreateTokens( statement.tokenWriteOperations(), indexDefinition );
+                    TokenWriteOperations tokenWriteOperations = statement.tokenWriteOperations();
+                    int labelId = tokenWriteOperations.labelGetOrCreateForName( indexDefinition.getLabel().name() );
+                    int[] propertyKeyIds = getOrCreatePropertyKeyIds( tokenWriteOperations, indexDefinition );
+                    LabelSchemaDescriptor descriptor = SchemaDescriptorFactory.forLabel( labelId, propertyKeyIds );
                     statement.schemaWriteOperations().indexCreate( descriptor );
                     return indexDefinition;
                 }
@@ -480,7 +484,7 @@ public class SchemaImpl implements Schema
                 {
                     int labelId = statement.tokenWriteOperations().labelGetOrCreateForName(
                             indexDefinition.getLabel().name() );
-                    int[] propertyKeyIds = PropertyNameUtils.getOrCreatePropertyKeyIds(
+                    int[] propertyKeyIds = getOrCreatePropertyKeyIds(
                             statement.tokenWriteOperations(), indexDefinition );
                     statement.schemaWriteOperations().uniquePropertyConstraintCreate(
                             SchemaDescriptorFactory.forLabel( labelId, propertyKeyIds ) );
@@ -514,7 +518,7 @@ public class SchemaImpl implements Schema
                 try
                 {
                     int labelId = statement.tokenWriteOperations().labelGetOrCreateForName( label.name() );
-                    int[] propertyKeyIds = PropertyNameUtils.getOrCreatePropertyKeyIds(
+                    int[] propertyKeyIds = getOrCreatePropertyKeyIds(
                             statement.tokenWriteOperations(), propertyKeys );
                     statement.schemaWriteOperations().nodePropertyExistenceConstraintCreate(
                                     SchemaDescriptorFactory.forLabel( labelId, propertyKeyIds ) );
@@ -549,7 +553,7 @@ public class SchemaImpl implements Schema
                 try
                 {
                     int typeId = statement.tokenWriteOperations().relationshipTypeGetOrCreateForName( type.name() );
-                    int[] propertyKeyId = PropertyNameUtils.getOrCreatePropertyKeyIds( statement.tokenWriteOperations(), propertyKey );
+                    int[] propertyKeyId = getOrCreatePropertyKeyIds( statement.tokenWriteOperations(), propertyKey );
                     statement.schemaWriteOperations().relationshipPropertyExistenceConstraintCreate(
                             SchemaDescriptorFactory.forRelType( typeId, propertyKeyId ) );
                     return new RelationshipPropertyExistenceConstraintDefinition( this, type, propertyKey );

@@ -151,7 +151,7 @@ public abstract class KernelExtensionFactoryContractTest
         }
     }
 
-    private final KernelExtensionFactory<?> newInstance()
+    private KernelExtensionFactory<?> newInstance()
     {
         try
         {

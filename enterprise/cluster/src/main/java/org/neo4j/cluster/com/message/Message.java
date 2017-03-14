@@ -90,6 +90,9 @@ public class Message<MESSAGETYPE extends MessageType>
     public static final String FROM = "from";
     public static final String TO = "to";
     public static final String INSTANCE_ID = "instance-id";
+    // Should be present only in configurationRequest messages. Value is a comma separated list of instance ids.
+    // Added in 3.0.9.
+    public static final String DISCOVERED = "discovered";
 
     private MESSAGETYPE messageType;
     private Object payload;
@@ -135,7 +138,7 @@ public class Message<MESSAGETYPE extends MessageType>
     public String getHeader( String name )
             throws IllegalArgumentException
     {
-        String value = headers.get( name );
+        String value = getHeader( name, null );
         if ( value == null )
         {
             throw new IllegalArgumentException( "No such header:" + name );
@@ -143,8 +146,18 @@ public class Message<MESSAGETYPE extends MessageType>
         return value;
     }
 
-    public <MESSAGETYPE extends MessageType> Message<MESSAGETYPE> copyHeadersTo( Message<MESSAGETYPE> message,
-                                                                                 String... names )
+    public String getHeader( String name, String defaultValue )
+    {
+        String value = headers.get( name );
+        if ( value == null )
+        {
+            return defaultValue;
+        }
+        return value;
+    }
+
+    public <MSGTYPE extends MessageType> Message<MSGTYPE> copyHeadersTo( Message<MSGTYPE> message,
+                                                                         String... names )
     {
         if ( names.length == 0 )
         {

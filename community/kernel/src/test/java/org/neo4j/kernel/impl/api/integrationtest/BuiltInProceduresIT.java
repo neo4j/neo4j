@@ -195,7 +195,7 @@ public class BuiltInProceduresIT extends KernelIntegrationTest
         int labelId2 = statement.tokenWriteOperations().labelGetOrCreateForName( "Age" );
         int propertyKeyId = statement.tokenWriteOperations().propertyKeyGetOrCreateForName( "foo" );
         //TODO: Add test support for composite indexes
-        statement.schemaWriteOperations().indexCreate( new NodePropertyDescriptor( labelId1, propertyKeyId ) );
+        statement.schemaWriteOperations().indexCreate( SchemaDescriptorFactory.forLabel( labelId1, propertyKeyId ) );
         statement.schemaWriteOperations().uniquePropertyConstraintCreate( forLabel( labelId2, propertyKeyId ) );
         commit();
 

@@ -21,7 +21,6 @@ package org.neo4j.unsafe.batchinsert.internal;
 
 import java.util.Iterator;
 
-import org.neo4j.function.Predicates;
 import org.neo4j.graphdb.NotFoundException;
 import org.neo4j.helpers.collection.PrefetchingIterator;
 import org.neo4j.kernel.impl.api.store.StoreNodeRelationshipCursor;
@@ -44,7 +43,7 @@ abstract class BatchRelationshipIterable<T> implements Iterable<T>
 {
     private final StoreNodeRelationshipCursor relationshipCursor;
 
-    public BatchRelationshipIterable( NeoStores neoStores, long nodeId, RecordCursors cursors )
+    BatchRelationshipIterable( NeoStores neoStores, long nodeId, RecordCursors cursors )
     {
         RelationshipStore relationshipStore = neoStores.getRelationshipStore();
         RecordStore<RelationshipGroupRecord> relationshipGroupStore = neoStores.getRelationshipGroupStore();

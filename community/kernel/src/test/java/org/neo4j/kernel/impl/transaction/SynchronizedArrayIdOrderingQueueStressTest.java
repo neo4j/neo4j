@@ -74,7 +74,7 @@ public class SynchronizedArrayIdOrderingQueueStressTest
         private final AtomicInteger removedCount = new AtomicInteger();
         private volatile long previousId = -1;
 
-        public VerifyingIdOrderingQueue( IdOrderingQueue delegate )
+        VerifyingIdOrderingQueue( IdOrderingQueue delegate )
         {
             this.delegate = delegate;
         }
@@ -154,8 +154,8 @@ public class SynchronizedArrayIdOrderingQueueStressTest
         private final CountDownLatch readySignal;
         private volatile Exception exception;
 
-        public Committer( IdOrderingQueue queue, PrimitiveLongIterator idSource,
-                AtomicLong endTime, CountDownLatch readySignal, CountDownLatch startSignal )
+        Committer( IdOrderingQueue queue, PrimitiveLongIterator idSource, AtomicLong endTime,
+                CountDownLatch readySignal, CountDownLatch startSignal )
         {
             this.queue = queue;
             this.idSource = idSource;

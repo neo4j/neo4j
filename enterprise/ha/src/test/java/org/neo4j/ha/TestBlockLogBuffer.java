@@ -19,16 +19,16 @@
  */
 package org.neo4j.ha;
 
-import java.io.IOException;
-import java.nio.ByteBuffer;
-import java.nio.channels.ReadableByteChannel;
-import java.util.Arrays;
-
 import org.hamcrest.BaseMatcher;
 import org.hamcrest.Description;
 import org.jboss.netty.buffer.ChannelBuffer;
 import org.jboss.netty.buffer.ChannelBuffers;
 import org.junit.Test;
+
+import java.io.IOException;
+import java.nio.ByteBuffer;
+import java.nio.channels.ReadableByteChannel;
+import java.util.Arrays;
 
 import org.neo4j.com.BlockLogBuffer;
 import org.neo4j.com.BlockLogReader;
@@ -285,7 +285,7 @@ public class TestBlockLogBuffer
         private final T expected;
         private Object actual;
 
-        public ArrayMatches( T expected )
+        ArrayMatches( T expected )
         {
             this.expected = expected;
         }

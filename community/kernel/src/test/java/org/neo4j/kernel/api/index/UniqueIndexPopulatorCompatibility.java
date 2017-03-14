@@ -62,8 +62,8 @@ public class UniqueIndexPopulatorCompatibility extends IndexProviderCompatibilit
         IndexSamplingConfig indexSamplingConfig = new IndexSamplingConfig( Config.empty() );
         IndexPopulator populator = indexProvider.getPopulator( 17, descriptor, indexSamplingConfig );
         populator.create();
-        populator.add( Arrays.asList( IndexEntryUpdate.add( nodeId1, descriptor, value ),
-                IndexEntryUpdate.add( nodeId2, descriptor, value ) ) );
+        populator.add( Arrays.asList( IndexEntryUpdate.add( nodeId1, descriptor.schema(), value ),
+                IndexEntryUpdate.add( nodeId2, descriptor.schema(), value ) ) );
         try
         {
             PropertyAccessor propertyAccessor = mock( PropertyAccessor.class );

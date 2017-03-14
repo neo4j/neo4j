@@ -20,6 +20,7 @@
 package org.neo4j.causalclustering.readreplica;
 
 import java.io.File;
+import java.util.Iterator;
 import java.util.concurrent.TimeUnit;
 import java.util.function.Predicate;
 import java.util.function.Supplier;
@@ -96,6 +97,7 @@ import org.neo4j.kernel.lifecycle.LifeSupport;
 import org.neo4j.kernel.lifecycle.LifecycleStatus;
 import org.neo4j.kernel.monitoring.Monitors;
 import org.neo4j.logging.LogProvider;
+import org.neo4j.logging.NullLogProvider;
 import org.neo4j.storageengine.api.StorageEngine;
 import org.neo4j.time.Clocks;
 import org.neo4j.udc.UsageData;
@@ -248,10 +250,22 @@ public class EnterpriseReadReplicaEditionModule extends EditionModule
 
         ConnectToRandomCoreServer defaultStrategy = new ConnectToRandomCoreServer();
         defaultStrategy.setTopologyService( topologyService );
+        defaultStrategy.setConfig( config );
+        defaultStrategy.setMyself( myself );
+
+        UpstreamDatabaseStrategiesLoader loader;
+        if ( config.get( CausalClusteringSettings.multi_dc_license ) )
+        {
+            loader = new UpstreamDatabaseStrategiesLoader( topologyService, config, myself, logProvider );
+            logProvider.getLog( getClass() ).info( "Multi-Data Center option enabled." );
+        }
+        else
+        {
+            loader = new NoOpUpstreamDatabaseStrategiesLoader();
+        }
 
         UpstreamDatabaseStrategySelector upstreamDatabaseStrategySelector =
-                new UpstreamDatabaseStrategySelector( defaultStrategy,
-                        new UpstreamDatabaseStrategiesLoader( topologyService, config ), myself );
+                new UpstreamDatabaseStrategySelector( defaultStrategy, loader, myself, logProvider );
 
         CatchupPollingProcess catchupProcess =
                 new CatchupPollingProcess( logProvider, localDatabase, servicesToStopOnStoreCopy, catchUpClient,
@@ -329,5 +343,32 @@ public class EnterpriseReadReplicaEditionModule extends EditionModule
     public void setupSecurityModule( PlatformModule platformModule, Procedures procedures )
     {
         EnterpriseEditionModule.setupEnterpriseSecurityModule( platformModule, procedures );
+    }
+
+    private class NoOpUpstreamDatabaseStrategiesLoader extends UpstreamDatabaseStrategiesLoader
+    {
+        NoOpUpstreamDatabaseStrategiesLoader()
+        {
+            super( null, null, null, NullLogProvider.getInstance() );
+        }
+
+        @Override
+        public Iterator<UpstreamDatabaseSelectionStrategy> iterator()
+        {
+            return new Iterator<UpstreamDatabaseSelectionStrategy>()
+            {
+                @Override
+                public boolean hasNext()
+                {
+                    return false;
+                }
+
+                @Override
+                public UpstreamDatabaseSelectionStrategy next()
+                {
+                    return null;
+                }
+            };
+        }
     }
 }

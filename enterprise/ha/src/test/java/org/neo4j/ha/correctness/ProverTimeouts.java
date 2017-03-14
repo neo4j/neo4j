@@ -37,7 +37,7 @@ class ProverTimeouts extends Timeouts
     private final URI to;
     private long time = 0;
 
-    public ProverTimeouts( URI to )
+    ProverTimeouts( URI to )
     {
         super(new FixedTimeoutStrategy(1));
         this.to = to;
@@ -181,7 +181,7 @@ class ProverTimeouts extends Timeouts
 
     class ProverTimeout extends Timeout
     {
-        public ProverTimeout( long timeout, Message<? extends MessageType> timeoutMessage )
+        ProverTimeout( long timeout, Message<? extends MessageType> timeoutMessage )
         {
             super( timeout, timeoutMessage );
         }

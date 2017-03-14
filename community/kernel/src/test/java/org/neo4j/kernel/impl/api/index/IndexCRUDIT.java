@@ -46,8 +46,9 @@ import org.neo4j.kernel.api.index.IndexPopulator;
 import org.neo4j.kernel.api.index.IndexUpdater;
 import org.neo4j.kernel.api.index.PropertyAccessor;
 import org.neo4j.kernel.api.index.SchemaIndexProvider;
+import org.neo4j.kernel.api.schema_new.LabelSchemaDescriptor;
+import org.neo4j.kernel.api.schema_new.SchemaDescriptorFactory;
 import org.neo4j.kernel.api.schema_new.index.NewIndexDescriptor;
-import org.neo4j.kernel.api.schema_new.index.NewIndexDescriptorFactory;
 import org.neo4j.kernel.extension.KernelExtensionFactory;
 import org.neo4j.kernel.impl.api.index.sampling.IndexSamplingConfig;
 import org.neo4j.kernel.impl.api.scan.LabelScanStoreProvider;
@@ -93,9 +94,9 @@ public class IndexCRUDIT
             ReadOperations readOperations = ctxSupplier.get().readOperations();
             int propertyKey1 = readOperations.propertyKeyGetForName( indexProperty );
             int label = readOperations.labelGetForName( myLabel.name() );
-            NewIndexDescriptor index = NewIndexDescriptorFactory.forLabel( label, propertyKey1 );
+            LabelSchemaDescriptor descriptor = SchemaDescriptorFactory.forLabel( label, propertyKey1 );
             assertThat( writer.updatesCommitted, equalTo( asSet(
-                    IndexEntryUpdate.add( node.getId(), index, value1 ) ) ) );
+                    IndexEntryUpdate.add( node.getId(), descriptor, value1 ) ) ) );
             tx.success();
         }
         // We get two updates because we both add a label and a property to be indexed
@@ -133,9 +134,9 @@ public class IndexCRUDIT
             ReadOperations readOperations = ctxSupplier.get().readOperations();
             int propertyKey1 = readOperations.propertyKeyGetForName( indexProperty );
             int label = readOperations.labelGetForName( myLabel.name() );
-            NewIndexDescriptor index = NewIndexDescriptorFactory.forLabel( label, propertyKey1 );
+            LabelSchemaDescriptor descriptor = SchemaDescriptorFactory.forLabel( label, propertyKey1 );
             assertThat( writer.updatesCommitted, equalTo( asSet(
-                    IndexEntryUpdate.add( node.getId(), index, value ) ) ) );
+                    IndexEntryUpdate.add( node.getId(), descriptor, value ) ) ) );
             tx.success();
         }
     }

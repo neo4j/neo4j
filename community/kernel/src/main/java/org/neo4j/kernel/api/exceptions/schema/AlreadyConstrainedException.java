@@ -23,6 +23,7 @@ import org.neo4j.kernel.api.TokenNameLookup;
 import org.neo4j.kernel.api.constraints.NodePropertyConstraint;
 import org.neo4j.kernel.api.constraints.PropertyConstraint;
 import org.neo4j.kernel.api.exceptions.Status;
+import org.neo4j.kernel.api.schema.NodePropertyDescriptor;
 
 import static java.lang.String.format;
 
@@ -57,8 +58,9 @@ public class AlreadyConstrainedException extends SchemaKernelException
             case INDEX_CREATION:
                 // is is safe to cast here because we only support indexes on nodes atm
                 NodePropertyConstraint nodePropertyConstraint = (NodePropertyConstraint) constraint;
+                NodePropertyDescriptor descriptor = nodePropertyConstraint.descriptor();
                 return messageWithLabelAndPropertyName( tokenNameLookup, INDEX_CONTEXT_FORMAT,
-                        nodePropertyConstraint.descriptor() );
+                        descriptor );
 
             case CONSTRAINT_CREATION:
                 return ALREADY_CONSTRAINED_MESSAGE_PREFIX + constraint.userDescription( tokenNameLookup );

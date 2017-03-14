@@ -81,7 +81,7 @@ public interface ProgressListener
         }
     };
 
-    static class SinglePartProgressListener extends Adapter
+    class SinglePartProgressListener extends Adapter
     {
         final Indicator indicator;
         private final long totalCount;
@@ -142,7 +142,7 @@ public interface ProgressListener
         }
     }
 
-    static final class OpenEndedProgressListener extends SinglePartProgressListener
+    final class OpenEndedProgressListener extends SinglePartProgressListener
     {
         private int lastReported = 0;
 
@@ -170,7 +170,7 @@ public interface ProgressListener
         }
     }
 
-    static final class MultiPartProgressListener extends Adapter
+    final class MultiPartProgressListener extends Adapter
     {
         private final Aggregator aggregator;
         final String part;

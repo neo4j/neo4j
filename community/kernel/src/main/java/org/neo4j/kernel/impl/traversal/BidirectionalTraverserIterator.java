@@ -51,7 +51,7 @@ class BidirectionalTraverserIterator extends AbstractTraverserIterator
     {
         private final MonoDirectionalTraversalDescription description;
 
-        public Side( MonoDirectionalTraversalDescription description )
+        Side( MonoDirectionalTraversalDescription description )
         {
             this.description = description;
         }

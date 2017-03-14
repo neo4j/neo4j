@@ -54,7 +54,7 @@ public class InternalJettyServletRequest extends Request
         private int position = 0;
         private ReadListener readListener;
 
-        public Input( String data )
+        Input( String data )
         {
             bytes = UTF8.encode( data );
         }

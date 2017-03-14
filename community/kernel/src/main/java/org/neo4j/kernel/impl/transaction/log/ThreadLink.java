@@ -27,7 +27,7 @@ class ThreadLink
     volatile ThreadLink next;
     volatile boolean done;
 
-    public ThreadLink( Thread thread )
+    ThreadLink( Thread thread )
     {
         this.thread = thread;
     }

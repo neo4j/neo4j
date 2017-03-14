@@ -95,7 +95,7 @@ public abstract class SchemaConstraintProviderApprovalTest
 
         private final Object value;
 
-        private TestValue( Object value )
+        TestValue( Object value )
         {
             this.value = value;
         }

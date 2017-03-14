@@ -26,7 +26,7 @@ import org.neo4j.jmx.ManagementInterface;
 @Description( "Handle index sampling." )
 public interface IndexSamplingManager
 {
-    final String NAME = "Index sampler";
+    String NAME = "Index sampler";
 
     @Description("Trigger index sampling for the index associated with the provided label and property key." +
             " If forceSample is set to true an index sampling will always happen otherwise a sampling is only " +

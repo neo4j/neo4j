@@ -29,7 +29,7 @@ class SyncMonitor implements Worker.Monitor
     private final AtomicLong transactionCounter = new AtomicLong();
     private final CountDownLatch stopLatch;
 
-    public SyncMonitor( int threads )
+    SyncMonitor( int threads )
     {
         this.stopLatch = new CountDownLatch( threads );
     }

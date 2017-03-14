@@ -1598,7 +1598,7 @@ public class InternalTreeLogicTest
 
         void recovery();
 
-        static GenerationManager NO_OP_GEN = new GenerationManager()
+        GenerationManager NO_OP_GEN = new GenerationManager()
         {
             @Override
             public void checkpoint()
@@ -1613,7 +1613,7 @@ public class InternalTreeLogicTest
             }
         };
 
-        static GenerationManager DEFAULT = new GenerationManager()
+        GenerationManager DEFAULT = new GenerationManager()
         {
             @Override
             public void checkpoint()

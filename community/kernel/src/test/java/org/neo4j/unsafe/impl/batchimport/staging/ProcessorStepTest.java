@@ -126,7 +126,7 @@ public class ProcessorStepTest
     {
         private final CountDownLatch latch;
 
-        public BlockingProcessorStep( StageControl control, int maxProcessors, CountDownLatch latch )
+        BlockingProcessorStep( StageControl control, int maxProcessors, CountDownLatch latch )
         {
             super( control, "test", Configuration.DEFAULT, maxProcessors );
             this.latch = latch;

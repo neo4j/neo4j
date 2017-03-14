@@ -19,8 +19,10 @@
  */
 package org.neo4j.kernel.api.index;
 
+import org.junit.Before;
 import org.junit.Test;
 
+import org.neo4j.kernel.api.schema_new.LabelSchemaDescriptor;
 import org.neo4j.kernel.api.schema_new.index.NewIndexDescriptorFactory;
 
 import static java.util.Arrays.asList;
@@ -32,20 +34,27 @@ import static org.neo4j.kernel.api.schema_new.IndexQuery.exists;
 public class CompositeIndexAccessorCompatibility extends IndexAccessorCompatibility
 {
     protected IndexAccessor accessor;
+    private LabelSchemaDescriptor schemaDescriptor;
 
     public CompositeIndexAccessorCompatibility( IndexProviderCompatibilityTestSuite testSuite )
     {
         super( testSuite, NewIndexDescriptorFactory.forLabel( 1000, 100, 200, 300 ), false );
     }
 
+    @Before
+    public void setUp() throws Exception
+    {
+        schemaDescriptor = descriptor.schema();
+    }
+
     @Test
     public void testIndexSeekAndScan() throws Exception
     {
         updateAndCommit( asList(
-                IndexEntryUpdate.add( 1L, descriptor, "a", "a" ),
-                IndexEntryUpdate.add( 2L, descriptor, "a", "a" ),
-                IndexEntryUpdate.add( 3L, descriptor, "b", "b" ),
-                IndexEntryUpdate.add( 4L, descriptor, "a", "b" )
+                IndexEntryUpdate.add( 1L, schemaDescriptor, "a", "a" ),
+                IndexEntryUpdate.add( 2L, schemaDescriptor, "a", "a" ),
+                IndexEntryUpdate.add( 3L, schemaDescriptor, "b", "b" ),
+                IndexEntryUpdate.add( 4L, schemaDescriptor, "a", "b" )
         ) );
 
         assertThat( query( exact( 0, "a" ), exact( 1, "a" ) ), equalTo( asList( 1L, 2L ) ) );

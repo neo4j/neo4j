@@ -55,7 +55,7 @@ public class Scanner
         private final RecordCursor<R> cursor;
         private final Predicate<? super R>[] filters;
 
-        public Scan( RecordStore<R> store, boolean forward, final Predicate<? super R>... filters )
+        Scan( RecordStore<R> store, boolean forward, final Predicate<? super R>... filters )
         {
             this.filters = filters;
             this.ids = new StoreIdIterator( store, forward );

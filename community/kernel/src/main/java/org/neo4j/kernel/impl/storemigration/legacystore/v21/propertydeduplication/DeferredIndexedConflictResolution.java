@@ -37,9 +37,8 @@ class DeferredIndexedConflictResolution
     private PropertyStore propertyStore;
     private DuplicatePropertyRemover propertyRemover;
 
-    public DeferredIndexedConflictResolution( NodeRecord record, List<DuplicateCluster> duplicateClusters,
-                                              NodeStore nodeStore, IndexLookup indexLookup,
-                                              PropertyStore propertyStore, DuplicatePropertyRemover propertyRemover )
+    DeferredIndexedConflictResolution( NodeRecord record, List<DuplicateCluster> duplicateClusters, NodeStore nodeStore,
+            IndexLookup indexLookup, PropertyStore propertyStore, DuplicatePropertyRemover propertyRemover )
     {
         this.record = record;
         this.duplicateClusterList = duplicateClusters;

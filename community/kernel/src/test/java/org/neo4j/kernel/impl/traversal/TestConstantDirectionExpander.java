@@ -30,7 +30,7 @@ import org.neo4j.graphdb.Transaction;
 
 public class TestConstantDirectionExpander extends TraversalTestBase
 {
-    private static enum Types implements RelationshipType
+    private enum Types implements RelationshipType
     {
         A, B
     }

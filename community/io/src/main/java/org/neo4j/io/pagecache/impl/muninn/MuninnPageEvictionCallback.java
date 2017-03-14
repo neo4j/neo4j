@@ -26,7 +26,7 @@ final class MuninnPageEvictionCallback implements PageEvictionCallback
 {
     private final MuninnPagedFile file;
 
-    public MuninnPageEvictionCallback( MuninnPagedFile file )
+    MuninnPageEvictionCallback( MuninnPagedFile file )
     {
         this.file = file;
     }

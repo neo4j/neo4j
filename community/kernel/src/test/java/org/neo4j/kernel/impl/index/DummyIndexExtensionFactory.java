@@ -51,7 +51,7 @@ public class DummyIndexExtensionFactory extends KernelExtensionFactory<DummyInde
     {
         private final IndexProviders indexProviders;
 
-        public Extension( IndexProviders indexProviders )
+        Extension( IndexProviders indexProviders )
         {
             this.indexProviders = indexProviders;
         }

@@ -65,7 +65,6 @@ import org.neo4j.kernel.api.index.IndexUpdater;
 import org.neo4j.kernel.api.index.InternalIndexState;
 import org.neo4j.kernel.api.index.NodeUpdates;
 import org.neo4j.kernel.api.index.SchemaIndexProvider;
-import org.neo4j.kernel.api.schema_new.index.IndexBoundary;
 import org.neo4j.kernel.api.schema_new.index.NewIndexDescriptor;
 import org.neo4j.kernel.api.schema_new.index.NewIndexDescriptorFactory;
 import org.neo4j.kernel.configuration.Config;
@@ -532,7 +531,7 @@ public class IndexingServiceTest
         life.start();
 
         // when
-        indexingService.triggerIndexSampling( IndexBoundary.map( descriptor ), mode );
+        indexingService.triggerIndexSampling( descriptor.schema() , mode );
 
         // then
         String userDescription = descriptor.schema().userDescription( nameLookup );
@@ -1003,7 +1002,7 @@ public class IndexingServiceTest
 
     private IndexEntryUpdate add( long nodeId, Object propertyValue )
     {
-        return IndexEntryUpdate.add( nodeId, index, propertyValue );
+        return IndexEntryUpdate.add( nodeId, index.schema(), propertyValue );
     }
 
     private IndexingService newIndexingServiceWithMockedDependencies( IndexPopulator populator,

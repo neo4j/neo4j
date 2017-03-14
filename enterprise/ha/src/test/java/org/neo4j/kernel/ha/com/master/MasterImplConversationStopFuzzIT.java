@@ -298,7 +298,7 @@ public class MasterImplConversationStopFuzzIT
             return worker.random.nextInt( numberOfResources );
         }
 
-        public SlaveEmulatorWorker( MasterImpl master, int clientNumber)
+        SlaveEmulatorWorker( MasterImpl master, int clientNumber )
         {
             this.machineId = clientNumber;
             this.random = new Random( machineId );
@@ -432,7 +432,7 @@ public class MasterImplConversationStopFuzzIT
         private volatile boolean running = true;
         private final ConversationManager conversationManager;
 
-        public ConversationKiller( ConversationManager conversationManager )
+        ConversationKiller( ConversationManager conversationManager )
         {
             this.conversationManager = conversationManager;
         }
@@ -477,7 +477,7 @@ public class MasterImplConversationStopFuzzIT
 
         private TimedRepository<RequestContext,Conversation> conversationStore;
 
-        public ExposedConversationManager( ConversationSPI spi, Config config, int activityCheckInterval,
+        ExposedConversationManager( ConversationSPI spi, Config config, int activityCheckInterval,
                 int lockTimeoutAddition )
         {
             super( spi, config, activityCheckInterval, lockTimeoutAddition );

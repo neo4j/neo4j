@@ -39,7 +39,6 @@ import org.neo4j.upgrade.loader.JarLoaderSupplier;
 
 import static org.junit.Assert.assertThat;
 import static org.junit.Assert.assertTrue;
-
 import static org.neo4j.upgrade.lucene.LuceneLegacyIndexUpgrader.NO_MONITOR;
 
 public class LuceneLegacyIndexUpgraderTest
@@ -98,7 +97,7 @@ public class LuceneLegacyIndexUpgraderTest
 
         private final String[] failedIndexNames;
 
-        public LegacyIndexMigrationExceptionBaseMatcher(String... failedIndexNames)
+        LegacyIndexMigrationExceptionBaseMatcher( String... failedIndexNames )
         {
             this.failedIndexNames = failedIndexNames;
         }
@@ -128,12 +127,12 @@ public class LuceneLegacyIndexUpgraderTest
         private final Set<String> migratedIndexes = new HashSet<>( );
         private final boolean failIndexUpgrade;
 
-        public TrackingLuceneLegacyIndexUpgrader( Path indexRootPath)
+        TrackingLuceneLegacyIndexUpgrader( Path indexRootPath )
         {
             this ( indexRootPath, false );
         }
 
-        public TrackingLuceneLegacyIndexUpgrader( Path indexRootPath, boolean failIndexUpgrade )
+        TrackingLuceneLegacyIndexUpgrader( Path indexRootPath, boolean failIndexUpgrade )
         {
             super( indexRootPath, NO_MONITOR );
             this.failIndexUpgrade = failIndexUpgrade;
@@ -157,7 +156,7 @@ public class LuceneLegacyIndexUpgraderTest
         private final Set<String> migratedIndexes;
         private final boolean failIndexUpgrade;
 
-        public IndexUpgraderWrapperStub( Supplier<EmbeddedJarLoader> jarLoaderSupplier, Set<String> migratedIndexes,
+        IndexUpgraderWrapperStub( Supplier<EmbeddedJarLoader> jarLoaderSupplier, Set<String> migratedIndexes,
                 boolean failIndexUpgrade )
         {
             super( jarLoaderSupplier );

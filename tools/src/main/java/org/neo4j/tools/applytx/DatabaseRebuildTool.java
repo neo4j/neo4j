@@ -167,7 +167,7 @@ public class DatabaseRebuildTool
         private final StoreAccess access;
         private final File storeDir;
 
-        public Store( GraphDatabaseBuilder dbBuilder )
+        Store( GraphDatabaseBuilder dbBuilder )
         {
             this.db = (GraphDatabaseAPI) dbBuilder.newGraphDatabase();
             this.access = new StoreAccess( db.getDependencyResolver()

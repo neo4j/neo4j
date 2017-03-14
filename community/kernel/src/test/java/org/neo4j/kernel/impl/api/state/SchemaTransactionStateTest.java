@@ -33,11 +33,8 @@ import java.util.Map;
 
 import org.neo4j.helpers.collection.Iterators;
 import org.neo4j.kernel.api.index.InternalIndexState;
-import org.neo4j.kernel.api.schema.IndexDescriptor;
-import org.neo4j.kernel.api.schema.IndexDescriptorFactory;
 import org.neo4j.kernel.api.schema.NodePropertyDescriptor;
 import org.neo4j.kernel.api.schema_new.SchemaDescriptorFactory;
-import org.neo4j.kernel.api.schema_new.index.IndexBoundary;
 import org.neo4j.kernel.api.schema_new.index.NewIndexDescriptor;
 import org.neo4j.kernel.api.schema_new.index.NewIndexDescriptorFactory;
 import org.neo4j.kernel.api.txstate.TransactionState;
@@ -64,7 +61,7 @@ public class SchemaTransactionStateTest
     private static NewIndexDescriptor indexCreate( StateHandlingStatementOperations txContext, KernelStatement state,
             int labelId, int propertyKey )
     {
-        return txContext.indexCreate( state, new NodePropertyDescriptor( labelId, propertyKey ) );
+        return txContext.indexCreate( state, SchemaDescriptorFactory.forLabel( labelId, propertyKey ) );
     }
 
     private static NewIndexDescriptor indexGetForLabelAndPropertyKey(
@@ -240,9 +237,9 @@ public class SchemaTransactionStateTest
         state = StatementOperationsTestHelper.mockedState( txState );
 
         store = mock( StoreReadLayer.class );
-        when( store.indexesGetForLabel( labelId1 ) ).then( asAnswer( Collections.<IndexDescriptor>emptyList() ) );
-        when( store.indexesGetForLabel( labelId2 ) ).then( asAnswer( Collections.<IndexDescriptor>emptyList() ) );
-        when( store.indexesGetAll() ).then( asAnswer( Collections.<IndexDescriptor>emptyList() ) );
+        when( store.indexesGetForLabel( labelId1 ) ).then( asAnswer( Collections.<NewIndexDescriptor>emptyList() ) );
+        when( store.indexesGetForLabel( labelId2 ) ).then( asAnswer( Collections.<NewIndexDescriptor>emptyList() ) );
+        when( store.indexesGetAll() ).then( asAnswer( Collections.<NewIndexDescriptor>emptyList() ) );
 
         txContext = new StateHandlingStatementOperations( store, mock( InternalAutoIndexing.class ),
                 mock( ConstraintIndexCreator.class ), mock( LegacyIndexStore.class ) );

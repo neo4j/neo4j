@@ -245,7 +245,14 @@ public class HighAvailabilityMemberStateMachine extends LifecycleAdapter impleme
         public void memberIsFailed( InstanceId instanceId )
         {
             // If we don't have quorum anymore with the currently alive members, then go to pending
-            if ( !isQuorum( getAliveCount(), getTotalCount() ) )
+            /*
+             * Unless this is a two instance cluster and we are the MASTER. This is an edge case in which a cluster
+             * of two instances gets a partition and we want to maintain write capability on one side.
+             * This, in combination with use of slave_only, is a cheap way to provide quasi-read-replica
+             * functionality for HA under the 2-instance scenario.
+             */
+            if ( !isQuorum( getAliveCount(), getTotalCount() ) &&
+                    !( getTotalCount() == 2 &&  state == HighAvailabilityMemberState.MASTER ) )
             {
                 HighAvailabilityMemberState oldState = state;
                 changeStateToDetached();

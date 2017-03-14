@@ -32,6 +32,7 @@ import java.util.List;
 import java.util.Map;
 import java.util.concurrent.Executor;
 
+import org.neo4j.cluster.ClusterSettings;
 import org.neo4j.cluster.InstanceId;
 import org.neo4j.cluster.protocol.atomicbroadcast.ObjectInputStreamFactory;
 import org.neo4j.cluster.protocol.atomicbroadcast.ObjectOutputStreamFactory;
@@ -43,6 +44,7 @@ import org.neo4j.cluster.protocol.election.ElectionCredentialsProvider;
 import org.neo4j.cluster.protocol.election.ElectionRole;
 import org.neo4j.cluster.timeout.Timeouts;
 import org.neo4j.helpers.collection.Iterables;
+import org.neo4j.kernel.configuration.Config;
 import org.neo4j.logging.NullLogProvider;
 
 import static org.junit.Assert.assertEquals;
@@ -86,15 +88,18 @@ public class HeartbeatContextTest
 
         context = mock( ClusterContext.class );
 
+        Config configuration = mock( Config.class );
+        when( configuration.get( ClusterSettings.max_acceptors ) ).thenReturn( 10 );
+
         when( context.getConfiguration() ).thenReturn( config );
         when( context.getMyId() ).thenReturn( instanceIds[0] );
 
-        MultiPaxosContext context = new MultiPaxosContext( instanceIds[0], 10, Iterables.<ElectionRole, ElectionRole>iterable(
+        MultiPaxosContext context = new MultiPaxosContext( instanceIds[0], Iterables.iterable(
                         new ElectionRole( "coordinator" ) ), config,
                         Mockito.mock( Executor.class ), NullLogProvider.getInstance(),
                         Mockito.mock( ObjectInputStreamFactory.class), Mockito.mock( ObjectOutputStreamFactory.class),
                         Mockito.mock( AcceptorInstanceStore.class), Mockito.mock( Timeouts.class),
-                        mock( ElectionCredentialsProvider.class) );
+                        mock( ElectionCredentialsProvider.class ), configuration );
 
         toTest = context.getHeartbeatContext();
     }

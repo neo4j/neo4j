@@ -215,7 +215,7 @@ public class GeoDataGenerator
         }
     }
 
-    public static enum RelationshipTypes implements RelationshipType
+    public enum RelationshipTypes implements RelationshipType
     {
         CONNECTION;
     }

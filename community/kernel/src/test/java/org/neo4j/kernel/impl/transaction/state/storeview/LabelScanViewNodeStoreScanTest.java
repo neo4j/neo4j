@@ -166,8 +166,7 @@ public class LabelScanViewNodeStoreScanTest
 
     private class LabelScanTestMultipleIndexPopulator extends MultipleIndexPopulator
     {
-        public LabelScanTestMultipleIndexPopulator( IndexStoreView storeView,
-                LogProvider logProvider )
+        LabelScanTestMultipleIndexPopulator( IndexStoreView storeView, LogProvider logProvider )
         {
             super( storeView, logProvider );
         }

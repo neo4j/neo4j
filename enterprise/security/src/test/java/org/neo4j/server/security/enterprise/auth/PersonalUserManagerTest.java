@@ -88,7 +88,7 @@ public class PersonalUserManagerTest
         private boolean failNextCall = false;
         private EnterpriseUserManager delegate;
 
-        public EvilUserManager( EnterpriseUserManager delegate )
+        EvilUserManager( EnterpriseUserManager delegate )
         {
             this.delegate = delegate;
         }

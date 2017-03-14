@@ -42,7 +42,7 @@ public interface RawIterator<T,EXCEPTION extends Exception>
         throw new UnsupportedOperationException();
     }
 
-    static RawIterator<Object,Exception> EMPTY = RawIterator.of();
+    RawIterator<Object,Exception> EMPTY = RawIterator.of();
 
     @SuppressWarnings( "unchecked" )
     static <T, EXCEPTION extends Exception> RawIterator<T,EXCEPTION> empty()

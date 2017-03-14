@@ -451,7 +451,7 @@ public class FormattedLog extends AbstractLog
         private final String prefix;
         private final DateFormat format;
 
-        public FormattedLogger( @Nonnull Supplier<PrintWriter> writerSupplier, @Nonnull String prefix )
+        FormattedLogger( @Nonnull Supplier<PrintWriter> writerSupplier, @Nonnull String prefix )
         {
             super( writerSupplier, lock, autoFlush );
             this.prefix = prefix;

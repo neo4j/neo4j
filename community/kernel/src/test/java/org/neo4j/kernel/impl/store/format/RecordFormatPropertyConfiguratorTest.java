@@ -92,7 +92,7 @@ public class RecordFormatPropertyConfiguratorTest
 
         private int dynamicRecordHeaderSize;
 
-        public ResizableRecordFormats(int dynamicRecordHeaderSize)
+        ResizableRecordFormats( int dynamicRecordHeaderSize )
         {
             this.dynamicRecordHeaderSize = dynamicRecordHeaderSize;
         }

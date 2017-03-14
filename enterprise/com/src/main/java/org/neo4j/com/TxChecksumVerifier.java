@@ -21,13 +21,9 @@ package org.neo4j.com;
 
 public interface TxChecksumVerifier
 {
-    public static final TxChecksumVerifier ALWAYS_MATCH = new TxChecksumVerifier()
+    TxChecksumVerifier ALWAYS_MATCH = ( txId, checksum ) ->
     {
-        @Override
-        public void assertMatch( long txId, long checksum )
-        {
-        }
     };
 
-    public void assertMatch( long txId, long checksum );
+    void assertMatch( long txId, long checksum );
 }

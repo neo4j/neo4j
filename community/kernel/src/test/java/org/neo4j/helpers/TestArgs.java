@@ -339,7 +339,7 @@ public class TestArgs
         assertTrue( interpreted.isEmpty() );
     }
 
-    private static enum MyEnum
+    private enum MyEnum
     {
         first,
         second,

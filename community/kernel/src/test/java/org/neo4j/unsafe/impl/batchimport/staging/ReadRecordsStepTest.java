@@ -116,7 +116,7 @@ public class ReadRecordsStepTest
         private final RECORD record;
         private final Predicate<RECORD> populator;
 
-        public ControlledRecordCursor( RECORD record, Predicate<RECORD> populator )
+        ControlledRecordCursor( RECORD record, Predicate<RECORD> populator )
         {
             this.record = record;
             this.populator = populator;

@@ -241,8 +241,7 @@ public class DatabaseIndexIntegrationTest
     private static class TestLuceneIndex extends AbstractLuceneIndex
     {
 
-        public TestLuceneIndex( PartitionedIndexStorage indexStorage,
-                IndexPartitionFactory partitionFactory )
+        TestLuceneIndex( PartitionedIndexStorage indexStorage, IndexPartitionFactory partitionFactory )
         {
             super( indexStorage, partitionFactory );
         }
@@ -286,7 +285,7 @@ public class DatabaseIndexIntegrationTest
             private final Directory delegate;
             private final CountDownLatch signal;
 
-            public SyncNotifierDirectory( Directory delegate, CountDownLatch signal )
+            SyncNotifierDirectory( Directory delegate, CountDownLatch signal )
             {
                 this.delegate = delegate;
                 this.signal = signal;

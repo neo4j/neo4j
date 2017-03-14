@@ -79,7 +79,7 @@ public class BatchingIdGeneratorFactory implements IdGeneratorFactory
         private final FileSystemAbstraction fs;
         private final File fileName;
 
-        public BatchingIdGenerator( FileSystemAbstraction fs, File fileName, long highId )
+        BatchingIdGenerator( FileSystemAbstraction fs, File fileName, long highId )
         {
             this.fs = fs;
             this.fileName = fileName;

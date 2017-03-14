@@ -32,7 +32,7 @@ class KeyValueMerger implements DataProvider
     private final BigEndianByteArrayBuffer firstKey, firstValue, otherKey, otherValue;
     private boolean firstAvail, otherAvail;
 
-    public KeyValueMerger( DataProvider first, DataProvider other, int keySize, int valueSize ) throws IOException
+    KeyValueMerger( DataProvider first, DataProvider other, int keySize, int valueSize ) throws IOException
     {
         this.firstAvail = (this.first = first).visit( firstKey = buffer( keySize ), firstValue = buffer( valueSize ) );
         this.otherAvail = (this.other = other).visit( otherKey = buffer( keySize ), otherValue = buffer( valueSize ) );

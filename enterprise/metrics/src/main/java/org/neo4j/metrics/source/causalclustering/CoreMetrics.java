@@ -45,8 +45,6 @@ public class CoreMetrics extends LifecycleAdapter
     public static final String TERM = name( CAUSAL_CLUSTERING_PREFIX, "term" );
     @Documented("Leader was not found while attempting to commit a transaction")
     public static final String LEADER_NOT_FOUND = name( CAUSAL_CLUSTERING_PREFIX, "leader_not_found" );
-    @Documented("TX pull requests received from read replicas")
-    public static final String TX_PULL_REQUESTS_RECEIVED = name( CAUSAL_CLUSTERING_PREFIX, "tx_pull_requests_received" );
     @Documented("Transaction retries")
     public static final String TX_RETRIES = name( CAUSAL_CLUSTERING_PREFIX, "tx_retries" );
     @Documented("Is this server the leader?")
@@ -90,7 +88,6 @@ public class CoreMetrics extends LifecycleAdapter
         registry.register( APPEND_INDEX, (Gauge<Long>) raftLogAppendIndexMetric::appendIndex );
         registry.register( TERM, (Gauge<Long>) raftTermMetric::term );
         registry.register( LEADER_NOT_FOUND, (Gauge<Long>) leaderNotFoundMetric::leaderNotFoundExceptions );
-        registry.register( TX_PULL_REQUESTS_RECEIVED, (Gauge<Long>) txPullRequestsMetric::txPullRequestsReceived );
         registry.register( TX_RETRIES, (Gauge<Long>) txRetryMetric::transactionsRetries );
         registry.register( IS_LEADER, new LeaderGauge() );
         registry.register( DROPPED_MESSAGES, (Gauge<Long>) messageQueueMetric::droppedMessages );
@@ -104,7 +101,6 @@ public class CoreMetrics extends LifecycleAdapter
         registry.remove( APPEND_INDEX );
         registry.remove( TERM );
         registry.remove( LEADER_NOT_FOUND );
-        registry.remove( TX_PULL_REQUESTS_RECEIVED );
         registry.remove( TX_RETRIES );
         registry.remove( IS_LEADER );
         registry.remove( DROPPED_MESSAGES );

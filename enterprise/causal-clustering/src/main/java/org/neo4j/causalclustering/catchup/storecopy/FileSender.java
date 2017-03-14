@@ -35,7 +35,7 @@ class FileSender implements ChunkedInput<FileChunk>
     private boolean sentChunk = false;
     private byte[] preFetchedBytes;
 
-    public FileSender( ReadableByteChannel channel ) throws IOException
+    FileSender( ReadableByteChannel channel ) throws IOException
     {
         this.channel = channel;
         byteBuffer = ByteBuffer.allocateDirect( FileChunk.MAX_SIZE );

@@ -56,5 +56,5 @@ public interface PageCache
     @Description( "Number of exceptions caught during page eviction. " +
                   "This number should be zero, or at least not growing, in a healthy database. " +
                   "Otherwise it could indicate drive failure, storage space, or permission problems." )
-    public long getEvictionExceptions();
+    long getEvictionExceptions();
 }

@@ -195,7 +195,7 @@ class AsOneStartBranch implements TraversalBranch
     {
         private final Iterator<Node> nodeIterator;
 
-        public TraversalBranchIterator( Iterator<Node> nodeIterator )
+        TraversalBranchIterator( Iterator<Node> nodeIterator )
         {
             this.nodeIterator = nodeIterator;
         }

@@ -64,7 +64,7 @@ public enum TraverserReturnType
     };
     public final RepresentationType repType;
 
-    private TraverserReturnType( RepresentationType repType )
+    TraverserReturnType( RepresentationType repType )
     {
         this.repType = repType;
     }

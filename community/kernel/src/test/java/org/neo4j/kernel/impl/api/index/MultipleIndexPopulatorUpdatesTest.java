@@ -41,8 +41,8 @@ import org.neo4j.kernel.api.index.IndexUpdater;
 import org.neo4j.kernel.api.index.NodeUpdates;
 import org.neo4j.kernel.api.index.SchemaIndexProvider;
 import org.neo4j.kernel.api.labelscan.NodeLabelUpdate;
-import org.neo4j.kernel.api.schema.IndexDescriptor;
-import org.neo4j.kernel.api.schema.IndexDescriptorFactory;
+import org.neo4j.kernel.api.schema_new.LabelSchemaDescriptor;
+import org.neo4j.kernel.api.schema_new.SchemaDescriptorFactory;
 import org.neo4j.kernel.api.schema_new.index.NewIndexDescriptor;
 import org.neo4j.kernel.api.schema_new.index.NewIndexDescriptorFactory;
 import org.neo4j.kernel.impl.locking.LockService;
@@ -170,7 +170,7 @@ public class MultipleIndexPopulatorUpdatesTest
         private final NodeRecord nodeRecord;
         private final long id;
 
-        public SetNodeIdRecordAnswer( NodeRecord nodeRecord, long id )
+        SetNodeIdRecordAnswer( NodeRecord nodeRecord, long id )
         {
             this.nodeRecord = nodeRecord;
             this.id = id;
@@ -187,12 +187,12 @@ public class MultipleIndexPopulatorUpdatesTest
     private static class NodeUpdateProcessListener implements Listener<NodeRecord>
     {
         private final MultipleIndexPopulator indexPopulator;
-        private final NewIndexDescriptor index;
+        private final LabelSchemaDescriptor index;
 
-        public NodeUpdateProcessListener( MultipleIndexPopulator indexPopulator )
+        NodeUpdateProcessListener( MultipleIndexPopulator indexPopulator )
         {
             this.indexPopulator = indexPopulator;
-            this.index = NewIndexDescriptorFactory.forLabel( 1, 1 );
+            this.index = SchemaDescriptorFactory.forLabel( 1, 1 );
         }
 
         @Override
@@ -209,7 +209,7 @@ public class MultipleIndexPopulatorUpdatesTest
     {
         private Listener<NodeRecord> processListener;
 
-        public ProcessListenableNeoStoreIndexView( LockService locks, NeoStores neoStores )
+        ProcessListenableNeoStoreIndexView( LockService locks, NeoStores neoStores )
         {
             super( locks, neoStores );
         }

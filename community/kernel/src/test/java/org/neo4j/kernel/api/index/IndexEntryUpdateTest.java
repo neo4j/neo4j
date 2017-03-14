@@ -23,7 +23,7 @@ import org.junit.Rule;
 import org.junit.Test;
 import org.junit.rules.ExpectedException;
 
-import org.neo4j.kernel.api.schema_new.index.NewIndexDescriptorFactory;
+import org.neo4j.kernel.api.schema_new.SchemaDescriptorFactory;
 
 import static org.hamcrest.MatcherAssert.assertThat;
 import static org.hamcrest.Matchers.equalTo;
@@ -40,8 +40,8 @@ public class IndexEntryUpdateTest
     @Test
     public void indexEntryUpdatesShouldBeEqual()
     {
-        IndexEntryUpdate a = IndexEntryUpdate.add( 0, NewIndexDescriptorFactory.forLabel( 3, 4 ), "hi" );
-        IndexEntryUpdate b = IndexEntryUpdate.add( 0, NewIndexDescriptorFactory.forLabel( 3, 4 ), "hi" );
+        IndexEntryUpdate a = IndexEntryUpdate.add( 0, SchemaDescriptorFactory.forLabel( 3, 4 ), "hi" );
+        IndexEntryUpdate b = IndexEntryUpdate.add( 0, SchemaDescriptorFactory.forLabel( 3, 4 ), "hi" );
         assertThat( a, equalTo( b ) );
         assertThat( a.hashCode(), equalTo( b.hashCode() ) );
     }
@@ -49,8 +49,8 @@ public class IndexEntryUpdateTest
     @Test
     public void addShouldRetainValues()
     {
-        IndexEntryUpdate single = IndexEntryUpdate.add( 0, NewIndexDescriptorFactory.forLabel( 3, 4 ), singleValue );
-        IndexEntryUpdate multi = IndexEntryUpdate.add( 0, NewIndexDescriptorFactory.forLabel( 3, 4, 5 ), multiValue );
+        IndexEntryUpdate single = IndexEntryUpdate.add( 0, SchemaDescriptorFactory.forLabel( 3, 4 ), singleValue );
+        IndexEntryUpdate multi = IndexEntryUpdate.add( 0, SchemaDescriptorFactory.forLabel( 3, 4, 5 ), multiValue );
         assertThat( single, not( equalTo( multi ) ) );
         assertThat( single.values(), equalTo( new Object[]{singleValue} ) );
         assertThat( multi.values(), equalTo( multiValue ) );
@@ -59,9 +59,9 @@ public class IndexEntryUpdateTest
     @Test
     public void removeShouldRetainValues()
     {
-        IndexEntryUpdate single = IndexEntryUpdate.remove( 0, NewIndexDescriptorFactory.forLabel( 3, 4 ), singleValue );
+        IndexEntryUpdate single = IndexEntryUpdate.remove( 0, SchemaDescriptorFactory.forLabel( 3, 4 ), singleValue );
         IndexEntryUpdate multi = IndexEntryUpdate
-                .remove( 0, NewIndexDescriptorFactory.forLabel( 3, 4, 5 ), multiValue );
+                .remove( 0, SchemaDescriptorFactory.forLabel( 3, 4, 5 ), multiValue );
         assertThat( single, not( equalTo( multi ) ) );
         assertThat( single.values(), equalTo( new Object[]{singleValue} ) );
         assertThat( multi.values(), equalTo( multiValue ) );
@@ -70,7 +70,7 @@ public class IndexEntryUpdateTest
     @Test
     public void addShouldThrowIfAskedForChanged() throws Exception
     {
-        IndexEntryUpdate single = IndexEntryUpdate.add( 0, NewIndexDescriptorFactory.forLabel( 3, 4 ), singleValue );
+        IndexEntryUpdate single = IndexEntryUpdate.add( 0, SchemaDescriptorFactory.forLabel( 3, 4 ), singleValue );
         thrown.expect( UnsupportedOperationException.class );
         single.beforeValues();
     }
@@ -78,7 +78,7 @@ public class IndexEntryUpdateTest
     @Test
     public void removeShouldThrowIfAskedForChanged() throws Exception
     {
-        IndexEntryUpdate single = IndexEntryUpdate.remove( 0, NewIndexDescriptorFactory.forLabel( 3, 4 ), singleValue );
+        IndexEntryUpdate single = IndexEntryUpdate.remove( 0, SchemaDescriptorFactory.forLabel( 3, 4 ), singleValue );
         thrown.expect( UnsupportedOperationException.class );
         single.beforeValues();
     }
@@ -86,18 +86,18 @@ public class IndexEntryUpdateTest
     @Test
     public void updatesShouldEqualRegardlessOfCreationMethod()
     {
-        IndexEntryUpdate singleAdd = IndexEntryUpdate.add( 0, NewIndexDescriptorFactory.forLabel( 3, 4 ), singleValue );
+        IndexEntryUpdate singleAdd = IndexEntryUpdate.add( 0, SchemaDescriptorFactory.forLabel( 3, 4 ), singleValue );
         Object[] singleAsArray = {singleValue};
         IndexEntryUpdate multiAdd = IndexEntryUpdate
-                .add( 0, NewIndexDescriptorFactory.forLabel( 3, 4 ), singleAsArray );
+                .add( 0, SchemaDescriptorFactory.forLabel( 3, 4 ), singleAsArray );
         IndexEntryUpdate singleRemove = IndexEntryUpdate
-                .remove( 0, NewIndexDescriptorFactory.forLabel( 3, 4 ), singleValue );
+                .remove( 0, SchemaDescriptorFactory.forLabel( 3, 4 ), singleValue );
         IndexEntryUpdate multiRemove = IndexEntryUpdate
-                .remove( 0, NewIndexDescriptorFactory.forLabel( 3, 4 ), singleAsArray );
+                .remove( 0, SchemaDescriptorFactory.forLabel( 3, 4 ), singleAsArray );
         IndexEntryUpdate singleChange = IndexEntryUpdate
-                .change( 0, NewIndexDescriptorFactory.forLabel( 3, 4 ), singleValue, singleValue );
+                .change( 0, SchemaDescriptorFactory.forLabel( 3, 4 ), singleValue, singleValue );
         IndexEntryUpdate multiChange = IndexEntryUpdate
-                .change( 0, NewIndexDescriptorFactory.forLabel( 3, 4 ), singleAsArray, singleAsArray );
+                .change( 0, SchemaDescriptorFactory.forLabel( 3, 4 ), singleAsArray, singleAsArray );
         assertThat( singleAdd, equalTo( multiAdd ) );
         assertThat( singleRemove, equalTo( multiRemove ) );
         assertThat( singleChange, equalTo( multiChange ) );
@@ -108,10 +108,10 @@ public class IndexEntryUpdateTest
     {
         String singleAfter = "Hello";
         IndexEntryUpdate singleChange = IndexEntryUpdate
-                .change( 0, NewIndexDescriptorFactory.forLabel( 3, 4 ), singleValue, singleAfter );
+                .change( 0, SchemaDescriptorFactory.forLabel( 3, 4 ), singleValue, singleAfter );
         Object[] multiAfter = {"Hello", "Hi"};
         IndexEntryUpdate multiChange = IndexEntryUpdate
-                .change( 0, NewIndexDescriptorFactory.forLabel( 3, 4 ), multiValue, multiAfter );
+                .change( 0, SchemaDescriptorFactory.forLabel( 3, 4 ), multiValue, multiAfter );
         assertThat( new Object[]{singleValue}, equalTo( singleChange.beforeValues() ) );
         assertThat( new Object[]{singleAfter}, equalTo( singleChange.values() ) );
         assertThat( multiValue, equalTo( multiChange.beforeValues() ) );
@@ -124,8 +124,8 @@ public class IndexEntryUpdateTest
         Object value1 = arraysOfDepth( 13 );
         Object value2 = arraysOfDepth( 13 );
 
-        IndexEntryUpdate a = IndexEntryUpdate.add( 0, NewIndexDescriptorFactory.forLabel( 3, 4 ), value1 );
-        IndexEntryUpdate b = IndexEntryUpdate.add( 0, NewIndexDescriptorFactory.forLabel( 3, 4 ), value2 );
+        IndexEntryUpdate a = IndexEntryUpdate.add( 0, SchemaDescriptorFactory.forLabel( 3, 4 ), value1 );
+        IndexEntryUpdate b = IndexEntryUpdate.add( 0, SchemaDescriptorFactory.forLabel( 3, 4 ), value2 );
         assertThat( a, equalTo( b ) );
         assertThat( a.hashCode(), equalTo( b.hashCode() ) );
     }

@@ -69,7 +69,7 @@ public interface ClusterListener
 
     void unelected( String role, InstanceId instanceId, URI electedMember );
 
-    public abstract class Adapter
+    abstract class Adapter
             implements ClusterListener
     {
         @Override

@@ -52,7 +52,7 @@ public class AggregatingIndexSamplerTest
     {
         private final long value;
 
-        public TestIndexSampler( long value )
+        TestIndexSampler( long value )
         {
             this.value = value;
         }

@@ -67,7 +67,7 @@ class NodeRecordFormat extends BaseHighLimitRecordFormat<NodeRecord>
     private static final long LOWER_NIBBLE_READ_MASK = 0xFL;
     private static final long HIGHER_NIBBLE_READ_MASK = 0xF0L;
 
-    public NodeRecordFormat()
+    NodeRecordFormat()
     {
         this( RECORD_SIZE );
     }

@@ -117,7 +117,7 @@ final class MuninnWritePageCursor extends MuninnPageCursor
     }
 
     @Override
-    public final boolean shouldRetry()
+    public boolean shouldRetry()
     {
         // We take exclusive locks, so there's never a need to retry.
         return false;

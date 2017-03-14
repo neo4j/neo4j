@@ -126,7 +126,7 @@ public class LockingStatementOperations implements
     }
 
     @Override
-    public NewIndexDescriptor indexCreate( KernelStatement state, NodePropertyDescriptor descriptor )
+    public NewIndexDescriptor indexCreate( KernelStatement state, LabelSchemaDescriptor descriptor )
             throws AlreadyIndexedException, AlreadyConstrainedException
     {
         acquireExclusiveSchemaLock( state );

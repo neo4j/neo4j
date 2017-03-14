@@ -42,9 +42,7 @@ import org.neo4j.kernel.api.KernelTransaction;
 import org.neo4j.kernel.api.ReadOperations;
 import org.neo4j.kernel.api.Statement;
 import org.neo4j.kernel.api.StatementTokenNameLookup;
-import org.neo4j.kernel.api.constraints.NodePropertyConstraint;
 import org.neo4j.kernel.api.constraints.PropertyConstraint;
-import org.neo4j.kernel.api.schema.IndexDescriptor;
 import org.neo4j.kernel.api.schema_new.constaints.ConstraintBoundary;
 import org.neo4j.kernel.api.schema_new.constaints.ConstraintDescriptor;
 import org.neo4j.kernel.api.schema_new.index.NewIndexDescriptor;
@@ -223,7 +221,7 @@ public class SchemaProcedure
         private final Node endNode;
         private final RelationshipType relationshipType;
 
-        public RelationshipImpl( final NodeImpl startNode, final NodeImpl endNode, final String type )
+        RelationshipImpl( final NodeImpl startNode, final NodeImpl endNode, final String type )
         {
             this.id = MIN_ID.getAndDecrement();
             this.startNode = startNode;
@@ -350,7 +348,7 @@ public class SchemaProcedure
         private final long id;
         private final Label label;
 
-        public NodeImpl( final String label, Map<String,Object> properties )
+        NodeImpl( final String label, Map<String,Object> properties )
         {
             this.id = MIN_ID.getAndDecrement();
             this.label = Label.label( label );

@@ -353,7 +353,7 @@ public class DbRepresentation
     {
         private final Collection<String> collection;
 
-        public CollectionDiffReport( Collection<String> collection )
+        CollectionDiffReport( Collection<String> collection )
         {
             this.collection = collection;
         }

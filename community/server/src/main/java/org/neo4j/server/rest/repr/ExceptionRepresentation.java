@@ -108,7 +108,7 @@ public class ExceptionRepresentation extends MappingRepresentation
     {
         private final Neo4jError error;
 
-        public ErrorEntryRepresentation( Neo4jError error )
+        ErrorEntryRepresentation( Neo4jError error )
         {
             super( "error-entry" );
             this.error = error;

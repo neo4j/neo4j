@@ -454,7 +454,7 @@ final class TransactionBoundQueryContext(tc: TransactionalContextWrapper)
   }
 
   def addIndexRule(labelId: Int, propertyKeyId: Int): IdempotentResult[IndexDescriptor] = try {
-    IdempotentResult(tc.statement.schemaWriteOperations().indexCreate(new NodePropertyDescriptor(labelId, propertyKeyId)))
+    IdempotentResult(tc.statement.schemaWriteOperations().indexCreate(SchemaDescriptorFactory.forLabel(labelId, propertyKeyId)))
   } catch {
     case _: AlreadyIndexedException =>
 

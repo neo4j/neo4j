@@ -66,7 +66,7 @@ public class PrimitiveCollectionEqualityTest
     {
         private final Class<T> applicableType;
 
-        public ValueProducer( Class<T> applicableType )
+        ValueProducer( Class<T> applicableType )
         {
             this.applicableType = applicableType;
         }

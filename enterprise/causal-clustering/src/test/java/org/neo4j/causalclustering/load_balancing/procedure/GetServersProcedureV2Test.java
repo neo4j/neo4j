@@ -43,7 +43,7 @@ public class GetServersProcedureV2Test
     public void shouldHaveCorrectSignature() throws Exception
     {
         // given
-        GetServersProcedureV2 proc = new GetServersProcedureV2( null );
+        GetServersProcedureForMultiDC proc = new GetServersProcedureForMultiDC( null );
 
         // when
         ProcedureSignature signature = proc.signature();
@@ -63,7 +63,7 @@ public class GetServersProcedureV2Test
         // given
         LoadBalancingPlugin plugin = mock( LoadBalancingPlugin.class );
         when( plugin.run( anyMap() ) ).thenReturn( mock( LoadBalancingPlugin.Result.class ) );
-        GetServersProcedureV2 getServers = new GetServersProcedureV2( plugin );
+        GetServersProcedureForMultiDC getServers = new GetServersProcedureForMultiDC( plugin );
         Map<String,String> clientContext = stringMap( "key", "value", "key2", "value2" );
 
         // when

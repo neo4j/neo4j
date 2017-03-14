@@ -117,7 +117,7 @@ public class MadeUpServer extends Server<MadeUpCommunicationInterface, Void>
         return responseFailureEncountered;
     }
 
-    static enum MadeUpRequestType implements RequestType<MadeUpCommunicationInterface>
+    enum MadeUpRequestType implements RequestType<MadeUpCommunicationInterface>
     {
         MULTIPLY( new TargetCaller<MadeUpCommunicationInterface, Integer>()
         {

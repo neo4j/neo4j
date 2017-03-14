@@ -27,7 +27,7 @@ final class FileMapping
     public final File file;
     public final MuninnPagedFile pagedFile;
 
-    public FileMapping( File file, MuninnPagedFile pagedFile )
+    FileMapping( File file, MuninnPagedFile pagedFile )
     {
         this.file = file;
         this.pagedFile = pagedFile;

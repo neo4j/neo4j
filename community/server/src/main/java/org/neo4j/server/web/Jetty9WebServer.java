@@ -89,7 +89,7 @@ public class Jetty9WebServer implements WebServer
         private final Filter filter;
         private final String pathSpec;
 
-        public FilterDefinition( Filter filter, String pathSpec )
+        FilterDefinition( Filter filter, String pathSpec )
         {
             this.filter = filter;
             this.pathSpec = pathSpec;

@@ -481,7 +481,7 @@ public class UdcExtensionImplTest extends LocalServerTestBase
         assertThat( DefaultUdcInformationCollector.filterVersionForUDC( "1.9" ), is( equalTo( "1.9" ) ) );
     }
 
-    private static interface Condition<T>
+    private interface Condition<T>
     {
         boolean isTrue( T value );
     }
@@ -563,7 +563,7 @@ public class UdcExtensionImplTest extends LocalServerTestBase
     {
         private T value;
 
-        public PointerTo( T value )
+        PointerTo( T value )
         {
             this.value = value;
         }

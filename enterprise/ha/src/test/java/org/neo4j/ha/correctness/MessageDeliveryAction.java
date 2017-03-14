@@ -33,7 +33,7 @@ class MessageDeliveryAction implements ClusterAction
 
     private final Message message;
 
-    public MessageDeliveryAction( Message message )
+    MessageDeliveryAction( Message message )
     {
         this.message = message;
     }

@@ -41,7 +41,7 @@ import org.neo4j.cluster.protocol.cluster.ClusterMessage.ConfigurationResponseSt
 public interface ClusterContext
     extends LoggingContext, TimeoutsContext, ConfigurationContext
 {
-    public static final int NO_ELECTOR_VERSION = -1;
+    int NO_ELECTOR_VERSION = -1;
 
     // Cluster API
     void addClusterListener( ClusterListener listener );
@@ -87,6 +87,12 @@ public interface ClusterContext
 
     List<ClusterMessage.ConfigurationRequestState> getDiscoveredInstances();
 
+    boolean haveWeContactedInstance( ClusterMessage.ConfigurationRequestState configurationRequested );
+
+    void addContactingInstance( ClusterMessage.ConfigurationRequestState instance, String discoveryHeader );
+
+    String generateDiscoveryHeader();
+
     void setBoundAt( URI boundAt );
 
     void joinDenied( ConfigurationResponseState configurationResponseState );
@@ -116,4 +122,6 @@ public interface ClusterContext
     long getLastElectorVersion();
 
     void setLastElectorVersion( long lastElectorVersion );
+
+    boolean shouldFilterContactingInstances();
 }

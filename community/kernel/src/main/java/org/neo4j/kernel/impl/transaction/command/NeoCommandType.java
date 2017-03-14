@@ -23,24 +23,24 @@ public interface NeoCommandType
 {
     // means the first byte of the command record was only written but second
     // (saying what type) did not get written but the file still got expanded
-    public static final byte NONE = (byte) 0;
+    byte NONE = (byte) 0;
 
-    public static final byte NODE_COMMAND = (byte) 1;
-    public static final byte PROP_COMMAND = (byte) 2;
-    public static final byte REL_COMMAND = (byte) 3;
-    public static final byte REL_TYPE_COMMAND = (byte) 4;
-    public static final byte PROP_INDEX_COMMAND = (byte) 5;
-    public static final byte NEOSTORE_COMMAND = (byte) 6;
-    public static final byte SCHEMA_RULE_COMMAND = (byte) 7;
-    public static final byte LABEL_KEY_COMMAND = (byte) 8;
-    public static final byte REL_GROUP_COMMAND = (byte) 9;
+    byte NODE_COMMAND = (byte) 1;
+    byte PROP_COMMAND = (byte) 2;
+    byte REL_COMMAND = (byte) 3;
+    byte REL_TYPE_COMMAND = (byte) 4;
+    byte PROP_INDEX_COMMAND = (byte) 5;
+    byte NEOSTORE_COMMAND = (byte) 6;
+    byte SCHEMA_RULE_COMMAND = (byte) 7;
+    byte LABEL_KEY_COMMAND = (byte) 8;
+    byte REL_GROUP_COMMAND = (byte) 9;
 
-    public static final byte INDEX_DEFINE_COMMAND = (byte) 10;
-    public static final byte INDEX_ADD_COMMAND = (byte) 11;
-    public static final byte INDEX_ADD_RELATIONSHIP_COMMAND = (byte) 12;
-    public static final byte INDEX_REMOVE_COMMAND = (byte) 13;
-    public static final byte INDEX_DELETE_COMMAND = (byte) 14;
-    public static final byte INDEX_CREATE_COMMAND = (byte) 15;
+    byte INDEX_DEFINE_COMMAND = (byte) 10;
+    byte INDEX_ADD_COMMAND = (byte) 11;
+    byte INDEX_ADD_RELATIONSHIP_COMMAND = (byte) 12;
+    byte INDEX_REMOVE_COMMAND = (byte) 13;
+    byte INDEX_DELETE_COMMAND = (byte) 14;
+    byte INDEX_CREATE_COMMAND = (byte) 15;
 
     byte UPDATE_RELATIONSHIP_COUNTS_COMMAND = (byte) 16;
     byte UPDATE_NODE_COUNTS_COMMAND = (byte) 17;

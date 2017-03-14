@@ -126,7 +126,7 @@ public class DefaultRecoverySPI implements Recovery.SPI
     {
         private final TransactionQueue transactionsToApply;
 
-        public RecoveryVisitor( TransactionQueue transactionsToApply )
+        RecoveryVisitor( TransactionQueue transactionsToApply )
         {
             this.transactionsToApply = transactionsToApply;
         }

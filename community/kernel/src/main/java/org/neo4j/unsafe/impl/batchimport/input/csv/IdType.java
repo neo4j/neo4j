@@ -113,7 +113,7 @@ public enum IdType
 
     private final boolean idsAreExternal;
 
-    private IdType( boolean idsAreExternal )
+    IdType( boolean idsAreExternal )
     {
         this.idsAreExternal = idsAreExternal;
     }

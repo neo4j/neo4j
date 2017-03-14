@@ -25,7 +25,6 @@ import org.neo4j.kernel.impl.pagecache.ConfiguringPageCacheFactory;
 import static java.lang.Math.min;
 import static org.neo4j.graphdb.factory.GraphDatabaseSettings.dense_node_threshold;
 import static org.neo4j.graphdb.factory.GraphDatabaseSettings.pagecache_memory;
-import static org.neo4j.io.ByteUnit.kibiBytes;
 import static org.neo4j.io.ByteUnit.mebiBytes;
 
 /**
@@ -124,7 +123,7 @@ public interface Configuration extends org.neo4j.unsafe.impl.batchimport.staging
         }
     }
 
-    public static Configuration withBatchSize( Configuration config, int batchSize )
+    static Configuration withBatchSize( Configuration config, int batchSize )
     {
         return new Overridden( config )
         {

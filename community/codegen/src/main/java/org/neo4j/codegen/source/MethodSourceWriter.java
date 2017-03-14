@@ -44,7 +44,7 @@ class MethodSourceWriter implements MethodEmitter, ExpressionVisitor
     private final ClassSourceWriter classSourceWriter;
     private final Deque<Runnable> level = new LinkedList<>();
 
-    public MethodSourceWriter( StringBuilder target, ClassSourceWriter classSourceWriter )
+    MethodSourceWriter( StringBuilder target, ClassSourceWriter classSourceWriter )
     {
         this.target = target;
         this.classSourceWriter = classSourceWriter;

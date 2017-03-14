@@ -31,6 +31,7 @@ import java.util.concurrent.ExecutorService;
 import java.util.concurrent.Executors;
 import java.util.concurrent.TimeUnit;
 import java.util.concurrent.atomic.AtomicBoolean;
+
 import org.neo4j.consistency.ConsistencyCheckService;
 import org.neo4j.consistency.ConsistencyCheckService.Result;
 import org.neo4j.graphdb.GraphDatabaseService;
@@ -364,7 +365,7 @@ public class MultipleIndexPopulationStressIT
     {
         private final int count;
 
-        public RandomDataInput( int count )
+        RandomDataInput( int count )
         {
             this.count = count;
         }

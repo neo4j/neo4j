@@ -78,7 +78,7 @@ class RelationshipGroupRecordFormat extends BaseHighLimitRecordFormat<Relationsh
     private static final long ONE_BIT_OVERFLOW_BIT_MASK = 0xFFFF_FFFE_0000_0000L;
     private static final long HIGH_DWORD_LAST_BIT_MASK = 0x100000000L;
 
-    public RelationshipGroupRecordFormat()
+    RelationshipGroupRecordFormat()
     {
         this( RECORD_SIZE );
     }

@@ -29,6 +29,8 @@ import org.neo4j.kernel.api.impl.schema.LuceneDocumentStructure;
 import org.neo4j.kernel.api.impl.schema.SchemaIndex;
 import org.neo4j.kernel.api.impl.schema.writer.LuceneIndexWriter;
 import org.neo4j.kernel.api.index.PropertyAccessor;
+import org.neo4j.kernel.api.schema_new.LabelSchemaDescriptor;
+import org.neo4j.kernel.api.schema_new.SchemaDescriptorFactory;
 import org.neo4j.kernel.api.schema_new.index.NewIndexDescriptor;
 import org.neo4j.kernel.api.schema_new.index.NewIndexDescriptorFactory;
 import org.neo4j.kernel.impl.api.index.sampling.UniqueIndexSampler;
@@ -50,7 +52,7 @@ import static org.neo4j.kernel.api.index.IndexEntryUpdate.remove;
 
 public class UniqueDatabaseIndexPopulatingUpdaterTest
 {
-    private static final NewIndexDescriptor descriptor = NewIndexDescriptorFactory.forLabel( 1, 42 );
+    private static final LabelSchemaDescriptor descriptor = SchemaDescriptorFactory.forLabel( 1, 42 );
 
     @Test
     public void removeNotSupported()
@@ -81,7 +83,7 @@ public class UniqueDatabaseIndexPopulatingUpdaterTest
         verifyZeroInteractions( index );
 
         updater.close();
-        verify( index ).verifyUniqueness( any(), eq( descriptor.schema().getPropertyId() ), eq( Arrays.asList( "foo", "bar", "baz" ) ) );
+        verify( index ).verifyUniqueness( any(), eq( descriptor.getPropertyId() ), eq( Arrays.asList( "foo", "bar", "baz" ) ) );
     }
 
     @Test
@@ -97,7 +99,7 @@ public class UniqueDatabaseIndexPopulatingUpdaterTest
         verifyZeroInteractions( index );
 
         updater.close();
-        verify( index ).verifyUniqueness( any(), eq( descriptor.schema().getPropertyId() ), eq( Arrays.asList( "foo2", "bar2", "baz2" ) ) );
+        verify( index ).verifyUniqueness( any(), eq( descriptor.getPropertyId() ), eq( Arrays.asList( "foo2", "bar2", "baz2" ) ) );
     }
 
     @Test
@@ -117,7 +119,7 @@ public class UniqueDatabaseIndexPopulatingUpdaterTest
         updater.close();
 
         List<Object> toBeVerified = Arrays.asList( "added1", "added2", "after1", "after2" );
-        verify( index ).verifyUniqueness( any(), eq( descriptor.schema().getPropertyId() ), eq( toBeVerified ) );
+        verify( index ).verifyUniqueness( any(), eq( descriptor.getPropertyId() ), eq( toBeVerified ) );
     }
 
     @Test
@@ -256,7 +258,7 @@ public class UniqueDatabaseIndexPopulatingUpdaterTest
     private static UniqueLuceneIndexPopulatingUpdater newUpdater( SchemaIndex index, LuceneIndexWriter writer,
             UniqueIndexSampler sampler )
     {
-        return new UniqueLuceneIndexPopulatingUpdater( writer, descriptor.schema().getPropertyId(), index,
+        return new UniqueLuceneIndexPopulatingUpdater( writer, descriptor.getPropertyId(), index,
                 mock( PropertyAccessor.class ), sampler );
     }
 }

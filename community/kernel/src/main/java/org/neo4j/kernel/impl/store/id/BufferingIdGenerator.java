@@ -28,7 +28,7 @@ class BufferingIdGenerator extends IdGenerator.Delegate
 {
     private DelayedBuffer<KernelTransactionsSnapshot> buffer;
 
-    public BufferingIdGenerator( IdGenerator delegate )
+    BufferingIdGenerator( IdGenerator delegate )
     {
         super( delegate );
     }

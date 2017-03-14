@@ -676,7 +676,7 @@ public final class Iterables
     {
         private final Iterable<I> iterable;
 
-        public FlattenIterable( Iterable<I> iterable )
+        FlattenIterable( Iterable<I> iterable )
         {
             this.iterable = iterable;
         }
@@ -693,7 +693,7 @@ public final class Iterables
             private final Iterator<I> iterator;
             private Iterator<? extends T> currentIterator;
 
-            public FlattenIterator( Iterator<I> iterator )
+            FlattenIterator( Iterator<I> iterator )
             {
                 this.iterator = iterator;
                 currentIterator = null;

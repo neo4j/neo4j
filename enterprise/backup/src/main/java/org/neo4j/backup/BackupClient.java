@@ -52,7 +52,7 @@ class BackupClient extends Client<TheBackupInterface> implements TheBackupInterf
 
     static final long BIG_READ_TIMEOUT = TimeUnit.MINUTES.toMillis( 20 );
 
-    public BackupClient( String destinationHostNameOrIp, int destinationPort, String originHostNameOrIp,
+    BackupClient( String destinationHostNameOrIp, int destinationPort, String originHostNameOrIp,
             LogProvider logProvider, StoreId storeId, long timeout,
             ResponseUnpacker unpacker, ByteCounterMonitor byteCounterMonitor, RequestMonitor requestMonitor,
             LogEntryReader<ReadableClosablePositionAwareChannel> reader )

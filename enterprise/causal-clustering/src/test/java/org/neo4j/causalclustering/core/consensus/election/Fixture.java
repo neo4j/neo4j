@@ -44,7 +44,6 @@ import org.neo4j.time.Clocks;
 
 import static java.util.concurrent.TimeUnit.MILLISECONDS;
 import static java.util.concurrent.TimeUnit.SECONDS;
-
 import static org.neo4j.helpers.collection.Iterables.asSet;
 import static org.neo4j.logging.NullLogProvider.getInstance;
 
@@ -173,7 +172,7 @@ public class Fixture
         private final RaftMachine raftMachine;
         private final InMemoryRaftLog raftLog;
 
-        public RaftFixture( RaftMachine raftMachine, InMemoryRaftLog raftLog )
+        RaftFixture( RaftMachine raftMachine, InMemoryRaftLog raftLog )
         {
             this.raftMachine = raftMachine;
             this.raftLog = raftLog;

@@ -198,7 +198,7 @@ public class ManyPropertyKeysIT
     {
         private final String key;
 
-        public CreateNodeAndSetProperty( String key )
+        CreateNodeAndSetProperty( String key )
         {
             this.key = key;
         }

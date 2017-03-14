@@ -56,7 +56,7 @@ public class TimedRepository<KEY, VALUE> implements Runnable
         private final VALUE value;
         private volatile long latestActivityTimestamp;
 
-        public Entry( VALUE value )
+        Entry( VALUE value )
         {
             this.value = value;
             this.latestActivityTimestamp = clock.millis();

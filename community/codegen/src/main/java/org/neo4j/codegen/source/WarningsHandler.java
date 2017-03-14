@@ -39,7 +39,7 @@ interface WarningsHandler
     {
         private final WarningsHandler[] handlers;
 
-        public Multiplex( WarningsHandler... handlers )
+        Multiplex( WarningsHandler... handlers )
         {
             this.handlers = handlers;
         }

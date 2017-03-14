@@ -117,12 +117,12 @@ public class TestExceptions
 
     private static class LevelOneException extends Exception
     {
-        public LevelOneException( String message )
+        LevelOneException( String message )
         {
             super( message );
         }
 
-        public LevelOneException( String message, Throwable cause )
+        LevelOneException( String message, Throwable cause )
         {
             super( message, cause );
         }
@@ -130,12 +130,12 @@ public class TestExceptions
 
     private static class LevelTwoException extends LevelOneException
     {
-        public LevelTwoException( String message )
+        LevelTwoException( String message )
         {
             super( message );
         }
 
-        public LevelTwoException( String message, Throwable cause )
+        LevelTwoException( String message, Throwable cause )
         {
             super( message, cause );
         }
@@ -143,12 +143,12 @@ public class TestExceptions
 
     private static class LevelThreeException extends LevelTwoException
     {
-        public LevelThreeException( String message )
+        LevelThreeException( String message )
         {
             super( message );
         }
 
-        public LevelThreeException( String message, Throwable cause )
+        LevelThreeException( String message, Throwable cause )
         {
             super( message, cause );
         }
@@ -156,12 +156,12 @@ public class TestExceptions
 
     private static class LevelFourException extends LevelThreeException
     {
-        public LevelFourException( String message )
+        LevelFourException( String message )
         {
             super( message );
         }
 
-        public LevelFourException( String message, Throwable cause )
+        LevelFourException( String message, Throwable cause )
         {
             super( message, cause );
         }
@@ -169,7 +169,7 @@ public class TestExceptions
 
     private static class ARuntimeException extends RuntimeException
     {
-        public ARuntimeException( Throwable cause )
+        ARuntimeException( Throwable cause )
         {
             super( cause );
         }
@@ -177,7 +177,7 @@ public class TestExceptions
 
     private static class AnotherRuntimeException extends RuntimeException
     {
-        public AnotherRuntimeException( Throwable cause )
+        AnotherRuntimeException( Throwable cause )
         {
             super( cause );
         }

@@ -20,7 +20,6 @@
 package org.neo4j.kernel.ha.lock;
 
 import java.util.Arrays;
-import java.util.HashMap;
 import java.util.Map;
 import java.util.concurrent.atomic.AtomicInteger;
 import java.util.function.Function;
@@ -74,13 +73,8 @@ class SlaveLocksClient implements Locks.Client
     private boolean initialized;
     private volatile boolean stopped;
 
-    public SlaveLocksClient(
-            Master master,
-            Locks.Client local,
-            Locks localLockManager,
-            RequestContextFactory requestContextFactory,
-            AvailabilityGuard availabilityGuard,
-            LogProvider logProvider )
+    SlaveLocksClient( Master master, Locks.Client local, Locks localLockManager,
+            RequestContextFactory requestContextFactory, AvailabilityGuard availabilityGuard, LogProvider logProvider )
     {
         this.master = master;
         this.client = local;

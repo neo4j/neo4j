@@ -60,7 +60,7 @@ public class MonitoredWorkerFactory implements WorkerFactory
         private final BoltWorker delegate;
         private final Clock clock;
 
-        public MonitoredBoltWorker( SessionMonitor monitor, BoltWorker delegate, Clock clock )
+        MonitoredBoltWorker( SessionMonitor monitor, BoltWorker delegate, Clock clock )
         {
             this.monitor = monitor;
             this.delegate = delegate;

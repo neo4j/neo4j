@@ -298,7 +298,7 @@ enum SystemDiagnostics implements DiagnosticsProvider
 
     private final String message;
 
-    private SystemDiagnostics(String message)
+    SystemDiagnostics( String message )
     {
         this.message = message;
     }

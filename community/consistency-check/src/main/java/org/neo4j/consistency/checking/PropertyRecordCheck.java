@@ -93,7 +93,7 @@ public class PropertyRecordCheck
         }
     }
 
-    public static enum PropertyField implements
+    public enum PropertyField implements
             RecordField<PropertyRecord, ConsistencyReport.PropertyConsistencyReport>,
             ComparativeRecordChecker<PropertyRecord, PropertyRecord, ConsistencyReport.PropertyConsistencyReport>
     {
@@ -151,7 +151,7 @@ public class PropertyRecordCheck
         };
         private final Record NONE;
 
-        private PropertyField( Record none )
+        PropertyField( Record none )
         {
             this.NONE = none;
         }
