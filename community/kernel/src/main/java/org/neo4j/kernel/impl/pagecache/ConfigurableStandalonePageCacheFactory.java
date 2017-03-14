@@ -53,14 +53,23 @@ public final class ConfigurableStandalonePageCacheFactory
         return createPageCache( fileSystem, PageCacheTracer.NULL, DefaultPageCursorTracerSupplier.INSTANCE, config );
     }
 
-    public static PageCache createPageCache( FileSystemAbstraction fileSystem, PageCacheTracer tracer,
-            PageCursorTracerSupplier cursorTracerSupplier, Config config )
+    /**
+     * Create page cache
+     * @param fileSystem file system that page cache will be based on
+     * @param pageCacheTracer global page cache tracer
+     * @param pageCursorTracerSupplier supplier of thread local (transaction local) page cursor tracer that will provide
+     * thread local page cache statistics
+     * @param config page cache configuration
+     * @return created page cache instance
+     */
+    public static PageCache createPageCache( FileSystemAbstraction fileSystem, PageCacheTracer pageCacheTracer,
+            PageCursorTracerSupplier pageCursorTracerSupplier, Config config )
     {
         Config finalConfig = config.withDefaults( MapUtil.stringMap(
                 GraphDatabaseSettings.pagecache_memory.name(), "8M" ) );
         FormattedLogProvider logProvider = FormattedLogProvider.toOutputStream( System.err );
         ConfiguringPageCacheFactory pageCacheFactory = new ConfiguringPageCacheFactory(
-                fileSystem, finalConfig, tracer, cursorTracerSupplier,
+                fileSystem, finalConfig, pageCacheTracer, pageCursorTracerSupplier,
                 logProvider.getLog( PageCache.class ) );
         return pageCacheFactory.getOrCreatePageCache();
     }

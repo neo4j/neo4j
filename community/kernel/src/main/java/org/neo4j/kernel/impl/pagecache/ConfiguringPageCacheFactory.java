@@ -43,19 +43,28 @@ public class ConfiguringPageCacheFactory
     private static final int pageSize = getInteger( ConfiguringPageCacheFactory.class, "pageSize", 8192 );
     private final PageSwapperFactory swapperFactory;
     private final Config config;
-    private final PageCacheTracer tracer;
+    private final PageCacheTracer pageCacheTracer;
     private final Log log;
     private PageCache pageCache;
-    private PageCursorTracerSupplier cursorTracerSupplier;
+    private PageCursorTracerSupplier pageCursorTracerSupplier;
 
-    public ConfiguringPageCacheFactory( FileSystemAbstraction fs, Config config, PageCacheTracer tracer,
-            PageCursorTracerSupplier cursorTracerSupplier, Log log )
+    /**
+     * Construct configuring page cache factory
+     * @param fs fileSystem file system that page cache will be based on
+     * @param config page swapper configuration
+     * @param pageCacheTracer global page cache tracer
+     * @param pageCursorTracerSupplier supplier of thread local (transaction local) page cursor tracer that will provide
+     * thread local page cache statistics
+     * @param log page cache factory log
+     */
+    public ConfiguringPageCacheFactory( FileSystemAbstraction fs, Config config, PageCacheTracer pageCacheTracer,
+            PageCursorTracerSupplier pageCursorTracerSupplier, Log log )
     {
         this.swapperFactory = createAndConfigureSwapperFactory( fs, config, log );
         this.config = config;
-        this.tracer = tracer;
+        this.pageCacheTracer = pageCacheTracer;
         this.log = log;
-        this.cursorTracerSupplier = cursorTracerSupplier;
+        this.pageCursorTracerSupplier = pageCursorTracerSupplier;
     }
 
     private PageSwapperFactory createAndConfigureSwapperFactory( FileSystemAbstraction fs, Config config, Log log )
@@ -102,9 +111,7 @@ public class ConfiguringPageCacheFactory
         return new MuninnPageCache(
                 swapperFactory,
                 maxPages,
-                cachePageSize,
-                tracer,
-                cursorTracerSupplier );
+                cachePageSize, pageCacheTracer, pageCursorTracerSupplier );
     }
 
     public int calculateMaxPages( Config config, int cachePageSize )

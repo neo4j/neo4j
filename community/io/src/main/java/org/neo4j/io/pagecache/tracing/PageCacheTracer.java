@@ -26,7 +26,7 @@ import org.neo4j.io.pagecache.monitoring.PageCacheCounters;
 
 /**
  * A PageCacheTracer receives a steady stream of events and data about what
- * the page cache is doing. Implementations of this interface should be as
+ * whole page cache is doing. Implementations of this interface should be as
  * efficient as possible, lest they severely slow down the page cache.
  */
 public interface PageCacheTracer extends PageCacheCounters

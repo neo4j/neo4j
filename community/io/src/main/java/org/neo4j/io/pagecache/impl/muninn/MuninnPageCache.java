@@ -152,7 +152,7 @@ public class MuninnPageCache implements PageCache
     private final PageSwapperFactory swapperFactory;
     private final int cachePageSize;
     private final int keepFree;
-    private final PageCacheTracer tracer;
+    private final PageCacheTracer pageCacheTracer;
     private final MuninnPage[] pages;
     // All PageCursors are initialised with their pointers pointing to the victim page. This way, we can do branch-free
     // bounds checking of page accesses without fear of segfaulting newly allocated cursors.
@@ -195,10 +195,19 @@ public class MuninnPageCache implements PageCache
 
     // 'true' (the default) if we should print any exceptions we get when unmapping a file.
     private boolean printExceptionsOnClose;
-    private PageCursorTracerSupplier cursorTracerSupplier;
+    private PageCursorTracerSupplier pageCursorTracerSupplier;
 
-    public MuninnPageCache( PageSwapperFactory swapperFactory, int maxPages, int cachePageSize, PageCacheTracer tracer,
-            PageCursorTracerSupplier cursorTracerSupplier )
+    /**
+     * Create page cache
+     * @param swapperFactory page cache swapper factory
+     * @param maxPages maximum number of pages
+     * @param cachePageSize page cache size
+     * @param pageCacheTracer global page cache tracer
+     * @param pageCursorTracerSupplier supplier of thread local (transaction local) page cursor tracer that will provide
+     * thread local page cache statistics
+     */
+    public MuninnPageCache( PageSwapperFactory swapperFactory, int maxPages, int cachePageSize, PageCacheTracer pageCacheTracer,
+            PageCursorTracerSupplier pageCursorTracerSupplier )
     {
         verifyHacks();
         verifyCachePageSizeIsPowerOfTwo( cachePageSize );
@@ -208,8 +217,8 @@ public class MuninnPageCache implements PageCache
         this.swapperFactory = swapperFactory;
         this.cachePageSize = cachePageSize;
         this.keepFree = Math.min( pagesToKeepFree, maxPages / 2 );
-        this.tracer = tracer;
-        this.cursorTracerSupplier = cursorTracerSupplier;
+        this.pageCacheTracer = pageCacheTracer;
+        this.pageCursorTracerSupplier = pageCursorTracerSupplier;
         this.pages = new MuninnPage[maxPages];
         this.printExceptionsOnClose = true;
 
@@ -354,9 +363,7 @@ public class MuninnPageCache implements PageCache
                 file,
                 this,
                 filePageSize,
-                swapperFactory,
-                tracer,
-                cursorTracerSupplier,
+                swapperFactory, pageCacheTracer, pageCursorTracerSupplier,
                 createIfNotExists,
                 truncateExisting );
         pagedFile.incrementRefCount();
@@ -364,7 +371,7 @@ public class MuninnPageCache implements PageCache
         current = new FileMapping( file, pagedFile );
         current.next = mappedFiles;
         mappedFiles = current;
-        tracer.mappedFile( file );
+        pageCacheTracer.mappedFile( file );
         return pagedFile;
     }
 
@@ -515,7 +522,7 @@ public class MuninnPageCache implements PageCache
                     {
                         prev.next = current.next;
                     }
-                    tracer.unmappedFile( current.file );
+                    pageCacheTracer.unmappedFile( current.file );
                     flushAndCloseWithoutFail( file );
                     break;
                 }
@@ -580,7 +587,7 @@ public class MuninnPageCache implements PageCache
 
     private void flushAllPages( IOLimiter limiter ) throws IOException
     {
-        try ( MajorFlushEvent cacheFlush = tracer.beginCacheFlush() )
+        try ( MajorFlushEvent cacheFlush = pageCacheTracer.beginCacheFlush() )
         {
             FlushEventOpportunity flushOpportunity = cacheFlush.flushEventOpportunity();
             FileMapping fileMapping = mappedFiles;
@@ -866,7 +873,7 @@ public class MuninnPageCache implements PageCache
         while ( !closed )
         {
             int pageCountToEvict = parkUntilEvictionRequired( keepFree );
-            try ( EvictionRunEvent evictionRunEvent = tracer.beginPageEvictions( pageCountToEvict ) )
+            try ( EvictionRunEvent evictionRunEvent = pageCacheTracer.beginPageEvictions( pageCountToEvict ) )
             {
                 clockArm = evictPages( pageCountToEvict, clockArm, evictionRunEvent );
             }

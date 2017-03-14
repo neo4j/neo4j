@@ -59,7 +59,7 @@ final class MuninnPagedFile implements PagedFile, Flushable
 
     final MuninnPageCache pageCache;
     final int filePageSize;
-    final PageCacheTracer tracer;
+    final PageCacheTracer pageCacheTracer;
 
     // This is the table where we translate file-page-ids to cache-page-ids. Only one thread can perform a resize at
     // a time, and we ensure this mutual exclusion using the monitor lock on this MuninnPagedFile object.
@@ -91,20 +91,33 @@ final class MuninnPagedFile implements PagedFile, Flushable
     @SuppressWarnings( "unused" ) // Accessed via Unsafe
     private volatile long headerState;
 
+    /**
+     * Create muninn page file
+     * @param file original file
+     * @param pageCache page cache
+     * @param filePageSize file page size
+     * @param swapperFactory page cache swapper factory
+     * @param pageCacheTracer global page cache tracer
+     * @param pageCursorTracerSupplier supplier of thread local (transaction local) page cursor tracer that will provide
+     * thread local page cache statistics
+     * @param createIfNotExists should create file if it does not exists
+     * @param truncateExisting should truncate file if it exists
+     * @throws IOException
+     */
     MuninnPagedFile(
             File file,
             MuninnPageCache pageCache,
             int filePageSize,
             PageSwapperFactory swapperFactory,
-            PageCacheTracer tracer,
-            PageCursorTracerSupplier cursorTracerSupplier,
+            PageCacheTracer pageCacheTracer,
+            PageCursorTracerSupplier pageCursorTracerSupplier,
             boolean createIfNotExists,
             boolean truncateExisting ) throws IOException
     {
         this.pageCache = pageCache;
         this.filePageSize = filePageSize;
-        this.cursorPool = new CursorPool( this, cursorTracerSupplier, tracer );
-        this.tracer = tracer;
+        this.cursorPool = new CursorPool( this, pageCursorTracerSupplier, pageCacheTracer );
+        this.pageCacheTracer = pageCacheTracer;
 
         // The translation table is an array of arrays of references to either null, MuninnPage objects, or Latch
         // objects. The table only grows the outer array, and all the inner "chunks" all stay the same size. This
@@ -239,7 +252,7 @@ final class MuninnPagedFile implements PagedFile, Flushable
         {
             throw new IllegalArgumentException( "IOPSLimiter cannot be null" );
         }
-        try ( MajorFlushEvent flushEvent = tracer.beginFileFlush( swapper ) )
+        try ( MajorFlushEvent flushEvent = pageCacheTracer.beginFileFlush( swapper ) )
         {
             flushAndForceInternal( flushEvent.flushEventOpportunity(), false, limiter );
             syncDevice();
@@ -248,7 +261,7 @@ final class MuninnPagedFile implements PagedFile, Flushable
 
     void flushAndForceForClose() throws IOException
     {
-        try ( MajorFlushEvent flushEvent = tracer.beginFileFlush( swapper ) )
+        try ( MajorFlushEvent flushEvent = pageCacheTracer.beginFileFlush( swapper ) )
         {
             flushAndForceInternal( flushEvent.flushEventOpportunity(), true, IOLimiter.unlimited() );
             syncDevice();
