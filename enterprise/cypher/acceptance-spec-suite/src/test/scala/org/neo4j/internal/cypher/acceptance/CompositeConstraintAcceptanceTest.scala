@@ -19,14 +19,20 @@
  */
 package org.neo4j.internal.cypher.acceptance
 
+import org.neo4j.cypher.javacompat.internal.GraphDatabaseCypherService
 import org.neo4j.cypher.{CypherExecutionException, ExecutionEngineFunSuite, NewPlannerTestSupport}
 import org.neo4j.graphdb.{ConstraintViolationException, Node}
 import org.neo4j.kernel.GraphDatabaseQueryService
+import org.neo4j.test.{TestEnterpriseGraphDatabaseFactory, TestGraphDatabaseFactory}
 import org.scalatest.matchers.{MatchResult, Matcher}
 
 import scala.collection.JavaConverters._
 
 class CompositeConstraintAcceptanceTest extends ExecutionEngineFunSuite with NewPlannerTestSupport {
+
+  override protected def createGraphDatabase(): GraphDatabaseCypherService = {
+    new GraphDatabaseCypherService(new TestEnterpriseGraphDatabaseFactory().newImpermanentDatabase(databaseConfig().asJava))
+  }
 
   test("should be able to create and remove composite uniquness constraints") {
     // When
@@ -86,6 +92,36 @@ class CompositeConstraintAcceptanceTest extends ExecutionEngineFunSuite with New
     a[CypherExecutionException] should be thrownBy {
       executeWithCostPlannerAndInterpretedRuntimeOnly("CREATE CONSTRAINT ON (n:User) ASSERT (n.firstname,n.lastname) IS UNIQUE")
     }
+  }
+
+  test("should be able to create and remove single property NODE KEY") {
+    // When
+    executeWithCostPlannerAndInterpretedRuntimeOnly("CREATE CONSTRAINT ON (n:Person) ASSERT (n.email) IS NODE KEY")
+
+    // Then
+    graph should haveConstraints("NODE_KEY:Person(email)")
+
+    // When
+    executeWithCostPlannerAndInterpretedRuntimeOnly("DROP CONSTRAINT ON (n:Person) ASSERT (n.email) IS NODE KEY")
+
+    // Then
+    graph should not(haveConstraints("NODE_KEY:Person(email)"))
+  }
+
+  test("should be able to create and remove multiple property NODE KEY") {
+    // When
+    executeWithCostPlannerAndInterpretedRuntimeOnly("CREATE CONSTRAINT ON (n:Person) ASSERT (n.email) IS NODE KEY")
+    executeWithCostPlannerAndInterpretedRuntimeOnly("CREATE CONSTRAINT ON (n:Person) ASSERT (n.firstname,n.lastname) IS NODE KEY")
+
+    // Then
+    graph should haveConstraints("NODE_KEY:Person(email)", "NODE_KEY:Person(firstname,lastname")
+
+    // When
+    executeWithCostPlannerAndInterpretedRuntimeOnly("DROP CONSTRAINT ON (n:Person) ASSERT (n.firstname,n.lastname) IS NODE KEY")
+
+    // Then
+    graph should haveConstraints("NODE_KEY:Person(email)")
+    graph should not(haveConstraints("NODE_KEY:Person(firstname,lastname)"))
   }
 
   case class haveConstraints(expectedConstraints: String*) extends Matcher[GraphDatabaseQueryService] {

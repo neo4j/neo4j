@@ -32,11 +32,13 @@ trait Command extends Parser
   def Command: Rule1[ast.Command] = rule(
     CreateUniqueConstraint
       | CreateUniqueCompositeConstraint
+      | CreateNodeKeyConstraint
       | CreateNodePropertyExistenceConstraint
       | CreateRelationshipPropertyExistenceConstraint
       | CreateIndex
       | DropUniqueConstraint
       | DropUniqueCompositeConstraint
+      | DropNodeKeyConstraint
       | DropNodePropertyExistenceConstraint
       | DropRelationshipPropertyExistenceConstraint
       | DropIndex
@@ -63,6 +65,10 @@ trait Command extends Parser
     group(keyword("CREATE") ~~ UniqueCompositeConstraintSyntax) ~~>> (ast.CreateUniquePropertyConstraint(_, _, _))
   }
 
+  def CreateNodeKeyConstraint: Rule1[ast.CreateNodeKeyConstraint] = rule {
+    group(keyword("CREATE") ~~ NodeKeyConstraintSyntax) ~~>> (ast.CreateNodeKeyConstraint(_, _, _))
+  }
+
   def CreateNodePropertyExistenceConstraint: Rule1[ast.CreateNodePropertyExistenceConstraint] = rule {
     group(keyword("CREATE") ~~ NodePropertyExistenceConstraintSyntax) ~~>> (ast.CreateNodePropertyExistenceConstraint(_, _, _))
   }
@@ -80,6 +86,10 @@ trait Command extends Parser
     group(keyword("DROP") ~~ UniqueCompositeConstraintSyntax) ~~>> (ast.DropUniquePropertyConstraint(_, _, _))
   }
 
+  def DropNodeKeyConstraint: Rule1[ast.DropNodeKeyConstraint] = rule {
+    group(keyword("DROP") ~~ NodeKeyConstraintSyntax) ~~>> (ast.DropNodeKeyConstraint(_, _, _))
+  }
+
   def DropNodePropertyExistenceConstraint: Rule1[ast.DropNodePropertyExistenceConstraint] = rule {
     group(keyword("DROP") ~~ NodePropertyExistenceConstraintSyntax) ~~>> (ast.DropNodePropertyExistenceConstraint(_, _, _))
   }
@@ -93,6 +103,9 @@ trait Command extends Parser
       zeroOrMore(Expression, separator = CommaSep) ~~ ")"
     ) ~~> (_.toIndexedSeq))
   }
+
+  private def NodeKeyConstraintSyntax: Rule3[Variable, LabelName, Seq[Property]] = keyword("CONSTRAINT ON") ~~ "(" ~~ Variable ~~ NodeLabel ~~ ")" ~~
+    keyword("ASSERT") ~~ "(" ~~ PropertyExpressions ~~ ")" ~~ keyword("IS NODE KEY")
 
   private def UniqueConstraintSyntax: Rule3[Variable, LabelName, Property] = keyword("CONSTRAINT ON") ~~ "(" ~~ Variable ~~ NodeLabel ~~ ")" ~~
     keyword("ASSERT") ~~ PropertyExpression ~~ keyword("IS UNIQUE")

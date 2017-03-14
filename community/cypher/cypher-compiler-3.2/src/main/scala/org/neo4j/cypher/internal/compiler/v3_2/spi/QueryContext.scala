@@ -102,6 +102,11 @@ trait QueryContext extends TokenContext {
   def getOrCreateFromSchemaState[K, V](key: K, creator: => V): V
 
   /* return true if the constraint was created, false if preexisting, throws if failed */
+  def createNodeKeyConstraint(descriptor: IndexDescriptor): Boolean
+
+  def dropNodeKeyConstraint(descriptor: IndexDescriptor)
+
+  /* return true if the constraint was created, false if preexisting, throws if failed */
   def createUniqueConstraint(descriptor: IndexDescriptor): Boolean
 
   def dropUniqueConstraint(descriptor: IndexDescriptor)

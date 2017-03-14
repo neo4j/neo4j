@@ -44,6 +44,8 @@ trait QueryContextAdaptation {
 
   override def createUniqueConstraint(descriptor: IndexDescriptor): Boolean = ???
 
+  override def createNodeKeyConstraint(descriptor: IndexDescriptor): Boolean = ???
+
   override def getOrCreateRelTypeId(relTypeName: String): Int = ???
 
   override def getPropertiesForRelationship(relId: Long): scala.Iterator[Int] = ???
@@ -79,6 +81,8 @@ trait QueryContextAdaptation {
   override def getLabelsForNode(node: Long): scala.Iterator[Int] = ???
 
   override def dropUniqueConstraint(descriptor: IndexDescriptor): Unit = ???
+
+  override def dropNodeKeyConstraint(descriptor: IndexDescriptor): Unit = ???
 
   // Check if a runtime value is a node, relationship, path or some such value returned from
   override def isGraphKernelResultValue(v: Any): Boolean = ???
