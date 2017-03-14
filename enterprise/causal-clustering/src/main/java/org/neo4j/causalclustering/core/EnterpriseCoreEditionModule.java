@@ -45,8 +45,9 @@ import org.neo4j.causalclustering.discovery.procedures.CoreRoleProcedure;
 import org.neo4j.causalclustering.identity.MemberId;
 import org.neo4j.causalclustering.load_balancing.LoadBalancingPluginLoader;
 import org.neo4j.causalclustering.load_balancing.LoadBalancingProcessor;
-import org.neo4j.causalclustering.load_balancing.procedure.GetServersProcedureV1;
-import org.neo4j.causalclustering.load_balancing.procedure.GetServersProcedureV2;
+import org.neo4j.causalclustering.load_balancing.procedure.GetServersProcedureForSingleDC;
+import org.neo4j.causalclustering.load_balancing.procedure.LegacyGetServersProcedure;
+import org.neo4j.causalclustering.load_balancing.procedure.GetServersProcedureForMultiDC;
 import org.neo4j.causalclustering.logging.BetterMessageLogger;
 import org.neo4j.causalclustering.logging.MessageLogger;
 import org.neo4j.causalclustering.logging.NullMessageLogger;
@@ -131,9 +132,18 @@ public class EnterpriseCoreEditionModule extends EditionModule
     {
         procedures.registerProcedure( EnterpriseBuiltInDbmsProcedures.class, true );
         procedures.register(
-                new GetServersProcedureV1( topologyService, consensusModule.raftMachine(), config, logProvider ) );
-        procedures.register(
-                new GetServersProcedureV2( getLoadBalancingProcessor() ) );
+                new LegacyGetServersProcedure( topologyService, consensusModule.raftMachine(), config, logProvider ) );
+
+        if ( config.get( CausalClusteringSettings.multi_dc_license ) )
+        {
+            procedures.register( new GetServersProcedureForMultiDC( getLoadBalancingProcessor() ) );
+        }
+        else
+        {
+            procedures.register( new GetServersProcedureForSingleDC( topologyService, consensusModule.raftMachine(),
+                    config, logProvider ) );
+        }
+
         procedures.register(
                 new ClusterOverviewProcedure( topologyService, consensusModule.raftMachine(), logProvider ) );
         procedures.register( new CoreRoleProcedure( consensusModule.raftMachine() ) );

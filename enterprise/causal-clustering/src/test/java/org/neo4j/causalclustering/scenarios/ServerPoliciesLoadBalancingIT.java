@@ -115,7 +115,8 @@ public class ServerPoliciesLoadBalancingIT
 
         Map<String,String> coreParams = stringMap(
                 CausalClusteringSettings.cluster_allow_reads_on_followers.name(), "true",
-                CausalClusteringSettings.load_balancing_config.name() + ".server_policies.default", defaultPolicy );
+                CausalClusteringSettings.load_balancing_config.name() + ".server_policies.default", defaultPolicy,
+                CausalClusteringSettings.multi_dc_license.name(), "true");
 
         cluster = new Cluster( testDir.directory( "cluster" ), 5, 5,
                 new HazelcastDiscoveryServiceFactory(), coreParams, instanceCoreParams,
@@ -166,7 +167,8 @@ public class ServerPoliciesLoadBalancingIT
                 CausalClusteringSettings.load_balancing_config.name() + ".server_policies.default", defaultPolicySpec,
                 CausalClusteringSettings.load_balancing_config.name() + ".server_policies.policy_one_two", policyOneTwoSpec,
                 CausalClusteringSettings.load_balancing_config.name() + ".server_policies.policy_zero_two", policyZeroTwoSpec,
-                CausalClusteringSettings.load_balancing_config.name() + ".server_policies.policy_all_replicas", policyAllReplicasSpec
+                CausalClusteringSettings.load_balancing_config.name() + ".server_policies.policy_all_replicas", policyAllReplicasSpec,
+                CausalClusteringSettings.multi_dc_license.name(), "true"
         );
 
         cluster = new Cluster( testDir.directory( "cluster" ), 3, 3,

@@ -43,7 +43,7 @@ import static org.neo4j.kernel.api.proc.ProcedureSignature.procedureSignature;
  * key-value pairs to be supplied to and used by the concrete load
  * balancing strategies.
  */
-public class GetServersProcedureV2 implements CallableProcedure
+public class GetServersProcedureForMultiDC implements CallableProcedure
 {
     private final String DESCRIPTION = "Returns cluster endpoints and their capabilities.";
 
@@ -57,7 +57,7 @@ public class GetServersProcedureV2 implements CallableProcedure
 
     private final LoadBalancingProcessor loadBalancingProcessor;
 
-    public GetServersProcedureV2( LoadBalancingProcessor loadBalancingProcessor )
+    public GetServersProcedureForMultiDC( LoadBalancingProcessor loadBalancingProcessor )
     {
         this.loadBalancingProcessor = loadBalancingProcessor;
     }
