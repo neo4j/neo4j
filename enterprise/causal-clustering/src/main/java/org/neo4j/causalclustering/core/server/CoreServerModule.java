@@ -30,9 +30,9 @@ import org.neo4j.causalclustering.catchup.CatchupServer;
 import org.neo4j.causalclustering.catchup.CheckpointerSupplier;
 import org.neo4j.causalclustering.catchup.storecopy.CopiedStoreRecovery;
 import org.neo4j.causalclustering.catchup.storecopy.LocalDatabase;
+import org.neo4j.causalclustering.catchup.storecopy.RemoteStore;
 import org.neo4j.causalclustering.catchup.storecopy.StoreCopyClient;
 import org.neo4j.causalclustering.catchup.storecopy.StoreCopyProcess;
-import org.neo4j.causalclustering.catchup.storecopy.RemoteStore;
 import org.neo4j.causalclustering.catchup.tx.TransactionLogCatchUpFactory;
 import org.neo4j.causalclustering.catchup.tx.TxPullClient;
 import org.neo4j.causalclustering.core.CausalClusteringSettings;
@@ -58,6 +58,7 @@ import org.neo4j.causalclustering.logging.MessageLogger;
 import org.neo4j.causalclustering.messaging.CoreReplicatedContentMarshal;
 import org.neo4j.causalclustering.messaging.LoggingInbound;
 import org.neo4j.io.fs.FileSystemAbstraction;
+import org.neo4j.kernel.Health;
 import org.neo4j.kernel.NeoStoreDataSource;
 import org.neo4j.kernel.configuration.Config;
 import org.neo4j.kernel.impl.factory.PlatformModule;
@@ -67,7 +68,6 @@ import org.neo4j.kernel.impl.transaction.log.TransactionIdStore;
 import org.neo4j.kernel.impl.transaction.state.DataSourceManager;
 import org.neo4j.kernel.impl.util.Dependencies;
 import org.neo4j.kernel.impl.util.JobScheduler;
-import org.neo4j.kernel.internal.DatabaseHealth;
 import org.neo4j.kernel.lifecycle.LifeSupport;
 import org.neo4j.kernel.monitoring.Monitors;
 import org.neo4j.logging.LogProvider;
@@ -86,7 +86,7 @@ public class CoreServerModule
             ConsensusModule consensusModule, CoreStateMachinesModule coreStateMachinesModule,
             ReplicationModule replicationModule, File clusterStateDirectory, ClusteringModule clusteringModule,
             LocalDatabase localDatabase, MessageLogger<MemberId> messageLogger,
-            Supplier<DatabaseHealth> dbHealthSupplier )
+            Supplier<Health> dbHealthSupplier )
     {
         final Dependencies dependencies = platformModule.dependencies;
         final Config config = platformModule.config;
@@ -99,7 +99,7 @@ public class CoreServerModule
         LogProvider logProvider = logging.getInternalLogProvider();
         LogProvider userLogProvider = logging.getUserLogProvider();
 
-        final Supplier<DatabaseHealth> databaseHealthSupplier = dependencies.provideDependency( DatabaseHealth.class );
+        final Supplier<Health> databaseHealthSupplier = dependencies.provideDependency( Health.class );
 
         StateStorage<Long> lastFlushedStorage = life
                 .add( new DurableStateStorage<>( fileSystem, clusterStateDirectory, LAST_FLUSHED_NAME,

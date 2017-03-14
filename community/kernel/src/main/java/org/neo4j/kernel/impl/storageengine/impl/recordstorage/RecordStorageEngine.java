@@ -106,7 +106,7 @@ import org.neo4j.kernel.impl.util.DependencySatisfier;
 import org.neo4j.kernel.impl.util.IdOrderingQueue;
 import org.neo4j.kernel.impl.util.JobScheduler;
 import org.neo4j.kernel.info.DiagnosticsManager;
-import org.neo4j.kernel.internal.DatabaseHealth;
+import org.neo4j.kernel.Health;
 import org.neo4j.kernel.lifecycle.Lifecycle;
 import org.neo4j.kernel.spi.legacyindex.IndexImplementation;
 import org.neo4j.logging.LogProvider;
@@ -139,7 +139,7 @@ public class RecordStorageEngine implements StorageEngine, Lifecycle
     private final PropertyKeyTokenHolder propertyKeyTokenHolder;
     private final RelationshipTypeTokenHolder relationshipTypeTokenHolder;
     private final LabelTokenHolder labelTokenHolder;
-    private final DatabaseHealth databaseHealth;
+    private final Health databaseHealth;
     private final IndexConfigStore indexConfigStore;
     private final SchemaCache schemaCache;
     private final IntegrityValidator integrityValidator;
@@ -188,7 +188,7 @@ public class RecordStorageEngine implements StorageEngine, Lifecycle
             LockService lockService,
             SchemaIndexProvider indexProvider,
             IndexingService.Monitor indexingServiceMonitor,
-            DatabaseHealth databaseHealth,
+            Health databaseHealth,
             LabelScanStoreProvider labelScanStoreProvider,
             LegacyIndexProviderLookup legacyIndexProviderLookup,
             IndexConfigStore indexConfigStore,

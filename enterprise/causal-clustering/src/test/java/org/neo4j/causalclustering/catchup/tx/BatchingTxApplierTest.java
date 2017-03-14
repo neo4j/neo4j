@@ -35,6 +35,7 @@ import org.neo4j.kernel.impl.transaction.TransactionRepresentation;
 import org.neo4j.kernel.impl.transaction.log.TransactionIdStore;
 import org.neo4j.kernel.impl.transaction.log.entry.LogEntryCommit;
 import org.neo4j.kernel.internal.DatabaseHealth;
+import org.neo4j.kernel.Health;
 import org.neo4j.kernel.monitoring.Monitors;
 import org.neo4j.logging.NullLogProvider;
 
@@ -53,7 +54,7 @@ public class BatchingTxApplierTest
 {
     private final TransactionIdStore idStore = mock( TransactionIdStore.class );
     private final TransactionCommitProcess commitProcess = mock( TransactionCommitProcess.class );
-    private final DatabaseHealth dbHealth = mock( DatabaseHealth.class );
+    private final Health dbHealth = mock( DatabaseHealth.class );
 
     private final long startTxId = 31L;
     private final int maxBatchSize = 16;

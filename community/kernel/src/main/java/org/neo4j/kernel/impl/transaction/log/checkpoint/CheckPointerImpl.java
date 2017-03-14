@@ -28,7 +28,7 @@ import org.neo4j.kernel.impl.transaction.log.TransactionIdStore;
 import org.neo4j.kernel.impl.transaction.log.pruning.LogPruning;
 import org.neo4j.kernel.impl.transaction.tracing.CheckPointTracer;
 import org.neo4j.kernel.impl.transaction.tracing.LogCheckPointEvent;
-import org.neo4j.kernel.internal.DatabaseHealth;
+import org.neo4j.kernel.Health;
 import org.neo4j.kernel.lifecycle.LifecycleAdapter;
 import org.neo4j.logging.Log;
 import org.neo4j.logging.LogProvider;
@@ -41,7 +41,7 @@ public class CheckPointerImpl extends LifecycleAdapter implements CheckPointer
     private final CheckPointThreshold threshold;
     private final StorageEngine storageEngine;
     private final LogPruning logPruning;
-    private final DatabaseHealth databaseHealth;
+    private final Health databaseHealth;
     private final IOLimiter ioLimiter;
     private final Log msgLog;
     private final CheckPointTracer tracer;
@@ -55,7 +55,7 @@ public class CheckPointerImpl extends LifecycleAdapter implements CheckPointer
             StorageEngine storageEngine,
             LogPruning logPruning,
             TransactionAppender appender,
-            DatabaseHealth databaseHealth,
+            Health databaseHealth,
             LogProvider logProvider,
             CheckPointTracer tracer,
             IOLimiter ioLimiter,

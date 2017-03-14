@@ -39,7 +39,7 @@ import org.neo4j.kernel.impl.transaction.tracing.LogForceEvents;
 import org.neo4j.kernel.impl.transaction.tracing.LogForceWaitEvent;
 import org.neo4j.kernel.impl.transaction.tracing.SerializeTransactionEvent;
 import org.neo4j.kernel.impl.util.IdOrderingQueue;
-import org.neo4j.kernel.internal.DatabaseHealth;
+import org.neo4j.kernel.Health;
 import org.neo4j.kernel.lifecycle.LifecycleAdapter;
 
 import static org.neo4j.kernel.impl.api.TransactionToApply.TRANSACTION_ID_NOT_SPECIFIED;
@@ -63,7 +63,7 @@ public class BatchingTransactionAppender extends LifecycleAdapter implements Tra
     private final LogRotation logRotation;
     private final TransactionIdStore transactionIdStore;
     private final LogPositionMarker positionMarker = new LogPositionMarker();
-    private final DatabaseHealth databaseHealth;
+    private final Health databaseHealth;
     private final Lock forceLock = new ReentrantLock();
 
     private FlushablePositionAwareChannel writer;
@@ -72,7 +72,7 @@ public class BatchingTransactionAppender extends LifecycleAdapter implements Tra
 
     public BatchingTransactionAppender( LogFile logFile, LogRotation logRotation,
             TransactionMetadataCache transactionMetadataCache, TransactionIdStore transactionIdStore,
-            IdOrderingQueue legacyIndexTransactionOrdering, DatabaseHealth databaseHealth )
+            IdOrderingQueue legacyIndexTransactionOrdering, Health databaseHealth )
     {
         this.logFile = logFile;
         this.logRotation = logRotation;

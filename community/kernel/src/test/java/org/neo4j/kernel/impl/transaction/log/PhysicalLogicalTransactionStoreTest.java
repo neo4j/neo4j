@@ -41,6 +41,7 @@ import org.neo4j.kernel.impl.transaction.log.PhysicalLogFile.Monitor;
 import org.neo4j.kernel.impl.transaction.log.entry.VersionAwareLogEntryReader;
 import org.neo4j.kernel.impl.transaction.tracing.LogAppendEvent;
 import org.neo4j.kernel.internal.DatabaseHealth;
+import org.neo4j.kernel.Health;
 import org.neo4j.kernel.lifecycle.LifeSupport;
 import org.neo4j.kernel.monitoring.Monitors;
 import org.neo4j.kernel.recovery.Recovery;
@@ -62,7 +63,7 @@ import static org.neo4j.kernel.impl.util.IdOrderingQueue.BYPASS;
 
 public class PhysicalLogicalTransactionStoreTest
 {
-    private static final DatabaseHealth DATABASE_HEALTH = mock( DatabaseHealth.class );
+    private static final Health DATABASE_HEALTH = mock( DatabaseHealth.class );
 
     @Rule
     public final DefaultFileSystemRule fileSystemRule = new DefaultFileSystemRule();

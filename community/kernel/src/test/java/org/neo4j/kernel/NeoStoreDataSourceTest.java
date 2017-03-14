@@ -84,7 +84,7 @@ public class NeoStoreDataSourceTest
         NeoStoreDataSource theDataSource = null;
         try
         {
-            DatabaseHealth databaseHealth = new DatabaseHealth( mock( DatabasePanicEventGenerator.class ),
+            Health databaseHealth = new DatabaseHealth( mock( DatabasePanicEventGenerator.class ),
                     NullLogProvider.getInstance().getLog( DatabaseHealth.class ) );
 
             theDataSource = dsRule.getDataSource( dir.graphDbDir(), fs.get(), pageCacheRule.getPageCache( fs.get() ),
@@ -125,7 +125,7 @@ public class NeoStoreDataSourceTest
     @Test
     public void flushOfThePageCacheOnShutdownHappensIfTheDbIsHealthy() throws IOException
     {
-        DatabaseHealth health = mock( DatabaseHealth.class );
+        Health health = mock( DatabaseHealth.class );
         when( health.isHealthy() ).thenReturn( true );
 
         PageCache pageCache = spy( pageCacheRule.getPageCache( fs.get() ) );
@@ -144,7 +144,7 @@ public class NeoStoreDataSourceTest
     @Test
     public void flushOfThePageCacheOnShutdownDoesNotHappenIfTheDbIsUnhealthy() throws IOException
     {
-        DatabaseHealth health = mock( DatabaseHealth.class );
+        Health health = mock( DatabaseHealth.class );
         when( health.isHealthy() ).thenReturn( false );
 
         PageCache pageCache = spy( pageCacheRule.getPageCache( fs.get() ) );
@@ -251,7 +251,7 @@ public class NeoStoreDataSourceTest
         File storeDir = dir.graphDbDir();
         FileSystemAbstraction fs = this.fs.get();
         PageCache pageCache = pageCacheRule.getPageCache( fs );
-        DatabaseHealth databaseHealth = mock( DatabaseHealth.class );
+        Health databaseHealth = mock( DatabaseHealth.class );
         when( databaseHealth.isHealthy() ).thenReturn( true );
         IOException ex = new IOException( "boom!" );
         doThrow( ex ).when( databaseHealth )

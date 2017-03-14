@@ -24,7 +24,7 @@ import java.io.IOException;
 import org.neo4j.kernel.impl.transaction.log.LogFile;
 import org.neo4j.kernel.impl.transaction.tracing.LogAppendEvent;
 import org.neo4j.kernel.impl.transaction.tracing.LogRotateEvent;
-import org.neo4j.kernel.internal.DatabaseHealth;
+import org.neo4j.kernel.Health;
 
 /**
  * Default implementation of the LogRotation interface.
@@ -33,9 +33,9 @@ public class LogRotationImpl implements LogRotation
 {
     private final LogRotation.Monitor monitor;
     private final LogFile logFile;
-    private final DatabaseHealth databaseHealth;
+    private final Health databaseHealth;
 
-    public LogRotationImpl( Monitor monitor, LogFile logFile, DatabaseHealth databaseHealth )
+    public LogRotationImpl( Monitor monitor, LogFile logFile, Health databaseHealth )
     {
         this.monitor = monitor;
         this.logFile = logFile;

@@ -67,6 +67,7 @@ import org.neo4j.kernel.impl.util.Dependencies;
 import org.neo4j.kernel.impl.util.DependenciesProxy;
 import org.neo4j.kernel.impl.util.JobScheduler;
 import org.neo4j.kernel.internal.DatabaseHealth;
+import org.neo4j.kernel.Health;
 import org.neo4j.kernel.internal.TransactionEventHandlers;
 import org.neo4j.kernel.monitoring.Monitors;
 import org.neo4j.kernel.monitoring.tracing.Tracers;
@@ -85,7 +86,7 @@ public class NeoStoreDataSourceRule extends ExternalResource
     private NeoStoreDataSource dataSource;
 
     public NeoStoreDataSource getDataSource( File storeDir, FileSystemAbstraction fs,
-            PageCache pageCache, Map<String,String> additionalConfig, DatabaseHealth databaseHealth )
+            PageCache pageCache, Map<String,String> additionalConfig, Health databaseHealth )
     {
         CommunityIdTypeConfigurationProvider idTypeConfigurationProvider =
                 new CommunityIdTypeConfigurationProvider();
@@ -97,7 +98,7 @@ public class NeoStoreDataSourceRule extends ExternalResource
 
     public NeoStoreDataSource getDataSource( File storeDir, FileSystemAbstraction fs,
             IdGeneratorFactory idGeneratorFactory, IdTypeConfigurationProvider idConfigurationProvider,
-            PageCache pageCache, Map<String, String> additionalConfig, DatabaseHealth databaseHealth,
+            PageCache pageCache, Map<String, String> additionalConfig, Health databaseHealth,
             LogService logService )
     {
         return getDataSource( storeDir, fs, idGeneratorFactory, idConfigurationProvider, pageCache,
@@ -106,7 +107,7 @@ public class NeoStoreDataSourceRule extends ExternalResource
 
     public NeoStoreDataSource getDataSource( File storeDir, FileSystemAbstraction fs,
             IdGeneratorFactory idGeneratorFactory, IdTypeConfigurationProvider idConfigurationProvider,
-            PageCache pageCache, Config config, DatabaseHealth databaseHealth,
+            PageCache pageCache, Config config, Health databaseHealth,
             LogService logService )
     {
         if ( dataSource != null )
@@ -175,7 +176,7 @@ public class NeoStoreDataSourceRule extends ExternalResource
     public NeoStoreDataSource getDataSource( File storeDir, FileSystemAbstraction fs,
             PageCache pageCache, Map<String,String> additionalConfig )
     {
-        DatabaseHealth databaseHealth = new DatabaseHealth( mock( DatabasePanicEventGenerator.class ),
+        Health databaseHealth = new DatabaseHealth( mock( DatabasePanicEventGenerator.class ),
                 NullLogProvider.getInstance().getLog( DatabaseHealth.class ) );
         return getDataSource( storeDir, fs, pageCache, additionalConfig, databaseHealth );
     }

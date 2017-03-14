@@ -65,6 +65,7 @@ import org.neo4j.graphdb.factory.GraphDatabaseSettings;
 import org.neo4j.io.fs.FileSystemAbstraction;
 import org.neo4j.io.pagecache.PageCache;
 import org.neo4j.kernel.DatabaseAvailability;
+import org.neo4j.kernel.Health;
 import org.neo4j.kernel.NeoStoreDataSource;
 import org.neo4j.kernel.api.bolt.BoltConnectionTracker;
 import org.neo4j.kernel.api.exceptions.KernelException;
@@ -89,7 +90,6 @@ import org.neo4j.kernel.impl.store.id.IdReuseEligibility;
 import org.neo4j.kernel.impl.transaction.TransactionHeaderInformationFactory;
 import org.neo4j.kernel.impl.transaction.log.PhysicalLogFile;
 import org.neo4j.kernel.impl.util.Dependencies;
-import org.neo4j.kernel.internal.DatabaseHealth;
 import org.neo4j.kernel.internal.DefaultKernelData;
 import org.neo4j.kernel.internal.GraphDatabaseAPI;
 import org.neo4j.kernel.internal.KernelData;
@@ -174,7 +174,7 @@ public class EnterpriseCoreEditionModule extends EditionModule
         eligibleForIdReuse = IdReuseEligibility.ALWAYS;
 
         logProvider = logging.getInternalLogProvider();
-        final Supplier<DatabaseHealth> databaseHealthSupplier = dependencies.provideDependency( DatabaseHealth.class );
+        final Supplier<Health> databaseHealthSupplier = dependencies.provideDependency( Health.class );
 
         watcherService = createFileSystemWatcherService( fileSystem, storeDir, logging,
                 platformModule.jobScheduler, fileWatcherFileNameFilter() );

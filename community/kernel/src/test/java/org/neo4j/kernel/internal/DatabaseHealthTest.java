@@ -21,6 +21,7 @@ package org.neo4j.kernel.internal;
 
 import org.junit.Test;
 
+import org.neo4j.kernel.Health;
 import org.neo4j.kernel.impl.core.DatabasePanicEventGenerator;
 import org.neo4j.logging.AssertableLogProvider;
 import org.neo4j.logging.NullLogProvider;
@@ -40,7 +41,7 @@ public class DatabaseHealthTest
     {
         // GIVEN
         DatabasePanicEventGenerator generator = mock( DatabasePanicEventGenerator.class );
-        DatabaseHealth databaseHealth = new DatabaseHealth( generator, NullLogProvider.getInstance().getLog( DatabaseHealth.class ) );
+        Health databaseHealth = new DatabaseHealth( generator, NullLogProvider.getInstance().getLog( DatabaseHealth.class ) );
         databaseHealth.healed();
 
         // WHEN
@@ -57,7 +58,7 @@ public class DatabaseHealthTest
     {
         // GIVEN
         AssertableLogProvider logProvider = new AssertableLogProvider();
-        DatabaseHealth databaseHealth = new DatabaseHealth( mock( DatabasePanicEventGenerator.class ), logProvider.getLog( DatabaseHealth.class ) );
+        Health databaseHealth = new DatabaseHealth( mock( DatabasePanicEventGenerator.class ), logProvider.getLog( DatabaseHealth.class ) );
         databaseHealth.healed();
 
         // WHEN

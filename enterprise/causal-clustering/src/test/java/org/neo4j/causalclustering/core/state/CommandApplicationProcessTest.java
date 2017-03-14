@@ -44,6 +44,7 @@ import org.neo4j.causalclustering.core.consensus.log.monitoring.RaftLogCommitInd
 import org.neo4j.causalclustering.core.consensus.log.segmented.InFlightMap;
 import org.neo4j.kernel.impl.core.DatabasePanicEventGenerator;
 import org.neo4j.kernel.internal.DatabaseHealth;
+import org.neo4j.kernel.Health;
 import org.neo4j.kernel.monitoring.Monitors;
 import org.neo4j.logging.NullLogProvider;
 
@@ -72,7 +73,7 @@ public class CommandApplicationProcessTest
     private final SessionTracker sessionStorage = new SessionTracker(
             new InMemoryStateStorage<>( new GlobalSessionTrackerState() ) );
 
-    private final DatabaseHealth dbHealth = new DatabaseHealth( mock( DatabasePanicEventGenerator.class ),
+    private final Health dbHealth = new DatabaseHealth( mock( DatabasePanicEventGenerator.class ),
             NullLogProvider.getInstance().getLog( getClass() ) );
 
     private final GlobalSession globalSession = new GlobalSession( UUID.randomUUID(), null );

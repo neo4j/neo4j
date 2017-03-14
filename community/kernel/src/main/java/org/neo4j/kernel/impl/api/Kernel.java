@@ -32,7 +32,7 @@ import org.neo4j.kernel.api.security.SecurityContext;
 import org.neo4j.kernel.configuration.Config;
 import org.neo4j.kernel.impl.proc.Procedures;
 import org.neo4j.kernel.impl.transaction.TransactionMonitor;
-import org.neo4j.kernel.internal.DatabaseHealth;
+import org.neo4j.kernel.Health;
 import org.neo4j.kernel.lifecycle.LifecycleAdapter;
 
 /**
@@ -61,12 +61,12 @@ public class Kernel extends LifecycleAdapter implements KernelAPI
 {
     private final KernelTransactions transactions;
     private final TransactionHooks hooks;
-    private final DatabaseHealth health;
+    private final Health health;
     private final TransactionMonitor transactionMonitor;
     private final Procedures procedures;
     private final long defaultTransactionTimeout;
 
-    public Kernel( KernelTransactions transactionFactory, TransactionHooks hooks, DatabaseHealth health,
+    public Kernel( KernelTransactions transactionFactory, TransactionHooks hooks, Health health,
             TransactionMonitor transactionMonitor, Procedures procedures, Config config )
     {
         this.transactions = transactionFactory;

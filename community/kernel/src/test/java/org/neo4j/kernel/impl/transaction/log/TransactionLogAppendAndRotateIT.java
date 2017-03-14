@@ -44,6 +44,7 @@ import org.neo4j.kernel.impl.transaction.log.entry.VersionAwareLogEntryReader;
 import org.neo4j.kernel.impl.transaction.log.rotation.LogRotation;
 import org.neo4j.kernel.impl.transaction.log.rotation.LogRotationImpl;
 import org.neo4j.kernel.internal.DatabaseHealth;
+import org.neo4j.kernel.Health;
 import org.neo4j.kernel.lifecycle.LifeRule;
 import org.neo4j.logging.NullLog;
 import org.neo4j.storageengine.api.StorageCommand;
@@ -91,7 +92,7 @@ public class TransactionLogAppendAndRotateIT
         LogFile logFile = life.add( new PhysicalLogFile( fileSystemRule.get(), logFiles, rotationThreshold,
                 () -> txIdStore.getLastCommittedTransactionId(), logVersionRepository, monitoring, logHeaderCache ) );
         monitoring.setLogFile( logFile );
-        DatabaseHealth health = new DatabaseHealth( mock( DatabasePanicEventGenerator.class ), NullLog.getInstance() );
+        Health health = new DatabaseHealth( mock( DatabasePanicEventGenerator.class ), NullLog.getInstance() );
         LogRotation rotation = new LogRotationImpl( monitoring, logFile, health );
         final TransactionAppender appender = life.add( new BatchingTransactionAppender( logFile, rotation, metadataCache,
                 txIdStore, BYPASS, health ) );

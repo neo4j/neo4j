@@ -54,6 +54,7 @@ import org.neo4j.kernel.impl.util.JobScheduler;
 import org.neo4j.kernel.impl.util.Neo4jJobScheduler;
 import org.neo4j.kernel.impl.util.SynchronizedArrayIdOrderingQueue;
 import org.neo4j.kernel.internal.DatabaseHealth;
+import org.neo4j.kernel.Health;
 import org.neo4j.kernel.internal.KernelEventHandlers;
 import org.neo4j.kernel.lifecycle.LifeSupport;
 import org.neo4j.logging.LogProvider;
@@ -92,7 +93,7 @@ public class RecordStorageEngineRule extends ExternalResource
     }
 
     private RecordStorageEngine get( FileSystemAbstraction fs, PageCache pageCache,
-            SchemaIndexProvider schemaIndexProvider, DatabaseHealth databaseHealth, File storeDirectory,
+            SchemaIndexProvider schemaIndexProvider, Health databaseHealth, File storeDirectory,
             Function<BatchTransactionApplierFacade,BatchTransactionApplierFacade> transactionApplierTransformer )
     {
         if ( !fs.fileExists( storeDirectory ) && !fs.mkdir( storeDirectory ) )
@@ -130,7 +131,7 @@ public class RecordStorageEngineRule extends ExternalResource
     {
         private final FileSystemAbstraction fs;
         private final PageCache pageCache;
-        private DatabaseHealth databaseHealth = new DatabaseHealth(
+        private Health databaseHealth = new DatabaseHealth(
                 new DatabasePanicEventGenerator( new KernelEventHandlers( NullLog.getInstance() ) ),
                 NullLog.getInstance() );
         private File storeDirectory = new File( "/graph.db" );
@@ -157,7 +158,7 @@ public class RecordStorageEngineRule extends ExternalResource
             return this;
         }
 
-        public Builder databaseHealth( DatabaseHealth databaseHealth )
+        public Builder databaseHealth( Health databaseHealth )
         {
             this.databaseHealth = databaseHealth;
             return this;
@@ -193,7 +194,7 @@ public class RecordStorageEngineRule extends ExternalResource
                 ConstraintSemantics constraintSemantics, JobScheduler scheduler,
                 TokenNameLookup tokenNameLookup, LockService lockService,
                 SchemaIndexProvider indexProvider,
-                IndexingService.Monitor indexingServiceMonitor, DatabaseHealth databaseHealth,
+                IndexingService.Monitor indexingServiceMonitor, Health databaseHealth,
                 LabelScanStoreProvider labelScanStoreProvider,
                 LegacyIndexProviderLookup legacyIndexProviderLookup,
                 IndexConfigStore indexConfigStore, IdOrderingQueue legacyIndexTransactionOrdering,
