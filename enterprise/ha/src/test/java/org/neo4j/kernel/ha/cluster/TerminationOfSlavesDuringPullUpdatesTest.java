@@ -339,7 +339,6 @@ public class TerminationOfSlavesDuringPullUpdatesTest
         return node ? db.getNodeById( id ) : db.getRelationshipById( id );
     }
 
-
     private static class PropertyKeyActions implements ReadContestantActions
     {
         final char keyPrefixA;
