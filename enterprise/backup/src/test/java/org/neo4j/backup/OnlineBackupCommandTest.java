@@ -276,6 +276,7 @@ public class OnlineBackupCommandTest
 
         verify( backupService ).doFullBackup( any(), anyInt(), any(), any(), any(), anyLong(), anyBoolean() );
         verify( outsideWorld ).stdOutLine( "Doing full backup..." );
+        verify( outsideWorld ).stdOutLine( "Doing consistency check..." );
         verify( outsideWorld ).stdOutLine( "Backup complete." );
         verifyNoMoreInteractions( backupService );
     }
@@ -290,6 +291,7 @@ public class OnlineBackupCommandTest
 
         verify( backupService ).doFullBackup( any(), anyInt(), any(), any(), any(), anyLong(), anyBoolean() );
         verify( outsideWorld ).stdOutLine( "Doing full backup..." );
+        verify( outsideWorld ).stdOutLine( "Doing consistency check..." );
         verifyNoMoreInteractions( backupService );
     }
 
@@ -304,6 +306,7 @@ public class OnlineBackupCommandTest
 
         verify( backupService ).doIncrementalBackup( any(), anyInt(), any(), anyLong(), any() );
         verify( outsideWorld ).stdOutLine( "Destination is not empty, doing incremental backup..." );
+        verify( outsideWorld ).stdOutLine( "Doing consistency check..." );
         verifyNoMoreInteractions( backupService );
     }
 
@@ -328,6 +331,7 @@ public class OnlineBackupCommandTest
         verify( mockFs ).renameFile( eq( dir ), eq( testDirectory.directory( "ccInc.err.1" ) ) );
         verify( backupService ).doFullBackup( any(), anyInt(), any(), any(), any(), anyLong(), anyBoolean() );
         verify( outsideWorld ).stdOutLine( "Doing full backup..." );
+        verify( outsideWorld ).stdOutLine( "Doing consistency check..." );
         verifyNoMoreInteractions( backupService );
     }
 
@@ -389,6 +393,7 @@ public class OnlineBackupCommandTest
         verify( outsideWorld ).stdErrLine( "Old backup renamed to 'ccInc.err.50'." );
         verify( backupService ).doFullBackup( any(), anyInt(), any(), any(), any(), anyLong(), anyBoolean() );
         verify( outsideWorld ).stdOutLine( "Doing full backup..." );
+        verify( outsideWorld ).stdOutLine( "Doing consistency check..." );
         verifyNoMoreInteractions( backupService );
     }
 

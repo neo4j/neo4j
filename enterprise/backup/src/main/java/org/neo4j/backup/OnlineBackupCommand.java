@@ -236,6 +236,7 @@ public class OnlineBackupCommand implements AdminCommand
         {
             try
             {
+                outsideWorld.stdOutLine( "Doing consistency check..." );
                 ConsistencyCheckService.Result ccResult = consistencyCheckService
                         .runFullConsistencyCheck( destination, config,
                                 ProgressMonitorFactory.textual( outsideWorld.errorStream() ),
