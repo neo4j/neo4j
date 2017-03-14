@@ -249,12 +249,16 @@ public class OnlineBackupCommand implements AdminCommand
                 if ( !ccResult.isSuccessful() )
                 {
                     throw new CommandFailed( String.format( "Inconsistencies found. See '%s' for details.",
-                            ccResult.reportFile() ) );
+                            ccResult.reportFile() ), 3 );
                 }
             }
-            catch ( Exception e )
+            catch ( Throwable e )
             {
-                throw new CommandFailed( "Failed to do consistency check on backup: " + e.getMessage(), e );
+                if ( e instanceof CommandFailed )
+                {
+                    throw (CommandFailed) e;
+                }
+                throw new CommandFailed( "Failed to do consistency check on backup: " + e.getMessage(), e, 2 );
             }
         }
 

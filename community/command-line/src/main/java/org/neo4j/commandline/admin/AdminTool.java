@@ -149,7 +149,7 @@ public class AdminTool
 
     private void commandFailed( CommandFailed e )
     {
-        failure( "command failed", e );
+        failure( "command failed", e, e.code() );
     }
 
     private void failure()
@@ -159,17 +159,22 @@ public class AdminTool
 
     private void failure( String message, Exception e )
     {
+        failure( message, e, 1 );
+    }
+
+    private void failure( String message, Exception e, int code )
+    {
         if ( debug )
         {
             outsideWorld.printStacktrace( e );
         }
-        failure( format( "%s: %s", message, e.getMessage() ) );
+        failure( format( "%s: %s", message, e.getMessage() ), code );
     }
 
-    private void failure( String message )
+    private void failure( String message, int code )
     {
         outsideWorld.stdErrLine( message );
-        outsideWorld.exit( 1 );
+        outsideWorld.exit( code );
     }
 
     private void success()
