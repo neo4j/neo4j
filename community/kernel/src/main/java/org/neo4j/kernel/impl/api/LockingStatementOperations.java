@@ -46,6 +46,7 @@ import org.neo4j.kernel.api.schema_new.RelationTypeSchemaDescriptor;
 import org.neo4j.kernel.api.schema_new.SchemaDescriptor;
 import org.neo4j.kernel.api.schema_new.constaints.ConstraintDescriptor;
 import org.neo4j.kernel.api.schema_new.constaints.NodeExistenceConstraintDescriptor;
+import org.neo4j.kernel.api.schema_new.constaints.NodeKeyConstraintDescriptor;
 import org.neo4j.kernel.api.schema_new.constaints.RelExistenceConstraintDescriptor;
 import org.neo4j.kernel.api.schema_new.constaints.UniquenessConstraintDescriptor;
 import org.neo4j.kernel.api.schema_new.index.NewIndexDescriptor;
@@ -341,6 +342,15 @@ public class LockingStatementOperations implements
         {
             acquireExclusiveNodeLock( state, max( startNodeId, endNodeId ) );
         }
+    }
+
+    @Override
+    public NodeKeyConstraintDescriptor nodeKeyConstraintCreate( KernelStatement state,LabelSchemaDescriptor descriptor )
+            throws CreateConstraintFailureException, AlreadyConstrainedException, AlreadyIndexedException
+    {
+        acquireExclusiveSchemaLock( state );
+        state.assertOpen();
+        return schemaWriteDelegate.nodeKeyConstraintCreate( state, descriptor );
     }
 
     @Override

@@ -21,16 +21,16 @@ package org.neo4j.kernel.api.schema_new.constaints;
 
 import org.neo4j.kernel.api.schema_new.LabelSchemaDescriptor;
 
-public class UniquenessConstraintDescriptor extends IndexBackedConstraintDescriptor
+public class NodeKeyConstraintDescriptor extends IndexBackedConstraintDescriptor
 {
-    UniquenessConstraintDescriptor( LabelSchemaDescriptor schema )
+    NodeKeyConstraintDescriptor( LabelSchemaDescriptor schema )
     {
-        super( Type.UNIQUE, schema );
+        super( Type.UNIQUE_EXISTS, schema );
     }
 
     @Override
     protected String constraintTypeText()
     {
-        return "UNIQUE";
+        return "NODE KEY";
     }
 }

@@ -51,6 +51,20 @@ case object ProcedureCallOrSchemaCommandPlanBuilder extends Phase[CompilerContex
         Some(ProcedureCallExecutionPlan(signature, args, resolved.callResultTypes, resolved.callResultIndices,
           context.notificationLogger.notifications, context.typeConverter.asPublicType))
 
+      // CREATE CONSTRAINT ON (node:Label) ASSERT (node.prop1,node.prop2) IS NODE KEY
+      case CreateNodeKeyConstraint(node, label, props) =>
+        Some(PureSideEffectExecutionPlan("CreateNodeKeyConstraint", SCHEMA_WRITE, (ctx) => {
+          val propertyKeyIds = props.map(p => propertyToId(ctx)(p.propertyKey))
+          ctx.createNodeKeyConstraint(IndexDescriptor(labelToId(ctx)(label), propertyKeyIds))
+        }))
+
+      // DROP CONSTRAINT ON (node:Label) ASSERT (node.prop1,node.prop2) IS NODE KEY
+      case DropNodeKeyConstraint(_, label, props) =>
+        Some(PureSideEffectExecutionPlan("DropNodeKeyConstraint", SCHEMA_WRITE, (ctx) => {
+          val propertyKeyIds = props.map(p => propertyToId(ctx)(p.propertyKey))
+          ctx.dropNodeKeyConstraint(IndexDescriptor(labelToId(ctx)(label), propertyKeyIds))
+        }))
+
       // CREATE CONSTRAINT ON (node:Label) ASSERT node.prop IS UNIQUE
       // CREATE CONSTRAINT ON (node:Label) ASSERT (node.prop1,node.prop2) IS UNIQUE
       case CreateUniquePropertyConstraint(node, label, props) =>

@@ -29,6 +29,8 @@ import org.neo4j.kernel.api.exceptions.schema.SchemaRuleNotFoundException;
 import org.neo4j.kernel.api.index.SchemaIndexProvider;
 import org.neo4j.kernel.api.properties.DefinedProperty;
 import org.neo4j.kernel.api.schema_new.constaints.ConstraintDescriptor;
+import org.neo4j.kernel.api.schema_new.constaints.NodeExistenceConstraintDescriptor;
+import org.neo4j.kernel.api.schema_new.constaints.NodeKeyConstraintDescriptor;
 import org.neo4j.kernel.api.schema_new.constaints.UniquenessConstraintDescriptor;
 import org.neo4j.kernel.api.schema_new.index.NewIndexDescriptor;
 import org.neo4j.kernel.impl.api.index.SchemaIndexProviderMap;
@@ -202,21 +204,38 @@ public class TransactionToRecordStateVisitor extends TxStateVisitor.Adapter
         switch ( constraint.type() )
         {
         case UNIQUE:
-            UniquenessConstraintDescriptor uniqueConstraint = (UniquenessConstraintDescriptor) constraint;
-            IndexRule indexRule = schemaStorage.indexGetForSchema( uniqueConstraint.ownedIndexDescriptor() );
-            recordState.createSchemaRule( constraintSemantics.createUniquenessConstraintRule(
-                    constraintId, uniqueConstraint, indexRule.getId() ) );
-            recordState.setConstraintIndexOwner( indexRule, constraintId );
+            visitAddedUniquenessConstraint( (UniquenessConstraintDescriptor) constraint, constraintId );
+            break;
+
+        case UNIQUE_EXISTS:
+            visitAddedNodeKeyConstraint( (NodeKeyConstraintDescriptor) constraint, constraintId );
             break;
 
         case EXISTS:
-            recordState.createSchemaRule( constraintSemantics.createExistenceConstraint(
-                    schemaStorage.newRuleId(), constraint ) );
+            recordState.createSchemaRule(
+                    constraintSemantics.createExistenceConstraint( schemaStorage.newRuleId(), constraint ) );
             break;
 
         default:
             throw new IllegalStateException( constraint.type().toString() );
         }
+    }
+
+    private void visitAddedUniquenessConstraint(UniquenessConstraintDescriptor uniqueConstraint, long constraintId)
+    {
+        IndexRule indexRule = schemaStorage.indexGetForSchema( uniqueConstraint.ownedIndexDescriptor() );
+        recordState.createSchemaRule( constraintSemantics.createUniquenessConstraintRule(
+                constraintId, uniqueConstraint, indexRule.getId() ) );
+        recordState.setConstraintIndexOwner( indexRule, constraintId );
+    }
+
+    private void visitAddedNodeKeyConstraint(NodeKeyConstraintDescriptor uniqueConstraint, long constraintId)
+            throws CreateConstraintFailureException
+    {
+        IndexRule indexRule = schemaStorage.indexGetForSchema( uniqueConstraint.ownedIndexDescriptor() );
+        recordState.createSchemaRule( constraintSemantics.createNodeKeyConstraintRule(
+                constraintId, uniqueConstraint, indexRule.getId() ) );
+        recordState.setConstraintIndexOwner( indexRule, constraintId );
     }
 
     @Override
@@ -237,7 +256,7 @@ public class TransactionToRecordStateVisitor extends TxStateVisitor.Adapter
         {
             throw new IllegalStateException( "Multiple constraints found for specified label and property." );
         }
-        if ( constraint.type() == ConstraintDescriptor.Type.UNIQUE )
+        if ( constraint.type().enforcesUniqueness() )
         {
             // Remove the index for the constraint as well
             visitRemovedIndex( ((UniquenessConstraintDescriptor)constraint).ownedIndexDescriptor() );

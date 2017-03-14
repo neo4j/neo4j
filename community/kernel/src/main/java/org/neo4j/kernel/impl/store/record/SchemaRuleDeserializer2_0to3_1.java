@@ -84,6 +84,8 @@ public class SchemaRuleDeserializer2_0to3_1
             return readNodePropertyExistenceConstraintRule( id, labelId, buffer );
         case RELATIONSHIP_PROPERTY_EXISTENCE_CONSTRAINT:
             return readRelPropertyExistenceConstraintRule( id, labelId, buffer );
+        case NODE_KEY_CONSTRAINT:
+            return readNodeKeyConstraintRule( id, labelId, buffer );
         default:
             throw new IllegalArgumentException( kind.name() );
         }
@@ -135,6 +137,13 @@ public class SchemaRuleDeserializer2_0to3_1
     {
         return new ConstraintRule( id,
                 ConstraintDescriptorFactory.uniqueForLabel( labelId, readConstraintPropertyKeys( buffer ) ),
+                readOwnedIndexRule( buffer ) );
+    }
+
+    public static ConstraintRule readNodeKeyConstraintRule( long id, int labelId, ByteBuffer buffer )
+    {
+        return new ConstraintRule( id,
+                ConstraintDescriptorFactory.nodeKeyForLabel( labelId, readConstraintPropertyKeys( buffer ) ),
                 readOwnedIndexRule( buffer ) );
     }
 

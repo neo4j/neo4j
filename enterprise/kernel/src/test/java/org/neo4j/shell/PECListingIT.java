@@ -138,6 +138,7 @@ public class PECListingIT extends AbstractShellIT
 
         // WHEN
         SchemaHelper.createUniquenessConstraint( db, label, "name" );
+//        SchemaHelper.createNodeKeyConstraint( db, label, "surname" );
         SchemaHelper.createNodePropertyExistenceConstraint( db, label, "name" );
         SchemaHelper.createRelPropertyExistenceConstraint( db, relType, "since" );
 
@@ -147,8 +148,10 @@ public class PECListingIT extends AbstractShellIT
         executeCommand( "schema",
                 "Indexes",
                 "  ON :Person\\(name\\) ONLINE \\(for uniqueness constraint\\)",
+//                "  ON :Person\\(surname\\) ONLINE \\(for uniqueness constraint\\)",
                 "Constraints",
                 "  ON \\(person:Person\\) ASSERT person.name IS UNIQUE",
+//                "  ON \\(person:Person\\) ASSERT person.surname IS NODE KEY",
                 "  ON \\(person:Person\\) ASSERT exists\\(person.name\\)",
                 "  ON \\(\\)-\\[knows:KNOWS\\]-\\(\\) ASSERT exists\\(knows.since\\)" );
     }

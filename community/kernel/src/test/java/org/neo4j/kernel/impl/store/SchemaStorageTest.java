@@ -33,23 +33,37 @@ import java.util.Set;
 import java.util.concurrent.TimeUnit;
 import java.util.function.Consumer;
 
+import org.neo4j.graphdb.ConstraintViolationException;
 import org.neo4j.graphdb.DependencyResolver;
 import org.neo4j.graphdb.GraphDatabaseService;
+import org.neo4j.graphdb.InvalidTransactionTypeException;
 import org.neo4j.graphdb.Label;
 import org.neo4j.graphdb.Transaction;
+import org.neo4j.graphdb.schema.ConstraintDefinition;
 import org.neo4j.graphdb.schema.IndexCreator;
 import org.neo4j.helpers.collection.Iterators;
 import org.neo4j.kernel.api.ReadOperations;
 import org.neo4j.kernel.api.Statement;
+import org.neo4j.kernel.api.StatementTokenNameLookup;
 import org.neo4j.kernel.api.TokenNameLookup;
+import org.neo4j.kernel.api.exceptions.InvalidTransactionTypeKernelException;
+import org.neo4j.kernel.api.exceptions.schema.AlreadyConstrainedException;
+import org.neo4j.kernel.api.exceptions.schema.AlreadyIndexedException;
+import org.neo4j.kernel.api.exceptions.schema.CreateConstraintFailureException;
 import org.neo4j.kernel.api.exceptions.schema.DuplicateSchemaRuleException;
+import org.neo4j.kernel.api.exceptions.schema.IllegalTokenNameException;
 import org.neo4j.kernel.api.exceptions.schema.SchemaRuleNotFoundException;
+import org.neo4j.kernel.api.exceptions.schema.TooManyLabelsException;
+import org.neo4j.kernel.api.schema_new.SchemaDescriptorFactory;
 import org.neo4j.kernel.api.schema_new.SchemaDescriptorPredicates;
 import org.neo4j.kernel.api.schema_new.constaints.ConstraintDescriptor;
 import org.neo4j.kernel.api.schema_new.constaints.ConstraintDescriptorFactory;
 import org.neo4j.kernel.api.schema_new.index.NewIndexDescriptor;
 import org.neo4j.kernel.api.schema_new.index.NewIndexDescriptorFactory;
 import org.neo4j.kernel.impl.core.ThreadToStatementContextBridge;
+import org.neo4j.kernel.impl.coreapi.schema.IndexDefinitionImpl;
+import org.neo4j.kernel.impl.coreapi.schema.InternalSchemaActions;
+import org.neo4j.kernel.impl.coreapi.schema.NodeKeyConstraintDefinition;
 import org.neo4j.kernel.impl.storageengine.impl.recordstorage.RecordStorageEngine;
 import org.neo4j.kernel.impl.store.record.ConstraintRule;
 import org.neo4j.kernel.impl.store.record.IndexRule;
@@ -64,8 +78,10 @@ import static org.junit.Assert.assertNull;
 import static org.junit.Assert.assertTrue;
 import static org.mockito.Matchers.any;
 import static org.mockito.Matchers.anyBoolean;
+import static org.mockito.Mockito.mock;
 import static org.neo4j.helpers.collection.Iterators.asSet;
 import static org.neo4j.kernel.impl.api.index.inmemory.InMemoryIndexProviderFactory.PROVIDER_DESCRIPTOR;
+import static org.neo4j.kernel.impl.coreapi.schema.PropertyNameUtils.getOrCreatePropertyKeyIds;
 
 public class SchemaStorageTest
 {
@@ -312,7 +328,7 @@ public class SchemaStorageTest
 
     private TokenNameLookup getDefaultTokenNameLookup()
     {
-        TokenNameLookup tokenNameLookup = Mockito.mock( TokenNameLookup.class );
+        TokenNameLookup tokenNameLookup = mock( TokenNameLookup.class );
         Mockito.when( tokenNameLookup.labelGetName( labelId( LABEL1 ) ) ).thenReturn( LABEL1 );
         Mockito.when( tokenNameLookup.propertyKeyGetName( propId( PROP1 ) ) ).thenReturn( PROP1 );
         Mockito.when( tokenNameLookup.relationshipTypeGetName( typeId( TYPE1 ) ) ).thenReturn( TYPE1 );
@@ -424,6 +440,45 @@ public class SchemaStorageTest
     private Consumer<GraphDatabaseService> uniquenessConstraint( String label, String prop )
     {
         return db -> db.schema().constraintFor( Label.label( label ) ).assertPropertyIsUnique( prop ).create();
+    }
+
+    private Consumer<GraphDatabaseService> nodeKeyConstraint( String label, String prop )
+    {
+        return db -> createNodeKeyConstraint( label, prop );
+    }
+
+    private ConstraintDefinition createNodeKeyConstraint( String label, String prop )
+    {
+        Statement statement = dependencyResolver().resolveDependency( ThreadToStatementContextBridge.class ).get();
+        InternalSchemaActions actions = mock( InternalSchemaActions.class );
+        IndexDefinitionImpl indexDefinition = new IndexDefinitionImpl( actions, Label.label( label ), prop, true );
+        try
+        {
+            int labelId = statement.tokenWriteOperations().labelGetOrCreateForName(
+                    indexDefinition.getLabel().name() );
+            int[] propertyKeyIds = getOrCreatePropertyKeyIds(
+                    statement.tokenWriteOperations(), indexDefinition );
+            statement.schemaWriteOperations().nodeKeyConstraintCreate(
+                    SchemaDescriptorFactory.forLabel( labelId, propertyKeyIds ) );
+            return new NodeKeyConstraintDefinition( actions, indexDefinition );
+        }
+        catch ( AlreadyConstrainedException | CreateConstraintFailureException | AlreadyIndexedException e )
+        {
+            throw new ConstraintViolationException(
+                    e.getUserMessage( new StatementTokenNameLookup( statement.readOperations() ) ), e );
+        }
+        catch ( IllegalTokenNameException e )
+        {
+            throw new IllegalArgumentException( e );
+        }
+        catch ( TooManyLabelsException e )
+        {
+            throw new IllegalStateException( e );
+        }
+        catch ( InvalidTransactionTypeKernelException e )
+        {
+            throw new InvalidTransactionTypeException( e.getMessage(), e );
+        }
     }
 
     @SafeVarargs

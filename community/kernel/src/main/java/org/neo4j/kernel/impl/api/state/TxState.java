@@ -42,7 +42,7 @@ import org.neo4j.kernel.api.schema_new.OrderedPropertyValues;
 import org.neo4j.kernel.api.schema_new.SchemaDescriptor;
 import org.neo4j.kernel.api.schema_new.SchemaDescriptorPredicates;
 import org.neo4j.kernel.api.schema_new.constaints.ConstraintDescriptor;
-import org.neo4j.kernel.api.schema_new.constaints.UniquenessConstraintDescriptor;
+import org.neo4j.kernel.api.schema_new.constaints.IndexBackedConstraintDescriptor;
 import org.neo4j.kernel.api.schema_new.index.NewIndexDescriptor;
 import org.neo4j.kernel.api.txstate.RelationshipChangeVisitorAdapter;
 import org.neo4j.kernel.api.txstate.TransactionState;
@@ -158,7 +158,7 @@ public final class TxState implements TransactionState, RelationshipVisitor.Home
     private PrimitiveLongSet nodesDeletedInTx;
     private PrimitiveLongSet relationshipsDeletedInTx;
 
-    private Map<UniquenessConstraintDescriptor, Long> createdConstraintIndexesByConstraint;
+    private Map<IndexBackedConstraintDescriptor, Long> createdConstraintIndexesByConstraint;
 
     private Map<LabelSchemaDescriptor, Map<OrderedPropertyValues, DiffSets<Long>>> indexUpdates;
 
@@ -911,7 +911,7 @@ public final class TxState implements TransactionState, RelationshipVisitor.Home
     }
 
     @Override
-    public void constraintDoAdd( UniquenessConstraintDescriptor constraint, long indexId )
+    public void constraintDoAdd( IndexBackedConstraintDescriptor constraint, long indexId )
     {
         constraintsChangesDiffSets().add( constraint );
         createdConstraintIndexesByConstraint().put( constraint, indexId );
@@ -962,9 +962,9 @@ public final class TxState implements TransactionState, RelationshipVisitor.Home
     public void constraintDoDrop( ConstraintDescriptor constraint )
     {
         constraintsChangesDiffSets().remove( constraint );
-        if ( constraint.type() == ConstraintDescriptor.Type.UNIQUE )
+        if ( constraint.type().enforcesUniqueness() )
         {
-            indexDoDrop( getIndexForUniqueConstraint( (UniquenessConstraintDescriptor)constraint ) );
+            indexDoDrop( getIndexForIndexBackedConstraint( (IndexBackedConstraintDescriptor) constraint ) );
         }
         changed();
     }
@@ -980,7 +980,7 @@ public final class TxState implements TransactionState, RelationshipVisitor.Home
     {
         if ( createdConstraintIndexesByConstraint != null && !createdConstraintIndexesByConstraint.isEmpty() )
         {
-            return map( this::getIndexForUniqueConstraint, createdConstraintIndexesByConstraint.keySet() );
+            return map( this::getIndexForIndexBackedConstraint, createdConstraintIndexesByConstraint.keySet() );
         }
         return Iterables.empty();
     }
@@ -1272,7 +1272,7 @@ public final class TxState implements TransactionState, RelationshipVisitor.Home
         return diffs;
     }
 
-    private Map<UniquenessConstraintDescriptor, Long> createdConstraintIndexesByConstraint()
+    private Map<IndexBackedConstraintDescriptor, Long> createdConstraintIndexesByConstraint()
     {
         if ( createdConstraintIndexesByConstraint == null )
         {
@@ -1281,7 +1281,7 @@ public final class TxState implements TransactionState, RelationshipVisitor.Home
         return createdConstraintIndexesByConstraint;
     }
 
-    private NewIndexDescriptor getIndexForUniqueConstraint( UniquenessConstraintDescriptor constraint )
+    private NewIndexDescriptor getIndexForIndexBackedConstraint( IndexBackedConstraintDescriptor constraint )
     {
         return constraint.ownedIndexDescriptor();
     }

@@ -33,7 +33,7 @@ import org.neo4j.kernel.api.TokenNameLookup;
  * how this is done in eg. LabelSchemaDescriptor, and the SchemaProcessor and SchemaComputer interfaces need to be
  * extended with methods taking the new concrete type as argument.
  */
-public interface SchemaDescriptor
+public interface SchemaDescriptor extends Comparable<SchemaDescriptor>
 {
     /**
      * Computes some value by feeding this object into the given SchemaComputer.

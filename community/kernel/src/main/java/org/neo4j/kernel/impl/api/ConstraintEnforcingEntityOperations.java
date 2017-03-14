@@ -57,6 +57,7 @@ import org.neo4j.kernel.api.schema_new.RelationTypeSchemaDescriptor;
 import org.neo4j.kernel.api.schema_new.SchemaDescriptor;
 import org.neo4j.kernel.api.schema_new.constaints.ConstraintDescriptor;
 import org.neo4j.kernel.api.schema_new.constaints.NodeExistenceConstraintDescriptor;
+import org.neo4j.kernel.api.schema_new.constaints.NodeKeyConstraintDescriptor;
 import org.neo4j.kernel.api.schema_new.constaints.RelExistenceConstraintDescriptor;
 import org.neo4j.kernel.api.schema_new.constaints.UniquenessConstraintDescriptor;
 import org.neo4j.kernel.api.schema_new.index.NewIndexDescriptor;
@@ -80,7 +81,6 @@ import static org.neo4j.kernel.api.StatementConstants.NO_SUCH_NODE;
 import static org.neo4j.kernel.api.StatementConstants.NO_SUCH_PROPERTY_KEY;
 import static org.neo4j.kernel.api.exceptions.schema.ConstraintValidationException.Phase.VALIDATION;
 import static org.neo4j.kernel.api.schema_new.SchemaDescriptorPredicates.hasProperty;
-import static org.neo4j.kernel.api.schema_new.constaints.ConstraintDescriptor.Type.UNIQUE;
 import static org.neo4j.kernel.impl.locking.ResourceTypes.INDEX_ENTRY;
 import static org.neo4j.kernel.impl.locking.ResourceTypes.indexEntryResourceId;
 
@@ -118,7 +118,7 @@ public class ConstraintEnforcingEntityOperations implements EntityOperations, Sc
             while ( constraints.hasNext() )
             {
                 ConstraintDescriptor constraint = constraints.next();
-                if ( constraint.type() == UNIQUE )
+                if ( constraint.type().enforcesUniqueness() )
                 {
                     UniquenessConstraintDescriptor uniqueConstraint = (UniquenessConstraintDescriptor) constraint;
                     ExactPredicate[] propertyValues = getAllPropertyValues( state, uniqueConstraint.schema(), node );
@@ -555,6 +555,13 @@ public class ConstraintEnforcingEntityOperations implements EntityOperations, Sc
     public void uniqueIndexDrop( KernelStatement state, NewIndexDescriptor descriptor ) throws DropIndexFailureException
     {
         schemaWriteOperations.uniqueIndexDrop( state, descriptor );
+    }
+
+    @Override
+    public NodeKeyConstraintDescriptor nodeKeyConstraintCreate( KernelStatement state, LabelSchemaDescriptor descriptor )
+            throws AlreadyConstrainedException, CreateConstraintFailureException, AlreadyIndexedException
+    {
+        return schemaWriteOperations.nodeKeyConstraintCreate( state, descriptor );
     }
 
     @Override

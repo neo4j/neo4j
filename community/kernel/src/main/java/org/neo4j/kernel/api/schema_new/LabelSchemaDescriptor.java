@@ -102,4 +102,24 @@ public class LabelSchemaDescriptor implements SchemaDescriptor, LabelSchemaSuppl
     {
         return this;
     }
+
+    public int compareTo( SchemaDescriptor o )
+    {
+        if ( o instanceof LabelSchemaDescriptor )
+        {
+            LabelSchemaDescriptor other = (LabelSchemaDescriptor) o;
+            if ( labelId == other.getLabelId() )
+            {
+                return SchemaUtil.comparePropertyKeyIds( propertyIds, other.getPropertyIds() );
+            }
+            else
+            {
+                return labelId - other.labelId;
+            }
+        }
+        else
+        {
+            return -1;
+        }
+    }
 }

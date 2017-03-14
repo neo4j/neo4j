@@ -64,7 +64,7 @@ public class StartupConstraintSemanticsTest
         {
             Throwable error = Exceptions.rootCause( e );
             assertThat( error, instanceOf( IllegalStateException.class ) );
-            assertEquals( StandardConstraintSemantics.ERROR_MESSAGE, error.getMessage() );
+            assertEquals( StandardConstraintSemantics.ERROR_MESSAGE_EXISTS, error.getMessage() );
         }
         finally
         {

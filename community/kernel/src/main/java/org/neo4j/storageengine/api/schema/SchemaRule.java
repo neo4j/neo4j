@@ -107,7 +107,8 @@ public abstract class SchemaRule implements SchemaDescriptor.Supplier
         CONSTRAINT_INDEX_RULE( "Constraint index" ),
         UNIQUENESS_CONSTRAINT( "Uniqueness constraint" ),
         NODE_PROPERTY_EXISTENCE_CONSTRAINT( "Node property existence constraint" ),
-        RELATIONSHIP_PROPERTY_EXISTENCE_CONSTRAINT( "Relationship property existence constraint" );
+        RELATIONSHIP_PROPERTY_EXISTENCE_CONSTRAINT( "Relationship property existence constraint" ),
+        NODE_KEY_CONSTRAINT( "Node key constraint" );
 
         private static final Kind[] ALL = values();
 
@@ -156,6 +157,8 @@ public abstract class SchemaRule implements SchemaDescriptor.Supplier
             {
             case UNIQUE:
                 return UNIQUENESS_CONSTRAINT;
+            case UNIQUE_EXISTS:
+                return NODE_KEY_CONSTRAINT;
             case EXISTS:
                 return descriptor.schema().computeWith( existenceKindMapper );
             default:

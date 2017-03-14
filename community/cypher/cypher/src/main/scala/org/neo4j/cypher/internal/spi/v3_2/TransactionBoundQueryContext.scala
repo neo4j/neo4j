@@ -481,6 +481,16 @@ final class TransactionBoundQueryContext(val transactionalContext: Transactional
   override def dropIndexRule(descriptor: IndexDescriptor) =
     transactionalContext.statement.schemaWriteOperations().indexDrop(descriptor)
 
+  override def createNodeKeyConstraint(descriptor: IndexDescriptor): Boolean = try {
+    transactionalContext.statement.schemaWriteOperations().nodeKeyConstraintCreate(descriptor)
+    true
+  } catch {
+    case existing: AlreadyConstrainedException => false
+  }
+
+  override def dropNodeKeyConstraint(descriptor: IndexDescriptor) =
+    transactionalContext.statement.schemaWriteOperations().constraintDrop(ConstraintDescriptorFactory.uniqueForSchema(descriptor))
+
   override def createUniqueConstraint(descriptor: IndexDescriptor): Boolean = try {
     transactionalContext.statement.schemaWriteOperations().uniquePropertyConstraintCreate(descriptor)
     true

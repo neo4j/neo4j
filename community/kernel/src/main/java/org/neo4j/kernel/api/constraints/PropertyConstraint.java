@@ -38,6 +38,10 @@ public interface PropertyConstraint
 
         void visitRemovedUniquePropertyConstraint( UniquenessConstraint constraint );
 
+        void visitAddedNodeKeyConstraint( NodeKeyConstraint constraint );
+
+        void visitRemovedNodeKeyConstraint( NodeKeyConstraint constraint );
+
         void visitAddedNodePropertyExistenceConstraint( NodePropertyExistenceConstraint constraint )
                 throws CreateConstraintFailureException;
 

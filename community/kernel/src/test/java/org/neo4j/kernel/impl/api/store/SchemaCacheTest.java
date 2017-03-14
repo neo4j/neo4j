@@ -46,7 +46,6 @@ import static org.hamcrest.Matchers.equalTo;
 import static org.junit.Assert.assertEquals;
 import static org.junit.Assert.assertNull;
 import static org.neo4j.helpers.collection.Iterators.asSet;
-import static org.neo4j.kernel.api.schema_new.constaints.ConstraintDescriptor.Type.EXISTS;
 import static org.neo4j.kernel.impl.api.index.TestSchemaIndexProviderDescriptor.PROVIDER_DESCRIPTOR;
 
 public class SchemaCacheTest
@@ -285,9 +284,9 @@ public class SchemaCacheTest
     private static class ConstraintSemantics extends StandardConstraintSemantics
     {
         @Override
-        protected ConstraintDescriptor readNonStandardConstraint( ConstraintRule rule )
+        protected ConstraintDescriptor readNonStandardConstraint( ConstraintRule rule, String errorMessage )
         {
-            if ( rule.getConstraintDescriptor().type() != EXISTS )
+            if ( !rule.getConstraintDescriptor().type().enforcesPropertyExistence() )
             {
                 throw new IllegalStateException( "Unsupported constraint type: " + rule );
             }

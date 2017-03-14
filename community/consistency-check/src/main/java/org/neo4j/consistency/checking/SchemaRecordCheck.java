@@ -37,8 +37,6 @@ import org.neo4j.kernel.impl.store.record.PropertyKeyTokenRecord;
 import org.neo4j.kernel.impl.store.record.RelationshipTypeTokenRecord;
 import org.neo4j.storageengine.api.schema.SchemaRule;
 
-import static org.neo4j.kernel.api.schema_new.constaints.ConstraintDescriptor.Type.UNIQUE;
-
 /**
  * Note that this class builds up an in-memory representation of the complete schema store by being used in
  * multiple phases.
@@ -156,7 +154,7 @@ public class SchemaRecordCheck implements RecordCheck<DynamicRecord, Consistency
         {
             checkSchema( rule, record, records, engine );
 
-            if ( rule.getConstraintDescriptor().type() == UNIQUE )
+            if ( rule.getConstraintDescriptor().type().enforcesUniqueness() )
             {
                 DynamicRecord previousObligation = indexObligations.put( rule.getOwnedIndex(), record.clone() );
                 if ( previousObligation != null )
@@ -201,7 +199,7 @@ public class SchemaRecordCheck implements RecordCheck<DynamicRecord, Consistency
         public void checkConstraintRule( ConstraintRule rule, DynamicRecord record,
                 RecordAccess records, CheckerEngine<DynamicRecord,ConsistencyReport.SchemaConsistencyReport> engine )
         {
-            if ( rule.getConstraintDescriptor().type() == UNIQUE )
+            if ( rule.getConstraintDescriptor().type().enforcesUniqueness() )
             {
                 DynamicRecord obligation = constraintObligations.get( rule.getId() );
                 if ( obligation == null )

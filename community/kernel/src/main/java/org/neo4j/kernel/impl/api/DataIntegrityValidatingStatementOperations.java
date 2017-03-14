@@ -42,6 +42,7 @@ import org.neo4j.kernel.api.schema_new.constaints.ConstraintBoundary;
 import org.neo4j.kernel.api.schema_new.constaints.ConstraintDescriptor;
 import org.neo4j.kernel.api.schema_new.constaints.ConstraintDescriptorFactory;
 import org.neo4j.kernel.api.schema_new.constaints.NodeExistenceConstraintDescriptor;
+import org.neo4j.kernel.api.schema_new.constaints.NodeKeyConstraintDescriptor;
 import org.neo4j.kernel.api.schema_new.constaints.RelExistenceConstraintDescriptor;
 import org.neo4j.kernel.api.schema_new.constaints.UniquenessConstraintDescriptor;
 import org.neo4j.kernel.api.schema_new.index.NewIndexDescriptor;
@@ -115,7 +116,7 @@ public class DataIntegrityValidatingStatementOperations implements
             throws AlreadyIndexedException, AlreadyConstrainedException, RepeatedPropertyInCompositeSchemaException
     {
         assertValidDescriptor( descriptor, OperationContext.INDEX_CREATION );
-        assertIndexDoesNotExist( state, OperationContext.INDEX_CREATION, descriptor );
+        assertUniqueIndexDoesNotExist( state, OperationContext.INDEX_CREATION, descriptor );
         return schemaWriteDelegate.indexCreate( state, descriptor );
     }
 
@@ -151,6 +152,20 @@ public class DataIntegrityValidatingStatementOperations implements
     }
 
     @Override
+    public NodeKeyConstraintDescriptor nodeKeyConstraintCreate(
+            KernelStatement state, LabelSchemaDescriptor descriptor )
+            throws AlreadyConstrainedException, CreateConstraintFailureException, AlreadyIndexedException
+    {
+        ConstraintDescriptor constraint = ConstraintDescriptorFactory.nodeKeyForSchema( descriptor );
+        assertConstraintDoesNotExist( state, constraint );
+
+        // It is not allowed to create node key constraints on indexed label/property pairs
+        assertUniqueIndexDoesNotExist( state, OperationContext.CONSTRAINT_CREATION, descriptor );
+
+        return schemaWriteDelegate.nodeKeyConstraintCreate( state, descriptor );
+    }
+
+    @Override
     public UniquenessConstraintDescriptor uniquePropertyConstraintCreate(
             KernelStatement state, LabelSchemaDescriptor descriptor )
             throws AlreadyConstrainedException, CreateConstraintFailureException, AlreadyIndexedException,
@@ -161,7 +176,7 @@ public class DataIntegrityValidatingStatementOperations implements
         assertConstraintDoesNotExist( state, constraint );
 
         // It is not allowed to create uniqueness constraints on indexed label/property pairs
-        assertIndexDoesNotExist( state, OperationContext.CONSTRAINT_CREATION, descriptor );
+        assertUniqueIndexDoesNotExist( state, OperationContext.CONSTRAINT_CREATION, descriptor );
 
         return schemaWriteDelegate.uniquePropertyConstraintCreate( state, descriptor );
     }
@@ -203,7 +218,7 @@ public class DataIntegrityValidatingStatementOperations implements
         schemaWriteDelegate.constraintDrop( state, descriptor );
     }
 
-    private void assertIndexDoesNotExist( KernelStatement state, OperationContext context,
+    private void assertUniqueIndexDoesNotExist( KernelStatement state, OperationContext context,
             LabelSchemaDescriptor descriptor )
             throws AlreadyIndexedException, AlreadyConstrainedException
     {
