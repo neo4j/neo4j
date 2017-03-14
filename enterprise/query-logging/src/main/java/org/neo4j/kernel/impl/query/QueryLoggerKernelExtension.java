@@ -23,7 +23,11 @@ import java.io.Closeable;
 import java.io.File;
 import java.io.OutputStream;
 import java.time.Clock;
+import java.util.Collection;
+import java.util.Collections;
+import java.util.HashSet;
 import java.util.Map;
+import java.util.Set;
 import java.util.regex.Matcher;
 import java.util.regex.Pattern;
 
@@ -140,9 +144,12 @@ public class QueryLoggerKernelExtension extends KernelExtensionFactory<QueryLogg
         private final boolean logQueryParameters;
 
         private static final Pattern PASSWORD_PATTERN = Pattern.compile(
+                // call signature
                 "(?:(?i)call)\\s+dbms(?:\\.security)?\\.change(?:User)?Password\\(" +
-                        "(?:\\s*(?:'(?:(?<=\\\\)'|[^'])*'|\"(?:(?<=\\\\)\"|[^\"])*\"|\\$\\w*|\\{\\w*\\})\\s*,)?" +
-                        "\\s*('(?:(?<=\\\\)'|[^'])*'|\"(?:(?<=\\\\)\"|[^\"])*\"|\\$\\w*|\\{\\w*\\})\\s*\\)" );
+                // optional username parameter, in single, double quotes, or parametrized
+                "(?:\\s*(?:'(?:(?<=\\\\)'|[^'])*'|\"(?:(?<=\\\\)\"|[^\"])*\"|\\$\\w*|\\{\\w*\\})\\s*,)?" +
+                // password parameter, in single, double quotes, or parametrized
+                "\\s*('(?:(?<=\\\\)'|[^'])*'|\"(?:(?<=\\\\)\"|[^\"])*\"|\\$\\w*|\\{\\w*\\})\\s*\\)" );
 
         QueryLogger( Clock clock, Log log, long thresholdMillis, boolean logQueryParameters )
         {
@@ -180,20 +187,19 @@ public class QueryLoggerKernelExtension extends KernelExtensionFactory<QueryLogg
             String queryText = query.queryText();
             String metaData = mapAsString( query.metaData() );
 
-            String password = "";
-
+            Set<String> passwordParams = new HashSet<>();
             Matcher matcher = PASSWORD_PATTERN.matcher( queryText );
 
             while ( matcher.find() )
             {
-                password = matcher.group( 1 ).trim();
+                String password = matcher.group( 1 ).trim();
                 if ( password.charAt( 0 ) == '$' )
                 {
-                    password = password.substring( 1 );
+                    passwordParams.add( password.substring( 1 ) );
                 }
                 else if ( password.charAt( 0 ) == '{' )
                 {
-                    password = password.substring( 1, password.length() - 1 );
+                    passwordParams.add( password.substring( 1, password.length() - 1 ) );
                 }
                 else
                 {
@@ -204,7 +210,7 @@ public class QueryLoggerKernelExtension extends KernelExtensionFactory<QueryLogg
 
             if ( logQueryParameters )
             {
-                String params = mapAsString( query.queryParameters(), password );
+                String params = mapAsString( query.queryParameters(), passwordParams );
                 return format( "%d ms: %s - %s - %s - %s", time, sourceString, queryText, params, metaData );
             }
             else
@@ -215,10 +221,10 @@ public class QueryLoggerKernelExtension extends KernelExtensionFactory<QueryLogg
 
         private static String mapAsString( Map<String,Object> params )
         {
-            return mapAsString( params, "" );
+            return mapAsString( params, Collections.emptySet() );
         }
 
-        private static String mapAsString( Map<String, Object> params, String obfuscate )
+        private static String mapAsString( Map<String, Object> params, Collection<String> obfuscate )
         {
             if ( params == null )
             {
@@ -234,7 +240,7 @@ public class QueryLoggerKernelExtension extends KernelExtensionFactory<QueryLogg
                         .append( entry.getKey() )
                         .append( ": " );
 
-                if ( entry.getKey().equals( obfuscate ) )
+                if ( obfuscate.contains( entry.getKey() ) )
                 {
                     builder.append( "******" );
                 }

@@ -357,6 +357,7 @@ public class QueryLoggerIT
         assertEquals( 1, logLines.size() );
         assertThat( logLines.get( 0 ),
                 containsString(  "CALL dbms.security.changePassword(******)") ) ;
+        assertThat( logLines.get( 0 ),not( containsString( "abc123" ) ) );
         assertThat( logLines.get( 0 ), containsString( neo.subject().username() ) );
     }
 
@@ -389,6 +390,7 @@ public class QueryLoggerIT
         assertEquals( 1, logLines.size() );
         assertThat( logLines.get( 0 ),
                 containsString(  "CALL dbms.security.changeUserPassword('neo4j', ******)") ) ;
+        assertThat( logLines.get( 0 ),not( containsString( "abc123" ) ) );
         assertThat( logLines.get( 0 ), containsString( neo.subject().username() ) );
     }
 
@@ -421,6 +423,7 @@ public class QueryLoggerIT
         assertEquals( 1, logLines.size() );
         assertThat( logLines.get( 0 ),
                 containsString(  "CALL dbms.security.changePassword(******)") ) ;
+        assertThat( logLines.get( 0 ),not( containsString( ".changePassword(\\'si\"lly\\" ) ) );
         assertThat( logLines.get( 0 ), containsString( neo.subject().username() ) );
     }
 
@@ -457,6 +460,49 @@ public class QueryLoggerIT
         assertEquals( 1, logLines.size() );
         assertThat( logLines.get( 0 ),
                 containsString(  "CALL dbms.security.changeUserPassword('neo4j',******) CALL dbms.security.changeUserPassword('smith',******)") ) ;
+        assertThat( logLines.get( 0 ),not( containsString( "other$silly" ) ) );
+        assertThat( logLines.get( 0 ),not( containsString( ".changePassword(silly)" ) ) );
+        assertThat( logLines.get( 0 ), containsString( neo.subject().username() ) );
+    }
+
+    @Test
+    public void shouldNotLogPasswordEvenIfYouDoTwoThingsAtTheSameTimeWithSeveralParms() throws Exception
+    {
+        GraphDatabaseFacade database = (GraphDatabaseFacade) databaseBuilder
+                .setConfig( GraphDatabaseSettings.log_queries, Settings.TRUE )
+                .setConfig( GraphDatabaseSettings.logs_directory, logsDirectory.getPath() )
+                .setConfig( GraphDatabaseSettings.auth_enabled, Settings.TRUE )
+                .newGraphDatabase();
+
+        EnterpriseAuthManager authManager = database.getDependencyResolver().resolveDependency( EnterpriseAuthManager.class );
+        EnterpriseAuthAndUserManager userManager= database.getDependencyResolver().resolveDependency(
+                EnterpriseAuthAndUserManager.class );
+        userManager.getUserManager().newUser( "smith", "himitsu", false );
+        EnterpriseSecurityContext neo = authManager.login( AuthToken.newBasicAuthToken( "neo4j", "neo4j" ) );
+
+        String query = "CALL dbms.security.changeUserPassword('neo4j',$first) "+
+                "CALL dbms.security.changeUserPassword('smith',$second) RETURN 1";
+        try ( InternalTransaction tx = database
+                .beginTransaction( KernelTransaction.Type.explicit, neo ) )
+        {
+            Map<String,Object> params = new HashMap(  );
+            params.put("first",".changePassword(silly)");
+            params.put("second",".other$silly");
+            Result res = database.execute( tx, query, params );
+            res.close();
+            tx.success();
+        }
+        finally
+        {
+            database.shutdown();
+        }
+
+        List<String> logLines = readAllLines( logFilename );
+        assertEquals( 1, logLines.size() );
+        assertThat( logLines.get( 0 ),
+                containsString(  "{first: ******, second: ******}"));
+        assertThat( logLines.get( 0 ),not( containsString( "other$silly" ) ) );
+        assertThat( logLines.get( 0 ),not( containsString( ".changePassword(silly)" ) ) );
         assertThat( logLines.get( 0 ), containsString( neo.subject().username() ) );
     }
 
@@ -489,6 +535,7 @@ public class QueryLoggerIT
         assertEquals( 1, logLines.size() );
         assertThat( logLines.get( 0 ),
                 containsString(  "{password: ******}"));
+        assertThat( logLines.get( 0 ),not( containsString( "abc123" ) ) );
         assertThat( logLines.get( 0 ), containsString( neo.subject().username() ) );
     }
 
@@ -521,6 +568,7 @@ public class QueryLoggerIT
         assertEquals( 1, logLines.size() );
         assertThat( logLines.get( 0 ),
                 containsString(  "{password: ******}"));
+        assertThat( logLines.get( 0 ),not( containsString( "abc123" ) ) );
         assertThat( logLines.get( 0 ), containsString( neo.subject().username() ) );
     }
 
