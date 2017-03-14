@@ -298,6 +298,8 @@ public interface Status
     enum Schema implements Status
     {
         // client errors
+        RepeatedPropertyInCompositeSchema( ClientError,
+                "Unable to create composite index or constraint because a property was specified in several positions." ),
         ConstraintAlreadyExists( ClientError,
                 "Unable to perform operation because it would clash with a pre-existing constraint." ),
         ConstraintNotFound( ClientError,

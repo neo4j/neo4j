@@ -44,6 +44,7 @@ import org.neo4j.kernel.api.exceptions.schema.CreateConstraintFailureException;
 import org.neo4j.kernel.api.exceptions.schema.DropConstraintFailureException;
 import org.neo4j.kernel.api.exceptions.schema.DropIndexFailureException;
 import org.neo4j.kernel.api.exceptions.schema.IndexBrokenKernelException;
+import org.neo4j.kernel.api.exceptions.schema.RepeatedPropertyInCompositeSchemaException;
 import org.neo4j.kernel.api.exceptions.schema.UnableToValidateConstraintException;
 import org.neo4j.kernel.api.exceptions.schema.UniquePropertyValueValidationException;
 import org.neo4j.kernel.api.properties.DefinedProperty;
@@ -539,7 +540,7 @@ public class ConstraintEnforcingEntityOperations implements EntityOperations, Sc
 
     @Override
     public NewIndexDescriptor indexCreate( KernelStatement state, LabelSchemaDescriptor descriptor )
-            throws AlreadyIndexedException, AlreadyConstrainedException
+            throws AlreadyIndexedException, AlreadyConstrainedException, RepeatedPropertyInCompositeSchemaException
     {
         return schemaWriteOperations.indexCreate( state, descriptor );
     }
@@ -558,7 +559,8 @@ public class ConstraintEnforcingEntityOperations implements EntityOperations, Sc
 
     @Override
     public UniquenessConstraintDescriptor uniquePropertyConstraintCreate( KernelStatement state, LabelSchemaDescriptor descriptor )
-            throws AlreadyConstrainedException, CreateConstraintFailureException, AlreadyIndexedException
+            throws AlreadyConstrainedException, CreateConstraintFailureException, AlreadyIndexedException,
+            RepeatedPropertyInCompositeSchemaException
     {
         return schemaWriteOperations.uniquePropertyConstraintCreate( state, descriptor );
     }
@@ -567,7 +569,7 @@ public class ConstraintEnforcingEntityOperations implements EntityOperations, Sc
     public NodeExistenceConstraintDescriptor nodePropertyExistenceConstraintCreate(
                 KernelStatement state,
                 LabelSchemaDescriptor descriptor
-    ) throws AlreadyConstrainedException, CreateConstraintFailureException
+    ) throws AlreadyConstrainedException, CreateConstraintFailureException, RepeatedPropertyInCompositeSchemaException
     {
         Iterator<Cursor<NodeItem>> nodes = new NodeLoadingIterator( nodesGetForLabel( state, descriptor.getLabelId() ),
                 ( id ) -> nodeCursorById( state, id ) );
@@ -580,7 +582,7 @@ public class ConstraintEnforcingEntityOperations implements EntityOperations, Sc
     public RelExistenceConstraintDescriptor relationshipPropertyExistenceConstraintCreate(
                 KernelStatement state,
                 RelationTypeSchemaDescriptor descriptor
-    ) throws AlreadyConstrainedException, CreateConstraintFailureException
+    ) throws AlreadyConstrainedException, CreateConstraintFailureException, RepeatedPropertyInCompositeSchemaException
     {
         try ( Cursor<RelationshipItem> cursor = relationshipCursorGetAll( state ) )
         {

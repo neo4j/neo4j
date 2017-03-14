@@ -59,11 +59,11 @@ import org.neo4j.kernel.api.exceptions.schema.CreateConstraintFailureException;
 import org.neo4j.kernel.api.exceptions.schema.DropConstraintFailureException;
 import org.neo4j.kernel.api.exceptions.schema.DropIndexFailureException;
 import org.neo4j.kernel.api.exceptions.schema.IllegalTokenNameException;
+import org.neo4j.kernel.api.exceptions.schema.RepeatedPropertyInCompositeSchemaException;
 import org.neo4j.kernel.api.exceptions.schema.SchemaRuleNotFoundException;
 import org.neo4j.kernel.api.exceptions.schema.TooManyLabelsException;
 import org.neo4j.kernel.api.index.InternalIndexState;
 import org.neo4j.kernel.api.schema.NodeMultiPropertyDescriptor;
-import org.neo4j.kernel.api.schema.NodePropertyDescriptor;
 import org.neo4j.kernel.api.schema.RelationshipPropertyDescriptor;
 import org.neo4j.kernel.api.schema_new.LabelSchemaDescriptor;
 import org.neo4j.kernel.api.schema_new.SchemaDescriptorFactory;
@@ -429,7 +429,7 @@ public class SchemaImpl implements Schema
                     statement.schemaWriteOperations().indexCreate( descriptor );
                     return indexDefinition;
                 }
-                catch ( AlreadyIndexedException | AlreadyConstrainedException e )
+                catch ( AlreadyIndexedException | AlreadyConstrainedException | RepeatedPropertyInCompositeSchemaException e )
                 {
                     throw new ConstraintViolationException(
                             e.getUserMessage( new StatementTokenNameLookup( statement.readOperations() ) ), e );
@@ -490,7 +490,8 @@ public class SchemaImpl implements Schema
                             SchemaDescriptorFactory.forLabel( labelId, propertyKeyIds ) );
                     return new UniquenessConstraintDefinition( this, indexDefinition );
                 }
-                catch ( AlreadyConstrainedException | CreateConstraintFailureException | AlreadyIndexedException e )
+                catch ( AlreadyConstrainedException | CreateConstraintFailureException | AlreadyIndexedException |
+                        RepeatedPropertyInCompositeSchemaException e )
                 {
                     throw new ConstraintViolationException(
                             e.getUserMessage( new StatementTokenNameLookup( statement.readOperations() ) ), e );
@@ -524,7 +525,8 @@ public class SchemaImpl implements Schema
                                     SchemaDescriptorFactory.forLabel( labelId, propertyKeyIds ) );
                     return new NodePropertyExistenceConstraintDefinition( this, label, propertyKeys );
                 }
-                catch ( AlreadyConstrainedException | CreateConstraintFailureException e )
+                catch ( AlreadyConstrainedException | CreateConstraintFailureException |
+                        RepeatedPropertyInCompositeSchemaException e )
                 {
                     throw new ConstraintViolationException(
                             e.getUserMessage( new StatementTokenNameLookup( statement.readOperations() ) ), e );
@@ -558,7 +560,8 @@ public class SchemaImpl implements Schema
                             SchemaDescriptorFactory.forRelType( typeId, propertyKeyId ) );
                     return new RelationshipPropertyExistenceConstraintDefinition( this, type, propertyKey );
                 }
-                catch ( AlreadyConstrainedException | CreateConstraintFailureException e )
+                catch ( AlreadyConstrainedException | CreateConstraintFailureException |
+                        RepeatedPropertyInCompositeSchemaException e )
                 {
                     throw new ConstraintViolationException(
                             e.getUserMessage( new StatementTokenNameLookup( statement.readOperations() ) ), e );

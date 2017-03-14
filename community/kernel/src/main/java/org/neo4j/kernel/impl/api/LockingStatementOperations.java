@@ -36,6 +36,7 @@ import org.neo4j.kernel.api.exceptions.schema.ConstraintValidationException;
 import org.neo4j.kernel.api.exceptions.schema.CreateConstraintFailureException;
 import org.neo4j.kernel.api.exceptions.schema.DropConstraintFailureException;
 import org.neo4j.kernel.api.exceptions.schema.DropIndexFailureException;
+import org.neo4j.kernel.api.exceptions.schema.RepeatedPropertyInCompositeSchemaException;
 import org.neo4j.kernel.api.exceptions.schema.SchemaRuleNotFoundException;
 import org.neo4j.kernel.api.index.InternalIndexState;
 import org.neo4j.kernel.api.properties.DefinedProperty;
@@ -127,7 +128,7 @@ public class LockingStatementOperations implements
 
     @Override
     public NewIndexDescriptor indexCreate( KernelStatement state, LabelSchemaDescriptor descriptor )
-            throws AlreadyIndexedException, AlreadyConstrainedException
+            throws AlreadyIndexedException, AlreadyConstrainedException, RepeatedPropertyInCompositeSchemaException
     {
         acquireExclusiveSchemaLock( state );
         state.assertOpen();
@@ -345,7 +346,8 @@ public class LockingStatementOperations implements
 
     @Override
     public UniquenessConstraintDescriptor uniquePropertyConstraintCreate( KernelStatement state,LabelSchemaDescriptor descriptor )
-            throws CreateConstraintFailureException, AlreadyConstrainedException, AlreadyIndexedException
+            throws CreateConstraintFailureException, AlreadyConstrainedException, AlreadyIndexedException,
+            RepeatedPropertyInCompositeSchemaException
     {
         acquireExclusiveSchemaLock( state );
         state.assertOpen();
@@ -354,7 +356,8 @@ public class LockingStatementOperations implements
 
     @Override
     public NodeExistenceConstraintDescriptor nodePropertyExistenceConstraintCreate( KernelStatement state,
-            LabelSchemaDescriptor descriptor ) throws AlreadyConstrainedException, CreateConstraintFailureException
+            LabelSchemaDescriptor descriptor ) throws AlreadyConstrainedException, CreateConstraintFailureException,
+            RepeatedPropertyInCompositeSchemaException
     {
         acquireExclusiveSchemaLock( state );
         state.assertOpen();
@@ -363,7 +366,9 @@ public class LockingStatementOperations implements
 
     @Override
     public RelExistenceConstraintDescriptor relationshipPropertyExistenceConstraintCreate( KernelStatement state,
-            RelationTypeSchemaDescriptor descriptor ) throws AlreadyConstrainedException, CreateConstraintFailureException
+            RelationTypeSchemaDescriptor descriptor )
+            throws AlreadyConstrainedException, CreateConstraintFailureException,
+            RepeatedPropertyInCompositeSchemaException
     {
         acquireExclusiveSchemaLock( state );
         state.assertOpen();
