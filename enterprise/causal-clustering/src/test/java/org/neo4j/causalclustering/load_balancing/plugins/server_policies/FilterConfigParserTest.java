@@ -150,6 +150,10 @@ public class FilterConfigParserTest
                         filter().tags( "tag1" ).tags( "tag2" ).build()
                 },
                 {
+                        "tags(tag-1)->tags(tag-2); halt();",
+                        filter().tags( "tag-1" ).tags( "tag-2" ).build()
+                },
+                {
                         "tags(tag1)->tags(tag2)->min(4); tags(tag3,tag4)->min(2); halt();",
                         filter().tags( "tag1" ).tags( "tag2" ).min( 4 )
                                 .newRule().tags( "tag3", "tag4" ).min( 2 ).build()

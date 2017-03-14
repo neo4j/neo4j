@@ -105,7 +105,7 @@ class FilterConfigParser
             ruleSpec = ruleSpec.trim();
 
             List<Filter<ServerInfo>> filterChain = new ArrayList<>();
-            String[] filterSpecs = ruleSpec.split( "->" ); // will split - and > separately, as well as ->
+            String[] filterSpecs = ruleSpec.split( "->" );
             boolean allFilterEncountered = false;
             for ( String filterSpec : filterSpecs )
             {
@@ -146,7 +146,7 @@ class FilterConfigParser
 
                 for ( String arg : nonEmptyArgs )
                 {
-                    if ( !arg.matches( "\\w+" ) )
+                    if ( !arg.matches( "[\\w-]+" ) )
                     {
                         throw new InvalidFilterSpecification( format( "Syntax error argument: '%s'", arg ) );
                     }
