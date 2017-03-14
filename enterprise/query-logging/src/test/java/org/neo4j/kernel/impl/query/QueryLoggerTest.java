@@ -26,6 +26,7 @@ import java.util.HashMap;
 import java.util.Map;
 import java.util.concurrent.TimeUnit;
 
+import org.junit.Rule;
 import org.junit.Test;
 
 import org.neo4j.io.pagecache.tracing.cursor.PageCursorCounters;
@@ -63,8 +64,10 @@ public class QueryLoggerTest
     private static final String QUERY_3 = "MATCH (c)-[:FOO]->(d) RETURN d.size";
     private static final String QUERY_4 = "MATCH (n) WHERE n.age IN {ages} RETURN n";
     private final FakeClock clock = Clocks.fakeClock();
-    private final FakeCpuClock cpuClock = new FakeCpuClock();
-    private final FakeHeapAllocation heapAllocation = new FakeHeapAllocation();
+    @Rule
+    public final FakeCpuClock cpuClock = new FakeCpuClock();
+    @Rule
+    public final FakeHeapAllocation heapAllocation = new FakeHeapAllocation();
     private long pageHits, pageFaults;
 
     @Test

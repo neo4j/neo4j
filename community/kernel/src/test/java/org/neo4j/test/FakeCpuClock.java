@@ -21,11 +21,15 @@ package org.neo4j.test;
 
 import java.util.concurrent.TimeUnit;
 
+import org.junit.rules.TestRule;
+import org.junit.runner.Description;
+import org.junit.runners.model.Statement;
+
 import org.neo4j.collection.primitive.Primitive;
 import org.neo4j.collection.primitive.PrimitiveLongLongMap;
 import org.neo4j.resources.CpuClock;
 
-public class FakeCpuClock extends CpuClock
+public class FakeCpuClock extends CpuClock implements TestRule
 {
     public static final CpuClock NOT_AVAILABLE = new CpuClock()
     {
@@ -57,5 +61,25 @@ public class FakeCpuClock extends CpuClock
     {
         cpuTimes.put( threadId, cpuTimeNanos( threadId ) + nanos );
         return this;
+    }
+
+    @Override
+    public Statement apply( Statement base, Description description )
+    {
+        return new Statement()
+        {
+            @Override
+            public void evaluate() throws Throwable
+            {
+                try
+                {
+                    base.evaluate();
+                }
+                finally
+                {
+                    cpuTimes.close();
+                }
+            }
+        };
     }
 }

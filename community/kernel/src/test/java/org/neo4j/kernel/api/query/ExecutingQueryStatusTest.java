@@ -28,6 +28,7 @@ import org.junit.Test;
 
 import org.neo4j.io.pagecache.tracing.cursor.PageCursorTracer;
 import org.neo4j.kernel.impl.locking.ActiveLock;
+import org.neo4j.resources.HeapAllocation;
 import org.neo4j.storageengine.api.lock.ResourceType;
 import org.neo4j.storageengine.api.lock.WaitStrategy;
 import org.neo4j.test.FakeCpuClock;
@@ -103,8 +104,8 @@ public class ExecutingQueryStatusTest
                                 null,
                                 PageCursorTracer.NULL, Thread.currentThread(),
                                 clock,
-                                new FakeCpuClock(),
-                                new FakeHeapAllocation() ), clock.nanos() );
+                                FakeCpuClock.NOT_AVAILABLE,
+                                HeapAllocation.NOT_AVAILABLE ), clock.nanos() );
         clock.forward( 1025, TimeUnit.MILLISECONDS );
 
         // when

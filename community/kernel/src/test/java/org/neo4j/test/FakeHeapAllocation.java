@@ -19,13 +19,17 @@
  */
 package org.neo4j.test;
 
+import org.junit.rules.TestRule;
+import org.junit.runner.Description;
+import org.junit.runners.model.Statement;
+
 import org.neo4j.collection.primitive.PrimitiveLongLongMap;
 import org.neo4j.resources.HeapAllocation;
 
 import static java.lang.Thread.currentThread;
 import static org.neo4j.collection.primitive.Primitive.offHeapLongLongMap;
 
-public class FakeHeapAllocation extends HeapAllocation
+public class FakeHeapAllocation extends HeapAllocation implements TestRule
 {
     private final PrimitiveLongLongMap allocation = offHeapLongLongMap();
 
@@ -44,5 +48,25 @@ public class FakeHeapAllocation extends HeapAllocation
     {
         allocation.put( threadId, allocatedBytes( threadId ) + bytes );
         return this;
+    }
+
+    @Override
+    public Statement apply( Statement base, Description description )
+    {
+        return new Statement()
+        {
+            @Override
+            public void evaluate() throws Throwable
+            {
+                try
+                {
+                    base.evaluate();
+                }
+                finally
+                {
+                    allocation.close();
+                }
+            }
+        };
     }
 }
