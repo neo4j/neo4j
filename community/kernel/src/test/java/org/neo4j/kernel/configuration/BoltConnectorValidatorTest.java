@@ -19,18 +19,23 @@
  */
 package org.neo4j.kernel.configuration;
 
-import java.util.function.Consumer;
-
 import org.junit.Before;
 import org.junit.Rule;
 import org.junit.Test;
 import org.junit.rules.ExpectedException;
 
+import java.util.Collections;
+import java.util.List;
+import java.util.Optional;
+import java.util.function.Consumer;
+
 import org.neo4j.graphdb.config.InvalidSettingException;
+import org.neo4j.graphdb.config.Setting;
 import org.neo4j.kernel.configuration.BoltConnector.EncryptionLevel;
 
 import static java.lang.String.format;
 import static org.junit.Assert.assertEquals;
+import static org.junit.Assert.assertTrue;
 import static org.mockito.Mockito.mock;
 import static org.mockito.Mockito.verify;
 import static org.neo4j.helpers.collection.MapUtil.stringMap;
@@ -251,5 +256,50 @@ public class BoltConnectorValidatorTest
         expected.expectMessage( "'dbms.connector.bla.type' must be one of BOLT, HTTP; not 'BOBO'" );
 
         cv.validate( stringMap( type, "BOBO" ), warningConsumer );
+    }
+
+    @Test
+    public void setsDeprecationFlagOnAddress() throws Exception
+    {
+        Setting setting =
+                cv.getSettingFor( "dbms.connector.bolt.address", Collections.emptyMap() )
+                        .orElseThrow( () -> new RuntimeException( "missing setting!" ) );
+
+        assertTrue( setting.deprecated() );
+        assertEquals( Optional.of( "dbms.connector.bolt.listen_address" ), setting.replacement() );
+    }
+
+    @Test
+    public void setsDeprecationFlagOnType() throws Exception
+    {
+        Setting setting =
+                cv.getSettingFor( "dbms.connector.bolt.type", Collections.emptyMap() )
+                        .orElseThrow( () -> new RuntimeException( "missing setting!" ) );
+
+        assertTrue( setting.deprecated() );
+        assertEquals( Optional.empty(), setting.replacement() );
+    }
+
+    @Test
+    public void setsDeprecationFlagOnCustomNamedBoltConnectors() throws Exception
+    {
+        List<Setting<Object>> settings = cv.settings( stringMap( "dbms.connector.0.type", "BOLT",
+                "dbms.connector.0.enabled", "false",
+                "dbms.connector.0.listen_address", "1.2.3.4:123",
+                "dbms.connector.0.advertised_address", "localhost:123",
+                "dbms.connector.0.tls_level", EncryptionLevel.OPTIONAL.toString() ) );
+
+        assertEquals( 5, settings.size() );
+
+        for ( Setting s : settings )
+        {
+            assertTrue( "every setting should be deprecated: " + s.name(), s.deprecated() );
+            String[] parts = s.name().split( "\\." );
+            if ( !"type".equals( parts[3] ) )
+            {
+                assertEquals( Optional.of( format( "%s.%s.%s.%s", parts[0], parts[1], "bolt", parts[3] ) ),
+                        s.replacement() );
+            }
+        }
     }
 }

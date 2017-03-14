@@ -30,6 +30,8 @@ import java.util.Map;
 import java.util.Optional;
 import javax.annotation.Nonnull;
 
+import org.neo4j.configuration.DocumentedDefaultValue;
+import org.neo4j.configuration.Internal;
 import org.neo4j.configuration.LoadableConfig;
 import org.neo4j.configuration.ReplacedBy;
 import org.neo4j.graphdb.config.InvalidSettingException;
@@ -42,6 +44,7 @@ import org.neo4j.test.rule.TestDirectory;
 import static org.hamcrest.CoreMatchers.is;
 import static org.hamcrest.Matchers.equalTo;
 import static org.junit.Assert.assertEquals;
+import static org.junit.Assert.assertFalse;
 import static org.junit.Assert.assertThat;
 import static org.junit.Assert.assertTrue;
 import static org.junit.Assert.fail;
@@ -85,6 +88,10 @@ public class ConfigTest
         public static final Setting<String> hello = setting( "hello", STRING, "Hello, World!" );
 
         public static final Setting<Boolean> boolSetting = setting( "bool_setting", BOOLEAN, Settings.TRUE );
+
+        @Internal
+        @DocumentedDefaultValue( "<documented default value>" )
+        public static final Setting<Boolean> secretSetting = setting( "secret_setting", BOOLEAN, Settings.TRUE );
 
         @Deprecated
         @ReplacedBy( "hello" )
@@ -221,6 +228,45 @@ public class ConfigTest
                 MySettingsWithDefaults.hello.name() );
         verify( log ).warn( "%s is deprecated.", MySettingsWithDefaults.oldSetting.name() );
         verifyNoMoreInteractions( log );
+    }
+
+    @Test
+    public void shouldSetInternalParameter()
+            throws Exception
+    {
+        // Given
+        Config config =
+                new Config( Optional.empty(),
+                        stringMap( MySettingsWithDefaults.secretSetting.name(), "false",
+                                MySettingsWithDefaults.hello.name(), "ABC"),
+                        s -> {},
+                        Collections.emptyList(), Optional.empty(),
+                        Arrays.asList( mySettingsWithDefaults, myMigratingSettings ) );
+
+        // Then
+        assertTrue( config.getConfigValues().get( MySettingsWithDefaults.secretSetting.name() ).internal() );
+        assertFalse( config.getConfigValues().get( MySettingsWithDefaults.hello.name() ).internal() );
+    }
+
+    @Test
+    public void shouldSetDocumentedDefaultValue()
+            throws Exception
+    {
+        // Given
+        Config config =
+                new Config( Optional.empty(),
+                        stringMap( MySettingsWithDefaults.secretSetting.name(), "false",
+                                MySettingsWithDefaults.hello.name(), "ABC"),
+                        s -> {},
+                        Collections.emptyList(), Optional.empty(),
+                        Arrays.asList( mySettingsWithDefaults, myMigratingSettings ) );
+
+        // Then
+        assertEquals( Optional.of( "<documented default value>" ),
+                config.getConfigValues().get( MySettingsWithDefaults.secretSetting.name() )
+                        .documentedDefaultValue() );
+        assertEquals( Optional.empty(),
+                config.getConfigValues().get( MySettingsWithDefaults.hello.name() ).documentedDefaultValue() );
     }
 
     @Test

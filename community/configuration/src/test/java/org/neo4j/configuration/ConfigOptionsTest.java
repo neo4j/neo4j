@@ -27,6 +27,7 @@ import java.util.List;
 import java.util.Optional;
 import java.util.function.Function;
 
+import org.neo4j.graphdb.config.BaseSetting;
 import org.neo4j.graphdb.config.Configuration;
 import org.neo4j.graphdb.config.Setting;
 
@@ -34,7 +35,7 @@ import static org.junit.Assert.assertEquals;
 
 public class ConfigOptionsTest
 {
-    private Setting<Integer> setting = new Setting<Integer>()
+    private Setting<Integer> setting = new BaseSetting<Integer>()
     {
         @Override
         public String name()
@@ -65,25 +66,25 @@ public class ConfigOptionsTest
         {
             return Integer.parseInt( provider.apply( name() ) );
         }
+
+        @Override
+        public String valueDescription()
+        {
+            return "a special test integer";
+        }
     };
     private ConfigOptions configOptions;
 
     @Before
     public void setup()
     {
-        this.configOptions = new ConfigOptions( setting, Optional.empty(), Optional.empty(), false, Optional.empty() );
+        this.configOptions = new ConfigOptions( setting );
     }
 
     @Test
     public void setting() throws Exception
     {
         assertEquals( setting, configOptions.settingGroup() );
-    }
-
-    @Test
-    public void description() throws Exception
-    {
-        assertEquals( Optional.empty(), configOptions.description() );
     }
 
     @Test
@@ -96,5 +97,6 @@ public class ConfigOptionsTest
         assertEquals( Optional.of( 123 ), values.get( 0 ).value() );
         assertEquals( "myInt", values.get( 0 ).name() );
         assertEquals( Optional.empty(), values.get( 0 ).description() );
+        assertEquals( "a special test integer", values.get( 0 ).valueDescription() );
     }
 }

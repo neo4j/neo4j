@@ -24,7 +24,7 @@ import org.neo4j.configuration.LoadableConfig;
 import org.neo4j.graphdb.config.Setting;
 import org.neo4j.helpers.HostnamePort;
 import org.neo4j.kernel.configuration.ConfigurationMigrator;
-import org.neo4j.kernel.configuration.Internal;
+import org.neo4j.configuration.Internal;
 import org.neo4j.kernel.configuration.Migrator;
 import org.neo4j.kernel.configuration.Settings;
 

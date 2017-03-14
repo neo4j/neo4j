@@ -27,7 +27,7 @@ import org.neo4j.configuration.Description;
 import org.neo4j.configuration.LoadableConfig;
 import org.neo4j.graphdb.config.Setting;
 import org.neo4j.graphdb.factory.GraphDatabaseSettings;
-import org.neo4j.kernel.configuration.Internal;
+import org.neo4j.configuration.Internal;
 import org.neo4j.logging.Level;
 
 import static org.neo4j.kernel.configuration.Settings.BOOLEAN;

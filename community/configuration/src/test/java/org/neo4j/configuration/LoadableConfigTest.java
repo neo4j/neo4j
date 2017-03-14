@@ -26,6 +26,7 @@ import java.util.Map;
 import java.util.Optional;
 import java.util.function.Function;
 
+import org.neo4j.graphdb.config.BaseSetting;
 import org.neo4j.graphdb.config.Configuration;
 import org.neo4j.graphdb.config.Setting;
 import org.neo4j.helpers.collection.MapUtil;
@@ -50,28 +51,34 @@ public class LoadableConfigTest
 
         assertEquals( 1, options.get( 0 ).settingGroup().values( emptyMap() ).get( "myInt" ) );
         assertEquals( 123, options.get( 0 ).settingGroup().values( config ).get( "myInt" ) );
-        assertEquals( Optional.empty(), options.get( 0 ).description() );
-        assertFalse( options.get(0).deprecated() );
-        assertEquals( Optional.empty(), options.get( 0 ).replacement() );
+        assertEquals( Optional.empty(), options.get( 0 ).settingGroup().description() );
+        assertFalse( options.get(0).settingGroup().deprecated() );
+        assertEquals( Optional.empty(), options.get( 0 ).settingGroup().replacement() );
 
         assertEquals( "bob", options.get( 1 ).settingGroup().values( emptyMap() ).get( "myString" ) );
         assertEquals( "bah", options.get( 1 ).settingGroup().values( config ).get( "myString" ) );
-        assertEquals( "A string setting", options.get( 1 ).description().get() );
-        assertFalse( options.get(1).deprecated() );
-        assertEquals( Optional.empty(), options.get( 1 ).replacement() );
+        assertEquals( "A string setting", options.get( 1 ).settingGroup().description().get() );
+        assertFalse( options.get(1).settingGroup().deprecated() );
+        assertEquals( Optional.empty(), options.get( 1 ).settingGroup().replacement() );
 
         assertEquals( "tim", options.get( 2 ).settingGroup().values( emptyMap() ).get( "myOldString" ) );
         assertEquals( "moo", options.get( 2 ).settingGroup().values( config ).get( "myOldString" ) );
-        assertEquals( "A deprecated string setting", options.get( 2 ).description().get() );
-        assertTrue( options.get(2).deprecated() );
-        assertEquals( "myString", options.get( 2 ).replacement().get() );
+        assertEquals( "A deprecated string setting", options.get( 2 ).settingGroup().description().get() );
+        assertTrue( options.get(2).settingGroup().deprecated() );
+        assertEquals( "myString", options.get( 2 ).settingGroup().replacement().get() );
     }
 
     private static class TestConfig implements LoadableConfig
     {
         @SuppressWarnings( "unused" )
-        public static final Setting<Integer> integer = new Setting<Integer>()
+        public static final Setting<Integer> integer = new BaseSetting<Integer>()
         {
+            @Override
+            public String valueDescription()
+            {
+                return "an Integer";
+            }
+
             @Override
             public String name()
             {
@@ -106,13 +113,13 @@ public class LoadableConfigTest
                 }
                 return Integer.parseInt( val );
             }
+
         };
 
         @SuppressWarnings( "unused" )
         @Description( "A string setting" )
-        public static final Setting<String> string = new Setting<String>()
+        public static final Setting<String> string = new StringSetting()
         {
-
             @Override
             public String apply( Function<String,String> provider )
             {
@@ -153,9 +160,8 @@ public class LoadableConfigTest
         @Description( "A deprecated string setting" )
         @Deprecated
         @ReplacedBy( "myString" )
-        public static final Setting<String> oldString = new Setting<String>()
+        public static final Setting<String> oldString = new StringSetting()
         {
-
             @Override
             public String apply( Function<String,String> provider )
             {
@@ -194,9 +200,8 @@ public class LoadableConfigTest
 
         @SuppressWarnings( "unused" )
         @Description( "A private setting which is not accessible" )
-        private static final Setting<String> ignoredSetting = new Setting<String>()
+        private static final Setting<String> ignoredSetting = new StringSetting()
         {
-
             @Override
             public String apply( Function<String,String> provider )
             {
@@ -227,5 +232,15 @@ public class LoadableConfigTest
                 return configuration.get( this );
             }
         };
+    }
+
+    private abstract static class StringSetting extends BaseSetting<String>
+    {
+
+        @Override
+        public String valueDescription()
+        {
+            return "a String";
+        }
     }
 }

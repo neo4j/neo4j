@@ -25,6 +25,8 @@ import java.util.Optional;
 import java.util.stream.Collectors;
 import javax.annotation.Nonnull;
 
+import org.neo4j.graphdb.config.BaseSetting;
+import org.neo4j.graphdb.config.Setting;
 import org.neo4j.graphdb.config.SettingGroup;
 
 /**
@@ -33,20 +35,10 @@ import org.neo4j.graphdb.config.SettingGroup;
 public class ConfigOptions
 {
     private final SettingGroup<?> settingGroup;
-    private final Optional<String> description;
-    private final Optional<String> documentedDefaultValue;
-    private final boolean deprecated;
-    private final Optional<String> replacement;
 
-    public ConfigOptions( @Nonnull SettingGroup<?> settingGroup, @Nonnull Optional<String> description,
-            @Nonnull Optional<String> documentedDefaultValue, boolean deprecated,
-            @Nonnull Optional<String> replacement )
+    public ConfigOptions( @Nonnull SettingGroup<?> settingGroup )
     {
         this.settingGroup = settingGroup;
-        this.description = description;
-        this.documentedDefaultValue = documentedDefaultValue;
-        this.deprecated = deprecated;
-        this.replacement = replacement;
     }
 
     @Nonnull
@@ -56,34 +48,19 @@ public class ConfigOptions
     }
 
     @Nonnull
-    public Optional<String> description()
-    {
-        return description;
-    }
-
-    @Nonnull
-    public Optional<String> documentedDefaultValue()
-    {
-        return documentedDefaultValue;
-    }
-
-    @Nonnull
     public List<ConfigValue> asConfigValues( @Nonnull Map<String,String> validConfig )
     {
+        Map<String,Setting<?>> settings = settingGroup.settings( validConfig ).stream()
+                .collect( Collectors.toMap( Setting::name, s -> s ) );
+
         return settingGroup.values( validConfig ).entrySet().stream()
-                .map( val -> new ConfigValue( val.getKey(), description(), Optional.ofNullable( val.getValue() ),
-                        deprecated, replacement ) )
+                .map( val -> {
+                    BaseSetting<?> setting = (BaseSetting) settings.get( val.getKey() );
+                    return new ConfigValue( setting.name(), setting.description(),
+                            setting.documentedDefaultValue(),
+                        Optional.ofNullable( val.getValue() ),
+                            setting.valueDescription(), setting.internal(),
+                            setting.deprecated(), setting.replacement() ); } )
                 .collect( Collectors.toList() );
-    }
-
-    public boolean deprecated()
-    {
-        return deprecated;
-    }
-
-    @Nonnull
-    public Optional<String> replacement()
-    {
-        return replacement;
     }
 }

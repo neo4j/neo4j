@@ -37,7 +37,7 @@ import org.neo4j.kernel.configuration.GraphDatabaseConfigurationMigrator;
 import org.neo4j.kernel.configuration.Group;
 import org.neo4j.kernel.configuration.GroupSettingSupport;
 import org.neo4j.kernel.configuration.HttpConnectorValidator;
-import org.neo4j.kernel.configuration.Internal;
+import org.neo4j.configuration.Internal;
 import org.neo4j.kernel.configuration.Migrator;
 import org.neo4j.kernel.configuration.Settings;
 import org.neo4j.kernel.configuration.Title;
@@ -243,6 +243,7 @@ public class GraphDatabaseSettings implements LoadableConfig
     @Internal
     @Description( "Please use dbms.transaction.timeout instead." )
     @Deprecated
+    @ReplacedBy( "dbms.transaction.timeout" )
     public static final Setting<Boolean> execution_guard_enabled = setting("unsupported.dbms.executiontime_limit.enabled", BOOLEAN, FALSE );
 
     @Description("The maximum time interval of a transaction within which it should be completed.")

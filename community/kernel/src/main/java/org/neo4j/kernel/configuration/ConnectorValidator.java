@@ -37,10 +37,6 @@ import org.neo4j.graphdb.config.SettingGroup;
 import static java.lang.String.format;
 import static java.util.stream.Collectors.joining;
 import static java.util.stream.Collectors.toList;
-import static org.neo4j.kernel.configuration.Settings.BOOLEAN;
-import static org.neo4j.kernel.configuration.Settings.NO_DEFAULT;
-import static org.neo4j.kernel.configuration.Settings.options;
-import static org.neo4j.kernel.configuration.Settings.setting;
 
 public abstract class ConnectorValidator implements SettingGroup<Object>
 {
@@ -161,8 +157,7 @@ public abstract class ConnectorValidator implements SettingGroup<Object>
                 .filter( settingKey ->
                 {
                     String name = settingKey.split( "\\." )[2];
-                    return !( name.equalsIgnoreCase( "http" ) || name.equalsIgnoreCase( "https" ) || name
-                            .equalsIgnoreCase( "bolt" ) );
+                    return isDeprecatedConnectorName( name );
                 } )
                 .forEach( nonDefaultConnectors::add );
 
@@ -175,6 +170,12 @@ public abstract class ConnectorValidator implements SettingGroup<Object>
                             .map( s -> format( ">  %s%n", s ) )
                             .collect( joining() ) ) );
         }
+    }
+
+    protected boolean isDeprecatedConnectorName( String name )
+    {
+        return !( name.equalsIgnoreCase( "http" ) || name.equalsIgnoreCase( "https" ) || name
+                .equalsIgnoreCase( "bolt" ) );
     }
 
     @Override
@@ -192,31 +193,57 @@ public abstract class ConnectorValidator implements SettingGroup<Object>
         return result;
     }
 
+    /**
+     *
+     * @return a setting which is not necessarily literally defined in the map provided
+     */
     @Nonnull
-    protected Optional<Setting> getSettingFor( @Nonnull String settingName, @Nonnull Map<String,String> params )
-    {
-        // owns has already verified that 'type' is correct and that this split is possible
-        String[] parts = settingName.split( "\\." );
-        final String subsetting = parts[3];
-
-        switch ( subsetting )
-        {
-        case "enabled":
-            return Optional.of( setting( settingName, BOOLEAN, "false" ) );
-        case "type":
-            return Optional.of( setting( settingName, options( Connector.ConnectorType.class ), NO_DEFAULT ) );
-        default:
-            return Optional.empty();
-        }
-    }
+    protected abstract Optional<Setting<Object>> getSettingFor( @Nonnull String settingName,
+            @Nonnull Map<String,String> params );
 
     @Override
-    public List<Setting> settings( @Nonnull Map<String,String> params )
+    public List<Setting<Object>> settings( @Nonnull Map<String,String> params )
     {
         return ownedEntries( params )
                 .map( e -> getSettingFor( e.getKey(), params ) )
                 .filter( Optional::isPresent )
                 .map( Optional::get )
                 .collect( toList() );
+    }
+
+    @Override
+    public boolean deprecated()
+    {
+        return false;
+    }
+
+    @Override
+    public Optional<String> replacement()
+    {
+        return Optional.empty();
+    }
+
+    @Override
+    public boolean internal()
+    {
+        return false;
+    }
+
+    @Override
+    public Optional<String> documentedDefaultValue()
+    {
+        return Optional.empty();
+    }
+
+    @Override
+    public String valueDescription()
+    {
+        return "a group of connector settings";
+    }
+
+    @Override
+    public Optional<String> description()
+    {
+        return Optional.empty();
     }
 }

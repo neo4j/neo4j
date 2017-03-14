@@ -19,17 +19,21 @@
  */
 package org.neo4j.server.configuration;
 
-import java.util.List;
-import java.util.Map.Entry;
-
 import org.junit.Test;
 
+import java.util.List;
+import java.util.Map.Entry;
+import java.util.Optional;
+
+import org.neo4j.configuration.ConfigValue;
 import org.neo4j.kernel.configuration.Config;
 
 import static java.util.stream.Collectors.toList;
 import static org.hamcrest.Matchers.containsInAnyOrder;
 import static org.junit.Assert.assertEquals;
 import static org.junit.Assert.assertThat;
+import static org.junit.Assert.assertTrue;
+import static org.neo4j.helpers.collection.MapUtil.stringMap;
 
 public class ServerSettingsTest
 {
@@ -38,14 +42,16 @@ public class ServerSettingsTest
     {
         Config config = Config.serverDefaults();
 
-        String documentedDefaultValue = config.getDocumentedDefaults().entrySet().stream()
-                .filter( c -> c.getKey().equals( ServerSettings.webserver_max_threads.name() ) )
-                .findAny()
-                .orElseThrow( () -> new RuntimeException( "Setting not present!" ) )
-                .getValue()
-                .orElseThrow( () -> new RuntimeException( "Default value not present!" ) );
+        String documentedDefaultValue =
+                config.getConfigValues().entrySet().stream()
+                        .filter( c -> c.getKey().equals( ServerSettings.webserver_max_threads.name() ) )
+                        .map( Entry::getValue )
+                        .findAny()
+                        .orElseThrow( () -> new RuntimeException( "Setting not present!" ) )
+                        .documentedDefaultValue()
+                        .orElseThrow( () -> new RuntimeException( "Default value not present!" ) );
 
-       assertEquals( "Number of available processors (max 500).", documentedDefaultValue);
+        assertEquals( "Number of available processors (max 500).", documentedDefaultValue );
     }
 
     @Test
@@ -62,5 +68,20 @@ public class ServerSettingsTest
         assertThat( connectorSettings, containsInAnyOrder( "dbms.connector.http.enabled",
                 "dbms.connector.https.enabled",
                 "dbms.connector.bolt.enabled" ) );
+    }
+
+    @Test
+    public void connectorSettingHasItsOwnValues() throws Exception
+    {
+        Config config = Config.serverDefaults( stringMap( "dbms.connector.http.address", "localhost:123" ) );
+
+        ConfigValue address = config.getConfigValues().entrySet().stream()
+                .filter( c -> c.getKey().equals( "dbms.connector.http.address" ) )
+                .map( Entry::getValue )
+                .findAny()
+                .orElseThrow( () -> new RuntimeException( "Setting not present!" ) );
+
+        assertTrue( address.deprecated() );
+        assertEquals( Optional.of( "dbms.connector.http.listen_address" ), address.replacement() );
     }
 }

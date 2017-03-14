@@ -348,24 +348,6 @@ public class Config implements DiagnosticsProvider, Configuration
                 } ) );
     }
 
-    // Used for documentation
-    /**
-     * @return all config options with their documented default values
-     */
-    public Map<String,Optional<String>> getDocumentedDefaults()
-    {
-        HashMap<String,Optional<String>> result = new HashMap<>();
-        for ( ConfigOptions co : configOptions )
-        {
-            Optional<String> docDef = co.documentedDefaultValue();
-            co.settingGroup().settings( params )
-                    .forEach( s ->
-                            result.put( s.name(),
-                                    Optional.ofNullable( docDef.orElse( s.getDefaultValue() ) ) ) );
-        }
-        return result;
-    }
-
     @Override
     public String getDiagnosticsIdentifier()
     {
@@ -410,9 +392,9 @@ public class Config implements DiagnosticsProvider, Configuration
         return output.toString();
     }
 
-    private synchronized void replaceSettings( Map<String,String> newSettings, boolean warnOnUnknownSettings )
+    private synchronized void replaceSettings( Map<String,String> userSettings, boolean warnOnUnknownSettings )
     {
-        Map<String,String> validSettings = migrator.apply( newSettings, log );
+        Map<String,String> validSettings = migrator.apply( userSettings, log );
         List<SettingValidator> settingValidators = configOptions.stream()
                 .map( ConfigOptions::settingGroup )
                 .collect( Collectors.toList() );
@@ -427,26 +409,26 @@ public class Config implements DiagnosticsProvider, Configuration
         params.clear();
         params.putAll( validSettings );
 
-        // Warn about deprecations
-        if ( configFile.isPresent() )
-        {
-            configOptions.stream()
-                    .map( it -> it.asConfigValues( params ) )
-                    .flatMap( List::stream )
-                    .filter( c -> params.containsKey( c.name() ) )
-                    .filter( ConfigValue::deprecated )
-                    .forEach( c ->
+        // We only warn when parsing the file so we don't warn about the same setting more than once
+        configFile.ifPresent( file -> warnAboutDeprecations( userSettings ) );
+    }
+
+    private void warnAboutDeprecations( Map<String,String> userSettings )
+    {
+        configOptions.stream()
+                .flatMap( it -> it.asConfigValues( userSettings ).stream() )
+                .filter( config -> userSettings.containsKey( config.name() ) && config.deprecated() )
+                .forEach( c ->
+                {
+                    if ( c.replacement().isPresent() )
                     {
-                        if ( c.replacement().isPresent() )
-                        {
-                            log.warn( "%s is deprecated. Replaced by %s", c.name(), c.replacement().get() );
-                        }
-                        else
-                        {
-                            log.warn( "%s is deprecated.", c.name() );
-                        }
-                    } );
-        }
+                        log.warn( "%s is deprecated. Replaced by %s", c.name(), c.replacement().get() );
+                    }
+                    else
+                    {
+                        log.warn( "%s is deprecated.", c.name() );
+                    }
+                } );
     }
 
     @Nonnull

@@ -19,21 +19,27 @@
  */
 package org.neo4j.kernel.configuration;
 
+import java.util.EnumSet;
 import java.util.Map;
 import java.util.Optional;
 import java.util.function.Consumer;
 import java.util.function.Function;
 import javax.annotation.Nonnull;
 
+import org.neo4j.graphdb.config.BaseSetting;
 import org.neo4j.graphdb.config.Configuration;
 import org.neo4j.graphdb.config.InvalidSettingException;
 import org.neo4j.graphdb.config.Setting;
 import org.neo4j.kernel.configuration.HttpConnector.Encryption;
 
+import static java.lang.String.format;
 import static org.neo4j.kernel.configuration.Connector.ConnectorType.HTTP;
 import static org.neo4j.kernel.configuration.HttpConnector.Encryption.NONE;
 import static org.neo4j.kernel.configuration.HttpConnector.Encryption.TLS;
+import static org.neo4j.kernel.configuration.Settings.BOOLEAN;
+import static org.neo4j.kernel.configuration.Settings.NO_DEFAULT;
 import static org.neo4j.kernel.configuration.Settings.advertisedAddress;
+import static org.neo4j.kernel.configuration.Settings.describeOneOf;
 import static org.neo4j.kernel.configuration.Settings.listenAddress;
 import static org.neo4j.kernel.configuration.Settings.options;
 import static org.neo4j.kernel.configuration.Settings.setting;
@@ -52,26 +58,61 @@ public class HttpConnectorValidator extends ConnectorValidator
 
     @Override
     @Nonnull
-    protected Optional<Setting> getSettingFor( @Nonnull String settingName, @Nonnull Map<String,String> params )
+    protected Optional<Setting<Object>> getSettingFor( @Nonnull String settingName, @Nonnull Map<String,String> params )
     {
         // owns has already verified that 'type' is correct and that this split is possible
         String[] parts = settingName.split( "\\." );
         final String name = parts[2];
         final String subsetting = parts[3];
 
+        final boolean encrypted = encryptionSetting( name ).apply( params::get ).equals( Encryption.TLS );
+        BaseSetting setting;
+
         switch ( subsetting )
         {
+        case "enabled":
+            setting = setting( settingName, BOOLEAN, "false" );
+            setting.setDescription( "Enable this connector." );
+        break;
+        case "type":
+            setting = setting( settingName, options( Connector.ConnectorType.class ), NO_DEFAULT );
+            setting.setDeprecated( true );
+            setting.setDescription( "Connector type. This setting is deprecated and its value will instead be " +
+                    "inferred from the name of the connector." );
+            break;
         case "encryption":
-            return Optional.of( encryptionSetting( name ) );
+            setting = encryptionSetting( name );
+            setting.setDescription( "Enable TLS for this connector." );
+            break;
         case "address":
+            setting = listenAddress( settingName, defaultPort( name, params ) );
+            setting.setDeprecated( true );
+            setting.setReplacement( "dbms.connector." + name + ".listen_address" );
+            setting.setDescription( "Address the connector should bind to. Deprecated and replaced by "
+                    + setting.replacement().get() + "." );
+            break;
         case "listen_address":
-            return Optional.of( listenAddress( settingName, defaultPort( name, params ) ) );
+            setting = listenAddress( settingName, defaultPort( name, params ) );
+            setting.setDescription( "Address the connector should bind to." );
+            break;
         case "advertised_address":
-            return Optional.of( advertisedAddress( settingName,
-                    listenAddress( settingName, defaultPort( name, params ) ) ) );
+            setting = advertisedAddress( settingName,
+                    listenAddress( settingName, defaultPort( name, params ) ) );
+            setting.setDescription( "Advertised address for this connector." );
+            break;
         default:
-            return super.getSettingFor( settingName, params );
+            return Optional.empty();
         }
+
+        // If not deprecated for other reasons
+        if ( isDeprecatedConnectorName( name ) && !setting.deprecated() )
+        {
+            setting.setDeprecated( true );
+            setting.setReplacement( format( "%s.%s.%s.%s", parts[0], parts[1],
+                    encrypted ? "https" : "http",
+                    subsetting) );
+        }
+        return Optional.of( setting );
     }
 
     /**
@@ -107,7 +148,7 @@ public class HttpConnectorValidator extends ConnectorValidator
             if ( encryption.isPresent() && !TLS.equals( encryption.get() ) )
             {
                 throw new InvalidSettingException(
-                        String.format( "'%s' is only allowed to be '%s'; not '%s'",
+                        format( "'%s' is only allowed to be '%s'; not '%s'",
                                 setting.name(), TLS.name(), encryption.get() ) );
             }
         }
@@ -116,7 +157,7 @@ public class HttpConnectorValidator extends ConnectorValidator
             if ( encryption.isPresent() && !NONE.equals( encryption.get() ) )
             {
                 throw new InvalidSettingException(
-                        String.format( "'%s' is only allowed to be '%s'; not '%s'",
+                        format( "'%s' is only allowed to be '%s'; not '%s'",
                                 setting.name(), NONE.name(), encryption.get() ) );
             }
         }
@@ -125,19 +166,58 @@ public class HttpConnectorValidator extends ConnectorValidator
     }
 
     @Nonnull
-    public static Setting<HttpConnector.Encryption> encryptionSetting( @Nonnull String name )
+    public static BaseSetting<HttpConnector.Encryption> encryptionSetting( @Nonnull String name )
     {
         return encryptionSetting( name, Encryption.NONE );
     }
 
     @Nonnull
-    public static Setting<HttpConnector.Encryption> encryptionSetting( @Nonnull String name, Encryption defaultValue )
+    public static BaseSetting<HttpConnector.Encryption> encryptionSetting( @Nonnull String name, Encryption
+            defaultValue )
     {
         Setting<Encryption> s = setting( "dbms.connector." + name + ".encryption",
                 options( Encryption.class ), defaultValue.name() );
 
-        return new Setting<Encryption>()
+        return new BaseSetting<Encryption>()
         {
+            @Override
+            public boolean deprecated()
+            {
+                // For HTTP the encryption is decided by the connector name
+                return true;
+            }
+
+            @Override
+            public Optional<String> replacement()
+            {
+                return Optional.empty();
+            }
+
+            @Override
+            public boolean internal()
+            {
+                return false;
+            }
+
+            @Override
+            public Optional<String> documentedDefaultValue()
+            {
+                return Optional.empty();
+            }
+
+            @Override
+            public String valueDescription()
+            {
+                return describeOneOf( EnumSet.allOf( Encryption.class ) );
+            }
+
+            @Override
+            public Optional<String> description()
+            {
+                return Optional.of( "Enable TLS for this connector. This is deprecated and is decided based on the " +
+                        "connector name instead." );
+            }
+
             @Override
             public String name()
             {

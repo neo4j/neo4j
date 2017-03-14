@@ -21,6 +21,7 @@ package org.neo4j.graphdb.config;
 
 import java.util.List;
 import java.util.Map;
+import java.util.Optional;
 
 /**
  * This interface represents a setting group. One example can be group defined by a common prefix, such as
@@ -39,5 +40,41 @@ public interface SettingGroup<T> extends SettingValidator
     /**
      * @return a list of the settings this group contains
      */
-    List<Setting> settings( Map<String,String> params );
+    List<Setting<T>> settings( Map<String,String> params );
+
+    /**
+     *
+     * @return true if this setting is deprecated, false otherwise
+     */
+    boolean deprecated();
+
+    /**
+     *
+     * @return the key of the setting which replaces this when its deprecated, empty if not depricated
+     */
+    Optional<String> replacement();
+
+    /**
+     *
+     * @return true if internal setting, false otherwise
+     */
+    boolean internal();
+
+    /**
+     *
+     * @return the documented default value if it needs special documentation, empty if default value is good as is
+     */
+    Optional<String> documentedDefaultValue();
+
+    /**
+     *
+     * @return description of which values are good
+     */
+    String valueDescription();
+
+    /**
+     *
+     * @return description of setting, empty in case no description exists
+     */
+    Optional<String> description();
 }

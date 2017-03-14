@@ -22,11 +22,11 @@ package org.neo4j.configuration;
 import java.lang.reflect.Field;
 import java.util.ArrayList;
 import java.util.List;
-import java.util.Optional;
 import java.util.ServiceLoader;
 import java.util.stream.Collectors;
 import java.util.stream.StreamSupport;
 
+import org.neo4j.graphdb.config.BaseSetting;
 import org.neo4j.graphdb.config.SettingGroup;
 
 /**
@@ -48,48 +48,40 @@ public interface LoadableConfig
             try
             {
                 Object publicSetting = f.get( this );
-                if ( publicSetting instanceof SettingGroup )
+                if ( publicSetting instanceof BaseSetting )
                 {
+                    BaseSetting setting = (BaseSetting) publicSetting;
 
                     final Description documentation = f.getAnnotation( Description.class );
-                    final Optional<String> description;
-                    if ( documentation == null )
+                    if ( documentation != null )
                     {
-                        description = Optional.empty();
-                    }
-                    else
-                    {
-                        description = Optional.of( documentation.value() );
+                        setting.setDescription( documentation.value() );
                     }
 
                     final DocumentedDefaultValue defValue =
                             f.getAnnotation( DocumentedDefaultValue.class );
-                    final Optional<String> documentedDefaultValue;
-                    if ( defValue == null )
+                    if ( defValue != null )
                     {
-                        documentedDefaultValue = Optional.empty();
-                    }
-                    else
-                    {
-                        documentedDefaultValue = Optional.of( defValue.value() );
+                        setting.setDocumentedDefaultValue( defValue.value() );
                     }
 
                     final Deprecated deprecatedAnnotation = f.getAnnotation( Deprecated.class );
-                    final boolean deprecated = deprecatedAnnotation != null;
+                    setting.setDeprecated( deprecatedAnnotation != null );
 
                     final ReplacedBy replacedByAnnotation = f.getAnnotation( ReplacedBy.class );
-                    final Optional<String> replacement;
-                    if (replacedByAnnotation == null )
+                    if ( replacedByAnnotation != null )
                     {
-                        replacement = Optional.empty();
-                    }
-                    else
-                    {
-                        replacement = Optional.of( replacedByAnnotation.value() );
+                        setting.setReplacement( replacedByAnnotation.value() );
                     }
 
-                    configOptions.add( new ConfigOptions( (SettingGroup) publicSetting, description,
-                            documentedDefaultValue, deprecated, replacement ) );
+                    final Internal internalAnnotation = f.getAnnotation( Internal.class );
+                    setting.setInternal( internalAnnotation != null );
+                }
+
+                if ( publicSetting instanceof SettingGroup )
+                {
+                    SettingGroup setting = (SettingGroup) publicSetting;
+                    configOptions.add( new ConfigOptions( setting ) );
                 }
             }
             catch ( IllegalAccessException ignored )
