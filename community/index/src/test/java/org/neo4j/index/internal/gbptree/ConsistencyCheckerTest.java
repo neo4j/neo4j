@@ -42,8 +42,6 @@ public class ConsistencyCheckerTest
         // GIVEN
         int pageSize = 256;
         PageCursor cursor = new PageAwareByteArrayCursor( pageSize );
-        Layout<MutableLong,MutableLong> layout = new SimpleLongLayout();
-        TreeNode<MutableLong,MutableLong> treeNode = new TreeNode<>( pageSize, layout );
         long stableGeneration = MIN_GENERATION;
         long crashGeneration = stableGeneration + 1;
         long unstableGeneration = stableGeneration + 2;
@@ -51,14 +49,14 @@ public class ConsistencyCheckerTest
         long pointer = 123;
 
         cursor.next( 0 );
-        treeNode.initializeInternal( cursor, stableGeneration, crashGeneration );
-        treeNode.setSuccessor( cursor, pointer, stableGeneration, crashGeneration );
+        TreeNode.initializeInternal( cursor, stableGeneration, crashGeneration );
+        TreeNode.setSuccessor( cursor, pointer, stableGeneration, crashGeneration );
 
         // WHEN
         try
         {
             assertNoCrashOrBrokenPointerInGSPP( cursor, stableGeneration, unstableGeneration,
-                    pointerFieldName, TreeNode.BYTE_POS_SUCCESSOR, treeNode );
+                    pointerFieldName, TreeNode.BYTE_POS_SUCCESSOR );
             cursor.checkAndClearCursorException();
             fail( "Should have failed" );
         }
@@ -86,7 +84,7 @@ public class ConsistencyCheckerTest
         InternalTreeLogic<MutableLong,MutableLong> logic = new InternalTreeLogic<>( idProvider, node, layout );
         PageCursor cursor = new PageAwareByteArrayCursor( pageSize );
         cursor.next( idProvider.acquireNewId( stableGeneration, unstableGeneration ) );
-        node.initializeLeaf( cursor, stableGeneration, unstableGeneration );
+        TreeNode.initializeLeaf( cursor, stableGeneration, unstableGeneration );
         logic.initialize( cursor );
         StructurePropagation<MutableLong> structure = new StructurePropagation<>( layout.newKey(), layout.newKey(),
                 layout.newKey() );
@@ -102,9 +100,9 @@ public class ConsistencyCheckerTest
                 {
                     goTo( cursor, "new root",
                             idProvider.acquireNewId( stableGeneration, unstableGeneration ) );
-                    node.initializeInternal( cursor, stableGeneration, unstableGeneration );
+                    TreeNode.initializeInternal( cursor, stableGeneration, unstableGeneration );
                     node.insertKeyAt( cursor, structure.rightKey, 0, 0 );
-                    node.setKeyCount( cursor, 1 );
+                    TreeNode.setKeyCount( cursor, 1 );
                     node.setChildAt( cursor, structure.midChild, 0, stableGeneration, unstableGeneration );
                     node.setChildAt( cursor, structure.rightChild, 1,
                             stableGeneration, unstableGeneration );

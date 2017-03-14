@@ -67,7 +67,7 @@ class TreePrinter<KEY,VALUE>
             long currentPage = cursor.getCurrentPageId();
             Pair<TreeState,TreeState> statePair = TreeStatePair.readStatePages(
                     cursor, IdSpace.STATE_PAGE_A, IdSpace.STATE_PAGE_B );
-            node.goTo( cursor, "back to tree node from reading state", currentPage );
+            TreeNode.goTo( cursor, "back to tree node from reading state", currentPage );
             out.println( "StateA: " + statePair.getLeft() );
             out.println( "StateB: " + statePair.getRight() );
         }
@@ -85,7 +85,7 @@ class TreePrinter<KEY,VALUE>
             printLevel( cursor, out, printValues, printPosition );
 
             // Then go back to the left-most node on this level
-            node.goTo( cursor, "back", leftmostSibling );
+            TreeNode.goTo( cursor, "back", leftmostSibling );
         }
         // And continue down to next level if this level was an internal level
         while ( goToLeftmostChild( cursor ) );
@@ -99,7 +99,7 @@ class TreePrinter<KEY,VALUE>
         do
         {
             isLeaf = TreeNode.isLeaf( cursor );
-            keyCount = node.keyCount( cursor );
+            keyCount = TreeNode.keyCount( cursor );
             if ( keyCount < 0 || (keyCount > node.internalMaxKeyCount() && keyCount > node.leafMaxKeyCount()) )
             {
                 cursor.setCursorException( "Unexpected keyCount " + keyCount );
@@ -112,7 +112,7 @@ class TreePrinter<KEY,VALUE>
             long generation = -1;
             do
             {
-                generation = node.generation( cursor );
+                generation = TreeNode.generation( cursor );
 
             } while ( cursor.shouldRetry() );
             String treeNodeType = isLeaf ? "leaf" : "internal";
@@ -195,7 +195,7 @@ class TreePrinter<KEY,VALUE>
 
         if ( isInternal )
         {
-            node.goTo( cursor, "child", leftmostSibling );
+            TreeNode.goTo( cursor, "child", leftmostSibling );
         }
         return isInternal;
     }
@@ -211,13 +211,13 @@ class TreePrinter<KEY,VALUE>
 
             do
             {
-                rightSibling = node.rightSibling( cursor, stableGeneration, unstableGeneration );
+                rightSibling = TreeNode.rightSibling( cursor, stableGeneration, unstableGeneration );
             }
             while ( cursor.shouldRetry() );
 
             if ( TreeNode.isNode( rightSibling ) )
             {
-                node.goTo( cursor, "right sibling", rightSibling );
+                TreeNode.goTo( cursor, "right sibling", rightSibling );
             }
         }
         while ( TreeNode.isNode( rightSibling ) );
