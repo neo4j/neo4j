@@ -62,8 +62,6 @@ class CrashGenCleaner
         this.availableProcessors = Runtime.getRuntime().availableProcessors();
         this.batchSize = // Each processor will get roughly 100 batches each
                 min( 1000, max( 10, (highTreeNodeId - lowTreeNodeId) / (100 * availableProcessors) ) );
-        System.out.println( "Number of processors: " + availableProcessors + ", number of pages: " +
-                (highTreeNodeId - lowTreeNodeId) + ", batch size: " + batchSize );
         this.stableGeneration = stableGeneration;
         this.unstableGeneration = unstableGeneration;
         this.monitor = monitor;
@@ -231,6 +229,9 @@ class CrashGenCleaner
         cleanCrashedGSP( cursor, gsppOffset + GenSafePointer.SIZE, cleanedPointers );
     }
 
+    /**
+     * NOTE: No shouldRetry is used because cursor is assumed to be a write cursor.
+     */
     private void cleanCrashedGSP( PageCursor cursor, int gspOffset, AtomicInteger cleanedPointers )
     {
         if ( hasCrashedGSP( cursor, gspOffset ) )
