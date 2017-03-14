@@ -35,7 +35,7 @@ if [ -z ${version_label} ]; then
   rpm_release="1"
 else
   # Pre-release version
-  rpm_release="0.1.${version_label}"
+  rpm_release="0.${version_label}.1"
 fi
 
 echo "RPM version: ${rpm_version}"
