@@ -83,7 +83,6 @@ case object AnyIndex extends SchemaIndexKind
 case object UniqueIndex extends SchemaIndexKind
 
 // TODO Unify with Sargable
-
 trait QueryExpression[+T] {
   def expressions: Seq[T]
   def map[R](f: T => R): QueryExpression[R]
@@ -111,12 +110,10 @@ case class RangeQueryExpression[T](expression: T) extends QueryExpression[T] wit
   override def map[R](f: T => R) = RangeQueryExpression(f(expression))
 }
 
-case class CompositeQueryExpression[T](expressions: Seq[T]) extends QueryExpression[T] {
-  def map[R](f: T => R) = CompositeQueryExpression(expressions.map(f))
-}
+case class CompositeQueryExpression[T](inner: Seq[QueryExpression[T]]) extends QueryExpression[T] {
+  def map[R](f: T => R) = CompositeQueryExpression(inner.map(_.map(f)))
 
-case class CompositeRangeQueryExpression[T](expressions: Seq[T]) extends QueryExpression[T] {
-  override def map[R](f: T => R) = CompositeRangeQueryExpression(expressions.map(f))
+  override def expressions: Seq[T] = inner.flatMap(_.expressions)
 }
 
 case class SchemaIndex(variable: String, label: String, properties: Seq[String], kind: SchemaIndexKind, query: Option[QueryExpression[Expression]])

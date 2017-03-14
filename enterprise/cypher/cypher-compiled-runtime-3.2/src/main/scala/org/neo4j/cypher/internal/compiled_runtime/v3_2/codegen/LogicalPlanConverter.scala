@@ -199,9 +199,6 @@ object LogicalPlanConverter {
           case e: RangeQueryExpression[_] =>
             throw new CantCompileQueryException(s"To be done")
 
-          case e: CompositeRangeQueryExpression[_] =>
-            throw new CantCompileQueryException(s"To be done")
-
           case e => throw new CantCompileQueryException(s"$e is not a valid QueryExpression")
         }
 

@@ -196,8 +196,8 @@ class NodeIndexSeekPipeTest extends CypherFunSuite with AstConstructionTestSuppo
     val pipe = NodeIndexSeekPipe("n", label,
       propertyKey :+ PropertyKeyToken(PropertyKeyName("prop2") _, PropertyKeyId(11)),
       CompositeQueryExpression(Seq(
-        Literal("hello"),
-        Literal("world")
+        SingleQueryExpression(Literal("hello")),
+        SingleQueryExpression(Literal("world"))
       )))()
     val result = pipe.createResults(queryState)
 

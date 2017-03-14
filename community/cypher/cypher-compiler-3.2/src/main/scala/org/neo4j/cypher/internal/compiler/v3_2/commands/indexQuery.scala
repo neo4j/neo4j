@@ -24,7 +24,8 @@ import org.neo4j.cypher.internal.compiler.v3_2.commands.expressions.{Expression,
 import org.neo4j.cypher.internal.compiler.v3_2.helpers.IsList
 import org.neo4j.cypher.internal.compiler.v3_2.mutation.{GraphElementPropertyFunctions, makeValueNeoSafe}
 import org.neo4j.cypher.internal.compiler.v3_2.pipes.QueryState
-import org.neo4j.cypher.internal.frontend.v3_2.CypherTypeException
+import org.neo4j.cypher.internal.frontend.v3_2.helpers.SeqCombiner.combine
+import org.neo4j.cypher.internal.frontend.v3_2.{CypherTypeException, InternalException}
 import org.neo4j.graphdb.Node
 
 import scala.collection.GenTraversableOnce
@@ -54,9 +55,16 @@ object indexQuery extends GraphElementPropertyFunctions {
 
     // Index exact value seek on multiple values, making use of a composite index over all values
     case CompositeQueryExpression(innerExpressions) =>
-      val values = innerExpressions.map(e => e.apply(m)(state))
-      assert(values.size == propertyNames.size)
-      lookupNodes(values, index)
+      assert(innerExpressions.size == propertyNames.size)
+      val seekValues = innerExpressions.map(expressionValues(m, state))
+      val combined = combine(seekValues)
+      val results = combined map { values =>
+        lookupNodes(values, index)
+      }
+      if (results.size == 1)
+        results.head
+      else
+        new IteratorOfIterarors[Node](results)
 
     // Index range seek over range of values
     case RangeQueryExpression(rangeWrapper) =>
@@ -80,5 +88,56 @@ object indexQuery extends GraphElementPropertyFunctions {
       val index1 = index(neoValues)
       index1.toIterator
     }
+  }
+
+  private def expressionValues(m: ExecutionContext, state: QueryState)(queryExpression: QueryExpression[Expression]): Seq[Any] = {
+    queryExpression match {
+
+      case SingleQueryExpression(inner) =>
+        Seq(inner(m)(state))
+
+      case ManyQueryExpression(inner) =>
+        inner(m)(state) match {
+          case IsList(coll) => coll.toSeq
+          case null => Seq.empty
+          case _ => throw new CypherTypeException(s"Expected the value for $inner to be a collection but it was not.")
+        }
+
+      case CompositeQueryExpression(innerExpressions) =>
+        throw new InternalException("A CompositeQueryExpression can't be nested in a CompositeQueryExpression")
+
+      case RangeQueryExpression(rangeWrapper) =>
+        throw new InternalException("Range queries on composite indexea not yet supported")
+    }
+  }
+}
+
+class IteratorOfIterarors[T](inner: Seq[Iterator[T]]) extends Iterator[T] {
+  private var _buffer: Option[T] = None
+  private var _innerIterator = inner.toIterator
+  private var _current: Iterator[T] = Iterator.empty
+
+  fillBuffer()
+
+  override def hasNext: Boolean = _buffer.nonEmpty
+
+  override def next(): T = {
+    if (isEmpty) Iterator.empty.next()
+
+    val res = _buffer.get
+    fillBuffer()
+    res
+  }
+
+  private def fillBuffer(): Unit = {
+
+    while (_current.isEmpty && _innerIterator.nonEmpty) {
+      _current = _innerIterator.next()
+    }
+
+    if (_current.isEmpty)
+      _buffer = None
+    else
+      _buffer = Some(_current.next())
   }
 }
