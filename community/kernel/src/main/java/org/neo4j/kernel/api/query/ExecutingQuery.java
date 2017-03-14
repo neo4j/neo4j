@@ -29,8 +29,9 @@ import org.neo4j.kernel.impl.locking.ActiveLock;
 import org.neo4j.kernel.impl.locking.LockTracer;
 import org.neo4j.kernel.impl.locking.LockWaitEvent;
 import org.neo4j.kernel.impl.query.clientconnection.ClientConnectionInfo;
+import org.neo4j.resources.HeapAllocation;
 import org.neo4j.storageengine.api.lock.ResourceType;
-import org.neo4j.time.CpuClock;
+import org.neo4j.resources.CpuClock;
 import org.neo4j.time.SystemNanoClock;
 
 import static java.util.concurrent.TimeUnit.NANOSECONDS;
@@ -56,7 +57,9 @@ public class ExecutingQuery
     private final LongSupplier activeLockCount;
     private final SystemNanoClock clock;
     private final CpuClock cpuClock;
+    private final HeapAllocation heapAllocation;
     private final long cpuTimeNanosWhenQueryStarted;
+    private final long heapAllocatedBytesWhenQueryStarted;
     private final Map<String,Object> transactionAnnotationData;
     /** Uses write barrier of {@link #status}. */
     private PlannerInfo plannerInfo;
@@ -75,7 +78,8 @@ public class ExecutingQuery
             LongSupplier activeLockCount,
             Thread threadExecutingTheQuery,
             SystemNanoClock clock,
-            CpuClock cpuClock )
+            CpuClock cpuClock,
+            HeapAllocation heapAllocation )
     {
         // Capture timestamps first
         this.cpuTimeNanosWhenQueryStarted = cpuClock.cpuTimeNanos( threadExecutingTheQuery );
@@ -91,7 +95,9 @@ public class ExecutingQuery
         this.activeLockCount = activeLockCount;
         this.threadExecutingTheQuery = threadExecutingTheQuery;
         this.cpuClock = cpuClock;
+        this.heapAllocation = heapAllocation;
         this.clock = clock;
+        this.heapAllocatedBytesWhenQueryStarted = heapAllocation.allocatedBytes( threadExecutingTheQuery );
     }
 
     // update state
@@ -142,23 +148,30 @@ public class ExecutingQuery
         PlannerInfo planner = status.isPlanning() ? null : this.plannerInfo;
         // just needs to be captured at some point...
         long activeLockCount = this.activeLockCount.getAsLong();
+        long heapAllocatedBytes = heapAllocation.allocatedBytes( threadExecutingTheQuery );
 
         // - at this point we are done capturing the "live" state, and can start computing the snapshot -
         long planningTimeNanos = (status.isPlanning() ? currentTimeNanos : planningDoneNanos) - startTimeNanos;
         long elapsedTimeNanos = currentTimeNanos - startTimeNanos;
         cpuTimeNanos -= cpuTimeNanosWhenQueryStarted;
         waitTimeNanos += status.waitTimeNanos( currentTimeNanos );
+        // TODO: when we start allocating native memory as well during query execution,
+        // we should have a tracer that keeps track of how much memory we have allocated for the query,
+        // and get the value from that here.
+        heapAllocatedBytes = heapAllocatedBytesWhenQueryStarted < 0 ? -1 : // mark that we were unable to measure
+                heapAllocatedBytes - heapAllocatedBytesWhenQueryStarted;
 
         return new QuerySnapshot(
                 this,
                 planner,
                 NANOSECONDS.toMillis( planningTimeNanos ),
                 NANOSECONDS.toMillis( elapsedTimeNanos ),
-                NANOSECONDS.toMillis( cpuTimeNanos ),
+                cpuTimeNanos == 0 && cpuTimeNanosWhenQueryStarted == -1 ? -1 : NANOSECONDS.toMillis( cpuTimeNanos ),
                 NANOSECONDS.toMillis( waitTimeNanos ),
                 status.name(),
                 status.toMap( currentTimeNanos ),
-                activeLockCount
+                activeLockCount,
+                heapAllocatedBytes
         );
     }
 

@@ -30,6 +30,7 @@ import org.neo4j.kernel.impl.locking.ActiveLock;
 import org.neo4j.storageengine.api.lock.ResourceType;
 import org.neo4j.storageengine.api.lock.WaitStrategy;
 import org.neo4j.test.FakeCpuClock;
+import org.neo4j.test.FakeHeapAllocation;
 import org.neo4j.time.Clocks;
 import org.neo4j.time.FakeClock;
 
@@ -101,7 +102,8 @@ public class ExecutingQueryStatusTest
                                 null,
                                 Thread.currentThread(),
                                 clock,
-                                FakeCpuClock.CPU_CLOCK ), clock.nanos() );
+                                new FakeCpuClock(),
+                                new FakeHeapAllocation() ), clock.nanos() );
         clock.forward( 1025, TimeUnit.MILLISECONDS );
 
         // when

@@ -34,8 +34,9 @@ import org.neo4j.kernel.impl.query.clientconnection.ClientConnectionInfo;
 import org.neo4j.kernel.impl.query.clientconnection.ShellConnectionInfo;
 import org.neo4j.logging.AssertableLogProvider;
 import org.neo4j.logging.LogProvider;
+import org.neo4j.resources.HeapAllocation;
 import org.neo4j.time.Clocks;
-import org.neo4j.time.CpuClock;
+import org.neo4j.resources.CpuClock;
 import org.neo4j.time.FakeClock;
 
 import static java.lang.String.format;
@@ -451,6 +452,7 @@ public class QueryLoggerTest
                 () -> 0,
                 Thread.currentThread(),
                 clock,
-                CpuClock.CPU_CLOCK );
+                CpuClock.CPU_CLOCK,
+                HeapAllocation.HEAP_ALLOCATION );
     }
 }

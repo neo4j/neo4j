@@ -26,7 +26,8 @@ import org.neo4j.kernel.api.query.ExecutingQuery;
 import org.neo4j.kernel.impl.api.operations.QueryRegistrationOperations;
 import org.neo4j.kernel.impl.query.clientconnection.ClientConnectionInfo;
 import org.neo4j.kernel.impl.util.MonotonicCounter;
-import org.neo4j.time.CpuClock;
+import org.neo4j.resources.CpuClock;
+import org.neo4j.resources.HeapAllocation;
 import org.neo4j.time.SystemNanoClock;
 
 public class StackingQueryRegistrationOperations implements QueryRegistrationOperations
@@ -63,7 +64,8 @@ public class StackingQueryRegistrationOperations implements QueryRegistrationOpe
         Thread thread = Thread.currentThread();
         ExecutingQuery executingQuery =
                 new ExecutingQuery( queryId, clientConnection, statement.username(), queryText, queryParameters,
-                        statement.getTransaction().getMetaData(), statement.locks()::activeLockCount, thread, clock, CpuClock.CPU_CLOCK );
+                        statement.getTransaction().getMetaData(), statement.locks()::activeLockCount, thread, clock,
+                        CpuClock.CPU_CLOCK, HeapAllocation.HEAP_ALLOCATION );
         registerExecutingQuery( statement, executingQuery );
         return executingQuery;
     }

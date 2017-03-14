@@ -23,6 +23,7 @@ import java.time.ZonedDateTime;
 import java.util.Arrays;
 import java.util.Collections;
 import java.util.Map;
+import java.util.concurrent.ThreadLocalRandom;
 import java.util.concurrent.TimeUnit;
 
 import org.hamcrest.CoreMatchers;
@@ -33,23 +34,26 @@ import org.junit.Test;
 
 import org.neo4j.kernel.impl.locking.LockWaitEvent;
 import org.neo4j.kernel.impl.query.clientconnection.ClientConnectionInfo;
+import org.neo4j.resources.HeapAllocation;
 import org.neo4j.storageengine.api.lock.ResourceType;
 import org.neo4j.storageengine.api.lock.WaitStrategy;
 import org.neo4j.test.FakeCpuClock;
+import org.neo4j.test.FakeHeapAllocation;
 import org.neo4j.time.Clocks;
 import org.neo4j.time.FakeClock;
 
 import static java.util.Collections.emptyList;
-import static java.util.Collections.singletonMap;
 import static org.hamcrest.CoreMatchers.equalTo;
 import static org.hamcrest.Matchers.hasEntry;
 import static org.junit.Assert.assertEquals;
+import static org.junit.Assert.assertNull;
 import static org.junit.Assert.assertThat;
 
 public class ExecutingQueryTest
 {
     private final FakeClock clock = Clocks.fakeClock( ZonedDateTime.parse( "2016-12-03T15:10:00+01:00" ) );
-    private final FakeCpuClock cpuClock = new FakeCpuClock();
+    private final FakeCpuClock cpuClock = new FakeCpuClock().add( randomLong( 0x1_0000_0000L ) );
+    private final FakeHeapAllocation heapAllocation = new FakeHeapAllocation().add( randomLong( 0x1_0000_0000L ) );
     private long lockCount;
     private ExecutingQuery query = new ExecutingQuery(
             1,
@@ -60,7 +64,8 @@ public class ExecutingQueryTest
             Collections.emptyMap(),
             () -> lockCount, Thread.currentThread(),
             clock,
-            cpuClock );
+            cpuClock,
+            heapAllocation );
     private ExecutingQuery subQuery = new ExecutingQuery(
             2,
             ClientConnectionInfo.EMBEDDED_CONNECTION,
@@ -70,7 +75,8 @@ public class ExecutingQueryTest
             Collections.emptyMap(),
             () -> lockCount, Thread.currentThread(),
             clock,
-            cpuClock );
+            cpuClock,
+            heapAllocation );
 
     @Test
     public void shouldReportElapsedTime() throws Exception
@@ -233,6 +239,71 @@ public class ExecutingQueryTest
     }
 
     @Test
+    public void shouldNotReportCpuTimeIfUnavailable() throws Exception
+    {
+        // given
+        ExecutingQuery query = new ExecutingQuery( 17,
+                ClientConnectionInfo.EMBEDDED_CONNECTION,
+                "neo4j",
+                "hello world",
+                Collections.emptyMap(),
+                Collections.emptyMap(),
+                () -> lockCount, Thread.currentThread(),
+                clock,
+                FakeCpuClock.NOT_AVAILABLE,
+                HeapAllocation.NOT_AVAILABLE );
+
+        // when
+        QuerySnapshot snapshot = query.snapshot();
+
+        // then
+        assertNull( snapshot.cpuTimeMillis() );
+        assertNull( snapshot.idleTimeMillis() );
+    }
+
+    @Test
+    public void shouldReportHeapAllocation() throws Exception
+    {
+        // given
+        heapAllocation.add( 4096 );
+
+        // when
+        long allocatedBytes = query.snapshot().allocatedBytes();
+
+        // then
+        assertEquals( 4096, allocatedBytes );
+
+        // when
+        heapAllocation.add( 4096 );
+        allocatedBytes = query.snapshot().allocatedBytes();
+
+        // then
+        assertEquals( 8192, allocatedBytes );
+    }
+
+    @Test
+    public void shouldNotReportHeapAllocationIfUnavailable() throws Exception
+    {
+        // given
+        ExecutingQuery query = new ExecutingQuery( 17,
+                ClientConnectionInfo.EMBEDDED_CONNECTION,
+                "neo4j",
+                "hello world",
+                Collections.emptyMap(),
+                Collections.emptyMap(),
+                () -> lockCount, Thread.currentThread(),
+                clock,
+                FakeCpuClock.NOT_AVAILABLE,
+                HeapAllocation.NOT_AVAILABLE );
+
+        // when
+        QuerySnapshot snapshot = query.snapshot();
+
+        // then
+        assertNull( snapshot.allocatedBytes() );
+    }
+
+    @Test
     public void shouldReportLockCount() throws Exception
     {
         // given
@@ -300,5 +371,10 @@ public class ExecutingQueryTest
                 description.appendValue( expected );
             }
         };
+    }
+
+    private static long randomLong( long bound )
+    {
+        return ThreadLocalRandom.current().nextLong( bound );
     }
 }

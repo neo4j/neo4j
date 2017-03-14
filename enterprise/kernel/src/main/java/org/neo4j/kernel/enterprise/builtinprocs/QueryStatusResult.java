@@ -69,12 +69,14 @@ public class QueryStatusResult
     public final long activeLockCount;
     /** @since Neo4j 3.2 */
     public final long elapsedTimeMillis; // TODO: this field should be of a Duration type (when Cypher supports that)
-    /** @since Neo4j 3.2 */
-    public final long cpuTimeMillis; // TODO: we want this field to be of a Duration type (when Cypher supports that)
+    /** @since Neo4j 3.2, will be {@code null} if measuring CPU time is not supported. */
+    public final Long cpuTimeMillis; // TODO: we want this field to be of a Duration type (when Cypher supports that)
     /** @since Neo4j 3.2 */
     public final long waitTimeMillis; // TODO: we want this field to be of a Duration type (when Cypher supports that)
     /** @since Neo4j 3.2 */
-    public final long idleTimeMillis; // TODO: we want this field to be of a Duration type (when Cypher supports that)
+    public final Long idleTimeMillis; // TODO: we want this field to be of a Duration type (when Cypher supports that)
+    /** @since Neo4j 3.2, will be {@code null} if measuring allocation is not supported. */
+    public final Long allocatedBytes;
 
     QueryStatusResult( ExecutingQuery query ) throws InvalidArgumentsException
     {
@@ -105,6 +107,7 @@ public class QueryStatusResult
         this.planner = query.planner();
         this.runtime = query.runtime();
         this.indexes = query.indexes();
+        this.allocatedBytes = query.allocatedBytes();
     }
 
     private static String formatTime( final long startTime )
