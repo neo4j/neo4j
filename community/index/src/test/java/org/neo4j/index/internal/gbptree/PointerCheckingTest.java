@@ -25,14 +25,14 @@ import org.neo4j.io.pagecache.PageCursor;
 
 import static org.junit.Assert.fail;
 
-import static org.neo4j.index.internal.gbptree.GenSafePointerPair.NO_LOGICAL_POS;
-import static org.neo4j.index.internal.gbptree.GenSafePointerPair.read;
-import static org.neo4j.index.internal.gbptree.GenSafePointerPair.write;
+import static org.neo4j.index.internal.gbptree.GenerationSafePointerPair.NO_LOGICAL_POS;
+import static org.neo4j.index.internal.gbptree.GenerationSafePointerPair.read;
+import static org.neo4j.index.internal.gbptree.GenerationSafePointerPair.write;
 import static org.neo4j.index.internal.gbptree.PageCursorUtil.put6BLong;
 
 public class PointerCheckingTest
 {
-    private final PageCursor cursor = ByteArrayPageCursor.wrap( GenSafePointerPair.SIZE );
+    private final PageCursor cursor = ByteArrayPageCursor.wrap( GenerationSafePointerPair.SIZE );
     private final long firstGeneration = 1;
     private final long secondGeneration = 2;
     private final long thirdGeneration = 3;
@@ -56,7 +56,7 @@ public class PointerCheckingTest
     public void checkChildShouldThrowOnReadFailure() throws Exception
     {
         // GIVEN
-        long result = GenSafePointerPair.read( cursor, 0, 1, 123 );
+        long result = GenerationSafePointerPair.read( cursor, 0, 1, 123 );
 
         // WHEN
         try
@@ -171,10 +171,10 @@ public class PointerCheckingTest
         long generation = IdSpace.STATE_PAGE_A;
         long pointer = this.secondGeneration;
 
-        // Can not use GenSafePointer.write because it will fail on pointer assertion.
+        // Can not use GenerationSafePointer.write because it will fail on pointer assertion.
         cursor.putInt( (int) pointer );
         put6BLong( cursor, generation );
-        cursor.putShort( GenSafePointer.checksumOf( generation, pointer ) );
+        cursor.putShort( GenerationSafePointer.checksumOf( generation, pointer ) );
         cursor.rewind();
 
         // WHEN

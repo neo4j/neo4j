@@ -23,14 +23,14 @@ import org.neo4j.io.pagecache.PageCursor;
 
 import static java.lang.String.format;
 
-import static org.neo4j.index.internal.gbptree.GenSafePointer.MIN_GENERATION;
-import static org.neo4j.index.internal.gbptree.GenSafePointer.checksumOf;
-import static org.neo4j.index.internal.gbptree.GenSafePointer.readChecksum;
-import static org.neo4j.index.internal.gbptree.GenSafePointer.readGeneration;
-import static org.neo4j.index.internal.gbptree.GenSafePointer.readPointer;
+import static org.neo4j.index.internal.gbptree.GenerationSafePointer.MIN_GENERATION;
+import static org.neo4j.index.internal.gbptree.GenerationSafePointer.checksumOf;
+import static org.neo4j.index.internal.gbptree.GenerationSafePointer.readChecksum;
+import static org.neo4j.index.internal.gbptree.GenerationSafePointer.readGeneration;
+import static org.neo4j.index.internal.gbptree.GenerationSafePointer.readPointer;
 
 /**
- * Two {@link GenSafePointer} forming the basis for a B+tree becoming generate-aware.
+ * Two {@link GenerationSafePointer} forming the basis for a B+tree becoming generate-aware.
  * <p>
  * Generally a GSP fall into one out of these categories:
  * <ul>
@@ -61,7 +61,7 @@ import static org.neo4j.index.internal.gbptree.GenSafePointer.readPointer;
  *  │ ││ ││││  └└└────────────────────────────────────── POINTER STATE B (on failure)
  *  │ ││ │└└└─────────────────────────────────────────── POINTER STATE A (on failure)
  *  │ │└─└────────────────────────────────────────────── GENERATION COMPARISON (on failure):
- *  │ │                                                  {@link #FLAG_GEN_B_BIG}, {@link #FLAG_GEN_EQUAL}, {@link #FLAG_GEN_A_BIG}
+ *  │ │                                                  {@link #FLAG_GENERATION_B_BIG}, {@link #FLAG_GENERATION_EQUAL}, {@link #FLAG_GENERATION_A_BIG}
  *  │ └───────────────────────────────────────────────── 0:{@link #FLAG_SLOT_A}/1:{@link #FLAG_SLOT_B} (on success)
  *  └─────────────────────────────────────────────────── 0:{@link #FLAG_SUCCESS}/1:{@link #FLAG_FAIL}
  * </pre>
@@ -73,7 +73,7 @@ import static org.neo4j.index.internal.gbptree.GenSafePointer.readPointer;
  *    ││ │││└──└└─────────────────────────────────────── POINTER STATE B
  *    ││ └└└──────────────────────────────────────────── POINTER STATE A
  *    └└──────────────────────────────────────────────── GENERATION COMPARISON:
- *                                                       {@link #FLAG_GEN_B_BIG}, {@link #FLAG_GEN_EQUAL}, {@link #FLAG_GEN_A_BIG}
+ *                                                       {@link #FLAG_GENERATION_B_BIG}, {@link #FLAG_GENERATION_EQUAL}, {@link #FLAG_GENERATION_A_BIG}
  * </pre>
  * <pre>
  *     READ success
@@ -86,13 +86,13 @@ import static org.neo4j.index.internal.gbptree.GenSafePointer.readPointer;
  *  └─────────────────────────────────────────────────── 0:{@link #FLAG_SUCCESS}/1:{@link #FLAG_FAIL}
  * </pre>
  */
-class GenSafePointerPair
+class GenerationSafePointerPair
 {
-    static final int SIZE = GenSafePointer.SIZE * 2;
+    static final int SIZE = GenerationSafePointer.SIZE * 2;
     static final int NO_LOGICAL_POS = -1;
-    static final String GEN_COMPARISON_NAME_B_BIG = "A < B";
-    static final String GEN_COMPARISON_NAME_A_BIG = "A > B";
-    static final String GEN_COMPARISON_NAME_EQUAL = "A == B";
+    static final String GENERATION_COMPARISON_NAME_B_BIG = "A < B";
+    static final String GENERATION_COMPARISON_NAME_A_BIG = "A > B";
+    static final String GENERATION_COMPARISON_NAME_EQUAL = "A == B";
 
     // Pointer states
     static final byte STABLE = 0;     // any previous generation made safe by a checkpoint
@@ -106,16 +106,16 @@ class GenSafePointerPair
     static final long FLAG_FAIL        = 0x80000000_00000000L;
     static final long FLAG_READ        = 0x00000000_00000000L;
     static final long FLAG_WRITE       = 0x40000000_00000000L;
-    static final long FLAG_GEN_EQUAL   = 0x00000000_00000000L;
-    static final long FLAG_GEN_A_BIG   = 0x08000000_00000000L;
-    static final long FLAG_GEN_B_BIG   = 0x10000000_00000000L;
+    static final long FLAG_GENERATION_EQUAL = 0x00000000_00000000L;
+    static final long FLAG_GENERATION_A_BIG = 0x08000000_00000000L;
+    static final long FLAG_GENERATION_B_BIG = 0x10000000_00000000L;
     static final long FLAG_SLOT_A      = 0x00000000_00000000L;
     static final long FLAG_SLOT_B      = 0x20000000_00000000L;
     static final long FLAG_ABS_OFFSET  = 0x00000000_00000000L;
     static final long FLAG_LOGICAL_POS = 0x10000000_00000000L;
     static final int  SHIFT_STATE_A    = 56;
     static final int  SHIFT_STATE_B    = 53;
-    static final int  SHIFT_GEN_OFFSET = 48;
+    static final int SHIFT_GENERATION_OFFSET = 48;
 
     // Aggregations
     static final long SUCCESS_WRITE_TO_B = FLAG_SUCCESS | FLAG_WRITE | FLAG_SLOT_B;
@@ -126,12 +126,12 @@ class GenSafePointerPair
     static final long READ_OR_WRITE_MASK   = FLAG_READ | FLAG_WRITE;
     static final long SLOT_MASK            = FLAG_SLOT_A | FLAG_SLOT_B;
     static final long STATE_MASK           = 0x7; // After shift
-    static final long GEN_COMPARISON_MASK  = FLAG_GEN_EQUAL | FLAG_GEN_A_BIG | FLAG_GEN_B_BIG;
+    static final long GENERATION_COMPARISON_MASK = FLAG_GENERATION_EQUAL | FLAG_GENERATION_A_BIG | FLAG_GENERATION_B_BIG;
     static final long POINTER_MASK         = 0x0000FFFF_FFFFFFFFL;
-    static final long GEN_OFFSET_MASK      = 0x0FFF0000_00000000L;
-    static final long GEN_OFFSET_TYPE_MASK = FLAG_ABS_OFFSET | FLAG_LOGICAL_POS;
+    static final long GENERATION_OFFSET_MASK = 0x0FFF0000_00000000L;
+    static final long GENERATION_OFFSET_TYPE_MASK = FLAG_ABS_OFFSET | FLAG_LOGICAL_POS;
     static final long HEADER_MASK          = ~POINTER_MASK;
-    static final long MAX_GEN_OFFSET_MASK  = 0xFFF;
+    static final long MAX_GENERATION_OFFSET_MASK = 0xFFF;
 
     /**
      * Reads a GSPP, returning the read pointer or a failure. Check success/failure using {@link #isSuccess(long)}
@@ -182,7 +182,7 @@ class GenSafePointerPair
         }
         else if ( pointerStateA == STABLE && pointerStateB == STABLE )
         {
-            // compare gen
+            // compare generation
             if ( generationA > generationB )
             {
                 return buildSuccessfulReadResult( FLAG_SLOT_A, logicalPos, gsppOffset, pointerA );
@@ -209,13 +209,13 @@ class GenSafePointerPair
     {
         boolean isLogicalPos = logicalPos != NO_LOGICAL_POS;
         long offsetType = isLogicalPos ? FLAG_LOGICAL_POS : FLAG_ABS_OFFSET;
-        long genOffset = isLogicalPos ? logicalPos : gsppOffset;
-        if ( (genOffset & ~MAX_GEN_OFFSET_MASK) != 0 )
+        long generationOffset = isLogicalPos ? logicalPos : gsppOffset;
+        if ( (generationOffset & ~MAX_GENERATION_OFFSET_MASK) != 0 )
         {
-            throw new IllegalArgumentException( "Illegal genOffset:" + genOffset + ", it would be too large, max is " +
-                    MAX_GEN_OFFSET_MASK );
+            throw new IllegalArgumentException( "Illegal generationOffset:" + generationOffset + ", it would be too large, max is " +
+                    MAX_GENERATION_OFFSET_MASK );
         }
-        return FLAG_SUCCESS | FLAG_READ | slot | offsetType | genOffset << SHIFT_GEN_OFFSET | pointer;
+        return FLAG_SUCCESS | FLAG_READ | slot | offsetType | generationOffset << SHIFT_GENERATION_OFFSET | pointer;
     }
 
     /**
@@ -257,9 +257,9 @@ class GenSafePointerPair
         if ( isSuccess( writeResult ) )
         {
             boolean writeToA = ( writeResult & SLOT_MASK) == FLAG_SLOT_A;
-            int writeOffset = writeToA ? offset : offset + GenSafePointer.SIZE;
+            int writeOffset = writeToA ? offset : offset + GenerationSafePointer.SIZE;
             cursor.setOffset( writeOffset );
-            GenSafePointer.write( cursor, unstableGeneration, pointer );
+            GenerationSafePointer.write( cursor, unstableGeneration, pointer );
         }
         return writeResult;
     }
@@ -321,7 +321,8 @@ class GenSafePointerPair
 
     private static long generationState( long generationA, long generationB )
     {
-        return generationA > generationB ? FLAG_GEN_A_BIG : generationB > generationA ? FLAG_GEN_B_BIG : FLAG_GEN_EQUAL;
+        return generationA > generationB ? FLAG_GENERATION_A_BIG : generationB > generationA ? FLAG_GENERATION_B_BIG
+                                                                                             : FLAG_GENERATION_EQUAL;
     }
 
     /**
@@ -344,7 +345,7 @@ class GenSafePointerPair
     static byte pointerState( long stableGeneration, long unstableGeneration,
             long generation, long pointer, boolean checksumIsCorrect )
     {
-        if ( GenSafePointer.isEmpty( generation, pointer ) )
+        if ( GenerationSafePointer.isEmpty( generation, pointer ) )
         {
             return EMPTY;
         }
@@ -432,18 +433,18 @@ class GenSafePointerPair
 
     private static String generationComparisonFromResult( long result )
     {
-        long bits = result & GEN_COMPARISON_MASK;
-        if ( bits == FLAG_GEN_EQUAL )
+        long bits = result & GENERATION_COMPARISON_MASK;
+        if ( bits == FLAG_GENERATION_EQUAL )
         {
-            return GEN_COMPARISON_NAME_EQUAL;
+            return GENERATION_COMPARISON_NAME_EQUAL;
         }
-        else if ( bits == FLAG_GEN_A_BIG )
+        else if ( bits == FLAG_GENERATION_A_BIG )
         {
-            return GEN_COMPARISON_NAME_A_BIG;
+            return GENERATION_COMPARISON_NAME_A_BIG;
         }
-        else if ( bits == FLAG_GEN_B_BIG )
+        else if ( bits == FLAG_GENERATION_B_BIG )
         {
-            return GEN_COMPARISON_NAME_B_BIG;
+            return GENERATION_COMPARISON_NAME_B_BIG;
         }
         else
         {
@@ -487,16 +488,16 @@ class GenSafePointerPair
 
     static boolean isLogicalPos( long readResult )
     {
-        return (readResult & GEN_OFFSET_TYPE_MASK) == FLAG_LOGICAL_POS;
+        return (readResult & GENERATION_OFFSET_TYPE_MASK) == FLAG_LOGICAL_POS;
     }
 
-    static int genOffset( long readResult )
+    static int generationOffset( long readResult )
     {
         if ( (readResult & HEADER_MASK) == 0 )
         {
             throw new IllegalArgumentException( "Expected a header in read result, but read result was " + readResult );
         }
 
-        return Math.toIntExact( (readResult & GEN_OFFSET_MASK) >>> SHIFT_GEN_OFFSET );
+        return Math.toIntExact( (readResult & GENERATION_OFFSET_MASK) >>> SHIFT_GENERATION_OFFSET );
     }
 }

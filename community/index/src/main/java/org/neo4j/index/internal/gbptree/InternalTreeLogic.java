@@ -323,7 +323,7 @@ class InternalTreeLogic<KEY,VALUE>
      * {@link StructurePropagation} is provided from outside to minimize garbage.
      * <p>
      * When this method returns, {@code structurePropagation} will be populated with information about split or new
-     * gen version of root. This needs to be handled by caller.
+     * generation version of root. This needs to be handled by caller.
      * <p>
      * Leaves cursor at the page which was last updated. No guarantees on offset.
      *
@@ -1157,7 +1157,7 @@ class InternalTreeLogic<KEY,VALUE>
         if ( TreeNode.isNode( leftSibling ) )
         {
             // Go to left sibling and read stuff
-            try ( PageCursor leftSiblingCursor = cursor.openLinkedCursor( GenSafePointerPair.pointer( leftSibling ) ) )
+            try ( PageCursor leftSiblingCursor = cursor.openLinkedCursor( GenerationSafePointerPair.pointer( leftSibling ) ) )
             {
                 leftSiblingCursor.next();
                 int leftSiblingKeyCount = bTreeNode.keyCount( leftSiblingCursor );
@@ -1180,7 +1180,7 @@ class InternalTreeLogic<KEY,VALUE>
         else if ( TreeNode.isNode( rightSibling ) )
         {
             try ( PageCursor rightSiblingCursor = cursor.openLinkedCursor(
-                    GenSafePointerPair.pointer( rightSibling ) ) )
+                    GenerationSafePointerPair.pointer( rightSibling ) ) )
             {
                 rightSiblingCursor.next();
                 int rightSiblingKeyCount = bTreeNode.keyCount( rightSiblingCursor );
@@ -1341,8 +1341,8 @@ class InternalTreeLogic<KEY,VALUE>
             throws IOException
     {
         long oldId = cursor.getCurrentPageId();
-        long nodeGen = bTreeNode.gen( cursor );
-        if ( nodeGen == unstableGeneration )
+        long nodeGeneration = bTreeNode.generation( cursor );
+        if ( nodeGeneration == unstableGeneration )
         {
             // Don't copy
             return;
@@ -1354,7 +1354,7 @@ class InternalTreeLogic<KEY,VALUE>
         {
             bTreeNode.goTo( heirCursor, "heir", heirId );
             cursor.copyTo( 0, heirCursor, 0, cursor.getCurrentPageSize() );
-            bTreeNode.setGen( heirCursor, unstableGeneration );
+            bTreeNode.setGeneration( heirCursor, unstableGeneration );
             bTreeNode.setHeir( heirCursor, TreeNode.NO_NODE_FLAG, stableGeneration, unstableGeneration );
         }
 

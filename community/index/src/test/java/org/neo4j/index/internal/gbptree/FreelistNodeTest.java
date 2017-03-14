@@ -134,7 +134,7 @@ public class FreelistNodeTest
         // WHEN
         try
         {
-            freelist.write( cursor, GenSafePointer.MAX_GENERATION + 1, 1, 0 );
+            freelist.write( cursor, GenerationSafePointer.MAX_GENERATION + 1, 1, 0 );
             fail( "Should've failed" );
         }
         catch ( IllegalArgumentException e )
