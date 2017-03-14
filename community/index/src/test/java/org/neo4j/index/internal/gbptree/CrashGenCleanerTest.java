@@ -28,7 +28,6 @@ import org.junit.Test;
 import org.junit.rules.RuleChain;
 
 import java.io.IOException;
-import java.util.ArrayList;
 import java.util.Arrays;
 import java.util.Collections;
 import java.util.List;
@@ -70,19 +69,19 @@ public class CrashGenCleanerTest
     private final int firstChildPos = 0;
     private final int middleChildPos = corruptableTreeNode.internalMaxKeyCount() / 2;
     private final int lastChildPos = corruptableTreeNode.internalMaxKeyCount();
-    private final List<PageCorruption> possibleCorruptionsInInternal = new ArrayList<>( Arrays.asList(
+    private final List<PageCorruption> possibleCorruptionsInInternal = Arrays.asList(
             crashed( leftSibling() ),
             crashed( rightSibling() ),
             crashed( newGen() ),
             crashed( child( firstChildPos ) ),
             crashed( child( middleChildPos ) ),
             crashed( child( lastChildPos ) )
-    ) );
-    private final List<PageCorruption> possibleCorruptionsInLeaf = new ArrayList<>( Arrays.asList(
+    );
+    private final List<PageCorruption> possibleCorruptionsInLeaf = Arrays.asList(
             crashed( leftSibling() ),
             crashed( rightSibling() ),
             crashed( newGen() )
-    ) );
+    );
 
     private class SimpleMonitor implements GBPTree.Monitor
     {

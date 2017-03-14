@@ -47,9 +47,9 @@ class CrashGenCleaner
     private final long stableGeneration;
     private final long unstableGeneration;
     private final Monitor monitor;
-    private final long maxKeyCount;
+    private final long internalMaxKeyCount;
 
-    public CrashGenCleaner( PagedFile pagedFile, TreeNode<?,?> treeNode, long lowTreeNodeId, long highTreeNodeId,
+    CrashGenCleaner( PagedFile pagedFile, TreeNode<?,?> treeNode, long lowTreeNodeId, long highTreeNodeId,
             long stableGeneration, long unstableGeneration, Monitor monitor )
     {
         this.pagedFile = pagedFile;
@@ -59,7 +59,7 @@ class CrashGenCleaner
         this.stableGeneration = stableGeneration;
         this.unstableGeneration = unstableGeneration;
         this.monitor = monitor;
-        this.maxKeyCount = treeNode.internalMaxKeyCount();
+        this.internalMaxKeyCount = treeNode.internalMaxKeyCount();
     }
 
     // === Methods about the execution and threading ===
@@ -130,11 +130,6 @@ class CrashGenCleaner
                             break;
                         }
 
-                        // TODO: we should try to figure out if the disk backing this paged file
-                        // is good at concurrent random reads (i.e. if it's an SSD).
-                        // If it's not it'd likely be beneficial to let other threads wait until
-                        // goTo completes before letting others read. This will have reads be
-                        // 100% sequential.
                         PageCursorUtil.goTo( cursor, "clean", id );
 
                         if ( hasCrashedGSPP( treeNode, cursor ) )
@@ -171,6 +166,7 @@ class CrashGenCleaner
             keyCount = treeNode.keyCount( cursor );
         }
         while ( cursor.shouldRetry() );
+        PageCursorUtil.checkOutOfBounds( cursor );
 
         if ( !isTreeNode )
         {
@@ -187,13 +183,14 @@ class CrashGenCleaner
 
             if ( !hasCrashed && TreeNode.isInternal( cursor ) )
             {
-                for ( int i = 0; i <= keyCount && i <= maxKeyCount && !hasCrashed; i++ )
+                for ( int i = 0; i <= keyCount && i <= internalMaxKeyCount && !hasCrashed; i++ )
                 {
-                    hasCrashed |= hasCrashedGSPP( cursor, treeNode.childOffset( i ) );
+                    hasCrashed = hasCrashedGSPP( cursor, treeNode.childOffset( i ) );
                 }
             }
         }
         while ( cursor.shouldRetry() );
+        PageCursorUtil.checkOutOfBounds( cursor );
         return hasCrashed;
     }
 
@@ -220,7 +217,7 @@ class CrashGenCleaner
         if ( TreeNode.isInternal( cursor ) )
         {
             int keyCount = treeNode.keyCount( cursor );
-            for ( int i = 0; i <= keyCount && i <= maxKeyCount; i++ )
+            for ( int i = 0; i <= keyCount && i <= internalMaxKeyCount; i++ )
             {
                 cleanCrashedGSPP( cursor, treeNode.childOffset( i ), cleanedPointers );
             }

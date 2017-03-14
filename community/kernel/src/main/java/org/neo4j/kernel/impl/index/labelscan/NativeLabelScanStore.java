@@ -391,7 +391,7 @@ public class NativeLabelScanStore implements LabelScanStore
     {
         if ( recoveryStarted )
         {
-            index.completeRecovery();
+            index.cleanCrashPointers();
             recoveryStarted = false;
         }
     }
