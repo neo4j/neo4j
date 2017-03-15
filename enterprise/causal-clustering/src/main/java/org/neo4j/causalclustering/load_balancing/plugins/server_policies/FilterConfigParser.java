@@ -39,19 +39,19 @@ public class FilterConfigParser
     {
         switch ( filterName )
         {
-        case "tags":
+        case "groups":
             if ( args.length < 1 )
             {
                 throw new InvalidFilterSpecification( format( "Invalid number of arguments for filter '%s': %d", filterName, args.length ) );
             }
-            for ( String tag : args )
+            for ( String group : args )
             {
-                if ( tag.matches( "\\W" ) )
+                if ( group.matches( "\\W" ) )
                 {
-                    throw new InvalidFilterSpecification( format( "Invalid tag for filter '%s': '%s'", filterName, tag ) );
+                    throw new InvalidFilterSpecification( format( "Invalid group for filter '%s': '%s'", filterName, group ) );
                 }
             }
-            return new AnyTagFilter( args );
+            return new AnyGroupFilter( args );
         case "min":
             if ( args.length != 1 )
             {

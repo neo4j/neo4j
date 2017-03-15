@@ -32,13 +32,13 @@ public class ServerInfo
 {
     private final AdvertisedSocketAddress boltAddress;
     private MemberId memberId;
-    private Set<String> tags;
+    private Set<String> groups;
 
-    public ServerInfo( AdvertisedSocketAddress boltAddress, MemberId memberId, Set<String> tags )
+    public ServerInfo( AdvertisedSocketAddress boltAddress, MemberId memberId, Set<String> groups )
     {
         this.boltAddress = boltAddress;
         this.memberId = memberId;
-        this.tags = tags;
+        this.groups = groups;
     }
 
     public MemberId memberId()
@@ -51,9 +51,9 @@ public class ServerInfo
         return boltAddress;
     }
 
-    Set<String> tags()
+    Set<String> groups()
     {
-        return tags;
+        return groups;
     }
 
     @Override
@@ -65,18 +65,18 @@ public class ServerInfo
         { return false; }
         ServerInfo that = (ServerInfo) o;
         return Objects.equals( boltAddress, that.boltAddress ) && Objects.equals( memberId, that.memberId ) &&
-               Objects.equals( tags, that.tags );
+               Objects.equals( groups, that.groups );
     }
 
     @Override
     public int hashCode()
     {
-        return Objects.hash( boltAddress, memberId, tags );
+        return Objects.hash( boltAddress, memberId, groups );
     }
 
     @Override
     public String toString()
     {
-        return "ServerInfo{" + "boltAddress=" + boltAddress + ", memberId=" + memberId + ", tags=" + tags + '}';
+        return "ServerInfo{" + "boltAddress=" + boltAddress + ", memberId=" + memberId + ", groups=" + groups + '}';
     }
 }

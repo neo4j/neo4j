@@ -323,9 +323,9 @@ public class CausalClusteringSettings implements LoadableConfig
     public static final Setting<String> user_defined_upstream_selection_strategy =
             setting( "causal_clustering.user_defined_upstream_strategy", STRING, "" );
 
-    @Description( "Tags for the server used when configuring load balancing and replication policies." )
-    public static final Setting<List<String>> server_tags =
-            setting( "causal_clustering.server_tags", list( ",", STRING ), "" );
+    @Description( "A list of group names for the server used when configuring load balancing and replication policies." )
+    public static final Setting<List<String>> server_groups =
+            setting( "causal_clustering.server_groups", list( ",", STRING ), "" );
 
     @Description( "The load balancing plugin to use." )
     public static final Setting<String> load_balancing_plugin =

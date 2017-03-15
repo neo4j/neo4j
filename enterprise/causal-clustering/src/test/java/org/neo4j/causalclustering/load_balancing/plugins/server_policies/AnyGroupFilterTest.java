@@ -31,13 +31,13 @@ import org.neo4j.helpers.AdvertisedSocketAddress;
 import static org.junit.Assert.assertEquals;
 import static org.neo4j.helpers.collection.Iterators.asSet;
 
-public class AnyTagFilterTest
+public class AnyGroupFilterTest
 {
     @Test
-    public void shouldReturnServersMatchingAnyTag() throws Exception
+    public void shouldReturnServersMatchingAnyGroup() throws Exception
     {
         // given
-        AnyTagFilter tagFilter = new AnyTagFilter( asSet( "china-west", "europe" ) );
+        AnyGroupFilter groupFilter = new AnyGroupFilter( asSet( "china-west", "europe" ) );
 
         ServerInfo serverA = new ServerInfo( new AdvertisedSocketAddress( "bolt", 1 ), new MemberId( UUID.randomUUID() ), asSet( "china-west" ) );
         ServerInfo serverB = new ServerInfo( new AdvertisedSocketAddress( "bolt", 2 ), new MemberId( UUID.randomUUID() ), asSet( "europe" ) );
@@ -51,7 +51,7 @@ public class AnyTagFilterTest
         Set<ServerInfo> data = asSet( serverA, serverB, serverC, serverD, serverE, serverF, serverG, serverH );
 
         // when
-        Set<ServerInfo> output = tagFilter.apply( data );
+        Set<ServerInfo> output = groupFilter.apply( data );
 
         // then
         Set<Integer> ports = new HashSet<>();

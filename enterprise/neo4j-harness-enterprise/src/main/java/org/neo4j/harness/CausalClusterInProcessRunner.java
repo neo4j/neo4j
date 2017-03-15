@@ -128,7 +128,7 @@ public class CausalClusterInProcessRunner
                 builder.withConfig( CausalClusteringSettings.raft_listen_address.name(), specifyPortOnly( raftPort ) );
 
                 builder.withConfig( CausalClusteringSettings.expected_core_cluster_size.name(), String.valueOf( nCores ) );
-                builder.withConfig( CausalClusteringSettings.server_tags.name(), "core," + "core" + coreId );
+                builder.withConfig( CausalClusteringSettings.server_groups.name(), "core," + "core" + coreId );
                 configureConnectors( boltPort, httpPort, builder );
 
                 builder.withConfig( ServerSettings.jmx_module_enabled.name(), Settings.FALSE );
@@ -165,7 +165,7 @@ public class CausalClusterInProcessRunner
                 builder.withConfig( CausalClusteringSettings.initial_discovery_members.name(), String.join( ",", initialMembers ) );
                 builder.withConfig( CausalClusteringSettings.transaction_listen_address.name(), specifyPortOnly( txPort ) );
 
-                builder.withConfig( CausalClusteringSettings.server_tags.name(), "replica," + "replica" + replicaId );
+                builder.withConfig( CausalClusteringSettings.server_groups.name(), "replica," + "replica" + replicaId );
                 configureConnectors( boltPort, httpPort, builder );
 
                 builder.withConfig( ServerSettings.jmx_module_enabled.name(), Settings.FALSE );

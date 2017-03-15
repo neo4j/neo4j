@@ -55,12 +55,12 @@ public class UserDefinedConfigurationStrategyTest
         // given
         MemberId theCoreMemberId = new MemberId( UUID.randomUUID() );
         TopologyService topologyService = fakeTopologyService( fakeCoreTopology( theCoreMemberId ),
-                fakeReadReplicaTopology( memberIDs( 100 ), new NoEastTagGenerator() ) );
+                fakeReadReplicaTopology( memberIDs( 100 ), new NoEastGroupGenerator() ) );
 
         UserDefinedConfigurationStrategy strategy = new UserDefinedConfigurationStrategy();
         Config config = Config.defaults()
                 .with( stringMap( CausalClusteringSettings.user_defined_upstream_selection_strategy.name(),
-                        "tags(east); tags(core); halt()" ) );
+                        "groups(east); groups(core); halt()" ) );
 
         strategy.setConfig( config );
         strategy.setTopologyService( topologyService );
@@ -73,7 +73,7 @@ public class UserDefinedConfigurationStrategyTest
         assertEquals( theCoreMemberId, memberId.get() );
     }
 
-    private ReadReplicaTopology fakeReadReplicaTopology( MemberId[] readReplicaIds, NoEastTagGenerator tagGenerator )
+    private ReadReplicaTopology fakeReadReplicaTopology( MemberId[] readReplicaIds, NoEastGroupGenerator groupGenerator )
     {
         assert readReplicaIds.length > 0;
 
@@ -86,7 +86,7 @@ public class UserDefinedConfigurationStrategyTest
             readReplicas.put( memberId, new ReadReplicaInfo( new ClientConnectorAddresses( singletonList(
                     new ClientConnectorAddresses.ConnectorUri( ClientConnectorAddresses.Scheme.bolt,
                             new AdvertisedSocketAddress( "localhost", 11000 + offset ) ) ) ),
-                    new AdvertisedSocketAddress( "localhost", 10000 + offset ), tagGenerator.get( memberId ) ) );
+                    new AdvertisedSocketAddress( "localhost", 10000 + offset ), groupGenerator.get( memberId ) ) );
 
             offset++;
         }
@@ -178,7 +178,7 @@ public class UserDefinedConfigurationStrategyTest
         return new ReadReplicaTopology( readReplicas );
     }
 
-    private static class NoEastTagGenerator
+    private static class NoEastGroupGenerator
     {
         private static final String[] SOME_ORDINALS = {"north", "south", "west"};
         private static final Random random = new Random();

@@ -51,7 +51,7 @@ import static java.util.Collections.emptyMap;
 import static java.util.concurrent.TimeUnit.SECONDS;
 import static org.neo4j.test.assertion.Assert.assertEventually;
 
-public class ServerTagsIT
+public class ServerGroupsIT
 {
     @Rule
     public TestDirectory testDir = TestDirectory.testDirectory();
@@ -70,16 +70,16 @@ public class ServerTagsIT
     }
 
     @Test
-    public void shouldUpdateTagsOnStart() throws Exception
+    public void shouldUpdateGroupsOnStart() throws Exception
     {
         AtomicReference<String> suffix = new AtomicReference<>( "before" );
         List<List<String>> expected;
 
         Map<String,IntFunction<String>> instanceCoreParams = new HashMap<>();
-        instanceCoreParams.put( CausalClusteringSettings.server_tags.name(), ( id ) -> String.join( ", ", makeCoreTags( suffix.get(), id ) ) );
+        instanceCoreParams.put( CausalClusteringSettings.server_groups.name(), ( id ) -> String.join( ", ", makeCoreGroups( suffix.get(), id ) ) );
 
         Map<String,IntFunction<String>> instanceReplicaParams = new HashMap<>();
-        instanceReplicaParams.put( CausalClusteringSettings.server_tags.name(), ( id ) -> String.join( ", ", makeReplicaTags( suffix.get(), id ) ) );
+        instanceReplicaParams.put( CausalClusteringSettings.server_groups.name(), ( id ) -> String.join( ", ", makeReplicaGroups( suffix.get(), id ) ) );
 
         int nServers = 3;
         cluster = new Cluster( testDir.directory( "cluster" ), nServers, nServers,
@@ -93,41 +93,41 @@ public class ServerTagsIT
         expected = new ArrayList<>();
         for ( CoreClusterMember core : cluster.coreMembers() )
         {
-            expected.add( makeCoreTags( suffix.get(), core.serverId() ) );
-            expected.add( makeReplicaTags( suffix.get(), core.serverId() ) );
+            expected.add( makeCoreGroups( suffix.get(), core.serverId() ) );
+            expected.add( makeReplicaGroups( suffix.get(), core.serverId() ) );
         }
 
         for ( CoreClusterMember core : cluster.coreMembers() )
         {
-            assertEventually( core + " should have tags", () -> getServerTags( core.database() ),
-                    new TagsMatcher( expected ), 30, SECONDS );
+            assertEventually( core + " should have groups", () -> getServerGroups( core.database() ),
+                    new GroupsMatcher( expected ), 30, SECONDS );
         }
 
         // when
-        expected.remove( makeCoreTags( suffix.get(), 1 ) );
-        expected.remove( makeReplicaTags( suffix.get(), 2 ) );
+        expected.remove( makeCoreGroups( suffix.get(), 1 ) );
+        expected.remove( makeReplicaGroups( suffix.get(), 2 ) );
         cluster.getCoreMemberById( 1 ).shutdown();
         cluster.getReadReplicaById( 2 ).shutdown();
 
-        suffix.set( "after" ); // should update tags of restarted servers
+        suffix.set( "after" ); // should update groups of restarted servers
         cluster.addCoreMemberWithId( 1 ).start();
         cluster.addReadReplicaWithId( 2 ).start();
-        expected.add( makeCoreTags( suffix.get(), 1 ) );
-        expected.add( makeReplicaTags( suffix.get(), 2 ) );
+        expected.add( makeCoreGroups( suffix.get(), 1 ) );
+        expected.add( makeReplicaGroups( suffix.get(), 2 ) );
 
         // then
         for ( CoreClusterMember core : cluster.coreMembers() )
         {
-            assertEventually( core + " should have tags", () -> getServerTags( core.database() ),
-                    new TagsMatcher( expected ), 30, SECONDS );
+            assertEventually( core + " should have groups", () -> getServerGroups( core.database() ),
+                    new GroupsMatcher( expected ), 30, SECONDS );
         }
     }
 
-    class TagsMatcher extends TypeSafeMatcher<List<List<String>>>
+    class GroupsMatcher extends TypeSafeMatcher<List<List<String>>>
     {
         private final List<List<String>> expected;
 
-        TagsMatcher( List<List<String>> expected )
+        GroupsMatcher( List<List<String>> expected )
         {
             this.expected = expected;
         }
@@ -140,17 +140,17 @@ public class ServerTagsIT
                 return false;
             }
 
-            for ( List<String> actualTags : actual )
+            for ( List<String> actualGroups : actual )
             {
                 boolean matched = false;
-                for ( List<String> expectedTags : expected )
+                for ( List<String> expectedGroups : expected )
                 {
-                    if ( actualTags.size() != expectedTags.size() )
+                    if ( actualGroups.size() != expectedGroups.size() )
                     {
                         continue;
                     }
 
-                    if ( !actualTags.containsAll( expectedTags ) )
+                    if ( !actualGroups.containsAll( expectedGroups ) )
                     {
                         continue;
                     }
@@ -175,19 +175,19 @@ public class ServerTagsIT
         }
     }
 
-    private List<String> makeCoreTags( String suffix, int id )
+    private List<String> makeCoreGroups( String suffix, int id )
     {
         return asList( format( "core-%d-%s", id, suffix ), "core" );
     }
 
-    private List<String> makeReplicaTags( String suffix, int id )
+    private List<String> makeReplicaGroups( String suffix, int id )
     {
         return asList( format( "replica-%d-%s", id, suffix ), "replica" );
     }
 
-    private List<List<String>> getServerTags( CoreGraphDatabase db )
+    private List<List<String>> getServerGroups( CoreGraphDatabase db )
     {
-        List<List<String>> serverTags = new ArrayList<>();
+        List<List<String>> serverGroups = new ArrayList<>();
         try ( InternalTransaction tx = db.beginTransaction( KernelTransaction.Type.explicit, EnterpriseSecurityContext.AUTH_DISABLED ) )
         {
             try ( Result result = db.execute( tx, "CALL dbms.cluster.overview", emptyMap() ) )
@@ -195,11 +195,11 @@ public class ServerTagsIT
                 while ( result.hasNext() )
                 {
                     @SuppressWarnings( "unchecked" )
-                    List<String> tags = (List<String>) result.next().get( "tags" );
-                    serverTags.add( tags );
+                    List<String> groups = (List<String>) result.next().get( "groups" );
+                    serverGroups.add( groups );
                 }
             }
         }
-        return serverTags;
+        return serverGroups;
     }
 }

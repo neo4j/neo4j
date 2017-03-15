@@ -133,7 +133,7 @@ public class ServerPoliciesPlugin implements LoadBalancingPlugin
     {
         Set<ServerInfo> possibleReaders = rrTopology.members().entrySet().stream()
                 .map( entry -> new ServerInfo( entry.getValue().connectors().boltAddress(), entry.getKey(),
-                        entry.getValue().tags() ) )
+                        entry.getValue().groups() ) )
                 .collect( Collectors.toSet() );
 
         if ( allowReadsOnFollowers || possibleReaders.size() == 0 )
@@ -156,7 +156,7 @@ public class ServerPoliciesPlugin implements LoadBalancingPlugin
                 {
                     CoreServerInfo serverInfo = coreServerInfo.get();
                     possibleReaders.add(
-                            new ServerInfo( serverInfo.connectors().boltAddress(), validCore, serverInfo.tags() ) );
+                            new ServerInfo( serverInfo.connectors().boltAddress(), validCore, serverInfo.groups() ) );
                 }
             }
         }

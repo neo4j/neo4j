@@ -44,9 +44,9 @@ class FilterBuilder
         return this;
     }
 
-    FilterBuilder tags( String... tags )
+    FilterBuilder groups( String... groups )
     {
-        current.add( new AnyTagFilter( tags ) );
+        current.add( new AnyGroupFilter( groups ) );
         return this;
     }
 

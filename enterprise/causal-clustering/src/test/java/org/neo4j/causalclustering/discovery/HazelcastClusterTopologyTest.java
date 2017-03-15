@@ -56,7 +56,7 @@ import static org.neo4j.helpers.collection.Iterators.asSet;
 
 public class HazelcastClusterTopologyTest
 {
-    private static final Set<String> TAGS = asSet( "tag1", "tag2", "tag3" );
+    private static final Set<String> GROUPS = asSet( "group1", "group2", "group3" );
 
     private final HazelcastInstance hzInstance = mock( HazelcastInstance.class );
 
@@ -64,9 +64,9 @@ public class HazelcastClusterTopologyTest
     public void setup()
     {
         @SuppressWarnings( "unchecked" )
-        MultiMap<String,String> serverTagsMMap = mock( MultiMap.class );
-        when( serverTagsMMap.get( any() ) ).thenReturn( TAGS );
-        when( hzInstance.getMultiMap( anyString() ) ).thenReturn( (MultiMap) serverTagsMMap );
+        MultiMap<String,String> serverGroupsMMap = mock( MultiMap.class );
+        when( serverGroupsMMap.get( any() ) ).thenReturn( GROUPS );
+        when( hzInstance.getMultiMap( anyString() ) ).thenReturn( (MultiMap) serverGroupsMMap );
     }
 
     @Test
@@ -106,7 +106,7 @@ public class HazelcastClusterTopologyTest
             assertEquals( new AdvertisedSocketAddress( "tx", i + 1 ), coreServerInfo.getCatchupServer() );
             assertEquals( new AdvertisedSocketAddress( "raft", i + 1 ), coreServerInfo.getRaftServer() );
             assertEquals( new AdvertisedSocketAddress( "bolt", i + 1 ), coreServerInfo.connectors().boltAddress() );
-            assertEquals( coreServerInfo.tags(), TAGS );
+            assertEquals( coreServerInfo.groups(), GROUPS );
         }
     }
 

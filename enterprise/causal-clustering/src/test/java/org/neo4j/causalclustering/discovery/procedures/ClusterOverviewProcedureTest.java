@@ -100,14 +100,14 @@ public class ClusterOverviewProcedureTest
         private final UUID memberId;
         private final int boltPort;
         private final Role role;
-        private final Set<String> tags;
+        private final Set<String> groups;
 
-        IsRecord( UUID memberId, int boltPort, Role role, Set<String> tags )
+        IsRecord( UUID memberId, int boltPort, Role role, Set<String> groups )
         {
             this.memberId = memberId;
             this.boltPort = boltPort;
             this.role = role;
-            this.tags = tags;
+            this.groups = groups;
         }
 
         @Override
@@ -135,8 +135,8 @@ public class ClusterOverviewProcedureTest
                 return false;
             }
 
-            Set<String> recordTags = Iterables.asSet( (List<String>) record[3] );
-            if ( !tags.equals( recordTags ) )
+            Set<String> recordGroups = Iterables.asSet( (List<String>) record[3] );
+            if ( !groups.equals( recordGroups ) )
             {
                 return false;
             }
@@ -151,7 +151,7 @@ public class ClusterOverviewProcedureTest
                     "memberId=" + memberId +
                     ", boltPort=" + boltPort +
                     ", role=" + role +
-                    ", tags=" + tags +
+                    ", groups=" + groups +
                     '}' );
         }
     }

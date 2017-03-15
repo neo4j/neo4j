@@ -29,38 +29,38 @@ import org.neo4j.causalclustering.load_balancing.filters.Filter;
 import static org.neo4j.helpers.collection.Iterators.asSet;
 
 /**
- * Only returns servers matching any of the supplied tags.
+ * Only returns servers matching any of the supplied groups.
  */
-public class AnyTagFilter implements Filter<ServerInfo>
+public class AnyGroupFilter implements Filter<ServerInfo>
 {
-    private final Predicate<ServerInfo> matchesAnyTag;
-    private final Set<String> tags;
+    private final Predicate<ServerInfo> matchesAnyGroup;
+    private final Set<String> groups;
 
-    AnyTagFilter( String... tags )
+    AnyGroupFilter( String... groups )
     {
-        this( asSet( tags ) );
+        this( asSet( groups ) );
     }
 
-    AnyTagFilter( Set<String> tags )
+    AnyGroupFilter( Set<String> groups )
     {
-        this.matchesAnyTag = serverInfo ->
+        this.matchesAnyGroup = serverInfo ->
         {
-            for ( String tag : serverInfo.tags() )
+            for ( String group : serverInfo.groups() )
             {
-                if ( tags.contains( tag ) )
+                if ( groups.contains( group ) )
                 {
                     return true;
                 }
             }
             return false;
         };
-        this.tags = tags;
+        this.groups = groups;
     }
 
     @Override
     public Set<ServerInfo> apply( Set<ServerInfo> data )
     {
-        return data.stream().filter( matchesAnyTag ).collect( Collectors.toSet() );
+        return data.stream().filter( matchesAnyGroup ).collect( Collectors.toSet() );
     }
 
     @Override
@@ -70,21 +70,21 @@ public class AnyTagFilter implements Filter<ServerInfo>
         { return true; }
         if ( o == null || getClass() != o.getClass() )
         { return false; }
-        AnyTagFilter that = (AnyTagFilter) o;
-        return Objects.equals( tags, that.tags );
+        AnyGroupFilter that = (AnyGroupFilter) o;
+        return Objects.equals( groups, that.groups );
     }
 
     @Override
     public int hashCode()
     {
-        return Objects.hash( tags );
+        return Objects.hash( groups );
     }
 
     @Override
     public String toString()
     {
-        return "AnyTagFilter{" +
-               "tags=" + tags +
+        return "AnyGroupFilter{" +
+               "groups=" + groups +
                '}';
     }
 }
