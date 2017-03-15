@@ -296,14 +296,8 @@ public class NodeCursorTest
                     asSet( asArray( state.getNodeState( node.id() ).labelDiffSets().getAdded() ) );
             assertEquals( expectedLabels, node.labels() );
             assertEquals( StatementConstants.NO_SUCH_PROPERTY, node.nextPropertyId() );
-            if ( node.isDense() )
-            {
-                assertEquals( StatementConstants.NO_SUCH_RELATIONSHIP, node.nextGroupId() );
-            }
-            else
-            {
-                assertEquals( StatementConstants.NO_SUCH_RELATIONSHIP, node.nextRelationshipId() );
-            }
+            assertFalse( node.isDense() );
+            assertEquals( StatementConstants.NO_SUCH_RELATIONSHIP, node.nextRelationshipId() );
             PrimitiveIntIterator iterator = expectedLabels.iterator();
             while ( iterator.hasNext() )
             {
