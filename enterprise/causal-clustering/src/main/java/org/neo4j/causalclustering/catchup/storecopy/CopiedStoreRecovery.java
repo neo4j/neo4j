@@ -23,6 +23,7 @@ import java.io.File;
 
 import org.neo4j.graphdb.GraphDatabaseService;
 import org.neo4j.graphdb.factory.GraphDatabaseSettings;
+import org.neo4j.graphdb.factory.GraphDatabaseSettings.LabelIndex;
 import org.neo4j.helpers.Exceptions;
 import org.neo4j.io.pagecache.PageCache;
 import org.neo4j.kernel.configuration.Config;
@@ -98,6 +99,7 @@ public class CopiedStoreRecovery extends LifecycleAdapter
                 .setKernelExtensions( kernelExtensions )
                 .setUserLogProvider( NullLogProvider.getInstance() )
                 .newEmbeddedDatabaseBuilder( tempStore )
+                .setConfig( GraphDatabaseSettings.label_index, LabelIndex.AUTO.name() )
                 .setConfig( "dbms.backup.enabled", Settings.FALSE )
                 .setConfig( GraphDatabaseSettings.logs_directory, tempStore.getAbsolutePath() )
                 .setConfig( GraphDatabaseSettings.keep_logical_logs, Settings.TRUE )

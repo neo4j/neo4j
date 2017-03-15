@@ -1533,6 +1533,12 @@ public class BatchInsertTest
         {
             return false;
         }
+
+        @Override
+        public boolean hasStore()
+        {
+            return false;
+        }
     }
 
     interface NoDependencies

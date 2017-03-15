@@ -32,6 +32,7 @@ import java.util.stream.Stream;
 import org.neo4j.com.Response;
 import org.neo4j.graphdb.GraphDatabaseService;
 import org.neo4j.graphdb.factory.GraphDatabaseSettings;
+import org.neo4j.graphdb.factory.GraphDatabaseSettings.LabelIndex;
 import org.neo4j.helpers.CancellationRequest;
 import org.neo4j.helpers.collection.Visitor;
 import org.neo4j.io.fs.FileSystemAbstraction;
@@ -343,7 +344,7 @@ public class StoreCopyClient
                 .setKernelExtensions( kernelExtensions )
                 .setUserLogProvider( NullLogProvider.getInstance() )
                 .newEmbeddedDatabaseBuilder( tempStore.getAbsoluteFile() )
-                .setConfig( GraphDatabaseSettings.label_index, config.get( GraphDatabaseSettings.label_index ) )
+                .setConfig( GraphDatabaseSettings.label_index, LabelIndex.AUTO.name() )
                 .setConfig( "dbms.backup.enabled", Settings.FALSE )
                 .setConfig( GraphDatabaseSettings.logs_directory, tempStore.getAbsolutePath() )
                 .setConfig( GraphDatabaseSettings.keep_logical_logs, Settings.TRUE )
