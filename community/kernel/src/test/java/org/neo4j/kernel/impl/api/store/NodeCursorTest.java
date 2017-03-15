@@ -140,8 +140,7 @@ public class NodeCursorTest
 
     @Theory
     @RepeatRule.Repeat( times = 2 )
-    public void twoElementsInAppendMode( LongFunction<Operation> op0, LongFunction<Operation> op1 )
-            throws Throwable
+    public void twoElementsInAppendMode( LongFunction<Operation> op0, LongFunction<Operation> op1 ) throws Throwable
     {
         // given
         TestRun test = new TestRun( APPEND, new Operation[]{op0.apply( 0 ), op1.apply( 1 )} );
@@ -153,8 +152,7 @@ public class NodeCursorTest
 
     @Theory
     @RepeatRule.Repeat( times = 2 )
-    public void twoElementsInFetchMode( LongFunction<Operation> op0, LongFunction<Operation> op1 )
-            throws Throwable
+    public void twoElementsInFetchMode( LongFunction<Operation> op0, LongFunction<Operation> op1 ) throws Throwable
     {
         // given
         TestRun test = new TestRun( FETCH, new Operation[]{op0.apply( 0 ), op1.apply( 1 )} );
@@ -222,8 +220,7 @@ public class NodeCursorTest
     public void shouldCallTheConsumerOnClose()
     {
         MutableBoolean called = new MutableBoolean();
-        NodeCursor cursor =
-                new NodeCursor( nodeRecord, c -> called.setTrue(), recordCursors, NO_LOCK_SERVICE );
+        NodeCursor cursor = new NodeCursor( nodeRecord, c -> called.setTrue(), recordCursors, NO_LOCK_SERVICE );
         cursor.init( mock( Progression.class ), mock( ReadableTransactionState.class ) );
         assertFalse( called.booleanValue() );
 
@@ -507,8 +504,7 @@ public class NodeCursorTest
             this.ops = ops;
         }
 
-        Cursor<NodeItem> initialize( NodeCursor cursor, RecordCursor<NodeRecord> recordCursor,
-                NodeRecord nodeRecord )
+        Cursor<NodeItem> initialize( NodeCursor cursor, RecordCursor<NodeRecord> recordCursor, NodeRecord nodeRecord )
         {
             for ( Operation op : ops )
             {
@@ -567,8 +563,13 @@ public class NodeCursorTest
                 }
             }
 
+            state = state == null ? new TxState() : state;
+
+            int injectedId = 100_000;
             for ( Operation op : operations )
             {
+                // simulates tx changes after the cursor has been initialized, the cursor should no return this ids!
+                state.nodeDoCreate( injectedId++ );
                 if ( !(op instanceof DeletedNode) )
                 {
                     assertTrue( cursor.next() );

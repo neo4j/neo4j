@@ -70,6 +70,9 @@ public class NodeCursor implements NodeItem, Cursor<NodeItem>
     {
         this.progression = progression;
         this.state = state;
+        this.added = state != null && progression.mode() == APPEND
+                     ? state.addedAndRemovedNodes().getAdded().iterator()
+                     : null;
         return this;
     }
 
@@ -96,11 +99,6 @@ public class NodeCursor implements NodeItem, Cursor<NodeItem>
                 recordFromTxState( id );
                 return true;
             }
-        }
-
-        if ( added == null && state != null && progression.mode() == APPEND )
-        {
-            added = state.addedAndRemovedNodes().getAdded().iterator();
         }
 
         if ( added != null && added.hasNext() )
