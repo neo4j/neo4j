@@ -185,7 +185,7 @@ public class StorageLayerRelTypesAndDegreeTest extends StorageLayerTest
         int loopRelCount = randomRelCount();
 
         long nodeId = createNode( inRelCount, outRelCount, loopRelCount );
-        StoreNodeCursor cursor = newCursor( nodeId );
+        NodeCursor cursor = newCursor( nodeId );
 
         for ( TestRelType type : typesToDelete )
         {
@@ -219,7 +219,7 @@ public class StorageLayerRelTypesAndDegreeTest extends StorageLayerTest
         int loopRelCount = randomRelCount();
 
         long nodeId = createNode( inRelCount, outRelCount, loopRelCount );
-        StoreNodeCursor cursor = newCursor( nodeId );
+        NodeCursor cursor = newCursor( nodeId );
 
         if ( modifyInChain )
         {
@@ -239,13 +239,13 @@ public class StorageLayerRelTypesAndDegreeTest extends StorageLayerTest
         assertEquals( inRelCount + outRelCount + loopRelCount, degreeForDirection( cursor, BOTH ) );
     }
 
-    private int degreeForDirection( StoreNodeCursor cursor, Direction direction )
+    private int degreeForDirection( NodeCursor cursor, Direction direction )
     {
         return disk
                 .degreeRelationshipsInGroup( disk.newStatement(), cursor.id(), cursor.nextGroupId(), direction, null );
     }
 
-    private int degreeForDirectionAndType( StoreNodeCursor cursor, Direction direction, int relType )
+    private int degreeForDirectionAndType( NodeCursor cursor, Direction direction, int relType )
     {
         return disk.degreeRelationshipsInGroup( disk.newStatement(), cursor.id(), cursor.nextGroupId(), direction,
                 relType );
@@ -259,7 +259,7 @@ public class StorageLayerRelTypesAndDegreeTest extends StorageLayerTest
         int loopRelCount = randomRelCount();
 
         long nodeId = createNode( inRelCount, outRelCount, loopRelCount );
-        StoreNodeCursor cursor = newCursor( nodeId );
+        NodeCursor cursor = newCursor( nodeId );
 
         for ( TestRelType type : typesToDelete )
         {
@@ -301,7 +301,7 @@ public class StorageLayerRelTypesAndDegreeTest extends StorageLayerTest
         int loopRelCount = randomRelCount();
 
         long nodeId = createNode( inRelCount, outRelCount, loopRelCount );
-        StoreNodeCursor cursor = newCursor( nodeId );
+        NodeCursor cursor = newCursor( nodeId );
 
         if ( modifyInChain )
         {
@@ -370,12 +370,12 @@ public class StorageLayerRelTypesAndDegreeTest extends StorageLayerTest
         long nodeId = createNode( inRelCount, outRelCount, loopRelCount );
         nodeChanger.accept( nodeId );
 
-        StoreNodeCursor cursor = newCursor( nodeId );
+        NodeCursor cursor = newCursor( nodeId );
 
         assertEquals( expectedTypes, relTypes( cursor ) );
     }
 
-    private Set<TestRelType> relTypes( StoreNodeCursor cursor )
+    private Set<TestRelType> relTypes( NodeCursor cursor )
     {
         return mapToSet( disk.relationshipTypes( disk.newStatement(), cursor.get() ).iterator(), this::relTypeForId );
     }
@@ -388,7 +388,7 @@ public class StorageLayerRelTypesAndDegreeTest extends StorageLayerTest
         int loopRelCount = randomRelCount();
 
         long nodeId = createNode( inRelCount, outRelCount, loopRelCount );
-        StoreNodeCursor cursor = newCursor( nodeId );
+        NodeCursor cursor = newCursor( nodeId );
 
         for ( TestRelType type : typesToDelete )
         {
@@ -436,7 +436,7 @@ public class StorageLayerRelTypesAndDegreeTest extends StorageLayerTest
         int loopRelCount = randomRelCount();
 
         long nodeId = createNode( inRelCount, outRelCount, loopRelCount );
-        StoreNodeCursor cursor = newCursor( nodeId );
+        NodeCursor cursor = newCursor( nodeId );
 
         if ( modifyInChain )
         {
@@ -470,9 +470,9 @@ public class StorageLayerRelTypesAndDegreeTest extends StorageLayerTest
     }
 
     @SuppressWarnings( "unchecked" )
-    private StoreNodeCursor newCursor( long nodeId )
+    private NodeCursor newCursor( long nodeId )
     {
-        StoreNodeCursor cursor = new StoreNodeCursor( new NodeRecord( -1 ), mock( Consumer.class ),
+        NodeCursor cursor = new NodeCursor( new NodeRecord( -1 ), mock( Consumer.class ),
                 new RecordCursors( resolveNeoStores() ), NO_LOCK_SERVICE );
         cursor.init( new SingleNodeProgression( nodeId ), null );
         assertTrue( cursor.next() );
