@@ -26,13 +26,12 @@ import java.util.UUID;
 import org.hamcrest.Matchers;
 import org.junit.Test;
 
-import org.neo4j.causalclustering.identity.ClusterId;
 import org.neo4j.causalclustering.identity.MemberId;
 
 import static org.hamcrest.MatcherAssert.assertThat;
 import static org.mockito.Mockito.mock;
 
-public class CoreTopologyTest
+public class ReadReplicaTopologyTest
 {
     @Test
     public void identicalTopologiesShouldHaveNoDifference() throws Exception
@@ -41,11 +40,11 @@ public class CoreTopologyTest
         UUID one = UUID.randomUUID();
         UUID two = UUID.randomUUID();
 
-        Map<MemberId,CoreServerInfo> coreMembers = new HashMap<>();
-        coreMembers.put( new MemberId( one ), mock(CoreServerInfo.class) );
-        coreMembers.put( new MemberId( two ), mock(CoreServerInfo.class) );
+        Map<MemberId,ReadReplicaInfo> readReplicaMembers = new HashMap<>();
+        readReplicaMembers.put( new MemberId( one ), mock(ReadReplicaInfo.class) );
+        readReplicaMembers.put( new MemberId( two ), mock(ReadReplicaInfo.class) );
 
-        CoreTopology topology = new CoreTopology( new ClusterId( UUID.randomUUID() ), true, coreMembers );
+        ReadReplicaTopology topology = new ReadReplicaTopology( readReplicaMembers );
 
         // when
         TopologyDifference diff =  topology.difference(topology);
@@ -62,19 +61,19 @@ public class CoreTopologyTest
         UUID one = UUID.randomUUID();
         UUID two = UUID.randomUUID();
 
-        Map<MemberId,CoreServerInfo> initialMembers = new HashMap<>();
-        initialMembers.put( new MemberId( one ), mock(CoreServerInfo.class) );
-        initialMembers.put( new MemberId( two ), mock(CoreServerInfo.class) );
+        Map<MemberId,ReadReplicaInfo> initialMembers = new HashMap<>();
+        initialMembers.put( new MemberId( one ), mock(ReadReplicaInfo.class) );
+        initialMembers.put( new MemberId( two ), mock(ReadReplicaInfo.class) );
 
-        Map<MemberId,CoreServerInfo> newMembers = new HashMap<>();
-        newMembers.put( new MemberId( one ), mock(CoreServerInfo.class) );
-        newMembers.put( new MemberId( two ), mock(CoreServerInfo.class) );
-        newMembers.put( new MemberId( UUID.randomUUID() ), mock(CoreServerInfo.class) );
+        Map<MemberId,ReadReplicaInfo> newMembers = new HashMap<>();
+        newMembers.put( new MemberId( one ), mock(ReadReplicaInfo.class) );
+        newMembers.put( new MemberId( two ), mock(ReadReplicaInfo.class) );
+        newMembers.put( new MemberId( UUID.randomUUID() ), mock(ReadReplicaInfo.class) );
 
-        CoreTopology topology = new CoreTopology( new ClusterId( UUID.randomUUID() ), true, initialMembers );
+        ReadReplicaTopology topology = new ReadReplicaTopology( initialMembers );
 
         // when
-        TopologyDifference diff =  topology.difference(new CoreTopology( new ClusterId( UUID.randomUUID() ), true, newMembers ));
+        TopologyDifference diff =  topology.difference(new ReadReplicaTopology( newMembers ));
 
         // then
         assertThat( diff.added().size(), Matchers.equalTo( 1 ) );
@@ -88,17 +87,17 @@ public class CoreTopologyTest
         UUID one = UUID.randomUUID();
         UUID two = UUID.randomUUID();
 
-        Map<MemberId,CoreServerInfo> initialMembers = new HashMap<>();
-        initialMembers.put( new MemberId( one ), mock(CoreServerInfo.class) );
-        initialMembers.put( new MemberId( two ), mock(CoreServerInfo.class) );
+        Map<MemberId,ReadReplicaInfo> initialMembers = new HashMap<>();
+        initialMembers.put( new MemberId( one ), mock(ReadReplicaInfo.class) );
+        initialMembers.put( new MemberId( two ), mock(ReadReplicaInfo.class) );
 
-        Map<MemberId,CoreServerInfo> newMembers = new HashMap<>();
-        newMembers.put( new MemberId( two ), mock(CoreServerInfo.class) );
+        Map<MemberId,ReadReplicaInfo> newMembers = new HashMap<>();
+        newMembers.put( new MemberId( two ), mock(ReadReplicaInfo.class) );
 
-        CoreTopology topology = new CoreTopology( new ClusterId( UUID.randomUUID() ), true, initialMembers );
+        ReadReplicaTopology topology = new ReadReplicaTopology( initialMembers );
 
         // when
-        TopologyDifference diff =  topology.difference(new CoreTopology( new ClusterId( UUID.randomUUID() ), true, newMembers ));
+        TopologyDifference diff =  topology.difference(new ReadReplicaTopology( newMembers ));
 
         // then
         assertThat( diff.added().size(), Matchers.equalTo( 0 ) );
@@ -110,18 +109,18 @@ public class CoreTopologyTest
     {
         // given
 
-        Map<MemberId,CoreServerInfo> initialMembers = new HashMap<>();
-        initialMembers.put( new MemberId( UUID.randomUUID() ), mock(CoreServerInfo.class) );
-        initialMembers.put( new MemberId( UUID.randomUUID() ), mock(CoreServerInfo.class) );
+        Map<MemberId,ReadReplicaInfo> initialMembers = new HashMap<>();
+        initialMembers.put( new MemberId( UUID.randomUUID() ), mock(ReadReplicaInfo.class) );
+        initialMembers.put( new MemberId( UUID.randomUUID() ), mock(ReadReplicaInfo.class) );
 
-        Map<MemberId,CoreServerInfo> newMembers = new HashMap<>();
-        newMembers.put( new MemberId( UUID.randomUUID() ), mock(CoreServerInfo.class) );
-        newMembers.put( new MemberId( UUID.randomUUID() ), mock(CoreServerInfo.class) );
+        Map<MemberId,ReadReplicaInfo> newMembers = new HashMap<>();
+        newMembers.put( new MemberId( UUID.randomUUID() ), mock(ReadReplicaInfo.class) );
+        newMembers.put( new MemberId( UUID.randomUUID() ), mock(ReadReplicaInfo.class) );
 
-        CoreTopology topology = new CoreTopology( new ClusterId( UUID.randomUUID() ), true, initialMembers );
+        ReadReplicaTopology topology = new ReadReplicaTopology( initialMembers );
 
         // when
-        TopologyDifference diff =  topology.difference(new CoreTopology( new ClusterId( UUID.randomUUID() ), true, newMembers ));
+        TopologyDifference diff =  topology.difference(new ReadReplicaTopology( newMembers ));
 
         // then
         assertThat( diff.added().size(), Matchers.equalTo( 2 ) );
