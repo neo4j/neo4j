@@ -36,7 +36,7 @@ import org.neo4j.collection.primitive.PrimitiveIntSet;
 import org.neo4j.cursor.Cursor;
 import org.neo4j.kernel.api.StatementConstants;
 import org.neo4j.kernel.impl.api.state.TxState;
-import org.neo4j.kernel.impl.api.store.StoreNodeCursor.Progression.Mode;
+import org.neo4j.kernel.impl.api.store.NodeCursor.Progression.Mode;
 import org.neo4j.kernel.impl.locking.Lock;
 import org.neo4j.kernel.impl.store.RecordCursor;
 import org.neo4j.kernel.impl.store.RecordCursors;
@@ -54,14 +54,14 @@ import static org.mockito.Mockito.mock;
 import static org.mockito.Mockito.when;
 import static org.neo4j.collection.primitive.PrimitiveIntCollections.asArray;
 import static org.neo4j.collection.primitive.PrimitiveIntCollections.asSet;
-import static org.neo4j.kernel.impl.api.store.StoreNodeCursor.Progression.Mode.APPEND;
-import static org.neo4j.kernel.impl.api.store.StoreNodeCursor.Progression.Mode.FETCH;
+import static org.neo4j.kernel.impl.api.store.NodeCursor.Progression.Mode.APPEND;
+import static org.neo4j.kernel.impl.api.store.NodeCursor.Progression.Mode.FETCH;
 import static org.neo4j.kernel.impl.locking.LockService.NO_LOCK_SERVICE;
 import static org.neo4j.kernel.impl.store.record.RecordLoad.CHECK;
 import static org.neo4j.kernel.impl.transaction.state.NodeLabelsFieldTest.inlinedLabelsLongRepresentation;
 
 @RunWith( Theories.class )
-public class StoreNodeCursorTest
+public class NodeCursorTest
 {
     /*
      * each test is gonna run twice to make sure we reuse cursor correctly
@@ -76,7 +76,7 @@ public class StoreNodeCursorTest
     @SuppressWarnings( "unchecked" )
     private final RecordCursor<NodeRecord> recordCursor = mock( RecordCursor.class );
     // cursor is shared since it is designed to be reusable
-    private final StoreNodeCursor reusableCursor = new StoreNodeCursor( nodeRecord, i -> {}, recordCursors,
+    private final NodeCursor reusableCursor = new NodeCursor( nodeRecord, i -> {}, recordCursors,
             NO_LOCK_SERVICE );
 
     {
@@ -222,9 +222,9 @@ public class StoreNodeCursorTest
     public void shouldCallTheConsumerOnClose()
     {
         MutableBoolean called = new MutableBoolean();
-        StoreNodeCursor cursor =
-                new StoreNodeCursor( nodeRecord, c -> called.setTrue(), recordCursors, NO_LOCK_SERVICE );
-        cursor.init( mock( StoreNodeCursor.Progression.class ), mock( ReadableTransactionState.class ) );
+        NodeCursor cursor =
+                new NodeCursor( nodeRecord, c -> called.setTrue(), recordCursors, NO_LOCK_SERVICE );
+        cursor.init( mock( NodeCursor.Progression.class ), mock( ReadableTransactionState.class ) );
         assertFalse( called.booleanValue() );
 
         cursor.close();
@@ -513,7 +513,7 @@ public class StoreNodeCursorTest
             this.ops = ops;
         }
 
-        Cursor<NodeItem> initialize( StoreNodeCursor cursor, RecordCursor<NodeRecord> recordCursor,
+        Cursor<NodeItem> initialize( NodeCursor cursor, RecordCursor<NodeRecord> recordCursor,
                 NodeRecord nodeRecord )
         {
             for ( Operation op : ops )
@@ -523,9 +523,9 @@ public class StoreNodeCursorTest
             return cursor.init( createProgression( ops, mode ), state );
         }
 
-        private StoreNodeCursor.Progression createProgression( Operation[] ops, Mode mode )
+        private NodeCursor.Progression createProgression( Operation[] ops, Mode mode )
         {
-            return new StoreNodeCursor.Progression()
+            return new NodeCursor.Progression()
             {
                 private int i = 0;
 
