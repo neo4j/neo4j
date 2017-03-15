@@ -35,6 +35,8 @@ import org.neo4j.kernel.api.impl.index.storage.DirectoryFactory;
 import org.neo4j.kernel.api.impl.index.storage.IndexStorageFactory;
 import org.neo4j.kernel.api.impl.index.storage.PartitionedIndexStorage;
 import org.neo4j.kernel.api.index.InternalIndexState;
+import org.neo4j.kernel.api.schema_new.index.NewIndexDescriptor;
+import org.neo4j.kernel.api.schema_new.index.NewIndexDescriptorFactory;
 import org.neo4j.test.rule.TestDirectory;
 import org.neo4j.test.rule.fs.EphemeralFileSystemRule;
 import org.neo4j.kernel.configuration.Config;
@@ -68,7 +70,8 @@ public class LuceneSchemaIndexCorruptionTest
         LuceneSchemaIndexProvider provider = newFaultySchemaIndexProvider( faultyIndexId, error );
 
         // When
-        InternalIndexState initialState = provider.getInitialState( faultyIndexId );
+        NewIndexDescriptor descriptor = NewIndexDescriptorFactory.forLabel( 1, 1 );
+        InternalIndexState initialState = provider.getInitialState( faultyIndexId, descriptor );
 
         // Then
         assertThat( initialState, equalTo(InternalIndexState.POPULATING) );
@@ -85,7 +88,8 @@ public class LuceneSchemaIndexCorruptionTest
         LuceneSchemaIndexProvider provider = newFaultySchemaIndexProvider( faultyIndexId, error );
 
         // When
-        InternalIndexState initialState = provider.getInitialState( faultyIndexId );
+        NewIndexDescriptor descriptor = NewIndexDescriptorFactory.forLabel( 1, 1 );
+        InternalIndexState initialState = provider.getInitialState( faultyIndexId, descriptor );
 
         // Then
         assertThat( initialState, equalTo(InternalIndexState.POPULATING) );
@@ -102,7 +106,8 @@ public class LuceneSchemaIndexCorruptionTest
         LuceneSchemaIndexProvider provider = newFaultySchemaIndexProvider( faultyIndexId, error );
 
         // When
-        InternalIndexState initialState = provider.getInitialState( faultyIndexId );
+        NewIndexDescriptor descriptor = NewIndexDescriptorFactory.forLabel( 1, 1 );
+        InternalIndexState initialState = provider.getInitialState( faultyIndexId, descriptor );
 
         // Then
         assertThat( initialState, equalTo(InternalIndexState.POPULATING) );

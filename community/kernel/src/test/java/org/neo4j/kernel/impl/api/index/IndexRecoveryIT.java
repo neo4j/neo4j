@@ -106,7 +106,8 @@ public class IndexRecoveryIT
         killFuture.get();
 
         // When
-        when( mockedIndexProvider.getInitialState( anyLong() ) ).thenReturn( InternalIndexState.POPULATING );
+        when( mockedIndexProvider.getInitialState( anyLong(), any( NewIndexDescriptor.class ) ) )
+                .thenReturn( InternalIndexState.POPULATING );
         latch = new CountDownLatch( 1 );
         when( mockedIndexProvider
                 .getPopulator( anyLong(), any( NewIndexDescriptor.class ), any( IndexSamplingConfig.class ) ) )
@@ -145,7 +146,8 @@ public class IndexRecoveryIT
         when( mockedIndexProvider
                 .getPopulator( anyLong(), any( NewIndexDescriptor.class ), any( IndexSamplingConfig.class ) ) )
                 .thenReturn( indexPopulatorWithControlledCompletionTiming( latch ) );
-        when( mockedIndexProvider.getInitialState( anyLong() ) ).thenReturn( InternalIndexState.POPULATING );
+        when( mockedIndexProvider.getInitialState( anyLong(), any( NewIndexDescriptor.class ) ) )
+                .thenReturn( InternalIndexState.POPULATING );
 
         // When
         startDb();
@@ -185,7 +187,8 @@ public class IndexRecoveryIT
 
         // And Given
         killDb();
-        when( mockedIndexProvider.getInitialState( anyLong() ) ).thenReturn( InternalIndexState.ONLINE );
+        when( mockedIndexProvider.getInitialState( anyLong(), any( NewIndexDescriptor.class )) )
+                .thenReturn( InternalIndexState.ONLINE );
         GatheringIndexWriter writer = new GatheringIndexWriter();
         when( mockedIndexProvider.getOnlineAccessor(
                         anyLong(), any( NewIndexDescriptor.class ), any( IndexSamplingConfig.class ) )
@@ -225,7 +228,8 @@ public class IndexRecoveryIT
 
         // And Given
         killDb();
-        when( mockedIndexProvider.getInitialState( anyLong() ) ).thenReturn( InternalIndexState.FAILED );
+        when( mockedIndexProvider.getInitialState( anyLong(), any( NewIndexDescriptor.class ) ) )
+                .thenReturn( InternalIndexState.FAILED );
 
         // When
         startDb();

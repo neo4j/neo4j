@@ -289,7 +289,7 @@ public class LuceneSchemaIndexPopulatorTest
     private void switchToVerification() throws IOException
     {
         indexPopulator.close( true );
-        assertEquals( InternalIndexState.ONLINE, provider.getInitialState( indexId ) );
+        assertEquals( InternalIndexState.ONLINE, provider.getInitialState( indexId, index ) );
         reader = DirectoryReader.open( directory );
         searcher = new IndexSearcher( reader );
     }

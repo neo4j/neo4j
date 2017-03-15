@@ -104,7 +104,7 @@ public class ControlledPopulationSchemaIndexProvider extends SchemaIndexProvider
     }
 
     @Override
-    public InternalIndexState getInitialState( long indexId )
+    public InternalIndexState getInitialState( long indexId, NewIndexDescriptor descriptor )
     {
         return initialIndexState;
     }
