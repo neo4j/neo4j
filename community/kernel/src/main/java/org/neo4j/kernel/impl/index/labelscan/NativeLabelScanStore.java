@@ -41,6 +41,7 @@ import org.neo4j.kernel.api.labelscan.LabelScanStore;
 import org.neo4j.kernel.api.labelscan.LabelScanWriter;
 import org.neo4j.kernel.impl.api.scan.FullStoreChangeStream;
 import org.neo4j.kernel.impl.store.UnderlyingStorageException;
+import org.neo4j.kernel.monitoring.Monitors;
 import org.neo4j.storageengine.api.schema.LabelScanReader;
 
 import static org.neo4j.helpers.Format.duration;
@@ -89,6 +90,11 @@ public class NativeLabelScanStore implements LabelScanStore
      * Monitoring internal events.
      */
     private final Monitor monitor;
+
+    /**
+     * Monitors used to pass down monitor to underlying {@link GBPTree}
+     */
+    private final Monitors monitors;
 
     /**
      * {@link PageCache} to {@link PageCache#map(File, int, java.nio.file.OpenOption...)}
@@ -144,16 +150,17 @@ public class NativeLabelScanStore implements LabelScanStore
     private final NativeLabelScanWriter singleWriter;
 
     public NativeLabelScanStore( PageCache pageCache, File storeDir, FullStoreChangeStream fullStoreChangeStream,
-            boolean readOnly, Monitor monitor, Health health )
+            boolean readOnly, Monitors monitors, Health health )
     {
-        this( pageCache, storeDir, fullStoreChangeStream, readOnly, monitor, health, /*means no opinion about page size*/ 0 );
+        this( pageCache, storeDir, fullStoreChangeStream, readOnly, monitors, health,
+                /*means no opinion about page size*/ 0 );
     }
 
     /*
      * Test access to be able to control page size.
      */
     NativeLabelScanStore( PageCache pageCache, File storeDir, FullStoreChangeStream fullStoreChangeStream,
-            boolean readOnly, Monitor monitor, Health health, int pageSize )
+            boolean readOnly, Monitors monitors, Health health, int pageSize )
     {
         this.pageCache = pageCache;
         this.health = health;
@@ -162,7 +169,8 @@ public class NativeLabelScanStore implements LabelScanStore
         this.storeFile = new File( storeDir, FILE_NAME );
         this.singleWriter = new NativeLabelScanWriter( 1_000 );
         this.readOnly = readOnly;
-        this.monitor = monitor;
+        this.monitors = monitors;
+        this.monitor = monitors.newMonitor( Monitor.class );
     }
 
     /**
@@ -329,7 +337,9 @@ public class NativeLabelScanStore implements LabelScanStore
 
     private void instantiateTree() throws IOException
     {
-        index = new GBPTree<>( pageCache, storeFile, new LabelScanLayout(), pageSize, treeMonitor(), NO_HEADER, health );
+        monitors.addMonitorListener( treeMonitor() );
+        GBPTree.Monitor monitor = monitors.newMonitor( GBPTree.Monitor.class );
+        index = new GBPTree<>( pageCache, storeFile, new LabelScanLayout(), pageSize, monitor, NO_HEADER, health );
     }
 
     private GBPTree.Monitor treeMonitor()

@@ -27,6 +27,7 @@ import java.util.function.Supplier;
 import org.neo4j.helpers.collection.Iterables;
 import org.neo4j.io.fs.FileSystemAbstraction;
 import org.neo4j.io.pagecache.PageCache;
+import org.neo4j.kernel.Health;
 import org.neo4j.kernel.api.TokenNameLookup;
 import org.neo4j.kernel.api.index.SchemaIndexProvider;
 import org.neo4j.kernel.configuration.Config;
@@ -54,9 +55,9 @@ import org.neo4j.kernel.impl.util.JobScheduler;
 import org.neo4j.kernel.impl.util.Neo4jJobScheduler;
 import org.neo4j.kernel.impl.util.SynchronizedArrayIdOrderingQueue;
 import org.neo4j.kernel.internal.DatabaseHealth;
-import org.neo4j.kernel.Health;
 import org.neo4j.kernel.internal.KernelEventHandlers;
 import org.neo4j.kernel.lifecycle.LifeSupport;
+import org.neo4j.kernel.monitoring.Monitors;
 import org.neo4j.logging.LogProvider;
 import org.neo4j.logging.NullLog;
 import org.neo4j.logging.NullLogProvider;
@@ -94,14 +95,16 @@ public class RecordStorageEngineRule extends ExternalResource
 
     private RecordStorageEngine get( FileSystemAbstraction fs, PageCache pageCache,
             SchemaIndexProvider schemaIndexProvider, Health databaseHealth, File storeDirectory,
-            Function<BatchTransactionApplierFacade,BatchTransactionApplierFacade> transactionApplierTransformer )
+            Function<BatchTransactionApplierFacade,BatchTransactionApplierFacade> transactionApplierTransformer,
+            Monitors monitors )
     {
         if ( !fs.fileExists( storeDirectory ) && !fs.mkdir( storeDirectory ) )
         {
             throw new IllegalStateException();
         }
         IdGeneratorFactory idGeneratorFactory = new EphemeralIdGenerator.Factory();
-        LabelScanStoreProvider labelScanStoreProvider = nativeLabelScanStoreProvider( storeDirectory, fs, pageCache );
+        LabelScanStoreProvider labelScanStoreProvider =
+                nativeLabelScanStoreProvider( storeDirectory, fs, pageCache, databaseHealth, monitors );
         LegacyIndexProviderLookup legacyIndexProviderLookup = mock( LegacyIndexProviderLookup.class );
         when( legacyIndexProviderLookup.all() ).thenReturn( Iterables.empty() );
         IndexConfigStore indexConfigStore = new IndexConfigStore( storeDirectory, fs );
@@ -138,6 +141,7 @@ public class RecordStorageEngineRule extends ExternalResource
         private Function<BatchTransactionApplierFacade,BatchTransactionApplierFacade> transactionApplierTransformer =
                 applierFacade -> applierFacade;
         private SchemaIndexProvider schemaIndexProvider = SchemaIndexProvider.NO_INDEX_PROVIDER;
+        private Monitors monitors = new Monitors();
 
         public Builder( FileSystemAbstraction fs, PageCache pageCache )
         {
@@ -170,12 +174,18 @@ public class RecordStorageEngineRule extends ExternalResource
             return this;
         }
 
+        public Builder monitors( Monitors monitors )
+        {
+            this.monitors = monitors;
+            return this;
+        }
+
         // Add more here
 
         public RecordStorageEngine build()
         {
             return get( fs, pageCache, schemaIndexProvider, databaseHealth, storeDirectory,
-                    transactionApplierTransformer );
+                    transactionApplierTransformer, monitors );
         }
     }
 

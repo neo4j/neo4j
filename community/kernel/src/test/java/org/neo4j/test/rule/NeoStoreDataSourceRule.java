@@ -126,7 +126,7 @@ public class NeoStoreDataSourceRule extends ExternalResource
         JobScheduler jobScheduler = mock( JobScheduler.class, RETURNS_MOCKS );
         Monitors monitors = new Monitors();
         LabelScanStoreProvider labelScanStoreProvider =
-                nativeLabelScanStoreProvider( storeDir, fs, pageCache, config, logService );
+                nativeLabelScanStoreProvider( storeDir, fs, pageCache, config, logService, databaseHealth, monitors );
         SystemNanoClock clock = Clocks.nanoClock();
         dataSource = new NeoStoreDataSource( storeDir, config, idGeneratorFactory, IdReuseEligibility.ALWAYS,
                 idConfigurationProvider,
@@ -149,18 +149,20 @@ public class NeoStoreDataSourceRule extends ExternalResource
     }
 
     public static LabelScanStoreProvider nativeLabelScanStoreProvider( File storeDir, FileSystemAbstraction fs,
-            PageCache pageCache )
+            PageCache pageCache, Health databaseHealth, Monitors monitors )
     {
-        return nativeLabelScanStoreProvider( storeDir, fs, pageCache, Config.defaults(), NullLogService.getInstance() );
+        return nativeLabelScanStoreProvider( storeDir, fs, pageCache, Config.defaults(), NullLogService.getInstance(),
+                databaseHealth, monitors );
     }
 
     public static LabelScanStoreProvider nativeLabelScanStoreProvider( File storeDir, FileSystemAbstraction fs,
-            PageCache pageCache, Config config, LogService logService )
+            PageCache pageCache, Config config, LogService logService, Health databaseHealth, Monitors monitors )
     {
         try
         {
             Dependencies dependencies = new Dependencies();
-            dependencies.satisfyDependencies( pageCache, config, IndexStoreView.EMPTY, logService );
+            dependencies.satisfyDependencies( pageCache, config, IndexStoreView.EMPTY, logService, databaseHealth,
+                    monitors );
             KernelContext kernelContext =
                     new SimpleKernelContext( storeDir, DatabaseInfo.COMMUNITY, dependencies );
             return (LabelScanStoreProvider) new NativeLabelScanStoreExtension()

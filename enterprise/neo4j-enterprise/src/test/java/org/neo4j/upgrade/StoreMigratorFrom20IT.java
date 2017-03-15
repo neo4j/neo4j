@@ -44,6 +44,7 @@ import org.neo4j.graphdb.factory.EnterpriseGraphDatabaseFactory;
 import org.neo4j.graphdb.factory.GraphDatabaseSettings;
 import org.neo4j.io.fs.FileSystemAbstraction;
 import org.neo4j.io.pagecache.PageCache;
+import org.neo4j.kernel.Health;
 import org.neo4j.kernel.api.impl.index.storage.DirectoryFactory;
 import org.neo4j.kernel.api.impl.schema.LuceneSchemaIndexProvider;
 import org.neo4j.kernel.api.index.SchemaIndexProvider;
@@ -68,6 +69,7 @@ import org.neo4j.kernel.impl.storemigration.legacystore.LegacyStoreVersionCheck;
 import org.neo4j.kernel.impl.storemigration.participant.SchemaIndexMigrator;
 import org.neo4j.kernel.impl.storemigration.participant.StoreMigrator;
 import org.neo4j.kernel.lifecycle.LifeSupport;
+import org.neo4j.kernel.monitoring.Monitors;
 import org.neo4j.logging.LogProvider;
 import org.neo4j.logging.NullLogProvider;
 import org.neo4j.test.rule.NeoStoreDataSourceRule;
@@ -124,7 +126,8 @@ public class StoreMigratorFrom20IT
         File storeDirectory = storeDir.directory();
         schemaIndexProvider = new LuceneSchemaIndexProvider( fs, DirectoryFactory.PERSISTENT, storeDirectory,
                 NullLogProvider.getInstance(), Config.empty(), OperationalMode.single );
-        labelScanStoreProvider = NeoStoreDataSourceRule.nativeLabelScanStoreProvider( storeDirectory, fs, pageCache );
+        labelScanStoreProvider = NeoStoreDataSourceRule.nativeLabelScanStoreProvider( storeDirectory, fs, pageCache,
+                new Health.Adapter(), new Monitors() );
 
         upgradableDatabase = new UpgradableDatabase( fs, new StoreVersionCheck( pageCache ),
                 new LegacyStoreVersionCheck( fs ), recordFormat );

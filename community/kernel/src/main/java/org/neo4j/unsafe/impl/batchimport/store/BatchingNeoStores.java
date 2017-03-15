@@ -30,6 +30,7 @@ import org.neo4j.io.pagecache.tracing.DefaultPageCacheTracer;
 import org.neo4j.io.pagecache.tracing.PageCacheTracer;
 import org.neo4j.io.pagecache.tracing.cursor.DefaultPageCursorTracerSupplier;
 import org.neo4j.io.pagecache.tracing.cursor.PageCursorTracerSupplier;
+import org.neo4j.kernel.Health;
 import org.neo4j.kernel.api.labelscan.LabelScanStore;
 import org.neo4j.kernel.configuration.Config;
 import org.neo4j.kernel.extension.KernelExtensionFactory;
@@ -55,6 +56,7 @@ import org.neo4j.kernel.impl.store.format.RecordFormats;
 import org.neo4j.kernel.impl.store.record.RelationshipGroupRecord;
 import org.neo4j.kernel.impl.util.Dependencies;
 import org.neo4j.kernel.lifecycle.LifeSupport;
+import org.neo4j.kernel.monitoring.Monitors;
 import org.neo4j.logging.LogProvider;
 import org.neo4j.unsafe.impl.batchimport.AdditionalInitialIds;
 import org.neo4j.unsafe.impl.batchimport.Configuration;
@@ -65,7 +67,6 @@ import org.neo4j.unsafe.impl.batchimport.store.io.IoTracer;
 
 import static java.lang.String.valueOf;
 import static java.nio.file.StandardOpenOption.DELETE_ON_CLOSE;
-
 import static org.neo4j.graphdb.factory.GraphDatabaseSettings.dense_node_threshold;
 import static org.neo4j.graphdb.factory.GraphDatabaseSettings.pagecache_memory;
 import static org.neo4j.helpers.collection.MapUtil.stringMap;
@@ -161,6 +162,8 @@ public class BatchingNeoStores implements AutoCloseable
         dependencies.satisfyDependency( logService );
         dependencies.satisfyDependency( IndexStoreView.EMPTY );
         dependencies.satisfyDependency( pageCache );
+        dependencies.satisfyDependency( new Monitors() );
+        dependencies.satisfyDependency( new Health.Adapter() );
         KernelContext kernelContext = new SimpleKernelContext( storeDir, DatabaseInfo.UNKNOWN, dependencies );
         @SuppressWarnings( { "unchecked", "rawtypes" } )
         KernelExtensions extensions = life.add( new KernelExtensions(

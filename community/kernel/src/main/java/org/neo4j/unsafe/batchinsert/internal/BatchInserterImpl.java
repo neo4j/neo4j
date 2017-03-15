@@ -52,6 +52,7 @@ import org.neo4j.io.fs.FileSystemAbstraction;
 import org.neo4j.io.pagecache.PageCache;
 import org.neo4j.io.pagecache.tracing.PageCacheTracer;
 import org.neo4j.io.pagecache.tracing.cursor.PageCursorTracerSupplier;
+import org.neo4j.kernel.Health;
 import org.neo4j.kernel.api.exceptions.KernelException;
 import org.neo4j.kernel.api.exceptions.index.IndexEntryConflictException;
 import org.neo4j.kernel.api.exceptions.schema.AlreadyConstrainedException;
@@ -151,6 +152,7 @@ import org.neo4j.kernel.impl.util.Listener;
 import org.neo4j.kernel.internal.EmbeddedGraphDatabase;
 import org.neo4j.kernel.internal.StoreLocker;
 import org.neo4j.kernel.lifecycle.LifeSupport;
+import org.neo4j.kernel.monitoring.Monitors;
 import org.neo4j.logging.Log;
 import org.neo4j.logging.LogProvider;
 import org.neo4j.logging.NullLog;
@@ -278,7 +280,9 @@ public class BatchInserterImpl implements BatchInserter, IndexConfigStoreProvide
         indexStoreView = new NeoStoreIndexStoreView( LockService.NO_LOCK_SERVICE, neoStores );
 
         Dependencies deps = new Dependencies();
-        deps.satisfyDependencies( fileSystem, config, logService, indexStoreView, pageCache );
+        Monitors monitors = new Monitors();
+        Health databaseHealth = new Health.Adapter();
+        deps.satisfyDependencies( fileSystem, config, logService, indexStoreView, pageCache, monitors, databaseHealth );
 
         KernelExtensions extensions = life.add( new KernelExtensions(
                 new SimpleKernelContext( storeDir, DatabaseInfo.UNKNOWN, deps ),
