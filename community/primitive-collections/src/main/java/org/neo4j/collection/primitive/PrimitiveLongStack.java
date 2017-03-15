@@ -19,6 +19,8 @@
  */
 package org.neo4j.collection.primitive;
 
+import java.util.NoSuchElementException;
+
 import static java.util.Arrays.copyOf;
 
 /**
@@ -30,6 +32,11 @@ public class PrimitiveLongStack implements PrimitiveLongCollection
 {
     private long[] array;
     private int cursor = -1; // where the top most item lives
+
+    public PrimitiveLongStack( )
+    {
+        this( 16 );
+    }
 
     public PrimitiveLongStack( int initialSize )
     {
@@ -62,7 +69,27 @@ public class PrimitiveLongStack implements PrimitiveLongCollection
     @Override
     public PrimitiveLongIterator iterator()
     {
-        throw new UnsupportedOperationException( "Please implement" );
+        return new PrimitiveLongIterator()
+        {
+            int idx = 0;
+
+            @Override
+            public boolean hasNext()
+            {
+                return idx <= cursor;
+            }
+
+            @Override
+            public long next()
+            {
+                if ( !hasNext() )
+                {
+                    throw new NoSuchElementException();
+                }
+
+                return array[idx++];
+            }
+        };
     }
 
     @Override
