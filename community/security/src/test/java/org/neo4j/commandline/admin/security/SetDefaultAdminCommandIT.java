@@ -132,7 +132,7 @@ public class SetDefaultAdminCommandIT
         tool.execute( homeDir.toPath(), confDir.toPath(), SET_ADMIN );
         assertNoAuthIniFile();
 
-        verify( out ).stdErrLine( "no username specified." );
+        verify( out ).stdErrLine( "not enough arguments" );
         verify( out, times( 2 ) ).stdErrLine( "" );
         verify( out ).stdErrLine( "usage: neo4j-admin set-default-admin <username>" );
         verify( out, times( 2 ) ).stdErrLine( "" );
@@ -150,7 +150,7 @@ public class SetDefaultAdminCommandIT
         tool.execute( homeDir.toPath(), confDir.toPath(), SET_ADMIN, "foo", "bar" );
         assertNoAuthIniFile();
 
-        verify( out ).stdErrLine( "too many arguments." );
+        verify( out ).stdErrLine( "unrecognized arguments: 'bar'" );
         verify( out, times( 2 ) ).stdErrLine( "" );
         verify( out ).stdErrLine( "usage: neo4j-admin set-default-admin <username>" );
         verify( out, times( 2 ) ).stdErrLine( "" );

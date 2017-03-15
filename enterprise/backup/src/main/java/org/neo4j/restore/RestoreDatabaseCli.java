@@ -82,9 +82,9 @@ public class RestoreDatabaseCli implements AdminCommand
 
         try
         {
-            databaseName = arguments.parse( "database", incomingArguments );
-            fromPath = arguments.parse("from", incomingArguments);
-            forceOverwrite = arguments.parseBoolean("force", incomingArguments);
+            databaseName = arguments.parse( incomingArguments ).get( "database" );
+            fromPath = arguments.get( "from" );
+            forceOverwrite = arguments.getBoolean( "force" );
         }
         catch ( IllegalArgumentException e )
         {

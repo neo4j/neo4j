@@ -74,9 +74,10 @@ public class LoadCommand implements AdminCommand
     @Override
     public void execute( String[] args ) throws IncorrectUsage, CommandFailed
     {
-        Path archive = arguments.parseMandatoryPath( "from", args );
-        String database = arguments.parse( "database", args );
-        boolean force = arguments.parseBoolean( "force", args );
+        arguments.parse( args );
+        Path archive = arguments.getMandatoryPath( "from" );
+        String database = arguments.get( "database" );
+        boolean force = arguments.getBoolean( "force" );
 
         Path databaseDirectory = canonicalPath( toDatabaseDirectory( database ) );
 
