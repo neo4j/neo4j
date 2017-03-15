@@ -172,37 +172,4 @@ public class OnlineIndexUpdates implements IndexUpdates
         nodeStore.getRecord( nodeId, nodeRecord, RecordLoad.NORMAL );
         return nodeRecord;
     }
-
-//    private Iterator<DefinedProperty> nodeFullyLoadProperties(
-//            long nodeId,
-//            NodeCommand nodeCommand,
-//            List<PropertyCommand> propertyCommands )
-//    {
-//        NodeRecord nodeRecord = (nodeCommand == null) ? loadNode( nodeId ) : nodeCommand.getAfter();
-//
-//        IteratingPropertyReceiver receiver = new IteratingPropertyReceiver();
-//        PrimitiveLongObjectMap<PropertyRecord> propertiesById =
-//                propertiesFromCommandsForNode( propertyCommands );
-//        propertyLoader.nodeLoadProperties( nodeRecord, propertiesById, receiver );
-//        return receiver;
-//    }
-
-    private PrimitiveLongObjectMap<PropertyRecord> propertiesFromCommandsForNode(
-            List<PropertyCommand> propertyCommands )
-    {
-        if ( propertyCommands == null )
-        {
-            return PrimitiveLongCollections.emptyObjectMap();
-        }
-        PrimitiveLongObjectMap<PropertyRecord> result = Primitive.longObjectMap( propertyCommands.size() );
-        for ( PropertyCommand command : propertyCommands )
-        {
-            PropertyRecord after = command.getAfter();
-            if ( after.inUse() && after.isNodeSet() )
-            {
-                result.put( after.getId(), after );
-            }
-        }
-        return result;
-    }
 }
