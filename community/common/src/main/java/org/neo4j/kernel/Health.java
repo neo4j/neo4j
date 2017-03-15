@@ -50,7 +50,7 @@ public interface Health
         return null;
     }
 
-    public class Adapter implements Health
+    class Adapter implements Health
     {
     }
 }
