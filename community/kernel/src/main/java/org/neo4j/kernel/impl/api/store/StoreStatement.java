@@ -53,7 +53,7 @@ import org.neo4j.storageengine.api.txstate.ReadableTransactionState;
  */
 public class StoreStatement implements StorageStatement
 {
-    private final InstanceCache<StoreNodeCursor> nodeCursor;
+    private final InstanceCache<NodeCursor> nodeCursor;
     private final InstanceCache<StoreSingleRelationshipCursor> singleRelationshipCursor;
     private final InstanceCache<StoreIteratorRelationshipCursor> iteratorRelationshipCursor;
     private final InstanceCache<StoreNodeRelationshipCursor> nodeRelationshipsCursor;
@@ -84,12 +84,12 @@ public class StoreStatement implements StorageStatement
         this.relationshipGroupStore = neoStores.getRelationshipGroupStore();
         this.recordCursors = new RecordCursors( neoStores );
 
-        nodeCursor = new InstanceCache<StoreNodeCursor>()
+        nodeCursor = new InstanceCache<NodeCursor>()
         {
             @Override
-            protected StoreNodeCursor create()
+            protected NodeCursor create()
             {
-                return new StoreNodeCursor( nodeStore.newRecord(), this, recordCursors, lockService );
+                return new NodeCursor( nodeStore.newRecord(), this, recordCursors, lockService );
             }
         };
         singleRelationshipCursor = new InstanceCache<StoreSingleRelationshipCursor>()
