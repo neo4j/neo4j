@@ -26,6 +26,8 @@ import org.junit.rules.ExpectedException;
 import java.nio.file.Path;
 import java.nio.file.Paths;
 
+import org.neo4j.helpers.Args;
+
 import static org.junit.Assert.assertEquals;
 
 public class DatabaseTest
@@ -41,12 +43,12 @@ public class DatabaseTest
         Path path = Paths.get( "data", "databases", "graph.db" );
         expected.expect( IllegalArgumentException.class );
         expected.expectMessage( "'database' should be a name but you seem to have specified a path: " + path );
-        arg.parse( "--database=" + path );
+        arg.parse( Args.parse( "--database=" + path ) );
     }
 
     @Test
     public void parseDatabaseName() throws Exception
     {
-        assertEquals( "bob.db", arg.parse( "--database=bob.db" ) );
+        assertEquals( "bob.db", arg.parse( Args.parse( "--database=bob.db" ) ) );
     }
 }

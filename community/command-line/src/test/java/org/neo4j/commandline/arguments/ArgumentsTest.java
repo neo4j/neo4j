@@ -20,12 +20,18 @@
 package org.neo4j.commandline.arguments;
 
 import org.junit.Before;
+import org.junit.Rule;
 import org.junit.Test;
+import org.junit.rules.ExpectedException;
+
+import org.neo4j.commandline.admin.IncorrectUsage;
 
 import static org.junit.Assert.assertEquals;
 
 public class ArgumentsTest
 {
+    @Rule
+    public ExpectedException expected = ExpectedException.none();
 
     private Arguments builder;
 
@@ -33,6 +39,73 @@ public class ArgumentsTest
     public void setup()
     {
         builder = new Arguments();
+    }
+
+    @Test
+    public void throwsOnUnexpectedLongArgument() throws Exception
+    {
+        expected.expect( IncorrectUsage.class );
+        expected.expectMessage( "unrecognized option: 'stacktrace'" );
+
+        builder.withDatabase().parse( new String[]{ "--stacktrace" } );
+    }
+
+    @Test
+    public void throwsOnUnexpectedLongArgumentWithValue() throws Exception
+    {
+        expected.expect( IncorrectUsage.class );
+        expected.expectMessage( "unrecognized option: 'stacktrace'" );
+
+        builder.withDatabase().parse( new String[]{ "--stacktrace=true" } );
+    }
+
+    @Test
+    public void throwsOnUnexpectedShortArgument() throws Exception
+    {
+        expected.expect( IncorrectUsage.class );
+        expected.expectMessage( "unrecognized option: 'f'" );
+
+        builder.withDatabase().parse( new String[]{ "-f" } );
+    }
+
+    @Test
+    public void throwsOnUnexpectedShortArgumentWithValue() throws Exception
+    {
+        expected.expect( IncorrectUsage.class );
+        expected.expectMessage( "unrecognized option: 'f'" );
+
+        builder.withDatabase().parse( new String[]{ "-f=bob" } );
+    }
+
+    @Test
+    public void throwsOnUnexpectedPositionalArgument() throws Exception
+    {
+        expected.expect( IncorrectUsage.class );
+        expected.expectMessage( "unrecognized arguments: 'bob sob'" );
+
+        builder.withDatabase().parse( new String[]{ "bob", "sob" } );
+    }
+
+    @Test
+    public void throwsOnUnexpectedPositionalArgumentWhenExpectingSome() throws Exception
+    {
+        expected.expect( IncorrectUsage.class );
+        expected.expectMessage( "unrecognized arguments: 'three four'" );
+
+        builder.withMandatoryPositionalArgument( 0, "first" )
+                .withOptionalPositionalArgument( 1, "second" )
+                .parse( new String[]{ "one", "two", "three", "four" } );
+    }
+
+    @Test
+    public void throwsOnTooFewPositionalArguments() throws Exception
+    {
+        expected.expect( IncorrectUsage.class );
+        expected.expectMessage( "not enough arguments" );
+
+        builder.withMandatoryPositionalArgument( 0, "first" )
+                .withOptionalPositionalArgument( 1, "second" )
+                .parse( new String[]{} );
     }
 
     @Test
