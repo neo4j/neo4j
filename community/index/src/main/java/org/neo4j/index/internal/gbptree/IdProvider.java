@@ -33,21 +33,21 @@ interface IdProvider
      * Acquires a page id, guaranteed to currently not be used. The bytes on the page at this id
      * are all guaranteed to be zero at the point of returning from this method.
      *
-     * @param stableGeneration current stable generation.
-     * @param unstableGeneration current unstable generation.
+     * @param stableGen current stable generation.
+     * @param unstableGen current unstable generation.
      * @return page id guaranteed to current not be used and whose bytes are all zeros.
      * @throws IOException on {@link PageCursor} error.
      */
-    long acquireNewId( long stableGeneration, long unstableGeneration ) throws IOException;
+    long acquireNewId( long stableGen, long unstableGen ) throws IOException;
 
     /**
      * Releases a page id which has previously been used, but isn't anymore, effectively allowing
      * it to be reused and returned from {@link #acquireNewId(long, long)}.
      *
-     * @param stableGeneration current stable generation.
-     * @param unstableGeneration current unstable generation.
+     * @param stableGen current stable generation.
+     * @param unstableGen current unstable generation.
      * @param id page id to release.
      * @throws IOException on {@link PageCursor} error.
      */
-    void releaseId( long stableGeneration, long unstableGeneration, long id ) throws IOException;
+    void releaseId( long stableGen, long unstableGen, long id ) throws IOException;
 }

@@ -30,7 +30,7 @@ import static org.neo4j.index.internal.gbptree.PageCursorUtil.checkOutOfBounds;
 
 /**
  * Pair of {@link TreeState}, ability to make decision about which of the two to read and write respectively,
- * depending on the {@link TreeState#isValid() validity} and {@link TreeState#stableGeneration()} of each.
+ * depending on the {@link TreeState#isValid() validity} and {@link TreeState#stableGen()} of each.
  */
 class TreeStatePair
 {
@@ -82,7 +82,7 @@ class TreeStatePair
 
     /**
      * @param states the two states to compare.
-     * @return newest (w/ regards to {@link TreeState#stableGeneration()}) {@link TreeState#isValid() valid}
+     * @return newest (w/ regards to {@link TreeState#stableGen()}) {@link TreeState#isValid() valid}
      * {@link TreeState} of the two.
      * @throws IllegalStateException if none were valid.
      */
@@ -95,7 +95,7 @@ class TreeStatePair
 
     /**
      * @param states the two states to compare.
-     * @return oldest (w/ regards to {@link TreeState#stableGeneration()}) {@link TreeState#isValid() invalid}
+     * @return oldest (w/ regards to {@link TreeState#stableGen()}) {@link TreeState#isValid() invalid}
      * {@link TreeState} of the two. If both are invalid then the {@link Pair#getLeft() first one} is returned.
      */
     static TreeState selectOldestOrInvalid( Pair<TreeState,TreeState> states )
@@ -120,15 +120,15 @@ class TreeStatePair
 
             // compare unstable generations of A/B and include sanity check for stable generations
             // such that there cannot be a state S compared to other state O where
-            // S.unstableGeneration > O.unstableGeneration AND S.stableGeneration < O.stableGeneration
+            // S.unstableGen > O.unstableGen AND S.stableGen < O.stableGen
 
-            if ( stateA.stableGeneration() >= stateB.stableGeneration() &&
-                    stateA.unstableGeneration() > stateB.unstableGeneration() )
+            if ( stateA.stableGen() >= stateB.stableGen() &&
+                    stateA.unstableGen() > stateB.unstableGen() )
             {
                 return Optional.of( stateA );
             }
-            else if ( stateA.stableGeneration() <= stateB.stableGeneration() &&
-                    stateA.unstableGeneration() < stateB.unstableGeneration() )
+            else if ( stateA.stableGen() <= stateB.stableGen() &&
+                    stateA.unstableGen() < stateB.unstableGen() )
             {
                 return Optional.of( stateB );
             }

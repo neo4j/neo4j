@@ -37,15 +37,15 @@ class TreePrinter<KEY,VALUE>
 {
     private final TreeNode<KEY,VALUE> node;
     private final Layout<KEY,VALUE> layout;
-    private final long stableGeneration;
-    private final long unstableGeneration;
+    private final long stableGen;
+    private final long unstableGen;
 
-    TreePrinter( TreeNode<KEY,VALUE> node, Layout<KEY,VALUE> layout, long stableGeneration, long unstableGeneration )
+    TreePrinter( TreeNode<KEY,VALUE> node, Layout<KEY,VALUE> layout, long stableGen, long unstableGen )
     {
         this.node = node;
         this.layout = layout;
-        this.stableGeneration = stableGeneration;
-        this.unstableGeneration = unstableGeneration;
+        this.stableGen = stableGen;
+        this.unstableGen = unstableGen;
     }
 
     /**
@@ -109,15 +109,15 @@ class TreePrinter<KEY,VALUE>
         if ( printHeader )
         {
             //[TYPE][GEN][KEYCOUNT] ([RIGHTSIBLING][LEFTSIBLING][NEWGEN]))
-            long generation = -1;
+            long gen = -1;
             do
             {
-                generation = node.gen( cursor );
+                gen = node.gen( cursor );
 
             } while ( cursor.shouldRetry() );
             String treeNodeType = isLeaf ? "leaf" : "internal";
             out.print( format( "{%d,%s,gen=%d,keyCount=%d}",
-                    cursor.getCurrentPageId(), treeNodeType, generation, keyCount ) );
+                    cursor.getCurrentPageId(), treeNodeType, gen, keyCount ) );
         }
         else
         {
@@ -137,7 +137,7 @@ class TreePrinter<KEY,VALUE>
                 }
                 else
                 {
-                    child = pointer( node.childAt( cursor, i, stableGeneration, unstableGeneration ) );
+                    child = pointer( node.childAt( cursor, i, stableGen, unstableGen ) );
                 }
             }
             while ( cursor.shouldRetry() );
@@ -166,7 +166,7 @@ class TreePrinter<KEY,VALUE>
             long child;
             do
             {
-                child = pointer( node.childAt( cursor, keyCount, stableGeneration, unstableGeneration ) );
+                child = pointer( node.childAt( cursor, keyCount, stableGen, unstableGen ) );
             }
             while ( cursor.shouldRetry() );
 
@@ -188,7 +188,7 @@ class TreePrinter<KEY,VALUE>
             isInternal = TreeNode.isInternal( cursor );
             if ( isInternal )
             {
-                leftmostSibling = node.childAt( cursor, 0, stableGeneration, unstableGeneration );
+                leftmostSibling = node.childAt( cursor, 0, stableGen, unstableGen );
             }
         }
         while ( cursor.shouldRetry() );
@@ -211,7 +211,7 @@ class TreePrinter<KEY,VALUE>
 
             do
             {
-                rightSibling = node.rightSibling( cursor, stableGeneration, unstableGeneration );
+                rightSibling = node.rightSibling( cursor, stableGen, unstableGen );
             }
             while ( cursor.shouldRetry() );
 

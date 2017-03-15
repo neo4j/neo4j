@@ -37,12 +37,12 @@ class Root
     /**
      * Generation of current {@link #rootId}.
      */
-    private final long rootGeneration;
+    private final long rootGen;
 
-    Root( long rootId, long rootGeneration )
+    Root( long rootId, long rootGen )
     {
         this.rootId = rootId;
-        this.rootGeneration = rootGeneration;
+        this.rootGen = rootGen;
     }
 
     /**
@@ -56,7 +56,7 @@ class Root
     long goTo( PageCursor cursor ) throws IOException
     {
         PageCursorUtil.goTo( cursor, "root", rootId );
-        return rootGeneration;
+        return rootGen;
     }
 
     long id()
@@ -64,8 +64,8 @@ class Root
         return rootId;
     }
 
-    long generation()
+    long gen()
     {
-        return rootGeneration;
+        return rootGen;
     }
 }

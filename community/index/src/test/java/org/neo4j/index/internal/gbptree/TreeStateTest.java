@@ -90,16 +90,16 @@ public class TreeStateTest
     }
 
     @Test
-    public void shouldNotWriteInvalidStableGeneration() throws Exception
+    public void shouldNotWriteInvalidStableGen() throws Exception
     {
         // GIVEN
-        long generation = GenSafePointer.MAX_GENERATION + 1;
+        long gen = GenSafePointer.MAX_GEN + 1;
 
         // WHEN
         try
         {
             long pageId = cursor.getCurrentPageId();
-            write( cursor, new TreeState( pageId, generation, 2, 3, 4, 5, 6, 7, 8, 9, true ) );
+            write( cursor, new TreeState( pageId, gen, 2, 3, 4, 5, 6, 7, 8, 9, true ) );
             fail( "Should have failed" );
         }
         catch ( IllegalArgumentException e )
@@ -109,16 +109,16 @@ public class TreeStateTest
     }
 
     @Test
-    public void shouldNotWriteInvalidUnstableGeneration() throws Exception
+    public void shouldNotWriteInvalidUnstableGen() throws Exception
     {
         // GIVEN
-        long generation = GenSafePointer.MAX_GENERATION + 1;
+        long gen = GenSafePointer.MAX_GEN + 1;
 
         // WHEN
         try
         {
             long pageId = cursor.getCurrentPageId();
-            write( cursor, new TreeState( pageId, 1, generation, 3, 4, 5, 6, 7, 8, 9, true ) );
+            write( cursor, new TreeState( pageId, 1, gen, 3, 4, 5, 6, 7, 8, 9, true ) );
             fail( "Should have failed" );
         }
         catch ( IllegalArgumentException e )
@@ -138,8 +138,8 @@ public class TreeStateTest
     private void write( PageCursor cursor, TreeState origin )
     {
         TreeState.write( cursor,
-                origin.stableGeneration(),
-                origin.unstableGeneration(),
+                origin.stableGen(),
+                origin.unstableGen(),
                 origin.rootId(),
                 origin.rootGen(),
                 origin.lastId(),

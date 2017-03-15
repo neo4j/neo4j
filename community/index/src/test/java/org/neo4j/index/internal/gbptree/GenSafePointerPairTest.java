@@ -52,11 +52,11 @@ import static org.neo4j.index.internal.gbptree.GenSafePointerPair.pointerStateNa
 public class GenSafePointerPairTest
 {
     private static final int PAGE_SIZE = 128;
-    private static final int OLD_STABLE_GENERATION = 1;
-    private static final int STABLE_GENERATION = 2;
-    private static final int OLD_CRASH_GENERATION = 3;
-    private static final int CRASH_GENERATION = 4;
-    private static final int UNSTABLE_GENERATION = 5;
+    private static final int OLD_STABLE_GEN = 1;
+    private static final int STABLE_GEN = 2;
+    private static final int OLD_CRASH_GEN = 3;
+    private static final int CRASH_GEN = 4;
+    private static final int UNSTABLE_GEN = 5;
     private static final long EMPTY_POINTER = 0L;
 
     private static final long POINTER_A = 5;
@@ -138,7 +138,7 @@ public class GenSafePointerPairTest
 
         // WHEN
         cursor.setOffset( GSPP_OFFSET );
-        long result = GenSafePointerPair.read( cursor, STABLE_GENERATION, UNSTABLE_GENERATION, pos );
+        long result = GenSafePointerPair.read( cursor, STABLE_GEN, UNSTABLE_GEN, pos );
 
         // THEN
         expectedReadOutcome.verifyRead( cursor, result, stateA, stateB, preStatePointerA, preStatePointerB, pos );
@@ -155,7 +155,7 @@ public class GenSafePointerPairTest
 
         // WHEN
         cursor.setOffset( GSPP_OFFSET );
-        long result = GenSafePointerPair.read( cursor, STABLE_GENERATION, UNSTABLE_GENERATION, NO_LOGICAL_POS );
+        long result = GenSafePointerPair.read( cursor, STABLE_GEN, UNSTABLE_GEN, NO_LOGICAL_POS );
 
         // THEN
         expectedReadOutcome.verifyRead( cursor, result, stateA, stateB, preStatePointerA, preStatePointerB,
@@ -173,7 +173,7 @@ public class GenSafePointerPairTest
 
         // WHEN
         cursor.setOffset( GSPP_OFFSET );
-        long written = GenSafePointerPair.write( cursor, WRITTEN_POINTER, STABLE_GENERATION, UNSTABLE_GENERATION );
+        long written = GenSafePointerPair.write( cursor, WRITTEN_POINTER, STABLE_GEN, UNSTABLE_GEN );
 
         // THEN
         expectedWriteOutcome.verifyWrite( cursor, written, stateA, stateB, preStatePointerA, preStatePointerB );
@@ -248,10 +248,10 @@ public class GenSafePointerPairTest
 
     private static long readSlot( PageCursor cursor )
     {
-        long generation = GenSafePointer.readGeneration( cursor );
+        long gen = GenSafePointer.readGen( cursor );
         long pointer = GenSafePointer.readPointer( cursor );
         short checksum = GenSafePointer.readChecksum( cursor );
-        assertEquals( GenSafePointer.checksumOf( generation, pointer ), checksum );
+        assertEquals( GenSafePointer.checksumOf( gen, pointer ), checksum );
         return pointer;
     }
 
@@ -292,10 +292,10 @@ public class GenSafePointerPairTest
             {
                 cursor.setOffset( slotA ? SLOT_A_OFFSET : SLOT_B_OFFSET );
 
-                long generation = GenSafePointer.readGeneration( cursor );
+                long gen = GenSafePointer.readGen( cursor );
                 long pointer = GenSafePointer.readPointer( cursor );
                 short checksum = GenSafePointer.readChecksum( cursor );
-                assertNotEquals( GenSafePointer.checksumOf( generation, pointer ), checksum );
+                assertNotEquals( GenSafePointer.checksumOf( gen, pointer ), checksum );
             }
         },
         OLD_CRASH( GenSafePointerPair.CRASH )
@@ -303,7 +303,7 @@ public class GenSafePointerPairTest
             @Override
             long materialize( PageCursor cursor, long pointer )
             {
-                GenSafePointer.write( cursor, OLD_CRASH_GENERATION, pointer );
+                GenSafePointer.write( cursor, OLD_CRASH_GEN, pointer );
                 return pointer;
             }
         },
@@ -312,7 +312,7 @@ public class GenSafePointerPairTest
             @Override
             long materialize( PageCursor cursor, long pointer )
             {
-                GenSafePointer.write( cursor, CRASH_GENERATION, pointer );
+                GenSafePointer.write( cursor, CRASH_GEN, pointer );
                 return pointer;
             }
         },
@@ -321,7 +321,7 @@ public class GenSafePointerPairTest
             @Override
             long materialize( PageCursor cursor, long pointer )
             {
-                GenSafePointer.write( cursor, OLD_STABLE_GENERATION, pointer );
+                GenSafePointer.write( cursor, OLD_STABLE_GEN, pointer );
                 return pointer;
             }
         },
@@ -330,7 +330,7 @@ public class GenSafePointerPairTest
             @Override
             long materialize( PageCursor cursor, long pointer )
             {
-                GenSafePointer.write( cursor, STABLE_GENERATION, pointer );
+                GenSafePointer.write( cursor, STABLE_GEN, pointer );
                 return pointer;
             }
         },
@@ -339,7 +339,7 @@ public class GenSafePointerPairTest
             @Override
             long materialize( PageCursor cursor, long pointer )
             {
-                GenSafePointer.write( cursor, UNSTABLE_GENERATION, pointer );
+                GenSafePointer.write( cursor, UNSTABLE_GEN, pointer );
                 return pointer;
             }
         };

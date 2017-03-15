@@ -35,12 +35,12 @@ class SimpleIdProvider implements IdProvider
     }
 
     @Override
-    public long acquireNewId( long stableGeneration, long unstableGeneration )
+    public long acquireNewId( long stableGen, long unstableGen )
     {
         if ( !releasedIds.isEmpty() )
         {
             Pair<Long,Long> free = releasedIds.peek();
-            if ( free.getLeft() <= stableGeneration )
+            if ( free.getLeft() <= stableGen )
             {
                 releasedIds.poll();
                 return free.getRight();
@@ -51,9 +51,9 @@ class SimpleIdProvider implements IdProvider
     }
 
     @Override
-    public void releaseId( long stableGeneration, long unstableGeneration, long id )
+    public void releaseId( long stableGen, long unstableGen, long id )
     {
-        releasedIds.add( Pair.of( unstableGeneration, id ) );
+        releasedIds.add( Pair.of( unstableGen, id ) );
     }
 
     long lastId()

@@ -146,7 +146,7 @@ public class TreeStatePairTest
                 cursor.putLong( cursor.getOffset(), ~someOfTheBits );
             }
         },
-        VALID // stableGeneration:5 and unstableGeneration:6
+        VALID // stableGen:5 and unstableGen:6
         {
             @Override
             void write( PageCursor cursor ) throws IOException
@@ -154,7 +154,7 @@ public class TreeStatePairTest
                 TreeState.write( cursor, 5, 6, 7, 8, 9, 10, 11, 12, 13 );
             }
         },
-        CRASH_VALID // stableGeneration:5 and unstableGeneration:7, i.e. crashed from VALID state
+        CRASH_VALID // stableGen:5 and unstableGen:7, i.e. crashed from VALID state
         {
             @Override
             void write( PageCursor cursor ) throws IOException
@@ -162,7 +162,7 @@ public class TreeStatePairTest
                 TreeState.write( cursor, 5, 7, 7, 8, 9, 10, 11, 12, 13 );
             }
         },
-        WIDE_VALID // stableGeneration:4 and unstableGeneration:8, i.e. crashed but wider gap between generations
+        WIDE_VALID // stableGen:4 and unstableGen:8, i.e. crashed but wider gap between generations
         {
             @Override
             void write( PageCursor cursor ) throws IOException
@@ -170,7 +170,7 @@ public class TreeStatePairTest
                 TreeState.write( cursor, 4, 8, 9, 10, 11, 12, 13, 14, 15 );
             }
         },
-        OLD_VALID // stableGeneration:2 and unstableGeneration:3
+        OLD_VALID // stableGen:2 and unstableGen:3
         {
             @Override
             void write( PageCursor cursor ) throws IOException

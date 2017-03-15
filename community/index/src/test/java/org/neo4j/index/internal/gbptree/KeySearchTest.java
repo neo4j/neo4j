@@ -35,8 +35,8 @@ import static org.neo4j.index.internal.gbptree.KeySearch.search;
 
 public class KeySearchTest
 {
-    private static final int STABLE_GENERATION = 1;
-    private static final int UNSTABLE_GENERATION = 2;
+    private static final int STABLE_GEN = 1;
+    private static final int UNSTABLE_GEN = 2;
 
     private static final int KEY_COUNT = 10;
     private static final int PAGE_SIZE = 512;
@@ -55,7 +55,7 @@ public class KeySearchTest
     public void searchEmptyLeaf() throws Exception
     {
         // given
-        node.initializeLeaf( cursor, STABLE_GENERATION, UNSTABLE_GENERATION );
+        node.initializeLeaf( cursor, STABLE_GEN, UNSTABLE_GEN );
         int keyCount = node.keyCount( cursor );
 
         // then
@@ -67,7 +67,7 @@ public class KeySearchTest
     public void searchEmptyInternal() throws Exception
     {
         // given
-        node.initializeInternal( cursor, STABLE_GENERATION, UNSTABLE_GENERATION );
+        node.initializeInternal( cursor, STABLE_GEN, UNSTABLE_GEN );
         int keyCount = node.keyCount( cursor );
 
         // then
@@ -79,7 +79,7 @@ public class KeySearchTest
     public void searchNoHitLessThanWithOneKeyInLeaf() throws Exception
     {
         // given
-        node.initializeLeaf( cursor, STABLE_GENERATION, UNSTABLE_GENERATION );
+        node.initializeLeaf( cursor, STABLE_GEN, UNSTABLE_GEN );
         appendKey( 1L );
 
         // then
@@ -91,7 +91,7 @@ public class KeySearchTest
     public void searchNoHitLessThanWithOneKeyInInternal() throws Exception
     {
         // given
-        node.initializeInternal( cursor, STABLE_GENERATION, UNSTABLE_GENERATION );
+        node.initializeInternal( cursor, STABLE_GEN, UNSTABLE_GEN );
         appendKey( 1L );
 
         // then
@@ -104,7 +104,7 @@ public class KeySearchTest
     {
         // given
         long key = 1L;
-        node.initializeLeaf( cursor, STABLE_GENERATION, UNSTABLE_GENERATION );
+        node.initializeLeaf( cursor, STABLE_GEN, UNSTABLE_GEN );
         appendKey( key );
 
         // then
@@ -117,7 +117,7 @@ public class KeySearchTest
     {
         // given
         long key = 1L;
-        node.initializeInternal( cursor, STABLE_GENERATION, UNSTABLE_GENERATION );
+        node.initializeInternal( cursor, STABLE_GEN, UNSTABLE_GEN );
         appendKey( key );
 
         // then
@@ -129,7 +129,7 @@ public class KeySearchTest
     public void searchNoHitGreaterThanWithOneKeyInLeaf() throws Exception
     {
         // given
-        node.initializeLeaf( cursor, STABLE_GENERATION, UNSTABLE_GENERATION );
+        node.initializeLeaf( cursor, STABLE_GEN, UNSTABLE_GEN );
         appendKey( 1L );
 
         // then
@@ -141,7 +141,7 @@ public class KeySearchTest
     public void searchNoHitGreaterThanWithOneKeyInInternal() throws Exception
     {
         // given
-        node.initializeInternal( cursor, STABLE_GENERATION, UNSTABLE_GENERATION );
+        node.initializeInternal( cursor, STABLE_GEN, UNSTABLE_GEN );
         appendKey( 1L );
 
         // then
@@ -153,7 +153,7 @@ public class KeySearchTest
     public void searchNoHitGreaterThanWithFullLeaf() throws Exception
     {
         // given
-        node.initializeLeaf( cursor, STABLE_GENERATION, UNSTABLE_GENERATION );
+        node.initializeLeaf( cursor, STABLE_GEN, UNSTABLE_GEN );
         for ( int i = 0; i < KEY_COUNT; i++ )
         {
             appendKey( i );
@@ -168,7 +168,7 @@ public class KeySearchTest
     public void searchNoHitGreaterThanWithFullInternal() throws Exception
     {
         // given
-        node.initializeInternal( cursor, STABLE_GENERATION, UNSTABLE_GENERATION );
+        node.initializeInternal( cursor, STABLE_GEN, UNSTABLE_GEN );
         for ( int i = 0; i < KEY_COUNT; i++ )
         {
             appendKey( i );
@@ -183,7 +183,7 @@ public class KeySearchTest
     public void searchHitOnLastWithFullLeaf() throws Exception
     {
         // given
-        node.initializeLeaf( cursor, STABLE_GENERATION, UNSTABLE_GENERATION );
+        node.initializeLeaf( cursor, STABLE_GEN, UNSTABLE_GEN );
         for ( int i = 0; i < KEY_COUNT; i++ )
         {
             appendKey( i );
@@ -198,7 +198,7 @@ public class KeySearchTest
     public void searchHitOnLastWithFullInternal() throws Exception
     {
         // given
-        node.initializeInternal( cursor, STABLE_GENERATION, UNSTABLE_GENERATION );
+        node.initializeInternal( cursor, STABLE_GEN, UNSTABLE_GEN );
         for ( int i = 0; i < KEY_COUNT; i++ )
         {
             appendKey( i );
@@ -213,7 +213,7 @@ public class KeySearchTest
     public void searchHitOnFirstWithFullLeaf() throws Exception
     {
         // given
-        node.initializeLeaf( cursor, STABLE_GENERATION, UNSTABLE_GENERATION );
+        node.initializeLeaf( cursor, STABLE_GEN, UNSTABLE_GEN );
         for ( int i = 0; i < KEY_COUNT; i++ )
         {
             appendKey( i );
@@ -228,7 +228,7 @@ public class KeySearchTest
     public void searchHitOnFirstWithFullInternal() throws Exception
     {
         // given
-        node.initializeInternal( cursor, STABLE_GENERATION, UNSTABLE_GENERATION );
+        node.initializeInternal( cursor, STABLE_GEN, UNSTABLE_GEN );
         for ( int i = 0; i < KEY_COUNT; i++ )
         {
             appendKey( i );
@@ -243,7 +243,7 @@ public class KeySearchTest
     public void searchNoHitLessThanWithFullLeaf() throws Exception
     {
         // given
-        node.initializeLeaf( cursor, STABLE_GENERATION, UNSTABLE_GENERATION );
+        node.initializeLeaf( cursor, STABLE_GEN, UNSTABLE_GEN );
         for ( int i = 0; i < KEY_COUNT; i++ )
         {
             appendKey( i + 1 );
@@ -258,7 +258,7 @@ public class KeySearchTest
     public void searchNoHitLessThanWithFullInternal() throws Exception
     {
         // given
-        node.initializeInternal( cursor, STABLE_GENERATION, UNSTABLE_GENERATION );
+        node.initializeInternal( cursor, STABLE_GEN, UNSTABLE_GEN );
         for ( int i = 0; i < KEY_COUNT; i++ )
         {
             appendKey( i + 1 );
@@ -273,7 +273,7 @@ public class KeySearchTest
     public void searchHitOnMiddleWithFullLeaf() throws Exception
     {
         // given
-        node.initializeLeaf( cursor, STABLE_GENERATION, UNSTABLE_GENERATION );
+        node.initializeLeaf( cursor, STABLE_GEN, UNSTABLE_GEN );
         for ( int i = 0; i < KEY_COUNT; i++ )
         {
             appendKey( i );
@@ -289,7 +289,7 @@ public class KeySearchTest
     public void searchHitOnMiddleWithFullInternal() throws Exception
     {
         // given
-        node.initializeInternal( cursor, STABLE_GENERATION, UNSTABLE_GENERATION );
+        node.initializeInternal( cursor, STABLE_GEN, UNSTABLE_GEN );
         for ( int i = 0; i < KEY_COUNT; i++ )
         {
             appendKey( i );
@@ -305,7 +305,7 @@ public class KeySearchTest
     public void searchNoHitInMiddleWithFullLeaf() throws Exception
     {
         // given
-        node.initializeLeaf( cursor, STABLE_GENERATION, UNSTABLE_GENERATION );
+        node.initializeLeaf( cursor, STABLE_GEN, UNSTABLE_GEN );
         for ( int i = 0; i < KEY_COUNT; i++ )
         {
             appendKey( i * 2 );
@@ -321,7 +321,7 @@ public class KeySearchTest
     public void searchNoHitInMiddleWithFullInternal() throws Exception
     {
         // given
-        node.initializeInternal( cursor, STABLE_GENERATION, UNSTABLE_GENERATION );
+        node.initializeInternal( cursor, STABLE_GEN, UNSTABLE_GEN );
         for ( int i = 0; i < KEY_COUNT; i++ )
         {
             appendKey( i * 2 );
@@ -339,7 +339,7 @@ public class KeySearchTest
         // given
         long first = 1L;
         long second = 2L;
-        node.initializeLeaf( cursor, STABLE_GENERATION, UNSTABLE_GENERATION );
+        node.initializeLeaf( cursor, STABLE_GEN, UNSTABLE_GEN );
         for ( int i = 0; i < KEY_COUNT; i++ )
         {
             long key = i < KEY_COUNT / 2 ? first : second;
@@ -357,7 +357,7 @@ public class KeySearchTest
         // given
         long first = 1L;
         long second = 2L;
-        node.initializeInternal( cursor, STABLE_GENERATION, UNSTABLE_GENERATION );
+        node.initializeInternal( cursor, STABLE_GEN, UNSTABLE_GEN );
         for ( int i = 0; i < KEY_COUNT; i++ )
         {
             long key = i < KEY_COUNT / 2 ? first : second;
@@ -376,7 +376,7 @@ public class KeySearchTest
         long first = 1L;
         long second = 2L;
         int middle = KEY_COUNT / 2;
-        node.initializeLeaf( cursor, STABLE_GENERATION, UNSTABLE_GENERATION );
+        node.initializeLeaf( cursor, STABLE_GEN, UNSTABLE_GEN );
         for ( int i = 0; i < KEY_COUNT; i++ )
         {
             long key = i < middle ? first : second;
@@ -395,7 +395,7 @@ public class KeySearchTest
         long first = 1L;
         long second = 2L;
         int middle = KEY_COUNT / 2;
-        node.initializeInternal( cursor, STABLE_GENERATION, UNSTABLE_GENERATION );
+        node.initializeInternal( cursor, STABLE_GEN, UNSTABLE_GEN );
         for ( int i = 0; i < KEY_COUNT; i++ )
         {
             long key = i < middle ? first : second;
@@ -449,7 +449,7 @@ public class KeySearchTest
     public void shouldSearchAndFindOnRandomData() throws Exception
     {
         // GIVEN a leaf node with random, although sorted (as of course it must be to binary-search), data
-        node.initializeLeaf( cursor, STABLE_GENERATION, UNSTABLE_GENERATION );
+        node.initializeLeaf( cursor, STABLE_GEN, UNSTABLE_GEN );
         int internalMaxKeyCount = node.internalMaxKeyCount();
         int half = internalMaxKeyCount / 2;
         int keyCount = random.nextInt( half ) + half;
@@ -524,7 +524,7 @@ public class KeySearchTest
     private void fullLeafWithUniqueKeys()
     {
         // [2,4,8,16,32,64,128,512,1024,2048]
-        node.initializeLeaf( cursor, STABLE_GENERATION, UNSTABLE_GENERATION );
+        node.initializeLeaf( cursor, STABLE_GEN, UNSTABLE_GEN );
         MutableLong key = layout.newKey();
         for ( int i = 0; i < KEY_COUNT; i++ )
         {

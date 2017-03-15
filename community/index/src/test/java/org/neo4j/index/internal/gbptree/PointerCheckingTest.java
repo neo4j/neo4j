@@ -33,9 +33,9 @@ import static org.neo4j.index.internal.gbptree.PageCursorUtil.put6BLong;
 public class PointerCheckingTest
 {
     private final PageCursor cursor = ByteArrayPageCursor.wrap( GenSafePointerPair.SIZE );
-    private final long firstGeneration = 1;
-    private final long secondGeneration = 2;
-    private final long thirdGeneration = 3;
+    private final long firstGen = 1;
+    private final long secondGen = 2;
+    private final long thirdGen = 3;
 
     @Test
     public void checkChildShouldThrowOnNoNode() throws Exception
@@ -74,14 +74,14 @@ public class PointerCheckingTest
     public void checkChildShouldThrowOnWriteFailure() throws Exception
     {
         // GIVEN
-        write( cursor, 123, 0, firstGeneration );
+        write( cursor, 123, 0, firstGen );
         cursor.rewind();
-        write( cursor, 456, firstGeneration, secondGeneration );
+        write( cursor, 456, firstGen, secondGen );
         cursor.rewind();
 
         // WHEN
         // This write will see first and second written pointers and think they belong to CRASHed generation
-        long result = write( cursor, 789, 0, thirdGeneration );
+        long result = write( cursor, 789, 0, thirdGen );
         try
         {
             PointerChecking.checkPointer( result, false );
@@ -97,11 +97,11 @@ public class PointerCheckingTest
     public void checkChildShouldPassOnReadSuccess() throws Exception
     {
         // GIVEN
-        PointerChecking.checkPointer( write( cursor, 123, 0, firstGeneration ), false );
+        PointerChecking.checkPointer( write( cursor, 123, 0, firstGen ), false );
         cursor.rewind();
 
         // WHEN
-        long result = read( cursor, 0, firstGeneration, 456 );
+        long result = read( cursor, 0, firstGen, 456 );
 
         // THEN
         PointerChecking.checkPointer( result, false );
@@ -111,7 +111,7 @@ public class PointerCheckingTest
     public void checkChildShouldPassOnWriteSuccess() throws Exception
     {
         // WHEN
-        long result = write( cursor, 123, 0, firstGeneration );
+        long result = write( cursor, 123, 0, firstGen );
 
         // THEN
         PointerChecking.checkPointer( result, false );
@@ -121,11 +121,11 @@ public class PointerCheckingTest
     public void checkSiblingShouldPassOnReadSuccessForNoNodePointer() throws Exception
     {
         // GIVEN
-        write( cursor, TreeNode.NO_NODE_FLAG, firstGeneration, secondGeneration );
+        write( cursor, TreeNode.NO_NODE_FLAG, firstGen, secondGen );
         cursor.rewind();
 
         // WHEN
-        long result = read( cursor, firstGeneration, secondGeneration, NO_LOGICAL_POS );
+        long result = read( cursor, firstGen, secondGen, NO_LOGICAL_POS );
 
         // THEN
         PointerChecking.checkPointer( result, true );
@@ -136,11 +136,11 @@ public class PointerCheckingTest
     {
         // GIVEN
         long pointer = 101;
-        write( cursor, pointer, firstGeneration, secondGeneration );
+        write( cursor, pointer, firstGen, secondGen );
         cursor.rewind();
 
         // WHEN
-        long result = read( cursor, firstGeneration, secondGeneration, NO_LOGICAL_POS );
+        long result = read( cursor, firstGen, secondGen, NO_LOGICAL_POS );
 
         // THEN
         PointerChecking.checkPointer( result, true );
@@ -150,7 +150,7 @@ public class PointerCheckingTest
     public void checkSiblingShouldThrowOnReadFailure() throws Exception
     {
         // WHEN
-        long result = read( cursor, firstGeneration, secondGeneration, NO_LOGICAL_POS );
+        long result = read( cursor, firstGen, secondGen, NO_LOGICAL_POS );
 
         // WHEN
         try
@@ -168,17 +168,17 @@ public class PointerCheckingTest
     public void checkSiblingShouldThrowOnReadIllegalPointer() throws Exception
     {
         // GIVEN
-        long generation = IdSpace.STATE_PAGE_A;
-        long pointer = this.secondGeneration;
+        long gen = IdSpace.STATE_PAGE_A;
+        long pointer = this.secondGen;
 
         // Can not use GenSafePointer.write because it will fail on pointer assertion.
         cursor.putInt( (int) pointer );
-        put6BLong( cursor, generation );
-        cursor.putShort( GenSafePointer.checksumOf( generation, pointer ) );
+        put6BLong( cursor, gen );
+        cursor.putShort( GenSafePointer.checksumOf( gen, pointer ) );
         cursor.rewind();
 
         // WHEN
-        long result = read( cursor, firstGeneration, pointer, NO_LOGICAL_POS );
+        long result = read( cursor, firstGen, pointer, NO_LOGICAL_POS );
 
         // WHEN
         try
