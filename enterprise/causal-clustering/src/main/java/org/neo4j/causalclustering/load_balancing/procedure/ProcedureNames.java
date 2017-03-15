@@ -36,7 +36,7 @@ import static java.lang.String.join;
 public enum ProcedureNames
 {
     GET_SERVERS_V1( "getServers" ),
-    GET_SERVERS_V2( "getServersV2" );
+    GET_SERVERS_V2( "getRoutingTable" );
 
     private static final String[] nameSpace = new String[]{"dbms", "cluster", "routing"};
     private final String name;
