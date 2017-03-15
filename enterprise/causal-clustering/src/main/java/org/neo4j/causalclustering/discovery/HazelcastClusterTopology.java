@@ -19,13 +19,6 @@
  */
 package org.neo4j.causalclustering.discovery;
 
-import com.hazelcast.config.MemberAttributeConfig;
-import com.hazelcast.core.HazelcastInstance;
-import com.hazelcast.core.IAtomicReference;
-import com.hazelcast.core.IMap;
-import com.hazelcast.core.Member;
-import com.hazelcast.core.MultiMap;
-
 import java.util.Collection;
 import java.util.HashMap;
 import java.util.List;
@@ -33,6 +26,13 @@ import java.util.Map;
 import java.util.Set;
 import java.util.UUID;
 import java.util.stream.Collectors;
+
+import com.hazelcast.config.MemberAttributeConfig;
+import com.hazelcast.core.HazelcastInstance;
+import com.hazelcast.core.IAtomicReference;
+import com.hazelcast.core.IMap;
+import com.hazelcast.core.Member;
+import com.hazelcast.core.MultiMap;
 
 import org.neo4j.causalclustering.core.CausalClusteringSettings;
 import org.neo4j.causalclustering.identity.ClusterId;
@@ -42,6 +42,7 @@ import org.neo4j.kernel.configuration.Config;
 import org.neo4j.logging.Log;
 
 import static java.util.Collections.emptyMap;
+
 import static org.neo4j.helpers.SocketAddressFormat.socketAddress;
 import static org.neo4j.helpers.collection.Iterables.asSet;
 
@@ -114,6 +115,7 @@ public class HazelcastClusterTopology
         for ( Map.Entry<MemberId,ReadReplicaInfo> entry : rrTopology.members().entrySet() )
         {
             catchupAddressMap.put( entry.getKey(), entry.getValue().getCatchupServer() );
+
         }
 
         return catchupAddressMap;

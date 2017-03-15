@@ -35,9 +35,11 @@ import org.neo4j.logging.Log;
 import org.neo4j.logging.LogProvider;
 
 import static java.util.concurrent.TimeUnit.MILLISECONDS;
+
 import static org.neo4j.causalclustering.discovery.HazelcastClusterTopology.READ_REPLICA_BOLT_ADDRESS_MAP_NAME;
 import static org.neo4j.causalclustering.discovery.HazelcastClusterTopology.READ_REPLICA_MEMBER_ID_MAP_NAME;
-import static org.neo4j.causalclustering.discovery.HazelcastClusterTopology.READ_REPLICA_TRANSACTION_SERVER_ADDRESS_MAP_NAME;
+import static org.neo4j.causalclustering.discovery.HazelcastClusterTopology
+        .READ_REPLICA_TRANSACTION_SERVER_ADDRESS_MAP_NAME;
 import static org.neo4j.causalclustering.discovery.HazelcastClusterTopology.extractCatchupAddressesMap;
 import static org.neo4j.causalclustering.discovery.HazelcastClusterTopology.getCoreTopology;
 import static org.neo4j.causalclustering.discovery.HazelcastClusterTopology.getReadReplicaTopology;
@@ -50,11 +52,12 @@ class HazelcastClient extends LifecycleAdapter implements TopologyService
     private final RobustHazelcastWrapper hzInstance;
     private final RobustJobSchedulerWrapper scheduler;
     private final Config config;
-    private final AdvertisedSocketAddress transactionSource;
-    private final List<String> tags;
+
     private final long timeToLive;
     private final long refreshPeriod;
+    private final AdvertisedSocketAddress transactionSource;
     private final MemberId myself;
+    private final List<String> tags;
 
     private JobScheduler.JobHandle keepAliveJob;
     private JobScheduler.JobHandle refreshTopologyJob;
@@ -63,7 +66,8 @@ class HazelcastClient extends LifecycleAdapter implements TopologyService
     private volatile CoreTopology coreTopology = CoreTopology.EMPTY;
     private volatile ReadReplicaTopology rrTopology = ReadReplicaTopology.EMPTY;
 
-    HazelcastClient( HazelcastConnector connector, JobScheduler scheduler, LogProvider logProvider, Config config, MemberId myself )
+    HazelcastClient( HazelcastConnector connector, JobScheduler scheduler, LogProvider logProvider, Config config,
+                     MemberId myself )
     {
         this.hzInstance = new RobustHazelcastWrapper( connector );
         this.config = config;
@@ -71,10 +75,10 @@ class HazelcastClient extends LifecycleAdapter implements TopologyService
         this.scheduler = new RobustJobSchedulerWrapper( scheduler, log );
         this.connectorAddresses = ClientConnectorAddresses.extractFromConfig( config );
         this.transactionSource = config.get( CausalClusteringSettings.transaction_advertised_address );
-        this.tags = config.get( CausalClusteringSettings.server_tags );
         this.timeToLive = config.get( CausalClusteringSettings.read_replica_time_to_live );
         this.refreshPeriod = config.get( CausalClusteringSettings.cluster_topology_refresh );
         this.myself = myself;
+        this.tags = config.get( CausalClusteringSettings.server_tags );
     }
 
     @Override

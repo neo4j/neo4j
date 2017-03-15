@@ -99,6 +99,7 @@ public class SharedDiscoveryService implements DiscoveryServiceFactory
         try
         {
             return new ReadReplicaTopology( unmodifiableMap( readReplicaInfoMap ) );
+
         }
         finally
         {

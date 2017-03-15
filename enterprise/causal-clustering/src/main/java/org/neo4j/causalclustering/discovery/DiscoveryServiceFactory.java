@@ -30,5 +30,6 @@ public interface DiscoveryServiceFactory
             LogProvider logProvider, LogProvider userLogProvider );
 
     TopologyService topologyService( Config config, LogProvider logProvider,
-            JobScheduler jobScheduler, MemberId myself );
+                                     JobScheduler jobScheduler, MemberId myself );
+
 }

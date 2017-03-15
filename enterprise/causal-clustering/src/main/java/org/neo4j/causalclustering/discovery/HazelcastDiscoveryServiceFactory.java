@@ -37,10 +37,9 @@ public class HazelcastDiscoveryServiceFactory implements DiscoveryServiceFactory
 
     @Override
     public TopologyService topologyService( Config config, LogProvider logProvider,
-            JobScheduler jobScheduler, MemberId myself )
+                                            JobScheduler jobScheduler, MemberId myself )
     {
         configureHazelcast( config );
-
         return new HazelcastClient( new HazelcastClientConnector( config ), jobScheduler, logProvider, config, myself );
     }
 

@@ -82,6 +82,5 @@ class SharedDiscoveryReadReplicaClient extends LifecycleAdapter implements Topol
     {
         return sharedDiscoveryService.coreTopology( null ).find( upstream ).map( info -> Optional.of( info.getCatchupServer() ) )
                 .orElseGet( () -> sharedDiscoveryService.readReplicaTopology().find( upstream ).map( ReadReplicaInfo::getCatchupServer ) );
-
     }
 }
