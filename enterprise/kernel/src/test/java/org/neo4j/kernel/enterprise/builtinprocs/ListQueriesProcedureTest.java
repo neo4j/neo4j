@@ -19,6 +19,7 @@
  */
 package org.neo4j.kernel.enterprise.builtinprocs;
 
+import java.io.PrintWriter;
 import java.util.HashSet;
 import java.util.List;
 import java.util.Map;
@@ -29,6 +30,7 @@ import java.util.concurrent.TimeoutException;
 import java.util.function.BiConsumer;
 import java.util.function.Supplier;
 
+import org.junit.Ignore;
 import org.junit.Rule;
 import org.junit.Test;
 
@@ -351,6 +353,19 @@ public class ListQueriesProcedureTest
             assertThat( index, hasEntry( "identifier", "n" ) );
             assertThat( index, hasEntry( "label", "Node" ) );
             assertThat( index, hasEntry( "propertyKey", "value" ) );
+        }
+    }
+
+    @Ignore
+    @Test
+    public void sampleOutput() throws Exception
+    {
+        String query = "MATCH (n) SET n.v = n.v + 1";
+        db.execute( query ).close(); // ensure it's cached first
+        try ( Resource<Node> test = test( db::createNode, Transaction::acquireWriteLock, query );
+              PrintWriter out = new PrintWriter( System.out ) )
+        {
+            db.execute( "CALL dbms.listQueries" ).writeAsStringTo( out );
         }
     }
 
