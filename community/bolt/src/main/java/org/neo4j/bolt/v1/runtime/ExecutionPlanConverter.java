@@ -19,12 +19,12 @@
  */
 package org.neo4j.bolt.v1.runtime;
 
-import org.neo4j.graphdb.ExecutionPlanDescription;
-
 import java.util.HashMap;
 import java.util.LinkedList;
 import java.util.List;
 import java.util.Map;
+
+import org.neo4j.graphdb.ExecutionPlanDescription;
 
 /** Takes execution plans and converts them to the subset of types used in the Neo4j type system */
 class ExecutionPlanConverter
@@ -40,6 +40,8 @@ class ExecutionPlanConverter
         {
             ExecutionPlanDescription.ProfilerStatistics profile = plan.getProfilerStatistics();
             out.put( "dbHits", profile.getDbHits() );
+            out.put( "pageCacheHits", profile.getPageCacheHits() );
+            out.put( "pageCacheMisses", profile.getPageCacheMisses() );
             out.put( "rows", profile.getRows() );
         }
         return out;

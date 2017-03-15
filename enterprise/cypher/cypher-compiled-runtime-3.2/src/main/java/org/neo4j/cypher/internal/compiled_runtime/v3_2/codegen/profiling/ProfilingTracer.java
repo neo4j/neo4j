@@ -25,6 +25,7 @@ import java.util.Map;
 import org.neo4j.cypher.internal.compiled_runtime.v3_2.codegen.QueryExecutionEvent;
 import org.neo4j.cypher.internal.compiled_runtime.v3_2.codegen.QueryExecutionTracer;
 import org.neo4j.cypher.internal.compiler.v3_2.planDescription.Id;
+import org.neo4j.cypher.internal.compiler.v3_2.spi.KernelStatisticProvider;
 
 public class ProfilingTracer implements QueryExecutionTracer
 {
@@ -33,6 +34,8 @@ public class ProfilingTracer implements QueryExecutionTracer
         long time();
         long dbHits();
         long rows();
+        long pageCacheHits();
+        long pageCacheMisses();
     }
 
     public interface Clock
@@ -45,16 +48,18 @@ public class ProfilingTracer implements QueryExecutionTracer
     private static final Data ZERO = new Data();
 
     private final Clock clock;
+    private final KernelStatisticProvider statisticProvider;
     private final Map<Id, Data> data = new HashMap<>();
 
-    public ProfilingTracer()
+    public ProfilingTracer( KernelStatisticProvider statisticProvider )
     {
-        this( Clock.SYSTEM_TIMER );
+        this( Clock.SYSTEM_TIMER, statisticProvider );
     }
 
-    ProfilingTracer( Clock clock )
+    ProfilingTracer( Clock clock, KernelStatisticProvider statisticProvider )
     {
         this.clock = clock;
+        this.statisticProvider = statisticProvider;
     }
 
     public ProfilingInformation get( Id query )
@@ -86,20 +91,22 @@ public class ProfilingTracer implements QueryExecutionTracer
         {
             this.data.put( queryId, data = new Data() );
         }
-        return new ExecutionEvent( clock, data );
+        return new ExecutionEvent( clock, statisticProvider, data );
     }
 
     private static class ExecutionEvent implements QueryExecutionEvent
     {
         private final long start;
         private final Clock clock;
+        private final KernelStatisticProvider statisticProvider;
         private final Data data;
         private long hitCount;
         private long rowCount;
 
-        ExecutionEvent( Clock clock, Data data )
+        ExecutionEvent( Clock clock, KernelStatisticProvider statisticProvider, Data data )
         {
             this.clock = clock;
+            this.statisticProvider = statisticProvider;
             this.data = data;
             this.start = clock.nanoTime();
         }
@@ -108,9 +115,11 @@ public class ProfilingTracer implements QueryExecutionTracer
         public void close()
         {
             long executionTime = clock.nanoTime() - start;
+            long pageCacheHits = statisticProvider.getPageCacheHits();
+            long pageCacheFaults = statisticProvider.getPageCacheMisses();
             if ( data != null )
             {
-                data.update( executionTime, hitCount, rowCount );
+                data.update( executionTime, hitCount, rowCount, pageCacheHits, pageCacheFaults );
             }
         }
 
@@ -129,13 +138,19 @@ public class ProfilingTracer implements QueryExecutionTracer
 
     private static class Data implements ProfilingInformation
     {
-        private long time, hits, rows;
+        private long time;
+        private long hits;
+        private long rows;
+        private long pageCacheHits;
+        private long pageCacheMisses;
 
-        public void update( long time, long hits, long rows )
+        public void update( long time, long hits, long rows, long pageCacheHits, long pageCacheMisses )
         {
             this.time += time;
             this.hits += hits;
             this.rows += rows;
+            this.pageCacheHits += pageCacheHits;
+            this.pageCacheMisses += pageCacheMisses;
         }
 
         @Override
@@ -154,6 +169,18 @@ public class ProfilingTracer implements QueryExecutionTracer
         public long rows()
         {
             return rows;
+        }
+
+        @Override
+        public long pageCacheHits()
+        {
+            return pageCacheHits;
+        }
+
+        @Override
+        public long pageCacheMisses()
+        {
+            return pageCacheMisses;
         }
     }
 }

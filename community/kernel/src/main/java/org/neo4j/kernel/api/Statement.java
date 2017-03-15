@@ -68,4 +68,6 @@ public interface Statement extends Resource
      * @return interface exposing all procedure call operations.
      */
     ProcedureCallOperations procedureCallOperations();
+
+    ExecutionStatisticsOperations executionStatisticsOperations();
 }

@@ -17,36 +17,18 @@
  * You should have received a copy of the GNU General Public License
  * along with this program.  If not, see <http://www.gnu.org/licenses/>.
  */
-package org.neo4j.cypher.internal.javacompat;
+package org.neo4j.cypher.internal.compatibility.v3_2
 
-/**
- * Profiler statistics for a single execution step of a Cypher query execution plan
- */
-public interface ProfilerStatistics
-{
-    /**
-     * @return number of rows processed by the associated execution step
-     */
-    long getRows();
+import org.neo4j.cypher.internal.compiler.v3_2.spi.KernelStatisticProvider
+import org.neo4j.io.pagecache.tracing.cursor.PageCursorTracer
 
-    /**
-     * @return number of database hits (potential disk accesses) caused by executing the associated execution step
-     */
-    long getDbHits();
+class ProfileKernelStatisticProvider(pageCursorTracer: PageCursorTracer) extends KernelStatisticProvider {
 
-    /**
-     * @return number of page cache hits caused by executing the associated execution step
-     */
-    default long getPageCacheHits()
-    {
-        return 0;
-    }
+  override def getPageCacheHits: Long = {
+    pageCursorTracer.hits()
+  }
 
-    /**
-     * @return number of page cache misses caused by executing the associated execution step
-     */
-    default long getPageCacheMisses()
-    {
-        return 0;
-    }
+  override def getPageCacheMisses: Long = {
+    pageCursorTracer.faults()
+  }
 }

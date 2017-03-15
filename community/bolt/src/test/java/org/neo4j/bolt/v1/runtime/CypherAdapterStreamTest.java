@@ -21,16 +21,6 @@ package org.neo4j.bolt.v1.runtime;
 
 import org.junit.Test;
 
-import org.neo4j.bolt.v1.runtime.spi.Record;
-import org.neo4j.bolt.v1.runtime.spi.BoltResult;
-import org.neo4j.graphdb.ExecutionPlanDescription;
-import org.neo4j.graphdb.InputPosition;
-import org.neo4j.graphdb.Notification;
-import org.neo4j.graphdb.QueryStatistics;
-import org.neo4j.graphdb.Result;
-import org.neo4j.graphdb.impl.notification.NotificationCode;
-import org.neo4j.kernel.impl.query.TransactionalContext;
-
 import java.time.Clock;
 import java.util.Arrays;
 import java.util.Collections;
@@ -39,6 +29,16 @@ import java.util.HashSet;
 import java.util.List;
 import java.util.Map;
 import java.util.Set;
+
+import org.neo4j.bolt.v1.runtime.spi.BoltResult;
+import org.neo4j.bolt.v1.runtime.spi.Record;
+import org.neo4j.graphdb.ExecutionPlanDescription;
+import org.neo4j.graphdb.InputPosition;
+import org.neo4j.graphdb.Notification;
+import org.neo4j.graphdb.QueryStatistics;
+import org.neo4j.graphdb.Result;
+import org.neo4j.graphdb.impl.notification.NotificationCode;
+import org.neo4j.kernel.impl.query.TransactionalContext;
 
 import static java.util.Arrays.asList;
 import static java.util.Collections.singletonList;
@@ -139,8 +139,8 @@ public class CypherAdapterStreamTest
         when( result.getQueryStatistics() ).thenReturn( queryStatistics );
         when( result.getNotifications() ).thenReturn( Collections.emptyList() );
         when( result.getExecutionPlanDescription() ).thenReturn(
-                plan( "Join", map( "arg1", 1 ), 2, 1, singletonList( "id1" ),
-                        plan( "Scan", map( "arg2", 1 ), 2, 1, singletonList( "id2" ) ) ) );
+                plan( "Join", map( "arg1", 1 ), 2, 4, 3, 1, singletonList( "id1" ),
+                        plan( "Scan", map( "arg2", 1 ), 2, 4, 7, 1, singletonList( "id2" ) ) ) );
 
         TransactionalContext tc = mock( TransactionalContext.class );
         CypherAdapterStream stream = new CypherAdapterStream( result, Clock.systemUTC() );
@@ -149,7 +149,10 @@ public class CypherAdapterStreamTest
         Map<String,Object> meta = metadataOf( stream );
 
         // Then
-        assertThat( meta.get( "profile" ).toString(), equalTo( "{args={arg1=1}, children=[{args={arg2=1}, children=[], dbHits=2, identifiers=[id2], operatorType=Scan, rows=1}], dbHits=2, identifiers=[id1], operatorType=Join, rows=1}" ));
+        assertThat( meta.get( "profile" ).toString(), equalTo( "{args={arg1=1}, pageCacheMisses=3, " +
+                "children=[{args={arg2=1}, pageCacheMisses=7, " +
+                "children=[], dbHits=2, identifiers=[id2], operatorType=Scan, rows=1, pageCacheHits=4}], dbHits=2, " +
+                "identifiers=[id1], operatorType=Join, rows=1, pageCacheHits=4}" ));
     }
 
     @Test
@@ -200,7 +203,9 @@ public class CypherAdapterStreamTest
         return meta;
     }
 
-    private static ExecutionPlanDescription plan( final String name, final Map<String, Object> args, final long dbHits, final long rows, final List<String> identifiers, final ExecutionPlanDescription ... children )
+    private static ExecutionPlanDescription plan( final String name, final Map<String, Object> args, final long dbHits,
+            final long pageCacheHits, final long pageCacheMisses, final long rows, final List<String> identifiers,
+            final ExecutionPlanDescription... children )
     {
         return plan( name, args, identifiers, new ExecutionPlanDescription.ProfilerStatistics()
         {
@@ -214,6 +219,18 @@ public class CypherAdapterStreamTest
             public long getDbHits()
             {
                 return dbHits;
+            }
+
+            @Override
+            public long getPageCacheHits()
+            {
+                return pageCacheHits;
+            }
+
+            @Override
+            public long getPageCacheMisses()
+            {
+                return pageCacheMisses;
             }
         }, children );
     }

@@ -33,9 +33,9 @@ object ExecutionPlanBuilder {
   type DescriptionProvider =
     (InternalPlanDescription => (Provider[InternalPlanDescription], Option[QueryExecutionTracer]))
 
-  def tracer(mode: ExecutionMode): DescriptionProvider = mode match {
+  def tracer(mode: ExecutionMode, queryContext: QueryContext): DescriptionProvider = mode match {
     case ProfileMode =>
-      val tracer = new ProfilingTracer()
+      val tracer = new ProfilingTracer(queryContext.kernelStatisticProvider())
       (description: InternalPlanDescription) =>
         (new Provider[InternalPlanDescription] {
 
@@ -44,6 +44,8 @@ object ExecutionPlanBuilder {
               val data = tracer.get(plan.id)
               plan.
                 addArgument(Arguments.DbHits(data.dbHits())).
+                addArgument(Arguments.PageCacheHits(data.pageCacheHits())).
+                addArgument(Arguments.PageCacheMisses(data.pageCacheMisses())).
                 addArgument(Arguments.Rows(data.rows())).
                 addArgument(Arguments.Time(data.time()))
           }

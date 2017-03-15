@@ -22,6 +22,7 @@ package org.neo4j.cypher.internal.compiled_runtime.v3_2.codegen.ir
 import org.mockito.Matchers._
 import org.mockito.Mockito._
 import org.neo4j.collection.primitive.PrimitiveLongIterator
+import org.neo4j.cypher.internal.compatibility.v3_2.ProfileKernelStatisticProvider
 import org.neo4j.cypher.internal.compiled_runtime.v3_2.codegen.Variable
 import org.neo4j.cypher.internal.compiled_runtime.v3_2.codegen.ir.expressions.CodeGenType
 import org.neo4j.cypher.internal.compiled_runtime.v3_2.codegen.profiling.ProfilingTracer
@@ -37,6 +38,7 @@ import org.neo4j.cypher.internal.frontend.v3_2.test_helpers.CypherFunSuite
 import org.neo4j.cypher.internal.ir.v3_2.{Cardinality, CardinalityEstimation, IdName, PlannerQuery}
 import org.neo4j.cypher.internal.spi.v3_2.TransactionalContextWrapper
 import org.neo4j.cypher.javacompat.internal.GraphDatabaseCypherService
+import org.neo4j.io.pagecache.tracing.cursor.DefaultPageCursorTracer
 import org.neo4j.kernel.api._
 import org.neo4j.kernel.api.security.AnonymousContext
 import org.neo4j.kernel.impl.core.{NodeManager, NodeProxy}
@@ -60,6 +62,7 @@ class CompiledProfilingTest extends CypherFunSuite with CodeGenSugar {
     val queryContext = mock[QueryContext]
     val transactionalContext = mock[TransactionalContextWrapper]
     when(queryContext.transactionalContext).thenReturn(transactionalContext.asInstanceOf[QueryTransactionalContext])
+    when(queryContext.kernelStatisticProvider()).thenReturn(new ProfileKernelStatisticProvider(new DefaultPageCursorTracer))
     when(transactionalContext.readOperations).thenReturn(readOps)
     when(entityAccessor.newNodeProxyById(anyLong())).thenReturn(mock[NodeProxy])
     when(queryContext.entityAccessor).thenReturn(entityAccessor.asInstanceOf[queryContext.EntityAccessor])
@@ -80,7 +83,7 @@ class CompiledProfilingTest extends CypherFunSuite with CodeGenSugar {
     }
 
     // when
-    val tracer = new ProfilingTracer()
+    val tracer = new ProfilingTracer(queryContext.kernelStatisticProvider())
     newInstance(compiled, queryContext = queryContext, provider = provider, queryExecutionTracer = tracer).size
 
     // then

@@ -1677,7 +1677,7 @@ abstract class CodeGeneratorTest extends CypherFunSuite with LogicalPlanningTest
   }
 
   private def compileAndExecute(plan: LogicalPlan, params: Map[String, AnyRef] = Map.empty, taskCloser: TaskCloser = new TaskCloser) = {
-    compile(plan).executionResultBuilder(queryContext, NormalMode, tracer(NormalMode), params, taskCloser)
+    compile(plan).executionResultBuilder(queryContext, NormalMode, tracer(NormalMode, queryContext), params, taskCloser)
   }
 
   /*

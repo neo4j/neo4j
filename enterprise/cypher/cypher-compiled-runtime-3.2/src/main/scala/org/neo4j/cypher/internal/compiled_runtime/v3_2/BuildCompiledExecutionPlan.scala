@@ -73,7 +73,7 @@ object BuildCompiledExecutionPlan extends Phase[CompiledRuntimeContext, Compilat
           ExplainExecutionResult(compiled.columns.toList,
             compiled.planDescription, READ_ONLY, context.notificationLogger.notifications)
         } else
-          compiled.executionResultBuilder(queryContext, executionMode, createTracer(executionMode), params, taskCloser)
+          compiled.executionResultBuilder(queryContext, executionMode, createTracer(executionMode, queryContext), params, taskCloser)
       } catch {
         case (t: Throwable) =>
           taskCloser.close(success = false)
@@ -92,9 +92,9 @@ object BuildCompiledExecutionPlan extends Phase[CompiledRuntimeContext, Compilat
     override def plannedIndexUsage: Seq[IndexUsage] = compiled.plannedIndexUsage
   }
 
-  private def createTracer(mode: ExecutionMode): DescriptionProvider = mode match {
+  private def createTracer(mode: ExecutionMode, queryContext: QueryContext): DescriptionProvider = mode match {
     case ProfileMode =>
-      val tracer = new ProfilingTracer()
+      val tracer = new ProfilingTracer(queryContext.kernelStatisticProvider())
       (description: InternalPlanDescription) =>
         (new Provider[InternalPlanDescription] {
 
@@ -103,6 +103,8 @@ object BuildCompiledExecutionPlan extends Phase[CompiledRuntimeContext, Compilat
               val data = tracer.get(plan.id)
               plan.
                 addArgument(Arguments.DbHits(data.dbHits())).
+                addArgument(Arguments.PageCacheHits(data.pageCacheHits())).
+                addArgument(Arguments.PageCacheMisses(data.pageCacheMisses())).
                 addArgument(Arguments.Rows(data.rows())).
                 addArgument(Arguments.Time(data.time()))
           }

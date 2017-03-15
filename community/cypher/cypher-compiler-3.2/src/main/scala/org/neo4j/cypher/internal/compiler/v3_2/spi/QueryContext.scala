@@ -179,6 +179,7 @@ trait QueryContext extends TokenContext {
 
   def assertSchemaWritesAllowed(): Unit
 
+  def kernelStatisticProvider() : KernelStatisticProvider
 }
 
 trait Operations[T <: PropertyContainer] {

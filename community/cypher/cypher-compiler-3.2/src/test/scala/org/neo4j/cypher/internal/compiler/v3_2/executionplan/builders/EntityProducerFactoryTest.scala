@@ -25,7 +25,7 @@ import org.mockito.Mockito._
 import org.neo4j.cypher.internal.compiler.v3_2.commands._
 import org.neo4j.cypher.internal.compiler.v3_2.commands.expressions.Literal
 import org.neo4j.cypher.internal.compiler.v3_2.pipes.QueryStateHelper
-import org.neo4j.cypher.internal.compiler.v3_2.spi.{PlanContext, QueryContext, QueryContextAdaptation}
+import org.neo4j.cypher.internal.compiler.v3_2.spi._
 import org.neo4j.cypher.internal.compiler.v3_2.{ExecutionContext, IndexDescriptor}
 import org.neo4j.cypher.internal.frontend.v3_2.IndexHintException
 import org.neo4j.cypher.internal.frontend.v3_2.test_helpers.CypherFunSuite
@@ -84,6 +84,10 @@ class EntityProducerFactoryTest extends CypherFunSuite {
       override def indexSeek(index: IndexDescriptor, values: Seq[Any]): Iterator[Node] = {
         seenValues = values
         Iterator.empty
+      }
+
+      override def kernelStatisticProvider(): KernelStatisticProvider = {
+        EmptyKernelStatisticProvider
       }
     }
     val state = QueryStateHelper.emptyWith(query = queryContext)

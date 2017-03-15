@@ -210,6 +210,8 @@ class DelegatingQueryContext(val inner: QueryContext) extends QueryContext {
   override def detachDeleteNode(node: Node): Int = manyDbHits(inner.detachDeleteNode(node))
 
   override def assertSchemaWritesAllowed(): Unit = inner.assertSchemaWritesAllowed()
+
+  override def kernelStatisticProvider(): KernelStatisticProvider = inner.kernelStatisticProvider()
 }
 
 class DelegatingOperations[T <: PropertyContainer](protected val inner: Operations[T]) extends Operations[T] {

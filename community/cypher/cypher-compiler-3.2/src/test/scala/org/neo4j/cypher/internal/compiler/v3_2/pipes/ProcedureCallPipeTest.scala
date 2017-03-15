@@ -130,5 +130,8 @@ class ProcedureCallPipeTest
       result(args)
     }
 
+    override def kernelStatisticProvider(): KernelStatisticProvider =  {
+      EmptyKernelStatisticProvider
+    }
   }
 }
