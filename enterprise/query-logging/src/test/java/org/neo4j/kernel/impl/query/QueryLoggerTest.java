@@ -23,22 +23,38 @@ import org.junit.Test;
 
 import java.time.Clock;
 import java.util.Arrays;
+import java.util.Collections;
 import java.util.HashMap;
+import java.util.List;
 import java.util.Map;
 import java.util.concurrent.TimeUnit;
 
+import org.neo4j.graphdb.Result;
+import org.neo4j.graphdb.factory.GraphDatabaseSettings;
 import org.neo4j.kernel.api.ExecutingQuery;
+import org.neo4j.kernel.api.KernelTransaction;
+import org.neo4j.kernel.api.security.AuthToken;
+import org.neo4j.kernel.configuration.Settings;
+import org.neo4j.kernel.enterprise.api.security.EnterpriseAuthManager;
+import org.neo4j.kernel.enterprise.api.security.EnterpriseSecurityContext;
+import org.neo4j.kernel.impl.coreapi.InternalTransaction;
+import org.neo4j.kernel.impl.factory.GraphDatabaseFacade;
 import org.neo4j.kernel.impl.query.QueryLoggerKernelExtension.QueryLogger;
 import org.neo4j.logging.AssertableLogProvider;
 import org.neo4j.logging.LogProvider;
+import org.neo4j.server.security.enterprise.auth.EnterpriseAuthAndUserManager;
 import org.neo4j.time.Clocks;
 import org.neo4j.time.FakeClock;
 
 import static java.lang.String.format;
 import static java.util.Collections.emptyMap;
+import static org.hamcrest.Matchers.containsString;
 import static org.hamcrest.Matchers.equalTo;
+import static org.hamcrest.Matchers.not;
 import static org.hamcrest.Matchers.sameInstance;
 import static org.hamcrest.core.Is.is;
+import static org.junit.Assert.assertEquals;
+import static org.junit.Assert.assertThat;
 import static org.mockito.Mockito.mock;
 import static org.mockito.Mockito.when;
 import static org.neo4j.helpers.collection.MapUtil.map;
@@ -258,6 +274,143 @@ public class QueryLoggerTest
                             "{session one} [AnotherUser]", QUERY_1 ) ),
                         sameInstance( error ) )
         );
+    }
+
+    @Test
+    public void shouldNotLogPassword() throws Exception
+    {
+        String inputQuery = "CALL dbms.security.changePassword('abc123')";
+        String outputQuery = "CALL dbms.security.changePassword(******)";
+
+        runAndCheck( inputQuery, outputQuery, emptyMap(), "" );
+    }
+
+    @Test
+    public void shouldNotLogPasswordNull() throws Exception
+    {
+        String inputQuery = "CALL dbms.security.changeUserPassword(null, 'password')";
+        String outputQuery = "CALL dbms.security.changeUserPassword(null, ******)";
+
+        runAndCheck( inputQuery, outputQuery, emptyMap(), "" );
+    }
+
+    @Test
+    public void shouldNotLogPasswordWhenMalformedArgument() throws Exception
+    {
+        String inputQuery = "CALL dbms.security.changeUserPassword('user, 'password')";
+        String outputQuery = "CALL dbms.security.changeUserPassword('user, ******)";
+
+        runAndCheck( inputQuery, outputQuery, emptyMap(), "" );
+    }
+
+    @Test
+    public void shouldNotLogPasswordExplain() throws Exception
+    {
+        String inputQuery = "EXPLAIN CALL dbms.security.changePassword('abc123')";
+        String outputQuery = "EXPLAIN CALL dbms.security.changePassword(******)";
+
+        runAndCheck( inputQuery, outputQuery, emptyMap(), "" );
+    }
+
+    @Test
+    public void shouldNotLogChangeUserPassword() throws Exception
+    {
+        String inputQuery = "CALL dbms.security.changeUserPassword('abc123')";
+        String outputQuery = "CALL dbms.security.changeUserPassword(******)";
+
+        runAndCheck( inputQuery, outputQuery, emptyMap(), "" );
+    }
+
+    @Test
+    public void shouldNotLogPasswordEvenIfPasswordIsSilly() throws Exception
+    {
+        String inputQuery = "CALL dbms.security.changePassword('.changePassword(\\'si\"lly\\')')";
+        String outputQuery = "CALL dbms.security.changePassword(******)";
+
+        runAndCheck( inputQuery, outputQuery, emptyMap(), "" );
+    }
+
+    @Test
+    public void shouldNotLogPasswordEvenIfYouDoTwoThingsAtTheSameTime() throws Exception
+    {
+        String inputQuery = "CALL dbms.security.changeUserPassword('neo4j','.changePassword(silly)') " +
+                "CALL dbms.security.changeUserPassword('smith','other$silly') RETURN 1";
+        String outputQuery = "CALL dbms.security.changeUserPassword('neo4j',******) " +
+                "CALL dbms.security.changeUserPassword('smith',******) RETURN 1";
+
+        runAndCheck( inputQuery, outputQuery, emptyMap(), "" );
+    }
+
+    @Test
+    public void shouldNotLogPasswordEvenIfYouDoTwoThingsAtTheSameTimeWithSeveralParms() throws Exception
+    {
+        String inputQuery = "CALL dbms.security.changeUserPassword('neo4j',$first) " +
+                "CALL dbms.security.changeUserPassword('smith',$second) RETURN 1";
+        String outputQuery = "CALL dbms.security.changeUserPassword('neo4j',$first) " +
+                "CALL dbms.security.changeUserPassword('smith',$second) RETURN 1";
+
+        Map<String,Object> params = new HashMap<>();
+        params.put( "first", ".changePassword(silly)" );
+        params.put( "second", ".other$silly" );
+
+        runAndCheck( inputQuery, outputQuery, params, "first: ******, second: ******" );
+    }
+
+    @Test
+    public void shouldNotLogPasswordInParams() throws Exception
+    {
+        String inputQuery = "CALL dbms.changePassword($password)";
+        String outputQuery = "CALL dbms.changePassword($password)";
+
+        runAndCheck( inputQuery, outputQuery, Collections.singletonMap( "password", ".changePassword(silly)" ),
+                "password: ******" );
+    }
+
+    @Test
+    public void shouldNotLogPasswordInDeprecatedParams() throws Exception
+    {
+        String inputQuery = "CALL dbms.changePassword({password})";
+        String outputQuery = "CALL dbms.changePassword({password})";
+
+        runAndCheck( inputQuery, outputQuery, Collections.singletonMap( "password", "abc123" ), "password: ******" );
+    }
+
+    @Test
+    public void shouldNotLogPasswordDifferentWhitespace() throws Exception
+    {
+        String inputQuery = "CALL dbms.security.changeUserPassword(%s'abc123'%s)";
+        String outputQuery = "CALL dbms.security.changeUserPassword(%s******%s)";
+
+        runAndCheck(
+                format( inputQuery, "'user',", "" ),
+                format( outputQuery, "'user',", "" ), emptyMap(), "" );
+        runAndCheck(
+                format( inputQuery, "'user', ", "" ),
+                format( outputQuery, "'user', ", "" ), emptyMap(), "" );
+        runAndCheck(
+                format( inputQuery, "'user' ,", " " ),
+                format( outputQuery, "'user' ,", " " ), emptyMap(), "" );
+        runAndCheck(
+                format( inputQuery, "'user',  ", "  " ),
+                format( outputQuery, "'user',  ", "  " ), emptyMap(), "" );
+    }
+
+    private void runAndCheck( String inputQuery, String outputQuery, Map<String,Object> params, String paramsString )
+    {
+        final AssertableLogProvider logProvider = new AssertableLogProvider();
+        FakeClock clock = Clocks.fakeClock();
+        QueryLogger queryLogger = queryLoggerWithParams( logProvider, clock );
+
+        // when
+        ExecutingQuery query = query( 0, SESSION_1_NAME, "neo", inputQuery, params, emptyMap() );
+        queryLogger.startQueryExecution( query );
+        clock.forward( 10, TimeUnit.MILLISECONDS );
+        queryLogger.endSuccess( query );
+
+        // then
+        logProvider.assertExactly( inLog( getClass() )
+                .info( format( "%d ms: %s - %s - {%s} - {}", 10L, "{session one} [neo]", outputQuery,
+                        paramsString ) ) );
     }
 
     private QueryLogger queryLoggerWithoutParams( LogProvider logProvider, Clock clock )

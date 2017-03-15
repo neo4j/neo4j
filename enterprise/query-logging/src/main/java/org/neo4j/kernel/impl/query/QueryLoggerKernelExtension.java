@@ -23,7 +23,13 @@ import java.io.Closeable;
 import java.io.File;
 import java.io.OutputStream;
 import java.time.Clock;
+import java.util.Collection;
+import java.util.Collections;
+import java.util.HashSet;
 import java.util.Map;
+import java.util.Set;
+import java.util.regex.Matcher;
+import java.util.regex.Pattern;
 
 import org.neo4j.graphdb.factory.GraphDatabaseSettings;
 import org.neo4j.helpers.Service;
@@ -137,6 +143,14 @@ public class QueryLoggerKernelExtension extends KernelExtensionFactory<QueryLogg
         private final long thresholdMillis;
         private final boolean logQueryParameters;
 
+        private static final Pattern PASSWORD_PATTERN = Pattern.compile(
+                // call signature
+                "(?:(?i)call)\\s+dbms(?:\\.security)?\\.change(?:User)?Password\\(" +
+                // optional username parameter, in single, double quotes, or parametrized
+                "(?:\\s*(?:'(?:(?<=\\\\)'|[^'])*'|\"(?:(?<=\\\\)\"|[^\"])*\"|[^,]*)\\s*,)?" +
+                // password parameter, in single, double quotes, or parametrized
+                "\\s*('(?:(?<=\\\\)'|[^'])*'|\"(?:(?<=\\\\)\"|[^\"])*\"|\\$\\w*|\\{\\w*\\})\\s*\\)" );
+
         QueryLogger( Clock clock, Log log, long thresholdMillis, boolean logQueryParameters )
         {
             this.clock = clock;
@@ -172,9 +186,31 @@ public class QueryLoggerKernelExtension extends KernelExtensionFactory<QueryLogg
             String sourceString = query.querySource().toString();
             String queryText = query.queryText();
             String metaData = mapAsString( query.metaData() );
+
+            Set<String> passwordParams = new HashSet<>();
+            Matcher matcher = PASSWORD_PATTERN.matcher( queryText );
+
+            while ( matcher.find() )
+            {
+                String password = matcher.group( 1 ).trim();
+                if ( password.charAt( 0 ) == '$' )
+                {
+                    passwordParams.add( password.substring( 1 ) );
+                }
+                else if ( password.charAt( 0 ) == '{' )
+                {
+                    passwordParams.add( password.substring( 1, password.length() - 1 ) );
+                }
+                else
+                {
+                    queryText = queryText.replace( password, "******" );
+                    password = "";
+                }
+            }
+
             if ( logQueryParameters )
             {
-                String params = mapAsString( query.queryParameters() );
+                String params = mapAsString( query.queryParameters(), passwordParams );
                 return format( "%d ms: %s - %s - %s - %s", time, sourceString, queryText, params, metaData );
             }
             else
@@ -183,8 +219,12 @@ public class QueryLoggerKernelExtension extends KernelExtensionFactory<QueryLogg
             }
         }
 
-        @SuppressWarnings( "unchecked" )
         private static String mapAsString( Map<String,Object> params )
+        {
+            return mapAsString( params, Collections.emptySet() );
+        }
+
+        private static String mapAsString( Map<String, Object> params, Collection<String> obfuscate )
         {
             if ( params == null )
             {
@@ -196,11 +236,18 @@ public class QueryLoggerKernelExtension extends KernelExtensionFactory<QueryLogg
             for ( Map.Entry<String,Object> entry : params.entrySet() )
             {
                 builder
-                    .append( sep )
-                    .append( entry.getKey() )
-                    .append( ": " )
-                    .append( valueToString( entry.getValue() ) );
+                        .append( sep )
+                        .append( entry.getKey() )
+                        .append( ": " );
 
+                if ( obfuscate.contains( entry.getKey() ) )
+                {
+                    builder.append( "******" );
+                }
+                else
+                {
+                    builder.append( valueToString( entry.getValue() ) );
+                }
                 sep = ", ";
             }
             builder.append( "}" );
