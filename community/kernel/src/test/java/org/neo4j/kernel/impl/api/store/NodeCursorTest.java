@@ -36,7 +36,7 @@ import org.neo4j.collection.primitive.PrimitiveIntSet;
 import org.neo4j.cursor.Cursor;
 import org.neo4j.kernel.api.StatementConstants;
 import org.neo4j.kernel.impl.api.state.TxState;
-import org.neo4j.kernel.impl.api.store.NodeCursor.Progression.Mode;
+import org.neo4j.kernel.impl.api.store.Progression.Mode;
 import org.neo4j.kernel.impl.locking.Lock;
 import org.neo4j.kernel.impl.store.RecordCursor;
 import org.neo4j.kernel.impl.store.RecordCursors;
@@ -54,8 +54,8 @@ import static org.mockito.Mockito.mock;
 import static org.mockito.Mockito.when;
 import static org.neo4j.collection.primitive.PrimitiveIntCollections.asArray;
 import static org.neo4j.collection.primitive.PrimitiveIntCollections.asSet;
-import static org.neo4j.kernel.impl.api.store.NodeCursor.Progression.Mode.APPEND;
-import static org.neo4j.kernel.impl.api.store.NodeCursor.Progression.Mode.FETCH;
+import static org.neo4j.kernel.impl.api.store.Progression.Mode.APPEND;
+import static org.neo4j.kernel.impl.api.store.Progression.Mode.FETCH;
 import static org.neo4j.kernel.impl.locking.LockService.NO_LOCK_SERVICE;
 import static org.neo4j.kernel.impl.store.record.RecordLoad.CHECK;
 import static org.neo4j.kernel.impl.transaction.state.NodeLabelsFieldTest.inlinedLabelsLongRepresentation;
@@ -224,7 +224,7 @@ public class NodeCursorTest
         MutableBoolean called = new MutableBoolean();
         NodeCursor cursor =
                 new NodeCursor( nodeRecord, c -> called.setTrue(), recordCursors, NO_LOCK_SERVICE );
-        cursor.init( mock( NodeCursor.Progression.class ), mock( ReadableTransactionState.class ) );
+        cursor.init( mock( Progression.class ), mock( ReadableTransactionState.class ) );
         assertFalse( called.booleanValue() );
 
         cursor.close();
@@ -523,9 +523,9 @@ public class NodeCursorTest
             return cursor.init( createProgression( ops, mode ), state );
         }
 
-        private NodeCursor.Progression createProgression( Operation[] ops, Mode mode )
+        private Progression createProgression( Operation[] ops, Mode mode )
         {
-            return new NodeCursor.Progression()
+            return new Progression()
             {
                 private int i = 0;
 

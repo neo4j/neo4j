@@ -37,8 +37,8 @@ import org.neo4j.storageengine.api.txstate.NodeState;
 import org.neo4j.storageengine.api.txstate.ReadableTransactionState;
 
 import static org.neo4j.collection.primitive.PrimitiveIntCollections.asSet;
-import static org.neo4j.kernel.impl.api.store.NodeCursor.Progression.Mode.APPEND;
-import static org.neo4j.kernel.impl.api.store.NodeCursor.Progression.Mode.FETCH;
+import static org.neo4j.kernel.impl.api.store.Progression.Mode.APPEND;
+import static org.neo4j.kernel.impl.api.store.Progression.Mode.FETCH;
 import static org.neo4j.kernel.impl.locking.LockService.NO_LOCK;
 import static org.neo4j.kernel.impl.locking.LockService.NO_LOCK_SERVICE;
 import static org.neo4j.kernel.impl.store.record.RecordLoad.CHECK;
@@ -46,19 +46,6 @@ import static org.neo4j.kernel.impl.util.IoPrimitiveUtils.safeCastLongToInt;
 
 public class NodeCursor implements NodeItem, Cursor<NodeItem>
 {
-    public interface Progression
-    {
-        enum Mode
-        {
-            APPEND,
-            FETCH
-        }
-
-        long nextId();
-
-        Mode mode();
-    }
-
     private final NodeRecord nodeRecord;
     private final Consumer<NodeCursor> instanceCache;
     private final RecordCursors recordCursors;
