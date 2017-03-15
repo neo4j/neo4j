@@ -30,7 +30,6 @@ import java.util.concurrent.locks.Condition;
 import java.util.concurrent.locks.Lock;
 import java.util.concurrent.locks.ReentrantLock;
 
-import org.neo4j.causalclustering.core.consensus.schedule.DelayedRenewableTimeoutService;
 import org.neo4j.causalclustering.identity.ClusterId;
 import org.neo4j.causalclustering.identity.MemberId;
 import org.neo4j.kernel.configuration.Config;
@@ -61,9 +60,7 @@ public class SharedDiscoveryService implements DiscoveryServiceFactory
     }
 
     @Override
-    public TopologyService readReplicaDiscoveryService( Config config, LogProvider logProvider,
-                                                 DelayedRenewableTimeoutService timeoutService,
-                                                 long readReplicaTimeToLiveTimeout, long readReplicaRefreshRate )
+    public TopologyService readReplicaDiscoveryService( Config config, LogProvider logProvider, JobScheduler jobScheduler )
     {
         return new SharedDiscoveryReadReplicaClient( this, config, logProvider );
     }
@@ -107,7 +104,6 @@ public class SharedDiscoveryService implements DiscoveryServiceFactory
         try
         {
             return new ReadReplicaTopology(
-                    clusterId,
                     unmodifiableSet( readReplicaAddresses )
             );
         }

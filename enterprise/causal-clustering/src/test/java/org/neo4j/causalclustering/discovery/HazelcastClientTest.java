@@ -27,7 +27,6 @@ import com.hazelcast.core.EntryListener;
 import com.hazelcast.core.EntryView;
 import com.hazelcast.core.ExecutionCallback;
 import com.hazelcast.core.HazelcastInstance;
-import com.hazelcast.core.HazelcastInstanceNotActiveException;
 import com.hazelcast.core.IAtomicReference;
 import com.hazelcast.core.ICompletableFuture;
 import com.hazelcast.core.IExecutorService;
@@ -76,18 +75,17 @@ import org.neo4j.kernel.configuration.Config;
 import org.neo4j.logging.Log;
 import org.neo4j.logging.LogProvider;
 import org.neo4j.logging.NullLogProvider;
+import org.neo4j.test.OnDemandJobScheduler;
 
 import static java.lang.String.format;
 import static org.junit.Assert.assertEquals;
 import static org.mockito.Matchers.any;
 import static org.mockito.Matchers.anyString;
-import static org.mockito.Matchers.startsWith;
 import static org.mockito.Mockito.doThrow;
 import static org.mockito.Mockito.mock;
 import static org.mockito.Mockito.times;
 import static org.mockito.Mockito.verify;
 import static org.mockito.Mockito.when;
-import static org.neo4j.causalclustering.discovery.HazelcastClient.REFRESH_READ_REPLICA;
 import static org.neo4j.causalclustering.discovery.HazelcastClusterTopology.CLIENT_CONNECTOR_ADDRESSES;
 import static org.neo4j.causalclustering.discovery.HazelcastClusterTopology.MEMBER_UUID;
 import static org.neo4j.causalclustering.discovery.HazelcastClusterTopology.RAFT_SERVER;
@@ -113,12 +111,12 @@ public class HazelcastClientTest
     }
 
     @Test
-    public void shouldReturnTopologyUsingHazelcastMembers() throws Exception
+    public void shouldReturnTopologyUsingHazelcastMembers() throws Throwable
     {
         // given
         HazelcastConnector connector = mock( HazelcastConnector.class );
-        HazelcastClient client = new HazelcastClient( connector, NullLogProvider.getInstance(), config(), new
-                ControlledRenewableTimeoutService(), 60_000, 5_000 );
+        OnDemandJobScheduler jobScheduler = new OnDemandJobScheduler();
+        HazelcastClient client = new HazelcastClient( connector, jobScheduler, NullLogProvider.getInstance(), config() );
 
         HazelcastInstance hazelcastInstance = mock( HazelcastInstance.class );
         when( connector.connectToHazelcast() ).thenReturn( hazelcastInstance );
@@ -134,6 +132,8 @@ public class HazelcastClientTest
         when( cluster.getMembers() ).thenReturn( members );
 
         // when
+        client.start();
+        jobScheduler.runJob();
         CoreTopology topology = client.coreServers();
 
         // then
@@ -141,12 +141,12 @@ public class HazelcastClientTest
     }
 
     @Test
-    public void shouldNotReconnectWhileHazelcastRemainsAvailable() throws Exception
+    public void shouldNotReconnectWhileHazelcastRemainsAvailable() throws Throwable
     {
         // given
         HazelcastConnector connector = mock( HazelcastConnector.class );
-        HazelcastClient client = new HazelcastClient( connector, NullLogProvider.getInstance(), config(), new
-                ControlledRenewableTimeoutService(), 60_000, 5_000 );
+        OnDemandJobScheduler jobScheduler = new OnDemandJobScheduler();
+        HazelcastClient client = new HazelcastClient( connector, jobScheduler, NullLogProvider.getInstance(), config() );
 
         HazelcastInstance hazelcastInstance = mock( HazelcastInstance.class );
         when( connector.connectToHazelcast() ).thenReturn( hazelcastInstance );
@@ -162,6 +162,9 @@ public class HazelcastClientTest
         when( cluster.getMembers() ).thenReturn( members );
 
         // when
+        client.start();
+        jobScheduler.runJob();
+
         CoreTopology topology;
         for ( int i = 0; i < 5; i++ )
         {
@@ -174,7 +177,7 @@ public class HazelcastClientTest
     }
 
     @Test
-    public void shouldReturnEmptyTopologyIfUnableToConnectToHazelcast() throws Exception
+    public void shouldReturnEmptyTopologyIfUnableToConnectToHazelcast() throws Throwable
     {
         // given
         HazelcastConnector connector = mock( HazelcastConnector.class );
@@ -188,8 +191,8 @@ public class HazelcastClientTest
         when( hazelcastInstance.getAtomicReference( anyString() ) ).thenReturn( mock( IAtomicReference.class ) );
         when( hazelcastInstance.getSet( anyString() ) ).thenReturn( new HazelcastSet() );
 
-        HazelcastClient client = new HazelcastClient( connector, logProvider, config(), new
-                ControlledRenewableTimeoutService(), 60_000, 5_000 );
+        OnDemandJobScheduler jobScheduler = new OnDemandJobScheduler();
+        HazelcastClient client = new HazelcastClient( connector, jobScheduler, logProvider, config() );
 
         com.hazelcast.core.Cluster cluster = mock( Cluster.class );
         when( hazelcastInstance.getCluster() ).thenReturn( cluster );
@@ -198,76 +201,11 @@ public class HazelcastClientTest
         when( cluster.getMembers() ).thenReturn( members );
 
         // when
+        client.start();
+        jobScheduler.runJob();
         CoreTopology topology = client.coreServers();
 
         assertEquals( 0, topology.members().size() );
-        verify( log ).info( startsWith( "Failed to read cluster topology from Hazelcast." ),
-                any( IllegalStateException.class ) );
-    }
-
-    @Test
-    public void shouldReturnEmptyTopologyIfInitiallyConnectedToHazelcastButItsNowUnavailable() throws Exception
-    {
-        // given
-        HazelcastConnector connector = mock( HazelcastConnector.class );
-        HazelcastClient client = new HazelcastClient( connector, NullLogProvider.getInstance(), config(), new
-                ControlledRenewableTimeoutService(), 60_000, 5_000 );
-
-        HazelcastInstance hazelcastInstance = mock( HazelcastInstance.class );
-        when( connector.connectToHazelcast() ).thenReturn( hazelcastInstance );
-
-        when( hazelcastInstance.getSet( anyString() ) ).thenReturn( new HazelcastSet() );
-
-        when( hazelcastInstance.getCluster() ).thenThrow( new HazelcastInstanceNotActiveException() );
-
-        // when
-        CoreTopology topology = client.coreServers();
-
-        // then
-        assertEquals( 0, topology.members().size() );
-    }
-
-    @Test
-    public void shouldReconnectIfHazelcastUnavailable() throws Exception
-    {
-        // given
-        HazelcastConnector connector = mock( HazelcastConnector.class );
-        HazelcastClient client = new HazelcastClient( connector, NullLogProvider.getInstance(), config(), new
-                ControlledRenewableTimeoutService(), 60_000, 5_000 );
-
-        HazelcastInstance hazelcastInstance1 = mock( HazelcastInstance.class );
-        HazelcastInstance hazelcastInstance2 = mock( HazelcastInstance.class );
-        when( connector.connectToHazelcast() ).thenReturn( hazelcastInstance1 )
-                .thenReturn( hazelcastInstance2 );
-
-        com.hazelcast.core.Cluster cluster = mock( Cluster.class );
-        when( hazelcastInstance1.getCluster() ).thenReturn( cluster ).thenReturn( cluster )
-                .thenThrow( new HazelcastInstanceNotActiveException() );
-        when( hazelcastInstance2.getCluster() ).thenReturn( cluster );
-
-        when( hazelcastInstance1.getAtomicReference( anyString() ) ).thenReturn( mock( IAtomicReference.class ) );
-        when( hazelcastInstance1.getSet( anyString() ) ).thenReturn( new HazelcastSet() );
-        when( hazelcastInstance2.getAtomicReference( anyString() ) ).thenReturn( mock( IAtomicReference.class ) );
-        when( hazelcastInstance2.getSet( anyString() ) ).thenReturn( new HazelcastSet() );
-
-        when( hazelcastInstance1.getExecutorService( anyString() ) ).thenReturn( new StubExecutorService() );
-        when( hazelcastInstance2.getExecutorService( anyString() ) ).thenReturn( new StubExecutorService() );
-
-        Set<Member> members = asSet( makeMember( 1 ), makeMember( 2 ) );
-        when( cluster.getMembers() ).thenReturn( members );
-
-        // when
-        CoreTopology topology1 = client.coreServers();
-
-        // then
-        assertEquals( members.size(), topology1.members().size() );
-
-        // when
-        CoreTopology topology2 = client.coreServers();
-
-        // then
-        assertEquals( members.size(), topology2.members().size() );
-        verify( connector, times( 2 ) ).connectToHazelcast();
     }
 
     @Test
@@ -301,14 +239,12 @@ public class HazelcastClientTest
         HazelcastConnector connector = mock( HazelcastConnector.class );
         when( connector.connectToHazelcast() ).thenReturn( hazelcastInstance );
 
-        ControlledRenewableTimeoutService renewableTimeoutService = new ControlledRenewableTimeoutService();
-        HazelcastClient hazelcastClient = new HazelcastClient( connector, NullLogProvider.getInstance(), config(),
-                renewableTimeoutService, 60_000, 5_000 );
-
-        hazelcastClient.start();
+        OnDemandJobScheduler jobScheduler = new OnDemandJobScheduler();
+        HazelcastClient hazelcastClient = new HazelcastClient( connector, jobScheduler, NullLogProvider.getInstance(), config() );
 
         // when
-        renewableTimeoutService.invokeTimeout( REFRESH_READ_REPLICA );
+        hazelcastClient.start();
+        jobScheduler.runJob();
 
         // then
         assertEquals( 1, hazelcastMap.size() );
@@ -345,13 +281,12 @@ public class HazelcastClientTest
         HazelcastConnector connector = mock( HazelcastConnector.class );
         when( connector.connectToHazelcast() ).thenReturn( hazelcastInstance );
 
-        ControlledRenewableTimeoutService renewableTimeoutService = new ControlledRenewableTimeoutService();
-        HazelcastClient hazelcastClient = new HazelcastClient( connector, NullLogProvider.getInstance(), config(),
-                renewableTimeoutService, 60_000, 5_000 );
+        OnDemandJobScheduler jobScheduler = new OnDemandJobScheduler();
+        HazelcastClient hazelcastClient = new HazelcastClient( connector, jobScheduler, NullLogProvider.getInstance(), config() );
 
         hazelcastClient.start();
 
-        renewableTimeoutService.invokeTimeout( REFRESH_READ_REPLICA );
+        jobScheduler.runJob();
 
         // when
         hazelcastClient.stop();
@@ -375,14 +310,12 @@ public class HazelcastClientTest
         HazelcastConnector connector = mock( HazelcastConnector.class );
         when( connector.connectToHazelcast() ).thenReturn( hazelcastInstance );
 
-        ControlledRenewableTimeoutService renewableTimeoutService = new ControlledRenewableTimeoutService();
-
-        HazelcastClient hazelcastClient = new HazelcastClient( connector, NullLogProvider.getInstance(), config(),
-                renewableTimeoutService, 60_000, 5_000 );
+        OnDemandJobScheduler jobScheduler = new OnDemandJobScheduler();
+        HazelcastClient hazelcastClient = new HazelcastClient( connector, jobScheduler, NullLogProvider.getInstance(), config() );
 
         hazelcastClient.start();
 
-        renewableTimeoutService.invokeTimeout( REFRESH_READ_REPLICA );
+        jobScheduler.runJob();
 
         // when
         hazelcastClient.stop();

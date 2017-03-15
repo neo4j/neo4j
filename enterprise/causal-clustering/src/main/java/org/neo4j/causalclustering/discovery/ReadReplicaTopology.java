@@ -21,17 +21,16 @@ package org.neo4j.causalclustering.discovery;
 
 import java.util.Set;
 
-import org.neo4j.causalclustering.identity.ClusterId;
+import static java.util.Collections.emptySet;
 
 public class ReadReplicaTopology
 {
-    private final ClusterId clusterId;
+    static final ReadReplicaTopology EMPTY = new ReadReplicaTopology( emptySet() );
+
     private final Set<ReadReplicaAddresses> readReplicaMembers;
 
-    public ReadReplicaTopology( ClusterId clusterId, Set<ReadReplicaAddresses> readReplicaMembers )
+    public ReadReplicaTopology( Set<ReadReplicaAddresses> readReplicaMembers )
     {
-
-        this.clusterId = clusterId;
         this.readReplicaMembers = readReplicaMembers;
     }
 
