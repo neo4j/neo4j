@@ -36,6 +36,7 @@ import org.neo4j.collection.primitive.PrimitiveIntSet;
 import org.neo4j.cursor.Cursor;
 import org.neo4j.kernel.api.StatementConstants;
 import org.neo4j.kernel.impl.api.state.TxState;
+import org.neo4j.kernel.impl.api.store.StoreNodeCursor.Progression.Mode;
 import org.neo4j.kernel.impl.locking.Lock;
 import org.neo4j.kernel.impl.store.RecordCursor;
 import org.neo4j.kernel.impl.store.RecordCursors;
@@ -53,6 +54,8 @@ import static org.mockito.Mockito.mock;
 import static org.mockito.Mockito.when;
 import static org.neo4j.collection.primitive.PrimitiveIntCollections.asArray;
 import static org.neo4j.collection.primitive.PrimitiveIntCollections.asSet;
+import static org.neo4j.kernel.impl.api.store.StoreNodeCursor.Progression.Mode.APPEND;
+import static org.neo4j.kernel.impl.api.store.StoreNodeCursor.Progression.Mode.FETCH;
 import static org.neo4j.kernel.impl.locking.LockService.NO_LOCK_SERVICE;
 import static org.neo4j.kernel.impl.store.record.RecordLoad.CHECK;
 import static org.neo4j.kernel.impl.transaction.state.NodeLabelsFieldTest.inlinedLabelsLongRepresentation;
@@ -89,10 +92,10 @@ public class StoreNodeCursorTest
 
     @Theory
     @RepeatRule.Repeat( times = 2 )
-    public void nothingWithIncludedAdded() throws Throwable
+    public void nothingInAppendMode() throws Throwable
     {
         // given
-        TestRun test = new TestRun( true, new Operation[0] );
+        TestRun test = new TestRun( APPEND, new Operation[0] );
         Cursor<NodeItem> cursor = test.initialize( reusableCursor, recordCursor, nodeRecord );
 
         // when/then
@@ -101,10 +104,10 @@ public class StoreNodeCursorTest
 
     @Theory
     @RepeatRule.Repeat( times = 2 )
-    public void nothingWithoutIncludedAdded() throws Throwable
+    public void nothingInFetchMode() throws Throwable
     {
         // given
-        TestRun test = new TestRun( false, new Operation[0] );
+        TestRun test = new TestRun( FETCH, new Operation[0] );
         Cursor<NodeItem> cursor = test.initialize( reusableCursor, recordCursor, nodeRecord );
 
         // when/then
@@ -113,10 +116,10 @@ public class StoreNodeCursorTest
 
     @Theory
     @RepeatRule.Repeat( times = 2 )
-    public void anElementWithIncludedAdded( LongFunction<Operation> op0 ) throws Throwable
+    public void anElementInAppendMode( LongFunction<Operation> op0 ) throws Throwable
     {
         // given
-        TestRun test = new TestRun( true, new Operation[]{op0.apply( 0 )} );
+        TestRun test = new TestRun( APPEND, new Operation[]{op0.apply( 0 )} );
         Cursor<NodeItem> cursor = test.initialize( reusableCursor, recordCursor, nodeRecord );
 
         // when/then
@@ -125,10 +128,10 @@ public class StoreNodeCursorTest
 
     @Theory
     @RepeatRule.Repeat( times = 2 )
-    public void anElementWithoutIncludedAdded( LongFunction<Operation> op0 ) throws Throwable
+    public void anElementInFetchMode( LongFunction<Operation> op0 ) throws Throwable
     {
         // given
-        TestRun test = new TestRun( false, new Operation[]{op0.apply( 0 )} );
+        TestRun test = new TestRun( FETCH, new Operation[]{op0.apply( 0 )} );
         Cursor<NodeItem> cursor = test.initialize( reusableCursor, recordCursor, nodeRecord );
 
         // when/then
@@ -137,11 +140,11 @@ public class StoreNodeCursorTest
 
     @Theory
     @RepeatRule.Repeat( times = 2 )
-    public void twoElementsWithIncludedAdded( LongFunction<Operation> op0, LongFunction<Operation> op1 )
+    public void twoElementsInAppendMode( LongFunction<Operation> op0, LongFunction<Operation> op1 )
             throws Throwable
     {
         // given
-        TestRun test = new TestRun( true, new Operation[]{op0.apply( 0 ), op1.apply( 1 )} );
+        TestRun test = new TestRun( APPEND, new Operation[]{op0.apply( 0 ), op1.apply( 1 )} );
         Cursor<NodeItem> cursor = test.initialize( reusableCursor, recordCursor, nodeRecord );
 
         // when/then
@@ -150,11 +153,11 @@ public class StoreNodeCursorTest
 
     @Theory
     @RepeatRule.Repeat( times = 2 )
-    public void twoElementsWithoutIncludedAdded( LongFunction<Operation> op0, LongFunction<Operation> op1 )
+    public void twoElementsInFetchMode( LongFunction<Operation> op0, LongFunction<Operation> op1 )
             throws Throwable
     {
         // given
-        TestRun test = new TestRun( false, new Operation[]{op0.apply( 0 ), op1.apply( 1 )} );
+        TestRun test = new TestRun( FETCH, new Operation[]{op0.apply( 0 ), op1.apply( 1 )} );
         Cursor<NodeItem> cursor = test.initialize( reusableCursor, recordCursor, nodeRecord );
 
         // when/then
@@ -163,11 +166,11 @@ public class StoreNodeCursorTest
 
     @Theory
     @RepeatRule.Repeat( times = 2 )
-    public void threeElementsWithIncludedAdded( LongFunction<Operation> op0, LongFunction<Operation> op1,
+    public void threeElementsInAppendMode( LongFunction<Operation> op0, LongFunction<Operation> op1,
             LongFunction<Operation> op2 ) throws Throwable
     {
         // given
-        TestRun test = new TestRun( true, new Operation[]{op0.apply( 0 ), op1.apply( 1 ), op2.apply( 2 )} );
+        TestRun test = new TestRun( APPEND, new Operation[]{op0.apply( 0 ), op1.apply( 1 ), op2.apply( 2 )} );
         Cursor<NodeItem> cursor = test.initialize( reusableCursor, recordCursor, nodeRecord );
 
         // when/then
@@ -176,11 +179,11 @@ public class StoreNodeCursorTest
 
     @Theory
     @RepeatRule.Repeat( times = 2 )
-    public void threeElementsWithoutIncludedAdded( LongFunction<Operation> op0, LongFunction<Operation> op1,
+    public void threeElementsInFetchMode( LongFunction<Operation> op0, LongFunction<Operation> op1,
             LongFunction<Operation> op2 ) throws Throwable
     {
         // given
-        TestRun test = new TestRun( false, new Operation[]{op0.apply( 0 ), op1.apply( 1 ), op2.apply( 2 )} );
+        TestRun test = new TestRun( FETCH, new Operation[]{op0.apply( 0 ), op1.apply( 1 ), op2.apply( 2 )} );
         Cursor<NodeItem> cursor = test.initialize( reusableCursor, recordCursor, nodeRecord );
 
         // when/then
@@ -189,12 +192,12 @@ public class StoreNodeCursorTest
 
     @Theory
     @RepeatRule.Repeat( times = 2 )
-    public void fourElementsWithIncludedAdded( LongFunction<Operation> op0, LongFunction<Operation> op1,
+    public void fourElementsInAppendMode( LongFunction<Operation> op0, LongFunction<Operation> op1,
             LongFunction<Operation> op2, LongFunction<Operation> op3 ) throws Throwable
     {
         // given
         TestRun test =
-                new TestRun( true, new Operation[]{op0.apply( 0 ), op1.apply( 1 ), op2.apply( 2 ), op3.apply( 3 )} );
+                new TestRun( APPEND, new Operation[]{op0.apply( 0 ), op1.apply( 1 ), op2.apply( 2 ), op3.apply( 3 )} );
         Cursor<NodeItem> cursor = test.initialize( reusableCursor, recordCursor, nodeRecord );
 
         // when/then
@@ -203,12 +206,12 @@ public class StoreNodeCursorTest
 
     @Theory
     @RepeatRule.Repeat( times = 2 )
-    public void fourElementsWithoutIncludedAdded( LongFunction<Operation> op0, LongFunction<Operation> op1,
+    public void fourElementsInFetchMode( LongFunction<Operation> op0, LongFunction<Operation> op1,
             LongFunction<Operation> op2, LongFunction<Operation> op3 ) throws Throwable
     {
         // given
         TestRun test =
-                new TestRun( false, new Operation[]{op0.apply( 0 ), op1.apply( 1 ), op2.apply( 2 ), op3.apply( 3 )} );
+                new TestRun( FETCH, new Operation[]{op0.apply( 0 ), op1.apply( 1 ), op2.apply( 2 ), op3.apply( 3 )} );
         Cursor<NodeItem> cursor = test.initialize( reusableCursor, recordCursor, nodeRecord );
 
         // when/then
@@ -236,13 +239,12 @@ public class StoreNodeCursorTest
         }
 
         @Override
-        public TxState prepare( RecordCursor<NodeRecord> recordCursor, NodeRecord nodeRecord, TxState state,
-                boolean includeAdded )
+        public TxState prepare( RecordCursor<NodeRecord> recordCursor, NodeRecord nodeRecord, TxState state )
         {
             state = state == null ? new TxState() : state;
             state.nodeDoAddLabel( 6 + (int) id, id );
             state.nodeDoRemoveLabel( 5 + (int) id, id );
-            return super.prepare( recordCursor, nodeRecord, state, includeAdded );
+            return super.prepare( recordCursor, nodeRecord, state );
         }
 
         @Override
@@ -256,7 +258,6 @@ public class StoreNodeCursorTest
     {
         private final long id;
 
-        private boolean includeAdded;
         private TxState state;
 
         private AddedNode( long id )
@@ -271,10 +272,8 @@ public class StoreNodeCursorTest
         }
 
         @Override
-        public TxState prepare( RecordCursor<NodeRecord> recordCursor, NodeRecord nodeRecord, TxState state,
-                boolean includeAdded )
+        public TxState prepare( RecordCursor<NodeRecord> recordCursor, NodeRecord nodeRecord, TxState state )
         {
-            this.includeAdded = includeAdded;
             this.state = state = state == null ? new TxState() : state;
             state.nodeDoCreate( id );
             state.nodeDoAddLabel( 20 + (int) id, id );
@@ -285,12 +284,6 @@ public class StoreNodeCursorTest
         public boolean fromDisk()
         {
             return false;
-        }
-
-        @Override
-        public boolean skipCheck()
-        {
-            return !includeAdded;
         }
 
         @Override
@@ -342,8 +335,7 @@ public class StoreNodeCursorTest
         }
 
         @Override
-        public TxState prepare( RecordCursor<NodeRecord> recordCursor, NodeRecord nodeRecord, TxState state,
-                boolean includeAdded )
+        public TxState prepare( RecordCursor<NodeRecord> recordCursor, NodeRecord nodeRecord, TxState state )
         {
             state = state == null ? new TxState() : state;
             state.nodeDoDelete( id );
@@ -353,12 +345,6 @@ public class StoreNodeCursorTest
 
         @Override
         public boolean fromDisk()
-        {
-            return true;
-        }
-
-        @Override
-        public boolean skipCheck()
         {
             return true;
         }
@@ -393,8 +379,7 @@ public class StoreNodeCursorTest
         }
 
         @Override
-        public TxState prepare( RecordCursor<NodeRecord> recordCursor, NodeRecord nodeRecord, TxState state,
-                boolean includeAdded )
+        public TxState prepare( RecordCursor<NodeRecord> recordCursor, NodeRecord nodeRecord, TxState state )
         {
             expected = record( id, recordCursor, nodeRecord, state );
             return state;
@@ -404,12 +389,6 @@ public class StoreNodeCursorTest
         public boolean fromDisk()
         {
             return true;
-        }
-
-        @Override
-        public boolean skipCheck()
-        {
-            return false;
         }
 
         @Override
@@ -514,26 +493,23 @@ public class StoreNodeCursorTest
     {
         long id();
 
-        TxState prepare( RecordCursor<NodeRecord> recordCursor, NodeRecord nodeRecord, TxState state,
-                boolean includeAdded );
+        TxState prepare( RecordCursor<NodeRecord> recordCursor, NodeRecord nodeRecord, TxState state );
 
         boolean fromDisk();
-
-        boolean skipCheck();
 
         void check( NodeItem nodeItem );
     }
 
     private static class TestRun
     {
-        private final boolean includeAdded;
+        private final Mode mode;
         private final Operation[] ops;
 
         private TxState state = null;
 
-        private TestRun( boolean includeAdded, Operation[] ops )
+        private TestRun( Mode mode, Operation[] ops )
         {
-            this.includeAdded = includeAdded;
+            this.mode = mode;
             this.ops = ops;
         }
 
@@ -542,12 +518,12 @@ public class StoreNodeCursorTest
         {
             for ( Operation op : ops )
             {
-                state = op.prepare( recordCursor, nodeRecord, state, includeAdded );
+                state = op.prepare( recordCursor, nodeRecord, state );
             }
-            return cursor.init( createProgression( ops, includeAdded ), state );
+            return cursor.init( createProgression( ops, mode ), state );
         }
 
-        private StoreNodeCursor.Progression createProgression( Operation[] ops, boolean includeAdded )
+        private StoreNodeCursor.Progression createProgression( Operation[] ops, Mode mode )
         {
             return new StoreNodeCursor.Progression()
             {
@@ -559,7 +535,7 @@ public class StoreNodeCursorTest
                     while ( i < ops.length )
                     {
                         Operation op = ops[i++];
-                        if ( op.fromDisk() )
+                        if ( op.fromDisk() || mode == FETCH )
                         {
                             return op.id();
                         }
@@ -568,35 +544,38 @@ public class StoreNodeCursorTest
                 }
 
                 @Override
-                public boolean includeAllAdded()
+                public Mode mode()
                 {
-                    return includeAdded;
+                    return mode;
                 }
             };
         }
 
         void runAndVerify( Cursor<NodeItem> cursor )
         {
-            // push the AddedNodes at the end of the array during the check phase since if added in the cursor they
-            // are at the end of the stream
             Operation[] operations = Arrays.copyOf( ops, ops.length );
-            Operation tmp;
-            for ( int i = operations.length - 1; i >= 0; i-- )
+            if ( mode == APPEND )
             {
-                if ( operations[i] instanceof AddedNode )
+                // push the AddedNodes at the end of the array during the check phase since if added in the cursor they
+                // are at the end of the stream
+                Operation tmp;
+                for ( int i = operations.length - 1; i >= 0; i-- )
                 {
-                    for ( int j = i; j < operations.length - 1 && !(operations[j+1] instanceof AddedNode); j++ )
+                    if ( operations[i] instanceof AddedNode )
                     {
-                        tmp = operations[j];
-                        operations[j] = operations[j + 1];
-                        operations[j + 1] = tmp;
+                        for ( int j = i; j < operations.length - 1 && !(operations[j + 1] instanceof AddedNode); j++ )
+                        {
+                            tmp = operations[j];
+                            operations[j] = operations[j + 1];
+                            operations[j + 1] = tmp;
+                        }
                     }
                 }
             }
 
             for ( Operation op : operations )
             {
-                if ( !op.skipCheck() )
+                if ( !(op instanceof DeletedNode) )
                 {
                     assertTrue( cursor.next() );
                     op.check( cursor.get() );
@@ -625,7 +604,7 @@ public class StoreNodeCursorTest
         @Override
         public String toString()
         {
-            return String.format( "{added=%s, ops=%s}", includeAdded, Arrays.toString( ops ) );
+            return String.format( "{mode=%s, ops=%s}", mode, Arrays.toString( ops ) );
         }
     }
 }
