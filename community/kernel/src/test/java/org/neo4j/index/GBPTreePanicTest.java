@@ -62,21 +62,20 @@ public class GBPTreePanicTest
         AtomicBoolean isHealthy = new AtomicBoolean( true );
         Health health = new ControllableHealth( isHealthy );
         CheckpointCounter checkpointCounter = new CheckpointCounter();
-        int initialCheckpointCount;
 
         try( GBPTree<MutableLong,MutableLong> index = gbpTree( health, checkpointCounter ) )
         {
             // WHEN
-            initialCheckpointCount = checkpointCounter.count();
-            assertThat( checkpointCounter.count(), is( initialCheckpointCount ) );
+            checkpointCounter.reset();
+            assertThat( checkpointCounter.count(), is( 0 ) );
             insert( index, 1 );
             index.checkpoint( IOLimiter.unlimited() );
-            assertThat( checkpointCounter.count(), is( initialCheckpointCount + 1 ) );
+            assertThat( checkpointCounter.count(), is(1 ) );
             insert( index, 2 );
 
         }
         // THEN, after close
-        assertThat( checkpointCounter.count(), is( initialCheckpointCount + 2 ) );
+        assertThat( checkpointCounter.count(), is( 2 ) );
     }
 
     @Test
@@ -87,22 +86,20 @@ public class GBPTreePanicTest
         Health health = new ControllableHealth( isHealthy );
         CheckpointCounter checkpointCounter = new CheckpointCounter();
 
-        int initialCheckpointCount;
-
         try ( GBPTree<MutableLong,MutableLong> index = gbpTree( health, checkpointCounter ) )
         {
             // WHEN
-            initialCheckpointCount = checkpointCounter.count();
-            assertThat( checkpointCounter.count(), is( initialCheckpointCount ) );
+            checkpointCounter.reset();
+            assertThat( checkpointCounter.count(), is( 0 ) );
             insert( index, 1 );
             index.checkpoint( IOLimiter.unlimited() );
-            assertThat( checkpointCounter.count(), is( initialCheckpointCount + 1 ) );
+            assertThat( checkpointCounter.count(), is( 1 ) );
             insert( index, 2 );
             isHealthy.set( false );
 
         }
         // THEN, after close
-        assertThat( checkpointCounter.count(), is( initialCheckpointCount + 1 ) );
+        assertThat( checkpointCounter.count(), is( 1 ) );
     }
 
     private void insert( GBPTree<MutableLong, MutableLong> index, long key ) throws IOException

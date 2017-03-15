@@ -33,4 +33,9 @@ public class CheckpointCounter implements GBPTree.Monitor
     {
         return count;
     }
+
+    public void reset()
+    {
+        count = 0;
+    }
 }
