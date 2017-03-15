@@ -41,7 +41,6 @@ import org.neo4j.kernel.impl.api.state.TxState;
 import org.neo4j.kernel.impl.api.store.Progression.Mode;
 import org.neo4j.kernel.impl.locking.Lock;
 import org.neo4j.kernel.impl.store.NodeStore;
-import org.neo4j.kernel.impl.store.RecordCursors;
 import org.neo4j.kernel.impl.store.record.NodeRecord;
 import org.neo4j.kernel.impl.util.IoPrimitiveUtils;
 import org.neo4j.storageengine.api.NodeItem;
@@ -77,11 +76,9 @@ public class NodeCursorTest
 
     private final NodeRecord nodeRecord = new NodeRecord( -1 );
     private final NodeStore nodeStore = mock( NodeStore.class );
-    private final RecordCursors recordCursors = mock( RecordCursors.class );
     private final PageCursor pageCursor = mock( PageCursor.class );
     // cursor is shared since it is designed to be reusable
-    private final NodeCursor reusableCursor = new NodeCursor( nodeRecord, i -> {}, nodeStore, recordCursors,
-            NO_LOCK_SERVICE );
+    private final NodeCursor reusableCursor = new NodeCursor( nodeRecord, i -> {}, nodeStore, NO_LOCK_SERVICE );
 
     {
         when( nodeStore.newPageCursor() ).thenReturn( pageCursor );
@@ -225,7 +222,7 @@ public class NodeCursorTest
     {
         MutableBoolean called = new MutableBoolean();
         NodeCursor cursor =
-                new NodeCursor( nodeRecord, c -> called.setTrue(), nodeStore, recordCursors, NO_LOCK_SERVICE );
+                new NodeCursor( nodeRecord, c -> called.setTrue(), nodeStore, NO_LOCK_SERVICE );
         cursor.init( mock( Progression.class ), mock( ReadableTransactionState.class ) );
         assertFalse( called.booleanValue() );
 
