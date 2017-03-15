@@ -101,7 +101,6 @@ import org.neo4j.kernel.impl.store.record.PropertyRecord;
 import org.neo4j.kernel.impl.store.record.RelationshipGroupRecord;
 import org.neo4j.kernel.impl.store.record.RelationshipRecord;
 import org.neo4j.kernel.impl.store.record.RelationshipTypeTokenRecord;
-import org.neo4j.kernel.impl.util.Bits;
 import org.neo4j.kernel.internal.GraphDatabaseAPI;
 import org.neo4j.logging.FormattedLog;
 import org.neo4j.storageengine.api.schema.SchemaRule;
@@ -142,7 +141,7 @@ import static org.neo4j.kernel.impl.store.record.Record.NO_NEXT_PROPERTY;
 import static org.neo4j.kernel.impl.store.record.Record.NO_NEXT_RELATIONSHIP;
 import static org.neo4j.kernel.impl.store.record.Record.NO_PREV_RELATIONSHIP;
 import static org.neo4j.kernel.impl.store.record.RecordLoad.FORCE;
-import static org.neo4j.kernel.impl.util.Bits.bits;
+import static org.neo4j.kernel.impl.transaction.state.NodeLabelsFieldTest.inlinedLabelsLongRepresentation;
 import static org.neo4j.test.Property.property;
 import static org.neo4j.test.Property.set;
 
@@ -692,18 +691,6 @@ public class FullCheckIntegrationTest
         // then
         on( stats ).verify( RecordType.RELATIONSHIP, 1 )
                 .andThatsAllFolks();
-    }
-
-    private long inlinedLabelsLongRepresentation( long... labelIds )
-    {
-        long header = (long) labelIds.length << 36;
-        byte bitsPerLabel = (byte) (36 / labelIds.length);
-        Bits bits = bits( 5 );
-        for ( long labelId : labelIds )
-        {
-            bits.put( labelId, bitsPerLabel );
-        }
-        return header | bits.getLongs()[0];
     }
 
     @Test

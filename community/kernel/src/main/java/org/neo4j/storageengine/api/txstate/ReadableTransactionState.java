@@ -140,7 +140,7 @@ public interface ReadableTransactionState
 
     RelationshipState getRelationshipState( long id );
 
-    PrimitiveIntSet augmentLabels( PrimitiveIntSet cursor, NodeState nodeState );
+    PrimitiveIntSet augmentLabels( PrimitiveIntSet labels, NodeState nodeState );
 
     /**
      * The way tokens are created is that the first time a token is needed it gets created in its own little

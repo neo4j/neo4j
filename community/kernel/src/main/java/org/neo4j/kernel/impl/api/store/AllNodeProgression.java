@@ -17,19 +17,33 @@
  * You should have received a copy of the GNU General Public License
  * along with this program.  If not, see <http://www.gnu.org/licenses/>.
  */
-package org.neo4j.kernel.api;
+package org.neo4j.kernel.impl.api.store;
 
-public final class StatementConstants
+import org.neo4j.kernel.api.StatementConstants;
+import org.neo4j.kernel.impl.store.NodeStore;
+
+public class AllNodeProgression implements StoreNodeCursor.Progression
 {
-    public static final int NO_SUCH_RELATIONSHIP_TYPE = -1;
-    public static final int NO_SUCH_LABEL = -1;
-    public static final int NO_SUCH_PROPERTY_KEY = -1;
-    public static final long NO_SUCH_NODE = -1;
-    public static final long NO_SUCH_RELATIONSHIP = -1;
-    public static final long NO_SUCH_PROPERTY = -1;
+    private final AllIdIterator allIdIterator;
 
-    private StatementConstants()
+    AllNodeProgression( NodeStore nodeStore )
     {
-        throw new UnsupportedOperationException();
+        allIdIterator = new AllIdIterator( nodeStore );
+    }
+
+    @Override
+    public long nextId()
+    {
+        if ( allIdIterator.hasNext() )
+        {
+            return allIdIterator.next();
+        }
+        return StatementConstants.NO_SUCH_NODE;
+    }
+
+    @Override
+    public boolean includeAllAdded()
+    {
+        return true;
     }
 }
