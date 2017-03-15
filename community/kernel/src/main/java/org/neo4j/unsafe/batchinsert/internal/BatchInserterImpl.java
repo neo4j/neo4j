@@ -160,7 +160,6 @@ import org.neo4j.unsafe.batchinsert.DirectRecordAccessSet;
 import static java.lang.Boolean.parseBoolean;
 import static org.neo4j.collection.primitive.PrimitiveLongCollections.map;
 import static org.neo4j.graphdb.Label.label;
-import static org.neo4j.kernel.api.index.NodeUpdates.PropertyLoader.NO_PROPERTY_LOADER;
 import static org.neo4j.kernel.impl.store.NodeLabelsField.parseLabelsField;
 import static org.neo4j.kernel.impl.store.PropertyStore.encodeString;
 import static org.neo4j.kernel.impl.util.IoPrimitiveUtils.safeCastLongToInt;
@@ -463,8 +462,7 @@ public class BatchInserterImpl implements BatchInserter, IndexConfigStoreProvide
             // Do a lookup from which property has changed to a list of indexes worried about that property.
             // We do not need to load additional properties as the NodeUpdates for a full node store scan already
             // include all properties for the node.
-            for ( IndexEntryUpdate indexUpdate :
-                    updates.forIndexes( Iterables.asIterable( descriptors ), NO_PROPERTY_LOADER ) )
+            for ( IndexEntryUpdate indexUpdate : updates.forIndexes( Iterables.asIterable( descriptors ) ) )
             {
                 try
                 {

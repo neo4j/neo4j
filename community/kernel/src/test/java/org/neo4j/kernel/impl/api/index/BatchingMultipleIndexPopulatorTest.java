@@ -301,7 +301,7 @@ public class BatchingMultipleIndexPopulatorTest
         return Iterables.asList(
                 Iterables.concat(
                     Iterables.map(
-                            update -> update.forIndexes( Iterables.asIterable( index.schema() ), null ),
+                            update -> update.forIndexes( Iterables.asIterable( index.schema() ) ),
                             Arrays.asList( updates )
                     ) ) );
     }

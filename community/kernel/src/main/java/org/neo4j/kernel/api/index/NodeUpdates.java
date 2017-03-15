@@ -27,9 +27,9 @@ import org.neo4j.collection.primitive.Primitive;
 import org.neo4j.collection.primitive.PrimitiveIntIterator;
 import org.neo4j.collection.primitive.PrimitiveIntObjectMap;
 import org.neo4j.collection.primitive.PrimitiveIntSet;
+import org.neo4j.helpers.collection.Iterables;
 import org.neo4j.kernel.api.properties.DefinedProperty;
 import org.neo4j.kernel.api.schema_new.LabelSchemaDescriptor;
-import org.neo4j.kernel.api.schema_new.index.NewIndexDescriptor;
 
 import static java.lang.String.format;
 import static java.util.Arrays.binarySearch;
@@ -41,7 +41,7 @@ import static org.neo4j.kernel.impl.store.ShortArray.EMPTY_LONG_ARRAY;
  * Subclasses of this represent events related to property changes due to node addition, deletion or update.
  * This is of use in populating indexes that might be relevant to node label and property combinations.
  */
-public class NodeUpdates
+public class NodeUpdates implements PropertyLoader.PropertyLoadSink
 {
     private final long nodeId;
 
@@ -126,6 +126,43 @@ public class NodeUpdates
         return nodeId;
     }
 
+    @Override
+    public void onProperty( int propertyId, Object value )
+    {
+        knownProperties.put( propertyId, unchanged( value ) );
+    }
+
+    /**
+     * Matches the provided schema descriptors to the node updates in this object, and generates an IndexEntryUpdate
+     * for any index that needs to be updated.
+     *
+     * Note that unless this object contains a full representation of the node state after the update, the results
+     * from this methods will not be correct. In that case, use the propertyLoader variant.
+     *
+     * @param indexes The indexes to generate entry updates for
+     * @return IndexEntryUpdates for all relevant indexes
+     */
+    public Iterable<IndexEntryUpdate> forIndexes( Iterable<LabelSchemaDescriptor> indexes )
+    {
+        Iterable<LabelSchemaDescriptor> potentiallyRelevant = Iterables.filter( this::atLeastOneRelevantChange, indexes );
+
+        return gatherUpdatesForPotentials( potentiallyRelevant );
+    }
+
+    /**
+     * Matches the provided schema descriptors to the node updates in this object, and generates an IndexEntryUpdate
+     * for any index that needs to be updated.
+     *
+     * In some cases the updates to a node are not enough to determine whether some index should be affected. For
+     * example if we have and index of label :A and property p1, and :A is added to this node, we cannot say whether
+     * this should affect the index unless we know if this node has property p1. This get even more complicated for
+     * composite indexes. To solve this problem, a propertyLoader is used to load any additional properties needed to
+     * make these calls.
+     *
+     * @param indexes The indexes to generate entry updates for
+     * @param propertyLoader The property loader used to fetch needed additional properties
+     * @return IndexEntryUpdates for all relevant indexes
+     */
     public Iterable<IndexEntryUpdate> forIndexes( Iterable<LabelSchemaDescriptor> indexes, PropertyLoader propertyLoader )
     {
         List<LabelSchemaDescriptor> potentiallyRelevant = new ArrayList<>();
@@ -140,8 +177,16 @@ public class NodeUpdates
             }
         }
 
-        loadProperties( propertyLoader, additionalPropertiesToLoad );
+        if ( !additionalPropertiesToLoad.isEmpty() )
+        {
+            loadProperties( propertyLoader, additionalPropertiesToLoad );
+        }
 
+        return gatherUpdatesForPotentials( potentiallyRelevant );
+    }
+
+    private Iterable<IndexEntryUpdate> gatherUpdatesForPotentials( Iterable<LabelSchemaDescriptor> potentiallyRelevant )
+    {
         List<IndexEntryUpdate> indexUpdates = new ArrayList<>();
         for ( LabelSchemaDescriptor index : potentiallyRelevant )
         {
@@ -187,15 +232,13 @@ public class NodeUpdates
 
     private void loadProperties( PropertyLoader propertyLoader, PrimitiveIntSet additionalPropertiesToLoad )
     {
-        PrimitiveIntIterator toLoad = additionalPropertiesToLoad.iterator();
-        while ( toLoad.hasNext() )
+        propertyLoader.loadProperties( nodeId, additionalPropertiesToLoad, this );
+
+        // loadProperties removes loaded properties from the input set, so the remaining ones were not on the node
+        PrimitiveIntIterator propertiesWithNoValue = additionalPropertiesToLoad.iterator();
+        while ( propertiesWithNoValue.hasNext() )
         {
-            int propertyId = toLoad.next();
-            Object value = propertyLoader.loadProperty( nodeId, propertyId );
-            knownProperties.put(
-                    propertyId,
-                    value == null ? noValue : unchanged( value )
-                );
+            knownProperties.put( propertiesWithNoValue.next(), noValue );
         }
     }
 
@@ -523,12 +566,5 @@ public class NodeUpdates
     private static PropertyValue changed( Object before, Object after )
     {
         return new PropertyValue( before, after, PropertyValueType.Changed );
-    }
-
-    public interface PropertyLoader
-    {
-        Object loadProperty( long nodeId, int propertyId );
-
-        PropertyLoader NO_PROPERTY_LOADER = ( nodeId1, propertyId ) -> null;
     }
 }

@@ -27,6 +27,7 @@ import java.util.HashMap;
 import java.util.List;
 import java.util.Map;
 
+import org.neo4j.collection.primitive.PrimitiveIntIterator;
 import org.neo4j.kernel.api.properties.DefinedProperty;
 import org.neo4j.kernel.api.properties.Property;
 import org.neo4j.kernel.api.schema_new.LabelSchemaDescriptor;
@@ -258,21 +259,31 @@ public class NodeUpdatesTest
                 emptyIterable() );
     }
 
-    private NodeUpdates.PropertyLoader propertyLoader( DefinedProperty... properties )
+    private PropertyLoader propertyLoader( DefinedProperty... properties )
     {
         Map<Integer, Object> propertyMap = new HashMap<>( );
         for ( DefinedProperty p : properties )
         {
             propertyMap.put( p.propertyKeyId(), p.value() );
         }
-        return ( nodeId1, propertyId ) -> propertyMap.get( propertyId );
+        return ( nodeId1, propertyIds, sink ) -> {
+            PrimitiveIntIterator iterator = propertyIds.iterator();
+            while ( iterator.hasNext() )
+            {
+                int propertyId = iterator.next();
+                if ( propertyMap.containsKey( propertyId ) )
+                {
+                    sink.onProperty( propertyId, propertyMap.get( propertyId ) );
+                    propertyIds.remove( propertyId );
+                }
+            }
+        };
     }
 
-    private NodeUpdates.PropertyLoader assertNoLoading()
+    private PropertyLoader assertNoLoading()
     {
-        return ( nodeId1, propertyId ) -> {
+        return ( nodeId1, propertyIds, sink ) -> {
             fail( "Should never attempt to load properties!" );
-            return null;
         };
     }
 }

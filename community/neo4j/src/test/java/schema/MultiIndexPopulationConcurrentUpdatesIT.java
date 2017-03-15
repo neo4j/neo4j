@@ -79,7 +79,6 @@ import org.neo4j.storageengine.api.schema.IndexReader;
 import org.neo4j.test.rule.EmbeddedDatabaseRule;
 
 import static org.junit.Assert.assertEquals;
-import static org.neo4j.kernel.api.index.NodeUpdates.PropertyLoader.NO_PROPERTY_LOADER;
 
 //[NodePropertyUpdate[0, prop:0 add:Sweden, labelsBefore:[], labelsAfter:[0]]]
 //[NodePropertyUpdate[1, prop:0 add:USA, labelsBefore:[], labelsAfter:[0]]]
@@ -478,7 +477,7 @@ public class MultiIndexPopulationConcurrentUpdatesIT
                         {
                             LabelSchemaDescriptor schema = SchemaDescriptorFactory.forLabel( labelId, propertyId );
                             for ( IndexEntryUpdate indexUpdate :
-                                    update.forIndexes( Collections.singleton( schema ), NO_PROPERTY_LOADER ) )
+                                    update.forIndexes( Collections.singleton( schema ) ) )
                             {
                                 switch ( indexUpdate.updateMode() )
                                 {

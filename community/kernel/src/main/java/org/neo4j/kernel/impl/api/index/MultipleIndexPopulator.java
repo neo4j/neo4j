@@ -52,7 +52,6 @@ import org.neo4j.unsafe.impl.internal.dragons.FeatureToggles;
 
 import static java.lang.String.format;
 import static org.neo4j.collection.primitive.PrimitiveIntCollections.contains;
-import static org.neo4j.kernel.api.index.NodeUpdates.PropertyLoader.NO_PROPERTY_LOADER;
 import static org.neo4j.kernel.impl.api.index.IndexPopulationFailure.failure;
 
 /**
@@ -538,7 +537,7 @@ public class MultipleIndexPopulator implements IndexPopulator
         {
             // This is called from a full store node scan, meaning that all node properties are included in the
             // NodeUpdates object. Therefore no additional properties need to be loaded.
-            for ( IndexEntryUpdate indexUpdate : updates.forIndexes( populations.keySet(), NO_PROPERTY_LOADER ) )
+            for ( IndexEntryUpdate indexUpdate : updates.forIndexes( populations.keySet() ) )
             {
                 IndexPopulation population = populations.get( indexUpdate.descriptor() );
                 try

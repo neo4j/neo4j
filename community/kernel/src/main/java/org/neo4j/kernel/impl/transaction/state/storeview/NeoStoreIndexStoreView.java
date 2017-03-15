@@ -22,6 +22,7 @@ package org.neo4j.kernel.impl.transaction.state.storeview;
 import java.util.Collection;
 import java.util.function.IntPredicate;
 
+import org.neo4j.collection.primitive.PrimitiveIntSet;
 import org.neo4j.helpers.collection.Visitor;
 import org.neo4j.kernel.api.exceptions.EntityNotFoundException;
 import org.neo4j.kernel.api.index.NodeUpdates;
@@ -159,4 +160,31 @@ public class NeoStoreIndexStoreView implements IndexStoreView
         return Property.noNodeProperty( nodeId, propertyKeyId );
     }
 
+    @Override
+    public void loadProperties( long nodeId, PrimitiveIntSet propertyIds, PropertyLoadSink sink )
+    {
+        NodeRecord node = nodeStore.getRecord( nodeId, nodeStore.newRecord(), FORCE );
+        if ( !node.inUse() )
+        {
+            return;
+        }
+        long firstPropertyId = node.getNextProp();
+        if ( firstPropertyId == Record.NO_NEXT_PROPERTY.intValue() )
+        {
+            return;
+        }
+        for ( PropertyRecord propertyRecord : propertyStore.getPropertyRecordChain( firstPropertyId ) )
+        {
+            for ( PropertyBlock block : propertyRecord )
+            {
+                int currentPropertyId = block.getKeyIndexId();
+                if ( propertyIds.contains( currentPropertyId ) )
+                {
+                    Object currentValue = block.getType().getValue( block, propertyStore );
+                    sink.onProperty( currentPropertyId, currentValue );
+                    propertyIds.remove( currentPropertyId );
+                }
+            }
+        }
+    }
 }
