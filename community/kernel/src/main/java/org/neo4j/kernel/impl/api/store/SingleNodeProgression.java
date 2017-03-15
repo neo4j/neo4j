@@ -20,30 +20,32 @@
 package org.neo4j.kernel.impl.api.store;
 
 import org.neo4j.kernel.api.StatementConstants;
-import org.neo4j.kernel.impl.store.NodeStore;
 
-public class AllNodeProgression implements StoreNodeCursor.Progression
+public class SingleNodeProgression implements StoreNodeCursor.Progression
 {
-    private final AllIdIterator allIdIterator;
+    private long nodeId;
 
-    AllNodeProgression( NodeStore nodeStore )
+    SingleNodeProgression( long nodeId )
     {
-        allIdIterator = new AllIdIterator( nodeStore );
+        this.nodeId = nodeId;
     }
 
     @Override
     public long nextId()
     {
-        if ( allIdIterator.hasNext() )
+        try
         {
-            return allIdIterator.next();
+            return nodeId;
         }
-        return StatementConstants.NO_SUCH_NODE;
+        finally
+        {
+            nodeId = StatementConstants.NO_SUCH_NODE;
+        }
     }
 
     @Override
     public Mode mode()
     {
-        return Mode.APPEND;
+        return Mode.FETCH;
     }
 }

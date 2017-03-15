@@ -21,7 +21,6 @@ package org.neo4j.kernel.impl.api.store;
 
 import java.util.function.Supplier;
 
-import org.neo4j.collection.primitive.PrimitiveIntSet;
 import org.neo4j.cursor.Cursor;
 import org.neo4j.kernel.api.exceptions.index.IndexNotFoundKernelException;
 import org.neo4j.kernel.api.schema.index.IndexDescriptor;
@@ -54,7 +53,6 @@ import org.neo4j.storageengine.api.txstate.ReadableTransactionState;
  */
 public class StoreStatement implements StorageStatement
 {
-    private final InstanceCache<StoreSingleNodeCursor> singleNodeCursor;
     private final InstanceCache<StoreNodeCursor> nodeCursor;
     private final InstanceCache<StoreSingleRelationshipCursor> singleRelationshipCursor;
     private final InstanceCache<StoreIteratorRelationshipCursor> iteratorRelationshipCursor;
@@ -92,14 +90,6 @@ public class StoreStatement implements StorageStatement
             protected StoreNodeCursor create()
             {
                 return new StoreNodeCursor( nodeStore.newRecord(), this, recordCursors, lockService );
-            }
-        };
-        singleNodeCursor = new InstanceCache<StoreSingleNodeCursor>()
-        {
-            @Override
-            protected StoreSingleNodeCursor create()
-            {
-                return new StoreSingleNodeCursor( nodeStore.newRecord(), this, recordCursors, lockService );
             }
         };
         singleRelationshipCursor = new InstanceCache<StoreSingleRelationshipCursor>()
@@ -166,7 +156,7 @@ public class StoreStatement implements StorageStatement
     public Cursor<NodeItem> acquireSingleNodeCursor( long nodeId, ReadableTransactionState state )
     {
         neoStores.assertOpen();
-        return singleNodeCursor.get().init( nodeId, state );
+        return nodeCursor.get().init( new SingleNodeProgression( nodeId ), state );
     }
 
     @Override

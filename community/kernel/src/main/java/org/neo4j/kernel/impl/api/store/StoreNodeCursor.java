@@ -37,6 +37,8 @@ import org.neo4j.storageengine.api.txstate.NodeState;
 import org.neo4j.storageengine.api.txstate.ReadableTransactionState;
 
 import static org.neo4j.collection.primitive.PrimitiveIntCollections.asSet;
+import static org.neo4j.kernel.impl.api.store.StoreNodeCursor.Progression.Mode.APPEND;
+import static org.neo4j.kernel.impl.api.store.StoreNodeCursor.Progression.Mode.FETCH;
 import static org.neo4j.kernel.impl.locking.LockService.NO_LOCK;
 import static org.neo4j.kernel.impl.locking.LockService.NO_LOCK_SERVICE;
 import static org.neo4j.kernel.impl.store.record.RecordLoad.CHECK;
@@ -44,13 +46,17 @@ import static org.neo4j.kernel.impl.util.IoPrimitiveUtils.safeCastLongToInt;
 
 public class StoreNodeCursor implements NodeItem, Cursor<NodeItem>
 {
-    private Iterator<Long> added;
-
     public interface Progression
     {
+        enum Mode
+        {
+            APPEND,
+            FETCH
+        }
+
         long nextId();
 
-        boolean includeAllAdded();
+        Mode mode();
     }
 
     private final NodeRecord nodeRecord;
@@ -62,6 +68,7 @@ public class StoreNodeCursor implements NodeItem, Cursor<NodeItem>
     private ReadableTransactionState state;
     private boolean fetched;
     private long[] labels;
+    private Iterator<Long> added;
 
     StoreNodeCursor( NodeRecord nodeRecord, Consumer<StoreNodeCursor> instanceCache, RecordCursors recordCursors,
             LockService lockService )
@@ -96,21 +103,32 @@ public class StoreNodeCursor implements NodeItem, Cursor<NodeItem>
             {
                 return true;
             }
+
+            if ( state != null && progression.mode() == FETCH && state.nodeIsAddedInThisTx( id ) )
+            {
+                recordFromTxState( id );
+                return true;
+            }
         }
 
-        if ( added == null && state != null && progression.includeAllAdded() )
+        if ( added == null && state != null && progression.mode() == APPEND )
         {
             added = state.addedAndRemovedNodes().getAdded().iterator();
         }
 
         if ( added != null && added.hasNext() )
         {
-            nodeRecord.clear();
-            nodeRecord.setId( added.next() );
+            recordFromTxState( added.next() );
             return true;
         }
 
         return false;
+    }
+
+    private void recordFromTxState( long id )
+    {
+        nodeRecord.clear();
+        nodeRecord.setId( id );
     }
 
     @Override
