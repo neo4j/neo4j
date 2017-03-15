@@ -19,8 +19,12 @@
  */
 package org.neo4j.kernel.api.labelscan;
 
+import java.util.Map;
+
 import org.neo4j.kernel.api.labelscan.LabelScanStore.Monitor;
 import org.neo4j.logging.Log;
+
+import static java.lang.String.format;
 
 /**
  * Logs about important events about {@link LabelScanStore} {@link Monitor}.
@@ -80,5 +84,14 @@ public class LoggingMonitor implements Monitor
     {
         log.info( "Scan store rebuilt (roughly " + roughNodeCount + " nodes)" );
         delegate.rebuilt( roughNodeCount );
+    }
+
+    @Override
+    public void recoveryCompleted( Map<String,Object> data )
+    {
+        StringBuilder builder = new StringBuilder( "Scan store recovery completed:" );
+        data.forEach( (key,value) -> builder.append( format( " %s: %s", key, value ) ) );
+        log.info( builder.toString() );
+        delegate.recoveryCompleted( data );
     }
 }

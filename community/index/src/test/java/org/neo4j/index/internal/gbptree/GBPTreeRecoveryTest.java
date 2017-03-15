@@ -67,6 +67,10 @@ public class GBPTreeRecoveryTest
     private final MutableLong key = new MutableLong();
     private final MutableLong value = new MutableLong();
 
+    /* Global variables for recoverFromAnything test */
+    private boolean recoverFromAnythingInitialized;
+    private int keyRange;
+
     @Test
     public void shouldRecoverFromCrashBeforeFirstCheckpoint() throws Exception
     {
@@ -96,6 +100,7 @@ public class GBPTreeRecoveryTest
         {
             // this is the mimic:ed recovery
             index.prepareForRecovery();
+            index.finishRecovery();
 
             try ( Writer<MutableLong,MutableLong> writer = index.writer() )
             {
@@ -119,21 +124,47 @@ public class GBPTreeRecoveryTest
     }
 
     @Test
-    public void shouldRecoverFromAnythingReplayExactFromCheckpoint() throws Exception
+    public void shouldRecoverFromAnythingReplayExactFromCheckpointHighKeyContention() throws Exception
     {
+        initializeRecoveryFromAnythingTest( 100 );
         doShouldRecoverFromAnything( true );
-
     }
 
     @Test
-    public void shouldRecoverFromAnythingReplayFromBeforeLastCheckpoint() throws Exception
+    public void shouldRecoverFromAnythingReplayFromBeforeLastCheckpointHighKeyContention() throws Exception
     {
+        initializeRecoveryFromAnythingTest( 100 );
         doShouldRecoverFromAnything( false );
+    }
 
+    @Test
+    public void shouldRecoverFromAnythingReplayExactFromCheckpointLowKeyContention() throws Exception
+    {
+        initializeRecoveryFromAnythingTest( 1_000_000 );
+        doShouldRecoverFromAnything( true );
+    }
+
+    @Test
+    public void shouldRecoverFromAnythingReplayFromBeforeLastCheckpointLowKeyContention() throws Exception
+    {
+        initializeRecoveryFromAnythingTest( 1_000_000 );
+        doShouldRecoverFromAnything( false );
+    }
+
+    private void initializeRecoveryFromAnythingTest( int keyRange )
+    {
+        recoverFromAnythingInitialized = true;
+        this.keyRange = keyRange;
+    }
+
+    private void assertInitialized()
+    {
+        assertTrue( recoverFromAnythingInitialized );
     }
 
     private void doShouldRecoverFromAnything( boolean replayRecoveryExactlyFromCheckpoint ) throws Exception
     {
+        assertInitialized();
         // GIVEN
         // a tree which has had random updates and checkpoints in it, load generated with specific seed
         File file = directory.file( "index" );
@@ -200,6 +231,7 @@ public class GBPTreeRecoveryTest
                 GBPTree<MutableLong,MutableLong> index = createIndex( pageCache, file ) )
         {
             recover( recoveryActions, index );
+            index.finishRecovery();
 
             // THEN
             // we should end up with a consistent index containing all the stuff load says
@@ -356,8 +388,8 @@ public class GBPTreeRecoveryTest
         long[] data = new long[count * 2];
         for ( int i = 0, c = 0; i < count; i++ )
         {
-            data[c++] = random.intBetween( 0, 1_000_000 ); // key
-            data[c++] = random.intBetween( 0, 1_000_000 ); // value
+            data[c++] = random.intBetween( 0, keyRange ); // key
+            data[c++] = random.intBetween( 0, keyRange ); // value
         }
         return data;
     }
