@@ -529,6 +529,6 @@ public class NodeUpdates
     {
         Object loadProperty( long nodeId, int propertyId );
 
-        PropertyLoader NO_UNCHANGED_PROPERTIES = ( nodeId1, propertyId ) -> null;
+        PropertyLoader NO_PROPERTY_LOADER = ( nodeId1, propertyId ) -> null;
     }
 }

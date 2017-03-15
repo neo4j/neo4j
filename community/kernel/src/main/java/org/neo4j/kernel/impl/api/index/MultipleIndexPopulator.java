@@ -20,9 +20,7 @@
 package org.neo4j.kernel.impl.api.index;
 
 import java.io.IOException;
-import java.util.Arrays;
 import java.util.Collection;
-import java.util.Collections;
 import java.util.HashMap;
 import java.util.Map;
 import java.util.Queue;
@@ -45,7 +43,6 @@ import org.neo4j.kernel.api.index.PropertyAccessor;
 import org.neo4j.kernel.api.index.SchemaIndexProvider;
 import org.neo4j.kernel.api.index.SchemaIndexProvider.Descriptor;
 import org.neo4j.kernel.api.schema_new.LabelSchemaDescriptor;
-import org.neo4j.kernel.api.schema_new.SchemaDescriptor;
 import org.neo4j.kernel.api.schema_new.index.NewIndexDescriptor;
 import org.neo4j.kernel.impl.util.CopyOnWriteHashMap;
 import org.neo4j.logging.Log;
@@ -55,7 +52,7 @@ import org.neo4j.unsafe.impl.internal.dragons.FeatureToggles;
 
 import static java.lang.String.format;
 import static org.neo4j.collection.primitive.PrimitiveIntCollections.contains;
-import static org.neo4j.kernel.api.index.NodeUpdates.PropertyLoader.NO_UNCHANGED_PROPERTIES;
+import static org.neo4j.kernel.api.index.NodeUpdates.PropertyLoader.NO_PROPERTY_LOADER;
 import static org.neo4j.kernel.impl.api.index.IndexPopulationFailure.failure;
 
 /**
@@ -539,7 +536,9 @@ public class MultipleIndexPopulator implements IndexPopulator
 
         private void add( NodeUpdates updates )
         {
-            for ( IndexEntryUpdate indexUpdate : updates.forIndexes( populations.keySet(), NO_UNCHANGED_PROPERTIES ) )
+            // This is called from a full store node scan, meaning that all node properties are included in the
+            // NodeUpdates object. Therefore no additional properties need to be loaded.
+            for ( IndexEntryUpdate indexUpdate : updates.forIndexes( populations.keySet(), NO_PROPERTY_LOADER ) )
             {
                 IndexPopulation population = populations.get( indexUpdate.descriptor() );
                 try

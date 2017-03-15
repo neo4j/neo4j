@@ -30,7 +30,6 @@ import java.util.Collections;
 import java.util.HashMap;
 import java.util.List;
 import java.util.Map;
-import java.util.Optional;
 import java.util.function.IntPredicate;
 import java.util.stream.Collectors;
 
@@ -54,7 +53,6 @@ import org.neo4j.kernel.api.labelscan.LabelScanStore;
 import org.neo4j.kernel.api.labelscan.NodeLabelUpdate;
 import org.neo4j.kernel.api.schema_new.LabelSchemaDescriptor;
 import org.neo4j.kernel.api.schema_new.SchemaDescriptorFactory;
-import org.neo4j.kernel.api.schema_new.index.NewIndexDescriptor;
 import org.neo4j.kernel.api.schema_new.index.NewIndexDescriptorFactory;
 import org.neo4j.kernel.configuration.Config;
 import org.neo4j.kernel.impl.api.index.IndexProxy;
@@ -81,7 +79,7 @@ import org.neo4j.storageengine.api.schema.IndexReader;
 import org.neo4j.test.rule.EmbeddedDatabaseRule;
 
 import static org.junit.Assert.assertEquals;
-import static org.neo4j.kernel.api.index.NodeUpdates.PropertyLoader.NO_UNCHANGED_PROPERTIES;
+import static org.neo4j.kernel.api.index.NodeUpdates.PropertyLoader.NO_PROPERTY_LOADER;
 
 //[NodePropertyUpdate[0, prop:0 add:Sweden, labelsBefore:[], labelsAfter:[0]]]
 //[NodePropertyUpdate[1, prop:0 add:USA, labelsBefore:[], labelsAfter:[0]]]
@@ -480,7 +478,7 @@ public class MultiIndexPopulationConcurrentUpdatesIT
                         {
                             LabelSchemaDescriptor schema = SchemaDescriptorFactory.forLabel( labelId, propertyId );
                             for ( IndexEntryUpdate indexUpdate :
-                                    update.forIndexes( Collections.singleton( schema ), NO_UNCHANGED_PROPERTIES ) )
+                                    update.forIndexes( Collections.singleton( schema ), NO_PROPERTY_LOADER ) )
                             {
                                 switch ( indexUpdate.updateMode() )
                                 {
