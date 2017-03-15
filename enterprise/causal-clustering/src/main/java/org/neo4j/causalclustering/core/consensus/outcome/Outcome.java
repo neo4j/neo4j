@@ -31,6 +31,8 @@ import org.neo4j.causalclustering.core.consensus.state.ReadableRaftState;
 import org.neo4j.causalclustering.core.consensus.roles.follower.FollowerStates;
 import org.neo4j.causalclustering.identity.MemberId;
 
+import static java.util.Collections.emptySet;
+
 /**
  * Holds the outcome of a RAFT role's handling of a message. The role handling logic is stateless
  * and responds to RAFT messages in the context of a supplied state. The outcome is later consumed
@@ -68,6 +70,7 @@ public class Outcome implements Message, ConsensusOutcome
     private Collection<ShipCommand> shipCommands = new ArrayList<>();
     private boolean electedLeader;
     private boolean steppingDown;
+    private Set<MemberId> heartbeatResponses;
 
     public Outcome( Role currentRole, ReadableRaftState ctx )
     {
@@ -78,7 +81,7 @@ public class Outcome implements Message, ConsensusOutcome
                     Set<MemberId> votesForMe, long lastLogIndexBeforeWeBecameLeader,
                     FollowerStates<MemberId> followerStates, boolean renewElectionTimeout,
                     Collection<RaftLogCommand> logCommands, Collection<RaftMessages.Directed> outgoingMessages,
-                    Collection<ShipCommand> shipCommands, long commitIndex )
+                    Collection<ShipCommand> shipCommands, long commitIndex, Set<MemberId> heartbeatResponses )
     {
         this.nextRole = nextRole;
         this.term = term;
@@ -89,6 +92,7 @@ public class Outcome implements Message, ConsensusOutcome
         this.lastLogIndexBeforeWeBecameLeader = lastLogIndexBeforeWeBecameLeader;
         this.followerStates = followerStates;
         this.renewElectionTimeout = renewElectionTimeout;
+        this.heartbeatResponses = new HashSet<>( heartbeatResponses );
 
         this.logCommands.addAll( logCommands );
         this.outgoingMessages.addAll( outgoingMessages );
@@ -109,7 +113,8 @@ public class Outcome implements Message, ConsensusOutcome
         renewElectionTimeout = false;
         needsFreshSnapshot = false;
 
-        votesForMe = (currentRole == Role.CANDIDATE) ? new HashSet<>( ctx.votesForMe() ) : new HashSet<>();
+        votesForMe = (currentRole == Role.CANDIDATE) ? new HashSet<>( ctx.votesForMe() ) : emptySet();
+        heartbeatResponses = (currentRole == Role.LEADER) ? new HashSet<>( ctx.heartbeatResponses() ) : emptySet();
 
         lastLogIndexBeforeWeBecameLeader = (currentRole == Role.LEADER) ? ctx.lastLogIndexBeforeWeBecameLeader() : -1;
         followerStates = (currentRole == Role.LEADER) ? ctx.followerStates() : new FollowerStates<>();
@@ -302,5 +307,15 @@ public class Outcome implements Message, ConsensusOutcome
     public void setCommitIndex( long commitIndex )
     {
         this.commitIndex = commitIndex;
+    }
+
+    public void addHeartbeatResponse( MemberId from )
+    {
+        this.heartbeatResponses.add( from );
+    }
+
+    public Set<MemberId> getHeartbeatResponses()
+    {
+        return heartbeatResponses;
     }
 }

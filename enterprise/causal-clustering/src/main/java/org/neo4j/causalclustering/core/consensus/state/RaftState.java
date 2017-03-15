@@ -53,6 +53,7 @@ public class RaftState implements ReadableRaftState
 
     private MemberId leader;
     private Set<MemberId> votesForMe = new HashSet<>();
+    private Set<MemberId> heartbeatResponses = new HashSet<>();
     private FollowerStates<MemberId> followerStates = new FollowerStates<>();
     private long leaderCommit = -1;
     private long commitIndex = -1;
@@ -141,6 +142,12 @@ public class RaftState implements ReadableRaftState
     }
 
     @Override
+    public Set<MemberId> heartbeatResponses()
+    {
+        return heartbeatResponses;
+    }
+
+    @Override
     public long lastLogIndexBeforeWeBecameLeader()
     {
         return lastLogIndexBeforeWeBecameLeader;
@@ -180,6 +187,7 @@ public class RaftState implements ReadableRaftState
 
         leaderCommit = outcome.getLeaderCommit();
         votesForMe = outcome.getVotesForMe();
+        heartbeatResponses = outcome.getHeartbeatResponses();
         lastLogIndexBeforeWeBecameLeader = outcome.getLastLogIndexBeforeWeBecameLeader();
         followerStates = outcome.getFollowerStates();
 

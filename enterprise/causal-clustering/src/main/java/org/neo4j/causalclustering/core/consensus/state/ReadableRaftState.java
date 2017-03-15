@@ -43,6 +43,8 @@ public interface ReadableRaftState
 
     Set<MemberId> votesForMe();
 
+    Set<MemberId> heartbeatResponses();
+
     long lastLogIndexBeforeWeBecameLeader();
 
     FollowerStates<MemberId> followerStates();

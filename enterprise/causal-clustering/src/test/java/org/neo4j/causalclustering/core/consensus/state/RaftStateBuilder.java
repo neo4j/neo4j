@@ -52,15 +52,16 @@ public class RaftStateBuilder
 
     public MemberId myself;
     private Set<MemberId> votingMembers = emptySet();
+    private Set<MemberId> replicationMembers = emptySet();
     public long term;
     public MemberId leader;
     public long leaderCommit = -1;
     private MemberId votedFor;
     private RaftLog entryLog = new InMemoryRaftLog();
-    private Set votesForMe = emptySet();
+    private Set<MemberId> votesForMe = emptySet();
     private long lastLogIndexBeforeWeBecameLeader = -1;
     public long commitIndex = -1;
-    private FollowerStates followerStates = new FollowerStates<>();
+    private FollowerStates<MemberId> followerStates = new FollowerStates<>();
 
     public RaftStateBuilder myself( MemberId myself )
     {
@@ -71,6 +72,12 @@ public class RaftStateBuilder
     public RaftStateBuilder votingMembers( Set<MemberId> currentMembers )
     {
         this.votingMembers = currentMembers;
+        return this;
+    }
+
+    private RaftStateBuilder replicationMembers( Set<MemberId> replicationMembers )
+    {
+        this.replicationMembers = replicationMembers;
         return this;
     }
 
@@ -104,7 +111,7 @@ public class RaftStateBuilder
         return this;
     }
 
-    public RaftStateBuilder votesForMe( Set votesForMe )
+    public RaftStateBuilder votesForMe( Set<MemberId> votesForMe )
     {
         this.votesForMe = votesForMe;
         return this;
@@ -126,17 +133,17 @@ public class RaftStateBuilder
     {
         StateStorage<TermState> termStore = new InMemoryStateStorage<>( new TermState() );
         StateStorage<VoteState> voteStore = new InMemoryStateStorage<>( new VoteState( ) );
-        StubMembership membership = new StubMembership();
+        StubMembership membership = new StubMembership( votingMembers, replicationMembers );
 
-        RaftState state =
-                new RaftState( myself, termStore, membership, entryLog, voteStore, new InFlightMap<>(), NullLogProvider.getInstance() );
+        RaftState state = new RaftState( myself, termStore, membership, entryLog,
+                voteStore, new InFlightMap<>(), NullLogProvider.getInstance() );
 
         Collection<RaftMessages.Directed> noMessages = Collections.emptyList();
         List<RaftLogCommand> noLogCommands = Collections.emptyList();
 
         state.update( new Outcome( null, term, leader, leaderCommit, votedFor, votesForMe,
                 lastLogIndexBeforeWeBecameLeader, followerStates, false, noLogCommands,
-                noMessages, Collections.emptySet(), commitIndex ) );
+                noMessages, emptySet(), commitIndex, emptySet() ) );
 
         return state;
     }
@@ -146,13 +153,27 @@ public class RaftStateBuilder
         return votingMembers( asSet( members ) );
     }
 
+    public RaftStateBuilder replicationMembers( MemberId... members )
+    {
+        return replicationMembers( asSet( members ) );
+    }
+
     public RaftStateBuilder messagesSentToFollower( MemberId member, long nextIndex )
     {
         return this;
     }
 
-    private class StubMembership implements RaftMembership
+    private static class StubMembership implements RaftMembership
     {
+        private Set<MemberId> votingMembers;
+        private final Set<MemberId> replicationMembers;
+
+        private StubMembership( Set<MemberId> votingMembers, Set<MemberId> replicationMembers )
+        {
+            this.votingMembers = votingMembers;
+            this.replicationMembers = replicationMembers;
+        }
+
         @Override
         public Set<MemberId> votingMembers()
         {
@@ -162,7 +183,7 @@ public class RaftStateBuilder
         @Override
         public Set<MemberId> replicationMembers()
         {
-            return votingMembers;
+            return replicationMembers;
         }
 
         @Override
