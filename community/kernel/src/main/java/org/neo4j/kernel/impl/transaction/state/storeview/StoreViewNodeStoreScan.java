@@ -96,6 +96,8 @@ public class StoreViewNodeStoreScan<FAILURE extends Exception> extends NodeStore
             // Notify the property update visitor
             // TODO: reuse object instead? Better in terms of speed and GC?
             NodeUpdates.Builder updates = NodeUpdates.forNode( node.getId(), labels );
+            boolean hasRelevantProperty = false;
+
             for ( PropertyBlock property : properties( node ) )
             {
                 int propertyKeyId = property.getKeyIndexId();
@@ -105,10 +107,14 @@ public class StoreViewNodeStoreScan<FAILURE extends Exception> extends NodeStore
                     Object value = valueOf( property );
                     Validators.INDEX_VALUE_VALIDATOR.validate( value );
                     updates.added( propertyKeyId, value );
+                    hasRelevantProperty = true;
                 }
             }
-            // TODO: only visit if has label change or label + prop change?
-            propertyUpdatesVisitor.visit( updates.build() );
+
+            if ( hasRelevantProperty )
+            {
+                propertyUpdatesVisitor.visit( updates.build() );
+            }
         }
     }
 
