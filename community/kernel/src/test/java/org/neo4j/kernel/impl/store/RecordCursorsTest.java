@@ -71,7 +71,6 @@ public class RecordCursorsTest
         verify( recordCursors.property() ).close();
         verify( recordCursors.propertyString() ).close();
         verify( recordCursors.propertyArray() ).close();
-        verify( recordCursors.label() ).close();
     }
 
     private static RecordCursors newRecordCursorsWithMockedNeoStores()

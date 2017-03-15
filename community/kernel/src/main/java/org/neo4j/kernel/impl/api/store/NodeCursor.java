@@ -52,7 +52,6 @@ public class NodeCursor implements NodeItem, Cursor<NodeItem>
     private final NodeRecord nodeRecord;
     private final Consumer<NodeCursor> instanceCache;
     private final NodeStore nodeStore;
-    private final RecordCursors recordCursors;
     private final LockService lockService;
 
     private Progression progression;
@@ -63,12 +62,11 @@ public class NodeCursor implements NodeItem, Cursor<NodeItem>
     private PageCursor nodePageCursor;
 
     NodeCursor( NodeRecord nodeRecord, Consumer<NodeCursor> instanceCache, NodeStore nodeStore,
-            RecordCursors recordCursors, LockService lockService )
+            LockService lockService )
     {
         this.nodeRecord = nodeRecord;
         this.instanceCache = instanceCache;
         this.nodeStore = nodeStore;
-        this.recordCursors = recordCursors;
         this.lockService = lockService;
     }
 
@@ -193,7 +191,7 @@ public class NodeCursor implements NodeItem, Cursor<NodeItem>
     {
         if ( labels == null )
         {
-            labels = NodeLabelsField.get( nodeRecord, recordCursors.label() );
+            labels = NodeLabelsField.get( nodeRecord, nodeStore );
         }
         return labels;
     }
