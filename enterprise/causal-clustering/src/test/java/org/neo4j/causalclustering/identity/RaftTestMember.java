@@ -29,11 +29,6 @@ public class RaftTestMember
 
     public static MemberId member( int id )
     {
-        MemberId member = testMembers.get( id );
-        if ( member == null ) {
-            member = new MemberId( UUID.randomUUID() );
-            testMembers.put( id, member );
-        }
-        return member;
+        return testMembers.computeIfAbsent( id, k -> new MemberId( UUID.randomUUID() ) );
     }
 }

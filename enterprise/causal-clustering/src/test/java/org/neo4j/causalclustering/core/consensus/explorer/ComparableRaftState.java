@@ -42,21 +42,22 @@ import static java.lang.String.format;
 public class ComparableRaftState implements ReadableRaftState
 {
     protected final MemberId myself;
-    private final Set votingMembers;
-    private final Set replicationMembers;
+    private final Set<MemberId> votingMembers;
+    private final Set<MemberId> replicationMembers;
     private final Log log;
     protected long term = 0;
     protected MemberId leader;
     private long leaderCommit = -1;
     private MemberId votedFor = null;
-    private Set votesForMe = new HashSet<>();
+    private Set<MemberId> votesForMe = new HashSet<>();
+    private Set<MemberId> heartbeatResponses = new HashSet<>();
     private long lastLogIndexBeforeWeBecameLeader = -1;
-    private FollowerStates followerStates = new FollowerStates<>();
+    private FollowerStates<MemberId> followerStates = new FollowerStates<>();
     protected final RaftLog entryLog;
     private final InFlightMap<RaftLogEntry> inFlightMap;
     private long commitIndex = -1;
 
-    ComparableRaftState( MemberId myself, Set votingMembers, Set replicationMembers,
+    ComparableRaftState( MemberId myself, Set<MemberId> votingMembers, Set<MemberId> replicationMembers,
                          RaftLog entryLog, InFlightMap<RaftLogEntry> inFlightMap, LogProvider logProvider )
     {
         this.myself = myself;
@@ -67,7 +68,7 @@ public class ComparableRaftState implements ReadableRaftState
         this.log = logProvider.getLog( getClass() );
     }
 
-    public ComparableRaftState( ReadableRaftState original ) throws IOException
+    ComparableRaftState( ReadableRaftState original ) throws IOException
     {
         this( original.myself(), original.votingMembers(), original.replicationMembers(),
                 new ComparableRaftLog( original.entryLog() ), new InFlightMap<>(), NullLogProvider.getInstance() );
@@ -80,13 +81,13 @@ public class ComparableRaftState implements ReadableRaftState
     }
 
     @Override
-    public Set votingMembers()
+    public Set<MemberId> votingMembers()
     {
         return votingMembers;
     }
 
     @Override
-    public Set replicationMembers()
+    public Set<MemberId> replicationMembers()
     {
         return replicationMembers;
     }
@@ -116,9 +117,15 @@ public class ComparableRaftState implements ReadableRaftState
     }
 
     @Override
-    public Set votesForMe()
+    public Set<MemberId> votesForMe()
     {
         return votesForMe;
+    }
+
+    @Override
+    public Set<MemberId> heartbeatResponses()
+    {
+        return heartbeatResponses;
     }
 
     @Override
@@ -128,7 +135,7 @@ public class ComparableRaftState implements ReadableRaftState
     }
 
     @Override
-    public FollowerStates followerStates()
+    public FollowerStates<MemberId> followerStates()
     {
         return followerStates;
     }
