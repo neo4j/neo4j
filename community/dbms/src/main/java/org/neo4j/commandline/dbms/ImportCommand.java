@@ -176,9 +176,9 @@ public class ImportCommand implements AdminCommand
 
         try
         {
-            mode = allArguments.parse("mode", args);
-            database = allArguments.parse( "database", args );
-            additionalConfigFile = allArguments.parseOptionalPath( "additional-config", args );
+            mode = allArguments.parse( args ).get("mode" );
+            database = allArguments.get( "database" );
+            additionalConfigFile = allArguments.getOptionalPath( "additional-config" );
         }
         catch ( IllegalArgumentException e )
         {

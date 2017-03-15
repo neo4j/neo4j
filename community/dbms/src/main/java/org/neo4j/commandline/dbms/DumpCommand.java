@@ -69,8 +69,8 @@ public class DumpCommand implements AdminCommand
     @Override
     public void execute( String[] args ) throws IncorrectUsage, CommandFailed
     {
-        String database = arguments.parse( "database", args );
-        Path archive = calculateArchive( database, arguments.parseMandatoryPath( "to", args ) );
+        String database = arguments.parse( args ).get( "database" );
+        Path archive = calculateArchive( database, arguments.getMandatoryPath( "to" ) );
         Path databaseDirectory = canonicalPath( toDatabaseDirectory( database ) );
 
         try

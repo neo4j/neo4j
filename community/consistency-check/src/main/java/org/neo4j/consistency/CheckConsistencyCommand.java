@@ -110,11 +110,11 @@ public class CheckConsistencyCommand implements AdminCommand
 
         try
         {
-            database = arguments.parse( "database", args );
-            backupPath = arguments.parseOptionalPath( "backup", args );
-            verbose = arguments.parseBoolean( "verbose", args );
-            additionalConfigFile = arguments.parseOptionalPath( "additional-config", args );
-            reportDir = arguments.parseOptionalPath( "report-dir", args )
+            database = arguments.parse( args ).get( "database" );
+            backupPath = arguments.getOptionalPath( "backup" );
+            verbose = arguments.getBoolean( "verbose" );
+            additionalConfigFile = arguments.getOptionalPath( "additional-config" );
+            reportDir = arguments.getOptionalPath( "report-dir" )
                     .orElseThrow( () -> new IllegalArgumentException( "report-dir must be a valid path" ) );
         }
         catch ( IllegalArgumentException e )
@@ -124,7 +124,7 @@ public class CheckConsistencyCommand implements AdminCommand
 
         if ( backupPath.isPresent() )
         {
-            if ( arguments.has( "database", args ) )
+            if ( arguments.has( "database" ) )
             {
                 throw new IncorrectUsage( "Only one of '--database' and '--backup' can be specified." );
             }
@@ -139,33 +139,33 @@ public class CheckConsistencyCommand implements AdminCommand
         try
         {
             // We can remove the loading from config file in 4.0
-            if ( arguments.has( CHECK_GRAPH, args ) )
+            if ( arguments.has( CHECK_GRAPH ) )
             {
-                checkGraph = arguments.parseBoolean( CHECK_GRAPH, args );
+                checkGraph = arguments.getBoolean( CHECK_GRAPH );
             }
             else
             {
                 checkGraph = ConsistencyCheckSettings.consistency_check_graph.from( config );
             }
-            if ( arguments.has( CHECK_INDEXES, args ) )
+            if ( arguments.has( CHECK_INDEXES ) )
             {
-                checkIndexes = arguments.parseBoolean( CHECK_INDEXES, args );
+                checkIndexes = arguments.getBoolean( CHECK_INDEXES );
             }
             else
             {
                 checkIndexes = ConsistencyCheckSettings.consistency_check_indexes.from( config );
             }
-            if ( arguments.has( CHECK_LABEL_SCAN_STORE, args ) )
+            if ( arguments.has( CHECK_LABEL_SCAN_STORE ) )
             {
-                checkLabelScanStore = arguments.parseBoolean( CHECK_LABEL_SCAN_STORE, args );
+                checkLabelScanStore = arguments.getBoolean( CHECK_LABEL_SCAN_STORE );
             }
             else
             {
                 checkLabelScanStore = ConsistencyCheckSettings.consistency_check_label_scan_store.from( config );
             }
-            if ( arguments.has( CHECK_PROPERTY_OWNERS, args ) )
+            if ( arguments.has( CHECK_PROPERTY_OWNERS ) )
             {
-                checkPropertyOwners = arguments.parseBoolean( CHECK_PROPERTY_OWNERS, args );
+                checkPropertyOwners = arguments.getBoolean( CHECK_PROPERTY_OWNERS );
             }
             else
             {
