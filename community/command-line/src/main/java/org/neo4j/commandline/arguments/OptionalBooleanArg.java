@@ -38,10 +38,8 @@ public class OptionalBooleanArg extends OptionalNamedArg
     }
 
     @Override
-    public String parse( String... args )
+    public String parse( Args parsedArgs )
     {
-        return Boolean.toString( Args.withFlags( name() )
-                .parse( args )
-                .getBoolean( name, Boolean.parseBoolean( defaultValue ) ) );
+        return Boolean.toString( parsedArgs.getBoolean( name, Boolean.parseBoolean( defaultValue ) ) );
     }
 }
