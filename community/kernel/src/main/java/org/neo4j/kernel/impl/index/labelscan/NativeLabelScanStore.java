@@ -253,7 +253,7 @@ public class NativeLabelScanStore implements LabelScanStore
         int highestLabelId = -1;
         try ( RawCursor<Hit<LabelScanKey,LabelScanValue>,IOException> cursor = index.seek(
                 new LabelScanKey().set( Integer.MAX_VALUE, Long.MAX_VALUE ),
-                new LabelScanKey().set( 0, 0 ) ) )
+                new LabelScanKey().set( 0, -1 ) ) )
         {
             if ( cursor.next() )
             {
