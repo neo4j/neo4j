@@ -474,6 +474,12 @@ public class ConstraintEnforcingEntityOperations implements EntityOperations, Sc
     }
 
     @Override
+    public Cursor<NodeItem> nodeGetAllCursor( KernelStatement statement )
+    {
+        return entityReadOperations.nodeGetAllCursor( statement );
+    }
+
+    @Override
     public Cursor<NodeItem> nodeCursorById( KernelStatement statement, long nodeId ) throws EntityNotFoundException
     {
         return entityReadOperations.nodeCursorById( statement, nodeId );
