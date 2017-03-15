@@ -787,7 +787,7 @@ public class GBPTreeTest
         {}
 
         // THEN
-        assertEquals( 1, checkpointCounter.count );
+        assertEquals( 1, checkpointCounter.count() );
     }
 
     @Test
@@ -798,10 +798,9 @@ public class GBPTreeTest
         PageCache pageCache = createPageCache( 256 );
 
         // WHEN
-        int countBefore;
         try ( GBPTree<MutableLong,MutableLong> index = builder( pageCache ).with( checkpointCounter ).build() )
         {
-            countBefore = checkpointCounter.count;
+            checkpointCounter.reset();
             try ( Writer<MutableLong,MutableLong> writer = index.writer() )
             {
                 writer.put( new MutableLong( 0 ), new MutableLong( 1 ) );
@@ -809,7 +808,7 @@ public class GBPTreeTest
         }
 
         // THEN
-        assertEquals( countBefore + 1, checkpointCounter.count );
+        assertEquals( 1, checkpointCounter.count() );
     }
 
     @Test
@@ -820,19 +819,18 @@ public class GBPTreeTest
         PageCache pageCache = createPageCache( 256 );
 
         // WHEN
-        int countBefore;
         try ( GBPTree<MutableLong,MutableLong> index = builder( pageCache ).with( checkpointCounter ).build() )
         {
-            countBefore = checkpointCounter.count;
+            checkpointCounter.reset();
             try ( Writer<MutableLong,MutableLong> writer = index.writer() )
             {
                 writer.put( new MutableLong( 0 ), new MutableLong( 1 ) );
             }
             index.checkpoint( IOLimiter.unlimited() );
-            assertEquals( countBefore + 1, checkpointCounter.count );
+            assertEquals( 1, checkpointCounter.count() );
         }
         // THEN
-        assertEquals( countBefore + 1, checkpointCounter.count );
+        assertEquals( 1, checkpointCounter.count() );
     }
 
     private static class CheckpointControlledMonitor implements Monitor
@@ -847,17 +845,6 @@ public class GBPTreeTest
             {
                 barrier.reached();
             }
-        }
-    }
-
-    private static class CheckpointCounter implements Monitor
-    {
-        private int count;
-
-        @Override
-        public void checkpointCompleted()
-        {
-            count++;
         }
     }
 
