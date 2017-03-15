@@ -48,7 +48,9 @@ import org.neo4j.graphdb.factory.GraphDatabaseSettings;
 import org.neo4j.graphdb.mockfs.UncloseableDelegatingFileSystemAbstraction;
 import org.neo4j.io.fs.FileSystemAbstraction;
 import org.neo4j.kernel.api.KernelTransaction;
+import org.neo4j.kernel.api.security.AuthToken;
 import org.neo4j.kernel.configuration.Settings;
+import org.neo4j.kernel.enterprise.api.security.EnterpriseAuthManager;
 import org.neo4j.kernel.enterprise.api.security.EnterpriseSecurityContext;
 import org.neo4j.kernel.impl.coreapi.InternalTransaction;
 import org.neo4j.kernel.impl.factory.GraphDatabaseFacade;
@@ -252,9 +254,7 @@ public class QueryLoggerIT
         List<String> logLines = readAllLines( logFilename );
         assertEquals( 1, logLines.size() );
         assertThat( logLines.get( 0 ),
-                endsWith( String.format(
-                        " ms: %s - %s - {ids: [0, 1, 2]} - {}",
-                        clientConnectionInfo(), query) ) );
+                endsWith( String.format( " ms: %s - %s - {ids: [0, 1, 2]} - {}", clientConnectionInfo(), query ) ) );
         assertThat( logLines.get( 0 ), containsString( AUTH_DISABLED.username() ) );
     }
 
@@ -326,6 +326,39 @@ public class QueryLoggerIT
                                         .flatMap( Collection::stream )
                                         .collect( Collectors.toList() );
         assertThat( "Expected log file to have at least one log entry", loggedQueries, hasSize( 100 ) );
+    }
+
+    @Test
+    public void shouldNotLogPassword() throws Exception
+    {
+        GraphDatabaseFacade database = (GraphDatabaseFacade) databaseBuilder
+                .setConfig( GraphDatabaseSettings.log_queries, Settings.TRUE )
+                .setConfig( GraphDatabaseSettings.logs_directory, logsDirectory.getPath() )
+                .setConfig( GraphDatabaseSettings.auth_enabled, Settings.TRUE )
+                .newGraphDatabase();
+
+        EnterpriseAuthManager authManager = database.getDependencyResolver().resolveDependency( EnterpriseAuthManager.class );
+        EnterpriseSecurityContext neo = authManager.login( AuthToken.newBasicAuthToken( "neo4j", "neo4j" ) );
+
+        String query = "CALL dbms.security.changePassword('abc123')";
+        try ( InternalTransaction tx = database
+                .beginTransaction( KernelTransaction.Type.explicit, neo ) )
+        {
+            Result res = database.execute( tx, query, Collections.emptyMap() );
+            res.close();
+            tx.success();
+        }
+        finally
+        {
+            database.shutdown();
+        }
+
+        List<String> logLines = readAllLines( logFilename );
+        assertEquals( 1, logLines.size() );
+        assertThat( logLines.get( 0 ),
+                containsString(  "CALL dbms.security.changePassword(******)") ) ;
+        assertThat( logLines.get( 0 ),not( containsString( "abc123" ) ) );
+        assertThat( logLines.get( 0 ), containsString( neo.subject().username() ) );
     }
 
     private void executeQueryAndShutdown( GraphDatabaseService database )
