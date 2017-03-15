@@ -19,33 +19,15 @@
  */
 package org.neo4j.kernel.impl.api.store;
 
-import org.neo4j.kernel.api.StatementConstants;
-
-public class SingleNodeProgression implements Progression
+public interface Progression
 {
-    private long nodeId;
-
-    SingleNodeProgression( long nodeId )
+    enum Mode
     {
-        this.nodeId = nodeId;
+        APPEND,
+        FETCH
     }
 
-    @Override
-    public long nextId()
-    {
-        try
-        {
-            return nodeId;
-        }
-        finally
-        {
-            nodeId = StatementConstants.NO_SUCH_NODE;
-        }
-    }
+    long nextId();
 
-    @Override
-    public Mode mode()
-    {
-        return Mode.FETCH;
-    }
+    Mode mode();
 }
