@@ -317,6 +317,9 @@ public class CausalClusteringSettings implements LoadableConfig
     public static final Setting<List<String>> upstream_selection_strategy =
             setting( "causal_clustering.upstream_selection_strategy", list( ",", STRING ), "default" );
 
+    @Description( "If the operator specifies the user-defined upstream database selection strategy in " +
+            "causal_clustering.upstream_selection_strategy then the configuration of the upstream dependencies is " +
+            "written here." )
     public static final Setting<String> user_defined_upstream_selection_strategy =
             setting( "causal_clustering.user_defined_upstream_strategy", STRING, "" );
 
