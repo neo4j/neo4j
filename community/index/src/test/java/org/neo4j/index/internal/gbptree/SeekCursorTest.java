@@ -1524,7 +1524,7 @@ public class SeekCursorTest
         long currentNode = cursor.getCurrentPageId();
         try ( SeekCursor<MutableLong,MutableLong> seek = seekCursor( 0L, i, cursor ) )
         {
-            // when right sibling gets an heir
+            // when right sibling gets an successor
             checkpoint();
             PageAwareByteArrayCursor duplicate = cursor.duplicate( currentNode );
             duplicate.next();
@@ -1581,7 +1581,7 @@ public class SeekCursorTest
     }
 
     @Test
-    public void shouldRereadHeirIfReadFailureCausedByCheckpointInLeaf() throws Exception
+    public void shouldRereadSuccessorIfReadFailureCausedByCheckpointInLeaf() throws Exception
     {
         // given
         List<Long> expected = new ArrayList<>();
@@ -1600,7 +1600,7 @@ public class SeekCursorTest
             checkpoint();
             PageAwareByteArrayCursor duplicate = cursor.duplicate( currentNode );
             duplicate.next();
-            insert( i, i * 10, duplicate ); // Create heir of leaf
+            insert( i, i * 10, duplicate ); // Create successor of leaf
             expected.add( i );
 
             while ( seek.next() )
@@ -1615,7 +1615,7 @@ public class SeekCursorTest
     }
 
     @Test
-    public void shouldFailHeirIfReadFailureNotCausedByCheckpointInLeaf() throws Exception
+    public void shouldFailSuccessorIfReadFailureNotCausedByCheckpointInLeaf() throws Exception
     {
         // given
         long i = 0L;
@@ -1631,10 +1631,10 @@ public class SeekCursorTest
             checkpoint();
             PageAwareByteArrayCursor duplicate = cursor.duplicate( currentNode );
             duplicate.next();
-            insert( i, i * 10, duplicate ); // Create heir of leaf
+            insert( i, i * 10, duplicate ); // Create successor of leaf
 
-            // and corrupt heir pointer
-            corruptGSPP( duplicate, TreeNode.BYTE_POS_HEIR );
+            // and corrupt successor pointer
+            corruptGSPP( duplicate, TreeNode.BYTE_POS_SUCCESSOR );
 
             // then
             try
@@ -1652,7 +1652,7 @@ public class SeekCursorTest
     }
 
     @Test
-    public void shouldRereadHeirIfReadFailureCausedByCheckpointInInternal() throws Exception
+    public void shouldRereadSuccessorIfReadFailureCausedByCheckpointInInternal() throws Exception
     {
         // given
         // a root with two leaves in old generation
@@ -1693,7 +1693,7 @@ public class SeekCursorTest
         }
 
         // then
-        // make sure seek cursor went to heir of root node
+        // make sure seek cursor went to successor of root node
         assertEquals( Arrays.asList( oldRootId, rootId, rightChild ), breadcrumbCursor.getBreadcrumbs() );
     }
 
@@ -1712,7 +1712,7 @@ public class SeekCursorTest
     }
 
     @Test
-    public void shouldFailHeirIfReadFailureNotCausedByCheckpointInInternal() throws Exception
+    public void shouldFailSuccessorIfReadFailureNotCausedByCheckpointInInternal() throws Exception
     {
         // given
         // a root with two leaves in old generation
@@ -1736,9 +1736,9 @@ public class SeekCursorTest
             i++;
         }
 
-        // and corrupt heir pointer
+        // and corrupt successor pointer
         cursor.next( rootId );
-        corruptGSPP( cursor, TreeNode.BYTE_POS_HEIR );
+        corruptGSPP( cursor, TreeNode.BYTE_POS_SUCCESSOR );
 
         // when
         // starting a seek on the old root with generation that is not up to date, simulating a concurrent checkpoint
@@ -1792,7 +1792,7 @@ public class SeekCursorTest
         }
 
         // then
-        // make sure seek cursor went to heir of root node
+        // make sure seek cursor went to successor of root node
         assertEquals( Arrays.asList( rootId, newRightChild ), breadcrumbCursor.getBreadcrumbs() );
     }
 
@@ -1817,7 +1817,7 @@ public class SeekCursorTest
         insert( i, i * 10 );
         i++;
 
-        // and corrupt heir pointer
+        // and corrupt successor pointer
         corruptGSPP( cursor, node.childOffset( 1 ) );
 
         // when
@@ -1917,7 +1917,7 @@ public class SeekCursorTest
     }
 
     @Test
-    public void shouldCatchupRootWhenNodeHasTooHeirerationWhileTraversingLeaves() throws Exception
+    public void shouldCatchupRootWhenNodeHasTooNewGenerationWhileTraversingLeaves() throws Exception
     {
         // given
         MutableBoolean triggered = new MutableBoolean( false );

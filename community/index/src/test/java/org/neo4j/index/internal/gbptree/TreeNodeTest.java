@@ -74,7 +74,7 @@ public class TreeNodeTest
         assertEquals( 0, node.keyCount( cursor ) );
         assertEquals( NO_NODE_FLAG, leftSibling( cursor, STABLE_GENERATION, UNSTABLE_GENERATION ) );
         assertEquals( NO_NODE_FLAG, rightSibling( cursor, STABLE_GENERATION, UNSTABLE_GENERATION ) );
-        assertEquals( NO_NODE_FLAG, heir( cursor, STABLE_GENERATION, UNSTABLE_GENERATION ) );
+        assertEquals( NO_NODE_FLAG, successor( cursor, STABLE_GENERATION, UNSTABLE_GENERATION ) );
     }
 
     @Test
@@ -91,7 +91,7 @@ public class TreeNodeTest
         assertEquals( 0, node.keyCount( cursor ) );
         assertEquals( NO_NODE_FLAG, leftSibling( cursor, STABLE_GENERATION, UNSTABLE_GENERATION ) );
         assertEquals( NO_NODE_FLAG, rightSibling( cursor, STABLE_GENERATION, UNSTABLE_GENERATION ) );
-        assertEquals( NO_NODE_FLAG, heir( cursor, STABLE_GENERATION, UNSTABLE_GENERATION ) );
+        assertEquals( NO_NODE_FLAG, successor( cursor, STABLE_GENERATION, UNSTABLE_GENERATION ) );
     }
 
     @Test
@@ -353,16 +353,16 @@ public class TreeNodeTest
     }
 
     @Test
-    public void shouldSetAndGetHeir() throws Exception
+    public void shouldSetAndGetSuccessor() throws Exception
     {
         // GIVEN
         node.initializeLeaf( cursor, STABLE_GENERATION, UNSTABLE_GENERATION );
 
         // WHEN
-        node.setHeir( cursor, 123, STABLE_GENERATION, UNSTABLE_GENERATION );
+        node.setSuccessor( cursor, 123, STABLE_GENERATION, UNSTABLE_GENERATION );
 
         // THEN
-        assertEquals( 123, heir( cursor, STABLE_GENERATION, UNSTABLE_GENERATION ) );
+        assertEquals( 123, successor( cursor, STABLE_GENERATION, UNSTABLE_GENERATION ) );
     }
 
     @Test
@@ -731,8 +731,8 @@ public class TreeNodeTest
         return pointer( node.leftSibling( cursor, stableGeneration, unstableGeneration ) );
     }
 
-    private long heir( PageCursor cursor, long stableGeneration, long unstableGeneration )
+    private long successor( PageCursor cursor, long stableGeneration, long unstableGeneration )
     {
-        return pointer( node.heir( cursor, stableGeneration, unstableGeneration ) );
+        return pointer( node.successor( cursor, stableGeneration, unstableGeneration ) );
     }
 }

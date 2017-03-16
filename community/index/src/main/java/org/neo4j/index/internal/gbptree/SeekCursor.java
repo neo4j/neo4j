@@ -245,7 +245,7 @@ class SeekCursor<KEY,VALUE> implements RawCursor<Hit<KEY,VALUE>,IOException>, Hi
     /**
      * Generation of the pointer which was last followed, either a
      * {@link TreeNode#rightSibling(PageCursor, long, long) sibling} during scan or otherwise following
-     * {@link TreeNode#heir(PageCursor, long, long) heir} or
+     * {@link TreeNode#successor(PageCursor, long, long) successor} or
      * {@link TreeNode#childAt(PageCursor, int, long, long) child}.
      */
     private long lastFollowedPointerGeneration;
@@ -278,16 +278,16 @@ class SeekCursor<KEY,VALUE> implements RawCursor<Hit<KEY,VALUE>,IOException>, Hi
     /**
      * Set within should retry loop.
      * <p>
-     * Pointer to heir of node.
+     * Pointer to successor of node.
      */
-    private long heir;
+    private long successor;
 
     /**
      * Set within should retry loop.
      * <p>
-     * Generation of heir pointer
+     * Generation of successor pointer
      */
-    private long heirGeneration;
+    private long successorGeneration;
 
     /**
      * Set within should retry loop.
@@ -432,14 +432,14 @@ class SeekCursor<KEY,VALUE> implements RawCursor<Hit<KEY,VALUE>,IOException>, Hi
             else if ( !saneRead() )
             {
                 throw new TreeInconsistencyException( "Read inconsistent tree node %d%n" +
-                        "  nodeType:%d%n  currentNodeGeneration:%d%n  heir:%d%n  heirGeneration:%d%n" +
+                        "  nodeType:%d%n  currentNodeGeneration:%d%n  successor:%d%n  successorGeneration:%d%n" +
                         "  isInternal:%b%n  keyCount:%d%n  maxKeyCount:%d%n  searchResult:%d%n  pos:%d%n" +
                         "  childId:%d%n  childIdGeneration:%d",
-                        cursor.getCurrentPageId(), nodeType, currentNodeGeneration, heir, heirGeneration,
+                        cursor.getCurrentPageId(), nodeType, currentNodeGeneration, successor, successorGeneration,
                         isInternal, keyCount, maxKeyCount, searchResult, pos, pointerId, pointerGeneration );
             }
 
-            if ( goToHeir() )
+            if ( goToSuccessor() )
             {
                 continue;
             }
@@ -529,10 +529,10 @@ class SeekCursor<KEY,VALUE> implements RawCursor<Hit<KEY,VALUE>,IOException>, Hi
             else if ( !saneRead() )
             {
                 throw new TreeInconsistencyException( "Read inconsistent tree node %d%n" +
-                        "  nodeType:%d%n  currentNodeGeneration:%d%n  heir:%d%n  heirGeneration:%d%n" +
+                        "  nodeType:%d%n  currentNodeGeneration:%d%n  successor:%d%n  successorGeneration:%d%n" +
                         "  keyCount:%d%n  maxKeyCount:%d%n  searchResult:%d%n  pos:%d%n" +
                         "  rightSibling:%d%n  rightSiblingGeneration:%d",
-                        cursor.getCurrentPageId(), nodeType, currentNodeGeneration, heir, heirGeneration,
+                        cursor.getCurrentPageId(), nodeType, currentNodeGeneration, successor, successorGeneration,
                         keyCount, maxKeyCount, searchResult, pos, pointerId, pointerGeneration );
             }
 
@@ -541,7 +541,7 @@ class SeekCursor<KEY,VALUE> implements RawCursor<Hit<KEY,VALUE>,IOException>, Hi
                 continue;
             }
 
-            if ( goToHeir() )
+            if ( goToSuccessor() )
             {
                 continue;
             }
@@ -644,11 +644,11 @@ class SeekCursor<KEY,VALUE> implements RawCursor<Hit<KEY,VALUE>,IOException>, Hi
     }
 
     /**
-     * Calls {@link #goTo(long, long, String, boolean)} with heir fields.
+     * Calls {@link #goTo(long, long, String, boolean)} with successor fields.
      */
-    private boolean goToHeir() throws IOException
+    private boolean goToSuccessor() throws IOException
     {
-        return goTo( heir, heirGeneration, "heir", true );
+        return goTo( successor, successorGeneration, "successor", true );
     }
 
     /**
@@ -737,10 +737,10 @@ class SeekCursor<KEY,VALUE> implements RawCursor<Hit<KEY,VALUE>,IOException>, Hi
 
         currentNodeGeneration = bTreeNode.generation( cursor );
 
-        heir = bTreeNode.heir( cursor, stableGeneration, unstableGeneration );
-        if ( GenerationSafePointerPair.isSuccess( heir ) )
+        successor = bTreeNode.successor( cursor, stableGeneration, unstableGeneration );
+        if ( GenerationSafePointerPair.isSuccess( successor ) )
         {
-            heirGeneration = bTreeNode.pointerGeneration( cursor, heir );
+            successorGeneration = bTreeNode.pointerGeneration( cursor, successor );
         }
         isInternal = TreeNode.isInternal( cursor );
         // Find the left-most key within from-range

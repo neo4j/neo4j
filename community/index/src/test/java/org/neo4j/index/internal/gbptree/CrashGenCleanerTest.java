@@ -424,7 +424,7 @@ public class CrashGenCleanerTest
                     @Override
                     public int offset( TreeNode node )
                     {
-                        return TreeNode.BYTE_POS_HEIR;
+                        return TreeNode.BYTE_POS_SUCCESSOR;
                     }
                 }
     }
@@ -457,7 +457,7 @@ public class CrashGenCleanerTest
         void crashGSPP( PageCursor pageCursor, int offset, int crashGen )
         {
             pageCursor.setOffset( offset );
-            GenSafePointerPair.write( pageCursor, 42, stableGen, crashGen );
+            GenerationSafePointerPair.write( pageCursor, 42, stableGen, crashGen );
         }
     }
 }

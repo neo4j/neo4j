@@ -103,7 +103,7 @@ public class InternalTreeLogicTest
     private long rootId;
     private long rootGeneration;
     private int numberOfRootSplits;
-    private int numberOfRootHeirs;
+    private int numberOfRootSuccessors;
 
     @Before
     public void setUp() throws IOException
@@ -488,7 +488,7 @@ public class InternalTreeLogicTest
 
         // and we remove it
         generationManager.checkpoint();
-        remove( keyToRemove, readValue ); // Possibly create heir of right child
+        remove( keyToRemove, readValue ); // Possibly create successor of right child
         goTo( readCursor, rootId );
         currentRightChild = childAt( readCursor, 1, stableGeneration, unstableGeneration );
 
@@ -553,7 +553,7 @@ public class InternalTreeLogicTest
     @Test
     public void mustPropagateAllStructureChanges() throws Exception
     {
-        assumeTrue( "No checkpointing, no heir", isCheckpointing );
+        assumeTrue( "No checkpointing, no successor", isCheckpointing );
 
         //given
         initialize();
@@ -616,7 +616,7 @@ public class InternalTreeLogicTest
     @Test
     public void mustPropagateStructureOnMergeFromLeft() throws Exception
     {
-        assumeTrue( "No checkpointing, no heir", isCheckpointing );
+        assumeTrue( "No checkpointing, no successor", isCheckpointing );
 
         // GIVEN:
         //       ------root-------
@@ -662,11 +662,11 @@ public class InternalTreeLogicTest
         long newRightChild = childAt( readCursor, 1, stableGeneration, unstableGeneration );
         assertEquals( newRightChild, oldRightChild );
 
-        // old left and old middle has new left as heir
+        // old left and old middle has new left as successor
         goTo( readCursor, oldLeftChild );
-        assertEquals( newLeftChild, heir( readCursor, stableGeneration, unstableGeneration ) );
+        assertEquals( newLeftChild, successor( readCursor, stableGeneration, unstableGeneration ) );
         goTo( readCursor, oldMiddleChild );
-        assertEquals( newLeftChild, heir( readCursor, stableGeneration, unstableGeneration ) );
+        assertEquals( newLeftChild, successor( readCursor, stableGeneration, unstableGeneration ) );
 
         // new left child contain keys from old left and old middle
         goTo( readCursor, oldRightChild );
@@ -682,7 +682,7 @@ public class InternalTreeLogicTest
     @Test
     public void mustPropagateStructureOnMergeToRight() throws Exception
     {
-        assumeTrue( "No checkpointing, no heir", isCheckpointing );
+        assumeTrue( "No checkpointing, no successor", isCheckpointing );
 
         // GIVEN:
         //        ---------root---------
@@ -711,15 +711,15 @@ public class InternalTreeLogicTest
         remove( keyInLeftChild, insertValue );
         allKeys.remove( keyInLeftChild );
         // New structure
-        // NOTE: oldleft gets a heir (intermediate) before removing key and then another one once it is merged,
-        //       effectively creating a chain of heir pointers to our newleft that in the end contain keys from
+        // NOTE: oldleft gets a successor (intermediate) before removing key and then another one once it is merged,
+        //       effectively creating a chain of successor pointers to our newleft that in the end contain keys from
         //       oldleft and oldmiddle
         //                                                  ----root----
         //                                                 /            |
         //                                                v             v
-        // oldleft -[heir]-> intermediate -[heir]-> newleft <-> oldright
+        // oldleft -[successor]-> intermediate -[successor]-> newleft <-> oldright
         //                                                ^
-        //                                                  \-[heir]- oldmiddle
+        //                                                  \-[successor]- oldmiddle
 
         // THEN
         // old root should still have 2 keys
@@ -738,11 +738,11 @@ public class InternalTreeLogicTest
         long newRightChild = childAt( readCursor, 1, stableGeneration, unstableGeneration );
         assertEquals( newRightChild, oldRightChild );
 
-        // old left and old middle has new left as heir
+        // old left and old middle has new left as successor
         goTo( readCursor, oldLeftChild );
         assertEquals( newLeftChild, newestGeneration( readCursor, stableGeneration, unstableGeneration ) );
         goTo( readCursor, oldMiddleChild );
-        assertEquals( newLeftChild, heir( readCursor, stableGeneration, unstableGeneration ) );
+        assertEquals( newLeftChild, successor( readCursor, stableGeneration, unstableGeneration ) );
 
         // new left child contain keys from old left and old middle
         goTo( readCursor, oldRightChild );
@@ -800,12 +800,12 @@ public class InternalTreeLogicTest
         assertThat( newSplitter, is( not( oldSplitter ) ) );
         assertThat( newSplitter, is( rightmostKeyInLeftSubtree ) );
 
-        // rightmostKeyInLeftSubtree should have been removed from heir version of leftParent
+        // rightmostKeyInLeftSubtree should have been removed from successor version of leftParent
         long newRightmostInternalKeyInLeftSubtree = rightmostInternalKeyInSubtree( rootId, 0 );
         assertThat( newRightmostInternalKeyInLeftSubtree, is( not( rightmostKeyInLeftSubtree ) ) );
 
         // newRight contain all
-        goToHeir( readCursor, oldRight );
+        goToSuccessor( readCursor, oldRight );
         List<Long> allKeysInNewRight = allKeys( readCursor );
         assertEquals( allKeysInOldLeftAndOldRight, allKeysInNewRight );
     }
@@ -1026,33 +1026,33 @@ public class InternalTreeLogicTest
     @Test
     public void shouldCreateNewVersionWhenInsertInStableRootAsLeaf() throws Exception
     {
-        assumeTrue( "No checkpointing, no heir", isCheckpointing );
+        assumeTrue( "No checkpointing, no successor", isCheckpointing );
 
         // GIVEN root
         initialize();
         long oldGenerationId = cursor.getCurrentPageId();
 
-        // WHEN root -[heir]-> heir of root
+        // WHEN root -[successor]-> successor of root
         generationManager.checkpoint();
         insert( 1L, 1L );
-        long heirId = cursor.getCurrentPageId();
+        long successor = cursor.getCurrentPageId();
 
         // THEN
         goTo( readCursor, rootId );
-        assertEquals( 1, numberOfRootHeirs );
-        assertEquals( heirId, structurePropagation.midChild );
-        assertNotEquals( oldGenerationId, heirId );
+        assertEquals( 1, numberOfRootSuccessors );
+        assertEquals( successor, structurePropagation.midChild );
+        assertNotEquals( oldGenerationId, successor );
         assertEquals( 1, keyCount() );
 
         goTo( readCursor, oldGenerationId );
-        assertEquals( heirId, heir( readCursor, stableGeneration, unstableGeneration ) );
+        assertEquals( successor, successor( readCursor, stableGeneration, unstableGeneration ) );
         assertEquals( 0, keyCount() );
     }
 
     @Test
     public void shouldCreateNewVersionWhenRemoveInStableRootAsLeaf() throws Exception
     {
-        assumeTrue( "No checkpointing, no heir", isCheckpointing );
+        assumeTrue( "No checkpointing, no successor", isCheckpointing );
 
         // GIVEN root
         initialize();
@@ -1061,27 +1061,27 @@ public class InternalTreeLogicTest
         insert( key, value );
         long oldGenerationId = cursor.getCurrentPageId();
 
-        // WHEN root -[heir]-> heir of root
+        // WHEN root -[successor]-> successor of root
         generationManager.checkpoint();
         remove( key, readValue );
-        long heirId = cursor.getCurrentPageId();
+        long successor = cursor.getCurrentPageId();
 
         // THEN
         goTo( readCursor, rootId );
-        assertEquals( 1, numberOfRootHeirs );
-        assertEquals( heirId, structurePropagation.midChild );
-        assertNotEquals( oldGenerationId, heirId );
+        assertEquals( 1, numberOfRootSuccessors );
+        assertEquals( successor, structurePropagation.midChild );
+        assertNotEquals( oldGenerationId, successor );
         assertEquals( 0, keyCount() );
 
         goTo( readCursor, oldGenerationId );
-        assertEquals( heirId, heir( readCursor, stableGeneration, unstableGeneration ) );
+        assertEquals( successor, successor( readCursor, stableGeneration, unstableGeneration ) );
         assertEquals( 1, keyCount() );
     }
 
     @Test
     public void shouldCreateNewVersionWhenInsertInStableLeaf() throws Exception
     {
-        assumeTrue( "No checkpointing, no heir", isCheckpointing );
+        assumeTrue( "No checkpointing, no successor", isCheckpointing );
 
         // GIVEN:
         //       ------root-------
@@ -1115,9 +1115,9 @@ public class InternalTreeLogicTest
         long newMiddleChild = childAt( readCursor, 1, stableGeneration, unstableGeneration );
         assertEquals( expectedNewMiddleChild, newMiddleChild );
 
-        // old middle child has heir
+        // old middle child has successor
         goTo( readCursor, middleChild );
-        assertEquals( newMiddleChild, heir( readCursor, stableGeneration, unstableGeneration ) );
+        assertEquals( newMiddleChild, successor( readCursor, stableGeneration, unstableGeneration ) );
 
         // old middle child has seen no change
         assertKeyAssociatedWithValue( middleKey, middleKey );
@@ -1133,7 +1133,7 @@ public class InternalTreeLogicTest
     @Test
     public void shouldCreateNewVersionWhenRemoveInStableLeaf() throws Exception
     {
-        assumeTrue( "No checkpointing, no heir", isCheckpointing );
+        assumeTrue( "No checkpointing, no successor", isCheckpointing );
 
         // GIVEN:
         //       ------root-------
@@ -1174,9 +1174,9 @@ public class InternalTreeLogicTest
         long newMiddleChild = childAt( readCursor, 1, stableGeneration, unstableGeneration );
         assertEquals( expectedNewMiddleChild, newMiddleChild );
 
-        // old middle child has heir
+        // old middle child has successor
         goTo( readCursor, middleChild );
-        assertEquals( newMiddleChild, heir( readCursor, stableGeneration, unstableGeneration ) );
+        assertEquals( newMiddleChild, successor( readCursor, stableGeneration, unstableGeneration ) );
 
         // old middle child has seen no change
         assertKeyAssociatedWithValue( middleKey, middleKey );
@@ -1192,7 +1192,7 @@ public class InternalTreeLogicTest
     @Test
     public void shouldCreateNewVersionWhenInsertInStableRootAsInternal() throws Exception
     {
-        assumeTrue( "No checkpointing, no heir", isCheckpointing );
+        assumeTrue( "No checkpointing, no successor", isCheckpointing );
 
         // GIVEN:
         //                       root
@@ -1216,14 +1216,14 @@ public class InternalTreeLogicTest
         assertSiblings( leftChild, rightChild, TreeNode.NO_NODE_FLAG );
 
         // WHEN
-        //                       root(heir)
+        //                       root(successor)
         //                   ----  | ---------------
         //                  /      |                \
         //                 v       v                 v
-        //               left <-> right(heir) <--> farRight
+        //               left <-> right(successor) <--> farRight
         generationManager.checkpoint();
         insert( i, i );
-        assertEquals( 1, numberOfRootHeirs );
+        assertEquals( 1, numberOfRootSuccessors );
         goTo( readCursor, rootId );
         leftChild = childAt( readCursor, 0, stableGeneration, unstableGeneration );
         rightChild = childAt( readCursor, 1, stableGeneration, unstableGeneration );
@@ -1233,15 +1233,15 @@ public class InternalTreeLogicTest
         long farRightChild = childAt( readCursor, 2, stableGeneration, unstableGeneration );
         assertSiblings( leftChild, rightChild, farRightChild );
 
-        // old root points to heir of root
+        // old root points to successor of root
         goTo( readCursor, oldRootId );
-        assertEquals( rootId, heir( readCursor, stableGeneration, unstableGeneration ) );
+        assertEquals( rootId, successor( readCursor, stableGeneration, unstableGeneration ) );
     }
 
     @Test
     public void shouldCreateNewVersionWhenInsertInStableInternal() throws Exception
     {
-        assumeTrue( "No checkpointing, no heir", isCheckpointing );
+        assumeTrue( "No checkpointing, no successor", isCheckpointing );
 
         // GIVEN
         initialize();
@@ -1265,7 +1265,7 @@ public class InternalTreeLogicTest
 
         // WHEN
         generationManager.checkpoint();
-        long targetLastId = id.lastId() + 3; /*one for heir in leaf, one for split leaf, one for heir in internal*/
+        long targetLastId = id.lastId() + 3; /*one for successor in leaf, one for split leaf, one for successor in internal*/
         for ( int i = 0; id.lastId() < targetLastId; i++ )
         {
             insert( firstKeyInLeaf + i, firstKeyInLeaf + i );
@@ -1276,30 +1276,30 @@ public class InternalTreeLogicTest
         // root hasn't been split further
         assertEquals( rootAfterInitialData, rootId );
 
-        // there's an heir to left internal w/ one more key in
+        // there's an successor to left internal w/ one more key in
         goTo( readCursor, rootId );
-        long heirLeftInternal = id.lastId();
-        assertEquals( heirLeftInternal, childAt( readCursor, 0, stableGeneration, unstableGeneration ) );
-        goTo( readCursor, heirLeftInternal );
-        int heirLeftInternalKeyCount = keyCount();
-        assertEquals( leftInternalKeyCount + 1, heirLeftInternalKeyCount );
+        long successorLeftInternal = id.lastId();
+        assertEquals( successorLeftInternal, childAt( readCursor, 0, stableGeneration, unstableGeneration ) );
+        goTo( readCursor, successorLeftInternal );
+        int successorLeftInternalKeyCount = keyCount();
+        assertEquals( leftInternalKeyCount + 1, successorLeftInternalKeyCount );
 
-        // and left internal points to the heir
+        // and left internal points to the successor
         goTo( readCursor, leftInternal );
-        assertEquals( heirLeftInternal, heir( readCursor, stableGeneration, unstableGeneration ) );
-        assertSiblings( heirLeftInternal, rightInternal, TreeNode.NO_NODE_FLAG );
+        assertEquals( successorLeftInternal, successor( readCursor, stableGeneration, unstableGeneration ) );
+        assertSiblings( successorLeftInternal, rightInternal, TreeNode.NO_NODE_FLAG );
     }
 
     @Test
-    public void shouldOverwriteInheritedHeirOnHeir() throws Exception
+    public void shouldOverwriteInheritedSuccessorOnSuccessor() throws Exception
     {
         // GIVEN
         assumeTrue( isCheckpointing );
         initialize();
         long originalNodeId = rootId;
         generationManager.checkpoint();
-        insert( 1L, 10L ); // TX1 will create heir
-        assertEquals( 1, numberOfRootHeirs );
+        insert( 1L, 10L ); // TX1 will create successor
+        assertEquals( 1, numberOfRootSuccessors );
 
         // WHEN
         // recovery happens
@@ -1307,17 +1307,17 @@ public class InternalTreeLogicTest
         // start up on stable root
         goTo( cursor, originalNodeId );
         treeLogic.initialize( cursor );
-        // replay transaction TX1 will create a new heir
+        // replay transaction TX1 will create a new successor
         insert( 1L, 10L );
-        assertEquals( 2, numberOfRootHeirs );
+        assertEquals( 2, numberOfRootSuccessors );
 
         // THEN
         goTo( readCursor, rootId );
-        // heir pointer for heir should not have broken or crashed GSPP slot
-        assertHeirPointerNotCrashOrBroken();
-        // and previously crashed heir GSPP slot should have been overwritten
+        // successor pointer for successor should not have broken or crashed GSPP slot
+        assertSuccessorPointerNotCrashOrBroken();
+        // and previously crashed successor GSPP slot should have been overwritten
         goTo( readCursor, originalNodeId );
-        assertHeirPointerNotCrashOrBroken();
+        assertSuccessorPointerNotCrashOrBroken();
     }
 
     private long rightmostInternalKeyInSubtree( long parentNodeId, int subtreePosition ) throws IOException
@@ -1441,9 +1441,10 @@ public class InternalTreeLogicTest
         treeLogic.initialize( cursor );
     }
 
-    private void assertHeirPointerNotCrashOrBroken()
+    private void assertSuccessorPointerNotCrashOrBroken()
     {
-        assertNoCrashOrBrokenPointerInGSPP( readCursor, stableGeneration, unstableGeneration, "Heir", TreeNode.BYTE_POS_HEIR, node );
+        assertNoCrashOrBrokenPointerInGSPP( readCursor, stableGeneration, unstableGeneration, "Successor",
+                TreeNode.BYTE_POS_SUCCESSOR, node );
     }
 
     private void assertKeyAssociatedWithValue( long key, long expectedValue )
@@ -1581,7 +1582,7 @@ public class InternalTreeLogicTest
         {
             structurePropagation.hasMidChildUpdate = false;
             updateRoot();
-            numberOfRootHeirs++;
+            numberOfRootSuccessors++;
         }
     }
 
@@ -1637,16 +1638,16 @@ public class InternalTreeLogicTest
         PageCursorUtil.goTo( cursor, "test", pointer( pageId ) );
     }
 
-    private void goToHeir( PageCursor cursor ) throws IOException
+    private void goToSuccessor( PageCursor cursor ) throws IOException
     {
         long newestGeneration = newestGeneration( cursor, stableGeneration, unstableGeneration );
         goTo( cursor, newestGeneration );
     }
 
-    private void goToHeir( PageCursor cursor, long targetNode ) throws IOException
+    private void goToSuccessor( PageCursor cursor, long targetNode ) throws IOException
     {
         goTo( cursor, targetNode );
-        goToHeir( cursor );
+        goToSuccessor( cursor );
     }
 
     private long childAt( PageCursor cursor, int pos, long stableGeneration, long unstableGeneration )
@@ -1664,22 +1665,22 @@ public class InternalTreeLogicTest
         return pointer( node.leftSibling( cursor, stableGeneration, unstableGeneration ) );
     }
 
-    private long heir( PageCursor cursor, long stableGeneration, long unstableGeneration )
+    private long successor( PageCursor cursor, long stableGeneration, long unstableGeneration )
     {
-        return pointer( node.heir( cursor, stableGeneration, unstableGeneration ) );
+        return pointer( node.successor( cursor, stableGeneration, unstableGeneration ) );
     }
 
     private long newestGeneration( PageCursor cursor, long stableGeneration, long unstableGeneration ) throws IOException
     {
         long current = cursor.getCurrentPageId();
-        long heir = current;
+        long successor = current;
         do
         {
-            goTo( cursor, heir );
-            heir = pointer( node.heir( cursor, stableGeneration, unstableGeneration ) );
-        } while( heir != TreeNode.NO_NODE_FLAG );
-        heir = cursor.getCurrentPageId();
+            goTo( cursor, successor );
+            successor = pointer( node.successor( cursor, stableGeneration, unstableGeneration ) );
+        } while( successor != TreeNode.NO_NODE_FLAG );
+        successor = cursor.getCurrentPageId();
         goTo( cursor, current );
-        return heir;
+        return successor;
     }
 }

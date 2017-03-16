@@ -37,9 +37,9 @@ import static org.neo4j.index.internal.gbptree.GenerationSafePointerPair.read;
  * <pre>
  * # = empty space
  *
- * [                                   HEADER   82B                      ]|[      KEYS     ]|[     CHILDREN             ]
- * [NODETYPE][TYPE][GENERATION][KEYCOUNT][RIGHTSIBLING][LEFTSIBLING][HEIR]|[[KEY][KEY]...##]|[[CHILD][CHILD][CHILD]...##]
- *  0         1     6           10        34            58
+ * [                                   HEADER   82B                           ]|[   KEYS   ]|[     CHILDREN      ]
+ * [NODETYPE][TYPE][GENERATION][KEYCOUNT][RIGHTSIBLING][LEFTSIBLING][SUCCESSOR]|[[KEY]...##]|[[CHILD][CHILD]...##]
+ *  0         1     2           6         10            34           58          82
  * </pre>
  * Calc offset for key i (starting from 0)
  * HEADER_LENGTH + i * SIZE_KEY
@@ -50,9 +50,9 @@ import static org.neo4j.index.internal.gbptree.GenerationSafePointerPair.read;
  * Using Separate design the leaf nodes should look like
  *
  * <pre>
- * [                                   HEADER   82B                      ]|[      KEYS     ]|[     VALUES        ]
- * [NODETYPE][TYPE][GENERATION][KEYCOUNT][RIGHTSIBLING][LEFTSIBLING][HEIR]|[[KEY][KEY]...##]|[[VALUE][VALUE]...##]
- *  0         1     6           10        34            58
+ * [                                   HEADER   82B                           ]|[    KEYS  ]|[   VALUES   ]
+ * [NODETYPE][TYPE][GENERATION][KEYCOUNT][RIGHTSIBLING][LEFTSIBLING][SUCCESSOR]|[[KEY]...##]|[[VALUE]...##]
+ *  0         1     2           6         10            34           58          82
  * </pre>
  *
  * Calc offset for key i (starting from 0)
@@ -77,8 +77,8 @@ class TreeNode<KEY,VALUE>
     static final int BYTE_POS_KEYCOUNT = BYTE_POS_GENERATION + Integer.BYTES;
     static final int BYTE_POS_RIGHTSIBLING = BYTE_POS_KEYCOUNT + Integer.BYTES;
     static final int BYTE_POS_LEFTSIBLING = BYTE_POS_RIGHTSIBLING + SIZE_PAGE_REFERENCE;
-    static final int BYTE_POS_HEIR = BYTE_POS_LEFTSIBLING + SIZE_PAGE_REFERENCE;
-    static final int HEADER_LENGTH = BYTE_POS_HEIR + SIZE_PAGE_REFERENCE;
+    static final int BYTE_POS_SUCCESSOR = BYTE_POS_LEFTSIBLING + SIZE_PAGE_REFERENCE;
+    static final int HEADER_LENGTH = BYTE_POS_SUCCESSOR + SIZE_PAGE_REFERENCE;
 
     private static final byte LEAF_FLAG = 1;
     static final byte INTERNAL_FLAG = 0;
@@ -127,7 +127,7 @@ class TreeNode<KEY,VALUE>
         setKeyCount( cursor, 0 );
         setRightSibling( cursor, NO_NODE_FLAG, stableGeneration, unstableGeneration );
         setLeftSibling( cursor, NO_NODE_FLAG, stableGeneration, unstableGeneration );
-        setHeir( cursor, NO_NODE_FLAG, stableGeneration, unstableGeneration );
+        setSuccessor( cursor, NO_NODE_FLAG, stableGeneration, unstableGeneration );
     }
 
     void initializeLeaf( PageCursor cursor, long stableGeneration, long unstableGeneration )
@@ -174,9 +174,9 @@ class TreeNode<KEY,VALUE>
         return read( cursor, stableGeneration, unstableGeneration, NO_LOGICAL_POS );
     }
 
-    long heir( PageCursor cursor, long stableGeneration, long unstableGeneration )
+    long successor( PageCursor cursor, long stableGeneration, long unstableGeneration )
     {
-        cursor.setOffset( BYTE_POS_HEIR );
+        cursor.setOffset( BYTE_POS_SUCCESSOR );
         return read( cursor, stableGeneration, unstableGeneration, NO_LOGICAL_POS );
     }
 
@@ -205,10 +205,10 @@ class TreeNode<KEY,VALUE>
         GenerationSafePointerPair.assertSuccess( result );
     }
 
-    void setHeir( PageCursor cursor, long heirId, long stableGeneration, long unstableGeneration )
+    void setSuccessor( PageCursor cursor, long successorId, long stableGeneration, long unstableGeneration )
     {
-        cursor.setOffset( BYTE_POS_HEIR );
-        long result = GenerationSafePointerPair.write( cursor, heirId, stableGeneration, unstableGeneration );
+        cursor.setOffset( BYTE_POS_SUCCESSOR );
+        long result = GenerationSafePointerPair.write( cursor, successorId, stableGeneration, unstableGeneration );
         GenerationSafePointerPair.assertSuccess( result );
     }
 
