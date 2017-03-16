@@ -23,7 +23,7 @@ import java.io.IOException;
 import org.neo4j.kernel.impl.storageengine.impl.recordstorage.RecordStorageCommandReaderFactory;
 import org.neo4j.kernel.impl.transaction.log.LogPosition;
 import org.neo4j.kernel.impl.transaction.log.LogPositionMarker;
-import org.neo4j.kernel.impl.transaction.log.ReadAheadLogChannel;
+import org.neo4j.kernel.impl.transaction.log.PositionableChannel;
 import org.neo4j.kernel.impl.transaction.log.ReadableClosablePositionAwareChannel;
 import org.neo4j.storageengine.api.CommandReaderFactory;
 import org.neo4j.storageengine.api.ReadPastEndException;
@@ -122,7 +122,7 @@ public class VersionAwareLogEntryReader<SOURCE extends ReadableClosablePositionA
                     if ( channelSupportsPositioning( channel ) &&
                             invalidLogEntryHandler.handleInvalidEntry( e, position ) )
                     {
-                        ((ReadAheadLogChannel)channel).setCurrentPosition( positionMarker.getByteOffset() + 1 );
+                        ((PositionableChannel)channel).setCurrentPosition( positionMarker.getByteOffset() + 1 );
                         skipped++;
                         continue;
                     }
@@ -143,6 +143,6 @@ public class VersionAwareLogEntryReader<SOURCE extends ReadableClosablePositionA
 
     private boolean channelSupportsPositioning( SOURCE channel )
     {
-        return channel instanceof ReadAheadLogChannel;
+        return channel instanceof PositionableChannel;
     }
 }

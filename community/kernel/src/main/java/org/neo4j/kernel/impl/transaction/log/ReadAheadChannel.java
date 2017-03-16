@@ -34,7 +34,7 @@ import static java.lang.System.arraycopy;
  * spanning more than one file, by properly implementing {@link #next(StoreChannel)}.
  * @param <T> The type of StoreChannel wrapped
  */
-public class ReadAheadChannel<T extends StoreChannel> implements ReadableClosableChannel
+public class ReadAheadChannel<T extends StoreChannel> implements ReadableClosableChannel, PositionableChannel
 {
     public static final int DEFAULT_READ_AHEAD_SIZE = 1024 * 4;
 
@@ -187,6 +187,7 @@ public class ReadAheadChannel<T extends StoreChannel> implements ReadableClosabl
         aheadBuffer.position( remaining );
     }
 
+    @Override
     public void setCurrentPosition( long byteOffset ) throws IOException
     {
         long positionRelativeToAheadBuffer = byteOffset - (channel.position() - aheadBuffer.limit());

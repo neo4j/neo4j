@@ -38,14 +38,6 @@ class LenientInvalidLogEntryHandler implements InvalidLogEntryHandler
     }
 
     @Override
-    public boolean handleInvalidVersion( byte typeCode, byte versionCode )
-    {
-        out.println( "Read header of an entry which doesn't make sense version:" + versionCode +
-                ", type:" + typeCode + " will go one byte ahead and try again" );
-        return true;
-    }
-
-    @Override
     public boolean handleInvalidEntry( Exception e, LogPosition position )
     {
         out.println( "Read broken entry error:" + e + " will go one byte ahead and try again" );
