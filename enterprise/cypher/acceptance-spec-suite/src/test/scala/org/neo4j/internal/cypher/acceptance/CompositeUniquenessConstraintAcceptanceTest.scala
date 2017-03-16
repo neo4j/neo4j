@@ -19,25 +19,26 @@
  */
 package org.neo4j.internal.cypher.acceptance
 
-import org.neo4j.cypher.{ConstraintValidationException, CypherExecutionException, ExecutionEngineFunSuite, NewPlannerTestSupport}
+import org.neo4j.cypher.internal.compiler.v3_2.executionplan.InternalExecutionResult
+import org.neo4j.cypher.{CypherExecutionException, ExecutionEngineFunSuite, NewPlannerTestSupport}
 import org.neo4j.graphdb.ConstraintViolationException
 import org.neo4j.kernel.GraphDatabaseQueryService
 import org.scalatest.matchers.{MatchResult, Matcher}
 
 import scala.collection.JavaConverters._
 
-class CompositeConstraintAcceptanceTest extends ExecutionEngineFunSuite with NewPlannerTestSupport {
+class CompositeUniquenessConstraintAcceptanceTest extends ExecutionEngineFunSuite with NewPlannerTestSupport {
 
   test("should be able to create and remove composite uniquness constraints") {
     // When
-    executeWithCostPlannerAndInterpretedRuntimeOnly("CREATE CONSTRAINT ON (n:Person) ASSERT n.email IS UNIQUE")
-    executeWithCostPlannerAndInterpretedRuntimeOnly("CREATE CONSTRAINT ON (n:Person) ASSERT (n.firstname,n.lastname) IS UNIQUE")
+    exec("CREATE CONSTRAINT ON (n:Person) ASSERT n.email IS UNIQUE")
+    exec("CREATE CONSTRAINT ON (n:Person) ASSERT (n.firstname,n.lastname) IS UNIQUE")
 
     // Then
     graph should haveConstraints("UNIQUENESS:Person(email)", "UNIQUENESS:Person(firstname,lastname)")
 
     // When
-    executeWithCostPlannerAndInterpretedRuntimeOnly("DROP CONSTRAINT ON (n:Person) ASSERT (n.firstname,n.lastname) IS UNIQUE")
+    exec("DROP CONSTRAINT ON (n:Person) ASSERT (n.firstname,n.lastname) IS UNIQUE")
 
     // Then
     graph should haveConstraints("UNIQUENESS:Person(email)")
@@ -46,7 +47,7 @@ class CompositeConstraintAcceptanceTest extends ExecutionEngineFunSuite with New
 
   test("composite uniqueness constraint should not block adding nodes with different properties") {
     // When
-    executeWithCostPlannerAndInterpretedRuntimeOnly("CREATE CONSTRAINT ON (n:User) ASSERT (n.firstname,n.lastname) IS UNIQUE")
+    exec("CREATE CONSTRAINT ON (n:User) ASSERT (n.firstname,n.lastname) IS UNIQUE")
 
     // Then
     createLabeledNode(Map("firstname" -> "Joe", "lastname" -> "Soap"), "User")
@@ -56,7 +57,7 @@ class CompositeConstraintAcceptanceTest extends ExecutionEngineFunSuite with New
 
   test("composite uniqueness constraint should block adding nodes with same properties") {
     // When
-    executeWithCostPlannerAndInterpretedRuntimeOnly("CREATE CONSTRAINT ON (n:User) ASSERT (n.firstname,n.lastname) IS UNIQUE")
+    exec("CREATE CONSTRAINT ON (n:User) ASSERT (n.firstname,n.lastname) IS UNIQUE")
     createLabeledNode(Map("firstname" -> "Joe", "lastname" -> "Soap"), "User")
     createLabeledNode(Map("firstname" -> "Joe", "lastname" -> "Smoke"), "User")
 
@@ -73,7 +74,7 @@ class CompositeConstraintAcceptanceTest extends ExecutionEngineFunSuite with New
     createLabeledNode(Map("firstname" -> "Jake", "lastname" -> "Soap"), "User")
 
     // Then
-    executeWithCostPlannerAndInterpretedRuntimeOnly("CREATE CONSTRAINT ON (n:User) ASSERT (n.firstname,n.lastname) IS UNIQUE")
+    exec("CREATE CONSTRAINT ON (n:User) ASSERT (n.firstname,n.lastname) IS UNIQUE")
   }
 
   test("composite uniqueness constraint should fail when we have nodes with same properties") {
@@ -84,65 +85,8 @@ class CompositeConstraintAcceptanceTest extends ExecutionEngineFunSuite with New
 
     // Then
     a[CypherExecutionException] should be thrownBy {
-      executeWithCostPlannerAndInterpretedRuntimeOnly("CREATE CONSTRAINT ON (n:User) ASSERT (n.firstname,n.lastname) IS UNIQUE")
+      exec("CREATE CONSTRAINT ON (n:User) ASSERT (n.firstname,n.lastname) IS UNIQUE")
     }
-  }
-
-  test("should be able to create and remove single property NODE KEY") {
-    // When
-    executeWithCostPlannerAndInterpretedRuntimeOnly("CREATE CONSTRAINT ON (n:Person) ASSERT (n.email) IS NODE KEY")
-
-    // Then
-    graph should haveConstraints("NODE_KEY:Person(email)")
-
-    intercept[ConstraintValidationException](executeWithCostPlannerAndInterpretedRuntimeOnly("CREATE (:Person)"))
-    executeWithCostPlannerAndInterpretedRuntimeOnly("CREATE (:Person {email: 42})")
-    intercept[CypherExecutionException](executeWithCostPlannerAndInterpretedRuntimeOnly("CREATE (:Person {email: 42})"))
-
-    // When
-    executeWithCostPlannerAndInterpretedRuntimeOnly("DROP CONSTRAINT ON (n:Person) ASSERT (n.email) IS NODE KEY")
-
-    // Then
-    graph should haveNoConstraints()
-  }
-
-  test("should be able to create and remove multiple property NODE KEY") {
-    // When
-    executeWithCostPlannerAndInterpretedRuntimeOnly("CREATE CONSTRAINT ON (n:Person) ASSERT (n.email) IS NODE KEY")
-    executeWithCostPlannerAndInterpretedRuntimeOnly("CREATE CONSTRAINT ON (n:Person) ASSERT (n.firstname,n.lastname) IS NODE KEY")
-
-    // Then
-    graph should haveConstraints("NODE_KEY:Person(email)", "NODE_KEY:Person(firstname,lastname)")
-
-    // When
-    executeWithCostPlannerAndInterpretedRuntimeOnly("DROP CONSTRAINT ON (n:Person) ASSERT (n.firstname,n.lastname) IS NODE KEY")
-
-    // Then
-    graph should haveConstraints("NODE_KEY:Person(email)")
-    graph should not(haveConstraints("NODE_KEY:Person(firstname,lastname)"))
-  }
-
-  test("should be able to create and remove overlapping NODE KEY constraings") {
-    // When
-    executeWithCostPlannerAndInterpretedRuntimeOnly("CREATE CONSTRAINT ON (n:Person) ASSERT (n.a,n.b) IS NODE KEY")
-    executeWithCostPlannerAndInterpretedRuntimeOnly("CREATE CONSTRAINT ON (n:Person) ASSERT (n.b,n.c) IS NODE KEY")
-
-    // Then
-    graph should haveConstraints("NODE_KEY:Person(a,b)", "NODE_KEY:Person(b,c)")
-
-    intercept[ConstraintValidationException](executeWithCostPlannerAndInterpretedRuntimeOnly("CREATE (n:Person{ a: 42, b: 23})"))
-    intercept[ConstraintValidationException](executeWithCostPlannerAndInterpretedRuntimeOnly("CREATE (n:Person{ b: 42, c: 23})"))
-    executeWithCostPlannerAndInterpretedRuntimeOnly("CREATE (:Person {a: 1, b: 2, c: 3})")
-    intercept[CypherExecutionException](executeWithCostPlannerAndInterpretedRuntimeOnly("CREATE (:Person {a: 1, b: 2, c: 666})"))
-    intercept[CypherExecutionException](executeWithCostPlannerAndInterpretedRuntimeOnly("CREATE (:Person {a: 666, b: 2, c: 3})"))
-    executeWithCostPlannerAndInterpretedRuntimeOnly("CREATE (:Person {a: 666, b: 2, c: 666})")
-
-    // When
-    executeWithCostPlannerAndInterpretedRuntimeOnly("DROP CONSTRAINT ON (n:Person) ASSERT (n.a,n.b) IS NODE KEY")
-
-    // Then
-    graph should haveConstraints("NODE_KEY:Person(b,c)")
-    graph should not(haveConstraints("NODE_KEY:Person(a,b)"))
   }
 
   case class haveConstraints(expectedConstraints: String*) extends Matcher[GraphDatabaseQueryService] {
@@ -174,4 +118,7 @@ class CompositeConstraintAcceptanceTest extends ExecutionEngineFunSuite with New
     }
   }
 
+  def exec(q: String): InternalExecutionResult = {
+    executeWithCostPlannerAndInterpretedRuntimeOnly(q)
+  }
 }

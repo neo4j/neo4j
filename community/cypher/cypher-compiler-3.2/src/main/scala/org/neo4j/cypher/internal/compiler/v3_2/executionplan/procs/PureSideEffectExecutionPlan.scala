@@ -46,8 +46,15 @@ case class PureSideEffectExecutionPlan(name: String, queryType: InternalQueryTyp
       if (queryType == SCHEMA_WRITE) ctx.assertSchemaWritesAllowed()
 
       val countingCtx = new UpdateCountingQueryContext(ctx)
-      sideEffect(countingCtx)
-      ctx.transactionalContext.close(success = true)
+      try {
+        sideEffect(countingCtx)
+        ctx.transactionalContext.close(success = true)
+      }
+      catch {
+        case e: Throwable =>
+          ctx.transactionalContext.close(success = false)
+          throw e
+      }
       PureSideEffectInternalExecutionResult(countingCtx, description, queryType, planType)
     }
   }

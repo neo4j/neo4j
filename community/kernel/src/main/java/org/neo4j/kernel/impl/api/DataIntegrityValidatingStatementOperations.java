@@ -163,24 +163,23 @@ public class DataIntegrityValidatingStatementOperations implements
             RepeatedPropertyInCompositeSchemaException
     {
         NodeKeyConstraintDescriptor constraint = ConstraintDescriptorFactory.nodeKeyForSchema( descriptor );
-        UniquenessConstraintDescriptor uniquenessConstraintDescriptor =
-                ConstraintDescriptorFactory.uniqueForSchema( descriptor );
-        boolean somethingWasMade = false;
-        if ( !schemaReadDelegate.constraintExists( state, uniquenessConstraintDescriptor ) )
+
+        boolean nodeKeyAlreadyExists = true;
+        if ( !schemaReadDelegate.constraintExists( state, constraint.ownedUniquenessConstraint() ) )
         {
             assertIndexDoesNotExist( state, OperationContext.CONSTRAINT_CREATION, descriptor );
             schemaWriteDelegate.uniquePropertyConstraintCreate( state, descriptor );
-            somethingWasMade = true;
+            nodeKeyAlreadyExists = false;
         }
         for ( NodeExistenceConstraintDescriptor pem : constraint.ownedExistenceConstraints() )
         {
             if ( !schemaReadDelegate.constraintExists( state, pem ) )
             {
                 schemaWriteDelegate.nodePropertyExistenceConstraintCreate( state, pem.schema() );
-                somethingWasMade = true;
+                nodeKeyAlreadyExists = false;
             }
         }
-        if ( !somethingWasMade )
+        if ( nodeKeyAlreadyExists )
         {
             throw new AlreadyConstrainedException( constraint, OperationContext.CONSTRAINT_CREATION,
                     new StatementTokenNameLookup( state.readOperations() ) );
