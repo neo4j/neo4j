@@ -17,25 +17,13 @@
  * You should have received a copy of the GNU General Public License
  * along with this program.  If not, see <http://www.gnu.org/licenses/>.
  */
-package org.neo4j.tooling.procedure.procedures.invalid.bad_context_field;
+package org.neo4j.tooling.procedure;
 
-import org.neo4j.procedure.Context;
-import org.neo4j.procedure.Procedure;
-import org.neo4j.procedure.UserFunction;
-
-public class BadContextUnsupportedTypeError
+public class CompilerOptions
 {
-    @Context
-    public String foo;
+    public static final String IGNORE_CONTEXT_WARNINGS_OPTION = "IgnoreContextWarnings";
 
-    @Procedure
-    public void sproc()
+    private CompilerOptions()
     {
-    }
-
-    @UserFunction
-    public Long function()
-    {
-        return 2L;
     }
 }

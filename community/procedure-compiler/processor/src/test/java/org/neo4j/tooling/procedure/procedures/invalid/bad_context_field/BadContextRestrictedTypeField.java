@@ -22,8 +22,9 @@ package org.neo4j.tooling.procedure.procedures.invalid.bad_context_field;
 import org.neo4j.kernel.internal.GraphDatabaseAPI;
 import org.neo4j.procedure.Context;
 import org.neo4j.procedure.Procedure;
+import org.neo4j.procedure.UserFunction;
 
-public class BadContextRestrictedTypeSproc
+public class BadContextRestrictedTypeField
 {
 
     @Context
@@ -32,5 +33,11 @@ public class BadContextRestrictedTypeSproc
     @Procedure
     public void sproc()
     {
+    }
+
+    @UserFunction
+    public Long function()
+    {
+        return 42L;
     }
 }

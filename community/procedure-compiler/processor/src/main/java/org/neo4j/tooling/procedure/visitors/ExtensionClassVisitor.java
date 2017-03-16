@@ -32,27 +32,27 @@ import javax.lang.model.util.SimpleElementVisitor8;
 import javax.lang.model.util.Types;
 
 import org.neo4j.tooling.procedure.messages.CompilationMessage;
-import org.neo4j.tooling.procedure.messages.ProcedureMissingPublicNoArgConstructor;
+import org.neo4j.tooling.procedure.messages.ExtensionMissingPublicNoArgConstructor;
 
 import static javax.lang.model.util.ElementFilter.constructorsIn;
 
-public class StoredProcedureClassVisitor extends SimpleElementVisitor8<Stream<CompilationMessage>,Void>
+public class ExtensionClassVisitor extends SimpleElementVisitor8<Stream<CompilationMessage>,Void>
 {
 
     private final Set<TypeElement> visitedElements = new HashSet<>();
     private final FieldVisitor fieldVisitor;
 
-    public StoredProcedureClassVisitor( Types types, Elements elements, boolean ignoresWarnings )
+    public ExtensionClassVisitor( Types types, Elements elements, boolean ignoresWarnings )
     {
         fieldVisitor = new FieldVisitor( types, elements, ignoresWarnings );
     }
 
     @Override
-    public Stream<CompilationMessage> visitType( TypeElement procedureClass, Void ignored )
+    public Stream<CompilationMessage> visitType( TypeElement extensionClass, Void ignored )
     {
-        if ( isFirstVisit( procedureClass ) )
+        if ( isFirstVisit( extensionClass ) )
         {
-            return Stream.concat( validateFields( procedureClass ), validateConstructor( procedureClass ) );
+            return Stream.concat( validateFields( extensionClass ), validateConstructor( extensionClass ) );
         }
         return Stream.empty();
     }
@@ -74,17 +74,17 @@ public class StoredProcedureClassVisitor extends SimpleElementVisitor8<Stream<Co
         return e.getEnclosedElements().stream().flatMap( fieldVisitor::visit );
     }
 
-    private Stream<CompilationMessage> validateConstructor( Element procedureClass )
+    private Stream<CompilationMessage> validateConstructor( Element extensionClass )
     {
         Optional<ExecutableElement> publicNoArgConstructor =
-                constructorsIn( procedureClass.getEnclosedElements() ).stream()
+                constructorsIn( extensionClass.getEnclosedElements() ).stream()
                         .filter( c -> c.getModifiers().contains( Modifier.PUBLIC ) )
                         .filter( c -> c.getParameters().isEmpty() ).findFirst();
 
         if ( !publicNoArgConstructor.isPresent() )
         {
-            return Stream.of( new ProcedureMissingPublicNoArgConstructor( procedureClass,
-                    "Procedure class %s should contain a public no-arg constructor, none found.", procedureClass ) );
+            return Stream.of( new ExtensionMissingPublicNoArgConstructor( extensionClass,
+                    "Extension class %s should contain a public no-arg constructor, none found.", extensionClass ) );
         }
         return Stream.empty();
     }

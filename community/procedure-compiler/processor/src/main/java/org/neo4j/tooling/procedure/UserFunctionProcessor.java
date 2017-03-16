@@ -21,15 +21,8 @@ package org.neo4j.tooling.procedure;
 
 import com.google.auto.service.AutoService;
 
-import org.neo4j.tooling.procedure.compilerutils.CustomNameExtractor;
-import org.neo4j.tooling.procedure.compilerutils.TypeMirrorUtils;
-import org.neo4j.tooling.procedure.messages.CompilationMessage;
-import org.neo4j.tooling.procedure.messages.MessagePrinter;
-import org.neo4j.tooling.procedure.validators.DuplicatedProcedureValidator;
-import org.neo4j.tooling.procedure.visitors.UserFunctionVisitor;
-
 import java.util.Collection;
-import java.util.HashSet;
+import java.util.Collections;
 import java.util.LinkedHashSet;
 import java.util.Set;
 import java.util.function.Function;
@@ -46,6 +39,14 @@ import javax.lang.model.util.Elements;
 import javax.lang.model.util.Types;
 
 import org.neo4j.procedure.UserFunction;
+import org.neo4j.tooling.procedure.compilerutils.CustomNameExtractor;
+import org.neo4j.tooling.procedure.compilerutils.TypeMirrorUtils;
+import org.neo4j.tooling.procedure.messages.CompilationMessage;
+import org.neo4j.tooling.procedure.messages.MessagePrinter;
+import org.neo4j.tooling.procedure.validators.DuplicatedExtensionValidator;
+import org.neo4j.tooling.procedure.visitors.UserFunctionVisitor;
+
+import static org.neo4j.tooling.procedure.CompilerOptions.IGNORE_CONTEXT_WARNINGS_OPTION;
 
 @AutoService( Processor.class )
 public class UserFunctionProcessor extends AbstractProcessor
@@ -53,16 +54,20 @@ public class UserFunctionProcessor extends AbstractProcessor
     private static final Class<UserFunction> userFunctionType = UserFunction.class;
     private final Set<Element> visitedFunctions = new LinkedHashSet<>();
 
+    private Function<Collection<Element>,Stream<CompilationMessage>> duplicationValidator;
     private ElementVisitor<Stream<CompilationMessage>,Void> visitor;
     private MessagePrinter messagePrinter;
-    private Function<Collection<Element>,Stream<CompilationMessage>> duplicationPredicate;
+
+    @Override
+    public Set<String> getSupportedOptions()
+    {
+        return Collections.singleton( IGNORE_CONTEXT_WARNINGS_OPTION );
+    }
 
     @Override
     public Set<String> getSupportedAnnotationTypes()
     {
-        Set<String> types = new HashSet<>();
-        types.add( userFunctionType.getName() );
-        return types;
+        return Collections.singleton( userFunctionType.getName() );
     }
 
     @Override
@@ -80,8 +85,9 @@ public class UserFunctionProcessor extends AbstractProcessor
 
         visitedFunctions.clear();
         messagePrinter = new MessagePrinter( processingEnv.getMessager() );
-        visitor = new UserFunctionVisitor( typeUtils, elementUtils, new TypeMirrorUtils( typeUtils, elementUtils ) );
-        duplicationPredicate = new DuplicatedProcedureValidator<>( elementUtils, userFunctionType,
+        visitor = new UserFunctionVisitor( typeUtils, elementUtils, new TypeMirrorUtils( typeUtils, elementUtils ),
+                processingEnv.getOptions().containsKey( IGNORE_CONTEXT_WARNINGS_OPTION ) );
+        duplicationValidator = new DuplicatedExtensionValidator<>( elementUtils, userFunctionType,
                 ( function ) -> CustomNameExtractor.getName( function::name, function::value ) );
     }
 
@@ -91,7 +97,7 @@ public class UserFunctionProcessor extends AbstractProcessor
         processElements( roundEnv );
         if ( roundEnv.processingOver() )
         {
-            duplicationPredicate.apply( visitedFunctions ).forEach( messagePrinter::print );
+            duplicationValidator.apply( visitedFunctions ).forEach( messagePrinter::print );
         }
         return false;
     }

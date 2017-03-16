@@ -21,13 +21,13 @@ package org.neo4j.tooling.procedure.messages;
 
 import javax.lang.model.element.Element;
 
-public class ProcedureMissingPublicNoArgConstructor implements CompilationMessage
+public class ExtensionMissingPublicNoArgConstructor implements CompilationMessage
 {
 
     private final Element element;
     private final String errorMessage;
 
-    public ProcedureMissingPublicNoArgConstructor( Element element, String message, Object... args )
+    public ExtensionMissingPublicNoArgConstructor( Element element, String message, Object... args )
     {
 
         this.element = element;

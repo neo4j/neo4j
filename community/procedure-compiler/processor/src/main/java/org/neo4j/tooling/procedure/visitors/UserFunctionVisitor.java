@@ -19,13 +19,8 @@
  */
 package org.neo4j.tooling.procedure.visitors;
 
-import org.neo4j.tooling.procedure.compilerutils.TypeMirrorUtils;
-import org.neo4j.tooling.procedure.messages.CompilationMessage;
-import org.neo4j.tooling.procedure.messages.FunctionInRootNamespaceError;
-import org.neo4j.tooling.procedure.messages.ReturnTypeError;
-import org.neo4j.tooling.procedure.validators.AllowedTypesValidator;
-
 import java.util.List;
+import java.util.function.Function;
 import java.util.function.Predicate;
 import java.util.stream.Stream;
 import javax.lang.model.element.ElementVisitor;
@@ -38,6 +33,11 @@ import javax.lang.model.util.SimpleElementVisitor8;
 import javax.lang.model.util.Types;
 
 import org.neo4j.procedure.UserFunction;
+import org.neo4j.tooling.procedure.compilerutils.TypeMirrorUtils;
+import org.neo4j.tooling.procedure.messages.CompilationMessage;
+import org.neo4j.tooling.procedure.messages.FunctionInRootNamespaceError;
+import org.neo4j.tooling.procedure.messages.ReturnTypeError;
+import org.neo4j.tooling.procedure.validators.AllowedTypesValidator;
 
 public class UserFunctionVisitor extends SimpleElementVisitor8<Stream<CompilationMessage>,Void>
 {
@@ -45,20 +45,22 @@ public class UserFunctionVisitor extends SimpleElementVisitor8<Stream<Compilatio
     private final ElementVisitor<Stream<CompilationMessage>,Void> parameterVisitor;
     private final Predicate<TypeMirror> allowedTypesValidator;
     private final Elements elements;
+    private final ElementVisitor<Stream<CompilationMessage>,Void> classVisitor;
 
-    public UserFunctionVisitor( Types types, Elements elements, TypeMirrorUtils typeMirrorUtils )
+    public UserFunctionVisitor( Types types, Elements elements, TypeMirrorUtils typeMirrorUtils, boolean ignoresWarnings )
     {
+        this.classVisitor = new ExtensionClassVisitor( types, elements, ignoresWarnings );
         this.parameterVisitor = new ParameterVisitor( new ParameterTypeVisitor( types, typeMirrorUtils ) );
         this.allowedTypesValidator = new AllowedTypesValidator( typeMirrorUtils, types );
         this.elements = elements;
     }
 
     @Override
-    public Stream<CompilationMessage> visitExecutable( ExecutableElement method, Void ignored )
+    public Stream<CompilationMessage> visitExecutable( ExecutableElement executableElement, Void ignored )
     {
-        return Stream
-                .concat( Stream.concat( validateParameters( method.getParameters(), ignored ), validateName( method ) ),
-                        validateReturnType( method ) );
+        return Stream.of( classVisitor.visit( executableElement.getEnclosingElement() ),
+                validateParameters( executableElement.getParameters(), ignored ), validateName( executableElement ),
+                validateReturnType( executableElement ) ).flatMap( Function.identity() );
     }
 
     private Stream<CompilationMessage> validateParameters( List<? extends VariableElement> parameters, Void ignored )

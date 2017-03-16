@@ -42,18 +42,19 @@ import org.neo4j.procedure.Procedure;
 import org.neo4j.tooling.procedure.compilerutils.CustomNameExtractor;
 import org.neo4j.tooling.procedure.messages.CompilationMessage;
 import org.neo4j.tooling.procedure.messages.MessagePrinter;
-import org.neo4j.tooling.procedure.validators.DuplicatedProcedureValidator;
+import org.neo4j.tooling.procedure.validators.DuplicatedExtensionValidator;
 import org.neo4j.tooling.procedure.visitors.StoredProcedureVisitor;
+
+import static org.neo4j.tooling.procedure.CompilerOptions.IGNORE_CONTEXT_WARNINGS_OPTION;
 
 @AutoService( Processor.class )
 public class ProcedureProcessor extends AbstractProcessor
 {
 
-    public static final String IGNORE_CONTEXT_WARNINGS_OPTION = "IgnoreContextWarnings";
     private static final Class<Procedure> sprocType = Procedure.class;
     private final Set<Element> visitedProcedures = new LinkedHashSet<>();
 
-    private Function<Collection<Element>,Stream<CompilationMessage>> duplicationPredicate;
+    private Function<Collection<Element>,Stream<CompilationMessage>> duplicationValidator;
     private ElementVisitor<Stream<CompilationMessage>,Void> visitor;
     private MessagePrinter messagePrinter;
 
@@ -86,8 +87,8 @@ public class ProcedureProcessor extends AbstractProcessor
         messagePrinter = new MessagePrinter( processingEnv.getMessager() );
         visitor = new StoredProcedureVisitor( typeUtils, elementUtils,
                 processingEnv.getOptions().containsKey( IGNORE_CONTEXT_WARNINGS_OPTION ) );
-        duplicationPredicate =
-                new DuplicatedProcedureValidator<>( elementUtils, sprocType,
+        duplicationValidator =
+                new DuplicatedExtensionValidator<>( elementUtils, sprocType,
                         ( proc ) -> CustomNameExtractor.getName( proc::name, proc::value ) );
     }
 
@@ -98,7 +99,7 @@ public class ProcedureProcessor extends AbstractProcessor
         processElements( roundEnv );
         if ( roundEnv.processingOver() )
         {
-            duplicationPredicate.apply( visitedProcedures ).forEach( messagePrinter::print );
+            duplicationValidator.apply( visitedProcedures ).forEach( messagePrinter::print );
         }
         return false;
     }

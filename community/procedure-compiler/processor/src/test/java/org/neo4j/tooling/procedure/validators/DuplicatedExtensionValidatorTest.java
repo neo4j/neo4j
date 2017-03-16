@@ -45,7 +45,7 @@ import static java.util.Arrays.asList;
 import static org.assertj.core.api.Assertions.assertThat;
 import static org.assertj.core.groups.Tuple.tuple;
 
-public class DuplicatedProcedureValidatorTest
+public class DuplicatedExtensionValidatorTest
 {
 
     @Rule
@@ -58,7 +58,7 @@ public class DuplicatedProcedureValidatorTest
     public void prepare()
     {
         elements = compilation.getElements();
-        validator = new DuplicatedProcedureValidator<>( elements, Procedure.class,
+        validator = new DuplicatedExtensionValidator<>( elements, Procedure.class,
                 ( proc ) -> CustomNameExtractor.getName( proc::name, proc::value ) );
     }
 

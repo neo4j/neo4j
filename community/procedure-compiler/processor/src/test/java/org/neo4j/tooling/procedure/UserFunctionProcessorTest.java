@@ -34,7 +34,7 @@ import static com.google.testing.compile.JavaSourceSubjectFactory.javaSource;
 import static com.google.testing.compile.JavaSourcesSubjectFactory.javaSources;
 import static java.util.Arrays.asList;
 
-public class UserFunctionProcessorTest
+public class UserFunctionProcessorTest extends ExtensionTestBase
 {
 
     @Rule
@@ -49,7 +49,7 @@ public class UserFunctionProcessorTest
                 JavaFileObjectUtils.INSTANCE.procedureSource( "invalid/missing_name/MissingNameUserFunction.java" );
 
         UnsuccessfulCompilationClause compilation =
-                assert_().about( javaSource() ).that( function ).processedWith( processor ).failsToCompile()
+                assert_().about( javaSource() ).that( function ).processedWith( processor() ).failsToCompile()
                         .withErrorCount( 2 );
 
         compilation.withErrorContaining( "@org.neo4j.procedure.Name usage error: missing on parameter <parameter>" )
@@ -65,7 +65,7 @@ public class UserFunctionProcessorTest
         JavaFileObject function = JavaFileObjectUtils.INSTANCE
                 .procedureSource( "invalid/bad_return_type/BadReturnTypeUserFunction.java" );
 
-        assert_().about( javaSource() ).that( function ).processedWith( processor ).failsToCompile().withErrorCount( 1 )
+        assert_().about( javaSource() ).that( function ).processedWith( processor() ).failsToCompile().withErrorCount( 1 )
                 .withErrorContaining(
                         "Unsupported return type <java.util.stream.Stream<java.lang.Long>> of function defined in <org.neo4j.tooling.procedure.procedures.invalid.bad_return_type.BadReturnTypeUserFunction#wrongReturnTypeFunction>" )
                 .in( function ).onLine( 36 );
@@ -77,7 +77,7 @@ public class UserFunctionProcessorTest
         JavaFileObject function = JavaFileObjectUtils.INSTANCE
                 .procedureSource( "invalid/bad_proc_input_type/BadPrimitiveInputUserFunction.java" );
 
-        assert_().about( javaSource() ).that( function ).processedWith( processor ).failsToCompile().withErrorCount( 1 )
+        assert_().about( javaSource() ).that( function ).processedWith( processor() ).failsToCompile().withErrorCount( 1 )
                 .withErrorContaining(
                         "Unsupported parameter type <short> of procedure|function BadPrimitiveInputUserFunction#doSomething" )
                 .in( function ).onLine( 32 );
@@ -90,7 +90,7 @@ public class UserFunctionProcessorTest
                 .procedureSource( "invalid/bad_proc_input_type/BadGenericInputUserFunction.java" );
 
         UnsuccessfulCompilationClause compilation =
-                assert_().about( javaSource() ).that( function ).processedWith( processor ).failsToCompile()
+                assert_().about( javaSource() ).that( function ).processedWith( processor() ).failsToCompile()
                         .withErrorCount( 3 );
 
         compilation.withErrorContaining( "Unsupported parameter type " +
@@ -114,7 +114,7 @@ public class UserFunctionProcessorTest
         JavaFileObject secondDuplicate =
                 JavaFileObjectUtils.INSTANCE.procedureSource( "invalid/duplicated/UserFunction2.java" );
 
-        assert_().about( javaSources() ).that( asList( firstDuplicate, secondDuplicate ) ).processedWith( processor )
+        assert_().about( javaSources() ).that( asList( firstDuplicate, secondDuplicate ) ).processedWith( processor() )
                 .failsToCompile().withErrorCount( 2 ).withErrorContaining(
                 "Procedure|function name <org.neo4j.tooling.procedure.procedures.invalid.duplicated.foobar> is already defined 2 times. It should be defined only once!" );
     }
@@ -124,7 +124,13 @@ public class UserFunctionProcessorTest
     {
         assert_().about( javaSource() )
                 .that( JavaFileObjectUtils.INSTANCE.procedureSource( "valid/UserFunctions.java" ) )
-                .processedWith( processor ).compilesWithoutError();
+                .processedWith( processor() ).compilesWithoutError();
 
+    }
+
+    @Override
+    Processor processor()
+    {
+        return processor;
     }
 }

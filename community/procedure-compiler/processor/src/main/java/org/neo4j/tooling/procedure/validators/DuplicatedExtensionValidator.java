@@ -38,7 +38,7 @@ import org.neo4j.procedure.Procedure;
 
 import static java.util.stream.Collectors.groupingBy;
 
-public class DuplicatedProcedureValidator<T extends Annotation>
+public class DuplicatedExtensionValidator<T extends Annotation>
         implements Function<Collection<Element>,Stream<CompilationMessage>>
 {
 
@@ -46,7 +46,7 @@ public class DuplicatedProcedureValidator<T extends Annotation>
     private final Class<T> annotationType;
     private final Function<T,Optional<String>> customNameExtractor;
 
-    public DuplicatedProcedureValidator( Elements elements, Class<T> annotationType,
+    public DuplicatedExtensionValidator( Elements elements, Class<T> annotationType,
             Function<T,Optional<String>> customNameExtractor )
     {
         this.elements = elements;

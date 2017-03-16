@@ -48,6 +48,8 @@ import org.neo4j.tooling.procedure.messages.CompilationMessage;
 import org.neo4j.tooling.procedure.messages.ContextFieldError;
 import org.neo4j.tooling.procedure.messages.ContextFieldWarning;
 
+import static org.neo4j.tooling.procedure.CompilerOptions.IGNORE_CONTEXT_WARNINGS_OPTION;
+
 class ContextFieldVisitor extends SimpleElementVisitor8<Stream<CompilationMessage>,Void>
 {
     private static final Set<String> SUPPORTED_TYPES = new LinkedHashSet<>(
@@ -108,7 +110,7 @@ class ContextFieldVisitor extends SimpleElementVisitor8<Stream<CompilationMessag
                     "The procedure will not load unless declared via the configuration option 'dbms.security.procedures.unrestricted'.\n" +
                     "You can ignore this warning by passing the option -A%s to the Java compiler",
                     Context.class.getName(), fieldType.toString(), fieldFullName( field ),
-                    ProcedureProcessor.IGNORE_CONTEXT_WARNINGS_OPTION ) );
+                    IGNORE_CONTEXT_WARNINGS_OPTION ) );
         }
 
         return Stream.of( new ContextFieldError( field,

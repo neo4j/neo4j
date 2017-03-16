@@ -53,7 +53,7 @@ public class UserFunctionVisitorTest
         Elements elements = compilationRule.getElements();
 
         elementTestUtils = new ElementTestUtils( compilationRule );
-        visitor = new UserFunctionVisitor( types, elements, new TypeMirrorUtils( types, elements ) );
+        visitor = new UserFunctionVisitor( types, elements, new TypeMirrorUtils( types, elements ), false );
     }
 
     @Test

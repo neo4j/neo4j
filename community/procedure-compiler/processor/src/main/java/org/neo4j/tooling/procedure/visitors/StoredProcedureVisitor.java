@@ -54,7 +54,7 @@ public class StoredProcedureVisitor extends SimpleElementVisitor8<Stream<Compila
 
         this.typeUtils = typeUtils;
         this.elementUtils = elementUtils;
-        this.classVisitor = new StoredProcedureClassVisitor( typeUtils, elementUtils, ignoresWarnings );
+        this.classVisitor = new ExtensionClassVisitor( typeUtils, elementUtils, ignoresWarnings );
         this.recordVisitor = new RecordTypeVisitor( typeUtils, typeMirrors );
         this.parameterVisitor = new ParameterVisitor( new ParameterTypeVisitor( typeUtils, typeMirrors ) );
         this.performsWriteVisitor = new PerformsWriteMethodVisitor();

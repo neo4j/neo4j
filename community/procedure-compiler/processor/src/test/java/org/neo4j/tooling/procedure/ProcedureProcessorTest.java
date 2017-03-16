@@ -34,7 +34,7 @@ import static com.google.testing.compile.JavaSourceSubjectFactory.javaSource;
 import static com.google.testing.compile.JavaSourcesSubjectFactory.javaSources;
 import static java.util.Arrays.asList;
 
-public class ProcedureProcessorTest
+public class ProcedureProcessorTest extends ExtensionTestBase
 {
 
     @Rule
@@ -49,7 +49,7 @@ public class ProcedureProcessorTest
                 JavaFileObjectUtils.INSTANCE.procedureSource( "invalid/missing_name/MissingNameSproc.java" );
 
         UnsuccessfulCompilationClause compilation =
-                assert_().about( javaSource() ).that( sproc ).processedWith( processor ).failsToCompile()
+                assert_().about( javaSource() ).that( sproc ).processedWith( processor() ).failsToCompile()
                         .withErrorCount( 2 );
 
         compilation.withErrorContaining( "@org.neo4j.procedure.Name usage error: missing on parameter <parameter>" )
@@ -65,7 +65,7 @@ public class ProcedureProcessorTest
         JavaFileObject sproc =
                 JavaFileObjectUtils.INSTANCE.procedureSource( "invalid/bad_return_type/BadReturnTypeSproc.java" );
 
-        assert_().about( javaSource() ).that( sproc ).processedWith( processor ).failsToCompile().withErrorCount( 1 )
+        assert_().about( javaSource() ).that( sproc ).processedWith( processor() ).failsToCompile().withErrorCount( 1 )
                 .withErrorContaining( "Return type of BadReturnTypeSproc#niceSproc must be java.util.stream.Stream" )
                 .in( sproc ).onLine( 34 );
     }
@@ -78,7 +78,7 @@ public class ProcedureProcessorTest
 
         UnsuccessfulCompilationClause compilation = assert_().about( javaSources() ).that( asList(
                 JavaFileObjectUtils.INSTANCE.procedureSource( "invalid/bad_record_type/BadRecordTypeSproc.java" ),
-                record ) ).processedWith( processor ).failsToCompile().withErrorCount( 2 );
+                record ) ).processedWith( processor() ).failsToCompile().withErrorCount( 2 );
 
         compilation.withErrorContaining( "Record definition error: field BadRecord#label must be public" ).in( record )
                 .onLine( 26 );
@@ -93,7 +93,7 @@ public class ProcedureProcessorTest
         JavaFileObject sproc = JavaFileObjectUtils.INSTANCE
                 .procedureSource( "invalid/bad_proc_input_type/BadPrimitiveInputSproc.java" );
 
-        assert_().about( javaSource() ).that( sproc ).processedWith( processor ).failsToCompile().withErrorCount( 1 )
+        assert_().about( javaSource() ).that( sproc ).processedWith( processor() ).failsToCompile().withErrorCount( 1 )
                 .withErrorContaining(
                         "Unsupported parameter type <short> of procedure|function BadPrimitiveInputSproc#doSomething" )
                 .in( sproc ).onLine( 32 );
@@ -106,7 +106,7 @@ public class ProcedureProcessorTest
                 JavaFileObjectUtils.INSTANCE.procedureSource( "invalid/bad_proc_input_type/BadGenericInputSproc.java" );
 
         UnsuccessfulCompilationClause compilation =
-                assert_().about( javaSource() ).that( sproc ).processedWith( processor ).failsToCompile()
+                assert_().about( javaSource() ).that( sproc ).processedWith( processor() ).failsToCompile()
                         .withErrorCount( 3 );
 
         compilation.withErrorContaining( "Unsupported parameter type " +
@@ -130,7 +130,7 @@ public class ProcedureProcessorTest
 
         assert_().about( javaSources() ).that( asList( JavaFileObjectUtils.INSTANCE
                 .procedureSource( "invalid/bad_record_field_type/BadRecordSimpleFieldTypeSproc.java" ), record ) )
-                .processedWith( processor ).failsToCompile().withErrorCount( 1 ).withErrorContaining(
+                .processedWith( processor() ).failsToCompile().withErrorCount( 1 ).withErrorContaining(
                 "Record definition error: type of field BadRecordSimpleFieldType#wrongType is not supported" )
                 .in( record ).onLine( 29 );
     }
@@ -144,7 +144,7 @@ public class ProcedureProcessorTest
         UnsuccessfulCompilationClause compilation = assert_().about( javaSources() ).that( asList(
                 JavaFileObjectUtils.INSTANCE
                         .procedureSource( "invalid/bad_record_field_type/BadRecordGenericFieldTypeSproc.java" ),
-                record ) ).processedWith( processor ).failsToCompile().withErrorCount( 3 );
+                record ) ).processedWith( processor() ).failsToCompile().withErrorCount( 3 );
 
         compilation.withErrorContaining(
                 "Record definition error: type of field BadRecordGenericFieldType#wrongType1 is not supported" )
@@ -165,7 +165,7 @@ public class ProcedureProcessorTest
         JavaFileObject secondDuplicate =
                 JavaFileObjectUtils.INSTANCE.procedureSource( "invalid/duplicated/Sproc2.java" );
 
-        assert_().about( javaSources() ).that( asList( firstDuplicate, secondDuplicate ) ).processedWith( processor )
+        assert_().about( javaSources() ).that( asList( firstDuplicate, secondDuplicate ) ).processedWith( processor() )
                 .failsToCompile().withErrorCount( 2 ).withErrorContaining(
                 "Procedure|function name <org.neo4j.tooling.procedure.procedures.invalid.duplicated.foobar> is " +
                         "already defined 2 times. It should be defined only once!" );
@@ -177,9 +177,9 @@ public class ProcedureProcessorTest
         JavaFileObject procedure = JavaFileObjectUtils.INSTANCE
                 .procedureSource( "invalid/missing_constructor/MissingConstructorProcedure.java" );
 
-        assert_().about( javaSource() ).that( procedure ).processedWith( processor ).failsToCompile()
+        assert_().about( javaSource() ).that( procedure ).processedWith( processor() ).failsToCompile()
                 .withErrorCount( 1 ).withErrorContaining(
-                "Procedure class org.neo4j.tooling.procedure.procedures.invalid.missing_constructor.MissingConstructorProcedure should contain a public no-arg constructor, none found." )
+                "Extension class org.neo4j.tooling.procedure.procedures.invalid.missing_constructor.MissingConstructorProcedure should contain a public no-arg constructor, none found." )
                 .in( procedure ).onLine( 24 );
     }
 
@@ -189,72 +189,8 @@ public class ProcedureProcessorTest
         assert_().about( javaSources() )
                 .that( asList( JavaFileObjectUtils.INSTANCE.procedureSource( "valid/Procedures.java" ),
                         JavaFileObjectUtils.INSTANCE.procedureSource( "valid/Records.java" ) ) )
-                .processedWith( processor ).compilesWithoutError();
+                .processedWith( processor() ).compilesWithoutError();
 
-    }
-
-    @Test
-    public void fails_if_context_injected_fields_have_wrong_modifiers()
-    {
-        JavaFileObject sproc =
-                JavaFileObjectUtils.INSTANCE.procedureSource( "invalid/bad_context_field/BadContextSproc.java" );
-
-        UnsuccessfulCompilationClause unsuccessfulCompilationClause =
-                assert_().about( javaSource() ).that( sproc ).processedWith( processor ).failsToCompile()
-                        .withErrorCount( 4 );
-
-        unsuccessfulCompilationClause.withErrorContaining(
-                "@org.neo4j.procedure.Context usage error: field BadContextSproc#shouldBeNonStatic should be public, non-static and non-final" )
-                .in( sproc ).onLine( 30 );
-
-        unsuccessfulCompilationClause.withErrorContaining(
-                "@org.neo4j.procedure.Context usage error: field BadContextSproc#shouldBeNonFinal should be public, non-static and non-final" )
-                .in( sproc ).onLine( 33 );
-
-        unsuccessfulCompilationClause.withErrorContaining(
-                "@org.neo4j.procedure.Context usage error: field BadContextSproc#shouldBePublic should be public, non-static and non-final" )
-                .in( sproc ).onLine( 37 );
-
-        unsuccessfulCompilationClause.withErrorContaining( "Field BadContextSproc#shouldBeStatic should be static" )
-                .in( sproc ).onLine( 38 );
-    }
-
-    @Test
-    public void emits_warnings_if_context_injected_field_types_are_restricted()
-    {
-        JavaFileObject sproc = JavaFileObjectUtils.INSTANCE
-                .procedureSource( "invalid/bad_context_field/BadContextRestrictedTypeSproc.java" );
-
-        assert_().about( javaSource() ).that( sproc ).processedWith( processor ).compilesWithoutError()
-                .withWarningCount( 2 ).withWarningContaining(
-                "@org.neo4j.procedure.Context usage warning: found unsupported restricted type <org.neo4j.kernel.internal" +
-                        ".GraphDatabaseAPI> on BadContextRestrictedTypeSproc#notOfficiallySupported.\n" +
-                        "  The procedure will not load unless declared via the configuration option 'dbms.security.procedures.unrestricted'.\n" +
-                        "  You can ignore this warning by passing the option -AIgnoreContextWarnings to the Java compiler" )
-                .in( sproc ).onLine( 30 );
-    }
-
-    @Test
-    public void does_not_emit_warnings_if_context_injected_field_types_are_restricted_when_context_warnings_disabled()
-    {
-        JavaFileObject sproc = JavaFileObjectUtils.INSTANCE
-                .procedureSource( "invalid/bad_context_field/BadContextRestrictedTypeSproc.java" );
-
-        assert_().about( javaSource() ).that( sproc ).withCompilerOptions( "-AIgnoreContextWarnings" )
-                .processedWith( processor ).compilesWithoutError().withWarningCount( 1 );
-    }
-
-    @Test
-    public void fails_if_context_injected_fields_have_unsupported_types()
-    {
-        JavaFileObject sproc = JavaFileObjectUtils.INSTANCE
-                .procedureSource( "invalid/bad_context_field/BadContextUnsupportedTypeError.java" );
-
-        assert_().about( javaSource() ).that( sproc ).processedWith( processor ).failsToCompile().withErrorCount( 1 )
-                .withErrorContaining(
-                        "@org.neo4j.procedure.Context usage error: found unknown type <java.lang.String> on field " +
-                                "BadContextUnsupportedTypeError#foo, expected one of: <org.neo4j.graphdb.GraphDatabaseService>, <org.neo4j.logging.Log>, <org.neo4j.procedure.TerminationGuard>, <org.neo4j.kernel.api.security.SecurityContext>, <org.neo4j.procedure.ProcedureTransaction>" )
-                .in( sproc ).onLine( 28 );
     }
 
     @Test
@@ -263,10 +199,16 @@ public class ProcedureProcessorTest
         JavaFileObject procedure = JavaFileObjectUtils.INSTANCE.procedureSource(
                 "invalid/conflicting_mode/ConflictingMode.java" );
 
-        assert_().about( javaSource() ).that( procedure ).processedWith( processor ).failsToCompile()
+        assert_().about( javaSource() ).that( procedure ).processedWith( processor() ).failsToCompile()
                 .withErrorCount( 1 )
                 .withErrorContaining( "@PerformsWrites usage error: cannot use mode other than Mode.DEFAULT" )
                 .in( procedure ).onLine( 30 );
 
+    }
+
+    @Override
+    Processor processor()
+    {
+        return processor;
     }
 }
