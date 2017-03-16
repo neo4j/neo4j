@@ -61,7 +61,7 @@ class StorePropertyPayloadCursor implements Disposable
      */
     private final ByteBuffer cachedBuffer = ByteBuffer.allocate( INTERNAL_BYTE_ARRAY_SIZE );
 
-    private final DynamicRecord record = new DynamicRecord( DynamicRecord.NO_ID );
+    private final DynamicRecord record;
     private final PageCursor stringCursor;
     private final DynamicStringStore stringStore;
     private final PageCursor arrayCursor;
@@ -76,6 +76,7 @@ class StorePropertyPayloadCursor implements Disposable
 
     StorePropertyPayloadCursor( DynamicStringStore stringStore, DynamicArrayStore arrayStore )
     {
+        this.record = stringStore.newRecord();
         this.stringStore = stringStore;
         this.stringCursor = stringStore.newPageCursor();
         this.arrayStore = arrayStore;

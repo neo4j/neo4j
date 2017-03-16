@@ -41,7 +41,7 @@ public abstract class StoreAbstractPropertyCursor implements PropertyItem, Curso
 {
     protected final StorePropertyPayloadCursor payload;
     private final PageCursor cursor;
-    private final PropertyRecord record = new PropertyRecord( PropertyRecord.NO_ID );
+    private final PropertyRecord record;
     private final PropertyStore propertyStore;
 
     protected boolean fetched;
@@ -54,9 +54,10 @@ public abstract class StoreAbstractPropertyCursor implements PropertyItem, Curso
 
     StoreAbstractPropertyCursor( PropertyStore propertyStore )
     {
-        this.payload = new StorePropertyPayloadCursor( propertyStore.getStringStore(), propertyStore.getArrayStore() );
         this.cursor = propertyStore.newPageCursor();
         this.propertyStore = propertyStore;
+        this.record = propertyStore.newRecord();
+        this.payload = new StorePropertyPayloadCursor( propertyStore.getStringStore(), propertyStore.getArrayStore() );
     }
 
     protected final void initialize( IntPredicate propertyKeyIds, long firstPropertyId, Lock lock,
