@@ -58,6 +58,7 @@ import org.neo4j.kernel.impl.store.MetaDataStore;
 import org.neo4j.kernel.impl.store.MetaDataStore.Position;
 import org.neo4j.kernel.impl.store.NeoStores;
 import org.neo4j.kernel.impl.store.NodeStore;
+import org.neo4j.kernel.impl.store.PropertyStore;
 import org.neo4j.kernel.impl.store.RecordCursors;
 import org.neo4j.kernel.impl.store.RelationshipStore;
 import org.neo4j.kernel.impl.store.StoreFactory;
@@ -639,7 +640,7 @@ public class StoreMigrator extends AbstractStoreMigrationParticipant
     {
         RelationshipStore store = legacyStore.getRelationshipStore();
         final BiConsumer<InputRelationship,RelationshipRecord> propertyDecorator =
-                propertyDecorator( requiresPropertyMigration, cursors );
+                propertyDecorator( requiresPropertyMigration, cursors, legacyStore.getPropertyStore() );
         return new StoreScanAsInputIterable<InputRelationship,RelationshipRecord>( store )
         {
             @Override
@@ -660,7 +661,7 @@ public class StoreMigrator extends AbstractStoreMigrationParticipant
     {
         NodeStore store = legacyStore.getNodeStore();
         final BiConsumer<InputNode,NodeRecord> propertyDecorator =
-                propertyDecorator( requiresPropertyMigration, cursors );
+                propertyDecorator( requiresPropertyMigration, cursors, legacyStore.getPropertyStore() );
 
         return new StoreScanAsInputIterable<InputNode,NodeRecord>( store )
         {
@@ -678,7 +679,7 @@ public class StoreMigrator extends AbstractStoreMigrationParticipant
     }
 
     private <ENTITY extends InputEntity, RECORD extends PrimitiveRecord> BiConsumer<ENTITY,RECORD> propertyDecorator(
-            boolean requiresPropertyMigration, RecordCursors cursors )
+            boolean requiresPropertyMigration, RecordCursors cursors, PropertyStore propertyStore )
     {
         if ( !requiresPropertyMigration )
         {
@@ -687,7 +688,7 @@ public class StoreMigrator extends AbstractStoreMigrationParticipant
             };
         }
 
-        final StorePropertyCursor cursor = new StorePropertyCursor( cursors, ignored -> {} );
+        final StorePropertyCursor cursor = new StorePropertyCursor( propertyStore, cursors, ignored -> {} );
         final List<Object> scratch = new ArrayList<>();
         return ( ENTITY entity, RECORD record ) ->
         {

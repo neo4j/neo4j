@@ -21,7 +21,6 @@ package org.neo4j.kernel.impl.store;
 
 import org.neo4j.io.IOUtils;
 import org.neo4j.kernel.impl.store.record.AbstractBaseRecord;
-import org.neo4j.kernel.impl.store.record.DynamicRecord;
 import org.neo4j.kernel.impl.store.record.PropertyRecord;
 import org.neo4j.kernel.impl.store.record.RelationshipGroupRecord;
 import org.neo4j.kernel.impl.store.record.RelationshipRecord;
@@ -36,16 +35,12 @@ public class RecordCursors implements AutoCloseable
     private final RecordCursor<RelationshipRecord> relationship;
     private final RecordCursor<RelationshipGroupRecord> relationshipGroup;
     private final RecordCursor<PropertyRecord> property;
-    private final RecordCursor<DynamicRecord> propertyString;
-    private final RecordCursor<DynamicRecord> propertyArray;
 
     public RecordCursors( NeoStores neoStores )
     {
         relationship = newCursor( neoStores.getRelationshipStore() );
         relationshipGroup = newCursor( neoStores.getRelationshipGroupStore() );
         property = newCursor( neoStores.getPropertyStore() );
-        propertyString = newCursor( neoStores.getPropertyStore().getStringStore() );
-        propertyArray = newCursor( neoStores.getPropertyStore().getArrayStore() );
     }
 
     private static <R extends AbstractBaseRecord> RecordCursor<R> newCursor( RecordStore<R> store )
@@ -56,8 +51,7 @@ public class RecordCursors implements AutoCloseable
     @Override
     public void close()
     {
-        IOUtils.closeAll( RuntimeException.class, relationship, relationshipGroup, property, propertyArray,
-                propertyString );
+        IOUtils.closeAll( RuntimeException.class, relationship, relationshipGroup, property );
     }
 
     public RecordCursor<RelationshipRecord> relationship()
@@ -73,15 +67,5 @@ public class RecordCursors implements AutoCloseable
     public RecordCursor<PropertyRecord> property()
     {
         return property;
-    }
-
-    public RecordCursor<DynamicRecord> propertyArray()
-    {
-        return propertyArray;
-    }
-
-    public RecordCursor<DynamicRecord> propertyString()
-    {
-        return propertyString;
     }
 }
