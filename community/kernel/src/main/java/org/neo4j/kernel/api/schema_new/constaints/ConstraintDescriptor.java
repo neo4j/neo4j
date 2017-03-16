@@ -33,7 +33,8 @@ public abstract class ConstraintDescriptor implements SchemaDescriptor.Supplier
     public enum Type
     {
         UNIQUE,
-        EXISTS
+        EXISTS,
+        UNIQUE_EXISTS
     }
 
     public interface Supplier

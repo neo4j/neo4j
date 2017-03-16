@@ -17,7 +17,7 @@
  * You should have received a copy of the GNU General Public License
  * along with this program.  If not, see <http://www.gnu.org/licenses/>.
  */
-package org.neo4j.kernel.api.schema_new.constaints;
+package org.neo4j.kernel.api.constraints;
 
 import org.neo4j.kernel.api.TokenNameLookup;
 import org.neo4j.kernel.api.schema_new.LabelSchemaDescriptor;
@@ -25,37 +25,38 @@ import org.neo4j.kernel.api.schema_new.SchemaUtil;
 import org.neo4j.kernel.api.schema_new.index.NewIndexDescriptor;
 import org.neo4j.kernel.api.schema_new.index.NewIndexDescriptorFactory;
 
-public class UniquenessConstraintDescriptor extends ConstraintDescriptor implements LabelSchemaDescriptor.Supplier
+/**
+ * Description of uniqueness and existence constraint over nodes given a label and a property key id.
+ */
+public class NodeKeyConstraint extends NodePropertyConstraint
 {
-    private final LabelSchemaDescriptor schema;
-
-    UniquenessConstraintDescriptor( LabelSchemaDescriptor schema )
+    public NodeKeyConstraint( LabelSchemaDescriptor descriptor )
     {
-        super( Type.UNIQUE );
-        this.schema = schema;
+        super( descriptor );
+    }
+
+    public NewIndexDescriptor indexDescriptor()
+    {
+        return NewIndexDescriptorFactory.forSchema( descriptor );
     }
 
     @Override
-    public LabelSchemaDescriptor schema()
+    public String userDescription( TokenNameLookup tokenNameLookup )
     {
-        return schema;
-    }
-
-    public NewIndexDescriptor ownedIndexDescriptor()
-    {
-        return NewIndexDescriptorFactory.uniqueForSchema( schema );
-    }
-
-    @Override
-    public String prettyPrint( TokenNameLookup tokenNameLookup )
-    {
-        String labelName = escapeLabelOrRelTyp( tokenNameLookup.labelGetName( schema.getLabelId() ) );
-        String nodeName = labelName.toLowerCase();
-        String properties = SchemaUtil.niceProperties( tokenNameLookup, schema.getPropertyIds(), nodeName + "." );
-        if ( schema().getPropertyIds().length > 1 )
+        String labelName = labelName( tokenNameLookup );
+        String boundIdentifier = labelName.toLowerCase();
+        String properties = SchemaUtil
+                .niceProperties( tokenNameLookup, descriptor.getPropertyIds(), boundIdentifier + "." );
+        if ( descriptor.isComposite() )
         {
             properties = "(" + properties + ")";
         }
-        return String.format( "CONSTRAINT ON ( %s:%s ) ASSERT %s IS UNIQUE", nodeName, labelName, properties );
+        return String.format( "CONSTRAINT ON ( %s:%s ) ASSERT %s IS NODE KEY", boundIdentifier, labelName, properties );
+    }
+
+    @Override
+    public String toString()
+    {
+        return userDescription( SchemaUtil.idTokenNameLookup );
     }
 }

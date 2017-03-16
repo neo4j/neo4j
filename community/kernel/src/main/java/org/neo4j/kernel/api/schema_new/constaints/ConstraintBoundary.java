@@ -19,6 +19,7 @@
  */
 package org.neo4j.kernel.api.schema_new.constaints;
 
+import org.neo4j.kernel.api.constraints.NodeKeyConstraint;
 import org.neo4j.kernel.api.constraints.NodePropertyConstraint;
 import org.neo4j.kernel.api.constraints.NodePropertyExistenceConstraint;
 import org.neo4j.kernel.api.constraints.PropertyConstraint;
@@ -75,6 +76,9 @@ public class ConstraintBoundary
 
             case EXISTS:
                 return new NodePropertyExistenceConstraint( schema );
+
+            case UNIQUE_EXISTS:
+                return new NodeKeyConstraint( schema );
 
             default:
                 throw new UnsupportedOperationException( "Although we cannot get here, this has not been implemented." );

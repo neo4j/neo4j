@@ -23,8 +23,6 @@ import java.util.Arrays;
 
 import org.neo4j.kernel.api.TokenNameLookup;
 
-import static java.lang.String.format;
-
 public class RelationTypeSchemaDescriptor implements SchemaDescriptor
 {
     private final int relTypeId;
