@@ -19,7 +19,8 @@
  */
 package org.neo4j.kernel.impl.api;
 
-import org.neo4j.kernel.api.schema.NodePropertyDescriptor;
+import java.util.Arrays;
+
 import org.neo4j.kernel.api.Statement;
 import org.neo4j.kernel.api.StatementTokenNameLookup;
 import org.neo4j.kernel.api.constraints.UniquenessConstraint;
@@ -32,11 +33,14 @@ import org.neo4j.kernel.api.exceptions.schema.IllegalTokenNameException;
 import org.neo4j.kernel.api.exceptions.schema.IndexBelongsToConstraintException;
 import org.neo4j.kernel.api.exceptions.schema.NoSuchConstraintException;
 import org.neo4j.kernel.api.exceptions.schema.NoSuchIndexException;
+import org.neo4j.kernel.api.exceptions.schema.RepeatedPropertyInCompositeSchemaException;
 import org.neo4j.kernel.api.exceptions.schema.SchemaKernelException.OperationContext;
 import org.neo4j.kernel.api.exceptions.schema.TooManyLabelsException;
+import org.neo4j.kernel.api.schema.NodePropertyDescriptor;
 import org.neo4j.kernel.api.schema_new.LabelSchemaDescriptor;
 import org.neo4j.kernel.api.schema_new.RelationTypeSchemaDescriptor;
 import org.neo4j.kernel.api.schema_new.SchemaBoundary;
+import org.neo4j.kernel.api.schema_new.SchemaDescriptor;
 import org.neo4j.kernel.api.schema_new.constaints.ConstraintBoundary;
 import org.neo4j.kernel.api.schema_new.constaints.ConstraintDescriptor;
 import org.neo4j.kernel.api.schema_new.constaints.ConstraintDescriptorFactory;
@@ -111,9 +115,10 @@ public class DataIntegrityValidatingStatementOperations implements
 
     @Override
     public NewIndexDescriptor indexCreate( KernelStatement state, LabelSchemaDescriptor descriptor )
-            throws AlreadyIndexedException, AlreadyConstrainedException
+            throws AlreadyIndexedException, AlreadyConstrainedException, RepeatedPropertyInCompositeSchemaException
     {
-        checkIndexExistence( state, OperationContext.INDEX_CREATION, SchemaBoundary.map( descriptor ) );
+        assertValidDescriptor( descriptor, OperationContext.INDEX_CREATION );
+        assertIndexDoesNotExist( state, OperationContext.INDEX_CREATION, SchemaBoundary.map( descriptor ) );
         return schemaWriteDelegate.indexCreate( state, descriptor );
     }
 
@@ -151,21 +156,25 @@ public class DataIntegrityValidatingStatementOperations implements
     @Override
     public UniquenessConstraintDescriptor uniquePropertyConstraintCreate(
             KernelStatement state, LabelSchemaDescriptor descriptor )
-            throws AlreadyConstrainedException, CreateConstraintFailureException, AlreadyIndexedException
+            throws AlreadyConstrainedException, CreateConstraintFailureException, AlreadyIndexedException,
+            RepeatedPropertyInCompositeSchemaException
     {
+        assertValidDescriptor( descriptor, OperationContext.CONSTRAINT_CREATION );
         ConstraintDescriptor constraint = ConstraintDescriptorFactory.uniqueForSchema( descriptor );
         assertConstraintDoesNotExist( state, constraint );
 
         // It is not allowed to create uniqueness constraints on indexed label/property pairs
-        checkIndexExistence( state, OperationContext.CONSTRAINT_CREATION, SchemaBoundary.map( descriptor ) );
+        assertIndexDoesNotExist( state, OperationContext.CONSTRAINT_CREATION, SchemaBoundary.map( descriptor ) );
 
         return schemaWriteDelegate.uniquePropertyConstraintCreate( state, descriptor );
     }
 
     @Override
     public NodeExistenceConstraintDescriptor nodePropertyExistenceConstraintCreate( KernelStatement state,
-            LabelSchemaDescriptor descriptor) throws AlreadyConstrainedException, CreateConstraintFailureException
+            LabelSchemaDescriptor descriptor) throws AlreadyConstrainedException, CreateConstraintFailureException,
+            RepeatedPropertyInCompositeSchemaException
     {
+        assertValidDescriptor( descriptor, OperationContext.CONSTRAINT_CREATION );
         ConstraintDescriptor constraint = ConstraintDescriptorFactory.existsForSchema( descriptor );
         assertConstraintDoesNotExist( state, constraint );
         return schemaWriteDelegate.nodePropertyExistenceConstraintCreate( state, descriptor );
@@ -173,8 +182,11 @@ public class DataIntegrityValidatingStatementOperations implements
 
     @Override
     public RelExistenceConstraintDescriptor relationshipPropertyExistenceConstraintCreate( KernelStatement state,
-            RelationTypeSchemaDescriptor descriptor ) throws AlreadyConstrainedException, CreateConstraintFailureException
+            RelationTypeSchemaDescriptor descriptor )
+            throws AlreadyConstrainedException, CreateConstraintFailureException,
+            RepeatedPropertyInCompositeSchemaException
     {
+        assertValidDescriptor( descriptor, OperationContext.CONSTRAINT_CREATION );
         ConstraintDescriptor constraint = ConstraintDescriptorFactory.existsForSchema( descriptor );
         assertConstraintDoesNotExist( state, constraint );
         return schemaWriteDelegate.relationshipPropertyExistenceConstraintCreate( state, descriptor );
@@ -194,7 +206,7 @@ public class DataIntegrityValidatingStatementOperations implements
         schemaWriteDelegate.constraintDrop( state, descriptor );
     }
 
-    private void checkIndexExistence( KernelStatement state, OperationContext context,
+    private void assertIndexDoesNotExist( KernelStatement state, OperationContext context,
             NodePropertyDescriptor descriptor )
             throws AlreadyIndexedException, AlreadyConstrainedException
     {
@@ -236,6 +248,16 @@ public class DataIntegrityValidatingStatementOperations implements
         if ( !schemaReadDelegate.constraintExists( state, constraint ) )
         {
             throw new NoSuchConstraintException( ConstraintBoundary.map( constraint ) );
+        }
+    }
+
+    private void assertValidDescriptor( SchemaDescriptor descriptor, OperationContext context )
+            throws RepeatedPropertyInCompositeSchemaException
+    {
+        int numUnique = Arrays.stream( descriptor.getPropertyIds() ).distinct().toArray().length;
+        if ( numUnique != descriptor.getPropertyIds().length )
+        {
+            throw new RepeatedPropertyInCompositeSchemaException( descriptor, context );
         }
     }
 }

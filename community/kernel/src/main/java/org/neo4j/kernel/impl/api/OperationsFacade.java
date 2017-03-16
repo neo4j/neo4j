@@ -63,6 +63,7 @@ import org.neo4j.kernel.api.exceptions.schema.DropIndexFailureException;
 import org.neo4j.kernel.api.exceptions.schema.DuplicateSchemaRuleException;
 import org.neo4j.kernel.api.exceptions.schema.IllegalTokenNameException;
 import org.neo4j.kernel.api.exceptions.schema.IndexBrokenKernelException;
+import org.neo4j.kernel.api.exceptions.schema.RepeatedPropertyInCompositeSchemaException;
 import org.neo4j.kernel.api.exceptions.schema.SchemaRuleNotFoundException;
 import org.neo4j.kernel.api.exceptions.schema.TooManyLabelsException;
 import org.neo4j.kernel.api.index.InternalIndexState;
@@ -989,7 +990,7 @@ public class OperationsFacade
     // <SchemaWrite>
     @Override
     public NewIndexDescriptor indexCreate( LabelSchemaDescriptor descriptor )
-            throws AlreadyIndexedException, AlreadyConstrainedException
+            throws AlreadyIndexedException, AlreadyConstrainedException, RepeatedPropertyInCompositeSchemaException
     {
         statement.assertOpen();
         return schemaWrite().indexCreate( statement, descriptor );
@@ -1004,7 +1005,8 @@ public class OperationsFacade
 
     @Override
     public UniquenessConstraintDescriptor uniquePropertyConstraintCreate( LabelSchemaDescriptor descriptor )
-            throws CreateConstraintFailureException, AlreadyConstrainedException, AlreadyIndexedException
+            throws CreateConstraintFailureException, AlreadyConstrainedException, AlreadyIndexedException,
+            RepeatedPropertyInCompositeSchemaException
     {
         statement.assertOpen();
         return schemaWrite().uniquePropertyConstraintCreate( statement, descriptor );
@@ -1012,7 +1014,8 @@ public class OperationsFacade
 
     @Override
     public NodeExistenceConstraintDescriptor nodePropertyExistenceConstraintCreate( LabelSchemaDescriptor descriptor )
-            throws CreateConstraintFailureException, AlreadyConstrainedException
+            throws CreateConstraintFailureException, AlreadyConstrainedException,
+            RepeatedPropertyInCompositeSchemaException
     {
         statement.assertOpen();
         return schemaWrite().nodePropertyExistenceConstraintCreate( statement, descriptor );
@@ -1021,7 +1024,8 @@ public class OperationsFacade
     @Override
     public RelExistenceConstraintDescriptor relationshipPropertyExistenceConstraintCreate(
             RelationTypeSchemaDescriptor descriptor )
-            throws CreateConstraintFailureException, AlreadyConstrainedException
+            throws CreateConstraintFailureException, AlreadyConstrainedException,
+            RepeatedPropertyInCompositeSchemaException
     {
         statement.assertOpen();
         return schemaWrite().relationshipPropertyExistenceConstraintCreate( statement, descriptor );

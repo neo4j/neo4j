@@ -24,6 +24,7 @@ import org.neo4j.kernel.api.exceptions.schema.AlreadyIndexedException;
 import org.neo4j.kernel.api.exceptions.schema.CreateConstraintFailureException;
 import org.neo4j.kernel.api.exceptions.schema.DropConstraintFailureException;
 import org.neo4j.kernel.api.exceptions.schema.DropIndexFailureException;
+import org.neo4j.kernel.api.exceptions.schema.RepeatedPropertyInCompositeSchemaException;
 import org.neo4j.kernel.api.schema_new.LabelSchemaDescriptor;
 import org.neo4j.kernel.api.schema_new.RelationTypeSchemaDescriptor;
 import org.neo4j.kernel.api.schema_new.constaints.ConstraintDescriptor;
@@ -40,7 +41,7 @@ public interface SchemaWriteOperations
      * {@code labelId}.
      */
     NewIndexDescriptor indexCreate( KernelStatement state, LabelSchemaDescriptor descriptor )
-            throws AlreadyIndexedException, AlreadyConstrainedException;
+            throws AlreadyIndexedException, AlreadyConstrainedException, RepeatedPropertyInCompositeSchemaException;
 
     /** Drops a {@link NewIndexDescriptor} from the database */
     void indexDrop( KernelStatement state, NewIndexDescriptor descriptor ) throws DropIndexFailureException;
@@ -52,13 +53,17 @@ public interface SchemaWriteOperations
     void uniqueIndexDrop( KernelStatement state, NewIndexDescriptor descriptor ) throws DropIndexFailureException;
 
     UniquenessConstraintDescriptor uniquePropertyConstraintCreate( KernelStatement state, LabelSchemaDescriptor descriptor )
-            throws AlreadyConstrainedException, CreateConstraintFailureException, AlreadyIndexedException;
+            throws AlreadyConstrainedException, CreateConstraintFailureException, AlreadyIndexedException,
+            RepeatedPropertyInCompositeSchemaException;
 
     NodeExistenceConstraintDescriptor nodePropertyExistenceConstraintCreate( KernelStatement state,
-            LabelSchemaDescriptor descriptor ) throws AlreadyConstrainedException, CreateConstraintFailureException;
+            LabelSchemaDescriptor descriptor ) throws AlreadyConstrainedException, CreateConstraintFailureException,
+            RepeatedPropertyInCompositeSchemaException;
 
     RelExistenceConstraintDescriptor relationshipPropertyExistenceConstraintCreate( KernelStatement state,
-            RelationTypeSchemaDescriptor descriptor ) throws AlreadyConstrainedException, CreateConstraintFailureException;
+            RelationTypeSchemaDescriptor descriptor )
+            throws AlreadyConstrainedException, CreateConstraintFailureException,
+            RepeatedPropertyInCompositeSchemaException;
 
     void constraintDrop( KernelStatement state, ConstraintDescriptor constraint ) throws DropConstraintFailureException;
 }
