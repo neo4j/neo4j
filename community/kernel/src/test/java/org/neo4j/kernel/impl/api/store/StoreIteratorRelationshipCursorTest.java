@@ -34,6 +34,7 @@ import static org.junit.Assert.assertFalse;
 import static org.junit.Assert.assertTrue;
 import static org.mockito.Mockito.doAnswer;
 import static org.mockito.Mockito.mock;
+import static org.mockito.Mockito.verify;
 import static org.mockito.Mockito.when;
 import static org.neo4j.kernel.impl.locking.LockService.NO_LOCK_SERVICE;
 import static org.neo4j.kernel.impl.store.record.RecordLoad.CHECK;
@@ -63,10 +64,22 @@ public class StoreIteratorRelationshipCursorTest
         }
     }
 
+    @Test
+    public void shouldCloseThePageCursorWhenDisposed() throws IOException
+    {
+        StoreIteratorRelationshipCursor cursor = createRelationshipCursor( false );
+        cursor.close();
+        cursor.dispose();
+
+        verify( pageCursor ).close();
+    }
+
+    private final PageCursor pageCursor = mock( PageCursor.class );
+
+
     private StoreIteratorRelationshipCursor createRelationshipCursor( boolean relationshipInUse ) throws IOException
     {
         final RelationshipRecord relationshipRecord = new RelationshipRecord( -1 );
-        PageCursor pageCursor = mock( PageCursor.class );
         RelationshipStore relationshipStore = mock( RelationshipStore.class );
         when( relationshipStore.newRecord() ).thenReturn( relationshipRecord );
         when( relationshipStore.newPageCursor() ).thenReturn( pageCursor );
