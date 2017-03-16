@@ -37,6 +37,7 @@ import org.neo4j.kernel.api.TokenNameLookup;
 import org.neo4j.kernel.api.exceptions.ProcedureException;
 import org.neo4j.kernel.api.exceptions.Status;
 import org.neo4j.kernel.api.exceptions.index.IndexNotFoundKernelException;
+import org.neo4j.kernel.api.schema_new.constaints.NodeKeyConstraintDescriptor;
 import org.neo4j.kernel.api.schema_new.index.NewIndexDescriptor;
 import org.neo4j.kernel.impl.api.TokenAccess;
 import org.neo4j.kernel.impl.api.index.IndexingService;
@@ -182,7 +183,7 @@ public class BuiltInProcedures
         ReadOperations operations = statement.readOperations();
         TokenNameLookup tokens = new StatementTokenNameLookup( operations );
 
-        return asList( operations.constraintsGetAll() )
+        return asList( NodeKeyConstraintDescriptor.addNodeKeys( operations.constraintsGetAll() ) )
                 .stream()
                 .map( ( constraint ) -> constraint.prettyPrint( tokens ) )
                 .sorted()

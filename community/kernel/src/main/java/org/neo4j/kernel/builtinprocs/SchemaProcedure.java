@@ -44,6 +44,7 @@ import org.neo4j.kernel.api.Statement;
 import org.neo4j.kernel.api.StatementTokenNameLookup;
 import org.neo4j.kernel.api.schema_new.constaints.ConstraintBoundary;
 import org.neo4j.kernel.api.schema_new.constaints.ConstraintDescriptor;
+import org.neo4j.kernel.api.schema_new.constaints.NodeKeyConstraintDescriptor;
 import org.neo4j.kernel.api.schema_new.index.NewIndexDescriptor;
 import org.neo4j.kernel.impl.coreapi.schema.PropertyNameUtils;
 import org.neo4j.kernel.internal.GraphDatabaseAPI;
@@ -77,10 +78,10 @@ public class SchemaProcedure
                 while ( labelsInDatabase.hasNext() )
                 {
                     Label label = labelsInDatabase.next();
+                    int labelId = readOperations.labelGetForName( label.name() );
                     Map<String,Object> properties = new HashMap<>();
 
-                    Iterator<NewIndexDescriptor> indexDescriptorIterator =
-                            readOperations.indexesGetForLabel( readOperations.labelGetForName( label.name() ) );
+                    Iterator<NewIndexDescriptor> indexDescriptorIterator = readOperations.indexesGetForLabel( labelId );
                     ArrayList<String> indexes = new ArrayList<>();
                     while ( indexDescriptorIterator.hasNext() )
                     {
@@ -92,7 +93,8 @@ public class SchemaProcedure
                     properties.put( "indexes", indexes );
 
                     Iterator<ConstraintDescriptor> nodePropertyConstraintIterator =
-                            readOperations.constraintsGetForLabel( readOperations.labelGetForName( label.name() ) );
+                            NodeKeyConstraintDescriptor.addNodeKeys(
+                                    readOperations.constraintsGetForLabel( labelId ) );
                     ArrayList<String> constraints = new ArrayList<>();
                     while ( nodePropertyConstraintIterator.hasNext() )
                     {
