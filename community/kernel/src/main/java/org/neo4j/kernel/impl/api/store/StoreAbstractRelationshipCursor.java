@@ -179,5 +179,6 @@ public abstract class StoreAbstractRelationshipCursor
     @Override
     public void dispose()
     {
+        cursor.close();
     }
 }
