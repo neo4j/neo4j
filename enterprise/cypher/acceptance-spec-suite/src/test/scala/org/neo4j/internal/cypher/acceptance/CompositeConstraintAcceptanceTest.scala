@@ -128,7 +128,14 @@ class CompositeConstraintAcceptanceTest extends ExecutionEngineFunSuite with New
     executeWithCostPlannerAndInterpretedRuntimeOnly("CREATE CONSTRAINT ON (n:Person) ASSERT (n.b,n.c) IS NODE KEY")
 
     // Then
-//    graph should haveConstraints("NODE_KEY:Person(a,b)", "NODE_KEY:Person(b,c)")
+    graph should haveConstraints("NODE_KEY:Person(a,b)", "NODE_KEY:Person(b,c)")
+
+    intercept[ConstraintValidationException](executeWithCostPlannerAndInterpretedRuntimeOnly("CREATE (n:Person{ a: 42, b: 23})"))
+    intercept[ConstraintValidationException](executeWithCostPlannerAndInterpretedRuntimeOnly("CREATE (n:Person{ b: 42, c: 23})"))
+    executeWithCostPlannerAndInterpretedRuntimeOnly("CREATE (:Person {a: 1, b: 2, c: 3})")
+    intercept[CypherExecutionException](executeWithCostPlannerAndInterpretedRuntimeOnly("CREATE (:Person {a: 1, b: 2, c: 666})"))
+    intercept[CypherExecutionException](executeWithCostPlannerAndInterpretedRuntimeOnly("CREATE (:Person {a: 666, b: 2, c: 3})"))
+    executeWithCostPlannerAndInterpretedRuntimeOnly("CREATE (:Person {a: 666, b: 2, c: 666})")
 
     // When
     executeWithCostPlannerAndInterpretedRuntimeOnly("DROP CONSTRAINT ON (n:Person) ASSERT (n.a,n.b) IS NODE KEY")

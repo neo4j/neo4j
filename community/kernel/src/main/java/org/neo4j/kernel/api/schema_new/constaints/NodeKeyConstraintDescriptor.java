@@ -22,9 +22,11 @@ package org.neo4j.kernel.api.schema_new.constaints;
 import java.util.ArrayList;
 import java.util.HashMap;
 import java.util.Iterator;
+import java.util.LinkedList;
 import java.util.List;
 import java.util.Map;
 
+import org.neo4j.helpers.collection.Iterators;
 import org.neo4j.kernel.api.TokenNameLookup;
 import org.neo4j.kernel.api.schema_new.LabelSchemaDescriptor;
 import org.neo4j.kernel.api.schema_new.SchemaDescriptor;
@@ -91,7 +93,8 @@ public class NodeKeyConstraintDescriptor extends ConstraintDescriptor implements
     public static Iterator<ConstraintDescriptor> addNodeKeys( Iterator<ConstraintDescriptor> constraints )
     {
         List<UniquenessConstraintDescriptor> allUniqueConstraints = new ArrayList<>();
-        Map<SchemaDescriptor,ConstraintDescriptor> allExistenceConstraints = new HashMap<>();
+        List<ConstraintDescriptor> allExistenceConstraints = new LinkedList<>();
+        Map<SchemaDescriptor,Boolean> existenceNodeKeyMap = new HashMap<>();
         while ( constraints.hasNext() )
         {
             ConstraintDescriptor constraint = constraints.next();
@@ -101,7 +104,8 @@ public class NodeKeyConstraintDescriptor extends ConstraintDescriptor implements
             }
             else if ( constraint.type() == ConstraintDescriptor.Type.EXISTS )
             {
-                allExistenceConstraints.put( constraint.schema(), constraint );
+                allExistenceConstraints.add( constraint );
+                existenceNodeKeyMap.put( constraint.schema(), false );
             }
             else
             {
@@ -113,11 +117,12 @@ public class NodeKeyConstraintDescriptor extends ConstraintDescriptor implements
         return new Iterator<ConstraintDescriptor>()
         {
             private Iterator<UniquenessConstraintDescriptor> uniquenessIterator = allUniqueConstraints.iterator();
+            private Iterator<ConstraintDescriptor> remainingExistenceConstraints = allExistenceConstraints.iterator();
 
             @Override
             public boolean hasNext()
             {
-                return uniquenessIterator.hasNext() || !allExistenceConstraints.isEmpty();
+                return uniquenessIterator.hasNext() || remainingExistenceConstraints.hasNext();
             }
 
             @Override
@@ -126,38 +131,44 @@ public class NodeKeyConstraintDescriptor extends ConstraintDescriptor implements
                 if ( uniquenessIterator.hasNext() )
                 {
                     UniquenessConstraintDescriptor constraint = uniquenessIterator.next();
-                    NodeKeyConstraintDescriptor nodeKeyConstraintDescriptor =
-                            ConstraintDescriptorFactory.nodeKeyForSchema( constraint.schema() );
-                    boolean allExistenceConstraintsExists = true;
-                    for ( NodeExistenceConstraintDescriptor existenceConstraintDescriptor :
-                            nodeKeyConstraintDescriptor
-                                    .ownedExistenceConstraints() )
+                    NodeKeyConstraintDescriptor nodeKey = ConstraintDescriptorFactory.nodeKeyForSchema( constraint.schema() );
+                    ConstraintDescriptor toReturn;
+
+                    if ( isValidNodeKey( nodeKey ) )
                     {
-                        if ( !allExistenceConstraints.containsKey( existenceConstraintDescriptor.schema() ) )
+                        for ( NodeExistenceConstraintDescriptor pec : nodeKey.ownedExistenceConstraints() )
                         {
-                            allExistenceConstraintsExists = false;
+                            existenceNodeKeyMap.put( pec.schema(), true );
                         }
-                    }
-                    if ( allExistenceConstraintsExists )
-                    {
-                        for ( NodeExistenceConstraintDescriptor existenceConstraintDescriptor :
-                                nodeKeyConstraintDescriptor
-                                        .ownedExistenceConstraints() )
-                        {
-                            allExistenceConstraints.remove( existenceConstraintDescriptor.schema() );
-                        }
-                        return nodeKeyConstraintDescriptor;
+                        toReturn = nodeKey;
                     }
                     else
                     {
-                        return constraint;
+                        toReturn = constraint;
+                    }
+
+                    if ( !uniquenessIterator.hasNext() )
+                    {
+                        remainingExistenceConstraints = Iterators.filter(
+                                                                    c -> !existenceNodeKeyMap.get( c.schema() ),
+                                                                    allExistenceConstraints.iterator() );
+                    }
+
+                    return toReturn;
+                }
+                return remainingExistenceConstraints.next();
+            }
+
+            private boolean isValidNodeKey( NodeKeyConstraintDescriptor nodeKey )
+            {
+                for ( NodeExistenceConstraintDescriptor pec : nodeKey.ownedExistenceConstraints() )
+                {
+                    if ( !existenceNodeKeyMap.containsKey( pec.schema() ) )
+                    {
+                        return false;
                     }
                 }
-                else
-                {
-                    SchemaDescriptor next = allExistenceConstraints.keySet().iterator().next();
-                    return allExistenceConstraints.remove( next );
-                }
+                return true;
             }
         };
     }
