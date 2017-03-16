@@ -46,6 +46,7 @@ public class StoredProcedureVisitor extends SimpleElementVisitor8<Stream<Compila
     private final ElementVisitor<Stream<CompilationMessage>,Void> classVisitor;
     private final TypeVisitor<Stream<CompilationMessage>,Void> recordVisitor;
     private final ElementVisitor<Stream<CompilationMessage>,Void> parameterVisitor;
+    private final ElementVisitor<Stream<CompilationMessage>,Void> performsWriteVisitor;
 
     public StoredProcedureVisitor( Types typeUtils, Elements elementUtils, boolean ignoresWarnings )
     {
@@ -56,6 +57,7 @@ public class StoredProcedureVisitor extends SimpleElementVisitor8<Stream<Compila
         this.classVisitor = new StoredProcedureClassVisitor( typeUtils, elementUtils, ignoresWarnings );
         this.recordVisitor = new RecordTypeVisitor( typeUtils, typeMirrors );
         this.parameterVisitor = new ParameterVisitor( new ParameterTypeVisitor( typeUtils, typeMirrors ) );
+        this.performsWriteVisitor = new PerformsWriteMethodVisitor();
     }
 
     /**
@@ -66,7 +68,8 @@ public class StoredProcedureVisitor extends SimpleElementVisitor8<Stream<Compila
     {
         return Stream.of( classVisitor.visit( executableElement.getEnclosingElement() ),
                 validateParameters( executableElement.getParameters(), ignored ),
-                validateReturnType( executableElement ) ).flatMap( Function.identity() );
+                validateReturnType( executableElement ), validatePerformsWriteUsage( executableElement ) )
+                .flatMap( Function.identity() );
     }
 
     private Stream<CompilationMessage> validateParameters( List<? extends VariableElement> parameters, Void ignored )
@@ -95,6 +98,11 @@ public class StoredProcedureVisitor extends SimpleElementVisitor8<Stream<Compila
         }
 
         return recordVisitor.visit( returnType );
+    }
+
+    private Stream<CompilationMessage> validatePerformsWriteUsage( ExecutableElement executableElement )
+    {
+        return performsWriteVisitor.visit( executableElement );
     }
 
     private AnnotationMirror annotationMirror( List<? extends AnnotationMirror> mirrors )

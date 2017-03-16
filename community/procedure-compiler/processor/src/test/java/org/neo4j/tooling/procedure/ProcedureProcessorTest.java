@@ -256,4 +256,17 @@ public class ProcedureProcessorTest
                                 "BadContextUnsupportedTypeError#foo, expected one of: <org.neo4j.graphdb.GraphDatabaseService>, <org.neo4j.logging.Log>, <org.neo4j.procedure.TerminationGuard>, <org.neo4j.kernel.api.security.SecurityContext>, <org.neo4j.procedure.ProcedureTransaction>" )
                 .in( sproc ).onLine( 28 );
     }
+
+    @Test
+    public void fails_with_conflicting_mode()
+    {
+        JavaFileObject procedure = JavaFileObjectUtils.INSTANCE.procedureSource(
+                "invalid/conflicting_mode/ConflictingMode.java" );
+
+        assert_().about( javaSource() ).that( procedure ).processedWith( processor ).failsToCompile()
+                .withErrorCount( 1 )
+                .withErrorContaining( "@PerformsWrites usage error: cannot use mode other than Mode.DEFAULT" )
+                .in( procedure ).onLine( 30 );
+
+    }
 }
