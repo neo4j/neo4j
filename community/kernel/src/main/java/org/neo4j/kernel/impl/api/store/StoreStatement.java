@@ -89,7 +89,7 @@ public class StoreStatement implements StorageStatement
             @Override
             protected NodeCursor create()
             {
-                return new NodeCursor( nodeStore.newRecord(), this, nodeStore, lockService );
+                return new NodeCursor( nodeStore, this, lockService );
             }
         };
         singleRelationshipCursor = new InstanceCache<StoreSingleRelationshipCursor>()
