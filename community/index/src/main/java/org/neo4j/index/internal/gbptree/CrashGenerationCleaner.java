@@ -39,7 +39,7 @@ import static org.neo4j.helpers.Exceptions.launderedException;
 /**
  * Scans the entire tree and checks all GSPPs, replacing all CRASH gen GSPs with zeros.
  */
-class CrashGenCleaner
+class CrashGenerationCleaner
 {
     private final PagedFile pagedFile;
     private final TreeNode<?,?> treeNode;
@@ -52,7 +52,7 @@ class CrashGenCleaner
     private final Monitor monitor;
     private final long internalMaxKeyCount;
 
-    CrashGenCleaner( PagedFile pagedFile, TreeNode<?,?> treeNode, long lowTreeNodeId, long highTreeNodeId,
+    CrashGenerationCleaner( PagedFile pagedFile, TreeNode<?,?> treeNode, long lowTreeNodeId, long highTreeNodeId,
             long stableGeneration, long unstableGeneration, Monitor monitor )
     {
         this.pagedFile = pagedFile;

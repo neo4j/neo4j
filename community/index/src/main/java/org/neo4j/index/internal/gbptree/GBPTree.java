@@ -864,7 +864,7 @@ public class GBPTree<KEY,VALUE> implements Closeable
         // and zero out all CRASH pointers.
 
         long generation = this.generation;
-        new CrashGenCleaner( pagedFile, bTreeNode, IdSpace.MIN_TREE_NODE_ID,freeList.lastId() + 1,
+        new CrashGenerationCleaner( pagedFile, bTreeNode, IdSpace.MIN_TREE_NODE_ID,freeList.lastId() + 1,
                 stableGeneration( generation ), unstableGeneration( generation ), monitor ).clean();
     }
 
