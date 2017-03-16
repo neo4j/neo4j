@@ -114,7 +114,7 @@ class CompositeConstraintAcceptanceTest extends ExecutionEngineFunSuite with New
     executeWithCostPlannerAndInterpretedRuntimeOnly("CREATE CONSTRAINT ON (n:Person) ASSERT (n.firstname,n.lastname) IS NODE KEY")
 
     // Then
-    graph should haveConstraints("NODE_KEY:Person(email)", "NODE_KEY:Person(firstname,lastname")
+    graph should haveConstraints("NODE_KEY:Person(email)", "NODE_KEY:Person(firstname,lastname)")
 
     // When
     executeWithCostPlannerAndInterpretedRuntimeOnly("DROP CONSTRAINT ON (n:Person) ASSERT (n.firstname,n.lastname) IS NODE KEY")
@@ -127,11 +127,12 @@ class CompositeConstraintAcceptanceTest extends ExecutionEngineFunSuite with New
   case class haveConstraints(expectedConstraints: String*) extends Matcher[GraphDatabaseQueryService] {
     def apply(graph: GraphDatabaseQueryService): MatchResult = {
       graph.inTx {
-        val constraintName = graph.schema().getConstraints.asScala.toList.map(i => s"${i.getConstraintType}:${i.getLabel}(${i.getPropertyKeys.asScala.toList.mkString(",")})")
-        val result = expectedConstraints.forall(i => constraintName.contains(i.toString))
+        val constraintDefinitions = graph.schema().getConstraints.asScala.toList
+        val constraintNames = constraintDefinitions.map(i => s"${i.getConstraintType}:${i.getLabel}(${i.getPropertyKeys.asScala.toList.mkString(",")})")
+        val result = expectedConstraints.forall(expected => constraintNames.contains(expected))
         MatchResult(
           result,
-          s"Expected graph to have constraints ${expectedConstraints.mkString(", ")}, but it was ${constraintName.mkString(", ")}",
+          s"Expected graph to have constraints ${expectedConstraints.mkString(", ")}, but it was ${constraintNames.mkString(", ")}",
           s"Expected graph to not have constraints ${expectedConstraints.mkString(", ")}, but it did."
         )
       }
