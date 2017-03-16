@@ -40,6 +40,8 @@ import org.neo4j.causalclustering.logging.NullMessageLogger;
 import org.neo4j.causalclustering.messaging.Inbound;
 import org.neo4j.causalclustering.messaging.LoggingOutbound;
 import org.neo4j.causalclustering.messaging.Outbound;
+import org.neo4j.time.Clocks;
+import org.neo4j.time.FakeClock;
 
 import static java.lang.String.format;
 
@@ -55,7 +57,8 @@ public class RaftTestFixture
         {
             MemberFixture fixtureMember = new MemberFixture();
 
-            fixtureMember.timeoutService = new ControlledRenewableTimeoutService();
+            FakeClock clock = Clocks.fakeClock();
+            fixtureMember.timeoutService = new ControlledRenewableTimeoutService( clock );
 
             fixtureMember.raftLog = new InMemoryRaftLog();
             fixtureMember.member = id;
@@ -69,6 +72,7 @@ public class RaftTestFixture
                     .inbound( inbound )
                     .outbound( outbound )
                     .raftLog( fixtureMember.raftLog )
+                    .clock( clock )
                     .timeoutService( fixtureMember.timeoutService )
                     .build();
 
@@ -87,6 +91,7 @@ public class RaftTestFixture
         {
             member.raftLog().append( new RaftLogEntry(0, new MemberIdSet(asSet( members ))) );
             member.raftInstance().installCoreState( new RaftCoreState( new MembershipEntry( 0,  asSet( members )) ) );
+            member.raftInstance().startTimers();
         }
     }
 

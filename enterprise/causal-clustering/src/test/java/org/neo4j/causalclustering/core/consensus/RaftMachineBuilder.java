@@ -66,6 +66,7 @@ public class RaftMachineBuilder
 
     private LogProvider logProvider = NullLogProvider.getInstance();
     private Clock clock = Clocks.systemClock();
+    private Clock shippingClock = Clocks.systemClock();
 
     private long electionTimeout = 500;
     private long heartbeatInterval = 150;
@@ -95,11 +96,11 @@ public class RaftMachineBuilder
                 raftMembership );
         membershipManager.setRecoverFromIndexSupplier( () -> 0 );
         RaftLogShippingManager logShipping =
-                new RaftLogShippingManager( outbound, logProvider, raftLog, clock, member, membershipManager,
+                new RaftLogShippingManager( outbound, logProvider, raftLog, shippingClock, member, membershipManager,
                         retryTimeMillis, catchupBatchSize, maxAllowedShippingLag, inFlightMap );
         RaftMachine raft = new RaftMachine( member, termState, voteState, raftLog, electionTimeout,
                 heartbeatInterval, renewableTimeoutService, outbound, logProvider,
-                membershipManager, logShipping, inFlightMap, false, monitors );
+                membershipManager, logShipping, inFlightMap, false, monitors, clock );
         inbound.registerHandler( ( incomingMessage ) -> {
             try
             {
@@ -157,6 +158,12 @@ public class RaftMachineBuilder
     public RaftMachineBuilder raftLog( RaftLog raftLog )
     {
         this.raftLog = raftLog;
+        return this;
+    }
+
+    public RaftMachineBuilder clock( Clock clock )
+    {
+        this.clock = clock;
         return this;
     }
 

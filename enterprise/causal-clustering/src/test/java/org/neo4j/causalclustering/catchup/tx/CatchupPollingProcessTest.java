@@ -23,14 +23,13 @@ import org.junit.Before;
 import org.junit.Test;
 
 import java.util.concurrent.CompletableFuture;
-
 import java.util.concurrent.Future;
 
 import org.neo4j.causalclustering.catchup.CatchUpClient;
 import org.neo4j.causalclustering.catchup.CatchUpResponseCallback;
 import org.neo4j.causalclustering.catchup.CatchupResult;
-import org.neo4j.causalclustering.catchup.storecopy.StoreCopyProcess;
 import org.neo4j.causalclustering.catchup.storecopy.LocalDatabase;
+import org.neo4j.causalclustering.catchup.storecopy.StoreCopyProcess;
 import org.neo4j.causalclustering.core.consensus.schedule.ControlledRenewableTimeoutService;
 import org.neo4j.causalclustering.identity.MemberId;
 import org.neo4j.causalclustering.identity.StoreId;
@@ -48,7 +47,6 @@ import static org.mockito.Matchers.any;
 import static org.mockito.Matchers.eq;
 import static org.mockito.Mockito.doThrow;
 import static org.mockito.Mockito.mock;
-import static org.mockito.Mockito.never;
 import static org.mockito.Mockito.times;
 import static org.mockito.Mockito.verify;
 import static org.mockito.Mockito.when;
@@ -139,7 +137,7 @@ public class CatchupPollingProcessTest
         timeoutService.invokeTimeout( TX_PULLER_TIMEOUT );
 
         // then
-        verify( timeoutService.getTimeout( TX_PULLER_TIMEOUT ) ).renew();
+        assertEquals( 1, timeoutService.getTimeout( TX_PULLER_TIMEOUT ).renewalCount() );
     }
 
     @Test
@@ -199,7 +197,7 @@ public class CatchupPollingProcessTest
 
         // then
         assertEquals( PANIC, txPuller.state() );
-        verify( timeoutService.getTimeout( TX_PULLER_TIMEOUT ), never() ).renew();
+        assertEquals( 0, timeoutService.getTimeout( TX_PULLER_TIMEOUT ).renewalCount() );
     }
 
     @Test
