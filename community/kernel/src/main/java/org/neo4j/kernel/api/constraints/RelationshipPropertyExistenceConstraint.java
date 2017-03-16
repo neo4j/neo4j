@@ -22,10 +22,14 @@ package org.neo4j.kernel.api.constraints;
 import org.neo4j.kernel.api.TokenNameLookup;
 import org.neo4j.kernel.api.exceptions.schema.CreateConstraintFailureException;
 import org.neo4j.kernel.api.schema_new.RelationTypeSchemaDescriptor;
+import org.neo4j.kernel.api.schema_new.constaints.RelExistenceConstraintDescriptor;
 
 /**
  * Description of constraint enforcing relationships to contain a certain property.
+ *
+ * @deprecated use {@link RelExistenceConstraintDescriptor} instead.
  */
+@Deprecated
 public class RelationshipPropertyExistenceConstraint extends RelationshipPropertyConstraint
 {
     public RelationshipPropertyExistenceConstraint( RelationTypeSchemaDescriptor descriptor )

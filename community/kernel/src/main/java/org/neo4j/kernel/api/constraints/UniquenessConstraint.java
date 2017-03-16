@@ -21,12 +21,16 @@ package org.neo4j.kernel.api.constraints;
 
 import org.neo4j.kernel.api.TokenNameLookup;
 import org.neo4j.kernel.api.schema_new.LabelSchemaDescriptor;
+import org.neo4j.kernel.api.schema_new.constaints.UniquenessConstraintDescriptor;
 import org.neo4j.kernel.api.schema_new.index.NewIndexDescriptor;
 import org.neo4j.kernel.api.schema_new.index.NewIndexDescriptorFactory;
 
 /**
  * Description of uniqueness constraint over nodes given a label and a property key id.
+ *
+ * @deprecated use {@link UniquenessConstraintDescriptor} instead.
  */
+@Deprecated
 public class UniquenessConstraint extends NodePropertyConstraint
 {
     public UniquenessConstraint( LabelSchemaDescriptor descriptor )

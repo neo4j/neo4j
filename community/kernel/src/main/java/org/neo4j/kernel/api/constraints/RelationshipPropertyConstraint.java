@@ -21,10 +21,14 @@ package org.neo4j.kernel.api.constraints;
 
 import org.neo4j.kernel.api.schema_new.RelationTypeSchemaDescriptor;
 import org.neo4j.kernel.api.schema_new.SchemaDescriptor;
+import org.neo4j.kernel.api.schema_new.constaints.ConstraintDescriptor;
 
 /**
  * Base class describing property constraint on relationships.
+ *
+ * @deprecated use {@link ConstraintDescriptor} instead.
  */
+@Deprecated
 public abstract class RelationshipPropertyConstraint implements PropertyConstraint
 {
     protected final RelationTypeSchemaDescriptor descriptor;

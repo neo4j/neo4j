@@ -31,14 +31,12 @@ import org.neo4j.kernel.api.ReadOperations;
 import org.neo4j.kernel.api.Statement;
 import org.neo4j.kernel.api.StatementTokenNameLookup;
 import org.neo4j.kernel.api.TokenNameLookup;
-import org.neo4j.kernel.api.constraints.NodePropertyExistenceConstraint;
-import org.neo4j.kernel.api.constraints.PropertyConstraint;
-import org.neo4j.kernel.api.constraints.RelationshipPropertyExistenceConstraint;
-import org.neo4j.kernel.api.constraints.UniquenessConstraint;
 import org.neo4j.kernel.api.exceptions.KernelException;
 import org.neo4j.kernel.api.exceptions.index.IndexNotFoundKernelException;
-import org.neo4j.kernel.api.schema_new.constaints.ConstraintBoundary;
 import org.neo4j.kernel.api.schema_new.constaints.ConstraintDescriptor;
+import org.neo4j.kernel.api.schema_new.constaints.NodeExistenceConstraintDescriptor;
+import org.neo4j.kernel.api.schema_new.constaints.RelExistenceConstraintDescriptor;
+import org.neo4j.kernel.api.schema_new.constaints.UniquenessConstraintDescriptor;
 import org.neo4j.kernel.api.schema_new.index.NewIndexDescriptor;
 import org.neo4j.kernel.impl.core.ThreadToStatementContextBridge;
 import org.neo4j.kernel.internal.GraphDatabaseAPI;
@@ -168,21 +166,21 @@ public class GraphDbStructureGuide implements Visitable<DbStructureVisitor>
         Iterator<ConstraintDescriptor> constraints = read.constraintsGetAll();
         while ( constraints.hasNext() )
         {
-            PropertyConstraint constraint = ConstraintBoundary.map( constraints.next() );
-            String userDescription = constraint.userDescription( nameLookup );
+            ConstraintDescriptor constraint = constraints.next();
+            String userDescription = constraint.prettyPrint( nameLookup );
 
-            if ( constraint instanceof UniquenessConstraint )
+            if ( constraint instanceof UniquenessConstraintDescriptor )
             {
-                visitor.visitUniqueConstraint( (UniquenessConstraint) constraint, userDescription );
+                visitor.visitUniqueConstraint( (UniquenessConstraintDescriptor) constraint, userDescription );
             }
-            else if ( constraint instanceof NodePropertyExistenceConstraint )
+            else if ( constraint instanceof NodeExistenceConstraintDescriptor )
             {
-                NodePropertyExistenceConstraint existenceConstraint = (NodePropertyExistenceConstraint) constraint;
+                NodeExistenceConstraintDescriptor existenceConstraint = (NodeExistenceConstraintDescriptor) constraint;
                 visitor.visitNodePropertyExistenceConstraint( existenceConstraint, userDescription );
             }
-            else if ( constraint instanceof RelationshipPropertyExistenceConstraint )
+            else if ( constraint instanceof RelExistenceConstraintDescriptor )
             {
-                RelationshipPropertyExistenceConstraint existenceConstraint = (RelationshipPropertyExistenceConstraint) constraint;
+                RelExistenceConstraintDescriptor existenceConstraint = (RelExistenceConstraintDescriptor) constraint;
                 visitor.visitRelationshipPropertyExistenceConstraint( existenceConstraint, userDescription );
             }
             else

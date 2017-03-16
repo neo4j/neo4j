@@ -22,9 +22,6 @@ package org.neo4j.kernel.impl.api.operations;
 import java.util.Iterator;
 
 import org.neo4j.kernel.api.Statement;
-import org.neo4j.kernel.api.constraints.NodePropertyConstraint;
-import org.neo4j.kernel.api.constraints.PropertyConstraint;
-import org.neo4j.kernel.api.constraints.RelationshipPropertyConstraint;
 import org.neo4j.kernel.api.exceptions.index.IndexNotFoundKernelException;
 import org.neo4j.kernel.api.exceptions.schema.SchemaRuleNotFoundException;
 import org.neo4j.kernel.api.index.InternalIndexState;
@@ -89,8 +86,7 @@ public interface SchemaReadOperations
     String indexGetFailure( Statement state, NewIndexDescriptor descriptor ) throws IndexNotFoundKernelException;
 
     /**
-     * Get all constraints applicable to label and propertyKeys. There are only {@link NodePropertyConstraint}
-     * for the time being.
+     * Get all constraints applicable to label and propertyKeys.
      */
     Iterator<ConstraintDescriptor> constraintsGetForSchema( KernelStatement state, SchemaDescriptor descriptor );
 
@@ -100,20 +96,17 @@ public interface SchemaReadOperations
     boolean constraintExists( KernelStatement state, ConstraintDescriptor descriptor );
 
     /**
-     * Get all constraints applicable to label. There are only {@link NodePropertyConstraint}
-     * for the time being.
+     * Get all constraints applicable to label.
      */
     Iterator<ConstraintDescriptor> constraintsGetForLabel( KernelStatement state, int labelId );
 
     /**
-     * Get all constraints applicable to relationship type. There are only {@link RelationshipPropertyConstraint}
-     * for the time being.
+     * Get all constraints applicable to relationship type.
      */
     Iterator<ConstraintDescriptor> constraintsGetForRelationshipType( KernelStatement state, int typeId );
 
     /**
-     * Get all constraints. There are only {@link PropertyConstraint}
-     * for the time being.
+     * Get all constraints.
      */
     Iterator<ConstraintDescriptor> constraintsGetAll( KernelStatement state );
 

@@ -19,9 +19,6 @@
  */
 package org.neo4j.kernel.api.schema_new.constaints;
 
-import java.util.Iterator;
-
-import org.neo4j.helpers.collection.Iterators;
 import org.neo4j.kernel.api.constraints.NodePropertyConstraint;
 import org.neo4j.kernel.api.constraints.NodePropertyExistenceConstraint;
 import org.neo4j.kernel.api.constraints.PropertyConstraint;
@@ -57,37 +54,6 @@ public class ConstraintBoundary
     {
         return (RelationshipPropertyConstraint) descriptor.schema()
                                                           .computeWith( new BoundaryTransformer( descriptor ) );
-    }
-
-    public static ConstraintDescriptor map( PropertyConstraint constraint )
-    {
-        if ( constraint instanceof UniquenessConstraint )
-        {
-            UniquenessConstraint c = (UniquenessConstraint) constraint;
-            return ConstraintDescriptorFactory.uniqueForSchema( c.descriptor() );
-        }
-        if ( constraint instanceof NodePropertyExistenceConstraint )
-        {
-            NodePropertyExistenceConstraint c = (NodePropertyExistenceConstraint) constraint;
-            return ConstraintDescriptorFactory.existsForSchema( c.descriptor() );
-        }
-        if ( constraint instanceof RelationshipPropertyExistenceConstraint )
-        {
-            RelationshipPropertyExistenceConstraint c = (RelationshipPropertyExistenceConstraint) constraint;
-            return ConstraintDescriptorFactory.existsForSchema( c.descriptor() );
-        }
-        throw new IllegalStateException( "Unknown constraint type "+ constraint.getClass().getSimpleName() );
-    }
-
-    public static <T extends PropertyConstraint> Iterator<ConstraintDescriptor> mapToNew(
-            Iterator<T> constraints )
-    {
-        return Iterators.map( ConstraintBoundary::map, constraints );
-    }
-
-    public static Iterator<PropertyConstraint> map( Iterator<ConstraintDescriptor> constraints )
-    {
-        return Iterators.map( ConstraintBoundary::map, constraints );
     }
 
     private static class BoundaryTransformer implements SchemaComputer<PropertyConstraint>

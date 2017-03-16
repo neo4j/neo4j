@@ -27,11 +27,11 @@ import java.util.Set;
 
 import org.neo4j.helpers.collection.Iterators;
 import org.neo4j.helpers.collection.Pair;
-import org.neo4j.kernel.api.constraints.NodePropertyExistenceConstraint;
-import org.neo4j.kernel.api.constraints.RelationshipPropertyExistenceConstraint;
-import org.neo4j.kernel.api.constraints.UniquenessConstraint;
 import org.neo4j.kernel.api.schema_new.LabelSchemaDescriptor;
 import org.neo4j.kernel.api.schema_new.SchemaDescriptorFactory;
+import org.neo4j.kernel.api.schema_new.constaints.NodeExistenceConstraintDescriptor;
+import org.neo4j.kernel.api.schema_new.constaints.RelExistenceConstraintDescriptor;
+import org.neo4j.kernel.api.schema_new.constaints.UniquenessConstraintDescriptor;
 import org.neo4j.kernel.api.schema_new.index.NewIndexDescriptor;
 
 import static java.lang.String.format;
@@ -43,9 +43,9 @@ public class DbStructureCollector implements DbStructureVisitor
     private final TokenMap relationshipTypes = new TokenMap( "relationship types" );
     private final IndexDescriptorMap regularIndices = new IndexDescriptorMap( "regular" );
     private final IndexDescriptorMap uniqueIndices = new IndexDescriptorMap( "unique" );
-    private final Set<UniquenessConstraint> uniquenessConstraints = new HashSet<>();
-    private final Set<NodePropertyExistenceConstraint> nodePropertyExistenceConstraints = new HashSet<>();
-    private final Set<RelationshipPropertyExistenceConstraint> relPropertyExistenceConstraints = new HashSet<>();
+    private final Set<UniquenessConstraintDescriptor> uniquenessConstraints = new HashSet<>();
+    private final Set<NodeExistenceConstraintDescriptor> nodePropertyExistenceConstraints = new HashSet<>();
+    private final Set<RelExistenceConstraintDescriptor> relPropertyExistenceConstraints = new HashSet<>();
     private final Map<Integer, Long> nodeCounts = new HashMap<>();
     private final Map<RelSpecifier, Long> relCounts = new HashMap<>();
     private long allNodesCount = -1L;
@@ -89,8 +89,8 @@ public class DbStructureCollector implements DbStructureVisitor
             {
                 //TODO: Add support for composite indexes
                 return Iterators.map( uniquenessConstraint -> {
-                    String label = labels.byIdOrFail( uniquenessConstraint.label() );
-                    String propertyKey = propertyKeys.byIdOrFail( uniquenessConstraint.descriptor().getPropertyId() );
+                    String label = labels.byIdOrFail( uniquenessConstraint.schema().getLabelId() );
+                    String propertyKey = propertyKeys.byIdOrFail( uniquenessConstraint.schema().getPropertyId() );
                     return Pair.of( label, propertyKey );
                 }, uniquenessConstraints.iterator() );
             }
@@ -100,8 +100,8 @@ public class DbStructureCollector implements DbStructureVisitor
             {
                 //TODO: Add support for composite indexes
                 return Iterators.map( uniquenessConstraint -> {
-                    String label = labels.byIdOrFail( uniquenessConstraint.label() );
-                    String propertyKey = propertyKeys.byIdOrFail( uniquenessConstraint.descriptor().getPropertyId() );
+                    String label = labels.byIdOrFail( uniquenessConstraint.schema().getLabelId() );
+                    String propertyKey = propertyKeys.byIdOrFail( uniquenessConstraint.schema().getPropertyId() );
                     return Pair.of( label, propertyKey );
                 }, nodePropertyExistenceConstraints.iterator() );
             }
@@ -181,7 +181,7 @@ public class DbStructureCollector implements DbStructureVisitor
     }
 
     @Override
-    public void visitUniqueConstraint( UniquenessConstraint constraint, String userDescription )
+    public void visitUniqueConstraint( UniquenessConstraintDescriptor constraint, String userDescription )
     {
         if ( !uniquenessConstraints.add( constraint ) )
         {
@@ -192,7 +192,8 @@ public class DbStructureCollector implements DbStructureVisitor
     }
 
     @Override
-    public void visitNodePropertyExistenceConstraint( NodePropertyExistenceConstraint constraint, String userDescription )
+    public void visitNodePropertyExistenceConstraint( NodeExistenceConstraintDescriptor constraint,
+            String userDescription )
     {
         if ( !nodePropertyExistenceConstraints.add( constraint ) )
         {
@@ -203,7 +204,8 @@ public class DbStructureCollector implements DbStructureVisitor
     }
 
     @Override
-    public void visitRelationshipPropertyExistenceConstraint( RelationshipPropertyExistenceConstraint constraint, String userDescription )
+    public void visitRelationshipPropertyExistenceConstraint( RelExistenceConstraintDescriptor constraint,
+            String userDescription )
     {
         if ( !relPropertyExistenceConstraints.add( constraint ) )
         {

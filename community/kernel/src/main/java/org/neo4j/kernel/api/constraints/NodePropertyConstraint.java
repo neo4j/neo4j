@@ -21,10 +21,14 @@ package org.neo4j.kernel.api.constraints;
 
 import org.neo4j.kernel.api.TokenNameLookup;
 import org.neo4j.kernel.api.schema_new.LabelSchemaDescriptor;
+import org.neo4j.kernel.api.schema_new.constaints.ConstraintDescriptor;
 
 /**
  * Base class describing property constraint on nodes.
+ *
+ * @deprecated use {@link ConstraintDescriptor} instead.
  */
+@Deprecated
 public abstract class NodePropertyConstraint implements PropertyConstraint
 {
     protected final LabelSchemaDescriptor descriptor;

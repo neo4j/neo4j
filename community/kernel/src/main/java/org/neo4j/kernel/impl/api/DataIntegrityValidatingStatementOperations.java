@@ -23,7 +23,6 @@ import java.util.Arrays;
 
 import org.neo4j.kernel.api.Statement;
 import org.neo4j.kernel.api.StatementTokenNameLookup;
-import org.neo4j.kernel.api.constraints.UniquenessConstraint;
 import org.neo4j.kernel.api.exceptions.schema.AlreadyConstrainedException;
 import org.neo4j.kernel.api.exceptions.schema.AlreadyIndexedException;
 import org.neo4j.kernel.api.exceptions.schema.CreateConstraintFailureException;
@@ -199,7 +198,7 @@ public class DataIntegrityValidatingStatementOperations implements
         }
         catch ( NoSuchConstraintException e )
         {
-            throw new DropConstraintFailureException( ConstraintBoundary.map( descriptor ), e );
+            throw new DropConstraintFailureException( descriptor , e );
         }
         schemaWriteDelegate.constraintDrop( state, descriptor );
     }
@@ -213,9 +212,8 @@ public class DataIntegrityValidatingStatementOperations implements
         {
             if ( existingIndex.type() == UNIQUE )
             {
-                throw new AlreadyConstrainedException(
-                        new UniquenessConstraint( descriptor ), context,
-                        new StatementTokenNameLookup( state.readOperations() ) );
+                throw new AlreadyConstrainedException( ConstraintDescriptorFactory.uniqueForSchema( descriptor ),
+                        context, new StatementTokenNameLookup( state.readOperations() ) );
             }
             throw new AlreadyIndexedException( descriptor, context );
         }
@@ -235,8 +233,8 @@ public class DataIntegrityValidatingStatementOperations implements
     {
         if ( schemaReadDelegate.constraintExists( state, constraint ) )
         {
-            throw new AlreadyConstrainedException( ConstraintBoundary.map( constraint ),
-                    OperationContext.CONSTRAINT_CREATION, new StatementTokenNameLookup( state.readOperations() ) );
+            throw new AlreadyConstrainedException( constraint, OperationContext.CONSTRAINT_CREATION,
+                    new StatementTokenNameLookup( state.readOperations() ) );
         }
     }
 
@@ -245,7 +243,7 @@ public class DataIntegrityValidatingStatementOperations implements
     {
         if ( !schemaReadDelegate.constraintExists( state, constraint ) )
         {
-            throw new NoSuchConstraintException( ConstraintBoundary.map( constraint ) );
+            throw new NoSuchConstraintException( constraint );
         }
     }
 
