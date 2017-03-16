@@ -210,6 +210,12 @@ public class StoreStatement implements StorageStatement
     {
         assert !closed;
         closeSchemaResources();
+        nodeCursor.close();
+        singleRelationshipCursor.close();
+        iteratorRelationshipCursor.close();
+        nodeRelationshipsCursor.close();
+        propertyCursorCache.close();
+        singlePropertyCursorCache.close();
         recordCursors.close();
         closed = true;
     }
