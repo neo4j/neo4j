@@ -344,7 +344,9 @@ public class MuninnPageCache implements PageCache
                 file,
                 this,
                 filePageSize,
-                swapperFactory, pageCacheTracer, pageCursorTracerSupplier,
+                swapperFactory,
+                pageCacheTracer,
+                pageCursorTracerSupplier,
                 createIfNotExists,
                 truncateExisting );
         pagedFile.incrementRefCount();
