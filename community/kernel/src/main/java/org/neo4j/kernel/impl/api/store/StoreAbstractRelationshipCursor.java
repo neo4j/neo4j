@@ -20,6 +20,7 @@
 package org.neo4j.kernel.impl.api.store;
 
 import org.neo4j.cursor.Cursor;
+import org.neo4j.function.Disposable;
 import org.neo4j.kernel.impl.api.RelationshipVisitor;
 import org.neo4j.kernel.impl.locking.Lock;
 import org.neo4j.kernel.impl.locking.LockService;
@@ -37,7 +38,7 @@ import static org.neo4j.kernel.impl.store.record.RecordLoad.FORCE;
  * Base cursor for relationships.
  */
 public abstract class StoreAbstractRelationshipCursor
-        implements RelationshipVisitor<RuntimeException>, Cursor<RelationshipItem>, RelationshipItem
+        implements RelationshipVisitor<RuntimeException>, RelationshipItem, Cursor<RelationshipItem>, Disposable
 {
     protected final RelationshipRecord relationshipRecord;
     final RecordCursor<RelationshipRecord> relationshipRecordCursor;
@@ -98,8 +99,7 @@ public abstract class StoreAbstractRelationshipCursor
     @Override
     public final long otherNode( long nodeId )
     {
-        return relationshipRecord.getFirstNode() == nodeId ?
-               relationshipRecord.getSecondNode() : relationshipRecord.getFirstNode();
+        return relationshipRecord.getFirstNode() == nodeId ? relationshipRecord.getSecondNode() : relationshipRecord.getFirstNode();
     }
 
     @Override
@@ -154,5 +154,10 @@ public abstract class StoreAbstractRelationshipCursor
     public void close()
     {
         fetched = false;
+    }
+
+    @Override
+    public void dispose()
+    {
     }
 }
