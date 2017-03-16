@@ -197,6 +197,7 @@ public abstract class StoreAbstractPropertyCursor implements PropertyItem, Curso
     @Override
     public void dispose()
     {
+        cursor.close();
         payload.dispose();
     }
 }

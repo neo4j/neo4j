@@ -530,6 +530,7 @@ public class StorePropertyPayloadCursorTest
     private static <S extends AbstractDynamicStore> S newDynamicStoreMock( Class<S> clazz ) throws IOException
     {
         S store = mock( clazz );
+        when( store.newRecord() ).thenReturn( new DynamicRecord( DynamicRecord.NO_ID ) );
         doAnswer( invocationOnMock ->
         {
             DynamicRecord record = (DynamicRecord) invocationOnMock.getArguments()[1];
@@ -538,7 +539,6 @@ public class StorePropertyPayloadCursorTest
             return null;
         } ).when( store ).readIntoRecord( anyLong(), any( DynamicRecord.class ), any( RecordLoad.class ),
                 any( PageCursor.class ) );
-
         return store;
     }
 
