@@ -28,11 +28,9 @@ import org.neo4j.kernel.api.constraints.PropertyConstraint;
 import org.neo4j.kernel.api.constraints.RelationshipPropertyConstraint;
 import org.neo4j.kernel.api.constraints.RelationshipPropertyExistenceConstraint;
 import org.neo4j.kernel.api.constraints.UniquenessConstraint;
-import org.neo4j.kernel.api.schema.RelationshipPropertyDescriptor;
 import org.neo4j.kernel.api.schema_new.LabelSchemaDescriptor;
 import org.neo4j.kernel.api.schema_new.RelationTypeSchemaDescriptor;
 import org.neo4j.kernel.api.schema_new.SchemaComputer;
-import org.neo4j.kernel.api.schema_new.SchemaDescriptorFactory;
 
 /**
  * This class represents the boundary of where new constraint descriptors are converted to old constraints. This class
@@ -120,8 +118,7 @@ public class ConstraintBoundary
         @Override
         public PropertyConstraint computeSpecific( RelationTypeSchemaDescriptor schema )
         {
-            return new RelationshipPropertyExistenceConstraint( new RelationshipPropertyDescriptor(
-                    schema.getRelTypeId(), schema.getPropertyId() ) );
+            return new RelationshipPropertyExistenceConstraint( schema );
         }
     }
 }
