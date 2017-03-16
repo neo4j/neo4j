@@ -93,7 +93,7 @@ public class TreeStateTest
     public void shouldNotWriteInvalidStableGeneration() throws Exception
     {
         // GIVEN
-        long generation = GenSafePointer.MAX_GENERATION + 1;
+        long generation = GenerationSafePointer.MAX_GENERATION + 1;
 
         // WHEN
         try
@@ -112,7 +112,7 @@ public class TreeStateTest
     public void shouldNotWriteInvalidUnstableGeneration() throws Exception
     {
         // GIVEN
-        long generation = GenSafePointer.MAX_GENERATION + 1;
+        long generation = GenerationSafePointer.MAX_GENERATION + 1;
 
         // WHEN
         try
@@ -141,7 +141,7 @@ public class TreeStateTest
                 origin.stableGeneration(),
                 origin.unstableGeneration(),
                 origin.rootId(),
-                origin.rootGen(),
+                origin.rootGeneration(),
                 origin.lastId(),
                 origin.freeListWritePageId(),
                 origin.freeListReadPageId(),

@@ -26,9 +26,9 @@ import static org.neo4j.index.internal.gbptree.PageCursorUtil.getUnsignedInt;
 import static org.neo4j.index.internal.gbptree.PageCursorUtil.put6BLong;
 
 /**
- * Provides static methods for getting and manipulating GSP (gen-safe pointer) data.
+ * Provides static methods for getting and manipulating GSP (generation-safe pointer) data.
  * All interaction is made using a {@link PageCursor}. These methods are about a single GSP,
- * whereas the normal use case of a GSP is in pairs ({@link GenSafePointerPair GSPP}).
+ * whereas the normal use case of a GSP is in pairs ({@link GenerationSafePointerPair GSPP}).
  * <p>
  * A GSP consists of [generation,pointer,checksum]. Checksum is calculated from generation and pointer.
  * <p>
@@ -45,7 +45,7 @@ import static org.neo4j.index.internal.gbptree.PageCursorUtil.put6BLong;
  * <li>{@link #verifyChecksum(PageCursor, long, long)}</li>
  * </ol>
  */
-class GenSafePointer
+class GenerationSafePointer
 {
     private static final int EMPTY_POINTER = 0;
     private static final int EMPTY_GENERATION = 0;
@@ -138,7 +138,7 @@ class GenSafePointer
      * @param generation generation of the pointer.
      * @param pointer pointer itself.
      *
-     * @return a {@code short} which is the checksum of the gen-pointer.
+     * @return a {@code short} which is the checksum of the generation-pointer.
      */
     public static short checksumOf( long generation, long pointer )
     {

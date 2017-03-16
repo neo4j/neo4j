@@ -46,7 +46,7 @@ import static java.nio.file.StandardOpenOption.DELETE_ON_CLOSE;
 import static org.junit.Assert.assertEquals;
 import static org.neo4j.test.rule.PageCacheRule.config;
 
-public class CrashGenCleanerTest
+public class CrashGenerationCleanerTest
 {
     private FileSystemRule fileSystemRule = new DefaultFileSystemRule();
     private PageCacheRule pageCacheRule = new PageCacheRule();
@@ -62,17 +62,17 @@ public class CrashGenCleanerTest
     private PagedFile pagedFile;
     private final Layout<MutableLong,MutableLong> layout = new SimpleLongLayout();
     private final CorruptableTreeNode corruptableTreeNode = new CorruptableTreeNode( PAGE_SIZE, layout );
-    private final int oldStableGen = 9;
-    private final int stableGen = 10;
-    private final int unstableGen = 12;
-    private final int crashGen = 11;
+    private final int oldStableGeneration = 9;
+    private final int stableGeneration = 10;
+    private final int unstableGeneration = 12;
+    private final int crashGeneration = 11;
     private final int firstChildPos = 0;
     private final int middleChildPos = corruptableTreeNode.internalMaxKeyCount() / 2;
     private final int lastChildPos = corruptableTreeNode.internalMaxKeyCount();
     private final List<PageCorruption> possibleCorruptionsInInternal = Arrays.asList(
             crashed( leftSibling() ),
             crashed( rightSibling() ),
-            crashed( newGen() ),
+            crashed( successor() ),
             crashed( child( firstChildPos ) ),
             crashed( child( middleChildPos ) ),
             crashed( child( lastChildPos ) )
@@ -80,7 +80,7 @@ public class CrashGenCleanerTest
     private final List<PageCorruption> possibleCorruptionsInLeaf = Arrays.asList(
             crashed( leftSibling() ),
             crashed( rightSibling() ),
-            crashed( newGen() )
+            crashed( successor() )
     );
 
     private class SimpleMonitor implements GBPTree.Monitor
@@ -123,7 +123,7 @@ public class CrashGenCleanerTest
 
         // WHEN
         SimpleMonitor monitor = new SimpleMonitor();
-        crashGenCleaner( pagedFile, 0, pages.length, monitor ).clean();
+        crashGenerationCleaner( pagedFile, 0, pages.length, monitor ).clean();
 
         // THEN
         assertPagesVisisted( monitor, pages.length );
@@ -142,7 +142,7 @@ public class CrashGenCleanerTest
 
         // WHEN
         SimpleMonitor monitor = new SimpleMonitor();
-        crashGenCleaner( pagedFile, 0, pages.length, monitor ).clean();
+        crashGenerationCleaner( pagedFile, 0, pages.length, monitor ).clean();
 
         // THEN
         assertPagesVisisted( monitor, 2 );
@@ -162,9 +162,9 @@ public class CrashGenCleanerTest
                 leafWith( crashed( rightSibling() ) ),
                 internalWith( crashed( rightSibling() ) ),
 
-                /* new gen */
-                leafWith( crashed( newGen() ) ),
-                internalWith( crashed( newGen() ) ),
+                /* successor */
+                leafWith( crashed( successor() ) ),
+                internalWith( crashed( successor() ) ),
 
                 /* child */
                 internalWith( crashed( child( firstChildPos ) ) ),
@@ -175,7 +175,7 @@ public class CrashGenCleanerTest
 
         // WHEN
         SimpleMonitor monitor = new SimpleMonitor();
-        crashGenCleaner( pagedFile, 0, pages.length, monitor ).clean();
+        crashGenerationCleaner( pagedFile, 0, pages.length, monitor ).clean();
 
         // THEN
         assertPagesVisisted( monitor, pages.length );
@@ -190,11 +190,11 @@ public class CrashGenCleanerTest
                 leafWith(
                         crashed( leftSibling() ),
                         crashed( rightSibling() ),
-                        crashed( newGen() ) ),
+                        crashed( successor() ) ),
                 internalWith(
                         crashed( leftSibling() ),
                         crashed( rightSibling() ),
-                        crashed( newGen() ),
+                        crashed( successor() ),
                         crashed( child( firstChildPos ) ),
                         crashed( child( middleChildPos ) ),
                         crashed( child( lastChildPos ) ) )
@@ -203,7 +203,7 @@ public class CrashGenCleanerTest
 
         // WHEN
         SimpleMonitor monitor = new SimpleMonitor();
-        crashGenCleaner( pagedFile, 0, pages.length, monitor ).clean();
+        crashGenerationCleaner( pagedFile, 0, pages.length, monitor ).clean();
 
         // THEN
         assertPagesVisisted( monitor, pages.length );
@@ -228,18 +228,18 @@ public class CrashGenCleanerTest
 
         // WHEN
         SimpleMonitor monitor = new SimpleMonitor();
-        crashGenCleaner( pagedFile, 0, numberOfPages, monitor ).clean();
+        crashGenerationCleaner( pagedFile, 0, numberOfPages, monitor ).clean();
 
         // THEN
         assertPagesVisisted( monitor, numberOfPages );
         assertCleanedCrashPointers( monitor, totalNumberOfCorruptions.getValue() );
     }
 
-    private CrashGenCleaner crashGenCleaner( PagedFile pagedFile, int lowTreeNodeId, int highTreeNodeId,
+    private CrashGenerationCleaner crashGenerationCleaner( PagedFile pagedFile, int lowTreeNodeId, int highTreeNodeId,
             SimpleMonitor monitor )
     {
-        return new CrashGenCleaner( pagedFile, corruptableTreeNode, lowTreeNodeId, highTreeNodeId,
-                stableGen, unstableGen, monitor );
+        return new CrashGenerationCleaner( pagedFile, corruptableTreeNode, lowTreeNodeId, highTreeNodeId,
+                stableGeneration, unstableGeneration, monitor );
     }
 
     private void initializeFile( PagedFile pagedFile, Page... pages ) throws IOException
@@ -249,7 +249,7 @@ public class CrashGenCleanerTest
             for ( Page page : pages )
             {
                 cursor.next();
-                page.write( cursor, corruptableTreeNode, stableGen, unstableGen, crashGen );
+                page.write( cursor, corruptableTreeNode, stableGeneration, unstableGeneration, crashGeneration );
             }
         }
     }
@@ -333,12 +333,12 @@ public class CrashGenCleanerTest
             this.pageCorruptions = pageCorruptions;
         }
 
-        private void write( PageCursor cursor, CorruptableTreeNode node, int stableGen, int unstableGen, int crashGen )
-                throws IOException
+        private void write( PageCursor cursor, CorruptableTreeNode node, int stableGeneration, int unstableGeneration,
+                int crashGeneration ) throws IOException
         {
-            type.write( cursor, node, oldStableGen, stableGen );
+            type.write( cursor, node, oldStableGeneration, stableGeneration );
             Arrays.stream( pageCorruptions )
-                    .forEach( pc -> pc.corrupt( cursor, node, stableGen, unstableGen, crashGen ) );
+                    .forEach( pc -> pc.corrupt( cursor, node, stableGeneration, unstableGeneration, crashGeneration ) );
         }
     }
 
@@ -347,32 +347,32 @@ public class CrashGenCleanerTest
         LEAF
                 {
                     @Override
-                    void write( PageCursor cursor, CorruptableTreeNode corruptableTreeNode, int stableGen,
-                            int unstableGen )
+                    void write( PageCursor cursor, CorruptableTreeNode corruptableTreeNode, int stableGeneration,
+                            int unstableGeneration )
                     {
-                        corruptableTreeNode.initializeLeaf( cursor, stableGen, unstableGen );
+                        corruptableTreeNode.initializeLeaf( cursor, stableGeneration, unstableGeneration );
                     }
                 },
         INTERNAL
                 {
                     @Override
-                    void write( PageCursor cursor, CorruptableTreeNode corruptableTreeNode, int stableGen,
-                            int unstableGen )
+                    void write( PageCursor cursor, CorruptableTreeNode corruptableTreeNode, int stableGeneration,
+                            int unstableGeneration )
                     {
-                        corruptableTreeNode.initializeInternal( cursor, stableGen, unstableGen );
+                        corruptableTreeNode.initializeInternal( cursor, stableGeneration, unstableGeneration );
                         int maxKeyCount = corruptableTreeNode.internalMaxKeyCount();
                         long base = IdSpace.MIN_TREE_NODE_ID;
                         for ( int i = 0; i <= maxKeyCount; i++ )
                         {
                             long child = base + i;
-                            corruptableTreeNode.setChildAt( cursor, child, i, stableGen, unstableGen );
+                            corruptableTreeNode.setChildAt( cursor, child, i, stableGeneration, unstableGeneration );
                         }
                         corruptableTreeNode.setKeyCount( cursor, maxKeyCount );
                     }
                 };
 
         abstract void write( PageCursor cursor, CorruptableTreeNode corruptableTreeNode,
-                int stableGen, int unstableGen );
+                int stableGeneration, int unstableGeneration );
     }
 
     /* GSPPType */
@@ -386,9 +386,9 @@ public class CrashGenCleanerTest
         return SimpleGSPPType.RIGHT_SIBLING;
     }
 
-    private GSPPType newGen()
+    private GSPPType successor()
     {
-        return SimpleGSPPType.NEW_GEN;
+        return SimpleGSPPType.SUCCESSOR;
     }
 
     private GSPPType child( int pos )
@@ -419,12 +419,12 @@ public class CrashGenCleanerTest
                         return TreeNode.BYTE_POS_RIGHTSIBLING;
                     }
                 },
-        NEW_GEN
+        SUCCESSOR
                 {
                     @Override
                     public int offset( TreeNode node )
                     {
-                        return TreeNode.BYTE_POS_HEIR;
+                        return TreeNode.BYTE_POS_SUCCESSOR;
                     }
                 }
     }
@@ -437,14 +437,14 @@ public class CrashGenCleanerTest
     /* PageCorruption */
     private PageCorruption crashed( GSPPType gsppType )
     {
-        return ( pageCursor, node, stableGen, unstableGen, crashGen ) ->
-                node.crashGSPP( pageCursor, gsppType.offset( node ), crashGen );
+        return ( pageCursor, node, stableGeneration, unstableGeneration, crashGeneration ) ->
+                node.crashGSPP( pageCursor, gsppType.offset( node ), crashGeneration );
     }
 
     private interface PageCorruption
     {
-        void corrupt( PageCursor pageCursor, CorruptableTreeNode node, int stableGen,
-                int unstableGen, int crashGen );
+        void corrupt( PageCursor pageCursor, CorruptableTreeNode node, int stableGeneration,
+                int unstableGeneration, int crashGeneration );
     }
 
     class CorruptableTreeNode extends TreeNode<MutableLong,MutableLong>
@@ -454,10 +454,10 @@ public class CrashGenCleanerTest
             super( pageSize, layout );
         }
 
-        void crashGSPP( PageCursor pageCursor, int offset, int crashGen )
+        void crashGSPP( PageCursor pageCursor, int offset, int crashGeneration )
         {
             pageCursor.setOffset( offset );
-            GenSafePointerPair.write( pageCursor, 42, stableGen, crashGen );
+            GenerationSafePointerPair.write( pageCursor, 42, stableGeneration, crashGeneration );
         }
     }
 }

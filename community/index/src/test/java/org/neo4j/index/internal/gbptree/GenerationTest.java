@@ -28,13 +28,13 @@ public class GenerationTest
     @Test
     public void shouldSetLowGenerations() throws Exception
     {
-        shouldComposeAndDecomposeGeneration( GenSafePointer.MIN_GENERATION, GenSafePointer.MIN_GENERATION + 1 );
+        shouldComposeAndDecomposeGeneration( GenerationSafePointer.MIN_GENERATION, GenerationSafePointer.MIN_GENERATION + 1 );
     }
 
     @Test
     public void shouldSetHighGenerations() throws Exception
     {
-        shouldComposeAndDecomposeGeneration( GenSafePointer.MAX_GENERATION - 1, GenSafePointer.MAX_GENERATION );
+        shouldComposeAndDecomposeGeneration( GenerationSafePointer.MAX_GENERATION - 1, GenerationSafePointer.MAX_GENERATION );
     }
 
     private void shouldComposeAndDecomposeGeneration( long stable, long unstable )

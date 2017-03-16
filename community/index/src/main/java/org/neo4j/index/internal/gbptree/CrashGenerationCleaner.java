@@ -39,7 +39,7 @@ import static org.neo4j.helpers.Exceptions.launderedException;
 /**
  * Scans the entire tree and checks all GSPPs, replacing all CRASH gen GSPs with zeros.
  */
-class CrashGenCleaner
+class CrashGenerationCleaner
 {
     private final PagedFile pagedFile;
     private final TreeNode<?,?> treeNode;
@@ -52,7 +52,7 @@ class CrashGenCleaner
     private final Monitor monitor;
     private final long internalMaxKeyCount;
 
-    CrashGenCleaner( PagedFile pagedFile, TreeNode<?,?> treeNode, long lowTreeNodeId, long highTreeNodeId,
+    CrashGenerationCleaner( PagedFile pagedFile, TreeNode<?,?> treeNode, long lowTreeNodeId, long highTreeNodeId,
             long stableGeneration, long unstableGeneration, Monitor monitor )
     {
         this.pagedFile = pagedFile;
@@ -176,7 +176,7 @@ class CrashGenCleaner
         do
         {
             hasCrashed =
-                    hasCrashedGSPP( cursor, TreeNode.BYTE_POS_HEIR ) ||
+                    hasCrashedGSPP( cursor, TreeNode.BYTE_POS_SUCCESSOR ) ||
                     hasCrashedGSPP( cursor, TreeNode.BYTE_POS_LEFTSIBLING ) ||
                     hasCrashedGSPP( cursor, TreeNode.BYTE_POS_RIGHTSIBLING );
 
@@ -195,13 +195,13 @@ class CrashGenCleaner
 
     private boolean hasCrashedGSPP( PageCursor cursor, int gsppOffset )
     {
-        return hasCrashedGSP( cursor, gsppOffset ) || hasCrashedGSP( cursor, gsppOffset + GenSafePointer.SIZE );
+        return hasCrashedGSP( cursor, gsppOffset ) || hasCrashedGSP( cursor, gsppOffset + GenerationSafePointer.SIZE );
     }
 
     private boolean hasCrashedGSP( PageCursor cursor, int offset )
     {
         cursor.setOffset( offset );
-        long generation = GenSafePointer.readGeneration( cursor );
+        long generation = GenerationSafePointer.readGeneration( cursor );
         return generation > stableGeneration && generation < unstableGeneration;
     }
 
@@ -209,7 +209,7 @@ class CrashGenCleaner
 
     private void cleanTreeNode( TreeNode<?,?> treeNode, PageCursor cursor, AtomicInteger cleanedPointers )
     {
-        cleanCrashedGSPP( cursor, TreeNode.BYTE_POS_HEIR, cleanedPointers );
+        cleanCrashedGSPP( cursor, TreeNode.BYTE_POS_SUCCESSOR, cleanedPointers );
         cleanCrashedGSPP( cursor, TreeNode.BYTE_POS_LEFTSIBLING, cleanedPointers );
         cleanCrashedGSPP( cursor, TreeNode.BYTE_POS_RIGHTSIBLING, cleanedPointers );
 
@@ -226,7 +226,7 @@ class CrashGenCleaner
     private void cleanCrashedGSPP( PageCursor cursor, int gsppOffset, AtomicInteger cleanedPointers )
     {
         cleanCrashedGSP( cursor, gsppOffset, cleanedPointers );
-        cleanCrashedGSP( cursor, gsppOffset + GenSafePointer.SIZE, cleanedPointers );
+        cleanCrashedGSP( cursor, gsppOffset + GenerationSafePointer.SIZE, cleanedPointers );
     }
 
     /**
@@ -237,7 +237,7 @@ class CrashGenCleaner
         if ( hasCrashedGSP( cursor, gspOffset ) )
         {
             cursor.setOffset( gspOffset );
-            GenSafePointer.clean( cursor );
+            GenerationSafePointer.clean( cursor );
             cleanedPointers.incrementAndGet();
         }
     }

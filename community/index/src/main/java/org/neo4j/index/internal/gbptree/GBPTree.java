@@ -127,7 +127,7 @@ public class GBPTree<KEY,VALUE> implements Closeable
      * Version of the format that makes up the tree. This includes:
      * <ul>
      * <li>{@link TreeNode} format, header, keys, children, values</li>
-     * <li>{@link GenSafePointer} and {@link GenSafePointerPair}</li>
+     * <li>{@link GenerationSafePointer} and {@link GenerationSafePointerPair}</li>
      * <li>{@link IdSpace} i.e. which pages are fixed</li>
      * <li>{@link TreeState} and {@link TreeStatePair}</li>
      * </ul>
@@ -311,7 +311,7 @@ public class GBPTree<KEY,VALUE> implements Closeable
     {
         this.indexFile = indexFile;
         this.monitor = monitor;
-        this.generation = Generation.generation( GenSafePointer.MIN_GENERATION, GenSafePointer.MIN_GENERATION + 1 );
+        this.generation = Generation.generation( GenerationSafePointer.MIN_GENERATION, GenerationSafePointer.MIN_GENERATION + 1 );
         long rootId = IdSpace.MIN_TREE_NODE_ID;
         setRoot( rootId, Generation.unstableGeneration( generation ) );
         this.layout = layout;
@@ -434,7 +434,7 @@ public class GBPTree<KEY,VALUE> implements Closeable
             while ( cursor.shouldRetry() );
         }
         generation = Generation.generation( state.stableGeneration(), state.unstableGeneration() );
-        setRoot( state.rootId(), state.rootGen() );
+        setRoot( state.rootId(), state.rootGeneration() );
 
         long lastId = state.lastId();
         long freeListWritePageId = state.freeListWritePageId();
@@ -643,11 +643,11 @@ public class GBPTree<KEY,VALUE> implements Closeable
         long unstableGeneration = unstableGeneration( generation );
 
         PageCursor cursor = pagedFile.io( 0L /*ignored*/, PagedFile.PF_SHARED_READ_LOCK );
-        long rootGen = root.goTo( cursor );
+        long rootGeneration = root.goTo( cursor );
 
         // Returns cursor which is now initiated with left-most leaf node for the specified range
         return new SeekCursor<>( cursor, bTreeNode, fromInclusive, toExclusive, layout,
-                stableGeneration, unstableGeneration, generationSupplier, rootCatchup, rootGen );
+                stableGeneration, unstableGeneration, generationSupplier, rootCatchup, rootGeneration );
     }
 
     /**
@@ -864,7 +864,7 @@ public class GBPTree<KEY,VALUE> implements Closeable
         // and zero out all CRASH pointers.
 
         long generation = this.generation;
-        new CrashGenCleaner( pagedFile, bTreeNode, IdSpace.MIN_TREE_NODE_ID,freeList.lastId() + 1,
+        new CrashGenerationCleaner( pagedFile, bTreeNode, IdSpace.MIN_TREE_NODE_ID,freeList.lastId() + 1,
                 stableGeneration( generation ), unstableGeneration( generation ), monitor ).clean();
     }
 
@@ -892,8 +892,8 @@ public class GBPTree<KEY,VALUE> implements Closeable
             ConsistencyChecker<KEY> consistencyChecker = new ConsistencyChecker<>( bTreeNode, layout,
                     stableGeneration( generation ), unstableGeneration );
 
-            long rootGen = root.goTo( cursor );
-            boolean check = consistencyChecker.check( cursor, rootGen );
+            long rootGeneration = root.goTo( cursor );
+            boolean check = consistencyChecker.check( cursor, rootGeneration );
             root.goTo( cursor );
 
             PrimitiveLongSet freelistIds = Primitive.longSet();
@@ -909,7 +909,7 @@ public class GBPTree<KEY,VALUE> implements Closeable
     public String toString()
     {
         long generation = this.generation;
-        return format( "GB+Tree[file:%s, layout:%s, gen:%d/%d]",
+        return format( "GB+Tree[file:%s, layout:%s, generation:%d/%d]",
                 indexFile.getAbsolutePath(), layout,
                 stableGeneration( generation ), unstableGeneration( generation ) );
     }
@@ -977,7 +977,7 @@ public class GBPTree<KEY,VALUE> implements Closeable
 
         private void setRoot( long rootPointer )
         {
-            long rootId = GenSafePointerPair.pointer( rootPointer );
+            long rootId = GenerationSafePointerPair.pointer( rootPointer );
             GBPTree.this.setRoot( rootId, unstableGeneration );
             treeLogic.initialize( cursor );
         }
