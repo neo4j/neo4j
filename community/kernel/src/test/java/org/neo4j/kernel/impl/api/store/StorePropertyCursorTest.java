@@ -38,15 +38,11 @@ import java.util.function.Consumer;
 import org.neo4j.cursor.Cursor;
 import org.neo4j.graphdb.mockfs.EphemeralFileSystemAbstraction;
 import org.neo4j.io.pagecache.PageCache;
-import org.neo4j.io.pagecache.PageCursor;
-import org.neo4j.kernel.impl.store.DynamicArrayStore;
 import org.neo4j.kernel.impl.store.DynamicRecordAllocator;
-import org.neo4j.kernel.impl.store.DynamicStringStore;
 import org.neo4j.kernel.impl.store.NeoStores;
 import org.neo4j.kernel.impl.store.PropertyStore;
 import org.neo4j.kernel.impl.store.PropertyType;
 import org.neo4j.kernel.impl.store.RecordCursor;
-import org.neo4j.kernel.impl.store.RecordCursors;
 import org.neo4j.kernel.impl.store.RecordStore;
 import org.neo4j.kernel.impl.store.StoreFactory;
 import org.neo4j.kernel.impl.store.format.standard.PropertyRecordFormat;
@@ -74,7 +70,6 @@ import static org.mockito.Mockito.times;
 import static org.mockito.Mockito.verify;
 import static org.mockito.Mockito.when;
 import static org.neo4j.kernel.impl.locking.LockService.NO_LOCK;
-import static org.neo4j.kernel.impl.store.record.RecordLoad.NORMAL;
 
 @RunWith( Enclosed.class )
 public class StorePropertyCursorTest
@@ -233,9 +228,6 @@ public class StorePropertyCursorTest
     {
         private final NeoStores neoStores = MockedNeoStores.basicMockedNeoStores();
         private final PropertyStore propertyStore = neoStores.getPropertyStore();
-        @SuppressWarnings( "unchecked" )
-        private final Consumer<StorePropertyCursor> cache = mock( Consumer.class );
-
         {
             RecordCursor<PropertyRecord> recordCursor = MockedNeoStores.mockedRecordCursor();
             try
@@ -254,7 +246,10 @@ public class StorePropertyCursorTest
         public void shouldReturnTheCursorToTheCacheOnClose() throws Throwable
         {
             // given
-            StorePropertyCursor storePropertyCursor = newStorePropertyCursor( propertyStore, cache );
+            @SuppressWarnings( "unchecked" )
+            Consumer<StorePropertyCursor> cache = mock( Consumer.class );
+
+            StorePropertyCursor storePropertyCursor = new StorePropertyCursor( propertyStore, cache );
             storePropertyCursor.init( 0, NO_LOCK, null );
 
             // when
@@ -754,19 +749,7 @@ public class StorePropertyCursorTest
 
     private static StorePropertyCursor newStorePropertyCursor( PropertyStore propertyStore )
     {
-        return newStorePropertyCursor( propertyStore, ignored -> {} );
-    }
-
-    private static StorePropertyCursor newStorePropertyCursor( PropertyStore propertyStore,
-            Consumer<StorePropertyCursor> cache )
-    {
-        RecordCursor<PropertyRecord> propertyRecordCursor = propertyStore.newRecordCursor( propertyStore.newRecord() );
-        propertyRecordCursor.acquire( 0, NORMAL );
-
-        RecordCursors cursors = mock( RecordCursors.class );
-        when( cursors.property() ).thenReturn( propertyRecordCursor );
-
-        return new StorePropertyCursor( propertyStore, cursors, cache );
+        return new StorePropertyCursor( propertyStore, ignored -> {} );
     }
 
     private static List<PropertyRecord> createPropertyChain( PropertyStore store, int keyId,

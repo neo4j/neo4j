@@ -32,10 +32,9 @@ public class StoreSinglePropertyCursor extends StoreAbstractPropertyCursor
     private final Consumer<StoreSinglePropertyCursor> instanceCache;
     private int propertyKeyId;
 
-    StoreSinglePropertyCursor( PropertyStore propertyStore, RecordCursors cursors,
-            Consumer<StoreSinglePropertyCursor> instanceCache )
+    StoreSinglePropertyCursor( PropertyStore propertyStore, Consumer<StoreSinglePropertyCursor> instanceCache )
     {
-        super( propertyStore, cursors  );
+        super( propertyStore  );
         this.instanceCache = instanceCache;
     }
 
