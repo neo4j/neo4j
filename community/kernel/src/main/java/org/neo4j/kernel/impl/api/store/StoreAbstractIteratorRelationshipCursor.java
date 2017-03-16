@@ -21,8 +21,7 @@ package org.neo4j.kernel.impl.api.store;
 
 import org.neo4j.collection.primitive.PrimitiveLongIterator;
 import org.neo4j.kernel.impl.locking.LockService;
-import org.neo4j.kernel.impl.store.RecordCursors;
-import org.neo4j.kernel.impl.store.record.RelationshipRecord;
+import org.neo4j.kernel.impl.store.RelationshipStore;
 import org.neo4j.storageengine.api.txstate.ReadableTransactionState;
 
 import static org.neo4j.kernel.api.StatementConstants.NO_SUCH_NODE;
@@ -35,10 +34,9 @@ public abstract class StoreAbstractIteratorRelationshipCursor extends StoreAbstr
     private PrimitiveLongIterator addedRelationshipIterator;
     private boolean fromStore;
 
-    StoreAbstractIteratorRelationshipCursor( RelationshipRecord relationshipRecord, RecordCursors cursors,
-            LockService lockService )
+    StoreAbstractIteratorRelationshipCursor( RelationshipStore relationshipStore, LockService lockService )
     {
-        super( relationshipRecord, cursors, lockService );
+        super( relationshipStore, lockService );
     }
 
     void internalInitTxState( ReadableTransactionState state, PrimitiveLongIterator addedRelationshipIterator )

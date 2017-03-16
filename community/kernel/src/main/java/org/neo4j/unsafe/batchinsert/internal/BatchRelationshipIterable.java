@@ -32,10 +32,7 @@ import org.neo4j.kernel.impl.store.RecordStore;
 import org.neo4j.kernel.impl.store.RelationshipStore;
 import org.neo4j.kernel.impl.store.record.NodeRecord;
 import org.neo4j.kernel.impl.store.record.RelationshipGroupRecord;
-import org.neo4j.kernel.impl.store.record.RelationshipRecord;
-import org.neo4j.storageengine.api.Direction;
 
-import static org.neo4j.function.Predicates.ALWAYS_TRUE_INT;
 import static org.neo4j.kernel.impl.locking.LockService.NO_LOCK_SERVICE;
 import static org.neo4j.kernel.impl.store.record.RecordLoad.NORMAL;
 import static org.neo4j.storageengine.api.Direction.BOTH;
@@ -48,9 +45,8 @@ abstract class BatchRelationshipIterable<T> implements Iterable<T>
     {
         RelationshipStore relationshipStore = neoStores.getRelationshipStore();
         RecordStore<RelationshipGroupRecord> relationshipGroupStore = neoStores.getRelationshipGroupStore();
-        RelationshipRecord relationshipRecord = relationshipStore.newRecord();
         RelationshipGroupRecord relationshipGroupRecord = relationshipGroupStore.newRecord();
-        this.relationshipCursor = new StoreNodeRelationshipCursor( relationshipRecord, relationshipGroupRecord,
+        this.relationshipCursor = new StoreNodeRelationshipCursor( relationshipStore, relationshipGroupRecord,
                 cursor -> {}, cursors, NO_LOCK_SERVICE );
 
         // TODO There's an opportunity to reuse lots of instances created here, but this isn't a

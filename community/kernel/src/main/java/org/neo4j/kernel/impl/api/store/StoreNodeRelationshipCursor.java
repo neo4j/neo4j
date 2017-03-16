@@ -26,6 +26,7 @@ import org.neo4j.collection.primitive.PrimitiveLongIterator;
 import org.neo4j.kernel.impl.locking.LockService;
 import org.neo4j.kernel.impl.store.InvalidRecordException;
 import org.neo4j.kernel.impl.store.RecordCursors;
+import org.neo4j.kernel.impl.store.RelationshipStore;
 import org.neo4j.kernel.impl.store.record.Record;
 import org.neo4j.kernel.impl.store.record.RelationshipGroupRecord;
 import org.neo4j.kernel.impl.store.record.RelationshipRecord;
@@ -56,13 +57,13 @@ public class StoreNodeRelationshipCursor extends StoreAbstractIteratorRelationsh
     private boolean end;
     private final RecordCursors cursors;
 
-    public StoreNodeRelationshipCursor( RelationshipRecord relationshipRecord,
+    public StoreNodeRelationshipCursor( RelationshipStore relationshipStore,
             RelationshipGroupRecord groupRecord,
             Consumer<StoreNodeRelationshipCursor> instanceCache,
             RecordCursors cursors,
             LockService lockService )
     {
-        super( relationshipRecord, cursors, lockService );
+        super( relationshipStore, lockService );
         this.groupRecord = groupRecord;
         this.instanceCache = instanceCache;
         this.cursors = cursors;
@@ -124,7 +125,7 @@ public class StoreNodeRelationshipCursor extends StoreAbstractIteratorRelationsh
     {
         while ( relationshipId != NO_NEXT_RELATIONSHIP.intValue() )
         {
-            relationshipRecordCursor.next( relationshipId, relationshipRecord, FORCE );
+            RelationshipRecord relationshipRecord = readRecord( relationshipId, FORCE );
 
             // If we end up on a relationship record that isn't in use there's a good chance there
             // have been a concurrent transaction deleting this record under our feet. Since we don't

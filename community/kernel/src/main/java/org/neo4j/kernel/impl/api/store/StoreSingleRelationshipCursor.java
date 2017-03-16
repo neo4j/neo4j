@@ -21,6 +21,7 @@ package org.neo4j.kernel.impl.api.store;
 
 import org.neo4j.kernel.impl.locking.LockService;
 import org.neo4j.kernel.impl.store.RecordCursors;
+import org.neo4j.kernel.impl.store.RelationshipStore;
 import org.neo4j.kernel.impl.store.record.RelationshipRecord;
 import org.neo4j.kernel.impl.util.InstanceCache;
 import org.neo4j.storageengine.api.txstate.ReadableTransactionState;
@@ -39,10 +40,10 @@ public class StoreSingleRelationshipCursor extends StoreAbstractRelationshipCurs
     private long relationshipId = NO_SUCH_RELATIONSHIP;
     private ReadableTransactionState state;
 
-    StoreSingleRelationshipCursor( RelationshipRecord relationshipRecord,
-            InstanceCache<StoreSingleRelationshipCursor> instanceCache, RecordCursors cursors, LockService lockService )
+    StoreSingleRelationshipCursor( RelationshipStore relationshipStore,
+            InstanceCache<StoreSingleRelationshipCursor> instanceCache, LockService lockService )
     {
-        super( relationshipRecord, cursors, lockService );
+        super( relationshipStore, lockService );
         this.instanceCache = instanceCache;
     }
 
@@ -74,7 +75,7 @@ public class StoreSingleRelationshipCursor extends StoreAbstractRelationshipCurs
     private boolean loadNextRecord()
     {
         return relationshipId != NO_SUCH_RELATIONSHIP &&
-                relationshipRecordCursor.next( relationshipId, relationshipRecord, CHECK );
+                readRecord( relationshipId, CHECK ).inUse();
     }
 
     private boolean fetchFromTxState()
