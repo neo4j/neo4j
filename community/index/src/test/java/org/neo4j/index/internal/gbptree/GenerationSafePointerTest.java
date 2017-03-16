@@ -30,9 +30,9 @@ import static org.junit.Assert.assertFalse;
 import static org.junit.Assert.assertTrue;
 import static org.junit.Assert.fail;
 
-public class GenSafePointerTest
+public class GenerationSafePointerTest
 {
-    private static final int PAGE_SIZE = GenSafePointer.SIZE * 2;
+    private static final int PAGE_SIZE = GenerationSafePointer.SIZE * 2;
     private final PageCursor cursor = ByteArrayPageCursor.wrap( new byte[PAGE_SIZE] );
     private final GSP read = new GSP();
 
@@ -93,7 +93,7 @@ public class GenSafePointerTest
         write( cursor, offset, initial );
 
         // WHEN
-        cursor.putShort( offset + GenSafePointer.SIZE - GenSafePointer.CHECKSUM_SIZE,
+        cursor.putShort( offset + GenerationSafePointer.SIZE - GenerationSafePointer.CHECKSUM_SIZE,
                 (short) (checksumOf( initial ) - 2) );
 
         // THEN
@@ -105,7 +105,7 @@ public class GenSafePointerTest
     public void shouldWriteAndReadGspCloseToGenerationMax() throws Exception
     {
         // GIVEN
-        long generation = GenSafePointer.MAX_GENERATION;
+        long generation = GenerationSafePointer.MAX_GENERATION;
         GSP expected = gsp( generation, 12345 );
         write( cursor, 0, expected );
 
@@ -123,7 +123,7 @@ public class GenSafePointerTest
     public void shouldWriteAndReadGspCloseToPointerMax() throws Exception
     {
         // GIVEN
-        long pointer = GenSafePointer.MAX_POINTER;
+        long pointer = GenerationSafePointer.MAX_POINTER;
         GSP expected = gsp( 12345, pointer );
         write( cursor, 0, expected );
 
@@ -141,8 +141,8 @@ public class GenSafePointerTest
     public void shouldWriteAndReadGspCloseToGenerationAndPointerMax() throws Exception
     {
         // GIVEN
-        long generation = GenSafePointer.MAX_GENERATION;
-        long pointer = GenSafePointer.MAX_POINTER;
+        long generation = GenerationSafePointer.MAX_GENERATION;
+        long pointer = GenerationSafePointer.MAX_POINTER;
         GSP expected = gsp( generation, pointer );
         write( cursor, 0, expected );
 
@@ -161,8 +161,8 @@ public class GenSafePointerTest
     public void shouldThrowIfPointerToLarge() throws Exception
     {
         // GIVEN
-        long generation = GenSafePointer.MIN_GENERATION;
-        long pointer = GenSafePointer.MAX_POINTER + 1;
+        long generation = GenerationSafePointer.MIN_GENERATION;
+        long pointer = GenerationSafePointer.MAX_POINTER + 1;
         GSP broken = gsp( generation, pointer );
 
         // WHEN
@@ -182,8 +182,8 @@ public class GenSafePointerTest
     public void shouldThrowIfPointerToSmall() throws Exception
     {
         // GIVEN
-        long generation = GenSafePointer.MIN_GENERATION;
-        long pointer = GenSafePointer.MIN_POINTER - 1;
+        long generation = GenerationSafePointer.MIN_GENERATION;
+        long pointer = GenerationSafePointer.MIN_POINTER - 1;
         GSP broken = gsp( generation, pointer );
 
         // WHEN
@@ -203,8 +203,8 @@ public class GenSafePointerTest
     public void shouldThrowIfGenerationToLarge() throws Exception
     {
         // GIVEN
-        long generation = GenSafePointer.MAX_GENERATION + 1;
-        long pointer = GenSafePointer.MIN_POINTER;
+        long generation = GenerationSafePointer.MAX_GENERATION + 1;
+        long pointer = GenerationSafePointer.MIN_POINTER;
         GSP broken = gsp( generation, pointer );
 
         // WHEN
@@ -224,8 +224,8 @@ public class GenSafePointerTest
     public void shouldThrowIfGenerationToSmall() throws Exception
     {
         // GIVEN
-        long generation = GenSafePointer.MIN_GENERATION - 1;
-        long pointer = GenSafePointer.MIN_POINTER;
+        long generation = GenerationSafePointer.MIN_GENERATION - 1;
+        long pointer = GenerationSafePointer.MIN_POINTER;
         GSP broken = gsp( generation, pointer );
 
         // WHEN
@@ -253,8 +253,8 @@ public class GenSafePointerTest
         short reference = 0;
         for ( int i = 0; i < count; i++ )
         {
-            gsp.generation = random.nextLong( GenSafePointer.MAX_GENERATION );
-            gsp.pointer = random.nextLong( GenSafePointer.MAX_POINTER );
+            gsp.generation = random.nextLong( GenerationSafePointer.MAX_GENERATION );
+            gsp.pointer = random.nextLong( GenerationSafePointer.MAX_POINTER );
             short checksum = checksumOf( gsp );
             if ( i == 0 )
             {
@@ -282,20 +282,20 @@ public class GenSafePointerTest
     private boolean read( PageCursor cursor, int offset, GSP into )
     {
         cursor.setOffset( offset );
-        into.generation = GenSafePointer.readGeneration( cursor );
-        into.pointer = GenSafePointer.readPointer( cursor );
-        return GenSafePointer.verifyChecksum( cursor, into.generation, into.pointer );
+        into.generation = GenerationSafePointer.readGeneration( cursor );
+        into.pointer = GenerationSafePointer.readPointer( cursor );
+        return GenerationSafePointer.verifyChecksum( cursor, into.generation, into.pointer );
     }
 
     private void write( PageCursor cursor, int offset, GSP gsp )
     {
         cursor.setOffset( offset );
-        GenSafePointer.write( cursor, gsp.generation, gsp.pointer );
+        GenerationSafePointer.write( cursor, gsp.generation, gsp.pointer );
     }
 
     private static short checksumOf( GSP gsp )
     {
-        return GenSafePointer.checksumOf( gsp.generation, gsp.pointer );
+        return GenerationSafePointer.checksumOf( gsp.generation, gsp.pointer );
     }
 
     /**
@@ -348,7 +348,7 @@ public class GenSafePointerTest
         @Override
         public String toString()
         {
-            return "[gen:" + generation + ",p:" + pointer + "]";
+            return "[generation:" + generation + ",p:" + pointer + "]";
         }
     }
 }

@@ -47,7 +47,7 @@ import static org.neo4j.index.internal.gbptree.FreeListIdProvider.NO_MONITOR;
 public class FreeListIdProviderTest
 {
     private static final int PAGE_SIZE = 128;
-    private static final long GENERATION_ONE = GenSafePointer.MIN_GENERATION;
+    private static final long GENERATION_ONE = GenerationSafePointer.MIN_GENERATION;
     private static final long GENERATION_TWO = GENERATION_ONE + 1;
     private static final long GENERATION_THREE = GENERATION_TWO + 1;
     private static final long GENERATION_FOUR = GENERATION_THREE + 1;
@@ -139,7 +139,7 @@ public class FreeListIdProviderTest
         // GIVEN
         PrimitiveLongSet acquired = Primitive.longSet();
         List<Long> acquiredList = new ArrayList<>(); // for quickly finding random to remove
-        long stableGeneration = GenSafePointer.MIN_GENERATION;
+        long stableGeneration = GenerationSafePointer.MIN_GENERATION;
         long unstableGeneration = stableGeneration + 1;
         int iterations = 100;
 

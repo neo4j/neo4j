@@ -35,12 +35,12 @@ class RightmostInChain
 {
     private long currentRightmostNode = TreeNode.NO_NODE_FLAG;
     private long currentRightmostRightSiblingPointer = TreeNode.NO_NODE_FLAG;
-    private long currentRightmostRightSiblingPointerGen;
-    private long currentRightmostNodeGen;
+    private long currentRightmostRightSiblingPointerGeneration;
+    private long currentRightmostNodeGeneration;
 
-    void assertNext( PageCursor cursor, long newRightmostNodeGen,
-            long newRightmostLeftSiblingPointer, long newRightmostLeftSiblingPointerGen,
-            long newRightmostRightSiblingPointer, long newRightmostRightSiblingPointerGen )
+    void assertNext( PageCursor cursor, long newRightmostNodeGeneration,
+            long newRightmostLeftSiblingPointer, long newRightmostLeftSiblingPointerGeneration,
+            long newRightmostRightSiblingPointer, long newRightmostRightSiblingPointerGeneration )
     {
         long newRightmostNode = cursor.getCurrentPageId();
 
@@ -50,57 +50,58 @@ class RightmostInChain
         {
             errorMessageBuilder.append( format( "Sibling pointer does align with tree structure%n" ) );
         }
-        if ( currentRightmostNodeGen > newRightmostLeftSiblingPointerGen && currentRightmostNode != NO_NODE_FLAG )
+        if ( currentRightmostNodeGeneration > newRightmostLeftSiblingPointerGeneration && currentRightmostNode != NO_NODE_FLAG )
         {
-            errorMessageBuilder.append( format( "Sibling pointer gen differs from expected%n" ) );
+            errorMessageBuilder.append( format( "Sibling pointer generation differs from expected%n" ) );
         }
         if ( newRightmostNode != currentRightmostRightSiblingPointer &&
                 (currentRightmostRightSiblingPointer != NO_NODE_FLAG || currentRightmostNode != NO_NODE_FLAG) )
         {
             errorMessageBuilder.append( format( "Sibling pointer does not align with tree structure%n" ) );
         }
-        if ( currentRightmostRightSiblingPointerGen < newRightmostNodeGen &&
+        if ( currentRightmostRightSiblingPointerGeneration < newRightmostNodeGeneration &&
                 currentRightmostRightSiblingPointer != NO_NODE_FLAG )
         {
-            errorMessageBuilder.append( format( "Sibling pointer gen differs from expected%n" ) );
+            errorMessageBuilder.append( format( "Sibling pointer generation differs from expected%n" ) );
         }
 
         String errorMessage = errorMessageBuilder.toString();
         if ( !errorMessage.equals( "" ) )
         {
-            setPatternException( cursor, newRightmostNodeGen, newRightmostLeftSiblingPointer, newRightmostLeftSiblingPointerGen, newRightmostNode, errorMessage );
+            setPatternException( cursor, newRightmostNodeGeneration, newRightmostLeftSiblingPointer, newRightmostLeftSiblingPointerGeneration, newRightmostNode, errorMessage );
         }
 
         // Update currentRightmostNode = newRightmostNode;
         currentRightmostNode = newRightmostNode;
-        currentRightmostNodeGen = newRightmostNodeGen;
+        currentRightmostNodeGeneration = newRightmostNodeGeneration;
         currentRightmostRightSiblingPointer = newRightmostRightSiblingPointer;
-        currentRightmostRightSiblingPointerGen = newRightmostRightSiblingPointerGen;
+        currentRightmostRightSiblingPointerGeneration = newRightmostRightSiblingPointerGeneration;
     }
 
-    private void setPatternException( PageCursor cursor, long newRightmostGen, long leftSibling,
-            long leftSiblingGen, long newRightmost, String errorMessage )
+    private void setPatternException( PageCursor cursor, long newRightmostGeneration, long leftSibling,
+            long leftSiblingGeneration, long newRightmost, String errorMessage )
     {
         cursor.setCursorException( format( "%s" +
                         "  Left siblings view:  %s%n" +
                         "  Right siblings view: %s%n", errorMessage,
-                leftPattern( currentRightmostNode, currentRightmostNodeGen, currentRightmostRightSiblingPointerGen,
+                leftPattern( currentRightmostNode, currentRightmostNodeGeneration,
+                        currentRightmostRightSiblingPointerGeneration,
                         currentRightmostRightSiblingPointer ),
-                rightPattern( newRightmost, newRightmostGen, leftSiblingGen, leftSibling ) ) );
+                rightPattern( newRightmost, newRightmostGeneration, leftSiblingGeneration, leftSibling ) ) );
     }
 
-    private String leftPattern( long actualLeftSibling, long actualLeftSiblingGen, long expectedRightSiblingGen,
-            long expectedRightSibling )
+    private String leftPattern( long actualLeftSibling, long actualLeftSiblingGeneration,
+            long expectedRightSiblingGeneration, long expectedRightSibling )
     {
-        return format( "{%d(%d)}-(%d)->{%d}", actualLeftSibling, actualLeftSiblingGen, expectedRightSiblingGen,
+        return format( "{%d(%d)}-(%d)->{%d}", actualLeftSibling, actualLeftSiblingGeneration, expectedRightSiblingGeneration,
                 expectedRightSibling );
     }
 
-    private String rightPattern( long actualRightSibling, long actualRightSiblingGen, long expectedLeftSiblingGen,
-            long expectedLeftSibling )
+    private String rightPattern( long actualRightSibling, long actualRightSiblingGeneration,
+            long expectedLeftSiblingGeneration, long expectedLeftSibling )
     {
-        return format( "{%d}<-(%d)-{%d(%d)}", expectedLeftSibling, expectedLeftSiblingGen, actualRightSibling,
-                actualRightSiblingGen );
+        return format( "{%d}<-(%d)-{%d(%d)}", expectedLeftSibling, expectedLeftSiblingGeneration, actualRightSibling,
+                actualRightSiblingGeneration );
     }
 
     void assertLast()

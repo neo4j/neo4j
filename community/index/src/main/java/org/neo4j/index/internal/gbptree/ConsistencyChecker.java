@@ -32,7 +32,7 @@ import org.neo4j.io.pagecache.PageCursor;
 import static java.lang.Math.toIntExact;
 import static java.lang.String.format;
 
-import static org.neo4j.index.internal.gbptree.GenSafePointerPair.pointer;
+import static org.neo4j.index.internal.gbptree.GenerationSafePointerPair.pointer;
 import static org.neo4j.index.internal.gbptree.PageCursorUtil.checkOutOfBounds;
 
 /**
@@ -64,11 +64,11 @@ class ConsistencyChecker<KEY>
         this.unstableGeneration = unstableGeneration;
     }
 
-    public boolean check( PageCursor cursor, long expectedGen ) throws IOException
+    public boolean check( PageCursor cursor, long expectedGeneration ) throws IOException
     {
         assertOnTreeNode( cursor );
         KeyRange<KEY> openRange = new KeyRange<>( comparator, null, null, layout, null );
-        boolean result = checkSubtree( cursor, openRange, expectedGen, 0 );
+        boolean result = checkSubtree( cursor, openRange, expectedGeneration, 0 );
 
         // Assert that rightmost node on each level has empty right sibling.
         rightmostPerLevel.forEach( RightmostInChain::assertLast );
@@ -224,20 +224,20 @@ class ConsistencyChecker<KEY>
         }
     }
 
-    private boolean checkSubtree( PageCursor cursor, KeyRange<KEY> range, long expectedGen, int level )
+    private boolean checkSubtree( PageCursor cursor, KeyRange<KEY> range, long expectedGeneration, int level )
             throws IOException
     {
         boolean isInternal = false;
         boolean isLeaf = false;
         int keyCount;
-        long newGen;
-        long newGenGen;
+        long heir;
+        long heirGeneration;
 
         long leftSiblingPointer;
         long rightSiblingPointer;
-        long leftSiblingPointerGen;
-        long rightSiblingPointerGen;
-        long currentNodeGen;
+        long leftSiblingPointerGeneration;
+        long rightSiblingPointerGeneration;
+        long currentNodeGeneration;
 
         do
         {
@@ -247,19 +247,19 @@ class ConsistencyChecker<KEY>
             assertNoCrashOrBrokenPointerInGSPP(
                     cursor, stableGeneration, unstableGeneration, "RightSibling", TreeNode.BYTE_POS_RIGHTSIBLING, node );
             assertNoCrashOrBrokenPointerInGSPP(
-                    cursor, stableGeneration, unstableGeneration, "NewGen", TreeNode.BYTE_POS_NEWGEN, node );
+                    cursor, stableGeneration, unstableGeneration, "Heir", TreeNode.BYTE_POS_HEIR, node );
 
             // for assertSiblings
             leftSiblingPointer = node.leftSibling( cursor, stableGeneration, unstableGeneration );
             rightSiblingPointer = node.rightSibling( cursor, stableGeneration, unstableGeneration );
-            leftSiblingPointerGen = node.pointerGen( cursor, leftSiblingPointer );
-            rightSiblingPointerGen = node.pointerGen( cursor, rightSiblingPointer );
+            leftSiblingPointerGeneration = node.pointerGeneration( cursor, leftSiblingPointer );
+            rightSiblingPointerGeneration = node.pointerGeneration( cursor, rightSiblingPointer );
             leftSiblingPointer = pointer( leftSiblingPointer );
             rightSiblingPointer = pointer( rightSiblingPointer );
-            currentNodeGen = node.gen( cursor );
+            currentNodeGeneration = node.generation( cursor );
 
-            newGen = node.newGen( cursor, stableGeneration, unstableGeneration );
-            newGenGen = node.pointerGen( cursor, newGen );
+            heir = node.heir( cursor, stableGeneration, unstableGeneration );
+            heirGeneration = node.pointerGeneration( cursor, heir );
 
             keyCount = node.keyCount( cursor );
             if ( keyCount > node.internalMaxKeyCount() && keyCount > node.leafMaxKeyCount() )
@@ -280,10 +280,10 @@ class ConsistencyChecker<KEY>
                     " isn't a tree node, parent expected range " + range );
         }
 
-        assertPointerGenMatchesGen( cursor, currentNodeGen, expectedGen );
-        assertSiblings( cursor, currentNodeGen, leftSiblingPointer, leftSiblingPointerGen, rightSiblingPointer,
-                rightSiblingPointerGen, level );
-        checkNewGenPointerGen( cursor, newGen, newGenGen );
+        assertPointerGenerationMatchesGeneration( cursor, currentNodeGeneration, expectedGeneration );
+        assertSiblings( cursor, currentNodeGeneration, leftSiblingPointer, leftSiblingPointerGeneration, rightSiblingPointer,
+                rightSiblingPointerGeneration, level );
+        checkHeirPointerGeneration( cursor, heir, heirGeneration );
 
         if ( isInternal )
         {
@@ -292,31 +292,32 @@ class ConsistencyChecker<KEY>
         return true;
     }
 
-    private static void assertPointerGenMatchesGen( PageCursor cursor, long nodeGen, long expectedGen )
+    private static void assertPointerGenerationMatchesGeneration( PageCursor cursor, long nodeGeneration,
+            long expectedGeneration )
     {
-        assert nodeGen <= expectedGen : "Expected node:" + cursor.getCurrentPageId() + " gen:" + nodeGen +
-                " to be ≤ pointer gen:" + expectedGen;
+        assert nodeGeneration <= expectedGeneration : "Expected node:" + cursor.getCurrentPageId() + " generation:" + nodeGeneration +
+                " to be ≤ pointer generation:" + expectedGeneration;
     }
 
-    private void checkNewGenPointerGen( PageCursor cursor, long newGen, long newGenGen )
+    private void checkHeirPointerGeneration( PageCursor cursor, long heir, long heirGeneration )
             throws IOException
     {
-        if ( TreeNode.isNode( newGen ) )
+        if ( TreeNode.isNode( heir ) )
         {
             cursor.setCursorException( "WARNING: we ended up on an old generation " + cursor.getCurrentPageId() +
-                    " which had newGen:" + pointer( newGen ) );
+                    " which had heir:" + pointer( heir ) );
             long origin = cursor.getCurrentPageId();
-            node.goTo( cursor, "newGen", newGen );
+            node.goTo( cursor, "heir", heir );
             try
             {
-                long nodeGen;
+                long nodeGeneration;
                 do
                 {
-                    nodeGen = node.gen( cursor );
+                    nodeGeneration = node.generation( cursor );
                 }
                 while ( cursor.shouldRetry() );
 
-                assertPointerGenMatchesGen( cursor, nodeGen, newGenGen );
+                assertPointerGenerationMatchesGeneration( cursor, nodeGeneration, heirGeneration );
             }
             finally
             {
@@ -326,8 +327,8 @@ class ConsistencyChecker<KEY>
     }
 
     // Assumption: We traverse the tree from left to right on every level
-    private void assertSiblings( PageCursor cursor, long currentNodeGen, long leftSiblingPointer,
-            long leftSiblingPointerGen, long rightSiblingPointer, long rightSiblingPointerGen, int level )
+    private void assertSiblings( PageCursor cursor, long currentNodeGeneration, long leftSiblingPointer,
+            long leftSiblingPointerGeneration, long rightSiblingPointer, long rightSiblingPointerGeneration, int level )
     {
         // If this is the first time on this level, we will add a new entry
         for ( int i = rightmostPerLevel.size(); i <= level; i++ )
@@ -336,8 +337,8 @@ class ConsistencyChecker<KEY>
         }
         RightmostInChain rightmost = rightmostPerLevel.get( level );
 
-        rightmost.assertNext( cursor, currentNodeGen, leftSiblingPointer, leftSiblingPointerGen, rightSiblingPointer,
-                rightSiblingPointerGen );
+        rightmost.assertNext( cursor, currentNodeGeneration, leftSiblingPointer, leftSiblingPointerGeneration, rightSiblingPointer,
+                rightSiblingPointerGeneration );
     }
 
     private void assertSubtrees( PageCursor cursor, KeyRange<KEY> range, int keyCount, int level )
@@ -352,11 +353,11 @@ class ConsistencyChecker<KEY>
         while ( pos < keyCount )
         {
             long child;
-            long childGen;
+            long childGeneration;
             do
             {
                 child = childAt( cursor, pos );
-                childGen = node.pointerGen( cursor, child );
+                childGeneration = node.pointerGeneration( cursor, child );
                 node.keyAt( cursor, readKey, pos );
             }
             while ( cursor.shouldRetry() );
@@ -369,7 +370,7 @@ class ConsistencyChecker<KEY>
             }
 
             node.goTo( cursor, "child at pos " + pos, child );
-            checkSubtree( cursor, childRange, childGen, level + 1 );
+            checkSubtree( cursor, childRange, childGeneration, level + 1 );
 
             node.goTo( cursor, "parent", pageId );
 
@@ -379,18 +380,18 @@ class ConsistencyChecker<KEY>
 
         // Check last child
         long child;
-        long childGen;
+        long childGeneration;
         do
         {
             child = childAt( cursor, pos );
-            childGen = node.pointerGen( cursor, child );
+            childGeneration = node.pointerGeneration( cursor, child );
         }
         while ( cursor.shouldRetry() );
         checkAfterShouldRetry( cursor );
 
         node.goTo( cursor, "child at pos " + pos, child );
         childRange = range.restrictLeft( prev );
-        checkSubtree( cursor, childRange, childGen, level + 1 );
+        checkSubtree( cursor, childRange, childGeneration, level + 1 );
         node.goTo( cursor, "parent", pageId );
     }
 
@@ -440,22 +441,22 @@ class ConsistencyChecker<KEY>
         cursor.setOffset( offset );
         long currentNodeId = cursor.getCurrentPageId();
         // A
-        long generationA = GenSafePointer.readGeneration( cursor );
-        long pointerA = GenSafePointer.readPointer( cursor );
-        short checksumA = GenSafePointer.readChecksum( cursor );
-        boolean correctChecksumA = GenSafePointer.checksumOf( generationA, pointerA ) == checksumA;
-        byte stateA = GenSafePointerPair.pointerState(
+        long generationA = GenerationSafePointer.readGeneration( cursor );
+        long pointerA = GenerationSafePointer.readPointer( cursor );
+        short checksumA = GenerationSafePointer.readChecksum( cursor );
+        boolean correctChecksumA = GenerationSafePointer.checksumOf( generationA, pointerA ) == checksumA;
+        byte stateA = GenerationSafePointerPair.pointerState(
                 stableGeneration, unstableGeneration, generationA, pointerA, correctChecksumA );
-        boolean okA = stateA != GenSafePointerPair.BROKEN && stateA != GenSafePointerPair.CRASH;
+        boolean okA = stateA != GenerationSafePointerPair.BROKEN && stateA != GenerationSafePointerPair.CRASH;
 
         // B
-        long generationB = GenSafePointer.readGeneration( cursor );
-        long pointerB = GenSafePointer.readPointer( cursor );
-        short checksumB = GenSafePointer.readChecksum( cursor );
-        boolean correctChecksumB = GenSafePointer.checksumOf( generationB, pointerB ) == checksumB;
-        byte stateB = GenSafePointerPair.pointerState(
+        long generationB = GenerationSafePointer.readGeneration( cursor );
+        long pointerB = GenerationSafePointer.readPointer( cursor );
+        short checksumB = GenerationSafePointer.readChecksum( cursor );
+        boolean correctChecksumB = GenerationSafePointer.checksumOf( generationB, pointerB ) == checksumB;
+        byte stateB = GenerationSafePointerPair.pointerState(
                 stableGeneration, unstableGeneration, generationB, pointerB, correctChecksumB );
-        boolean okB = stateB != GenSafePointerPair.BROKEN && stateB != GenSafePointerPair.CRASH;
+        boolean okB = stateB != GenerationSafePointerPair.BROKEN && stateB != GenerationSafePointerPair.CRASH;
 
         if ( !(okA && okB) )
         {
@@ -472,7 +473,7 @@ class ConsistencyChecker<KEY>
     private static String stateToString( long generationA, long pointerA, byte stateA )
     {
         return format( "generation=%d, pointer=%d, state=%s",
-                generationA, pointerA, GenSafePointerPair.pointerStateName( stateA ) );
+                generationA, pointerA, GenerationSafePointerPair.pointerStateName( stateA ) );
     }
 
     private static class KeyRange<KEY>
