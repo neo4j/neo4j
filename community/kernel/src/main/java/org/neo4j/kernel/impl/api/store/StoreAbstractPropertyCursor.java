@@ -25,6 +25,7 @@ import org.neo4j.cursor.Cursor;
 import org.neo4j.function.Disposable;
 import org.neo4j.kernel.api.properties.DefinedProperty;
 import org.neo4j.kernel.impl.locking.Lock;
+import org.neo4j.kernel.impl.store.PropertyStore;
 import org.neo4j.kernel.impl.store.RecordCursor;
 import org.neo4j.kernel.impl.store.RecordCursors;
 import org.neo4j.kernel.impl.store.record.PropertyRecord;
@@ -46,9 +47,9 @@ public abstract class StoreAbstractPropertyCursor implements PropertyItem, Curso
     private Lock lock;
     protected PropertyContainerState state;
 
-    StoreAbstractPropertyCursor( RecordCursors cursors )
+    StoreAbstractPropertyCursor( PropertyStore propertyStore, RecordCursors cursors )
     {
-        this.payload = new StorePropertyPayloadCursor( cursors.propertyString(), cursors.propertyArray() );
+        this.payload = new StorePropertyPayloadCursor( propertyStore.getStringStore(), propertyStore.getArrayStore() );
         this.recordCursor = cursors.property();
     }
 
@@ -170,5 +171,6 @@ public abstract class StoreAbstractPropertyCursor implements PropertyItem, Curso
     @Override
     public void dispose()
     {
+        payload.dispose();
     }
 }
