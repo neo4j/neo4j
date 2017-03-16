@@ -424,7 +424,7 @@ public class CrashGenCleanerTest
                     @Override
                     public int offset( TreeNode node )
                     {
-                        return TreeNode.BYTE_POS_NEWGEN;
+                        return TreeNode.BYTE_POS_HEIR;
                     }
                 }
     }
