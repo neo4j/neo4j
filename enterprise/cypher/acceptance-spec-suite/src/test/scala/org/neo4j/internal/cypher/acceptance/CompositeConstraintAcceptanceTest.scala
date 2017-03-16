@@ -19,20 +19,14 @@
  */
 package org.neo4j.internal.cypher.acceptance
 
-import org.neo4j.cypher.javacompat.internal.GraphDatabaseCypherService
 import org.neo4j.cypher.{CypherExecutionException, ExecutionEngineFunSuite, NewPlannerTestSupport}
-import org.neo4j.graphdb.{ConstraintViolationException, Node}
+import org.neo4j.graphdb.ConstraintViolationException
 import org.neo4j.kernel.GraphDatabaseQueryService
-import org.neo4j.test.{TestEnterpriseGraphDatabaseFactory, TestGraphDatabaseFactory}
 import org.scalatest.matchers.{MatchResult, Matcher}
 
 import scala.collection.JavaConverters._
 
 class CompositeConstraintAcceptanceTest extends ExecutionEngineFunSuite with NewPlannerTestSupport {
-
-  override protected def createGraphDatabase(): GraphDatabaseCypherService = {
-    new GraphDatabaseCypherService(new TestEnterpriseGraphDatabaseFactory().newImpermanentDatabase(databaseConfig().asJava))
-  }
 
   test("should be able to create and remove composite uniquness constraints") {
     // When

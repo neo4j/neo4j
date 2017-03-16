@@ -42,6 +42,7 @@ import org.neo4j.kernel.api.schema_new.constaints.ConstraintBoundary;
 import org.neo4j.kernel.api.schema_new.constaints.ConstraintDescriptor;
 import org.neo4j.kernel.api.schema_new.constaints.ConstraintDescriptorFactory;
 import org.neo4j.kernel.api.schema_new.constaints.NodeExistenceConstraintDescriptor;
+import org.neo4j.kernel.api.schema_new.constaints.NodeKeyConstraintDescriptor;
 import org.neo4j.kernel.api.schema_new.constaints.RelExistenceConstraintDescriptor;
 import org.neo4j.kernel.api.schema_new.constaints.UniquenessConstraintDescriptor;
 import org.neo4j.kernel.api.schema_new.index.NewIndexDescriptor;
@@ -151,6 +152,38 @@ public class DataIntegrityValidatingStatementOperations implements
     }
 
     @Override
+    public NodeKeyConstraintDescriptor nodeKeyConstraintCreate(
+            KernelStatement state, LabelSchemaDescriptor descriptor )
+            throws AlreadyConstrainedException, CreateConstraintFailureException, AlreadyIndexedException,
+            RepeatedPropertyInCompositeSchemaException
+    {
+        NodeKeyConstraintDescriptor constraint = ConstraintDescriptorFactory.nodeKeyForSchema( descriptor );
+        UniquenessConstraintDescriptor uniquenessConstraintDescriptor =
+                ConstraintDescriptorFactory.uniqueForSchema( descriptor );
+        boolean somethingWasMade = false;
+        if ( !schemaReadDelegate.constraintExists( state, uniquenessConstraintDescriptor ) )
+        {
+            assertIndexDoesNotExist( state, OperationContext.CONSTRAINT_CREATION, descriptor );
+            schemaWriteDelegate.uniquePropertyConstraintCreate( state, descriptor );
+            somethingWasMade = true;
+        }
+        for ( NodeExistenceConstraintDescriptor pem : constraint.ownedExistenceConstraints() )
+        {
+            if ( !schemaReadDelegate.constraintExists( state, pem ) )
+            {
+                schemaWriteDelegate.nodePropertyExistenceConstraintCreate( state, pem.schema() );
+                somethingWasMade = true;
+            }
+        }
+        if ( !somethingWasMade )
+        {
+            throw new AlreadyConstrainedException( constraint, OperationContext.CONSTRAINT_CREATION,
+                    new StatementTokenNameLookup( state.readOperations() ) );
+        }
+        return constraint;
+    }
+
+    @Override
     public UniquenessConstraintDescriptor uniquePropertyConstraintCreate(
             KernelStatement state, LabelSchemaDescriptor descriptor )
             throws AlreadyConstrainedException, CreateConstraintFailureException, AlreadyIndexedException,
@@ -192,15 +225,40 @@ public class DataIntegrityValidatingStatementOperations implements
     @Override
     public void constraintDrop( KernelStatement state, ConstraintDescriptor descriptor ) throws DropConstraintFailureException
     {
-        try
+        if ( descriptor.type() == ConstraintDescriptor.Type.UNIQUE_EXISTS )
         {
-            assertConstraintExists( state, descriptor );
+            NodeKeyConstraintDescriptor nodeKey = (NodeKeyConstraintDescriptor) descriptor;
+            try
+            {
+                assertConstraintExists( state, nodeKey.ownedUniquenessConstraint() );
+                for ( ConstraintDescriptor existenceConstraint : nodeKey.ownedExistenceConstraints() )
+                {
+                    assertConstraintExists( state, existenceConstraint );
+                }
+            }
+            catch ( NoSuchConstraintException e )
+            {
+                throw new DropConstraintFailureException( descriptor, e );
+            }
+
+            schemaWriteDelegate.constraintDrop( state, nodeKey.ownedUniquenessConstraint() );
+            for ( ConstraintDescriptor existenceConstraint : nodeKey.ownedExistenceConstraints() )
+            {
+                schemaWriteDelegate.constraintDrop( state, existenceConstraint );
+            }
         }
-        catch ( NoSuchConstraintException e )
+        else
         {
-            throw new DropConstraintFailureException( descriptor , e );
+            try
+            {
+                assertConstraintExists( state, descriptor );
+            }
+            catch ( NoSuchConstraintException e )
+            {
+                throw new DropConstraintFailureException( descriptor, e );
+            }
+            schemaWriteDelegate.constraintDrop( state, descriptor );
         }
-        schemaWriteDelegate.constraintDrop( state, descriptor );
     }
 
     private void assertIndexDoesNotExist( KernelStatement state, OperationContext context,

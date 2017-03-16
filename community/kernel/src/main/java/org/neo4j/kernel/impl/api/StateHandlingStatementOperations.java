@@ -69,6 +69,7 @@ import org.neo4j.kernel.api.schema_new.SchemaUtil;
 import org.neo4j.kernel.api.schema_new.constaints.ConstraintDescriptor;
 import org.neo4j.kernel.api.schema_new.constaints.ConstraintDescriptorFactory;
 import org.neo4j.kernel.api.schema_new.constaints.NodeExistenceConstraintDescriptor;
+import org.neo4j.kernel.api.schema_new.constaints.NodeKeyConstraintDescriptor;
 import org.neo4j.kernel.api.schema_new.constaints.RelExistenceConstraintDescriptor;
 import org.neo4j.kernel.api.schema_new.constaints.UniquenessConstraintDescriptor;
 import org.neo4j.kernel.api.schema_new.index.NewIndexDescriptor;
@@ -586,6 +587,14 @@ public class StateHandlingStatementOperations implements
     }
 
     @Override
+    public NodeKeyConstraintDescriptor nodeKeyConstraintCreate( KernelStatement state,
+            LabelSchemaDescriptor descriptor )
+            throws CreateConstraintFailureException
+    {
+        throw new IllegalStateException( "NODE KEY Constraints are syntactic sugar and are handled higher in the cake." );
+    }
+
+    @Override
     public UniquenessConstraintDescriptor uniquePropertyConstraintCreate( KernelStatement state, LabelSchemaDescriptor descriptor )
             throws CreateConstraintFailureException
     {
@@ -705,6 +714,8 @@ public class StateHandlingStatementOperations implements
     @Override
     public void constraintDrop( KernelStatement state, ConstraintDescriptor constraint )
     {
+        assert constraint.type() != ConstraintDescriptor.Type.UNIQUE_EXISTS :
+                "The NODE KEY constraint is synthetic, and is dropped at a higher layer in the cake.";
         state.txState().constraintDoDrop( constraint );
     }
 
