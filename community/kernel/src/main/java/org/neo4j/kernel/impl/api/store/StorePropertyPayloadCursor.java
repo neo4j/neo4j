@@ -235,9 +235,9 @@ class StorePropertyPayloadCursor implements Disposable
 
     private void readRecord( CommonAbstractStore<DynamicRecord,?> store, PageCursor cursor, long blockId )
     {
-        record.clear();
         try
         {
+            record.clear();
             store.readIntoRecord( blockId, record, FORCE, cursor );
         }
         catch ( IOException e )
