@@ -25,12 +25,12 @@ import java.util.function.Consumer;
 
 import org.neo4j.collection.primitive.PrimitiveIntSet;
 import org.neo4j.cursor.Cursor;
+import org.neo4j.function.Disposable;
 import org.neo4j.io.pagecache.PageCursor;
 import org.neo4j.kernel.impl.locking.Lock;
 import org.neo4j.kernel.impl.locking.LockService;
 import org.neo4j.kernel.impl.store.NodeLabelsField;
 import org.neo4j.kernel.impl.store.NodeStore;
-import org.neo4j.kernel.impl.store.RecordCursors;
 import org.neo4j.kernel.impl.store.UnderlyingStorageException;
 import org.neo4j.kernel.impl.store.record.NodeRecord;
 import org.neo4j.kernel.impl.store.record.Record;
@@ -47,7 +47,7 @@ import static org.neo4j.kernel.impl.locking.LockService.NO_LOCK_SERVICE;
 import static org.neo4j.kernel.impl.store.record.RecordLoad.CHECK;
 import static org.neo4j.kernel.impl.util.IoPrimitiveUtils.safeCastLongToInt;
 
-public class NodeCursor implements NodeItem, Cursor<NodeItem>
+public class NodeCursor implements NodeItem, Cursor<NodeItem>, Disposable
 {
     private final NodeRecord nodeRecord;
     private final Consumer<NodeCursor> instanceCache;
@@ -59,11 +59,12 @@ public class NodeCursor implements NodeItem, Cursor<NodeItem>
     private boolean fetched;
     private long[] labels;
     private Iterator<Long> added;
-    private PageCursor nodePageCursor;
+    private PageCursor pageCursor;
 
     NodeCursor( NodeRecord nodeRecord, Consumer<NodeCursor> instanceCache, NodeStore nodeStore,
             LockService lockService )
     {
+        this.pageCursor = nodeStore.newPageCursor();
         this.nodeRecord = nodeRecord;
         this.instanceCache = instanceCache;
         this.nodeStore = nodeStore;
@@ -72,7 +73,6 @@ public class NodeCursor implements NodeItem, Cursor<NodeItem>
 
     public Cursor<NodeItem> init( Progression progression, ReadableTransactionState state )
     {
-        this.nodePageCursor = nodeStore.newPageCursor();
         this.progression = progression;
         this.state = state;
         this.added = state != null && progression.mode() == APPEND
@@ -119,7 +119,7 @@ public class NodeCursor implements NodeItem, Cursor<NodeItem>
         try
         {
             nodeRecord.clear();
-            nodeStore.readIntoRecord( id, nodeRecord, CHECK, nodePageCursor );
+            nodeStore.readIntoRecord( id, nodeRecord, CHECK, pageCursor );
             return nodeRecord.inUse();
         }
         catch ( IOException e )
@@ -140,9 +140,14 @@ public class NodeCursor implements NodeItem, Cursor<NodeItem>
         labels = null;
         added = null;
         state = null;
-        nodePageCursor.close();
-        nodePageCursor = null;
         instanceCache.accept( this );
+    }
+
+    @Override
+    public void dispose()
+    {
+        pageCursor.close();
+        pageCursor = null;
     }
 
     @Override
