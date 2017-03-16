@@ -26,7 +26,7 @@ import java.util.stream.{DoubleStream, IntStream, LongStream}
 import org.neo4j.codegen.Expression.{constant, invoke, newInstance}
 import org.neo4j.codegen.MethodReference.constructorReference
 import org.neo4j.codegen.TypeReference._
-import org.neo4j.codegen.bytecode.ByteCode.BYTECODE
+import org.neo4j.codegen.bytecode.ByteCode.{BYTECODE, VERIFY_GENERATED_BYTECODE}
 import org.neo4j.codegen.source.SourceCode.SOURCECODE
 import org.neo4j.codegen.source.{SourceCode, SourceVisitor}
 import org.neo4j.codegen.{CodeGenerator, Parameter, _}
@@ -62,6 +62,9 @@ object GeneratedQueryStructure extends CodeStructure[GeneratedQuery] {
     }
     if(conf.showByteCode) {
       options += code.saveByteCode
+    }
+    if(getClass.desiredAssertionStatus()) {
+      options += VERIFY_GENERATED_BYTECODE
     }
     conf.saveSource.foreach(path => {
       options += SourceCode.sourceLocation(path)

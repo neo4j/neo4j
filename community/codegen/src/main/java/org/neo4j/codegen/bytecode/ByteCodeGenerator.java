@@ -19,7 +19,9 @@
  */
 package org.neo4j.codegen.bytecode;
 
+import java.util.ArrayList;
 import java.util.HashMap;
+import java.util.List;
 import java.util.Map;
 
 import org.neo4j.codegen.ByteCodes;
@@ -28,12 +30,12 @@ import org.neo4j.codegen.CodeGenerator;
 import org.neo4j.codegen.CompilationFailureException;
 import org.neo4j.codegen.TypeReference;
 
-public class ByteCodeGenerator extends CodeGenerator
+class ByteCodeGenerator extends CodeGenerator
 {
     private final Configuration configuration;
     private final Map<TypeReference,ClassByteCodeWriter> classes = new HashMap<>();
 
-    public ByteCodeGenerator( ClassLoader parentClassLoader, Configuration configuration)
+    ByteCodeGenerator( ClassLoader parentClassLoader, Configuration configuration )
     {
         super( parentClassLoader );
         this.configuration = configuration;
@@ -58,6 +60,16 @@ public class ByteCodeGenerator extends CodeGenerator
 
     protected Iterable<? extends ByteCodes> compile( ClassLoader classpathLoader ) throws CompilationFailureException
     {
-        return classes.values().stream().map( ClassByteCodeWriter::toByteCodes )::iterator;
+        List<ByteCodes> byteCodes = new ArrayList<>( classes.size() );
+        for ( ClassByteCodeWriter writer : classes.values() )
+        {
+            byteCodes.add( writer.toByteCodes() );
+        }
+        ByteCodeChecker checker = configuration.bytecodeChecker();
+        if ( checker != null )
+        {
+            checker.check( classpathLoader, byteCodes );
+        }
+        return byteCodes;
     }
 }

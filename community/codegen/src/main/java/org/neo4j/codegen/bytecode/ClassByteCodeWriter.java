@@ -19,17 +19,20 @@
  */
 package org.neo4j.codegen.bytecode;
 
-import org.objectweb.asm.ClassWriter;
-import org.objectweb.asm.FieldVisitor;
-import org.objectweb.asm.MethodVisitor;
-
 import java.lang.reflect.Modifier;
 import java.nio.ByteBuffer;
 import java.util.HashMap;
 import java.util.Map;
+import java.util.function.Function;
+
+import org.objectweb.asm.ClassVisitor;
+import org.objectweb.asm.ClassWriter;
+import org.objectweb.asm.FieldVisitor;
+import org.objectweb.asm.MethodVisitor;
 
 import org.neo4j.codegen.ByteCodes;
 import org.neo4j.codegen.ClassEmitter;
+import org.neo4j.codegen.CompilationFailureException;
 import org.neo4j.codegen.Expression;
 import org.neo4j.codegen.FieldReference;
 import org.neo4j.codegen.MethodDeclaration;
@@ -50,6 +53,7 @@ import static org.objectweb.asm.Opcodes.V1_8;
 class ClassByteCodeWriter implements ClassEmitter
 {
     private final ClassWriter classWriter;
+    private final ClassVisitor classVisitor;
     private final TypeReference type;
     private final Map<FieldReference,Expression> staticFields = new HashMap<>();
     private final TypeReference base;
@@ -57,16 +61,17 @@ class ClassByteCodeWriter implements ClassEmitter
     ClassByteCodeWriter( TypeReference type, TypeReference base, TypeReference[] interfaces )
     {
         this.classWriter = new ClassWriter( ClassWriter.COMPUTE_FRAMES );
+        this.classVisitor = classWriter; // this separation is useful if we want to add intermediary visitors
         String[] iNames = new String[interfaces.length];
         for ( int i = 0; i < interfaces.length; i++ )
         {
             iNames[i] = byteCodeName( interfaces[i] );
         }
-        classWriter.visit( V1_8, ACC_PUBLIC + ACC_SUPER, byteCodeName( type ), signature( type ),
+        classVisitor.visit( V1_8, ACC_PUBLIC + ACC_SUPER, byteCodeName( type ), signature( type ),
                 byteCodeName( base ), iNames.length != 0 ? iNames : null );
         if ( base.isInnerClass() )
         {
-            classWriter.visitInnerClass( byteCodeName( base ), outerName(base),
+            classVisitor.visitInnerClass( byteCodeName( base ), outerName( base ),
                     base.simpleName(), ACC_PUBLIC + ACC_STATIC );
         }
         this.type = type;
@@ -76,7 +81,7 @@ class ClassByteCodeWriter implements ClassEmitter
     @Override
     public MethodEmitter method( MethodDeclaration signature )
     {
-        return new MethodByteCodeEmitter( classWriter, signature, base );
+        return new MethodByteCodeEmitter( classVisitor, signature, base );
     }
 
     @Override
@@ -87,7 +92,7 @@ class ClassByteCodeWriter implements ClassEmitter
         {
             staticFields.put( field, value );
         }
-        FieldVisitor fieldVisitor = classWriter
+        FieldVisitor fieldVisitor = classVisitor
                 .visitField( field.modifiers(), field.name(), typeName( field.type() ), signature( field.type() ),
                         null );
         fieldVisitor.visitEnd();
@@ -98,7 +103,7 @@ class ClassByteCodeWriter implements ClassEmitter
     {
         if ( !staticFields.isEmpty() )
         {
-            MethodVisitor methodVisitor = classWriter.visitMethod( ACC_STATIC, "<clinit>", "()V", null, null );
+            MethodVisitor methodVisitor = classVisitor.visitMethod( ACC_STATIC, "<clinit>", "()V", null, null );
             ByteCodeExpressionVisitor expressionVisitor = new ByteCodeExpressionVisitor( methodVisitor );
             methodVisitor.visitCode();
             for ( Map.Entry<FieldReference,Expression> entry : staticFields.entrySet() )
@@ -113,11 +118,12 @@ class ClassByteCodeWriter implements ClassEmitter
             methodVisitor.visitMaxs( 0, 0 );
             methodVisitor.visitEnd();
         }
-        classWriter.visitEnd();
+        classVisitor.visitEnd();
     }
 
-    public ByteCodes toByteCodes()
+    ByteCodes toByteCodes()
     {
+        byte[] bytecode = classWriter.toByteArray();
         return new ByteCodes()
         {
             @Override
@@ -129,7 +135,7 @@ class ClassByteCodeWriter implements ClassEmitter
             @Override
             public ByteBuffer bytes()
             {
-                return ByteBuffer.wrap( classWriter.toByteArray() );
+                return ByteBuffer.wrap( bytecode );
             }
         };
     }

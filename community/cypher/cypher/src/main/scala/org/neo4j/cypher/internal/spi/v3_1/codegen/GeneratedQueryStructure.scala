@@ -22,9 +22,8 @@ package org.neo4j.cypher.internal.spi.v3_1.codegen
 import java.lang.reflect.Modifier
 import java.util
 
-import org.neo4j.codegen.CodeGeneratorOption._
 import org.neo4j.codegen.TypeReference._
-import org.neo4j.codegen.bytecode.ByteCode.BYTECODE
+import org.neo4j.codegen.bytecode.ByteCode.{BYTECODE, VERIFY_GENERATED_BYTECODE}
 import org.neo4j.codegen.source.SourceCode.SOURCECODE
 import org.neo4j.codegen.source.SourceVisitor
 import org.neo4j.codegen.{CodeGenerator, Parameter, _}
@@ -40,6 +39,8 @@ import org.neo4j.cypher.internal.frontend.v3_1.symbols
 import org.neo4j.kernel.api.ReadOperations
 import org.neo4j.kernel.impl.core.NodeManager
 
+import scala.collection.mutable
+
 object GeneratedQueryStructure extends CodeStructure[GeneratedQuery] {
 
   import Expression.{constant, invoke, newInstance}
@@ -54,20 +55,22 @@ object GeneratedQueryStructure extends CodeStructure[GeneratedQuery] {
       case ByteCodeMode => BYTECODE
     }
 
-    val option = if(conf.saveSource) {
-      if(mode == SOURCECODE) new SourceVisitor {
+    val options = mutable.ListBuffer.empty[CodeGeneratorOption]
+    if(conf.saveSource) {
+      options += (if(mode == SOURCECODE) new SourceVisitor {
         override protected def visitSource(reference: TypeReference, sourceCode: CharSequence): Unit =
           source(reference.fullName(), sourceCode.toString)
       } else new DisassemblyVisitor {
         override protected def visitDisassembly(className: String, disassembly: CharSequence): Unit =
           source(className, disassembly.toString)
-      }
-    } else {
-      BLANK_OPTION
+      })
+    }
+    if(getClass.desiredAssertionStatus()) {
+      options += VERIFY_GENERATED_BYTECODE
     }
 
     try {
-      CodeGenerator.generateCode(classOf[CodeStructure[_]].getClassLoader, mode, option)
+      CodeGenerator.generateCode(classOf[CodeStructure[_]].getClassLoader, mode, options:_*)
     } catch {
       case e: Exception => throw new CantCompileQueryException(e.getMessage, e)
     }
