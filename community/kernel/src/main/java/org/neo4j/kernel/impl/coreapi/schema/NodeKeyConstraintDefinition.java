@@ -35,7 +35,7 @@ public class NodeKeyConstraintDefinition extends NodeConstraintDefinition
     public void drop()
     {
         assertInUnterminatedTransaction();
-        actions.dropPropertyUniquenessConstraint( label, propertyKeys );
+        actions.dropNodeKeyConstraint( label, propertyKeys );
     }
 
     @Override
@@ -48,7 +48,7 @@ public class NodeKeyConstraintDefinition extends NodeConstraintDefinition
     @Override
     public String toString()
     {
-        return format( "ON (%1$s:%2$s) ASSERT %3$s IS UNIQUE",
+        return format( "ON (%1$s:%2$s) ASSERT %3$s IS NODE KEY",
                 label.name().toLowerCase(), label.name(), propertyText() );
     }
 }

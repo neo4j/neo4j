@@ -29,7 +29,7 @@ import org.neo4j.kernel.api.exceptions.schema.SchemaRuleNotFoundException;
 import org.neo4j.kernel.api.index.SchemaIndexProvider;
 import org.neo4j.kernel.api.properties.DefinedProperty;
 import org.neo4j.kernel.api.schema_new.constaints.ConstraintDescriptor;
-import org.neo4j.kernel.api.schema_new.constaints.NodeExistenceConstraintDescriptor;
+import org.neo4j.kernel.api.schema_new.constaints.IndexBackedConstraintDescriptor;
 import org.neo4j.kernel.api.schema_new.constaints.NodeKeyConstraintDescriptor;
 import org.neo4j.kernel.api.schema_new.constaints.UniquenessConstraintDescriptor;
 import org.neo4j.kernel.api.schema_new.index.NewIndexDescriptor;
@@ -259,7 +259,7 @@ public class TransactionToRecordStateVisitor extends TxStateVisitor.Adapter
         if ( constraint.type().enforcesUniqueness() )
         {
             // Remove the index for the constraint as well
-            visitRemovedIndex( ((UniquenessConstraintDescriptor)constraint).ownedIndexDescriptor() );
+            visitRemovedIndex( ((IndexBackedConstraintDescriptor)constraint).ownedIndexDescriptor() );
         }
     }
 
