@@ -1521,7 +1521,7 @@ public class SeekCursorTest
         long currentNode = cursor.getCurrentPageId();
         try ( SeekCursor<MutableLong,MutableLong> seek = seekCursor( 0L, i, cursor ) )
         {
-            // when new generation of right sibling
+            // when right sibling gets an heir
             checkpoint();
             PageAwareByteArrayCursor duplicate = cursor.duplicate( currentNode );
             duplicate.next();
@@ -1578,7 +1578,7 @@ public class SeekCursorTest
     }
 
     @Test
-    public void shouldRereadNewGenIfReadFailureCausedByCheckpointInLeaf() throws Exception
+    public void shouldRereadHeirIfReadFailureCausedByCheckpointInLeaf() throws Exception
     {
         // given
         List<Long> expected = new ArrayList<>();
@@ -1597,7 +1597,7 @@ public class SeekCursorTest
             checkpoint();
             PageAwareByteArrayCursor duplicate = cursor.duplicate( currentNode );
             duplicate.next();
-            insert( i, i * 10, duplicate ); // Create new gen of leaf
+            insert( i, i * 10, duplicate ); // Create heir of leaf
             expected.add( i );
 
             while ( seek.next() )
@@ -1612,7 +1612,7 @@ public class SeekCursorTest
     }
 
     @Test
-    public void shouldFailNewGenIfReadFailureNotCausedByCheckpointInLeaf() throws Exception
+    public void shouldFailHeirIfReadFailureNotCausedByCheckpointInLeaf() throws Exception
     {
         // given
         long i = 0L;
@@ -1628,10 +1628,10 @@ public class SeekCursorTest
             checkpoint();
             PageAwareByteArrayCursor duplicate = cursor.duplicate( currentNode );
             duplicate.next();
-            insert( i, i * 10, duplicate ); // Create new gen of leaf
+            insert( i, i * 10, duplicate ); // Create heir of leaf
 
-            // and corrupt new gen pointer
-            corruptGSPP( duplicate, TreeNode.BYTE_POS_NEWGEN );
+            // and corrupt heir pointer
+            corruptGSPP( duplicate, TreeNode.BYTE_POS_HEIR );
 
             // then
             try
@@ -1649,7 +1649,7 @@ public class SeekCursorTest
     }
 
     @Test
-    public void shouldRereadNewGenIfReadFailureCausedByCheckpointInInternal() throws Exception
+    public void shouldRereadHeirIfReadFailureCausedByCheckpointInInternal() throws Exception
     {
         // given
         // a root with two leaves in old generation
@@ -1690,7 +1690,7 @@ public class SeekCursorTest
         }
 
         // then
-        // make sure seek cursor went to new gen of root node
+        // make sure seek cursor went to heir of root node
         assertEquals( Arrays.asList( oldRootId, rootId, rightChild ), breadcrumbCursor.getBreadcrumbs() );
     }
 
@@ -1709,7 +1709,7 @@ public class SeekCursorTest
     }
 
     @Test
-    public void shouldFailNewGenIfReadFailureNotCausedByCheckpointInInternal() throws Exception
+    public void shouldFailHeirIfReadFailureNotCausedByCheckpointInInternal() throws Exception
     {
         // given
         // a root with two leaves in old generation
@@ -1733,9 +1733,9 @@ public class SeekCursorTest
             i++;
         }
 
-        // and corrupt new gen pointer
+        // and corrupt heir pointer
         cursor.next( rootId );
-        corruptGSPP( cursor, TreeNode.BYTE_POS_NEWGEN );
+        corruptGSPP( cursor, TreeNode.BYTE_POS_HEIR );
 
         // when
         // starting a seek on the old root with generation that is not up to date, simulating a concurrent checkpoint
@@ -1770,7 +1770,7 @@ public class SeekCursorTest
         long oldUnstableGen = unstableGen;
         checkpoint();
 
-        // and an update to root with a new gen child pointer
+        // and an update to root with a child pointer in new gen
         insert( i, i * 10 );
         i++;
         long newRightChild = childAt( cursor, 1, stableGen, unstableGen );
@@ -1789,7 +1789,7 @@ public class SeekCursorTest
         }
 
         // then
-        // make sure seek cursor went to new gen of root node
+        // make sure seek cursor went to heir of root node
         assertEquals( Arrays.asList( rootId, newRightChild ), breadcrumbCursor.getBreadcrumbs() );
     }
 
@@ -1814,7 +1814,7 @@ public class SeekCursorTest
         insert( i, i * 10 );
         i++;
 
-        // and corrupt new gen pointer
+        // and corrupt heir pointer
         corruptGSPP( cursor, node.childOffset( 1 ) );
 
         // when
@@ -1914,7 +1914,7 @@ public class SeekCursorTest
     }
 
     @Test
-    public void shouldCatchupRootWhenNodeHasTooNewGenerationWhileTraversingLeaves() throws Exception
+    public void shouldCatchupRootWhenNodeHasTooHeirerationWhileTraversingLeaves() throws Exception
     {
         // given
         MutableBoolean triggered = new MutableBoolean( false );

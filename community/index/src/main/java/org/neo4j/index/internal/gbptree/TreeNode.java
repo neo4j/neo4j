@@ -37,8 +37,8 @@ import static org.neo4j.index.internal.gbptree.GenSafePointerPair.read;
  * <pre>
  * # = empty space
  *
- * [                            HEADER   82B                        ]|[      KEYS     ]|[     CHILDREN             ]
- * [NODETYPE][TYPE][GEN][KEYCOUNT][RIGHTSIBLING][LEFTSIBLING][NEWGEN]|[[KEY][KEY]...##]|[[CHILD][CHILD][CHILD]...##]
+ * [                            HEADER   82B                      ]|[      KEYS     ]|[     CHILDREN             ]
+ * [NODETYPE][TYPE][GEN][KEYCOUNT][RIGHTSIBLING][LEFTSIBLING][HEIR]|[[KEY][KEY]...##]|[[CHILD][CHILD][CHILD]...##]
  *  0         1     6    10        34            58
  * </pre>
  * Calc offset for key i (starting from 0)
@@ -50,8 +50,8 @@ import static org.neo4j.index.internal.gbptree.GenSafePointerPair.read;
  * Using Separate design the leaf nodes should look like
  *
  * <pre>
- * [                            HEADER   82B                        ]|[      KEYS     ]|[     VALUES        ]
- * [NODETYPE][TYPE][GEN][KEYCOUNT][RIGHTSIBLING][LEFTSIBLING][NEWGEN]|[[KEY][KEY]...##]|[[VALUE][VALUE]...##]
+ * [                            HEADER   82B                      ]|[      KEYS     ]|[     VALUES        ]
+ * [NODETYPE][TYPE][GEN][KEYCOUNT][RIGHTSIBLING][LEFTSIBLING][HEIR]|[[KEY][KEY]...##]|[[VALUE][VALUE]...##]
  *  0         1     6    10        34            58
  * </pre>
  *
@@ -77,8 +77,8 @@ class TreeNode<KEY,VALUE>
     static final int BYTE_POS_KEYCOUNT = BYTE_POS_GEN + Integer.BYTES;
     static final int BYTE_POS_RIGHTSIBLING = BYTE_POS_KEYCOUNT + Integer.BYTES;
     static final int BYTE_POS_LEFTSIBLING = BYTE_POS_RIGHTSIBLING + SIZE_PAGE_REFERENCE;
-    static final int BYTE_POS_NEWGEN = BYTE_POS_LEFTSIBLING + SIZE_PAGE_REFERENCE;
-    static final int HEADER_LENGTH = BYTE_POS_NEWGEN + SIZE_PAGE_REFERENCE;
+    static final int BYTE_POS_HEIR = BYTE_POS_LEFTSIBLING + SIZE_PAGE_REFERENCE;
+    static final int HEADER_LENGTH = BYTE_POS_HEIR + SIZE_PAGE_REFERENCE;
 
     private static final byte LEAF_FLAG = 1;
     static final byte INTERNAL_FLAG = 0;
@@ -127,7 +127,7 @@ class TreeNode<KEY,VALUE>
         setKeyCount( cursor, 0 );
         setRightSibling( cursor, NO_NODE_FLAG, stableGeneration, unstableGeneration );
         setLeftSibling( cursor, NO_NODE_FLAG, stableGeneration, unstableGeneration );
-        setNewGen( cursor, NO_NODE_FLAG, stableGeneration, unstableGeneration );
+        setHeir( cursor, NO_NODE_FLAG, stableGeneration, unstableGeneration );
     }
 
     void initializeLeaf( PageCursor cursor, long stableGeneration, long unstableGeneration )
@@ -174,9 +174,9 @@ class TreeNode<KEY,VALUE>
         return read( cursor, stableGeneration, unstableGeneration, NO_LOGICAL_POS );
     }
 
-    long newGen( PageCursor cursor, long stableGeneration, long unstableGeneration )
+    long heir( PageCursor cursor, long stableGeneration, long unstableGeneration )
     {
-        cursor.setOffset( BYTE_POS_NEWGEN );
+        cursor.setOffset( BYTE_POS_HEIR );
         return read( cursor, stableGeneration, unstableGeneration, NO_LOGICAL_POS );
     }
 
@@ -205,10 +205,10 @@ class TreeNode<KEY,VALUE>
         GenSafePointerPair.assertSuccess( result );
     }
 
-    void setNewGen( PageCursor cursor, long newGenId, long stableGeneration, long unstableGeneration )
+    void setHeir( PageCursor cursor, long heirId, long stableGeneration, long unstableGeneration )
     {
-        cursor.setOffset( BYTE_POS_NEWGEN );
-        long result = GenSafePointerPair.write( cursor, newGenId, stableGeneration, unstableGeneration );
+        cursor.setOffset( BYTE_POS_HEIR );
+        long result = GenSafePointerPair.write( cursor, heirId, stableGeneration, unstableGeneration );
         GenSafePointerPair.assertSuccess( result );
     }
 
