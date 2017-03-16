@@ -19,8 +19,9 @@
  */
 package org.neo4j.kernel.impl.api;
 
-import java.util.Arrays;
+import org.apache.commons.lang3.ArrayUtils;
 
+import java.util.Arrays;
 import java.util.Iterator;
 
 import org.neo4j.collection.primitive.Primitive;
@@ -234,12 +235,11 @@ public class DataIntegrityValidatingStatementOperations implements
             NodeKeyConstraintDescriptor nodeKey = (NodeKeyConstraintDescriptor) descriptor;
             assertNodeKeyExists( state, nodeKey );
 
-            Iterator<ConstraintDescriptor> constraintsForLabel =
-                    schemaReadDelegate.constraintsGetForLabel( state, nodeKey.schema().getLabelId() );
-            Iterator<UniquenessConstraintDescriptor> uniqueForLabel =
-                    new CastingIterator<>( constraintsForLabel, UniquenessConstraintDescriptor.class );
-
-            PrimitiveIntLongMap propertyCounts = countPropertyUses( nodeKey, uniqueForLabel );
+            PrimitiveIntLongMap propertyCounts =
+                                            countPropertyUses(
+                                                nodeKey,
+                                                uniquenessConstraintsForLabel( state, nodeKey.schema().getLabelId() )
+                                            );
 
             schemaWriteDelegate.constraintDrop( state, nodeKey.ownedUniquenessConstraint() );
             removePECsNoLongerInUse( state, nodeKey, propertyCounts );
@@ -254,6 +254,7 @@ public class DataIntegrityValidatingStatementOperations implements
             {
                 throw new DropConstraintFailureException( descriptor, e );
             }
+            assertNotExistencePartOfNodeKey( state, descriptor );
             schemaWriteDelegate.constraintDrop( state, descriptor );
         }
     }
@@ -362,5 +363,38 @@ public class DataIntegrityValidatingStatementOperations implements
         {
             throw new DropConstraintFailureException( nodeKey, e );
         }
+    }
+
+    private void assertNotExistencePartOfNodeKey( KernelStatement state, ConstraintDescriptor descriptor )
+            throws DropConstraintFailureException
+    {
+        if ( descriptor instanceof NodeExistenceConstraintDescriptor )
+        {
+            NodeExistenceConstraintDescriptor pec = (NodeExistenceConstraintDescriptor) descriptor;
+
+            Iterator<ConstraintDescriptor> constraintsForLabel =
+                    NodeKeyConstraintDescriptor.addNodeKeys(
+                        schemaReadDelegate.constraintsGetForLabel( state, pec.schema().getLabelId() ) );
+            Iterator<NodeKeyConstraintDescriptor> nodeKeysForLabel =
+                    new CastingIterator<>( constraintsForLabel, NodeKeyConstraintDescriptor.class );
+
+            while ( nodeKeysForLabel.hasNext() )
+            {
+                int[] nodeKeyPropertyIds = nodeKeysForLabel.next().schema().getPropertyIds();
+                if ( ArrayUtils.indexOf( nodeKeyPropertyIds, pec.schema().getPropertyId() ) != -1 )
+                {
+                    throw new DropConstraintFailureException( ConstraintBoundary.map( descriptor ), new
+                            NoSuchConstraintException( ConstraintBoundary.map( pec ) ) );
+                }
+            }
+        }
+    }
+
+    private Iterator<UniquenessConstraintDescriptor> uniquenessConstraintsForLabel( KernelStatement state, int labelId )
+    {
+        return new CastingIterator<>(
+                schemaReadDelegate.constraintsGetForLabel( state, labelId ),
+                UniquenessConstraintDescriptor.class
+            );
     }
 }

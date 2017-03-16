@@ -34,7 +34,7 @@ class NodeKeyConstraintAcceptanceTest extends ExecutionEngineFunSuite with NewPl
     new GraphDatabaseCypherService(new TestEnterpriseGraphDatabaseFactory().newImpermanentDatabase(databaseConfig().asJava))
   }
 
-  test("should be able to create and remove single property NODE KEY") {
+  test("should be able to create and drop single property NODE KEY") {
     // When
     exec("CREATE CONSTRAINT ON (n:Person) ASSERT (n.email) IS NODE KEY")
 
@@ -83,13 +83,30 @@ class NodeKeyConstraintAcceptanceTest extends ExecutionEngineFunSuite with NewPl
     graph should haveNoConstraints()
   }
 
-  test("should idempotently enrich preexisting uniqueness constraint") {
-    // When
+  test("should enrich existing uniqueness constraint") {
+    // Given
     exec("CREATE CONSTRAINT ON (n:Person) ASSERT (n.email) IS UNIQUE")
+    graph should haveConstraints("UNIQUENESS:Person(email)")
+
+    // When
     exec("CREATE CONSTRAINT ON (n:Person) ASSERT (n.email) IS NODE KEY")
 
     // Then
     graph should haveConstraints("NODE_KEY:Person(email)")
+    graph should not(haveConstraints("UNIQUENESS:Person(email)"))
+  }
+
+  test("should enrich existing existence constraint") {
+    // Given
+    exec("CREATE CONSTRAINT ON (n:Person) ASSERT exists(n.email)")
+    graph should haveConstraints("NODE_PROPERTY_EXISTENCE:Person(email)")
+
+    // When
+    exec("CREATE CONSTRAINT ON (n:Person) ASSERT (n.email,n.name) IS NODE KEY")
+
+    // Then
+    graph should haveConstraints("NODE_KEY:Person(email,name)")
+    graph should not(haveConstraints("NODE_PROPERTY_EXISTENCE:Person(email)"))
   }
 
   test("should silently ignore duplicate NODE KEY constraint") {
@@ -108,7 +125,7 @@ class NodeKeyConstraintAcceptanceTest extends ExecutionEngineFunSuite with NewPl
     graph should haveConstraints("NODE_KEY:Person(email,name)")
   }
 
-  test("should be able to create and remove multiple property NODE KEY") {
+  test("should be able to create and drop composite NODE KEY") {
     // When
     exec("CREATE CONSTRAINT ON (n:Person) ASSERT (n.email) IS NODE KEY")
     exec("CREATE CONSTRAINT ON (n:Person) ASSERT (n.firstname,n.lastname) IS NODE KEY")
@@ -124,7 +141,7 @@ class NodeKeyConstraintAcceptanceTest extends ExecutionEngineFunSuite with NewPl
     graph should not(haveConstraints("NODE_KEY:Person(firstname,lastname)"))
   }
 
-  test("should be able to create and remove overlapping NODE KEY constraints") {
+  test("should be able to create and drop overlapping NODE KEY constraints") {
     // When
     exec("CREATE CONSTRAINT ON (n:Person) ASSERT (n.a,n.b) IS NODE KEY")
     exec("CREATE CONSTRAINT ON (n:Person) ASSERT (n.b,n.c) IS NODE KEY")
@@ -145,6 +162,19 @@ class NodeKeyConstraintAcceptanceTest extends ExecutionEngineFunSuite with NewPl
     // Then
     graph should haveConstraints("NODE_KEY:Person(b,c)")
     graph should not(haveConstraints("NODE_KEY:Person(a,b)"))
+  }
+
+  test("should fail to drop existence constraint that is part of NODE KEY") {
+    // Given
+    exec("CREATE CONSTRAINT ON (n:Person) ASSERT exists(n.email)")
+    exec("CREATE CONSTRAINT ON (n:Person) ASSERT (n.email,n.name) IS NODE KEY")
+
+    // When
+    intercept[CypherExecutionException](exec("DROP CONSTRAINT ON (n:Person) ASSERT exists(n.email)"))
+
+    // Then
+    graph should haveConstraints("NODE_KEY:Person(email,name)")
+    graph should not(haveConstraints("EXISTS:Person(email)"))
   }
 
   case class haveConstraints(expectedConstraints: String*) extends Matcher[GraphDatabaseQueryService] {
