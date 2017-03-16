@@ -87,7 +87,7 @@ public abstract class EntityPropertyDescriptor implements Comparable<EntityPrope
      */
     public int[] getPropertyIds()
     {
-        throw new UnsupportedOperationException( "Cannot get multiple property Ids of single property descriptor" );
+        return new int[]{propertyKeyId};
     }
 
     @Override
