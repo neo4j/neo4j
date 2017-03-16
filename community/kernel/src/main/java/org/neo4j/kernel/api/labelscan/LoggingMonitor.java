@@ -74,6 +74,5 @@ public class LoggingMonitor implements Monitor
         StringBuilder builder = new StringBuilder( "Scan store recovery completed:" );
         data.forEach( (key,value) -> builder.append( format( " %s: %s", key, value ) ) );
         log.info( builder.toString() );
-        delegate.recoveryCompleted( data );
     }
 }
