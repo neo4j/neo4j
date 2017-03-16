@@ -20,7 +20,6 @@
 package org.neo4j.kernel.api.constraints;
 
 import org.neo4j.kernel.api.TokenNameLookup;
-import org.neo4j.kernel.api.exceptions.schema.CreateConstraintFailureException;
 import org.neo4j.kernel.api.schema_new.RelationTypeSchemaDescriptor;
 import org.neo4j.kernel.api.schema_new.constaints.RelExistenceConstraintDescriptor;
 
@@ -35,18 +34,6 @@ public class RelationshipPropertyExistenceConstraint extends RelationshipPropert
     public RelationshipPropertyExistenceConstraint( RelationTypeSchemaDescriptor descriptor )
     {
         super( descriptor );
-    }
-
-    @Override
-    public void added( ChangeVisitor visitor ) throws CreateConstraintFailureException
-    {
-        visitor.visitAddedRelationshipPropertyExistenceConstraint( this );
-    }
-
-    @Override
-    public void removed( ChangeVisitor visitor )
-    {
-        visitor.visitRemovedRelationshipPropertyExistenceConstraint( this );
     }
 
     @Override

@@ -97,6 +97,11 @@ public class LabelSchemaDescriptor implements SchemaDescriptor
         return "LabelSchemaDescriptor( " + userDescription( SchemaUtil.idTokenNameLookup ) + " )";
     }
 
+    public boolean isComposite()
+    {
+        return propertyIds.length > 1;
+    }
+
     public interface Supplier extends SchemaDescriptor.Supplier
     {
         LabelSchemaDescriptor schema();

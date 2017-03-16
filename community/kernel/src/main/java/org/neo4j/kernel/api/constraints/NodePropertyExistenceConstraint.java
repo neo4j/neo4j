@@ -20,7 +20,6 @@
 package org.neo4j.kernel.api.constraints;
 
 import org.neo4j.kernel.api.TokenNameLookup;
-import org.neo4j.kernel.api.exceptions.schema.CreateConstraintFailureException;
 import org.neo4j.kernel.api.schema_new.LabelSchemaDescriptor;
 import org.neo4j.kernel.api.schema_new.constaints.NodeExistenceConstraintDescriptor;
 
@@ -35,18 +34,6 @@ public class NodePropertyExistenceConstraint extends NodePropertyConstraint
     public NodePropertyExistenceConstraint( LabelSchemaDescriptor descriptor )
     {
         super( descriptor );
-    }
-
-    @Override
-    public void added( ChangeVisitor visitor ) throws CreateConstraintFailureException
-    {
-        visitor.visitAddedNodePropertyExistenceConstraint( this );
-    }
-
-    @Override
-    public void removed( ChangeVisitor visitor )
-    {
-        visitor.visitRemovedNodePropertyExistenceConstraint( this );
     }
 
     @Override
