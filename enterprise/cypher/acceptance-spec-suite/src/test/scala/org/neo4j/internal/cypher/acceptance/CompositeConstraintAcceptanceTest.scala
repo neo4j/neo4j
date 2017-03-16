@@ -19,7 +19,7 @@
  */
 package org.neo4j.internal.cypher.acceptance
 
-import org.neo4j.cypher.{CypherExecutionException, ExecutionEngineFunSuite, NewPlannerTestSupport}
+import org.neo4j.cypher.{ConstraintValidationException, CypherExecutionException, ExecutionEngineFunSuite, NewPlannerTestSupport}
 import org.neo4j.graphdb.ConstraintViolationException
 import org.neo4j.kernel.GraphDatabaseQueryService
 import org.scalatest.matchers.{MatchResult, Matcher}
@@ -95,11 +95,15 @@ class CompositeConstraintAcceptanceTest extends ExecutionEngineFunSuite with New
     // Then
     graph should haveConstraints("NODE_KEY:Person(email)")
 
+    intercept[ConstraintValidationException](executeWithCostPlannerAndInterpretedRuntimeOnly("CREATE (:Person)"))
+    executeWithCostPlannerAndInterpretedRuntimeOnly("CREATE (:Person {email: 42})")
+    intercept[CypherExecutionException](executeWithCostPlannerAndInterpretedRuntimeOnly("CREATE (:Person {email: 42})"))
+
     // When
     executeWithCostPlannerAndInterpretedRuntimeOnly("DROP CONSTRAINT ON (n:Person) ASSERT (n.email) IS NODE KEY")
 
     // Then
-    graph should not(haveConstraints("NODE_KEY:Person(email)"))
+    graph should haveNoConstraints()
   }
 
   test("should be able to create and remove multiple property NODE KEY") {
@@ -118,6 +122,22 @@ class CompositeConstraintAcceptanceTest extends ExecutionEngineFunSuite with New
     graph should not(haveConstraints("NODE_KEY:Person(firstname,lastname)"))
   }
 
+  test("should be able to create and remove overlapping NODE KEY constraings") {
+    // When
+    executeWithCostPlannerAndInterpretedRuntimeOnly("CREATE CONSTRAINT ON (n:Person) ASSERT (n.a,n.b) IS NODE KEY")
+    executeWithCostPlannerAndInterpretedRuntimeOnly("CREATE CONSTRAINT ON (n:Person) ASSERT (n.b,n.c) IS NODE KEY")
+
+    // Then
+//    graph should haveConstraints("NODE_KEY:Person(a,b)", "NODE_KEY:Person(b,c)")
+
+    // When
+    executeWithCostPlannerAndInterpretedRuntimeOnly("DROP CONSTRAINT ON (n:Person) ASSERT (n.a,n.b) IS NODE KEY")
+
+    // Then
+    graph should haveConstraints("NODE_KEY:Person(b,c)")
+    graph should not(haveConstraints("NODE_KEY:Person(a,b)"))
+  }
+
   case class haveConstraints(expectedConstraints: String*) extends Matcher[GraphDatabaseQueryService] {
     def apply(graph: GraphDatabaseQueryService): MatchResult = {
       graph.inTx {
@@ -132,4 +152,19 @@ class CompositeConstraintAcceptanceTest extends ExecutionEngineFunSuite with New
       }
     }
   }
+
+  case class haveNoConstraints() extends Matcher[GraphDatabaseQueryService] {
+    def apply(graph: GraphDatabaseQueryService): MatchResult = {
+      graph.inTx {
+        val constraintDefinitions = graph.schema().getConstraints.asScala.toList
+        val constraintNames = constraintDefinitions.map(i => s"${i.getConstraintType}:${i.getLabel}(${i.getPropertyKeys.asScala.toList.mkString(",")})")
+        MatchResult(
+          constraintNames.isEmpty,
+          s"Expected graph to not have constraints, but it had ${constraintNames.mkString(", ")}",
+          s"Expected graph to have constraints, but it didn't."
+        )
+      }
+    }
+  }
+
 }

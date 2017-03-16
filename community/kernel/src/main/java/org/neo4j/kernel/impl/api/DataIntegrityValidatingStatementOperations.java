@@ -21,6 +21,11 @@ package org.neo4j.kernel.impl.api;
 
 import java.util.Arrays;
 
+import java.util.Iterator;
+
+import org.neo4j.collection.primitive.Primitive;
+import org.neo4j.collection.primitive.PrimitiveIntLongMap;
+import org.neo4j.helpers.collection.CastingIterator;
 import org.neo4j.kernel.api.Statement;
 import org.neo4j.kernel.api.StatementTokenNameLookup;
 import org.neo4j.kernel.api.exceptions.schema.AlreadyConstrainedException;
@@ -225,27 +230,20 @@ public class DataIntegrityValidatingStatementOperations implements
     @Override
     public void constraintDrop( KernelStatement state, ConstraintDescriptor descriptor ) throws DropConstraintFailureException
     {
-        if ( descriptor.type() == ConstraintDescriptor.Type.UNIQUE_EXISTS )
+        if ( descriptor.type() == ConstraintDescriptor.Type.NODE_KEY )
         {
             NodeKeyConstraintDescriptor nodeKey = (NodeKeyConstraintDescriptor) descriptor;
-            try
-            {
-                assertConstraintExists( state, nodeKey.ownedUniquenessConstraint() );
-                for ( ConstraintDescriptor existenceConstraint : nodeKey.ownedExistenceConstraints() )
-                {
-                    assertConstraintExists( state, existenceConstraint );
-                }
-            }
-            catch ( NoSuchConstraintException e )
-            {
-                throw new DropConstraintFailureException( descriptor, e );
-            }
+            assertNodeKeyExists( state, nodeKey );
+
+            Iterator<ConstraintDescriptor> constraintsForLabel =
+                    schemaReadDelegate.constraintsGetForLabel( state, nodeKey.schema().getLabelId() );
+            Iterator<UniquenessConstraintDescriptor> uniqueForLabel =
+                    new CastingIterator<>( constraintsForLabel, UniquenessConstraintDescriptor.class );
+
+            PrimitiveIntLongMap propertyCounts = countPropertyUses( nodeKey, uniqueForLabel );
 
             schemaWriteDelegate.constraintDrop( state, nodeKey.ownedUniquenessConstraint() );
-            for ( ConstraintDescriptor existenceConstraint : nodeKey.ownedExistenceConstraints() )
-            {
-                schemaWriteDelegate.constraintDrop( state, existenceConstraint );
-            }
+            removePECsNoLongerInUse( state, nodeKey, propertyCounts );
         }
         else
         {
@@ -259,6 +257,42 @@ public class DataIntegrityValidatingStatementOperations implements
             }
             schemaWriteDelegate.constraintDrop( state, descriptor );
         }
+    }
+
+    private void removePECsNoLongerInUse( KernelStatement state, NodeKeyConstraintDescriptor nodeKey,
+            PrimitiveIntLongMap propertyCounts ) throws DropConstraintFailureException
+    {
+        for ( NodeExistenceConstraintDescriptor existenceConstraint : nodeKey.ownedExistenceConstraints() )
+        {
+            if ( propertyCounts.get( existenceConstraint.schema().getPropertyId() ) == 1 )
+            {
+                schemaWriteDelegate.constraintDrop( state, existenceConstraint );
+            }
+        }
+    }
+
+    private PrimitiveIntLongMap countPropertyUses( NodeKeyConstraintDescriptor nodeKey,
+            Iterator<UniquenessConstraintDescriptor> uniqueForLabel )
+    {
+        PrimitiveIntLongMap propertyCounts = Primitive.intLongMap();
+
+        for ( int propertyId : nodeKey.schema().getPropertyIds() )
+        {
+            propertyCounts.put( propertyId, 0 );
+        }
+
+        while ( uniqueForLabel.hasNext() )
+        {
+            UniquenessConstraintDescriptor uniqueConstraint = uniqueForLabel.next();
+            for ( int propertyId : uniqueConstraint.schema().getPropertyIds() )
+            {
+                if ( propertyCounts.containsKey( propertyId ) )
+                {
+                    propertyCounts.put( propertyId, propertyCounts.get( propertyId ) + 1 );
+                }
+            }
+        }
+        return propertyCounts;
     }
 
     private void assertIndexDoesNotExist( KernelStatement state, OperationContext context,
@@ -312,6 +346,22 @@ public class DataIntegrityValidatingStatementOperations implements
         if ( numUnique != descriptor.getPropertyIds().length )
         {
             throw new RepeatedPropertyInCompositeSchemaException( descriptor, context );
+        }
+    }
+
+    private void assertNodeKeyExists( KernelStatement state, NodeKeyConstraintDescriptor nodeKey ) throws DropConstraintFailureException
+    {
+        try
+        {
+            assertConstraintExists( state, nodeKey.ownedUniquenessConstraint() );
+            for ( ConstraintDescriptor existenceConstraint : nodeKey.ownedExistenceConstraints() )
+            {
+                assertConstraintExists( state, existenceConstraint );
+            }
+        }
+        catch ( NoSuchConstraintException e )
+        {
+            throw new DropConstraintFailureException( nodeKey, e );
         }
     }
 }

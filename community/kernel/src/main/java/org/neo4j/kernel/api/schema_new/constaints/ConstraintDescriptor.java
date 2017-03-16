@@ -34,7 +34,7 @@ public abstract class ConstraintDescriptor implements SchemaDescriptor.Supplier
     {
         UNIQUE,
         EXISTS,
-        UNIQUE_EXISTS
+        NODE_KEY
     }
 
     public interface Supplier

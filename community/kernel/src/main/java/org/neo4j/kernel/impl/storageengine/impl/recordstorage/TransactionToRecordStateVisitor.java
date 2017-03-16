@@ -214,7 +214,7 @@ public class TransactionToRecordStateVisitor extends TxStateVisitor.Adapter
                     schemaStorage.newRuleId(), constraint ) );
             break;
 
-        case UNIQUE_EXISTS:
+        case NODE_KEY:
             throw new IllegalStateException(
                     "NODE KEY constraints should not make it this deep into the stack: " + constraint );
 

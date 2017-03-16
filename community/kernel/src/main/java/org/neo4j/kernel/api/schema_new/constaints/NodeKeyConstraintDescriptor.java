@@ -44,7 +44,7 @@ public class NodeKeyConstraintDescriptor extends ConstraintDescriptor implements
 
     NodeKeyConstraintDescriptor( LabelSchemaDescriptor schema )
     {
-        super( Type.UNIQUE_EXISTS );
+        super( Type.NODE_KEY );
         this.schema = schema;
         this.uniquenessConstraint = new UniquenessConstraintDescriptor( schema );
         this.existenceConstraints = new NodeExistenceConstraintDescriptor[schema.getPropertyIds().length];

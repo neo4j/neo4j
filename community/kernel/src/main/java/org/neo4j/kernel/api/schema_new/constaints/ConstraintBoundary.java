@@ -77,7 +77,7 @@ public class ConstraintBoundary
             case EXISTS:
                 return new NodePropertyExistenceConstraint( schema );
 
-            case UNIQUE_EXISTS:
+            case NODE_KEY:
                 return new NodeKeyConstraint( schema );
 
             default:

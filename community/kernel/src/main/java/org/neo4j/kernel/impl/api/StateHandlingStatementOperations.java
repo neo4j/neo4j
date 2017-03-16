@@ -714,7 +714,7 @@ public class StateHandlingStatementOperations implements
     @Override
     public void constraintDrop( KernelStatement state, ConstraintDescriptor constraint )
     {
-        assert constraint.type() != ConstraintDescriptor.Type.UNIQUE_EXISTS :
+        assert constraint.type() != ConstraintDescriptor.Type.NODE_KEY :
                 "The NODE KEY constraint is synthetic, and is dropped at a higher layer in the cake.";
         state.txState().constraintDoDrop( constraint );
     }
