@@ -26,6 +26,7 @@ import java.io.File;
 import java.io.IOException;
 import java.nio.file.Path;
 import java.nio.file.Paths;
+import java.time.Clock;
 import java.util.Collection;
 import java.util.HashSet;
 import java.util.Map;
@@ -37,6 +38,7 @@ import java.util.function.BiConsumer;
 import java.util.function.BinaryOperator;
 import java.util.function.Function;
 
+import org.neo4j.causalclustering.catchup.tx.CatchupPollingProcess;
 import org.neo4j.causalclustering.catchup.tx.FileCopyMonitor;
 import org.neo4j.causalclustering.core.CausalClusteringSettings;
 import org.neo4j.causalclustering.core.CoreGraphDatabase;
@@ -59,7 +61,10 @@ import org.neo4j.graphdb.security.WriteOperationsNotAllowedException;
 import org.neo4j.io.fs.DefaultFileSystemAbstraction;
 import org.neo4j.io.fs.FileSystemAbstraction;
 import org.neo4j.io.pagecache.PageCache;
+import org.neo4j.kernel.AvailabilityGuard;
+import org.neo4j.kernel.api.exceptions.TransactionFailureException;
 import org.neo4j.kernel.api.labelscan.LabelScanStore;
+import org.neo4j.kernel.api.txtracking.TransactionIdTracker;
 import org.neo4j.kernel.impl.factory.GraphDatabaseFacade;
 import org.neo4j.kernel.impl.store.MetaDataStore;
 import org.neo4j.kernel.impl.store.format.highlimit.HighLimit;
@@ -74,6 +79,7 @@ import org.neo4j.logging.Log;
 import org.neo4j.test.DbRepresentation;
 import org.neo4j.test.causalclustering.ClusterRule;
 
+import static java.time.Duration.ofSeconds;
 import static java.util.concurrent.TimeUnit.MINUTES;
 import static java.util.concurrent.TimeUnit.SECONDS;
 import static java.util.stream.Collectors.toSet;
@@ -101,8 +107,8 @@ import static org.neo4j.test.assertion.Assert.assertEventually;
 public class ReadReplicaReplicationIT
 {
     // This test is extended in the blockdevice repository, and these constants are required there as well.
-    public static final int NR_CORE_MEMBERS = 3;
-    public static final int NR_READ_REPLICAS = 1;
+    private static final int NR_CORE_MEMBERS = 3;
+    private static final int NR_READ_REPLICAS = 1;
 
     @Rule
     public final ClusterRule clusterRule = new ClusterRule( getClass() ).withNumberOfCoreMembers( NR_CORE_MEMBERS )
@@ -171,10 +177,7 @@ public class ReadReplicaReplicationIT
         }
 
         Set<Path> labelScanStoreFiles = new HashSet<>();
-        cluster.coreTx( ( db, tx ) ->
-        {
-            gatherLabelScanStoreFiles( db, labelScanStoreFiles );
-        } );
+        cluster.coreTx( ( db, tx ) -> gatherLabelScanStoreFiles( db, labelScanStoreFiles ) );
 
         AtomicBoolean labelScanStoreCorrectlyPlaced = new AtomicBoolean( false );
         Monitors monitors = new Monitors();
@@ -418,6 +421,50 @@ public class ReadReplicaReplicationIT
         assertEventually( "The read replica has the same data as the core members",
                 () -> DbRepresentation.of( readReplica.database() ),
                 equalTo( DbRepresentation.of( cluster.awaitLeader().database() ) ), 10, TimeUnit.SECONDS );
+    }
+
+    @Test
+    public void transactionsShouldNotAppearOnTheReadReplicaWhilePollingIsPaused() throws Throwable
+    {
+        // given
+        Cluster cluster = clusterRule.startCluster();
+
+        ReadReplicaGraphDatabase readReplicaGraphDatabase = cluster.findAnyReadReplica().database();
+        CatchupPollingProcess pollingClient = readReplicaGraphDatabase.getDependencyResolver()
+                .resolveDependency( CatchupPollingProcess.class );
+        pollingClient.stop();
+
+        cluster.coreTx( ( coreGraphDatabase, transaction ) -> {
+            coreGraphDatabase.createNode();
+            transaction.success();
+        } );
+
+        CoreGraphDatabase leaderDatabase = cluster.awaitLeader().database();
+        long transactionVisibleOnLeader = transactionIdTracker( leaderDatabase ).newestEncounteredTxId();
+
+        // when the poller is paused, transaction doesn't make it to the read replica
+        try
+        {
+            transactionIdTracker( readReplicaGraphDatabase ).awaitUpToDate( transactionVisibleOnLeader, ofSeconds( 3 ) );
+            fail( "should have thrown exception" );
+        }
+        catch ( TransactionFailureException e )
+        {
+            // expected timeout
+        }
+
+        // when the poller is resumed, it does make it to the read replica
+        pollingClient.start();
+        transactionIdTracker( readReplicaGraphDatabase ).awaitUpToDate( transactionVisibleOnLeader, ofSeconds( 3 ) );
+    }
+
+    private TransactionIdTracker transactionIdTracker( GraphDatabaseAPI database )
+    {
+        TransactionIdStore transactionIdStore =
+                database.getDependencyResolver().resolveDependency( TransactionIdStore.class );
+        AvailabilityGuard availabilityGuard =
+                database.getDependencyResolver().resolveDependency( AvailabilityGuard.class );
+        return new TransactionIdTracker( transactionIdStore, availabilityGuard, Clock.systemUTC() );
     }
 
     private PhysicalLogFiles physicalLogFiles( ClusterMember clusterMember )
