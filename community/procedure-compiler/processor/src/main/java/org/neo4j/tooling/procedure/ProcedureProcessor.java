@@ -21,99 +21,30 @@ package org.neo4j.tooling.procedure;
 
 import com.google.auto.service.AutoService;
 
-import java.util.Collection;
-import java.util.Collections;
-import java.util.LinkedHashSet;
-import java.util.Set;
-import java.util.function.Function;
-import java.util.stream.Stream;
-import javax.annotation.processing.AbstractProcessor;
-import javax.annotation.processing.ProcessingEnvironment;
 import javax.annotation.processing.Processor;
-import javax.annotation.processing.RoundEnvironment;
-import javax.lang.model.SourceVersion;
-import javax.lang.model.element.Element;
-import javax.lang.model.element.ElementVisitor;
-import javax.lang.model.element.TypeElement;
 import javax.lang.model.util.Elements;
 import javax.lang.model.util.Types;
 
 import org.neo4j.procedure.Procedure;
 import org.neo4j.tooling.procedure.compilerutils.CustomNameExtractor;
-import org.neo4j.tooling.procedure.messages.CompilationMessage;
-import org.neo4j.tooling.procedure.messages.MessagePrinter;
-import org.neo4j.tooling.procedure.validators.DuplicatedExtensionValidator;
 import org.neo4j.tooling.procedure.visitors.ProcedureVisitor;
 
 import static org.neo4j.tooling.procedure.CompilerOptions.IGNORE_CONTEXT_WARNINGS_OPTION;
 
 @AutoService( Processor.class )
-public class ProcedureProcessor extends AbstractProcessor
+public class ProcedureProcessor extends DuplicationAwareBaseProcessor<Procedure>
 {
 
-    private static final Class<Procedure> sprocType = Procedure.class;
-    private final Set<Element> visitedProcedures = new LinkedHashSet<>();
-
-    private Function<Collection<Element>,Stream<CompilationMessage>> duplicationValidator;
-    private ElementVisitor<Stream<CompilationMessage>,Void> visitor;
-    private MessagePrinter messagePrinter;
-
-    @Override
-    public Set<String> getSupportedOptions()
+    public ProcedureProcessor()
     {
-        return Collections.singleton( IGNORE_CONTEXT_WARNINGS_OPTION );
+        super( Procedure.class, ( proc ) -> CustomNameExtractor.getName( proc::name, proc::value ),
+                processingEnvironment ->
+                {
+                    Types typeUtils = processingEnvironment.getTypeUtils();
+                    Elements elementUtils = processingEnvironment.getElementUtils();
+
+                    return new ProcedureVisitor( typeUtils, elementUtils,
+                            processingEnvironment.getOptions().containsKey( IGNORE_CONTEXT_WARNINGS_OPTION ) );
+                } );
     }
-
-    @Override
-    public Set<String> getSupportedAnnotationTypes()
-    {
-        return Collections.singleton( sprocType.getName() );
-    }
-
-    @Override
-    public SourceVersion getSupportedSourceVersion()
-    {
-        return SourceVersion.RELEASE_8;
-    }
-
-    @Override
-    public synchronized void init( ProcessingEnvironment processingEnv )
-    {
-        super.init( processingEnv );
-        Types typeUtils = processingEnv.getTypeUtils();
-        Elements elementUtils = processingEnv.getElementUtils();
-
-        visitedProcedures.clear();
-        messagePrinter = new MessagePrinter( processingEnv.getMessager() );
-        visitor = new ProcedureVisitor( typeUtils, elementUtils,
-                processingEnv.getOptions().containsKey( IGNORE_CONTEXT_WARNINGS_OPTION ) );
-        duplicationValidator =
-                new DuplicatedExtensionValidator<>( elementUtils, sprocType,
-                        ( proc ) -> CustomNameExtractor.getName( proc::name, proc::value ) );
-    }
-
-    @Override
-    public boolean process( Set<? extends TypeElement> annotations, RoundEnvironment roundEnv )
-    {
-
-        processElements( roundEnv );
-        if ( roundEnv.processingOver() )
-        {
-            duplicationValidator.apply( visitedProcedures ).forEach( messagePrinter::print );
-        }
-        return false;
-    }
-
-    private void processElements( RoundEnvironment roundEnv )
-    {
-        Set<? extends Element> procedures = roundEnv.getElementsAnnotatedWith( sprocType );
-        visitedProcedures.addAll( procedures );
-        procedures.stream().flatMap( this::validate ).forEachOrdered( messagePrinter::print );
-    }
-
-    private Stream<CompilationMessage> validate( Element element )
-    {
-        return visitor.visit( element );
-    }
-
 }
