@@ -24,7 +24,6 @@ import com.google.auto.service.AutoService;
 import java.util.Collection;
 import java.util.Collections;
 import java.util.LinkedHashSet;
-import java.util.Optional;
 import java.util.Set;
 import java.util.function.Function;
 import java.util.stream.Stream;
@@ -40,6 +39,7 @@ import javax.lang.model.util.Elements;
 import javax.lang.model.util.Types;
 
 import org.neo4j.procedure.Procedure;
+import org.neo4j.tooling.procedure.compilerutils.CustomNameExtractor;
 import org.neo4j.tooling.procedure.messages.CompilationMessage;
 import org.neo4j.tooling.procedure.messages.MessagePrinter;
 import org.neo4j.tooling.procedure.validators.DuplicatedProcedureValidator;
@@ -56,21 +56,6 @@ public class ProcedureProcessor extends AbstractProcessor
     private Function<Collection<Element>,Stream<CompilationMessage>> duplicationPredicate;
     private ElementVisitor<Stream<CompilationMessage>,Void> visitor;
     private MessagePrinter messagePrinter;
-
-    public static Optional<String> getCustomName( Procedure proc )
-    {
-        String name = proc.name();
-        if ( !name.isEmpty() )
-        {
-            return Optional.of( name );
-        }
-        String value = proc.value();
-        if ( !value.isEmpty() )
-        {
-            return Optional.of( value );
-        }
-        return Optional.empty();
-    }
 
     @Override
     public Set<String> getSupportedOptions()
@@ -102,7 +87,8 @@ public class ProcedureProcessor extends AbstractProcessor
         visitor = new StoredProcedureVisitor( typeUtils, elementUtils,
                 processingEnv.getOptions().containsKey( IGNORE_CONTEXT_WARNINGS_OPTION ) );
         duplicationPredicate =
-                new DuplicatedProcedureValidator<>( elementUtils, sprocType, ProcedureProcessor::getCustomName );
+                new DuplicatedProcedureValidator<>( elementUtils, sprocType,
+                        ( proc ) -> CustomNameExtractor.getName( proc::name, proc::value ) );
     }
 
     @Override

@@ -20,6 +20,8 @@
 package org.neo4j.tooling.procedure;
 
 import com.google.auto.service.AutoService;
+
+import org.neo4j.tooling.procedure.compilerutils.CustomNameExtractor;
 import org.neo4j.tooling.procedure.compilerutils.TypeMirrorUtils;
 import org.neo4j.tooling.procedure.messages.CompilationMessage;
 import org.neo4j.tooling.procedure.messages.MessagePrinter;
@@ -29,7 +31,6 @@ import org.neo4j.tooling.procedure.visitors.UserFunctionVisitor;
 import java.util.Collection;
 import java.util.HashSet;
 import java.util.LinkedHashSet;
-import java.util.Optional;
 import java.util.Set;
 import java.util.function.Function;
 import java.util.stream.Stream;
@@ -56,21 +57,6 @@ public class UserFunctionProcessor extends AbstractProcessor
     private MessagePrinter messagePrinter;
     private Function<Collection<Element>,Stream<CompilationMessage>> duplicationPredicate;
 
-    public static Optional<String> getCustomName( UserFunction function )
-    {
-        String name = function.name();
-        if ( !name.isEmpty() )
-        {
-            return Optional.of( name );
-        }
-        String value = function.value();
-        if ( !value.isEmpty() )
-        {
-            return Optional.of( value );
-        }
-        return Optional.empty();
-    }
-
     @Override
     public Set<String> getSupportedAnnotationTypes()
     {
@@ -96,7 +82,7 @@ public class UserFunctionProcessor extends AbstractProcessor
         messagePrinter = new MessagePrinter( processingEnv.getMessager() );
         visitor = new UserFunctionVisitor( typeUtils, elementUtils, new TypeMirrorUtils( typeUtils, elementUtils ) );
         duplicationPredicate = new DuplicatedProcedureValidator<>( elementUtils, userFunctionType,
-                UserFunctionProcessor::getCustomName );
+                ( function ) -> CustomNameExtractor.getName( function::name, function::value ) );
     }
 
     @Override
