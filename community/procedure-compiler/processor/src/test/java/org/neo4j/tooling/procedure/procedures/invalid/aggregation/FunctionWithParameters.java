@@ -17,50 +17,35 @@
  * You should have received a copy of the GNU General Public License
  * along with this program.  If not, see <http://www.gnu.org/licenses/>.
  */
-package org.neo4j.tooling.procedure.procedures.invalid.bad_context_field;
+package org.neo4j.tooling.procedure.procedures.invalid.aggregation;
 
-import org.neo4j.procedure.Context;
 import org.neo4j.procedure.Name;
-import org.neo4j.procedure.Procedure;
 import org.neo4j.procedure.UserAggregationFunction;
 import org.neo4j.procedure.UserAggregationResult;
 import org.neo4j.procedure.UserAggregationUpdate;
-import org.neo4j.procedure.UserFunction;
 
-public class BadContextUnsupportedTypeError
+public class FunctionWithParameters
 {
-    @Context
-    public String foo;
-
-    @Procedure
-    public void sproc()
-    {
-    }
-
-    @UserFunction
-    public Long function()
-    {
-        return 2L;
-    }
 
     @UserAggregationFunction
-    public MyAggregation aggregation()
+    public MyAggregation aggregateAllTheThings(String shouldNotHaveAnyParam)
     {
         return new MyAggregation();
     }
 
     public static class MyAggregation
     {
-        @UserAggregationResult
-        public Long result()
-        {
-            return 42L;
-        }
 
         @UserAggregationUpdate
-        public void woot(@Name("undostres") String onetwothree )
+        public void update(@Name("foo") long island)
         {
 
+        }
+
+        @UserAggregationResult
+        public boolean sarahConnor()
+        {
+            return false;
         }
     }
 }

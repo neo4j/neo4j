@@ -67,14 +67,14 @@ public class ProcedureVisitor extends SimpleElementVisitor8<Stream<CompilationMe
     public Stream<CompilationMessage> visitExecutable( ExecutableElement executableElement, Void ignored )
     {
         return Stream.of( classVisitor.visit( executableElement.getEnclosingElement() ),
-                validateParameters( executableElement.getParameters(), ignored ),
+                validateParameters( executableElement.getParameters() ),
                 validateReturnType( executableElement ), validatePerformsWriteUsage( executableElement ) )
                 .flatMap( Function.identity() );
     }
 
-    private Stream<CompilationMessage> validateParameters( List<? extends VariableElement> parameters, Void ignored )
+    private Stream<CompilationMessage> validateParameters( List<? extends VariableElement> parameters )
     {
-        return parameters.stream().flatMap( var -> parameterVisitor.visit( var, ignored ) );
+        return parameters.stream().flatMap( parameterVisitor::visit );
     }
 
     private Stream<CompilationMessage> validateReturnType( ExecutableElement method )
@@ -105,15 +105,4 @@ public class ProcedureVisitor extends SimpleElementVisitor8<Stream<CompilationMe
         return performsWriteVisitor.visit( executableElement );
     }
 
-    private AnnotationMirror annotationMirror( List<? extends AnnotationMirror> mirrors )
-    {
-        AnnotationTypeVisitor nameVisitor = new AnnotationTypeVisitor( Name.class );
-        return mirrors.stream().filter( mirror -> nameVisitor.visit( mirror.getAnnotationType().asElement() ) )
-                .findFirst().orElse( null );
-    }
-
-    private String nameOf( VariableElement parameter )
-    {
-        return parameter.getSimpleName().toString();
-    }
 }

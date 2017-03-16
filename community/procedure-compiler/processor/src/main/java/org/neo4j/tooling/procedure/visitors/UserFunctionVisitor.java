@@ -19,106 +19,31 @@
  */
 package org.neo4j.tooling.procedure.visitors;
 
-import java.util.List;
 import java.util.function.Function;
-import java.util.function.Predicate;
 import java.util.stream.Stream;
-import javax.lang.model.element.ElementVisitor;
 import javax.lang.model.element.ExecutableElement;
-import javax.lang.model.element.PackageElement;
-import javax.lang.model.element.VariableElement;
-import javax.lang.model.type.TypeMirror;
-import javax.lang.model.util.Elements;
 import javax.lang.model.util.SimpleElementVisitor8;
-import javax.lang.model.util.Types;
 
 import org.neo4j.procedure.UserFunction;
-import org.neo4j.tooling.procedure.compilerutils.TypeMirrorUtils;
 import org.neo4j.tooling.procedure.messages.CompilationMessage;
-import org.neo4j.tooling.procedure.messages.FunctionInRootNamespaceError;
-import org.neo4j.tooling.procedure.messages.ReturnTypeError;
-import org.neo4j.tooling.procedure.validators.AllowedTypesValidator;
 
 public class UserFunctionVisitor extends SimpleElementVisitor8<Stream<CompilationMessage>,Void>
 {
 
-    private final ElementVisitor<Stream<CompilationMessage>,Void> parameterVisitor;
-    private final Predicate<TypeMirror> allowedTypesValidator;
-    private final Elements elements;
-    private final ElementVisitor<Stream<CompilationMessage>,Void> classVisitor;
+    private final FunctionVisitor functionVisitor;
 
-    public UserFunctionVisitor( Types types, Elements elements, TypeMirrorUtils typeMirrorUtils, boolean ignoresWarnings )
+    public UserFunctionVisitor( FunctionVisitor<UserFunction> baseFunctionVisitor)
     {
-        this.classVisitor = new ExtensionClassVisitor( types, elements, ignoresWarnings );
-        this.parameterVisitor = new ParameterVisitor( new ParameterTypeVisitor( types, typeMirrorUtils ) );
-        this.allowedTypesValidator = new AllowedTypesValidator( typeMirrorUtils, types );
-        this.elements = elements;
+        this.functionVisitor = baseFunctionVisitor;
     }
 
     @Override
     public Stream<CompilationMessage> visitExecutable( ExecutableElement executableElement, Void ignored )
     {
-        return Stream.of( classVisitor.visit( executableElement.getEnclosingElement() ),
-                validateParameters( executableElement.getParameters(), ignored ), validateName( executableElement ),
-                validateReturnType( executableElement ) ).flatMap( Function.identity() );
-    }
-
-    private Stream<CompilationMessage> validateParameters( List<? extends VariableElement> parameters, Void ignored )
-    {
-        return parameters.stream().flatMap( var -> parameterVisitor.visit( var, ignored ) );
-    }
-
-    private Stream<CompilationMessage> validateName( ExecutableElement method )
-    {
-        UserFunction function = method.getAnnotation( UserFunction.class );
-        String name = function.name();
-        if ( !name.isEmpty() && isInRootNamespace( name ) )
-        {
-            return Stream.of( rootNamespaceError( method, name ) );
-        }
-        String value = function.value();
-        if ( !value.isEmpty() && isInRootNamespace( value ) )
-        {
-            return Stream.of( rootNamespaceError( method, value ) );
-        }
-        PackageElement namespace = elements.getPackageOf( method );
-        if ( namespace == null )
-        {
-            return Stream.of( rootNamespaceError( method ) );
-        }
-        return Stream.empty();
-    }
-
-    private Stream<CompilationMessage> validateReturnType( ExecutableElement method )
-    {
-        TypeMirror returnType = method.getReturnType();
-        if ( !allowedTypesValidator.test( returnType ) )
-        {
-            return Stream.of( new ReturnTypeError( method,
-                    "Unsupported return type <%s> of function defined in " + "<%s#%s>.", returnType,
-                    method.getEnclosingElement(), method.getSimpleName() ) );
-        }
-        return Stream.empty();
-    }
-
-    private boolean isInRootNamespace( String name )
-    {
-        return !name.contains( "." ) || name.split( "\\." )[0].isEmpty();
-    }
-
-    private FunctionInRootNamespaceError rootNamespaceError( ExecutableElement method, String name )
-    {
-        return new FunctionInRootNamespaceError( method,
-                "Function <%s> cannot be defined in the root namespace. Valid name example: com.acme.my_function",
-                name );
-    }
-
-    private FunctionInRootNamespaceError rootNamespaceError( ExecutableElement method )
-    {
-        return new FunctionInRootNamespaceError( method,
-                "Function defined in <%s#%s> cannot be defined in the root namespace. " +
-                        "Valid name example: com.acme.my_function", method.getEnclosingElement().getSimpleName(),
-                method.getSimpleName() );
+        return Stream.<Stream<CompilationMessage>>of( functionVisitor.validateEnclosingClass( executableElement ),
+                functionVisitor.validateParameters( executableElement.getParameters() ),
+                functionVisitor.validateName( executableElement ),
+                functionVisitor.validateReturnType( executableElement ) ).flatMap( Function.identity() );
     }
 
 }

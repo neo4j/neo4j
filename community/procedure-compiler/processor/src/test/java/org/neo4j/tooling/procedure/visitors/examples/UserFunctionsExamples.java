@@ -22,9 +22,6 @@ package org.neo4j.tooling.procedure.visitors.examples;
 import org.neo4j.procedure.Name;
 import org.neo4j.procedure.UserFunction;
 
-/*
- * see also BadUserFunction in root package
- */
 public class UserFunctionsExamples
 {
     @UserFunction( name = "in_root_namespace" )

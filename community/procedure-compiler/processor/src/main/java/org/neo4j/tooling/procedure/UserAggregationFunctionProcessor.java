@@ -27,37 +27,38 @@ import javax.annotation.processing.Processor;
 import javax.lang.model.util.Elements;
 import javax.lang.model.util.Types;
 
-import org.neo4j.procedure.UserFunction;
+import org.neo4j.procedure.UserAggregationFunction;
 import org.neo4j.tooling.procedure.compilerutils.CustomNameExtractor;
 import org.neo4j.tooling.procedure.compilerutils.TypeMirrorUtils;
 import org.neo4j.tooling.procedure.visitors.FunctionVisitor;
-import org.neo4j.tooling.procedure.visitors.UserFunctionVisitor;
+import org.neo4j.tooling.procedure.visitors.UserAggregationFunctionVisitor;
 
 import static org.neo4j.tooling.procedure.CompilerOptions.IGNORE_CONTEXT_WARNINGS_OPTION;
 
 @AutoService( Processor.class )
-public class UserFunctionProcessor extends DuplicationAwareBaseProcessor<UserFunction>
+public class UserAggregationFunctionProcessor extends DuplicationAwareBaseProcessor<UserAggregationFunction>
 {
 
-    private static final Class<UserFunction> SUPPORTED_ANNOTATION_TYPE = UserFunction.class;
+    public static final Class<UserAggregationFunction> SUPPORTED_ANNOTATION_TYPE = UserAggregationFunction.class;
 
-    public UserFunctionProcessor()
+    public UserAggregationFunctionProcessor()
     {
         super( SUPPORTED_ANNOTATION_TYPE, customNameExtractor(), processingEnvironment ->
         {
-            Elements elementUtils = processingEnvironment.getElementUtils();
             Types typeUtils = processingEnvironment.getTypeUtils();
+            Elements elementUtils = processingEnvironment.getElementUtils();
             TypeMirrorUtils typeMirrorUtils = new TypeMirrorUtils( typeUtils, elementUtils );
 
-            return new UserFunctionVisitor(
+            return new UserAggregationFunctionVisitor(
                     new FunctionVisitor<>( SUPPORTED_ANNOTATION_TYPE, typeUtils, elementUtils, typeMirrorUtils,
                             customNameExtractor(),
-                            processingEnvironment.getOptions().containsKey( IGNORE_CONTEXT_WARNINGS_OPTION ) ) );
+                            processingEnvironment.getOptions().containsKey( IGNORE_CONTEXT_WARNINGS_OPTION ) ),
+                    typeUtils );
         } );
     }
 
-    private static Function<UserFunction,Optional<String>> customNameExtractor()
+    private static Function<UserAggregationFunction,Optional<String>> customNameExtractor()
     {
-        return ( function ) -> CustomNameExtractor.getName( function::name, function::value );
+        return function -> CustomNameExtractor.getName( function::name, function::value );
     }
 }

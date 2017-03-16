@@ -47,18 +47,18 @@ public abstract class ExtensionTestBase
 
         unsuccessfulCompilationClause.withErrorContaining(
                 "@org.neo4j.procedure.Context usage error: field BadContextFields#shouldBeNonStatic should be public, non-static and non-final" )
-                .in( sproc ).onLine( 31 );
+                .in( sproc ).onLine( 35 );
 
         unsuccessfulCompilationClause.withErrorContaining(
                 "@org.neo4j.procedure.Context usage error: field BadContextFields#shouldBeNonFinal should be public, non-static and non-final" )
-                .in( sproc ).onLine( 34 );
+                .in( sproc ).onLine( 38 );
 
         unsuccessfulCompilationClause.withErrorContaining(
                 "@org.neo4j.procedure.Context usage error: field BadContextFields#shouldBePublic should be public, non-static and non-final" )
-                .in( sproc ).onLine( 38 );
+                .in( sproc ).onLine( 42 );
 
         unsuccessfulCompilationClause.withErrorContaining( "Field BadContextFields#shouldBeStatic should be static" )
-                .in( sproc ).onLine( 39 );
+                .in( sproc ).onLine( 43 );
     }
 
     @Test
@@ -73,7 +73,7 @@ public abstract class ExtensionTestBase
                         ".GraphDatabaseAPI> on BadContextRestrictedTypeField#notOfficiallySupported.\n" +
                         "  The procedure will not load unless declared via the configuration option 'dbms.security.procedures.unrestricted'.\n" +
                         "  You can ignore this warning by passing the option -AIgnoreContextWarnings to the Java compiler" )
-                .in( sproc ).onLine( 31 );
+                .in( sproc ).onLine( 35 );
     }
 
     @Test
@@ -96,6 +96,6 @@ public abstract class ExtensionTestBase
                 .withErrorContaining(
                         "@org.neo4j.procedure.Context usage error: found unknown type <java.lang.String> on field " +
                                 "BadContextUnsupportedTypeError#foo, expected one of: <org.neo4j.graphdb.GraphDatabaseService>, <org.neo4j.logging.Log>, <org.neo4j.procedure.TerminationGuard>, <org.neo4j.kernel.api.security.SecurityContext>, <org.neo4j.procedure.ProcedureTransaction>" )
-                .in( sproc ).onLine( 29 );
+                .in( sproc ).onLine( 33 );
     }
 }
