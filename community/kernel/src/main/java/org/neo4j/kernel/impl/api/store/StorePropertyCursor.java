@@ -40,10 +40,9 @@ public class StorePropertyCursor extends StoreAbstractPropertyCursor
 
     private Iterator<StorageProperty> storagePropertyIterator;
 
-    public StorePropertyCursor( PropertyStore propertyStore, RecordCursors cursors,
-            Consumer<StorePropertyCursor> instanceCache )
+    public StorePropertyCursor( PropertyStore propertyStore, Consumer<StorePropertyCursor> instanceCache )
     {
-        super( propertyStore, cursors );
+        super( propertyStore );
         this.instanceCache = instanceCache;
     }
 

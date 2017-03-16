@@ -59,7 +59,6 @@ import org.neo4j.kernel.impl.store.MetaDataStore.Position;
 import org.neo4j.kernel.impl.store.NeoStores;
 import org.neo4j.kernel.impl.store.NodeStore;
 import org.neo4j.kernel.impl.store.PropertyStore;
-import org.neo4j.kernel.impl.store.RecordCursors;
 import org.neo4j.kernel.impl.store.RelationshipStore;
 import org.neo4j.kernel.impl.store.StoreFactory;
 import org.neo4j.kernel.impl.store.StoreType;
@@ -435,8 +434,6 @@ public class StoreMigrator extends AbstractStoreMigrationParticipant
                 !newFormat.property().equals( oldFormat.property() ) || requiresDynamicStoreMigration;
         File badFile = new File( storeDir, Configuration.BAD_FILE_NAME );
         try ( NeoStores legacyStore = instantiateLegacyStore( oldFormat, storeDir );
-                RecordCursors nodeInputCursors = new RecordCursors( legacyStore );
-                RecordCursors relationshipInputCursors = new RecordCursors( legacyStore );
                 OutputStream badOutput = new BufferedOutputStream( new FileOutputStream( badFile, false ) ) )
         {
             Configuration importConfig = new Configuration.Overridden( config );
@@ -448,10 +445,9 @@ public class StoreMigrator extends AbstractStoreMigrationParticipant
                     importConfig, logService,
                     withDynamicProcessorAssignment( migrationBatchImporterMonitor( legacyStore, progressMonitor,
                             importConfig ), importConfig ), additionalInitialIds, config, newFormat );
-            InputIterable<InputNode> nodes =
-                    legacyNodesAsInput( legacyStore, requiresPropertyMigration, nodeInputCursors );
+            InputIterable<InputNode> nodes = legacyNodesAsInput( legacyStore, requiresPropertyMigration );
             InputIterable<InputRelationship> relationships =
-                    legacyRelationshipsAsInput( legacyStore, requiresPropertyMigration, relationshipInputCursors );
+                    legacyRelationshipsAsInput( legacyStore, requiresPropertyMigration );
             importer.doImport(
                     Inputs.input( nodes, relationships, IdMappers.actual(), IdGenerators.fromInput(),
                             Collectors.badCollector( badOutput, 0 ) ) );
@@ -636,11 +632,11 @@ public class StoreMigrator extends AbstractStoreMigrationParticipant
     }
 
     private InputIterable<InputRelationship> legacyRelationshipsAsInput( NeoStores legacyStore,
-            boolean requiresPropertyMigration, RecordCursors cursors )
+            boolean requiresPropertyMigration )
     {
         RelationshipStore store = legacyStore.getRelationshipStore();
         final BiConsumer<InputRelationship,RelationshipRecord> propertyDecorator =
-                propertyDecorator( requiresPropertyMigration, cursors, legacyStore.getPropertyStore() );
+                propertyDecorator( requiresPropertyMigration, legacyStore.getPropertyStore() );
         return new StoreScanAsInputIterable<InputRelationship,RelationshipRecord>( store )
         {
             @Override
@@ -656,12 +652,11 @@ public class StoreMigrator extends AbstractStoreMigrationParticipant
         };
     }
 
-    private InputIterable<InputNode> legacyNodesAsInput( NeoStores legacyStore,
-            boolean requiresPropertyMigration, RecordCursors cursors )
+    private InputIterable<InputNode> legacyNodesAsInput( NeoStores legacyStore, boolean requiresPropertyMigration )
     {
         NodeStore store = legacyStore.getNodeStore();
-        final BiConsumer<InputNode,NodeRecord> propertyDecorator =
-                propertyDecorator( requiresPropertyMigration, cursors, legacyStore.getPropertyStore() );
+        BiConsumer<InputNode,NodeRecord> propertyDecorator =
+                propertyDecorator( requiresPropertyMigration, legacyStore.getPropertyStore() );
 
         return new StoreScanAsInputIterable<InputNode,NodeRecord>( store )
         {
@@ -679,7 +674,7 @@ public class StoreMigrator extends AbstractStoreMigrationParticipant
     }
 
     private <ENTITY extends InputEntity, RECORD extends PrimitiveRecord> BiConsumer<ENTITY,RECORD> propertyDecorator(
-            boolean requiresPropertyMigration, RecordCursors cursors, PropertyStore propertyStore )
+            boolean requiresPropertyMigration, PropertyStore propertyStore )
     {
         if ( !requiresPropertyMigration )
         {
@@ -688,7 +683,7 @@ public class StoreMigrator extends AbstractStoreMigrationParticipant
             };
         }
 
-        final StorePropertyCursor cursor = new StorePropertyCursor( propertyStore, cursors, ignored -> {} );
+        final StorePropertyCursor cursor = new StorePropertyCursor( propertyStore, ignored -> {} );
         final List<Object> scratch = new ArrayList<>();
         return ( ENTITY entity, RECORD record ) ->
         {
