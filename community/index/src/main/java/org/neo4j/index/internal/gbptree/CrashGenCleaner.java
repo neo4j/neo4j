@@ -176,7 +176,7 @@ class CrashGenCleaner
         do
         {
             hasCrashed =
-                    hasCrashedGSPP( cursor, TreeNode.BYTE_POS_NEWGEN ) ||
+                    hasCrashedGSPP( cursor, TreeNode.BYTE_POS_HEIR ) ||
                     hasCrashedGSPP( cursor, TreeNode.BYTE_POS_LEFTSIBLING ) ||
                     hasCrashedGSPP( cursor, TreeNode.BYTE_POS_RIGHTSIBLING );
 
@@ -209,7 +209,7 @@ class CrashGenCleaner
 
     private void cleanTreeNode( TreeNode<?,?> treeNode, PageCursor cursor, AtomicInteger cleanedPointers )
     {
-        cleanCrashedGSPP( cursor, TreeNode.BYTE_POS_NEWGEN, cleanedPointers );
+        cleanCrashedGSPP( cursor, TreeNode.BYTE_POS_HEIR, cleanedPointers );
         cleanCrashedGSPP( cursor, TreeNode.BYTE_POS_LEFTSIBLING, cleanedPointers );
         cleanCrashedGSPP( cursor, TreeNode.BYTE_POS_RIGHTSIBLING, cleanedPointers );
 
