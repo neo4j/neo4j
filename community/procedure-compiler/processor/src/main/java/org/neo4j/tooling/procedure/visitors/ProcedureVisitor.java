@@ -38,7 +38,7 @@ import org.neo4j.tooling.procedure.compilerutils.TypeMirrorUtils;
 import org.neo4j.tooling.procedure.messages.CompilationMessage;
 import org.neo4j.tooling.procedure.messages.ReturnTypeError;
 
-public class StoredProcedureVisitor extends SimpleElementVisitor8<Stream<CompilationMessage>,Void>
+public class ProcedureVisitor extends SimpleElementVisitor8<Stream<CompilationMessage>,Void>
 {
 
     private final Types typeUtils;
@@ -48,7 +48,7 @@ public class StoredProcedureVisitor extends SimpleElementVisitor8<Stream<Compila
     private final ElementVisitor<Stream<CompilationMessage>,Void> parameterVisitor;
     private final ElementVisitor<Stream<CompilationMessage>,Void> performsWriteVisitor;
 
-    public StoredProcedureVisitor( Types typeUtils, Elements elementUtils, boolean ignoresWarnings )
+    public ProcedureVisitor( Types typeUtils, Elements elementUtils, boolean ignoresWarnings )
     {
         TypeMirrorUtils typeMirrors = new TypeMirrorUtils( typeUtils, elementUtils );
 

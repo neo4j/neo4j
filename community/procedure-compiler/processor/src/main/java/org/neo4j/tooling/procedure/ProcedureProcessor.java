@@ -43,7 +43,7 @@ import org.neo4j.tooling.procedure.compilerutils.CustomNameExtractor;
 import org.neo4j.tooling.procedure.messages.CompilationMessage;
 import org.neo4j.tooling.procedure.messages.MessagePrinter;
 import org.neo4j.tooling.procedure.validators.DuplicatedExtensionValidator;
-import org.neo4j.tooling.procedure.visitors.StoredProcedureVisitor;
+import org.neo4j.tooling.procedure.visitors.ProcedureVisitor;
 
 import static org.neo4j.tooling.procedure.CompilerOptions.IGNORE_CONTEXT_WARNINGS_OPTION;
 
@@ -85,7 +85,7 @@ public class ProcedureProcessor extends AbstractProcessor
 
         visitedProcedures.clear();
         messagePrinter = new MessagePrinter( processingEnv.getMessager() );
-        visitor = new StoredProcedureVisitor( typeUtils, elementUtils,
+        visitor = new ProcedureVisitor( typeUtils, elementUtils,
                 processingEnv.getOptions().containsKey( IGNORE_CONTEXT_WARNINGS_OPTION ) );
         duplicationValidator =
                 new DuplicatedExtensionValidator<>( elementUtils, sprocType,
