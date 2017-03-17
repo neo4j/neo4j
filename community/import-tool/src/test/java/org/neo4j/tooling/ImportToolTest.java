@@ -29,6 +29,7 @@ import java.io.PrintStream;
 import java.nio.charset.Charset;
 import java.util.ArrayList;
 import java.util.Arrays;
+import java.util.Collections;
 import java.util.HashMap;
 import java.util.Iterator;
 import java.util.List;
@@ -1142,18 +1143,14 @@ public class ImportToolTest
     public void shouldCollectUnlimitedNumberOfBadEntries() throws Exception
     {
         // GIVEN
-        List<String> nodeIds = new ArrayList<>();
-        for ( int i = 0; i < 10_000; i++ )
-        {
-            nodeIds.add( "A" );
-        }
+        List<String> nodeIds = Collections.nCopies( 10_000, "A" );
 
         // WHEN
         importTool(
                 "--into", dbRule.getStoreDirAbsolutePath(),
                 "--nodes", nodeData( true, Configuration.COMMAS, nodeIds, TRUE ).getAbsolutePath(),
                 "--skip-duplicate-nodes",
-                "--bad-tolerance", "-" );
+                "--bad-tolerance", "true" );
 
         // THEN
         // all those duplicates should just be accepted using the - for specifying bad tolerance

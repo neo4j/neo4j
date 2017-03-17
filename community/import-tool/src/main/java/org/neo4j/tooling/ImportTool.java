@@ -100,7 +100,7 @@ import static org.neo4j.unsafe.impl.batchimport.input.csv.DataFactories.defaultF
  */
 public class ImportTool
 {
-    private static final String UNLIMITED = "-";
+    private static final String UNLIMITED = "true";
     private static final int UNSPECIFIED = -1;
 
     enum Options
