@@ -19,33 +19,8 @@
  */
 package org.neo4j.kernel.impl.api.store;
 
-import org.neo4j.kernel.api.StatementConstants;
-
-public class SingleNodeProgression implements NodeProgression
+public enum TransactionStateAccessMode
 {
-    private long nodeId;
-
-    SingleNodeProgression( long nodeId )
-    {
-        this.nodeId = nodeId;
-    }
-
-    @Override
-    public long nextId()
-    {
-        try
-        {
-            return nodeId;
-        }
-        finally
-        {
-            nodeId = StatementConstants.NO_SUCH_NODE;
-        }
-    }
-
-    @Override
-    public TransactionStateAccessMode mode()
-    {
-        return TransactionStateAccessMode.FETCH;
-    }
+    APPEND,
+    FETCH
 }

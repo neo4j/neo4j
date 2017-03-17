@@ -42,8 +42,8 @@ public class AllNodeProgression implements NodeProgression
     }
 
     @Override
-    public Mode mode()
+    public TransactionStateAccessMode mode()
     {
-        return Mode.APPEND;
+        return TransactionStateAccessMode.APPEND;
     }
 }

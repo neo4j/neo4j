@@ -38,7 +38,6 @@ import org.neo4j.cursor.Cursor;
 import org.neo4j.io.pagecache.PageCursor;
 import org.neo4j.kernel.api.StatementConstants;
 import org.neo4j.kernel.impl.api.state.TxState;
-import org.neo4j.kernel.impl.api.store.NodeProgression.Mode;
 import org.neo4j.kernel.impl.locking.Lock;
 import org.neo4j.kernel.impl.store.NodeStore;
 import org.neo4j.kernel.impl.store.record.NodeRecord;
@@ -57,8 +56,8 @@ import static org.mockito.Mockito.verify;
 import static org.mockito.Mockito.when;
 import static org.neo4j.collection.primitive.PrimitiveIntCollections.asArray;
 import static org.neo4j.collection.primitive.PrimitiveIntCollections.asSet;
-import static org.neo4j.kernel.impl.api.store.NodeProgression.Mode.APPEND;
-import static org.neo4j.kernel.impl.api.store.NodeProgression.Mode.FETCH;
+import static org.neo4j.kernel.impl.api.store.TransactionStateAccessMode.APPEND;
+import static org.neo4j.kernel.impl.api.store.TransactionStateAccessMode.FETCH;
 import static org.neo4j.kernel.impl.locking.LockService.NO_LOCK_SERVICE;
 import static org.neo4j.kernel.impl.store.record.RecordLoad.CHECK;
 import static org.neo4j.kernel.impl.transaction.state.NodeLabelsFieldTest.inlinedLabelsLongRepresentation;
@@ -513,12 +512,12 @@ public class NodeCursorTest
 
     private static class TestRun
     {
-        private final Mode mode;
+        private final TransactionStateAccessMode mode;
         private final Operation[] ops;
 
         private TxState state = null;
 
-        private TestRun( Mode mode, Operation[] ops )
+        private TestRun( TransactionStateAccessMode mode, Operation[] ops )
         {
             this.mode = mode;
             this.ops = ops;
@@ -534,7 +533,7 @@ public class NodeCursorTest
             return cursor.init( createProgression( ops, mode ), state );
         }
 
-        private NodeProgression createProgression( Operation[] ops, Mode mode )
+        private NodeProgression createProgression( Operation[] ops, TransactionStateAccessMode mode )
         {
             return new NodeProgression()
             {
@@ -555,7 +554,7 @@ public class NodeCursorTest
                 }
 
                 @Override
-                public Mode mode()
+                public TransactionStateAccessMode mode()
                 {
                     return mode;
                 }
