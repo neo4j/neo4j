@@ -32,6 +32,10 @@ import static java.lang.String.format;
 
 public class AdminTool
 {
+
+    static final int STATUS_SUCCESS = 0;
+    public static final int STATUS_ERROR = 1;
+
     public static void main( String[] args ) throws IOException
     {
         Path homeDir = Paths.get( System.getenv().getOrDefault( "NEO4J_HOME", "" ) );
@@ -159,7 +163,7 @@ public class AdminTool
 
     private void failure( String message, Exception e )
     {
-        failure( message, e, 1 );
+        failure( message, e, STATUS_ERROR );
     }
 
     private void failure( String message, Exception e, int code )
@@ -179,6 +183,6 @@ public class AdminTool
 
     private void success()
     {
-        outsideWorld.exit( 0 );
+        outsideWorld.exit( STATUS_SUCCESS );
     }
 }

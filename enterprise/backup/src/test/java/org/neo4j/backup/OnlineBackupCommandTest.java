@@ -68,6 +68,9 @@ import static org.mockito.Mockito.verify;
 import static org.mockito.Mockito.verifyNoMoreInteractions;
 import static org.mockito.Mockito.when;
 import static org.neo4j.backup.OnlineBackupCommand.MAX_OLD_BACKUPS;
+import static org.neo4j.backup.OnlineBackupCommand.STATUS_CC_ERROR;
+import static org.neo4j.backup.OnlineBackupCommand.STATUS_CC_INCONSISTENT;
+import static org.neo4j.commandline.admin.AdminTool.STATUS_ERROR;
 import static org.neo4j.graphdb.factory.GraphDatabaseSettings.cypher_planner;
 
 public class OnlineBackupCommandTest
@@ -172,7 +175,7 @@ public class OnlineBackupCommandTest
         final String path = path( "/Idontexist/sasdfasdfa" );
         expected.expect( CommandFailed.class );
         expected.expectMessage( "Directory '" + path + "' does not exist." );
-        expected.expect( exitCode( 1 ) );
+        expected.expect( exitCode( STATUS_ERROR ) );
         execute( backupDir( path ), "--name=mybackup" );
     }
 
@@ -255,7 +258,7 @@ public class OnlineBackupCommandTest
 
         expected.expect( CommandFailed.class );
         expected.expectMessage( "Inconsistencies found. See '" + path + "' for details." );
-        expected.expect( exitCode( 3 ) );
+        expected.expect( exitCode( STATUS_CC_INCONSISTENT ) );
         execute( "--check-consistency=true", backupDir(), "--name=mybackup" );
     }
 
@@ -269,7 +272,7 @@ public class OnlineBackupCommandTest
 
         expected.expect( CommandFailed.class );
         expected.expectMessage( "Failed to do consistency check on backup: craassh" );
-        expected.expect( exitCode( 2 ) );
+        expected.expect( exitCode( STATUS_CC_ERROR ) );
         execute( "--check-consistency=true", backupDir(), "--name=mybackup" );
     }
 
@@ -370,7 +373,7 @@ public class OnlineBackupCommandTest
 
         expected.expectMessage( "Failed to move old backup out of the way: kaboom" );
         expected.expect( CommandFailed.class );
-        expected.expect( exitCode( 1 ) );
+        expected.expect( exitCode( STATUS_ERROR ) );
 
         execute( "--cc-report-dir=" + dir.getParent(), backupDir( dir.getParent() ),
                 "--name=" + dir.getName() );
@@ -424,7 +427,7 @@ public class OnlineBackupCommandTest
 
         expected.expectMessage( "Backup failed: nah-ah" );
         expected.expect( CommandFailed.class );
-        expected.expect( exitCode( 1 ) );
+        expected.expect( exitCode( STATUS_ERROR ) );
 
         execute( "--fallback-to-full=false", backupDir( dir.getParent() ), "--name=" + dir.getName() );
     }
@@ -474,7 +477,7 @@ public class OnlineBackupCommandTest
 
         expected.expect( CommandFailed.class );
         expected.expectMessage( "ailed to move old backup out of the way: too many old backups." );
-        expected.expect( exitCode( 1 ) );
+        expected.expect( exitCode( STATUS_ERROR ) );
         execute( "--cc-report-dir=" + dir.getParent(), backupDir( dir.getParent() ), "--name=" + dir.getName() );
     }
 
@@ -504,7 +507,7 @@ public class OnlineBackupCommandTest
 
         expected.expect( CommandFailed.class );
         expected.expectMessage( "Backup failed: nope" );
-        expected.expect( exitCode( 1 ) );
+        expected.expect( exitCode( STATUS_ERROR ) );
         execute( backupDir( dir.getParent() ), "--name=" + dir.getName() );
     }
 
@@ -523,7 +526,7 @@ public class OnlineBackupCommandTest
         final String path = path( "/aalivnmoimzlckmvPDK" );
         expected.expect( CommandFailed.class );
         expected.expectMessage( "Directory '" + path + "' does not exist." );
-        expected.expect( exitCode( 1 ) );
+        expected.expect( exitCode( STATUS_ERROR ) );
         execute( "--check-consistency", backupDir(), "--name=mybackup",
                 "--cc-report-dir=" + path );
     }

@@ -85,6 +85,8 @@ public class OnlineBackupCommand implements AdminCommand
         return arguments;
     }
 
+    static final int STATUS_CC_ERROR = 2;
+    static final int STATUS_CC_INCONSISTENT = 3;
     static final int MAX_OLD_BACKUPS = 1000;
     private final BackupService backupService;
     private final Path homeDir;
@@ -249,7 +251,7 @@ public class OnlineBackupCommand implements AdminCommand
                 if ( !ccResult.isSuccessful() )
                 {
                     throw new CommandFailed( String.format( "Inconsistencies found. See '%s' for details.",
-                            ccResult.reportFile() ), 3 );
+                            ccResult.reportFile() ), STATUS_CC_INCONSISTENT );
                 }
             }
             catch ( Throwable e )
@@ -258,7 +260,8 @@ public class OnlineBackupCommand implements AdminCommand
                 {
                     throw (CommandFailed) e;
                 }
-                throw new CommandFailed( "Failed to do consistency check on backup: " + e.getMessage(), e, 2 );
+                throw new CommandFailed( "Failed to do consistency check on backup: " + e.getMessage(), e,
+                        STATUS_CC_ERROR );
             }
         }
 

@@ -38,6 +38,8 @@ import static org.mockito.Mockito.never;
 import static org.mockito.Mockito.verify;
 import static org.mockito.Mockito.verifyNoMoreInteractions;
 import static org.mockito.Mockito.when;
+import static org.neo4j.commandline.admin.AdminTool.STATUS_ERROR;
+import static org.neo4j.commandline.admin.AdminTool.STATUS_SUCCESS;
 
 public class AdminToolTest
 {
@@ -56,7 +58,7 @@ public class AdminToolTest
         OutsideWorld outsideWorld = mock( OutsideWorld.class );
         new AdminTool( new CannedLocator( new NullCommandProvider() ), new NullBlockerLocator(), outsideWorld, false )
                 .execute( null, null, "null" );
-        verify( outsideWorld ).exit( 0 );
+        verify( outsideWorld ).exit( STATUS_SUCCESS );
     }
 
     @Test
@@ -75,7 +77,7 @@ public class AdminToolTest
         new AdminTool( new NullCommandLocator(), new NullBlockerLocator(), outsideWorld, false ).execute( null, null );
         verify( outsideWorld ).stdErrLine( "you must provide a command" );
         verify( outsideWorld ).stdErrLine( "usage: neo4j-admin <command>" );
-        verify( outsideWorld ).exit( 1 );
+        verify( outsideWorld ).exit( STATUS_ERROR );
     }
 
     @Test
@@ -89,7 +91,7 @@ public class AdminToolTest
         new AdminTool( cannedCommand( "exception", command ), new NullBlockerLocator(), outsideWorld, false )
                 .execute( null, null, "exception" );
         verify( outsideWorld ).stdErrLine( "unexpected error: the-exception-message" );
-        verify( outsideWorld ).exit( 1 );
+        verify( outsideWorld ).exit( STATUS_ERROR );
     }
 
     @Test
@@ -131,7 +133,7 @@ public class AdminToolTest
         new AdminTool( cannedCommand( "exception", command ), new NullBlockerLocator(), outsideWorld, false )
                 .execute( null, null, "exception" );
         verify( outsideWorld ).stdErrLine( "command failed: the-failure-message" );
-        verify( outsideWorld ).exit( 1 );
+        verify( outsideWorld ).exit( STATUS_ERROR );
     }
 
     @Test
@@ -174,7 +176,7 @@ public class AdminToolTest
                 .execute( null, null, "exception" );
         InOrder inOrder = inOrder( outsideWorld );
         inOrder.verify( outsideWorld ).stdErrLine( "the-usage-message" );
-        verify( outsideWorld ).exit( 1 );
+        verify( outsideWorld ).exit( STATUS_ERROR );
     }
 
     @Test
@@ -195,7 +197,7 @@ public class AdminToolTest
                 .execute( null, null, "command" );
 
         verify( outsideWorld ).stdErrLine( "command failed: the explanation" );
-        verify( outsideWorld ).exit( 1 );
+        verify( outsideWorld ).exit( STATUS_ERROR );
     }
 
     @Test
@@ -220,7 +222,7 @@ public class AdminToolTest
                 .execute( null, null, "command" );
 
         verify( outsideWorld ).stdErrLine( "command failed: trueBlocker explanation" );
-        verify( outsideWorld ).exit( 1 );
+        verify( outsideWorld ).exit( STATUS_ERROR );
     }
 
     @Test
@@ -253,7 +255,7 @@ public class AdminToolTest
         verifyNoMoreInteractions( command );
         verify( outsideWorld ).stdErrLine( "unknown argument: --help" );
         verify( outsideWorld ).stdErrLine( "usage: neo4j-admin command " );
-        verify( outsideWorld ).exit( 1 );
+        verify( outsideWorld ).exit( STATUS_ERROR );
     }
 
     private CannedLocator cannedCommand( final String name, AdminCommand command )
