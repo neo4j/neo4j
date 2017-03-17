@@ -99,6 +99,7 @@ public abstract class SchemaRule implements SchemaDescriptor.Supplier
 
     /**
      * This enum is used for the legacy schema store, and should not be extended.
+     * @see org.neo4j.kernel.impl.store.record.SchemaRuleSerialization for the new (de)serialisation code instead.
      */
     @Deprecated
     public enum Kind
@@ -107,8 +108,7 @@ public abstract class SchemaRule implements SchemaDescriptor.Supplier
         CONSTRAINT_INDEX_RULE( "Constraint index" ),
         UNIQUENESS_CONSTRAINT( "Uniqueness constraint" ),
         NODE_PROPERTY_EXISTENCE_CONSTRAINT( "Node property existence constraint" ),
-        RELATIONSHIP_PROPERTY_EXISTENCE_CONSTRAINT( "Relationship property existence constraint" ),
-        NODE_KEY_CONSTRAINT( "Node key constraint" );
+        RELATIONSHIP_PROPERTY_EXISTENCE_CONSTRAINT( "Relationship property existence constraint" );
 
         private static final Kind[] ALL = values();
 
@@ -157,8 +157,6 @@ public abstract class SchemaRule implements SchemaDescriptor.Supplier
             {
             case UNIQUE:
                 return UNIQUENESS_CONSTRAINT;
-            case UNIQUE_EXISTS:
-                return NODE_KEY_CONSTRAINT;
             case EXISTS:
                 return descriptor.schema().computeWith( existenceKindMapper );
             default:

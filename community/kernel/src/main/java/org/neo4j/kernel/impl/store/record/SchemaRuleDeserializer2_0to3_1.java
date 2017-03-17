@@ -84,8 +84,6 @@ public class SchemaRuleDeserializer2_0to3_1
             return readNodePropertyExistenceConstraintRule( id, labelId, buffer );
         case RELATIONSHIP_PROPERTY_EXISTENCE_CONSTRAINT:
             return readRelPropertyExistenceConstraintRule( id, labelId, buffer );
-        case NODE_KEY_CONSTRAINT:
-            return readNodeKeyConstraintRule( id, labelId, buffer );
         default:
             throw new IllegalArgumentException( kind.name() );
         }
