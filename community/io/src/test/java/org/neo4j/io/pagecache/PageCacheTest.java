@@ -57,6 +57,7 @@ import org.neo4j.graphdb.config.Configuration;
 import org.neo4j.graphdb.mockfs.DelegatingFileSystemAbstraction;
 import org.neo4j.graphdb.mockfs.DelegatingStoreChannel;
 import org.neo4j.graphdb.mockfs.EphemeralFileSystemAbstraction;
+import org.neo4j.io.ByteUnit;
 import org.neo4j.io.fs.FileSystemAbstraction;
 import org.neo4j.io.fs.StoreChannel;
 import org.neo4j.io.pagecache.impl.SingleFilePageSwapperFactory;
@@ -3713,18 +3714,18 @@ public abstract class PageCacheTest<T extends PageCache> extends PageCacheTestSu
         // size of Huge Pages on Linux is 2 MB, but it can be configured to be
         // as large as 1 GB - at least I have not heard of anyone trying to
         // configure it to be more than that.
-        int pageSize = 1024 * 1024 * 8;
+        int pageSize = (int) ByteUnit.kibiBytes( 8 );
         getPageCache( fs, 5, pageSize, PageCacheTracer.NULL, PageCursorTracerSupplier.NULL );
 
         ThreadLocalRandom rng = ThreadLocalRandom.current();
 
-        try ( PagedFile pagedFile = pageCache.map( file( "a" ), filePageSize );
+        try ( PagedFile pagedFile = pageCache.map( file( "a" ), pageSize );
               PageCursor cursor = pagedFile.io( 0, PF_SHARED_WRITE_LOCK ) )
         {
             assertTrue( cursor.next() );
 
             long x = rng.nextLong();
-            int limit = pageSize - 8;
+            int limit = pageSize - Long.BYTES;
             for ( int i = 0; i < limit; i++ )
             {
                 x += i;
@@ -3733,6 +3734,7 @@ public abstract class PageCacheTest<T extends PageCache> extends PageCacheTestSu
                 cursor.setOffset( i );
                 long y = cursor.getLong();
 
+                assertFalse( "Should not have had a page out-of-bounds access!", cursor.checkAndClearBoundsFlag() );
                 if ( x != y )
                 {
                     String reason =

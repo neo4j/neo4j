@@ -407,10 +407,29 @@ abstract class MuninnPageCursor extends PageCursor
         }
     }
 
+    /**
+     * Compute a pointer that guarantees (assuming {@code size} is less than or equal to {@link #pageSize}) that the
+     * page access will be within the bounds of the page.
+     * This works just like {@link #getBoundedPointer(int, int)}, except in terms of the current {@link #offset}.
+     * This version is faster when applicable, because it can ignore the <em>page underflow</em> case.
+     */
+    private long nextBoundedPointer( int size )
+    {
+        if ( boundsCheck )
+        {
+            outOfBounds |= offset + size > pageSize;
+            return outOfBounds? pointer : pointer + offset;
+        }
+        else
+        {
+            return pointer + offset;
+        }
+    }
+
     @Override
     public final byte getByte()
     {
-        long p = getBoundedPointer( offset, SIZE_OF_BYTE );
+        long p = nextBoundedPointer( SIZE_OF_BYTE );
         byte b = UnsafeUtil.getByte( p );
         offset++;
         return b;
@@ -426,7 +445,7 @@ abstract class MuninnPageCursor extends PageCursor
     @Override
     public void putByte( byte value )
     {
-        long p = getBoundedPointer( offset, SIZE_OF_BYTE );
+        long p = nextBoundedPointer( SIZE_OF_BYTE );
         UnsafeUtil.putByte( p, value );
         offset++;
     }
@@ -441,7 +460,8 @@ abstract class MuninnPageCursor extends PageCursor
     @Override
     public long getLong()
     {
-        long value = getLong( offset );
+        long p = nextBoundedPointer( SIZE_OF_LONG );
+        long value = getLongAt( p );
         offset += SIZE_OF_LONG;
         return value;
     }
@@ -450,6 +470,11 @@ abstract class MuninnPageCursor extends PageCursor
     public long getLong( int offset )
     {
         long p = getBoundedPointer( offset, SIZE_OF_LONG );
+        return getLongAt( p );
+    }
+
+    private long getLongAt( long p )
+    {
         long value;
         if ( UnsafeUtil.allowUnalignedMemoryAccess )
         {
@@ -482,7 +507,8 @@ abstract class MuninnPageCursor extends PageCursor
     @Override
     public void putLong( long value )
     {
-        putLong( offset, value );
+        long p = nextBoundedPointer( SIZE_OF_LONG );
+        putLongAt( p, value );
         offset += SIZE_OF_LONG;
     }
 
@@ -490,6 +516,11 @@ abstract class MuninnPageCursor extends PageCursor
     public void putLong( int offset, long value )
     {
         long p = getBoundedPointer( offset, SIZE_OF_LONG );
+        putLongAt( p, value );
+    }
+
+    private void putLongAt( long p, long value )
+    {
         if ( UnsafeUtil.allowUnalignedMemoryAccess )
         {
             UnsafeUtil.putLong( p, UnsafeUtil.storeByteOrderIsNative ? value : Long.reverseBytes( value ) );
@@ -515,7 +546,8 @@ abstract class MuninnPageCursor extends PageCursor
     @Override
     public int getInt()
     {
-        int i = getInt( offset );
+        long p = nextBoundedPointer( SIZE_OF_INT );
+        int i = getIntAt( p );
         offset += SIZE_OF_INT;
         return i;
     }
@@ -524,6 +556,11 @@ abstract class MuninnPageCursor extends PageCursor
     public int getInt( int offset )
     {
         long p = getBoundedPointer( offset, SIZE_OF_INT );
+        return getIntAt( p );
+    }
+
+    private int getIntAt( long p )
+    {
         if ( UnsafeUtil.allowUnalignedMemoryAccess )
         {
             int x = UnsafeUtil.getInt( p );
@@ -544,7 +581,8 @@ abstract class MuninnPageCursor extends PageCursor
     @Override
     public void putInt( int value )
     {
-        putInt( offset, value );
+        long p = nextBoundedPointer( SIZE_OF_INT );
+        putIntAt( p, value );
         offset += SIZE_OF_INT;
     }
 
@@ -552,6 +590,11 @@ abstract class MuninnPageCursor extends PageCursor
     public void putInt( int offset, int value )
     {
         long p = getBoundedPointer( offset, SIZE_OF_INT );
+        putIntAt( p, value );
+    }
+
+    private void putIntAt( long p, int value )
+    {
         if ( UnsafeUtil.allowUnalignedMemoryAccess )
         {
             UnsafeUtil.putInt( p, UnsafeUtil.storeByteOrderIsNative ? value : Integer.reverseBytes( value ) );
@@ -614,7 +657,8 @@ abstract class MuninnPageCursor extends PageCursor
     @Override
     public final short getShort()
     {
-        short s = getShort( offset );
+        long p = nextBoundedPointer( SIZE_OF_SHORT );
+        short s = getShortAt( p );
         offset += SIZE_OF_SHORT;
         return s;
     }
@@ -623,6 +667,11 @@ abstract class MuninnPageCursor extends PageCursor
     public short getShort( int offset )
     {
         long p = getBoundedPointer( offset, SIZE_OF_SHORT );
+        return getShortAt( p );
+    }
+
+    private short getShortAt( long p )
+    {
         if ( UnsafeUtil.allowUnalignedMemoryAccess )
         {
             short x = UnsafeUtil.getShort( p );
@@ -641,7 +690,8 @@ abstract class MuninnPageCursor extends PageCursor
     @Override
     public void putShort( short value )
     {
-        putShort( offset, value );
+        long p = nextBoundedPointer( SIZE_OF_SHORT );
+        putShortAt( p, value );
         offset += SIZE_OF_SHORT;
     }
 
@@ -649,6 +699,11 @@ abstract class MuninnPageCursor extends PageCursor
     public void putShort( int offset, short value )
     {
         long p = getBoundedPointer( offset, SIZE_OF_SHORT );
+        putShortAt( p, value );
+    }
+
+    private void putShortAt( long p, short value )
+    {
         if ( UnsafeUtil.allowUnalignedMemoryAccess )
         {
             UnsafeUtil.putShort( p, UnsafeUtil.storeByteOrderIsNative ? value : Short.reverseBytes( value ) );
