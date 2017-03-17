@@ -63,7 +63,6 @@ import org.neo4j.kernel.impl.store.SchemaStorage;
 import org.neo4j.kernel.impl.store.UnderlyingStorageException;
 import org.neo4j.kernel.impl.store.counts.CountsTracker;
 import org.neo4j.kernel.impl.store.record.IndexRule;
-import org.neo4j.kernel.impl.store.record.Record;
 import org.neo4j.kernel.impl.store.record.RelationshipGroupRecord;
 import org.neo4j.kernel.impl.store.record.RelationshipRecord;
 import org.neo4j.kernel.impl.transaction.state.PropertyLoader;
@@ -615,25 +614,12 @@ public class StorageLayer implements StoreReadLayer
     {
         if ( node.isDense() )
         {
-            visitDenseNode( statement, node, visitor );
+            statement.acquireDenseNodeDegreeCounter( node.id(), node.nextGroupId() ).once( visitor );
         }
         else
         {
             visitNode( statement, node, visitor );
         }
-    }
-
-    private IndexRule indexRule( IndexDescriptor index )
-    {
-        for ( IndexRule rule : schemaCache.indexRules() )
-        {
-            if ( rule.getIndexDescriptor().equals( index ) )
-            {
-                return rule;
-            }
-        }
-
-        return schemaStorage.indexGetForSchema( index );
     }
 
     @Override
@@ -669,35 +655,6 @@ public class StorageLayer implements StoreReadLayer
         }
     }
 
-    private void visitDenseNode( StorageStatement statement, NodeItem node, DegreeVisitor visitor )
-    {
-        RelationshipGroupRecord relationshipGroupRecord = relationshipGroupStore.newRecord();
-        RecordCursor<RelationshipGroupRecord> relationshipGroupCursor = statement.recordCursors().relationshipGroup();
-        RelationshipRecord relationshipRecord = relationshipStore.newRecord();
-        RecordCursor<RelationshipRecord> relationshipCursor = statement.recordCursors().relationship();
-
-        boolean keepGoing = true;
-        long groupId = node.nextGroupId();
-        while ( keepGoing && groupId != NO_NEXT_RELATIONSHIP.longValue() )
-        {
-            relationshipGroupCursor.next( groupId, relationshipGroupRecord, FORCE );
-            if ( relationshipGroupRecord.inUse() )
-            {
-                int type = relationshipGroupRecord.getType();
-
-                long firstLoop = relationshipGroupRecord.getFirstLoop();
-                long firstOut = relationshipGroupRecord.getFirstOut();
-                long firstIn = relationshipGroupRecord.getFirstIn();
-
-                long loop = countByFirstPrevPointer( firstLoop, relationshipCursor, node.id(), relationshipRecord );
-                long outgoing = countByFirstPrevPointer( firstOut, relationshipCursor, node.id(), relationshipRecord );
-                long incoming = countByFirstPrevPointer( firstIn, relationshipCursor, node.id(), relationshipRecord );
-                keepGoing = visitor.visitDegree( type, outgoing, incoming, loop );
-            }
-            groupId = relationshipGroupRecord.getNext();
-        }
-    }
-
     private Direction directionOf( long nodeId, long relationshipId, long startNode, long endNode )
     {
         if ( startNode == nodeId )
@@ -713,23 +670,17 @@ public class StorageLayer implements StoreReadLayer
                         " with startNode:" + startNode + " and endNode:" + endNode );
     }
 
-    private static long countByFirstPrevPointer( long relationshipId, RecordCursor<RelationshipRecord> cursor,
-            long nodeId, RelationshipRecord relationshipRecord )
+    private IndexRule indexRule( IndexDescriptor index )
     {
-        if ( relationshipId == Record.NO_NEXT_RELATIONSHIP.longValue() )
+        for ( IndexRule rule : schemaCache.indexRules() )
         {
-            return 0;
+            if ( rule.getIndexDescriptor().equals( index ) )
+            {
+                return rule;
+            }
         }
-        cursor.next( relationshipId, relationshipRecord, FORCE );
-        if ( relationshipRecord.getFirstNode() == nodeId )
-        {
-            return relationshipRecord.getFirstPrevRel();
-        }
-        if ( relationshipRecord.getSecondNode() == nodeId )
-        {
-            return relationshipRecord.getSecondPrevRel();
-        }
-        throw new InvalidRecordException( "Node " + nodeId + " neither start nor end node of " + relationshipRecord );
+
+        return schemaStorage.indexGetForSchema( index );
     }
 
     private static Iterator<IndexDescriptor> toIndexDescriptors( Iterable<IndexRule> rules )
