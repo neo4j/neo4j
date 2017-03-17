@@ -3205,7 +3205,7 @@ public abstract class PageCacheTest<T extends PageCache> extends PageCacheTestSu
     }
 
     @Test( timeout = SHORT_TIMEOUT_MILLIS )
-    public void settingOutOfBoundsCursorOffsetMustNotRaiseBoundsFlag() throws IOException
+    public void settingOutOfBoundsCursorOffsetMustRaiseBoundsFlag() throws IOException
     {
         generateFileWithRecords( file( "a" ), 1, recordSize );
 
@@ -3214,12 +3214,15 @@ public abstract class PageCacheTest<T extends PageCache> extends PageCacheTestSu
               PageCursor cursor = pagedFile.io( 0, PF_SHARED_READ_LOCK ) )
         {
             cursor.setOffset( -1 );
+            assertTrue( cursor.checkAndClearBoundsFlag() );
             assertFalse( cursor.checkAndClearBoundsFlag() );
 
             cursor.setOffset( filePageSize + 1 );
+            assertTrue( cursor.checkAndClearBoundsFlag() );
             assertFalse( cursor.checkAndClearBoundsFlag() );
 
             cursor.setOffset( pageCachePageSize + 1 );
+            assertTrue( cursor.checkAndClearBoundsFlag() );
             assertFalse( cursor.checkAndClearBoundsFlag() );
         }
     }

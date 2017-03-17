@@ -750,6 +750,11 @@ abstract class MuninnPageCursor extends PageCursor
     public void setOffset( int offset )
     {
         this.offset = offset;
+        if ( offset < 0 | offset > filePageSize )
+        {
+            this.offset = 0;
+            outOfBounds = true;
+        }
     }
 
     @Override
