@@ -59,6 +59,7 @@ import org.neo4j.kernel.lifecycle.LifeSupport;
 import org.neo4j.unsafe.impl.batchimport.BatchImporter;
 import org.neo4j.unsafe.impl.batchimport.ParallelBatchImporter;
 import org.neo4j.unsafe.impl.batchimport.cache.idmapping.string.DuplicateInputIdException;
+import org.neo4j.unsafe.impl.batchimport.input.BadCollector;
 import org.neo4j.unsafe.impl.batchimport.input.Collector;
 import org.neo4j.unsafe.impl.batchimport.input.Input;
 import org.neo4j.unsafe.impl.batchimport.input.InputException;
@@ -97,6 +98,7 @@ import static org.neo4j.unsafe.impl.batchimport.input.csv.DataFactories.defaultF
  */
 public class ImportTool
 {
+    private static final String UNLIMITED = "true";
     private static final int UNSPECIFIED = -1;
 
     enum Options
@@ -178,7 +180,7 @@ public class ImportTool
                 "<true/false>",
                 "Enable printing of error stack traces." ),
         BAD_TOLERANCE( "bad-tolerance", 1000,
-                "<max number of bad entries>",
+                "<max number of bad entries, or " + UNLIMITED + " for unlimited>",
                 "Number of bad entries before the import is considered failed. This tolerance threshold is "
                         + "about relationships refering to missing nodes. Format errors in input data are "
                         + "still treated as errors" ),
@@ -390,8 +392,7 @@ public class ImportTool
             processors = args.getNumber( Options.PROCESSORS.key(), null );
             idType = args.interpretOption( Options.ID_TYPE.key(),
                     withDefault( (IdType)Options.ID_TYPE.defaultValue() ), TO_ID_TYPE );
-            badTolerance = args.getNumber( Options.BAD_TOLERANCE.key(),
-                    (Number) Options.BAD_TOLERANCE.defaultValue() ).intValue();
+            badTolerance = parseNumberOrUnlimited( args, Options.BAD_TOLERANCE );
             inputEncoding = Charset.forName( args.get( Options.INPUT_ENCODING.key(), defaultCharset().name() ) );
             skipBadRelationships = args.getBoolean( Options.SKIP_BAD_RELATIONSHIPS.key(),
                     (Boolean)Options.SKIP_BAD_RELATIONSHIPS.defaultValue(), true );
@@ -520,6 +521,12 @@ public class ImportTool
                 Validators.REGEX_FILE_EXISTS.validate( file );
             }
         };
+    }
+
+    private static Integer parseNumberOrUnlimited( Args args, Options option )
+    {
+        String value = args.get( option.key(), option.defaultValue().toString() );
+        return UNLIMITED.equals( value ) ? BadCollector.UNLIMITED_TOLERANCE : Integer.parseInt( value );
     }
 
     private static Config loadDbConfig( File file ) throws IOException
