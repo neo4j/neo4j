@@ -399,8 +399,5 @@ public interface StoreReadLayer
 
     void degrees( StorageStatement statement, NodeItem nodeItem, DegreeVisitor visitor );
 
-    int degreeRelationshipsInGroup( StorageStatement storeStatement, long id, long groupId, Direction direction,
-            Integer relType );
-
     <T> T getOrCreateSchemaDependantState( Class<T> type, Function<StoreReadLayer, T> factory );
 }
