@@ -28,7 +28,7 @@ public class ConstraintViolationTransactionFailureException extends TransactionF
 {
     public ConstraintViolationTransactionFailureException( String msg, KernelException cause )
     {
-        super( Status.Schema.ConstraintValidationFailed, msg, cause );
+        super( Status.Schema.ConstraintValidationFailed, cause, msg );
     }
 
     public ConstraintViolationTransactionFailureException( String msg )

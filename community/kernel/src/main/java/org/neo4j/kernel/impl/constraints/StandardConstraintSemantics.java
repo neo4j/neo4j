@@ -48,7 +48,7 @@ public class StandardConstraintSemantics implements ConstraintSemantics
             LabelSchemaDescriptor descriptor, BiPredicate<NodeItem,Integer> hasProperty )
             throws CreateConstraintFailureException
     {
-        throw propertyExistenceConstraintsNotAllowed( descriptor, ERROR_MESSAGE_NODE_KEY );
+        throw propertyExistenceConstraintsNotAllowed( descriptor );
     }
 
     @Override
@@ -56,7 +56,15 @@ public class StandardConstraintSemantics implements ConstraintSemantics
             RelationTypeSchemaDescriptor descriptor, BiPredicate<RelationshipItem,Integer> hasPropertyCheck )
             throws CreateConstraintFailureException
     {
-        throw propertyExistenceConstraintsNotAllowed( descriptor, ERROR_MESSAGE_EXISTS );
+        throw propertyExistenceConstraintsNotAllowed( descriptor );
+    }
+
+    @Override
+    public void validateNodeKeyConstraint( Iterator<Cursor<NodeItem>> allNodes,
+            LabelSchemaDescriptor descriptor, BiPredicate<NodeItem,Integer> hasProperty )
+            throws CreateConstraintFailureException
+    {
+        throw nodeKeyConstraintsNotAllowed( descriptor );
     }
 
     @Override
@@ -80,12 +88,20 @@ public class StandardConstraintSemantics implements ConstraintSemantics
         throw new IllegalStateException( errorMessage );
     }
 
-    private CreateConstraintFailureException propertyExistenceConstraintsNotAllowed( SchemaDescriptor descriptor, String errorMessage )
+    private CreateConstraintFailureException propertyExistenceConstraintsNotAllowed( SchemaDescriptor descriptor )
     {
         // When creating a Property Existence Constraint in Community Edition
         return new CreateConstraintFailureException(
-                    ConstraintDescriptorFactory.existsForSchema( descriptor ),
-                    new IllegalStateException( errorMessage ) );
+                ConstraintDescriptorFactory.existsForSchema( descriptor ),
+                new IllegalStateException( ERROR_MESSAGE_EXISTS ) );
+    }
+
+    private CreateConstraintFailureException nodeKeyConstraintsNotAllowed( SchemaDescriptor descriptor )
+    {
+        // When creating a Node Key Constraint in Community Edition
+        return new CreateConstraintFailureException(
+                ConstraintDescriptorFactory.existsForSchema( descriptor ),
+                new IllegalStateException( ERROR_MESSAGE_NODE_KEY ) );
     }
 
     @Override
@@ -99,14 +115,14 @@ public class StandardConstraintSemantics implements ConstraintSemantics
     public ConstraintRule createNodeKeyConstraintRule(
             long ruleId, NodeKeyConstraintDescriptor descriptor, long indexId ) throws CreateConstraintFailureException
     {
-        throw propertyExistenceConstraintsNotAllowed( descriptor.schema(), ERROR_MESSAGE_NODE_KEY );
+        throw nodeKeyConstraintsNotAllowed( descriptor.schema() );
     }
 
     @Override
     public ConstraintRule createExistenceConstraint( long ruleId, ConstraintDescriptor descriptor )
             throws CreateConstraintFailureException
     {
-        throw propertyExistenceConstraintsNotAllowed( descriptor.schema(), ERROR_MESSAGE_EXISTS );
+        throw propertyExistenceConstraintsNotAllowed( descriptor.schema() );
     }
 
     @Override

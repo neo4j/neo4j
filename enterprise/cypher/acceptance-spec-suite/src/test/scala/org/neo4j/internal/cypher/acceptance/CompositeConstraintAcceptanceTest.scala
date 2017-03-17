@@ -19,12 +19,15 @@
  */
 package org.neo4j.internal.cypher.acceptance
 
+import org.hamcrest.CoreMatchers.containsString
+import org.junit.Assert.assertThat
 import org.neo4j.cypher.javacompat.internal.GraphDatabaseCypherService
-import org.neo4j.cypher.{CypherExecutionException, ExecutionEngineFunSuite, NewPlannerTestSupport}
-import org.neo4j.graphdb.{ConstraintViolationException, Node}
+import org.neo4j.cypher._
+import org.neo4j.graphdb.ConstraintViolationException
 import org.neo4j.kernel.GraphDatabaseQueryService
-import org.neo4j.test.{TestEnterpriseGraphDatabaseFactory, TestGraphDatabaseFactory}
+import org.neo4j.test.TestEnterpriseGraphDatabaseFactory
 import org.scalatest.matchers.{MatchResult, Matcher}
+import org.neo4j.cypher.internal.frontend.v3_2.helpers.StringHelper._
 
 import scala.collection.JavaConverters._
 
@@ -122,6 +125,84 @@ class CompositeConstraintAcceptanceTest extends ExecutionEngineFunSuite with New
     // Then
     graph should haveConstraints("NODE_KEY:Person(email)")
     graph should not(haveConstraints("NODE_KEY:Person(firstname,lastname)"))
+  }
+
+  test("trying to add duplicate node when unique constraint exists") {
+    createLabeledNode(Map("name" -> "A"), "Person")
+    executeQuery("CREATE CONSTRAINT ON (person:Person) ASSERT person.name IS UNIQUE")
+
+    expectError(
+      "CREATE (n:Person) SET n.name = 'A'",
+      String.format("Node(0) already exists with label `Person` and property `name` = 'A'")
+    )
+  }
+
+  test("trying to add a node key constraint when duplicates exist") {
+    createLabeledNode(Map("name" -> "A"), "Person")
+    createLabeledNode(Map("name" -> "A"), "Person")
+
+    expectError(
+      "CREATE CONSTRAINT ON (person:Person) ASSERT (person.name) IS NODE KEY",
+      String.format("Unable to create CONSTRAINT ON ( person:Person ) ASSERT person.name IS NODE KEY:%n" +
+        "Both Node(0) and Node(1) have the label `Person` and property `name` = 'A'")
+    )
+  }
+
+  test("trying to add duplicate node when node key constraint exists") {
+    createLabeledNode(Map("name" -> "A"), "Person")
+    executeQuery("CREATE CONSTRAINT ON (person:Person) ASSERT (person.name) IS NODE KEY")
+
+    expectError(
+      "CREATE (n:Person) SET n.name = 'A'",
+      String.format("Node(0) already exists with label `Person` and property `name` = 'A'")
+    )
+  }
+
+  test("drop a non existent node key constraint") {
+    expectError(
+      "DROP CONSTRAINT ON (person:Person) ASSERT (person.name) IS NODE KEY",
+      "No such constraint"
+    )
+  }
+
+  test("trying to add duplicate node when composite unique constraint exists") {
+    createLabeledNode(Map("name" -> "A", "surname" -> "B"), "Person")
+    executeQuery("CREATE CONSTRAINT ON (person:Person) ASSERT (person.name, person.surname) IS UNIQUE")
+
+    expectError(
+      "CREATE (n:Person) SET n.name = 'A', n.surname = 'B'",
+      String.format("Node(0) already exists with label `Person` and properties `name` = 'A', `surname` = 'B'")
+    )
+  }
+
+  test("trying to add a composite node key constraint when duplicates exist") {
+    createLabeledNode(Map("name" -> "A", "surname" -> "B"), "Person")
+    createLabeledNode(Map("name" -> "A", "surname" -> "B"), "Person")
+
+    expectError(
+      "CREATE CONSTRAINT ON (person:Person) ASSERT (person.name, person.surname) IS NODE KEY",
+      String.format("Unable to create CONSTRAINT ON ( person:Person ) ASSERT (person.name, person.surname) IS NODE KEY:%n" +
+        "Both Node(0) and Node(1) have the label `Person` and properties `name` = 'A', `surname` = 'B'")
+    )
+  }
+
+  test("trying to add duplicate node when composite node key constraint exists") {
+    createLabeledNode(Map("name" -> "A", "surname" -> "B"), "Person")
+    executeQuery("CREATE CONSTRAINT ON (person:Person) ASSERT (person.name, person.surname) IS NODE KEY")
+
+    expectError(
+      "CREATE (n:Person) SET n.name = 'A', n.surname = 'B'",
+      String.format("Node(0) already exists with label `Person` and properties `name` = 'A', `surname` = 'B'")
+    )
+  }
+
+  private def expectError(query: String, expectedError: String) {
+    val error = intercept[CypherException](executeQuery(query))
+    assertThat(error.getMessage, containsString(expectedError))
+  }
+
+  private def executeQuery(query: String) {
+    executeWithCostPlannerAndInterpretedRuntimeOnly(query.fixNewLines).toList
   }
 
   case class haveConstraints(expectedConstraints: String*) extends Matcher[GraphDatabaseQueryService] {

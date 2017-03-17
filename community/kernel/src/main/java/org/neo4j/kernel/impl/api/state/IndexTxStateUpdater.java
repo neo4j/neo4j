@@ -47,13 +47,13 @@ public class IndexTxStateUpdater
 {
     private final SchemaReadOperations schemaReadOps;
     private final EntityReadOperations readOps;
-    private final NodeSchemaMatcher<NewIndexDescriptor> nodeIndexMatcher;
+    private final NodeSchemaMatcher nodeIndexMatcher;
 
     public IndexTxStateUpdater( SchemaReadOperations schemaReadOps, EntityReadOperations readOps )
     {
         this.schemaReadOps = schemaReadOps;
         this.readOps = readOps;
-        this.nodeIndexMatcher = new NodeSchemaMatcher<>( readOps );
+        this.nodeIndexMatcher = new NodeSchemaMatcher( readOps );
     }
 
     // LABEL CHANGES

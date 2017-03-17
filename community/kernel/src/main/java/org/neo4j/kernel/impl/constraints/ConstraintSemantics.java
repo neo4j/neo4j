@@ -41,6 +41,9 @@ import org.neo4j.storageengine.api.txstate.TxStateVisitor;
  */
 public interface ConstraintSemantics
 {
+    void validateNodeKeyConstraint( Iterator<Cursor<NodeItem>> allNodes, LabelSchemaDescriptor descriptor,
+            BiPredicate<NodeItem,Integer> hasProperty ) throws CreateConstraintFailureException;
+
     void validateNodePropertyExistenceConstraint( Iterator<Cursor<NodeItem>> allNodes, LabelSchemaDescriptor descriptor,
             BiPredicate<NodeItem,Integer> hasProperty ) throws CreateConstraintFailureException;
 

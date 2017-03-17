@@ -87,6 +87,14 @@ public class EnterpriseConstraintSemantics extends StandardConstraintSemantics
         }
     }
 
+    @Override
+    public void validateNodeKeyConstraint( Iterator<Cursor<NodeItem>> allNodes,
+            LabelSchemaDescriptor descriptor, BiPredicate<NodeItem,Integer> hasPropertyCheck )
+            throws CreateConstraintFailureException
+    {
+        validateNodePropertyExistenceConstraint( allNodes, descriptor, hasPropertyCheck );
+    }
+
     private void validateNodePropertyExistenceConstraint( NodeItem node, int propertyKey,
         LabelSchemaDescriptor descriptor, BiPredicate<NodeItem, Integer> hasPropertyCheck ) throws
             CreateConstraintFailureException
