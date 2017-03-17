@@ -32,7 +32,6 @@ import org.neo4j.kernel.impl.locking.Lock;
 import org.neo4j.kernel.impl.locking.LockService;
 import org.neo4j.kernel.impl.store.CommonAbstractStore;
 import org.neo4j.kernel.impl.store.NeoStores;
-import org.neo4j.kernel.impl.store.RecordCursors;
 import org.neo4j.kernel.impl.store.UnderlyingStorageException;
 import org.neo4j.kernel.impl.store.record.AbstractBaseRecord;
 import org.neo4j.kernel.impl.store.record.RecordLoad;
@@ -68,7 +67,6 @@ public class StoreStatement implements StorageStatement
     private final NeoStores neoStores;
     private final Supplier<IndexReaderFactory> indexReaderFactorySupplier;
     private final Supplier<LabelScanReader> labelScanStore;
-    private final RecordCursors recordCursors;
 
     private IndexReaderFactory indexReaderFactory;
     private LabelScanReader labelScanReader;
@@ -82,7 +80,6 @@ public class StoreStatement implements StorageStatement
         this.neoStores = neoStores;
         this.indexReaderFactorySupplier = indexReaderFactory;
         this.labelScanStore = labelScanReaderSupplier;
-        this.recordCursors = new RecordCursors( neoStores );
 
         nodeCursor = new InstanceCache<NodeCursor>()
         {
@@ -245,7 +242,6 @@ public class StoreStatement implements StorageStatement
         singlePropertyCursorCache.close();
         relationshipGroupCursorCache.close();
         degreeVisitableCache.close();
-        recordCursors.close();
         closed = true;
     }
 
@@ -286,12 +282,6 @@ public class StoreStatement implements StorageStatement
     public IndexReader getFreshIndexReader( IndexDescriptor descriptor ) throws IndexNotFoundKernelException
     {
         return indexReaderFactory().newUnCachedReader( descriptor );
-    }
-
-    @Override
-    public RecordCursors recordCursors()
-    {
-        return recordCursors;
     }
 
     public static <RECORD extends AbstractBaseRecord, STORE extends CommonAbstractStore<RECORD,?>> RECORD read( long id,
