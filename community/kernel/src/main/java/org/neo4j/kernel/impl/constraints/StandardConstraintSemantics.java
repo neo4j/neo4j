@@ -69,8 +69,9 @@ public class StandardConstraintSemantics implements ConstraintSemantics
             return readNonStandardConstraint( rule, ERROR_MESSAGE_EXISTS );
         case UNIQUE_EXISTS:
             return readNonStandardConstraint( rule, ERROR_MESSAGE_NODE_KEY );
+        default:
+            return desc;
         }
-        return desc;
     }
 
     protected ConstraintDescriptor readNonStandardConstraint( ConstraintRule rule, String errorMessage )
