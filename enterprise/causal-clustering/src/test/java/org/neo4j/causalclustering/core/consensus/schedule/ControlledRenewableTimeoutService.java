@@ -22,30 +22,87 @@ package org.neo4j.causalclustering.core.consensus.schedule;
 import java.util.HashMap;
 import java.util.Map;
 
-import org.neo4j.helpers.collection.Pair;
+import org.neo4j.time.Clocks;
+import org.neo4j.time.FakeClock;
 
-import static org.mockito.Mockito.mock;
+import static java.util.concurrent.TimeUnit.MILLISECONDS;
 
 public class ControlledRenewableTimeoutService implements RenewableTimeoutService
 {
-    private Map<TimeoutName, Pair<TimeoutHandler, RenewableTimeout>> handlers = new HashMap<>();
+    public static class Timer implements RenewableTimeout
+    {
+        TimeoutHandler callback;
+        long delayMillis;
+        boolean enabled;
+        long renewalCount;
+
+        Timer( TimeoutHandler callback, long delayMillis )
+        {
+            this.callback = callback;
+            this.delayMillis = delayMillis;
+            enabled = true;
+        }
+
+        @Override
+        public void renew()
+        {
+            enabled = true;
+            renewalCount++;
+        }
+
+        public long renewalCount()
+        {
+            return renewalCount;
+        }
+
+        @Override
+        public void cancel()
+        {
+            enabled = false;
+        }
+    }
+
+    private Map<TimeoutName,Timer> timers = new HashMap<>();
+    private final FakeClock clock;
+
+    public ControlledRenewableTimeoutService()
+    {
+        this( Clocks.fakeClock() );
+    }
+
+    public ControlledRenewableTimeoutService( FakeClock clock )
+    {
+        this.clock = clock;
+    }
 
     @Override
-    public RenewableTimeout create( TimeoutName name, long delayInMillis, long randomRangeInMillis, TimeoutHandler handler )
+    public RenewableTimeout create( TimeoutName name, long delayInMillis, long randomRangeInMillis, TimeoutHandler callback )
     {
-        RenewableTimeout timeout = mock( RenewableTimeout.class );
-        handlers.put( name, Pair.of( handler, timeout ) );
-        return timeout;
+        Timer timer = new Timer( callback, delayInMillis );
+        timers.put( name, timer );
+        return timer;
     }
 
     public void invokeTimeout( TimeoutName name )
     {
-        Pair<TimeoutHandler, RenewableTimeout> pair = handlers.get( name );
-        pair.first().onTimeout( pair.other() );
+        Timer timer = timers.get( name );
+        if ( timer == null )
+        {
+            /* not registered */
+            return;
+        }
+        /* invoking a certain timer moves time forward the same amount */
+        clock.forward( timer.delayMillis, MILLISECONDS );
+        if ( !timer.enabled )
+        {
+            throw new IllegalStateException( "Invoked timer which is not enabled" );
+        }
+        timer.cancel();
+        timer.callback.onTimeout( timer );
     }
 
-    public RenewableTimeout getTimeout( TimeoutName name )
+    public Timer getTimeout( TimeoutName name )
     {
-        return handlers.get( name ).other();
+        return timers.get( name );
     }
 }

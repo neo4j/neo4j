@@ -135,7 +135,7 @@ public class ConsensusModule
 
         raftMachine = new RaftMachine( myself, termState, voteState, raftLog, electionTimeout, heartbeatInterval,
                 raftTimeoutService, outbound, logProvider, raftMembershipManager, logShipping, inFlightMap,
-                config.get( CausalClusteringSettings.refuse_to_be_leader ), platformModule.monitors );
+                config.get( CausalClusteringSettings.refuse_to_be_leader ), platformModule.monitors, systemClock() );
 
         life.add( new RaftCoreTopologyConnector( coreTopologyService, raftMachine ) );
 

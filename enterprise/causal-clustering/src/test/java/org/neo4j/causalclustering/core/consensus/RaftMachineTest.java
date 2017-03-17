@@ -35,6 +35,8 @@ import org.neo4j.causalclustering.identity.MemberId;
 import org.neo4j.causalclustering.identity.RaftTestMemberSetBuilder;
 import org.neo4j.causalclustering.messaging.Inbound;
 import org.neo4j.kernel.monitoring.Monitors;
+import org.neo4j.time.Clocks;
+import org.neo4j.time.FakeClock;
 
 import static org.hamcrest.CoreMatchers.equalTo;
 import static org.hamcrest.CoreMatchers.hasItem;
@@ -83,15 +85,18 @@ public class RaftMachineTest
     public void shouldRequestVotesOnElectionTimeout() throws Exception
     {
         // Given
-        ControlledRenewableTimeoutService timeouts = new ControlledRenewableTimeoutService();
+        FakeClock fakeClock = Clocks.fakeClock();
+        ControlledRenewableTimeoutService timeouts = new ControlledRenewableTimeoutService( fakeClock );
         OutboundMessageCollector messages = new OutboundMessageCollector();
 
         RaftMachine raft = new RaftMachineBuilder( myself, 3, RaftTestMemberSetBuilder.INSTANCE )
                 .timeoutService( timeouts )
+                .clock( fakeClock )
                 .outbound( messages )
                 .build();
 
         raft.installCoreState( new RaftCoreState( new MembershipEntry( 0, asSet( myself, member1, member2 )  ) ) );
+        raft.startTimers();
 
         // When
         timeouts.invokeTimeout( ELECTION );
@@ -110,11 +115,13 @@ public class RaftMachineTest
     public void shouldBecomeLeaderInMajorityOf3() throws Exception
     {
         // Given
-        ControlledRenewableTimeoutService timeouts = new ControlledRenewableTimeoutService();
+        FakeClock fakeClock = Clocks.fakeClock();
+        ControlledRenewableTimeoutService timeouts = new ControlledRenewableTimeoutService( fakeClock );
         RaftMachine raft = new RaftMachineBuilder( myself, 3, RaftTestMemberSetBuilder.INSTANCE )
-                .timeoutService( timeouts ).build();
+                .timeoutService( timeouts ).clock( fakeClock ).build();
 
         raft.installCoreState( new RaftCoreState( new MembershipEntry( 0, asSet( myself, member1, member2 )  ) ) );
+        raft.startTimers();
 
         timeouts.invokeTimeout( ELECTION );
         assertThat( raft.isLeader(), is( false ) );
@@ -130,12 +137,14 @@ public class RaftMachineTest
     public void shouldBecomeLeaderInMajorityOf5() throws Exception
     {
         // Given
-        ControlledRenewableTimeoutService timeouts = new ControlledRenewableTimeoutService();
+        FakeClock fakeClock = Clocks.fakeClock();
+        ControlledRenewableTimeoutService timeouts = new ControlledRenewableTimeoutService( fakeClock );
         RaftMachine raft = new RaftMachineBuilder( myself, 3, RaftTestMemberSetBuilder.INSTANCE )
-                .timeoutService( timeouts ).build();
+                .timeoutService( timeouts ).clock( fakeClock ).build();
 
         raft.installCoreState( new RaftCoreState(
                 new MembershipEntry( 0, asSet( myself, member1, member2, member3, member4 )  ) ) );
+        raft.startTimers();
 
         timeouts.invokeTimeout( ELECTION );
 
@@ -153,12 +162,14 @@ public class RaftMachineTest
     public void shouldNotBecomeLeaderOnMultipleVotesFromSameMember() throws Exception
     {
         // Given
-        ControlledRenewableTimeoutService timeouts = new ControlledRenewableTimeoutService();
+        FakeClock fakeClock = Clocks.fakeClock();
+        ControlledRenewableTimeoutService timeouts = new ControlledRenewableTimeoutService( fakeClock );
         RaftMachine raft = new RaftMachineBuilder( myself, 3, RaftTestMemberSetBuilder.INSTANCE )
-                .timeoutService( timeouts ).build();
+                .timeoutService( timeouts ).clock( fakeClock ).build();
 
         raft.installCoreState( new RaftCoreState(
                 new MembershipEntry( 0, asSet( myself, member1, member2, member3, member4 )  ) ) );
+        raft.startTimers();
 
         timeouts.invokeTimeout( ELECTION );
 
@@ -174,11 +185,13 @@ public class RaftMachineTest
     public void shouldNotBecomeLeaderWhenVotingOnItself() throws Exception
     {
         // Given
-        ControlledRenewableTimeoutService timeouts = new ControlledRenewableTimeoutService();
+        FakeClock fakeClock = Clocks.fakeClock();
+        ControlledRenewableTimeoutService timeouts = new ControlledRenewableTimeoutService( fakeClock );
         RaftMachine raft = new RaftMachineBuilder( myself, 3, RaftTestMemberSetBuilder.INSTANCE )
-                .timeoutService( timeouts ).build();
+                .timeoutService( timeouts ).clock( fakeClock ).build();
 
         raft.installCoreState( new RaftCoreState( new MembershipEntry( 0, asSet( myself, member1, member2 )  ) ) );
+        raft.startTimers();
 
         timeouts.invokeTimeout( ELECTION );
 
@@ -193,11 +206,13 @@ public class RaftMachineTest
     public void shouldNotBecomeLeaderWhenMembersVoteNo() throws Exception
     {
         // Given
-        ControlledRenewableTimeoutService timeouts = new ControlledRenewableTimeoutService();
+        FakeClock fakeClock = Clocks.fakeClock();
+        ControlledRenewableTimeoutService timeouts = new ControlledRenewableTimeoutService( fakeClock );
         RaftMachine raft = new RaftMachineBuilder( myself, 3, RaftTestMemberSetBuilder.INSTANCE )
-                .timeoutService( timeouts ).build();
+                .timeoutService( timeouts ).clock( fakeClock ).build();
 
         raft.installCoreState( new RaftCoreState( new MembershipEntry( 0, asSet( myself, member1, member2 )  ) ) );
+        raft.startTimers();
 
         timeouts.invokeTimeout( ELECTION );
 
@@ -213,11 +228,13 @@ public class RaftMachineTest
     public void shouldNotBecomeLeaderByVotesFromOldTerm() throws Exception
     {
         // Given
-        ControlledRenewableTimeoutService timeouts = new ControlledRenewableTimeoutService();
+        FakeClock fakeClock = Clocks.fakeClock();
+        ControlledRenewableTimeoutService timeouts = new ControlledRenewableTimeoutService( fakeClock );
         RaftMachine raft = new RaftMachineBuilder( myself, 3, RaftTestMemberSetBuilder.INSTANCE )
-                .timeoutService( timeouts ).build();
+                .timeoutService( timeouts ).clock( fakeClock ).build();
 
         raft.installCoreState( new RaftCoreState( new MembershipEntry( 0, asSet( myself, member1, member2 )  ) ) );
+        raft.startTimers();
 
         timeouts.invokeTimeout( ELECTION );
         // When
@@ -232,19 +249,22 @@ public class RaftMachineTest
     public void shouldVoteFalseForCandidateInOldTerm() throws Exception
     {
         // Given
-        ControlledRenewableTimeoutService timeouts = new ControlledRenewableTimeoutService();
+        FakeClock fakeClock = Clocks.fakeClock();
+        ControlledRenewableTimeoutService timeouts = new ControlledRenewableTimeoutService( fakeClock );
         OutboundMessageCollector messages = new OutboundMessageCollector();
 
         RaftMachine raft = new RaftMachineBuilder( myself, 3, RaftTestMemberSetBuilder.INSTANCE )
                 .timeoutService( timeouts )
+                .clock( fakeClock )
                 .outbound( messages )
                 .build();
 
         raft.installCoreState( new RaftCoreState( new MembershipEntry( 0, asSet( myself, member1, member2 )  ) ) );
+        raft.startTimers();
 
         // When
-        raft.handle( voteRequest().from( member1 ).term( -1 ).candidate( member1 ).lastLogIndex( 0 ).lastLogTerm( -1
-        ).build() );
+        raft.handle( voteRequest().from( member1 ).term( -1 ).candidate( member1 )
+                .lastLogIndex( 0 ).lastLogTerm( -1 ).build() );
 
         // Then
         assertThat( messages.sentTo( member1 ).size(), equalTo( 1 ) );
@@ -255,11 +275,13 @@ public class RaftMachineTest
     public void shouldNotBecomeLeaderByVotesFromFutureTerm() throws Exception
     {
         // Given
-        ControlledRenewableTimeoutService timeouts = new ControlledRenewableTimeoutService();
+        FakeClock fakeClock = Clocks.fakeClock();
+        ControlledRenewableTimeoutService timeouts = new ControlledRenewableTimeoutService( fakeClock );
         RaftMachine raft = new RaftMachineBuilder( myself, 3, RaftTestMemberSetBuilder.INSTANCE )
-                .timeoutService( timeouts ).build();
+                .timeoutService( timeouts ).clock( fakeClock ).build();
 
         raft.installCoreState( new RaftCoreState( new MembershipEntry( 0, asSet( myself, member1, member2 )  ) ) );
+        raft.startTimers();
 
         timeouts.invokeTimeout( ELECTION );
 
@@ -275,17 +297,20 @@ public class RaftMachineTest
     public void shouldAppendNewLeaderBarrierAfterBecomingLeader() throws Exception
     {
         // Given
-        ControlledRenewableTimeoutService timeouts = new ControlledRenewableTimeoutService();
+        FakeClock fakeClock = Clocks.fakeClock();
+        ControlledRenewableTimeoutService timeouts = new ControlledRenewableTimeoutService( fakeClock );
         OutboundMessageCollector messages = new OutboundMessageCollector();
 
         InMemoryRaftLog raftLog = new InMemoryRaftLog();
         RaftMachine raft = new RaftMachineBuilder( myself, 3, RaftTestMemberSetBuilder.INSTANCE )
                 .timeoutService( timeouts )
+                .clock( fakeClock )
                 .outbound( messages )
                 .raftLog( raftLog )
                 .build();
 
         raft.installCoreState( new RaftCoreState( new MembershipEntry( 0, asSet( myself, member1, member2 )  ) ) );
+        raft.startTimers();
 
         // When
         timeouts.invokeTimeout( ELECTION );
@@ -299,15 +324,18 @@ public class RaftMachineTest
     public void leaderShouldSendHeartBeatsOnHeartbeatTimeout() throws Exception
     {
         // Given
-        ControlledRenewableTimeoutService timeouts = new ControlledRenewableTimeoutService();
+        FakeClock fakeClock = Clocks.fakeClock();
+        ControlledRenewableTimeoutService timeouts = new ControlledRenewableTimeoutService( fakeClock );
         OutboundMessageCollector messages = new OutboundMessageCollector();
 
         RaftMachine raft = new RaftMachineBuilder( myself, 3, RaftTestMemberSetBuilder.INSTANCE )
                 .timeoutService( timeouts )
                 .outbound( messages )
+                .clock( fakeClock )
                 .build();
 
         raft.installCoreState( new RaftCoreState( new MembershipEntry( 0, asSet( myself, member1, member2 )  ) ) );
+        raft.startTimers();
 
         timeouts.invokeTimeout( ELECTION );
         raft.handle( voteResponse().from( member1 ).term( 1 ).grant().build() );
@@ -324,12 +352,14 @@ public class RaftMachineTest
     public void shouldThrowExceptionIfReceivesClientRequestWithNoLeaderElected() throws Exception
     {
         // Given
-        ControlledRenewableTimeoutService timeouts = new ControlledRenewableTimeoutService();
+        FakeClock fakeClock = Clocks.fakeClock();
+        ControlledRenewableTimeoutService timeouts = new ControlledRenewableTimeoutService( fakeClock );
 
         RaftMachine raft = new RaftMachineBuilder( myself, 3, RaftTestMemberSetBuilder.INSTANCE )
-                .timeoutService( timeouts ).build();
+                .timeoutService( timeouts ).clock( fakeClock ).build();
 
         raft.installCoreState( new RaftCoreState( new MembershipEntry( 0, asSet( myself, member1, member2 )  ) ) );
+        raft.startTimers();
 
         try
         {
@@ -349,9 +379,11 @@ public class RaftMachineTest
     public void shouldPersistAtSpecifiedLogIndex() throws Exception
     {
         // given
-        ControlledRenewableTimeoutService timeouts = new ControlledRenewableTimeoutService();
+        FakeClock fakeClock = Clocks.fakeClock();
+        ControlledRenewableTimeoutService timeouts = new ControlledRenewableTimeoutService( fakeClock );
         RaftMachine raft = new RaftMachineBuilder( myself, 3, RaftTestMemberSetBuilder.INSTANCE )
                 .timeoutService( timeouts )
+                .clock( fakeClock )
                 .raftLog( raftLog )
                 .build();
 
@@ -383,14 +415,16 @@ public class RaftMachineTest
             }
         } );
 
-        ControlledRenewableTimeoutService timeouts = new ControlledRenewableTimeoutService();
-
+        FakeClock fakeClock = Clocks.fakeClock();
+        ControlledRenewableTimeoutService timeouts = new ControlledRenewableTimeoutService( fakeClock );
         RaftMachine raft = new RaftMachineBuilder( myself, 3, RaftTestMemberSetBuilder.INSTANCE )
                 .timeoutService( timeouts )
                 .outbound( messages )
+                .clock( fakeClock )
                 .build();
 
         raft.installCoreState( new RaftCoreState( new MembershipEntry( 0, asSet( myself, member1, member2 )  ) ) );
+        raft.startTimers();
 
         // We make ourselves the leader
         timeouts.invokeTimeout( ELECTION );
