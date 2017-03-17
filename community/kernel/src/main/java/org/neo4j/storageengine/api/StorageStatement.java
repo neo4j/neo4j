@@ -24,7 +24,6 @@ import org.neo4j.kernel.api.exceptions.index.IndexNotFoundKernelException;
 import org.neo4j.kernel.api.schema.index.IndexDescriptor;
 import org.neo4j.kernel.impl.api.DegreeVisitor;
 import org.neo4j.kernel.impl.locking.Lock;
-import org.neo4j.kernel.impl.store.RecordCursors;
 import org.neo4j.storageengine.api.schema.IndexReader;
 import org.neo4j.storageengine.api.schema.LabelScanReader;
 import org.neo4j.storageengine.api.txstate.PropertyContainerState;
@@ -159,11 +158,4 @@ public interface StorageStatement extends AutoCloseable
      * @throws IndexNotFoundKernelException if no such index exists.
      */
     IndexReader getFreshIndexReader( IndexDescriptor index ) throws IndexNotFoundKernelException;
-
-    /**
-     * Access to low level record cursors
-     *
-     * @return record cursors
-     */
-    RecordCursors recordCursors();
 }
