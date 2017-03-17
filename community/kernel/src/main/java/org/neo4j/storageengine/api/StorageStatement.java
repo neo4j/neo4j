@@ -123,7 +123,9 @@ public interface StorageStatement extends AutoCloseable
 
     Cursor<PropertyItem> acquireSinglePropertyCursor( long propertyId, int propertyKeyId, Lock shortLivedReadLock, PropertyContainerState state );
 
-    DegreeVisitor.Visitable acquireDenseNodeDegreeCounter( long nodeId, long groupId );
+    Cursor<RelationshipGroupItem> acquireRelationshipGroupCursor( long relationshipGroupId );
+
+    DegreeVisitor.Visitable acquireDenseNodeDegreeCounter( long nodeId, long relationshipGroupId );
 
     /**
      * @return {@link LabelScanReader} capable of reading nodes for specific label ids.

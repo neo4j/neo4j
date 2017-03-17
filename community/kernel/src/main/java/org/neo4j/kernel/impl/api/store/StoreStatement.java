@@ -40,6 +40,7 @@ import org.neo4j.kernel.impl.util.InstanceCache;
 import org.neo4j.storageengine.api.Direction;
 import org.neo4j.storageengine.api.NodeItem;
 import org.neo4j.storageengine.api.PropertyItem;
+import org.neo4j.storageengine.api.RelationshipGroupItem;
 import org.neo4j.storageengine.api.RelationshipItem;
 import org.neo4j.storageengine.api.StorageStatement;
 import org.neo4j.storageengine.api.schema.IndexReader;
@@ -62,6 +63,7 @@ public class StoreStatement implements StorageStatement
     private final InstanceCache<StoreNodeRelationshipCursor> nodeRelationshipsCursor;
     private final InstanceCache<StorePropertyCursor> propertyCursorCache;
     private final InstanceCache<StoreSinglePropertyCursor> singlePropertyCursorCache;
+    private final InstanceCache<RelationshipGroupCursor> relationshipGroupCursorCache;
     private final InstanceCache<DegreeVisitable> degreeVisitableCache;
     private final NeoStores neoStores;
     private final Supplier<IndexReaderFactory> indexReaderFactorySupplier;
@@ -140,6 +142,14 @@ public class StoreStatement implements StorageStatement
                         this );
             }
         };
+        relationshipGroupCursorCache = new InstanceCache<RelationshipGroupCursor>()
+        {
+            @Override
+            protected RelationshipGroupCursor create()
+            {
+                return new RelationshipGroupCursor( neoStores.getRelationshipGroupStore(), this );
+            }
+        };
     }
 
     @Override
@@ -202,9 +212,15 @@ public class StoreStatement implements StorageStatement
     }
 
     @Override
-    public DegreeVisitor.Visitable acquireDenseNodeDegreeCounter( long nodeId, long groupId )
+    public Cursor<RelationshipGroupItem> acquireRelationshipGroupCursor( long relationshipGroupId )
     {
-        return degreeVisitableCache.get().init( nodeId, groupId );
+        return relationshipGroupCursorCache.get().init( relationshipGroupId );
+    }
+
+    @Override
+    public DegreeVisitor.Visitable acquireDenseNodeDegreeCounter( long nodeId, long relationshipGroupId )
+    {
+        return degreeVisitableCache.get().init( nodeId, relationshipGroupId );
     }
 
     @Override
@@ -227,6 +243,7 @@ public class StoreStatement implements StorageStatement
         nodeRelationshipsCursor.close();
         propertyCursorCache.close();
         singlePropertyCursorCache.close();
+        relationshipGroupCursorCache.close();
         degreeVisitableCache.close();
         recordCursors.close();
         closed = true;
