@@ -76,7 +76,6 @@ public class StoreIteratorRelationshipCursorTest
 
     private final PageCursor pageCursor = mock( PageCursor.class );
 
-
     private StoreIteratorRelationshipCursor createRelationshipCursor( boolean relationshipInUse ) throws IOException
     {
         final RelationshipRecord relationshipRecord = new RelationshipRecord( -1 );
