@@ -100,8 +100,7 @@ public class LuceneSchemaIndexPopulationIT
             assertEquals( 0, uniqueIndex.allDocumentsReader().maxCount() );
             assertFalse( uniqueIndex.exists() );
 
-            try ( LuceneIndexAccessor indexAccessor = new LuceneIndexAccessor( uniqueIndex,
-                    NewIndexDescriptorFactory.forLabel( 1, 1 ) ) )
+            try ( LuceneIndexAccessor indexAccessor = new LuceneIndexAccessor( uniqueIndex, descriptor ) )
             {
                 generateUpdates( indexAccessor, affectedNodes );
                 indexAccessor.force();

@@ -336,7 +336,7 @@ public class LuceneSchemaIndexUniquenessVerificationIT
     {
         Object[] propertyValues = data.stream().map( property -> property.value ).toArray();
         PropertyAccessor propertyAccessor = new TestPropertyAccessor( propertyValues );
-        index.verifyUniqueness( propertyAccessor, PROPERTY_KEY_ID );
+        index.verifyUniqueness( propertyAccessor, new int[]{PROPERTY_KEY_ID} );
     }
 
     private Set<PropertyValue> randomStrings()

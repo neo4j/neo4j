@@ -111,7 +111,7 @@ public class IndexEntryUpdateTest
                 .change( 0, SchemaDescriptorFactory.forLabel( 3, 4 ), singleValue, singleAfter );
         Object[] multiAfter = {"Hello", "Hi"};
         IndexEntryUpdate multiChange = IndexEntryUpdate
-                .change( 0, SchemaDescriptorFactory.forLabel( 3, 4 ), multiValue, multiAfter );
+                .change( 0, SchemaDescriptorFactory.forLabel( 3, 4, 5 ), multiValue, multiAfter );
         assertThat( new Object[]{singleValue}, equalTo( singleChange.beforeValues() ) );
         assertThat( new Object[]{singleAfter}, equalTo( singleChange.values() ) );
         assertThat( multiValue, equalTo( multiChange.beforeValues() ) );

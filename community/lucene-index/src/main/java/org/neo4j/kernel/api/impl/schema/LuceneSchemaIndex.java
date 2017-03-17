@@ -85,22 +85,27 @@ class LuceneSchemaIndex extends AbstractLuceneIndex
                                                 : createPartitionedReader( partitions );
     }
 
+    public NewIndexDescriptor getDescriptor()
+    {
+        return descriptor;
+    }
+
     /**
      * Verifies uniqueness of property values present in this index.
      *
      * @param accessor the accessor to retrieve actual property values from the store.
-     * @param propertyKeyId the id of the property to verify.
+     * @param propertyKeyIds the ids of the properties to verify.
      * @throws IndexEntryConflictException if there are duplicates.
      * @throws IOException
-     * @see UniquenessVerifier#verify(PropertyAccessor, int)
+     * @see UniquenessVerifier#verify(PropertyAccessor, int[])
      */
-    public void verifyUniqueness( PropertyAccessor accessor, int propertyKeyId )
+    public void verifyUniqueness( PropertyAccessor accessor, int[] propertyKeyIds )
             throws IOException, IndexEntryConflictException
     {
         flush( true );
         try ( UniquenessVerifier verifier = createUniquenessVerifier() )
         {
-            verifier.verify( accessor, propertyKeyId );
+            verifier.verify( accessor, propertyKeyIds );
         }
     }
 
@@ -108,18 +113,18 @@ class LuceneSchemaIndex extends AbstractLuceneIndex
      * Verifies uniqueness of updated property values.
      *
      * @param accessor the accessor to retrieve actual property values from the store.
-     * @param propertyKeyId the id of the property to verify.
+     * @param propertyKeyIds the ids of the properties to verify.
      * @param updatedPropertyValues the values to check uniqueness for.
      * @throws IndexEntryConflictException if there are duplicates.
      * @throws IOException
-     * @see UniquenessVerifier#verify(PropertyAccessor, int, List)
+     * @see UniquenessVerifier#verify(PropertyAccessor, int[], List)
      */
-    public void verifyUniqueness( PropertyAccessor accessor, int propertyKeyId, List<Object> updatedPropertyValues )
+    public void verifyUniqueness( PropertyAccessor accessor, int[] propertyKeyIds, List<Object> updatedPropertyValues )
             throws IOException, IndexEntryConflictException
     {
         try ( UniquenessVerifier verifier = createUniquenessVerifier() )
         {
-            verifier.verify( accessor, propertyKeyId, updatedPropertyValues );
+            verifier.verify( accessor, propertyKeyIds, updatedPropertyValues );
         }
     }
 

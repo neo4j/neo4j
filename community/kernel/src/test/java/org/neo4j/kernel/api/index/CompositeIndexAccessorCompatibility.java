@@ -19,52 +19,118 @@
  */
 package org.neo4j.kernel.api.index;
 
-import org.junit.Before;
+import org.junit.Ignore;
 import org.junit.Test;
 
-import org.neo4j.kernel.api.schema_new.LabelSchemaDescriptor;
+import org.neo4j.kernel.api.schema_new.index.NewIndexDescriptor;
 import org.neo4j.kernel.api.schema_new.index.NewIndexDescriptorFactory;
 
 import static java.util.Arrays.asList;
+import static java.util.Collections.singletonList;
 import static org.hamcrest.Matchers.equalTo;
 import static org.junit.Assert.assertThat;
 import static org.neo4j.kernel.api.schema_new.IndexQuery.exact;
 import static org.neo4j.kernel.api.schema_new.IndexQuery.exists;
 
-public class CompositeIndexAccessorCompatibility extends IndexAccessorCompatibility
+
+@Ignore( "Not a test. This is a compatibility suite that provides test cases for verifying" +
+        " SchemaIndexProvider implementations. Each index provider that is to be tested by this suite" +
+        " must create their own test class extending IndexProviderCompatibilityTestSuite." +
+        " The @Ignore annotation doesn't prevent these tests to run, it rather removes some annoying" +
+        " errors or warnings in some IDEs about test classes needing a public zero-arg constructor." )
+public abstract class CompositeIndexAccessorCompatibility extends IndexAccessorCompatibility
 {
-    protected IndexAccessor accessor;
-    private LabelSchemaDescriptor schemaDescriptor;
-
-    public CompositeIndexAccessorCompatibility( IndexProviderCompatibilityTestSuite testSuite )
+    public CompositeIndexAccessorCompatibility(
+            IndexProviderCompatibilityTestSuite testSuite, NewIndexDescriptor descriptor )
     {
-        super( testSuite, NewIndexDescriptorFactory.forLabel( 1000, 100, 200, 300 ), false );
-    }
-
-    @Before
-    public void setUp() throws Exception
-    {
-        schemaDescriptor = descriptor.schema();
+        super( testSuite, descriptor );
     }
 
     @Test
-    public void testIndexSeekAndScan() throws Exception
+    public void testIndexSeekAndScanByString() throws Exception
     {
         updateAndCommit( asList(
-                IndexEntryUpdate.add( 1L, schemaDescriptor, "a", "a" ),
-                IndexEntryUpdate.add( 2L, schemaDescriptor, "a", "a" ),
-                IndexEntryUpdate.add( 3L, schemaDescriptor, "b", "b" ),
-                IndexEntryUpdate.add( 4L, schemaDescriptor, "a", "b" )
-        ) );
+                IndexEntryUpdate.add( 1L, descriptor.schema(), "a", "a" ),
+                IndexEntryUpdate.add( 2L, descriptor.schema(), "b", "b" ),
+                IndexEntryUpdate.add( 3L, descriptor.schema(), "a", "b" ) ) );
 
-        assertThat( query( exact( 0, "a" ), exact( 1, "a" ) ), equalTo( asList( 1L, 2L ) ) );
-        assertThat( query( exact( 0, "b" ), exact( 1, "b" ) ), equalTo( asList( 3L ) ) );
-        assertThat( query( exact( 0, "a" ), exact( 1, "b" ) ), equalTo( asList( 4L ) ) );
-        assertThat( query( exists( 1 ) ), equalTo( asList( 1L, 2L, 3L, 4L ) ) );
+        assertThat( query( exact( 0, "a" ), exact( 1, "a" ) ), equalTo( singletonList( 1L ) ) );
+        assertThat( query( exact( 0, "b" ), exact( 1, "b" ) ), equalTo( singletonList( 2L ) ) );
+        assertThat( query( exact( 0, "a" ), exact( 1, "b" ) ), equalTo( singletonList( 3L ) ) );
+        assertThat( query( exists( 1 ) ), equalTo( asList( 1L, 2L, 3L ) ) );
+    }
+
+    @Test
+    public void testIndexSeekAndScanByNumber() throws Exception
+    {
+        updateAndCommit( asList(
+                IndexEntryUpdate.add( 1L, descriptor.schema(), 333, 333 ),
+                IndexEntryUpdate.add( 2L, descriptor.schema(), 101, 101 ),
+                IndexEntryUpdate.add( 3L, descriptor.schema(), 333, 101 ) ) );
+
+        assertThat( query( exact( 0, 333 ), exact( 1, 333 ) ), equalTo( singletonList( 1L ) ) );
+        assertThat( query( exact( 0, 101 ), exact( 1, 101 ) ), equalTo( singletonList( 2L ) ) );
+        assertThat( query( exact( 0, 333 ), exact( 1, 101 ) ), equalTo( singletonList( 3L ) ) );
+        assertThat( query( exists( 1 ) ), equalTo( asList( 1L, 2L, 3L ) ) );
+    }
+
+    // This behaviour is expected by General indexes
+
+    public static class General extends CompositeIndexAccessorCompatibility
+    {
+        public General( IndexProviderCompatibilityTestSuite testSuite )
+        {
+            super( testSuite, NewIndexDescriptorFactory.forLabel( 1000, 100, 200 ) );
+        }
+
+        @Test
+        public void testDuplicatesInIndexSeekByString() throws Exception
+        {
+            updateAndCommit( asList(
+                    IndexEntryUpdate.add( 1L, descriptor.schema(), "a", "a" ),
+                    IndexEntryUpdate.add( 2L, descriptor.schema(), "a", "a" ) ) );
+
+            assertThat( query( exact( 0, "a" ), exact( 1, "a" ) ), equalTo( asList( 1L, 2L ) ) );
+        }
+
+        @Test
+        public void testDuplicatesInIndexSeekByNumber() throws Exception
+        {
+            updateAndCommit( asList(
+                    IndexEntryUpdate.add( 1L, descriptor.schema(), 333, 333 ),
+                    IndexEntryUpdate.add( 2L, descriptor.schema(), 333, 333 ) ) );
+
+            assertThat( query( exact( 0, 333 ), exact( 1, 333 ) ), equalTo( asList( 1L, 2L ) ) );
+        }
+    }
+
+    // This behaviour is expected by Unique indexes
+
+    public static class Unique extends CompositeIndexAccessorCompatibility
+    {
+        public Unique( IndexProviderCompatibilityTestSuite testSuite )
+        {
+            super( testSuite, NewIndexDescriptorFactory.uniqueForLabel( 1000, 100, 200 ) );
+        }
+
+        @Test
+        public void closingAnOnlineIndexUpdaterMustNotThrowEvenIfItHasBeenFedConflictingData() throws Exception
+        {
+            // The reason is that we use and close IndexUpdaters in commit - not in prepare - and therefor
+            // we cannot have them go around and throw exceptions, because that could potentially break
+            // recovery.
+            // Conflicting data can happen because of faulty data coercion. These faults are resolved by
+            // the exact-match filtering we do on index seeks in StateHandlingStatementOperations.
+
+            updateAndCommit( asList(
+                    IndexEntryUpdate.add( 1L, descriptor.schema(), "a", "a" ),
+                    IndexEntryUpdate.add( 2L, descriptor.schema(), "a", "a" ) ) );
+
+            assertThat( query( exact( 0, "a" ), exact( 1, "a" ) ), equalTo( asList( 1L, 2L ) ) );
+        }
     }
 
 //TODO: add when supported:
-    //testIndexSeekByNumber
     //testIndexSeekByString
     //testIndexSeekByPrefix
     //testIndexSeekByPrefixOnNonStrings

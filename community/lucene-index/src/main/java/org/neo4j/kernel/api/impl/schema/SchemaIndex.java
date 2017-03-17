@@ -27,6 +27,7 @@ import org.neo4j.kernel.api.impl.index.DatabaseIndex;
 import org.neo4j.kernel.api.impl.schema.verification.UniquenessVerifier;
 import org.neo4j.kernel.api.impl.schema.writer.LuceneIndexWriter;
 import org.neo4j.kernel.api.index.PropertyAccessor;
+import org.neo4j.kernel.api.schema_new.index.NewIndexDescriptor;
 import org.neo4j.storageengine.api.schema.IndexReader;
 
 /**
@@ -38,29 +39,31 @@ public interface SchemaIndex extends DatabaseIndex
 
     IndexReader getIndexReader() throws IOException;
 
+    NewIndexDescriptor getDescriptor();
+
     /**
      * Verifies uniqueness of property values present in this index.
      *
      * @param accessor the accessor to retrieve actual property values from the store.
-     * @param propertyKeyId the id of the property to verify.
+     * @param propertyKeyIds the ids of the properties to verify.
      * @throws IndexEntryConflictException if there are duplicates.
      * @throws IOException
-     * @see UniquenessVerifier#verify(PropertyAccessor, int)
+     * @see UniquenessVerifier#verify(PropertyAccessor, int[])
      */
-    void verifyUniqueness( PropertyAccessor accessor, int propertyKeyId )
+    void verifyUniqueness( PropertyAccessor accessor, int[] propertyKeyIds )
             throws IOException, IndexEntryConflictException;
 
     /**
      * Verifies uniqueness of updated property values.
      *
      * @param accessor the accessor to retrieve actual property values from the store.
-     * @param propertyKeyId the id of the property to verify.
+     * @param propertyKeyIds the ids of the properties to verify.
      * @param updatedPropertyValues the values to check uniqueness for.
      * @throws IndexEntryConflictException if there are duplicates.
      * @throws IOException
-     * @see UniquenessVerifier#verify(PropertyAccessor, int, List)
+     * @see UniquenessVerifier#verify(PropertyAccessor, int[], List)
      */
-    void verifyUniqueness( PropertyAccessor accessor, int propertyKeyId, List<Object> updatedPropertyValues )
+    void verifyUniqueness( PropertyAccessor accessor, int[] propertyKeyIds, List<Object> updatedPropertyValues )
                     throws IOException, IndexEntryConflictException;
 
     /**

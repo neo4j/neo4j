@@ -123,8 +123,7 @@ public class LuceneIndexAccessor implements IndexAccessor
     public void verifyDeferredConstraints( PropertyAccessor propertyAccessor )
             throws IndexEntryConflictException, IOException
     {
-        //TODO: support composite index.
-        luceneIndex.verifyUniqueness( propertyAccessor, descriptor.schema().getPropertyId() );
+        luceneIndex.verifyUniqueness( propertyAccessor, descriptor.schema().getPropertyIds() );
     }
 
     private class LuceneIndexUpdater implements IndexUpdater
@@ -141,6 +140,9 @@ public class LuceneIndexAccessor implements IndexAccessor
         @Override
         public void process( IndexEntryUpdate update ) throws IOException
         {
+            // we do not support adding partial entries
+            assert update.descriptor().equals( descriptor.schema() );
+
             switch ( update.updateMode() )
             {
             case ADDED:

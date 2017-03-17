@@ -42,15 +42,18 @@ public class IndexEntryUpdate
 
     private IndexEntryUpdate( long entityId, LabelSchemaDescriptor descriptor, UpdateMode updateMode, Object... values )
     {
-        this.entityId = entityId;
-        this.descriptor = descriptor;
-        this.before = null;
-        this.values = values;
-        this.updateMode = updateMode;
+        this( entityId, descriptor, updateMode, null, values );
     }
+
     private IndexEntryUpdate( long entityId, LabelSchemaDescriptor descriptor, UpdateMode updateMode, Object[] before,
             Object[] values )
     {
+        // we do not support partial index entries
+        assert descriptor.getPropertyIds().length == values.length :
+                format( "IndexEntryUpdate values must be of same length as index compositness. " +
+                        "Index on %s, but got values %s", descriptor.toString(), Arrays.toString( values ) );
+        assert before == null || before.length == values.length;
+
         this.entityId = entityId;
         this.descriptor = descriptor;
         this.before = before;

@@ -34,31 +34,30 @@ import org.neo4j.storageengine.api.schema.IndexSample;
  * A {@link LuceneIndexPopulator} used for unique Lucene schema indexes.
  * Performs sampling using {@link UniqueIndexSampler}.
  * Verifies uniqueness of added and changed values using
- * {@link SchemaIndex#verifyUniqueness(PropertyAccessor, int)} method.
+ * {@link SchemaIndex#verifyUniqueness(PropertyAccessor, int[])} method.
  */
 public class UniqueLuceneIndexPopulator extends LuceneIndexPopulator
 {
-    private final int propertyKeyId;
+    private final int[] propertyKeyIds;
     private final UniqueIndexSampler sampler;
 
     public UniqueLuceneIndexPopulator( SchemaIndex index, NewIndexDescriptor descriptor )
     {
         super( index );
-        //TODO: Composite index make lucene handel Composite indexes
-        this.propertyKeyId = descriptor.schema().getPropertyId();
+        this.propertyKeyIds = descriptor.schema().getPropertyIds();
         this.sampler = new UniqueIndexSampler();
     }
 
     @Override
     public void verifyDeferredConstraints( PropertyAccessor accessor ) throws IndexEntryConflictException, IOException
     {
-        luceneIndex.verifyUniqueness( accessor, propertyKeyId );
+        luceneIndex.verifyUniqueness( accessor, propertyKeyIds );
     }
 
     @Override
     public IndexUpdater newPopulatingUpdater( final PropertyAccessor accessor ) throws IOException
     {
-        return new UniqueLuceneIndexPopulatingUpdater( writer, propertyKeyId, luceneIndex, accessor, sampler );
+        return new UniqueLuceneIndexPopulatingUpdater( writer, propertyKeyIds, luceneIndex, accessor, sampler );
     }
 
     @Override

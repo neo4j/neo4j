@@ -57,24 +57,30 @@ public class WritableDatabaseSchemaIndex extends WritableAbstractDatabaseIndex<L
         return luceneIndex.getIndexReader();
     }
 
-    /**
-     * {@inheritDoc}
-     */
     @Override
-    public void verifyUniqueness( PropertyAccessor accessor, int propertyKeyId )
-            throws IOException, IndexEntryConflictException
+    public NewIndexDescriptor getDescriptor()
     {
-        luceneIndex.verifyUniqueness( accessor, propertyKeyId );
+        return luceneIndex.getDescriptor();
     }
 
     /**
      * {@inheritDoc}
      */
     @Override
-    public void verifyUniqueness( PropertyAccessor accessor, int propertyKeyId, List<Object> updatedPropertyValues )
+    public void verifyUniqueness( PropertyAccessor accessor, int[] propertyKeyIds )
             throws IOException, IndexEntryConflictException
     {
-        luceneIndex.verifyUniqueness( accessor, propertyKeyId, updatedPropertyValues );
+        luceneIndex.verifyUniqueness( accessor, propertyKeyIds );
+    }
+
+    /**
+     * {@inheritDoc}
+     */
+    @Override
+    public void verifyUniqueness( PropertyAccessor accessor, int[] propertyKeyIds, List<Object> updatedPropertyValues )
+            throws IOException, IndexEntryConflictException
+    {
+        luceneIndex.verifyUniqueness( accessor, propertyKeyIds, updatedPropertyValues );
     }
 
     /**
