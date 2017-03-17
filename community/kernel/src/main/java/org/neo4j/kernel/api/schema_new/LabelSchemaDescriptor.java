@@ -122,4 +122,9 @@ public class LabelSchemaDescriptor implements SchemaDescriptor, LabelSchemaSuppl
             return -1;
         }
     }
+
+    public interface Supplier extends SchemaDescriptor.Supplier
+    {
+        LabelSchemaDescriptor schema();
+    }
 }

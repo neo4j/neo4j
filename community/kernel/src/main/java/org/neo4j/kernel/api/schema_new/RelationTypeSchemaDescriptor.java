@@ -92,25 +92,4 @@ public class RelationTypeSchemaDescriptor implements SchemaDescriptor
     {
         return Arrays.hashCode( propertyIds ) + 31 * relTypeId;
     }
-
-    @Override
-    public int compareTo( SchemaDescriptor o )
-    {
-        if ( o instanceof RelationTypeSchemaDescriptor )
-        {
-            RelationTypeSchemaDescriptor other = (RelationTypeSchemaDescriptor) o;
-            if ( relTypeId == other.getRelTypeId() )
-            {
-                return SchemaUtil.comparePropertyKeyIds( propertyIds, other.getPropertyIds() );
-            }
-            else
-            {
-                return relTypeId - other.getRelTypeId();
-            }
-        }
-        else
-        {
-            return -1;
-        }
-    }
 }
