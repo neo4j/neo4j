@@ -34,6 +34,8 @@ import org.neo4j.causalclustering.identity.MemberId;
 import org.neo4j.causalclustering.identity.RaftTestMemberSetBuilder;
 import org.neo4j.causalclustering.messaging.Inbound;
 import org.neo4j.causalclustering.messaging.Outbound;
+import org.neo4j.time.Clocks;
+import org.neo4j.time.FakeClock;
 
 import static org.junit.Assert.assertEquals;
 import static org.mockito.Matchers.eq;
@@ -68,14 +70,16 @@ public class ElectionTest
     public void candidateShouldWinElectionAndBecomeLeader() throws Exception
     {
         // given
-        ControlledRenewableTimeoutService timeouts = new ControlledRenewableTimeoutService();
-
+        FakeClock fakeClock = Clocks.fakeClock();
+        ControlledRenewableTimeoutService timeouts = new ControlledRenewableTimeoutService( fakeClock );
         RaftMachine raft = new RaftMachineBuilder( myself, 3, RaftTestMemberSetBuilder.INSTANCE )
                 .outbound( outbound )
                 .timeoutService( timeouts )
+                .clock( fakeClock )
                 .build();
 
         raft.installCoreState( new RaftCoreState( new MembershipEntry( 0, asSet( myself, member1, member2 )  ) ) );
+        raft.startTimers();
 
         timeouts.invokeTimeout( RaftMachine.Timeouts.ELECTION );
 
@@ -98,15 +102,17 @@ public class ElectionTest
         // remain as a candidate
 
         // given
-        ControlledRenewableTimeoutService timeouts = new ControlledRenewableTimeoutService();
-
+        FakeClock fakeClock = Clocks.fakeClock();
+        ControlledRenewableTimeoutService timeouts = new ControlledRenewableTimeoutService( fakeClock );
         RaftMachine raft = new RaftMachineBuilder( myself, 3, RaftTestMemberSetBuilder.INSTANCE )
                 .outbound( outbound )
                 .timeoutService( timeouts )
+                .clock( fakeClock )
                 .build();
 
         raft.installCoreState(
                 new RaftCoreState( new MembershipEntry( 0, asSet( myself, member1, member2 ) ) ));
+        raft.startTimers();
 
         timeouts.invokeTimeout( RaftMachine.Timeouts.ELECTION );
 
@@ -126,11 +132,12 @@ public class ElectionTest
     public void candidateShouldVoteForTheSameCandidateInTheSameTerm() throws Exception
     {
         // given
-        ControlledRenewableTimeoutService timeouts = new ControlledRenewableTimeoutService();
-
+        FakeClock fakeClock = Clocks.fakeClock();
+        ControlledRenewableTimeoutService timeouts = new ControlledRenewableTimeoutService( fakeClock );
         RaftMachine raft = new RaftMachineBuilder( myself, 3, RaftTestMemberSetBuilder.INSTANCE )
                 .outbound( outbound )
                 .timeoutService( timeouts )
+                .clock( fakeClock )
                 .build();
 
         raft.installCoreState( new RaftCoreState( new MembershipEntry( 0, asSet( myself, member1, member2 )  ) ) );

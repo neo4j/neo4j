@@ -20,13 +20,13 @@
 package org.neo4j.causalclustering.core.consensus;
 
 import java.io.IOException;
+import java.time.Clock;
 import java.util.ArrayList;
 import java.util.Collection;
 import java.util.Set;
 import java.util.concurrent.TimeoutException;
 import java.util.function.Predicate;
 
-import org.neo4j.causalclustering.core.CausalClusteringSettings;
 import org.neo4j.causalclustering.core.consensus.log.RaftLog;
 import org.neo4j.causalclustering.core.consensus.log.RaftLogEntry;
 import org.neo4j.causalclustering.core.consensus.log.segmented.InFlightMap;
@@ -35,6 +35,7 @@ import org.neo4j.causalclustering.core.consensus.outcome.ConsensusOutcome;
 import org.neo4j.causalclustering.core.consensus.outcome.Outcome;
 import org.neo4j.causalclustering.core.consensus.roles.Role;
 import org.neo4j.causalclustering.core.consensus.schedule.RenewableTimeoutService;
+import org.neo4j.causalclustering.core.consensus.schedule.RenewableTimeoutService.TimeoutHandler;
 import org.neo4j.causalclustering.core.consensus.shipping.RaftLogShippingManager;
 import org.neo4j.causalclustering.core.consensus.state.ExposedRaftState;
 import org.neo4j.causalclustering.core.consensus.state.RaftState;
@@ -45,6 +46,7 @@ import org.neo4j.causalclustering.core.state.storage.StateStorage;
 import org.neo4j.causalclustering.helper.VolatileFuture;
 import org.neo4j.causalclustering.identity.MemberId;
 import org.neo4j.causalclustering.messaging.Outbound;
+import org.neo4j.function.ThrowingAction;
 import org.neo4j.kernel.impl.util.Listener;
 import org.neo4j.kernel.monitoring.Monitors;
 import org.neo4j.logging.Log;
@@ -77,8 +79,10 @@ public class RaftMachine implements LeaderLocator, CoreMetaData
     private RenewableTimeoutService.RenewableTimeout electionTimer;
     private RaftMembershipManager membershipManager;
     private final boolean refuseToBecomeLeader;
+    private final Clock clock;
 
     private final long electionTimeout;
+    private long lastElectionRenewalMillis;
 
     private final VolatileFuture<MemberId> volatileLeader = new VolatileFuture<>( null );
 
@@ -92,7 +96,7 @@ public class RaftMachine implements LeaderLocator, CoreMetaData
             RaftLog entryLog, long electionTimeout, long heartbeatInterval,
             RenewableTimeoutService renewableTimeoutService, Outbound<MemberId,RaftMessages.RaftMessage> outbound,
             LogProvider logProvider, RaftMembershipManager membershipManager, RaftLogShippingManager logShipping,
-            InFlightMap<RaftLogEntry> inFlightMap, boolean refuseToBecomeLeader, Monitors monitors )
+            InFlightMap<RaftLogEntry> inFlightMap, boolean refuseToBecomeLeader, Monitors monitors, Clock clock )
     {
         this.myself = myself;
         this.electionTimeout = electionTimeout;
@@ -106,42 +110,60 @@ public class RaftMachine implements LeaderLocator, CoreMetaData
 
         this.membershipManager = membershipManager;
         this.refuseToBecomeLeader = refuseToBecomeLeader;
+        this.clock = clock;
 
         this.state = new RaftState( myself, termStorage, membershipManager, entryLog, voteStorage, inFlightMap,
                 logProvider );
 
         leaderNotFoundMonitor = monitors.newMonitor( LeaderNotFoundMonitor.class );
-
-        initTimers();
     }
 
-    private void initTimers()
+    public synchronized void startTimers()
     {
-        electionTimer =
-                renewableTimeoutService.create( Timeouts.ELECTION, electionTimeout, randomTimeoutRange(), timeout ->
-                {
-                    try
-                    {
-                        triggerElection();
-                    }
-                    catch ( IOException e )
-                    {
-                        log.error( "Failed to process election timeout.", e );
-                    }
-                    timeout.renew();
-                } );
-        heartbeatTimer = renewableTimeoutService.create( Timeouts.HEARTBEAT, heartbeatInterval, 0, timeout ->
+        if ( !refuseToBecomeLeader )
+        {
+            lastElectionRenewalMillis = clock.millis();
+            electionTimer = renewableTimeoutService.create( Timeouts.ELECTION, electionTimeout, randomTimeoutRange(),
+                    renewing( this::electionTimeout ) );
+            heartbeatTimer = renewableTimeoutService.create( Timeouts.HEARTBEAT, heartbeatInterval, 0,
+                    renewing( () -> handle( new RaftMessages.Timeout.Heartbeat( myself ) ) ) );
+        }
+    }
+
+    public synchronized void stopTimers()
+    {
+        if ( electionTimer != null )
+        {
+            electionTimer.cancel();
+        }
+        if ( heartbeatTimer != null )
+        {
+            heartbeatTimer.cancel();
+        }
+    }
+
+    private TimeoutHandler renewing( ThrowingAction<Exception> action )
+    {
+        return timeout ->
         {
             try
             {
-                handle( new RaftMessages.Timeout.Heartbeat( myself ) );
+                action.apply();
             }
-            catch ( IOException e )
+            catch ( Exception e )
             {
-                log.error( "Failed to process heartbeat timeout.", e );
+                log.error( "Failed to process timeout.", e );
             }
             timeout.renew();
-        } );
+        };
+    }
+
+    private synchronized void electionTimeout() throws IOException
+    {
+        if ( clock.millis() - lastElectionRenewalMillis >= electionTimeout )
+        {
+            triggerElection();
+        }
     }
 
     public void triggerElection() throws IOException
@@ -150,19 +172,11 @@ public class RaftMachine implements LeaderLocator, CoreMetaData
         {
             handle( new RaftMessages.Timeout.Election( myself ) );
         }
-        else
-        {
-            log.info(
-                    format( "Election timeout occured, but {%s} is configured to not tirgger an election. " +
-                                    "See setting: %s",
-                            myself, CausalClusteringSettings.refuse_to_be_leader.name() ) );
-        }
     }
 
     public void panic()
     {
-        heartbeatTimer.cancel();
-        electionTimer.cancel();
+        stopTimers();
     }
 
     public synchronized RaftCoreState coreState()
@@ -316,7 +330,11 @@ public class RaftMachine implements LeaderLocator, CoreMetaData
     {
         if ( outcome.electionTimeoutRenewed() )
         {
-            electionTimer.renew();
+            lastElectionRenewalMillis = clock.millis();
+            if ( electionTimer != null )
+            {
+                electionTimer.renew();
+            }
         }
     }
 
