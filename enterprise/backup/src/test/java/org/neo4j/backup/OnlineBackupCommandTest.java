@@ -19,6 +19,9 @@
  */
 package org.neo4j.backup;
 
+import org.hamcrest.BaseMatcher;
+import org.hamcrest.Description;
+import org.hamcrest.Matcher;
 import org.junit.Before;
 import org.junit.Rule;
 import org.junit.Test;
@@ -45,6 +48,7 @@ import org.neo4j.io.fs.FileSystemAbstraction;
 import org.neo4j.kernel.configuration.Config;
 import org.neo4j.test.rule.TestDirectory;
 
+import static java.lang.String.format;
 import static java.util.Collections.singletonList;
 import static java.util.concurrent.TimeUnit.HOURS;
 import static java.util.concurrent.TimeUnit.MINUTES;
@@ -64,6 +68,9 @@ import static org.mockito.Mockito.verify;
 import static org.mockito.Mockito.verifyNoMoreInteractions;
 import static org.mockito.Mockito.when;
 import static org.neo4j.backup.OnlineBackupCommand.MAX_OLD_BACKUPS;
+import static org.neo4j.backup.OnlineBackupCommand.STATUS_CC_ERROR;
+import static org.neo4j.backup.OnlineBackupCommand.STATUS_CC_INCONSISTENT;
+import static org.neo4j.commandline.admin.AdminTool.STATUS_ERROR;
 import static org.neo4j.graphdb.factory.GraphDatabaseSettings.cypher_planner;
 
 public class OnlineBackupCommandTest
@@ -168,6 +175,7 @@ public class OnlineBackupCommandTest
         final String path = path( "/Idontexist/sasdfasdfa" );
         expected.expect( CommandFailed.class );
         expected.expectMessage( "Directory '" + path + "' does not exist." );
+        expected.expect( exitCode( STATUS_ERROR ) );
         execute( backupDir( path ), "--name=mybackup" );
     }
 
@@ -238,17 +246,33 @@ public class OnlineBackupCommandTest
     }
 
     @Test
-    public void failedCCIsReported() throws Exception
+    public void inconsistentCCIsReportedWithExitCode3() throws Exception
 
     {
         final Path path = Paths.get( "/foo/bar" );
 
         when( consistencyCheckService.runFullConsistencyCheck( any(), any(), any(), any(), any(),
-                anyBoolean(), eq( new File( "." ).getCanonicalFile() ), any( CheckConsistencyConfig.class ) ) ).thenReturn(
-                ConsistencyCheckService.Result.failure( path.toFile() ) );
+                anyBoolean(), eq( new File( "." ).getCanonicalFile() ), any( CheckConsistencyConfig.class ) ) )
+                .thenReturn(
+                        ConsistencyCheckService.Result.failure( path.toFile() ) );
 
         expected.expect( CommandFailed.class );
         expected.expectMessage( "Inconsistencies found. See '" + path + "' for details." );
+        expected.expect( exitCode( STATUS_CC_INCONSISTENT ) );
+        execute( "--check-consistency=true", backupDir(), "--name=mybackup" );
+    }
+
+    @Test
+    public void errorInCCIsReportedWithExitCode2() throws Exception
+
+    {
+        when( consistencyCheckService.runFullConsistencyCheck( any(), any(), any(), any(), any(),
+                anyBoolean(), eq( new File( "." ).getCanonicalFile() ), any( CheckConsistencyConfig.class ) ) )
+                .thenThrow( new RuntimeException( "craassh" ) );
+
+        expected.expect( CommandFailed.class );
+        expected.expectMessage( "Failed to do consistency check on backup: craassh" );
+        expected.expect( exitCode( STATUS_CC_ERROR ) );
         execute( "--check-consistency=true", backupDir(), "--name=mybackup" );
     }
 
@@ -276,6 +300,7 @@ public class OnlineBackupCommandTest
 
         verify( backupService ).doFullBackup( any(), anyInt(), any(), any(), any(), anyLong(), anyBoolean() );
         verify( outsideWorld ).stdOutLine( "Doing full backup..." );
+        verify( outsideWorld ).stdOutLine( "Doing consistency check..." );
         verify( outsideWorld ).stdOutLine( "Backup complete." );
         verifyNoMoreInteractions( backupService );
     }
@@ -290,6 +315,7 @@ public class OnlineBackupCommandTest
 
         verify( backupService ).doFullBackup( any(), anyInt(), any(), any(), any(), anyLong(), anyBoolean() );
         verify( outsideWorld ).stdOutLine( "Doing full backup..." );
+        verify( outsideWorld ).stdOutLine( "Doing consistency check..." );
         verifyNoMoreInteractions( backupService );
     }
 
@@ -304,6 +330,7 @@ public class OnlineBackupCommandTest
 
         verify( backupService ).doIncrementalBackup( any(), anyInt(), any(), anyLong(), any() );
         verify( outsideWorld ).stdOutLine( "Destination is not empty, doing incremental backup..." );
+        verify( outsideWorld ).stdOutLine( "Doing consistency check..." );
         verifyNoMoreInteractions( backupService );
     }
 
@@ -314,7 +341,7 @@ public class OnlineBackupCommandTest
         when( outsideWorld.fileSystem() ).thenReturn( mockFs );
         File dir = testDirectory.directory( "ccInc" );
         when( mockFs.isDirectory( eq( dir.getParentFile() ) ) ).thenReturn( true );
-        when( mockFs.listFiles( eq( dir ) ) ).thenReturn( new File[]{dir} );
+        when( mockFs.listFiles( eq( dir ) ) ).thenReturn( new File[]{ dir } );
         when( backupService.doIncrementalBackup( any(), anyInt(), any(), anyLong(), any() ) )
                 .thenThrow( new RuntimeException( "nah-ah" ) );
 
@@ -328,6 +355,7 @@ public class OnlineBackupCommandTest
         verify( mockFs ).renameFile( eq( dir ), eq( testDirectory.directory( "ccInc.err.1" ) ) );
         verify( backupService ).doFullBackup( any(), anyInt(), any(), any(), any(), anyLong(), anyBoolean() );
         verify( outsideWorld ).stdOutLine( "Doing full backup..." );
+        verify( outsideWorld ).stdOutLine( "Doing consistency check..." );
         verifyNoMoreInteractions( backupService );
     }
 
@@ -337,7 +365,7 @@ public class OnlineBackupCommandTest
         when( outsideWorld.fileSystem() ).thenReturn( mockFs );
         File dir = testDirectory.directory( "ccInc" );
         when( mockFs.isDirectory( eq( dir.getParentFile() ) ) ).thenReturn( true );
-        when( mockFs.listFiles( eq( dir ) ) ).thenReturn( new File[]{dir} );
+        when( mockFs.listFiles( eq( dir ) ) ).thenReturn( new File[]{ dir } );
         when( backupService.doIncrementalBackup( any(), anyInt(), any(), anyLong(), any() ) )
                 .thenThrow( new RuntimeException( "nah-ah" ) );
 
@@ -345,9 +373,47 @@ public class OnlineBackupCommandTest
 
         expected.expectMessage( "Failed to move old backup out of the way: kaboom" );
         expected.expect( CommandFailed.class );
+        expected.expect( exitCode( STATUS_ERROR ) );
 
         execute( "--cc-report-dir=" + dir.getParent(), backupDir( dir.getParent() ),
                 "--name=" + dir.getName() );
+    }
+
+    private Matcher<CommandFailed> exitCode( final int expectedCode )
+    {
+        return new BaseMatcher<CommandFailed>()
+        {
+            @Override
+            public void describeTo( Description description )
+            {
+                description.appendText( "expected exit code " ).appendValue( expectedCode );
+            }
+
+            @Override
+            public void describeMismatch( Object o, Description description )
+            {
+                if ( o instanceof CommandFailed )
+                {
+                    CommandFailed e = (CommandFailed) o;
+                    description.appendText( "but it was " ).appendValue( e.code() );
+                }
+                else
+                {
+                    description.appendText( "but exception is not a CommandFailed exception" );
+                }
+            }
+
+            @Override
+            public boolean matches( Object o )
+            {
+                if ( o instanceof CommandFailed )
+                {
+                    CommandFailed e = (CommandFailed) o;
+                    return expectedCode == e.code();
+                }
+                return false;
+            }
+        };
     }
 
     @Test
@@ -361,6 +427,7 @@ public class OnlineBackupCommandTest
 
         expected.expectMessage( "Backup failed: nah-ah" );
         expected.expect( CommandFailed.class );
+        expected.expect( exitCode( STATUS_ERROR ) );
 
         execute( "--fallback-to-full=false", backupDir( dir.getParent() ), "--name=" + dir.getName() );
     }
@@ -372,7 +439,7 @@ public class OnlineBackupCommandTest
         File dir = testDirectory.directory( "ccInc" );
         when( outsideWorld.fileSystem() ).thenReturn( mockFs );
         when( mockFs.isDirectory( eq( dir.getParentFile() ) ) ).thenReturn( true );
-        when( mockFs.listFiles( eq( dir ) ) ).thenReturn( new File[]{dir} );
+        when( mockFs.listFiles( eq( dir ) ) ).thenReturn( new File[]{ dir } );
         for ( int i = 1; i < 50; i++ )
         {
             when( mockFs.fileExists( eq( new File( dir.getParentFile(), "ccInc.err." + i ) ) ) ).thenReturn( true );
@@ -389,6 +456,7 @@ public class OnlineBackupCommandTest
         verify( outsideWorld ).stdErrLine( "Old backup renamed to 'ccInc.err.50'." );
         verify( backupService ).doFullBackup( any(), anyInt(), any(), any(), any(), anyLong(), anyBoolean() );
         verify( outsideWorld ).stdOutLine( "Doing full backup..." );
+        verify( outsideWorld ).stdOutLine( "Doing consistency check..." );
         verifyNoMoreInteractions( backupService );
     }
 
@@ -399,7 +467,7 @@ public class OnlineBackupCommandTest
         File dir = testDirectory.directory( "ccInc" );
         when( outsideWorld.fileSystem() ).thenReturn( mockFs );
         when( mockFs.isDirectory( eq( dir.getParentFile() ) ) ).thenReturn( true );
-        when( mockFs.listFiles( eq( dir ) ) ).thenReturn( new File[]{dir} );
+        when( mockFs.listFiles( eq( dir ) ) ).thenReturn( new File[]{ dir } );
         for ( int i = 1; i < MAX_OLD_BACKUPS; i++ )
         {
             when( mockFs.fileExists( eq( new File( dir.getParentFile(), "ccInc.err." + i ) ) ) ).thenReturn( true );
@@ -409,6 +477,7 @@ public class OnlineBackupCommandTest
 
         expected.expect( CommandFailed.class );
         expected.expectMessage( "ailed to move old backup out of the way: too many old backups." );
+        expected.expect( exitCode( STATUS_ERROR ) );
         execute( "--cc-report-dir=" + dir.getParent(), backupDir( dir.getParent() ), "--name=" + dir.getName() );
     }
 
@@ -417,7 +486,7 @@ public class OnlineBackupCommandTest
     {
         File reportDir = testDirectory.directory( "ccreport" );
         when( consistencyCheckService.runFullConsistencyCheck( any(), any(), any(), any(), any(), anyBoolean(),
-                any(CheckConsistencyConfig.class) ) ).thenReturn( ConsistencyCheckService.Result.success( null ) );
+                any( CheckConsistencyConfig.class ) ) ).thenReturn( ConsistencyCheckService.Result.success( null ) );
 
         execute( "--check-consistency", backupDir(), "--name=mybackup",
                 "--cc-report-dir=" + reportDir );
@@ -438,6 +507,7 @@ public class OnlineBackupCommandTest
 
         expected.expect( CommandFailed.class );
         expected.expectMessage( "Backup failed: nope" );
+        expected.expect( exitCode( STATUS_ERROR ) );
         execute( backupDir( dir.getParent() ), "--name=" + dir.getName() );
     }
 
@@ -456,6 +526,7 @@ public class OnlineBackupCommandTest
         final String path = path( "/aalivnmoimzlckmvPDK" );
         expected.expect( CommandFailed.class );
         expected.expectMessage( "Directory '" + path + "' does not exist." );
+        expected.expect( exitCode( STATUS_ERROR ) );
         execute( "--check-consistency", backupDir(), "--name=mybackup",
                 "--cc-report-dir=" + path );
     }
@@ -534,7 +605,7 @@ public class OnlineBackupCommandTest
             usage.printUsageForCommand( new OnlineBackupCommandProvider(), ps::println );
 
             assertEquals(
-                    String.format( "usage: neo4j-admin backup --backup-dir=<backup-path> --name=<graph.db-backup>%n" +
+                    format( "usage: neo4j-admin backup --backup-dir=<backup-path> --name=<graph.db-backup>%n" +
                             "                          [--from=<address>] [--fallback-to-full[=<true|false>]]%n" +
                             "                          [--timeout=<timeout>]%n" +
                             "                          [--check-consistency[=<true|false>]]%n" +

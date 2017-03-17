@@ -103,13 +103,9 @@ public class UnbindFromClusterCommand implements AdminCommand
         {
             throw new IncorrectUsage( e.getMessage() );
         }
-        catch ( UnbindFailureException | CannotWriteException | IOException e )
+        catch ( UnbindFailureException | CannotWriteException | IOException | ClusterStateException e )
         {
-            throw new CommandFailed( "Unbind failed: " + e.getMessage(), e );
-        }
-        catch ( ClusterStateException e )
-        {
-            throw new CommandFailed( e );
+            throw new CommandFailed( e.getMessage(), e );
         }
     }
 
