@@ -42,36 +42,36 @@ public class FilterConfigParserTest
                 ",",
                 "\"",
                 "\'",
-                "tags",
+                "groups",
                 "min",
                 "unknown",
                 "unknown()",
                 "unknown(something)",
                 "min()",
                 "min(2,5)",
-                "tags()",
+                "groups()",
                 "all(2)",
                 "min(five)",
-                "tags(tag1_%)",
-                "tags(tag2_%)",
-                "tags(tag 2)",
-                "%tags(tag2)",
-                "ta%gs(tag2)",
-                "ta-gs(tag2)",
-                "tags(tag1),tags(tag2)",
-                "tags(tag1);;tags(tag2)",
-                "tags(tag1)+tags(tag2)",
-                "halt();tags(tag)",
+                "groups(group1_%)",
+                "groups(group2_%)",
+                "groups(group 2)",
+                "%groups(group2)",
+                "ta%gs(group2)",
+                "ta-gs(group2)",
+                "groups(group1),groups(group2)",
+                "groups(group1);;groups(group2)",
+                "groups(group1)+groups(group2)",
+                "halt();groups(group)",
                 "halt();halt()",
-                "tags(tag1);halt();tags(tag2)",
-                "tags(tag1);tags(tag2);halt();tags(tag3)",
-                "tags(tag1) -> halt()",
-                "halt() -> tags(tag1)",
-                "tags(tag1) -> tags(tag2) -> halt()",
-                "tags(tag1) -> halt() -> tags(tag2)",
-                "tags(tag)->all()",
+                "groups(group1);halt();groups(group2)",
+                "groups(group1);groups(group2);halt();groups(group3)",
+                "groups(group1) -> halt()",
+                "halt() -> groups(group1)",
+                "groups(group1) -> groups(group2) -> halt()",
+                "groups(group1) -> halt() -> groups(group2)",
+                "groups(group)->all()",
                 "all()->all()",
-                "tags(A)->all()->tags(B)",
+                "groups(A)->all()->groups(B)",
         };
 
         // when
@@ -100,8 +100,8 @@ public class FilterConfigParserTest
                                 .build()
                 },
                 {
-                        "tags(5);",
-                        filter().tags( "5" )
+                        "groups(5);",
+                        filter().groups( "5" )
                                 .newRule().all() // implicit
                                 .build()
                 },
@@ -110,58 +110,58 @@ public class FilterConfigParserTest
                         filter().all().build()
                 },
                 {
-                        "all() -> tags(5);",
-                        filter().tags( "5" )
+                        "all() -> groups(5);",
+                        filter().groups( "5" )
                                 .newRule().all() // implicit
                                 .build()
                 },
                 {
-                        "all() -> tags(5);all()",
-                        filter().tags( "5" )
+                        "all() -> groups(5);all()",
+                        filter().groups( "5" )
                                 .newRule().all()
                                 .build()
                 },
                 {
-                        "all() -> tags(A); all() -> tags(B); halt()",
-                        filter().tags( "A" )
-                                .newRule().tags( "B" )
+                        "all() -> groups(A); all() -> groups(B); halt()",
+                        filter().groups( "A" )
+                                .newRule().groups( "B" )
                                 .build()
                 },
                 {
-                        "tags(tagA);",
-                        filter().tags( "tagA" )
+                        "groups(groupA);",
+                        filter().groups( "groupA" )
                                 .newRule().all() // implicit
                                 .build()
                 },
                 {
-                        "tags(tagA,tagB); halt()",
-                        filter().tags( "tagA", "tagB" ).build()
+                        "groups(groupA,groupB); halt()",
+                        filter().groups( "groupA", "groupB" ).build()
                 },
                 {
-                        "tags ( tagA , tagB ); halt()",
-                        filter().tags( "tagA", "tagB" ).build()
+                        "groups ( groupA , groupB ); halt()",
+                        filter().groups( "groupA", "groupB" ).build()
                 },
                 {
-                        "tags(tag1)->tags(tag2); halt()",
-                        filter().tags( "tag1" ).tags( "tag2" ).build()
+                        "groups(group1)->groups(group2); halt()",
+                        filter().groups( "group1" ).groups( "group2" ).build()
                 },
                 {
-                        "tags(tag1)->tags(tag2); halt();",
-                        filter().tags( "tag1" ).tags( "tag2" ).build()
+                        "groups(group1)->groups(group2); halt();",
+                        filter().groups( "group1" ).groups( "group2" ).build()
                 },
                 {
-                        "tags(tag-1)->tags(tag-2); halt();",
-                        filter().tags( "tag-1" ).tags( "tag-2" ).build()
+                        "groups(group-1)->groups(group-2); halt();",
+                        filter().groups( "group-1" ).groups( "group-2" ).build()
                 },
                 {
-                        "tags(tag1)->tags(tag2)->min(4); tags(tag3,tag4)->min(2); halt();",
-                        filter().tags( "tag1" ).tags( "tag2" ).min( 4 )
-                                .newRule().tags( "tag3", "tag4" ).min( 2 ).build()
+                        "groups(group1)->groups(group2)->min(4); groups(group3,group4)->min(2); halt();",
+                        filter().groups( "group1" ).groups( "group2" ).min( 4 )
+                                .newRule().groups( "group3", "group4" ).min( 2 ).build()
                 },
                 {
-                        "tags(tag1,tag2,tag3,tag4)->min(2); tags(tag3,tag4);",
-                        filter().tags( "tag1", "tag2", "tag3", "tag4" ).min( 2 )
-                                .newRule().tags( "tag3", "tag4" )
+                        "groups(group1,group2,group3,group4)->min(2); groups(group3,group4);",
+                        filter().groups( "group1", "group2", "group3", "group4" ).min( 2 )
+                                .newRule().groups( "group3", "group4" )
                                 .newRule().all() // implicit
                                 .build()
                 }

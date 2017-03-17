@@ -19,17 +19,13 @@
  */
 package org.neo4j.causalclustering.readreplica;
 
-import java.util.List;
-import java.util.Map;
 import java.util.Optional;
-import java.util.Random;
 import java.util.Set;
 import java.util.stream.Collectors;
 
 import org.neo4j.causalclustering.core.CausalClusteringSettings;
 import org.neo4j.causalclustering.discovery.CoreServerInfo;
 import org.neo4j.causalclustering.discovery.CoreTopology;
-import org.neo4j.causalclustering.discovery.ReadReplicaInfo;
 import org.neo4j.causalclustering.identity.MemberId;
 import org.neo4j.causalclustering.load_balancing.filters.Filter;
 import org.neo4j.causalclustering.load_balancing.plugins.server_policies.FilterConfigParser;
@@ -55,7 +51,7 @@ public class UserDefinedConfigurationStrategy extends UpstreamDatabaseSelectionS
 
             Set<ServerInfo> possibleReaders = topologyService.readReplicas().members().entrySet().stream()
                     .map( entry -> new ServerInfo( entry.getValue().connectors().boltAddress(), entry.getKey(),
-                            entry.getValue().tags() ) ).collect( Collectors.toSet() );
+                            entry.getValue().groups() ) ).collect( Collectors.toSet() );
 
             CoreTopology coreTopology = topologyService.coreServers();
             for ( MemberId validCore : coreTopology.members().keySet() )
@@ -65,7 +61,7 @@ public class UserDefinedConfigurationStrategy extends UpstreamDatabaseSelectionS
                 {
                     CoreServerInfo serverInfo = coreServerInfo.get();
                     possibleReaders.add(
-                            new ServerInfo( serverInfo.connectors().boltAddress(), validCore, serverInfo.tags() ) );
+                            new ServerInfo( serverInfo.connectors().boltAddress(), validCore, serverInfo.groups() ) );
                 }
             }
 

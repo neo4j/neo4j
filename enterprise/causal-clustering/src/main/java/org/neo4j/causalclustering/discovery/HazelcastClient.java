@@ -43,7 +43,7 @@ import static org.neo4j.causalclustering.discovery.HazelcastClusterTopology
 import static org.neo4j.causalclustering.discovery.HazelcastClusterTopology.extractCatchupAddressesMap;
 import static org.neo4j.causalclustering.discovery.HazelcastClusterTopology.getCoreTopology;
 import static org.neo4j.causalclustering.discovery.HazelcastClusterTopology.getReadReplicaTopology;
-import static org.neo4j.causalclustering.discovery.HazelcastClusterTopology.refreshTags;
+import static org.neo4j.causalclustering.discovery.HazelcastClusterTopology.refreshGroups;
 
 class HazelcastClient extends LifecycleAdapter implements TopologyService
 {
@@ -52,12 +52,11 @@ class HazelcastClient extends LifecycleAdapter implements TopologyService
     private final RobustHazelcastWrapper hzInstance;
     private final RobustJobSchedulerWrapper scheduler;
     private final Config config;
-
     private final long timeToLive;
     private final long refreshPeriod;
     private final AdvertisedSocketAddress transactionSource;
     private final MemberId myself;
-    private final List<String> tags;
+    private final List<String> groups;
 
     private JobScheduler.JobHandle keepAliveJob;
     private JobScheduler.JobHandle refreshTopologyJob;
@@ -78,7 +77,7 @@ class HazelcastClient extends LifecycleAdapter implements TopologyService
         this.timeToLive = config.get( CausalClusteringSettings.read_replica_time_to_live );
         this.refreshPeriod = config.get( CausalClusteringSettings.cluster_topology_refresh );
         this.myself = myself;
-        this.tags = config.get( CausalClusteringSettings.server_tags );
+        this.groups = config.get( CausalClusteringSettings.server_groups );
     }
 
     @Override
@@ -154,7 +153,7 @@ class HazelcastClient extends LifecycleAdapter implements TopologyService
             hazelcastInstance.getMap( READ_REPLICA_MEMBER_ID_MAP_NAME )
                     .put( uuid, myself.getUuid().toString(), timeToLive, MILLISECONDS );
 
-            refreshTags( hazelcastInstance, uuid, tags );
+            refreshGroups( hazelcastInstance, uuid, groups );
 
             // this needs to be last as when we read from it in HazelcastClusterTopology.readReplicas
             // we assume that all the other maps have been populated if an entry exists in this one

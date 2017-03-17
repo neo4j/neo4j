@@ -23,59 +23,41 @@ import org.junit.Before;
 import org.junit.Rule;
 import org.junit.Test;
 
-import java.io.File;
 import java.util.HashMap;
 import java.util.Map;
-import java.util.Optional;
 import java.util.UUID;
 
-import org.neo4j.backup.OnlineBackupSettings;
 import org.neo4j.causalclustering.core.CausalClusteringSettings;
 import org.neo4j.causalclustering.discovery.Cluster;
 import org.neo4j.causalclustering.discovery.CoreClusterMember;
 import org.neo4j.causalclustering.discovery.HazelcastDiscoveryServiceFactory;
 import org.neo4j.causalclustering.discovery.ReadReplica;
-import org.neo4j.causalclustering.identity.MemberId;
-import org.neo4j.causalclustering.readreplica.UpstreamDatabaseSelectionException;
-import org.neo4j.causalclustering.readreplica.UpstreamDatabaseSelectionStrategy;
-import org.neo4j.function.ThrowingSupplier;
-import org.neo4j.graphdb.GraphDatabaseService;
-import org.neo4j.graphdb.Node;
-import org.neo4j.graphdb.Transaction;
-import org.neo4j.helpers.Service;
 import org.neo4j.helpers.collection.Pair;
-import org.neo4j.kernel.impl.api.scan.LabelScanStoreProvider;
-import org.neo4j.kernel.monitoring.Monitors;
 import org.neo4j.test.causalclustering.ClusterRule;
 
-import static java.util.concurrent.TimeUnit.MINUTES;
-import static org.hamcrest.CoreMatchers.startsWith;
 import static org.hamcrest.MatcherAssert.assertThat;
 import static org.hamcrest.core.Is.is;
 import static org.neo4j.causalclustering.helpers.DataCreator.createLabelledNodesWithProperty;
-import static org.neo4j.causalclustering.scenarios.ReadReplicaToReadReplicaCatchupIT.SpecificReplicaStrategy.upstreamFactory;
 import static org.neo4j.causalclustering.scenarios.ReadReplicaToReadReplicaCatchupIT.checkDataHasReplicatedToReadReplicas;
-import static org.neo4j.com.storecopy.StoreUtil.TEMP_COPY_DIRECTORY_NAME;
 import static org.neo4j.graphdb.Label.label;
 import static org.neo4j.helpers.collection.Iterables.count;
-import static org.neo4j.test.assertion.Assert.assertEventually;
 
 public class ReadReplicaHierarchicalCatchupIT
 {
-    private Map<Integer,String> serverTags = new HashMap<>();
+    private Map<Integer,String> serverGroups = new HashMap<>();
 
     @Before
     public void setup()
     {
-        serverTags.put( 0, "NORTH" );
-        serverTags.put( 1, "NORTH" );
-        serverTags.put( 2, "NORTH" );
+        serverGroups.put( 0, "NORTH" );
+        serverGroups.put( 1, "NORTH" );
+        serverGroups.put( 2, "NORTH" );
 
-        serverTags.put( 3, "EAST" );
-        serverTags.put( 5, "EAST" );
+        serverGroups.put( 3, "EAST" );
+        serverGroups.put( 5, "EAST" );
 
-        serverTags.put( 4, "WEST" );
-        serverTags.put( 6, "WEST" );
+        serverGroups.put( 4, "WEST" );
+        serverGroups.put( 6, "WEST" );
     }
 
     @Rule
@@ -90,8 +72,8 @@ public class ReadReplicaHierarchicalCatchupIT
     public void shouldCatchupThroughHierarchy() throws Throwable
     {
         clusterRule = clusterRule
-                .withInstanceReadReplicaParam( CausalClusteringSettings.server_tags, id -> serverTags.get( id ) )
-                .withInstanceCoreParam( CausalClusteringSettings.server_tags, id -> serverTags.get( id ) );
+                .withInstanceReadReplicaParam( CausalClusteringSettings.server_groups, id -> serverGroups.get( id ) )
+                .withInstanceCoreParam( CausalClusteringSettings.server_groups, id -> serverGroups.get( id ) );
 
         // given
         Cluster cluster = clusterRule.startCluster();

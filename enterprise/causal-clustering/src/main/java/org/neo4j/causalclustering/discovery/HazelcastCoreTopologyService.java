@@ -59,7 +59,7 @@ import static com.hazelcast.spi.properties.GroupProperty.WAIT_SECONDS_BEFORE_JOI
 import static org.neo4j.causalclustering.discovery.HazelcastClusterTopology.extractCatchupAddressesMap;
 import static org.neo4j.causalclustering.discovery.HazelcastClusterTopology.getCoreTopology;
 import static org.neo4j.causalclustering.discovery.HazelcastClusterTopology.getReadReplicaTopology;
-import static org.neo4j.causalclustering.discovery.HazelcastClusterTopology.refreshTags;
+import static org.neo4j.causalclustering.discovery.HazelcastClusterTopology.refreshGroups;
 
 class HazelcastCoreTopologyService extends LifecycleAdapter implements CoreTopologyService
 {
@@ -194,8 +194,8 @@ class HazelcastCoreTopologyService extends LifecycleAdapter implements CoreTopol
             throw new RuntimeException( e );
         }
 
-        List<String> tags = config.get( CausalClusteringSettings.server_tags );
-        refreshTags( hazelcastInstance, myself.getUuid().toString(), tags );
+        List<String> groups = config.get( CausalClusteringSettings.server_groups );
+        refreshGroups( hazelcastInstance, myself.getUuid().toString(), groups );
 
         return hazelcastInstance;
     }

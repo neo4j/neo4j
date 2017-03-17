@@ -59,7 +59,7 @@ public class HazelcastClusterTopology
 
     // cluster-wide attributes
     private static final String CLUSTER_UUID = "cluster_uuid";
-    static final String SERVER_TAGS_MULTIMAP_NAME = "tags";
+    static final String SERVER_GROUPS_MULTIMAP_NAME = "groups";
     static final String READ_REPLICA_TRANSACTION_SERVER_ADDRESS_MAP_NAME = "read-replica-transaction-servers";
     static final String READ_REPLICA_BOLT_ADDRESS_MAP_NAME = "read_replicas"; // hz client uuid string -> boltAddress string
     static final String READ_REPLICA_MEMBER_ID_MAP_NAME = "read-replica-member-ids";
@@ -141,7 +141,7 @@ public class HazelcastClusterTopology
 
         IMap<String,String> txServerMap = hazelcastInstance.getMap( READ_REPLICA_TRANSACTION_SERVER_ADDRESS_MAP_NAME );
         IMap<String,String> memberIdMap = hazelcastInstance.getMap( READ_REPLICA_MEMBER_ID_MAP_NAME );
-        MultiMap<String,String> serverTags = hazelcastInstance.getMultiMap( SERVER_TAGS_MULTIMAP_NAME );
+        MultiMap<String,String> serverGroups = hazelcastInstance.getMultiMap( SERVER_GROUPS_MULTIMAP_NAME );
 
         Map<MemberId,ReadReplicaInfo> result = new HashMap<>();
 
@@ -154,7 +154,7 @@ public class HazelcastClusterTopology
 
             result.put( new MemberId( UUID.fromString( memberIdMap.get( hzUUID ) ) ),
                     new ReadReplicaInfo( clientConnectorAddresses, catchupAddress,
-                            asSet( serverTags.get( hzUUID ) ) ) );
+                            asSet( serverGroups.get( hzUUID ) ) ) );
         }
         return result;
     }
@@ -192,7 +192,7 @@ public class HazelcastClusterTopology
             HazelcastInstance hazelcastInstance )
     {
         Map<MemberId,CoreServerInfo> coreMembers = new HashMap<>();
-        MultiMap<String,String> serverTagsMMap = hazelcastInstance.getMultiMap( SERVER_TAGS_MULTIMAP_NAME );
+        MultiMap<String,String> serverGroupsMMap = hazelcastInstance.getMultiMap( SERVER_GROUPS_MULTIMAP_NAME );
 
         for ( Member member : members )
         {
@@ -204,7 +204,7 @@ public class HazelcastClusterTopology
                         socketAddress( member.getStringAttribute( RAFT_SERVER ), AdvertisedSocketAddress::new ),
                         socketAddress( member.getStringAttribute( TRANSACTION_SERVER ), AdvertisedSocketAddress::new ),
                         ClientConnectorAddresses.fromString( member.getStringAttribute( CLIENT_CONNECTOR_ADDRESSES ) ),
-                        asSet( serverTagsMMap.get( memberId.getUuid().toString() ) ) );
+                        asSet( serverGroupsMMap.get( memberId.getUuid().toString() ) ) );
 
                 coreMembers.put( memberId, coreServerInfo );
             }
@@ -217,16 +217,16 @@ public class HazelcastClusterTopology
         return coreMembers;
     }
 
-    static void refreshTags( HazelcastInstance hazelcastInstance, String memberId, List<String> tags )
+    static void refreshGroups( HazelcastInstance hazelcastInstance, String memberId, List<String> groups )
     {
-        MultiMap<String,String> tagsMap = hazelcastInstance.getMultiMap( SERVER_TAGS_MULTIMAP_NAME );
-        Collection<String> existing = tagsMap.get( memberId );
+        MultiMap<String,String> groupsMap = hazelcastInstance.getMultiMap( SERVER_GROUPS_MULTIMAP_NAME );
+        Collection<String> existing = groupsMap.get( memberId );
 
-        Set<String> superfluous = existing.stream().filter( t -> !tags.contains( t ) ).collect( Collectors.toSet() );
-        Set<String> missing = tags.stream().filter( t -> !existing.contains( t ) ).collect( Collectors.toSet() );
+        Set<String> superfluous = existing.stream().filter( t -> !groups.contains( t ) ).collect( Collectors.toSet() );
+        Set<String> missing = groups.stream().filter( t -> !existing.contains( t ) ).collect( Collectors.toSet() );
 
-        missing.forEach( tag -> tagsMap.put( memberId, tag ) );
-        superfluous.forEach( tag -> tagsMap.remove( memberId, tag ) );
+        missing.forEach( group -> groupsMap.put( memberId, group ) );
+        superfluous.forEach( group -> groupsMap.remove( memberId, group ) );
     }
 
     static MemberAttributeConfig buildMemberAttributesForCore( MemberId myself, Config config )

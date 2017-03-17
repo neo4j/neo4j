@@ -51,7 +51,7 @@ import static org.neo4j.helpers.collection.Iterators.map;
 import static org.neo4j.kernel.api.proc.ProcedureSignature.procedureSignature;
 
 /**
- * Overview procedure with added support for server tags.
+ * Overview procedure with added support for server groups.
  */
 public class ClusterOverviewProcedure extends CallableProcedure.BasicProcedure
 {
@@ -68,7 +68,7 @@ public class ClusterOverviewProcedure extends CallableProcedure.BasicProcedure
                 .out( "id", Neo4jTypes.NTString )
                 .out( "addresses", Neo4jTypes.NTList( Neo4jTypes.NTString ) )
                 .out( "role", Neo4jTypes.NTString )
-                .out( "tags", Neo4jTypes.NTList( Neo4jTypes.NTString ) )
+                .out( "groups", Neo4jTypes.NTList( Neo4jTypes.NTString ) )
                 .description( "Overview of all currently accessible cluster members and their roles." )
                 .build() );
         this.topologyService = topologyService;
@@ -99,7 +99,7 @@ public class ClusterOverviewProcedure extends CallableProcedure.BasicProcedure
             if ( coreServerInfo.isPresent() )
             {
                 Role role = memberId.equals( leader ) ? Role.LEADER : Role.FOLLOWER;
-                endpoints.add( new ReadWriteEndPoint( coreServerInfo.get().connectors(), role, memberId.getUuid(), asList( coreServerInfo.get().tags() ) ) );
+                endpoints.add( new ReadWriteEndPoint( coreServerInfo.get().connectors(), role, memberId.getUuid(), asList( coreServerInfo.get().groups() ) ) );
             }
             else
             {
@@ -110,7 +110,7 @@ public class ClusterOverviewProcedure extends CallableProcedure.BasicProcedure
         for ( Map.Entry<MemberId,ReadReplicaInfo> readReplica : topologyService.readReplicas().members().entrySet() )
         {
             ReadReplicaInfo readReplicaInfo = readReplica.getValue();
-            endpoints.add( new ReadWriteEndPoint( readReplicaInfo.connectors(), Role.READ_REPLICA, readReplica.getKey().getUuid(), asList( readReplicaInfo.tags() ) ) );
+            endpoints.add( new ReadWriteEndPoint( readReplicaInfo.connectors(), Role.READ_REPLICA, readReplica.getKey().getUuid(), asList( readReplicaInfo.groups() ) ) );
         }
 
         endpoints.sort( comparing( o -> o.addresses().toString() ) );
@@ -120,7 +120,7 @@ public class ClusterOverviewProcedure extends CallableProcedure.BasicProcedure
                                 endpoint.memberId().toString(),
                                 endpoint.addresses().uriList().stream().map( URI::toString ).toArray(),
                                 endpoint.role().name(),
-                                endpoint.tags()
+                                endpoint.groups()
                         },
                 asRawIterator( endpoints.iterator() ) );
     }
@@ -130,7 +130,7 @@ public class ClusterOverviewProcedure extends CallableProcedure.BasicProcedure
         private final ClientConnectorAddresses clientConnectorAddresses;
         private final Role role;
         private final UUID memberId;
-        private final List<String> tags;
+        private final List<String> groups;
 
         public ClientConnectorAddresses addresses()
         {
@@ -147,17 +147,17 @@ public class ClusterOverviewProcedure extends CallableProcedure.BasicProcedure
             return memberId;
         }
 
-        List<String> tags()
+        List<String> groups()
         {
-            return tags;
+            return groups;
         }
 
-        ReadWriteEndPoint( ClientConnectorAddresses clientConnectorAddresses, Role role, UUID memberId, List<String> tags )
+        ReadWriteEndPoint( ClientConnectorAddresses clientConnectorAddresses, Role role, UUID memberId, List<String> groups )
         {
             this.clientConnectorAddresses = clientConnectorAddresses;
             this.role = role;
             this.memberId = memberId;
-            this.tags = tags;
+            this.groups = groups;
         }
     }
 }

@@ -25,22 +25,22 @@ import org.neo4j.helpers.AdvertisedSocketAddress;
 
 import static java.util.Collections.emptySet;
 
-public class ReadReplicaInfo implements CatchupServerAddress, ClientConnector, TaggedServer
+public class ReadReplicaInfo implements CatchupServerAddress, ClientConnector, GroupedServer
 {
     private final AdvertisedSocketAddress catchupServerAddress;
     private final ClientConnectorAddresses clientConnectorAddresses;
-    private final Set<String> tags;
+    private final Set<String> groups;
 
     public ReadReplicaInfo( ClientConnectorAddresses clientConnectorAddresses, AdvertisedSocketAddress catchupServerAddress )
     {
         this( clientConnectorAddresses, catchupServerAddress, emptySet() );
     }
 
-    public ReadReplicaInfo( ClientConnectorAddresses clientConnectorAddresses, AdvertisedSocketAddress catchupServerAddress, Set<String> tags )
+    public ReadReplicaInfo( ClientConnectorAddresses clientConnectorAddresses, AdvertisedSocketAddress catchupServerAddress, Set<String> groups )
     {
         this.clientConnectorAddresses = clientConnectorAddresses;
         this.catchupServerAddress = catchupServerAddress;
-        this.tags = tags;
+        this.groups = groups;
     }
 
     @Override
@@ -56,9 +56,9 @@ public class ReadReplicaInfo implements CatchupServerAddress, ClientConnector, T
     }
 
     @Override
-    public Set<String> tags()
+    public Set<String> groups()
     {
-        return tags;
+        return groups;
     }
 
     @Override
@@ -67,7 +67,7 @@ public class ReadReplicaInfo implements CatchupServerAddress, ClientConnector, T
         return "ReadReplicaInfo{" +
                "catchupServerAddress=" + catchupServerAddress +
                ", clientConnectorAddresses=" + clientConnectorAddresses +
-               ", tags=" + tags +
+               ", groups=" + groups +
                '}';
     }
 }

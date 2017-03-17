@@ -45,16 +45,16 @@ public class ConnectWithinDataCenterStrategy extends UpstreamDatabaseSelectionSt
     {
         Map<MemberId, ReadReplicaInfo> replicas = topologyService.readReplicas().members();
 
-        List<String> tags = config.get( CausalClusteringSettings.server_tags );
-        if ( tags.isEmpty() )
+        List<String> groups = config.get( CausalClusteringSettings.server_groups );
+        if ( groups.isEmpty() )
         {
             return Optional.empty();
         }
 
-        String myTag = tags.get( 0 );
+        String myGroup = groups.get( 0 );
 
         List<Map.Entry<MemberId, ReadReplicaInfo>> choices = replicas.entrySet().stream()
-                .filter( entry -> entry.getValue().tags().contains( myTag ) && !entry.getKey().equals( myself ) )
+                .filter( entry -> entry.getValue().groups().contains( myGroup ) && !entry.getKey().equals( myself ) )
                 .collect( Collectors.toList() );
 
         if ( choices.isEmpty() )

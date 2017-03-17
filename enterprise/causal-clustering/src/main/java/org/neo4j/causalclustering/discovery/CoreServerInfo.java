@@ -25,12 +25,12 @@ import org.neo4j.helpers.AdvertisedSocketAddress;
 
 import static java.util.Collections.emptySet;
 
-public class CoreServerInfo implements CatchupServerAddress, ClientConnector, TaggedServer
+public class CoreServerInfo implements CatchupServerAddress, ClientConnector, GroupedServer
 {
     private final AdvertisedSocketAddress raftServer;
     private final AdvertisedSocketAddress catchupServer;
     private final ClientConnectorAddresses clientConnectorAddresses;
-    private final Set<String> tags;
+    private final Set<String> groups;
 
     public CoreServerInfo( AdvertisedSocketAddress raftServer, AdvertisedSocketAddress catchupServer,
             ClientConnectorAddresses clientConnectors )
@@ -39,12 +39,12 @@ public class CoreServerInfo implements CatchupServerAddress, ClientConnector, Ta
     }
 
     public CoreServerInfo( AdvertisedSocketAddress raftServer, AdvertisedSocketAddress catchupServer,
-            ClientConnectorAddresses clientConnectorAddresses, Set<String> tags )
+            ClientConnectorAddresses clientConnectorAddresses, Set<String> groups )
     {
         this.raftServer = raftServer;
         this.catchupServer = catchupServer;
         this.clientConnectorAddresses = clientConnectorAddresses;
-        this.tags = tags;
+        this.groups = groups;
     }
 
     public AdvertisedSocketAddress getRaftServer()
@@ -65,9 +65,9 @@ public class CoreServerInfo implements CatchupServerAddress, ClientConnector, Ta
     }
 
     @Override
-    public Set<String> tags()
+    public Set<String> groups()
     {
-        return tags;
+        return groups;
     }
 
     @Override
@@ -77,7 +77,7 @@ public class CoreServerInfo implements CatchupServerAddress, ClientConnector, Ta
                "raftServer=" + raftServer +
                ", catchupServer=" + catchupServer +
                ", clientConnectorAddresses=" + clientConnectorAddresses +
-               ", tags=" + tags +
+               ", groups=" + groups +
                '}';
     }
 }

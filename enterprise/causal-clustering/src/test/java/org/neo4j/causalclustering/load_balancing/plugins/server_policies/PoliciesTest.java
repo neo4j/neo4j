@@ -48,8 +48,8 @@ public class PoliciesTest
         // when
         Policy policy = policies.selectFor( emptyMap() );
         Set<ServerInfo> input = asSet(
-                new ServerInfo( new AdvertisedSocketAddress( "bolt", 1 ), new MemberId( UUID.randomUUID() ), asSet( "tagA" ) ),
-                new ServerInfo( new AdvertisedSocketAddress( "bolt", 2 ), new MemberId( UUID.randomUUID() ), asSet( "tagB" ) )
+                new ServerInfo( new AdvertisedSocketAddress( "bolt", 1 ), new MemberId( UUID.randomUUID() ), asSet( "groupA" ) ),
+                new ServerInfo( new AdvertisedSocketAddress( "bolt", 2 ), new MemberId( UUID.randomUUID() ), asSet( "groupB" ) )
         );
 
         Set<ServerInfo> output = policy.apply( input );
@@ -68,8 +68,8 @@ public class PoliciesTest
         // when
         Policy policy = policies.selectFor( stringMap( Policies.POLICY_KEY, "unknown-policy" ) );
         Set<ServerInfo> input = asSet(
-                new ServerInfo( new AdvertisedSocketAddress( "bolt", 1 ), new MemberId( UUID.randomUUID() ), asSet( "tagA" ) ),
-                new ServerInfo( new AdvertisedSocketAddress( "bolt", 2 ), new MemberId( UUID.randomUUID() ), asSet( "tagB" ) )
+                new ServerInfo( new AdvertisedSocketAddress( "bolt", 1 ), new MemberId( UUID.randomUUID() ), asSet( "groupA" ) ),
+                new ServerInfo( new AdvertisedSocketAddress( "bolt", 2 ), new MemberId( UUID.randomUUID() ), asSet( "groupB" ) )
         );
 
         Set<ServerInfo> output = policy.apply( input );
@@ -85,7 +85,7 @@ public class PoliciesTest
         Policies policies = new Policies( log );
 
         String defaulyPolicyName = Policies.DEFAULT_POLICY_NAME;
-        Policy defaultPolicy = new FilteringPolicy( new AnyTagFilter( "tagA", "tagB" ) );
+        Policy defaultPolicy = new FilteringPolicy( new AnyGroupFilter( "groupA", "groupB" ) );
 
         // when
         policies.addPolicy( defaulyPolicyName, defaultPolicy );
