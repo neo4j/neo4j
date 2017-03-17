@@ -70,10 +70,6 @@ public class VersionAwareLogEntryReader<SOURCE extends ReadableClosablePositionA
             {
                 channel.getCurrentPosition( positionMarker );
 
-                /*
-                 * if the read type is negative than it is actually the log entry version
-                 * so we need to read an extra byte which will contain the type
-                 */
                 byte typeCode;
                 byte versionCode;
                 try
@@ -82,6 +78,8 @@ public class VersionAwareLogEntryReader<SOURCE extends ReadableClosablePositionA
                     versionCode = 0;
                     if ( typeCode < 0 )
                     {
+                        // if the read type is negative than it is actually the log entry version
+                        // so we need to read an extra byte which will contain the type
                         versionCode = typeCode;
                         typeCode = channel.get();
                     }
