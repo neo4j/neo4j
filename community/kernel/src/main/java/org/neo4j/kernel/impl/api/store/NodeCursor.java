@@ -40,8 +40,8 @@ import org.neo4j.storageengine.api.txstate.NodeState;
 import org.neo4j.storageengine.api.txstate.ReadableTransactionState;
 
 import static org.neo4j.collection.primitive.PrimitiveIntCollections.asSet;
-import static org.neo4j.kernel.impl.api.store.NodeProgression.Mode.APPEND;
-import static org.neo4j.kernel.impl.api.store.NodeProgression.Mode.FETCH;
+import static org.neo4j.kernel.impl.api.store.TransactionStateAccessMode.APPEND;
+import static org.neo4j.kernel.impl.api.store.TransactionStateAccessMode.FETCH;
 import static org.neo4j.kernel.impl.locking.LockService.NO_LOCK;
 import static org.neo4j.kernel.impl.locking.LockService.NO_LOCK_SERVICE;
 import static org.neo4j.kernel.impl.store.record.RecordLoad.CHECK;
