@@ -22,7 +22,6 @@ package org.neo4j.causalclustering.load_balancing.procedure;
 import java.util.Map;
 
 import org.neo4j.causalclustering.load_balancing.LoadBalancingProcessor;
-import org.neo4j.causalclustering.load_balancing.LoadBalancingResult;
 import org.neo4j.collection.RawIterator;
 import org.neo4j.kernel.api.exceptions.ProcedureException;
 import org.neo4j.kernel.api.proc.CallableProcedure;
@@ -76,10 +75,6 @@ public class GetServersProcedureForMultiDC implements CallableProcedure
 
         LoadBalancingProcessor.Result result = loadBalancingProcessor.run( clientContext );
 
-        return RawIterator.<Object[],ProcedureException>of( ResultFormatV1.build( new LoadBalancingResult(
-                result.routeEndpoints(),
-                result.writeEndpoints(),
-                result.readEndpoints(),
-                result.getTimeToLiveMillis() ) ) );
+        return RawIterator.<Object[],ProcedureException>of( ResultFormatV1.build( result ) );
     }
 }

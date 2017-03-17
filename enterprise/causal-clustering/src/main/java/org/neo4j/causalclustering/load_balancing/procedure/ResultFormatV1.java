@@ -29,6 +29,7 @@ import java.util.TreeMap;
 import java.util.stream.Stream;
 
 import org.neo4j.causalclustering.load_balancing.Endpoint;
+import org.neo4j.causalclustering.load_balancing.LoadBalancingProcessor;
 import org.neo4j.causalclustering.load_balancing.LoadBalancingResult;
 import org.neo4j.causalclustering.load_balancing.Role;
 import org.neo4j.helpers.AdvertisedSocketAddress;
@@ -48,7 +49,7 @@ public class ResultFormatV1
     private static final String ROLE_KEY = "role";
     private static final String ADDRESSES_KEY = "addresses";
 
-    static Object[] build( LoadBalancingResult result )
+    static Object[] build( LoadBalancingProcessor.Result result )
     {
         Object[] routers = result.routeEndpoints().stream().map( Endpoint::address ).map( SocketAddress::toString ).toArray();
         Object[] readers = result.readEndpoints().stream().map( Endpoint::address ).map( SocketAddress::toString ).toArray();
