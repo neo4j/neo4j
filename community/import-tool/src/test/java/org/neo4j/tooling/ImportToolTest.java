@@ -29,6 +29,7 @@ import java.io.PrintStream;
 import java.nio.charset.Charset;
 import java.util.ArrayList;
 import java.util.Arrays;
+import java.util.Collections;
 import java.util.HashMap;
 import java.util.Iterator;
 import java.util.List;
@@ -1192,6 +1193,23 @@ public class ImportToolTest
                 "about how to use id spaces in the manual: https://neo4j.com/docs/operations-manual/" +
                 docsVersion +
                 "/tools/import/file-header-format/#import-tool-id-spaces" );
+    }
+
+    @Test
+    public void shouldCollectUnlimitedNumberOfBadEntries() throws Exception
+    {
+        // GIVEN
+        List<String> nodeIds = Collections.nCopies( 10_000, "A" );
+
+        // WHEN
+        importTool(
+                "--into", dbRule.getStoreDirAbsolutePath(),
+                "--nodes", nodeData( true, Configuration.COMMAS, nodeIds, TRUE ).getAbsolutePath(),
+                "--skip-duplicate-nodes",
+                "--bad-tolerance", "true" );
+
+        // THEN
+        // all those duplicates should just be accepted using the - for specifying bad tolerance
     }
 
     private void shouldPrintReferenceLinkAsPartOfErrorMessage( List<String> nodeIds,
