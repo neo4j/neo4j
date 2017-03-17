@@ -30,6 +30,7 @@ import org.neo4j.kernel.api.exceptions.schema.MalformedSchemaRuleException;
 import org.neo4j.kernel.api.index.SchemaIndexProvider;
 import org.neo4j.kernel.api.schema_new.constaints.ConstraintDescriptor;
 import org.neo4j.kernel.api.schema_new.constaints.ConstraintDescriptorFactory;
+import org.neo4j.kernel.api.schema_new.constaints.NodeKeyConstraintDescriptor;
 import org.neo4j.kernel.api.schema_new.constaints.UniquenessConstraintDescriptor;
 import org.neo4j.kernel.api.schema_new.index.NewIndexDescriptor;
 import org.neo4j.kernel.api.schema_new.index.NewIndexDescriptorFactory;
@@ -43,8 +44,6 @@ import static org.neo4j.test.assertion.Assert.assertException;
 
 public class SchemaRuleSerializationTest extends SchemaRuleTestBase
 {
-    private static final int VERY_LARGE_CAPACITY = 1024;
-
     IndexRule indexRegular = IndexRule.indexRule( RULE_ID,
             NewIndexDescriptorFactory.forLabel( LABEL_ID, PROPERTY_ID_1 ), PROVIDER_DESCRIPTOR );
 
@@ -67,6 +66,9 @@ public class SchemaRuleSerializationTest extends SchemaRuleTestBase
     ConstraintRule constraintUniqueLabel = ConstraintRule.constraintRule( RULE_ID_2,
             ConstraintDescriptorFactory.uniqueForLabel( LABEL_ID, PROPERTY_ID_1 ), RULE_ID );
 
+    ConstraintRule constraintNodeKeyLabel = ConstraintRule.constraintRule( RULE_ID_2,
+            ConstraintDescriptorFactory.nodeKeyForLabel( LABEL_ID, PROPERTY_ID_1 ), RULE_ID );
+
     ConstraintRule constraintExistsRelType = ConstraintRule.constraintRule( RULE_ID_2,
             ConstraintDescriptorFactory.existsForRelType( REL_TYPE_ID, PROPERTY_ID_1 ) );
 
@@ -88,6 +90,7 @@ public class SchemaRuleSerializationTest extends SchemaRuleTestBase
         assertThat( indexBigComposite.getName(), is( "index_1" ) );
         assertThat( constraintExistsLabel.getName(), is( "constraint_1" ) );
         assertThat( constraintUniqueLabel.getName(), is( "constraint_2" ) );
+        assertThat( constraintNodeKeyLabel.getName(), is( "constraint_2" ) );
         assertThat( constraintExistsRelType.getName(), is( "constraint_2" ) );
         assertThat( constraintCompositeLabel.getName(), is( "constraint_1" ) );
         assertThat( constraintCompositeRelType.getName(), is( "constraint_2" ) );
@@ -99,6 +102,7 @@ public class SchemaRuleSerializationTest extends SchemaRuleTestBase
         assertThat( generateName( indexBigComposite ), is( "index_1" ) );
         assertThat( generateName( constraintExistsLabel ), is( "constraint_1" ) );
         assertThat( generateName( constraintUniqueLabel ), is( "constraint_2" ) );
+        assertThat( generateName( constraintNodeKeyLabel ), is( "constraint_2" ) );
         assertThat( generateName( constraintExistsRelType ), is( "constraint_2" ) );
         assertThat( generateName( constraintCompositeLabel ), is( "constraint_1" ) );
         assertThat( generateName( constraintCompositeRelType ), is( "constraint_2" ) );
@@ -119,6 +123,7 @@ public class SchemaRuleSerializationTest extends SchemaRuleTestBase
         assertThat( serialiseAndDeserialise( indexBigComposite ).getName(), is( "index_1" ) );
         assertThat( serialiseAndDeserialise( constraintExistsLabel ).getName(), is( "constraint_1" ) );
         assertThat( serialiseAndDeserialise( constraintUniqueLabel ).getName(), is( "constraint_2" ) );
+        assertThat( serialiseAndDeserialise( constraintNodeKeyLabel ).getName(), is( "constraint_2" ) );
         assertThat( serialiseAndDeserialise( constraintExistsRelType ).getName(), is( "constraint_2" ) );
         assertThat( serialiseAndDeserialise( constraintCompositeLabel ).getName(), is( "constraint_1" ) );
         assertThat( serialiseAndDeserialise( constraintCompositeRelType ).getName(), is( "constraint_2" ) );
@@ -144,6 +149,8 @@ public class SchemaRuleSerializationTest extends SchemaRuleTestBase
                 ConstraintDescriptorFactory.existsForLabel( LABEL_ID, PROPERTY_ID_1 ), name ) ).getName(), is( name ) );
         assertThat( serialiseAndDeserialise( ConstraintRule.constraintRule( RULE_ID_2,
                 ConstraintDescriptorFactory.uniqueForLabel( LABEL_ID, PROPERTY_ID_1 ), RULE_ID, name ) ).getName(), is( name ) );
+        assertThat( serialiseAndDeserialise( ConstraintRule.constraintRule( RULE_ID_2,
+                ConstraintDescriptorFactory.nodeKeyForLabel( LABEL_ID, PROPERTY_ID_1 ), RULE_ID, name ) ).getName(), is( name ) );
         assertThat( serialiseAndDeserialise( ConstraintRule.constraintRule( RULE_ID_2,
                 ConstraintDescriptorFactory.existsForRelType( REL_TYPE_ID, PROPERTY_ID_1 ), name ) ).getName(), is( name ) );
         assertThat( serialiseAndDeserialise( ConstraintRule.constraintRule( RULE_ID,
@@ -172,6 +179,8 @@ public class SchemaRuleSerializationTest extends SchemaRuleTestBase
                 ConstraintDescriptorFactory.existsForLabel( LABEL_ID, PROPERTY_ID_1 ), name ) ).getName(), is( "constraint_1" ) );
         assertThat( serialiseAndDeserialise( ConstraintRule.constraintRule( RULE_ID_2,
                 ConstraintDescriptorFactory.uniqueForLabel( LABEL_ID, PROPERTY_ID_1 ), RULE_ID, name ) ).getName(), is( "constraint_2" ) );
+        assertThat( serialiseAndDeserialise( ConstraintRule.constraintRule( RULE_ID_2,
+                ConstraintDescriptorFactory.nodeKeyForLabel( LABEL_ID, PROPERTY_ID_1 ), RULE_ID, name ) ).getName(), is( "constraint_2" ) );
         assertThat( serialiseAndDeserialise( ConstraintRule.constraintRule( RULE_ID_2,
                 ConstraintDescriptorFactory.existsForRelType( REL_TYPE_ID, PROPERTY_ID_1 ), name ) ).getName(), is( "constraint_2" ) );
         assertThat( serialiseAndDeserialise( ConstraintRule.constraintRule( RULE_ID,
@@ -248,6 +257,23 @@ public class SchemaRuleSerializationTest extends SchemaRuleTestBase
                 ConstraintDescriptorFactory.uniqueForLabel( LABEL_ID, PROPERTY_ID_1 ), RULE_ID_2, name );
     }
 
+    @Test( expected = IllegalArgumentException.class )
+    public void nodeKeyConstraintRuleNameMustNotContainNullCharacter() throws Exception
+    {
+        String name = "a\0b";
+        ConstraintRule.constraintRule( RULE_ID,
+                ConstraintDescriptorFactory.nodeKeyForLabel( LABEL_ID, PROPERTY_ID_1 ), RULE_ID_2, name );
+    }
+
+    @Test( expected = IllegalArgumentException.class )
+    public void nodeKeyConstraintRuleNameMustNotBeTheEmptyString() throws Exception
+    {
+        //noinspection RedundantStringConstructorCall
+        String name = new String( "" );
+        ConstraintRule.constraintRule( RULE_ID,
+                ConstraintDescriptorFactory.nodeKeyForLabel( LABEL_ID, PROPERTY_ID_1 ), RULE_ID_2, name );
+    }
+
     @Test
     public void shouldSerializeAndDeserializeIndexRules() throws MalformedSchemaRuleException
     {
@@ -275,6 +301,7 @@ public class SchemaRuleSerializationTest extends SchemaRuleTestBase
     {
         assertSerializeAndDeserializeConstraintRule( constraintExistsLabel );
         assertSerializeAndDeserializeConstraintRule( constraintUniqueLabel );
+        assertSerializeAndDeserializeConstraintRule( constraintNodeKeyLabel );
         assertSerializeAndDeserializeConstraintRule( constraintExistsRelType );
     }
 
@@ -340,6 +367,18 @@ public class SchemaRuleSerializationTest extends SchemaRuleTestBase
         assertParseUniqueConstraintRule( addNullByte( 3, "/////ww+AAAAAAAAAAJbAAAANwABAAAAAw==" ), "constraint_1" ); // empty name
         assertParseUniqueConstraintRule( addNullByte( 4, "/////ww+AAAAAAAAAAJbAAAANwABAAAAAw==" ), "constraint_1" ); // empty name
         assertParseUniqueConstraintRule( addNullByte( 5, "/////ww+AAAAAAAAAAJbAAAANwABAAAAAw==" ), "constraint_1" ); // empty name
+    }
+
+    @Test
+    public void shouldParseNodeKeyConstraintRule() throws Exception
+    {
+        assertParseNodeKeyConstraintRule( "/////ww/AAAAAAAAAAJbAAAANwABAAAAAw==", "constraint_1" );
+        assertParseNodeKeyConstraintRule( "/////ww/AAAAAAAAAAJbAAAANwABAAAAAwAAAAtjdXN0b21fbmFtZQ==", "custom_name" ); // named rule
+        assertParseNodeKeyConstraintRule( addNullByte( "/////ww/AAAAAAAAAAJbAAAANwABAAAAAw==" ), "constraint_1" ); // empty name
+        assertParseNodeKeyConstraintRule( addNullByte( 2, "/////ww/AAAAAAAAAAJbAAAANwABAAAAAw==" ), "constraint_1" ); // empty name
+        assertParseNodeKeyConstraintRule( addNullByte( 3, "/////ww/AAAAAAAAAAJbAAAANwABAAAAAw==" ), "constraint_1" ); // empty name
+        assertParseNodeKeyConstraintRule( addNullByte( 4, "/////ww/AAAAAAAAAAJbAAAANwABAAAAAw==" ), "constraint_1" ); // empty name
+        assertParseNodeKeyConstraintRule( addNullByte( 5, "/////ww/AAAAAAAAAAJbAAAANwABAAAAAw==" ), "constraint_1" ); // empty name
     }
 
     @Test
@@ -419,6 +458,28 @@ public class SchemaRuleSerializationTest extends SchemaRuleTestBase
         int labelId = 55;
         long ownedIndexId = 2;
         UniquenessConstraintDescriptor constraint = ConstraintDescriptorFactory.uniqueForLabel( labelId, propertyKey );
+        byte[] bytes = decodeBase64( serialized );
+//        System.out.println( encodeBase64( ConstraintRule.constraintRule( ruleId, constraint, ownedIndexId, "custom_name" ).serialize() ) );
+
+        // WHEN
+        ConstraintRule deserialized = assertConstraintRule( SchemaRuleSerialization.deserialize( ruleId, ByteBuffer.wrap( bytes ) ) );
+
+        // THEN
+        assertThat( deserialized.getId(), equalTo( ruleId ) );
+        assertThat( deserialized.getConstraintDescriptor(), equalTo( constraint ) );
+        assertThat( deserialized.schema(), equalTo( constraint.schema() ) );
+        assertThat( deserialized.getOwnedIndex(), equalTo( ownedIndexId ) );
+        assertThat( deserialized.getName(), is( name ) );
+    }
+
+    private void assertParseNodeKeyConstraintRule( String serialized, String name ) throws MalformedSchemaRuleException
+    {
+        // GIVEN
+        long ruleId = 1;
+        int propertyKey = 3;
+        int labelId = 55;
+        long ownedIndexId = 2;
+        NodeKeyConstraintDescriptor constraint = ConstraintDescriptorFactory.nodeKeyForLabel( labelId, propertyKey );
         byte[] bytes = decodeBase64( serialized );
 //        System.out.println( encodeBase64( ConstraintRule.constraintRule( ruleId, constraint, ownedIndexId, "custom_name" ).serialize() ) );
 
