@@ -2267,7 +2267,7 @@ public abstract class PageCacheTest<T extends PageCache> extends PageCacheTestSu
                 return super.beginPin( writeLock, filePageId, swapper );
             }
         };
-        ConfigurablePageCursorTracerSupplier cursorTracerSupplier =
+        ConfigurablePageCursorTracerSupplier<DefaultPageCursorTracer> cursorTracerSupplier =
                 new ConfigurablePageCursorTracerSupplier<>( pageCursorTracer );
         generateFileWithRecords( file( "a" ), recordCount, recordSize );
 
