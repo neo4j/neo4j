@@ -19,8 +19,8 @@
  */
 package org.neo4j.internal.cypher.acceptance
 
-import org.neo4j.cypher.{ExecutionEngineFunSuite, NewPlannerTestSupport}
-import org.neo4j.graphdb.Node
+import org.neo4j.cypher.{CypherExecutionException, ExecutionEngineFunSuite, NewPlannerTestSupport, SyntaxException}
+import org.neo4j.graphdb.{ConstraintViolationException, Node}
 import org.neo4j.kernel.GraphDatabaseQueryService
 import org.scalatest.matchers.{MatchResult, Matcher}
 
@@ -256,5 +256,4 @@ class CompositeIndexAcceptanceTest extends ExecutionEngineFunSuite with NewPlann
       }
     }
   }
-
 }

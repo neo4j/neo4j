@@ -35,6 +35,7 @@ import org.neo4j.kernel.api.schema_new.LabelSchemaDescriptor;
 import org.neo4j.kernel.api.schema_new.RelationTypeSchemaDescriptor;
 import org.neo4j.kernel.api.schema_new.SchemaBoundary;
 import org.neo4j.kernel.api.schema_new.SchemaComputer;
+import org.neo4j.kernel.api.schema_new.index.NewIndexDescriptorFactory;
 
 /**
  * This class represents the boundary of where new constraint descriptors are converted to old constraints. This class
@@ -109,11 +110,9 @@ public class ConstraintBoundary
             switch ( descriptor.type() )
             {
             case UNIQUE:
-                return new UniquenessConstraint(
-                    schema.getPropertyIds().length == 1 ?
-                        new NodePropertyDescriptor( schema.getLabelId(), schema.getPropertyId() ) :
-                        new NodeMultiPropertyDescriptor( schema.getLabelId(), schema.getPropertyIds() )
-                    );
+                return new UniquenessConstraint( SchemaBoundary
+                        .map( NewIndexDescriptorFactory.forLabel( schema.getLabelId(), schema.getPropertyIds() )
+                                .schema() ) );
 
             case EXISTS:
                 return new NodePropertyExistenceConstraint( new NodePropertyDescriptor(
