@@ -21,8 +21,6 @@ package org.neo4j.kernel.impl.api.operations;
 
 import java.util.Iterator;
 
-import org.neo4j.kernel.api.schema.NodePropertyDescriptor;
-import org.neo4j.kernel.api.schema.RelationshipPropertyDescriptor;
 import org.neo4j.kernel.api.Statement;
 import org.neo4j.kernel.api.constraints.NodePropertyConstraint;
 import org.neo4j.kernel.api.constraints.PropertyConstraint;
@@ -30,6 +28,7 @@ import org.neo4j.kernel.api.constraints.RelationshipPropertyConstraint;
 import org.neo4j.kernel.api.exceptions.index.IndexNotFoundKernelException;
 import org.neo4j.kernel.api.exceptions.schema.SchemaRuleNotFoundException;
 import org.neo4j.kernel.api.index.InternalIndexState;
+import org.neo4j.kernel.api.schema_new.LabelSchemaDescriptor;
 import org.neo4j.kernel.api.schema_new.SchemaDescriptor;
 import org.neo4j.kernel.api.schema_new.constaints.ConstraintDescriptor;
 import org.neo4j.kernel.api.schema_new.index.NewIndexDescriptor;
@@ -41,7 +40,7 @@ public interface SchemaReadOperations
     /**
      * Returns the descriptor for the given labelId and propertyKey.
      */
-    NewIndexDescriptor indexGetForLabelAndPropertyKey( KernelStatement state, NodePropertyDescriptor descriptor );
+    NewIndexDescriptor indexGetForLabelAndPropertyKey( KernelStatement state, LabelSchemaDescriptor descriptor );
 
     /**
      * Get all indexes for a label.

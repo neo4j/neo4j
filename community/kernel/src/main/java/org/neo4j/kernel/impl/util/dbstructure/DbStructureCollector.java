@@ -90,7 +90,7 @@ public class DbStructureCollector implements DbStructureVisitor
                 //TODO: Add support for composite indexes
                 return Iterators.map( uniquenessConstraint -> {
                     String label = labels.byIdOrFail( uniquenessConstraint.label() );
-                    String propertyKey = propertyKeys.byIdOrFail( uniquenessConstraint.descriptor().getPropertyKeyId() );
+                    String propertyKey = propertyKeys.byIdOrFail( uniquenessConstraint.descriptor().getPropertyId() );
                     return Pair.of( label, propertyKey );
                 }, uniquenessConstraints.iterator() );
             }
@@ -101,7 +101,7 @@ public class DbStructureCollector implements DbStructureVisitor
                 //TODO: Add support for composite indexes
                 return Iterators.map( uniquenessConstraint -> {
                     String label = labels.byIdOrFail( uniquenessConstraint.label() );
-                    String propertyKey = propertyKeys.byIdOrFail( uniquenessConstraint.descriptor().getPropertyKeyId() );
+                    String propertyKey = propertyKeys.byIdOrFail( uniquenessConstraint.descriptor().getPropertyId() );
                     return Pair.of( label, propertyKey );
                 }, nodePropertyExistenceConstraints.iterator() );
             }

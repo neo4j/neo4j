@@ -28,13 +28,11 @@ import org.neo4j.kernel.api.constraints.PropertyConstraint;
 import org.neo4j.kernel.api.constraints.RelationshipPropertyConstraint;
 import org.neo4j.kernel.api.constraints.RelationshipPropertyExistenceConstraint;
 import org.neo4j.kernel.api.constraints.UniquenessConstraint;
-import org.neo4j.kernel.api.schema.NodeMultiPropertyDescriptor;
-import org.neo4j.kernel.api.schema.NodePropertyDescriptor;
 import org.neo4j.kernel.api.schema.RelationshipPropertyDescriptor;
 import org.neo4j.kernel.api.schema_new.LabelSchemaDescriptor;
 import org.neo4j.kernel.api.schema_new.RelationTypeSchemaDescriptor;
-import org.neo4j.kernel.api.schema_new.SchemaBoundary;
 import org.neo4j.kernel.api.schema_new.SchemaComputer;
+import org.neo4j.kernel.api.schema_new.SchemaDescriptorFactory;
 
 /**
  * This class represents the boundary of where new constraint descriptors are converted to old constraints. This class
@@ -68,17 +66,17 @@ public class ConstraintBoundary
         if ( constraint instanceof UniquenessConstraint )
         {
             UniquenessConstraint c = (UniquenessConstraint) constraint;
-            return ConstraintDescriptorFactory.uniqueForSchema( SchemaBoundary.map( c.descriptor() ) );
+            return ConstraintDescriptorFactory.uniqueForSchema( c.descriptor() );
         }
         if ( constraint instanceof NodePropertyExistenceConstraint )
         {
             NodePropertyExistenceConstraint c = (NodePropertyExistenceConstraint) constraint;
-            return ConstraintDescriptorFactory.existsForSchema( SchemaBoundary.map( c.descriptor() ) );
+            return ConstraintDescriptorFactory.existsForSchema( c.descriptor() );
         }
         if ( constraint instanceof RelationshipPropertyExistenceConstraint )
         {
             RelationshipPropertyExistenceConstraint c = (RelationshipPropertyExistenceConstraint) constraint;
-            return ConstraintDescriptorFactory.existsForSchema( SchemaBoundary.map( c.descriptor() ) );
+            return ConstraintDescriptorFactory.existsForSchema( c.descriptor() );
         }
         throw new IllegalStateException( "Unknown constraint type "+ constraint.getClass().getSimpleName() );
     }
@@ -109,15 +107,10 @@ public class ConstraintBoundary
             switch ( descriptor.type() )
             {
             case UNIQUE:
-                return new UniquenessConstraint(
-                    schema.getPropertyIds().length == 1 ?
-                        new NodePropertyDescriptor( schema.getLabelId(), schema.getPropertyId() ) :
-                        new NodeMultiPropertyDescriptor( schema.getLabelId(), schema.getPropertyIds() )
-                    );
+                return new UniquenessConstraint( schema );
 
             case EXISTS:
-                return new NodePropertyExistenceConstraint( new NodePropertyDescriptor(
-                        schema.getLabelId(), schema.getPropertyId() ) );
+                return new NodePropertyExistenceConstraint( schema );
 
             default:
                 throw new UnsupportedOperationException( "Although we cannot get here, this has not been implemented." );

@@ -29,9 +29,6 @@ import org.neo4j.collection.primitive.PrimitiveIntIterator;
 import org.neo4j.collection.primitive.PrimitiveLongIterator;
 import org.neo4j.cursor.Cursor;
 import org.neo4j.graphdb.Direction;
-import org.neo4j.kernel.api.constraints.NodePropertyConstraint;
-import org.neo4j.kernel.api.constraints.PropertyConstraint;
-import org.neo4j.kernel.api.constraints.RelationshipPropertyConstraint;
 import org.neo4j.kernel.api.exceptions.EntityNotFoundException;
 import org.neo4j.kernel.api.exceptions.LabelNotFoundKernelException;
 import org.neo4j.kernel.api.exceptions.ProcedureException;
@@ -47,8 +44,8 @@ import org.neo4j.kernel.api.index.InternalIndexState;
 import org.neo4j.kernel.api.proc.ProcedureSignature;
 import org.neo4j.kernel.api.proc.QualifiedName;
 import org.neo4j.kernel.api.proc.UserFunctionSignature;
-import org.neo4j.kernel.api.schema.NodePropertyDescriptor;
 import org.neo4j.kernel.api.schema_new.IndexQuery;
+import org.neo4j.kernel.api.schema_new.LabelSchemaDescriptor;
 import org.neo4j.kernel.api.schema_new.SchemaDescriptor;
 import org.neo4j.kernel.api.schema_new.constaints.ConstraintDescriptor;
 import org.neo4j.kernel.api.schema_new.index.NewIndexDescriptor;
@@ -228,7 +225,7 @@ public interface ReadOperations
     //===========================================
 
     /** Returns the index rule for the given labelId and propertyKey. */
-    NewIndexDescriptor indexGetForLabelAndPropertyKey( NodePropertyDescriptor descriptor )
+    NewIndexDescriptor indexGetForLabelAndPropertyKey( LabelSchemaDescriptor descriptor )
             throws SchemaRuleNotFoundException;
 
     /** Get all indexes for a label. */
@@ -238,7 +235,7 @@ public interface ReadOperations
     Iterator<NewIndexDescriptor> indexesGetAll();
 
     /** Returns the constraint index for the given labelId and propertyKey. */
-    NewIndexDescriptor uniqueIndexGetForLabelAndPropertyKey( NodePropertyDescriptor descriptor )
+    NewIndexDescriptor uniqueIndexGetForLabelAndPropertyKey( LabelSchemaDescriptor descriptor )
             throws SchemaRuleNotFoundException, DuplicateSchemaRuleException;
 
     /** Get all constraint indexes for a label. */

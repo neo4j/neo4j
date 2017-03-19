@@ -76,11 +76,9 @@ import org.neo4j.kernel.api.proc.UserFunctionSignature;
 import org.neo4j.kernel.api.properties.DefinedProperty;
 import org.neo4j.kernel.api.properties.Property;
 import org.neo4j.kernel.api.query.ExecutingQuery;
-import org.neo4j.kernel.api.schema.NodePropertyDescriptor;
 import org.neo4j.kernel.api.schema_new.IndexQuery;
 import org.neo4j.kernel.api.schema_new.LabelSchemaDescriptor;
 import org.neo4j.kernel.api.schema_new.RelationTypeSchemaDescriptor;
-import org.neo4j.kernel.api.schema_new.SchemaBoundary;
 import org.neo4j.kernel.api.schema_new.SchemaDescriptor;
 import org.neo4j.kernel.api.schema_new.constaints.ConstraintDescriptor;
 import org.neo4j.kernel.api.schema_new.constaints.NodeExistenceConstraintDescriptor;
@@ -572,14 +570,14 @@ public class OperationsFacade
 
     // <SchemaRead>
     @Override
-    public NewIndexDescriptor indexGetForLabelAndPropertyKey( NodePropertyDescriptor descriptor )
+    public NewIndexDescriptor indexGetForLabelAndPropertyKey( LabelSchemaDescriptor descriptor )
             throws SchemaRuleNotFoundException
     {
         statement.assertOpen();
         NewIndexDescriptor indexDescriptor = schemaRead().indexGetForLabelAndPropertyKey( statement, descriptor );
         if ( indexDescriptor == null )
         {
-            throw new SchemaRuleNotFoundException( SchemaRule.Kind.INDEX_RULE, SchemaBoundary.map( descriptor ) );
+            throw new SchemaRuleNotFoundException( SchemaRule.Kind.INDEX_RULE, descriptor );
         }
         return indexDescriptor;
     }
@@ -599,7 +597,7 @@ public class OperationsFacade
     }
 
     @Override
-    public NewIndexDescriptor uniqueIndexGetForLabelAndPropertyKey( NodePropertyDescriptor descriptor )
+    public NewIndexDescriptor uniqueIndexGetForLabelAndPropertyKey( LabelSchemaDescriptor descriptor )
             throws SchemaRuleNotFoundException, DuplicateSchemaRuleException
 
     {
@@ -608,7 +606,7 @@ public class OperationsFacade
         while ( indexes.hasNext() )
         {
             NewIndexDescriptor index = indexes.next();
-            if ( index.schema().equals( SchemaBoundary.map( descriptor ) ) )
+            if ( index.schema().equals( descriptor ) )
             {
                 if ( null == result )
                 {
@@ -623,8 +621,7 @@ public class OperationsFacade
 
         if ( null == result )
         {
-            throw new SchemaRuleNotFoundException( SchemaRule.Kind.CONSTRAINT_INDEX_RULE,
-                    SchemaBoundary.map( descriptor ) );
+            throw new SchemaRuleNotFoundException( SchemaRule.Kind.CONSTRAINT_INDEX_RULE, descriptor );
         }
 
         return result;

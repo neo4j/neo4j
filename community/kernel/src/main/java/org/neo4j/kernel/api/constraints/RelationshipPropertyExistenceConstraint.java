@@ -58,6 +58,6 @@ public class RelationshipPropertyExistenceConstraint extends RelationshipPropert
     public String toString()
     {
         return String.format( "CONSTRAINT ON ()-[ n:relationshipType[%s] ]-() ASSERT exists(n.property[%s])",
-                descriptor.getRelationshipTypeId(), descriptor.propertyIdText() );
+                descriptor.getRelationshipTypeId(), descriptor.getPropertyId() );
     }
 }

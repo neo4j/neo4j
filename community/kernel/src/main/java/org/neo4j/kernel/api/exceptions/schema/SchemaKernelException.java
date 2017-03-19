@@ -19,10 +19,10 @@
  */
 package org.neo4j.kernel.api.exceptions.schema;
 
-import org.neo4j.kernel.api.schema.NodePropertyDescriptor;
 import org.neo4j.kernel.api.TokenNameLookup;
 import org.neo4j.kernel.api.exceptions.KernelException;
 import org.neo4j.kernel.api.exceptions.Status;
+import org.neo4j.kernel.api.schema_new.LabelSchemaDescriptor;
 
 /**
  * Signals that some constraint has been violated, for example a name containing invalid characters or length.
@@ -51,19 +51,19 @@ public abstract class SchemaKernelException extends KernelException
     }
 
     protected static String messageWithLabelAndPropertyName( TokenNameLookup tokenNameLookup, String formatString,
-            NodePropertyDescriptor descriptor )
+            LabelSchemaDescriptor descriptor )
     {
         if ( tokenNameLookup != null )
         {
             return String.format( formatString,
                     tokenNameLookup.labelGetName( descriptor.getLabelId() ),
-                    descriptor.propertyNameText( tokenNameLookup ) );
+                    tokenNameLookup.propertyKeyGetName( descriptor.getPropertyId() ) );
         }
         else
         {
             return String.format( formatString,
                     "label[" + descriptor.getLabelId() + "]",
-                    "key[" + descriptor.propertyIdText() + "]" );
+                    "key[" + descriptor.getPropertyId() + "]" );
         }
     }
 }

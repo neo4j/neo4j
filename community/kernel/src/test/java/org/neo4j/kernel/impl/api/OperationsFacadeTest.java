@@ -30,11 +30,11 @@ import org.mockito.Mockito;
 import org.mockito.runners.MockitoJUnitRunner;
 
 import org.neo4j.helpers.collection.Iterators;
-import org.neo4j.kernel.api.schema.NodePropertyDescriptor;
 import org.neo4j.kernel.api.TokenNameLookup;
 import org.neo4j.kernel.api.exceptions.schema.DuplicateSchemaRuleException;
 import org.neo4j.kernel.api.exceptions.schema.SchemaRuleNotFoundException;
-import org.neo4j.kernel.api.schema_new.SchemaBoundary;
+import org.neo4j.kernel.api.schema_new.LabelSchemaDescriptor;
+import org.neo4j.kernel.api.schema_new.SchemaDescriptorFactory;
 import org.neo4j.kernel.api.schema_new.index.NewIndexDescriptor;
 import org.neo4j.kernel.api.schema_new.index.NewIndexDescriptorFactory;
 import org.neo4j.kernel.impl.api.operations.SchemaReadOperations;
@@ -47,7 +47,7 @@ public class OperationsFacadeTest
 {
     private final String LABEL1 = "Label1";
     private final String PROP1 = "Prop1";
-    private final NodePropertyDescriptor descriptor = new NodePropertyDescriptor( 1, 2 );
+    private final LabelSchemaDescriptor descriptor = SchemaDescriptorFactory.forLabel( 1, 2 );
 
     @Mock
     private KernelStatement kernelStatement;
@@ -86,7 +86,7 @@ public class OperationsFacadeTest
             throws SchemaRuleNotFoundException, DuplicateSchemaRuleException
     {
         SchemaReadOperations readOperations = setupSchemaReadOperations();
-        NewIndexDescriptor index = NewIndexDescriptorFactory.forSchema( SchemaBoundary.map( descriptor ) );
+        NewIndexDescriptor index = NewIndexDescriptorFactory.forSchema( descriptor );
         Mockito.when( readOperations
                 .uniqueIndexesGetForLabel( Mockito.any( KernelStatement.class ), Mockito.eq( descriptor.getLabelId() ) ) )
                 .thenReturn( Iterators.iterator( index, index ) );
@@ -127,7 +127,7 @@ public class OperationsFacadeTest
     {
         TokenNameLookup tokenNameLookup = Mockito.mock( TokenNameLookup.class );
         Mockito.when( tokenNameLookup.labelGetName( descriptor.getLabelId() ) ).thenReturn( LABEL1 );
-        Mockito.when( tokenNameLookup.propertyKeyGetName( descriptor.getPropertyKeyId() ) ).thenReturn( PROP1 );
+        Mockito.when( tokenNameLookup.propertyKeyGetName( descriptor.getPropertyId() ) ).thenReturn( PROP1 );
         return tokenNameLookup;
     }
 

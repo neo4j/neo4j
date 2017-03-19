@@ -23,7 +23,6 @@ import org.neo4j.cypher.internal.compiler.v3_2.{IndexDescriptor => CypherIndexDe
 import org.neo4j.kernel.api.schema_new.{LabelSchemaDescriptor, SchemaDescriptorFactory}
 import org.neo4j.kernel.api.schema_new.index.NewIndexDescriptorFactory
 import org.neo4j.kernel.api.schema_new.index.{NewIndexDescriptor => KernelIndexDescriptor}
-import org.neo4j.kernel.api.schema.{NodeMultiPropertyDescriptor, NodePropertyDescriptor}
 
 trait IndexDescriptorCompatibility {
   implicit def cypherToKernel(index: CypherIndexDescriptor): KernelIndexDescriptor =
@@ -35,21 +34,12 @@ trait IndexDescriptorCompatibility {
   implicit def cypherToKernelSchema(index: CypherIndexDescriptor): LabelSchemaDescriptor =
     SchemaDescriptorFactory.forLabel(index.label.id, index.properties.map(_.id):_*)
 
-  implicit def toNodePropertyDescriptor(descriptor: CypherIndexDescriptor): NodePropertyDescriptor =
-    if (descriptor.isComposite)
-      new NodeMultiPropertyDescriptor(descriptor.label, CypherIndexDescriptor.toKernelEncode(descriptor.properties))
-    else
-      new NodePropertyDescriptor(descriptor.label, descriptor.property)
+  implicit def toLabelSchemaDescriptor(labelId: Int, propertyKeyIds: Seq[Int]): LabelSchemaDescriptor =
+      SchemaDescriptorFactory.forLabel(labelId, propertyKeyIds.toArray:_*)
 
-  implicit def toNodePropertyDescriptor(labelId: Int, propertyKeyIds: Seq[Int]): NodePropertyDescriptor =
-    if (propertyKeyIds.length > 1)
-      new NodeMultiPropertyDescriptor(labelId, propertyKeyIds.toArray)
-    else
-      new NodePropertyDescriptor(labelId, propertyKeyIds.head)
-
-  implicit def toNodePropertyDescriptor(tc: TransactionalContextWrapper, labelName: String, propertyKeys: Seq[String]): NodePropertyDescriptor = {
+  implicit def toLabelSchemaDescriptor(tc: TransactionalContextWrapper, labelName: String, propertyKeys: Seq[String]): LabelSchemaDescriptor = {
     val labelId: Int = tc.statement.readOperations().labelGetForName(labelName)
     val propertyKeyIds: Seq[Int] = propertyKeys.map(tc.statement.readOperations().propertyKeyGetForName(_))
-    toNodePropertyDescriptor(labelId, propertyKeyIds)
+    toLabelSchemaDescriptor(labelId, propertyKeyIds)
   }
 }

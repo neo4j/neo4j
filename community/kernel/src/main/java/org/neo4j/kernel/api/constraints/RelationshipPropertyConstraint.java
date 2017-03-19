@@ -20,7 +20,10 @@
 package org.neo4j.kernel.api.constraints;
 
 import org.neo4j.kernel.api.schema.RelationshipPropertyDescriptor;
+import org.neo4j.kernel.api.schema_new.LabelSchemaDescriptor;
 import org.neo4j.kernel.api.schema_new.RelationTypeSchemaDescriptor;
+import org.neo4j.kernel.api.schema_new.SchemaBoundary;
+import org.neo4j.kernel.api.schema_new.SchemaDescriptor;
 
 /**
  * Base class describing property constraint on relationships.
@@ -35,9 +38,9 @@ public abstract class RelationshipPropertyConstraint implements PropertyConstrai
     }
 
     @Override
-    public final RelationshipPropertyDescriptor descriptor()
+    public final SchemaDescriptor descriptor()
     {
-        return descriptor;
+        return SchemaBoundary.map( descriptor );
     }
 
     public boolean matches( RelationshipPropertyDescriptor descriptor )
@@ -49,7 +52,7 @@ public abstract class RelationshipPropertyConstraint implements PropertyConstrai
     {
         return other != null &&
                 descriptor.getRelationshipTypeId() == other.getRelTypeId() &&
-                descriptor.getPropertyKeyId() == other.getPropertyIds()[0];
+                descriptor.getPropertyId() == other.getPropertyIds()[0];
         // this is safe because we are replacing this class before introducing composite constraints
     }
 

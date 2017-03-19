@@ -39,8 +39,6 @@ import org.neo4j.kernel.api.exceptions.schema.UniquePropertyValueValidationExcep
 import org.neo4j.kernel.api.proc.CallableProcedure;
 import org.neo4j.kernel.api.proc.CallableUserAggregationFunction;
 import org.neo4j.kernel.api.proc.CallableUserFunction;
-import org.neo4j.kernel.api.schema_new.OrderedPropertyValues;
-import org.neo4j.kernel.api.schema_new.SchemaBoundary;
 import org.neo4j.kernel.api.schema_new.LabelSchemaDescriptor;
 import org.neo4j.kernel.api.schema_new.SchemaDescriptorFactory;
 import org.neo4j.kernel.api.schema_new.index.NewIndexDescriptor;
@@ -120,7 +118,7 @@ public class ConstraintIndexCreatorTest
         IndexProxy indexProxy = mock( IndexProxy.class );
         when( indexingService.getIndexProxy( 2468L ) ).thenReturn( indexProxy );
         IndexEntryConflictException cause = new IndexEntryConflictException( 2, 1, "a" );
-        doThrow( new IndexPopulationFailedKernelException( SchemaBoundary.map( descriptor ), "some index", cause ) )
+        doThrow( new IndexPopulationFailedKernelException( descriptor, "some index", cause ) )
                 .when( indexProxy ).awaitStoreScanCompleted();
         PropertyAccessor propertyAccessor = mock( PropertyAccessor.class );
 

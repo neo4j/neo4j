@@ -27,14 +27,13 @@ import java.util.concurrent.TimeUnit;
 import java.util.concurrent.atomic.AtomicBoolean;
 import java.util.concurrent.atomic.AtomicReference;
 
-import org.neo4j.kernel.api.schema.NodePropertyDescriptor;
 import org.neo4j.kernel.api.ReadOperations;
 import org.neo4j.kernel.api.exceptions.ProcedureException;
 import org.neo4j.kernel.api.exceptions.Status;
 import org.neo4j.kernel.api.exceptions.index.IndexNotFoundKernelException;
 import org.neo4j.kernel.api.exceptions.schema.SchemaRuleNotFoundException;
 import org.neo4j.kernel.api.index.InternalIndexState;
-import org.neo4j.kernel.api.schema_new.SchemaBoundary;
+import org.neo4j.kernel.api.schema_new.LabelSchemaDescriptor;
 import org.neo4j.kernel.api.schema_new.SchemaDescriptorFactory;
 import org.neo4j.kernel.api.schema_new.index.NewIndexDescriptor;
 import org.neo4j.kernel.api.schema_new.index.NewIndexDescriptorFactory;
@@ -62,10 +61,9 @@ public class AwaitIndexProcedureTest
     private static final TimeUnit timeoutUnits = TimeUnit.MILLISECONDS;
     private final ReadOperations operations = mock( ReadOperations.class );
     private final IndexProcedures procedure = new IndexProcedures( new StubKernelTransaction( operations ), null );
-    private final NodePropertyDescriptor descriptor = new NodePropertyDescriptor( 123, 456 );
-    private final NodePropertyDescriptor anyDescriptor = new NodePropertyDescriptor( 0, 0 );
-    private final NewIndexDescriptor anyIndex = NewIndexDescriptorFactory.forSchema( SchemaBoundary.map(
-            anyDescriptor ) );
+    private final LabelSchemaDescriptor descriptor = SchemaDescriptorFactory.forLabel( 123, 456 );
+    private final LabelSchemaDescriptor anyDescriptor = SchemaDescriptorFactory.forLabel( 0, 0 );
+    private final NewIndexDescriptor anyIndex = NewIndexDescriptorFactory.forSchema( anyDescriptor );
 
     @Test
     public void shouldThrowAnExceptionIfTheLabelDoesntExist() throws ProcedureException
@@ -104,7 +102,7 @@ public class AwaitIndexProcedureTest
             throws ProcedureException, SchemaRuleNotFoundException, IndexNotFoundKernelException
     {
         when( operations.labelGetForName( anyString() ) ).thenReturn( descriptor.getLabelId() );
-        when( operations.propertyKeyGetForName( anyString() ) ).thenReturn( descriptor.getPropertyKeyId() );
+        when( operations.propertyKeyGetForName( anyString() ) ).thenReturn( descriptor.getPropertyId() );
         when( operations.indexGetForLabelAndPropertyKey( anyObject() ) ).thenReturn( anyIndex );
         when( operations.indexGetState( any( NewIndexDescriptor.class ) ) ).thenReturn( ONLINE );
 

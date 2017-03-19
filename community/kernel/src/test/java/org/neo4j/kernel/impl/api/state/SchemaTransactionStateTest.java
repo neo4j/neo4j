@@ -33,7 +33,7 @@ import java.util.Map;
 
 import org.neo4j.helpers.collection.Iterators;
 import org.neo4j.kernel.api.index.InternalIndexState;
-import org.neo4j.kernel.api.schema.NodePropertyDescriptor;
+import org.neo4j.kernel.api.schema_new.LabelSchemaDescriptor;
 import org.neo4j.kernel.api.schema_new.SchemaDescriptorFactory;
 import org.neo4j.kernel.api.schema_new.index.NewIndexDescriptor;
 import org.neo4j.kernel.api.schema_new.index.NewIndexDescriptorFactory;
@@ -67,10 +67,12 @@ public class SchemaTransactionStateTest
     private static NewIndexDescriptor indexGetForLabelAndPropertyKey(
             StateHandlingStatementOperations txContext, KernelStatement state, int labelId, int propertyKey )
     {
-        return txContext.indexGetForLabelAndPropertyKey( state, new NodePropertyDescriptor( labelId, propertyKey ) );
+        LabelSchemaDescriptor schemaDescriptor = SchemaDescriptorFactory.forLabel( labelId, propertyKey );
+        return txContext.indexGetForLabelAndPropertyKey( state, schemaDescriptor );
     }
 
-    private static NewIndexDescriptor indexGetForLabelAndPropertyKey( StoreReadLayer store, int labelId, int propertyKey )
+    private static NewIndexDescriptor indexGetForLabelAndPropertyKey( StoreReadLayer store, int labelId,
+            int propertyKey )
     {
         return store.indexGetForLabelAndPropertyKey( SchemaDescriptorFactory.forLabel( labelId, propertyKey ) );
     }

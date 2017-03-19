@@ -19,8 +19,6 @@
  */
 package org.neo4j.kernel.api.schema_new;
 
-import org.neo4j.kernel.api.schema.NodeMultiPropertyDescriptor;
-import org.neo4j.kernel.api.schema.NodePropertyDescriptor;
 import org.neo4j.kernel.api.schema.RelationshipPropertyDescriptor;
 
 /**
@@ -33,20 +31,8 @@ public class SchemaBoundary
     {
     }
 
-    public static LabelSchemaDescriptor map( NodePropertyDescriptor descriptor )
-    {
-        return descriptor.isComposite() ?
-               SchemaDescriptorFactory.forLabel( descriptor.getLabelId(), descriptor.getPropertyKeyIds() ) :
-               SchemaDescriptorFactory.forLabel( descriptor.getLabelId(), descriptor.getPropertyKeyId() );
-    }
-
     public static RelationTypeSchemaDescriptor map( RelationshipPropertyDescriptor descriptor )
     {
-        return SchemaDescriptorFactory.forRelType( descriptor.getRelationshipTypeId(), descriptor.getPropertyKeyId() );
-    }
-
-    public static NodePropertyDescriptor map( LabelSchemaDescriptor schema )
-    {
-        return new NodeMultiPropertyDescriptor( schema.getLabelId(), schema.getPropertyIds() );
+        return SchemaDescriptorFactory.forRelType( descriptor.getRelationshipTypeId(), descriptor.getPropertyIds() );
     }
 }

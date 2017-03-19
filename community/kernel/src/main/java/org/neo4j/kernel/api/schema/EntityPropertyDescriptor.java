@@ -77,7 +77,7 @@ public abstract class EntityPropertyDescriptor implements Comparable<EntityPrope
     /**
      * @return property key token id this index is for.
      */
-    public int getPropertyKeyId()
+    public int getPropertyId()
     {
         return propertyKeyId;
     }
@@ -85,9 +85,9 @@ public abstract class EntityPropertyDescriptor implements Comparable<EntityPrope
     /**
      * @return property key token ids this descriptor is for.
      */
-    public int[] getPropertyKeyIds()
+    public int[] getPropertyIds()
     {
-        throw new UnsupportedOperationException( "Cannot get multiple property Ids of single property descriptor" );
+        return new int[]{propertyKeyId};
     }
 
     @Override

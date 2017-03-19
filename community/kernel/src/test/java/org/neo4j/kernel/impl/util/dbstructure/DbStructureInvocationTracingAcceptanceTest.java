@@ -45,8 +45,9 @@ import javax.tools.StandardLocation;
 import javax.tools.ToolProvider;
 
 import org.neo4j.helpers.collection.Visitable;
-import org.neo4j.kernel.api.schema.NodePropertyDescriptor;
 import org.neo4j.kernel.api.constraints.UniquenessConstraint;
+import org.neo4j.kernel.api.schema_new.LabelSchemaDescriptor;
+import org.neo4j.kernel.api.schema_new.SchemaDescriptorFactory;
 import org.neo4j.kernel.api.schema_new.index.NewIndexDescriptorFactory;
 
 import static org.junit.Assert.assertEquals;
@@ -133,7 +134,8 @@ public class DbStructureInvocationTracingAcceptanceTest
         visitor.apply( null ).visitRelationshipType( 1, "REJECTS" );
         visitor.apply( null ).visitIndex( NewIndexDescriptorFactory.forLabel( 0, 1 ), ":Person(age)", 0.5d, 1L );
         visitor.apply( null ).visitUniqueIndex( NewIndexDescriptorFactory.forLabel( 0, 0 ), ":Person(name)", 0.5d, 1L );
-        visitor.apply( null ).visitUniqueConstraint( new UniquenessConstraint( new NodePropertyDescriptor( 1, 0) ), ":Party(name)" );
+        visitor.apply( null ).visitUniqueConstraint( new UniquenessConstraint(
+                SchemaDescriptorFactory.forLabel( 1, 0 ) ), ":Party(name)" );
         visitor.apply( null ).visitAllNodesCount( 55 );
         visitor.apply( null ).visitNodeCount( 0, "Person", 50 );
         visitor.apply( null ).visitNodeCount( 0, "Party", 5 );

@@ -49,7 +49,6 @@ import org.neo4j.kernel.api.constraints.{NodePropertyExistenceConstraint, Relati
 import org.neo4j.kernel.api.exceptions.schema.{AlreadyConstrainedException, AlreadyIndexedException}
 import org.neo4j.kernel.api.index.InternalIndexState
 import org.neo4j.kernel.api.schema_new.IndexQuery
-import org.neo4j.kernel.api.schema.NodePropertyDescriptor
 import org.neo4j.kernel.api.schema_new.SchemaDescriptorFactory
 import org.neo4j.kernel.api.schema_new.constaints.{ConstraintBoundary, ConstraintDescriptorFactory}
 import org.neo4j.kernel.api.schema_new.index.NewIndexDescriptorFactory
@@ -458,7 +457,7 @@ final class TransactionBoundQueryContext(tc: TransactionalContextWrapper)
   } catch {
     case _: AlreadyIndexedException =>
 
-      val indexDescriptor = tc.statement.readOperations().indexGetForLabelAndPropertyKey(new NodePropertyDescriptor(labelId, propertyKeyId))
+      val indexDescriptor = tc.statement.readOperations().indexGetForLabelAndPropertyKey( SchemaDescriptorFactory.forLabel(labelId, propertyKeyId))
 
       if (tc.statement.readOperations().indexGetState(indexDescriptor) == InternalIndexState.FAILED)
         throw new FailedIndexException(indexDescriptor.userDescription(tokenNameLookup))

@@ -19,9 +19,8 @@
  */
 package org.neo4j.kernel.api.constraints;
 
-import org.neo4j.kernel.api.schema.NodePropertyDescriptor;
 import org.neo4j.kernel.api.TokenNameLookup;
-import org.neo4j.kernel.api.schema_new.SchemaBoundary;
+import org.neo4j.kernel.api.schema_new.LabelSchemaDescriptor;
 import org.neo4j.kernel.api.schema_new.index.NewIndexDescriptor;
 import org.neo4j.kernel.api.schema_new.index.NewIndexDescriptorFactory;
 
@@ -30,14 +29,14 @@ import org.neo4j.kernel.api.schema_new.index.NewIndexDescriptorFactory;
  */
 public class UniquenessConstraint extends NodePropertyConstraint
 {
-    public UniquenessConstraint( NodePropertyDescriptor descriptor )
+    public UniquenessConstraint( LabelSchemaDescriptor descriptor )
     {
         super( descriptor );
     }
 
     public NewIndexDescriptor indexDescriptor()
     {
-        return NewIndexDescriptorFactory.forSchema( SchemaBoundary.map( descriptor ) );
+        return NewIndexDescriptorFactory.forSchema( descriptor );
     }
 
     @Override
@@ -57,14 +56,15 @@ public class UniquenessConstraint extends NodePropertyConstraint
     {
         String labelName = labelName( tokenNameLookup );
         String boundIdentifier = labelName.toLowerCase();
-        return String.format( "CONSTRAINT ON ( %s:%s ) ASSERT %s.%s IS UNIQUE",
-                boundIdentifier, labelName, boundIdentifier, descriptor.propertyNameText( tokenNameLookup ) );
+        return String
+                .format( "CONSTRAINT ON ( %s:%s ) ASSERT %s.%s IS UNIQUE", boundIdentifier, labelName, boundIdentifier,
+                        tokenNameLookup.propertyKeyGetName( descriptor.getPropertyId() ) );
     }
 
     @Override
     public String toString()
     {
-        return String.format( "CONSTRAINT ON ( n:label[%s] ) ASSERT n.property[%s] IS UNIQUE",
-                descriptor.getLabelId(), descriptor.propertyIdText() );
+        return String.format( "CONSTRAINT ON ( n:label[%d] ) ASSERT n.property[%d] IS UNIQUE",
+                descriptor.getLabelId(), descriptor.getPropertyId() );
     }
 }

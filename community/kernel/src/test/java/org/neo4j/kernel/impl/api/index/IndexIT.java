@@ -32,8 +32,7 @@ import org.neo4j.kernel.api.SchemaWriteOperations;
 import org.neo4j.kernel.api.Statement;
 import org.neo4j.kernel.api.TokenWriteOperations;
 import org.neo4j.kernel.api.exceptions.schema.SchemaKernelException;
-import org.neo4j.kernel.api.schema.NodePropertyDescriptor;
-import org.neo4j.kernel.api.schema_new.SchemaBoundary;
+import org.neo4j.kernel.api.schema_new.LabelSchemaDescriptor;
 import org.neo4j.kernel.api.schema_new.SchemaDescriptorFactory;
 import org.neo4j.kernel.api.security.AnonymousContext;
 import org.neo4j.kernel.api.security.SecurityContext;
@@ -58,7 +57,7 @@ public class IndexIT extends KernelIntegrationTest
 
     private int labelId;
     private int propertyKeyId;
-    private NodePropertyDescriptor descriptor;
+    private LabelSchemaDescriptor descriptor;
 
     @Before
     public void createLabelAndProperty() throws Exception
@@ -66,7 +65,7 @@ public class IndexIT extends KernelIntegrationTest
         TokenWriteOperations tokenWrites = tokenWriteOperationsInNewTransaction();
         labelId = tokenWrites.labelGetOrCreateForName( LABEL );
         propertyKeyId = tokenWrites.propertyKeyGetOrCreateForName( PROPERTY_KEY );
-        descriptor = new NodePropertyDescriptor( labelId, propertyKeyId );
+        descriptor = SchemaDescriptorFactory.forLabel( labelId, propertyKeyId );
         commit();
     }
 
@@ -77,7 +76,7 @@ public class IndexIT extends KernelIntegrationTest
         SchemaWriteOperations schemaWriteOperations = schemaWriteOperationsInNewTransaction();
 
         // WHEN
-        NewIndexDescriptor expectedRule = schemaWriteOperations.indexCreate( SchemaBoundary.map( descriptor ) );
+        NewIndexDescriptor expectedRule = schemaWriteOperations.indexCreate( descriptor );
         commit();
 
         // THEN
@@ -92,7 +91,7 @@ public class IndexIT extends KernelIntegrationTest
     {
         // GIVEN
         SchemaWriteOperations schemaWriteOperations = schemaWriteOperationsInNewTransaction();
-        NewIndexDescriptor existingRule = schemaWriteOperations.indexCreate( SchemaBoundary.map( descriptor ) );
+        NewIndexDescriptor existingRule = schemaWriteOperations.indexCreate( descriptor );
         commit();
 
         // WHEN
@@ -113,7 +112,7 @@ public class IndexIT extends KernelIntegrationTest
         SchemaWriteOperations schemaWriteOperations = schemaWriteOperationsInNewTransaction();
 
         // WHEN
-        schemaWriteOperations.indexCreate( SchemaBoundary.map( descriptor ) );
+        schemaWriteOperations.indexCreate( descriptor );
         // don't mark as success
         rollback();
 
@@ -129,7 +128,8 @@ public class IndexIT extends KernelIntegrationTest
         // given
         PropertyAccessor propertyAccessor = mock( PropertyAccessor.class );
         ConstraintIndexCreator creator = new ConstraintIndexCreator( () -> kernel, indexingService, propertyAccessor, false );
-        creator.createConstraintIndex( SchemaBoundary.map( descriptor ) );
+
+        creator.createConstraintIndex( descriptor );
 
         // when
         restartDb();
@@ -147,7 +147,7 @@ public class IndexIT extends KernelIntegrationTest
         NewIndexDescriptor index;
         {
             SchemaWriteOperations statement = schemaWriteOperationsInNewTransaction();
-            index = statement.indexCreate( SchemaBoundary.map( descriptor ) );
+            index = statement.indexCreate( descriptor );
             commit();
         }
         {
@@ -177,7 +177,7 @@ public class IndexIT extends KernelIntegrationTest
         // given
         {
             SchemaWriteOperations statement = schemaWriteOperationsInNewTransaction();
-            statement.uniquePropertyConstraintCreate( SchemaBoundary.map( descriptor ) );
+            statement.uniquePropertyConstraintCreate( descriptor );
             commit();
         }
 
@@ -185,7 +185,7 @@ public class IndexIT extends KernelIntegrationTest
         try
         {
             SchemaWriteOperations statement = schemaWriteOperationsInNewTransaction();
-            statement.indexCreate( SchemaBoundary.map( descriptor ) );
+            statement.indexCreate( descriptor );
             commit();
 
             fail( "expected exception" );
@@ -245,7 +245,7 @@ public class IndexIT extends KernelIntegrationTest
     {
         // given
         SchemaWriteOperations schemaWriteOperations = schemaWriteOperationsInNewTransaction();
-        schemaWriteOperations.uniquePropertyConstraintCreate( SchemaBoundary.map( descriptor ) );
+        schemaWriteOperations.uniquePropertyConstraintCreate( descriptor );
         commit();
 
         // then/when
@@ -259,7 +259,7 @@ public class IndexIT extends KernelIntegrationTest
     {
         // given
         SchemaWriteOperations schemaWriteOperations = schemaWriteOperationsInNewTransaction();
-        schemaWriteOperations.indexCreate( SchemaBoundary.map( descriptor ) );
+        schemaWriteOperations.indexCreate( descriptor );
         commit();
 
         // then/when

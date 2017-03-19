@@ -26,7 +26,7 @@ import org.neo4j.kernel.api.exceptions.ProcedureException;
 import org.neo4j.kernel.api.exceptions.Status;
 import org.neo4j.kernel.api.exceptions.index.IndexNotFoundKernelException;
 import org.neo4j.kernel.api.exceptions.schema.SchemaRuleNotFoundException;
-import org.neo4j.kernel.api.schema.NodePropertyDescriptor;
+import org.neo4j.kernel.api.schema_new.LabelSchemaDescriptor;
 import org.neo4j.kernel.api.schema_new.SchemaDescriptorFactory;
 import org.neo4j.kernel.api.schema_new.index.NewIndexDescriptor;
 import org.neo4j.kernel.api.schema_new.index.NewIndexDescriptorFactory;
@@ -94,7 +94,7 @@ public class ResampleIndexProcedureTest
 
         procedure.resampleIndex( ":Person(name)" );
 
-        verify( operations ).indexGetForLabelAndPropertyKey( new NodePropertyDescriptor( 123, 456 ) );
+        verify( operations ).indexGetForLabelAndPropertyKey( SchemaDescriptorFactory.forLabel( 123, 456 ) );
     }
 
     @Test

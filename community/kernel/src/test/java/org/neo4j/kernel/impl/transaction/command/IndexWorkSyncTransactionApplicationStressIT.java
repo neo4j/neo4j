@@ -34,7 +34,6 @@ import org.neo4j.helpers.collection.Visitor;
 import org.neo4j.kernel.api.index.InternalIndexState;
 import org.neo4j.kernel.api.schema_new.IndexQuery;
 import org.neo4j.kernel.api.schema_new.LabelSchemaDescriptor;
-import org.neo4j.kernel.api.schema_new.SchemaBoundary;
 import org.neo4j.kernel.api.schema_new.SchemaDescriptorFactory;
 import org.neo4j.kernel.api.txstate.TransactionState;
 import org.neo4j.kernel.impl.api.TransactionQueue;
@@ -95,7 +94,7 @@ public class IndexWorkSyncTransactionApplicationStressIT
                 .indexProvider( new InMemoryIndexProvider() )
                 .build();
         storageEngine.apply( tx( asList( createIndexRule(
-                InMemoryIndexProviderFactory.PROVIDER_DESCRIPTOR, 1, SchemaBoundary.map( descriptor ) ) ) ),
+                InMemoryIndexProviderFactory.PROVIDER_DESCRIPTOR, 1, descriptor ) ) ),
                 TransactionApplicationMode.EXTERNAL );
         Dependencies dependencies = new Dependencies();
         storageEngine.satisfyDependencies( dependencies );

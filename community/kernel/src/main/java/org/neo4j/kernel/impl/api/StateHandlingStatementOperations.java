@@ -60,12 +60,10 @@ import org.neo4j.kernel.api.legacyindex.AutoIndexing;
 import org.neo4j.kernel.api.properties.DefinedProperty;
 import org.neo4j.kernel.api.properties.Property;
 import org.neo4j.kernel.api.properties.PropertyKeyIdIterator;
-import org.neo4j.kernel.api.schema.NodePropertyDescriptor;
 import org.neo4j.kernel.api.schema_new.IndexQuery;
 import org.neo4j.kernel.api.schema_new.LabelSchemaDescriptor;
 import org.neo4j.kernel.api.schema_new.OrderedPropertyValues;
 import org.neo4j.kernel.api.schema_new.RelationTypeSchemaDescriptor;
-import org.neo4j.kernel.api.schema_new.SchemaBoundary;
 import org.neo4j.kernel.api.schema_new.SchemaDescriptor;
 import org.neo4j.kernel.api.schema_new.SchemaUtil;
 import org.neo4j.kernel.api.schema_new.constaints.ConstraintDescriptor;
@@ -711,12 +709,7 @@ public class StateHandlingStatementOperations implements
     }
 
     @Override
-    public NewIndexDescriptor indexGetForLabelAndPropertyKey( KernelStatement state, NodePropertyDescriptor descriptor )
-    {
-        return indexGetForLabelAndPropertyKey( state, SchemaBoundary.map( descriptor ) );
-    }
-
-    private NewIndexDescriptor indexGetForLabelAndPropertyKey( KernelStatement state, LabelSchemaDescriptor descriptor )
+    public NewIndexDescriptor indexGetForLabelAndPropertyKey( KernelStatement state, LabelSchemaDescriptor descriptor )
     {
         NewIndexDescriptor indexDescriptor = storeLayer.indexGetForLabelAndPropertyKey( descriptor );
         Iterator<NewIndexDescriptor> rules = iterator( indexDescriptor );
