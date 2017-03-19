@@ -392,19 +392,19 @@ abstract class MuninnPageCursor extends PageCursor
      */
     private long getBoundedPointer( int offset, int size )
     {
+        long p = pointer;
+        long can = p + offset;
         if ( boundsCheck )
         {
-            long can = pointer + offset;
-            long lim = pointer + pageSize - size;
-            long ref = Math.min( can, lim );
-            ref = Math.max( ref, pointer );
-            outOfBounds |= ref != can | lim < pointer;
-            return ref;
+            if ( can + size > p + pageSize || can < p )
+            {
+                outOfBounds = true;
+                // Return the victim page when we are out of bounds, since at this point we can't tell if the pointer
+                // will be used for reading or writing.
+                return victimPage;
+            }
         }
-        else
-        {
-            return pointer + offset;
-        }
+        return can;
     }
 
     /**
@@ -415,15 +415,19 @@ abstract class MuninnPageCursor extends PageCursor
      */
     private long nextBoundedPointer( int size )
     {
+        int offset = this.offset;
+        long can = pointer + offset;
         if ( boundsCheck )
         {
-            outOfBounds |= offset + size > pageSize;
-            return outOfBounds? pointer : pointer + offset;
+            if ( offset + size > pageSize )
+            {
+                outOfBounds = true;
+                // Return the victim page when we are out of bounds, since at this point we can't tell if the pointer
+                // will be used for reading or writing.
+                return victimPage;
+            }
         }
-        else
-        {
-            return pointer + offset;
-        }
+        return can;
     }
 
     @Override
