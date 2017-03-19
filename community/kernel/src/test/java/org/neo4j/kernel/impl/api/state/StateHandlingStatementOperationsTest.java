@@ -36,6 +36,7 @@ import org.neo4j.kernel.api.constraints.PropertyConstraint;
 import org.neo4j.kernel.api.constraints.UniquenessConstraint;
 import org.neo4j.kernel.api.exceptions.index.IndexNotFoundKernelException;
 import org.neo4j.kernel.api.index.IndexDescriptor;
+import org.neo4j.kernel.api.properties.Property;
 import org.neo4j.kernel.api.txstate.TransactionState;
 import org.neo4j.kernel.impl.api.IndexReaderFactory;
 import org.neo4j.kernel.impl.api.KernelStatement;
@@ -48,12 +49,15 @@ import org.neo4j.kernel.impl.util.Cursors;
 import org.neo4j.kernel.impl.util.diffsets.DiffSets;
 import org.neo4j.storageengine.api.LabelItem;
 import org.neo4j.storageengine.api.NodeItem;
+import org.neo4j.storageengine.api.PropertyItem;
+import org.neo4j.storageengine.api.RelationshipItem;
 import org.neo4j.storageengine.api.StorageStatement;
 import org.neo4j.storageengine.api.StoreReadLayer;
 import org.neo4j.storageengine.api.schema.IndexReader;
 import org.neo4j.storageengine.api.schema.LabelScanReader;
 
 import static org.junit.Assert.assertEquals;
+import static org.junit.Assert.assertFalse;
 import static org.junit.Assert.fail;
 import static org.mockito.Matchers.any;
 import static org.mockito.Matchers.anyInt;
@@ -420,6 +424,74 @@ public class StateHandlingStatementOperationsTest
             }
         }
         verify( indexReader ).close();
+    }
+
+    @Test
+    public void shouldNotRecordNodeSetPropertyOnSameValue() throws Exception
+    {
+        // GIVEN
+        int propertyKeyId = 5;
+        long nodeId = 0;
+        String value = "The value";
+        KernelStatement kernelStatement = mock( KernelStatement.class );
+        StoreStatement storeStatement = mock( StoreStatement.class );
+        Cursor<NodeItem> ourNode = nodeCursorWithProperty( propertyKeyId, value );
+        when( storeStatement.acquireSingleNodeCursor( nodeId ) ).thenReturn( ourNode );
+        when( kernelStatement.getStoreStatement() ).thenReturn( storeStatement );
+        StateHandlingStatementOperations operations = newTxStateOps( mock( StoreReadLayer.class ) );
+
+        // WHEN
+        operations.nodeSetProperty( kernelStatement, nodeId, Property.stringProperty( propertyKeyId, value ) );
+
+        // THEN
+        assertFalse( kernelStatement.hasTxStateWithChanges() );
+    }
+
+    @Test
+    public void shouldNotRecordRelationshipSetPropertyOnSameValue() throws Exception
+    {
+        // GIVEN
+        int propertyKeyId = 5;
+        long relationshipId = 0;
+        String value = "The value";
+        KernelStatement kernelStatement = mock( KernelStatement.class );
+        StoreStatement storeStatement = mock( StoreStatement.class );
+        Cursor<RelationshipItem> ourRelationship = relationshipCursorWithProperty( propertyKeyId, value );
+        when( storeStatement.acquireSingleRelationshipCursor( relationshipId ) ).thenReturn( ourRelationship );
+        when( kernelStatement.getStoreStatement() ).thenReturn( storeStatement );
+        StateHandlingStatementOperations operations = newTxStateOps( mock( StoreReadLayer.class ) );
+
+        // WHEN
+        operations.relationshipSetProperty( kernelStatement, relationshipId,
+                Property.stringProperty( propertyKeyId, value ) );
+
+        // THEN
+        assertFalse( kernelStatement.hasTxStateWithChanges() );
+    }
+
+    private Cursor<NodeItem> nodeCursorWithProperty( int propertyKeyId, String value )
+    {
+        Cursor<PropertyItem> propertyCursor = propertyCursor( propertyKeyId, value );
+        NodeItem item = mock( NodeItem.class );
+        when( item.property( propertyKeyId ) ).thenReturn( propertyCursor );
+        return Cursors.cursor( item );
+    }
+
+    private Cursor<RelationshipItem> relationshipCursorWithProperty( int propertyKeyId, String value )
+    {
+        Cursor<PropertyItem> propertyCursor = propertyCursor( propertyKeyId, value );
+        RelationshipItem item = mock( RelationshipItem.class );
+        when( item.property( propertyKeyId ) ).thenReturn( propertyCursor );
+        return Cursors.cursor( item );
+    }
+
+    private Cursor<PropertyItem> propertyCursor( int propertyKeyId, String value )
+    {
+        PropertyItem propertyItem = mock( PropertyItem.class );
+        when( propertyItem.propertyKeyId() ).thenReturn( propertyKeyId );
+        when( propertyItem.value() ).thenReturn( value );
+        Cursor<PropertyItem> propertyCursor = Cursors.cursor( propertyItem );
+        return propertyCursor;
     }
 
     private StateHandlingStatementOperations newTxStateOps( StoreReadLayer delegate )
