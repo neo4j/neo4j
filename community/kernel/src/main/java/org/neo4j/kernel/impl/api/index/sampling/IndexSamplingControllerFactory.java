@@ -96,11 +96,11 @@ public class IndexSamplingControllerFactory
                 boolean result = storeView.indexSample( descriptor, register ).readSecond() == 0;
                 if ( result )
                 {
-                    log.warn( "Recovering index sampling for index %s", descriptor.userDescription( tokenNameLookup ) );
+                    log.debug( "Recovering index sampling for index %s",
+                            descriptor.userDescription( tokenNameLookup ) );
                 }
                 return result;
             }
         };
     }
-
 }
