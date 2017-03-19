@@ -24,6 +24,7 @@ import java.util.Iterator;
 import org.neo4j.collection.primitive.Primitive;
 import org.neo4j.collection.primitive.PrimitiveIntSet;
 import org.neo4j.kernel.api.schema_new.LabelSchemaDescriptor;
+import org.neo4j.kernel.api.schema_new.LabelSchemaSupplier;
 import org.neo4j.kernel.api.schema_new.SchemaDescriptor;
 import org.neo4j.kernel.impl.api.KernelStatement;
 import org.neo4j.kernel.impl.api.operations.EntityReadOperations;
@@ -31,9 +32,9 @@ import org.neo4j.storageengine.api.NodeItem;
 
 /**
  * This class holds functionality to match LabelSchemaDescriptors to nodes
- * @param <SUPPLIER> the type to match. Must implement LabelSchemaDescriptor.Supplier
+ * @param <SUPPLIER> the type to match. Must implement LabelSchemaSupplier
  */
-public class NodeSchemaMatcher<SUPPLIER extends LabelSchemaDescriptor.Supplier>
+public class NodeSchemaMatcher<SUPPLIER extends LabelSchemaSupplier>
 {
     private final EntityReadOperations readOps;
 

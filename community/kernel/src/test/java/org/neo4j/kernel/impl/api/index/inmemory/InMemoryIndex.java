@@ -127,7 +127,8 @@ class InMemoryIndex
         }
 
         @Override
-        public void add( Collection<IndexEntryUpdate> updates ) throws IndexEntryConflictException, IOException
+        public void add( Collection<? extends IndexEntryUpdate<?>> updates )
+                throws IndexEntryConflictException, IOException
         {
             for ( IndexEntryUpdate update : updates )
             {
@@ -136,7 +137,7 @@ class InMemoryIndex
         }
 
         @Override
-        public void add( IndexEntryUpdate update ) throws IndexEntryConflictException, IOException
+        public void add( IndexEntryUpdate<?> update ) throws IndexEntryConflictException, IOException
         {
             InMemoryIndex.this.add( update.getEntityId(), update.values(), false );
         }

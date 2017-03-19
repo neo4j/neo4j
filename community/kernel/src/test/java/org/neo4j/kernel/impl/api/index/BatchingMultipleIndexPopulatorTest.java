@@ -254,7 +254,7 @@ public class BatchingMultipleIndexPopulatorTest
                     NullLogProvider.getInstance() );
 
             populator = addPopulator( batchingPopulator, index1 );
-            List<IndexEntryUpdate> expected = forUpdates( index1, update1, update2 );
+            List<IndexEntryUpdate<NewIndexDescriptor>> expected = forUpdates( index1, update1, update2 );
             doThrow( batchFlushError ).when( populator ).add( expected );
 
             batchingPopulator.indexAllNodes().run();
@@ -296,14 +296,14 @@ public class BatchingMultipleIndexPopulatorTest
         verify( populator, never() ).add( forUpdates( index1, update5 ) );
     }
 
-    private List<IndexEntryUpdate> forUpdates( NewIndexDescriptor index, NodeUpdates... updates )
+    private List<IndexEntryUpdate<NewIndexDescriptor>> forUpdates( NewIndexDescriptor index, NodeUpdates... updates )
     {
         return Iterables.asList(
                 Iterables.concat(
-                    Iterables.map(
-                            update -> update.forIndexes( Iterables.asIterable( index.schema() ) ),
-                            Arrays.asList( updates )
-                    ) ) );
+                        Iterables.map(
+                                update -> update.forIndexKeys( Iterables.asIterable( index ) ),
+                                Arrays.asList( updates )
+                        ) ) );
     }
 
     private NodeUpdates nodeUpdates( int nodeId, int propertyId, String propertyValue, long...

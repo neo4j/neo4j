@@ -38,6 +38,7 @@ import static org.hamcrest.Matchers.containsInAnyOrder;
 import static org.hamcrest.Matchers.emptyIterable;
 import static org.junit.Assert.fail;
 
+@SuppressWarnings( "unchecked" )
 public class NodeUpdatesTest
 {
     private static final long nodeId = 0;
@@ -63,7 +64,7 @@ public class NodeUpdatesTest
         NodeUpdates updates = NodeUpdates.forNode( nodeId ).build();
 
         // Then
-        assertThat( updates.forIndexes( indexes, assertNoLoading() ), emptyIterable() );
+        assertThat( updates.forIndexKeys( indexes, assertNoLoading() ), emptyIterable() );
     }
 
     @Test
@@ -74,7 +75,7 @@ public class NodeUpdatesTest
                 .buildWithExistingProperties( property1, property2 );
 
         // Then
-        assertThat( updates.forIndexes( indexes, assertNoLoading() ), emptyIterable() );
+        assertThat( updates.forIndexKeys( indexes, assertNoLoading() ), emptyIterable() );
     }
 
     @Test
@@ -84,7 +85,7 @@ public class NodeUpdatesTest
         NodeUpdates updates = NodeUpdates.forNode( nodeId, empty, labels ).build();
 
         // Then
-        assertThat( updates.forIndexes( indexes, propertyLoader() ), emptyIterable() );
+        assertThat( updates.forIndexKeys( indexes, propertyLoader() ), emptyIterable() );
     }
 
     @Test
@@ -95,7 +96,7 @@ public class NodeUpdatesTest
 
         // Then
         assertThat(
-                updates.forIndexes( indexes, propertyLoader( property1 ) ),
+                updates.forIndexKeys( indexes, propertyLoader( property1 ) ),
                 containsInAnyOrder(
                     IndexEntryUpdate.add( nodeId, index1, property1.value() )
                 ) );
@@ -110,7 +111,7 @@ public class NodeUpdatesTest
 
         // Then
         assertThat(
-                updates.forIndexes( indexes, propertyLoader( property1, property2 ) ),
+                updates.forIndexKeys( indexes, propertyLoader( property1, property2 ) ),
                 containsInAnyOrder(
                         IndexEntryUpdate.add( nodeId, index1, property1.value() ),
                         IndexEntryUpdate.add( nodeId, index2, property2.value() ),
@@ -125,7 +126,7 @@ public class NodeUpdatesTest
         NodeUpdates updates = NodeUpdates.forNode( nodeId, labels, empty ).build();
 
         // Then
-        assertThat( updates.forIndexes( indexes, propertyLoader() ), emptyIterable() );
+        assertThat( updates.forIndexKeys( indexes, propertyLoader() ), emptyIterable() );
     }
 
     @Test
@@ -137,7 +138,7 @@ public class NodeUpdatesTest
 
         // Then
         assertThat(
-                updates.forIndexes( indexes, propertyLoader( property1 ) ),
+                updates.forIndexKeys( indexes, propertyLoader( property1 ) ),
                 containsInAnyOrder(
                         IndexEntryUpdate.remove( nodeId, index1, property1.value() )
                 ) );
@@ -152,7 +153,7 @@ public class NodeUpdatesTest
 
         // Then
         assertThat(
-                updates.forIndexes( indexes, propertyLoader( property1, property2 ) ),
+                updates.forIndexKeys( indexes, propertyLoader( property1, property2 ) ),
                 containsInAnyOrder(
                         IndexEntryUpdate.remove( nodeId, index1, property1.value() ),
                         IndexEntryUpdate.remove( nodeId, index2, property2.value() ),
@@ -169,7 +170,7 @@ public class NodeUpdatesTest
                 .build();
 
         // Then
-        assertThat( updates.forIndexes( indexes, assertNoLoading() ), emptyIterable() );
+        assertThat( updates.forIndexKeys( indexes, assertNoLoading() ), emptyIterable() );
     }
 
     @Test
@@ -182,7 +183,7 @@ public class NodeUpdatesTest
 
         // Then
         assertThat(
-                updates.forIndexes( indexes, propertyLoader() ),
+                updates.forIndexKeys( indexes, propertyLoader() ),
                 containsInAnyOrder(
                         IndexEntryUpdate.add( nodeId, index1, property1.value() )
                 ) );
@@ -199,7 +200,7 @@ public class NodeUpdatesTest
 
         // Then
         assertThat(
-                updates.forIndexes( indexes, propertyLoader( property1, property2 ) ),
+                updates.forIndexKeys( indexes, propertyLoader( property1, property2 ) ),
                 containsInAnyOrder(
                         IndexEntryUpdate.add( nodeId, index1, property1.value() ),
                         IndexEntryUpdate.add( nodeId, index2, property2.value() ),
@@ -217,7 +218,7 @@ public class NodeUpdatesTest
                 .build();
 
         // Then
-        assertThat( updates.forIndexes( indexes, assertNoLoading() ), emptyIterable() );
+        assertThat( updates.forIndexKeys( indexes, assertNoLoading() ), emptyIterable() );
     }
 
     @Test
@@ -230,7 +231,7 @@ public class NodeUpdatesTest
                 .build();
 
         // Then
-        assertThat( updates.forIndexes( indexes, assertNoLoading() ), emptyIterable() );
+        assertThat( updates.forIndexKeys( indexes, assertNoLoading() ), emptyIterable() );
     }
 
     @Test
@@ -241,7 +242,7 @@ public class NodeUpdatesTest
 
         // Then
         assertThat(
-                updates.forIndexes( Collections.singleton( index1 ), assertNoLoading() ),
+                updates.forIndexKeys( Collections.singleton( index1 ), assertNoLoading() ),
                 emptyIterable() );
     }
 
@@ -255,7 +256,7 @@ public class NodeUpdatesTest
 
         // Then
         assertThat(
-                updates.forIndexes( Collections.singleton( index1 ), assertNoLoading() ),
+                updates.forIndexKeys( Collections.singleton( index1 ), assertNoLoading() ),
                 emptyIterable() );
     }
 

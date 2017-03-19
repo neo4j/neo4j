@@ -206,8 +206,8 @@ public class NeoStoreIndexStoreViewTest
 
         assertThat(
                 Iterables.map(
-                        IndexEntryUpdate::descriptor,
-                        propertyUpdates.forIndexes( indexes, null ) ),
+                        IndexEntryUpdate::indexKey,
+                        propertyUpdates.forIndexKeys( indexes ) ),
                 containsInAnyOrder( index1, index2, index3 ) );
     }
 

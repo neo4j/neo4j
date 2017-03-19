@@ -463,7 +463,7 @@ public class IndexPopulationJobTest
         }
 
         @Override
-        public void add( Collection<IndexEntryUpdate> updates )
+        public void add( Collection<? extends IndexEntryUpdate<?>> updates )
         {
             for ( IndexEntryUpdate update : updates )
             {
@@ -472,7 +472,7 @@ public class IndexPopulationJobTest
         }
 
         @Override
-        public void add( IndexEntryUpdate update )
+        public void add( IndexEntryUpdate<?> update )
         {
             if ( update.getEntityId() == 2 )
             {
@@ -541,7 +541,7 @@ public class IndexPopulationJobTest
         }
 
         @Override
-        public void add( Collection<IndexEntryUpdate> updates )
+        public void add( Collection<? extends IndexEntryUpdate<?>> updates )
         {
             for ( IndexEntryUpdate update : updates )
             {
@@ -550,7 +550,7 @@ public class IndexPopulationJobTest
         }
 
         @Override
-        public void add( IndexEntryUpdate update )
+        public void add( IndexEntryUpdate<?> update )
         {
             if ( update.getEntityId() == 2 )
             {

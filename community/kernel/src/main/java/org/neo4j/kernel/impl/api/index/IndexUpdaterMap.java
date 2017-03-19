@@ -26,11 +26,14 @@ import java.util.Iterator;
 import java.util.Map;
 import java.util.Set;
 
+import org.neo4j.helpers.collection.Iterables;
 import org.neo4j.helpers.collection.Pair;
 import org.neo4j.helpers.collection.PrefetchingIterator;
 import org.neo4j.kernel.api.exceptions.index.IndexEntryConflictException;
+import org.neo4j.kernel.api.index.IndexEntryUpdate;
 import org.neo4j.kernel.api.index.IndexUpdater;
 import org.neo4j.kernel.api.schema_new.LabelSchemaDescriptor;
+import org.neo4j.kernel.api.schema_new.LabelSchemaSupplier;
 import org.neo4j.kernel.api.schema_new.index.NewIndexDescriptor;
 import org.neo4j.kernel.api.schema_new.index.NewIndexDescriptorFactory;
 import org.neo4j.kernel.impl.store.MultipleUnderlyingStorageExceptions;
@@ -58,9 +61,11 @@ class IndexUpdaterMap implements AutoCloseable, Iterable<IndexUpdater>
         this.updaterMap = new HashMap<>();
     }
 
-    Iterable<LabelSchemaDescriptor> descriptors()
+    Iterable<IndexUpdaterWithSchema> updaters()
     {
-        return indexMap::descriptors;
+        return Iterables.map(
+                IndexUpdaterWithSchema::new,
+                indexMap::descriptors );
     }
 
     IndexUpdater getUpdater( LabelSchemaDescriptor descriptor )
@@ -145,5 +150,27 @@ class IndexUpdaterMap implements AutoCloseable, Iterable<IndexUpdater>
                 return null;
             }
         };
+    }
+
+    class IndexUpdaterWithSchema implements LabelSchemaSupplier
+    {
+        private final LabelSchemaDescriptor schema;
+
+        IndexUpdaterWithSchema( LabelSchemaDescriptor schema )
+        {
+            this.schema = schema;
+        }
+
+        @Override
+        public LabelSchemaDescriptor schema()
+        {
+            return schema;
+        }
+
+        public void process( IndexEntryUpdate<IndexUpdaterWithSchema> indexUpdate )
+                throws IOException, IndexEntryConflictException
+        {
+            getUpdater( schema ).process( indexUpdate );
+        }
     }
 }

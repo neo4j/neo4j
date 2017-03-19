@@ -83,7 +83,7 @@ public class BatchingMultipleIndexPopulator extends MultipleIndexPopulator
 
     private final AtomicLong activeTasks = new AtomicLong();
     private final ExecutorService executor;
-    private final Map<IndexPopulation,List<IndexEntryUpdate>> batchedUpdates = new HashMap<>();
+    private final Map<IndexPopulation,List<IndexEntryUpdate<?>>> batchedUpdates = new HashMap<>();
 
     /**
      * Creates a new multi-threaded populator for the given store view.
@@ -179,9 +179,9 @@ public class BatchingMultipleIndexPopulator extends MultipleIndexPopulator
      * @param population the index population.
      * @param update updates to add to the batch.
      */
-    private void batchUpdate( IndexPopulation population, IndexEntryUpdate update )
+    private void batchUpdate( IndexPopulation population, IndexEntryUpdate<?> update )
     {
-        List<IndexEntryUpdate> batch = batchedUpdates.computeIfAbsent( population, key -> newBatch() );
+        List<IndexEntryUpdate<?>> batch = batchedUpdates.computeIfAbsent( population, key -> newBatch() );
         batch.add( update );
         flushIfNeeded( population, batch );
     }
@@ -192,7 +192,7 @@ public class BatchingMultipleIndexPopulator extends MultipleIndexPopulator
      * @param population the index population.
      * @param batch the list of updates for the index.
      */
-    private void flushIfNeeded( IndexPopulation population, List<IndexEntryUpdate> batch )
+    private void flushIfNeeded( IndexPopulation population, List<IndexEntryUpdate<?>> batch )
     {
         if ( batch.size() >= BATCH_SIZE )
         {
@@ -206,12 +206,12 @@ public class BatchingMultipleIndexPopulator extends MultipleIndexPopulator
      */
     private void flushAll()
     {
-        Iterator<Map.Entry<IndexPopulation,List<IndexEntryUpdate>>> entries = batchedUpdates.entrySet().iterator();
+        Iterator<Map.Entry<IndexPopulation,List<IndexEntryUpdate<?>>>> entries = batchedUpdates.entrySet().iterator();
         while ( entries.hasNext() )
         {
-            Map.Entry<IndexPopulation,List<IndexEntryUpdate>> entry = entries.next();
+            Map.Entry<IndexPopulation,List<IndexEntryUpdate<?>>> entry = entries.next();
             IndexPopulation population = entry.getKey();
-            List<IndexEntryUpdate> updates = entry.getValue();
+            List<IndexEntryUpdate<?>> updates = entry.getValue();
             entries.remove();
             if ( updates != null && !updates.isEmpty() )
             {
@@ -226,7 +226,7 @@ public class BatchingMultipleIndexPopulator extends MultipleIndexPopulator
      * @param population the index population.
      * @param batch the list of updates to insert.
      */
-    private void flush( IndexPopulation population, List<IndexEntryUpdate> batch )
+    private void flush( IndexPopulation population, List<IndexEntryUpdate<?>> batch )
     {
         activeTasks.incrementAndGet();
 
@@ -292,7 +292,7 @@ public class BatchingMultipleIndexPopulator extends MultipleIndexPopulator
         log.warn( "Interrupted while waiting for index population tasks to complete." + EOL + this );
     }
 
-    private List<IndexEntryUpdate> newBatch()
+    private List<IndexEntryUpdate<?>> newBatch()
     {
         return new ArrayList<>( BATCH_SIZE );
     }

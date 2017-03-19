@@ -969,7 +969,8 @@ public class IndexingServiceTest
         }
 
         @Override
-        public void add( Collection<IndexEntryUpdate> updates ) throws IndexEntryConflictException, IOException
+        public void add( Collection<? extends IndexEntryUpdate<?>> updates )
+                throws IndexEntryConflictException, IOException
         {
             latch.waitForAllToStart();
         }

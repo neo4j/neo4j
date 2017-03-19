@@ -30,6 +30,7 @@ import org.neo4j.collection.primitive.PrimitiveIntSet;
 import org.neo4j.helpers.collection.Iterables;
 import org.neo4j.kernel.api.properties.DefinedProperty;
 import org.neo4j.kernel.api.schema_new.LabelSchemaDescriptor;
+import org.neo4j.kernel.api.schema_new.LabelSchemaSupplier;
 
 import static java.lang.String.format;
 import static java.util.Arrays.binarySearch;
@@ -139,12 +140,13 @@ public class NodeUpdates implements PropertyLoader.PropertyLoadSink
      * Note that unless this object contains a full representation of the node state after the update, the results
      * from this methods will not be correct. In that case, use the propertyLoader variant.
      *
-     * @param indexes The indexes to generate entry updates for
-     * @return IndexEntryUpdates for all relevant indexes
+     * @param indexKeys The index keys to generate entry updates for
+     * @return IndexEntryUpdates for all relevant index keys
      */
-    public Iterable<IndexEntryUpdate> forIndexes( Iterable<LabelSchemaDescriptor> indexes )
+    public <INDEX_KEY extends LabelSchemaSupplier> Iterable<IndexEntryUpdate<INDEX_KEY>> forIndexKeys(
+            Iterable<INDEX_KEY> indexKeys )
     {
-        Iterable<LabelSchemaDescriptor> potentiallyRelevant = Iterables.filter( this::atLeastOneRelevantChange, indexes );
+        Iterable<INDEX_KEY> potentiallyRelevant = Iterables.filter( this::atLeastOneRelevantChange, indexKeys );
 
         return gatherUpdatesForPotentials( potentiallyRelevant );
     }
@@ -159,21 +161,22 @@ public class NodeUpdates implements PropertyLoader.PropertyLoadSink
      * composite indexes. To solve this problem, a propertyLoader is used to load any additional properties needed to
      * make these calls.
      *
-     * @param indexes The indexes to generate entry updates for
+     * @param indexKeys The index keys to generate entry updates for
      * @param propertyLoader The property loader used to fetch needed additional properties
-     * @return IndexEntryUpdates for all relevant indexes
+     * @return IndexEntryUpdates for all relevant index keys
      */
-    public Iterable<IndexEntryUpdate> forIndexes( Iterable<LabelSchemaDescriptor> indexes, PropertyLoader propertyLoader )
+    public <INDEX_KEY extends LabelSchemaSupplier> Iterable<IndexEntryUpdate<INDEX_KEY>> forIndexKeys(
+            Iterable<INDEX_KEY> indexKeys, PropertyLoader propertyLoader )
     {
-        List<LabelSchemaDescriptor> potentiallyRelevant = new ArrayList<>();
+        List<INDEX_KEY> potentiallyRelevant = new ArrayList<>();
         PrimitiveIntSet additionalPropertiesToLoad = Primitive.intSet();
 
-        for ( LabelSchemaDescriptor index : indexes )
+        for ( INDEX_KEY indexKey : indexKeys )
         {
-            if ( atLeastOneRelevantChange( index ) )
+            if ( atLeastOneRelevantChange( indexKey ) )
             {
-                potentiallyRelevant.add( index );
-                gatherPropsToLoad( index, additionalPropertiesToLoad );
+                potentiallyRelevant.add( indexKey );
+                gatherPropsToLoad( indexKey.schema(), additionalPropertiesToLoad );
             }
         }
 
@@ -185,24 +188,26 @@ public class NodeUpdates implements PropertyLoader.PropertyLoadSink
         return gatherUpdatesForPotentials( potentiallyRelevant );
     }
 
-    private Iterable<IndexEntryUpdate> gatherUpdatesForPotentials( Iterable<LabelSchemaDescriptor> potentiallyRelevant )
+    private <INDEX_KEY extends LabelSchemaSupplier> Iterable<IndexEntryUpdate<INDEX_KEY>> gatherUpdatesForPotentials(
+            Iterable<INDEX_KEY> potentiallyRelevant )
     {
-        List<IndexEntryUpdate> indexUpdates = new ArrayList<>();
-        for ( LabelSchemaDescriptor index : potentiallyRelevant )
+        List<IndexEntryUpdate<INDEX_KEY>> indexUpdates = new ArrayList<>();
+        for ( INDEX_KEY indexKey : potentiallyRelevant )
         {
-            boolean relevantBefore = relevantBefore( index );
-            boolean relevantAfter = relevantAfter( index );
-            int[] propertyIds = index.getPropertyIds();
+            LabelSchemaDescriptor schema = indexKey.schema();
+            boolean relevantBefore = relevantBefore( schema );
+            boolean relevantAfter = relevantAfter( schema );
+            int[] propertyIds = schema.getPropertyIds();
             if ( relevantBefore && !relevantAfter )
             {
                 indexUpdates.add( IndexEntryUpdate.remove(
-                        nodeId, index, valuesBefore( propertyIds )
+                        nodeId, indexKey, valuesBefore( propertyIds )
                     ) );
             }
             else if ( !relevantBefore && relevantAfter )
             {
                 indexUpdates.add( IndexEntryUpdate.add(
-                        nodeId, index, valuesAfter( propertyIds )
+                        nodeId, indexKey, valuesAfter( propertyIds )
                 ) );
             }
             else if ( relevantBefore && relevantAfter )
@@ -210,7 +215,7 @@ public class NodeUpdates implements PropertyLoader.PropertyLoadSink
                 if ( valuesChanged( propertyIds ) )
                 {
                     indexUpdates.add( IndexEntryUpdate.change(
-                            nodeId, index, valuesBefore( propertyIds ), valuesAfter( propertyIds ) ) );
+                            nodeId, indexKey, valuesBefore( propertyIds ), valuesAfter( propertyIds ) ) );
                 }
             }
         }
@@ -253,14 +258,14 @@ public class NodeUpdates implements PropertyLoader.PropertyLoadSink
         }
     }
 
-    private boolean atLeastOneRelevantChange( LabelSchemaDescriptor schema )
+    private boolean atLeastOneRelevantChange( LabelSchemaSupplier indexKey )
     {
-        int labelId = schema.getLabelId();
+        int labelId = indexKey.schema().getLabelId();
         boolean labelBefore = hasLabel( labelId, labelsBefore );
         boolean labelAfter = hasLabel( labelId, labelsAfter );
         if ( labelBefore && labelAfter )
         {
-            for ( int propertyId : schema.getPropertyIds() )
+            for ( int propertyId : indexKey.schema().getPropertyIds() )
             {
                 if ( knownProperties.get( propertyId ) != null )
                 {

@@ -477,7 +477,7 @@ public class MultiIndexPopulationConcurrentUpdatesIT
                         {
                             LabelSchemaDescriptor schema = SchemaDescriptorFactory.forLabel( labelId, propertyId );
                             for ( IndexEntryUpdate indexUpdate :
-                                    update.forIndexes( Collections.singleton( schema ) ) )
+                                    update.forIndexKeys( Collections.singleton( schema ) ) )
                             {
                                 switch ( indexUpdate.updateMode() )
                                 {

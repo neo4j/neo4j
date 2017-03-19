@@ -60,12 +60,14 @@ import org.neo4j.kernel.api.index.IndexEntryUpdate;
 import org.neo4j.kernel.api.index.IndexPopulator;
 import org.neo4j.kernel.api.index.InternalIndexState;
 import org.neo4j.kernel.api.index.NodeUpdates;
+import org.neo4j.kernel.api.index.PropertyAccessor;
 import org.neo4j.kernel.api.index.SchemaIndexProvider;
 import org.neo4j.kernel.api.labelscan.LabelScanStore;
 import org.neo4j.kernel.api.labelscan.LabelScanWriter;
 import org.neo4j.kernel.api.labelscan.NodeLabelUpdate;
 import org.neo4j.kernel.api.properties.DefinedProperty;
 import org.neo4j.kernel.api.schema_new.LabelSchemaDescriptor;
+import org.neo4j.kernel.api.schema_new.LabelSchemaSupplier;
 import org.neo4j.kernel.api.schema_new.SchemaDescriptorFactory;
 import org.neo4j.kernel.api.schema_new.constaints.ConstraintDescriptor;
 import org.neo4j.kernel.api.schema_new.constaints.ConstraintDescriptorFactory;
@@ -440,9 +442,7 @@ public class BatchInserterImpl implements BatchInserter, IndexConfigStoreProvide
         }
 
         final IndexRule[] rules = getIndexesNeedingPopulation();
-        final Map<LabelSchemaDescriptor,IndexPopulator> populators = new HashMap<>();
-        final Map<LabelSchemaDescriptor,NewIndexDescriptor> indexes = new HashMap<>();
-        // the store is uncontended at this point, so creating a local LockService is safe.
+        final List<IndexPopulatorWithSchema> populators = new ArrayList<>();
 
         final LabelSchemaDescriptor[] descriptors = new LabelSchemaDescriptor[rules.length];
 
@@ -454,23 +454,22 @@ public class BatchInserterImpl implements BatchInserter, IndexConfigStoreProvide
             IndexPopulator populator = schemaIndexProviders.apply( rule.getProviderDescriptor() )
                                                 .getPopulator( rule.getId(), index, new IndexSamplingConfig( config ) );
             populator.create();
-            populators.put( index.schema(), populator );
-            indexes.put( index.schema(), index );
+            populators.add( new IndexPopulatorWithSchema( populator, index ) );
         }
 
         Visitor<NodeUpdates, IOException> propertyUpdateVisitor = updates -> {
             // Do a lookup from which property has changed to a list of indexes worried about that property.
             // We do not need to load additional properties as the NodeUpdates for a full node store scan already
             // include all properties for the node.
-            for ( IndexEntryUpdate indexUpdate : updates.forIndexes( Iterables.asIterable( descriptors ) ) )
+            for ( IndexEntryUpdate<IndexPopulatorWithSchema> indexUpdate : updates.forIndexKeys( populators ) )
             {
                 try
                 {
-                    populators.get( indexUpdate.descriptor() ).add( indexUpdate );
+                    indexUpdate.indexKey().add( indexUpdate );
                 }
                 catch ( IndexEntryConflictException conflict )
                 {
-                    throw conflict.notAllowed( indexes.get( indexUpdate.descriptor() ) );
+                    throw conflict.notAllowed( indexUpdate.indexKey().index() );
                 }
             }
             return true;
@@ -491,7 +490,7 @@ public class BatchInserterImpl implements BatchInserter, IndexConfigStoreProvide
                 propertyUpdateVisitor, labelUpdateVisitor, true );
         storeScan.run();
 
-        for ( IndexPopulator populator : populators.values() )
+        for ( IndexPopulatorWithSchema populator : populators )
         {
             populator.verifyDeferredConstraints( indexStoreView );
             populator.close( true );
@@ -1223,6 +1222,48 @@ public class BatchInserterImpl implements BatchInserter, IndexConfigStoreProvide
         {
             directRecordAccess.commit();
             attempts = 0;
+        }
+    }
+
+    private static class IndexPopulatorWithSchema extends IndexPopulator.Adapter implements LabelSchemaSupplier
+    {
+        private final IndexPopulator populator;
+        private final NewIndexDescriptor index;
+
+        IndexPopulatorWithSchema( IndexPopulator populator, NewIndexDescriptor index )
+        {
+            this.populator = populator;
+            this.index = index;
+        }
+
+        @Override
+        public LabelSchemaDescriptor schema()
+        {
+            return index.schema();
+        }
+
+        public NewIndexDescriptor index()
+        {
+            return index;
+        }
+
+        @Override
+        public void add( IndexEntryUpdate<?> update ) throws IndexEntryConflictException, IOException
+        {
+            populator.add( update );
+        }
+
+        @Override
+        public void verifyDeferredConstraints( PropertyAccessor propertyAccessor )
+                throws IndexEntryConflictException, IOException
+        {
+            populator.verifyDeferredConstraints( propertyAccessor );
+        }
+
+        @Override
+        public void close( boolean populationCompletedSuccessfully ) throws IOException
+        {
+            populator.close( populationCompletedSuccessfully );
         }
     }
 }
