@@ -176,8 +176,7 @@ class PageList
 
     public boolean validateReadLock( long pageRef, long stamp )
     {
-        boolean valid = OffHeapPageLock.validateReadLock( offLock( pageRef ), stamp );
-        return valid;
+        return OffHeapPageLock.validateReadLock( offLock( pageRef ), stamp );
     }
 
     public boolean isModified( long pageRef )

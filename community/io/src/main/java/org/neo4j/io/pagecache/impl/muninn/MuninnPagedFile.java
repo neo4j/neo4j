@@ -426,17 +426,6 @@ final class MuninnPagedFile extends PageList implements PagedFile, Flushable
             // Write the pages vector
             long firstPageRef = pages[0];
             long startFilePageId = getFilePageId( firstPageRef );
-
-//            // Mark the flushed pages as clean before our flush, so concurrent page writes can mark it as dirty and
-//            // we'll be able to write those changes out on the next flush.
-//            for ( int j = 0; j < pagesGrabbed; j++ )
-//            {
-//                // If the flush fails, we'll undo this
-//                pages[j].markAsClean();
-//                // copy over the native page memory address
-//                bufferAddresses[j] = pages[j].address();
-//            }
-
             flush = flushOpportunity.beginFlush( startFilePageId, toId( firstPageRef ), swapper );
             long bytesWritten = swapper.write( startFilePageId, bufferAddresses, 0, pagesGrabbed );
 
@@ -450,11 +439,6 @@ final class MuninnPagedFile extends PageList implements PagedFile, Flushable
         }
         catch ( IOException ioe )
         {
-//            // Undo marking the pages as clean
-//            for ( int j = 0; j < pagesGrabbed; j++ )
-//            {
-//                pages[j].markAsDirty();
-//            }
             if ( flush != null )
             {
                 flush.done( ioe );
