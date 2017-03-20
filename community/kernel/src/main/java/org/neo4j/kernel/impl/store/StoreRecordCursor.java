@@ -47,7 +47,16 @@ class StoreRecordCursor<RECORD extends AbstractBaseRecord> implements RecordCurs
     {
         try
         {
-            return next( currentId );
+            assert pageCursor != null : "Not initialized";
+            if ( NULL_REFERENCE.is( currentId ) )
+            {
+                record.clear();
+                record.setId( NULL_REFERENCE.intValue() );
+                return false;
+            }
+
+            store.readRecord( currentId, record, mode, pageCursor );
+            return record.inUse();
         }
         finally
         {
@@ -58,21 +67,6 @@ class StoreRecordCursor<RECORD extends AbstractBaseRecord> implements RecordCurs
             // !inUse && mode == FORCE ==> actual next reference
             currentId = store.getNextRecordReference( record );
         }
-    }
-
-    @Override
-    public boolean next( long id )
-    {
-        assert pageCursor != null : "Not initialized";
-        if ( NULL_REFERENCE.is( id ) )
-        {
-            record.clear();
-            record.setId( NULL_REFERENCE.intValue() );
-            return false;
-        }
-
-        store.readRecord( id, record, mode, pageCursor );
-        return record.inUse();
     }
 
     @Override

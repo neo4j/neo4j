@@ -68,16 +68,6 @@ public interface RecordCursor<R extends AbstractBaseRecord> extends Cursor<R>
     boolean next();
 
     /**
-     * An additional way of placing this cursor at an arbitrary record id. This is useful when stride,
-     * as opposed to following record chains, is controlled from the outside.
-     * The read record can be accessed using {@link #get()}.
-     *
-     * @param id record id to place cursor at.
-     * @return whether or not that record is in use.
-     */
-    boolean next( long id );
-
-    /**
      * Read all records in the chain starting from the id this cursor is positioned at using either
      * {@link #acquire(long, RecordLoad)} or {@link #placeAt(long, RecordLoad)}. Each next record in the chain is
      * determined by {@link RecordStore#getNextRecordReference(AbstractBaseRecord)}. Each record placed in the
@@ -134,12 +124,6 @@ public interface RecordCursor<R extends AbstractBaseRecord> extends Cursor<R>
         {
             actual.acquire( id, mode );
             return this;
-        }
-
-        @Override
-        public boolean next( long id )
-        {
-            return actual.next( id );
         }
     }
 }

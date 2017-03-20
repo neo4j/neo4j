@@ -143,7 +143,6 @@ public class StoreMigratorIT
                 versionToMigrateFrom, upgradableDatabase.currentVersion() );
 
         // WHEN simulating resuming the migration
-        progressMonitor = new SilentMigrationProgressMonitor();
         migrator = new StoreMigrator( fs, pageCache, CONFIG, logService, schemaIndexProvider );
         migrator.moveMigratedFiles( migrationDir, storeDirectory, versionToMigrateFrom, upgradableDatabase.currentVersion() );
 
