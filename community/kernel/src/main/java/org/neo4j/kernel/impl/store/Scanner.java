@@ -25,6 +25,7 @@ import org.neo4j.collection.primitive.PrimitiveLongIterator;
 import org.neo4j.graphdb.ResourceIterable;
 import org.neo4j.graphdb.ResourceIterator;
 import org.neo4j.helpers.collection.PrefetchingResourceIterator;
+import org.neo4j.io.pagecache.PageCursor;
 import org.neo4j.kernel.impl.store.record.AbstractBaseRecord;
 import org.neo4j.kernel.impl.store.record.RecordLoad;
 
@@ -56,15 +57,18 @@ public class Scanner
     private static class Scan<R extends AbstractBaseRecord> extends PrefetchingResourceIterator<R>
     {
         private final PrimitiveLongIterator ids;
-        private final RecordCursor<R> cursor;
+        private final RecordStore<R> store;
+        private final R record;
+        private final PageCursor cursor;
         private final Predicate<? super R>[] filters;
 
         Scan( RecordStore<R> store, boolean forward, final Predicate<? super R>... filters )
         {
+            this.store = store;
             this.filters = filters;
             this.ids = new StoreIdIterator( store, forward );
-            this.cursor = store.newRecordCursor( store.newRecord() );
-            cursor.acquire( 0, RecordLoad.CHECK );
+            this.record = store.newRecord();
+            this.cursor = store.newPageCursor();
         }
 
         @Override
@@ -72,9 +76,9 @@ public class Scanner
         {
             while ( ids.hasNext() )
             {
-                if ( cursor.next( ids.next() ) )
+                store.readRecord( ids.next(), record, RecordLoad.CHECK, cursor );
+                if ( record.inUse() )
                 {
-                    R record = cursor.get();
                     if ( passesFilters( record ) )
                     {
                         return record;

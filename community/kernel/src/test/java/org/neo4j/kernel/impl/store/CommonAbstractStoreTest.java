@@ -157,7 +157,7 @@ public class CommonAbstractStoreTest
         RecordCursor<TheRecord> cursor = store.newRecordCursor( newRecord( -1 ) );
         cursor.acquire( recordId, RecordLoad.FORCE );
 
-        cursor.next( recordId );
+        cursor.next();
 
         InOrder order = inOrder( pageCursor );
         order.verify( pageCursor ).next( pageIdForRecord );
@@ -211,9 +211,10 @@ public class CommonAbstractStoreTest
 
             try ( RecordCursor<NodeRecord> cursor = store.newRecordCursor( store.newRecord() ) )
             {
-                cursor.acquire( 0, RecordLoad.NORMAL );
-                assertTrue( cursor.next( nodeId1 ) );
-                assertTrue( cursor.next( nodeId2 ) );
+                cursor.acquire( nodeId1, RecordLoad.NORMAL );
+                assertTrue( cursor.next() );
+                cursor.placeAt( nodeId2, RecordLoad.NORMAL );
+                assertTrue( cursor.next() );
             }
             // Because both nodes hit the same page, the code will only pin the page once and thus only emit one pin
             // event. This pin event will not be observable until after we have closed the cursor. We could

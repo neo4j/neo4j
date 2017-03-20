@@ -1028,6 +1028,7 @@ public abstract class CommonAbstractStore<RECORD extends AbstractBaseRecord,HEAD
         }
     }
 
+    @Override
     public RECORD readRecord( long id, RECORD record, RecordLoad mode, PageCursor cursor )
     {
         try
@@ -1112,15 +1113,16 @@ public abstract class CommonAbstractStore<RECORD extends AbstractBaseRecord,HEAD
     @Override
     public <EXCEPTION extends Exception> void scanAllRecords( Visitor<RECORD,EXCEPTION> visitor ) throws EXCEPTION
     {
-        try ( RecordCursor<RECORD> cursor = newRecordCursor( newRecord() ) )
+        try ( PageCursor cursor = newPageCursor() )
         {
             long highId = getHighId();
-            cursor.acquire( getNumberOfReservedLowIds(), CHECK );
+            RECORD record = newRecord();
             for ( long id = getNumberOfReservedLowIds(); id < highId; id++ )
             {
-                if ( cursor.next( id ) )
+                readRecord( id, record, CHECK, cursor );
+                if ( record.inUse() )
                 {
-                    visitor.visit( cursor.get() );
+                    visitor.visit( record );
                 }
             }
         }
@@ -1136,6 +1138,7 @@ public abstract class CommonAbstractStore<RECORD extends AbstractBaseRecord,HEAD
         }
     }
 
+    @Override
     public PageCursor newPageCursor()
     {
         try
