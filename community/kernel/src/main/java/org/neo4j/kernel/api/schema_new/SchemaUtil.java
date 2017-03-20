@@ -68,23 +68,4 @@ public class SchemaUtil
             return format( "property[%d]", propertyKeyId );
         }
     };
-
-    public static int comparePropertyKeyIds( int[] these, int[] those )
-    {
-        if ( these.length == those.length )
-        {
-            for ( int i = 0; i < these.length; i++ )
-            {
-                if ( these[i] != those[i] )
-                {
-                    return these[i] - those[i];
-                }
-            }
-            return 0;
-        }
-        else
-        {
-            return these.length - those.length;
-        }
-    }
 }
