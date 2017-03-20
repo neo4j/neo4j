@@ -107,8 +107,8 @@ import static org.neo4j.test.assertion.Assert.assertEventually;
 public class ReadReplicaReplicationIT
 {
     // This test is extended in the blockdevice repository, and these constants are required there as well.
-    private static final int NR_CORE_MEMBERS = 3;
-    private static final int NR_READ_REPLICAS = 1;
+    protected static final int NR_CORE_MEMBERS = 3;
+    protected static final int NR_READ_REPLICAS = 1;
 
     @Rule
     public final ClusterRule clusterRule = new ClusterRule( getClass() ).withNumberOfCoreMembers( NR_CORE_MEMBERS )
