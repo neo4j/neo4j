@@ -30,10 +30,10 @@ import static org.mockito.Mockito.verify;
 import static org.mockito.Mockito.verifyZeroInteractions;
 import static org.mockito.Mockito.when;
 
-public class NoCacheHtmlFilterTest
+public class StaticContentFilterTest
 {
     @Test
-    public void shouldAddCacheControlHeaderToHtmlResponses() throws Exception
+    public void shouldAddStaticContentHeadersToHtmlResponses() throws Exception
     {
         // given
         HttpServletRequest request = mock(HttpServletRequest.class);
@@ -42,10 +42,12 @@ public class NoCacheHtmlFilterTest
         FilterChain filterChain = mock( FilterChain.class );
 
         // when
-        new NoCacheHtmlFilter().doFilter( request, response, filterChain );
+        new StaticContentFilter().doFilter( request, response, filterChain );
 
         // then
         verify( response ).addHeader( "Cache-Control", "no-cache" );
+        verify( response ).addHeader( "Content-Security-Policy", "frame-ancestors 'none'" );
+        verify( response ).addHeader( "X-Frame-Options", "DENY" );
         verify( filterChain ).doFilter( request, response );
     }
 
@@ -59,7 +61,7 @@ public class NoCacheHtmlFilterTest
         FilterChain filterChain = mock( FilterChain.class );
 
         // when
-        new NoCacheHtmlFilter().doFilter( request, response, filterChain );
+        new StaticContentFilter().doFilter( request, response, filterChain );
 
         // then
         verifyZeroInteractions( response );
@@ -76,7 +78,7 @@ public class NoCacheHtmlFilterTest
         FilterChain filterChain = mock( FilterChain.class );
 
         // when
-        new NoCacheHtmlFilter().doFilter( request, response, filterChain );
+        new StaticContentFilter().doFilter( request, response, filterChain );
 
         // then
         verifyZeroInteractions( response );

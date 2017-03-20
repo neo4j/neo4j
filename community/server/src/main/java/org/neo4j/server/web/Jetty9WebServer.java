@@ -483,7 +483,7 @@ public class Jetty9WebServer implements WebServer
                 staticContext.setBaseResource( resource );
 
                 addFiltersTo( staticContext );
-                staticContext.addFilter( new FilterHolder( new NoCacheHtmlFilter() ), "/*",
+                staticContext.addFilter( new FilterHolder( new StaticContentFilter() ), "/*",
                         EnumSet.of( DispatcherType.REQUEST, DispatcherType.FORWARD ) );
 
                 handlers.addHandler( staticContext );
