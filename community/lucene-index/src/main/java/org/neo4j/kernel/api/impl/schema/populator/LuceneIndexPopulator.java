@@ -98,11 +98,11 @@ public abstract class LuceneIndexPopulator implements IndexPopulator
         luceneIndex.markAsFailed( failure );
     }
 
-    private boolean updatesForCorrectIndex( Collection<IndexEntryUpdate> updates )
+    private boolean updatesForCorrectIndex( Collection<? extends IndexEntryUpdate<?>> updates )
     {
         for ( IndexEntryUpdate update : updates )
         {
-            if ( !update.descriptor().equals( luceneIndex.getDescriptor().schema() ) )
+            if ( !update.indexKey().schema().equals( luceneIndex.getDescriptor().schema() ) )
             {
                 return false;
             }

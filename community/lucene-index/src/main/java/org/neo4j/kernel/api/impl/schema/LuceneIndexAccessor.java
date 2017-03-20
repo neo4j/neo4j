@@ -141,7 +141,7 @@ public class LuceneIndexAccessor implements IndexAccessor
         public void process( IndexEntryUpdate update ) throws IOException
         {
             // we do not support adding partial entries
-            assert update.descriptor().equals( descriptor.schema() );
+            assert update.indexKey().schema().equals( descriptor.schema() );
 
             switch ( update.updateMode() )
             {
