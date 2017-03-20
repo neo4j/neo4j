@@ -23,7 +23,6 @@ import java.time.{Clock, Instant, ZoneOffset}
 
 import org.neo4j.cypher.GraphDatabaseTestSupport
 import org.neo4j.cypher.internal.compatibility.v3_2.{StringInfoLogger, WrappedMonitors}
-import org.neo4j.cypher.internal.frontend.v3_2.phases.CompilationPhaseTracer.NO_TRACING
 import org.neo4j.cypher.internal.compiler.v3_2.executionplan.ExecutionPlan
 import org.neo4j.cypher.internal.compiler.v3_2.helpers.IdentityTypeConverter
 import org.neo4j.cypher.internal.compiler.v3_2.phases.CompilerContext
@@ -102,9 +101,9 @@ class CypherCompilerAstCacheAcceptanceTest extends CypherFunSuite with GraphData
     compiler.monitors.addMonitorListener(counter)
   }
 
-  private def runQuery(query: String): Unit = {
+  private def runQuery(query: String, debugOptions: Set[String] = Set.empty): Unit = {
     graph.inTx {
-      compiler.planQuery(query, planContext, devNullLogger, IDPPlannerName.name)
+      compiler.planQuery(query, planContext, devNullLogger, IDPPlannerName.name, debugOptions)
     }
   }
 
@@ -198,5 +197,12 @@ class CypherCompilerAstCacheAcceptanceTest extends CypherFunSuite with GraphData
     logProvider.assertExactly(
       inLog(logName).info( s"Discarded stale query from the query cache: $query" )
     )
+  }
+
+  test("when running queries with debug options - never cache") {
+    runQuery("return 42", Set("debug"))
+    runQuery("return 42", Set("debug"))
+
+    counter.counts.hits should equal(0)
   }
 }

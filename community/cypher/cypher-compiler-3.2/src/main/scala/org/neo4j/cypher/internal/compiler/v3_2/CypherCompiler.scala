@@ -75,10 +75,17 @@ case class CypherCompiler[Context <: CompilerContext](createExecutionPlan: Trans
     val preparedCompilationState = prepareForCaching.transform(state, context)
     val cache = provideCache(cacheAccessor, cacheMonitor, planContext)
     val isStale = (plan: ExecutionPlan) => plan.isStale(planContext.txIdProvider, planContext.statistics)
-    val (executionPlan, _) = cache.getOrElseUpdate(state.statement(), state.queryText, isStale, {
+
+    def createPlan(): ExecutionPlan = {
       val result: CompilationState = planAndCreateExecPlan.transform(preparedCompilationState, context)
       result.executionPlan
-    })
+    }
+
+    val executionPlan = if (debugOptions.isEmpty)
+      cache.getOrElseUpdate(state.statement(), state.queryText, isStale, createPlan())._1
+    else
+      createPlan()
+
     (executionPlan, preparedCompilationState.extractedParams())
   }
 
