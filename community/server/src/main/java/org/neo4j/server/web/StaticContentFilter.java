@@ -29,7 +29,7 @@ import javax.servlet.ServletResponse;
 import javax.servlet.http.HttpServletRequest;
 import javax.servlet.http.HttpServletResponse;
 
-public class NoCacheHtmlFilter implements Filter
+public class StaticContentFilter implements Filter
 {
     @Override
     public void init( FilterConfig filterConfig ) throws ServletException
@@ -45,6 +45,8 @@ public class NoCacheHtmlFilter implements Filter
         if ( request.getServletPath() != null && request.getServletPath().endsWith( ".html" ))
         {
             response.addHeader( "Cache-Control", "no-cache" );
+            response.addHeader( "Content-Security-Policy", "frame-ancestors 'none'" );
+            response.addHeader( "X-Frame-Options", "DENY" );
         }
         filterChain.doFilter( servletRequest, servletResponse);
     }
