@@ -29,7 +29,7 @@ case class RelationshipCountFromCountStoreInstruction(opName: String, variable: 
   private val hasTokens = opName + "hasTokens"
 
   override def body[E](generator: MethodStructure[E])(implicit context: CodeGenContext): Unit = {
-    generator.assign(variable, generator.constantPrimitiveExpression(0))
+    generator.assign(variable, generator.constantPrimitiveExpression(0L))
     generator.trace(opName) { body =>
 
       body.ifStatement(body.loadVariable(hasTokens)) { ifBody =>

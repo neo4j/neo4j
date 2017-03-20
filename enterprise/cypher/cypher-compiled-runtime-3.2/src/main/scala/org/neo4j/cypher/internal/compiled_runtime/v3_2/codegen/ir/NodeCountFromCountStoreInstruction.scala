@@ -42,7 +42,7 @@ case class NodeCountFromCountStoreInstruction(opName: String, variable: Variable
         case Some((None, labelName)) =>
           val tokenConstant: E = generator.lookupLabelIdE(labelName)
           val isMissing = generator.primitiveEquals(tokenConstant, generator.wildCardToken)
-          val zero = body.constantExpression(0.asInstanceOf[AnyRef])
+          val zero = body.constantExpression(0L.asInstanceOf[AnyRef])
           val getFromCountStore = body.nodeCountFromCountStore(tokenConstant)
           body.assign(variable, body.ternaryOperator(isMissing, zero, getFromCountStore))
       }
