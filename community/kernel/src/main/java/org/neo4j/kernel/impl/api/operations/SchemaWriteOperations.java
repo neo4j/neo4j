@@ -54,7 +54,8 @@ public interface SchemaWriteOperations
     void uniqueIndexDrop( KernelStatement state, NewIndexDescriptor descriptor ) throws DropIndexFailureException;
 
     NodeKeyConstraintDescriptor nodeKeyConstraintCreate( KernelStatement state, LabelSchemaDescriptor descriptor )
-            throws AlreadyConstrainedException, CreateConstraintFailureException, AlreadyIndexedException;
+            throws AlreadyConstrainedException, CreateConstraintFailureException, AlreadyIndexedException,
+            RepeatedPropertyInCompositeSchemaException;
 
     UniquenessConstraintDescriptor uniquePropertyConstraintCreate( KernelStatement state, LabelSchemaDescriptor descriptor )
             throws AlreadyConstrainedException, CreateConstraintFailureException, AlreadyIndexedException,

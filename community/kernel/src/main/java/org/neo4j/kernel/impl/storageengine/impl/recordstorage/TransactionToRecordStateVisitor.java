@@ -256,7 +256,7 @@ public class TransactionToRecordStateVisitor extends TxStateVisitor.Adapter
         {
             throw new IllegalStateException( "Multiple constraints found for specified label and property." );
         }
-        if ( constraint.type().enforcesUniqueness() )
+        if ( constraint.enforcesUniqueness() )
         {
             // Remove the index for the constraint as well
             visitRemovedIndex( ((IndexBackedConstraintDescriptor)constraint).ownedIndexDescriptor() );

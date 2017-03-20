@@ -154,8 +154,10 @@ public class DataIntegrityValidatingStatementOperations implements
     @Override
     public NodeKeyConstraintDescriptor nodeKeyConstraintCreate(
             KernelStatement state, LabelSchemaDescriptor descriptor )
-            throws AlreadyConstrainedException, CreateConstraintFailureException, AlreadyIndexedException
+            throws AlreadyConstrainedException, CreateConstraintFailureException, AlreadyIndexedException,
+            RepeatedPropertyInCompositeSchemaException
     {
+        assertValidDescriptor( descriptor, OperationContext.CONSTRAINT_CREATION );
         ConstraintDescriptor constraint = ConstraintDescriptorFactory.nodeKeyForSchema( descriptor );
         assertConstraintDoesNotExist( state, constraint );
 

@@ -154,7 +154,7 @@ public class SchemaRecordCheck implements RecordCheck<DynamicRecord, Consistency
         {
             checkSchema( rule, record, records, engine );
 
-            if ( rule.getConstraintDescriptor().type().enforcesUniqueness() )
+            if ( rule.getConstraintDescriptor().enforcesUniqueness() )
             {
                 DynamicRecord previousObligation = indexObligations.put( rule.getOwnedIndex(), record.clone() );
                 if ( previousObligation != null )
@@ -199,7 +199,7 @@ public class SchemaRecordCheck implements RecordCheck<DynamicRecord, Consistency
         public void checkConstraintRule( ConstraintRule rule, DynamicRecord record,
                 RecordAccess records, CheckerEngine<DynamicRecord,ConsistencyReport.SchemaConsistencyReport> engine )
         {
-            if ( rule.getConstraintDescriptor().type().enforcesUniqueness() )
+            if ( rule.getConstraintDescriptor().enforcesUniqueness() )
             {
                 DynamicRecord obligation = constraintObligations.get( rule.getId() );
                 if ( obligation == null )

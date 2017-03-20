@@ -962,7 +962,7 @@ public final class TxState implements TransactionState, RelationshipVisitor.Home
     public void constraintDoDrop( ConstraintDescriptor constraint )
     {
         constraintsChangesDiffSets().remove( constraint );
-        if ( constraint.type().enforcesUniqueness() )
+        if ( constraint.enforcesUniqueness() )
         {
             indexDoDrop( getIndexForIndexBackedConstraint( (IndexBackedConstraintDescriptor) constraint ) );
         }

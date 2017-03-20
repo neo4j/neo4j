@@ -286,7 +286,7 @@ public class SchemaCacheTest
         @Override
         protected ConstraintDescriptor readNonStandardConstraint( ConstraintRule rule, String errorMessage )
         {
-            if ( !rule.getConstraintDescriptor().type().enforcesPropertyExistence() )
+            if ( !rule.getConstraintDescriptor().enforcesPropertyExistence() )
             {
                 throw new IllegalStateException( "Unsupported constraint type: " + rule );
             }

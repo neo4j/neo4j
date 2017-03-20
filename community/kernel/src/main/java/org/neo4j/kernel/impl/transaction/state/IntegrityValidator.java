@@ -82,7 +82,7 @@ public class IntegrityValidator
         if ( schemaRule instanceof ConstraintRule )
         {
             ConstraintRule constraintRule = (ConstraintRule) schemaRule;
-            if ( constraintRule.getConstraintDescriptor().type().enforcesUniqueness() )
+            if ( constraintRule.getConstraintDescriptor().enforcesUniqueness() )
             {
                 try
                 {

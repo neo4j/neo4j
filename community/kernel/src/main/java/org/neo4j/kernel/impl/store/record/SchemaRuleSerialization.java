@@ -208,7 +208,7 @@ public class SchemaRuleSerialization
 
         length += 1; // constraint type
         ConstraintDescriptor constraintDescriptor = constraintRule.getConstraintDescriptor();
-        if ( constraintDescriptor.type().enforcesUniqueness() )
+        if ( constraintDescriptor.enforcesUniqueness() )
         {
             length += 8; // owned index id
         }

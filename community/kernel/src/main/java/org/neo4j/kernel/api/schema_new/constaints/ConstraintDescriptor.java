@@ -45,12 +45,12 @@ public abstract class ConstraintDescriptor implements SchemaDescriptor.Supplier
             this.mustExist = mustExist;
         }
 
-        public boolean enforcesUniqueness()
+        private boolean enforcesUniqueness()
         {
             return isUnique;
         }
 
-        public boolean enforcesPropertyExistence()
+        private boolean enforcesPropertyExistence()
         {
             return mustExist;
         }
@@ -75,6 +75,16 @@ public abstract class ConstraintDescriptor implements SchemaDescriptor.Supplier
     public Type type()
     {
         return type;
+    }
+
+    public boolean enforcesUniqueness()
+    {
+        return type.enforcesUniqueness();
+    }
+
+    public boolean enforcesPropertyExistence()
+    {
+        return type.enforcesPropertyExistence();
     }
 
     /**

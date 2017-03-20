@@ -147,7 +147,8 @@ public abstract class SchemaRule implements SchemaDescriptor.Supplier
             case UNIQUE:
                 return CONSTRAINT_INDEX_RULE;
             default:
-                throw new IllegalStateException( "Cannot end up here, says johant" );
+                throw new IllegalStateException(
+                        "Cannot map descriptor type to legacy schema rule: " + descriptor.type() );
             }
         }
 
@@ -160,7 +161,8 @@ public abstract class SchemaRule implements SchemaDescriptor.Supplier
             case EXISTS:
                 return descriptor.schema().computeWith( existenceKindMapper );
             default:
-                throw new IllegalStateException( "Cannot end up here, says johant" );
+                throw new IllegalStateException(
+                        "Cannot map descriptor type to legacy schema rule: " + descriptor.type() );
             }
         }
 

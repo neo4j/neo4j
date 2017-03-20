@@ -52,7 +52,7 @@ public class MandatoryProperties
         SchemaStorage schemaStorage = new SchemaStorage( storeAccess.getSchemaStore() );
         for ( ConstraintRule rule : constraintsIgnoringMalformed( schemaStorage ) )
         {
-            if ( rule.getConstraintDescriptor().type().enforcesPropertyExistence() )
+            if ( rule.getConstraintDescriptor().enforcesPropertyExistence() )
             {
                 rule.schema().processWith( constraintRecorder );
             }

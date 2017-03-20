@@ -1003,7 +1003,8 @@ public class OperationsFacade
 
     @Override
     public NodeKeyConstraintDescriptor nodeKeyConstraintCreate( LabelSchemaDescriptor descriptor )
-            throws CreateConstraintFailureException, AlreadyConstrainedException, AlreadyIndexedException
+            throws CreateConstraintFailureException, AlreadyConstrainedException, AlreadyIndexedException,
+            RepeatedPropertyInCompositeSchemaException
     {
         statement.assertOpen();
         return schemaWrite().nodeKeyConstraintCreate( statement, descriptor );

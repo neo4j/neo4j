@@ -28,13 +28,15 @@ import org.neo4j.kernel.GraphDatabaseQueryService
 import org.neo4j.test.TestEnterpriseGraphDatabaseFactory
 import org.scalatest.matchers.{MatchResult, Matcher}
 import org.neo4j.cypher.internal.frontend.v3_2.helpers.StringHelper._
+import org.neo4j.graphdb.config.Setting
 
 import scala.collection.JavaConverters._
+import scala.collection.Map
 
 class CompositeConstraintAcceptanceTest extends ExecutionEngineFunSuite with NewPlannerTestSupport {
 
-  override protected def createGraphDatabase(): GraphDatabaseCypherService = {
-    new GraphDatabaseCypherService(new TestEnterpriseGraphDatabaseFactory().newImpermanentDatabase(databaseConfig().asJava))
+  override protected def createGraphDatabase(config: Map[Setting[_], String] = databaseConfig()): GraphDatabaseCypherService = {
+    new GraphDatabaseCypherService(new TestEnterpriseGraphDatabaseFactory().newImpermanentDatabase(config.asJava))
   }
 
   test("should be able to create and remove composite uniqueness constraints") {

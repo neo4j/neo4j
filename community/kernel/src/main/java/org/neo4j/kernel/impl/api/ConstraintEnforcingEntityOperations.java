@@ -119,7 +119,7 @@ public class ConstraintEnforcingEntityOperations implements EntityOperations, Sc
             while ( constraints.hasNext() )
             {
                 ConstraintDescriptor constraint = constraints.next();
-                if ( constraint.type().enforcesUniqueness() )
+                if ( constraint.enforcesUniqueness() )
                 {
                     IndexBackedConstraintDescriptor uniqueConstraint = (IndexBackedConstraintDescriptor) constraint;
                     ExactPredicate[] propertyValues = getAllPropertyValues( state, uniqueConstraint.schema(), node );
@@ -558,7 +558,8 @@ public class ConstraintEnforcingEntityOperations implements EntityOperations, Sc
 
     @Override
     public NodeKeyConstraintDescriptor nodeKeyConstraintCreate( KernelStatement state, LabelSchemaDescriptor descriptor )
-            throws AlreadyConstrainedException, CreateConstraintFailureException, AlreadyIndexedException
+            throws AlreadyConstrainedException, CreateConstraintFailureException, AlreadyIndexedException,
+            RepeatedPropertyInCompositeSchemaException
     {
         Iterator<Cursor<NodeItem>> nodes = new NodeLoadingIterator( nodesGetForLabel( state, descriptor.getLabelId() ),
                 ( id ) -> nodeCursorById( state, id ) );

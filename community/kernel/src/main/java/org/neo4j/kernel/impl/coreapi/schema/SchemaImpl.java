@@ -374,6 +374,7 @@ public class SchemaImpl implements Schema
         // internal storage engine API.
         StatementTokenNameLookup lookup = new StatementTokenNameLookup( readOperations );
         if ( constraint instanceof NodeExistenceConstraintDescriptor ||
+             constraint instanceof NodeKeyConstraintDescriptor ||
              constraint instanceof UniquenessConstraintDescriptor )
         {
             LabelSchemaDescriptor schemaDescriptor = (LabelSchemaDescriptor) constraint.schema();
@@ -526,7 +527,8 @@ public class SchemaImpl implements Schema
                             SchemaDescriptorFactory.forLabel( labelId, propertyKeyIds ) );
                     return new NodeKeyConstraintDefinition( this, indexDefinition );
                 }
-                catch ( AlreadyConstrainedException | CreateConstraintFailureException | AlreadyIndexedException e )
+                catch ( AlreadyConstrainedException | CreateConstraintFailureException | AlreadyIndexedException |
+                        RepeatedPropertyInCompositeSchemaException e )
                 {
                     throw new ConstraintViolationException(
                             e.getUserMessage( new StatementTokenNameLookup( statement.readOperations() ) ), e );

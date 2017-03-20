@@ -346,7 +346,8 @@ public class LockingStatementOperations implements
 
     @Override
     public NodeKeyConstraintDescriptor nodeKeyConstraintCreate( KernelStatement state,LabelSchemaDescriptor descriptor )
-            throws CreateConstraintFailureException, AlreadyConstrainedException, AlreadyIndexedException
+            throws CreateConstraintFailureException, AlreadyConstrainedException, AlreadyIndexedException,
+            RepeatedPropertyInCompositeSchemaException
     {
         acquireExclusiveSchemaLock( state );
         state.assertOpen();

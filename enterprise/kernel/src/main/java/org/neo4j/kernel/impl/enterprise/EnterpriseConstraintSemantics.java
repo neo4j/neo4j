@@ -49,7 +49,7 @@ public class EnterpriseConstraintSemantics extends StandardConstraintSemantics
     @Override
     protected ConstraintDescriptor readNonStandardConstraint( ConstraintRule rule, String errorMessage )
     {
-        if ( !rule.getConstraintDescriptor().type().enforcesPropertyExistence() )
+        if ( !rule.getConstraintDescriptor().enforcesPropertyExistence() )
         {
             throw new IllegalStateException( "Unsupported constraint type: " + rule );
         }
@@ -156,7 +156,7 @@ public class EnterpriseConstraintSemantics extends StandardConstraintSemantics
 
         void addIfRelevant( ConstraintDescriptor constraint )
         {
-            if ( constraint.type().enforcesPropertyExistence() )
+            if ( constraint.enforcesPropertyExistence() )
             {
                 constraint.schema().processWith( this );
             }
