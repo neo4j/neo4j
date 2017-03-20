@@ -200,9 +200,6 @@ public interface ReadOperations
 
     Object graphGetProperty( int propertyKeyId );
 
-    <EXCEPTION extends Exception> void relationshipVisit( long relId, RelationshipVisitor<EXCEPTION> visitor )
-            throws EntityNotFoundException, EXCEPTION;
-
     long nodesGetCount();
 
     long relationshipsGetCount();

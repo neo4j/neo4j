@@ -483,14 +483,6 @@ public class OperationsFacade
     }
 
     @Override
-    public <EXCEPTION extends Exception> void relationshipVisit( long relId,
-            RelationshipVisitor<EXCEPTION> visitor ) throws EntityNotFoundException, EXCEPTION
-    {
-        statement.assertOpen();
-        dataRead().relationshipVisit( statement, relId, visitor );
-    }
-
-    @Override
     public long nodesGetCount()
     {
         statement.assertOpen();

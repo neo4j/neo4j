@@ -1805,14 +1805,6 @@ abstract class CodeGeneratorTest extends CypherFunSuite with LogicalPlanningTest
       getRelsForNode(allNodes(node), dir, types)
     }
   })
-  when(ro.relationshipVisit(anyLong(), any())).thenAnswer(new Answer[Unit] {
-    override def answer(invocationOnMock: InvocationOnMock): Unit = {
-      val relId = invocationOnMock.getArguments.apply(0).asInstanceOf[Long]
-      val visitor = invocationOnMock.getArguments.apply(1).asInstanceOf[RelationshipVisitor[_]]
-      val rel = relMap(relId)
-      visitor.visit(relId, -1, rel.from.getId, rel.to.getId)
-    }
-  })
   when(ro.nodeGetDegree(anyLong(), any())).thenReturn(1)
   when(ro.nodeGetDegree(anyLong(), any(), anyInt())).thenReturn(1)
   when(ro.nodeHasLabel(anyLong(), anyInt())).thenAnswer(new Answer[Boolean] {
