@@ -36,7 +36,6 @@ import org.neo4j.graphdb.event.PropertyEntry;
 import org.neo4j.graphdb.event.TransactionData;
 import org.neo4j.helpers.collection.IterableWrapper;
 import org.neo4j.kernel.api.KernelTransaction;
-import org.neo4j.kernel.api.exceptions.EntityNotFoundException;
 import org.neo4j.kernel.api.exceptions.LabelNotFoundKernelException;
 import org.neo4j.kernel.api.exceptions.PropertyKeyIdNotFoundKernelException;
 import org.neo4j.kernel.api.properties.DefinedProperty;
@@ -203,13 +202,12 @@ public class TxStateTransactionDataSnapshot implements TransactionData
         {
             for ( long nodeId : state.addedAndRemovedNodes().getRemoved() )
             {
-                try ( Cursor<NodeItem> node = storeStatement.acquireSingleNodeCursor( nodeId, null ) )
+                try ( Cursor<NodeItem> node = store.nodeCursor( storeStatement, nodeId, null ) )
                 {
                     if ( node.next() )
                     {
-                        Lock lock = node.get().lock();
-                        try ( Cursor<PropertyItem> properties = storeStatement
-                                .acquirePropertyCursor( node.get().nextPropertyId(), lock, null ) )
+                        try ( Cursor<PropertyItem> properties = store
+                                .nodeGetProperties( storeStatement, node.get(), null ) )
                         {
                             while ( properties.next() )
                             {
@@ -230,14 +228,12 @@ public class TxStateTransactionDataSnapshot implements TransactionData
             for ( long relId : state.addedAndRemovedRelationships().getRemoved() )
             {
                 Relationship relationshipProxy = relationship( relId );
-                try ( Cursor<RelationshipItem> relationship = storeStatement
-                        .acquireSingleRelationshipCursor( relId, null ) )
+                try ( Cursor<RelationshipItem> relationship = store.relationshipCursor( storeStatement, relId, null ) )
                 {
                     if ( relationship.next() )
                     {
-                        Lock lock = relationship.get().lock();
-                        try ( Cursor<PropertyItem> properties = storeStatement
-                                .acquirePropertyCursor( relationship.get().nextPropertyId(), lock, null ) )
+                        try ( Cursor<PropertyItem> properties = store
+                                .relationshipGetProperties( storeStatement, relationship.get(), null ) )
                         {
                             while ( properties.next() )
                             {
@@ -264,9 +260,9 @@ public class TxStateTransactionDataSnapshot implements TransactionData
                 while ( removed.hasNext() )
                 {
                     Integer property = removed.next();
-                    removedNodeProperties.add( new NodePropertyEntryView( nodeState.getId(),
-                            store.propertyKeyGetName( property ), null,
-                            committedValue( nodeState, property ) ) );
+                    removedNodeProperties
+                            .add( new NodePropertyEntryView( nodeState.getId(), store.propertyKeyGetName( property ),
+                                    null, committedValue( nodeState, property ) ) );
                 }
                 ReadableDiffSets<Integer> labels = nodeState.labelDiffSets();
                 for ( Integer label : labels.getAdded() )
@@ -293,9 +289,9 @@ public class TxStateTransactionDataSnapshot implements TransactionData
                 while ( removed.hasNext() )
                 {
                     Integer property = removed.next();
-                    removedRelationshipProperties.add( new RelationshipPropertyEntryView( relationship,
-                            store.propertyKeyGetName( property ), null,
-                            committedValue( relState, property ) ) );
+                    removedRelationshipProperties
+                            .add( new RelationshipPropertyEntryView( relationship, store.propertyKeyGetName( property ),
+                                    null, committedValue( relState, property ) ) );
                 }
             }
         }
@@ -307,27 +303,32 @@ public class TxStateTransactionDataSnapshot implements TransactionData
 
     private Relationship relationship( long relId )
     {
-        RelationshipProxy relationship = new RelationshipProxy( relationshipActions, relId );
-        if ( !state.relationshipVisit( relId, relationship ) )
-        {   // This relationship has been created or changed in this transaction
-            RelationshipProxy cached = relationshipsReadFromStore.get( relId );
-            if ( cached != null )
-            {
-                return cached;
-            }
+        if ( state.relationshipIsAddedInThisTx( relId ) )
+        {
+            return new RelationshipProxy( relationshipActions, relId );
+        }
 
-            try
-            {   // Get this relationship data from the store
-                store.relationshipVisit( relId, relationship );
-                relationshipsReadFromStore.put( relId, relationship );
-            }
-            catch ( EntityNotFoundException e )
+        // This relationship has been created or changed in this transaction
+        RelationshipProxy cached = relationshipsReadFromStore.get( relId );
+        if ( cached != null )
+        {
+            return cached;
+        }
+
+        // Get this relationship data from the store
+        try ( Cursor<RelationshipItem> cursor = store.relationshipCursor( storeStatement, relId, null ) )
+        {
+            if ( !cursor.next() )
             {
                 throw new IllegalStateException(
                         "Getting deleted relationship data should have been covered by the tx state" );
             }
+            RelationshipItem rel = cursor.get();
+            RelationshipProxy relationship =
+                    new RelationshipProxy( relationshipActions, relId, rel.startNode(), rel.type(), rel.endNode() );
+            relationshipsReadFromStore.put( relId, relationship );
+            return relationship;
         }
-        return relationship;
     }
 
     private Iterable<Node> map2Nodes( Iterable<Long> added )
@@ -361,16 +362,15 @@ public class TxStateTransactionDataSnapshot implements TransactionData
             return null;
         }
 
-        try ( Cursor<NodeItem> node = storeStatement.acquireSingleNodeCursor( nodeState.getId(), null ) )
+        try ( Cursor<NodeItem> node = store.nodeCursor( storeStatement, nodeState.getId(), null ) )
         {
             if ( !node.next() )
             {
                 return null;
             }
 
-            Lock lock = node.get().lock();
-            try ( Cursor<PropertyItem> properties = storeStatement
-                    .acquireSinglePropertyCursor( node.get().nextPropertyId(), property, lock, null ) )
+            try ( Cursor<PropertyItem> properties = store
+                    .nodeGetProperty( storeStatement, node.get(), property, null ) )
             {
                 if ( properties.next() )
                 {
@@ -389,17 +389,16 @@ public class TxStateTransactionDataSnapshot implements TransactionData
             return null;
         }
 
-        try ( Cursor<RelationshipItem> relationship = storeStatement
-                .acquireSingleRelationshipCursor( relState.getId(), null ) )
+        try ( Cursor<RelationshipItem> relationship = store
+                .relationshipCursor( storeStatement, relState.getId(), null ) )
         {
             if ( !relationship.next() )
             {
                 return null;
             }
 
-            Lock lock = relationship.get().lock();
-            try ( Cursor<PropertyItem> properties = storeStatement
-                    .acquireSinglePropertyCursor( relationship.get().nextPropertyId(), property, lock, null ) )
+            try ( Cursor<PropertyItem> properties = store
+                    .relationshipGetProperty( storeStatement, relationship.get(), property, null ) )
             {
                 if ( properties.next() )
                 {
@@ -439,7 +438,7 @@ public class TxStateTransactionDataSnapshot implements TransactionData
         }
 
         @Override
-        public Object previouslyCommitedValue()
+        public Object previouslyCommittedValue()
         {
             return oldValue;
         }
@@ -494,7 +493,7 @@ public class TxStateTransactionDataSnapshot implements TransactionData
         }
 
         @Override
-        public Object previouslyCommitedValue()
+        public Object previouslyCommittedValue()
         {
             return oldValue;
         }
