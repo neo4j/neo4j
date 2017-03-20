@@ -738,21 +738,6 @@ public class IndexingService extends LifecycleAdapter
         }
     }
 
-    public void flushAll()
-    {
-        for ( IndexProxy index : indexMapRef.getAllIndexProxies() )
-        {
-            try
-            {
-                index.flush();
-            }
-            catch ( IOException e )
-            {
-                throw new UnderlyingStorageException( "Unable to force " + index, e );
-            }
-        }
-    }
-
     private void closeAllIndexes()
     {
         Iterable<IndexProxy> indexesToStop = indexMapRef.clear();

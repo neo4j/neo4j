@@ -121,12 +121,6 @@ public class PopulatingIndexProxy implements IndexProxy
     }
 
     @Override
-    public void flush() throws IOException
-    {
-        // Ignored... this isn't controlled from the outside while we're populating the index.
-    }
-
-    @Override
     public Future<Void> close()
     {
         return job.cancel();
