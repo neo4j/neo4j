@@ -527,7 +527,7 @@ public class StorePropertyPayloadCursorTest
     }
 
     @SuppressWarnings( "unchecked" )
-    private static <S extends AbstractDynamicStore> S newDynamicStoreMock( Class<S> clazz ) throws IOException
+    private static <S extends AbstractDynamicStore> S newDynamicStoreMock( Class<S> clazz )
     {
         S store = mock( clazz );
         when( store.newRecord() ).thenReturn( new DynamicRecord( DynamicRecord.NO_ID ) );
@@ -537,7 +537,7 @@ public class StorePropertyPayloadCursorTest
             record.setId( 42 );
             record.setData( new byte[]{1, 1, 1, 1, 1} );
             return null;
-        } ).when( store ).readIntoRecord( anyLong(), any( DynamicRecord.class ), any( RecordLoad.class ),
+        } ).when( store ).readRecord( anyLong(), any( DynamicRecord.class ), any( RecordLoad.class ),
                 any( PageCursor.class ) );
         return store;
     }

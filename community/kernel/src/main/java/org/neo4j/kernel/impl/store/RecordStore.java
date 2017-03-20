@@ -115,6 +115,12 @@ public interface RecordStore<RECORD extends AbstractBaseRecord> extends IdSequen
     RECORD getRecord( long id, RECORD target, RecordLoad mode ) throws InvalidRecordException;
 
     /**
+     * Same as {@link RecordStore#getRecord(long, RECORD, RecordLoad)} but accept a {@link PageCursor} in input to use
+     * for the read.
+     */
+    RECORD readRecord( long id, RECORD target, RecordLoad mode, PageCursor cursor ) throws InvalidRecordException;
+
+    /**
      * For stores that have other stores coupled underneath, the "top level" record will have a flag
      * saying whether or not it's light. Light means that no records from the coupled store have been loaded yet.
      * This method can load those records and enrich the target record with those, marking it as heavy.
@@ -264,6 +270,12 @@ public interface RecordStore<RECORD extends AbstractBaseRecord> extends IdSequen
         public R getRecord( long id, R target, RecordLoad mode ) throws InvalidRecordException
         {
             return actual.getRecord( id, target, mode );
+        }
+
+        @Override
+        public R readRecord( long id, R target, RecordLoad mode, PageCursor cursor ) throws InvalidRecordException
+        {
+            return actual.readRecord( id, target, mode, cursor );
         }
 
         @Override

@@ -432,19 +432,13 @@ public class NodeCursorTest
         int nextProp = 42 + (int) id;
         long nextRel = 43 + id;
         long[] labelIds = new long[]{4 + id, 5 + id};
-        try
+        when( nodeStore.readRecord( id, nodeRecord, CHECK, pageCursor ) ).thenAnswer( invocationOnMock ->
         {
-            doAnswer( invocationOnMock ->
-            {
-                nodeRecord.setId( id );
-                nodeRecord.initialize( true, nextProp, dense, nextRel, inlinedLabelsLongRepresentation( labelIds ) );
-                return null;
-            } ).when( nodeStore ).readIntoRecord( id, nodeRecord, CHECK, pageCursor );
-        }
-        catch ( IOException e )
-        {
-            throw new RuntimeException( e );
-        }
+            nodeRecord.setId( id );
+            nodeRecord.initialize( true, nextProp, dense, nextRel, inlinedLabelsLongRepresentation( labelIds ) );
+            return nodeRecord;
+        } );
+
         return new NodeItem()
         {
             @Override
