@@ -21,6 +21,7 @@ package org.neo4j.kernel.api.schema_new.constaints;
 
 import org.neo4j.kernel.api.TokenNameLookup;
 import org.neo4j.kernel.api.schema_new.LabelSchemaDescriptor;
+import org.neo4j.kernel.api.schema_new.SchemaUtil;
 
 public class NodeExistenceConstraintDescriptor extends ConstraintDescriptor
 {
@@ -43,9 +44,9 @@ public class NodeExistenceConstraintDescriptor extends ConstraintDescriptor
     {
         String labelName = escapeLabelOrRelTyp( tokenNameLookup.labelGetName( schema.getLabelId() ) );
         String nodeName = labelName.toLowerCase();
-        String propertyName = tokenNameLookup.propertyKeyGetName( schema.getPropertyId() );
+        String properties =
+                SchemaUtil.niceProperties( tokenNameLookup, schema.getPropertyIds(), nodeName + ".", false );
 
-        return String.format( "CONSTRAINT ON ( %s:%s ) ASSERT exists(%s.%s)",
-                nodeName, labelName, nodeName, propertyName );
+        return String.format( "CONSTRAINT ON ( %s:%s ) ASSERT exists(%s)", nodeName, labelName, properties );
     }
 }

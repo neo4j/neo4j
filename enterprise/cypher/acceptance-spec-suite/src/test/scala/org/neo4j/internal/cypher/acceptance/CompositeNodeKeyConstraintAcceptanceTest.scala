@@ -91,6 +91,30 @@ class CompositeNodeKeyConstraintAcceptanceTest extends ExecutionEngineFunSuite w
     }
   }
 
+  test("single property NODE KEY constraint should block adding nodes with missing property") {
+    // When
+    exec("CREATE CONSTRAINT ON (n:User) ASSERT (n.email) IS NODE KEY")
+    createLabeledNode(Map("email" -> "joe@soap.tv"), "User")
+    createLabeledNode(Map("email" -> "jake@soap.tv"), "User")
+
+    // Then
+    a[ConstraintViolationException] should be thrownBy {
+      createLabeledNode(Map("firstname" -> "Joe", "lastname" -> "Soap"), "User")
+    }
+  }
+
+  test("composite NODE KEY constraint should block adding nodes with missing properties") {
+    // When
+    exec("CREATE CONSTRAINT ON (n:User) ASSERT (n.firstname,n.lastname) IS NODE KEY")
+    createLabeledNode(Map("firstname" -> "Joe", "lastname" -> "Soap"), "User")
+    createLabeledNode(Map("firstname" -> "Joe", "lastname" -> "Smoke"), "User")
+
+    // Then
+    a[ConstraintViolationException] should be thrownBy {
+      createLabeledNode(Map("firstname" -> "Joe", "lastnamex" -> "Soap"), "User")
+    }
+  }
+
   test("composite NODE KEY constraint should not fail when we have nodes with different properties") {
     // When
     createLabeledNode(Map("firstname" -> "Joe", "lastname" -> "Soap"), "User")
@@ -163,6 +187,16 @@ class CompositeNodeKeyConstraintAcceptanceTest extends ExecutionEngineFunSuite w
   }
 
   test("trying to add duplicate node when composite node key constraint exists") {
+    createLabeledNode(Map("name" -> "A", "surname" -> "B"), "Person")
+    exec("CREATE CONSTRAINT ON (person:Person) ASSERT (person.name, person.surname) IS NODE KEY")
+
+    expectError(
+      "CREATE (n:Person) SET n.name = 'A', n.surname = 'B'",
+      String.format("Node(0) already exists with label `Person` and properties `name` = 'A', `surname` = 'B'")
+    )
+  }
+
+  test("trying to add node withoutwhen composite node key constraint exists") {
     createLabeledNode(Map("name" -> "A", "surname" -> "B"), "Person")
     exec("CREATE CONSTRAINT ON (person:Person) ASSERT (person.name, person.surname) IS NODE KEY")
 
