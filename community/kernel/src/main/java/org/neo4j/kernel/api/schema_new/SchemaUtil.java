@@ -31,17 +31,21 @@ public class SchemaUtil
 
     public static String niceProperties( TokenNameLookup tokenNameLookup, int[] propertyIds )
     {
-        return niceProperties( tokenNameLookup, propertyIds, "" );
+        return niceProperties( tokenNameLookup, propertyIds, "", false );
     }
 
-    public static String niceProperties( TokenNameLookup tokenNameLookup, int[] propertyIds, String prefix )
+    public static String niceProperties( TokenNameLookup tokenNameLookup, int[] propertyIds, String prefix,
+            boolean useBrackets )
     {
-        String[] properties = new String[propertyIds.length];
+        StringBuilder properties = new StringBuilder();
+        if ( useBrackets ) { properties.append( "(" ); }
         for ( int i = 0; i < propertyIds.length; i++ )
         {
-            properties[i] = prefix + tokenNameLookup.propertyKeyGetName( propertyIds[i] );
+            if ( i > 0 ) { properties.append( ", " ); }
+            properties.append( prefix ).append( tokenNameLookup.propertyKeyGetName( propertyIds[i] ) );
         }
-        return String.join( ", ", properties );
+        if ( useBrackets ) { properties.append( ")" ); }
+        return properties.toString();
     }
 
     public static TokenNameLookup idTokenNameLookup = new TokenNameLookup() {
