@@ -328,5 +328,5 @@ public class SecuritySettings
 
     @Description( "Set to true if users with role `publisher` are allowed to create new tokens." )
     public static final Setting<Boolean> allow_publisher_create_token =
-            setting( "dbms.security.allow_publisher_create_token", BOOLEAN, "false" );
+            setting( "dbms.security.allow_publisher_create_token", BOOLEAN, "true" );
 }

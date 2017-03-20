@@ -34,19 +34,9 @@ public abstract class ConfiguredAuthScenariosInteractionTestBase<S> extends Proc
     }
 
     @Test
-    public void shouldNotAllowPublisherCreateNewTokens() throws Throwable
+    public void shouldAllowPublisherCreateNewTokens() throws Throwable
     {
         configuredSetup( defaultConfiguration() );
-        assertFail( writeSubject, "CREATE (:MySpecialLabel)", TOKEN_CREATE_OPS_NOT_ALLOWED );
-        assertFail( writeSubject, "MATCH (a:Node), (b:Node) WHERE a.number = 0 AND b.number = 1 " +
-                "CREATE (a)-[:MySpecialRelationship]->(b)", TOKEN_CREATE_OPS_NOT_ALLOWED );
-        assertFail( writeSubject, "CREATE (a) SET a.MySpecialProperty = 'a'", TOKEN_CREATE_OPS_NOT_ALLOWED );
-    }
-
-    @Test
-    public void shouldAllowPublisherCreateNewTokensWhenConfigured() throws Throwable
-    {
-        configuredSetup( stringMap( SecuritySettings.allow_publisher_create_token.name(), "true" ) );
         assertEmpty( writeSubject, "CREATE (:MySpecialLabel)" );
         assertEmpty( writeSubject, "MATCH (a:Node), (b:Node) WHERE a.number = 0 AND b.number = 1 " +
                 "CREATE (a)-[:MySpecialRelationship]->(b)" );
@@ -54,21 +44,31 @@ public abstract class ConfiguredAuthScenariosInteractionTestBase<S> extends Proc
     }
 
     @Test
-    public void shouldNotAllowPublisherCallCreateNewTokensProcedures() throws Throwable
+    public void shouldNotAllowPublisherCreateNewTokensWhenConfigured() throws Throwable
     {
-        configuredSetup( defaultConfiguration() );
-        assertFail( writeSubject, "CALL db.createLabel('MySpecialLabel')", TOKEN_CREATE_OPS_NOT_ALLOWED );
-        assertFail( writeSubject, "CALL db.createRelationshipType('MySpecialRelationship')", TOKEN_CREATE_OPS_NOT_ALLOWED );
-        assertFail( writeSubject, "CALL db.createProperty('MySpecialProperty')", TOKEN_CREATE_OPS_NOT_ALLOWED );
+        configuredSetup( stringMap( SecuritySettings.allow_publisher_create_token.name(), "false" ) );
+        assertFail( writeSubject, "CREATE (:MySpecialLabel)", TOKEN_CREATE_OPS_NOT_ALLOWED );
+        assertFail( writeSubject, "MATCH (a:Node), (b:Node) WHERE a.number = 0 AND b.number = 1 " +
+                "CREATE (a)-[:MySpecialRelationship]->(b)", TOKEN_CREATE_OPS_NOT_ALLOWED );
+        assertFail( writeSubject, "CREATE (a) SET a.MySpecialProperty = 'a'", TOKEN_CREATE_OPS_NOT_ALLOWED );
     }
 
     @Test
-    public void shouldAllowPublisherCallCreateNewTokensProceduresWhenConfigured() throws Throwable
+    public void shouldAllowPublisherCallCreateNewTokensProcedures() throws Throwable
     {
-        configuredSetup( stringMap( SecuritySettings.allow_publisher_create_token.name(), "true" ) );
+        configuredSetup( defaultConfiguration() );
         assertEmpty( writeSubject, "CALL db.createLabel('MySpecialLabel')" );
         assertEmpty( writeSubject, "CALL db.createRelationshipType('MySpecialRelationship')" );
         assertEmpty( writeSubject, "CALL db.createProperty('MySpecialProperty')" );
+    }
+
+    @Test
+    public void shouldNotAllowPublisherCallCreateNewTokensProceduresWhenConfigured() throws Throwable
+    {
+        configuredSetup( stringMap( SecuritySettings.allow_publisher_create_token.name(), "false" ) );
+        assertFail( writeSubject, "CALL db.createLabel('MySpecialLabel')", TOKEN_CREATE_OPS_NOT_ALLOWED );
+        assertFail( writeSubject, "CALL db.createRelationshipType('MySpecialRelationship')", TOKEN_CREATE_OPS_NOT_ALLOWED );
+        assertFail( writeSubject, "CALL db.createProperty('MySpecialProperty')", TOKEN_CREATE_OPS_NOT_ALLOWED );
     }
 
     @Test
