@@ -147,7 +147,7 @@ case class PruningVarLengthExpandPipe(source: Pipe,
 
 
   /**
-    * Performs DFS travelsal, but omits traversing relationships that have been completely traversed (to the
+    * Performs DFS traversal, but omits traversing relationships that have been completely traversed (to the
     * remaining depth) before.
     *
     * Pruning and full expand depths
