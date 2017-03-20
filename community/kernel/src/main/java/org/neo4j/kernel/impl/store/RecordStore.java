@@ -140,19 +140,6 @@ public interface RecordStore<RECORD extends AbstractBaseRecord> extends IdSequen
     Collection<RECORD> getRecords( long firstId, RecordLoad mode ) throws InvalidRecordException;
 
     /**
-     * Instantiates a new record cursor capable of iterating over records in this store. A {@link RecordCursor}
-     * gets created with one record and will use every time it reads records.
-     *
-     * This method relates to {@link #placeRecordCursor(long, RecordCursor, RecordLoad)} just like
-     * {@link #newRecord()} relates to {@link #getRecord(long, AbstractBaseRecord, RecordLoad)} in that
-     * instantiation of object is separate from reading record data.
-     *
-     * @param record instance to use when reading record data.
-     * @return a new {@link RecordCursor} instance capable of reading records in this store.
-     */
-    RecordCursor<RECORD> newRecordCursor( RECORD record );
-
-    /**
      * Instantiates a new page cursor capable of iterating over records in this store.
      *
      * @return a new {@link PageCursor} instance capable of reading records in this store.
@@ -289,12 +276,6 @@ public interface RecordStore<RECORD extends AbstractBaseRecord> extends IdSequen
         public Collection<R> getRecords( long firstId, RecordLoad mode ) throws InvalidRecordException
         {
             return actual.getRecords( firstId, mode );
-        }
-
-        @Override
-        public RecordCursor<R> newRecordCursor( R record )
-        {
-            return actual.newRecordCursor( record );
         }
 
         @Override

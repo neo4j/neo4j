@@ -24,7 +24,6 @@ import java.util.Arrays;
 
 import org.neo4j.collection.primitive.PrimitiveLongIterator;
 import org.neo4j.io.pagecache.PageCursor;
-import org.neo4j.kernel.impl.store.RecordCursor;
 import org.neo4j.kernel.impl.store.RecordStore;
 import org.neo4j.kernel.impl.store.id.validation.IdValidator;
 import org.neo4j.kernel.impl.store.record.AbstractBaseRecord;
@@ -35,7 +34,7 @@ import static org.neo4j.kernel.impl.store.record.RecordLoad.CHECK;
 
 /**
  * Reads records from a {@link RecordStore} and sends batches of those records downstream.
- * A {@link RecordCursor} is used during the life cycle of this {@link Step}, e.g. between
+ * A {@link PageCursor} is used during the life cycle of this {@link Step}, e.g. between
  * {@link #start(int)} and {@link #close()}.
  *
  * @param <RECORD> type of {@link AbstractBaseRecord}
