@@ -33,7 +33,5 @@ public enum Mode
     /** This procedure will perform system operations - i.e. not against the graph */
     DBMS,
     /** This procedure will only perform read operations against the graph */
-    DEFAULT,
-    /** This procedure may perform both read and write operations against the graph and create new tokens */
-    TOKEN
+    DEFAULT
 }
