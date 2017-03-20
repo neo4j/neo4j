@@ -73,27 +73,6 @@ public interface ProcedureCallOperations
             throws ProcedureException;
 
     /**
-     * Invoke a read/write and token create procedure by name.
-     * @param name the name of the procedure.
-     * @param arguments the procedure arguments.
-     * @return an iterator containing the procedure results.
-     * @throws ProcedureException if there was an exception thrown during procedure execution.
-     */
-    RawIterator<Object[], ProcedureException> procedureCallToken(
-            QualifiedName name, Object[] arguments )
-            throws ProcedureException;
-    /**
-     * Invoke a read/write and token create procedure by name, and set the transaction's access mode to
-     * {@link AccessMode.Static#TOKEN_WRITE TOKEN_WRITE} for the duration of the procedure execution.
-     * @param name the name of the procedure.
-     * @param arguments the procedure arguments.
-     * @return an iterator containing the procedure results.
-     * @throws ProcedureException if there was an exception thrown during procedure execution.
-     */
-    RawIterator<Object[], ProcedureException> procedureCallTokenOverride( QualifiedName name, Object[] arguments )
-            throws ProcedureException;
-
-    /**
      * Invoke a schema write procedure by name.
      * @param name the name of the procedure.
      * @param arguments the procedure arguments.

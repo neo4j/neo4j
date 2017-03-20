@@ -616,15 +616,6 @@ final class TransactionBoundQueryContext(val transactionalContext: Transactional
     callProcedure(name, args, call)
   }
 
-  override def callTokenWriteProcedure(name: QualifiedName, args: Seq[Any], allowed: Array[String]) = {
-    val call: KernelProcedureCall =
-      if (shouldElevate(allowed))
-        transactionalContext.statement.procedureCallOperations.procedureCallTokenOverride(_, _)
-      else
-        transactionalContext.statement.procedureCallOperations.procedureCallToken(_, _)
-    callProcedure(name, args, call)
-  }
-
   override def callSchemaWriteProcedure(name: QualifiedName, args: Seq[Any], allowed: Array[String]) = {
     val call: KernelProcedureCall =
       if (shouldElevate(allowed))
