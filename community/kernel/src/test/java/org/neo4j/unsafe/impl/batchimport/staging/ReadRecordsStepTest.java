@@ -157,11 +157,5 @@ public class ReadRecordsStepTest
             record.setId( id );
             return populator.test( record );
         }
-
-        @Override
-        public boolean next( long id, RECORD record, RecordLoad mode )
-        {
-            throw new UnsupportedOperationException();
-        }
     }
 }

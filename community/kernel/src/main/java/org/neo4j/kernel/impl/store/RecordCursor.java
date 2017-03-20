@@ -77,20 +77,6 @@ public interface RecordCursor<R extends AbstractBaseRecord> extends Cursor<R>
      */
     boolean next( long id );
 
-     /**
-      * An additional way of placing this cursor at an arbitrary record id.
-      * Calling this method will not advance the "current id" as to change which {@link #next()} will load next.
-      * This method is useful when there's an opportunity to load a record from an already acquired
-      * {@link PageCursor} and potentially even an already pinned page.
-      *
-      * @param id record id to place cursor at.
-      * @param record record to load the record data into.
-      * @param mode {@link RecordLoad} mode temporarily overriding the default provided in
-      * {@link #acquire(long, RecordLoad)}.
-      * @return whether or not that record is in use.
-      */
-    boolean next( long id, R record, RecordLoad mode );
-
     /**
      * Read all records in the chain starting from the id this cursor is positioned at using either
      * {@link #acquire(long, RecordLoad)} or {@link #placeAt(long, RecordLoad)}. Each next record in the chain is
@@ -154,12 +140,6 @@ public interface RecordCursor<R extends AbstractBaseRecord> extends Cursor<R>
         public boolean next( long id )
         {
             return actual.next( id );
-        }
-
-        @Override
-        public boolean next( long id, R record, RecordLoad mode )
-        {
-            return actual.next( id, record, mode );
         }
     }
 }
