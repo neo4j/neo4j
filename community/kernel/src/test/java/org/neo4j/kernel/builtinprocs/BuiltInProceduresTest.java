@@ -152,13 +152,17 @@ public class BuiltInProceduresTest
     {
         // Given
         givenUniqueConstraint( "User", "name" );
-        givenNodePropExistenceConstraint( "User", "name" );
+        givenNodePropExistenceConstraint( "Site", "url" );
+        // the parts for a NODE KEY
+        givenUniqueConstraint( "Computer", "mac" );
+        givenNodePropExistenceConstraint( "Computer", "mac" );
 
         // When/Then
         assertThat( call( "db.constraints" ),
-                contains(
-                        record( "CONSTRAINT ON ( user:User ) ASSERT exists(user.name)" ),
-                        record( "CONSTRAINT ON ( user:User ) ASSERT user.name IS UNIQUE" ) ) );
+                containsInAnyOrder(
+                        record( "CONSTRAINT ON ( site:Site ) ASSERT exists(site.url)" ),
+                        record( "CONSTRAINT ON ( user:User ) ASSERT user.name IS UNIQUE" ),
+                        record( "CONSTRAINT ON ( computer:Computer ) ASSERT computer.mac IS NODE KEY" ) ) );
     }
 
     @Test
@@ -166,14 +170,14 @@ public class BuiltInProceduresTest
     {
         // Given
         givenUniqueConstraint( "FOO:BAR", "x.y" );
-        givenNodePropExistenceConstraint( "FOO:BAR", "x.y" );
+        givenNodePropExistenceConstraint( "FOO:BAR", "x.z" );
 
         // When/Then
         List<Object[]> call = call( "db.constraints" );
         assertThat( call,
                 contains(
                         record( "CONSTRAINT ON ( `foo:bar`:`FOO:BAR` ) ASSERT `foo:bar`.x.y IS UNIQUE" ),
-                        record( "CONSTRAINT ON ( `foo:bar`:`FOO:BAR` ) ASSERT exists(`foo:bar`.x.y)" ) ) );
+                        record( "CONSTRAINT ON ( `foo:bar`:`FOO:BAR` ) ASSERT exists(`foo:bar`.x.z)" ) ) );
     }
 
     @Test

@@ -134,11 +134,13 @@ public class PECListingIT extends AbstractShellIT
     {
         // GIVEN
         Label label = label( "Person" );
+        Label computerLabel = label( "Computer" );
         RelationshipType relType = RelationshipType.withName( "KNOWS" );
 
         // WHEN
-        SchemaHelper.createUniquenessConstraint( db, label, "name" );
+        SchemaHelper.createUniquenessConstraint( db, label, "email" );
         SchemaHelper.createNodePropertyExistenceConstraint( db, label, "name" );
+        SchemaHelper.createNodeKeyConstraint( db, computerLabel, "mac" );
         SchemaHelper.createRelPropertyExistenceConstraint( db, relType, "since" );
 
         SchemaHelper.awaitIndexes( db );
@@ -146,10 +148,12 @@ public class PECListingIT extends AbstractShellIT
         // THEN
         executeCommand( "schema",
                 "Indexes",
-                "  ON :Person\\(name\\) ONLINE \\(for uniqueness constraint\\)",
+                "  ON :Computer\\(mac\\) ONLINE \\(for uniqueness constraint\\)",
+                "  ON :Person\\(email\\) ONLINE \\(for uniqueness constraint\\)",
                 "Constraints",
-                "  ON \\(person:Person\\) ASSERT person.name IS UNIQUE",
+                "  ON \\(person:Person\\) ASSERT person.email IS UNIQUE",
                 "  ON \\(person:Person\\) ASSERT exists\\(person.name\\)",
+                "  ON \\(computer:Computer\\) ASSERT computer.mac IS NODE KEY",
                 "  ON \\(\\)-\\[knows:KNOWS\\]-\\(\\) ASSERT exists\\(knows.since\\)" );
     }
 

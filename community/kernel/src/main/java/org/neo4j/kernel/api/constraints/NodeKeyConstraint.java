@@ -21,19 +21,23 @@ package org.neo4j.kernel.api.constraints;
 
 import org.neo4j.kernel.api.TokenNameLookup;
 import org.neo4j.kernel.api.schema_new.LabelSchemaDescriptor;
-import org.neo4j.kernel.api.schema_new.constaints.NodeExistenceConstraintDescriptor;
+import org.neo4j.kernel.api.schema_new.SchemaUtil;
+import org.neo4j.kernel.api.schema_new.index.NewIndexDescriptor;
+import org.neo4j.kernel.api.schema_new.index.NewIndexDescriptorFactory;
 
 /**
- * Description of constraint enforcing nodes to contain a certain property.
- *
- * @deprecated use {@link NodeExistenceConstraintDescriptor} instead.
+ * Description of uniqueness and existence constraint over nodes given a label and a property key id.
  */
-@Deprecated
-public class NodePropertyExistenceConstraint extends NodePropertyConstraint
+public class NodeKeyConstraint extends NodePropertyConstraint
 {
-    public NodePropertyExistenceConstraint( LabelSchemaDescriptor descriptor )
+    public NodeKeyConstraint( LabelSchemaDescriptor descriptor )
     {
         super( descriptor );
+    }
+
+    public NewIndexDescriptor indexDescriptor()
+    {
+        return NewIndexDescriptorFactory.forSchema( descriptor );
     }
 
     @Override
@@ -41,15 +45,18 @@ public class NodePropertyExistenceConstraint extends NodePropertyConstraint
     {
         String labelName = labelName( tokenNameLookup );
         String boundIdentifier = labelName.toLowerCase();
-        return String.format( "CONSTRAINT ON ( %s:%s ) ASSERT exists(%s.%s)",
-                boundIdentifier, labelName, boundIdentifier,
-                tokenNameLookup.labelGetName( descriptor.getLabelId() ) );
+        String properties = SchemaUtil
+                .niceProperties( tokenNameLookup, descriptor.getPropertyIds(), boundIdentifier + "." );
+        if ( descriptor.isComposite() )
+        {
+            properties = "(" + properties + ")";
+        }
+        return String.format( "CONSTRAINT ON ( %s:%s ) ASSERT %s IS NODE KEY", boundIdentifier, labelName, properties );
     }
 
     @Override
     public String toString()
     {
-        return String.format( "CONSTRAINT ON ( n:label[%d] ) ASSERT exists(n.property[%d])",
-                descriptor.getLabelId(), descriptor.getPropertyId() );
+        return userDescription( SchemaUtil.idTokenNameLookup );
     }
 }

@@ -20,7 +20,6 @@
 package org.neo4j.kernel.api.constraints;
 
 import org.neo4j.kernel.api.TokenNameLookup;
-import org.neo4j.kernel.api.exceptions.schema.CreateConstraintFailureException;
 import org.neo4j.kernel.api.schema_new.SchemaDescriptor;
 import org.neo4j.kernel.api.schema_new.constaints.ConstraintDescriptor;
 
@@ -32,27 +31,6 @@ import org.neo4j.kernel.api.schema_new.constaints.ConstraintDescriptor;
 @Deprecated
 public interface PropertyConstraint
 {
-    interface ChangeVisitor
-    {
-        void visitAddedUniquePropertyConstraint( UniquenessConstraint constraint );
-
-        void visitRemovedUniquePropertyConstraint( UniquenessConstraint constraint );
-
-        void visitAddedNodePropertyExistenceConstraint( NodePropertyExistenceConstraint constraint )
-                throws CreateConstraintFailureException;
-
-        void visitRemovedNodePropertyExistenceConstraint( NodePropertyExistenceConstraint constraint );
-
-        void visitAddedRelationshipPropertyExistenceConstraint( RelationshipPropertyExistenceConstraint constraint )
-                throws CreateConstraintFailureException;
-
-        void visitRemovedRelationshipPropertyExistenceConstraint( RelationshipPropertyExistenceConstraint constraint );
-    }
-
-    void added( ChangeVisitor visitor ) throws CreateConstraintFailureException;
-
-    void removed( ChangeVisitor visitor );
-
     SchemaDescriptor descriptor();
 
     String userDescription( TokenNameLookup tokenNameLookup );

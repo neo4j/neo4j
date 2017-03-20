@@ -43,6 +43,7 @@ import org.neo4j.kernel.api.ReadOperations;
 import org.neo4j.kernel.api.Statement;
 import org.neo4j.kernel.api.StatementTokenNameLookup;
 import org.neo4j.kernel.api.TokenWriteOperations;
+
 import org.neo4j.kernel.api.exceptions.InvalidTransactionTypeKernelException;
 import org.neo4j.kernel.api.exceptions.KernelException;
 import org.neo4j.kernel.api.exceptions.LabelNotFoundKernelException;
@@ -64,6 +65,7 @@ import org.neo4j.kernel.api.schema_new.SchemaDescriptorFactory;
 import org.neo4j.kernel.api.schema_new.constaints.ConstraintDescriptor;
 import org.neo4j.kernel.api.schema_new.constaints.ConstraintDescriptorFactory;
 import org.neo4j.kernel.api.schema_new.constaints.NodeExistenceConstraintDescriptor;
+import org.neo4j.kernel.api.schema_new.constaints.NodeKeyConstraintDescriptor;
 import org.neo4j.kernel.api.schema_new.constaints.RelExistenceConstraintDescriptor;
 import org.neo4j.kernel.api.schema_new.constaints.UniquenessConstraintDescriptor;
 import org.neo4j.kernel.api.schema_new.index.NewIndexDescriptor;
@@ -79,6 +81,7 @@ import static org.neo4j.graphdb.schema.Schema.IndexState.POPULATING;
 import static org.neo4j.helpers.collection.Iterators.addToCollection;
 import static org.neo4j.helpers.collection.Iterators.asCollection;
 import static org.neo4j.helpers.collection.Iterators.map;
+import static org.neo4j.kernel.api.schema_new.constaints.NodeKeyConstraintDescriptor.addNodeKeys;
 import static org.neo4j.kernel.impl.coreapi.schema.PropertyNameUtils.getOrCreatePropertyKeyIds;
 
 public class SchemaImpl implements Schema
@@ -280,7 +283,7 @@ public class SchemaImpl implements Schema
         try ( Statement statement = statementContextSupplier.get() )
         {
             Iterator<ConstraintDescriptor> constraints = statement.readOperations().constraintsGetAll();
-            return asConstraintDefinitions( constraints, statement.readOperations() );
+            return asConstraintDefinitions( addNodeKeys( constraints ), statement.readOperations() );
         }
     }
 
@@ -297,7 +300,7 @@ public class SchemaImpl implements Schema
                 return emptyList();
             }
             Iterator<ConstraintDescriptor> constraints = statement.readOperations().constraintsGetForLabel( labelId );
-            return asConstraintDefinitions( constraints, statement.readOperations() );
+            return asConstraintDefinitions( addNodeKeys( constraints ), statement.readOperations() );
         }
     }
 
@@ -373,7 +376,8 @@ public class SchemaImpl implements Schema
         // internal storage engine API.
         StatementTokenNameLookup lookup = new StatementTokenNameLookup( readOperations );
         if ( constraint instanceof NodeExistenceConstraintDescriptor ||
-             constraint instanceof UniquenessConstraintDescriptor )
+             constraint instanceof UniquenessConstraintDescriptor ||
+             constraint instanceof NodeKeyConstraintDescriptor )
         {
             LabelSchemaDescriptor schemaDescriptor = (LabelSchemaDescriptor) constraint.schema();
             Label label = Label.label( lookup.labelGetName( schemaDescriptor.getLabelId() ) );
@@ -385,8 +389,13 @@ public class SchemaImpl implements Schema
             }
             else if ( constraint instanceof UniquenessConstraintDescriptor )
             {
-                return new UniquenessConstraintDefinition( actions, new IndexDefinitionImpl( actions, label,
-                        propertyKeys, true ) );
+                return new UniquenessConstraintDefinition( actions,
+                        new IndexDefinitionImpl( actions, label, propertyKeys, true ) );
+            }
+            else // must be NodeKeyConstraintDescriptor
+            {
+                return new NodeKeyConstraintDefinition( actions,
+                        new IndexDefinitionImpl( actions, label, propertyKeys, true ) );
             }
         }
         else if ( constraint instanceof RelExistenceConstraintDescriptor )

@@ -28,6 +28,7 @@ import org.neo4j.graphdb.schema.ConstraintDefinition;
 import org.neo4j.graphdb.schema.IndexDefinition;
 import org.neo4j.kernel.impl.coreapi.schema.IndexDefinitionImpl;
 import org.neo4j.kernel.impl.coreapi.schema.InternalSchemaActions;
+import org.neo4j.kernel.impl.coreapi.schema.NodeKeyConstraintDefinition;
 import org.neo4j.kernel.impl.coreapi.schema.NodePropertyExistenceConstraintDefinition;
 import org.neo4j.kernel.impl.coreapi.schema.RelationshipPropertyExistenceConstraintDefinition;
 import org.neo4j.kernel.impl.coreapi.schema.UniquenessConstraintDefinition;
@@ -46,6 +47,8 @@ public class SchemaWithPECAcceptanceTest
     private GraphDatabaseService db;
     private Label label = Labels.MY_LABEL;
     private String propertyKey = "my_property_key";
+    private String propertyKey2 = "my_property_key2";
+    private String propertyKey3 = "my_property_key3";
 
     private enum Labels implements Label
     {
@@ -90,11 +93,13 @@ public class SchemaWithPECAcceptanceTest
     {
         // GIVEN
         ConstraintDefinition constraint1 = createUniquenessConstraint( label, propertyKey );
-        ConstraintDefinition constraint2 = createNodePropertyExistenceConstraint( label, propertyKey );
+        ConstraintDefinition constraint2 = createNodePropertyExistenceConstraint( label, propertyKey2 );
+        ConstraintDefinition constraint3 = createNodeKeyConstraint( label, propertyKey3 );
+
         createNodePropertyExistenceConstraint( Labels.MY_OTHER_LABEL, propertyKey );
 
         // WHEN THEN
-        assertThat( getConstraints( db, label ), containsOnly( constraint1, constraint2 ) );
+        assertThat( getConstraints( db, label ), containsOnly( constraint1, constraint2, constraint3 ) );
     }
 
     @Test
@@ -113,11 +118,12 @@ public class SchemaWithPECAcceptanceTest
     {
         // GIVEN
         ConstraintDefinition constraint1 = createUniquenessConstraint( label, propertyKey );
-        ConstraintDefinition constraint2 = createNodePropertyExistenceConstraint( label, propertyKey );
-        ConstraintDefinition constraint3 = createRelationshipPropertyExistenceConstraint( Types.MY_TYPE, propertyKey );
+        ConstraintDefinition constraint2 = createNodePropertyExistenceConstraint( label, propertyKey2 );
+        ConstraintDefinition constraint3 = createRelationshipPropertyExistenceConstraint( Types.MY_TYPE, propertyKey2 );
+        ConstraintDefinition constraint4 = createNodeKeyConstraint( label, propertyKey3 );
 
         // WHEN THEN
-        assertThat( getConstraints( db ), containsOnly( constraint1, constraint2, constraint3 ) );
+        assertThat( getConstraints( db ), containsOnly( constraint1, constraint2, constraint3, constraint4 ) );
     }
 
     private ConstraintDefinition createUniquenessConstraint( Label label, String propertyKey )
@@ -127,6 +133,15 @@ public class SchemaWithPECAcceptanceTest
         InternalSchemaActions actions = mock( InternalSchemaActions.class );
         IndexDefinition index = new IndexDefinitionImpl( actions, label, new String[]{propertyKey}, true );
         return new UniquenessConstraintDefinition( actions, index );
+    }
+
+    private ConstraintDefinition createNodeKeyConstraint( Label label, String propertyKey )
+    {
+        SchemaHelper.createNodeKeyConstraint( db, label, propertyKey );
+        SchemaHelper.awaitIndexes( db );
+        InternalSchemaActions actions = mock( InternalSchemaActions.class );
+        IndexDefinition index = new IndexDefinitionImpl( actions, label, new String[]{propertyKey}, true );
+        return new NodeKeyConstraintDefinition( actions, index );
     }
 
     private ConstraintDefinition createNodePropertyExistenceConstraint( Label label, String propertyKey )

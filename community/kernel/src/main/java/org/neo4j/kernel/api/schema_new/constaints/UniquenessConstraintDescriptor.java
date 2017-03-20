@@ -21,6 +21,7 @@ package org.neo4j.kernel.api.schema_new.constaints;
 
 import org.neo4j.kernel.api.TokenNameLookup;
 import org.neo4j.kernel.api.schema_new.LabelSchemaDescriptor;
+import org.neo4j.kernel.api.schema_new.SchemaUtil;
 import org.neo4j.kernel.api.schema_new.index.NewIndexDescriptor;
 import org.neo4j.kernel.api.schema_new.index.NewIndexDescriptorFactory;
 
@@ -50,12 +51,11 @@ public class UniquenessConstraintDescriptor extends ConstraintDescriptor impleme
     {
         String labelName = escapeLabelOrRelTyp( tokenNameLookup.labelGetName( schema.getLabelId() ) );
         String nodeName = labelName.toLowerCase();
-        // awaiting the OpenCypher decision of constraint syntax
-        String propertyName = schema.getPropertyIds().length == 1 ?
-                              tokenNameLookup.propertyKeyGetName( schema.getPropertyId() ) :
-                              schema.userDescription( tokenNameLookup );
-
-        return String.format( "CONSTRAINT ON ( %s:%s ) ASSERT %s.%s IS UNIQUE",
-                nodeName, labelName, nodeName, propertyName );
+        String properties = SchemaUtil.niceProperties( tokenNameLookup, schema.getPropertyIds(), nodeName + "." );
+        if ( schema().getPropertyIds().length > 1 )
+        {
+            properties = "(" + properties + ")";
+        }
+        return String.format( "CONSTRAINT ON ( %s:%s ) ASSERT %s IS UNIQUE", nodeName, labelName, properties );
     }
 }

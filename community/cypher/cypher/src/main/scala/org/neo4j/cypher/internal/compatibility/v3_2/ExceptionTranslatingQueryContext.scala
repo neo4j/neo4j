@@ -111,6 +111,12 @@ class ExceptionTranslatingQueryContext(val inner: QueryContext) extends QueryCon
   override def getOrCreateFromSchemaState[K, V](key: K, creator: => V): V =
     translateException(inner.getOrCreateFromSchemaState(key, creator))
 
+  override def createNodeKeyConstraint(descriptor: IndexDescriptor): Boolean =
+    translateException(inner.createNodeKeyConstraint(descriptor))
+
+  override def dropNodeKeyConstraint(descriptor: IndexDescriptor) =
+    translateException(inner.dropNodeKeyConstraint(descriptor))
+
   override def createUniqueConstraint(descriptor: IndexDescriptor): Boolean =
     translateException(inner.createUniqueConstraint(descriptor))
 

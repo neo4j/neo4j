@@ -53,6 +53,16 @@ public final class SchemaHelper
         db.execute( String.format( "CREATE CONSTRAINT ON (n:`%s`) ASSERT n.`%s` IS UNIQUE", label, property ) );
     }
 
+    public static void createNodeKeyConstraint( GraphDatabaseService db, Label label, String property )
+    {
+        createNodeKeyConstraint( db, label.name(), property );
+    }
+
+    public static void createNodeKeyConstraint( GraphDatabaseService db, String label, String property )
+    {
+        db.execute( String.format( "CREATE CONSTRAINT ON (n:`%s`) ASSERT (n.`%s`) IS NODE KEY", label, property ) );
+    }
+
     public static void createNodePropertyExistenceConstraint( GraphDatabaseService db, Label label, String property )
     {
         createNodePropertyExistenceConstraint( db, label.name(), property );

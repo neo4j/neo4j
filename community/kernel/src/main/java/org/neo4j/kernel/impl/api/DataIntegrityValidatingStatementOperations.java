@@ -19,8 +19,14 @@
  */
 package org.neo4j.kernel.impl.api;
 
-import java.util.Arrays;
+import org.apache.commons.lang3.ArrayUtils;
 
+import java.util.Arrays;
+import java.util.Iterator;
+
+import org.neo4j.collection.primitive.Primitive;
+import org.neo4j.collection.primitive.PrimitiveIntLongMap;
+import org.neo4j.helpers.collection.CastingIterator;
 import org.neo4j.kernel.api.Statement;
 import org.neo4j.kernel.api.StatementTokenNameLookup;
 import org.neo4j.kernel.api.exceptions.schema.AlreadyConstrainedException;
@@ -42,6 +48,7 @@ import org.neo4j.kernel.api.schema_new.constaints.ConstraintBoundary;
 import org.neo4j.kernel.api.schema_new.constaints.ConstraintDescriptor;
 import org.neo4j.kernel.api.schema_new.constaints.ConstraintDescriptorFactory;
 import org.neo4j.kernel.api.schema_new.constaints.NodeExistenceConstraintDescriptor;
+import org.neo4j.kernel.api.schema_new.constaints.NodeKeyConstraintDescriptor;
 import org.neo4j.kernel.api.schema_new.constaints.RelExistenceConstraintDescriptor;
 import org.neo4j.kernel.api.schema_new.constaints.UniquenessConstraintDescriptor;
 import org.neo4j.kernel.api.schema_new.index.NewIndexDescriptor;
@@ -151,6 +158,37 @@ public class DataIntegrityValidatingStatementOperations implements
     }
 
     @Override
+    public NodeKeyConstraintDescriptor nodeKeyConstraintCreate(
+            KernelStatement state, LabelSchemaDescriptor descriptor )
+            throws AlreadyConstrainedException, CreateConstraintFailureException, AlreadyIndexedException,
+            RepeatedPropertyInCompositeSchemaException
+    {
+        NodeKeyConstraintDescriptor constraint = ConstraintDescriptorFactory.nodeKeyForSchema( descriptor );
+
+        boolean nodeKeyAlreadyExists = true;
+        if ( !schemaReadDelegate.constraintExists( state, constraint.ownedUniquenessConstraint() ) )
+        {
+            assertIndexDoesNotExist( state, OperationContext.CONSTRAINT_CREATION, descriptor );
+            schemaWriteDelegate.uniquePropertyConstraintCreate( state, descriptor );
+            nodeKeyAlreadyExists = false;
+        }
+        for ( NodeExistenceConstraintDescriptor pem : constraint.ownedExistenceConstraints() )
+        {
+            if ( !schemaReadDelegate.constraintExists( state, pem ) )
+            {
+                schemaWriteDelegate.nodePropertyExistenceConstraintCreate( state, pem.schema() );
+                nodeKeyAlreadyExists = false;
+            }
+        }
+        if ( nodeKeyAlreadyExists )
+        {
+            throw new AlreadyConstrainedException( constraint, OperationContext.CONSTRAINT_CREATION,
+                    new StatementTokenNameLookup( state.readOperations() ) );
+        }
+        return constraint;
+    }
+
+    @Override
     public UniquenessConstraintDescriptor uniquePropertyConstraintCreate(
             KernelStatement state, LabelSchemaDescriptor descriptor )
             throws AlreadyConstrainedException, CreateConstraintFailureException, AlreadyIndexedException,
@@ -192,15 +230,69 @@ public class DataIntegrityValidatingStatementOperations implements
     @Override
     public void constraintDrop( KernelStatement state, ConstraintDescriptor descriptor ) throws DropConstraintFailureException
     {
-        try
+        if ( descriptor.type() == ConstraintDescriptor.Type.NODE_KEY )
         {
-            assertConstraintExists( state, descriptor );
+            NodeKeyConstraintDescriptor nodeKey = (NodeKeyConstraintDescriptor) descriptor;
+            assertNodeKeyExists( state, nodeKey );
+
+            PrimitiveIntLongMap propertyCounts =
+                                            countPropertyUses(
+                                                nodeKey,
+                                                uniquenessConstraintsForLabel( state, nodeKey.schema().getLabelId() )
+                                            );
+
+            schemaWriteDelegate.constraintDrop( state, nodeKey.ownedUniquenessConstraint() );
+            removePECsNoLongerInUse( state, nodeKey, propertyCounts );
         }
-        catch ( NoSuchConstraintException e )
+        else
         {
-            throw new DropConstraintFailureException( descriptor , e );
+            try
+            {
+                assertConstraintExists( state, descriptor );
+            }
+            catch ( NoSuchConstraintException e )
+            {
+                throw new DropConstraintFailureException( descriptor, e );
+            }
+            assertNotExistencePartOfNodeKey( state, descriptor );
+            schemaWriteDelegate.constraintDrop( state, descriptor );
         }
-        schemaWriteDelegate.constraintDrop( state, descriptor );
+    }
+
+    private void removePECsNoLongerInUse( KernelStatement state, NodeKeyConstraintDescriptor nodeKey,
+            PrimitiveIntLongMap propertyCounts ) throws DropConstraintFailureException
+    {
+        for ( NodeExistenceConstraintDescriptor existenceConstraint : nodeKey.ownedExistenceConstraints() )
+        {
+            if ( propertyCounts.get( existenceConstraint.schema().getPropertyId() ) == 1 )
+            {
+                schemaWriteDelegate.constraintDrop( state, existenceConstraint );
+            }
+        }
+    }
+
+    private PrimitiveIntLongMap countPropertyUses( NodeKeyConstraintDescriptor nodeKey,
+            Iterator<UniquenessConstraintDescriptor> uniqueForLabel )
+    {
+        PrimitiveIntLongMap propertyCounts = Primitive.intLongMap();
+
+        for ( int propertyId : nodeKey.schema().getPropertyIds() )
+        {
+            propertyCounts.put( propertyId, 0 );
+        }
+
+        while ( uniqueForLabel.hasNext() )
+        {
+            UniquenessConstraintDescriptor uniqueConstraint = uniqueForLabel.next();
+            for ( int propertyId : uniqueConstraint.schema().getPropertyIds() )
+            {
+                if ( propertyCounts.containsKey( propertyId ) )
+                {
+                    propertyCounts.put( propertyId, propertyCounts.get( propertyId ) + 1 );
+                }
+            }
+        }
+        return propertyCounts;
     }
 
     private void assertIndexDoesNotExist( KernelStatement state, OperationContext context,
@@ -255,5 +347,54 @@ public class DataIntegrityValidatingStatementOperations implements
         {
             throw new RepeatedPropertyInCompositeSchemaException( descriptor, context );
         }
+    }
+
+    private void assertNodeKeyExists( KernelStatement state, NodeKeyConstraintDescriptor nodeKey ) throws DropConstraintFailureException
+    {
+        try
+        {
+            assertConstraintExists( state, nodeKey.ownedUniquenessConstraint() );
+            for ( ConstraintDescriptor existenceConstraint : nodeKey.ownedExistenceConstraints() )
+            {
+                assertConstraintExists( state, existenceConstraint );
+            }
+        }
+        catch ( NoSuchConstraintException e )
+        {
+            throw new DropConstraintFailureException( nodeKey, e );
+        }
+    }
+
+    private void assertNotExistencePartOfNodeKey( KernelStatement state, ConstraintDescriptor descriptor )
+            throws DropConstraintFailureException
+    {
+        if ( descriptor instanceof NodeExistenceConstraintDescriptor )
+        {
+            NodeExistenceConstraintDescriptor pec = (NodeExistenceConstraintDescriptor) descriptor;
+
+            Iterator<ConstraintDescriptor> constraintsForLabel =
+                    NodeKeyConstraintDescriptor.addNodeKeys(
+                        schemaReadDelegate.constraintsGetForLabel( state, pec.schema().getLabelId() ) );
+            Iterator<NodeKeyConstraintDescriptor> nodeKeysForLabel =
+                    new CastingIterator<>( constraintsForLabel, NodeKeyConstraintDescriptor.class );
+
+            while ( nodeKeysForLabel.hasNext() )
+            {
+                int[] nodeKeyPropertyIds = nodeKeysForLabel.next().schema().getPropertyIds();
+                if ( ArrayUtils.indexOf( nodeKeyPropertyIds, pec.schema().getPropertyId() ) != -1 )
+                {
+                    throw new DropConstraintFailureException( ConstraintBoundary.map( descriptor ), new
+                            NoSuchConstraintException( ConstraintBoundary.map( pec ) ) );
+                }
+            }
+        }
+    }
+
+    private Iterator<UniquenessConstraintDescriptor> uniquenessConstraintsForLabel( KernelStatement state, int labelId )
+    {
+        return new CastingIterator<>(
+                schemaReadDelegate.constraintsGetForLabel( state, labelId ),
+                UniquenessConstraintDescriptor.class
+            );
     }
 }

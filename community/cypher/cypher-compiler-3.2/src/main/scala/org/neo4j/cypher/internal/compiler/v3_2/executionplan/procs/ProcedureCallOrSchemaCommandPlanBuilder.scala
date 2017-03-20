@@ -51,16 +51,34 @@ case object ProcedureCallOrSchemaCommandPlanBuilder extends Phase[CompilerContex
         Some(ProcedureCallExecutionPlan(signature, args, resolved.callResultTypes, resolved.callResultIndices,
           context.notificationLogger.notifications, context.typeConverter.asPublicType))
 
+      // CREATE CONSTRAINT ON (node:Label) ASSERT (node.prop1,node.prop2) IS NODE KEY
+      case CreateNodeKeyConstraint(node, label, props) =>
+        Some(PureSideEffectExecutionPlan("CreateNodeKeyConstraint", SCHEMA_WRITE, (ctx) => {
+          val propertyKeyIds = props.map(p => propertyToId(ctx)(p.propertyKey))
+          ctx.createNodeKeyConstraint(IndexDescriptor(labelToId(ctx)(label), propertyKeyIds))
+        }))
+
+      // DROP CONSTRAINT ON (node:Label) ASSERT (node.prop1,node.prop2) IS NODE KEY
+      case DropNodeKeyConstraint(_, label, props) =>
+        Some(PureSideEffectExecutionPlan("DropNodeKeyConstraint", SCHEMA_WRITE, (ctx) => {
+          val propertyKeyIds = props.map(p => propertyToId(ctx)(p.propertyKey))
+          ctx.dropNodeKeyConstraint(IndexDescriptor(labelToId(ctx)(label), propertyKeyIds))
+        }))
+
       // CREATE CONSTRAINT ON (node:Label) ASSERT node.prop IS UNIQUE
-      case CreateUniquePropertyConstraint(node, label, prop) =>
+      // CREATE CONSTRAINT ON (node:Label) ASSERT (node.prop1,node.prop2) IS UNIQUE
+      case CreateUniquePropertyConstraint(node, label, props) =>
         Some(PureSideEffectExecutionPlan("CreateUniqueConstraint", SCHEMA_WRITE, (ctx) => {
-          ctx.createUniqueConstraint(IndexDescriptor(labelToId(ctx)(label), propertyToId(ctx)(prop.propertyKey)))
+          val propertyKeyIds = props.map(p => propertyToId(ctx)(p.propertyKey))
+          ctx.createUniqueConstraint(IndexDescriptor(labelToId(ctx)(label), propertyKeyIds))
         }))
 
       // DROP CONSTRAINT ON (node:Label) ASSERT node.prop IS UNIQUE
-      case DropUniquePropertyConstraint(_, label, prop) =>
+      // DROP CONSTRAINT ON (node:Label) ASSERT (node.prop1,node.prop2) IS UNIQUE
+      case DropUniquePropertyConstraint(_, label, props) =>
         Some(PureSideEffectExecutionPlan("DropUniqueConstraint", SCHEMA_WRITE, (ctx) => {
-          ctx.dropUniqueConstraint(IndexDescriptor(labelToId(ctx)(label), propertyToId(ctx)(prop.propertyKey)))
+          val propertyKeyIds = props.map(p => propertyToId(ctx)(p.propertyKey))
+          ctx.dropUniqueConstraint(IndexDescriptor(labelToId(ctx)(label), propertyKeyIds))
         }))
 
       // CREATE CONSTRAINT ON (node:Label) ASSERT node.prop EXISTS

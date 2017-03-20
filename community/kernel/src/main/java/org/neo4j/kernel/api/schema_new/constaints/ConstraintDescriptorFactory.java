@@ -65,6 +65,11 @@ public class ConstraintDescriptorFactory
         return schema.computeWith( convertToUniquenessConstraint );
     }
 
+    public static NodeKeyConstraintDescriptor nodeKeyForSchema( LabelSchemaDescriptor schema )
+    {
+        return new NodeKeyConstraintDescriptor( schema );
+    }
+
     private static SchemaComputer<ConstraintDescriptor> convertToExistenceConstraint =
             new SchemaComputer<ConstraintDescriptor>()
             {
