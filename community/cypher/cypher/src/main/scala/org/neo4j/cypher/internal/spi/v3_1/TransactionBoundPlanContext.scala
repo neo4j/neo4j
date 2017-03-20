@@ -170,7 +170,6 @@ class TransactionBoundPlanContext(tc: TransactionalContextWrapper, logger: Inter
     case Mode.READ => ProcedureReadOnlyAccess(allowed)
     case Mode.DEFAULT => ProcedureReadOnlyAccess(allowed)
     case Mode.WRITE => ProcedureReadWriteAccess(allowed)
-    case Mode.TOKEN => throw new UnsupportedOperationException("Token write procedures are not support for Cypher 3.1")  // TODO: Fix this once Neo4j 3.1.2 is released
     case Mode.SCHEMA => ProcedureSchemaWriteAccess(allowed)
     case Mode.DBMS => ProcedureDbmsAccess(allowed)
 

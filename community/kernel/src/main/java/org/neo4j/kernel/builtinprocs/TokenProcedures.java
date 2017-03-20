@@ -19,7 +19,6 @@
  */
 package org.neo4j.kernel.builtinprocs;
 
-
 import org.neo4j.kernel.api.KernelTransaction;
 import org.neo4j.kernel.api.Statement;
 import org.neo4j.kernel.api.exceptions.schema.IllegalTokenNameException;
@@ -29,7 +28,7 @@ import org.neo4j.procedure.Description;
 import org.neo4j.procedure.Name;
 import org.neo4j.procedure.Procedure;
 
-import static org.neo4j.procedure.Mode.TOKEN;
+import static org.neo4j.procedure.Mode.WRITE;
 
 public class TokenProcedures
 {
@@ -37,7 +36,7 @@ public class TokenProcedures
     public KernelTransaction tx;
 
     @Description( "Create a label" )
-    @Procedure( name = "db.createLabel", mode = TOKEN )
+    @Procedure( name = "db.createLabel", mode = WRITE )
     public void createLabel( @Name( "newLabel" ) String newLabel )
             throws IllegalTokenNameException, TooManyLabelsException
     {
@@ -48,7 +47,7 @@ public class TokenProcedures
     }
 
     @Description( "Create a RelationshipType" )
-    @Procedure( name = "db.createRelationshipType", mode = TOKEN )
+    @Procedure( name = "db.createRelationshipType", mode = WRITE )
     public void createRelationshipType( @Name( "newRelationshipType" ) String newRelationshipType )
             throws IllegalTokenNameException
     {
@@ -59,7 +58,7 @@ public class TokenProcedures
     }
 
     @Description( "Create a Property" )
-    @Procedure( name = "db.createProperty", mode = TOKEN )
+    @Procedure( name = "db.createProperty", mode = WRITE )
     public void createProperty( @Name( "newProperty" ) String newProperty ) throws IllegalTokenNameException
     {
         try ( Statement statement = tx.acquireStatement() )

@@ -193,7 +193,7 @@ public class EnterpriseBuiltInDbmsProcedures
         Procedures procedures = graph.getDependencyResolver().resolveDependency( Procedures.class );
         return procedures.getAllProcedures().stream()
                 .sorted( ( a, b ) -> a.name().toString().compareTo( b.name().toString() ) )
-                .map( sig -> new ProcedureResult( sig, procedures.isAllowWriteTokenCreate() ) );
+                .map( ProcedureResult::new );
     }
 
     @SuppressWarnings( "WeakerAccess" )
@@ -204,7 +204,7 @@ public class EnterpriseBuiltInDbmsProcedures
         public final String description;
         public final List<String> roles;
 
-        public ProcedureResult( ProcedureSignature signature, boolean publisherTokenCreate )
+        public ProcedureResult( ProcedureSignature signature )
         {
             this.name = signature.name().toString();
             this.signature = signature.toString();
@@ -221,11 +221,6 @@ public class EnterpriseBuiltInDbmsProcedures
                 roles.add( "reader" );
             case WRITE:
                 roles.add( "publisher" );
-            case TOKEN:
-                if ( publisherTokenCreate )
-                {
-                    roles.add( "publisher" );
-                }
             case SCHEMA:
                 roles.add( "architect" );
             default:

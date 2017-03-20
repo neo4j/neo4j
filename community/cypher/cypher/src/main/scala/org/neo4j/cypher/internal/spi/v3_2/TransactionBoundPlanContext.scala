@@ -157,7 +157,6 @@ class TransactionBoundPlanContext(tc: TransactionalContextWrapper, logger: Inter
     case Mode.READ => ProcedureReadOnlyAccess(allowed)
     case Mode.DEFAULT => ProcedureReadOnlyAccess(allowed)
     case Mode.WRITE => ProcedureReadWriteAccess(allowed)
-    case Mode.TOKEN => ProcedureTokenWriteAccess(allowed)
     case Mode.SCHEMA => ProcedureSchemaWriteAccess(allowed)
     case Mode.DBMS => ProcedureDbmsAccess(allowed)
 

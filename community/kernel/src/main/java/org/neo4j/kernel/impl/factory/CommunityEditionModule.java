@@ -291,7 +291,6 @@ public class CommunityEditionModule extends EditionModule
         }
         else
         {
-            procedures.writerCreateToken( true );
             platformModule.life.add( platformModule.dependencies.satisfyDependency( AuthManager.NO_AUTH ) );
             platformModule.life.add( platformModule.dependencies.satisfyDependency( UserManagerSupplier.NO_AUTH ) );
         }
