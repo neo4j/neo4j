@@ -46,6 +46,7 @@ import static org.neo4j.helpers.collection.MapUtil.genericMap;
 import static org.neo4j.helpers.collection.MapUtil.stringMap;
 import static org.neo4j.server.security.enterprise.auth.plugin.api.PredefinedRoles.ADMIN;
 import static org.neo4j.server.security.enterprise.auth.plugin.api.PredefinedRoles.ARCHITECT;
+import static org.neo4j.server.security.enterprise.auth.plugin.api.PredefinedRoles.EDITOR;
 import static org.neo4j.server.security.enterprise.auth.plugin.api.PredefinedRoles.PUBLISHER;
 import static org.neo4j.server.security.enterprise.auth.plugin.api.PredefinedRoles.READER;
 
@@ -231,17 +232,17 @@ public abstract class ConfiguredProceduresTestBase<S> extends ProcedureInteracti
                 SecuritySettings.default_allowed.name(), "default" ) );
 
         Map<String,Set<String>> expected = genericMap(
-                "test.staticReadProcedure", newSet( "default", READER, PUBLISHER, ARCHITECT, ADMIN ),
-                "test.staticWriteProcedure", newSet( "default", PUBLISHER, ARCHITECT, ADMIN ),
+                "test.staticReadProcedure", newSet( "default", READER, EDITOR, PUBLISHER, ARCHITECT, ADMIN ),
+                "test.staticWriteProcedure", newSet( "default", EDITOR, PUBLISHER, ARCHITECT, ADMIN ),
                 "test.staticSchemaProcedure", newSet( "default", ARCHITECT, ADMIN ),
-                "test.annotatedProcedure", newSet( "annotated", READER, PUBLISHER, ARCHITECT, ADMIN ),
-                "test.numNodes", newSet( "counter", "user", READER, PUBLISHER, ARCHITECT, ADMIN ),
-                "db.labels", newSet( "default", READER, PUBLISHER, ARCHITECT, ADMIN ),
+                "test.annotatedProcedure", newSet( "annotated", READER, EDITOR, PUBLISHER, ARCHITECT, ADMIN ),
+                "test.numNodes", newSet( "counter", "user", READER, EDITOR, PUBLISHER, ARCHITECT, ADMIN ),
+                "db.labels", newSet( "default", READER, EDITOR, PUBLISHER, ARCHITECT, ADMIN ),
                 "dbms.security.changePassword", newSet( ADMIN ),
                 "dbms.procedures", newSet( ADMIN ),
                 "dbms.listQueries", newSet( ADMIN ),
                 "dbms.security.createUser", newSet( ADMIN ),
-                "db.createLabel", newSet( "default", PUBLISHER, ARCHITECT, ADMIN ));
+                "db.createLabel", newSet( "default", EDITOR, PUBLISHER, ARCHITECT, ADMIN ));
 
         String call = "CALL dbms.procedures";
         assertListProceduresHasRoles( adminSubject, expected, call );
@@ -258,9 +259,9 @@ public abstract class ConfiguredProceduresTestBase<S> extends ProcedureInteracti
                 SecuritySettings.default_allowed.name(), "default" ) );
 
         Map<String,Set<String>> expected = genericMap(
-                "test.annotatedFunction", newSet( "annotated", READER, PUBLISHER, ARCHITECT, ADMIN ),
-                "test.allowedFunc", newSet( "counter", "user", READER, PUBLISHER, ARCHITECT, ADMIN ),
-                "test.nonAllowedFunc", newSet( "default", READER, PUBLISHER, ARCHITECT, ADMIN ) );
+                "test.annotatedFunction", newSet( "annotated", READER, EDITOR, PUBLISHER, ARCHITECT, ADMIN ),
+                "test.allowedFunc", newSet( "counter", "user", READER, EDITOR, PUBLISHER, ARCHITECT, ADMIN ),
+                "test.nonAllowedFunc", newSet( "default", READER, EDITOR, PUBLISHER, ARCHITECT, ADMIN ) );
 
         String call = "CALL dbms.functions";
         assertListProceduresHasRoles( adminSubject, expected, call );

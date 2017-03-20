@@ -66,10 +66,10 @@ public class EnterpriseAuthenticationIT extends AuthenticationIT
         assertThat( "Should have no errors", errors.size(), equalTo( 0 ) );
         ArrayNode results = (ArrayNode) response.get("results");
         ArrayNode data = (ArrayNode) results.get(0).get("data");
-        assertThat( "Should have 4 predefined roles", data.size(), equalTo( 4 ) );
+        assertThat( "Should have 5 predefined roles", data.size(), equalTo( 5 ) );
         Stream<String> values = data.findValues( "row" ).stream().map( row -> row.get(0).asText() );
         assertThat( "Expected specific roles", values.collect( Collectors.toList()),
-                hasItems( "admin", "architect", "publisher", "reader") );
+                hasItems( "admin", "architect", "publisher", "editor", "reader") );
 
     }
 

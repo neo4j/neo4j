@@ -27,7 +27,6 @@ import org.apache.shiro.authz.permission.WildcardPermission;
 import java.util.Collection;
 import java.util.Collections;
 import java.util.Map;
-import java.util.Set;
 import java.util.concurrent.ConcurrentHashMap;
 
 import static org.neo4j.server.security.enterprise.auth.plugin.api.PredefinedRoles.*;
@@ -37,7 +36,7 @@ public class PredefinedRolesBuilder implements RolesBuilder
     private static final WildcardPermission SCHEMA = new WildcardPermission( "schema:*" );
     private static final WildcardPermission FULL = new WildcardPermission( "*" );
     private static final WildcardPermission TOKEN = new WildcardPermission( "token:*" );
-    private static final WildcardPermission WRITE = new WildcardPermission( "data:*" );
+    private static final WildcardPermission READ_WRITE = new WildcardPermission( "data:*" );
     private static final WildcardPermission READ = new WildcardPermission( "data:read" );
 
     private static final Map<String,SimpleRole> innerRoles = staticBuildRoles();
@@ -53,14 +52,18 @@ public class PredefinedRolesBuilder implements RolesBuilder
 
         SimpleRole architect = new SimpleRole( ARCHITECT );
         architect.add( SCHEMA );
-        architect.add( WRITE );
+        architect.add( READ_WRITE );
         architect.add( TOKEN );
         roles.put( ARCHITECT, architect );
 
         SimpleRole publisher = new SimpleRole( PUBLISHER );
-        publisher.add( WRITE );
+        publisher.add( READ_WRITE );
         publisher.add( TOKEN );
         roles.put( PUBLISHER, publisher );
+
+        SimpleRole editor = new SimpleRole( EDITOR );
+        editor.add( READ_WRITE );
+        roles.put( EDITOR, editor );
 
         SimpleRole reader = new SimpleRole( READER );
         reader.add( READ );
@@ -95,5 +98,4 @@ public class PredefinedRolesBuilder implements RolesBuilder
     {
         return roles;
     }
-
 }
