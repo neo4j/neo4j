@@ -257,7 +257,7 @@ public class CommonAbstractStoreBehaviourTest
         // This will encounter a decoding error, which is ignored because FORCE
         assertTrue( cursor.next() );
         // Then this should not fail because of the previous decoding error, even though we stay on the same page
-        assertTrue( cursor.next( 2, new IntRecord( 2 ), NORMAL ) );
+        assertTrue( cursor.next( 2 ) );
     }
 
     @Test
@@ -276,10 +276,6 @@ public class CommonAbstractStoreBehaviourTest
         // we need to read record 43 not 42!
         assertTrue( cursor.next( 43 ) );
         assertEquals( record43, cursor.get() );
-
-        IntRecord record = new IntRecord( -1 );
-        assertTrue( cursor.next( 43, record, NORMAL ) );
-        assertEquals( record43, record );
 
         // next with id does not affect the old pointer either, so 42 is read now
         assertTrue( cursor.next() );
@@ -304,10 +300,6 @@ public class CommonAbstractStoreBehaviourTest
         // we need to read record 43 not 42!
         assertTrue( cursor.next( idOnAnotherPage ) );
         assertEquals( record43, cursor.get() );
-
-        IntRecord record = new IntRecord( -1 );
-        assertTrue( cursor.next( idOnAnotherPage, record, NORMAL ) );
-        assertEquals( record43, record );
 
         // next with id does not affect the old pointer either, so 42 is read now
         assertTrue( cursor.next() );

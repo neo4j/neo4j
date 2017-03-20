@@ -44,7 +44,7 @@ public class AccessStatsKeepingStoreAccess extends StoreAccess
     {
         AccessStats accessStats = new AccessStats( store.getClass().getSimpleName(), store.getRecordsPerPage() );
         accessStatistics.register( store, accessStats );
-        return new AccessStatsKeepingRecordStore( store, accessStats );
+        return new AccessStatsKeepingRecordStore<>( store, accessStats );
     }
 
     private static class AccessStatsKeepingRecordStore<RECORD extends AbstractBaseRecord>
@@ -56,11 +56,6 @@ public class AccessStatsKeepingStoreAccess extends StoreAccess
         {
             super( actual );
             this.accessStats = accessStats;
-        }
-
-        protected AccessStats getAccessStats()
-        {
-            return accessStats;
         }
 
         @Override
