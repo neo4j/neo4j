@@ -616,6 +616,8 @@ public class GraphDatabaseFacade implements GraphDatabaseAPI
     {
         try
         {
+            final int labelId1 = labelId;
+            final int[] propertyKeyIds = new int[]{propertyId};
             NewIndexDescriptor descriptor =
                     readOps.indexGetForLabelAndPropertyKey( SchemaDescriptorFactory.forLabel( labelId, propertyId ) );
 

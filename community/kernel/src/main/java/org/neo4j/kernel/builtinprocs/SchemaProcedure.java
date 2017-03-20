@@ -42,7 +42,6 @@ import org.neo4j.kernel.api.KernelTransaction;
 import org.neo4j.kernel.api.ReadOperations;
 import org.neo4j.kernel.api.Statement;
 import org.neo4j.kernel.api.StatementTokenNameLookup;
-import org.neo4j.kernel.api.constraints.PropertyConstraint;
 import org.neo4j.kernel.api.schema_new.constaints.ConstraintBoundary;
 import org.neo4j.kernel.api.schema_new.constaints.ConstraintDescriptor;
 import org.neo4j.kernel.api.schema_new.index.NewIndexDescriptor;
@@ -97,8 +96,8 @@ public class SchemaProcedure
                     ArrayList<String> constraints = new ArrayList<>();
                     while ( nodePropertyConstraintIterator.hasNext() )
                     {
-                        PropertyConstraint constraint = ConstraintBoundary.map( nodePropertyConstraintIterator.next() );
-                        constraints.add(constraint.userDescription( statementTokenNameLookup ) );
+                        ConstraintDescriptor constraint = nodePropertyConstraintIterator.next();
+                        constraints.add(constraint.prettyPrint( statementTokenNameLookup ) );
                     }
                     properties.put( "constraints", constraints );
 

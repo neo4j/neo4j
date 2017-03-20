@@ -22,10 +22,14 @@ package org.neo4j.kernel.api.constraints;
 import org.neo4j.kernel.api.TokenNameLookup;
 import org.neo4j.kernel.api.exceptions.schema.CreateConstraintFailureException;
 import org.neo4j.kernel.api.schema_new.LabelSchemaDescriptor;
+import org.neo4j.kernel.api.schema_new.constaints.NodeExistenceConstraintDescriptor;
 
 /**
  * Description of constraint enforcing nodes to contain a certain property.
+ *
+ * @deprecated use {@link NodeExistenceConstraintDescriptor} instead.
  */
+@Deprecated
 public class NodePropertyExistenceConstraint extends NodePropertyConstraint
 {
     public NodePropertyExistenceConstraint( LabelSchemaDescriptor descriptor )

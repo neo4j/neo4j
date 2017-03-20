@@ -53,7 +53,6 @@ import org.neo4j.io.fs.FileSystemAbstraction;
 import org.neo4j.io.pagecache.PageCache;
 import org.neo4j.io.pagecache.tracing.PageCacheTracer;
 import org.neo4j.io.pagecache.tracing.cursor.PageCursorTracerSupplier;
-import org.neo4j.kernel.api.constraints.UniquenessConstraint;
 import org.neo4j.kernel.api.exceptions.KernelException;
 import org.neo4j.kernel.api.exceptions.index.IndexEntryConflictException;
 import org.neo4j.kernel.api.exceptions.schema.AlreadyConstrainedException;
@@ -71,6 +70,7 @@ import org.neo4j.kernel.api.schema_new.LabelSchemaDescriptor;
 import org.neo4j.kernel.api.schema_new.SchemaDescriptorFactory;
 import org.neo4j.kernel.api.schema_new.constaints.ConstraintDescriptor;
 import org.neo4j.kernel.api.schema_new.constaints.ConstraintDescriptorFactory;
+import org.neo4j.kernel.api.schema_new.constaints.UniquenessConstraintDescriptor;
 import org.neo4j.kernel.api.schema_new.index.NewIndexDescriptor;
 import org.neo4j.kernel.api.schema_new.index.NewIndexDescriptorFactory;
 import org.neo4j.kernel.configuration.Config;
@@ -550,25 +550,24 @@ public class BatchInserterImpl implements BatchInserter, IndexConfigStoreProvide
         return new BaseNodeConstraintCreator( new BatchSchemaActions(), label );
     }
 
-    private void createUniquenessConstraintRule( UniquenessConstraint constraint )
+    private void createUniquenessConstraintRule( LabelSchemaDescriptor schemaDescriptor )
     {
         // TODO: Do not create duplicate index
 
         long indexRuleId = schemaStore.nextId();
         long constraintRuleId = schemaStore.nextId();
-        int propertyKeyId = constraint.indexDescriptor().schema().getPropertyId();
 
         IndexRule indexRule =
                 IndexRule.constraintIndexRule(
                     indexRuleId,
-                    NewIndexDescriptorFactory.uniqueForLabel( constraint.label(), propertyKeyId ),
+                    NewIndexDescriptorFactory.uniqueForSchema( schemaDescriptor ),
                     this.schemaIndexProviders.getDefaultProvider().getProviderDescriptor(),
                     constraintRuleId
                 );
         ConstraintRule constraintRule =
                 ConstraintRule.constraintRule(
                     constraintRuleId,
-                    ConstraintDescriptorFactory.uniqueForLabel( constraint.label(), propertyKeyId ),
+                    ConstraintDescriptorFactory.uniqueForSchema( schemaDescriptor ),
                     indexRuleId
                 );
 
@@ -1124,7 +1123,7 @@ public class BatchInserterImpl implements BatchInserter, IndexConfigStoreProvide
             LabelSchemaDescriptor descriptor = SchemaDescriptorFactory.forLabel( labelId, propertyKeyIds );
 
             validateUniquenessConstraintCanBeCreated( labelId, propertyKeyIds );
-            createUniquenessConstraintRule( new UniquenessConstraint( descriptor ) );
+            createUniquenessConstraintRule( descriptor );
             return new UniquenessConstraintDefinition( this, indexDefinition );
         }
 

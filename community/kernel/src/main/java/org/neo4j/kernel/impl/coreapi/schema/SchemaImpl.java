@@ -20,6 +20,7 @@
 package org.neo4j.kernel.impl.coreapi.schema;
 
 import java.util.ArrayList;
+import java.util.Arrays;
 import java.util.Collection;
 import java.util.Iterator;
 import java.util.List;
@@ -42,11 +43,6 @@ import org.neo4j.kernel.api.ReadOperations;
 import org.neo4j.kernel.api.Statement;
 import org.neo4j.kernel.api.StatementTokenNameLookup;
 import org.neo4j.kernel.api.TokenWriteOperations;
-import org.neo4j.kernel.api.constraints.NodePropertyConstraint;
-import org.neo4j.kernel.api.constraints.NodePropertyExistenceConstraint;
-import org.neo4j.kernel.api.constraints.PropertyConstraint;
-import org.neo4j.kernel.api.constraints.RelationshipPropertyExistenceConstraint;
-import org.neo4j.kernel.api.constraints.UniquenessConstraint;
 import org.neo4j.kernel.api.exceptions.InvalidTransactionTypeKernelException;
 import org.neo4j.kernel.api.exceptions.KernelException;
 import org.neo4j.kernel.api.exceptions.LabelNotFoundKernelException;
@@ -65,9 +61,11 @@ import org.neo4j.kernel.api.index.InternalIndexState;
 import org.neo4j.kernel.api.schema_new.LabelSchemaDescriptor;
 import org.neo4j.kernel.api.schema_new.RelationTypeSchemaDescriptor;
 import org.neo4j.kernel.api.schema_new.SchemaDescriptorFactory;
-import org.neo4j.kernel.api.schema_new.constaints.ConstraintBoundary;
 import org.neo4j.kernel.api.schema_new.constaints.ConstraintDescriptor;
 import org.neo4j.kernel.api.schema_new.constaints.ConstraintDescriptorFactory;
+import org.neo4j.kernel.api.schema_new.constaints.NodeExistenceConstraintDescriptor;
+import org.neo4j.kernel.api.schema_new.constaints.RelExistenceConstraintDescriptor;
+import org.neo4j.kernel.api.schema_new.constaints.UniquenessConstraintDescriptor;
 import org.neo4j.kernel.api.schema_new.index.NewIndexDescriptor;
 import org.neo4j.kernel.impl.api.operations.KeyReadOperations;
 import org.neo4j.storageengine.api.schema.PopulationProgress;
@@ -82,7 +80,6 @@ import static org.neo4j.helpers.collection.Iterators.addToCollection;
 import static org.neo4j.helpers.collection.Iterators.asCollection;
 import static org.neo4j.helpers.collection.Iterators.map;
 import static org.neo4j.kernel.impl.coreapi.schema.PropertyNameUtils.getOrCreatePropertyKeyIds;
-import static org.neo4j.kernel.impl.coreapi.schema.PropertyNameUtils.getPropertyKeys;
 
 public class SchemaImpl implements Schema
 {
@@ -360,41 +357,41 @@ public class SchemaImpl implements Schema
         while ( constraints.hasNext() )
         {
             ConstraintDescriptor constraint = constraints.next();
-            definitions.add( asConstraintDefinition( ConstraintBoundary.map( constraint ), readOperations ) );
+            definitions.add( asConstraintDefinition( constraint, readOperations ) );
         }
 
         return definitions;
     }
 
-    private ConstraintDefinition asConstraintDefinition( PropertyConstraint constraint, ReadOperations readOperations )
+    private ConstraintDefinition asConstraintDefinition( ConstraintDescriptor constraint,
+            ReadOperations readOperations )
     {
         // This was turned inside out. Previously a low-level constraint object would reference a public enum type
         // which made it impossible to break out the low-level component from kernel. There could be a lower level
         // constraint type introduced to mimic the public ConstraintType, but that would be a duplicate of it
         // essentially. Checking instanceof here is OKish since the objects it checks here are part of the
         // internal storage engine API.
-        if ( constraint instanceof NodePropertyConstraint )
+        StatementTokenNameLookup lookup = new StatementTokenNameLookup( readOperations );
+        if ( constraint instanceof NodeExistenceConstraintDescriptor ||
+             constraint instanceof UniquenessConstraintDescriptor )
         {
-            NodePropertyConstraint nodePropertyConstraint = (NodePropertyConstraint) constraint;
-            if ( constraint instanceof NodePropertyExistenceConstraint )
+            LabelSchemaDescriptor schemaDescriptor = (LabelSchemaDescriptor) constraint.schema();
+            Label label = Label.label( lookup.labelGetName( schemaDescriptor.getLabelId() ) );
+            String[] propertyKeys = Arrays.stream( schemaDescriptor.getPropertyIds() )
+                    .mapToObj( lookup::propertyKeyGetName ).toArray(String[]::new);
+            if ( constraint instanceof NodeExistenceConstraintDescriptor )
             {
-                StatementTokenNameLookup lookup = new StatementTokenNameLookup( readOperations );
-                return new NodePropertyExistenceConstraintDefinition( actions,
-                        Label.label( lookup.labelGetName( nodePropertyConstraint.label() ) ),
-                        getPropertyKeys( lookup, nodePropertyConstraint.descriptor() ) );
+                return new NodePropertyExistenceConstraintDefinition( actions, label, propertyKeys );
             }
-            else if ( constraint instanceof UniquenessConstraint )
+            else if ( constraint instanceof UniquenessConstraintDescriptor )
             {
-                StatementTokenNameLookup lookup = new StatementTokenNameLookup( readOperations );
-                return new UniquenessConstraintDefinition( actions, new IndexDefinitionImpl( actions,
-                        Label.label( lookup.labelGetName( nodePropertyConstraint.label() ) ),
-                        getPropertyKeys( lookup, nodePropertyConstraint.descriptor() ), true ) );
+                return new UniquenessConstraintDefinition( actions, new IndexDefinitionImpl( actions, label,
+                        propertyKeys, true ) );
             }
         }
-        else if ( constraint instanceof RelationshipPropertyExistenceConstraint )
+        else if ( constraint instanceof RelExistenceConstraintDescriptor )
         {
-            StatementTokenNameLookup lookup = new StatementTokenNameLookup( readOperations );
-            RelationTypeSchemaDescriptor descriptor = (RelationTypeSchemaDescriptor) constraint.descriptor();
+            RelationTypeSchemaDescriptor descriptor = (RelationTypeSchemaDescriptor) constraint.schema();
             return new RelationshipPropertyExistenceConstraintDefinition( actions,
                     RelationshipType.withName( lookup.relationshipTypeGetName( descriptor.getRelTypeId() ) ),
                     lookup.propertyKeyGetName( descriptor.getPropertyId() ) );

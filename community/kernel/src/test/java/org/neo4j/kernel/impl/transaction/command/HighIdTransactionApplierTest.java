@@ -75,6 +75,7 @@ public class HighIdTransactionApplierTest
         tracker.visitRelationshipGroupCommand( Commands.createRelationshipGroup( 20, 2 ) );
 
         // Schema rules
+        final int[] propertyKeyIds = new int[]{1};
         tracker.visitSchemaRuleCommand( Commands.createIndexRule(
                 NO_INDEX_PROVIDER.getProviderDescriptor(), 10, SchemaDescriptorFactory.forLabel( 0, 1 ) ) );
         tracker.visitSchemaRuleCommand( Commands.createIndexRule(

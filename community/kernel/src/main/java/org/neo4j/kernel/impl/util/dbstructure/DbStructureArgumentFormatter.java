@@ -26,12 +26,13 @@ import java.util.List;
 import java.util.stream.Collectors;
 
 import org.neo4j.helpers.Strings;
-import org.neo4j.kernel.api.constraints.NodePropertyExistenceConstraint;
-import org.neo4j.kernel.api.constraints.RelationshipPropertyExistenceConstraint;
-import org.neo4j.kernel.api.constraints.UniquenessConstraint;
 import org.neo4j.kernel.api.schema_new.LabelSchemaDescriptor;
 import org.neo4j.kernel.api.schema_new.RelationTypeSchemaDescriptor;
 import org.neo4j.kernel.api.schema_new.SchemaDescriptorFactory;
+import org.neo4j.kernel.api.schema_new.constaints.ConstraintDescriptorFactory;
+import org.neo4j.kernel.api.schema_new.constaints.NodeExistenceConstraintDescriptor;
+import org.neo4j.kernel.api.schema_new.constaints.RelExistenceConstraintDescriptor;
+import org.neo4j.kernel.api.schema_new.constaints.UniquenessConstraintDescriptor;
 import org.neo4j.kernel.api.schema_new.index.NewIndexDescriptor;
 import org.neo4j.kernel.api.schema_new.index.NewIndexDescriptorFactory;
 
@@ -42,7 +43,10 @@ public enum DbStructureArgumentFormatter implements ArgumentFormatter
     INSTANCE;
 
     private static List<String> IMPORTS = Arrays.asList(
-            UniquenessConstraint.class.getCanonicalName(),
+            ConstraintDescriptorFactory.class.getCanonicalName(),
+            UniquenessConstraintDescriptor.class.getCanonicalName(),
+            RelExistenceConstraintDescriptor.class.getCanonicalName(),
+            NodeExistenceConstraintDescriptor.class.getCanonicalName(),
             LabelSchemaDescriptor.class.getCanonicalName(),
             SchemaDescriptorFactory.class.getCanonicalName(),
             NewIndexDescriptor.class.getCanonicalName(),
@@ -107,25 +111,24 @@ public enum DbStructureArgumentFormatter implements ArgumentFormatter
             builder.append( format( "SchemaDescriptorFactory.forLabel( %d, %s )", labelId,
                     asString( descriptor.getPropertyIds() ) ) );
         }
-        else if ( arg instanceof UniquenessConstraint )
+        else if ( arg instanceof UniquenessConstraintDescriptor )
         {
-            UniquenessConstraint constraint = (UniquenessConstraint) arg;
-            int labelId = constraint.label();
-            builder.append( format( "new UniquenessConstraint( SchemaDescriptorFactory.forLabel( %d, %s ) )", labelId,
-                    asString( constraint.descriptor().getPropertyIds() ) ) );
+            UniquenessConstraintDescriptor constraint = (UniquenessConstraintDescriptor) arg;
+            int labelId = constraint.schema().getLabelId();
+            builder.append( format( "ConstraintDescriptorFactory.uniqueForLabel( %d, %s )",
+                    labelId,
+                    asString( constraint.schema().getPropertyIds() ) ) );
         }
-        else if ( arg instanceof NodePropertyExistenceConstraint )
+        else if ( arg instanceof NodeExistenceConstraintDescriptor )
         {
-            NodePropertyExistenceConstraint constraint = (NodePropertyExistenceConstraint) arg;
-            int labelId = constraint.label();
+            NodeExistenceConstraintDescriptor constraint = (NodeExistenceConstraintDescriptor) arg;
+            int labelId = constraint.schema().getLabelId();
             builder.append( format( "new NodePropertyExistenceConstraint( SchemaDescriptorFactory.forLabel( %d, %s ) )",
-                    labelId, asString( constraint.descriptor().getPropertyIds() ) ) );
+                    labelId, asString( constraint.schema().getPropertyIds() ) ) );
         }
-        else if ( arg instanceof RelationshipPropertyExistenceConstraint )
+        else if ( arg instanceof RelExistenceConstraintDescriptor )
         {
-            RelationTypeSchemaDescriptor descriptor = (RelationTypeSchemaDescriptor) (
-                    (RelationshipPropertyExistenceConstraint) arg)
-                    .descriptor();
+            RelationTypeSchemaDescriptor descriptor = ((RelExistenceConstraintDescriptor) arg).schema();
             int relTypeId = descriptor.getRelTypeId();
             builder.append(
                     format( "new RelationshipPropertyExistenceConstraint( SchemaDescriptorFactory.forLabel( %d, %s ) )",

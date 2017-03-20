@@ -97,10 +97,10 @@ public class SchemaProcedureIT extends KernelIntegrationTest
             ArrayList<Node> nodes = (ArrayList<Node>) next[0];
             assertTrue( nodes.size() == 1 );
             assertThat( nodes.get( 0 ).getLabels(), contains( equalTo( Label.label( "Person" ) ) ) );
-            assertEquals( nodes.get( 0 ).getAllProperties().get( "name" ), new String( "Person" ) );
-            assertEquals( nodes.get( 0 ).getAllProperties().get( "indexes" ), Arrays.asList( "name" ) );
-            assertEquals( nodes.get( 0 ).getAllProperties().get( "constraints" ),
-                    Arrays.asList( "CONSTRAINT ON ( person:Person ) ASSERT person.age IS UNIQUE" ) );
+            assertEquals( new String( "Person" ), nodes.get( 0 ).getAllProperties().get( "name" ) );
+            assertEquals( Arrays.asList( "name" ), nodes.get( 0 ).getAllProperties().get( "indexes" ) );
+            assertEquals( Arrays.asList( "CONSTRAINT ON ( person:Person ) ASSERT person.age IS UNIQUE" ),
+                    nodes.get( 0 ).getAllProperties().get( "constraints" ) );
         }
     }
 

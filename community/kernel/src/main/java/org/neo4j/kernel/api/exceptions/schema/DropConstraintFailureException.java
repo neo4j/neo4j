@@ -20,21 +20,21 @@
 package org.neo4j.kernel.api.exceptions.schema;
 
 import org.neo4j.kernel.api.TokenNameLookup;
-import org.neo4j.kernel.api.constraints.PropertyConstraint;
 import org.neo4j.kernel.api.exceptions.KernelException;
 import org.neo4j.kernel.api.exceptions.Status;
+import org.neo4j.kernel.api.schema_new.constaints.ConstraintDescriptor;
 
 public class DropConstraintFailureException extends SchemaKernelException
 {
-    private final PropertyConstraint constraint;
+    private final ConstraintDescriptor constraint;
 
-    public DropConstraintFailureException( PropertyConstraint constraint, Throwable cause )
+    public DropConstraintFailureException( ConstraintDescriptor constraint, Throwable cause )
     {
         super( Status.Schema.ConstraintDropFailed, cause, "Unable to drop constraint %s: %s", constraint, cause.getMessage() );
         this.constraint = constraint;
     }
 
-    public PropertyConstraint constraint()
+    public ConstraintDescriptor constraint()
     {
         return constraint;
     }

@@ -19,20 +19,21 @@
  */
 package org.neo4j.kernel.api.constraints;
 
-import org.neo4j.kernel.api.schema.RelationshipPropertyDescriptor;
-import org.neo4j.kernel.api.schema_new.LabelSchemaDescriptor;
 import org.neo4j.kernel.api.schema_new.RelationTypeSchemaDescriptor;
-import org.neo4j.kernel.api.schema_new.SchemaBoundary;
 import org.neo4j.kernel.api.schema_new.SchemaDescriptor;
+import org.neo4j.kernel.api.schema_new.constaints.ConstraintDescriptor;
 
 /**
  * Base class describing property constraint on relationships.
+ *
+ * @deprecated use {@link ConstraintDescriptor} instead.
  */
+@Deprecated
 public abstract class RelationshipPropertyConstraint implements PropertyConstraint
 {
-    protected final RelationshipPropertyDescriptor descriptor;
+    protected final RelationTypeSchemaDescriptor descriptor;
 
-    public RelationshipPropertyConstraint( RelationshipPropertyDescriptor descriptor )
+    public RelationshipPropertyConstraint( RelationTypeSchemaDescriptor descriptor )
     {
         this.descriptor = descriptor;
     }
@@ -40,20 +41,12 @@ public abstract class RelationshipPropertyConstraint implements PropertyConstrai
     @Override
     public final SchemaDescriptor descriptor()
     {
-        return SchemaBoundary.map( descriptor );
+        return descriptor;
     }
 
-    public boolean matches( RelationshipPropertyDescriptor descriptor )
+    public boolean matches( RelationTypeSchemaDescriptor descriptor )
     {
         return this.descriptor.equals( descriptor );
-    }
-
-    public boolean matches( RelationTypeSchemaDescriptor other )
-    {
-        return other != null &&
-                descriptor.getRelationshipTypeId() == other.getRelTypeId() &&
-                descriptor.getPropertyId() == other.getPropertyIds()[0];
-        // this is safe because we are replacing this class before introducing composite constraints
     }
 
     @Override
