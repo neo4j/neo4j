@@ -29,7 +29,7 @@ import org.neo4j.collection.primitive.PrimitiveLongSet;
 import org.neo4j.concurrent.Work;
 import org.neo4j.helpers.collection.NestingIterator;
 import org.neo4j.kernel.api.exceptions.index.IndexEntryConflictException;
-import org.neo4j.kernel.api.index.NodeUpdates;
+import org.neo4j.kernel.impl.api.index.NodeUpdates;
 import org.neo4j.kernel.impl.api.index.IndexingService;
 import org.neo4j.kernel.impl.store.UnderlyingStorageException;
 import org.neo4j.kernel.impl.transaction.command.Command.NodeCommand;

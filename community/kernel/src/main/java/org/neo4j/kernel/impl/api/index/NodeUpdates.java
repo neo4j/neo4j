@@ -17,7 +17,7 @@
  * You should have received a copy of the GNU General Public License
  * along with this program.  If not, see <http://www.gnu.org/licenses/>.
  */
-package org.neo4j.kernel.api.index;
+package org.neo4j.kernel.impl.api.index;
 
 import java.util.ArrayList;
 import java.util.Arrays;
@@ -28,14 +28,15 @@ import org.neo4j.collection.primitive.PrimitiveIntIterator;
 import org.neo4j.collection.primitive.PrimitiveIntObjectMap;
 import org.neo4j.collection.primitive.PrimitiveIntSet;
 import org.neo4j.helpers.collection.Iterables;
+import org.neo4j.kernel.api.index.IndexEntryUpdate;
 import org.neo4j.kernel.api.properties.DefinedProperty;
 import org.neo4j.kernel.api.schema_new.LabelSchemaDescriptor;
 import org.neo4j.kernel.api.schema_new.LabelSchemaSupplier;
 
 import static java.lang.String.format;
 import static java.util.Arrays.binarySearch;
-import static org.neo4j.kernel.api.index.NodeUpdates.PropertyValueType.Changed;
-import static org.neo4j.kernel.api.index.NodeUpdates.PropertyValueType.NoValue;
+import static org.neo4j.kernel.impl.api.index.NodeUpdates.PropertyValueType.Changed;
+import static org.neo4j.kernel.impl.api.index.NodeUpdates.PropertyValueType.NoValue;
 import static org.neo4j.kernel.impl.store.ShortArray.EMPTY_LONG_ARRAY;
 
 /**

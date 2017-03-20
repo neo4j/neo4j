@@ -28,7 +28,6 @@ import org.junit.Test;
 import java.io.File;
 
 import org.neo4j.helpers.collection.Iterables;
-import org.neo4j.kernel.api.index.NodeUpdates;
 import org.neo4j.kernel.configuration.Config;
 import org.neo4j.kernel.impl.store.NeoStores;
 import org.neo4j.kernel.impl.store.PropertyStore;

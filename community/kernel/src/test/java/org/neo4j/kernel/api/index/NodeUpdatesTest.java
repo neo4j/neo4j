@@ -32,6 +32,8 @@ import org.neo4j.kernel.api.properties.DefinedProperty;
 import org.neo4j.kernel.api.properties.Property;
 import org.neo4j.kernel.api.schema_new.LabelSchemaDescriptor;
 import org.neo4j.kernel.api.schema_new.SchemaDescriptorFactory;
+import org.neo4j.kernel.impl.api.index.NodeUpdates;
+import org.neo4j.kernel.impl.api.index.PropertyLoader;
 
 import static org.hamcrest.MatcherAssert.assertThat;
 import static org.hamcrest.Matchers.containsInAnyOrder;

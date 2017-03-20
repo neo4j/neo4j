@@ -17,12 +17,14 @@
  * You should have received a copy of the GNU General Public License
  * along with this program.  If not, see <http://www.gnu.org/licenses/>.
  */
-package org.neo4j.kernel.api.index;
+package org.neo4j.kernel.impl.api.index;
 
 import org.neo4j.collection.primitive.PrimitiveIntSet;
+import org.neo4j.kernel.api.index.PropertyAccessor;
 
 /**
- * TODO: make doc. This should probably not be in API, unless directly used by index providers.
+ * The PropertyLoader provides a stream-lined interface for getting multiple property values from a node in a single
+ * call. This can be used over the index provider API {@link PropertyAccessor} for better performance in these cases.
  */
 public interface PropertyLoader
 {

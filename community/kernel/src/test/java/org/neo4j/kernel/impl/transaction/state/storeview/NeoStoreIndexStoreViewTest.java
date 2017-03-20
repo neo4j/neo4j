@@ -41,7 +41,7 @@ import org.neo4j.kernel.api.Statement;
 import org.neo4j.kernel.api.exceptions.EntityNotFoundException;
 import org.neo4j.kernel.api.exceptions.KernelException;
 import org.neo4j.kernel.api.index.IndexEntryUpdate;
-import org.neo4j.kernel.api.index.NodeUpdates;
+import org.neo4j.kernel.impl.api.index.NodeUpdates;
 import org.neo4j.kernel.api.labelscan.NodeLabelUpdate;
 import org.neo4j.kernel.api.properties.Property;
 import org.neo4j.kernel.api.schema_new.LabelSchemaDescriptor;

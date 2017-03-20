@@ -25,7 +25,7 @@ import java.util.function.IntPredicate;
 import org.neo4j.collection.primitive.PrimitiveIntSet;
 import org.neo4j.helpers.collection.Visitor;
 import org.neo4j.kernel.api.exceptions.EntityNotFoundException;
-import org.neo4j.kernel.api.index.NodeUpdates;
+import org.neo4j.kernel.impl.api.index.NodeUpdates;
 import org.neo4j.kernel.api.labelscan.NodeLabelUpdate;
 import org.neo4j.kernel.api.properties.Property;
 import org.neo4j.kernel.impl.api.CountsAccessor;

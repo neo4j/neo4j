@@ -22,27 +22,4 @@ package org.neo4j.kernel.api.schema_new;
 public interface LabelSchemaSupplier extends SchemaDescriptor.Supplier
 {
     LabelSchemaDescriptor schema();
-
-    class Box<VALUE> implements LabelSchemaSupplier
-    {
-        private final LabelSchemaDescriptor schema;
-        private final VALUE value;
-
-        public Box( LabelSchemaDescriptor schema, VALUE value )
-        {
-            this.schema = schema;
-            this.value = value;
-        }
-
-        @Override
-        public LabelSchemaDescriptor schema()
-        {
-            return schema;
-        }
-
-        public VALUE value()
-        {
-            return value;
-        }
-    }
 }
