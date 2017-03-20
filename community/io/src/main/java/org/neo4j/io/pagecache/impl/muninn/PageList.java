@@ -117,7 +117,7 @@ class PageList
         long address = baseAddress - 8;
         for ( long i = 0; i < pageCount; i++ )
         {
-            UnsafeUtil.putLong( address += 8, 0 ); // lock word
+            UnsafeUtil.putLong( address += 8, OffHeapPageLock.initialLockWordWithExclusiveLock() ); // lock word
             UnsafeUtil.putLong( address += 8, 0 ); // pointer
             UnsafeUtil.putLong( address += 8, PageCursor.UNBOUND_PAGE_ID ); // file page id
             UnsafeUtil.putLong( address += 8, 0 ); // rest

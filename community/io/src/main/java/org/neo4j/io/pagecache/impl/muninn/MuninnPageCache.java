@@ -222,13 +222,7 @@ public class MuninnPageCache implements PageCache
         MemoryManager memoryManager = new MemoryManager( expectedMaxMemory, alignment );
         this.victimPage = VictimPageReference.getVictimPage( cachePageSize );
 
-        // todo allocate page list with exclusive locks preset
         this.pages = new PageList( maxPages, cachePageSize, memoryManager, new SwapperSet(), victimPage );
-        for ( int i = 0; i < maxPages; i++ )
-        {
-            long pageRef = pages.deref( i );
-            pages.tryExclusiveLock( pageRef );
-        }
 
         UnsafeUtil.putObjectVolatile( this, freelistOffset, new AtomicInteger() );
     }

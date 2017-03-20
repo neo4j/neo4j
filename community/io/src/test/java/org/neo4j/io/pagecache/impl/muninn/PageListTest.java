@@ -152,8 +152,16 @@ public class PageListTest
     // xxx ---[ Sequence lock tests ]---
 
     @Test
+    public void pagesAreInitiallyExclusivelyLocked() throws Exception
+    {
+        assertTrue( pageList.isExclusivelyLocked( pageRef ) );
+        pageList.unlockExclusive( pageRef );
+    }
+
+    @Test
     public void uncontendedOptimisticLockMustValidate() throws Exception
     {
+        pageList.unlockExclusive( pageRef );
         long stamp = pageList.tryOptimisticReadLock( pageRef );
         assertTrue( pageList.validateReadLock( pageRef, stamp ) );
     }
@@ -167,6 +175,7 @@ public class PageListTest
     @Test
     public void writeLockMustInvalidateOptimisticReadLock() throws Exception
     {
+        pageList.unlockExclusive( pageRef );
         long r = pageList.tryOptimisticReadLock( pageRef );
         pageList.tryWriteLock( pageRef );
         pageList.unlockWrite( pageRef );
@@ -192,6 +201,7 @@ public class PageListTest
     @Test
     public void writeLockReleaseMustInvalidateOptimisticReadLock() throws Exception
     {
+        pageList.unlockExclusive( pageRef );
         pageList.tryWriteLock( pageRef );
         long r = pageList.tryOptimisticReadLock( pageRef );
         pageList.unlockWrite( pageRef );
@@ -201,12 +211,14 @@ public class PageListTest
     @Test
     public void uncontendedWriteLockMustBeAvailable() throws Exception
     {
+        pageList.unlockExclusive( pageRef );
         assertTrue( pageList.tryWriteLock( pageRef ) );
     }
 
     @Test
     public void uncontendedOptimisticReadLockMustValidateAfterWriteLockRelease() throws Exception
     {
+        pageList.unlockExclusive( pageRef );
         pageList.tryWriteLock( pageRef );
         pageList.unlockWrite( pageRef );
         long r = pageList.tryOptimisticReadLock( pageRef );
@@ -216,6 +228,7 @@ public class PageListTest
     @Test( timeout = TIMEOUT )
     public void writeLocksMustNotBlockOtherWriteLocks() throws Exception
     {
+        pageList.unlockExclusive( pageRef );
         assertTrue( pageList.tryWriteLock( pageRef ) );
         assertTrue( pageList.tryWriteLock( pageRef ) );
     }
@@ -223,6 +236,7 @@ public class PageListTest
     @Test( timeout = TIMEOUT )
     public void writeLocksMustNotBlockOtherWriteLocksInOtherThreads() throws Exception
     {
+        pageList.unlockExclusive( pageRef );
         int threads = 10;
         CountDownLatch end = new CountDownLatch( threads );
         Runnable runnable = () ->
@@ -251,6 +265,7 @@ public class PageListTest
     @Test( expected = IllegalMonitorStateException.class, timeout = TIMEOUT )
     public void writeLockCountOverflowMustThrow() throws Exception
     {
+        pageList.unlockExclusive( pageRef );
         //noinspection InfiniteLoopStatement
         for (; ; )
         {
@@ -261,6 +276,7 @@ public class PageListTest
     @Test
     public void exclusiveLockMustInvalidateOptimisticLock() throws Exception
     {
+        pageList.unlockExclusive( pageRef );
         long r = pageList.tryOptimisticReadLock( pageRef );
         pageList.tryExclusiveLock( pageRef );
         pageList.unlockExclusive( pageRef );
@@ -270,6 +286,7 @@ public class PageListTest
     @Test
     public void takingExclusiveLockMustInvalidateOptimisticLock() throws Exception
     {
+        pageList.unlockExclusive( pageRef );
         long r = pageList.tryOptimisticReadLock( pageRef );
         pageList.tryExclusiveLock( pageRef );
         assertFalse( pageList.validateReadLock( pageRef, r ) );
@@ -278,7 +295,7 @@ public class PageListTest
     @Test
     public void optimisticReadLockMustNotValidateUnderExclusiveLock() throws Exception
     {
-        pageList.tryExclusiveLock( pageRef );
+        // exclusive lock implied by constructor
         long r = pageList.tryOptimisticReadLock( pageRef );
         assertFalse( pageList.validateReadLock( pageRef, r ) );
     }
@@ -286,7 +303,7 @@ public class PageListTest
     @Test
     public void exclusiveLockReleaseMustInvalidateOptimisticReadLock() throws Exception
     {
-        pageList.tryExclusiveLock( pageRef );
+        // exclusive lock implied by constructor
         long r = pageList.tryOptimisticReadLock( pageRef );
         pageList.unlockExclusive( pageRef );
         assertFalse( pageList.validateReadLock( pageRef, r ) );
@@ -295,6 +312,7 @@ public class PageListTest
     @Test
     public void uncontendedOptimisticReadLockMustValidateAfterExclusiveLockRelease() throws Exception
     {
+        pageList.unlockExclusive( pageRef );
         pageList.tryExclusiveLock( pageRef );
         pageList.unlockExclusive( pageRef );
         long r = pageList.tryOptimisticReadLock( pageRef );
@@ -304,12 +322,14 @@ public class PageListTest
     @Test
     public void canTakeUncontendedExclusiveLocks() throws Exception
     {
+        pageList.unlockExclusive( pageRef );
         assertTrue( pageList.tryExclusiveLock( pageRef ) );
     }
 
     @Test
     public void writeLocksMustFailExclusiveLocks() throws Exception
     {
+        pageList.unlockExclusive( pageRef );
         pageList.tryWriteLock( pageRef );
         assertFalse( pageList.tryExclusiveLock( pageRef ) );
     }
@@ -317,6 +337,7 @@ public class PageListTest
     @Test
     public void concurrentWriteLocksMustFailExclusiveLocks() throws Exception
     {
+        pageList.unlockExclusive( pageRef );
         pageList.tryWriteLock( pageRef );
         pageList.tryWriteLock( pageRef );
         pageList.unlockWrite( pageRef );
@@ -326,6 +347,7 @@ public class PageListTest
     @Test
     public void exclusiveLockMustBeAvailableAfterWriteLock() throws Exception
     {
+        pageList.unlockExclusive( pageRef );
         pageList.tryWriteLock( pageRef );
         pageList.unlockWrite( pageRef );
         assertTrue( pageList.tryExclusiveLock( pageRef ) );
@@ -334,6 +356,9 @@ public class PageListTest
     @Test
     public void cannotTakeExclusiveLockIfAlreadyTaken() throws Exception
     {
+        // existing exclusive lock implied by constructor
+        assertFalse( pageList.tryExclusiveLock( pageRef ) );
+        pageList.unlockExclusive( pageRef );
         assertTrue( pageList.tryExclusiveLock( pageRef ) );
         assertFalse( pageList.tryExclusiveLock( pageRef ) );
     }
@@ -341,6 +366,7 @@ public class PageListTest
     @Test
     public void exclusiveLockMustBeAvailableAfterExclusiveLock() throws Exception
     {
+        pageList.unlockExclusive( pageRef );
         assertTrue( pageList.tryExclusiveLock( pageRef ) );
         pageList.unlockExclusive( pageRef );
         assertTrue( pageList.tryExclusiveLock( pageRef ) );
@@ -349,7 +375,7 @@ public class PageListTest
     @Test( timeout = TIMEOUT )
     public void exclusiveLockMustFailWriteLocks() throws Exception
     {
-        pageList.tryExclusiveLock( pageRef );
+        // exclusive lock implied by constructor
         assertFalse( pageList.tryWriteLock( pageRef ) );
     }
 
@@ -357,11 +383,13 @@ public class PageListTest
     public void unmatchedUnlockExclusiveLockMustThrow() throws Exception
     {
         pageList.unlockExclusive( pageRef );
+        pageList.unlockExclusive( pageRef );
     }
 
     @Test( expected = IllegalMonitorStateException.class )
     public void unmatchedUnlockWriteAfterTakingExclusiveLockMustThrow() throws Exception
     {
+        pageList.unlockExclusive( pageRef );
         pageList.tryExclusiveLock( pageRef );
         pageList.unlockWrite( pageRef );
     }
@@ -369,6 +397,7 @@ public class PageListTest
     @Test( timeout = TIMEOUT )
     public void writeLockMustBeAvailableAfterExclusiveLock() throws Exception
     {
+        pageList.unlockExclusive( pageRef );
         pageList.tryExclusiveLock( pageRef );
         pageList.unlockExclusive( pageRef );
         assertTrue( pageList.tryWriteLock( pageRef ) );
@@ -378,7 +407,7 @@ public class PageListTest
     @Test
     public void unlockExclusiveMustReturnStampForOptimisticReadLock() throws Exception
     {
-        pageList.tryExclusiveLock( pageRef );
+        // exclusive lock implied by constructor
         long r = pageList.unlockExclusive( pageRef );
         assertTrue( pageList.validateReadLock( pageRef, r ) );
     }
@@ -386,7 +415,7 @@ public class PageListTest
     @Test
     public void unlockExclusiveAndTakeWriteLockMustInvalidateOptimisticReadLocks() throws Exception
     {
-        pageList.tryExclusiveLock( pageRef );
+        // exclusive lock implied by constructor
         pageList.unlockExclusiveAndTakeWriteLock( pageRef );
         long r = pageList.tryOptimisticReadLock( pageRef );
         assertFalse( pageList.validateReadLock( pageRef, r ) );
@@ -395,7 +424,7 @@ public class PageListTest
     @Test
     public void unlockExclusiveAndTakeWriteLockMustPreventExclusiveLocks() throws Exception
     {
-        pageList.tryExclusiveLock( pageRef );
+        // exclusive lock implied by constructor
         pageList.unlockExclusiveAndTakeWriteLock( pageRef );
         assertFalse( pageList.tryExclusiveLock( pageRef ) );
     }
@@ -403,7 +432,7 @@ public class PageListTest
     @Test( timeout = TIMEOUT )
     public void unlockExclusiveAndTakeWriteLockMustAllowConcurrentWriteLocks() throws Exception
     {
-        pageList.tryExclusiveLock( pageRef );
+        // exclusive lock implied by constructor
         pageList.unlockExclusiveAndTakeWriteLock( pageRef );
         assertTrue( pageList.tryWriteLock( pageRef ) );
     }
@@ -411,6 +440,7 @@ public class PageListTest
     @Test( timeout = TIMEOUT )
     public void unlockExclusiveAndTakeWriteLockMustBeAtomic() throws Exception
     {
+        // exclusive lock implied by constructor
         int threads = Runtime.getRuntime().availableProcessors() - 1;
         CountDownLatch start = new CountDownLatch( threads );
         AtomicBoolean stop = new AtomicBoolean();
@@ -446,7 +476,7 @@ public class PageListTest
     @Test
     public void stampFromUnlockExclusiveMustNotBeValidIfThereAreWriteLocks() throws Exception
     {
-        pageList.tryExclusiveLock( pageRef );
+        // exclusive lock implied by constructor
         long r = pageList.unlockExclusive( pageRef );
         assertTrue( pageList.tryWriteLock( pageRef ) );
         assertFalse( pageList.validateReadLock( pageRef, r ) );
@@ -455,12 +485,14 @@ public class PageListTest
     @Test
     public void uncontendedFlushLockMustBeAvailable() throws Exception
     {
+        pageList.unlockExclusive( pageRef );
         assertTrue( pageList.tryFlushLock( pageRef ) != 0 );
     }
 
     @Test
     public void flushLockMustNotInvalidateOptimisticReadLock() throws Exception
     {
+        pageList.unlockExclusive( pageRef );
         long r = pageList.tryOptimisticReadLock( pageRef );
         long s = pageList.tryFlushLock( pageRef );
         pageList.unlockFlush( pageRef, s, true );
@@ -470,6 +502,7 @@ public class PageListTest
     @Test
     public void flushLockMustNotFailWriteLock() throws Exception
     {
+        pageList.unlockExclusive( pageRef );
         pageList.tryFlushLock( pageRef );
         assertTrue( pageList.tryWriteLock( pageRef ) );
     }
@@ -477,6 +510,7 @@ public class PageListTest
     @Test
     public void flushLockMustFailExclusiveLock() throws Exception
     {
+        pageList.unlockExclusive( pageRef );
         pageList.tryFlushLock( pageRef );
         assertFalse( pageList.tryExclusiveLock( pageRef ) );
     }
@@ -484,6 +518,7 @@ public class PageListTest
     @Test
     public void cannotTakeFlushLockIfAlreadyTaken() throws Exception
     {
+        pageList.unlockExclusive( pageRef );
         assertTrue( pageList.tryFlushLock( pageRef ) != 0 );
         assertFalse( pageList.tryFlushLock( pageRef ) != 0 );
     }
@@ -491,6 +526,7 @@ public class PageListTest
     @Test
     public void writeLockMustNotFailFlushLock() throws Exception
     {
+        pageList.unlockExclusive( pageRef );
         pageList.tryWriteLock( pageRef );
         assertTrue( pageList.tryFlushLock( pageRef ) != 0 );
     }
@@ -498,14 +534,14 @@ public class PageListTest
     @Test
     public void exclusiveLockMustFailFlushLock() throws Exception
     {
-        pageList.tryExclusiveLock( pageRef );
+        // exclusively locked from constructor
         assertFalse( pageList.tryFlushLock( pageRef ) != 0 );
     }
 
     @Test
     public void unlockExclusiveAndTakeWriteLockMustNotFailFlushLock() throws Exception
     {
-        pageList.tryExclusiveLock( pageRef );
+        // exclusively locked from constructor
         pageList.unlockExclusiveAndTakeWriteLock( pageRef );
         assertTrue( pageList.tryFlushLock( pageRef ) != 0 );
     }
@@ -513,6 +549,7 @@ public class PageListTest
     @Test
     public void flushUnlockMustNotInvalidateOptimisticReadLock() throws Exception
     {
+        pageList.unlockExclusive( pageRef );
         long r = pageList.tryOptimisticReadLock( pageRef );
         assertTrue( pageList.tryFlushLock( pageRef ) != 0 );
         assertTrue( pageList.validateReadLock( pageRef, r ) );
@@ -521,6 +558,7 @@ public class PageListTest
     @Test
     public void optimisticReadLockMustValidateUnderFlushLock() throws Exception
     {
+        pageList.unlockExclusive( pageRef );
         pageList.tryFlushLock( pageRef );
         long r = pageList.tryOptimisticReadLock( pageRef );
         assertTrue( pageList.validateReadLock( pageRef, r ) );
@@ -529,6 +567,7 @@ public class PageListTest
     @Test
     public void flushLockReleaseMustNotInvalidateOptimisticReadLock() throws Exception
     {
+        pageList.unlockExclusive( pageRef );
         long s = pageList.tryFlushLock( pageRef );
         long r = pageList.tryOptimisticReadLock( pageRef );
         pageList.unlockFlush( pageRef, s, true );
@@ -544,6 +583,7 @@ public class PageListTest
     @Test
     public void uncontendedOptimisticReadLockMustBeAvailableAfterFlushLock() throws Exception
     {
+        pageList.unlockExclusive( pageRef );
         long s = pageList.tryFlushLock( pageRef );
         pageList.unlockFlush( pageRef, s, true );
         long r = pageList.tryOptimisticReadLock( pageRef );
@@ -553,6 +593,7 @@ public class PageListTest
     @Test
     public void uncontendedWriteLockMustBeAvailableAfterFlushLock() throws Exception
     {
+        pageList.unlockExclusive( pageRef );
         long s = pageList.tryFlushLock( pageRef );
         pageList.unlockFlush( pageRef, s, true );
         assertTrue( pageList.tryWriteLock( pageRef ) );
@@ -561,6 +602,7 @@ public class PageListTest
     @Test
     public void uncontendedExclusiveLockMustBeAvailableAfterFlushLock() throws Exception
     {
+        pageList.unlockExclusive( pageRef );
         long s = pageList.tryFlushLock( pageRef );
         pageList.unlockFlush( pageRef, s, true );
         assertTrue( pageList.tryExclusiveLock( pageRef ) );
@@ -569,6 +611,7 @@ public class PageListTest
     @Test
     public void uncontendedFlushLockMustBeAvailableAfterWriteLock() throws Exception
     {
+        pageList.unlockExclusive( pageRef );
         pageList.tryWriteLock( pageRef );
         pageList.unlockWrite( pageRef );
         assertTrue( pageList.tryFlushLock( pageRef ) != 0 );
@@ -577,6 +620,7 @@ public class PageListTest
     @Test
     public void uncontendedFlushLockMustBeAvailableAfterExclusiveLock() throws Exception
     {
+        pageList.unlockExclusive( pageRef );
         pageList.tryExclusiveLock( pageRef );
         pageList.unlockExclusive( pageRef );
         assertTrue( pageList.tryFlushLock( pageRef ) != 0 );
@@ -585,6 +629,7 @@ public class PageListTest
     @Test
     public void uncontendedFlushLockMustBeAvailableAfterFlushLock() throws Exception
     {
+        pageList.unlockExclusive( pageRef );
         long s = pageList.tryFlushLock( pageRef );
         pageList.unlockFlush( pageRef, s, true );
         assertTrue( pageList.tryFlushLock( pageRef ) != 0 );
@@ -593,7 +638,7 @@ public class PageListTest
     @Test
     public void stampFromUnlockExclusiveMustBeValidUnderFlushLock() throws Exception
     {
-        pageList.tryExclusiveLock( pageRef );
+        // exclusively locked from constructor
         long r = pageList.unlockExclusive( pageRef );
         pageList.tryFlushLock( pageRef );
         assertTrue( pageList.validateReadLock( pageRef, r ) );
@@ -602,6 +647,9 @@ public class PageListTest
     @Test
     public void optimisticReadLockMustNotGetInterferenceFromAdjacentWriteLocks() throws Exception
     {
+        pageList.unlockExclusive( prevPageRef );
+        pageList.unlockExclusive( pageRef );
+        pageList.unlockExclusive( nextPageRef );
         assertTrue( pageList.tryWriteLock( prevPageRef ) );
         assertTrue( pageList.tryWriteLock( nextPageRef ) );
         long r = pageList.tryOptimisticReadLock( pageRef );
@@ -614,6 +662,9 @@ public class PageListTest
     @Test
     public void optimisticReadLockMustNotGetInterferenceFromAdjacentExclusiveLocks() throws Exception
     {
+        pageList.unlockExclusive( prevPageRef );
+        pageList.unlockExclusive( pageRef );
+        pageList.unlockExclusive( nextPageRef );
         assertTrue( pageList.tryExclusiveLock( prevPageRef ) );
         assertTrue( pageList.tryExclusiveLock( nextPageRef ) );
         long r = pageList.tryOptimisticReadLock( pageRef );
@@ -626,6 +677,9 @@ public class PageListTest
     @Test
     public void optimisticReadLockMustNotGetInterferenceFromAdjacentExclusiveAndWriteLocks() throws Exception
     {
+        pageList.unlockExclusive( prevPageRef );
+        pageList.unlockExclusive( pageRef );
+        pageList.unlockExclusive( nextPageRef );
         assertTrue( pageList.tryExclusiveLock( prevPageRef ) );
         assertTrue( pageList.tryExclusiveLock( nextPageRef ) );
         long r = pageList.tryOptimisticReadLock( pageRef );
@@ -641,6 +695,9 @@ public class PageListTest
     @Test
     public void writeLockMustNotGetInterferenceFromAdjacentExclusiveLocks() throws Exception
     {
+        pageList.unlockExclusive( prevPageRef );
+        pageList.unlockExclusive( pageRef );
+        pageList.unlockExclusive( nextPageRef );
         assertTrue( pageList.tryExclusiveLock( prevPageRef ) );
         assertTrue( pageList.tryExclusiveLock( nextPageRef ) );
         assertTrue( pageList.tryWriteLock( pageRef ) );
@@ -652,6 +709,9 @@ public class PageListTest
     @Test
     public void flushLockMustNotGetInterferenceFromAdjacentExclusiveLocks() throws Exception
     {
+        pageList.unlockExclusive( prevPageRef );
+        pageList.unlockExclusive( pageRef );
+        pageList.unlockExclusive( nextPageRef );
         long s;
         assertTrue( pageList.tryExclusiveLock( prevPageRef ) );
         assertTrue( pageList.tryExclusiveLock( nextPageRef ) );
@@ -664,6 +724,9 @@ public class PageListTest
     @Test
     public void flushLockMustNotGetInterferenceFromAdjacentFlushLocks() throws Exception
     {
+        pageList.unlockExclusive( prevPageRef );
+        pageList.unlockExclusive( pageRef );
+        pageList.unlockExclusive( nextPageRef );
         long ps, ns, s;
         assertTrue( (ps = pageList.tryFlushLock( prevPageRef )) != 0 );
         assertTrue( (ns = pageList.tryFlushLock( nextPageRef )) != 0 );
@@ -676,17 +739,26 @@ public class PageListTest
     @Test
     public void exclusiveLockMustNotGetInterferenceFromAdjacentExclusiveLocks() throws Exception
     {
+        pageList.unlockExclusive( pageRef );
+        pageList.unlockExclusive( prevPageRef );
+        pageList.unlockExclusive( nextPageRef );
         assertTrue( pageList.tryExclusiveLock( prevPageRef ) );
         assertTrue( pageList.tryExclusiveLock( nextPageRef ) );
         assertTrue( pageList.tryExclusiveLock( pageRef ) );
         pageList.unlockExclusive( pageRef );
         pageList.unlockExclusive( prevPageRef );
         pageList.unlockExclusive( nextPageRef );
+        assertTrue( pageList.tryExclusiveLock( prevPageRef ) );
+        assertTrue( pageList.tryExclusiveLock( nextPageRef ) );
+        assertTrue( pageList.tryExclusiveLock( pageRef ) );
     }
 
     @Test
     public void exclusiveLockMustNotGetInterferenceFromAdjacentWriteLocks() throws Exception
     {
+        pageList.unlockExclusive( pageRef );
+        pageList.unlockExclusive( prevPageRef );
+        pageList.unlockExclusive( nextPageRef );
         assertTrue( pageList.tryWriteLock( prevPageRef ) );
         assertTrue( pageList.tryWriteLock( nextPageRef ) );
         assertTrue( pageList.tryExclusiveLock( pageRef ) );
@@ -698,9 +770,7 @@ public class PageListTest
     @Test
     public void exclusiveLockMustNotGetInterferenceFromAdjacentExclusiveAndWriteLocks() throws Exception
     {
-        assertTrue( pageList.tryExclusiveLock( prevPageRef ) );
-        assertTrue( pageList.tryExclusiveLock( nextPageRef ) );
-        assertTrue( pageList.tryExclusiveLock( pageRef ) );
+        // exclusive locks on prevPageRef, nextPageRef and pageRef are implied from constructor
         pageList.unlockExclusive( pageRef );
         pageList.unlockExclusiveAndTakeWriteLock( prevPageRef );
         pageList.unlockExclusiveAndTakeWriteLock( nextPageRef );
@@ -722,6 +792,9 @@ public class PageListTest
     @Test
     public void exclusiveLockMustNotGetInterferenceFromAdjacentFlushLocks() throws Exception
     {
+        pageList.unlockExclusive( prevPageRef );
+        pageList.unlockExclusive( pageRef );
+        pageList.unlockExclusive( nextPageRef );
         long ps, ns;
         assertTrue( (ps = pageList.tryFlushLock( prevPageRef )) != 0 );
         assertTrue( (ns = pageList.tryFlushLock( nextPageRef )) != 0);
@@ -734,6 +807,7 @@ public class PageListTest
     @Test
     public void takingWriteLockMustRaiseModifiedFlag() throws Exception
     {
+        pageList.unlockExclusive( pageRef );
         assertFalse( pageList.isModified( pageRef ) );
         assertTrue( pageList.tryWriteLock( pageRef ) );
         assertTrue( pageList.isModified( pageRef ) );
@@ -743,6 +817,7 @@ public class PageListTest
     @Test
     public void turningExclusiveLockIntoWriteLockMustRaiseModifiedFlag() throws Exception
     {
+        pageList.unlockExclusive( pageRef );
         assertFalse( pageList.isModified( pageRef ) );
         assertTrue( pageList.tryExclusiveLock( pageRef ) );
         assertFalse( pageList.isModified( pageRef ) );
@@ -754,6 +829,7 @@ public class PageListTest
     @Test
     public void releasingFlushLockMustLowerModifiedFlagIfSuccessful() throws Exception
     {
+        pageList.unlockExclusive( pageRef );
         assertTrue( pageList.tryWriteLock( pageRef ) );
         pageList.unlockWrite( pageRef );
         assertTrue( pageList.isModified( pageRef ) );
@@ -765,6 +841,7 @@ public class PageListTest
     @Test
     public void releasingFlushLockMustNotLowerModifiedFlagIfUnsuccessful() throws Exception
     {
+        pageList.unlockExclusive( pageRef );
         assertTrue( pageList.tryWriteLock( pageRef ) );
         pageList.unlockWrite( pageRef );
         assertTrue( pageList.isModified( pageRef ) );
@@ -776,6 +853,7 @@ public class PageListTest
     @Test
     public void releasingFlushLockMustNotLowerModifiedFlagIfWriteLockWasWithinFlushFlushLock() throws Exception
     {
+        pageList.unlockExclusive( pageRef );
         long s = pageList.tryFlushLock( pageRef );
         assertTrue( pageList.tryWriteLock( pageRef ) );
         pageList.unlockWrite( pageRef );
@@ -786,6 +864,7 @@ public class PageListTest
     @Test
     public void releasingFlushLockMustNotLowerModifiedFlagIfWriteLockOverlappedTakingFlushLock() throws Exception
     {
+        pageList.unlockExclusive( pageRef );
         assertTrue( pageList.tryWriteLock( pageRef ) );
         long s = pageList.tryFlushLock( pageRef );
         pageList.unlockWrite( pageRef );
@@ -796,6 +875,7 @@ public class PageListTest
     @Test
     public void releasingFlushLockMustNotLowerModifiedFlagIfWriteLockOverlappedReleasingFlushLock() throws Exception
     {
+        pageList.unlockExclusive( pageRef );
         long s = pageList.tryFlushLock( pageRef );
         assertTrue( pageList.tryWriteLock( pageRef ) );
         pageList.unlockFlush( pageRef, s, true );
@@ -807,6 +887,7 @@ public class PageListTest
     @Test
     public void releasingFlushLockMustNotLowerModifiedFlagIfWriteLockOverlappedFlushLock() throws Exception
     {
+        pageList.unlockExclusive( pageRef );
         assertTrue( pageList.tryWriteLock( pageRef ) );
         long s = pageList.tryFlushLock( pageRef );
         pageList.unlockFlush( pageRef, s, true );
@@ -818,6 +899,9 @@ public class PageListTest
     @Test
     public void releasingFlushLockMustNotInterfereWithAdjacentModifiedFlags() throws Exception
     {
+        pageList.unlockExclusive( prevPageRef );
+        pageList.unlockExclusive( pageRef );
+        pageList.unlockExclusive( nextPageRef );
         assertTrue( pageList.tryWriteLock( prevPageRef ) );
         assertTrue( pageList.tryWriteLock( pageRef ) );
         assertTrue( pageList.tryWriteLock( nextPageRef ) );
@@ -837,6 +921,9 @@ public class PageListTest
     @Test
     public void writeLockMustNotInterfereWithAdjacentModifiedFlags() throws Exception
     {
+        pageList.unlockExclusive( prevPageRef );
+        pageList.unlockExclusive( pageRef );
+        pageList.unlockExclusive( nextPageRef );
         assertTrue( pageList.tryWriteLock( pageRef ) );
         pageList.unlockWrite( pageRef );
         assertFalse( pageList.isModified( prevPageRef ) );
@@ -847,12 +934,14 @@ public class PageListTest
     @Test( expected = IllegalStateException.class )
     public void disallowUnlockedPageToExplicitlyLowerModifiedFlag() throws Exception
     {
+        pageList.unlockExclusive( pageRef );
         pageList.explicitlyMarkPageUnmodifiedUnderExclusiveLock( pageRef );
     }
 
     @Test( expected = IllegalStateException.class )
     public void disallowReadLockedPageToExplicitlyLowerModifiedFlag() throws Exception
     {
+        pageList.unlockExclusive( pageRef );
         pageList.tryOptimisticReadLock( pageRef );
         pageList.explicitlyMarkPageUnmodifiedUnderExclusiveLock( pageRef );
     }
@@ -860,6 +949,7 @@ public class PageListTest
     @Test( expected = IllegalStateException.class )
     public void disallowFlushLockedPageToExplicitlyLowerModifiedFlag() throws Exception
     {
+        pageList.unlockExclusive( pageRef );
         assertThat( pageList.tryFlushLock( pageRef ), is( not( 0L ) ) );
         pageList.explicitlyMarkPageUnmodifiedUnderExclusiveLock( pageRef );
     }
@@ -867,6 +957,7 @@ public class PageListTest
     @Test( expected = IllegalStateException.class )
     public void disallowWriteLockedPageToExplicitlyLowerModifiedFlag() throws Exception
     {
+        pageList.unlockExclusive( pageRef );
         assertTrue( pageList.tryWriteLock( pageRef ) );
         pageList.explicitlyMarkPageUnmodifiedUnderExclusiveLock( pageRef );
     }
@@ -874,6 +965,7 @@ public class PageListTest
     @Test
     public void allowExclusiveLockedPageToExplicitlyLowerModifiedFlag() throws Exception
     {
+        pageList.unlockExclusive( pageRef );
         assertFalse( pageList.isModified( pageRef ) );
         assertTrue( pageList.tryWriteLock( pageRef ) );
         pageList.unlockWrite( pageRef );
@@ -1001,6 +1093,7 @@ public class PageListTest
     @Test
     public void faultMustThrowWithoutExclusiveLock() throws Exception
     {
+        pageList.unlockExclusive( pageRef );
         pageList.initBuffer( pageRef );
         exception.expect( IllegalStateException.class );
         pageList.fault( pageRef, DUMMY_SWAPPER, 0, 0, PageFaultEvent.NULL );
@@ -1009,7 +1102,7 @@ public class PageListTest
     @Test
     public void faultMustThrowIfSwapperIsNull() throws Exception
     {
-        assertTrue( pageList.tryExclusiveLock( pageRef ) );
+        // exclusive lock implied by the constructor
         pageList.initBuffer( pageRef );
         exception.expect( IllegalArgumentException.class );
         pageList.fault( pageRef, null, 0, 0, PageFaultEvent.NULL );
@@ -1018,7 +1111,7 @@ public class PageListTest
     @Test
     public void faultMustThrowIfFilePageIdIsUnbound() throws Exception
     {
-        assertTrue( pageList.tryExclusiveLock( pageRef ) );
+        // exclusively locked from constructor
         pageList.initBuffer( pageRef );
         exception.expect( IllegalStateException.class );
         pageList.fault( pageRef, DUMMY_SWAPPER, 0, PageCursor.UNBOUND_PAGE_ID, PageFaultEvent.NULL );
@@ -1043,7 +1136,6 @@ public class PageListTest
                 throw new IOException( "Did not expect this file page id = " + fpId );
             }
         };
-        assertTrue( pageList.tryExclusiveLock( pageRef ) );
         pageList.initBuffer( pageRef );
         pageList.fault( pageRef, swapper, swapperId, filePageId, PageFaultEvent.NULL );
 
@@ -1064,9 +1156,9 @@ public class PageListTest
     @Test
     public void pageMustBeLoadedAndBoundAfterFault() throws Exception
     {
+        // exclusive lock implied by constructor
         int swapperId = 1;
         long filePageId = 42;
-        assertTrue( pageList.tryExclusiveLock( pageRef ) );
         pageList.initBuffer( pageRef );
         pageList.fault( pageRef, DUMMY_SWAPPER, swapperId, filePageId, PageFaultEvent.NULL );
         assertThat( pageList.getFilePageId( pageRef ), is( filePageId ) );
@@ -1078,6 +1170,7 @@ public class PageListTest
     @Test
     public void pageMustBeLoadedAndNotBoundIfFaultThrows() throws Exception
     {
+        // exclusive lock implied by constructor
         PageSwapper swapper = new DummyPageSwapper( "file", pageSize )
         {
             @Override
@@ -1088,7 +1181,6 @@ public class PageListTest
         };
         int swapperId = 1;
         long filePageId = 42;
-        assertTrue( pageList.tryExclusiveLock( pageRef ) );
         pageList.initBuffer( pageRef );
         try
         {
@@ -1107,9 +1199,9 @@ public class PageListTest
     @Test
     public void faultMustThrowIfPageIsAlreadyBound() throws Exception
     {
+        // exclusive lock implied by constructor
         int swapperId = 1;
         long filePageId = 42;
-        assertTrue( pageList.tryExclusiveLock( pageRef ) );
         pageList.initBuffer( pageRef );
         pageList.fault( pageRef, DUMMY_SWAPPER, swapperId, filePageId, PageFaultEvent.NULL );
 
@@ -1120,6 +1212,7 @@ public class PageListTest
     @Test
     public void faultMustThrowIfPageIsLoadedButNotBound() throws Exception
     {
+        pageList.unlockExclusive( pageRef );
         int swapperId = 1;
         long filePageId = 42;
         doFailedFault( swapperId, filePageId );
@@ -1156,9 +1249,9 @@ public class PageListTest
     @Test
     public void faultMustPopulatePageFaultEvent() throws Exception
     {
+        // exclusive lock implied by constructor
         int swapperId = 1;
         long filePageId = 42;
-        assertTrue( pageList.tryExclusiveLock( pageRef ) );
         pageList.initBuffer( pageRef );
         DummyPageSwapper swapper = new DummyPageSwapper( "", pageSize )
         {
@@ -1189,6 +1282,7 @@ public class PageListTest
     @Test
     public void boundPagesAreNotBoundToOtherPagesWithSameSwapper() throws Exception
     {
+        pageList.unlockExclusive( pageRef );
         long filePageId = 42;
         doFault( 2, filePageId );
 
@@ -1207,6 +1301,7 @@ public class PageListTest
     @Test
     public void boundPagesAreNotBoundToOtherPagesWithSameFilePageId() throws Exception
     {
+        pageList.unlockExclusive( pageRef );
         int swapperId = 2;
         doFault( swapperId, 42 );
 
@@ -1218,6 +1313,7 @@ public class PageListTest
     @Test
     public void faultMustNotInterfereWithAdjacentPages() throws Exception
     {
+        pageList.unlockExclusive( pageRef );
         doFault( 1, 42 );
 
         assertFalse( pageList.isLoaded( prevPageRef ) );
@@ -1231,6 +1327,7 @@ public class PageListTest
     @Test
     public void failedFaultMustNotInterfereWithAdjacentPages() throws Exception
     {
+        pageList.unlockExclusive( pageRef );
         doFailedFault( 1, 42 );
 
         assertFalse( pageList.isLoaded( prevPageRef ) );
@@ -1244,6 +1341,7 @@ public class PageListTest
     @Test
     public void exclusiveLockMustStillBeHeldAfterFault() throws Exception
     {
+        pageList.unlockExclusive( pageRef );
         doFault( 1, 42 );
         pageList.unlockExclusive( pageRef ); // will throw if lock is not held
     }
@@ -1253,6 +1351,7 @@ public class PageListTest
     @Test
     public void tryEvictMustFailIfPageIsAlreadyExclusivelyLocked() throws Exception
     {
+        pageList.unlockExclusive( pageRef );
         int swapperId = swappers.allocate( DUMMY_SWAPPER );
         doFault( swapperId, 42 ); // page is now loaded
         // pages are delivered from the fault routine with the exclusive lock already held!
@@ -1262,6 +1361,7 @@ public class PageListTest
     @Test
     public void tryEvictThatFailsOnExclusiveLockMustNotUndoSaidLock() throws Exception
     {
+        pageList.unlockExclusive( pageRef );
         int swapperId = swappers.allocate( DUMMY_SWAPPER );
         doFault( swapperId, 42 ); // page is now loaded
         // pages are delivered from the fault routine with the exclusive lock already held!
@@ -1278,6 +1378,7 @@ public class PageListTest
     @Test
     public void tryEvictMustWhenPageIsNotLoadedMustNotLeavePageLocked() throws Exception
     {
+        pageList.unlockExclusive( pageRef );
         pageList.tryEvict( pageRef, EvictionRunEvent.NULL ); // This attempt fails
         assertFalse( pageList.isExclusivelyLocked( pageRef ) ); // Page should not be left in locked state
     }
@@ -1285,6 +1386,7 @@ public class PageListTest
     @Test
     public void tryEvictMustLeavePageExclusivelyLockedOnSuccess() throws Exception
     {
+        pageList.unlockExclusive( pageRef );
         int swapperId = swappers.allocate( DUMMY_SWAPPER );
         doFault( swapperId, 42 ); // page now bound & exclusively locked
         pageList.unlockExclusive( pageRef ); // no longer exclusively locked; can now be evicted
@@ -1295,6 +1397,7 @@ public class PageListTest
     @Test
     public void pageMustNotBeLoadedAfterSuccessfulEviction() throws Exception
     {
+        pageList.unlockExclusive( pageRef );
         int swapperId = swappers.allocate( DUMMY_SWAPPER );
         doFault( swapperId, 42 ); // page now bound & exclusively locked
         pageList.unlockExclusive( pageRef ); // no longer exclusively locked; can now be evicted
@@ -1306,6 +1409,7 @@ public class PageListTest
     @Test
     public void pageMustNotBeBoundAfterSuccessfulEviction() throws Exception
     {
+        pageList.unlockExclusive( pageRef );
         int swapperId = swappers.allocate( DUMMY_SWAPPER );
         doFault( swapperId, 42 ); // page now bound & exclusively locked
         pageList.unlockExclusive( pageRef ); // no longer exclusively locked; can now be evicted
@@ -1321,6 +1425,7 @@ public class PageListTest
     @Test
     public void pageMustNotBeModifiedAfterSuccessfulEviction() throws Exception
     {
+        pageList.unlockExclusive( pageRef );
         int swapperId = swappers.allocate( DUMMY_SWAPPER );
         doFault( swapperId, 42 );
         pageList.unlockExclusiveAndTakeWriteLock( pageRef );
@@ -1333,9 +1438,9 @@ public class PageListTest
     @Test
     public void tryEvictMustFlushPageIfModified() throws Exception
     {
+        pageList.unlockExclusive( pageRef );
         AtomicLong writtenFilePageId = new AtomicLong( -1 );
         AtomicLong writtenBufferAddress = new AtomicLong( -1 );
-//        AtomicInteger writtenBufferSize = new AtomicInteger( -1 );
         PageSwapper swapper = new DummyPageSwapper( "file", pageSize )
         {
             @Override
@@ -1354,12 +1459,12 @@ public class PageListTest
         assertTrue( pageList.tryEvict( pageRef, EvictionRunEvent.NULL ) );
         assertThat( writtenFilePageId.get(), is( 42L ) );
         assertThat( writtenBufferAddress.get(), is( pageList.getAddress( pageRef ) ) );
-//        assertThat( writtenBufferSize.get(), is( 313 ) );
     }
 
     @Test
     public void tryEvictMustNotFlushPageIfNotModified() throws Exception
     {
+        pageList.unlockExclusive( pageRef );
         AtomicInteger writes = new AtomicInteger();
         PageSwapper swapper = new DummyPageSwapper( "a", 313 )
         {
@@ -1381,6 +1486,7 @@ public class PageListTest
     @Test
     public void tryEvictMustNotifySwapperOnSuccess() throws Exception
     {
+        pageList.unlockExclusive( pageRef );
         AtomicBoolean evictionNotified = new AtomicBoolean();
         PageSwapper swapper = new DummyPageSwapper( "a", 313 )
         {
@@ -1401,6 +1507,7 @@ public class PageListTest
     @Test
     public void tryEvictMustNotifySwapperOnSuccessEvenWhenFlushing() throws Exception
     {
+        pageList.unlockExclusive( pageRef );
         AtomicBoolean evictionNotified = new AtomicBoolean();
         PageSwapper swapper = new DummyPageSwapper( "a", 313 )
         {
@@ -1424,6 +1531,7 @@ public class PageListTest
     @Test
     public void tryEvictMustLeavePageUnlockedAndLoadedAndBoundAndModifiedIfFlushThrows() throws Exception
     {
+        pageList.unlockExclusive( pageRef );
         PageSwapper swapper = new DummyPageSwapper( "a", 313 )
         {
             @Override
@@ -1459,6 +1567,7 @@ public class PageListTest
     @Test
     public void tryEvictMustNotNotifySwapperOfEvictionIfFlushThrows() throws Exception
     {
+        pageList.unlockExclusive( pageRef );
         AtomicBoolean evictionNotified = new AtomicBoolean();
         PageSwapper swapper = new DummyPageSwapper( "a", 313 )
         {
@@ -1582,6 +1691,7 @@ public class PageListTest
     @Test
     public void tryEvictMustReportToEvictionEvent() throws Exception
     {
+        pageList.unlockExclusive( pageRef );
         PageSwapper swapper = new DummyPageSwapper( "a", 313 );
         int swapperId = swappers.allocate( swapper );
         doFault( swapperId, 42 );
@@ -1602,6 +1712,7 @@ public class PageListTest
     @Test
     public void tryEvictThatFlushesMustReportToEvictionAndFlushEvents() throws Exception
     {
+        pageList.unlockExclusive( pageRef );
         int filePageSize = 313;
         PageSwapper swapper = new DummyPageSwapper( "a", filePageSize );
         int swapperId = swappers.allocate( swapper );
@@ -1625,6 +1736,7 @@ public class PageListTest
     @Test
     public void tryEvictThatFailsMustReportExceptionsToEvictionAndFlushEvents() throws Exception
     {
+        pageList.unlockExclusive( pageRef );
         IOException ioException = new IOException();
         PageSwapper swapper = new DummyPageSwapper( "a", 313 )
         {
@@ -1663,6 +1775,9 @@ public class PageListTest
     @Test
     public void tryEvictThatSucceedsMustNotInterfereWithAdjacentPages() throws Exception
     {
+        pageList.unlockExclusive( prevPageRef );
+        pageList.unlockExclusive( pageRef );
+        pageList.unlockExclusive( nextPageRef );
         PageSwapper swapper = new DummyPageSwapper( "a", 313 );
         int swapperId = swappers.allocate( swapper );
         long prevStamp = pageList.tryOptimisticReadLock( prevPageRef );
@@ -1677,6 +1792,9 @@ public class PageListTest
     @Test
     public void tryEvictThatFlushesAndSucceedsMustNotInterfereWithAdjacentPages() throws Exception
     {
+        pageList.unlockExclusive( prevPageRef );
+        pageList.unlockExclusive( pageRef );
+        pageList.unlockExclusive( nextPageRef );
         PageSwapper swapper = new DummyPageSwapper( "a", 313 );
         int swapperId = swappers.allocate( swapper );
         long prevStamp = pageList.tryOptimisticReadLock( prevPageRef );
@@ -1693,6 +1811,9 @@ public class PageListTest
     @Test
     public void tryEvictThatFailsMustNotInterfereWithAdjacentPages() throws Exception
     {
+        pageList.unlockExclusive( prevPageRef );
+        pageList.unlockExclusive( pageRef );
+        pageList.unlockExclusive( nextPageRef );
         PageSwapper swapper = new DummyPageSwapper( "a", 313 )
         {
             @Override

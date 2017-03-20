@@ -119,6 +119,14 @@ public final class OffHeapPageLock
     }
 
     /**
+     * @return A newly initialised lock word, for a lock that is exclusively locked.
+     */
+    public static long initialLockWordWithExclusiveLock()
+    {
+        return EXL_MASK;
+    }
+
+    /**
      * Start an optimistic critical section, and return a stamp that can be used to validate if the read lock was
      * consistent. That is, if no write or exclusive lock was overlapping with the optimistic read lock.
      *
