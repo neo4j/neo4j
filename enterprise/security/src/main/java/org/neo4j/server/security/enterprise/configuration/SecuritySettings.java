@@ -325,8 +325,4 @@ public class SecuritySettings
                   "system account." )
     public static final Setting<Boolean> ldap_authorization_connection_pooling =
             setting( "unsupported.dbms.security.ldap.authorization.connection_pooling", BOOLEAN, "true" );
-
-    @Description( "Set to true if users with role `publisher` are allowed to create new tokens." )
-    public static final Setting<Boolean> allow_publisher_create_token =
-            setting( "dbms.security.allow_publisher_create_token", BOOLEAN, "true" );
 }

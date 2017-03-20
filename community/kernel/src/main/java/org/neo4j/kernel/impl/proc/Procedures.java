@@ -53,7 +53,6 @@ public class Procedures extends LifecycleAdapter
     private final ThrowingConsumer<Procedures, ProcedureException> builtin;
     private final File pluginDir;
     private final Log log;
-    private AccessMode writeMode;
 
     public Procedures()
     {
@@ -218,26 +217,5 @@ public class Procedures extends LifecycleAdapter
 
         // And register built-in procedures
         builtin.accept( this );
-    }
-
-    private boolean changed = false;
-
-    public void writerCreateToken( boolean allow )
-    {
-        if ( !changed )
-        {
-            writeMode = allow ? AccessMode.Static.TOKEN_WRITE : AccessMode.Static.WRITE;
-            changed = true;
-        }
-    }
-
-    public AccessMode getWriteMode()
-    {
-        return writeMode;
-    }
-
-    public boolean isAllowWriteTokenCreate()
-    {
-        return writeMode.equals( AccessMode.Static.TOKEN_WRITE );
     }
 }
