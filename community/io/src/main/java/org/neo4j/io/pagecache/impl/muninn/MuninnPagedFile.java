@@ -125,18 +125,22 @@ final class MuninnPagedFile extends PageList implements PagedFile, Flushable
         this.pageCacheTracer = pageCacheTracer;
         this.pageFaultLatches = new LatchMap();
 
-        // The translation table is an array of arrays of references to either null, MuninnPage objects, or Latch
-        // objects. The table only grows the outer array, and all the inner "chunks" all stay the same size. This
+        // The translation table is an array of arrays of integers that are either UNMAPPED_TTE, or the id of a page in
+        // the page list. The table only grows the outer array, and all the inner "chunks" all stay the same size. This
         // means that pages can be addressed with simple bit-wise operations on the filePageId. Eviction sets slots
-        // to null with volatile writes. Page faults CAS's in a latch that will be opened after the page fault has
-        // completed and written the final page reference to the slot. The initial CAS on a page fault is what
-        // ensures that only a single thread will fault a page at a time. Look-ups use volatile reads of the slots.
-        // If a look-up finds a latch, it awaits on it and retries the look-up. If a look-up finds a null reference,
-        // it initiates a page fault. If a look-up finds that it is out of bounds of the translation table, it
-        // resizes the table by first taking the resize lock, then verifying that the given filePageId is still out
-        // of bounds, then creates a new and larger outer array, then copies over the existing inner arrays, fills
-        // the remaining outer array slots with more inner arrays, and then finally assigns the new outer array to
-        // the translationTable field and releases the resize lock.
+        // to UNMAPPED_TTE with volatile writes. Page faults guard their target entries via the LatchMap, and overwrites
+        // the UNMAPPED_TTE value with the new page id, with a volatile write, and then finally releases their latch
+        // from the LatchMap. The LatchMap will ensure that only a single thread will fault a page at a time. However,
+        // after a latch has been taken, the thread must double-check the entry to make sure that it did not race with
+        // another thread to fault in the page – this is called double-check locking. Look-ups use volatile reads of the
+        // slots. If a look-up finds UNMAPPED_TTE, it will attempt to page fault. If the LatchMap returns null, then
+        // someone else might already be faulting in that page. The LatchMap will wait for the existing latch to be
+        // released, before returning null. Thus the thread can retry the lookup immediately. If a look-up finds that it
+        // is out of bounds of the translation table, it resizes the table by first taking the resize lock, then
+        // verifying that the given filePageId is still out of bounds, then creates a new and larger outer array, then
+        // copies over the existing inner arrays, fills the remaining outer array slots with more inner arrays, in turn
+        // filled with UNMAPPED_TTE values, and then finally assigns the new outer array to the translationTable field
+        // and releases the resize lock.
         PageEvictionCallback onEviction = this::evictPage;
         swapper = swapperFactory.createPageSwapper( file, filePageSize, onEviction, createIfNotExists );
         if ( truncateExisting )

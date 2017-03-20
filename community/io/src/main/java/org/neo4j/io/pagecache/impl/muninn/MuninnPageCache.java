@@ -152,22 +152,17 @@ public class MuninnPageCache implements PageCache
     private final PageCacheTracer pageCacheTracer;
     private final PageCursorTracerSupplier pageCursorTracerSupplier;
     final PageList pages;
-    // All PageCursors are initialised with their pointers pointing to the victim page. This way, we can do branch-free
-    // bounds checking of page accesses without fear of segfaulting newly allocated cursors.
+    // All PageCursors are initialised with their pointers pointing to the victim page. This way, we don't have to throw
+    // exceptions on bounds checking failures; we can instead return the victim page pointer, and permit the page
+    // accesses to take place without fear of segfaulting newly allocated cursors.
     final long victimPage;
 
-    // The freelist is a thread-safe linked-list of 2 types of objects. A link
-    // can either be a MuninnPage or a FreePage.
-    // Initially, most of the links are MuninnPages that are ready for the
-    // taking. Then towards the end, we have the last bunch of pages linked
-    // through FreePage objects. We make this transition because, once a
-    // MuninnPage has been removed from the list, it cannot be added back. The
-    // reason is that the MuninnPages are reused, and adding them back into the
-    // freelist would expose us to the ABA-problem, which can cause cycles to
-    // form. The FreePage objects, however, are single-use such that they don't
-    // exhibit the ABA-problem. In other words, eviction will never add
-    // MuninnPages to the freelist; it will only add free pages through a new
-    // FreePage object.
+    // The freelist is a thread-safe linked-list of FreePage objects, or an AtomicInteger, or null.
+    // Initially, the field is an AtomicInteger that counts from zero to the max page count, at which point all of the
+    // pages have been put in use. Once this happens, the field is set to null to allow the background eviction thread
+    // to start its work. From that point on, the field will operate as a concurrent stack of FreePage objects. The
+    // eviction thread pushes newly freed FreePage objects onto the stack, and page faulting threads pops FreePage
+    // objects from the stack. The FreePage objects are single-use, to avoid running into the ABA-problem.
     @SuppressWarnings( "unused" ) // This field is accessed via Unsafe.
     private volatile Object freelist;
 
@@ -227,6 +222,7 @@ public class MuninnPageCache implements PageCache
         MemoryManager memoryManager = new MemoryManager( expectedMaxMemory, alignment );
         this.victimPage = VictimPageReference.getVictimPage( cachePageSize );
 
+        // todo allocate page list with exclusive locks preset
         this.pages = new PageList( maxPages, cachePageSize, memoryManager, new SwapperSet(), victimPage );
         for ( int i = 0; i < maxPages; i++ )
         {

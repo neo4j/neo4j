@@ -62,6 +62,20 @@ class PageList
     // todo we can alternatively also make use of the lower 12 bits of the address field, because
     // todo the addresses are page aligned, and we can assume them to be at least 4096 bytes in size.
 
+    // xxx Thinking about it some more, it might even be possible to get down to just 16 bytes per page.
+    // xxx We cannot change the lock work, but if we change the eviction scheme to always go through the translation
+    // xxx tables to find pages, then we won't need the file page id. The address ought to have its lower 13 bits free.
+    // xxx Two of these can go to the usage counter, and the rest to the swapper id, for up to 2048 swappers.
+    // xxx Do we even need the swapper id at this point? If we can already infer the file page id, the same should be
+    // xxx true for the swapper.
+    // xxx The trouble with this idea is that we won't be able to seamlessly turn the transaction tables into hash
+    // xxx tables when they get too big - at least not easily - since the index into the table no longer corresponds to
+    // xxx the file page id. We might still be able to get away with it, if with the page id we also keep a counter for
+    // xxx how many times the file page id loop around the translation table before arriving at the given entry.
+    // xxx That is, what the entry index should be multiplied by to get the file page id. To do this, we would, however,
+    // xxx have to either grab bits from the page id space, or make each entry more than 4 bytes. This will all depend
+    // xxx on where the cut-off point is. That is, what the max entry capacity for a translation table should be.
+
     private final int pageCount;
     private final int cachePageSize;
     private final MemoryManager memoryManager;
