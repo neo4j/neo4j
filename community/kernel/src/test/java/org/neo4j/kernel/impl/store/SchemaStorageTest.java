@@ -443,46 +443,6 @@ public class SchemaStorageTest
         return db -> db.schema().constraintFor( Label.label( label ) ).assertPropertyIsUnique( prop ).create();
     }
 
-    private Consumer<GraphDatabaseService> nodeKeyConstraint( String label, String prop )
-    {
-        return db -> createNodeKeyConstraint( label, prop );
-    }
-
-    private ConstraintDefinition createNodeKeyConstraint( String label, String prop )
-    {
-        Statement statement = dependencyResolver().resolveDependency( ThreadToStatementContextBridge.class ).get();
-        InternalSchemaActions actions = mock( InternalSchemaActions.class );
-        IndexDefinitionImpl indexDefinition = new IndexDefinitionImpl( actions, Label.label( label ), prop, true );
-        try
-        {
-            int labelId = statement.tokenWriteOperations().labelGetOrCreateForName(
-                    indexDefinition.getLabel().name() );
-            int[] propertyKeyIds = getOrCreatePropertyKeyIds(
-                    statement.tokenWriteOperations(), indexDefinition );
-            statement.schemaWriteOperations().nodeKeyConstraintCreate(
-                    SchemaDescriptorFactory.forLabel( labelId, propertyKeyIds ) );
-            return new NodeKeyConstraintDefinition( actions, indexDefinition );
-        }
-        catch ( AlreadyConstrainedException | CreateConstraintFailureException | AlreadyIndexedException |
-                RepeatedPropertyInCompositeSchemaException e )
-        {
-            throw new ConstraintViolationException(
-                    e.getUserMessage( new StatementTokenNameLookup( statement.readOperations() ) ), e );
-        }
-        catch ( IllegalTokenNameException e )
-        {
-            throw new IllegalArgumentException( e );
-        }
-        catch ( TooManyLabelsException e )
-        {
-            throw new IllegalStateException( e );
-        }
-        catch ( InvalidTransactionTypeKernelException e )
-        {
-            throw new InvalidTransactionTypeException( e.getMessage(), e );
-        }
-    }
-
     @SafeVarargs
     private static void createSchema( Consumer<GraphDatabaseService>... creators )
     {
