@@ -47,7 +47,6 @@ import org.neo4j.test.rule.ConfigurablePageCacheRule;
 import org.neo4j.test.rule.PageCacheRule;
 import org.neo4j.test.rule.fs.EphemeralFileSystemRule;
 
-import static org.junit.Assert.assertEquals;
 import static org.junit.Assert.assertTrue;
 import static org.junit.Assert.fail;
 import static org.neo4j.helpers.collection.MapUtil.stringMap;
@@ -195,6 +194,17 @@ public class CommonAbstractStoreBehaviourTest
     {
         verifyExceptionOnOutOfBoundsAccess( () -> store.getRecord( 5, new IntRecord( 5 ), NORMAL ) );
     }
+    @Test
+    public void readRecordMustThrowOnPageOverflow() throws Exception
+    {
+        verifyExceptionOnOutOfBoundsAccess( () ->
+        {
+            try( PageCursor cursor = store.newPageCursor() )
+            {
+                store.readRecord( 5, new IntRecord( 5 ), NORMAL, cursor );
+            }
+        } );
+    }
 
     @Test
     public void getRecordMustNotThrowOnPageOverflowWithCheckLoadMode() throws Exception
@@ -204,10 +214,30 @@ public class CommonAbstractStoreBehaviourTest
     }
 
     @Test
+    public void readRecordMustNotThrowOnPageOverflowWithCheckLoadMode() throws Exception
+    {
+        prepareStoreForOutOfBoundsAccess();
+        try ( PageCursor cursor = store.newPageCursor() )
+        {
+            store.readRecord( 5, new IntRecord( 5 ), CHECK, cursor );
+        }
+    }
+
+    @Test
     public void getRecordMustNotThrowOnPageOverflowWithForceLoadMode() throws Exception
     {
         prepareStoreForOutOfBoundsAccess();
         store.getRecord( 5, new IntRecord( 5 ), FORCE );
+    }
+
+    @Test
+    public void readRecordMustNotThrowOnPageOverflowWithForceLoadMode() throws Exception
+    {
+        prepareStoreForOutOfBoundsAccess();
+        try( PageCursor pageCursor = store.newPageCursor() )
+        {
+            store.readRecord( 5, new IntRecord( 5 ), FORCE, pageCursor );
+        }
     }
 
     @Test
@@ -221,12 +251,33 @@ public class CommonAbstractStoreBehaviourTest
     {
         verifyExceptionOnCursorError( () -> store.getRecord( 5, new IntRecord( 5 ), NORMAL ) );
     }
+    @Test
+    public void readRecordMustThrowOnCursorError() throws Exception
+    {
+        verifyExceptionOnCursorError( () ->
+        {
+            try( PageCursor cursor = store.newPageCursor() )
+            {
+                store.readRecord( 5, new IntRecord( 5 ), NORMAL, cursor );
+            }
+        } );
+    }
 
     @Test
     public void getRecordMustNotThrowOnCursorErrorWithCheckLoadMode() throws Exception
     {
         prepareStoreForCursorError();
         store.getRecord( 5, new IntRecord( 5 ), CHECK );
+    }
+
+    @Test
+    public void readRecordMustNotThrowOnCursorErrorWithCheckLoadMode() throws Exception
+    {
+        prepareStoreForCursorError();
+        try( PageCursor cursor = store.newPageCursor() )
+        {
+            store.readRecord( 5, new IntRecord( 5 ), CHECK, cursor );
+        }
     }
 
     @Test
@@ -237,15 +288,13 @@ public class CommonAbstractStoreBehaviourTest
     }
 
     @Test
-    public void recordCursorNextMustThrowOnPageOverflow() throws Exception
+    public void readRecordMustNotThrowOnCursorErrorWithForceLoadMode() throws Exception
     {
-        verifyExceptionOnOutOfBoundsAccess( () ->
+        prepareStoreForCursorError();
+        try ( PageCursor cursor = store.newPageCursor() )
         {
-            try ( RecordCursor<IntRecord> cursor = store.newRecordCursor( new IntRecord( 0 ) ).acquire( 5, NORMAL ) )
-            {
-                cursor.next();
-            }
-        } );
+            store.readRecord( 5, new IntRecord( 5 ), FORCE, cursor );
+        }
     }
 
     @Test
