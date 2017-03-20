@@ -162,7 +162,7 @@ class CrashGenerationCleaner
         do
         {
             isTreeNode = TreeNode.nodeType( cursor ) == TreeNode.NODE_TYPE_TREE_NODE;
-            keyCount = treeNode.keyCount( cursor );
+            keyCount = TreeNode.keyCount( cursor );
         }
         while ( cursor.shouldRetry() );
         PageCursorUtil.checkOutOfBounds( cursor );
@@ -215,7 +215,7 @@ class CrashGenerationCleaner
 
         if ( TreeNode.isInternal( cursor ) )
         {
-            int keyCount = treeNode.keyCount( cursor );
+            int keyCount = TreeNode.keyCount( cursor );
             for ( int i = 0; i <= keyCount && i <= internalMaxKeyCount; i++ )
             {
                 cleanCrashedGSPP( cursor, treeNode.childOffset( i ), cleanedPointers );

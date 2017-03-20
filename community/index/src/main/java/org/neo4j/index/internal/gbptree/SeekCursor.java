@@ -635,7 +635,7 @@ class SeekCursor<KEY,VALUE> implements RawCursor<Hit<KEY,VALUE>,IOException>, Hi
         }
         else if ( !allowNoNode || TreeNode.isNode( pointerId ) )
         {
-            bTreeNode.goTo( cursor, type, pointerId );
+            TreeNode.goTo( cursor, type, pointerId );
             lastFollowedPointerGeneration = pointerGeneration;
             concurrentWriteHappened = true;
             return true;
@@ -685,8 +685,8 @@ class SeekCursor<KEY,VALUE> implements RawCursor<Hit<KEY,VALUE>,IOException>, Hi
     private long readPrevSibling()
     {
         return seekForward ?
-               bTreeNode.leftSibling( cursor, stableGeneration, unstableGeneration ) :
-               bTreeNode.rightSibling( cursor, stableGeneration, unstableGeneration );
+               TreeNode.leftSibling( cursor, stableGeneration, unstableGeneration ) :
+               TreeNode.rightSibling( cursor, stableGeneration, unstableGeneration );
     }
 
     /**
@@ -695,8 +695,8 @@ class SeekCursor<KEY,VALUE> implements RawCursor<Hit<KEY,VALUE>,IOException>, Hi
     private long readNextSibling()
     {
         return seekForward ?
-               bTreeNode.rightSibling( cursor, stableGeneration, unstableGeneration ) :
-               bTreeNode.leftSibling( cursor, stableGeneration, unstableGeneration );
+               TreeNode.rightSibling( cursor, stableGeneration, unstableGeneration ) :
+               TreeNode.leftSibling( cursor, stableGeneration, unstableGeneration );
     }
 
     /**
@@ -735,16 +735,16 @@ class SeekCursor<KEY,VALUE> implements RawCursor<Hit<KEY,VALUE>,IOException>, Hi
             return false;
         }
 
-        currentNodeGeneration = bTreeNode.generation( cursor );
+        currentNodeGeneration = TreeNode.generation( cursor );
 
-        successor = bTreeNode.successor( cursor, stableGeneration, unstableGeneration );
+        successor = TreeNode.successor( cursor, stableGeneration, unstableGeneration );
         if ( GenerationSafePointerPair.isSuccess( successor ) )
         {
             successorGeneration = bTreeNode.pointerGeneration( cursor, successor );
         }
         isInternal = TreeNode.isInternal( cursor );
         // Find the left-most key within from-range
-        keyCount = bTreeNode.keyCount( cursor );
+        keyCount = TreeNode.keyCount( cursor );
 
         return keyCountIsSane( keyCount );
     }
@@ -796,7 +796,7 @@ class SeekCursor<KEY,VALUE> implements RawCursor<Hit<KEY,VALUE>,IOException>, Hi
             {
                 // TODO: Check if rightSibling is within expected range before calling next.
                 // TODO: Possibly by getting highest expected from IdProvider
-                bTreeNode.goTo( cursor, "sibling", pointerId );
+                TreeNode.goTo( cursor, "sibling", pointerId );
                 lastFollowedPointerGeneration = pointerGeneration;
                 if ( first )
                 {
@@ -818,7 +818,7 @@ class SeekCursor<KEY,VALUE> implements RawCursor<Hit<KEY,VALUE>,IOException>, Hi
                 // Need to scout next sibling because we are seeking backwards
                 if ( scoutNextSibling() )
                 {
-                    bTreeNode.goTo( cursor, "sibling", pointerId );
+                    TreeNode.goTo( cursor, "sibling", pointerId );
                     verifyExpectedFirstAfterGoToNext = true;
                     lastFollowedPointerGeneration = pointerGeneration;
                 }
@@ -857,7 +857,7 @@ class SeekCursor<KEY,VALUE> implements RawCursor<Hit<KEY,VALUE>,IOException>, Hi
             nodeType = TreeNode.nodeType( scout );
             if ( nodeType == TreeNode.NODE_TYPE_TREE_NODE )
             {
-                keyCount = bTreeNode.keyCount( scout );
+                keyCount = TreeNode.keyCount( scout );
                 if ( keyCountIsSane( keyCount ) )
                 {
                     int firstPos = seekForward ? 0 : keyCount - 1;
