@@ -221,7 +221,7 @@ public class TransactionToRecordStateVisitor extends TxStateVisitor.Adapter
         }
     }
 
-    private void visitAddedUniquenessConstraint(UniquenessConstraintDescriptor uniqueConstraint, long constraintId)
+    private void visitAddedUniquenessConstraint( UniquenessConstraintDescriptor uniqueConstraint, long constraintId )
     {
         IndexRule indexRule = schemaStorage.indexGetForSchema( uniqueConstraint.ownedIndexDescriptor() );
         recordState.createSchemaRule( constraintSemantics.createUniquenessConstraintRule(
@@ -229,7 +229,7 @@ public class TransactionToRecordStateVisitor extends TxStateVisitor.Adapter
         recordState.setConstraintIndexOwner( indexRule, constraintId );
     }
 
-    private void visitAddedNodeKeyConstraint(NodeKeyConstraintDescriptor uniqueConstraint, long constraintId)
+    private void visitAddedNodeKeyConstraint( NodeKeyConstraintDescriptor uniqueConstraint, long constraintId )
             throws CreateConstraintFailureException
     {
         IndexRule indexRule = schemaStorage.indexGetForSchema( uniqueConstraint.ownedIndexDescriptor() );

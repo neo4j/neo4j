@@ -138,13 +138,6 @@ public class SchemaRuleDeserializer2_0to3_1
                 readOwnedIndexRule( buffer ) );
     }
 
-    public static ConstraintRule readNodeKeyConstraintRule( long id, int labelId, ByteBuffer buffer )
-    {
-        return new ConstraintRule( id,
-                ConstraintDescriptorFactory.nodeKeyForLabel( labelId, readConstraintPropertyKeys( buffer ) ),
-                readOwnedIndexRule( buffer ) );
-    }
-
     public static ConstraintRule readNodePropertyExistenceConstraintRule( long id, int labelId, ByteBuffer buffer )
     {
         return new ConstraintRule( id,

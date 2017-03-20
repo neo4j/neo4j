@@ -38,13 +38,22 @@ public class SchemaUtil
             boolean useBrackets )
     {
         StringBuilder properties = new StringBuilder();
-        if ( useBrackets ) { properties.append( "(" ); }
+        if ( useBrackets )
+        {
+            properties.append( "(" );
+        }
         for ( int i = 0; i < propertyIds.length; i++ )
         {
-            if ( i > 0 ) { properties.append( ", " ); }
+            if ( i > 0 )
+            {
+                properties.append( ", " );
+            }
             properties.append( prefix ).append( tokenNameLookup.propertyKeyGetName( propertyIds[i] ) );
         }
-        if ( useBrackets ) { properties.append( ")" ); }
+        if ( useBrackets )
+        {
+            properties.append( ")" );
+        }
         return properties.toString();
     }
 
