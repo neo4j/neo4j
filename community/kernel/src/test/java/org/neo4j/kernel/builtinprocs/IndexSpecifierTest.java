@@ -21,7 +21,11 @@ package org.neo4j.kernel.builtinprocs;
 
 import org.junit.Test;
 
+import java.util.Arrays;
+
 import static org.hamcrest.MatcherAssert.assertThat;
+import static org.hamcrest.Matchers.array;
+import static org.hamcrest.Matchers.arrayContaining;
 import static org.hamcrest.Matchers.is;
 import static org.junit.Assert.fail;
 
@@ -42,7 +46,23 @@ public class IndexSpecifierTest
     @Test
     public void shouldParseASimpleProperty()
     {
-        assertThat( new IndexSpecifier( ":Person(a_Name_123)" ).property(), is( "a_Name_123" ) );
+        assertThat( new IndexSpecifier( ":Person(a_Name_123)" ).properties(), is( arrayContaining( "a_Name_123" ) ) );
+    }
+
+    @Test
+    public void shouldParseTwoProperties()
+    {
+        assertThat( new IndexSpecifier( ":Person(name, lastName)" ).properties(),
+                is( arrayContaining( "name", "lastName" ) ) );
+    }
+
+    @Test
+    public void shouldParseManyProperties()
+    {
+        String[] properties = new IndexSpecifier( ":Person(1, 2, 3, 4, 5, 6)" ).properties();
+        System.out.println(Arrays.toString(properties));
+        assertThat( properties,
+                is( arrayContaining( "1", "2", "3", "4", "5", "6" ) ) );
     }
 
     @Test
@@ -54,7 +74,8 @@ public class IndexSpecifierTest
     @Test
     public void shouldParseANastyProperty()
     {
-        assertThat( new IndexSpecifier( ":Person(`(:!\"£$%^&*( )`)" ).property(), is( "(:!\"£$%^&*( )" ) );
+        assertThat( new IndexSpecifier( ":Person(`(:!\"£$%^&*( )`)" ).properties(),
+                is( arrayContaining( "(:!\"£$%^&*( )" ) ) );
     }
 
     @Test

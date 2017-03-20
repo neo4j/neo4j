@@ -71,7 +71,6 @@ import org.neo4j.kernel.api.index.InternalIndexState;
 import org.neo4j.kernel.api.legacyindex.AutoIndexing;
 import org.neo4j.kernel.api.properties.Property;
 import org.neo4j.kernel.api.schema_new.IndexQuery;
-import org.neo4j.kernel.api.schema_new.LabelSchemaDescriptor;
 import org.neo4j.kernel.api.schema_new.SchemaDescriptorFactory;
 import org.neo4j.kernel.api.schema_new.index.NewIndexDescriptor;
 import org.neo4j.kernel.api.security.SecurityContext;
@@ -619,7 +618,7 @@ public class GraphDatabaseFacade implements GraphDatabaseAPI
             final int labelId1 = labelId;
             final int[] propertyKeyIds = new int[]{propertyId};
             NewIndexDescriptor descriptor =
-                    readOps.indexGetForLabelAndPropertyKey( SchemaDescriptorFactory.forLabel( labelId, propertyId ) );
+                    readOps.indexGetForSchema( SchemaDescriptorFactory.forLabel( labelId, propertyId ) );
 
             if ( readOps.indexGetState( descriptor ) == InternalIndexState.ONLINE )
             {

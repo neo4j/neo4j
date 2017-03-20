@@ -224,8 +224,8 @@ public interface ReadOperations
     //== SCHEMA OPERATIONS ======================
     //===========================================
 
-    /** Returns the index rule for the given labelId and propertyKey. */
-    NewIndexDescriptor indexGetForLabelAndPropertyKey( LabelSchemaDescriptor descriptor )
+    /** Returns the index rule for the given LabelSchemaDescriptor. */
+    NewIndexDescriptor indexGetForSchema( LabelSchemaDescriptor descriptor )
             throws SchemaRuleNotFoundException;
 
     /** Get all indexes for a label. */

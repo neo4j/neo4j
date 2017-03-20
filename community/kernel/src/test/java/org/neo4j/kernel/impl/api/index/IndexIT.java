@@ -82,7 +82,7 @@ public class IndexIT extends KernelIntegrationTest
         // THEN
         ReadOperations readOperations = readOperationsInNewTransaction();
         assertEquals( asSet( expectedRule ), asSet( readOperations.indexesGetForLabel( labelId ) ) );
-        assertEquals( expectedRule, readOperations.indexGetForLabelAndPropertyKey( descriptor ) );
+        assertEquals( expectedRule, readOperations.indexGetForSchema( descriptor ) );
         commit();
     }
 

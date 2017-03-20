@@ -616,7 +616,7 @@ public class IndexingAcceptanceTest
         int[] propertyKeyIds = getPropertyIds( readOperations, index.getPropertyKeys() );
 
         LabelSchemaDescriptor descriptor = SchemaDescriptorFactory.forLabel( labelId, propertyKeyIds );
-        return readOperations.indexGetForLabelAndPropertyKey( descriptor );
+        return readOperations.indexGetForSchema( descriptor );
     }
 
     private Statement getStatement( GraphDatabaseAPI db )

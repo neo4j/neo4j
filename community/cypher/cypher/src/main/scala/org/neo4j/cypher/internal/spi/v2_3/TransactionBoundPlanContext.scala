@@ -45,7 +45,7 @@ class TransactionBoundPlanContext(tc: TransactionalContextWrapper)
     val labelId = tc.statement.readOperations().labelGetForName(labelName)
     val propertyKeyId = tc.statement.readOperations().propertyKeyGetForName(propertyKey)
 
-    getOnlineIndex(tc.statement.readOperations().indexGetForLabelAndPropertyKey(SchemaDescriptorFactory.forLabel(labelId, propertyKeyId)))
+    getOnlineIndex(tc.statement.readOperations().indexGetForSchema(SchemaDescriptorFactory.forLabel(labelId, propertyKeyId)))
   }
 
   def hasIndexRule(labelName: String): Boolean = {

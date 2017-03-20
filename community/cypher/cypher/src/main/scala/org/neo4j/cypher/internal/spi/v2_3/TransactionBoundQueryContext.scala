@@ -457,7 +457,7 @@ final class TransactionBoundQueryContext(tc: TransactionalContextWrapper)
   } catch {
     case _: AlreadyIndexedException =>
 
-      val indexDescriptor = tc.statement.readOperations().indexGetForLabelAndPropertyKey( SchemaDescriptorFactory.forLabel(labelId, propertyKeyId))
+      val indexDescriptor = tc.statement.readOperations().indexGetForSchema( SchemaDescriptorFactory.forLabel(labelId, propertyKeyId))
 
       if (tc.statement.readOperations().indexGetState(indexDescriptor) == InternalIndexState.FAILED)
         throw new FailedIndexException(indexDescriptor.userDescription(tokenNameLookup))

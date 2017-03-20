@@ -19,9 +19,11 @@
  */
 package org.neo4j.kernel.builtinprocs;
 
+import java.util.ArrayList;
 import java.util.regex.Matcher;
 import java.util.regex.Pattern;
 
+import org.neo4j.helpers.ArrayUtil;
 import org.neo4j.helpers.collection.Pair;
 
 import static java.lang.String.format;
@@ -31,15 +33,14 @@ public class IndexSpecifier
 
     private final String specification;
     private final String label;
-    private final String property;
+    private final String[] properties;
 
     public IndexSpecifier( String specification )
     {
         this.specification = specification;
-        Pair<String, String> components = parse();
+        Pair<String,String[]> components = parse();
         label = components.first();
-        //TODO: Support composite indexes
-        property = components.other();
+        properties = components.other();
     }
 
     public String label()
@@ -47,9 +48,9 @@ public class IndexSpecifier
         return label;
     }
 
-    public String property()
+    public String[] properties()
     {
-        return property;
+        return properties;
     }
 
     @Override
@@ -58,21 +59,28 @@ public class IndexSpecifier
         return specification;
     }
 
-    private Pair<String, String> parse()
+    private Pair<String,String[]> parse()
     {
-        Pattern pattern = Pattern.compile( "" +
-                ":" + or( simpleIdentifier( "simpleLabel" ), complexIdentifier( "complexLabel" ) ) +
-                "\\(" + or( simpleIdentifier( "simpleProperty" ), complexIdentifier( "complexProperty" ) ) + "\\)"
+        // Note that this now matches all properties in a single group, in order to split them later.
+        Pattern pattern = Pattern.compile(
+                ":" + or( identifier(true), qoutedIdentifier(true) ) + // Match the label
+                "\\((" + or( identifier(false), qoutedIdentifier(false) ) + // Match the first property
+                "(?:\\,\\s" + or( identifier(false), qoutedIdentifier(false) ) + ")*)\\)" // Match following properties
         );
         Matcher matcher = pattern.matcher( specification );
         if ( !matcher.find() )
         {
             throw new IllegalArgumentException( "Cannot parse index specification " + specification );
         }
-        return Pair.of(
-                either( matcher.group( "simpleLabel" ), matcher.group( "complexLabel" ) ),
-                either( matcher.group( "simpleProperty" ), matcher.group( "complexProperty" ) )
-        );
+        String label = either( matcher.group( 1 ), matcher.group( 2 ) );
+        String propertyString = matcher.group( 3 );
+        //Split string on commas, but ignore commas in quotes
+        String[] properties = propertyString.split(",\\s(?=(?:`[^`]*`)|[^`]*$)", -1);
+        for ( int i = 0; i < properties.length ; i++ )
+        {
+            properties[i] = properties[i].replace( "`", "" );
+        }
+        return Pair.of( label, properties );
     }
 
     private String either( String first, String second )
@@ -82,16 +90,30 @@ public class IndexSpecifier
 
     private static String or( String first, String second )
     {
-        return "(:?" + first + "|" + second + ")";
+        return "(?:" + first + "|" + second + ")";
     }
 
-    private static String simpleIdentifier( String name )
+    private static String identifier( boolean capture )
     {
-        return format( "(?<%s>[A-Za-z0-9_]+)", name );
+        if ( capture )
+        {
+            return "([A-Za-z0-9_]+)";
+        }
+        else
+        {
+            return "(?:[A-Za-z0-9_]+)";
+        }
     }
 
-    private static String complexIdentifier( String name )
+    private static String qoutedIdentifier( boolean capture )
     {
-        return format( "(?:`(?<%s>[^`]+)`)", name );
+        if ( capture )
+        {
+            return "(?:`([^`]+)`)";
+        }
+        else
+        {
+            return "(?:`(?:[^`]+)`)";
+        }
     }
 }

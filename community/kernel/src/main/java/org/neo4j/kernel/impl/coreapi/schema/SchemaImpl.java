@@ -325,7 +325,7 @@ public class SchemaImpl implements Schema
         int[] propertyKeyIds = PropertyNameUtils.getPropertyIds( readOperations, index.getPropertyKeys() );
         assertValidLabel( index.getLabel(), labelId );
         assertValidProperties( index.getPropertyKeys(), propertyKeyIds );
-        return readOperations.indexGetForLabelAndPropertyKey( SchemaDescriptorFactory.forLabel( labelId, propertyKeyIds ) );
+        return readOperations.indexGetForSchema( SchemaDescriptorFactory.forLabel( labelId, propertyKeyIds ) );
     }
 
     private static void assertValidLabel( Label label, int labelId )
