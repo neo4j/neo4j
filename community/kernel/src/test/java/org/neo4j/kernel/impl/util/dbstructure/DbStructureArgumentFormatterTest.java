@@ -72,8 +72,16 @@ public class DbStructureArgumentFormatterTest
     @Test
     public void shouldFormatUniquenessConstraints()
     {
-        assertEquals( "ConstraintDescriptorFactory.uniqueForLabel( 23, 42 )", formatArgument(
-                ConstraintDescriptorFactory.uniqueForSchema( SchemaDescriptorFactory.forLabel( 23, 42 ) ) ) );
+        assertEquals( "ConstraintDescriptorFactory.uniqueForLabel( 23, 42 )",
+                formatArgument(
+                        ConstraintDescriptorFactory.uniqueForLabel( 23, 42 ) ) );
+    }
+
+    @Test
+    public void shouldFormatCompositeUniquenessConstraints()
+    {
+        assertEquals( "ConstraintDescriptorFactory.uniqueForLabel( 23, 42, 43 )",
+                formatArgument( ConstraintDescriptorFactory.uniqueForLabel( 23, 42, 43 ) ) );
     }
 
     private String formatArgument( Object arg )

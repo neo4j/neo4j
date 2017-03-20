@@ -73,41 +73,42 @@ public class DbStructureCollector implements DbStructureVisitor
             }
 
             @Override
-            public Iterator<Pair<String, String>> knownIndices()
+            public Iterator<Pair<String,String[]>> knownIndices()
             {
                 return regularIndices.iterator();
             }
 
             @Override
-            public Iterator<Pair<String, String>> knownUniqueIndices()
+            public Iterator<Pair<String,String[]>> knownUniqueIndices()
             {
                 return uniqueIndices.iterator();
             }
 
             @Override
-            public Iterator<Pair<String, String>> knownUniqueConstraints()
+            public Iterator<Pair<String,String[]>> knownUniqueConstraints()
             {
                 //TODO: Add support for composite indexes
                 return Iterators.map( uniquenessConstraint -> {
                     String label = labels.byIdOrFail( uniquenessConstraint.schema().getLabelId() );
-                    String propertyKey = propertyKeys.byIdOrFail( uniquenessConstraint.schema().getPropertyId() );
-                    return Pair.of( label, propertyKey );
+                    String[] propertyKeyNames = propertyKeys
+                            .byIdOrFail( uniquenessConstraint.schema().getPropertyIds() );
+                    return Pair.of( label, propertyKeyNames );
                 }, uniquenessConstraints.iterator() );
             }
 
             @Override
-            public Iterator<Pair<String,String>> knownNodePropertyExistenceConstraints()
+            public Iterator<Pair<String,String[]>> knownNodePropertyExistenceConstraints()
             {
-                //TODO: Add support for composite indexes
                 return Iterators.map( uniquenessConstraint -> {
                     String label = labels.byIdOrFail( uniquenessConstraint.schema().getLabelId() );
-                    String propertyKey = propertyKeys.byIdOrFail( uniquenessConstraint.schema().getPropertyId() );
-                    return Pair.of( label, propertyKey );
+                    String[] propertyKeyNames = propertyKeys
+                            .byIdOrFail( uniquenessConstraint.schema().getPropertyIds() );
+                    return Pair.of( label, propertyKeyNames );
                 }, nodePropertyExistenceConstraints.iterator() );
             }
 
             @Override
-            public Iterator<Pair<String,String>> knownRelationshipPropertyExistenceConstraints()
+            public Iterator<Pair<String,String[]>> knownRelationshipPropertyExistenceConstraints()
             {
                 return Iterators.emptyIterator();
             }
@@ -128,20 +129,18 @@ public class DbStructureCollector implements DbStructureVisitor
             }
 
             @Override
-            public double indexSelectivity( int labelId, int propertyKeyId )
+            public double indexSelectivity( int labelId, int... propertyKeyIds )
             {
-                //TODO: Support composite indexes
-                LabelSchemaDescriptor descriptor = SchemaDescriptorFactory.forLabel( labelId, propertyKeyId );
+                LabelSchemaDescriptor descriptor = SchemaDescriptorFactory.forLabel( labelId, propertyKeyIds );
                 IndexStatistics result1 = regularIndices.getIndex( descriptor );
                 IndexStatistics result2 = result1 == null ? uniqueIndices.getIndex( descriptor ) : result1;
                 return result2 == null ? Double.NaN : result2.uniqueValuesPercentage;
             }
 
             @Override
-            public double indexPropertyExistsSelectivity( int labelId, int propertyKeyId )
+            public double indexPropertyExistsSelectivity( int labelId, int... propertyKeyIds )
             {
-                //TODO: Support composite indexes
-                LabelSchemaDescriptor descriptor = SchemaDescriptorFactory.forLabel( labelId, propertyKeyId );
+                LabelSchemaDescriptor descriptor = SchemaDescriptorFactory.forLabel( labelId, propertyKeyIds );
                 IndexStatistics result1 = regularIndices.getIndex( descriptor );
                 IndexStatistics result2 = result1 == null ? uniqueIndices.getIndex( descriptor ) : result1;
                 return result2 == null ? Double.NaN : result2.size;
@@ -313,7 +312,7 @@ public class DbStructureCollector implements DbStructureVisitor
         }
     }
 
-    private class IndexDescriptorMap implements Iterable<Pair<String, String>>
+    private class IndexDescriptorMap implements Iterable<Pair<String,String[]>>
     {
         private final String indexType;
         private final Map<LabelSchemaDescriptor, IndexStatistics> indexMap = new HashMap<>();
@@ -341,10 +340,10 @@ public class DbStructureCollector implements DbStructureVisitor
             return indexMap.get( descriptor );
         }
 
-        public Iterator<Pair<String, String>> iterator()
+        public Iterator<Pair<String,String[]>> iterator()
         {
             final Iterator<LabelSchemaDescriptor> iterator = indexMap.keySet().iterator();
-            return new Iterator<Pair<String, String>>()
+            return new Iterator<Pair<String,String[]>>()
             {
                 @Override
                 public boolean hasNext()
@@ -353,12 +352,12 @@ public class DbStructureCollector implements DbStructureVisitor
                 }
 
                 @Override
-                public Pair<String, String> next()
+                public Pair<String,String[]> next()
                 {
                     //TODO: Add support for composite indexes
                     LabelSchemaDescriptor next = iterator.next();
                     String label = labels.byIdOrFail( next.getLabelId() );
-                    String propertyKey = propertyKeys.byIdOrFail( next.getPropertyIds()[0] );
+                    String[] propertyKey = propertyKeys.byIdOrFail( next.getPropertyIds() );
                     return Pair.of( label, propertyKey );
                 }
 

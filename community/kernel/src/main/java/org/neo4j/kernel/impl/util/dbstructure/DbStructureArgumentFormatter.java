@@ -123,16 +123,15 @@ public enum DbStructureArgumentFormatter implements ArgumentFormatter
         {
             NodeExistenceConstraintDescriptor constraint = (NodeExistenceConstraintDescriptor) arg;
             int labelId = constraint.schema().getLabelId();
-            builder.append( format( "new NodePropertyExistenceConstraint( SchemaDescriptorFactory.forLabel( %d, %s ) )",
+            builder.append( format( "ConstraintDescriptorFactory.existsForLabel( %d, %s )",
                     labelId, asString( constraint.schema().getPropertyIds() ) ) );
         }
         else if ( arg instanceof RelExistenceConstraintDescriptor )
         {
             RelationTypeSchemaDescriptor descriptor = ((RelExistenceConstraintDescriptor) arg).schema();
             int relTypeId = descriptor.getRelTypeId();
-            builder.append(
-                    format( "new RelationshipPropertyExistenceConstraint( SchemaDescriptorFactory.forLabel( %d, %s ) )",
-                            relTypeId, asString( descriptor.getPropertyIds() ) ) );
+            builder.append( format( "ConstraintDescriptorFactory.existsForReltype( %d, %s )", relTypeId,
+                    asString( descriptor.getPropertyIds() ) ) );
         }
         else
         {
@@ -144,6 +143,6 @@ public enum DbStructureArgumentFormatter implements ArgumentFormatter
     private String asString( int[] propertyIds )
     {
         List<String> strings = Arrays.stream( propertyIds ).mapToObj( i -> "" + i ).collect( Collectors.toList() );
-        return String.join( ",", strings );
+        return String.join( ", ", strings );
     }
 }
