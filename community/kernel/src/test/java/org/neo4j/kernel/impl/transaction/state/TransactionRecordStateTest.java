@@ -38,9 +38,8 @@ import org.neo4j.graphdb.Direction;
 import org.neo4j.graphdb.factory.GraphDatabaseSettings;
 import org.neo4j.helpers.collection.Iterables;
 import org.neo4j.kernel.api.exceptions.TransactionFailureException;
-import org.neo4j.kernel.api.index.NodeUpdates;
+import org.neo4j.kernel.impl.api.index.NodeUpdates;
 import org.neo4j.kernel.api.properties.DefinedProperty;
-import org.neo4j.kernel.api.properties.Property;
 import org.neo4j.kernel.impl.api.BatchTransactionApplier;
 import org.neo4j.kernel.impl.api.CommandVisitor;
 import org.neo4j.kernel.impl.api.TransactionToApply;
@@ -310,10 +309,7 @@ public class TransactionRecordStateTest
         Iterable<NodeUpdates> indexUpdates = indexUpdatesOf( neoStores, recordState );
 
         // THEN
-        NodeUpdates expected = NodeUpdates.forNode( nodeId, noLabels, oneLabelId )
-                .buildWithExistingProperties(
-                        Property.stringProperty( propertyId1, LONG_STRING ),
-                        Property.byteArrayProperty( propertyId2, LONG_STRING.getBytes() ) );
+        NodeUpdates expected = NodeUpdates.forNode( nodeId, noLabels, oneLabelId ).build();
         assertEquals( expected, Iterables.single( indexUpdates ) );
     }
 
@@ -339,7 +335,7 @@ public class TransactionRecordStateTest
         NodeUpdates expected =
                 NodeUpdates.forNode( nodeId, oneLabelId, bothLabelIds )
                         .added( propertyId2, value2 )
-                        .buildWithExistingProperties( Property.stringProperty( propertyId1, value1 ) );
+                        .build();
         assertEquals( expected, Iterables.single( indexUpdates ) );
     }
 
@@ -362,10 +358,7 @@ public class TransactionRecordStateTest
         Iterable<NodeUpdates> indexUpdates = indexUpdatesOf( neoStores, recordState );
 
         // THEN
-        NodeUpdates expected = NodeUpdates.forNode( nodeId, oneLabelId, noLabels )
-                .buildWithExistingProperties(
-                        Property.stringProperty( propertyId1, value1 ),
-                        Property.intProperty( propertyId2, value2 ) );
+        NodeUpdates expected = NodeUpdates.forNode( nodeId, oneLabelId, noLabels ).build();
         assertEquals( expected, Iterables.single( indexUpdates ) );
     }
 
@@ -378,7 +371,6 @@ public class TransactionRecordStateTest
         TransactionRecordState recordState = newTransactionRecordState( neoStores );
         recordState.nodeCreate( nodeId );
         DefinedProperty property1 = recordState.nodeAddProperty( nodeId, propertyId1, value1 );
-        DefinedProperty property2 = recordState.nodeAddProperty( nodeId, propertyId2, value2 );
         addLabelsToNode( recordState, nodeId, bothLabelIds );
         apply( neoStores, recordState );
 
@@ -392,7 +384,7 @@ public class TransactionRecordStateTest
         NodeUpdates expected =
                 NodeUpdates.forNode( nodeId, bothLabelIds, oneLabelId )
                         .removed( property1.propertyKeyId(), property1.value() )
-                        .buildWithExistingProperties( property2 );
+                        .build();
         assertEquals( expected, Iterables.single( indexUpdates ) );
     }
 
@@ -404,7 +396,7 @@ public class TransactionRecordStateTest
         long nodeId = 0;
         TransactionRecordState recordState = newTransactionRecordState( neoStores );
         recordState.nodeCreate( nodeId );
-        DefinedProperty property1 = recordState.nodeAddProperty( nodeId, propertyId1, value1 );
+        DefinedProperty ignored = recordState.nodeAddProperty( nodeId, propertyId1, value1 );
         addLabelsToNode( recordState, nodeId, bothLabelIds );
         apply( neoStores, recordState );
 
@@ -418,7 +410,7 @@ public class TransactionRecordStateTest
         NodeUpdates expected =
                 NodeUpdates.forNode( nodeId, bothLabelIds, oneLabelId )
                         .added( property2.propertyKeyId(), property2.value() )
-                        .buildWithExistingProperties( property1, property2 );
+                        .build();
         assertEquals( expected, Iterables.single( indexUpdates ) );
     }
 

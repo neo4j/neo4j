@@ -27,7 +27,6 @@ import org.junit.Rule;
 import org.junit.Test;
 import org.mockito.ArgumentCaptor;
 import org.mockito.InOrder;
-import org.mockito.Mockito;
 import org.mockito.invocation.InvocationOnMock;
 import org.mockito.stubbing.Answer;
 
@@ -63,7 +62,6 @@ import org.neo4j.kernel.api.index.IndexEntryUpdate;
 import org.neo4j.kernel.api.index.IndexPopulator;
 import org.neo4j.kernel.api.index.IndexUpdater;
 import org.neo4j.kernel.api.index.InternalIndexState;
-import org.neo4j.kernel.api.index.NodeUpdates;
 import org.neo4j.kernel.api.index.SchemaIndexProvider;
 import org.neo4j.kernel.api.schema_new.index.NewIndexDescriptor;
 import org.neo4j.kernel.api.schema_new.index.NewIndexDescriptorFactory;
@@ -250,7 +248,7 @@ public class IndexingServiceTest
         InOrder order = inOrder( populator, accessor, updater);
         order.verify( populator ).create();
         order.verify( populator ).includeSample( add( 1, "value1" ) );
-        order.verify( populator ).add( Mockito.anyListOf( IndexEntryUpdate.class ) );
+        order.verify( populator ).add( any( IndexEntryUpdate.class ) );
 
         // invoked from indexAllNodes(), empty because the id we added (2) is bigger than the one we indexed (1)
         //
@@ -970,7 +968,8 @@ public class IndexingServiceTest
         }
 
         @Override
-        public void add( Collection<IndexEntryUpdate> updates ) throws IndexEntryConflictException, IOException
+        public void add( Collection<? extends IndexEntryUpdate<?>> updates )
+                throws IndexEntryConflictException, IOException
         {
             latch.waitForAllToStart();
         }
@@ -1119,7 +1118,7 @@ public class IndexingServiceTest
                 }
 
                 @Override
-                public void configure( List<MultipleIndexPopulator.IndexPopulation> populations )
+                public void configure( Collection<MultipleIndexPopulator.IndexPopulation> populations )
                 {
                     // no-op
                 }

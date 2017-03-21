@@ -21,7 +21,7 @@ package org.neo4j.kernel.impl.transaction.state;
 
 import org.junit.Test;
 
-import java.util.List;
+import java.util.Collection;
 import java.util.function.Supplier;
 
 import org.neo4j.kernel.api.index.IndexEntryUpdate;
@@ -73,7 +73,7 @@ public class NodeStoreScanTest
             }
 
             @Override
-            public void configure( List list )
+            public void configure( Collection populations )
             {
                 // no-op
             }

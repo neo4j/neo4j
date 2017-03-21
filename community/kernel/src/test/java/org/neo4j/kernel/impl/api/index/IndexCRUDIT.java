@@ -211,9 +211,16 @@ public class IndexCRUDIT
         }
 
         @Override
-        public void add( Collection<IndexEntryUpdate> updates )
+        public void add( Collection<? extends IndexEntryUpdate<?>> updates )
         {
             updatesCommitted.addAll( updates );
+        }
+
+        @Override
+        public void add( IndexEntryUpdate<?> update ) throws IndexEntryConflictException, IOException
+        {
+            ReadOperations statement = ctxSupplier.get().readOperations();
+            updatesCommitted.add( update );
         }
 
         @Override

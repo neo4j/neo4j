@@ -20,13 +20,12 @@
 package org.neo4j.kernel.impl.api.index;
 
 import java.util.Collection;
-import java.util.List;
 import java.util.function.IntPredicate;
 
+import org.neo4j.collection.primitive.PrimitiveIntSet;
 import org.neo4j.helpers.collection.Visitor;
 import org.neo4j.kernel.api.exceptions.EntityNotFoundException;
 import org.neo4j.kernel.api.index.IndexEntryUpdate;
-import org.neo4j.kernel.api.index.NodeUpdates;
 import org.neo4j.kernel.api.index.PropertyAccessor;
 import org.neo4j.kernel.api.labelscan.NodeLabelUpdate;
 import org.neo4j.kernel.api.properties.Property;
@@ -34,7 +33,7 @@ import org.neo4j.register.Register.DoubleLongRegister;
 import org.neo4j.storageengine.api.schema.PopulationProgress;
 
 /** The indexing services view of the universe. */
-public interface IndexStoreView extends PropertyAccessor
+public interface IndexStoreView extends PropertyAccessor, PropertyLoader
 {
     /**
      * Retrieve all nodes in the database which has got one or more of the given labels AND
@@ -88,7 +87,6 @@ public interface IndexStoreView extends PropertyAccessor
         public void acceptUpdate( MultipleIndexPopulator.MultipleIndexUpdater updater, IndexEntryUpdate update,
                 long currentlyIndexedNodeId )
         {
-
         }
 
         @Override
@@ -98,14 +96,18 @@ public interface IndexStoreView extends PropertyAccessor
         }
 
         @Override
-        public void configure( List list )
+        public void configure( Collection collection )
         {
-
         }
     };
 
     IndexStoreView EMPTY = new IndexStoreView()
     {
+        @Override
+        public void loadProperties( long nodeId, PrimitiveIntSet propertyIds, PropertyLoadSink sink )
+        {
+        }
+
         @Override
         public Property getProperty( long nodeId, int propertyKeyId ) throws EntityNotFoundException
         {

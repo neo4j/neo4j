@@ -17,23 +17,9 @@
  * You should have received a copy of the GNU General Public License
  * along with this program.  If not, see <http://www.gnu.org/licenses/>.
  */
-package org.neo4j.kernel.impl.api.index;
+package org.neo4j.kernel.api.schema_new;
 
-import java.util.Collection;
-
-import org.neo4j.kernel.api.index.IndexEntryUpdate;
-import org.neo4j.storageengine.api.schema.PopulationProgress;
-
-public interface StoreScan<FAILURE extends Exception>
+public interface LabelSchemaSupplier extends SchemaDescriptor.Supplier
 {
-    void run() throws FAILURE;
-
-    void stop();
-
-    void acceptUpdate( MultipleIndexPopulator.MultipleIndexUpdater updater, IndexEntryUpdate update,
-            long currentlyIndexedNodeId );
-
-    PopulationProgress getProgress();
-
-    void configure( Collection<MultipleIndexPopulator.IndexPopulation> populations );
+    LabelSchemaDescriptor schema();
 }

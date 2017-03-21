@@ -91,4 +91,26 @@ public class PrimitiveLongStackTest
         assertEquals( value1, secondPolledValue );
         assertTrue( stack.isEmpty() );
     }
+
+    @Test
+    public void shouldIterate() throws Exception
+    {
+        // GIVEN
+        PrimitiveLongStack stack = new PrimitiveLongStack();
+
+        // WHEN
+        for ( int i = 0; i < 7; i++ )
+        {
+            stack.push( i );
+        }
+
+        // THEN
+        PrimitiveLongIterator iterator = stack.iterator();
+        long i = 0;
+        while ( iterator.hasNext() )
+        {
+            assertEquals( i++, iterator.next() );
+        }
+        assertEquals( 7L, i );
+    }
 }

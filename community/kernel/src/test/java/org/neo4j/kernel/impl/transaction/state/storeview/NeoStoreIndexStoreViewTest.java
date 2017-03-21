@@ -25,23 +25,27 @@ import org.junit.Test;
 import org.mockito.InOrder;
 import org.mockito.stubbing.Answer;
 
+import java.util.Arrays;
 import java.util.HashMap;
 import java.util.HashSet;
+import java.util.List;
 import java.util.Map;
 import java.util.Set;
 
 import org.neo4j.graphdb.Label;
 import org.neo4j.graphdb.Node;
 import org.neo4j.graphdb.Transaction;
+import org.neo4j.helpers.collection.Iterables;
 import org.neo4j.helpers.collection.Visitor;
 import org.neo4j.kernel.api.Statement;
 import org.neo4j.kernel.api.exceptions.EntityNotFoundException;
 import org.neo4j.kernel.api.exceptions.KernelException;
-import org.neo4j.kernel.api.index.NodeUpdates;
+import org.neo4j.kernel.api.index.IndexEntryUpdate;
+import org.neo4j.kernel.impl.api.index.NodeUpdates;
 import org.neo4j.kernel.api.labelscan.NodeLabelUpdate;
 import org.neo4j.kernel.api.properties.Property;
+import org.neo4j.kernel.api.schema_new.LabelSchemaDescriptor;
 import org.neo4j.kernel.api.schema_new.SchemaDescriptorFactory;
-import org.neo4j.kernel.api.schema_new.index.NewIndexDescriptorFactory;
 import org.neo4j.kernel.impl.api.index.StoreScan;
 import org.neo4j.kernel.impl.core.ThreadToStatementContextBridge;
 import org.neo4j.kernel.impl.locking.Lock;
@@ -53,6 +57,8 @@ import org.neo4j.kernel.impl.store.record.RecordLoad;
 import org.neo4j.kernel.internal.GraphDatabaseAPI;
 import org.neo4j.test.rule.EmbeddedDatabaseRule;
 
+import static org.hamcrest.MatcherAssert.assertThat;
+import static org.hamcrest.Matchers.containsInAnyOrder;
 import static org.junit.Assert.assertEquals;
 import static org.junit.Assert.assertNotNull;
 import static org.junit.Assert.assertTrue;
@@ -190,11 +196,19 @@ public class NeoStoreIndexStoreViewTest
         storeViewNodeStoreScan.process( nodeRecord );
 
         NodeUpdates propertyUpdates = propertyUpdateVisitor.getPropertyUpdates();
-        assertNotNull( "Visitor should containts container with updates.", propertyUpdates );
-        assert propertyUpdates.forIndex( SchemaDescriptorFactory.forLabel( 0, 0 ) ).isPresent();
-        assert propertyUpdates.forIndex( SchemaDescriptorFactory.forLabel( 0, 1 ) ).isPresent();
-        assert propertyUpdates.forIndex( SchemaDescriptorFactory.forLabel( 0, 0, 1 ) ).isPresent();
-        assert !propertyUpdates.forIndex( SchemaDescriptorFactory.forLabel( 1, 1 ) ).isPresent();
+        assertNotNull( "Visitor should contain container with updates.", propertyUpdates );
+
+        LabelSchemaDescriptor index1 = SchemaDescriptorFactory.forLabel( 0, 0 );
+        LabelSchemaDescriptor index2 = SchemaDescriptorFactory.forLabel( 0, 1 );
+        LabelSchemaDescriptor index3 = SchemaDescriptorFactory.forLabel( 0, 0, 1 );
+        LabelSchemaDescriptor index4 = SchemaDescriptorFactory.forLabel( 1, 1 );
+        List<LabelSchemaDescriptor> indexes = Arrays.asList( index1, index2, index3, index4 );
+
+        assertThat(
+                Iterables.map(
+                        IndexEntryUpdate::indexKey,
+                        propertyUpdates.forIndexKeys( indexes ) ),
+                containsInAnyOrder( index1, index2, index3 ) );
     }
 
     NodeUpdates add( long nodeId, int propertyKeyId, Object value, long[] labels)

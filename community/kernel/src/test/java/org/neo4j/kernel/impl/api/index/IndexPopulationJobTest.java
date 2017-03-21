@@ -29,7 +29,6 @@ import java.io.IOException;
 import java.util.Collection;
 import java.util.HashMap;
 import java.util.HashSet;
-import java.util.List;
 import java.util.Map;
 import java.util.Set;
 import java.util.concurrent.Future;
@@ -51,7 +50,6 @@ import org.neo4j.kernel.api.index.IndexEntryUpdate;
 import org.neo4j.kernel.api.index.IndexPopulator;
 import org.neo4j.kernel.api.index.IndexUpdater;
 import org.neo4j.kernel.api.index.InternalIndexState;
-import org.neo4j.kernel.api.index.NodeUpdates;
 import org.neo4j.kernel.api.index.PropertyAccessor;
 import org.neo4j.kernel.api.labelscan.NodeLabelUpdate;
 import org.neo4j.kernel.api.schema_new.LabelSchemaDescriptor;
@@ -82,7 +80,6 @@ import static org.hamcrest.core.IsEqual.equalTo;
 import static org.junit.Assert.assertEquals;
 import static org.mockito.Matchers.any;
 import static org.mockito.Matchers.anyBoolean;
-import static org.mockito.Matchers.anyListOf;
 import static org.mockito.Mockito.doThrow;
 import static org.mockito.Mockito.mock;
 import static org.mockito.Mockito.spy;
@@ -163,7 +160,7 @@ public class IndexPopulationJobTest
         verify( populator ).create();
         verify( populator ).configureSampling( true );
         verify( populator ).includeSample( update );
-        verify( populator ).add( anyListOf(IndexEntryUpdate.class) );
+        verify( populator ).add( any( IndexEntryUpdate.class) );
         verify( populator ).sampleResult();
         verify( populator ).close( true );
 
@@ -212,7 +209,7 @@ public class IndexPopulationJobTest
         verify( populator ).configureSampling( true );
         verify( populator ).includeSample( update1 );
         verify( populator ).includeSample( update2 );
-        verify( populator, times( 2 ) ).add( anyListOf(IndexEntryUpdate.class ) );
+        verify( populator, times( 2 ) ).add( any( IndexEntryUpdate.class ) );
         verify( populator ).sampleResult();
         verify( populator ).close( true );
 
@@ -275,7 +272,7 @@ public class IndexPopulationJobTest
     {
         // GIVEN
         IndexPopulator failingPopulator = mock( IndexPopulator.class );
-        doThrow( new RuntimeException( "BORK BORK" ) ).when( failingPopulator ).add( any() );
+        doThrow( new RuntimeException( "BORK BORK" ) ).when( failingPopulator ).add( any(Collection.class) );
 
         FlippableIndexProxy index = new FlippableIndexProxy();
 
@@ -440,7 +437,7 @@ public class IndexPopulationJobTest
         }
 
         @Override
-        public void configure( List<MultipleIndexPopulator.IndexPopulation> populations )
+        public void configure( Collection<MultipleIndexPopulator.IndexPopulation> populations )
         {
             // no-op
         }
@@ -464,16 +461,22 @@ public class IndexPopulationJobTest
         }
 
         @Override
-        public void add( Collection<IndexEntryUpdate> updates )
+        public void add( Collection<? extends IndexEntryUpdate<?>> updates )
         {
             for ( IndexEntryUpdate update : updates )
             {
-                if ( update.getEntityId() == 2 )
-                {
-                    job.update( IndexEntryUpdate.change( nodeToChange, index, previousValue, newValue ) );
-                }
-                added.add( Pair.of( update.getEntityId(), update.values()[0] ) );
+                add( update );
             }
+        }
+
+        @Override
+        public void add( IndexEntryUpdate<?> update )
+        {
+            if ( update.getEntityId() == 2 )
+            {
+                job.update( IndexEntryUpdate.change( nodeToChange, index, previousValue, newValue ) );
+            }
+            added.add( Pair.of( update.getEntityId(), update.values()[0] ) );
         }
 
         @Override
@@ -536,16 +539,22 @@ public class IndexPopulationJobTest
         }
 
         @Override
-        public void add( Collection<IndexEntryUpdate> updates )
+        public void add( Collection<? extends IndexEntryUpdate<?>> updates )
         {
             for ( IndexEntryUpdate update : updates )
             {
-                if ( update.getEntityId() == 2 )
-                {
-                    job.update( IndexEntryUpdate.remove( nodeToDelete, index, valueToDelete ) );
-                }
-                added.put( update.getEntityId(), update.values()[0] );
+                add( update );
             }
+        }
+
+        @Override
+        public void add( IndexEntryUpdate<?> update )
+        {
+            if ( update.getEntityId() == 2 )
+            {
+                job.update( IndexEntryUpdate.remove( nodeToDelete, index, valueToDelete ) );
+            }
+            added.put( update.getEntityId(), update.values()[0] );
         }
 
         @Override

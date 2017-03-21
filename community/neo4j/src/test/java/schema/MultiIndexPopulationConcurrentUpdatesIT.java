@@ -26,10 +26,10 @@ import org.junit.Test;
 
 import java.io.IOException;
 import java.util.ArrayList;
+import java.util.Collections;
 import java.util.HashMap;
 import java.util.List;
 import java.util.Map;
-import java.util.Optional;
 import java.util.function.IntPredicate;
 import java.util.stream.Collectors;
 
@@ -47,13 +47,12 @@ import org.neo4j.kernel.api.exceptions.index.IndexEntryConflictException;
 import org.neo4j.kernel.api.exceptions.index.IndexNotFoundKernelException;
 import org.neo4j.kernel.api.exceptions.index.IndexPopulationFailedKernelException;
 import org.neo4j.kernel.api.index.IndexEntryUpdate;
-import org.neo4j.kernel.api.index.NodeUpdates;
+import org.neo4j.kernel.impl.api.index.NodeUpdates;
 import org.neo4j.kernel.api.index.SchemaIndexProvider;
 import org.neo4j.kernel.api.labelscan.LabelScanStore;
 import org.neo4j.kernel.api.labelscan.NodeLabelUpdate;
 import org.neo4j.kernel.api.schema_new.LabelSchemaDescriptor;
 import org.neo4j.kernel.api.schema_new.SchemaDescriptorFactory;
-import org.neo4j.kernel.api.schema_new.index.NewIndexDescriptor;
 import org.neo4j.kernel.api.schema_new.index.NewIndexDescriptorFactory;
 import org.neo4j.kernel.configuration.Config;
 import org.neo4j.kernel.impl.api.index.IndexProxy;
@@ -446,7 +445,6 @@ public class MultiIndexPopulationConcurrentUpdatesIT
 
     private class DelegatingPrimitiveLongResourceIterator implements PrimitiveLongResourceIterator
     {
-
         private final List<NodeUpdates> updates;
         private final PrimitiveLongResourceIterator delegate;
 
@@ -477,23 +475,21 @@ public class MultiIndexPopulationConcurrentUpdatesIT
                         Node node = embeddedDatabase.getNodeById( update.getNodeId() );
                         for ( int labelId : labelsNameIdMap.values() )
                         {
-                            LabelSchemaDescriptor schemaDescriptor = SchemaDescriptorFactory
-                                    .forLabel( labelId, propertyId );
-                            Optional<IndexEntryUpdate> indexEntryUpdateOptional = update.forIndex( schemaDescriptor );
-                            if ( indexEntryUpdateOptional.isPresent() )
+                            LabelSchemaDescriptor schema = SchemaDescriptorFactory.forLabel( labelId, propertyId );
+                            for ( IndexEntryUpdate indexUpdate :
+                                    update.forIndexKeys( Collections.singleton( schema ) ) )
                             {
-                                IndexEntryUpdate indexUpdate = indexEntryUpdateOptional.get();
                                 switch ( indexUpdate.updateMode() )
                                 {
                                 case CHANGED:
                                 case ADDED:
                                     node.addLabel(
-                                            Label.label( labelsIdNameMap.get( schemaDescriptor.getLabelId() ) ) );
+                                            Label.label( labelsIdNameMap.get( schema.getLabelId() ) ) );
                                     node.setProperty( NAME_PROPERTY, indexUpdate.values()[0] );
                                     break;
                                 case REMOVED:
                                     node.addLabel(
-                                            Label.label( labelsIdNameMap.get( schemaDescriptor.getLabelId() ) ) );
+                                            Label.label( labelsIdNameMap.get( schema.getLabelId() ) ) );
                                     node.delete();
                                     break;
                                 default:
@@ -523,5 +519,4 @@ public class MultiIndexPopulationConcurrentUpdatesIT
             delegate.close();
         }
     }
-
 }

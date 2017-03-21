@@ -532,10 +532,10 @@ public class UniqueDatabaseIndexPopulatorTest
     {
         populator = newPopulator();
 
-        List<IndexEntryUpdate> updates = Arrays.asList(
-                IndexEntryUpdate.add( 1, descriptor.schema(), "aaa" ),
-                IndexEntryUpdate.add( 2, descriptor.schema(), "bbb" ),
-                IndexEntryUpdate.add( 3, descriptor.schema(), "ccc" ) );
+        List<IndexEntryUpdate<?>> updates = Arrays.asList(
+                IndexEntryUpdate.add( 1, schemaDescriptor, "aaa" ),
+                IndexEntryUpdate.add( 2, schemaDescriptor, "bbb" ),
+                IndexEntryUpdate.add( 3, schemaDescriptor, "ccc" ) );
 
         populator.add( updates );
 
@@ -558,6 +558,6 @@ public class UniqueDatabaseIndexPopulatorTest
             throws IOException, IndexEntryConflictException
     {
         IndexEntryUpdate update = IndexEntryUpdate.add( nodeId, descriptor.schema(), value );
-        populator.add( Collections.singletonList( update ) );
+        populator.add( update );
     }
 }

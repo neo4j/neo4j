@@ -60,7 +60,7 @@ public abstract class LuceneIndexPopulator implements IndexPopulator
     }
 
     @Override
-    public void add( Collection<IndexEntryUpdate> updates ) throws IndexEntryConflictException, IOException
+    public void add( Collection<? extends IndexEntryUpdate<?>> updates ) throws IndexEntryConflictException, IOException
     {
         assert updatesForCorrectIndex( updates );
         // Lucene documents stored in a ThreadLocal and reused so we can't create an eager collection of documents here
@@ -68,6 +68,12 @@ public abstract class LuceneIndexPopulator implements IndexPopulator
         writer.addDocuments( updates.size(), () -> updates.stream()
                 .map( LuceneIndexPopulator::updateAsDocument )
                 .iterator() );
+    }
+
+    @Override
+    public void add( IndexEntryUpdate<?> update ) throws IndexEntryConflictException, IOException
+    {
+        writer.addDocument( updateAsDocument( update ) );
     }
 
     @Override
@@ -92,11 +98,11 @@ public abstract class LuceneIndexPopulator implements IndexPopulator
         luceneIndex.markAsFailed( failure );
     }
 
-    private boolean updatesForCorrectIndex( Collection<IndexEntryUpdate> updates )
+    private boolean updatesForCorrectIndex( Collection<? extends IndexEntryUpdate<?>> updates )
     {
         for ( IndexEntryUpdate update : updates )
         {
-            if ( !update.descriptor().equals( luceneIndex.getDescriptor().schema() ) )
+            if ( !update.indexKey().schema().equals( luceneIndex.getDescriptor().schema() ) )
             {
                 return false;
             }

@@ -51,9 +51,16 @@ public interface IndexPopulator
      *
      * @param updates batch of node property updates that needs to be inserted. Node ids will be retrieved using
      * {@link IndexEntryUpdate#getEntityId()} method and property values will be retrieved using
-     * {@link IndexEntryUpdate#value()} method.
+     * {@link IndexEntryUpdate#values()} method.
      */
-    void add( Collection<IndexEntryUpdate> updates )
+    void add( Collection<? extends IndexEntryUpdate<?>> updates )
+            throws IndexEntryConflictException, IOException;
+
+    /**
+     * Variant of {@link #add(Collection)
+     * @param update to be inserted
+     */
+    void add( IndexEntryUpdate<?> update )
             throws IndexEntryConflictException, IOException;
 
     /**
@@ -138,11 +145,16 @@ public interface IndexPopulator
         }
 
         @Override
-        public void add( Collection<IndexEntryUpdate> updates ) throws IndexEntryConflictException, IOException
+        public void add( Collection<? extends IndexEntryUpdate<?>> updates ) throws IndexEntryConflictException,
+                IOException
         {
         }
 
         @Override
+        public void add( IndexEntryUpdate<?> update ) throws IndexEntryConflictException, IOException
+        {
+        }
+
         public IndexUpdater newPopulatingUpdater( PropertyAccessor accessor )
         {
             return SwallowingIndexUpdater.INSTANCE;

@@ -21,10 +21,11 @@ package org.neo4j.kernel.api.schema_new.constaints;
 
 import org.neo4j.kernel.api.TokenNameLookup;
 import org.neo4j.kernel.api.schema_new.LabelSchemaDescriptor;
+import org.neo4j.kernel.api.schema_new.LabelSchemaSupplier;
 import org.neo4j.kernel.api.schema_new.index.NewIndexDescriptor;
 import org.neo4j.kernel.api.schema_new.index.NewIndexDescriptorFactory;
 
-public class UniquenessConstraintDescriptor extends ConstraintDescriptor implements LabelSchemaDescriptor.Supplier
+public class UniquenessConstraintDescriptor extends ConstraintDescriptor implements LabelSchemaSupplier
 {
     private final LabelSchemaDescriptor schema;
 

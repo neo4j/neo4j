@@ -27,7 +27,6 @@ import java.util.HashMap;
 import java.util.HashSet;
 import java.util.List;
 import java.util.Map;
-import java.util.Optional;
 import java.util.Set;
 import java.util.concurrent.Future;
 
@@ -45,7 +44,6 @@ import org.neo4j.kernel.api.exceptions.schema.UniquePropertyValueValidationExcep
 import org.neo4j.kernel.api.index.IndexEntryUpdate;
 import org.neo4j.kernel.api.index.IndexUpdater;
 import org.neo4j.kernel.api.index.InternalIndexState;
-import org.neo4j.kernel.api.index.NodeUpdates;
 import org.neo4j.kernel.api.index.SchemaIndexProvider;
 import org.neo4j.kernel.api.index.SchemaIndexProvider.Descriptor;
 import org.neo4j.kernel.api.schema_new.LabelSchemaDescriptor;
@@ -433,13 +431,10 @@ public class IndexingService extends LifecycleAdapter
         {
             for ( NodeUpdates update : updates )
             {
-                for ( LabelSchemaDescriptor descriptor : updaterMap.descriptors() )
+                for ( IndexEntryUpdate<IndexUpdaterMap.IndexUpdaterWithSchema> indexUpdate :
+                        update.forIndexKeys( updaterMap.updaters(), storeView ) )
                 {
-                    Optional<IndexEntryUpdate> entry = update.forIndex( descriptor );
-                    if ( entry.isPresent() )
-                    {
-                        updaterMap.getUpdater( descriptor ).process( entry.get() );
-                    }
+                    indexUpdate.indexKey().process( indexUpdate );
                 }
             }
         }

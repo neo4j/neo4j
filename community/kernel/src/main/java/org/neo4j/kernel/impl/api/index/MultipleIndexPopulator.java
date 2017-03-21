@@ -20,13 +20,10 @@
 package org.neo4j.kernel.impl.api.index;
 
 import java.io.IOException;
-import java.util.Arrays;
 import java.util.Collection;
-import java.util.Collections;
 import java.util.HashMap;
 import java.util.List;
 import java.util.Map;
-import java.util.Optional;
 import java.util.Queue;
 import java.util.concurrent.CopyOnWriteArrayList;
 import java.util.concurrent.LinkedBlockingQueue;
@@ -43,11 +40,11 @@ import org.neo4j.kernel.api.exceptions.index.IndexPopulationFailedKernelExceptio
 import org.neo4j.kernel.api.index.IndexEntryUpdate;
 import org.neo4j.kernel.api.index.IndexPopulator;
 import org.neo4j.kernel.api.index.IndexUpdater;
-import org.neo4j.kernel.api.index.NodeUpdates;
 import org.neo4j.kernel.api.index.PropertyAccessor;
 import org.neo4j.kernel.api.index.SchemaIndexProvider;
 import org.neo4j.kernel.api.index.SchemaIndexProvider.Descriptor;
 import org.neo4j.kernel.api.schema_new.LabelSchemaDescriptor;
+import org.neo4j.kernel.api.schema_new.LabelSchemaSupplier;
 import org.neo4j.kernel.api.schema_new.index.NewIndexDescriptor;
 import org.neo4j.logging.Log;
 import org.neo4j.logging.LogProvider;
@@ -155,7 +152,13 @@ public class MultipleIndexPopulator implements IndexPopulator
     }
 
     @Override
-    public void add( Collection<IndexEntryUpdate> updates )
+    public void add( Collection<? extends IndexEntryUpdate<?>> updates )
+    {
+        throw new UnsupportedOperationException( "Can't populate directly using this populator implementation. " );
+    }
+
+    @Override
+    public void add( IndexEntryUpdate<?> update )
     {
         throw new UnsupportedOperationException( "Can't populate directly using this populator implementation. " );
     }
@@ -167,7 +170,7 @@ public class MultipleIndexPopulator implements IndexPopulator
         IntPredicate propertyKeyIdFilter = (propertyKeyId) -> contains( propertyKeyIds, propertyKeyId );
 
         storeScan = storeView.visitNodes( labelIds, propertyKeyIdFilter, new NodePopulationVisitor(), null, false );
-        storeScan.configure(populations);
+        storeScan.configure( populations );
         return storeScan;
     }
 
@@ -195,8 +198,7 @@ public class MultipleIndexPopulator implements IndexPopulator
 
     protected void fail( IndexPopulation population, Throwable failure )
     {
-        boolean removed = populations.remove( population );
-        if ( !removed )
+        if ( !populations.remove( population ) )
         {
             return;
         }
@@ -316,13 +318,12 @@ public class MultipleIndexPopulator implements IndexPopulator
 
     private IntStream propertyKeyIds( IndexPopulation population )
     {
-        NewIndexDescriptor desc = population.descriptor;
-        return IntStream.of( desc.schema().getPropertyIds() );
+        return IntStream.of( population.schema().getPropertyIds() );
     }
 
     private int[] labelIds()
     {
-        return populations.stream().mapToInt( population -> population.descriptor.schema().getLabelId() ).toArray();
+        return populations.stream().mapToInt( population -> population.schema().getLabelId() ).toArray();
     }
 
     public void cancel()
@@ -404,7 +405,7 @@ public class MultipleIndexPopulator implements IndexPopulator
         @Override
         public void process( IndexEntryUpdate update )
         {
-            Pair<IndexPopulation,IndexUpdater> pair = populationsWithUpdaters.get( update.descriptor() );
+            Pair<IndexPopulation,IndexUpdater> pair = populationsWithUpdaters.get( update.indexKey().schema() );
             if ( pair != null )
             {
                 IndexPopulation population = pair.first();
@@ -424,7 +425,7 @@ public class MultipleIndexPopulator implements IndexPopulator
                     {
                         log.error( format( "Failed to close index updater: [%s]", updater ), ce );
                     }
-                    populationsWithUpdaters.remove( update.descriptor() );
+                    populationsWithUpdaters.remove( update.indexKey().schema() );
                     multipleIndexPopulator.fail( population, t );
                 }
             }
@@ -451,7 +452,7 @@ public class MultipleIndexPopulator implements IndexPopulator
         }
     }
 
-    public class IndexPopulation
+    public class IndexPopulation implements LabelSchemaSupplier
     {
         public final IndexPopulator populator;
         final long indexId;
@@ -488,22 +489,17 @@ public class MultipleIndexPopulator implements IndexPopulator
                     populator, failure( t ), indexCountsRemover, logProvider ) );
         }
 
-        private void add( NodeUpdates updates )
+        private void onUpdate( IndexEntryUpdate update )
                 throws IndexEntryConflictException, IOException
         {
-            Optional<IndexEntryUpdate> updateOpt = updates.forIndex( descriptor.schema() );
-            if ( updateOpt.isPresent() )
-            {
-                IndexEntryUpdate update = updateOpt.get();
-                populator.includeSample( update );
-                add( update );
-            }
+            populator.includeSample( update );
+            add( update );
         }
 
         void add( IndexEntryUpdate update )
                 throws IOException, IndexEntryConflictException
         {
-            populator.add( Collections.singleton( update ) );
+            populator.add( update );
         }
 
         private void flip() throws FlipFailedKernelException
@@ -517,6 +513,12 @@ public class MultipleIndexPopulator implements IndexPopulator
                 return null;
             }, failedIndexProxyFactory );
             log.info( "Index population completed. Index is now online: [%s]", indexUserDescription );
+        }
+
+        @Override
+        public LabelSchemaDescriptor schema()
+        {
+            return descriptor.schema();
         }
     }
 
@@ -533,7 +535,19 @@ public class MultipleIndexPopulator implements IndexPopulator
 
         private void add( NodeUpdates updates )
         {
-            forEachPopulation( population -> population.add( updates ) );
+            // This is called from a full store node scan, meaning that all node properties are included in the
+            // NodeUpdates object. Therefore no additional properties need to be loaded.
+            for ( IndexEntryUpdate<IndexPopulation> indexUpdate : updates.forIndexKeys( populations ) )
+            {
+                try
+                {
+                    indexUpdate.indexKey().onUpdate( indexUpdate );
+                }
+                catch ( Throwable failure )
+                {
+                    fail( indexUpdate.indexKey(), failure );
+                }
+            }
         }
     }
 }

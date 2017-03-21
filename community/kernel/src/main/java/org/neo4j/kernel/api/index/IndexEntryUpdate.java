@@ -21,7 +21,7 @@ package org.neo4j.kernel.api.index;
 
 import java.util.Arrays;
 
-import org.neo4j.kernel.api.schema_new.LabelSchemaDescriptor;
+import org.neo4j.kernel.api.schema_new.LabelSchemaSupplier;
 import org.neo4j.kernel.api.schema_new.SchemaUtil;
 import org.neo4j.kernel.impl.api.index.UpdateMode;
 
@@ -32,30 +32,30 @@ import static java.lang.String.format;
  * update.
  * This is of use in populating indexes that might be relevant to node label and property combinations.
  */
-public class IndexEntryUpdate
+public class IndexEntryUpdate<INDEX_KEY extends LabelSchemaSupplier>
 {
     private final long entityId;
     private final UpdateMode updateMode;
     private final Object[] before;
-    private Object[] values;
-    private LabelSchemaDescriptor descriptor;
+    private final Object[] values;
+    private final INDEX_KEY indexKey;
 
-    private IndexEntryUpdate( long entityId, LabelSchemaDescriptor descriptor, UpdateMode updateMode, Object... values )
+    private IndexEntryUpdate( long entityId, INDEX_KEY indexKey, UpdateMode updateMode, Object... values )
     {
-        this( entityId, descriptor, updateMode, null, values );
+        this( entityId, indexKey, updateMode, null, values );
     }
 
-    private IndexEntryUpdate( long entityId, LabelSchemaDescriptor descriptor, UpdateMode updateMode, Object[] before,
+    private IndexEntryUpdate( long entityId, INDEX_KEY indexKey, UpdateMode updateMode, Object[] before,
             Object[] values )
     {
         // we do not support partial index entries
-        assert descriptor.getPropertyIds().length == values.length :
+        assert indexKey.schema().getPropertyIds().length == values.length :
                 format( "IndexEntryUpdate values must be of same length as index compositness. " +
-                        "Index on %s, but got values %s", descriptor.toString(), Arrays.toString( values ) );
+                        "Index on %s, but got values %s", indexKey.schema().toString(), Arrays.toString( values ) );
         assert before == null || before.length == values.length;
 
         this.entityId = entityId;
-        this.descriptor = descriptor;
+        this.indexKey = indexKey;
         this.before = before;
         this.values = values;
         this.updateMode = updateMode;
@@ -71,9 +71,9 @@ public class IndexEntryUpdate
         return updateMode;
     }
 
-    public LabelSchemaDescriptor descriptor()
+    public INDEX_KEY indexKey()
     {
-        return descriptor;
+        return indexKey;
     }
 
     public Object[] values()
@@ -111,7 +111,7 @@ public class IndexEntryUpdate
         {
             return false;
         }
-        return descriptor != null ? descriptor.equals( that.descriptor ) : that.descriptor == null;
+        return indexKey != null ? indexKey.schema().equals( that.indexKey.schema() ) : that.indexKey == null;
     }
 
     @Override
@@ -121,35 +121,40 @@ public class IndexEntryUpdate
         result = 31 * result + (updateMode != null ? updateMode.hashCode() : 0);
         result = 31 * result + Arrays.deepHashCode( before );
         result = 31 * result + Arrays.deepHashCode( values );
-        result = 31 * result + (descriptor != null ? descriptor.hashCode() : 0);
+        result = 31 * result + (indexKey != null ? indexKey.schema().hashCode() : 0);
         return result;
     }
 
     @Override
     public String toString()
     {
-        return format( "IndexEntryUpdate[id=%d, mode=%s, %s, values=%s]", entityId, updateMode, descriptor()
+        return format( "IndexEntryUpdate[id=%d, mode=%s, %s, values=%s]", entityId, updateMode, indexKey().schema()
                 .userDescription( SchemaUtil.idTokenNameLookup ), Arrays.toString(values) );
     }
 
-    public static IndexEntryUpdate add( long nodeId, LabelSchemaDescriptor descriptor, Object... values )
+    public static <INDEX_KEY extends LabelSchemaSupplier> IndexEntryUpdate<INDEX_KEY> add(
+            long nodeId, INDEX_KEY indexKey, Object... values )
     {
-        return new IndexEntryUpdate( nodeId, descriptor, UpdateMode.ADDED, values );
+        return new IndexEntryUpdate<>( nodeId, indexKey, UpdateMode.ADDED, values );
     }
 
-    public static IndexEntryUpdate remove( long nodeId, LabelSchemaDescriptor descriptor, Object... values )
+    public static <INDEX_KEY extends LabelSchemaSupplier> IndexEntryUpdate<INDEX_KEY> remove(
+            long nodeId, INDEX_KEY indexKey, Object... values )
     {
-        return new IndexEntryUpdate( nodeId, descriptor, UpdateMode.REMOVED, values );
+        return new IndexEntryUpdate<>( nodeId, indexKey, UpdateMode.REMOVED, values );
     }
 
-    public static IndexEntryUpdate change( long nodeId, LabelSchemaDescriptor descriptor, Object before, Object after )
+    public static <INDEX_KEY extends LabelSchemaSupplier> IndexEntryUpdate<INDEX_KEY> change(
+            long nodeId, INDEX_KEY indexKey, Object before, Object after )
     {
-        return new IndexEntryUpdate( nodeId, descriptor, UpdateMode.CHANGED, new Object[]{before}, new Object[]{after} );
+        return new IndexEntryUpdate<>( nodeId, indexKey, UpdateMode.CHANGED,
+                new Object[]{before}, new Object[]{after} );
     }
 
-    public static IndexEntryUpdate change( long nodeId, LabelSchemaDescriptor descriptor, Object[] before, Object[] after )
+    public static <INDEX_KEY extends LabelSchemaSupplier> IndexEntryUpdate<INDEX_KEY> change(
+            long nodeId, INDEX_KEY indexKey, Object[] before, Object[] after )
     {
-        return new IndexEntryUpdate( nodeId, descriptor, UpdateMode.CHANGED, before, after );
+        return new IndexEntryUpdate<>( nodeId, indexKey, UpdateMode.CHANGED, before, after );
     }
 
     public Object[] beforeValues()

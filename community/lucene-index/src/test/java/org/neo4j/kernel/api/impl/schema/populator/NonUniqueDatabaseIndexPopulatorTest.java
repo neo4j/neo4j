@@ -135,7 +135,7 @@ public class NonUniqueDatabaseIndexPopulatorTest
     {
         populator = newPopulator();
 
-        List<IndexEntryUpdate> updates = Arrays.asList(
+        List<IndexEntryUpdate<?>> updates = Arrays.asList(
                 IndexEntryUpdate.add( 1, labelSchemaDescriptor, "foo" ),
                 IndexEntryUpdate.add( 2, labelSchemaDescriptor, "bar" ),
                 IndexEntryUpdate.add( 42, labelSchemaDescriptor, "bar" ) );

@@ -23,7 +23,7 @@ import java.util.Arrays;
 
 import org.neo4j.kernel.api.TokenNameLookup;
 
-public class LabelSchemaDescriptor implements SchemaDescriptor
+public class LabelSchemaDescriptor implements SchemaDescriptor, LabelSchemaSupplier
 {
     private final int labelId;
     private final int[] propertyIds;
@@ -97,8 +97,9 @@ public class LabelSchemaDescriptor implements SchemaDescriptor
         return "LabelSchemaDescriptor( " + userDescription( SchemaUtil.idTokenNameLookup ) + " )";
     }
 
-    public interface Supplier extends SchemaDescriptor.Supplier
+    @Override
+    public LabelSchemaDescriptor schema()
     {
-        LabelSchemaDescriptor schema();
+        return this;
     }
 }

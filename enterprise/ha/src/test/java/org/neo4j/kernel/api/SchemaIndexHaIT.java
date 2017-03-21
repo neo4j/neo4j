@@ -435,10 +435,17 @@ public class SchemaIndexHaIT
         }
 
         @Override
-        public void add( Collection<IndexEntryUpdate> updates )
+        public void add( Collection<? extends IndexEntryUpdate<?>> updates )
                 throws IndexEntryConflictException, IOException
         {
             delegate.add( updates );
+            latch.startAndWaitForAllToStartAndFinish();
+        }
+
+        @Override
+        public void add( IndexEntryUpdate<?> update ) throws IndexEntryConflictException, IOException
+        {
+            delegate.add( update );
             latch.startAndWaitForAllToStartAndFinish();
         }
 

@@ -23,22 +23,16 @@ import java.util.ArrayList;
 import java.util.Collection;
 import java.util.Iterator;
 import java.util.List;
-import java.util.stream.Stream;
 
 import org.neo4j.collection.primitive.Primitive;
-import org.neo4j.collection.primitive.PrimitiveLongCollections;
 import org.neo4j.collection.primitive.PrimitiveLongIterator;
 import org.neo4j.collection.primitive.PrimitiveLongObjectMap;
 import org.neo4j.collection.primitive.PrimitiveLongSet;
 import org.neo4j.helpers.collection.Iterables;
-import org.neo4j.helpers.collection.Iterators;
-import org.neo4j.kernel.api.index.NodeUpdates;
-import org.neo4j.kernel.api.properties.DefinedProperty;
+import org.neo4j.kernel.impl.api.index.NodeUpdates;
 import org.neo4j.kernel.impl.api.index.PropertyPhysicalToLogicalConverter;
-import org.neo4j.kernel.impl.core.IteratingPropertyReceiver;
 import org.neo4j.kernel.impl.store.NodeStore;
 import org.neo4j.kernel.impl.store.record.NodeRecord;
-import org.neo4j.kernel.impl.store.record.PropertyRecord;
 import org.neo4j.kernel.impl.store.record.RecordLoad;
 import org.neo4j.kernel.impl.transaction.command.Command.NodeCommand;
 import org.neo4j.kernel.impl.transaction.command.Command.PropertyCommand;
@@ -96,7 +90,6 @@ public class OnlineIndexUpdates implements IndexUpdates
         }
     }
 
-    //TODO: investigate if this is really necessary. Perhaps one is a subset of the other
     private PrimitiveLongSet allKeys( PrimitiveLongObjectMap... maps )
     {
         PrimitiveLongSet union = Primitive.longSet();
@@ -118,14 +111,7 @@ public class OnlineIndexUpdates implements IndexUpdates
         NodeUpdates.Builder nodePropertyUpdate =
                 gatherUpdatesFromCommandsForNode( nodeId, nodeCommand, propertyCommands );
 
-        if ( nodePropertyUpdate.hasUpdatedLabels() || nodePropertyUpdate.hasUpdates() )
-        {
-            //TODO: Do we really need to always load all node properties? This can be a performance impact
-            // At least only load the ones for which there are known indexes
-            Stream<DefinedProperty> properties = Iterators.stream(nodeFullyLoadProperties( nodeId, nodeCommand, propertyCommands ));
-            DefinedProperty[] definedProperties = properties.toArray( DefinedProperty[]::new );
-            updates.add( nodePropertyUpdate.buildWithExistingProperties( definedProperties ) );
-        }
+        updates.add( nodePropertyUpdate.build() );
     }
 
     private NodeUpdates.Builder gatherUpdatesFromCommandsForNode( long nodeId,
@@ -179,37 +165,5 @@ public class OnlineIndexUpdates implements IndexUpdates
         }
         nodeStore.getRecord( nodeId, nodeRecord, RecordLoad.NORMAL );
         return nodeRecord;
-    }
-
-    private Iterator<DefinedProperty> nodeFullyLoadProperties( long nodeId,
-            NodeCommand nodeCommand,
-            List<PropertyCommand> propertyCommands )
-    {
-        NodeRecord nodeRecord = (nodeCommand == null) ? loadNode( nodeId ) : nodeCommand.getAfter();
-
-        IteratingPropertyReceiver receiver = new IteratingPropertyReceiver();
-        PrimitiveLongObjectMap<PropertyRecord> propertiesById =
-                propertiesFromCommandsForNode( propertyCommands );
-        propertyLoader.nodeLoadProperties( nodeRecord, propertiesById, receiver );
-        return receiver;
-    }
-
-    private PrimitiveLongObjectMap<PropertyRecord> propertiesFromCommandsForNode(
-            List<PropertyCommand> propertyCommands )
-    {
-        if ( propertyCommands == null )
-        {
-            return PrimitiveLongCollections.emptyObjectMap();
-        }
-        PrimitiveLongObjectMap<PropertyRecord> result = Primitive.longObjectMap( propertyCommands.size() );
-        for ( PropertyCommand command : propertyCommands )
-        {
-            PropertyRecord after = command.getAfter();
-            if ( after.inUse() && after.isNodeSet() )
-            {
-                result.put( after.getId(), after );
-            }
-        }
-        return result;
     }
 }

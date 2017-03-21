@@ -25,7 +25,7 @@ import java.util.function.IntPredicate;
 import java.util.stream.IntStream;
 
 import org.neo4j.helpers.collection.Visitor;
-import org.neo4j.kernel.api.index.NodeUpdates;
+import org.neo4j.kernel.impl.api.index.NodeUpdates;
 import org.neo4j.kernel.api.labelscan.LabelScanStore;
 import org.neo4j.kernel.api.labelscan.NodeLabelUpdate;
 import org.neo4j.kernel.impl.api.index.StoreScan;
