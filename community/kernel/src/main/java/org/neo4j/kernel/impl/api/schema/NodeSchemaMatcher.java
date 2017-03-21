@@ -60,7 +60,7 @@ public class NodeSchemaMatcher
      * @param <EXCEPTION> The type of exception that can be thrown when taking the action
      * @throws EXCEPTION This exception is propagated from the action
      */
-    public <SUPPLIER extends LabelSchemaDescriptor.Supplier,EXCEPTION extends Exception> void onMatchingSchema(
+    public <SUPPLIER extends LabelSchemaSupplier,EXCEPTION extends Exception> void onMatchingSchema(
             KernelStatement state,
             Iterator<SUPPLIER> schemaSuppliers,
             NodeItem node,
