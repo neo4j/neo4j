@@ -20,21 +20,21 @@
 package org.neo4j.graphdb;
 
 import org.junit.Test;
-import org.neo4j.graphdb.index.Index;
+import org.neo4j.graphdb.index.RelationshipIndex;
 
-import static org.neo4j.graphdb.NodeIndexFacadeMethods.ALL_NODE_INDEX_FACADE_METHODS;
+import static org.neo4j.graphdb.RelationshipIndexFacadeMethods.ALL_RELATIONSHIP_INDEX_FACADE_METHODS;
 
-public class MandatoryTransactionsForNodeIndexFacadeTests extends AbstractMandatoryTransactionsTest<Index<Node>>
+public class MandatoryTransactionsForRelationshipIndexFacadeTest extends AbstractMandatoryTransactionsTest<RelationshipIndex>
 {
     @Test
-    public void shouldRequireTransactionsWhenCallingMethodsOnNodeIndexFacade() throws Exception
+    public void shouldRequireTransactionsWhenCallingMethodsOnRelationshipIndexFacade() throws Exception
     {
-        assertFacadeMethodsThrowNotInTransaction( obtainEntity(), ALL_NODE_INDEX_FACADE_METHODS );
+        assertFacadeMethodsThrowNotInTransaction( obtainEntity(), ALL_RELATIONSHIP_INDEX_FACADE_METHODS );
     }
 
     @Override
-    protected Index<Node> obtainEntityInTransaction( GraphDatabaseService graphDatabaseService )
+    protected RelationshipIndex obtainEntityInTransaction( GraphDatabaseService graphDatabaseService )
     {
-        return graphDatabaseService.index().forNodes( "foo" );
+        return graphDatabaseService.index().forRelationships( "foo" );
     }
 }

@@ -21,28 +21,27 @@ package org.neo4j.graphdb;
 
 import org.junit.Test;
 
-import static org.neo4j.graphdb.RelationshipFacadeMethods.ALL_RELATIONSHIP_FACADE_METHODS;
-import static org.neo4j.graphdb.RelationshipType.withName;
+import org.neo4j.graphdb.index.IndexManager;
 
-public class MandatoryTransactionsForRelationshipTests extends AbstractMandatoryTransactionsTest<Relationship>
+import static org.neo4j.graphdb.IndexManagerFacadeMethods.ALL_INDEX_MANAGER_FACADE_METHODS;
+
+public class MandatoryTransactionsForIndexManagerFacadeTest extends AbstractMandatoryTransactionsTest<IndexManager>
 {
     @Test
-    public void shouldRequireTransactionsWhenCallingMethodsOnRelationshipFacade() throws Exception
+    public void shouldRequireTransactionsWhenCallingMethodsOnIndexManagerFacade() throws Exception
     {
-        assertFacadeMethodsThrowNotInTransaction( obtainEntity(), ALL_RELATIONSHIP_FACADE_METHODS );
+        assertFacadeMethodsThrowNotInTransaction( obtainEntity(), ALL_INDEX_MANAGER_FACADE_METHODS );
     }
 
     @Test
-    public void shouldTerminateWhenCallingMethodsOnRelationshipFacade() throws Exception
+    public void shouldTerminateWhenCallingMethodsOnIndexManagerFacade() throws Exception
     {
-        assertFacadeMethodsThrowAfterTerminate( ALL_RELATIONSHIP_FACADE_METHODS );
+        assertFacadeMethodsThrowAfterTerminate( ALL_INDEX_MANAGER_FACADE_METHODS );
     }
 
     @Override
-    protected Relationship obtainEntityInTransaction( GraphDatabaseService graphDatabaseService )
+    protected IndexManager obtainEntityInTransaction( GraphDatabaseService graphDatabaseService )
     {
-        return graphDatabaseService
-                .createNode()
-                .createRelationshipTo( graphDatabaseService.createNode(), withName( "foo" ) );
+        return graphDatabaseService.index();
     }
 }

@@ -21,26 +21,30 @@ package org.neo4j.graphdb;
 
 import org.junit.Test;
 
-import static org.neo4j.graphdb.NodeFacadeMethods.ALL_NODE_FACADE_METHODS;
+import org.neo4j.graphdb.schema.ConstraintCreator;
 
-public class MandatoryTransactionsForNodeTests extends AbstractMandatoryTransactionsTest<Node>
+import static org.neo4j.graphdb.ConstraintCreatorFacadeMethods.ALL_CONSTRAINT_CREATOR_FACADE_METHODS;
+
+public class MandatoryTransactionsForConstraintCreatorTest
+    extends AbstractMandatoryTransactionsTest<ConstraintCreator>
 {
     @Test
-    public void shouldRequireTransactionsWhenCallingMethodsOnNode() throws Exception
+    public void shouldRequireTransactionsWhenCallingMethodsConstraintCreators() throws Exception
     {
-        assertFacadeMethodsThrowNotInTransaction( obtainEntity(), ALL_NODE_FACADE_METHODS );
+        assertFacadeMethodsThrowNotInTransaction( obtainEntity(), ALL_CONSTRAINT_CREATOR_FACADE_METHODS );
     }
 
     @Test
-    public void shouldTerminateWhenCallingMethodsOnNode() throws Exception
+    public void shouldTerminateWhenCallingMethodsConstraintCreators() throws Exception
     {
-        assertFacadeMethodsThrowAfterTerminate( ALL_NODE_FACADE_METHODS );
+        assertFacadeMethodsThrowAfterTerminate( ALL_CONSTRAINT_CREATOR_FACADE_METHODS );
     }
 
     @Override
-    protected Node obtainEntityInTransaction( GraphDatabaseService graphDatabaseService )
+    protected ConstraintCreator obtainEntityInTransaction( GraphDatabaseService graphDatabaseService )
     {
-        return graphDatabaseService.createNode();
+        return graphDatabaseService
+               .schema()
+               .constraintFor( Label.label( "Label" ) );
     }
 }
-

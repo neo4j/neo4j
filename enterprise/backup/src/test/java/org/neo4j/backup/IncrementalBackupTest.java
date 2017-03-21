@@ -43,7 +43,7 @@ import org.neo4j.test.rule.TestDirectory;
 
 import static org.junit.Assert.assertEquals;
 
-public class IncrementalBackupTests
+public class IncrementalBackupTest
 {
     @Rule
     public TestName testName = new TestName();

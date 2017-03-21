@@ -53,7 +53,7 @@ import static org.neo4j.kernel.api.security.AuthenticationResult.TOO_MANY_ATTEMP
 import static org.neo4j.server.security.auth.SecurityTestUtils.authToken;
 import static org.neo4j.test.assertion.Assert.assertException;
 
-public class BasicAuthManagerTest extends InitialUserTests
+public class BasicAuthManagerTest extends InitialUserTest
 {
     private BasicAuthManager manager;
     private AuthenticationStrategy authStrategy = mock( AuthenticationStrategy.class );

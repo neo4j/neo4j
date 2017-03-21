@@ -29,7 +29,7 @@ import org.neo4j.test.rule.ImpermanentDatabaseRule;
 
 import static org.junit.Assert.fail;
 
-public class MandatoryTransactionsForIndexHitsFacadeTests
+public class MandatoryTransactionsForIndexHitsFacadeTest
 {
     @Rule
     public ImpermanentDatabaseRule dbRule = new ImpermanentDatabaseRule();

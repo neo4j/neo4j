@@ -21,27 +21,32 @@ package org.neo4j.graphdb;
 
 import org.junit.Test;
 
-import org.neo4j.graphdb.index.IndexManager;
+import org.neo4j.graphdb.schema.IndexDefinition;
 
-import static org.neo4j.graphdb.IndexManagerFacadeMethods.ALL_INDEX_MANAGER_FACADE_METHODS;
+import static org.neo4j.graphdb.IndexDefinitionFacadeMethods.ALL_INDEX_DEFINITION_FACADE_METHODS;
 
-public class MandatoryTransactionsForIndexManagerFacadeTests extends AbstractMandatoryTransactionsTest<IndexManager>
+public class MandatoryTransactionsForIndexDefinitionTest
+    extends AbstractMandatoryTransactionsTest<IndexDefinition>
 {
     @Test
-    public void shouldRequireTransactionsWhenCallingMethodsOnIndexManagerFacade() throws Exception
+    public void shouldRequireTransactionsWhenCallingMethodsOnIndexDefinitions() throws Exception
     {
-        assertFacadeMethodsThrowNotInTransaction( obtainEntity(), ALL_INDEX_MANAGER_FACADE_METHODS );
+        assertFacadeMethodsThrowNotInTransaction( obtainEntity(), ALL_INDEX_DEFINITION_FACADE_METHODS );
     }
 
     @Test
-    public void shouldTerminateWhenCallingMethodsOnIndexManagerFacade() throws Exception
+    public void shouldTerminateWhenCallingMethodsOnIndexDefinitions() throws Exception
     {
-        assertFacadeMethodsThrowAfterTerminate( ALL_INDEX_MANAGER_FACADE_METHODS );
+        assertFacadeMethodsThrowAfterTerminate( ALL_INDEX_DEFINITION_FACADE_METHODS );
     }
 
     @Override
-    protected IndexManager obtainEntityInTransaction( GraphDatabaseService graphDatabaseService )
+    protected IndexDefinition obtainEntityInTransaction( GraphDatabaseService graphDatabaseService )
     {
-        return graphDatabaseService.index();
+        return graphDatabaseService
+               .schema()
+               .indexFor( Label.label( "Label" ) )
+               .on( "property" )
+               .create();
     }
 }

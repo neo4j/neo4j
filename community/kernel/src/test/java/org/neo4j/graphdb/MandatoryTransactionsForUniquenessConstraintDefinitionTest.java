@@ -25,18 +25,17 @@ import org.neo4j.graphdb.schema.ConstraintDefinition;
 
 import static org.neo4j.graphdb.ConstraintDefinitionFacadeMethods.ALL_CONSTRAINT_DEFINITION_FACADE_METHODS;
 
-
-public class MandatoryTransactionsForConstraintDefinitionTests
+public class MandatoryTransactionsForUniquenessConstraintDefinitionTest
     extends AbstractMandatoryTransactionsTest<ConstraintDefinition>
 {
     @Test
-    public void shouldRequireTransactionsWhenCallingMethodsOnIndexDefinitions() throws Exception
+    public void shouldRequireTransactionsWhenCallingMethodsOnUniquenessConstraintDefinitions() throws Exception
     {
         assertFacadeMethodsThrowNotInTransaction( obtainEntity(), ALL_CONSTRAINT_DEFINITION_FACADE_METHODS );
     }
 
     @Test
-    public void shouldTerminateWhenCallingMethodsOnIndexDefinitions() throws Exception
+    public void shouldTerminateWhenCallingMethodsOnUniquenessConstraintDefinitions() throws Exception
     {
         assertFacadeMethodsThrowAfterTerminate( ALL_CONSTRAINT_DEFINITION_FACADE_METHODS );
     }
@@ -45,9 +44,9 @@ public class MandatoryTransactionsForConstraintDefinitionTests
     protected ConstraintDefinition obtainEntityInTransaction( GraphDatabaseService graphDatabaseService )
     {
         return graphDatabaseService
-               .schema()
-               .constraintFor( Label.label( "Label" ) )
-               .assertPropertyIsUnique( "property" )
-               .create();
+                .schema()
+                .constraintFor( Label.label( "Label" ) )
+                .assertPropertyIsUnique( "property" )
+                .create();
     }
 }

@@ -20,21 +20,27 @@
 package org.neo4j.graphdb;
 
 import org.junit.Test;
-import org.neo4j.graphdb.index.RelationshipIndex;
 
-import static org.neo4j.graphdb.RelationshipIndexFacadeMethods.ALL_RELATIONSHIP_INDEX_FACADE_METHODS;
+import static org.neo4j.graphdb.GraphDatabaseServiceFacadeMethods.ALL_NON_TRANSACTIONAL_GRAPH_DATABASE_METHODS;
 
-public class MandatoryTransactionsForRelationshipIndexFacadeTests extends AbstractMandatoryTransactionsTest<RelationshipIndex>
+public class MandatoryTransactionsForGraphDatabaseServiceTest extends
+        AbstractMandatoryTransactionsTest<GraphDatabaseService>
 {
     @Test
-    public void shouldRequireTransactionsWhenCallingMethodsOnRelationshipIndexFacade() throws Exception
+    public void shouldRequireTransactionsWhenCallingMethodsOnGraphDatabaseService() throws Exception
     {
-        assertFacadeMethodsThrowNotInTransaction( obtainEntity(), ALL_RELATIONSHIP_INDEX_FACADE_METHODS );
+        assertFacadeMethodsThrowNotInTransaction( obtainEntity(), ALL_NON_TRANSACTIONAL_GRAPH_DATABASE_METHODS );
+    }
+
+    @Test
+    public void shouldTerminateWhenCallingMethodsOnGraphDatabaseService() throws Exception
+    {
+        assertFacadeMethodsThrowAfterTerminate( ALL_NON_TRANSACTIONAL_GRAPH_DATABASE_METHODS );
     }
 
     @Override
-    protected RelationshipIndex obtainEntityInTransaction( GraphDatabaseService graphDatabaseService )
+    protected GraphDatabaseService obtainEntityInTransaction( GraphDatabaseService graphDatabaseService )
     {
-        return graphDatabaseService.index().forRelationships( "foo" );
+        return graphDatabaseService;
     }
 }

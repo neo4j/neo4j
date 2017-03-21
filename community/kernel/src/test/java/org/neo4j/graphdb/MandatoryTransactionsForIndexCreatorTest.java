@@ -21,26 +21,30 @@ package org.neo4j.graphdb;
 
 import org.junit.Test;
 
-import static org.neo4j.graphdb.GraphDatabaseServiceFacadeMethods.ALL_NON_TRANSACTIONAL_GRAPH_DATABASE_METHODS;
+import org.neo4j.graphdb.schema.IndexCreator;
 
-public class MandatoryTransactionsForGraphDatabaseServiceTests extends
-        AbstractMandatoryTransactionsTest<GraphDatabaseService>
+import static org.neo4j.graphdb.IndexCreatorFacadeMethods.ALL_INDEX_CREATOR_FACADE_METHODS;
+
+public class MandatoryTransactionsForIndexCreatorTest
+    extends AbstractMandatoryTransactionsTest<IndexCreator>
 {
     @Test
-    public void shouldRequireTransactionsWhenCallingMethodsOnGraphDatabaseService() throws Exception
+    public void shouldRequireTransactionsWhenCallingMethodsOnIndexCreators() throws Exception
     {
-        assertFacadeMethodsThrowNotInTransaction( obtainEntity(), ALL_NON_TRANSACTIONAL_GRAPH_DATABASE_METHODS );
+        assertFacadeMethodsThrowNotInTransaction( obtainEntity(), ALL_INDEX_CREATOR_FACADE_METHODS );
     }
 
     @Test
-    public void shouldTerminateWhenCallingMethodsOnGraphDatabaseService() throws Exception
+    public void shouldTerminateWhenCallingMethodsOnIndexCreators() throws Exception
     {
-        assertFacadeMethodsThrowAfterTerminate( ALL_NON_TRANSACTIONAL_GRAPH_DATABASE_METHODS );
+        assertFacadeMethodsThrowAfterTerminate( ALL_INDEX_CREATOR_FACADE_METHODS );
     }
 
     @Override
-    protected GraphDatabaseService obtainEntityInTransaction( GraphDatabaseService graphDatabaseService )
+    protected IndexCreator obtainEntityInTransaction( GraphDatabaseService graphDatabaseService )
     {
-        return graphDatabaseService;
+        return graphDatabaseService
+               .schema()
+               .indexFor( Label.label( "Label" ) );
     }
 }

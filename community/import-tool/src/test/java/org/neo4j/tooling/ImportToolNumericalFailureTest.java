@@ -45,7 +45,7 @@ import static org.neo4j.tooling.ImportToolTest.importTool;
  * them as such.
  */
 @RunWith( Parameterized.class )
-public class ImportToolNumericalFailureTests
+public class ImportToolNumericalFailureTest
 {
     @Parameters( name = "{index}: {0}, \"{1}\", \"{2}\"" )
     public static List<Object[]> types()

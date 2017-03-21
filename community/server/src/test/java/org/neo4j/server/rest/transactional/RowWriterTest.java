@@ -21,7 +21,6 @@ package org.neo4j.server.rest.transactional;
 
 import java.io.ByteArrayOutputStream;
 import java.io.IOException;
-import java.net.URI;
 
 import org.codehaus.jackson.JsonFactory;
 import org.codehaus.jackson.JsonGenerator;
@@ -36,19 +35,18 @@ import static org.hamcrest.CoreMatchers.is;
 import static org.neo4j.helpers.collection.MapUtil.map;
 import static org.neo4j.server.rest.domain.JsonHelper.jsonNode;
 
-public class RestRepresentationWriterTests
+public class RowWriterTest
 {
     @Test
     public void shouldWriteNestedMaps() throws Exception
     {
         ByteArrayOutputStream out = new ByteArrayOutputStream();
-        JsonGenerator json = new JsonFactory( new Neo4jJsonCodec() ).createJsonGenerator( out );
+        JsonGenerator json = new JsonFactory(new Neo4jJsonCodec()).createJsonGenerator( out );
 
-        JsonNode rest = serialize( out, json, new RestRepresentationWriter( URI.create( "localhost" ) ) );
+        JsonNode row = serialize( out, json, new RowWriter(  ) );
 
-        MatcherAssert.assertThat( rest.size(), equalTo( 1 ) );
-
-        JsonNode firstCell = rest.get( 0 );
+        MatcherAssert.assertThat( row.size(), equalTo( 1 ) );
+        JsonNode firstCell = row.get( 0 );
         MatcherAssert.assertThat( firstCell.get( "one" ).get( "two" ).size(), is( 2 ) );
         MatcherAssert.assertThat( firstCell.get( "one" ).get( "two" ).get( 0 ).asBoolean(), is( true ) );
         MatcherAssert.assertThat( firstCell.get( "one" ).get( "two" ).get( 1 ).get( "three" ).asInt(), is( 42 ) );
@@ -66,6 +64,6 @@ public class RestRepresentationWriterTests
         json.close();
 
         String jsonAsString = out.toString();
-        return jsonNode( jsonAsString ).get( "rest" );
+        return jsonNode( jsonAsString ).get( "row" );
     }
 }

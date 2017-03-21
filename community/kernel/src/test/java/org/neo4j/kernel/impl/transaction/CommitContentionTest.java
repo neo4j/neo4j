@@ -42,7 +42,7 @@ import org.neo4j.test.rule.TestDirectory;
 
 import static java.util.concurrent.TimeUnit.SECONDS;
 
-public class CommitContentionTests
+public class CommitContentionTest
 {
     @Rule
     public final TestDirectory storeLocation = TestDirectory.testDirectory();

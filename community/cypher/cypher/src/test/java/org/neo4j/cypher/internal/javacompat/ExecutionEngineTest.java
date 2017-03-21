@@ -47,7 +47,7 @@ import org.neo4j.test.rule.ImpermanentDatabaseRule;
 import static org.hamcrest.core.Is.is;
 import static org.junit.Assert.assertThat;
 
-public class ExecutionEngineTests
+public class ExecutionEngineTest
 {
     private static final Map<String,Object> NO_PARAMS = Collections.emptyMap();
 

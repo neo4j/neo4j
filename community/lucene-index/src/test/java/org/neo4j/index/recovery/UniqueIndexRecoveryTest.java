@@ -64,7 +64,7 @@ import static org.neo4j.graphdb.Label.label;
  * Arbitrary recovery scenarios boiled down to as small tests as possible
  */
 @RunWith(Parameterized.class)
-public class UniqueIndexRecoveryTests
+public class UniqueIndexRecoveryTest
 {
     @Rule
     public final TestDirectory storeDir = TestDirectory.testDirectory();

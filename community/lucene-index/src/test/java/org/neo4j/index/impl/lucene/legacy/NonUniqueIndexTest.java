@@ -60,7 +60,7 @@ import static org.hamcrest.CoreMatchers.equalTo;
 import static org.junit.Assert.assertThat;
 import static org.neo4j.graphdb.Label.label;
 
-public class NonUniqueIndexTests
+public class NonUniqueIndexTest
 {
     @Rule
     public final TestDirectory directory = TestDirectory.testDirectory( getClass() );

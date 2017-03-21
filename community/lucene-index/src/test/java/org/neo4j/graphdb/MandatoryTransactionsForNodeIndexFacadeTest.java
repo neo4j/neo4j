@@ -20,28 +20,21 @@
 package org.neo4j.graphdb;
 
 import org.junit.Test;
+import org.neo4j.graphdb.index.Index;
 
-import org.neo4j.graphdb.schema.Schema;
+import static org.neo4j.graphdb.NodeIndexFacadeMethods.ALL_NODE_INDEX_FACADE_METHODS;
 
-import static org.neo4j.graphdb.SchemaFacadeMethods.ALL_SCHEMA_FACADE_METHODS;
-
-public class MandatoryTransactionsForSchemaTests extends AbstractMandatoryTransactionsTest<Schema>
+public class MandatoryTransactionsForNodeIndexFacadeTest extends AbstractMandatoryTransactionsTest<Index<Node>>
 {
     @Test
-    public void shouldRequireTransactionsWhenCallingMethodsOnSchema() throws Exception
+    public void shouldRequireTransactionsWhenCallingMethodsOnNodeIndexFacade() throws Exception
     {
-        assertFacadeMethodsThrowNotInTransaction( obtainEntity(), ALL_SCHEMA_FACADE_METHODS );
-    }
-
-    @Test
-    public void shouldTerminateWhenCallingMethodsOnSchema() throws Exception
-    {
-        assertFacadeMethodsThrowAfterTerminate( ALL_SCHEMA_FACADE_METHODS );
+        assertFacadeMethodsThrowNotInTransaction( obtainEntity(), ALL_NODE_INDEX_FACADE_METHODS );
     }
 
     @Override
-    protected Schema obtainEntityInTransaction( GraphDatabaseService graphDatabaseService )
+    protected Index<Node> obtainEntityInTransaction( GraphDatabaseService graphDatabaseService )
     {
-        return graphDatabaseService.schema();
+        return graphDatabaseService.index().forNodes( "foo" );
     }
 }
