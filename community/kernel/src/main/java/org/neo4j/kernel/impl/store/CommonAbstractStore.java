@@ -1141,7 +1141,7 @@ public abstract class CommonAbstractStore<RECORD extends AbstractBaseRecord,HEAD
             long id = firstId;
             while ( !NULL_REFERENCE.is( id )  )
             {
-                readRecord( id, record, CHECK, cursor );
+                readRecord( id, record, mode, cursor );
                 if ( record.inUse() )
                 {
                     records.add( (RECORD) record.clone() );
