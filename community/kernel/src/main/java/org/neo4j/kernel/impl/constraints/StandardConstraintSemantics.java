@@ -29,6 +29,7 @@ import org.neo4j.kernel.api.schema_new.RelationTypeSchemaDescriptor;
 import org.neo4j.kernel.api.schema_new.SchemaDescriptor;
 import org.neo4j.kernel.api.schema_new.constaints.ConstraintDescriptor;
 import org.neo4j.kernel.api.schema_new.constaints.ConstraintDescriptorFactory;
+import org.neo4j.kernel.api.schema_new.constaints.NodeKeyConstraintDescriptor;
 import org.neo4j.kernel.api.schema_new.constaints.UniquenessConstraintDescriptor;
 import org.neo4j.kernel.impl.store.record.ConstraintRule;
 import org.neo4j.storageengine.api.NodeItem;
@@ -37,11 +38,10 @@ import org.neo4j.storageengine.api.StoreReadLayer;
 import org.neo4j.storageengine.api.txstate.ReadableTransactionState;
 import org.neo4j.storageengine.api.txstate.TxStateVisitor;
 
-import static org.neo4j.kernel.api.schema_new.constaints.ConstraintDescriptor.Type.UNIQUE;
-
 public class StandardConstraintSemantics implements ConstraintSemantics
 {
-    public static final String ERROR_MESSAGE = "Property existence constraint requires Neo4j Enterprise Edition";
+    public static final String ERROR_MESSAGE_EXISTS = "Property existence constraint requires Neo4j Enterprise Edition";
+    public static final String ERROR_MESSAGE_NODE_KEY = "Node Key constraint requires Neo4j Enterprise Edition";
 
     @Override
     public void validateNodePropertyExistenceConstraint( Iterator<Cursor<NodeItem>> allNodes,
@@ -60,28 +60,48 @@ public class StandardConstraintSemantics implements ConstraintSemantics
     }
 
     @Override
+    public void validateNodeKeyConstraint( Iterator<Cursor<NodeItem>> allNodes,
+            LabelSchemaDescriptor descriptor, BiPredicate<NodeItem,Integer> hasProperty )
+            throws CreateConstraintFailureException
+    {
+        throw nodeKeyConstraintsNotAllowed( descriptor );
+    }
+
+    @Override
     public ConstraintDescriptor readConstraint( ConstraintRule rule )
     {
         ConstraintDescriptor desc = rule.getConstraintDescriptor();
-        if ( desc.type() == UNIQUE )
+        switch ( desc.type() )
         {
+        case EXISTS:
+            return readNonStandardConstraint( rule, ERROR_MESSAGE_EXISTS );
+        case UNIQUE_EXISTS:
+            return readNonStandardConstraint( rule, ERROR_MESSAGE_NODE_KEY );
+        default:
             return desc;
         }
-        return readNonStandardConstraint( rule );
     }
 
-    protected ConstraintDescriptor readNonStandardConstraint( ConstraintRule rule )
+    protected ConstraintDescriptor readNonStandardConstraint( ConstraintRule rule, String errorMessage )
     {
         // When opening a store in Community Edition that contains a Property Existence Constraint
-        throw new IllegalStateException( ERROR_MESSAGE );
+        throw new IllegalStateException( errorMessage );
     }
 
     private CreateConstraintFailureException propertyExistenceConstraintsNotAllowed( SchemaDescriptor descriptor )
     {
         // When creating a Property Existence Constraint in Community Edition
         return new CreateConstraintFailureException(
-                    ConstraintDescriptorFactory.existsForSchema( descriptor ),
-                    new IllegalStateException( ERROR_MESSAGE ) );
+                ConstraintDescriptorFactory.existsForSchema( descriptor ),
+                new IllegalStateException( ERROR_MESSAGE_EXISTS ) );
+    }
+
+    private CreateConstraintFailureException nodeKeyConstraintsNotAllowed( SchemaDescriptor descriptor )
+    {
+        // When creating a Node Key Constraint in Community Edition
+        return new CreateConstraintFailureException(
+                ConstraintDescriptorFactory.existsForSchema( descriptor ),
+                new IllegalStateException( ERROR_MESSAGE_NODE_KEY ) );
     }
 
     @Override
@@ -89,6 +109,13 @@ public class StandardConstraintSemantics implements ConstraintSemantics
             long ruleId, UniquenessConstraintDescriptor descriptor, long indexId )
     {
         return ConstraintRule.constraintRule( ruleId, descriptor, indexId );
+    }
+
+    @Override
+    public ConstraintRule createNodeKeyConstraintRule(
+            long ruleId, NodeKeyConstraintDescriptor descriptor, long indexId ) throws CreateConstraintFailureException
+    {
+        throw nodeKeyConstraintsNotAllowed( descriptor.schema() );
     }
 
     @Override

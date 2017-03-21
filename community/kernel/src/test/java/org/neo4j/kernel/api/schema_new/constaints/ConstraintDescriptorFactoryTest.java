@@ -58,12 +58,26 @@ public class ConstraintDescriptorFactoryTest
     }
 
     @Test
+    public void shouldCreateNodeKeyConstraintDescriptors()
+    {
+        ConstraintDescriptor desc;
+
+        desc = ConstraintDescriptorFactory.nodeKeyForLabel( LABEL_ID, 1 );
+        assertThat( desc.type(), equalTo( ConstraintDescriptor.Type.UNIQUE_EXISTS ) );
+        assertThat( desc.schema(), equalTo( SchemaDescriptorFactory.forLabel( LABEL_ID, 1 ) ) );
+    }
+
+    @Test
     public void shouldCreateConstraintDescriptorsFromSchema()
     {
         ConstraintDescriptor desc;
 
         desc = ConstraintDescriptorFactory.uniqueForSchema( SchemaDescriptorFactory.forLabel( LABEL_ID, 1 ) );
         assertThat( desc.type(), equalTo( ConstraintDescriptor.Type.UNIQUE ) );
+        assertThat( desc.schema(), equalTo( SchemaDescriptorFactory.forLabel( LABEL_ID, 1 ) ) );
+
+        desc = ConstraintDescriptorFactory.nodeKeyForSchema( SchemaDescriptorFactory.forLabel( LABEL_ID, 1 ) );
+        assertThat( desc.type(), equalTo( ConstraintDescriptor.Type.UNIQUE_EXISTS ) );
         assertThat( desc.schema(), equalTo( SchemaDescriptorFactory.forLabel( LABEL_ID, 1 ) ) );
 
         desc = ConstraintDescriptorFactory.existsForSchema( SchemaDescriptorFactory.forRelType( REL_TYPE_ID, 1 ) );

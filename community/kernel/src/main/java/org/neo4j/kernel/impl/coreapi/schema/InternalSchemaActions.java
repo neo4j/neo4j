@@ -42,7 +42,11 @@ public interface InternalSchemaActions
 
     ConstraintDefinition createPropertyUniquenessConstraint( IndexDefinition indexDefinition )
             throws IllegalTokenNameException, TooManyLabelsException, CreateConstraintFailureException,
-                   AlreadyConstrainedException, AlreadyIndexedException;
+            AlreadyConstrainedException, AlreadyIndexedException;
+
+    ConstraintDefinition createNodeKeyConstraint( IndexDefinition indexDefinition )
+            throws IllegalTokenNameException, TooManyLabelsException, CreateConstraintFailureException,
+            AlreadyConstrainedException, AlreadyIndexedException;
 
     ConstraintDefinition createPropertyExistenceConstraint( Label label, String... propertyKey )
             throws IllegalTokenNameException, TooManyLabelsException, CreateConstraintFailureException,
@@ -52,6 +56,8 @@ public interface InternalSchemaActions
             throws CreateConstraintFailureException, AlreadyConstrainedException;
 
     void dropPropertyUniquenessConstraint( Label label, String[] properties );
+
+    void dropNodeKeyConstraint( Label label, String[] properties );
 
     void dropNodePropertyExistenceConstraint( Label label, String[] properties );
 

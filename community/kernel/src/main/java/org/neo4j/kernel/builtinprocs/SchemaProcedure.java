@@ -77,10 +77,10 @@ public class SchemaProcedure
                 while ( labelsInDatabase.hasNext() )
                 {
                     Label label = labelsInDatabase.next();
+                    int labelId = readOperations.labelGetForName( label.name() );
                     Map<String,Object> properties = new HashMap<>();
 
-                    Iterator<NewIndexDescriptor> indexDescriptorIterator =
-                            readOperations.indexesGetForLabel( readOperations.labelGetForName( label.name() ) );
+                    Iterator<NewIndexDescriptor> indexDescriptorIterator = readOperations.indexesGetForLabel( labelId );
                     ArrayList<String> indexes = new ArrayList<>();
                     while ( indexDescriptorIterator.hasNext() )
                     {
@@ -92,7 +92,7 @@ public class SchemaProcedure
                     properties.put( "indexes", indexes );
 
                     Iterator<ConstraintDescriptor> nodePropertyConstraintIterator =
-                            readOperations.constraintsGetForLabel( readOperations.labelGetForName( label.name() ) );
+                            readOperations.constraintsGetForLabel( labelId );
                     ArrayList<String> constraints = new ArrayList<>();
                     while ( nodePropertyConstraintIterator.hasNext() )
                     {

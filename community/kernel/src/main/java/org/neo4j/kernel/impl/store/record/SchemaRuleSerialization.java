@@ -31,6 +31,7 @@ import org.neo4j.kernel.api.schema_new.SchemaDescriptorFactory;
 import org.neo4j.kernel.api.schema_new.SchemaProcessor;
 import org.neo4j.kernel.api.schema_new.constaints.ConstraintDescriptor;
 import org.neo4j.kernel.api.schema_new.constaints.ConstraintDescriptorFactory;
+import org.neo4j.kernel.api.schema_new.constaints.NodeKeyConstraintDescriptor;
 import org.neo4j.kernel.api.schema_new.constaints.UniquenessConstraintDescriptor;
 import org.neo4j.kernel.api.schema_new.index.NewIndexDescriptor;
 import org.neo4j.kernel.api.schema_new.index.NewIndexDescriptorFactory;
@@ -50,7 +51,7 @@ public class SchemaRuleSerialization
     private static final byte GENERAL_INDEX = 31, UNIQUE_INDEX = 32;
 
     // Constraint type
-    private static final byte EXISTS_CONSTRAINT = 61, UNIQUE_CONSTRAINT = 62;
+    private static final byte EXISTS_CONSTRAINT = 61, UNIQUE_CONSTRAINT = 62, UNIQUE_EXISTS_CONSTRAINT = 63;
 
     // Schema type
     private static final byte SIMPLE_LABEL = 91, SIMPLE_REL_TYPE = 92;
@@ -154,6 +155,11 @@ public class SchemaRuleSerialization
             target.putLong( constraintRule.getOwnedIndex() );
             break;
 
+        case UNIQUE_EXISTS:
+            target.put( UNIQUE_EXISTS_CONSTRAINT );
+            target.putLong( constraintRule.getOwnedIndex() );
+            break;
+
         default:
             throw new UnsupportedOperationException( format( "Got unknown index descriptor type '%s'.",
                     constraintDescriptor.type() ) );
@@ -202,7 +208,7 @@ public class SchemaRuleSerialization
 
         length += 1; // constraint type
         ConstraintDescriptor constraintDescriptor = constraintRule.getConstraintDescriptor();
-        if ( constraintDescriptor.type() == ConstraintDescriptor.Type.UNIQUE )
+        if ( constraintDescriptor.enforcesUniqueness() )
         {
             length += 8; // owned index id
         }
@@ -275,11 +281,18 @@ public class SchemaRuleSerialization
             return ConstraintRule.constraintRule( id, ConstraintDescriptorFactory.existsForSchema( schema ), name );
 
         case UNIQUE_CONSTRAINT:
-            long ownedIndex = source.getLong();
+            long ownedUniqueIndex = source.getLong();
             schema = readSchema( source );
             UniquenessConstraintDescriptor descriptor = ConstraintDescriptorFactory.uniqueForSchema( schema );
             name = readRuleName( id, ConstraintRule.class, source );
-            return ConstraintRule.constraintRule( id, descriptor, ownedIndex, name );
+            return ConstraintRule.constraintRule( id, descriptor, ownedUniqueIndex, name );
+
+        case UNIQUE_EXISTS_CONSTRAINT:
+            long ownedNodeKeyIndex = source.getLong();
+            schema = readSchema( source );
+            NodeKeyConstraintDescriptor nodeKeyConstraintDescriptor = ConstraintDescriptorFactory.nodeKeyForSchema( schema );
+            name = readRuleName( id, ConstraintRule.class, source );
+            return ConstraintRule.constraintRule( id, nodeKeyConstraintDescriptor, ownedNodeKeyIndex, name );
 
         default:
             throw new MalformedSchemaRuleException( format( "Got unknown constraint rule type '%d'.", constraintRuleType ) );

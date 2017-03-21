@@ -69,7 +69,7 @@ public class NodeSchemaMatcherTest
     NewIndexDescriptor indexWithMissingLabel = forLabel( nonExistentLabelId, propId1, propId2 );
     NewIndexDescriptor indexOnSpecialProperty = forLabel( labelId1, propId1, specialPropId );
 
-    private NodeSchemaMatcher<NewIndexDescriptor> nodeSchemaMatcher;
+    private NodeSchemaMatcher nodeSchemaMatcher;
 
     @Before
     public void setup()
@@ -91,7 +91,7 @@ public class NodeSchemaMatcherTest
         when( readOps.nodeGetProperty( state, node, propId2 ) ).thenReturn( "hi2" );
         when( readOps.nodeGetProperty( state, node, unIndexedPropId ) ).thenReturn( "hi3" );
 
-        nodeSchemaMatcher = new NodeSchemaMatcher<>( readOps );
+        nodeSchemaMatcher = new NodeSchemaMatcher( readOps );
     }
 
     @Test

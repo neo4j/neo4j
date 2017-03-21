@@ -21,7 +21,7 @@ package org.neo4j.kernel.impl.store.record;
 
 import org.neo4j.kernel.api.schema_new.SchemaDescriptor;
 import org.neo4j.kernel.api.schema_new.constaints.ConstraintDescriptor;
-import org.neo4j.kernel.api.schema_new.constaints.UniquenessConstraintDescriptor;
+import org.neo4j.kernel.api.schema_new.constaints.IndexBackedConstraintDescriptor;
 import org.neo4j.storageengine.api.schema.SchemaRule;
 
 import static org.neo4j.kernel.api.schema_new.SchemaUtil.idTokenNameLookup;
@@ -38,7 +38,7 @@ public class ConstraintRule extends SchemaRule implements ConstraintDescriptor.S
     }
 
     public static ConstraintRule constraintRule(
-            long id, UniquenessConstraintDescriptor descriptor, long ownedIndexRule )
+            long id, IndexBackedConstraintDescriptor descriptor, long ownedIndexRule )
     {
         return new ConstraintRule( id, descriptor, ownedIndexRule );
     }
@@ -50,7 +50,7 @@ public class ConstraintRule extends SchemaRule implements ConstraintDescriptor.S
     }
 
     public static ConstraintRule constraintRule(
-            long id, UniquenessConstraintDescriptor descriptor, long ownedIndexRule, String name )
+            long id, IndexBackedConstraintDescriptor descriptor, long ownedIndexRule, String name )
     {
         return new ConstraintRule( id, descriptor, ownedIndexRule, name );
     }

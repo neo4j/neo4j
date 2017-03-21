@@ -22,12 +22,14 @@ package org.neo4j.kernel.impl.store.record;
 import org.junit.Test;
 
 import org.neo4j.kernel.api.schema_new.constaints.ConstraintDescriptor;
+import org.neo4j.kernel.api.schema_new.constaints.NodeKeyConstraintDescriptor;
 import org.neo4j.kernel.api.schema_new.constaints.UniquenessConstraintDescriptor;
 
 import static org.hamcrest.Matchers.equalTo;
 import static org.junit.Assert.assertThat;
 import static org.neo4j.kernel.api.schema_new.constaints.ConstraintDescriptorFactory.existsForLabel;
 import static org.neo4j.kernel.api.schema_new.constaints.ConstraintDescriptorFactory.existsForRelType;
+import static org.neo4j.kernel.api.schema_new.constaints.ConstraintDescriptorFactory.nodeKeyForLabel;
 import static org.neo4j.kernel.api.schema_new.constaints.ConstraintDescriptorFactory.uniqueForLabel;
 import static org.neo4j.test.assertion.Assert.assertException;
 
@@ -60,6 +62,32 @@ public class ConstraintRuleTest extends SchemaRuleTestBase
     }
 
     @Test
+    public void shouldCreateNodeKeyConstraint() throws Exception
+    {
+        // GIVEN
+        ConstraintDescriptor descriptor = nodeKeyForLabel( LABEL_ID, PROPERTY_ID_1 );
+        ConstraintRule constraintRule = ConstraintRule.constraintRule( RULE_ID, descriptor );
+
+        // THEN
+        assertThat( constraintRule.getId(), equalTo( RULE_ID ) );
+        assertThat( constraintRule.schema(), equalTo( descriptor.schema() ) );
+        assertThat( constraintRule.getConstraintDescriptor(), equalTo( descriptor ) );
+        assertException( constraintRule::getOwnedIndex, IllegalStateException.class, "" );
+    }
+
+    @Test
+    public void shouldCreateNodeKeyConstraintWithOwnedIndex() throws Exception
+    {
+        // GIVEN
+        NodeKeyConstraintDescriptor descriptor = nodeKeyForLabel( LABEL_ID, PROPERTY_ID_1 );
+        ConstraintRule constraintRule = ConstraintRule.constraintRule( RULE_ID, descriptor, RULE_ID_2 );
+
+        // THEN
+        assertThat( constraintRule.getConstraintDescriptor(), equalTo( descriptor ) );
+        assertThat( constraintRule.getOwnedIndex(), equalTo( RULE_ID_2 ) );
+    }
+
+    @Test
     public void shouldCreateExistenceConstraint() throws Exception
     {
         // GIVEN
@@ -78,9 +106,11 @@ public class ConstraintRuleTest extends SchemaRuleTestBase
     {
         assertEqualityByDescriptor( existsForLabel( LABEL_ID, PROPERTY_ID_1 ) );
         assertEqualityByDescriptor( uniqueForLabel( LABEL_ID, PROPERTY_ID_1 ) );
+        assertEqualityByDescriptor( nodeKeyForLabel( LABEL_ID, PROPERTY_ID_1 ) );
         assertEqualityByDescriptor( existsForRelType( REL_TYPE_ID, PROPERTY_ID_1 ) );
         assertEqualityByDescriptor( existsForLabel( LABEL_ID, PROPERTY_ID_1, PROPERTY_ID_2 ) );
         assertEqualityByDescriptor( uniqueForLabel( LABEL_ID, PROPERTY_ID_1, PROPERTY_ID_2 ) );
+        assertEqualityByDescriptor( nodeKeyForLabel( LABEL_ID, PROPERTY_ID_1, PROPERTY_ID_2 ) );
     }
 
     private void assertEqualityByDescriptor( UniquenessConstraintDescriptor descriptor )

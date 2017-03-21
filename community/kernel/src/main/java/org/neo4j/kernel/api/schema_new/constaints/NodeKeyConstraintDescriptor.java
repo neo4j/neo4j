@@ -17,22 +17,20 @@
  * You should have received a copy of the GNU General Public License
  * along with this program.  If not, see <http://www.gnu.org/licenses/>.
  */
-package org.neo4j.kernel.api.exceptions;
+package org.neo4j.kernel.api.schema_new.constaints;
 
+import org.neo4j.kernel.api.schema_new.LabelSchemaDescriptor;
 
-/**
- * This exception is thrown when committing a transaction contains
- * violations to any constraints defined for the database.
- */
-public class ConstraintViolationTransactionFailureException extends TransactionFailureException
+public class NodeKeyConstraintDescriptor extends IndexBackedConstraintDescriptor
 {
-    public ConstraintViolationTransactionFailureException( String msg, KernelException cause )
+    NodeKeyConstraintDescriptor( LabelSchemaDescriptor schema )
     {
-        super( Status.Schema.ConstraintValidationFailed, cause, msg );
+        super( Type.UNIQUE_EXISTS, schema );
     }
 
-    public ConstraintViolationTransactionFailureException( String msg )
+    @Override
+    protected String constraintTypeText()
     {
-        this( msg, null );
+        return "NODE KEY";
     }
 }

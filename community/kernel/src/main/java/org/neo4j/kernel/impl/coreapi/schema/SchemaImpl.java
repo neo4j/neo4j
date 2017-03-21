@@ -64,6 +64,7 @@ import org.neo4j.kernel.api.schema_new.SchemaDescriptorFactory;
 import org.neo4j.kernel.api.schema_new.constaints.ConstraintDescriptor;
 import org.neo4j.kernel.api.schema_new.constaints.ConstraintDescriptorFactory;
 import org.neo4j.kernel.api.schema_new.constaints.NodeExistenceConstraintDescriptor;
+import org.neo4j.kernel.api.schema_new.constaints.NodeKeyConstraintDescriptor;
 import org.neo4j.kernel.api.schema_new.constaints.RelExistenceConstraintDescriptor;
 import org.neo4j.kernel.api.schema_new.constaints.UniquenessConstraintDescriptor;
 import org.neo4j.kernel.api.schema_new.index.NewIndexDescriptor;
@@ -373,6 +374,7 @@ public class SchemaImpl implements Schema
         // internal storage engine API.
         StatementTokenNameLookup lookup = new StatementTokenNameLookup( readOperations );
         if ( constraint instanceof NodeExistenceConstraintDescriptor ||
+             constraint instanceof NodeKeyConstraintDescriptor ||
              constraint instanceof UniquenessConstraintDescriptor )
         {
             LabelSchemaDescriptor schemaDescriptor = (LabelSchemaDescriptor) constraint.schema();
@@ -386,6 +388,11 @@ public class SchemaImpl implements Schema
             else if ( constraint instanceof UniquenessConstraintDescriptor )
             {
                 return new UniquenessConstraintDefinition( actions, new IndexDefinitionImpl( actions, label,
+                        propertyKeys, true ) );
+            }
+            else if ( constraint instanceof NodeKeyConstraintDescriptor )
+            {
+                return new NodeKeyConstraintDefinition( actions, new IndexDefinitionImpl( actions, label,
                         propertyKeys, true ) );
             }
         }
@@ -506,6 +513,42 @@ public class SchemaImpl implements Schema
         }
 
         @Override
+        public ConstraintDefinition createNodeKeyConstraint( IndexDefinition indexDefinition )
+        {
+            try ( Statement statement = ctxSupplier.get() )
+            {
+                try
+                {
+                    int labelId = statement.tokenWriteOperations().labelGetOrCreateForName(
+                            indexDefinition.getLabel().name() );
+                    int[] propertyKeyIds = getOrCreatePropertyKeyIds(
+                            statement.tokenWriteOperations(), indexDefinition );
+                    statement.schemaWriteOperations().nodeKeyConstraintCreate(
+                            SchemaDescriptorFactory.forLabel( labelId, propertyKeyIds ) );
+                    return new NodeKeyConstraintDefinition( this, indexDefinition );
+                }
+                catch ( AlreadyConstrainedException | CreateConstraintFailureException | AlreadyIndexedException |
+                        RepeatedPropertyInCompositeSchemaException e )
+                {
+                    throw new ConstraintViolationException(
+                            e.getUserMessage( new StatementTokenNameLookup( statement.readOperations() ) ), e );
+                }
+                catch ( IllegalTokenNameException e )
+                {
+                    throw new IllegalArgumentException( e );
+                }
+                catch ( TooManyLabelsException e )
+                {
+                    throw new IllegalStateException( e );
+                }
+                catch ( InvalidTransactionTypeKernelException e )
+                {
+                    throw new InvalidTransactionTypeException( e.getMessage(), e );
+                }
+            }
+        }
+
+        @Override
         public ConstraintDefinition createPropertyExistenceConstraint( Label label, String... propertyKeys )
         {
             try ( Statement statement = ctxSupplier.get() )
@@ -582,6 +625,30 @@ public class SchemaImpl implements Schema
                     int[] propertyKeyIds = PropertyNameUtils.getPropertyIds( statement.readOperations(), properties );
                     statement.schemaWriteOperations().constraintDrop(
                             ConstraintDescriptorFactory.uniqueForLabel( labelId, propertyKeyIds ) );
+                }
+                catch ( DropConstraintFailureException e )
+                {
+                    throw new ConstraintViolationException(
+                            e.getUserMessage( new StatementTokenNameLookup( statement.readOperations() ) ), e );
+                }
+                catch ( InvalidTransactionTypeKernelException e )
+                {
+                    throw new ConstraintViolationException( e.getMessage(), e );
+                }
+            }
+        }
+
+        @Override
+        public void dropNodeKeyConstraint( Label label, String[] properties )
+        {
+            try ( Statement statement = ctxSupplier.get() )
+            {
+                try
+                {
+                    int labelId = statement.readOperations().labelGetForName( label.name() );
+                    int[] propertyKeyIds = PropertyNameUtils.getPropertyIds( statement.readOperations(), properties );
+                    statement.schemaWriteOperations().constraintDrop(
+                            ConstraintDescriptorFactory.nodeKeyForLabel( labelId, propertyKeyIds ) );
                 }
                 catch ( DropConstraintFailureException e )
                 {

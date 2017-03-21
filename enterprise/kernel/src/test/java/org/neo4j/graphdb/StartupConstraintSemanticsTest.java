@@ -41,11 +41,59 @@ public class StartupConstraintSemanticsTest
     @Test
     public void shouldNotAllowOpeningADatabaseWithPECInCommunityEdition() throws Exception
     {
+        assertThatCommunityCannotStartOnEnterpriseOnlyConstraint( "CREATE CONSTRAINT ON (n:Draconian) ASSERT exists(n.required)",
+                StandardConstraintSemantics.ERROR_MESSAGE_EXISTS );
+    }
+
+    @Test
+    public void shouldNotAllowOpeningADatabaseWithNodeKeyInCommunityEdition() throws Exception
+    {
+        assertThatCommunityCannotStartOnEnterpriseOnlyConstraint( "CREATE CONSTRAINT ON (n:Draconian) ASSERT (n.required) IS NODE KEY",
+                StandardConstraintSemantics.ERROR_MESSAGE_NODE_KEY );
+    }
+
+    @Test
+    public void shouldAllowOpeningADatabaseWithUniqueConstraintInCommunityEdition() throws Exception
+    {
+        assertThatCommunityCanStartOnNormalConstraint( "CREATE CONSTRAINT ON (n:Draconian) ASSERT (n.required) IS UNIQUE" );
+    }
+
+    private void assertThatCommunityCanStartOnNormalConstraint( String constraintCreationQuery )
+    {
         // given
         GraphDatabaseService graphDb = new EnterpriseGraphDatabaseFactory().newEmbeddedDatabase( dir.graphDbDir() );
         try
         {
-            graphDb.execute( "CREATE CONSTRAINT ON (n:Draconian) ASSERT exists(n.required)" );
+            graphDb.execute( constraintCreationQuery );
+        }
+        finally
+        {
+            graphDb.shutdown();
+        }
+        graphDb = null;
+
+        // when
+        try
+        {
+            graphDb = new TestGraphDatabaseFactory().newEmbeddedDatabase( dir.graphDbDir() );
+            // Should not get exception
+        }
+        finally
+        {
+            if ( graphDb != null )
+            {
+                graphDb.shutdown();
+            }
+        }
+    }
+
+    private void assertThatCommunityCannotStartOnEnterpriseOnlyConstraint( String constraintCreationQuery, String errorMessage )
+    {
+        // given
+        GraphDatabaseService graphDb = new EnterpriseGraphDatabaseFactory().newEmbeddedDatabase( dir.graphDbDir() );
+        try
+        {
+            graphDb.execute( constraintCreationQuery );
         }
         finally
         {
@@ -64,7 +112,7 @@ public class StartupConstraintSemanticsTest
         {
             Throwable error = Exceptions.rootCause( e );
             assertThat( error, instanceOf( IllegalStateException.class ) );
-            assertEquals( StandardConstraintSemantics.ERROR_MESSAGE, error.getMessage() );
+            assertEquals( errorMessage, error.getMessage() );
         }
         finally
         {

@@ -21,6 +21,7 @@ package org.neo4j.kernel.api.exceptions.schema;
 
 import org.neo4j.kernel.api.TokenNameLookup;
 import org.neo4j.kernel.api.schema_new.LabelSchemaDescriptor;
+import org.neo4j.kernel.api.schema_new.SchemaUtil;
 import org.neo4j.kernel.api.schema_new.constaints.ConstraintDescriptorFactory;
 
 import static java.lang.String.format;
@@ -42,9 +43,10 @@ public class NodePropertyExistenceException extends ConstraintValidationExceptio
     @Override
     public String getUserMessage( TokenNameLookup tokenNameLookup )
     {
-        return format( "Node(%d) with label `%s` must have the property `%s`",
+        String propertyNoun = (schema.getPropertyIds().length > 1) ? "properties" : "property";
+        return format( "Node(%d) with label `%s` must have the %s `%s`",
                 nodeId,
-                tokenNameLookup.labelGetName( schema.getLabelId() ),
-                tokenNameLookup.propertyKeyGetName( schema.getPropertyId() ) );
+                tokenNameLookup.labelGetName( schema.getLabelId() ), propertyNoun,
+                SchemaUtil.niceProperties( tokenNameLookup, schema.getPropertyIds() ) );
     }
 }

@@ -68,7 +68,9 @@ import org.neo4j.kernel.api.schema_new.SchemaDescriptor;
 import org.neo4j.kernel.api.schema_new.SchemaUtil;
 import org.neo4j.kernel.api.schema_new.constaints.ConstraintDescriptor;
 import org.neo4j.kernel.api.schema_new.constaints.ConstraintDescriptorFactory;
+import org.neo4j.kernel.api.schema_new.constaints.IndexBackedConstraintDescriptor;
 import org.neo4j.kernel.api.schema_new.constaints.NodeExistenceConstraintDescriptor;
+import org.neo4j.kernel.api.schema_new.constaints.NodeKeyConstraintDescriptor;
 import org.neo4j.kernel.api.schema_new.constaints.RelExistenceConstraintDescriptor;
 import org.neo4j.kernel.api.schema_new.constaints.UniquenessConstraintDescriptor;
 import org.neo4j.kernel.api.schema_new.index.NewIndexDescriptor;
@@ -585,11 +587,10 @@ public class StateHandlingStatementOperations implements
         state.txState().indexDoDrop( descriptor );
     }
 
-    @Override
-    public UniquenessConstraintDescriptor uniquePropertyConstraintCreate( KernelStatement state, LabelSchemaDescriptor descriptor )
+    private IndexBackedConstraintDescriptor indexBackedConstraintCreate( KernelStatement state, IndexBackedConstraintDescriptor constraint )
             throws CreateConstraintFailureException
     {
-        UniquenessConstraintDescriptor constraint = ConstraintDescriptorFactory.uniqueForSchema( descriptor );
+        LabelSchemaDescriptor descriptor = constraint.schema();
         try
         {
             if ( state.hasTxStateWithChanges() &&
@@ -620,6 +621,25 @@ public class StateHandlingStatementOperations implements
         {
             throw new CreateConstraintFailureException( constraint, e );
         }
+    }
+
+    @Override
+    public NodeKeyConstraintDescriptor nodeKeyConstraintCreate( KernelStatement state,
+            LabelSchemaDescriptor descriptor )
+            throws CreateConstraintFailureException
+    {
+        NodeKeyConstraintDescriptor constraint = ConstraintDescriptorFactory.nodeKeyForSchema( descriptor );
+        indexBackedConstraintCreate( state, constraint );
+        return constraint;
+    }
+
+    @Override
+    public UniquenessConstraintDescriptor uniquePropertyConstraintCreate( KernelStatement state, LabelSchemaDescriptor descriptor )
+            throws CreateConstraintFailureException
+    {
+        UniquenessConstraintDescriptor constraint = ConstraintDescriptorFactory.uniqueForSchema( descriptor );
+        indexBackedConstraintCreate( state, constraint );
+        return constraint;
     }
 
     @Override

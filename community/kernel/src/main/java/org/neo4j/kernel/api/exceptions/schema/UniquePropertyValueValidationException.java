@@ -26,26 +26,26 @@ import java.util.Set;
 import org.neo4j.kernel.api.TokenNameLookup;
 import org.neo4j.kernel.api.exceptions.index.IndexEntryConflictException;
 import org.neo4j.kernel.api.schema_new.LabelSchemaDescriptor;
-import org.neo4j.kernel.api.schema_new.constaints.UniquenessConstraintDescriptor;
+import org.neo4j.kernel.api.schema_new.constaints.IndexBackedConstraintDescriptor;
 
 public class UniquePropertyValueValidationException extends ConstraintValidationException
 {
     private final Set<IndexEntryConflictException> conflicts;
 
-    public UniquePropertyValueValidationException( UniquenessConstraintDescriptor constraint,
+    public UniquePropertyValueValidationException( IndexBackedConstraintDescriptor constraint,
             ConstraintValidationException.Phase phase, IndexEntryConflictException conflict )
     {
         this( constraint, phase, Collections.singleton( conflict ) );
     }
 
-    public UniquePropertyValueValidationException( UniquenessConstraintDescriptor constraint,
+    public UniquePropertyValueValidationException( IndexBackedConstraintDescriptor constraint,
             ConstraintValidationException.Phase phase, Set<IndexEntryConflictException> conflicts )
     {
         super( constraint, phase, phase == Phase.VERIFICATION ? "Existing data" : "New data" );
         this.conflicts = conflicts;
     }
 
-    public UniquePropertyValueValidationException( UniquenessConstraintDescriptor constraint,
+    public UniquePropertyValueValidationException( IndexBackedConstraintDescriptor constraint,
             ConstraintValidationException.Phase phase, Throwable cause )
     {
         super( constraint, phase, phase == Phase.VERIFICATION ? "Existing data" : "New data", cause );

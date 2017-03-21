@@ -32,9 +32,8 @@ import org.neo4j.storageengine.api.NodeItem;
 
 /**
  * This class holds functionality to match LabelSchemaDescriptors to nodes
- * @param <SUPPLIER> the type to match. Must implement LabelSchemaSupplier
  */
-public class NodeSchemaMatcher<SUPPLIER extends LabelSchemaSupplier>
+public class NodeSchemaMatcher
 {
     private final EntityReadOperations readOps;
 
@@ -57,10 +56,11 @@ public class NodeSchemaMatcher<SUPPLIER extends LabelSchemaSupplier>
      * @param specialPropertyId This property id will always count as a match for the descriptor, regardless of
      *                          whether the node has this property or not
      * @param action The action to take on match
+     * @param <SUPPLIER> the type to match. Must implement LabelSchemaDescriptor.Supplier
      * @param <EXCEPTION> The type of exception that can be thrown when taking the action
      * @throws EXCEPTION This exception is propagated from the action
      */
-    public <EXCEPTION extends Exception> void onMatchingSchema(
+    public <SUPPLIER extends LabelSchemaSupplier,EXCEPTION extends Exception> void onMatchingSchema(
             KernelStatement state,
             Iterator<SUPPLIER> schemaSuppliers,
             NodeItem node,

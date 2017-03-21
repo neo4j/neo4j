@@ -33,6 +33,7 @@ import org.neo4j.kernel.api.schema_new.LabelSchemaDescriptor;
 import org.neo4j.kernel.api.schema_new.RelationTypeSchemaDescriptor;
 import org.neo4j.kernel.api.schema_new.SchemaProcessor;
 import org.neo4j.kernel.api.schema_new.constaints.ConstraintDescriptor;
+import org.neo4j.kernel.api.schema_new.constaints.NodeKeyConstraintDescriptor;
 import org.neo4j.kernel.impl.constraints.StandardConstraintSemantics;
 import org.neo4j.kernel.impl.store.record.ConstraintRule;
 import org.neo4j.storageengine.api.NodeItem;
@@ -42,18 +43,24 @@ import org.neo4j.storageengine.api.txstate.ReadableTransactionState;
 import org.neo4j.storageengine.api.txstate.TxStateVisitor;
 
 import static org.neo4j.kernel.api.exceptions.schema.ConstraintValidationException.Phase.VERIFICATION;
-import static org.neo4j.kernel.api.schema_new.constaints.ConstraintDescriptor.Type.EXISTS;
 
 public class EnterpriseConstraintSemantics extends StandardConstraintSemantics
 {
     @Override
-    protected ConstraintDescriptor readNonStandardConstraint( ConstraintRule rule )
+    protected ConstraintDescriptor readNonStandardConstraint( ConstraintRule rule, String errorMessage )
     {
-        if ( rule.getConstraintDescriptor().type() != EXISTS )
+        if ( !rule.getConstraintDescriptor().enforcesPropertyExistence() )
         {
             throw new IllegalStateException( "Unsupported constraint type: " + rule );
         }
         return rule.getConstraintDescriptor();
+    }
+
+    @Override
+    public ConstraintRule createNodeKeyConstraintRule(
+            long ruleId, NodeKeyConstraintDescriptor descriptor, long indexId )
+    {
+        return ConstraintRule.constraintRule( ruleId, descriptor, indexId );
     }
 
     @Override
@@ -78,6 +85,14 @@ public class EnterpriseConstraintSemantics extends StandardConstraintSemantics
                 }
             }
         }
+    }
+
+    @Override
+    public void validateNodeKeyConstraint( Iterator<Cursor<NodeItem>> allNodes,
+            LabelSchemaDescriptor descriptor, BiPredicate<NodeItem,Integer> hasPropertyCheck )
+            throws CreateConstraintFailureException
+    {
+        validateNodePropertyExistenceConstraint( allNodes, descriptor, hasPropertyCheck );
     }
 
     private void validateNodePropertyExistenceConstraint( NodeItem node, int propertyKey,
@@ -141,7 +156,7 @@ public class EnterpriseConstraintSemantics extends StandardConstraintSemantics
 
         void addIfRelevant( ConstraintDescriptor constraint )
         {
-            if ( constraint.type() == EXISTS )
+            if ( constraint.enforcesPropertyExistence() )
             {
                 constraint.schema().processWith( this );
             }

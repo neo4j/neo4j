@@ -45,6 +45,11 @@ public class ConstraintDescriptorFactory
         return new UniquenessConstraintDescriptor( SchemaDescriptorFactory.forLabel( labelId, propertyIds ) );
     }
 
+    public static NodeKeyConstraintDescriptor nodeKeyForLabel( int labelId, int... propertyIds )
+    {
+        return new NodeKeyConstraintDescriptor( SchemaDescriptorFactory.forLabel( labelId, propertyIds ) );
+    }
+
     public static ConstraintDescriptor existsForSchema( SchemaDescriptor schema )
     {
         return schema.computeWith( convertToExistenceConstraint );
@@ -63,6 +68,11 @@ public class ConstraintDescriptorFactory
     public static UniquenessConstraintDescriptor uniqueForSchema( SchemaDescriptor schema )
     {
         return schema.computeWith( convertToUniquenessConstraint );
+    }
+
+    public static NodeKeyConstraintDescriptor nodeKeyForSchema( SchemaDescriptor schema )
+    {
+        return schema.computeWith( convertToNodeKeyConstraint );
     }
 
     private static SchemaComputer<ConstraintDescriptor> convertToExistenceConstraint =
@@ -95,6 +105,26 @@ public class ConstraintDescriptorFactory
                 {
                     throw new UnsupportedOperationException(
                             format( "Cannot create uniqueness constraint for schema '%s' of type %s",
+                                    schema.userDescription( SchemaUtil.idTokenNameLookup ),
+                                    schema.getClass().getSimpleName()
+                            ) );
+                }
+            };
+
+    private static SchemaComputer<NodeKeyConstraintDescriptor> convertToNodeKeyConstraint =
+            new SchemaComputer<NodeKeyConstraintDescriptor>()
+            {
+                @Override
+                public NodeKeyConstraintDescriptor computeSpecific( LabelSchemaDescriptor schema )
+                {
+                    return new NodeKeyConstraintDescriptor( schema );
+                }
+
+                @Override
+                public NodeKeyConstraintDescriptor computeSpecific( RelationTypeSchemaDescriptor schema )
+                {
+                    throw new UnsupportedOperationException(
+                            format( "Cannot create node key constraint for schema '%s' of type %s",
                                     schema.userDescription( SchemaUtil.idTokenNameLookup ),
                                     schema.getClass().getSimpleName()
                             ) );

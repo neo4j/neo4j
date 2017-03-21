@@ -19,44 +19,18 @@
  */
 package org.neo4j.kernel.api.schema_new.constaints;
 
-import org.neo4j.kernel.api.TokenNameLookup;
 import org.neo4j.kernel.api.schema_new.LabelSchemaDescriptor;
-import org.neo4j.kernel.api.schema_new.LabelSchemaSupplier;
-import org.neo4j.kernel.api.schema_new.index.NewIndexDescriptor;
-import org.neo4j.kernel.api.schema_new.index.NewIndexDescriptorFactory;
 
-public class UniquenessConstraintDescriptor extends ConstraintDescriptor implements LabelSchemaSupplier
+public class UniquenessConstraintDescriptor extends IndexBackedConstraintDescriptor
 {
-    private final LabelSchemaDescriptor schema;
-
     UniquenessConstraintDescriptor( LabelSchemaDescriptor schema )
     {
-        super( Type.UNIQUE );
-        this.schema = schema;
+        super( Type.UNIQUE, schema );
     }
 
     @Override
-    public LabelSchemaDescriptor schema()
+    protected String constraintTypeText()
     {
-        return schema;
-    }
-
-    public NewIndexDescriptor ownedIndexDescriptor()
-    {
-        return NewIndexDescriptorFactory.uniqueForSchema( schema );
-    }
-
-    @Override
-    public String prettyPrint( TokenNameLookup tokenNameLookup )
-    {
-        String labelName = escapeLabelOrRelTyp( tokenNameLookup.labelGetName( schema.getLabelId() ) );
-        String nodeName = labelName.toLowerCase();
-        // awaiting the OpenCypher decision of constraint syntax
-        String propertyName = schema.getPropertyIds().length == 1 ?
-                              tokenNameLookup.propertyKeyGetName( schema.getPropertyId() ) :
-                              schema.userDescription( tokenNameLookup );
-
-        return String.format( "CONSTRAINT ON ( %s:%s ) ASSERT %s.%s IS UNIQUE",
-                nodeName, labelName, nodeName, propertyName );
+        return "UNIQUE";
     }
 }

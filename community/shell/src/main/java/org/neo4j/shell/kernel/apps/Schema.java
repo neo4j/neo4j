@@ -450,6 +450,7 @@ public class Schema extends TransactionProvidingApp
     private static boolean isNodeConstraint( ConstraintDefinition constraint )
     {
         return constraint.isConstraintType( ConstraintType.UNIQUENESS ) ||
+               constraint.isConstraintType( ConstraintType.NODE_KEY ) ||
                constraint.isConstraintType( ConstraintType.NODE_PROPERTY_EXISTENCE );
     }
 

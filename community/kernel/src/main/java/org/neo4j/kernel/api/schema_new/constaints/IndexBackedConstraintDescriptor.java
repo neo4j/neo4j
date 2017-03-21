@@ -21,15 +21,18 @@ package org.neo4j.kernel.api.schema_new.constaints;
 
 import org.neo4j.kernel.api.TokenNameLookup;
 import org.neo4j.kernel.api.schema_new.LabelSchemaDescriptor;
+import org.neo4j.kernel.api.schema_new.LabelSchemaSupplier;
 import org.neo4j.kernel.api.schema_new.SchemaUtil;
+import org.neo4j.kernel.api.schema_new.index.NewIndexDescriptor;
+import org.neo4j.kernel.api.schema_new.index.NewIndexDescriptorFactory;
 
-public class NodeExistenceConstraintDescriptor extends ConstraintDescriptor
+public abstract class IndexBackedConstraintDescriptor extends ConstraintDescriptor implements LabelSchemaSupplier
 {
-    private LabelSchemaDescriptor schema;
+    private final LabelSchemaDescriptor schema;
 
-    NodeExistenceConstraintDescriptor( LabelSchemaDescriptor schema )
+    IndexBackedConstraintDescriptor( Type type, LabelSchemaDescriptor schema )
     {
-        super( Type.EXISTS );
+        super( type );
         this.schema = schema;
     }
 
@@ -39,14 +42,21 @@ public class NodeExistenceConstraintDescriptor extends ConstraintDescriptor
         return schema;
     }
 
+    public NewIndexDescriptor ownedIndexDescriptor()
+    {
+        return NewIndexDescriptorFactory.uniqueForSchema( schema );
+    }
+
     @Override
     public String prettyPrint( TokenNameLookup tokenNameLookup )
     {
         String labelName = escapeLabelOrRelTyp( tokenNameLookup.labelGetName( schema.getLabelId() ) );
         String nodeName = labelName.toLowerCase();
-        String properties =
-                SchemaUtil.niceProperties( tokenNameLookup, schema.getPropertyIds(), nodeName + ".", false );
-
-        return String.format( "CONSTRAINT ON ( %s:%s ) ASSERT exists(%s)", nodeName, labelName, properties );
+        String properties = SchemaUtil.niceProperties( tokenNameLookup, schema.getPropertyIds(), nodeName + ".",
+                schema().getPropertyIds().length > 1 );
+        return String.format( "CONSTRAINT ON ( %s:%s ) ASSERT %s IS %s", nodeName, labelName, properties,
+                constraintTypeText() );
     }
+
+    protected abstract String constraintTypeText();
 }

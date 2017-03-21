@@ -40,8 +40,6 @@ import org.neo4j.kernel.impl.store.record.PrimitiveRecord;
 import org.neo4j.kernel.impl.store.record.RelationshipRecord;
 import org.neo4j.unsafe.impl.batchimport.Utils;
 
-import static org.neo4j.kernel.api.schema_new.constaints.ConstraintDescriptor.Type.EXISTS;
-
 public class MandatoryProperties
 {
     private final PrimitiveIntObjectMap<int[]> nodes = Primitive.intObjectMap();
@@ -54,7 +52,7 @@ public class MandatoryProperties
         SchemaStorage schemaStorage = new SchemaStorage( storeAccess.getSchemaStore() );
         for ( ConstraintRule rule : constraintsIgnoringMalformed( schemaStorage ) )
         {
-            if ( rule.getConstraintDescriptor().type() == EXISTS )
+            if ( rule.getConstraintDescriptor().enforcesPropertyExistence() )
             {
                 rule.schema().processWith( constraintRecorder );
             }

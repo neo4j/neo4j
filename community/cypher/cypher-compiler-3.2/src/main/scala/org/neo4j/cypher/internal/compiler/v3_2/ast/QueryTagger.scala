@@ -290,6 +290,7 @@ object QueryTagger extends QueryTagger[String] {
     lift[ASTNode] {
       case x: CreateIndex => Set(CreateIndexTag)
       case x: DropIndex => Set(DropIndexTag)
+      case x: CreateNodeKeyConstraint => Set(CreateConstraintTag)
       case x: CreateUniquePropertyConstraint => Set(CreateConstraintTag)
       case x: CreateNodePropertyExistenceConstraint => Set(CreateConstraintTag)
       case x: CreateRelationshipPropertyExistenceConstraint => Set(CreateConstraintTag)

@@ -32,8 +32,28 @@ public abstract class ConstraintDescriptor implements SchemaDescriptor.Supplier
 {
     public enum Type
     {
-        UNIQUE,
-        EXISTS
+        UNIQUE( true, false ),
+        EXISTS( false, true ),
+        UNIQUE_EXISTS( true, true );
+
+        private final boolean isUnique;
+        private final boolean mustExist;
+
+        Type( boolean isUnique, boolean mustExist )
+        {
+            this.isUnique = isUnique;
+            this.mustExist = mustExist;
+        }
+
+        private boolean enforcesUniqueness()
+        {
+            return isUnique;
+        }
+
+        private boolean enforcesPropertyExistence()
+        {
+            return mustExist;
+        }
     }
 
     public interface Supplier
@@ -55,6 +75,16 @@ public abstract class ConstraintDescriptor implements SchemaDescriptor.Supplier
     public Type type()
     {
         return type;
+    }
+
+    public boolean enforcesUniqueness()
+    {
+        return type.enforcesUniqueness();
+    }
+
+    public boolean enforcesPropertyExistence()
+    {
+        return type.enforcesPropertyExistence();
     }
 
     /**

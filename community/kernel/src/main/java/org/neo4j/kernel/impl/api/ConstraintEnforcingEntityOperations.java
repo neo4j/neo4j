@@ -56,7 +56,9 @@ import org.neo4j.kernel.api.schema_new.OrderedPropertyValues;
 import org.neo4j.kernel.api.schema_new.RelationTypeSchemaDescriptor;
 import org.neo4j.kernel.api.schema_new.SchemaDescriptor;
 import org.neo4j.kernel.api.schema_new.constaints.ConstraintDescriptor;
+import org.neo4j.kernel.api.schema_new.constaints.IndexBackedConstraintDescriptor;
 import org.neo4j.kernel.api.schema_new.constaints.NodeExistenceConstraintDescriptor;
+import org.neo4j.kernel.api.schema_new.constaints.NodeKeyConstraintDescriptor;
 import org.neo4j.kernel.api.schema_new.constaints.RelExistenceConstraintDescriptor;
 import org.neo4j.kernel.api.schema_new.constaints.UniquenessConstraintDescriptor;
 import org.neo4j.kernel.api.schema_new.index.NewIndexDescriptor;
@@ -80,7 +82,6 @@ import static org.neo4j.kernel.api.StatementConstants.NO_SUCH_NODE;
 import static org.neo4j.kernel.api.StatementConstants.NO_SUCH_PROPERTY_KEY;
 import static org.neo4j.kernel.api.exceptions.schema.ConstraintValidationException.Phase.VALIDATION;
 import static org.neo4j.kernel.api.schema_new.SchemaDescriptorPredicates.hasProperty;
-import static org.neo4j.kernel.api.schema_new.constaints.ConstraintDescriptor.Type.UNIQUE;
 import static org.neo4j.kernel.impl.locking.ResourceTypes.INDEX_ENTRY;
 import static org.neo4j.kernel.impl.locking.ResourceTypes.indexEntryResourceId;
 
@@ -91,7 +92,7 @@ public class ConstraintEnforcingEntityOperations implements EntityOperations, Sc
     private final SchemaWriteOperations schemaWriteOperations;
     private final SchemaReadOperations schemaReadOperations;
     private final ConstraintSemantics constraintSemantics;
-    private final NodeSchemaMatcher<UniquenessConstraintDescriptor> nodeSchemaMatcher;
+    private final NodeSchemaMatcher nodeSchemaMatcher;
 
     public ConstraintEnforcingEntityOperations(
             ConstraintSemantics constraintSemantics, EntityWriteOperations entityWriteOperations,
@@ -104,7 +105,7 @@ public class ConstraintEnforcingEntityOperations implements EntityOperations, Sc
         this.entityReadOperations = entityReadOperations;
         this.schemaWriteOperations = schemaWriteOperations;
         this.schemaReadOperations = schemaReadOperations;
-        nodeSchemaMatcher = new NodeSchemaMatcher<>( entityReadOperations );
+        nodeSchemaMatcher = new NodeSchemaMatcher( entityReadOperations );
     }
 
     @Override
@@ -118,9 +119,9 @@ public class ConstraintEnforcingEntityOperations implements EntityOperations, Sc
             while ( constraints.hasNext() )
             {
                 ConstraintDescriptor constraint = constraints.next();
-                if ( constraint.type() == UNIQUE )
+                if ( constraint.enforcesUniqueness() )
                 {
-                    UniquenessConstraintDescriptor uniqueConstraint = (UniquenessConstraintDescriptor) constraint;
+                    IndexBackedConstraintDescriptor uniqueConstraint = (IndexBackedConstraintDescriptor) constraint;
                     ExactPredicate[] propertyValues = getAllPropertyValues( state, uniqueConstraint.schema(), node );
                     if ( propertyValues != null )
                     {
@@ -141,15 +142,13 @@ public class ConstraintEnforcingEntityOperations implements EntityOperations, Sc
         {
             NodeItem node = cursor.get();
             Iterator<ConstraintDescriptor> constraints = getConstraintsInvolvingProperty( state, property.propertyKeyId() );
-            Iterator<UniquenessConstraintDescriptor> uniquenessConstraints =
-                    new CastingIterator<>( constraints, UniquenessConstraintDescriptor.class );
+            Iterator<IndexBackedConstraintDescriptor> uniquenessConstraints =
+                    new CastingIterator<>( constraints, IndexBackedConstraintDescriptor.class );
 
             nodeSchemaMatcher.onMatchingSchema( state, uniquenessConstraints, node, property.propertyKeyId(),
-                    constraint -> {
-                        validateNoExistingNodeWithExactValues( state, constraint,
-                                getAllPropertyValues( state, constraint.schema(), node, property ),
-                                node.id() );
-                    } );
+                    constraint -> validateNoExistingNodeWithExactValues( state, constraint,
+                            getAllPropertyValues( state, constraint.schema(), node, property ),
+                            node.id() ) );
         }
 
         return entityWriteOperations.nodeSetProperty( state, nodeId, property );
@@ -217,7 +216,7 @@ public class ConstraintEnforcingEntityOperations implements EntityOperations, Sc
 
     private void validateNoExistingNodeWithExactValues(
             KernelStatement state,
-            UniquenessConstraintDescriptor constraint,
+            IndexBackedConstraintDescriptor constraint,
             ExactPredicate[] propertyValues,
             long modifiedNode
     ) throws ConstraintValidationException
@@ -555,6 +554,18 @@ public class ConstraintEnforcingEntityOperations implements EntityOperations, Sc
     public void uniqueIndexDrop( KernelStatement state, NewIndexDescriptor descriptor ) throws DropIndexFailureException
     {
         schemaWriteOperations.uniqueIndexDrop( state, descriptor );
+    }
+
+    @Override
+    public NodeKeyConstraintDescriptor nodeKeyConstraintCreate( KernelStatement state, LabelSchemaDescriptor descriptor )
+            throws AlreadyConstrainedException, CreateConstraintFailureException, AlreadyIndexedException,
+            RepeatedPropertyInCompositeSchemaException
+    {
+        Iterator<Cursor<NodeItem>> nodes = new NodeLoadingIterator( nodesGetForLabel( state, descriptor.getLabelId() ),
+                ( id ) -> nodeCursorById( state, id ) );
+        constraintSemantics.validateNodeKeyConstraint( nodes, descriptor,
+                (node, propertyKey) -> entityReadOperations.nodeHasProperty(state, node, propertyKey) );
+        return schemaWriteOperations.nodeKeyConstraintCreate( state, descriptor );
     }
 
     @Override
