@@ -114,7 +114,7 @@ public class NativeLabelScanStore implements LabelScanStore
     private final FullStoreChangeStream fullStoreChangeStream;
 
     /**
-     * todo
+     * Describe health state for the system this {@link LabelScanStore} is part of.
      */
     private final Health health;
     /**
