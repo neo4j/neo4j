@@ -38,16 +38,17 @@ import org.neo4j.kernel.configuration.Config;
 import static java.util.Collections.singletonList;
 import static org.hamcrest.CoreMatchers.hasItem;
 import static org.hamcrest.MatcherAssert.assertThat;
+import static org.mockito.Mockito.mock;
 import static org.neo4j.causalclustering.readreplica.ConnectToRandomCoreServerStrategyTest.fakeCoreTopology;
 import static org.neo4j.causalclustering.readreplica.UserDefinedConfigurationStrategyTest.fakeTopologyService;
 import static org.neo4j.causalclustering.readreplica.UserDefinedConfigurationStrategyTest.memberIDs;
 import static org.neo4j.helpers.collection.Iterators.asSet;
 import static org.neo4j.helpers.collection.MapUtil.stringMap;
 
-public class ConnectToSpecificServerGroupStrategyTest
+public class ConnectRandomlyWithinServerGroupStrategyTest
 {
     @Test
-    public void shouldStayWithinOwnServerGroup() throws Exception
+    public void shouldStayWithinOwnSingleServerGroup() throws Exception
     {
         // given
         final String myServerGroup = "my_server_group";
@@ -55,12 +56,38 @@ public class ConnectToSpecificServerGroupStrategyTest
         Config configWithMyServerGroup = Config.defaults()
                 .with( stringMap( CausalClusteringSettings.server_groups.name(), myServerGroup ) );
 
-        MemberId theCoreMemberId = new MemberId( UUID.randomUUID() );
         MemberId[] myGroupMemberIds = memberIDs( 10 );
-        TopologyService topologyService = fakeTopologyService( fakeCoreTopology( theCoreMemberId ),
+        TopologyService topologyService = fakeTopologyService( fakeCoreTopology( new MemberId( UUID.randomUUID() ) ),
                 fakeReadReplicaTopology( myServerGroup, myGroupMemberIds, "your_server_group", 10 ) );
 
-        ConnectToSpecificServerGroupStrategy strategy = new ConnectToSpecificServerGroupStrategy();
+        ConnectRandomlyWithinServerGroupStrategy
+                strategy = new ConnectRandomlyWithinServerGroupStrategy();
+        strategy.setConfig( configWithMyServerGroup );
+        strategy.setTopologyService( topologyService );
+
+        // when
+        Optional<MemberId> memberId = strategy.upstreamDatabase();
+
+        // then
+        assertThat( asSet( myGroupMemberIds ), hasItem( memberId.get() ) );
+    }
+
+    @Test
+    public void shouldSelectAnyFromMultipleServerGroups() throws Exception
+    {
+        // given
+        final String myServerGroups = "a,b,c";
+
+        Config configWithMyServerGroup = Config.defaults()
+                .with( stringMap( CausalClusteringSettings.server_groups.name(), myServerGroups ) );
+
+        MemberId[] myGroupMemberIds = memberIDs( 10 );
+        TopologyService topologyService = fakeTopologyService( fakeCoreTopology( new MemberId( UUID.randomUUID() ) ),
+                fakeReadReplicaTopology( myServerGroups, myGroupMemberIds, "x,y,z", 10 ) );
+
+
+        ConnectRandomlyWithinServerGroupStrategy
+                strategy = new ConnectRandomlyWithinServerGroupStrategy();
         strategy.setConfig( configWithMyServerGroup );
         strategy.setTopologyService( topologyService );
 
@@ -83,7 +110,7 @@ public class ConnectToSpecificServerGroupStrategyTest
             readReplicas.put( memberId, new ReadReplicaInfo( new ClientConnectorAddresses( singletonList(
                     new ClientConnectorAddresses.ConnectorUri( ClientConnectorAddresses.Scheme.bolt,
                             new AdvertisedSocketAddress( "localhost", 11000 + offset ) ) ) ),
-                    new AdvertisedSocketAddress( "localhost", 10000 + offset ), asSet( wanted ) ) );
+                    new AdvertisedSocketAddress( "localhost", 10000 + offset ), asSet( wanted.split( "," ) ) ) );
 
             offset++;
         }

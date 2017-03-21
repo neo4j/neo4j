@@ -19,10 +19,12 @@
  */
 package org.neo4j.causalclustering.readreplica;
 
+import java.util.ArrayList;
 import java.util.List;
 import java.util.Map;
 import java.util.Optional;
 import java.util.Random;
+import java.util.Set;
 import java.util.stream.Collectors;
 
 import org.neo4j.causalclustering.core.CausalClusteringSettings;
@@ -31,13 +33,13 @@ import org.neo4j.causalclustering.identity.MemberId;
 import org.neo4j.helpers.Service;
 
 @Service.Implementation(UpstreamDatabaseSelectionStrategy.class)
-public class ConnectToSpecificServerGroupStrategy extends UpstreamDatabaseSelectionStrategy
+public class ConnectRandomlyWithinServerGroupStrategy extends UpstreamDatabaseSelectionStrategy
 {
     private Random random = new Random();
 
-    public ConnectToSpecificServerGroupStrategy()
+    public ConnectRandomlyWithinServerGroupStrategy()
     {
-        super( "connect-to-specific-server-group" );
+        super( "connect-randomly-within--server-group" );
     }
 
     @Override
@@ -51,11 +53,15 @@ public class ConnectToSpecificServerGroupStrategy extends UpstreamDatabaseSelect
             return Optional.empty();
         }
 
-        String myGroup = groups.get( 0 );
+        List<Map.Entry<MemberId,ReadReplicaInfo>> choices = new ArrayList<>();
 
-        List<Map.Entry<MemberId, ReadReplicaInfo>> choices = replicas.entrySet().stream()
-                .filter( entry -> entry.getValue().groups().contains( myGroup ) && !entry.getKey().equals( myself ) )
-                .collect( Collectors.toList() );
+        for ( String group : groups )
+        {
+            List<Map.Entry<MemberId,ReadReplicaInfo>> list = replicas.entrySet().stream()
+                    .filter( entry -> entry.getValue().groups().contains( group ) && !entry.getKey().equals( myself ) )
+                    .collect( Collectors.toList() );
+            choices.addAll( list );
+        }
 
         if ( choices.isEmpty() )
         {
