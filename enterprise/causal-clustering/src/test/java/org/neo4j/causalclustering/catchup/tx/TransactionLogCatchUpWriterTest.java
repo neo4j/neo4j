@@ -42,6 +42,7 @@ import org.neo4j.kernel.impl.transaction.log.PhysicalTransactionCursor;
 import org.neo4j.kernel.impl.transaction.log.ReadAheadLogChannel;
 import org.neo4j.kernel.impl.transaction.log.ReadableClosablePositionAwareChannel;
 import org.neo4j.kernel.impl.transaction.log.ReadableLogChannel;
+import org.neo4j.kernel.impl.transaction.log.entry.InvalidLogEntryHandler;
 import org.neo4j.kernel.impl.transaction.log.entry.LogEntryReader;
 import org.neo4j.kernel.impl.transaction.log.entry.LogEntryStart;
 import org.neo4j.kernel.impl.transaction.log.entry.OnePhaseCommit;
@@ -115,8 +116,8 @@ public class TransactionLogCatchUpWriterTest
 
     private void verifyCheckpointInLog() throws IOException
     {
-        LogEntryReader<ReadableClosablePositionAwareChannel> logEntryReader =
-                new VersionAwareLogEntryReader<>( new RecordStorageCommandReaderFactory() );
+        LogEntryReader<ReadableClosablePositionAwareChannel> logEntryReader = new VersionAwareLogEntryReader<>(
+                new RecordStorageCommandReaderFactory(), InvalidLogEntryHandler.STRICT );
         PhysicalLogFiles logFiles = new PhysicalLogFiles( storeDir, fs );
         final LatestCheckPointFinder checkPointFinder =
                 new LatestCheckPointFinder( logFiles, fs, logEntryReader );
