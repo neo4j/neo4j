@@ -127,7 +127,6 @@ public class AbstractDynamicStoreTest
             second.setInUse( false );
             store.updateRecord( second );
 
-
             DynamicRecord dynamicRecord = store.newRecord();
             PageCursor cursor = store.newPageCursor();
             store.readRecord( 1, dynamicRecord, FORCE, cursor );
