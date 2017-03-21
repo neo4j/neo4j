@@ -34,6 +34,7 @@ import org.neo4j.kernel.impl.storageengine.impl.recordstorage.RecordStorageComma
 import org.neo4j.kernel.impl.transaction.TransactionRepresentation;
 import org.neo4j.kernel.impl.transaction.log.PhysicalTransactionRepresentation;
 import org.neo4j.kernel.impl.transaction.log.ReadableClosablePositionAwareChannel;
+import org.neo4j.kernel.impl.transaction.log.entry.InvalidLogEntryHandler;
 import org.neo4j.kernel.impl.transaction.log.entry.LogEntryCommand;
 import org.neo4j.kernel.impl.transaction.log.entry.LogEntryReader;
 import org.neo4j.kernel.impl.transaction.log.entry.LogEntryWriter;
@@ -123,7 +124,7 @@ public class ReplicatedTransactionFactory
     public static TransactionRepresentation read( NetworkReadableClosableChannelNetty4 channel, byte[] extraHeader ) throws IOException
     {
         LogEntryReader<ReadableClosablePositionAwareChannel> reader = new VersionAwareLogEntryReader<>(
-                new RecordStorageCommandReaderFactory() );
+                new RecordStorageCommandReaderFactory(), InvalidLogEntryHandler.STRICT );
 
         int authorId = channel.getInt();
         int masterId = channel.getInt();

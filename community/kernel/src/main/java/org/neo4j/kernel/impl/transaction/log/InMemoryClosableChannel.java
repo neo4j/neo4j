@@ -19,6 +19,7 @@
  */
 package org.neo4j.kernel.impl.transaction.log;
 
+import java.io.Closeable;
 import java.io.Flushable;
 import java.io.IOException;
 import java.nio.ByteBuffer;
@@ -27,14 +28,16 @@ import java.util.Arrays;
 import org.neo4j.io.fs.StoreChannel;
 import org.neo4j.storageengine.api.ReadPastEndException;
 
+import static java.lang.Math.toIntExact;
+
 /**
  * Implementation of {@link ReadableClosablePositionAwareChannel} operating over a {@code byte[]} in memory.
  */
 public class InMemoryClosableChannel implements ReadableClosablePositionAwareChannel, FlushablePositionAwareChannel
 {
     private final byte[] bytes;
-    private final ByteBuffer asWriter;
-    private final ByteBuffer asReader;
+    private final Reader reader;
+    private final Writer writer;
 
     public InMemoryClosableChannel()
     {
@@ -44,12 +47,14 @@ public class InMemoryClosableChannel implements ReadableClosablePositionAwareCha
     public InMemoryClosableChannel( byte[] bytes, boolean append )
     {
         this.bytes = bytes;
-        this.asWriter = ByteBuffer.wrap( this.bytes );
-        this.asReader = ByteBuffer.wrap( this.bytes );
+        ByteBuffer writeBuffer = ByteBuffer.wrap( this.bytes );
+        ByteBuffer readBuffer = ByteBuffer.wrap( this.bytes );
         if ( append )
         {
-            this.asWriter.position( bytes.length );
+            writeBuffer.position( bytes.length );
         }
+        this.writer = new Writer( writeBuffer );
+        this.reader = new Reader( readBuffer );
     }
 
     public InMemoryClosableChannel( int bufferSize )
@@ -59,57 +64,67 @@ public class InMemoryClosableChannel implements ReadableClosablePositionAwareCha
 
     public void reset()
     {
-        asWriter.clear();
-        asReader.clear();
+        writer.clear();
+        reader.clear();
         Arrays.fill( bytes, (byte) 0 );
+    }
+
+    public Reader reader()
+    {
+        return reader;
+    }
+
+    public Writer writer()
+    {
+        return writer;
     }
 
     @Override
     public InMemoryClosableChannel put( byte b ) throws IOException
     {
-        asWriter.put( b );
+        writer.put( b );
         return this;
     }
 
     @Override
     public InMemoryClosableChannel putShort( short s ) throws IOException
     {
-        asWriter.putShort( s );
+        writer.putShort( s );
         return this;
     }
 
     @Override
     public InMemoryClosableChannel putInt( int i ) throws IOException
     {
-        asWriter.putInt( i );
+        writer.putInt( i );
         return this;
     }
 
     @Override
     public InMemoryClosableChannel putLong( long l ) throws IOException
     {
-        asWriter.putLong( l );
+        writer.putLong( l );
         return this;
     }
 
     @Override
     public InMemoryClosableChannel putFloat( float f ) throws IOException
     {
-        asWriter.putFloat( f );
+        writer.putFloat( f );
         return this;
     }
 
     @Override
     public InMemoryClosableChannel putDouble( double d ) throws IOException
     {
-        asWriter.putDouble( d );
+        writer.putDouble( d );
         return this;
     }
 
     @Override
     public InMemoryClosableChannel put( byte[] bytes, int length ) throws IOException
     {
-        asWriter.put( bytes, 0, length );
+        writer.put( bytes, length );
         return this;
     }
 
@@ -126,6 +141,8 @@ public class InMemoryClosableChannel implements ReadableClosablePositionAwareCha
     @Override
     public void close() throws IOException
     {
+        reader.close();
+        writer.close();
     }
 
     @Override
@@ -137,95 +154,79 @@ public class InMemoryClosableChannel implements ReadableClosablePositionAwareCha
     @Override
     public byte get() throws ReadPastEndException
     {
-        ensureAvailableToRead( 1 );
-        return asReader.get();
+        return reader.get();
     }
 
     @Override
     public short getShort() throws ReadPastEndException
     {
-        ensureAvailableToRead( 2 );
-        return asReader.getShort();
+        return reader.getShort();
     }
 
     @Override
     public int getInt() throws ReadPastEndException
     {
-        ensureAvailableToRead( 4 );
-        return asReader.getInt();
+        return reader.getInt();
     }
 
     @Override
     public long getLong() throws ReadPastEndException
     {
-        ensureAvailableToRead( 8 );
-        return asReader.getLong();
+        return reader.getLong();
     }
 
     @Override
     public float getFloat() throws ReadPastEndException
     {
-        ensureAvailableToRead( 4 );
-        return asReader.getFloat();
+        return reader.getFloat();
     }
 
     @Override
     public double getDouble() throws ReadPastEndException
     {
-        ensureAvailableToRead( 8 );
-        return asReader.getDouble();
+        return reader.getDouble();
     }
 
     @Override
     public void get( byte[] bytes, int length ) throws ReadPastEndException
     {
-        ensureAvailableToRead( length );
-        asReader.get( bytes, 0, length );
-    }
-
-    private void ensureAvailableToRead( int i ) throws ReadPastEndException
-    {
-        if ( asReader.remaining() < i || asReader.position() + i > asWriter.position() )
-        {
-            throw ReadPastEndException.INSTANCE;
-        }
+        reader.get( bytes, length );
     }
 
     @Override
-    public LogPositionMarker getCurrentPosition( LogPositionMarker positionMarker )
+    public LogPositionMarker getCurrentPosition( LogPositionMarker positionMarker ) throws IOException
     {
         // Hmm, this would be for the writer.
-        positionMarker.mark( 0, asWriter.position() );
-        return positionMarker;
+        return writer.getCurrentPosition( positionMarker );
     }
 
     public int positionWriter( int position )
     {
-        int previous = asWriter.position();
-        asWriter.position( position );
+        int previous = writer.position();
+        writer.position( position );
         return previous;
     }
 
     public int positionReader( int position )
     {
-        int previous = asReader.position();
-        asReader.position( position );
+        int previous = reader.position();
+        reader.position( position );
         return previous;
     }
 
     public int readerPosition()
     {
-        return asReader.position();
+        return reader.position();
     }
 
     public int writerPosition()
     {
-        return asWriter.position();
+        return writer.position();
     }
 
-    public void truncateTo( int bytesSuccessfullyWritten )
+    public void truncateTo( int offset )
     {
-        asReader.limit( bytesSuccessfullyWritten );
+        reader.limit( offset );
     }
 
     public int capacity()
@@ -235,12 +236,194 @@ public class InMemoryClosableChannel implements ReadableClosablePositionAwareCha
 
     public int availableBytesToRead()
     {
-        return asReader.remaining();
+        return reader.remaining();
     }
 
     public int availableBytesToWrite()
     {
-        return asWriter.remaining();
+        return writer.remaining();
     }
+
     private static final Flushable NO_OP_FLUSHABLE = () -> { };
+
+    class ByteBufferBase implements PositionAwareChannel, Closeable
+    {
+        protected final ByteBuffer buffer;
+
+        ByteBufferBase( ByteBuffer buffer )
+        {
+            this.buffer = buffer;
+        }
+
+        void clear()
+        {
+            buffer.clear();
+        }
+
+        int position()
+        {
+            return buffer.position();
+        }
+
+        void position( int position )
+        {
+            buffer.position( position );
+        }
+
+        int remaining()
+        {
+            return buffer.remaining();
+        }
+
+        void limit( int offset )
+        {
+            buffer.limit( offset );
+        }
+
+        @Override
+        public void close()
+        {
+        }
+
+        @Override
+        public LogPositionMarker getCurrentPosition( LogPositionMarker positionMarker ) throws IOException
+        {
+            positionMarker.mark( 0, buffer.position() );
+            return positionMarker;
+        }
+    }
+
+    public class Reader extends ByteBufferBase implements ReadableClosablePositionAwareChannel, PositionableChannel
+    {
+        Reader( ByteBuffer buffer )
+        {
+            super( buffer );
+        }
+
+        @Override
+        public byte get() throws ReadPastEndException
+        {
+            ensureAvailableToRead( 1 );
+            return buffer.get();
+        }
+
+        @Override
+        public short getShort() throws ReadPastEndException
+        {
+            ensureAvailableToRead( 2 );
+            return buffer.getShort();
+        }
+
+        @Override
+        public int getInt() throws ReadPastEndException
+        {
+            ensureAvailableToRead( 4 );
+            return buffer.getInt();
+        }
+
+        @Override
+        public long getLong() throws ReadPastEndException
+        {
+            ensureAvailableToRead( 8 );
+            return buffer.getLong();
+        }
+
+        @Override
+        public float getFloat() throws ReadPastEndException
+        {
+            ensureAvailableToRead( 4 );
+            return buffer.getFloat();
+        }
+
+        @Override
+        public double getDouble() throws ReadPastEndException
+        {
+            ensureAvailableToRead( 8 );
+            return buffer.getDouble();
+        }
+
+        @Override
+        public void get( byte[] bytes, int length ) throws ReadPastEndException
+        {
+            ensureAvailableToRead( length );
+            buffer.get( bytes, 0, length );
+        }
+
+        private void ensureAvailableToRead( int i ) throws ReadPastEndException
+        {
+            if ( remaining() < i || position() + i > writer.position() )
+            {
+                throw ReadPastEndException.INSTANCE;
+            }
+        }
+
+        @Override
+        public void setCurrentPosition( long byteOffset ) throws IOException
+        {
+            buffer.position( toIntExact( byteOffset ) );
+        }
+    }
+
+    public class Writer extends ByteBufferBase implements FlushablePositionAwareChannel
+    {
+        Writer( ByteBuffer buffer )
+        {
+            super( buffer );
+        }
+
+        @Override
+        public Writer put( byte b ) throws IOException
+        {
+            buffer.put( b );
+            return this;
+        }
+
+        @Override
+        public Writer putShort( short s ) throws IOException
+        {
+            buffer.putShort( s );
+            return this;
+        }
+
+        @Override
+        public Writer putInt( int i ) throws IOException
+        {
+            buffer.putInt( i );
+            return this;
+        }
+
+        @Override
+        public Writer putLong( long l ) throws IOException
+        {
+            buffer.putLong( l );
+            return this;
+        }
+
+        @Override
+        public Writer putFloat( float f ) throws IOException
+        {
+            buffer.putFloat( f );
+            return this;
+        }
+
+        @Override
+        public Writer putDouble( double d ) throws IOException
+        {
+            buffer.putDouble( d );
+            return this;
+        }
+
+        @Override
+        public Writer put( byte[] bytes, int length ) throws IOException
+        {
+            buffer.put( bytes, 0, length );
+            return this;
+        }
+
+        @Override
+        public Flushable prepareForFlush() throws IOException
+        {
+            return NO_OP_FLUSHABLE;
+        }
+    }
 }

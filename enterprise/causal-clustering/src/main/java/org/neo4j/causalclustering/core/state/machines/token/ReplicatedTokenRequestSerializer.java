@@ -32,6 +32,7 @@ import org.neo4j.causalclustering.messaging.NetworkReadableClosableChannelNetty4
 import org.neo4j.causalclustering.messaging.marshalling.StringMarshal;
 import org.neo4j.kernel.impl.storageengine.impl.recordstorage.RecordStorageCommandReaderFactory;
 import org.neo4j.kernel.impl.transaction.log.ReadableClosablePositionAwareChannel;
+import org.neo4j.kernel.impl.transaction.log.entry.InvalidLogEntryHandler;
 import org.neo4j.kernel.impl.transaction.log.entry.LogEntryCommand;
 import org.neo4j.kernel.impl.transaction.log.entry.LogEntryReader;
 import org.neo4j.kernel.impl.transaction.log.entry.LogEntryWriter;
@@ -110,7 +111,7 @@ public class ReplicatedTokenRequestSerializer
         NetworkReadableClosableChannelNetty4 channel = new NetworkReadableClosableChannelNetty4( txBuffer );
 
         LogEntryReader<ReadableClosablePositionAwareChannel> reader = new VersionAwareLogEntryReader<>(
-                new RecordStorageCommandReaderFactory() );
+                new RecordStorageCommandReaderFactory(), InvalidLogEntryHandler.STRICT );
 
         LogEntryCommand entryRead;
         List<StorageCommand> commands = new LinkedList<>();
