@@ -30,7 +30,7 @@ import org.neo4j.io.pagecache.tracing.DefaultPageCacheTracer;
 import org.neo4j.io.pagecache.tracing.PageCacheTracer;
 import org.neo4j.io.pagecache.tracing.cursor.DefaultPageCursorTracerSupplier;
 import org.neo4j.io.pagecache.tracing.cursor.PageCursorTracerSupplier;
-import org.neo4j.kernel.Health;
+import org.neo4j.kernel.AlwaysHealthy;
 import org.neo4j.kernel.api.labelscan.LabelScanStore;
 import org.neo4j.kernel.configuration.Config;
 import org.neo4j.kernel.extension.KernelExtensionFactory;
@@ -163,7 +163,7 @@ public class BatchingNeoStores implements AutoCloseable
         dependencies.satisfyDependency( IndexStoreView.EMPTY );
         dependencies.satisfyDependency( pageCache );
         dependencies.satisfyDependency( new Monitors() );
-        dependencies.satisfyDependency( new Health.Adapter() );
+        dependencies.satisfyDependency( new AlwaysHealthy() );
         KernelContext kernelContext = new SimpleKernelContext( storeDir, DatabaseInfo.UNKNOWN, dependencies );
         @SuppressWarnings( { "unchecked", "rawtypes" } )
         KernelExtensions extensions = life.add( new KernelExtensions(

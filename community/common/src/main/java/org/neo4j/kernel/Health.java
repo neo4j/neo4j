@@ -33,9 +33,7 @@ public interface Health
      * @param panicDisguise the cause of the unhealthy state wrapped in an exception of this type.
      * @throws EXCEPTION exception type to wrap cause in.
      */
-    default <EXCEPTION extends Throwable> void assertHealthy( Class<EXCEPTION> panicDisguise ) throws EXCEPTION
-    {
-    }
+    <EXCEPTION extends Throwable> void assertHealthy( Class<EXCEPTION> panicDisguise ) throws EXCEPTION;
 
     /**
      * Report panic with cause to the system, meaning system is not longer in a healthy state.
@@ -43,38 +41,58 @@ public interface Health
      *
      * @param cause Cause of panic. Can not be {@code null}.
      */
-    default void panic( Throwable cause )
-    {
-    }
+    void panic( Throwable cause );
 
     /**
      * Check that the system is in good health, without throwing any exception if it is not.
      *
      * @return true if system is in good health, otherwise false.
      */
-    default boolean isHealthy()
-    {
-        return true;
-    }
+    boolean isHealthy();
 
     /**
      * Reset system state to healthy. This should override any previous calls to {@link #panic(Throwable)},
      * subsequent calls to {@link #isHealthy()} should return {@code true}, subsequent calls to
      * {@link #assertHealthy(Class)} should not throw.
      */
-    default void healed()
-    {
-    }
+    void healed();
 
     /**
      * @return Cause of panic or {@code null} if system is in good health.
      */
-    default Throwable cause()
-    {
-        return null;
-    }
+    Throwable cause();
 
     class Adapter implements Health
     {
+
+        @Override
+        public <EXCEPTION extends Throwable> void assertHealthy( Class<EXCEPTION> panicDisguise ) throws EXCEPTION
+        {
+            // no-op
+        }
+
+        @Override
+        public void panic( Throwable cause )
+        {
+            // no-op
+        }
+
+        @Override
+        public boolean isHealthy()
+        {
+            return true;
+        }
+
+        @Override
+        public void healed()
+        {
+            // no-op
+        }
+
+        @Override
+        public Throwable cause()
+        {
+            return null;
+        }
     }
 }

@@ -43,7 +43,7 @@ import org.neo4j.io.pagecache.IOLimiter;
 import org.neo4j.io.pagecache.PageCache;
 import org.neo4j.io.pagecache.PageCursor;
 import org.neo4j.io.pagecache.PagedFile;
-import org.neo4j.kernel.Health;
+import org.neo4j.kernel.AlwaysHealthy;
 import org.neo4j.test.Barrier;
 import org.neo4j.test.rule.PageCacheRule;
 import org.neo4j.test.rule.RandomRule;
@@ -95,7 +95,7 @@ public class GBPTreeTest
         GBPTree<MutableLong,MutableLong> build() throws IOException
         {
             return new GBPTree<>( pageCache, indexFile, layout, tentativePageSize, monitor, headerReader,
-                    new Health.Adapter() );
+                    new AlwaysHealthy() );
         }
 
         GBPTreeBuilder with( int tentativePageSize )

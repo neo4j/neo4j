@@ -37,7 +37,7 @@ import org.neo4j.graphdb.GraphDatabaseService;
 import org.neo4j.graphdb.factory.GraphDatabaseSettings;
 import org.neo4j.io.fs.FileSystemAbstraction;
 import org.neo4j.io.pagecache.PageCache;
-import org.neo4j.kernel.Health;
+import org.neo4j.kernel.AlwaysHealthy;
 import org.neo4j.kernel.api.index.SchemaIndexProvider;
 import org.neo4j.kernel.configuration.Config;
 import org.neo4j.kernel.impl.api.index.inmemory.InMemoryIndexProvider;
@@ -116,7 +116,7 @@ public class StoreUpgraderInterruptionTestIT
         workingDirectory = directory.directory( "working" );
         prepareDirectory = directory.directory( "prepare" );
         labelScanStoreProvider = NeoStoreDataSourceRule.nativeLabelScanStoreProvider( workingDirectory, fs,
-                pageCacheRule.getPageCache( fs ), new Health.Adapter(), new Monitors() );
+                pageCacheRule.getPageCache( fs ), new AlwaysHealthy(), new Monitors() );
     }
 
     @Test

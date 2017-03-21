@@ -44,7 +44,7 @@ import org.neo4j.graphdb.factory.EnterpriseGraphDatabaseFactory;
 import org.neo4j.graphdb.factory.GraphDatabaseSettings;
 import org.neo4j.io.fs.FileSystemAbstraction;
 import org.neo4j.io.pagecache.PageCache;
-import org.neo4j.kernel.Health;
+import org.neo4j.kernel.AlwaysHealthy;
 import org.neo4j.kernel.api.impl.index.storage.DirectoryFactory;
 import org.neo4j.kernel.api.impl.schema.LuceneSchemaIndexProvider;
 import org.neo4j.kernel.api.index.SchemaIndexProvider;
@@ -127,7 +127,7 @@ public class StoreMigratorFrom20IT
         schemaIndexProvider = new LuceneSchemaIndexProvider( fs, DirectoryFactory.PERSISTENT, storeDirectory,
                 NullLogProvider.getInstance(), Config.empty(), OperationalMode.single );
         labelScanStoreProvider = NeoStoreDataSourceRule.nativeLabelScanStoreProvider( storeDirectory, fs, pageCache,
-                new Health.Adapter(), new Monitors() );
+                new AlwaysHealthy(), new Monitors() );
 
         upgradableDatabase = new UpgradableDatabase( fs, new StoreVersionCheck( pageCache ),
                 new LegacyStoreVersionCheck( fs ), recordFormat );

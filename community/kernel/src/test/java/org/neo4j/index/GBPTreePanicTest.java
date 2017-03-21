@@ -118,7 +118,7 @@ public class GBPTreePanicTest
         return new GBPTree<>( pageCache, file, layout, 0, monitor, GBPTree.NO_HEADER, health );
     }
 
-    private class ControllableHealth implements Health
+    private class ControllableHealth extends Health.Adapter
     {
         private final AtomicBoolean isHealthy;
 

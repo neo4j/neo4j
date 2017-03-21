@@ -43,7 +43,7 @@ import org.neo4j.io.fs.FileSystemAbstraction;
 import org.neo4j.io.pagecache.PageCache;
 import org.neo4j.io.pagecache.tracing.PageCacheTracer;
 import org.neo4j.io.pagecache.tracing.cursor.PageCursorTracerSupplier;
-import org.neo4j.kernel.Health;
+import org.neo4j.kernel.AlwaysHealthy;
 import org.neo4j.kernel.api.direct.DirectStoreAccess;
 import org.neo4j.kernel.api.index.SchemaIndexProvider;
 import org.neo4j.kernel.api.labelscan.LabelScanStore;
@@ -242,7 +242,7 @@ public class ConsistencyCheckService
             IndexStoreView indexStoreView = new NeoStoreIndexStoreView( LockService.NO_LOCK_SERVICE, neoStores );
             Dependencies dependencies = new Dependencies();
             dependencies.satisfyDependencies( config, fileSystem, new SimpleLogService( logProvider, logProvider ),
-                    indexStoreView, pageCache, new Monitors(), new Health.Adapter() );
+                    indexStoreView, pageCache, new Monitors(), new AlwaysHealthy() );
             KernelContext kernelContext = new SimpleKernelContext( storeDir, UNKNOWN, dependencies );
             KernelExtensions extensions = life.add( new KernelExtensions(
                     kernelContext, (Iterable) load( KernelExtensionFactory.class ), dependencies, ignore() ) );

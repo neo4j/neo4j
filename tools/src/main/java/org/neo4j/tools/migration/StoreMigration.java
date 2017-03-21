@@ -30,8 +30,8 @@ import org.neo4j.helpers.collection.MapUtil;
 import org.neo4j.io.fs.DefaultFileSystemAbstraction;
 import org.neo4j.io.fs.FileSystemAbstraction;
 import org.neo4j.io.pagecache.PageCache;
+import org.neo4j.kernel.AlwaysHealthy;
 import org.neo4j.kernel.GraphDatabaseDependencies;
-import org.neo4j.kernel.Health;
 import org.neo4j.kernel.api.index.SchemaIndexProvider;
 import org.neo4j.kernel.configuration.Config;
 import org.neo4j.kernel.configuration.Settings;
@@ -112,7 +112,7 @@ public class StoreMigration
         try ( PageCache pageCache = createPageCache( fs, config ) )
         {
             Dependencies deps = new Dependencies();
-            deps.satisfyDependencies( fs, config, legacyIndexProvider, pageCache, logService, new Health.Adapter(),
+            deps.satisfyDependencies( fs, config, legacyIndexProvider, pageCache, logService, new AlwaysHealthy(),
                     new Monitors() );
 
             KernelContext kernelContext = new SimpleKernelContext( storeDirectory, DatabaseInfo.UNKNOWN, deps );
