@@ -24,7 +24,7 @@ import org.neo4j.kernel.impl.transaction.log.LogPosition;
 /**
  * Decides what happens to invalid log entries read by {@link LogEntryReader}.
  */
-public interface InvalidLogEntryHandler
+public abstract class InvalidLogEntryHandler
 {
     /**
      * Allows no invalid log entries.
@@ -41,7 +41,7 @@ public interface InvalidLogEntryHandler
      * @return {@code true} if this error is accepted, otherwise {@code false} which means the exception
      * causing this will be thrown by the caller.
      */
-    default boolean handleInvalidEntry( Exception e, LogPosition position )
+    public boolean handleInvalidEntry( Exception e, LogPosition position )
     {   // consider invalid by default
         return false;
     }
@@ -54,7 +54,7 @@ public interface InvalidLogEntryHandler
      *
      * @param bytesSkipped number of bytes skipped.
      */
-    default void bytesSkipped( long bytesSkipped )
+    public void bytesSkipped( long bytesSkipped )
     {   // do nothing by default
     }
 }

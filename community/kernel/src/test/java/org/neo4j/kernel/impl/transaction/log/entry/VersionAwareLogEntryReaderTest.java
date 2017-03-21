@@ -477,7 +477,7 @@ public class VersionAwareLogEntryReaderTest
         assertEquals( secondStartTime, readSecondStartEntry.getTimeWritten() );
     }
 
-    static class AcceptingInvalidLogEntryHandler implements InvalidLogEntryHandler
+    static class AcceptingInvalidLogEntryHandler extends InvalidLogEntryHandler
     {
         long bytesSkipped;
         Exception e;

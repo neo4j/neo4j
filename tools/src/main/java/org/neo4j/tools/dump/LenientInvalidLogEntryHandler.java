@@ -28,7 +28,7 @@ import org.neo4j.kernel.impl.transaction.log.entry.InvalidLogEntryHandler;
  * Is less strict with invalid log entries, allowing reader to try and read through bad sections.
  * Prints problems along the way.
  */
-class LenientInvalidLogEntryHandler implements InvalidLogEntryHandler
+class LenientInvalidLogEntryHandler extends InvalidLogEntryHandler
 {
     private final PrintStream out;
 
@@ -40,13 +40,13 @@ class LenientInvalidLogEntryHandler implements InvalidLogEntryHandler
     @Override
     public boolean handleInvalidEntry( Exception e, LogPosition position )
     {
-        out.println( "Read broken entry error:" + e + " will go one byte ahead and try again" );
+        out.println( "Read broken entry with error:" + e + ", will go one byte ahead and try again" );
         return true;
     }
 
     @Override
     public void bytesSkipped( long bytesSkipped )
     {
-        out.println( "... skipped " + bytesSkipped + " bytes of weird tx log data" );
+        out.println( "... skipped " + bytesSkipped + " bytes of indecipherable transaction log data" );
     }
 }
