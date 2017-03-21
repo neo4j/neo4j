@@ -19,11 +19,22 @@
  */
 package org.neo4j.index.internal.gbptree;
 
-public class CheckpointCounter extends CountingMonitor
+public abstract class CountingMonitor implements GBPTree.Monitor
 {
-    @Override
-    public void checkpointCompleted()
+    private int count;
+
+    protected void increment()
     {
-        increment();
+        count++;
+    }
+
+    public int count()
+    {
+        return count;
+    }
+
+    public void reset()
+    {
+        count = 0;
     }
 }

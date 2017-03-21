@@ -30,6 +30,7 @@ import org.neo4j.graphdb.GraphDatabaseService;
 import org.neo4j.graphdb.Label;
 import org.neo4j.graphdb.Transaction;
 import org.neo4j.index.internal.gbptree.CheckpointCounter;
+import org.neo4j.index.internal.gbptree.CountingMonitor;
 import org.neo4j.kernel.Health;
 import org.neo4j.kernel.internal.GraphDatabaseAPI;
 import org.neo4j.kernel.monitoring.Monitors;
@@ -52,7 +53,7 @@ public class GBPTreePanicIT
     public RuleChain ruleChain = RuleChain.outerRule( testDirectory ).around( fileSystemRule ).around( pageCacheRule );
 
     private TestGraphDatabaseFactory dbFactory = new TestGraphDatabaseFactory();
-    private CheckpointCounter checkpointCounter = new CheckpointCounter();
+    private CountingMonitor checkpointCounter = new CheckpointCounter();
     private Label label = Label.label( "label" );
 
     @Before
