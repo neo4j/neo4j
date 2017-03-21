@@ -1,0 +1,69 @@
+/*
+ * Copyright (c) 2002-2017 "Neo Technology,"
+ * Network Engine for Objects in Lund AB [http://neotechnology.com]
+ *
+ * This file is part of Neo4j.
+ *
+ * Neo4j is free software: you can redistribute it and/or modify
+ * it under the terms of the GNU Affero General Public License as
+ * published by the Free Software Foundation, either version 3 of the
+ * License, or (at your option) any later version.
+ *
+ * This program is distributed in the hope that it will be useful,
+ * but WITHOUT ANY WARRANTY; without even the implied warranty of
+ * MERCHANTABILITY or FITNESS FOR A PARTICULAR PURPOSE.  See the
+ * GNU Affero General Public License for more details.
+ *
+ * You should have received a copy of the GNU Affero General Public License
+ * along with this program. If not, see <http://www.gnu.org/licenses/>.
+ */
+package org.neo4j.causalclustering.readreplica;
+
+import java.util.List;
+import java.util.Map;
+import java.util.Optional;
+import java.util.Random;
+import java.util.stream.Collectors;
+
+import org.neo4j.causalclustering.core.CausalClusteringSettings;
+import org.neo4j.causalclustering.discovery.ReadReplicaInfo;
+import org.neo4j.causalclustering.identity.MemberId;
+import org.neo4j.helpers.Service;
+
+@Service.Implementation(UpstreamDatabaseSelectionStrategy.class)
+public class ConnectToSpecificServerGroupStrategy extends UpstreamDatabaseSelectionStrategy
+{
+    private Random random = new Random();
+
+    public ConnectToSpecificServerGroupStrategy()
+    {
+        super( "connect-to-specific-server-group" );
+    }
+
+    @Override
+    public Optional<MemberId> upstreamDatabase() throws UpstreamDatabaseSelectionException
+    {
+        Map<MemberId, ReadReplicaInfo> replicas = topologyService.readReplicas().members();
+
+        List<String> groups = config.get( CausalClusteringSettings.server_groups );
+        if ( groups.isEmpty() )
+        {
+            return Optional.empty();
+        }
+
+        String myGroup = groups.get( 0 );
+
+        List<Map.Entry<MemberId, ReadReplicaInfo>> choices = replicas.entrySet().stream()
+                .filter( entry -> entry.getValue().groups().contains( myGroup ) && !entry.getKey().equals( myself ) )
+                .collect( Collectors.toList() );
+
+        if ( choices.isEmpty() )
+        {
+            return Optional.empty();
+        }
+        else
+        {
+            return Optional.of( choices.get( random.nextInt( choices.size() ) ).getKey() );
+        }
+    }
+}
