@@ -24,6 +24,7 @@ import java.util.function.Supplier;
 
 import org.neo4j.kernel.api.KernelAPI;
 import org.neo4j.kernel.api.KernelTransaction;
+import org.neo4j.kernel.api.ReadOperations;
 import org.neo4j.kernel.api.Statement;
 import org.neo4j.kernel.api.constraints.UniquenessConstraint;
 import org.neo4j.kernel.api.exceptions.TransactionFailureException;
@@ -42,6 +43,8 @@ import org.neo4j.kernel.impl.api.index.IndexingService;
 import org.neo4j.kernel.impl.api.operations.SchemaReadOperations;
 import org.neo4j.kernel.impl.locking.Locks.Client;
 import static java.util.Collections.singleton;
+
+import static org.neo4j.helpers.collection.Iterators.loop;
 import static org.neo4j.kernel.api.security.SecurityContext.AUTH_DISABLED;
 
 import static org.neo4j.kernel.impl.locking.ResourceTypes.SCHEMA;
@@ -88,7 +91,7 @@ public class ConstraintIndexCreator
             throws ConstraintVerificationFailedKernelException, TransactionFailureException,
             CreateConstraintFailureException, DropIndexFailureException
     {
-        IndexDescriptor descriptor = createConstraintIndex( labelId, propertyKeyId );
+        IndexDescriptor descriptor = getOrCreateConstraintIndex( state, labelId, propertyKeyId );
         UniquenessConstraint constraint = new UniquenessConstraint( labelId, propertyKeyId );
 
         boolean success = false;
@@ -208,7 +211,36 @@ public class ConstraintIndexCreator
         }
     }
 
-    public IndexDescriptor createConstraintIndex( final int labelId, final int propertyKeyId )
+    public IndexDescriptor getOrCreateConstraintIndex( KernelStatement state,
+            int labelId, int propertyKeyId )
+    {
+        ReadOperations readOperations = state.readOperations();
+        for ( IndexDescriptor descriptor : loop( readOperations.uniqueIndexesGetForLabel( labelId ) ) )
+        {
+            if ( descriptor.getPropertyKeyId() == propertyKeyId )
+            {
+                // OK so we found a matching constraint index. We check whether or not it has an owner
+                // because this may have been a left-over constraint index from a previously failed
+                // constraint creation, due to crash or similar, hence the missing owner.
+                try
+                {
+                    if ( readOperations.indexGetOwningUniquenessConstraintId( descriptor ) == null )
+                    {
+                        return descriptor;
+                    }
+                }
+                catch ( SchemaRuleNotFoundException e )
+                {
+                    throw new IllegalStateException( "Unexpectedly index " + descriptor +
+                            " wasn't found right after getting it", e );
+                }
+            }
+        }
+
+        return createConstraintIndex( labelId, propertyKeyId );
+    }
+
+    public IndexDescriptor createConstraintIndex( int labelId, int propertyKeyId )
     {
         try ( KernelTransaction transaction =
                       kernelSupplier.get().newTransaction( KernelTransaction.Type.implicit, AUTH_DISABLED );

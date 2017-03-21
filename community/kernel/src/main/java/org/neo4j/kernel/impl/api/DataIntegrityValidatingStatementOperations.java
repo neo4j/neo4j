@@ -39,6 +39,7 @@ import org.neo4j.kernel.api.exceptions.schema.IndexBelongsToConstraintException;
 import org.neo4j.kernel.api.exceptions.schema.NoSuchConstraintException;
 import org.neo4j.kernel.api.exceptions.schema.NoSuchIndexException;
 import org.neo4j.kernel.api.exceptions.schema.SchemaKernelException.OperationContext;
+import org.neo4j.kernel.api.exceptions.schema.SchemaRuleNotFoundException;
 import org.neo4j.kernel.api.exceptions.schema.TooManyLabelsException;
 import org.neo4j.kernel.api.index.IndexDescriptor;
 import org.neo4j.kernel.impl.api.operations.KeyWriteOperations;
@@ -241,10 +242,29 @@ public class DataIntegrityValidatingStatementOperations implements
         {
             if ( descriptor.getPropertyKeyId() == propertyKey )
             {
-                throw new AlreadyConstrainedException(
-                        new UniquenessConstraint( descriptor.getLabelId(), descriptor.getPropertyKeyId() ), context,
-                        new StatementTokenNameLookup( state.readOperations() ) );
+                // OK so we found a matching constraint index. We check whether or not it has an owner
+                // because this may have been a left-over constraint index from a previously failed
+                // constraint creation, due to crash or similar, hence the missing owner.
+                if ( context != OperationContext.CONSTRAINT_CREATION || constraintIndexHasOwner( state, descriptor ) )
+                {
+                    throw new AlreadyConstrainedException(
+                            new UniquenessConstraint( descriptor.getLabelId(), descriptor.getPropertyKeyId() ), context,
+                            new StatementTokenNameLookup( state.readOperations() ) );
+                }
             }
+        }
+    }
+
+    private boolean constraintIndexHasOwner( KernelStatement state, IndexDescriptor descriptor )
+    {
+        try
+        {
+            return schemaReadDelegate.indexGetOwningUniquenessConstraintId( state, descriptor ) != null;
+        }
+        catch ( SchemaRuleNotFoundException e )
+        {
+            throw new IllegalStateException( "Unexpectedly index " + descriptor +
+                    " wasn't found right after getting it", e );
         }
     }
 

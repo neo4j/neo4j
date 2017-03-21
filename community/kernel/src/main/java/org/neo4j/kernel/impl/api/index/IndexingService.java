@@ -214,18 +214,8 @@ public class IndexingService extends LifecycleAdapter
                     break;
                 case POPULATING:
                     // The database was shut down during population, or a crash has occurred, or some other sad thing.
-                    if ( constraint && indexRule.getOwningConstraint() == null )
-                    {
-                        // don't bother rebuilding if we are going to throw the index away anyhow
-                        indexProxy = indexProxyCreator.createFailedIndexProxy(
-                                indexId, descriptor, providerDescriptor, constraint,
-                                failure( "Constraint for index was not committed." ) );
-                    }
-                    else
-                    {
-                        indexProxy = indexProxyCreator
-                                .createRecoveringIndexProxy( descriptor, providerDescriptor, constraint );
-                    }
+                    indexProxy = indexProxyCreator
+                            .createRecoveringIndexProxy( descriptor, providerDescriptor, constraint );
                     break;
                 case FAILED:
                     IndexPopulationFailure failure = failure( provider.getPopulationFailure( indexId ) );
