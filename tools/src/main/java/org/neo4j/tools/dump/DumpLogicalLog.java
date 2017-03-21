@@ -29,8 +29,6 @@ import java.util.function.Function;
 import java.util.function.Predicate;
 import java.util.regex.Pattern;
 
-import org.neo4j.collection.primitive.Primitive;
-import org.neo4j.collection.primitive.PrimitiveLongSet;
 import org.neo4j.cursor.IOCursor;
 import org.neo4j.helpers.Args;
 import org.neo4j.io.fs.DefaultFileSystemAbstraction;
@@ -40,6 +38,7 @@ import org.neo4j.kernel.impl.transaction.command.Command.NodeCommand;
 import org.neo4j.kernel.impl.transaction.command.Command.PropertyCommand;
 import org.neo4j.kernel.impl.transaction.command.Command.RelationshipCommand;
 import org.neo4j.kernel.impl.transaction.command.Command.RelationshipGroupCommand;
+import org.neo4j.kernel.impl.transaction.command.Command.SchemaRuleCommand;
 import org.neo4j.kernel.impl.transaction.log.FilteringIOCursor;
 import org.neo4j.kernel.impl.transaction.log.LogEntryCursor;
 import org.neo4j.kernel.impl.transaction.log.LogVersionBridge;
@@ -56,7 +55,7 @@ import org.neo4j.kernel.impl.transaction.log.entry.LogEntryReader;
 import org.neo4j.kernel.impl.transaction.log.entry.LogHeader;
 import org.neo4j.kernel.impl.transaction.log.entry.VersionAwareLogEntryReader;
 import org.neo4j.storageengine.api.StorageCommand;
-import org.neo4j.tools.dump.InconsistencyReportReader.Inconsistencies;
+import org.neo4j.tools.dump.inconsistency.ReportInconsistencies;
 
 import static java.util.TimeZone.getTimeZone;
 import static org.neo4j.helpers.Format.DEFAULT_TIME_ZONE;
@@ -185,40 +184,13 @@ public class DumpLogicalLog
     public static class ConsistencyCheckOutputCriteria implements Predicate<LogEntry[]>, Function<LogEntry,String>
     {
         private final TimeZone timeZone;
-        private final PrimitiveLongSet relationshipIds = Primitive.longSet();
-        private final PrimitiveLongSet nodeIds = Primitive.longSet();
-        private final PrimitiveLongSet propertyIds = Primitive.longSet();
-        private final PrimitiveLongSet relationshipGroupIds = Primitive.longSet();
+        private ReportInconsistencies inconsistencies;
 
         public ConsistencyCheckOutputCriteria( String ccFile, TimeZone timeZone ) throws IOException
         {
             this.timeZone = timeZone;
-            new InconsistencyReportReader( new Inconsistencies()
-            {
-                @Override
-                public void relationshipGroup( long id )
-                {
-                    relationshipGroupIds.add( id );
-                }
-
-                @Override
-                public void relationship( long id )
-                {
-                    relationshipIds.add( id );
-                }
-
-                @Override
-                public void property( long id )
-                {
-                    propertyIds.add( id );
-                }
-
-                @Override
-                public void node( long id )
-                {
-                    nodeIds.add( id );
-                }
-            } ).read( new File( ccFile ) );
+            inconsistencies = new ReportInconsistencies();
+            new InconsistencyReportReader( inconsistencies ).read( new File( ccFile ) );
         }
 
         @Override
@@ -250,19 +222,23 @@ public class DumpLogicalLog
         {
             if ( command instanceof NodeCommand )
             {
-                return nodeIds.contains( ((NodeCommand) command).getKey() );
+                return inconsistencies.containsNodeId( ((NodeCommand) command).getKey() );
             }
             if ( command instanceof RelationshipCommand )
             {
-                return relationshipIds.contains( ((RelationshipCommand) command).getKey() );
+                return inconsistencies.containsRelationshipId( ((RelationshipCommand) command).getKey() );
             }
             if ( command instanceof PropertyCommand )
             {
-                return propertyIds.contains( ((PropertyCommand) command).getKey() );
+                return inconsistencies.containsPropertyId( ((PropertyCommand) command).getKey() );
             }
             if ( command instanceof RelationshipGroupCommand )
             {
-                return relationshipGroupIds.contains( ((RelationshipGroupCommand) command).getKey() );
+                return inconsistencies.containsRelationshipGroupId( ((RelationshipGroupCommand) command).getKey() );
+            }
+            if ( command instanceof SchemaRuleCommand )
+            {
+                return inconsistencies.containsSchemaIndexId( ((SchemaRuleCommand) command).getKey() );
             }
             return false;
         }
