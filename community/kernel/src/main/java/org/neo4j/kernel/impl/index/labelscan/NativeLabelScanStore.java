@@ -42,6 +42,7 @@ import org.neo4j.kernel.api.labelscan.LabelScanWriter;
 import org.neo4j.kernel.impl.api.scan.FullStoreChangeStream;
 import org.neo4j.kernel.impl.store.UnderlyingStorageException;
 import org.neo4j.kernel.monitoring.Monitors;
+import org.neo4j.logging.Log;
 import org.neo4j.storageengine.api.schema.LabelScanReader;
 
 import static org.neo4j.helpers.Format.duration;
@@ -117,6 +118,11 @@ public class NativeLabelScanStore implements LabelScanStore
      * Describe health state for the system this {@link LabelScanStore} is part of.
      */
     private final Health health;
+
+    /**
+     * For underlying {@link GBPTree} to use
+     */
+    private final Log log;
     /**
      * Page size to use for each tree node in {@link GBPTree}. Passed to {@link GBPTree}.
      */
@@ -150,9 +156,9 @@ public class NativeLabelScanStore implements LabelScanStore
     private final NativeLabelScanWriter singleWriter;
 
     public NativeLabelScanStore( PageCache pageCache, File storeDir, FullStoreChangeStream fullStoreChangeStream,
-            boolean readOnly, Monitors monitors, Health health )
+            boolean readOnly, Monitors monitors, Health health, Log log )
     {
-        this( pageCache, storeDir, fullStoreChangeStream, readOnly, monitors, health,
+        this( pageCache, storeDir, fullStoreChangeStream, readOnly, monitors, health, log,
                 /*means no opinion about page size*/ 0 );
     }
 
@@ -160,10 +166,11 @@ public class NativeLabelScanStore implements LabelScanStore
      * Test access to be able to control page size.
      */
     NativeLabelScanStore( PageCache pageCache, File storeDir, FullStoreChangeStream fullStoreChangeStream,
-            boolean readOnly, Monitors monitors, Health health, int pageSize )
+            boolean readOnly, Monitors monitors, Health health, Log log, int pageSize )
     {
         this.pageCache = pageCache;
         this.health = health;
+        this.log = log;
         this.pageSize = pageSize;
         this.fullStoreChangeStream = fullStoreChangeStream;
         this.storeFile = new File( storeDir, FILE_NAME );
@@ -339,7 +346,7 @@ public class NativeLabelScanStore implements LabelScanStore
     {
         monitors.addMonitorListener( treeMonitor() );
         GBPTree.Monitor monitor = monitors.newMonitor( GBPTree.Monitor.class );
-        index = new GBPTree<>( pageCache, storeFile, new LabelScanLayout(), pageSize, monitor, NO_HEADER, health );
+        index = new GBPTree<>( pageCache, storeFile, new LabelScanLayout(), pageSize, monitor, NO_HEADER, health, log );
     }
 
     private GBPTree.Monitor treeMonitor()

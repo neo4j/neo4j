@@ -42,6 +42,7 @@ import org.neo4j.io.pagecache.PageCache;
 import org.neo4j.io.pagecache.PageCursor;
 import org.neo4j.io.pagecache.PagedFile;
 import org.neo4j.kernel.Health;
+import org.neo4j.logging.Log;
 
 import static java.lang.String.format;
 
@@ -301,6 +302,11 @@ public class GBPTree<KEY,VALUE> implements Closeable
     private final Health health;
 
     /**
+     * Used to log interesting events
+     */
+    private final Log log;
+
+    /**
      * Opens an index {@code indexFile} in the {@code pageCache}, creating and initializing it if it doesn't exist.
      * If the index doesn't exist it will be created and the {@link Layout} and {@code pageSize} will
      * be written in index header.
@@ -317,15 +323,17 @@ public class GBPTree<KEY,VALUE> implements Closeable
      * @param headerReader reads header data, previously written using {@link #checkpoint(IOLimiter, Consumer)}
      * or {@link #close()}
      * @param health Database {@link Health}
+     * @param log {@link Log} to use for logging
      * @throws IOException on page cache error
      */
     public GBPTree( PageCache pageCache, File indexFile, Layout<KEY,VALUE> layout, int tentativePageSize,
-            Monitor monitor, Header.Reader headerReader, Health health ) throws IOException
+            Monitor monitor, Header.Reader headerReader, Health health, Log log ) throws IOException
     {
         this.indexFile = indexFile;
         this.monitor = monitor;
         this.generation = Generation.generation( GenerationSafePointer.MIN_GENERATION, GenerationSafePointer.MIN_GENERATION + 1 );
         this.health = health;
+        this.log = log;
         long rootId = IdSpace.MIN_TREE_NODE_ID;
         setRoot( rootId, Generation.unstableGeneration( generation ) );
         this.layout = layout;
@@ -677,10 +685,11 @@ public class GBPTree<KEY,VALUE> implements Closeable
      * @param ioLimiter for controlling I/O usage.
      * @param headerWriter hook for writing header data.
      * @throws IOException on error flushing to storage.
+     * @return {@code true} if checkpoint had anything to write
      */
-    public void checkpoint( IOLimiter ioLimiter, Consumer<PageCursor> headerWriter ) throws IOException
+    public boolean checkpoint( IOLimiter ioLimiter, Consumer<PageCursor> headerWriter ) throws IOException
     {
-        checkpoint( ioLimiter, replace( headerWriter ) );
+        return checkpoint( ioLimiter, replace( headerWriter ) );
     }
 
     /**
@@ -691,17 +700,17 @@ public class GBPTree<KEY,VALUE> implements Closeable
      * @throws IOException on error flushing to storage.
      * @see #checkpoint(IOLimiter, Consumer)
      */
-    public void checkpoint( IOLimiter ioLimiter ) throws IOException
+    public boolean checkpoint( IOLimiter ioLimiter ) throws IOException
     {
-        checkpoint( ioLimiter, CARRY_OVER_PREVIOUS_HEADER );
+        return checkpoint( ioLimiter, CARRY_OVER_PREVIOUS_HEADER );
     }
 
-    private void checkpoint( IOLimiter ioLimiter, Header.Writer headerWriter ) throws IOException
+    private boolean checkpoint( IOLimiter ioLimiter, Header.Writer headerWriter ) throws IOException
     {
         if ( !changesSinceLastCheckpoint && headerWriter == CARRY_OVER_PREVIOUS_HEADER )
         {
             // No changes has happened since last checkpoint was called, no need to do another checkpoint
-            return;
+            return false;
         }
 
         // Flush dirty pages of the tree, do this before acquiring the lock so that writers won't be
@@ -739,6 +748,7 @@ public class GBPTree<KEY,VALUE> implements Closeable
             // the new unstable generation.
             writerCheckpointMutex.unlock();
         }
+        return true;
     }
 
     /**
@@ -768,6 +778,8 @@ public class GBPTree<KEY,VALUE> implements Closeable
     private void close( Header.Writer headerWriter ) throws IOException
     {
         writerCheckpointMutex.lock();
+        boolean didCheckpoint = false;
+        boolean anyWrites = false;
         try
         {
             if ( closed )
@@ -790,11 +802,20 @@ public class GBPTree<KEY,VALUE> implements Closeable
             {
                 closed = true;
                 pagedFile.close();
+                // Perform a checkpoint before closing. If no changes has happened since last checkpoint,
+                // no new checkpoint will be created.
+                anyWrites = checkpoint( IOLimiter.unlimited(), headerWriter );
+                didCheckpoint = true;
             }
         }
         finally
         {
             writerCheckpointMutex.unlock();
+            pagedFile.close();
+            String checkpointMessage = didCheckpoint ?
+                                       "Did checkpoint during close, had anything to write? " + anyWrites :
+                                       "Did not checkpoint during close";
+            log.info( checkpointMessage );
         }
     }
 

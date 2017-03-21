@@ -39,6 +39,7 @@ import org.neo4j.cursor.RawCursor;
 import org.neo4j.io.pagecache.IOLimiter;
 import org.neo4j.io.pagecache.PageCache;
 import org.neo4j.kernel.AlwaysHealthy;
+import org.neo4j.logging.NullLog;
 import org.neo4j.test.rule.PageCacheRule;
 import org.neo4j.test.rule.TestDirectory;
 import org.neo4j.test.rule.fs.DefaultFileSystemRule;
@@ -139,7 +140,7 @@ public class FormatCompatibilityTest
     private GBPTree<MutableLong,MutableLong> gbpTree( File storeFile, PageCache pageCache ) throws IOException
     {
         return new GBPTree<>( pageCache, storeFile, new SimpleLongLayout(), 0, NO_MONITOR, NO_HEADER,
-                new AlwaysHealthy() );
+                new AlwaysHealthy(), NullLog.getInstance() );
     }
 
     private void tellDeveloperToCommitThisFormatVersion()

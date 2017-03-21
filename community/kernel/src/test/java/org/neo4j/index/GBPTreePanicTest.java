@@ -30,12 +30,14 @@ import java.util.concurrent.atomic.AtomicBoolean;
 
 import org.neo4j.index.internal.gbptree.CheckpointCounter;
 import org.neo4j.index.internal.gbptree.GBPTree;
+import org.neo4j.index.internal.gbptree.GBPTree.Monitor;
 import org.neo4j.index.internal.gbptree.Layout;
 import org.neo4j.index.internal.gbptree.SimpleLongLayout;
 import org.neo4j.index.internal.gbptree.Writer;
 import org.neo4j.io.pagecache.IOLimiter;
 import org.neo4j.io.pagecache.PageCache;
 import org.neo4j.kernel.Health;
+import org.neo4j.logging.NullLog;
 import org.neo4j.test.rule.PageCacheRule;
 import org.neo4j.test.rule.TestDirectory;
 import org.neo4j.test.rule.fs.DefaultFileSystemRule;
@@ -72,7 +74,6 @@ public class GBPTreePanicTest
             index.checkpoint( IOLimiter.unlimited() );
             assertThat( checkpointCounter.count(), is(1 ) );
             insert( index, 2 );
-
         }
         // THEN, after close
         assertThat( checkpointCounter.count(), is( 2 ) );
@@ -96,7 +97,6 @@ public class GBPTreePanicTest
             assertThat( checkpointCounter.count(), is( 1 ) );
             insert( index, 2 );
             isHealthy.set( false );
-
         }
         // THEN, after close
         assertThat( checkpointCounter.count(), is( 1 ) );
@@ -110,27 +110,11 @@ public class GBPTreePanicTest
         }
     }
 
-    private GBPTree<MutableLong,MutableLong> gbpTree( Health health, CheckpointCounter monitor )
+    private GBPTree<MutableLong,MutableLong> gbpTree( Health health, Monitor monitor )
             throws java.io.IOException
     {
         PageCache pageCache = pageCacheRule.getPageCache( fs.get() );
         File file = directory.file( "index" );
-        return new GBPTree<>( pageCache, file, layout, 0, monitor, GBPTree.NO_HEADER, health );
-    }
-
-    private class ControllableHealth extends Health.Adapter
-    {
-        private final AtomicBoolean isHealthy;
-
-        ControllableHealth( AtomicBoolean isHealthy )
-        {
-            this.isHealthy = isHealthy;
-        }
-
-        @Override
-        public boolean isHealthy()
-        {
-            return isHealthy.get();
-        }
+        return new GBPTree<>( pageCache, file, layout, 0, monitor, GBPTree.NO_HEADER, health, NullLog.getInstance() );
     }
 }

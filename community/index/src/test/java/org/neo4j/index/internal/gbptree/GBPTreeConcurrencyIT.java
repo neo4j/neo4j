@@ -50,6 +50,7 @@ import org.neo4j.cursor.RawCursor;
 import org.neo4j.io.pagecache.IOLimiter;
 import org.neo4j.io.pagecache.PageCache;
 import org.neo4j.kernel.AlwaysHealthy;
+import org.neo4j.logging.NullLog;
 import org.neo4j.test.rule.PageCacheRule;
 import org.neo4j.test.rule.RandomRule;
 import org.neo4j.test.rule.TestDirectory;
@@ -108,7 +109,8 @@ public class GBPTreeConcurrencyIT
         PageCache pageCache =
                 pageCacheRule.getPageCache( fs.get(), config().withPageSize( pageSize ).withAccessChecks( true ) );
         return index = new GBPTree<>( pageCache, directory.file( "index" ),
-                layout, 0/*use whatever page cache says*/, monitor, NO_HEADER, new AlwaysHealthy() );
+                layout, 0/*use whatever page cache says*/, monitor, NO_HEADER, new AlwaysHealthy(),
+                NullLog.getInstance() );
     }
 
     @After
@@ -285,8 +287,7 @@ public class GBPTreeConcurrencyIT
         void iterationFinished()
         {
             // Create new set to not modify set that readers use concurrently
-            TreeSet<Long> tmp = new TreeSet<>( readersShouldSee );
-            readersShouldSee = tmp;
+            readersShouldSee = new TreeSet<>( readersShouldSee );
             updateRecentlyInsertedData( readersShouldSee, updatesForNextIteration );
             updatesForNextIteration = generateUpdatesForNextIteration();
             updateWithSoonToBeRemovedData( readersShouldSee, updatesForNextIteration );

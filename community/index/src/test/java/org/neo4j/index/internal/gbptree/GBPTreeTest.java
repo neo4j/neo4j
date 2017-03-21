@@ -44,6 +44,8 @@ import org.neo4j.io.pagecache.PageCache;
 import org.neo4j.io.pagecache.PageCursor;
 import org.neo4j.io.pagecache.PagedFile;
 import org.neo4j.kernel.AlwaysHealthy;
+import org.neo4j.logging.Log;
+import org.neo4j.logging.NullLog;
 import org.neo4j.test.Barrier;
 import org.neo4j.test.rule.PageCacheRule;
 import org.neo4j.test.rule.RandomRule;
@@ -82,6 +84,7 @@ public class GBPTreeTest
         private int tentativePageSize;
         private GBPTree.Monitor monitor;
         private Header.Reader headerReader;
+        private Log log;
 
         GBPTreeBuilder( PageCache pageCache )
         {
@@ -90,12 +93,13 @@ public class GBPTreeTest
             this.tentativePageSize = pageCache.pageSize();
             this.monitor = NO_MONITOR;
             this.headerReader = NO_HEADER;
+            this.log = NullLog.getInstance();
         }
 
         GBPTree<MutableLong,MutableLong> build() throws IOException
         {
             return new GBPTree<>( pageCache, indexFile, layout, tentativePageSize, monitor, headerReader,
-                    new AlwaysHealthy() );
+                    new AlwaysHealthy(), log );
         }
 
         GBPTreeBuilder with( int tentativePageSize )
@@ -116,6 +120,12 @@ public class GBPTreeTest
             return this;
         }
 
+        GBPTreeBuilder with( Log log )
+        {
+            this.log = log;
+            return this;
+        }
+
         public GBPTreeBuilder with( Layout<MutableLong,MutableLong> layout )
         {
             this.layout = layout;
@@ -123,7 +133,7 @@ public class GBPTreeTest
         }
     }
 
-    GBPTreeBuilder builder( PageCache pageCache )
+    private GBPTreeBuilder builder( PageCache pageCache )
     {
         return new GBPTreeBuilder( pageCache );
     }
