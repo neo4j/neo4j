@@ -59,7 +59,6 @@ public class TxPullRequestHandler extends SimpleChannelInboundHandler<TxPullRequ
 
     public TxPullRequestHandler( CatchupServerProtocol protocol, Supplier<StoreId> storeIdSupplier,
                                  BooleanSupplier databaseAvailable, Supplier<TransactionIdStore> transactionIdStoreSupplier,
-
                                  Supplier<LogicalTransactionStore> logicalTransactionStoreSupplier, int batchSize, Monitors monitors, LogProvider logProvider )
     {
         this.protocol = protocol;
@@ -80,6 +79,8 @@ public class TxPullRequestHandler extends SimpleChannelInboundHandler<TxPullRequ
         CatchupResult status = SUCCESS_END_OF_STREAM;
         StoreId localStoreId = storeIdSupplier.get();
 
+        long lastCommittedTransactionId = transactionIdStore.getLastCommittedTransactionId();
+
         if ( localStoreId == null || !localStoreId.equals( msg.expectedStoreId() ) )
         {
             status = E_STORE_ID_MISMATCH;
@@ -93,7 +94,7 @@ public class TxPullRequestHandler extends SimpleChannelInboundHandler<TxPullRequ
             status = E_STORE_UNAVAILABLE;
             log.info( "Failed to serve TxPullRequest for tx %d because the local database is unavailable.", lastTxId );
         }
-        else if ( transactionIdStore.getLastCommittedTransactionId() >= firstTxId )
+        else if ( lastCommittedTransactionId >= firstTxId )
         {
             try ( IOCursor<CommittedTransactionRepresentation> cursor =
                           logicalTransactionStore.getTransactions( firstTxId ) )
@@ -124,7 +125,7 @@ public class TxPullRequestHandler extends SimpleChannelInboundHandler<TxPullRequ
         }
 
         ctx.write( ResponseMessageType.TX_STREAM_FINISHED );
-        TxStreamFinishedResponse response = new TxStreamFinishedResponse( status );
+        TxStreamFinishedResponse response = new TxStreamFinishedResponse( status, lastCommittedTransactionId );
         ctx.write( response );
         ctx.flush();
 

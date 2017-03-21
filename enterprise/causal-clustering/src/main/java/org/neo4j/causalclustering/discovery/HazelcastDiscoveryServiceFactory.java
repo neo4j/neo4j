@@ -20,7 +20,6 @@
 package org.neo4j.causalclustering.discovery;
 
 import org.neo4j.causalclustering.core.CausalClusteringSettings;
-import org.neo4j.causalclustering.core.consensus.schedule.DelayedRenewableTimeoutService;
 import org.neo4j.causalclustering.identity.MemberId;
 import org.neo4j.kernel.configuration.Config;
 import org.neo4j.kernel.impl.util.JobScheduler;
@@ -37,14 +36,11 @@ public class HazelcastDiscoveryServiceFactory implements DiscoveryServiceFactory
     }
 
     @Override
-    public TopologyService readReplicaDiscoveryService( Config config,
-                                                 LogProvider logProvider, DelayedRenewableTimeoutService timeoutService,
-                                                 long readReplicaTimeToLiveTimeout, long readReplicaRefreshRate )
+    public TopologyService readReplicaDiscoveryService( Config config, LogProvider logProvider,
+            JobScheduler jobScheduler )
     {
         configureHazelcast( config );
-
-        return new HazelcastClient( new HazelcastClientConnector( config ), logProvider, config, timeoutService,
-                readReplicaTimeToLiveTimeout, readReplicaRefreshRate );
+        return new HazelcastClient( new HazelcastClientConnector( config ), jobScheduler, logProvider, config );
     }
 
     private static void configureHazelcast( Config config )

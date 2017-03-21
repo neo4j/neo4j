@@ -81,7 +81,7 @@ public class GetServersProcedureRoutingTest
 
         final CoreTopology clusterTopology = new CoreTopology( clusterId, false, coreMembers );
         when( coreTopologyService.coreServers() ).thenReturn( clusterTopology );
-        when( coreTopologyService.readReplicas() ).thenReturn( new ReadReplicaTopology( clusterId, emptySet() ) );
+        when( coreTopologyService.readReplicas() ).thenReturn( new ReadReplicaTopology( emptySet() ) );
 
         final GetServersProcedure proc =
                 new GetServersProcedure( coreTopologyService, leaderLocator, config, getInstance() );

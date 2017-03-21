@@ -19,16 +19,18 @@
  */
 package org.neo4j.causalclustering.discovery;
 
-import org.neo4j.causalclustering.identity.MemberId;
-import org.neo4j.kernel.configuration.Config;
-import org.neo4j.kernel.impl.util.JobScheduler;
-import org.neo4j.logging.LogProvider;
-
-public interface DiscoveryServiceFactory
+/**
+ * A checked exception to make exceptions visible.
+ */
+class HazelcastInstanceNotActiveException extends Exception
 {
-    CoreTopologyService coreTopologyService( Config config, MemberId myself, JobScheduler jobScheduler,
-            LogProvider logProvider, LogProvider userLogProvider );
+    HazelcastInstanceNotActiveException( String message )
+    {
+        super( message );
+    }
 
-    TopologyService readReplicaDiscoveryService( Config config, LogProvider logProvider,
-            JobScheduler jobScheduler );
+    HazelcastInstanceNotActiveException( Throwable cause )
+    {
+        super( cause );
+    }
 }

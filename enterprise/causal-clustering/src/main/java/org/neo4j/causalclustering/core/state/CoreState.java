@@ -186,6 +186,7 @@ public class CoreState implements MessageHandler<RaftMessages.ClusterIdAwareMess
         localDatabase.start();
         coreStateMachines.installCommitProcess( localDatabase.getCommitProcess() );
         applicationProcess.start();
+        raftMachine.startTimers();
     }
 
     private boolean haveState()
@@ -198,6 +199,7 @@ public class CoreState implements MessageHandler<RaftMessages.ClusterIdAwareMess
     @Override
     public synchronized void stop() throws Throwable
     {
+        raftMachine.stopTimers();
         applicationProcess.stop();
         localDatabase.stop();
         allowMessageHandling = false;

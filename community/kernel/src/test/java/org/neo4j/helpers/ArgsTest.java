@@ -17,21 +17,24 @@
  * You should have received a copy of the GNU General Public License
  * along with this program.  If not, see <http://www.gnu.org/licenses/>.
  */
-package org.neo4j.procedure;
-/**
- * The procedure mode affects how the procedure will execute, and which capabilities
- * it requires.
- */
-public enum Mode
+package org.neo4j.helpers;
+
+import org.junit.Test;
+
+import static org.junit.Assert.assertEquals;
+
+public class ArgsTest
 {
-    /** This procedure will only perform read operations against the graph */
-    READ,
-    /** This procedure may perform both read and write operations against the graph */
-    WRITE,
-    /** This procedure will perform operations against the schema */
-    SCHEMA,
-    /** This procedure will perform system operations - i.e. not against the graph */
-    DBMS,
-    /** This procedure will only perform read operations against the graph */
-    DEFAULT
+    @Test
+    public void shoulInterpretSingleDashAsValue() throws Exception
+    {
+        // GIVEN
+        Args args = Args.parse( "-test", "-" );
+
+        // WHEN
+        String value = args.get( "test" );
+
+        // THEN
+        assertEquals( "-", value );
+    }
 }

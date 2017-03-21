@@ -23,14 +23,13 @@ import org.junit.Before;
 import org.junit.Test;
 
 import java.util.concurrent.CompletableFuture;
-
 import java.util.concurrent.Future;
 
 import org.neo4j.causalclustering.catchup.CatchUpClient;
 import org.neo4j.causalclustering.catchup.CatchUpResponseCallback;
 import org.neo4j.causalclustering.catchup.CatchupResult;
-import org.neo4j.causalclustering.catchup.storecopy.StoreCopyProcess;
 import org.neo4j.causalclustering.catchup.storecopy.LocalDatabase;
+import org.neo4j.causalclustering.catchup.storecopy.StoreCopyProcess;
 import org.neo4j.causalclustering.core.consensus.schedule.ControlledRenewableTimeoutService;
 import org.neo4j.causalclustering.identity.MemberId;
 import org.neo4j.causalclustering.identity.StoreId;
@@ -48,7 +47,6 @@ import static org.mockito.Matchers.any;
 import static org.mockito.Matchers.eq;
 import static org.mockito.Mockito.doThrow;
 import static org.mockito.Mockito.mock;
-import static org.mockito.Mockito.never;
 import static org.mockito.Mockito.times;
 import static org.mockito.Mockito.verify;
 import static org.mockito.Mockito.when;
@@ -114,9 +112,11 @@ public class CatchupPollingProcessTest
         when( txApplier.lastQueuedTxId() ).thenReturn( lastAppliedTxId );
 
         // when
-        when(catchUpClient.<CatchupResult>makeBlockingRequest(  any( MemberId.class ), any( TxPullRequest.class ),
-                any( CatchUpResponseCallback.class )  ))
-                .thenReturn( CatchupResult.SUCCESS_END_OF_BATCH, CatchupResult.SUCCESS_END_OF_STREAM );
+        when( catchUpClient.<TxStreamFinishedResponse>makeBlockingRequest( any( MemberId.class ), any( TxPullRequest.class ),
+                any( CatchUpResponseCallback.class ) ) )
+                .thenReturn(
+                        new TxStreamFinishedResponse( CatchupResult.SUCCESS_END_OF_BATCH, 10 ),
+                        new TxStreamFinishedResponse( CatchupResult.SUCCESS_END_OF_STREAM, 10 ) );
 
         timeoutService.invokeTimeout( TX_PULLER_TIMEOUT );
 
@@ -130,14 +130,14 @@ public class CatchupPollingProcessTest
     {
         // when
         txPuller.start();
-        when( catchUpClient .makeBlockingRequest( any( MemberId.class ), any( TxPullRequest.class ),
-                any(CatchUpResponseCallback.class)))
-                .thenReturn( CatchupResult.SUCCESS_END_OF_STREAM );
+        when( catchUpClient.makeBlockingRequest( any( MemberId.class ), any( TxPullRequest.class ),
+                any( CatchUpResponseCallback.class ) ) ).thenReturn(
+                new TxStreamFinishedResponse( CatchupResult.SUCCESS_END_OF_STREAM, 0 ) );
 
         timeoutService.invokeTimeout( TX_PULLER_TIMEOUT );
 
         // then
-        verify( timeoutService.getTimeout( TX_PULLER_TIMEOUT ) ).renew();
+        assertEquals( 1, timeoutService.getTimeout( TX_PULLER_TIMEOUT ).renewalCount() );
     }
 
     @Test
@@ -145,9 +145,9 @@ public class CatchupPollingProcessTest
     {
         // when
         txPuller.start();
-        when( catchUpClient.makeBlockingRequest(
-                any( MemberId.class ), any( TxPullRequest.class ), any( CatchUpResponseCallback.class ) ) )
-                .thenReturn( CatchupResult.E_TRANSACTION_PRUNED );
+        when( catchUpClient.makeBlockingRequest( any( MemberId.class ), any( TxPullRequest.class ),
+                any( CatchUpResponseCallback.class ) ) ).thenReturn(
+                        new TxStreamFinishedResponse( CatchupResult.E_TRANSACTION_PRUNED, 0 ) );
 
         timeoutService.invokeTimeout( TX_PULLER_TIMEOUT );
 
@@ -161,7 +161,8 @@ public class CatchupPollingProcessTest
         // given
         txPuller.start();
         when( catchUpClient.makeBlockingRequest( any( MemberId.class ), any( TxPullRequest.class ),
-                any( CatchUpResponseCallback.class ) ) ).thenReturn( CatchupResult.E_TRANSACTION_PRUNED );
+                any( CatchUpResponseCallback.class ) ) ).thenReturn(
+                        new TxStreamFinishedResponse( CatchupResult.E_TRANSACTION_PRUNED, 0 ) );
 
         // when (tx pull)
         timeoutService.invokeTimeout( TX_PULLER_TIMEOUT );
@@ -196,19 +197,19 @@ public class CatchupPollingProcessTest
 
         // then
         assertEquals( PANIC, txPuller.state() );
-        verify( timeoutService.getTimeout( TX_PULLER_TIMEOUT ), never() ).renew();
+        assertEquals( 0, timeoutService.getTimeout( TX_PULLER_TIMEOUT ).renewalCount() );
     }
 
     @Test
     public void shouldNotSignalOperationalUntilPulling() throws Throwable
     {
         // given
-        when(catchUpClient.<CatchupResult>makeBlockingRequest(  any( MemberId.class ), any( TxPullRequest.class ),
-                any( CatchUpResponseCallback.class )  ))
+        when( catchUpClient.<TxStreamFinishedResponse>makeBlockingRequest( any( MemberId.class ), any( TxPullRequest.class ),
+                any( CatchUpResponseCallback.class ) ) )
                 .thenReturn(
-                        CatchupResult.E_TRANSACTION_PRUNED,
-                        CatchupResult.SUCCESS_END_OF_BATCH,
-                        CatchupResult.SUCCESS_END_OF_STREAM );
+                        new TxStreamFinishedResponse( CatchupResult.E_TRANSACTION_PRUNED, 0),
+                        new TxStreamFinishedResponse( CatchupResult.SUCCESS_END_OF_BATCH, 10),
+                        new TxStreamFinishedResponse( CatchupResult.SUCCESS_END_OF_STREAM, 15) );
 
         // when
         txPuller.start();

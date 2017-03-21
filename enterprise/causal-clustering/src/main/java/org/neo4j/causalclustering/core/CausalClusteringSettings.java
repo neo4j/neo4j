@@ -204,11 +204,7 @@ public class CausalClusteringSettings
     public static final Setting<Long> read_replica_time_to_live =
             setting( "causal_clustering.read_replica_time_to_live", DURATION, "1m", min(60_000L) );
 
-    @Description( "Read replica 'call home' frequency"  )
-    public static final Setting<Long> read_replica_refresh_rate =
-            setting( "causal_clustering.read_replica_refresh_rate", DURATION, "5s", min(5_000L) );
-
-    @Description( "How long drivers should cache the data from the `dbms.cluster.routing.getServers()` procedure."  )
+    @Description( "How long drivers should cache the data from the `dbms.cluster.routing.getServers()` procedure." )
     public static final Setting<Long> cluster_routing_ttl =
             setting( "causal_clustering.cluster_routing_ttl", DURATION, "5m", min(1_000L) );
 
@@ -310,7 +306,7 @@ public class CausalClusteringSettings
 
     @Description( "Time between scanning the cluster to refresh current server's view of topology" )
     public static final Setting<Long> cluster_topology_refresh =
-            setting( "causal_clustering.cluster_topology_refresh", DURATION, "1m", min(1_000L) );
+            setting( "causal_clustering.cluster_topology_refresh", DURATION, "5s", min(1_000L) );
 
     @Description( "Require authorization for access to the Causal Clustering status endpoints." )
     public static final Setting<Boolean> status_auth_enabled =

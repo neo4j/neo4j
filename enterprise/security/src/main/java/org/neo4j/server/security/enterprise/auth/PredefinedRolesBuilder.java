@@ -59,6 +59,7 @@ public class PredefinedRolesBuilder implements RolesBuilder
 
         SimpleRole publisher = new SimpleRole( PUBLISHER );
         publisher.add( WRITE );
+        publisher.add( TOKEN );
         roles.put( PUBLISHER, publisher );
 
         SimpleRole reader = new SimpleRole( READER );
@@ -66,28 +67,6 @@ public class PredefinedRolesBuilder implements RolesBuilder
         roles.put( READER, reader );
 
         return roles;
-    }
-
-    static void setAllowPublisherTokenCreate( boolean allowTokenCreate )
-    {
-
-        SimpleRole publisher = innerRoles.get( PUBLISHER );
-        if ( publisher == null )
-        {
-            return;
-        }
-        if ( allowTokenCreate )
-        {
-            publisher.add( TOKEN );
-        }
-        else
-        {
-            Set<Permission> permissions = publisher.getPermissions();
-            if ( permissions != null )
-            {
-                permissions.remove( TOKEN );
-            }
-        }
     }
 
     public static final RolePermissionResolver rolePermissionResolver = new RolePermissionResolver()

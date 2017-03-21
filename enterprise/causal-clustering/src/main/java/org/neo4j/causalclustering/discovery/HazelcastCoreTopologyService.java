@@ -31,10 +31,14 @@ import com.hazelcast.core.MemberAttributeEvent;
 import com.hazelcast.core.MembershipEvent;
 import com.hazelcast.core.MembershipListener;
 
+import java.util.HashMap;
 import java.util.List;
+import java.util.Map;
+import java.util.Optional;
 import java.util.concurrent.TimeUnit;
 
 import org.neo4j.causalclustering.core.CausalClusteringSettings;
+import org.neo4j.causalclustering.helper.RobustJobSchedulerWrapper;
 import org.neo4j.causalclustering.identity.ClusterId;
 import org.neo4j.causalclustering.identity.MemberId;
 import org.neo4j.graphdb.config.Setting;
@@ -52,8 +56,9 @@ import static com.hazelcast.spi.properties.GroupProperty.MERGE_FIRST_RUN_DELAY_S
 import static com.hazelcast.spi.properties.GroupProperty.MERGE_NEXT_RUN_DELAY_SECONDS;
 import static com.hazelcast.spi.properties.GroupProperty.OPERATION_CALL_TIMEOUT_MILLIS;
 import static com.hazelcast.spi.properties.GroupProperty.WAIT_SECONDS_BEFORE_JOIN;
-import static java.util.concurrent.TimeUnit.MILLISECONDS;
-import static org.neo4j.kernel.impl.util.JobScheduler.SchedulingStrategy.POOLED;
+import static org.neo4j.causalclustering.discovery.HazelcastClusterTopology.extractCatchupAddressesMap;
+import static org.neo4j.causalclustering.discovery.HazelcastClusterTopology.getCoreTopology;
+import static org.neo4j.causalclustering.discovery.HazelcastClusterTopology.getReadReplicaTopology;
 
 class HazelcastCoreTopologyService extends LifecycleAdapter implements CoreTopologyService
 {
@@ -63,31 +68,34 @@ class HazelcastCoreTopologyService extends LifecycleAdapter implements CoreTopol
     private final Log log;
     private final Log userLog;
     private final CoreTopologyListenerService listenerService;
-    private final JobScheduler scheduler;
-    private String membershipRegistrationId;
+    private final RobustJobSchedulerWrapper scheduler;
+    private final long refreshPeriod;
 
-    private JobScheduler.JobHandle jobHandle;
+    private String membershipRegistrationId;
+    private JobScheduler.JobHandle refreshJob;
 
     private HazelcastInstance hazelcastInstance;
-    private volatile ReadReplicaTopology latestReadReplicaTopology;
-    private volatile CoreTopology latestCoreTopology;
+    private volatile ReadReplicaTopology readReplicaTopology = ReadReplicaTopology.EMPTY;
+    private volatile CoreTopology coreTopology = CoreTopology.EMPTY;
+    private volatile Map<MemberId,AdvertisedSocketAddress> catchupAddressMap = new HashMap<>();
 
     HazelcastCoreTopologyService( Config config, MemberId myself, JobScheduler jobScheduler, LogProvider logProvider,
             LogProvider userLogProvider )
     {
         this.config = config;
         this.myself = myself;
-        this.scheduler = jobScheduler;
         this.listenerService = new CoreTopologyListenerService();
         this.log = logProvider.getLog( getClass() );
+        this.scheduler = new RobustJobSchedulerWrapper( jobScheduler, log );
         this.userLog = userLogProvider.getLog( getClass() );
+        this.refreshPeriod = config.get( CausalClusteringSettings.cluster_topology_refresh );
     }
 
     @Override
     public void addCoreTopologyListener( Listener listener )
     {
         listenerService.addCoreTopologyListener( listener );
-        listener.onCoreTopologyChange( coreServers() );
+        listener.onCoreTopologyChange( coreTopology );
     }
 
     @Override
@@ -99,36 +107,10 @@ class HazelcastCoreTopologyService extends LifecycleAdapter implements CoreTopol
     @Override
     public void start()
     {
-        hazelcastInstance = createHazelcastInstance();
         log.info( "Cluster discovery service started" );
+        hazelcastInstance = createHazelcastInstance();
         membershipRegistrationId = hazelcastInstance.getCluster().addMembershipListener( new OurMembershipListener() );
-        refreshCoreTopology();
-        refreshReadReplicaTopology();
-        listenerService.notifyListeners( coreServers() );
-
-        try
-        {
-            scheduler.start();
-        }
-        catch ( Throwable throwable )
-        {
-            log.debug( "Failed to start job scheduler." );
-            return;
-        }
-
-        JobScheduler.Group group = new JobScheduler.Group( "Scheduler", POOLED );
-        jobHandle = this.scheduler.scheduleRecurring( group, () ->
-        {
-            try
-            {
-                refreshCoreTopology();
-                refreshReadReplicaTopology();
-            }
-            catch ( Throwable e )
-            {
-                log.info( "Failed to refresh topology", e );
-            }
-        }, config.get( CausalClusteringSettings.cluster_topology_refresh ), MILLISECONDS );
+        refreshJob = scheduler.scheduleRecurring( "TopologyRefresh", refreshPeriod, this::refreshTopology );
     }
 
     @Override
@@ -136,6 +118,9 @@ class HazelcastCoreTopologyService extends LifecycleAdapter implements CoreTopol
     {
         log.info( String.format( "HazelcastCoreTopologyService stopping and unbinding from %s",
                 config.get( CausalClusteringSettings.discovery_listen_address ) ) );
+
+        scheduler.cancelAndWaitTermination( refreshJob );
+
         try
         {
             hazelcastInstance.getCluster().removeMembershipListener( membershipRegistrationId );
@@ -144,10 +129,6 @@ class HazelcastCoreTopologyService extends LifecycleAdapter implements CoreTopol
         catch ( Throwable e )
         {
             log.warn( "Failed to stop Hazelcast", e );
-        }
-        finally
-        {
-            jobHandle.cancel( true );
         }
     }
 
@@ -193,18 +174,15 @@ class HazelcastCoreTopologyService extends LifecycleAdapter implements CoreTopol
         c.setMemberAttributeConfig( memberAttributeConfig );
         logConnectionInfo( initialMembers );
 
-        DelayedLog delayedLog = new DelayedLog( "The server has not been able to connect in a timely fashion to the " +
-                "cluster. Please consult the logs for more details. Rebooting the server may solve the problem", log );
-        JobScheduler.JobHandle jobHandle = scheduler
-                .schedule( new JobScheduler.Group( getClass().toString(), JobScheduler.SchedulingStrategy.POOLED ),
-                        delayedLog, HAZELCAST_IS_HEALTHY_TIMEOUT_MS, MILLISECONDS );
-
-        delayedLog.setJobHandle( jobHandle );
+        JobScheduler.JobHandle logJob = scheduler.schedule( "HazelcastHealth", HAZELCAST_IS_HEALTHY_TIMEOUT_MS,
+                () -> log.warn( "The server has not been able to connect in a timely fashion to the " +
+                                "cluster. Please consult the logs for more details. Rebooting the server may " +
+                                "solve the problem." ) );
 
         try
         {
             hazelcastInstance = Hazelcast.newHazelcastInstance( c );
-            delayedLog.stop();
+            logJob.cancel( true );
         }
         catch ( HazelcastException e )
         {
@@ -220,12 +198,12 @@ class HazelcastCoreTopologyService extends LifecycleAdapter implements CoreTopol
 
     private void logConnectionInfo( List<AdvertisedSocketAddress> initialMembers )
     {
-        userLog.info(   "My connection info: " +
-                        "[\n\tDiscovery:   listen=%s, advertised=%s," +
-                        "\n\tTransaction: listen=%s, advertised=%s, " +
-                        "\n\tRaft:        listen=%s, advertised=%s, " +
-                        "\n\tClient Connector Addresses: %s" +
-                        "\n]",
+        userLog.info( "My connection info: " +
+                      "[\n\tDiscovery:   listen=%s, advertised=%s," +
+                      "\n\tTransaction: listen=%s, advertised=%s, " +
+                      "\n\tRaft:        listen=%s, advertised=%s, " +
+                      "\n\tClient Connector Addresses: %s" +
+                      "\n]",
                 config.get( CausalClusteringSettings.discovery_listen_address ),
                 config.get( CausalClusteringSettings.discovery_advertised_address ),
                 config.get( CausalClusteringSettings.transaction_listen_address ),
@@ -243,30 +221,40 @@ class HazelcastCoreTopologyService extends LifecycleAdapter implements CoreTopol
     }
 
     @Override
-    public ReadReplicaTopology readReplicas()
-    {
-        return latestReadReplicaTopology;
-    }
-
-    @Override
     public CoreTopology coreServers()
     {
-        return latestCoreTopology;
+        return coreTopology;
     }
 
     @Override
-    public void refreshCoreTopology()
+    public ReadReplicaTopology readReplicas()
     {
-        latestCoreTopology = HazelcastClusterTopology.getCoreTopology( hazelcastInstance, config, log );
-        log.info( "Current core topology is %s", coreServers() );
+        return readReplicaTopology;
+    }
 
-        listenerService.notifyListeners( coreServers() );
+    @Override
+    public Optional<AdvertisedSocketAddress> findCatchupAddress( MemberId memberId )
+    {
+        return Optional.ofNullable( catchupAddressMap.get( memberId ) );
+    }
+
+    private synchronized void refreshTopology()
+    {
+        refreshCoreTopology();
+        refreshReadReplicaTopology();
+        catchupAddressMap = extractCatchupAddressesMap( coreTopology, readReplicaTopology );
+    }
+
+    private void refreshCoreTopology()
+    {
+        coreTopology = getCoreTopology( hazelcastInstance, config, log );
+        listenerService.notifyListeners( coreTopology );
     }
 
     private void refreshReadReplicaTopology()
     {
-        latestReadReplicaTopology = HazelcastClusterTopology.getReadReplicaTopology( hazelcastInstance, log );
-        log.info( "Current read replica topology is %s", latestReadReplicaTopology );
+        readReplicaTopology = getReadReplicaTopology( hazelcastInstance, log );
+        log.info( "Current read replica topology is %s", readReplicaTopology );
     }
 
     private class OurMembershipListener implements MembershipListener
@@ -275,55 +263,20 @@ class HazelcastCoreTopologyService extends LifecycleAdapter implements CoreTopol
         public void memberAdded( MembershipEvent membershipEvent )
         {
             log.info( "Core member added %s", membershipEvent );
-            refreshCoreTopology();
+            refreshTopology();
         }
 
         @Override
         public void memberRemoved( MembershipEvent membershipEvent )
         {
             log.info( "Core member removed %s", membershipEvent );
-            refreshCoreTopology();
+            refreshTopology();
         }
 
         @Override
         public void memberAttributeChanged( MemberAttributeEvent memberAttributeEvent )
         {
-        }
-    }
-
-    private class DelayedLog implements Runnable
-    {
-        private final String message;
-        private final Log log;
-        private boolean performLogging = true;
-        private JobScheduler.JobHandle jobHandle;
-
-        DelayedLog( String message, Log log )
-        {
-            this.message = message;
-            this.log = log;
-        }
-
-        @Override
-        public void run()
-        {
-            if ( performLogging )
-            {
-                log.warn( message );
-                stop();
-            }
-
-            jobHandle.cancel( true );
-        }
-
-        public void stop()
-        {
-            this.performLogging = false;
-        }
-
-        void setJobHandle( JobScheduler.JobHandle jobHandle )
-        {
-            this.jobHandle = jobHandle;
+            log.info( "Core member attribute changed %s", memberAttributeEvent );
         }
     }
 }

@@ -27,7 +27,6 @@ import java.util.function.Supplier;
 import org.neo4j.causalclustering.catchup.CatchUpClient;
 import org.neo4j.causalclustering.catchup.CatchUpClientException;
 import org.neo4j.causalclustering.catchup.CatchUpResponseAdaptor;
-import org.neo4j.causalclustering.catchup.CatchupResult;
 import org.neo4j.causalclustering.catchup.storecopy.LocalDatabase;
 import org.neo4j.causalclustering.catchup.storecopy.StoreCopyFailedException;
 import org.neo4j.causalclustering.catchup.storecopy.StreamingTransactionsFailedException;
@@ -47,6 +46,7 @@ import org.neo4j.kernel.monitoring.Monitors;
 import org.neo4j.logging.Log;
 import org.neo4j.logging.LogProvider;
 
+import static java.lang.String.format;
 import static org.neo4j.causalclustering.catchup.tx.CatchupPollingProcess.State.PANIC;
 import static org.neo4j.causalclustering.catchup.tx.CatchupPollingProcess.State.STORE_COPYING;
 import static org.neo4j.causalclustering.catchup.tx.CatchupPollingProcess.State.TX_PULLING;
@@ -87,9 +87,10 @@ public class CatchupPollingProcess extends LifecycleAdapter
     private final PullRequestMonitor pullRequestMonitor;
 
     private RenewableTimeout timeout;
-    private State state = TX_PULLING;
+    private volatile State state = TX_PULLING;
     private DatabaseHealth dbHealth;
     private CompletableFuture<Boolean> upToDateFuture; // we are up-to-date when we are successfully pulling
+    private volatile long latestTxIdOfUpStream;
 
     public CatchupPollingProcess( LogProvider logProvider, LocalDatabase localDatabase,
             Lifecycle startStopOnStoreCopy, CatchUpClient catchUpClient,
@@ -239,23 +240,23 @@ public class CatchupPollingProcess extends LifecycleAdapter
         TxPullRequest txPullRequest = new TxPullRequest( lastQueuedTxId, localStoreId );
         log.debug( "Pull transactions where tx id > %d [batch #%d]", lastQueuedTxId, batchCount );
 
-        CatchupResult catchupResult;
+        TxStreamFinishedResponse response;
         try
         {
-            catchupResult = catchUpClient.makeBlockingRequest( core, txPullRequest, new CatchUpResponseAdaptor<CatchupResult>()
+            response = catchUpClient.makeBlockingRequest( core, txPullRequest, new CatchUpResponseAdaptor<TxStreamFinishedResponse>()
             {
                 @Override
-                public void onTxPullResponse( CompletableFuture<CatchupResult> signal, TxPullResponse response )
+                public void onTxPullResponse( CompletableFuture<TxStreamFinishedResponse> signal, TxPullResponse response )
                 {
                     handleTransaction( response.tx() );
                 }
 
                 @Override
-                public void onTxStreamFinishedResponse( CompletableFuture<CatchupResult> signal,
+                public void onTxStreamFinishedResponse( CompletableFuture<TxStreamFinishedResponse> signal,
                         TxStreamFinishedResponse response )
                 {
                     streamComplete();
-                    signal.complete( response.status() );
+                    signal.complete( response );
                 }
             } );
         }
@@ -265,7 +266,9 @@ public class CatchupPollingProcess extends LifecycleAdapter
             return false;
         }
 
-        switch ( catchupResult )
+        latestTxIdOfUpStream = response.latestTxId();
+
+        switch ( response.status() )
         {
             case SUCCESS_END_OF_BATCH:
                 return true;
@@ -333,7 +336,20 @@ public class CatchupPollingProcess extends LifecycleAdapter
             throw new RuntimeException( throwable );
         }
 
+        latestTxIdOfUpStream = 0; // we will find out on the next pull request response
         state = TX_PULLING;
         applier.refreshFromNewStore();
+    }
+
+    public String describeState()
+    {
+        if ( state == TX_PULLING && applier.lastQueuedTxId() > 0 && latestTxIdOfUpStream > 0 )
+        {
+            return format( "%s (%d of %d)", TX_PULLING.name(), applier.lastQueuedTxId(), latestTxIdOfUpStream );
+        }
+        else
+        {
+            return state.name();
+        }
     }
 }
