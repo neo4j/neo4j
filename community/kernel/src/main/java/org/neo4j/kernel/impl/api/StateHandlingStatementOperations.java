@@ -964,10 +964,12 @@ public class StateHandlingStatementOperations implements
             NodeItem node = cursor.get();
             Property existingProperty = readProperty( property.propertyKeyId(), node, EntityType.NODE );
 
+            // TODO Explicitly auto-index properties, even if setting the same value as the existing one.
+            // This because there are established ways of rebuilding auto-indexes which involves this function.
+            autoIndexProperty( nodeId, property, ops, existingProperty, autoIndexing.nodes() );
+
             if ( !property.equals( existingProperty ) )
             {
-                autoIndexProperty( nodeId, property, ops, existingProperty, autoIndexing.nodes() );
-
                 state.txState().nodeDoReplaceProperty( node.id(), existingProperty, property );
 
                 DefinedProperty before = definedPropertyOrNull( existingProperty );
@@ -1013,9 +1015,12 @@ public class StateHandlingStatementOperations implements
             RelationshipItem relationship = cursor.get();
             Property existingProperty = readProperty( property.propertyKeyId(), relationship, EntityType.RELATIONSHIP );
 
+            // TODO Explicitly auto-index properties, even if setting the same value as the existing one.
+            // This because there are established ways of rebuilding auto-indexes which involves this function.
+            autoIndexProperty( relationshipId, property, ops, existingProperty, autoIndexing.relationships() );
+
             if ( !property.equals( existingProperty ) )
             {
-                autoIndexProperty( relationshipId, property, ops, existingProperty, autoIndexing.relationships() );
                 state.txState().relationshipDoReplaceProperty( relationship.id(), existingProperty, property );
             }
             return existingProperty;
