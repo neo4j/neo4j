@@ -388,8 +388,6 @@ case class FullPruningVarLengthExpandPipe(source: Pipe,
   }
 
   override protected def internalCreateResults(input: Iterator[ExecutionContext], state: QueryState): Iterator[ExecutionContext] = {
-    state.decorator.registerParentPipe(this)
-
     new FullyPruningIterator(input, state)
   }
 }
