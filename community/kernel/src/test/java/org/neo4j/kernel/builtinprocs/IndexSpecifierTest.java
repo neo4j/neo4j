@@ -60,9 +60,17 @@ public class IndexSpecifierTest
     public void shouldParseManyProperties()
     {
         String[] properties = new IndexSpecifier( ":Person(1, 2, 3, 4, 5, 6)" ).properties();
-        System.out.println(Arrays.toString(properties));
         assertThat( properties,
                 is( arrayContaining( "1", "2", "3", "4", "5", "6" ) ) );
+    }
+
+    @Test
+    public void shouldParseOddProperties()
+    {
+        String[] properties = new IndexSpecifier( ": Person(1,    2lskgj_LKHGS, `3sdlkhs,   df``sas;g`, 4, `  5  `, 6)" )
+                .properties();
+        assertThat( properties,
+                is( arrayContaining( "1", "2lskgj_LKHGS", "3sdlkhs,   df``sas;g", "4", "  5  ", "6" ) ) );
     }
 
     @Test

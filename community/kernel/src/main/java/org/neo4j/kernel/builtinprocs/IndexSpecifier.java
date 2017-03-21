@@ -63,9 +63,9 @@ public class IndexSpecifier
     {
         // Note that this now matches all properties in a single group, in order to split them later.
         Pattern pattern = Pattern.compile(
-                ":" + or( identifier(true), qoutedIdentifier(true) ) + // Match the label
+                ":\\s*" + or( identifier(true), qoutedIdentifier(true) ) + // Match the label
                 "\\((" + or( identifier(false), qoutedIdentifier(false) ) + // Match the first property
-                "(?:\\,\\s" + or( identifier(false), qoutedIdentifier(false) ) + ")*)\\)" // Match following properties
+                "(?:\\,\\s*" + or( identifier(false), qoutedIdentifier(false) ) + ")*)\\)" // Match following properties
         );
         Matcher matcher = pattern.matcher( specification );
         if ( !matcher.find() )
@@ -75,10 +75,11 @@ public class IndexSpecifier
         String label = either( matcher.group( 1 ), matcher.group( 2 ) );
         String propertyString = matcher.group( 3 );
         //Split string on commas, but ignore commas in quotes
-        String[] properties = propertyString.split(",\\s(?=(?:`[^`]*`)|[^`]*$)", -1);
+        String[] properties = propertyString.split(",\\s*(?=(?:[^`]*`[^`]*`)*[^`]*$)");
+        //Strip quotes from property names
         for ( int i = 0; i < properties.length ; i++ )
         {
-            properties[i] = properties[i].replace( "`", "" );
+            properties[i] = properties[i].replaceAll( "(^`)|(`$)", "" );
         }
         return Pair.of( label, properties );
     }
@@ -109,11 +110,11 @@ public class IndexSpecifier
     {
         if ( capture )
         {
-            return "(?:`([^`]+)`)";
+            return "(?:`((?:[^`]|``)+)`)";
         }
         else
         {
-            return "(?:`(?:[^`]+)`)";
+            return "(?:`(?:(?:[^`]|``)+)`)";
         }
     }
 }
