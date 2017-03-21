@@ -54,20 +54,18 @@ public class IndexProcedures implements AutoCloseable
     {
         IndexSpecifier index = parse( indexSpecification );
         int labelId = getLabelId( index.label() );
-        int propertyKeyId = getPropertyId( index.property() );
-        //TODO: Support composite indexes
-        waitUntilOnline( getIndex( labelId, propertyKeyId, index ), index, timeout, timeoutUnits );
+        int[] propertyKeyIds = getPropertyIds( index.properties() );
+        waitUntilOnline( getIndex( labelId, propertyKeyIds, index ), index, timeout, timeoutUnits );
     }
 
     public void resampleIndex( String indexSpecification ) throws ProcedureException
     {
         IndexSpecifier index = parse( indexSpecification );
         int labelId = getLabelId( index.label() );
-        int propertyKeyId = getPropertyId( index.property() );
-        //TODO: Support composite indexes
+        int[] propertyKeyIds = getPropertyIds( index.properties() );
         try
         {
-            triggerSampling( getIndex( labelId, propertyKeyId, index ) );
+            triggerSampling( getIndex( labelId, propertyKeyIds, index ) );
         }
         catch ( IndexNotFoundKernelException e )
         {
@@ -95,24 +93,30 @@ public class IndexProcedures implements AutoCloseable
         return labelId;
     }
 
-    private int getPropertyId( String propertyKeyName ) throws ProcedureException
+    private int[] getPropertyIds( String[] propertyKeyNames ) throws ProcedureException
     {
-        int propertyKeyId = operations.propertyKeyGetForName( propertyKeyName );
-        if ( propertyKeyId == ReadOperations.NO_SUCH_PROPERTY_KEY )
+        int[] propertyKeyIds = new int[propertyKeyNames.length];
+        for ( int i = 0; i < propertyKeyIds.length; i++ )
         {
-            throw new ProcedureException( Status.Schema.PropertyKeyAccessFailed,
-                    "No such property key %s", propertyKeyName );
+
+            int propertyKeyId = operations.propertyKeyGetForName( propertyKeyNames[i] );
+            if ( propertyKeyId == ReadOperations.NO_SUCH_PROPERTY_KEY )
+            {
+                throw new ProcedureException( Status.Schema.PropertyKeyAccessFailed, "No such property key %s",
+                        propertyKeyNames );
+            }
+            propertyKeyIds[i] = propertyKeyId;
         }
-        return propertyKeyId;
+        return propertyKeyIds;
     }
 
-    private NewIndexDescriptor getIndex( int labelId, int propertyKeyId, IndexSpecifier index ) throws
+    private NewIndexDescriptor getIndex( int labelId, int[] propertyKeyIds, IndexSpecifier index ) throws
             ProcedureException
     {
         try
         {
             return operations
-                    .indexGetForLabelAndPropertyKey( SchemaDescriptorFactory.forLabel( labelId, propertyKeyId ) );
+                    .indexGetForSchema( SchemaDescriptorFactory.forLabel( labelId, propertyKeyIds ) );
         }
         catch ( SchemaRuleNotFoundException e )
         {

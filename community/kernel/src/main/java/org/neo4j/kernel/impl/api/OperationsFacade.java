@@ -571,7 +571,7 @@ public class OperationsFacade
 
     // <SchemaRead>
     @Override
-    public NewIndexDescriptor indexGetForLabelAndPropertyKey( LabelSchemaDescriptor descriptor )
+    public NewIndexDescriptor indexGetForSchema( LabelSchemaDescriptor descriptor )
             throws SchemaRuleNotFoundException
     {
         statement.assertOpen();

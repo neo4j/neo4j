@@ -103,12 +103,12 @@ public class AwaitIndexProcedureTest
     {
         when( operations.labelGetForName( anyString() ) ).thenReturn( descriptor.getLabelId() );
         when( operations.propertyKeyGetForName( anyString() ) ).thenReturn( descriptor.getPropertyId() );
-        when( operations.indexGetForLabelAndPropertyKey( anyObject() ) ).thenReturn( anyIndex );
+        when( operations.indexGetForSchema( anyObject() ) ).thenReturn( anyIndex );
         when( operations.indexGetState( any( NewIndexDescriptor.class ) ) ).thenReturn( ONLINE );
 
         procedure.awaitIndex( ":Person(name)", timeout, timeoutUnits );
 
-        verify( operations ).indexGetForLabelAndPropertyKey( descriptor );
+        verify( operations ).indexGetForSchema( descriptor );
     }
 
     @Test
@@ -118,7 +118,7 @@ public class AwaitIndexProcedureTest
     {
         when( operations.labelGetForName( anyString() ) ).thenReturn( 0 );
         when( operations.propertyKeyGetForName( anyString() ) ).thenReturn( 0 );
-        when( operations.indexGetForLabelAndPropertyKey( anyObject() ) ).thenReturn( anyIndex );
+        when( operations.indexGetForSchema( anyObject() ) ).thenReturn( anyIndex );
         when( operations.indexGetState( any( NewIndexDescriptor.class ) ) ).thenReturn( FAILED );
 
         try
@@ -139,7 +139,7 @@ public class AwaitIndexProcedureTest
     {
         when( operations.propertyKeyGetForName( anyString() ) ).thenReturn( 0 );
         when( operations.labelGetForName( anyString() ) ).thenReturn( 0 );
-        when( operations.indexGetForLabelAndPropertyKey( any() ) ).thenThrow(
+        when( operations.indexGetForSchema( any() ) ).thenThrow(
                 new SchemaRuleNotFoundException( INDEX_RULE, SchemaDescriptorFactory.forLabel( 0, 0 ) ) );
 
         try
@@ -159,7 +159,7 @@ public class AwaitIndexProcedureTest
     {
         when( operations.labelGetForName( anyString() ) ).thenReturn( 0 );
         when( operations.propertyKeyGetForName( anyString() ) ).thenReturn( 0 );
-        when( operations.indexGetForLabelAndPropertyKey( anyObject() ) ).thenReturn( anyIndex );
+        when( operations.indexGetForSchema( anyObject() ) ).thenReturn( anyIndex );
 
         AtomicReference<InternalIndexState> state = new AtomicReference<>( POPULATING );
         when( operations.indexGetState( any( NewIndexDescriptor.class ) ) ).then( new Answer<InternalIndexState>()
@@ -198,7 +198,7 @@ public class AwaitIndexProcedureTest
     {
         when( operations.labelGetForName( anyString() ) ).thenReturn( 0 );
         when( operations.propertyKeyGetForName( anyString() ) ).thenReturn( 0 );
-        when( operations.indexGetForLabelAndPropertyKey( anyObject() ) ).thenReturn( anyIndex );
+        when( operations.indexGetForSchema( anyObject() ) ).thenReturn( anyIndex );
         when( operations.indexGetState( any( NewIndexDescriptor.class ) ) ).thenReturn( POPULATING );
 
         AtomicReference<ProcedureException> exception = new AtomicReference<>();

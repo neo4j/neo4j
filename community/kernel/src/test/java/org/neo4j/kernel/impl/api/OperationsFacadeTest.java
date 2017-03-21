@@ -78,7 +78,7 @@ public class OperationsFacadeTest
         expectedException.expect( new KernelExceptionUserMessageMatcher<>( tokenNameLookup,
                 "No index was found for :Label1(Prop1)." ) );
 
-        operationsFacade.indexGetForLabelAndPropertyKey( descriptor );
+        operationsFacade.indexGetForSchema( descriptor );
     }
 
     @Test

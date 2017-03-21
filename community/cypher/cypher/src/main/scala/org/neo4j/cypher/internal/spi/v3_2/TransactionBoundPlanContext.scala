@@ -48,7 +48,7 @@ class TransactionBoundPlanContext(tc: TransactionalContextWrapper, logger: Inter
 
   def indexGet(labelName: String, propertyKeys: Seq[String]): Option[IndexDescriptor] = evalOrNone {
     val descriptor = toLabelSchemaDescriptor(tc, labelName, propertyKeys)
-    getOnlineIndex(tc.statement.readOperations().indexGetForLabelAndPropertyKey(descriptor))
+    getOnlineIndex(tc.statement.readOperations().indexGetForSchema(descriptor))
   }
 
   def indexExistsForLabel(labelName: String): Boolean = {
