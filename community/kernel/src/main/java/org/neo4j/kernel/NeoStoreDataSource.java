@@ -163,6 +163,7 @@ import org.neo4j.storageengine.api.StorageEngine;
 import org.neo4j.storageengine.api.StoreFileMetadata;
 import org.neo4j.storageengine.api.StoreReadLayer;
 
+import static org.neo4j.kernel.impl.transaction.log.entry.InvalidLogEntryHandler.STRICT;
 import static org.neo4j.kernel.impl.transaction.log.pruning.LogPruneStrategyFactory.fromConfigValue;
 
 public class NeoStoreDataSource implements Lifecycle, IndexProviders
@@ -455,7 +456,7 @@ public class NeoStoreDataSource implements Lifecycle, IndexProviders
                     indexConfigStore, updateableSchemaState::clear, legacyIndexTransactionOrdering );
 
             LogEntryReader<ReadableClosablePositionAwareChannel> logEntryReader =
-                    new VersionAwareLogEntryReader<>( storageEngine.commandReaderFactory() );
+                    new VersionAwareLogEntryReader<>( storageEngine.commandReaderFactory(), STRICT );
 
             TransactionIdStore transactionIdStore = dependencies.resolveDependency( TransactionIdStore.class );
             LogVersionRepository logVersionRepository = dependencies.resolveDependency( LogVersionRepository.class );

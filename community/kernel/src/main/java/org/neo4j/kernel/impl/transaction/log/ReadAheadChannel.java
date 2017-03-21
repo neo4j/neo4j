@@ -26,6 +26,7 @@ import org.neo4j.io.fs.StoreChannel;
 import org.neo4j.storageengine.api.ReadPastEndException;
 
 import static java.lang.Math.min;
+import static java.lang.Math.toIntExact;
 import static java.lang.System.arraycopy;
 
 /**
@@ -33,7 +34,7 @@ import static java.lang.System.arraycopy;
  * spanning more than one file, by properly implementing {@link #next(StoreChannel)}.
  * @param <T> The type of StoreChannel wrapped
  */
-public class ReadAheadChannel<T extends StoreChannel> implements ReadableClosableChannel
+public class ReadAheadChannel<T extends StoreChannel> implements ReadableClosableChannel, PositionableChannel
 {
     public static final int DEFAULT_READ_AHEAD_SIZE = 1024 * 4;
 
@@ -191,5 +192,21 @@ public class ReadAheadChannel<T extends StoreChannel> implements ReadableClosabl
         arraycopy( aheadBuffer.array(), aheadBuffer.position(), aheadBuffer.array(), 0, remaining );
         aheadBuffer.clear();
         aheadBuffer.position( remaining );
+    }
+
+    @Override
+    public void setCurrentPosition( long byteOffset ) throws IOException
+    {
+        long positionRelativeToAheadBuffer = byteOffset - (channel.position() - aheadBuffer.limit());
+        if ( positionRelativeToAheadBuffer >= aheadBuffer.limit() || positionRelativeToAheadBuffer < 0 )
+        {
+            // Beyond what we currently have buffered
+            aheadBuffer.position( aheadBuffer.limit() );
+            channel.position( byteOffset );
+        }
+        else
+        {
+            aheadBuffer.position( toIntExact( positionRelativeToAheadBuffer ) );
+        }
     }
 }

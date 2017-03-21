@@ -155,7 +155,7 @@ public enum LogEntryVersion
     {
         byte flattenedVersion = (byte) -version;
 
-        if ( flattenedVersion < LOOKUP_BY_VERSION.length)
+        if ( flattenedVersion >= 0 && flattenedVersion < LOOKUP_BY_VERSION.length )
         {
             return LOOKUP_BY_VERSION[flattenedVersion];
         }
