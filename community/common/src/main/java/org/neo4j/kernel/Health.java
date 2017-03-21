@@ -19,11 +19,16 @@
  */
 package org.neo4j.kernel;
 
+/**
+ * Communicate health status between components within a system and let components report system panic.
+ */
 public interface Health
 {
     /**
-     * Asserts that the database is in good health. If that is not the case then the cause of the
+     * Asserts that the system is in good health. If that is not the case then the cause of the
      * unhealthy state is wrapped in an exception of the given type, i.e. the panic disguise.
+     * <p>
+     * To check health without throwing exception, use {@link #isHealthy()}.
      *
      * @param panicDisguise the cause of the unhealthy state wrapped in an exception of this type.
      * @throws EXCEPTION exception type to wrap cause in.
@@ -32,19 +37,38 @@ public interface Health
     {
     }
 
+    /**
+     * Report panic with cause to the system, meaning system is not longer in a healthy state.
+     * If system is already in a non health state cause will be ignored.
+     *
+     * @param cause Cause of panic. Can not be {@code null}.
+     */
     default void panic( Throwable cause )
     {
     }
 
+    /**
+     * Check that the system is in good health, without throwing any exception if it is not.
+     *
+     * @return true if system is in good health, otherwise false.
+     */
     default boolean isHealthy()
     {
         return true;
     }
 
+    /**
+     * Reset system state to healthy. This should override any previous calls to {@link #panic(Throwable)},
+     * subsequent calls to {@link #isHealthy()} should return {@code true}, subsequent calls to
+     * {@link #assertHealthy(Class)} should not throw.
+     */
     default void healed()
     {
     }
 
+    /**
+     * @return Cause of panic or {@code null} if system is in good health.
+     */
     default Throwable cause()
     {
         return null;
