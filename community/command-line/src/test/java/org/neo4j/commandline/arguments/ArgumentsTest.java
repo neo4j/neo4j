@@ -109,6 +109,42 @@ public class ArgumentsTest
     }
 
     @Test
+    public void argumentNoValue() throws Exception
+    {
+        Arguments args = builder.withArgument( new OptionalBooleanArg( "flag", false, "description" ) );
+
+        args.parse( new String[]{"--flag"} );
+        assertEquals( true, args.getBoolean( "flag" ) );
+
+        args.parse( new String[0] );
+        assertEquals( false, args.getBoolean( "flag" ) );
+    }
+
+    @Test
+    public void argumentWithEquals() throws Exception
+    {
+        Arguments args = builder.withArgument( new OptionalBooleanArg( "flag", false, "description" ) );
+
+        args.parse( new String[]{"--flag=true"} );
+        assertEquals( true, args.getBoolean( "flag" ) );
+
+        args.parse( new String[]{"--flag=false"} );
+        assertEquals( false, args.getBoolean( "flag" ) );
+    }
+
+    @Test
+    public void argumentWithSpace() throws Exception
+    {
+        Arguments args = builder.withArgument( new OptionalBooleanArg( "flag", false, "description" ) );
+
+        args.parse( new String[]{"--flag", "true"} );
+        assertEquals( true, args.getBoolean( "flag" ) );
+
+        args.parse( new String[]{"--flag", "false"} );
+        assertEquals( false, args.getBoolean( "flag" ) );
+    }
+
+    @Test
     public void withDatabaseUsage() throws Exception
     {
         assertEquals( "[--database=<name>]", builder.withDatabase().usage() );
