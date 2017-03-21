@@ -189,7 +189,7 @@ public interface ConsistencyReport
         @Documented( "This node was found in the expected index, although multiple times" )
         void indexedMultipleTimes( IndexRule index, Object[] propertyValues, long count );
 
-        @Documented( "There is another node in the unique index with the same property values." )
+        @Documented( "There is another node in the unique index with the same property value(s)." )
         void uniqueIndexNotUnique( IndexRule index, Object[] propertyValues, long duplicateNodeId );
 
         @Documented( "The referenced relationship group record is not in use." )

@@ -68,8 +68,8 @@ public class LookupFilter
                     for ( IndexQuery predicate : numericPredicates )
                     {
                         int propertyKeyId = predicate.propertyKeyId();
-                        Property property = accessor.getProperty( nodeId, propertyKeyId );
-                        if ( property.isDefined() && !predicate.test( ((DefinedProperty)property).value() ) )
+                        Object value = accessor.getProperty( nodeId, propertyKeyId ).value( null );
+                        if ( !predicate.test( value ) )
                         {
                             return false;
                         }

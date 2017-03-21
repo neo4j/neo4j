@@ -1084,38 +1084,6 @@ public class FullCheckIntegrationTest
                    .andThatsAllFolks();
     }
 
-    public static Collection<DynamicRecord> serializeRule( SchemaRule rule, DynamicRecord... records )
-    {
-        return serializeRule( rule, asList( records ) );
-    }
-
-    public static Collection<DynamicRecord> serializeRule( SchemaRule rule, Collection<DynamicRecord> records )
-    {
-        byte[] data = rule.serialize();
-        DynamicRecordAllocator dynamicRecordAllocator =
-                new ReusableRecordsCompositeAllocator( records, schemaAllocator );
-        Collection<DynamicRecord> result = new ArrayList<>();
-        AbstractDynamicStore.allocateRecordsFromBytes( result, data, dynamicRecordAllocator );
-        return result;
-    }
-
-    private static DynamicRecordAllocator schemaAllocator = new DynamicRecordAllocator()
-    {
-        private int next = 10000; // we start high to not conflict with real ids
-
-        @Override
-        public int getRecordDataSize()
-        {
-            return SchemaStore.BLOCK_SIZE;
-        }
-
-        @Override
-        public DynamicRecord nextRecord()
-        {
-            return new DynamicRecord( next++ );
-        }
-    };
-
     @Test
     public void shouldReportArrayPropertyInconsistencies() throws Exception
     {
@@ -1542,14 +1510,14 @@ public class FullCheckIntegrationTest
                    .andThatsAllFolks();
     }
 
-    protected RelationshipRecord withNext( RelationshipRecord relationship, long next )
+    private RelationshipRecord withNext( RelationshipRecord relationship, long next )
     {
         relationship.setFirstNextRel( next );
         relationship.setSecondNextRel( next );
         return relationship;
     }
 
-    protected RelationshipRecord withPrev( RelationshipRecord relationship, long prev )
+    private RelationshipRecord withPrev( RelationshipRecord relationship, long prev )
     {
         relationship.setFirstInFirstChain( false );
         relationship.setFirstInSecondChain( false );
@@ -2317,4 +2285,31 @@ public class FullCheckIntegrationTest
             assertEquals( "Total number of inconsistencies: " + stats, total, stats.getTotalInconsistencyCount() );
         }
     }
+
+    private static Collection<DynamicRecord> serializeRule( SchemaRule rule, DynamicRecord... records )
+    {
+        byte[] data = rule.serialize();
+        DynamicRecordAllocator dynamicRecordAllocator =
+                new ReusableRecordsCompositeAllocator( asList( records ), schemaAllocator );
+        Collection<DynamicRecord> result = new ArrayList<>();
+        AbstractDynamicStore.allocateRecordsFromBytes( result, data, dynamicRecordAllocator );
+        return result;
+    }
+
+    private static DynamicRecordAllocator schemaAllocator = new DynamicRecordAllocator()
+    {
+        private int next = 10000; // we start high to not conflict with real ids
+
+        @Override
+        public int getRecordDataSize()
+        {
+            return SchemaStore.BLOCK_SIZE;
+        }
+
+        @Override
+        public DynamicRecord nextRecord()
+        {
+            return new DynamicRecord( next++ );
+        }
+    };
 }

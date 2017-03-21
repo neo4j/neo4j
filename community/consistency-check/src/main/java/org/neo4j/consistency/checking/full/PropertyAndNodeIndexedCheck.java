@@ -238,15 +238,15 @@ public class PropertyAndNodeIndexedCheck implements RecordCheck<NodeRecord, Cons
         catch ( IndexNotApplicableKernelException e )
         {
             throw new RuntimeException( format(
-                    "Cannot continue %s, as index provider does not support exact composite query: %s",
-                    this.getClass().getSimpleName(), Arrays.toString( query ) ), e );
+                    "Consistency checking error: index provider does not support exact query %s",
+                    Arrays.toString( query ) ), e );
         }
 
         indexedNodeIds = LookupFilter.exactIndexMatches( propertyReader, indexedNodeIds, query );
         return indexedNodeIds;
     }
 
-    public static boolean nodeHasSchemaProperties(
+    private static boolean nodeHasSchemaProperties(
             PrimitiveIntObjectMap<PropertyBlock> nodePropertyMap, int[] indexPropertyIds )
     {
         for ( int indexPropertyId : indexPropertyIds )
