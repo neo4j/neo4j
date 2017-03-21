@@ -450,6 +450,20 @@ public class GBPTreeTest
     }
 
     @Test
+    public void shouldAllowClosingTreeMultipleTimes() throws Exception
+    {
+        // GIVEN
+        index = createIndex( 256 );
+
+        // WHEN
+        index.close();
+
+        // THEN
+        index.close(); // should be OK
+        index = null; // so that our @After clause won't try to consistency check it
+    }
+
+    @Test
     public void shouldPutHeaderDataInCheckPoint() throws Exception
     {
         // GIVEN
