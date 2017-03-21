@@ -39,28 +39,6 @@ case class FullPruningVarLengthExpandPipe(source: Pipe,
 
   assert(min <= max)
 
-  /*
-  This algorithm has been implemented using a state machine. This Cypher statement shows the static connections between the states.
-
-  create (ln:State  {name: "LoadNext", loads: "The start node of the expansion.", checksRelationshipUniqueness: false}),
-         (pre:State {name: "PrePruning", loads: "The relationship iterator of the nodes before min length has been reached.", checksRelationshipUniqueness: true}),
-         (pru:State {name: "Pruning", loads: "The relationship iterator of the nodes after min length has been reached.", checksRelationshipUniqueness: true}),
-         (nil:State {name: "Empty", signals: "End of the line. No more expansions to be done."}),
-         (ln)-[:GOES_TO {if: "Input iterator is not empty, load next input row and the start node from it"}]->(pre),
-         (ln)-[:GOES_TO {if: "Input iterator is not empty"}]->(nil),
-         (nil)-[:GOES_TO]->(nil),
-         (pre)-[:GOES_TO {if: "Next step is still less than min"}]->(pre),
-         (pre)-[:GOES_TO {if: "Next step is min or greater"}]->(pru),
-         (pru)-[:GOES_TO {if: "Next step is still less than max"}]->(pru)
-
-   Missing from this picture are the dynamic connections between the states - both `pre` and `pru` have a `whenEmptied`
-   field that is followed once the loaded iterator has been emptied.
- */
-
-  object Constants {
-    val VERY_BIG_VALUE:Int = 1000001
-  }
-
   /**
     * Performs DFS traversal, but omits traversing relationships that have been completely traversed (to the
     * remaining depth) before.
@@ -76,7 +54,7 @@ case class FullPruningVarLengthExpandPipe(source: Pipe,
     * incoming relationship on the previous node in the path. The full expand depth is computed as
     *
     *   1                 if the max path length is reached
-    *   A_VERY_BIG_VALUE  if the node has no relationships except the incoming one
+    *   inf               if the node has no relationships except the incoming one
     *   d+1               if at or above minLength, or if the node has been emitted
     *                       d is the minimum outgoing full expand depth
     *   0                 otherwise
@@ -247,15 +225,15 @@ case class FullPruningVarLengthExpandPipe(source: Pipe,
       * @return the full expand depth
       */
     def minOutgoingDepth(incomingRelId: Long): Int = {
-      var max = Constants.VERY_BIG_VALUE
+      var min = Integer.MAX_VALUE >> 1 // we don't want it to overflow
       var i = 0
       while (i < rels.length) {
         if (rels(i).getId != incomingRelId) {
-          max = math.min(depths(i), max)
+          min = math.min(depths(i), min)
         }
         i += 1
       }
-      max
+      min
     }
 
     def updateFullExpandDepth(relIndex:Int, depth:Int ): Unit = {
