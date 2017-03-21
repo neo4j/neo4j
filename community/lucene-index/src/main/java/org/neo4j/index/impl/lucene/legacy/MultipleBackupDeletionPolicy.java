@@ -19,19 +19,14 @@
  */
 package org.neo4j.index.impl.lucene.legacy;
 
-import java.io.IOException;
-
 import org.apache.lucene.index.IndexCommit;
 import org.apache.lucene.index.KeepOnlyLastCommitDeletionPolicy;
 import org.apache.lucene.index.SnapshotDeletionPolicy;
 
+import java.io.IOException;
+
 public class MultipleBackupDeletionPolicy extends SnapshotDeletionPolicy
 {
-    static final String SNAPSHOT_ID = "backup";
-
-    private IndexCommit snapshot;
-    private int snapshotUsers;
-
     public MultipleBackupDeletionPolicy()
     {
         super( new KeepOnlyLastCommitDeletionPolicy() );
@@ -40,29 +35,12 @@ public class MultipleBackupDeletionPolicy extends SnapshotDeletionPolicy
     @Override
     public synchronized IndexCommit snapshot() throws IOException
     {
-        if ( snapshotUsers == 0 )
-        {
-            snapshot = super.snapshot();
-        }
-        // Incremented after the call to super.snapshot() so that it wont get incremented
-        // if an exception (IllegalStateException if empty index) is thrown
-        snapshotUsers++;
-        return snapshot;
+        return super.snapshot();
     }
 
     @Override
     public synchronized void release( IndexCommit commit ) throws IOException
     {
-        if ( (--snapshotUsers) > 0 )
-        {
-            return;
-        }
         super.release( commit );
-        snapshot = null;
-        if ( snapshotUsers < 0 )
-        {
-            snapshotUsers = 0;
-            throw new IllegalStateException( "Cannot release snapshot, no snapshot held" );
-        }
     }
 }
