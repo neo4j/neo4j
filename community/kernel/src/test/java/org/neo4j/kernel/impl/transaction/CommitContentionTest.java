@@ -32,7 +32,6 @@ import org.neo4j.graphdb.GraphDatabaseService;
 import org.neo4j.graphdb.Transaction;
 import org.neo4j.graphdb.factory.GraphDatabaseFactoryState;
 import org.neo4j.kernel.configuration.Config;
-import org.neo4j.kernel.impl.api.index.RemoveOrphanConstraintIndexesOnStartup;
 import org.neo4j.kernel.impl.factory.CommunityEditionModule;
 import org.neo4j.kernel.impl.factory.DatabaseInfo;
 import org.neo4j.kernel.impl.factory.GraphDatabaseFacade;
@@ -147,11 +146,6 @@ public class CommitContentionTest
                             {
                                 super.transactionFinished( committed, write );
 
-                                if ( isTheRemoveOrphanedConstraintIndexesOnStartupTransaction() )
-                                {
-                                    return;
-                                }
-
                                 if ( committed )
                                 {
                                     // skip signal and waiting for second transaction
@@ -165,18 +159,6 @@ public class CommitContentionTest
 
                                     waitForSecondTransactionToFinish();
                                 }
-                            }
-
-                            private boolean isTheRemoveOrphanedConstraintIndexesOnStartupTransaction()
-                            {
-                                for ( StackTraceElement element : Thread.currentThread().getStackTrace() )
-                                {
-                                    if ( element.getClassName().contains( RemoveOrphanConstraintIndexesOnStartup.class.getSimpleName() ) )
-                                    {
-                                        return true;
-                                    }
-                                }
-                                return false;
                             }
                         };
                     }

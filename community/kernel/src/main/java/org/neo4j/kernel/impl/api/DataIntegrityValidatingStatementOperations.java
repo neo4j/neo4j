@@ -34,6 +34,7 @@ import org.neo4j.kernel.api.exceptions.schema.NoSuchConstraintException;
 import org.neo4j.kernel.api.exceptions.schema.NoSuchIndexException;
 import org.neo4j.kernel.api.exceptions.schema.RepeatedPropertyInCompositeSchemaException;
 import org.neo4j.kernel.api.exceptions.schema.SchemaKernelException.OperationContext;
+import org.neo4j.kernel.api.exceptions.schema.SchemaRuleNotFoundException;
 import org.neo4j.kernel.api.exceptions.schema.TooManyLabelsException;
 import org.neo4j.kernel.api.schema.LabelSchemaDescriptor;
 import org.neo4j.kernel.api.schema.RelationTypeSchemaDescriptor;
@@ -49,6 +50,7 @@ import org.neo4j.kernel.impl.api.operations.KeyWriteOperations;
 import org.neo4j.kernel.impl.api.operations.SchemaReadOperations;
 import org.neo4j.kernel.impl.api.operations.SchemaWriteOperations;
 
+import static org.neo4j.kernel.api.exceptions.schema.SchemaKernelException.OperationContext.CONSTRAINT_CREATION;
 import static org.neo4j.kernel.api.schema.index.IndexDescriptor.Type.UNIQUE;
 
 public class DataIntegrityValidatingStatementOperations implements
@@ -226,12 +228,34 @@ public class DataIntegrityValidatingStatementOperations implements
         IndexDescriptor existingIndex = schemaReadDelegate.indexGetForSchema( state, descriptor );
         if ( existingIndex != null )
         {
+            // OK so we found a matching constraint index. We check whether or not it has an owner
+            // because this may have been a left-over constraint index from a previously failed
+            // constraint creation, due to crash or similar, hence the missing owner.
             if ( existingIndex.type() == UNIQUE )
             {
-                throw new AlreadyConstrainedException( ConstraintDescriptorFactory.uniqueForSchema( descriptor ),
-                        context, new StatementTokenNameLookup( state.readOperations() ) );
+                if ( context != CONSTRAINT_CREATION || constraintIndexHasOwner( state, existingIndex ) )
+                {
+                    throw new AlreadyConstrainedException( ConstraintDescriptorFactory.uniqueForSchema( descriptor ),
+                            context, new StatementTokenNameLookup( state.readOperations() ) );
+                }
             }
-            throw new AlreadyIndexedException( descriptor, context );
+            else
+            {
+                throw new AlreadyIndexedException( descriptor, context );
+            }
+        }
+    }
+
+    private boolean constraintIndexHasOwner( KernelStatement state, IndexDescriptor descriptor )
+    {
+        try
+        {
+            return schemaReadDelegate.indexGetOwningUniquenessConstraintId( state, descriptor ) != null;
+        }
+        catch ( SchemaRuleNotFoundException e )
+        {
+            throw new IllegalStateException( "Unexpectedly index " + descriptor +
+                    " wasn't found right after getting it", e );
         }
     }
 

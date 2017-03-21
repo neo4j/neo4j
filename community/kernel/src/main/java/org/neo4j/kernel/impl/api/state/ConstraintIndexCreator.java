@@ -25,19 +25,25 @@ import java.util.function.Supplier;
 import org.neo4j.kernel.api.KernelAPI;
 import org.neo4j.kernel.api.KernelTransaction;
 import org.neo4j.kernel.api.Statement;
+import org.neo4j.kernel.api.StatementTokenNameLookup;
 import org.neo4j.kernel.api.exceptions.TransactionFailureException;
 import org.neo4j.kernel.api.exceptions.index.IndexEntryConflictException;
 import org.neo4j.kernel.api.exceptions.index.IndexNotFoundKernelException;
 import org.neo4j.kernel.api.exceptions.index.IndexPopulationFailedKernelException;
+import org.neo4j.kernel.api.exceptions.schema.AlreadyIndexedException;
 import org.neo4j.kernel.api.exceptions.schema.CreateConstraintFailureException;
 import org.neo4j.kernel.api.exceptions.schema.DropIndexFailureException;
+import org.neo4j.kernel.api.exceptions.schema.SchemaKernelException;
 import org.neo4j.kernel.api.exceptions.schema.SchemaRuleNotFoundException;
 import org.neo4j.kernel.api.exceptions.schema.UniquePropertyValueValidationException;
+import org.neo4j.kernel.api.exceptions.schema.AlreadyConstrainedException;
+import org.neo4j.kernel.api.exceptions.schema.SchemaKernelException.OperationContext;
 import org.neo4j.kernel.api.index.PropertyAccessor;
 import org.neo4j.kernel.api.schema.LabelSchemaDescriptor;
 import org.neo4j.kernel.api.schema.constaints.ConstraintDescriptorFactory;
 import org.neo4j.kernel.api.schema.constaints.UniquenessConstraintDescriptor;
 import org.neo4j.kernel.api.schema.index.IndexDescriptor;
+import org.neo4j.kernel.api.schema.index.IndexDescriptor.Type;
 import org.neo4j.kernel.api.schema.index.IndexDescriptorFactory;
 import org.neo4j.kernel.impl.api.KernelStatement;
 import org.neo4j.kernel.impl.api.index.IndexingService;
@@ -45,6 +51,7 @@ import org.neo4j.kernel.impl.api.operations.SchemaReadOperations;
 import org.neo4j.kernel.impl.locking.Locks.Client;
 
 import static org.neo4j.kernel.api.exceptions.schema.ConstraintValidationException.Phase.VERIFICATION;
+import static org.neo4j.kernel.api.exceptions.schema.SchemaKernelException.OperationContext.CONSTRAINT_CREATION;
 import static org.neo4j.kernel.api.security.SecurityContext.AUTH_DISABLED;
 import static org.neo4j.kernel.impl.locking.ResourceTypes.SCHEMA;
 import static org.neo4j.kernel.impl.locking.ResourceTypes.schemaResource;
@@ -85,18 +92,31 @@ public class ConstraintIndexCreator
      * </ol>
      */
     public long createUniquenessConstraintIndex(
-            KernelStatement state, SchemaReadOperations schema, LabelSchemaDescriptor descriptor
+            KernelStatement state, SchemaReadOperations schemaOps, LabelSchemaDescriptor descriptor
     ) throws TransactionFailureException, CreateConstraintFailureException,
-            DropIndexFailureException, UniquePropertyValueValidationException
+            DropIndexFailureException, UniquePropertyValueValidationException, AlreadyConstrainedException
     {
         UniquenessConstraintDescriptor constraint = ConstraintDescriptorFactory.uniqueForSchema( descriptor );
-        IndexDescriptor index = createConstraintIndex( descriptor );
+        IndexDescriptor index;
+        try
+        {
+            index = getOrCreateUniquenessConstraintIndex( state, schemaOps, descriptor );
+        }
+        catch ( AlreadyConstrainedException e )
+        {
+            throw e;
+        }
+        catch ( SchemaKernelException e )
+        {
+            throw new CreateConstraintFailureException( constraint, e );
+        }
+
         boolean success = false;
         boolean reacquiredSchemaLock = false;
         Client locks = state.locks().pessimistic();
         try
         {
-            long indexId = schema.indexGetCommittedId( state, index );
+            long indexId = schemaOps.indexGetCommittedId( state, index );
 
             // Release the SCHEMA WRITE lock during index population.
             // At this point the integrity of the constraint to be created was checked
@@ -205,6 +225,41 @@ public class ConstraintIndexCreator
                 throw new UniquePropertyValueValidationException( constraint, VERIFICATION, cause );
             }
         }
+    }
+
+    public IndexDescriptor getOrCreateUniquenessConstraintIndex( KernelStatement state,
+            SchemaReadOperations schemaOps, LabelSchemaDescriptor schema ) throws SchemaKernelException
+    {
+        IndexDescriptor descriptor = schemaOps.indexGetForSchema( state, schema );
+        if ( descriptor != null )
+        {
+            if ( descriptor.type() == Type.UNIQUE )
+            {
+                // OK so we found a matching constraint index. We check whether or not it has an owner
+                // because this may have been a left-over constraint index from a previously failed
+                // constraint creation, due to crash or similar, hence the missing owner.
+                try
+                {
+                    if ( schemaOps.indexGetOwningUniquenessConstraintId( state, descriptor ) == null )
+                    {
+                        return descriptor;
+                    }
+                    throw new AlreadyConstrainedException(
+                            ConstraintDescriptorFactory.uniqueForSchema( schema ),
+                            OperationContext.CONSTRAINT_CREATION,
+                            new StatementTokenNameLookup( state.readOperations() ) );
+                }
+                catch ( SchemaRuleNotFoundException e )
+                {
+                    throw new IllegalStateException( "Unexpectedly index " + descriptor +
+                            " wasn't found right after getting it", e );
+                }
+            }
+            // There's already an index for this schema descriptor, which isn't of the type we're after.
+            throw new AlreadyIndexedException( schema, CONSTRAINT_CREATION );
+        }
+
+        return createConstraintIndex( schema );
     }
 
     public IndexDescriptor createConstraintIndex( final LabelSchemaDescriptor schema )
