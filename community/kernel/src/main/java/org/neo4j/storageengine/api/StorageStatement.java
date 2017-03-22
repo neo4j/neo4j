@@ -19,6 +19,8 @@
  */
 package org.neo4j.storageengine.api;
 
+import java.util.function.IntPredicate;
+
 import org.neo4j.cursor.Cursor;
 import org.neo4j.kernel.api.exceptions.index.IndexNotFoundKernelException;
 import org.neo4j.kernel.api.schema.index.IndexDescriptor;
@@ -124,7 +126,7 @@ public interface StorageStatement extends AutoCloseable
 
     Cursor<RelationshipGroupItem> acquireRelationshipGroupCursor( long relationshipGroupId );
 
-    DegreeVisitor.Visitable acquireDenseNodeDegreeCounter( long nodeId, long relationshipGroupId );
+    DegreeVisitor.Visitable acquireDenseNodeDegreeCounter( long nodeId, long relationshipGroupId, IntPredicate types );
 
     /**
      * @return {@link LabelScanReader} capable of reading nodes for specific label ids.

@@ -20,6 +20,7 @@
 package org.neo4j.kernel.impl.api.store;
 
 import java.util.function.Consumer;
+import java.util.function.IntPredicate;
 
 import org.neo4j.function.Disposable;
 import org.neo4j.io.pagecache.PageCursor;
@@ -47,6 +48,7 @@ public class DegreeVisitable implements DegreeVisitor.Visitable, Disposable
 
     private long nodeId;
     private long groupId;
+    private IntPredicate types;
 
     DegreeVisitable( RelationshipStore relationshipStore, RelationshipGroupStore groupStore,
             Consumer<DegreeVisitable> cache )
@@ -60,10 +62,11 @@ public class DegreeVisitable implements DegreeVisitor.Visitable, Disposable
         this.cache = cache;
     }
 
-    public DegreeVisitable init( long nodeId, long firstGroupId )
+    public DegreeVisitable init( long nodeId, long firstGroupId, IntPredicate types )
     {
         this.nodeId = nodeId;
         this.groupId = firstGroupId;
+        this.types = types;
         return this;
     }
 
@@ -77,10 +80,13 @@ public class DegreeVisitable implements DegreeVisitor.Visitable, Disposable
             if ( record.inUse() )
             {
                 int type = record.getType();
-                long loop = countByFirstPrevPointer( record.getFirstLoop() );
-                long outgoing = countByFirstPrevPointer( record.getFirstOut() );
-                long incoming = countByFirstPrevPointer( record.getFirstIn() );
-                keepGoing = visitor.visitDegree( type, outgoing, incoming, loop );
+                if ( types.test( type ) )
+                {
+                    long loop = countByFirstPrevPointer( record.getFirstLoop() );
+                    long outgoing = countByFirstPrevPointer( record.getFirstOut() );
+                    long incoming = countByFirstPrevPointer( record.getFirstIn() );
+                    keepGoing = visitor.visitDegree( type, outgoing, incoming, loop );
+                }
             }
             groupId = record.getNext();
         }
@@ -110,6 +116,7 @@ public class DegreeVisitable implements DegreeVisitor.Visitable, Disposable
     {
         nodeId = StatementConstants.NO_SUCH_NODE;
         groupId = StatementConstants.NO_SUCH_RELATIONSHIP;
+        types = null;
         cache.accept( this );
     }
 

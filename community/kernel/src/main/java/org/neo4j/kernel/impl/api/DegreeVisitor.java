@@ -28,18 +28,6 @@ public interface DegreeVisitor
 
         @Override
         void close();
-
-        default void once( DegreeVisitor visitor )
-        {
-            try
-            {
-                accept( visitor );
-            }
-            finally
-            {
-                close();
-            }
-        }
     }
 
     boolean visitDegree( int type, long outgoing, long incoming, long loop );

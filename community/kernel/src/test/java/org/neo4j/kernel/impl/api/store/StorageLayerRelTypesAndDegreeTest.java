@@ -55,6 +55,7 @@ import static org.junit.Assert.assertNotEquals;
 import static org.junit.Assert.assertTrue;
 import static org.mockito.Mockito.mock;
 import static org.neo4j.collection.primitive.PrimitiveIntCollections.mapToSet;
+import static org.neo4j.function.Predicates.ALWAYS_TRUE_INT;
 import static org.neo4j.helpers.collection.Iterators.asSet;
 import static org.neo4j.kernel.impl.api.store.TestRelType.IN;
 import static org.neo4j.kernel.impl.api.store.TestRelType.LOOP;
@@ -241,16 +242,16 @@ public class StorageLayerRelTypesAndDegreeTest extends StorageLayerTest
 
     private int degreeForDirection( NodeCursor node, Direction direction )
     {
-        CountingDegreeVisitor visitor = new CountingDegreeVisitor( direction, node.isDense() );
-        disk.degrees( disk.newStatement(), node, visitor );
-        return visitor.count();
+        CountingDegreeVisitor countingDegreeVisitor = new CountingDegreeVisitor( direction, false );
+        disk.degrees( disk.newStatement(), node, countingDegreeVisitor, countingDegreeVisitor );
+        return countingDegreeVisitor.count();
     }
 
-    private int degreeForDirectionAndType( NodeCursor node, Direction direction, Integer relType )
+    private int degreeForDirectionAndType( NodeCursor node, Direction direction, int relType )
     {
-        CountingDegreeVisitor visitor = new CountingDegreeVisitor( direction, relType, node.isDense() );
-        disk.degrees( disk.newStatement(), node, visitor );
-        return visitor.count();
+        CountingDegreeVisitor countingDegreeVisitor = new CountingDegreeVisitor( direction, relType, node.isDense() );
+        disk.degrees( disk.newStatement(), node, countingDegreeVisitor, countingDegreeVisitor );
+        return countingDegreeVisitor.count();
     }
 
     private void testDegreeByDirectionAndTypeForDenseNodeWithPartiallyDeletedRelGroupChain(
@@ -466,7 +467,7 @@ public class StorageLayerRelTypesAndDegreeTest extends StorageLayerTest
     private Set<TestDegreeItem> degrees( NodeItem nodeItem )
     {
         Set<TestDegreeItem> degrees = new HashSet<>();
-        disk.degrees( disk.newStatement(), nodeItem, ( type, outgoing, incoming, loop ) -> degrees
+        disk.degrees( disk.newStatement(), nodeItem, ALWAYS_TRUE_INT, ( type, outgoing, incoming, loop ) -> degrees
                 .add( new TestDegreeItem( type, outgoing, incoming, loop ) ) );
         return degrees;
     }
