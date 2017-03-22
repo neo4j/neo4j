@@ -384,7 +384,7 @@ class GeneratedMethodStructure(val fields: Fields, val generator: CodeBlock, aux
       or(equal(nullValue(codeGenType), lhs),
          equal(nullValue(codeGenType), rhs)),
       constant(null),
-      box(equal(lhs, rhs))
+      box(equal(lhs, rhs), CodeGenType.primitiveBool)
     )
   }
 
@@ -408,9 +408,9 @@ class GeneratedMethodStructure(val fields: Fields, val generator: CodeBlock, aux
   override def notNull(varName: String, codeGenType: CodeGenType) = not(isNull(varName, codeGenType))
 
   override def box(expression: Expression, codeGenType: CodeGenType) = codeGenType match {
-    case CypherCodeGenType(symbols.CTNode, IntType) =>
+    case CypherCodeGenType(symbols.CTNode, LongType) =>
       createNewInstance(typeRef[NodeIdWrapperImpl], (typeRef[Long], expression))
-    case CypherCodeGenType(symbols.CTRelationship, IntType) =>
+    case CypherCodeGenType(symbols.CTRelationship, LongType) =>
       createNewInstance(typeRef[RelationshipIdWrapperImpl], (typeRef[Long], expression))
     case _ => Expression.box(expression)
   }
@@ -705,9 +705,10 @@ class GeneratedMethodStructure(val fields: Fields, val generator: CodeBlock, aux
         generator.put(generator.load(varName), field, e)
     }
     if (structure.size == 1) {
+      val (cgType, expression) = structure.values.head
       generator.put(generator.load(varName), FieldReference.field(typ, typeRef[Int], "hashCode"),
                     invoke(method[CompiledEquivalenceUtils, Int]("hashCode", typeRef[Object]),
-                           box(structure.values.head._2)))
+                           box(expression, cgType)))
     } else {
       generator.put(generator.load(varName), FieldReference.field(typ, typeRef[Int], "hashCode"),
                     invoke(method[CompiledEquivalenceUtils, Int]("hashCode", typeRef[Array[Object]]),
@@ -747,14 +748,15 @@ class GeneratedMethodStructure(val fields: Fields, val generator: CodeBlock, aux
     val tableType = sortTableType(tableDescriptor)
     val localVariable = generator.declare(tableType, name)
     locals += name -> localVariable
-    generator.assign(localVariable, createNewInstance(tableType, (typeRef[Int], invoke(Methods.mathCastToInt, box(count)))))
+    val boxedInteger = box(count, CodeGenType.Any) // TODO: we shouldn't need to box here, we know it's either 'int' or 'long'
+    generator.assign(localVariable, createNewInstance(tableType, (typeRef[Int], invoke(Methods.mathCastToInt, boxedInteger))))
   }
 
   override def sortTableAdd(name: String, tableDescriptor: SortTableDescriptor, value: Expression): Unit = {
     val tableType = sortTableType(tableDescriptor)
     generator.expression(pop(invoke(generator.load(name),
       methodReference(tableType, typeRef[Boolean], "add", typeRef[Object]),
-      box(value))))
+      box(value, CodeGenType.Any)))) // TODO: this boxing seems completely unnecessary
   }
 
   override def sortTableSort(name: String, tableDescriptor: SortTableDescriptor): Unit = {
@@ -806,7 +808,7 @@ class GeneratedMethodStructure(val fields: Fields, val generator: CodeBlock, aux
              invoke(generator.load(mapName),
                     method[util.HashMap[Object, java.lang.Long], Object]("getOrDefault", typeRef[Object],
                                                                          typeRef[Object]),
-                    generator.load(keyVar), box(constant(Long.box(0L))))),
+                    generator.load(keyVar), box(constantLong(0L), CodeGenType.javaLong))),
         CypherCodeGenType(symbols.CTInteger, ReferenceType)))
     }
   }
@@ -935,7 +937,7 @@ class GeneratedMethodStructure(val fields: Fields, val generator: CodeBlock, aux
       generator.expression(pop(invoke(generator.load(name),
                                       method[util.HashMap[Object, java.lang.Long], Object]("put", typeRef[Object],
                                                                                            typeRef[Object]),
-                                      generator.load(keyVar), box(value))))
+                                      generator.load(keyVar), box(value, CodeGenType.javaLong))))
     }
   }
 
@@ -1079,7 +1081,7 @@ class GeneratedMethodStructure(val fields: Fields, val generator: CodeBlock, aux
           invoke(generator.load(tableVar), countingTableCompositeKeyPut,
                  generator.load(keyName),
                  ternary(Expression.isNull(generator.load(countName)),
-                               box(constant(1)), box(add(invoke(generator.load(countName), unboxInteger), constant(1)))))))
+                               box(constantInt(1), CodeGenType.javaInt), box(add(invoke(generator.load(countName), unboxInteger), constantInt(1)), CodeGenType.javaInt)))))
   }
 
   override def probe(tableVar: String, tableType: JoinTableType, keyVars: Seq[String])

@@ -38,6 +38,7 @@ object CodeGenType {
   val primitiveFloat = CypherCodeGenType(symbols.CTFloat, FloatType)
   val primitiveBool = CypherCodeGenType(symbols.CTBoolean, BoolType)
   val javaInt = JavaCodeGenType(IntType)
+  val javaLong = JavaCodeGenType(LongType)
 }
 
 case class JavaCodeGenType(repr: RepresentationType) extends CodeGenType {

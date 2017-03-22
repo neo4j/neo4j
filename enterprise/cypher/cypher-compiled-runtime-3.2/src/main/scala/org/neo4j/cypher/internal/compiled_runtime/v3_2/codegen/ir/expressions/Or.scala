@@ -46,9 +46,9 @@ case class Or(lhs: CodeGenExpression, rhs: CodeGenExpression) extends CodeGenExp
         structure.orExpression(structure.unbox(lhs.generateExpression(structure), t1), rhs.generateExpression(structure))
       case _ =>
         structure.unbox(
-          structure.threeValuedOrExpression(structure.box(lhs.generateExpression(structure)), structure.box(rhs.generateExpression(structure))),
+          structure.threeValuedOrExpression(structure.box(lhs.generateExpression(structure), lhs.codeGenType), structure.box(rhs.generateExpression(structure), rhs.codeGenType)),
           CypherCodeGenType(CTBoolean, ReferenceType))
     }
-    else structure.threeValuedOrExpression(structure.box(lhs.generateExpression(structure)),
-                                           structure.box(rhs.generateExpression(structure)))
+    else structure.threeValuedOrExpression(structure.box(lhs.generateExpression(structure), lhs.codeGenType),
+                                           structure.box(rhs.generateExpression(structure), rhs.codeGenType))
 }

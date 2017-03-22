@@ -37,7 +37,7 @@ case class HasLabel(nodeVariable: Variable, labelVariable: String, labelName: St
     if (nodeVariable.nullable)
       structure.nullableReference(nodeVariable.name, CodeGenType.primitiveNode,
                                   structure.box(
-                                    structure.hasLabel(nodeVariable.name, labelVariable, localName)))
+                                    structure.hasLabel(nodeVariable.name, labelVariable, localName), CodeGenType.primitiveBool))
     else
       structure.hasLabel(nodeVariable.name, labelVariable, localName)
   }

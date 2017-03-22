@@ -423,6 +423,16 @@ public abstract class Expression extends ExpressionTemplate
         };
     }
 
+    public static Expression constantInt( int value )
+    {
+        return constant(value);
+    }
+
+    public static Expression constantLong( long value )
+    {
+        return constant(value);
+    }
+
     public static Expression constant( final Object value )
     {
         TypeReference reference;

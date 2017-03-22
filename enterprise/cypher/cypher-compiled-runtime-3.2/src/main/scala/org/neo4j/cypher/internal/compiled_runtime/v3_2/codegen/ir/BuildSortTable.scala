@@ -50,7 +50,7 @@ case class BuildTopTable(opName: String, tableName: String, countExpression: Cod
 
     // Return early on limit <= 0 (this unifies the behaviour with the normal limit implementation)
     val variableName = context.namer.newVarName()
-    generator.declareCounter(variableName, generator.box(countExpression.generateExpression(generator)))
+    generator.declareCounter(variableName, generator.box(countExpression.generateExpression(generator), countExpression.codeGenType))
     generator.ifStatement(generator.checkInteger(variableName, LessThanEqual, 0L)) { onTrue =>
       onTrue.returnSuccessfully()
     }
