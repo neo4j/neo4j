@@ -103,7 +103,6 @@ import static org.junit.Assert.fail;
 import static org.mockito.Mockito.mock;
 import static org.mockito.Mockito.verify;
 import static org.mockito.Mockito.when;
-
 import static org.neo4j.kernel.impl.storemigration.StoreFile.COUNTS_STORE_LEFT;
 import static org.neo4j.kernel.impl.storemigration.StoreFile.COUNTS_STORE_RIGHT;
 
@@ -119,7 +118,7 @@ public class BackupServiceIT
         }
 
         @Override
-        public void finishStreamingStoreFile( File storefile )
+        public void finishStreamingStoreFile( File storefile, String storeCopyIdentifier )
         {
             if ( storefile.getAbsolutePath().contains( NODE_STORE ) ||
                  storefile.getAbsolutePath().contains( RELATIONSHIP_STORE ) )

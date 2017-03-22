@@ -90,7 +90,7 @@ public class OnlineBackupKernelExtension implements Lifecycle
                     monitors.newMonitor( StoreCopyServer.Monitor.class ), pageCache );
             LogicalTransactionStore logicalTransactionStore = logicalTransactionStoreSupplier.get();
             LogFileInformation logFileInformation = logFileInformationSupplier.get();
-            return new BackupImpl( copier, monitors, logicalTransactionStore, transactionIdStore, logFileInformation,
+            return new BackupImpl( copier, logicalTransactionStore, transactionIdStore, logFileInformation,
                     graphDatabaseAPI::storeId, logProvider );
         }, monitors, logProvider );
     }

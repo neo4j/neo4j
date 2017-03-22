@@ -40,6 +40,7 @@ import org.neo4j.kernel.impl.transaction.log.checkpoint.SimpleTriggerInfo;
 import org.neo4j.kernel.impl.transaction.log.checkpoint.TriggerInfo;
 import org.neo4j.kernel.internal.GraphDatabaseAPI;
 import org.neo4j.kernel.monitoring.Monitors;
+import org.neo4j.logging.NullLogProvider;
 
 import static org.mockito.Matchers.anyBoolean;
 import static org.mockito.Mockito.RETURNS_MOCKS;
@@ -62,7 +63,7 @@ public class DefaultMasterImplSPITest
                 mock( PropertyKeyTokenHolder.class ), mock( RelationshipTypeTokenHolder.class ),
                 mock( IdGeneratorFactory.class ), mock( TransactionCommitProcess.class ), checkPointer,
                 mock( TransactionIdStore.class ), mock( LogicalTransactionStore.class ),
-                dataSource, mock( PageCache.class ) );
+                dataSource, mock( PageCache.class ), NullLogProvider.getInstance() );
 
         master.flushStoresAndStreamStoreFiles( mock( StoreWriter.class ) );
 

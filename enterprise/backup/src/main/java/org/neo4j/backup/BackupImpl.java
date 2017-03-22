@@ -30,7 +30,6 @@ import org.neo4j.kernel.impl.store.StoreId;
 import org.neo4j.kernel.impl.transaction.log.LogFileInformation;
 import org.neo4j.kernel.impl.transaction.log.LogicalTransactionStore;
 import org.neo4j.kernel.impl.transaction.log.TransactionIdStore;
-import org.neo4j.kernel.monitoring.Monitors;
 import org.neo4j.logging.LogProvider;
 import org.neo4j.logging.Logger;
 
@@ -48,7 +47,7 @@ class BackupImpl implements TheBackupInterface
     private final LogFileInformation logFileInformation;
     private final Logger logger;
 
-    public BackupImpl( StoreCopyServer storeCopyServer, Monitors monitors,
+    public BackupImpl( StoreCopyServer storeCopyServer,
             LogicalTransactionStore logicalTransactionStore, TransactionIdStore transactionIdStore,
             LogFileInformation logFileInformation, Supplier<StoreId> storeId, LogProvider logProvider )
     {
@@ -64,32 +63,38 @@ class BackupImpl implements TheBackupInterface
     @Override
     public Response<Void> fullBackup( StoreWriter writer, boolean forensics )
     {
+        String backupIdentifier = getBackupIdentifier();
         try ( StoreWriter storeWriter = writer )
         {
-            logger.log( "Full backup started..." );
+            logger.log( "%s: Full backup started...", backupIdentifier );
             RequestContext copyStartContext = storeCopyServer.flushStoresAndStreamStoreFiles(
                     FULL_BACKUP_CHECKPOINT_TRIGGER, storeWriter, forensics );
             ResponsePacker responsePacker = new StoreCopyResponsePacker( logicalTransactionStore,
-                    transactionIdStore, logFileInformation, storeId,
-                    copyStartContext.lastAppliedTransaction() + 1, storeCopyServer.monitor() ); // mandatory transaction id
+                    transactionIdStore, logFileInformation, storeId, copyStartContext.lastAppliedTransaction() + 1, storeCopyServer.monitor() );
             long optionalTransactionId = copyStartContext.lastAppliedTransaction();
             return responsePacker.packTransactionStreamResponse( anonymous( optionalTransactionId ), null/*no response object*/ );
         }
         finally
         {
-            logger.log( "Full backup finished." );
+            logger.log( "%s: Full backup finished.", backupIdentifier );
         }
     }
 
     @Override
     public Response<Void> incrementalBackup( RequestContext context )
     {
+        String backupIdentifier = getBackupIdentifier();
         try
         {
-            logger.log("Incremental backup started...");
+            logger.log("%s: Incremental backup started...", backupIdentifier);
             return incrementalResponsePacker.packTransactionStreamResponse( context, null );
         } finally {
-            logger.log("Incremental backup finished.");
+            logger.log("%s: Incremental backup finished.", backupIdentifier);
         }
+    }
+
+    private String getBackupIdentifier()
+    {
+        return Thread.currentThread().getName();
     }
 }

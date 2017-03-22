@@ -52,61 +52,61 @@ public class StoreCopyServer
 {
     public interface Monitor
     {
-        void startTryCheckPoint();
+        void startTryCheckPoint( String storeCopyIdentifier );
 
-        void finishTryCheckPoint();
+        void finishTryCheckPoint( String storeCopyIdentifier );
 
-        void startStreamingStoreFile( File file );
+        void startStreamingStoreFile( File file, String storeCopyIdentifier );
 
-        void finishStreamingStoreFile( File file );
+        void finishStreamingStoreFile( File file, String storeCopyIdentifier );
 
-        void startStreamingStoreFiles();
+        void startStreamingStoreFiles( String storeCopyIdentifier );
 
-        void finishStreamingStoreFiles();
+        void finishStreamingStoreFiles( String storeCopyIdentifier );
 
-        void startStreamingTransactions( long startTxId );
+        void startStreamingTransactions( long startTxId, String storeCopyIdentifier );
 
-        void finishStreamingTransactions( long endTxId );
+        void finishStreamingTransactions( long endTxId, String storeCopyIdentifier );
 
         class Adapter implements Monitor
         {
             @Override
-            public void startTryCheckPoint()
+            public void startTryCheckPoint( String storeCopyIdentifier )
             {   // empty
             }
 
             @Override
-            public void finishTryCheckPoint()
+            public void finishTryCheckPoint( String storeCopyIdentifier )
             {   // empty
             }
 
             @Override
-            public void startStreamingStoreFile( File file )
+            public void startStreamingStoreFile( File file, String storeCopyIdentifier )
             {   // empty
             }
 
             @Override
-            public void finishStreamingStoreFile( File file )
+            public void finishStreamingStoreFile( File file, String storeCopyIdentifier )
             {   // empty
             }
 
             @Override
-            public void startStreamingStoreFiles()
+            public void startStreamingStoreFiles( String storeCopyIdentifier )
             {   // empty
             }
 
             @Override
-            public void finishStreamingStoreFiles()
+            public void finishStreamingStoreFiles( String storeCopyIdentifier )
             {   // empty
             }
 
             @Override
-            public void startStreamingTransactions( long startTxId )
+            public void startStreamingTransactions( long startTxId, String storeCopyIdentifier )
             {   // empty
             }
 
             @Override
-            public void finishStreamingTransactions( long endTxId )
+            public void finishStreamingTransactions( long endTxId, String storeCopyIdentifier )
             {   // empty
             }
         }
@@ -148,13 +148,14 @@ public class StoreCopyServer
     {
         try
         {
-            monitor.startTryCheckPoint();
+            String storeCopyIdentifier = Thread.currentThread().getName();
+            monitor.startTryCheckPoint( storeCopyIdentifier );
             long lastAppliedTransaction = checkPointer.tryCheckPoint( new SimpleTriggerInfo( triggerName ) );
-            monitor.finishTryCheckPoint();
+            monitor.finishTryCheckPoint( storeCopyIdentifier );
             ByteBuffer temporaryBuffer = ByteBuffer.allocateDirect( (int) ByteUnit.mebiBytes( 1 ) );
 
             // Copy the store files
-            monitor.startStreamingStoreFiles();
+            monitor.startStreamingStoreFiles( storeCopyIdentifier );
             try ( ResourceIterator<StoreFileMetadata> files = dataSource.listStoreFiles( includeLogs ) )
             {
                 while ( files.hasNext() )
@@ -173,7 +174,7 @@ public class StoreCopyServer
                         long fileSize = pagedFile.fileSize();
                         try ( ReadableByteChannel fileChannel = pagedFile.openReadableByteChannel() )
                         {
-                            doWrite( writer, temporaryBuffer, file, recordSize, fileChannel, fileSize );
+                            doWrite( writer, temporaryBuffer, file, recordSize, fileChannel, fileSize, storeCopyIdentifier );
                         }
                         finally
                         {
@@ -185,14 +186,14 @@ public class StoreCopyServer
                         try ( ReadableByteChannel fileChannel = fileSystem.open( file, "r" ) )
                         {
                             long fileSize = fileSystem.getFileSize( file );
-                            doWrite( writer, temporaryBuffer, file, recordSize, fileChannel, fileSize );
+                            doWrite( writer, temporaryBuffer, file, recordSize, fileChannel, fileSize, storeCopyIdentifier );
                         }
                     }
                 }
             }
             finally
             {
-                monitor.finishStreamingStoreFiles();
+                monitor.finishStreamingStoreFiles( storeCopyIdentifier );
             }
 
             return anonymous( lastAppliedTransaction );
@@ -204,11 +205,11 @@ public class StoreCopyServer
     }
 
     private void doWrite( StoreWriter writer, ByteBuffer temporaryBuffer, File file, int recordSize,
-            ReadableByteChannel fileChannel, long fileSize ) throws IOException
+            ReadableByteChannel fileChannel, long fileSize, String storeCopyIdentifier ) throws IOException
     {
-        monitor.startStreamingStoreFile( file );
+        monitor.startStreamingStoreFile( file, storeCopyIdentifier );
         writer.write( relativePath( storeDirectory, file ), fileChannel,
                 temporaryBuffer, fileSize > 0, recordSize );
-        monitor.finishStreamingStoreFile( file );
+        monitor.finishStreamingStoreFile( file, storeCopyIdentifier );
     }
 }

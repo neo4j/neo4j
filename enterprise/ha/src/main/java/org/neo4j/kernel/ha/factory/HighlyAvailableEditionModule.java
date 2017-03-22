@@ -89,8 +89,8 @@ import org.neo4j.kernel.ha.cluster.HighAvailabilityMemberStateMachine;
 import org.neo4j.kernel.ha.cluster.SimpleHighAvailabilityMemberContext;
 import org.neo4j.kernel.ha.cluster.SwitchToMaster;
 import org.neo4j.kernel.ha.cluster.SwitchToSlave;
-import org.neo4j.kernel.ha.cluster.SwitchToSlaveCopyThenBranch;
 import org.neo4j.kernel.ha.cluster.SwitchToSlaveBranchThenCopy;
+import org.neo4j.kernel.ha.cluster.SwitchToSlaveCopyThenBranch;
 import org.neo4j.kernel.ha.cluster.member.ClusterMembers;
 import org.neo4j.kernel.ha.cluster.member.HighAvailabilitySlaves;
 import org.neo4j.kernel.ha.cluster.member.ObservedClusterMembers;
@@ -174,7 +174,6 @@ import org.neo4j.udc.UsageData;
 import org.neo4j.udc.UsageDataKeys;
 
 import static java.lang.reflect.Proxy.newProxyInstance;
-
 import static org.neo4j.kernel.impl.transaction.log.TransactionMetadataCache.TransactionMetadata;
 
 /**
@@ -419,7 +418,8 @@ public class HighlyAvailableEditionModule
                         platformModule.dependencies.resolveDependency( TransactionIdStore.class ),
                         platformModule.dependencies.resolveDependency( LogicalTransactionStore.class ),
                         platformModule.dependencies.resolveDependency( NeoStoreDataSource.class ),
-                        platformModule.dependencies.resolveDependency( PageCache.class ) );
+                        platformModule.dependencies.resolveDependency( PageCache.class ),
+                        logging.getInternalLogProvider() );
 
         final Factory<ConversationSPI> conversationSPIFactory =
                 () -> new DefaultConversationSPI( lockManager, platformModule.jobScheduler );
