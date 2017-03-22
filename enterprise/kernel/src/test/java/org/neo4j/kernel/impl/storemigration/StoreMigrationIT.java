@@ -54,6 +54,7 @@ import org.neo4j.kernel.impl.store.format.RecordFormatSelector;
 import org.neo4j.kernel.impl.store.format.RecordFormats;
 import org.neo4j.kernel.impl.store.format.standard.StandardV2_3;
 import org.neo4j.kernel.impl.store.format.standard.StandardV3_0;
+import org.neo4j.kernel.impl.store.format.standard.StandardV3_2;
 import org.neo4j.kernel.impl.storemigration.legacystore.LegacyStoreVersionCheck;
 import org.neo4j.logging.NullLogProvider;
 import org.neo4j.test.rule.PageCacheRule;
@@ -177,6 +178,21 @@ public class StoreMigrationIT
         public RecordFormats newInstance()
         {
             return StandardV3_0.RECORD_FORMATS;
+        }
+    }
+
+    @Service.Implementation( RecordFormats.Factory.class )
+    public static class Standard32Factory extends RecordFormats.Factory
+    {
+        public Standard32Factory()
+        {
+            super( StandardV3_2.STORE_VERSION );
+        }
+
+        @Override
+        public RecordFormats newInstance()
+        {
+            return StandardV3_2.RECORD_FORMATS;
         }
     }
 

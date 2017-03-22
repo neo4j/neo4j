@@ -39,7 +39,9 @@ import org.neo4j.kernel.impl.store.MetaDataStore;
 import org.neo4j.kernel.impl.store.TransactionId;
 import org.neo4j.kernel.impl.store.format.standard.StandardV2_2;
 import org.neo4j.kernel.impl.store.format.standard.StandardV3_0;
+import org.neo4j.kernel.impl.store.format.standard.StandardV3_2;
 import org.neo4j.kernel.impl.storemigration.legacylogs.LegacyLogs;
+import org.neo4j.kernel.impl.storemigration.monitoring.MigrationProgressMonitor;
 import org.neo4j.kernel.impl.transaction.log.LogPosition;
 import org.neo4j.kernel.impl.transaction.log.TransactionIdStore;
 import org.neo4j.kernel.impl.transaction.log.PhysicalLogFiles;
@@ -52,6 +54,7 @@ import org.neo4j.test.rule.TestDirectory;
 import org.neo4j.test.rule.fs.DefaultFileSystemRule;
 
 import static org.junit.Assert.assertEquals;
+import static org.junit.Assert.assertFalse;
 import static org.mockito.Mockito.mock;
 import static org.mockito.Mockito.when;
 import static org.neo4j.kernel.api.index.SchemaIndexProvider.NO_INDEX_PROVIDER;
@@ -260,9 +263,52 @@ public class StoreMigratorTest
 
         assertEquals( writtenLogPosition, readLogPosition );
     }
+
+    @Test
+    public void shouldNotMigrateFilesForVersionsWithSameCapability() throws Exception
+    {
+        // Prepare migrator and file
+        StoreMigrator migrator = newStoreMigrator();
+        File graphDbDir = directory.graphDbDir();
+        File neoStore = new File( graphDbDir, DEFAULT_NAME );
+        neoStore.createNewFile();
+
+        // Monitor what happens
+        MySection progressMonitor = new MySection();
+        // Migrate with two storeversions that have the same FORMAT capabilities
+        migrator.migrate( graphDbDir, directory.directory( "migrationDir" ), progressMonitor,
+                StandardV3_0.STORE_VERSION, StandardV3_2.STORE_VERSION );
+
+        // Should not have started any migration
+        assertFalse( progressMonitor.started );
+    }
+
     private StoreMigrator newStoreMigrator()
     {
         return new StoreMigrator( fileSystemRule, pageCache,
                 Config.empty(), NullLogService.getInstance(), schemaIndexProvider );
+    }
+
+    private static class MySection implements MigrationProgressMonitor.Section
+    {
+        public boolean started;
+
+        @Override
+        public void start( long max )
+        {
+            started = true;
+        }
+
+        @Override
+        public void progress( long add )
+        {
+
+        }
+
+        @Override
+        public void completed()
+        {
+
+        }
     }
 }
