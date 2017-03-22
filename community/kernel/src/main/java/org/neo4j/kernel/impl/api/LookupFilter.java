@@ -27,6 +27,8 @@ import org.neo4j.collection.primitive.PrimitiveLongIterator;
 import org.neo4j.cursor.Cursor;
 import org.neo4j.kernel.api.exceptions.EntityNotFoundException;
 import org.neo4j.kernel.api.index.PropertyAccessor;
+import org.neo4j.kernel.api.properties.DefinedProperty;
+import org.neo4j.kernel.api.properties.Property;
 import org.neo4j.kernel.api.schema_new.IndexQuery;
 import org.neo4j.kernel.impl.api.operations.EntityOperations;
 import org.neo4j.storageengine.api.NodeItem;
@@ -45,13 +47,43 @@ public class LookupFilter
      * used by the consistency checker
      */
     public static PrimitiveLongIterator exactIndexMatches( PropertyAccessor accessor,
-            PrimitiveLongIterator indexedNodeIds, int propertyKeyId, Object value )
+            PrimitiveLongIterator indexedNodeIds, IndexQuery... predicates )
     {
-        if ( isNumberOrArray( value ) )
+        if ( !indexedNodeIds.hasNext() )
         {
-            return PrimitiveLongCollections.filter( indexedNodeIds,
-                    new LookupBasedExactMatchPredicate( accessor, propertyKeyId,
-                            value ) );
+            return indexedNodeIds;
+        }
+
+        IndexQuery[] numericPredicates =
+                Arrays.stream( predicates )
+                        .filter( LookupFilter::isNumericPredicate )
+                        .toArray( IndexQuery[]::new );
+
+        if ( numericPredicates.length > 0 )
+        {
+            LongPredicate combinedPredicate = nodeId ->
+            {
+                try
+                {
+                    for ( IndexQuery predicate : numericPredicates )
+                    {
+                        int propertyKeyId = predicate.propertyKeyId();
+                        Object value = accessor.getProperty( nodeId, propertyKeyId ).value( null );
+                        if ( !predicate.test( value ) )
+                        {
+                            return false;
+                        }
+                    }
+                    return true;
+                }
+                catch ( EntityNotFoundException ignored )
+                {
+                    return false; // The node has been deleted but was still reported from the index. CC will catch
+                                  // this through other mechanism (NodeInUseWithCorrectLabelsCheck), so we can
+                                  // silently ignore here
+                }
+            };
+            return PrimitiveLongCollections.filter( indexedNodeIds, combinedPredicate );
         }
         return indexedNodeIds;
     }
@@ -92,7 +124,8 @@ public class LookupFilter
                 }
                 catch ( EntityNotFoundException ignored )
                 {
-                    return false;
+                    return false; // The node has been deleted but was still reported from the index. We hope that this
+                                  // is some transient problem and just ignore this index entry.
                 }
             };
             return PrimitiveLongCollections.filter( indexedNodeIds, combinedPredicate );
@@ -121,35 +154,5 @@ public class LookupFilter
     private static boolean isNumberOrArray( Object value )
     {
         return value instanceof Number || value.getClass().isArray();
-    }
-
-    /**
-     * used by CC
-     */
-    private static class LookupBasedExactMatchPredicate implements LongPredicate
-    {
-        final PropertyAccessor accessor;
-        private final int propertyKeyId;
-        private final Object value;
-
-        LookupBasedExactMatchPredicate( PropertyAccessor accessor, int propertyKeyId, Object value )
-        {
-            this.accessor = accessor;
-            this.propertyKeyId = propertyKeyId;
-            this.value = value;
-        }
-
-        @Override
-        public boolean test( long nodeId )
-        {
-            try
-            {
-                return accessor.getProperty( nodeId, propertyKeyId ).valueEquals( value );
-            }
-            catch ( EntityNotFoundException ignored )
-            {
-                return false;
-            }
-        }
     }
 }

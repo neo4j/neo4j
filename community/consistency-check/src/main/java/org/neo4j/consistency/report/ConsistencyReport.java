@@ -184,13 +184,13 @@ public interface ConsistencyReport
         void dynamicRecordChainCycle( DynamicRecord nextRecord );
 
         @Documented( "This node was not found in the expected index." )
-        void notIndexed( IndexRule index, Object propertyValue );
+        void notIndexed( IndexRule index, Object[] propertyValues );
 
         @Documented( "This node was found in the expected index, although multiple times" )
-        void indexedMultipleTimes( IndexRule index, Object propertyValue, long count );
+        void indexedMultipleTimes( IndexRule index, Object[] propertyValues, long count );
 
-        @Documented( "There is another node in the unique index with the same property value." )
-        void uniqueIndexNotUnique( IndexRule index, Object propertyValue, long duplicateNodeId );
+        @Documented( "There is another node in the unique index with the same property value(s)." )
+        void uniqueIndexNotUnique( IndexRule index, Object[] propertyValues, long duplicateNodeId );
 
         @Documented( "The referenced relationship group record is not in use." )
         void relationshipGroupNotInUse( RelationshipGroupRecord group );

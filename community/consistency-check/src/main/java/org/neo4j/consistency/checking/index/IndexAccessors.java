@@ -79,12 +79,11 @@ public class IndexAccessors implements Closeable
         }
     }
 
-    public IndexAccessor accessorFor(IndexRule indexRule)
+    public IndexAccessor accessorFor( IndexRule indexRule )
     {
         return accessors.get( indexRule.getId() );
     }
 
-    // TODO: return pair of rules and accessor
     public Iterable<IndexRule> rules()
     {
         return indexRules;

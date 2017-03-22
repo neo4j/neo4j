@@ -57,14 +57,14 @@ import org.neo4j.graphdb.Direction;
 import org.neo4j.graphdb.GraphDatabaseService;
 import org.neo4j.graphdb.Node;
 import org.neo4j.graphdb.factory.GraphDatabaseSettings;
+import org.neo4j.helpers.collection.Iterators;
 import org.neo4j.helpers.collection.Pair;
 import org.neo4j.helpers.progress.ProgressMonitorFactory;
 import org.neo4j.kernel.api.ReadOperations;
 import org.neo4j.kernel.api.TokenWriteOperations;
 import org.neo4j.kernel.api.direct.DirectStoreAccess;
+import org.neo4j.kernel.api.exceptions.KernelException;
 import org.neo4j.kernel.api.exceptions.TransactionFailureException;
-import org.neo4j.kernel.api.exceptions.schema.IllegalTokenNameException;
-import org.neo4j.kernel.api.exceptions.schema.TooManyLabelsException;
 import org.neo4j.kernel.api.index.IndexAccessor;
 import org.neo4j.kernel.api.index.IndexEntryUpdate;
 import org.neo4j.kernel.api.index.IndexPopulator;
@@ -73,6 +73,8 @@ import org.neo4j.kernel.api.index.SchemaIndexProvider;
 import org.neo4j.kernel.api.labelscan.LabelScanStore;
 import org.neo4j.kernel.api.labelscan.LabelScanWriter;
 import org.neo4j.kernel.api.labelscan.NodeLabelUpdate;
+import org.neo4j.kernel.api.schema_new.SchemaDescriptorFactory;
+import org.neo4j.kernel.api.schema_new.constaints.ConstraintDescriptorFactory;
 import org.neo4j.kernel.configuration.Config;
 import org.neo4j.kernel.impl.annotations.Documented;
 import org.neo4j.kernel.impl.api.KernelStatement;
@@ -80,6 +82,7 @@ import org.neo4j.kernel.impl.api.index.IndexUpdateMode;
 import org.neo4j.kernel.impl.api.index.sampling.IndexSamplingConfig;
 import org.neo4j.kernel.impl.core.ThreadToStatementContextBridge;
 import org.neo4j.kernel.impl.store.AbstractDynamicStore;
+import org.neo4j.kernel.impl.store.DynamicRecordAllocator;
 import org.neo4j.kernel.impl.store.NodeLabelsField;
 import org.neo4j.kernel.impl.store.PropertyType;
 import org.neo4j.kernel.impl.store.RecordStore;
@@ -87,6 +90,7 @@ import org.neo4j.kernel.impl.store.SchemaStorage;
 import org.neo4j.kernel.impl.store.SchemaStore;
 import org.neo4j.kernel.impl.store.StoreAccess;
 import org.neo4j.kernel.impl.store.allocator.ReusableRecordsAllocator;
+import org.neo4j.kernel.impl.store.allocator.ReusableRecordsCompositeAllocator;
 import org.neo4j.kernel.impl.store.record.ConstraintRule;
 import org.neo4j.kernel.impl.store.record.DynamicRecord;
 import org.neo4j.kernel.impl.store.record.IndexRule;
@@ -125,6 +129,8 @@ import static org.neo4j.helpers.collection.MapUtil.stringMap;
 import static org.neo4j.kernel.api.ReadOperations.ANY_LABEL;
 import static org.neo4j.kernel.api.ReadOperations.ANY_RELATIONSHIP_TYPE;
 import static org.neo4j.kernel.api.labelscan.NodeLabelUpdate.labelChanges;
+import static org.neo4j.kernel.api.schema_new.index.NewIndexDescriptorFactory.forLabel;
+import static org.neo4j.kernel.api.schema_new.index.NewIndexDescriptorFactory.uniqueForLabel;
 import static org.neo4j.kernel.impl.store.AbstractDynamicStore.readFullByteArrayFromHeavyRecords;
 import static org.neo4j.kernel.impl.store.DynamicArrayStore.allocateFromNumbers;
 import static org.neo4j.kernel.impl.store.DynamicArrayStore.getRightArray;
@@ -143,9 +149,13 @@ import static org.neo4j.test.Property.set;
 public class FullCheckIntegrationTest
 {
     private static final SchemaIndexProvider.Descriptor DESCRIPTOR = new SchemaIndexProvider.Descriptor( "lucene", "1.0" );
+    private static final String PROP1 = "key1";
+    private static final String PROP2 = "key2";
+    private static final Object VALUE1 = "value1";
+    private static final Object VALUE2 = "value2";
 
     private int label1, label2, label3, label4, draconian;
-    private int key, mandatory;
+    private int key1, key2, mandatory;
     private int C, T, M;
 
     private final List<Long> indexedNodes = new ArrayList<>();
@@ -199,9 +209,21 @@ public class FullCheckIntegrationTest
         {
             try ( org.neo4j.graphdb.Transaction tx = db.beginTx() )
             {
-                db.schema().indexFor( label( "label3" ) ).on( "key" ).create();
-                db.schema().constraintFor( label( "label4" ) ).assertPropertyIsUnique( "key" ).create();
+                db.schema().indexFor( label( "label3" ) ).on( PROP1 ).create();
+
+                // the Core API for composite index creation is not quite merged yet
+                key1 = tokenWriteOperationsOn( db ).propertyKeyGetOrCreateForName( PROP1 );
+                key2 = tokenWriteOperationsOn( db ).propertyKeyGetOrCreateForName( PROP2 );
+                label3 = readOperationsOn( db ).labelGetForName( "label3" );
+                statementOn( db ).schemaWriteOperations().indexCreate(
+                        SchemaDescriptorFactory.forLabel( label3, key1, key2 ) );
+
+                db.schema().constraintFor( label( "label4" ) ).assertPropertyIsUnique( PROP1 ).create();
                 tx.success();
+            }
+            catch ( KernelException e )
+            {
+                throw new RuntimeException( e );
             }
 
             try ( org.neo4j.graphdb.Transaction ignored = db.beginTx() )
@@ -212,12 +234,15 @@ public class FullCheckIntegrationTest
             try ( org.neo4j.graphdb.Transaction tx = db.beginTx() )
             {
                 Node node1 = set( db.createNode( label( "label1" ) ) );
-                Node node2 = set( db.createNode( label( "label2" ) ), property( "key", "value" ) );
+                Node node2 = set( db.createNode( label( "label2" ) ), property( PROP1, VALUE1 ) );
                 node1.createRelationshipTo( node2, withName( "C" ) );
                 // Just to create one more rel type
                 db.createNode().createRelationshipTo( db.createNode(), withName( "T" ) );
-                indexedNodes.add( set( db.createNode( label( "label3" ) ), property( "key", "value" ) ).getId() );
-                set( db.createNode( label( "label4" ) ), property( "key", "value" ) );
+                indexedNodes.add( set( db.createNode( label( "label3" ) ), property( PROP1, VALUE1 ) ).getId() );
+                indexedNodes.add( set( db.createNode( label( "label3" ) ),
+                        property( PROP1, VALUE1 ), property( PROP2, VALUE2 ) ).getId() );
+
+                set( db.createNode( label( "label4" ) ), property( PROP1, VALUE1 ) );
                 tx.success();
 
                 label1 = readOperationsOn( db ).labelGetForName( "label1" );
@@ -225,13 +250,13 @@ public class FullCheckIntegrationTest
                 label3 = readOperationsOn( db ).labelGetForName( "label3" );
                 label4 = readOperationsOn( db ).labelGetForName( "label4" );
                 draconian = tokenWriteOperationsOn( db ).labelGetOrCreateForName( "draconian" );
-                key = readOperationsOn( db ).propertyKeyGetForName( "key" );
+                key1 = readOperationsOn( db ).propertyKeyGetForName( PROP1 );
                 mandatory = tokenWriteOperationsOn( db ).propertyKeyGetOrCreateForName( "mandatory" );
                 C = readOperationsOn( db ).relationshipTypeGetForName( "C" );
                 T = readOperationsOn( db ).relationshipTypeGetForName( "T" );
                 M = tokenWriteOperationsOn( db ).relationshipTypeGetOrCreateForName( "M" );
             }
-            catch ( IllegalTokenNameException | TooManyLabelsException e )
+            catch ( KernelException e )
             {
                 throw new RuntimeException( e );
             }
@@ -389,8 +414,8 @@ public class FullCheckIntegrationTest
         ConsistencySummaryStatistics stats = check();
 
         // then
-        on( stats ).verify( RecordType.INDEX, 1 )
-                   .verify( RecordType.LABEL_SCAN_DOCUMENT, 1 )
+        on( stats ).verify( RecordType.INDEX, 3 ) // 3 index entries are pointing to nodes not in use
+                   .verify( RecordType.LABEL_SCAN_DOCUMENT, 2 ) // the label scan is pointing to 2 nodes not in use
                    .verify( RecordType.COUNTS, 3 )
                    .andThatsAllFolks();
     }
@@ -427,7 +452,7 @@ public class FullCheckIntegrationTest
         ConsistencySummaryStatistics stats = check();
 
         // then
-        on( stats ).verify( RecordType.LABEL_SCAN_DOCUMENT, 1 )
+        on( stats ).verify( RecordType.LABEL_SCAN_DOCUMENT, 2 ) // the label scan is pointing to 2 nodes not in use
                    .verify( RecordType.COUNTS, 3 )
                    .andThatsAllFolks();
     }
@@ -534,7 +559,7 @@ public class FullCheckIntegrationTest
         ConsistencySummaryStatistics stats = check();
 
         // then
-        on( stats ).verify( RecordType.NODE, 1 )
+        on( stats ).verify( RecordType.NODE, 3 ) // 1 node missing from 1 index + 1 node missing from 2 indexes
                    .andThatsAllFolks();
     }
 
@@ -551,7 +576,7 @@ public class FullCheckIntegrationTest
             IndexAccessor accessor = fixture.directStoreAccess().indexes()
                     .getOnlineAccessor( indexRule.getId(), indexRule.getIndexDescriptor(), samplingConfig );
             IndexUpdater updater = accessor.newUpdater( IndexUpdateMode.ONLINE );
-            updater.process( IndexEntryUpdate.add( 42, indexRule.getIndexDescriptor().schema(), "value" ) );
+            updater.process( IndexEntryUpdate.add( 42, indexRule.getIndexDescriptor().schema(), values( indexRule ) ) );
             updater.close();
             accessor.close();
         }
@@ -560,9 +585,19 @@ public class FullCheckIntegrationTest
         ConsistencySummaryStatistics stats = check();
 
         // then
-        on( stats ).verify( RecordType.NODE, 1 )
-                   .verify( RecordType.INDEX, 2 )
+        on( stats ).verify( RecordType.NODE, 1 ) // the duplicate in unique index
+                   .verify( RecordType.INDEX, 3 ) // the index entries pointing to non-existent node 42
                    .andThatsAllFolks();
+    }
+
+    private Object[] values( IndexRule indexRule )
+    {
+        switch ( indexRule.schema().getPropertyIds().length )
+        {
+        case 1: return Iterators.array( VALUE1 );
+        case 2: return Iterators.array( VALUE1, VALUE2 );
+        default: throw new UnsupportedOperationException();
+        }
     }
 
     @Test
@@ -583,7 +618,7 @@ public class FullCheckIntegrationTest
                 PropertyRecord property = new PropertyRecord( node.getNextProp(), node );
                 property.setInUse( true );
                 PropertyBlock block = new PropertyBlock();
-                block.setSingleBlock( key | (((long) PropertyType.INT.intValue()) << 24) | (1337L << 28) );
+                block.setSingleBlock( key1 | (((long) PropertyType.INT.intValue()) << 24) | (1337L << 28) );
                 property.addPropertyBlock( block );
                 tx.create( node );
                 tx.create( property );
@@ -629,7 +664,7 @@ public class FullCheckIntegrationTest
                 PropertyRecord property = new PropertyRecord( propId, relationship );
                 property.setInUse( true );
                 PropertyBlock block = new PropertyBlock();
-                block.setSingleBlock( key | (((long) PropertyType.INT.intValue()) << 24) | (1337L << 28) );
+                block.setSingleBlock( key1 | (((long) PropertyType.INT.intValue()) << 24) | (1337L << 28) );
                 property.addPropertyBlock( block );
 
                 tx.create( node1 );
@@ -944,7 +979,7 @@ public class FullCheckIntegrationTest
                 DynamicRecord schemaBefore = schema.clone();
 
                 schema.setNextBlock( next.schema() ); // Point to a record that isn't in use.
-                IndexRule rule = indexRule( schema.getId(), label1, key, DESCRIPTOR );
+                IndexRule rule = indexRule( schema.getId(), label1, key1, DESCRIPTOR );
                 schema.setData( rule.serialize() );
 
                 tx.createSchema( asList( schemaBefore ), asList( schema ), rule );
@@ -1047,20 +1082,6 @@ public class FullCheckIntegrationTest
         // then
         on( stats ).verify( RecordType.SCHEMA, 2 )
                    .andThatsAllFolks();
-    }
-
-    public static Collection<DynamicRecord> serializeRule( SchemaRule rule, DynamicRecord... records )
-    {
-        return serializeRule( rule, asList( records ) );
-    }
-
-    public static Collection<DynamicRecord> serializeRule( SchemaRule rule, Collection<DynamicRecord> records )
-    {
-        byte[] data = rule.serialize();
-        ReusableRecordsAllocator dynamicRecordAllocator = new ReusableRecordsAllocator( data.length, records );
-        Collection<DynamicRecord> result = new ArrayList<>();
-        AbstractDynamicStore.allocateRecordsFromBytes( result, data, dynamicRecordAllocator );
-        return result;
     }
 
     @Test
@@ -1489,14 +1510,14 @@ public class FullCheckIntegrationTest
                    .andThatsAllFolks();
     }
 
-    protected RelationshipRecord withNext( RelationshipRecord relationship, long next )
+    private RelationshipRecord withNext( RelationshipRecord relationship, long next )
     {
         relationship.setFirstNextRel( next );
         relationship.setSecondNextRel( next );
         return relationship;
     }
 
-    protected RelationshipRecord withPrev( RelationshipRecord relationship, long prev )
+    private RelationshipRecord withPrev( RelationshipRecord relationship, long prev )
     {
         relationship.setFirstInFirstChain( false );
         relationship.setFirstInSecondChain( false );
@@ -1692,6 +1713,24 @@ public class FullCheckIntegrationTest
     }
 
     @Test
+    public void shouldReportDuplicatedCompositeIndexRules() throws Exception
+    {
+        // Given
+        int labelId = createLabel();
+        int propertyKeyId1 = createPropertyKey( "p1" );
+        int propertyKeyId2 = createPropertyKey( "p2" );
+        int propertyKeyId3 = createPropertyKey( "p3" );
+        createIndexRule( labelId, propertyKeyId1, propertyKeyId2, propertyKeyId3 );
+        createIndexRule( labelId, propertyKeyId1, propertyKeyId2, propertyKeyId3 );
+
+        // When
+        ConsistencySummaryStatistics stats = check();
+
+        // Then
+        on( stats ).verify( RecordType.SCHEMA, 1 ).andThatsAllFolks();
+    }
+
+    @Test
     public void shouldReportDuplicatedUniquenessConstraintRules() throws Exception
     {
         // Given
@@ -1699,6 +1738,24 @@ public class FullCheckIntegrationTest
         int propertyKeyId = createPropertyKey();
         createUniquenessConstraintRule( labelId, propertyKeyId );
         createUniquenessConstraintRule( labelId, propertyKeyId );
+
+        // When
+        ConsistencySummaryStatistics stats = check();
+
+        // Then
+        on( stats ).verify( RecordType.SCHEMA, 2 ) // pair of duplicated indexes & pair of duplicated constraints
+                .andThatsAllFolks();
+    }
+
+    @Test
+    public void shouldReportDuplicatedCompositeUniquenessConstraintRules() throws Exception
+    {
+        // Given
+        int labelId = createLabel();
+        int propertyKeyId1 = createPropertyKey( "p1" );
+        int propertyKeyId2 = createPropertyKey( "p2" );
+        createUniquenessConstraintRule( labelId, propertyKeyId1, propertyKeyId2 );
+        createUniquenessConstraintRule( labelId, propertyKeyId1, propertyKeyId2 );
 
         // When
         ConsistencySummaryStatistics stats = check();
@@ -1759,9 +1816,9 @@ public class FullCheckIntegrationTest
     public void shouldReportInvalidLabelIdInUniquenessConstraintRule() throws Exception
     {
         // Given
-        int labelId = fixture.idGenerator().label();
+        int badLabelId = fixture.idGenerator().label();
         int propertyKeyId = createPropertyKey();
-        createUniquenessConstraintRule( labelId, propertyKeyId );
+        createUniquenessConstraintRule( badLabelId, propertyKeyId );
 
         // When
         ConsistencySummaryStatistics stats = check();
@@ -1775,9 +1832,9 @@ public class FullCheckIntegrationTest
     public void shouldReportInvalidLabelIdInNodePropertyExistenceConstraintRule() throws Exception
     {
         // Given
-        int labelId = fixture.idGenerator().label();
+        int badLabelId = fixture.idGenerator().label();
         int propertyKeyId = createPropertyKey();
-        createNodePropertyExistenceConstraint( labelId, propertyKeyId );
+        createNodePropertyExistenceConstraint( badLabelId, propertyKeyId );
 
         // When
         ConsistencySummaryStatistics stats = check();
@@ -1791,8 +1848,24 @@ public class FullCheckIntegrationTest
     {
         // Given
         int labelId = createLabel();
-        int propertyKeyId = fixture.idGenerator().propertyKey();
-        createIndexRule( labelId, propertyKeyId );
+        int badPropertyKeyId = fixture.idGenerator().propertyKey();
+        createIndexRule( labelId, badPropertyKeyId );
+
+        // When
+        ConsistencySummaryStatistics stats = check();
+
+        // Then
+        on( stats ).verify( RecordType.SCHEMA, 1 ).andThatsAllFolks();
+    }
+
+    @Test
+    public void shouldReportInvalidSecondPropertyKeyIdInIndexRule() throws Exception
+    {
+        // Given
+        int labelId = createLabel();
+        int propertyKeyId = createPropertyKey();
+        int badPropertyKeyId = fixture.idGenerator().propertyKey();
+        createIndexRule( labelId, propertyKeyId, badPropertyKeyId );
 
         // When
         ConsistencySummaryStatistics stats = check();
@@ -1806,8 +1879,25 @@ public class FullCheckIntegrationTest
     {
         // Given
         int labelId = createLabel();
-        int propertyKeyId = fixture.idGenerator().propertyKey();
-        createUniquenessConstraintRule( labelId, propertyKeyId );
+        int badPropertyKeyId = fixture.idGenerator().propertyKey();
+        createUniquenessConstraintRule( labelId, badPropertyKeyId );
+
+        // When
+        ConsistencySummaryStatistics stats = check();
+
+        // Then
+        on( stats ).verify( RecordType.SCHEMA, 2 ) // invalid property key in both index & owning constraint
+                .andThatsAllFolks();
+    }
+
+    @Test
+    public void shouldReportInvalidSecondPropertyKeyIdInUniquenessConstraintRule() throws Exception
+    {
+        // Given
+        int labelId = createLabel();
+        int propertyKeyId = createPropertyKey();
+        int badPropertyKeyId = fixture.idGenerator().propertyKey();
+        createUniquenessConstraintRule( labelId, propertyKeyId, badPropertyKeyId );
 
         // When
         ConsistencySummaryStatistics stats = check();
@@ -1822,8 +1912,8 @@ public class FullCheckIntegrationTest
     {
         // Given
         int labelId = createLabel();
-        int propertyKeyId = fixture.idGenerator().propertyKey();
-        createNodePropertyExistenceConstraint( labelId, propertyKeyId );
+        int badPropertyKeyId = fixture.idGenerator().propertyKey();
+        createNodePropertyExistenceConstraint( labelId, badPropertyKeyId );
 
         // When
         ConsistencySummaryStatistics stats = check();
@@ -1836,9 +1926,9 @@ public class FullCheckIntegrationTest
     public void shouldReportInvalidRelTypeIdInRelationshipPropertyExistenceConstraintRule() throws Exception
     {
         // Given
-        int relTypeId = fixture.idGenerator().relationshipType();
+        int badRelTypeId = fixture.idGenerator().relationshipType();
         int propertyKeyId = createPropertyKey();
-        createRelationshipPropertyExistenceConstraint( relTypeId, propertyKeyId );
+        createRelationshipPropertyExistenceConstraint( badRelTypeId, propertyKeyId );
 
         // When
         ConsistencySummaryStatistics stats = check();
@@ -2007,6 +2097,11 @@ public class FullCheckIntegrationTest
 
     private int createPropertyKey() throws Exception
     {
+        return createPropertyKey( "property" );
+    }
+
+    private int createPropertyKey( String propertyKey ) throws Exception
+    {
         final MutableInt id = new MutableInt( -1 );
 
         fixture.apply( new GraphStoreFixture.Transaction()
@@ -2016,7 +2111,7 @@ public class FullCheckIntegrationTest
                     GraphStoreFixture.IdGenerator next )
             {
                 int propertyKeyId = next.propertyKey();
-                tx.propertyKey( propertyKeyId, "property" );
+                tx.propertyKey( propertyKeyId, propertyKey );
                 id.setValue( propertyKeyId );
             }
         } );
@@ -2043,7 +2138,7 @@ public class FullCheckIntegrationTest
         return id.intValue();
     }
 
-    private void createIndexRule( final int labelId, final int propertyKeyId ) throws Exception
+    private void createIndexRule( final int labelId, final int... propertyKeyIds ) throws Exception
     {
         fixture.apply( new GraphStoreFixture.Transaction()
         {
@@ -2056,7 +2151,7 @@ public class FullCheckIntegrationTest
                 DynamicRecord recordBefore = new DynamicRecord( id );
                 DynamicRecord recordAfter = recordBefore.clone();
 
-                IndexRule rule = indexRule( id, labelId, propertyKeyId, DESCRIPTOR );
+                IndexRule rule = IndexRule.indexRule( id, forLabel( labelId, propertyKeyIds ), DESCRIPTOR );
                 Collection<DynamicRecord> records = serializeRule( rule, recordAfter );
 
                 tx.createSchema( singleton( recordBefore ), records, rule );
@@ -2064,7 +2159,7 @@ public class FullCheckIntegrationTest
         } );
     }
 
-    private void createUniquenessConstraintRule( final int labelId, final int propertyKeyId ) throws Exception
+    private void createUniquenessConstraintRule( final int labelId, final int... propertyKeyIds ) throws Exception
     {
         fixture.apply( new GraphStoreFixture.Transaction()
         {
@@ -2072,22 +2167,24 @@ public class FullCheckIntegrationTest
             protected void transactionData( GraphStoreFixture.TransactionDataBuilder tx,
                     GraphStoreFixture.IdGenerator next )
             {
-                int ruleId1 = (int) next.schema();
-                int ruleId2 = (int) next.schema();
+                long ruleId1 = next.schema();
+                long ruleId2 = next.schema();
 
                 DynamicRecord record1 = new DynamicRecord( ruleId1 );
                 DynamicRecord record2 = new DynamicRecord( ruleId2 );
                 DynamicRecord record1Before = record1.clone();
                 DynamicRecord record2Before = record2.clone();
 
-                IndexRule rule1 = constraintIndexRule( ruleId1, labelId, propertyKeyId, DESCRIPTOR, (long) ruleId2 );
-                ConstraintRule rule2 = uniquenessConstraintRule( ruleId2, labelId, propertyKeyId, ruleId1 );
+                IndexRule rule1 = IndexRule.constraintIndexRule( ruleId1,
+                        uniqueForLabel( labelId, propertyKeyIds ), DESCRIPTOR, ruleId2 );
+                ConstraintRule rule2 = ConstraintRule.constraintRule( ruleId2,
+                        ConstraintDescriptorFactory.uniqueForLabel( labelId, propertyKeyIds ), ruleId1 );
 
                 Collection<DynamicRecord> records1 = serializeRule( rule1, record1 );
                 Collection<DynamicRecord> records2 = serializeRule( rule2, record2 );
 
-                assertEquals( asList( record1 ), records1 );
-                assertEquals( asList( record2 ), records2 );
+                assertEquals( record1, records1.iterator().next() );
+                assertEquals( record2, records2.iterator().next() );
 
                 tx.createSchema( asList( record1Before ), records1, rule1 );
                 tx.createSchema( asList( record2Before ), records2, rule2 );
@@ -2188,4 +2285,31 @@ public class FullCheckIntegrationTest
             assertEquals( "Total number of inconsistencies: " + stats, total, stats.getTotalInconsistencyCount() );
         }
     }
+
+    private static Collection<DynamicRecord> serializeRule( SchemaRule rule, DynamicRecord... records )
+    {
+        byte[] data = rule.serialize();
+        DynamicRecordAllocator dynamicRecordAllocator =
+                new ReusableRecordsCompositeAllocator( asList( records ), schemaAllocator );
+        Collection<DynamicRecord> result = new ArrayList<>();
+        AbstractDynamicStore.allocateRecordsFromBytes( result, data, dynamicRecordAllocator );
+        return result;
+    }
+
+    private static DynamicRecordAllocator schemaAllocator = new DynamicRecordAllocator()
+    {
+        private int next = 10000; // we start high to not conflict with real ids
+
+        @Override
+        public int getRecordDataSize()
+        {
+            return SchemaStore.BLOCK_SIZE;
+        }
+
+        @Override
+        public DynamicRecord nextRecord()
+        {
+            return new DynamicRecord( next++ );
+        }
+    };
 }
