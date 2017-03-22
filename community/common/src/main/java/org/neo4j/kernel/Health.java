@@ -61,38 +61,4 @@ public interface Health
      * @return Cause of panic or {@code null} if system is in good health.
      */
     Throwable cause();
-
-    class Adapter implements Health
-    {
-
-        @Override
-        public <EXCEPTION extends Throwable> void assertHealthy( Class<EXCEPTION> panicDisguise ) throws EXCEPTION
-        {
-            // no-op
-        }
-
-        @Override
-        public void panic( Throwable cause )
-        {
-            // no-op
-        }
-
-        @Override
-        public boolean isHealthy()
-        {
-            return true;
-        }
-
-        @Override
-        public void healed()
-        {
-            // no-op
-        }
-
-        @Override
-        public Throwable cause()
-        {
-            return null;
-        }
-    }
 }

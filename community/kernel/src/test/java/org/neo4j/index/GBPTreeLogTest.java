@@ -33,7 +33,7 @@ import org.neo4j.index.internal.gbptree.Layout;
 import org.neo4j.index.internal.gbptree.SimpleLongLayout;
 import org.neo4j.index.internal.gbptree.Writer;
 import org.neo4j.io.pagecache.PageCache;
-import org.neo4j.kernel.AlwaysHealthy;
+import org.neo4j.kernel.SilentHealth;
 import org.neo4j.kernel.Health;
 import org.neo4j.logging.AssertableLogProvider;
 import org.neo4j.logging.Log;
@@ -68,7 +68,7 @@ public class GBPTreeLogTest
     private GBPTree<MutableLong,MutableLong> gbpTree( Log log )
             throws java.io.IOException
     {
-        return gbpTree( log, new AlwaysHealthy() );
+        return gbpTree( log, new SilentHealth() );
     }
 
     private GBPTree<MutableLong,MutableLong> gbpTree( Log log, Health health )

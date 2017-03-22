@@ -52,7 +52,7 @@ import org.neo4j.io.fs.FileSystemAbstraction;
 import org.neo4j.io.pagecache.PageCache;
 import org.neo4j.io.pagecache.tracing.PageCacheTracer;
 import org.neo4j.io.pagecache.tracing.cursor.PageCursorTracerSupplier;
-import org.neo4j.kernel.AlwaysHealthy;
+import org.neo4j.kernel.SilentHealth;
 import org.neo4j.kernel.Health;
 import org.neo4j.kernel.api.exceptions.KernelException;
 import org.neo4j.kernel.api.exceptions.index.IndexEntryConflictException;
@@ -282,7 +282,7 @@ public class BatchInserterImpl implements BatchInserter, IndexConfigStoreProvide
 
         Dependencies deps = new Dependencies();
         Monitors monitors = new Monitors();
-        Health databaseHealth = new AlwaysHealthy();
+        Health databaseHealth = new SilentHealth();
         deps.satisfyDependencies( fileSystem, config, logService, indexStoreView, pageCache, monitors, databaseHealth );
 
         KernelExtensions extensions = life.add( new KernelExtensions(

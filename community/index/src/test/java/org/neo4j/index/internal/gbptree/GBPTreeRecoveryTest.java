@@ -34,7 +34,7 @@ import java.util.stream.Collectors;
 
 import org.neo4j.cursor.RawCursor;
 import org.neo4j.io.pagecache.PageCache;
-import org.neo4j.kernel.AlwaysHealthy;
+import org.neo4j.kernel.SilentHealth;
 import org.neo4j.logging.NullLog;
 import org.neo4j.test.rule.PageCacheRule;
 import org.neo4j.test.rule.RandomRule;
@@ -398,7 +398,7 @@ public class GBPTreeRecoveryTest
 
     private static GBPTree<MutableLong,MutableLong> createIndex( PageCache pageCache, File file ) throws IOException
     {
-        return new GBPTree<>( pageCache, file, new SimpleLongLayout(), 0, NO_MONITOR, NO_HEADER, new AlwaysHealthy(),
+        return new GBPTree<>( pageCache, file, new SimpleLongLayout(), 0, NO_MONITOR, NO_HEADER, new SilentHealth(),
                 NullLog.getInstance() );
     }
 

@@ -29,7 +29,7 @@ import java.util.List;
 
 import org.neo4j.io.fs.FileSystemAbstraction;
 import org.neo4j.io.pagecache.PageCache;
-import org.neo4j.kernel.AlwaysHealthy;
+import org.neo4j.kernel.SilentHealth;
 import org.neo4j.kernel.api.impl.labelscan.LabelScanStoreTest;
 import org.neo4j.kernel.api.labelscan.LabelScanStore;
 import org.neo4j.kernel.api.labelscan.NodeLabelUpdate;
@@ -51,7 +51,7 @@ public class NativeLabelScanStoreTest extends LabelScanStoreTest
         monitors.addMonitorListener( monitor );
         PageCache pageCache = pageCacheRule.getPageCache( fileSystemAbstraction );
         return new NativeLabelScanStore( pageCache, rootFolder,
-                asStream( existingData ), readOnly, monitors, new AlwaysHealthy(), NullLog.getInstance() );
+                asStream( existingData ), readOnly, monitors, new SilentHealth(), NullLog.getInstance() );
     }
 
     @Override

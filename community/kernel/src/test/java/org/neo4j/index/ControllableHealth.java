@@ -21,9 +21,9 @@ package org.neo4j.index;
 
 import java.util.concurrent.atomic.AtomicBoolean;
 
-import org.neo4j.kernel.Health;
+import org.neo4j.kernel.SilentHealth;
 
-class ControllableHealth extends Health.Adapter
+class ControllableHealth extends SilentHealth
 {
     private final AtomicBoolean isHealthy;
 

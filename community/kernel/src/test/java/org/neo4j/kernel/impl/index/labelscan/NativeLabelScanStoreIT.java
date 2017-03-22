@@ -30,7 +30,7 @@ import java.util.Random;
 
 import org.neo4j.io.fs.DefaultFileSystemAbstraction;
 import org.neo4j.io.pagecache.PageCache;
-import org.neo4j.kernel.AlwaysHealthy;
+import org.neo4j.kernel.SilentHealth;
 import org.neo4j.kernel.api.labelscan.LabelScanWriter;
 import org.neo4j.kernel.api.labelscan.NodeLabelUpdate;
 import org.neo4j.kernel.impl.api.scan.FullStoreChangeStream;
@@ -65,7 +65,7 @@ public class NativeLabelScanStoreIT
     {
         PageCache pageCache = pageCacheRule.getPageCache( new DefaultFileSystemAbstraction() );
         store = life.add( new NativeLabelScanStore( pageCache, directory.absolutePath(), FullStoreChangeStream.EMPTY,
-                false, new Monitors(), new AlwaysHealthy(), NullLog.getInstance(),
+                false, new Monitors(), new SilentHealth(), NullLog.getInstance(),
                 // a bit of random pageSize
                 Math.min( pageCache.pageSize(), 256 << random.nextInt( 5 ) ) ) );
     }
