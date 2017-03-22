@@ -148,7 +148,7 @@ public class SortedLongArrayUtilTest
                 {
                     values.add( val );
                 }
-                return (values.equals( expectedValue ));
+                return values.equals( expectedValue );
             }
             return false;
         }
