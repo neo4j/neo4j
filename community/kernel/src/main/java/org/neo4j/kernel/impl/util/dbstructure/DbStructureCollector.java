@@ -87,7 +87,6 @@ public class DbStructureCollector implements DbStructureVisitor
             @Override
             public Iterator<Pair<String,String[]>> knownUniqueConstraints()
             {
-                //TODO: Add support for composite indexes
                 return Iterators.map( uniquenessConstraint -> {
                     String label = labels.byIdOrFail( uniquenessConstraint.schema().getLabelId() );
                     String[] propertyKeyNames = propertyKeys
@@ -357,8 +356,8 @@ public class DbStructureCollector implements DbStructureVisitor
                     //TODO: Add support for composite indexes
                     LabelSchemaDescriptor next = iterator.next();
                     String label = labels.byIdOrFail( next.getLabelId() );
-                    String[] propertyKey = propertyKeys.byIdOrFail( next.getPropertyIds() );
-                    return Pair.of( label, propertyKey );
+                    String[] propertyKeyNames = propertyKeys.byIdOrFail( next.getPropertyIds() );
+                    return Pair.of( label, propertyKeyNames );
                 }
 
                 @Override
