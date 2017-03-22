@@ -61,11 +61,16 @@ class IndexUpdaterMap implements AutoCloseable, Iterable<IndexUpdater>
         this.updaterMap = new HashMap<>();
     }
 
-    Iterable<IndexUpdaterWithSchema> updaters()
+    /**
+     * Returns IndexUpdaters that are relevant to the input labels
+     * @param labels set of labels
+     * @return The IndexUpdaters
+     */
+    Iterable<IndexUpdaterWithSchema> updatersForLabels( long[] labels )
     {
         return Iterables.map(
                 IndexUpdaterWithSchema::new,
-                indexMap::descriptors );
+                () -> indexMap.descriptorsForLabels( labels ) );
     }
 
     IndexUpdater getUpdater( LabelSchemaDescriptor descriptor )

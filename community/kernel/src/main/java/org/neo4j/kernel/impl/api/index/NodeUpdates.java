@@ -27,6 +27,7 @@ import org.neo4j.collection.primitive.Primitive;
 import org.neo4j.collection.primitive.PrimitiveIntIterator;
 import org.neo4j.collection.primitive.PrimitiveIntObjectMap;
 import org.neo4j.collection.primitive.PrimitiveIntSet;
+import org.neo4j.helpers.SortedLongArrayUtil;
 import org.neo4j.helpers.collection.Iterables;
 import org.neo4j.kernel.api.index.IndexEntryUpdate;
 import org.neo4j.kernel.api.properties.DefinedProperty;
@@ -126,6 +127,11 @@ public class NodeUpdates implements PropertyLoader.PropertyLoadSink
     public final long getNodeId()
     {
         return nodeId;
+    }
+
+    public long[] labelsAffected()
+    {
+        return SortedLongArrayUtil.union( labelsBefore, labelsAfter );
     }
 
     @Override

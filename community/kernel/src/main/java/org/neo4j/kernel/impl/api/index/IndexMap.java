@@ -19,11 +19,17 @@
  */
 package org.neo4j.kernel.impl.api.index;
 
+import java.util.ArrayList;
 import java.util.HashMap;
+import java.util.HashSet;
 import java.util.Iterator;
+import java.util.List;
 import java.util.Map;
+import java.util.Set;
 import java.util.function.BiConsumer;
 
+import org.neo4j.collection.primitive.Primitive;
+import org.neo4j.collection.primitive.PrimitiveLongObjectMap;
 import org.neo4j.kernel.api.schema_new.LabelSchemaDescriptor;
 
 /**
@@ -37,17 +43,26 @@ public final class IndexMap implements Cloneable
     private final Map<Long, IndexProxy> indexesById;
     private final Map<LabelSchemaDescriptor,IndexProxy> indexesByDescriptor;
     private final Map<LabelSchemaDescriptor,Long> indexIdsByDescriptor;
+    private final PrimitiveLongObjectMap<Set<LabelSchemaDescriptor>> descriptorsByLabel;
 
     public IndexMap()
     {
         this( new HashMap<>(), new HashMap<>(), new HashMap<>() );
     }
 
-    private IndexMap( Map<Long, IndexProxy> indexesById, Map<LabelSchemaDescriptor,IndexProxy> indexesByDescriptor, Map<LabelSchemaDescriptor,Long> indexIdsByDescriptor )
+    private IndexMap(
+            Map<Long, IndexProxy> indexesById,
+            Map<LabelSchemaDescriptor,IndexProxy> indexesByDescriptor,
+            Map<LabelSchemaDescriptor,Long> indexIdsByDescriptor )
     {
         this.indexesById = indexesById;
         this.indexesByDescriptor = indexesByDescriptor;
         this.indexIdsByDescriptor = indexIdsByDescriptor;
+        this.descriptorsByLabel = Primitive.longObjectMap();
+        for ( LabelSchemaDescriptor schema : indexesByDescriptor.keySet() )
+        {
+            addDescriptorToLabelLookup( schema );
+        }
     }
 
     public IndexProxy getIndexProxy( long indexId )
@@ -67,18 +82,31 @@ public final class IndexMap implements Cloneable
 
     public void putIndexProxy( long indexId, IndexProxy indexProxy )
     {
+        LabelSchemaDescriptor schema = indexProxy.getDescriptor().schema();
         indexesById.put( indexId, indexProxy );
-        indexesByDescriptor.put( indexProxy.getDescriptor().schema(), indexProxy );
-        indexIdsByDescriptor.put( indexProxy.getDescriptor().schema(), indexId );
+        indexesByDescriptor.put( schema, indexProxy );
+        indexIdsByDescriptor.put( schema, indexId );
+        addDescriptorToLabelLookup( schema );
     }
 
     public IndexProxy removeIndexProxy( long indexId )
     {
         IndexProxy removedProxy = indexesById.remove( indexId );
-        if ( null != removedProxy )
+        if ( removedProxy == null )
         {
-            indexesByDescriptor.remove( removedProxy.getDescriptor().schema() );
+            return null;
         }
+
+        LabelSchemaDescriptor schema = removedProxy.getDescriptor().schema();
+        indexesByDescriptor.remove( schema );
+
+        Set<LabelSchemaDescriptor> descriptors = descriptorsByLabel.get( schema.getLabelId() );
+        descriptors.remove( schema );
+        if ( descriptors.isEmpty() )
+        {
+            descriptorsByLabel.remove( schema.getLabelId() );
+        }
+
         return removedProxy;
     }
 
@@ -114,6 +142,21 @@ public final class IndexMap implements Cloneable
         return indexesByDescriptor.keySet().iterator();
     }
 
+    public Iterator<LabelSchemaDescriptor> descriptorsForLabels( long[] labels )
+    {
+        if ( labels.length == 1 )
+        {
+            return descriptorsByLabel.get( labels[0] ).iterator();
+        }
+
+        List<LabelSchemaDescriptor> descriptors = new ArrayList<>();
+        for ( long label : labels )
+        {
+            descriptors.addAll( descriptorsByLabel.get( label ) );
+        }
+        return descriptors.iterator();
+    }
+
     public Iterator<Long> indexIds()
     {
         return indexesById.keySet().iterator();
@@ -122,5 +165,14 @@ public final class IndexMap implements Cloneable
     public int size()
     {
         return indexesById.size();
+    }
+
+    private void addDescriptorToLabelLookup( LabelSchemaDescriptor schema )
+    {
+        if ( !descriptorsByLabel.containsKey( schema.getLabelId() ) )
+        {
+            descriptorsByLabel.put( schema.getLabelId(), new HashSet<>() );
+        }
+        descriptorsByLabel.get( schema.getLabelId() ).add( schema );
     }
 }
