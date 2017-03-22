@@ -513,8 +513,8 @@ public class MultipleIndexPopulator implements IndexPopulator
 
         private boolean isApplicable( NodePropertyUpdate update )
         {
-            return update.forLabel( descriptor.getLabelId() ) &&
-                   update.getPropertyKeyId() == descriptor.getPropertyKeyId();
+            return update.getPropertyKeyId() == descriptor.getPropertyKeyId() &&
+                    update.forLabel( descriptor.getLabelId() );
         }
 
         private void flip() throws FlipFailedKernelException
