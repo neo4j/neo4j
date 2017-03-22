@@ -77,72 +77,6 @@ public class GBPTreeTest
 
     private File indexFile;
 
-    class GBPTreeBuilder
-    {
-        private PageCache pageCache;
-        private Layout<MutableLong,MutableLong> layout;
-        private int tentativePageSize;
-        private GBPTree.Monitor monitor;
-        private Header.Reader headerReader;
-        private Log log;
-
-        GBPTreeBuilder( PageCache pageCache )
-        {
-            this.pageCache = pageCache;
-            this.layout = new SimpleLongLayout();
-            this.tentativePageSize = pageCache.pageSize();
-            this.monitor = NO_MONITOR;
-            this.headerReader = NO_HEADER;
-            this.log = NullLog.getInstance();
-        }
-
-        GBPTree<MutableLong,MutableLong> build() throws IOException
-        {
-            return new GBPTree<>( pageCache, indexFile, layout, tentativePageSize, monitor, headerReader,
-                    new SilentHealth(), log );
-        }
-
-        GBPTreeBuilder with( int tentativePageSize )
-        {
-            this.tentativePageSize = tentativePageSize;
-            return this;
-        }
-
-        GBPTreeBuilder with( GBPTree.Monitor monitor )
-        {
-            this.monitor = monitor;
-            return this;
-        }
-
-        GBPTreeBuilder with( Header.Reader headerReader )
-        {
-            this.headerReader = headerReader;
-            return this;
-        }
-
-        GBPTreeBuilder with( Log log )
-        {
-            this.log = log;
-            return this;
-        }
-
-        public GBPTreeBuilder with( Layout<MutableLong,MutableLong> layout )
-        {
-            this.layout = layout;
-            return this;
-        }
-    }
-
-    private GBPTreeBuilder builder( PageCache pageCache )
-    {
-        return new GBPTreeBuilder( pageCache );
-    }
-
-    private PageCache createPageCache( int pageSize )
-    {
-        return pageCacheRule.getPageCache( fs.get(), config().withPageSize( pageSize ) );
-    }
-
     @Before
     public void setUpIndexFile()
     {
@@ -841,6 +775,72 @@ public class GBPTreeTest
         }
         // THEN
         assertEquals( 1, checkpointCounter.count() );
+    }
+
+    class GBPTreeBuilder
+    {
+        private PageCache pageCache;
+        private Layout<MutableLong,MutableLong> layout;
+        private int tentativePageSize;
+        private GBPTree.Monitor monitor;
+        private Header.Reader headerReader;
+        private Log log;
+
+        GBPTreeBuilder( PageCache pageCache )
+        {
+            this.pageCache = pageCache;
+            this.layout = new SimpleLongLayout();
+            this.tentativePageSize = pageCache.pageSize();
+            this.monitor = NO_MONITOR;
+            this.headerReader = NO_HEADER;
+            this.log = NullLog.getInstance();
+        }
+
+        GBPTree<MutableLong,MutableLong> build() throws IOException
+        {
+            return new GBPTree<>( pageCache, indexFile, layout, tentativePageSize, monitor, headerReader,
+                    new SilentHealth(), log );
+        }
+
+        GBPTreeBuilder with( int tentativePageSize )
+        {
+            this.tentativePageSize = tentativePageSize;
+            return this;
+        }
+
+        GBPTreeBuilder with( GBPTree.Monitor monitor )
+        {
+            this.monitor = monitor;
+            return this;
+        }
+
+        GBPTreeBuilder with( Header.Reader headerReader )
+        {
+            this.headerReader = headerReader;
+            return this;
+        }
+
+        GBPTreeBuilder with( Log log )
+        {
+            this.log = log;
+            return this;
+        }
+
+        public GBPTreeBuilder with( Layout<MutableLong,MutableLong> layout )
+        {
+            this.layout = layout;
+            return this;
+        }
+    }
+
+    private GBPTreeBuilder builder( PageCache pageCache )
+    {
+        return new GBPTreeBuilder( pageCache );
+    }
+
+    private PageCache createPageCache( int pageSize )
+    {
+        return pageCacheRule.getPageCache( fs.get(), config().withPageSize( pageSize ) );
     }
 
     private static class CheckpointControlledMonitor implements Monitor

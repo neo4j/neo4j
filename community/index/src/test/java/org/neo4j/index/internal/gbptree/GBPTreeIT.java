@@ -67,21 +67,6 @@ public class GBPTreeIT
     private final ExecutorService threadPool = Executors.newFixedThreadPool( Runtime.getRuntime().availableProcessors() );
     private PageCache pageCache;
 
-    private GBPTree<MutableLong,MutableLong> createIndex( int pageSize )
-            throws IOException
-    {
-        return createIndex( pageSize, NO_MONITOR );
-    }
-
-    private GBPTree<MutableLong,MutableLong> createIndex( int pageSize, GBPTree.Monitor monitor )
-            throws IOException
-    {
-        pageCache = pageCacheRule.getPageCache( fs.get(), config().withPageSize( pageSize ).withAccessChecks( true ) );
-        return index = new GBPTree<>( pageCache, directory.file( "index" ),
-                layout, 0/*use whatever page cache says*/, monitor, NO_HEADER, new SilentHealth(),
-                NullLog.getInstance() );
-    }
-
     @After
     public void consistencyCheckAndClose() throws IOException
     {
@@ -162,6 +147,21 @@ public class GBPTreeIT
             index.checkpoint( IOLimiter.unlimited() );
             randomlyModifyIndex( index, data, random.random(), (double) round / totalNumberOfRounds );
         }
+    }
+
+    private GBPTree<MutableLong,MutableLong> createIndex( int pageSize )
+            throws IOException
+    {
+        return createIndex( pageSize, NO_MONITOR );
+    }
+
+    private GBPTree<MutableLong,MutableLong> createIndex( int pageSize, GBPTree.Monitor monitor )
+            throws IOException
+    {
+        pageCache = pageCacheRule.getPageCache( fs.get(), config().withPageSize( pageSize ).withAccessChecks( true ) );
+        return index = new GBPTree<>( pageCache, directory.file( "index" ),
+                layout, 0/*use whatever page cache says*/, monitor, NO_HEADER, new SilentHealth(),
+                NullLog.getInstance() );
     }
 
     private static void randomlyModifyIndex( GBPTree<MutableLong,MutableLong> index,

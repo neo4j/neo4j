@@ -96,23 +96,6 @@ public class GBPTreeConcurrencyIT
     private final ExecutorService threadPool =
             Executors.newFixedThreadPool( Runtime.getRuntime().availableProcessors() );
 
-    private GBPTree<MutableLong,MutableLong> createIndex()
-            throws IOException
-    {
-        return createIndex( NO_MONITOR );
-    }
-
-    private GBPTree<MutableLong,MutableLong> createIndex( GBPTree.Monitor monitor )
-            throws IOException
-    {
-        int pageSize = 256;
-        PageCache pageCache =
-                pageCacheRule.getPageCache( fs.get(), config().withPageSize( pageSize ).withAccessChecks( true ) );
-        return index = new GBPTree<>( pageCache, directory.file( "index" ),
-                layout, 0/*use whatever page cache says*/, monitor, NO_HEADER, new SilentHealth(),
-                NullLog.getInstance() );
-    }
-
     @After
     public void consistencyCheckAndClose() throws IOException
     {
@@ -161,6 +144,23 @@ public class GBPTreeConcurrencyIT
     {
         TestCoordinator testCoordinator = new TestCoordinator( random.random(), false, 0.5 );
         shouldReadCorrectlyWithConcurrentUpdates( testCoordinator );
+    }
+
+    private GBPTree<MutableLong,MutableLong> createIndex()
+            throws IOException
+    {
+        return createIndex( NO_MONITOR );
+    }
+
+    private GBPTree<MutableLong,MutableLong> createIndex( GBPTree.Monitor monitor )
+            throws IOException
+    {
+        int pageSize = 256;
+        PageCache pageCache =
+                pageCacheRule.getPageCache( fs.get(), config().withPageSize( pageSize ).withAccessChecks( true ) );
+        return index = new GBPTree<>( pageCache, directory.file( "index" ),
+                layout, 0/*use whatever page cache says*/, monitor, NO_HEADER, new SilentHealth(),
+                NullLog.getInstance() );
     }
 
     private void shouldReadCorrectlyWithConcurrentUpdates( TestCoordinator testCoordinator ) throws Throwable

@@ -57,28 +57,6 @@ public class GBPTreeLogTest
 
     private final Layout<MutableLong,MutableLong> layout = new SimpleLongLayout();
 
-    private void insert( GBPTree<MutableLong, MutableLong> index, long key ) throws IOException
-    {
-        try ( Writer<MutableLong,MutableLong> writer = index.writer() )
-        {
-            writer.put( new MutableLong( key ), new MutableLong( key ) );
-        }
-    }
-
-    private GBPTree<MutableLong,MutableLong> gbpTree( Log log )
-            throws java.io.IOException
-    {
-        return gbpTree( log, new SilentHealth() );
-    }
-
-    private GBPTree<MutableLong,MutableLong> gbpTree( Log log, Health health )
-            throws java.io.IOException
-    {
-        PageCache pageCache = pageCacheRule.getPageCache( fs.get() );
-        File file = directory.file( "index" );
-        return new GBPTree<>( pageCache, file, layout, 0, NO_MONITOR, NO_HEADER, health, log );
-    }
-
     @Test
     public void shouldLogMessageDuringCloseWithCheckpointAndContent() throws Exception
     {
@@ -124,5 +102,27 @@ public class GBPTreeLogTest
             isHealthy.set( false );
         }
         logProvider.assertContainsLogCallContaining( "Did not checkpoint during close" );
+    }
+
+    private void insert( GBPTree<MutableLong, MutableLong> index, long key ) throws IOException
+    {
+        try ( Writer<MutableLong,MutableLong> writer = index.writer() )
+        {
+            writer.put( new MutableLong( key ), new MutableLong( key ) );
+        }
+    }
+
+    private GBPTree<MutableLong,MutableLong> gbpTree( Log log )
+            throws java.io.IOException
+    {
+        return gbpTree( log, new SilentHealth() );
+    }
+
+    private GBPTree<MutableLong,MutableLong> gbpTree( Log log, Health health )
+            throws java.io.IOException
+    {
+        PageCache pageCache = pageCacheRule.getPageCache( fs.get() );
+        File file = directory.file( "index" );
+        return new GBPTree<>( pageCache, file, layout, 0, NO_MONITOR, NO_HEADER, health, log );
     }
 }
