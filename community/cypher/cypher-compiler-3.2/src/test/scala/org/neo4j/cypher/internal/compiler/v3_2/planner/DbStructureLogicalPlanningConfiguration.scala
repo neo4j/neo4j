@@ -28,7 +28,7 @@ import org.neo4j.helpers.collection.Visitable
 import org.neo4j.kernel.impl.util.dbstructure.{DbStructureCollector, DbStructureLookup, DbStructureVisitor}
 
 import scala.collection.JavaConverters._
-import scala.collection.mutable
+import scala.collection.{JavaConverters, mutable}
 
 object DbStructureLogicalPlanningConfiguration {
 
@@ -63,8 +63,8 @@ object DbStructureLogicalPlanningConfiguration {
     }
   }
 
-  private def indexSet(indices: util.Iterator[Pair[String, String]]): Set[(String, Seq[String])] =
-    indices.asScala.map { pair => pair.first() -> Seq(pair.other()) }.toSet
+  private def indexSet(indices: util.Iterator[Pair[String, Array[String]]]): Set[(String, Seq[String])] =
+    indices.asScala.map { pair => pair.first() -> pair.other().to[Seq] }.toSet
 
   private def resolveTokens[T](iterator: util.Iterator[Pair[Integer, String]])(f: Int => T): mutable.Map[String, T] = {
     val builder = mutable.Map.newBuilder[String, T]

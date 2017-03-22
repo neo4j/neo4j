@@ -127,11 +127,13 @@ public class DbStructureInvocationTracingAcceptanceTest
         visitor.apply( null ).visitLabel( 0, "Person" );
         visitor.apply( null ).visitLabel( 1, "Party" );
         visitor.apply( null ).visitPropertyKey( 0, "name" );
+        visitor.apply( null ).visitPropertyKey( 2, "lastName" );
         visitor.apply( null ).visitPropertyKey( 1, "age" );
         visitor.apply( null ).visitRelationshipType( 0, "ACCEPTS" );
         visitor.apply( null ).visitRelationshipType( 1, "REJECTS" );
         visitor.apply( null ).visitIndex( NewIndexDescriptorFactory.forLabel( 0, 1 ), ":Person(age)", 0.5d, 1L );
-        visitor.apply( null ).visitUniqueIndex( NewIndexDescriptorFactory.forLabel( 0, 0 ), ":Person(name)", 0.5d, 1L );
+        visitor.apply( null )
+                .visitUniqueIndex( NewIndexDescriptorFactory.forLabel( 0, 0, 2 ), ":Person(name, lastName)", 0.5d, 1L );
         visitor.apply( null )
                 .visitUniqueConstraint( ConstraintDescriptorFactory.uniqueForLabel( 1, 0 ), ":Party(name)" );
         visitor.apply( null ).visitAllNodesCount( 55 );
