@@ -26,29 +26,42 @@ import java.util.LinkedList;
 import java.util.Map;
 import java.util.Set;
 import java.util.function.Function;
+import java.util.stream.Collectors;
 
 import org.neo4j.helpers.AdvertisedSocketAddress;
 
+import static java.util.stream.Stream.concat;
+
 class CatchUpChannelPool<CHANNEL extends CatchUpChannelPool.Channel>
 {
-    private final Map<AdvertisedSocketAddress, LinkedList<CHANNEL>> idleChannels = new HashMap<>();
+    private final Map<AdvertisedSocketAddress,LinkedList<CHANNEL>> idleChannels = new HashMap<>();
     private final Set<CHANNEL> activeChannels = new HashSet<>();
-    private final Function<AdvertisedSocketAddress, CHANNEL> factory;
+    private final Function<AdvertisedSocketAddress,CHANNEL> factory;
 
-    CatchUpChannelPool( Function<AdvertisedSocketAddress, CHANNEL> factory )
+    CatchUpChannelPool( Function<AdvertisedSocketAddress,CHANNEL> factory )
     {
         this.factory = factory;
     }
 
-    synchronized CHANNEL acquire( AdvertisedSocketAddress catchUpAddress )
+    CHANNEL acquire( AdvertisedSocketAddress catchUpAddress )
     {
-        CHANNEL channel;
-        LinkedList<CHANNEL> channels = idleChannels.get( catchUpAddress );
-        if ( channels == null )
+        CHANNEL channel = getIdleChannel( catchUpAddress );
+
+        if ( channel == null )
         {
             channel = factory.apply( catchUpAddress );
         }
-        else
+
+        addActiveChannel( channel );
+
+        return channel;
+    }
+
+    private synchronized CHANNEL getIdleChannel( AdvertisedSocketAddress catchUpAddress )
+    {
+        CHANNEL channel = null;
+        LinkedList<CHANNEL> channels = idleChannels.get( catchUpAddress );
+        if ( channels != null )
         {
             channel = channels.poll();
             if ( channels.isEmpty() )
@@ -56,28 +69,47 @@ class CatchUpChannelPool<CHANNEL extends CatchUpChannelPool.Channel>
                 idleChannels.remove( catchUpAddress );
             }
         }
-
-        activeChannels.add( channel );
         return channel;
     }
 
-    synchronized void dispose( CHANNEL channel )
+    private synchronized void addActiveChannel( CHANNEL channel )
+    {
+        activeChannels.add( channel );
+    }
+
+    private synchronized void removeActiveChannel( CHANNEL channel )
     {
         activeChannels.remove( channel );
+    }
+
+    void dispose( CHANNEL channel )
+    {
+        removeActiveChannel( channel );
         channel.close();
     }
 
     synchronized void release( CHANNEL channel )
     {
-        activeChannels.remove( channel );
-        idleChannels.computeIfAbsent( channel.destination(), (address) -> new LinkedList<>() ).add( channel );
+        removeActiveChannel( channel );
+        idleChannels.computeIfAbsent( channel.destination(), ( address ) -> new LinkedList<>() ).add( channel );
     }
 
-    synchronized void close()
+    void close()
     {
-        idleChannels.values().stream().flatMap( Collection::stream )
-                .forEach( Channel::close );
-        activeChannels.forEach( Channel::close );
+        collectDisposed().forEach( Channel::close );
+    }
+
+    private synchronized Set<CHANNEL> collectDisposed()
+    {
+        Set<CHANNEL> disposed;
+        disposed = concat(
+                idleChannels.values().stream().flatMap( Collection::stream ),
+                activeChannels.stream() )
+                .collect( Collectors.toSet() );
+
+        idleChannels.clear();
+        activeChannels.clear();
+        return disposed;
     }
 
     interface Channel
