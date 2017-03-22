@@ -19,22 +19,17 @@
  */
 package org.neo4j.kernel.impl.api.store;
 
-import java.io.IOException;
+import java.util.function.IntPredicate;
 import java.util.function.Supplier;
 
 import org.neo4j.cursor.Cursor;
-import org.neo4j.io.pagecache.PageCursor;
 import org.neo4j.kernel.api.exceptions.index.IndexNotFoundKernelException;
 import org.neo4j.kernel.api.schema.index.IndexDescriptor;
 import org.neo4j.kernel.impl.api.DegreeVisitor;
 import org.neo4j.kernel.impl.api.IndexReaderFactory;
 import org.neo4j.kernel.impl.locking.Lock;
 import org.neo4j.kernel.impl.locking.LockService;
-import org.neo4j.kernel.impl.store.CommonAbstractStore;
 import org.neo4j.kernel.impl.store.NeoStores;
-import org.neo4j.kernel.impl.store.UnderlyingStorageException;
-import org.neo4j.kernel.impl.store.record.AbstractBaseRecord;
-import org.neo4j.kernel.impl.store.record.RecordLoad;
 import org.neo4j.kernel.impl.util.InstanceCache;
 import org.neo4j.storageengine.api.Direction;
 import org.neo4j.storageengine.api.NodeItem;
@@ -215,9 +210,10 @@ public class StoreStatement implements StorageStatement
     }
 
     @Override
-    public DegreeVisitor.Visitable acquireDenseNodeDegreeCounter( long nodeId, long relationshipGroupId )
+    public DegreeVisitor.Visitable acquireDenseNodeDegreeCounter( long nodeId, long relationshipGroupId,
+            IntPredicate types )
     {
-        return degreeVisitableCache.get().init( nodeId, relationshipGroupId );
+        return degreeVisitableCache.get().init( nodeId, relationshipGroupId, types );
     }
 
     @Override

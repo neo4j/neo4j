@@ -21,6 +21,7 @@ package org.neo4j.kernel.impl.api.store;
 
 import java.util.Iterator;
 import java.util.function.Function;
+import java.util.function.IntPredicate;
 import java.util.function.Supplier;
 
 import org.neo4j.collection.primitive.PrimitiveIntIterator;
@@ -549,6 +550,12 @@ public class StorageLayer implements StoreReadLayer
         return counts.indexSample( tryGetIndexId( descriptor ), target );
     }
 
+    @Override
+    public <T> T getOrCreateSchemaDependantState( Class<T> type, Function<StoreReadLayer,T> factory )
+    {
+        return schemaCache.getOrCreateDependantState( type, factory, this );
+    }
+
     private long tryGetIndexId( LabelSchemaDescriptor descriptor ) throws IndexNotFoundKernelException
     {
         return indexService.getIndexId( descriptor );
@@ -577,25 +584,23 @@ public class StorageLayer implements StoreReadLayer
     }
 
     @Override
-    public void degrees( StorageStatement statement, NodeItem node, DegreeVisitor visitor )
+    public void degrees( StorageStatement statement, NodeItem node, IntPredicate types, DegreeVisitor visitor )
     {
         if ( node.isDense() )
         {
-            statement.acquireDenseNodeDegreeCounter( node.id(), node.nextGroupId() ).once( visitor );
+            try ( DegreeVisitor.Visitable degreeCounter = statement
+                    .acquireDenseNodeDegreeCounter( node.id(), node.nextGroupId(), types ) )
+            {
+                degreeCounter.accept( visitor );
+            }
         }
         else
         {
-            visitNode( statement, node, visitor );
+            visitNode( statement, node, types, visitor );
         }
     }
 
-    @Override
-    public <T> T getOrCreateSchemaDependantState( Class<T> type, Function<StoreReadLayer,T> factory )
-    {
-        return schemaCache.getOrCreateDependantState( type, factory, this );
-    }
-
-    private void visitNode( StorageStatement statement, NodeItem node, DegreeVisitor visitor )
+    private void visitNode( StorageStatement statement, NodeItem node, IntPredicate types, DegreeVisitor visitor )
     {
         try ( Cursor<RelationshipItem> relationships = nodeGetRelationships( statement, node, BOTH, null ) )
         {
@@ -604,19 +609,22 @@ public class StorageLayer implements StoreReadLayer
             {
                 RelationshipItem rel = relationships.get();
                 int type = rel.type();
-                switch ( directionOf( node.id(), rel.id(), rel.startNode(), rel.endNode() ) )
+                if ( types.test( type ) )
                 {
-                case OUTGOING:
-                    keepGoing = visitor.visitDegree( type, 1, 0, 0 );
-                    break;
-                case INCOMING:
-                    keepGoing = visitor.visitDegree( type, 0, 1, 0 );
-                    break;
-                case BOTH:
-                    keepGoing = visitor.visitDegree( type, 0, 0, 1 );
-                    break;
-                default:
-                    throw new IllegalStateException( "You found the missing direction!" );
+                    switch ( directionOf( node.id(), rel.id(), rel.startNode(), rel.endNode() ) )
+                    {
+                    case OUTGOING:
+                        keepGoing = visitor.visitDegree( type, 1, 0, 0 );
+                        break;
+                    case INCOMING:
+                        keepGoing = visitor.visitDegree( type, 0, 1, 0 );
+                        break;
+                    case BOTH:
+                        keepGoing = visitor.visitDegree( type, 0, 0, 1 );
+                        break;
+                    default:
+                        throw new IllegalStateException( "You found the missing direction!" );
+                    }
                 }
             }
         }

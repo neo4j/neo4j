@@ -19,55 +19,59 @@
  */
 package org.neo4j.kernel.impl.api;
 
+import java.util.function.IntPredicate;
+
 import org.neo4j.storageengine.api.Direction;
 
-public class CountingDegreeVisitor implements DegreeVisitor
+public class CountingDegreeVisitor implements DegreeVisitor, IntPredicate
 {
     private final Direction direction;
     private final int relType;
-    private final boolean dense;
+    private final boolean stopOnFirstMatch;
 
     private int count;
 
-    public CountingDegreeVisitor( Direction direction, boolean dense )
+    public CountingDegreeVisitor( Direction direction, boolean stopOnFirstMatch )
     {
-        this( direction, -1, dense );
+        this( direction, -1, stopOnFirstMatch );
     }
 
-    public CountingDegreeVisitor( Direction direction, int relType, boolean dense )
+    public CountingDegreeVisitor( Direction direction, int relType, boolean stopOnFirstMatch )
     {
         this.direction = direction;
         this.relType = relType;
-        this.dense = dense;
+        this.stopOnFirstMatch = stopOnFirstMatch;
     }
 
     @Override
     public boolean visitDegree( int type, long outgoing, long incoming, long loop )
     {
-        if ( relType == -1 || type == relType )
+        switch ( direction )
         {
-            switch ( direction )
-            {
-            case OUTGOING:
-                count += outgoing + loop;
-                break;
-            case INCOMING:
-                count += incoming + loop;
-                break;
-            case BOTH:
-                count += outgoing + incoming + loop;
-                break;
-            default:
-                throw new IllegalStateException( "Unknown direction: " + direction );
-            }
-            // continue only if we are counting all types or the node is not dense (i.e., we visit one rel at the time)
-            return relType == -1 || !dense;
+        case OUTGOING:
+            count += outgoing + loop;
+            break;
+        case INCOMING:
+            count += incoming + loop;
+            break;
+        case BOTH:
+            count += outgoing + incoming + loop;
+            break;
+        default:
+            throw new IllegalStateException( "Unknown direction: " + direction );
         }
-        return true;
+
+        return !stopOnFirstMatch;
     }
 
     public int count()
     {
         return count;
+    }
+
+    @Override
+    public boolean test( int value )
+    {
+        return relType == -1 || relType == value;
     }
 }

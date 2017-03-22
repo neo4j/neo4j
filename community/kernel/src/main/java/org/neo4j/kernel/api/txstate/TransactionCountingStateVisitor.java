@@ -34,6 +34,7 @@ import org.neo4j.storageengine.api.StoreReadLayer;
 import org.neo4j.storageengine.api.txstate.ReadableTransactionState;
 import org.neo4j.storageengine.api.txstate.TxStateVisitor;
 
+import static org.neo4j.function.Predicates.ALWAYS_TRUE_INT;
 import static org.neo4j.kernel.api.ReadOperations.ANY_LABEL;
 import static org.neo4j.kernel.api.ReadOperations.ANY_RELATIONSHIP_TYPE;
 
@@ -78,7 +79,7 @@ public class TransactionCountingStateVisitor extends TxStateVisitor.Delegator
             return false;
         } );
 
-        storeLayer.degrees( statement, node,
+        storeLayer.degrees( statement, node, ALWAYS_TRUE_INT,
                 ( type, out, in, loop ) -> updateRelationshipsCountsFromDegrees( labelIds, type, -out, -in, -loop ) );
     }
 
@@ -124,10 +125,11 @@ public class TransactionCountingStateVisitor extends TxStateVisitor.Delegator
             // get the relationship counts from *before* this transaction,
             // the relationship changes will compensate for what happens during the transaction
             storeLayer.nodeCursor( statement, id, null )
-                    .forAll( node -> storeLayer.degrees( statement, node, ( type, out, in, loop ) ->
+                    .forAll( node -> storeLayer.degrees( statement, node, ALWAYS_TRUE_INT, ( type, out, in, loop ) ->
                     {
                         added.forEach( label -> updateRelationshipsCountsFromDegrees( type, label, out, in, loop ) );
-                        removed.forEach( label -> updateRelationshipsCountsFromDegrees( type, label, -out, -in, -loop ) );
+                        removed.forEach(
+                                label -> updateRelationshipsCountsFromDegrees( type, label, -out, -in, -loop ) );
                         return true;
                     } ) );
         }
