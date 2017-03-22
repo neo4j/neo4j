@@ -54,10 +54,7 @@ class Equivalent(protected val eagerizedValue: Any, val originalValue: Any) exte
 
   override def canEqual(that: Any): Boolean = true
 
-  private def mixedFloatEquality(a: Float, b: Double) =
-    a.doubleValue() == b.doubleValue() ||
-      (Math.rint(a.doubleValue()).toLong == b.longValue() &&
-        Math.rint(b.doubleValue()).toLong == a.longValue())
+  private def mixedFloatEquality(a: Float, b: Double) = a == b.floatValue()
 
   private var hash: Option[Int] = None
 
