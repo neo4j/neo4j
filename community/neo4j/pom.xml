@@ -27,7 +27,7 @@
   </properties>
 
   <scm>
-    <connection>scm:git:git://github.com/neo4j/neo4j.git</connection>
+    <connection>scm:git:git://github.com/neo4j/neo4j.git</connection>a
     <developerConnection>scm:git:git@github.com:neo4j/neo4j.git</developerConnection>
     <url>https://github.com/neo4j/neo4j</url>
   </scm>
@@ -94,7 +94,11 @@
       <groupId>commons-codec</groupId>
       <artifactId>commons-codec</artifactId>
     </dependency>
-
+    <dependency>
+      <groupId>commons-io</groupId>
+      <artifactId>commons-io</artifactId>
+      <scope>test</scope>
+    </dependency>
     <dependency>
       <groupId>org.neo4j</groupId>
       <artifactId>neo4j-common</artifactId>

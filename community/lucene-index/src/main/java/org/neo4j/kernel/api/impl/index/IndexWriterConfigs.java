@@ -23,10 +23,11 @@ import org.apache.lucene.codecs.PostingsFormat;
 import org.apache.lucene.codecs.blocktreeords.BlockTreeOrdsPostingsFormat;
 import org.apache.lucene.codecs.lucene54.Lucene54Codec;
 import org.apache.lucene.index.IndexWriterConfig;
+import org.apache.lucene.index.KeepOnlyLastCommitDeletionPolicy;
 import org.apache.lucene.index.LogByteSizeMergePolicy;
+import org.apache.lucene.index.SnapshotDeletionPolicy;
 
 import org.neo4j.index.impl.lucene.legacy.LuceneDataSource;
-import org.neo4j.index.impl.lucene.legacy.MultipleBackupDeletionPolicy;
 import org.neo4j.unsafe.impl.internal.dragons.FeatureToggles;
 
 /**
@@ -70,7 +71,7 @@ public final class IndexWriterConfigs
 
         writerConfig.setMaxBufferedDocs( MAX_BUFFERED_DOCS );
         writerConfig.setMaxBufferedDeleteTerms( MAX_BUFFERED_DELETE_TERMS );
-        writerConfig.setIndexDeletionPolicy( new MultipleBackupDeletionPolicy() );
+        writerConfig.setIndexDeletionPolicy( new SnapshotDeletionPolicy( new KeepOnlyLastCommitDeletionPolicy() ) );
         writerConfig.setUseCompoundFile( true );
         writerConfig.setRAMBufferSizeMB( STANDARD_RAM_BUFFER_SIZE_MB );
         writerConfig.setCodec(new Lucene54Codec()

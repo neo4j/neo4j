@@ -23,6 +23,8 @@ import org.apache.lucene.index.DirectoryReader;
 import org.apache.lucene.index.IndexReader;
 import org.apache.lucene.index.IndexWriter;
 import org.apache.lucene.index.IndexWriterConfig;
+import org.apache.lucene.index.KeepOnlyLastCommitDeletionPolicy;
+import org.apache.lucene.index.SnapshotDeletionPolicy;
 import org.apache.lucene.search.IndexSearcher;
 import org.apache.lucene.search.similarities.Similarity;
 import org.apache.lucene.store.Directory;
@@ -89,7 +91,7 @@ class WritableIndexReferenceFactory extends IndexReferenceFactory
             Directory indexDirectory = getIndexDirectory( identifier );
             IndexType type = getType( identifier );
             IndexWriterConfig writerConfig = new IndexWriterConfig( type.analyzer );
-            writerConfig.setIndexDeletionPolicy( new MultipleBackupDeletionPolicy() );
+            writerConfig.setIndexDeletionPolicy( new SnapshotDeletionPolicy( new KeepOnlyLastCommitDeletionPolicy() ) );
             Similarity similarity = type.getSimilarity();
             if ( similarity != null )
             {
