@@ -19,20 +19,30 @@
  */
 package org.neo4j.internal.cypher.acceptance
 
+import org.neo4j.cypher.javacompat.internal.GraphDatabaseCypherService
 import org.neo4j.cypher.{ExecutionEngineFunSuite, NewPlannerTestSupport}
+import org.neo4j.graphdb.config.Setting
+import org.neo4j.test.TestEnterpriseGraphDatabaseFactory
 
-class UniqueIndexAcceptanceTest extends ExecutionEngineFunSuite with NewPlannerTestSupport {
+import scala.collection.JavaConverters._
+import scala.collection.Map
 
-  test("should be able to use unique index hints on IN expressions") {
+class UniqueIndexNodeKeyAcceptanceTest extends ExecutionEngineFunSuite with NewPlannerTestSupport {
+
+  override protected def createGraphDatabase(config: Map[Setting[_], String] = databaseConfig()): GraphDatabaseCypherService = {
+    new GraphDatabaseCypherService(new TestEnterpriseGraphDatabaseFactory().newImpermanentDatabase(config.asJava))
+  }
+
+  test("should be able to use node key index hints on IN expressions") {
     //GIVEN
     val andres = createLabeledNode(Map("name" -> "Andres"), "Person")
     val jake = createLabeledNode(Map("name" -> "Jacob"), "Person")
     relate(andres, createNode())
     relate(jake, createNode())
 
-    graph.createConstraint("Person", "name")
-    graph should not(haveConstraints("NODE_KEY:Person(name)"))
-    graph should haveConstraints("UNIQUENESS:Person(name)")
+    graph.createNodeKeyConstraint("Person", "name")
+    graph should haveConstraints("NODE_KEY:Person(name)")
+    graph should not(haveConstraints("UNIQUENESS:Person(name)"))
 
     //WHEN
     val result = executeWithAllPlannersAndRuntimesAndCompatibilityMode("MATCH (n:Person)-->() USING INDEX n:Person(name) WHERE n.name IN ['Jacob'] RETURN n")
@@ -48,9 +58,9 @@ class UniqueIndexAcceptanceTest extends ExecutionEngineFunSuite with NewPlannerT
     relate(andres, createNode())
     relate(jake, createNode())
 
-    graph.createConstraint("Person", "name")
-    graph should not(haveConstraints("NODE_KEY:Person(name)"))
-    graph should haveConstraints("UNIQUENESS:Person(name)")
+    graph.createNodeKeyConstraint("Person", "name")
+    graph should haveConstraints("NODE_KEY:Person(name)")
+    graph should not(haveConstraints("UNIQUENESS:Person(name)"))
 
     //WHEN
     val result = executeWithAllPlannersAndRuntimesAndCompatibilityMode("MATCH (n:Person)-->() USING INDEX n:Person(name) WHERE n.name IN ['Jacob','Jacob'] RETURN n")
@@ -66,9 +76,9 @@ class UniqueIndexAcceptanceTest extends ExecutionEngineFunSuite with NewPlannerT
     relate(andres, createNode())
     relate(jake, createNode())
 
-    graph.createConstraint("Person", "name")
-    graph should not(haveConstraints("NODE_KEY:Person(name)"))
-    graph should haveConstraints("UNIQUENESS:Person(name)")
+    graph.createNodeKeyConstraint("Person", "name")
+    graph should haveConstraints("NODE_KEY:Person(name)")
+    graph should not(haveConstraints("UNIQUENESS:Person(name)"))
 
     //WHEN
     val result = executeWithAllPlannersAndRuntimesAndCompatibilityMode("MATCH (n:Person)-->() USING INDEX n:Person(name) WHERE n.name IN null RETURN n")
@@ -84,9 +94,9 @@ class UniqueIndexAcceptanceTest extends ExecutionEngineFunSuite with NewPlannerT
     relate(andres, createNode())
     relate(jake, createNode())
 
-    graph.createConstraint("Person", "name")
-    graph should not(haveConstraints("NODE_KEY:Person(name)"))
-    graph should haveConstraints("UNIQUENESS:Person(name)")
+    graph.createNodeKeyConstraint("Person", "name")
+    graph should haveConstraints("NODE_KEY:Person(name)")
+    graph should not(haveConstraints("UNIQUENESS:Person(name)"))
 
     //WHEN
     val result = executeWithAllPlannersAndRuntimesAndCompatibilityMode("MATCH (n:Person)-->() USING INDEX n:Person(name) WHERE n.name IN {coll} RETURN n","coll"->List("Jacob"))
@@ -102,9 +112,9 @@ class UniqueIndexAcceptanceTest extends ExecutionEngineFunSuite with NewPlannerT
     relate(andres, createNode())
     relate(jake, createNode())
 
-    graph.createConstraint("Person", "name")
-    graph should not(haveConstraints("NODE_KEY:Person(name)"))
-    graph should haveConstraints("UNIQUENESS:Person(name)")
+    graph.createNodeKeyConstraint("Person", "name")
+    graph should haveConstraints("NODE_KEY:Person(name)")
+    graph should not(haveConstraints("UNIQUENESS:Person(name)"))
 
     //WHEN
     val result = executeWithAllPlannersAndRuntimesAndCompatibilityMode("MATCH (n:Person)-->() USING INDEX n:Person(name) WHERE n.name IN {coll} RETURN n","coll"->List("Jacob"))
@@ -117,9 +127,9 @@ class UniqueIndexAcceptanceTest extends ExecutionEngineFunSuite with NewPlannerT
   test("should use locking unique index for merge queries") {
     //GIVEN
     createLabeledNode(Map("name" -> "Andres"), "Person")
-    graph.createConstraint("Person", "name")
-    graph should not(haveConstraints("NODE_KEY:Person(name)"))
-    graph should haveConstraints("UNIQUENESS:Person(name)")
+    graph.createNodeKeyConstraint("Person", "name")
+    graph should haveConstraints("NODE_KEY:Person(name)")
+    graph should not(haveConstraints("UNIQUENESS:Person(name)"))
 
     //WHEN
     val result = updateWithBothPlannersAndCompatibilityMode("MERGE (n:Person {name: 'Andres'}) RETURN n.name")
@@ -132,9 +142,9 @@ class UniqueIndexAcceptanceTest extends ExecutionEngineFunSuite with NewPlannerT
   test("should use locking unique index for mixed read write queries") {
     //GIVEN
     createLabeledNode(Map("name" -> "Andres"), "Person")
-    graph.createConstraint("Person", "name")
-    graph should not(haveConstraints("NODE_KEY:Person(name)"))
-    graph should haveConstraints("UNIQUENESS:Person(name)")
+    graph.createNodeKeyConstraint("Person", "name")
+    graph should haveConstraints("NODE_KEY:Person(name)")
+    graph should not(haveConstraints("UNIQUENESS:Person(name)"))
 
     //WHEN
     val result = updateWithBothPlannersAndCompatibilityMode("MATCH (n:Person)-->() USING INDEX n:Person(name) WHERE n.name IN {coll} SET n:Foo RETURN n.name","coll"->List("Jacob"))

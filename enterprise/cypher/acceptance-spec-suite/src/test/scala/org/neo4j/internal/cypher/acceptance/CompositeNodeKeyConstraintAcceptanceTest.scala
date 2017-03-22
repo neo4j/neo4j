@@ -26,9 +26,7 @@ import org.neo4j.cypher.internal.frontend.v3_2.helpers.StringHelper._
 import org.neo4j.cypher.javacompat.internal.GraphDatabaseCypherService
 import org.neo4j.graphdb.ConstraintViolationException
 import org.neo4j.graphdb.config.Setting
-import org.neo4j.kernel.GraphDatabaseQueryService
 import org.neo4j.test.TestEnterpriseGraphDatabaseFactory
-import org.scalatest.matchers.{MatchResult, Matcher}
 
 import scala.collection.JavaConverters._
 import scala.collection.Map
@@ -213,19 +211,5 @@ class CompositeNodeKeyConstraintAcceptanceTest extends ExecutionEngineFunSuite w
 
   private def exec(query: String) {
     executeWithCostPlannerAndInterpretedRuntimeOnly(query.fixNewLines).toList
-  }
-
-  case class haveConstraints(expectedConstraints: String*) extends Matcher[GraphDatabaseQueryService] {
-    def apply(graph: GraphDatabaseQueryService): MatchResult = {
-      graph.inTx {
-        val constraintNames = graph.schema().getConstraints.asScala.toList.map(i => s"${i.getConstraintType}:${i.getLabel}(${i.getPropertyKeys.asScala.toList.mkString(",")})")
-        val result = expectedConstraints.forall(i => constraintNames.contains(i.toString))
-        MatchResult(
-          result,
-          s"Expected graph to have constraints ${expectedConstraints.mkString(", ")}, but it was ${constraintNames.mkString(", ")}",
-          s"Expected graph to not have constraints ${expectedConstraints.mkString(", ")}, but it did."
-        )
-      }
-    }
   }
 }
