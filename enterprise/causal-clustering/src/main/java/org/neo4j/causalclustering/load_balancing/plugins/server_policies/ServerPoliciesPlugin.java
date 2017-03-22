@@ -38,6 +38,7 @@ import org.neo4j.causalclustering.load_balancing.LoadBalancingPlugin;
 import org.neo4j.causalclustering.load_balancing.LoadBalancingResult;
 import org.neo4j.graphdb.config.InvalidSettingException;
 import org.neo4j.helpers.Service;
+import org.neo4j.kernel.api.exceptions.ProcedureException;
 import org.neo4j.kernel.configuration.Config;
 import org.neo4j.logging.Log;
 import org.neo4j.logging.LogProvider;
@@ -95,13 +96,15 @@ public class ServerPoliciesPlugin implements LoadBalancingPlugin
     }
 
     @Override
-    public Result run( Map<String,String> context )
+    public Result run( Map<String,String> context ) throws ProcedureException
     {
+        Policy policy = policies.selectFor( context );
+
         CoreTopology coreTopology = topologyService.coreServers();
         ReadReplicaTopology rrTopology = topologyService.readReplicas();
 
         return new LoadBalancingResult( routeEndpoints( coreTopology ), writeEndpoints( coreTopology ),
-                readEndpoints( coreTopology, rrTopology, policies.selectFor( context ) ), timeToLive );
+                readEndpoints( coreTopology, rrTopology, policy ), timeToLive );
     }
 
     private List<Endpoint> routeEndpoints( CoreTopology cores )

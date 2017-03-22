@@ -23,6 +23,7 @@ import java.util.Collections;
 import java.util.Map;
 
 import org.neo4j.causalclustering.load_balancing.LoadBalancingProcessor;
+import org.neo4j.kernel.api.exceptions.ProcedureException;
 
 /**
  * Shuffles the servers of the delegate around so that every client
@@ -40,7 +41,7 @@ public class ServerShufflingProcessor implements LoadBalancingProcessor
     }
 
     @Override
-    public Result run( Map<String,String> context )
+    public Result run( Map<String,String> context ) throws ProcedureException
     {
         Result result = delegate.run( context );
 
