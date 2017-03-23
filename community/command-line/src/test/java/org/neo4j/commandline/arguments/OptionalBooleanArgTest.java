@@ -21,6 +21,8 @@ package org.neo4j.commandline.arguments;
 
 import org.junit.Test;
 
+import org.neo4j.helpers.Args;
+
 import static org.junit.Assert.assertEquals;
 
 public class OptionalBooleanArgTest
@@ -31,10 +33,10 @@ public class OptionalBooleanArgTest
     {
         OptionalBooleanArg arg = new OptionalBooleanArg( "foo", false, "" );
 
-        assertEquals( "false", arg.parse() );
-        assertEquals( "false", arg.parse("--foo=false") );
-        assertEquals( "true", arg.parse("--foo=true") );
-        assertEquals( "true", arg.parse("--foo") );
+        assertEquals( "false", arg.parse( Args.parse() ) );
+        assertEquals( "false", arg.parse( Args.parse( "--foo=false" ) ) );
+        assertEquals( "true", arg.parse( Args.parse( "--foo=true" ) ) );
+        assertEquals( "true", arg.parse( Args.parse( "--foo" ) ) );
     }
 
     @Test
@@ -42,10 +44,10 @@ public class OptionalBooleanArgTest
     {
         OptionalBooleanArg arg = new OptionalBooleanArg( "foo", true, "" );
 
-        assertEquals( "true", arg.parse() );
-        assertEquals( "false", arg.parse("--foo=false") );
-        assertEquals( "true", arg.parse("--foo=true") );
-        assertEquals( "true", arg.parse("--foo") );
+        assertEquals( "true", arg.parse( Args.parse() ) );
+        assertEquals( "false", arg.parse( Args.parse( "--foo=false" ) ) );
+        assertEquals( "true", arg.parse( Args.parse( "--foo=true" ) ) );
+        assertEquals( "true", arg.parse( Args.parse( "--foo" ) ) );
     }
 
     @Test

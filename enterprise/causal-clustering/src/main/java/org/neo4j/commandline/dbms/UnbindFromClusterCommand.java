@@ -58,7 +58,7 @@ public class UnbindFromClusterCommand implements AdminCommand
         this.outsideWorld = outsideWorld;
     }
 
-    public static Arguments arguments()
+    static Arguments arguments()
     {
         return arguments;
     }
@@ -82,7 +82,7 @@ public class UnbindFromClusterCommand implements AdminCommand
     {
         try
         {
-            Config config = loadNeo4jConfig( homeDir, configDir, arguments.parse( "database", args ) );
+            Config config = loadNeo4jConfig( homeDir, configDir, arguments.parse( args ).get( "database" ) );
             File dataDirectory = config.get( DatabaseManagementSystemSettings.data_directory );
             Path pathToSpecificDatabase = config.get( DatabaseManagementSystemSettings.database_path ).toPath();
 

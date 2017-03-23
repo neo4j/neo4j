@@ -26,7 +26,6 @@ import java.util.function.Consumer;
 import org.neo4j.commandline.admin.AdminCommand;
 import org.neo4j.commandline.admin.CommandFailed;
 import org.neo4j.commandline.admin.IncorrectUsage;
-import org.neo4j.commandline.admin.OutsideWorld;
 import org.neo4j.commandline.arguments.Arguments;
 import org.neo4j.commandline.arguments.common.MandatoryCanonicalPath;
 import org.neo4j.io.fs.DefaultFileSystemAbstraction;
@@ -57,7 +56,7 @@ public class VersionCommand implements AdminCommand
     @Override
     public void execute( String[] args ) throws IncorrectUsage, CommandFailed
     {
-        final Path storeDir = arguments.parseMandatoryPath( "store", args );
+        final Path storeDir = arguments.parse( args ).getMandatoryPath( "store" );
 
         Validators.CONTAINS_EXISTING_DATABASE.validate( storeDir.toFile() );
 
