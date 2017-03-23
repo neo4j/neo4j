@@ -104,7 +104,7 @@ public class BackupHaIT
     {
         List<String> args = new ArrayList<>();
         args.add( "--from=" + from );
-        args.add( "cc-report-dir=" + backupDir );
+        args.add( "--cc-report-dir=" + backupDir );
         args.add( "--backup-dir=" + backupDir );
         args.add( "--name=" + name );
         return args.toArray( new String[args.size()] );
