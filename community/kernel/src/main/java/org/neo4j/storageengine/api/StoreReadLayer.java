@@ -20,6 +20,7 @@
 package org.neo4j.storageengine.api;
 
 import java.util.Iterator;
+import java.util.function.Function;
 import java.util.function.IntPredicate;
 
 import org.neo4j.collection.primitive.PrimitiveIntIterator;
@@ -384,4 +385,6 @@ public interface StoreReadLayer
 
     int degreeRelationshipsInGroup( StorageStatement storeStatement, long id, long groupId, Direction direction,
             Integer relType );
+
+    <T> T getOrCreateSchemaDependantState( Class<T> type, Function<StoreReadLayer, T> factory );
 }

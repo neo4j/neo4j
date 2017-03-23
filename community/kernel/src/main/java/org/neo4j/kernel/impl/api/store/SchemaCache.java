@@ -25,12 +25,13 @@ import java.util.Iterator;
 import java.util.List;
 import java.util.Map;
 import java.util.Set;
+import java.util.concurrent.ConcurrentHashMap;
+import java.util.function.Function;
 
 import org.neo4j.helpers.collection.Iterators;
 import org.neo4j.kernel.api.schema_new.LabelSchemaDescriptor;
 import org.neo4j.kernel.api.schema_new.SchemaDescriptor;
 import org.neo4j.kernel.api.schema_new.SchemaDescriptorPredicates;
-import org.neo4j.kernel.api.schema_new.constaints.ConstraintBoundary;
 import org.neo4j.kernel.api.schema_new.constaints.ConstraintDescriptor;
 import org.neo4j.kernel.api.schema_new.index.NewIndexDescriptor;
 import org.neo4j.kernel.impl.constraints.ConstraintSemantics;
@@ -55,6 +56,8 @@ public class SchemaCache
 
     private final Map<SchemaDescriptor, NewIndexDescriptor> indexDescriptors = new HashMap<>();
     private final ConstraintSemantics constraintSemantics;
+
+    private final Map<Class<?>,Object> dependantState = new ConcurrentHashMap<>();
 
     public SchemaCache( ConstraintSemantics constraintSemantics, Iterable<SchemaRule> initialRules )
     {
@@ -128,8 +131,14 @@ public class SchemaCache
         return Iterators.filter( SchemaDescriptor.equalTo( descriptor ), constraints.iterator() );
     }
 
+    public <P, T> T getOrCreateDependantState( Class<T> type, Function<P,T> factory, P parameter )
+    {
+        return type.cast( dependantState.computeIfAbsent( type, key -> factory.apply( parameter ) ) );
+    }
+
     public void addSchemaRule( SchemaRule rule )
     {
+        dependantState.clear();
         if ( rule instanceof ConstraintRule )
         {
             ConstraintRule constraintRule = (ConstraintRule) rule;
@@ -163,6 +172,7 @@ public class SchemaCache
 
     public void removeSchemaRule( long id )
     {
+        dependantState.clear();
         if ( constraintRuleById.containsKey( id ) )
         {
             ConstraintRule rule = constraintRuleById.remove( id );
