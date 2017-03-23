@@ -44,7 +44,7 @@ import org.neo4j.logging.NullLogProvider;
 import org.neo4j.server.security.auth.AuthenticationStrategy;
 import org.neo4j.server.security.auth.CommunitySecurityModule;
 import org.neo4j.kernel.impl.security.Credential;
-import org.neo4j.server.security.auth.InitialUserTests;
+import org.neo4j.server.security.auth.InitialUserTest;
 import org.neo4j.kernel.api.security.PasswordPolicy;
 import org.neo4j.kernel.impl.security.User;
 import org.neo4j.server.security.auth.UserRepository;
@@ -68,7 +68,7 @@ import static org.neo4j.logging.AssertableLogProvider.inLog;
 import static org.neo4j.server.security.auth.SecurityTestUtils.authToken;
 import static org.neo4j.test.assertion.Assert.assertException;
 
-public class MultiRealmAuthManagerTest extends InitialUserTests
+public class MultiRealmAuthManagerTest extends InitialUserTest
 {
     private AuthenticationStrategy authStrategy;
     private MultiRealmAuthManager manager;
