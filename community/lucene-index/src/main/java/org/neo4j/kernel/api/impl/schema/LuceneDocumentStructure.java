@@ -47,11 +47,7 @@ import org.apache.lucene.util.NumericUtils;
 import org.apache.lucene.util.StringHelper;
 
 import java.io.IOException;
-import java.util.Arrays;
-import java.util.HashMap;
 import java.util.Iterator;
-import java.util.Map;
-import java.util.stream.Collectors;
 
 import org.neo4j.unsafe.impl.internal.dragons.FeatureToggles;
 
@@ -87,10 +83,16 @@ public class LuceneDocumentStructure
 
     public static String encodedStringValuesForSampling( Object... values )
     {
-        return Arrays.stream( values ).map( s -> {
-            ValueEncoding encoding = ValueEncoding.forValue( s );
-            return encoding.encodeField( encoding.key(), s ).stringValue();
-        } ).collect( Collectors.joining( DELIMITER ) );
+        StringBuilder sb = new StringBuilder();
+        String sep = "";
+        for ( Object value : values )
+        {
+            sb.append( sep );
+            sep = DELIMITER;
+            ValueEncoding encoding = ValueEncoding.forValue( value );
+            sb.append( encoding.encodeField( encoding.key(), value ).stringValue() );
+        }
+        return sb.toString();
     }
 
     public static MatchAllDocsQuery newScanQuery()
@@ -258,7 +260,7 @@ public class LuceneDocumentStructure
         private final Field idField;
         private final Field idValueField;
 
-        private final Map<String,Field> valueFields = new HashMap<>();
+        private Field[] reusableValueFields = new Field[0];
 
         private DocWithId()
         {
@@ -278,10 +280,15 @@ public class LuceneDocumentStructure
         private void setValues( Object... values )
         {
             removeAllValueFields();
+            int neededLength = values.length * ValueEncoding.values().length;
+            if ( reusableValueFields.length < neededLength )
+            {
+                reusableValueFields = new Field[neededLength];
+            }
+
             for ( int i = 0; i < values.length; i++ )
             {
-                ValueEncoding encoding = ValueEncoding.forValue( values[i] );
-                Field reusableField = getFieldWithValue( i, encoding, values[i] );
+                Field reusableField = getFieldWithValue( i, values[i] );
                 document.add( reusableField );
             }
         }
@@ -300,14 +307,16 @@ public class LuceneDocumentStructure
             }
         }
 
-        private Field getFieldWithValue( int propertyNumber, ValueEncoding encoding, Object value )
+        private Field getFieldWithValue( int propertyNumber, Object value )
         {
+            ValueEncoding encoding = ValueEncoding.forValue( value );
+            int reuseId = propertyNumber * ValueEncoding.values().length + encoding.ordinal();
             String key = encoding.key( propertyNumber );
-            Field reusableField = valueFields.get( key );
+            Field reusableField = reusableValueFields[reuseId];
             if ( reusableField == null )
             {
                 reusableField = encoding.encodeField( key, value );
-                valueFields.put( key, reusableField );
+                reusableValueFields[reuseId] = reusableField;
             }
             else
             {
