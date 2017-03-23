@@ -19,6 +19,10 @@
  */
 package org.neo4j.commandline.arguments;
 
+import java.util.Arrays;
+import java.util.Collection;
+import java.util.List;
+
 import org.neo4j.helpers.Args;
 
 import static org.neo4j.kernel.impl.util.Converters.identity;
@@ -98,9 +102,30 @@ public class OptionalNamedArg implements NamedArgument
                     return value;
                 }
             }
-            throw new IllegalArgumentException( String.format( "'%s' must be one of [%s], not: %s", name,
-                    String.join( ",", allowedValues ), value ) );
+            throw new IllegalArgumentException(
+                    String.format( "'%s' must be one of [%s], not: %s", name, String.join( ",", allowedValues ),
+                            value ) );
         }
         return value;
+    }
+
+    @Override
+    public Collection<String> parseMultiple( Args parsedArgs )
+    {
+        Collection<String> values = parsedArgs.interpretOptions( name, withDefault( defaultValue ), identity() );
+        for ( String value : values )
+        {
+            if ( allowedValues.length > 0 )
+            {
+                List<String> allowed = Arrays.asList( allowedValues );
+                if ( !allowed.contains( value ) )
+                {
+                    throw new IllegalArgumentException(
+                            String.format( "'%s' must be one of [%s], not: %s", name, String.join( ",", allowedValues ),
+                                    value ) );
+                }
+            }
+        }
+        return values;
     }
 }

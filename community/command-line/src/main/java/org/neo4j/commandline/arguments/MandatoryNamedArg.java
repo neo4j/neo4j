@@ -19,6 +19,8 @@
  */
 package org.neo4j.commandline.arguments;
 
+import java.util.Collection;
+
 import org.neo4j.helpers.Args;
 
 import static org.neo4j.kernel.impl.util.Converters.identity;
@@ -32,7 +34,6 @@ public class MandatoryNamedArg implements NamedArgument
 
     public MandatoryNamedArg( String name, String exampleValue, String description )
     {
-
         this.name = name;
         this.exampleValue = exampleValue;
         this.description = description;
@@ -72,5 +73,11 @@ public class MandatoryNamedArg implements NamedArgument
     public String parse( Args parsedArgs )
     {
         return parsedArgs.interpretOption( name, mandatory(), identity() );
+    }
+
+    @Override
+    public Collection<String> parseMultiple( Args parsedArgs )
+    {
+        return parsedArgs.interpretOptions( name, mandatory(), identity() );
     }
 }
