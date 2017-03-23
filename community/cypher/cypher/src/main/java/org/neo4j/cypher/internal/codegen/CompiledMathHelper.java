@@ -125,8 +125,8 @@ public final class CompiledMathHelper
             // other numbers we cannot add
         }
 
-        throw new CypherTypeException( "Cannot add " + lhs.getClass().getSimpleName() +
-                                       " and " + rhs.getClass().getSimpleName(), null );
+        throw new CypherTypeException(
+                String.format( "Don't know how to add `%s` and `%s`", lhs, rhs), null );
     }
 
     public static Object subtract( Object lhs, Object rhs )

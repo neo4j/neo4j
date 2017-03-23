@@ -55,4 +55,10 @@ public final class NodeIdWrapperImpl implements NodeIdWrapper
     {
         return (int) (id ^ (id >>> 32));
     }
+
+    @Override
+    public String toString()
+    {
+        return String.format( "Node[%d]", id );
+    }
 }

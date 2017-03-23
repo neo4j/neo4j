@@ -45,7 +45,7 @@ object ExpressionConverter {
       override def nullable(implicit context: CodeGenContext) = false
 
       override def codeGenType(implicit context: CodeGenContext) =
-        if (nullable) CodeGenType(CTBoolean, ReferenceType)
+        if (nullable) CypherCodeGenType(CTBoolean, ReferenceType)
         else expression.codeGenType
     }
   }
@@ -83,31 +83,31 @@ object ExpressionConverter {
     val variable = context.getVariable(variableQueryVariable)
 
     variable.codeGenType match {
-      case CodeGenType(CTNode, _) => NodeProjection(variable)
-      case CodeGenType(CTRelationship, _) => RelationshipProjection(variable)
-      case CodeGenType(CTString, _) |
-           CodeGenType(CTBoolean, _) |
-           CodeGenType(CTInteger, _) |
-           CodeGenType(CTFloat, _) =>
+      case CypherCodeGenType(CTNode, _) => NodeProjection(variable)
+      case CypherCodeGenType(CTRelationship, _) => RelationshipProjection(variable)
+      case CypherCodeGenType(CTString, _) |
+           CypherCodeGenType(CTBoolean, _) |
+           CypherCodeGenType(CTInteger, _) |
+           CypherCodeGenType(CTFloat, _) =>
         LoadVariable(variable)
-      case CodeGenType(ListType(CTInteger), ListReferenceType(IntType)) =>
+      case CypherCodeGenType(ListType(CTInteger), ListReferenceType(LongType)) =>
         // TODO: PrimitiveProjection(variable)
         AnyProjection(variable) // Temporarily resort to runtime projection
-      case CodeGenType(ListType(CTFloat), ListReferenceType(FloatType)) =>
+      case CypherCodeGenType(ListType(CTFloat), ListReferenceType(FloatType)) =>
         // TODO: PrimitiveProjection(variable)
         AnyProjection(variable) // Temporarily resort to runtime projection
-      case CodeGenType(ListType(CTBoolean), ListReferenceType(BoolType)) =>
+      case CypherCodeGenType(ListType(CTBoolean), ListReferenceType(BoolType)) =>
         // TODO: PrimitiveProjection(variable)
         AnyProjection(variable) // Temporarily resort to runtime projection
-      case CodeGenType(ListType(CTString), _) |
-           CodeGenType(ListType(CTBoolean), _) |
-           CodeGenType(ListType(CTInteger), _) |
-           CodeGenType(ListType(CTFloat), _) =>
+      case CypherCodeGenType(ListType(CTString), _) |
+           CypherCodeGenType(ListType(CTBoolean), _) |
+           CypherCodeGenType(ListType(CTInteger), _) |
+           CypherCodeGenType(ListType(CTFloat), _) =>
         LoadVariable(variable)
-      case CodeGenType(CTAny, _) => AnyProjection(variable)
-      case CodeGenType(CTMap, _) => AnyProjection(variable)
-      case CodeGenType(ListType(_), _) => AnyProjection(variable) // TODO: We could have a more specialized projection when the inner type is known to be node or relationship
-      case _ => throw new CantCompileQueryException(s"The compiled runtime cannot handle results of type ${variable.codeGenType.ct}")
+      case CypherCodeGenType(CTAny, _) => AnyProjection(variable)
+      case CypherCodeGenType(CTMap, _) => AnyProjection(variable)
+      case CypherCodeGenType(ListType(_), _) => AnyProjection(variable) // TODO: We could have a more specialized projection when the inner type is known to be node or relationship
+      case _ => throw new CantCompileQueryException(s"The compiled runtime cannot handle results of type ${variable.codeGenType}")
     }
   }
 

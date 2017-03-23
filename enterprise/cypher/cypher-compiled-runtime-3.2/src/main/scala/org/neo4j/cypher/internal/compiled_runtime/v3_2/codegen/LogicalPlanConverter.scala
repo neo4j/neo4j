@@ -176,8 +176,7 @@ object LogicalPlanConverter {
           //collection, create set and for each element of the set do an index lookup
           case ManyQueryExpression(e: ast.ListLiteral) =>
             val expression = ToSet(createExpression(e)(context))
-            val expressionVar = Variable(context.namer.newVarName(), CodeGenType(symbols.CTAny, ReferenceType),
-                                         nullable = false)
+            val expressionVar = Variable(context.namer.newVarName(), CodeGenType.Any, nullable = false)
 
             ForEachExpression(expressionVar, expression,
                               indexSeekFun(opName, context.namer.newVarName(), LoadVariable(expressionVar), nodeVar,
@@ -186,7 +185,7 @@ object LogicalPlanConverter {
           //Unknown, try to cast to collection and then same as above
           case ManyQueryExpression(e) =>
             val expression = ToSet(CastToCollection(createExpression(e)(context)))
-            val expressionVar = Variable(context.namer.newVarName(), CodeGenType(symbols.CTAny, ReferenceType),
+            val expressionVar = Variable(context.namer.newVarName(), CodeGenType.Any,
                                          nullable = false)
             ForEachExpression(expressionVar, expression,
                               indexSeekFun(opName, context.namer.newVarName(), LoadVariable(expressionVar), nodeVar,
@@ -224,7 +223,7 @@ object LogicalPlanConverter {
                                               createExpression(value)(context), actions)
               case _ =>
                 val expression = createExpression(e)(context)
-                val expressionVar = Variable(context.namer.newVarName(), CodeGenType(symbols.CTAny, ReferenceType),
+                val expressionVar = Variable(context.namer.newVarName(), CodeGenType.Any,
                                              nullable = false)
                 ForEachExpression(expressionVar, expression,
                                   SeekNodeById(opName, nodeVar, LoadVariable(expressionVar), actions))
@@ -232,7 +231,7 @@ object LogicalPlanConverter {
 
           case exp =>
             val expression = ToSet(CastToCollection(createExpression(exp)(context)))
-            val expressionVar = Variable(context.namer.newVarName(), CodeGenType(symbols.CTAny, ReferenceType),
+            val expressionVar = Variable(context.namer.newVarName(), CodeGenType.Any,
                                          nullable = false)
             ForEachExpression(expressionVar, expression,
                               SeekNodeById(opName, nodeVar, LoadVariable(expressionVar), actions))
@@ -557,7 +556,7 @@ object LogicalPlanConverter {
     override val logicalPlan: LogicalPlan = nodeCount
 
     override def produce(context: CodeGenContext): (Option[JoinTableMethod], List[Instruction]) = {
-      val variable = Variable(context.namer.newVarName(), CodeGenType(symbols.CTInteger, IntType))
+      val variable = Variable(context.namer.newVarName(), CodeGenType.primitiveInt)
       context.addVariable(nodeCount.idName.name, variable)
 
       // Only the node count variable is projected from now on
@@ -567,7 +566,7 @@ object LogicalPlanConverter {
       val (methodHandle, actions :: tl) = context.popParent().consume(context, this)
       val opName = context.registerOperator(logicalPlan)
 
-      val label = nodeCount.labelName.map(l => l.id(context.semanticTable).map(_.id) -> l.name)
+      val label: Option[(Option[Int], String)] = nodeCount.labelName.map(l => l.id(context.semanticTable).map(_.id) -> l.name)
       (methodHandle, NodeCountFromCountStoreInstruction(opName, variable, label, actions) :: tl)
     }
   }
@@ -576,7 +575,7 @@ object LogicalPlanConverter {
     override val logicalPlan: LogicalPlan = relCount
 
     override def produce(context: CodeGenContext): (Option[JoinTableMethod], List[Instruction]) = {
-      val variable = Variable(context.namer.newVarName(), CodeGenType(symbols.CTInteger, IntType))
+      val variable = Variable(context.namer.newVarName(), CodeGenType.primitiveInt)
       context.addVariable(relCount.idName.name, variable)
 
       // Only the relationship count variable is projected from now on
@@ -606,13 +605,13 @@ object LogicalPlanConverter {
       val opName = context.registerOperator(logicalPlan)
 
       val (elementCodeGenType, loopDataGenerator) = collectionCodeGenType match {
-        case CodeGenType(symbols.ListType(innerType), ListReferenceType(innerReprType))
+        case CypherCodeGenType(symbols.ListType(innerType), ListReferenceType(innerReprType))
           if RepresentationType.isPrimitive(innerReprType) =>
-          (CodeGenType(innerType, innerReprType), UnwindPrimitiveCollection(opName, collection))
-        case CodeGenType(symbols.ListType(innerType), _) =>
-          (CodeGenType(innerType, ReferenceType), ir.UnwindCollection(opName, collection))
-        case CodeGenType(symbols.CTAny, _) =>
-          (CodeGenType(symbols.CTAny, ReferenceType), ir.UnwindCollection(opName, collection))
+          (CypherCodeGenType(innerType, innerReprType), UnwindPrimitiveCollection(opName, collection))
+        case CypherCodeGenType(symbols.ListType(innerType), _) =>
+          (CypherCodeGenType(innerType, ReferenceType), ir.UnwindCollection(opName, collection))
+        case CypherCodeGenType(symbols.CTAny, _) =>
+          (CypherCodeGenType(symbols.CTAny, ReferenceType), ir.UnwindCollection(opName, collection))
         case t =>
           throw new CantCompileQueryException(s"Unwind collection type $t not supported")
       }

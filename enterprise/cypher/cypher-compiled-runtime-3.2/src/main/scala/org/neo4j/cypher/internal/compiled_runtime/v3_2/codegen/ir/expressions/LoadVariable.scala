@@ -21,6 +21,7 @@ package org.neo4j.cypher.internal.compiled_runtime.v3_2.codegen.ir.expressions
 
 import org.neo4j.cypher.internal.compiled_runtime.v3_2.codegen.spi.MethodStructure
 import org.neo4j.cypher.internal.compiled_runtime.v3_2.codegen.{CodeGenContext, Variable}
+import org.neo4j.cypher.internal.frontend.v3_2.InternalException
 
 case class LoadVariable(variable: Variable) extends CodeGenExpression {
 
@@ -31,5 +32,8 @@ case class LoadVariable(variable: Variable) extends CodeGenExpression {
 
   override def nullable(implicit context: CodeGenContext): Boolean = variable.nullable
 
-  override def codeGenType(implicit context: CodeGenContext) = variable.codeGenType
+  override def codeGenType(implicit context: CodeGenContext) = variable.codeGenType match {
+    case x: CypherCodeGenType => x
+    case _ => throw new InternalException("Tried to create a Cypher value from a non-cypher-value variable")
+  }
 }

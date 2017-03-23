@@ -22,9 +22,9 @@ package org.neo4j.cypher.internal.compiled_runtime.spi.v3_2
 import java.util
 
 import org.neo4j.codegen.bytecode.ByteCode
-import org.neo4j.codegen.source.{Configuration, SourceCode}
+import org.neo4j.codegen.source.SourceCode
 import org.neo4j.codegen.{CodeGenerationStrategy, CodeGenerator, Expression, MethodDeclaration}
-import org.neo4j.cypher.internal.compiled_runtime.v3_2.codegen.ir.expressions.{CodeGenType, ReferenceType}
+import org.neo4j.cypher.internal.compiled_runtime.v3_2.codegen.ir.expressions.{CodeGenType, CypherCodeGenType, ReferenceType}
 import org.neo4j.cypher.internal.compiled_runtime.v3_2.codegen.spi._
 import org.neo4j.cypher.internal.compiled_runtime.v3_2.codegen.{CodeGenContext, QueryExecutionTracer}
 import org.neo4j.cypher.internal.compiler.v3_2.executionplan.{Completable, Provider}
@@ -157,7 +157,7 @@ class GeneratedMethodStructureTest extends CypherFunSuite {
         }),
         Operation("rel type", m => {
           m.createRelExtractor("bar")
-          m.declareAndInitialize("foo", CodeGenType(symbols.CTString, ReferenceType))
+          m.declareAndInitialize("foo", CypherCodeGenType(symbols.CTString, ReferenceType))
           m.relType("bar", "foo")
         }),
         Operation("all relationships for node and types", (m) => {

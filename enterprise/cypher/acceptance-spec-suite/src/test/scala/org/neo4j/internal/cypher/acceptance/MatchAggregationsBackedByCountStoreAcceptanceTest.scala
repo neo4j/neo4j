@@ -24,7 +24,8 @@ import org.neo4j.cypher.internal.compiler.v3_2.planDescription.InternalPlanDescr
 import org.neo4j.cypher.{ExecutionEngineFunSuite, NewPlannerTestSupport, QueryStatisticsTestSupport}
 import org.scalatest.matchers.{MatchResult, Matcher}
 
-class MatchAggregationsBackedByCountStoreAcceptanceTest extends ExecutionEngineFunSuite with QueryStatisticsTestSupport with NewPlannerTestSupport {
+class MatchAggregationsBackedByCountStoreAcceptanceTest
+  extends ExecutionEngineFunSuite with QueryStatisticsTestSupport with NewPlannerTestSupport {
 
   test("do not plan counts store lookup for loop matches") {
     val n = createNode()
@@ -626,6 +627,35 @@ class MatchAggregationsBackedByCountStoreAcceptanceTest extends ExecutionEngineF
     result.columnAs("count(r)").toSet[Int] should equal(Set(1))
   }
 
+  test("runtime checking of tokens - nodes - not existing when planning nor when running") {
+    createLabeledNode("NotRelated")
+    val result = executeWithAllPlannersAndRuntimesAndCompatibilityMode("MATCH (n:Nonexistent) RETURN count(n)")
+    result.toList should equal(List(Map("count(n)" -> 0)))
+  }
+
+  test("runtime checking of tokens - nodes - not existing when planning but exists when running") {
+    createLabeledNode("NotRelated")
+    val result1 = executeWithAllPlannersAndRuntimesAndCompatibilityMode("MATCH (n:justCreated) RETURN count(n)")
+    result1.toList should equal(List(Map("count(n)" -> 0)))
+    createLabeledNode("justCreated")
+    val result2 = executeWithAllPlannersAndRuntimesAndCompatibilityMode("MATCH (n:justCreated) RETURN count(n)")
+    result2.toList should equal(List(Map("count(n)" -> 1)))
+  }
+
+  test("runtime checking of tokens - relationships - not existing when planning nor when running") {
+    relate(createNode(), createNode(), "UNRELATED")
+    val result = executeWithAllPlannersAndRuntimesAndCompatibilityMode("MATCH ()-[r:Nonexistent]->() RETURN count(r)")
+    result.toList should equal(List(Map("count(r)" -> 0)))
+  }
+
+  test("runtime checking of tokens - relationships - not existing when planning but exists when running") {
+    relate(createNode(), createNode(), "UNRELATED")
+    val result1 = executeWithAllPlannersAndRuntimesAndCompatibilityMode("MATCH ()-[r:justCreated]->() RETURN count(r)")
+    result1.toList should equal(List(Map("count(r)" -> 0)))
+    relate(createNode(), createNode(), "justCreated")
+    val result2 = executeWithAllPlannersAndRuntimesAndCompatibilityMode("MATCH ()-[r:justCreated]->() RETURN count(r)")
+    result2.toList should equal(List(Map("count(r)" -> 1)))
+  }
 
   def withModel(label1: String = "User",
                 label2: String = "User",

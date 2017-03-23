@@ -34,5 +34,5 @@ case class NodeExpression(nodeIdVar: Variable) extends CodeGenExpression {
 
   override def nullable(implicit context: CodeGenContext) = nodeIdVar.nullable
 
-  override def codeGenType(implicit context: CodeGenContext) = nodeIdVar.codeGenType
+  override def codeGenType(implicit context: CodeGenContext) = CodeGenType.primitiveNode
 }

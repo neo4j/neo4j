@@ -21,6 +21,7 @@ package org.neo4j.cypher.internal.compiled_runtime.v3_2.codegen.ir.expressions
 
 import org.neo4j.cypher.internal.compiled_runtime.v3_2.codegen._
 import org.neo4j.cypher.internal.compiled_runtime.v3_2.codegen.spi.MethodStructure
+import org.neo4j.cypher.internal.frontend.v3_2.InternalException
 
 case class AnyProjection(variable: Variable) extends CodeGenExpression {
   override def init[E](generator: MethodStructure[E])(implicit context: CodeGenContext) = {}
@@ -31,5 +32,9 @@ case class AnyProjection(variable: Variable) extends CodeGenExpression {
 
   override def nullable(implicit context: CodeGenContext): Boolean = variable.nullable
 
-  override def codeGenType(implicit context: CodeGenContext) = variable.codeGenType
+  override def codeGenType(implicit context: CodeGenContext): CypherCodeGenType = variable.codeGenType match {
+    case x: CypherCodeGenType => x
+    case _ => throw new InternalException("Tried to create a Cypher value from a non-cypher-value variable")
+  }
+
 }

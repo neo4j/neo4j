@@ -26,5 +26,5 @@ trait CodeGenExpression {
   def init[E](generator: MethodStructure[E])(implicit context: CodeGenContext): Unit
   def generateExpression[E](structure: MethodStructure[E])(implicit context: CodeGenContext): E
   def nullable(implicit context: CodeGenContext): Boolean
-  def codeGenType(implicit context: CodeGenContext): CodeGenType
+  def codeGenType(implicit context: CodeGenContext): CypherCodeGenType
 }

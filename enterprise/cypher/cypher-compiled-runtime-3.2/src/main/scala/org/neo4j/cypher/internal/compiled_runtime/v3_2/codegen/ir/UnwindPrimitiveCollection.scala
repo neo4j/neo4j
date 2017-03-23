@@ -19,7 +19,7 @@
  */
 package org.neo4j.cypher.internal.compiled_runtime.v3_2.codegen.ir
 
-import org.neo4j.cypher.internal.compiled_runtime.v3_2.codegen.ir.expressions.{CodeGenExpression, CodeGenType, ListReferenceType}
+import org.neo4j.cypher.internal.compiled_runtime.v3_2.codegen.ir.expressions.{CodeGenExpression, CodeGenType, CypherCodeGenType, ListReferenceType}
 import org.neo4j.cypher.internal.compiled_runtime.v3_2.codegen.spi.MethodStructure
 import org.neo4j.cypher.internal.compiled_runtime.v3_2.codegen.{CodeGenContext, Variable}
 import org.neo4j.cypher.internal.frontend.v3_2.symbols
@@ -38,7 +38,7 @@ case class UnwindPrimitiveCollection(opName: String, collection: CodeGenExpressi
   override def produceNext[E](nextVar: Variable, iterVar: String, generator: MethodStructure[E])
                              (implicit context: CodeGenContext): Unit = {
     val elementType = collection.codeGenType match {
-      case CodeGenType(symbols.ListType(innerCt), ListReferenceType(innerRepr)) => CodeGenType(innerCt, innerRepr)
+      case CypherCodeGenType(symbols.ListType(innerCt), ListReferenceType(innerRepr)) => CypherCodeGenType(innerCt, innerRepr)
       case _ => throw new IllegalArgumentException(s"CodeGenType $collection.codeGenType not supported as primitive iterator")
     }
     val next = generator.primitiveIteratorNext(generator.loadVariable(iterVar), collection.codeGenType)
