@@ -134,7 +134,7 @@ public class CoreToCoreCopySnapshotIT
         coreParams.put( raft_log_pruning_frequency.name(), "100ms" );
         coreParams.put( state_machine_flush_window_size.name(), "64" );
         int numberOfTransactions = 100;
-        Timeout timeout = new Timeout( Clocks.systemClock(), 60, SECONDS );
+        Timeout timeout = new Timeout( Clocks.systemClock(), 120, SECONDS );
 
         // start the cluster
         Cluster cluster = clusterRule.withSharedCoreParams( coreParams ).startCluster();
