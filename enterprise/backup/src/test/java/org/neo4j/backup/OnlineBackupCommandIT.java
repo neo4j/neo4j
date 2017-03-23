@@ -97,7 +97,7 @@ public class OnlineBackupCommandIT
         assertEquals(
                 0,
                 runBackupToolFromOtherJvmToGetExitCode( "--from", ip,
-                        "cc-report-dir=" + backupDir,
+                        "--cc-report-dir=" + backupDir,
                         "--backup-dir=" + backupDir,
                         "--name=defaultport" ) );
         assertEquals( getDbRepresentation(), getBackupDbRepresentation( "defaultport" ) );
@@ -105,7 +105,7 @@ public class OnlineBackupCommandIT
         assertEquals(
                 0,
                 runBackupToolFromOtherJvmToGetExitCode( "--from", ip,
-                        "cc-report-dir=" + backupDir,
+                        "--cc-report-dir=" + backupDir,
                         "--backup-dir=" + backupDir,
                         "--name=defaultport" ) );
         assertEquals( getDbRepresentation(), getBackupDbRepresentation( "defaultport" ) );
@@ -121,14 +121,14 @@ public class OnlineBackupCommandIT
         assertEquals(
                 1,
                 runBackupToolFromOtherJvmToGetExitCode( "--from", ip,
-                        "cc-report-dir=" + backupDir,
+                        "--cc-report-dir=" + backupDir,
                         "--backup-dir=" + backupDir,
                         "--name=customport" ) );
         assertEquals(
                 0,
                 runBackupToolFromOtherJvmToGetExitCode( "--from",
                         ip + ":" + port,
-                        "cc-report-dir=" + backupDir,
+                        "--cc-report-dir=" + backupDir,
                         "--backup-dir=" + backupDir,
                         "--name=customport" ) );
         assertEquals( getDbRepresentation(), getBackupDbRepresentation( "customport" ) );
@@ -136,7 +136,7 @@ public class OnlineBackupCommandIT
         assertEquals(
                 0,
                 runBackupToolFromOtherJvmToGetExitCode( "--from", ip + ":" + port,
-                        "cc-report-dir=" + backupDir,
+                        "--cc-report-dir=" + backupDir,
                         "--backup-dir=" + backupDir,
                         "--name=customport" ) );
         assertEquals( getDbRepresentation(), getBackupDbRepresentation( "customport" ) );
