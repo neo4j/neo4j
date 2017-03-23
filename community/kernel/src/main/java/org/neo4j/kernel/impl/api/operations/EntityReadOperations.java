@@ -113,7 +113,7 @@ public interface EntityReadOperations
      * @throws IndexNotFoundKernelException if no such index found.
      * @throws IndexBrokenKernelException   if we found an index that was corrupt or otherwise in a failed state.
      */
-    long nodeGetFromUniqueIndexSeek( KernelStatement state, IndexDescriptor index, Object value )
+    long nodeGetFromUniqueIndexSeek( KernelStatement state, IndexDescriptor index, Object value, boolean exclusive )
             throws IndexNotFoundKernelException, IndexBrokenKernelException;
 
     long nodesCountIndexed( KernelStatement statement, IndexDescriptor index, long nodeId, Object value )

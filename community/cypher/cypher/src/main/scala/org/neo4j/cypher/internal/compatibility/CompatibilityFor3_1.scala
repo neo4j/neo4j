@@ -186,6 +186,8 @@ object exceptionHandlerFor3_1 extends MapToPublicExceptions[CypherException] {
 
   def failedIndexException(indexName: String, cause: Throwable): CypherException = throw new FailedIndexException(indexName, cause)
 
+  override def lockingHintException(cause: Throwable): CypherException = throw new LockingHintException(cause)
+
   object runSafely extends RunSafely {
     override def apply[T](body: => T)(implicit f: ExceptionHandler = ExceptionHandler.default) = {
       try {

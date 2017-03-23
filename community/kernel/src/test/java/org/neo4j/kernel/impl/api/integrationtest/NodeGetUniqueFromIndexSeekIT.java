@@ -78,7 +78,7 @@ public class NodeGetUniqueFromIndexSeekIT extends KernelIntegrationTest
 
         // when looking for it
         DataWriteOperations statement = dataWriteOperationsInNewTransaction();
-        long foundId = statement.nodeGetFromUniqueIndexSeek( index, value );
+        long foundId = statement.nodeGetFromUniqueIndexSeek( index, value, false );
         commit();
 
         // then
@@ -95,7 +95,7 @@ public class NodeGetUniqueFromIndexSeekIT extends KernelIntegrationTest
 
         // when looking for it
         DataWriteOperations statement = dataWriteOperationsInNewTransaction();
-        long foundId = statement.nodeGetFromUniqueIndexSeek( index, value );
+        long foundId = statement.nodeGetFromUniqueIndexSeek( index, value, false );
         commit();
 
         // then
@@ -142,7 +142,7 @@ public class NodeGetUniqueFromIndexSeekIT extends KernelIntegrationTest
             {
                 try ( Statement statement1 = statementContextSupplier.get() )
                 {
-                    statement1.readOperations().nodeGetFromUniqueIndexSeek( index, value );
+                    statement1.readOperations().nodeGetFromUniqueIndexSeek( index, value, false );
                 }
                 tx.success();
             }

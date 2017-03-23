@@ -139,7 +139,7 @@ public class IndexQueryTransactionStateTest
         txContext.nodeDelete( state, nodeId );
 
         // When
-        long result = txContext.nodeGetFromUniqueIndexSeek( state, indexDescriptor, value );
+        long result = txContext.nodeGetFromUniqueIndexSeek( state, indexDescriptor, value, false );
 
         // Then
         assertNoSuchNode( result );
@@ -170,7 +170,7 @@ public class IndexQueryTransactionStateTest
                 Property.intProperty( propertyKeyId, 10 ) );
 
         // When
-        long result = txContext.nodeGetFromUniqueIndexSeek( state, indexDescriptor, value );
+        long result = txContext.nodeGetFromUniqueIndexSeek( state, indexDescriptor, value, false );
 
         // Then
         assertNoSuchNode( result );
@@ -218,7 +218,7 @@ public class IndexQueryTransactionStateTest
         txContext.nodeAddLabel( state, nodeId, labelId );
 
         // When
-        long result = txContext.nodeGetFromUniqueIndexSeek( state, indexDescriptor, value );
+        long result = txContext.nodeGetFromUniqueIndexSeek( state, indexDescriptor, value, false );
 
         // Then
         assertThat( result, equalTo( nodeId ) );
@@ -262,7 +262,7 @@ public class IndexQueryTransactionStateTest
         txContext.nodeAddLabel( state, nodeId, labelId );
 
         // When
-        long result = txContext.nodeGetFromUniqueIndexSeek( state, indexDescriptor, value );
+        long result = txContext.nodeGetFromUniqueIndexSeek( state, indexDescriptor, value, false );
 
         // Then
         assertThat( result, equalTo( nodeId ) );
@@ -304,7 +304,7 @@ public class IndexQueryTransactionStateTest
         txContext.nodeRemoveLabel( state, nodeId, labelId );
 
         // When
-        long result = txContext.nodeGetFromUniqueIndexSeek( state, indexDescriptor, value );
+        long result = txContext.nodeGetFromUniqueIndexSeek( state, indexDescriptor, value, false );
 
         // Then
         assertNoSuchNode( result );
@@ -349,7 +349,7 @@ public class IndexQueryTransactionStateTest
         txContext.nodeRemoveProperty( state, nodeId, propertyKeyId );
 
         // When
-        long result = txContext.nodeGetFromUniqueIndexSeek( state, indexDescriptor, value );
+        long result = txContext.nodeGetFromUniqueIndexSeek( state, indexDescriptor, value, false );
 
         // Then
         assertNoSuchNode( result );

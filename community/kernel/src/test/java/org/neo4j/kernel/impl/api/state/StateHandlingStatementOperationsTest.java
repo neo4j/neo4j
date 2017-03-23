@@ -394,7 +394,8 @@ public class StateHandlingStatementOperationsTest
 
         StateHandlingStatementOperations operations = newTxStateOps( mock( StoreReadLayer.class ) );
 
-        operations.nodeGetFromUniqueIndexSeek( kernelStatement, new IndexDescriptor( 1, 1 ), "foo" );
+        IndexDescriptor descriptor = new IndexDescriptor( 1, 1 );
+        operations.nodeGetFromUniqueIndexSeek( kernelStatement, descriptor, "foo", false );
 
         verify( indexReader ).close();
     }

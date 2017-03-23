@@ -20,10 +20,11 @@
 package org.neo4j.cypher.internal.compiler.v3_1.planner.logical
 
 import org.neo4j.cypher.internal.compiler.v3_1.planner._
-import org.neo4j.cypher.internal.compiler.v3_1.planner.logical.plans.{IdName, LockNodes, LogicalPlan}
+import org.neo4j.cypher.internal.compiler.v3_1.planner.logical.plans.{IdName, LockNodes, LogicalPlan, NodeUniqueIndexSeek}
 import org.neo4j.cypher.internal.compiler.v3_1.planner.logical.steps.{LogicalPlanProducer, mergeUniqueIndexSeekLeafPlanner}
+import org.neo4j.cypher.internal.frontend.v3_1.Foldable._
+import org.neo4j.cypher.internal.frontend.v3_1.LockingHintException
 import org.neo4j.cypher.internal.frontend.v3_1.ast.{ContainerIndex, PathExpression, Variable}
-
 /*
  * This coordinates PlannerQuery planning of updates.
  */
@@ -160,7 +161,7 @@ case object PlanUpdates
     val producer: LogicalPlanProducer = context.logicalPlanProducer
 
     //Merge needs to make sure that found nodes have all the expected properties, so we use AssertSame operators here
-    val leafPlanners = PriorityLeafPlannerList(LeafPlannerList(mergeUniqueIndexSeekLeafPlanner),
+    val leafPlanners = PriorityLeafPlannerList(LeafPlannerList(mergeUniqueIndexSeekLeafPlanner(exclusiveLocking)),
       context.config.leafPlanners)
 
     val innerContext: LogicalPlanningContext =
@@ -247,7 +248,7 @@ case object PlanUpdates
     //                arg
     val matchOrNull = producer.planApply(source, mergeRead(firstContext))(context)
 
-    if (nodesToLock.nonEmpty && !exclusiveLocking) {
+    val result = if (nodesToLock.nonEmpty && !exclusiveLocking) {
       //        antiCondApply
       //        /   \
       //       /  optional
@@ -261,5 +262,17 @@ case object PlanUpdates
       producer.planAntiConditionalApply(matchOrNull, ifMissingLockAndMatchAgain, ids)(context)
     } else
       matchOrNull
+
+    if (exclusiveLocking && !containsLocking(result))
+      throw new LockingHintException
+
+    result
+  }
+
+  private def containsLocking(plan: LogicalPlan): Boolean = {
+    plan.treeExists {
+      case _: LockNodes => true
+      case index: NodeUniqueIndexSeek => index.exclusive
+    }
   }
 }

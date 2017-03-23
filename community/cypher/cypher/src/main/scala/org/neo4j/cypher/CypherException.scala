@@ -116,6 +116,11 @@ class LabelScanHintException(variable: String, label: String, message: String, c
   def this(variable: String, label: String, message: String) = this(variable, label, message, null)
 }
 
+class LockingHintException(cause: Throwable)
+  extends CypherException("", cause) {
+  val status = Status.Statement.SemanticError
+}
+
 class InvalidSemanticsException(message: String, cause: Throwable) extends CypherException(message, cause) {
   val status = Status.Statement.SemanticError
   def this(message: String) = this(message,null)
