@@ -19,6 +19,7 @@
  */
 package org.neo4j.kernel.enterprise.builtinprocs;
 
+import org.hamcrest.Matchers;
 import org.junit.Rule;
 import org.junit.Test;
 
@@ -48,6 +49,7 @@ import static org.hamcrest.Matchers.equalTo;
 import static org.hamcrest.Matchers.greaterThanOrEqualTo;
 import static org.hamcrest.Matchers.hasEntry;
 import static org.hamcrest.Matchers.hasKey;
+import static org.hamcrest.Matchers.not;
 import static org.junit.Assert.assertArrayEquals;
 import static org.junit.Assert.assertEquals;
 import static org.junit.Assert.assertFalse;
@@ -84,6 +86,18 @@ public class ListQueriesProcedureTest
         Map<String,Object> row = result.next();
         assertFalse( result.hasNext() );
         assertEquals( query, row.get( "query" ) );
+    }
+
+    @Test
+    public void shouldNotIncludeDeprecatedFields() throws Exception
+    {
+        // when
+        Result result = db.execute( "CALL dbms.listQueries" );
+
+        // then
+        Map<String,Object> row = result.next();
+        assertThat( row, not( hasKey( "elapsedTime" ) ) );
+        assertThat( row, not( hasKey( "connectionDetails" ) ) );
     }
 
     @Test
