@@ -33,6 +33,7 @@ import org.neo4j.commandline.arguments.Arguments;
 import org.neo4j.commandline.arguments.MandatoryNamedArg;
 import org.neo4j.commandline.arguments.OptionalBooleanArg;
 import org.neo4j.commandline.arguments.OptionalNamedArg;
+import org.neo4j.commandline.arguments.OptionalNamedArgWithMetadata;
 import org.neo4j.dbms.DatabaseManagementSystemSettings;
 import org.neo4j.helpers.Args;
 import org.neo4j.helpers.collection.MapUtil;
@@ -105,13 +106,18 @@ public class ImportCommand implements AdminCommand
                     "The location of the pre-3.0 database (e.g. <neo4j-root>/data/graph.db)." ) )
             .withArgument( new OptionalNamedArg( "report-file", "filename", DEFAULT_REPORT_FILE_NAME,
                     "File in which to store the report of the csv-import." ) )
-            .withArgument( new OptionalNamedArg( "nodes[:Label1:Label2]", "\"file1,file2,...\"", "",
+            .withArgument( new OptionalNamedArgWithMetadata( "nodes",
+                    ":Label1:Label2",
+                    "\"file1,file2,...\"", "",
                     "Node CSV header and data. Multiple files will be logically seen as " +
                             "one big file from the perspective of the importer. The first line " +
                             "must contain the header. Multiple data sources like these can be " +
                             "specified in one import, where each data source has its own header. " +
                             "Note that file groups must be enclosed in quotation marks." ) )
-            .withArgument( new OptionalNamedArg( "relationships[:RELATIONSHIP_TYPE]", "\"file1,file2,...\"", "",
+            .withArgument( new OptionalNamedArgWithMetadata( "relationships",
+                    ":RELATIONSHIP_TYPE",
+                    "\"file1,file2,...\"",
+                    "",
                     "Relationship CSV header and data. Multiple files will be logically " +
                             "seen as one big file from the perspective of the importer. The first " +
                             "line must contain the header. Multiple data sources like these can be " +

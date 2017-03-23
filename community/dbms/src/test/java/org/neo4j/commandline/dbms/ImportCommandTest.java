@@ -81,6 +81,48 @@ public class ImportCommandTest
     }
 
     @Test
+    public void acceptsNodeMetadata() throws Exception
+    {
+        File homeDir = testDir.directory( "home" );
+        ImporterFactory mockImporterFactory = mock( ImporterFactory.class );
+        when( mockImporterFactory
+                .getImporterForMode( eq( "csv" ), any( Args.class ), any( Config.class ), any( OutsideWorld.class ) ) )
+                .thenReturn( mock( Importer.class ) );
+
+        ImportCommand importCommand =
+                new ImportCommand( homeDir.toPath(), testDir.directory( "conf" ).toPath(), new RealOutsideWorld(),
+                        mockImporterFactory );
+
+        String[] arguments = {"--database=foo", "--from=bar", "--nodes:PERSON:FRIEND=mock.csv"};
+
+        importCommand.execute( arguments );
+
+        verify( mockImporterFactory )
+                .getImporterForMode( eq( "csv" ), any( Args.class ), any( Config.class ), any( OutsideWorld.class ) );
+    }
+
+    @Test
+    public void acceptsRelationshipsMetadata() throws Exception
+    {
+        File homeDir = testDir.directory( "home" );
+        ImporterFactory mockImporterFactory = mock( ImporterFactory.class );
+        when( mockImporterFactory
+                .getImporterForMode( eq( "csv" ), any( Args.class ), any( Config.class ), any( OutsideWorld.class ) ) )
+                .thenReturn( mock( Importer.class ) );
+
+        ImportCommand importCommand =
+                new ImportCommand( homeDir.toPath(), testDir.directory( "conf" ).toPath(), new RealOutsideWorld(),
+                        mockImporterFactory );
+
+        String[] arguments = {"--database=foo", "--from=bar", "--relationships:LIKES:HATES=mock.csv"};
+
+        importCommand.execute( arguments );
+
+        verify( mockImporterFactory )
+                .getImporterForMode( eq( "csv" ), any( Args.class ), any( Config.class ), any( OutsideWorld.class ) );
+    }
+
+    @Test
     public void requiresDatabaseArgument() throws Exception
     {
         try ( NullOutsideWorld outsideWorld = new NullOutsideWorld() )
