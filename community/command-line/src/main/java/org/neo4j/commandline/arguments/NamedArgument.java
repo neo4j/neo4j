@@ -19,6 +19,8 @@
  */
 package org.neo4j.commandline.arguments;
 
+import java.util.Collection;
+
 import org.neo4j.helpers.Args;
 
 public interface NamedArgument
@@ -49,9 +51,15 @@ public interface NamedArgument
     String exampleValue();
 
     /**
-     * Parses the option (or possible default value) out of program arguments.
+     * Parses the option (or possible default value) out of program arguments. Use only if a single argument is allowed.
      */
     String parse( Args parsedArgs );
+
+    /**
+     * Parses the option (or possible default value) out of program arguments. Use in case multiple arguments are
+     * allowed.
+     */
+    Collection<String> parseMultiple( Args parsedArgs );
 
     /**
      * Returns true if this argument was given explicitly on the command line
