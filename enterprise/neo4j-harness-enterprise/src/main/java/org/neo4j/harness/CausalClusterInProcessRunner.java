@@ -121,6 +121,7 @@ public class CausalClusterInProcessRunner
                 builder.withConfig( GraphDatabaseSettings.pagecache_memory.name(), "8m" );
 
                 builder.withConfig( ClusterSettings.mode.name(), ClusterSettings.Mode.CORE.name() );
+                builder.withConfig( CausalClusteringSettings.multi_dc_license.name(), "true" );
                 builder.withConfig( CausalClusteringSettings.initial_discovery_members.name(), String.join( ",", initialMembers ) );
 
                 builder.withConfig( CausalClusteringSettings.discovery_listen_address.name(), specifyPortOnly( hazelcastPort ) );

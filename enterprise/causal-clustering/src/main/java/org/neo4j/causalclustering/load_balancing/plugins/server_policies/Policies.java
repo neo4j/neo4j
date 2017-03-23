@@ -31,7 +31,7 @@ import static java.lang.String.format;
 
 public class Policies
 {
-    public static final String POLICY_KEY = "load_balancing.policy"; // TODO: move somewhere (driver support package?)
+    public static final String POLICY_KEY = "policy";
     static final String DEFAULT_POLICY_NAME = "default";
     static final Policy DEFAULT_POLICY = new FilteringPolicy( IdentityFilter.as() ); // the default default
 
