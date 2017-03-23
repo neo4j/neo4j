@@ -23,6 +23,7 @@ package org.neo4j.commandline.arguments.common;
 import java.io.File;
 
 import org.neo4j.commandline.arguments.OptionalNamedArg;
+import org.neo4j.helpers.Args;
 
 public class Database extends OptionalNamedArg
 {
@@ -42,8 +43,8 @@ public class Database extends OptionalNamedArg
     }
 
     @Override
-    public String parse( String... args )
+    public String parse( Args parsedArgs )
     {
-        return validate( super.parse( args ) );
+        return validate( super.parse( parsedArgs ) );
     }
 }

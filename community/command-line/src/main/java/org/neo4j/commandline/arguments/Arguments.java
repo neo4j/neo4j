@@ -26,15 +26,20 @@ import java.util.Arrays;
 import java.util.LinkedHashMap;
 import java.util.List;
 import java.util.Map;
+import java.util.Map.Entry;
 import java.util.Optional;
 import java.util.function.Function;
 import java.util.stream.Collectors;
 
 import org.apache.commons.lang3.text.WordUtils;
 
+import org.neo4j.commandline.admin.IncorrectUsage;
 import org.neo4j.commandline.arguments.common.Database;
 import org.neo4j.commandline.arguments.common.MandatoryCanonicalPath;
 import org.neo4j.commandline.arguments.common.OptionalCanonicalPath;
+import org.neo4j.helpers.Args;
+
+import static java.lang.String.format;
 
 /**
  * Builder class for constructing a suitable arguments-string for displaying in help messages and alike.
@@ -48,6 +53,7 @@ public class Arguments
     private static final String NEWLINE = System.getProperty( "line.separator" );
     private final Map<String,NamedArgument> namedArgs;
     private final ArrayList<PositionalArgument> positionalArgs;
+    private Args parsedArgs;
 
     public Arguments()
     {
@@ -151,11 +157,11 @@ public class Arguments
 
     public String formatArgumentDescription( final int longestAlignmentLength, final NamedArgument argument )
     {
-        final String left = String.format( "  %s", argument.optionsListing() );
+        final String left = format( "  %s", argument.optionsListing() );
         final String right;
         if ( argument instanceof OptionalNamedArg )
         {
-            right = String.format( "%s [default:%s]", argument.description(),
+            right = format( "%s [default:%s]", argument.description(),
                     ((OptionalNamedArg) argument).defaultValue() );
         }
         else
@@ -180,11 +186,11 @@ public class Arguments
         final String[] rightLines = wrapText( rightText, rightWidth ).split( NEWLINE );
 
         final String fmt = "%-" + (startOnNewLine ? newLineIndent : rightAlignIndex) + "s%s";
-        String firstLine = String.format( fmt, leftText, startOnNewLine ? "" : rightLines[0] );
+        String firstLine = format( fmt, leftText, startOnNewLine ? "" : rightLines[0] );
 
         String rest = Arrays.stream( rightLines )
                 .skip( startOnNewLine ? 0 : 1 )
-                .map( l -> String.format( fmt, "", l ) )
+                .map( l -> format( fmt, "", l ) )
                 .collect( Collectors.joining( NEWLINE ) );
 
         if ( rest.isEmpty() )
@@ -197,23 +203,70 @@ public class Arguments
         }
     }
 
-    public String parse( String argName, String[] args )
+    public Arguments parse( String[] args ) throws IncorrectUsage
+    {
+        // Get boolean flags
+        List<String> flags = namedArgs.entrySet().stream()
+                .filter( e -> e.getValue() instanceof OptionalBooleanArg )
+                .map( Entry::getKey )
+                .collect( Collectors.toList() );
+
+        parsedArgs = Args.withFlags( flags.toArray( new String[flags.size()] ) ).parse( args );
+        validate();
+        return this;
+    }
+
+    public String get( int pos )
+    {
+        if ( pos >= 0 && pos < positionalArgs.size() )
+        {
+            return positionalArgs.get( pos ).parse( parsedArgs );
+        }
+        throw new IllegalArgumentException( format( "Positional argument '%d' not specified.", pos ) );
+    }
+
+    public String get( String argName )
     {
         if ( namedArgs.containsKey( argName ) )
         {
-            return namedArgs.get( argName ).parse( args );
+            return namedArgs.get( argName ).parse( parsedArgs );
         }
         throw new IllegalArgumentException( "No such argument available to be parsed: " + argName );
     }
 
-    public boolean parseBoolean( String argName, String[] args )
+    private void validate() throws IncorrectUsage
     {
-        return parse( argName, Boolean::parseBoolean, args );
+        for ( String o : parsedArgs.asMap().keySet() )
+        {
+            if ( !namedArgs.containsKey( o ) )
+            {
+                throw new IncorrectUsage( format( "unrecognized option: '%s'", o ) );
+            }
+        }
+        long mandatoryPositionalArgs = positionalArgs.stream()
+                .filter( o -> o instanceof MandatoryPositionalArgument )
+                .count();
+        if ( parsedArgs.orphans().size() < mandatoryPositionalArgs )
+        {
+            throw new IncorrectUsage( "not enough arguments" );
+        }
+        String excessArgs = parsedArgs.orphans().stream()
+                .skip( positionalArgs.size() )
+                .collect( Collectors.joining( " " ) );
+        if ( !excessArgs.isEmpty() )
+        {
+            throw new IncorrectUsage( format( "unrecognized arguments: '%s'", excessArgs ) );
+        }
     }
 
-    public Optional<Path> parseOptionalPath( String argName, String[] args )
+    public boolean getBoolean( String argName )
     {
-        String p = parse( argName, args );
+        return get( argName, Boolean::parseBoolean );
+    }
+
+    public Optional<Path> getOptionalPath( String argName )
+    {
+        String p = get( argName );
 
         if ( p.isEmpty() )
         {
@@ -223,31 +276,30 @@ public class Arguments
         return Optional.of( Paths.get( p ) );
     }
 
-    public Path parseMandatoryPath( String argName, String[] args )
+    public Path getMandatoryPath( String argName )
     {
-        Optional<Path> p = parseOptionalPath( argName, args );
+        Optional<Path> p = getOptionalPath( argName );
         if ( p.isPresent() )
         {
             return p.get();
         }
-        throw new IllegalArgumentException( String.format( "Missing exampleValue for '%s'", argName ) );
+        throw new IllegalArgumentException( format( "Missing exampleValue for '%s'", argName ) );
     }
 
-    public <T> T parse( String argName, Function<String,T> converter, String[] args )
+    public <T> T get( String argName, Function<String,T> converter )
     {
-        return converter.apply( parse( argName, args ) );
+        return converter.apply( get( argName ) );
     }
 
     /**
      * @param argName name of argument
-     * @param args the given arguments
      * @return true if argName was given as an explicit argument, false otherwise
      */
-    public boolean has( String argName, String[] args )
+    public boolean has( String argName )
     {
         if ( namedArgs.containsKey( argName ) )
         {
-            return namedArgs.get( argName ).has( args );
+            return namedArgs.get( argName ).has( parsedArgs );
         }
         throw new IllegalArgumentException( "No such argument available: " + argName );
     }

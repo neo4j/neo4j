@@ -19,11 +19,8 @@
  */
 package org.neo4j.commandline.admin;
 
-import java.nio.file.Path;
 import java.util.NoSuchElementException;
 import java.util.function.Consumer;
-
-import org.neo4j.commandline.arguments.Arguments;
 
 import static java.lang.String.format;
 

@@ -111,7 +111,7 @@ public class SetInitialPasswordCommandIT
         tool.execute( homeDir.toPath(), confDir.toPath(), SET_PASSWORD );
         assertNoAuthIniFile();
 
-        verify( out ).stdErrLine( "No password specified." );
+        verify( out ).stdErrLine( "not enough arguments" );
         verify( out, times( 2 ) ).stdErrLine( "" );
         verify( out ).stdErrLine( "usage: neo4j-admin set-initial-password <password>" );
         verify( out, times( 2 ) ).stdErrLine( "" );
@@ -127,7 +127,7 @@ public class SetInitialPasswordCommandIT
         tool.execute( homeDir.toPath(), confDir.toPath(), SET_PASSWORD, "foo", "bar" );
         assertNoAuthIniFile();
 
-        verify( out ).stdErrLine( "Too many arguments." );
+        verify( out ).stdErrLine( "unrecognized arguments: 'bar'" );
         verify( out, times( 2 ) ).stdErrLine( "" );
         verify( out ).stdErrLine( "usage: neo4j-admin set-initial-password <password>" );
         verify( out, times( 2 ) ).stdErrLine( "" );

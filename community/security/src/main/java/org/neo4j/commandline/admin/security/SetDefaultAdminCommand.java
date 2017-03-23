@@ -65,11 +65,9 @@ public class SetDefaultAdminCommand implements AdminCommand
     @Override
     public void execute( String[] args ) throws IncorrectUsage, CommandFailed
     {
-        Args parsedArgs = validateArgs( args );
-
         try
         {
-            setDefaultAdmin( parsedArgs.orphans().get( 0 ) );
+            setDefaultAdmin( arguments.parse( args ).get( 0 ) );
         }
         catch ( IncorrectUsage | CommandFailed e )
         {
@@ -79,20 +77,6 @@ public class SetDefaultAdminCommand implements AdminCommand
         {
             throw new CommandFailed( throwable.getMessage(), new RuntimeException( throwable ) );
         }
-    }
-
-    private Args validateArgs( String[] args ) throws IncorrectUsage
-    {
-        Args parsedArgs = Args.parse( args );
-        if ( parsedArgs.orphans().size() < 1 )
-        {
-            throw new IncorrectUsage( "no username specified." );
-        }
-        if ( parsedArgs.orphans().size() > 1 )
-        {
-            throw new IncorrectUsage( "too many arguments." );
-        }
-        return parsedArgs;
     }
 
     private void setDefaultAdmin( String username ) throws Throwable

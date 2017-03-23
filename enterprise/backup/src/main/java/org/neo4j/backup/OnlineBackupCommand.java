@@ -40,6 +40,7 @@ import org.neo4j.consistency.ConsistencyCheckSettings;
 import org.neo4j.consistency.checking.full.CheckConsistencyConfig;
 import org.neo4j.helpers.Args;
 import org.neo4j.helpers.HostnamePort;
+import org.neo4j.helpers.TimeUtil;
 import org.neo4j.helpers.collection.MapUtil;
 import org.neo4j.helpers.progress.ProgressMonitorFactory;
 import org.neo4j.kernel.configuration.Config;
@@ -124,14 +125,14 @@ public class OnlineBackupCommand implements AdminCommand
         try
         {
             address = toHostnamePort( new HostnamePort( "localhost", 6362 ) )
-                    .apply( arguments.parse( "from", args ) );
-            folder = arguments.parseMandatoryPath( "backup-dir", args );
-            name = arguments.parse( "name", args );
-            fallbackToFull = arguments.parseBoolean( "fallback-to-full", args );
-            doConsistencyCheck = arguments.parseBoolean( "check-consistency", args );
-            timeout = parseTimeout( args );
-            additionalConfig = arguments.parseOptionalPath( "additional-config", args );
-            reportDir = arguments.parseOptionalPath( "cc-report-dir", args ).orElseThrow( () ->
+                    .apply( arguments.parse( args ).get( "from" ) );
+            folder = arguments.getMandatoryPath( "backup-dir" );
+            name = arguments.get( "name" );
+            fallbackToFull = arguments.getBoolean( "fallback-to-full" );
+            doConsistencyCheck = arguments.getBoolean( "check-consistency" );
+            timeout = arguments.get( "timeout", TimeUtil.parseTimeMillis );
+            additionalConfig = arguments.getOptionalPath( "additional-config" );
+            reportDir = arguments.getOptionalPath( "cc-report-dir" ).orElseThrow( () ->
                     new IllegalArgumentException( "cc-report-dir must be a path" ) );
         }
         catch ( IllegalArgumentException e )
@@ -157,33 +158,33 @@ public class OnlineBackupCommand implements AdminCommand
         try
         {
             // We can remove the loading from config file in 4.0
-            if ( arguments.has( "cc-graph", args ) )
+            if ( arguments.has( "cc-graph" ) )
             {
-                checkGraph = arguments.parseBoolean( "cc-graph", args );
+                checkGraph = arguments.getBoolean( "cc-graph" );
             }
             else
             {
                 checkGraph = ConsistencyCheckSettings.consistency_check_graph.from( config );
             }
-            if ( arguments.has( "cc-indexes", args ) )
+            if ( arguments.has( "cc-indexes" ) )
             {
-                checkIndexes = arguments.parseBoolean( "cc-indexes", args );
+                checkIndexes = arguments.getBoolean( "cc-indexes" );
             }
             else
             {
                 checkIndexes = ConsistencyCheckSettings.consistency_check_indexes.from( config );
             }
-            if ( arguments.has( "cc-label-scan-store", args ) )
+            if ( arguments.has( "cc-label-scan-store" ) )
             {
-                checkLabelScanStore = arguments.parseBoolean( "cc-label-scan-store", args );
+                checkLabelScanStore = arguments.getBoolean( "cc-label-scan-store" );
             }
             else
             {
                 checkLabelScanStore = ConsistencyCheckSettings.consistency_check_label_scan_store.from( config );
             }
-            if ( arguments.has( "cc-property-owners", args ) )
+            if ( arguments.has( "cc-property-owners" ) )
             {
-                checkPropertyOwners = arguments.parseBoolean( "cc-property-owners", args );
+                checkPropertyOwners = arguments.getBoolean( "cc-property-owners" );
             }
             else
             {

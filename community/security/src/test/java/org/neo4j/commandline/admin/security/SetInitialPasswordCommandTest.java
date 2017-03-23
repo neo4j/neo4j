@@ -53,7 +53,6 @@ public class SetInitialPasswordCommandTest
 {
     private SetInitialPasswordCommand setPasswordCommand;
     private File authInitFile;
-    private File authFile;
     private FileSystemAbstraction fileSystem;
 
     private final EphemeralFileSystemRule fileSystemRule = new EphemeralFileSystemRule();
@@ -71,21 +70,21 @@ public class SetInitialPasswordCommandTest
         setPasswordCommand = new SetInitialPasswordCommand( testDir.directory( "home" ).toPath(),
                 testDir.directory( "conf" ).toPath(), mock );
         authInitFile = CommunitySecurityModule.getInitialUserRepositoryFile( setPasswordCommand.loadNeo4jConfig() );
-        authFile = CommunitySecurityModule.getUserRepositoryFile( setPasswordCommand.loadNeo4jConfig() );
+        CommunitySecurityModule.getUserRepositoryFile( setPasswordCommand.loadNeo4jConfig() );
     }
 
     @Test
     public void shouldFailSetPasswordWithNoArguments() throws Exception
     {
         assertException( () -> setPasswordCommand.execute( new String[0] ), IncorrectUsage.class,
-                "No password specified." );
+                "not enough arguments" );
     }
 
     @Test
     public void shouldFailSetPasswordWithTooManyArguments() throws Exception
     {
         String[] arguments = {"", "123", "321"};
-        assertException( () -> setPasswordCommand.execute( arguments ), IncorrectUsage.class, "Too many arguments." );
+        assertException( () -> setPasswordCommand.execute( arguments ), IncorrectUsage.class, "unrecognized arguments: '123 321'" );
     }
 
     @Test

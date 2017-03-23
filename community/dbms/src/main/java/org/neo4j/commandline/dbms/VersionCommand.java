@@ -57,7 +57,8 @@ public class VersionCommand implements AdminCommand
     @Override
     public void execute( String[] args ) throws IncorrectUsage, CommandFailed
     {
-        final Path storeDir = arguments.parseMandatoryPath( "store", args );
+        arguments.parse( args );
+        final Path storeDir = arguments.getMandatoryPath( "store" );
 
         Validators.CONTAINS_EXISTING_DATABASE.validate( storeDir.toFile() );
 

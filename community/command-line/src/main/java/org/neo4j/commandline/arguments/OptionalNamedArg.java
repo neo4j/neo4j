@@ -86,9 +86,9 @@ public class OptionalNamedArg implements NamedArgument
     }
 
     @Override
-    public String parse( String... args )
+    public String parse( Args parsedArgs )
     {
-        String value = Args.parse( args ).interpretOption( name, withDefault( defaultValue ), identity() );
+        String value = parsedArgs.interpretOption( name, withDefault( defaultValue ), identity() );
         if ( allowedValues.length > 0 )
         {
             for ( String allowedValue : allowedValues )

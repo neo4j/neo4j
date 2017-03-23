@@ -69,8 +69,8 @@ public class MandatoryNamedArg implements NamedArgument
     }
 
     @Override
-    public String parse( String... args )
+    public String parse( Args parsedArgs )
     {
-        return Args.parse( args ).interpretOption( name, mandatory(), identity() );
+        return parsedArgs.interpretOption( name, mandatory(), identity() );
     }
 }

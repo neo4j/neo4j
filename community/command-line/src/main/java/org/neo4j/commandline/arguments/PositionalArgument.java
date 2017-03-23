@@ -19,6 +19,8 @@
  */
 package org.neo4j.commandline.arguments;
 
+import org.neo4j.helpers.Args;
+
 public interface PositionalArgument
 {
     /**
@@ -30,4 +32,9 @@ public interface PositionalArgument
      * Represents the option in the usage string.
      */
     String usage();
+
+    /**
+     * Parses the option (or possible default value) out of program arguments.
+     */
+    String parse( Args parsedArgs );
 }
