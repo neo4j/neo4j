@@ -68,11 +68,9 @@ public class SetInitialPasswordCommand implements AdminCommand
     @Override
     public void execute( String[] args ) throws IncorrectUsage, CommandFailed
     {
-        Args parsedArgs = validateArgs( args );
-
         try
         {
-            setPassword( parsedArgs.orphans().get( 0 ) );
+            setPassword( arguments.parse( args ).get( 0 ) );
         }
         catch ( IncorrectUsage | CommandFailed e )
         {
@@ -82,20 +80,6 @@ public class SetInitialPasswordCommand implements AdminCommand
         {
             throw new CommandFailed( throwable.getMessage(), new RuntimeException( throwable ) );
         }
-    }
-
-    private Args validateArgs( String[] args ) throws IncorrectUsage
-    {
-        Args parsedArgs = Args.parse( args );
-        if ( parsedArgs.orphans().size() < 1 )
-        {
-            throw new IncorrectUsage( "No password specified." );
-        }
-        if ( parsedArgs.orphans().size() > 1 )
-        {
-            throw new IncorrectUsage( "Too many arguments." );
-        }
-        return parsedArgs;
     }
 
     private void setPassword( String password ) throws Throwable

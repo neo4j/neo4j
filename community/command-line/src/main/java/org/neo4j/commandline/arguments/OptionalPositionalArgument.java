@@ -19,6 +19,8 @@
  */
 package org.neo4j.commandline.arguments;
 
+import org.neo4j.helpers.Args;
+
 public class OptionalPositionalArgument implements PositionalArgument
 {
     protected final String value;
@@ -40,5 +42,11 @@ public class OptionalPositionalArgument implements PositionalArgument
     public String usage()
     {
         return String.format( "[<%s>]", value );
+    }
+
+    @Override
+    public String parse( Args parsedArgs )
+    {
+        return parsedArgs.orphans().get( position );
     }
 }

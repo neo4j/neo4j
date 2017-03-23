@@ -94,10 +94,10 @@ public class CheckConsistencyCommand implements AdminCommand
 
         try
         {
-            database = arguments.parse( "database", args );
-            verbose = arguments.parseBoolean( "verbose", args );
-            additionalConfigFile = arguments.parseOptionalPath( "additional-config", args );
-            reportDir = arguments.parseOptionalPath( "report-dir", args )
+            database = arguments.parse( args ).get( "database" );
+            verbose = arguments.getBoolean( "verbose" );
+            additionalConfigFile = arguments.getOptionalPath( "additional-config" );
+            reportDir = arguments.getOptionalPath( "report-dir" )
                     .orElseThrow( () -> new IllegalArgumentException( "report-dir must be a valid path" ) );
         }
         catch ( IllegalArgumentException e )

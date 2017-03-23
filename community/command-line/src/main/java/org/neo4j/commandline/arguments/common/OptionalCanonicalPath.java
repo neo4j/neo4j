@@ -22,6 +22,7 @@ package org.neo4j.commandline.arguments.common;
 
 import org.neo4j.commandline.Util;
 import org.neo4j.commandline.arguments.OptionalNamedArg;
+import org.neo4j.helpers.Args;
 
 public class OptionalCanonicalPath extends OptionalNamedArg
 {
@@ -42,8 +43,8 @@ public class OptionalCanonicalPath extends OptionalNamedArg
     }
 
     @Override
-    public String parse( String... args )
+    public String parse( Args parsedArgs )
     {
-        return canonicalize( super.parse( args ) );
+        return canonicalize( super.parse( parsedArgs ) );
     }
 }

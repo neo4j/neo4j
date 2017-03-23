@@ -40,6 +40,7 @@ import org.neo4j.consistency.ConsistencyCheckSettings;
 import org.neo4j.graphdb.factory.GraphDatabaseSettings;
 import org.neo4j.helpers.Args;
 import org.neo4j.helpers.HostnamePort;
+import org.neo4j.helpers.TimeUtil;
 import org.neo4j.helpers.collection.MapUtil;
 import org.neo4j.helpers.progress.ProgressMonitorFactory;
 import org.neo4j.kernel.configuration.Config;
@@ -109,14 +110,14 @@ public class OnlineBackupCommand implements AdminCommand
         try
         {
             address = toHostnamePort( new HostnamePort( "localhost", 6362 ) )
-                    .apply( arguments.parse( "from", args ) );
-            folder = arguments.parseMandatoryPath( "backup-dir", args );
-            name = arguments.parse( "name", args );
-            fallbackToFull = arguments.parseBoolean( "fallback-to-full", args );
-            doConsistencyCheck = arguments.parseBoolean( "check-consistency", args );
-            timeout = parseTimeout( args );
-            additionalConfig = arguments.parseOptionalPath( "additional-config", args );
-            reportDir = arguments.parseOptionalPath( "cc-report-dir", args ).orElseThrow( () ->
+                    .apply( arguments.parse( args ).get( "from" ) );
+            folder = arguments.getMandatoryPath( "backup-dir" );
+            name = arguments.get( "name" );
+            fallbackToFull = arguments.getBoolean( "fallback-to-full" );
+            doConsistencyCheck = arguments.getBoolean( "check-consistency" );
+            timeout = arguments.get( "timeout", TimeUtil.parseTimeMillis );
+            additionalConfig = arguments.getOptionalPath( "additional-config" );
+            reportDir = arguments.getOptionalPath( "cc-report-dir" ).orElseThrow( () ->
                     new IllegalArgumentException( "cc-report-dir must be a path" ) );
         }
         catch ( IllegalArgumentException e )

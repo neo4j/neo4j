@@ -89,14 +89,14 @@ public class SetDefaultAdminCommandTest
     public void shouldFailForNoArguments() throws Exception
     {
         assertException( () -> setDefaultAdmin.execute( new String[0] ), IncorrectUsage.class,
-                "no username specified." );
+                "not enough arguments" );
     }
 
     @Test
     public void shouldFailForTooManyArguments() throws Exception
     {
         String[] arguments = {"", "123", "321"};
-        assertException( () -> setDefaultAdmin.execute( arguments ), IncorrectUsage.class, "too many arguments." );
+        assertException( () -> setDefaultAdmin.execute( arguments ), IncorrectUsage.class, "unrecognized arguments: '123 321'" );
     }
 
     @Test
