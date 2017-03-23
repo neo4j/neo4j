@@ -85,7 +85,6 @@ public class ConnectRandomlyWithinServerGroupStrategyTest
         TopologyService topologyService = fakeTopologyService( fakeCoreTopology( new MemberId( UUID.randomUUID() ) ),
                 fakeReadReplicaTopology( myServerGroups, myGroupMemberIds, "x,y,z", 10 ) );
 
-
         ConnectRandomlyWithinServerGroupStrategy
                 strategy = new ConnectRandomlyWithinServerGroupStrategy();
         strategy.setConfig( configWithMyServerGroup );
