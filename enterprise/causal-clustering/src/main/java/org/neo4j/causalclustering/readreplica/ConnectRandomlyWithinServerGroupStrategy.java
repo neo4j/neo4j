@@ -39,7 +39,7 @@ public class ConnectRandomlyWithinServerGroupStrategy extends UpstreamDatabaseSe
 
     public ConnectRandomlyWithinServerGroupStrategy()
     {
-        super( "connect-randomly-within--server-group" );
+        super( "connect-randomly-within-server-group" );
     }
 
     @Override
