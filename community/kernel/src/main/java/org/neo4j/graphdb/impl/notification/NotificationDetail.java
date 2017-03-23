@@ -98,6 +98,30 @@ public interface NotificationDetail
             return createNotificationDetail( labels, "indexed label", "indexed labels" );
         }
 
+        public static NotificationDetail deprecatedField( final String procedure, final String field )
+        {
+            return new NotificationDetail()
+            {
+                @Override
+                public String name()
+                {
+                    return procedure;
+                }
+
+                @Override
+                public String value()
+                {
+                    return field;
+                }
+
+                @Override
+                public String toString()
+                {
+                    return String.format( "'%s' returned by '%s' is no longer supported.", field, procedure );
+                }
+            };
+        }
+
         private static NotificationDetail createNotificationDetail( Set<String> elements, String singularTerm,
                 String pluralTerm )
         {

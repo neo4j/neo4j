@@ -125,7 +125,7 @@ class TransactionBoundPlanContext(tc: TransactionalContextWrapper, logger: Inter
       .map(s => FieldSignature(s.name(), asCypherType(s.neo4jType()), asOption(s.defaultValue()).map(asCypherValue)))
       .toIndexedSeq
     val output = if (ks.isVoid) None else Some(
-      ks.outputSignature().asScala.map(s => FieldSignature(s.name(), asCypherType(s.neo4jType()))).toIndexedSeq)
+      ks.outputSignature().asScala.map(s => FieldSignature(s.name(), asCypherType(s.neo4jType()), deprecated = s.isDeprecated)).toIndexedSeq)
     val deprecationInfo = asOption(ks.deprecated())
     val mode = asCypherProcMode(ks.mode(), ks.allowed())
     val description = asOption(ks.description())

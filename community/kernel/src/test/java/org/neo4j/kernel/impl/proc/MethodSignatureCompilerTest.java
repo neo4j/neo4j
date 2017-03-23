@@ -85,7 +85,7 @@ public class MethodSignatureCompilerTest
         List<FieldSignature> signature = new MethodSignatureCompiler( new TypeMappers() ).signatureFor( echo );
 
         // THen
-        assertThat(signature, contains( new FieldSignature("name", Neo4jTypes.NTString)));
+        assertThat(signature, contains( FieldSignature.inputField( "name", Neo4jTypes.NTString ) ));
     }
 
     @Test

@@ -50,11 +50,11 @@ public class GetServersProcedureV2Test
 
         // then
         assertThat( signature.inputSignature(), containsInAnyOrder(
-                new FieldSignature( "context", NTMap ) ) );
+                FieldSignature.inputField( "context", NTMap ) ) );
 
         assertThat( signature.outputSignature(), containsInAnyOrder(
-                new FieldSignature( "ttl", NTInteger ),
-                new FieldSignature( "servers", NTMap ) ) );
+                FieldSignature.outputField( "ttl", NTInteger ),
+                FieldSignature.outputField( "servers", NTMap ) ) );
     }
 
     @Test

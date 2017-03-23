@@ -503,7 +503,7 @@ class CloseTransactionTest extends CypherFunSuite with GraphIcing {
     def paramSignature: util.List[FieldSignature] = List.empty[FieldSignature].asJava
 
     def resultSignature: util.List[FieldSignature] = results.keys.foldLeft(List.empty[FieldSignature]) { (fields, entry) =>
-      fields :+ new FieldSignature(entry, results(entry).asInstanceOf[Neo4jTypes.AnyType])
+      fields :+ FieldSignature.outputField(entry, results(entry).asInstanceOf[Neo4jTypes.AnyType])
     }.asJava
 
     override def apply(context: Context, objects: Array[AnyRef]): RawIterator[Array[AnyRef], ProcedureException] = {

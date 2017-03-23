@@ -19,27 +19,56 @@
  */
 package org.neo4j.kernel.api.proc;
 
+import java.util.Objects;
 import java.util.Optional;
 
 import org.neo4j.kernel.impl.proc.Neo4jValue;
 
+import static java.util.Objects.requireNonNull;
+
 /** Represents a type and a name for a field in a record, used to define input and output record signatures. */
 public class FieldSignature
 {
-    private final String name;
-    private final Neo4jTypes.AnyType type;
-    private final Optional<Neo4jValue> defaultValue;
-
-    public FieldSignature( String name, Neo4jTypes.AnyType type)
+    public static FieldSignature inputField( String name, Neo4jTypes.AnyType type )
     {
-        this(name, type, Optional.empty());
+        return new FieldSignature( name, type, null, false );
     }
 
-    public FieldSignature( String name, Neo4jTypes.AnyType type, Optional<Neo4jValue> defaultValue )
+    public static FieldSignature inputField( String name, Neo4jTypes.AnyType type, Neo4jValue defaultValue )
     {
-        this.name = name;
-        this.type = type;
+        return new FieldSignature( name, type, requireNonNull( defaultValue, "defaultValue" ), false );
+    }
+
+    public static FieldSignature outputField( String name, Neo4jTypes.AnyType type )
+    {
+        return outputField( name, type, false );
+    }
+
+    public static FieldSignature outputField( String name, Neo4jTypes.AnyType type, boolean deprecated )
+    {
+        return new FieldSignature( name, type, null, deprecated );
+    }
+
+    private final String name;
+    private final Neo4jTypes.AnyType type;
+    private final Neo4jValue defaultValue;
+    private final boolean deprecated;
+
+    private FieldSignature( String name, Neo4jTypes.AnyType type, Neo4jValue defaultValue, boolean deprecated )
+    {
+        this.name = requireNonNull( name, "name" );
+        this.type = requireNonNull( type, "type" );
         this.defaultValue = defaultValue;
+        this.deprecated = deprecated;
+        if ( defaultValue != null )
+        {
+            if ( !type.equals( defaultValue.neo4jType() ) )
+            {
+                throw new IllegalArgumentException( String.format(
+                        "Default value does not have a valid type, field type was %s, but value type was %s.",
+                        type.toString(), defaultValue.neo4jType().toString() ) );
+            }
+        }
     }
 
     public String name()
@@ -54,14 +83,24 @@ public class FieldSignature
 
     public Optional<Neo4jValue> defaultValue()
     {
-        return defaultValue;
+        return Optional.ofNullable( defaultValue );
+    }
+
+    public boolean isDeprecated()
+    {
+        return deprecated;
     }
 
     @Override
     public String toString()
     {
-        String nameValue = defaultValue.isPresent() ? name + " = " + defaultValue.get().value() : name;
-        return String.format("%s :: %s", nameValue, type);
+        StringBuilder result = new StringBuilder();
+        result.append( name );
+        if ( defaultValue != null )
+        {
+            result.append( " = " ).append( defaultValue.value() );
+        }
+        return result.append( " :: " ).append( type ).toString();
     }
 
     @Override
@@ -76,7 +115,10 @@ public class FieldSignature
             return false;
         }
         FieldSignature that = (FieldSignature) o;
-        return name.equals( that.name ) && type.equals( that.type );
+        return name.equals( that.name ) &&
+                type.equals( that.type ) &&
+                Objects.equals( this.defaultValue, that.defaultValue ) &&
+                this.deprecated == that.deprecated;
     }
 
     @Override

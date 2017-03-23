@@ -187,14 +187,14 @@ public class ProcedureSignature
         /** Define an input field */
         public Builder in( String name, AnyType type )
         {
-            inputSignature.add( new FieldSignature( name, type) );
+            inputSignature.add( FieldSignature.inputField( name, type ) );
             return this;
         }
 
         /** Define an output field */
         public Builder out( String name, AnyType type )
         {
-            outputSignature.add( new FieldSignature( name, type ) );
+            outputSignature.add( FieldSignature.outputField( name, type ) );
             return this;
         }
 

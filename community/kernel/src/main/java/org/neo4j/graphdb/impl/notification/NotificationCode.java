@@ -114,6 +114,11 @@ public enum NotificationCode
             Status.Procedure.ProcedureWarning,
             "The query used a procedure that generated a warning."
     ),
+    DEPRECATED_PROCEDURE_RETURN_FIELD(
+            SeverityLevel.WARNING,
+            Status.Statement.FeatureDeprecationWarning,
+            "The query used a deprecated field from a procedure."
+    ),
     EAGER_LOAD_CSV(
         SeverityLevel.WARNING,
         Status.Statement.EagerOperatorWarning,
