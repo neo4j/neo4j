@@ -94,7 +94,6 @@ import org.neo4j.kernel.impl.transaction.state.IntegrityValidator;
 import org.neo4j.kernel.impl.transaction.state.Loaders;
 import org.neo4j.kernel.impl.transaction.state.PropertyCreator;
 import org.neo4j.kernel.impl.transaction.state.PropertyDeleter;
-import org.neo4j.kernel.impl.transaction.state.PropertyLoader;
 import org.neo4j.kernel.impl.transaction.state.PropertyTraverser;
 import org.neo4j.kernel.impl.transaction.state.RecordChangeSet;
 import org.neo4j.kernel.impl.transaction.state.RelationshipCreator;
@@ -381,7 +380,7 @@ public class RecordStorageEngine implements StorageEngine, Lifecycle
 
         // Schema index application
         appliers.add( new IndexBatchTransactionApplier( indexingService, labelScanStoreSync, indexUpdatesSync,
-                neoStores.getNodeStore(), new PropertyLoader( neoStores ),
+                neoStores.getNodeStore(),
                 indexUpdatesConverter, mode ) );
 
         // Legacy index application

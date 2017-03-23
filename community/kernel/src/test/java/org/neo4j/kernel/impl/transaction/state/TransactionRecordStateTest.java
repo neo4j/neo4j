@@ -38,6 +38,7 @@ import org.neo4j.graphdb.Direction;
 import org.neo4j.graphdb.factory.GraphDatabaseSettings;
 import org.neo4j.helpers.collection.Iterables;
 import org.neo4j.kernel.api.exceptions.TransactionFailureException;
+import org.neo4j.kernel.impl.api.index.IndexingUpdateService;
 import org.neo4j.kernel.impl.api.index.NodeUpdates;
 import org.neo4j.kernel.api.properties.DefinedProperty;
 import org.neo4j.kernel.impl.api.BatchTransactionApplier;
@@ -1218,7 +1219,7 @@ public class TransactionRecordStateTest
         transaction.accept( extractor );
 
         OnlineIndexUpdates lazyIndexUpdates = new OnlineIndexUpdates( neoStores.getNodeStore(),
-                new PropertyLoader( neoStores ),
+                mock( IndexingUpdateService.class ),
                 new PropertyPhysicalToLogicalConverter( neoStores.getPropertyStore() ) );
         lazyIndexUpdates.feed( extractor.propertyCommandsByNodeIds(), extractor.nodeCommandsById() );
         return lazyIndexUpdates;

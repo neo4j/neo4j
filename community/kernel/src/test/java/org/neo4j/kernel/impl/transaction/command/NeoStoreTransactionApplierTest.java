@@ -72,7 +72,6 @@ import org.neo4j.kernel.impl.store.record.RelationshipTypeTokenRecord;
 import org.neo4j.kernel.impl.transaction.command.Command.LabelTokenCommand;
 import org.neo4j.kernel.impl.transaction.command.Command.PropertyKeyTokenCommand;
 import org.neo4j.kernel.impl.transaction.command.Command.RelationshipTypeTokenCommand;
-import org.neo4j.kernel.impl.transaction.state.PropertyLoader;
 import org.neo4j.storageengine.api.Token;
 
 import static org.junit.Assert.assertFalse;
@@ -926,7 +925,7 @@ public class NeoStoreTransactionApplierTest
     private BatchTransactionApplier newIndexApplier()
     {
         return new IndexBatchTransactionApplier( indexingService, labelScanStoreSynchronizer,
-                indexUpdatesSync, nodeStore, new PropertyLoader( neoStores ),
+                indexUpdatesSync, nodeStore,
                 new PropertyPhysicalToLogicalConverter( propertyStore ), INTERNAL );
     }
 

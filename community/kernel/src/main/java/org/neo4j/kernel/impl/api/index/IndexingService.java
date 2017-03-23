@@ -433,7 +433,7 @@ public class IndexingService extends LifecycleAdapter implements IndexingUpdateS
             for ( NodeUpdates update : updates )
             {
                 for ( IndexEntryUpdate<IndexUpdaterMap.IndexUpdaterWithSchema> indexUpdate :
-                        update.forIndexKeys( updaterMap.updaters(), storeView ) )
+                        update.forIndexKeys( updaterMap.updaters() ) )
                 {
                     indexUpdate.indexKey().process( indexUpdate );
                 }

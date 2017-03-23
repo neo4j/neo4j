@@ -89,7 +89,7 @@ public class SchemaRuleCommandTest
     private final PropertyStore propertyStore = mock( PropertyStore.class );
     private final IndexBatchTransactionApplier indexApplier = new IndexBatchTransactionApplier( indexes,
             labelScanStoreSynchronizer, indexUpdatesSync, mock( NodeStore.class ),
-            mock( PropertyLoader.class ), new PropertyPhysicalToLogicalConverter( propertyStore ),
+            new PropertyPhysicalToLogicalConverter( propertyStore ),
             TransactionApplicationMode.INTERNAL );
     private final PhysicalLogCommandReaderV2_2 reader = new PhysicalLogCommandReaderV2_2();
     private final IndexRule rule = IndexRule.indexRule( id, NewIndexDescriptorFactory.forLabel( labelId, propertyKey ),

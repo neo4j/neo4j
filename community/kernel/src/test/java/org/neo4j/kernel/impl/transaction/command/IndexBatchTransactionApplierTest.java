@@ -37,7 +37,6 @@ import org.neo4j.kernel.impl.store.NodeStore;
 import org.neo4j.kernel.impl.store.PropertyStore;
 import org.neo4j.kernel.impl.store.record.NodeRecord;
 import org.neo4j.kernel.impl.transaction.command.Command.NodeCommand;
-import org.neo4j.kernel.impl.transaction.state.PropertyLoader;
 import org.neo4j.storageengine.api.TransactionApplicationMode;
 
 import static org.junit.Assert.assertEquals;
@@ -62,7 +61,7 @@ public class IndexBatchTransactionApplierTest
         TransactionToApply tx = mock( TransactionToApply.class );
         PropertyStore propertyStore = mock( PropertyStore.class );
         try ( IndexBatchTransactionApplier applier = new IndexBatchTransactionApplier( indexing, labelScanSync,
-                indexUpdatesSync, mock( NodeStore.class ), mock( PropertyLoader.class ),
+                indexUpdatesSync, mock( NodeStore.class ),
                 new PropertyPhysicalToLogicalConverter( propertyStore ),
                 TransactionApplicationMode.INTERNAL ) )
         {
