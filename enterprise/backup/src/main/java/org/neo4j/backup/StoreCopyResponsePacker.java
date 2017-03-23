@@ -66,15 +66,16 @@ public class StoreCopyResponsePacker extends ResponsePacker
     @Override
     public <T> Response<T> packTransactionStreamResponse( RequestContext context, T response )
     {
+        final String packerIdentifier = Thread.currentThread().getName();
         final long toStartFrom = mandatoryStartTransactionId;
         final long toEndAt = transactionIdStore.getLastCommittedTransactionId();
         TransactionStream transactions = visitor -> {
             // Check so that it's even worth thinking about extracting any transactions at all
             if ( toStartFrom > BASE_TX_ID && toStartFrom <= toEndAt )
             {
-                monitor.startStreamingTransactions( toStartFrom );
+                monitor.startStreamingTransactions( toStartFrom, packerIdentifier );
                 extractTransactions( toStartFrom, filterVisitor( visitor, toEndAt ) );
-                monitor.finishStreamingTransactions( toEndAt );
+                monitor.finishStreamingTransactions( toEndAt, packerIdentifier );
             }
         };
         return new TransactionStreamResponse<>( response, storeId.get(), transactions, ResourceReleaser.NO_OP );

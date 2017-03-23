@@ -30,7 +30,6 @@ import org.neo4j.kernel.impl.store.StoreId;
 import org.neo4j.kernel.impl.transaction.log.LogFileInformation;
 import org.neo4j.kernel.impl.transaction.log.LogicalTransactionStore;
 import org.neo4j.kernel.impl.transaction.log.TransactionIdStore;
-import org.neo4j.kernel.monitoring.Monitors;
 import org.neo4j.logging.NullLogProvider;
 
 import static org.mockito.Matchers.any;
@@ -50,7 +49,7 @@ public class BackupImplTest
         when( storeCopyServer.flushStoresAndStreamStoreFiles( anyString(), any( StoreWriter.class ), anyBoolean() ) )
                 .thenReturn( RequestContext.EMPTY );
 
-        BackupImpl backup = new BackupImpl( storeCopyServer, new Monitors(), mock( LogicalTransactionStore.class ),
+        BackupImpl backup = new BackupImpl( storeCopyServer, mock( LogicalTransactionStore.class ),
                 mock( TransactionIdStore.class ), mock( LogFileInformation.class ), defaultStoreIdSupplier(),
                 NullLogProvider.getInstance() );
 

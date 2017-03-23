@@ -24,6 +24,8 @@ import org.hamcrest.Description;
 import org.junit.Before;
 import org.junit.Rule;
 import org.junit.Test;
+import org.junit.rules.RuleChain;
+import org.mockito.Mockito;
 
 import java.io.File;
 import java.io.FileFilter;
@@ -100,37 +102,20 @@ import static org.junit.Assert.assertFalse;
 import static org.junit.Assert.assertNotEquals;
 import static org.junit.Assert.assertTrue;
 import static org.junit.Assert.fail;
+import static org.mockito.Matchers.eq;
 import static org.mockito.Mockito.mock;
 import static org.mockito.Mockito.verify;
 import static org.mockito.Mockito.when;
-
 import static org.neo4j.kernel.impl.storemigration.StoreFile.COUNTS_STORE_LEFT;
 import static org.neo4j.kernel.impl.storemigration.StoreFile.COUNTS_STORE_RIGHT;
 
 public class BackupServiceIT
 {
-    private static final class StoreSnoopingMonitor extends StoreCopyServer.Monitor.Adapter
-    {
-        private final Barrier barrier;
+    private final TestDirectory target = TestDirectory.testDirectory();
+    private final EmbeddedDatabaseRule dbRule = new EmbeddedDatabaseRule( getClass() ).startLazily();
+    private final SuppressOutput suppressOutput = SuppressOutput.suppressAll();
+    private final PageCacheRule pageCacheRule = new PageCacheRule();
 
-        private StoreSnoopingMonitor( Barrier barrier )
-        {
-            this.barrier = barrier;
-        }
-
-        @Override
-        public void finishStreamingStoreFile( File storefile )
-        {
-            if ( storefile.getAbsolutePath().contains( NODE_STORE ) ||
-                 storefile.getAbsolutePath().contains( RELATIONSHIP_STORE ) )
-            {
-                barrier.reached(); // multiple calls to this barrier will not block
-            }
-        }
-    }
-
-    @Rule
-    public final TestDirectory target = TestDirectory.testDirectory();
     private static final String NODE_STORE = StoreFactory.NODE_STORE_NAME;
     private static final String RELATIONSHIP_STORE = StoreFactory.RELATIONSHIP_STORE_NAME;
     private static final String BACKUP_HOST = "localhost";
@@ -140,15 +125,11 @@ public class BackupServiceIT
     private final IOLimiter limiter = IOLimiter.unlimited();
     private File storeDir;
     private File backupDir;
-    public int backupPort = 8200;
+    private int backupPort = 8200;
 
     @Rule
-    public EmbeddedDatabaseRule dbRule = new EmbeddedDatabaseRule( getClass() ).startLazily();
-
-    @Rule
-    public SuppressOutput suppressOutput = SuppressOutput.suppressAll();
-    @Rule
-    public final PageCacheRule pageCacheRule = new PageCacheRule();
+    public RuleChain ruleChain = RuleChain.outerRule( target ).around( dbRule ).around( suppressOutput ).around(
+            pageCacheRule );
 
     @Before
     public void setup()
@@ -877,28 +858,33 @@ public class BackupServiceIT
                         new SimpleKernelContext( fileSystem, storeDir, DatabaseInfo.UNKNOWN, dependencies ),
                         DependenciesProxy.dependencies( dependencies, OnlineBackupExtensionFactory.Dependencies.class )
                 );
+        try
+        {
+            backup.start();
 
-        backup.start();
+            // when
+            backupService()
+                    .doFullBackup( BACKUP_HOST, backupPort, backupDir, ConsistencyCheck.NONE, withOnlineBackupDisabled,
+                            BackupClient.BIG_READ_TIMEOUT, false );
 
-        // when
-        backupService().doFullBackup( BACKUP_HOST, backupPort, backupDir, ConsistencyCheck.NONE,
-                withOnlineBackupDisabled, BackupClient.BIG_READ_TIMEOUT, false );
+            // then
+            verify( logger ).log( eq( "%s: Full backup started...") , Mockito.startsWith( "BackupServer" ) );
+            verify( logger ).log( eq( "%s: Full backup finished." ), Mockito.startsWith( "BackupServer" ) );
 
-        // then
-        verify( logger ).log( "Full backup started..." );
-        verify( logger ).log( "Full backup finished." );
+            // when
+            createAndIndexNode( dbRule, 2 );
 
-        // when
-        createAndIndexNode( dbRule, 2 );
+            backupService().doIncrementalBackupOrFallbackToFull( BACKUP_HOST, backupPort, backupDir, ConsistencyCheck.NONE,
+                    withOnlineBackupDisabled, BackupClient.BIG_READ_TIMEOUT, false );
 
-        backupService().doIncrementalBackupOrFallbackToFull( BACKUP_HOST, backupPort, backupDir,
-                ConsistencyCheck.NONE, withOnlineBackupDisabled, BackupClient.BIG_READ_TIMEOUT, false );
-
-        backup.stop();
-
-        // then
-        verify( logger ).log( "Incremental backup started..." );
-        verify( logger ).log( "Incremental backup finished." );
+            // then
+            verify( logger ).log( eq( "%s: Incremental backup started..."), Mockito.startsWith( "BackupServer" ) );
+            verify( logger ).log( eq( "%s: Incremental backup finished." ), Mockito.startsWith( "BackupServer" ) );
+        }
+        finally
+        {
+            backup.stop();
+        }
     }
 
     @Test
@@ -1054,6 +1040,26 @@ public class BackupServiceIT
     private DbRepresentation getDbRepresentation()
     {
         return DbRepresentation.of( storeDir );
+    }
+
+    private static final class StoreSnoopingMonitor extends StoreCopyServer.Monitor.Adapter
+    {
+        private final Barrier barrier;
+
+        private StoreSnoopingMonitor( Barrier barrier )
+        {
+            this.barrier = barrier;
+        }
+
+        @Override
+        public void finishStreamingStoreFile( File storefile, String storeCopyIdentifier )
+        {
+            if ( storefile.getAbsolutePath().contains( NODE_STORE ) ||
+                    storefile.getAbsolutePath().contains( RELATIONSHIP_STORE ) )
+            {
+                barrier.reached(); // multiple calls to this barrier will not block
+            }
+        }
     }
 
 }

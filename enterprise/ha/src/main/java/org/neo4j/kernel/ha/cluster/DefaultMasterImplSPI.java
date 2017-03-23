@@ -50,6 +50,8 @@ import org.neo4j.kernel.impl.transaction.log.checkpoint.CheckPointer;
 import org.neo4j.kernel.impl.transaction.tracing.CommitEvent;
 import org.neo4j.kernel.internal.GraphDatabaseAPI;
 import org.neo4j.kernel.monitoring.Monitors;
+import org.neo4j.logging.Log;
+import org.neo4j.logging.LogProvider;
 import org.neo4j.storageengine.api.TransactionApplicationMode;
 
 public class DefaultMasterImplSPI implements MasterImpl.SPI
@@ -84,7 +86,8 @@ public class DefaultMasterImplSPI implements MasterImpl.SPI
                                  TransactionIdStore transactionIdStore,
                                  LogicalTransactionStore logicalTransactionStore,
                                  NeoStoreDataSource neoStoreDataSource,
-                                 PageCache pageCache )
+                                 PageCache pageCache,
+                                 LogProvider logProvider)
     {
         this.graphDb = graphDb;
         this.fileSystem = fileSystemAbstraction;
@@ -100,6 +103,8 @@ public class DefaultMasterImplSPI implements MasterImpl.SPI
         this.responsePacker = new ResponsePacker( logicalTransactionStore, transactionIdStore, graphDb::storeId );
         this.monitors = monitors;
         this.pageCache = pageCache;
+        monitors.addMonitorListener( new LoggingStoreCopyServerMonitor( logProvider.getLog( StoreCopyServer.class ) ),
+                StoreCopyServer.class.getName() );
     }
 
     @Override
@@ -136,8 +141,8 @@ public class DefaultMasterImplSPI implements MasterImpl.SPI
     }
 
     @Override
-    public long applyPreparedTransaction( TransactionRepresentation preparedTransaction ) throws IOException,
-            TransactionFailureException
+    public long applyPreparedTransaction( TransactionRepresentation preparedTransaction )
+            throws IOException, TransactionFailureException
     {
         return transactionCommitProcess.commit( new TransactionToApply( preparedTransaction ), CommitEvent.NULL,
                 TransactionApplicationMode.EXTERNAL );
@@ -158,8 +163,8 @@ public class DefaultMasterImplSPI implements MasterImpl.SPI
     @Override
     public RequestContext flushStoresAndStreamStoreFiles( StoreWriter writer )
     {
-        StoreCopyServer streamer = new StoreCopyServer( neoStoreDataSource,
-                checkPointer, fileSystem, storeDir, monitors.newMonitor( StoreCopyServer.Monitor.class ), pageCache );
+        StoreCopyServer streamer = new StoreCopyServer( neoStoreDataSource, checkPointer, fileSystem, storeDir,
+                monitors.newMonitor( StoreCopyServer.Monitor.class, StoreCopyServer.class ), pageCache );
         return streamer.flushStoresAndStreamStoreFiles( STORE_COPY_CHECKPOINT_TRIGGER, writer, false );
     }
 
@@ -179,5 +184,63 @@ public class DefaultMasterImplSPI implements MasterImpl.SPI
     public <T> Response<T> packEmptyResponse( T response )
     {
         return responsePacker.packEmptyResponse( response );
+    }
+
+    private static class LoggingStoreCopyServerMonitor implements StoreCopyServer.Monitor
+    {
+        private Log log;
+
+        LoggingStoreCopyServerMonitor( Log log )
+        {
+            this.log = log;
+        }
+
+        @Override
+        public void startTryCheckPoint( String storeCopyIdentifier )
+        {
+            log.debug( "%s: try to checkpoint before sending store.", storeCopyIdentifier );
+        }
+
+        @Override
+        public void finishTryCheckPoint( String storeCopyIdentifier )
+        {
+            log.debug( "%s: checkpoint before sending store completed.", storeCopyIdentifier );
+        }
+
+        @Override
+        public void startStreamingStoreFile( File file, String storeCopyIdentifier )
+        {
+            log.debug( "%s: start streaming file %s.", storeCopyIdentifier, file );
+        }
+
+        @Override
+        public void finishStreamingStoreFile( File file, String storeCopyIdentifier )
+        {
+            log.debug( "%s: finish streaming file %s.", storeCopyIdentifier, file );
+        }
+
+        @Override
+        public void startStreamingStoreFiles( String storeCopyIdentifier )
+        {
+            log.debug( "%s: start streaming store files.", storeCopyIdentifier );
+        }
+
+        @Override
+        public void finishStreamingStoreFiles( String storeCopyIdentifier )
+        {
+            log.debug( "%s: finish streaming store files.", storeCopyIdentifier );
+        }
+
+        @Override
+        public void startStreamingTransactions( long startTxId, String storeCopyIdentifier )
+        {
+            log.debug( "%s: start streaming transaction starting %d.", storeCopyIdentifier, startTxId );
+        }
+
+        @Override
+        public void finishStreamingTransactions( long endTxId, String storeCopyIdentifier )
+        {
+            log.debug( "%s: finish streaming transactions at %d.", storeCopyIdentifier, endTxId );
+        }
     }
 }
