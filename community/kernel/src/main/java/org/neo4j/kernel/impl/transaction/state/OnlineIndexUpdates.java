@@ -29,6 +29,7 @@ import org.neo4j.collection.primitive.PrimitiveLongIterator;
 import org.neo4j.collection.primitive.PrimitiveLongObjectMap;
 import org.neo4j.collection.primitive.PrimitiveLongSet;
 import org.neo4j.helpers.collection.Iterables;
+import org.neo4j.kernel.impl.api.index.IndexingUpdateService;
 import org.neo4j.kernel.impl.api.index.NodeUpdates;
 import org.neo4j.kernel.impl.api.index.PropertyPhysicalToLogicalConverter;
 import org.neo4j.kernel.impl.store.NodeStore;
@@ -52,17 +53,17 @@ import static org.neo4j.kernel.impl.store.NodeLabelsField.parseLabelsField;
 public class OnlineIndexUpdates implements IndexUpdates
 {
     private final NodeStore nodeStore;
-    private final PropertyLoader propertyLoader;
+    private final IndexingUpdateService updateService;
     private final PropertyPhysicalToLogicalConverter converter;
     private final Collection<NodeUpdates> updates = new ArrayList<>();
     private NodeRecord nodeRecord;
 
     public OnlineIndexUpdates( NodeStore nodeStore,
-                             PropertyLoader propertyLoader,
+                             IndexingUpdateService updateService,
                              PropertyPhysicalToLogicalConverter converter )
     {
         this.nodeStore = nodeStore;
-        this.propertyLoader = propertyLoader;
+        this.updateService = updateService;
         this.converter = converter;
     }
 
@@ -111,7 +112,9 @@ public class OnlineIndexUpdates implements IndexUpdates
         NodeUpdates.Builder nodePropertyUpdate =
                 gatherUpdatesFromCommandsForNode( nodeId, nodeCommand, propertyCommands );
 
-        updates.add( nodePropertyUpdate.build() );
+        NodeUpdates nodeUpdates = nodePropertyUpdate.build();
+        updateService.loadAdditionalProperties( nodeUpdates );
+        updates.add( nodeUpdates );
     }
 
     private NodeUpdates.Builder gatherUpdatesFromCommandsForNode( long nodeId,

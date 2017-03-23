@@ -35,6 +35,8 @@ import org.neo4j.kernel.api.index.IndexUpdater;
 import org.neo4j.kernel.api.index.InternalIndexState;
 import org.neo4j.kernel.api.index.PropertyAccessor;
 import org.neo4j.kernel.api.index.SchemaIndexProvider;
+import org.neo4j.kernel.api.schema_new.LabelSchemaDescriptor;
+import org.neo4j.kernel.api.schema_new.LabelSchemaSupplier;
 import org.neo4j.kernel.api.schema_new.index.NewIndexDescriptor;
 import org.neo4j.storageengine.api.schema.IndexReader;
 import org.neo4j.storageengine.api.schema.PopulationProgress;
@@ -57,7 +59,7 @@ import org.neo4j.storageengine.api.schema.PopulationProgress;
  *
  * @see ContractCheckingIndexProxy
  */
-public interface IndexProxy
+public interface IndexProxy extends LabelSchemaSupplier
 {
     void start() throws IOException;
 
@@ -77,6 +79,8 @@ public interface IndexProxy
     Future<Void> close() throws IOException;
 
     NewIndexDescriptor getDescriptor();
+
+    LabelSchemaDescriptor schema();
 
     SchemaIndexProvider.Descriptor getProviderDescriptor();
 

@@ -55,6 +55,7 @@ import org.neo4j.kernel.impl.api.TransactionApplier;
 import org.neo4j.kernel.impl.api.TransactionApplierFacade;
 import org.neo4j.kernel.impl.api.index.IndexingService;
 import org.neo4j.kernel.impl.api.index.IndexingServiceFactory;
+import org.neo4j.kernel.impl.api.index.IndexingUpdateService;
 import org.neo4j.kernel.impl.api.index.PropertyPhysicalToLogicalConverter;
 import org.neo4j.kernel.impl.api.scan.LabelScanStoreProvider;
 import org.neo4j.kernel.impl.api.store.StorageLayer;
@@ -93,7 +94,6 @@ import org.neo4j.kernel.impl.transaction.state.IntegrityValidator;
 import org.neo4j.kernel.impl.transaction.state.Loaders;
 import org.neo4j.kernel.impl.transaction.state.PropertyCreator;
 import org.neo4j.kernel.impl.transaction.state.PropertyDeleter;
-import org.neo4j.kernel.impl.transaction.state.PropertyLoader;
 import org.neo4j.kernel.impl.transaction.state.PropertyTraverser;
 import org.neo4j.kernel.impl.transaction.state.RecordChangeSet;
 import org.neo4j.kernel.impl.transaction.state.RelationshipCreator;
@@ -155,7 +155,7 @@ public class RecordStorageEngine implements StorageEngine, Lifecycle
     private final LockService lockService;
     private final WorkSync<Supplier<LabelScanWriter>,LabelUpdateWork> labelScanStoreSync;
     private final CommandReaderFactory commandReaderFactory;
-    private final WorkSync<IndexingService,IndexUpdatesWork> indexUpdatesSync;
+    private final WorkSync<IndexingUpdateService,IndexUpdatesWork> indexUpdatesSync;
     private final NeoStoreIndexStoreView indexStoreView;
     private final LegacyIndexProviderLookup legacyIndexProviderLookup;
     private final PropertyPhysicalToLogicalConverter indexUpdatesConverter;
@@ -380,7 +380,7 @@ public class RecordStorageEngine implements StorageEngine, Lifecycle
 
         // Schema index application
         appliers.add( new IndexBatchTransactionApplier( indexingService, labelScanStoreSync, indexUpdatesSync,
-                neoStores.getNodeStore(), new PropertyLoader( neoStores ),
+                neoStores.getNodeStore(),
                 indexUpdatesConverter, mode ) );
 
         // Legacy index application

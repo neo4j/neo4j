@@ -32,6 +32,7 @@ import org.neo4j.kernel.api.schema_new.index.NewIndexDescriptorFactory;
 import org.neo4j.kernel.impl.api.BatchTransactionApplier;
 import org.neo4j.kernel.impl.api.TransactionToApply;
 import org.neo4j.kernel.impl.api.index.IndexingService;
+import org.neo4j.kernel.impl.api.index.IndexingUpdateService;
 import org.neo4j.kernel.impl.api.index.PropertyPhysicalToLogicalConverter;
 import org.neo4j.kernel.impl.core.CacheAccessBackDoor;
 import org.neo4j.kernel.impl.locking.LockService;
@@ -84,11 +85,11 @@ public class SchemaRuleCommandTest
             mock( CacheAccessBackDoor.class ), LockService.NO_LOCK_SERVICE );
     private final WorkSync<Supplier<LabelScanWriter>,LabelUpdateWork> labelScanStoreSynchronizer =
             new WorkSync<>( labelScanStore );
-    private final WorkSync<IndexingService,IndexUpdatesWork> indexUpdatesSync = new WorkSync<>( indexes );
+    private final WorkSync<IndexingUpdateService,IndexUpdatesWork> indexUpdatesSync = new WorkSync<>( indexes );
     private final PropertyStore propertyStore = mock( PropertyStore.class );
     private final IndexBatchTransactionApplier indexApplier = new IndexBatchTransactionApplier( indexes,
             labelScanStoreSynchronizer, indexUpdatesSync, mock( NodeStore.class ),
-            mock( PropertyLoader.class ), new PropertyPhysicalToLogicalConverter( propertyStore ),
+            new PropertyPhysicalToLogicalConverter( propertyStore ),
             TransactionApplicationMode.INTERNAL );
     private final PhysicalLogCommandReaderV2_2 reader = new PhysicalLogCommandReaderV2_2();
     private final IndexRule rule = IndexRule.indexRule( id, NewIndexDescriptorFactory.forLabel( labelId, propertyKey ),

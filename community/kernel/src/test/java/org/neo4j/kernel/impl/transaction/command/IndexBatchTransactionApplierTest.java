@@ -30,13 +30,13 @@ import org.neo4j.kernel.api.labelscan.NodeLabelUpdate;
 import org.neo4j.kernel.impl.api.TransactionApplier;
 import org.neo4j.kernel.impl.api.TransactionToApply;
 import org.neo4j.kernel.impl.api.index.IndexingService;
+import org.neo4j.kernel.impl.api.index.IndexingUpdateService;
 import org.neo4j.kernel.impl.api.index.PropertyPhysicalToLogicalConverter;
 import org.neo4j.kernel.impl.store.NodeLabelsField;
 import org.neo4j.kernel.impl.store.NodeStore;
 import org.neo4j.kernel.impl.store.PropertyStore;
 import org.neo4j.kernel.impl.store.record.NodeRecord;
 import org.neo4j.kernel.impl.transaction.command.Command.NodeCommand;
-import org.neo4j.kernel.impl.transaction.state.PropertyLoader;
 import org.neo4j.storageengine.api.TransactionApplicationMode;
 
 import static org.junit.Assert.assertEquals;
@@ -57,11 +57,11 @@ public class IndexBatchTransactionApplierTest
         LabelScanWriter writer = new OrderVerifyingLabelScanWriter( 10, 15, 20 );
         WorkSync<Supplier<LabelScanWriter>,LabelUpdateWork> labelScanSync =
                 spy( new WorkSync<>( singletonProvider( writer ) ) );
-        WorkSync<IndexingService,IndexUpdatesWork> indexUpdatesSync = new WorkSync<>( indexing );
+        WorkSync<IndexingUpdateService,IndexUpdatesWork> indexUpdatesSync = new WorkSync<>( indexing );
         TransactionToApply tx = mock( TransactionToApply.class );
         PropertyStore propertyStore = mock( PropertyStore.class );
         try ( IndexBatchTransactionApplier applier = new IndexBatchTransactionApplier( indexing, labelScanSync,
-                indexUpdatesSync, mock( NodeStore.class ), mock( PropertyLoader.class ),
+                indexUpdatesSync, mock( NodeStore.class ),
                 new PropertyPhysicalToLogicalConverter( propertyStore ),
                 TransactionApplicationMode.INTERNAL ) )
         {

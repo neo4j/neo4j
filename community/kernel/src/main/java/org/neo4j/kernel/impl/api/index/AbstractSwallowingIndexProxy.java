@@ -23,6 +23,7 @@ import java.util.concurrent.Future;
 
 import org.neo4j.kernel.api.index.IndexUpdater;
 import org.neo4j.kernel.api.index.SchemaIndexProvider;
+import org.neo4j.kernel.api.schema_new.LabelSchemaDescriptor;
 import org.neo4j.kernel.api.schema_new.index.NewIndexDescriptor;
 import org.neo4j.storageengine.api.schema.IndexReader;
 import org.neo4j.storageengine.api.schema.PopulationProgress;
@@ -83,6 +84,12 @@ public abstract class AbstractSwallowingIndexProxy implements IndexProxy
     public NewIndexDescriptor getDescriptor()
     {
         return descriptor;
+    }
+
+    @Override
+    public LabelSchemaDescriptor schema()
+    {
+        return descriptor.schema();
     }
 
     @Override

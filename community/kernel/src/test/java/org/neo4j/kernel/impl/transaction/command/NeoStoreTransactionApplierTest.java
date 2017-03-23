@@ -41,6 +41,7 @@ import org.neo4j.kernel.impl.api.BatchTransactionApplier;
 import org.neo4j.kernel.impl.api.BatchTransactionApplierFacade;
 import org.neo4j.kernel.impl.api.TransactionToApply;
 import org.neo4j.kernel.impl.api.index.IndexingService;
+import org.neo4j.kernel.impl.api.index.IndexingUpdateService;
 import org.neo4j.kernel.impl.api.index.PropertyPhysicalToLogicalConverter;
 import org.neo4j.kernel.impl.core.CacheAccessBackDoor;
 import org.neo4j.kernel.impl.core.RelationshipTypeToken;
@@ -71,7 +72,6 @@ import org.neo4j.kernel.impl.store.record.RelationshipTypeTokenRecord;
 import org.neo4j.kernel.impl.transaction.command.Command.LabelTokenCommand;
 import org.neo4j.kernel.impl.transaction.command.Command.PropertyKeyTokenCommand;
 import org.neo4j.kernel.impl.transaction.command.Command.RelationshipTypeTokenCommand;
-import org.neo4j.kernel.impl.transaction.state.PropertyLoader;
 import org.neo4j.storageengine.api.Token;
 
 import static org.junit.Assert.assertFalse;
@@ -114,7 +114,7 @@ public class NeoStoreTransactionApplierTest
     private final WorkSync<Supplier<LabelScanWriter>,LabelUpdateWork>
             labelScanStoreSynchronizer = new WorkSync<>( labelScanStore );
     private final TransactionToApply transactionToApply = mock( TransactionToApply.class );
-    private final WorkSync<IndexingService,IndexUpdatesWork> indexUpdatesSync = new WorkSync<>( indexingService );
+    private final WorkSync<IndexingUpdateService,IndexUpdatesWork> indexUpdatesSync = new WorkSync<>( indexingService );
 
     @Before
     public void setup()
@@ -925,7 +925,7 @@ public class NeoStoreTransactionApplierTest
     private BatchTransactionApplier newIndexApplier()
     {
         return new IndexBatchTransactionApplier( indexingService, labelScanStoreSynchronizer,
-                indexUpdatesSync, nodeStore, new PropertyLoader( neoStores ),
+                indexUpdatesSync, nodeStore,
                 new PropertyPhysicalToLogicalConverter( propertyStore ), INTERNAL );
     }
 

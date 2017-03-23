@@ -34,6 +34,7 @@ import org.neo4j.kernel.api.labelscan.NodeLabelUpdate;
 import org.neo4j.kernel.impl.api.BatchTransactionApplier;
 import org.neo4j.kernel.impl.api.TransactionApplier;
 import org.neo4j.kernel.impl.api.index.IndexingService;
+import org.neo4j.kernel.impl.api.index.IndexingUpdateService;
 import org.neo4j.kernel.impl.api.index.NodePropertyCommandsExtractor;
 import org.neo4j.kernel.impl.api.index.PropertyPhysicalToLogicalConverter;
 import org.neo4j.kernel.impl.store.NodeLabels;
@@ -43,7 +44,6 @@ import org.neo4j.kernel.impl.store.record.NodeRecord;
 import org.neo4j.kernel.impl.transaction.command.Command.PropertyCommand;
 import org.neo4j.kernel.impl.transaction.state.IndexUpdates;
 import org.neo4j.kernel.impl.transaction.state.OnlineIndexUpdates;
-import org.neo4j.kernel.impl.transaction.state.PropertyLoader;
 import org.neo4j.kernel.impl.transaction.state.RecoveryIndexUpdates;
 import org.neo4j.storageengine.api.CommandsToApply;
 import org.neo4j.storageengine.api.TransactionApplicationMode;
@@ -58,7 +58,7 @@ public class IndexBatchTransactionApplier extends BatchTransactionApplier.Adapte
 {
     private final IndexingService indexingService;
     private final WorkSync<Supplier<LabelScanWriter>,LabelUpdateWork> labelScanStoreSync;
-    private final WorkSync<IndexingService,IndexUpdatesWork> indexUpdatesSync;
+    private final WorkSync<IndexingUpdateService,IndexUpdatesWork> indexUpdatesSync;
     private final SingleTransactionApplier transactionApplier;
     private final PropertyPhysicalToLogicalConverter indexUpdateConverter;
 
@@ -67,8 +67,8 @@ public class IndexBatchTransactionApplier extends BatchTransactionApplier.Adapte
 
     public IndexBatchTransactionApplier( IndexingService indexingService,
             WorkSync<Supplier<LabelScanWriter>,LabelUpdateWork> labelScanStoreSync,
-            WorkSync<IndexingService,IndexUpdatesWork> indexUpdatesSync,
-            NodeStore nodeStore, PropertyLoader propertyLoader,
+            WorkSync<IndexingUpdateService,IndexUpdatesWork> indexUpdatesSync,
+            NodeStore nodeStore,
             PropertyPhysicalToLogicalConverter indexUpdateConverter,
             TransactionApplicationMode mode )
     {
@@ -76,7 +76,7 @@ public class IndexBatchTransactionApplier extends BatchTransactionApplier.Adapte
         this.labelScanStoreSync = labelScanStoreSync;
         this.indexUpdatesSync = indexUpdatesSync;
         this.indexUpdateConverter = indexUpdateConverter;
-        this.transactionApplier = new SingleTransactionApplier( nodeStore, propertyLoader, mode );
+        this.transactionApplier = new SingleTransactionApplier( nodeStore, mode );
     }
 
     @Override
@@ -129,15 +129,13 @@ public class IndexBatchTransactionApplier extends BatchTransactionApplier.Adapte
     private class SingleTransactionApplier extends TransactionApplier.Adapter
     {
         private final NodeStore nodeStore;
-        private final PropertyLoader propertyLoader;
         private final TransactionApplicationMode mode;
         private final NodePropertyCommandsExtractor indexUpdatesExtractor = new NodePropertyCommandsExtractor();
         private List<IndexRule> createdIndexes;
 
-        SingleTransactionApplier( NodeStore nodeStore, PropertyLoader propertyLoader, TransactionApplicationMode mode )
+        SingleTransactionApplier( NodeStore nodeStore, TransactionApplicationMode mode )
         {
             this.nodeStore = nodeStore;
-            this.propertyLoader = propertyLoader;
             this.mode = mode;
         }
 
@@ -173,7 +171,7 @@ public class IndexBatchTransactionApplier extends BatchTransactionApplier.Adapte
         private IndexUpdates createIndexUpdates()
         {
             return mode == TransactionApplicationMode.RECOVERY ? new RecoveryIndexUpdates() :
-                new OnlineIndexUpdates( nodeStore, propertyLoader, indexUpdateConverter );
+                new OnlineIndexUpdates( nodeStore, indexingService, indexUpdateConverter );
         }
 
         @Override
