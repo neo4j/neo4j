@@ -29,8 +29,8 @@ import org.neo4j.collection.primitive.PrimitiveLongSet;
 import org.neo4j.concurrent.Work;
 import org.neo4j.helpers.collection.NestingIterator;
 import org.neo4j.kernel.api.exceptions.index.IndexEntryConflictException;
+import org.neo4j.kernel.impl.api.index.IndexingUpdateService;
 import org.neo4j.kernel.impl.api.index.NodeUpdates;
-import org.neo4j.kernel.impl.api.index.IndexingService;
 import org.neo4j.kernel.impl.store.UnderlyingStorageException;
 import org.neo4j.kernel.impl.transaction.command.Command.NodeCommand;
 import org.neo4j.kernel.impl.transaction.command.Command.PropertyCommand;
@@ -39,7 +39,7 @@ import org.neo4j.kernel.impl.transaction.state.IndexUpdates;
 /**
  * Combines {@link IndexUpdates} from multiple transactions into one bigger job.
  */
-public class IndexUpdatesWork implements Work<IndexingService,IndexUpdatesWork>
+public class IndexUpdatesWork implements Work<IndexingUpdateService,IndexUpdatesWork>
 {
     private final List<IndexUpdates> updates = new ArrayList<>();
 
@@ -56,7 +56,7 @@ public class IndexUpdatesWork implements Work<IndexingService,IndexUpdatesWork>
     }
 
     @Override
-    public void apply( IndexingService material )
+    public void apply( IndexingUpdateService material )
     {
         try
         {

@@ -84,7 +84,7 @@ import static org.neo4j.kernel.impl.util.JobScheduler.Groups.indexPopulation;
  * If, however, it is {@link org.neo4j.kernel.api.index.InternalIndexState#ONLINE}, the index provider is required to
  * also guarantee that the index had been flushed to disk.
  */
-public class IndexingService extends LifecycleAdapter
+public class IndexingService extends LifecycleAdapter implements IndexingUpdateService
 {
     private final IndexSamplingController samplingController;
     private final IndexProxyCreator indexProxyCreator;
@@ -405,6 +405,7 @@ public class IndexingService extends LifecycleAdapter
      * @throws IOException potentially thrown from index updating.
      * @throws IndexEntryConflictException potentially thrown from index updating.
      */
+    @Override
     public void apply( IndexUpdates updates ) throws IOException, IndexEntryConflictException
     {
         if ( state == State.NOT_STARTED )
@@ -438,6 +439,12 @@ public class IndexingService extends LifecycleAdapter
                 }
             }
         }
+    }
+
+    @Override
+    public void loadAdditionalProperties( NodeUpdates nodeUpdates )
+    {
+        nodeUpdates.loadAdditionalProperties( indexMapRef.getAllIndexProxies(), storeView );
     }
 
     /**

@@ -34,6 +34,7 @@ import org.neo4j.kernel.api.labelscan.NodeLabelUpdate;
 import org.neo4j.kernel.impl.api.BatchTransactionApplier;
 import org.neo4j.kernel.impl.api.TransactionApplier;
 import org.neo4j.kernel.impl.api.index.IndexingService;
+import org.neo4j.kernel.impl.api.index.IndexingUpdateService;
 import org.neo4j.kernel.impl.api.index.NodePropertyCommandsExtractor;
 import org.neo4j.kernel.impl.api.index.PropertyPhysicalToLogicalConverter;
 import org.neo4j.kernel.impl.store.NodeLabels;
@@ -58,7 +59,7 @@ public class IndexBatchTransactionApplier extends BatchTransactionApplier.Adapte
 {
     private final IndexingService indexingService;
     private final WorkSync<Supplier<LabelScanWriter>,LabelUpdateWork> labelScanStoreSync;
-    private final WorkSync<IndexingService,IndexUpdatesWork> indexUpdatesSync;
+    private final WorkSync<IndexingUpdateService,IndexUpdatesWork> indexUpdatesSync;
     private final SingleTransactionApplier transactionApplier;
     private final PropertyPhysicalToLogicalConverter indexUpdateConverter;
 
@@ -67,7 +68,7 @@ public class IndexBatchTransactionApplier extends BatchTransactionApplier.Adapte
 
     public IndexBatchTransactionApplier( IndexingService indexingService,
             WorkSync<Supplier<LabelScanWriter>,LabelUpdateWork> labelScanStoreSync,
-            WorkSync<IndexingService,IndexUpdatesWork> indexUpdatesSync,
+            WorkSync<IndexingUpdateService,IndexUpdatesWork> indexUpdatesSync,
             NodeStore nodeStore, PropertyLoader propertyLoader,
             PropertyPhysicalToLogicalConverter indexUpdateConverter,
             TransactionApplicationMode mode )

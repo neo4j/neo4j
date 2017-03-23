@@ -189,6 +189,25 @@ public class NodeUpdates implements PropertyLoader.PropertyLoadSink
         return gatherUpdatesForPotentials( potentiallyRelevant );
     }
 
+    public <INDEX_KEY extends LabelSchemaSupplier> void loadAdditionalProperties(
+            Iterable<INDEX_KEY> indexKeys, PropertyLoader propertyLoader )
+    {
+        PrimitiveIntSet additionalPropertiesToLoad = Primitive.intSet();
+
+        for ( INDEX_KEY indexKey : indexKeys )
+        {
+            if ( atLeastOneRelevantChange( indexKey ) )
+            {
+                gatherPropsToLoad( indexKey.schema(), additionalPropertiesToLoad );
+            }
+        }
+
+        if ( !additionalPropertiesToLoad.isEmpty() )
+        {
+            loadProperties( propertyLoader, additionalPropertiesToLoad );
+        }
+    }
+
     private <INDEX_KEY extends LabelSchemaSupplier> Iterable<IndexEntryUpdate<INDEX_KEY>> gatherUpdatesForPotentials(
             Iterable<INDEX_KEY> potentiallyRelevant )
     {
