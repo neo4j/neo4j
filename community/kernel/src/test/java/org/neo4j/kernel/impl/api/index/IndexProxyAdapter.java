@@ -26,6 +26,7 @@ import org.neo4j.graphdb.ResourceIterator;
 import org.neo4j.kernel.api.index.IndexUpdater;
 import org.neo4j.kernel.api.index.InternalIndexState;
 import org.neo4j.kernel.api.index.SchemaIndexProvider;
+import org.neo4j.kernel.api.schema_new.LabelSchemaDescriptor;
 import org.neo4j.kernel.api.schema_new.index.NewIndexDescriptor;
 import org.neo4j.kernel.impl.api.index.updater.SwallowingIndexUpdater;
 import org.neo4j.storageengine.api.schema.IndexReader;
@@ -77,6 +78,12 @@ public class IndexProxyAdapter implements IndexProxy
 
     @Override
     public NewIndexDescriptor getDescriptor()
+    {
+        return null;
+    }
+
+    @Override
+    public LabelSchemaDescriptor schema()
     {
         return null;
     }
