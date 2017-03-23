@@ -22,6 +22,8 @@ package org.neo4j.causalclustering.load_balancing;
 import java.util.List;
 import java.util.Map;
 
+import org.neo4j.kernel.api.exceptions.ProcedureException;
+
 public interface LoadBalancingProcessor
 {
     /**
@@ -31,7 +33,7 @@ public interface LoadBalancingProcessor
      * @param context The client supplied context.
      * @return The result of invoking the procedure.
      */
-    Result run( Map<String,String> context );
+    Result run( Map<String,String> context ) throws ProcedureException;
 
     interface Result
     {

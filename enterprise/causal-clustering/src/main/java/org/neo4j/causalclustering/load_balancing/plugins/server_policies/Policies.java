@@ -23,6 +23,8 @@ import java.util.HashMap;
 import java.util.Map;
 
 import org.neo4j.causalclustering.load_balancing.filters.IdentityFilter;
+import org.neo4j.kernel.api.exceptions.ProcedureException;
+import org.neo4j.kernel.api.exceptions.Status;
 import org.neo4j.logging.Log;
 
 import static java.lang.String.format;
@@ -31,7 +33,7 @@ public class Policies
 {
     public static final String POLICY_KEY = "load_balancing.policy"; // TODO: move somewhere (driver support package?)
     static final String DEFAULT_POLICY_NAME = "default";
-    static final Policy DEFAULT_POLICY = new FilteringPolicy( IdentityFilter.as() );
+    static final Policy DEFAULT_POLICY = new FilteringPolicy( IdentityFilter.as() ); // the default default
 
     private final Map<String,Policy> policies = new HashMap<>();
 
@@ -51,21 +53,29 @@ public class Policies
         }
     }
 
-    Policy selectFor( Map<String,String> context )
+    Policy selectFor( Map<String,String> context ) throws ProcedureException
     {
         String policyName = context.get( POLICY_KEY );
-        policyName = (policyName != null) ? policyName : DEFAULT_POLICY_NAME;
 
-        Policy selectedPolicy = policies.get( policyName );
-
-        if ( selectedPolicy == null )
+        if ( policyName == null )
         {
-            log.warn( format( "Policy definition for '%s' could not be found. Will use built-in default instead.", policyName ) );
-            return DEFAULT_POLICY;
+            return defaultPolicy();
         }
         else
         {
+            Policy selectedPolicy = policies.get( policyName );
+            if ( selectedPolicy == null )
+            {
+                throw new ProcedureException( Status.Procedure.ProcedureCallFailed,
+                        format( "Policy definition for '%s' could not be found.", policyName ) );
+            }
             return selectedPolicy;
         }
+    }
+
+    private Policy defaultPolicy()
+    {
+        Policy registeredDefault = policies.get( DEFAULT_POLICY_NAME );
+        return registeredDefault != null ? registeredDefault : DEFAULT_POLICY;
     }
 }

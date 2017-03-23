@@ -26,11 +26,14 @@ import java.util.UUID;
 
 import org.neo4j.causalclustering.identity.MemberId;
 import org.neo4j.helpers.AdvertisedSocketAddress;
+import org.neo4j.kernel.api.exceptions.ProcedureException;
+import org.neo4j.kernel.api.exceptions.Status;
 import org.neo4j.logging.Log;
 
 import static java.util.Collections.emptyMap;
 import static org.junit.Assert.assertEquals;
 import static org.junit.Assert.assertNotEquals;
+import static org.junit.Assert.fail;
 import static org.mockito.Mockito.mock;
 import static org.neo4j.helpers.collection.Iterators.asSet;
 import static org.neo4j.helpers.collection.MapUtil.stringMap;
@@ -60,23 +63,40 @@ public class PoliciesTest
     }
 
     @Test
-    public void shouldSupplyDefaultUnfilteredPolicyForUnknownPolicyName() throws Exception
+    public void shouldThrowExceptionOnUnknownPolicyName() throws Exception
     {
         // given
         Policies policies = new Policies( log );
 
-        // when
-        Policy policy = policies.selectFor( stringMap( Policies.POLICY_KEY, "unknown-policy" ) );
-        Set<ServerInfo> input = asSet(
-                new ServerInfo( new AdvertisedSocketAddress( "bolt", 1 ), new MemberId( UUID.randomUUID() ), asSet( "groupA" ) ),
-                new ServerInfo( new AdvertisedSocketAddress( "bolt", 2 ), new MemberId( UUID.randomUUID() ), asSet( "groupB" ) )
-        );
+        try
+        {
+            // when
+            policies.selectFor( stringMap( Policies.POLICY_KEY, "unknown-policy" ) );
+            fail();
+        }
+        catch ( ProcedureException e )
+        {
+            // then
+            assertEquals( Status.Procedure.ProcedureCallFailed, e.status() );
+        }
+    }
 
-        Set<ServerInfo> output = policy.apply( input );
+    @Test
+    public void shouldThrowExceptionOnSelectionOfUnregisteredDefault() throws Exception
+    {
+        Policies policies = new Policies( log );
 
-        // then
-        assertEquals( input, output );
-        assertEquals( Policies.DEFAULT_POLICY, policy );
+        try
+        {
+            // when
+            policies.selectFor( stringMap( Policies.POLICY_KEY, Policies.DEFAULT_POLICY_NAME ) );
+            fail();
+        }
+        catch ( ProcedureException e )
+        {
+            // then
+            assertEquals( Status.Procedure.ProcedureCallFailed, e.status() );
+        }
     }
 
     @Test
