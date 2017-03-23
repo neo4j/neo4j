@@ -69,15 +69,18 @@ case class DeleteExpression(expression: Expression, forced: Boolean) extends Mut
 trait MergePattern {
   self : MutatingPattern =>
   def matchGraph: QueryGraph
+  def exclusiveLocking: Boolean
 }
 
 case class MergeNodePattern(createNodePattern: CreateNodePattern, matchGraph: QueryGraph, onCreate: Seq[SetMutatingPattern],
-                            onMatch: Seq[SetMutatingPattern]) extends MutatingPattern with MergePattern {
+                            onMatch: Seq[SetMutatingPattern], exclusiveLocking: Boolean) extends MutatingPattern with MergePattern {
   override def coveredIds = matchGraph.allCoveredIds
 }
 
 case class MergeRelationshipPattern(createNodePatterns: Seq[CreateNodePattern], createRelPatterns: Seq[CreateRelationshipPattern],
-                                    matchGraph: QueryGraph, onCreate: Seq[SetMutatingPattern], onMatch: Seq[SetMutatingPattern]) extends MutatingPattern with MergePattern {
+                                    matchGraph: QueryGraph, onCreate: Seq[SetMutatingPattern],
+                                    onMatch: Seq[SetMutatingPattern], exclusiveLocking: Boolean)
+  extends MutatingPattern with MergePattern {
   override def coveredIds = matchGraph.allCoveredIds
 }
 

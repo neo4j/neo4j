@@ -295,7 +295,7 @@ object ClauseConverters {
 
         val queryGraph = QueryGraph.empty
           .withArgumentIds(matchGraph.argumentIds)
-          .addMutatingPatterns(MergeNodePattern(createNodePattern, matchGraph, onCreate, onMatch))
+          .addMutatingPatterns(MergeNodePattern(createNodePattern, matchGraph, onCreate, onMatch, clause.exclusive))
 
         acc
           .withHorizon(PassthroughAllHorizon())
@@ -342,7 +342,7 @@ object ClauseConverters {
 
         val queryGraph = QueryGraph.empty
           .withArgumentIds(matchGraph.argumentIds)
-          .addMutatingPatterns(MergeRelationshipPattern(nodesToCreate, rels, matchGraph, onCreate, onMatch))
+          .addMutatingPatterns(MergeRelationshipPattern(nodesToCreate, rels, matchGraph, onCreate, onMatch, clause.exclusive))
 
         acc.
           withHorizon(PassthroughAllHorizon()).

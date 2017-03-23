@@ -179,7 +179,7 @@ trait UpdateGraph {
   def createsNodes: Boolean = mutatingPatterns.exists {
     case _: CreateNodePattern => true
     case _: MergeNodePattern => true
-    case MergeRelationshipPattern(nodesToCreate, _, _, _, _) => nodesToCreate.nonEmpty
+    case m:MergeRelationshipPattern  => m.createNodePatterns.nonEmpty
     case _ => false
   }
 
@@ -251,9 +251,9 @@ trait UpdateGraph {
       patterns match {
         case Nil => acc
         case SetLabelPattern(_, labels) :: tl => toLabelPattern(tl, acc ++ labels)
-        case MergeNodePattern(_, _, onCreate, onMatch) :: tl =>
+        case MergeNodePattern(_, _, onCreate, onMatch, _) :: tl =>
           toLabelPattern(tl, acc ++ extractLabels(onCreate) ++ extractLabels(onMatch))
-        case MergeRelationshipPattern(_, _, _, onCreate, onMatch) :: tl =>
+        case MergeRelationshipPattern(_, _, _, onCreate, onMatch, _) :: tl =>
           toLabelPattern(tl, acc ++ extractLabels(onCreate) ++ extractLabels(onMatch))
         case hd :: tl => toLabelPattern(tl, acc)
       }
@@ -318,9 +318,9 @@ trait UpdateGraph {
         case Nil => acc
         case SetNodePropertiesFromMapPattern(_, expression, _) :: tl => CreatesPropertyKeys(expression)
         case SetNodePropertyPattern(_, key, _) :: tl => toNodePropertyPattern(tl, acc + CreatesKnownPropertyKeys(key))
-        case MergeNodePattern(_, _, onCreate, onMatch) :: tl =>
+        case MergeNodePattern(_, _, onCreate, onMatch, _) :: tl =>
           toNodePropertyPattern(tl, acc + extractPropertyKey(onCreate) + extractPropertyKey(onMatch))
-        case MergeRelationshipPattern(_, _, _, onCreate, onMatch) :: tl =>
+        case MergeRelationshipPattern(_, _, _, onCreate, onMatch, _) :: tl =>
           toNodePropertyPattern(tl, acc + extractPropertyKey(onCreate) + extractPropertyKey(onMatch))
         case hd :: tl => toNodePropertyPattern(tl, acc)
       }
@@ -349,9 +349,9 @@ trait UpdateGraph {
         case SetRelationshipPropertiesFromMapPattern(_, expression, _) :: tl => CreatesPropertyKeys(expression)
         case SetRelationshipPropertyPattern(_, key, _) :: tl =>
           toRelPropertyPattern(tl, acc + CreatesKnownPropertyKeys(key))
-        case MergeNodePattern(_, _, onCreate, onMatch) :: tl =>
+        case MergeNodePattern(_, _, onCreate, onMatch, _) :: tl =>
           toRelPropertyPattern(tl, acc + extractPropertyKey(onCreate) + extractPropertyKey(onMatch))
-        case MergeRelationshipPattern(_, _, _, onCreate, onMatch) :: tl =>
+        case MergeRelationshipPattern(_, _, _, onCreate, onMatch, _) :: tl =>
           toRelPropertyPattern(tl, acc + extractPropertyKey(onCreate) + extractPropertyKey(onMatch))
         case hd :: tl => toRelPropertyPattern(tl, acc)
       }

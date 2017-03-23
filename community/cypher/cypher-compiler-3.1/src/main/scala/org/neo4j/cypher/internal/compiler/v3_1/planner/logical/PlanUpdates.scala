@@ -73,7 +73,7 @@ case object PlanUpdates
       //MERGE ()
       case p: MergeNodePattern =>
         val mergePlan = planMerge(source, p.matchGraph, Seq(p.createNodePattern), Seq.empty, p.onCreate,
-          p.onMatch, first)
+          p.onMatch, first, p.exclusiveLocking)
         //we have to force the plan to solve what we actually solve
         val solved = context.logicalPlanProducer.estimatePlannerQuery(
           source.solved.amendQueryGraph(u => u.addMutatingPatterns(p)))
@@ -82,7 +82,7 @@ case object PlanUpdates
       //MERGE (a)-[:T]->(b)
       case p: MergeRelationshipPattern =>
         val mergePlan = planMerge(source, p.matchGraph, p.createNodePatterns, p.createRelPatterns, p.onCreate,
-          p.onMatch, first)
+          p.onMatch, first, p.exclusiveLocking)
         //we have to force the plan to solve what we actually solve
         val solved = context.logicalPlanProducer.estimatePlannerQuery(
           source.solved.amendQueryGraph(u => u.addMutatingPatterns(p)))
@@ -154,7 +154,8 @@ case object PlanUpdates
    */
   def planMerge(source: LogicalPlan, matchGraph: QueryGraph, createNodePatterns: Seq[CreateNodePattern],
                 createRelationshipPatterns: Seq[CreateRelationshipPattern], onCreatePatterns: Seq[SetMutatingPattern],
-                onMatchPatterns: Seq[SetMutatingPattern], first: Boolean)(implicit context: LogicalPlanningContext): LogicalPlan = {
+                onMatchPatterns: Seq[SetMutatingPattern], first: Boolean, exclusiveLocking: Boolean)
+               (implicit context: LogicalPlanningContext): LogicalPlan = {
 
     val producer: LogicalPlanProducer = context.logicalPlanProducer
 
@@ -167,7 +168,8 @@ case object PlanUpdates
 
     val ids: Seq[IdName] = createNodePatterns.map(_.nodeName) ++ createRelationshipPatterns.map(_.relName)
 
-    val mergeMatch = mergeMatchPart(source, matchGraph, producer, createNodePatterns, createRelationshipPatterns, innerContext, ids)
+    val mergeMatch = mergeMatchPart(source, matchGraph, producer, createNodePatterns, createRelationshipPatterns,
+      innerContext, ids, exclusiveLocking)
 
     //            condApply
     //             /   \
@@ -208,12 +210,32 @@ case object PlanUpdates
                              createNodePatterns: Seq[CreateNodePattern],
                              createRelationshipPatterns: Seq[CreateRelationshipPattern],
                              context: LogicalPlanningContext,
-                             ids: Seq[IdName]): LogicalPlan = {
+                             ids: Seq[IdName],
+                             exclusiveLocking: Boolean): LogicalPlan = {
     def mergeRead(ctx: LogicalPlanningContext) = {
       val mergeReadPart = ctx.strategy.plan(matchGraph)(ctx)
       if (mergeReadPart.solved.queryGraph != matchGraph)
         throw new CantHandleQueryException(s"The planner was unable to successfully plan the MERGE read:\n${mergeReadPart.solved.queryGraph}\n not equal to \n$matchGraph")
       producer.planOptional(mergeReadPart, matchGraph.argumentIds)(ctx)
+    }
+
+    // If we are MERGEing on relationships, we need to lock nodes before matching again. Otherwise, we are done
+    val nodesToLock = matchGraph.patternNodes intersect matchGraph.argumentIds
+
+    def addLockToPlan(plan: LogicalPlan): LogicalPlan = {
+      val lockThese = nodesToLock intersect plan.availableSymbols
+      if (lockThese.nonEmpty)
+        LockNodes(plan, lockThese)(plan.solved)
+      else
+        plan
+    }
+
+    val lockingContext = context.copy(leafPlanUpdater = addLockToPlan)
+
+    val firstContext = if (exclusiveLocking && nodesToLock.nonEmpty) {
+      lockingContext
+    } else {
+      context
     }
 
     //        apply
@@ -223,23 +245,9 @@ case object PlanUpdates
     // source  mergeReadPart
     //                \
     //                arg
-    val matchOrNull = producer.planApply(source, mergeRead(context))(context)
+    val matchOrNull = producer.planApply(source, mergeRead(firstContext))(context)
 
-    // If we are MERGEing on relationships, we need to lock nodes before matching again. Otherwise, we are done
-    val nodesToLock = matchGraph.patternNodes intersect matchGraph.argumentIds
-
-    if (nodesToLock.nonEmpty) {
-
-      def addLockToPlan(plan: LogicalPlan): LogicalPlan = {
-        val lockThese = nodesToLock intersect plan.availableSymbols
-        if (lockThese.nonEmpty)
-          LockNodes(plan, lockThese)(plan.solved)
-        else
-          plan
-      }
-
-      val lockingContext = context.copy(leafPlanUpdater = addLockToPlan)
-
+    if (nodesToLock.nonEmpty && !exclusiveLocking) {
       //        antiCondApply
       //        /   \
       //       /  optional
