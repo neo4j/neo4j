@@ -409,11 +409,13 @@ public class NeoStoreDataSource implements Lifecycle, IndexProviders
 
         this.commitProcessFactory = commitProcessFactory;
         this.pageCache = pageCache;
+        this.monitors.addMonitorListener( new LoggingLogFileMonitor( msgLog ) );
     }
 
     @Override
     public void init()
-    {   // We do our own internal life management:
+    {
+        // We do our own internal life management:
         // start() does life.init() and life.start(),
         // stop() does life.stop() and life.shutdown().
     }
@@ -431,10 +433,6 @@ public class NeoStoreDataSource implements Lifecycle, IndexProviders
         dependencies.satisfyDependency( lockService );
         dependencies.satisfyDependency( indexConfigStore );
         life.add( indexConfigStore );
-
-        // Monitor listeners
-        LoggingLogFileMonitor loggingLogMonitor = new LoggingLogFileMonitor( msgLog );
-        monitors.addMonitorListener( loggingLogMonitor );
 
         life.add( new Delegate( Lifecycles.multiple( indexProviders.values() ) ) );
 
