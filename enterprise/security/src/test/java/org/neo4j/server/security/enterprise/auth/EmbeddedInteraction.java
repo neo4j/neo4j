@@ -185,8 +185,8 @@ public class EmbeddedInteraction implements NeoInteractionLevel<EnterpriseSecuri
     }
 
     @Override
-    public String getConnectionDetails()
+    public String getConnectionProtocol()
     {
-        return "embedded-session";
+        return null;
     }
 }

@@ -42,7 +42,7 @@ object ResolvedCall {
   }
 
   private def signatureResults(signature: ProcedureSignature, position: InputPosition): IndexedSeq[ProcedureResultItem] =
-    signature.outputSignature.getOrElse(Seq.empty).map {
+    signature.outputSignature.getOrElse(Seq.empty).filter(!_.deprecated).map {
       field => ProcedureResultItem(Variable(field.name)(position))(position)
   }.toIndexedSeq
 }
