@@ -289,7 +289,8 @@ public class TestLuceneIndex extends AbstractLuceneIndexTest
         try ( Transaction transaction = graphDb.beginTx() )
         {
             ResourceIterator<Node> nodes = graphDb.findNodes( heroes );
-            nodes.stream().forEach( node -> {
+            nodes.stream().forEach( node ->
+            {
                 node.setProperty( nameProperty, "junior " + node.getProperty( nameProperty )  );
                 index.remove( node, nameProperty );
                 index.add( node, nameProperty,  node.getProperty( nameProperty ));
@@ -2270,7 +2271,8 @@ public class TestLuceneIndex extends AbstractLuceneIndexTest
         try ( Transaction transaction = graphDb.beginTx() )
         {
             ResourceIterator<Node> nodes = graphDb.findNodes( label );
-            nodes.stream().forEach( node -> {
+            nodes.stream().forEach( node ->
+            {
                 node.setProperty( numericProperty, (Integer) node.getProperty( numericProperty ) * 2 );
                 index.remove( node, numericProperty );
                 index.add( node, numericProperty,  new ValueContext( node.getProperty( numericProperty )).indexNumeric() );

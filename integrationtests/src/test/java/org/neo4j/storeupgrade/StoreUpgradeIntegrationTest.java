@@ -358,7 +358,7 @@ public class StoreUpgradeIntegrationTest
             File dir = store.prepareDirectory( testDir.graphDbDir() );
 
             // remove id files
-            File[] idFiles = dir.listFiles( ( dir1, name ) -> { return name.endsWith( ".id" ); } );
+            File[] idFiles = dir.listFiles( ( dir1, name ) -> name.endsWith( ".id" ) );
 
             for ( File idFile : idFiles )
             {

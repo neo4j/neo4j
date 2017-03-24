@@ -227,7 +227,8 @@ public class PhysicalLogFileTest
 
         // WHEN/THEN
         final AtomicBoolean called = new AtomicBoolean();
-        logFile.accept( ( position, channel ) -> {
+        logFile.accept( ( position, channel ) ->
+        {
             for ( int i = 0; i < 5; i++ )
             {
                 assertEquals( (byte)i, channel.get() );

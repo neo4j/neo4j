@@ -86,9 +86,9 @@ import static org.neo4j.procedure.Mode.READ;
 import static org.neo4j.procedure.Mode.WRITE;
 import static org.neo4j.server.security.enterprise.auth.plugin.api.PredefinedRoles.ADMIN;
 import static org.neo4j.server.security.enterprise.auth.plugin.api.PredefinedRoles.ARCHITECT;
+import static org.neo4j.server.security.enterprise.auth.plugin.api.PredefinedRoles.EDITOR;
 import static org.neo4j.server.security.enterprise.auth.plugin.api.PredefinedRoles.PUBLISHER;
 import static org.neo4j.server.security.enterprise.auth.plugin.api.PredefinedRoles.READER;
-import static org.neo4j.server.security.enterprise.auth.plugin.api.PredefinedRoles.EDITOR;
 
 public abstract class ProcedureInteractionTestBase<S>
 {
@@ -208,7 +208,8 @@ public abstract class ProcedureInteractionTestBase<S>
 
     void testSuccessfulRead( S subject, int count )
     {
-        assertSuccess( subject, "MATCH (n) RETURN count(n) as count", r -> {
+        assertSuccess( subject, "MATCH (n) RETURN count(n) as count", r ->
+        {
             List<Object> result = r.stream().map( s -> s.get( "count" ) ).collect( toList() );
             assertThat( result.size(), equalTo( 1 ) );
             assertThat( String.valueOf( result.get( 0 ) ), equalTo( String.valueOf( count ) ) );
@@ -740,7 +741,8 @@ public abstract class ProcedureInteractionTestBase<S>
 
         private void startWriteThread()
         {
-            new Thread( () -> {
+            new Thread( () ->
+            {
                 doubleLatch.start();
                 try ( Transaction tx = db.beginTx() )
                 {

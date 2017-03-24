@@ -46,9 +46,9 @@ import static org.neo4j.server.security.enterprise.auth.InternalFlatFileRealm.IS
 import static org.neo4j.server.security.enterprise.auth.ProcedureInteractionTestBase.ClassWithProcedures.exceptionsInProcedure;
 import static org.neo4j.server.security.enterprise.auth.plugin.api.PredefinedRoles.ADMIN;
 import static org.neo4j.server.security.enterprise.auth.plugin.api.PredefinedRoles.ARCHITECT;
+import static org.neo4j.server.security.enterprise.auth.plugin.api.PredefinedRoles.EDITOR;
 import static org.neo4j.server.security.enterprise.auth.plugin.api.PredefinedRoles.PUBLISHER;
 import static org.neo4j.server.security.enterprise.auth.plugin.api.PredefinedRoles.READER;
-import static org.neo4j.server.security.enterprise.auth.plugin.api.PredefinedRoles.EDITOR;
 
 public abstract class AuthProceduresInteractionTestBase<S> extends ProcedureInteractionTestBase<S>
 {
@@ -59,8 +59,10 @@ public abstract class AuthProceduresInteractionTestBase<S> extends ProcedureInte
     @Test
     public void shouldHaveDescriptionsOnAllSecurityProcedures() throws Throwable
     {
-        assertSuccess( readSubject, "CALL dbms.procedures", r -> {
-            Stream<Map<String, Object>> securityProcedures = r.stream().filter( s -> {
+        assertSuccess( readSubject, "CALL dbms.procedures", r ->
+        {
+            Stream<Map<String, Object>> securityProcedures = r.stream().filter( s ->
+            {
                 String name = s.get( "name" ).toString();
                 String description = s.get( "description" ).toString();
                 // TODO: remove filter for Transaction and Connection once those procedures are removed

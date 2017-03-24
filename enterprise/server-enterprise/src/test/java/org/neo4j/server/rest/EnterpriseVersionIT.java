@@ -52,7 +52,8 @@ public abstract class EnterpriseVersionIT extends ExclusiveServerTestBase
                 .withClock(clock)
                 .build();
 
-        suppressAll().call((Callable<Void>) () -> {
+        suppressAll().call((Callable<Void>) () ->
+        {
             server.start();
             return null;
         });
@@ -62,7 +63,8 @@ public abstract class EnterpriseVersionIT extends ExclusiveServerTestBase
     @AfterClass
     public static void stopServer() throws Exception
     {
-        suppressAll().call((Callable<Void>) () -> {
+        suppressAll().call((Callable<Void>) () ->
+        {
             server.stop();
             return null;
         });

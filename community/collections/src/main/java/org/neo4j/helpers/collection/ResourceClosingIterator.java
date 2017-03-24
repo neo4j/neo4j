@@ -29,8 +29,8 @@ public abstract class ResourceClosingIterator<T, V> implements ResourceIterator<
 {
     public static <T> ResourceIterator<T> newResourceIterator( Resource resource, Iterator<T> iterator )
     {
-        return new ResourceClosingIterator<T, T>( resource, iterator  ) {
-
+        return new ResourceClosingIterator<T,T>( resource, iterator )
+        {
             @Override
             public T map( T elem )
             {

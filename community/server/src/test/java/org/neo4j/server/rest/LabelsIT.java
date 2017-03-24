@@ -19,13 +19,13 @@
  */
 package org.neo4j.server.rest;
 
+import org.junit.Test;
+
 import java.io.UnsupportedEncodingException;
 import java.util.List;
 import java.util.Map;
 import java.util.Set;
 import java.util.function.Function;
-
-import org.junit.Test;
 
 import org.neo4j.graphdb.Node;
 import org.neo4j.helpers.collection.Iterables;
@@ -38,12 +38,10 @@ import org.neo4j.test.GraphDescription.NODE;
 import org.neo4j.test.GraphDescription.PROP;
 
 import static java.util.Arrays.asList;
-
 import static org.hamcrest.Matchers.not;
 import static org.junit.Assert.assertEquals;
 import static org.junit.Assert.assertThat;
 import static org.junit.Assert.assertTrue;
-
 import static org.neo4j.graphdb.Label.label;
 import static org.neo4j.helpers.collection.Iterables.map;
 import static org.neo4j.helpers.collection.Iterators.asSet;
@@ -285,7 +283,8 @@ public class LabelsIT extends AbstractRestFunctionalTestBase
 
     private <T> Function<Object, T> getProperty( final String propertyKey, final Class<T> propertyType )
     {
-        return from -> {
+        return from ->
+        {
             Map<?, ?> node = (Map<?, ?>) from;
             Map<?, ?> data1 = (Map<?, ?>) node.get( "data" );
             return propertyType.cast( data1.get( propertyKey ) );

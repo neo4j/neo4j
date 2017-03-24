@@ -430,7 +430,10 @@ public class TransactionHandleTest
         // given
         QueryExecutionEngine executionEngine = mock( QueryExecutionEngine.class );
         when( executionEngine.executeQuery( eq( "match (n) return n" ), eq( map() ), any( TransactionalContext.class ) ) ).thenAnswer(
-                invocationOnMock -> { throw new Exception("BOO"); } );
+                invocationOnMock ->
+                {
+                    throw new Exception( "BOO" );
+                } );
 
         TransactionRegistry registry = mock( TransactionRegistry.class );
         when( registry.begin( any( TransactionHandle.class ) ) ).thenReturn( 1337L );

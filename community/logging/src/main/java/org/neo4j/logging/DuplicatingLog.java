@@ -139,7 +139,8 @@ public class DuplicatingLog extends AbstractLog
         if ( !remaining.isEmpty() )
         {
             Log log = remaining.pop();
-            log.bulk( bulkLog -> {
+            log.bulk( bulkLog ->
+            {
                 bulkLogs.add( bulkLog );
                 bulk( remaining, bulkLogs, finalConsumer );
             } );

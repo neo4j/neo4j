@@ -31,7 +31,6 @@ import org.neo4j.test.rule.DatabaseRule;
 
 import static java.util.stream.Collectors.toList;
 import static org.junit.Assert.assertTrue;
-
 import static org.neo4j.graphdb.factory.GraphDatabaseSettings.label_index;
 import static org.neo4j.io.fs.FileUtils.deleteRecursively;
 
@@ -40,7 +39,8 @@ public class LuceneLabelScanStoreChaosIT extends LabelScanStoreChaosIT
     @Override
     protected DatabaseRule.RestartAction corruptTheLabelScanStoreIndex()
     {
-        return ( fs, storeDirectory ) -> {
+        return ( fs, storeDirectory ) ->
+        {
             int filesCorrupted = 0;
             List<File> partitionDirs = labelScanStoreIndexDirectories( storeDirectory );
             for ( File partitionDir : partitionDirs )

@@ -389,7 +389,8 @@ public class TestCommunication
         final String comExceptionMessage = "The ComException";
 
         MadeUpCommunicationInterface communication = mock( MadeUpCommunicationInterface.class,
-                (Answer<Response<?>>) ingored -> {
+                (Answer<Response<?>>) ingored ->
+                {
                     throw new ComException( comExceptionMessage );
                 } );
 

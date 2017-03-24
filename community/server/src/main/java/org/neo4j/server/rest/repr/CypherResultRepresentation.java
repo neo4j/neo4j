@@ -78,7 +78,8 @@ public class CypherResultRepresentation extends MappingRepresentation
             protected Representation underlyingObjectToObject(final Map<String, Object> row)
             {
                 return new ListRepresentation("row",
-                 new IterableWrapper<Representation,String>(columns) {
+                 new IterableWrapper<Representation,String>(columns)
+                 {
 
                      @Override
                      protected Representation underlyingObjectToObject(String column)

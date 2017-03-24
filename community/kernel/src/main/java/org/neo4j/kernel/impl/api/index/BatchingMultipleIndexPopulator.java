@@ -230,7 +230,8 @@ public class BatchingMultipleIndexPopulator extends MultipleIndexPopulator
     {
         activeTasks.incrementAndGet();
 
-        executor.execute( () -> {
+        executor.execute( () ->
+        {
             try
             {
                 population.populator.add( batch );

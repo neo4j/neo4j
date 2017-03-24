@@ -84,7 +84,8 @@ public class KernelTest
                         @Override
                         protected SchemaWriteGuard createSchemaWriteGuard()
                         {
-                            return () -> {
+                            return () ->
+                            {
                                 throw new InvalidTransactionTypeKernelException(
                                         "Creation or deletion of constraints is not possible while running in a HA cluster. " +
                                                 "In order to do that, please restart in non-HA mode and propagate the database copy" +

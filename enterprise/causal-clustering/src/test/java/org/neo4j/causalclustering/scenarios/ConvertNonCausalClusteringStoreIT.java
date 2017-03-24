@@ -88,7 +88,8 @@ public class ConvertNonCausalClusteringStoreIT
         cluster.start();
 
         // when
-        cluster.coreTx( (coreDB, tx) -> {
+        cluster.coreTx( (coreDB, tx) ->
+        {
             Node node = coreDB.createNode( label( "boo" ) );
             node.setProperty( "foobar", "baz_bat" );
             tx.success();

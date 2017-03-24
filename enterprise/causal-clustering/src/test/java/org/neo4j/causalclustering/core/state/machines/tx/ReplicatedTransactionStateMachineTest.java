@@ -93,7 +93,8 @@ public class ReplicatedTransactionStateMachineTest
 
         AtomicBoolean called = new AtomicBoolean();
         // when
-        stateMachine.applyCommand( tx, 0, result -> {
+        stateMachine.applyCommand( tx, 0, result ->
+        {
             // then
             called.set( true );
             try
@@ -135,7 +136,8 @@ public class ReplicatedTransactionStateMachineTest
         AtomicBoolean called = new AtomicBoolean();
 
         // when
-        stateMachine.applyCommand( tx, 0, result -> {
+        stateMachine.applyCommand( tx, 0, result ->
+        {
             // then
             called.set( true );
             try
@@ -157,7 +159,8 @@ public class ReplicatedTransactionStateMachineTest
         TransactionCommitProcess localCommitProcess = mock( TransactionCommitProcess.class );
         when( localCommitProcess.commit(
                 any( TransactionToApply.class), any( CommitEvent.class ), any( TransactionApplicationMode.class ) )
-        ).thenAnswer( invocation -> {
+        ).thenAnswer( invocation ->
+        {
             TransactionToApply txToApply = (TransactionToApply) invocation.getArguments()[0];
             txToApply.commitment( new FakeCommitment( txId, mock( TransactionIdStore.class ) ), txId );
             txToApply.commitment().publishAsCommitted();

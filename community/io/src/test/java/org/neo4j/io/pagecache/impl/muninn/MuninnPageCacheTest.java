@@ -240,7 +240,8 @@ public class MuninnPageCacheTest extends PageCacheTest<MuninnPageCache>
                 DefaultPageCursorTracerSupplier.INSTANCE );
         final PagedFile pagedFile = pageCache.map( file( "a" ), 8 );
 
-        Future<?> task = executor.submit( () -> {
+        Future<?> task = executor.submit( () ->
+        {
             try ( PageCursor cursor = pagedFile.io( 0, PF_SHARED_WRITE_LOCK ) )
             {
                 assertTrue( cursor.next() );

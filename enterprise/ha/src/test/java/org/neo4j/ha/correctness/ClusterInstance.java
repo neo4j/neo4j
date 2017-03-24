@@ -168,9 +168,8 @@ class ClusterInstance
 
     private Iterable<String> stateMachineStates()
     {
-        return Iterables.map( stateMachine -> {
-            return stateMachine.getState().toString();
-        }, server.getStateMachines().getStateMachines() );
+        return Iterables.map( stateMachine -> stateMachine.getState().toString(),
+                server.getStateMachines().getStateMachines() );
     }
 
     @Override

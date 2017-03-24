@@ -37,13 +37,13 @@ public interface MasterClient extends Master
     ProtocolVersion CURRENT = MasterClient320.PROTOCOL_VERSION;
 
     @Override
-    Response<Integer> createRelationshipType( RequestContext context, final String name );
+    Response<Integer> createRelationshipType( RequestContext context, String name );
 
     @Override
     Response<Void> newLockSession( RequestContext context );
 
     @Override
-    Response<Long> commit( RequestContext context, final TransactionRepresentation channel );
+    Response<Long> commit( RequestContext context, TransactionRepresentation channel );
 
     @Override
     Response<Void> pullUpdates( RequestContext context );
@@ -51,7 +51,7 @@ public interface MasterClient extends Master
     Response<Void> pullUpdates( RequestContext context, TxHandler txHandler );
 
     @Override
-    Response<Void> copyStore( RequestContext context, final StoreWriter writer );
+    Response<Void> copyStore( RequestContext context, StoreWriter writer );
 
     void setComExceptionHandler( ComExceptionHandler handler );
 

@@ -21,7 +21,11 @@ package org.neo4j.kernel.impl.store.counts.keys;
 
 public enum CountsKeyType
 {
-    EMPTY ( 0 ), ENTITY_NODE( 2 ), ENTITY_RELATIONSHIP( 3 ), INDEX_STATISTICS( 4 ), INDEX_SAMPLE( 5 );
+    EMPTY( 0 ),
+    ENTITY_NODE( 2 ),
+    ENTITY_RELATIONSHIP( 3 ),
+    INDEX_STATISTICS( 4 ),
+    INDEX_SAMPLE( 5 );
 
     public final byte code;
 

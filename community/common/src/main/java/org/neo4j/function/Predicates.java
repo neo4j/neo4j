@@ -73,7 +73,8 @@ public class Predicates
 
     public static <T> Predicate<T> all( final Iterable<Predicate<T>> predicates )
     {
-        return item -> {
+        return item ->
+        {
             for ( Predicate<T> predicate : predicates )
             {
                 if ( !predicate.test( item ) )
@@ -93,7 +94,8 @@ public class Predicates
 
     public static <T> Predicate<T> any( final Iterable<Predicate<T>> predicates )
     {
-        return item -> {
+        return item ->
+        {
             for ( Predicate<T> predicate : predicates )
             {
                 if ( predicate.test( item ) )
@@ -112,7 +114,8 @@ public class Predicates
 
     public static <T> Predicate<T> instanceOfAny( final Class... classes )
     {
-        return item -> {
+        return item ->
+        {
             if ( item != null )
             {
                 for ( Class clazz : classes )
@@ -249,7 +252,8 @@ public class Predicates
 
     public static <T> Predicate<T> in( final Iterable<T> allowed )
     {
-        return item -> {
+        return item ->
+        {
             for ( T allow : allowed )
             {
                 if ( allow.equals( item ) )

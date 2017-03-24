@@ -118,7 +118,8 @@ public class ClusterFormationIT
     {
         // given
         ExecutorService executorService = Executors.newSingleThreadExecutor();
-        executorService.submit( () -> {
+        executorService.submit( () ->
+        {
             CoreGraphDatabase leader = cluster.getDbWithRole( Role.LEADER ).database();
             try ( Transaction tx = leader.beginTx() )
             {

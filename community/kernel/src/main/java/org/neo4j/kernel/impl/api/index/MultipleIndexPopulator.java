@@ -139,7 +139,8 @@ public class MultipleIndexPopulator implements IndexPopulator
     @Override
     public void create()
     {
-        forEachPopulation( population -> {
+        forEachPopulation( population ->
+        {
             log.info( "Index population started: [%s]", population.indexUserDescription );
             population.populator.create();
         } );
@@ -504,7 +505,8 @@ public class MultipleIndexPopulator implements IndexPopulator
 
         private void flip() throws FlipFailedKernelException
         {
-            flipper.flip( () -> {
+            flipper.flip( () ->
+            {
                 populateFromQueueIfAvailable( Long.MAX_VALUE );
                 IndexSample sample = populator.sampleResult();
                 storeView.replaceIndexCounts( indexId, sample.uniqueValues(), sample.sampleSize(),

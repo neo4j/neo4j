@@ -59,7 +59,8 @@ class DumpSegmentedRaftLog
                 new RecoveryProtocol( fileSystem, fileNames, readerPool, marshal, logProvider );
         Segments segments = recoveryProtocol.run().segments;
 
-        segments.visit( (segment) -> {
+        segments.visit( (segment) ->
+        {
                 logsFound[0]++;
                 out.println( "=== " + segment.getFilename() + " ===" );
 

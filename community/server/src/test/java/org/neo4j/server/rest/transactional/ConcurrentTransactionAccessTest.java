@@ -60,12 +60,14 @@ public class ConcurrentTransactionAccessTest
         final DoubleLatch latch = new DoubleLatch();
 
         final StatementDeserializer statements = mock( StatementDeserializer.class );
-        when( statements.hasNext() ).thenAnswer( invocation -> {
+        when( statements.hasNext() ).thenAnswer( invocation ->
+        {
             latch.startAndWaitForAllToStartAndFinish();
             return false;
         } );
 
-        new Thread( () -> {
+        new Thread( () ->
+        {
             // start and block until finish
             transactionHandle.execute( statements, mock( ExecutionResultSerializer.class ), mock(
                     HttpServletRequest.class ) );

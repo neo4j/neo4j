@@ -19,14 +19,10 @@
  */
 package org.neo4j.desktop.ui;
 
-import java.awt.Component;
-import java.awt.FlowLayout;
-import java.awt.Frame;
+import java.awt.*;
 import java.io.File;
 import java.io.IOException;
-import javax.swing.BoxLayout;
-import javax.swing.JButton;
-import javax.swing.JDialog;
+import javax.swing.*;
 
 import org.neo4j.desktop.model.DesktopModel;
 
@@ -130,7 +126,8 @@ class SettingsDialog extends JDialog
 
     private JButton createCommandPromptButton()
     {
-        return Components.createTextButton( ellipsis( "Command Prompt" ), e -> {
+        return Components.createTextButton( ellipsis( "Command Prompt" ), e ->
+        {
             try
             {
                 model.launchCommandPrompt();

@@ -321,7 +321,8 @@ public abstract class PageCacheTest<T extends PageCache> extends PageCacheTestSu
 
         AtomicInteger callbackCounter = new AtomicInteger();
         AtomicInteger ioCounter = new AtomicInteger();
-        cache.flushAndForce( (previousStamp, recentlyCompletedIOs, swapper) -> {
+        cache.flushAndForce( ( previousStamp, recentlyCompletedIOs, swapper ) ->
+        {
             ioCounter.addAndGet( recentlyCompletedIOs );
             return callbackCounter.getAndIncrement();
         });
@@ -345,7 +346,8 @@ public abstract class PageCacheTest<T extends PageCache> extends PageCacheTestSu
 
         AtomicInteger callbackCounter = new AtomicInteger();
         AtomicInteger ioCounter = new AtomicInteger();
-        pf.flushAndForce( (previousStamp, recentlyCompletedIOs, swapper) -> {
+        pf.flushAndForce( ( previousStamp, recentlyCompletedIOs, swapper ) ->
+        {
             ioCounter.addAndGet( recentlyCompletedIOs );
             return callbackCounter.getAndIncrement();
         });
@@ -907,7 +909,8 @@ public abstract class PageCacheTest<T extends PageCache> extends PageCacheTestSu
         final PageCache cache = createStandardPageCache();
         final PagedFile pagedFile = cache.map( file( "a" ), filePageSize );
 
-        Runnable runnable = () -> {
+        Runnable runnable = () ->
+        {
             try ( PageCursor cursorA = pagedFile.io( 0, PF_SHARED_WRITE_LOCK | PF_NO_GROW ) )
             {
                 assertTrue( cursorA.next() );
@@ -1585,7 +1588,8 @@ public abstract class PageCacheTest<T extends PageCache> extends PageCacheTestSu
         }
 
         AtomicBoolean end = new AtomicBoolean( false );
-        Runnable writer = () -> {
+        Runnable writer = () ->
+        {
             while ( !end.get() )
             {
                 try ( PageCursor cursor = pagedFile.io( 0, PF_SHARED_WRITE_LOCK ) )
@@ -1859,7 +1863,8 @@ public abstract class PageCacheTest<T extends PageCache> extends PageCacheTestSu
         {
             assertTrue( cursor.next() );
 
-            executor.submit( () -> {
+            executor.submit( () ->
+            {
                 try ( PageCursor innerCursor = pf.io( 0, PF_SHARED_WRITE_LOCK ) )
                 {
                     assertTrue( innerCursor.next() );
@@ -1879,7 +1884,8 @@ public abstract class PageCacheTest<T extends PageCache> extends PageCacheTestSu
         {
             assertTrue( cursor.next() );
 
-            executor.submit( () -> {
+            executor.submit( () ->
+            {
                 try ( PageCursor innerCursor = pf.io( 0, PF_SHARED_READ_LOCK ) )
                 {
                     assertTrue( innerCursor.next() );
@@ -1904,7 +1910,8 @@ public abstract class PageCacheTest<T extends PageCache> extends PageCacheTestSu
             assertTrue( cursor.next() ); // Ensure that page 0 exists so the read cursor can get it
             assertTrue( cursor.next() ); // Then unlock it
 
-            Future<Object> read = executor.submit( () -> {
+            Future<Object> read = executor.submit( () ->
+            {
                 try ( PageCursor innerCursor = pf.io( 0, PF_SHARED_READ_LOCK ) )
                 {
                     assertTrue( innerCursor.next() );
@@ -1936,7 +1943,8 @@ public abstract class PageCacheTest<T extends PageCache> extends PageCacheTestSu
         {
             assertTrue( cursor.next() ); // Lock page 0
 
-            Future<Object> read = executor.submit( () -> {
+            Future<Object> read = executor.submit( () ->
+            {
                 try ( PageCursor innerCursor = pf.io( 0, PF_SHARED_READ_LOCK ) )
                 {
                     assertTrue( innerCursor.next() );
@@ -1961,12 +1969,14 @@ public abstract class PageCacheTest<T extends PageCache> extends PageCacheTestSu
         generateFileWithRecords( file( "a" ), recordCount, recordSize );
 
         final AtomicBoolean observedWrite = new AtomicBoolean();
-        FileSystemAbstraction fs = new DelegatingFileSystemAbstraction( this.fs ) {
+        FileSystemAbstraction fs = new DelegatingFileSystemAbstraction( this.fs )
+        {
             @Override
             public StoreChannel open( File fileName, String mode ) throws IOException
             {
                 StoreChannel channel = super.open( fileName, mode );
-                return new DelegatingStoreChannel( channel ) {
+                return new DelegatingStoreChannel( channel )
+                {
                     @Override
                     public int write( ByteBuffer src, long position ) throws IOException
                     {
@@ -3404,7 +3414,8 @@ public abstract class PageCacheTest<T extends PageCache> extends PageCacheTestSu
             }
         }
 
-        Runnable fillPagedFileB = () -> {
+        Runnable fillPagedFileB = () ->
+        {
             try ( PageCursor cursor = pagedFileB.io( 0, PF_SHARED_WRITE_LOCK ) )
             {
                 for ( int i = 0; i < maxPages * 30; i++ )

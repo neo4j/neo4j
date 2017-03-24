@@ -57,7 +57,6 @@ import org.neo4j.helpers.collection.PrefetchingResourceIterator;
 import org.neo4j.helpers.collection.ResourceClosingIterator;
 import org.neo4j.kernel.GraphDatabaseQueryService;
 import org.neo4j.kernel.api.KernelTransaction;
-import org.neo4j.kernel.api.exceptions.schema.ConstraintValidationException;
 import org.neo4j.kernel.api.ReadOperations;
 import org.neo4j.kernel.api.Statement;
 import org.neo4j.kernel.api.exceptions.EntityNotFoundException;
@@ -65,6 +64,7 @@ import org.neo4j.kernel.api.exceptions.InvalidTransactionTypeKernelException;
 import org.neo4j.kernel.api.exceptions.KernelException;
 import org.neo4j.kernel.api.exceptions.Status;
 import org.neo4j.kernel.api.exceptions.index.IndexNotFoundKernelException;
+import org.neo4j.kernel.api.exceptions.schema.ConstraintValidationException;
 import org.neo4j.kernel.api.exceptions.schema.SchemaKernelException;
 import org.neo4j.kernel.api.exceptions.schema.SchemaRuleNotFoundException;
 import org.neo4j.kernel.api.index.InternalIndexState;
@@ -235,7 +235,8 @@ public class GraphDatabaseFacade implements GraphDatabaseAPI
         this.relActions = new StandardRelationshipActions( statementSupplier, transactionSupplier, assertTransactionOpen, ( id ) -> new NodeProxy( nodeActions, id ), this );
         this.nodeActions = new StandardNodeActions( statementSupplier, transactionSupplier, assertTransactionOpen, relActions, this );
 
-        this.indexManager = Suppliers.lazySingleton( () -> {
+        this.indexManager = Suppliers.lazySingleton( () ->
+        {
             IndexProviderImpl idxProvider = new IndexProviderImpl( this, statementSupplier );
             AutoIndexerFacade<Node> nodeAutoIndexer = new AutoIndexerFacade<>(
                 () -> new ReadOnlyIndexFacade<>( idxProvider.getOrCreateNodeIndex( NODE_AUTO_INDEX, null ) ),
@@ -433,7 +434,8 @@ public class GraphDatabaseFacade implements GraphDatabaseAPI
     public ResourceIterable<Node> getAllNodes()
     {
         assertTransactionOpen();
-        return () -> {
+        return () ->
+        {
             Statement statement = spi.currentStatement();
             return map2nodes( statement.readOperations().nodesGetAll(), statement );
         };
@@ -443,7 +445,8 @@ public class GraphDatabaseFacade implements GraphDatabaseAPI
     public ResourceIterable<Relationship> getAllRelationships()
     {
         assertTransactionOpen();
-        return () -> {
+        return () ->
+        {
             final Statement statement = spi.currentStatement();
             final PrimitiveLongIterator ids = statement.readOperations().relationshipsGetAll();
             return new PrefetchingResourceIterator<Relationship>()

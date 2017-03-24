@@ -259,7 +259,8 @@ public class GraphDatabaseServiceExecuteTest
     private static Point makeFakePoint(double x, double y, final CRS crs)
     {
         final Coordinate coord = new Coordinate( x, y );
-        return new Point() {
+        return new Point()
+        {
 
             @Override
             public String getGeometryType()
@@ -284,7 +285,8 @@ public class GraphDatabaseServiceExecuteTest
     private static Geometry makeFakePointAsGeometry(double x, double y, final CRS crs)
     {
         final Coordinate coord = new Coordinate( x, y );
-        return new Geometry() {
+        return new Geometry()
+        {
 
             @Override
             public String getGeometryType()
@@ -309,7 +311,8 @@ public class GraphDatabaseServiceExecuteTest
     private static CRS makeWGS84()
     {
         // "WGS-84", 4326, "http://spatialreference.org/ref/epsg/4326/"
-        return new CRS() {
+        return new CRS()
+        {
             @Override
             public int getCode()
             {

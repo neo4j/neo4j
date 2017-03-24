@@ -80,7 +80,8 @@ public class IndexConstraintsTest
                 Executors.newFixedThreadPool( numThreads ) );
         for ( int i = 0; i < numThreads; i++ )
         {
-            ecs.submit( () -> {
+            ecs.submit( () ->
+            {
                 try ( Transaction tx = graphDb.beginTx() )
                 {
                     final Node node = graphDb.createNode();

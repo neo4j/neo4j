@@ -260,7 +260,8 @@ public class TransactionIT extends AbstractRestFunctionalTestBase
     {
         int nodes = 11;
         int batch = 2;
-        ServerTestUtils.withCSVFile( nodes, url -> {
+        ServerTestUtils.withCSVFile( nodes, url ->
+        {
             long nodesInDatabaseBeforeTransaction = countNodes();
             long txIdBefore = resolveDependency( TransactionIdStore.class ).getLastClosedTransactionId();
 
@@ -291,7 +292,8 @@ public class TransactionIT extends AbstractRestFunctionalTestBase
     {
         int nodes = 11;
         int batch = 2;
-        ServerTestUtils.withCSVFile( nodes, url -> {
+        ServerTestUtils.withCSVFile( nodes, url ->
+        {
             long nodesInDatabaseBeforeTransaction = countNodes();
             long txIdBefore = resolveDependency( TransactionIdStore.class ).getLastClosedTransactionId();
 
@@ -326,7 +328,8 @@ public class TransactionIT extends AbstractRestFunctionalTestBase
 
         int nodes = 11;
         int batch = 2;
-        ServerTestUtils.withCSVFile( nodes, url -> {
+        ServerTestUtils.withCSVFile( nodes, url ->
+        {
             long nodesInDatabaseBeforeTransaction = countNodes();
             long txIdBefore = resolveDependency( TransactionIdStore.class ).getLastClosedTransactionId();
 
@@ -352,7 +355,8 @@ public class TransactionIT extends AbstractRestFunctionalTestBase
     @Test
     public void begin_and_execute_periodic_commit_followed_by_another_statement_and_commit() throws Exception
     {
-        ServerTestUtils.withCSVFile( 1, url -> {
+        ServerTestUtils.withCSVFile( 1, url ->
+        {
             // begin and execute and commit
             Response response = http.POST(
                     "/db/data/transaction/commit",
@@ -382,7 +386,8 @@ public class TransactionIT extends AbstractRestFunctionalTestBase
     @Test
     public void begin_and_execute_multiple_periodic_commit_last_and_commit() throws Exception
     {
-        ServerTestUtils.withCSVFile( 1, url -> {
+        ServerTestUtils.withCSVFile( 1, url ->
+        {
             // begin and execute and commit
             Response response = http.POST(
                     "/db/data/transaction/commit",
@@ -398,7 +403,8 @@ public class TransactionIT extends AbstractRestFunctionalTestBase
     @Test
     public void begin__execute__execute_and_periodic_commit() throws Exception
     {
-        ServerTestUtils.withCSVFile( 1, url -> {
+        ServerTestUtils.withCSVFile( 1, url ->
+        {
             // begin
             Response begin = http.POST( "/db/data/transaction" );
 
@@ -417,7 +423,8 @@ public class TransactionIT extends AbstractRestFunctionalTestBase
     @Test
     public void begin_and_execute_periodic_commit__commit() throws Exception
     {
-        ServerTestUtils.withCSVFile( 1, url -> {
+        ServerTestUtils.withCSVFile( 1, url ->
+        {
             // begin and execute
             Response begin = http.POST(
                     "/db/data/transaction",
@@ -563,7 +570,8 @@ public class TransactionIT extends AbstractRestFunctionalTestBase
 
         final CountDownLatch latch = new CountDownLatch( 1 );
 
-        final Future<Response> executeFuture = Executors.newSingleThreadExecutor().submit( () -> {
+        final Future<Response> executeFuture = Executors.newSingleThreadExecutor().submit( () ->
+        {
             latch.countDown();
             Response response = http.POST( executeResource, quotedJson( "{ 'statements': [ { 'statement': '" +
                                                                         statement + "' } ] }" ) );
@@ -573,7 +581,8 @@ public class TransactionIT extends AbstractRestFunctionalTestBase
         } );
 
         // terminate
-        final Future<Response> interruptFuture = Executors.newSingleThreadExecutor().submit( () -> {
+        final Future<Response> interruptFuture = Executors.newSingleThreadExecutor().submit( () ->
+        {
             try
             {
                 latch.await();

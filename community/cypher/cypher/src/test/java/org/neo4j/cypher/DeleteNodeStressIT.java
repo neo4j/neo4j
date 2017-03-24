@@ -129,7 +129,8 @@ public class DeleteNodeStressIT
 
     private void executeInThread( final String query )
     {
-        executorService.execute( () -> {
+        executorService.execute( () ->
+        {
             Result execute = db.execute( query );
             try
             {

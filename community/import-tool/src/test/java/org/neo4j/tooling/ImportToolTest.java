@@ -678,7 +678,8 @@ public class ImportToolTest
 
         // THEN
         verifyData(
-                node -> {
+                node ->
+                {
                     if ( node.getId() < NODE_COUNT / 2 )
                     {
                         assertNodeHasLabels( node, firstLabels );
@@ -688,7 +689,8 @@ public class ImportToolTest
                         assertNodeHasLabels( node, secondLabels );
                     }
                 },
-                relationship -> {
+                relationship ->
+                {
                     if ( relationship.getId() < RELATIONSHIP_COUNT / 2 )
                     {
                         assertEquals( firstType, relationship.getType().name() );
@@ -1019,7 +1021,8 @@ public class ImportToolTest
                 "--relationships", relationshipData( true, config, nodeIds, TRUE, true ).getAbsolutePath() );
 
         // THEN
-        verifyData( node -> {
+        verifyData( node ->
+        {
             assertTrue( node.hasLabel( label1 ) );
             assertTrue( node.hasLabel( label2 ) );
         }, Validators.<Relationship>emptyValidator() );

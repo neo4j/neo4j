@@ -113,7 +113,8 @@ public class ArbiterBootstrapper implements Bootstrapper, AutoCloseable
     private static Config getConfig( Optional<File> configFile, Pair<String, String>... configOverrides )
     {
         Map<String, String> config = new HashMap<>();
-        configFile.ifPresent( (file) -> {
+        configFile.ifPresent( (file) ->
+        {
             try
             {
                 config.putAll( MapUtil.load( file ) );

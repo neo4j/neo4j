@@ -1172,7 +1172,8 @@ public abstract class BuiltInProceduresInteractionTestBase<S> extends ProcedureI
     @SuppressWarnings( {"rawtypes", "unchecked"} )
     private Function<Entry<String,Object>,Matcher<Entry<String,Object>>> entryMapper()
     {
-        return entry -> {
+        return entry ->
+        {
             Matcher keyMatcher = equalTo( entry.getKey() );
             Matcher valueMatcher = equalTo( entry.getValue() );
             return hasEntry( keyMatcher, valueMatcher );

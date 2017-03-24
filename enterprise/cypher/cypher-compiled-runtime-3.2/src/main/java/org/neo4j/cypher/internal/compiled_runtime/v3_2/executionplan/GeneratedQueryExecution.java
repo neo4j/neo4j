@@ -30,7 +30,7 @@ public interface GeneratedQueryExecution
 {
     List<String> javaColumns();
 
-    <E extends Exception> void accept( final InternalResultVisitor<E> visitor ) throws E;
+    <E extends Exception> void accept( InternalResultVisitor<E> visitor ) throws E;
 
     ExecutionMode executionMode();
 

@@ -177,7 +177,8 @@ public class FileRoleRepositoryTest
         // Given
         final IOException exception = new IOException( "simulated IO Exception on create" );
         FileSystemAbstraction craschingFileSystem =
-                new DelegatingFileSystemAbstraction( fs ) {
+                new DelegatingFileSystemAbstraction( fs )
+                {
                     @Override
                     public void renameFile( File oldLocation, File newLocation, CopyOption... copyOptions ) throws
                             IOException

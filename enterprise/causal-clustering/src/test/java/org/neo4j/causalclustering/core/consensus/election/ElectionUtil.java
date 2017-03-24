@@ -70,7 +70,8 @@ public class ElectionUtil
             validRafts, Map<MemberId,MemberId> leaderViews, long viewCount, CompletableFuture<MemberId>
             futureAgreedLeader )
     {
-        Listener<MemberId> listener = newLeader -> {
+        Listener<MemberId> listener = newLeader ->
+        {
             synchronized ( leaderViews )
             {
                 leaderViews.put( raft.identity(), newLeader );

@@ -100,8 +100,13 @@ public class RaceTest
         String error = "Noooo";
         Race race = new Race();
         race.withEndCondition( () -> false ); // <-- never end
-        race.addContestant( () -> {throw new RuntimeException( error );} );
-        race.addContestants( 3, () -> {} );
+        race.addContestant( () ->
+        {
+            throw new RuntimeException( error );
+        } );
+        race.addContestants( 3, () ->
+        {
+        } );
 
         // WHEN
         try

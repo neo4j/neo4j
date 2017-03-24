@@ -76,7 +76,8 @@ public class SegmentedRaftLogDurabilityTest
         final RaftLogEntry logEntry = new RaftLogEntry( 1, ReplicatedInteger.valueOf( 1 ) );
         log.append( logEntry );
 
-        verifyCurrentLogAndNewLogLoadedFromFileSystem( log, fsRule.get(), myLog -> {
+        verifyCurrentLogAndNewLogLoadedFromFileSystem( log, fsRule.get(), myLog ->
+        {
             assertThat( myLog.appendIndex(), is( 0L ) );
             assertThat( readLogEntry( myLog, 0 ), equalTo( logEntry ) );
         } );
@@ -149,7 +150,8 @@ public class SegmentedRaftLogDurabilityTest
         log.append( logEntryD );
         log.append( logEntryE );
 
-        verifyCurrentLogAndNewLogLoadedFromFileSystem( log, fsRule.get(), myLog -> {
+        verifyCurrentLogAndNewLogLoadedFromFileSystem( log, fsRule.get(), myLog ->
+        {
             assertThat( myLog.appendIndex(), is( 2L ) );
             assertThat( readLogEntry( myLog, 0 ), equalTo( logEntryA ) );
             assertThat( readLogEntry( myLog, 1 ), equalTo( logEntryD ) );
@@ -168,7 +170,8 @@ public class SegmentedRaftLogDurabilityTest
         log.append( logEntryA );
         log.append( logEntryB );
 
-        verifyCurrentLogAndNewLogLoadedFromFileSystem( log, fsRule.get(), myLog -> {
+        verifyCurrentLogAndNewLogLoadedFromFileSystem( log, fsRule.get(), myLog ->
+        {
             assertThat( myLog.appendIndex(), is( 1L ) );
             assertThat( readLogEntry( myLog, 0 ), equalTo( logEntryA ) );
             assertThat( readLogEntry( myLog, 1 ), equalTo( logEntryB ) );
@@ -200,7 +203,8 @@ public class SegmentedRaftLogDurabilityTest
 
         final long finalAppendIndex = log.appendIndex();
         final long finalPrunedIndex = prunedIndex;
-        verifyCurrentLogAndNewLogLoadedFromFileSystem( log, fsRule.get(), myLog -> {
+        verifyCurrentLogAndNewLogLoadedFromFileSystem( log, fsRule.get(), myLog ->
+        {
             assertThat( log, hasNoContent( 0 ) );
             assertThat( log, hasNoContent( finalPrunedIndex ) );
             assertThat( myLog.prevIndex(), equalTo( finalPrunedIndex ) );

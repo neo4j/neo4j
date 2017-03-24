@@ -738,7 +738,8 @@ public class BackupServiceIT
             throws IOException
     {
         final FileFilter logFileFilter = pathname -> pathname.getName().contains( "logical" );
-        return dbRule.restartDatabase( ( fs, storeDirectory ) -> {
+        return dbRule.restartDatabase( ( fs, storeDirectory ) ->
+        {
             for ( File logFile : storeDir.listFiles( logFileFilter ) )
             {
                 logFile.delete();
@@ -801,7 +802,8 @@ public class BackupServiceIT
         // when
         BackupService backupService = backupService();
         ExecutorService executor = Executors.newSingleThreadExecutor();
-        executor.execute( () -> {
+        executor.execute( () ->
+        {
             barrier.awaitUninterruptibly();
 
             createAndIndexNode( db, 1 );
@@ -908,7 +910,8 @@ public class BackupServiceIT
                 defaultConfig, BackupClient.BIG_READ_TIMEOUT, false );
 
         // When
-        GraphDatabaseAPI db2 = dbRule.restartDatabase( ( fs, storeDirectory ) -> {
+        GraphDatabaseAPI db2 = dbRule.restartDatabase( ( fs, storeDirectory ) ->
+        {
             deleteAllBackedUpTransactionLogs();
 
             fileSystem.deleteRecursively( storeDir );

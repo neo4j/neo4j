@@ -258,7 +258,8 @@ public class CommunityEditionModule extends EditionModule
     private void registerRecovery( final DatabaseInfo databaseInfo, LifeSupport life,
             final DependencyResolver dependencyResolver )
     {
-        life.addLifecycleListener( ( instance, from, to ) -> {
+        life.addLifecycleListener( ( instance, from, to ) ->
+        {
             if ( instance instanceof DatabaseAvailability && to.equals( LifecycleStatus.STARTED ) )
             {
                 doAfterRecoveryAndStartup( databaseInfo, dependencyResolver );

@@ -134,7 +134,8 @@ public class TestShortestPath extends Neo4jAlgoTestCase
         //   \__/
         graph.makeEdge( "s", "t" );
         graph.makeEdge( "s", "t" );
-        testShortestPathFinder( finder -> {
+        testShortestPathFinder( finder ->
+        {
             final Iterable<Path> paths = finder.findAllPaths( graph.getNode( "s" ), graph.getNode( "t" ) );
             assertPaths( paths, "s,t", "s,t" );
             assertPaths( asList( finder.findSinglePath( graph.getNode( "s" ), graph.getNode( "t" ) ) ), "s,t" );
@@ -158,7 +159,8 @@ public class TestShortestPath extends Neo4jAlgoTestCase
         graph.makeEdge( "q", "t" );
         graph.makeEdge( "n", "o" );
         graph.makeEdge( "o", "t" );
-        testShortestPathFinder( finder -> {
+        testShortestPathFinder( finder ->
+        {
             final Iterable<Path> paths = finder.findAllPaths( graph.getNode( "s" ), graph.getNode( "t" ) );
             assertPaths( paths, "s,m,o,t", "s,n,o,t" );
         }, PathExpanders.forTypeAndDirection( R1, BOTH ), 6 );
@@ -217,7 +219,8 @@ public class TestShortestPath extends Neo4jAlgoTestCase
         //         (d)
         //
         graph.makeEdgeChain( "a,b,c,d,b,c,e" );
-        testShortestPathFinder( finder -> {
+        testShortestPathFinder( finder ->
+        {
             final Node a = graph.getNode( "a" );
             final Node e = graph.getNode( "e" );
             assertPaths( finder.findAllPaths( a, e ), "a,b,c,e", "a,b,c,e" );
@@ -239,7 +242,8 @@ public class TestShortestPath extends Neo4jAlgoTestCase
         final Node d = graph.getNode( "d" );
         final Node b = graph.getNode( "b" );
         b.setProperty( "skip", true );
-        final Predicate<Node> filter = item -> {
+        final Predicate<Node> filter = item ->
+        {
             final boolean skip = (Boolean) item.getProperty( "skip", false );
             return !skip;
         };
@@ -258,11 +262,13 @@ public class TestShortestPath extends Neo4jAlgoTestCase
         testShortestPathFinder(
                 finder -> assertPaths( finder.findAllPaths( graph.getNode( "a" ), graph.getNode( "b" ) ) ),
                 PathExpanders.allTypesAndDirections(), 0 );
-        testShortestPathFinder( finder -> {
+        testShortestPathFinder( finder ->
+        {
             assertPaths( finder.findAllPaths( graph.getNode( "a" ), graph.getNode( "c" ) ) );
             assertPaths( finder.findAllPaths( graph.getNode( "a" ), graph.getNode( "d" ) ) );
         }, PathExpanders.allTypesAndDirections(), 1 );
-        testShortestPathFinder( finder -> {
+        testShortestPathFinder( finder ->
+        {
             assertPaths( finder.findAllPaths( graph.getNode( "a" ), graph.getNode( "d" ) ) );
             assertPaths( finder.findAllPaths( graph.getNode( "a" ), graph.getNode( "e" ) ) );
         }, PathExpanders.allTypesAndDirections(), 2 );
@@ -319,7 +325,8 @@ public class TestShortestPath extends Neo4jAlgoTestCase
          */
         graph.makeEdgeChain( "i,g,f,e,d,c,b,a" );
         graph.makeEdgeChain( "i,h,f" );
-        testShortestPathFinder( finder -> {
+        testShortestPathFinder( finder ->
+        {
             final Node start = graph.getNode( "a" );
             final Node end = graph.getNode( "i" );
             assertPaths( finder.findAllPaths( start, end ), "a,b,c,d,e,f,g,i", "a,b,c,d,e,f,h,i" );

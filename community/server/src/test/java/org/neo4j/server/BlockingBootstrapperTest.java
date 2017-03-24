@@ -65,7 +65,8 @@ public class BlockingBootstrapperTest
             }
         } );
 
-        new Thread( () -> {
+        new Thread( () ->
+        {
             status.set( bootstrapper.start( homeDir.directory( "home-dir" ), null ) );
             exited.set( true );
         } ).start();
@@ -102,7 +103,8 @@ public class BlockingBootstrapperTest
             }
         } );
 
-        new Thread( () -> {
+        new Thread( () ->
+        {
             status.set( bootstrapper.start( homeDir.directory( "home-dir" ), null ) );
             exited.set( true );
         } ).start();

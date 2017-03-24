@@ -99,7 +99,8 @@ public class IndexCreationTest
             ExecutorService executor = newCachedThreadPool();
             for ( int thread = 0; thread < 10; thread++ )
             {
-                executor.submit( (Runnable) () -> {
+                executor.submit( () ->
+                {
                     try ( Transaction tx = db.beginTx() )
                     {
                         latch.await();

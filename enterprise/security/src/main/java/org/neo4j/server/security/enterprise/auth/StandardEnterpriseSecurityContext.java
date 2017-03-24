@@ -21,7 +21,6 @@ package org.neo4j.server.security.enterprise.auth;
 
 import org.apache.shiro.authz.AuthorizationInfo;
 
-import java.io.IOException;
 import java.util.Collection;
 import java.util.Set;
 import java.util.TreeSet;
@@ -114,7 +113,8 @@ class StandardEnterpriseSecurityContext implements EnterpriseSecurityContext
         Collection<AuthorizationInfo> authorizationInfo =
                 authManager.getAuthorizationInfo( shiroSubject.getPrincipals() );
         return authorizationInfo.stream()
-                .flatMap( authInfo -> {
+                .flatMap( authInfo ->
+                {
                     Collection<String> roles = authInfo.getRoles();
                     return roles == null ? Stream.empty() : roles.stream();
                 } )

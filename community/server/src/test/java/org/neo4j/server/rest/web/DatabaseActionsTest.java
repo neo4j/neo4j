@@ -1184,7 +1184,8 @@ public class DatabaseActionsTest
         }
 
         // THEN
-        assertEquals( asSet( node1, node2 ), Iterables.asSet( Iterables.map( from -> {
+        assertEquals( asSet( node1, node2 ), Iterables.asSet( Iterables.map( from ->
+        {
             Map<?, ?> nodeMap = (Map<?, ?>) from;
             return nodeUriToId( (String) nodeMap.get( "self" ) );
         }, representation ) ) );

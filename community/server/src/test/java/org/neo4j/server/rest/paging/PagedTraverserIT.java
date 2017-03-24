@@ -19,12 +19,6 @@
  */
 package org.neo4j.server.rest.paging;
 
-import java.net.URI;
-import java.util.Map;
-import java.util.concurrent.Callable;
-import java.util.concurrent.TimeUnit;
-import javax.ws.rs.core.MediaType;
-
 import org.junit.AfterClass;
 import org.junit.Before;
 import org.junit.BeforeClass;
@@ -32,6 +26,12 @@ import org.junit.ClassRule;
 import org.junit.Rule;
 import org.junit.Test;
 import org.junit.rules.TemporaryFolder;
+
+import java.net.URI;
+import java.util.Map;
+import java.util.concurrent.Callable;
+import java.util.concurrent.TimeUnit;
+import javax.ws.rs.core.MediaType;
 
 import org.neo4j.graphdb.Node;
 import org.neo4j.graphdb.RelationshipType;
@@ -57,7 +57,6 @@ import static org.hamcrest.Matchers.containsString;
 import static org.junit.Assert.assertEquals;
 import static org.junit.Assert.assertNotNull;
 import static org.junit.Assert.assertThat;
-
 import static org.neo4j.test.rule.SuppressOutput.suppressAll;
 
 public class PagedTraverserIT extends ExclusiveServerTestBase
@@ -87,7 +86,8 @@ public class PagedTraverserIT extends ExclusiveServerTestBase
                 .withClock( clock )
                 .build();
 
-        suppressAll().call( (Callable<Void>) () -> {
+        suppressAll().call( (Callable<Void>) () ->
+        {
             server.start();
             return null;
         } );
@@ -103,7 +103,8 @@ public class PagedTraverserIT extends ExclusiveServerTestBase
     @AfterClass
     public static void stopServer() throws Exception
     {
-        suppressAll().call( (Callable<Void>) () -> {
+        suppressAll().call( (Callable<Void>) () ->
+        {
             server.stop();
             return null;
         } );

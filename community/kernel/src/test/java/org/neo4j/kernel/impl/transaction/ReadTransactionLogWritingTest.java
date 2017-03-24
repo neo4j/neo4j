@@ -147,7 +147,8 @@ public class ReadTransactionLogWritingTest
 
     private Runnable getNodesFromRelationship()
     {
-        return () -> {
+        return () ->
+        {
             relationship.getEndNode();
             relationship.getStartNode();
             relationship.getNodes();
@@ -157,7 +158,8 @@ public class ReadTransactionLogWritingTest
 
     private Runnable getById()
     {
-        return () -> {
+        return () ->
+        {
             dbr.getGraphDatabaseAPI().getNodeById( node.getId() );
             dbr.getGraphDatabaseAPI().getRelationshipById( relationship.getId() );
         };

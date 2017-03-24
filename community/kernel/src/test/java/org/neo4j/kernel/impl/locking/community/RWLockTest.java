@@ -191,7 +191,8 @@ public class RWLockTest
         final CountDownLatch exceptionLatch = new CountDownLatch( 1 );
         final CountDownLatch completionLatch = new CountDownLatch( 1 );
 
-        Mockito.doNothing().doAnswer( invocation -> {
+        Mockito.doNothing().doAnswer( invocation ->
+        {
             exceptionLatch.countDown();
             throw new DeadlockDetectedException( "Deadlock" );
         } ).when( ragManager ).checkWaitOn( lock, lockTransaction );
@@ -204,7 +205,8 @@ public class RWLockTest
         // writer will be added to a waiting list
         // then spurious wake up will be simulated
         // and deadlock will be detected
-        Runnable writer = () -> {
+        Runnable writer = () ->
+        {
             try
             {
                 lock.mark();
@@ -377,7 +379,8 @@ public class RWLockTest
     private Runnable createReader( final RWLock lock, final LockTransaction transaction,
                                    final CountDownLatch latch )
     {
-        return () -> {
+        return () ->
+        {
             lock.mark();
             lock.acquireReadLock( LockTracer.NONE, transaction );
             latch.countDown();
@@ -387,7 +390,8 @@ public class RWLockTest
     private Runnable createFailedReader( final RWLock lock, final LockTransaction transaction,
                                          final CountDownLatch latch )
     {
-        return () -> {
+        return () ->
+        {
             lock.mark();
             Assert.assertFalse( lock.acquireReadLock( LockTracer.NONE, transaction ) );
             latch.countDown();
@@ -397,7 +401,8 @@ public class RWLockTest
     private Runnable createWriter( final RWLock lock, final LockTransaction transaction,
                                    final CountDownLatch latch )
     {
-        return () -> {
+        return () ->
+        {
             lock.mark();
             lock.acquireWriteLock( LockTracer.NONE, transaction );
             latch.countDown();
@@ -407,7 +412,8 @@ public class RWLockTest
     private Runnable createFailedWriter( final RWLock lock, final LockTransaction transaction,
                                          final CountDownLatch latch )
     {
-        return () -> {
+        return () ->
+        {
             lock.mark();
             Assert.assertFalse( lock.acquireWriteLock( LockTracer.NONE, transaction ) );
             latch.countDown();
@@ -417,7 +423,8 @@ public class RWLockTest
     private Runnable createReaderForDeadlock( final RWLock node, final LockTransaction transaction,
                                               final CountDownLatch latch )
     {
-        return () -> {
+        return () ->
+        {
             try
             {
                 node.mark();

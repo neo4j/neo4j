@@ -74,7 +74,8 @@ public class NodeManagerTest
         allNodes.next();
 
         // and WHEN another node is then added
-        Thread thread = new Thread( () -> {
+        Thread thread = new Thread( () ->
+        {
             Transaction newTx = db.beginTx();
             assertThat( newTx, not( instanceOf( PlaceboTransaction.class ) ) );
             db.createNode();

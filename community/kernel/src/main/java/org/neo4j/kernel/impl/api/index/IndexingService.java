@@ -281,7 +281,8 @@ public class IndexingService extends LifecycleAdapter implements IndexingUpdateS
         final Map<Long,RebuildingIndexDescriptor> rebuildingDescriptors = new HashMap<>();
 
         // Find all indexes that are not already online, do not require rebuilding, and create them
-        indexMap.foreachIndexProxy( ( indexId, proxy ) -> {
+        indexMap.foreachIndexProxy( ( indexId, proxy ) ->
+        {
             InternalIndexState state = proxy.getState();
             NewIndexDescriptor descriptor = proxy.getDescriptor();
             log.debug( indexStateInfo( "start", indexId, state, descriptor ) );

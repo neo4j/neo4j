@@ -132,7 +132,8 @@ public class OtherThreadExecutor<T> implements ThreadFactory, Closeable
     {
         lastExecutionTrigger = new Exception();
         executionState = ExecutionState.REQUESTED_EXECUTION;
-        return commandExecutor.submit( () -> {
+        return commandExecutor.submit( () ->
+        {
             executionState = ExecutionState.EXECUTING;
             try
             {

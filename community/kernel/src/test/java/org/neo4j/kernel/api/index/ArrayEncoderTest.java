@@ -108,7 +108,8 @@ public class ArrayEncoderTest
         for ( String input : INPUT )
         {
             final String[] inputArray = new String[] {input};
-            race.addContestant( () -> {
+            race.addContestant( () ->
+            {
                 String first = ArrayEncoder.encode( inputArray );
                 for ( int i = 0; i < 1000; i++ )
                 {

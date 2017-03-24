@@ -380,7 +380,8 @@ public class GraphDbHelper
     {
         try ( Transaction tx = database.getGraph().beginTransaction( implicit, AnonymousContext.read() ) )
         {
-            Iterable<ConstraintDefinition> definitions = Iterables.filter( item -> {
+            Iterable<ConstraintDefinition> definitions = Iterables.filter( item ->
+            {
                 if ( item.isConstraintType( ConstraintType.UNIQUENESS ) )
                 {
                     Iterable<String> keys = item.getPropertyKeys();

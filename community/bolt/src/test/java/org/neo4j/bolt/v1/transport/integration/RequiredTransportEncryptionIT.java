@@ -19,14 +19,14 @@
  */
 package org.neo4j.bolt.v1.transport.integration;
 
-import java.util.Collection;
-
 import org.junit.After;
 import org.junit.Before;
 import org.junit.Rule;
 import org.junit.Test;
 import org.junit.runner.RunWith;
 import org.junit.runners.Parameterized;
+
+import java.util.Collection;
 
 import org.neo4j.bolt.v1.transport.socket.client.SocketConnection;
 import org.neo4j.bolt.v1.transport.socket.client.TransportConnection;
@@ -45,7 +45,8 @@ public class RequiredTransportEncryptionIT
 {
     @Rule
     public Neo4jWithSocket server = new Neo4jWithSocket( getClass(),
-            settings -> {
+            settings ->
+            {
                 Setting<BoltConnector.EncryptionLevel> encryption_level =
                         new BoltConnector( "bolt" ).encryption_level;
                 settings.put( encryption_level.name(), REQUIRED.name() );

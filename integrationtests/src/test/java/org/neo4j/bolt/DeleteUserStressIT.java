@@ -75,7 +75,8 @@ public class DeleteUserStressIT
     }
 
     @SuppressWarnings( "InfiniteLoopStatement" )
-    private final Runnable transactionWork = () -> {
+    private final Runnable transactionWork = () ->
+    {
 
         for (; ; )
         {
@@ -100,7 +101,8 @@ public class DeleteUserStressIT
     };
 
     @SuppressWarnings( "InfiniteLoopStatement" )
-    private final Runnable deleteUserWork = () -> {
+    private final Runnable deleteUserWork = () ->
+    {
 
         for (; ; )
         {
@@ -121,7 +123,8 @@ public class DeleteUserStressIT
     };
 
     @SuppressWarnings( "InfiniteLoopStatement" )
-    private final Runnable createUserWork = () -> {
+    private final Runnable createUserWork = () ->
+    {
         for (; ; )
         {
             try ( Session session = adminDriver.session();

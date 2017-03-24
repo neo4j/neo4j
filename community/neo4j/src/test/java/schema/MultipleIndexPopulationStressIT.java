@@ -184,7 +184,8 @@ public class MultipleIndexPopulationStressIT
             ExecutorService executor = cleanup.add( Executors.newCachedThreadPool() );
             for ( int i = 0; i < 10; i++ )
             {
-                executor.submit( () -> {
+                executor.submit( () ->
+                {
                     Randoms random = new Randoms();
                     while ( !end.get() )
                     {

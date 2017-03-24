@@ -169,7 +169,8 @@ public class DatabaseIndexIntegrationTest
 
     private Runnable createConcurrentDropTask( CountDownLatch dropRaceSignal )
     {
-        return () -> {
+        return () ->
+        {
             try
             {
                 dropRaceSignal.await();
@@ -185,7 +186,8 @@ public class DatabaseIndexIntegrationTest
 
     private Runnable createConcurrentCloseTask( CountDownLatch closeRaceSignal )
     {
-        return () -> {
+        return () ->
+        {
             try
             {
                 closeRaceSignal.await();
@@ -201,7 +203,8 @@ public class DatabaseIndexIntegrationTest
 
     private Runnable createMainCloseTask()
     {
-        return () -> {
+        return () ->
+        {
             try
             {
                 luceneIndex.close();

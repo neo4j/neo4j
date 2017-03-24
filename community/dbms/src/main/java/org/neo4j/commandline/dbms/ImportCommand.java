@@ -46,7 +46,8 @@ public class ImportCommand implements AdminCommand
     public static final String DEFAULT_REPORT_FILE_NAME = "import.report";
     private static final String[] allowedModes = {"database", "csv"};
     private static final Arguments databaseArguments = new Arguments()
-            .withArgument( new MandatoryNamedArg( "mode", "database", "Import a pre-3.0 installation." ) {
+            .withArgument( new MandatoryNamedArg( "mode", "database", "Import a pre-3.0 installation." )
+            {
                 @Override
                 public String usage()
                 {
@@ -58,7 +59,8 @@ public class ImportCommand implements AdminCommand
             .withArgument( new OptionalNamedArg( "from", "source-directory", "",
                     "The location of the pre-3.0 database (e.g. <neo4j-root>/data/graph.db)." ) );
     private static final Arguments csvArguments = new Arguments()
-            .withArgument( new OptionalNamedArg( "mode", "csv", "csv", "Import a collection of CSV files." ) {
+            .withArgument( new OptionalNamedArg( "mode", "csv", "csv", "Import a collection of CSV files." )
+            {
                 @Override
                 public String usage()
                 {

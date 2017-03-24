@@ -244,7 +244,9 @@ public class InMemoryClosableChannel implements ReadableClosablePositionAwareCha
         return writer.remaining();
     }
 
-    private static final Flushable NO_OP_FLUSHABLE = () -> { };
+    private static final Flushable NO_OP_FLUSHABLE = () ->
+    {
+    };
 
     class ByteBufferBase implements PositionAwareChannel, Closeable
     {

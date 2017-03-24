@@ -39,7 +39,6 @@ import org.neo4j.test.rule.TestDirectory;
 
 import static org.junit.Assert.assertEquals;
 import static org.junit.Assert.assertTrue;
-
 import static org.neo4j.helpers.collection.Iterators.count;
 import static org.neo4j.kernel.impl.ha.ClusterManager.allAvailabilityGuardsReleased;
 import static org.neo4j.kernel.impl.ha.ClusterManager.allSeesAllAsAvailable;
@@ -116,7 +115,8 @@ public abstract class LabelScanStoreHaIT
         ClusterManager clusterManager = new ClusterManager.Builder( testDirectory.directory( "root" ) )
                 .withDbFactory( factory )
                 .withSharedSetting( GraphDatabaseSettings.label_index, labelIndexSettingName() )
-                .withStoreDirInitializer( ( serverId, storeDir ) -> {
+                .withStoreDirInitializer( ( serverId, storeDir ) ->
+                {
                     if ( serverId == 1 )
                     {
                         GraphDatabaseService db = new TestGraphDatabaseFactory()

@@ -86,7 +86,8 @@ public class IndexProxyCreator
         flipper.flipTo( populatingIndex );
 
         // Prepare for flipping to online mode
-        flipper.setFlipTarget( () -> {
+        flipper.setFlipTarget( () ->
+        {
             monitor.populationCompleteOn( descriptor );
             OnlineIndexProxy onlineProxy =
                     new OnlineIndexProxy(

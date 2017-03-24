@@ -127,8 +127,9 @@ public class Validators
 
     public static Validator<String> inList( String[] validStrings )
     {
-        return value -> {
-            if ( !Arrays.stream( validStrings ).anyMatch( s -> s.equals( value ) ) )
+        return value ->
+        {
+            if ( Arrays.stream( validStrings ).noneMatch( s -> s.equals( value ) ) )
             {
                 throw new IllegalArgumentException( "'" + value + "' found but must be one of: " +
                     Arrays.toString( validStrings ) + "." );

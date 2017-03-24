@@ -585,7 +585,8 @@ public class MetaDataStore extends CommonAbstractStore<MetaDataRecord,NoStoreHea
 
     private void refreshFields()
     {
-        scanAllFields( PF_SHARED_READ_LOCK, element -> {
+        scanAllFields( PF_SHARED_READ_LOCK, element ->
+        {
             readAllFields( element );
             return false;
         } );
@@ -842,7 +843,8 @@ public class MetaDataStore extends CommonAbstractStore<MetaDataRecord,NoStoreHea
 
     public void logRecords( final Logger msgLog )
     {
-        scanAllFields( PF_SHARED_READ_LOCK, cursor -> {
+        scanAllFields( PF_SHARED_READ_LOCK, cursor ->
+        {
             for ( Position position : Position.values() )
             {
                 long value;

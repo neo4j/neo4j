@@ -36,7 +36,6 @@ import org.neo4j.helpers.Args;
 import org.neo4j.helpers.Args.Option;
 import org.neo4j.helpers.ArrayUtil;
 import org.neo4j.helpers.Exceptions;
-import org.neo4j.helpers.Format;
 import org.neo4j.helpers.Strings;
 import org.neo4j.helpers.collection.IterableWrapper;
 import org.neo4j.helpers.collection.Iterables;
@@ -73,14 +72,12 @@ import org.neo4j.unsafe.impl.batchimport.input.csv.Decorator;
 import org.neo4j.unsafe.impl.batchimport.input.csv.IdType;
 import org.neo4j.unsafe.impl.batchimport.staging.ExecutionMonitors;
 
-import static java.lang.Math.toIntExact;
 import static java.nio.charset.Charset.defaultCharset;
 import static org.neo4j.helpers.Exceptions.launderedException;
 import static org.neo4j.helpers.Format.bytes;
 import static org.neo4j.helpers.Strings.TAB;
 import static org.neo4j.helpers.collection.MapUtil.stringMap;
 import static org.neo4j.io.ByteUnit.mebiBytes;
-import static org.neo4j.kernel.configuration.Settings.parseLongWithUnit;
 import static org.neo4j.kernel.impl.util.Converters.withDefault;
 import static org.neo4j.unsafe.impl.batchimport.Configuration.BAD_FILE_NAME;
 import static org.neo4j.unsafe.impl.batchimport.input.Collectors.badCollector;
@@ -509,7 +506,8 @@ public class ImportTool
 
     private static Validator<File[]> filesExist( PrintStream err )
     {
-        return files -> {
+        return files ->
+        {
             for ( File file : files )
             {
                 if ( file.getName().startsWith( ":" ) )
@@ -685,7 +683,10 @@ public class ImportTool
         // Calling System.exit( 1 ) or similar would be convenient on one hand since we can set
         // a specific exit code. On the other hand It's very inconvenient to have any System.exit
         // call in code that is tested.
-        Thread.currentThread().setUncaughtExceptionHandler( ( t, e1 ) -> { /* Shhhh */ } );
+        Thread.currentThread().setUncaughtExceptionHandler( ( t, e1 ) ->
+        {
+            /* Shhhh */
+        } );
         return launderedException( e ); // throw in order to have process exit with !0
     }
 

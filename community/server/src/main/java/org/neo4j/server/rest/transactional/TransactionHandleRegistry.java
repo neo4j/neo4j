@@ -250,7 +250,8 @@ public class TransactionHandleRegistry implements TransactionRegistry
 
     public void rollbackSuspendedTransactionsIdleSince( final long oldestLastActiveTime )
     {
-        rollbackSuspended( item -> {
+        rollbackSuspended( item ->
+        {
             try
             {
                 SuspendedTransaction transaction = item.getSuspendedTransaction();

@@ -73,7 +73,8 @@ public class ServerCommandLineArgs
     private static Pair<String, String>[] parseConfigOverrides( Args arguments )
     {
         Collection<Pair<String, String>> options = arguments.interpretOptions( "c",
-                Converters.<Pair<String, String>>optional(), s -> {
+                Converters.optional(), s ->
+                {
                     if ( s.contains( "=" ) )
                     {
                         String[] keyVal = s.split( "=", 2 );

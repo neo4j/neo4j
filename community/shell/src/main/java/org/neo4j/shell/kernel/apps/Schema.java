@@ -29,10 +29,9 @@ import org.neo4j.graphdb.schema.ConstraintDefinition;
 import org.neo4j.graphdb.schema.ConstraintType;
 import org.neo4j.graphdb.schema.IndexDefinition;
 import org.neo4j.graphdb.schema.Schema.IndexState;
-import org.neo4j.kernel.api.exceptions.index.IndexNotFoundKernelException;
 import org.neo4j.kernel.api.Statement;
+import org.neo4j.kernel.api.exceptions.index.IndexNotFoundKernelException;
 import org.neo4j.kernel.api.schema_new.SchemaDescriptorFactory;
-import org.neo4j.kernel.api.schema_new.index.NewIndexDescriptorFactory;
 import org.neo4j.kernel.impl.api.index.IndexingService;
 import org.neo4j.kernel.impl.api.index.sampling.IndexSamplingMode;
 import org.neo4j.shell.AppCommandParser;
@@ -474,9 +473,7 @@ public class Schema extends TransactionProvidingApp
         Iterable<IndexDefinition> indexes = schema.getIndexes();
         for ( final Label label : labels )
         {
-            indexes = filter( item -> {
-                return item.getLabel().name().equals( label.name() );
-            }, indexes );
+            indexes = filter( item -> item.getLabel().name().equals( label.name() ), indexes );
         }
         return indexes;
     }

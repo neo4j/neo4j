@@ -25,8 +25,6 @@ import java.util.concurrent.ConcurrentHashMap;
 import java.util.concurrent.locks.ReadWriteLock;
 import java.util.concurrent.locks.ReentrantReadWriteLock;
 
-import org.neo4j.helpers.Exceptions;
-import org.neo4j.kernel.impl.store.UnderlyingStorageException;
 import org.neo4j.kernel.impl.store.counts.keys.CountsKey;
 import org.neo4j.kernel.impl.util.ArrayQueueOutOfOrderSequence;
 import org.neo4j.kernel.impl.util.OutOfOrderSequence;
@@ -88,7 +86,8 @@ public class InMemoryCountsStore implements CountsStore
      */
     private void applyUpdates( Map<CountsKey,long[]> updates, Map<CountsKey,long[]> map )
     {
-        updates.forEach( ( key, value ) -> map.compute( key, ( k, v ) -> {
+        updates.forEach( ( key, value ) -> map.compute( key, ( k, v ) ->
+        {
             if ( v == null )
             {
                 return Arrays.copyOf( value, value.length );
