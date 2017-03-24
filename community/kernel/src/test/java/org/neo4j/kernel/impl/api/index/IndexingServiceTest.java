@@ -33,6 +33,7 @@ import org.mockito.stubbing.Answer;
 
 import java.io.File;
 import java.io.IOException;
+import java.util.ArrayList;
 import java.util.Arrays;
 import java.util.Collection;
 import java.util.Iterator;
@@ -350,10 +351,10 @@ public class IndexingServiceTest
         life.init();
 
         // then
-        logProvider.assertExactly(
-                logMatch.info( "IndexingService.init: index 1 on :LabelOne(propertyOne) is ONLINE" ),
-                logMatch.info( "IndexingService.init: index 2 on :LabelOne(propertyTwo) is POPULATING" ),
-                logMatch.info( "IndexingService.init: index 3 on :LabelTwo(propertyTwo) is FAILED" )
+        logProvider.assertAtLeastOnce(
+                logMatch.debug( "IndexingService.init: index 1 on :LabelOne(propertyOne) is ONLINE" ),
+                logMatch.debug( "IndexingService.init: index 2 on :LabelOne(propertyTwo) is POPULATING" ),
+                logMatch.debug( "IndexingService.init: index 3 on :LabelTwo(propertyTwo) is FAILED" )
         );
     }
 
@@ -395,9 +396,9 @@ public class IndexingServiceTest
         // then
         verify( provider ).getPopulationFailure( 3 );
         logProvider.assertAtLeastOnce(
-                logMatch.info( "IndexingService.start: index 1 on :LabelOne(propertyOne) is ONLINE" ),
-                logMatch.info( "IndexingService.start: index 2 on :LabelOne(propertyTwo) is POPULATING" ),
-                logMatch.info( "IndexingService.start: index 3 on :LabelTwo(propertyTwo) is FAILED" )
+                logMatch.debug( "IndexingService.start: index 1 on :LabelOne(propertyOne) is ONLINE" ),
+                logMatch.debug( "IndexingService.start: index 2 on :LabelOne(propertyTwo) is POPULATING" ),
+                logMatch.debug( "IndexingService.start: index 3 on :LabelTwo(propertyTwo) is FAILED" )
         );
     }
 
@@ -915,6 +916,107 @@ public class IndexingServiceTest
         logProvider.assertNone( inLog( IndexPopulationJob.class ).info(
                 "Index population completed. Index is now online: [%s]",
                 ":TheLabel(propertyKey) [provider: {key=quantum-dex, version=25.0}]" ) );
+    }
+
+    @Test
+    public void shouldLogIndexStateOutliersOnInit() throws Exception
+    {
+        // given
+        SchemaIndexProvider provider = mock( SchemaIndexProvider.class );
+        when( provider.getProviderDescriptor() ).thenReturn( PROVIDER_DESCRIPTOR );
+        when( provider.getOnlineAccessor( anyLong(), any( IndexDescriptor.class ), any( IndexConfiguration.class ),
+                any( IndexSamplingConfig.class ) ) )
+                .thenReturn( mock( IndexAccessor.class ) );
+        SchemaIndexProviderMap providerMap = new DefaultSchemaIndexProviderMap( provider );
+        TokenNameLookup mockLookup = mock( TokenNameLookup.class );
+
+        List<IndexRule> indexes = new ArrayList<>();
+        int nextIndexId = 1;
+        IndexRule populatingIndex = indexRule( nextIndexId, nextIndexId++, 1, PROVIDER_DESCRIPTOR );
+        when( provider.getInitialState( populatingIndex.getId() ) ).thenReturn( POPULATING );
+        indexes.add( populatingIndex );
+        IndexRule failedIndex = indexRule( nextIndexId, nextIndexId++, 1, PROVIDER_DESCRIPTOR );
+        when( provider.getInitialState( failedIndex.getId() ) ).thenReturn( FAILED );
+        indexes.add( failedIndex );
+        for ( int i = 0; i < 10; i++ )
+        {
+            IndexRule indexRule = indexRule( nextIndexId, nextIndexId++, 1, PROVIDER_DESCRIPTOR );
+            when( provider.getInitialState( indexRule.getId() ) ).thenReturn( ONLINE );
+            indexes.add( indexRule );
+        }
+        for ( int i = 0; i < nextIndexId; i++ )
+        {
+            when( mockLookup.labelGetName( i ) ).thenReturn( "Label" + i );
+        }
+
+        life.add( IndexingServiceFactory.createIndexingService( Config.empty(), mock( JobScheduler.class ), providerMap,
+                mock( IndexStoreView.class ), mockLookup, indexes,
+                logProvider, IndexingService.NO_MONITOR, DO_NOTHING_CALLBACK ) );
+
+        when( mockLookup.propertyKeyGetName( 1 ) ).thenReturn( "prop" );
+
+        // when
+        life.init();
+
+        // then
+        logProvider.assertAtLeastOnce(
+                logMatch.info( "IndexingService.init: index 1 on :Label1(prop) is POPULATING" ),
+                logMatch.info( "IndexingService.init: index 2 on :Label2(prop) is FAILED" ),
+                logMatch.info( "IndexingService.init: indexes not specifically mentioned above are ONLINE" )
+        );
+        logProvider.assertNone( logMatch.info( "IndexingService.init: index 3 on :Label3(prop) is ONLINE" ) );
+    }
+
+    @Test
+    public void shouldLogIndexStateOutliersOnStart() throws Exception
+    {
+        // given
+        SchemaIndexProvider provider = mock( SchemaIndexProvider.class );
+        when( provider.getProviderDescriptor() ).thenReturn( PROVIDER_DESCRIPTOR );
+        when( provider.getOnlineAccessor( anyLong(), any( IndexDescriptor.class ), any( IndexConfiguration.class ),
+                any( IndexSamplingConfig.class ) ) )
+                .thenReturn( mock( IndexAccessor.class ) );
+        SchemaIndexProviderMap providerMap = new DefaultSchemaIndexProviderMap( provider );
+        TokenNameLookup mockLookup = mock( TokenNameLookup.class );
+
+        List<IndexRule> indexes = new ArrayList<>();
+        int nextIndexId = 1;
+        IndexRule populatingIndex = indexRule( nextIndexId, nextIndexId++, 1, PROVIDER_DESCRIPTOR );
+        when( provider.getInitialState( populatingIndex.getId() ) ).thenReturn( POPULATING );
+        indexes.add( populatingIndex );
+        IndexRule failedIndex = indexRule( nextIndexId, nextIndexId++, 1, PROVIDER_DESCRIPTOR );
+        when( provider.getInitialState( failedIndex.getId() ) ).thenReturn( FAILED );
+        indexes.add( failedIndex );
+        for ( int i = 0; i < 10; i++ )
+        {
+            IndexRule indexRule = indexRule( nextIndexId, nextIndexId++, 1, PROVIDER_DESCRIPTOR );
+            when( provider.getInitialState( indexRule.getId() ) ).thenReturn( ONLINE );
+            indexes.add( indexRule );
+        }
+        for ( int i = 0; i < nextIndexId; i++ )
+        {
+            when( mockLookup.labelGetName( i ) ).thenReturn( "Label" + i );
+        }
+
+        IndexingService indexingService = IndexingServiceFactory.createIndexingService( Config.empty(),
+                mock( JobScheduler.class ), providerMap, storeView, mockLookup, indexes,
+                logProvider, IndexingService.NO_MONITOR, DO_NOTHING_CALLBACK );
+        when( storeView.indexSample( any( IndexDescriptor.class ), any( DoubleLongRegister.class ) ) )
+                .thenReturn( newDoubleLongRegister( 32L, 32L ) );
+        when( mockLookup.propertyKeyGetName( 1 ) ).thenReturn( "prop" );
+
+        // when
+        indexingService.init();
+        logProvider.clear();
+        indexingService.start();
+
+        // then
+        logProvider.assertAtLeastOnce(
+                logMatch.info( "IndexingService.start: index 1 on :Label1(prop) is POPULATING" ),
+                logMatch.info( "IndexingService.start: index 2 on :Label2(prop) is FAILED" ),
+                logMatch.info( "IndexingService.start: indexes not specifically mentioned above are ONLINE" )
+        );
+        logProvider.assertNone( logMatch.info( "IndexingService.start: index 3 on :Label3(prop) is ONLINE" ) );
     }
 
     private static Matcher<? extends Throwable> causedBy( final Throwable exception )

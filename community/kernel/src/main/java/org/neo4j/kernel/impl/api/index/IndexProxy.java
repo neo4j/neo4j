@@ -92,8 +92,6 @@ public interface IndexProxy
 
     void force() throws IOException;
 
-    void flush() throws IOException;
-
     /**
      * @throws IndexNotFoundKernelException if the index isn't online yet.
      */
