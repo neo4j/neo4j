@@ -48,6 +48,8 @@ import org.neo4j.test.server.ExclusiveServerTestBase;
 import static java.util.Arrays.asList;
 import static org.hamcrest.MatcherAssert.assertThat;
 
+import static org.neo4j.server.AbstractNeoServer.NEO4J_IS_STARTING_MESSAGE;
+
 public class StartupLoggingIT extends ExclusiveServerTestBase
 {
     @Rule
@@ -74,6 +76,7 @@ public class StartupLoggingIT extends ExclusiveServerTestBase
         List<String> captured = suppressOutput.getOutputVoice().lines();
         assertThat( captured, containsAtLeastTheseLines(
                 warn( "Config file \\[nonexistent-file.conf\\] does not exist." ),
+                info( NEO4J_IS_STARTING_MESSAGE ),
                 info( "Starting..." ),
                 info( "Started." ),
                 info( "Remote interface available at http://.+:7474/" ),
