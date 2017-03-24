@@ -175,5 +175,21 @@ _setup_configurable_paths() {
   NEO4J_LOGS=$(resolve_path "${dbms_directories_logs:-logs}")
   NEO4J_PLUGINS=$(resolve_path "${dbms_directories_plugins:-plugins}")
   NEO4J_RUN=$(resolve_path "${dbms_directories_run:-run}")
-  readonly NEO4J_DATA NEO4J_LIB NEO4J_LOGS NEO4J_PLUGINS NEO4J_RUN
+  NEO4J_IMPORT=$(resolve_path "${dbms_directories_import:-import}")
+  NEO4J_CERTS=$(resolve_path "${dbms_directories_certificates:-certificates}")
+  readonly NEO4J_DATA NEO4J_LIB NEO4J_LOGS NEO4J_PLUGINS NEO4J_RUN NEO4J_IMPORT NEO4J_CERTS
+}
+
+print_configurable_paths() {
+  cat <<EOF
+Directories in use:
+  Home:         ${NEO4J_HOME}
+  Config:       ${NEO4J_CONF}
+  Logs:         ${NEO4J_LOGS}
+  Plugins:      ${NEO4J_PLUGINS}
+  Import:       ${NEO4J_IMPORT}
+  Data:         ${NEO4J_DATA}
+  Certificates: ${NEO4J_CERTS}
+  Run:          ${NEO4J_RUN}
+EOF
 }

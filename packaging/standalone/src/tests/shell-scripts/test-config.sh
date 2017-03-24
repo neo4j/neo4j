@@ -100,4 +100,24 @@ test_expect_success "can configure log directory outside neo4j-root" "
   test_expect_file_matching 'stdout from java' '$(pwd)/other-log-dir/neo4j.log'
 "
 
+test_expect_success "should write paths in use" "
+  clear_config &&
+  mkdir '$(neo4j_home)/loogs' &&
+  mkdir '$(neo4j_home)/ruun' &&
+  set_config 'dbms.directories.data' '/data/bob' neo4j.conf &&
+  set_config 'dbms.directories.import' '/import/bob' neo4j.conf &&
+  set_config 'dbms.directories.plugins' '/plugins/bob' neo4j.conf &&
+  set_config 'dbms.directories.certificates' '/certs/bob' neo4j.conf &&
+  set_config 'dbms.directories.run' 'ruun' neo4j.conf &&
+  set_config 'dbms.directories.logs' 'loogs' neo4j.conf &&
+  test_expect_stdout_matching '  Home:         $(neo4j_home)' run_daemon &&
+  test_expect_stdout_matching '  Config:       $(neo4j_home)/conf' run_daemon &&
+  test_expect_stdout_matching '  Data:         /data/bob' run_daemon &&
+  test_expect_stdout_matching '  Import:       /import/bob' run_daemon &&
+  test_expect_stdout_matching '  Plugins:      /plugins/bob' run_daemon &&
+  test_expect_stdout_matching '  Certificates: /certs/bob' run_daemon &&
+  test_expect_stdout_matching '  Logs:         $(neo4j_home)/loogs' run_daemon &&
+  test_expect_stdout_matching '  Run:          $(neo4j_home)/ruun' run_daemon
+"
+
 test_done

@@ -278,10 +278,12 @@ main() {
 
   case "${1:-}" in
     console)
+      print_configurable_paths
       do_console
       ;;
 
     start)
+      print_configurable_paths
       do_start
       ;;
 
