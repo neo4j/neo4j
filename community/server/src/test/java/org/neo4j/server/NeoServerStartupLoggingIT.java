@@ -19,14 +19,14 @@
  */
 package org.neo4j.server;
 
-import java.io.ByteArrayOutputStream;
-import java.io.IOException;
-
 import com.sun.jersey.api.client.Client;
 import org.junit.AfterClass;
 import org.junit.Before;
 import org.junit.BeforeClass;
 import org.junit.Test;
+
+import java.io.ByteArrayOutputStream;
+import java.io.IOException;
 
 import org.neo4j.logging.FormattedLogProvider;
 import org.neo4j.server.helpers.ServerHelper;
@@ -34,9 +34,11 @@ import org.neo4j.server.rest.JaxRsResponse;
 import org.neo4j.server.rest.RestRequest;
 import org.neo4j.test.server.ExclusiveServerTestBase;
 
+import static org.hamcrest.Matchers.containsString;
 import static org.hamcrest.Matchers.greaterThan;
 import static org.hamcrest.Matchers.is;
 import static org.junit.Assert.assertThat;
+import static org.neo4j.server.AbstractNeoServer.NEO4J_IS_STARTING_MESSAGE;
 
 public class NeoServerStartupLoggingIT extends ExclusiveServerTestBase
 {
@@ -66,8 +68,9 @@ public class NeoServerStartupLoggingIT extends ExclusiveServerTestBase
     public void shouldLogStartup() throws Exception
     {
         // Check the logs
-        assertThat( out.toString().length(), is( greaterThan( 0 ) ) );
-
+        String logContent = out.toString();
+        assertThat( logContent.length(), is( greaterThan( 0 ) ) );
+        assertThat( logContent, containsString( NEO4J_IS_STARTING_MESSAGE ) );
         // Check the server is alive
         Client nonRedirectingClient = Client.create();
         nonRedirectingClient.setFollowRedirects( false );
