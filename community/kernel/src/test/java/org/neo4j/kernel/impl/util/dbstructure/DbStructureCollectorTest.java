@@ -44,7 +44,7 @@ public class DbStructureCollectorTest
         collector.visitPropertyKey( 2, "income" );
         collector.visitRelationshipType( 1, "LIVES_IN" );
         collector.visitRelationshipType( 2, "FRIEND" );
-        collector.visitUniqueIndex( NewIndexDescriptorFactory.forLabel( 1, 1 ), ":Person(name)", 1.0d, 1L );
+        collector.visitIndex( NewIndexDescriptorFactory.uniqueForLabel( 1, 1 ), ":Person(name)", 1.0d, 1L );
         collector.visitUniqueConstraint( ConstraintDescriptorFactory.uniqueForLabel( 2, 1 ), ":City(name)" );
         collector.visitIndex( NewIndexDescriptorFactory.forLabel( 2, 2 ), ":City(income)", 0.2d, 1L );
         collector.visitAllNodesCount( 50 );
@@ -91,8 +91,7 @@ public class DbStructureCollectorTest
         collector.visitPropertyKey( 5, "area" );
         collector.visitRelationshipType( 1, "LIVES_IN" );
         collector.visitRelationshipType( 2, "FRIEND" );
-        collector
-                .visitUniqueIndex( NewIndexDescriptorFactory.forLabel( 1, 1, 3 ), ":Person(name, lastName)", 1.0d, 1L );
+        collector.visitIndex( NewIndexDescriptorFactory.uniqueForLabel( 1, 1, 3 ), ":Person(name, lastName)", 1.0d, 1L );
         collector.visitUniqueConstraint( ConstraintDescriptorFactory.uniqueForLabel( 2, 1, 5 ), ":City(name, area)" );
         collector.visitIndex( NewIndexDescriptorFactory.forLabel( 2, 2, 4 ), ":City(income, tax)", 0.2d, 1L );
         collector.visitAllNodesCount( 50 );

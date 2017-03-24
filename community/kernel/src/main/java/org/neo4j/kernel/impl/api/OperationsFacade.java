@@ -60,7 +60,6 @@ import org.neo4j.kernel.api.exceptions.schema.ConstraintValidationException;
 import org.neo4j.kernel.api.exceptions.schema.CreateConstraintFailureException;
 import org.neo4j.kernel.api.exceptions.schema.DropConstraintFailureException;
 import org.neo4j.kernel.api.exceptions.schema.DropIndexFailureException;
-import org.neo4j.kernel.api.exceptions.schema.DuplicateSchemaRuleException;
 import org.neo4j.kernel.api.exceptions.schema.IllegalTokenNameException;
 import org.neo4j.kernel.api.exceptions.schema.IndexBrokenKernelException;
 import org.neo4j.kernel.api.exceptions.schema.RepeatedPropertyInCompositeSchemaException;
@@ -575,7 +574,7 @@ public class OperationsFacade
             throws SchemaRuleNotFoundException
     {
         statement.assertOpen();
-        NewIndexDescriptor indexDescriptor = schemaRead().indexGetForLabelAndPropertyKey( statement, descriptor );
+        NewIndexDescriptor indexDescriptor = schemaRead().indexGetForSchema( statement, descriptor );
         if ( indexDescriptor == null )
         {
             throw new SchemaRuleNotFoundException( SchemaRule.Kind.INDEX_RULE, descriptor );
@@ -598,55 +597,10 @@ public class OperationsFacade
     }
 
     @Override
-    public NewIndexDescriptor uniqueIndexGetForLabelAndPropertyKey( LabelSchemaDescriptor descriptor )
-            throws SchemaRuleNotFoundException, DuplicateSchemaRuleException
-
-    {
-        NewIndexDescriptor result = null;
-        Iterator<NewIndexDescriptor> indexes = uniqueIndexesGetForLabel( descriptor.getLabelId() );
-        while ( indexes.hasNext() )
-        {
-            NewIndexDescriptor index = indexes.next();
-            if ( index.schema().equals( descriptor ) )
-            {
-                if ( null == result )
-                {
-                    result = index;
-                }
-                else
-                {
-                    throw new DuplicateSchemaRuleException( SchemaRule.Kind.CONSTRAINT_INDEX_RULE, index.schema() );
-                }
-            }
-        }
-
-        if ( null == result )
-        {
-            throw new SchemaRuleNotFoundException( SchemaRule.Kind.CONSTRAINT_INDEX_RULE, descriptor );
-        }
-
-        return result;
-    }
-
-    @Override
-    public Iterator<NewIndexDescriptor> uniqueIndexesGetForLabel( int labelId )
-    {
-        statement.assertOpen();
-        return schemaRead().uniqueIndexesGetForLabel( statement, labelId );
-    }
-
-    @Override
     public Long indexGetOwningUniquenessConstraintId( NewIndexDescriptor index ) throws SchemaRuleNotFoundException
     {
         statement.assertOpen();
         return schemaRead().indexGetOwningUniquenessConstraintId( statement, index );
-    }
-
-    @Override
-    public Iterator<NewIndexDescriptor> uniqueIndexesGetAll()
-    {
-        statement.assertOpen();
-        return schemaRead().uniqueIndexesGetAll( statement );
     }
 
     @Override

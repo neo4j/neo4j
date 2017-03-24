@@ -35,6 +35,7 @@ import org.neo4j.kernel.api.schema_new.constaints.UniquenessConstraintDescriptor
 import org.neo4j.kernel.api.schema_new.index.NewIndexDescriptor;
 
 import static java.lang.String.format;
+import static org.neo4j.kernel.api.schema_new.index.NewIndexDescriptor.Type.UNIQUE;
 
 public class DbStructureCollector implements DbStructureVisitor
 {
@@ -168,16 +169,11 @@ public class DbStructureCollector implements DbStructureVisitor
     }
 
     @Override
-    public void visitIndex( NewIndexDescriptor descriptor, String userDescription, double uniqueValuesPercentage, long
-            size )
+    public void visitIndex( NewIndexDescriptor descriptor, String userDescription,
+                            double uniqueValuesPercentage, long size )
     {
-        regularIndices.putIndex( descriptor.schema(), userDescription, uniqueValuesPercentage, size );
-    }
-
-    @Override
-    public void visitUniqueIndex( NewIndexDescriptor descriptor, String userDescription, double uniqueValuesPercentage, long size )
-    {
-        uniqueIndices.putIndex( descriptor.schema(), userDescription, uniqueValuesPercentage, size );
+        IndexDescriptorMap indices = descriptor.type() == UNIQUE ? uniqueIndices : regularIndices;
+        indices.putIndex( descriptor.schema(), userDescription, uniqueValuesPercentage, size );
     }
 
     @Override

@@ -478,10 +478,7 @@ public class StoreUpgradeIntegrationTest
             ThreadToStatementContextBridge bridge = db.getDependencyResolver()
                     .resolveDependency( ThreadToStatementContextBridge.class );
             Statement statement = bridge.get();
-            return Iterators.concat(
-                    statement.readOperations().indexesGetAll(),
-                    statement.readOperations().uniqueIndexesGetAll()
-            );
+            return statement.readOperations().indexesGetAll();
         }
     }
 

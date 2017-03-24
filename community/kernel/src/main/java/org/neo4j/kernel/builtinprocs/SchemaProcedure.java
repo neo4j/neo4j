@@ -42,11 +42,12 @@ import org.neo4j.kernel.api.KernelTransaction;
 import org.neo4j.kernel.api.ReadOperations;
 import org.neo4j.kernel.api.Statement;
 import org.neo4j.kernel.api.StatementTokenNameLookup;
-import org.neo4j.kernel.api.schema_new.constaints.ConstraintBoundary;
 import org.neo4j.kernel.api.schema_new.constaints.ConstraintDescriptor;
 import org.neo4j.kernel.api.schema_new.index.NewIndexDescriptor;
 import org.neo4j.kernel.impl.coreapi.schema.PropertyNameUtils;
 import org.neo4j.kernel.internal.GraphDatabaseAPI;
+
+import static org.neo4j.kernel.api.schema_new.index.NewIndexDescriptor.Type.GENERAL;
 
 public class SchemaProcedure
 {
@@ -85,9 +86,12 @@ public class SchemaProcedure
                     while ( indexDescriptorIterator.hasNext() )
                     {
                         NewIndexDescriptor index = indexDescriptorIterator.next();
-                        String[] propertyNames = PropertyNameUtils.getPropertyKeys(
-                                                    statementTokenNameLookup, index.schema().getPropertyIds() );
-                        indexes.add( String.join( ",", propertyNames ) );
+                        if ( index.type() == GENERAL )
+                        {
+                            String[] propertyNames = PropertyNameUtils.getPropertyKeys(
+                                                        statementTokenNameLookup, index.schema().getPropertyIds() );
+                            indexes.add( String.join( ",", propertyNames ) );
+                        }
                     }
                     properties.put( "indexes", indexes );
 

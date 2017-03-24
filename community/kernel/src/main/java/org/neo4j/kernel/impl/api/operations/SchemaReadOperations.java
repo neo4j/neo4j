@@ -37,7 +37,7 @@ public interface SchemaReadOperations
     /**
      * Returns the descriptor for the given labelId and propertyKey.
      */
-    NewIndexDescriptor indexGetForLabelAndPropertyKey( KernelStatement state, LabelSchemaDescriptor descriptor );
+    NewIndexDescriptor indexGetForSchema( KernelStatement state, LabelSchemaDescriptor descriptor );
 
     /**
      * Get all indexes for a label.
@@ -48,16 +48,6 @@ public interface SchemaReadOperations
      * Returns all indexes.
      */
     Iterator<NewIndexDescriptor> indexesGetAll( KernelStatement state );
-
-    /**
-     * Get all constraint indexes for a label.
-     */
-    Iterator<NewIndexDescriptor> uniqueIndexesGetForLabel( KernelStatement state, int labelId );
-
-    /**
-     * Returns all constraint indexes.
-     */
-    Iterator<NewIndexDescriptor> uniqueIndexesGetAll( KernelStatement state );
 
     /**
      * Retrieve the state of an index.

@@ -81,7 +81,7 @@ implements Visitable<DbStructureVisitor>
         visitor.visitIndex( NewIndexDescriptorFactory.forLabel( 1, 5 ), ":Person(name)", 1.0d, 49845L );
         visitor.visitIndex( NewIndexDescriptorFactory.forLabel( 3, 5 ), ":Actor(name)", 1.0d, 44689L );
         visitor.visitIndex( NewIndexDescriptorFactory.forLabel( 4, 5 ), ":Director(name)", 1.0d, 6010L );
-        visitor.visitUniqueIndex( NewIndexDescriptorFactory.forLabel( 2, 3 ), ":User(login)", 1.0d, 45L );
+        visitor.visitIndex( NewIndexDescriptorFactory.uniqueForLabel( 2, 3 ), ":User(login)", 1.0d, 45L );
         visitor.visitUniqueConstraint( ConstraintDescriptorFactory.uniqueForLabel( 2, 3 ),
                 "CONSTRAINT ON ( " + "user:User ) ASSERT user.login IS UNIQUE" );
         visitor.visitAllNodesCount( 63042L );

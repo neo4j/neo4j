@@ -26,7 +26,6 @@ import java.util.Iterator;
 import org.neo4j.collection.primitive.Primitive;
 import org.neo4j.collection.primitive.PrimitiveIntSet;
 import org.neo4j.cursor.Cursor;
-import org.neo4j.helpers.collection.Iterators;
 import org.neo4j.kernel.api.exceptions.EntityNotFoundException;
 import org.neo4j.kernel.api.properties.DefinedProperty;
 import org.neo4j.kernel.api.properties.Property;
@@ -72,10 +71,7 @@ public class IndexTxStateUpdater
         PrimitiveIntSet nodePropertyIds = Primitive.intSet();
         nodePropertyIds.addAll( readOps.nodeGetPropertyKeys( state, node ).iterator() );
 
-        Iterator<NewIndexDescriptor> indexes =
-                Iterators.concat(
-                        storeReadLayer.indexesGetForLabel( labelId ),
-                        storeReadLayer.uniquenessIndexesGetForLabel( labelId ) );
+        Iterator<NewIndexDescriptor> indexes = storeReadLayer.indexesGetForLabel( labelId );
 
         while ( indexes.hasNext() )
         {
@@ -108,7 +104,7 @@ public class IndexTxStateUpdater
     {
         assert noSchemaChangedInTx( state );
         Iterator<NewIndexDescriptor> indexes =
-                storeReadLayer.indexesAndUniqueIndexesRelatedToProperty( after.propertyKeyId() );
+                storeReadLayer.indexesGetRelatedToProperty( after.propertyKeyId() );
         nodeIndexMatcher.onMatchingSchema( state, indexes, node, after.propertyKeyId(),
                 index ->
                 {
@@ -124,7 +120,7 @@ public class IndexTxStateUpdater
     {
         assert noSchemaChangedInTx( state );
         Iterator<NewIndexDescriptor> indexes =
-                storeReadLayer.indexesAndUniqueIndexesRelatedToProperty( before.propertyKeyId() );
+                storeReadLayer.indexesGetRelatedToProperty( before.propertyKeyId() );
         nodeIndexMatcher.onMatchingSchema( state, indexes, node, before.propertyKeyId(),
                 index ->
                 {
@@ -140,7 +136,7 @@ public class IndexTxStateUpdater
         assert noSchemaChangedInTx( state );
         assert before.propertyKeyId() == after.propertyKeyId();
         Iterator<NewIndexDescriptor> indexes =
-                storeReadLayer.indexesAndUniqueIndexesRelatedToProperty( before.propertyKeyId() );
+                storeReadLayer.indexesGetRelatedToProperty( before.propertyKeyId() );
         nodeIndexMatcher.onMatchingSchema( state, indexes, node, before.propertyKeyId(),
                 index ->
                 {

@@ -184,11 +184,11 @@ public class LockingStatementOperations implements
     }
 
     @Override
-    public NewIndexDescriptor indexGetForLabelAndPropertyKey( KernelStatement state, LabelSchemaDescriptor descriptor )
+    public NewIndexDescriptor indexGetForSchema( KernelStatement state, LabelSchemaDescriptor descriptor )
     {
         acquireSharedSchemaLock( state );
         state.assertOpen();
-        return schemaReadDelegate.indexGetForLabelAndPropertyKey( state, descriptor );
+        return schemaReadDelegate.indexGetForSchema( state, descriptor );
     }
 
     @Override
@@ -249,22 +249,6 @@ public class LockingStatementOperations implements
         acquireSharedSchemaLock( state );
         state.assertOpen();
         return schemaReadDelegate.indexGetCommittedId( state, index );
-    }
-
-    @Override
-    public Iterator<NewIndexDescriptor> uniqueIndexesGetForLabel( KernelStatement state, int labelId )
-    {
-        acquireSharedSchemaLock( state );
-        state.assertOpen();
-        return schemaReadDelegate.uniqueIndexesGetForLabel( state, labelId );
-    }
-
-    @Override
-    public Iterator<NewIndexDescriptor> uniqueIndexesGetAll( KernelStatement state )
-    {
-        acquireSharedSchemaLock( state );
-        state.assertOpen();
-        return schemaReadDelegate.uniqueIndexesGetAll( state );
     }
 
     @Override

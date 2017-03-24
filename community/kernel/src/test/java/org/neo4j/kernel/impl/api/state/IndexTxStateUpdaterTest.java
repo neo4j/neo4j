@@ -52,8 +52,6 @@ import static org.neo4j.helpers.collection.Iterators.filter;
 import static org.neo4j.kernel.api.properties.Property.property;
 import static org.neo4j.kernel.api.schema_new.SchemaDescriptorPredicates.hasLabel;
 import static org.neo4j.kernel.api.schema_new.SchemaDescriptorPredicates.hasProperty;
-import static org.neo4j.kernel.api.schema_new.index.NewIndexDescriptor.Filter.GENERAL;
-import static org.neo4j.kernel.api.schema_new.index.NewIndexDescriptor.Filter.UNIQUE;
 import static org.neo4j.kernel.impl.api.state.IndexTxStateUpdater.LabelChangeType.ADDED_LABEL;
 import static org.neo4j.kernel.impl.api.state.IndexTxStateUpdater.LabelChangeType.REMOVED_LABEL;
 
@@ -89,18 +87,14 @@ public class IndexTxStateUpdaterTest
         when( state.txState() ).thenReturn( txState );
 
         StoreReadLayer storeReadLayer = mock( StoreReadLayer.class );
-        when( storeReadLayer.indexesGetAll() ).thenAnswer(
-                x -> filter( GENERAL, indexes.iterator() ) );
-        when( storeReadLayer.uniquenessIndexesGetAll() ).thenAnswer(
-                x -> filter( UNIQUE, indexes.iterator() ) );
+        when( storeReadLayer.indexesGetAll() ).thenAnswer( x -> indexes.iterator() );
+        when( storeReadLayer.indexesGetForLabel(anyInt() ) )
+                .thenAnswer(
+                    x -> filter( hasLabel( (Integer)x.getArguments()[0] ), indexes.iterator() ) );
 
-        when( storeReadLayer.indexesGetForLabel( anyInt() ) ).thenAnswer(
-                x -> filter( GENERAL, filter( hasLabel( (Integer)x.getArguments()[0] ), indexes.iterator() ) ) );
-        when( storeReadLayer.uniquenessIndexesGetForLabel( anyInt() ) ).thenAnswer(
-                x -> filter( UNIQUE, filter( hasLabel( (Integer)x.getArguments()[0] ), indexes.iterator() ) ) );
-
-        when( storeReadLayer.indexesAndUniqueIndexesRelatedToProperty( anyInt() ) ).thenAnswer(
-                x -> filter( hasProperty( (Integer)x.getArguments()[0] ), indexes.iterator() ) );
+        when( storeReadLayer.indexesGetRelatedToProperty( anyInt() ) )
+                .thenAnswer(
+                    x -> filter( hasProperty( (Integer)x.getArguments()[0] ), indexes.iterator() ) );
 
         PrimitiveIntSet labels = Primitive.intSet();
         labels.add( labelId1 );

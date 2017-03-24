@@ -22,7 +22,6 @@ package org.neo4j.kernel.builtinprocs;
 import java.util.ArrayList;
 import java.util.Comparator;
 import java.util.List;
-import java.util.Set;
 import java.util.concurrent.TimeUnit;
 import java.util.stream.Stream;
 
@@ -47,7 +46,7 @@ import org.neo4j.procedure.Name;
 import org.neo4j.procedure.Procedure;
 
 import static org.neo4j.helpers.collection.Iterators.asList;
-import static org.neo4j.helpers.collection.Iterators.asSet;
+import static org.neo4j.kernel.api.schema_new.index.NewIndexDescriptor.Type.UNIQUE;
 import static org.neo4j.procedure.Mode.READ;
 
 @SuppressWarnings( {"unused", "WeakerAccess"} )
@@ -102,9 +101,6 @@ public class BuiltInProcedures
             TokenNameLookup tokens = new StatementTokenNameLookup( operations );
 
             List<NewIndexDescriptor> indexes = asList( operations.indexesGetAll() );
-
-            Set<NewIndexDescriptor> uniqueIndexes = asSet( operations.uniqueIndexesGetAll() );
-            indexes.addAll( uniqueIndexes );
             indexes.sort( Comparator.comparing( a -> a.userDescription( tokens ) ) );
 
             ArrayList<IndexResult> result = new ArrayList<>();
@@ -113,7 +109,7 @@ public class BuiltInProcedures
                 try
                 {
                     String type;
-                    if ( uniqueIndexes.contains( index ) )
+                    if ( index.type() == UNIQUE )
                     {
                         type = IndexType.NODE_UNIQUE_PROPERTY.typeName();
                     }

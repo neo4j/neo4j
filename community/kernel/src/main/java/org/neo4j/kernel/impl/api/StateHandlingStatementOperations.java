@@ -115,8 +115,7 @@ import static org.neo4j.helpers.collection.Iterators.iterator;
 import static org.neo4j.helpers.collection.Iterators.singleOrNull;
 import static org.neo4j.kernel.api.StatementConstants.NO_SUCH_NODE;
 import static org.neo4j.kernel.api.properties.DefinedProperty.NO_SUCH_PROPERTY;
-import static org.neo4j.kernel.api.schema_new.index.NewIndexDescriptor.Filter.GENERAL;
-import static org.neo4j.kernel.api.schema_new.index.NewIndexDescriptor.Filter.UNIQUE;
+import static org.neo4j.kernel.api.schema_new.index.NewIndexDescriptor.Filter.ANY;
 import static org.neo4j.kernel.impl.api.state.IndexTxStateUpdater.LabelChangeType.ADDED_LABEL;
 import static org.neo4j.kernel.impl.api.state.IndexTxStateUpdater.LabelChangeType.REMOVED_LABEL;
 import static org.neo4j.kernel.impl.util.Cursors.count;
@@ -729,15 +728,15 @@ public class StateHandlingStatementOperations implements
     }
 
     @Override
-    public NewIndexDescriptor indexGetForLabelAndPropertyKey( KernelStatement state, LabelSchemaDescriptor descriptor )
+    public NewIndexDescriptor indexGetForSchema( KernelStatement state, LabelSchemaDescriptor descriptor )
     {
-        NewIndexDescriptor indexDescriptor = storeLayer.indexGetForLabelAndPropertyKey( descriptor );
+        NewIndexDescriptor indexDescriptor = storeLayer.indexGetForSchema( descriptor );
         Iterator<NewIndexDescriptor> rules = iterator( indexDescriptor );
         if ( state.hasTxStateWithChanges() )
         {
             rules = filter(
                     SchemaDescriptor.equalTo( descriptor ),
-                    state.txState().indexDiffSetsByLabel( descriptor.getLabelId(), GENERAL ).apply( rules ) );
+                    state.txState().indexDiffSetsByLabel( descriptor.getLabelId(), ANY ).apply( rules ) );
         }
         return singleOrNull( rules );
     }
@@ -749,8 +748,8 @@ public class StateHandlingStatementOperations implements
         // If index is in our state, then return populating
         if ( state.hasTxStateWithChanges() )
         {
-            if ( checkIndexState( descriptor, state.txState().indexDiffSetsByLabel( descriptor.schema().getLabelId(),
-                    NewIndexDescriptor.Filter.ANY ) ) )
+            if ( checkIndexState( descriptor,
+                    state.txState().indexDiffSetsByLabel( descriptor.schema().getLabelId(), ANY ) ) )
             {
                 return InternalIndexState.POPULATING;
             }
@@ -767,8 +766,7 @@ public class StateHandlingStatementOperations implements
         if ( state.hasTxStateWithChanges() )
         {
             if ( checkIndexState( descriptor,
-                    state.txState().indexDiffSetsByLabel( descriptor.schema().getLabelId(),
-                            NewIndexDescriptor.Filter.ANY ) ) )
+                    state.txState().indexDiffSetsByLabel( descriptor.schema().getLabelId(), ANY ) ) )
             {
                 return PopulationProgress.NONE;
             }
@@ -797,7 +795,7 @@ public class StateHandlingStatementOperations implements
     {
         if ( state.hasTxStateWithChanges() )
         {
-            return state.txState().indexDiffSetsByLabel( labelId, GENERAL )
+            return state.txState().indexDiffSetsByLabel( labelId, ANY )
                                         .apply( storeLayer.indexesGetForLabel( labelId ) );
         }
         return storeLayer.indexesGetForLabel( labelId );
@@ -808,33 +806,10 @@ public class StateHandlingStatementOperations implements
     {
         if ( state.hasTxStateWithChanges() )
         {
-            return state.txState().indexChanges( GENERAL ).apply( storeLayer.indexesGetAll() );
+            return state.txState().indexChanges( ANY ).apply( storeLayer.indexesGetAll() );
         }
 
         return storeLayer.indexesGetAll();
-    }
-
-    @Override
-    public Iterator<NewIndexDescriptor> uniqueIndexesGetForLabel( KernelStatement state, int labelId )
-    {
-        if ( state.hasTxStateWithChanges() )
-        {
-            return state.txState().indexDiffSetsByLabel( labelId, UNIQUE )
-                        .apply( storeLayer.uniquenessIndexesGetForLabel( labelId ) );
-        }
-
-        return storeLayer.uniquenessIndexesGetForLabel( labelId );
-    }
-
-    @Override
-    public Iterator<NewIndexDescriptor> uniqueIndexesGetAll( KernelStatement state )
-    {
-        if ( state.hasTxStateWithChanges() )
-        {
-            return state.txState().indexChanges( UNIQUE ).apply( storeLayer.uniquenessIndexesGetAll() );
-        }
-
-        return storeLayer.uniquenessIndexesGetAll();
     }
 
     @Override

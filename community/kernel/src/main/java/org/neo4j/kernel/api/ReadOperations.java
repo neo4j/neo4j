@@ -234,34 +234,19 @@ public interface ReadOperations
     /** Returns all indexes. */
     Iterator<NewIndexDescriptor> indexesGetAll();
 
-    /** Returns the constraint index for the given labelId and propertyKey. */
-    NewIndexDescriptor uniqueIndexGetForLabelAndPropertyKey( LabelSchemaDescriptor descriptor )
-            throws SchemaRuleNotFoundException, DuplicateSchemaRuleException;
-
-    /** Get all constraint indexes for a label. */
-    Iterator<NewIndexDescriptor> uniqueIndexesGetForLabel( int labelId );
-
-    /** Returns all constraint indexes. */
-    Iterator<NewIndexDescriptor> uniqueIndexesGetAll();
-
-    /** Retrieve the state of an index.
-     * @param descriptor*/
+    /** Retrieve the state of an index. */
     InternalIndexState indexGetState( NewIndexDescriptor descriptor ) throws IndexNotFoundKernelException;
 
-    /** Retrieve the population progress of an index.
-     * @param descriptor*/
+    /** Retrieve the population progress of an index. */
     PopulationProgress indexGetPopulationProgress( NewIndexDescriptor descriptor ) throws IndexNotFoundKernelException;
 
-    /** Get the index size.
-     * @param descriptor*/
+    /** Get the index size. */
     long indexSize( NewIndexDescriptor descriptor ) throws IndexNotFoundKernelException;
 
-    /** Calculate the index unique values percentage (range: {@code 0.0} exclusive to {@code 1.0} inclusive).
-     * @param descriptor*/
+    /** Calculate the index unique values percentage (range: {@code 0.0} exclusive to {@code 1.0} inclusive). */
     double indexUniqueValuesSelectivity( NewIndexDescriptor descriptor ) throws IndexNotFoundKernelException;
 
-    /** Returns the failure description of a failed index.
-     * @param descriptor*/
+    /** Returns the failure description of a failed index. */
     String indexGetFailure( NewIndexDescriptor descriptor ) throws IndexNotFoundKernelException;
 
     /**

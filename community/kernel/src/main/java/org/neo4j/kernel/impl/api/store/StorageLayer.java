@@ -184,7 +184,7 @@ public class StorageLayer implements StoreReadLayer
     }
 
     @Override
-    public NewIndexDescriptor indexGetForLabelAndPropertyKey( LabelSchemaDescriptor descriptor )
+    public NewIndexDescriptor indexGetForSchema( LabelSchemaDescriptor descriptor )
     {
         return schemaCache.indexDescriptor( descriptor );
     }
@@ -192,32 +192,17 @@ public class StorageLayer implements StoreReadLayer
     @Override
     public Iterator<NewIndexDescriptor> indexesGetForLabel( int labelId )
     {
-        return toIndexDescriptors( filter( rule -> hasLabel( rule, labelId ) && !rule.canSupportUniqueConstraint(),
-                schemaCache.indexRules() ) );
+        return toIndexDescriptors( filter( hasLabel( labelId ), schemaCache.indexRules() ) );
     }
 
     @Override
     public Iterator<NewIndexDescriptor> indexesGetAll()
     {
-        return toIndexDescriptors( filter( rule -> !rule.canSupportUniqueConstraint(), schemaCache.indexRules() ) );
+        return toIndexDescriptors( schemaCache.indexRules() );
     }
 
     @Override
-    public Iterator<NewIndexDescriptor> uniquenessIndexesGetForLabel( int labelId )
-    {
-        Predicate<IndexRule> indexRulePredicate =
-                rule -> hasLabel( rule, labelId ) && rule.canSupportUniqueConstraint();
-        return toIndexDescriptors( filter( indexRulePredicate, schemaCache.indexRules() ) );
-    }
-
-    @Override
-    public Iterator<NewIndexDescriptor> uniquenessIndexesGetAll()
-    {
-        return toIndexDescriptors( filter( IndexRule::canSupportUniqueConstraint, schemaCache.indexRules() ) );
-    }
-
-    @Override
-    public Iterator<NewIndexDescriptor> indexesAndUniqueIndexesRelatedToProperty( int propertyId )
+    public Iterator<NewIndexDescriptor> indexesGetRelatedToProperty( int propertyId )
     {
         return schemaCache.indexesByProperty( propertyId );
     }

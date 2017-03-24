@@ -22,11 +22,13 @@ package org.neo4j.kernel.impl.api.index;
 import org.junit.Before;
 import org.junit.Test;
 
+import java.util.List;
 import java.util.Set;
 
 import org.neo4j.graphdb.Transaction;
 import org.neo4j.graphdb.schema.IndexDefinition;
 import org.neo4j.helpers.collection.Iterables;
+import org.neo4j.helpers.collection.Iterators;
 import org.neo4j.kernel.api.ReadOperations;
 import org.neo4j.kernel.api.SchemaWriteOperations;
 import org.neo4j.kernel.api.Statement;
@@ -41,8 +43,9 @@ import org.neo4j.kernel.api.index.PropertyAccessor;
 import org.neo4j.kernel.impl.api.integrationtest.KernelIntegrationTest;
 import org.neo4j.kernel.impl.api.state.ConstraintIndexCreator;
 
+import static org.hamcrest.MatcherAssert.assertThat;
+import static org.hamcrest.Matchers.containsInAnyOrder;
 import static org.junit.Assert.assertEquals;
-import static org.junit.Assert.assertFalse;
 import static org.junit.Assert.assertTrue;
 import static org.junit.Assert.fail;
 import static org.mockito.Mockito.mock;
@@ -54,10 +57,12 @@ public class IndexIT extends KernelIntegrationTest
 {
     private static final String LABEL = "Label";
     private static final String PROPERTY_KEY = "prop";
+    private static final String PROPERTY_KEY2 = "prop2";
 
     private int labelId;
     private int propertyKeyId;
     private LabelSchemaDescriptor descriptor;
+    private LabelSchemaDescriptor descriptor2;
 
     @Before
     public void createLabelAndProperty() throws Exception
@@ -65,7 +70,9 @@ public class IndexIT extends KernelIntegrationTest
         TokenWriteOperations tokenWrites = tokenWriteOperationsInNewTransaction();
         labelId = tokenWrites.labelGetOrCreateForName( LABEL );
         propertyKeyId = tokenWrites.propertyKeyGetOrCreateForName( PROPERTY_KEY );
+        int propertyKeyId2 = tokenWrites.propertyKeyGetOrCreateForName( PROPERTY_KEY2 );
         descriptor = SchemaDescriptorFactory.forLabel( labelId, propertyKeyId );
+        descriptor2 = SchemaDescriptorFactory.forLabel( labelId, propertyKeyId2 );
         commit();
     }
 
@@ -241,30 +248,18 @@ public class IndexIT extends KernelIntegrationTest
     }
 
     @Test
-    public void shouldNotListConstraintIndexesAmongIndexes() throws Exception
+    public void shouldListAll() throws Exception
     {
         // given
         SchemaWriteOperations schemaWriteOperations = schemaWriteOperationsInNewTransaction();
-        schemaWriteOperations.uniquePropertyConstraintCreate( descriptor );
+        NewIndexDescriptor index1 = schemaWriteOperations.indexCreate( descriptor );
+        NewIndexDescriptor index2 = schemaWriteOperations.uniquePropertyConstraintCreate( descriptor2 )
+                                                            .ownedIndexDescriptor();
         commit();
 
         // then/when
         ReadOperations readOperations = readOperationsInNewTransaction();
-        assertFalse( readOperations.indexesGetAll().hasNext() );
-        assertFalse( readOperations.indexesGetForLabel( labelId ).hasNext() );
-    }
-
-    @Test
-    public void shouldNotListIndexesAmongConstraintIndexes() throws Exception
-    {
-        // given
-        SchemaWriteOperations schemaWriteOperations = schemaWriteOperationsInNewTransaction();
-        schemaWriteOperations.indexCreate( descriptor );
-        commit();
-
-        // then/when
-        ReadOperations readOperations = readOperationsInNewTransaction();
-        assertFalse( readOperations.uniqueIndexesGetAll().hasNext() );
-        assertFalse( readOperations.uniqueIndexesGetForLabel( labelId ).hasNext() );
+        List<NewIndexDescriptor> indexes = Iterators.asList( readOperations.indexesGetAll() );
+        assertThat( indexes, containsInAnyOrder( index1, index2 ) );
     }
 }
