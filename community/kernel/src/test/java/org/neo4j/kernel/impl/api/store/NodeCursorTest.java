@@ -27,7 +27,6 @@ import org.junit.experimental.theories.Theories;
 import org.junit.experimental.theories.Theory;
 import org.junit.runner.RunWith;
 
-import java.io.IOException;
 import java.util.Arrays;
 import java.util.Set;
 import java.util.function.LongFunction;
@@ -50,7 +49,6 @@ import static org.junit.Assert.assertEquals;
 import static org.junit.Assert.assertFalse;
 import static org.junit.Assert.assertTrue;
 import static org.junit.Assert.fail;
-import static org.mockito.Mockito.doAnswer;
 import static org.mockito.Mockito.mock;
 import static org.mockito.Mockito.verify;
 import static org.mockito.Mockito.when;
@@ -534,17 +532,19 @@ public class NodeCursorTest
                 private int i = 0;
 
                 @Override
-                public long nextId()
+                public boolean nextBatch( Batch batch )
                 {
                     while ( i < ops.length )
                     {
                         Operation op = ops[i++];
                         if ( op.fromDisk() || mode == FETCH )
                         {
-                            return op.id();
+                            batch.init( op.id(), op.id() );
+                            return true;
                         }
                     }
-                    return -1L;
+                    batch.nothing();
+                    return false;
                 }
 
                 @Override

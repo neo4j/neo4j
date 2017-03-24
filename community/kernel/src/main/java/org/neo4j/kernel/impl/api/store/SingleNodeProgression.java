@@ -19,7 +19,7 @@
  */
 package org.neo4j.kernel.impl.api.store;
 
-import org.neo4j.kernel.api.StatementConstants;
+import static org.neo4j.kernel.api.StatementConstants.NO_SUCH_NODE;
 
 public class SingleNodeProgression implements NodeProgression
 {
@@ -31,15 +31,18 @@ public class SingleNodeProgression implements NodeProgression
     }
 
     @Override
-    public long nextId()
+    public boolean nextBatch( Batch batch )
     {
-        try
+        if ( nodeId != NO_SUCH_NODE )
         {
-            return nodeId;
+            batch.init( nodeId, nodeId );
+            nodeId = NO_SUCH_NODE;
+            return true;
         }
-        finally
+        else
         {
-            nodeId = StatementConstants.NO_SUCH_NODE;
+            batch.nothing();
+            return false;
         }
     }
 

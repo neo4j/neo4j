@@ -47,6 +47,7 @@ import static org.neo4j.kernel.impl.util.IoPrimitiveUtils.safeCastLongToInt;
 
 public class NodeCursor implements NodeItem, Cursor<NodeItem>, Disposable
 {
+    private final NodeProgression.Batch batch = new NodeProgression.Batch();
     private final NodeRecord nodeRecord;
     private final Consumer<NodeCursor> instanceCache;
     private final NodeStore nodeStore;
@@ -87,10 +88,9 @@ public class NodeCursor implements NodeItem, Cursor<NodeItem>, Disposable
     private boolean fetchNext()
     {
         labels = null;
-        long id;
-        while ( progression != null && (id = progression.nextId()) >= 0 )
+        while ( progression != null && (batch.hasNext() || progression.nextBatch( batch ) ) )
         {
-
+            long id = batch.next();
             if ( state != null && progression.mode() == FETCH && state.nodeIsAddedInThisTx( id ) )
             {
                 recordFromTxState( id );
@@ -104,6 +104,7 @@ public class NodeCursor implements NodeItem, Cursor<NodeItem>, Disposable
             }
         }
 
+        progression = null; // we are done with the progression here, let's skip the checks on next iterations
         if ( added != null && added.hasNext() )
         {
             recordFromTxState( added.next() );
@@ -127,6 +128,7 @@ public class NodeCursor implements NodeItem, Cursor<NodeItem>, Disposable
         added = null;
         state = null;
         progression = null;
+        batch.nothing();
         instanceCache.accept( this );
     }
 

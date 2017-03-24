@@ -19,26 +19,31 @@
  */
 package org.neo4j.kernel.impl.api.store;
 
-import org.neo4j.kernel.api.StatementConstants;
 import org.neo4j.kernel.impl.store.NodeStore;
 
 public class AllNodeProgression implements NodeProgression
 {
-    private final AllIdIterator allIdIterator;
+    private final NodeStore nodeStore;
+    private long start;
 
     AllNodeProgression( NodeStore nodeStore )
     {
-        allIdIterator = new AllIdIterator( nodeStore );
+        this.nodeStore = nodeStore;
+        this.start = nodeStore.getNumberOfReservedLowIds();
     }
 
     @Override
-    public long nextId()
+    public boolean nextBatch( Batch batch )
     {
-        if ( allIdIterator.hasNext() )
+        long highId = nodeStore.getHighId();
+        if ( start > highId )
         {
-            return allIdIterator.next();
+            batch.nothing();
+            return false;
         }
-        return StatementConstants.NO_SUCH_NODE;
+        batch.init( start, highId );
+        start = highId + 1;
+        return true;
     }
 
     @Override

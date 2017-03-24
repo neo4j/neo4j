@@ -22,5 +22,6 @@ package org.neo4j.kernel.impl.api.store;
 public enum TransactionStateAccessMode
 {
     APPEND,
-    FETCH
+    FETCH,
+    NONE
 }
