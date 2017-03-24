@@ -89,6 +89,7 @@ public class IndexQueryTransactionStateTest
         when( store.indexGetState( newIndexDescriptor ) ).thenReturn( InternalIndexState.ONLINE );
         when( store.indexesGetForLabel( labelId ) ).then( answerAsIteratorFrom( indexes ) );
         when( store.indexesGetAll() ).then( answerAsIteratorFrom( indexes ) );
+        when( store.indexesAndUniqueIndexesRelatedToProperty( propertyKeyId ) ).then( answerAsIteratorFrom( indexes ) );
         when( store.constraintsGetForLabel( labelId ) ).thenReturn( Collections.emptyIterator() );
         when( store.indexGetForLabelAndPropertyKey( newIndexDescriptor.schema() ) ).thenReturn( newIndexDescriptor );
 

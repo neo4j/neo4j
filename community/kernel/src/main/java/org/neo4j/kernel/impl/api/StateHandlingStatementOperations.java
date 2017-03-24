@@ -149,7 +149,7 @@ public class StateHandlingStatementOperations implements
         this.autoIndexing = propertyTrackers;
         this.constraintIndexCreator = constraintIndexCreator;
         this.legacyIndexStore = legacyIndexStore;
-        this.indexTxStateUpdater = new IndexTxStateUpdater( this, this );
+        this.indexTxStateUpdater = new IndexTxStateUpdater( storeLayer, this );
     }
 
     // <Cursors>

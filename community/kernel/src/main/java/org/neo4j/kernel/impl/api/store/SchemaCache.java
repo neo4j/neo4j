@@ -22,12 +22,15 @@ package org.neo4j.kernel.impl.api.store;
 import java.util.HashMap;
 import java.util.HashSet;
 import java.util.Iterator;
+import java.util.LinkedList;
 import java.util.List;
 import java.util.Map;
 import java.util.Set;
 import java.util.concurrent.ConcurrentHashMap;
 import java.util.function.Function;
 
+import org.neo4j.collection.primitive.Primitive;
+import org.neo4j.collection.primitive.PrimitiveIntObjectMap;
 import org.neo4j.helpers.collection.Iterators;
 import org.neo4j.kernel.api.schema_new.LabelSchemaDescriptor;
 import org.neo4j.kernel.api.schema_new.SchemaDescriptor;
@@ -58,6 +61,7 @@ public class SchemaCache
     private final ConstraintSemantics constraintSemantics;
 
     private final Map<Class<?>,Object> dependantState = new ConcurrentHashMap<>();
+    private final PrimitiveIntObjectMap<List<NewIndexDescriptor>> indexByProperty = Primitive.intObjectMap();
 
     public SchemaCache( ConstraintSemantics constraintSemantics, Iterable<SchemaRule> initialRules )
     {
@@ -150,6 +154,16 @@ public class SchemaCache
             IndexRule indexRule = (IndexRule) rule;
             indexRuleById.put( indexRule.getId(), indexRule );
             indexDescriptors.put( indexRule.schema(), indexRule.getIndexDescriptor() );
+            for ( int propertyId : indexRule.schema().getPropertyIds() )
+            {
+                List<NewIndexDescriptor> indexesForProperty = indexByProperty.get( propertyId );
+                if ( indexesForProperty == null )
+                {
+                    indexesForProperty = new LinkedList<>();
+                    indexByProperty.put( propertyId, indexesForProperty );
+                }
+                indexesForProperty.add( indexRule.getIndexDescriptor() );
+            }
         }
     }
 
@@ -159,6 +173,7 @@ public class SchemaCache
         constraintRuleById.clear();
         constraints.clear();
         indexDescriptors.clear();
+        indexByProperty.clear();
     }
 
     public void load( List<SchemaRule> schemaRuleIterator )
@@ -182,11 +197,21 @@ public class SchemaCache
         {
             IndexRule rule = indexRuleById.remove( id );
             indexDescriptors.remove( rule.schema() );
+            for ( int propertyId : rule.schema().getPropertyIds() )
+            {
+                indexByProperty.get( propertyId ).remove( rule.getIndexDescriptor() );
+            }
         }
     }
 
     public NewIndexDescriptor indexDescriptor( LabelSchemaDescriptor descriptor )
     {
         return indexDescriptors.get( descriptor );
+    }
+
+    public Iterator<NewIndexDescriptor> indexesByProperty( int propertyId )
+    {
+        List<NewIndexDescriptor> indexes = indexByProperty.get( propertyId );
+        return (indexes == null) ? Iterators.emptyIterator() : indexes.iterator();
     }
 }

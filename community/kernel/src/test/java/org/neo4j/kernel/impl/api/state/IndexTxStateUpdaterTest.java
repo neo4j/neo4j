@@ -38,9 +38,8 @@ import org.neo4j.kernel.api.schema_new.index.NewIndexDescriptorFactory;
 import org.neo4j.kernel.api.txstate.TransactionState;
 import org.neo4j.kernel.impl.api.KernelStatement;
 import org.neo4j.kernel.impl.api.operations.EntityReadOperations;
-import org.neo4j.kernel.impl.api.operations.SchemaReadOperations;
 import org.neo4j.storageengine.api.NodeItem;
-import org.neo4j.storageengine.api.PropertyItem;
+import org.neo4j.storageengine.api.StoreReadLayer;
 
 import static org.mockito.Matchers.any;
 import static org.mockito.Matchers.anyInt;
@@ -52,6 +51,7 @@ import static org.mockito.Mockito.when;
 import static org.neo4j.helpers.collection.Iterators.filter;
 import static org.neo4j.kernel.api.properties.Property.property;
 import static org.neo4j.kernel.api.schema_new.SchemaDescriptorPredicates.hasLabel;
+import static org.neo4j.kernel.api.schema_new.SchemaDescriptorPredicates.hasProperty;
 import static org.neo4j.kernel.api.schema_new.index.NewIndexDescriptor.Filter.GENERAL;
 import static org.neo4j.kernel.api.schema_new.index.NewIndexDescriptor.Filter.UNIQUE;
 import static org.neo4j.kernel.impl.api.state.IndexTxStateUpdater.LabelChangeType.ADDED_LABEL;
@@ -88,19 +88,19 @@ public class IndexTxStateUpdaterTest
         txState = mock( TransactionState.class );
         when( state.txState() ).thenReturn( txState );
 
-        SchemaReadOperations schemaReadOps = mock( SchemaReadOperations.class );
-        when( schemaReadOps.indexesGetAll( state ) ).thenAnswer(
+        StoreReadLayer storeReadLayer = mock( StoreReadLayer.class );
+        when( storeReadLayer.indexesGetAll() ).thenAnswer(
                 x -> filter( GENERAL, indexes.iterator() ) );
-        when( schemaReadOps.uniqueIndexesGetAll( state ) ).thenAnswer(
+        when( storeReadLayer.uniquenessIndexesGetAll() ).thenAnswer(
                 x -> filter( UNIQUE, indexes.iterator() ) );
-        when( schemaReadOps.indexesGetForLabel( state, labelId1 ) ).thenAnswer(
-                x -> filter( GENERAL, filter( hasLabel( labelId1 ), indexes.iterator() ) ) );
-        when( schemaReadOps.uniqueIndexesGetForLabel( state, labelId1 ) ).thenAnswer(
-                x -> filter( UNIQUE, filter( hasLabel( labelId1 ), indexes.iterator() ) ) );
-        when( schemaReadOps.indexesGetForLabel( state, labelId2 ) ).thenAnswer(
-                x -> filter( GENERAL, filter( hasLabel( labelId2 ), indexes.iterator() ) ) );
-        when( schemaReadOps.uniqueIndexesGetForLabel( state, labelId2 ) ).thenAnswer(
-                x -> filter( UNIQUE, filter( hasLabel( labelId2 ), indexes.iterator() ) ) );
+
+        when( storeReadLayer.indexesGetForLabel( anyInt() ) ).thenAnswer(
+                x -> filter( GENERAL, filter( hasLabel( (Integer)x.getArguments()[0] ), indexes.iterator() ) ) );
+        when( storeReadLayer.uniquenessIndexesGetForLabel( anyInt() ) ).thenAnswer(
+                x -> filter( UNIQUE, filter( hasLabel( (Integer)x.getArguments()[0] ), indexes.iterator() ) ) );
+
+        when( storeReadLayer.indexesAndUniqueIndexesRelatedToProperty( anyInt() ) ).thenAnswer(
+                x -> filter( hasProperty( (Integer)x.getArguments()[0] ), indexes.iterator() ) );
 
         PrimitiveIntSet labels = Primitive.intSet();
         labels.add( labelId1 );
@@ -121,7 +121,7 @@ public class IndexTxStateUpdaterTest
         when( readOps.nodeGetProperty( state, node, propId2 ) ).thenReturn( "hi2" );
         when( readOps.nodeGetProperty( state, node, propId3 ) ).thenReturn( "hi3" );
 
-        indexTxUpdater = new IndexTxStateUpdater( schemaReadOps, readOps );
+        indexTxUpdater = new IndexTxStateUpdater( storeReadLayer, readOps );
 
     }
 
