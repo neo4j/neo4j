@@ -292,7 +292,7 @@ public class GBPTree<KEY,VALUE> implements Closeable
      * Whether or not this tree has been closed. Accessed and changed solely in
      * {@link #close()} and {@link #close(Consumer)} to be able to close tree multiple times gracefully.
      */
-    private volatile boolean closed;
+    private boolean closed;
 
     /**
      * Opens an index {@code indexFile} in the {@code pageCache}, creating and initializing it if it doesn't exist.
