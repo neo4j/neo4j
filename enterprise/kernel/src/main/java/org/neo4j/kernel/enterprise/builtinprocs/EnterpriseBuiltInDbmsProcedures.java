@@ -181,7 +181,7 @@ public class EnterpriseBuiltInDbmsProcedures
             this.name = signature.name().toString();
             this.signature = signature.toString();
             this.description = signature.description().orElse( "" );
-            roles = Stream.of( "admin", "reader", "publisher", "architect" ).collect( toList() );
+            roles = Stream.of( "admin", "reader", "editor", "publisher", "architect" ).collect( toList() );
             roles.addAll( Arrays.asList( signature.allowed() ) );
         }
     }
@@ -220,6 +220,7 @@ public class EnterpriseBuiltInDbmsProcedures
             case READ:
                 roles.add( "reader" );
             case WRITE:
+                roles.add( "editor" );
                 roles.add( "publisher" );
             case SCHEMA:
                 roles.add( "architect" );

@@ -48,6 +48,7 @@ import static org.neo4j.server.security.enterprise.auth.plugin.api.PredefinedRol
 import static org.neo4j.server.security.enterprise.auth.plugin.api.PredefinedRoles.ARCHITECT;
 import static org.neo4j.server.security.enterprise.auth.plugin.api.PredefinedRoles.PUBLISHER;
 import static org.neo4j.server.security.enterprise.auth.plugin.api.PredefinedRoles.READER;
+import static org.neo4j.server.security.enterprise.auth.plugin.api.PredefinedRoles.EDITOR;
 
 public abstract class AuthProceduresInteractionTestBase<S> extends ProcedureInteractionTestBase<S>
 {
@@ -686,6 +687,7 @@ public abstract class AuthProceduresInteractionTestBase<S> extends ProcedureInte
                 "readSubject", listOf( READER ),
                 "schemaSubject", listOf( ARCHITECT ),
                 "writeSubject", listOf( READER, PUBLISHER ),
+                "editorSubject", listOf( EDITOR ),
                 "pwdSubject", listOf( ),
                 "noneSubject", listOf( ),
                 "neo4j", listOf( ADMIN )
@@ -702,6 +704,7 @@ public abstract class AuthProceduresInteractionTestBase<S> extends ProcedureInte
                 "adminSubject", listOf(),
                 "readSubject", listOf(),
                 "schemaSubject", listOf(),
+                "editorSubject", listOf(),
                 "writeSubject", listOf( IS_SUSPENDED ),
                 "pwdSubject", listOf( PWD_CHANGE, IS_SUSPENDED ),
                 "noneSubject", listOf(),
@@ -756,6 +759,7 @@ public abstract class AuthProceduresInteractionTestBase<S> extends ProcedureInte
                 READER, listOf( "readSubject" ),
                 ARCHITECT, listOf( "schemaSubject" ),
                 PUBLISHER, listOf( "writeSubject" ),
+                EDITOR, listOf( "editorSubject" ),
                 "empty", listOf()
         );
         assertSuccess( adminSubject, "CALL dbms.security.listRoles()",
@@ -979,9 +983,21 @@ public abstract class AuthProceduresInteractionTestBase<S> extends ProcedureInte
     {
         testSuccessfulRead( readSubject, 3 );
         testFailWrite( readSubject );
+        testFailTokenWrite( readSubject, WRITE_OPS_NOT_ALLOWED );
         testFailSchema( readSubject );
         testFailCreateUser( readSubject, PERMISSION_DENIED );
         assertEmpty( readSubject, "CALL dbms.security.changePassword( '321' )" );
+    }
+
+    @Test
+    public void shouldSetCorrectEditorPermissions() throws Exception
+    {
+        testSuccessfulRead( editorSubject, 3 );
+        testSuccessfulWrite( editorSubject );
+        testFailTokenWrite( editorSubject );
+        testFailSchema( editorSubject );
+        testFailCreateUser( editorSubject, PERMISSION_DENIED );
+        assertEmpty( editorSubject, "CALL dbms.security.changePassword( '321' )" );
     }
 
     @Test
@@ -989,6 +1005,7 @@ public abstract class AuthProceduresInteractionTestBase<S> extends ProcedureInte
     {
         testSuccessfulRead( writeSubject, 3 );
         testSuccessfulWrite( writeSubject );
+        testSuccessfulTokenWrite( writeSubject );
         testFailSchema( writeSubject );
         testFailCreateUser( writeSubject, PERMISSION_DENIED );
         assertEmpty( writeSubject, "CALL dbms.security.changePassword( '321' )" );
@@ -999,6 +1016,7 @@ public abstract class AuthProceduresInteractionTestBase<S> extends ProcedureInte
     {
         testSuccessfulRead( schemaSubject, 3 );
         testSuccessfulWrite( schemaSubject );
+        testSuccessfulTokenWrite( schemaSubject );
         testSuccessfulSchema( schemaSubject );
         testFailCreateUser( schemaSubject, PERMISSION_DENIED );
         assertEmpty( schemaSubject, "CALL dbms.security.changePassword( '321' )" );
@@ -1009,6 +1027,7 @@ public abstract class AuthProceduresInteractionTestBase<S> extends ProcedureInte
     {
         testSuccessfulRead( adminSubject, 3 );
         testSuccessfulWrite( adminSubject );
+        testSuccessfulTokenWrite( adminSubject );
         testSuccessfulSchema( adminSubject );
         assertEmpty( adminSubject, "CALL dbms.security.createUser('Olivia', 'bar', true)" );
         assertEmpty( adminSubject, "CALL dbms.security.changePassword( '321' )" );

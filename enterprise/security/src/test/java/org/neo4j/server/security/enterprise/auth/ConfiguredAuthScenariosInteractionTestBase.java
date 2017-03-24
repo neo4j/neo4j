@@ -40,6 +40,7 @@ import static org.neo4j.helpers.collection.MapUtil.map;
 import static org.neo4j.helpers.collection.MapUtil.stringMap;
 import static org.neo4j.server.security.enterprise.auth.plugin.api.PredefinedRoles.ADMIN;
 import static org.neo4j.server.security.enterprise.auth.plugin.api.PredefinedRoles.ARCHITECT;
+import static org.neo4j.server.security.enterprise.auth.plugin.api.PredefinedRoles.EDITOR;
 import static org.neo4j.server.security.enterprise.auth.plugin.api.PredefinedRoles.PUBLISHER;
 import static org.neo4j.server.security.enterprise.auth.plugin.api.PredefinedRoles.READER;
 
@@ -101,6 +102,7 @@ public abstract class ConfiguredAuthScenariosInteractionTestBase<S> extends Proc
             "readSubject", listOf( READER ),
             "schemaSubject", listOf( ARCHITECT ),
             "writeSubject", listOf( PUBLISHER ),
+            "editorSubject", listOf( EDITOR ),
             "pwdSubject", listOf( ),
             "noneSubject", listOf( ),
             "neo4j", listOf( ADMIN )

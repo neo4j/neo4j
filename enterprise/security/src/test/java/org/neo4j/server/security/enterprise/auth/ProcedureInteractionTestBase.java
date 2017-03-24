@@ -88,6 +88,7 @@ import static org.neo4j.server.security.enterprise.auth.plugin.api.PredefinedRol
 import static org.neo4j.server.security.enterprise.auth.plugin.api.PredefinedRoles.ARCHITECT;
 import static org.neo4j.server.security.enterprise.auth.plugin.api.PredefinedRoles.PUBLISHER;
 import static org.neo4j.server.security.enterprise.auth.plugin.api.PredefinedRoles.READER;
+import static org.neo4j.server.security.enterprise.auth.plugin.api.PredefinedRoles.EDITOR;
 
 public abstract class ProcedureInteractionTestBase<S>
 {
@@ -113,13 +114,14 @@ public abstract class ProcedureInteractionTestBase<S>
     S adminSubject;
     S schemaSubject;
     S writeSubject;
+    S editorSubject;
     S readSubject;
     S pwdSubject;
     S noneSubject;
 
     String[] initialUsers = { "adminSubject", "readSubject", "schemaSubject",
-        "writeSubject", "pwdSubject", "noneSubject", "neo4j" };
-    String[] initialRoles = { ADMIN, ARCHITECT, PUBLISHER, READER, EMPTY_ROLE };
+        "writeSubject", "editorSubject", "pwdSubject", "noneSubject", "neo4j" };
+    String[] initialRoles = { ADMIN, ARCHITECT, PUBLISHER, EDITOR, READER, EMPTY_ROLE };
 
     @Rule
     public final ThreadingRule threading = new ThreadingRule();
@@ -160,16 +162,19 @@ public abstract class ProcedureInteractionTestBase<S>
         userManager.newUser( "adminSubject", "abc", false );
         userManager.newUser( "schemaSubject", "abc", false );
         userManager.newUser( "writeSubject", "abc", false );
+        userManager.newUser( "editorSubject", "abc", false );
         userManager.newUser( "readSubject", "123", false );
         // Currently admin role is created by default
         userManager.addRoleToUser( ADMIN, "adminSubject" );
         userManager.addRoleToUser( ARCHITECT, "schemaSubject" );
         userManager.addRoleToUser( PUBLISHER, "writeSubject" );
+        userManager.addRoleToUser( EDITOR, "editorSubject" );
         userManager.addRoleToUser( READER, "readSubject" );
         userManager.newRole( EMPTY_ROLE );
         noneSubject = neo.login( "noneSubject", "abc" );
         pwdSubject = neo.login( "pwdSubject", "abc" );
         readSubject = neo.login( "readSubject", "123" );
+        editorSubject = neo.login( "editorSubject", "abc" );
         writeSubject = neo.login( "writeSubject", "abc" );
         schemaSubject = neo.login( "schemaSubject", "abc" );
         adminSubject = neo.login( "adminSubject", "abc" );
@@ -233,6 +238,21 @@ public abstract class ProcedureInteractionTestBase<S>
     void testFailWrite( S subject, String errMsg )
     {
         assertFail( subject, "CREATE (:Node)", errMsg );
+    }
+
+    void testSuccessfulTokenWrite( S subject )
+    {
+        assertEmpty( subject, "CALL db.createLabel('NewNodeName')" );
+    }
+
+    void testFailTokenWrite( S subject )
+    {
+        testFailTokenWrite( subject, TOKEN_CREATE_OPS_NOT_ALLOWED );
+    }
+
+    void testFailTokenWrite( S subject, String errMsg )
+    {
+        assertFail( subject, "CALL db.createLabel('NewNodeName')", errMsg );
     }
 
     void testSuccessfulSchema( S subject )
