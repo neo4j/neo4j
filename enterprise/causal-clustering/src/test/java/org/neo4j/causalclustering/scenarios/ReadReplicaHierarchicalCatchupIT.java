@@ -104,10 +104,10 @@ public class ReadReplicaHierarchicalCatchupIT
 
         // 5, 6 are other DCs
         ReadReplica east5 = cluster.addReadReplicaWithId( 5 );
-        east5.setUpstreamDatabaseSelectionStrategy( "connect-within-data-center" );
+        east5.setUpstreamDatabaseSelectionStrategy( "connect-randomly-within-server-group" );
         east5.start();
         ReadReplica west6 = cluster.addReadReplicaWithId( 6 );
-        west6.setUpstreamDatabaseSelectionStrategy( "connect-within-data-center" );
+        west6.setUpstreamDatabaseSelectionStrategy( "connect-randomly-within-server-group" );
         west6.start();
 
         checkDataHasReplicatedToReadReplicas( cluster, numberOfNodesToCreate );
