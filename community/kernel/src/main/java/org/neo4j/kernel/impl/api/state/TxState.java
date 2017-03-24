@@ -475,12 +475,6 @@ public final class TxState implements TransactionState, RelationshipVisitor.Home
     }
 
     @Override
-    public boolean nodeModifiedInThisTx( long nodeId )
-    {
-        return nodeIsAddedInThisTx( nodeId ) || nodeIsDeletedInThisTx( nodeId ) || hasNodeState( nodeId );
-    }
-
-    @Override
     public void relationshipDoDelete( long id, int type, long startNodeId, long endNodeId )
     {
         if ( relationships().remove( id ) )
@@ -730,18 +724,6 @@ public final class TxState implements TransactionState, RelationshipVisitor.Home
             nodes = new DiffSets<>();
         }
         return nodes;
-    }
-
-    @Override
-    public int augmentNodeDegree( long nodeId, int degree, Direction direction )
-    {
-        return NODE_STATE.get( this, nodeId ).augmentDegree( direction, degree );
-    }
-
-    @Override
-    public int augmentNodeDegree( long nodeId, int degree, Direction direction, int typeId )
-    {
-        return NODE_STATE.get( this, nodeId ).augmentDegree( direction, degree, typeId );
     }
 
     @Override
