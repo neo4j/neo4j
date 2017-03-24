@@ -1059,9 +1059,9 @@ public class TxStateTest
         state.relationshipDoDelete( 1338, relType + 1, startNode, startNode );
 
         // Then
-        assertEquals( 12, state.augmentNodeDegree( startNode, 10, Direction.BOTH ) );
-        assertEquals( 10, state.augmentNodeDegree( startNode, 10, Direction.INCOMING ) );
-        assertEquals( 11, state.augmentNodeDegree( startNode, 10, Direction.BOTH, relType ) );
+        assertEquals( 12, state.getNodeState( startNode ).augmentDegree( Direction.BOTH, 10 ) );
+        assertEquals( 10, state.getNodeState( startNode ).augmentDegree( Direction.INCOMING, 10 ) );
+        assertEquals( 11, state.getNodeState( startNode ).augmentDegree( Direction.BOTH, 10, relType ) );
     }
 
     @Test

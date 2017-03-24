@@ -85,13 +85,7 @@ public interface ReadableTransactionState
 
     boolean nodeIsDeletedInThisTx( long nodeId );
 
-    boolean nodeModifiedInThisTx( long nodeId );
-
     PrimitiveIntSet nodeRelationshipTypes( long nodeId );
-
-    int augmentNodeDegree( long node, int committedDegree, Direction direction );
-
-    int augmentNodeDegree( long node, int committedDegree, Direction direction, int relType );
 
     PrimitiveLongIterator augmentNodesGetAll( PrimitiveLongIterator committed );
 
