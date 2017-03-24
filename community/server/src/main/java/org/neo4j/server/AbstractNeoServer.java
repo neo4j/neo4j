@@ -50,6 +50,7 @@ import org.neo4j.kernel.impl.query.QueryExecutionEngine;
 import org.neo4j.kernel.impl.util.Dependencies;
 import org.neo4j.kernel.impl.util.JobScheduler;
 import org.neo4j.kernel.info.DiagnosticsManager;
+import org.neo4j.kernel.internal.Version;
 import org.neo4j.kernel.lifecycle.LifeSupport;
 import org.neo4j.logging.Log;
 import org.neo4j.logging.LogProvider;
@@ -109,6 +110,7 @@ public abstract class AbstractNeoServer implements NeoServer
             Pattern.compile( "/browser.*" ),
             Pattern.compile( "/" )
     };
+    public static final String NEO4J_IS_STARTING_MESSAGE = "======== Neo4j " + Version.getNeo4jVersion() + " ========";
 
     private final Database.Factory dbFactory;
     private final GraphDatabaseFacadeFactory.Dependencies dependencies;
@@ -145,6 +147,7 @@ public abstract class AbstractNeoServer implements NeoServer
         this.dependencies = dependencies;
         this.logProvider = logProvider;
         this.log = logProvider.getLog( getClass() );
+        log.info( NEO4J_IS_STARTING_MESSAGE );
 
         httpAddress = httpConnector( config, HttpConnector.Encryption.NONE )
                 .orElseThrow( () ->
