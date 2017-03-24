@@ -24,18 +24,20 @@ import java.util.function.Supplier;
 
 import org.neo4j.kernel.api.KernelAPI;
 import org.neo4j.kernel.api.KernelTransaction;
-import org.neo4j.kernel.api.ReadOperations;
 import org.neo4j.kernel.api.Statement;
+import org.neo4j.kernel.api.StatementTokenNameLookup;
 import org.neo4j.kernel.api.constraints.UniquenessConstraint;
 import org.neo4j.kernel.api.exceptions.TransactionFailureException;
 import org.neo4j.kernel.api.exceptions.index.IndexEntryConflictException;
 import org.neo4j.kernel.api.exceptions.index.IndexNotFoundKernelException;
 import org.neo4j.kernel.api.exceptions.index.IndexPopulationFailedKernelException;
+import org.neo4j.kernel.api.exceptions.schema.AlreadyConstrainedException;
 import org.neo4j.kernel.api.exceptions.schema.ConstraintVerificationFailedKernelException;
 import org.neo4j.kernel.api.exceptions.schema.CreateConstraintFailureException;
 import org.neo4j.kernel.api.exceptions.schema.DropIndexFailureException;
 import org.neo4j.kernel.api.exceptions.schema.SchemaRuleNotFoundException;
 import org.neo4j.kernel.api.exceptions.schema.UniquenessConstraintVerificationFailedKernelException;
+import org.neo4j.kernel.api.exceptions.schema.SchemaKernelException.OperationContext;
 import org.neo4j.kernel.api.index.IndexDescriptor;
 import org.neo4j.kernel.api.index.PropertyAccessor;
 import org.neo4j.kernel.impl.api.KernelStatement;
@@ -89,9 +91,9 @@ public class ConstraintIndexCreator
     public long createUniquenessConstraintIndex( KernelStatement state, SchemaReadOperations schema,
             int labelId, int propertyKeyId )
             throws ConstraintVerificationFailedKernelException, TransactionFailureException,
-            CreateConstraintFailureException, DropIndexFailureException
+            CreateConstraintFailureException, DropIndexFailureException, AlreadyConstrainedException
     {
-        IndexDescriptor descriptor = getOrCreateConstraintIndex( state, labelId, propertyKeyId );
+        IndexDescriptor descriptor = getOrCreateConstraintIndex( state, schema, labelId, propertyKeyId );
         UniquenessConstraint constraint = new UniquenessConstraint( labelId, propertyKeyId );
 
         boolean success = false;
@@ -211,11 +213,10 @@ public class ConstraintIndexCreator
         }
     }
 
-    public IndexDescriptor getOrCreateConstraintIndex( KernelStatement state,
-            int labelId, int propertyKeyId )
+    public IndexDescriptor getOrCreateConstraintIndex( KernelStatement state, SchemaReadOperations schema,
+            int labelId, int propertyKeyId ) throws AlreadyConstrainedException
     {
-        ReadOperations readOperations = state.readOperations();
-        for ( IndexDescriptor descriptor : loop( readOperations.uniqueIndexesGetForLabel( labelId ) ) )
+        for ( IndexDescriptor descriptor : loop( schema.uniqueIndexesGetForLabel( state, labelId ) ) )
         {
             if ( descriptor.getPropertyKeyId() == propertyKeyId )
             {
@@ -224,10 +225,14 @@ public class ConstraintIndexCreator
                 // constraint creation, due to crash or similar, hence the missing owner.
                 try
                 {
-                    if ( readOperations.indexGetOwningUniquenessConstraintId( descriptor ) == null )
+                    if ( schema.indexGetOwningUniquenessConstraintId( state, descriptor ) == null )
                     {
                         return descriptor;
                     }
+                    throw new AlreadyConstrainedException(
+                            new UniquenessConstraint( descriptor.getLabelId(), descriptor.getPropertyKeyId() ),
+                            OperationContext.CONSTRAINT_CREATION,
+                            new StatementTokenNameLookup( state.readOperations() ) );
                 }
                 catch ( SchemaRuleNotFoundException e )
                 {

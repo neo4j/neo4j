@@ -32,6 +32,7 @@ import org.neo4j.graphdb.Label;
 import org.neo4j.graphdb.Node;
 import org.neo4j.graphdb.Transaction;
 import org.neo4j.graphdb.mockfs.EphemeralFileSystemAbstraction;
+import org.neo4j.graphdb.schema.IndexDefinition;
 import org.neo4j.helpers.collection.Iterables;
 import org.neo4j.kernel.impl.api.index.IndexingService;
 import org.neo4j.kernel.impl.storageengine.impl.recordstorage.RecordStorageEngine;
@@ -44,16 +45,20 @@ import static org.junit.Assert.assertEquals;
 import static org.junit.Assert.assertTrue;
 import static org.junit.Assert.fail;
 
+import static org.neo4j.helpers.collection.Iterables.single;
+
 public class ConstraintRecoveryIT
 {
+    private static final String KEY = "prop";
+    private static final Label LABEL = Label.label( "label1" );
+
     @Rule
     public EphemeralFileSystemRule fileSystemRule = new EphemeralFileSystemRule();
 
-    private static final Label LABEL = Label.label( "label1" );
     private GraphDatabaseAPI db;
 
     @Test
-    public void shouldNotHaveAnIndexIfUniqueConstraintCreationOnRecoveryFails() throws IOException
+    public void shouldHaveAvailableOrphanedConstraintIndexIfUniqueConstraintCreationFails() throws IOException
     {
         // given
         final EphemeralFileSystemAbstraction fs = fileSystemRule.get();
@@ -87,7 +92,7 @@ public class ConstraintRecoveryIT
             for ( int i = 0; i < 2; i++ )
             {
                 Node node1 = db.createNode( LABEL );
-                node1.setProperty( "prop", true );
+                node1.setProperty( KEY, true );
             }
 
             tx.success();
@@ -95,7 +100,7 @@ public class ConstraintRecoveryIT
 
         try ( Transaction tx = db.beginTx() )
         {
-            db.schema().constraintFor( LABEL ).assertPropertyIsUnique( "prop" ).create();
+            db.schema().constraintFor( LABEL ).assertPropertyIsUnique( KEY ).create();
             fail("Should have failed with ConstraintViolationException");
             tx.success();
         }
@@ -128,7 +133,9 @@ public class ConstraintRecoveryIT
 
         try(Transaction tx = db.beginTx())
         {
-            assertEquals(0, Iterables.count(Iterables.asList( db.schema().getIndexes() )));
+            IndexDefinition orphanedConstraintIndex = single( db.schema().getIndexes() );
+            assertEquals( LABEL.name(), orphanedConstraintIndex.getLabel().name() );
+            assertEquals( KEY, single( orphanedConstraintIndex.getPropertyKeys() ) );
         }
 
         db.shutdown();

@@ -24,6 +24,7 @@ import org.junit.Test;
 import java.util.ArrayList;
 import java.util.List;
 
+import org.neo4j.helpers.collection.Iterators;
 import org.neo4j.kernel.api.KernelAPI;
 import org.neo4j.kernel.api.KernelTransaction;
 import org.neo4j.kernel.api.Statement;
@@ -32,6 +33,7 @@ import org.neo4j.kernel.api.exceptions.ProcedureException;
 import org.neo4j.kernel.api.exceptions.Status;
 import org.neo4j.kernel.api.exceptions.TransactionFailureException;
 import org.neo4j.kernel.api.exceptions.index.IndexPopulationFailedKernelException;
+import org.neo4j.kernel.api.exceptions.schema.AlreadyConstrainedException;
 import org.neo4j.kernel.api.exceptions.schema.ConstraintVerificationFailedKernelException;
 import org.neo4j.kernel.api.index.IndexDescriptor;
 import org.neo4j.kernel.api.index.PreexistingIndexEntryConflictException;
@@ -56,6 +58,8 @@ import static org.mockito.Mockito.verify;
 import static org.mockito.Mockito.verifyNoMoreInteractions;
 import static org.mockito.Mockito.verifyZeroInteractions;
 import static org.mockito.Mockito.when;
+
+import static org.neo4j.helpers.collection.Iterators.iterator;
 import static org.neo4j.kernel.impl.api.StatementOperationsTestHelper.mockedParts;
 import static org.neo4j.kernel.impl.api.StatementOperationsTestHelper.mockedState;
 import static org.neo4j.kernel.impl.store.SchemaStorage.IndexRuleKind.CONSTRAINT;
@@ -69,7 +73,8 @@ public class ConstraintIndexCreatorTest
         StatementOperationParts constraintCreationContext = mockedParts();
         StatementOperationParts indexCreationContext = mockedParts();
 
-        IndexDescriptor descriptor = new IndexDescriptor( 123, 456 );
+        int labelId = 123;
+        IndexDescriptor descriptor = new IndexDescriptor( labelId, 456 );
         KernelStatement state = mockedState();
 
         IndexingService indexingService = mock( IndexingService.class );
@@ -80,7 +85,8 @@ public class ConstraintIndexCreatorTest
         IndexProxy indexProxy = mock( IndexProxy.class );
         when( indexingService.getIndexProxy( 2468L ) ).thenReturn( indexProxy );
         PropertyAccessor propertyAccessor = mock( PropertyAccessor.class );
-
+        when( constraintCreationContext.schemaReadOperations().uniqueIndexesGetForLabel( state, labelId ) )
+                .thenReturn( Iterators.emptyIterator() );
         ConstraintIndexCreator creator = new ConstraintIndexCreator( () -> kernel, indexingService, propertyAccessor, false );
 
         // when
@@ -92,6 +98,7 @@ public class ConstraintIndexCreatorTest
         verify( kernel.statements.get( 0 ).txState() ).constraintIndexRuleDoAdd( descriptor );
         verifyNoMoreInteractions( indexCreationContext.schemaWriteOperations() );
         verify( constraintCreationContext.schemaReadOperations() ).indexGetCommittedId( state, descriptor, CONSTRAINT );
+        verify( constraintCreationContext.schemaReadOperations() ).uniqueIndexesGetForLabel( state, labelId );
         verifyNoMoreInteractions( constraintCreationContext.schemaReadOperations() );
         verify( indexProxy ).awaitStoreScanCompleted();
     }
@@ -103,7 +110,8 @@ public class ConstraintIndexCreatorTest
         StatementOperationParts constraintCreationContext = mockedParts();
         KernelStatement state = mockedState();
 
-        IndexDescriptor descriptor = new IndexDescriptor( 123, 456 );
+        int labelId = 123;
+        IndexDescriptor descriptor = new IndexDescriptor( labelId, 456 );
 
         IndexingService indexingService = mock( IndexingService.class );
         StubKernel kernel = new StubKernel();
@@ -116,13 +124,14 @@ public class ConstraintIndexCreatorTest
         doThrow( new IndexPopulationFailedKernelException( descriptor, "some index", cause) )
                 .when(indexProxy).awaitStoreScanCompleted();
         PropertyAccessor propertyAccessor = mock( PropertyAccessor.class );
-
+        when( constraintCreationContext.schemaReadOperations().uniqueIndexesGetForLabel( state, labelId ) )
+                .thenReturn( Iterators.emptyIterator() );
         ConstraintIndexCreator creator = new ConstraintIndexCreator( () -> kernel, indexingService, propertyAccessor, false );
 
         // when
         try
         {
-            creator.createUniquenessConstraintIndex( state, constraintCreationContext.schemaReadOperations(), 123, 456 );
+            creator.createUniquenessConstraintIndex( state, constraintCreationContext.schemaReadOperations(), labelId, 456 );
 
             fail( "expected exception" );
         }
@@ -134,12 +143,13 @@ public class ConstraintIndexCreatorTest
         }
         assertEquals( 2, kernel.statements.size() );
         TransactionState tx1 = kernel.statements.get( 0 ).txState();
-        verify( tx1 ).constraintIndexRuleDoAdd( new IndexDescriptor( 123, 456 ) );
+        verify( tx1 ).constraintIndexRuleDoAdd( new IndexDescriptor( labelId, 456 ) );
         verifyNoMoreInteractions( tx1 );
         verify( constraintCreationContext.schemaReadOperations() ).indexGetCommittedId( state, descriptor, CONSTRAINT );
+        verify( constraintCreationContext.schemaReadOperations() ).uniqueIndexesGetForLabel( state, labelId );
         verifyNoMoreInteractions( constraintCreationContext.schemaReadOperations() );
         TransactionState tx2 = kernel.statements.get( 1 ).txState();
-        verify( tx2 ).constraintIndexDoDrop( new IndexDescriptor( 123, 456 ) );
+        verify( tx2 ).constraintIndexDoDrop( new IndexDescriptor( labelId, 456 ) );
         verifyNoMoreInteractions( tx2 );
     }
 
@@ -171,7 +181,8 @@ public class ConstraintIndexCreatorTest
         StubKernel kernel = new StubKernel();
         IndexingService indexingService = mock( IndexingService.class );
         StatementOperationParts constraintCreationContext = mockedParts();
-        IndexDescriptor descriptor = new IndexDescriptor( 123, 456 );
+        int labelId = 123;
+        IndexDescriptor descriptor = new IndexDescriptor( labelId, 456 );
         PropertyAccessor propertyAccessor = mock( PropertyAccessor.class );
 
         KernelStatement state = mockedState();
@@ -180,15 +191,112 @@ public class ConstraintIndexCreatorTest
                 .thenReturn( 2468L );
         IndexProxy indexProxy = mock( IndexProxy.class );
         when( indexingService.getIndexProxy( anyLong() ) ).thenReturn( indexProxy );
+        when( constraintCreationContext.schemaReadOperations().uniqueIndexesGetForLabel( state, labelId ) )
+                .thenReturn( Iterators.emptyIterator() );
 
         ConstraintIndexCreator creator = new ConstraintIndexCreator( () -> kernel, indexingService, propertyAccessor, true );
 
         // when
-        creator.createUniquenessConstraintIndex( state, constraintCreationContext.schemaReadOperations(), 123, 456 );
+        creator.createUniquenessConstraintIndex( state, constraintCreationContext.schemaReadOperations(), labelId, 456 );
 
         // then
         verify( state.locks().pessimistic() ).releaseExclusive( ResourceTypes.SCHEMA, ResourceTypes.schemaResource() );
         verify( state.locks().pessimistic() ).acquireExclusive( ResourceTypes.SCHEMA, ResourceTypes.schemaResource() );
+    }
+
+    @Test
+    public void shouldReuseExistingOrphanedConstraintIndex() throws Exception
+    {
+        // given
+        StatementOperationParts constraintCreationContext = mockedParts();
+        StatementOperationParts indexCreationContext = mockedParts();
+
+        int labelId = 123;
+        int propertyKeyId = 456;
+        IndexDescriptor descriptor = new IndexDescriptor( labelId, propertyKeyId );
+        KernelStatement state = mockedState();
+
+        IndexingService indexingService = mock( IndexingService.class );
+        StubKernel kernel = new StubKernel();
+
+        long orphanedConstraintIndexId = 111;
+        when( constraintCreationContext.schemaReadOperations().indexGetCommittedId( state, descriptor, CONSTRAINT ) )
+                .thenReturn( orphanedConstraintIndexId );
+        IndexProxy indexProxy = mock( IndexProxy.class );
+        when( indexingService.getIndexProxy( orphanedConstraintIndexId ) ).thenReturn( indexProxy );
+        PropertyAccessor propertyAccessor = mock( PropertyAccessor.class );
+        when( constraintCreationContext.schemaReadOperations().uniqueIndexesGetForLabel( state, labelId ) )
+                .thenReturn( iterator( descriptor ) );
+        when( constraintCreationContext.schemaReadOperations().indexGetOwningUniquenessConstraintId(
+                state, descriptor ) ).thenReturn( null ); // which means it has no owner
+        ConstraintIndexCreator creator = new ConstraintIndexCreator( () -> kernel, indexingService, propertyAccessor, false );
+
+        // when
+        long indexId = creator.createUniquenessConstraintIndex( state, constraintCreationContext.schemaReadOperations(), 123, propertyKeyId );
+
+        // then
+        assertEquals( orphanedConstraintIndexId, indexId );
+        assertEquals( "There should have been no need to acquire a statement to create the constraint index", 0,
+                kernel.statements.size() );
+        verifyNoMoreInteractions( indexCreationContext.schemaWriteOperations() );
+        verify( constraintCreationContext.schemaReadOperations() ).indexGetCommittedId( state, descriptor, CONSTRAINT );
+        verify( constraintCreationContext.schemaReadOperations() ).uniqueIndexesGetForLabel( state, labelId );
+        verify( constraintCreationContext.schemaReadOperations() )
+                .indexGetOwningUniquenessConstraintId( state, descriptor );
+        verifyNoMoreInteractions( constraintCreationContext.schemaReadOperations() );
+        verify( indexProxy ).awaitStoreScanCompleted();
+    }
+
+    @Test
+    public void shouldFailOnExistingOwnedConstraintIndex() throws Exception
+    {
+        // given
+        StatementOperationParts constraintCreationContext = mockedParts();
+        StatementOperationParts indexCreationContext = mockedParts();
+
+        int labelId = 123;
+        int propertyKeyId = 456;
+        IndexDescriptor descriptor = new IndexDescriptor( labelId, propertyKeyId );
+        KernelStatement state = mockedState();
+
+        IndexingService indexingService = mock( IndexingService.class );
+        StubKernel kernel = new StubKernel();
+
+        long constraintIndexId = 111;
+        long constraintIndexOwnerId = 222;
+        when( constraintCreationContext.schemaReadOperations().indexGetCommittedId( state, descriptor, CONSTRAINT ) )
+                .thenReturn( constraintIndexId );
+        IndexProxy indexProxy = mock( IndexProxy.class );
+        when( indexingService.getIndexProxy( constraintIndexId ) ).thenReturn( indexProxy );
+        PropertyAccessor propertyAccessor = mock( PropertyAccessor.class );
+        when( constraintCreationContext.schemaReadOperations().uniqueIndexesGetForLabel( state, labelId ) )
+                .thenReturn( iterator( descriptor ) );
+        when( constraintCreationContext.schemaReadOperations().indexGetOwningUniquenessConstraintId(
+                state, descriptor ) ).thenReturn( constraintIndexOwnerId ); // which means there's an owner
+        when( state.readOperations().labelGetName( labelId ) ).thenReturn( "MyLabel" );
+        when( state.readOperations().propertyKeyGetName( propertyKeyId ) ).thenReturn( "MyKey" );
+        ConstraintIndexCreator creator = new ConstraintIndexCreator( () -> kernel, indexingService, propertyAccessor, false );
+
+        // when
+        try
+        {
+            creator.createUniquenessConstraintIndex( state, constraintCreationContext.schemaReadOperations(), 123,
+                    propertyKeyId );
+            fail( "Should've failed" );
+        }
+        catch ( AlreadyConstrainedException e )
+        {
+            // THEN good
+        }
+
+        // then
+        assertEquals( "There should have been no need to acquire a statement to create the constraint index", 0,
+                kernel.statements.size() );
+        verifyNoMoreInteractions( indexCreationContext.schemaWriteOperations() );
+        verify( constraintCreationContext.schemaReadOperations() ).uniqueIndexesGetForLabel( state, labelId );
+        verify( constraintCreationContext.schemaReadOperations() )
+                .indexGetOwningUniquenessConstraintId( state, descriptor );
+        verifyNoMoreInteractions( constraintCreationContext.schemaReadOperations() );
     }
 
     private class StubKernel implements KernelAPI
