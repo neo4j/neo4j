@@ -752,16 +752,8 @@ public class IndexingService extends LifecycleAdapter implements IndexingUpdateS
 
     private String indexStateInfo( String tag, Long indexId, InternalIndexState state, NewIndexDescriptor descriptor )
     {
-        try
-        {
-            return format( "IndexingService.%s: index %d on %s is %s", tag, indexId, descriptor.schema().userDescription( tokenNameLookup ), state.name() );
-        }
-        catch ( Exception e )
-        {
-            System.out.println(descriptor);
-            e.printStackTrace();
-            throw new RuntimeException( e );
-        }
+        return format( "IndexingService.%s: index %d on %s is %s", tag, indexId,
+                descriptor.schema().userDescription( tokenNameLookup ), state.name() );
     }
 
     public IndexSamplingController getSamplingController()
