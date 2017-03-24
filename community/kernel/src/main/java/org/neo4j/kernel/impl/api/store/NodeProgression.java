@@ -19,10 +19,44 @@
  */
 package org.neo4j.kernel.impl.api.store;
 
+import org.neo4j.collection.primitive.PrimitiveLongIterator;
+
 public interface NodeProgression
 {
-
-    long nextId();
+    boolean nextBatch( Batch batch );
 
     TransactionStateAccessMode mode();
+
+    class Batch implements PrimitiveLongIterator
+    {
+        private long first;
+        private long last;
+
+        {
+            nothing();
+        }
+
+        public void init( long first, long last )
+        {
+            this.first = first;
+            this.last = last;
+        }
+
+        public void nothing()
+        {
+            init( -1, -2 );
+        }
+
+        @Override
+        public boolean hasNext()
+        {
+            return first <= last;
+        }
+
+        @Override
+        public long next()
+        {
+            return first++;
+        }
+    }
 }
