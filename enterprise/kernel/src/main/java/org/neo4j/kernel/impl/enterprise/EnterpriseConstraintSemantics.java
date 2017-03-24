@@ -19,9 +19,7 @@
  */
 package org.neo4j.kernel.impl.enterprise;
 
-import java.util.ArrayList;
 import java.util.Iterator;
-import java.util.List;
 import java.util.function.BiPredicate;
 
 import org.neo4j.cursor.Cursor;
@@ -31,7 +29,6 @@ import org.neo4j.kernel.api.exceptions.schema.NodePropertyExistenceException;
 import org.neo4j.kernel.api.exceptions.schema.RelationshipPropertyExistenceException;
 import org.neo4j.kernel.api.schema_new.LabelSchemaDescriptor;
 import org.neo4j.kernel.api.schema_new.RelationTypeSchemaDescriptor;
-import org.neo4j.kernel.api.schema_new.SchemaProcessor;
 import org.neo4j.kernel.api.schema_new.constaints.ConstraintDescriptor;
 import org.neo4j.kernel.api.schema_new.constaints.NodeKeyConstraintDescriptor;
 import org.neo4j.kernel.impl.constraints.StandardConstraintSemantics;
@@ -43,6 +40,7 @@ import org.neo4j.storageengine.api.txstate.ReadableTransactionState;
 import org.neo4j.storageengine.api.txstate.TxStateVisitor;
 
 import static org.neo4j.kernel.api.exceptions.schema.ConstraintValidationException.Phase.VERIFICATION;
+import static org.neo4j.kernel.impl.enterprise.PropertyExistenceEnforcer.getOrCreatePropertyExistenceEnforcerFrom;
 
 public class EnterpriseConstraintSemantics extends StandardConstraintSemantics
 {
@@ -135,48 +133,16 @@ public class EnterpriseConstraintSemantics extends StandardConstraintSemantics
     public TxStateVisitor decorateTxStateVisitor( StoreReadLayer storeLayer, ReadableTransactionState txState,
             TxStateVisitor visitor )
     {
-        ExistenceConstraintCollector collector = new ExistenceConstraintCollector();
-        Iterator<ConstraintDescriptor> constraints = storeLayer.constraintsGetAll();
-        while ( constraints.hasNext() )
+        if ( !txState.hasDataChanges() )
         {
-            collector.addIfRelevant( constraints.next() );
+            // If there are no data changes, there is no need to enforce constraints. Since there is no need to
+            // enforce constraints, there is no need to build up the state required to be able to enforce constraints.
+            // In fact, it might even be counter productive to build up that state, since if there are no data changes
+            // there would be schema changes instead, and in that case we would throw away the schema-dependant state
+            // we just built when the schema changing transaction commits.
+            return visitor;
         }
-
-        if ( collector.hasExistenceConstraints() )
-        {
-            return new PropertyExistenceEnforcer( visitor, txState, storeLayer, collector.labelExists, collector.relTypeExists );
-        }
-        return visitor;
-    }
-
-    private static class ExistenceConstraintCollector implements SchemaProcessor
-    {
-        final List<LabelSchemaDescriptor> labelExists = new ArrayList<>();
-        final List<RelationTypeSchemaDescriptor> relTypeExists = new ArrayList<>();
-
-        void addIfRelevant( ConstraintDescriptor constraint )
-        {
-            if ( constraint.enforcesPropertyExistence() )
-            {
-                constraint.schema().processWith( this );
-            }
-        }
-
-        @Override
-        public void processSpecific( LabelSchemaDescriptor schema )
-        {
-            labelExists.add( schema );
-        }
-
-        @Override
-        public void processSpecific( RelationTypeSchemaDescriptor schema )
-        {
-            relTypeExists.add( schema );
-        }
-
-        boolean hasExistenceConstraints()
-        {
-            return labelExists.size() > 0 || relTypeExists.size() > 0;
-        }
+        return getOrCreatePropertyExistenceEnforcerFrom( storeLayer )
+                .decorate( visitor, txState, storeLayer );
     }
 }

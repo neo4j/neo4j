@@ -322,7 +322,7 @@ public class RecordStorageEngine implements StorageEngine, Lifecycle
                     txStateVisitor, storeLayer, storageStatement, txState, countsRecordState );
             try ( TxStateVisitor visitor = txStateVisitor )
             {
-                txState.accept( txStateVisitor );
+                txState.accept( visitor );
             }
 
             // Convert record state into commands

@@ -20,6 +20,7 @@
 package org.neo4j.kernel.impl.api.store;
 
 import java.util.Iterator;
+import java.util.function.Function;
 import java.util.function.IntPredicate;
 import java.util.function.Predicate;
 import java.util.function.Supplier;
@@ -608,6 +609,12 @@ public class StorageLayer implements StoreReadLayer
         RelationshipGroupRecord relationshipGroupRecord = relationshipGroupStore.newRecord();
         return countRelationshipsInGroup( groupId, direction, relType, nodeId, relationshipRecord,
                 relationshipGroupRecord, storeStatement.recordCursors() );
+    }
+
+    @Override
+    public <T> T getOrCreateSchemaDependantState( Class<T> type, Function<StoreReadLayer,T> factory )
+    {
+        return schemaCache.getOrCreateDependantState( type, factory, this );
     }
 
     private void visitNode( StorageStatement statement, NodeItem nodeItem, DegreeVisitor visitor )
