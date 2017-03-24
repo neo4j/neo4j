@@ -1034,7 +1034,12 @@ public class StateHandlingStatementOperations implements
         Property existingProperty = existingPropertyValue == null ?
                 Property.noGraphProperty( property.propertyKeyId() ) :
                 Property.property( property.propertyKeyId(), existingPropertyValue );
-        state.txState().graphDoReplaceProperty( existingProperty, property );
+
+        if ( !property.equals( existingProperty ) )
+        {
+            state.txState().graphDoReplaceProperty( existingProperty, property );
+        }
+
         return existingProperty;
     }
 

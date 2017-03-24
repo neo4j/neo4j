@@ -74,6 +74,7 @@ import static org.mockito.Mockito.verifyNoMoreInteractions;
 import static org.mockito.Mockito.when;
 import static org.neo4j.helpers.collection.Iterators.asIterable;
 import static org.neo4j.helpers.collection.Iterators.asSet;
+import static org.neo4j.helpers.collection.Iterators.iterator;
 import static org.neo4j.kernel.api.properties.Property.intProperty;
 import static org.neo4j.kernel.impl.api.StatementOperationsTestHelper.mockedState;
 import static org.neo4j.kernel.impl.api.state.StubCursors.asNodeCursor;
@@ -487,6 +488,26 @@ public class StateHandlingStatementOperationsTest
         // although auto-indexing should still be notified
         verify( autoIndexOps ).propertyChanged( any( DataWriteOperations.class ), eq( relationshipId ),
                 eq( newProperty ), eq( newProperty ) );
+    }
+
+    @Test
+    public void shouldNotRecordGraphSetPropertyOnSameValue() throws Exception
+    {
+        // GIVEN
+        int propertyKeyId = 5;
+        String value = "The value";
+        KernelStatement kernelStatement = mock( KernelStatement.class );
+        StoreStatement storeStatement = mock( StoreStatement.class );
+        when( kernelStatement.getStoreStatement() ).thenReturn( storeStatement );
+        when( inner.graphGetAllProperties() ).thenReturn( iterator( Property.stringProperty( propertyKeyId, value ) ) );
+        StateHandlingStatementOperations operations = newTxStateOps( inner );
+
+        // WHEN
+        DefinedProperty newProperty = Property.stringProperty( propertyKeyId, value );
+        operations.graphSetProperty( kernelStatement, newProperty );
+
+        // THEN
+        assertFalse( kernelStatement.hasTxStateWithChanges() );
     }
 
     private Cursor<NodeItem> nodeCursorWithProperty( int propertyKeyId, String value )
