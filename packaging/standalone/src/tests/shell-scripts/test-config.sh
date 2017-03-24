@@ -120,4 +120,10 @@ test_expect_success "should write paths in use" "
   test_expect_stdout_matching '  Run:          $(neo4j_home)/ruun' run_daemon
 "
 
+test_expect_success "should write active database" "
+  clear_config &&
+  set_config 'dbms.active_database' 'bigdata' neo4j.conf &&
+  test_expect_stdout_matching 'Active database: bigdata' run_daemon
+"
+
 test_done

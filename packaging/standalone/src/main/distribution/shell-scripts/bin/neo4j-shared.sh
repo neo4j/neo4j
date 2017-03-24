@@ -193,3 +193,7 @@ Directories in use:
   Run:          ${NEO4J_RUN}
 EOF
 }
+
+print_active_database() {
+  echo "Active database: ${dbms_active_database:-graph.db}"
+}
