@@ -38,4 +38,10 @@ public class ShellConnectionInfo extends ClientConnectionInfo
     {
         return "shell-session\tshell\t" + id;
     }
+
+    @Override
+    public String protocol()
+    {
+        return "shell";
+    }
 }

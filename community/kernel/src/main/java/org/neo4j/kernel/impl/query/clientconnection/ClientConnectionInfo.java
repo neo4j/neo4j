@@ -48,14 +48,14 @@ public abstract class ClientConnectionInfo
     public abstract String asConnectionDetails();
 
     /**
-     * This method is overridden in the subclasses where this information is available.
+     * Which protocol was used for this connection.
+     * <p>
+     * This is not necessarily an internet protocol (like http et.c.) although it could be. It might also be "embedded"
+     * for example, if this connection represents an embedded session.
      *
-     * @return the scheme used for connecting to the server, or {@code null} if no scheme is available.
+     * @return the protocol used for connecting to the server.
      */
-    public String protocol()
-    {
-        return null;
-    }
+    public abstract String protocol();
 
     /**
      * This method is overridden in the subclasses where this information is available.
@@ -83,6 +83,12 @@ public abstract class ClientConnectionInfo
         public String asConnectionDetails()
         {
             return "embedded-session\t";
+        }
+
+        @Override
+        public String protocol()
+        {
+            return "embedded";
         }
     };
 
