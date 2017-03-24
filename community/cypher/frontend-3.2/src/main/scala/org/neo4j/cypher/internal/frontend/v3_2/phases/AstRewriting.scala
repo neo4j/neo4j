@@ -21,13 +21,13 @@ package org.neo4j.cypher.internal.frontend.v3_2.phases
 
 import org.neo4j.cypher.internal.frontend.v3_2.ast.NotEquals
 import org.neo4j.cypher.internal.frontend.v3_2.ast.conditions._
-import org.neo4j.cypher.internal.frontend.v3_2.ast.rewriters.ASTRewriter
+import org.neo4j.cypher.internal.frontend.v3_2.ast.rewriters.{ASTRewriter, LiteralExtraction}
 import org.neo4j.cypher.internal.frontend.v3_2.helpers.rewriting.RewriterStepSequencer
 import org.neo4j.cypher.internal.frontend.v3_2.phases.CompilationPhaseTracer.CompilationPhase.AST_REWRITE
 
-case class AstRewriting(sequencer: String => RewriterStepSequencer, shouldExtractParams: Boolean) extends Phase[BaseContext, BaseState, BaseState] {
+case class AstRewriting(sequencer: String => RewriterStepSequencer, literalExtraction: LiteralExtraction) extends Phase[BaseContext, BaseState, BaseState] {
 
-  private val astRewriter = new ASTRewriter(sequencer, shouldExtractParams)
+  private val astRewriter = new ASTRewriter(sequencer, literalExtraction)
 
   override def process(in: BaseState, context: BaseContext): BaseState = {
 

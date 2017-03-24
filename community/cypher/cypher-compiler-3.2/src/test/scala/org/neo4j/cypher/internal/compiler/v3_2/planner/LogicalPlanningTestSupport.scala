@@ -35,7 +35,7 @@ import org.neo4j.cypher.internal.compiler.v3_2.spi.{GraphStatistics, PlanContext
 import org.neo4j.cypher.internal.compiler.v3_2.test_helpers.ContextHelper
 import org.neo4j.cypher.internal.frontend.v3_2._
 import org.neo4j.cypher.internal.frontend.v3_2.ast._
-import org.neo4j.cypher.internal.frontend.v3_2.ast.rewriters.{ASTRewriter, CNFNormalizer, Namespacer, rewriteEqualityToInPredicate}
+import org.neo4j.cypher.internal.frontend.v3_2.ast.rewriters._
 import org.neo4j.cypher.internal.frontend.v3_2.helpers.rewriting.RewriterStepSequencer
 import org.neo4j.cypher.internal.frontend.v3_2.helpers.rewriting.RewriterStepSequencer.newPlain
 import org.neo4j.cypher.internal.frontend.v3_2.parser.CypherParser
@@ -52,7 +52,7 @@ trait LogicalPlanningTestSupport extends CypherTestSupport with AstConstructionT
   val monitors = mock[Monitors]
   val parser = new CypherParser
   val rewriterSequencer = RewriterStepSequencer.newValidating _
-  val astRewriter = new ASTRewriter(rewriterSequencer, shouldExtractParameters = false)
+  val astRewriter = new ASTRewriter(rewriterSequencer, literalExtraction = Never)
   val mockRel = newPatternRelationship("a", "b", "r")
   val solved = CardinalityEstimation.lift(PlannerQuery.empty, Cardinality(1))
 
@@ -184,7 +184,7 @@ trait LogicalPlanningTestSupport extends CypherTestSupport with AstConstructionT
     Parsing andThen
     PreparatoryRewriting andThen
     SemanticAnalysis(warn = true) andThen
-    AstRewriting(newPlain, shouldExtractParams = false) andThen
+    AstRewriting(newPlain, literalExtraction = Never) andThen
     RewriteProcedureCalls andThen
     Namespacer andThen
     rewriteEqualityToInPredicate andThen

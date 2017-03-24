@@ -32,7 +32,7 @@ import org.neo4j.cypher.internal.compiler.v3_2.planner.logical.{LogicalPlanningC
 import org.neo4j.cypher.internal.compiler.v3_2.spi._
 import org.neo4j.cypher.internal.compiler.v3_2.test_helpers.ContextHelper
 import org.neo4j.cypher.internal.frontend.v3_2.ast._
-import org.neo4j.cypher.internal.frontend.v3_2.ast.rewriters.{ASTRewriter, CNFNormalizer, Namespacer, rewriteEqualityToInPredicate}
+import org.neo4j.cypher.internal.frontend.v3_2.ast.rewriters._
 import org.neo4j.cypher.internal.frontend.v3_2.helpers.fixedPoint
 import org.neo4j.cypher.internal.frontend.v3_2.helpers.rewriting.RewriterStepSequencer
 import org.neo4j.cypher.internal.frontend.v3_2.helpers.rewriting.RewriterStepSequencer.newPlain
@@ -54,7 +54,7 @@ trait LogicalPlanningTestSupport2 extends CypherTestSupport with AstConstruction
   val solved = CardinalityEstimation.lift(PlannerQuery.empty, Cardinality(0))
   var parser = new CypherParser
   val rewriterSequencer = RewriterStepSequencer.newValidating _
-  var astRewriter = new ASTRewriter(rewriterSequencer, shouldExtractParameters = false)
+  var astRewriter = new ASTRewriter(rewriterSequencer, literalExtraction = Never)
   final var planner = new QueryPlanner() {
     def internalPlan(query: PlannerQuery)(implicit context: LogicalPlanningContext, leafPlan: Option[LogicalPlan] = None): LogicalPlan =
       planSingleQuery(query)
@@ -139,7 +139,7 @@ trait LogicalPlanningTestSupport2 extends CypherTestSupport with AstConstruction
       Parsing andThen
       PreparatoryRewriting andThen
       SemanticAnalysis(warn = true) andThen
-      AstRewriting(newPlain, shouldExtractParams = false) andThen
+      AstRewriting(newPlain, literalExtraction = Never) andThen
       RewriteProcedureCalls andThen
       Namespacer andThen
       rewriteEqualityToInPredicate andThen
