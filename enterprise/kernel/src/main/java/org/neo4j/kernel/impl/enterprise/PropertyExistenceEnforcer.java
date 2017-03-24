@@ -50,6 +50,7 @@ import org.neo4j.storageengine.api.txstate.TxStateVisitor;
 
 import static java.lang.String.format;
 import static java.util.Collections.emptyList;
+import static org.neo4j.collection.primitive.PrimitiveSortedArraySet.mergeSortedSet;
 import static org.neo4j.kernel.api.exceptions.schema.ConstraintValidationException.Phase.VALIDATION;
 
 class PropertyExistenceEnforcer
@@ -84,7 +85,7 @@ class PropertyExistenceEnforcer
         int[] current = map.get( key );
         if ( current != null )
         {
-            values = merge( current, values );
+            values = mergeSortedSet( current, values );
         }
         map.put( key, values );
     }
@@ -371,74 +372,6 @@ class PropertyExistenceEnforcer
         throw new IllegalStateException( format(
                 "Relationship constraint for relationshipType=%d, propertyKey=%d should exist.",
                 relationshipType, propertyKey ) );
-    }
-
-    /**
-     * Merges two sets of integers represented as sorted arrays.
-     *
-     * @param lhs
-     *         a set of integers, represented as a sorted array.
-     * @param rhs
-     *         a set of integers, represented as a sorted array.
-     * @return a set of integers, represented as a sorted array.
-     */
-    static int[] merge( int[] lhs, int[] rhs )
-    {
-        if ( lhs.length < rhs.length )
-        {
-            return merge( rhs, lhs );
-        }
-        int[] merged = null;
-        int m = 0;
-        for ( int l = 0, r = 0; l < lhs.length && r < rhs.length; )
-        {
-            while ( l < lhs.length && lhs[l] < rhs[r] )
-            {
-                if ( merged != null )
-                {
-                    merged[m++] = lhs[l];
-                }
-                l++;
-            }
-            if ( l == lhs.length )
-            {
-                if ( merged == null )
-                {
-                    merged = Arrays.copyOf( lhs, lhs.length + rhs.length - r );
-                    m = l;
-                }
-                System.arraycopy( rhs, r, merged, m, rhs.length - r );
-                m += rhs.length - r;
-                break;
-            }
-            if ( lhs[l] > rhs[r] )
-            {
-                if ( merged == null )
-                {
-                    merged = Arrays.copyOf( lhs, lhs.length + rhs.length - r );
-                    m = l;
-                }
-                merged[m++] = rhs[r++];
-            }
-            else // i.e. ( lhs[l] == rhs[r] )
-            {
-                if ( merged != null )
-                {
-                    merged[m++] = lhs[l];
-                }
-                l++;
-                r++;
-            }
-        }
-        if ( merged == null )
-        {
-            return lhs;
-        }
-        if ( merged.length < m )
-        {
-            merged = Arrays.copyOf( merged, m );
-        }
-        return merged;
     }
 
     private boolean contains( int[] list, int value )

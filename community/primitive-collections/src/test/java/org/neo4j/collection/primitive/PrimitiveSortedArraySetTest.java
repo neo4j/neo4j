@@ -5,19 +5,19 @@
  * This file is part of Neo4j.
  *
  * Neo4j is free software: you can redistribute it and/or modify
- * it under the terms of the GNU Affero General Public License as
- * published by the Free Software Foundation, either version 3 of the
- * License, or (at your option) any later version.
+ * it under the terms of the GNU General Public License as published by
+ * the Free Software Foundation, either version 3 of the License, or
+ * (at your option) any later version.
  *
  * This program is distributed in the hope that it will be useful,
  * but WITHOUT ANY WARRANTY; without even the implied warranty of
  * MERCHANTABILITY or FITNESS FOR A PARTICULAR PURPOSE.  See the
- * GNU Affero General Public License for more details.
+ * GNU General Public License for more details.
  *
- * You should have received a copy of the GNU Affero General Public License
- * along with this program. If not, see <http://www.gnu.org/licenses/>.
+ * You should have received a copy of the GNU General Public License
+ * along with this program.  If not, see <http://www.gnu.org/licenses/>.
  */
-package org.neo4j.kernel.impl.enterprise;
+package org.neo4j.collection.primitive;
 
 import java.util.Arrays;
 
@@ -27,10 +27,10 @@ import org.junit.runners.Parameterized;
 
 import static org.junit.Assert.assertArrayEquals;
 import static org.junit.Assert.assertSame;
-import static org.neo4j.kernel.impl.enterprise.PropertyExistenceEnforcer.merge;
+import static org.neo4j.collection.primitive.PrimitiveSortedArraySet.mergeSortedSet;
 
 @RunWith( Parameterized.class )
-public class PropertyExistenceEnforcerMergeTest
+public class PrimitiveSortedArraySetTest
 {
     @Parameterized.Parameters( name = "{0}" )
     public static Iterable<Object[]> parameters()
@@ -53,7 +53,7 @@ public class PropertyExistenceEnforcerMergeTest
     private final int[] rhs;
     private final int[] expected;
 
-    public PropertyExistenceEnforcerMergeTest( Input input )
+    public PrimitiveSortedArraySetTest( Input input )
     {
         this.lhs = input.lhs;
         this.rhs = input.rhs;
@@ -63,7 +63,7 @@ public class PropertyExistenceEnforcerMergeTest
     @Test
     public void testMerge() throws Exception
     {
-        int[] actual = merge( lhs, rhs );
+        int[] actual = mergeSortedSet( lhs, rhs );
         if ( lhs == expected || rhs == expected )
         {
             assertSame( expected, actual );
