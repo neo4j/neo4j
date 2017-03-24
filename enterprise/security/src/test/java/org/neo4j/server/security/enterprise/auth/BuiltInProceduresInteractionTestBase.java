@@ -360,7 +360,7 @@ public abstract class BuiltInProceduresInteractionTestBase<S> extends ProcedureI
                 "RETURN 1",
                 itr -> assertThat( itr.hasNext(), equalTo( true ) ) );
 
-        tx2.closeAndAssertQueryKilled();
+        tx2.closeAndAssertSomeTermination();
 
         // allow query1 to exit procedure and finish
         ClassWithProcedures.doubleLatch.finish();
@@ -406,7 +406,7 @@ public abstract class BuiltInProceduresInteractionTestBase<S> extends ProcedureI
         );
 
         latch.finishAndWaitForAllToFinish();
-        tx1.closeAndAssertTransactionTermination();
+        tx1.closeAndAssertExplicitTermination();
         tx2.closeAndAssertSuccess();
 
         assertEmpty( adminSubject,
@@ -517,7 +517,10 @@ public abstract class BuiltInProceduresInteractionTestBase<S> extends ProcedureI
                 latch.finishAndWaitForAllToFinish();
 
                 // Then
-                write.closeAndAssertTransactionTermination();
+                // We cannot assert on explicit termination here, because if the termination is detected when trying
+                // to lock we will only get the general TransactionTerminatedException
+                // (see {@link LockClientStateHolder}).
+                write.closeAndAssertSomeTermination();
 
                 // stop server after assertion to avoid other kind of failures due to races (e.g., already closed
                 // lock clients )
@@ -560,8 +563,8 @@ public abstract class BuiltInProceduresInteractionTestBase<S> extends ProcedureI
         );
 
         latch.finishAndWaitForAllToFinish();
-        read1.closeAndAssertTransactionTermination();
-        read2.closeAndAssertTransactionTermination();
+        read1.closeAndAssertExplicitTermination();
+        read2.closeAndAssertExplicitTermination();
         read3.closeAndAssertSuccess();
         write.closeAndAssertSuccess();
 
@@ -845,7 +848,7 @@ public abstract class BuiltInProceduresInteractionTestBase<S> extends ProcedureI
 
         latch.finishAndWaitForAllToFinish();
 
-        write.closeAndAssertTransactionTermination();
+        write.closeAndAssertExplicitTermination();
 
         assertEmpty( adminSubject, "MATCH (n:Test) RETURN n.name AS name" );
     }
@@ -870,7 +873,7 @@ public abstract class BuiltInProceduresInteractionTestBase<S> extends ProcedureI
 
         latch.finishAndWaitForAllToFinish();
 
-        schema.closeAndAssertTransactionTermination();
+        schema.closeAndAssertExplicitTermination();
         write.closeAndAssertSuccess();
 
         assertSuccess( adminSubject, "MATCH (n:Test) RETURN n.name AS name",
@@ -896,8 +899,8 @@ public abstract class BuiltInProceduresInteractionTestBase<S> extends ProcedureI
 
         latch.finishAndWaitForAllToFinish();
 
-        schema1.closeAndAssertTransactionTermination();
-        schema2.closeAndAssertTransactionTermination();
+        schema1.closeAndAssertExplicitTermination();
+        schema2.closeAndAssertExplicitTermination();
 
         assertEmpty( adminSubject, "MATCH (n:Test) RETURN n.name AS name" );
     }
@@ -937,7 +940,7 @@ public abstract class BuiltInProceduresInteractionTestBase<S> extends ProcedureI
 
         latch.finishAndWaitForAllToFinish();
 
-        create.closeAndAssertTransactionTermination();
+        create.closeAndAssertExplicitTermination();
 
         assertEmpty( adminSubject, "MATCH (n:Test) RETURN n.name AS name" );
     }

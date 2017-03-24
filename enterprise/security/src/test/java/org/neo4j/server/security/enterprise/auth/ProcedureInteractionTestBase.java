@@ -477,7 +477,7 @@ public abstract class ProcedureInteractionTestBase<S>
 
         latch.finishAndWaitForAllToFinish();
 
-        userThread.closeAndAssertTransactionTermination();
+        userThread.closeAndAssertExplicitTermination();
 
         assertEmpty( adminSubject, "MATCH (n:Test) RETURN n.name AS name" );
     }
