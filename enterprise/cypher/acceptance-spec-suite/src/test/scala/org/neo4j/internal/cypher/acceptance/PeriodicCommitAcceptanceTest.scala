@@ -22,10 +22,10 @@ package org.neo4j.internal.cypher.acceptance
 import java.io.PrintWriter
 
 import org.neo4j.cypher._
-import org.neo4j.cypher.internal.compiler.v3_2.planDescription.InternalPlanDescription.Arguments.Planner
+import org.neo4j.cypher.internal.compiler.v3_2.planDescription.InternalPlanDescription.Arguments.{PageCacheHits, PageCacheMisses, Planner}
 import org.neo4j.cypher.internal.compiler.v3_2.test_helpers.CreateTempFileTestSupport
-import org.neo4j.cypher.internal.helpers.TxCounts
 import org.neo4j.cypher.internal.frontend.v3_2.helpers.StringHelper.RichString
+import org.neo4j.cypher.internal.helpers.TxCounts
 import org.neo4j.graphdb.Node
 import org.neo4j.kernel.api.KernelTransaction
 import org.neo4j.kernel.impl.transaction.log.TransactionIdStore
@@ -81,7 +81,10 @@ class PeriodicCommitAcceptanceTest extends ExecutionEngineFunSuite
     val txIdStore = graph.getDependencyResolver.resolveDependency(classOf[TransactionIdStore])
     val beforeTxId = txIdStore.getLastClosedTransactionId
     val result = execute(s"PROFILE USING PERIODIC COMMIT 1 LOAD CSV FROM '$url' AS line CREATE (n {id: line[0]}) RETURN n.id as id")
-    result.executionPlanDescription().arguments should contain(Planner("IDP"))
+    val arguments = result.executionPlanDescription().arguments
+    arguments should contain(Planner("IDP"))
+    arguments.find( _.isInstanceOf[PageCacheHits]) shouldBe defined
+    arguments.find( _.isInstanceOf[PageCacheMisses]) shouldBe defined
     result.columnAs[Long]("id").toList should equal(List("1","2","3","4","5"))
     val afterTxId = txIdStore.getLastClosedTransactionId
     result.close()

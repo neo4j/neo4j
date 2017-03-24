@@ -19,16 +19,16 @@
  */
 package org.neo4j.cypher.internal.compiler.v3_2
 
-import org.neo4j.cypher.internal.frontend.v3_2.phases.CompilationPhaseTracer.CompilationPhase.PIPE_BUILDING
 import org.neo4j.cypher.internal.compiler.v3_2.executionplan.{PipeInfo, _}
 import org.neo4j.cypher.internal.compiler.v3_2.phases._
 import org.neo4j.cypher.internal.compiler.v3_2.pipes.Pipe
 import org.neo4j.cypher.internal.compiler.v3_2.planner.execution.{PipeExecutionBuilderContext, PipeExecutionPlanBuilder}
 import org.neo4j.cypher.internal.compiler.v3_2.planner.logical.LogicalPlanIdentificationBuilder
-import org.neo4j.cypher.internal.compiler.v3_2.profiler.Profiler
+import org.neo4j.cypher.internal.compiler.v3_2.profiler.{Profiler, ProfilingQueryContext}
 import org.neo4j.cypher.internal.compiler.v3_2.spi.{GraphStatistics, PlanContext, QueryContext, UpdateCountingQueryContext}
 import org.neo4j.cypher.internal.frontend.v3_2.PeriodicCommitInOpenTransactionException
 import org.neo4j.cypher.internal.frontend.v3_2.notification.InternalNotification
+import org.neo4j.cypher.internal.frontend.v3_2.phases.CompilationPhaseTracer.CompilationPhase.PIPE_BUILDING
 import org.neo4j.cypher.internal.frontend.v3_2.phases.{InternalNotificationLogger, Phase}
 
 object BuildInterpretedExecutionPlan extends Phase[CompilerContext, CompilationState, CompilationState] {
@@ -87,7 +87,14 @@ object BuildInterpretedExecutionPlan extends Phase[CompilerContext, CompilationS
       val builder = resultBuilderFactory.create()
 
       val profiling = planType == ProfileMode
-      val builderContext = if (updating || profiling) new UpdateCountingQueryContext(queryContext) else queryContext
+      var builderContext = if (updating || profiling) new UpdateCountingQueryContext(queryContext) else queryContext
+
+      if (profiling) {
+        val profiler = new Profiler()
+        builderContext = new ProfilingQueryContext(queryContext)
+        builder.setPipeDecorator(profiler)
+      }
+
       builder.setQueryContext(builderContext)
 
       if (periodicCommit.isDefined) {
@@ -95,9 +102,6 @@ object BuildInterpretedExecutionPlan extends Phase[CompilerContext, CompilationS
           throw new PeriodicCommitInOpenTransactionException()
         builder.setLoadCsvPeriodicCommitObserver(periodicCommit.get.batchRowCount)
       }
-
-      if (profiling)
-        builder.setPipeDecorator(new Profiler())
 
       builder.build(queryId, planType, params, notificationLogger)
     }
