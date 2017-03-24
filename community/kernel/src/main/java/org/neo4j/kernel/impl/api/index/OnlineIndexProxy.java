@@ -142,12 +142,6 @@ public class OnlineIndexProxy implements IndexProxy
     }
 
     @Override
-    public void flush() throws IOException
-    {
-        accessor.flush();
-    }
-
-    @Override
     public Future<Void> close() throws IOException
     {
         accessor.close();

@@ -199,7 +199,7 @@ public class IndexingService extends LifecycleAdapter implements IndexingUpdateS
             SchemaIndexProvider.Descriptor providerDescriptor = indexRule.getProviderDescriptor();
             SchemaIndexProvider provider = providerMap.apply( providerDescriptor );
             InternalIndexState initialState = provider.getInitialState( indexId, descriptor );
-            log.info( indexStateInfo( "init", indexId, initialState, descriptor ) );
+            log.debug( indexStateInfo( "init", indexId, initialState, descriptor ) );
             boolean constraintIndex = indexRule.canSupportUniqueConstraint();
 
             switch ( initialState )
@@ -232,8 +232,41 @@ public class IndexingService extends LifecycleAdapter implements IndexingUpdateS
             }
             indexMap.putIndexProxy( indexId, indexProxy );
         }
+        logIndexStateSummary( "init" );
 
         indexMapRef.setIndexMap( indexMap );
+    }
+
+    private void logIndexStateSummary( String method )
+    {
+        int[] counts = new int[InternalIndexState.values().length];
+        for ( IndexRule indexRule : indexRules )
+        {
+            SchemaIndexProvider provider = providerMap.apply( indexRule.getProviderDescriptor() );
+            InternalIndexState state = provider.getInitialState( indexRule.getId(), indexRule.getIndexDescriptor() );
+            counts[state.ordinal()]++;
+        }
+
+        int mostIndex = -1;
+        for ( int i = 0; i < counts.length; i++ )
+        {
+            if ( mostIndex == -1 || counts[i] > counts[mostIndex] )
+            {
+                mostIndex = i;
+            }
+        }
+        InternalIndexState mostState = InternalIndexState.values()[mostIndex];
+        for ( IndexRule indexRule : indexRules )
+        {
+            long id = indexRule.getId();
+            SchemaIndexProvider provider = providerMap.apply( indexRule.getProviderDescriptor() );
+            InternalIndexState state = provider.getInitialState( id, indexRule.getIndexDescriptor() );
+            if ( mostState != state )
+            {
+                log.info( indexStateInfo( method, id, state, indexRule.getIndexDescriptor() ) );
+            }
+        }
+        log.info( format( "IndexingService.%s: indexes not specifically mentioned above are %s", method, mostState ) );
     }
 
     // Recovery semantics: This is to be called after init, and after the database has run recovery.
@@ -251,7 +284,7 @@ public class IndexingService extends LifecycleAdapter implements IndexingUpdateS
         indexMap.foreachIndexProxy( ( indexId, proxy ) -> {
             InternalIndexState state = proxy.getState();
             NewIndexDescriptor descriptor = proxy.getDescriptor();
-            log.info( indexStateInfo( "start", indexId, state, descriptor ) );
+            log.debug( indexStateInfo( "start", indexId, state, descriptor ) );
             switch ( state )
             {
                 case ONLINE:
@@ -269,6 +302,7 @@ public class IndexingService extends LifecycleAdapter implements IndexingUpdateS
                     throw new IllegalStateException( "Unknown state: " + state );
             }
         } );
+        logIndexStateSummary( "start" );
 
         // Drop placeholder proxies for indexes that need to be rebuilt
         dropRecoveringIndexes( indexMap, rebuildingDescriptors.keySet() );
@@ -659,21 +693,6 @@ public class IndexingService extends LifecycleAdapter implements IndexingUpdateS
         }
     }
 
-    public void flushAll()
-    {
-        for ( IndexProxy index : indexMapRef.getAllIndexProxies() )
-        {
-            try
-            {
-                index.flush();
-            }
-            catch ( IOException e )
-            {
-                throw new UnderlyingStorageException( "Unable to force " + index, e );
-            }
-        }
-    }
-
     private void closeAllIndexes()
     {
         Iterable<IndexProxy> indexesToStop = indexMapRef.clear();
@@ -733,8 +752,16 @@ public class IndexingService extends LifecycleAdapter implements IndexingUpdateS
 
     private String indexStateInfo( String tag, Long indexId, InternalIndexState state, NewIndexDescriptor descriptor )
     {
-        return format( "IndexingService.%s: index %d on %s is %s", tag, indexId,
-                descriptor.schema().userDescription( tokenNameLookup ), state.name() );
+        try
+        {
+            return format( "IndexingService.%s: index %d on %s is %s", tag, indexId, descriptor.schema().userDescription( tokenNameLookup ), state.name() );
+        }
+        catch ( Exception e )
+        {
+            System.out.println(descriptor);
+            e.printStackTrace();
+            throw new RuntimeException( e );
+        }
     }
 
     public IndexSamplingController getSamplingController()

@@ -76,11 +76,6 @@ public abstract class AbstractSwallowingIndexProxy implements IndexProxy
     }
 
     @Override
-    public void flush()
-    {
-    }
-
-    @Override
     public NewIndexDescriptor getDescriptor()
     {
         return descriptor;

@@ -66,11 +66,6 @@ public class IndexProxyAdapter implements IndexProxy
     }
 
     @Override
-    public void flush()
-    {
-    }
-
-    @Override
     public Future<Void> close()
     {
         return VOID;

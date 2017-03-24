@@ -132,7 +132,7 @@ public class IndexStatisticsIT
     private void assertLogExistsForRecoveryOn( String labelAndProperty )
     {
         logProvider.assertAtLeastOnce(
-                inLog( IndexSamplingController.class ).warn( "Recovering index sampling for index %s", labelAndProperty )
+                inLog( IndexSamplingController.class ).debug( "Recovering index sampling for index %s", labelAndProperty )
         );
     }
 

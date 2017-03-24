@@ -130,6 +130,6 @@ public class KernelSchemaStateStore implements UpdateableSchemaState
         {
             lock.writeLock().unlock();
         }
-        log.info( "Schema state store has been cleared." );
+        log.debug( "Schema state store has been cleared." );
     }
 }

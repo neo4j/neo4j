@@ -58,12 +58,12 @@ public class KernelSchemaStateStoreTest
 
         // AND ALSO
         logProvider.assertExactly(
-                inLog( KernelSchemaStateStore.class ).info( "Schema state store has been cleared." )
+                inLog( KernelSchemaStateStore.class ).debug( "Schema state store has been cleared." )
         );
     }
 
     private KernelSchemaStateStore stateStore;
-    private AssertableLogProvider logProvider = new AssertableLogProvider();
+    private final AssertableLogProvider logProvider = new AssertableLogProvider();
 
     @Before
     public void before()

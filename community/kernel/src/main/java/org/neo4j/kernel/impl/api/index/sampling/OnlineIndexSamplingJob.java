@@ -74,7 +74,7 @@ class OnlineIndexSamplingJob implements IndexSamplingJob
                         storeView.replaceIndexCounts( indexId, sample.uniqueValues(), sample.sampleSize(),
                                 sample.indexSize() );
                         durationLogger.markAsFinished();
-                        log.info(
+                        log.debug(
                                 format( "Sampled index %s with %d unique values in sample of avg size %d taken from " +
                                         "index containing %d entries",
                                         indexUserDescription, sample.uniqueValues(), sample.sampleSize(),
