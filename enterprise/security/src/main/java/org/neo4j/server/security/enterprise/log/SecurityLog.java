@@ -33,7 +33,6 @@ import org.neo4j.logging.FormattedLog;
 import org.neo4j.logging.Log;
 import org.neo4j.logging.Logger;
 import org.neo4j.logging.RotatingFileOutputStreamSupplier;
-import org.neo4j.logging.async.AsyncLog;
 import org.neo4j.server.security.enterprise.configuration.SecuritySettings;
 
 import static org.neo4j.helpers.Strings.escape;
@@ -56,7 +55,7 @@ public class SecurityLog extends LifecycleAdapter implements Log
         FormattedLog formattedLog = builder.toOutputStream( rotatingSupplier );
         formattedLog.setLevel( config.get( SecuritySettings.security_log_level ) );
 
-        this.inner = new AsyncLog( event -> executor.execute( event::process ), formattedLog );
+        this.inner = formattedLog;
     }
 
     /* Only used for tests */
