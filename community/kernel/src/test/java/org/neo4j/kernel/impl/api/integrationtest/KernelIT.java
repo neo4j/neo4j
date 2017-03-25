@@ -652,7 +652,8 @@ public class KernelIT extends KernelIntegrationTest
         {
             Statement statement = statementContextSupplier.get();
             final AtomicBoolean result = new AtomicBoolean( true );
-            statement.readOperations().schemaStateGetOrCreate( key, s -> {
+            statement.readOperations().schemaStateGetOrCreate( key, s ->
+            {
                 result.set( false );
                 return null;
             } );

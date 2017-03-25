@@ -234,7 +234,8 @@ public class KernelTransactionsTest
         for ( int i = 0; i < threads; i++ )
         {
             final int threadIndex = i;
-            race.addContestant( () -> {
+            race.addContestant( () ->
+            {
                 ThreadLocalRandom random = ThreadLocalRandom.current();
                 while ( !end.get() )
                 {
@@ -256,7 +257,8 @@ public class KernelTransactionsTest
         }
 
         // Just checks snapshots
-        race.addContestant( () -> {
+        race.addContestant( () ->
+        {
             ThreadLocalRandom random = ThreadLocalRandom.current();
             int snapshotsLeft = 1_000;
             while ( snapshotsLeft > 0 )
@@ -578,7 +580,8 @@ public class KernelTransactionsTest
         when( commitProcess.commit(
                 any( TransactionToApply.class ), any( CommitEvent.class ),
                 any( TransactionApplicationMode.class ) ) )
-                .then( invocation -> {
+                .then( invocation ->
+                {
                     slot[0] = ((TransactionToApply) invocation.getArguments()[0]).transactionRepresentation();
                     return 1L;
                 } );

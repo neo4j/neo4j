@@ -157,7 +157,8 @@ public class TransactionEventsIT
     @Test
     public void shouldGetEmptyUsernameOnAuthDisabled()
     {
-        db.registerTransactionEventHandler( getBeforeCommitHandler( txData -> {
+        db.registerTransactionEventHandler( getBeforeCommitHandler( txData ->
+        {
             assertThat( "Should have no username", txData.username(), equalTo( "" ) );
             assertThat( "Should have no metadata", txData.metaData(), equalTo( Collections.emptyMap() ) );
         }) );
@@ -169,7 +170,8 @@ public class TransactionEventsIT
     {
         final AtomicReference<String> usernameRef = new AtomicReference<>();
         final AtomicReference<Map<String,Object>> metaDataRef = new AtomicReference<>();
-        db.registerTransactionEventHandler( getBeforeCommitHandler( txData -> {
+        db.registerTransactionEventHandler( getBeforeCommitHandler( txData ->
+        {
             usernameRef.set( txData.username() );
             metaDataRef.set( txData.metaData() );
         } ) );
@@ -185,7 +187,8 @@ public class TransactionEventsIT
 
     private TransactionEventHandler.Adapter<Object> getBeforeCommitHandler(Consumer<TransactionData> dataConsumer)
     {
-        return new TransactionEventHandler.Adapter<Object>(){
+        return new TransactionEventHandler.Adapter<Object>()
+        {
             @Override
             public Object beforeCommit( TransactionData data ) throws Exception
             {

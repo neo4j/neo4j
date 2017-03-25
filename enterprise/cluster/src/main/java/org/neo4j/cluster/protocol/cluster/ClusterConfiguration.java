@@ -197,9 +197,8 @@ public class ClusterConfiguration
 
     public Iterable<String> getRolesOf( final InstanceId node )
     {
-        return Iterables.map( Map.Entry::getKey, Iterables.filter( item -> {
-            return item.getValue().equals( node );
-        }, roles.entrySet() ) );
+        return Iterables.map( Map.Entry::getKey, Iterables.filter( item -> item.getValue().equals( node ),
+                roles.entrySet() ) );
     }
 
     public URI getUriForId( InstanceId node )

@@ -370,7 +370,10 @@ public class HopScotchHashingAlgorithm
         }
     }
 
-    public static final Monitor NO_MONITOR = new Monitor.Adapter() { /*No additional logic*/ };
+    public static final Monitor NO_MONITOR = new Monitor.Adapter()
+    {
+        /*No additional logic*/
+    };
 
     public interface HashFunction
     {

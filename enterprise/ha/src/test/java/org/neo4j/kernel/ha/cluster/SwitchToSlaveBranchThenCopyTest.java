@@ -335,7 +335,8 @@ public class SwitchToSlaveBranchThenCopyTest
                 storeCopyClient,
                 Suppliers.singleton( dataSource ),
                 Suppliers.singleton( transactionIdStoreMock ),
-                slave -> {
+                slave ->
+                {
                     SlaveServer server = mock( SlaveServer.class );
                     InetSocketAddress inetSocketAddress = InetSocketAddress.createUnresolved( "localhost", 42 );
 

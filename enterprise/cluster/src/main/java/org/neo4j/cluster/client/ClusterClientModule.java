@@ -246,7 +246,8 @@ public class ClusterClientModule
             scheduler = Executors.newSingleThreadScheduledExecutor(
                     daemon( "timeout-clusterClient", monitors.newMonitor( NamedThreadFactory.Monitor.class ) ) );
 
-            tickFuture = scheduler.scheduleWithFixedDelay( () -> {
+            tickFuture = scheduler.scheduleWithFixedDelay( () ->
+            {
                 long now = System.currentTimeMillis();
 
                 server.getTimeouts().tick( now );

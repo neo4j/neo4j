@@ -599,7 +599,8 @@ public abstract class PageSwapperTest
     {
         final AtomicLong callbackFilePageId = new AtomicLong();
         final AtomicReference<Page> callbackPage = new AtomicReference<>();
-        PageEvictionCallback callback = ( filePageId, page ) -> {
+        PageEvictionCallback callback = ( filePageId, page ) ->
+        {
             callbackFilePageId.set( filePageId );
             callbackPage.set( page );
         };
@@ -865,7 +866,8 @@ public abstract class PageSwapperTest
             swapper.write( i, output );
         }
 
-        Callable<Void> work = () -> {
+        Callable<Void> work = () ->
+        {
             ThreadLocalRandom rng = ThreadLocalRandom.current();
             ByteBufferPage[] pages = new ByteBufferPage[10];
             for ( int i = 0; i < pages.length; i++ )
@@ -904,7 +906,8 @@ public abstract class PageSwapperTest
         };
 
         int threads = 8;
-        ExecutorService executor = Executors.newFixedThreadPool( threads, r -> {
+        ExecutorService executor = Executors.newFixedThreadPool( threads, r ->
+        {
             Thread thread = Executors.defaultThreadFactory().newThread( r );
             thread.setDaemon( true );
             return thread;

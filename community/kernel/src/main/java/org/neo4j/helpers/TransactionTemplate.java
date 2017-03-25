@@ -125,7 +125,8 @@ public class TransactionTemplate
 
     public void execute( final Consumer<Transaction> txConsumer )
     {
-        execute( transaction -> {
+        execute( transaction ->
+        {
             txConsumer.accept( transaction );
             return null;
         } );

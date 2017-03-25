@@ -56,7 +56,8 @@ public class JUnitRuleTest
             .withFixture( "CREATE (u:User)" )
             .withConfig( ServerSettings.certificates_directory.name(),
                     getRelativePath( getSharedTestTemporaryFolder(), ServerSettings.certificates_directory ) )
-            .withFixture( graphDatabaseService -> {
+            .withFixture( graphDatabaseService ->
+            {
                 try ( Transaction tx = graphDatabaseService.beginTx() )
                 {
                     graphDatabaseService.createNode( Label.label( "User" ) );

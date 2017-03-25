@@ -39,7 +39,6 @@ import static org.mockito.Matchers.any;
 import static org.mockito.Mockito.doAnswer;
 import static org.mockito.Mockito.mock;
 import static org.mockito.Mockito.when;
-
 import static org.neo4j.unsafe.impl.batchimport.Configuration.DEFAULT;
 
 public class EncodeGroupsStepTest
@@ -53,7 +52,8 @@ public class EncodeGroupsStepTest
         final AtomicLong nextId = new AtomicLong();
         RecordStore<RelationshipGroupRecord> store = mock( RecordStore.class );
         when( store.nextId() ).thenAnswer( invocation -> nextId.incrementAndGet() );
-        doAnswer( invocation -> {
+        doAnswer( invocation ->
+        {
             // our own way of marking that this has record been prepared (firstOut=1)
             invocation.getArgumentAt( 0, RelationshipGroupRecord.class ).setFirstOut( 1 );
             return null;

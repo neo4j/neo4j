@@ -51,7 +51,8 @@ public class EmbeddedUserManagementProceduresInteractionTest extends AuthProcedu
                 "WITH n,p,count(*) as c " +
                 "RETURN count(*) as count";
 
-        assertSuccess( adminSubject, movieOptionalMatch, r -> {
+        assertSuccess( adminSubject, movieOptionalMatch, r ->
+        {
             List<Object> counts = getObjectsAsList( r, "count" );
             assertThat( counts.size(), equalTo( 1 ) );
             assertThat( counts.get( 0 ), equalTo( 1395L ) );

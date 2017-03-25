@@ -30,7 +30,6 @@ import java.util.concurrent.Future;
 import java.util.function.Predicate;
 
 import org.neo4j.function.IOFunction;
-import org.neo4j.function.ThrowingFunction;
 import org.neo4j.graphdb.factory.GraphDatabaseSettings;
 import org.neo4j.kernel.configuration.Config;
 import org.neo4j.kernel.impl.api.CountsAccessor;
@@ -50,6 +49,8 @@ import org.neo4j.test.rule.concurrent.ThreadingRule;
 import org.neo4j.time.Clocks;
 import org.neo4j.time.FakeClock;
 
+import static java.util.concurrent.TimeUnit.MILLISECONDS;
+import static java.util.concurrent.TimeUnit.SECONDS;
 import static org.junit.Assert.assertEquals;
 import static org.junit.Assert.assertNotEquals;
 import static org.junit.Assert.assertSame;
@@ -58,10 +59,6 @@ import static org.junit.Assert.fail;
 import static org.mockito.Mockito.mock;
 import static org.mockito.Mockito.verify;
 import static org.mockito.Mockito.verifyNoMoreInteractions;
-
-import static java.util.concurrent.TimeUnit.MILLISECONDS;
-import static java.util.concurrent.TimeUnit.SECONDS;
-
 import static org.neo4j.function.Predicates.all;
 import static org.neo4j.kernel.impl.util.DebugUtil.classNameContains;
 import static org.neo4j.kernel.impl.util.DebugUtil.methodIs;
@@ -229,7 +226,8 @@ public class CountsTrackerTest
                     return super.include( countsKey, value );
                 }
             } );
-            Future<Void> task = threading.execute( (ThrowingFunction<CountsTracker,Void,RuntimeException>) t -> {
+            Future<Void> task = threading.execute( t ->
+            {
                 try
                 {
                     delta.update( t, secondTransaction );
@@ -315,7 +313,8 @@ public class CountsTrackerTest
         }
 
         // when
-        Future<Long> rotated = threading.executeAndAwait( new Rotation( 2 ), tracker, thread -> {
+        Future<Long> rotated = threading.executeAndAwait( new Rotation( 2 ), tracker, thread ->
+        {
             switch ( thread.getState() )
             {
             case BLOCKED:

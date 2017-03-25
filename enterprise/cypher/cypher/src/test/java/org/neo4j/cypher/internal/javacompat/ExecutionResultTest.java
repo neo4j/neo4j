@@ -90,7 +90,8 @@ public class ExecutionResultTest
         final List<Result.ResultRow> listResult = new ArrayList<>();
         try ( Result result = db.execute( "CYPHER runtime=compiled MATCH (n) RETURN n" ) )
         {
-            result.accept( row -> {
+            result.accept( row ->
+            {
                 listResult.add( row );
                 return true;
             } );
@@ -111,7 +112,8 @@ public class ExecutionResultTest
         final List<Result.ResultRow> listResult = new ArrayList<>();
         try ( Result result = db.execute( "CYPHER runtime=compiled MATCH (n) RETURN n" ) )
         {
-            result.accept( row -> {
+            result.accept( row ->
+            {
                 listResult.add( row );
                 // return false so that no more result rows would be visited
                 return false;

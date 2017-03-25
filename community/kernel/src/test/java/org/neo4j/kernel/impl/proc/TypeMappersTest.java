@@ -73,9 +73,13 @@ public class TypeMappersTest
                 new Object[]{String.class, NTString, null, null},
 
                 new Object[]{Map.class, NTMap, new HashMap<>(), new HashMap<>()},
-                new Object[]{Map.class, NTMap,
-                        new HashMap<String,Object>() {{ put( "k", 1 ); }},
-                        new HashMap<String,Object>(){{ put( "k", 1 ); }}},
+                new Object[]{Map.class, NTMap, new HashMap<String,Object>()
+                {{
+                    put( "k", 1 );
+                }}, new HashMap<String,Object>()
+                {{
+                    put( "k", 1 );
+                }}},
                 new Object[]{Map.class, NTMap, null, null},
 
                 new Object[]{List.class, NTList( NTAny ), emptyList(), emptyList()},

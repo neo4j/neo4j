@@ -37,7 +37,8 @@ public class CoreStateApplierTest
         CoreStateApplier applier = new CoreStateApplier( NullLogProvider.getInstance() );
         CountDownLatch latch = new CountDownLatch( 1 );
 
-        applier.submit( status -> () -> {
+        applier.submit( status -> () ->
+        {
             while ( !status.isCancelled() )
             {
                 try

@@ -26,9 +26,9 @@ import java.io.File;
 import java.util.Set;
 import java.util.concurrent.TimeUnit;
 
-import org.neo4j.consistency.ConsistencyCheckService;
 import org.neo4j.causalclustering.discovery.Cluster;
 import org.neo4j.causalclustering.discovery.CoreClusterMember;
+import org.neo4j.consistency.ConsistencyCheckService;
 import org.neo4j.graphdb.Node;
 import org.neo4j.helpers.progress.ProgressMonitorFactory;
 import org.neo4j.kernel.configuration.Config;
@@ -125,7 +125,8 @@ public class RecoveryIT
         for ( int i = 0; i < cluster.numberOfCoreMembersReportedByTopology(); i++ )
         {
             final String prop = "val" + i;
-            cluster.coreTx( ( db, tx ) -> {
+            cluster.coreTx( ( db, tx ) ->
+            {
                 Node node = db.createNode( label( "demo" ) );
                 node.setProperty( "server", prop );
                 tx.success();

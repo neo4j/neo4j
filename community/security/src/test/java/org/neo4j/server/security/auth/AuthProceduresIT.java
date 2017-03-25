@@ -265,15 +265,19 @@ public class AuthProceduresIT
 
     private void assertEmpty( BasicSecurityContext subject, String query )
     {
-        assertThat(
-                execute( subject, query, r -> { assert !r.hasNext(); } ),
+        assertThat( execute( subject, query, r ->
+                {
+                    assert !r.hasNext();
+                } ),
                 equalTo( "" ) );
     }
 
     private void assertFail( BasicSecurityContext subject, String query, String partOfErrorMsg )
     {
-        assertThat(
-                execute( subject, query, r -> { assert !r.hasNext(); } ),
+        assertThat( execute( subject, query, r ->
+                {
+                    assert !r.hasNext();
+                } ),
                 containsString( partOfErrorMsg ) );
     }
 

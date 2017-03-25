@@ -73,7 +73,8 @@ public class IndexReaderStub extends LeafReader
 
     public IndexReaderStub( final Map<String,NumericDocValues> ndvs )
     {
-        this.ndvs = s -> {
+        this.ndvs = s ->
+        {
             NumericDocValues dv = ndvs.get( s );
             if ( dv == null )
             {

@@ -112,7 +112,8 @@ public class Args
         }
     }
 
-    private static final Function<String,Option<String>> DEFAULT_OPTION_PARSER = from -> {
+    private static final Function<String,Option<String>> DEFAULT_OPTION_PARSER = from ->
+    {
         int metadataStartIndex = from.indexOf( OPTION_METADATA_DELIMITER );
         return metadataStartIndex == -1
                 ? new Option<>( from, null )

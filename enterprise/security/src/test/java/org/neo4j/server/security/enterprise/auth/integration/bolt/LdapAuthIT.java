@@ -134,7 +134,8 @@ public class LdapAuthIT extends EnterpriseAuthenticationTestBase
     {
         server.shutdownDatabase();
         server.ensureDatabase( asSettings( ldapOnlyAuthSettings.andThen(
-                settings -> {
+                settings ->
+                {
                     settings.put( SecuritySettings.ldap_authentication_mechanism, "DIGEST-MD5" );
                     settings.put( SecuritySettings.ldap_authentication_user_dn_template, "{0}" );
                 }
@@ -145,7 +146,8 @@ public class LdapAuthIT extends EnterpriseAuthenticationTestBase
     {
         server.shutdownDatabase();
         server.ensureDatabase( asSettings( ldapOnlyAuthSettings.andThen(
-                settings -> {
+                settings ->
+                {
                     settings.put( SecuritySettings.ldap_authentication_mechanism, "CRAM-MD5" );
                     settings.put( SecuritySettings.ldap_authentication_user_dn_template, "{0}" );
                 }
@@ -155,7 +157,8 @@ public class LdapAuthIT extends EnterpriseAuthenticationTestBase
     @Override
     protected Consumer<Map<Setting<?>, String>> getSettingsFunction()
     {
-        return super.getSettingsFunction().andThen( ldapOnlyAuthSettings ).andThen( settings -> {
+        return super.getSettingsFunction().andThen( ldapOnlyAuthSettings ).andThen( settings ->
+        {
             settings.put( SecuritySettings.ldap_server, "0.0.0.0:10389" );
             settings.put( SecuritySettings.ldap_authentication_user_dn_template, "cn={0},ou=users,dc=example,dc=com" );
             settings.put( SecuritySettings.ldap_authentication_cache_enabled, "true" );
@@ -183,9 +186,8 @@ public class LdapAuthIT extends EnterpriseAuthenticationTestBase
     @Test
     public void shouldLoginWithLdapWithAuthenticationCacheDisabled() throws Throwable
     {
-        restartNeo4jServerWithOverriddenSettings( ldapOnlyAuthSettings.andThen( settings -> {
-            settings.put( SecuritySettings.ldap_authentication_cache_enabled, "false" );
-        } ) );
+        restartNeo4jServerWithOverriddenSettings( ldapOnlyAuthSettings
+                .andThen( settings -> settings.put( SecuritySettings.ldap_authentication_cache_enabled, "false" ) ) );
 
         assertAuth( "neo4j", "abc123" );
         reconnect();
@@ -285,9 +287,8 @@ public class LdapAuthIT extends EnterpriseAuthenticationTestBase
     public void shouldBeAbleToLoginAndAuthorizeNoPermissionUserWithLdapOnlyAndNoGroupToRoleMapping() throws Throwable
     {
         // When
-        restartNeo4jServerWithOverriddenSettings( ldapOnlyAuthSettings.andThen( settings -> {
-            settings.put( SecuritySettings.ldap_authorization_group_to_role_mapping, null );
-        } ) );
+        restartNeo4jServerWithOverriddenSettings( ldapOnlyAuthSettings
+                .andThen( settings -> settings.put( SecuritySettings.ldap_authorization_group_to_role_mapping, null ) ) );
 
         // Then
         // User 'neo' has reader role by default, but since we are not passing a group-to-role mapping
@@ -299,10 +300,9 @@ public class LdapAuthIT extends EnterpriseAuthenticationTestBase
     public void shouldBeAbleToLoginAndAuthorizeWithLdapOnlyAndQuotedGroupToRoleMapping() throws Throwable
     {
         // When
-        restartNeo4jServerWithOverriddenSettings( ldapOnlyAuthSettings.andThen( settings -> {
-            settings.put( SecuritySettings.ldap_authorization_group_to_role_mapping,
-                    " '500'  =\t reader  ; \"501\"\t=publisher\n;502 =architect  ;  \"503\"=  \nadmin" );
-        } ) );
+        restartNeo4jServerWithOverriddenSettings( ldapOnlyAuthSettings
+                .andThen( settings -> settings.put( SecuritySettings.ldap_authorization_group_to_role_mapping,
+                " '500'  =\t reader  ; \"501\"\t=publisher\n;502 =architect  ;  \"503\"=  \nadmin" ) ) );
 
         // Then
         testAuthWithReaderUser();
@@ -315,9 +315,7 @@ public class LdapAuthIT extends EnterpriseAuthenticationTestBase
     @Test
     public void shouldBeAbleToLoginAndAuthorizeReaderWithUserLdapContext() throws Throwable
     {
-        restartNeo4jServerWithOverriddenSettings( settings -> {
-            settings.put( SecuritySettings.ldap_authorization_use_system_account, "false" );
-        } );
+        restartNeo4jServerWithOverriddenSettings( settings -> settings.put( SecuritySettings.ldap_authorization_use_system_account, "false" ) );
 
         // Then
         testAuthWithReaderUser();
@@ -326,9 +324,7 @@ public class LdapAuthIT extends EnterpriseAuthenticationTestBase
     @Test
     public void shouldBeAbleToLoginAndAuthorizePublisherWithUserLdapContext() throws Throwable
     {
-        restartNeo4jServerWithOverriddenSettings( settings -> {
-            settings.put( SecuritySettings.ldap_authorization_use_system_account, "false" );
-        } );
+        restartNeo4jServerWithOverriddenSettings( settings -> settings.put( SecuritySettings.ldap_authorization_use_system_account, "false" ) );
 
         // Then
         testAuthWithPublisherUser();
@@ -337,9 +333,7 @@ public class LdapAuthIT extends EnterpriseAuthenticationTestBase
     @Test
     public void shouldFailIfAuthorizationExpiredWithUserLdapContext() throws Throwable
     {
-        restartNeo4jServerWithOverriddenSettings( settings -> {
-            settings.put( SecuritySettings.ldap_authorization_use_system_account, "false" );
-        } );
+        restartNeo4jServerWithOverriddenSettings( settings -> settings.put( SecuritySettings.ldap_authorization_use_system_account, "false" ) );
 
         // Given
         assertAuth( "neo4j", "abc123" );
@@ -362,9 +356,7 @@ public class LdapAuthIT extends EnterpriseAuthenticationTestBase
     @Test
     public void shouldSucceedIfAuthorizationExpiredWithinTransactionWithUserLdapContext() throws Throwable
     {
-        restartNeo4jServerWithOverriddenSettings( settings -> {
-            settings.put( SecuritySettings.ldap_authorization_use_system_account, "false" );
-        } );
+        restartNeo4jServerWithOverriddenSettings( settings -> settings.put( SecuritySettings.ldap_authorization_use_system_account, "false" ) );
 
         // Then
         assertAuth( "neo4j", "abc123" );
@@ -379,9 +371,7 @@ public class LdapAuthIT extends EnterpriseAuthenticationTestBase
     @Test
     public void shouldBeAbleToLoginAndAuthorizeNoPermissionUserWithUserLdapContext() throws Throwable
     {
-        restartNeo4jServerWithOverriddenSettings( settings -> {
-            settings.put( SecuritySettings.ldap_authorization_use_system_account, "false" );
-        } );
+        restartNeo4jServerWithOverriddenSettings( settings -> settings.put( SecuritySettings.ldap_authorization_use_system_account, "false" ) );
 
         // Then
         testAuthWithNoPermissionUser( "smith", "abc123" );
@@ -390,7 +380,8 @@ public class LdapAuthIT extends EnterpriseAuthenticationTestBase
     @Test
     public void shouldBeAbleToLoginAndAuthorizeNoPermissionUserWithUserLdapContextAndNoGroupToRoleMapping() throws Throwable
     {
-        restartNeo4jServerWithOverriddenSettings( settings -> {
+        restartNeo4jServerWithOverriddenSettings( settings ->
+        {
             settings.put( SecuritySettings.ldap_authorization_use_system_account, "false" );
             settings.put( SecuritySettings.ldap_authorization_group_to_role_mapping, null );
         } );
@@ -405,7 +396,8 @@ public class LdapAuthIT extends EnterpriseAuthenticationTestBase
     public void shouldBeAbleToLoginWithLdapAndAuthorizeInternally() throws Throwable
     {
         // When
-        restartNeo4jServerWithOverriddenSettings( settings -> {
+        restartNeo4jServerWithOverriddenSettings( settings ->
+        {
             settings.put( SecuritySettings.auth_providers,
                     SecuritySettings.NATIVE_REALM_NAME + "," + SecuritySettings.LDAP_REALM_NAME );
             settings.put( SecuritySettings.native_authentication_enabled, "false" );
@@ -428,7 +420,8 @@ public class LdapAuthIT extends EnterpriseAuthenticationTestBase
     public void shouldBeAbleToLoginNativelyAndAuthorizeWithLdap() throws Throwable
     {
         // Given
-        restartNeo4jServerWithOverriddenSettings( settings -> {
+        restartNeo4jServerWithOverriddenSettings( settings ->
+        {
             settings.put( SecuritySettings.auth_providers,
                     SecuritySettings.NATIVE_REALM_NAME + "," + SecuritySettings.LDAP_REALM_NAME );
             settings.put( SecuritySettings.native_authentication_enabled, "true" );
@@ -457,14 +450,13 @@ public class LdapAuthIT extends EnterpriseAuthenticationTestBase
     @Test
     public void shouldKeepAuthorizationForLifetimeOfTransaction() throws Throwable
     {
-        restartNeo4jServerWithOverriddenSettings( settings -> {
-            settings.put( SecuritySettings.ldap_authorization_use_system_account, "false" );
-        } );
+        restartNeo4jServerWithOverriddenSettings( settings -> settings.put( SecuritySettings.ldap_authorization_use_system_account, "false" ) );
 
         DoubleLatch latch = new DoubleLatch( 2 );
         final Throwable[] threadFail = {null};
 
-        Thread readerThread = new Thread( () -> {
+        Thread readerThread = new Thread( () ->
+        {
             try
             {
                 assertAuth( "neo", "abc123" );
@@ -502,7 +494,8 @@ public class LdapAuthIT extends EnterpriseAuthenticationTestBase
     @Test
     public void shouldKeepAuthorizationForLifetimeOfTransactionWithProcedureAllowed() throws Throwable
     {
-        restartNeo4jServerWithOverriddenSettings( settings -> {
+        restartNeo4jServerWithOverriddenSettings( settings ->
+        {
             settings.put( SecuritySettings.ldap_authorization_use_system_account, "false" );
             settings.put( SecuritySettings.ldap_authorization_group_to_role_mapping, "503=admin;504=role1" );
         } );
@@ -514,7 +507,8 @@ public class LdapAuthIT extends EnterpriseAuthenticationTestBase
         DoubleLatch latch = new DoubleLatch( 2 );
         final Throwable[] threadFail = {null};
 
-        Thread readerThread = new Thread( () -> {
+        Thread readerThread = new Thread( () ->
+        {
             try
             {
                 assertAuth( "smith", "abc123" );
@@ -553,9 +547,8 @@ public class LdapAuthIT extends EnterpriseAuthenticationTestBase
     public void shouldBeAbleToUseProcedureAllowedAnnotationWithLdapGroupToRoleMapping() throws Throwable
     {
         // When
-        restartNeo4jServerWithOverriddenSettings( ldapOnlyAuthSettings.andThen( settings -> {
-            settings.put( SecuritySettings.ldap_authorization_group_to_role_mapping, "500=role1" );
-        } ) );
+        restartNeo4jServerWithOverriddenSettings( ldapOnlyAuthSettings
+                .andThen( settings -> settings.put( SecuritySettings.ldap_authorization_group_to_role_mapping, "500=role1" ) ) );
 
         GraphDatabaseAPI graphDatabaseAPI = (GraphDatabaseAPI) server.graphDatabaseService();
         graphDatabaseAPI.getDependencyResolver().resolveDependency( Procedures.class )
@@ -569,7 +562,8 @@ public class LdapAuthIT extends EnterpriseAuthenticationTestBase
     public void shouldTimeoutIfInvalidLdapServer() throws Throwable
     {
         // When
-        restartNeo4jServerWithOverriddenSettings( ldapOnlyAuthSettings.andThen( settings -> {
+        restartNeo4jServerWithOverriddenSettings( ldapOnlyAuthSettings.andThen( settings ->
+        {
             settings.put( SecuritySettings.ldap_server, "ldap://198.51.100.9" ); // An IP in the TEST-NET-2 range
             settings.put( SecuritySettings.ldap_connection_timeout, "1s" );
         } ) );
@@ -586,9 +580,8 @@ public class LdapAuthIT extends EnterpriseAuthenticationTestBase
     {
         try ( DirectoryServiceWaitOnSearch ignore = new DirectoryServiceWaitOnSearch( 5000 ) )
         {
-            restartNeo4jServerWithOverriddenSettings( ldapOnlyAuthSettings.andThen( settings -> {
-                settings.put( SecuritySettings.ldap_read_timeout, "1s" );
-            } ) );
+            restartNeo4jServerWithOverriddenSettings( ldapOnlyAuthSettings
+                    .andThen( settings -> settings.put( SecuritySettings.ldap_read_timeout, "1s" ) ) );
 
             assertAuth( "neo", "abc123" );
             assertLdapAuthorizationTimeout();
@@ -601,7 +594,8 @@ public class LdapAuthIT extends EnterpriseAuthenticationTestBase
     {
         try ( DirectoryServiceWaitOnSearch ignore = new DirectoryServiceWaitOnSearch( 5000 ) )
         {
-            restartNeo4jServerWithOverriddenSettings( ldapOnlyAuthSettings.andThen( settings -> {
+            restartNeo4jServerWithOverriddenSettings( ldapOnlyAuthSettings.andThen( settings ->
+            {
                 // NOTE: Pooled connections from previous test runs will not be affected by this read timeout setting
                 settings.put( SecuritySettings.ldap_read_timeout, "1s" );
                 settings.put( SecuritySettings.ldap_authorization_connection_pooling, "false" );
@@ -618,9 +612,8 @@ public class LdapAuthIT extends EnterpriseAuthenticationTestBase
     {
         try ( DirectoryServiceFailOnSearch ignore = new DirectoryServiceFailOnSearch() )
         {
-            restartNeo4jServerWithOverriddenSettings( ldapOnlyAuthSettings.andThen( settings -> {
-                settings.put( SecuritySettings.ldap_read_timeout, "1s" );
-            } ) );
+            restartNeo4jServerWithOverriddenSettings( ldapOnlyAuthSettings
+                    .andThen( settings -> settings.put( SecuritySettings.ldap_read_timeout, "1s" ) ) );
 
             assertAuth( "neo", "abc123" );
             assertLdapAuthorizationFailed();
@@ -633,7 +626,8 @@ public class LdapAuthIT extends EnterpriseAuthenticationTestBase
         try ( DirectoryServiceWaitOnSearch ignore = new DirectoryServiceWaitOnSearch( 5000 ) )
         {
             // When
-            restartNeo4jServerWithOverriddenSettings( ldapOnlyAuthSettings.andThen( settings -> {
+            restartNeo4jServerWithOverriddenSettings( ldapOnlyAuthSettings.andThen( settings ->
+            {
                 settings.put( SecuritySettings.ldap_authorization_use_system_account, "false" );
                 settings.put( SecuritySettings.ldap_read_timeout, "1s" );
             } ) );
@@ -667,9 +661,8 @@ public class LdapAuthIT extends EnterpriseAuthenticationTestBase
         try( EmbeddedTestCertificates ignore = new EmbeddedTestCertificates() )
         {
             // When
-            restartNeo4jServerWithOverriddenSettings( ldapOnlyAuthSettings.andThen( settings -> {
-                settings.put( SecuritySettings.ldap_server, "ldaps://localhost:10636" );
-            } ) );
+            restartNeo4jServerWithOverriddenSettings( ldapOnlyAuthSettings
+                    .andThen( settings -> settings.put( SecuritySettings.ldap_server, "ldaps://localhost:10636" ) ) );
 
             // Then
             testAuthWithReaderUser();
@@ -684,7 +677,8 @@ public class LdapAuthIT extends EnterpriseAuthenticationTestBase
         try( EmbeddedTestCertificates ignore = new EmbeddedTestCertificates() )
         {
             // When
-            restartNeo4jServerWithOverriddenSettings( ldapOnlyAuthSettings.andThen( settings -> {
+            restartNeo4jServerWithOverriddenSettings( ldapOnlyAuthSettings.andThen( settings ->
+            {
                 settings.put( SecuritySettings.ldap_authorization_use_system_account, "false" );
                 settings.put( SecuritySettings.ldap_server, "ldaps://localhost:10636" );
             } ) );
@@ -702,7 +696,8 @@ public class LdapAuthIT extends EnterpriseAuthenticationTestBase
         try( EmbeddedTestCertificates ignore = new EmbeddedTestCertificates() )
         {
             // When
-            restartNeo4jServerWithOverriddenSettings( ldapOnlyAuthSettings.andThen( settings -> {
+            restartNeo4jServerWithOverriddenSettings( ldapOnlyAuthSettings.andThen( settings ->
+            {
                 settings.put( SecuritySettings.ldap_server, "localhost:10389" );
                 settings.put( SecuritySettings.ldap_use_starttls, "true" );
             } ) );
@@ -720,7 +715,8 @@ public class LdapAuthIT extends EnterpriseAuthenticationTestBase
         try( EmbeddedTestCertificates ignore = new EmbeddedTestCertificates() )
         {
             // When
-            restartNeo4jServerWithOverriddenSettings( ldapOnlyAuthSettings.andThen( settings -> {
+            restartNeo4jServerWithOverriddenSettings( ldapOnlyAuthSettings.andThen( settings ->
+            {
                 settings.put( SecuritySettings.ldap_authorization_use_system_account, "false" );
                 settings.put( SecuritySettings.ldap_server, "localhost:10389" );
                 settings.put( SecuritySettings.ldap_use_starttls, "true" );
@@ -809,9 +805,8 @@ public class LdapAuthIT extends EnterpriseAuthenticationTestBase
     //@Test
     public void shouldBeAbleToLoginAndAuthorizeReaderUsingLdapsOnEC2() throws Throwable
     {
-        restartNeo4jServerWithOverriddenSettings( activeDirectoryOnEc2UsingSystemAccountSettings.andThen( settings -> {
-            settings.put( SecuritySettings.ldap_server, "ldaps://henrik.neohq.net:636" );
-        }) );
+        restartNeo4jServerWithOverriddenSettings( activeDirectoryOnEc2UsingSystemAccountSettings
+                .andThen( settings -> settings.put( SecuritySettings.ldap_server, "ldaps://henrik.neohq.net:636" ) ) );
 
         assertAuth( "neo", "abc123ABC123" );
         assertReadSucceeds();
@@ -821,9 +816,8 @@ public class LdapAuthIT extends EnterpriseAuthenticationTestBase
     //@Test
     public void shouldBeAbleToLoginAndAuthorizeReaderWithUserLdapContextUsingLDAPSOnEC2() throws Throwable
     {
-        restartNeo4jServerWithOverriddenSettings( activeDirectoryOnEc2NotUsingSystemAccountSettings.andThen( settings -> {
-            settings.put( SecuritySettings.ldap_server, "ldaps://henrik.neohq.net:636" );
-        }) );
+        restartNeo4jServerWithOverriddenSettings( activeDirectoryOnEc2NotUsingSystemAccountSettings
+                .andThen( settings -> settings.put( SecuritySettings.ldap_server, "ldaps://henrik.neohq.net:636" ) ) );
 
         assertAuth( "neo", "abc123ABC123" );
         assertReadSucceeds();
@@ -833,9 +827,8 @@ public class LdapAuthIT extends EnterpriseAuthenticationTestBase
     //@Test
     public void shouldBeAbleToLoginAndAuthorizeReaderUsingStartTlsOnEC2() throws Throwable
     {
-        restartNeo4jServerWithOverriddenSettings( activeDirectoryOnEc2UsingSystemAccountSettings.andThen( settings -> {
-            settings.put( SecuritySettings.ldap_use_starttls, "true" );
-        }) );
+        restartNeo4jServerWithOverriddenSettings( activeDirectoryOnEc2UsingSystemAccountSettings
+                .andThen( settings -> settings.put( SecuritySettings.ldap_use_starttls, "true" ) ) );
 
         assertAuth( "neo", "abc123ABC123" );
         assertReadSucceeds();
@@ -845,9 +838,8 @@ public class LdapAuthIT extends EnterpriseAuthenticationTestBase
     //@Test
     public void shouldBeAbleToLoginAndAuthorizeReaderWithUserLdapContextUsingStartTlsOnEC2() throws Throwable
     {
-        restartNeo4jServerWithOverriddenSettings( activeDirectoryOnEc2NotUsingSystemAccountSettings.andThen( settings -> {
-            settings.put( SecuritySettings.ldap_use_starttls, "true" );
-        }) );
+        restartNeo4jServerWithOverriddenSettings( activeDirectoryOnEc2NotUsingSystemAccountSettings
+                .andThen( settings -> settings.put( SecuritySettings.ldap_use_starttls, "true" ) ) );
 
         assertAuth( "neo", "abc123ABC123" );
         assertReadSucceeds();
@@ -859,7 +851,8 @@ public class LdapAuthIT extends EnterpriseAuthenticationTestBase
     @Test
     public void shouldBeAbleToLoginWithLdapWhenSelectingRealmFromClient() throws Throwable
     {
-        restartNeo4jServerWithOverriddenSettings( settings -> {
+        restartNeo4jServerWithOverriddenSettings( settings ->
+        {
             settings.put( SecuritySettings.auth_providers,
                     SecuritySettings.NATIVE_REALM_NAME + "," + SecuritySettings.LDAP_REALM_NAME );
             settings.put( SecuritySettings.native_authentication_enabled, "true" );
@@ -920,9 +913,8 @@ public class LdapAuthIT extends EnterpriseAuthenticationTestBase
         try ( EmbeddedTestCertificates ignore = new EmbeddedTestCertificates() )
         {
             // When
-            restartNeo4jServerWithOverriddenSettings( ldapOnlyAuthSettings.andThen( settings -> {
-                settings.put( SecuritySettings.ldap_server, "ldaps://localhost:10636" );
-            } ) );
+            restartNeo4jServerWithOverriddenSettings( ldapOnlyAuthSettings
+                    .andThen( settings -> settings.put( SecuritySettings.ldap_server, "ldaps://localhost:10636" ) ) );
 
             // Then
             assertAuth( "tank", "abc123", "ldap" );
@@ -956,9 +948,8 @@ public class LdapAuthIT extends EnterpriseAuthenticationTestBase
         try ( EmbeddedTestCertificates ignore = new EmbeddedTestCertificates() )
         {
             // When
-            restartNeo4jServerWithOverriddenSettings( ldapOnlyAuthSettings.andThen( settings -> {
-                settings.put( SecuritySettings.ldap_server, "ldaps://localhost:10636" );
-            } ) );
+            restartNeo4jServerWithOverriddenSettings( ldapOnlyAuthSettings
+                    .andThen( settings -> settings.put( SecuritySettings.ldap_server, "ldaps://localhost:10636" ) ) );
 
             // Then
             assertAuth( "tank", "abc123", "ldap" );
@@ -1194,7 +1185,8 @@ public class LdapAuthIT extends EnterpriseAuthenticationTestBase
         settings.put( SecuritySettings.ldap_authorization_enabled, "true" );
     };
 
-    private static Consumer<Map<Setting<?>,String>> activeDirectoryOnEc2Settings = settings -> {
+    private static Consumer<Map<Setting<?>,String>> activeDirectoryOnEc2Settings = settings ->
+    {
         settings.put( SecuritySettings.auth_provider, SecuritySettings.LDAP_REALM_NAME );
         //settings.put( SecuritySettings.ldap_server, "ec2-176-34-79-113.eu-west-1.compute.amazonaws.com:389" );
         settings.put( SecuritySettings.ldap_server, "henrik.neohq.net:389" );
@@ -1211,12 +1203,11 @@ public class LdapAuthIT extends EnterpriseAuthenticationTestBase
     };
 
     private static Consumer<Map<Setting<?>,String>> activeDirectoryOnEc2NotUsingSystemAccountSettings =
-            activeDirectoryOnEc2Settings.andThen( settings -> {
-                settings.put( SecuritySettings.ldap_authorization_use_system_account, "false" );
-            } );
+            activeDirectoryOnEc2Settings.andThen( settings -> settings.put( SecuritySettings.ldap_authorization_use_system_account, "false" ) );
 
     private static Consumer<Map<Setting<?>,String>> activeDirectoryOnEc2UsingSystemAccountSettings =
-            activeDirectoryOnEc2Settings.andThen( settings -> {
+            activeDirectoryOnEc2Settings.andThen( settings ->
+            {
                 settings.put( SecuritySettings.ldap_authorization_use_system_account, "true" );
                 settings.put( SecuritySettings.ldap_authorization_system_username, "Petra Selmer" );
                 settings.put( SecuritySettings.ldap_authorization_system_password, "S0uthAfrica" );

@@ -40,7 +40,8 @@ public class StoreUtil
     private static final String[] DONT_MOVE_DIRECTORIES = {"metrics", "logs", "certificates"};
     public static final String TEMP_COPY_DIRECTORY_NAME = "temp-copy";
 
-    private static final FileFilter STORE_FILE_FILTER = file -> {
+    private static final FileFilter STORE_FILE_FILTER = file ->
+    {
         for ( String directory : DONT_MOVE_DIRECTORIES )
         {
             if ( file.getName().equals( directory ) )
@@ -50,7 +51,8 @@ public class StoreUtil
         }
         return !isBranchedDataRootDirectory( file ) && !isTemporaryCopy( file );
     };
-    private static final FileFilter DEEP_STORE_FILE_FILTER = file -> {
+    private static final FileFilter DEEP_STORE_FILE_FILTER = file ->
+    {
         for ( String directory : DONT_MOVE_DIRECTORIES )
         {
             if ( file.getPath().contains( directory ) )

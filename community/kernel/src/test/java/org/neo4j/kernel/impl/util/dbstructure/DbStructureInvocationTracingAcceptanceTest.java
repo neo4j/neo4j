@@ -145,7 +145,8 @@ public class DbStructureInvocationTracingAcceptanceTest
     private void assertCompiles( final String className, String source )
     {
         compile( className, source,
-                ( success, manager, diagnostics ) -> {
+                ( success, manager, diagnostics ) ->
+                {
                     assertSuccessfullyCompiled( success, diagnostics, className );
                     return true;
                 }
@@ -155,7 +156,8 @@ public class DbStructureInvocationTracingAcceptanceTest
     private Visitable<DbStructureVisitor> compileVisitable( final String className, String inputSource )
     {
         return compile( className, inputSource,
-                ( success, manager, diagnostics ) -> {
+                ( success, manager, diagnostics ) ->
+                {
                     assertSuccessfullyCompiled( success, diagnostics, className );
                     Object instance;
                     try

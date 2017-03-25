@@ -25,7 +25,6 @@ import org.junit.Test;
 
 import java.util.concurrent.CountDownLatch;
 
-import org.neo4j.helpers.HostnamePort;
 import org.neo4j.helpers.ListenSocketAddress;
 import org.neo4j.kernel.configuration.Config;
 import org.neo4j.logging.NullLogProvider;
@@ -75,7 +74,8 @@ public class JettyThreadLimitTest
         CountDownLatch endLatch = new CountDownLatch( 1 );
         for ( int i = 0; i < tasksToSubmit; i++ )
         {
-            threadPool.execute( () -> {
+            threadPool.execute( () ->
+            {
                 startLatch.countDown();
                 try
                 {

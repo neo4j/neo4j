@@ -53,6 +53,7 @@ import org.neo4j.bolt.v1.runtime.WorkerFactory;
 import org.neo4j.bolt.v1.runtime.concurrent.ThreadedWorkerFactory;
 import org.neo4j.bolt.v1.transport.BoltProtocolV1;
 import org.neo4j.configuration.Description;
+import org.neo4j.configuration.Internal;
 import org.neo4j.graphdb.GraphDatabaseService;
 import org.neo4j.graphdb.config.Configuration;
 import org.neo4j.graphdb.config.Setting;
@@ -65,7 +66,6 @@ import org.neo4j.kernel.api.security.AuthManager;
 import org.neo4j.kernel.api.security.UserManagerSupplier;
 import org.neo4j.kernel.configuration.BoltConnector;
 import org.neo4j.kernel.configuration.Config;
-import org.neo4j.configuration.Internal;
 import org.neo4j.kernel.extension.KernelExtensionFactory;
 import org.neo4j.kernel.impl.core.ThreadToStatementContextBridge;
 import org.neo4j.kernel.impl.logging.LogService;
@@ -163,7 +163,8 @@ public class BoltKernelExtension extends KernelExtensionFactory<BoltKernelExtens
         WorkerFactory workerFactory = createWorkerFactory( boltFactory, scheduler, dependencies, logService, clock );
 
         List<ProtocolInitializer> connectors =config.enabledBoltConnectors().stream()
-                .map( ( connConfig ) -> {
+                .map( ( connConfig ) ->
+                {
                     ListenSocketAddress listenAddress = config.get( connConfig.listen_address );
                     AdvertisedSocketAddress advertisedAddress = config.get( connConfig.advertised_address );
                     SslContext sslCtx;
@@ -243,7 +244,8 @@ public class BoltKernelExtension extends KernelExtensionFactory<BoltKernelExtens
         Map<Long, BiFunction<Channel, Boolean, BoltProtocol>> availableVersions = new HashMap<>();
         availableVersions.put(
                 (long) BoltProtocolV1.VERSION,
-                ( channel, isEncrypted ) -> {
+                ( channel, isEncrypted ) ->
+                {
                     BoltConnectionDescriptor descriptor = new BoltConnectionDescriptor(
                             channel.remoteAddress(), channel.localAddress() );
                     BoltWorker worker = workerFactory.newWorker( descriptor, channel::close );

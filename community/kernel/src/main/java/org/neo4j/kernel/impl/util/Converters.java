@@ -34,7 +34,8 @@ public class Converters
 {
     public static <T> Function<String,T> mandatory()
     {
-        return key -> {
+        return key ->
+        {
             throw new IllegalArgumentException( "Missing argument '" + key + "'" );
         };
     }
@@ -64,14 +65,15 @@ public class Converters
         return s -> s;
     }
 
-    public static final Comparator<File> BY_FILE_NAME = ( o1, o2 ) -> o1.getName().compareTo( o2.getName() );
+    public static final Comparator<File> BY_FILE_NAME = Comparator.comparing( File::getName );
 
     public static final Comparator<File> BY_FILE_NAME_WITH_CLEVER_NUMBERS =
             ( o1, o2 ) -> NumberAwareStringComparator.INSTANCE.compare( o1.getAbsolutePath(), o2.getAbsolutePath() );
 
     public static Function<String,File[]> regexFiles( final boolean cleverNumberRegexSort )
     {
-        return name -> {
+        return name ->
+        {
             Comparator<File> sorting = cleverNumberRegexSort ? BY_FILE_NAME_WITH_CLEVER_NUMBERS : BY_FILE_NAME;
             List<File> files = Validators.matchingFiles( new File( name ) );
             Collections.sort( files, sorting );
@@ -82,7 +84,8 @@ public class Converters
     public static Function<String,File[]> toFiles( final String delimiter,
             final Function<String,File[]> eachFileConverter )
     {
-        return from -> {
+        return from ->
+        {
             if ( from == null )
             {
                 return new File[0];

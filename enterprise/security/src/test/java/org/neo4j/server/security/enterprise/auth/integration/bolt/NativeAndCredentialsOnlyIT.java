@@ -32,9 +32,8 @@ public class NativeAndCredentialsOnlyIT extends EnterpriseAuthenticationTestBase
     @Override
     protected Consumer<Map<Setting<?>, String>> getSettingsFunction()
     {
-        return super.getSettingsFunction().andThen( settings -> {
-            settings.put( SecuritySettings.auth_providers, "native,plugin-TestCredentialsOnlyPlugin" );
-        });
+        return super.getSettingsFunction()
+                .andThen( settings -> settings.put( SecuritySettings.auth_providers, "native,plugin-TestCredentialsOnlyPlugin" ) );
     }
 
     @Test

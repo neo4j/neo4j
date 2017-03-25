@@ -328,7 +328,8 @@ public class Cluster
     private CoreClusterMember leaderTx( BiConsumer<CoreGraphDatabase,Transaction> op, int timeout, TimeUnit timeUnit )
             throws Exception
     {
-        ThrowingSupplier<CoreClusterMember,Exception> supplier = () -> {
+        ThrowingSupplier<CoreClusterMember,Exception> supplier = () ->
+        {
             CoreClusterMember member = awaitLeader( timeout, timeUnit );
             CoreGraphDatabase db = member.database();
             if ( db == null )
@@ -476,7 +477,8 @@ public class Cluster
             CoreClusterMember memberToLookLike )
             throws TimeoutException, InterruptedException
     {
-        await( () -> {
+        await( () ->
+                {
                     try
                     {
                         // We recalculate the DbRepresentation of both source and target, so changes can be picked up

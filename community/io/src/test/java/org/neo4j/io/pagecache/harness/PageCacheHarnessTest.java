@@ -183,7 +183,8 @@ abstract class PageCacheHarnessTest<T extends PageCache> extends PageCacheTestSu
 
     private Phase filesAreCorrectlyWrittenVerification( final RecordFormat recordFormat, final int filePageCount )
     {
-        return ( pageCache1, fs1, filesTouched ) -> {
+        return ( pageCache1, fs1, filesTouched ) ->
+        {
             for ( File file : filesTouched )
             {
                 try ( PagedFile pf = pageCache1.map( file, pageCachePageSize );

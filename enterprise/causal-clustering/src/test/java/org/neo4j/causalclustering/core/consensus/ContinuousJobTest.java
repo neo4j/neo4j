@@ -65,7 +65,8 @@ public class ContinuousJobTest
         // given: this task is gonna take >20 ms total
         Semaphore semaphore = new Semaphore( -20 );
 
-        Runnable task = () -> {
+        Runnable task = () ->
+        {
             LockSupport.parkNanos( 1_000_000 ); // 1 ms
             semaphore.release();
         };

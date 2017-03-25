@@ -52,8 +52,6 @@ import org.neo4j.io.fs.FileSystemAbstraction;
 import org.neo4j.io.pagecache.PageCache;
 import org.neo4j.io.pagecache.tracing.PageCacheTracer;
 import org.neo4j.io.pagecache.tracing.cursor.PageCursorTracerSupplier;
-import org.neo4j.kernel.api.constraints.NodeKeyConstraint;
-import org.neo4j.kernel.api.constraints.UniquenessConstraint;
 import org.neo4j.kernel.api.exceptions.KernelException;
 import org.neo4j.kernel.api.exceptions.index.IndexEntryConflictException;
 import org.neo4j.kernel.api.exceptions.schema.AlreadyConstrainedException;
@@ -61,7 +59,6 @@ import org.neo4j.kernel.api.exceptions.schema.CreateConstraintFailureException;
 import org.neo4j.kernel.api.index.IndexEntryUpdate;
 import org.neo4j.kernel.api.index.IndexPopulator;
 import org.neo4j.kernel.api.index.InternalIndexState;
-import org.neo4j.kernel.impl.api.index.NodeUpdates;
 import org.neo4j.kernel.api.index.PropertyAccessor;
 import org.neo4j.kernel.api.index.SchemaIndexProvider;
 import org.neo4j.kernel.api.labelscan.LabelScanStore;
@@ -82,6 +79,7 @@ import org.neo4j.kernel.extension.KernelExtensions;
 import org.neo4j.kernel.extension.UnsatisfiedDependencyStrategies;
 import org.neo4j.kernel.extension.dependency.HighestSelectionStrategy;
 import org.neo4j.kernel.extension.dependency.NamedLabelScanStoreSelectionStrategy;
+import org.neo4j.kernel.impl.api.index.NodeUpdates;
 import org.neo4j.kernel.impl.api.index.SchemaIndexProviderMap;
 import org.neo4j.kernel.impl.api.index.StoreScan;
 import org.neo4j.kernel.impl.api.index.sampling.IndexSamplingConfig;
@@ -469,7 +467,8 @@ public class BatchInserterImpl implements BatchInserter, IndexConfigStoreProvide
             populators.add( new IndexPopulatorWithSchema( populator, index ) );
         }
 
-        Visitor<NodeUpdates, IOException> propertyUpdateVisitor = updates -> {
+        Visitor<NodeUpdates, IOException> propertyUpdateVisitor = updates ->
+        {
             // Do a lookup from which property has changed to a list of indexes worried about that property.
             // We do not need to load additional properties as the NodeUpdates for a full node store scan already
             // include all properties for the node.
@@ -806,7 +805,8 @@ public class BatchInserterImpl implements BatchInserter, IndexConfigStoreProvide
     @Override
     public Iterable<Label> getNodeLabels( final long node )
     {
-        return () -> {
+        return () ->
+        {
             NodeRecord record = getNodeRecord( node ).forReadingData();
             long[] labels = parseLabelsField( record ).get( nodeStore );
             return map( labelIdToLabelFunction, PrimitiveLongCollections.iterator( labels ) );

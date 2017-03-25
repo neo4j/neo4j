@@ -89,7 +89,8 @@ class BoltInteraction implements NeoInteractionLevel<BoltInteraction.BoltSubject
         server = new Neo4jWithSocket( getClass(),
                 factory,
                 () -> fileSystem,
-                settings -> {
+                settings ->
+                {
                     settings.put( GraphDatabaseSettings.auth_enabled.name(), "true" );
                     settings.putAll( config );
                 } );

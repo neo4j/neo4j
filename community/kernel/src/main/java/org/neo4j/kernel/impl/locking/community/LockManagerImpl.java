@@ -98,7 +98,8 @@ public class LockManagerImpl
             }
             lock = resourceLockMap.get( resource );
         }
-        logger.bulk( bulkLogger -> {
+        logger.bulk( bulkLogger ->
+        {
             bulkLogger.log( "Dump locks on resource %s", resource );
             lock.logTo( bulkLogger );
         } );

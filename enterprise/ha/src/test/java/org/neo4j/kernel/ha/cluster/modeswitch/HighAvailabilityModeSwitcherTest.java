@@ -165,7 +165,9 @@ public class HighAvailabilityModeSwitcherTest
         SwitchToMaster switchToMaster = mock( SwitchToMaster.class );
 
         when( switchToSlave.switchToSlave( any( LifeSupport.class ), any( URI.class ), any( URI.class ),
-                any( CancellationRequest.class ) ) ).thenAnswer( invocationOnMock -> {
+                any( CancellationRequest.class ) ) )
+                .thenAnswer( invocationOnMock ->
+                {
                     switching.countDown();
                     CancellationRequest cancel = (CancellationRequest) invocationOnMock.getArguments()[3];
                     if ( firstSwitch.get() )
@@ -238,8 +240,10 @@ public class HighAvailabilityModeSwitcherTest
                                         ((Runnable) invocation.getArguments()[0]).run() ) );
 
                 when( executor.schedule( any( Runnable.class ), anyLong(), any( TimeUnit.class ) ) ).thenAnswer(
-                        (Answer<Future<?>>) invocation -> {
-                            realExecutor.submit( (Callable<Void>) () -> {
+                        (Answer<Future<?>>) invocation ->
+                        {
+                            realExecutor.submit( (Callable<Void>) () ->
+                            {
                                 firstMasterAvailableHandled.countDown();
 
                                 // wait until the second masterIsAvailable comes and then call switchToSlave
@@ -316,14 +320,16 @@ public class HighAvailabilityModeSwitcherTest
         toTest.listeningAt( URI.create( "ha://server3?serverId=3" ) );
 
         when( switchToSlave.switchToSlave( any( LifeSupport.class ), any( URI.class ), any( URI.class ), any(
-                CancellationRequest.class ) ) ).thenAnswer( invocation -> {
+                CancellationRequest.class ) ) ).thenAnswer( invocation ->
+                {
                     firstCallMade.countDown();
                     waitForSecondMessage.await();
                     throw new MismatchingStoreIdException( StoreId.DEFAULT, StoreId.DEFAULT );
-                } ).thenAnswer( invocation -> {
-                    secondCallMade.countDown();
-                    return URI.create( "ha://server3" );
-                } );
+                } ).thenAnswer( invocation ->
+                    {
+                        secondCallMade.countDown();
+                        return URI.create( "ha://server3" );
+                    } );
 
         // When
 
@@ -451,7 +457,8 @@ public class HighAvailabilityModeSwitcherTest
             {
                 ScheduledExecutorService executor = mock( ScheduledExecutorService.class );
 
-                doAnswer( invocation -> {
+                doAnswer( invocation ->
+                {
                     ((Runnable) invocation.getArguments()[0]).run();
                     modeSwitchHappened.countDown();
                     return mock( Future.class );

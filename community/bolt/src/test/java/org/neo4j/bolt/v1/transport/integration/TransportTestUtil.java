@@ -218,7 +218,8 @@ public class TransportTestUtil
             @Override
             protected boolean matchesSafely( TransportConnection connection )
             {
-                Supplier<Boolean> condition = () -> {
+                Supplier<Boolean> condition = () ->
+                {
                     try
                     {
                         connection.send( new byte[]{0,0});

@@ -175,7 +175,8 @@ public class LuceneIndexAccessor implements IndexAccessor
         @Override
         public void remove( PrimitiveLongSet nodeIds ) throws IOException
         {
-            nodeIds.visitKeys( nodeId -> {
+            nodeIds.visitKeys( nodeId ->
+            {
                 remove( nodeId );
                 return false;
             } );

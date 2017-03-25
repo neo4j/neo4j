@@ -149,7 +149,8 @@ public class AsyncEventsTest
         executor.submit( asyncEvents );
 
         ExecutorService threadPool = Executors.newFixedThreadPool( threads );
-        Runnable runner = () -> {
+        Runnable runner = () ->
+        {
             try
             {
                 startLatch.await();
@@ -203,7 +204,8 @@ public class AsyncEventsTest
         while ( consumer.eventsProcessed.take().processedBy == Thread.currentThread() );
 
         // Start a thread that awaits the termination
-        Future<?> awaitShutdownFuture = executor.submit( (Runnable) () -> {
+        Future<?> awaitShutdownFuture = executor.submit( () ->
+        {
             awaitStartLatch.countDown();
             try
             {

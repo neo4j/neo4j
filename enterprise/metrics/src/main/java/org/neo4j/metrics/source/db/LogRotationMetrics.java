@@ -60,7 +60,8 @@ public class LogRotationMetrics extends LifecycleAdapter implements Lifecycle
         this.registry = registry;
         this.monitors = monitors;
         this.logRotationMonitor = logRotationMonitor;
-        this.listener = ( durationMillis ) -> {
+        this.listener = ( durationMillis ) ->
+        {
             final SortedMap<String,Gauge> gauges = new TreeMap<>();
             gauges.put( LOG_ROTATION_DURATION, () -> durationMillis );
             reporter.report( gauges, emptySortedMap(), emptySortedMap(), emptySortedMap(), emptySortedMap() );

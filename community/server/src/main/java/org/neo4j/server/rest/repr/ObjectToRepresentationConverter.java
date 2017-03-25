@@ -59,7 +59,8 @@ public class ObjectToRepresentationConverter
     @SuppressWarnings("unchecked")
     static Representation getIteratorRepresentation( Iterator data )
     {
-        final FirstItemIterable<Representation> results = new FirstItemIterable<>(new IteratorWrapper<Representation, Object>(data) {
+        final FirstItemIterable<Representation> results = new FirstItemIterable<>(new IteratorWrapper<Representation, Object>(data)
+        {
             @Override
             protected Representation underlyingObjectToObject( Object value )
             {

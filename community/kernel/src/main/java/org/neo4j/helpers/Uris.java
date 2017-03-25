@@ -36,7 +36,8 @@ public final class Uris
      */
     public static Function<URI, String> parameter( final String name )
     {
-        return uri -> {
+        return uri ->
+        {
             if ( uri == null )
             {
                 return null;

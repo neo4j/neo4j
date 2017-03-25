@@ -41,7 +41,8 @@ public class Fixtures
 
     private final String cypherSuffix = "cyp";
 
-    private final FileFilter cypherFileOrDirectoryFilter = file -> {
+    private final FileFilter cypherFileOrDirectoryFilter = file ->
+    {
         if(file.isDirectory())
         {
             return true;

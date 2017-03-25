@@ -269,7 +269,8 @@ public class NodeUpdatesTest
         {
             propertyMap.put( p.propertyKeyId(), p.value() );
         }
-        return ( nodeId1, propertyIds, sink ) -> {
+        return ( nodeId1, propertyIds, sink ) ->
+        {
             PrimitiveIntIterator iterator = propertyIds.iterator();
             while ( iterator.hasNext() )
             {
@@ -285,8 +286,6 @@ public class NodeUpdatesTest
 
     private PropertyLoader assertNoLoading()
     {
-        return ( nodeId1, propertyIds, sink ) -> {
-            fail( "Should never attempt to load properties!" );
-        };
+        return ( nodeId1, propertyIds, sink ) -> fail( "Should never attempt to load properties!" );
     }
 }

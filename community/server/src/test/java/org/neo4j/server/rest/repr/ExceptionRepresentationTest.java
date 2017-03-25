@@ -59,7 +59,9 @@ public class ExceptionRepresentationTest
     public void shouldRenderErrorsWithNeo4jStatusCode() throws Exception
     {
         // Given
-        ExceptionRepresentation rep = new ExceptionRepresentation( new KernelException( UnknownError, "Hello" ) { });
+        ExceptionRepresentation rep = new ExceptionRepresentation( new KernelException( UnknownError, "Hello" )
+        {
+        } );
 
         // When
         JsonNode out = serialize( rep );
@@ -73,7 +75,9 @@ public class ExceptionRepresentationTest
     public void shoudExcludeLegacyFormatIfAsked() throws Exception
     {
         // Given
-        ExceptionRepresentation rep = new ExceptionRepresentation( new KernelException( UnknownError, "Hello" ) { }, /*legacy*/false);
+        ExceptionRepresentation rep = new ExceptionRepresentation( new KernelException( UnknownError, "Hello" )
+        {
+        }, /*legacy*/false );
 
         // When
         JsonNode out = serialize( rep );

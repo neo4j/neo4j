@@ -188,7 +188,8 @@ public class StoreUpgraderTest
                 MetaDataStore.Position.LAST_TRANSACTION_COMMIT_TIMESTAMP, MetaDataRecordFormat.FIELD_NOT_PRESENT );
 
         UpgradableDatabase upgradableDatabase = new UpgradableDatabase( fs, new StoreVersionCheck( pageCache ),
-                new LegacyStoreVersionCheck( fs ), getRecordFormats() ) {
+                new LegacyStoreVersionCheck( fs ), getRecordFormats() )
+        {
             @Override
             public RecordFormats checkUpgradeable( File storeDirectory )
             {

@@ -58,7 +58,8 @@ public class CheckPointingMetrics extends LifecycleAdapter
         this.registry = registry;
         this.monitors = monitors;
         this.checkPointerMonitor = checkPointerMonitor;
-        this.listener = ( durationMillis ) -> {
+        this.listener = ( durationMillis ) ->
+        {
             TreeMap<String,Gauge> gauges = new TreeMap<>();
             gauges.put( CHECK_POINT_DURATION, () -> durationMillis );
             reporter.report( gauges, emptySortedMap(), emptySortedMap(), emptySortedMap(), emptySortedMap() );

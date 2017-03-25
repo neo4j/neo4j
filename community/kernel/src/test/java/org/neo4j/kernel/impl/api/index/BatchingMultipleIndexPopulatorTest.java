@@ -332,7 +332,8 @@ public class BatchingMultipleIndexPopulatorTest
     private static IndexStoreView newStoreView( NodeUpdates... updates )
     {
         IndexStoreView storeView = mock( IndexStoreView.class );
-        when( storeView.visitNodes( any(), any(), any(), any(), anyBoolean() ) ).thenAnswer( invocation -> {
+        when( storeView.visitNodes( any(), any(), any(), any(), anyBoolean() ) ).thenAnswer( invocation ->
+        {
             Object visitorArg = invocation.getArguments()[2];
             Visitor<NodeUpdates,IndexPopulationFailedKernelException> visitor =
                     (Visitor<NodeUpdates,IndexPopulationFailedKernelException>) visitorArg;
@@ -345,7 +346,8 @@ public class BatchingMultipleIndexPopulatorTest
     {
         ExecutorService executor = mock( ExecutorService.class );
         when( executor.awaitTermination( anyLong(), any() ) ).thenReturn( true );
-        doAnswer( invocation -> {
+        doAnswer( invocation ->
+        {
             ((Runnable) invocation.getArguments()[0]).run();
             return null;
         } ).when( executor ).execute( any() );

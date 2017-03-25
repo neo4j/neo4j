@@ -281,7 +281,8 @@ public class HighlyAvailableEditionModule
         ClusterClient clusterClient = clusterClientModule.clusterClient;
         PaxosClusterMemberEvents localClusterEvents = new PaxosClusterMemberEvents( clusterClient, clusterClient,
                 clusterClient, clusterClient, logging.getInternalLogProvider(),
-                item -> {
+                item ->
+                {
                     for ( MemberIsAvailable member : item.getCurrentAvailableMembers() )
                     {
                         if ( member.getRoleUri().getScheme().equals( "ha" ) )
@@ -436,7 +437,8 @@ public class HighlyAvailableEditionModule
                 conversationManager, monitors.newMonitor( MasterImpl.Monitor.class, MasterImpl.class ), config ) );
 
         BiFunction<Master, ConversationManager, MasterServer> masterServerFactory =
-                ( master1, conversationManager ) -> {
+                ( master1, conversationManager ) ->
+                {
                     TransactionChecksumLookup txChecksumLookup = new TransactionChecksumLookup(
                             platformModule.dependencies.resolveDependency( TransactionIdStore.class ),
                             platformModule.dependencies.resolveDependency( LogicalTransactionStore.class ) );
@@ -507,7 +509,8 @@ public class HighlyAvailableEditionModule
 
         headerInformationFactory = createHeaderInformationFactory( memberContext );
 
-        schemaWriteGuard = () -> {
+        schemaWriteGuard = () ->
+        {
             if ( !memberStateMachine.isMaster() )
             {
                 throw new InvalidTransactionTypeKernelException(

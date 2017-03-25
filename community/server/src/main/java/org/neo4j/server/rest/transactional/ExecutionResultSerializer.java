@@ -441,7 +441,8 @@ public class ExecutionResultSerializer
         out.writeArrayFieldStart( "data" );
         try
         {
-            data.accept( row -> {
+            data.accept( row ->
+            {
                 out.writeStartObject();
                 try
                 {

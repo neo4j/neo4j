@@ -80,7 +80,8 @@ public class CatchUpClient extends LifecycleAdapter
 
         CatchUpChannel channel = pool.acquire( catchUpAddress.get() );
 
-        future.whenComplete( ( result, e ) -> {
+        future.whenComplete( ( result, e ) ->
+        {
             if ( e == null )
             {
                 pool.release( channel );

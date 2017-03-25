@@ -133,7 +133,8 @@ public class TransactionTerminationIT
         assertThat( update1, containsNoErrors() );
 
         CountDownLatch latch = new CountDownLatch( 1 );
-        Future<?> tx2Result = executeInSeparateThread( "tx2", () -> {
+        Future<?> tx2Result = executeInSeparateThread( "tx2", () ->
+        {
             latch.countDown();
             Response update2 = executeUpdateStatement( tx2, value2, http );
             assertTxWasTerminated( update2 );
@@ -348,7 +349,8 @@ public class TransactionTerminationIT
     private static Future<?> setPropertyInSeparateThreadAndWaitBeforeCommit( String threadName, GraphDatabaseService db,
             Object value, CountDownLatch txStarted, CountDownLatch txCommit )
     {
-        return executeInSeparateThread( threadName, () -> {
+        return executeInSeparateThread( threadName, () ->
+        {
             try ( Transaction tx = db.beginTx() )
             {
                 Node node = findNode( db );
@@ -363,7 +365,8 @@ public class TransactionTerminationIT
     private static Future<?> setPropertyInSeparateThreadAndAttemptToCommit( String threadName,
             GraphDatabaseService db, Object value, CountDownLatch txStarted, AtomicReference<Transaction> txReference )
     {
-        return executeInSeparateThread( threadName, () -> {
+        return executeInSeparateThread( threadName, () ->
+        {
             try ( Transaction tx = db.beginTx() )
             {
                 txReference.set( tx );

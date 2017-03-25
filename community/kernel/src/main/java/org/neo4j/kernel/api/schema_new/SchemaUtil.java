@@ -57,7 +57,8 @@ public class SchemaUtil
         return properties.toString();
     }
 
-    public static TokenNameLookup idTokenNameLookup = new TokenNameLookup() {
+    public static TokenNameLookup idTokenNameLookup = new TokenNameLookup()
+    {
 
         @Override
         public String labelGetName( int labelId )

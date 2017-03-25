@@ -189,7 +189,8 @@ public class DefaultTransactionTracer implements TransactionTracer, LogRotationM
         counter.incrementAndGet();
         long lastEventTime = clock.nanos() - startTimeNanos;
         accumulatedTotalTimeNanos.addAndGet( lastEventTime );
-        jobScheduler.schedule( JobScheduler.Groups.metricsEvent, () -> {
+        jobScheduler.schedule( JobScheduler.Groups.metricsEvent, () ->
+        {
             long millis = TimeUnit.NANOSECONDS.toMillis( lastEventTime );
             monitor.lastLogRotationEventDuration( millis );
         } );

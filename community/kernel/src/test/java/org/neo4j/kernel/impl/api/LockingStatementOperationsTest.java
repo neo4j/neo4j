@@ -421,7 +421,8 @@ public class LockingStatementOperationsTest
 
         {
             // and GIVEN
-            doAnswer( invocation -> {
+            doAnswer( invocation ->
+            {
                 RelationshipVisitor<RuntimeException> visitor =
                         (RelationshipVisitor<RuntimeException>) invocation.getArguments()[2];
                 visitor.visit( relationshipId, 0, lowId, highId );
@@ -443,7 +444,8 @@ public class LockingStatementOperationsTest
 
         {
             // and GIVEN
-            doAnswer( invocation -> {
+            doAnswer( invocation ->
+            {
                 RelationshipVisitor<RuntimeException> visitor =
                         (RelationshipVisitor<RuntimeException>) invocation.getArguments()[2];
                 visitor.visit( relationshipId, 0, highId, lowId );

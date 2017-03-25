@@ -172,7 +172,8 @@ public class TestNetwork<T>
         {
             private volatile boolean done = false;
 
-            private final TreeSet<MessageContext> msgQueue = new TreeSet<>( (Comparator<MessageContext>) ( o1, o2 ) -> {
+            private final TreeSet<MessageContext> msgQueue = new TreeSet<>( (Comparator<MessageContext>) ( o1, o2 ) ->
+            {
                 int res = Long.compare( o1.atMillis, o2.atMillis );
 
                 if ( res == 0 && o1 != o2 )

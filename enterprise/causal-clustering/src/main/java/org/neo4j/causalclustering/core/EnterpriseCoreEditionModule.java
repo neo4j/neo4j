@@ -45,9 +45,9 @@ import org.neo4j.causalclustering.discovery.procedures.CoreRoleProcedure;
 import org.neo4j.causalclustering.identity.MemberId;
 import org.neo4j.causalclustering.load_balancing.LoadBalancingPluginLoader;
 import org.neo4j.causalclustering.load_balancing.LoadBalancingProcessor;
+import org.neo4j.causalclustering.load_balancing.procedure.GetServersProcedureForMultiDC;
 import org.neo4j.causalclustering.load_balancing.procedure.GetServersProcedureForSingleDC;
 import org.neo4j.causalclustering.load_balancing.procedure.LegacyGetServersProcedure;
-import org.neo4j.causalclustering.load_balancing.procedure.GetServersProcedureForMultiDC;
 import org.neo4j.causalclustering.logging.BetterMessageLogger;
 import org.neo4j.causalclustering.logging.MessageLogger;
 import org.neo4j.causalclustering.logging.NullMessageLogger;
@@ -333,7 +333,8 @@ public class EnterpriseCoreEditionModule extends EditionModule
     private void registerRecovery( final DatabaseInfo databaseInfo, LifeSupport life,
             final DependencyResolver dependencyResolver )
     {
-        life.addLifecycleListener( ( instance, from, to ) -> {
+        life.addLifecycleListener( ( instance, from, to ) ->
+        {
             if ( instance instanceof DatabaseAvailability && LifecycleStatus.STARTED.equals( to ) )
             {
                 doAfterRecoveryAndStartup( databaseInfo, dependencyResolver );

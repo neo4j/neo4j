@@ -248,5 +248,5 @@ public interface TraversalDescription
      * @return a {@link Traverser} used to step through the graph and to get
      * results from.
      */
-    Traverser traverse( final Iterable<Node> iterableStartNodes );
+    Traverser traverse( Iterable<Node> iterableStartNodes );
 }

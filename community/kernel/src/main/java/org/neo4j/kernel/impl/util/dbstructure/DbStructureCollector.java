@@ -87,7 +87,8 @@ public class DbStructureCollector implements DbStructureVisitor
             @Override
             public Iterator<Pair<String,String[]>> knownUniqueConstraints()
             {
-                return Iterators.map( uniquenessConstraint -> {
+                return Iterators.map( uniquenessConstraint ->
+                {
                     String label = labels.byIdOrFail( uniquenessConstraint.schema().getLabelId() );
                     String[] propertyKeyNames = propertyKeys
                             .byIdOrFail( uniquenessConstraint.schema().getPropertyIds() );
@@ -98,7 +99,8 @@ public class DbStructureCollector implements DbStructureVisitor
             @Override
             public Iterator<Pair<String,String[]>> knownNodePropertyExistenceConstraints()
             {
-                return Iterators.map( uniquenessConstraint -> {
+                return Iterators.map( uniquenessConstraint ->
+                {
                     String label = labels.byIdOrFail( uniquenessConstraint.schema().getLabelId() );
                     String[] propertyKeyNames = propertyKeys
                             .byIdOrFail( uniquenessConstraint.schema().getPropertyIds() );

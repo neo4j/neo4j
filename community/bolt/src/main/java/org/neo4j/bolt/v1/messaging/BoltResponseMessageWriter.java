@@ -19,20 +19,24 @@
  */
 package org.neo4j.bolt.v1.messaging;
 
-import org.neo4j.bolt.v1.runtime.spi.Record;
-import org.neo4j.kernel.api.exceptions.Status;
-
 import java.io.IOException;
 import java.util.Map;
 
-import static org.neo4j.bolt.v1.messaging.BoltResponseMessage.*;
+import org.neo4j.bolt.v1.runtime.spi.Record;
+import org.neo4j.kernel.api.exceptions.Status;
+
+import static org.neo4j.bolt.v1.messaging.BoltResponseMessage.FAILURE;
+import static org.neo4j.bolt.v1.messaging.BoltResponseMessage.IGNORED;
+import static org.neo4j.bolt.v1.messaging.BoltResponseMessage.RECORD;
+import static org.neo4j.bolt.v1.messaging.BoltResponseMessage.SUCCESS;
 
 /**
  * Writer for Bolt request messages to be sent to a {@link Neo4jPack.Packer}.
  */
 public class BoltResponseMessageWriter implements BoltResponseMessageHandler<IOException>
 {
-    public static final BoltResponseMessageBoundaryHook NO_BOUNDARY_HOOK = () -> {
+    public static final BoltResponseMessageBoundaryHook NO_BOUNDARY_HOOK = () ->
+    {
     };
 
     private final Neo4jPack.Packer packer;

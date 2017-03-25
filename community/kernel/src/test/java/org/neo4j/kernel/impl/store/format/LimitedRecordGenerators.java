@@ -112,7 +112,8 @@ public class LimitedRecordGenerators implements RecordGenerators
     @Override
     public Generator<PropertyRecord> property()
     {
-        return (recordSize, format, recordId) -> {
+        return ( recordSize, format, recordId ) ->
+        {
             PropertyRecord record = new PropertyRecord( recordId );
             int maxProperties = random.intBetween( 1, 4 );
             StandaloneDynamicRecordAllocator stringAllocator = new StandaloneDynamicRecordAllocator();
@@ -161,7 +162,8 @@ public class LimitedRecordGenerators implements RecordGenerators
     @Override
     public Generator<DynamicRecord> dynamic()
     {
-        return (recordSize, format, recordId) -> {
+        return (recordSize, format, recordId) ->
+        {
             int dataSize = recordSize - format.getRecordHeaderSize();
             int length = random.nextBoolean() ? dataSize : random.nextInt( dataSize );
             long next = length == dataSize ? randomLong( propertyBits ) : nullValue;

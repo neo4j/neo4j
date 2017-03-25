@@ -170,7 +170,8 @@ public class DelayedRenewableTimeoutServiceTest
                 NullLogProvider.getInstance() );
 
         RenewableTimeoutService.RenewableTimeout timeout = timeoutService.create( Timeouts.FOOBAR, TIMEOUT_MS, 0,
-                handler -> {
+                handler ->
+                {
                     try
                     {
                         latch.await( LONG_TIME_MS, MILLISECONDS );

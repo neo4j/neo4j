@@ -166,7 +166,8 @@ public final class UnsafeUtil
     {
         try
         {
-            PrivilegedExceptionAction<Unsafe> getUnsafe = () -> {
+            PrivilegedExceptionAction<Unsafe> getUnsafe = () ->
+            {
                 try
                 {
                     return Unsafe.getUnsafe();

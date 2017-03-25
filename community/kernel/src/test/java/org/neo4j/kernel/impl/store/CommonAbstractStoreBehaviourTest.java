@@ -239,7 +239,8 @@ public class CommonAbstractStoreBehaviourTest
     @Test
     public void recordCursorNextMustThrowOnPageOverflow() throws Exception
     {
-        verifyExceptionOnOutOfBoundsAccess( () -> {
+        verifyExceptionOnOutOfBoundsAccess( () ->
+        {
             try ( RecordCursor<IntRecord> cursor = store.newRecordCursor( new IntRecord( 0 ) ).acquire( 5, NORMAL ) )
             {
                 cursor.next();

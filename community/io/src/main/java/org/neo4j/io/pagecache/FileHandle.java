@@ -38,7 +38,8 @@ public interface FileHandle
      * <p>
      * Possible IOException caused by fileHandle.delete() is wrapped in UncheckedIOException
      */
-    Consumer<FileHandle> HANDLE_DELETE = fh -> {
+    Consumer<FileHandle> HANDLE_DELETE = fh ->
+    {
         try
         {
             fh.delete();
@@ -61,7 +62,8 @@ public interface FileHandle
      */
     static Consumer<FileHandle> handleRenameBetweenDirectories( File from, File to )
     {
-        return fileHandle -> {
+        return fileHandle ->
+        {
             try
             {
                 fileHandle.rename( FileUtils.pathToFileAfterMove( from, to, fileHandle.getFile() ) );

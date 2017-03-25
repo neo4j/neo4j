@@ -52,9 +52,9 @@ public interface DependencyResolver
      */
     <T> T resolveDependency( Class<T> type, SelectionStrategy selector ) throws IllegalArgumentException;
 
-    <T> Supplier<T> provideDependency( final Class<T> type, final SelectionStrategy selector);
+    <T> Supplier<T> provideDependency( Class<T> type, SelectionStrategy selector);
 
-    <T> Supplier<T> provideDependency( final Class<T> type );
+    <T> Supplier<T> provideDependency( Class<T> type );
 
     /**
      * Responsible for making the choice between available candidates.

@@ -122,7 +122,8 @@ public class SequenceLockTest
     {
         int threads = 10;
         CountDownLatch end = new CountDownLatch( threads );
-        Runnable runnable = () -> {
+        Runnable runnable = () ->
+        {
             assertTrue( lock.tryWriteLock() );
             end.countDown();
         };
@@ -311,7 +312,8 @@ public class SequenceLockTest
         CountDownLatch start = new CountDownLatch( threads );
         AtomicBoolean stop = new AtomicBoolean();
         lock.tryExclusiveLock();
-        Runnable runnable = () -> {
+        Runnable runnable = () ->
+        {
             while ( !stop.get() )
             {
                 if ( lock.tryExclusiveLock() )

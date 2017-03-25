@@ -49,7 +49,8 @@ public class AbstractCheckPointThresholdTest
         AbstractCheckPointThreshold threshold = new TheAbstractCheckPointThreshold( false, null );
 
         // When
-        threshold.isCheckPointingNeeded( 42, s -> {
+        threshold.isCheckPointingNeeded( 42, s ->
+        {
             throw new IllegalStateException( "nooooooooo!" );
         } );
 

@@ -74,7 +74,8 @@ public class MonitoredWorkerFactory implements WorkerFactory
         {
             monitor.messageReceived();
             long start = clock.millis();
-            delegate.enqueue( session -> {
+            delegate.enqueue( session ->
+            {
                 long queueTime = clock.millis() - start;
                 monitor.processingStarted( queueTime );
                 job.perform( session );

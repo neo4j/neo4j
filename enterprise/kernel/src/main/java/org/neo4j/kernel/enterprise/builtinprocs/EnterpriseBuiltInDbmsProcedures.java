@@ -33,7 +33,6 @@ import org.neo4j.function.UncaughtCheckedException;
 import org.neo4j.graphdb.DependencyResolver;
 import org.neo4j.graphdb.security.AuthorizationViolationException;
 import org.neo4j.helpers.collection.Pair;
-import org.neo4j.kernel.api.query.ExecutingQuery;
 import org.neo4j.kernel.api.KernelTransaction;
 import org.neo4j.kernel.api.KernelTransactionHandle;
 import org.neo4j.kernel.api.Statement;
@@ -43,6 +42,7 @@ import org.neo4j.kernel.api.exceptions.InvalidArgumentsException;
 import org.neo4j.kernel.api.exceptions.Status;
 import org.neo4j.kernel.api.proc.ProcedureSignature;
 import org.neo4j.kernel.api.proc.UserFunctionSignature;
+import org.neo4j.kernel.api.query.ExecutingQuery;
 import org.neo4j.kernel.api.security.SecurityContext;
 import org.neo4j.kernel.impl.api.KernelTransactions;
 import org.neo4j.kernel.impl.core.ThreadToStatementContextBridge;
@@ -372,8 +372,11 @@ public class EnterpriseBuiltInDbmsProcedures
     {
         Long killCount = getBoltConnectionTracker( dependencyResolver )
             .getActiveConnections( username )
-            .stream()
-            .map( conn -> { conn.terminate(); return true; } )
+            .stream().map( conn ->
+                {
+                    conn.terminate();
+                    return true;
+                } )
             .count();
         return Stream.of( new ConnectionResult( username, killCount ) );
     }

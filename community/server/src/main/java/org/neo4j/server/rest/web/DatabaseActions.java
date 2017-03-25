@@ -1626,16 +1626,12 @@ public class DatabaseActions
 
     private Iterable<ConstraintDefinition> filteredNodeConstraints( String labelName, final ConstraintType type )
     {
-        return filter( item -> {
-            return item.isConstraintType( type );
-        }, graphDb.schema().getConstraints( label( labelName ) ) );
+        return filter( item -> item.isConstraintType( type ), graphDb.schema().getConstraints( label( labelName ) ) );
     }
 
     private Iterable<ConstraintDefinition> filteredRelationshipConstraints( String typeName, final ConstraintType type )
     {
-        return filter( item -> {
-            return item.isConstraintType( type );
-        }, graphDb.schema().getConstraints( RelationshipType.withName( typeName ) ) );
+        return filter( item -> item.isConstraintType( type ), graphDb.schema().getConstraints( RelationshipType.withName( typeName ) ) );
     }
 
     private Predicate<ConstraintDefinition> propertyUniquenessFilter( final Set<String> propertyKeysSet )

@@ -83,7 +83,8 @@ public class MandatoryProperties
     public Function<NodeRecord,Check<NodeRecord,ConsistencyReport.NodeConsistencyReport>> forNodes(
             final ConsistencyReporter reporter )
     {
-        return node -> {
+        return node ->
+        {
             PrimitiveIntSet keys = null;
             for ( long labelId : NodeLabelReader.getListOfLabels( node, storeAccess.getNodeDynamicLabelStore() ) )
             {
@@ -111,7 +112,8 @@ public class MandatoryProperties
     public Function<RelationshipRecord,Check<RelationshipRecord,ConsistencyReport.RelationshipConsistencyReport>>
             forRelationships( final ConsistencyReporter reporter )
     {
-        return relationship -> {
+        return relationship ->
+        {
             int[] propertyKeys = relationships.get( relationship.getType() );
             if ( propertyKeys != null )
             {

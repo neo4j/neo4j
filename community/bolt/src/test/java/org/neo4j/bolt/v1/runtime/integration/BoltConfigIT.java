@@ -31,8 +31,8 @@ import org.neo4j.bolt.v1.transport.socket.client.SocketConnection;
 import org.neo4j.bolt.v1.transport.socket.client.TransportConnection;
 import org.neo4j.bolt.v1.transport.socket.client.WebSocketConnection;
 import org.neo4j.helpers.HostnamePort;
-import org.neo4j.test.rule.SuppressOutput;
 import org.neo4j.kernel.configuration.BoltConnector;
+import org.neo4j.test.rule.SuppressOutput;
 
 import static java.util.Collections.emptyMap;
 import static org.hamcrest.MatcherAssert.assertThat;
@@ -45,7 +45,8 @@ public class BoltConfigIT
 
     @Rule
     public Neo4jWithSocket server = new Neo4jWithSocket( getClass(),
-            settings -> {
+            settings ->
+            {
                 settings.put( new BoltConnector("bolt").type.name(), "BOLT" );
                 settings.put( new BoltConnector("bolt").enabled.name(), "true" );
                 settings.put( new BoltConnector("bolt").address.name(), "localhost:7888" );

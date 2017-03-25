@@ -67,17 +67,13 @@ public class DuplicatingLogProvider extends AbstractLogProvider<DuplicatingLog>
     @Override
     protected DuplicatingLog buildLog( final Class loggingClass )
     {
-        return buildLog( logProvider -> {
-            return logProvider.getLog( loggingClass );
-        } );
+        return buildLog( logProvider -> logProvider.getLog( loggingClass ) );
     }
 
     @Override
     protected DuplicatingLog buildLog( final String name )
     {
-        return buildLog( logProvider -> {
-            return logProvider.getLog( name );
-        } );
+        return buildLog( logProvider -> logProvider.getLog( name ) );
     }
 
     private DuplicatingLog buildLog( Function<LogProvider, Log> logConstructor )

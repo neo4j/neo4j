@@ -95,7 +95,8 @@ public class RestartIT
         ExecutorService executor = Executors.newCachedThreadPool();
 
         final AtomicBoolean done = new AtomicBoolean( false );
-        executor.execute( () -> {
+        executor.execute( () ->
+        {
             while ( !done.get() )
             {
                 try ( Transaction tx = coreDB.beginTx() )

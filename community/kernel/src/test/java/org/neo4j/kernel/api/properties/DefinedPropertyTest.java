@@ -21,8 +21,6 @@ package org.neo4j.kernel.api.properties;
 
 import org.junit.Test;
 
-import java.util.concurrent.Callable;
-
 import static org.hamcrest.Matchers.equalTo;
 import static org.hamcrest.Matchers.greaterThan;
 import static org.hamcrest.Matchers.lessThan;
@@ -154,13 +152,7 @@ public class DefinedPropertyTest
     @Test
     public void shouldSortLazyStringAndNonLazyStringPropertiesByValue()
     {
-        DefinedProperty p1 = lazyStringProperty( 1, new Callable<String>(){
-            @Override
-            public String call() throws Exception
-            {
-                return "x";
-            }
-        } );
+        DefinedProperty p1 = lazyStringProperty( 1, () -> "x" );
         DefinedProperty p2 = stringProperty( 1, "y" );
 
         assertThat( compare( p1, p2 ), lessThan( 0 ) );

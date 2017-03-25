@@ -101,7 +101,8 @@ public class ReplicatedTokenHolderTest
         TokenRegistry<Token> registry = new TokenRegistry<>( "Label" );
         int generatedTokenId = 1;
         ReplicatedTokenHolder<Token> tokenHolder = new ReplicatedLabelTokenHolder( registry,
-                ( content, trackResult ) -> {
+                ( content, trackResult ) ->
+                {
                     CompletableFuture<Object> completeFuture = new CompletableFuture<>();
                     completeFuture.complete( generatedTokenId );
                     return completeFuture;
@@ -119,7 +120,8 @@ public class ReplicatedTokenHolderTest
     private StorageEngine mockedStorageEngine() throws Exception
     {
         StorageEngine storageEngine = mock( StorageEngine.class );
-        doAnswer( invocation -> {
+        doAnswer( invocation ->
+        {
             Collection<StorageCommand> target = invocation.getArgumentAt( 0, Collection.class );
             ReadableTransactionState txState = invocation.getArgumentAt( 1, ReadableTransactionState.class );
             txState.accept( new TxStateVisitor.Adapter()
