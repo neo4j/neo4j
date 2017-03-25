@@ -29,7 +29,12 @@ import org.neo4j.collection.primitive.PrimitiveLongIterator;
 import org.neo4j.cursor.Cursor;
 import org.neo4j.helpers.collection.Iterables;
 import org.neo4j.helpers.collection.Iterators;
+import org.neo4j.kernel.api.DataWriteOperations;
 import org.neo4j.kernel.api.exceptions.index.IndexNotFoundKernelException;
+import org.neo4j.kernel.api.legacyindex.AutoIndexOperations;
+import org.neo4j.kernel.api.legacyindex.AutoIndexing;
+import org.neo4j.kernel.api.properties.DefinedProperty;
+import org.neo4j.kernel.api.properties.Property;
 import org.neo4j.kernel.api.schema_new.IndexQuery;
 import org.neo4j.kernel.api.schema_new.LabelSchemaDescriptor;
 import org.neo4j.kernel.api.schema_new.OrderedPropertyValues;
@@ -47,12 +52,15 @@ import org.neo4j.kernel.impl.api.store.StoreStatement;
 import org.neo4j.kernel.impl.index.LegacyIndexStore;
 import org.neo4j.kernel.impl.util.diffsets.DiffSets;
 import org.neo4j.storageengine.api.NodeItem;
+import org.neo4j.storageengine.api.PropertyItem;
+import org.neo4j.storageengine.api.RelationshipItem;
 import org.neo4j.storageengine.api.StorageStatement;
 import org.neo4j.storageengine.api.StoreReadLayer;
 import org.neo4j.storageengine.api.schema.IndexReader;
 import org.neo4j.storageengine.api.txstate.PropertyContainerState;
 
 import static org.junit.Assert.assertEquals;
+import static org.junit.Assert.assertFalse;
 import static org.mockito.Matchers.any;
 import static org.mockito.Matchers.anyInt;
 import static org.mockito.Matchers.anyLong;
@@ -490,10 +498,123 @@ public class StateHandlingStatementOperationsTest
         verify( indexReader ).close();
     }
 
+    @Test
+    public void shouldNotRecordNodeSetPropertyOnSameValue() throws Exception
+    {
+        // GIVEN
+        int propertyKeyId = 5;
+        long nodeId = 0;
+        String value = "The value";
+        KernelStatement kernelStatement = mock( KernelStatement.class );
+        StoreStatement storeStatement = mock( StoreStatement.class );
+        Cursor<NodeItem> ourNode = nodeCursorWithProperty( propertyKeyId );
+        when( storeStatement.acquireSingleNodeCursor( nodeId ) ).thenReturn( ourNode );
+        when( kernelStatement.getStoreStatement() ).thenReturn( storeStatement );
+        InternalAutoIndexing autoIndexing = mock( InternalAutoIndexing.class );
+        AutoIndexOperations autoIndexOps = mock( AutoIndexOperations.class );
+        when( autoIndexing.nodes() ).thenReturn( autoIndexOps );
+        when( autoIndexing.relationships() ).thenReturn( AutoIndexOperations.UNSUPPORTED );
+        StoreReadLayer storeReadLayer = mock( StoreReadLayer.class );
+        Cursor<PropertyItem> propertyItemCursor = propertyCursor( propertyKeyId, value );
+        when( storeReadLayer.nodeGetProperty( eq( storeStatement ), any( NodeItem.class ),
+                eq( propertyKeyId ) ) ).thenReturn( propertyItemCursor );
+        StateHandlingStatementOperations operations = newTxStateOps( storeReadLayer, autoIndexing );
+
+        // WHEN
+        DefinedProperty newProperty = Property.stringProperty( propertyKeyId, value );
+        operations.nodeSetProperty( kernelStatement, nodeId, newProperty );
+
+        // THEN
+        assertFalse( kernelStatement.hasTxStateWithChanges() );
+        // although auto-indexing should still be notified
+        verify( autoIndexOps ).propertyChanged( any( DataWriteOperations.class ), eq( nodeId ),
+                eq( Property.stringProperty( propertyKeyId, value ) ), eq( newProperty ) );
+    }
+
+    @Test
+    public void shouldNotRecordRelationshipSetPropertyOnSameValue() throws Exception
+    {
+        // GIVEN
+        int propertyKeyId = 5;
+        long relationshipId = 0;
+        String value = "The value";
+        KernelStatement kernelStatement = mock( KernelStatement.class );
+        StoreStatement storeStatement = mock( StoreStatement.class );
+        Cursor<RelationshipItem> ourRelationship = relationshipCursorWithProperty( propertyKeyId );
+        when( storeStatement.acquireSingleRelationshipCursor( relationshipId ) ).thenReturn( ourRelationship );
+        when( kernelStatement.getStoreStatement() ).thenReturn( storeStatement );
+        InternalAutoIndexing autoIndexing = mock( InternalAutoIndexing.class );
+        AutoIndexOperations autoIndexOps = mock( AutoIndexOperations.class );
+        when( autoIndexing.nodes() ).thenReturn( AutoIndexOperations.UNSUPPORTED );
+        when( autoIndexing.relationships() ).thenReturn( autoIndexOps );
+        StoreReadLayer storeReadLayer = mock( StoreReadLayer.class );
+        Cursor<PropertyItem> propertyItemCursor = propertyCursor( propertyKeyId, value );
+        when( storeReadLayer.relationshipGetProperty( eq( storeStatement ), any( RelationshipItem.class ),
+                eq( propertyKeyId ) ) ).thenReturn( propertyItemCursor );
+        StateHandlingStatementOperations operations = newTxStateOps( storeReadLayer, autoIndexing );
+
+        // WHEN
+        DefinedProperty newProperty = Property.stringProperty( propertyKeyId, value );
+        operations.relationshipSetProperty( kernelStatement, relationshipId, newProperty );
+
+        // THEN
+        assertFalse( kernelStatement.hasTxStateWithChanges() );
+        // although auto-indexing should still be notified
+        verify( autoIndexOps ).propertyChanged( any( DataWriteOperations.class ), eq( relationshipId ),
+                eq( newProperty ), eq( newProperty ) );
+    }
+
+    @Test
+    public void shouldNotRecordGraphSetPropertyOnSameValue() throws Exception
+    {
+        // GIVEN
+        int propertyKeyId = 5;
+        String value = "The value";
+        KernelStatement kernelStatement = mock( KernelStatement.class );
+        StoreStatement storeStatement = mock( StoreStatement.class );
+        when( kernelStatement.getStoreStatement() ).thenReturn( storeStatement );
+        when( inner.graphGetAllProperties() ).thenReturn( iterator( Property.stringProperty( propertyKeyId, value ) ) );
+        StateHandlingStatementOperations operations = newTxStateOps( inner );
+
+        // WHEN
+        DefinedProperty newProperty = Property.stringProperty( propertyKeyId, value );
+        operations.graphSetProperty( kernelStatement, newProperty );
+
+        // THEN
+        assertFalse( kernelStatement.hasTxStateWithChanges() );
+    }
+
+    private Cursor<NodeItem> nodeCursorWithProperty( long propertyKeyId )
+    {
+        NodeItem item = mock( NodeItem.class );
+        when( item.nextPropertyId()).thenReturn( propertyKeyId );
+        return StubCursors.cursor( item );
+    }
+
+    private Cursor<RelationshipItem> relationshipCursorWithProperty( long propertyKeyId )
+    {
+        RelationshipItem item = mock( RelationshipItem.class );
+        when( item.nextPropertyId() ).thenReturn( propertyKeyId );
+        return StubCursors.cursor( item );
+    }
+
+    private Cursor<PropertyItem> propertyCursor( long propertyKeyId, String value )
+    {
+        PropertyItem propertyItem = mock( PropertyItem.class );
+        when( propertyItem.propertyKeyId() ).thenReturn( (int) propertyKeyId );
+        when( propertyItem.value() ).thenReturn( value );
+        return StubCursors.cursor( propertyItem );
+    }
+
     private StateHandlingStatementOperations newTxStateOps( StoreReadLayer delegate )
     {
+        return newTxStateOps( delegate, mock( InternalAutoIndexing.class ) );
+    }
+
+    private StateHandlingStatementOperations newTxStateOps( StoreReadLayer delegate, AutoIndexing autoIndexing )
+    {
         return new StateHandlingStatementOperations( delegate,
-                mock( InternalAutoIndexing.class ), mock( ConstraintIndexCreator.class ),
+                autoIndexing, mock( ConstraintIndexCreator.class ),
                 mock( LegacyIndexStore.class ) );
     }
 

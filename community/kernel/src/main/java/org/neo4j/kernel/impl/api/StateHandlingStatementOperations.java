@@ -1063,8 +1063,11 @@ public class StateHandlingStatementOperations implements
             }
             else
             {
-                state.txState().nodeDoChangeProperty( node.id(), existingProperty, property );
-                indexTxStateUpdater.onPropertyChange( state, node, existingProperty, property );
+                if ( !property.equals( existingProperty ) )
+                {
+                    state.txState().nodeDoChangeProperty( node.id(), existingProperty, property );
+                    indexTxStateUpdater.onPropertyChange( state, node, existingProperty, property );
+                }
                 return existingProperty;
             }
         }
@@ -1096,8 +1099,10 @@ public class StateHandlingStatementOperations implements
                     autoIndexing.relationships().propertyChanged( ops, relationshipId, existingProperty, property );
                 }
             }
-
-            state.txState().relationshipDoReplaceProperty( relationship.id(), existingProperty, property );
+            if ( !property.equals( existingProperty ) )
+            {
+                state.txState().relationshipDoReplaceProperty( relationship.id(), existingProperty, property );
+            }
             return existingProperty;
         }
     }
@@ -1109,7 +1114,12 @@ public class StateHandlingStatementOperations implements
         Property existingProperty = existingPropertyValue == null ?
                 Property.noGraphProperty( property.propertyKeyId() ) :
                 Property.property( property.propertyKeyId(), existingPropertyValue );
-        state.txState().graphDoReplaceProperty( existingProperty, property );
+
+        if ( !property.equals( existingProperty ) )
+        {
+            state.txState().graphDoReplaceProperty( existingProperty, property );
+        }
+
         return existingProperty;
     }
 
