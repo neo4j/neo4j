@@ -60,6 +60,7 @@ import org.neo4j.kernel.api.exceptions.schema.SchemaRuleNotFoundException;
 import org.neo4j.kernel.api.exceptions.schema.TooManyLabelsException;
 import org.neo4j.kernel.api.index.IndexDescriptor;
 import org.neo4j.kernel.api.index.InternalIndexState;
+import org.neo4j.kernel.api.legacyindex.AutoIndexOperations;
 import org.neo4j.kernel.api.legacyindex.AutoIndexing;
 import org.neo4j.kernel.api.properties.DefinedProperty;
 import org.neo4j.kernel.api.properties.Property;
@@ -80,6 +81,7 @@ import org.neo4j.kernel.impl.index.IndexEntityType;
 import org.neo4j.kernel.impl.index.LegacyIndexStore;
 import org.neo4j.kernel.impl.util.Cursors;
 import org.neo4j.register.Register.DoubleLongRegister;
+import org.neo4j.storageengine.api.EntityItem;
 import org.neo4j.storageengine.api.EntityType;
 import org.neo4j.storageengine.api.LabelItem;
 import org.neo4j.storageengine.api.NodeItem;
@@ -960,27 +962,44 @@ public class StateHandlingStatementOperations implements
         try ( Cursor<NodeItem> cursor = nodeCursorById( state, nodeId ) )
         {
             NodeItem node = cursor.get();
-            Property existingProperty;
-            try ( Cursor<PropertyItem> properties = node.property( property.propertyKeyId() ) )
+            Property existingProperty = readProperty( property.propertyKeyId(), node, EntityType.NODE );
+
+            // TODO Explicitly auto-index properties, even if setting the same value as the existing one.
+            // This because there are established ways of rebuilding auto-indexes which involves this function.
+            autoIndexProperty( nodeId, property, ops, existingProperty, autoIndexing.nodes() );
+
+            if ( !property.equals( existingProperty ) )
             {
-                if ( !properties.next() )
-                {
-                    autoIndexing.nodes().propertyAdded( ops, nodeId, property );
-                    existingProperty = Property.noProperty( property.propertyKeyId(), EntityType.NODE, node.id() );
-                }
-                else
-                {
-                    existingProperty = Property.property( properties.get().propertyKeyId(), properties.get().value() );
-                    autoIndexing.nodes().propertyChanged( ops, nodeId, existingProperty, property );
-                }
+                state.txState().nodeDoReplaceProperty( node.id(), existingProperty, property );
+
+                DefinedProperty before = definedPropertyOrNull( existingProperty );
+                indexesUpdateProperty( state, node, property.propertyKeyId(), before, property );
             }
 
-            state.txState().nodeDoReplaceProperty( node.id(), existingProperty, property );
-
-            DefinedProperty before = definedPropertyOrNull( existingProperty );
-            indexesUpdateProperty( state, node, property.propertyKeyId(), before, property );
-
             return existingProperty;
+        }
+    }
+
+    private void autoIndexProperty( long entityId, DefinedProperty property, DataWriteOperations ops,
+            Property existingProperty, AutoIndexOperations indexing ) throws AutoIndexingKernelException
+    {
+        if ( existingProperty.isDefined() )
+        {
+            indexing.propertyChanged( ops, entityId, existingProperty, property );
+        }
+        else
+        {
+            indexing.propertyAdded( ops, entityId, property );
+        }
+    }
+
+    private Property readProperty( int propertyKeyId, EntityItem entity, EntityType entityType )
+    {
+        try ( Cursor<PropertyItem> properties = entity.property( propertyKeyId ) )
+        {
+            return properties.next()
+                    ? Property.property( properties.get().propertyKeyId(), properties.get().value() )
+                    : Property.noProperty( propertyKeyId, entityType, entity.id() );
         }
     }
 
@@ -994,23 +1013,16 @@ public class StateHandlingStatementOperations implements
         try ( Cursor<RelationshipItem> cursor = relationshipCursorById( state, relationshipId ) )
         {
             RelationshipItem relationship = cursor.get();
-            Property existingProperty;
-            try ( Cursor<PropertyItem> properties = relationship.property( property.propertyKeyId() ) )
-            {
-                if ( !properties.next() )
-                {
-                    autoIndexing.relationships().propertyAdded( ops, relationshipId, property );
-                    existingProperty = Property.noProperty( property.propertyKeyId(), EntityType.RELATIONSHIP,
-                            relationship.id() );
-                }
-                else
-                {
-                    existingProperty = Property.property( properties.get().propertyKeyId(), properties.get().value() );
-                    autoIndexing.relationships().propertyChanged( ops, relationshipId, existingProperty, property );
-                }
-            }
+            Property existingProperty = readProperty( property.propertyKeyId(), relationship, EntityType.RELATIONSHIP );
 
-            state.txState().relationshipDoReplaceProperty( relationship.id(), existingProperty, property );
+            // TODO Explicitly auto-index properties, even if setting the same value as the existing one.
+            // This because there are established ways of rebuilding auto-indexes which involves this function.
+            autoIndexProperty( relationshipId, property, ops, existingProperty, autoIndexing.relationships() );
+
+            if ( !property.equals( existingProperty ) )
+            {
+                state.txState().relationshipDoReplaceProperty( relationship.id(), existingProperty, property );
+            }
             return existingProperty;
         }
     }
@@ -1022,7 +1034,12 @@ public class StateHandlingStatementOperations implements
         Property existingProperty = existingPropertyValue == null ?
                 Property.noGraphProperty( property.propertyKeyId() ) :
                 Property.property( property.propertyKeyId(), existingPropertyValue );
-        state.txState().graphDoReplaceProperty( existingProperty, property );
+
+        if ( !property.equals( existingProperty ) )
+        {
+            state.txState().graphDoReplaceProperty( existingProperty, property );
+        }
+
         return existingProperty;
     }
 
@@ -1034,22 +1051,13 @@ public class StateHandlingStatementOperations implements
         try ( Cursor<NodeItem> cursor = nodeCursorById( state, nodeId ) )
         {
             NodeItem node = cursor.get();
-            Property existingProperty;
-            try ( Cursor<PropertyItem> properties = node.property( propertyKeyId ) )
+            Property existingProperty = readProperty( propertyKeyId, node, EntityType.NODE );
+            if ( existingProperty.isDefined() )
             {
-                if ( !properties.next() )
-                {
-                    existingProperty = Property.noProperty( propertyKeyId, EntityType.NODE, node.id() );
-                }
-                else
-                {
-                    existingProperty = Property.property( properties.get().propertyKeyId(), properties.get().value() );
+                autoIndexing.nodes().propertyRemoved( ops, nodeId, propertyKeyId );
+                state.txState().nodeDoRemoveProperty( node.id(), (DefinedProperty) existingProperty );
 
-                    autoIndexing.nodes().propertyRemoved( ops, nodeId, propertyKeyId );
-                    state.txState().nodeDoRemoveProperty( node.id(), (DefinedProperty) existingProperty );
-
-                    indexesUpdateProperty( state, node, propertyKeyId, (DefinedProperty) existingProperty, null );
-                }
+                indexesUpdateProperty( state, node, propertyKeyId, (DefinedProperty) existingProperty, null );
             }
             return existingProperty;
         }
@@ -1065,21 +1073,12 @@ public class StateHandlingStatementOperations implements
         try ( Cursor<RelationshipItem> cursor = relationshipCursorById( state, relationshipId ) )
         {
             RelationshipItem relationship = cursor.get();
-            Property existingProperty;
-            try ( Cursor<PropertyItem> properties = relationship.property( propertyKeyId ) )
+            Property existingProperty = readProperty( propertyKeyId, relationship, EntityType.RELATIONSHIP );
+            if ( existingProperty.isDefined() )
             {
-                if ( !properties.next() )
-                {
-                    existingProperty = Property.noProperty( propertyKeyId, EntityType.RELATIONSHIP, relationship.id() );
-                }
-                else
-                {
-                    existingProperty = Property.property( properties.get().propertyKeyId(), properties.get().value() );
-
-                    autoIndexing.relationships().propertyRemoved( ops, relationshipId, propertyKeyId );
-                    state.txState().relationshipDoRemoveProperty( relationship.id(),
-                            (DefinedProperty) existingProperty );
-                }
+                autoIndexing.relationships().propertyRemoved( ops, relationshipId, propertyKeyId );
+                state.txState().relationshipDoRemoveProperty( relationship.id(),
+                        (DefinedProperty) existingProperty );
             }
             return existingProperty;
         }
