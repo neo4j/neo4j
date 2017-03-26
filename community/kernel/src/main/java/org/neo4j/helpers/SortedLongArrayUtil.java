@@ -19,17 +19,17 @@
  */
 package org.neo4j.helpers;
 
-import static java.util.Arrays.copyOf;
-
 /**
  * Specialized methods for operations of sorted long arrays.
  */
 public class SortedLongArrayUtil
 {
+    private static final long[] EMPTY = new long[]{};
+
     /**
      * Compute union of two sorted long arrays.
-     * @param left one sorted array
-     * @param right the other sorted array
+     * @param left a sorted array set
+     * @param right another sorted array set
      * @return the union, which is NOT sorted
      */
     public static long[] union( long[] left, long[] right )
@@ -39,63 +39,210 @@ public class SortedLongArrayUtil
             return left == null ? right : left;
         }
 
-        int missing = missing( left, right );
-        if ( missing == 0 )
+        long uniqueCounts = countUnique( left, right );
+        if ( uniqueCounts == 0 || right( uniqueCounts ) == 0 )
         {
             return left;
         }
-
-        // An attempt to add the labels as efficiently as possible
-        long[] union = copyOf( left, left.length + missing );
-
-        int i = 0;
-        int cursor = left.length;
-        for ( long candidate : right )
+        if ( left( uniqueCounts ) == 0 )
         {
-            while ( i < left.length && left[i] < candidate )
+            return right;
+        }
+
+        long[] union = new long[left.length + right( uniqueCounts )];
+
+        int cursor = 0;
+        int l = 0;
+        int r = 0;
+        while ( l < left.length && r < right.length )
+        {
+            if ( left[l] == right[r] )
             {
-                i++;
+                union[cursor++] = left[l];
+                l++;
+                r++;
             }
-            if ( i == left.length || candidate != left[i] )
+            else if ( left[l] < right[r] )
             {
-                union[cursor++] = candidate;
-                missing--;
+                union[cursor++] = left[l];
+                l++;
+            }
+            else
+            {
+                union[cursor++] = right[r];
+                r++;
             }
         }
-        assert missing == 0;
+        while ( l < left.length )
+        {
+            union[cursor++] = left[l];
+            l++;
+        }
+        while ( r < right.length )
+        {
+            union[cursor++] = right[r];
+            r++;
+        }
+
+        assert cursor == union.length;
         return union;
     }
 
     /**
-     * Compute how many values in maybeMissing that are not in reference.
-     * @param reference sorted set
-     * @param maybeMissing sorted set
-     * @return number of missing values
+     * Compute intersect of two sorted long array sets.
+     * @param left a sorted array set
+     * @param right another sorted array set
+     * @return the union, which is NOT sorted
      */
-    public static int missing( long[] reference, long[] maybeMissing )
+    public static long[] intersect( long[] left, long[] right )
     {
-        int i = 0;
-        int j = 0;
-        int count = 0;
-        while ( i < reference.length && j < maybeMissing.length )
+        if ( left == null || right == null )
         {
-            if ( reference[i] == maybeMissing[j] )
+            return EMPTY;
+        }
+
+        long uniqueCounts = countUnique( left, right );
+        if ( uniqueCounts == 0 ) // complete intersection
+        {
+            return right;
+        }
+        if ( right( uniqueCounts ) == right.length || left( uniqueCounts ) == left.length ) // non-intersecting
+        {
+            return EMPTY;
+        }
+
+        long[] intersect = new long[left.length - left( uniqueCounts )];
+
+        int cursor = 0;
+        int l = 0;
+        int r = 0;
+        while ( l < left.length && r < right.length )
+        {
+            if ( left[l] == right[r] )
             {
-                i++;
-                j++;
+                intersect[cursor++] = left[l];
+                l++;
+                r++;
             }
-            else if ( reference[i] < maybeMissing[j] )
+            else if ( left[l] < right[r] )
             {
-                i++;
+                l++;
             }
             else
             {
-                count++;
-                j++;
+                r++;
             }
         }
-        count += maybeMissing.length - j;
-        return count;
+
+        assert cursor == intersect.length;
+        return intersect;
+    }
+
+    /**
+     * Compute the symmetric difference (set XOR basically) of two sorted long array sets.
+     * @param left a sorted array set
+     * @param right another sorted array set
+     * @return the union, which is NOT sorted
+     */
+    public static long[] symmetricDifference( long[] left, long[] right )
+    {
+        if ( left == null || right == null )
+        {
+            return left == null ? right : left;
+        }
+
+        long uniqueCounts = countUnique( left, right );
+        if ( uniqueCounts == 0 ) // complete intersection
+        {
+            return EMPTY;
+        }
+
+        long[] difference = new long[left( uniqueCounts ) + right( uniqueCounts )];
+
+        int cursor = 0;
+        int l = 0;
+        int r = 0;
+        while ( l < left.length && r < right.length )
+        {
+            if ( left[l] == right[r] )
+            {
+                l++;
+                r++;
+            }
+            else if ( left[l] < right[r] )
+            {
+                difference[cursor++] = left[l];
+                l++;
+            }
+            else
+            {
+                difference[cursor++] = right[r];
+                r++;
+            }
+        }
+        while ( l < left.length )
+        {
+            difference[cursor++] = left[l];
+            l++;
+        }
+        while ( r < right.length )
+        {
+            difference[cursor++] = right[r];
+            r++;
+        }
+
+        assert cursor == difference.length;
+        return difference;
+    }
+
+    /**
+     * Compute the number of unique values in two sorted long array sets
+     * @param left a sorted array set
+     * @param right another sorted array set
+     * @return int pair packed into long
+     */
+    public static long countUnique( long[] left, long[] right )
+    {
+        int l = 0;
+        int r = 0;
+        int uniqueInLeft = 0;
+        int uniqueInRight = 0;
+        while ( l < left.length && r < right.length )
+        {
+            if ( left[l] == right[r] )
+            {
+                l++;
+                r++;
+            }
+            else if ( left[l] < right[r] )
+            {
+                uniqueInLeft++;
+                l++;
+            }
+            else
+            {
+                uniqueInRight++;
+                r++;
+            }
+        }
+        uniqueInLeft += left.length - l;
+        uniqueInRight += right.length - r;
+        return intPair( uniqueInLeft, uniqueInRight );
+    }
+
+    public static long intPair( int left, int right )
+    {
+        return (long)left << (Integer.BYTES * 8) | right;
+    }
+
+    public static int left( long pair )
+    {
+        return (int)(pair >> (Integer.BYTES * 8));
+    }
+
+    public static int right( long pair )
+    {
+        return (int)pair;
     }
 
     private SortedLongArrayUtil()

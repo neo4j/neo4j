@@ -24,9 +24,6 @@ import org.hamcrest.Description;
 import org.hamcrest.Matcher;
 import org.junit.Test;
 
-import java.util.HashSet;
-import java.util.Set;
-
 import static org.hamcrest.MatcherAssert.assertThat;
 import static org.hamcrest.Matchers.equalTo;
 import static org.hamcrest.Matchers.nullValue;
@@ -37,46 +34,10 @@ public class SortedLongArrayUtilTest
     private static final long[] EMPTY = new long[0];
     private static final long[] ONE_VALUE = new long[]{1};
 
-    // missing()
-
-    @Test
-    public void missingShouldNotHandleNulls() throws Exception
-    {
-        assertException( () -> SortedLongArrayUtil.missing( null, null ), NullPointerException.class );
-        assertException( () -> SortedLongArrayUtil.missing( EMPTY, null ), NullPointerException.class );
-        assertException( () -> SortedLongArrayUtil.missing( null, EMPTY ), NullPointerException.class );
-    }
-
-    @Test
-    public void missingShouldWorkWithNonIntersectingArrays()
-    {
-        assertThat( SortedLongArrayUtil.missing( new long[]{1, 2, 3}, new long[]{4, 5, 6} ), equalTo( 3 ) );
-        assertThat( SortedLongArrayUtil.missing( new long[]{1, 2, 3}, new long[]{14, 15, 16} ), equalTo( 3 ) );
-        assertThat( SortedLongArrayUtil.missing( new long[]{4, 5, 6}, new long[]{1, 2, 3} ), equalTo( 3 ) );
-    }
-
-    @Test
-    public void missingShouldWorkWithIntersectingArrays()
-    {
-        assertThat( SortedLongArrayUtil.missing( new long[]{1, 2, 3}, new long[]{3, 4, 5} ), equalTo( 2 ) );
-        assertThat( SortedLongArrayUtil.missing( new long[]{3, 4, 5}, new long[]{1, 2, 3} ), equalTo( 2 ) );
-    }
-
-    @Test
-    public void missingShouldWorkWithComplexIntersectingArraysWithGaps()
-    {
-        assertThat(
-                SortedLongArrayUtil.missing( new long[]{4, 6, 9, 11, 12, 15}, new long[]{2, 3, 4, 7, 8, 9, 12, 16, 19} ),
-                equalTo( 6 ) );
-        assertThat(
-                SortedLongArrayUtil.missing( new long[]{2, 3, 4, 7, 8, 9, 12, 16, 19}, new long[]{4, 6, 9, 11, 12, 15} ),
-                equalTo( 3 ) );
-    }
-
     // union()
 
     @Test
-    public void shouldHandleNullInput()
+    public void union_shouldHandleNullInput()
     {
         assertThat( SortedLongArrayUtil.union( null, null ), nullValue() );
         assertThat( SortedLongArrayUtil.union( null, EMPTY ), equalTo( EMPTY ) );
@@ -86,77 +47,190 @@ public class SortedLongArrayUtilTest
     }
 
     @Test
-    public void shouldCreateUnionOfNonIntersectingArrays()
+    public void union_shouldHandleNonIntersectingArrays()
     {
         assertThat( SortedLongArrayUtil.union( new long[]{1, 2, 3}, new long[]{4, 5, 6} ),
-                equalToIgnoringOrder( 1, 2, 3, 4, 5, 6 ) );
+                isArray( 1, 2, 3, 4, 5, 6 ) );
 
         assertThat( SortedLongArrayUtil.union( new long[]{1, 2, 3}, new long[]{14, 15, 16} ),
-                equalToIgnoringOrder( 1, 2, 3, 14, 15, 16 ) );
+                isArray( 1, 2, 3, 14, 15, 16 ) );
 
         assertThat( SortedLongArrayUtil.union( new long[]{14, 15, 16}, new long[]{1, 2, 3} ),
-                equalToIgnoringOrder( 1, 2, 3, 14, 15, 16 ) );
+                isArray( 1, 2, 3, 14, 15, 16 ) );
     }
 
     @Test
-    public void shouldCreateUnionOfIntersectingArrays()
+    public void union_shouldHandleIntersectingArrays()
     {
         assertThat( SortedLongArrayUtil.union( new long[]{1, 2, 3}, new long[]{3, 4, 5} ),
-                equalToIgnoringOrder( 1, 2, 3, 4, 5 ) );
+                isArray( 1, 2, 3, 4, 5 ) );
 
         assertThat( SortedLongArrayUtil.union( new long[]{3, 4, 5}, new long[]{1, 2, 3} ),
-                equalToIgnoringOrder( 1, 2, 3, 4, 5 ) );
+                isArray( 1, 2, 3, 4, 5 ) );
     }
 
     @Test
-    public void shouldCreateUnionOfComplexIntersectingArraysWithGaps()
+    public void union_shouldHandleComplexIntersectingArraysWithGaps()
     {
         assertThat(
                 SortedLongArrayUtil.union( new long[]{4, 6, 9, 11, 12, 15}, new long[]{2, 3, 4, 7, 8, 9, 12, 16, 19} ),
-                equalToIgnoringOrder( 2, 3, 4, 6, 7, 8, 9, 11, 12, 15, 16, 19 ) );
+                isArray( 2, 3, 4, 6, 7, 8, 9, 11, 12, 15, 16, 19 ) );
         assertThat(
                 SortedLongArrayUtil.union( new long[]{2, 3, 4, 7, 8, 9, 12, 16, 19}, new long[]{4, 6, 9, 11, 12, 15} ),
-                equalToIgnoringOrder( 2, 3, 4, 6, 7, 8, 9, 11, 12, 15, 16, 19 ) );
+                isArray( 2, 3, 4, 6, 7, 8, 9, 11, 12, 15, 16, 19 ) );
+    }
+
+    // intersect()
+
+    @Test
+    public void intersect_shouldHandleNullInput()
+    {
+        assertThat( SortedLongArrayUtil.intersect( null, null ), equalTo( EMPTY ) );
+        assertThat( SortedLongArrayUtil.intersect( null, EMPTY ), equalTo( EMPTY ) );
+        assertThat( SortedLongArrayUtil.intersect( EMPTY, null ), equalTo( EMPTY ) );
+        assertThat( SortedLongArrayUtil.intersect( null, ONE_VALUE ), equalTo( EMPTY ) );
+        assertThat( SortedLongArrayUtil.intersect( ONE_VALUE, null ), equalTo( EMPTY ) );
+    }
+
+    @Test
+    public void intersect_shouldHandleNonIntersectingArrays()
+    {
+        assertThat( SortedLongArrayUtil.intersect( new long[]{1, 2, 3}, new long[]{4, 5, 6} ),
+                equalTo( EMPTY ) );
+
+        assertThat( SortedLongArrayUtil.intersect( new long[]{14, 15, 16}, new long[]{1, 2, 3} ),
+                equalTo( EMPTY ) );
+    }
+
+    @Test
+    public void intersect_shouldHandleIntersectingArrays()
+    {
+        assertThat( SortedLongArrayUtil.intersect( new long[]{1, 2, 3}, new long[]{3, 4, 5} ),
+                isArray( 3 ) );
+
+        assertThat( SortedLongArrayUtil.intersect( new long[]{3, 4, 5}, new long[]{1, 2, 3, 4} ),
+                isArray( 3, 4 ) );
+    }
+
+    @Test
+    public void intersect_shouldHandleComplexIntersectingArraysWithGaps()
+    {
+        assertThat(
+                SortedLongArrayUtil.intersect( new long[]{4, 6, 9, 11, 12, 15}, new long[]{2, 3, 4, 7, 8, 9, 12, 16, 19} ),
+                isArray( 4, 9, 12 ) );
+        assertThat(
+                SortedLongArrayUtil.intersect( new long[]{2, 3, 4, 7, 8, 9, 12, 16, 19}, new long[]{4, 6, 9, 11, 12, 15} ),
+                isArray( 4, 9, 12 ) );
+    }
+
+    // symmetricDifference()
+
+    @Test
+    public void symDiff_shouldHandleNullInput()
+    {
+        assertThat( SortedLongArrayUtil.symmetricDifference( null, null ), equalTo( null ) );
+        assertThat( SortedLongArrayUtil.symmetricDifference( null, EMPTY ), equalTo( EMPTY ) );
+        assertThat( SortedLongArrayUtil.symmetricDifference( EMPTY, null ), equalTo( EMPTY ) );
+        assertThat( SortedLongArrayUtil.symmetricDifference( null, ONE_VALUE ), equalTo( ONE_VALUE ) );
+        assertThat( SortedLongArrayUtil.symmetricDifference( ONE_VALUE, null ), equalTo( ONE_VALUE ) );
+    }
+
+    @Test
+    public void symDiff_shouldHandleNonIntersectingArrays()
+    {
+        assertThat( SortedLongArrayUtil.symmetricDifference( new long[]{1, 2, 3}, new long[]{4, 5, 6} ),
+                isArray( 1, 2, 3, 4, 5, 6 ) );
+
+        assertThat( SortedLongArrayUtil.symmetricDifference( new long[]{14, 15, 16}, new long[]{1, 2, 3} ),
+                isArray( 1, 2, 3, 14, 15, 16 ) );
+    }
+
+    @Test
+    public void symDiff_shouldHandleIntersectingArrays()
+    {
+        assertThat( SortedLongArrayUtil.symmetricDifference( new long[]{1, 2, 3}, new long[]{3, 4, 5} ),
+                isArray( 1, 2, 4, 5 ) );
+
+        assertThat( SortedLongArrayUtil.symmetricDifference( new long[]{3, 4, 5}, new long[]{1, 2, 3, 4} ),
+                isArray( 1, 2, 5 ) );
+    }
+
+    @Test
+    public void symDiff_shouldHandleComplexIntersectingArraysWithGaps()
+    {
+        assertThat(
+                SortedLongArrayUtil.symmetricDifference( new long[]{4, 6, 9, 11, 12, 15}, new long[]{2, 3, 4, 7, 8, 9, 12, 16, 19} ),
+                isArray( 2, 3, 6, 7, 8, 11, 15, 16, 19 ) );
+        assertThat(
+                SortedLongArrayUtil.symmetricDifference( new long[]{2, 3, 4, 7, 8, 9, 12, 16, 19}, new long[]{4, 6, 9, 11, 12, 15} ),
+                isArray( 2, 3, 6, 7, 8, 11, 15, 16, 19 ) );
+    }
+
+    // count unique
+
+    @Test
+    public void shouldCountUnique()
+    {
+        assertThat(
+                SortedLongArrayUtil.countUnique( new long[]{1, 2, 3}, new long[]{4, 5, 6} ),
+                isIntPair( 3, 3 ) );
+
+        assertThat(
+                SortedLongArrayUtil.countUnique( new long[]{1, 2, 3}, new long[]{3, 6} ),
+                isIntPair( 2, 1 ) );
+
+        assertThat(
+                SortedLongArrayUtil.countUnique( new long[]{1, 2, 3}, new long[]{3} ),
+                isIntPair( 2, 0 ) );
+
+        assertThat(
+                SortedLongArrayUtil.countUnique( new long[]{3}, new long[]{1, 2, 3} ),
+                isIntPair( 0, 2 ) );
+
+        assertThat(
+                SortedLongArrayUtil.countUnique( new long[]{3}, new long[]{3} ),
+                isIntPair( 0, 0 ) );
+
+        assertThat(
+                SortedLongArrayUtil.countUnique( new long[]{3, 6, 8}, new long[]{} ),
+                isIntPair( 3, 0 ) );
+
+        assertThat(
+                SortedLongArrayUtil.countUnique( new long[]{}, new long[]{3, 6, 8} ),
+                isIntPair( 0, 3 ) );
+
+        assertThat(
+                SortedLongArrayUtil.countUnique( new long[]{}, new long[]{} ),
+                isIntPair( 0, 0 ) );
+
+        assertThat(
+                SortedLongArrayUtil.countUnique( new long[]{4, 6, 9, 11, 12, 15}, new long[]{2, 3, 4, 7, 8, 9, 12, 16, 19} ),
+                isIntPair( 3, 6 ) );
     }
 
     // helpers
 
-    private static Matcher<long[]> equalToIgnoringOrder( long... operand )
+    private Matcher<Long> isIntPair( int left, int right )
     {
-        return new IsEqualIgnoreOrder( operand );
+        return new BaseMatcher<Long>()
+        {
+            @Override
+            public void describeTo( Description description )
+            {
+                description.appendValue( left );
+                description.appendValue( right );
+            }
+
+            @Override
+            public boolean matches( Object o )
+            {
+                return o instanceof Long && ((Long) o) == ((long) left << 32 | right);
+            }
+        };
     }
 
-    private static class IsEqualIgnoreOrder extends BaseMatcher<long[]>
+    private static Matcher<long[]> isArray( long... values )
     {
-        private final Set<Long> expectedValue = new HashSet<>();
-
-        IsEqualIgnoreOrder( long[] equalArg )
-        {
-            for ( long val : equalArg )
-            {
-                this.expectedValue.add( val );
-            }
-        }
-
-        @Override
-        public boolean matches( Object o )
-        {
-            if ( o instanceof long[] )
-            {
-                Set<Long> values = new HashSet<>();
-                for ( long val : (long[]) o )
-                {
-                    values.add( val );
-                }
-                return values.equals( expectedValue );
-            }
-            return false;
-        }
-
-        @Override
-        public void describeTo( Description description )
-        {
-            description.appendValue( this.expectedValue );
-        }
+        return equalTo( values );
     }
 }
