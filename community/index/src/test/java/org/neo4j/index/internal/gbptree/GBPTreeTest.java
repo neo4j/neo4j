@@ -418,14 +418,14 @@ public class GBPTreeTest
     public void shouldAllowClosingTreeMultipleTimes() throws Exception
     {
         // GIVEN
-        index = createIndex( 256 );
+        PageCache pageCache = createPageCache( 256 );
+        GBPTree<MutableLong,MutableLong> index = builder( pageCache ).build();
 
         // WHEN
         index.close();
 
         // THEN
         index.close(); // should be OK
-        index = null; // so that our @After clause won't try to consistency check it
     }
 
     @Test
@@ -501,141 +501,6 @@ public class GBPTreeTest
 
         // THEN
         assertArrayEquals( expectedHeader, readHeader );
-    }
-
-    /* Check-pointing tests */
-
-    @Test
-    public void checkPointShouldLockOutWriter() throws Exception
-    {
-        // GIVEN
-        CheckpointControlledMonitor monitor = new CheckpointControlledMonitor();
-        PageCache pageCache = createPageCache( 1024 );
-        try ( GBPTree<MutableLong,MutableLong> index = builder( pageCache ).with( monitor ).build() )
-        {
-            long key = 10;
-            try ( Writer<MutableLong,MutableLong> writer = index.writer() )
-            {
-                writer.put( new MutableLong( key ), new MutableLong( key ) );
-            }
-
-            // WHEN
-            monitor.enabled = true;
-            Thread checkpointer = new Thread( throwing( () -> index.checkpoint( IOLimiter.unlimited() ) ) );
-            checkpointer.start();
-            monitor.barrier.awaitUninterruptibly();
-            // now we're in the smack middle of a checkpoint
-            Thread t2 = new Thread( throwing( () -> index.writer().close() ) );
-            t2.start();
-            t2.join( 200 );
-            assertTrue( Arrays.toString( checkpointer.getStackTrace() ), t2.isAlive() );
-            monitor.barrier.release();
-
-            // THEN
-            t2.join();
-        }
-    }
-
-    @Test
-    public void checkPointShouldWaitForWriter() throws Exception
-    {
-        // GIVEN
-        PageCache pageCache = createPageCache( 1024 );
-        try ( GBPTree<MutableLong,MutableLong> index = builder( pageCache ).build() )
-        {
-            // WHEN
-            Barrier.Control barrier = new Barrier.Control();
-            Thread writerThread = new Thread( throwing( () ->
-            {
-                try ( Writer<MutableLong,MutableLong> writer = index.writer() )
-                {
-                    writer.put( new MutableLong( 1 ), new MutableLong( 1 ) );
-                    barrier.reached();
-                }
-            } ) );
-            writerThread.start();
-            barrier.awaitUninterruptibly();
-            Thread checkpointer = new Thread( throwing( () -> index.checkpoint( IOLimiter.unlimited() ) ) );
-            checkpointer.start();
-            checkpointer.join( 200 );
-            assertTrue( checkpointer.isAlive() );
-
-            // THEN
-            barrier.release();
-            checkpointer.join();
-        }
-    }
-
-    @Test
-    public void closeShouldLockOutWriter() throws Exception
-    {
-        // GIVEN
-        CheckpointControlledMonitor monitor = new CheckpointControlledMonitor();
-        index = createIndex( 1024, monitor );
-        long key = 10;
-        try ( Writer<MutableLong,MutableLong> writer = index.writer() )
-        {
-            writer.put( new MutableLong( key ), new MutableLong( key ) );
-        }
-
-        // WHEN
-        monitor.enabled = true;
-        Thread closer = new Thread( throwing( () -> index.close() ) );
-        closer.start();
-        monitor.barrier.awaitUninterruptibly();
-        // now we're in the smack middle of a close/checkpoint
-        AtomicReference<Exception> writerError = new AtomicReference<>();
-        Thread t2 = new Thread( () ->
-        {
-            try
-            {
-                index.writer().close();
-            }
-            catch ( Exception e )
-            {
-                writerError.set( e );
-            }
-        } );
-
-        t2.start();
-        t2.join( 200 );
-        assertTrue( Arrays.toString( closer.getStackTrace() ), t2.isAlive() );
-        monitor.barrier.release();
-
-        // THEN
-        t2.join();
-        assertTrue( "Writer should not be able to acquired after close",
-                writerError.get() instanceof IllegalStateException );
-        index = null;
-    }
-
-    @Test
-    public void closeShouldWaitForWriter() throws Exception
-    {
-        // GIVEN
-        index = createIndex( 1024 );
-
-        // WHEN
-        Barrier.Control barrier = new Barrier.Control();
-        Thread writerThread = new Thread( throwing( () ->
-        {
-            try ( Writer<MutableLong,MutableLong> writer = index.writer() )
-            {
-                writer.put( new MutableLong( 1 ), new MutableLong( 1 ) );
-                barrier.reached();
-            }
-        } ) );
-        writerThread.start();
-        barrier.awaitUninterruptibly();
-        Thread closer = new Thread( throwing( () -> index.close() ) );
-        closer.start();
-        closer.join( 200 );
-        assertTrue( closer.isAlive() );
-
-        // THEN
-        barrier.release();
-        closer.join();
-        index = null;
     }
 
     /* Insertion and read tests */
@@ -764,7 +629,6 @@ public class GBPTreeTest
         private int tentativePageSize;
         private GBPTree.Monitor monitor;
         private Header.Reader headerReader;
-        private Log log;
 
         GBPTreeBuilder( PageCache pageCache )
         {
@@ -773,7 +637,6 @@ public class GBPTreeTest
             this.tentativePageSize = pageCache.pageSize();
             this.monitor = NO_MONITOR;
             this.headerReader = NO_HEADER;
-            this.log = NullLog.getInstance();
         }
 
         GBPTree<MutableLong,MutableLong> build() throws IOException
@@ -799,12 +662,6 @@ public class GBPTreeTest
             return this;
         }
 
-        GBPTreeBuilder with( Log log )
-        {
-            this.log = log;
-            return this;
-        }
-
         public GBPTreeBuilder with( Layout<MutableLong,MutableLong> layout )
         {
             this.layout = layout;
@@ -820,21 +677,6 @@ public class GBPTreeTest
     private PageCache createPageCache( int pageSize )
     {
         return pageCacheRule.getPageCache( fs.get(), config().withPageSize( pageSize ) );
-    }
-
-    private static class CheckpointControlledMonitor implements Monitor
-    {
-        private final Barrier.Control barrier = new Barrier.Control();
-        private volatile boolean enabled;
-
-        @Override
-        public void checkpointCompleted()
-        {
-            if ( enabled )
-            {
-                barrier.reached();
-            }
-        }
     }
 
     private void setFormatVersion( PageCache pageCache, int pageSize, int formatVersion ) throws IOException
