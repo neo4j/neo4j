@@ -289,6 +289,12 @@ public class GBPTree<KEY,VALUE> implements Closeable
     private final Monitor monitor;
 
     /**
+     * Whether or not this tree has been closed. Accessed and changed solely in
+     * {@link #close()} and {@link #close(Consumer)} to be able to close tree multiple times gracefully.
+     */
+    private boolean closed;
+
+    /**
      * Opens an index {@code indexFile} in the {@code pageCache}, creating and initializing it if it doesn't exist.
      * If the index doesn't exist it will be created and the {@link Layout} and {@code pageSize} will
      * be written in index header.
@@ -753,17 +759,31 @@ public class GBPTree<KEY,VALUE> implements Closeable
 
     private void close( Header.Writer headerWriter ) throws IOException
     {
-        writer.close();
-
+        writerCheckpointMutex.lock();
         try
         {
-            // Perform a checkpoint before closing. If no changes has happened since last checkpoint,
-            // no new checkpoint will be created.
-            checkpoint( IOLimiter.unlimited(), headerWriter );
+            if ( closed )
+            {
+                return;
+            }
+
+            try
+            {
+                writer.close();
+
+                // Perform a checkpoint before closing. If no changes has happened since last checkpoint,
+                // no new checkpoint will be created.
+                checkpoint( IOLimiter.unlimited(), headerWriter );
+            }
+            finally
+            {
+                closed = true;
+                pagedFile.close();
+            }
         }
         finally
         {
-            pagedFile.close();
+            writerCheckpointMutex.unlock();
         }
     }
 

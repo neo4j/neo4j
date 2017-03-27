@@ -33,6 +33,7 @@ import java.util.Arrays;
 import java.util.List;
 import java.util.concurrent.ThreadLocalRandom;
 import java.util.concurrent.atomic.AtomicInteger;
+import java.util.concurrent.atomic.AtomicReference;
 
 import org.neo4j.collection.primitive.Primitive;
 import org.neo4j.collection.primitive.PrimitiveLongCollections;
@@ -450,6 +451,20 @@ public class GBPTreeTest
     }
 
     @Test
+    public void shouldAllowClosingTreeMultipleTimes() throws Exception
+    {
+        // GIVEN
+        index = createIndex( 256 );
+
+        // WHEN
+        index.close();
+
+        // THEN
+        index.close(); // should be OK
+        index = null; // so that our @After clause won't try to consistency check it
+    }
+
+    @Test
     public void shouldPutHeaderDataInCheckPoint() throws Exception
     {
         // GIVEN
@@ -565,6 +580,78 @@ public class GBPTreeTest
         // THEN
         barrier.release();
         checkpointer.join();
+    }
+
+    @Test
+    public void closeShouldLockOutWriter() throws Exception
+    {
+        // GIVEN
+        CheckpointControlledMonitor monitor = new CheckpointControlledMonitor();
+        index = createIndex( 1024, monitor );
+        long key = 10;
+        try ( Writer<MutableLong,MutableLong> writer = index.writer() )
+        {
+            writer.put( new MutableLong( key ), new MutableLong( key ) );
+        }
+
+        // WHEN
+        monitor.enabled = true;
+        Thread closer = new Thread( throwing( () -> index.close() ) );
+        closer.start();
+        monitor.barrier.awaitUninterruptibly();
+        // now we're in the smack middle of a close/checkpoint
+        AtomicReference<Exception> writerError = new AtomicReference<>();
+        Thread t2 = new Thread( () ->
+        {
+            try
+            {
+                index.writer().close();
+            }
+            catch ( Exception e )
+            {
+                writerError.set( e );
+            }
+        } );
+
+        t2.start();
+        t2.join( 200 );
+        assertTrue( Arrays.toString( closer.getStackTrace() ), t2.isAlive() );
+        monitor.barrier.release();
+
+        // THEN
+        t2.join();
+        assertTrue( "Writer should not be able to acquired after close",
+                writerError.get() instanceof IllegalStateException );
+        index = null;
+    }
+
+    @Test
+    public void closeShouldWaitForWriter() throws Exception
+    {
+        // GIVEN
+        index = createIndex( 1024 );
+
+        // WHEN
+        Barrier.Control barrier = new Barrier.Control();
+        Thread writerThread = new Thread( throwing( () ->
+        {
+            try ( Writer<MutableLong,MutableLong> writer = index.writer() )
+            {
+                writer.put( new MutableLong( 1 ), new MutableLong( 1 ) );
+                barrier.reached();
+            }
+        } ) );
+        writerThread.start();
+        barrier.awaitUninterruptibly();
+        Thread closer = new Thread( throwing( () -> index.close() ) );
+        closer.start();
+        closer.join( 200 );
+        assertTrue( closer.isAlive() );
+
+        // THEN
+        barrier.release();
+        closer.join();
+        index = null;
     }
 
     /* Insertion and read tests */
