@@ -27,6 +27,7 @@ import java.util.Collections;
 import java.util.function.Supplier;
 
 import org.neo4j.concurrent.WorkSync;
+import org.neo4j.helpers.collection.Iterables;
 import org.neo4j.kernel.api.index.SchemaIndexProvider.Descriptor;
 import org.neo4j.kernel.api.labelscan.LabelScanWriter;
 import org.neo4j.kernel.api.schema_new.index.NewIndexDescriptorFactory;
@@ -44,6 +45,7 @@ import org.neo4j.storageengine.api.TransactionApplicationMode;
 
 import static java.util.Collections.singleton;
 import static org.junit.Assert.assertFalse;
+import static org.mockito.Matchers.any;
 import static org.mockito.Mockito.mock;
 import static org.mockito.Mockito.verify;
 import static org.mockito.Mockito.when;
@@ -66,6 +68,7 @@ public class NeoTransactionIndexApplierTest
     public void setup()
     {
         when( transactionToApply.transactionId() ).thenReturn( 1L );
+        when( indexingService.convertToIndexUpdates( any() ) ).thenAnswer( o -> Iterables.empty() );
     }
 
     @Test
