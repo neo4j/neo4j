@@ -133,41 +133,28 @@ public final class IndexMap implements Cloneable
 
     /**
      * Get all indexes that would be affected by changes in the input labels and/or properties
-     * @param labels set of labels
+     * @param changedLabels set of labels that have changed
+     * @param unchangedLabels set of labels that are unchanged
      * @param properties set of properties
-     * @return set of LabelSchemaDescriptors describing the effected indexes
+     * @return set of LabelSchemaDescriptors describing the potentially affected indexes
      */
-    public Set<LabelSchemaDescriptor> getRelatedIndexes( long[] labels, PrimitiveIntCollection properties )
+    public Set<LabelSchemaDescriptor> getRelatedIndexes(
+            long[] changedLabels, long[] unchangedLabels, PrimitiveIntCollection properties )
     {
-        if ( labels.length == 1 && properties.isEmpty() )
+        if ( changedLabels.length == 1 && properties.isEmpty() )
         {
-            Set<LabelSchemaDescriptor> descriptors = descriptorsByLabel.get( (int)labels[0] );
+            Set<LabelSchemaDescriptor> descriptors = descriptorsByLabel.get( (int)changedLabels[0] );
             return descriptors == null ? Collections.emptySet() : descriptors;
         }
 
-        if ( labels.length == 0 && properties.size() == 1 )
+        if ( changedLabels.length == 0 && properties.size() == 1 )
         {
-            Set<LabelSchemaDescriptor> descriptors = descriptorsByProperty.get( properties.iterator().next() );
-            return descriptors == null ? Collections.emptySet() : descriptors;
+            return getDescriptorsByProperties( unchangedLabels, properties );
         }
 
-        Set<LabelSchemaDescriptor> descriptors = new HashSet<>();
-        for ( long label : labels )
-        {
-            Set<LabelSchemaDescriptor> toAdd = descriptorsByLabel.get( (int) label );
-            if ( toAdd != null )
-            {
-                descriptors.addAll( toAdd );
-            }
-        }
-        for ( PrimitiveIntIterator property = properties.iterator(); property.hasNext(); )
-        {
-            Set<LabelSchemaDescriptor> toAdd = descriptorsByProperty.get( property.next() );
-            if ( toAdd != null )
-            {
-                descriptors.addAll( toAdd );
-            }
-        }
+        Set<LabelSchemaDescriptor> descriptors = extractIndexesByLabels( changedLabels );
+        descriptors.addAll( getDescriptorsByProperties( unchangedLabels, properties ) );
+
         return descriptors;
     }
 
@@ -239,7 +226,7 @@ public final class IndexMap implements Cloneable
         }
     }
 
-    public static Map<LabelSchemaDescriptor, IndexProxy> indexesByDescriptor( Map<Long, IndexProxy> indexesById )
+    private static Map<LabelSchemaDescriptor, IndexProxy> indexesByDescriptor( Map<Long,IndexProxy> indexesById )
     {
         Map<LabelSchemaDescriptor, IndexProxy> map = new HashMap<>();
         for ( IndexProxy proxy : indexesById.values() )
@@ -249,7 +236,7 @@ public final class IndexMap implements Cloneable
         return map;
     }
 
-    public static Map<LabelSchemaDescriptor, Long> indexIdsByDescriptor( Map<Long, IndexProxy> indexesById )
+    private static Map<LabelSchemaDescriptor, Long> indexIdsByDescriptor( Map<Long,IndexProxy> indexesById )
     {
         Map<LabelSchemaDescriptor, Long> map = new HashMap<>();
         for ( Map.Entry<Long,IndexProxy> entry : indexesById.entrySet() )
@@ -257,5 +244,91 @@ public final class IndexMap implements Cloneable
             map.put( entry.getValue().schema(), entry.getKey() );
         }
         return map;
+    }
+
+    /**
+     * Get descriptors affected by changed properties. Implementation is smart about whether doing
+     * the lookup using the unchanged labels or the changed properties given the smallest final
+     * set of indexes.
+     *
+     * @param unchangedLabels set of labels that are unchanged
+     * @param properties set of properties that have changed
+     * @return set of LabelSchemaDescriptors describing the potentially affected indexes
+     */
+    private Set<LabelSchemaDescriptor> getDescriptorsByProperties(
+            long[] unchangedLabels,
+            PrimitiveIntCollection properties )
+    {
+        int nIndexesForLabels = countIndexesByLabels( unchangedLabels );
+        int nIndexesForProperties = countIndexesByProperties( properties );
+
+        if ( nIndexesForLabels == 0 || nIndexesForProperties == 0 )
+        {
+            return Collections.emptySet();
+        }
+        if ( nIndexesForLabels < nIndexesForProperties )
+        {
+            return extractIndexesByLabels( unchangedLabels );
+        }
+        else
+        {
+            return extractIndexesByProperties( properties );
+        }
+    }
+
+    private Set<LabelSchemaDescriptor> extractIndexesByLabels( long[] labels )
+    {
+        Set<LabelSchemaDescriptor> set = new HashSet<>();
+        for ( long label : labels )
+        {
+            Set<LabelSchemaDescriptor> forLabel = descriptorsByLabel.get( (int) label );
+            if ( forLabel != null )
+            {
+                set.addAll( forLabel );
+            }
+        }
+        return set;
+    }
+
+    private int countIndexesByLabels( long[] labels )
+    {
+        int count = 0;
+        for ( long label : labels )
+        {
+            Set<LabelSchemaDescriptor> forLabel = descriptorsByLabel.get( (int) label );
+            if ( forLabel != null )
+            {
+                count += forLabel.size();
+            }
+        }
+        return count;
+    }
+
+    private Set<LabelSchemaDescriptor> extractIndexesByProperties( PrimitiveIntCollection properties )
+    {
+        Set<LabelSchemaDescriptor> set = new HashSet<>();
+        for ( PrimitiveIntIterator iterator = properties.iterator(); iterator.hasNext(); )
+        {
+            Set<LabelSchemaDescriptor> forProperty = descriptorsByProperty.get( iterator.next() );
+            if ( forProperty != null )
+            {
+                set.addAll( forProperty );
+            }
+        }
+        return set;
+    }
+
+    private int countIndexesByProperties( PrimitiveIntCollection properties )
+    {
+        int count = 0;
+        for ( PrimitiveIntIterator iterator = properties.iterator(); iterator.hasNext(); )
+        {
+            Set<LabelSchemaDescriptor> forProperty = descriptorsByProperty.get( iterator.next() );
+            if ( forProperty != null )
+            {
+                count += forProperty.size();
+            }
+        }
+        return count;
     }
 }

@@ -136,6 +136,11 @@ public class NodeUpdates implements PropertyLoader.PropertyLoadSink
         return SortedLongArrayUtil.symmetricDifference( labelsBefore, labelsAfter );
     }
 
+    public long[] labelsUnchanged()
+    {
+        return SortedLongArrayUtil.intersect( labelsBefore, labelsAfter );
+    }
+
     public PrimitiveIntCollection propertiesChanged()
     {
         assert !hasLoadedAdditionalProperties : "Calling propertiesChanged() is not valid after non-changed " +

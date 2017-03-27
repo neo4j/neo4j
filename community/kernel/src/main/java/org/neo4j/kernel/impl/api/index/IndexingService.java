@@ -508,9 +508,11 @@ public class IndexingService extends LifecycleAdapter implements IndexingUpdateS
     @Override
     public Iterable<IndexEntryUpdate<LabelSchemaDescriptor>> convertToIndexUpdates( NodeUpdates nodeUpdates )
     {
-        Iterable<LabelSchemaDescriptor> relatedIndexes = indexMapRef.getRelatedIndexes(
-                                                                            nodeUpdates.labelsChanged(),
-                                                                            nodeUpdates.propertiesChanged() );
+        Iterable<LabelSchemaDescriptor> relatedIndexes =
+                                            indexMapRef.getRelatedIndexes(
+                                                nodeUpdates.labelsChanged(),
+                                                nodeUpdates.labelsUnchanged(),
+                                                nodeUpdates.propertiesChanged() );
 
         return nodeUpdates.forIndexKeys( relatedIndexes, storeView );
     }

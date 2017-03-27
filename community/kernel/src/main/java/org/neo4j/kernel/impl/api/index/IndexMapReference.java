@@ -81,9 +81,10 @@ public class IndexMapReference implements IndexMapSnapshotProvider
         return indexMap.getAllIndexProxies();
     }
 
-    public Iterable<LabelSchemaDescriptor> getRelatedIndexes( long[] labels, PrimitiveIntCollection properties )
+    public Iterable<LabelSchemaDescriptor> getRelatedIndexes(
+            long[] changedLabels, long[] unchangedLabels, PrimitiveIntCollection properties )
     {
-        return indexMap.getRelatedIndexes( labels, properties );
+        return indexMap.getRelatedIndexes( changedLabels, unchangedLabels, properties );
     }
 
     public void setIndexMap( IndexMap newIndexMap )

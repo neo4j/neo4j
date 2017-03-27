@@ -38,6 +38,7 @@ import static org.neo4j.collection.primitive.PrimitiveIntCollections.emptySet;
 public class IndexMapTest
 {
 
+    private static final long[] noLabel = {};
     private IndexMap indexMap;
 
     private LabelSchemaDescriptor schema3_4 = SchemaDescriptorFactory.forLabel( 3, 4 );
@@ -59,7 +60,7 @@ public class IndexMapTest
     public void shouldGetRelatedIndexForLabel()
     {
         assertThat(
-                indexMap.getRelatedIndexes( new long[]{3}, emptySet() ),
+                indexMap.getRelatedIndexes( label( 3 ), noLabel, emptySet() ),
                 containsInAnyOrder( schema3_4 ) );
     }
 
@@ -67,7 +68,7 @@ public class IndexMapTest
     public void shouldGetRelatedIndexForProperty()
     {
         assertThat(
-                indexMap.getRelatedIndexes( new long[]{}, properties( 4 ) ),
+                indexMap.getRelatedIndexes( noLabel, label( 3, 4, 5 ), properties( 4 ) ),
                 containsInAnyOrder( schema3_4 ) );
     }
 
@@ -75,7 +76,7 @@ public class IndexMapTest
     public void shouldGetRelatedIndexesForLabel()
     {
         assertThat(
-                indexMap.getRelatedIndexes( new long[]{5}, emptySet() ),
+                indexMap.getRelatedIndexes( label( 5 ), label( 3, 4 ), emptySet() ),
                 containsInAnyOrder( schema5_6_7, schema5_8 ) );
     }
 
@@ -83,7 +84,7 @@ public class IndexMapTest
     public void shouldGetRelatedIndexes()
     {
         assertThat(
-                indexMap.getRelatedIndexes( new long[]{3}, properties( 7 ) ),
+                indexMap.getRelatedIndexes( label( 3 ), label( 4, 5 ), properties( 7 ) ),
                 containsInAnyOrder( schema3_4, schema5_6_7 ) );
     }
 
@@ -91,11 +92,11 @@ public class IndexMapTest
     public void shouldGetRelatedIndexOnce()
     {
         assertThat(
-                indexMap.getRelatedIndexes( new long[]{3}, properties( 4 ) ),
+                indexMap.getRelatedIndexes( label( 3 ), noLabel, properties( 4 ) ),
                 containsInAnyOrder( schema3_4 ) );
 
         assertThat(
-                indexMap.getRelatedIndexes( new long[]{}, properties( 6, 7 ) ),
+                indexMap.getRelatedIndexes( noLabel, label( 5 ), properties( 6, 7 ) ),
                 containsInAnyOrder( schema5_6_7 ) );
     }
 
@@ -103,20 +104,27 @@ public class IndexMapTest
     public void shouldHandleUnrelated()
     {
         assertThat(
-                indexMap.getRelatedIndexes( new long[]{}, emptySet() ),
+                indexMap.getRelatedIndexes( noLabel, noLabel, emptySet() ),
                 emptyIterableOf( LabelSchemaDescriptor.class ) );
 
         assertThat(
-                indexMap.getRelatedIndexes( new long[]{2}, emptySet() ),
+                indexMap.getRelatedIndexes( label( 2 ), noLabel, emptySet() ),
                 emptyIterableOf( LabelSchemaDescriptor.class ) );
 
         assertThat(
-                indexMap.getRelatedIndexes( new long[]{}, properties( 1 ) ),
+                indexMap.getRelatedIndexes( noLabel, label( 2 ), properties( 1 ) ),
                 emptyIterableOf( LabelSchemaDescriptor.class ) );
 
         assertThat(
-                indexMap.getRelatedIndexes( new long[]{2}, properties( 1 ) ),
+                indexMap.getRelatedIndexes( label( 2 ), label( 2 ), properties( 1 ) ),
                 emptyIterableOf( LabelSchemaDescriptor.class ) );
+    }
+
+    // HELPERS
+
+    private long[] label( long... labels)
+    {
+        return labels;
     }
 
     private PrimitiveIntSet properties( int... propertyIds )
