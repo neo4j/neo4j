@@ -41,8 +41,6 @@ import org.neo4j.io.pagecache.IOLimiter;
 import org.neo4j.io.pagecache.PageCache;
 import org.neo4j.io.pagecache.PageCursor;
 import org.neo4j.io.pagecache.PagedFile;
-import org.neo4j.kernel.Health;
-import org.neo4j.logging.Log;
 
 import static java.lang.String.format;
 
@@ -292,19 +290,9 @@ public class GBPTree<KEY,VALUE> implements Closeable
 
     /**
      * Whether or not this tree has been closed. Accessed and changed solely in
-     * {@link #close()} and {@link #close(Consumer)} to be able to close tree multiple times gracefully.
+     * {@link #close()} to be able to close tree multiple times gracefully.
      */
-    private boolean closed;
-
-    /**
-     * To check database health during close
-     */
-    private final Health health;
-
-    /**
-     * Used to log interesting events
-     */
-    private final Log log;
+    private volatile boolean closed;
 
     /**
      * Opens an index {@code indexFile} in the {@code pageCache}, creating and initializing it if it doesn't exist.
@@ -322,18 +310,14 @@ public class GBPTree<KEY,VALUE> implements Closeable
      * @param monitor {@link Monitor} for monitoring {@link GBPTree}.
      * @param headerReader reads header data, previously written using {@link #checkpoint(IOLimiter, Consumer)}
      * or {@link #close()}
-     * @param health Database {@link Health}
-     * @param log {@link Log} to use for logging
      * @throws IOException on page cache error
      */
     public GBPTree( PageCache pageCache, File indexFile, Layout<KEY,VALUE> layout, int tentativePageSize,
-            Monitor monitor, Header.Reader headerReader, Health health, Log log ) throws IOException
+            Monitor monitor, Header.Reader headerReader ) throws IOException
     {
         this.indexFile = indexFile;
         this.monitor = monitor;
         this.generation = Generation.generation( GenerationSafePointer.MIN_GENERATION, GenerationSafePointer.MIN_GENERATION + 1 );
-        this.health = health;
-        this.log = log;
         long rootId = IdSpace.MIN_TREE_NODE_ID;
         setRoot( rootId, Generation.unstableGeneration( generation ) );
         this.layout = layout;
@@ -752,70 +736,28 @@ public class GBPTree<KEY,VALUE> implements Closeable
     }
 
     /**
-     * Closes this tree and its associated resources. A {@link #checkpoint(IOLimiter)} is first performed
-     * as part of this call if there have been changes since last call to {@link #checkpoint(IOLimiter)}
-     * or since opening this tree.
+     * Closes this tree and its associated resources.
+     * <p>
+     * NOTE: No {@link #checkpoint(IOLimiter) checkpoint} is performed. To make data
+     * persistent checkpoint needs to be performed manually before calling close.
      *
-     * @throws IOException on error either checkpointing or closing resources.
+     * @throws IOException on error while closing resources.
      */
     @Override
     public void close() throws IOException
     {
-        close( CARRY_OVER_PREVIOUS_HEADER );
-    }
-
-    /**
-     * Closes the {@link GBPTree} also writing header using the supplied writer.
-     *
-     * @param headerWriter hook for writing header data.
-     * @throws IOException on error either checkpointing or closing resources.
-     */
-    public void close( Consumer<PageCursor> headerWriter ) throws IOException
-    {
-        close( replace( headerWriter ) );
-    }
-
-    private void close( Header.Writer headerWriter ) throws IOException
-    {
-        writerCheckpointMutex.lock();
-        boolean didCheckpoint = false;
-        boolean anyWrites = false;
+        if ( closed )
+        {
+            return;
+        }
         try
         {
-            if ( closed )
-            {
-                return;
-            }
-
-            try
-            {
-                writer.close();
-
-                if ( health.isHealthy() )
-                {
-                    // Perform a checkpoint before closing. If no changes has happened since last checkpoint,
-                    // no new checkpoint will be created.
-                    checkpoint( IOLimiter.unlimited(), headerWriter );
-                }
-            }
-            finally
-            {
-                closed = true;
-                pagedFile.close();
-                // Perform a checkpoint before closing. If no changes has happened since last checkpoint,
-                // no new checkpoint will be created.
-                anyWrites = checkpoint( IOLimiter.unlimited(), headerWriter );
-                didCheckpoint = true;
-            }
+            writer.close();
         }
         finally
         {
-            writerCheckpointMutex.unlock();
+            closed = true;
             pagedFile.close();
-            String checkpointMessage = didCheckpoint ?
-                                       "Did checkpoint during close, had anything to write? " + anyWrites :
-                                       "Did not checkpoint during close";
-            log.info( checkpointMessage );
         }
     }
 

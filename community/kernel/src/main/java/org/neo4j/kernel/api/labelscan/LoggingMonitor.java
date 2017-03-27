@@ -31,6 +31,9 @@ import static java.lang.String.format;
  */
 public class LoggingMonitor implements Monitor
 {
+    public static final String SHUTDOWN_WITH_FLUSH_MESSAGE = "Scan store flush and shutdown";
+    public static final String SHUTDOWN_NO_FLUSH_MESSAGE = "Scan store shutdown without flush";
+
     private final Log log;
 
     public LoggingMonitor( Log log )
@@ -74,5 +77,11 @@ public class LoggingMonitor implements Monitor
         StringBuilder builder = new StringBuilder( "Scan store recovery completed:" );
         data.forEach( (key,value) -> builder.append( format( " %s: %s", key, value ) ) );
         log.info( builder.toString() );
+    }
+
+    @Override
+    public void flushDuringShutdown( boolean didFlush )
+    {
+        log.info( didFlush ? SHUTDOWN_WITH_FLUSH_MESSAGE : SHUTDOWN_NO_FLUSH_MESSAGE );
     }
 }

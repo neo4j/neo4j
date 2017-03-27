@@ -73,7 +73,7 @@ public class NativeLabelScanStoreExtension extends
                 new FullLabelStream( dependencies.indexStoreView() ),
                 dependencies.getConfig().get( GraphDatabaseSettings.read_only ),
                 monitors,
-                dependencies.getHealth(), log );
+                dependencies.getHealth() );
         return new LabelScanStoreProvider( NAME, labelScanStore );
     }
 }

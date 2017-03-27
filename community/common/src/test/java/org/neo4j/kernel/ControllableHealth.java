@@ -17,17 +17,15 @@
  * You should have received a copy of the GNU General Public License
  * along with this program.  If not, see <http://www.gnu.org/licenses/>.
  */
-package org.neo4j.index;
+package org.neo4j.kernel;
 
 import java.util.concurrent.atomic.AtomicBoolean;
 
-import org.neo4j.kernel.SilentHealth;
-
-class ControllableHealth extends SilentHealth
+public class ControllableHealth extends SilentHealth
 {
     private final AtomicBoolean isHealthy;
 
-    ControllableHealth( AtomicBoolean isHealthy )
+    public ControllableHealth( AtomicBoolean isHealthy )
     {
         this.isHealthy = isHealthy;
     }

@@ -36,8 +36,6 @@ import java.util.concurrent.Executors;
 import org.neo4j.cursor.RawCursor;
 import org.neo4j.io.pagecache.IOLimiter;
 import org.neo4j.io.pagecache.PageCache;
-import org.neo4j.kernel.SilentHealth;
-import org.neo4j.logging.NullLog;
 import org.neo4j.test.rule.PageCacheRule;
 import org.neo4j.test.rule.RandomRule;
 import org.neo4j.test.rule.TestDirectory;
@@ -160,8 +158,7 @@ public class GBPTreeIT
     {
         pageCache = pageCacheRule.getPageCache( fs.get(), config().withPageSize( pageSize ).withAccessChecks( true ) );
         return index = new GBPTree<>( pageCache, directory.file( "index" ),
-                layout, 0/*use whatever page cache says*/, monitor, NO_HEADER, new SilentHealth(),
-                NullLog.getInstance() );
+                layout, 0/*use whatever page cache says*/, monitor, NO_HEADER );
     }
 
     private static void randomlyModifyIndex( GBPTree<MutableLong,MutableLong> index,

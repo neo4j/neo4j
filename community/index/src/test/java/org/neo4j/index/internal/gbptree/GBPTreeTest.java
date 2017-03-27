@@ -43,7 +43,6 @@ import org.neo4j.io.pagecache.IOLimiter;
 import org.neo4j.io.pagecache.PageCache;
 import org.neo4j.io.pagecache.PageCursor;
 import org.neo4j.io.pagecache.PagedFile;
-import org.neo4j.kernel.SilentHealth;
 import org.neo4j.logging.Log;
 import org.neo4j.logging.NullLog;
 import org.neo4j.test.Barrier;
@@ -437,7 +436,8 @@ public class GBPTreeTest
         ThreadLocalRandom.current().nextBytes( expectedHeader );
         PageCache pageCache = createPageCache( 256 );
         GBPTree<MutableLong,MutableLong> index = builder( pageCache ).build();
-        index.close( cursor -> cursor.putBytes( expectedHeader ) );
+        index.checkpoint( IOLimiter.unlimited(), cursor -> cursor.putBytes( expectedHeader ) );
+        index.close();
 
         // WHEN
         byte[] readHeader = new byte[expectedHeader.length];
@@ -489,7 +489,8 @@ public class GBPTreeTest
         GBPTree<MutableLong,MutableLong> index = builder( pageCache ).build();
         index.checkpoint( IOLimiter.unlimited(), cursor -> cursor.putBytes( expectedHeader ) );
         ThreadLocalRandom.current().nextBytes( expectedHeader );
-        index.close( cursor -> cursor.putBytes( expectedHeader ) );
+        index.checkpoint( IOLimiter.unlimited(), cursor -> cursor.putBytes( expectedHeader ) );
+        index.close();
 
         // WHEN
         byte[] readHeader = new byte[expectedHeader.length];
@@ -735,27 +736,6 @@ public class GBPTreeTest
     }
 
     @Test
-    public void shouldCheckpointOnCloseAfterChangesHappened() throws Exception
-    {
-        // GIVEN
-        CheckpointCounter checkpointCounter = new CheckpointCounter();
-        PageCache pageCache = createPageCache( 256 );
-
-        // WHEN
-        try ( GBPTree<MutableLong,MutableLong> index = builder( pageCache ).with( checkpointCounter ).build() )
-        {
-            checkpointCounter.reset();
-            try ( Writer<MutableLong,MutableLong> writer = index.writer() )
-            {
-                writer.put( new MutableLong( 0 ), new MutableLong( 1 ) );
-            }
-        }
-
-        // THEN
-        assertEquals( 1, checkpointCounter.count() );
-    }
-
-    @Test
     public void shouldNotCheckpointOnCloseIfNoChangesHappened() throws Exception
     {
         // GIVEN
@@ -798,8 +778,7 @@ public class GBPTreeTest
 
         GBPTree<MutableLong,MutableLong> build() throws IOException
         {
-            return new GBPTree<>( pageCache, indexFile, layout, tentativePageSize, monitor, headerReader,
-                    new SilentHealth(), log );
+            return new GBPTree<>( pageCache, indexFile, layout, tentativePageSize, monitor, headerReader );
         }
 
         GBPTreeBuilder with( int tentativePageSize )
