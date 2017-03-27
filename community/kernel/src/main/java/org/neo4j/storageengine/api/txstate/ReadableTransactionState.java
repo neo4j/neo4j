@@ -77,15 +77,11 @@ public interface ReadableTransactionState
 
     boolean relationshipIsDeletedInThisTx( long relationshipId );
 
-    ReadableDiffSets<Integer> nodeStateLabelDiffSets( long nodeId );
-
     Iterator<StorageProperty> augmentGraphProperties( Iterator<StorageProperty> original );
 
     boolean nodeIsAddedInThisTx( long nodeId );
 
     boolean nodeIsDeletedInThisTx( long nodeId );
-
-    PrimitiveIntSet nodeRelationshipTypes( long nodeId );
 
     PrimitiveLongIterator augmentNodesGetAll( PrimitiveLongIterator committed );
 

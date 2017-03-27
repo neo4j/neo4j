@@ -372,12 +372,6 @@ public final class TxState implements TransactionState, RelationshipVisitor.Home
         return LABEL_STATE.getOrCreate( this, labelId ).getOrCreateNodeDiffSets();
     }
 
-    @Override
-    public ReadableDiffSets<Integer> nodeStateLabelDiffSets( long nodeId )
-    {
-        return NODE_STATE.get( this, nodeId ).labelDiffSets();
-    }
-
     private DiffSets<Integer> getOrCreateNodeStateLabelDiffSets( long nodeId )
     {
         return getOrCreateNodeState( nodeId ).getOrCreateLabelDiffSets();
@@ -724,12 +718,6 @@ public final class TxState implements TransactionState, RelationshipVisitor.Home
             nodes = new DiffSets<>();
         }
         return nodes;
-    }
-
-    @Override
-    public PrimitiveIntSet nodeRelationshipTypes( long nodeId )
-    {
-        return NODE_STATE.get( this, nodeId ).relationshipTypes();
     }
 
     @Override
