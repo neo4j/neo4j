@@ -22,6 +22,7 @@ package org.neo4j.causalclustering.catchup.tx;
 import io.netty.channel.ChannelHandlerContext;
 import io.netty.channel.SimpleChannelInboundHandler;
 
+import java.io.IOException;
 import java.util.function.BooleanSupplier;
 import java.util.function.Supplier;
 
@@ -42,7 +43,6 @@ import org.neo4j.logging.LogProvider;
 import static org.neo4j.causalclustering.catchup.CatchupResult.E_STORE_ID_MISMATCH;
 import static org.neo4j.causalclustering.catchup.CatchupResult.E_STORE_UNAVAILABLE;
 import static org.neo4j.causalclustering.catchup.CatchupResult.E_TRANSACTION_PRUNED;
-import static org.neo4j.causalclustering.catchup.CatchupResult.SUCCESS_END_OF_BATCH;
 import static org.neo4j.causalclustering.catchup.CatchupResult.SUCCESS_END_OF_STREAM;
 import static org.neo4j.kernel.impl.transaction.log.TransactionIdStore.BASE_TX_ID;
 
@@ -51,20 +51,18 @@ public class TxPullRequestHandler extends SimpleChannelInboundHandler<TxPullRequ
     private final CatchupServerProtocol protocol;
     private final Supplier<StoreId> storeIdSupplier;
     private final BooleanSupplier databaseAvailable;
-    private final int batchSize;
     private final TransactionIdStore transactionIdStore;
     private final LogicalTransactionStore logicalTransactionStore;
     private final TxPullRequestsMonitor monitor;
     private final Log log;
 
     public TxPullRequestHandler( CatchupServerProtocol protocol, Supplier<StoreId> storeIdSupplier,
-                                 BooleanSupplier databaseAvailable, Supplier<TransactionIdStore> transactionIdStoreSupplier,
-                                 Supplier<LogicalTransactionStore> logicalTransactionStoreSupplier, int batchSize, Monitors monitors, LogProvider logProvider )
+            BooleanSupplier databaseAvailable, Supplier<TransactionIdStore> transactionIdStoreSupplier,
+            Supplier<LogicalTransactionStore> logicalTransactionStoreSupplier, Monitors monitors, LogProvider logProvider )
     {
         this.protocol = protocol;
         this.storeIdSupplier = storeIdSupplier;
         this.databaseAvailable = databaseAvailable;
-        this.batchSize = batchSize;
         this.transactionIdStore = transactionIdStoreSupplier.get();
         this.logicalTransactionStore = logicalTransactionStoreSupplier.get();
         this.monitor = monitors.newMonitor( TxPullRequestsMonitor.class );
@@ -74,62 +72,60 @@ public class TxPullRequestHandler extends SimpleChannelInboundHandler<TxPullRequ
     @Override
     protected void channelRead0( ChannelHandlerContext ctx, final TxPullRequest msg ) throws Exception
     {
-        long firstTxId = Math.max( msg.previousTxId(), BASE_TX_ID ) + 1;
-        long lastTxId = firstTxId;
-        CatchupResult status = SUCCESS_END_OF_STREAM;
-        StoreId localStoreId = storeIdSupplier.get();
+        monitor.increment();
 
+        long firstTxId = Math.max( msg.previousTxId(), BASE_TX_ID ) + 1;
+        StoreId localStoreId = storeIdSupplier.get();
+        StoreId expectedStoreId = msg.expectedStoreId();
+
+        IOCursor<CommittedTransactionRepresentation> txCursor = getCursor( ctx, firstTxId, localStoreId, expectedStoreId );
+
+        if ( txCursor != null )
+        {
+            ctx.writeAndFlush( new ChunkedTransactionStream( localStoreId, txCursor, protocol ) );
+            // chunked transaction stream ends the interaction internally and closes the cursor
+        }
+    }
+
+    private IOCursor<CommittedTransactionRepresentation> getCursor( ChannelHandlerContext ctx, long firstTxId, StoreId localStoreId, StoreId expectedStoreId ) throws IOException
+    {
         long lastCommittedTransactionId = transactionIdStore.getLastCommittedTransactionId();
 
-        if ( localStoreId == null || !localStoreId.equals( msg.expectedStoreId() ) )
+        if ( localStoreId == null || !localStoreId.equals( expectedStoreId ) )
         {
-            status = E_STORE_ID_MISMATCH;
             log.info( "Failed to serve TxPullRequest for tx %d and storeId %s because that storeId is different " +
-                            "from this machine with %s",
-                    lastTxId, msg.expectedStoreId(), localStoreId );
+                      "from this machine with %s", firstTxId, expectedStoreId, localStoreId );
+            endInteraction( ctx, E_STORE_ID_MISMATCH, lastCommittedTransactionId );
+            return null;
         }
         else if ( !databaseAvailable.getAsBoolean() )
         {
-            // database is not available for pulling transactions...
-            status = E_STORE_UNAVAILABLE;
-            log.info( "Failed to serve TxPullRequest for tx %d because the local database is unavailable.", lastTxId );
+            log.info( "Failed to serve TxPullRequest for tx %d because the local database is unavailable.", firstTxId );
+            endInteraction( ctx, E_STORE_UNAVAILABLE, lastCommittedTransactionId );
+            return null;
         }
-        else if ( lastCommittedTransactionId >= firstTxId )
+        else if ( lastCommittedTransactionId < firstTxId )
         {
-            try ( IOCursor<CommittedTransactionRepresentation> cursor =
-                          logicalTransactionStore.getTransactions( firstTxId ) )
-            {
-                status = SUCCESS_END_OF_BATCH;
-                for ( int i = 0; i < batchSize; i++ )
-                {
-                    if ( cursor.next() )
-                    {
-                        ctx.write( ResponseMessageType.TX );
-                        CommittedTransactionRepresentation tx = cursor.get();
-                        lastTxId = tx.getCommitEntry().getTxId();
-                        ctx.write( new TxPullResponse( localStoreId, tx ) );
-                    }
-                    else
-                    {
-                        status = SUCCESS_END_OF_STREAM;
-                        break;
-                    }
-                }
-                ctx.flush();
-            }
-            catch ( NoSuchTransactionException e )
-            {
-                status = E_TRANSACTION_PRUNED;
-                log.info( "Failed to serve TxPullRequest for tx %d because the transaction does not exist.", lastTxId );
-            }
+            endInteraction( ctx, SUCCESS_END_OF_STREAM, lastCommittedTransactionId );
+            return null;
         }
 
-        ctx.write( ResponseMessageType.TX_STREAM_FINISHED );
-        TxStreamFinishedResponse response = new TxStreamFinishedResponse( status, lastCommittedTransactionId );
-        ctx.write( response );
-        ctx.flush();
+        try
+        {
+            return logicalTransactionStore.getTransactions( firstTxId );
+        }
+        catch ( NoSuchTransactionException e )
+        {
+            log.info( "Failed to serve TxPullRequest for tx %d because the transaction does not exist.", firstTxId );
+            endInteraction( ctx, E_TRANSACTION_PRUNED, lastCommittedTransactionId );
+            return null;
+        }
+    }
 
-        monitor.increment();
+    private void endInteraction( ChannelHandlerContext ctx, CatchupResult status, long lastCommittedTransactionId )
+    {
+        ctx.write( ResponseMessageType.TX_STREAM_FINISHED );
+        ctx.writeAndFlush( new TxStreamFinishedResponse( status, lastCommittedTransactionId ) );
         protocol.expect( State.MESSAGE_TYPE );
     }
 }
