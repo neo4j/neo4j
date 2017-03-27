@@ -19,13 +19,11 @@
  */
 package org.neo4j.kernel.impl.api.store;
 
-import java.util.function.IntPredicate;
 import java.util.function.Supplier;
 
 import org.neo4j.cursor.Cursor;
 import org.neo4j.kernel.api.exceptions.index.IndexNotFoundKernelException;
 import org.neo4j.kernel.api.schema.index.IndexDescriptor;
-import org.neo4j.kernel.impl.api.DegreeVisitor;
 import org.neo4j.kernel.impl.api.IndexReaderFactory;
 import org.neo4j.kernel.impl.locking.Lock;
 import org.neo4j.kernel.impl.locking.LockService;
@@ -58,7 +56,7 @@ public class StoreStatement implements StorageStatement
     private final InstanceCache<StorePropertyCursor> propertyCursorCache;
     private final InstanceCache<StoreSinglePropertyCursor> singlePropertyCursorCache;
     private final InstanceCache<RelationshipGroupCursor> relationshipGroupCursorCache;
-    private final InstanceCache<DegreeVisitable> degreeVisitableCache;
+    private final InstanceCache<DenseNodeDegreeCounter> degreeVisitableCache;
     private final NeoStores neoStores;
     private final Supplier<IndexReaderFactory> indexReaderFactorySupplier;
     private final Supplier<LabelScanReader> labelScanStore;
@@ -125,12 +123,12 @@ public class StoreStatement implements StorageStatement
                 return new StoreSinglePropertyCursor( neoStores.getPropertyStore(), this );
             }
         };
-        degreeVisitableCache = new InstanceCache<DegreeVisitable>()
+        degreeVisitableCache = new InstanceCache<DenseNodeDegreeCounter>()
         {
             @Override
-            protected DegreeVisitable create()
+            protected DenseNodeDegreeCounter create()
             {
-                return new DegreeVisitable( neoStores.getRelationshipStore(), neoStores.getRelationshipGroupStore(),
+                return new DenseNodeDegreeCounter( neoStores.getRelationshipStore(), neoStores.getRelationshipGroupStore(),
                         this );
             }
         };
@@ -210,10 +208,9 @@ public class StoreStatement implements StorageStatement
     }
 
     @Override
-    public DegreeVisitor.Visitable acquireDenseNodeDegreeCounter( long nodeId, long relationshipGroupId,
-            IntPredicate types )
+    public NodeDegreeCounter acquireNodeDegreeCounter( long nodeId, long relationshipGroupId )
     {
-        return degreeVisitableCache.get().init( nodeId, relationshipGroupId, types );
+        return degreeVisitableCache.get().init( nodeId, relationshipGroupId );
     }
 
     @Override

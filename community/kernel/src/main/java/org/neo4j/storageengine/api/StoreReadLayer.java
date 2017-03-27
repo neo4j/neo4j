@@ -40,6 +40,7 @@ import org.neo4j.kernel.api.schema.constaints.ConstraintDescriptor;
 import org.neo4j.kernel.api.schema.index.IndexDescriptor;
 import org.neo4j.kernel.api.txstate.TransactionState;
 import org.neo4j.kernel.impl.api.DegreeVisitor;
+import org.neo4j.kernel.impl.api.KernelStatement;
 import org.neo4j.kernel.impl.api.store.RelationshipIterator;
 import org.neo4j.register.Register.DoubleLongRegister;
 import org.neo4j.storageengine.api.schema.IndexReader;
@@ -386,7 +387,13 @@ public interface StoreReadLayer
 
     PrimitiveIntSet relationshipTypes( StorageStatement statement, NodeItem node );
 
-    void degrees( StorageStatement statement, NodeItem nodeItem, IntPredicate types, DegreeVisitor visitor );
+    void degrees( StorageStatement statement, NodeItem nodeItem, DegreeVisitor visitor );
+
+    int countDegrees( StorageStatement statement, NodeItem node, Direction direction, ReadableTransactionState state );
+
+    int countDegrees( StorageStatement statement, NodeItem node, Direction direction, int relType,
+            ReadableTransactionState state );
 
     <T> T getOrCreateSchemaDependantState( Class<T> type, Function<StoreReadLayer, T> factory );
+
 }

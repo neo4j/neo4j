@@ -17,10 +17,21 @@
  * You should have received a copy of the GNU General Public License
  * along with this program.  If not, see <http://www.gnu.org/licenses/>.
  */
-package org.neo4j.kernel.impl.api;
+package org.neo4j.kernel.impl.api.store;
 
-@FunctionalInterface
-public interface DegreeVisitor
+import org.neo4j.function.Disposable;
+import org.neo4j.kernel.impl.api.DegreeVisitor;
+import org.neo4j.storageengine.api.Direction;
+
+public interface NodeDegreeCounter extends AutoCloseable, Disposable
 {
-    void visitDegree( int type, long outgoing, long incoming );
+    void accept( DegreeVisitor visitor );
+
+    int count( Direction direction );
+
+    int count( Direction direction, int relType );
+
+    @Override
+    void close();
+
 }
