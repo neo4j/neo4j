@@ -79,8 +79,8 @@ public class TransactionCountingStateVisitor extends TxStateVisitor.Delegator
             return false;
         } );
 
-        storeLayer.degrees( statement, node, ALWAYS_TRUE_INT,
-                ( type, out, in, loop ) -> updateRelationshipsCountsFromDegrees( labelIds, type, -out, -in, -loop ) );
+        storeLayer.degrees( statement, node,
+                ( type, out, in ) -> updateRelationshipsCountsFromDegrees( labelIds, type, -out, -in ) );
     }
 
     @Override
@@ -125,40 +125,37 @@ public class TransactionCountingStateVisitor extends TxStateVisitor.Delegator
             // get the relationship counts from *before* this transaction,
             // the relationship changes will compensate for what happens during the transaction
             storeLayer.nodeCursor( statement, id, null )
-                    .forAll( node -> storeLayer.degrees( statement, node, ALWAYS_TRUE_INT, ( type, out, in, loop ) ->
+                    .forAll( node -> storeLayer.degrees( statement, node, ( type, out, in ) ->
                     {
-                        added.forEach( label -> updateRelationshipsCountsFromDegrees( type, label, out, in, loop ) );
+                        added.forEach( label -> updateRelationshipsCountsFromDegrees( type, label, out, in ) );
                         removed.forEach(
-                                label -> updateRelationshipsCountsFromDegrees( type, label, -out, -in, -loop ) );
-                        return true;
+                                label -> updateRelationshipsCountsFromDegrees( type, label, -out, -in ) );
                     } ) );
         }
         super.visitNodeLabelChanges( id, added, removed );
     }
 
-    private boolean updateRelationshipsCountsFromDegrees( PrimitiveIntCollection labels, int type, long outgoing,
-            long incoming, long loop )
+    private void updateRelationshipsCountsFromDegrees( PrimitiveIntCollection labels, int type, long out, long in )
     {
-        labels.visitKeys( label -> updateRelationshipsCountsFromDegrees( type, label, outgoing, incoming, loop ) );
-        return true;
+        labels.visitKeys( label -> updateRelationshipsCountsFromDegrees( type, label, out, in ) );
     }
 
-    private boolean updateRelationshipsCountsFromDegrees( int type, int label, long out, long in, long loop )
+    private boolean updateRelationshipsCountsFromDegrees( int type, int label, long out, long in )
     {
         // untyped
-        counts.incrementRelationshipCount( label, ANY_RELATIONSHIP_TYPE, ANY_LABEL, out + loop );
-        counts.incrementRelationshipCount( ANY_LABEL, ANY_RELATIONSHIP_TYPE, label, in + loop );
+        counts.incrementRelationshipCount( label, ANY_RELATIONSHIP_TYPE, ANY_LABEL, out );
+        counts.incrementRelationshipCount( ANY_LABEL, ANY_RELATIONSHIP_TYPE, label, in );
         // typed
-        counts.incrementRelationshipCount( label, type, ANY_LABEL, out + loop );
-        counts.incrementRelationshipCount( ANY_LABEL, type, label, in + loop );
+        counts.incrementRelationshipCount( label, type, ANY_LABEL, out );
+        counts.incrementRelationshipCount( ANY_LABEL, type, label, in );
         return false;
     }
 
     private void updateRelationshipCount( long startNode, int type, long endNode, int delta )
     {
-        updateRelationshipsCountsFromDegrees( type, ANY_LABEL, delta, 0, 0 );
-        visitLabels( startNode, ( labelId ) -> updateRelationshipsCountsFromDegrees( type, labelId, delta, 0, 0 ) );
-        visitLabels( endNode, ( labelId ) -> updateRelationshipsCountsFromDegrees( type, labelId, 0, delta, 0 ) );
+        updateRelationshipsCountsFromDegrees( type, ANY_LABEL, delta, 0 );
+        visitLabels( startNode, ( labelId ) -> updateRelationshipsCountsFromDegrees( type, labelId, delta, 0) );
+        visitLabels( endNode, ( labelId ) -> updateRelationshipsCountsFromDegrees( type, labelId, 0, delta ) );
     }
 
     private void visitLabels( long nodeId, PrimitiveIntVisitor<RuntimeException> visitor )
