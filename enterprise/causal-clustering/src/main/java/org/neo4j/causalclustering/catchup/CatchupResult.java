@@ -21,6 +21,7 @@ package org.neo4j.causalclustering.catchup;
 
 public enum CatchupResult
 {
+    @Deprecated // batch demarcation no longer used
     SUCCESS_END_OF_BATCH,
     SUCCESS_END_OF_STREAM,
     E_STORE_ID_MISMATCH,

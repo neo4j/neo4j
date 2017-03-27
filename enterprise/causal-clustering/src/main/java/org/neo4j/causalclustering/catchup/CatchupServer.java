@@ -99,7 +99,6 @@ public class CatchupServer extends LifecycleAdapter
     private EventLoopGroup workerGroup;
     private Channel channel;
     private final Supplier<CheckPointer> checkPointerSupplier;
-    private final int txPullBatchSize;
 
     public CatchupServer( LogProvider logProvider, LogProvider userLogProvider, Supplier<StoreId> storeIdSupplier,
             Supplier<TransactionIdStore> transactionIdStoreSupplier,
@@ -112,7 +111,6 @@ public class CatchupServer extends LifecycleAdapter
         this.coreState = coreState;
         this.storeCopyCheckPointMutex = storeCopyCheckPointMutex;
         this.listenAddress = config.get( CausalClusteringSettings.transaction_listen_address );
-        this.txPullBatchSize = config.get( CausalClusteringSettings.tx_pull_batch_size );
         this.transactionIdStoreSupplier = transactionIdStoreSupplier;
         this.storeIdSupplier = storeIdSupplier;
         this.dataSourceAvailabilitySupplier = dataSourceAvailabilitySupplier;
@@ -167,12 +165,10 @@ public class CatchupServer extends LifecycleAdapter
 
                         pipeline.addLast( decoders( protocol ) );
 
-                        pipeline.addLast(
-                                new TxPullRequestHandler( protocol, storeIdSupplier, dataSourceAvailabilitySupplier,
-                                        transactionIdStoreSupplier, logicalTransactionStoreSupplier, txPullBatchSize,
-                                        monitors, logProvider ) );
                         pipeline.addLast( new ChunkedWriteHandler() );
 
+                        pipeline.addLast( new TxPullRequestHandler( protocol, storeIdSupplier, dataSourceAvailabilitySupplier,
+                                transactionIdStoreSupplier, logicalTransactionStoreSupplier, monitors, logProvider ) );
                         pipeline.addLast( new GetStoreRequestHandler( protocol, dataSourceSupplier,
                                 checkPointerSupplier, fs, pageCache, logProvider, storeCopyCheckPointMutex ) );
 
