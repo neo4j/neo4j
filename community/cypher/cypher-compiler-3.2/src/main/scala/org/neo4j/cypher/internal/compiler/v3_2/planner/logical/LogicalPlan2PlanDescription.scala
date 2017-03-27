@@ -229,6 +229,10 @@ case class LogicalPlan2PlanDescription(idMap: Map[LogicalPlan, Id], readOnly: Bo
         val expandSpec = ExpandExpression(fromName, "", types.map(_.name), toName, dir, minLength = min, maxLength = Some(max))
         PlanDescriptionImpl(id, s"VarLengthExpand(Pruning)", children, Seq(expandSpec), variables)
 
+      case FullPruningVarExpand(_, IdName(fromName), dir, types, IdName(toName), min, max, predicates) =>
+        val expandSpec = ExpandExpression(fromName, "", types.map(_.name), toName, dir, minLength = min, maxLength = Some(max))
+        PlanDescriptionImpl(id, s"VarLengthExpand(FullPruning)", children, Seq(expandSpec), variables)
+
       case _: RemoveLabels =>
         PlanDescriptionImpl(id, "RemoveLabels", children, Seq.empty, variables)
 

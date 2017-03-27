@@ -80,7 +80,12 @@ case object pruningVarExpander extends Rewriter {
 
         val innerRewriter = topDown(Rewriter.lift {
           case expand@VarExpand(lhs, fromId, dir, projectedDir, relTypes, toId, relId, length, _, predicates) if distinctSet(expand) =>
-            PruningVarExpand(lhs, fromId, dir, relTypes, toId, length.min, length.max.get, predicates)(expand.solved)
+            if (length.min >= 4 && length.max.get >= 5)
+              // These constants were selected by benchmarking on randomized graphs, with different
+              // degrees of interconnection.
+              FullPruningVarExpand(lhs, fromId, dir, relTypes, toId, length.min, length.max.get, predicates)(expand.solved)
+            else
+              PruningVarExpand(lhs, fromId, dir, relTypes, toId, length.min, length.max.get, predicates)(expand.solved)
         })
         plan.endoRewrite(innerRewriter)
 

@@ -27,7 +27,7 @@ import org.neo4j.cypher.internal.frontend.v3_2.test_helpers.CypherFunSuite
 import org.neo4j.cypher.internal.ir.v3_2.{IdName, VarPatternLength}
 
 class PruningVarExpanderTest extends CypherFunSuite with LogicalPlanningTestSupport {
-  test("simples possible query that can use DistinctVarExpand") {
+  test("simples possible query that can use PruningVarExpand") {
     // Simplest query:
     // match (a)-[*1..3]->(b) return distinct b
 
@@ -151,7 +151,7 @@ class PruningVarExpanderTest extends CypherFunSuite with LogicalPlanningTestSupp
     rewrite(input) should equal(expectedOutput)
   }
 
-  test("optional match can be solved with DistinctVarExpand") {
+  test("optional match can be solved with PruningVarExpand") {
     /* Simplest query:
        match (a) optional match (a)-[:R*1..3]->(b)-[:T]->(c) return distinct c
        in logical plans:
@@ -162,7 +162,7 @@ class PruningVarExpanderTest extends CypherFunSuite with LogicalPlanningTestSupp
                /   \                                /   \
        all-nodes   optional1      ===>       all-nodes  optional2
                      \                                    \
-                     var-length-expand                   distinct-var-expand
+                     var-length-expand                   pruning-var-expand
                        \                                    \
                        argument                            argument
     */
@@ -202,6 +202,25 @@ class PruningVarExpanderTest extends CypherFunSuite with LogicalPlanningTestSupp
     val input = Aggregation(originalExpand, Map("r" -> Variable("r")(pos)), Map.empty)(solved)
 
     rewrite(input) should equal(input)
+  }
+
+  test("on longer var-lengths, we use FullPruningVarExpand") {
+    // Simplest query:
+    // match (a)-[*4..5]->(b) return distinct b
+
+    val fromId = IdName("from")
+    val allNodes = AllNodesScan(fromId, Set.empty)(solved)
+    val dir = SemanticDirection.BOTH
+    val length = VarPatternLength(4, Some(5))
+    val toId = IdName("to")
+    val relId = IdName("r")
+    val originalExpand = VarExpand(allNodes, fromId, dir, dir, Seq.empty, toId, relId, length)(solved)
+    val input = Aggregation(originalExpand, Map("to" -> Variable("to")(pos)), Map.empty)(solved)
+
+    val rewrittenExpand = FullPruningVarExpand(allNodes, fromId, dir, Seq.empty, toId, 4, 5)(solved)
+    val expectedOutput = Aggregation(rewrittenExpand, Map("to" -> Variable("to")(pos)), Map.empty)(solved)
+
+    rewrite(input) should equal(expectedOutput)
   }
 
   private def rewrite(p: LogicalPlan): LogicalPlan =
