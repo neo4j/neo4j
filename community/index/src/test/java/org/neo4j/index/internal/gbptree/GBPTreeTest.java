@@ -32,20 +32,15 @@ import java.util.Arrays;
 import java.util.List;
 import java.util.concurrent.ThreadLocalRandom;
 import java.util.concurrent.atomic.AtomicInteger;
-import java.util.concurrent.atomic.AtomicReference;
 
 import org.neo4j.collection.primitive.Primitive;
 import org.neo4j.collection.primitive.PrimitiveLongCollections;
 import org.neo4j.collection.primitive.PrimitiveLongSet;
 import org.neo4j.cursor.RawCursor;
-import org.neo4j.index.internal.gbptree.GBPTree.Monitor;
 import org.neo4j.io.pagecache.IOLimiter;
 import org.neo4j.io.pagecache.PageCache;
 import org.neo4j.io.pagecache.PageCursor;
 import org.neo4j.io.pagecache.PagedFile;
-import org.neo4j.logging.Log;
-import org.neo4j.logging.NullLog;
-import org.neo4j.test.Barrier;
 import org.neo4j.test.rule.PageCacheRule;
 import org.neo4j.test.rule.RandomRule;
 import org.neo4j.test.rule.TestDirectory;
@@ -61,7 +56,6 @@ import static org.junit.Assert.fail;
 import static org.junit.rules.RuleChain.outerRule;
 import static org.neo4j.index.internal.gbptree.GBPTree.NO_HEADER;
 import static org.neo4j.index.internal.gbptree.GBPTree.NO_MONITOR;
-import static org.neo4j.index.internal.gbptree.ThrowingRunnable.throwing;
 import static org.neo4j.test.rule.PageCacheRule.config;
 
 public class GBPTreeTest
@@ -89,12 +83,14 @@ public class GBPTreeTest
     {
         // GIVEN
         PageCache pageCache = createPageCache( 1024 );
-        try ( GBPTree<MutableLong,MutableLong> index = builder( pageCache ).build() )
+        //noinspection EmptyTryBlock
+        try ( GBPTree<MutableLong,MutableLong> ignored = builder( pageCache ).build() )
         {   // Open/close is enough
         }
 
         // WHEN
-        try ( GBPTree<MutableLong,MutableLong> index = builder( pageCache ).build() )
+        //noinspection EmptyTryBlock
+        try ( GBPTree<MutableLong,MutableLong> ignored = builder( pageCache ).build() )
         {   // Open/close is enough
         }
 
@@ -106,13 +102,14 @@ public class GBPTreeTest
     {
         // GIVEN
         PageCache pageCache = createPageCache( 1024 );
-        try ( GBPTree<MutableLong,MutableLong> index = builder( pageCache ).build() )
+        //noinspection EmptyTryBlock
+        try ( GBPTree<MutableLong,MutableLong> ignored = builder( pageCache ).build() )
         {   // Open/close is enough
         }
 
         // WHEN
         SimpleLongLayout otherLayout = new SimpleLongLayout( "Something else" );
-        try ( GBPTree<MutableLong,MutableLong> index = builder( pageCache ).with( otherLayout ).build() )
+        try ( GBPTree<MutableLong,MutableLong> ignored = builder( pageCache ).with( otherLayout ).build() )
         {
             fail( "Should not load" );
         }
@@ -130,7 +127,8 @@ public class GBPTreeTest
     {
         // GIVEN
         PageCache pageCache = createPageCache( 1024 );
-        try ( GBPTree<MutableLong,MutableLong> index = builder( pageCache ).build() )
+        //noinspection EmptyTryBlock
+        try ( GBPTree<MutableLong,MutableLong> ignored = builder( pageCache ).build() )
         {   // Open/close is enough
         }
 
@@ -143,9 +141,8 @@ public class GBPTreeTest
                 return 123456;
             }
         };
-        try ( GBPTree<MutableLong,MutableLong> index = builder( pageCache ).with( otherLayout ).build() )
+        try ( GBPTree<MutableLong,MutableLong> ignored = builder( pageCache ).with( otherLayout ).build() )
         {
-
             fail( "Should not load" );
         }
         catch ( MetadataMismatchException e )
@@ -159,7 +156,8 @@ public class GBPTreeTest
     {
         // GIVEN
         PageCache pageCache = createPageCache( 1024 );
-        try ( GBPTree<MutableLong,MutableLong> index = builder( pageCache ).build() )
+        //noinspection EmptyTryBlock
+        try ( GBPTree<MutableLong,MutableLong> ignored = builder( pageCache ).build() )
         {   // Open/close is enough
         }
 
@@ -172,7 +170,7 @@ public class GBPTreeTest
                 return super.majorVersion() + 1;
             }
         };
-        try ( GBPTree<MutableLong,MutableLong> index = builder( pageCache ).with( otherLayout ).build() )
+        try ( GBPTree<MutableLong,MutableLong> ignored = builder( pageCache ).with( otherLayout ).build() )
         {
             fail( "Should not load" );
         }
@@ -187,7 +185,8 @@ public class GBPTreeTest
     {
         // GIVEN
         PageCache pageCache = createPageCache( 1024 );
-        try ( GBPTree<MutableLong,MutableLong> index = builder( pageCache ).build() )
+        //noinspection EmptyTryBlock
+        try ( GBPTree<MutableLong,MutableLong> ignored = builder( pageCache ).build() )
         {   // Open/close is enough
         }
 
@@ -200,7 +199,7 @@ public class GBPTreeTest
                 return super.minorVersion() + 1;
             }
         };
-        try ( GBPTree<MutableLong,MutableLong> index = builder( pageCache ).with( otherLayout ).build() )
+        try ( GBPTree<MutableLong,MutableLong> ignored = builder( pageCache ).with( otherLayout ).build() )
         {
             fail( "Should not load" );
         }
@@ -216,14 +215,15 @@ public class GBPTreeTest
         // GIVEN
         int pageSize = 1024;
         PageCache pageCache = createPageCache( pageSize );
-        try ( GBPTree<MutableLong,MutableLong> index = builder( pageCache ).build() )
+        //noinspection EmptyTryBlock
+        try ( GBPTree<MutableLong,MutableLong> ignored = builder( pageCache ).build() )
         {   // Open/close is enough
         }
 
         // WHEN
         pageCache.close();
         pageCache = createPageCache( pageSize / 2 );
-        try ( GBPTree<MutableLong,MutableLong> index = builder( pageCache ).build() )
+        try ( GBPTree<MutableLong,MutableLong> ignored = builder( pageCache ).build() )
         {
             fail( "Should not load" );
         }
@@ -240,7 +240,7 @@ public class GBPTreeTest
         // WHEN
         int pageSize = 512;
         PageCache pageCache = createPageCache( pageSize );
-        try ( GBPTree<MutableLong,MutableLong> index = builder( pageCache ).with( pageSize * 2 ).build() )
+        try ( GBPTree<MutableLong,MutableLong> ignored = builder( pageCache ).with( pageSize * 2 ).build() )
         {
             fail( "Shouldn't have been created" );
         }
@@ -258,7 +258,8 @@ public class GBPTreeTest
         int pageSize = 1024;
         PageCache pageCache = createPageCache( pageSize );
         int tentativePageSize = pageSize / 2;
-        try ( GBPTree<MutableLong,MutableLong> index = builder( pageCache ).with( tentativePageSize ).build() )
+        //noinspection EmptyTryBlock
+        try ( GBPTree<MutableLong,MutableLong> ignored = builder( pageCache ).with( tentativePageSize ).build() )
         {
             // Good
         }
@@ -270,13 +271,14 @@ public class GBPTreeTest
         // WHEN
         int pageSize = 1024;
         PageCache pageCache = createPageCache( pageSize );
-        try ( GBPTree<MutableLong,MutableLong> index = builder( pageCache ).build() )
+        //noinspection EmptyTryBlock
+        try ( GBPTree<MutableLong,MutableLong> ignored = builder( pageCache ).build() )
         {
             // Good
         }
 
         pageCache = createPageCache( pageSize / 2 );
-        try ( GBPTree<MutableLong, MutableLong> index = builder( pageCache ).build() )
+        try ( GBPTree<MutableLong, MutableLong> ignored = builder( pageCache ).build() )
         {
             fail( "Expected to fail" );
         }
@@ -341,13 +343,14 @@ public class GBPTreeTest
         // GIVEN
         int pageSize = 1024;
         PageCache pageCache = createPageCache( pageSize );
-        try ( GBPTree<MutableLong,MutableLong> index = builder( pageCache ).build() )
+        //noinspection EmptyTryBlock
+        try ( GBPTree<MutableLong,MutableLong> ignored = builder( pageCache ).build() )
         {   // Open/close is enough
         }
         setFormatVersion( pageCache, pageSize, GBPTree.FORMAT_VERSION - 1 );
 
         // WHEN
-        try ( GBPTree<MutableLong,MutableLong> index = builder( pageCache ).build() )
+        try ( GBPTree<MutableLong,MutableLong> ignored = builder( pageCache ).build() )
         {
             fail( "Should have failed" );
         }
@@ -380,7 +383,7 @@ public class GBPTreeTest
         PageCache pageCache = createPageCache( 256 );
         try ( GBPTree<MutableLong,MutableLong> index = builder( pageCache ).build() )
         {
-            try ( Writer<MutableLong,MutableLong> writer = index.writer() )
+            try ( Writer<MutableLong,MutableLong> ignored = index.writer() )
             {
                 // WHEN
                 try
@@ -593,7 +596,8 @@ public class GBPTreeTest
         PageCache pageCache = createPageCache( 256 );
 
         // WHEN
-        try ( GBPTree<MutableLong,MutableLong> index = builder( pageCache ).with( checkpointCounter ).build() )
+        //noinspection EmptyTryBlock
+        try ( GBPTree<MutableLong,MutableLong> ignored = builder( pageCache ).with( checkpointCounter ).build() )
         {}
 
         // THEN
