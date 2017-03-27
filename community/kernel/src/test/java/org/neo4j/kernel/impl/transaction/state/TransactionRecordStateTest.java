@@ -1222,7 +1222,7 @@ public class TransactionRecordStateTest
                 mock( IndexingUpdateService.class ),
                 new PropertyPhysicalToLogicalConverter( neoStores.getPropertyStore() ) );
         lazyIndexUpdates.feed( extractor.propertyCommandsByNodeIds(), extractor.nodeCommandsById() );
-        return lazyIndexUpdates;
+        return Iterables.empty();
     }
 
     private PhysicalTransactionRepresentation transactionRepresentationOf( TransactionRecordState writeTransaction )

@@ -22,6 +22,8 @@ package org.neo4j.kernel.impl.api.index;
 import java.io.IOException;
 
 import org.neo4j.kernel.api.exceptions.index.IndexEntryConflictException;
+import org.neo4j.kernel.api.index.IndexEntryUpdate;
+import org.neo4j.kernel.api.schema_new.LabelSchemaDescriptor;
 import org.neo4j.kernel.impl.transaction.state.IndexUpdates;
 
 public interface IndexingUpdateService
@@ -32,9 +34,9 @@ public interface IndexingUpdateService
     void apply( IndexUpdates updates ) throws IOException, IndexEntryConflictException;
 
     /**
-     * Load eventual additional properties depending on the set of active indexes. This has to happen earlier than
-     * the actual application of the updates to the indexes, so that the properties reflect the exact state of the
+     * Convert the updates for a node into index entry updates. This has to happen earlier than the actual
+     * application of the updates to the indexes, so that the properties reflect the exact state of the
      * transaction.
      */
-    void loadAdditionalProperties( NodeUpdates nodeUpdates );
+    Iterable<IndexEntryUpdate<LabelSchemaDescriptor>> convertToIndexUpdates( NodeUpdates nodeUpdates );
 }

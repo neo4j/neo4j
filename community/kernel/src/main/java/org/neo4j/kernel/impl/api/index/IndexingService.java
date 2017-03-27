@@ -52,7 +52,6 @@ import org.neo4j.kernel.impl.api.index.sampling.IndexSamplingController;
 import org.neo4j.kernel.impl.api.index.sampling.IndexSamplingMode;
 import org.neo4j.kernel.impl.store.UnderlyingStorageException;
 import org.neo4j.kernel.impl.store.record.IndexRule;
-import org.neo4j.kernel.impl.transaction.state.DirectIndexUpdates;
 import org.neo4j.kernel.impl.transaction.state.IndexUpdates;
 import org.neo4j.kernel.impl.util.JobScheduler;
 import org.neo4j.kernel.lifecycle.LifecycleAdapter;
@@ -460,26 +459,60 @@ public class IndexingService extends LifecycleAdapter implements IndexingUpdateS
         }
     }
 
-    private void apply( IndexUpdates updates, IndexUpdateMode updateMode )
+    private void apply( Iterable<IndexEntryUpdate<LabelSchemaDescriptor>> updates, IndexUpdateMode updateMode )
             throws IOException, IndexEntryConflictException
     {
-        try ( IndexUpdaterMap updaterMap = indexMapRef.createIndexUpdaterMap( updateMode ) )
+        Map<LabelSchemaDescriptor,List<IndexEntryUpdate<LabelSchemaDescriptor>>> bySchema = new HashMap<>();
+        for ( IndexEntryUpdate<LabelSchemaDescriptor> indexUpdate : updates )
         {
-            for ( NodeUpdates update : updates )
+            List<IndexEntryUpdate<LabelSchemaDescriptor>> forSchema = bySchema.get( indexUpdate.indexKey() );
+            if ( forSchema == null )
             {
-                for ( IndexEntryUpdate<IndexUpdaterMap.IndexUpdaterWithSchema> indexUpdate :
-                        update.forIndexKeys( updaterMap.updatersForLabels( update.labelsAffected() ) ) )
+                forSchema = new ArrayList<>();
+                bySchema.put( indexUpdate.indexKey(), forSchema );
+            }
+            forSchema.add( indexUpdate );
+        }
+
+        for ( Map.Entry<LabelSchemaDescriptor, List<IndexEntryUpdate<LabelSchemaDescriptor>>> entry : bySchema.entrySet() )
+        {
+            LabelSchemaDescriptor schema = entry.getKey();
+            try ( IndexUpdater updater = indexMapRef.getIndexProxy( schema ).newUpdater( updateMode ) )
+            {
+                for ( IndexEntryUpdate<LabelSchemaDescriptor> indexUpdate : entry.getValue() )
                 {
-                    indexUpdate.indexKey().process( indexUpdate );
+                    updater.process( indexUpdate );
                 }
+            }
+            catch ( IndexNotFoundKernelException e )
+            {
+                // ignore, the index was deleted while update was in flight. It can be discarded.
             }
         }
     }
 
-    @Override
-    public void loadAdditionalProperties( NodeUpdates nodeUpdates )
+    public void convertToIndexUpdatesAndApply( Iterable<NodeUpdates> updates, IndexUpdateMode updateMode )
+            throws IOException, IndexEntryConflictException
     {
-        nodeUpdates.loadAdditionalProperties( indexMapRef.getAllIndexProxies(), storeView );
+        final List<IndexEntryUpdate<LabelSchemaDescriptor>> indexUpdates = new ArrayList<>();
+        for ( NodeUpdates nodeUpdate : updates )
+        {
+            for ( IndexEntryUpdate<LabelSchemaDescriptor> indexUpdate : convertToIndexUpdates( nodeUpdate ) )
+            {
+                indexUpdates.add( indexUpdate );
+            }
+        }
+        apply( indexUpdates, updateMode );
+    }
+
+    @Override
+    public Iterable<IndexEntryUpdate<LabelSchemaDescriptor>> convertToIndexUpdates( NodeUpdates nodeUpdates )
+    {
+        Iterable<LabelSchemaDescriptor> relatedIndexes = indexMapRef.getRelatedIndexes(
+                                                                            nodeUpdates.labelsChanged(),
+                                                                            nodeUpdates.propertiesChanged() );
+
+        return nodeUpdates.forIndexKeys( relatedIndexes, storeView );
     }
 
     /**
@@ -558,28 +591,28 @@ public class IndexingService extends LifecycleAdapter implements IndexingUpdateS
                     updater.remove( recoveredNodeIds );
                 }
 
-                IndexUpdates updates = readRecoveredUpdatesFromStore();
-                apply( updates, IndexUpdateMode.RECOVERY );
+                Iterable<NodeUpdates> updates = readNodeUpdatesFromRecoveredStore();
+                convertToIndexUpdatesAndApply( updates, IndexUpdateMode.RECOVERY );
                 monitor.appliedRecoveredData( updates );
             }
         }
         recoveredNodeIds.clear();
     }
 
-    private IndexUpdates readRecoveredUpdatesFromStore()
+    private Iterable<NodeUpdates> readNodeUpdatesFromRecoveredStore()
     {
-        final List<NodeUpdates> recoveredUpdates = new ArrayList<>();
+        final List<NodeUpdates> nodeUpdates = new ArrayList<>();
         recoveredNodeIds.visitKeys( new PrimitiveLongVisitor<RuntimeException>()
         {
             @Override
             public boolean visited( long nodeId )
             {
-                storeView.nodeAsUpdates( nodeId, recoveredUpdates );
+                storeView.nodeAsUpdates( nodeId, nodeUpdates );
                 return false;
             }
         } );
 
-        return new DirectIndexUpdates( recoveredUpdates );
+        return nodeUpdates;
     }
 
     public void dropIndex( IndexRule rule )

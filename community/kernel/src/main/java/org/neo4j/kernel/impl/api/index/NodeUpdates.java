@@ -24,6 +24,7 @@ import java.util.Arrays;
 import java.util.List;
 
 import org.neo4j.collection.primitive.Primitive;
+import org.neo4j.collection.primitive.PrimitiveIntCollection;
 import org.neo4j.collection.primitive.PrimitiveIntIterator;
 import org.neo4j.collection.primitive.PrimitiveIntObjectMap;
 import org.neo4j.collection.primitive.PrimitiveIntSet;
@@ -53,6 +54,7 @@ public class NodeUpdates implements PropertyLoader.PropertyLoadSink
     private final long[] labelsAfter;
 
     private final PrimitiveIntObjectMap<PropertyValue> knownProperties;
+    private boolean hasLoadedAdditionalProperties = false;
 
     public static class Builder
     {
@@ -129,9 +131,16 @@ public class NodeUpdates implements PropertyLoader.PropertyLoadSink
         return nodeId;
     }
 
-    public long[] labelsAffected()
+    public long[] labelsChanged()
     {
-        return SortedLongArrayUtil.union( labelsBefore, labelsAfter );
+        return SortedLongArrayUtil.symmetricDifference( labelsBefore, labelsAfter );
+    }
+
+    public PrimitiveIntCollection propertiesChanged()
+    {
+        assert !hasLoadedAdditionalProperties : "Calling propertiesChanged() is not valid after non-changed " +
+                                                "properties have already been loaded.";
+        return knownProperties;
     }
 
     @Override
@@ -195,25 +204,6 @@ public class NodeUpdates implements PropertyLoader.PropertyLoadSink
         return gatherUpdatesForPotentials( potentiallyRelevant );
     }
 
-    public <INDEX_KEY extends LabelSchemaSupplier> void loadAdditionalProperties(
-            Iterable<INDEX_KEY> indexKeys, PropertyLoader propertyLoader )
-    {
-        PrimitiveIntSet additionalPropertiesToLoad = Primitive.intSet();
-
-        for ( INDEX_KEY indexKey : indexKeys )
-        {
-            if ( atLeastOneRelevantChange( indexKey ) )
-            {
-                gatherPropsToLoad( indexKey.schema(), additionalPropertiesToLoad );
-            }
-        }
-
-        if ( !additionalPropertiesToLoad.isEmpty() )
-        {
-            loadProperties( propertyLoader, additionalPropertiesToLoad );
-        }
-    }
-
     private <INDEX_KEY extends LabelSchemaSupplier> Iterable<IndexEntryUpdate<INDEX_KEY>> gatherUpdatesForPotentials(
             Iterable<INDEX_KEY> potentiallyRelevant )
     {
@@ -263,6 +253,7 @@ public class NodeUpdates implements PropertyLoader.PropertyLoadSink
 
     private void loadProperties( PropertyLoader propertyLoader, PrimitiveIntSet additionalPropertiesToLoad )
     {
+        hasLoadedAdditionalProperties = true;
         propertyLoader.loadProperties( nodeId, additionalPropertiesToLoad, this );
 
         // loadProperties removes loaded properties from the input set, so the remaining ones were not on the node
