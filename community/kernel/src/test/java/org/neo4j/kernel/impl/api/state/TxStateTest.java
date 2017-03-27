@@ -85,7 +85,7 @@ public class TxStateTest
         state.nodeDoAddLabel( 2, 1 );
 
         // WHEN
-        Set<Integer> addedLabels = state.nodeStateLabelDiffSets( 1 ).getAdded();
+        Set<Integer> addedLabels = state.getNodeState( 1 ).labelDiffSets().getAdded();
 
         // THEN
         assertEquals( asSet( 1, 2 ), addedLabels );
@@ -100,7 +100,7 @@ public class TxStateTest
         state.nodeDoRemoveLabel( 2, 1 );
 
         // WHEN
-        Set<Integer> removedLabels = state.nodeStateLabelDiffSets( 1 ).getRemoved();
+        Set<Integer> removedLabels = state.getNodeState( 1 ).labelDiffSets().getRemoved();
 
         // THEN
         assertEquals( asSet( 1, 2 ), removedLabels );
@@ -118,7 +118,7 @@ public class TxStateTest
         state.nodeDoRemoveLabel( 1, 1 );
 
         // THEN
-        assertEquals( asSet( 2 ), state.nodeStateLabelDiffSets( 1 ).getAdded() );
+        assertEquals( asSet( 2 ), state.getNodeState( 1 ).labelDiffSets().getAdded() );
     }
 
     @Test
@@ -133,7 +133,7 @@ public class TxStateTest
         state.nodeDoAddLabel( 1, 1 );
 
         // THEN
-        assertEquals( asSet( 2 ), state.nodeStateLabelDiffSets( 1 ).getRemoved() );
+        assertEquals( asSet( 2 ), state.getNodeState( 1 ).labelDiffSets().getRemoved() );
     }
 
     @Test
@@ -1084,7 +1084,8 @@ public class TxStateTest
         state.relationshipDoDelete( relC, relType + 1, startNode, endNode );
 
         // Then
-        assertThat( toList( state.nodeRelationshipTypes( startNode ).iterator() ), equalTo( asList( relType ) ) );
+        assertThat( toList( state.getNodeState( startNode ).relationshipTypes().iterator() ),
+                equalTo( asList( relType ) ) );
     }
 
     @Test
