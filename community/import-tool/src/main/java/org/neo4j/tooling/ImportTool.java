@@ -42,6 +42,7 @@ import org.neo4j.helpers.Strings;
 import org.neo4j.helpers.collection.IterableWrapper;
 import org.neo4j.helpers.collection.Iterables;
 import org.neo4j.helpers.collection.MapUtil;
+import org.neo4j.io.IOUtils;
 import org.neo4j.io.fs.DefaultFileSystemAbstraction;
 import org.neo4j.io.fs.FileSystemAbstraction;
 import org.neo4j.kernel.configuration.Config;
@@ -76,7 +77,6 @@ import org.neo4j.unsafe.impl.batchimport.staging.ExecutionMonitors;
 
 import static java.lang.Math.toIntExact;
 import static java.nio.charset.Charset.defaultCharset;
-
 import static org.neo4j.helpers.Exceptions.launderedException;
 import static org.neo4j.helpers.Format.bytes;
 import static org.neo4j.helpers.Strings.TAB;
@@ -87,6 +87,7 @@ import static org.neo4j.kernel.impl.util.Converters.withDefault;
 import static org.neo4j.unsafe.impl.batchimport.Configuration.BAD_FILE_NAME;
 import static org.neo4j.unsafe.impl.batchimport.input.Collectors.badCollector;
 import static org.neo4j.unsafe.impl.batchimport.input.Collectors.collect;
+import static org.neo4j.unsafe.impl.batchimport.input.Collectors.silentBadCollector;
 import static org.neo4j.unsafe.impl.batchimport.input.InputEntityDecorators.NO_NODE_DECORATOR;
 import static org.neo4j.unsafe.impl.batchimport.input.InputEntityDecorators.additiveLabels;
 import static org.neo4j.unsafe.impl.batchimport.input.InputEntityDecorators.defaultRelationshipType;
@@ -177,25 +178,30 @@ public class ImportTool
                 "Number of bad entries before the import is considered failed. This tolerance threshold is "
                         + "about relationships refering to missing nodes. Format errors in input data are "
                         + "still treated as errors" ),
+        SKIP_BAD_ENTRIES_LOGGING ("skip-bad-entries-logging", Boolean.FALSE,
+                "<true/false>", "Whether or not log bad entries detected during import."),
         SKIP_BAD_RELATIONSHIPS( "skip-bad-relationships", Boolean.TRUE,
                 "<true/false>",
                 "Whether or not to skip importing relationships that refers to missing node ids, i.e. either "
                         + "start or end node id/group referring to node that wasn't specified by the "
                         + "node input data. "
                         + "Skipped nodes will be logged"
-                        + ", containing at most number of entites specified by " + BAD_TOLERANCE.key() + "." ),
+                        + ", containing at most number of entites specified by " + BAD_TOLERANCE.key() + ", unless "
+                        + "otherwise specified by " + SKIP_BAD_ENTRIES_LOGGING.key() + " option."),
         SKIP_DUPLICATE_NODES( "skip-duplicate-nodes", Boolean.FALSE,
                 "<true/false>",
                 "Whether or not to skip importing nodes that have the same id/group. In the event of multiple "
                         + "nodes within the same group having the same id, the first encountered will be imported "
                         + "whereas consecutive such nodes will be skipped. "
                         + "Skipped nodes will be logged"
-                        + ", containing at most number of entities specified by " + BAD_TOLERANCE.key() + "." ),
+                        + ", containing at most number of entities specified by " + BAD_TOLERANCE.key() + ", unless "
+                        + "otherwise specified by " + SKIP_BAD_ENTRIES_LOGGING.key() + "option." ),
         IGNORE_EXTRA_COLUMNS( "ignore-extra-columns", Boolean.FALSE,
                 "<true/false>",
                 "Whether or not to ignore extra columns in the data not specified by the header. "
                         + "Skipped columns will be logged, containing at most number of entities specified by "
-                        + BAD_TOLERANCE.key() + "." ),
+                        + BAD_TOLERANCE.key() + ", unless "
+                        + "otherwise specified by " + SKIP_BAD_ENTRIES_LOGGING.key() + "option." ),
         DATABASE_CONFIG( "db-config", null,
                 "<path/to/neo4j.conf>",
                 "(advanced) File specifying database-specific configuration. For more information consult "
@@ -333,12 +339,13 @@ public class ImportTool
         int badTolerance;
         Charset inputEncoding;
         boolean skipBadRelationships, skipDuplicateNodes, ignoreExtraColumns;
+        boolean skipBadEntriesLogging;
         Config dbConfig;
         OutputStream badOutput = null;
         int pageSize = UNSPECIFIED;
         org.neo4j.unsafe.impl.batchimport.Configuration configuration = null;
         File logsDir;
-        File badFile;
+        File badFile = null;
 
         boolean success = false;
         try
@@ -350,8 +357,13 @@ public class ImportTool
             logsDir = config.get( GraphDatabaseSettings.logs_directory );
             fs.mkdirs( logsDir );
 
-            badFile = new File( storeDir, BAD_FILE_NAME );
-            badOutput = new BufferedOutputStream( fs.openAsOutputStream( badFile, false ) );
+            skipBadEntriesLogging = args.getBoolean( Options.SKIP_BAD_ENTRIES_LOGGING.key(),
+                    (Boolean) Options.SKIP_BAD_ENTRIES_LOGGING.defaultValue(), false);
+            if ( !skipBadEntriesLogging )
+            {
+                badFile = new File( storeDir, BAD_FILE_NAME );
+                badOutput = new BufferedOutputStream( fs.openAsOutputStream( badFile, false ) );
+            }
             nodesFiles = INPUT_FILES_EXTRACTOR.apply( args, Options.NODE_DATA.key() );
             relationshipsFiles = INPUT_FILES_EXTRACTOR.apply( args, Options.RELATIONSHIP_DATA.key() );
             validateInputFiles( nodesFiles, relationshipsFiles );
@@ -361,6 +373,7 @@ public class ImportTool
                     withDefault( (IdType)Options.ID_TYPE.defaultValue() ), TO_ID_TYPE );
             badTolerance = parseNumberOrUnlimited( args, Options.BAD_TOLERANCE );
             inputEncoding = Charset.forName( args.get( Options.INPUT_ENCODING.key(), defaultCharset().name() ) );
+
             skipBadRelationships = args.getBoolean( Options.SKIP_BAD_RELATIONSHIPS.key(),
                     (Boolean)Options.SKIP_BAD_RELATIONSHIPS.defaultValue(), true );
             skipDuplicateNodes = args.getBoolean( Options.SKIP_DUPLICATE_NODES.key(),
@@ -368,8 +381,8 @@ public class ImportTool
             ignoreExtraColumns = args.getBoolean( Options.IGNORE_EXTRA_COLUMNS.key(),
                     (Boolean)Options.IGNORE_EXTRA_COLUMNS.defaultValue(), true );
 
-            Collector badCollector = badCollector( badOutput, badTolerance, collect( skipBadRelationships,
-                    skipDuplicateNodes, ignoreExtraColumns ) );
+            Collector badCollector = getBadCollector( badTolerance, skipBadRelationships, skipDuplicateNodes, ignoreExtraColumns,
+                            skipBadEntriesLogging, badOutput );
 
             dbConfig = loadDbConfig( args.interpretOption( Options.DATABASE_CONFIG.key(), Converters.<File>optional(),
                     Converters.toFile(), Validators.REGEX_FILE_EXISTS ) );
@@ -426,16 +439,18 @@ public class ImportTool
         {
             int numberOfBadEntries = input.badCollector().badEntries();
             input.badCollector().close();
-            badOutput.close();
+            IOUtils.closeAll( badOutput );
 
-            if ( numberOfBadEntries > 0 )
+            if (badFile != null)
             {
-                System.out.println(
-                        "There were bad entries which were skipped and logged into " + badFile.getAbsolutePath() );
-            }
-            else
-            {
-                fs.deleteFile( badFile );
+                if ( (numberOfBadEntries > 0) )
+                {
+                    System.out.println( "There were bad entries which were skipped and logged into " + badFile.getAbsolutePath() );
+                }
+                else
+                {
+                    fs.deleteFile( badFile );
+                }
             }
 
             life.shutdown();
@@ -457,6 +472,14 @@ public class ImportTool
                 }
             }
         }
+    }
+
+    private static Collector getBadCollector( int badTolerance, boolean skipBadRelationships,
+            boolean skipDuplicateNodes, boolean ignoreExtraColumns, boolean skipBadEntriesLogging,
+            OutputStream badOutput )
+    {
+        int collect = collect( skipBadRelationships, skipDuplicateNodes, ignoreExtraColumns );
+        return skipBadEntriesLogging ? silentBadCollector( badTolerance, collect ) : badCollector( badOutput, badTolerance, collect );
     }
 
     private static Integer parseNumberOrUnlimited( Args args, Options option )
