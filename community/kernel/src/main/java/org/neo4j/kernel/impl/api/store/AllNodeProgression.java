@@ -25,6 +25,7 @@ public class AllNodeProgression implements NodeProgression
 {
     private final NodeStore nodeStore;
     private long start;
+    private boolean done;
 
     AllNodeProgression( NodeStore nodeStore )
     {
@@ -35,15 +36,24 @@ public class AllNodeProgression implements NodeProgression
     @Override
     public boolean nextBatch( Batch batch )
     {
-        long highId = nodeStore.getHighId();
-        if ( start > highId )
+        while ( true )
         {
-            batch.nothing();
-            return false;
+            if ( done )
+            {
+                batch.nothing();
+                return false;
+            }
+
+            long highId = nodeStore.getHighestPossibleIdInUse();
+            if ( start <= highId )
+            {
+                batch.init( start, highId );
+                start = highId + 1;
+                return true;
+            }
+
+            done = true;
         }
-        batch.init( start, highId );
-        start = highId + 1;
-        return true;
     }
 
     @Override
