@@ -47,6 +47,7 @@ public class HazelcastDiscoveryServiceFactory implements DiscoveryServiceFactory
     {
         // tell hazelcast to not phone home
         System.setProperty( "hazelcast.phone.home.enabled", "false" );
+        System.setProperty( "hazelcast.socket.server.bind.any", "false" );
 
         // Make hazelcast quiet
         if ( config.get( CausalClusteringSettings.disable_middleware_logging ) )

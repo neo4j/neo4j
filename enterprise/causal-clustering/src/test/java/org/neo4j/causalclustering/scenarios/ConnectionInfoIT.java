@@ -47,7 +47,9 @@ import org.neo4j.server.configuration.ClientConnectorSettings;
 import org.neo4j.test.causalclustering.ClusterRule;
 
 import static java.util.Collections.singletonMap;
+
 import static org.mockito.Mockito.mock;
+
 import static org.neo4j.causalclustering.core.CausalClusteringSettings.discovery_listen_address;
 import static org.neo4j.causalclustering.core.CausalClusteringSettings.transaction_listen_address;
 import static org.neo4j.kernel.configuration.Config.defaults;
@@ -100,51 +102,10 @@ public class ConnectionInfoIT
         userLogProvider.assertContainsMessageContaining( "Address is already bound for setting" );
     }
 
-    @SuppressWarnings( "unchecked" )
+    @SuppressWarnings("unchecked")
     private <T> Supplier<T> mockSupplier()
     {
         return mock( Supplier.class );
-    }
-
-    @Test
-    public void hzTest() throws Throwable
-    {
-        // given
-        testSocket = bindPort( "0.0.0.0", 4243 );
-
-        //when
-        AssertableLogProvider logProvider = new AssertableLogProvider();
-        AssertableLogProvider userLogProvider = new AssertableLogProvider();
-
-        HazelcastDiscoveryServiceFactory hzFactory = new HazelcastDiscoveryServiceFactory();
-        Config config =
-                defaults().with( singletonMap( discovery_listen_address.name(), ":" + testSocket.getLocalPort() ) );
-        config.augment( singletonMap( CausalClusteringSettings.initial_discovery_members.name(),
-                "localhost:" + testSocket.getLocalPort() ) );
-        config.augment( singletonMap( GraphDatabaseSettings.boltConnector( "bolt" ).enabled.name(), "true" ) );
-        config.augment( singletonMap( ClientConnectorSettings.httpConnector( "http" ).enabled.name(), "true" ) );
-
-        Neo4jJobScheduler jobScheduler = new Neo4jJobScheduler();
-        jobScheduler.init();
-
-        CoreTopologyService coreTopologyService = hzFactory
-                .coreTopologyService( config, new MemberId( UUID.randomUUID() ), jobScheduler, logProvider,
-                        userLogProvider );
-
-        try
-        {
-            coreTopologyService.init();
-            coreTopologyService.start();
-        }
-
-        //then
-        catch ( Throwable throwable )
-        {
-            //expected
-        }
-
-        logProvider.assertContainsMessageContaining( "Hazelcast was unable to start with setting" );
-        userLogProvider.assertContainsMessageContaining( "Hazelcast was unable to start with setting" );
     }
 
     private Socket bindPort( String address, int port ) throws IOException
