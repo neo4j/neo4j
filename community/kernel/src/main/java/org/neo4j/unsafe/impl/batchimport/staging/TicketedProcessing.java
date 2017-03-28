@@ -153,15 +153,24 @@ public class TicketedProcessing<FROM,STATE,TO> implements Parallelizable, AutoCl
     {
         return future( () ->
         {
-            while ( input.hasNext() )
+            try
             {
-                submit( input.next() );
+                while ( input.hasNext() )
+                {
+                    submit( input.next() );
+                }
+                if ( closeAfterAllSubmitted )
+                {
+                    close();
+                }
+                return null;
             }
-            if ( closeAfterAllSubmitted )
+            catch ( Throwable e )
             {
+                receivePanic( e );
                 close();
+                throw e;
             }
-            return null;
         } );
     }
 
@@ -206,7 +215,12 @@ public class TicketedProcessing<FROM,STATE,TO> implements Parallelizable, AutoCl
             }
             healthCheck.run();
         }
-        // We've reached the end of the line
+
+        // Health check here too since slurp may have failed and so if not checking health here then
+        // a panic may go by unnoticed and may just look like the end of the stream. Checking health here
+        // ensures that any slurp panic bubbles up and eventually spreads.
+        healthCheck.run();
+
         return null;
     }
 
