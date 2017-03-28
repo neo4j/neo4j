@@ -149,6 +149,22 @@ _read_config() {
       else
         export ${key}="${value}"
       fi
+      # Print some deprecation warnings
+      # Connectors with names not http, https, bolt, are deprecated
+      # To function, they must specify their type so check for that specific field
+      if [[ "${key}" =~ dbms_connector_(.*)_type ]]; then
+        name="${BASH_REMATCH[1]}"
+        if [[ ! "${name}" =~ (http|https|bolt) ]]; then
+          cat >&2 <<EOF
+WARNING: connectors with names other than [http,https,bolt] are
+         deprecated and support for them will be removed in a future
+         version of Neo4j. Offending lines in ${NEO4J_CONF/neo4j.conf}:
+
+         dbms.connector.${name}.*
+                        ^
+EOF
+        fi
+      fi
     fi
   }
 
