@@ -210,7 +210,12 @@ public class ImportTool
                 "Page size in bytes, or e.g. 4M or 8k" ),
         LEGACY_STYLE_QUOTING( "legacy-style-quoting", Configuration.DEFAULT_LEGACY_STYLE_QUOTING,
                 "<true/false>",
-                "Whether or not backslash-escaped quote e.g. \\\" is interpreted as inner quote." );
+                "Whether or not backslash-escaped quote e.g. \\\" is interpreted as inner quote." ),
+        READ_BUFFER_SIZE( "read-buffer-size", org.neo4j.csv.reader.Configuration.DEFAULT.bufferSize(),
+                "<bytes, e.g. 10k, 4M>",
+                "Size of the buffer for reading input data. It has to be large enough to hold at least the " +
+                "biggest single value in the data. Actual memory used may be bigger than specified, " +
+                "given some amount of internal overhead" );
 
         private final String key;
         private final Object defaultValue;
@@ -723,6 +728,9 @@ public class ImportTool
         final Boolean multiLineFields = args.getBoolean( Options.MULTILINE_FIELDS.key(), null );
         final Boolean emptyStringsAsNull = args.getBoolean( Options.IGNORE_EMPTY_STRINGS.key(), null );
         final Boolean legacyStyleQuoting = args.getBoolean( Options.LEGACY_STYLE_QUOTING.key(), null );
+        final Number bufferSize = args.has( Options.READ_BUFFER_SIZE.key() )
+                ? parseLongWithUnit( args.get( Options.READ_BUFFER_SIZE.key(), null ) )
+                : null;
         return new Configuration.Default()
         {
             @Override
@@ -768,7 +776,9 @@ public class ImportTool
             @Override
             public int bufferSize()
             {
-                return defaultSettingsSuitableForTests ? 10_000 : super.bufferSize();
+                return bufferSize != null
+                        ? bufferSize.intValue()
+                        : defaultSettingsSuitableForTests ? 10_000 : super.bufferSize();
             }
 
             @Override
