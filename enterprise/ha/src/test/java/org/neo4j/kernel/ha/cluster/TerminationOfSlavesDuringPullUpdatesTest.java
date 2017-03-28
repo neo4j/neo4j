@@ -78,43 +78,51 @@ public class TerminationOfSlavesDuringPullUpdatesTest
     public static Iterable<Object> data()
     {
         return Arrays.<Object>asList( new Object[][]
-                {
-                        {new PropertyValueActions( longString( 'a' ), longString( 'b' ), true,
-                                ( db, entityId, key, node ) -> getEntity( db, entityId, node ).getAllProperties().get( key ) ),
-                                "NodeStringProperty[allProps]"},
-                        {new PropertyValueActions( longString( 'a' ), longString( 'b' ), true,
-                                ( db, entityId, key, node ) -> getEntity( db, entityId, node ).getProperty( key, null ) ),
-                                "NodeStringProperty[singleProp]"},
-                        {new PropertyValueActions( longString( 'a' ), longString( 'b' ), true,
-                                ( db, entityId, key, node ) -> getEntity( db, entityId, node ).getProperties( key ).get( key ) ),
-                                "NodeStringProperty[varArgsProp]"},
+        {
+                {new PropertyValueActions( longString( 'a' ), longString( 'b' ), true,
+                        ( db, entityId, key, node ) -> getEntity( db, entityId, node ).getAllProperties().get( key ) ),
+                        "NodeStringProperty[allProps]"},
+                {new PropertyValueActions( longString( 'a' ), longString( 'b' ), true,
+                        ( db, entityId, key, node ) -> getEntity( db, entityId, node ).getProperty( key, null ) ),
+                        "NodeStringProperty[singleProp]"},
+                {new PropertyValueActions( longString( 'a' ), longString( 'b' ), true,
+                        ( db, entityId, key, node ) -> getEntity( db, entityId, node ).getProperties( key ).get( key ) ),
+                        "NodeStringProperty[varArgsProp]"},
 
-                        {new PropertyValueActions( longString( 'a' ), longString( 'b' ), false, ( db, entityId, key, node ) -> getEntity( db, entityId, node ).getAllProperties().get( key ) ),
-                                "RelationshipStringProperty[allProps]"},
-                        {new PropertyValueActions( longString( 'a' ), longString( 'b' ), false, ( db, entityId, key, node ) -> getEntity( db, entityId, node ).getProperty( key, null ) ),
-                                "RelationshipStringProperty[singleProp]"},
-                        {new PropertyValueActions( longString( 'a' ), longString( 'b' ), false, ( db, entityId, key, node ) -> getEntity( db, entityId, node ).getProperties( key ).get( key ) ),
-                                "RelationshipStringProperty[varArgsProp]"},
+                {new PropertyValueActions( longString( 'a' ), longString( 'b' ), false,
+                        ( db, entityId, key, node ) -> getEntity( db, entityId, node ).getAllProperties().get( key ) ),
+                        "RelationshipStringProperty[allProps]"},
+                {new PropertyValueActions( longString( 'a' ), longString( 'b' ), false,
+                        ( db, entityId, key, node ) -> getEntity( db, entityId, node ).getProperty( key, null ) ),
+                        "RelationshipStringProperty[singleProp]"},
+                {new PropertyValueActions( longString( 'a' ), longString( 'b' ), false,
+                        ( db, entityId, key, node ) -> getEntity( db, entityId, node ).getProperties( key ).get( key ) ),
+                        "RelationshipStringProperty[varArgsProp]"},
 
-                        {new PropertyValueActions( longArray( 'a' ), longArray( 'b' ), true, ( db, entityId, key, node ) -> getEntity( db, entityId, node ).getAllProperties().get( key ) ),
-                                "NodeArrayProperty[allProps]"},
-                        {new PropertyValueActions( longArray( 'a' ), longArray( 'b' ), true, ( db, entityId, key, node ) -> getEntity( db, entityId, node ).getProperty( key, null ) ),
-                                "NodeArrayProperty[singleProp]"},
-                        {new PropertyValueActions( longArray( 'a' ), longArray( 'b' ), true, ( db, entityId, key, node ) -> getEntity( db, entityId, node ).getProperties( key ).get( key ) ),
-                                "NodeArrayProperty[varArgsProp]"},
+                {new PropertyValueActions( longArray( 'a' ), longArray( 'b' ), true,
+                        ( db, entityId, key, node ) -> getEntity( db, entityId, node ).getAllProperties().get( key ) ),
+                        "NodeArrayProperty[allProps]"},
+                {new PropertyValueActions( longArray( 'a' ), longArray( 'b' ), true,
+                        ( db, entityId, key, node ) -> getEntity( db, entityId, node ).getProperty( key, null ) ),
+                        "NodeArrayProperty[singleProp]"},
+                {new PropertyValueActions( longArray( 'a' ), longArray( 'b' ), true,
+                        ( db, entityId, key, node ) -> getEntity( db, entityId, node ).getProperties( key ).get( key ) ),
+                        "NodeArrayProperty[varArgsProp]"},
 
-                        {new PropertyValueActions( longArray( 'a' ), longArray( 'b' ), false, ( db, entityId, key, node ) -> getEntity( db, entityId, node ).getAllProperties().get( key ) ),
-                                "RelationshipArrayProperty[allProps]"},
-                        {new PropertyValueActions( longArray( 'a' ), longArray( 'b' ), false, ( db, entityId, key, node ) -> getEntity( db, entityId, node ).getProperty( key, null ) ),
-                                "RelationshipArrayProperty[singleProp]"},
-                        {new PropertyValueActions( longArray( 'a' ), longArray( 'b' ), false, ( db, entityId, key, node ) -> getEntity( db, entityId, node ).getProperties( key ).get( key ) ),
-                                "RelationshipArrayProperty[varArgsProp]"},
+                {new PropertyValueActions( longArray( 'a' ), longArray( 'b' ), false,
+                        ( db, entityId, key, node ) -> getEntity( db, entityId, node ).getAllProperties().get( key ) ),
+                        "RelationshipArrayProperty[allProps]"},
+                {new PropertyValueActions( longArray( 'a' ), longArray( 'b' ), false,
+                        ( db, entityId, key, node ) -> getEntity( db, entityId, node ).getProperty( key, null ) ),
+                        "RelationshipArrayProperty[singleProp]"},
+                {new PropertyValueActions( longArray( 'a' ), longArray( 'b' ), false,
+                        ( db, entityId, key, node ) -> getEntity( db, entityId, node ).getProperties( key ).get( key ) ),
+                        "RelationshipArrayProperty[varArgsProp]"},
 
-                        {new PropertyKeyActions( 'a', 'b', true ), "NodePropertyKeys"},
+                {new PropertyKeyActions( 'a', 'b', true ), "NodePropertyKeys"},
 
-                        {new PropertyKeyActions( 'a', 'b', false ), "RelationshipPropertyKeys"},
-                }
-        );
+                {new PropertyKeyActions( 'a', 'b', false ), "RelationshipPropertyKeys"},
+        } );
     }
 
     @Test
