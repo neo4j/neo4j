@@ -19,10 +19,10 @@
  */
 package org.neo4j.cypher.internal.compiler.v3_2.planner.logical
 
-import org.neo4j.cypher.internal.compiler.v3_2.planner._
 import org.neo4j.cypher.internal.compiler.v3_2.planner.logical.plans.{LockNodes, LogicalPlan}
 import org.neo4j.cypher.internal.compiler.v3_2.planner.logical.steps.{LogicalPlanProducer, mergeUniqueIndexSeekLeafPlanner}
-import org.neo4j.cypher.internal.frontend.v3_2.ast.{ContainerIndex, PathExpression, Variable}
+import org.neo4j.cypher.internal.frontend.v3_2.ast.Expression
+import org.neo4j.cypher.internal.frontend.v3_2.{InputPosition, ast}
 import org.neo4j.cypher.internal.ir.v3_2._
 import org.neo4j.cypher.internal.ir.v3_2.exception.CantHandleQueryException
 
@@ -112,19 +112,19 @@ case object PlanUpdates
       case p: DeleteExpression =>
         val delete = p.expression match {
           //DELETE user
-          case Variable(n) if context.semanticTable.isNode(n) =>
+          case ast.Variable(n) if context.semanticTable.isNode(n) =>
             context.logicalPlanProducer.planDeleteNode(source, p)
           //DELETE rel
-          case Variable(r) if context.semanticTable.isRelationship(r) =>
+          case ast.Variable(r) if context.semanticTable.isRelationship(r) =>
             context.logicalPlanProducer.planDeleteRelationship(source, p)
           //DELETE path
-          case PathExpression(e) =>
+          case ast.PathExpression(e) =>
             context.logicalPlanProducer.planDeletePath(source, p)
           //DELETE users[{i}]
-          case ContainerIndex(Variable(n), indexExpr) if context.semanticTable.isNodeCollection(n) =>
+          case ast.ContainerIndex(ast.Variable(n), indexExpr) if context.semanticTable.isNodeCollection(n) =>
             context.logicalPlanProducer.planDeleteNode(source, p)
           //DELETE rels[{i}]
-          case ContainerIndex(Variable(r), indexExpr) if context.semanticTable.isRelationshipCollection(r) =>
+          case ast.ContainerIndex(ast.Variable(r), indexExpr) if context.semanticTable.isRelationshipCollection(r) =>
             context.logicalPlanProducer.planDeleteRelationship(source, p)
           //DELETE expr
           case expr =>
@@ -180,7 +180,8 @@ case object PlanUpdates
       val onMatch = onMatchPatterns.foldLeft[LogicalPlan](producer.planQueryArgumentRow(qgWithAllNeededArguments)) {
         case (src, current) => planUpdate(src, current, first)
       }
-      producer.planConditionalApply(mergeMatch, onMatch, ids)(innerContext)
+
+      producer.planConditionalApply(mergeMatch, onMatch, checkForNull(ids, negated = true))(innerContext)
     } else mergeMatch
 
     //       antiCondApply
@@ -199,10 +200,38 @@ case object PlanUpdates
     val onCreate = onCreatePatterns.foldLeft(mergeCreatePart) {
       case (src, current) => planUpdate(src, current, first)
     }
-
-    val antiCondApply = producer.planAntiConditionalApply(condApply, onCreate, ids)(innerContext)
+    val antiCondApply = producer.planConditionalApply(condApply, onCreate, checkForNull(ids, negated = false))(innerContext)
 
     antiCondApply
+  }
+
+  /*
+       If negated, produces a predicate such as
+       WHERE a IS NOT NULL AND b IS NOT NULL AND c IS NOT NULL AND D IS NOT NULL
+
+       If not negated,
+       WHERE a IS NULL OR b IS NULL OR c IS NULL or D IS NULL
+   */
+  private def checkForNull(ids: Seq[IdName], negated: Boolean): Expression = {
+    val pos = InputPosition.NONE
+    val predicates: Seq[Expression] = ids map {
+      case IdName(key) =>
+        val isNull = ast.IsNull(ast.Variable(key)(pos))(pos)
+        if (negated)
+          ast.Not(isNull)(pos)
+        else
+          isNull
+    }
+
+    val predicate = if (predicates.size == 1)
+      predicates.head
+    else {
+      if (negated)
+        ast.Ands(predicates.toSet)(pos)
+      else
+        ast.Ors(predicates.toSet)(pos)
+    }
+    predicate
   }
 
   private def mergeMatchPart(source: LogicalPlan,
@@ -253,7 +282,7 @@ case object PlanUpdates
       //                  \
       //                  leaf
       val ifMissingLockAndMatchAgain = mergeRead(lockingContext)
-      producer.planAntiConditionalApply(matchOrNull, ifMissingLockAndMatchAgain, ids)(context)
+      producer.planConditionalApply(matchOrNull, ifMissingLockAndMatchAgain, checkForNull(ids, negated = false))(context)
     } else
       matchOrNull
   }

@@ -287,14 +287,11 @@ case class LogicalPlan2PlanDescription(idMap: Map[LogicalPlan, Id], readOnly: Bo
     val children = TwoChildren(lhs, rhs)
 
     val result: InternalPlanDescription = plan match {
-      case _: AntiConditionalApply =>
-        PlanDescriptionImpl(id, "AntiConditionalApply", children, Seq.empty, variables)
+      case ConditionalApply(_, _, predicate) =>
+        PlanDescriptionImpl(id, "ConditionalApply", children, Seq(Expression(predicate)), variables)
 
       case _: AntiSemiApply =>
         PlanDescriptionImpl(id, "AntiSemiApply", children, Seq.empty, variables)
-
-      case _: ConditionalApply =>
-        PlanDescriptionImpl(id, "ConditionalApply", children, Seq.empty, variables)
 
       case _: Apply =>
         PlanDescriptionImpl(id, "Apply", children, Seq.empty, variables)

@@ -490,11 +490,8 @@ case class ActualPipeBuilder(monitors: Monitors, recurse: LogicalPlan => Pipe, r
       case LetSelectOrAntiSemiApply(_, _, idName, predicate) =>
         LetSelectOrSemiApplyPipe(lhs, rhs, idName.name, buildPredicate(predicate), negated = true)(id = id)
 
-      case ConditionalApply(_, _, ids) =>
-        ConditionalApplyPipe(lhs, rhs, ids.map(_.name), negated = false)(id = id)
-
-      case AntiConditionalApply(_, _, ids) =>
-        ConditionalApplyPipe(lhs, rhs, ids.map(_.name), negated = true)(id = id)
+      case ConditionalApply(_, _, predicate) =>
+        ConditionalApplyPipe(lhs, rhs, buildPredicate(predicate))(id = id)
 
       case Union(_, _) =>
         UnionPipe(lhs, rhs)(id = id)

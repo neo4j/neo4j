@@ -71,7 +71,7 @@ case object unnestApply extends Rewriter {
       foreach.copy(left = lhs, right = rhs)(original.solved)
 
     // L Ax (Arg Ax R) => L Ax R
-    case original@AntiConditionalApply(lhs, Apply(_: Argument, rhs), _) =>
+    case original@ConditionalApply(lhs, Apply(_: Argument, rhs), _) =>
       original.copy(lhs, rhs)(original.solved)
 
     // L Ax (σ R) => σ(L Ax R)

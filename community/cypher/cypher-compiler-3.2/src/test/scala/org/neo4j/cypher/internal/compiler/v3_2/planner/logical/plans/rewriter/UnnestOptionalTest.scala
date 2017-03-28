@@ -24,6 +24,7 @@ import org.neo4j.cypher.internal.compiler.v3_2.planner.LogicalPlanningTestSuppor
 import org.neo4j.cypher.internal.compiler.v3_2.planner.logical.plans._
 import org.neo4j.cypher.internal.frontend.v3_2.SemanticDirection
 import org.neo4j.cypher.internal.frontend.v3_2.ast.{Equals, Property, PropertyKeyName, SignedDecimalIntegerLiteral}
+import org.neo4j.cypher.internal.frontend.v3_2.ast
 import org.neo4j.cypher.internal.frontend.v3_2.test_helpers.CypherFunSuite
 import org.neo4j.cypher.internal.ir.v3_2.{IdName, VarPatternLength}
 
@@ -64,7 +65,7 @@ class UnnestOptionalTest extends CypherFunSuite with LogicalPlanningTestSupport 
     val mergeRel = MergeCreateRelationship(SingleRow()(solved), IdName("r"), IdName("a"), LazyType("T"), IdName("b"),
       None)(solved)
 
-    val input = AntiConditionalApply(apply, mergeRel, Seq.empty)(solved)
+    val input = ConditionalApply(apply, mergeRel, mock[ast.Expression])(solved)
 
     input.endoRewrite(unnestOptional) should equal(input)
   }

@@ -559,18 +559,11 @@ case class LogicalPlanProducer(cardinalityModel: CardinalityModel) extends ListS
       pattern.endNode, pattern.properties)(solved)
   }
 
-  def planConditionalApply(lhs: LogicalPlan, rhs: LogicalPlan, idNames: Seq[IdName])
+  def planConditionalApply(lhs: LogicalPlan, rhs: LogicalPlan, predicate: Expression)
                           (implicit context: LogicalPlanningContext): LogicalPlan = {
     val solved = lhs.solved ++ rhs.solved
 
-    ConditionalApply(lhs, rhs, idNames)(solved)
-  }
-
-  def planAntiConditionalApply(inner: LogicalPlan, outer: LogicalPlan, idNames: Seq[IdName])
-                              (implicit context: LogicalPlanningContext): LogicalPlan = {
-    val solved = inner.solved ++ outer.solved
-
-    AntiConditionalApply(inner, outer, idNames)(solved)
+    ConditionalApply(lhs, rhs, predicate)(solved)
   }
 
   def planDeleteNode(inner: LogicalPlan, delete: DeleteExpression)
