@@ -19,9 +19,10 @@
  */
 package org.neo4j.unsafe.impl.batchimport.input;
 
-import java.io.IOException;
 import java.io.OutputStream;
 import java.util.function.Function;
+
+import org.neo4j.io.NullOutputStream;
 
 /**
  * Common implementations of {@link Collector}
@@ -35,14 +36,7 @@ public class Collectors
 
     public static Collector silentBadCollector( int tolerance, int collect )
     {
-        return badCollector( new OutputStream()
-        {
-            @Override
-            public void write( int i ) throws IOException
-            {
-                // ignored
-            }
-        }, tolerance, collect );
+        return badCollector( NullOutputStream.NULL_OUTPUT_STREAM, tolerance, collect );
     }
 
     public static Collector badCollector( OutputStream out, int tolerance )

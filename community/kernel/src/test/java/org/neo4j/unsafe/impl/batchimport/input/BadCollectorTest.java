@@ -28,6 +28,7 @@ import java.io.OutputStream;
 
 import org.neo4j.collection.primitive.PrimitiveLongCollections;
 import org.neo4j.collection.primitive.PrimitiveLongSet;
+import org.neo4j.io.NullOutputStream;
 import org.neo4j.io.fs.FileSystemAbstraction;
 import org.neo4j.test.rule.fs.EphemeralFileSystemRule;
 
@@ -207,7 +208,7 @@ public class BadCollectorTest
     public void shouldCollectUnlimitedNumberOfBadEntriesIfToldTo() throws Exception
     {
         // GIVEN
-        BadCollector collector = new BadCollector( new NullOutputStream(), UNLIMITED_TOLERANCE, COLLECT_ALL );
+        BadCollector collector = new BadCollector( NullOutputStream.NULL_OUTPUT_STREAM, UNLIMITED_TOLERANCE, COLLECT_ALL );
 
         // WHEN
         int count = 10_000;
@@ -257,13 +258,5 @@ public class BadCollectorTest
         fileSystem.mkdir( badDataPath.getParentFile() );
         fileSystem.create( badDataPath );
         return badDataPath;
-    }
-
-    private static class NullOutputStream extends OutputStream
-    {
-        @Override
-        public void write( int b ) throws IOException
-        {   // Don't
-        }
     }
 }
