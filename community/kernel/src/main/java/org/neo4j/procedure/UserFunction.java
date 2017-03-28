@@ -86,6 +86,7 @@ import java.lang.annotation.Target;
  * <ul>
  *     <li>{@link org.neo4j.graphdb.GraphDatabaseService}</li>
  *     <li>{@link org.neo4j.logging.Log}</li>
+ *     <li>{@link org.neo4j.procedure.TerminationGuard}</li>
  * </ul>
  *
  * <h2>Lifecycle and state</h2>
