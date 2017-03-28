@@ -78,4 +78,14 @@
     </dependency>
   </dependencies>
 
+  <build>
+    <resources>
+      <resource>
+        <!-- Inject version into properties file -->
+        <directory>src/main/resources</directory>
+        <filtering>true</filtering>
+      </resource>
+    </resources>
+  </build>
+
 </project>
