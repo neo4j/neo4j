@@ -21,23 +21,24 @@ package org.neo4j.tools.dump;
 
 import org.junit.Test;
 
+import java.io.BufferedReader;
 import java.io.ByteArrayOutputStream;
 import java.io.StringReader;
 
-import org.neo4j.collection.primitive.Primitive;
-import org.neo4j.collection.primitive.PrimitiveLongSet;
 import org.neo4j.consistency.RecordType;
 import org.neo4j.consistency.report.InconsistencyMessageLogger;
+import org.neo4j.consistency.store.synthetic.IndexEntry;
+import org.neo4j.kernel.api.index.SchemaIndexProvider;
+import org.neo4j.kernel.api.schema_new.index.NewIndexDescriptorFactory;
+import org.neo4j.kernel.impl.store.record.IndexRule;
 import org.neo4j.kernel.impl.store.record.NodeRecord;
 import org.neo4j.kernel.impl.store.record.PropertyRecord;
 import org.neo4j.kernel.impl.store.record.RelationshipGroupRecord;
 import org.neo4j.kernel.impl.store.record.RelationshipRecord;
 import org.neo4j.logging.FormattedLog;
-import org.neo4j.tools.dump.InconsistencyReportReader.Inconsistencies;
+import org.neo4j.tools.dump.inconsistency.ReportInconsistencies;
 
-import static org.junit.Assert.assertEquals;
-import static org.neo4j.collection.primitive.PrimitiveLongCollections.asSet;
-import static org.neo4j.collection.primitive.PrimitiveLongCollections.iterator;
+import static org.junit.Assert.assertTrue;
 
 public class InconsistencyReportReaderTest
 {
@@ -49,6 +50,9 @@ public class InconsistencyReportReaderTest
         FormattedLog log = FormattedLog.toOutputStream( out );
         InconsistencyMessageLogger logger = new InconsistencyMessageLogger( log );
         long nodeId = 5;
+        long indexNodeId = 7;
+        long nodeNotInTheIndexId = 17;
+        long indexId = 99;
         long relationshipGroupId = 10;
         long relationshipId = 15;
         long propertyId = 20;
@@ -60,45 +64,23 @@ public class InconsistencyReportReaderTest
                 "Some error", "something" );
         logger.error( RecordType.PROPERTY, new PropertyRecord( propertyId ),
                 "Some error", "something" );
+        logger.error( RecordType.INDEX, new IndexEntry( indexNodeId ), "Some index error", "Something wrong with index" );
+        logger.error( RecordType.NODE, new NodeRecord( nodeNotInTheIndexId ), "Some index error",
+                IndexRule.indexRule( indexId, NewIndexDescriptorFactory.forLabel( 1, 2 ), new SchemaIndexProvider.Descriptor( "key", "version" ) ).toString() );
         String text = out.toString();
-        PrimitiveLongSet nodes = Primitive.longSet();
-        PrimitiveLongSet relationships = Primitive.longSet();
-        PrimitiveLongSet relationshipGroups = Primitive.longSet();
-        PrimitiveLongSet properties = Primitive.longSet();
 
         // WHEN
-        InconsistencyReportReader reader = new InconsistencyReportReader( new Inconsistencies()
-        {
-            @Override
-            public void relationshipGroup( long id )
-            {
-                relationshipGroups.add( id );
-            }
-
-            @Override
-            public void relationship( long id )
-            {
-                relationships.add( id );
-            }
-
-            @Override
-            public void property( long id )
-            {
-                properties.add( id );
-            }
-
-            @Override
-            public void node( long id )
-            {
-                nodes.add( id );
-            }
-        } );
-        reader.read( new StringReader( text ) );
+        ReportInconsistencies inconsistencies = new ReportInconsistencies();
+        InconsistencyReportReader reader = new InconsistencyReportReader( inconsistencies );
+        reader.read( new BufferedReader( new StringReader( text ) ) );
 
         // THEN
-        assertEquals( asSet( iterator( nodeId ) ), nodes );
-        assertEquals( asSet( iterator( relationshipId ) ), relationships );
-        assertEquals( asSet( iterator( relationshipGroupId ) ), relationshipGroups );
-        assertEquals( asSet( iterator( propertyId ) ), properties );
+        assertTrue( inconsistencies.containsNodeId( nodeId ) );
+        assertTrue( inconsistencies.containsNodeId( indexNodeId ) );
+        assertTrue( inconsistencies.containsNodeId( nodeNotInTheIndexId ) );
+        assertTrue( inconsistencies.containsRelationshipId( relationshipId ) );
+        assertTrue( inconsistencies.containsRelationshipGroupId( relationshipGroupId ) );
+        assertTrue( inconsistencies.containsPropertyId( propertyId ) );
+        assertTrue( inconsistencies.containsSchemaIndexId( indexId ) );
     }
 }
