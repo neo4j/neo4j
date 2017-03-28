@@ -245,7 +245,22 @@ public class AdminToolTest
     }
 
     @Test
-    public void helpArgumentShouldAlwaysPrintHelp() throws CommandFailed, IncorrectUsage
+    public void helpArgumentPrintsHelp() throws CommandFailed, IncorrectUsage
+    {
+        AdminCommand command = mock( AdminCommand.class );
+        OutsideWorld outsideWorld = mock( OutsideWorld.class );
+
+        new AdminTool( cannedCommand( "command", command ), new NullBlockerLocator(), outsideWorld, false )
+                .execute( null, null, "--help" );
+
+        verifyNoMoreInteractions( command );
+        verify( outsideWorld ).stdErrLine( "unrecognized command: --help" );
+        verify( outsideWorld ).stdErrLine( "usage: neo4j-admin <command>" );
+        verify( outsideWorld ).exit( STATUS_ERROR );
+    }
+
+    @Test
+    public void helpArgumentPrintsHelpForCommand() throws CommandFailed, IncorrectUsage
     {
         AdminCommand command = mock( AdminCommand.class );
         OutsideWorld outsideWorld = mock( OutsideWorld.class );

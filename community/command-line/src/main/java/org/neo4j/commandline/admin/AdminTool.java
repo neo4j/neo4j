@@ -105,6 +105,12 @@ public class AdminTool
                 return;
             }
 
+            if ( provider == null )
+            {
+                badUsage( format( "unrecognized command: %s", name ) );
+                return;
+            }
+
             if ( Args.parse( commandArgs ).has( "help" ) )
             {
                 outsideWorld.stdErrLine( "unknown argument: --help" );
