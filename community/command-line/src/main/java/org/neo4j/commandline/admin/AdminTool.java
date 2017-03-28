@@ -29,6 +29,7 @@ import java.util.function.Supplier;
 import org.neo4j.helpers.Args;
 
 import static java.lang.String.format;
+import static org.neo4j.commandline.Util.neo4jVersion;
 
 public class AdminTool
 {
@@ -75,6 +76,14 @@ public class AdminTool
                 badUsage( "you must provide a command" );
                 return;
             }
+
+            if ( Args.parse( args ).has( "version") )
+            {
+                outsideWorld.stdOutLine( "neo4j-admin " + neo4jVersion() );
+                success();
+                return;
+            }
+
             String name = args[0];
             String[] commandArgs = Arrays.copyOfRange( args, 1, args.length );
 
