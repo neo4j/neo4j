@@ -52,8 +52,7 @@ public final class IndexMap implements Cloneable
         this( new HashMap<>(), new HashMap<>(), new HashMap<>() );
     }
 
-    public IndexMap(
-            Map<Long, IndexProxy> indexesById )
+    IndexMap( Map<Long,IndexProxy> indexesById )
     {
         this( indexesById, indexesByDescriptor( indexesById ), indexIdsByDescriptor( indexesById ) );
     }

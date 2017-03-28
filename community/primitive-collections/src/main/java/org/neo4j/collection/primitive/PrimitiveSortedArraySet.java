@@ -41,6 +41,8 @@ public class PrimitiveSortedArraySet
      *         a set of integers, represented as a sorted array.
      * @return a set of integers, represented as a sorted array.
      */
+    // NOTE: this implementation was measured to be faster than an implementation
+    // with countUnique for arrays on size 100+.
     public static int[] union( int[] lhs, int[] rhs )
     {
         if ( lhs == null || rhs == null )
@@ -112,10 +114,10 @@ public class PrimitiveSortedArraySet
     }
 
     /**
-     * Compute intersection of two sorted long array sets.
+     * Compute the intersection of two sorted long array sets.
      * @param left a sorted array set
      * @param right another sorted array set
-     * @return the intersection, which is also sorted
+     * @return the intersection, represented as a sorted long array
      */
     public static long[] intersect( long[] left, long[] right )
     {
@@ -164,7 +166,7 @@ public class PrimitiveSortedArraySet
      * Compute the symmetric difference (set XOR basically) of two sorted long array sets.
      * @param left a sorted array set
      * @param right another sorted array set
-     * @return the union, which is NOT sorted
+     * @return the symmetric difference, represented as a sorted long array
      */
     public static long[] symmetricDifference( long[] left, long[] right )
     {
