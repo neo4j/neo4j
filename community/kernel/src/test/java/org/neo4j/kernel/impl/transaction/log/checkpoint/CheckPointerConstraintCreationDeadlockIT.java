@@ -117,7 +117,15 @@ public class CheckPointerConstraintCreationDeadlockIT
             Future<Object> checkPointer = t3.execute( state ->
                     db.getDependencyResolver().resolveDependency( CheckPointer.class )
                             .forceCheckPoint( new SimpleTriggerInfo( "MANUAL" ) ) );
-            t3.get().waitUntilWaiting( details -> details.isAt( LockWrapper.class, "writeLock" ) );
+            try
+            {
+                t3.get().waitUntilWaiting( details -> details.isAt( LockWrapper.class, "writeLock" ) );
+            }
+            catch ( IllegalStateException e )
+            {
+                // Thrown when the fix is in, basically it's thrown if the check pointer didn't get blocked
+                checkPointer.get(); // to assert that no exception was thrown during in check point thread
+            }
 
             // Alright the trap is set. Let the population thread move on and seal the deal
             controller.release();

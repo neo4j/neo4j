@@ -23,6 +23,7 @@ import java.io.IOException;
 
 import org.neo4j.kernel.impl.store.counts.CountsTracker;
 import org.neo4j.kernel.impl.transaction.command.Command;
+import org.neo4j.kernel.impl.transaction.command.Command.SchemaRuleCommand;
 import org.neo4j.storageengine.api.TransactionApplicationMode;
 
 public class CountsStoreTransactionApplier extends TransactionApplier.Adapter
@@ -40,6 +41,11 @@ public class CountsStoreTransactionApplier extends TransactionApplier.Adapter
     public void close() throws Exception
     {
         assert countsUpdater != null || mode == TransactionApplicationMode.RECOVERY : "You must call begin first";
+        closeCountsUpdaterIfOpen();
+    }
+
+    private void closeCountsUpdaterIfOpen()
+    {
         if ( countsUpdater != null )
         {   // CountsUpdater is null if we're in recovery and the counts store already has had this transaction applied.
             countsUpdater.close();
@@ -66,6 +72,17 @@ public class CountsStoreTransactionApplier extends TransactionApplier.Adapter
             countsUpdater.incrementRelationshipCount(
                     command.startLabelId(), command.typeId(), command.endLabelId(), command.delta() );
         }
+        return false;
+    }
+
+    @Override
+    public boolean visitSchemaRuleCommand( SchemaRuleCommand command ) throws IOException
+    {
+        // This shows that this transaction is a schema transaction, so it cannot have commands
+        // updating any counts anyway. Therefore the counts updater is closed right away.
+        // This also breaks an otherwise deadlocking scenario between check pointer, this applier
+        // and an index population thread wanting to apply index sampling to the counts store.
+        closeCountsUpdaterIfOpen();
         return false;
     }
 }
