@@ -32,6 +32,7 @@ import java.util.Iterator;
 import java.util.Map;
 
 import org.neo4j.helpers.collection.Iterators;
+import org.neo4j.kernel.api.AssertOpen;
 import org.neo4j.kernel.api.index.IndexDescriptor;
 import org.neo4j.kernel.api.index.InternalIndexState;
 import org.neo4j.kernel.api.txstate.TransactionState;
@@ -266,7 +267,7 @@ public class SchemaTransactionStateTest
         Map<Integer, Collection<Long>> allLabels = new HashMap<>();
         for ( Labels nodeLabels : labels )
         {
-            when( storeStatement.acquireSingleNodeCursor( eq( nodeLabels.nodeId ), any( Runnable.class ) ) ).thenReturn(
+            when( storeStatement.acquireSingleNodeCursor( eq( nodeLabels.nodeId ), any( AssertOpen.class ) ) ).thenReturn(
                     StubCursors.asNodeCursor( nodeLabels.nodeId,
                             Cursors.<PropertyItem>empty(), StubCursors.asLabelCursor( nodeLabels.labelIds ) ) );
 

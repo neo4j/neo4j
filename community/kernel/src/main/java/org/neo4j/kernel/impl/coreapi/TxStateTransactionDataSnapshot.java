@@ -36,6 +36,7 @@ import org.neo4j.graphdb.event.PropertyEntry;
 import org.neo4j.graphdb.event.TransactionData;
 import org.neo4j.helpers.collection.IterableWrapper;
 import org.neo4j.kernel.api.KernelTransaction;
+import org.neo4j.kernel.api.AssertOpen;
 import org.neo4j.kernel.api.exceptions.EntityNotFoundException;
 import org.neo4j.kernel.api.exceptions.LabelNotFoundKernelException;
 import org.neo4j.kernel.api.exceptions.PropertyKeyIdNotFoundKernelException;
@@ -203,7 +204,7 @@ public class TxStateTransactionDataSnapshot implements TransactionData
         {
             for ( Long nodeId : state.addedAndRemovedNodes().getRemoved() )
             {
-                try ( Cursor<NodeItem> node = storeStatement.acquireSingleNodeCursor( nodeId, () -> {} ) )
+                try ( Cursor<NodeItem> node = storeStatement.acquireSingleNodeCursor( nodeId, AssertOpen.ALWAYS_OPEN ) )
                 {
                     if ( node.next() )
                     {
@@ -232,7 +233,7 @@ public class TxStateTransactionDataSnapshot implements TransactionData
             {
                 Relationship relationshipProxy = relationship( relId );
                 try ( Cursor<RelationshipItem> relationship =
-                              storeStatement.acquireSingleRelationshipCursor( relId, () -> {} ) )
+                              storeStatement.acquireSingleRelationshipCursor( relId, AssertOpen.ALWAYS_OPEN ) )
                 {
                     if ( relationship.next() )
                     {
@@ -360,7 +361,7 @@ public class TxStateTransactionDataSnapshot implements TransactionData
             return null;
         }
 
-        try ( Cursor<NodeItem> node = storeStatement.acquireSingleNodeCursor( nodeState.getId(), () -> {} ) )
+        try ( Cursor<NodeItem> node = storeStatement.acquireSingleNodeCursor( nodeState.getId(), AssertOpen.ALWAYS_OPEN ) )
         {
             if ( !node.next() )
             {
@@ -387,7 +388,7 @@ public class TxStateTransactionDataSnapshot implements TransactionData
         }
 
         try ( Cursor<RelationshipItem> relationship = storeStatement.acquireSingleRelationshipCursor(
-                relState.getId(), () -> {} ) )
+                relState.getId(), AssertOpen.ALWAYS_OPEN ) )
         {
             if ( !relationship.next() )
             {

@@ -32,6 +32,7 @@ import org.neo4j.cursor.Cursor;
 import org.neo4j.helpers.collection.Iterables;
 import org.neo4j.helpers.collection.Iterators;
 import org.neo4j.kernel.api.DataWriteOperations;
+import org.neo4j.kernel.api.AssertOpen;
 import org.neo4j.kernel.api.constraints.NodePropertyConstraint;
 import org.neo4j.kernel.api.constraints.PropertyConstraint;
 import org.neo4j.kernel.api.constraints.UniquenessConstraint;
@@ -98,7 +99,7 @@ public class StateHandlingStatementOperationsTest
         when( state.txState() ).thenReturn( new TxState() );
         StoreStatement storeStatement = mock( StoreStatement.class );
         when( state.getStoreStatement() ).thenReturn( storeStatement );
-        when( storeStatement.acquireSingleNodeCursor( anyLong(), any( Runnable.class ) ) ).
+        when( storeStatement.acquireSingleNodeCursor( anyLong(), any( AssertOpen.class ) ) ).
                 thenReturn( asNodeCursor( 0 ) );
 
         StateHandlingStatementOperations ctx = newTxStateOps( inner );
@@ -110,7 +111,7 @@ public class StateHandlingStatementOperationsTest
         ctx.nodeRemoveLabel( state, 0, 0 );
 
         // one for add and one for remove
-        verify( storeStatement, times( 2 ) ).acquireSingleNodeCursor( eq( 0L ), any( Runnable.class ) );
+        verify( storeStatement, times( 2 ) ).acquireSingleNodeCursor( eq( 0L ), any( AssertOpen.class ) );
         verifyNoMoreInteractions( storeStatement );
     }
 
@@ -338,7 +339,7 @@ public class StateHandlingStatementOperationsTest
         when( indexReader.rangeSeekByNumberInclusive( lower, upper ) ).thenReturn(
                 PrimitiveLongCollections.resourceIterator( PrimitiveLongCollections.iterator( 43L, 44L, 46L ), null )
         );
-        when( storageStatement.acquireSingleNodeCursor( anyLong(), any( Runnable.class ) ) ).thenAnswer(
+        when( storageStatement.acquireSingleNodeCursor( anyLong(), any( AssertOpen.class ) ) ).thenAnswer(
                 new Answer<Cursor<NodeItem>>()
                 {
                     @Override
@@ -442,7 +443,7 @@ public class StateHandlingStatementOperationsTest
         KernelStatement kernelStatement = mock( KernelStatement.class );
         StoreStatement storeStatement = mock( StoreStatement.class );
         Cursor<NodeItem> ourNode = nodeCursorWithProperty( propertyKeyId, value );
-        when( storeStatement.acquireSingleNodeCursor( nodeId ) ).thenReturn( ourNode );
+        when( storeStatement.acquireSingleNodeCursor( nodeId, kernelStatement ) ).thenReturn( ourNode );
         when( kernelStatement.getStoreStatement() ).thenReturn( storeStatement );
         InternalAutoIndexing autoIndexing = mock( InternalAutoIndexing.class );
         AutoIndexOperations autoIndexOps = mock( AutoIndexOperations.class );
@@ -471,7 +472,8 @@ public class StateHandlingStatementOperationsTest
         KernelStatement kernelStatement = mock( KernelStatement.class );
         StoreStatement storeStatement = mock( StoreStatement.class );
         Cursor<RelationshipItem> ourRelationship = relationshipCursorWithProperty( propertyKeyId, value );
-        when( storeStatement.acquireSingleRelationshipCursor( relationshipId ) ).thenReturn( ourRelationship );
+        when( storeStatement.acquireSingleRelationshipCursor( relationshipId, kernelStatement ) )
+                .thenReturn( ourRelationship );
         when( kernelStatement.getStoreStatement() ).thenReturn( storeStatement );
         InternalAutoIndexing autoIndexing = mock( InternalAutoIndexing.class );
         AutoIndexOperations autoIndexOps = mock( AutoIndexOperations.class );

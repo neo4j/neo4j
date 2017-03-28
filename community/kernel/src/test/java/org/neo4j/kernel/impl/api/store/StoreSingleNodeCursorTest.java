@@ -36,6 +36,7 @@ import org.neo4j.graphdb.Node;
 import org.neo4j.graphdb.RelationshipType;
 import org.neo4j.graphdb.Transaction;
 import org.neo4j.graphdb.factory.GraphDatabaseSettings;
+import org.neo4j.kernel.api.AssertOpen;
 import org.neo4j.kernel.impl.core.RelationshipTypeTokenHolder;
 import org.neo4j.kernel.impl.core.TokenNotFoundException;
 import org.neo4j.kernel.impl.storageengine.impl.recordstorage.RecordStorageEngine;
@@ -623,7 +624,7 @@ public class StoreSingleNodeCursorTest
                 mock( StoreStatement.class ), mock( Consumer.class ), new RecordCursors( resolveNeoStores() ),
                 NO_LOCK_SERVICE );
 
-        cursor.init( nodeId, () -> {} );
+        cursor.init( nodeId, AssertOpen.ALWAYS_OPEN );
         assertTrue( cursor.next() );
 
         return cursor;

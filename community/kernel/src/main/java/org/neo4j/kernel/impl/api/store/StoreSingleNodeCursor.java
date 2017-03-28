@@ -21,6 +21,7 @@ package org.neo4j.kernel.impl.api.store;
 
 import java.util.function.Consumer;
 
+import org.neo4j.kernel.api.AssertOpen;
 import org.neo4j.kernel.api.StatementConstants;
 import org.neo4j.kernel.impl.locking.LockService;
 import org.neo4j.kernel.impl.store.NeoStores;
@@ -48,9 +49,9 @@ public class StoreSingleNodeCursor extends StoreAbstractNodeCursor
         this.instanceCache = instanceCache;
     }
 
-    public StoreSingleNodeCursor init( long nodeId, Runnable assertOnPropertyValueFetch )
+    public StoreSingleNodeCursor init( long nodeId, AssertOpen assertOpen )
     {
-        initialize( assertOnPropertyValueFetch );
+        initialize( assertOpen );
         this.nodeId = nodeId;
         return this;
     }

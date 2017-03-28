@@ -28,6 +28,7 @@ import org.neo4j.collection.primitive.PrimitiveLongCollections;
 import org.neo4j.collection.primitive.PrimitiveLongIterator;
 import org.neo4j.collection.primitive.PrimitiveLongResourceIterator;
 import org.neo4j.graphdb.Resource;
+import org.neo4j.kernel.api.AssertOpen;
 import org.neo4j.kernel.api.constraints.NodePropertyConstraint;
 import org.neo4j.kernel.api.index.IndexDescriptor;
 import org.neo4j.kernel.api.index.InternalIndexState;
@@ -118,7 +119,7 @@ public class IndexQueryTransactionStateTest
         long nodeId = 2L;
         when( indexReader.seek( value ) ).then( answerAsPrimitiveLongIteratorFrom( asList( 1L, nodeId, 3L ) ) );
 
-        when( statement.acquireSingleNodeCursor( eq( nodeId ), any( Runnable.class ) ) )
+        when( statement.acquireSingleNodeCursor( eq( nodeId ), any( AssertOpen.class ) ) )
                 .thenReturn( asNodeCursor( nodeId ) );
 
         txContext.nodeDelete( state, nodeId );
@@ -137,7 +138,7 @@ public class IndexQueryTransactionStateTest
         long nodeId = 1L;
         when( indexReader.seek( value ) ).thenReturn( asPrimitiveResourceIterator( nodeId ) );
 
-        when( statement.acquireSingleNodeCursor( eq( nodeId ), any( Runnable.class ) ) )
+        when( statement.acquireSingleNodeCursor( eq( nodeId ), any( AssertOpen.class ) ) )
                 .thenReturn( asNodeCursor( nodeId ) );
 
         txContext.nodeDelete( state, nodeId );
@@ -190,7 +191,7 @@ public class IndexQueryTransactionStateTest
         state.txState().nodeDoReplaceProperty( nodeId, noNodeProperty( nodeId, propertyKeyId ),
                 stringProperty( propertyKeyId, value ) );
 
-        when( statement.acquireSingleNodeCursor( eq( nodeId ), any( Runnable.class ) ) ).thenReturn(
+        when( statement.acquireSingleNodeCursor( eq( nodeId ), any( AssertOpen.class ) ) ).thenReturn(
                 asNodeCursor( nodeId,
                         asPropertyCursor( stringProperty( propertyKeyId, value ) ),
                         Cursors.<LabelItem>empty() ) );
@@ -214,7 +215,7 @@ public class IndexQueryTransactionStateTest
         state.txState().nodeDoReplaceProperty( nodeId, noNodeProperty( nodeId, propertyKeyId ),
                 stringProperty( propertyKeyId, value ) );
 
-        when( statement.acquireSingleNodeCursor( eq( nodeId ), any( Runnable.class ) ) ).thenReturn(
+        when( statement.acquireSingleNodeCursor( eq( nodeId ), any( AssertOpen.class ) ) ).thenReturn(
                 asNodeCursor( nodeId,
                         asPropertyCursor( stringProperty( propertyKeyId, value ) ),
                         Cursors.<LabelItem>empty() ) );
@@ -236,7 +237,7 @@ public class IndexQueryTransactionStateTest
 
         long nodeId = 1L;
 
-        when( statement.acquireSingleNodeCursor( eq( nodeId ), any( Runnable.class ) ) ).thenReturn(
+        when( statement.acquireSingleNodeCursor( eq( nodeId ), any( AssertOpen.class ) ) ).thenReturn(
                 asNodeCursor( nodeId,
                         asPropertyCursor( stringProperty( propertyKeyId, value ) ),
                         asLabelCursor() ) );
@@ -258,7 +259,7 @@ public class IndexQueryTransactionStateTest
 
         long nodeId = 2L;
 
-        when( statement.acquireSingleNodeCursor( eq( nodeId ), any( Runnable.class ) ) ).thenReturn(
+        when( statement.acquireSingleNodeCursor( eq( nodeId ), any( AssertOpen.class ) ) ).thenReturn(
                 asNodeCursor( nodeId,
                         asPropertyCursor( stringProperty( propertyKeyId, value ) ),
                         asLabelCursor() ) );
@@ -279,7 +280,7 @@ public class IndexQueryTransactionStateTest
         long nodeId = 1L;
         when( indexReader.seek( value ) ).then( answerAsPrimitiveLongIteratorFrom( asList( nodeId, 2L, 3L ) ) );
 
-        when( statement.acquireSingleNodeCursor( eq( nodeId ), any( Runnable.class ) ) ).thenReturn(
+        when( statement.acquireSingleNodeCursor( eq( nodeId ), any( AssertOpen.class ) ) ).thenReturn(
                 asNodeCursor( nodeId,
                         asPropertyCursor( stringProperty( propertyKeyId, value ) ),
                         asLabelCursor( labelId ) ) );
@@ -300,7 +301,7 @@ public class IndexQueryTransactionStateTest
         long nodeId = 1L;
         when( indexReader.seek( value ) ).thenReturn( asPrimitiveResourceIterator( nodeId ) );
 
-        when( statement.acquireSingleNodeCursor( eq( nodeId ), any( Runnable.class ) ) ).thenReturn(
+        when( statement.acquireSingleNodeCursor( eq( nodeId ), any( AssertOpen.class ) ) ).thenReturn(
                 asNodeCursor( nodeId,
                         asPropertyCursor( stringProperty( propertyKeyId, value ) ),
                         asLabelCursor( labelId ) ) );
@@ -324,7 +325,7 @@ public class IndexQueryTransactionStateTest
         state.txState().nodeDoReplaceProperty( nodeId, Property.noNodeProperty( nodeId, propertyKeyId ),
                 Property.intProperty( propertyKeyId, 10 ) );
 
-        when( statement.acquireSingleNodeCursor( eq( nodeId ), any( Runnable.class ) ) ).thenReturn(
+        when( statement.acquireSingleNodeCursor( eq( nodeId ), any( AssertOpen.class ) ) ).thenReturn(
                 asNodeCursor( nodeId,
                         asPropertyCursor(),
                         asLabelCursor( labelId ) ) );
@@ -345,7 +346,7 @@ public class IndexQueryTransactionStateTest
         long nodeId = 1L;
         when( indexReader.seek( value ) ).thenReturn( asPrimitiveResourceIterator( nodeId ) );
 
-        when( statement.acquireSingleNodeCursor( eq( nodeId ), any( Runnable.class ) ) ).thenReturn(
+        when( statement.acquireSingleNodeCursor( eq( nodeId ), any( AssertOpen.class ) ) ).thenReturn(
                 asNodeCursor( nodeId,
                         asPropertyCursor( stringProperty( propertyKeyId, value ) ),
                         asLabelCursor( labelId ) ) );

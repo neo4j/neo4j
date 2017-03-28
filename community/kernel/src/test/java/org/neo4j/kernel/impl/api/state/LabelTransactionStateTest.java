@@ -31,6 +31,7 @@ import java.util.Map;
 import org.neo4j.collection.primitive.PrimitiveIntCollections;
 import org.neo4j.collection.primitive.PrimitiveLongCollections;
 import org.neo4j.cursor.Cursor;
+import org.neo4j.kernel.api.AssertOpen;
 import org.neo4j.kernel.api.exceptions.EntityNotFoundException;
 import org.neo4j.kernel.api.index.IndexDescriptor;
 import org.neo4j.kernel.api.txstate.TransactionState;
@@ -246,7 +247,7 @@ public class LabelTransactionStateTest
     public void should_return_true_when_adding_new_label() throws Exception
     {
         // GIVEN
-        when( storeStatement.acquireSingleNodeCursor( eq( 1337L ), any( Runnable.class ) ) )
+        when( storeStatement.acquireSingleNodeCursor( eq( 1337L ), any( AssertOpen.class ) ) )
                 .thenReturn( asNodeCursor( 1337 ) );
 
         // WHEN
@@ -260,7 +261,7 @@ public class LabelTransactionStateTest
     public void should_return_false_when_adding_existing_label() throws Exception
     {
         // GIVEN
-        when( storeStatement.acquireSingleNodeCursor( eq( 1337L ), any( Runnable.class ) ) )
+        when( storeStatement.acquireSingleNodeCursor( eq( 1337L ), any( AssertOpen.class ) ) )
                 .thenReturn( asNodeCursor( 1337, asPropertyCursor(),
                 asLabelCursor( 12 ) ) );
 
@@ -275,7 +276,7 @@ public class LabelTransactionStateTest
     public void should_return_true_when_removing_existing_label() throws Exception
     {
         // GIVEN
-        when( storeStatement.acquireSingleNodeCursor( eq( 1337L ), any( Runnable.class ) ) )
+        when( storeStatement.acquireSingleNodeCursor( eq( 1337L ), any( AssertOpen.class ) ) )
                 .thenReturn( asNodeCursor( 1337, asPropertyCursor(), asLabelCursor( 12 ) ) );
 
         // WHEN
@@ -289,7 +290,7 @@ public class LabelTransactionStateTest
     public void should_return_true_when_removing_non_existant_label() throws Exception
     {
         // GIVEN
-        when( storeStatement.acquireSingleNodeCursor( eq( 1337L ), any( Runnable.class ) ) )
+        when( storeStatement.acquireSingleNodeCursor( eq( 1337L ), any( AssertOpen.class ) ) )
                 .thenReturn( asNodeCursor( 1337 ) );
 
         // WHEN
@@ -333,7 +334,7 @@ public class LabelTransactionStateTest
         Map<Integer,Collection<Long>> allLabels = new HashMap<>();
         for ( Labels nodeLabels : labels )
         {
-            when( storeStatement.acquireSingleNodeCursor( eq( nodeLabels.nodeId ), any( Runnable.class ) ) )
+            when( storeStatement.acquireSingleNodeCursor( eq( nodeLabels.nodeId ), any( AssertOpen.class ) ) )
                     .thenReturn( StubCursors.asNodeCursor(
                             nodeLabels.nodeId, asPropertyCursor(), asLabelCursor( nodeLabels.labelIds ) ) );
 

@@ -24,6 +24,7 @@ import org.mockito.invocation.InvocationOnMock;
 import org.mockito.stubbing.Answer;
 
 import org.neo4j.collection.primitive.PrimitiveLongCollections;
+import org.neo4j.kernel.api.AssertOpen;
 import org.neo4j.kernel.impl.locking.LockService;
 import org.neo4j.kernel.impl.store.DynamicArrayStore;
 import org.neo4j.kernel.impl.store.DynamicStringStore;
@@ -64,7 +65,7 @@ public class StoreIteratorRelationshipCursorTest
         try ( StoreIteratorRelationshipCursor cursor = createRelationshipCursor( relationshipRecord,
                 relationshipStore ) )
         {
-            cursor.init( PrimitiveLongCollections.iterator( RELATIONSHIP_ID ), () -> {} );
+            cursor.init( PrimitiveLongCollections.iterator( RELATIONSHIP_ID ), AssertOpen.ALWAYS_OPEN );
             assertTrue( cursor.next() );
             assertEquals( RELATIONSHIP_ID, cursor.get().id() );
         }
@@ -82,7 +83,7 @@ public class StoreIteratorRelationshipCursorTest
         try ( StoreIteratorRelationshipCursor cursor = createRelationshipCursor( relationshipRecord,
                 relationshipStore ) )
         {
-            cursor.init( PrimitiveLongCollections.iterator( RELATIONSHIP_ID ), () -> {} );
+            cursor.init( PrimitiveLongCollections.iterator( RELATIONSHIP_ID ), AssertOpen.ALWAYS_OPEN );
             assertTrue( cursor.next() );
             assertEquals( RELATIONSHIP_ID, cursor.get().id() );
         }

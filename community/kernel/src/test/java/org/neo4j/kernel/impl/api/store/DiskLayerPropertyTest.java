@@ -24,6 +24,7 @@ import org.junit.Test;
 import java.lang.reflect.Array;
 
 import org.neo4j.cursor.Cursor;
+import org.neo4j.kernel.api.AssertOpen;
 import org.neo4j.kernel.api.properties.Property;
 import org.neo4j.kernel.impl.api.operations.KeyReadOperations;
 import org.neo4j.storageengine.api.NodeItem;
@@ -95,7 +96,7 @@ public class DiskLayerPropertyTest extends DiskLayerTest
             long nodeId = createLabeledNode( db, singletonMap( "prop", value ), label1 ).getId();
 
             // when
-            try ( Cursor<NodeItem> node = statement.acquireSingleNodeCursor( nodeId, () -> {} ) )
+            try ( Cursor<NodeItem> node = statement.acquireSingleNodeCursor( nodeId, AssertOpen.ALWAYS_OPEN ) )
             {
                 node.next();
 

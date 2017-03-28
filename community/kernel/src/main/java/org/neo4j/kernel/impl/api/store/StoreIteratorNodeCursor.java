@@ -23,6 +23,7 @@ import java.util.function.Consumer;
 
 import org.neo4j.collection.primitive.PrimitiveLongIterator;
 import org.neo4j.graphdb.Resource;
+import org.neo4j.kernel.api.AssertOpen;
 import org.neo4j.kernel.impl.locking.LockService;
 import org.neo4j.kernel.impl.store.NeoStores;
 import org.neo4j.kernel.impl.store.RecordCursors;
@@ -50,9 +51,9 @@ public class StoreIteratorNodeCursor extends StoreAbstractNodeCursor
         this.instanceCache = instanceCache;
     }
 
-    public StoreIteratorNodeCursor init( PrimitiveLongIterator iterator, Runnable assertOnPropertyValueFetch )
+    public StoreIteratorNodeCursor init( PrimitiveLongIterator iterator, AssertOpen assertOpen )
     {
-        initialize( assertOnPropertyValueFetch );
+        initialize( assertOpen );
         this.iterator = iterator;
         return this;
     }

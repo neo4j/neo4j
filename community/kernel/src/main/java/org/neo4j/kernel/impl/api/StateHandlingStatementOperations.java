@@ -147,7 +147,7 @@ public class StateHandlingStatementOperations implements
     @Override
     public Cursor<NodeItem> nodeCursor( KernelStatement statement, long nodeId )
     {
-        Cursor<NodeItem> cursor = statement.getStoreStatement().acquireSingleNodeCursor( nodeId, statement::assertOpen );
+        Cursor<NodeItem> cursor = statement.getStoreStatement().acquireSingleNodeCursor( nodeId, statement );
         if ( statement.hasTxStateWithChanges() )
         {
             return statement.txState().augmentSingleNodeCursor( cursor, nodeId );
@@ -172,7 +172,7 @@ public class StateHandlingStatementOperations implements
     public Cursor<RelationshipItem> relationshipCursor( KernelStatement statement, long relationshipId )
     {
         Cursor<RelationshipItem> cursor = statement.getStoreStatement().acquireSingleRelationshipCursor(
-                relationshipId, statement::assertOpen );
+                relationshipId, statement );
         if ( statement.hasTxStateWithChanges() )
         {
             return statement.txState().augmentSingleRelationshipCursor( cursor, relationshipId );
@@ -183,7 +183,7 @@ public class StateHandlingStatementOperations implements
     @Override
     public Cursor<NodeItem> nodeCursorGetAll( KernelStatement statement )
     {
-        Cursor<NodeItem> cursor = statement.getStoreStatement().nodesGetAllCursor( statement::assertOpen );
+        Cursor<NodeItem> cursor = statement.getStoreStatement().nodesGetAllCursor( statement );
         if ( statement.hasTxStateWithChanges() )
         {
             return statement.txState().augmentNodesGetAllCursor( cursor );
@@ -195,7 +195,7 @@ public class StateHandlingStatementOperations implements
     public Cursor<RelationshipItem> relationshipCursorGetAll( KernelStatement statement )
     {
         Cursor<RelationshipItem> cursor =
-                statement.getStoreStatement().relationshipsGetAllCursor( statement::assertOpen );
+                statement.getStoreStatement().relationshipsGetAllCursor( statement );
         if ( statement.hasTxStateWithChanges() )
         {
             return statement.txState().augmentRelationshipsGetAllCursor( cursor );
@@ -209,7 +209,7 @@ public class StateHandlingStatementOperations implements
         // TODO Filter this properly
         StorageStatement storeStatement = statement.getStoreStatement();
         return storeStatement.acquireIteratorNodeCursor(
-                storeLayer.nodesGetForLabel( storeStatement, labelId ), statement::assertOpen );
+                storeLayer.nodesGetForLabel( storeStatement, labelId ), statement );
     }
 
     @Override
@@ -219,7 +219,7 @@ public class StateHandlingStatementOperations implements
         // TODO Filter this properly
         StorageStatement storeStatement = statement.getStoreStatement();
         IndexReader reader = storeStatement.getIndexReader( index );
-        return storeStatement.acquireIteratorNodeCursor( reader.seek( value ), statement::assertOpen );
+        return storeStatement.acquireIteratorNodeCursor( reader.seek( value ), statement );
     }
 
     @Override
@@ -229,7 +229,7 @@ public class StateHandlingStatementOperations implements
         // TODO Filter this properly
         StorageStatement storeStatement = statement.getStoreStatement();
         IndexReader reader = storeStatement.getIndexReader( index );
-        return storeStatement.acquireIteratorNodeCursor( reader.scan(), statement::assertOpen );
+        return storeStatement.acquireIteratorNodeCursor( reader.scan(), statement );
     }
 
     @Override
@@ -240,7 +240,7 @@ public class StateHandlingStatementOperations implements
         // TODO Filter this properly
         StorageStatement storeStatement = statement.getStoreStatement();
         IndexReader reader = storeStatement.getIndexReader( index );
-        return storeStatement.acquireIteratorNodeCursor( reader.rangeSeekByPrefix( prefix ), statement::assertOpen );
+        return storeStatement.acquireIteratorNodeCursor( reader.rangeSeekByPrefix( prefix ), statement );
     }
 
     @Override
@@ -256,7 +256,7 @@ public class StateHandlingStatementOperations implements
         IndexReader reader = storeStatement.getIndexReader( index );
         return COMPARE_NUMBERS.isEmptyRange( lower, includeLower, upper, includeUpper ) ? Cursors.<NodeItem>empty() :
                storeStatement.acquireIteratorNodeCursor(
-                       reader.rangeSeekByNumberInclusive( lower, upper ), statement::assertOpen );
+                       reader.rangeSeekByNumberInclusive( lower, upper ), statement );
     }
 
     @Override
@@ -271,7 +271,7 @@ public class StateHandlingStatementOperations implements
         StorageStatement storeStatement = statement.getStoreStatement();
         IndexReader reader = storeStatement.getIndexReader( index );
         return storeStatement.acquireIteratorNodeCursor(
-                reader.rangeSeekByString( lower, includeLower, upper, includeUpper ), statement::assertOpen );
+                reader.rangeSeekByString( lower, includeLower, upper, includeUpper ), statement );
     }
 
     @Override
@@ -282,7 +282,7 @@ public class StateHandlingStatementOperations implements
         // TODO Filter this properly
         StorageStatement storeStatement = statement.getStoreStatement();
         IndexReader reader = storeStatement.getIndexReader( index );
-        return storeStatement.acquireIteratorNodeCursor( reader.rangeSeekByPrefix( prefix ), statement::assertOpen );
+        return storeStatement.acquireIteratorNodeCursor( reader.rangeSeekByPrefix( prefix ), statement );
     }
 
     @Override
@@ -294,7 +294,7 @@ public class StateHandlingStatementOperations implements
         StorageStatement storeStatement = statement.getStoreStatement();
         IndexReader reader = storeStatement.getFreshIndexReader( index );
         PrimitiveLongIterator seekResult = PrimitiveLongCollections.resourceIterator( reader.seek( value ), reader );
-        return storeStatement.acquireIteratorNodeCursor( seekResult, statement::assertOpen );
+        return storeStatement.acquireIteratorNodeCursor( seekResult, statement );
     }
 
     // </Cursors>
