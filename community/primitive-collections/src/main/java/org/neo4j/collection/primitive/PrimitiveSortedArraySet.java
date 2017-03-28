@@ -32,15 +32,16 @@ public class PrimitiveSortedArraySet
      *         a set of integers, represented as a sorted array.
      * @return a set of integers, represented as a sorted array.
      */
-    public static int[] mergeSortedSet( int[] lhs, int[] rhs )
+    public static int[] union( int[] lhs, int[] rhs )
     {
         if ( lhs.length < rhs.length )
         {
-            return mergeSortedSet( rhs, lhs );
+            return union( rhs, lhs );
         }
         int[] merged = null;
         int m = 0;
-        for ( int l = 0, r = 0; l < lhs.length && r < rhs.length; )
+        int l = 0;
+        for ( int r = 0; l < lhs.length && r < rhs.length; )
         {
             while ( l < lhs.length && lhs[l] < rhs[r] )
             {
@@ -84,7 +85,12 @@ public class PrimitiveSortedArraySet
         {
             return lhs;
         }
-        if ( merged.length < m )
+        if ( l < lhs.length ) // get tail of lhs
+        {
+            System.arraycopy( lhs, l, merged, m, lhs.length - l );
+            m += lhs.length - l;
+        }
+        if ( m < merged.length ) // truncate extra elements
         {
             merged = Arrays.copyOf( merged, m );
         }
