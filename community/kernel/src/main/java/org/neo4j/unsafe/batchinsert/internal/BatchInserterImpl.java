@@ -49,7 +49,6 @@ import org.neo4j.helpers.collection.Iterables;
 import org.neo4j.helpers.collection.IteratorWrapper;
 import org.neo4j.helpers.collection.Iterators;
 import org.neo4j.helpers.collection.Visitor;
-import org.neo4j.io.IOUtils;
 import org.neo4j.io.fs.FileSystemAbstraction;
 import org.neo4j.io.pagecache.PageCache;
 import org.neo4j.io.pagecache.tracing.PageCacheTracer;
@@ -219,7 +218,6 @@ public class BatchInserterImpl implements BatchInserter, IndexConfigStoreProvide
     private final Locks.Client noopLockClient = new NoOpClient();
     private final long maxNodeId;
     private final RecordCursors cursors;
-    private final List<Closeable> resources = new ArrayList<>();
 
     public BatchInserterImpl( final File storeDir, final FileSystemAbstraction fileSystem,
                        Map<String, String> stringParams, Iterable<KernelExtensionFactory<?>> kernelExtensions ) throws IOException
@@ -498,19 +496,19 @@ public class BatchInserterImpl implements BatchInserter, IndexConfigStoreProvide
                 .flatMapToInt( d -> Arrays.stream( d.getPropertyIds() ) )
                 .toArray();
 
-        InitialNodeLabelCreationVisitor labelUpdateVisitor = new InitialNodeLabelCreationVisitor();
-        resources.add( labelUpdateVisitor );
-        StoreScan<IOException> storeScan = indexStoreView.visitNodes( labelIds,
-                (propertyKeyId) -> PrimitiveIntCollections.contains( propertyKeyIds, propertyKeyId ),
-                propertyUpdateVisitor, labelUpdateVisitor, true );
-        storeScan.run();
-
-        for ( IndexPopulatorWithSchema populator : populators )
+        try ( InitialNodeLabelCreationVisitor labelUpdateVisitor = new InitialNodeLabelCreationVisitor() )
         {
-            populator.verifyDeferredConstraints( indexStoreView );
-            populator.close( true );
+            StoreScan<IOException> storeScan = indexStoreView.visitNodes( labelIds,
+                    ( propertyKeyId ) -> PrimitiveIntCollections.contains( propertyKeyIds, propertyKeyId ),
+                    propertyUpdateVisitor, labelUpdateVisitor, true );
+            storeScan.run();
+
+            for ( IndexPopulatorWithSchema populator : populators )
+            {
+                populator.verifyDeferredConstraints( indexStoreView );
+                populator.close( true );
+            }
         }
-        labelUpdateVisitor.close();
     }
 
     private void rebuildCounts()
@@ -972,7 +970,6 @@ public class BatchInserterImpl implements BatchInserter, IndexConfigStoreProvide
         {
             cursors.close();
             neoStores.close();
-            IOUtils.closeAll( RuntimeException.class, resources.toArray( new Closeable[resources.size()] ) );
 
             try
             {
