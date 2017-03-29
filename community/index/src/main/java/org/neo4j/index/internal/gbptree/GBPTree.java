@@ -290,9 +290,9 @@ public class GBPTree<KEY,VALUE> implements Closeable
 
     /**
      * Whether or not this tree has been closed. Accessed and changed solely in
-     * {@link #close()} and {@link #close(Consumer)} to be able to close tree multiple times gracefully.
+     * {@link #close()} to be able to close tree multiple times gracefully.
      */
-    private boolean closed;
+    private volatile boolean closed;
 
     /**
      * Opens an index {@code indexFile} in the {@code pageCache}, creating and initializing it if it doesn't exist.
@@ -669,10 +669,11 @@ public class GBPTree<KEY,VALUE> implements Closeable
      * @param ioLimiter for controlling I/O usage.
      * @param headerWriter hook for writing header data.
      * @throws IOException on error flushing to storage.
+     * @return {@code true} if checkpoint had anything to write
      */
-    public void checkpoint( IOLimiter ioLimiter, Consumer<PageCursor> headerWriter ) throws IOException
+    public boolean checkpoint( IOLimiter ioLimiter, Consumer<PageCursor> headerWriter ) throws IOException
     {
-        checkpoint( ioLimiter, replace( headerWriter ) );
+        return checkpoint( ioLimiter, replace( headerWriter ) );
     }
 
     /**
@@ -683,17 +684,17 @@ public class GBPTree<KEY,VALUE> implements Closeable
      * @throws IOException on error flushing to storage.
      * @see #checkpoint(IOLimiter, Consumer)
      */
-    public void checkpoint( IOLimiter ioLimiter ) throws IOException
+    public boolean checkpoint( IOLimiter ioLimiter ) throws IOException
     {
-        checkpoint( ioLimiter, CARRY_OVER_PREVIOUS_HEADER );
+        return checkpoint( ioLimiter, CARRY_OVER_PREVIOUS_HEADER );
     }
 
-    private void checkpoint( IOLimiter ioLimiter, Header.Writer headerWriter ) throws IOException
+    private boolean checkpoint( IOLimiter ioLimiter, Header.Writer headerWriter ) throws IOException
     {
         if ( !changesSinceLastCheckpoint && headerWriter == CARRY_OVER_PREVIOUS_HEADER )
         {
             // No changes has happened since last checkpoint was called, no need to do another checkpoint
-            return;
+            return false;
         }
 
         // Flush dirty pages of the tree, do this before acquiring the lock so that writers won't be
@@ -731,59 +732,32 @@ public class GBPTree<KEY,VALUE> implements Closeable
             // the new unstable generation.
             writerCheckpointMutex.unlock();
         }
+        return true;
     }
 
     /**
-     * Closes this tree and its associated resources. A {@link #checkpoint(IOLimiter)} is first performed
-     * as part of this call if there have been changes since last call to {@link #checkpoint(IOLimiter)}
-     * or since opening this tree.
+     * Closes this tree and its associated resources.
+     * <p>
+     * NOTE: No {@link #checkpoint(IOLimiter) checkpoint} is performed. To make data
+     * persistent checkpoint needs to be performed manually before calling close.
      *
-     * @throws IOException on error either checkpointing or closing resources.
+     * @throws IOException on error while closing resources.
      */
     @Override
     public void close() throws IOException
     {
-        close( CARRY_OVER_PREVIOUS_HEADER );
-    }
-
-    /**
-     * Closes the {@link GBPTree} also writing header using the supplied writer.
-     *
-     * @param headerWriter hook for writing header data.
-     * @throws IOException on error either checkpointing or closing resources.
-     */
-    public void close( Consumer<PageCursor> headerWriter ) throws IOException
-    {
-        close( replace( headerWriter ) );
-    }
-
-    private void close( Header.Writer headerWriter ) throws IOException
-    {
-        writerCheckpointMutex.lock();
+        if ( closed )
+        {
+            return;
+        }
         try
         {
-            if ( closed )
-            {
-                return;
-            }
-
-            try
-            {
-                writer.close();
-
-                // Perform a checkpoint before closing. If no changes has happened since last checkpoint,
-                // no new checkpoint will be created.
-                checkpoint( IOLimiter.unlimited(), headerWriter );
-            }
-            finally
-            {
-                closed = true;
-                pagedFile.close();
-            }
+            writer.close();
         }
         finally
         {
-            writerCheckpointMutex.unlock();
+            closed = true;
+            pagedFile.close();
         }
     }
 

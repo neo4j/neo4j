@@ -35,11 +35,13 @@ import org.neo4j.index.internal.gbptree.MetadataMismatchException;
 import org.neo4j.io.pagecache.FileHandle;
 import org.neo4j.io.pagecache.IOLimiter;
 import org.neo4j.io.pagecache.PageCache;
+import org.neo4j.kernel.Health;
 import org.neo4j.kernel.api.labelscan.AllEntriesLabelScanReader;
 import org.neo4j.kernel.api.labelscan.LabelScanStore;
 import org.neo4j.kernel.api.labelscan.LabelScanWriter;
 import org.neo4j.kernel.impl.api.scan.FullStoreChangeStream;
 import org.neo4j.kernel.impl.store.UnderlyingStorageException;
+import org.neo4j.kernel.monitoring.Monitors;
 import org.neo4j.storageengine.api.schema.LabelScanReader;
 
 import static org.neo4j.helpers.Format.duration;
@@ -90,6 +92,11 @@ public class NativeLabelScanStore implements LabelScanStore
     private final Monitor monitor;
 
     /**
+     * Monitors used to pass down monitor to underlying {@link GBPTree}
+     */
+    private final Monitors monitors;
+
+    /**
      * {@link PageCache} to {@link PageCache#map(File, int, java.nio.file.OpenOption...)}
      * store file backing this label scan store. Passed to {@link GBPTree}.
      */
@@ -105,6 +112,11 @@ public class NativeLabelScanStore implements LabelScanStore
      * this label scan store. This can be the case when changing label scan store provider on an existing database.
      */
     private final FullStoreChangeStream fullStoreChangeStream;
+
+    /**
+     * Describe health state for the system this {@link LabelScanStore} is part of.
+     */
+    private final Health health;
 
     /**
      * Page size to use for each tree node in {@link GBPTree}. Passed to {@link GBPTree}.
@@ -138,25 +150,28 @@ public class NativeLabelScanStore implements LabelScanStore
 
     private final NativeLabelScanWriter singleWriter;
 
-    public NativeLabelScanStore( PageCache pageCache, File storeDir,
-            FullStoreChangeStream fullStoreChangeStream, boolean readOnly, Monitor monitor )
+    public NativeLabelScanStore( PageCache pageCache, File storeDir, FullStoreChangeStream fullStoreChangeStream,
+            boolean readOnly, Monitors monitors, Health health )
     {
-        this( pageCache, storeDir, fullStoreChangeStream, readOnly, monitor, 0/*means no opinion about page size*/ );
+        this( pageCache, storeDir, fullStoreChangeStream, readOnly, monitors, health,
+                /*means no opinion about page size*/ 0 );
     }
 
     /*
      * Test access to be able to control page size.
      */
-    NativeLabelScanStore( PageCache pageCache, File storeDir,
-            FullStoreChangeStream fullStoreChangeStream, boolean readOnly, Monitor monitor, int pageSize )
+    NativeLabelScanStore( PageCache pageCache, File storeDir, FullStoreChangeStream fullStoreChangeStream,
+            boolean readOnly, Monitors monitors, Health health, int pageSize )
     {
         this.pageCache = pageCache;
+        this.health = health;
         this.pageSize = pageSize;
         this.fullStoreChangeStream = fullStoreChangeStream;
         this.storeFile = new File( storeDir, FILE_NAME );
         this.singleWriter = new NativeLabelScanWriter( 1_000 );
         this.readOnly = readOnly;
-        this.monitor = monitor;
+        this.monitors = monitors;
+        this.monitor = monitors.newMonitor( Monitor.class );
     }
 
     /**
@@ -323,7 +338,9 @@ public class NativeLabelScanStore implements LabelScanStore
 
     private void instantiateTree() throws IOException
     {
-        index = new GBPTree<>( pageCache, storeFile, new LabelScanLayout(), pageSize, treeMonitor(), NO_HEADER );
+        monitors.addMonitorListener( treeMonitor() );
+        GBPTree.Monitor monitor = monitors.newMonitor( GBPTree.Monitor.class );
+        index = new GBPTree<>( pageCache, storeFile, new LabelScanLayout(), pageSize, monitor, NO_HEADER );
     }
 
     private GBPTree.Monitor treeMonitor()
@@ -426,6 +443,12 @@ public class NativeLabelScanStore implements LabelScanStore
     @Override
     public void shutdown() throws IOException
     {
+        boolean flush = started && health.isHealthy();
+        monitor.flushDuringShutdown( flush );
+        if ( flush )
+        {
+            index.checkpoint( IOLimiter.unlimited() );
+        }
         index.close();
     }
 

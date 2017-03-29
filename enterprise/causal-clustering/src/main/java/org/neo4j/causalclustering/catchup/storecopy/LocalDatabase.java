@@ -38,7 +38,7 @@ import org.neo4j.kernel.impl.storemigration.StoreFile;
 import org.neo4j.kernel.impl.transaction.log.TransactionAppender;
 import org.neo4j.kernel.impl.transaction.state.DataSourceManager;
 import org.neo4j.kernel.impl.util.watcher.FileSystemWatcherService;
-import org.neo4j.kernel.internal.DatabaseHealth;
+import org.neo4j.kernel.Health;
 import org.neo4j.kernel.lifecycle.Lifecycle;
 import org.neo4j.logging.Log;
 import org.neo4j.logging.LogProvider;
@@ -57,19 +57,19 @@ public class LocalDatabase implements Lifecycle
 
     private final StoreFiles storeFiles;
     private final DataSourceManager dataSourceManager;
-    private final Supplier<DatabaseHealth> databaseHealthSupplier;
+    private final Supplier<Health> databaseHealthSupplier;
     private final AvailabilityGuard availabilityGuard;
     private final Log log;
     private final FileSystemWatcherService watcherService;
 
     private volatile StoreId storeId;
-    private volatile DatabaseHealth databaseHealth;
+    private volatile Health databaseHealth;
     private volatile AvailabilityRequirement currentRequirement;
 
     private volatile TransactionCommitProcess localCommit;
 
     public LocalDatabase( File storeDir, StoreFiles storeFiles, DataSourceManager dataSourceManager,
-            Supplier<DatabaseHealth> databaseHealthSupplier, FileSystemWatcherService watcherService,
+            Supplier<Health> databaseHealthSupplier, FileSystemWatcherService watcherService,
             AvailabilityGuard availabilityGuard,
             LogProvider logProvider )
     {
@@ -171,7 +171,7 @@ public class LocalDatabase implements Lifecycle
         getDatabaseHealth().assertHealthy( cause );
     }
 
-    private DatabaseHealth getDatabaseHealth()
+    private Health getDatabaseHealth()
     {
         if ( databaseHealth == null )
         {

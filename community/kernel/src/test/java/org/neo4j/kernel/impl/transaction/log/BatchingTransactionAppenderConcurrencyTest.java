@@ -56,6 +56,7 @@ import org.neo4j.kernel.impl.transaction.tracing.LogAppendEvent;
 import org.neo4j.kernel.impl.transaction.tracing.LogForceWaitEvent;
 import org.neo4j.kernel.impl.util.IdOrderingQueue;
 import org.neo4j.kernel.internal.DatabaseHealth;
+import org.neo4j.kernel.Health;
 import org.neo4j.kernel.lifecycle.LifeRule;
 import org.neo4j.logging.NullLog;
 import org.neo4j.test.Race;
@@ -110,7 +111,7 @@ public class BatchingTransactionAppenderConcurrencyTest
     private final LogHeaderCache logHeaderCache = new LogHeaderCache( 10 );
     private final TransactionIdStore transactionIdStore = new DeadSimpleTransactionIdStore();
     private final IdOrderingQueue legacyIndexTransactionOrdering = IdOrderingQueue.BYPASS;
-    private final DatabaseHealth databaseHealth = mock( DatabaseHealth.class );
+    private final Health databaseHealth = mock( DatabaseHealth.class );
     private final Semaphore forceSemaphore = new Semaphore( 0 );
 
     private final BlockingQueue<ChannelCommand> channelCommandQueue = new LinkedBlockingQueue<>( 2 );
@@ -269,7 +270,7 @@ public class BatchingTransactionAppenderConcurrencyTest
         efs.mkdirs( directory );
         FileSystemAbstraction fs = new AdversarialFileSystemAbstraction( adversary, efs );
         life.add( new FileSystemLifecycleAdapter( fs ) );
-        DatabaseHealth databaseHealth = new DatabaseHealth( mock( DatabasePanicEventGenerator.class ), NullLog.getInstance() );
+        Health databaseHealth = new DatabaseHealth( mock( DatabasePanicEventGenerator.class ), NullLog.getInstance() );
         PhysicalLogFiles logFiles = new PhysicalLogFiles( directory, fs );
         LogFile logFile = life.add( new PhysicalLogFile( fs, logFiles, kibiBytes( 10 ), transactionIdStore::getLastCommittedTransactionId,
                 new DeadSimpleLogVersionRepository( 0 ), new PhysicalLogFile.Monitor.Adapter(), logHeaderCache ) );

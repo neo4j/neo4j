@@ -94,22 +94,6 @@ public class GBPTreeConcurrencyIT
     private final ExecutorService threadPool =
             Executors.newFixedThreadPool( Runtime.getRuntime().availableProcessors() );
 
-    private GBPTree<MutableLong,MutableLong> createIndex()
-            throws IOException
-    {
-        return createIndex( NO_MONITOR );
-    }
-
-    private GBPTree<MutableLong,MutableLong> createIndex( GBPTree.Monitor monitor )
-            throws IOException
-    {
-        int pageSize = 256;
-        PageCache pageCache =
-                pageCacheRule.getPageCache( fs.get(), config().withPageSize( pageSize ).withAccessChecks( true ) );
-        return index = new GBPTree<>( pageCache, directory.file( "index" ),
-                layout, 0/*use whatever page cache says*/, monitor, NO_HEADER );
-    }
-
     @After
     public void consistencyCheckAndClose() throws IOException
     {
@@ -158,6 +142,22 @@ public class GBPTreeConcurrencyIT
     {
         TestCoordinator testCoordinator = new TestCoordinator( random.random(), false, 0.5 );
         shouldReadCorrectlyWithConcurrentUpdates( testCoordinator );
+    }
+
+    private GBPTree<MutableLong,MutableLong> createIndex()
+            throws IOException
+    {
+        return createIndex( NO_MONITOR );
+    }
+
+    private GBPTree<MutableLong,MutableLong> createIndex( GBPTree.Monitor monitor )
+            throws IOException
+    {
+        int pageSize = 256;
+        PageCache pageCache =
+                pageCacheRule.getPageCache( fs.get(), config().withPageSize( pageSize ).withAccessChecks( true ) );
+        return index = new GBPTree<>( pageCache, directory.file( "index" ),
+                layout, 0/*use whatever page cache says*/, monitor, NO_HEADER );
     }
 
     private void shouldReadCorrectlyWithConcurrentUpdates( TestCoordinator testCoordinator ) throws Throwable
@@ -284,8 +284,7 @@ public class GBPTreeConcurrencyIT
         void iterationFinished()
         {
             // Create new set to not modify set that readers use concurrently
-            TreeSet<Long> tmp = new TreeSet<>( readersShouldSee );
-            readersShouldSee = tmp;
+            readersShouldSee = new TreeSet<>( readersShouldSee );
             updateRecentlyInsertedData( readersShouldSee, updatesForNextIteration );
             updatesForNextIteration = generateUpdatesForNextIteration();
             updateWithSoonToBeRemovedData( readersShouldSee, updatesForNextIteration );

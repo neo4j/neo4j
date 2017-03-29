@@ -20,16 +20,15 @@
 package org.neo4j.kernel.api.impl.labelscan;
 
 import org.neo4j.graphdb.factory.GraphDatabaseSettings.LabelIndex;
-import org.neo4j.kernel.api.labelscan.LabelScanStore;
 import org.neo4j.kernel.extension.KernelExtensionFactory;
 import org.neo4j.kernel.impl.api.scan.NativeLabelScanStoreExtension;
 
 public class NativeLabelScanStoreHaIT extends LabelScanStoreHaIT
 {
     @Override
-    protected KernelExtensionFactory<?> labelScanStoreExtension( LabelScanStore.Monitor monitor )
+    protected KernelExtensionFactory<?> labelScanStoreExtension()
     {
-        return new NativeLabelScanStoreExtension( monitor );
+        return new NativeLabelScanStoreExtension();
     }
 
     @Override

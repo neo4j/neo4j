@@ -25,7 +25,7 @@ import java.util.function.BooleanSupplier;
 import org.neo4j.function.Predicates;
 import org.neo4j.kernel.impl.store.UnderlyingStorageException;
 import org.neo4j.kernel.impl.util.JobScheduler;
-import org.neo4j.kernel.internal.DatabaseHealth;
+import org.neo4j.kernel.Health;
 import org.neo4j.kernel.lifecycle.LifecycleAdapter;
 
 import static java.util.concurrent.TimeUnit.MILLISECONDS;
@@ -42,7 +42,7 @@ public class CheckPointScheduler extends LifecycleAdapter
     private final CheckPointer checkPointer;
     private final JobScheduler scheduler;
     private final long recurringPeriodMillis;
-    private final DatabaseHealth health;
+    private final Health health;
     private final Throwable[] failures = new Throwable[MAX_CONSECUTIVE_FAILURES_TOLERANCE];
     private volatile int consecutiveFailures;
     private final Runnable job = new Runnable()
@@ -115,7 +115,7 @@ public class CheckPointScheduler extends LifecycleAdapter
     };
 
     public CheckPointScheduler( CheckPointer checkPointer, JobScheduler scheduler, long recurringPeriodMillis,
-            DatabaseHealth health )
+            Health health )
     {
         this.checkPointer = checkPointer;
         this.scheduler = scheduler;

@@ -39,7 +39,7 @@ import org.neo4j.causalclustering.identity.StoreId;
 import org.neo4j.causalclustering.readreplica.UpstreamDatabaseSelectionException;
 import org.neo4j.causalclustering.readreplica.UpstreamDatabaseStrategySelector;
 import org.neo4j.kernel.impl.transaction.CommittedTransactionRepresentation;
-import org.neo4j.kernel.internal.DatabaseHealth;
+import org.neo4j.kernel.Health;
 import org.neo4j.kernel.lifecycle.Lifecycle;
 import org.neo4j.kernel.lifecycle.LifecycleAdapter;
 import org.neo4j.kernel.monitoring.Monitors;
@@ -78,7 +78,7 @@ public class CatchupPollingProcess extends LifecycleAdapter
     private final Log log;
     private final Lifecycle startStopOnStoreCopy;
     private final StoreCopyProcess storeCopyProcess;
-    private final Supplier<DatabaseHealth> databaseHealthSupplier;
+    private final Supplier<Health> databaseHealthSupplier;
     private final CatchUpClient catchUpClient;
     private final UpstreamDatabaseStrategySelector selectionStrategyPipeline;
     private final RenewableTimeoutService timeoutService;
@@ -88,7 +88,7 @@ public class CatchupPollingProcess extends LifecycleAdapter
 
     private RenewableTimeout timeout;
     private volatile State state = TX_PULLING;
-    private DatabaseHealth dbHealth;
+    private Health dbHealth;
     private CompletableFuture<Boolean> upToDateFuture; // we are up-to-date when we are successfully pulling
     private volatile long latestTxIdOfUpStream;
 
@@ -96,7 +96,7 @@ public class CatchupPollingProcess extends LifecycleAdapter
             Lifecycle startStopOnStoreCopy, CatchUpClient catchUpClient,
             UpstreamDatabaseStrategySelector selectionStrategy, RenewableTimeoutService timeoutService,
             long txPullIntervalMillis, BatchingTxApplier applier, Monitors monitors,
-            StoreCopyProcess storeCopyProcess, Supplier<DatabaseHealth> databaseHealthSupplier )
+            StoreCopyProcess storeCopyProcess, Supplier<Health> databaseHealthSupplier )
 
     {
         this.localDatabase = localDatabase;

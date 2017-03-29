@@ -140,7 +140,6 @@ import org.neo4j.kernel.impl.util.SynchronizedArrayIdOrderingQueue;
 import org.neo4j.kernel.info.DiagnosticsExtractor;
 import org.neo4j.kernel.info.DiagnosticsManager;
 import org.neo4j.kernel.info.DiagnosticsPhase;
-import org.neo4j.kernel.internal.DatabaseHealth;
 import org.neo4j.kernel.internal.TransactionEventHandlers;
 import org.neo4j.kernel.lifecycle.LifeSupport;
 import org.neo4j.kernel.lifecycle.Lifecycle;
@@ -252,7 +251,7 @@ public class NeoStoreDataSource implements Lifecycle, IndexProviders
     private final IndexingService.Monitor indexingServiceMonitor;
     private final FileSystemAbstraction fs;
     private final TransactionMonitor transactionMonitor;
-    private final DatabaseHealth databaseHealth;
+    private final Health databaseHealth;
     private final PhysicalLogFile.Monitor physicalLogMonitor;
     private final TransactionHeaderInformationFactory transactionHeaderInformationFactory;
     private final StartupStatisticsProvider startupStatistics;
@@ -305,7 +304,7 @@ public class NeoStoreDataSource implements Lifecycle, IndexProviders
             IndexingService.Monitor indexingServiceMonitor,
             FileSystemAbstraction fs,
             TransactionMonitor transactionMonitor,
-            DatabaseHealth databaseHealth,
+            Health databaseHealth,
             PhysicalLogFile.Monitor physicalLogMonitor,
             TransactionHeaderInformationFactory transactionHeaderInformationFactory,
             StartupStatisticsProvider startupStatistics,

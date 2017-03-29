@@ -68,6 +68,10 @@ public interface LabelScanStore extends Lifecycle
         default void recoveryCompleted( Map<String,Object> data )
         {   // empty
         }
+
+        default void flushDuringShutdown( boolean didFlush )
+        {   // empty
+        }
     }
 
     /**

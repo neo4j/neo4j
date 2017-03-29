@@ -32,6 +32,7 @@ import org.neo4j.causalclustering.core.consensus.log.RaftLogEntry;
 import org.neo4j.causalclustering.core.consensus.state.ExposedRaftState;
 import org.neo4j.causalclustering.core.consensus.state.RaftStateBuilder;
 import org.neo4j.kernel.internal.DatabaseHealth;
+import org.neo4j.kernel.Health;
 import org.neo4j.logging.NullLogProvider;
 import org.neo4j.test.OnDemandJobScheduler;
 
@@ -45,7 +46,7 @@ import static org.neo4j.causalclustering.identity.RaftTestMember.member;
 
 public class MembershipWaiterTest
 {
-    private DatabaseHealth dbHealth = mock( DatabaseHealth.class );
+    private Health dbHealth = mock( DatabaseHealth.class );
 
     @Before
     public void mocking()

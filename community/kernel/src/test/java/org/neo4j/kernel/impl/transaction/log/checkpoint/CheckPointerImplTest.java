@@ -41,6 +41,7 @@ import org.neo4j.kernel.impl.transaction.log.pruning.LogPruning;
 import org.neo4j.kernel.impl.transaction.tracing.CheckPointTracer;
 import org.neo4j.kernel.impl.transaction.tracing.LogCheckPointEvent;
 import org.neo4j.kernel.internal.DatabaseHealth;
+import org.neo4j.kernel.Health;
 import org.neo4j.logging.NullLogProvider;
 import org.neo4j.storageengine.api.StorageEngine;
 
@@ -73,7 +74,7 @@ public class CheckPointerImplTest
     private final StorageEngine storageEngine = mock( StorageEngine.class );
     private final LogPruning logPruning = mock( LogPruning.class );
     private final TransactionAppender appender = mock( TransactionAppender.class );
-    private final DatabaseHealth health = mock( DatabaseHealth.class );
+    private final Health health = mock( DatabaseHealth.class );
     private final CheckPointTracer tracer = mock( CheckPointTracer.class, RETURNS_MOCKS );
     private IOLimiter limiter = mock( IOLimiter.class );
 

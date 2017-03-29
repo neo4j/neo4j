@@ -93,12 +93,6 @@ public class SeekCursorTest
         updateRoot();
     }
 
-    private void updateRoot()
-    {
-        rootId = cursor.getCurrentPageId();
-        treeLogic.initialize( cursor );
-    }
-
     /* NO CONCURRENT INSERT */
 
     @Test
@@ -2028,6 +2022,12 @@ public class SeekCursorTest
         {
             assertThat( e.getMessage(), containsString( "keyCount:" + keyCount ) );
         }
+    }
+
+    private void updateRoot()
+    {
+        rootId = cursor.getCurrentPageId();
+        treeLogic.initialize( cursor );
     }
 
     private void triggerUnderflowAndSeekRange( SeekCursor<MutableLong,MutableLong> seeker,

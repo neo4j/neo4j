@@ -252,7 +252,7 @@ public class RecoveryIT
         }
     }
 
-    private static DatabaseHealth healthOf( GraphDatabaseService db )
+    private static Health healthOf( GraphDatabaseService db )
     {
         DependencyResolver resolver = ((GraphDatabaseAPI) db).getDependencyResolver();
         return resolver.resolveDependency( DatabaseHealth.class );

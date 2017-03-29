@@ -175,6 +175,7 @@ public class LuceneLabelScanStore implements LabelScanStore
     @Override
     public void shutdown() throws IOException
     {
+        monitor.flushDuringShutdown( true );
         luceneIndex.close();
     }
 

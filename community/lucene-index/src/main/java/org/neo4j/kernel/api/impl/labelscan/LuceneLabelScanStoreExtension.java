@@ -26,7 +26,7 @@ import org.neo4j.helpers.Service;
 import org.neo4j.io.fs.FileSystemAbstraction;
 import org.neo4j.kernel.NeoStoreDataSource;
 import org.neo4j.kernel.api.impl.index.storage.DirectoryFactory;
-import org.neo4j.kernel.api.labelscan.LabelScanStore.Monitor;
+import org.neo4j.kernel.api.labelscan.LabelScanStore;
 import org.neo4j.kernel.api.labelscan.LoggingMonitor;
 import org.neo4j.kernel.configuration.Config;
 import org.neo4j.kernel.extension.KernelExtensionFactory;
@@ -37,6 +37,7 @@ import org.neo4j.kernel.impl.factory.GraphDatabaseFacadeFactory;
 import org.neo4j.kernel.impl.logging.LogService;
 import org.neo4j.kernel.impl.spi.KernelContext;
 import org.neo4j.kernel.lifecycle.Lifecycle;
+import org.neo4j.kernel.monitoring.Monitors;
 import org.neo4j.logging.LogProvider;
 
 import static org.neo4j.kernel.api.impl.index.LuceneKernelExtensions.directoryFactory;
@@ -45,8 +46,6 @@ import static org.neo4j.kernel.api.impl.index.LuceneKernelExtensions.directoryFa
 public class LuceneLabelScanStoreExtension extends KernelExtensionFactory<LuceneLabelScanStoreExtension.Dependencies>
 {
     private static final String NAME = LabelIndex.LUCENE.name();
-
-    private final Monitor monitor;
 
     public interface Dependencies
     {
@@ -63,17 +62,13 @@ public class LuceneLabelScanStoreExtension extends KernelExtensionFactory<Lucene
         LogService getLogService();
 
         FileSystemAbstraction fileSystem();
+
+        Monitors monitors();
     }
 
     public LuceneLabelScanStoreExtension()
     {
-        this( Monitor.EMPTY );
-    }
-
-    LuceneLabelScanStoreExtension( Monitor monitor )
-    {
         super( "lucene-scan-store" );
-        this.monitor = monitor;
     }
 
     @Override
@@ -86,9 +81,11 @@ public class LuceneLabelScanStoreExtension extends KernelExtensionFactory<Lucene
 
         LuceneLabelScanIndexBuilder indexBuilder = getIndexBuilder( context, directoryFactory, fileSystem, config );
         LogProvider logger = dependencies.getLogService().getInternalLogProvider();
-        Monitor loggingMonitor = new LoggingMonitor( logger.getLog( LuceneLabelScanStore.class ), monitor );
+        Monitors monitors = dependencies.monitors();
+        monitors.addMonitorListener( new LoggingMonitor( logger.getLog( LuceneLabelScanStore.class ) ) );
         LuceneLabelScanStore scanStore = new LuceneLabelScanStore( indexBuilder,
-                new FullLabelStream( dependencies.indexStoreView() ), loggingMonitor );
+                new FullLabelStream( dependencies.indexStoreView() ),
+                monitors.newMonitor( LabelScanStore.Monitor.class ) );
 
         return new LabelScanStoreProvider( NAME, scanStore );
     }

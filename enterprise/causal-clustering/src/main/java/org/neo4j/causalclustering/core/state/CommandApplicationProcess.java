@@ -38,7 +38,7 @@ import org.neo4j.causalclustering.core.state.snapshot.CoreSnapshot;
 import org.neo4j.causalclustering.core.state.snapshot.CoreStateType;
 import org.neo4j.causalclustering.core.state.storage.StateStorage;
 import org.neo4j.causalclustering.helper.StatUtil;
-import org.neo4j.kernel.internal.DatabaseHealth;
+import org.neo4j.kernel.Health;
 import org.neo4j.kernel.lifecycle.LifecycleAdapter;
 import org.neo4j.kernel.monitoring.Monitors;
 import org.neo4j.logging.Log;
@@ -55,7 +55,7 @@ public class CommandApplicationProcess extends LifecycleAdapter
     private final int flushEvery;
     private final ProgressTracker progressTracker;
     private final SessionTracker sessionTracker;
-    private final Supplier<DatabaseHealth> dbHealth;
+    private final Supplier<Health> dbHealth;
     private final InFlightMap<RaftLogEntry> inFlightMap;
     private final Log log;
     private final CoreStateApplier applier;
@@ -75,7 +75,7 @@ public class CommandApplicationProcess extends LifecycleAdapter
             RaftLog raftLog,
             int maxBatchSize,
             int flushEvery,
-            Supplier<DatabaseHealth> dbHealth,
+            Supplier<Health> dbHealth,
             LogProvider logProvider,
             ProgressTracker progressTracker,
             StateStorage<Long> lastFlushedStorage,

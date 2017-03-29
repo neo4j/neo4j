@@ -76,6 +76,7 @@ import org.neo4j.kernel.impl.transaction.state.DataSourceManager;
 import org.neo4j.kernel.impl.util.Dependencies;
 import org.neo4j.kernel.info.DiagnosticsManager;
 import org.neo4j.kernel.internal.DatabaseHealth;
+import org.neo4j.kernel.Health;
 import org.neo4j.kernel.internal.GraphDatabaseAPI;
 import org.neo4j.kernel.internal.KernelEventHandlers;
 import org.neo4j.kernel.internal.TransactionEventHandlers;
@@ -169,7 +170,7 @@ public class DataSourceModule
         DatabasePanicEventGenerator databasePanicEventGenerator = deps.satisfyDependency(
                 new DatabasePanicEventGenerator( kernelEventHandlers ) );
 
-        DatabaseHealth databaseHealth = deps.satisfyDependency( new DatabaseHealth( databasePanicEventGenerator,
+        Health databaseHealth = deps.satisfyDependency( new DatabaseHealth( databasePanicEventGenerator,
                 logging.getInternalLog( DatabaseHealth.class ) ) );
 
         autoIndexing = new InternalAutoIndexing( platformModule.config, editionModule.propertyKeyTokenHolder );

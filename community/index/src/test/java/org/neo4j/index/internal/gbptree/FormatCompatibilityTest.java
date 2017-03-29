@@ -97,8 +97,7 @@ public class FormatCompatibilityTest
         // WHEN reading from the tree
         // THEN everything should work, otherwise there has likely been a format change
         PageCache pageCache = pageCacheRule.getPageCache( fsRule.get() );
-        try ( GBPTree<MutableLong,MutableLong> tree =
-                new GBPTree<>( pageCache, storeFile, new SimpleLongLayout(), 0, NO_MONITOR, NO_HEADER ) )
+        try ( GBPTree<MutableLong,MutableLong> tree = gbpTree( storeFile, pageCache ) )
         {
             try
             {
@@ -134,6 +133,11 @@ public class FormatCompatibilityTest
 
             tellDeveloperToCommitThisFormatVersion();
         }
+    }
+
+    private GBPTree<MutableLong,MutableLong> gbpTree( File storeFile, PageCache pageCache ) throws IOException
+    {
+        return new GBPTree<>( pageCache, storeFile, new SimpleLongLayout(), 0, NO_MONITOR, NO_HEADER );
     }
 
     private void tellDeveloperToCommitThisFormatVersion()
@@ -173,8 +177,7 @@ public class FormatCompatibilityTest
     private void createAndZipTree( File storeFile ) throws IOException
     {
         PageCache pageCache = pageCacheRule.getPageCache( fsRule.get() );
-        try ( GBPTree<MutableLong,MutableLong> tree =
-                new GBPTree<>( pageCache, storeFile, new SimpleLongLayout(), 0, NO_MONITOR, NO_HEADER ) )
+        try ( GBPTree<MutableLong,MutableLong> tree = gbpTree( storeFile, pageCache ) )
         {
             MutableLong insertKey = new MutableLong();
             MutableLong insertValue = new MutableLong();

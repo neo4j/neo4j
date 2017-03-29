@@ -29,6 +29,7 @@ import java.util.concurrent.atomic.AtomicReference;
 import org.neo4j.helpers.collection.Iterators;
 import org.neo4j.kernel.impl.store.UnderlyingStorageException;
 import org.neo4j.kernel.internal.DatabaseHealth;
+import org.neo4j.kernel.Health;
 import org.neo4j.test.DoubleLatch;
 import org.neo4j.test.OnDemandJobScheduler;
 
@@ -54,7 +55,7 @@ public class CheckPointSchedulerTest
 {
     private final CheckPointer checkPointer = mock( CheckPointer.class );
     private final OnDemandJobScheduler jobScheduler = spy( new OnDemandJobScheduler() );
-    private final DatabaseHealth health = mock( DatabaseHealth.class );
+    private final Health health = mock( DatabaseHealth.class );
 
     @Test
     public void shouldScheduleTheCheckPointerJobOnStart() throws Throwable

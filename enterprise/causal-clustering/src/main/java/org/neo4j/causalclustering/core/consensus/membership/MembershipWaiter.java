@@ -27,7 +27,7 @@ import org.neo4j.causalclustering.core.consensus.RaftMachine;
 import org.neo4j.causalclustering.core.consensus.state.ExposedRaftState;
 import org.neo4j.causalclustering.identity.MemberId;
 import org.neo4j.kernel.impl.util.JobScheduler;
-import org.neo4j.kernel.internal.DatabaseHealth;
+import org.neo4j.kernel.Health;
 import org.neo4j.logging.Log;
 import org.neo4j.logging.LogProvider;
 
@@ -54,12 +54,12 @@ public class MembershipWaiter
 {
     private final MemberId myself;
     private final JobScheduler jobScheduler;
-    private final Supplier<DatabaseHealth> dbHealthSupplier;
+    private final Supplier<Health> dbHealthSupplier;
     private final long maxCatchupLag;
     private long currentCatchupDelayInMs;
     private final Log log;
 
-    public MembershipWaiter( MemberId myself, JobScheduler jobScheduler, Supplier<DatabaseHealth> dbHealthSupplier,
+    public MembershipWaiter( MemberId myself, JobScheduler jobScheduler, Supplier<Health> dbHealthSupplier,
             long maxCatchupLag, LogProvider logProvider )
     {
         this.myself = myself;
@@ -91,10 +91,10 @@ public class MembershipWaiter
         private final CompletableFuture<Boolean> catchUpFuture;
 
         private long lastLeaderCommit;
-        private final Supplier<DatabaseHealth> dbHealthSupplier;
+        private final Supplier<Health> dbHealthSupplier;
 
         private Evaluator( RaftMachine raft, CompletableFuture<Boolean> catchUpFuture,
-                Supplier<DatabaseHealth> dbHealthSupplier )
+                Supplier<Health> dbHealthSupplier )
         {
             this.raft = raft;
             this.catchUpFuture = catchUpFuture;

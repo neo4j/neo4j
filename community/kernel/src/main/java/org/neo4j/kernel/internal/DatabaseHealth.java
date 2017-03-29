@@ -20,12 +20,13 @@
 package org.neo4j.kernel.internal;
 
 import org.neo4j.graphdb.event.ErrorState;
+import org.neo4j.kernel.Health;
 import org.neo4j.kernel.impl.core.DatabasePanicEventGenerator;
 import org.neo4j.logging.Log;
 
 import static org.neo4j.helpers.Exceptions.withCause;
 
-public class DatabaseHealth
+public class DatabaseHealth implements Health
 {
     private static final String panicMessage = "Database has encountered some problem, "
             + "please perform necessary action (tx recovery/restart)";
@@ -42,13 +43,7 @@ public class DatabaseHealth
         this.log = log;
     }
 
-    /**
-     * Asserts that the database is in good health. If that is not the case then the cause of the
-     * unhealthy state is wrapped in an exception of the given type, i.e. the panic disguise.
-     *
-     * @param panicDisguise the cause of the unhealthy state wrapped in an exception of this type.
-     * @throws EXCEPTION exception type to wrap cause in.
-     */
+    @Override
     public <EXCEPTION extends Throwable> void assertHealthy( Class<EXCEPTION> panicDisguise ) throws EXCEPTION
     {
         if ( !tmOk )
@@ -76,6 +71,7 @@ public class DatabaseHealth
         }
     }
 
+    @Override
     public void panic( Throwable cause )
     {
         if ( !tmOk )
@@ -93,11 +89,13 @@ public class DatabaseHealth
         dbpe.generateEvent( ErrorState.TX_MANAGER_NOT_OK, causeOfPanic );
     }
 
+    @Override
     public boolean isHealthy()
     {
         return tmOk;
     }
 
+    @Override
     public void healed()
     {
         tmOk = true;
@@ -105,6 +103,7 @@ public class DatabaseHealth
         log.info( "Database health set to OK" );
     }
 
+    @Override
     public Throwable cause()
     {
         return causeOfPanic;

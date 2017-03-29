@@ -67,6 +67,7 @@ import org.neo4j.kernel.impl.util.Dependencies;
 import org.neo4j.kernel.impl.util.DependenciesProxy;
 import org.neo4j.kernel.impl.util.JobScheduler;
 import org.neo4j.kernel.internal.DatabaseHealth;
+import org.neo4j.kernel.Health;
 import org.neo4j.kernel.internal.TransactionEventHandlers;
 import org.neo4j.kernel.monitoring.Monitors;
 import org.neo4j.kernel.monitoring.tracing.Tracers;
@@ -85,7 +86,7 @@ public class NeoStoreDataSourceRule extends ExternalResource
     private NeoStoreDataSource dataSource;
 
     public NeoStoreDataSource getDataSource( File storeDir, FileSystemAbstraction fs,
-            PageCache pageCache, Map<String,String> additionalConfig, DatabaseHealth databaseHealth )
+            PageCache pageCache, Map<String,String> additionalConfig, Health databaseHealth )
     {
         CommunityIdTypeConfigurationProvider idTypeConfigurationProvider =
                 new CommunityIdTypeConfigurationProvider();
@@ -97,7 +98,7 @@ public class NeoStoreDataSourceRule extends ExternalResource
 
     public NeoStoreDataSource getDataSource( File storeDir, FileSystemAbstraction fs,
             IdGeneratorFactory idGeneratorFactory, IdTypeConfigurationProvider idConfigurationProvider,
-            PageCache pageCache, Map<String, String> additionalConfig, DatabaseHealth databaseHealth,
+            PageCache pageCache, Map<String, String> additionalConfig, Health databaseHealth,
             LogService logService )
     {
         return getDataSource( storeDir, fs, idGeneratorFactory, idConfigurationProvider, pageCache,
@@ -106,7 +107,7 @@ public class NeoStoreDataSourceRule extends ExternalResource
 
     public NeoStoreDataSource getDataSource( File storeDir, FileSystemAbstraction fs,
             IdGeneratorFactory idGeneratorFactory, IdTypeConfigurationProvider idConfigurationProvider,
-            PageCache pageCache, Config config, DatabaseHealth databaseHealth,
+            PageCache pageCache, Config config, Health databaseHealth,
             LogService logService )
     {
         if ( dataSource != null )
@@ -125,7 +126,7 @@ public class NeoStoreDataSourceRule extends ExternalResource
         JobScheduler jobScheduler = mock( JobScheduler.class, RETURNS_MOCKS );
         Monitors monitors = new Monitors();
         LabelScanStoreProvider labelScanStoreProvider =
-                nativeLabelScanStoreProvider( storeDir, fs, pageCache, config, logService );
+                nativeLabelScanStoreProvider( storeDir, fs, pageCache, config, logService, databaseHealth, monitors );
         SystemNanoClock clock = Clocks.nanoClock();
         dataSource = new NeoStoreDataSource( storeDir, config, idGeneratorFactory, IdReuseEligibility.ALWAYS,
                 idConfigurationProvider,
@@ -148,18 +149,20 @@ public class NeoStoreDataSourceRule extends ExternalResource
     }
 
     public static LabelScanStoreProvider nativeLabelScanStoreProvider( File storeDir, FileSystemAbstraction fs,
-            PageCache pageCache )
+            PageCache pageCache, Health databaseHealth, Monitors monitors )
     {
-        return nativeLabelScanStoreProvider( storeDir, fs, pageCache, Config.defaults(), NullLogService.getInstance() );
+        return nativeLabelScanStoreProvider( storeDir, fs, pageCache, Config.defaults(), NullLogService.getInstance(),
+                databaseHealth, monitors );
     }
 
     public static LabelScanStoreProvider nativeLabelScanStoreProvider( File storeDir, FileSystemAbstraction fs,
-            PageCache pageCache, Config config, LogService logService )
+            PageCache pageCache, Config config, LogService logService, Health databaseHealth, Monitors monitors )
     {
         try
         {
             Dependencies dependencies = new Dependencies();
-            dependencies.satisfyDependencies( pageCache, config, IndexStoreView.EMPTY, logService );
+            dependencies.satisfyDependencies( pageCache, config, IndexStoreView.EMPTY, logService, databaseHealth,
+                    monitors );
             KernelContext kernelContext =
                     new SimpleKernelContext( storeDir, DatabaseInfo.COMMUNITY, dependencies );
             return (LabelScanStoreProvider) new NativeLabelScanStoreExtension()
@@ -175,7 +178,7 @@ public class NeoStoreDataSourceRule extends ExternalResource
     public NeoStoreDataSource getDataSource( File storeDir, FileSystemAbstraction fs,
             PageCache pageCache, Map<String,String> additionalConfig )
     {
-        DatabaseHealth databaseHealth = new DatabaseHealth( mock( DatabasePanicEventGenerator.class ),
+        Health databaseHealth = new DatabaseHealth( mock( DatabasePanicEventGenerator.class ),
                 NullLogProvider.getInstance().getLog( DatabaseHealth.class ) );
         return getDataSource( storeDir, fs, pageCache, additionalConfig, databaseHealth );
     }

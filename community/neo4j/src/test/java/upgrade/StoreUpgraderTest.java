@@ -45,6 +45,7 @@ import org.neo4j.graphdb.mockfs.DelegatingFileSystemAbstraction;
 import org.neo4j.helpers.collection.MapUtil;
 import org.neo4j.io.fs.FileSystemAbstraction;
 import org.neo4j.io.pagecache.PageCache;
+import org.neo4j.kernel.SilentHealth;
 import org.neo4j.kernel.api.index.SchemaIndexProvider;
 import org.neo4j.kernel.configuration.Config;
 import org.neo4j.kernel.impl.api.index.inmemory.InMemoryIndexProvider;
@@ -74,6 +75,7 @@ import org.neo4j.kernel.impl.storemigration.monitoring.SilentMigrationProgressMo
 import org.neo4j.kernel.impl.storemigration.participant.AbstractStoreMigrationParticipant;
 import org.neo4j.kernel.impl.storemigration.participant.SchemaIndexMigrator;
 import org.neo4j.kernel.impl.storemigration.participant.StoreMigrator;
+import org.neo4j.kernel.monitoring.Monitors;
 import org.neo4j.logging.NullLogProvider;
 import org.neo4j.test.TestGraphDatabaseFactory;
 import org.neo4j.test.rule.NeoStoreDataSourceRule;
@@ -157,7 +159,7 @@ public class StoreUpgraderTest
     {
         dbDirectory = directory.directory( "db_" + version );
         labelScanStoreProvider = NeoStoreDataSourceRule.nativeLabelScanStoreProvider( dbDirectory, fileSystem,
-                pageCacheRule.getPageCache( fileSystem ) );
+                pageCacheRule.getPageCache( fileSystem ), new SilentHealth(), new Monitors() );
         File prepareDirectory = directory.directory( "prepare_" + version );
         prepareSampleDatabase( version, fileSystem, dbDirectory, prepareDirectory );
     }

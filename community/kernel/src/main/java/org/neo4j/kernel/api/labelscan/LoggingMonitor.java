@@ -31,59 +31,44 @@ import static java.lang.String.format;
  */
 public class LoggingMonitor implements Monitor
 {
+    public static final String SHUTDOWN_WITH_FLUSH_MESSAGE = "Scan store flush and shutdown";
+    public static final String SHUTDOWN_NO_FLUSH_MESSAGE = "Scan store shutdown without flush";
+
     private final Log log;
-    private final Monitor delegate;
 
     public LoggingMonitor( Log log )
     {
-        this( log, Monitor.EMPTY );
-    }
-
-    public LoggingMonitor( Log log, Monitor delegate )
-    {
         this.log = log;
-        this.delegate = delegate;
-    }
-
-    @Override
-    public void init()
-    {
-        delegate.init();
     }
 
     @Override
     public void noIndex()
     {
         log.info( "No scan store found, this might just be first use. Preparing to rebuild." );
-        delegate.noIndex();
     }
 
     @Override
     public void lockedIndex( Exception e )
     {
         log.error( "Scan store is locked by another process or database", e );
-        delegate.lockedIndex( e );
     }
 
     @Override
     public void notValidIndex()
     {
         log.warn( "Scan store could not be read. Preparing to rebuild." );
-        delegate.notValidIndex();
     }
 
     @Override
     public void rebuilding()
     {
         log.info( "Rebuilding scan store, this may take a while" );
-        delegate.rebuilding();
     }
 
     @Override
     public void rebuilt( long roughNodeCount )
     {
         log.info( "Scan store rebuilt (roughly " + roughNodeCount + " nodes)" );
-        delegate.rebuilt( roughNodeCount );
     }
 
     @Override
@@ -92,6 +77,11 @@ public class LoggingMonitor implements Monitor
         StringBuilder builder = new StringBuilder( "Scan store recovery completed:" );
         data.forEach( (key,value) -> builder.append( format( " %s: %s", key, value ) ) );
         log.info( builder.toString() );
-        delegate.recoveryCompleted( data );
+    }
+
+    @Override
+    public void flushDuringShutdown( boolean didFlush )
+    {
+        log.info( didFlush ? SHUTDOWN_WITH_FLUSH_MESSAGE : SHUTDOWN_NO_FLUSH_MESSAGE );
     }
 }

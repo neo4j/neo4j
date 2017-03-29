@@ -43,6 +43,7 @@ import org.neo4j.kernel.impl.transaction.log.entry.VersionAwareLogEntryReader;
 import org.neo4j.kernel.impl.transaction.tracing.LogAppendEvent;
 import org.neo4j.kernel.impl.transaction.tracing.LogCheckPointEvent;
 import org.neo4j.kernel.internal.DatabaseHealth;
+import org.neo4j.kernel.Health;
 import org.neo4j.kernel.lifecycle.LifeRule;
 import org.neo4j.storageengine.api.StorageCommand;
 import org.neo4j.test.rule.CleanupRule;
@@ -79,7 +80,7 @@ public class BatchingTransactionAppenderTest
 
     private final InMemoryVersionableReadableClosablePositionAwareChannel channel = new InMemoryVersionableReadableClosablePositionAwareChannel();
     private final LogAppendEvent logAppendEvent = LogAppendEvent.NULL;
-    private final DatabaseHealth databaseHealth = mock( DatabaseHealth.class );
+    private final Health databaseHealth = mock( DatabaseHealth.class );
     private final LogFile logFile = mock( LogFile.class );
     private final TransactionIdStore transactionIdStore = mock( TransactionIdStore.class );
     private final TransactionMetadataCache positionCache = new TransactionMetadataCache( 10 );
