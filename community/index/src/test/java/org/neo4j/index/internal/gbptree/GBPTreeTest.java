@@ -67,6 +67,7 @@ import static org.neo4j.index.internal.gbptree.GBPTree.NO_MONITOR;
 import static org.neo4j.index.internal.gbptree.ThrowingRunnable.throwing;
 import static org.neo4j.test.rule.PageCacheRule.config;
 
+@SuppressWarnings( "EmptyTryBlock" )
 public class GBPTreeTest
 {
     private final DefaultFileSystemRule fs = new DefaultFileSystemRule();
@@ -125,12 +126,12 @@ public class GBPTreeTest
     public void shouldReadWrittenMetaData() throws Exception
     {
         // GIVEN
-        try ( GBPTree<MutableLong,MutableLong> index = createIndex( 1024 ) )
+        try ( GBPTree<MutableLong,MutableLong> ignored = createIndex( 1024 ) )
         {   // open/close is enough
         }
 
         // WHEN
-        try ( GBPTree<MutableLong,MutableLong> index =
+        try ( GBPTree<MutableLong,MutableLong> ignored =
                       new GBPTree<>( pageCache, indexFile, layout, 0, NO_MONITOR, NO_HEADER ) )
         {   // open/close is enough
         }
@@ -143,12 +144,12 @@ public class GBPTreeTest
     public void shouldFailToOpenOnDifferentMetaData() throws Exception
     {
         // GIVEN
-        try ( GBPTree<MutableLong,MutableLong> index = createIndex( 1024 ) )
+        try ( GBPTree<MutableLong,MutableLong> ignored = createIndex( 1024 ) )
         {   // Open/close is enough
         }
 
         // WHEN
-        try ( GBPTree<MutableLong,MutableLong> index = new GBPTree<>( pageCache, indexFile,
+        try ( GBPTree<MutableLong,MutableLong> ignored = new GBPTree<>( pageCache, indexFile,
                 new SimpleLongLayout( "Something else" ), 0, NO_MONITOR, NO_HEADER ) )
         {
             fail( "Should not load" );
@@ -166,12 +167,12 @@ public class GBPTreeTest
     public void shouldFailToOpenOnDifferentLayout() throws Exception
     {
         // GIVEN
-        try ( GBPTree<MutableLong,MutableLong> index = createIndex( 1024 ) )
+        try ( GBPTree<MutableLong,MutableLong> ignored = createIndex( 1024 ) )
         {   // Open/close is enough
         }
 
         // WHEN
-        try ( GBPTree<MutableLong,MutableLong> index =
+        try ( GBPTree<MutableLong,MutableLong> ignored =
                 new GBPTree<>( pageCache, indexFile, new SimpleLongLayout()
         {
             @Override
@@ -194,12 +195,12 @@ public class GBPTreeTest
     public void shouldFailToOpenOnDifferentMajorVersion() throws Exception
     {
         // GIVEN
-        try ( GBPTree<MutableLong,MutableLong> index = createIndex( 1024 ) )
+        try ( GBPTree<MutableLong,MutableLong> ignored = createIndex( 1024 ) )
         {   // Open/close is enough
         }
 
         // WHEN
-        try ( GBPTree<MutableLong,MutableLong> index =
+        try ( GBPTree<MutableLong,MutableLong> ignored =
             new GBPTree<>( pageCache, indexFile, new SimpleLongLayout()
             {
                 @Override
@@ -221,12 +222,12 @@ public class GBPTreeTest
     public void shouldFailToOpenOnDifferentMinorVersion() throws Exception
     {
         // GIVEN
-        try ( GBPTree<MutableLong,MutableLong> index = createIndex( 1024 ) )
+        try ( GBPTree<MutableLong,MutableLong> ignored = createIndex( 1024 ) )
         {   // Open/close is enough
         }
 
         // WHEN
-        try ( GBPTree<MutableLong,MutableLong> index =
+        try ( GBPTree<MutableLong,MutableLong> ignored =
             new GBPTree<>( pageCache, indexFile, new SimpleLongLayout()
             {
                 @Override
@@ -249,14 +250,14 @@ public class GBPTreeTest
     {
         // GIVEN
         int pageSize = 1024;
-        try ( GBPTree<MutableLong,MutableLong> index = createIndex( pageSize ) )
+        try ( GBPTree<MutableLong,MutableLong> ignored = createIndex( pageSize ) )
         {   // Open/close is enough
         }
 
         // WHEN
         pageCache.close();
         pageCache = createPageCache( pageSize / 2 );
-        try ( GBPTree<MutableLong,MutableLong> index =
+        try ( GBPTree<MutableLong,MutableLong> ignored =
                 new GBPTree<>( pageCache, indexFile, layout, 0, NO_MONITOR, NO_HEADER ) )
         {
             fail( "Should not load" );
@@ -274,7 +275,7 @@ public class GBPTreeTest
         // WHEN
         int pageSize = 512;
         pageCache = createPageCache( pageSize );
-        try ( GBPTree<MutableLong,MutableLong> index =
+        try ( GBPTree<MutableLong,MutableLong> ignored =
                 new GBPTree<>( pageCache, indexFile, layout, pageSize * 2, NO_MONITOR, NO_HEADER ) )
         {
             fail( "Shouldn't have been created" );
@@ -292,7 +293,7 @@ public class GBPTreeTest
         // WHEN
         int pageSize = 1024;
         pageCache = createPageCache( pageSize );
-        try ( GBPTree<MutableLong,MutableLong> index =
+        try ( GBPTree<MutableLong,MutableLong> ignored =
                 new GBPTree<>( pageCache, indexFile, layout, pageSize / 2, NO_MONITOR, NO_HEADER ) )
         {
             // Good
@@ -305,14 +306,14 @@ public class GBPTreeTest
         // WHEN
         int pageSize = 1024;
         pageCache = createPageCache( pageSize );
-        try ( GBPTree<MutableLong,MutableLong> index =
+        try ( GBPTree<MutableLong,MutableLong> ignored =
                 new GBPTree<>( pageCache, indexFile, layout, pageSize, NO_MONITOR, NO_HEADER ) )
         {
             // Good
         }
 
         pageCache = createPageCache( pageSize / 2 );
-        try ( GBPTree<MutableLong, MutableLong> index =
+        try ( GBPTree<MutableLong, MutableLong> ignored =
                 new GBPTree<>( pageCache, indexFile, layout, pageSize, NO_MONITOR, NO_HEADER ) )
         {
             fail( "Expected to fail" );
@@ -379,7 +380,7 @@ public class GBPTreeTest
     {
         // GIVEN
         int pageSize = 1024;
-        try ( GBPTree<MutableLong,MutableLong> index = createIndex( pageSize ) )
+        try ( GBPTree<MutableLong,MutableLong> ignored = createIndex( pageSize ) )
         {   // Open/close is enough
         }
         setFormatVersion( pageSize, GBPTree.FORMAT_VERSION - 1 );
@@ -387,8 +388,7 @@ public class GBPTreeTest
         try
         {
             // WHEN
-            GBPTree<MutableLong,MutableLong> index =
-                    new GBPTree<>( pageCache, indexFile, layout, 0, NO_MONITOR, NO_HEADER );
+            new GBPTree<>( pageCache, indexFile, layout, 0, NO_MONITOR, NO_HEADER );
             fail( "Should have failed" );
         }
         catch ( MetadataMismatchException e )
@@ -484,7 +484,7 @@ public class GBPTreeTest
             length.set( len );
             cursor.getBytes( readHeader );
         };
-        try ( GBPTree<MutableLong,MutableLong> restart = createIndex( 256, NO_MONITOR, headerReader ) )
+        try ( GBPTree<MutableLong,MutableLong> ignored = createIndex( 256, NO_MONITOR, headerReader ) )
         {   // open/close is enough
         }
 
@@ -507,7 +507,7 @@ public class GBPTreeTest
         // WHEN
         byte[] readHeader = new byte[expectedHeader.length];
         Header.Reader headerReader = ( cursor, length ) -> cursor.getBytes( readHeader );
-        try ( GBPTree<MutableLong,MutableLong> index = createIndex( 256, NO_MONITOR, headerReader ) )
+        try ( GBPTree<MutableLong,MutableLong> ignored = createIndex( 256, NO_MONITOR, headerReader ) )
         {   // open/close is enough
         }
 
@@ -529,7 +529,7 @@ public class GBPTreeTest
 
         // WHEN
         byte[] readHeader = new byte[expectedHeader.length];
-        try ( GBPTree<MutableLong,MutableLong> restart =
+        try ( GBPTree<MutableLong,MutableLong> ignored =
                       createIndex( 256, NO_MONITOR, (cursor,length) -> cursor.getBytes( readHeader ) ) )
         {   // open/close is enough
         }
@@ -615,7 +615,7 @@ public class GBPTreeTest
 
         // WHEN
         enabled.set( true );
-        Thread closer = new Thread( throwing( () -> index.close() ) );
+        Thread closer = new Thread( throwing( index::close ) );
         closer.start();
         barrier.awaitUninterruptibly();
         // now we're in the smack middle of a close/checkpoint
@@ -684,7 +684,7 @@ public class GBPTreeTest
         } ) );
         writerThread.start();
         barrier.awaitUninterruptibly();
-        Thread closer = new Thread( throwing( () -> index.close() ) );
+        Thread closer = new Thread( throwing( index::close ) );
         closer.start();
         closer.join( 200 );
         assertTrue( closer.isAlive() );
