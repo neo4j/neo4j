@@ -66,22 +66,19 @@ public interface StorageStatement extends AutoCloseable
     @Override
     void close();
 
-    NodeProgression parallelNodeScanProgression();
+    NodeProgression parallelNodeScanProgression( ReadableTransactionState state );
 
-    Cursor<NodeItem> acquireParallelScanNodeCursor( NodeProgression nodeProgression, ReadableTransactionState state );
-
-    Cursor<NodeItem> acquireNodeCursor( ReadableTransactionState state );
+    Cursor<NodeItem> acquireParallelScanNodeCursor( NodeProgression nodeProgression );
 
     /**
      * Acquires {@link Cursor} capable of {@link Cursor#get() serving} {@link NodeItem} for selected nodes.
      * No node is selected when this method returns, a call to {@link Cursor#next()} will have to be made
      * to place the cursor over the first item and then more calls to move the cursor through the selection.
      *
-     * @param nodeId id of node to get cursor for.
-     * @param state the transaction state or null if there are no changes.
+     * @param nodeProgression the progression of the selected nodes to be fetched
      * @return a {@link Cursor} over {@link NodeItem} for the given {@code nodeId}.
      */
-    Cursor<NodeItem> acquireSingleNodeCursor( long nodeId, ReadableTransactionState state );
+    Cursor<NodeItem> acquireNodeCursor( NodeProgression nodeProgression );
 
     /**
      * Acquires {@link Cursor} capable of {@link Cursor#get() serving} {@link RelationshipItem} for selected

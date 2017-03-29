@@ -151,14 +151,13 @@ public class StoreStatement implements StorageStatement
     }
 
     @Override
-    public NodeProgression parallelNodeScanProgression()
+    public NodeProgression parallelNodeScanProgression( ReadableTransactionState state )
     {
         throw unsupportedOperation();
     }
 
     @Override
-    public Cursor<NodeItem> acquireParallelScanNodeCursor( NodeProgression nodeProgression,
-            ReadableTransactionState state )
+    public Cursor<NodeItem> acquireParallelScanNodeCursor( NodeProgression nodeProgression )
     {
         throw unsupportedOperation();
     }
@@ -169,17 +168,10 @@ public class StoreStatement implements StorageStatement
     }
 
     @Override
-    public Cursor<NodeItem> acquireNodeCursor( ReadableTransactionState state )
+    public Cursor<NodeItem> acquireNodeCursor( NodeProgression nodeProgression  )
     {
         neoStores.assertOpen();
-        return nodeCursor.get().init( new AllNodeProgression( neoStores.getNodeStore() ), state );
-    }
-
-    @Override
-    public Cursor<NodeItem> acquireSingleNodeCursor( long nodeId, ReadableTransactionState state )
-    {
-        neoStores.assertOpen();
-        return nodeCursor.get().init( new SingleNodeProgression( nodeId ), state );
+        return nodeCursor.get().init( nodeProgression );
     }
 
     @Override

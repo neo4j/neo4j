@@ -113,7 +113,7 @@ public class EnterpriseStoreStatementTest
             localStatements[i] = new EnterpriseStoreStatement( neoStores, null, null, NO_LOCK_SERVICE );
         }
         // use any of the local statements to build the shared progression
-        NodeProgression progression = localStatements[0].parallelNodeScanProgression();
+        NodeProgression progression = localStatements[0].parallelNodeScanProgression( state );
 
         @SuppressWarnings( "unchecked" )
         Future<Set<Long>>[] futures = new Future[threads];
@@ -124,7 +124,7 @@ public class EnterpriseStoreStatementTest
             {
                 HashSet<Long> ids = new HashSet<>();
                 try ( Cursor<NodeItem> cursor = localStatements[id]
-                        .acquireParallelScanNodeCursor( progression, state ) )
+                        .acquireParallelScanNodeCursor( progression ) )
                 {
                     while ( cursor.next() )
                     {
@@ -165,7 +165,8 @@ public class EnterpriseStoreStatementTest
     {
         Set<Long> expected = new HashSet<>();
         EnterpriseStoreStatement statement = new EnterpriseStoreStatement( neoStores, null, null, NO_LOCK_SERVICE );
-        try ( Cursor<NodeItem> cursor = statement.acquireNodeCursor( state ) )
+        try ( Cursor<NodeItem> cursor = statement
+                .acquireNodeCursor( new AllNodeProgression( neoStores.getNodeStore(), state ) ) )
         {
             while ( cursor.next() )
             {
