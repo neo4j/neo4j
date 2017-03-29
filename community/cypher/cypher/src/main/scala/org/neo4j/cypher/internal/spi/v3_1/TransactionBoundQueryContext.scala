@@ -33,6 +33,7 @@ import org.neo4j.cypher.internal.compiler.v3_1.commands.expressions.{KernelPredi
 import org.neo4j.cypher.internal.compiler.v3_1.helpers.JavaConversionSupport
 import org.neo4j.cypher.internal.compiler.v3_1.helpers.JavaConversionSupport._
 import org.neo4j.cypher.internal.compiler.v3_1.pipes.matching.PatternNode
+import org.neo4j.cypher.internal.compiler.v3_1.spi.SchemaTypes.{IndexDescriptor, NodePropertyExistenceConstraint, RelationshipPropertyExistenceConstraint, UniquenessConstraint}
 import org.neo4j.cypher.internal.compiler.v3_1.spi._
 import org.neo4j.cypher.internal.frontend.v3_1.{Bound, EntityNotFoundException, FailedIndexException, SemanticDirection}
 import org.neo4j.cypher.internal.spi.BeansAPIRelationshipIterator
@@ -47,7 +48,6 @@ import org.neo4j.graphdb.security.URLAccessValidationError
 import org.neo4j.graphdb.traversal.{Evaluators, TraversalDescription, Uniqueness}
 import org.neo4j.kernel.GraphDatabaseQueryService
 import org.neo4j.kernel.api._
-import org.neo4j.kernel.api.constraints.{NodePropertyExistenceConstraint, RelationshipPropertyExistenceConstraint, UniquenessConstraint}
 import org.neo4j.kernel.api.dbms.DbmsOperations
 import org.neo4j.kernel.api.exceptions.ProcedureException
 import org.neo4j.kernel.api.exceptions.schema.{AlreadyConstrainedException, AlreadyIndexedException}
@@ -64,7 +64,7 @@ import scala.collection.Iterator
 import scala.collection.JavaConverters._
 
 final class TransactionBoundQueryContext(txContext: TransactionalContextWrapper)(implicit indexSearchMonitor: IndexSearchMonitor)
-  extends TransactionBoundTokenContext(txContext.statement) with QueryContext with IndexDescriptorCompatibility {
+  extends TransactionBoundTokenContext(txContext.statement) with QueryContext with SchemaDescriptorTranslation {
 
   type EntityAccessor = NodeManager
 
@@ -141,7 +141,7 @@ final class TransactionBoundQueryContext(txContext: TransactionalContextWrapper)
 
   override def indexSeek(index: IndexDescriptor, value: Any) = {
     indexSearchMonitor.indexSeek(index, value)
-    JavaConversionSupport.mapToScalaENFXSafe(txContext.statement.readOperations().indexQuery(index, IndexQuery.exact(index.property, value)))(nodeOps.getById)
+    JavaConversionSupport.mapToScalaENFXSafe(txContext.statement.readOperations().indexQuery(index, IndexQuery.exact(index.propertyId, value)))(nodeOps.getById)
   }
 
   override def indexSeekByRange(index: IndexDescriptor, value: Any) = value match {
@@ -204,7 +204,7 @@ final class TransactionBoundQueryContext(txContext: TransactionalContextWrapper)
   }
 
   private def indexSeekByPrefixRange(index: IndexDescriptor, prefix: String): scala.Iterator[Node] = {
-    val indexedNodes = txContext.statement.readOperations().indexQuery(index, IndexQuery.stringPrefix(index.property, prefix))
+    val indexedNodes = txContext.statement.readOperations().indexQuery(index, IndexQuery.stringPrefix(index.propertyId, prefix))
     JavaConversionSupport.mapToScalaENFXSafe(indexedNodes)(nodeOps.getById)
   }
 
@@ -214,18 +214,18 @@ final class TransactionBoundQueryContext(txContext: TransactionalContextWrapper)
 
       case rangeLessThan: RangeLessThan[Number] =>
         rangeLessThan.limit(BY_NUMBER).map { limit =>
-          readOps.indexQuery(index, IndexQuery.range(index.property, null, false, limit.endPoint, limit.isInclusive))
+          readOps.indexQuery(index, IndexQuery.range(index.propertyId, null, false, limit.endPoint, limit.isInclusive))
         }
 
       case rangeGreaterThan: RangeGreaterThan[Number] =>
         rangeGreaterThan.limit(BY_NUMBER).map { limit =>
-          readOps.indexQuery(index, IndexQuery.range(index.property, limit.endPoint, limit.isInclusive, null, false))
+          readOps.indexQuery(index, IndexQuery.range(index.propertyId, limit.endPoint, limit.isInclusive, null, false))
         }
 
       case RangeBetween(rangeGreaterThan, rangeLessThan) =>
         rangeGreaterThan.limit(BY_NUMBER).flatMap { greaterThanLimit =>
           rangeLessThan.limit(BY_NUMBER).map { lessThanLimit =>
-            readOps.indexQuery(index, IndexQuery.range(index.property, greaterThanLimit.endPoint, greaterThanLimit.isInclusive, lessThanLimit.endPoint, lessThanLimit.isInclusive))
+            readOps.indexQuery(index, IndexQuery.range(index.propertyId, greaterThanLimit.endPoint, greaterThanLimit.isInclusive, lessThanLimit.endPoint, lessThanLimit.isInclusive))
           }
         }
     }).getOrElse(EMPTY_PRIMITIVE_LONG_COLLECTION.iterator)
@@ -238,18 +238,18 @@ final class TransactionBoundQueryContext(txContext: TransactionalContextWrapper)
 
       case rangeLessThan: RangeLessThan[String] =>
         rangeLessThan.limit(BY_STRING).map { limit =>
-          readOps.indexQuery(index, IndexQuery.range(index.property, null, false, limit.endPoint.asInstanceOf[String], limit.isInclusive))
+          readOps.indexQuery(index, IndexQuery.range(index.propertyId, null, false, limit.endPoint.asInstanceOf[String], limit.isInclusive))
         }.getOrElse(EMPTY_PRIMITIVE_LONG_COLLECTION.iterator)
 
       case rangeGreaterThan: RangeGreaterThan[String] =>
         rangeGreaterThan.limit(BY_STRING).map { limit =>
-          readOps.indexQuery(index, IndexQuery.range(index.property, limit.endPoint.asInstanceOf[String], limit.isInclusive, null, false))
+          readOps.indexQuery(index, IndexQuery.range(index.propertyId, limit.endPoint.asInstanceOf[String], limit.isInclusive, null, false))
         }.getOrElse(EMPTY_PRIMITIVE_LONG_COLLECTION.iterator)
 
       case RangeBetween(rangeGreaterThan, rangeLessThan) =>
         rangeGreaterThan.limit(BY_STRING).flatMap { greaterThanLimit =>
           rangeLessThan.limit(BY_STRING).map { lessThanLimit =>
-            readOps.indexQuery(index, IndexQuery.range(index.property, greaterThanLimit.endPoint.asInstanceOf[String], greaterThanLimit.isInclusive, lessThanLimit.endPoint.asInstanceOf[String], lessThanLimit.isInclusive))
+            readOps.indexQuery(index, IndexQuery.range(index.propertyId, greaterThanLimit.endPoint.asInstanceOf[String], greaterThanLimit.isInclusive, lessThanLimit.endPoint.asInstanceOf[String], lessThanLimit.isInclusive))
           }
         }.getOrElse(EMPTY_PRIMITIVE_LONG_COLLECTION.iterator)
     }
@@ -258,17 +258,17 @@ final class TransactionBoundQueryContext(txContext: TransactionalContextWrapper)
   }
 
   override def indexScan(index: IndexDescriptor) =
-    mapToScalaENFXSafe(txContext.statement.readOperations().indexQuery(index, IndexQuery.exists(index.property)))(nodeOps.getById)
+    mapToScalaENFXSafe(txContext.statement.readOperations().indexQuery(index, IndexQuery.exists(index.propertyId)))(nodeOps.getById)
 
   override def indexScanByContains(index: IndexDescriptor, value: String) =
-    mapToScalaENFXSafe(txContext.statement.readOperations().indexQuery(index, IndexQuery.stringContains(index.property, value)))(nodeOps.getById)
+    mapToScalaENFXSafe(txContext.statement.readOperations().indexQuery(index, IndexQuery.stringContains(index.propertyId, value)))(nodeOps.getById)
 
   override def indexScanByEndsWith(index: IndexDescriptor, value: String) =
-    mapToScalaENFXSafe(txContext.statement.readOperations().indexQuery(index, IndexQuery.stringSuffix(index.property, value)))(nodeOps.getById)
+    mapToScalaENFXSafe(txContext.statement.readOperations().indexQuery(index, IndexQuery.stringSuffix(index.propertyId, value)))(nodeOps.getById)
 
   override def lockingUniqueIndexSeek(index: IndexDescriptor, value: Any): Option[Node] = {
     indexSearchMonitor.lockingUniqueIndexSeek(index, value)
-    val nodeId = txContext.statement.readOperations().nodeGetFromUniqueIndexSeek(index, IndexQuery.exact(index.property, value))
+    val nodeId = txContext.statement.readOperations().nodeGetFromUniqueIndexSeek(index, IndexQuery.exact(index.propertyId, value))
     if (StatementConstants.NO_SUCH_NODE == nodeId) None else Some(nodeOps.getById(nodeId))
   }
 
@@ -472,10 +472,9 @@ final class TransactionBoundQueryContext(txContext: TransactionalContextWrapper)
     txContext.statement.schemaWriteOperations().indexDrop(NewIndexDescriptorFactory.forLabel( labelId, propertyKeyId ))
 
   override def createUniqueConstraint(labelId: Int, propertyKeyId: Int): IdempotentResult[UniquenessConstraint] = try {
-    IdempotentResult(ConstraintBoundary.mapUnique(
+    IdempotentResult(
       txContext.statement.schemaWriteOperations().uniquePropertyConstraintCreate(
-        SchemaDescriptorFactory.forLabel(labelId, propertyKeyId)
-      )))
+        SchemaDescriptorFactory.forLabel(labelId, propertyKeyId)))
   } catch {
     case existing: AlreadyConstrainedException =>
       IdempotentResult(existing.constraint().asInstanceOf[UniquenessConstraint], wasCreated = false)
