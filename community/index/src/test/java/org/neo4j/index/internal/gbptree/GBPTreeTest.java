@@ -20,7 +20,6 @@
 package org.neo4j.index.internal.gbptree;
 
 import org.apache.commons.lang3.mutable.MutableLong;
-import org.junit.After;
 import org.junit.Before;
 import org.junit.Rule;
 import org.junit.Test;
@@ -81,7 +80,6 @@ public class GBPTreeTest
     private PageCache pageCache;
     private File indexFile;
     private final Layout<MutableLong,MutableLong> layout = new SimpleLongLayout();
-    private GBPTree<MutableLong,MutableLong> index;
 
     private GBPTree<MutableLong,MutableLong> createIndex( int pageSize )
             throws IOException
@@ -99,14 +97,14 @@ public class GBPTreeTest
             Header.Reader headerReader ) throws IOException
     {
         pageCache = createPageCache( pageSize );
-        return index = new GBPTree<>( pageCache, indexFile, layout,
+        return new GBPTree<>( pageCache, indexFile, layout,
                 0/*use whatever page cache says*/, monitor, headerReader );
     }
 
     private GBPTree<MutableLong,MutableLong> createIndex( PageCache pageCache ) throws IOException
     {
         this.pageCache = pageCache;
-        return index = new GBPTree<>( pageCache, indexFile, layout, 0 /*use whatever page cache says*/,
+        return new GBPTree<>( pageCache, indexFile, layout, 0 /*use whatever page cache says*/,
                 NO_MONITOR, NO_HEADER );
     }
 
@@ -121,16 +119,6 @@ public class GBPTreeTest
         indexFile = directory.file( "index" );
     }
 
-    @After
-    public void closeIndexAndPageCache() throws IOException
-    {
-        if ( index != null )
-        {
-            assertTrue( index.consistencyCheck() );
-            closeIndex();
-        }
-    }
-
     /* Meta and state page tests */
 
     @Test
@@ -138,11 +126,14 @@ public class GBPTreeTest
     {
         // GIVEN
         try ( GBPTree<MutableLong,MutableLong> index = createIndex( 1024 ) )
-        {   // Open/close is enough
+        {   // open/close is enough
         }
 
         // WHEN
-        index = new GBPTree<>( pageCache, indexFile, layout, 0, NO_MONITOR, NO_HEADER );
+        try ( GBPTree<MutableLong,MutableLong> index =
+                      new GBPTree<>( pageCache, indexFile, layout, 0, NO_MONITOR, NO_HEADER ) )
+        {   // open/close is enough
+        }
 
         // THEN being able to open validates that the same meta data was read
         // the test also closes the index afterwards
@@ -155,7 +146,6 @@ public class GBPTreeTest
         try ( GBPTree<MutableLong,MutableLong> index = createIndex( 1024 ) )
         {   // Open/close is enough
         }
-        index = null;
 
         // WHEN
         try ( GBPTree<MutableLong,MutableLong> index = new GBPTree<>( pageCache, indexFile,
@@ -179,7 +169,6 @@ public class GBPTreeTest
         try ( GBPTree<MutableLong,MutableLong> index = createIndex( 1024 ) )
         {   // Open/close is enough
         }
-        index = null;
 
         // WHEN
         try ( GBPTree<MutableLong,MutableLong> index =
@@ -208,7 +197,6 @@ public class GBPTreeTest
         try ( GBPTree<MutableLong,MutableLong> index = createIndex( 1024 ) )
         {   // Open/close is enough
         }
-        index = null;
 
         // WHEN
         try ( GBPTree<MutableLong,MutableLong> index =
@@ -236,7 +224,6 @@ public class GBPTreeTest
         try ( GBPTree<MutableLong,MutableLong> index = createIndex( 1024 ) )
         {   // Open/close is enough
         }
-        index = null;
 
         // WHEN
         try ( GBPTree<MutableLong,MutableLong> index =
@@ -265,7 +252,6 @@ public class GBPTreeTest
         try ( GBPTree<MutableLong,MutableLong> index = createIndex( pageSize ) )
         {   // Open/close is enough
         }
-        index = null;
 
         // WHEN
         pageCache.close();
@@ -396,13 +382,13 @@ public class GBPTreeTest
         try ( GBPTree<MutableLong,MutableLong> index = createIndex( pageSize ) )
         {   // Open/close is enough
         }
-        index = null;
         setFormatVersion( pageSize, GBPTree.FORMAT_VERSION - 1 );
 
         try
         {
             // WHEN
-            index = new GBPTree<>( pageCache, indexFile, layout, 0, NO_MONITOR, NO_HEADER );
+            GBPTree<MutableLong,MutableLong> index =
+                    new GBPTree<>( pageCache, indexFile, layout, 0, NO_MONITOR, NO_HEADER );
             fail( "Should have failed" );
         }
         catch ( MetadataMismatchException e )
@@ -415,64 +401,69 @@ public class GBPTreeTest
     public void shouldReturnNoResultsOnEmptyIndex() throws Exception
     {
         // GIVEN
-        index = createIndex( 256 );
+        try ( GBPTree<MutableLong,MutableLong> index = createIndex( 256 ) )
+        {
 
-        // WHEN
-        RawCursor<Hit<MutableLong,MutableLong>,IOException> result =
-                index.seek( new MutableLong( 0 ), new MutableLong( 10 ) );
+            // WHEN
+            RawCursor<Hit<MutableLong,MutableLong>,IOException> result =
+                    index.seek( new MutableLong( 0 ), new MutableLong( 10 ) );
 
-        // THEN
-        assertFalse( result.next() );
+            // THEN
+            assertFalse( result.next() );
+        }
     }
 
     @Test
     public void shouldNotBeAbleToAcquireModifierTwice() throws Exception
     {
         // GIVEN
-        index = createIndex( 256 );
-        Writer<MutableLong,MutableLong> writer = index.writer();
-
-        // WHEN
-        try
+        try ( GBPTree<MutableLong,MutableLong> index = createIndex( 256 ) )
         {
-            index.writer();
-            fail( "Should have failed" );
-        }
-        catch ( IllegalStateException e )
-        {
-            // THEN good
-        }
+            Writer<MutableLong,MutableLong> writer = index.writer();
 
-        writer.close();
+            // WHEN
+            try
+            {
+                index.writer();
+                fail( "Should have failed" );
+            }
+            catch ( IllegalStateException e )
+            {
+                // THEN good
+            }
+
+            writer.close();
+        }
     }
 
     @Test
     public void shouldAllowClosingWriterMultipleTimes() throws Exception
     {
         // GIVEN
-        index = createIndex( 256 );
-        Writer<MutableLong,MutableLong> writer = index.writer();
-        writer.put( new MutableLong( 0 ), new MutableLong( 1 ) );
-        writer.close();
+        try ( GBPTree<MutableLong,MutableLong> index = createIndex( 256 ) )
+        {
+            Writer<MutableLong,MutableLong> writer = index.writer();
+            writer.put( new MutableLong( 0 ), new MutableLong( 1 ) );
+            writer.close();
 
-        // WHEN
-        writer.close();
+            // WHEN
+            writer.close();
 
-        // THEN that should be OK
+            // THEN that should be OK
+        }
     }
 
     @Test
     public void shouldAllowClosingTreeMultipleTimes() throws Exception
     {
         // GIVEN
-        index = createIndex( 256 );
+        GBPTree<MutableLong,MutableLong> index = createIndex( 256 );
 
         // WHEN
         index.close();
 
         // THEN
         index.close(); // should be OK
-        index = null; // so that our @After clause won't try to consistency check it
     }
 
     @Test
@@ -481,18 +472,21 @@ public class GBPTreeTest
         // GIVEN
         byte[] expectedHeader = new byte[12];
         ThreadLocalRandom.current().nextBytes( expectedHeader );
-        index = createIndex( 256 );
+        GBPTree<MutableLong,MutableLong> index = createIndex( 256 );
         index.checkpoint( IOLimiter.unlimited(), cursor -> cursor.putBytes( expectedHeader ) );
         index.close();
 
         // WHEN
         byte[] readHeader = new byte[expectedHeader.length];
         AtomicInteger length = new AtomicInteger();
-        index = createIndex( 256, NO_MONITOR, (cursor,len) ->
+        Header.Reader headerReader = ( cursor, len ) ->
         {
             length.set( len );
             cursor.getBytes( readHeader );
-        } );
+        };
+        try ( GBPTree<MutableLong,MutableLong> restart = createIndex( 256, NO_MONITOR, headerReader ) )
+        {   // open/close is enough
+        }
 
         // THEN
         assertEquals( expectedHeader.length, length.get() );
@@ -505,13 +499,17 @@ public class GBPTreeTest
         // GIVEN
         byte[] expectedHeader = new byte[12];
         ThreadLocalRandom.current().nextBytes( expectedHeader );
-        index = createIndex( 256 );
-        index.checkpoint( IOLimiter.unlimited(), cursor -> cursor.putBytes( expectedHeader ) );
-        index.close();
+        try ( GBPTree<MutableLong,MutableLong> index = createIndex( 256 ) )
+        {
+            index.checkpoint( IOLimiter.unlimited(), cursor -> cursor.putBytes( expectedHeader ) );
+        }
 
         // WHEN
         byte[] readHeader = new byte[expectedHeader.length];
-        index = createIndex( 256, NO_MONITOR, (cursor,length) -> cursor.getBytes( readHeader ) );
+        Header.Reader headerReader = ( cursor, length ) -> cursor.getBytes( readHeader );
+        try ( GBPTree<MutableLong,MutableLong> index = createIndex( 256, NO_MONITOR, headerReader ) )
+        {   // open/close is enough
+        }
 
         // THEN
         assertArrayEquals( expectedHeader, readHeader );
@@ -523,7 +521,7 @@ public class GBPTreeTest
         // GIVEN
         byte[] expectedHeader = new byte[12];
         ThreadLocalRandom.current().nextBytes( expectedHeader );
-        index = createIndex( 256 );
+        GBPTree<MutableLong,MutableLong> index = createIndex( 256 );
         index.checkpoint( IOLimiter.unlimited(), cursor -> cursor.putBytes( expectedHeader ) );
         ThreadLocalRandom.current().nextBytes( expectedHeader );
         index.checkpoint( IOLimiter.unlimited(), cursor -> cursor.putBytes( expectedHeader ) );
@@ -531,7 +529,10 @@ public class GBPTreeTest
 
         // WHEN
         byte[] readHeader = new byte[expectedHeader.length];
-        index = createIndex( 256, NO_MONITOR, (cursor,length) -> cursor.getBytes( readHeader ) );
+        try ( GBPTree<MutableLong,MutableLong> restart =
+                      createIndex( 256, NO_MONITOR, (cursor,length) -> cursor.getBytes( readHeader ) ) )
+        {   // open/close is enough
+        }
 
         // THEN
         assertArrayEquals( expectedHeader, readHeader );
@@ -544,55 +545,58 @@ public class GBPTreeTest
     {
         // GIVEN
         CheckpointControlledMonitor monitor = new CheckpointControlledMonitor();
-        index = createIndex( 1024, monitor );
-        long key = 10;
-        try ( Writer<MutableLong,MutableLong> writer = index.writer() )
+        try ( GBPTree<MutableLong,MutableLong> index = createIndex( 1024, monitor ) )
         {
-            writer.put( new MutableLong( key ), new MutableLong( key ) );
+            long key = 10;
+            try ( Writer<MutableLong,MutableLong> writer = index.writer() )
+            {
+                writer.put( new MutableLong( key ), new MutableLong( key ) );
+            }
+
+            // WHEN
+            monitor.enabled = true;
+            Thread checkpointer = new Thread( throwing( () -> index.checkpoint( IOLimiter.unlimited() ) ) );
+            checkpointer.start();
+            monitor.barrier.awaitUninterruptibly();
+            // now we're in the smack middle of a checkpoint
+            Thread t2 = new Thread( throwing( () -> index.writer().close() ) );
+            t2.start();
+            t2.join( 200 );
+            assertTrue( Arrays.toString( checkpointer.getStackTrace() ), t2.isAlive() );
+            monitor.barrier.release();
+
+            // THEN
+            t2.join();
         }
-
-        // WHEN
-        monitor.enabled = true;
-        Thread checkpointer = new Thread( throwing( () -> index.checkpoint( IOLimiter.unlimited() ) ) );
-        checkpointer.start();
-        monitor.barrier.awaitUninterruptibly();
-        // now we're in the smack middle of a checkpoint
-        Thread t2 = new Thread( throwing( () -> index.writer().close() ) );
-        t2.start();
-        t2.join( 200 );
-        assertTrue( Arrays.toString( checkpointer.getStackTrace() ), t2.isAlive() );
-        monitor.barrier.release();
-
-        // THEN
-        t2.join();
     }
 
     @Test
     public void checkPointShouldWaitForWriter() throws Exception
     {
         // GIVEN
-        index = createIndex( 1024 );
-
-        // WHEN
-        Barrier.Control barrier = new Barrier.Control();
-        Thread writerThread = new Thread( throwing( () ->
+        try ( GBPTree<MutableLong,MutableLong> index = createIndex( 1024 ) )
         {
-            try ( Writer<MutableLong,MutableLong> writer = index.writer() )
+            // WHEN
+            Barrier.Control barrier = new Barrier.Control();
+            Thread writerThread = new Thread( throwing( () ->
             {
-                writer.put( new MutableLong( 1 ), new MutableLong( 1 ) );
-                barrier.reached();
-            }
-        } ) );
-        writerThread.start();
-        barrier.awaitUninterruptibly();
-        Thread checkpointer = new Thread( throwing( () -> index.checkpoint( IOLimiter.unlimited() ) ) );
-        checkpointer.start();
-        checkpointer.join( 200 );
-        assertTrue( checkpointer.isAlive() );
+                try ( Writer<MutableLong,MutableLong> writer = index.writer() )
+                {
+                    writer.put( new MutableLong( 1 ), new MutableLong( 1 ) );
+                    barrier.reached();
+                }
+            } ) );
+            writerThread.start();
+            barrier.awaitUninterruptibly();
+            Thread checkpointer = new Thread( throwing( () -> index.checkpoint( IOLimiter.unlimited() ) ) );
+            checkpointer.start();
+            checkpointer.join( 200 );
+            assertTrue( checkpointer.isAlive() );
 
-        // THEN
-        barrier.release();
-        checkpointer.join();
+            // THEN
+            barrier.release();
+            checkpointer.join();
+        }
     }
 
     @Test
@@ -602,7 +606,7 @@ public class GBPTreeTest
         AtomicBoolean enabled = new AtomicBoolean();
         Barrier.Control barrier = new Barrier.Control();
         PageCache pageCacheWithBarrier = pageCacheWithBarrierInClose( enabled, barrier );
-        index = createIndex( pageCacheWithBarrier );
+        GBPTree<MutableLong,MutableLong> index = createIndex( pageCacheWithBarrier );
         long key = 10;
         try ( Writer<MutableLong,MutableLong> writer = index.writer() )
         {
@@ -637,7 +641,6 @@ public class GBPTreeTest
         t2.join();
         assertTrue( "Writer should not be able to acquired after close",
                 writerError.get() instanceof IllegalStateException );
-        index = null;
     }
 
     private PageCache pageCacheWithBarrierInClose( final AtomicBoolean enabled, final Barrier.Control barrier )
@@ -667,7 +670,7 @@ public class GBPTreeTest
     public void closeShouldWaitForWriter() throws Exception
     {
         // GIVEN
-        index = createIndex( 1024 );
+        GBPTree<MutableLong,MutableLong> index = createIndex( 1024 );
 
         // WHEN
         Barrier.Control barrier = new Barrier.Control();
@@ -689,7 +692,6 @@ public class GBPTreeTest
         // THEN
         barrier.release();
         closer.join();
-        index = null;
     }
 
     /* Insertion and read tests */
@@ -697,25 +699,27 @@ public class GBPTreeTest
     @Test
     public void shouldSeeSimpleInsertions() throws Exception
     {
-        index = createIndex( 256 );
-        int count = 1000;
-        try ( Writer<MutableLong,MutableLong> writer = index.writer() )
+        try ( GBPTree<MutableLong,MutableLong> index = createIndex( 256 ) )
         {
-            for ( int i = 0; i < count; i++ )
+            int count = 1000;
+            try ( Writer<MutableLong,MutableLong> writer = index.writer() )
             {
-                writer.put( new MutableLong( i ), new MutableLong( i ) );
+                for ( int i = 0; i < count; i++ )
+                {
+                    writer.put( new MutableLong( i ), new MutableLong( i ) );
+                }
             }
-        }
 
-        try ( RawCursor<Hit<MutableLong,MutableLong>,IOException> cursor =
-                index.seek( new MutableLong( 0 ), new MutableLong( Long.MAX_VALUE ) ) )
-        {
-            for ( int i = 0; i < count; i++ )
+            try ( RawCursor<Hit<MutableLong,MutableLong>,IOException> cursor =
+                          index.seek( new MutableLong( 0 ), new MutableLong( Long.MAX_VALUE ) ) )
             {
-                assertTrue( cursor.next() );
-                assertEquals( i, cursor.get().key().longValue() );
+                for ( int i = 0; i < count; i++ )
+                {
+                    assertTrue( cursor.next() );
+                    assertEquals( i, cursor.get().key().longValue() );
+                }
+                assertFalse( cursor.next() );
             }
-            assertFalse( cursor.next() );
         }
     }
 
@@ -725,46 +729,47 @@ public class GBPTreeTest
     public void shouldSplitCorrectly() throws Exception
     {
         // GIVEN
-        GBPTree<MutableLong,MutableLong> index = createIndex( 256 );
-
-        // WHEN
-        int count = 1_000;
-        PrimitiveLongSet seen = Primitive.longSet( count );
-        try ( Writer<MutableLong,MutableLong> writer = index.writer() )
+        try ( GBPTree<MutableLong,MutableLong> index = createIndex( 256 ) )
         {
-            for ( int i = 0; i < count; i++ )
+            // WHEN
+            int count = 1_000;
+            PrimitiveLongSet seen = Primitive.longSet( count );
+            try ( Writer<MutableLong,MutableLong> writer = index.writer() )
             {
-                MutableLong key;
-                do
+                for ( int i = 0; i < count; i++ )
                 {
-                    key = new MutableLong( random.nextInt( 100_000 ) );
+                    MutableLong key;
+                    do
+                    {
+                        key = new MutableLong( random.nextInt( 100_000 ) );
+                    }
+                    while ( !seen.add( key.longValue() ) );
+                    MutableLong value = new MutableLong( i );
+                    writer.put( key, value );
+                    seen.add( key.longValue() );
                 }
-                while ( !seen.add( key.longValue() ) );
-                MutableLong value = new MutableLong( i );
-                writer.put( key, value );
-                seen.add( key.longValue() );
-            }
-        }
-
-        // THEN
-        try ( RawCursor<Hit<MutableLong,MutableLong>,IOException> cursor =
-                      index.seek( new MutableLong( 0 ), new MutableLong( Long.MAX_VALUE ) ) )
-        {
-            long prev = -1;
-            while ( cursor.next() )
-            {
-                MutableLong hit = cursor.get().key();
-                if ( hit.longValue() < prev )
-                {
-                    fail( hit + " smaller than prev " + prev );
-                }
-                prev = hit.longValue();
-                assertTrue( seen.remove( hit.longValue() ) );
             }
 
-            if ( !seen.isEmpty() )
+            // THEN
+            try ( RawCursor<Hit<MutableLong,MutableLong>,IOException> cursor =
+                          index.seek( new MutableLong( 0 ), new MutableLong( Long.MAX_VALUE ) ) )
             {
-                fail( "expected hits " + Arrays.toString( PrimitiveLongCollections.asArray( seen.iterator() ) ) );
+                long prev = -1;
+                while ( cursor.next() )
+                {
+                    MutableLong hit = cursor.get().key();
+                    if ( hit.longValue() < prev )
+                    {
+                        fail( hit + " smaller than prev " + prev );
+                    }
+                    prev = hit.longValue();
+                    assertTrue( seen.remove( hit.longValue() ) );
+                }
+
+                if ( !seen.isEmpty() )
+                {
+                    fail( "expected hits " + Arrays.toString( PrimitiveLongCollections.asArray( seen.iterator() ) ) );
+                }
             }
         }
     }
@@ -780,6 +785,7 @@ public class GBPTreeTest
 
         // THEN
         assertEquals( 1, checkpointCounter.count );
+        index.close();
     }
 
     @Test
@@ -789,27 +795,20 @@ public class GBPTreeTest
         CheckpointCounter checkpointCounter = new CheckpointCounter();
 
         // WHEN
-        GBPTree<MutableLong,MutableLong> index = createIndex( 256, checkpointCounter );
-        int countBefore = checkpointCounter.count;
-        try ( Writer<MutableLong,MutableLong> writer = index.writer() )
+        int countBefore;
+        try ( GBPTree<MutableLong,MutableLong> index = createIndex( 256, checkpointCounter ) )
         {
-            writer.put( new MutableLong( 0 ), new MutableLong( 1 ) );
+            countBefore = checkpointCounter.count;
+            try ( Writer<MutableLong,MutableLong> writer = index.writer() )
+            {
+                writer.put( new MutableLong( 0 ), new MutableLong( 1 ) );
+            }
+            index.checkpoint( IOLimiter.unlimited() );
+            assertEquals( countBefore + 1, checkpointCounter.count );
         }
-        index.checkpoint( IOLimiter.unlimited() );
-        assertEquals( countBefore + 1, checkpointCounter.count );
 
         // THEN
-        closeIndex();
         assertEquals( countBefore + 1, checkpointCounter.count );
-    }
-
-    private void closeIndex() throws IOException
-    {
-        if ( index != null )
-        {
-            index.close();
-            index = null;
-        }
     }
 
     private static class CheckpointControlledMonitor implements Monitor
