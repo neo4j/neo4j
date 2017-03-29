@@ -20,6 +20,7 @@
 package org.neo4j.index.internal.gbptree;
 
 import org.apache.commons.lang3.mutable.MutableLong;
+import org.junit.After;
 import org.junit.Before;
 import org.junit.Rule;
 import org.junit.Test;
@@ -31,7 +32,13 @@ import java.nio.file.OpenOption;
 import java.util.ArrayList;
 import java.util.Arrays;
 import java.util.List;
+import java.util.concurrent.ExecutionException;
+import java.util.concurrent.ExecutorService;
+import java.util.concurrent.Executors;
+import java.util.concurrent.Future;
 import java.util.concurrent.ThreadLocalRandom;
+import java.util.concurrent.TimeUnit;
+import java.util.concurrent.TimeoutException;
 import java.util.concurrent.atomic.AtomicBoolean;
 import java.util.concurrent.atomic.AtomicInteger;
 import java.util.concurrent.atomic.AtomicReference;
@@ -82,11 +89,19 @@ public class GBPTreeTest
     private PageCache pageCache;
     private File indexFile;
     private static final Layout<MutableLong,MutableLong> layout = new SimpleLongLayout();
+    private ExecutorService executor;
 
     @Before
-    public void setUpIndexFile()
+    public void setUp()
     {
+        executor = Executors.newFixedThreadPool( Runtime.getRuntime().availableProcessors() );
         indexFile = directory.file( "index" );
+    }
+
+    @After
+    public void teardown()
+    {
+        executor.shutdown();
     }
 
     /* Meta and state page tests */
@@ -520,18 +535,17 @@ public class GBPTreeTest
 
             // WHEN
             monitor.enabled = true;
-            Thread checkpointer = new Thread( throwing( () -> index.checkpoint( unlimited() ) ) );
-            checkpointer.start();
+            Future<?> checkpoint = executor.submit( throwing( () -> index.checkpoint( unlimited() ) ) );
             monitor.barrier.awaitUninterruptibly();
             // now we're in the smack middle of a checkpoint
-            Thread t2 = new Thread( throwing( () -> index.writer().close() ) );
-            t2.start();
-            t2.join( 200 );
-            assertTrue( Arrays.toString( checkpointer.getStackTrace() ), t2.isAlive() );
-            monitor.barrier.release();
+            Future<?> writerClose = executor.submit( throwing( () -> index.writer().close() ) );
 
             // THEN
-            t2.join();
+            wait( writerClose );
+            monitor.barrier.release();
+
+            writerClose.get();
+            checkpoint.get();
         }
     }
 
@@ -543,7 +557,7 @@ public class GBPTreeTest
         {
             // WHEN
             Barrier.Control barrier = new Barrier.Control();
-            Thread writerThread = new Thread( throwing( () ->
+             Future<?> write = executor.submit( throwing( () ->
             {
                 try ( Writer<MutableLong,MutableLong> writer = index.writer() )
                 {
@@ -551,16 +565,14 @@ public class GBPTreeTest
                     barrier.reached();
                 }
             } ) );
-            writerThread.start();
             barrier.awaitUninterruptibly();
-            Thread checkpointer = new Thread( throwing( () -> index.checkpoint( unlimited() ) ) );
-            checkpointer.start();
-            checkpointer.join( 200 );
-            assertTrue( checkpointer.isAlive() );
+            Future<?> checkpoint = executor.submit( throwing( () -> index.checkpoint( unlimited() ) ) );
+            wait( checkpoint );
 
             // THEN
             barrier.release();
-            checkpointer.join();
+            checkpoint.get();
+            write.get();
         }
     }
 
@@ -580,12 +592,11 @@ public class GBPTreeTest
 
         // WHEN
         enabled.set( true );
-        Thread closer = new Thread( throwing( index::close ) );
-        closer.start();
+        Future<?> close = executor.submit( throwing( index::close ) );
         barrier.awaitUninterruptibly();
         // now we're in the smack middle of a close/checkpoint
         AtomicReference<Exception> writerError = new AtomicReference<>();
-        Thread t2 = new Thread( () ->
+        Future<?> write = executor.submit( () ->
         {
             try
             {
@@ -597,13 +608,12 @@ public class GBPTreeTest
             }
         } );
 
-        t2.start();
-        t2.join( 200 );
-        assertTrue( Arrays.toString( closer.getStackTrace() ), t2.isAlive() );
+        wait( write );
         barrier.release();
 
         // THEN
-        t2.join();
+        write.get();
+        close.get();
         assertTrue( "Writer should not be able to acquired after close",
                 writerError.get() instanceof IllegalStateException );
     }
@@ -639,7 +649,7 @@ public class GBPTreeTest
 
         // WHEN
         Barrier.Control barrier = new Barrier.Control();
-        Thread writerThread = new Thread( throwing( () ->
+        Future<?> write= executor.submit( throwing( () ->
         {
             try ( Writer<MutableLong,MutableLong> writer = index.writer() )
             {
@@ -647,16 +657,14 @@ public class GBPTreeTest
                 barrier.reached();
             }
         } ) );
-        writerThread.start();
         barrier.awaitUninterruptibly();
-        Thread closer = new Thread( throwing( index::close ) );
-        closer.start();
-        closer.join( 200 );
-        assertTrue( closer.isAlive() );
+        Future<?> close = executor.submit( throwing( index::close ) );
+        wait( close );
 
         // THEN
         barrier.release();
-        closer.join();
+        close.get();
+        write.get();
     }
 
     /* Insertion and read tests */
@@ -773,6 +781,19 @@ public class GBPTreeTest
 
         // THEN
         assertEquals( 1, checkpointCounter.count() );
+    }
+
+    private void wait( Future<?> future )throws InterruptedException, ExecutionException
+    {
+        try
+        {
+            future.get( 200, TimeUnit.MILLISECONDS );
+            fail( "Expected timeout" );
+        }
+        catch ( TimeoutException e )
+        {
+            // good
+        }
     }
 
     private PageCache createPageCache( int pageSize )
