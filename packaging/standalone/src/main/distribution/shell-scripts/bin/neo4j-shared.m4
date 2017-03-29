@@ -1,4 +1,7 @@
 
+set -o errexit -o nounset -o pipefail
+[[ "${TRACE:-}" ]] && set -o xtrace
+
 declare -r PROGRAM="$(basename "$0")"
 
 # Sets up the standard environment for running Neo4j shell scripts.
@@ -17,6 +20,14 @@ setup_environment() {
   _setup_calculated_paths
   _read_config
   _setup_configurable_paths
+}
+
+setup_heap() {
+  JAVA_MEMORY_OPTS=()
+  if [[ -n "${HEAP_SIZE:-}" ]]; then
+    JAVA_MEMORY_OPTS+=("-Xmx${HEAP_SIZE}")
+    JAVA_MEMORY_OPTS+=("-Xms${HEAP_SIZE}")
+  fi
 }
 
 build_classpath() {
@@ -62,6 +73,22 @@ resolve_path() {
         filename="${NEO4J_HOME}/${orig_filename}"
     fi
     echo "${filename}"
+}
+
+call_main_class() {
+  setup_environment
+  check_java
+  build_classpath
+  EXTRA_JVM_ARGUMENTS="-Dfile.encoding=UTF-8"
+  class_name=$1
+  shift
+
+  export NEO4J_HOME NEO4J_CONF
+
+  exec "${JAVA_CMD}" ${JAVA_OPTS:-} ${JAVA_MEMORY_OPTS[@]:-} \
+    -classpath "${CLASSPATH}" \
+    ${EXTRA_JVM_ARGUMENTS:-} \
+    $class_name "$@"
 }
 
 _find_java_cmd() {
