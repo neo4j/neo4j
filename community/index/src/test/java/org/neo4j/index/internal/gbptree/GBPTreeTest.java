@@ -749,7 +749,7 @@ public class GBPTreeTest
         GBPTree<MutableLong,MutableLong> index = index().with( checkpointCounter ).build();
 
         // THEN
-        assertEquals( 1, checkpointCounter.count );
+        assertEquals( 1, checkpointCounter.count() );
         index.close();
     }
 
@@ -760,20 +760,19 @@ public class GBPTreeTest
         CheckpointCounter checkpointCounter = new CheckpointCounter();
 
         // WHEN
-        int countBefore;
         try ( GBPTree<MutableLong,MutableLong> index = index().with( checkpointCounter ).build() )
         {
-            countBefore = checkpointCounter.count;
+            checkpointCounter.reset();
             try ( Writer<MutableLong,MutableLong> writer = index.writer() )
             {
                 writer.put( new MutableLong( 0 ), new MutableLong( 1 ) );
             }
             index.checkpoint( unlimited() );
-            assertEquals( countBefore + 1, checkpointCounter.count );
+            assertEquals( 1, checkpointCounter.count() );
         }
 
         // THEN
-        assertEquals( countBefore + 1, checkpointCounter.count );
+        assertEquals( 1, checkpointCounter.count() );
     }
 
     private PageCache createPageCache( int pageSize )
@@ -875,6 +874,16 @@ public class GBPTreeTest
         public void checkpointCompleted()
         {
             count++;
+        }
+
+        public void reset()
+        {
+            count = 0;
+        }
+
+        public int count()
+        {
+            return count;
         }
     }
 
