@@ -1,6 +1,20 @@
-
-set -o errexit -o nounset -o pipefail
-[[ "${TRACE:-}" ]] && set -o xtrace
+# Copyright (c) 2002-2016 "Neo Technology,"
+# Network Engine for Objects in Lund AB [http://neotechnology.com]
+#
+# This file is part of Neo4j.
+#
+# Neo4j is free software: you can redistribute it and/or modify
+# it under the terms of the GNU General Public License as published by
+# the Free Software Foundation, either version 3 of the License, or
+# (at your option) any later version.
+#
+# This program is distributed in the hope that it will be useful,
+# but WITHOUT ANY WARRANTY; without even the implied warranty of
+# MERCHANTABILITY or FITNESS FOR A PARTICULAR PURPOSE.  See the
+# GNU General Public License for more details.
+#
+# You should have received a copy of the GNU General Public License
+# along with this program.  If not, see <http://www.gnu.org/licenses/>.
 
 declare -r PROGRAM="$(basename "$0")"
 
@@ -20,14 +34,6 @@ setup_environment() {
   _setup_calculated_paths
   _read_config
   _setup_configurable_paths
-}
-
-setup_heap() {
-  JAVA_MEMORY_OPTS=()
-  if [[ -n "${HEAP_SIZE:-}" ]]; then
-    JAVA_MEMORY_OPTS+=("-Xmx${HEAP_SIZE}")
-    JAVA_MEMORY_OPTS+=("-Xms${HEAP_SIZE}")
-  fi
 }
 
 build_classpath() {
@@ -73,22 +79,6 @@ resolve_path() {
         filename="${NEO4J_HOME}/${orig_filename}"
     fi
     echo "${filename}"
-}
-
-call_main_class() {
-  setup_environment
-  check_java
-  build_classpath
-  EXTRA_JVM_ARGUMENTS="-Dfile.encoding=UTF-8"
-  class_name=$1
-  shift
-
-  export NEO4J_HOME NEO4J_CONF
-
-  exec "${JAVA_CMD}" ${JAVA_OPTS:-} \
-    -classpath "${CLASSPATH}" \
-    ${EXTRA_JVM_ARGUMENTS:-} \
-    $class_name "$@"
 }
 
 _find_java_cmd() {
