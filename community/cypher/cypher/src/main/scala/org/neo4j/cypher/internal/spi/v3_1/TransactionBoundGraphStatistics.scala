@@ -29,7 +29,7 @@ import org.neo4j.kernel.api.{ReadOperations, Statement => KernelStatement}
 object TransactionBoundGraphStatistics {
   def apply(ops: ReadOperations) = new StatisticsCompletingGraphStatistics(new BaseTransactionBoundGraphStatistics(ops))
 
-  private class BaseTransactionBoundGraphStatistics(operations: ReadOperations) extends GraphStatistics with IndexDescriptorCompatibility {
+  private class BaseTransactionBoundGraphStatistics(operations: ReadOperations) extends GraphStatistics with SchemaDescriptorTranslation {
 
     import NameId._
 

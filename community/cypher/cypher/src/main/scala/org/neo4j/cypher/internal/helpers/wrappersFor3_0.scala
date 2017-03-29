@@ -40,6 +40,8 @@ object wrappersFor3_0 {
                                    config.idpMaxTableSize,
                                    config.idpIterationDuration,
                                    config.errorIfShortestPathFallbackUsedAtRuntime,
+                                   config.errorIfShortestPathHasCommonNodesAtRuntime,
+                                   config.legacyCsvQuoteEscaping,
                                    config.nonIndexedLabelWarningThreshold)
 
   /** This is awful but needed until 3_0 is updated no to send in the tracer here */

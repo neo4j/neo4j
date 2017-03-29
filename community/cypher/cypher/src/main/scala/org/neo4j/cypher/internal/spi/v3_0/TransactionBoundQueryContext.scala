@@ -59,7 +59,7 @@ import scala.collection.Iterator
 import scala.collection.JavaConverters._
 
 final class TransactionBoundQueryContext(val transactionalContext: TransactionalContextWrapperv3_0)(implicit indexSearchMonitor: IndexSearchMonitor)
-  extends TransactionBoundTokenContext(transactionalContext.statement) with QueryContext {
+  extends TransactionBoundTokenContext(transactionalContext.statement) with QueryContext with SchemaDescriptionTranslation {
 
   type EntityAccessor = NodeManager
 
@@ -134,17 +134,19 @@ final class TransactionBoundQueryContext(val transactionalContext: Transactional
     new BeansAPIRelationshipIterator(relationships, entityAccessor)
   }
 
-  override def indexSeek(index: IndexDescriptor, value: Any) = {
-    indexSearchMonitor.indexSeek(index, value)
-    JavaConversionSupport.mapToScalaENFXSafe(transactionalContext.statement.readOperations().nodesGetFromIndexSeek(index, value))(nodeOps.getById)
+  override def indexSeek(index: SchemaTypes.IndexDescriptor, value: Any) = {
+    indexSearchMonitor.indexSeek(toKernel(index), value)
+    JavaConversionSupport.mapToScalaENFXSafe(
+        transactionalContext.statement.readOperations().nodesGetFromIndexSeek(toKernel(index), value)
+      )(nodeOps.getById)
   }
 
-  override def indexSeekByRange(index: IndexDescriptor, value: Any) = value match {
+  override def indexSeekByRange(index: SchemaTypes.IndexDescriptor, value: Any) = value match {
 
     case PrefixRange(prefix: String) =>
-      indexSeekByPrefixRange(index, prefix)
+      indexSeekByPrefixRange(toKernel(index), prefix)
     case range: InequalitySeekRange[Any] =>
-      indexSeekByPrefixRange(index, range)
+      indexSeekByPrefixRange(toKernel(index), range)
 
     case range =>
       throw new InternalException(s"Unsupported index seek by range: $range")
@@ -259,16 +261,16 @@ final class TransactionBoundQueryContext(val transactionalContext: Transactional
     JavaConversionSupport.mapToScalaENFXSafe(matchingNodes)(nodeOps.getById)
   }
 
-  override def indexScan(index: IndexDescriptor) =
+  override def indexScan(index: SchemaTypes.IndexDescriptor) =
     mapToScalaENFXSafe(transactionalContext.statement.readOperations().nodesGetFromIndexScan(index))(nodeOps.getById)
 
-  override def indexScanByContains(index: IndexDescriptor, value: String) =
+  override def indexScanByContains(index: SchemaTypes.IndexDescriptor, value: String) =
     mapToScalaENFXSafe(transactionalContext.statement.readOperations().nodesGetFromIndexContainsScan(index, value))(nodeOps.getById)
 
-  override def indexScanByEndsWith(index: IndexDescriptor, value: String) =
+  override def indexScanByEndsWith(index: SchemaTypes.IndexDescriptor, value: String) =
     mapToScalaENFXSafe(transactionalContext.statement.readOperations().nodesGetFromIndexEndsWithScan(index, value))(nodeOps.getById)
 
-  override def lockingUniqueIndexSeek(index: IndexDescriptor, value: Any): Option[Node] = {
+  override def lockingUniqueIndexSeek(index: SchemaTypes.IndexDescriptor, value: Any): Option[Node] = {
     indexSearchMonitor.lockingUniqueIndexSeek(index, value)
     val nodeId = transactionalContext.statement.readOperations().nodeGetFromUniqueIndexSeek(index, value)
     if (StatementConstants.NO_SUCH_NODE == nodeId) None else Some(nodeOps.getById(nodeId))
@@ -492,7 +494,7 @@ final class TransactionBoundQueryContext(val transactionalContext: Transactional
     transactionalContext.statement.readOperations().schemaStateGetOrCreate(key, javaCreator)
   }
 
-  override def addIndexRule(labelId: Int, propertyKeyId: Int): IdempotentResult[IndexDescriptor] = try {
+  override def addIndexRule(labelId: Int, propertyKeyId: Int): IdempotentResult[SchemaTypes.IndexDescriptor] = try {
     IdempotentResult(transactionalContext.statement.schemaWriteOperations().indexCreate(labelId, propertyKeyId))
   } catch {
     case _: AlreadyIndexedException =>
@@ -505,7 +507,7 @@ final class TransactionBoundQueryContext(val transactionalContext: Transactional
   override def dropIndexRule(labelId: Int, propertyKeyId: Int) =
     transactionalContext.statement.schemaWriteOperations().indexDrop(new IndexDescriptor(labelId, propertyKeyId))
 
-  override def createUniqueConstraint(labelId: Int, propertyKeyId: Int): IdempotentResult[UniquenessConstraint] = try {
+  override def createUniqueConstraint(labelId: Int, propertyKeyId: Int): IdempotentResult[SchemaTypes.UniquenessConstraint] = try {
     IdempotentResult(transactionalContext.statement.schemaWriteOperations().uniquePropertyConstraintCreate(labelId, propertyKeyId))
   } catch {
     case existing: AlreadyConstrainedException =>
@@ -515,7 +517,7 @@ final class TransactionBoundQueryContext(val transactionalContext: Transactional
   override def dropUniqueConstraint(labelId: Int, propertyKeyId: Int) =
     transactionalContext.statement.schemaWriteOperations().constraintDrop(new UniquenessConstraint(labelId, propertyKeyId))
 
-  override def createNodePropertyExistenceConstraint(labelId: Int, propertyKeyId: Int): IdempotentResult[NodePropertyExistenceConstraint] =
+  override def createNodePropertyExistenceConstraint(labelId: Int, propertyKeyId: Int): IdempotentResult[SchemaTypes.NodePropertyExistenceConstraint] =
     try {
       IdempotentResult(transactionalContext.statement.schemaWriteOperations().nodePropertyExistenceConstraintCreate(labelId, propertyKeyId))
     } catch {
@@ -526,7 +528,7 @@ final class TransactionBoundQueryContext(val transactionalContext: Transactional
   override def dropNodePropertyExistenceConstraint(labelId: Int, propertyKeyId: Int) =
     transactionalContext.statement.schemaWriteOperations().constraintDrop(new NodePropertyExistenceConstraint(labelId, propertyKeyId))
 
-  override def createRelationshipPropertyExistenceConstraint(relTypeId: Int, propertyKeyId: Int): IdempotentResult[RelationshipPropertyExistenceConstraint] =
+  override def createRelationshipPropertyExistenceConstraint(relTypeId: Int, propertyKeyId: Int): IdempotentResult[SchemaTypes.RelationshipPropertyExistenceConstraint] =
     try {
       IdempotentResult(transactionalContext.statement.schemaWriteOperations().relationshipPropertyExistenceConstraintCreate(relTypeId, propertyKeyId))
     } catch {
