@@ -83,82 +83,6 @@ public class GBPTreeTest
     private File indexFile;
     private static final Layout<MutableLong,MutableLong> layout = new SimpleLongLayout();
 
-    private PageCache createPageCache( int pageSize )
-    {
-        return pageCacheRule.getPageCache( fs.get(), config().withPageSize( pageSize ) );
-    }
-
-    private GBPTreeBuilder index()
-    {
-        return new GBPTreeBuilder();
-    }
-
-    private class GBPTreeBuilder
-    {
-        private int pageCachePageSize = 256;
-        private int tentativePageSize = 0;
-        private Monitor monitor = NO_MONITOR;
-        private Header.Reader headerReader = NO_HEADER;
-        private Layout<MutableLong,MutableLong> layout = GBPTreeTest.layout;
-        private PageCache specificPageCache;
-
-        private GBPTreeBuilder withPageCachePageSize( int pageSize )
-        {
-            this.pageCachePageSize = pageSize;
-            return this;
-        }
-
-        private GBPTreeBuilder withIndexPageSize( int tentativePageSize )
-        {
-            this.tentativePageSize = tentativePageSize;
-            return this;
-        }
-
-        private GBPTreeBuilder with( GBPTree.Monitor monitor )
-        {
-            this.monitor = monitor;
-            return this;
-        }
-
-        private GBPTreeBuilder with( Header.Reader headerReader )
-        {
-            this.headerReader = headerReader;
-            return this;
-        }
-
-        private GBPTreeBuilder with( Layout<MutableLong,MutableLong> layout )
-        {
-            this.layout = layout;
-            return this;
-        }
-
-        private GBPTreeBuilder with( PageCache pageCache )
-        {
-            this.specificPageCache = pageCache;
-            return this;
-        }
-
-        private GBPTree<MutableLong,MutableLong> build() throws IOException
-        {
-            PageCache pageCacheToUse;
-            if ( specificPageCache == null )
-            {
-                if ( pageCache != null )
-                {
-                    pageCache.close();
-                }
-                pageCache = createPageCache( pageCachePageSize );
-                pageCacheToUse = pageCache;
-            }
-            else
-            {
-                pageCacheToUse = specificPageCache;
-            }
-
-            return new GBPTree<>( pageCacheToUse, indexFile, layout, tentativePageSize, monitor, headerReader );
-        }
-    }
-
     @Before
     public void setUpIndexFile()
     {
@@ -850,6 +774,82 @@ public class GBPTreeTest
 
         // THEN
         assertEquals( countBefore + 1, checkpointCounter.count );
+    }
+
+    private PageCache createPageCache( int pageSize )
+    {
+        return pageCacheRule.getPageCache( fs.get(), config().withPageSize( pageSize ) );
+    }
+
+    private GBPTreeBuilder index()
+    {
+        return new GBPTreeBuilder();
+    }
+
+    private class GBPTreeBuilder
+    {
+        private int pageCachePageSize = 256;
+        private int tentativePageSize = 0;
+        private Monitor monitor = NO_MONITOR;
+        private Header.Reader headerReader = NO_HEADER;
+        private Layout<MutableLong,MutableLong> layout = GBPTreeTest.layout;
+        private PageCache specificPageCache;
+
+        private GBPTreeBuilder withPageCachePageSize( int pageSize )
+        {
+            this.pageCachePageSize = pageSize;
+            return this;
+        }
+
+        private GBPTreeBuilder withIndexPageSize( int tentativePageSize )
+        {
+            this.tentativePageSize = tentativePageSize;
+            return this;
+        }
+
+        private GBPTreeBuilder with( GBPTree.Monitor monitor )
+        {
+            this.monitor = monitor;
+            return this;
+        }
+
+        private GBPTreeBuilder with( Header.Reader headerReader )
+        {
+            this.headerReader = headerReader;
+            return this;
+        }
+
+        private GBPTreeBuilder with( Layout<MutableLong,MutableLong> layout )
+        {
+            this.layout = layout;
+            return this;
+        }
+
+        private GBPTreeBuilder with( PageCache pageCache )
+        {
+            this.specificPageCache = pageCache;
+            return this;
+        }
+
+        private GBPTree<MutableLong,MutableLong> build() throws IOException
+        {
+            PageCache pageCacheToUse;
+            if ( specificPageCache == null )
+            {
+                if ( pageCache != null )
+                {
+                    pageCache.close();
+                }
+                pageCache = createPageCache( pageCachePageSize );
+                pageCacheToUse = pageCache;
+            }
+            else
+            {
+                pageCacheToUse = specificPageCache;
+            }
+
+            return new GBPTree<>( pageCacheToUse, indexFile, layout, tentativePageSize, monitor, headerReader );
+        }
     }
 
     private static class CheckpointControlledMonitor implements Monitor
