@@ -735,8 +735,8 @@ public class GBPTree<KEY,VALUE> implements Closeable
 
     /**
      * Closes this tree and its associated resources.
-     * NOTE: No {@link #checkpoint(IOLimiter) checkpoint} is performed. To make data persistent in store
-     * a checkpoint needs to be performed manually.
+     * <p>
+     * NOTE: No {@link #checkpoint(IOLimiter) checkpoint} is performed.
      *
      * @throws IOException on error closing resources.
      */
@@ -751,10 +751,10 @@ public class GBPTree<KEY,VALUE> implements Closeable
                 return;
             }
 
-            closed = true;
             // Force close on writer to not risk deadlock on pagedFile.close()
             writer.close();
             pagedFile.close();
+            closed = true;
         }
         finally
         {
