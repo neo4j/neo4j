@@ -78,20 +78,16 @@ public class GBPTreeRecoveryTest
         // a tree with only small amount of data that has not yet seen checkpoint from outside
         File file = directory.file( "index" );
         {
-            PageCache pageCache = createPageCache();
-            GBPTree<MutableLong,MutableLong> index = createIndex( pageCache, file );
-            Writer<MutableLong,MutableLong> writer = index.writer();
-
-            key.setValue( 1L );
-            value.setValue( 10L );
-            writer.put( key, value );
-            pageCache.flushAndForce();
-            fs.snapshot( throwing( () ->
+            try ( PageCache pageCache = createPageCache();
+                  GBPTree<MutableLong,MutableLong> index = createIndex( pageCache, file );
+                  Writer<MutableLong,MutableLong> writer = index.writer() )
             {
-                writer.close();
-                index.close();
-                pageCache.close();
-            } ) );
+                key.setValue( 1L );
+                value.setValue( 10L );
+                writer.put( key, value );
+                pageCache.flushAndForce();
+                // No checkpoint
+            }
         }
 
         // WHEN
@@ -213,17 +209,13 @@ public class GBPTreeRecoveryTest
         int numberOfCrashesDuringRecovery = random.intBetween( 0, 3 );
         for ( int i = 0; i < numberOfCrashesDuringRecovery; i++ )
         {
-            PageCache pageCache = createPageCache();
-            GBPTree<MutableLong,MutableLong> index = createIndex( pageCache, file );
-            int numberOfActionsToRecoverBeforeCrashing = random.intBetween( 1, recoveryActions.size() );
-            recover( recoveryActions.subList( 0, numberOfActionsToRecoverBeforeCrashing ), index );
-            pageCache.flushAndForce();
-
-            fs.snapshot( throwing( () ->
+            try ( PageCache pageCache = createPageCache();
+                  GBPTree<MutableLong,MutableLong> index = createIndex( pageCache, file ) )
             {
-                index.close();
-                pageCache.close();
-            } ) );
+                int numberOfActionsToRecoverBeforeCrashing = random.intBetween( 1, recoveryActions.size() );
+                recover( recoveryActions.subList( 0, numberOfActionsToRecoverBeforeCrashing ), index );
+                // ... crash
+            }
         }
 
         // to finally apply all actions after last checkpoint and verify tree
