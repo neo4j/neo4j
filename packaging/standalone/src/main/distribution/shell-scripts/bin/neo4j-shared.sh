@@ -183,14 +183,14 @@ _setup_configurable_paths() {
 print_configurable_paths() {
   cat <<EOF
 Directories in use:
-  Home:         ${NEO4J_HOME}
-  Config:       ${NEO4J_CONF}
-  Logs:         ${NEO4J_LOGS}
-  Plugins:      ${NEO4J_PLUGINS}
-  Import:       ${NEO4J_IMPORT}
-  Data:         ${NEO4J_DATA}
-  Certificates: ${NEO4J_CERTS}
-  Run:          ${NEO4J_RUN}
+  home:         ${NEO4J_HOME}
+  config:       ${NEO4J_CONF}
+  logs:         ${NEO4J_LOGS}
+  plugins:      ${NEO4J_PLUGINS}
+  import:       ${NEO4J_IMPORT}
+  data:         ${NEO4J_DATA}
+  certificates: ${NEO4J_CERTS}
+  run:          ${NEO4J_RUN}
 EOF
 }
 
