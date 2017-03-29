@@ -156,11 +156,6 @@ public class StoreStatement implements StorageStatement
         throw unsupportedOperation();
     }
 
-    @Override
-    public Cursor<NodeItem> acquireParallelScanNodeCursor( NodeProgression nodeProgression )
-    {
-        throw unsupportedOperation();
-    }
     private UnsupportedOperationException unsupportedOperation()
     {
         return new UnsupportedOperationException( "This operation is not supported in community edition but only in " +

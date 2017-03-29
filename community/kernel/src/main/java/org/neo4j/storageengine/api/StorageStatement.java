@@ -68,8 +68,6 @@ public interface StorageStatement extends AutoCloseable
 
     NodeProgression parallelNodeScanProgression( ReadableTransactionState state );
 
-    Cursor<NodeItem> acquireParallelScanNodeCursor( NodeProgression nodeProgression );
-
     /**
      * Acquires {@link Cursor} capable of {@link Cursor#get() serving} {@link NodeItem} for selected nodes.
      * No node is selected when this method returns, a call to {@link Cursor#next()} will have to be made
