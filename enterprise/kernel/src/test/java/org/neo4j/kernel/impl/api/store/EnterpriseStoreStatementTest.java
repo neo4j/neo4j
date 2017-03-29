@@ -123,8 +123,7 @@ public class EnterpriseStoreStatementTest
             futures[i] = executorService.submit( () ->
             {
                 HashSet<Long> ids = new HashSet<>();
-                try ( Cursor<NodeItem> cursor = localStatements[id]
-                        .acquireParallelScanNodeCursor( progression ) )
+                try ( Cursor<NodeItem> cursor = localStatements[id].acquireNodeCursor( progression ) )
                 {
                     while ( cursor.next() )
                     {

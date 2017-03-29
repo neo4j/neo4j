@@ -19,22 +19,14 @@
  */
 package org.neo4j.kernel.impl.api.store;
 
-import java.util.Iterator;
-import java.util.concurrent.atomic.AtomicBoolean;
-import java.util.concurrent.atomic.AtomicLong;
 import java.util.function.Supplier;
 
-import org.neo4j.cursor.Cursor;
 import org.neo4j.kernel.impl.api.IndexReaderFactory;
 import org.neo4j.kernel.impl.locking.LockService;
 import org.neo4j.kernel.impl.store.NeoStores;
 import org.neo4j.kernel.impl.store.NodeStore;
-import org.neo4j.storageengine.api.NodeItem;
 import org.neo4j.storageengine.api.schema.LabelScanReader;
-import org.neo4j.storageengine.api.txstate.NodeState;
 import org.neo4j.storageengine.api.txstate.ReadableTransactionState;
-
-import static java.lang.Math.max;
 
 public class EnterpriseStoreStatement extends StoreStatement
 {
@@ -50,83 +42,6 @@ public class EnterpriseStoreStatement extends StoreStatement
     @Override
     public NodeProgression parallelNodeScanProgression( ReadableTransactionState state )
     {
-        return new NodeProgression()
-        {
-            private final int reservedLowIds = nodeStore.getNumberOfReservedLowIds();
-            private final int recordsPerPage = nodeStore.getRecordsPerPage();
-            private final long lastPageId = nodeStore.getHighestPossibleIdInUse() / recordsPerPage;
-            private final AtomicLong pageIds = new AtomicLong();
-            private final AtomicBoolean done = new AtomicBoolean();
-
-            private final AtomicBoolean append = new AtomicBoolean( true );
-
-            @Override
-            public boolean nextBatch( Batch batch )
-            {
-                while ( true )
-                {
-                    if ( done.get() )
-                    {
-                        batch.nothing();
-                        return false;
-                    }
-
-                    long pageId = pageIds.getAndIncrement();
-                    if ( pageId < lastPageId )
-                    {
-                        long first = firstId( pageId );
-                        long last = first + recordsPerPage - 1;
-                        batch.init( first, last );
-                        return true;
-                    }
-                    else if ( !done.get() && done.compareAndSet( false, true ) )
-                    {
-                        long first = firstId( lastPageId );
-                        long last = nodeStore.getHighestPossibleIdInUse();
-                        batch.init( first, last );
-                        return true;
-                    }
-                }
-            }
-
-            private long firstId( long pageId )
-            {
-                return max( reservedLowIds, pageId * recordsPerPage );
-            }
-
-            @Override
-            public Iterator<Long> addedNodes()
-            {
-                if ( state != null && append.get() && append.compareAndSet( true, false  ) )
-                {
-                    return state.addedAndRemovedNodes().getAdded().iterator();
-                }
-                return null;
-            }
-
-            @Override
-            public boolean fetchFromTxState( long id )
-            {
-                return false;
-            }
-
-            @Override
-            public boolean fetchFromDisk( long id )
-            {
-                return state == null || !state.nodeIsDeletedInThisTx( id );
-            }
-
-            @Override
-            public NodeState nodeState( long id )
-            {
-                return state == null ? NodeState.EMPTY : state.getNodeState( id );
-            }
-        };
-    }
-
-    @Override
-    public Cursor<NodeItem> acquireParallelScanNodeCursor( NodeProgression nodeProgression )
-    {
-        return nodeCursor.get().init( nodeProgression );
+        return new ParallelAllNodeProgression(  nodeStore, state );
     }
 }
