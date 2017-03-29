@@ -98,8 +98,8 @@ public class BoltFactoryImplTest
         when( txIdStoreBeforeRestart.getLastClosedTransactionId() ).thenReturn( 42L );
         TransactionIdStore txIdStoreAfterRestart = mock( TransactionIdStore.class );
         when( txIdStoreAfterRestart.getLastClosedTransactionId() ).thenReturn( 4242L );
-        when( dependencyResolver.resolveDependency( TransactionIdStore.class ) )
-                .thenReturn( txIdStoreBeforeRestart ).thenReturn( txIdStoreAfterRestart );
+        when( dependencyResolver.provideDependency( TransactionIdStore.class ) )
+                .thenReturn( () -> txIdStoreBeforeRestart ).thenReturn( () -> txIdStoreAfterRestart );
 
         BoltFactoryImpl boltFactory = newBoltFactory( db );
 

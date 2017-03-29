@@ -22,6 +22,7 @@ package org.neo4j.kernel.api.txtracking;
 import org.junit.Test;
 
 import java.time.Clock;
+import java.util.function.Supplier;
 
 import org.neo4j.kernel.AvailabilityGuard;
 import org.neo4j.kernel.api.exceptions.Status;
@@ -38,13 +39,15 @@ import static org.neo4j.kernel.impl.transaction.log.TransactionIdStore.BASE_TX_I
 
 public class TransactionIdTrackerTest
 {
-    private final TransactionIdStore transactionIdStore = mock( TransactionIdStore.class );
+    private final Supplier<TransactionIdStore> transactionIdStoreSupplier = mock( Supplier.class );
     private final AvailabilityGuard availabilityGuard = mock( AvailabilityGuard.class );
 
     @Test( timeout = 500 )
     public void shouldAlwaysReturnIfTheRequestVersionIsBaseTxIdOrLess() throws Exception
     {
         // given
+        TransactionIdStore transactionIdStore = mock( TransactionIdStore.class );
+        when(transactionIdStoreSupplier.get()).thenReturn( transactionIdStore );
         when( transactionIdStore.getLastClosedTransactionId() ).thenReturn( -1L );
         when( availabilityGuard.isAvailable() ).thenReturn( true );
         TransactionIdTracker transactionIdTracker = createTracker();
@@ -60,7 +63,10 @@ public class TransactionIdTrackerTest
     {
         // given
         long version = 5L;
-        when( transactionIdStore.getLastClosedTransactionId() ).thenReturn( version );
+        TransactionIdStore transactionIdStore = mock(TransactionIdStore.class);
+        when( transactionIdStoreSupplier.get() ).thenReturn( transactionIdStore );
+        when( transactionIdStore.getLastClosedTransactionId()).thenReturn( version );
+
         when( availabilityGuard.isAvailable() ).thenReturn( true );
         TransactionIdTracker transactionIdTracker = createTracker();
 
@@ -75,6 +81,8 @@ public class TransactionIdTrackerTest
     {
         // given
         long version = 5L;
+        TransactionIdStore transactionIdStore = mock( TransactionIdStore.class );
+        when(transactionIdStoreSupplier.get()).thenReturn( transactionIdStore );
         when( transactionIdStore.getLastClosedTransactionId() ).thenReturn( version );
         when( availabilityGuard.isAvailable() ).thenReturn( true );
         TransactionIdTracker transactionIdTracker = createTracker();
@@ -97,6 +105,8 @@ public class TransactionIdTrackerTest
     {
         // given
         long version = 5L;
+        TransactionIdStore transactionIdStore = mock( TransactionIdStore.class );
+        when(transactionIdStoreSupplier.get()).thenReturn( transactionIdStore );
         when( transactionIdStore.getLastClosedTransactionId() ).thenReturn( version );
         when( availabilityGuard.isAvailable() ).thenReturn( false );
         TransactionIdTracker transactionIdTracker = createTracker();
@@ -116,6 +126,6 @@ public class TransactionIdTrackerTest
 
     private TransactionIdTracker createTracker()
     {
-        return new TransactionIdTracker( transactionIdStore, availabilityGuard, Clock.systemUTC() );
+        return new TransactionIdTracker( transactionIdStoreSupplier, availabilityGuard, Clock.systemUTC() );
     }
 }

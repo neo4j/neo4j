@@ -47,6 +47,8 @@ import org.neo4j.logging.Log;
 import org.neo4j.logging.LogProvider;
 
 import static java.lang.String.format;
+
+import static org.neo4j.causalclustering.catchup.tx.CatchupPollingProcess.State.CANCELLED;
 import static org.neo4j.causalclustering.catchup.tx.CatchupPollingProcess.State.PANIC;
 import static org.neo4j.causalclustering.catchup.tx.CatchupPollingProcess.State.STORE_COPYING;
 import static org.neo4j.causalclustering.catchup.tx.CatchupPollingProcess.State.TX_PULLING;
@@ -71,7 +73,8 @@ public class CatchupPollingProcess extends LifecycleAdapter
     {
         TX_PULLING,
         STORE_COPYING,
-        PANIC
+        PANIC,
+        CANCELLED
     }
 
     private final LocalDatabase localDatabase;
@@ -115,6 +118,7 @@ public class CatchupPollingProcess extends LifecycleAdapter
     @Override
     public synchronized void start() throws Throwable
     {
+        state = TX_PULLING;
         timeout = timeoutService.create( TX_PULLER_TIMEOUT, txPullIntervalMillis, 0, timeout -> onTimeout() );
         dbHealth = databaseHealthSupplier.get();
         upToDateFuture = new CompletableFuture<>();
@@ -128,6 +132,7 @@ public class CatchupPollingProcess extends LifecycleAdapter
     @Override
     public void stop() throws Throwable
     {
+        state = CANCELLED;
         timeout.cancel();
     }
 
@@ -162,7 +167,7 @@ public class CatchupPollingProcess extends LifecycleAdapter
             panic( e );
         }
 
-        if ( state != PANIC )
+        if ( state != PANIC && state != CANCELLED )
         {
             timeout.renew();
         }

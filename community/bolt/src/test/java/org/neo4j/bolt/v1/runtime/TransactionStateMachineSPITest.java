@@ -26,6 +26,7 @@ import java.time.Clock;
 import java.time.Duration;
 import java.util.concurrent.ExecutionException;
 import java.util.concurrent.Future;
+import java.util.function.Supplier;
 
 import org.neo4j.graphdb.DependencyResolver;
 import org.neo4j.kernel.AvailabilityGuard;
@@ -56,7 +57,7 @@ public class TransactionStateMachineSPITest
     public void throwsWhenTxAwaitDurationExpires() throws Exception
     {
         long lastClosedTransactionId = 100;
-        TransactionIdStore txIdStore = fixedTxIdStore( lastClosedTransactionId );
+        Supplier<TransactionIdStore> txIdStore = () -> fixedTxIdStore( lastClosedTransactionId );
         Duration txAwaitDuration = Duration.ofSeconds( 42 );
         FakeClock clock = new FakeClock();
 
@@ -93,7 +94,7 @@ public class TransactionStateMachineSPITest
     public void doesNotWaitWhenTxIdUpToDate() throws Exception
     {
         long lastClosedTransactionId = 100;
-        TransactionIdStore txIdStore = fixedTxIdStore( lastClosedTransactionId );
+        Supplier<TransactionIdStore> txIdStore = () -> fixedTxIdStore( lastClosedTransactionId );
 
         TransactionStateMachineSPI txSpi = createTxSpi( txIdStore, Duration.ZERO, Clock.systemUTC() );
 
@@ -113,21 +114,27 @@ public class TransactionStateMachineSPITest
         return txIdStore;
     }
 
-    private static TransactionStateMachineSPI createTxSpi( TransactionIdStore txIdStore, Duration txAwaitDuration,
+    private static TransactionStateMachineSPI createTxSpi( Supplier<TransactionIdStore> txIdStore, Duration txAwaitDuration,
             Clock clock )
     {
         AvailabilityGuard availabilityGuard = new AvailabilityGuard( clock, NullLog.getInstance() );
         return createTxSpi( txIdStore, txAwaitDuration, availabilityGuard, clock );
     }
 
-    private static TransactionStateMachineSPI createTxSpi( TransactionIdStore txIdStore, Duration txAwaitDuration,
+    private static TransactionStateMachineSPI createTxSpi( Supplier<TransactionIdStore> txIdStore, Duration txAwaitDuration,
             AvailabilityGuard availabilityGuard, Clock clock )
     {
         GraphDatabaseQueryService queryService = mock( GraphDatabaseQueryService.class );
-        when( queryService.getDependencyResolver() ).thenReturn( mock( DependencyResolver.class ) );
+        DependencyResolver dependencyResolver = mock( DependencyResolver.class );
+        GraphDatabaseAPI db = mock( GraphDatabaseAPI.class );
 
-        return new TransactionStateMachineSPI( mock( GraphDatabaseAPI.class ), new ThreadToStatementContextBridge(),
-                mock( QueryExecutionEngine.class ), txIdStore, availabilityGuard, queryService, txAwaitDuration,
+        when( queryService.getDependencyResolver() ).thenReturn( dependencyResolver );
+        when( db.getDependencyResolver() ).thenReturn( dependencyResolver );
+
+        when(dependencyResolver.provideDependency( TransactionIdStore.class )).thenReturn( txIdStore );
+
+        return new TransactionStateMachineSPI( db, new ThreadToStatementContextBridge(),
+                mock( QueryExecutionEngine.class ), availabilityGuard, queryService, txAwaitDuration,
                 clock );
     }
 }

@@ -451,7 +451,7 @@
       <dependency>
         <groupId>org.neo4j.driver</groupId>
         <artifactId>neo4j-java-driver</artifactId>
-        <version>1.1.0-M06</version>
+        <version>1.2.1</version>
         <scope>test</scope>
       </dependency>
       <dependency>

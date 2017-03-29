@@ -32,7 +32,8 @@ import org.neo4j.bolt.v1.runtime.WorkerFactory;
 import org.neo4j.driver.v1.Driver;
 import org.neo4j.driver.v1.GraphDatabase;
 import org.neo4j.driver.v1.Session;
-import org.neo4j.driver.v1.exceptions.ConnectionFailureException;
+import org.neo4j.driver.v1.Transaction;
+import org.neo4j.driver.v1.exceptions.ServiceUnavailableException;
 import org.neo4j.graphdb.GraphDatabaseService;
 import org.neo4j.graphdb.factory.GraphDatabaseFactory;
 import org.neo4j.graphdb.factory.GraphDatabaseSettings;
@@ -64,6 +65,7 @@ public class BoltFailuresIT
 
     private GraphDatabaseService db;
     private Driver driver;
+    private Session session;
 
     @After
     public void shutdownDb()
@@ -72,7 +74,7 @@ public class BoltFailuresIT
         {
             db.shutdown();
         }
-        IOUtils.closeAllSilently( driver );
+        IOUtils.closeAllSilently( session, driver );
     }
 
     @Test( timeout = TEST_TIMEOUT )
@@ -85,15 +87,19 @@ public class BoltFailuresIT
 
         db = startDbWithBolt( new GraphDatabaseFactoryWithCustomBoltKernelExtension( extension ) );
         driver = createDriver();
+        // creating a session does not force driver to open a new connection, it opens connections
+        // lazily either when transaction is started or when query is executed via #run()
+        session = driver.session();
 
         try
         {
-            driver.session();
+            // attempt to begin a transaction to make driver create new socket connection
+            session.beginTransaction();
             fail( "Exception expected" );
         }
         catch ( Exception e )
         {
-            assertThat( e, instanceOf( ConnectionFailureException.class ) );
+            assertThat( e, instanceOf( ServiceUnavailableException.class ) );
         }
     }
 
@@ -106,15 +112,19 @@ public class BoltFailuresIT
 
         db = startDbWithBolt( new GraphDatabaseFactory().setMonitors( monitors ) );
         driver = createDriver();
+        // creating a session does not force driver to open a new connection, it opens connections
+        // lazily either when transaction is started or when query is executed via #run()
+        session = driver.session();
 
         try
         {
-            driver.session();
+            // attempt to begin a transaction to make driver create new socket connection
+            session.beginTransaction();
             fail( "Exception expected" );
         }
         catch ( Exception e )
         {
-            assertThat( e, instanceOf( ConnectionFailureException.class ) );
+            assertThat( e, instanceOf( ServiceUnavailableException.class ) );
         }
     }
 
@@ -155,7 +165,7 @@ public class BoltFailuresIT
     }
 
     private void throwsWhenInitMessageFails( Consumer<ThrowingSessionMonitor> monitorSetup,
-            boolean shouldBeAbleToGetSession )
+            boolean shouldBeAbleToBeginTransaction )
     {
         ThrowingSessionMonitor sessionMonitor = new ThrowingSessionMonitor();
         monitorSetup.accept( sessionMonitor );
@@ -164,11 +174,12 @@ public class BoltFailuresIT
         db = startTestDb( monitors );
         driver = createDriver();
 
-        try ( Session session = driver.session() )
+        try ( Session session = driver.session();
+              Transaction tx = session.beginTransaction() )
         {
-            if ( shouldBeAbleToGetSession )
+            if ( shouldBeAbleToBeginTransaction )
             {
-                session.run( "CREATE ()" ).consume();
+                tx.run( "CREATE ()" ).consume();
             }
             else
             {
@@ -177,7 +188,7 @@ public class BoltFailuresIT
         }
         catch ( Exception e )
         {
-            assertThat( e, instanceOf( ConnectionFailureException.class ) );
+            assertThat( e, instanceOf( ServiceUnavailableException.class ) );
         }
     }
 
@@ -189,19 +200,24 @@ public class BoltFailuresIT
         db = startTestDb( monitors );
         driver = createDriver();
 
+        // open a session and start a transaction, this will force driver to obtain
+        // a network connection and bind it to the transaction
         Session session = driver.session();
+        Transaction tx = session.beginTransaction();
 
+        // at this point driver holds a valid initialize connection
         // setup monitor to throw before running the query to make processing of the RUN message fail
         monitorSetup.accept( sessionMonitor );
-        session.run( "CREATE ()" );
+        tx.run( "CREATE ()" );
         try
         {
+            tx.close();
             session.close();
             fail( "Exception expected" );
         }
         catch ( Exception e )
         {
-            assertThat( e, instanceOf( ConnectionFailureException.class ) );
+            assertThat( e, instanceOf( ServiceUnavailableException.class ) );
         }
     }
 

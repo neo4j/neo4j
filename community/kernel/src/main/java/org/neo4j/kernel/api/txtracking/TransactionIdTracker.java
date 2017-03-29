@@ -22,6 +22,7 @@ package org.neo4j.kernel.api.txtracking;
 import java.time.Clock;
 import java.time.Duration;
 import java.util.concurrent.TimeUnit;
+import java.util.function.Supplier;
 
 import org.neo4j.kernel.AvailabilityGuard;
 import org.neo4j.kernel.api.exceptions.Status;
@@ -40,15 +41,15 @@ public class TransactionIdTracker
     private static final int POLL_INTERVAL = 25;
     private static final TimeUnit POLL_UNIT = TimeUnit.MILLISECONDS;
 
-    private final TransactionIdStore transactionIdStore;
+    private final Supplier<TransactionIdStore> transactionIdStoreSupplier;
     private final AvailabilityGuard availabilityGuard;
     private final Clock clock;
 
-    public TransactionIdTracker( TransactionIdStore transactionIdStore, AvailabilityGuard availabilityGuard,
-            Clock clock )
+    public TransactionIdTracker( Supplier<TransactionIdStore> transactionIdStoreSupplier, AvailabilityGuard availabilityGuard,
+                                 Clock clock )
     {
         this.availabilityGuard = availabilityGuard;
-        this.transactionIdStore = transactionIdStore;
+        this.transactionIdStoreSupplier = transactionIdStoreSupplier;
         this.clock = clock;
     }
 
@@ -86,7 +87,7 @@ public class TransactionIdTracker
         {
             throw new TransactionFailureException( Status.Transaction.InstanceStateChanged,
                     "Database not up to the requested version: %d. Latest database version is %d", oldestAcceptableTxId,
-                    transactionIdStore.getLastClosedTransactionId() );
+                    transactionIdStore().getLastClosedTransactionId() );
         }
     }
 
@@ -97,7 +98,15 @@ public class TransactionIdTracker
             throw new TransactionFailureException( Status.General.DatabaseUnavailable,
                     "Database had become unavailable while waiting for requested version %d.", oldestAcceptableTxId );
         }
-        return oldestAcceptableTxId <= transactionIdStore.getLastClosedTransactionId();
+        return oldestAcceptableTxId <= transactionIdStore().getLastClosedTransactionId();
+    }
+
+    private TransactionIdStore transactionIdStore()
+    {
+        // We need to resolve this as late as possible in case the database has been restarted as part of store copy.
+        // This causes TransactionIdStore staleness and we could get a MetaDataStore closed exception.
+        // Ideally we'd fix this with some life cycle wizardry but not going to do that for now.
+        return transactionIdStoreSupplier.get();
     }
 
     /**
@@ -109,6 +118,6 @@ public class TransactionIdTracker
      */
     public long newestEncounteredTxId()
     {
-        return transactionIdStore.getLastClosedTransactionId();
+        return transactionIdStore().getLastClosedTransactionId();
     }
 }

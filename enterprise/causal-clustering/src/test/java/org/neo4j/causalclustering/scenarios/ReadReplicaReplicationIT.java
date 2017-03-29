@@ -37,6 +37,7 @@ import java.util.concurrent.atomic.AtomicBoolean;
 import java.util.function.BiConsumer;
 import java.util.function.BinaryOperator;
 import java.util.function.Function;
+import java.util.function.Supplier;
 
 import org.neo4j.causalclustering.catchup.tx.CatchupPollingProcess;
 import org.neo4j.causalclustering.catchup.tx.FileCopyMonitor;
@@ -462,8 +463,8 @@ public class ReadReplicaReplicationIT
 
     private TransactionIdTracker transactionIdTracker( GraphDatabaseAPI database )
     {
-        TransactionIdStore transactionIdStore =
-                database.getDependencyResolver().resolveDependency( TransactionIdStore.class );
+        Supplier<TransactionIdStore> transactionIdStore =
+                database.getDependencyResolver().provideDependency( TransactionIdStore.class );
         AvailabilityGuard availabilityGuard =
                 database.getDependencyResolver().resolveDependency( AvailabilityGuard.class );
         return new TransactionIdTracker( transactionIdStore, availabilityGuard, Clock.systemUTC() );
