@@ -19,13 +19,22 @@
  */
 package org.neo4j.kernel.impl.api.store;
 
+import java.util.Iterator;
+
 import org.neo4j.collection.primitive.PrimitiveLongIterator;
+import org.neo4j.storageengine.api.txstate.NodeState;
 
 public interface NodeProgression
 {
     boolean nextBatch( Batch batch );
 
-    TransactionStateAccessMode mode();
+    Iterator<Long> addedNodes();
+
+    boolean fetchFromTxState( long id );
+
+    boolean fetchFromDisk( long id );
+
+    NodeState nodeState( long id );
 
     class Batch implements PrimitiveLongIterator
     {

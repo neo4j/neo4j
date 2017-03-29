@@ -396,13 +396,13 @@ public class StorageLayer implements StoreReadLayer
     @Override
     public Cursor<NodeItem> nodeGetAllCursor( StorageStatement statement, TransactionState state )
     {
-        return statement.acquireNodeCursor( state );
+        return statement.acquireNodeCursor( new AllNodeProgression( nodeStore, state ) );
     }
 
     @Override
     public Cursor<NodeItem> nodeCursor( StorageStatement statement, long nodeId, ReadableTransactionState state )
     {
-        return statement.acquireSingleNodeCursor( nodeId, state );
+        return statement.acquireNodeCursor( new SingleNodeProgression( nodeId, state ) );
     }
 
     @Override

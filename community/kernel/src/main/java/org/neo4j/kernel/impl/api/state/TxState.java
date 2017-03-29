@@ -643,18 +643,6 @@ public final class TxState implements TransactionState, RelationshipVisitor.Home
     }
 
     @Override
-    public PrimitiveIntSet augmentLabels( PrimitiveIntSet labels, NodeState nodeState )
-    {
-        ReadableDiffSets<Integer> labelDiffSets = nodeState.labelDiffSets();
-        if ( !labelDiffSets.isEmpty() )
-        {
-            labelDiffSets.getRemoved().forEach( labels::remove );
-            labelDiffSets.getAdded().forEach( labels::add );
-        }
-        return labels;
-    }
-
-    @Override
     public ReadableDiffSets<Long> nodesWithLabelChanged( int labelId )
     {
         return LABEL_STATE.get( this, labelId ).nodeDiffSets();
