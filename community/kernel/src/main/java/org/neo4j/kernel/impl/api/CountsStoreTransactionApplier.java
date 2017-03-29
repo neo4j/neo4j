@@ -30,6 +30,7 @@ public class CountsStoreTransactionApplier extends TransactionApplier.Adapter
 {
     private final TransactionApplicationMode mode;
     private final CountsTracker.Updater countsUpdater;
+    private boolean haveUpdates;
 
     public CountsStoreTransactionApplier( TransactionApplicationMode mode, CountsAccessor.Updater countsUpdater )
     {
@@ -56,6 +57,7 @@ public class CountsStoreTransactionApplier extends TransactionApplier.Adapter
     public boolean visitNodeCountsCommand( Command.NodeCountsCommand command )
     {
         assert countsUpdater != null || mode == TransactionApplicationMode.RECOVERY : "You must call begin first";
+        haveUpdates = true;
         if ( countsUpdater != null )
         {   // CountsUpdater is null if we're in recovery and the counts store already has had this transaction applied.
             countsUpdater.incrementNodeCount( command.labelId(), command.delta() );
@@ -67,6 +69,7 @@ public class CountsStoreTransactionApplier extends TransactionApplier.Adapter
     public boolean visitRelationshipCountsCommand( Command.RelationshipCountsCommand command ) throws IOException
     {
         assert countsUpdater != null || mode == TransactionApplicationMode.RECOVERY : "You must call begin first";
+        haveUpdates = true;
         if ( countsUpdater != null )
         {   // CountsUpdater is null if we're in recovery and the counts store already has had this transaction applied.
             countsUpdater.incrementRelationshipCount(
@@ -82,6 +85,8 @@ public class CountsStoreTransactionApplier extends TransactionApplier.Adapter
         // updating any counts anyway. Therefore the counts updater is closed right away.
         // This also breaks an otherwise deadlocking scenario between check pointer, this applier
         // and an index population thread wanting to apply index sampling to the counts store.
+        assert !haveUpdates : "Assumed that a schema transaction wouldn't also contain data commands affecting " +
+                "counts store, but was proven wrong with this transaction";
         closeCountsUpdaterIfOpen();
         return false;
     }
