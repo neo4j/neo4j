@@ -26,10 +26,13 @@ import org.junit.rules.RuleChain;
 
 import java.io.File;
 import java.io.IOException;
-import java.util.ArrayList;
+import java.util.Arrays;
+import java.util.LinkedList;
 import java.util.List;
 import java.util.Map;
+import java.util.Set;
 import java.util.TreeMap;
+import java.util.TreeSet;
 import java.util.stream.Collectors;
 
 import org.neo4j.cursor.RawCursor;
@@ -52,7 +55,7 @@ import static org.neo4j.test.rule.PageCacheRule.config;
 public class GBPTreeRecoveryIT
 {
     private static final int PAGE_SIZE = 256;
-    private static final Action CHECKPOINT = new CheckpointAction();
+    private final Action CHECKPOINT = new CheckpointAction();
 
     private final EphemeralFileSystemRule fs = new EphemeralFileSystemRule();
     private final TestDirectory directory = TestDirectory.testDirectory( getClass(), fs.get() );
@@ -160,6 +163,7 @@ public class GBPTreeRecoveryIT
         // a tree which has had random updates and checkpoints in it, load generated with specific seed
         File file = directory.file( "index" );
         List<Action> load = generateLoad();
+        List<Action> shuffledLoad = randomCausalAwareShuffle( load );
         int lastCheckPointIndex = indexOfLastCheckpoint( load );
 
         {
@@ -172,15 +176,15 @@ public class GBPTreeRecoveryIT
             PageCache pageCache = createPageCache();
             GBPTree<MutableLong,MutableLong> index = createIndex( pageCache, file );
             // Execute all actions up to and including last checkpoint ...
-            execute( load.subList( 0, lastCheckPointIndex + 1 ), index );
+            execute( shuffledLoad.subList( 0, lastCheckPointIndex + 1 ), index );
             // ... a random amount of the remaining "unsafe" actions ...
-            int numberOfRemainingActions = load.size() - lastCheckPointIndex - 1;
+            int numberOfRemainingActions = shuffledLoad.size() - lastCheckPointIndex - 1;
             int crashFlushIndex = lastCheckPointIndex + random.nextInt( numberOfRemainingActions ) + 1;
-            execute( load.subList( lastCheckPointIndex + 1, crashFlushIndex ), index );
+            execute( shuffledLoad.subList( lastCheckPointIndex + 1, crashFlushIndex ), index );
             // ... flush ...
             pageCache.flushAndForce();
             // ... execute the remaining actions
-            execute( load.subList( crashFlushIndex, load.size() ), index );
+            execute( shuffledLoad.subList( crashFlushIndex, shuffledLoad.size() ), index );
             // ... and finally crash
             fs.snapshot( throwing( () ->
             {
@@ -238,10 +242,53 @@ public class GBPTreeRecoveryIT
         }
     }
 
+    /**
+     * Shuffle actions without breaking causal dependencies, i.e. without affecting the end result
+     * of the data ending up in the tree. Checkpoints cannot move.
+     *
+     * On an integration level with neo4j, this is done because of the nature of how concurrent transactions
+     * are applied in random order and recovery applies transactions in order of transaction id.
+     */
+    private List<Action> randomCausalAwareShuffle( List<Action> actions )
+    {
+        Action[] arrayToShuffle = actions.toArray( new Action[actions.size()] );
+        int size = arrayToShuffle.length;
+        int numberOfActionsToShuffle = random.nextInt( size / 2 );
+
+        for ( int i = 0; i < numberOfActionsToShuffle; i++ )
+        {
+            int actionIndexToMove = random.nextInt( size );
+            int stride = random.nextBoolean() ? 1 : -1;
+            int maxNumberOfSteps = random.nextInt( 10 ) + 1;
+
+            for ( int steps = 0; steps < maxNumberOfSteps; steps++ )
+            {
+                Action actionToMove = arrayToShuffle[actionIndexToMove];
+                int actionIndexToSwap = actionIndexToMove + stride;
+                if ( actionIndexToSwap < 0 || actionIndexToSwap >= size )
+                {
+                    break;
+                }
+                Action actionToSwap = arrayToShuffle[actionIndexToSwap];
+
+                if ( actionToMove.hasCausalDependencyWith( actionToSwap ) )
+                {
+                    break;
+                }
+
+                arrayToShuffle[actionIndexToMove] = actionToSwap;
+                arrayToShuffle[actionIndexToSwap] = actionToMove;
+
+                actionIndexToMove = actionIndexToSwap;
+            }
+        }
+        return Arrays.asList( arrayToShuffle );
+    }
+
     private List<Action> recoveryActions( List<Action> load, int fromIndex )
     {
         return load.subList( fromIndex, load.size() ).stream()
-                .filter( Action::isRecoverable )
+                .filter( action -> !action.isCheckpoint() )
                 .collect( Collectors.toList() );
     }
 
@@ -304,7 +351,7 @@ public class GBPTreeRecoveryIT
         int lastCheckpoint = -1;
         for ( Action action : actions )
         {
-            if ( action == CHECKPOINT )
+            if ( action.isCheckpoint() )
             {
                 lastCheckpoint = i;
             }
@@ -315,7 +362,7 @@ public class GBPTreeRecoveryIT
 
     private List<Action> generateLoad()
     {
-        List<Action> actions = new ArrayList<>();
+        List<Action> actions = new LinkedList<>();
         int count = random.intBetween( 300, 1_000 );
         boolean hasCheckPoint = false;
         for ( int i = 0; i < count; i++ )
@@ -389,53 +436,68 @@ public class GBPTreeRecoveryIT
         return pageCacheRule.getPageCache( fs.get() );
     }
 
-    interface Action
+    abstract class Action
     {
-        void execute( GBPTree<MutableLong,MutableLong> index ) throws IOException;
+        long[] data;
+        Set<Long> allKeys;
 
-        long[] data();
-
-        boolean isRecoverable();
-    }
-
-    abstract class RecoverableAction implements Action
-    {
-        final long[] data;
-
-        RecoverableAction( long[] data )
+        Action( long[] data )
         {
             this.data = data;
+            this.allKeys = keySet( data );
         }
 
-        @Override
-        public long[] data()
+        long[] data()
         {
             return data;
         }
 
-        @Override
-        public boolean isRecoverable()
+        abstract void execute( GBPTree<MutableLong,MutableLong> index ) throws IOException;
+
+        abstract boolean isCheckpoint();
+
+        abstract boolean hasCausalDependencyWith( Action other );
+
+        private Set<Long> keySet( long[] data )
         {
-            return true;
+            Set<Long> keys = new TreeSet<>();
+            for ( int i = 0; i < data.length; i += 2 )
+            {
+                keys.add( data[i] );
+            }
+            return keys;
         }
     }
 
-    abstract static class NonRecoverableAction implements Action
+    abstract class DataAction extends Action
     {
+        DataAction( long[] data )
+        {
+            super( data );
+        }
+
         @Override
-        public boolean isRecoverable()
+        boolean isCheckpoint()
         {
             return false;
         }
 
         @Override
-        public long[] data()
+        public boolean hasCausalDependencyWith( Action other )
         {
-            return null;
+            if ( other.isCheckpoint() )
+            {
+                return true;
+            }
+
+            Set<Long> intersection = new TreeSet<>( allKeys );
+            intersection.retainAll( other.allKeys );
+
+            return !intersection.isEmpty();
         }
     }
 
-    class InsertAction extends RecoverableAction
+    class InsertAction extends DataAction
     {
         InsertAction( long[] data )
         {
@@ -457,7 +519,7 @@ public class GBPTreeRecoveryIT
         }
     }
 
-    class RemoveAction extends RecoverableAction
+    class RemoveAction extends DataAction
     {
         RemoveAction( long[] data )
         {
@@ -479,12 +541,29 @@ public class GBPTreeRecoveryIT
         }
     }
 
-    static class CheckpointAction extends NonRecoverableAction
+    class CheckpointAction extends Action
     {
+        CheckpointAction()
+        {
+            super( new long[0] );
+        }
+
         @Override
         public void execute( GBPTree<MutableLong,MutableLong> index ) throws IOException
         {
             index.checkpoint( unlimited() );
+        }
+
+        @Override
+        boolean isCheckpoint()
+        {
+            return true;
+        }
+
+        @Override
+        public boolean hasCausalDependencyWith( Action other )
+        {
+            return true;
         }
     }
 }
