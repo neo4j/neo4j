@@ -48,6 +48,7 @@ import org.neo4j.graphdb.schema.IndexDefinition;
 import org.neo4j.helpers.collection.Iterables;
 import org.neo4j.helpers.collection.IteratorWrapper;
 import org.neo4j.helpers.collection.Visitor;
+import org.neo4j.index.internal.gbptree.RecoveryCleanupWorkCollector;
 import org.neo4j.io.fs.FileSystemAbstraction;
 import org.neo4j.io.pagecache.IOLimiter;
 import org.neo4j.io.pagecache.PageCache;
@@ -279,7 +280,8 @@ public class BatchInserterImpl implements BatchInserter, IndexConfigStoreProvide
 
         Dependencies deps = new Dependencies();
         Monitors monitors = new Monitors();
-        deps.satisfyDependencies( fileSystem, config, logService, indexStoreView, pageCache, monitors );
+        deps.satisfyDependencies( fileSystem, config, logService, indexStoreView, pageCache, monitors,
+                RecoveryCleanupWorkCollector.IMMEDIATE );
 
         KernelExtensions extensions = life.add( new KernelExtensions(
                 new SimpleKernelContext( storeDir, DatabaseInfo.UNKNOWN, deps ),

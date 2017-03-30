@@ -177,6 +177,11 @@ public interface JobScheduler extends Lifecycle
          */
         public static Group fileWatch = new Group( "FileWatcher", NEW_THREAD );
 
+        /**
+         * Recovery cleanup.
+         */
+        public static Group recoveryCleanup = new Group( "RecoveryCleanup", POOLED );
+
         private Groups()
         {
         }

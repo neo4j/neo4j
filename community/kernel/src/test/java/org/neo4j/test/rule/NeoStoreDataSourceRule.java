@@ -23,6 +23,7 @@ import java.io.File;
 import java.util.Map;
 
 import org.neo4j.graphdb.DependencyResolver;
+import org.neo4j.index.internal.gbptree.RecoveryCleanupWorkCollector;
 import org.neo4j.io.fs.FileSystemAbstraction;
 import org.neo4j.io.pagecache.IOLimiter;
 import org.neo4j.io.pagecache.PageCache;
@@ -158,7 +159,8 @@ public class NeoStoreDataSourceRule extends ExternalResource
         try
         {
             Dependencies dependencies = new Dependencies();
-            dependencies.satisfyDependencies( pageCache, config, IndexStoreView.EMPTY, logService, monitors );
+            dependencies.satisfyDependencies( pageCache, config, IndexStoreView.EMPTY, logService, monitors,
+                    RecoveryCleanupWorkCollector.IMMEDIATE );
             KernelContext kernelContext =
                     new SimpleKernelContext( storeDir, DatabaseInfo.COMMUNITY, dependencies );
             return (LabelScanStoreProvider) new NativeLabelScanStoreExtension()

@@ -24,6 +24,7 @@ import java.io.IOException;
 import java.nio.file.OpenOption;
 
 import org.neo4j.helpers.Service;
+import org.neo4j.index.internal.gbptree.RecoveryCleanupWorkCollector;
 import org.neo4j.io.fs.FileSystemAbstraction;
 import org.neo4j.io.pagecache.IOLimiter;
 import org.neo4j.io.pagecache.PageCache;
@@ -167,6 +168,7 @@ public class BatchingNeoStores implements AutoCloseable, MemoryStatsVisitor.Visi
         dependencies.satisfyDependency( IndexStoreView.EMPTY );
         dependencies.satisfyDependency( pageCache );
         dependencies.satisfyDependency( new Monitors() );
+        dependencies.satisfyDependency( RecoveryCleanupWorkCollector.IMMEDIATE );
         KernelContext kernelContext = new SimpleKernelContext( storeDir, DatabaseInfo.UNKNOWN, dependencies );
         @SuppressWarnings( { "unchecked", "rawtypes" } )
         KernelExtensions extensions = life.add( new KernelExtensions(
