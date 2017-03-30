@@ -44,18 +44,7 @@ public final class Assert
     public static <E extends Exception> void assertException( ThrowingAction<E> f, Class typeOfException ) throws
             Exception
     {
-        try
-        {
-            f.apply();
-            fail( "Expected exception of type " + typeOfException + ", but no exception was thrown" );
-        }
-        catch ( Exception e )
-        {
-            if ( !typeOfException.isInstance( e ) )
-            {
-                fail( "Got unexpected exception " + e.getClass() + "\nExpected: " + typeOfException );
-            }
-        }
+        assertException( f, typeOfException, null );
     }
 
     public static <E extends Exception> void assertException( ThrowingAction<E> f, Class typeOfException,
@@ -70,7 +59,10 @@ public final class Assert
         {
             if ( typeOfException.isInstance( e ) )
             {
-                assertThat( e.getMessage(), containsString( partOfErrorMessage ) );
+                if ( partOfErrorMessage != null )
+                {
+                    assertThat( e.getMessage(), containsString( partOfErrorMessage ) );
+                }
             }
             else
             {
