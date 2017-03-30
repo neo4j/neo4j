@@ -1107,15 +1107,6 @@ public class BackupServiceIT
 
         @Override
         public boolean runFull( File storeDir, Config tuningConfiguration, ProgressMonitorFactory progressFactory,
-                LogProvider logProvider, FileSystemAbstraction fileSystem, PageCache pageCache, boolean verbose )
-                throws ConsistencyCheckFailedException
-        {
-            markAsChecked();
-            return ConsistencyCheck.FULL.runFull( storeDir, tuningConfiguration, progressFactory, logProvider, fileSystem, pageCache, verbose );
-        }
-
-        @Override
-        public boolean runFull( File storeDir, Config tuningConfiguration, ProgressMonitorFactory progressFactory,
                 LogProvider logProvider, FileSystemAbstraction fileSystem, PageCache pageCache, boolean verbose,
                 CheckConsistencyConfig checkConsistencyConfig ) throws ConsistencyCheckFailedException
         {
@@ -1128,7 +1119,7 @@ public class BackupServiceIT
             checked = true;
         }
 
-        public boolean isChecked()
+        boolean isChecked()
         {
             return checked;
         }
