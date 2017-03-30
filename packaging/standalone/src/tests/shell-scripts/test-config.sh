@@ -110,14 +110,14 @@ test_expect_success "should write paths in use" "
   set_config 'dbms.directories.certificates' '/certs/bob' neo4j.conf &&
   set_config 'dbms.directories.run' 'ruun' neo4j.conf &&
   set_config 'dbms.directories.logs' 'loogs' neo4j.conf &&
-  test_expect_stdout_matching '  Home:         $(neo4j_home)' run_daemon &&
-  test_expect_stdout_matching '  Config:       $(neo4j_home)/conf' run_daemon &&
-  test_expect_stdout_matching '  Data:         /data/bob' run_daemon &&
-  test_expect_stdout_matching '  Import:       /import/bob' run_daemon &&
-  test_expect_stdout_matching '  Plugins:      /plugins/bob' run_daemon &&
-  test_expect_stdout_matching '  Certificates: /certs/bob' run_daemon &&
-  test_expect_stdout_matching '  Logs:         $(neo4j_home)/loogs' run_daemon &&
-  test_expect_stdout_matching '  Run:          $(neo4j_home)/ruun' run_daemon
+  test_expect_stdout_matching '  home:         $(neo4j_home)' run_daemon &&
+  test_expect_stdout_matching '  config:       $(neo4j_home)/conf' run_daemon &&
+  test_expect_stdout_matching '  data:         /data/bob' run_daemon &&
+  test_expect_stdout_matching '  import:       /import/bob' run_daemon &&
+  test_expect_stdout_matching '  plugins:      /plugins/bob' run_daemon &&
+  test_expect_stdout_matching '  certificates: /certs/bob' run_daemon &&
+  test_expect_stdout_matching '  logs:         $(neo4j_home)/loogs' run_daemon &&
+  test_expect_stdout_matching '  run:          $(neo4j_home)/ruun' run_daemon
 "
 
 test_expect_success "should write active database" "
