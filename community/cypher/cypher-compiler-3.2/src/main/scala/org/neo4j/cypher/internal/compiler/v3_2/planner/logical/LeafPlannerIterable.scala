@@ -34,13 +34,3 @@ case class LeafPlannerList(leafPlanners: IndexedSeq[LeafPlanner]) extends LeafPl
     logicalPlans.groupBy(_.availableSymbols).values
   }
 }
-
-case class PriorityLeafPlannerList(priority: LeafPlannerIterable, fallback: LeafPlannerIterable) extends LeafPlannerIterable {
-
-  override def candidates(qg: QueryGraph, f: (LogicalPlan, QueryGraph) => LogicalPlan)
-                         (implicit context: LogicalPlanningContext): Iterable[Seq[LogicalPlan]] = {
-    val priorityPlans = priority.candidates(qg, f)
-    if (priorityPlans.nonEmpty) priorityPlans
-    else fallback.candidates(qg, f)
-  }
-}

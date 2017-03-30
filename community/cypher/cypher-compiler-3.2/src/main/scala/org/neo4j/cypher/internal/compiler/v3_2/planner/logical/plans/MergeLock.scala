@@ -19,13 +19,20 @@
  */
 package org.neo4j.cypher.internal.compiler.v3_2.planner.logical.plans
 
+import org.neo4j.cypher.internal.frontend.v3_2.ast.{Expression, LabelName, PropertyKeyName}
 import org.neo4j.cypher.internal.ir.v3_2.{CardinalityEstimation, IdName, PlannerQuery}
 
-case class AssertSameNode(node: IdName, left: LogicalPlan, right: LogicalPlan)(val solved: PlannerQuery with CardinalityEstimation)
-  extends LogicalPlan with LazyLogicalPlan {
+case class MergeLock(source: LogicalPlan, descriptions: Seq[LockDescription], lockMode: LockMode)
+                    (val solved: PlannerQuery with CardinalityEstimation) extends LogicalPlan with LazyLogicalPlan {
+  override def lhs: Option[LogicalPlan] = Some(source)
 
-  val lhs = Some(left)
-  val rhs = Some(right)
+  override def rhs: Option[LogicalPlan] = None
 
-  def availableSymbols = left.availableSymbols ++ right.availableSymbols + node
+  override def availableSymbols: Set[IdName] = source.availableSymbols
 }
+
+case class LockDescription(label: LabelName, propertyValues: Seq[(PropertyKeyName, Expression)])
+
+sealed trait LockMode
+object Shared extends LockMode
+object Exclusive extends LockMode

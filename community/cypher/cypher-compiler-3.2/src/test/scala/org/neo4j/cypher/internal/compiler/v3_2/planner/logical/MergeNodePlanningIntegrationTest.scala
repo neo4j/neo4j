@@ -100,25 +100,6 @@ class MergeNodePlanningIntegrationTest extends CypherFunSuite with LogicalPlanni
     planFor("MERGE(a) CREATE (b)")._2 should equal(emptyResult)
   }
 
-  test("should use AssertSameNode when multiple unique index matches") {
-    val plan = (new given {
-      uniqueIndexOn("X", "prop")
-      uniqueIndexOn("Y", "prop")
-    } getLogicalPlanFor "MERGE (a:X:Y {prop: 42})")._2
-
-    plan shouldBe using[AssertSameNode]
-    plan shouldBe using[NodeUniqueIndexSeek]
-  }
-
-  test("should not use AssertSameNode when one unique index matches") {
-    val plan = (new given {
-      uniqueIndexOn("X", "prop")
-    } getLogicalPlanFor "MERGE (a:X:Y {prop: 42})")._2
-
-    plan should not be using[AssertSameNode]
-    plan shouldBe using[NodeUniqueIndexSeek]
-  }
-
   /*
    *                     |
    *           condApply(IsNull(a))

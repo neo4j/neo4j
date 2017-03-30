@@ -19,9 +19,9 @@
  */
 package org.neo4j.cypher.internal.compiler.v3_2.planner.logical
 
-import org.neo4j.cypher.internal.compiler.v3_2.planner.logical.plans.{LockNodes, LogicalPlan}
-import org.neo4j.cypher.internal.compiler.v3_2.planner.logical.steps.{LogicalPlanProducer, mergeUniqueIndexSeekLeafPlanner}
-import org.neo4j.cypher.internal.frontend.v3_2.ast.Expression
+import org.neo4j.cypher.internal.compiler.v3_2.planner.logical.plans.{DeleteExpression => _, _}
+import org.neo4j.cypher.internal.compiler.v3_2.planner.logical.steps.LogicalPlanProducer
+import org.neo4j.cypher.internal.frontend.v3_2.ast._
 import org.neo4j.cypher.internal.frontend.v3_2.{InputPosition, ast}
 import org.neo4j.cypher.internal.ir.v3_2._
 import org.neo4j.cypher.internal.ir.v3_2.exception.CantHandleQueryException
@@ -135,42 +135,34 @@ case object PlanUpdates
   }
 
   /*
-   * Merges either matches or creates. It is planned as following:
+   * MERGE either matches or creates. It is planned as following:
    *
-   *
-   *            antiCondApply
-   *              /     \
-   *             /    onCreate
-   *            /         \
-   *           /      mergeCreatePart
-   *          /
-   *       cond-apply
-   *        /     \
-   *    apply  onMatch
-   *    /    \
-   * source optional
-   *           \
-   *         mergeReadPart
-   *
-   * Note also that merge uses a special leaf planner to enforce the correct behavior
-   * when having uniqueness constraints, and unnestApply will remove a lot of the extra Applies
+   *                                 cond-apply
+   *                                 x IS NULL
+   *                                /         \
+   *                           cond-apply   onCreate
+   *                          x IS NOT NULL    \
+   *                           /         \    CREATE
+   *                      cond-apply    onMatch
+   *                      x IS NULL
+   *                     /        \
+   *                cond-apply  optional
+   *                x IS NULL      \
+   *                  /    \      MATCH
+   *               apply  lock-X
+   *               /    \
+   *           lock-S optional
+   *             /       \
+   *          source    MATCH
    */
   def planMerge(source: LogicalPlan, matchGraph: QueryGraph, createNodePatterns: Seq[CreateNodePattern],
                 createRelationshipPatterns: Seq[CreateRelationshipPattern], onCreatePatterns: Seq[SetMutatingPattern],
                 onMatchPatterns: Seq[SetMutatingPattern], first: Boolean)(implicit context: LogicalPlanningContext): LogicalPlan = {
 
     val producer: LogicalPlanProducer = context.logicalPlanProducer
-
-    //Merge needs to make sure that found nodes have all the expected properties, so we use AssertSame operators here
-    val leafPlannerList = LeafPlannerList(IndexedSeq(mergeUniqueIndexSeekLeafPlanner))
-    val leafPlanners = PriorityLeafPlannerList(leafPlannerList, context.config.leafPlanners)
-
-    val innerContext: LogicalPlanningContext =
-      context.recurse(source).copy(config = context.config.withLeafPlanners(leafPlanners))
-
     val ids: Seq[IdName] = createNodePatterns.map(_.nodeName) ++ createRelationshipPatterns.map(_.relName)
 
-    val mergeMatch = mergeMatchPart(source, matchGraph, producer, createNodePatterns, createRelationshipPatterns, innerContext, ids)
+    val mergeMatch = mergeMatchPart(source, matchGraph, producer, createNodePatterns, createRelationshipPatterns, context, ids)
 
     //            condApply
     //             /   \
@@ -181,7 +173,7 @@ case object PlanUpdates
         case (src, current) => planUpdate(src, current, first)
       }
 
-      producer.planConditionalApply(mergeMatch, onMatch, checkForNull(ids, negated = true))(innerContext)
+      producer.planConditionalApply(mergeMatch, onMatch, checkForNull(ids, negated = true))(context)
     } else mergeMatch
 
     //       antiCondApply
@@ -200,20 +192,21 @@ case object PlanUpdates
     val onCreate = onCreatePatterns.foldLeft(mergeCreatePart) {
       case (src, current) => planUpdate(src, current, first)
     }
-    val antiCondApply = producer.planConditionalApply(condApply, onCreate, checkForNull(ids, negated = false))(innerContext)
+    val antiCondApply = producer.planConditionalApply(condApply, onCreate, checkForNull(ids, negated = false))(context)
 
     antiCondApply
   }
 
-  /*
-       If negated, produces a predicate such as
-       WHERE a IS NOT NULL AND b IS NOT NULL AND c IS NOT NULL AND D IS NOT NULL
+  private val pos = InputPosition.NONE
 
-       If not negated,
-       WHERE a IS NULL OR b IS NULL OR c IS NULL or D IS NULL
-   */
+  /*
+     If negated, produces a predicate such as
+     WHERE a IS NOT NULL AND b IS NOT NULL AND c IS NOT NULL AND D IS NOT NULL
+
+     If not negated,
+     WHERE a IS NULL OR b IS NULL OR c IS NULL or D IS NULL
+     */
   private def checkForNull(ids: Seq[IdName], negated: Boolean): Expression = {
-    val pos = InputPosition.NONE
     val predicates: Seq[Expression] = ids map {
       case IdName(key) =>
         val isNull = ast.IsNull(ast.Variable(key)(pos))(pos)
@@ -234,7 +227,7 @@ case object PlanUpdates
     predicate
   }
 
-  private def mergeMatchPart(source: LogicalPlan,
+  private def mergeMatchPart(in: LogicalPlan,
                              matchGraph: QueryGraph,
                              producer: LogicalPlanProducer,
                              createNodePatterns: Seq[CreateNodePattern],
@@ -248,6 +241,13 @@ case object PlanUpdates
       producer.planOptional(mergeReadPart, matchGraph.argumentIds)(ctx)
     }
 
+    val mergeLocks: Seq[LockDescription] = createLockingDescriptions(matchGraph)
+    // Grab merge locks if we need to
+    val source = if (mergeLocks.nonEmpty)
+      context.logicalPlanProducer.planMergeLock(in, mergeLocks, Shared)
+    else
+      in
+
     //        apply
     //        /   \
     //       /  optional
@@ -256,34 +256,75 @@ case object PlanUpdates
     //                \
     //                arg
     val matchOrNull = producer.planApply(source, mergeRead(context))(context)
+    val nullPredicate = checkForNull(ids, negated = false)
+
+    val lockedIfNeeded = if (mergeLocks.nonEmpty)
+    //       CondApply (check if null)
+    //          /   \
+    //         /  merge-lock(X)
+    //        /       \
+    //   source   single-row
+      grabExclusiveLocks(producer, context, mergeLocks, matchOrNull, nullPredicate)
+    else
+      matchOrNull
 
     // If we are MERGEing on relationships, we need to lock nodes before matching again. Otherwise, we are done
     val nodesToLock = matchGraph.patternNodes intersect matchGraph.argumentIds
 
     if (nodesToLock.nonEmpty) {
-
-      def addLockToPlan(plan: LogicalPlan): LogicalPlan = {
-        val lockThese = nodesToLock intersect plan.availableSymbols
-        if (lockThese.nonEmpty)
-          LockNodes(plan, lockThese)(plan.solved)
-        else
-          plan
-      }
-
-      val lockingContext = context.copy(leafPlanUpdater = addLockToPlan)
-
-      //        antiCondApply
-      //        /   \
-      //       /  optional
-      //      /       \
-      // source  mergeReadPart
-      //                \
-      //               lock
-      //                  \
-      //                  leaf
-      val ifMissingLockAndMatchAgain = mergeRead(lockingContext)
-      producer.planConditionalApply(matchOrNull, ifMissingLockAndMatchAgain, checkForNull(ids, negated = false))(context)
+      grabNodeLocks(producer, context, mergeRead, nullPredicate, lockedIfNeeded, nodesToLock)
     } else
-      matchOrNull
+      lockedIfNeeded
+  }
+
+
+  private def grabNodeLocks(producer: LogicalPlanProducer, context: LogicalPlanningContext,
+                            mergeRead: LogicalPlanningContext => LogicalPlan, nullPredicate: Expression,
+                            lockedIfNeeded: LogicalPlan, nodesToLock: Set[IdName]) = {
+    def addLockToPlan(plan: LogicalPlan): LogicalPlan = {
+      val lockThese = nodesToLock intersect plan.availableSymbols
+      if (lockThese.nonEmpty)
+        LockNodes(plan, lockThese)(plan.solved)
+      else
+        plan
+    }
+
+    val lockingContext = context.copy(leafPlanUpdater = addLockToPlan)
+
+    //        CondApply
+    //        /   \
+    //       /  optional
+    //      /       \
+    // source  mergeReadPart
+    //                \
+    //             lock-nodes
+    //                  \
+    //                  leaf
+    val ifMissingLockAndMatchAgain = mergeRead(lockingContext)
+    producer.planConditionalApply(lockedIfNeeded, ifMissingLockAndMatchAgain, nullPredicate)(context)
+  }
+
+  private def grabExclusiveLocks(producer: LogicalPlanProducer, context: LogicalPlanningContext,
+                                 mergeLocks: Seq[LockDescription], matchOrNull: LogicalPlan, nullPredicate: Expression) = {
+    val singleRow = context.logicalPlanProducer.planSingleRow()(context)
+    val takeExclusiveLocks = context.logicalPlanProducer.planMergeLock(singleRow, mergeLocks, Exclusive)
+    producer.planConditionalApply(matchOrNull, takeExclusiveLocks, nullPredicate)(context)
+  }
+
+  def createLockingDescriptions(qg: QueryGraph): Seq[LockDescription] = {
+    val nodeIds = qg.patternNodes -- qg.argumentIds
+    val nodesWithLabels = nodeIds.flatMap(id => qg.selections.labelsOnNode(id).map(lbl => id -> lbl))
+    val lockDescriptions = nodesWithLabels flatMap {
+      case (nodeId, label) =>
+        val propValues: Set[(PropertyKeyName, Expression)] = qg.selections.predicates.collect {
+          case Predicate(_, Equals(Property(Variable(x), propertyKeyName), exp)) if x == nodeId.name => propertyKeyName -> exp
+        }
+        if (propValues.isEmpty)
+          None
+        else
+          Some(LockDescription(label, propValues.toSeq))
+    }
+
+    lockDescriptions.toSeq
   }
 }

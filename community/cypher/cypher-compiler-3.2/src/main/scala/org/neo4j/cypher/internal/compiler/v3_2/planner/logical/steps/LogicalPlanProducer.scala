@@ -286,12 +286,6 @@ case class LogicalPlanProducer(cardinalityModel: CardinalityModel) extends ListS
     NodeUniqueIndexSeek(idName, label, propertyKeys, valueExpr, argumentIds)(solved)
   }
 
-  def planAssertSameNode(node: IdName, left: LogicalPlan, right: LogicalPlan)
-                        (implicit context: LogicalPlanningContext): LogicalPlan = {
-    val solved: PlannerQuery = left.solved ++ right.solved
-    AssertSameNode(node, left, right)(solved)
-  }
-
   def planOptionalExpand(left: LogicalPlan,
                          from: IdName,
                          dir: SemanticDirection,
@@ -669,6 +663,9 @@ case class LogicalPlanProducer(cardinalityModel: CardinalityModel) extends ListS
 
   def planError(inner: LogicalPlan, exception: ExhaustiveShortestPathForbiddenException): LogicalPlan =
     ErrorPlan(inner, exception)(inner.solved)
+
+  def planMergeLock(inner: LogicalPlan, lockDescriptions: Seq[LockDescription], lockMode: LockMode) =
+     MergeLock(inner, lockDescriptions, lockMode)(inner.solved)
 
   implicit def estimatePlannerQuery(plannerQuery: PlannerQuery)
                                    (implicit context: LogicalPlanningContext): PlannerQuery with CardinalityEstimation = {

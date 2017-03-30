@@ -77,25 +77,6 @@ class MergeRelationshipPlanningIntegrationTest extends CypherFunSuite with Logic
     planFor("WITH 42 AS arg MERGE (a:A {p: arg})-[r:R]->(b)")._2 should equal(emptyResult)
   }
 
-  test("should use AssertSameNode when multiple unique index matches") {
-    val plan = (new given {
-      uniqueIndexOn("X", "prop")
-      uniqueIndexOn("Y", "prop")
-    } getLogicalPlanFor "MERGE (a:X:Y {prop: 42})-[:T]->(b)")._2
-
-    plan shouldBe using[AssertSameNode]
-    plan shouldBe using[NodeUniqueIndexSeek]
-  }
-
-  test("should not use AssertSameNode when one unique index matches") {
-    val plan = (new given {
-      uniqueIndexOn("X", "prop")
-    } getLogicalPlanFor "MERGE (a:X:Y {prop: 42})")._2
-
-    plan should not be using[AssertSameNode]
-    plan shouldBe using[NodeUniqueIndexSeek]
-  }
-
   test("should plan only one create node when the other node is already in scope when creating a relationship") {
 
     val predicate = Ors(Set(isNull(bId), isNull(rId)))(InputPosition.NONE)

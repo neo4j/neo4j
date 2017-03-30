@@ -463,9 +463,6 @@ case class ActualPipeBuilder(monitors: Monitors, recurse: LogicalPlan => Pipe, r
 
       case Apply(_, _) => ApplyPipe(lhs, rhs)(id = id)
 
-      case AssertSameNode(node, _, _) =>
-        AssertSameNodePipe(lhs, rhs, node.name)(id = id)
-
       case SemiApply(_, _) =>
         SemiApplyPipe(lhs, rhs, negated = false)(id = id)
 

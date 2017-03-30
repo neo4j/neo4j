@@ -296,9 +296,6 @@ case class LogicalPlan2PlanDescription(idMap: Map[LogicalPlan, Id], readOnly: Bo
       case _: Apply =>
         PlanDescriptionImpl(id, "Apply", children, Seq.empty, variables)
 
-      case _: AssertSameNode =>
-        PlanDescriptionImpl(id, "AssertSameNode", children, Seq.empty, variables)
-
       case CartesianProduct(_, _) =>
         PlanDescriptionImpl(id, "CartesianProduct", children, Seq.empty, variables)
 
