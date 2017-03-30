@@ -68,6 +68,7 @@ public class IndexTxStateUpdater
     public void onLabelChange( KernelStatement state, int labelId, NodeItem node, LabelChangeType changeType )
             throws EntityNotFoundException
     {
+        assert noSchemaChangedInTx( state );
         PrimitiveIntSet nodePropertyIds = Primitive.intSet();
         nodePropertyIds.addAll( readOps.nodeGetPropertyKeys( state, node ).iterator() );
 
@@ -95,11 +96,17 @@ public class IndexTxStateUpdater
         }
     }
 
+    private boolean noSchemaChangedInTx( KernelStatement state )
+    {
+        return !(state.txState().hasChanges() && !state.txState().hasDataChanges());
+    }
+
     // PROPERTY CHANGES
 
     public void onPropertyAdd( KernelStatement state, NodeItem node, DefinedProperty after )
             throws EntityNotFoundException
     {
+        assert noSchemaChangedInTx( state );
         Iterator<NewIndexDescriptor> indexes =
                 storeReadLayer.indexesAndUniqueIndexesRelatedToProperty( after.propertyKeyId() );
         nodeIndexMatcher.onMatchingSchema( state, indexes, node, after.propertyKeyId(),
@@ -115,6 +122,7 @@ public class IndexTxStateUpdater
     public void onPropertyRemove( KernelStatement state, NodeItem node, DefinedProperty before )
             throws EntityNotFoundException
     {
+        assert noSchemaChangedInTx( state );
         Iterator<NewIndexDescriptor> indexes =
                 storeReadLayer.indexesAndUniqueIndexesRelatedToProperty( before.propertyKeyId() );
         nodeIndexMatcher.onMatchingSchema( state, indexes, node, before.propertyKeyId(),
@@ -129,6 +137,7 @@ public class IndexTxStateUpdater
     public void onPropertyChange( KernelStatement state, NodeItem node, DefinedProperty before, DefinedProperty after )
             throws EntityNotFoundException
     {
+        assert noSchemaChangedInTx( state );
         assert before.propertyKeyId() == after.propertyKeyId();
         Iterator<NewIndexDescriptor> indexes =
                 storeReadLayer.indexesAndUniqueIndexesRelatedToProperty( before.propertyKeyId() );
