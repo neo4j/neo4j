@@ -192,7 +192,7 @@ public class StorageLayer implements StoreReadLayer
     @Override
     public Iterator<NewIndexDescriptor> indexesGetForLabel( int labelId )
     {
-        return toIndexDescriptors( filter( hasLabel( labelId ), schemaCache.indexRules() ) );
+        return schemaCache.indexDescriptorsForLabel( labelId );
     }
 
     @Override
