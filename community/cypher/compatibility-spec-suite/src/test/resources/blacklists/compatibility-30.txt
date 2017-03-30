@@ -22,36 +22,14 @@ LIMIT with an expression that does not depend on variables
 `toBoolean()` on invalid types
 
 // new parameter syntax $
-Delete node from a list
-Delete node from a list
-Delete relationship from a list
-Use dynamic property lookup based on parameters when there is no type information
-Use dynamic property lookup based on parameters when there is lhs type information
-Use dynamic property lookup based on parameters when there is rhs type information
-Use collection lookup based on parameters when there is no type information
-Use collection lookup based on parameters when there is lhs type information
 Fail at runtime when attempting to index with an Int into a Map
 Fail at runtime when trying to index into a map with a non-string
 Fail at runtime when attempting to index with a String into a Collection
 Fail at runtime when trying to index into a list with a list
 Fail at runtime when trying to index something which is not a map or collection
-`percentileDisc()`
-`percentileCont()`
 `percentileCont()` failing on bad arguments
 `percentileDisc()` failing on bad arguments
 `percentileDisc()` failing in more involved query
-Using `keys()` on a parameter map
-Use params in pattern matching predicates
-Matching with many predicates and larger pattern
-ORDER BY with negative parameter for LIMIT should not generate errors
-Start the result from the second row by param
-Get rows in the middle by param
-Using null in AND
-Using null in OR
-Using null in XOR
-Using null in IN
-Creating nodes from an unwound parameter list
-Unwind with merge
 
 // unsupported pattern comprehensions
 Pattern comprehension and ORDER BY
@@ -76,8 +54,3 @@ Fail when comparing parameters to nodes
 Comparing nodes to properties
 Fail when comparing nodes to relationships
 Fail when comparing relationships to nodes
-
-// error conditions should give null
-Handling non-string operands for STARTS WITH
-Handling non-string operands for CONTAINS
-Handling non-string operands for ENDS WITH
