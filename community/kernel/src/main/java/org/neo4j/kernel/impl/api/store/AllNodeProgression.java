@@ -66,7 +66,7 @@ public class AllNodeProgression implements NodeProgression
     @Override
     public Iterator<Long> addedNodes()
     {
-        return state == null ? null : state.addedAndRemovedNodes().getAdded().iterator();
+        return state.addedAndRemovedNodes().getAdded().iterator();
     }
 
     @Override
@@ -78,12 +78,12 @@ public class AllNodeProgression implements NodeProgression
     @Override
     public boolean fetchFromDisk( long id )
     {
-        return state == null || !state.nodeIsDeletedInThisTx( id );
+        return !state.nodeIsDeletedInThisTx( id );
     }
 
     @Override
     public NodeState nodeState( long id )
     {
-        return state == null ? NodeState.EMPTY : state.getNodeState( id );
+        return state.getNodeState( id );
     }
 }

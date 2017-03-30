@@ -51,9 +51,12 @@ import org.neo4j.storageengine.api.StorageProperty;
 import org.neo4j.storageengine.api.StorageStatement;
 import org.neo4j.storageengine.api.StoreReadLayer;
 import org.neo4j.storageengine.api.txstate.NodeState;
+import org.neo4j.storageengine.api.txstate.PropertyContainerState;
 import org.neo4j.storageengine.api.txstate.ReadableDiffSets;
 import org.neo4j.storageengine.api.txstate.ReadableTransactionState;
 import org.neo4j.storageengine.api.txstate.RelationshipState;
+
+import static org.neo4j.storageengine.api.txstate.ReadableTransactionState.EMPTY;
 
 /**
  * Transform for {@link org.neo4j.storageengine.api.txstate.ReadableTransactionState} to make it accessible as {@link TransactionData}.
@@ -202,12 +205,12 @@ public class TxStateTransactionDataSnapshot implements TransactionData
         {
             for ( long nodeId : state.addedAndRemovedNodes().getRemoved() )
             {
-                try ( Cursor<NodeItem> node = store.nodeCursor( storeStatement, nodeId, null ) )
+                try ( Cursor<NodeItem> node = store.nodeCursor( storeStatement, nodeId, EMPTY ) )
                 {
                     if ( node.next() )
                     {
                         try ( Cursor<PropertyItem> properties = store
-                                .nodeGetProperties( storeStatement, node.get(), null ) )
+                                .nodeGetProperties( storeStatement, node.get(), NodeState.EMPTY ) )
                         {
                             while ( properties.next() )
                             {
@@ -228,12 +231,13 @@ public class TxStateTransactionDataSnapshot implements TransactionData
             for ( long relId : state.addedAndRemovedRelationships().getRemoved() )
             {
                 Relationship relationshipProxy = relationship( relId );
-                try ( Cursor<RelationshipItem> relationship = store.relationshipCursor( storeStatement, relId, null ) )
+                try ( Cursor<RelationshipItem> relationship = store.relationshipCursor( storeStatement, relId, EMPTY ) )
                 {
                     if ( relationship.next() )
                     {
                         try ( Cursor<PropertyItem> properties = store
-                                .relationshipGetProperties( storeStatement, relationship.get(), null ) )
+                                .relationshipGetProperties( storeStatement, relationship.get(),
+                                        RelationshipState.EMPTY ) )
                         {
                             while ( properties.next() )
                             {
@@ -316,7 +320,7 @@ public class TxStateTransactionDataSnapshot implements TransactionData
         }
 
         // Get this relationship data from the store
-        try ( Cursor<RelationshipItem> cursor = store.relationshipCursor( storeStatement, relId, null ) )
+        try ( Cursor<RelationshipItem> cursor = store.relationshipCursor( storeStatement, relId, EMPTY ) )
         {
             if ( !cursor.next() )
             {
@@ -362,7 +366,7 @@ public class TxStateTransactionDataSnapshot implements TransactionData
             return null;
         }
 
-        try ( Cursor<NodeItem> node = store.nodeCursor( storeStatement, nodeState.getId(), null ) )
+        try ( Cursor<NodeItem> node = store.nodeCursor( storeStatement, nodeState.getId(), EMPTY ) )
         {
             if ( !node.next() )
             {
@@ -370,7 +374,7 @@ public class TxStateTransactionDataSnapshot implements TransactionData
             }
 
             try ( Cursor<PropertyItem> properties = store
-                    .nodeGetProperty( storeStatement, node.get(), property, null ) )
+                    .nodeGetProperty( storeStatement, node.get(), property, NodeState.EMPTY ) )
             {
                 if ( properties.next() )
                 {
@@ -390,7 +394,7 @@ public class TxStateTransactionDataSnapshot implements TransactionData
         }
 
         try ( Cursor<RelationshipItem> relationship = store
-                .relationshipCursor( storeStatement, relState.getId(), null ) )
+                .relationshipCursor( storeStatement, relState.getId(), EMPTY ) )
         {
             if ( !relationship.next() )
             {
@@ -398,7 +402,8 @@ public class TxStateTransactionDataSnapshot implements TransactionData
             }
 
             try ( Cursor<PropertyItem> properties = store
-                    .relationshipGetProperty( storeStatement, relationship.get(), property, null ) )
+                    .relationshipGetProperty( storeStatement, relationship.get(), property,
+                            RelationshipState.EMPTY ) )
             {
                 if ( properties.next() )
                 {

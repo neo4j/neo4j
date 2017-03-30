@@ -67,7 +67,9 @@ import org.neo4j.storageengine.api.StorageCommand;
 import org.neo4j.storageengine.api.StorageEngine;
 import org.neo4j.storageengine.api.StorageStatement;
 import org.neo4j.storageengine.api.StoreReadLayer;
+import org.neo4j.storageengine.api.txstate.ReadableTransactionState;
 import org.neo4j.storageengine.api.txstate.TxStateVisitor;
+import org.neo4j.storageengine.api.txstate.WritableTransactionState;
 
 import static org.neo4j.storageengine.api.TransactionApplicationMode.INTERNAL;
 
@@ -353,7 +355,7 @@ public class KernelTransactionImplementation implements KernelTransaction, TxSta
     {
         if ( hasTxStateWithChanges() )
         {
-            for ( IndexDescriptor createdConstraintIndex : txState().constraintIndexesCreatedInTx() )
+            for ( IndexDescriptor createdConstraintIndex : readableTxState().constraintIndexesCreatedInTx() )
             {
                 try
                 {
@@ -370,7 +372,13 @@ public class KernelTransactionImplementation implements KernelTransaction, TxSta
     }
 
     @Override
-    public TransactionState txState()
+    public ReadableTransactionState readableTxState()
+    {
+        return txState == null ? ReadableTransactionState.EMPTY : txState;
+    }
+
+    @Override
+    public WritableTransactionState writableTxState()
     {
         if ( txState == null )
         {
@@ -387,8 +395,7 @@ public class KernelTransactionImplementation implements KernelTransaction, TxSta
             (legacyIndexTransactionState = legacyIndexTxStateSupplier.get());
     }
 
-    @Override
-    public boolean hasTxStateWithChanges()
+    private boolean hasTxStateWithChanges()
     {
         return txState != null && txState.hasChanges();
     }

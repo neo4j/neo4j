@@ -43,6 +43,7 @@ import org.neo4j.kernel.impl.api.store.SingleNodeProgression;
 import org.neo4j.kernel.impl.api.store.StoreStatement;
 import org.neo4j.kernel.impl.index.LegacyIndexStore;
 import org.neo4j.storageengine.api.StoreReadLayer;
+import org.neo4j.storageengine.api.txstate.ReadableTransactionState;
 
 import static org.junit.Assert.assertEquals;
 import static org.junit.Assert.assertNull;
@@ -55,6 +56,7 @@ import static org.neo4j.helpers.collection.Iterators.asSet;
 import static org.neo4j.helpers.collection.Iterators.emptyIterator;
 import static org.neo4j.helpers.collection.Iterators.emptySetOf;
 import static org.neo4j.kernel.impl.api.state.StubCursors.asNodeCursor;
+import static org.neo4j.storageengine.api.txstate.ReadableTransactionState.EMPTY;
 
 public class SchemaTransactionStateTest
 {
@@ -275,7 +277,7 @@ public class SchemaTransactionStateTest
         Map<Integer, Collection<Long>> allLabels = new HashMap<>();
         for ( Labels nodeLabels : labels )
         {
-            when( storeStatement.acquireNodeCursor( new SingleNodeProgression( nodeLabels.nodeId, null ) ) )
+            when( storeStatement.acquireNodeCursor( new SingleNodeProgression( nodeLabels.nodeId, EMPTY ) ) )
                     .thenReturn( asNodeCursor( nodeLabels.nodeId, StubCursors.labels( nodeLabels.labelIds ) ) );
 
             for ( int label : nodeLabels.labelIds )

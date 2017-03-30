@@ -23,6 +23,7 @@ import org.junit.Test;
 
 import org.neo4j.kernel.impl.api.state.TxState;
 import org.neo4j.kernel.impl.store.NodeStore;
+import org.neo4j.storageengine.api.txstate.ReadableTransactionState;
 
 import static java.util.Collections.singletonList;
 import static org.junit.Assert.assertEquals;
@@ -50,7 +51,7 @@ public class AllNodeProgressionTest
     public void shouldReturnABatchFromLowReservedIdsToHighIdPossibleInUse() throws Throwable
     {
         // given
-        AllNodeProgression progression = new AllNodeProgression( nodeStore, null );
+        AllNodeProgression progression = new AllNodeProgression( nodeStore, ReadableTransactionState.EMPTY );
 
         // when
         boolean hasNext = progression.nextBatch( batch );
@@ -66,7 +67,7 @@ public class AllNodeProgressionTest
     public void shouldCheckIfTheHighIdHasChangedAndIssueAnExtraBatchWithTheRemainingElements() throws Throwable
     {
         // given
-        AllNodeProgression progression = new AllNodeProgression( nodeStore, null );
+        AllNodeProgression progression = new AllNodeProgression( nodeStore, ReadableTransactionState.EMPTY );
         assertTrue( progression.nextBatch( batch ) );
         checkBatch( start, end, progression );
 
@@ -83,7 +84,7 @@ public class AllNodeProgressionTest
     public void shouldNeverReturnNewBatchesIfTheProgressionHasReturnFalseToSignalTermination() throws Throwable
     {
         // given
-        AllNodeProgression progression = new AllNodeProgression( nodeStore, null );
+        AllNodeProgression progression = new AllNodeProgression( nodeStore, ReadableTransactionState.EMPTY );
         assertTrue( progression.nextBatch( batch ) );
         checkBatch( start, end, progression );
 
@@ -98,8 +99,8 @@ public class AllNodeProgressionTest
     @Test
     public void shouldReturnNoAddedNodesIfNoTransactionStateIsGiven() throws Throwable
     {
-        AllNodeProgression progression = new AllNodeProgression( nodeStore, null );
-        assertNull( progression.addedNodes() );
+        AllNodeProgression progression = new AllNodeProgression( nodeStore, ReadableTransactionState.EMPTY );
+        assertFalse( progression.addedNodes().hasNext() );
     }
 
     @Test

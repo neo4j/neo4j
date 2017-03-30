@@ -62,18 +62,18 @@ public class SingleNodeProgression implements NodeProgression
     @Override
     public boolean fetchFromTxState( long id )
     {
-        return state != null && state.nodeIsAddedInThisTx( id );
+        return state.nodeIsAddedInThisTx( id );
     }
 
     @Override
     public boolean fetchFromDisk( long id )
     {
-        return state == null || !state.nodeIsDeletedInThisTx( id );
+        return !state.nodeIsDeletedInThisTx( id );
     }
 
     @Override
     public NodeState nodeState( long id )
     {
-        return state == null ? NodeState.EMPTY : state.getNodeState( id );
+        return state.getNodeState( id );
     }
 }

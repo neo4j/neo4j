@@ -45,6 +45,7 @@ import static java.util.Collections.disjoint;
 import static org.junit.Assert.assertEquals;
 import static org.junit.Assert.assertTrue;
 import static org.neo4j.kernel.impl.locking.LockService.NO_LOCK_SERVICE;
+import static org.neo4j.storageengine.api.txstate.ReadableTransactionState.EMPTY;
 
 public class EnterpriseStoreStatementTest
 {
@@ -62,13 +63,13 @@ public class EnterpriseStoreStatementTest
         int nodes = randomNodes( neoStores.getNodeStore() );
         createNodes( db, nodes );
 
-        Set<Long> expected = singleThreadExecution( neoStores, null );
+        Set<Long> expected = singleThreadExecution( neoStores, EMPTY );
 
         int threads = random.nextInt( 2, 6 );
         ExecutorService executorService = Executors.newCachedThreadPool();
         try
         {
-            Set<Long> parallelResult = parallelExecution( neoStores, executorService, threads, null );
+            Set<Long> parallelResult = parallelExecution( neoStores, executorService, threads, EMPTY );
             assertEquals( expected, parallelResult );
         }
         finally
@@ -213,9 +214,5 @@ public class EnterpriseStoreStatementTest
             tx.success();
             return nodeId;
         }
-    }
-
-    private void noCache( NodeCursor c )
-    {
     }
 }

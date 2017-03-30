@@ -44,13 +44,13 @@ import org.neo4j.kernel.api.schema.SchemaDescriptorFactory;
 import org.neo4j.kernel.api.schema.index.IndexDescriptor;
 import org.neo4j.kernel.api.schema.index.IndexDescriptorFactory;
 import org.neo4j.kernel.api.security.SecurityContext;
-import org.neo4j.kernel.api.txstate.TransactionState;
 import org.neo4j.kernel.impl.api.KernelStatement;
 import org.neo4j.kernel.impl.api.StatementOperationParts;
 import org.neo4j.kernel.impl.api.index.IndexProxy;
 import org.neo4j.kernel.impl.api.index.IndexingService;
 import org.neo4j.kernel.impl.api.state.ConstraintIndexCreator;
 import org.neo4j.kernel.impl.locking.ResourceTypes;
+import org.neo4j.storageengine.api.txstate.WritableTransactionState;
 
 import static org.junit.Assert.assertEquals;
 import static org.junit.Assert.fail;
@@ -96,7 +96,7 @@ public class ConstraintIndexCreatorTest
         // then
         assertEquals( 2468L, indexId );
         assertEquals( 1, kernel.statements.size() );
-        verify( kernel.statements.get( 0 ).txState() ).indexRuleDoAdd( eq( index ) );
+        verify( kernel.statements.get( 0 ).writableTxState() ).indexRuleDoAdd( eq( index ) );
         verifyNoMoreInteractions( indexCreationContext.schemaWriteOperations() );
         verify( constraintCreationContext.schemaReadOperations() ).indexGetCommittedId( state, index );
         verifyNoMoreInteractions( constraintCreationContext.schemaReadOperations() );
@@ -138,13 +138,13 @@ public class ConstraintIndexCreatorTest
                           e.getMessage() );
         }
         assertEquals( 2, kernel.statements.size() );
-        TransactionState tx1 = kernel.statements.get( 0 ).txState();
+        WritableTransactionState tx1 = kernel.statements.get( 0 ).writableTxState();
         IndexDescriptor newIndex = IndexDescriptorFactory.uniqueForLabel( 123, 456 );
         verify( tx1 ).indexRuleDoAdd( newIndex );
         verifyNoMoreInteractions( tx1 );
         verify( constraintCreationContext.schemaReadOperations() ).indexGetCommittedId( state, index );
         verifyNoMoreInteractions( constraintCreationContext.schemaReadOperations() );
-        TransactionState tx2 = kernel.statements.get( 1 ).txState();
+        WritableTransactionState tx2 = kernel.statements.get( 1 ).writableTxState();
         verify( tx2 ).indexDoDrop( newIndex );
         verifyNoMoreInteractions( tx2 );
     }
@@ -166,7 +166,7 @@ public class ConstraintIndexCreatorTest
 
         // then
         assertEquals( 1, kernel.statements.size() );
-        verify( kernel.statements.get( 0 ).txState() ).indexDoDrop( index );
+        verify( kernel.statements.get( 0 ).writableTxState() ).indexDoDrop( index );
         verifyZeroInteractions( indexingService );
     }
 

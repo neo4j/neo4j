@@ -19,6 +19,8 @@
  */
 package org.neo4j.storageengine.api;
 
+import com.sun.org.apache.regexp.internal.RE;
+
 import java.util.Iterator;
 import java.util.function.Function;
 import java.util.function.IntPredicate;
@@ -268,7 +270,7 @@ public interface StoreReadLayer
      */
     RelationshipIterator relationshipsGetAll();
 
-    Cursor<NodeItem> nodeGetAllCursor( StorageStatement storeStatement, TransactionState state );
+    Cursor<NodeItem> nodeGetAllCursor( StorageStatement storeStatement, ReadableTransactionState state );
 
     Cursor<NodeItem> nodeCursor( StorageStatement storeStatement, long nodeId, ReadableTransactionState state );
 

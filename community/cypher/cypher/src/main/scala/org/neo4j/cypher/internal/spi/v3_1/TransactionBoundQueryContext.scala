@@ -351,8 +351,7 @@ final class TransactionBoundQueryContext(txContext: TransactionalContextWrapper)
 
     override def isDeletedInThisTx(n: Node): Boolean = isDeletedInThisTx(n.getId)
 
-    def isDeletedInThisTx(id: Long): Boolean =
-      txContext.stateView.hasTxStateWithChanges && txContext.stateView.txState().nodeIsDeletedInThisTx(id)
+    def isDeletedInThisTx(id: Long): Boolean = txContext.stateView.readableTxState().nodeIsDeletedInThisTx(id)
 
     override def acquireExclusiveLock(obj: Long) =
       txContext.statement.readOperations().acquireExclusive(ResourceTypes.NODE, obj)
@@ -429,7 +428,7 @@ final class TransactionBoundQueryContext(txContext: TransactionalContextWrapper)
       isDeletedInThisTx(r.getId)
 
     def isDeletedInThisTx(id: Long): Boolean =
-      txContext.stateView.hasTxStateWithChanges && txContext.stateView.txState().relationshipIsDeletedInThisTx(id)
+      txContext.stateView.readableTxState().relationshipIsDeletedInThisTx(id)
 
     override def acquireExclusiveLock(obj: Long) =
       txContext.statement.readOperations().acquireExclusive(ResourceTypes.RELATIONSHIP, obj)

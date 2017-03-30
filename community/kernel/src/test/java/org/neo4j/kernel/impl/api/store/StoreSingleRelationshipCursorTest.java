@@ -40,6 +40,7 @@ import static org.junit.Assert.assertEquals;
 import static org.junit.Assert.assertFalse;
 import static org.junit.Assert.assertTrue;
 import static org.mockito.Mockito.mock;
+import static org.neo4j.storageengine.api.txstate.ReadableTransactionState.EMPTY;
 
 public class StoreSingleRelationshipCursorTest
 {
@@ -79,7 +80,7 @@ public class StoreSingleRelationshipCursorTest
 
         try ( StoreSingleRelationshipCursor cursor = createRelationshipCursor() )
         {
-            cursor.init( RELATIONSHIP_ID, null );
+            cursor.init( RELATIONSHIP_ID, EMPTY );
             assertTrue( cursor.next() );
             assertEquals( RELATIONSHIP_ID, cursor.get().id() );
         }
@@ -94,7 +95,7 @@ public class StoreSingleRelationshipCursorTest
 
         try ( StoreSingleRelationshipCursor cursor = createRelationshipCursor() )
         {
-            cursor.init( RELATIONSHIP_ID, null );
+            cursor.init( RELATIONSHIP_ID, EMPTY );
             assertFalse( cursor.next() );
         }
     }

@@ -243,7 +243,7 @@ public class LabelTransactionStateTest
     public void should_return_true_when_adding_new_label() throws Exception
     {
         // GIVEN
-        when( store.nodeCursor( any( StorageStatement.class ), eq( 1337L ), eq( null ) ) )
+        when( store.nodeCursor( any( StorageStatement.class ), eq( 1337L ), any( ReadableTransactionState.class ) ) )
                 .thenReturn( asNodeCursor( 1337L ) );
         when( store.nodeGetProperties( any( StorageStatement.class ), any( NodeItem.class ),
                 any( PropertyContainerState.class ) ) ).thenReturn( asPropertyCursor() );
@@ -259,7 +259,7 @@ public class LabelTransactionStateTest
     public void should_return_false_when_adding_existing_label() throws Exception
     {
         // GIVEN
-        when( store.nodeCursor( any( StorageStatement.class ), eq( 1337L ), eq( null  ) ) )
+        when( store.nodeCursor( any( StorageStatement.class ), eq( 1337L ), any( ReadableTransactionState.class ) ) )
                 .thenReturn( asNodeCursor( 1337L, StubCursors.labels( 12 ) ) );
         when( store.nodeGetProperties( any( StorageStatement.class ), any( NodeItem.class ),
                 any( PropertyContainerState.class ) ) ).thenReturn( asPropertyCursor() );
@@ -275,7 +275,7 @@ public class LabelTransactionStateTest
     public void should_return_true_when_removing_existing_label() throws Exception
     {
         // GIVEN
-        when( store.nodeCursor( any( StorageStatement.class ), eq( 1337L ), eq( null ) ) )
+        when( store.nodeCursor( any( StorageStatement.class ), eq( 1337L ), any( ReadableTransactionState.class ) ) )
                 .thenReturn( asNodeCursor( 1337L, StubCursors.labels( 12 ) ) );
         when( store.nodeGetProperties( any( StorageStatement.class ), any( NodeItem.class ),
                 any( PropertyContainerState.class ) ) ).thenReturn( asPropertyCursor() );
@@ -291,7 +291,7 @@ public class LabelTransactionStateTest
     public void should_return_true_when_removing_non_existant_label() throws Exception
     {
         // GIVEN
-        when( store.nodeCursor( any( StorageStatement.class ), eq( 1337L ), eq( null ) ) )
+        when( store.nodeCursor( any( StorageStatement.class ), eq( 1337L ), any( ReadableTransactionState.class ) ) )
                 .thenReturn( asNodeCursor( 1337L ) );
 
         // WHEN
