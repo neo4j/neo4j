@@ -368,14 +368,12 @@ public abstract class StandardExpander implements PathExpander
         Iterator<Relationship> doExpand( Path path, BranchState state )
         {
             final Node node = path.endNode();
-            return new FilteringIterator<>(
-                    node.getRelationships().iterator(),
-                    rel -> {
-                        Exclusion exclude = exclusion.get( rel.getType().name() );
-                        exclude = (exclude == null) ? defaultExclusion
-                                : exclude;
-                        return exclude.accept( node, rel );
-                    } );
+            return new FilteringIterator<>( node.getRelationships().iterator(), rel ->
+            {
+                Exclusion exclude = exclusion.get( rel.getType().name() );
+                exclude = (exclude == null) ? defaultExclusion : exclude;
+                return exclude.accept( node, rel );
+            } );
         }
 
         @Override
@@ -586,7 +584,8 @@ public abstract class StandardExpander implements PathExpander
         @Override
         Iterator<Relationship> doExpand( final Path path, BranchState state )
         {
-            return new FilteringIterator<>( expander.doExpand( path, state ), item -> {
+            return new FilteringIterator<>( expander.doExpand( path, state ), item ->
+            {
                 Path extendedPath = ExtendedPath.extend( path, item );
                 for ( Filter filter : filters )
                 {

@@ -19,6 +19,7 @@
  */
 package org.neo4j.unsafe.batchinsert.internal;
 
+import java.io.Closeable;
 import java.io.File;
 import java.io.IOException;
 import java.io.PrintStream;
@@ -52,8 +53,6 @@ import org.neo4j.io.fs.FileSystemAbstraction;
 import org.neo4j.io.pagecache.PageCache;
 import org.neo4j.io.pagecache.tracing.PageCacheTracer;
 import org.neo4j.io.pagecache.tracing.cursor.PageCursorTracerSupplier;
-import org.neo4j.kernel.api.constraints.NodeKeyConstraint;
-import org.neo4j.kernel.api.constraints.UniquenessConstraint;
 import org.neo4j.kernel.api.exceptions.KernelException;
 import org.neo4j.kernel.api.exceptions.index.IndexEntryConflictException;
 import org.neo4j.kernel.api.exceptions.schema.AlreadyConstrainedException;
@@ -61,7 +60,6 @@ import org.neo4j.kernel.api.exceptions.schema.CreateConstraintFailureException;
 import org.neo4j.kernel.api.index.IndexEntryUpdate;
 import org.neo4j.kernel.api.index.IndexPopulator;
 import org.neo4j.kernel.api.index.InternalIndexState;
-import org.neo4j.kernel.impl.api.index.NodeUpdates;
 import org.neo4j.kernel.api.index.PropertyAccessor;
 import org.neo4j.kernel.api.index.SchemaIndexProvider;
 import org.neo4j.kernel.api.labelscan.LabelScanStore;
@@ -82,6 +80,7 @@ import org.neo4j.kernel.extension.KernelExtensions;
 import org.neo4j.kernel.extension.UnsatisfiedDependencyStrategies;
 import org.neo4j.kernel.extension.dependency.HighestSelectionStrategy;
 import org.neo4j.kernel.extension.dependency.NamedLabelScanStoreSelectionStrategy;
+import org.neo4j.kernel.impl.api.index.NodeUpdates;
 import org.neo4j.kernel.impl.api.index.SchemaIndexProviderMap;
 import org.neo4j.kernel.impl.api.index.StoreScan;
 import org.neo4j.kernel.impl.api.index.sampling.IndexSamplingConfig;
@@ -469,7 +468,8 @@ public class BatchInserterImpl implements BatchInserter, IndexConfigStoreProvide
             populators.add( new IndexPopulatorWithSchema( populator, index ) );
         }
 
-        Visitor<NodeUpdates, IOException> propertyUpdateVisitor = updates -> {
+        Visitor<NodeUpdates, IOException> propertyUpdateVisitor = updates ->
+        {
             // Do a lookup from which property has changed to a list of indexes worried about that property.
             // We do not need to load additional properties as the NodeUpdates for a full node store scan already
             // include all properties for the node.
@@ -496,18 +496,19 @@ public class BatchInserterImpl implements BatchInserter, IndexConfigStoreProvide
                 .flatMapToInt( d -> Arrays.stream( d.getPropertyIds() ) )
                 .toArray();
 
-        InitialNodeLabelCreationVisitor labelUpdateVisitor = new InitialNodeLabelCreationVisitor();
-        StoreScan<IOException> storeScan = indexStoreView.visitNodes( labelIds,
-                (propertyKeyId) -> PrimitiveIntCollections.contains( propertyKeyIds, propertyKeyId ),
-                propertyUpdateVisitor, labelUpdateVisitor, true );
-        storeScan.run();
-
-        for ( IndexPopulatorWithSchema populator : populators )
+        try ( InitialNodeLabelCreationVisitor labelUpdateVisitor = new InitialNodeLabelCreationVisitor() )
         {
-            populator.verifyDeferredConstraints( indexStoreView );
-            populator.close( true );
+            StoreScan<IOException> storeScan = indexStoreView.visitNodes( labelIds,
+                    ( propertyKeyId ) -> PrimitiveIntCollections.contains( propertyKeyIds, propertyKeyId ),
+                    propertyUpdateVisitor, labelUpdateVisitor, true );
+            storeScan.run();
+
+            for ( IndexPopulatorWithSchema populator : populators )
+            {
+                populator.verifyDeferredConstraints( indexStoreView );
+                populator.close( true );
+            }
         }
-        labelUpdateVisitor.close();
     }
 
     private void rebuildCounts()
@@ -525,7 +526,7 @@ public class BatchInserterImpl implements BatchInserter, IndexConfigStoreProvide
         CountsComputer.recomputeCounts( neoStores );
     }
 
-    private class InitialNodeLabelCreationVisitor implements Visitor<NodeLabelUpdate, IOException>
+    private class InitialNodeLabelCreationVisitor implements Visitor<NodeLabelUpdate, IOException>, Closeable
     {
         LabelScanWriter writer = labelScanStore.newWriter();
 
@@ -536,6 +537,7 @@ public class BatchInserterImpl implements BatchInserter, IndexConfigStoreProvide
             return true;
         }
 
+        @Override
         public void close() throws IOException
         {
             writer.close();
@@ -806,7 +808,8 @@ public class BatchInserterImpl implements BatchInserter, IndexConfigStoreProvide
     @Override
     public Iterable<Label> getNodeLabels( final long node )
     {
-        return () -> {
+        return () ->
+        {
             NodeRecord record = getNodeRecord( node ).forReadingData();
             long[] labels = parseLabelsField( record ).get( nodeStore );
             return map( labelIdToLabelFunction, PrimitiveLongCollections.iterator( labels ) );

@@ -56,7 +56,8 @@ class TckSerializer
             n.getLabels().forEach( ( l ) -> sb.append( ":" ).append( l.name() ) );
             sb.append( " {" );
             String[] comma = new String[]{ "" };
-            n.getAllProperties().forEach( ( k, v ) -> {
+            n.getAllProperties().forEach( ( k, v ) ->
+            {
                 sb.append( comma[0] ).append( k ).append( ": " ).append( serialize( v ) );
                 comma[0] = ", ";
             } );
@@ -69,7 +70,8 @@ class TckSerializer
             sb.append( r.getType().name() );
             sb.append( " {" );
             String[] comma = new String[]{ "" };
-            r.getAllProperties().forEach( ( k, v ) -> {
+            r.getAllProperties().forEach( ( k, v ) ->
+            {
                 sb.append( comma[0] ).append( k ).append( ": " ).append( serialize( v ) );
                 comma[0] = ", ";
             } );
@@ -130,7 +132,8 @@ class TckSerializer
             Map<?,?> map = (Map) obj;
             sb.append( "{" );
             String[] comma = new String[]{ "" };
-            map.forEach( ( k, v ) -> {
+            map.forEach( ( k, v ) ->
+            {
                 sb.append( comma[0] ).append( k ).append( ": " ).append( serialize( v ) );
                 comma[0] = ", ";
             } );

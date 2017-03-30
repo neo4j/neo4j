@@ -408,13 +408,15 @@ public class MetaDataStoreTest
                     fileReadCount.get() >= lowerLimit && apiReadCount.get() >= lowerLimit &&
                     currentTimeMillis() >= endTime );
             // writers
-            race.addContestants( 3, () -> {
+            race.addContestants( 3, () ->
+            {
                 long count = writeCount.incrementAndGet();
                 store.setUpgradeTransaction( count, count, count );
             } );
 
             // file readers
-            race.addContestants( 3, throwing( () -> {
+            race.addContestants( 3, throwing( () ->
+            {
                 try ( PageCursor cursor = pf.io( 0, PagedFile.PF_SHARED_READ_LOCK ) )
                 {
                     assertTrue( cursor.next() );
@@ -430,7 +432,8 @@ public class MetaDataStoreTest
                 }
             } ) );
 
-            race.addContestants( 3, () -> {
+            race.addContestants( 3, () ->
+            {
                 TransactionId transaction = store.getUpgradeTransaction();
                 assertIdEqualsChecksum( transaction.transactionId(), transaction.checksum(), "API" );
                 apiReadCount.incrementAndGet();
@@ -494,7 +497,8 @@ public class MetaDataStoreTest
                 store.transactionCommitted( count, count, count );
             } );
 
-            race.addContestants( 3, throwing( () -> {
+            race.addContestants( 3, throwing( () ->
+            {
                 try ( PageCursor cursor = pf.io( 0, PagedFile.PF_SHARED_READ_LOCK ) )
                 {
                     assertTrue( cursor.next() );
@@ -542,12 +546,14 @@ public class MetaDataStoreTest
             race.withEndCondition( () -> writeCount.get() >= lowerLimit &&
                     fileReadCount.get() >= lowerLimit && apiReadCount.get() >= lowerLimit &&
                     currentTimeMillis() >= endTime );
-            race.addContestants( 3, () -> {
+            race.addContestants( 3, () ->
+            {
                 long count = writeCount.incrementAndGet();
                 store.transactionCommitted( count, count, count );
             } );
 
-            race.addContestants( 3, throwing( () -> {
+            race.addContestants( 3, throwing( () ->
+            {
                 try ( PageCursor cursor = pf.io( 0, PagedFile.PF_SHARED_READ_LOCK ) )
                 {
                     assertTrue( cursor.next() );
@@ -565,7 +571,8 @@ public class MetaDataStoreTest
                 }
             } ) );
 
-            race.addContestants( 3, () -> {
+            race.addContestants( 3, () ->
+            {
                 long[] transaction = store.getLastClosedTransaction();
                 assertLogVersionEqualsByteOffset( transaction[0], transaction[1], "API" );
                 apiReadCount.incrementAndGet();
@@ -595,13 +602,15 @@ public class MetaDataStoreTest
         List<Long> actualValues = new ArrayList<>();
         try ( MetaDataStore store = newMetaDataStore() )
         {
-            store.scanAllRecords( record -> {
+            store.scanAllRecords( record ->
+            {
                 actualValues.add( record.getValue() );
                 return false;
             } );
         }
 
-        List<Long> expectedValues = Arrays.stream( positions ).map( p -> {
+        List<Long> expectedValues = Arrays.stream( positions ).map( p ->
+        {
             if ( p == MetaDataStore.Position.STORE_VERSION )
             {
                 return storeVersion;
@@ -649,7 +658,8 @@ public class MetaDataStoreTest
             }
         }
 
-        List<Long> expectedValues = Arrays.stream( positions ).map( p -> {
+        List<Long> expectedValues = Arrays.stream( positions ).map( p ->
+        {
             if ( p == MetaDataStore.Position.STORE_VERSION )
             {
                 return storeVersion;

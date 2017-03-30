@@ -44,7 +44,8 @@ public class ResultMatcher implements Matcher<Result>
         final boolean[] matched = { true };
         List<String> columns = value.columns();
 
-        value.accept( row -> {
+        value.accept( row ->
+        {
             Map<String,Object> nextRow = new HashMap<>( columns.size() );
             for ( String col : columns )
             {
@@ -71,7 +72,8 @@ public class ResultMatcher implements Matcher<Result>
         final boolean[] matched = { true };
         List<String> columns = value.columns();
 
-        value.accept( row -> {
+        value.accept( row ->
+        {
             Map<String,Object> nextRow = new HashMap<>( columns.size() );
             for ( String col : columns )
             {

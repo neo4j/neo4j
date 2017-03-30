@@ -85,7 +85,8 @@ public abstract class DatabaseRule extends ExternalResource implements GraphData
 
     public void executeAndCommit( Consumer<? super GraphDatabaseService> consumer )
     {
-        transaction( (Function<? super GraphDatabaseService,Void>) t -> {
+        transaction( (Function<? super GraphDatabaseService,Void>) t ->
+        {
             consumer.accept( t );
             return null;
         }, true );
@@ -103,7 +104,8 @@ public abstract class DatabaseRule extends ExternalResource implements GraphData
 
     public <FROM, TO> Function<FROM,TO> tx( Function<FROM,TO> function )
     {
-        return from -> {
+        return from ->
+        {
             Function<GraphDatabaseService,TO> inner = graphDb -> function.apply( from );
             return executeAndCommit( inner );
         };
@@ -332,7 +334,8 @@ public abstract class DatabaseRule extends ExternalResource implements GraphData
     {
         void run( FileSystemAbstraction fs, File storeDirectory ) throws IOException;
 
-        RestartAction EMPTY = ( fs, storeDirectory ) -> {
+        RestartAction EMPTY = ( fs, storeDirectory ) ->
+        {
             // duh
         };
     }

@@ -55,7 +55,8 @@ public class BoltV1DechunkerTest
             System.arraycopy( message, 0, chunk2, 1, message.length );
 
             BoltRequestMessageRecorder messages = new BoltRequestMessageRecorder();
-            BoltV1Dechunker dechunker = new BoltV1Dechunker( messages, () -> {
+            BoltV1Dechunker dechunker = new BoltV1Dechunker( messages, () ->
+            {
             } );
 
             // when

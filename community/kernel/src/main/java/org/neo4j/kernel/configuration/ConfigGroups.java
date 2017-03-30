@@ -75,7 +75,8 @@ public class ConfigGroups
     {
         Pattern pattern = Pattern.compile( Pattern.quote( baseName ) + "\\.(\\d+)\\.(.+)" );
 
-        return ( values ) -> {
+        return ( values ) ->
+        {
             Map<String, Map<String, String>> groups = new HashMap<>();
             for ( Pair<String, String> entry : values.rawConfiguration() )
             {

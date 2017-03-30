@@ -99,17 +99,20 @@ class StructurePropagation<KEY>
         void update( StructurePropagation structurePropagation, long childId );
     }
 
-    static final StructureUpdate UPDATE_LEFT_CHILD = ( sp, childId ) -> {
+    static final StructureUpdate UPDATE_LEFT_CHILD = ( sp, childId ) ->
+    {
         sp.hasLeftChildUpdate = true;
         sp.leftChild = childId;
     };
 
-    static final StructureUpdate UPDATE_MID_CHILD = ( sp, childId ) -> {
+    static final StructureUpdate UPDATE_MID_CHILD = ( sp, childId ) ->
+    {
         sp.hasMidChildUpdate = true;
         sp.midChild = childId;
     };
 
-    static final StructureUpdate UPDATE_RIGHT_CHILD = ( sp, childId ) -> {
+    static final StructureUpdate UPDATE_RIGHT_CHILD = ( sp, childId ) ->
+    {
         sp.hasRightChildUpdate = true;
         sp.rightChild = childId;
     };

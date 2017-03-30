@@ -355,7 +355,8 @@ public abstract class PageCacheSlowTest<T extends PageCache> extends PageCacheTe
         final AtomicBoolean doneWriteSignal = new AtomicBoolean();
         final AtomicBoolean doneCloseSignal = new AtomicBoolean();
 
-        executor.submit( () -> {
+        executor.submit( () ->
+        {
             try ( PageCursor cursor = pf.io( 0, PF_SHARED_WRITE_LOCK ) )
             {
                 cursor.next();
@@ -367,7 +368,8 @@ public abstract class PageCacheSlowTest<T extends PageCache> extends PageCacheTe
 
         hasLockLatch.await(); // A write lock is now held on page 0.
 
-        Future<Object> takeLockFuture = executor.submit( () -> {
+        Future<Object> takeLockFuture = executor.submit( () ->
+        {
             try ( PageCursor cursor = pf.io( 0, PF_SHARED_WRITE_LOCK ) )
             {
                 cursor.next();
@@ -377,7 +379,8 @@ public abstract class PageCacheSlowTest<T extends PageCache> extends PageCacheTe
             return null;
         } );
 
-        Future<Object> closeFuture = executor.submit( () -> {
+        Future<Object> closeFuture = executor.submit( () ->
+        {
             pf.close();
             doneCloseSignal.set( true );
             return null;

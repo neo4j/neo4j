@@ -84,7 +84,8 @@ public abstract class ProcessorStep<T> extends AbstractStep<T>
         // Don't go too far ahead
         long idleTime = await( catchUp, executor.processors( 0 ), healthChecker, park );
         incrementQueue();
-        executor.submit( sender -> {
+        executor.submit( sender ->
+        {
             assertHealthy();
             sender.initialize( ticket );
             try

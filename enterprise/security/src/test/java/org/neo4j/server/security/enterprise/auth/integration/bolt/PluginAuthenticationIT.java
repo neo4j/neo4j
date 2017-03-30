@@ -31,10 +31,10 @@ import java.util.stream.Collectors;
 import org.neo4j.bolt.v1.transport.integration.TransportTestUtil;
 import org.neo4j.graphdb.config.Setting;
 import org.neo4j.kernel.api.exceptions.Status;
-import org.neo4j.server.security.enterprise.configuration.SecuritySettings;
 import org.neo4j.server.security.enterprise.auth.plugin.TestCacheableAuthPlugin;
 import org.neo4j.server.security.enterprise.auth.plugin.TestCacheableAuthenticationPlugin;
 import org.neo4j.server.security.enterprise.auth.plugin.TestCustomCacheableAuthenticationPlugin;
+import org.neo4j.server.security.enterprise.configuration.SecuritySettings;
 
 import static org.hamcrest.CoreMatchers.equalTo;
 import static org.hamcrest.MatcherAssert.assertThat;
@@ -66,9 +66,7 @@ public class PluginAuthenticationIT extends EnterpriseAuthenticationTestBase
     @Override
     protected Consumer<Map<Setting<?>, String>> getSettingsFunction()
     {
-        return super.getSettingsFunction().andThen( settings -> {
-            settings.put( SecuritySettings.auth_providers, DEFAULT_TEST_PLUGIN_REALMS );
-        });
+        return super.getSettingsFunction().andThen( settings -> settings.put( SecuritySettings.auth_providers, DEFAULT_TEST_PLUGIN_REALMS ) );
     }
 
     @Test
@@ -85,9 +83,7 @@ public class PluginAuthenticationIT extends EnterpriseAuthenticationTestBase
 
         TestCacheableAuthenticationPlugin.getAuthenticationInfoCallCount.set( 0 );
 
-        restartNeo4jServerWithOverriddenSettings( settings -> {
-            settings.put( SecuritySettings.auth_cache_ttl, "60m" );
-        });
+        restartNeo4jServerWithOverriddenSettings( settings -> settings.put( SecuritySettings.auth_cache_ttl, "60m" ) );
 
         // When we log in the first time our plugin should get a call
         assertConnectionSucceeds( authToken );
@@ -114,9 +110,7 @@ public class PluginAuthenticationIT extends EnterpriseAuthenticationTestBase
 
         TestCustomCacheableAuthenticationPlugin.getAuthenticationInfoCallCount.set( 0 );
 
-        restartNeo4jServerWithOverriddenSettings( settings -> {
-            settings.put( SecuritySettings.auth_cache_ttl, "60m" );
-        });
+        restartNeo4jServerWithOverriddenSettings( settings -> settings.put( SecuritySettings.auth_cache_ttl, "60m" ) );
 
         // When we log in the first time our plugin should get a call
         assertConnectionSucceeds( authToken );
@@ -159,9 +153,7 @@ public class PluginAuthenticationIT extends EnterpriseAuthenticationTestBase
 
         TestCacheableAuthPlugin.getAuthInfoCallCount.set( 0 );
 
-        restartNeo4jServerWithOverriddenSettings( settings -> {
-            settings.put( SecuritySettings.auth_cache_ttl, "60m" );
-        });
+        restartNeo4jServerWithOverriddenSettings( settings -> settings.put( SecuritySettings.auth_cache_ttl, "60m" ) );
 
         // When we log in the first time our plugin should get a call
         assertConnectionSucceeds( authToken );
@@ -187,9 +179,7 @@ public class PluginAuthenticationIT extends EnterpriseAuthenticationTestBase
     @Test
     public void shouldAuthenticateAndAuthorizeWithTestCombinedAuthPlugin() throws Throwable
     {
-        restartNeo4jServerWithOverriddenSettings( settings -> {
-            settings.put( SecuritySettings.auth_providers, "plugin-TestCombinedAuthPlugin" );
-        });
+        restartNeo4jServerWithOverriddenSettings( settings -> settings.put( SecuritySettings.auth_providers, "plugin-TestCombinedAuthPlugin" ) );
 
         assertConnectionSucceeds( authToken( "neo4j", "neo4j", "plugin-TestCombinedAuthPlugin" ) );
         assertReadSucceeds();
@@ -199,10 +189,8 @@ public class PluginAuthenticationIT extends EnterpriseAuthenticationTestBase
     @Test
     public void shouldAuthenticateAndAuthorizeWithTwoSeparateTestPlugins() throws Throwable
     {
-        restartNeo4jServerWithOverriddenSettings( settings -> {
-            settings.put( SecuritySettings.auth_providers,
-                    "plugin-TestAuthenticationPlugin,plugin-TestAuthorizationPlugin" );
-        });
+        restartNeo4jServerWithOverriddenSettings( settings -> settings.put( SecuritySettings.auth_providers,
+                "plugin-TestAuthenticationPlugin,plugin-TestAuthorizationPlugin" ) );
 
         assertConnectionSucceeds( authToken( "neo4j", "neo4j", null ) );
         assertReadSucceeds();
@@ -212,9 +200,7 @@ public class PluginAuthenticationIT extends EnterpriseAuthenticationTestBase
     @Test
     public void shouldFailIfAuthorizationExpiredWithAuthPlugin() throws Throwable
     {
-        restartNeo4jServerWithOverriddenSettings( settings -> {
-            settings.put( SecuritySettings.auth_providers, "plugin-TestCacheableAdminAuthPlugin" );
-        });
+        restartNeo4jServerWithOverriddenSettings( settings -> settings.put( SecuritySettings.auth_providers, "plugin-TestCacheableAdminAuthPlugin" ) );
 
         assertConnectionSucceeds( authToken( "neo4j", "neo4j", "plugin-TestCacheableAdminAuthPlugin" ) );
         assertReadSucceeds();
@@ -235,9 +221,7 @@ public class PluginAuthenticationIT extends EnterpriseAuthenticationTestBase
     @Test
     public void shouldSucceedIfAuthorizationExpiredWithinTransactionWithAuthPlugin() throws Throwable
     {
-        restartNeo4jServerWithOverriddenSettings( settings -> {
-            settings.put( SecuritySettings.auth_providers, "plugin-TestCacheableAdminAuthPlugin" );
-        });
+        restartNeo4jServerWithOverriddenSettings( settings -> settings.put( SecuritySettings.auth_providers, "plugin-TestCacheableAdminAuthPlugin" ) );
 
         // Then
         assertConnectionSucceeds( authToken( "neo4j", "neo4j", "plugin-TestCacheableAdminAuthPlugin" ) );
@@ -262,10 +246,8 @@ public class PluginAuthenticationIT extends EnterpriseAuthenticationTestBase
     @Test
     public void shouldPassOnAuthorizationExpiredException() throws Throwable
     {
-        restartNeo4jServerWithOverriddenSettings( settings -> {
-            settings.put( SecuritySettings.auth_providers,
-                    "plugin-TestCombinedAuthPlugin" );
-        });
+        restartNeo4jServerWithOverriddenSettings( settings -> settings.put( SecuritySettings.auth_providers,
+                "plugin-TestCombinedAuthPlugin" ) );
 
         assertConnectionSucceeds( authToken( "authorization_expired_user", "neo4j", null ) );
 

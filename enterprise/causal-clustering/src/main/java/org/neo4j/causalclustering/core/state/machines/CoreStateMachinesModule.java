@@ -182,7 +182,8 @@ public class CoreStateMachinesModule
                 relationshipTypeTokenStateMachine, propertyKeyTokenStateMachine, replicatedLockTokenStateMachine,
                 idAllocationStateMachine, localDatabase, consensusLogIndexRecovery );
 
-        commitProcessFactory = ( appender, applier, ignored ) -> {
+        commitProcessFactory = ( appender, applier, ignored ) ->
+        {
             localDatabase.registerCommitProcessDependencies( appender, applier );
             return new ReplicatedTransactionCommitProcess( replicator );
         };

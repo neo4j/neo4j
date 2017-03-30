@@ -321,7 +321,8 @@ public class Settings
     private static <T> BiFunction<String,Function<String, String>, String> inheritedValue(
             final BiFunction<String,Function<String,String>, String> lookup, final Setting<T> inheritedSetting )
     {
-        return (name, settings) -> {
+        return ( name, settings ) ->
+        {
             String value = lookup.apply( name, settings );
             if ( value == null )
             {
@@ -334,7 +335,8 @@ public class Settings
     private static <T> BiFunction<String,Function<String, String>, String> inheritedDefault(
             final BiFunction<String,Function<String,String>, String> lookup, final Setting<T> inheritedSetting )
     {
-        return (name, settings) -> {
+        return ( name, settings ) ->
+        {
             String value = lookup.apply( name, settings );
             if ( value == null )
             {
@@ -979,15 +981,15 @@ public class Settings
     public static BiFunction<String, Function<String, String>, String> toLowerCase =
             ( value, settings ) -> value.toLowerCase();
 
-    public static BiFunction<URI, Function<String, String>, URI> normalize =
-            ( value, settings ) -> {
-                String resultStr = value.normalize().toString();
-                if ( resultStr.endsWith( "/" ) )
-                {
-                    value = java.net.URI.create( resultStr.substring( 0, resultStr.length() - 1 ) );
-                }
-                return value;
-            };
+    public static BiFunction<URI,Function<String,String>,URI> normalize = ( value, settings ) ->
+    {
+        String resultStr = value.normalize().toString();
+        if ( resultStr.endsWith( "/" ) )
+        {
+            value = java.net.URI.create( resultStr.substring( 0, resultStr.length() - 1 ) );
+        }
+        return value;
+    };
 
     // Setting converters and constraints
     public static BiFunction<File, Function<String, String>, File> basePath( final Setting<File> baseSetting )
@@ -1010,27 +1012,27 @@ public class Settings
         };
     }
 
-    public static BiFunction<File, Function<String, String>, File> isFile =
-            ( path, settings ) -> {
-                if ( path.exists() && !path.isFile() )
-                {
-                    throw new IllegalArgumentException( String.format( "%s must point to a file, not a directory",
-                            path.toString() ) );
-                }
+    public static BiFunction<File,Function<String,String>,File> isFile = ( path, settings ) ->
+    {
+        if ( path.exists() && !path.isFile() )
+        {
+            throw new IllegalArgumentException(
+                    String.format( "%s must point to a file, not a directory", path.toString() ) );
+        }
 
-                return path;
-            };
+        return path;
+    };
 
-    public static BiFunction<File, Function<String, String>, File> isDirectory =
-            ( path, settings ) -> {
-                if ( path.exists() && !path.isDirectory() )
-                {
-                    throw new IllegalArgumentException( String.format( "%s must point to a file, not a directory",
-                            path.toString() ) );
-                }
+    public static BiFunction<File,Function<String,String>,File> isDirectory = ( path, settings ) ->
+    {
+        if ( path.exists() && !path.isDirectory() )
+        {
+            throw new IllegalArgumentException(
+                    String.format( "%s must point to a file, not a directory", path.toString() ) );
+        }
 
-                return path;
-            };
+        return path;
+    };
 
     public static long parseLongWithUnit( String numberWithPotentialUnit )
     {
@@ -1090,7 +1092,8 @@ public class Settings
     private static BiFunction<String,Function<String,String>,String> withDefault( final String defaultValue,
             final BiFunction<String,Function<String,String>,String> lookup )
     {
-        return (name, settings) -> {
+        return ( name, settings ) ->
+        {
             String value = lookup.apply( name, settings );
             if ( value == null )
             {
@@ -1176,7 +1179,8 @@ public class Settings
     private static BiFunction<String,Function<String, String>, String> mandatory(
             final BiFunction<String,Function<String, String>,String> lookup )
     {
-        return (name, settings) -> {
+        return ( name, settings ) ->
+        {
             String value = lookup.apply( name, settings );
             if ( value == null )
             {

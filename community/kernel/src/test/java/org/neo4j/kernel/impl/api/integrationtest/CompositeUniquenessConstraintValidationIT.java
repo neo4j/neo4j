@@ -41,18 +41,12 @@ import org.neo4j.kernel.api.KernelTransaction;
 import org.neo4j.kernel.api.Statement;
 import org.neo4j.kernel.api.exceptions.KernelException;
 import org.neo4j.kernel.api.exceptions.TransactionFailureException;
-import org.neo4j.kernel.api.exceptions.schema.IllegalTokenNameException;
-import org.neo4j.kernel.api.exceptions.schema.TooManyLabelsException;
 import org.neo4j.kernel.api.exceptions.schema.UniquePropertyValueValidationException;
 import org.neo4j.kernel.api.schema_new.constaints.ConstraintDescriptorFactory;
 import org.neo4j.kernel.api.security.SecurityContext;
 import org.neo4j.kernel.internal.GraphDatabaseAPI;
 import org.neo4j.test.rule.ImpermanentDatabaseRule;
 
-import static org.junit.Assert.assertEquals;
-import static org.junit.Assert.assertNotEquals;
-import static org.junit.Assert.assertThat;
-import static org.junit.Assert.fail;
 import static org.neo4j.kernel.api.properties.Property.property;
 import static org.neo4j.kernel.api.schema_new.SchemaDescriptorFactory.forLabel;
 import static org.neo4j.test.assertion.Assert.assertException;
@@ -146,7 +140,8 @@ public class CompositeUniquenessConstraintValidationIT
         // when
         newTransaction();
         long node = createLabeledNode( label );
-        assertException( () -> {
+        assertException( () ->
+        {
             setProperty( node, prop1, valueB1 ); // still ok
             setProperty( node, prop2, valueB2 ); // boom!
 
@@ -163,7 +158,8 @@ public class CompositeUniquenessConstraintValidationIT
         // when
         newTransaction();
         long node = createNode();
-        assertException( () -> {
+        assertException( () ->
+        {
             setProperty( node, prop1, valueB1 ); // still ok
             setProperty( node, prop2, valueB2 ); // and fine
             addLabel( node, label ); // boom again
@@ -182,7 +178,8 @@ public class CompositeUniquenessConstraintValidationIT
         setProperty( nodeA, prop2, valueA2 );
 
         long nodeB = createLabeledNode( label );
-        assertException( () -> {
+        assertException( () ->
+        {
             setProperty( nodeB, prop1, valueB1 ); // still ok
             setProperty( nodeB, prop2, valueB2 ); // boom!
 
@@ -200,7 +197,8 @@ public class CompositeUniquenessConstraintValidationIT
         setProperty( nodeA, prop2, valueA2 );
 
         long nodeB = createNode();
-        assertException( () -> {
+        assertException( () ->
+        {
             setProperty( nodeB, prop1, valueB1 ); // still ok
             setProperty( nodeB, prop2, valueB2 ); // and fine
             addLabel( nodeB, label ); // boom again

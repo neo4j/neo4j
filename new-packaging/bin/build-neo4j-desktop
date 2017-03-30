@@ -60,7 +60,6 @@ cp ${shell_scripts_directory}/neo4j-admin ${workspace}/shell-scripts
 cp ${shell_scripts_directory}/neo4j-backup ${workspace}/shell-scripts
 cp ${shell_scripts_directory}/neo4j-import ${workspace}/shell-scripts
 cp ${shell_scripts_directory}/neo4j-shell ${workspace}/shell-scripts
-cp ${shell_scripts_directory}/neo4j-shared.sh ${workspace}/shell-scripts
 cp ${shell_scripts_directory}/tools/2.x-config-migrator.jar ${workspace}/shell-scripts/tools
 
 # Windows scripts

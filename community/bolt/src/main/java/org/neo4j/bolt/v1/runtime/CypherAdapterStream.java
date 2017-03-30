@@ -66,7 +66,8 @@ class CypherAdapterStream extends BoltResult
     public void accept( final Visitor visitor ) throws Exception
     {
         long start = clock.millis();
-        delegate.accept( row -> {
+        delegate.accept( row ->
+        {
             visitor.visit( currentRecord.reset( row ) );
             return true;
         } );

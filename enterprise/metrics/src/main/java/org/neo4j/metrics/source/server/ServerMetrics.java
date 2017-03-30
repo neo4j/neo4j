@@ -63,7 +63,8 @@ public class ServerMetrics extends LifecycleAdapter
                 return -1;
             }
         };
-        satisfier.satisfyDependency( (ServerThreadViewSetter) serverThreadView -> {
+        satisfier.satisfyDependency( (ServerThreadViewSetter) serverThreadView ->
+        {
             assert ServerMetrics.this.serverThreadView != null;
             ServerMetrics.this.serverThreadView = serverThreadView;
             userLog.info( "Server thread metrics has been registered successfully" );

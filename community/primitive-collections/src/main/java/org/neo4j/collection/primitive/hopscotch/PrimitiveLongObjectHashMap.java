@@ -149,5 +149,20 @@ public class PrimitiveLongObjectHashMap<VALUE> extends AbstractLongHopScotchColl
         {
             return hash;
         }
+
+        @Override
+        public boolean equals( Object o )
+        {
+            if ( this == o )
+            {
+                return true;
+            }
+            if ( o == null || getClass() != o.getClass() )
+            {
+                return false;
+            }
+            HashCodeComputer<?> that = (HashCodeComputer<?>) o;
+            return hash == that.hash;
+        }
     }
 }

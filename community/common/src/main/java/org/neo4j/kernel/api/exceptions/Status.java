@@ -122,7 +122,7 @@ public interface Status
     {
         // client errors
         TransactionNotFound( ClientError,
-                "The request referred to a transaction that does not exist."),
+                "The request referred to a transaction that does not exist." ),
         TransactionAccessedConcurrently( ClientError,
                 "There were concurrent requests accessing the same transaction, which is not allowed." ),
         ForbiddenDueToTransactionType( ClientError,
@@ -134,7 +134,7 @@ public interface Status
                 "allowed. There are several reasons this happens - the client might have asked for the transaction " +
                 "to be terminated, an operator might have asked for the database to be shut down, or the current " +
                 "instance is about to go through a cluster role switch. Simply retry your operation in a new " +
-                "transaction."),
+                "transaction." ),
         TransactionEventHandlerFailed( ClientError,
                 "A transaction event handler threw an exception. The transaction will be rolled back." ),
         TransactionValidationFailed( ClientError,

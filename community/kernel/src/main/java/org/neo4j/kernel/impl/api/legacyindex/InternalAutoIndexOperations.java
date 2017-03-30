@@ -276,7 +276,8 @@ public class InternalAutoIndexOperations implements AutoIndexOperations
     @Override
     public void startAutoIndexingProperty( String propName )
     {
-        propertyKeysToInclude.getAndUpdate( current -> {
+        propertyKeysToInclude.getAndUpdate( current ->
+        {
             Set<String> updated = new HashSet<String>();
             updated.addAll( current );
             updated.add( propName );
@@ -287,7 +288,8 @@ public class InternalAutoIndexOperations implements AutoIndexOperations
     @Override
     public void stopAutoIndexingProperty( String propName )
     {
-        propertyKeysToInclude.getAndUpdate( current -> {
+        propertyKeysToInclude.getAndUpdate( current ->
+        {
             Set<String> updated = new HashSet<String>();
             updated.addAll( current );
             updated.remove( propName );

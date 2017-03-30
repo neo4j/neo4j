@@ -310,7 +310,8 @@ public class NodeStoreTest
     private static boolean containsStackTraceElement( Throwable cause,
             final Predicate<StackTraceElement> predicate )
     {
-        return contains( cause, item -> {
+        return contains( cause, item ->
+        {
             for ( StackTraceElement element : item.getStackTrace() )
             {
                 if ( predicate.test( element ) )

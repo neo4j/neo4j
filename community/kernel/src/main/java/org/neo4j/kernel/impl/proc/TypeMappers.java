@@ -141,7 +141,8 @@ public class TypeMappers
     private final NeoValueConverter TO_STRING = new SimpleConverter( NTString, String.class, Neo4jValue::ntString );
     private final NeoValueConverter TO_INTEGER = new SimpleConverter( NTInteger, Long.class, s -> ntInteger( parseLong(s) ) );
     private final NeoValueConverter TO_FLOAT = new SimpleConverter( NTFloat, Double.class, s -> ntFloat( parseDouble(s) ));
-    private final NeoValueConverter TO_NUMBER = new SimpleConverter( NTNumber, Number.class, s -> {
+    private final NeoValueConverter TO_NUMBER = new SimpleConverter( NTNumber, Number.class, s ->
+    {
         try
         {
             return ntInteger( parseLong(s) );
@@ -234,7 +235,8 @@ public class TypeMappers
 
         private static Function<String,Neo4jValue> nullParser( Class<?> javaType, Neo4jTypes.AnyType neoType )
         {
-            return s -> {
+            return s ->
+            {
                 if ( s.equalsIgnoreCase( "null" ) )
                 {
                     return new Neo4jValue( null, neoType );

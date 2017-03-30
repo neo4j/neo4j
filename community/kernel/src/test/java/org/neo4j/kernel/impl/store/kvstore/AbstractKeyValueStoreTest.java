@@ -380,7 +380,8 @@ public class AbstractKeyValueStoreTest
 
         // when
         updateStore( store, 1 );
-        Future<Long> rotation = threading.executeAndAwait( store.rotation, 3L, thread -> {
+        Future<Long> rotation = threading.executeAndAwait( store.rotation, 3L, thread ->
+        {
             switch ( thread.getState() )
             {
             case BLOCKED:
@@ -530,7 +531,8 @@ public class AbstractKeyValueStoreTest
 
     private void updateStore( final Store store, long transaction ) throws IOException
     {
-        ThrowingConsumer<Long,IOException> update = u -> {
+        ThrowingConsumer<Long,IOException> update = u ->
+        {
             try ( EntryUpdater<String> updater = store.updater( u ).get() )
             {
                 updater.apply( "key " + u, value( "value " + u ) );

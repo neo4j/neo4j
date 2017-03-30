@@ -68,7 +68,8 @@ public class CoreToCoreCopySnapshotIT
         // given
         Cluster cluster = clusterRule.startCluster();
 
-        CoreClusterMember source = cluster.coreTx( ( db, tx ) -> {
+        CoreClusterMember source = cluster.coreTx( ( db, tx ) ->
+        {
             createData( db, 1000 );
             tx.success();
         } );
@@ -102,7 +103,8 @@ public class CoreToCoreCopySnapshotIT
 
         Cluster cluster = clusterRule.withSharedCoreParams( params ).startCluster();
 
-        CoreClusterMember leader = cluster.coreTx( ( db, tx ) -> {
+        CoreClusterMember leader = cluster.coreTx( ( db, tx ) ->
+        {
             createData( db, 10000 );
             tx.success();
         } );

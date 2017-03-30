@@ -114,7 +114,8 @@ public class LegacyBatchIndexApplierTest
         for ( long i = 0; i < 100; i++ )
         {
             final long txId = i;
-            race.addContestant( () -> {
+            race.addContestant( () ->
+            {
                 try ( LegacyBatchIndexApplier applier = new LegacyBatchIndexApplier( config, applierLookup, queue, INTERNAL ) )
                 {
                     TransactionToApply txToApply = new TransactionToApply(

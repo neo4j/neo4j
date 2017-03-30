@@ -82,7 +82,8 @@ public final class StoreWithReservedId
             R record )
     {
         RecordCursor<R> cursor = mock( RecordCursor.class );
-        when( cursor.next( anyInt() ) ).thenAnswer( invocation -> {
+        when( cursor.next( anyInt() ) ).thenAnswer( invocation ->
+        {
             long id = (long) invocation.getArguments()[0];
             long realId = (id == highId - 1) ? IdGeneratorImpl.INTEGER_MINUS_ONE : id;
             record.setId( realId );

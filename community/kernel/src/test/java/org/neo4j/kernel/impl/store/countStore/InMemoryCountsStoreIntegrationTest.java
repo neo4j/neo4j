@@ -202,7 +202,8 @@ public class InMemoryCountsStoreIntegrationTest
         try
         {
             assertEquals( expected.size(), actual.size() );
-            actual.forEach( ( key, value ) -> {
+            actual.forEach( ( key, value ) ->
+            {
                 assertNotNull( "Example counts store snapshot has null where key was expected.", expected.get( key ) );
                 assertArrayEquals( "Example counts store snapshot has different value for a key than expected.",
                         expected.get( key ), value );

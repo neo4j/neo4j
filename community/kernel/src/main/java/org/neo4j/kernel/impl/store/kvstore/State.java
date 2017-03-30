@@ -48,7 +48,8 @@ public @interface State
             @Override
             public <Key> ActiveState<Key> open( ReadableState<Key> store, File file )
             {
-                return new ConcurrentMapState<Key>( store, file ) {
+                return new ConcurrentMapState<Key>( store, file )
+                {
                     @Override
                     protected boolean hasChanges()
                     {

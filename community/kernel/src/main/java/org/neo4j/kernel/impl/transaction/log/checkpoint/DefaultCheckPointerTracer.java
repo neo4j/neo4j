@@ -107,7 +107,8 @@ public class DefaultCheckPointerTracer implements CheckPointTracer, CheckPointer
         accumulatedTotalTimeNanos.addAndGet( lastEventTime );
 
         // notify async
-        jobScheduler.schedule( JobScheduler.Groups.metricsEvent, () -> {
+        jobScheduler.schedule( JobScheduler.Groups.metricsEvent, () ->
+        {
             long millis = TimeUnit.NANOSECONDS.toMillis( lastEventTime );
             monitor.lastCheckPointEventDuration( millis );
         } );

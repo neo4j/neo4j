@@ -26,7 +26,8 @@ public final class TimeUtil
 {
     public static final TimeUnit DEFAULT_TIME_UNIT = TimeUnit.SECONDS;
 
-    public static final Function<String, Long> parseTimeMillis = timeWithOrWithoutUnit -> {
+    public static final Function<String,Long> parseTimeMillis = timeWithOrWithoutUnit ->
+    {
         int unitIndex = -1;
         for ( int i = 0; i < timeWithOrWithoutUnit.length(); i++ )
         {

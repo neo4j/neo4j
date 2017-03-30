@@ -19,6 +19,12 @@
  */
 package org.neo4j.codegen;
 
+import org.junit.Before;
+import org.junit.Test;
+import org.junit.runner.RunWith;
+import org.junit.runners.Parameterized;
+import org.mockito.InOrder;
+
 import java.io.IOException;
 import java.lang.invoke.MethodHandle;
 import java.lang.invoke.MethodHandles;
@@ -31,12 +37,6 @@ import java.util.List;
 import java.util.Map;
 import java.util.function.BiFunction;
 import java.util.function.Function;
-
-import org.junit.Before;
-import org.junit.Test;
-import org.junit.runner.RunWith;
-import org.junit.runners.Parameterized;
-import org.mockito.InOrder;
 
 import org.neo4j.codegen.bytecode.ByteCode;
 import org.neo4j.codegen.source.SourceCode;
@@ -371,7 +371,8 @@ public class CodeGenerationTest
         // when
         try
         {
-            instanceMethod( handle.newInstance(), "fail", Thrower.class ).invoke( (Thrower<IOException>) () -> {
+            instanceMethod( handle.newInstance(), "fail", Thrower.class ).invoke( (Thrower<IOException>) () ->
+            {
                 throw new IOException( "Hello from the inside" );
             } );
 
@@ -1547,7 +1548,8 @@ public class CodeGenerationTest
             {
 
                 run.tryCatch(
-                        ( tryBlock ) -> {
+                        ( tryBlock ) ->
+                        {
                             try ( CodeBlock ifBlock = tryBlock.ifStatement( run.load( "test" ) ) )
                             {
                                 ifBlock.expression( invoke( run.load( "body" ), RUN ) );

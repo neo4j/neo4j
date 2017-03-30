@@ -152,7 +152,8 @@ public class BiggerThanLogTxIT
 
     private int commitLargeTx( final GraphDatabaseService db )
     {
-        return template.with( db ).execute( transaction -> {
+        return template.with( db ).execute( transaction ->
+        {
             // We're not actually asserting that this transaction produces log data
             // bigger than the threshold.
             long rotationThreshold = parseLongWithUnit( ROTATION_THRESHOLD );

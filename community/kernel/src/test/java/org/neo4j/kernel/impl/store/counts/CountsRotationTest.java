@@ -332,7 +332,8 @@ public class CountsRotationTest
         CountDownLatch txStartLatch = new CountDownLatch( 1 );
         CountDownLatch txCommitLatch = new CountDownLatch( 1 );
 
-        Future<?> result = ForkJoinPool.commonPool().submit( () -> {
+        Future<?> result = ForkJoinPool.commonPool().submit( () ->
+        {
             try ( Transaction tx = db.beginTx() )
             {
                 txStartLatch.countDown();

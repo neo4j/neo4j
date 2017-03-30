@@ -585,8 +585,6 @@ public class NodeLabelsFieldTest
 
     private static <T extends CloneableInPublic> Iterable<T> cloned( Iterable<T> items, final Class<T> itemClass )
     {
-        return Iterables.map( from -> {
-            return itemClass.cast( from.clone() );
-        }, items );
+        return Iterables.map( from -> itemClass.cast( from.clone() ), items );
     }
 }

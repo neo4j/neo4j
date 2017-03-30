@@ -134,7 +134,8 @@ public class NodeProxy implements Node
     public ResourceIterable<Relationship> getRelationships( final Direction dir )
     {
         assertInUnterminatedTransaction();
-        return () -> {
+        return () ->
+        {
             Statement statement = actions.statement();
             try
             {

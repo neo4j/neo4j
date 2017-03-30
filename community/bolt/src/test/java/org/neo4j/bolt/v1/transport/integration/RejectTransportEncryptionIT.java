@@ -19,9 +19,6 @@
  */
 package org.neo4j.bolt.v1.transport.integration;
 
-import java.io.IOException;
-import java.util.Collection;
-
 import org.junit.After;
 import org.junit.Before;
 import org.junit.Rule;
@@ -29,6 +26,9 @@ import org.junit.Test;
 import org.junit.rules.ExpectedException;
 import org.junit.runner.RunWith;
 import org.junit.runners.Parameterized;
+
+import java.io.IOException;
+import java.util.Collection;
 
 import org.neo4j.bolt.v1.transport.socket.client.SecureSocketConnection;
 import org.neo4j.bolt.v1.transport.socket.client.SecureWebSocketConnection;
@@ -45,7 +45,8 @@ public class RejectTransportEncryptionIT
 {
     @Rule
     public Neo4jWithSocket server = new Neo4jWithSocket( getClass(),
-            settings -> {
+            settings ->
+            {
                 settings.put( new BoltConnector( "bolt" ).type.name(), "BOLT" );
                 settings.put( new BoltConnector( "bolt" ).encryption_level.name(), DISABLED.name() );
             } );

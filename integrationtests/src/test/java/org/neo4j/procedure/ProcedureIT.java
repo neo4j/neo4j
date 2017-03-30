@@ -52,7 +52,6 @@ import org.neo4j.graphdb.RelationshipType;
 import org.neo4j.graphdb.Result;
 import org.neo4j.graphdb.Transaction;
 import org.neo4j.graphdb.TransactionFailureException;
-import org.neo4j.graphdb.factory.GraphDatabaseSettings;
 import org.neo4j.graphdb.security.AuthorizationViolationException;
 import org.neo4j.helpers.collection.Iterators;
 import org.neo4j.io.fs.FileUtils;
@@ -822,7 +821,8 @@ public class ProcedureIT
     public void shouldBeAbleToSpawnThreadsCreatingTransactionInProcedures() throws Throwable
     {
         // given
-        Runnable doIt = () -> {
+        Runnable doIt = () ->
+        {
             Result result = db.execute( "CALL org.neo4j.procedure.supportedProcedure()" );
             while ( result.hasNext() )
             {
@@ -1445,7 +1445,10 @@ public class ProcedureIT
         @Procedure
         public Stream<Output> throwsExceptionInStream()
         {
-            return Stream.generate( () -> { throw new RuntimeException( "Kaboom" ); } );
+            return Stream.generate( () ->
+            {
+                throw new RuntimeException( "Kaboom" );
+            } );
         }
 
         @Procedure
@@ -1561,7 +1564,8 @@ public class ProcedureIT
         @Procedure( mode = WRITE )
         public void supportedProcedure() throws ExecutionException, InterruptedException
         {
-            jobs.submit( () -> {
+            jobs.submit( () ->
+            {
                 try ( Transaction tx = db.beginTx() )
                 {
                     db.createNode();
@@ -1627,7 +1631,8 @@ public class ProcedureIT
         @Procedure( mode = SCHEMA )
         public Stream<NodeOutput> schemaCallReadProcedure( @Name( "id" ) long id )
         {
-            return db.execute( "CALL org.neo4j.procedure.node(" + id + ")" ).stream().map( record -> {
+            return db.execute( "CALL org.neo4j.procedure.node(" + id + ")" ).stream().map( record ->
+            {
                 NodeOutput n = new NodeOutput();
                 n.setNode( (Node) record.get( "node" ) );
                 return n;

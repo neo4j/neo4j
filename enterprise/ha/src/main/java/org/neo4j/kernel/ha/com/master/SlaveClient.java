@@ -62,7 +62,8 @@ public class SlaveClient extends Client<Slave> implements Slave
     @Override
     public Response<Void> pullUpdates( final long upToAndIncludingTxId )
     {
-        return sendRequest( SlaveRequestType.PULL_UPDATES, RequestContext.EMPTY, buffer -> {
+        return sendRequest( SlaveRequestType.PULL_UPDATES, RequestContext.EMPTY, buffer ->
+        {
             writeString( buffer, NeoStoreDataSource.DEFAULT_DATA_SOURCE_NAME );
             buffer.writeLong( upToAndIncludingTxId );
         }, Protocol.VOID_DESERIALIZER );
@@ -76,7 +77,8 @@ public class SlaveClient extends Client<Slave> implements Slave
 
     public enum SlaveRequestType implements RequestType<Slave>
     {
-        PULL_UPDATES( (TargetCaller<Slave,Void>) ( master, context, input, target ) -> {
+        PULL_UPDATES( (TargetCaller<Slave,Void>) ( master, context, input, target ) ->
+        {
             readString( input ); // And discard
             return master.pullUpdates( input.readLong() );
         }, VOID_SERIALIZER );

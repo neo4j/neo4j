@@ -27,6 +27,7 @@ import java.util.Collection;
 import java.util.HashMap;
 import java.util.HashSet;
 import java.util.Map;
+import java.util.Objects;
 import java.util.TreeMap;
 
 import org.neo4j.graphdb.Direction;
@@ -272,7 +273,9 @@ public class DbRepresentation
             for ( Long id : other.outRelationships.keySet() )
             {
                 if ( !outRelationships.containsKey( id ) )
-                { diff.add( "Other has relationship " + id + " which I don't" ); }
+                {
+                    diff.add( "Other has relationship " + id + " which I don't" );
+                }
             }
         }
 
@@ -286,6 +289,23 @@ public class DbRepresentation
             if ( index != null )
             { result += index.hashCode() * 19; }
             return result;
+        }
+
+        @Override
+        public boolean equals( Object o )
+        {
+            if ( this == o )
+            {
+                return true;
+            }
+            if ( o == null || getClass() != o.getClass() )
+            {
+                return false;
+            }
+            NodeRep nodeRep = (NodeRep) o;
+            return id == nodeRep.id && Objects.equals( properties, nodeRep.properties ) &&
+                    Objects.equals( outRelationships, nodeRep.outRelationships ) &&
+                    Objects.equals( index, nodeRep.index );
         }
 
         @Override
@@ -327,7 +347,9 @@ public class DbRepresentation
         {
             boolean equals = props.equals( other.props );
             if ( !equals )
-            { diff.add( "Properties diff for " + entityToString + " mine:" + props + ", other:" + other.props ); }
+            {
+                diff.add( "Properties diff for " + entityToString + " mine:" + props + ", other:" + other.props );
+            }
             return equals;
         }
 
@@ -335,6 +357,21 @@ public class DbRepresentation
         public int hashCode()
         {
             return props.hashCode();
+        }
+
+        @Override
+        public boolean equals( Object o )
+        {
+            if ( this == o )
+            {
+                return true;
+            }
+            if ( o == null || getClass() != o.getClass() )
+            {
+                return false;
+            }
+            PropertiesRep that = (PropertiesRep) o;
+            return Objects.equals( props, that.props );
         }
 
         @Override

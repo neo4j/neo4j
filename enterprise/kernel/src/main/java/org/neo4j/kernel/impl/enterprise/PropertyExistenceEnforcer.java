@@ -19,11 +19,16 @@
  */
 package org.neo4j.kernel.impl.enterprise;
 
+import java.util.ArrayList;
+import java.util.Arrays;
 import java.util.Iterator;
 import java.util.List;
 import java.util.Set;
+import java.util.function.Function;
 
 import org.neo4j.collection.primitive.Primitive;
+import org.neo4j.collection.primitive.PrimitiveIntIterator;
+import org.neo4j.collection.primitive.PrimitiveIntObjectMap;
 import org.neo4j.collection.primitive.PrimitiveIntSet;
 import org.neo4j.cursor.Cursor;
 import org.neo4j.kernel.api.exceptions.schema.ConstraintValidationException;
@@ -31,6 +36,8 @@ import org.neo4j.kernel.api.exceptions.schema.NodePropertyExistenceException;
 import org.neo4j.kernel.api.exceptions.schema.RelationshipPropertyExistenceException;
 import org.neo4j.kernel.api.schema_new.LabelSchemaDescriptor;
 import org.neo4j.kernel.api.schema_new.RelationTypeSchemaDescriptor;
+import org.neo4j.kernel.api.schema_new.SchemaProcessor;
+import org.neo4j.kernel.api.schema_new.constaints.ConstraintDescriptor;
 import org.neo4j.kernel.impl.locking.Lock;
 import org.neo4j.storageengine.api.NodeItem;
 import org.neo4j.storageengine.api.PropertyItem;
@@ -42,191 +49,340 @@ import org.neo4j.storageengine.api.txstate.ReadableTransactionState;
 import org.neo4j.storageengine.api.txstate.TxStateVisitor;
 
 import static java.lang.String.format;
+import static java.util.Collections.emptyList;
+import static org.neo4j.collection.primitive.PrimitiveSortedArraySet.mergeSortedSet;
+import static org.neo4j.kernel.api.exceptions.schema.ConstraintValidationException.Phase.VALIDATION;
 
-class PropertyExistenceEnforcer extends TxStateVisitor.Delegator
+class PropertyExistenceEnforcer
 {
-    private final StoreReadLayer storeLayer;
-    private final ReadableTransactionState txState;
-    private final List<LabelSchemaDescriptor> labelExistenceConstraints;
-    private final List<RelationTypeSchemaDescriptor> relTypeExistenceConstraints;
-
-    private final PrimitiveIntSet propertyKeyIds = Primitive.intSet();
-
-    private StorageStatement storageStatement;
-
-    PropertyExistenceEnforcer( TxStateVisitor next, ReadableTransactionState txState, StoreReadLayer storeLayer,
-            List<LabelSchemaDescriptor> labelExistenceConstraints,
-            List<RelationTypeSchemaDescriptor> relTypeExistenceConstraints )
+    static PropertyExistenceEnforcer getOrCreatePropertyExistenceEnforcerFrom( StoreReadLayer storeLayer )
     {
-        super( next );
-        this.txState = txState;
-        this.storeLayer = storeLayer;
-        this.labelExistenceConstraints = labelExistenceConstraints;
-        this.relTypeExistenceConstraints = relTypeExistenceConstraints;
+        return storeLayer.getOrCreateSchemaDependantState( PropertyExistenceEnforcer.class, FACTORY );
     }
 
-    @Override
-    public void visitNodePropertyChanges( long id, Iterator<StorageProperty> added, Iterator<StorageProperty> changed,
-            Iterator<Integer> removed ) throws ConstraintValidationException
-    {
-        validateNode( id );
-        super.visitNodePropertyChanges( id, added, changed, removed );
-    }
+    private final List<LabelSchemaDescriptor> nodeConstraints;
+    private final List<RelationTypeSchemaDescriptor> relationshipConstraints;
+    private final PrimitiveIntObjectMap<int[]> mandatoryNodePropertiesByLabel = Primitive.intObjectMap();
+    private final PrimitiveIntObjectMap<int[]> mandatoryRelationshipPropertiesByType = Primitive.intObjectMap();
 
-    @Override
-    public void visitNodeLabelChanges( long id, Set<Integer> added, Set<Integer> removed )
-            throws ConstraintValidationException
+    private PropertyExistenceEnforcer( List<LabelSchemaDescriptor> nodes, List<RelationTypeSchemaDescriptor> rels )
     {
-        validateNode( id );
-        super.visitNodeLabelChanges( id, added, removed );
-    }
-
-    @Override
-    public void visitCreatedRelationship( long id, int type, long startNode, long endNode )
-            throws ConstraintValidationException
-    {
-        validateRelationship( id );
-        super.visitCreatedRelationship( id, type, startNode, endNode );
-    }
-
-    @Override
-    public void visitRelPropertyChanges( long id, Iterator<StorageProperty> added, Iterator<StorageProperty> changed,
-            Iterator<Integer> removed ) throws ConstraintValidationException
-    {
-        validateRelationship( id );
-        super.visitRelPropertyChanges( id, added, changed, removed );
-    }
-
-    private void validateNode( long nodeId ) throws NodePropertyExistenceException
-    {
-        if ( labelExistenceConstraints.isEmpty() )
+        this.nodeConstraints = nodes;
+        this.relationshipConstraints = rels;
+        for ( LabelSchemaDescriptor constraint : nodes )
         {
-            return;
+            update( mandatoryNodePropertiesByLabel, constraint.getLabelId(), constraint.getPropertyIds() );
+        }
+        for ( RelationTypeSchemaDescriptor constraint : rels )
+        {
+            update( mandatoryRelationshipPropertiesByType, constraint.getRelTypeId(), constraint.getPropertyIds() );
+        }
+    }
+
+    private static void update( PrimitiveIntObjectMap<int[]> map, int key, int[] values )
+    {
+        Arrays.sort( values );
+        int[] current = map.get( key );
+        if ( current != null )
+        {
+            values = mergeSortedSet( current, values );
+        }
+        map.put( key, values );
+    }
+
+    TxStateVisitor decorate( TxStateVisitor visitor, ReadableTransactionState txState, StoreReadLayer storeLayer )
+    {
+        return new Decorator( visitor, txState, storeLayer );
+    }
+
+    private static final PropertyExistenceEnforcer NO_CONSTRAINTS = new PropertyExistenceEnforcer(
+            emptyList(), emptyList() )
+    {
+        @Override
+        TxStateVisitor decorate( TxStateVisitor visitor, ReadableTransactionState txState, StoreReadLayer storeLayer )
+        {
+            return visitor;
+        }
+    };
+    private static final Function<StoreReadLayer,PropertyExistenceEnforcer> FACTORY = storeLayer ->
+    {
+        List<LabelSchemaDescriptor> nodes = new ArrayList<>();
+        List<RelationTypeSchemaDescriptor> relationships = new ArrayList<>();
+        for ( Iterator<ConstraintDescriptor> constraints = storeLayer.constraintsGetAll(); constraints.hasNext(); )
+        {
+            ConstraintDescriptor constraint = constraints.next();
+            if ( constraint.enforcesPropertyExistence() )
+            {
+                constraint.schema().processWith( new SchemaProcessor()
+                {
+                    @Override
+                    public void processSpecific( LabelSchemaDescriptor schema )
+                    {
+                        nodes.add( schema );
+                    }
+
+                    @Override
+                    public void processSpecific( RelationTypeSchemaDescriptor schema )
+                    {
+                        relationships.add( schema );
+                    }
+                } );
+            }
+        }
+        if ( nodes.isEmpty() && relationships.isEmpty() )
+        {
+            return NO_CONSTRAINTS;
+        }
+        return new PropertyExistenceEnforcer( nodes, relationships );
+    };
+
+    private class Decorator extends TxStateVisitor.Delegator
+    {
+        private final ReadableTransactionState txState;
+        private final StoreReadLayer storeLayer;
+        private final PrimitiveIntSet propertyKeyIds = Primitive.intSet();
+        private StorageStatement storageStatement;
+
+        Decorator( TxStateVisitor next, ReadableTransactionState txState, StoreReadLayer storeLayer )
+        {
+            super( next );
+            this.txState = txState;
+            this.storeLayer = storeLayer;
         }
 
-        try ( Cursor<NodeItem> node = nodeCursor( nodeId ) )
+        @Override
+        public void visitNodePropertyChanges(
+                long id, Iterator<StorageProperty> added, Iterator<StorageProperty> changed,
+                Iterator<Integer> removed ) throws ConstraintValidationException
         {
-            if ( node.next() )
+            validateNode( id );
+            super.visitNodePropertyChanges( id, added, changed, removed );
+        }
+
+        @Override
+        public void visitNodeLabelChanges( long id, Set<Integer> added, Set<Integer> removed )
+                throws ConstraintValidationException
+        {
+            validateNode( id );
+            super.visitNodeLabelChanges( id, added, removed );
+        }
+
+        @Override
+        public void visitCreatedRelationship( long id, int type, long startNode, long endNode )
+                throws ConstraintValidationException
+        {
+            validateRelationship( id );
+            super.visitCreatedRelationship( id, type, startNode, endNode );
+        }
+
+        @Override
+        public void visitRelPropertyChanges(
+                long id, Iterator<StorageProperty> added, Iterator<StorageProperty> changed,
+                Iterator<Integer> removed ) throws ConstraintValidationException
+        {
+            validateRelationship( id );
+            super.visitRelPropertyChanges( id, added, changed, removed );
+        }
+
+        @Override
+        public void close()
+        {
+            super.close();
+            if ( storageStatement != null )
             {
-                PrimitiveIntSet labelIds = node.get().labels();
+                storageStatement.close();
+            }
+        }
 
-                propertyKeyIds.clear();
-                try ( Cursor<PropertyItem> properties = properties( node.get() ) )
+        private void validateNode( long nodeId ) throws NodePropertyExistenceException
+        {
+            if ( mandatoryNodePropertiesByLabel.isEmpty() )
+            {
+                return;
+            }
+
+            PrimitiveIntSet labelIds;
+            try ( Cursor<NodeItem> node = node( nodeId ) )
+            {
+                if ( node.next() )
                 {
-                    while ( properties.next() )
+                    labelIds = node.get().labels();
+                    if ( labelIds.isEmpty() )
                     {
-                        propertyKeyIds.add( properties.get().propertyKeyId() );
+                        return;
                     }
-                }
-
-                for ( LabelSchemaDescriptor descriptor : labelExistenceConstraints )
-                {
-                    if ( labelIds.contains( descriptor.getLabelId() ) )
+                    propertyKeyIds.clear();
+                    try ( Cursor<PropertyItem> properties = properties( node.get() ) )
                     {
-                        for ( int propertyId : descriptor.getPropertyIds() )
+                        while ( properties.next() )
                         {
-                            validateNodeProperty( nodeId, propertyId, descriptor );
+                            propertyKeyIds.add( properties.get().propertyKeyId() );
                         }
                     }
                 }
+                else
+                {
+                    throw new IllegalStateException( format( "Node %d with changes should exist.", nodeId ) );
+                }
             }
-            else
+
+            validateNodeProperties( nodeId, labelIds, propertyKeyIds );
+        }
+
+        private void validateRelationship( long id ) throws RelationshipPropertyExistenceException
+        {
+            if ( mandatoryRelationshipPropertiesByType.isEmpty() )
             {
-                throw new IllegalStateException( format( "Node %d with changes should exist.", nodeId ) );
+                return;
             }
+
+            int relationshipType;
+            int[] required;
+            try ( Cursor<RelationshipItem> relationship = relationship( id ) )
+            {
+                if ( relationship.next() )
+                {
+                    relationshipType = relationship.get().type();
+                    required = mandatoryRelationshipPropertiesByType.get( relationshipType );
+                    if ( required == null )
+                    {
+                        return;
+                    }
+                    propertyKeyIds.clear();
+                    try ( Cursor<PropertyItem> properties = properties( relationship.get() ) )
+                    {
+                        while ( properties.next() )
+                        {
+                            propertyKeyIds.add( properties.get().propertyKeyId() );
+                        }
+                    }
+                }
+                else
+                {
+                    throw new IllegalStateException( format( "Relationship %d with changes should exist.", id ) );
+                }
+            }
+
+            for ( int mandatory : required )
+            {
+                if ( !propertyKeyIds.contains( mandatory ) )
+                {
+                    failRelationship( id, relationshipType, mandatory );
+                }
+            }
+        }
+
+        private Cursor<NodeItem> node( long id )
+        {
+            Cursor<NodeItem> cursor = storeStatement().acquireSingleNodeCursor( id );
+            return txState.augmentSingleNodeCursor( cursor, id );
+        }
+
+        private Cursor<RelationshipItem> relationship( long id )
+        {
+            Cursor<RelationshipItem> cursor = storeStatement().acquireSingleRelationshipCursor( id );
+            return txState.augmentSingleRelationshipCursor( cursor, id );
+        }
+
+        private Cursor<PropertyItem> properties( NodeItem node )
+        {
+            Lock lock = node.lock();
+            Cursor<PropertyItem> cursor = storeStatement().acquirePropertyCursor( node.nextPropertyId(), lock );
+            return txState.augmentPropertyCursor( cursor, txState.getNodeState( node.id() ) );
+        }
+
+        private Cursor<PropertyItem> properties( RelationshipItem relationship )
+        {
+            Lock lock = relationship.lock();
+            Cursor<PropertyItem> cursor = storeStatement().acquirePropertyCursor( relationship.nextPropertyId(), lock );
+            return txState.augmentPropertyCursor( cursor, txState.getRelationshipState( relationship.id() ) );
+        }
+
+        private StorageStatement storeStatement()
+        {
+            return storageStatement == null ? storageStatement = storeLayer.newStatement() : storageStatement;
         }
     }
 
-    private void validateNodeProperty( long nodeId, int propertyKey, LabelSchemaDescriptor descriptor )
+    private void validateNodeProperties( long id, PrimitiveIntSet labelIds, PrimitiveIntSet propertyKeyIds )
             throws NodePropertyExistenceException
     {
-        if ( !propertyKeyIds.contains( propertyKey ) )
+        if ( labelIds.size() > mandatoryNodePropertiesByLabel.size() )
         {
-            throw new NodePropertyExistenceException( descriptor, ConstraintValidationException.Phase.VALIDATION, nodeId );
-        }
-    }
-
-    private Cursor<NodeItem> nodeCursor( long id )
-    {
-        Cursor<NodeItem> cursor = storeStatement().acquireSingleNodeCursor( id );
-        return txState.augmentSingleNodeCursor( cursor, id );
-    }
-
-    private Cursor<PropertyItem> properties( NodeItem node )
-    {
-        Lock lock = node.lock();
-        Cursor<PropertyItem> cursor = storeStatement().acquirePropertyCursor( node.nextPropertyId(), lock );
-        return txState.augmentPropertyCursor( cursor, txState.getNodeState( node.id() ) );
-    }
-
-    private StorageStatement storeStatement()
-    {
-        return storageStatement == null ? storageStatement = storeLayer.newStatement() : storageStatement;
-    }
-
-    @Override
-    public void close()
-    {
-        super.close();
-        if ( storageStatement != null )
-        {
-            storageStatement.close();
-        }
-    }
-
-    private void validateRelationship( long id ) throws RelationshipPropertyExistenceException
-    {
-        if ( relTypeExistenceConstraints.isEmpty() )
-        {
-            return;
-        }
-
-        try ( Cursor<RelationshipItem> relationship = relationshipCursor( id ) )
-        {
-            if ( relationship.next() )
+            for ( PrimitiveIntIterator labels = mandatoryNodePropertiesByLabel.iterator(); labels.hasNext(); )
             {
-                // Iterate all constraints and find property existence constraints that match relationship type
-                propertyKeyIds.clear();
-                try ( Cursor<PropertyItem> properties = properties( relationship.get() ) )
+                int label = labels.next();
+                if ( labelIds.contains( label ) )
                 {
-                    while ( properties.next() )
-                    {
-                        propertyKeyIds.add( properties.get().propertyKeyId() );
-                    }
-                }
-
-                for ( RelationTypeSchemaDescriptor descriptor : relTypeExistenceConstraints )
-                {
-                    if ( relationship.get().type() == descriptor.getRelTypeId() )
-                    {
-                        for ( int propertyId : descriptor.getPropertyIds() )
-                        {
-                            if ( !propertyKeyIds.contains( propertyId ) )
-                            {
-                                throw new RelationshipPropertyExistenceException( descriptor,
-                                        ConstraintValidationException.Phase.VALIDATION, id );
-                            }
-                        }
-                    }
+                    validateNodeProperties( id, label, mandatoryNodePropertiesByLabel.get( label ), propertyKeyIds );
                 }
             }
-            else
+        }
+        else
+        {
+            for ( PrimitiveIntIterator labels = labelIds.iterator(); labels.hasNext(); )
             {
-                throw new IllegalStateException( format( "Relationship %d with changes should exist.", id ) );
+                int label = labels.next();
+                int[] keys = mandatoryNodePropertiesByLabel.get( label );
+                if ( keys != null )
+                {
+                    validateNodeProperties( id, label, keys, propertyKeyIds );
+                }
+            }
+        }
+    }
+
+    private void validateNodeProperties( long id, int label, int[] requiredKeys, PrimitiveIntSet propertyKeyIds )
+            throws NodePropertyExistenceException
+    {
+        for ( int key : requiredKeys )
+        {
+            if ( !propertyKeyIds.contains( key ) )
+            {
+                failNode( id, label, key );
             }
         }
     }
 
-    private Cursor<RelationshipItem> relationshipCursor( long id )
+    private void failNode( long id, int label, int propertyKey )
+            throws NodePropertyExistenceException
     {
-        Cursor<RelationshipItem> cursor = storeStatement().acquireSingleRelationshipCursor( id );
-        return txState.augmentSingleRelationshipCursor( cursor, id );
+        for ( LabelSchemaDescriptor constraint : nodeConstraints )
+        {
+            if ( constraint.getLabelId() == label && contains( constraint.getPropertyIds(), propertyKey ) )
+            {
+                throw new NodePropertyExistenceException( constraint, VALIDATION, id );
+            }
+        }
+        throw new IllegalStateException( format(
+                "Node constraint for label=%d, propertyKey=%d should exist.",
+                label, propertyKey ) );
     }
 
-    private Cursor<PropertyItem> properties( RelationshipItem relationship )
+    private void failRelationship( long id, int relationshipType, int propertyKey )
+            throws RelationshipPropertyExistenceException
     {
-        Lock lock = relationship.lock();
-        Cursor<PropertyItem> cursor = storeStatement().acquirePropertyCursor( relationship.nextPropertyId(), lock );
-        return txState.augmentPropertyCursor( cursor, txState.getRelationshipState( relationship.id() ) );
+        for ( RelationTypeSchemaDescriptor constraint : relationshipConstraints )
+        {
+            if ( constraint.getRelTypeId() == relationshipType && contains( constraint.getPropertyIds(), propertyKey ) )
+            {
+                throw new RelationshipPropertyExistenceException( constraint, VALIDATION, id );
+            }
+        }
+        throw new IllegalStateException( format(
+                "Relationship constraint for relationshipType=%d, propertyKey=%d should exist.",
+                relationshipType, propertyKey ) );
+    }
+
+    private boolean contains( int[] list, int value )
+    {
+        for ( int x : list )
+        {
+            if ( value == x )
+            {
+                return true;
+            }
+        }
+        return false;
     }
 }

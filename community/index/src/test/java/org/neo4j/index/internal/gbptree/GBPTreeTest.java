@@ -28,17 +28,22 @@ import org.junit.rules.RuleChain;
 
 import java.io.File;
 import java.io.IOException;
+import java.nio.file.OpenOption;
 import java.util.ArrayList;
 import java.util.Arrays;
 import java.util.List;
 import java.util.concurrent.ThreadLocalRandom;
+import java.util.concurrent.atomic.AtomicBoolean;
 import java.util.concurrent.atomic.AtomicInteger;
+import java.util.concurrent.atomic.AtomicReference;
 
 import org.neo4j.collection.primitive.Primitive;
 import org.neo4j.collection.primitive.PrimitiveLongCollections;
 import org.neo4j.collection.primitive.PrimitiveLongSet;
 import org.neo4j.cursor.RawCursor;
 import org.neo4j.index.internal.gbptree.GBPTree.Monitor;
+import org.neo4j.io.pagecache.DelegatingPageCache;
+import org.neo4j.io.pagecache.DelegatingPagedFile;
 import org.neo4j.io.pagecache.IOLimiter;
 import org.neo4j.io.pagecache.PageCache;
 import org.neo4j.io.pagecache.PageCursor;
@@ -96,6 +101,13 @@ public class GBPTreeTest
         pageCache = createPageCache( pageSize );
         return index = new GBPTree<>( pageCache, indexFile, layout,
                 0/*use whatever page cache says*/, monitor, headerReader );
+    }
+
+    private GBPTree<MutableLong,MutableLong> createIndex( PageCache pageCache ) throws IOException
+    {
+        this.pageCache = pageCache;
+        return index = new GBPTree<>( pageCache, indexFile, layout, 0 /*use whatever page cache says*/,
+                NO_MONITOR, NO_HEADER );
     }
 
     private PageCache createPageCache( int pageSize )
@@ -450,13 +462,28 @@ public class GBPTreeTest
     }
 
     @Test
+    public void shouldAllowClosingTreeMultipleTimes() throws Exception
+    {
+        // GIVEN
+        index = createIndex( 256 );
+
+        // WHEN
+        index.close();
+
+        // THEN
+        index.close(); // should be OK
+        index = null; // so that our @After clause won't try to consistency check it
+    }
+
+    @Test
     public void shouldPutHeaderDataInCheckPoint() throws Exception
     {
         // GIVEN
         byte[] expectedHeader = new byte[12];
         ThreadLocalRandom.current().nextBytes( expectedHeader );
         index = createIndex( 256 );
-        index.close( cursor -> cursor.putBytes( expectedHeader ) );
+        index.checkpoint( IOLimiter.unlimited(), cursor -> cursor.putBytes( expectedHeader ) );
+        index.close();
 
         // WHEN
         byte[] readHeader = new byte[expectedHeader.length];
@@ -499,7 +526,8 @@ public class GBPTreeTest
         index = createIndex( 256 );
         index.checkpoint( IOLimiter.unlimited(), cursor -> cursor.putBytes( expectedHeader ) );
         ThreadLocalRandom.current().nextBytes( expectedHeader );
-        index.close( cursor -> cursor.putBytes( expectedHeader ) );
+        index.checkpoint( IOLimiter.unlimited(), cursor -> cursor.putBytes( expectedHeader ) );
+        index.close();
 
         // WHEN
         byte[] readHeader = new byte[expectedHeader.length];
@@ -565,6 +593,103 @@ public class GBPTreeTest
         // THEN
         barrier.release();
         checkpointer.join();
+    }
+
+    @Test
+    public void closeShouldLockOutWriter() throws Exception
+    {
+        // GIVEN
+        AtomicBoolean enabled = new AtomicBoolean();
+        Barrier.Control barrier = new Barrier.Control();
+        PageCache pageCacheWithBarrier = pageCacheWithBarrierInClose( enabled, barrier );
+        index = createIndex( pageCacheWithBarrier );
+        long key = 10;
+        try ( Writer<MutableLong,MutableLong> writer = index.writer() )
+        {
+            writer.put( new MutableLong( key ), new MutableLong( key ) );
+        }
+
+        // WHEN
+        enabled.set( true );
+        Thread closer = new Thread( throwing( () -> index.close() ) );
+        closer.start();
+        barrier.awaitUninterruptibly();
+        // now we're in the smack middle of a close/checkpoint
+        AtomicReference<Exception> writerError = new AtomicReference<>();
+        Thread t2 = new Thread( () ->
+        {
+            try
+            {
+                index.writer().close();
+            }
+            catch ( Exception e )
+            {
+                writerError.set( e );
+            }
+        } );
+
+        t2.start();
+        t2.join( 200 );
+        assertTrue( Arrays.toString( closer.getStackTrace() ), t2.isAlive() );
+        barrier.release();
+
+        // THEN
+        t2.join();
+        assertTrue( "Writer should not be able to acquired after close",
+                writerError.get() instanceof IllegalStateException );
+        index = null;
+    }
+
+    private PageCache pageCacheWithBarrierInClose( final AtomicBoolean enabled, final Barrier.Control barrier )
+    {
+        return new DelegatingPageCache( createPageCache( 1024 ) )
+        {
+            @Override
+            public PagedFile map( File file, int pageSize, OpenOption... openOptions ) throws IOException
+            {
+                return new DelegatingPagedFile( super.map( file, pageSize, openOptions ) )
+                {
+                    @Override
+                    public void close() throws IOException
+                    {
+                        if ( enabled.get() )
+                        {
+                            barrier.reached();
+                        }
+                        super.close();
+                    }
+                };
+            }
+        };
+    }
+
+    @Test
+    public void closeShouldWaitForWriter() throws Exception
+    {
+        // GIVEN
+        index = createIndex( 1024 );
+
+        // WHEN
+        Barrier.Control barrier = new Barrier.Control();
+        Thread writerThread = new Thread( throwing( () ->
+        {
+            try ( Writer<MutableLong,MutableLong> writer = index.writer() )
+            {
+                writer.put( new MutableLong( 1 ), new MutableLong( 1 ) );
+                barrier.reached();
+            }
+        } ) );
+        writerThread.start();
+        barrier.awaitUninterruptibly();
+        Thread closer = new Thread( throwing( () -> index.close() ) );
+        closer.start();
+        closer.join( 200 );
+        assertTrue( closer.isAlive() );
+
+        // THEN
+        barrier.release();
+        closer.join();
+        index = null;
     }
 
     /* Insertion and read tests */
@@ -655,25 +780,6 @@ public class GBPTreeTest
 
         // THEN
         assertEquals( 1, checkpointCounter.count );
-    }
-
-    @Test
-    public void shouldCheckpointOnCloseAfterChangesHappened() throws Exception
-    {
-        // GIVEN
-        CheckpointCounter checkpointCounter = new CheckpointCounter();
-
-        // WHEN
-        GBPTree<MutableLong,MutableLong> index = createIndex( 256, checkpointCounter );
-        int countBefore = checkpointCounter.count;
-        try ( Writer<MutableLong,MutableLong> writer = index.writer() )
-        {
-            writer.put( new MutableLong( 0 ), new MutableLong( 1 ) );
-        }
-
-        // THEN
-        closeIndex();
-        assertEquals( countBefore + 1, checkpointCounter.count );
     }
 
     @Test

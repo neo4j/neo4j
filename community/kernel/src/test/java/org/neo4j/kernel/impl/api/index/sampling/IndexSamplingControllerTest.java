@@ -105,15 +105,10 @@ public class IndexSamplingControllerTest
         final AtomicInteger concurrentCount = new AtomicInteger( 0 );
         final DoubleLatch jobLatch = new DoubleLatch();
         final DoubleLatch testLatch = new DoubleLatch();
-        final ThreadLocal<Boolean> hasRun = new ThreadLocal<Boolean>() {
-            @Override
-            protected Boolean initialValue()
-            {
-                return false;
-            }
-        };
+        final ThreadLocal<Boolean> hasRun = ThreadLocal.withInitial( () -> false );
 
-        IndexSamplingJobFactory jobFactory = (indexId, proxy) -> {
+        IndexSamplingJobFactory jobFactory = (indexId, proxy) ->
+        {
             // make sure we execute this once per thread
             if ( hasRun.get() )
             {
@@ -218,7 +213,8 @@ public class IndexSamplingControllerTest
         final DoubleLatch jobLatch = new DoubleLatch();
         final DoubleLatch testLatch = new DoubleLatch();
 
-        IndexSamplingJobFactory jobFactory = (indexId, proxy) -> {
+        IndexSamplingJobFactory jobFactory = (indexId, proxy) ->
+        {
             if ( ! concurrentCount.compareAndSet( 0, 1 ) )
             {
                 throw new IllegalStateException( "count !== 0 on create" );

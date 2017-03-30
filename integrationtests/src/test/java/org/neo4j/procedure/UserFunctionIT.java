@@ -37,11 +37,9 @@ import java.util.List;
 import java.util.Map;
 import java.util.concurrent.Executors;
 import java.util.concurrent.ScheduledExecutorService;
-import java.util.concurrent.TimeUnit;
 import java.util.stream.Collectors;
 import java.util.stream.IntStream;
 
-import org.neo4j.function.Predicates;
 import org.neo4j.graphdb.GraphDatabaseService;
 import org.neo4j.graphdb.Label;
 import org.neo4j.graphdb.Node;
@@ -53,12 +51,10 @@ import org.neo4j.graphdb.Result;
 import org.neo4j.graphdb.Transaction;
 import org.neo4j.graphdb.factory.GraphDatabaseSettings;
 import org.neo4j.graphdb.security.AuthorizationViolationException;
-import org.neo4j.helpers.Exceptions;
 import org.neo4j.helpers.collection.Iterators;
 import org.neo4j.io.fs.FileUtils;
 import org.neo4j.kernel.api.KernelTransaction;
 import org.neo4j.kernel.api.security.AnonymousContext;
-import org.neo4j.kernel.api.security.SecurityContext;
 import org.neo4j.kernel.impl.proc.JarBuilder;
 import org.neo4j.kernel.impl.proc.Procedures;
 import org.neo4j.kernel.internal.GraphDatabaseAPI;
@@ -69,7 +65,6 @@ import org.neo4j.test.TestGraphDatabaseFactory;
 import static java.lang.System.lineSeparator;
 import static java.util.Collections.singletonList;
 import static org.hamcrest.MatcherAssert.assertThat;
-import static org.hamcrest.Matchers.instanceOf;
 import static org.hamcrest.core.IsEqual.equalTo;
 import static org.junit.Assert.assertEquals;
 import static org.junit.Assert.assertFalse;
@@ -474,7 +469,8 @@ public class UserFunctionIT
     public void shouldBeAbleToSpawnThreadsCreatingTransactionInFunctions() throws Throwable
     {
         // given
-        Runnable doIt = () -> {
+        Runnable doIt = () ->
+        {
             Result result = db.execute( "RETURN org.neo4j.procedure.unsupportedFunction()" );
             result.resultAsString();
             result.close();
@@ -1041,7 +1037,8 @@ public class UserFunctionIT
         @UserFunction
         public String unsupportedFunction()
         {
-            jobs.submit( () -> {
+            jobs.submit( () ->
+            {
                 try ( Transaction tx = db.beginTx() )
                 {
                     db.createNode();

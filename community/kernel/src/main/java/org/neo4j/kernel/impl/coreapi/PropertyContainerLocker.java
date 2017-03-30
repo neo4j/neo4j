@@ -77,7 +77,8 @@ public class PropertyContainerLocker
         if ( container instanceof Node )
         {
             statement.readOperations().acquireExclusive( ResourceTypes.NODE, ((Node) container).getId() );
-            return () -> {
+            return () ->
+            {
                 long id = ((Node) container).getId();
                 statement.readOperations().releaseExclusive( ResourceTypes.NODE, id );
             };
@@ -86,7 +87,8 @@ public class PropertyContainerLocker
         {
             statement.readOperations()
                     .acquireExclusive( ResourceTypes.RELATIONSHIP, ((Relationship) container).getId() );
-            return () -> {
+            return () ->
+            {
                 long id = ((Relationship) container).getId();
                 statement.readOperations().releaseExclusive( ResourceTypes.RELATIONSHIP, id );
             };

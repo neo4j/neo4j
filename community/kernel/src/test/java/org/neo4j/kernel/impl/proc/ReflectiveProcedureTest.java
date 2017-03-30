@@ -528,9 +528,10 @@ public class ReflectiveProcedureTest
         @Procedure
         public Stream<MyOutputRecord> throwsInStream( )
         {
-            return Stream.generate( () -> {
+            return Stream.generate( () ->
+            {
                 throw new IndexOutOfBoundsException();
-            });
+            } );
         }
     }
 

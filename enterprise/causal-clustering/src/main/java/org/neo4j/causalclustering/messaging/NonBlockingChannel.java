@@ -62,7 +62,8 @@ class NonBlockingChannel
         this.maxQueueSize = maxQueueSize;
         this.log = log;
 
-        this.errorListener = future -> {
+        this.errorListener = future ->
+        {
             if ( !future.isSuccess() )
             {
                 log.error( "Failed to send message to " + destination, future.cause() );

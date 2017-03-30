@@ -164,7 +164,8 @@ public class UniqueIndexApplicationIT
     private Function<GraphDatabaseService, List<Long>> listNodeIdsFromIndexLookup(
             final Label label, final String propertyKey, final Object value )
     {
-        return graphDb -> {
+        return graphDb ->
+        {
             ArrayList<Long> ids = new ArrayList<>();
             for ( Node node : loop( graphDb.findNodes( label, propertyKey, value ) ) )
             {

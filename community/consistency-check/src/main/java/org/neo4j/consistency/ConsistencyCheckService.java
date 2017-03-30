@@ -70,7 +70,6 @@ import org.neo4j.logging.Log;
 import org.neo4j.logging.LogProvider;
 
 import static java.lang.String.format;
-
 import static org.neo4j.helpers.Service.load;
 import static org.neo4j.helpers.collection.MapUtil.stringMap;
 import static org.neo4j.io.file.Files.createOrOpenAsOuputStream;
@@ -222,7 +221,8 @@ public class ConsistencyCheckService
 
         ConsistencySummaryStatistics summary;
         final File reportFile = chooseReportPath( reportDir );
-        Log reportLog = new ConsistencyReportLog( Suppliers.lazySingleton( () -> {
+        Log reportLog = new ConsistencyReportLog( Suppliers.lazySingleton( () ->
+        {
             try
             {
                 return new PrintWriter( createOrOpenAsOuputStream( fileSystem, reportFile, true ) );

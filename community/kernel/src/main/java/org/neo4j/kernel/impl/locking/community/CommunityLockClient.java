@@ -349,7 +349,8 @@ public class CommunityLockClient implements Locks.Client
     // waking up and terminate all waiters that were waiting for any lock for current client
     private void terminateAllWaiters()
     {
-        manager.accept( lock -> {
+        manager.accept( lock ->
+        {
             lock.terminateLockRequestsForLockTransaction( lockTransaction );
             return false;
         } );

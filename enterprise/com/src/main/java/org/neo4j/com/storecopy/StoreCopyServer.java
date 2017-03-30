@@ -24,6 +24,7 @@ import java.io.IOException;
 import java.nio.ByteBuffer;
 import java.nio.channels.ReadableByteChannel;
 import java.util.Optional;
+
 import org.neo4j.com.RequestContext;
 import org.neo4j.com.Response;
 import org.neo4j.com.ServerFailureException;
@@ -153,7 +154,8 @@ public class StoreCopyServer
         try
         {
             String storeCopyIdentifier = Thread.currentThread().getName();
-            ThrowingAction<IOException> checkPointAction = () -> {
+            ThrowingAction<IOException> checkPointAction = () ->
+            {
                 monitor.startTryCheckPoint( storeCopyIdentifier );
                 checkPointer.tryCheckPoint( new SimpleTriggerInfo( triggerName ) );
                 monitor.finishTryCheckPoint( storeCopyIdentifier );

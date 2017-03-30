@@ -24,7 +24,6 @@ import org.apache.commons.lang3.mutable.MutableInt;
 import java.util.Iterator;
 import java.util.function.Function;
 
-import org.neo4j.kernel.api.exceptions.schema.ConstraintValidationException;
 import org.neo4j.kernel.api.Statement;
 import org.neo4j.kernel.api.exceptions.EntityNotFoundException;
 import org.neo4j.kernel.api.exceptions.InvalidTransactionTypeKernelException;
@@ -33,6 +32,7 @@ import org.neo4j.kernel.api.exceptions.index.IndexNotFoundKernelException;
 import org.neo4j.kernel.api.exceptions.legacyindex.AutoIndexingKernelException;
 import org.neo4j.kernel.api.exceptions.schema.AlreadyConstrainedException;
 import org.neo4j.kernel.api.exceptions.schema.AlreadyIndexedException;
+import org.neo4j.kernel.api.exceptions.schema.ConstraintValidationException;
 import org.neo4j.kernel.api.exceptions.schema.CreateConstraintFailureException;
 import org.neo4j.kernel.api.exceptions.schema.DropConstraintFailureException;
 import org.neo4j.kernel.api.exceptions.schema.DropIndexFailureException;
@@ -281,7 +281,8 @@ public class LockingStatementOperations implements
     {
         final MutableInt count = new MutableInt();
         TwoPhaseNodeForRelationshipLocking locking = new TwoPhaseNodeForRelationshipLocking( entityReadDelegate,
-                relId -> {
+                relId ->
+                {
                     state.assertOpen();
                     try
                     {
@@ -322,13 +323,8 @@ public class LockingStatementOperations implements
     public void relationshipDelete( final KernelStatement state, long relationshipId )
             throws EntityNotFoundException, AutoIndexingKernelException, InvalidTransactionTypeKernelException
     {
-        entityReadDelegate.relationshipVisit(state, relationshipId, new RelationshipVisitor<RuntimeException>() {
-            @Override
-            public void visit(long relId, int type, long startNode, long endNode)
-            {
-                lockRelationshipNodes(state, startNode, endNode);
-            }
-        });
+        entityReadDelegate.relationshipVisit( state, relationshipId,
+                ( relId, type, startNode, endNode ) -> lockRelationshipNodes( state, startNode, endNode ) );
         acquireExclusiveRelationshipLock( state, relationshipId );
         state.assertOpen();
         entityWriteDelegate.relationshipDelete(state, relationshipId);

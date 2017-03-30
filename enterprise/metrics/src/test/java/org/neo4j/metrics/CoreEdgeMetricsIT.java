@@ -28,10 +28,10 @@ import java.util.concurrent.ExecutionException;
 import java.util.concurrent.TimeUnit;
 import java.util.stream.Collectors;
 
+import org.neo4j.causalclustering.core.CoreGraphDatabase;
 import org.neo4j.causalclustering.discovery.Cluster;
 import org.neo4j.causalclustering.discovery.CoreClusterMember;
 import org.neo4j.causalclustering.discovery.ReadReplica;
-import org.neo4j.causalclustering.core.CoreGraphDatabase;
 import org.neo4j.function.ThrowingSupplier;
 import org.neo4j.graphdb.Node;
 import org.neo4j.graphdb.Transaction;
@@ -129,7 +129,8 @@ public class CoreEdgeMetricsIT
                 () -> readLongValue( metricsCsv( coreMetricsDir, CoreMetrics.LEADER_NOT_FOUND ) ),
                 equalTo( 0L ), TIMEOUT, TimeUnit.SECONDS );
 
-        assertEventually( "tx pull requests received eventually accurate", () -> {
+        assertEventually( "tx pull requests received eventually accurate", () ->
+        {
             long total = 0;
             for ( final File homeDir : cluster.coreMembers().stream().map( CoreClusterMember::homeDir ).collect( Collectors.toList()) )
             {

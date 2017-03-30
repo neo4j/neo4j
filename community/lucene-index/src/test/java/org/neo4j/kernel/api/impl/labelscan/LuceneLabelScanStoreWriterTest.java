@@ -306,7 +306,8 @@ public class LuceneLabelScanStoreWriterTest
 
         try
         {
-            doAnswer( invocation -> {
+            doAnswer( invocation ->
+            {
                 Object[] args = invocation.getArguments();
                 Term term = (Term) args[0];
                 Iterable<? extends IndexableField> fields = (Iterable<? extends IndexableField>) args[1];
@@ -316,7 +317,8 @@ public class LuceneLabelScanStoreWriterTest
                 return null;
             } ).when( writer ).updateDocument( any(), any() );
 
-            doAnswer( invocation -> {
+            doAnswer( invocation ->
+            {
                 Term[] terms = (Term[]) invocation.getArguments()[0];
                 Stream.of( terms ).forEach( storage::remove );
                 return null;
@@ -466,7 +468,8 @@ public class LuceneLabelScanStoreWriterTest
         partitions.add( partition );
         WritableDatabaseLabelScanIndex index = prepareIndex( partitions );
 
-        when( index.addNewPartition() ).then( invocation -> {
+        when( index.addNewPartition() ).then( invocation ->
+        {
             StubIndexPartition newPartition =
                     newStubIndexPartition( testDir.directory( String.valueOf( partitions.size() ) ) );
             partitions.add( newPartition );

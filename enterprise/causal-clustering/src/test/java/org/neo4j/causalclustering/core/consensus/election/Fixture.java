@@ -155,7 +155,8 @@ public class Fixture
 
     private void awaitBootstrapped() throws InterruptedException, TimeoutException
     {
-        Predicates.await( () -> {
+        Predicates.await( () ->
+        {
             for ( BootstrapWaiter bootstrapWaiter : bootstrapWaiters )
             {
                 if ( !bootstrapWaiter.bootstrapped.get() )

@@ -77,14 +77,16 @@ public class UpdatePullingTransactionObligationFulfillerTest
         Supplier<TransactionIdStore> supplier = mock( Supplier.class );
         when( supplier.get() ).thenReturn( store1, store2 );
 
-        doAnswer( invocation -> {
+        doAnswer( invocation ->
+        {
             ((HighAvailabilityMemberListener) invocation.getArguments()[0]).slaveIsAvailable(
                     new HighAvailabilityMemberChangeEvent( null, null, serverId, null )
             );
             return null;
         } ).when( machine ).addHighAvailabilityMemberListener( any( HighAvailabilityMemberListener.class ) );
 
-        doAnswer( invocation -> {
+        doAnswer( invocation ->
+        {
             ((HighAvailabilityMemberListener) invocation.getArguments()[0]).instanceStops(
                     new HighAvailabilityMemberChangeEvent( null, null, serverId, null )
             );

@@ -54,13 +54,15 @@ public class ConfigOptions
                 .collect( Collectors.toMap( Setting::name, s -> s ) );
 
         return settingGroup.values( validConfig ).entrySet().stream()
-                .map( val -> {
+                .map( val ->
+                {
                     BaseSetting<?> setting = (BaseSetting) settings.get( val.getKey() );
                     return new ConfigValue( setting.name(), setting.description(),
                             setting.documentedDefaultValue(),
                         Optional.ofNullable( val.getValue() ),
                             setting.valueDescription(), setting.internal(),
-                            setting.deprecated(), setting.replacement() ); } )
+                            setting.deprecated(), setting.replacement() );
+                } )
                 .collect( Collectors.toList() );
     }
 }

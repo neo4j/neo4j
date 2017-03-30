@@ -49,6 +49,7 @@ public interface CompilationPhaseTracer
         }
     };
 
-    CompilationPhaseEvent NONE_PHASE = () -> {
+    CompilationPhaseEvent NONE_PHASE = () ->
+    {
     };
 }

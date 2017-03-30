@@ -50,7 +50,8 @@ public class CommunityLockManger implements Locks
     @Override
     public void accept( final Visitor visitor )
     {
-        manager.accept( element -> {
+        manager.accept( element ->
+        {
             Object resource = element.resource();
             if ( resource instanceof LockResource )
             {

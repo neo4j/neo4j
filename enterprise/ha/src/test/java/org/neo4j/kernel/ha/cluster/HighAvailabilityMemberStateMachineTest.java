@@ -567,7 +567,8 @@ public class HighAvailabilityMemberStateMachineTest
                 new StoreCopyClient.Monitor.Adapter(),
                 Suppliers.singleton( dataSource ),
                 Suppliers.singleton( transactionIdStoreMock ),
-                slave -> {
+                slave ->
+                {
                     SlaveServer mock = mock( SlaveServer.class );
                     when( mock.getSocketAddress() ).thenReturn( new InetSocketAddress( "localhost", 123 ) );
                     return mock;
@@ -669,7 +670,8 @@ public class HighAvailabilityMemberStateMachineTest
     static ClusterMemberListenerContainer mockAddClusterMemberListener( ClusterMemberEvents events )
     {
         final ClusterMemberListenerContainer listenerContainer = new ClusterMemberListenerContainer();
-        doAnswer( invocation -> {
+        doAnswer( invocation ->
+        {
             listenerContainer.set( (ClusterMemberListener) invocation.getArguments()[0] );
             return null;
         } ).when( events ).addClusterMemberListener( Matchers.any() );

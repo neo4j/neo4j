@@ -81,7 +81,8 @@ public abstract class AbstractMandatoryTransactionsTest<T>
     {
         for ( final FacadeMethod<T> method : methods )
         {
-            obtainEntityInTerminatedTransaction( entity -> {
+            obtainEntityInTerminatedTransaction( entity ->
+            {
                 try
                 {
                     method.call( entity );

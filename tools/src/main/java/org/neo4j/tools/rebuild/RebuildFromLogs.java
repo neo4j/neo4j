@@ -245,7 +245,7 @@ class RebuildFromLogs
             ReadableLogChannel channel = new ReadAheadLogChannel( startingChannel, versionBridge );
             long txId = BASE_TX_ID;
             TransactionQueue queue = new TransactionQueue( 10_000,
-                    (tx, last) -> {commitProcess.commit( tx, NULL, EXTERNAL );} );
+                    (tx, last) -> commitProcess.commit( tx, NULL, EXTERNAL ) );
             LogEntryReader<ReadableClosablePositionAwareChannel> entryReader = new VersionAwareLogEntryReader<>();
             try ( IOCursor<CommittedTransactionRepresentation> cursor =
                     new PhysicalTransactionCursor<>( channel, entryReader ) )

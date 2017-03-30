@@ -57,10 +57,6 @@ case class PruningVarLengthExpandPipe(source: Pipe,
    field that is followed once the loaded iterator has been emptied.
  */
 
-  object Constants {
-    val VERY_BIG_VALUE = 1000001
-  }
-
   sealed trait State {
     // Note that the ExecutionContext part here can be null.
     // This code is used in a hot spot, and avoiding object creation is important.
@@ -147,7 +143,7 @@ case class PruningVarLengthExpandPipe(source: Pipe,
 
 
   /**
-    * Performs DFS travelsal, but omits traversing relationships that have been completely traversed (to the
+    * Performs DFS traversal, but omits traversing relationships that have been completely traversed (to the
     * remaining depth) before.
     *
     * Pruning and full expand depths
@@ -327,7 +323,7 @@ case class PruningVarLengthExpandPipe(source: Pipe,
       * @return the full expand depth
       */
     def minOutgoingDepth(incomingRelId: Long): Int = {
-      var min = Constants.VERY_BIG_VALUE
+      var min = Integer.MAX_VALUE >> 1 // we don't want it to overflow
       var i = 0
       while (i < rels.length) {
         if (rels(i).getId != incomingRelId)

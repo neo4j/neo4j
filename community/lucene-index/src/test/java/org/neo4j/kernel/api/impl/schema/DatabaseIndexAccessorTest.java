@@ -90,7 +90,8 @@ public class DatabaseIndexAccessorTest
     {
         final File dir = new File( "dir" );
         return Arrays.asList(
-                arg( GENERAL_INDEX, dirFactory1 -> {
+                arg( GENERAL_INDEX, dirFactory1 ->
+                {
                     SchemaIndex index = LuceneSchemaIndexBuilder.create( GENERAL_INDEX )
                             .withFileSystem( fileSystemRule.get() )
                             .withDirectoryFactory( dirFactory1 )
@@ -102,7 +103,8 @@ public class DatabaseIndexAccessorTest
                     index.open();
                     return new LuceneIndexAccessor( index, GENERAL_INDEX );
                 } ),
-                arg( UNIQUE_INDEX, dirFactory1 -> {
+                arg( UNIQUE_INDEX, dirFactory1 ->
+                {
                     SchemaIndex index = LuceneSchemaIndexBuilder.create( UNIQUE_INDEX )
                             .withFileSystem( fileSystemRule.get() )
                             .withDirectoryFactory( dirFactory1 )
@@ -303,7 +305,8 @@ public class DatabaseIndexAccessorTest
         IndexReader indexReader = accessor.newReader(); // needs to be acquired before drop() is called
         IndexSampler indexSampler = indexReader.createSampler();
 
-        Future<Void> drop = threading.executeAndAwait( (IOFunction<Void,Void>) nothing -> {
+        Future<Void> drop = threading.executeAndAwait( (IOFunction<Void,Void>) nothing ->
+        {
             accessor.drop();
             return nothing;
         }, null, waitingWhileIn( TaskCoordinator.class, "awaitCompletion" ), 3, SECONDS );

@@ -19,8 +19,6 @@
  */
 package org.neo4j.kernel.api.schema_new;
 
-import java.util.ArrayList;
-import java.util.List;
 import java.util.Optional;
 import java.util.function.Predicate;
 
@@ -28,7 +26,8 @@ public class SchemaDescriptorPredicates
 {
     public static <T extends SchemaDescriptor.Supplier> Predicate<T> hasLabel( int labelId )
     {
-        return supplier -> {
+        return supplier ->
+        {
             Optional<Integer> labelOpt = supplier.schema().computeWith( getLabel );
             return labelOpt.isPresent() && labelOpt.get() == labelId;
         };
@@ -36,7 +35,8 @@ public class SchemaDescriptorPredicates
 
     public static <T extends SchemaDescriptor.Supplier> Predicate<T> hasRelType( int relTypeId )
     {
-        return supplier -> {
+        return supplier ->
+        {
             Optional<Integer> relTypeOpt = supplier.schema().computeWith( getRelType );
             return relTypeOpt.isPresent() && relTypeOpt.get() == relTypeId;
         };

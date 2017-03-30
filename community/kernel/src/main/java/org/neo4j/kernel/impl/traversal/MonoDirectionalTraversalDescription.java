@@ -108,7 +108,8 @@ public final class MonoDirectionalTraversalDescription implements TraversalDescr
     @Override
     public Traverser traverse( final Iterable<Node> iterableStartNodes )
     {
-        return new DefaultTraverser( () -> {
+        return new DefaultTraverser( () ->
+        {
             Resource statement = statementSupplier.get();
             MonoDirectionalTraverserIterator iterator = new MonoDirectionalTraverserIterator(
                     statement,

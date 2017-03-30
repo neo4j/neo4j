@@ -224,7 +224,8 @@ public class ClusterManager
      */
     public static Function<FreePorts.Session,Cluster> clusterOfSize( String hostname, int memberCount )
     {
-        return session -> {
+        return session ->
+        {
             final Cluster cluster = new Cluster();
 
             try
@@ -254,7 +255,8 @@ public class ClusterManager
     public static Function<FreePorts.Session,Cluster> clusterWithAdditionalClients( int haMemberCount,
             int additionalClientCount )
     {
-        return session -> {
+        return session ->
+        {
             Cluster cluster = new Cluster();
 
             try
@@ -287,7 +289,8 @@ public class ClusterManager
      */
     public static Function<FreePorts.Session,Cluster> clusterWithAdditionalArbiters( int haMemberCount, int arbiterCount )
     {
-        return session -> {
+        return session ->
+        {
             Cluster cluster = new Cluster();
 
             try
@@ -504,7 +507,8 @@ public class ClusterManager
 
     public static Predicate<ManagedCluster> allAvailabilityGuardsReleased()
     {
-        return item -> {
+        return item ->
+        {
             int clusterMembersChecked = 0;
             for ( HighlyAvailableGraphDatabase member : item.getAllMembers())
             {
@@ -551,7 +555,8 @@ public class ClusterManager
     public static Predicate<ManagedCluster> memberSeesOtherMemberAsFailed(
             final HighlyAvailableGraphDatabase observer, final HighlyAvailableGraphDatabase observed )
     {
-        return cluster -> {
+        return cluster ->
+        {
             InstanceId observedServerId = observed.getDependencyResolver().resolveDependency( Config.class )
                     .get( ClusterSettings.server_id );
             for ( ClusterMember member : observer.getDependencyResolver().resolveDependency(
@@ -569,7 +574,8 @@ public class ClusterManager
     public static Predicate<ManagedCluster> entireClusterSeesMemberAsNotAvailable(
             final HighlyAvailableGraphDatabase observed )
     {
-        return cluster -> {
+        return cluster ->
+        {
             InstanceId observedServerId = observed.getDependencyResolver().resolveDependency( Config.class ).get(
                     ClusterSettings.server_id );
             int clusterMembersChecked = 0;
@@ -1164,7 +1170,8 @@ public class ClusterManager
         private RepairKit wrap( final RepairKit actual )
         {
             pendingRepairs.add( actual );
-            return () -> {
+            return () ->
+            {
                 try
                 {
                     return actual.repair();

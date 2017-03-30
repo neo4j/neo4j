@@ -477,21 +477,24 @@ public class UniqueDatabaseIndexPopulatorTest
 
         // GIVEN an index updater that we close
         OtherThreadExecutor<Void> executor = cleanup.add( new OtherThreadExecutor<>( "Deferred", null ) );
-        executor.execute( (WorkerCommand<Void,Void>) state -> {
+        executor.execute( (WorkerCommand<Void,Void>) state ->
+        {
             try ( IndexUpdater updater = populator.newPopulatingUpdater( propertyAccessor ) )
             {   // Just open it and let it be closed
             }
             return null;
         } );
         // ... and where we verify deferred constraints after
-        executor.execute( (WorkerCommand<Void,Void>) state -> {
+        executor.execute( (WorkerCommand<Void,Void>) state ->
+        {
             populator.verifyDeferredConstraints( propertyAccessor );
             return null;
         } );
 
         // WHEN doing more index updating after that
         // THEN it should be able to complete within a very reasonable time
-        executor.execute( (WorkerCommand<Void,Void>) state -> {
+        executor.execute( (WorkerCommand<Void,Void>) state ->
+        {
             try ( IndexUpdater secondUpdater = populator.newPopulatingUpdater( propertyAccessor ) )
             {   // Just open it and let it be closed
             }

@@ -35,9 +35,11 @@ import org.neo4j.codegen.TypeReference;
 
 class MethodSourceWriter implements MethodEmitter, ExpressionVisitor
 {
-    private static final Runnable BOTTOM = () -> {
+    private static final Runnable BOTTOM = () ->
+    {
         throw new IllegalStateException( "Popped too many levels!" );
-    }, LEVEL = () -> {
+    }, LEVEL = () ->
+    {
     };
     private static final String INDENTATION = "    ";
     private final StringBuilder target;

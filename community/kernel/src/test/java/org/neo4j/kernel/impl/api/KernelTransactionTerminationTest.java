@@ -132,11 +132,13 @@ public class KernelTransactionTerminationTest
         Race race = new Race();
         race.withEndCondition(
                 () -> ((t1Count.get() >= limit) && (t2Count.get() >= limit)) || (currentTimeMillis() >= endTime) );
-        race.addContestant( () -> {
+        race.addContestant( () ->
+        {
             thread1Action.accept( tx );
             t1Count.incrementAndGet();
         } );
-        race.addContestant( () -> {
+        race.addContestant( () ->
+        {
             thread2Action.accept( tx );
             t2Count.incrementAndGet();
         } );

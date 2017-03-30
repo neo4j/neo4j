@@ -205,12 +205,8 @@ public class DynamicTaskExecutor<LOCAL> implements TaskExecutor<LOCAL>
         parkStrategy.park( Thread.currentThread() );
     }
 
-    private static final UncaughtExceptionHandler SILENT_UNCAUGHT_EXCEPTION_HANDLER = new UncaughtExceptionHandler()
-    {
-        @Override
-        public void uncaughtException( Thread t, Throwable e )
-        {   // Don't print about it
-        }
+    private static final UncaughtExceptionHandler SILENT_UNCAUGHT_EXCEPTION_HANDLER = ( t, e ) ->
+    {   // Don't print about it
     };
 
     private class Processor extends Thread

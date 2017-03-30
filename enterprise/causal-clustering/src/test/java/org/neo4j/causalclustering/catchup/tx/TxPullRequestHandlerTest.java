@@ -39,17 +39,15 @@ import org.neo4j.kernel.impl.transaction.log.entry.LogEntryStart;
 import org.neo4j.kernel.impl.transaction.log.entry.OnePhaseCommit;
 import org.neo4j.kernel.monitoring.Monitors;
 import org.neo4j.logging.AssertableLogProvider;
-import org.neo4j.logging.NullLogProvider;
 
+import static org.mockito.Matchers.isA;
 import static org.mockito.Mockito.mock;
 import static org.mockito.Mockito.never;
-import static org.mockito.Mockito.times;
 import static org.mockito.Mockito.verify;
 import static org.mockito.Mockito.when;
 import static org.neo4j.causalclustering.catchup.CatchupResult.E_STORE_ID_MISMATCH;
 import static org.neo4j.causalclustering.catchup.CatchupResult.E_STORE_UNAVAILABLE;
 import static org.neo4j.causalclustering.catchup.CatchupResult.E_TRANSACTION_PRUNED;
-import static org.neo4j.causalclustering.catchup.CatchupResult.SUCCESS_END_OF_BATCH;
 import static org.neo4j.causalclustering.catchup.CatchupResult.SUCCESS_END_OF_STREAM;
 import static org.neo4j.kernel.impl.api.state.StubCursors.cursor;
 import static org.neo4j.kernel.impl.transaction.command.Commands.createNode;
@@ -57,117 +55,60 @@ import static org.neo4j.logging.AssertableLogProvider.inLog;
 
 public class TxPullRequestHandlerTest
 {
-    private static final int BATCH_SIZE = 3;
     private final ChannelHandlerContext context = mock( ChannelHandlerContext.class );
     private final AssertableLogProvider logProvider = new AssertableLogProvider();
+
+    private StoreId storeId = new StoreId( 1, 2, 3, 4 );
+    private LogicalTransactionStore logicalTransactionStore = mock( LogicalTransactionStore.class );
+    private TransactionIdStore transactionIdStore = mock( TransactionIdStore.class );
+
+    private TxPullRequestHandler txPullRequestHandler = new TxPullRequestHandler( new CatchupServerProtocol(), () -> storeId, () -> true,
+            () -> transactionIdStore, () -> logicalTransactionStore, new Monitors(), logProvider );
 
     @Test
     public void shouldRespondWithCompleteStreamOfTransactions() throws Exception
     {
         // given
-        StoreId storeId = new StoreId( 1, 2, 3, 4 );
-
-        TransactionIdStore transactionIdStore = mock( TransactionIdStore.class );
         when( transactionIdStore.getLastCommittedTransactionId() ).thenReturn( 15L );
-
-        LogicalTransactionStore logicalTransactionStore = mock( LogicalTransactionStore.class );
         when( logicalTransactionStore.getTransactions( 14L ) ).thenReturn( txCursor( cursor( tx( 14 ), tx( 15 ) ) ) );
 
-        TxPullRequestHandler txPullRequestHandler =
-                new TxPullRequestHandler( new CatchupServerProtocol(), () -> storeId, () -> true,
-                        () -> transactionIdStore, () -> logicalTransactionStore, BATCH_SIZE, new Monitors(),
-                        NullLogProvider.getInstance() );
-
         // when
         txPullRequestHandler.channelRead0( context, new TxPullRequest( 13, storeId ) );
 
         // then
-        verify( context, times( 2 ) ).write( ResponseMessageType.TX );
-        verify( context ).write( new TxPullResponse( storeId, tx( 14 ) ) );
-        verify( context ).write( new TxPullResponse( storeId, tx( 15 ) ) );
-
-        verify( context ).write( ResponseMessageType.TX_STREAM_FINISHED );
-        verify( context ).write( new TxStreamFinishedResponse( SUCCESS_END_OF_STREAM, 15L ) );
-    }
-
-    @Test
-    public void shouldRespondWithBatchOfTransactions() throws Exception
-    {
-        // given
-        StoreId storeId = new StoreId( 1, 2, 3, 4 );
-
-        TransactionIdStore transactionIdStore = mock( TransactionIdStore.class );
-        when( transactionIdStore.getLastCommittedTransactionId() ).thenReturn( 15L );
-
-        LogicalTransactionStore logicalTransactionStore = mock( LogicalTransactionStore.class );
-        when( logicalTransactionStore.getTransactions( 14L ) ).thenReturn( txCursor(
-                cursor( tx( 14 ), tx( 15 ), tx( 16 ), tx( 17 ) ) ) );
-
-        TxPullRequestHandler txPullRequestHandler =
-                new TxPullRequestHandler( new CatchupServerProtocol(), () -> storeId, () -> true,
-                        () -> transactionIdStore, () -> logicalTransactionStore, BATCH_SIZE, new Monitors(),
-                        NullLogProvider.getInstance() );
-
-        // when
-        txPullRequestHandler.channelRead0( context, new TxPullRequest( 13, storeId ) );
-
-        // then
-        verify( context, times( 3 ) ).write( ResponseMessageType.TX );
-        verify( context ).write( new TxPullResponse( storeId, tx( 14 ) ) );
-        verify( context ).write( new TxPullResponse( storeId, tx( 15 ) ) );
-        verify( context ).write( new TxPullResponse( storeId, tx( 16 ) ) );
-
-        verify( context ).write( ResponseMessageType.TX_STREAM_FINISHED );
-        verify( context ).write( new TxStreamFinishedResponse( SUCCESS_END_OF_BATCH, 15L ) );
+        verify( context ).writeAndFlush( isA( ChunkedTransactionStream.class ) );
     }
 
     @Test
     public void shouldRespondWithEndOfStreamIfThereAreNoTransactions() throws Exception
     {
         // given
-        StoreId storeId = new StoreId( 1, 2, 3, 4 );
-
-        TransactionIdStore transactionIdStore = mock( TransactionIdStore.class );
         when( transactionIdStore.getLastCommittedTransactionId() ).thenReturn( 14L );
-
-        LogicalTransactionStore logicalTransactionStore = mock( LogicalTransactionStore.class );
-
-        TxPullRequestHandler txPullRequestHandler =
-                new TxPullRequestHandler( new CatchupServerProtocol(), () -> storeId, () -> true,
-                        () -> transactionIdStore, () -> logicalTransactionStore, BATCH_SIZE, new Monitors(),
-                        NullLogProvider.getInstance() );
 
         // when
         txPullRequestHandler.channelRead0( context, new TxPullRequest( 14, storeId ) );
 
         // then
         verify( context ).write( ResponseMessageType.TX_STREAM_FINISHED );
-        verify( context ).write( new TxStreamFinishedResponse( SUCCESS_END_OF_STREAM, 14L ) );
+        verify( context ).writeAndFlush( new TxStreamFinishedResponse( SUCCESS_END_OF_STREAM, 14L ) );
     }
 
     @Test
     public void shouldRespondWithoutTransactionsIfTheyDoNotExist() throws Exception
     {
         // given
-        StoreId storeId = new StoreId( 1, 2, 3, 4 );
-
-        TransactionIdStore transactionIdStore = mock( TransactionIdStore.class );
         when( transactionIdStore.getLastCommittedTransactionId() ).thenReturn( 15L );
-
-        LogicalTransactionStore logicalTransactionStore = mock( LogicalTransactionStore.class );
         when( logicalTransactionStore.getTransactions( 14L ) ).thenThrow( new NoSuchTransactionException( 14 ) );
-
-        TxPullRequestHandler txPullRequestHandler =
-                new TxPullRequestHandler( new CatchupServerProtocol(), () -> storeId, () -> true,
-                        () -> transactionIdStore, () -> logicalTransactionStore, BATCH_SIZE, new Monitors(), logProvider );
 
         // when
         txPullRequestHandler.channelRead0( context, new TxPullRequest( 13, storeId ) );
 
         // then
-        verify( context, never() ).write( ResponseMessageType.TX );
+        verify( context, never() ).write( isA( ChunkedTransactionStream.class ) );
+        verify( context, never() ).writeAndFlush( isA( ChunkedTransactionStream.class ) );
+
         verify( context ).write( ResponseMessageType.TX_STREAM_FINISHED );
-        verify( context ).write( new TxStreamFinishedResponse( E_TRANSACTION_PRUNED, 15L ) );
+        verify( context ).writeAndFlush( new TxStreamFinishedResponse( E_TRANSACTION_PRUNED, 15L ) );
         logProvider.assertAtLeastOnce( inLog( TxPullRequestHandler.class )
                 .info( "Failed to serve TxPullRequest for tx %d because the transaction does not exist.", 14L ) );
     }
@@ -185,15 +126,14 @@ public class TxPullRequestHandlerTest
 
         TxPullRequestHandler txPullRequestHandler =
                 new TxPullRequestHandler( new CatchupServerProtocol(), () -> serverStoreId, () -> true,
-                        () -> transactionIdStore, () -> logicalTransactionStore, BATCH_SIZE, new Monitors(), logProvider );
+                        () -> transactionIdStore, () -> logicalTransactionStore, new Monitors(), logProvider );
 
         // when
         txPullRequestHandler.channelRead0( context, new TxPullRequest( 1, clientStoreId ) );
 
         // then
-        verify( context, never() ).write( ResponseMessageType.TX );
         verify( context ).write( ResponseMessageType.TX_STREAM_FINISHED );
-        verify( context ).write( new TxStreamFinishedResponse( E_STORE_ID_MISMATCH, 15L ) );
+        verify( context ).writeAndFlush( new TxStreamFinishedResponse( E_STORE_ID_MISMATCH, 15L ) );
         logProvider.assertAtLeastOnce( inLog( TxPullRequestHandler.class )
                 .info( "Failed to serve TxPullRequest for tx %d and storeId %s because that storeId is different " +
                         "from this machine with %s", 2L, clientStoreId, serverStoreId ) );
@@ -203,23 +143,18 @@ public class TxPullRequestHandlerTest
     public void shouldNotStreamTxsAndReportErrorIfTheLocalDatabaseIsNotAvailable() throws Exception
     {
         // given
-        StoreId storeId = new StoreId( 1, 2, 3, 4 );
-
-        TransactionIdStore transactionIdStore = mock( TransactionIdStore.class );
         when( transactionIdStore.getLastCommittedTransactionId() ).thenReturn( 15L );
-        LogicalTransactionStore logicalTransactionStore = mock( LogicalTransactionStore.class );
 
         TxPullRequestHandler txPullRequestHandler =
                 new TxPullRequestHandler( new CatchupServerProtocol(), () -> storeId, () -> false,
-                        () -> transactionIdStore, () -> logicalTransactionStore, BATCH_SIZE, new Monitors(), logProvider );
+                        () -> transactionIdStore, () -> logicalTransactionStore, new Monitors(), logProvider );
 
         // when
         txPullRequestHandler.channelRead0( context, new TxPullRequest( 1, storeId ) );
 
         // then
-        verify( context, never() ).write( ResponseMessageType.TX );
         verify( context ).write( ResponseMessageType.TX_STREAM_FINISHED );
-        verify( context ).write( new TxStreamFinishedResponse( E_STORE_UNAVAILABLE, 15L ) );
+        verify( context ).writeAndFlush( new TxStreamFinishedResponse( E_STORE_UNAVAILABLE, 15L ) );
         logProvider.assertAtLeastOnce( inLog( TxPullRequestHandler.class )
                 .info( "Failed to serve TxPullRequest for tx %d because the local database is unavailable.", 2L ) );
     }

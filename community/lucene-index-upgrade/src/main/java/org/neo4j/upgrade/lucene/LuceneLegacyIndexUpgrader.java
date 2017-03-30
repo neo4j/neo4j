@@ -155,7 +155,8 @@ public class LuceneLegacyIndexUpgrader
 
     private static Predicate<Path> getIndexPathFilter()
     {
-        return path -> {
+        return path ->
+        {
             try
             {
                 return Files.isDirectory( path ) && isIndexDirectory( path );

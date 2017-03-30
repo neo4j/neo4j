@@ -264,7 +264,8 @@ public class HighAvailabilityModeSwitcher implements HighAvailabilityMemberListe
     private void switchToMaster()
     {
         final CancellationHandle cancellationHandle = new CancellationHandle();
-        startModeSwitching( () -> {
+        startModeSwitching( () ->
+        {
             if ( currentTargetState != HighAvailabilityMemberState.TO_MASTER )
             {
                 return;
@@ -413,7 +414,8 @@ public class HighAvailabilityModeSwitcher implements HighAvailabilityMemberListe
     {
         msgLog.info( "I am %s, moving to pending", instanceId );
 
-        startModeSwitching( () -> {
+        startModeSwitching( () ->
+        {
             if ( cancellationHandle.cancellationRequested() )
             {
                 msgLog.info( "Switch to pending cancelled on start." );
@@ -446,7 +448,8 @@ public class HighAvailabilityModeSwitcher implements HighAvailabilityMemberListe
     {
         msgLog.info( "I am %s, moving to detached", instanceId );
 
-        startModeSwitching( () -> {
+        startModeSwitching( () ->
+        {
             if ( cancellationHandle.cancellationRequested() )
             {
                 msgLog.info( "Switch to pending cancelled on start." );

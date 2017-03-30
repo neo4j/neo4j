@@ -89,6 +89,10 @@ import org.neo4j.storageengine.api.schema.IndexSample;
 import org.neo4j.storageengine.api.schema.PopulationProgress;
 import org.neo4j.test.DoubleLatch;
 
+import static java.lang.String.format;
+import static java.lang.System.currentTimeMillis;
+import static java.util.Arrays.asList;
+import static java.util.concurrent.TimeUnit.SECONDS;
 import static org.hamcrest.CoreMatchers.containsString;
 import static org.hamcrest.CoreMatchers.startsWith;
 import static org.hamcrest.Matchers.equalTo;
@@ -114,12 +118,6 @@ import static org.mockito.Mockito.verify;
 import static org.mockito.Mockito.verifyNoMoreInteractions;
 import static org.mockito.Mockito.verifyZeroInteractions;
 import static org.mockito.Mockito.when;
-
-import static java.lang.String.format;
-import static java.lang.System.currentTimeMillis;
-import static java.util.Arrays.asList;
-import static java.util.concurrent.TimeUnit.SECONDS;
-
 import static org.neo4j.collection.primitive.PrimitiveLongCollections.setOf;
 import static org.neo4j.helpers.collection.Iterators.asCollection;
 import static org.neo4j.helpers.collection.Iterators.asResourceIterator;
@@ -1083,7 +1081,8 @@ public class IndexingServiceTest
 
     private Answer<Void> waitForLatch( final CountDownLatch latch )
     {
-        return invocationOnMock -> {
+        return invocationOnMock ->
+        {
             latch.await();
             return null;
         };
@@ -1294,7 +1293,8 @@ public class IndexingServiceTest
     @SuppressWarnings( "unchecked" )
     private Answer nodeUpdatesAnswer( NodeUpdates... updates )
     {
-        return invocation -> {
+        return invocation ->
+        {
             Collection<NodeUpdates> target = (Collection<NodeUpdates>) invocation.getArguments()[1];
             target.addAll( asList( updates ) );
             return null;

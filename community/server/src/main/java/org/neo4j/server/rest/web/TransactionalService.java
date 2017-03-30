@@ -209,7 +209,8 @@ public class TransactionalService
                                                         final URI baseUri,
                                                         final HttpServletRequest request )
     {
-        return output -> {
+        return output ->
+        {
             OutputStream wrappedOutput = transactionHandle.isImplicit()
                                          ? new InterruptingOutputStream( output, transactionHandle )
                                          : output;
@@ -220,7 +221,8 @@ public class TransactionalService
 
     private StreamingOutput rollback( final TransactionHandle transactionHandle, final URI baseUri )
     {
-        return output -> {
+        return output ->
+        {
             if ( transactionHandle != null )
             {
                 transactionHandle.rollback( facade.serializer( output, baseUri ) );
@@ -230,7 +232,8 @@ public class TransactionalService
 
     private StreamingOutput serializeError( final Neo4jError neo4jError, final URI baseUri )
     {
-        return output -> {
+        return output ->
+        {
             ExecutionResultSerializer serializer = facade.serializer( output, baseUri );
             serializer.errors( Collections.singletonList( neo4jError ) );
             serializer.finish();

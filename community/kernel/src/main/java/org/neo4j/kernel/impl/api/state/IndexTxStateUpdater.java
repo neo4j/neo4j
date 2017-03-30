@@ -100,25 +100,25 @@ public class IndexTxStateUpdater
             throws EntityNotFoundException
     {
         Iterator<NewIndexDescriptor> indexes = getIndexesInvolvingProperty( state, after.propertyKeyId() );
-        nodeIndexMatcher.onMatchingSchema( state, indexes, node, after.propertyKeyId(),
-                index -> {
-                    Validators.INDEX_VALUE_VALIDATOR.validate( after.value() );
-                    OrderedPropertyValues values =
-                            getOrderedPropertyValues( state, node, after, index.schema().getPropertyIds() );
-                    state.txState().indexDoUpdateEntry( index.schema(), node.id(), null, values );
-                });
+        nodeIndexMatcher.onMatchingSchema( state, indexes, node, after.propertyKeyId(), index ->
+        {
+            Validators.INDEX_VALUE_VALIDATOR.validate( after.value() );
+            OrderedPropertyValues values =
+                    getOrderedPropertyValues( state, node, after, index.schema().getPropertyIds() );
+            state.txState().indexDoUpdateEntry( index.schema(), node.id(), null, values );
+        } );
     }
 
     public void onPropertyRemove( KernelStatement state, NodeItem node, DefinedProperty before )
             throws EntityNotFoundException
     {
         Iterator<NewIndexDescriptor> indexes = getIndexesInvolvingProperty( state, before.propertyKeyId() );
-        nodeIndexMatcher.onMatchingSchema( state, indexes, node, before.propertyKeyId(),
-                index -> {
-                    OrderedPropertyValues values =
-                            getOrderedPropertyValues( state, node, before, index.schema().getPropertyIds() );
-                    state.txState().indexDoUpdateEntry( index.schema(), node.id(), values, null );
-                });
+        nodeIndexMatcher.onMatchingSchema( state, indexes, node, before.propertyKeyId(), index ->
+        {
+            OrderedPropertyValues values =
+                    getOrderedPropertyValues( state, node, before, index.schema().getPropertyIds() );
+            state.txState().indexDoUpdateEntry( index.schema(), node.id(), values, null );
+        } );
     }
 
     public void onPropertyChange( KernelStatement state, NodeItem node, DefinedProperty before, DefinedProperty after )
@@ -127,7 +127,8 @@ public class IndexTxStateUpdater
         assert before.propertyKeyId() == after.propertyKeyId();
         Iterator<NewIndexDescriptor> indexes = getIndexesInvolvingProperty( state, before.propertyKeyId() );
         nodeIndexMatcher.onMatchingSchema( state, indexes, node, before.propertyKeyId(),
-                index -> {
+                index ->
+                {
                     Validators.INDEX_VALUE_VALIDATOR.validate( after.value() );
                     int[] indexPropertyIds = index.schema().getPropertyIds();
 

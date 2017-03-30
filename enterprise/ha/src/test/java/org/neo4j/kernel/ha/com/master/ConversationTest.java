@@ -79,24 +79,28 @@ public class ConversationTest
         final CountDownLatch stopLatch = new CountDownLatch( 1 );
         final CountDownLatch stopReadyLatch = new CountDownLatch( 1 );
         final int sleepTime = 1000;
-        doAnswer( invocation -> {
+        doAnswer( invocation ->
+        {
             stopReadyLatch.countDown();
             stopLatch.await();
             TimeUnit.MILLISECONDS.sleep( sleepTime );
             return null;
         } ).when( client ).stop();
-        doAnswer( invocation -> {
+        doAnswer( invocation ->
+        {
             answerLatch.countDown();
             return null;
         } ).when( client ).close();
 
-        threadingRule.execute( conversation -> {
+        threadingRule.execute( conversation ->
+        {
             conversation.stop();
             return null;
         }, conversation );
 
         stopReadyLatch.await();
-        threadingRule.execute( conversation -> {
+        threadingRule.execute( conversation ->
+        {
             conversation.close();
             return null;
         }, conversation );

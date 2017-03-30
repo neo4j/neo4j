@@ -286,7 +286,8 @@ public class TxPushStrategyConfigIT
                     }
                 } );
 
-        template.execute( transaction -> {
+        template.execute( transaction ->
+        {
             monitorListener.clear();
             db.createNode();
         } );

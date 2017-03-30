@@ -28,13 +28,11 @@ import java.util.concurrent.Executors;
 import java.util.concurrent.Future;
 import java.util.concurrent.TimeUnit;
 import java.util.concurrent.TimeoutException;
-import java.util.function.Consumer;
 import java.util.function.Predicate;
 
 import org.neo4j.function.FailableConsumer;
 import org.neo4j.function.Predicates;
 import org.neo4j.function.ThrowingFunction;
-import org.neo4j.function.ThrowingPredicate;
 import org.neo4j.helpers.FailableConcurrentTransfer;
 import org.neo4j.test.Barrier;
 import org.neo4j.test.ReflectionUtil;
@@ -106,7 +104,8 @@ public class ThreadingRule extends ExternalResource
             final Barrier barrier, final ThrowingFunction<FROM,TO,EX> function, final FROM parameter,
             final FailableConsumer<Thread> threadConsumer )
     {
-        return () -> {
+        return () ->
+        {
             Thread thread = Thread.currentThread();
             String name = thread.getName();
             thread.setName( function.toString() );

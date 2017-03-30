@@ -289,6 +289,12 @@ public class GBPTree<KEY,VALUE> implements Closeable
     private final Monitor monitor;
 
     /**
+     * Whether or not this tree has been closed. Accessed and changed solely in
+     * {@link #close()} to be able to close tree multiple times gracefully.
+     */
+    private boolean closed;
+
+    /**
      * Opens an index {@code indexFile} in the {@code pageCache}, creating and initializing it if it doesn't exist.
      * If the index doesn't exist it will be created and the {@link Layout} and {@code pageSize} will
      * be written in index header.
@@ -728,42 +734,31 @@ public class GBPTree<KEY,VALUE> implements Closeable
     }
 
     /**
-     * Closes this tree and its associated resources. A {@link #checkpoint(IOLimiter)} is first performed
-     * as part of this call if there have been changes since last call to {@link #checkpoint(IOLimiter)}
-     * or since opening this tree.
+     * Closes this tree and its associated resources.
+     * <p>
+     * NOTE: No {@link #checkpoint(IOLimiter) checkpoint} is performed.
      *
-     * @throws IOException on error either checkpointing or closing resources.
+     * @throws IOException on error closing resources.
      */
     @Override
     public void close() throws IOException
     {
-        close( CARRY_OVER_PREVIOUS_HEADER );
-    }
-
-    /**
-     * Closes the {@link GBPTree} also writing header using the supplied writer.
-     *
-     * @param headerWriter hook for writing header data.
-     * @throws IOException on error either checkpointing or closing resources.
-     */
-    public void close( Consumer<PageCursor> headerWriter ) throws IOException
-    {
-        close( replace( headerWriter ) );
-    }
-
-    private void close( Header.Writer headerWriter ) throws IOException
-    {
-        writer.close();
-
+        writerCheckpointMutex.lock();
         try
         {
-            // Perform a checkpoint before closing. If no changes has happened since last checkpoint,
-            // no new checkpoint will be created.
-            checkpoint( IOLimiter.unlimited(), headerWriter );
+            if ( closed )
+            {
+                return;
+            }
+
+            // Force close on writer to not risk deadlock on pagedFile.close()
+            writer.close();
+            pagedFile.close();
+            closed = true;
         }
         finally
         {
-            pagedFile.close();
+            writerCheckpointMutex.unlock();
         }
     }
 

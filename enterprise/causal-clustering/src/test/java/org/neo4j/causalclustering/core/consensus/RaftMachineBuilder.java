@@ -101,7 +101,8 @@ public class RaftMachineBuilder
         RaftMachine raft = new RaftMachine( member, termState, voteState, raftLog, electionTimeout,
                 heartbeatInterval, renewableTimeoutService, outbound, logProvider,
                 membershipManager, logShipping, inFlightMap, false, monitors, clock );
-        inbound.registerHandler( ( incomingMessage ) -> {
+        inbound.registerHandler( ( incomingMessage ) ->
+        {
             try
             {
                 ConsensusOutcome outcome = raft.handle( incomingMessage );

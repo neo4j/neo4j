@@ -364,7 +364,8 @@ public class NodeUpdates implements PropertyLoader.PropertyLoadSink
         StringBuilder result = new StringBuilder( getClass().getSimpleName() ).append( "[" ).append( nodeId );
         result.append( ", labelsBefore:" ).append( Arrays.toString( labelsBefore ) );
         result.append( ", labelsAfter:" ).append( Arrays.toString( labelsAfter ) );
-        knownProperties.visitEntries( ( key, propertyValue ) -> {
+        knownProperties.visitEntries( ( key, propertyValue ) ->
+        {
             result.append( ", " );
             result.append( key );
             result.append( " -> " );

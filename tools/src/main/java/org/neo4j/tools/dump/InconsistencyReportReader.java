@@ -23,7 +23,8 @@ import java.io.BufferedReader;
 import java.io.File;
 import java.io.FileReader;
 import java.io.IOException;
-import java.io.Reader;
+
+import org.neo4j.tools.dump.inconsistency.Inconsistencies;
 
 /**
  * Reads CC inconsistency reports. Example of entry:
@@ -38,19 +39,6 @@ public class InconsistencyReportReader
 {
     private final Inconsistencies inconsistencies;
 
-    public interface Inconsistencies
-    {
-        void node( long id );
-
-        void relationship( long id );
-
-        void property( long id );
-
-        void relationshipGroup( long id );
-
-        // TODO: incomplete list/arguments, driven by actual need a.t.m.
-    }
-
     public InconsistencyReportReader( Inconsistencies inconsistencies )
     {
         this.inconsistencies = inconsistencies;
@@ -58,25 +46,24 @@ public class InconsistencyReportReader
 
     public void read( File file ) throws IOException
     {
-        try ( Reader reader = new FileReader( file ) )
+        try ( BufferedReader reader = new BufferedReader( new FileReader( file )) )
         {
             read( reader );
         }
     }
 
-    public void read( Reader reader ) throws IOException
+    public void read( BufferedReader bufferedReader ) throws IOException
     {
         int state = 0; // 0:inconsistency description, 1:entity, 2:inconsistent with
-        BufferedReader bufferedReader = new BufferedReader( reader );
         String line;
         while ( (line = bufferedReader.readLine()) != null )
         {
             line = line.trim();
             if ( state == 0 )
             {
-                if ( !line.contains( "ERROR" ) && !line.contains( "WARNING" ) )
+                if ( !line.contains( " ERROR " ) && !line.contains( " WARNING " ) )
                 {
-                    break;
+                    continue;
                 }
             }
             else if ( state == 1 )
@@ -122,6 +109,12 @@ public class InconsistencyReportReader
         case "RelationshipGroup":
             inconsistencies.relationshipGroup( id );
             break;
+        case "IndexRule":
+            inconsistencies.schemaIndex( id );
+            break;
+        case "IndexEntry":
+            inconsistencies.node( id );
+            break;
         default:
             // it's OK, we just haven't implemented support for this yet
         }
@@ -132,13 +125,38 @@ public class InconsistencyReportReader
         int bracket = line.indexOf( '[' );
         if ( bracket > -1 )
         {
-            int comma = line.indexOf( ',', bracket );
-            if ( comma > -1 )
+            int separator = min( getSeparatorIndex( ',', line, bracket ),
+                    getSeparatorIndex( ';', line, bracket ),
+                    getSeparatorIndex( ']', line, bracket ) );
+            int equally = line.indexOf( "=", bracket );
+            int startPosition = (isNotPlainId( bracket, separator, equally ) ? equally : bracket) + 1;
+            if ( separator > -1 )
             {
-                return Long.parseLong( line.substring( bracket + 1, comma ) );
+                return Long.parseLong( line.substring( startPosition, separator ) );
             }
         }
         return -1;
+    }
+
+    private static int min(int... values)
+    {
+        int min = Integer.MAX_VALUE;
+        for ( int value : values )
+        {
+            min = Math.min( min, value );
+        }
+        return min;
+    }
+
+    private int getSeparatorIndex( char character, String line, int bracket )
+    {
+        int index = line.indexOf( character, bracket );
+        return index >= 0 ? index : Integer.MAX_VALUE;
+    }
+
+    private boolean isNotPlainId( int bracket, int comma, int equally )
+    {
+        return (equally > bracket) && (equally < comma);
     }
 
     private String entityType( String line )

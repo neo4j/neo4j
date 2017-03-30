@@ -36,7 +36,8 @@ import org.neo4j.kernel.impl.store.MetaDataStore;
 
 public class StoreFiles
 {
-    private static final FilenameFilter STORE_FILE_FILTER = ( dir, name ) -> {
+    private static final FilenameFilter STORE_FILE_FILTER = ( dir, name ) ->
+    {
         // Skip log files and tx files from temporary database
         return !name.startsWith( "metrics" ) && !name.startsWith( "temp-copy" ) &&
                !name.startsWith( "raft-messages." ) && !name.startsWith( "debug." ) &&

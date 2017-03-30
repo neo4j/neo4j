@@ -243,7 +243,8 @@ public abstract class AbstractNeoServer implements NeoServer
         // ensure that this is > 0
         long runEvery = round( timeoutMillis / 2.0 );
 
-        resolveDependency( JobScheduler.class ).scheduleRecurring( serverTransactionTimeout, () -> {
+        resolveDependency( JobScheduler.class ).scheduleRecurring( serverTransactionTimeout, () ->
+        {
             long maxAge = clock.millis() - timeoutMillis;
             transactionRegistry.rollbackSuspendedTransactionsIdleSince( maxAge );
         }, runEvery, MILLISECONDS );

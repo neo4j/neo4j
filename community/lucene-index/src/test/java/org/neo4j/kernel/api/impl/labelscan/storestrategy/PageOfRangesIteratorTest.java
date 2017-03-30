@@ -92,7 +92,8 @@ public class PageOfRangesIteratorTest
         reader.setElements( new String[]{"11", "16", "37"} );
         final LeafReaderContext context = reader.getContext();
 
-        doAnswer( invocation -> {
+        doAnswer( invocation ->
+        {
             DocValuesCollector collector = (DocValuesCollector) invocation.getArguments()[1];
             collector.doSetNextReader( context );
             collector.collect( 11 );

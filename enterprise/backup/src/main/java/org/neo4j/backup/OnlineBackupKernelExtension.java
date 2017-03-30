@@ -85,7 +85,8 @@ public class OnlineBackupKernelExtension implements Lifecycle
                                         final PageCache pageCache,
                                         final StoreCopyCheckPointMutex storeCopyCheckPointMutex )
     {
-        this( config, graphDatabaseAPI, () -> {
+        this( config, graphDatabaseAPI, () ->
+        {
             TransactionIdStore transactionIdStore = transactionIdStoreSupplier.get();
             StoreCopyServer copier = new StoreCopyServer( neoStoreDataSource, checkPointerSupplier.get(),
                     fileSystemAbstraction, new File( graphDatabaseAPI.getStoreDir() ),

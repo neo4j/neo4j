@@ -53,7 +53,8 @@ public class UniquenessConstraintValidationConcurrencyIT
         database.executeAndCommit( createUniquenessConstraint( "Label1", "key1" ) );
 
         // when
-        Future<Boolean> created = database.executeAndCommit( db -> {
+        Future<Boolean> created = database.executeAndCommit( db ->
+        {
             db.createNode( label( "Label1" ) ).setProperty( "key1", "value1" );
             return otherThread.execute( createNode( db, "Label1", "key1", "value2" ) );
         } );
@@ -69,7 +70,8 @@ public class UniquenessConstraintValidationConcurrencyIT
         database.executeAndCommit( createUniquenessConstraint( "Label1", "key1" ) );
 
         // when
-        Future<Boolean> created = database.executeAndCommit( db -> {
+        Future<Boolean> created = database.executeAndCommit( db ->
+        {
             db.createNode( label( "Label1" ) ).setProperty( "key1", "value1" );
             try
             {
@@ -92,7 +94,8 @@ public class UniquenessConstraintValidationConcurrencyIT
         database.executeAndCommit( createUniquenessConstraint( "Label1", "key1" ) );
 
         // when
-        Future<Boolean> created = database.executeAndRollback( db -> {
+        Future<Boolean> created = database.executeAndRollback( db ->
+        {
             db.createNode( label( "Label1" ) ).setProperty( "key1", "value1" );
             try
             {
@@ -111,7 +114,8 @@ public class UniquenessConstraintValidationConcurrencyIT
     private static Function<GraphDatabaseService, Void> createUniquenessConstraint(
             final String label, final String propertyKey )
     {
-        return db -> {
+        return db ->
+        {
             db.schema().constraintFor( label( label ) ).assertPropertyIsUnique( propertyKey ).create();
             return null;
         };
@@ -120,7 +124,8 @@ public class UniquenessConstraintValidationConcurrencyIT
     public static OtherThreadExecutor.WorkerCommand<Void, Boolean> createNode(
             final GraphDatabaseService db, final String label, final String propertyKey, final Object propertyValue )
     {
-        return nothing -> {
+        return nothing ->
+        {
             try ( Transaction tx = db.beginTx() )
             {
                 db.createNode( label( label ) ).setProperty( propertyKey, propertyValue );

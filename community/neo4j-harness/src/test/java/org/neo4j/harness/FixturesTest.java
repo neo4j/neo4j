@@ -202,7 +202,8 @@ public class FixturesTest
         // When
 
         try ( ServerControls server = getServerBuilder( targetFolder )
-                .withFixture( graphDatabaseService -> {
+                .withFixture( graphDatabaseService ->
+                {
                     try ( Transaction tx = graphDatabaseService.beginTx() )
                     {
                         graphDatabaseService.createNode( Label.label( "User" ) );

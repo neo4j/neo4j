@@ -25,14 +25,14 @@ import org.junit.Test;
 import java.io.File;
 import java.util.concurrent.TimeUnit;
 
+import org.neo4j.causalclustering.core.CausalClusteringSettings;
 import org.neo4j.causalclustering.discovery.Cluster;
 import org.neo4j.causalclustering.discovery.CoreClusterMember;
-import org.neo4j.causalclustering.core.CausalClusteringSettings;
 import org.neo4j.test.causalclustering.ClusterRule;
 
 import static org.hamcrest.Matchers.equalTo;
-import static org.neo4j.causalclustering.scenarios.SampleData.createData;
 import static org.neo4j.causalclustering.core.CausalClusteringSettings.raft_log_pruning_strategy;
+import static org.neo4j.causalclustering.scenarios.SampleData.createData;
 import static org.neo4j.test.assertion.Assert.assertEventually;
 
 public class CorePruningIT
@@ -55,7 +55,8 @@ public class CorePruningIT
         int txs = 10;
         for ( int i = 0; i < txs; i++ )
         {
-            coreGraphDatabase = cluster.coreTx( ( db, tx ) -> {
+            coreGraphDatabase = cluster.coreTx( ( db, tx ) ->
+            {
                 createData( db, 1 );
                 tx.success();
             } );

@@ -134,7 +134,8 @@ public abstract class SchemaConstraintProviderApprovalTest
 
     public static final String LABEL = "Person";
     public static final String PROPERTY_KEY = "name";
-    public static final Function<Node, Object> PROPERTY_EXTRACTOR = node -> {
+    public static final Function<Node, Object> PROPERTY_EXTRACTOR = node ->
+    {
         Object value = node.getProperty( PROPERTY_KEY );
         if ( value.getClass().isArray() )
         {

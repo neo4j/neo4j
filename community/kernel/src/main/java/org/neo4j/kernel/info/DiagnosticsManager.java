@@ -192,7 +192,8 @@ public class DiagnosticsManager implements Iterable<DiagnosticsProvider>, Lifecy
 
     public void dumpAll( Log log )
     {
-        log.bulk( bulkLog -> {
+        log.bulk( bulkLog ->
+        {
             for ( DiagnosticsProvider provider : providers )
             {
                 dump( provider, DiagnosticsPhase.EXPLICIT, bulkLog );
@@ -202,7 +203,8 @@ public class DiagnosticsManager implements Iterable<DiagnosticsProvider>, Lifecy
 
     public void extract( final String identifier, Log log )
     {
-        log.bulk( bulkLog -> {
+        log.bulk( bulkLog ->
+        {
             for ( DiagnosticsProvider provider : providers )
             {
                 if ( identifier.equals( provider.getDiagnosticsIdentifier() ) )
@@ -216,7 +218,8 @@ public class DiagnosticsManager implements Iterable<DiagnosticsProvider>, Lifecy
 
     private void dumpAll( final DiagnosticsPhase phase, Log log )
     {
-        log.bulk( bulkLog -> {
+        log.bulk( bulkLog ->
+        {
             phase.emitStart( bulkLog );
             for ( DiagnosticsProvider provider : providers )
             {

@@ -54,7 +54,8 @@ public final class Iterables
 
     public static <T> Iterable<T> limit( final int limitItems, final Iterable<T> iterable )
     {
-        return () -> {
+        return () ->
+        {
             final Iterator<T> iterator = iterable.iterator();
 
             return new Iterator<T>()
@@ -90,7 +91,8 @@ public final class Iterables
 
     public static <T> Iterable<T> unique( final Iterable<T> iterable )
     {
-        return () -> {
+        return () ->
+        {
             final Iterator<T> iterator = iterable.iterator();
 
             return new Iterator<T>()
@@ -167,7 +169,8 @@ public final class Iterables
 
     public static <X> Iterable<X> skip( final int skip, final Iterable<X> iterable )
     {
-        return () -> {
+        return () ->
+        {
             Iterator<X> iterator = iterable.iterator();
 
             for ( int i = 0; i < skip; i++ )
@@ -208,7 +211,8 @@ public final class Iterables
     @SafeVarargs
     public static <T> Iterable<T> mix( final Iterable<T>... iterables )
     {
-        return () -> {
+        return () ->
+        {
             final Iterable<Iterator<T>> iterators = asList( map( Iterable::iterator, Arrays.asList(iterables) ) );
 
             return new Iterator<T>()
@@ -344,7 +348,8 @@ public final class Iterables
 
     public static <T, C extends T> Iterable<T> append( final C item, final Iterable<T> iterable )
     {
-        return () -> {
+        return () ->
+        {
             final Iterator<T> iterator = iterable.iterator();
 
             return new Iterator<T>()

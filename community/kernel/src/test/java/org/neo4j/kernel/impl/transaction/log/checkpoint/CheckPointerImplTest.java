@@ -185,7 +185,8 @@ public class CheckPointerImplTest
         Lock lock = new ReentrantLock();
         final Lock spyLock = spy( lock );
 
-        doAnswer( invocation -> {
+        doAnswer( invocation ->
+        {
             verify( appender ).checkPoint( any( LogPosition.class ), any( LogCheckPointEvent.class ) );
             reset( appender );
             invocation.callRealMethod();
@@ -368,7 +369,8 @@ public class CheckPointerImplTest
         mockTxIdStore();
         CheckPointerImpl checkPointer = checkPointer();
 
-        doAnswer( invocation -> {
+        doAnswer( invocation ->
+        {
             backgroundCheckPointStartedLatch.release();
             forceCheckPointStartLatch.await();
             long newValue = limitDisableCounter.get();
@@ -376,7 +378,8 @@ public class CheckPointerImplTest
             return null;
         } ).when( storageEngine ).flushAndForce( limiter );
 
-        Future<Object> forceCheckPointer = forkFuture( () -> {
+        Future<Object> forceCheckPointer = forkFuture( () ->
+        {
             backgroundCheckPointStartedLatch.await();
             asyncAction.accept( checkPointer );
             return null;

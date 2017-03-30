@@ -80,7 +80,8 @@ public class ActiveDirectoryAuthenticationIT
 
     private Consumer<Map<String,String>> asSettings( Consumer<Map<Setting<?>,String>> overrideSettingsFunction )
     {
-        return settings -> {
+        return settings ->
+        {
             Map<Setting<?>,String> o = new LinkedHashMap<>();
             overrideSettingsFunction.accept( o );
             for ( Setting key : o.keySet() )
@@ -97,7 +98,8 @@ public class ActiveDirectoryAuthenticationIT
 
     protected Consumer<Map<Setting<?>,String>> getSettingsFunction()
     {
-        return settings -> {
+        return settings ->
+        {
             settings.put( GraphDatabaseSettings.auth_enabled, "true" );
             settings.put( SecuritySettings.auth_provider, "ldap" );
             settings.put( SecuritySettings.ldap_server, "activedirectory.neohq.net" );
@@ -114,7 +116,8 @@ public class ActiveDirectoryAuthenticationIT
         };
     }
 
-    private Consumer<Map<Setting<?>,String>> useSystemAccountSettings = settings -> {
+    private Consumer<Map<Setting<?>,String>> useSystemAccountSettings = settings ->
+    {
         settings.put( SecuritySettings.ldap_authorization_use_system_account, "true" );
         settings.put( SecuritySettings.ldap_authorization_system_username, "Neo4j System" );
         settings.put( SecuritySettings.ldap_authorization_system_password, "ProudListingsMedia1" );
@@ -197,9 +200,8 @@ public class ActiveDirectoryAuthenticationIT
     @Test
     public void shouldBeAbleToLoginAndAuthorizeReaderUsingLdapsOnEC2() throws Throwable
     {
-        restartNeo4jServerWithOverriddenSettings( useSystemAccountSettings.andThen( settings -> {
-            settings.put( SecuritySettings.ldap_server, "ldaps://activedirectory.neohq.net:636" );
-        } ) );
+        restartNeo4jServerWithOverriddenSettings( useSystemAccountSettings
+                .andThen( settings -> settings.put( SecuritySettings.ldap_server, "ldaps://activedirectory.neohq.net:636" ) ) );
 
         assertAuth( "neo", "ProudListingsMedia1" );
         assertReadSucceeds();
@@ -209,9 +211,7 @@ public class ActiveDirectoryAuthenticationIT
     @Test
     public void shouldBeAbleToLoginAndAuthorizeReaderWithUserLdapContextUsingLDAPSOnEC2() throws Throwable
     {
-        restartNeo4jServerWithOverriddenSettings( settings -> {
-            settings.put( SecuritySettings.ldap_server, "ldaps://activedirectory.neohq.net:636" );
-        } );
+        restartNeo4jServerWithOverriddenSettings( settings -> settings.put( SecuritySettings.ldap_server, "ldaps://activedirectory.neohq.net:636" ) );
 
         assertAuth( "neo", "ProudListingsMedia1" );
         assertReadSucceeds();
@@ -221,9 +221,7 @@ public class ActiveDirectoryAuthenticationIT
     @Test
     public void shouldBeAbleToLoginAndAuthorizeReaderUsingStartTlsOnEC2() throws Throwable
     {
-        restartNeo4jServerWithOverriddenSettings( useSystemAccountSettings.andThen( settings -> {
-            settings.put( SecuritySettings.ldap_use_starttls, "true" );
-        } ) );
+        restartNeo4jServerWithOverriddenSettings( useSystemAccountSettings.andThen( settings -> settings.put( SecuritySettings.ldap_use_starttls, "true" ) ) );
 
         assertAuth( "neo", "ProudListingsMedia1" );
         assertReadSucceeds();
@@ -233,9 +231,7 @@ public class ActiveDirectoryAuthenticationIT
     @Test
     public void shouldBeAbleToLoginAndAuthorizeReaderWithUserLdapContextUsingStartTlsOnEC2() throws Throwable
     {
-        restartNeo4jServerWithOverriddenSettings( settings -> {
-            settings.put( SecuritySettings.ldap_use_starttls, "true" );
-        } );
+        restartNeo4jServerWithOverriddenSettings( settings -> settings.put( SecuritySettings.ldap_use_starttls, "true" ) );
 
         assertAuth( "neo", "ProudListingsMedia1" );
         assertReadSucceeds();
@@ -245,7 +241,8 @@ public class ActiveDirectoryAuthenticationIT
     @Test
     public void shouldBeAbleToAccessEC2ActiveDirectoryInstance() throws Throwable
     {
-        restartNeo4jServerWithOverriddenSettings( settings -> {
+        restartNeo4jServerWithOverriddenSettings( settings ->
+        {
         } );
 
         // When

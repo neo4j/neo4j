@@ -39,7 +39,8 @@ public class InputEntityDecorators
             return NO_NODE_DECORATOR;
         }
 
-        return node -> {
+        return node ->
+        {
             if ( node.hasLabelField() )
             {
                 return node;
@@ -65,7 +66,8 @@ public class InputEntityDecorators
             return value -> value;
         }
 
-        return relationship -> {
+        return relationship ->
+        {
             if ( relationship.type() == null && !relationship.hasTypeId() )
             {
                 relationship.setType( defaultType );

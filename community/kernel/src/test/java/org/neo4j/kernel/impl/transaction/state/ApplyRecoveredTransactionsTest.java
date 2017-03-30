@@ -95,7 +95,8 @@ public class ApplyRecoveredTransactionsTest
         NeoStoreBatchTransactionApplier applier = new NeoStoreBatchTransactionApplier( neoStores,
                 mock( CacheAccessBackDoor.class ), lockService );
         TransactionRepresentation tx = new PhysicalTransactionRepresentation( Arrays.asList( commands ) );
-        CommandHandlerContract.apply( applier, txApplier -> {
+        CommandHandlerContract.apply( applier, txApplier ->
+        {
             tx.accept( txApplier );
             return false;
         }, new TransactionToApply( tx, transactionId ) );

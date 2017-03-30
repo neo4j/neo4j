@@ -415,11 +415,12 @@ public class RecoveryTest
 
         try (  LogVersionedStoreChannel versionedStoreChannel =
                        new PhysicalLogVersionedStoreChannel( fileSystemRule.get().open( file, "rw" ), logVersion, CURRENT_LOG_VERSION );
-              final PositionAwarePhysicalFlushableChannel writableLogChannel = new PositionAwarePhysicalFlushableChannel( versionedStoreChannel ) )
+              PositionAwarePhysicalFlushableChannel writableLogChannel = new PositionAwarePhysicalFlushableChannel( versionedStoreChannel ) )
         {
             writeLogHeader( writableLogChannel, logVersion, 2L );
 
-            Consumer<LogPositionMarker> consumer = marker -> {
+            Consumer<LogPositionMarker> consumer = marker ->
+            {
                 try
                 {
                     writableLogChannel.getCurrentPosition( marker );

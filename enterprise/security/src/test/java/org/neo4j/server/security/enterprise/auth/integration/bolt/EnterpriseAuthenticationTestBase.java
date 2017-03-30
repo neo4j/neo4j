@@ -77,7 +77,8 @@ public abstract class EnterpriseAuthenticationTestBase extends AbstractLdapTestU
 
     protected Consumer<Map<String,String>> asSettings( Consumer<Map<Setting<?>,String>> overrideSettingsFunction )
     {
-        return settings -> {
+        return settings ->
+        {
             Map<Setting<?>,String> o = new LinkedHashMap<>();
             overrideSettingsFunction.accept( o );
             for ( Setting key : o.keySet() )

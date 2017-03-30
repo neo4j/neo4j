@@ -175,7 +175,8 @@ public class ProgressTrackerImplTest
 
     private Thread replicationEventWaiter( Progress progress ) throws InterruptedException
     {
-        Thread waiter = new Thread( () -> {
+        Thread waiter = new Thread( () ->
+        {
             try
             {
                 progress.awaitReplication( DEFAULT_TIMEOUT_MS );

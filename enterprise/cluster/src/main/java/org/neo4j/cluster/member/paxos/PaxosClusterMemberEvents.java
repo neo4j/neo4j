@@ -188,7 +188,8 @@ public class PaxosClusterMemberEvents implements ClusterMemberEvents, Lifecycle
             else
             {
                 // Send current availability events to listeners
-                listeners.notify( executor, listener -> {
+                listeners.notify( executor, listener ->
+                {
                     for ( MemberIsAvailable memberIsAvailable : clusterMembersSnapshot.getCurrentAvailableMembers() )
                     {
                         listener.memberIsAvailable( memberIsAvailable.getRole(), memberIsAvailable.getInstanceId(),
@@ -206,7 +207,8 @@ public class PaxosClusterMemberEvents implements ClusterMemberEvents, Lifecycle
         public Iterable<MemberIsAvailable> apply( final Iterable<MemberIsAvailable> previousSnapshot,
                                                   final MemberIsAvailable newMessage )
         {
-            return Iterables.append( newMessage, Iterables.filter( item -> {
+            return Iterables.append( newMessage, Iterables.filter( item ->
+            {
                 return in( newMessage.getInstanceId() ).negate().test( item.getInstanceId() );
             }, previousSnapshot ) );
         }
@@ -239,7 +241,8 @@ public class PaxosClusterMemberEvents implements ClusterMemberEvents, Lifecycle
 
         public void unavailableMember( final URI member, final InstanceId id, final String role )
         {
-            availableMembers = asList( filter( item -> {
+            availableMembers = asList( filter( item ->
+            {
                 boolean matchByUriOrId = item.getClusterUri().equals( member ) || item.getInstanceId().equals( id );
                 boolean matchByRole = item.getRole().equals( role );
 
@@ -254,7 +257,8 @@ public class PaxosClusterMemberEvents implements ClusterMemberEvents, Lifecycle
 
         public Iterable<MemberIsAvailable> getCurrentAvailable( final InstanceId memberId )
         {
-            return asList( Iterables.filter( item -> {
+            return asList( Iterables.filter( item ->
+            {
                 return item.getInstanceId().equals( memberId );
             }, availableMembers ) );
         }
@@ -288,7 +292,8 @@ public class PaxosClusterMemberEvents implements ClusterMemberEvents, Lifecycle
         public void leftCluster( InstanceId instanceId, URI member )
         {
             // Notify unavailability of members
-            listeners.notify( listener -> {
+            listeners.notify( listener ->
+            {
                 for ( MemberIsAvailable memberIsAvailable : clusterMembersSnapshot.getCurrentAvailable( instanceId ) )
                 {
                     listener.memberIsUnavailable( memberIsAvailable.getRole(), instanceId );
