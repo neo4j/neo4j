@@ -19,6 +19,7 @@
  */
 package org.neo4j.unsafe.batchinsert.internal;
 
+import java.io.Closeable;
 import java.io.File;
 import java.io.IOException;
 import java.io.PrintStream;
@@ -495,18 +496,19 @@ public class BatchInserterImpl implements BatchInserter, IndexConfigStoreProvide
                 .flatMapToInt( d -> Arrays.stream( d.getPropertyIds() ) )
                 .toArray();
 
-        InitialNodeLabelCreationVisitor labelUpdateVisitor = new InitialNodeLabelCreationVisitor();
-        StoreScan<IOException> storeScan = indexStoreView.visitNodes( labelIds,
-                (propertyKeyId) -> PrimitiveIntCollections.contains( propertyKeyIds, propertyKeyId ),
-                propertyUpdateVisitor, labelUpdateVisitor, true );
-        storeScan.run();
-
-        for ( IndexPopulatorWithSchema populator : populators )
+        try ( InitialNodeLabelCreationVisitor labelUpdateVisitor = new InitialNodeLabelCreationVisitor() )
         {
-            populator.verifyDeferredConstraints( indexStoreView );
-            populator.close( true );
+            StoreScan<IOException> storeScan = indexStoreView.visitNodes( labelIds,
+                    ( propertyKeyId ) -> PrimitiveIntCollections.contains( propertyKeyIds, propertyKeyId ),
+                    propertyUpdateVisitor, labelUpdateVisitor, true );
+            storeScan.run();
+
+            for ( IndexPopulatorWithSchema populator : populators )
+            {
+                populator.verifyDeferredConstraints( indexStoreView );
+                populator.close( true );
+            }
         }
-        labelUpdateVisitor.close();
     }
 
     private void rebuildCounts()
@@ -524,7 +526,7 @@ public class BatchInserterImpl implements BatchInserter, IndexConfigStoreProvide
         CountsComputer.recomputeCounts( neoStores );
     }
 
-    private class InitialNodeLabelCreationVisitor implements Visitor<NodeLabelUpdate, IOException>
+    private class InitialNodeLabelCreationVisitor implements Visitor<NodeLabelUpdate, IOException>, Closeable
     {
         LabelScanWriter writer = labelScanStore.newWriter();
 
@@ -535,6 +537,7 @@ public class BatchInserterImpl implements BatchInserter, IndexConfigStoreProvide
             return true;
         }
 
+        @Override
         public void close() throws IOException
         {
             writer.close();
