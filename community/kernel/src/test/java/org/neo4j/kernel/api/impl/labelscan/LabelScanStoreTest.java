@@ -19,6 +19,7 @@
  */
 package org.neo4j.kernel.api.impl.labelscan;
 
+import org.apache.commons.lang3.mutable.MutableInt;
 import org.hamcrest.Matcher;
 import org.junit.After;
 import org.junit.Before;
@@ -49,6 +50,7 @@ import org.neo4j.helpers.collection.BoundedIterable;
 import org.neo4j.helpers.collection.PrefetchingIterator;
 import org.neo4j.io.fs.FileSystemAbstraction;
 import org.neo4j.io.pagecache.IOLimiter;
+import org.neo4j.kernel.api.labelscan.AllEntriesLabelScanReader;
 import org.neo4j.kernel.api.labelscan.LabelScanStore;
 import org.neo4j.kernel.api.labelscan.LabelScanWriter;
 import org.neo4j.kernel.api.labelscan.NodeLabelRange;
@@ -62,6 +64,7 @@ import org.neo4j.test.rule.fs.DefaultFileSystemRule;
 
 import static java.util.Arrays.asList;
 import static java.util.stream.Collectors.toList;
+import static org.hamcrest.CoreMatchers.is;
 import static org.junit.Assert.assertArrayEquals;
 import static org.junit.Assert.assertEquals;
 import static org.junit.Assert.assertFalse;
@@ -309,6 +312,23 @@ public abstract class LabelScanStoreTest
         LabelScanReader reader = store.newReader();
         Set<Long> nodesWithLabel0 = PrimitiveLongCollections.toSet( reader.nodesWithLabel( (int) label0Id ) );
         assertEquals( nodes, nodesWithLabel0 );
+    }
+
+    @Test
+    public void shouldSeeEntriesWhenOnlyLowestIsPresent() throws Exception
+    {
+        // given
+        long labelId = 0;
+        List<NodeLabelUpdate> labelUpdates = new ArrayList<>();
+        labelUpdates.add( NodeLabelUpdate.labelChanges( 0L, new long[]{}, new long[]{labelId} ) );
+
+        start( labelUpdates );
+
+        // when
+        MutableInt count = new MutableInt();
+        AllEntriesLabelScanReader nodeLabelRanges = store.allNodeLabelRanges();
+        nodeLabelRanges.forEach( nlr -> count.add( nlr.nodes().length ) );
+        assertThat( count.intValue(), is( 1 ) );
     }
 
     private void write( Iterator<NodeLabelUpdate> iterator ) throws IOException
