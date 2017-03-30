@@ -22,22 +22,11 @@ package org.neo4j.kernel.impl.query;
 import java.io.Closeable;
 import java.io.File;
 import java.io.OutputStream;
-import java.util.Collection;
-import java.util.Collections;
 import java.util.EnumSet;
-import java.util.HashSet;
-import java.util.Map;
-import java.util.Set;
-import java.util.regex.Matcher;
-import java.util.regex.Pattern;
 
-import org.neo4j.graphdb.config.Setting;
 import org.neo4j.graphdb.factory.GraphDatabaseSettings;
 import org.neo4j.helpers.Service;
-import org.neo4j.helpers.Strings;
 import org.neo4j.io.fs.FileSystemAbstraction;
-import org.neo4j.kernel.api.query.ExecutingQuery;
-import org.neo4j.kernel.api.query.QuerySnapshot;
 import org.neo4j.kernel.configuration.Config;
 import org.neo4j.kernel.extension.KernelExtensionFactory;
 import org.neo4j.kernel.impl.logging.LogService;
@@ -67,25 +56,6 @@ public class QueryLoggerKernelExtension extends KernelExtensionFactory<QueryLogg
         LogService logger();
 
         JobScheduler jobScheduler();
-    }
-
-    enum Flag
-    {
-        LOG_PARAMETERS( GraphDatabaseSettings.log_queries_parameter_logging_enabled ),
-        LOG_DETAILED_TIME( GraphDatabaseSettings.log_queries_detailed_time_logging_enabled ),
-        LOG_ALLOCATED_BYTES( GraphDatabaseSettings.log_queries_allocation_logging_enabled ),
-        LOG_PAGE_DETAILS( GraphDatabaseSettings.log_queries_page_detail_logging_enabled );
-        private final Setting<Boolean> setting;
-
-        Flag( Setting<Boolean> setting )
-        {
-            this.setting = setting;
-        }
-
-        boolean enabledIn( Config config )
-        {
-            return config.get( setting );
-        }
     }
 
     public QueryLoggerKernelExtension()
@@ -119,8 +89,8 @@ public class QueryLoggerKernelExtension extends KernelExtensionFactory<QueryLogg
                 Long thresholdMillis = config.get( GraphDatabaseSettings.log_queries_threshold );
                 Long rotationThreshold = config.get( GraphDatabaseSettings.log_queries_rotation_threshold );
                 int maxArchives = config.get( GraphDatabaseSettings.log_queries_max_archives );
-                EnumSet<Flag> flags = EnumSet.noneOf( Flag.class );
-                for ( Flag flag : Flag.values() )
+                EnumSet<QueryLogEntryContent> flags = EnumSet.noneOf( QueryLogEntryContent.class );
+                for ( QueryLogEntryContent flag : QueryLogEntryContent.values() )
                 {
                     if (flag.enabledIn(config))
                     {
@@ -161,162 +131,5 @@ public class QueryLoggerKernelExtension extends KernelExtensionFactory<QueryLogg
     private Lifecycle createEmptyAdapter()
     {
         return new LifecycleAdapter();
-    }
-
-    static class QueryLogger implements QueryExecutionMonitor
-    {
-        private final Log log;
-        private final long thresholdMillis;
-        private final boolean logQueryParameters, logDetailedTime, logAllocatedBytes, logPageDetails;
-
-        private static final Pattern PASSWORD_PATTERN = Pattern.compile(
-                // call signature
-                "(?:(?i)call)\\s+dbms(?:\\.security)?\\.change(?:User)?Password\\(" +
-                // optional username parameter, in single, double quotes, or parametrized
-                "(?:\\s*(?:'(?:(?<=\\\\)'|[^'])*'|\"(?:(?<=\\\\)\"|[^\"])*\"|[^,]*)\\s*,)?" +
-                // password parameter, in single, double quotes, or parametrized
-                "\\s*('(?:(?<=\\\\)'|[^'])*'|\"(?:(?<=\\\\)\"|[^\"])*\"|\\$\\w*|\\{\\w*\\})\\s*\\)" );
-
-        QueryLogger( Log log, long thresholdMillis, EnumSet<Flag> flags )
-        {
-            this.log = log;
-            this.thresholdMillis = thresholdMillis;
-            this.logQueryParameters = flags.contains( Flag.LOG_PARAMETERS );
-            this.logDetailedTime = flags.contains( Flag.LOG_DETAILED_TIME );
-            this.logAllocatedBytes = flags.contains( Flag.LOG_ALLOCATED_BYTES );
-            this.logPageDetails = flags.contains( Flag.LOG_PAGE_DETAILS );
-        }
-
-        @Override
-        public void startQueryExecution( ExecutingQuery query )
-        {
-        }
-
-        @Override
-        public void endFailure( ExecutingQuery query, Throwable failure )
-        {
-            log.error( logEntry( query.snapshot() ), failure );
-        }
-
-        @Override
-        public void endSuccess( ExecutingQuery query )
-        {
-            QuerySnapshot snapshot = query.snapshot();
-            if ( snapshot.elapsedTimeMillis() >= thresholdMillis )
-            {
-                log.info( logEntry( snapshot ) );
-            }
-        }
-
-        private String logEntry( QuerySnapshot query )
-        {
-            String sourceString = query.clientConnection().asConnectionDetails();
-            String queryText = query.queryText();
-            String metaData = mapAsString( query.transactionAnnotationData() );
-
-            Set<String> passwordParams = new HashSet<>();
-            Matcher matcher = PASSWORD_PATTERN.matcher( queryText );
-
-            while ( matcher.find() )
-            {
-                String password = matcher.group( 1 ).trim();
-                if ( password.charAt( 0 ) == '$' )
-                {
-                    passwordParams.add( password.substring( 1 ) );
-                }
-                else if ( password.charAt( 0 ) == '{' )
-                {
-                    passwordParams.add( password.substring( 1, password.length() - 1 ) );
-                }
-                else
-                {
-                    queryText = queryText.replace( password, "******" );
-                    password = "";
-                }
-            }
-
-            StringBuilder result = new StringBuilder();
-            result.append( query.elapsedTimeMillis() ).append( " ms: " );
-            if ( logDetailedTime )
-            {
-                result.append( "(planning: " ).append( query.planningTimeMillis() );
-                Long cpuTime = query.cpuTimeMillis();
-                if ( cpuTime != null )
-                {
-                    result.append( ", cpu: " ).append( cpuTime );
-                }
-                result.append( ", waiting: " ).append( query.waitTimeMillis() );
-                result.append( ") - " );
-            }
-            if ( logAllocatedBytes )
-            {
-                Long bytes = query.allocatedBytes();
-                if ( bytes != null )
-                {
-                    result.append( bytes ).append( " B - " );
-                }
-            }
-            if ( logPageDetails )
-            {
-                result.append( query.pageHits() ).append( " page hits, " );
-                result.append( query.pageFaults() ).append( " page faults - " );
-            }
-            result.append( sourceString ).append( " - " ).append( queryText );
-            if ( logQueryParameters )
-            {
-                result.append( " - " ).append( mapAsString( query.queryParameters(), passwordParams ) );
-            }
-            result.append( " - " ).append( metaData );
-            return result.toString();
-        }
-
-        private static String mapAsString( Map<String,Object> params )
-        {
-            return mapAsString( params, Collections.emptySet() );
-        }
-
-        private static String mapAsString( Map<String, Object> params, Collection<String> obfuscate )
-        {
-            if ( params == null )
-            {
-                return "{}";
-            }
-
-            StringBuilder builder = new StringBuilder( "{" );
-            String sep = "";
-            for ( Map.Entry<String,Object> entry : params.entrySet() )
-            {
-                builder
-                        .append( sep )
-                        .append( entry.getKey() )
-                        .append( ": " );
-
-                if ( obfuscate.contains( entry.getKey() ) )
-                {
-                    builder.append( "******" );
-                }
-                else
-                {
-                    builder.append( valueToString( entry.getValue() ) );
-                }
-                sep = ", ";
-            }
-            builder.append( "}" );
-
-            return builder.toString();
-        }
-
-        private static String valueToString( Object value )
-        {
-            if ( value instanceof Map<?,?> )
-            {
-                return mapAsString( (Map<String,Object>) value );
-            }
-            if ( value instanceof String )
-            {
-                return format( "'%s'", String.valueOf( value ) );
-            }
-            return Strings.prettyPrint( value );
-        }
     }
 }

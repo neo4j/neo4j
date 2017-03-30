@@ -31,7 +31,6 @@ import org.junit.Test;
 
 import org.neo4j.io.pagecache.tracing.cursor.PageCursorCounters;
 import org.neo4j.kernel.api.query.ExecutingQuery;
-import org.neo4j.kernel.impl.query.QueryLoggerKernelExtension.QueryLogger;
 import org.neo4j.kernel.impl.query.clientconnection.ClientConnectionInfo;
 import org.neo4j.kernel.impl.query.clientconnection.ShellConnectionInfo;
 import org.neo4j.logging.AssertableLogProvider;
@@ -48,10 +47,10 @@ import static org.hamcrest.Matchers.equalTo;
 import static org.hamcrest.Matchers.sameInstance;
 import static org.hamcrest.core.Is.is;
 import static org.neo4j.helpers.collection.MapUtil.map;
-import static org.neo4j.kernel.impl.query.QueryLoggerKernelExtension.Flag.LOG_ALLOCATED_BYTES;
-import static org.neo4j.kernel.impl.query.QueryLoggerKernelExtension.Flag.LOG_DETAILED_TIME;
-import static org.neo4j.kernel.impl.query.QueryLoggerKernelExtension.Flag.LOG_PAGE_DETAILS;
-import static org.neo4j.kernel.impl.query.QueryLoggerKernelExtension.Flag.LOG_PARAMETERS;
+import static org.neo4j.kernel.impl.query.QueryLogEntryContent.LOG_ALLOCATED_BYTES;
+import static org.neo4j.kernel.impl.query.QueryLogEntryContent.LOG_DETAILED_TIME;
+import static org.neo4j.kernel.impl.query.QueryLogEntryContent.LOG_PAGE_DETAILS;
+import static org.neo4j.kernel.impl.query.QueryLogEntryContent.LOG_PARAMETERS;
 import static org.neo4j.logging.AssertableLogProvider.inLog;
 
 public class QueryLoggerTest
@@ -468,9 +467,9 @@ public class QueryLoggerTest
                 containsString( " 17 page hits, 12 page faults - " ) ) );
     }
 
-    private QueryLogger queryLogger( LogProvider logProvider, QueryLoggerKernelExtension.Flag... flags )
+    private QueryLogger queryLogger( LogProvider logProvider, QueryLogEntryContent... flags )
     {
-        EnumSet<QueryLoggerKernelExtension.Flag> flagSet = EnumSet.noneOf( QueryLoggerKernelExtension.Flag.class );
+        EnumSet<QueryLogEntryContent> flagSet = EnumSet.noneOf( QueryLogEntryContent.class );
         Collections.addAll( flagSet, flags );
         return new QueryLogger( logProvider.getLog( getClass() ), 10/*ms*/, flagSet );
     }
