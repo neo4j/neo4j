@@ -28,7 +28,8 @@ import java.nio.file.NoSuchFileException;
 import java.nio.file.StandardOpenOption;
 import java.util.concurrent.atomic.AtomicBoolean;
 import java.util.concurrent.locks.Lock;
-import java.util.concurrent.locks.ReentrantLock;
+import java.util.concurrent.locks.ReadWriteLock;
+import java.util.concurrent.locks.StampedLock;
 import java.util.function.Consumer;
 import java.util.function.LongSupplier;
 import java.util.function.Supplier;
@@ -253,7 +254,7 @@ public class GBPTree<KEY,VALUE> implements Closeable
      * on stable storage, no writes are allowed to happen.
      * For this reason both writer and check-pointing acquires this lock.
      */
-    private final Lock writerCheckpointMutex = new ReentrantLock();
+    private final ReadWriteLock writerCheckpointMutex = new StampedLock().asReadWriteLock();
 
     /**
      * Page size, i.e. tree node size, of the tree nodes in this tree. The page size is determined on
@@ -753,7 +754,8 @@ public class GBPTree<KEY,VALUE> implements Closeable
 
         // Block writers, or if there's a current writer then wait for it to complete and then block
         // From this point and till the lock is released we know that the tree won't change.
-        writerCheckpointMutex.lock();
+        Lock writeLock = writerCheckpointMutex.writeLock();
+        writeLock.lock();
         try
         {
             // Flush dirty pages since that last flush above. This should be a very small set of pages
@@ -780,7 +782,7 @@ public class GBPTree<KEY,VALUE> implements Closeable
         {
             // Unblock writers, any writes after this point and up until the next checkpoint will have
             // the new unstable generation.
-            writerCheckpointMutex.unlock();
+            writeLock.unlock();
         }
     }
 
@@ -794,7 +796,8 @@ public class GBPTree<KEY,VALUE> implements Closeable
     @Override
     public void close() throws IOException
     {
-        writerCheckpointMutex.lock();
+        Lock writeLock = writerCheckpointMutex.writeLock();
+        writeLock.lock();
         try
         {
             if ( closed )
@@ -819,7 +822,7 @@ public class GBPTree<KEY,VALUE> implements Closeable
         }
         finally
         {
-            writerCheckpointMutex.unlock();
+            writeLock.unlock();
         }
     }
 
@@ -901,9 +904,18 @@ public class GBPTree<KEY,VALUE> implements Closeable
         // The temporary solution right now is to scan through all tree nodes, as performant as possible,
         // and zero out all CRASH pointers.
 
-        long generation = this.generation;
-        new CrashGenerationCleaner( pagedFile, bTreeNode, IdSpace.MIN_TREE_NODE_ID,freeList.lastId() + 1,
-                stableGeneration( generation ), unstableGeneration( generation ), monitor ).clean();
+        Lock readLock = writerCheckpointMutex.readLock();
+        readLock.lock();
+        try
+        {
+            long generation = this.generation;
+            new CrashGenerationCleaner( pagedFile, bTreeNode, IdSpace.MIN_TREE_NODE_ID,freeList.lastId() + 1,
+                    stableGeneration( generation ), unstableGeneration( generation ), monitor ).clean();
+        }
+        finally
+        {
+            readLock.unlock();
+        }
     }
 
     void printTree() throws IOException
@@ -1007,7 +1019,7 @@ public class GBPTree<KEY,VALUE> implements Closeable
             }
 
             boolean success = false;
-            writerCheckpointMutex.lock();
+            writerCheckpointMutex.readLock().lock();
             try
             {
                 cursor = openRootCursor( PagedFile.PF_SHARED_WRITE_LOCK );
@@ -1027,7 +1039,7 @@ public class GBPTree<KEY,VALUE> implements Closeable
                 {
                     closeCursor();
                     writerTaken.set( false );
-                    writerCheckpointMutex.unlock();
+                    writerCheckpointMutex.readLock().unlock();
                 }
             }
         }
@@ -1115,7 +1127,7 @@ public class GBPTree<KEY,VALUE> implements Closeable
                         ", but writer is already closed." );
             }
             closeCursor();
-            writerCheckpointMutex.unlock();
+            writerCheckpointMutex.readLock().unlock();
         }
 
         private void closeCursor()
