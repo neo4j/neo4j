@@ -25,7 +25,6 @@ import org.junit.rules.RuleChain;
 
 import java.io.File;
 import java.io.IOException;
-import java.io.OutputStream;
 import java.io.PrintWriter;
 import java.io.UncheckedIOException;
 import java.nio.charset.StandardCharsets;
@@ -34,11 +33,11 @@ import java.util.function.Supplier;
 import org.neo4j.csv.reader.CharReadable;
 import org.neo4j.csv.reader.DataAfterQuoteException;
 import org.neo4j.csv.reader.Readables;
+import org.neo4j.io.NullOutputStream;
 import org.neo4j.io.fs.DefaultFileSystemAbstraction;
 import org.neo4j.io.fs.FileSystemAbstraction;
 import org.neo4j.kernel.configuration.Config;
 import org.neo4j.kernel.impl.logging.NullLogService;
-import org.neo4j.kernel.impl.store.format.RecordFormats;
 import org.neo4j.kernel.impl.store.format.standard.StandardV3_0;
 import org.neo4j.test.rule.RandomRule;
 import org.neo4j.test.rule.TestDirectory;
@@ -53,7 +52,6 @@ import org.neo4j.unsafe.impl.batchimport.staging.ExecutionMonitors;
 
 import static org.junit.Assert.assertTrue;
 import static org.junit.Assert.fail;
-
 import static org.neo4j.unsafe.impl.batchimport.input.InputEntityDecorators.NO_NODE_DECORATOR;
 import static org.neo4j.unsafe.impl.batchimport.input.csv.Configuration.COMMAS;
 import static org.neo4j.unsafe.impl.batchimport.input.csv.DataFactories.data;
@@ -91,7 +89,7 @@ public class ImportPanicIT
                 relationshipData(), defaultFormatRelationshipFileHeader(),
                 IdType.ACTUAL,
                 csvConfigurationWithLowBufferSize(),
-                new BadCollector( new NullOutputStream(), 0, 0 ),
+                new BadCollector( NullOutputStream.NULL_OUTPUT_STREAM, 0, 0 ),
                 Runtime.getRuntime().availableProcessors() );
 
         // WHEN
@@ -157,13 +155,5 @@ public class ImportPanicIT
             }
         }
         return file;
-    }
-
-    public class NullOutputStream extends OutputStream
-    {
-        @Override
-        public void write( int b ) throws IOException
-        {
-        }
     }
 }

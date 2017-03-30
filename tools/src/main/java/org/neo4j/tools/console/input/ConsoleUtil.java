@@ -24,54 +24,29 @@ import io.airlift.airline.Help;
 
 import java.io.ByteArrayInputStream;
 import java.io.InputStream;
-import java.io.OutputStream;
 import java.io.PrintStream;
 import java.util.ArrayList;
 import java.util.Collection;
 import java.util.Collections;
 import java.util.StringTokenizer;
 
+import org.neo4j.io.NullOutputStream;
 import org.neo4j.kernel.impl.util.Listener;
 
 import static org.neo4j.helpers.ArrayUtil.join;
 
 public class ConsoleUtil
 {
-    public static final Listener<PrintStream> NO_PROMPT = new Listener<PrintStream>()
-    {
-        @Override
-        public void receive( PrintStream out )
-        {   // Do nothing
-        }
+    public static final Listener<PrintStream> NO_PROMPT = out ->
+    {   // Do nothing
     };
 
     public static final Listener<PrintStream> staticPrompt( final String prompt )
     {
-        return new Listener<PrintStream>()
-        {
-            @Override
-            public void receive( PrintStream out )
-            {
-                out.print( prompt );
-            }
-        };
+        return out -> out.print( prompt );
     }
 
-    public static final OutputStream NULL_OUTPUT_STREAM = new OutputStream()
-    {
-        @Override
-        public void close(){}
-        @Override
-        public void flush(){}
-        @Override
-        public void write(byte[]b){}
-        @Override
-        public void write(byte[]b,int i,int l){}
-        @Override
-        public void write(int b){}
-    };
-
-    public static final PrintStream NULL_PRINT_STREAM = new PrintStream( NULL_OUTPUT_STREAM );
+    public static final PrintStream NULL_PRINT_STREAM = new PrintStream( NullOutputStream.NULL_OUTPUT_STREAM );
 
     public static String[] tokenizeStringWithQuotes( String string )
     {

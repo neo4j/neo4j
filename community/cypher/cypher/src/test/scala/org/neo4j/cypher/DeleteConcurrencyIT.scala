@@ -19,9 +19,10 @@
  */
 package org.neo4j.cypher
 
-import java.io.{OutputStream, PrintStream, PrintWriter, StringWriter}
+import java.io.{PrintStream, PrintWriter, StringWriter}
 
 import org.neo4j.graphdb.{NotFoundException, TransactionFailureException}
+import org.neo4j.io.NullOutputStream
 
 import scala.language.reflectiveCalls
 
@@ -134,7 +135,7 @@ class DeleteConcurrencyIT extends ExecutionEngineFunSuite {
 
   test("detach delete should be atomic") {
     val originalErr = System.err
-    System.setErr(new PrintStream( new OutputStream { override def write(b: Int){ } })) // let's not spam!
+    System.setErr(new PrintStream(NullOutputStream.NULL_OUTPUT_STREAM)) // let's not spam!
 
     try {
       val nodes = 10
