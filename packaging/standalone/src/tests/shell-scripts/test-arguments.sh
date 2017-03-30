@@ -18,4 +18,12 @@ test_expect_success "should include script name in usage" "
   test_expect_stdout_matching ' neo4j ' neo4j-home/bin/neo4j help
 "
 
+test_expect_success "should include --version in java args when --version given" "
+  neo4j-home/bin/neo4j --version && test_expect_java_arg '--version'
+"
+
+test_expect_success "should include --version in java args when version given" "
+  neo4j-home/bin/neo4j version && test_expect_java_arg '--version'
+"
+
 test_done
