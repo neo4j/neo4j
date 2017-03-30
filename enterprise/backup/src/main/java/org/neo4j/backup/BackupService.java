@@ -41,6 +41,7 @@ import org.neo4j.com.storecopy.ResponseUnpacker.TxHandler;
 import org.neo4j.com.storecopy.StoreCopyClient;
 import org.neo4j.com.storecopy.StoreWriter;
 import org.neo4j.com.storecopy.TransactionCommittingResponseUnpacker;
+import org.neo4j.consistency.checking.full.CheckConsistencyConfig;
 import org.neo4j.graphdb.DependencyResolver;
 import org.neo4j.graphdb.factory.GraphDatabaseFactory;
 import org.neo4j.graphdb.factory.GraphDatabaseSettings;
@@ -177,16 +178,7 @@ class BackupService
                     MoveAfterCopy.moveReplaceExisting() );
 
             bumpDebugDotLogFileVersion( targetDirectory, timestamp );
-            boolean consistent = false;
-            try
-            {
-                consistent = consistencyCheck.runFull( targetDirectory, tuningConfiguration,
-                        ProgressMonitorFactory.textual( System.err ), logProvider, fileSystem, pageCache, false );
-            }
-            catch ( ConsistencyCheckFailedException e )
-            {
-                log.error( "Consistency check incomplete", e );
-            }
+            boolean consistent = checkDbConsistency( fileSystem, targetDirectory, consistencyCheck, tuningConfiguration, pageCache );
             clearIdFiles( fileSystem, targetDirectory );
             return new BackupOutcome( lastCommittedTx, consistent );
         }
@@ -196,12 +188,13 @@ class BackupService
         }
     }
 
-    BackupOutcome doIncrementalBackup( String sourceHostNameOrIp, int sourcePort, File targetDirectory, long timeout,
-            Config config ) throws IncrementalBackupNotPossibleException
+    BackupOutcome doIncrementalBackup( String sourceHostNameOrIp, int sourcePort, File targetDirectory,
+            ConsistencyCheck consistencyCheck, long timeout, Config config ) throws IncrementalBackupNotPossibleException
     {
         try ( FileSystemAbstraction fileSystem = fileSystemSupplier.get() )
         {
-            return incrementalBackup( fileSystem, sourceHostNameOrIp, sourcePort, targetDirectory, timeout, config );
+            return incrementalBackup( fileSystem, sourceHostNameOrIp, sourcePort, targetDirectory, consistencyCheck,
+                    timeout, config );
         }
         catch ( IOException e )
         {
@@ -210,7 +203,7 @@ class BackupService
     }
 
     private BackupOutcome incrementalBackup( FileSystemAbstraction fileSystem, String sourceHostNameOrIp,
-            int sourcePort, File targetDirectory, long timeout, Config config )
+            int sourcePort, File targetDirectory, ConsistencyCheck consistencyCheck, long timeout, Config config )
     {
         if ( !directoryContainsDb( fileSystem, targetDirectory ) )
         {
@@ -232,23 +225,41 @@ class BackupService
         {
             GraphDatabaseAPI targetDb = startTemporaryDb( targetDirectory, pageCache, configParams );
             long backupStartTime = System.currentTimeMillis();
-            BackupOutcome outcome;
+            long lastCommittedTx;
             try
             {
-                outcome = doIncrementalBackup( sourceHostNameOrIp, sourcePort, targetDb, timeout );
+                lastCommittedTx = incrementalWithContext( sourceHostNameOrIp, sourcePort, targetDb, timeout, slaveContextOf( targetDb ) );
             }
             finally
             {
                 targetDb.shutdown();
             }
             bumpDebugDotLogFileVersion( targetDirectory, backupStartTime );
+            boolean consistent = checkDbConsistency( fileSystem, targetDirectory, consistencyCheck, config, pageCache );
             clearIdFiles( fileSystem, targetDirectory );
-            return outcome;
+            return new BackupOutcome( lastCommittedTx, consistent );
         }
         catch ( IOException e )
         {
             throw new RuntimeException( e );
         }
+    }
+
+    private boolean checkDbConsistency( FileSystemAbstraction fileSystem, File targetDirectory,
+            ConsistencyCheck consistencyCheck, Config tuningConfiguration, PageCache pageCache )
+    {
+        boolean consistent = false;
+        try
+        {
+            consistent = consistencyCheck.runFull( targetDirectory, tuningConfiguration, ProgressMonitorFactory.textual( System.err ),
+                            logProvider, fileSystem, pageCache, false,
+                            new CheckConsistencyConfig( tuningConfiguration ) );
+        }
+        catch ( ConsistencyCheckFailedException e )
+        {
+            log.error( "Consistency check incomplete", e );
+        }
+        return consistent;
     }
 
     private Map<String,String> getTemporaryDbConfig()
@@ -274,7 +285,8 @@ class BackupService
             try
             {
                 log.info( "Previous backup found, trying incremental backup." );
-                return incrementalBackup( fileSystem, sourceHostNameOrIp, sourcePort, targetDirectory, timeout, config );
+                return incrementalBackup( fileSystem, sourceHostNameOrIp, sourcePort, targetDirectory,
+                        consistencyCheck, timeout, config );
             }
             catch ( IncrementalBackupNotPossibleException e )
             {
@@ -312,7 +324,9 @@ class BackupService
     BackupOutcome doIncrementalBackup( String sourceHostNameOrIp, int sourcePort, GraphDatabaseAPI targetDb,
             long timeout ) throws IncrementalBackupNotPossibleException
     {
-        return incrementalWithContext( sourceHostNameOrIp, sourcePort, targetDb, timeout, slaveContextOf( targetDb ) );
+        long lastCommittedTransaction = incrementalWithContext( sourceHostNameOrIp, sourcePort, targetDb, timeout,
+                slaveContextOf( targetDb ) );
+        return new BackupOutcome( lastCommittedTransaction, true );
     }
 
     private RequestContext slaveContextOf( GraphDatabaseAPI graphDb )
@@ -348,9 +362,9 @@ class BackupService
      *
      * @param targetDb The database that contains a previous full copy
      * @param context The context, containing transaction id to start streaming transaction from
-     * @return A backup context, ready to perform
+     * @return last committed transaction id
      */
-    private BackupOutcome incrementalWithContext( String sourceHostNameOrIp, int sourcePort, GraphDatabaseAPI targetDb,
+    private long incrementalWithContext( String sourceHostNameOrIp, int sourcePort, GraphDatabaseAPI targetDb,
             long timeout, RequestContext context ) throws IncrementalBackupNotPossibleException
     {
         DependencyResolver resolver = targetDb.getDependencyResolver();
@@ -393,7 +407,7 @@ class BackupService
             throw new RuntimeException( "Unexpected error", throwable );
         }
 
-        return new BackupOutcome( handler.getLastSeenTransactionId(), true );
+        return handler.getLastSeenTransactionId();
     }
 
     private static boolean bumpDebugDotLogFileVersion( File dbDirectory, long toTimestamp )

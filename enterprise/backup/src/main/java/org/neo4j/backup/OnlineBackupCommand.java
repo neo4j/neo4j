@@ -203,7 +203,7 @@ public class OnlineBackupCommand implements AdminCommand
             try
             {
                 backupService.doIncrementalBackup( address.getHost(), address.getPort(),
-                        destination, timeout, config );
+                        destination, ConsistencyCheck.NONE, timeout, config );
                 done = true;
             }
             catch ( Exception e )

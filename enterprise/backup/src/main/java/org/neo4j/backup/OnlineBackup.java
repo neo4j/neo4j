@@ -302,7 +302,7 @@ public class OnlineBackup
     public OnlineBackup incremental( String targetDirectory )
     {
         outcome = new BackupService().doIncrementalBackup( hostNameOrIp, port, new File( targetDirectory ),
-                timeoutMillis, defaultConfig() );
+                getConsistencyCheck( true ), timeoutMillis, defaultConfig() );
         return this;
     }
 
@@ -324,7 +324,7 @@ public class OnlineBackup
     public OnlineBackup incremental( String targetDirectory, boolean verification )
     {
         outcome = new BackupService().doIncrementalBackup( hostNameOrIp, port, new File( targetDirectory ),
-                timeoutMillis, defaultConfig() );
+                getConsistencyCheck( verification ), timeoutMillis, defaultConfig() );
         return this;
     }
 

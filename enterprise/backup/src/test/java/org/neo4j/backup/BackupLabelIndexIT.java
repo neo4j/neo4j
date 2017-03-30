@@ -23,6 +23,7 @@ import org.junit.After;
 import org.junit.Before;
 import org.junit.Rule;
 import org.junit.Test;
+import org.junit.rules.RuleChain;
 
 import java.io.File;
 import java.util.HashSet;
@@ -43,7 +44,9 @@ import org.neo4j.logging.NullLogProvider;
 import org.neo4j.test.TestGraphDatabaseFactory;
 import org.neo4j.test.TestLabels;
 import org.neo4j.test.rule.RandomRule;
+import org.neo4j.test.rule.SuppressOutput;
 import org.neo4j.test.rule.TestDirectory;
+
 import static org.junit.Assert.assertEquals;
 import static org.neo4j.backup.BackupServer.DEFAULT_PORT;
 import static org.neo4j.helpers.collection.Iterators.asSet;
@@ -53,11 +56,12 @@ public class BackupLabelIndexIT
 {
     private static final TestLabels LABEL = TestLabels.LABEL_ONE;
 
-    @Rule
-    public final RandomRule random = new RandomRule();
+    private final RandomRule random = new RandomRule();
+    private final TestDirectory directory = TestDirectory.testDirectory();
+    private final SuppressOutput suppressOutput = SuppressOutput.suppressAll();
 
     @Rule
-    public final TestDirectory directory = TestDirectory.testDirectory();
+    public final RuleChain ruleChain = RuleChain.outerRule( directory ).around( suppressOutput ).around( random );
 
     private File sourceDir;
     private File backupDir;
@@ -66,7 +70,7 @@ public class BackupLabelIndexIT
     private GraphDatabaseService backupDb;
 
     @Before
-    public void setupDirectoroes()
+    public void setupDirectories()
     {
         sourceDir = directory.absolutePath();
         backupDir = directory.directory( "backup" );
