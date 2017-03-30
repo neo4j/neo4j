@@ -115,6 +115,8 @@ public class OnlineIndexUpdates implements IndexUpdates
                 gatherUpdatesFromCommandsForNode( nodeId, nodeCommand, propertyCommands );
 
         NodeUpdates nodeUpdates = nodePropertyUpdate.build();
+        // we need to materialize the IndexEntryUpdates here, because when we
+        // consume (later in separate thread) the store might have changed.
         for ( IndexEntryUpdate<LabelSchemaDescriptor> update :  updateService.convertToIndexUpdates( nodeUpdates ) )
         {
             updates.add( update );

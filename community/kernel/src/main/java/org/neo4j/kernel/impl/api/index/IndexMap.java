@@ -131,7 +131,10 @@ public final class IndexMap implements Cloneable
     }
 
     /**
-     * Get all indexes that would be affected by changes in the input labels and/or properties
+     * Get all indexes that would be affected by changes in the input labels and/or properties. The returned
+     * indexes are guaranteed to contain all affected indexes, but might also contain unaffected indexes as
+     * we cannot provide matching without checking unaffected properties for composite indexes.
+     *
      * @param changedLabels set of labels that have changed
      * @param unchangedLabels set of labels that are unchanged
      * @param properties set of properties
@@ -246,9 +249,9 @@ public final class IndexMap implements Cloneable
     }
 
     /**
-     * Get descriptors affected by changed properties. Implementation is smart about whether doing
+     * Get descriptors affected by changed properties. Implementation checks whether doing
      * the lookup using the unchanged labels or the changed properties given the smallest final
-     * set of indexes.
+     * set of indexes, and chooses the best way.
      *
      * @param unchangedLabels set of labels that are unchanged
      * @param properties set of properties that have changed
