@@ -24,7 +24,7 @@ import java.util.List;
 import org.neo4j.csv.reader.SourceTraceability;
 
 /**
- * Encodes source id (effectively and id refering to a file name or similar,
+ * Encodes source id (effectively and id referring to a file name or similar,
  * i.e {@link SourceTraceability#sourceDescription()}, group id and line number.
  */
 class SourceInformation implements Cloneable
