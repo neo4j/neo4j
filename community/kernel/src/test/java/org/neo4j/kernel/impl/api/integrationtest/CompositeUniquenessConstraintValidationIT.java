@@ -145,7 +145,7 @@ public class CompositeUniquenessConstraintValidationIT
             setProperty( node, prop1, valueB1 ); // still ok
             setProperty( node, prop2, valueB2 ); // boom!
 
-        }, UniquePropertyValueValidationException.class, "" );
+        }, UniquePropertyValueValidationException.class );
         commit();
     }
 
@@ -164,7 +164,7 @@ public class CompositeUniquenessConstraintValidationIT
             setProperty( node, prop2, valueB2 ); // and fine
             addLabel( node, label ); // boom again
 
-        }, UniquePropertyValueValidationException.class, "" );
+        }, UniquePropertyValueValidationException.class );
         commit();
     }
 
@@ -183,7 +183,7 @@ public class CompositeUniquenessConstraintValidationIT
             setProperty( nodeB, prop1, valueB1 ); // still ok
             setProperty( nodeB, prop2, valueB2 ); // boom!
 
-        }, UniquePropertyValueValidationException.class, "" );
+        }, UniquePropertyValueValidationException.class );
         commit();
     }
 
@@ -203,7 +203,7 @@ public class CompositeUniquenessConstraintValidationIT
             setProperty( nodeB, prop2, valueB2 ); // and fine
             addLabel( nodeB, label ); // boom again
 
-        }, UniquePropertyValueValidationException.class, "" );
+        }, UniquePropertyValueValidationException.class );
         commit();
     }
 

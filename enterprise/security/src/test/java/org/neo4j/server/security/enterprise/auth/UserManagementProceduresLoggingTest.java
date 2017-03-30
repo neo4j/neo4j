@@ -616,12 +616,12 @@ public class UserManagementProceduresLoggingTest
 
     private void catchInvalidArguments( ThrowingAction<Exception> f ) throws Exception
     {
-        assertException( f, InvalidArgumentsException.class, "" );
+        assertException( f, InvalidArgumentsException.class );
     }
 
     private void catchAuthorizationViolation( ThrowingAction<Exception> f ) throws Exception
     {
-        assertException( f, AuthorizationViolationException.class, "" );
+        assertException( f, AuthorizationViolationException.class );
     }
 
     private AssertableLogProvider.LogMatcher info( String message, String... arguments )
