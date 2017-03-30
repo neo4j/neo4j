@@ -34,6 +34,7 @@ import org.neo4j.collection.primitive.Primitive;
 import org.neo4j.collection.primitive.PrimitiveLongSet;
 import org.neo4j.collection.primitive.PrimitiveLongVisitor;
 import org.neo4j.graphdb.ResourceIterator;
+import org.neo4j.helpers.collection.Iterables;
 import org.neo4j.helpers.collection.Iterators;
 import org.neo4j.kernel.api.TokenNameLookup;
 import org.neo4j.kernel.api.exceptions.index.IndexActivationFailedKernelException;
@@ -494,15 +495,7 @@ public class IndexingService extends LifecycleAdapter implements IndexingUpdateS
     public void convertToIndexUpdatesAndApply( Iterable<NodeUpdates> updates, IndexUpdateMode updateMode )
             throws IOException, IndexEntryConflictException
     {
-        final List<IndexEntryUpdate<LabelSchemaDescriptor>> indexUpdates = new ArrayList<>();
-        for ( NodeUpdates nodeUpdate : updates )
-        {
-            for ( IndexEntryUpdate<LabelSchemaDescriptor> indexUpdate : convertToIndexUpdates( nodeUpdate ) )
-            {
-                indexUpdates.add( indexUpdate );
-            }
-        }
-        apply( indexUpdates, updateMode );
+        apply( Iterables.flatMap( this::convertToIndexUpdates, updates ), updateMode );
     }
 
     @Override

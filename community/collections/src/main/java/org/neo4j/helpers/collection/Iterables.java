@@ -275,6 +275,11 @@ public final class Iterables
         return new MapIterable<>( from, function );
     }
 
+    public static <FROM, TO> Iterable<TO> flatMap( Function<? super FROM, ? extends Iterable<TO>> function, Iterable<FROM> from )
+    {
+        return new CombiningIterable<>( map(function, from) );
+    }
+
     @SafeVarargs
     @SuppressWarnings("unchecked")
     public static <T, C extends T> Iterable<T> iterable( C... items )
