@@ -45,6 +45,8 @@ import org.neo4j.kernel.impl.locking.LockTracer;
 import org.neo4j.kernel.impl.locking.StatementLocks;
 import org.neo4j.kernel.impl.proc.Procedures;
 import org.neo4j.storageengine.api.StorageStatement;
+import org.neo4j.storageengine.api.txstate.ReadableTransactionState;
+import org.neo4j.storageengine.api.txstate.WritableTransactionState;
 
 /**
  * A resource efficient implementation of {@link Statement}. Designed to be reused within a
@@ -150,21 +152,21 @@ public class KernelStatement implements TxStateHolder, Statement
     }
 
     @Override
-    public TransactionState txState()
+    public ReadableTransactionState readableTxState()
     {
-        return txStateHolder.txState();
+        return txStateHolder.readableTxState();
+    }
+
+    @Override
+    public WritableTransactionState writableTxState()
+    {
+        return txStateHolder.writableTxState();
     }
 
     @Override
     public LegacyIndexTransactionState legacyIndexTxState()
     {
         return txStateHolder.legacyIndexTxState();
-    }
-
-    @Override
-    public boolean hasTxStateWithChanges()
-    {
-        return txStateHolder.hasTxStateWithChanges();
     }
 
     @Override

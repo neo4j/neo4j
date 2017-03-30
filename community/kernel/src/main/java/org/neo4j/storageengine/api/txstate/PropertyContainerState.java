@@ -21,6 +21,7 @@ package org.neo4j.storageengine.api.txstate;
 
 import java.util.Iterator;
 
+import org.neo4j.helpers.collection.Iterators;
 import org.neo4j.kernel.api.exceptions.schema.ConstraintValidationException;
 import org.neo4j.storageengine.api.StorageProperty;
 

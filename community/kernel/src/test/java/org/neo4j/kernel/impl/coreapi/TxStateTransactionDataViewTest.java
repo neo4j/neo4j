@@ -48,7 +48,9 @@ import org.neo4j.kernel.impl.core.ThreadToStatementContextBridge;
 import org.neo4j.storageengine.api.NodeItem;
 import org.neo4j.storageengine.api.RelationshipItem;
 import org.neo4j.storageengine.api.StoreReadLayer;
+import org.neo4j.storageengine.api.txstate.NodeState;
 import org.neo4j.storageengine.api.txstate.ReadableTransactionState;
+import org.neo4j.storageengine.api.txstate.RelationshipState;
 
 import static java.util.Arrays.asList;
 import static org.hamcrest.CoreMatchers.equalTo;
@@ -105,14 +107,14 @@ public class TxStateTransactionDataViewTest
         state.nodeDoDelete( 2L );
 
         NodeItem node1 = asNode( 2L, 20L, labels( 15 ) );
-        when( ops.nodeCursor( storeStatement, 2L, null ) ).thenReturn( cursor( node1 ) );
+        when( ops.nodeCursor( storeStatement, 2L, ReadableTransactionState.EMPTY ) ).thenReturn( cursor( node1 ) );
 
-        when( ops.nodeGetProperties( storeStatement, node1, null ) )
+        when( ops.nodeGetProperties( storeStatement, node1, NodeState.EMPTY ) )
                 .thenReturn( asPropertyCursor( stringProperty( 1, "p" ) ) );
 
         NodeItem node2 = asNode( 1L, 21L, labels() );
-        when( ops.nodeCursor( storeStatement, 1L, null ) ).thenReturn( cursor( node2 ) );
-        when( ops.nodeGetProperties( storeStatement, node2, null ) ).thenReturn( asPropertyCursor() );
+        when( ops.nodeCursor( storeStatement, 1L, ReadableTransactionState.EMPTY ) ).thenReturn( cursor( node2 ) );
+        when( ops.nodeGetProperties( storeStatement, node2, NodeState.EMPTY ) ).thenReturn( asPropertyCursor() );
 
         when( ops.propertyKeyGetName( 1 ) ).thenReturn( "key" );
         when( ops.labelGetName( 15 ) ).thenReturn( "label" );
@@ -143,12 +145,15 @@ public class TxStateTransactionDataViewTest
         state.relationshipDoDelete( 2L, 1, 1L, 1L );
 
         RelationshipItem rel1 = asRelationship( 1L, 1, 1L, 2L, -1L );
-        when( ops.relationshipCursor( storeStatement, 1L, null ) ).thenReturn( cursor( rel1 ) );
-        when( ops.relationshipGetProperties( storeStatement, rel1, null ) ).thenReturn( asPropertyCursor() );
+        when( ops.relationshipCursor( storeStatement, 1L, ReadableTransactionState.EMPTY ) )
+                .thenReturn( cursor( rel1 ) );
+        when( ops.relationshipGetProperties( storeStatement, rel1, RelationshipState.EMPTY ) )
+                .thenReturn( asPropertyCursor() );
 
         RelationshipItem rel2 = asRelationship( 2L, 1, 1L, 1L, 40L );
-        when( ops.relationshipCursor( storeStatement, 2L, null ) ).thenReturn( cursor( rel2 ) );
-        when( ops.relationshipGetProperties( storeStatement, rel2, null ) )
+        when( ops.relationshipCursor( storeStatement, 2L, ReadableTransactionState.EMPTY ) )
+                .thenReturn( cursor( rel2 ) );
+        when( ops.relationshipGetProperties( storeStatement, rel2, RelationshipState.EMPTY ) )
                 .thenReturn( asPropertyCursor( stringProperty( 1, "p" ) ) );
 
         when( ops.propertyKeyGetName( 1 ) ).thenReturn( "key" );
@@ -167,8 +172,8 @@ public class TxStateTransactionDataViewTest
         Node node = mock( Node.class );
         when( node.getId() ).thenReturn( 1L );
         NodeItem nodeItem = asNode( 1 );
-        when( ops.nodeCursor( storeStatement, 1, null ) ).thenReturn( cursor( nodeItem ) );
-        when( ops.nodeGetProperties( storeStatement, nodeItem, null ) ).thenReturn( asPropertyCursor() );
+        when( ops.nodeCursor( storeStatement, 1, ReadableTransactionState.EMPTY ) ).thenReturn( cursor( nodeItem ) );
+        when( ops.nodeGetProperties( storeStatement, nodeItem, NodeState.EMPTY ) ).thenReturn( asPropertyCursor() );
 
         // When & Then
         assertThat( snapshot().isDeleted( node ), equalTo( true ) );
@@ -183,8 +188,10 @@ public class TxStateTransactionDataViewTest
         Relationship rel = mock( Relationship.class );
         when( rel.getId() ).thenReturn( 1L );
         RelationshipItem relationship = asRelationship( 1L, 1, 1L, 2L, -1L );
-        when( ops.relationshipCursor( storeStatement, 1L, null ) ).thenReturn( cursor( relationship ) );
-        when( ops.relationshipGetProperties( storeStatement, relationship, null ) ).thenReturn( asPropertyCursor() );
+        when( ops.relationshipCursor( storeStatement, 1L, ReadableTransactionState.EMPTY ) )
+                .thenReturn( cursor( relationship ) );
+        when( ops.relationshipGetProperties( storeStatement, relationship, RelationshipState.EMPTY ) )
+                .thenReturn( asPropertyCursor() );
 
         // When & Then
         assertThat( snapshot().isDeleted( rel ), equalTo( true ) );
@@ -200,8 +207,8 @@ public class TxStateTransactionDataViewTest
         when( ops.propertyKeyGetName( propertyKeyId ) ).thenReturn( "theKey" );
         long propertyId = 20L;
         NodeItem node = asNode( 1L, propertyId, labels() );
-        when( ops.nodeCursor( storeStatement, 1L, null ) ).thenReturn( cursor( node ) );
-        when( ops.nodeGetProperty( storeStatement, node, propertyKeyId, null ) )
+        when( ops.nodeCursor( storeStatement, 1L, ReadableTransactionState.EMPTY ) ).thenReturn( cursor( node ) );
+        when( ops.nodeGetProperty( storeStatement, node, propertyKeyId, NodeState.EMPTY ) )
                 .thenReturn( asPropertyCursor( prevProp ) );
 
         // When
@@ -225,8 +232,8 @@ public class TxStateTransactionDataViewTest
         when( ops.propertyKeyGetName( propertyKeyId ) ).thenReturn( "theKey" );
         long propertyId = 20L;
         NodeItem node = asNode( 1L, propertyId, labels() );
-        when( ops.nodeCursor( storeStatement, 1L, null ) ).thenReturn( cursor( node ) );
-        when( ops.nodeGetProperty( storeStatement, node, propertyKeyId, null ) )
+        when( ops.nodeCursor( storeStatement, 1L, ReadableTransactionState.EMPTY ) ).thenReturn( cursor( node ) );
+        when( ops.nodeGetProperty( storeStatement, node, propertyKeyId, NodeState.EMPTY ) )
                 .thenReturn( asPropertyCursor( prevProp ) );
 
         // When
@@ -249,9 +256,9 @@ public class TxStateTransactionDataViewTest
         when( ops.propertyKeyGetName( propertyKeyId ) ).thenReturn( "theKey" );
         long propertyId = 40L;
         RelationshipItem relationshipItem = asRelationship( 1, 0, 0, 0, propertyId );
-        when( ops.relationshipCursor( storeStatement, 1, null ) )
+        when( ops.relationshipCursor( storeStatement, 1, ReadableTransactionState.EMPTY ) )
                 .thenReturn( cursor( relationshipItem ) );
-        when( ops.relationshipGetProperty(  storeStatement, relationshipItem, propertyKeyId, null ) )
+        when( ops.relationshipGetProperty(  storeStatement, relationshipItem, propertyKeyId, RelationshipState.EMPTY ) )
                 .thenReturn( asPropertyCursor( prevValue ) );
 
         // When
@@ -275,9 +282,9 @@ public class TxStateTransactionDataViewTest
         when( ops.propertyKeyGetName( propertyKeyId ) ).thenReturn( "theKey" );
         long propertyId = 40L;
         RelationshipItem relationshipItem = asRelationship( 1, 0, 0, 0, propertyId );
-        when( ops.relationshipCursor( storeStatement, 1, null ) )
+        when( ops.relationshipCursor( storeStatement, 1, ReadableTransactionState.EMPTY ) )
                 .thenReturn( cursor( relationshipItem ) );
-        when( ops.relationshipGetProperty( storeStatement, relationshipItem, propertyKeyId, null ) )
+        when( ops.relationshipGetProperty( storeStatement, relationshipItem, propertyKeyId, RelationshipState.EMPTY ) )
                 .thenReturn( asPropertyCursor( prevProp ) );
 
         // When

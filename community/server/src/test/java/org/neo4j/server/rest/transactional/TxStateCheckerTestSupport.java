@@ -22,13 +22,14 @@ package org.neo4j.server.rest.transactional;
 import org.neo4j.kernel.api.KernelTransaction;
 import org.neo4j.kernel.impl.api.KernelStatement;
 import org.neo4j.kernel.impl.core.ThreadToStatementContextBridge;
+import org.neo4j.storageengine.api.txstate.ReadableTransactionState;
 
 import static org.mockito.Mockito.mock;
 import static org.mockito.Mockito.when;
 
-public class TxStateCheckerTestSupport
+class TxStateCheckerTestSupport
 {
-    protected static final TransitionalPeriodTransactionMessContainer TPTPMC =
+    static final TransitionalPeriodTransactionMessContainer TPTPMC =
             mock( TransitionalPeriodTransactionMessContainer.class );
 
     static
@@ -47,10 +48,10 @@ public class TxStateCheckerTestSupport
         private final KernelTransaction tx = mock( KernelTransaction.class );
         private final KernelStatement statement = mock( KernelStatement.class );
 
-        public FakeBridge()
+        FakeBridge()
         {
             when( tx.acquireStatement() ).thenReturn( statement );
-            when( statement.hasTxStateWithChanges() ).thenReturn( false );
+            when( statement.readableTxState() ).thenReturn( ReadableTransactionState.EMPTY );
         }
 
         @Override

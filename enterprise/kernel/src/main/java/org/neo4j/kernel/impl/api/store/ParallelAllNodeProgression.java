@@ -90,7 +90,7 @@ class ParallelAllNodeProgression implements NodeProgression
     @Override
     public Iterator<Long> addedNodes()
     {
-        if ( state != null && append.get() && append.compareAndSet( true, false  ) )
+        if ( append.get() && append.compareAndSet( true, false  ) )
         {
             return state.addedAndRemovedNodes().getAdded().iterator();
         }
@@ -106,12 +106,12 @@ class ParallelAllNodeProgression implements NodeProgression
     @Override
     public boolean fetchFromDisk( long id )
     {
-        return state == null || !state.nodeIsDeletedInThisTx( id );
+        return !state.nodeIsDeletedInThisTx( id );
     }
 
     @Override
     public NodeState nodeState( long id )
     {
-        return state == null ? NodeState.EMPTY : state.getNodeState( id );
+        return state.getNodeState( id );
     }
 }

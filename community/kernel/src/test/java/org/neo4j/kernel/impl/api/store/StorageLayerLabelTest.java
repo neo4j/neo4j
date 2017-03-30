@@ -27,12 +27,14 @@ import org.neo4j.collection.primitive.PrimitiveLongIterator;
 import org.neo4j.graphdb.GraphDatabaseService;
 import org.neo4j.graphdb.Node;
 import org.neo4j.graphdb.Transaction;
+import org.neo4j.storageengine.api.txstate.ReadableTransactionState;
 import org.neo4j.test.TestGraphDatabaseFactory;
 
 import static org.junit.Assert.assertEquals;
 import static org.junit.Assert.assertThat;
 import static org.neo4j.helpers.collection.Iterators.asSet;
 import static org.neo4j.helpers.collection.MapUtil.map;
+import static org.neo4j.storageengine.api.txstate.ReadableTransactionState.EMPTY;
 import static org.neo4j.test.mockito.matcher.Neo4jMatchers.containsOnly;
 import static org.neo4j.test.mockito.matcher.Neo4jMatchers.getPropertyKeys;
 
@@ -59,7 +61,7 @@ public class StorageLayerLabelTest extends StorageLayerTest
         }
 
         // THEN
-        disk.newStatement().acquireNodeCursor( new SingleNodeProgression( nodeId, null ) ).forAll(
+        disk.newStatement().acquireNodeCursor( new SingleNodeProgression( nodeId, EMPTY ) ).forAll(
                 node -> assertEquals( PrimitiveIntCollections.asSet( new int[]{labelId1, labelId2} ), node.labels() ) );
     }
 

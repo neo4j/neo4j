@@ -53,7 +53,7 @@ public abstract class StoreAbstractIteratorRelationshipCursor extends StoreAbstr
         {
             while ( doFetchNext() )
             {
-                if ( state != null && state.relationshipIsDeletedInThisTx( id() ) )
+                if ( state.relationshipIsDeletedInThisTx( id() ) )
                 {
                     continue;
                 }
@@ -64,7 +64,7 @@ public abstract class StoreAbstractIteratorRelationshipCursor extends StoreAbstr
             fromStore = false;
         }
 
-        if ( state != null && addedRelationshipIterator != null && addedRelationshipIterator.hasNext() )
+        if ( addedRelationshipIterator != null && addedRelationshipIterator.hasNext() )
         {
             state.getRelationshipState( addedRelationshipIterator.next() ).accept( this );
             return true;

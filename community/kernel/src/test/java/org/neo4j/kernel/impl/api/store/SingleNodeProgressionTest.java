@@ -21,6 +21,8 @@ package org.neo4j.kernel.impl.api.store;
 
 import org.junit.Test;
 
+import org.neo4j.storageengine.api.txstate.ReadableTransactionState;
+
 import static org.junit.Assert.assertEquals;
 import static org.junit.Assert.assertFalse;
 import static org.junit.Assert.assertTrue;
@@ -32,7 +34,7 @@ public class SingleNodeProgressionTest
     {
         // given
         long nodeId = 42L;
-        SingleNodeProgression progression = new SingleNodeProgression( nodeId, null );
+        SingleNodeProgression progression = new SingleNodeProgression( nodeId, ReadableTransactionState.EMPTY );
         NodeProgression.Batch batch = new NodeProgression.Batch();
 
         // when / then

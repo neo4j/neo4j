@@ -170,7 +170,7 @@ public class KernelTransactionsTest
         try ( KernelTransaction transaction = getKernelTransaction( registry ) )
         {
             // Just pick anything that can flag that changes have been made to this transaction
-            ((KernelTransactionImplementation) transaction).txState().nodeDoCreate( 0 );
+            ((KernelTransactionImplementation) transaction).writableTxState().nodeDoCreate( 0 );
             transaction.success();
         }
 

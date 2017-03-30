@@ -82,6 +82,7 @@ import static org.neo4j.register.Registers.newDoubleLongRegister;
 import static org.neo4j.storageengine.api.Direction.BOTH;
 import static org.neo4j.storageengine.api.Direction.INCOMING;
 import static org.neo4j.storageengine.api.Direction.OUTGOING;
+import static org.neo4j.storageengine.api.txstate.ReadableTransactionState.EMPTY;
 
 /**
  * Default implementation of StoreReadLayer. Delegates to NeoStores and indexes.
@@ -394,7 +395,7 @@ public class StorageLayer implements StoreReadLayer
     }
 
     @Override
-    public Cursor<NodeItem> nodeGetAllCursor( StorageStatement statement, TransactionState state )
+    public Cursor<NodeItem> nodeGetAllCursor( StorageStatement statement, ReadableTransactionState state )
     {
         return statement.acquireNodeCursor( new AllNodeProgression( nodeStore, state ) );
     }
@@ -577,7 +578,7 @@ public class StorageLayer implements StoreReadLayer
         }
         else
         {
-            nodeGetRelationships( statement, node, BOTH, null )
+            nodeGetRelationships( statement, node, BOTH, EMPTY )
                     .forAll( relationship -> set.add( relationship.type() ) );
         }
         return set;
@@ -621,7 +622,7 @@ public class StorageLayer implements StoreReadLayer
             }
             else
             {
-                count = count( nodeGetRelationships( statement, node, direction, null ) );
+                count = count( nodeGetRelationships( statement, node, direction, EMPTY ) );
             }
         }
 
@@ -649,7 +650,7 @@ public class StorageLayer implements StoreReadLayer
             }
             else
             {
-                count = count( nodeGetRelationships( statement, node, direction, new int[]{relType}, null ) );
+                count = count( nodeGetRelationships( statement, node, direction, new int[]{relType}, EMPTY ) );
             }
         }
 
@@ -658,7 +659,7 @@ public class StorageLayer implements StoreReadLayer
 
     private void visitNode( StorageStatement statement, NodeItem node, DegreeVisitor visitor )
     {
-        try ( Cursor<RelationshipItem> relationships = nodeGetRelationships( statement, node, BOTH, null ) )
+        try ( Cursor<RelationshipItem> relationships = nodeGetRelationships( statement, node, BOTH, EMPTY ) )
         {
             while ( relationships.next() )
             {

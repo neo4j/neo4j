@@ -30,11 +30,15 @@ import org.neo4j.kernel.impl.locking.Lock;
 import org.neo4j.storageengine.api.NodeItem;
 import org.neo4j.storageengine.api.PropertyItem;
 import org.neo4j.storageengine.api.StorageStatement;
+import org.neo4j.storageengine.api.txstate.NodeState;
+import org.neo4j.storageengine.api.txstate.PropertyContainerState;
+import org.neo4j.storageengine.api.txstate.ReadableTransactionState;
 
 import static java.util.Collections.singletonMap;
 import static org.junit.Assert.assertEquals;
 import static org.junit.Assert.assertTrue;
 import static org.junit.Assert.fail;
+import static org.neo4j.storageengine.api.txstate.ReadableTransactionState.EMPTY;
 
 /**
  * Test read access to committed properties.
@@ -96,13 +100,14 @@ public class StorageLayerPropertyTest extends StorageLayerTest
             long nodeId = createLabeledNode( db, singletonMap( "prop", value ), label1 ).getId();
 
             // when
-            try ( Cursor<NodeItem> node = statement.acquireNodeCursor( new SingleNodeProgression( nodeId, null ) ) )
+            try ( Cursor<NodeItem> node = statement.acquireNodeCursor( new SingleNodeProgression( nodeId, EMPTY ) ) )
             {
                 node.next();
 
                 Lock lock = node.get().lock();
                 try ( Cursor<PropertyItem> props = statement
-                        .acquireSinglePropertyCursor( node.get().nextPropertyId(), propKey, lock, null ) )
+                        .acquireSinglePropertyCursor( node.get().nextPropertyId(), propKey, lock,
+                                NodeState.EMPTY ) )
                 {
                     if ( props.next() )
                     {
