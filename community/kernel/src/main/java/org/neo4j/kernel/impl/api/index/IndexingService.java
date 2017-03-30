@@ -463,31 +463,15 @@ public class IndexingService extends LifecycleAdapter implements IndexingUpdateS
     private void apply( Iterable<IndexEntryUpdate<LabelSchemaDescriptor>> updates, IndexUpdateMode updateMode )
             throws IOException, IndexEntryConflictException
     {
-        Map<LabelSchemaDescriptor,List<IndexEntryUpdate<LabelSchemaDescriptor>>> bySchema = new HashMap<>();
-        for ( IndexEntryUpdate<LabelSchemaDescriptor> indexUpdate : updates )
+        try ( IndexUpdaterMap updaterMap = indexMapRef.createIndexUpdaterMap( updateMode ) )
         {
-            List<IndexEntryUpdate<LabelSchemaDescriptor>> forSchema = bySchema.get( indexUpdate.indexKey() );
-            if ( forSchema == null )
+            for ( IndexEntryUpdate<LabelSchemaDescriptor> indexUpdate : updates )
             {
-                forSchema = new ArrayList<>();
-                bySchema.put( indexUpdate.indexKey(), forSchema );
-            }
-            forSchema.add( indexUpdate );
-        }
-
-        for ( Map.Entry<LabelSchemaDescriptor, List<IndexEntryUpdate<LabelSchemaDescriptor>>> entry : bySchema.entrySet() )
-        {
-            LabelSchemaDescriptor schema = entry.getKey();
-            try ( IndexUpdater updater = indexMapRef.getIndexProxy( schema ).newUpdater( updateMode ) )
-            {
-                for ( IndexEntryUpdate<LabelSchemaDescriptor> indexUpdate : entry.getValue() )
+                IndexUpdater updater = updaterMap.getUpdater( indexUpdate.indexKey().schema() );
+                if ( updater != null )
                 {
                     updater.process( indexUpdate );
                 }
-            }
-            catch ( IndexNotFoundKernelException e )
-            {
-                // ignore, the index was deleted while update was in flight. It can be discarded.
             }
         }
     }
