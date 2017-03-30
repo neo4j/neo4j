@@ -28,7 +28,7 @@ import org.neo4j.collection.primitive.PrimitiveIntCollection;
 import org.neo4j.collection.primitive.PrimitiveIntIterator;
 import org.neo4j.collection.primitive.PrimitiveIntObjectMap;
 import org.neo4j.collection.primitive.PrimitiveIntSet;
-import org.neo4j.collection.primitive.PrimitiveSortedArraySet;
+import org.neo4j.collection.primitive.PrimitiveArrays;
 import org.neo4j.helpers.collection.Iterables;
 import org.neo4j.kernel.api.index.IndexEntryUpdate;
 import org.neo4j.kernel.api.properties.DefinedProperty;
@@ -133,12 +133,12 @@ public class NodeUpdates implements PropertyLoader.PropertyLoadSink
 
     public long[] labelsChanged()
     {
-        return PrimitiveSortedArraySet.symmetricDifference( labelsBefore, labelsAfter );
+        return PrimitiveArrays.symmetricDifference( labelsBefore, labelsAfter );
     }
 
     public long[] labelsUnchanged()
     {
-        return PrimitiveSortedArraySet.intersect( labelsBefore, labelsAfter );
+        return PrimitiveArrays.intersect( labelsBefore, labelsAfter );
     }
 
     public PrimitiveIntCollection propertiesChanged()

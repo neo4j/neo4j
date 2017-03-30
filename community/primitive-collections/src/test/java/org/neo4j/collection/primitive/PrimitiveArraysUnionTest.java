@@ -27,10 +27,10 @@ import org.junit.runners.Parameterized;
 
 import static org.junit.Assert.assertArrayEquals;
 import static org.junit.Assert.assertSame;
-import static org.neo4j.collection.primitive.PrimitiveSortedArraySet.union;
+import static org.neo4j.collection.primitive.PrimitiveArrays.union;
 
 @RunWith( Parameterized.class )
-public class PrimitiveSortedArraySetUnionTest
+public class PrimitiveArraysUnionTest
 {
     @Parameterized.Parameters( name = "{0}" )
     public static Iterable<Object[]> parameters()
@@ -55,7 +55,7 @@ public class PrimitiveSortedArraySetUnionTest
     private final int[] rhs;
     private final int[] expected;
 
-    public PrimitiveSortedArraySetUnionTest( Input input )
+    public PrimitiveArraysUnionTest( Input input )
     {
         this.lhs = input.lhs;
         this.rhs = input.rhs;

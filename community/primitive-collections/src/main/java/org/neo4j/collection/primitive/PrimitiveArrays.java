@@ -22,15 +22,14 @@ package org.neo4j.collection.primitive;
 import java.util.Arrays;
 
 /**
- * Specialized methods for operations on sets represented as sorted primitive arrays.
+ * Specialized methods for operations on primitive arrays.
  *
- * This class does not contain a complete set of operations for all primitives, but only
- * the ones that were needed. Feel free to add specializations on demand, but remember to test.
+ * For set operations (union, intersect, symmetricDifference), input and output arrays
+ * are arrays containing unique values in sorted ascending order.
  */
-public class PrimitiveSortedArraySet
+public class PrimitiveArrays
 {
-    private static final long[] NO_LONGS = new long[]{};
-    private static final int INT_BITS = Integer.BYTES * 8;
+    private static final long[] EMPTY_LONG_ARRAY = new long[]{};
 
     /**
      * Compute union of two sets of integers represented as sorted arrays.
@@ -50,6 +49,7 @@ public class PrimitiveSortedArraySet
             return lhs == null ? rhs : lhs;
         }
 
+        assert isSortedSet( lhs ) && isSortedSet( rhs );
         if ( lhs.length < rhs.length )
         {
             return union( rhs, lhs );
@@ -123,8 +123,10 @@ public class PrimitiveSortedArraySet
     {
         if ( left == null || right == null )
         {
-            return NO_LONGS;
+            return EMPTY_LONG_ARRAY;
         }
+
+        assert isSortedSet( left ) && isSortedSet( right );
 
         long uniqueCounts = countUnique( left, right );
         if ( uniqueCounts == 0 ) // complete intersection
@@ -133,7 +135,7 @@ public class PrimitiveSortedArraySet
         }
         if ( right( uniqueCounts ) == right.length || left( uniqueCounts ) == left.length ) // non-intersecting
         {
-            return NO_LONGS;
+            return EMPTY_LONG_ARRAY;
         }
 
         long[] intersect = new long[left.length - left( uniqueCounts )];
@@ -175,10 +177,12 @@ public class PrimitiveSortedArraySet
             return left == null ? right : left;
         }
 
+        assert isSortedSet( left ) && isSortedSet( right );
+
         long uniqueCounts = countUnique( left, right );
         if ( uniqueCounts == 0 ) // complete intersection
         {
-            return NO_LONGS;
+            return EMPTY_LONG_ARRAY;
         }
 
         long[] difference = new long[left( uniqueCounts ) + right( uniqueCounts )];
@@ -256,12 +260,12 @@ public class PrimitiveSortedArraySet
 
     private static long intPair( int left, int right )
     {
-        return ( ((long)left) << INT_BITS ) | right;
+        return ( ((long)left) << Integer.SIZE ) | right;
     }
 
     private static int left( long pair )
     {
-        return (int)(pair >> INT_BITS);
+        return (int)(pair >> Integer.SIZE);
     }
 
     private static int right( long pair )
@@ -269,7 +273,25 @@ public class PrimitiveSortedArraySet
         return (int)(pair & 0xFFFF_FFFFL);
     }
 
-    private PrimitiveSortedArraySet()
+    private static boolean isSortedSet( int[] set )
+    {
+        for ( int i = 0; i < set.length - 1; i++ )
+        {
+            assert set[i] < set[i+1] : "Array is not a sorted set: has " + set[i] + " before " + set[i + 1];
+        }
+        return true;
+    }
+
+    private static boolean isSortedSet( long[] set )
+    {
+        for ( int i = 0; i < set.length - 1; i++ )
+        {
+            assert set[i] < set[i+1] : "Array is not a sorted set: has " + set[i] + " before " + set[i + 1];
+        }
+        return true;
+    }
+
+    private PrimitiveArrays()
     {   // No instances allowed
     }
 }
