@@ -26,6 +26,9 @@ import java.util.logging.Level;
 import java.util.logging.Logger;
 import javax.annotation.Nonnull;
 
+import sun.misc.Signal;
+import sun.misc.SignalHandler;
+
 import org.neo4j.graphdb.TransactionFailureException;
 import org.neo4j.graphdb.factory.GraphDatabaseSettings;
 import org.neo4j.helpers.collection.Pair;
@@ -49,6 +52,8 @@ public abstract class ServerBootstrapper implements Bootstrapper
     public static final int OK = 0;
     public static final int WEB_SERVER_STARTUP_ERROR_CODE = 1;
     public static final int GRAPH_DATABASE_STARTUP_ERROR_CODE = 2;
+    private static final String SIGTERM = "TERM";
+    private static final String SIGINT = "INT";
 
     private volatile NeoServer server;
     private Thread shutdownHook;
@@ -74,6 +79,7 @@ public abstract class ServerBootstrapper implements Bootstrapper
     public final int start( File homeDir, Optional<File> configFile, Pair<String, String>... configOverrides )
     {
         addShutdownHook();
+        installSignalHandler();
         try
         {
             Config config = createConfig( homeDir, configFile, configOverrides );
@@ -169,6 +175,15 @@ public abstract class ServerBootstrapper implements Bootstrapper
     {
         return ConfigLoader.loadServerConfig( Optional.of( homeDir ), file, configOverrides,
                 configurationValidators() );
+    }
+
+    // Exit gracefully if possible
+    private void installSignalHandler()
+    {
+        // SIGTERM is invoked when system service is stopped
+        Signal.handle( new Signal( SIGTERM ), ( signal ) -> System.exit( 0 ) );
+        // SIGINT is invoked when user hits ctrl-c  when running `neo4j console`
+        Signal.handle( new Signal( SIGINT ), ( signal ) -> System.exit( 0 ) );
     }
 
     private void addShutdownHook()
