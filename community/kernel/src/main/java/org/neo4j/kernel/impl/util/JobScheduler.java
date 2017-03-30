@@ -42,7 +42,9 @@ public interface JobScheduler extends Lifecycle
         /** Create a new thread each time a job is scheduled */
         NEW_THREAD,
         /** Run the job from a pool of threads, shared among all groups with this strategy */
-        POOLED
+        POOLED,
+        /** Run the jobs in sequential order within the group */
+        SEQUENTIAL
     }
 
     /**
@@ -176,6 +178,11 @@ public interface JobScheduler extends Lifecycle
          * File watch service group
          */
         public static Group fileWatch = new Group( "FileWatcher", NEW_THREAD );
+
+        /**
+         * Recovery cleanup.
+         */
+        public static Group recoveryCleanup = new Group( "RecoveryCleanup", POOLED );
     }
 
     interface JobHandle

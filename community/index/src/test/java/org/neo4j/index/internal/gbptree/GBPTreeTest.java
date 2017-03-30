@@ -1239,7 +1239,8 @@ public class GBPTreeTest
                 pageCacheToUse = specificPageCache;
             }
 
-            return new GBPTree<>( pageCacheToUse, indexFile, layout, tentativePageSize, monitor, headerReader );
+            return new GBPTree<>( pageCacheToUse, indexFile, layout, tentativePageSize, monitor, headerReader,
+                    RecoveryCleanupWorkCollector.IMMEDIATE );
         }
     }
 

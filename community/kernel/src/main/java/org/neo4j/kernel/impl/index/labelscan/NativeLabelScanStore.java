@@ -31,6 +31,7 @@ import java.util.stream.Collectors;
 
 import org.neo4j.cursor.RawCursor;
 import org.neo4j.graphdb.ResourceIterator;
+import org.neo4j.index.internal.gbptree.RecoveryCleanupWorkCollector;
 import org.neo4j.index.internal.gbptree.GBPTree;
 import org.neo4j.index.internal.gbptree.Header;
 import org.neo4j.index.internal.gbptree.Hit;
@@ -159,7 +160,7 @@ public class NativeLabelScanStore implements LabelScanStore
     private static final Consumer<PageCursor> writeClean = pageCursor -> pageCursor.putByte( CLEAN );
 
     public NativeLabelScanStore( PageCache pageCache, File storeDir, FullStoreChangeStream fullStoreChangeStream,
-            boolean readOnly, Monitors monitors )
+            boolean readOnly, Monitors monitors, RecoveryCleanupWorkCollector recoveryCleanupWorkCollector )
     {
         this( pageCache, storeDir, fullStoreChangeStream, readOnly, monitors, /*means no opinion about page size*/ 0 );
     }
@@ -349,7 +350,8 @@ public class NativeLabelScanStore implements LabelScanStore
         MutableBoolean isRebuilding = new MutableBoolean();
         Header.Reader readRebuilding =
                 (pageCursor, length) -> isRebuilding.setValue( pageCursor.getByte() == REBUILDING );
-        index = new GBPTree<>( pageCache, storeFile, new LabelScanLayout(), pageSize, monitor, readRebuilding );
+        index = new GBPTree<>( pageCache, storeFile, new LabelScanLayout(), pageSize, monitor, readRebuilding,
+                RecoveryCleanupWorkCollector.IMMEDIATE );
         return isRebuilding.getValue();
     }
 

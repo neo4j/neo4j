@@ -302,6 +302,16 @@ public class GBPTree<KEY,VALUE> implements Closeable
     private boolean clean;
 
     /**
+     * Clean jobs part of recovery is posted here.
+     */
+    private final RecoveryCleanupWorkCollector recoveryCleanupWorkCollector;
+
+    /**
+     * If clean job fails, this throwable is set to the cause.
+     */
+    private volatile Throwable failedRecoveryCause;
+
+    /**
      * Opens an index {@code indexFile} in the {@code pageCache}, creating and initializing it if it doesn't exist.
      * If the index doesn't exist it will be created and the {@link Layout} and {@code pageSize} will
      * be written in index header.
@@ -330,13 +340,15 @@ public class GBPTree<KEY,VALUE> implements Closeable
      * @param monitor {@link Monitor} for monitoring {@link GBPTree}.
      * @param headerReader reads header data, previously written using {@link #checkpoint(IOLimiter, Consumer)}
      * or {@link #close()}
+     * @param recoveryCleanupWorkCollector collects recovery cleanup jobs for execution after recovery.
      * @throws IOException on page cache error
      */
     public GBPTree( PageCache pageCache, File indexFile, Layout<KEY,VALUE> layout, int tentativePageSize,
-            Monitor monitor, Header.Reader headerReader ) throws IOException
+            Monitor monitor, Header.Reader headerReader, RecoveryCleanupWorkCollector recoveryCleanupWorkCollector ) throws IOException
     {
         this.indexFile = indexFile;
         this.monitor = monitor;
+        this.recoveryCleanupWorkCollector = recoveryCleanupWorkCollector;
         this.generation = Generation.generation( GenerationSafePointer.MIN_GENERATION, GenerationSafePointer.MIN_GENERATION + 1 );
         long rootId = IdSpace.MIN_TREE_NODE_ID;
         setRoot( rootId, Generation.unstableGeneration( generation ) );
@@ -724,6 +736,8 @@ public class GBPTree<KEY,VALUE> implements Closeable
 
     private void checkpoint( IOLimiter ioLimiter, Header.Writer headerWriter ) throws IOException
     {
+        assertRecoveryCleanSuccessful();
+
         if ( !changesSinceLastCheckpoint && headerWriter == CARRY_OVER_PREVIOUS_HEADER )
         {
             // No changes has happened since last checkpoint was called, no need to do another checkpoint
@@ -765,6 +779,14 @@ public class GBPTree<KEY,VALUE> implements Closeable
             // Unblock writers, any writes after this point and up until the next checkpoint will have
             // the new unstable generation.
             writeLock.unlock();
+        }
+    }
+
+    private void assertRecoveryCleanSuccessful() throws IOException
+    {
+        if ( failedRecoveryCause != null )
+        {
+            throw new IOException( "Pointer cleaning during recovery failed", failedRecoveryCause );
         }
     }
 
@@ -813,6 +835,7 @@ public class GBPTree<KEY,VALUE> implements Closeable
      */
     public Writer<KEY,VALUE> writer() throws IOException
     {
+        assertRecoveryCleanSuccessful();
         writer.initialize();
         changesSinceLastCheckpoint = true;
         return writer;
@@ -864,22 +887,36 @@ public class GBPTree<KEY,VALUE> implements Closeable
         // i.e. recovery creates this gap to be able to distinguish crashed from fixed pointers.
         // After recovery is completed and the next checkpoint/close happens that gap is closed
         // and any remaining CRASH pointers cannot be recognized as such anymore.
-        //
-        // The temporary solution right now is to scan through all tree nodes, as performant as possible,
-        // and zero out all CRASH pointers.
+        // This method will add a cleanup job to ensure all remaining CRASH pointers will be cleared.
 
         Lock readLock = writerCheckpointMutex.readLock();
         readLock.lock();
-        try
+
+        long generation = this.generation;
+        long stableGeneration = stableGeneration( generation );
+        long unstableGeneration = unstableGeneration( generation );
+        long highTreeNodeId = freeList.lastId() + 1;
+
+        CleanupJob cleanupJob = () ->
         {
-            long generation = this.generation;
-            new CrashGenerationCleaner( pagedFile, bTreeNode, IdSpace.MIN_TREE_NODE_ID,freeList.lastId() + 1,
-                    stableGeneration( generation ), unstableGeneration( generation ), monitor ).clean();
-        }
-        finally
-        {
-            readLock.unlock();
-        }
+            CrashGenerationCleaner crashGenerationCleaner =
+                    new CrashGenerationCleaner( pagedFile, bTreeNode, IdSpace.MIN_TREE_NODE_ID, highTreeNodeId,
+                            stableGeneration, unstableGeneration, monitor );
+            try
+            {
+                crashGenerationCleaner.clean();
+            }
+            catch ( Throwable e )
+            {
+                // Clean failed, report back and let next system checkpoint handle error
+                failedRecoveryCause = e;
+            }
+            finally
+            {
+                readLock.unlock();
+            }
+        };
+        recoveryCleanupWorkCollector.add( cleanupJob );
     }
 
     void printTree() throws IOException

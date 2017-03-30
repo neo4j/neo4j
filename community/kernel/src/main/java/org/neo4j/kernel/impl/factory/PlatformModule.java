@@ -25,6 +25,8 @@ import java.util.Map;
 
 import org.neo4j.graphdb.factory.GraphDatabaseSettings;
 import org.neo4j.graphdb.security.URLAccessRule;
+import org.neo4j.index.internal.gbptree.GroupingRecoveryCleanupWorkCollector;
+import org.neo4j.index.internal.gbptree.RecoveryCleanupWorkCollector;
 import org.neo4j.io.fs.DefaultFileSystemAbstraction;
 import org.neo4j.io.fs.FileSystemAbstraction;
 import org.neo4j.io.fs.FileSystemLifecycleAdapter;
@@ -53,6 +55,7 @@ import org.neo4j.kernel.internal.StoreLocker;
 import org.neo4j.kernel.internal.StoreLockerLifecycleAdapter;
 import org.neo4j.kernel.internal.Version;
 import org.neo4j.kernel.lifecycle.LifeSupport;
+import org.neo4j.kernel.lifecycle.LifecycleAdapter;
 import org.neo4j.kernel.monitoring.Monitors;
 import org.neo4j.kernel.monitoring.tracing.Tracers;
 import org.neo4j.logging.Level;
@@ -148,6 +151,11 @@ public class PlatformModule
 
         jobScheduler = life.add( dependencies.satisfyDependency( createJobScheduler() ) );
 
+        // Cleanup after recovery, used by GBPTree
+        RecoveryCleanupWorkCollector recoveryCleanupWorkCollector = new GroupingRecoveryCleanupWorkCollector();
+        dependencies.satisfyDependency( recoveryCleanupWorkCollector );
+        life.add( cleanupAfterRecovery( recoveryCleanupWorkCollector ) );
+
         // Database system information, used by UDC
         dependencies.satisfyDependency( life.add( new UsageData( jobScheduler ) ) );
 
@@ -198,6 +206,18 @@ public class PlatformModule
         dependencies.satisfyDependency( storeCopyCheckPointMutex );
 
         publishPlatformInfo( dependencies.resolveDependency( UsageData.class ) );
+    }
+
+    private LifecycleAdapter cleanupAfterRecovery( final RecoveryCleanupWorkCollector recoveryCleanupWorkCollector )
+    {
+        return new LifecycleAdapter()
+        {
+            @Override
+            public void start() throws Throwable
+            {
+                jobScheduler.schedule( JobScheduler.Groups.recoveryCleanup, recoveryCleanupWorkCollector );
+            }
+        };
     }
 
     protected SystemNanoClock createClock()
@@ -295,5 +315,4 @@ public class PlatformModule
     {
         return new TransactionStats();
     }
-
 }
