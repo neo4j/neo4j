@@ -153,7 +153,7 @@ public class ExecutingQuery
         // just needs to be captured at some point...
         long activeLockCount = this.activeLockCount.getAsLong();
         long heapAllocatedBytes = heapAllocation.allocatedBytes( threadExecutingTheQuery );
-        QuerySnapshot.PageCounterValues pageCounters = new QuerySnapshot.PageCounterValues( pageCursorCounters );
+        PageCounterValues pageCounters = new PageCounterValues( pageCursorCounters );
 
         // - at this point we are done capturing the "live" state, and can start computing the snapshot -
         long planningTimeNanos = (status.isPlanning() ? currentTimeNanos : planningDoneNanos) - startTimeNanos;
