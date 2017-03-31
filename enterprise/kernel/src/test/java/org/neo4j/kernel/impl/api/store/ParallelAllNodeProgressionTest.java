@@ -39,12 +39,14 @@ import org.neo4j.helpers.collection.Iterables;
 import org.neo4j.helpers.collection.Iterators;
 import org.neo4j.kernel.impl.api.state.TxState;
 import org.neo4j.kernel.impl.store.NodeStore;
+import org.neo4j.kernel.impl.store.RecordPageLocationCalculator;
 import org.neo4j.test.rule.RandomRule;
 
 import static java.util.Collections.disjoint;
 import static java.util.stream.Collectors.toList;
 import static org.junit.Assert.assertEquals;
 import static org.junit.Assert.assertTrue;
+import static org.mockito.Matchers.anyLong;
 import static org.mockito.Mockito.mock;
 import static org.mockito.Mockito.when;
 import static org.neo4j.helpers.collection.Iterables.single;
@@ -63,11 +65,22 @@ public class ParallelAllNodeProgressionTest
     @Before
     public void setup()
     {
+        int recordSize = random.nextInt( 2, 25 );
+        int pageSize = random.nextInt( recordSize * 10, recordSize * 33);
         start = random.nextInt( 0, 20 );
-        end = random.nextInt( start + 40, start + 100 );
+        end = random.nextInt( start + 40, start + 1000 );
         threads = random.nextInt( 2, 6 );
         when( nodeStore.getNumberOfReservedLowIds() ).thenReturn( start );
-        when( nodeStore.getRecordsPerPage() ).thenReturn( end / random.nextInt( 2, 5 ) );
+        when( nodeStore.pageIdForRecord( anyLong() ) ).thenAnswer( invocation ->
+        {
+            long recordId = (long) invocation.getArguments()[0];
+            return RecordPageLocationCalculator.pageIdForRecord( recordId, pageSize, recordSize );
+        } );
+        when( nodeStore.firstRecordOnPage( anyLong() )).thenAnswer( invocation ->
+        {
+            long pageId = (long) invocation.getArguments()[0];
+            return RecordPageLocationCalculator.firstRecordOnPage( pageId, pageSize, recordSize, start );
+        });
     }
 
     @Test
