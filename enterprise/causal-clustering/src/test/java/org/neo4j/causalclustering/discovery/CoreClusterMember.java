@@ -80,12 +80,16 @@ public class CoreClusterMember implements ClusterMember
 
         String initialMembers = addresses.stream().map( AdvertisedSocketAddress::toString ).collect( joining( "," ) );
 
+        AdvertisedSocketAddress advertisedSocketAddress = Cluster.socketAddressForServer( serverId );
+        String advertisedAddress = advertisedSocketAddress.getHostname();
+        String listenAddress = "127.0.0.1";
+
         config.put( ClusterSettings.mode.name(), ClusterSettings.Mode.CORE.name() );
-        config.put( GraphDatabaseSettings.default_advertised_address.name(), "localhost" );
+        config.put( GraphDatabaseSettings.default_advertised_address.name(), advertisedAddress );
         config.put( CausalClusteringSettings.initial_discovery_members.name(), initialMembers );
-        config.put( CausalClusteringSettings.discovery_listen_address.name(), "127.0.0.1:" + hazelcastPort );
-        config.put( CausalClusteringSettings.transaction_listen_address.name(), "127.0.0.1:" + txPort );
-        config.put( CausalClusteringSettings.raft_listen_address.name(), "127.0.0.1:" + raftPort );
+        config.put( CausalClusteringSettings.discovery_listen_address.name(), listenAddress + ":" + hazelcastPort );
+        config.put( CausalClusteringSettings.transaction_listen_address.name(), listenAddress + ":" + txPort );
+        config.put( CausalClusteringSettings.raft_listen_address.name(), listenAddress + ":" + raftPort );
         config.put( CausalClusteringSettings.cluster_topology_refresh.name(), "1000ms" );
         config.put( CausalClusteringSettings.expected_core_cluster_size.name(), String.valueOf( clusterSize ) );
         config.put( CausalClusteringSettings.leader_election_timeout.name(), "500ms" );
@@ -94,13 +98,13 @@ public class CoreClusterMember implements ClusterMember
         config.put( GraphDatabaseSettings.record_format.name(), recordFormat );
         config.put( new BoltConnector( "bolt" ).type.name(), "BOLT" );
         config.put( new BoltConnector( "bolt" ).enabled.name(), "true" );
-        config.put( new BoltConnector( "bolt" ).listen_address.name(), "127.0.0.1:" + boltPort );
-        boltAdvertisedAddress = "127.0.0.1:" + boltPort;
+        config.put( new BoltConnector( "bolt" ).listen_address.name(), listenAddress + ":" + boltPort );
+        boltAdvertisedAddress = advertisedAddress + ":" + boltPort;
         config.put( new BoltConnector( "bolt" ).advertised_address.name(), boltAdvertisedAddress );
         config.put( new HttpConnector( "http", Encryption.NONE ).type.name(), "HTTP" );
         config.put( new HttpConnector( "http", Encryption.NONE ).enabled.name(), "true" );
-        config.put( new HttpConnector( "http", Encryption.NONE ).listen_address.name(), "127.0.0.1:" + httpPort );
-        config.put( new HttpConnector( "http", Encryption.NONE ).advertised_address.name(), "127.0.0.1:" + httpPort );
+        config.put( new HttpConnector( "http", Encryption.NONE ).listen_address.name(), listenAddress + ":" + httpPort );
+        config.put( new HttpConnector( "http", Encryption.NONE ).advertised_address.name(), advertisedAddress + ":" + httpPort );
         config.put( GraphDatabaseSettings.pagecache_memory.name(), "8m" );
         config.put( GraphDatabaseSettings.auth_store.name(), new File( parentDir, "auth" ).getAbsolutePath() );
         config.putAll( extraParams );

@@ -154,6 +154,11 @@ class HazelcastCoreTopologyService extends LifecycleAdapter implements CoreTopol
         InterfacesConfig interfaces = new InterfacesConfig();
         interfaces.addInterface( hazelcastAddress.getHostname() );
 
+        if ( !hazelcastAddress.getHostname().equals( "0.0.0.0" ) )
+        {
+            interfaces.setEnabled( true );
+        }
+
         NetworkConfig networkConfig = new NetworkConfig();
         networkConfig.setInterfaces( interfaces );
         networkConfig.setPort( hazelcastAddress.getPort() );
