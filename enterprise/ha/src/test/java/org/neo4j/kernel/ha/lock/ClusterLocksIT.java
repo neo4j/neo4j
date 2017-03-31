@@ -26,6 +26,8 @@ import org.junit.rules.ExpectedException;
 import org.junit.rules.RuleChain;
 
 import java.util.concurrent.CountDownLatch;
+import java.util.concurrent.atomic.AtomicInteger;
+
 import org.neo4j.graphdb.Label;
 import org.neo4j.graphdb.Node;
 import org.neo4j.graphdb.Transaction;
@@ -87,8 +89,9 @@ public class ClusterLocksIT
     }
 
     @Test
-    public void locksFailingOnSlavesMustHaveDescriptiveMessage() throws Throwable
+    public void oneOrTheOtherShouldDeadlock() throws Throwable
     {
+        AtomicInteger deadlockCount = new AtomicInteger();
         HighlyAvailableGraphDatabase master = cluster.getMaster();
         Node masterA = createNodeOnMaster( testLabel, master );
         Node masterB = createNodeOnMaster( testLabel, master );
@@ -111,15 +114,26 @@ public class ClusterLocksIT
                     latch.countDown();
                     tx.acquireWriteLock( masterB );
                 }
+                catch ( DeadlockDetectedException e )
+                {
+                    deadlockCount.incrementAndGet();
+                }
             });
-            masterTx.setDaemon( true );
             masterTx.start();
             latch.await();
 
-            // This should deadlock
-            expectedException.expect( DeadlockDetectedException.class );
-            transaction.acquireWriteLock( slaveA );
+            try
+            {
+                transaction.acquireWriteLock( slaveA );
+            }
+            catch ( DeadlockDetectedException e )
+            {
+                deadlockCount.incrementAndGet();
+            }
+            masterTx.join();
         }
+
+        assertEquals( 1, deadlockCount.get() );
     }
 
     @Test
