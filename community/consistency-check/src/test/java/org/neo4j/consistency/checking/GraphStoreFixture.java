@@ -38,6 +38,7 @@ import org.neo4j.graphdb.DependencyResolver;
 import org.neo4j.graphdb.GraphDatabaseService;
 import org.neo4j.graphdb.factory.GraphDatabaseBuilder;
 import org.neo4j.graphdb.factory.GraphDatabaseSettings;
+import org.neo4j.index.internal.gbptree.RecoveryCleanupWorkCollector;
 import org.neo4j.io.fs.DefaultFileSystemAbstraction;
 import org.neo4j.io.fs.FileSystemAbstraction;
 import org.neo4j.io.pagecache.PageCache;
@@ -188,7 +189,8 @@ public abstract class GraphStoreFixture extends ConfigurablePageCacheRule implem
 
             Dependencies dependencies = new Dependencies();
             dependencies.satisfyDependencies( Config.defaults(), fileSystem,
-                    new SimpleLogService( logProvider, logProvider ), indexStoreView, pageCache, new Monitors() );
+                    new SimpleLogService( logProvider, logProvider ), indexStoreView, pageCache, new Monitors(),
+                    RecoveryCleanupWorkCollector.IMMEDIATE );
             KernelContext kernelContext = new SimpleKernelContext( directory, UNKNOWN, dependencies );
             LabelScanStore labelScanStore = startLabelScanStore( config, dependencies, kernelContext );
             directStoreAccess = new DirectStoreAccess( nativeStores, labelScanStore, createIndexes( fileSystem,

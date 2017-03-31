@@ -38,6 +38,7 @@ import org.neo4j.function.Suppliers;
 import org.neo4j.graphdb.factory.GraphDatabaseSettings;
 import org.neo4j.graphdb.factory.GraphDatabaseSettings.LabelIndex;
 import org.neo4j.helpers.progress.ProgressMonitorFactory;
+import org.neo4j.index.internal.gbptree.RecoveryCleanupWorkCollector;
 import org.neo4j.io.fs.DefaultFileSystemAbstraction;
 import org.neo4j.io.fs.FileSystemAbstraction;
 import org.neo4j.io.pagecache.PageCache;
@@ -241,7 +242,7 @@ public class ConsistencyCheckService
             IndexStoreView indexStoreView = new NeoStoreIndexStoreView( LockService.NO_LOCK_SERVICE, neoStores );
             Dependencies dependencies = new Dependencies();
             dependencies.satisfyDependencies( config, fileSystem, new SimpleLogService( logProvider, logProvider ),
-                    indexStoreView, pageCache, new Monitors() );
+                    indexStoreView, pageCache, new Monitors(), RecoveryCleanupWorkCollector.IMMEDIATE );
             KernelContext kernelContext = new SimpleKernelContext( storeDir, UNKNOWN, dependencies );
             KernelExtensions extensions = life.add( new KernelExtensions(
                     kernelContext, (Iterable) load( KernelExtensionFactory.class ), dependencies, ignore() ) );
