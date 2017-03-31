@@ -22,6 +22,7 @@ package org.neo4j.unsafe.impl.batchimport.input;
 import org.junit.Rule;
 import org.junit.Test;
 
+import java.io.ByteArrayOutputStream;
 import java.io.File;
 import java.io.IOException;
 import java.io.OutputStream;
@@ -218,6 +219,20 @@ public class BadCollectorTest
 
         // THEN
         assertEquals( count, collector.badEntries() );
+    }
+
+    @Test
+    public void skipBadEntriesLogging()
+    {
+        ByteArrayOutputStream outputStream = new ByteArrayOutputStream();
+        BadCollector badCollector = new BadCollector( outputStream, 100, COLLECT_ALL, true );
+        for ( int i = 0; i < 2; i++ )
+        {
+            badCollector.collectDuplicateNode( i, i, "group", "source" + i, "otherSource" + i );
+        }
+        badCollector.collectBadRelationship( inputRelationship().build(), 2 );
+        badCollector.collectExtraColumns( "a,b,c", 1, "a" );
+        assertEquals( "Output stream should not have any reported entries", 0, outputStream.size() );
     }
 
     private OutputStream badOutputFile() throws IOException
