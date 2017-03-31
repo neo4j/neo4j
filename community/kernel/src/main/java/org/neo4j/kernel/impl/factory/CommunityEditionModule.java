@@ -27,6 +27,7 @@ import org.neo4j.function.Predicates;
 import org.neo4j.graphdb.DependencyResolver;
 import org.neo4j.graphdb.factory.GraphDatabaseSettings;
 import org.neo4j.helpers.Service;
+import org.neo4j.index.internal.gbptree.RecoveryCleanupWorkCollector;
 import org.neo4j.io.fs.FileSystemAbstraction;
 import org.neo4j.io.pagecache.IOLimiter;
 import org.neo4j.io.pagecache.PageCache;
@@ -65,10 +66,12 @@ import org.neo4j.kernel.impl.store.id.configuration.IdTypeConfigurationProvider;
 import org.neo4j.kernel.impl.transaction.TransactionHeaderInformationFactory;
 import org.neo4j.kernel.impl.transaction.log.PhysicalLogFile;
 import org.neo4j.kernel.impl.transaction.state.DataSourceManager;
+import org.neo4j.kernel.impl.util.JobScheduler;
 import org.neo4j.kernel.internal.DefaultKernelData;
 import org.neo4j.kernel.internal.GraphDatabaseAPI;
 import org.neo4j.kernel.internal.KernelData;
 import org.neo4j.kernel.lifecycle.LifeSupport;
+import org.neo4j.kernel.lifecycle.LifecycleAdapter;
 import org.neo4j.kernel.lifecycle.LifecycleStatus;
 import org.neo4j.udc.UsageData;
 
@@ -133,11 +136,26 @@ public class CommunityEditionModule extends EditionModule
 
         eligibleForIdReuse = IdReuseEligibility.ALWAYS;
 
+        life.add( cleanupAfterRecovery( platformModule.jobScheduler, platformModule.recoveryCleanupWorkCollector ) );
+
         registerRecovery( platformModule.databaseInfo, life, dependencies );
 
         publishEditionInfo( dependencies.resolveDependency( UsageData.class ), platformModule.databaseInfo, config );
 
         dependencies.satisfyDependency( createSessionTracker() );
+    }
+
+    private LifecycleAdapter cleanupAfterRecovery( JobScheduler jobScheduler,
+            final RecoveryCleanupWorkCollector recoveryCleanupWorkCollector )
+    {
+        return new LifecycleAdapter()
+        {
+            @Override
+            public void start() throws Throwable
+            {
+                jobScheduler.schedule( JobScheduler.Groups.recoveryCleanup, recoveryCleanupWorkCollector );
+            }
+        };
     }
 
     static Predicate<String> fileWatcherFileNameFilter()

@@ -186,11 +186,12 @@ public abstract class GraphStoreFixture extends ConfigurablePageCacheRule implem
             OperationalMode operationalMode = OperationalMode.single;
             IndexStoreView indexStoreView =
                     new NeoStoreIndexStoreView( LockService.NO_LOCK_SERVICE, nativeStores.getRawNeoStores() );
+            RecoveryCleanupWorkCollector recoveryCleanupWorkCollector = RecoveryCleanupWorkCollector.IMMEDIATE;
 
             Dependencies dependencies = new Dependencies();
             dependencies.satisfyDependencies( Config.defaults(), fileSystem,
                     new SimpleLogService( logProvider, logProvider ), indexStoreView, pageCache, new Monitors(),
-                    RecoveryCleanupWorkCollector.IMMEDIATE );
+                    recoveryCleanupWorkCollector );
             KernelContext kernelContext = new SimpleKernelContext( directory, UNKNOWN, dependencies );
             LabelScanStore labelScanStore = startLabelScanStore( config, dependencies, kernelContext );
             directStoreAccess = new DirectStoreAccess( nativeStores, labelScanStore, createIndexes( fileSystem,

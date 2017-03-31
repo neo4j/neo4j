@@ -145,6 +145,11 @@ public class NativeLabelScanStore implements LabelScanStore
     private boolean needsRebuild;
 
     /**
+     * Passed to underlying {@link GBPTree} which use it to submit recovery cleanup jobs.
+     */
+    private final RecoveryCleanupWorkCollector recoveryCleanupWorkCollector;
+
+    /**
      * The single instance of {@link NativeLabelScanWriter} used for updates.
      */
     private final NativeLabelScanWriter singleWriter;
@@ -162,14 +167,16 @@ public class NativeLabelScanStore implements LabelScanStore
     public NativeLabelScanStore( PageCache pageCache, File storeDir, FullStoreChangeStream fullStoreChangeStream,
             boolean readOnly, Monitors monitors, RecoveryCleanupWorkCollector recoveryCleanupWorkCollector )
     {
-        this( pageCache, storeDir, fullStoreChangeStream, readOnly, monitors, /*means no opinion about page size*/ 0 );
+        this( pageCache, storeDir, fullStoreChangeStream, readOnly, monitors, recoveryCleanupWorkCollector,
+                /*means no opinion about page size*/ 0 );
     }
 
     /*
      * Test access to be able to control page size.
      */
-    NativeLabelScanStore( PageCache pageCache, File storeDir, FullStoreChangeStream fullStoreChangeStream,
-            boolean readOnly, Monitors monitors, int pageSize )
+    NativeLabelScanStore( PageCache pageCache, File storeDir,
+                FullStoreChangeStream fullStoreChangeStream, boolean readOnly, Monitors monitors,
+                RecoveryCleanupWorkCollector recoveryCleanupWorkCollector, int pageSize )
     {
         this.pageCache = pageCache;
         this.pageSize = pageSize;
@@ -179,6 +186,7 @@ public class NativeLabelScanStore implements LabelScanStore
         this.readOnly = readOnly;
         this.monitors = monitors;
         this.monitor = monitors.newMonitor( Monitor.class );
+        this.recoveryCleanupWorkCollector = recoveryCleanupWorkCollector;
     }
 
     /**
@@ -351,7 +359,7 @@ public class NativeLabelScanStore implements LabelScanStore
         Header.Reader readRebuilding =
                 (pageCursor, length) -> isRebuilding.setValue( pageCursor.getByte() == REBUILDING );
         index = new GBPTree<>( pageCache, storeFile, new LabelScanLayout(), pageSize, monitor, readRebuilding,
-                RecoveryCleanupWorkCollector.IMMEDIATE );
+                recoveryCleanupWorkCollector );
         return isRebuilding.getValue();
     }
 
