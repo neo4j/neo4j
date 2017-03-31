@@ -22,6 +22,7 @@ package org.neo4j.unsafe.impl.batchimport.input;
 import org.junit.Rule;
 import org.junit.Test;
 
+import java.io.ByteArrayOutputStream;
 import java.io.File;
 import java.io.IOException;
 import java.io.OutputStream;
@@ -35,14 +36,14 @@ import static org.junit.Assert.assertArrayEquals;
 import static org.junit.Assert.assertEquals;
 import static org.junit.Assert.assertTrue;
 import static org.junit.Assert.fail;
-
 import static org.neo4j.unsafe.impl.batchimport.input.BadCollector.COLLECT_ALL;
 import static org.neo4j.unsafe.impl.batchimport.input.BadCollector.UNLIMITED_TOLERANCE;
 import static org.neo4j.unsafe.impl.batchimport.input.BadCollectorTest.InputRelationshipBuilder.inputRelationship;
 
 public class BadCollectorTest
 {
-    public final @Rule EphemeralFileSystemRule fs = new EphemeralFileSystemRule();
+    @Rule
+    public final EphemeralFileSystemRule fs = new EphemeralFileSystemRule();
 
     @Test
     public void shouldCollectBadRelationshipsEvenIfThresholdNeverReached() throws IOException
@@ -221,6 +222,20 @@ public class BadCollectorTest
         assertEquals( count, collector.badEntries() );
     }
 
+    @Test
+    public void skipBadEntriesLogging()
+    {
+        ByteArrayOutputStream outputStream = new ByteArrayOutputStream();
+        BadCollector badCollector = new BadCollector( outputStream, 100, COLLECT_ALL, true );
+        for ( int i = 0; i < 2; i++ )
+        {
+            badCollector.collectDuplicateNode( i, i, "group", "source" + i, "otherSource" + i );
+        }
+        badCollector.collectBadRelationship( inputRelationship().build(), 2 );
+        badCollector.collectExtraColumns( "a,b,c", 1, "a" );
+        assertEquals( "Output stream should not have any reported entries", 0, outputStream.size() );
+    }
+
     private OutputStream badOutputFile() throws IOException
     {
         File badDataPath = new File( "/tmp/foo2" ).getAbsoluteFile();
@@ -235,7 +250,7 @@ public class BadCollectorTest
         private final int lineNumber = 1;
         private final int position = 1;
         private final Object[] properties = new Object[]{};
-        private final long firstPropertyId = -1l;
+        private final long firstPropertyId = -1L;
         private final Object startNode = null;
         private final Object endNode = null;
         private final String friend = "FRIEND";
