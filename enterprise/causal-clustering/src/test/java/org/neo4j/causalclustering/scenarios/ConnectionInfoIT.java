@@ -109,46 +109,6 @@ public class ConnectionInfoIT
         return mock( Supplier.class );
     }
 
-    @Test
-    public void hzTest() throws Throwable
-    {
-        // given
-        testSocket = bindPort( "0.0.0.0", 4243 );
-
-        //when
-        AssertableLogProvider logProvider = new AssertableLogProvider();
-        AssertableLogProvider userLogProvider = new AssertableLogProvider();
-
-        HazelcastDiscoveryServiceFactory hzFactory = new HazelcastDiscoveryServiceFactory();
-        Config config = embeddedDefaults( stringMap(
-                discovery_listen_address.name(), ":" + testSocket.getLocalPort(),
-                CausalClusteringSettings.initial_discovery_members.name(), "localhost:" + testSocket.getLocalPort(),
-                new BoltConnector( "bolt" ).enabled.name(), "true",
-                new HttpConnector( "http" ).enabled.name(), "true" ) );
-
-        Neo4jJobScheduler jobScheduler = new Neo4jJobScheduler();
-        jobScheduler.init();
-
-        CoreTopologyService coreTopologyService = hzFactory
-                .coreTopologyService( config, new MemberId( UUID.randomUUID() ), jobScheduler, logProvider,
-                        userLogProvider );
-
-        try
-        {
-            coreTopologyService.init();
-            coreTopologyService.start();
-        }
-
-        //then
-        catch ( Throwable throwable )
-        {
-            //expected
-        }
-
-        logProvider.assertContainsMessageContaining( "Hazelcast was unable to start with setting" );
-        userLogProvider.assertContainsMessageContaining( "Hazelcast was unable to start with setting" );
-    }
-
     private Socket bindPort( String address, int port ) throws IOException
     {
         Socket socket = new Socket();
