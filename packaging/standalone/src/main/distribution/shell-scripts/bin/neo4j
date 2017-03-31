@@ -476,6 +476,14 @@ do_status() {
   fi
 }
 
+do_version() {
+  build_classpath
+
+  assemble_command_line
+  command_line=("${retval[@]}" "--version")
+  exec "${command_line[@]}"
+}
+
 main() {
   setup_environment
   CONSOLE_LOG="${NEO4J_LOGS}/neo4j.log"
@@ -512,12 +520,16 @@ main() {
       do_status
       ;;
 
+    --version|version))
+      do_version
+      ;;
+
     help)
-      echo "Usage: ${PROGRAM} { console | start | stop | restart | status }"
+      echo "Usage: ${PROGRAM} { console | start | stop | restart | status | version }"
       ;;
 
     *)
-      echo >&2 "Usage: ${PROGRAM} { console | start | stop | restart | status }"
+      echo >&2 "Usage: ${PROGRAM} { console | start | stop | restart | status | version }"
       exit 1
       ;;
   esac

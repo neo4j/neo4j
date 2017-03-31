@@ -40,6 +40,7 @@ import static org.mockito.Mockito.verifyNoMoreInteractions;
 import static org.mockito.Mockito.when;
 import static org.neo4j.commandline.admin.AdminTool.STATUS_ERROR;
 import static org.neo4j.commandline.admin.AdminTool.STATUS_SUCCESS;
+import static org.neo4j.commandline.Util.neo4jVersion;
 
 public class AdminToolTest
 {
@@ -244,7 +245,22 @@ public class AdminToolTest
     }
 
     @Test
-    public void helpArgumentShouldAlwaysPrintHelp() throws CommandFailed, IncorrectUsage
+    public void helpArgumentPrintsHelp() throws CommandFailed, IncorrectUsage
+    {
+        AdminCommand command = mock( AdminCommand.class );
+        OutsideWorld outsideWorld = mock( OutsideWorld.class );
+
+        new AdminTool( cannedCommand( "command", command ), new NullBlockerLocator(), outsideWorld, false )
+                .execute( null, null, "--help" );
+
+        verifyNoMoreInteractions( command );
+        verify( outsideWorld ).stdErrLine( "unrecognized command: --help" );
+        verify( outsideWorld ).stdErrLine( "usage: neo4j-admin <command>" );
+        verify( outsideWorld ).exit( STATUS_ERROR );
+    }
+
+    @Test
+    public void helpArgumentPrintsHelpForCommand() throws CommandFailed, IncorrectUsage
     {
         AdminCommand command = mock( AdminCommand.class );
         OutsideWorld outsideWorld = mock( OutsideWorld.class );
@@ -256,6 +272,34 @@ public class AdminToolTest
         verify( outsideWorld ).stdErrLine( "unknown argument: --help" );
         verify( outsideWorld ).stdErrLine( "usage: neo4j-admin command " );
         verify( outsideWorld ).exit( STATUS_ERROR );
+    }
+
+    @Test
+    public void versionArgumentPrintsVersion() throws CommandFailed, IncorrectUsage
+    {
+        AdminCommand command = mock( AdminCommand.class );
+        OutsideWorld outsideWorld = mock( OutsideWorld.class );
+
+        new AdminTool( cannedCommand( "command", command ), new NullBlockerLocator(), outsideWorld, false )
+                .execute( null, null, "--version" );
+
+        verifyNoMoreInteractions( command );
+        verify( outsideWorld ).stdOutLine( "neo4j-admin " + neo4jVersion() );
+        verify( outsideWorld ).exit( STATUS_SUCCESS );
+    }
+
+    @Test
+    public void versionArgumentPrintsVersionEvenWithCommand() throws CommandFailed, IncorrectUsage
+    {
+        AdminCommand command = mock( AdminCommand.class );
+        OutsideWorld outsideWorld = mock( OutsideWorld.class );
+
+        new AdminTool( cannedCommand( "command", command ), new NullBlockerLocator(), outsideWorld, false )
+                .execute( null, null, "command", "--version" );
+
+        verifyNoMoreInteractions( command );
+        verify( outsideWorld ).stdOutLine( "neo4j-admin " + neo4jVersion() );
+        verify( outsideWorld ).exit( STATUS_SUCCESS );
     }
 
     private CannedLocator cannedCommand( final String name, AdminCommand command )

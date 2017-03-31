@@ -44,6 +44,7 @@ public class ServerCommandLineArgs
 {
     public static final String CONFIG_DIR_ARG = "config-dir";
     public static final String HOME_DIR_ARG = "home-dir";
+    public static final String VERSION_ARG = "version";
     private final Args args;
     private final Pair<String, String>[] configOverrides;
 
@@ -55,7 +56,7 @@ public class ServerCommandLineArgs
 
     public static ServerCommandLineArgs parse( String[] argv )
     {
-        Args args = Args.parse( argv );
+        Args args = Args.withFlags( VERSION_ARG ).parse( argv );
         return new ServerCommandLineArgs( args, parseConfigOverrides( args ) );
     }
 
@@ -95,5 +96,10 @@ public class ServerCommandLineArgs
         }
 
         return new File( args.get( HOME_DIR_ARG ) );
+    }
+
+    public boolean version()
+    {
+        return args.getBoolean( VERSION_ARG, false );
     }
 }
