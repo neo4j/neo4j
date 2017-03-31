@@ -128,6 +128,7 @@ public class HelpCommandTest
                             "                  Takes a number and a unit, for example 512m.%n" +
                             "%n" +
                             "available commands:%n" +
+                            "%n" +
                             "General%n" +
                             "    bar%n" +
                             "        null%n" +
