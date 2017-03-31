@@ -273,10 +273,14 @@ main() {
 
   case "${1:-}" in
     console)
+      print_active_database
+      print_configurable_paths
       do_console
       ;;
 
     start)
+      print_active_database
+      print_configurable_paths
       do_start
       ;;
 
