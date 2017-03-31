@@ -27,7 +27,6 @@ import org.neo4j.collection.primitive.PrimitiveLongIterator;
 import org.neo4j.graphdb.GraphDatabaseService;
 import org.neo4j.graphdb.Node;
 import org.neo4j.graphdb.Transaction;
-import org.neo4j.storageengine.api.txstate.ReadableTransactionState;
 import org.neo4j.test.TestGraphDatabaseFactory;
 
 import static org.junit.Assert.assertEquals;
@@ -106,8 +105,8 @@ public class StorageLayerLabelTest extends StorageLayerTest
         int labelId2 = disk.labelGetForName( label2.name() );
 
         // WHEN
-        PrimitiveLongIterator nodesForLabel1 = disk.nodesGetForLabel( state.getStoreStatement(), labelId1 );
-        PrimitiveLongIterator nodesForLabel2 = disk.nodesGetForLabel( state.getStoreStatement(), labelId2 );
+        PrimitiveLongIterator nodesForLabel1 = disk.nodesGetForLabel( state.storageStatement(), labelId1 );
+        PrimitiveLongIterator nodesForLabel2 = disk.nodesGetForLabel( state.storageStatement(), labelId2 );
 
         // THEN
         assertEquals( asSet( node1.getId(), node2.getId() ), PrimitiveLongCollections.toSet( nodesForLabel1 ) );

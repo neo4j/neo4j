@@ -43,7 +43,6 @@ import org.neo4j.kernel.impl.api.KernelTransactionImplementation;
 import org.neo4j.kernel.impl.core.NodeProxy;
 import org.neo4j.kernel.impl.core.RelationshipProxy;
 import org.neo4j.kernel.impl.core.RelationshipProxy.RelationshipActions;
-import org.neo4j.kernel.impl.locking.Lock;
 import org.neo4j.storageengine.api.NodeItem;
 import org.neo4j.storageengine.api.PropertyItem;
 import org.neo4j.storageengine.api.RelationshipItem;
@@ -51,7 +50,6 @@ import org.neo4j.storageengine.api.StorageProperty;
 import org.neo4j.storageengine.api.StorageStatement;
 import org.neo4j.storageengine.api.StoreReadLayer;
 import org.neo4j.storageengine.api.txstate.NodeState;
-import org.neo4j.storageengine.api.txstate.PropertyContainerState;
 import org.neo4j.storageengine.api.txstate.ReadableDiffSets;
 import org.neo4j.storageengine.api.txstate.ReadableTransactionState;
 import org.neo4j.storageengine.api.txstate.RelationshipState;
@@ -165,14 +163,7 @@ public class TxStateTransactionDataSnapshot implements TransactionData
     @Override
     public Map<String,Object> metaData()
     {
-        if ( transaction instanceof KernelTransactionImplementation )
-        {
-            return ((KernelTransactionImplementation) transaction).getMetaData();
-        }
-        else
-        {
-            return Collections.emptyMap();
-        }
+        return transaction.getUserMetaData();
     }
 
     @Override

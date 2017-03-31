@@ -179,7 +179,7 @@ public class PageCacheCountersIT
                 try ( Transaction transaction = db.beginTx() )
                 {
                     KernelStatement kernelStatement = getKernelStatement( (GraphDatabaseAPI) db );
-                    pageCursorCounters = kernelStatement.getPageCursorTracer();
+                    pageCursorCounters = kernelStatement.pageCursorTracer();
                     Node node = db.createNode();
                     node.setProperty( "name", RandomStringUtils.random( localRandom.nextInt( 100 ) ) );
                     node.setProperty( "surname", RandomStringUtils.random( localRandom.nextInt( 100 ) ) );

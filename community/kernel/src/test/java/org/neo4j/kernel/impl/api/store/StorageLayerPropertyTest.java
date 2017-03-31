@@ -31,8 +31,6 @@ import org.neo4j.storageengine.api.NodeItem;
 import org.neo4j.storageengine.api.PropertyItem;
 import org.neo4j.storageengine.api.StorageStatement;
 import org.neo4j.storageengine.api.txstate.NodeState;
-import org.neo4j.storageengine.api.txstate.PropertyContainerState;
-import org.neo4j.storageengine.api.txstate.ReadableTransactionState;
 
 import static java.util.Collections.singletonMap;
 import static org.junit.Assert.assertEquals;
@@ -93,7 +91,7 @@ public class StorageLayerPropertyTest extends StorageLayerTest
 
         int propKey = disk.propertyKeyGetOrCreateForName( "prop" );
 
-        StorageStatement statement = state.getStoreStatement();
+        StorageStatement statement = state.storageStatement();
         for ( Object value : properties )
         {
             // given
