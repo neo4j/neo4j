@@ -349,7 +349,7 @@ public class LabelTransactionStateTest
 
         for ( Map.Entry<Integer,Collection<Long>> entry : allLabels.entrySet() )
         {
-            when( store.nodesGetForLabel( state.getStoreStatement(), entry.getKey() ) )
+            when( store.nodesGetForLabel( state.storageStatement(), entry.getKey() ) )
                     .then( answerAsPrimitiveLongIteratorFrom( entry.getValue() ) );
         }
     }

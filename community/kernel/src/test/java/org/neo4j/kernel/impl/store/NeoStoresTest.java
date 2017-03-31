@@ -991,13 +991,13 @@ public class NeoStoresTest
     {
         int count = 0;
         try ( KernelStatement statement = (KernelStatement) tx.acquireStatement();
-                Cursor<NodeItem> nodeCursor = statement.getStoreStatement()
+                Cursor<NodeItem> nodeCursor = statement.storageStatement()
                         .acquireNodeCursor( new SingleNodeProgression( node, EMPTY ) ) )
         {
             nodeCursor.next();
 
             NodeItem nodeItem = nodeCursor.get();
-            try ( Cursor<RelationshipItem> relationships = statement.getStoreStatement().acquireNodeRelationshipCursor(
+            try ( Cursor<RelationshipItem> relationships = statement.storageStatement().acquireNodeRelationshipCursor(
                     nodeItem.isDense(), nodeItem.id(), nodeItem.nextRelationshipId(), BOTH, null, EMPTY ) )
             {
                 while ( relationships.next() )
@@ -1076,12 +1076,12 @@ public class NeoStoresTest
         count = 0;
 
         try ( KernelStatement statement = (KernelStatement) tx.acquireStatement();
-                Cursor<NodeItem> nodeCursor = statement.getStoreStatement()
+                Cursor<NodeItem> nodeCursor = statement.storageStatement()
                         .acquireNodeCursor( new SingleNodeProgression( node, EMPTY ) ) )
         {
             nodeCursor.next();
             NodeItem nodeItem = nodeCursor.get();
-            try ( Cursor<RelationshipItem> relationships = statement.getStoreStatement().acquireNodeRelationshipCursor(
+            try ( Cursor<RelationshipItem> relationships = statement.storageStatement().acquireNodeRelationshipCursor(
                     nodeItem.isDense(), nodeItem.id(), nodeItem.nextRelationshipId(), BOTH, null, EMPTY ) )
             {
                 while ( relationships.next() )
@@ -1370,12 +1370,12 @@ public class NeoStoresTest
     private void assertHasRelationships( long node )
     {
         try ( KernelStatement statement = (KernelStatement) tx.acquireStatement();
-                Cursor<NodeItem> nodeCursor = statement.getStoreStatement()
+                Cursor<NodeItem> nodeCursor = statement.storageStatement()
                         .acquireNodeCursor( new SingleNodeProgression( node, EMPTY ) ) )
         {
             nodeCursor.next();
             NodeItem nodeItem = nodeCursor.get();
-            try ( Cursor<RelationshipItem> relationships = statement.getStoreStatement().acquireNodeRelationshipCursor(
+            try ( Cursor<RelationshipItem> relationships = statement.storageStatement().acquireNodeRelationshipCursor(
                     nodeItem.isDense(), nodeItem.id(), nodeItem.nextRelationshipId(), BOTH, null, EMPTY ) )
             {
                 assertTrue( relationships.next() );
@@ -1494,12 +1494,12 @@ public class NeoStoresTest
     private void deleteRelationships( long nodeId ) throws Exception
     {
         try ( KernelStatement statement = (KernelStatement) tx.acquireStatement();
-                Cursor<NodeItem> nodeCursor = statement.getStoreStatement()
+                Cursor<NodeItem> nodeCursor = statement.storageStatement()
                         .acquireNodeCursor( new SingleNodeProgression( nodeId, EMPTY ) ) )
         {
             assertTrue( nodeCursor.next() );
             NodeItem nodeItem = nodeCursor.get();
-            statement.getStoreStatement()
+            statement.storageStatement()
                     .acquireNodeRelationshipCursor( nodeItem.isDense(), nodeItem.id(), nodeItem.nextRelationshipId(),
                             BOTH, null, EMPTY ).forAll( rel -> relDelete( rel.id() ) );
         }

@@ -23,6 +23,7 @@ import org.junit.Test;
 
 import java.util.ArrayList;
 import java.util.List;
+import java.util.Map;
 import java.util.Optional;
 
 import org.neo4j.kernel.api.KernelAPI;
@@ -362,6 +363,18 @@ public class ConstraintIndexCreatorTest
             public long timeout()
             {
                 return timeout;
+            }
+
+            @Override
+            public void setUserMetaData( Map<String,Object> data )
+            {
+
+            }
+
+            @Override
+            public Map<String,Object> getUserMetaData()
+            {
+                return null;
             }
 
             @Override

@@ -82,7 +82,7 @@ public abstract class StatementOperationsTestHelper
             when( indexReader.query( Matchers.isA( IndexQuery.ExactPredicate.class ) ) ).thenReturn( PrimitiveLongCollections.emptyIterator() );
             StorageStatement storageStatement = mock( StorageStatement.class );
             when( storageStatement.getIndexReader( Matchers.any() ) ).thenReturn( indexReader );
-            when( state.getStoreStatement() ).thenReturn( storageStatement );
+            when( state.storageStatement() ).thenReturn( storageStatement );
         }
         catch ( IndexNotFoundKernelException | IndexNotApplicableKernelException e )
         {

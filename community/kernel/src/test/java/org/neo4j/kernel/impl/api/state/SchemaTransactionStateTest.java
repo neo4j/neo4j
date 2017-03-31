@@ -43,7 +43,6 @@ import org.neo4j.kernel.impl.api.store.SingleNodeProgression;
 import org.neo4j.kernel.impl.api.store.StoreStatement;
 import org.neo4j.kernel.impl.index.LegacyIndexStore;
 import org.neo4j.storageengine.api.StoreReadLayer;
-import org.neo4j.storageengine.api.txstate.ReadableTransactionState;
 
 import static org.junit.Assert.assertEquals;
 import static org.junit.Assert.assertNull;
@@ -252,7 +251,7 @@ public class SchemaTransactionStateTest
                 mock( ConstraintIndexCreator.class ), mock( LegacyIndexStore.class ) );
 
         storeStatement = mock( StoreStatement.class );
-        when( state.getStoreStatement() ).thenReturn( storeStatement );
+        when( state.storageStatement() ).thenReturn( storeStatement );
     }
 
     private static class Labels
@@ -290,7 +289,7 @@ public class SchemaTransactionStateTest
 
         for ( Map.Entry<Integer, Collection<Long>> entry : allLabels.entrySet() )
         {
-            when( store.nodesGetForLabel( state.getStoreStatement(), entry.getKey() ) )
+            when( store.nodesGetForLabel( state.storageStatement(), entry.getKey() ) )
                     .then( invocation -> entry.getValue().iterator() );
         }
     }

@@ -69,7 +69,6 @@ import static org.neo4j.kernel.impl.api.state.StubCursors.asPropertyCursor;
 import static org.neo4j.kernel.impl.api.state.StubCursors.asRelationship;
 import static org.neo4j.kernel.impl.api.state.StubCursors.cursor;
 import static org.neo4j.kernel.impl.api.state.StubCursors.labels;
-import static org.neo4j.kernel.impl.locking.LockService.NO_LOCK;
 
 public class TxStateTransactionDataViewTest
 {
@@ -378,7 +377,7 @@ public class TxStateTransactionDataViewTest
         NodeProxy.NodeActions nodeActions = mock( NodeProxy.NodeActions.class );
         final RelationshipProxy.RelationshipActions relActions = mock( RelationshipProxy.RelationshipActions.class );
         final KernelTransactionImplementation transaction = mock( KernelTransactionImplementation.class );
-        when( transaction.getMetaData() ).thenReturn( genericMap( "username", "Igor" ) );
+        when( transaction.getUserMetaData() ).thenReturn( genericMap( "username", "Igor" ) );
         TxStateTransactionDataSnapshot transactionDataSnapshot =
                 new TxStateTransactionDataSnapshot( state, nodeActions, relActions, ops, storeStatement, transaction );
         assertEquals( 1, transactionDataSnapshot.metaData().size() );

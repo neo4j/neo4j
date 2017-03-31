@@ -568,7 +568,7 @@ public class StateHandlingStatementOperationsTest
         WritableTransactionState writableTransactionState = mock( WritableTransactionState.class );
         when( kernelStatement.writableTxState() ).thenReturn( writableTransactionState );
         StoreStatement storeStatement = mock( StoreStatement.class );
-        when( kernelStatement.getStoreStatement() ).thenReturn( storeStatement );
+        when( kernelStatement.storageStatement() ).thenReturn( storeStatement );
         when( inner.graphGetAllProperties() ).thenReturn( iterator( Property.stringProperty( propertyKeyId, value ) ) );
         StateHandlingStatementOperations operations = newTxStateOps( inner );
 
