@@ -398,7 +398,7 @@ public class Cluster
     public static AdvertisedSocketAddress socketAddressForServer( int id )
     {
         String advertisedAddress = "127.0.0.1";
-        return new AdvertisedSocketAddress( advertisedAddress, (5000 + id) );
+        return new AdvertisedSocketAddress( advertisedAddress, 5000 + id );
     }
 
     private void createCoreMembers( final int noOfCoreMembers,
