@@ -23,7 +23,6 @@ import java.io.IOException;
 
 import org.neo4j.helpers.collection.Visitor;
 import org.neo4j.io.fs.FileSystemAbstraction;
-import org.neo4j.io.pagecache.IOLimiter;
 import org.neo4j.kernel.impl.api.TransactionQueue;
 import org.neo4j.kernel.impl.api.TransactionToApply;
 import org.neo4j.kernel.impl.transaction.CommittedTransactionRepresentation;
@@ -66,13 +65,6 @@ public class DefaultRecoverySPI implements Recovery.SPI
         this.transactionIdStore = transactionIdStore;
         this.logicalTransactionStore = logicalTransactionStore;
         this.positionToRecoverFrom = new PositionToRecoverFrom( checkPointFinder, monitor );
-    }
-
-    @Override
-    public void forceEverything()
-    {
-        IOLimiter unlimited = IOLimiter.unlimited(); // Runs during recovery; go as fast as possible.
-        storageEngine.flushAndForce( unlimited );
     }
 
     @Override
