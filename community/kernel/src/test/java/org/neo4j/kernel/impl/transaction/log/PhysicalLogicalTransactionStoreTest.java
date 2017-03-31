@@ -195,11 +195,6 @@ public class PhysicalLogicalTransactionStoreTest
         life.add( new Recovery( new Recovery.SPI()
         {
             @Override
-            public void forceEverything()
-            {
-            }
-
-            @Override
             public Visitor<CommittedTransactionRepresentation,Exception> startRecovery()
             {
                 recoveryRequired.set( true );
