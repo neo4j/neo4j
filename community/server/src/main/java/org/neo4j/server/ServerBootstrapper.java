@@ -27,7 +27,6 @@ import java.util.logging.Logger;
 import javax.annotation.Nonnull;
 
 import sun.misc.Signal;
-import sun.misc.SignalHandler;
 
 import org.neo4j.graphdb.TransactionFailureException;
 import org.neo4j.graphdb.factory.GraphDatabaseSettings;
@@ -187,10 +186,25 @@ public abstract class ServerBootstrapper implements Bootstrapper
     // Exit gracefully if possible
     private void installSignalHandler()
     {
-        // SIGTERM is invoked when system service is stopped
-        Signal.handle( new Signal( SIGTERM ), ( signal ) -> System.exit( 0 ) );
-        // SIGINT is invoked when user hits ctrl-c  when running `neo4j console`
-        Signal.handle( new Signal( SIGINT ), ( signal ) -> System.exit( 0 ) );
+        try
+        {
+            // SIGTERM is invoked when system service is stopped
+            Signal.handle( new Signal( SIGTERM ), ( signal ) -> System.exit( 0 ) );
+        }
+        catch ( Throwable e )
+        {
+            log.warn( "Unable to install signal handler. Exit code may not be 0 on graceful shutdown.", e );
+        }
+        try
+        {
+            // SIGINT is invoked when user hits ctrl-c  when running `neo4j console`
+            Signal.handle( new Signal( SIGINT ), ( signal ) -> System.exit( 0 ) );
+        }
+        catch ( Throwable e )
+        {
+            // Happens on IBM JDK with IllegalArgumentException: Signal already used by VM: INT
+            log.warn( "Unable to install signal handler. Exit code may not be 0 on graceful shutdown.", e );
+        }
     }
 
     private void addShutdownHook()
