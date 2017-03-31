@@ -305,7 +305,7 @@ main() {
       do_status
       ;;
 
-    --version|version))
+    --version|version)
       do_version
       ;;
 
