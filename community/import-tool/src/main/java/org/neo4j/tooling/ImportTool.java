@@ -183,8 +183,8 @@ public class ImportTool
                 "Number of bad entries before the import is considered failed. This tolerance threshold is "
                         + "about relationships refering to missing nodes. Format errors in input data are "
                         + "still treated as errors" ),
-        SKIP_BAD_ENTRIES_LOGGING ("skip-bad-entries-logging", Boolean.FALSE,
-                "<true/false>", "Whether or not to skip logging bad entries detected during import."),
+        SKIP_BAD_ENTRIES_LOGGING( "skip-bad-entries-logging", Boolean.FALSE, "<true/false>",
+                "Whether or not to skip logging bad entries detected during import." ),
         SKIP_BAD_RELATIONSHIPS( "skip-bad-relationships", Boolean.TRUE,
                 "<true/false>",
                 "Whether or not to skip importing relationships that refers to missing node ids, i.e. either "
