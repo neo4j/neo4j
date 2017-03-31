@@ -41,12 +41,17 @@ public class Collectors
 
     public static Collector badCollector( OutputStream out, int tolerance )
     {
-        return badCollector( out, tolerance, BadCollector.COLLECT_ALL );
+        return badCollector( out, tolerance, BadCollector.COLLECT_ALL, false );
     }
 
     public static Collector badCollector( OutputStream out, int tolerance, int collect )
     {
-        return new BadCollector( out, tolerance, collect );
+        return new BadCollector( out, tolerance, collect, false );
+    }
+
+    public static Collector badCollector( OutputStream out, int tolerance, int collect, boolean skipBadEntriesLogging )
+    {
+        return new BadCollector( out, tolerance, collect, skipBadEntriesLogging );
     }
 
     public static Function<OutputStream,Collector> badCollector( final int tolerance )
@@ -56,7 +61,7 @@ public class Collectors
 
     public static Function<OutputStream,Collector> badCollector( final int tolerance, final int collect )
     {
-        return out -> badCollector( out, tolerance, collect );
+        return out -> badCollector( out, tolerance, collect, false );
     }
 
     public static int collect( boolean skipBadRelationships, boolean skipDuplicateNodes, boolean ignoreExtraColumns )

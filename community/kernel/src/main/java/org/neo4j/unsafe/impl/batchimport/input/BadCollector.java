@@ -55,6 +55,7 @@ public class BadCollector implements Collector
     private final int collect;
     private long[] leftOverDuplicateNodeIds = new long[10];
     private int leftOverDuplicateNodeIdsCursor;
+    private final boolean logBadEntries;
 
     // volatile since one importer thread calls collect(), where this value is incremented and later the "main"
     // thread calls badEntries() to get a count.
@@ -63,50 +64,28 @@ public class BadCollector implements Collector
 
     public BadCollector( OutputStream out, int tolerance, int collect )
     {
+        this(out, tolerance, collect, false);
+    }
+
+    public BadCollector( OutputStream out, int tolerance, int collect, boolean skipBadEntriesLogging )
+    {
         this.out = new PrintStream( out );
         this.tolerance = tolerance;
         this.collect = collect;
+        this.logBadEntries = !skipBadEntriesLogging;
     }
 
     @Override
     public void collectBadRelationship( final InputRelationship relationship, final Object specificValue )
     {
-        checkTolerance( BAD_RELATIONSHIPS, new ProblemReporter()
-        {
-            private final String message = format( "%s referring to missing node %s", relationship, specificValue );
-
-            @Override
-            public String message()
-            {
-                return message;
-            }
-
-            @Override
-            public InputException exception()
-            {
-                return new InputException( message );
-            }
-        } );
+        checkTolerance( BAD_RELATIONSHIPS, new RelationshipsProblemReporter( relationship, specificValue ) );
     }
 
     @Override
     public void collectDuplicateNode( final Object id, long actualId, final String group,
             final String firstSource, final String otherSource )
     {
-        checkTolerance( DUPLICATE_NODES, new ProblemReporter()
-        {
-            @Override
-            public String message()
-            {
-                return DuplicateInputIdException.message( id, group, firstSource, otherSource );
-            }
-
-            @Override
-            public InputException exception()
-            {
-                return new DuplicateInputIdException( id, group, firstSource, otherSource );
-            }
-        } );
+        checkTolerance( DUPLICATE_NODES, new NodesProblemReporter( id, group, firstSource, otherSource ) );
 
         if ( leftOverDuplicateNodeIdsCursor == leftOverDuplicateNodeIds.length )
         {
@@ -118,23 +97,7 @@ public class BadCollector implements Collector
     @Override
     public void collectExtraColumns( final String source, final long row, final String value )
     {
-        checkTolerance( EXTRA_COLUMNS, new ProblemReporter()
-        {
-            private final String message = format( "Extra column not present in header on line %d in %s with value %s",
-                    row, source, value );
-
-            @Override
-            public String message()
-            {
-                return message;
-            }
-
-            @Override
-            public InputException exception()
-            {
-                return new InputException( message );
-            }
-        } );
+        checkTolerance( EXTRA_COLUMNS, new ExtraColumnsProblemReporter( row, source, value ) );
     }
 
     @Override
@@ -167,17 +130,116 @@ public class BadCollector implements Collector
         boolean collect = collects( bit );
         if ( collect )
         {
-            out.println( report.message() );
+            if ( logBadEntries )
+            {
+                out.println( report.message() );
+            }
             badEntries++;
         }
 
         if ( !collect || (tolerance != BadCollector.UNLIMITED_TOLERANCE && badEntries > tolerance) )
         {
             InputException exception = report.exception();
-            throw collect
-                    ? withMessage( exception, format( "Too many bad entries %d, where last one was: %s", badEntries,
-                            exception.getMessage() ) )
-                    : exception;
+            throw collect ? withMessage( exception, format( "Too many bad entries %d, where last one was: %s",
+                    badEntries, exception.getMessage() ) ) : exception;
+        }
+    }
+
+    private static class RelationshipsProblemReporter implements ProblemReporter
+    {
+        private String message;
+        private final InputRelationship relationship;
+        private final Object specificValue;
+
+        RelationshipsProblemReporter( InputRelationship relationship, Object specificValue )
+        {
+            this.relationship = relationship;
+            this.specificValue = specificValue;
+        }
+
+        @Override
+        public String message()
+        {
+            return getReportMessage();
+        }
+
+        @Override
+        public InputException exception()
+        {
+            return new InputException( getReportMessage() );
+        }
+
+        private String getReportMessage()
+        {
+            if ( message == null )
+            {
+                message = format( "%s referring to missing node %s", relationship, specificValue );
+            }
+            return message;
+        }
+    }
+
+    private static class NodesProblemReporter implements ProblemReporter
+    {
+        private final Object id;
+        private final String group;
+        private final String firstSource;
+        private final String otherSource;
+
+        NodesProblemReporter( Object id, String group, String firstSource, String otherSource )
+        {
+            this.id = id;
+            this.group = group;
+            this.firstSource = firstSource;
+            this.otherSource = otherSource;
+        }
+
+        @Override
+        public String message()
+        {
+            return DuplicateInputIdException.message( id, group, firstSource, otherSource );
+        }
+
+        @Override
+        public InputException exception()
+        {
+            return new DuplicateInputIdException( id, group, firstSource, otherSource );
+        }
+    }
+
+    private static class ExtraColumnsProblemReporter implements ProblemReporter
+    {
+        private String message;
+        private final long row;
+        private final String source;
+        private final String value;
+
+        ExtraColumnsProblemReporter( long row, String source, String value )
+        {
+            this.row = row;
+            this.source = source;
+            this.value = value;
+        }
+
+        @Override
+        public String message()
+        {
+            return getReportMessage();
+        }
+
+        @Override
+        public InputException exception()
+        {
+            return new InputException( getReportMessage() );
+        }
+
+        private String getReportMessage()
+        {
+            if ( message == null )
+            {
+                message = format( "Extra column not present in header on line %d in %s with value %s", row, source, value );
+            }
+            return message;
         }
     }
 }

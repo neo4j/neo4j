@@ -934,6 +934,36 @@ public class ImportToolTest
     }
 
     @Test
+    public void skipLoggingOfBadEntries() throws Exception
+    {
+        // GIVEN
+        List<String> nodeIds = asList( "a", "b", "c" );
+        Configuration config = Configuration.COMMAS;
+        File nodeData = nodeData( true, config, nodeIds, TRUE );
+        List<RelationshipDataLine> relationships = Arrays.asList(
+                // header                                   line 1 of file1
+                relationship( "a", "b", "TYPE", "aa" ), //          line 2 of file1
+                relationship( "c", "bogus", "TYPE", "bb" ), //      line 3 of file1
+                relationship( "b", "c", "KNOWS", "cc" ), //         line 1 of file2
+                relationship( "c", "a", "KNOWS", "dd" ), //         line 2 of file2
+                relationship( "missing", "a", "KNOWS", "ee" ) ); // line 3 of file2
+        File relationshipData1 = relationshipData( true, config, relationships.iterator(), lines( 0, 2 ), true );
+        File relationshipData2 = relationshipData( false, config, relationships.iterator(), lines( 2, 5 ), true );
+
+        // WHEN importing data where some relationships refer to missing nodes
+        importTool(
+                "--into", dbRule.getStoreDirAbsolutePath(),
+                "--nodes", nodeData.getAbsolutePath(),
+                "--bad-tolerance", "2",
+                "--skip-bad-entries-logging", "true",
+                "--relationships", relationshipData1.getAbsolutePath() + MULTI_FILE_DELIMITER +
+                        relationshipData2.getAbsolutePath() );
+
+        assertFalse( badFile().exists() );
+        verifyRelationships( relationships );
+    }
+
+    @Test
     public void shouldFailIfTooManyBadRelationships() throws Exception
     {
         // GIVEN
