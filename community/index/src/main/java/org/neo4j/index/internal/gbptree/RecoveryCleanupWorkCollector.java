@@ -20,12 +20,21 @@
 package org.neo4j.index.internal.gbptree;
 
 /**
- * todo doc
+ * Place to add recovery cleanup work to be done as part of recovery of {@link GBPTree}.
  */
 public interface RecoveryCleanupWorkCollector extends Runnable
 {
+    /**
+     * Adds {@link CleanupJob} to this collector.
+     *
+     * @param job cleanup job to perform, now or at some point in the future.
+     */
     void add( CleanupJob job );
 
+    /**
+     * {@link CleanupJob#run() Runs} {@link #add(CleanupJob) added} cleanup jobs right away in the thread
+     * calling {@link #add(CleanupJob)}.
+     */
     RecoveryCleanupWorkCollector IMMEDIATE = new RecoveryCleanupWorkCollector()
     {
         @Override

@@ -20,7 +20,7 @@
 package org.neo4j.index.internal.gbptree;
 
 /**
- * todo
+ * A job cleaning something up after recovery. Usually added to {@link RecoveryCleanupWorkCollector}.
  */
 public interface CleanupJob extends Runnable
 {

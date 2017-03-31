@@ -22,6 +22,10 @@ package org.neo4j.index.internal.gbptree;
 import java.util.LinkedList;
 import java.util.Queue;
 
+/**
+ * Collects recovery cleanup work to be performed and {@link #run() runs} them all as one job,
+ * each cleanup job sequentially one after the other.
+ */
 public class GroupingRecoveryCleanupWorkCollector implements RecoveryCleanupWorkCollector
 {
     private final Queue<CleanupJob> jobs = new LinkedList<>();
