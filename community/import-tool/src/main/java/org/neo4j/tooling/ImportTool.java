@@ -482,15 +482,12 @@ public class ImportTool
             collector.close();
             IOUtils.closeAll( badOutput );
 
-            if (badFile != null)
+            if ( badFile != null )
             {
                 if ( numberOfBadEntries > 0 )
                 {
-                    System.out.println( "There were bad entries which were skipped and logged into " + badFile.getAbsolutePath() );
-                }
-                else
-                {
-                    fs.deleteFile( badFile );
+                    System.out.println( "There were bad entries which were skipped and logged into " +
+                            badFile.getAbsolutePath() );
                 }
             }
 
