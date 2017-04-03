@@ -58,7 +58,7 @@ import org.neo4j.kernel.info.DiagnosticsManager;
 import org.neo4j.kernel.internal.KernelDiagnostics;
 import org.neo4j.kernel.lifecycle.LifeSupport;
 import org.neo4j.logging.Log;
-import org.neo4j.storageengine.api.ProgressionFactory;
+import org.neo4j.storageengine.api.BatchingProgressionFactory;
 import org.neo4j.udc.UsageData;
 import org.neo4j.udc.UsageDataKeys;
 
@@ -106,7 +106,7 @@ public abstract class EditionModule
 
     public FileSystemWatcherService watcherService;
 
-    public ProgressionFactory progressionFactory;
+    public BatchingProgressionFactory progressionFactory;
 
     protected FileSystemWatcherService createFileSystemWatcherService( FileSystemAbstraction fileSystem, File storeDir,
             LogService logging, JobScheduler jobScheduler, Predicate<String> fileNameFilter )

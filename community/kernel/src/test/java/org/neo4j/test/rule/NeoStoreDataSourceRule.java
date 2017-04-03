@@ -37,7 +37,7 @@ import org.neo4j.kernel.impl.api.index.IndexingService;
 import org.neo4j.kernel.impl.api.legacyindex.InternalAutoIndexing;
 import org.neo4j.kernel.impl.api.scan.LabelScanStoreProvider;
 import org.neo4j.kernel.impl.api.scan.NativeLabelScanStoreExtension;
-import org.neo4j.kernel.impl.api.store.CommunityProgressionFactory;
+import org.neo4j.kernel.impl.api.store.CommunityBatchingProgressionFactory;
 import org.neo4j.kernel.impl.api.store.StoreStatement;
 import org.neo4j.kernel.impl.constraints.StandardConstraintSemantics;
 import org.neo4j.kernel.impl.core.DatabasePanicEventGenerator;
@@ -141,7 +141,7 @@ public class NeoStoreDataSourceRule extends ExternalResource
                 new StandardConstraintSemantics(), StoreStatement::new, monitors,
                 new Tracers( "null", NullLog.getInstance(), monitors, jobScheduler ), mock( Procedures.class ),
                 IOLimiter.unlimited(), new AvailabilityGuard( clock, NullLog.getInstance() ), clock, new CanWrite(),
-                new StoreCopyCheckPointMutex(), new CommunityProgressionFactory() );
+                new StoreCopyCheckPointMutex(), new CommunityBatchingProgressionFactory() );
 
         return dataSource;
     }

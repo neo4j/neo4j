@@ -19,6 +19,8 @@
  */
 package org.neo4j.kernel.impl.api.store;
 
+import org.neo4j.storageengine.api.BatchingLongProgression;
+
 import static org.neo4j.kernel.api.StatementConstants.NO_SUCH_NODE;
 
 public class SingleNodeFetch implements BatchingLongProgression

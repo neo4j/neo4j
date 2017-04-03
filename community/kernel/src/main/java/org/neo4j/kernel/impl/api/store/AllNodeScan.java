@@ -20,6 +20,7 @@
 package org.neo4j.kernel.impl.api.store;
 
 import org.neo4j.kernel.impl.store.NodeStore;
+import org.neo4j.storageengine.api.BatchingLongProgression;
 
 public class AllNodeScan implements BatchingLongProgression
 {
