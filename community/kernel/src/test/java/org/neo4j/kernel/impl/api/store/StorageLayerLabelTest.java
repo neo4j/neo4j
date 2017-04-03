@@ -60,7 +60,7 @@ public class StorageLayerLabelTest extends StorageLayerTest
         }
 
         // THEN
-        disk.newStatement().acquireNodeCursor( new SingleNodeProgression( nodeId, EMPTY ) ).forAll(
+        disk.newStatement().acquireNodeCursor( new SingleNodeProgression( nodeId ), EMPTY ).forAll(
                 node -> assertEquals( PrimitiveIntCollections.asSet( new int[]{labelId1, labelId2} ), node.labels() ) );
     }
 

@@ -23,10 +23,11 @@ import org.neo4j.cursor.Cursor;
 import org.neo4j.kernel.api.exceptions.index.IndexNotFoundKernelException;
 import org.neo4j.kernel.api.schema.index.IndexDescriptor;
 import org.neo4j.kernel.impl.api.store.NodeDegreeCounter;
-import org.neo4j.kernel.impl.api.store.NodeProgression;
+import org.neo4j.kernel.impl.api.store.Progression;
 import org.neo4j.kernel.impl.locking.Lock;
 import org.neo4j.storageengine.api.schema.IndexReader;
 import org.neo4j.storageengine.api.schema.LabelScanReader;
+import org.neo4j.storageengine.api.txstate.NodeTransactionStateView;
 import org.neo4j.storageengine.api.txstate.PropertyContainerState;
 import org.neo4j.storageengine.api.txstate.ReadableTransactionState;
 
@@ -66,17 +67,18 @@ public interface StorageStatement extends AutoCloseable
     @Override
     void close();
 
-    NodeProgression parallelNodeScanProgression( ReadableTransactionState state );
+    Progression parallelNodeScanProgression();
 
     /**
      * Acquires {@link Cursor} capable of {@link Cursor#get() serving} {@link NodeItem} for selected nodes.
      * No node is selected when this method returns, a call to {@link Cursor#next()} will have to be made
      * to place the cursor over the first item and then more calls to move the cursor through the selection.
      *
-     * @param nodeProgression the progression of the selected nodes to be fetched
+     * @param progression the progression of the selected nodes to be fetched
+     * @param stateView the transaction state view for nodes
      * @return a {@link Cursor} over {@link NodeItem} for the given {@code nodeId}.
      */
-    Cursor<NodeItem> acquireNodeCursor( NodeProgression nodeProgression );
+    Cursor<NodeItem> acquireNodeCursor( Progression progression, NodeTransactionStateView stateView );
 
     /**
      * Acquires {@link Cursor} capable of {@link Cursor#get() serving} {@link RelationshipItem} for selected

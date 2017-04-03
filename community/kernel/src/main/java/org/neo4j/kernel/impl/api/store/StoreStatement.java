@@ -37,6 +37,7 @@ import org.neo4j.storageengine.api.RelationshipItem;
 import org.neo4j.storageengine.api.StorageStatement;
 import org.neo4j.storageengine.api.schema.IndexReader;
 import org.neo4j.storageengine.api.schema.LabelScanReader;
+import org.neo4j.storageengine.api.txstate.NodeTransactionStateView;
 import org.neo4j.storageengine.api.txstate.PropertyContainerState;
 import org.neo4j.storageengine.api.txstate.ReadableTransactionState;
 
@@ -151,7 +152,7 @@ public class StoreStatement implements StorageStatement
     }
 
     @Override
-    public NodeProgression parallelNodeScanProgression( ReadableTransactionState state )
+    public Progression parallelNodeScanProgression()
     {
         throw unsupportedOperation();
     }
@@ -163,10 +164,10 @@ public class StoreStatement implements StorageStatement
     }
 
     @Override
-    public Cursor<NodeItem> acquireNodeCursor( NodeProgression nodeProgression  )
+    public Cursor<NodeItem> acquireNodeCursor( Progression progression, NodeTransactionStateView stateView )
     {
         neoStores.assertOpen();
-        return nodeCursor.get().init( nodeProgression );
+        return nodeCursor.get().init( progression, stateView );
     }
 
     @Override

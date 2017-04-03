@@ -17,31 +17,18 @@
  * You should have received a copy of the GNU General Public License
  * along with this program.  If not, see <http://www.gnu.org/licenses/>.
  */
-package org.neo4j.kernel.impl.api.store;
+package org.neo4j.storageengine.api.txstate;
 
-import org.junit.Test;
-
-import static org.junit.Assert.assertEquals;
-import static org.junit.Assert.assertFalse;
-import static org.junit.Assert.assertTrue;
-
-public class SingleNodeProgressionTest
+public interface NodeTransactionStateView
 {
-    @Test
-    public void shouldReturnOnlyTheGivenNodeId() throws Throwable
-    {
-        // given
-        long nodeId = 42L;
-        SingleNodeProgression progression = new SingleNodeProgression( nodeId );
-        Batch batch = new Batch();
+    /**
+     * Returns nodes that have been added and removed in this tx.
+     */
+    ReadableDiffSets<Long> addedAndRemovedNodes();
 
-        // when / then
-        assertTrue( progression.nextBatch( batch ) );
-        assertTrue( batch.hasNext() );
-        assertEquals( nodeId, batch.next() );
+    boolean nodeIsAddedInThisTx( long nodeId );
 
-        assertFalse( batch.hasNext() );
-        assertFalse( progression.nextBatch( batch ) );
-        assertFalse( batch.hasNext() );
-    }
+    boolean nodeIsDeletedInThisTx( long nodeId );
+
+    NodeState getNodeState( long id );
 }

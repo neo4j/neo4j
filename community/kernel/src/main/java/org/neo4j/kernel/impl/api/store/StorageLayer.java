@@ -42,7 +42,6 @@ import org.neo4j.kernel.api.schema.LabelSchemaDescriptor;
 import org.neo4j.kernel.api.schema.SchemaDescriptor;
 import org.neo4j.kernel.api.schema.constaints.ConstraintDescriptor;
 import org.neo4j.kernel.api.schema.index.IndexDescriptor;
-import org.neo4j.kernel.api.txstate.TransactionState;
 import org.neo4j.kernel.impl.api.DegreeVisitor;
 import org.neo4j.kernel.impl.api.index.IndexingService;
 import org.neo4j.kernel.impl.core.IteratingPropertyReceiver;
@@ -73,6 +72,7 @@ import org.neo4j.storageengine.api.Token;
 import org.neo4j.storageengine.api.schema.IndexReader;
 import org.neo4j.storageengine.api.schema.PopulationProgress;
 import org.neo4j.storageengine.api.schema.SchemaRule;
+import org.neo4j.storageengine.api.txstate.NodeTransactionStateView;
 import org.neo4j.storageengine.api.txstate.PropertyContainerState;
 import org.neo4j.storageengine.api.txstate.ReadableTransactionState;
 
@@ -395,15 +395,15 @@ public class StorageLayer implements StoreReadLayer
     }
 
     @Override
-    public Cursor<NodeItem> nodeGetAllCursor( StorageStatement statement, ReadableTransactionState state )
+    public Cursor<NodeItem> nodeGetAllCursor( StorageStatement statement, NodeTransactionStateView stateView )
     {
-        return statement.acquireNodeCursor( new AllNodeProgression( nodeStore, state ) );
+        return statement.acquireNodeCursor( new AllNodeProgression( nodeStore ), stateView );
     }
 
     @Override
-    public Cursor<NodeItem> nodeCursor( StorageStatement statement, long nodeId, ReadableTransactionState state )
+    public Cursor<NodeItem> nodeCursor( StorageStatement statement, long nodeId, NodeTransactionStateView stateView )
     {
-        return statement.acquireNodeCursor( new SingleNodeProgression( nodeId, state ) );
+        return statement.acquireNodeCursor( new SingleNodeProgression( nodeId ), stateView );
     }
 
     @Override

@@ -37,7 +37,7 @@ import org.neo4j.storageengine.api.StorageProperty;
  * This interface contains the methods for reading transaction state from the transaction state.
  * The implementation of these methods should be free of any side effects (such as initialising lazy state).
  */
-public interface ReadableTransactionState
+public interface ReadableTransactionState extends NodeTransactionStateView
 {
     void accept( TxStateVisitor visitor ) throws ConstraintValidationException, CreateConstraintFailureException;
 
@@ -49,11 +49,6 @@ public interface ReadableTransactionState
      * Returns all nodes that, in this tx, have had labelId removed.
      */
     ReadableDiffSets<Long> nodesWithLabelChanged( int labelId );
-
-    /**
-     * Returns nodes that have been added and removed in this tx.
-     */
-    ReadableDiffSets<Long> addedAndRemovedNodes();
 
     /**
      * Returns rels that have been added and removed in this tx.
@@ -75,10 +70,6 @@ public interface ReadableTransactionState
     boolean relationshipIsDeletedInThisTx( long relationshipId );
 
     Iterator<StorageProperty> augmentGraphProperties( Iterator<StorageProperty> original );
-
-    boolean nodeIsAddedInThisTx( long nodeId );
-
-    boolean nodeIsDeletedInThisTx( long nodeId );
 
     PrimitiveLongIterator augmentNodesGetAll( PrimitiveLongIterator committed );
 
@@ -122,8 +113,6 @@ public interface ReadableTransactionState
                                                              String upper, boolean includeUpper );
 
     ReadableDiffSets<Long> indexUpdatesForRangeSeekByPrefix( IndexDescriptor index, String prefix );
-
-    NodeState getNodeState( long id );
 
     RelationshipState getRelationshipState( long id );
 

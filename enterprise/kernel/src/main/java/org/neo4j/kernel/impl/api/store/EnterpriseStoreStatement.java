@@ -40,8 +40,8 @@ public class EnterpriseStoreStatement extends StoreStatement
     }
 
     @Override
-    public NodeProgression parallelNodeScanProgression( ReadableTransactionState state )
+    public Progression parallelNodeScanProgression()
     {
-        return new ParallelAllNodeProgression(  nodeStore, state );
+        return new ParallelAllNodeProgression(  nodeStore );
     }
 }

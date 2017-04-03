@@ -213,7 +213,7 @@ class PropertyExistenceEnforcer
 
             PrimitiveIntSet labelIds;
             try ( Cursor<NodeItem> node = storeStatement()
-                    .acquireNodeCursor( new SingleNodeProgression( nodeId, txState ) ) )
+                    .acquireNodeCursor( new SingleNodeProgression( nodeId ), txState ) )
             {
                 if ( node.next() )
                 {
