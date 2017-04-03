@@ -562,7 +562,7 @@ public class GraphDatabaseSettings implements LoadableConfig
             "To bind specific connectors to a specific network interfaces, " +
             "specify the +listen_address+ properties for the specific connector.")
     public static final Setting<String> default_listen_address =
-            setting( "dbms.connectors.default_listen_address", STRING, "localhost" );
+            setting( "dbms.connectors.default_listen_address", STRING, "127.0.0.1" );
 
     @Description("Default hostname or IP address the server uses to advertise itself to its connectors. " +
             "To advertise a specific hostname or IP address for a specific connector, " +
