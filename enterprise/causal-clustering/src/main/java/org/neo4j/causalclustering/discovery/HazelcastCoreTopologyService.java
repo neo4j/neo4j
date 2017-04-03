@@ -153,7 +153,11 @@ class HazelcastCoreTopologyService extends LifecycleAdapter implements CoreTopol
         ListenSocketAddress hazelcastAddress = config.get( discovery_listen_address );
         InterfacesConfig interfaces = new InterfacesConfig();
         interfaces.addInterface( hazelcastAddress.getHostname() );
-        interfaces.setEnabled( true );
+
+        if ( !hazelcastAddress.getHostname().equals( "0.0.0.0" ) )
+        {
+            interfaces.setEnabled( true );
+        }
 
         NetworkConfig networkConfig = new NetworkConfig();
         networkConfig.setInterfaces( interfaces );
