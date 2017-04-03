@@ -32,7 +32,7 @@ case class CreateIndex(label: LabelName, properties: List[PropertyKeyName])(val 
 }
 
 case class DropIndex(label: LabelName, properties: List[PropertyKeyName])(val position: InputPosition) extends Command {
-  def property = properties(0)
+  def property = properties.head
   def semanticCheck = Seq()
 }
 
@@ -58,6 +58,8 @@ trait CompositePropertyConstraintCommand extends Command with SemanticChecking {
 
   def entityType: CypherType
 
+  def restrictedToSingleProperty: Boolean
+
   def semanticCheck =
     variable.declare(entityType) chain
       properties.foldSemanticCheck(_.semanticCheck(Expression.SemanticContext.Simple)) chain
@@ -65,6 +67,9 @@ trait CompositePropertyConstraintCommand extends Command with SemanticChecking {
         when(!property.map.isInstanceOf[ast.Variable]) {
           SemanticError("Cannot index nested properties", property.position)
         }
+      } chain
+      when(restrictedToSingleProperty && properties.size > 1) {
+        SemanticError("Only single property uniqueness constraints are supported", properties(1).position)
       }
 }
 
@@ -80,6 +85,17 @@ trait UniquePropertyConstraintCommand extends CompositePropertyConstraintCommand
   val entityType = symbols.CTNode
 
   def label: LabelName
+
+  override def restrictedToSingleProperty: Boolean = true
+}
+
+trait NodeKeyConstraintCommand extends CompositePropertyConstraintCommand {
+
+  val entityType = symbols.CTNode
+
+  def label: LabelName
+
+  override def restrictedToSingleProperty: Boolean = false
 }
 
 trait RelationshipPropertyConstraintCommand extends PropertyConstraintCommand {
@@ -89,9 +105,9 @@ trait RelationshipPropertyConstraintCommand extends PropertyConstraintCommand {
   def relType: RelTypeName
 }
 
-case class CreateNodeKeyConstraint(variable: Variable, label: LabelName, properties: Seq[Property])(val position: InputPosition) extends UniquePropertyConstraintCommand
+case class CreateNodeKeyConstraint(variable: Variable, label: LabelName, properties: Seq[Property])(val position: InputPosition) extends NodeKeyConstraintCommand
 
-case class DropNodeKeyConstraint(variable: Variable, label: LabelName, properties: Seq[Property])(val position: InputPosition) extends UniquePropertyConstraintCommand
+case class DropNodeKeyConstraint(variable: Variable, label: LabelName, properties: Seq[Property])(val position: InputPosition) extends NodeKeyConstraintCommand
 
 case class CreateUniquePropertyConstraint(variable: Variable, label: LabelName, properties: Seq[Property])(val position: InputPosition) extends UniquePropertyConstraintCommand
 
