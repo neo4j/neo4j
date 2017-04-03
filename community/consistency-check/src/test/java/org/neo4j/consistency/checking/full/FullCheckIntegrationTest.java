@@ -1775,6 +1775,24 @@ public class FullCheckIntegrationTest
     }
 
     @Test
+    public void shouldReportDuplicatedNodeKeyConstraintRules() throws Exception
+    {
+        // Given
+        int labelId = createLabel();
+        int propertyKeyId1 = createPropertyKey( "p1" );
+        int propertyKeyId2 = createPropertyKey( "p2" );
+        createNodeKeyConstraintRule( labelId, propertyKeyId1, propertyKeyId2 );
+        createNodeKeyConstraintRule( labelId, propertyKeyId1, propertyKeyId2 );
+
+        // When
+        ConsistencySummaryStatistics stats = check();
+
+        // Then
+        on( stats ).verify( RecordType.SCHEMA, 2 ) // pair of duplicated indexes & pair of duplicated constraints
+                .andThatsAllFolks();
+    }
+
+    @Test
     public void shouldReportDuplicatedNodePropertyExistenceConstraintRules() throws Exception
     {
         // Given
@@ -2170,52 +2188,52 @@ public class FullCheckIntegrationTest
 
     private void createUniquenessConstraintRule( final int labelId, final int... propertyKeyIds ) throws Exception
     {
-        fixture.apply( new GraphStoreFixture.Transaction()
-        {
-            @Override
-            protected void transactionData( GraphStoreFixture.TransactionDataBuilder tx,
-                    GraphStoreFixture.IdGenerator next )
-            {
-                long ruleId1 = next.schema();
-                long ruleId2 = next.schema();
+        SchemaStore schemaStore = (SchemaStore) fixture.directStoreAccess().nativeStores().getSchemaStore();
 
-                DynamicRecord record1 = new DynamicRecord( ruleId1 );
-                DynamicRecord record2 = new DynamicRecord( ruleId2 );
-                DynamicRecord record1Before = record1.clone();
-                DynamicRecord record2Before = record2.clone();
+        long ruleId1 = schemaStore.nextId();
+        long ruleId2 = schemaStore.nextId();
 
-                IndexRule rule1 = IndexRule.constraintIndexRule( ruleId1,
-                        uniqueForLabel( labelId, propertyKeyIds ), DESCRIPTOR, ruleId2 );
-                ConstraintRule rule2 = ConstraintRule.constraintRule( ruleId2,
-                        ConstraintDescriptorFactory.uniqueForLabel( labelId, propertyKeyIds ), ruleId1 );
+        IndexRule indexRule = IndexRule.constraintIndexRule( ruleId1,
+                uniqueForLabel( labelId, propertyKeyIds ), DESCRIPTOR, ruleId2 );
+        ConstraintRule uniqueRule = ConstraintRule.constraintRule( ruleId2,
+                ConstraintDescriptorFactory.uniqueForLabel( labelId, propertyKeyIds ), ruleId1 );
 
-                Collection<DynamicRecord> records1 = serializeRule( rule1, record1 );
-                Collection<DynamicRecord> records2 = serializeRule( rule2, record2 );
+        writeToSchemaStore( schemaStore, indexRule );
+        writeToSchemaStore( schemaStore, uniqueRule );
+    }
 
-                assertEquals( record1, records1.iterator().next() );
-                assertEquals( record2, records2.iterator().next() );
+    private void createNodeKeyConstraintRule( final int labelId, final int... propertyKeyIds ) throws Exception
+    {
+        SchemaStore schemaStore = (SchemaStore) fixture.directStoreAccess().nativeStores().getSchemaStore();
 
-                tx.createSchema( asList( record1Before ), records1, rule1 );
-                tx.createSchema( asList( record2Before ), records2, rule2 );
-            }
-        } );
+        long ruleId1 = schemaStore.nextId();
+        long ruleId2 = schemaStore.nextId();
+
+        IndexRule indexRule = IndexRule.constraintIndexRule( ruleId1,
+                uniqueForLabel( labelId, propertyKeyIds ), DESCRIPTOR, ruleId2 );
+        ConstraintRule nodeKeyRule = ConstraintRule.constraintRule( ruleId2,
+                ConstraintDescriptorFactory.nodeKeyForLabel( labelId, propertyKeyIds ), ruleId1 );
+
+        writeToSchemaStore( schemaStore, indexRule );
+        writeToSchemaStore( schemaStore, nodeKeyRule );
     }
 
     private void createNodePropertyExistenceConstraint( int labelId, int propertyKeyId )
     {
         SchemaStore schemaStore = (SchemaStore) fixture.directStoreAccess().nativeStores().getSchemaStore();
         ConstraintRule rule = nodePropertyExistenceConstraintRule( schemaStore.nextId(), labelId, propertyKeyId );
-        Collection<DynamicRecord> records = schemaStore.allocateFrom( rule );
-        for ( DynamicRecord record : records )
-        {
-            schemaStore.updateRecord( record );
-        }
+        writeToSchemaStore( schemaStore, rule );
     }
 
     private void createRelationshipPropertyExistenceConstraint( int relTypeId, int propertyKeyId )
     {
         SchemaStore schemaStore = (SchemaStore) fixture.directStoreAccess().nativeStores().getSchemaStore();
         ConstraintRule rule = relPropertyExistenceConstraintRule( schemaStore.nextId(), relTypeId, propertyKeyId );
+        writeToSchemaStore( schemaStore, rule );
+    }
+
+    private void writeToSchemaStore( SchemaStore schemaStore, SchemaRule rule )
+    {
         Collection<DynamicRecord> records = schemaStore.allocateFrom( rule );
         for ( DynamicRecord record : records )
         {
