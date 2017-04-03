@@ -30,4 +30,16 @@ public interface IntArray extends NumberArray<IntArray>
     int get( long index );
 
     void set( long index, int value );
+
+    @Override
+    default void swap( long fromIndex, long toIndex, int numberOfEntries )
+    {
+        // Let's just do this the stupid way. There's room for optimization here
+        for ( int i = 0; i < numberOfEntries; i++ )
+        {
+            int intermediary = get( fromIndex+i );
+            set( fromIndex+i, get( toIndex+i ) );
+            set( toIndex+i, intermediary );
+        }
+    }
 }
