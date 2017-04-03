@@ -58,6 +58,7 @@ import org.neo4j.kernel.info.DiagnosticsManager;
 import org.neo4j.kernel.internal.KernelDiagnostics;
 import org.neo4j.kernel.lifecycle.LifeSupport;
 import org.neo4j.logging.Log;
+import org.neo4j.storageengine.api.ProgressionFactory;
 import org.neo4j.udc.UsageData;
 import org.neo4j.udc.UsageDataKeys;
 
@@ -69,18 +70,8 @@ import static java.util.Collections.singletonMap;
  */
 public abstract class EditionModule
 {
-    void registerProcedures( Procedures procedures ) throws KernelException
-    {
-        procedures.registerProcedure( org.neo4j.kernel.builtinprocs.BuiltInProcedures.class );
-        procedures.registerProcedure( org.neo4j.kernel.builtinprocs.TokenProcedures.class );
-        procedures.registerProcedure( org.neo4j.kernel.builtinprocs.BuiltInDbmsProcedures.class );
-
-        registerEditionSpecificProcedures( procedures );
-    }
-
-    protected abstract void registerEditionSpecificProcedures( Procedures procedures ) throws KernelException;
-
     public IdGeneratorFactory idGeneratorFactory;
+
     public IdTypeConfigurationProvider idTypeConfigurationProvider;
 
     public LabelTokenHolder labelTokenHolder;
@@ -114,6 +105,8 @@ public abstract class EditionModule
     public IdReuseEligibility eligibleForIdReuse;
 
     public FileSystemWatcherService watcherService;
+
+    public ProgressionFactory progressionFactory;
 
     protected FileSystemWatcherService createFileSystemWatcherService( FileSystemAbstraction fileSystem, File storeDir,
             LogService logging, JobScheduler jobScheduler, Predicate<String> fileNameFilter )
@@ -228,4 +221,15 @@ public abstract class EditionModule
     {
         return BoltConnectionTracker.NOOP;
     }
+
+    void registerProcedures( Procedures procedures ) throws KernelException
+    {
+        procedures.registerProcedure( org.neo4j.kernel.builtinprocs.BuiltInProcedures.class );
+        procedures.registerProcedure( org.neo4j.kernel.builtinprocs.TokenProcedures.class );
+        procedures.registerProcedure( org.neo4j.kernel.builtinprocs.BuiltInDbmsProcedures.class );
+
+        registerEditionSpecificProcedures( procedures );
+    }
+
+    protected abstract void registerEditionSpecificProcedures( Procedures procedures ) throws KernelException;
 }

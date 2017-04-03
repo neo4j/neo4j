@@ -38,7 +38,7 @@ import org.neo4j.kernel.api.schema.LabelSchemaDescriptor;
 import org.neo4j.kernel.api.schema.RelationTypeSchemaDescriptor;
 import org.neo4j.kernel.api.schema.SchemaProcessor;
 import org.neo4j.kernel.api.schema.constaints.ConstraintDescriptor;
-import org.neo4j.kernel.impl.api.store.SingleNodeProgression;
+import org.neo4j.kernel.impl.api.store.SingleNodeFetch;
 import org.neo4j.kernel.impl.locking.Lock;
 import org.neo4j.storageengine.api.NodeItem;
 import org.neo4j.storageengine.api.PropertyItem;
@@ -213,7 +213,7 @@ class PropertyExistenceEnforcer
 
             PrimitiveIntSet labelIds;
             try ( Cursor<NodeItem> node = storeStatement()
-                    .acquireNodeCursor( new SingleNodeProgression( nodeId ), txState ) )
+                    .acquireNodeCursor( new SingleNodeFetch( nodeId ), txState ) )
             {
                 if ( node.next() )
                 {

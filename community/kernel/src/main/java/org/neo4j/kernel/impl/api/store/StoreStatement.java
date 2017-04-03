@@ -152,18 +152,6 @@ public class StoreStatement implements StorageStatement
     }
 
     @Override
-    public BatchingLongProgression parallelNodeScanProgression()
-    {
-        throw unsupportedOperation();
-    }
-
-    private UnsupportedOperationException unsupportedOperation()
-    {
-        return new UnsupportedOperationException( "This operation is not supported in community edition but only in " +
-                "enterprise edition" );
-    }
-
-    @Override
     public Cursor<NodeItem> acquireNodeCursor( BatchingLongProgression progression, NodeTransactionStateView stateView )
     {
         neoStores.assertOpen();

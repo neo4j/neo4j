@@ -19,53 +19,42 @@
  */
 package org.neo4j.kernel.impl.api.store;
 
-import org.neo4j.kernel.impl.store.NodeStore;
+import static org.neo4j.kernel.api.StatementConstants.NO_SUCH_NODE;
 
-public class AllNodeProgression implements BatchingLongProgression
+public class SingleNodeFetch implements BatchingLongProgression
 {
-    private final NodeStore nodeStore;
+    private long nodeId;
 
-    private long start;
-    private boolean done;
-
-    AllNodeProgression( NodeStore nodeStore )
+    public SingleNodeFetch( long nodeId )
     {
-        this.nodeStore = nodeStore;
-        this.start = nodeStore.getNumberOfReservedLowIds();
+        this.nodeId = nodeId;
     }
 
     @Override
     public boolean nextBatch( Batch batch )
     {
-        while ( true )
+        if ( nodeId != NO_SUCH_NODE )
         {
-            if ( done )
-            {
-                batch.nothing();
-                return false;
-            }
-
-            long highId = nodeStore.getHighestPossibleIdInUse();
-            if ( start <= highId )
-            {
-                batch.init( start, highId );
-                start = highId + 1;
-                return true;
-            }
-
-            done = true;
+            batch.init( nodeId, nodeId );
+            nodeId = NO_SUCH_NODE;
+            return true;
+        }
+        else
+        {
+            batch.nothing();
+            return false;
         }
     }
 
     @Override
     public boolean appendAdded()
     {
-        return true;
+        return false;
     }
 
     @Override
     public boolean fetchAdded()
     {
-        return false;
+        return true;
     }
 }
