@@ -38,7 +38,7 @@ import org.neo4j.kernel.api.security.UserManagerSupplier;
 import org.neo4j.kernel.configuration.Config;
 import org.neo4j.kernel.impl.api.SchemaWriteGuard;
 import org.neo4j.kernel.impl.api.index.RemoveOrphanConstraintIndexesOnStartup;
-import org.neo4j.kernel.impl.api.store.CommunityProgressionFactory;
+import org.neo4j.kernel.impl.api.store.CommunityBatchingProgressionFactory;
 import org.neo4j.kernel.impl.api.store.StoreStatement;
 import org.neo4j.kernel.impl.constraints.ConstraintSemantics;
 import org.neo4j.kernel.impl.constraints.StandardConstraintSemantics;
@@ -72,7 +72,7 @@ import org.neo4j.kernel.internal.GraphDatabaseAPI;
 import org.neo4j.kernel.internal.KernelData;
 import org.neo4j.kernel.lifecycle.LifeSupport;
 import org.neo4j.kernel.lifecycle.LifecycleStatus;
-import org.neo4j.storageengine.api.ProgressionFactory;
+import org.neo4j.storageengine.api.BatchingProgressionFactory;
 import org.neo4j.udc.UsageData;
 
 /**
@@ -147,9 +147,9 @@ public class CommunityEditionModule extends EditionModule
         dependencies.satisfyDependency( createSessionTracker() );
     }
 
-    protected ProgressionFactory createProgressionFactory()
+    protected BatchingProgressionFactory createProgressionFactory()
     {
-        return new CommunityProgressionFactory();
+        return new CommunityBatchingProgressionFactory();
     }
 
     static Predicate<String> fileWatcherFileNameFilter()

@@ -63,7 +63,7 @@ import org.neo4j.kernel.impl.api.CommitProcessFactory;
 import org.neo4j.kernel.impl.api.ReadOnlyTransactionCommitProcess;
 import org.neo4j.kernel.impl.api.TransactionCommitProcess;
 import org.neo4j.kernel.impl.api.TransactionRepresentationCommitProcess;
-import org.neo4j.kernel.impl.api.store.EnterpriseProgressionFactory;
+import org.neo4j.kernel.impl.api.store.EnterpriseBatchingProgressionFactory;
 import org.neo4j.kernel.impl.api.store.StoreStatement;
 import org.neo4j.kernel.impl.core.DelegatingLabelTokenHolder;
 import org.neo4j.kernel.impl.core.DelegatingPropertyKeyTokenHolder;
@@ -168,7 +168,7 @@ public class EnterpriseReadReplicaEditionModule extends EditionModule
 
         storageStatementFactory = StoreStatement::new;
 
-        progressionFactory = dependencies.satisfyDependency( new EnterpriseProgressionFactory() );
+        progressionFactory = dependencies.satisfyDependency( new EnterpriseBatchingProgressionFactory() );
 
         coreAPIAvailabilityGuard =
                 new CoreAPIAvailabilityGuard( platformModule.availabilityGuard, transactionStartTimeout );

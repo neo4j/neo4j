@@ -73,7 +73,7 @@ import org.neo4j.kernel.enterprise.builtinprocs.EnterpriseBuiltInDbmsProcedures;
 import org.neo4j.kernel.impl.api.SchemaWriteGuard;
 import org.neo4j.kernel.impl.api.TransactionHeaderInformation;
 import org.neo4j.kernel.impl.api.index.RemoveOrphanConstraintIndexesOnStartup;
-import org.neo4j.kernel.impl.api.store.EnterpriseProgressionFactory;
+import org.neo4j.kernel.impl.api.store.EnterpriseBatchingProgressionFactory;
 import org.neo4j.kernel.impl.api.store.StoreStatement;
 import org.neo4j.kernel.impl.coreapi.CoreAPIAvailabilityGuard;
 import org.neo4j.kernel.impl.enterprise.EnterpriseConstraintSemantics;
@@ -287,7 +287,7 @@ public class EnterpriseCoreEditionModule extends EditionModule
 
         storageStatementFactory = StoreStatement::new;
 
-        progressionFactory = dependencies.satisfyDependency( new EnterpriseProgressionFactory() );
+        progressionFactory = dependencies.satisfyDependency( new EnterpriseBatchingProgressionFactory() );
 
         coreAPIAvailabilityGuard =
                 new CoreAPIAvailabilityGuard( platformModule.availabilityGuard, transactionStartTimeout );

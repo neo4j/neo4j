@@ -158,7 +158,7 @@ import org.neo4j.kernel.spi.legacyindex.IndexProviders;
 import org.neo4j.logging.Log;
 import org.neo4j.logging.LogProvider;
 import org.neo4j.logging.Logger;
-import org.neo4j.storageengine.api.ProgressionFactory;
+import org.neo4j.storageengine.api.BatchingProgressionFactory;
 import org.neo4j.storageengine.api.StorageEngine;
 import org.neo4j.storageengine.api.StoreFileMetadata;
 import org.neo4j.storageengine.api.StoreReadLayer;
@@ -270,7 +270,7 @@ public class NeoStoreDataSource implements Lifecycle, IndexProviders
     private final AvailabilityGuard availabilityGuard;
     private final SystemNanoClock clock;
     private final StoreCopyCheckPointMutex storeCopyCheckPointMutex;
-    private final ProgressionFactory progressionFactory;
+    private final BatchingProgressionFactory progressionFactory;
 
     private Dependencies dependencies;
     private LifeSupport life;
@@ -327,7 +327,7 @@ public class NeoStoreDataSource implements Lifecycle, IndexProviders
             SystemNanoClock clock,
             AccessCapability accessCapability,
             StoreCopyCheckPointMutex storeCopyCheckPointMutex,
-            ProgressionFactory progressionFactory )
+            BatchingProgressionFactory progressionFactory )
     {
         this.storeDir = storeDir;
         this.config = config;
@@ -573,7 +573,7 @@ public class NeoStoreDataSource implements Lifecycle, IndexProviders
             LabelTokenHolder labelTokens, RelationshipTypeTokenHolder relationshipTypeTokens,
             LegacyIndexProviderLookup legacyIndexProviderLookup, IndexConfigStore indexConfigStore,
             Runnable schemaStateChangeCallback, SynchronizedArrayIdOrderingQueue legacyIndexTransactionOrdering,
-            ProgressionFactory progressionFactory )
+            BatchingProgressionFactory progressionFactory )
     {
         // TODO we should break this dependency on the kernelModule (which has not yet been created at this point in
         // TODO the code) and instead let information about generations of transactions flow through the StorageEngine

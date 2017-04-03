@@ -23,6 +23,7 @@ import java.util.concurrent.atomic.AtomicBoolean;
 import java.util.concurrent.atomic.AtomicLong;
 
 import org.neo4j.kernel.impl.store.NodeStore;
+import org.neo4j.storageengine.api.BatchingLongProgression;
 
 class ParallelAllNodeScan implements BatchingLongProgression
 {

@@ -22,7 +22,6 @@ package org.neo4j.storageengine.api;
 import org.neo4j.cursor.Cursor;
 import org.neo4j.kernel.api.exceptions.index.IndexNotFoundKernelException;
 import org.neo4j.kernel.api.schema.index.IndexDescriptor;
-import org.neo4j.kernel.impl.api.store.BatchingLongProgression;
 import org.neo4j.kernel.impl.api.store.NodeDegreeCounter;
 import org.neo4j.kernel.impl.locking.Lock;
 import org.neo4j.storageengine.api.schema.IndexReader;

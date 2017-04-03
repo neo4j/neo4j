@@ -63,7 +63,7 @@ import org.neo4j.register.Register;
 import org.neo4j.register.Register.DoubleLongRegister;
 import org.neo4j.storageengine.api.Direction;
 import org.neo4j.storageengine.api.NodeItem;
-import org.neo4j.storageengine.api.ProgressionFactory;
+import org.neo4j.storageengine.api.BatchingProgressionFactory;
 import org.neo4j.storageengine.api.PropertyItem;
 import org.neo4j.storageengine.api.RelationshipItem;
 import org.neo4j.storageengine.api.StorageProperty;
@@ -102,12 +102,12 @@ public class StorageLayer implements StoreReadLayer
     private final PropertyLoader propertyLoader;
     private final Supplier<StorageStatement> statementProvider;
     private final SchemaCache schemaCache;
-    private final ProgressionFactory progressionFactory;
+    private final BatchingProgressionFactory progressionFactory;
 
     public StorageLayer( PropertyKeyTokenHolder propertyKeyTokenHolder, LabelTokenHolder labelTokenHolder,
             RelationshipTypeTokenHolder relationshipTokenHolder, SchemaStorage schemaStorage, NeoStores neoStores,
             IndexingService indexService, Supplier<StorageStatement> storeStatementSupplier, SchemaCache schemaCache,
-            ProgressionFactory progressionFactory )
+            BatchingProgressionFactory progressionFactory )
     {
         this.relationshipTokenHolder = relationshipTokenHolder;
         this.schemaStorage = schemaStorage;

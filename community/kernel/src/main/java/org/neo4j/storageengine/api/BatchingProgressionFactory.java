@@ -17,28 +17,15 @@
  * You should have received a copy of the GNU General Public License
  * along with this program.  If not, see <http://www.gnu.org/licenses/>.
  */
-package org.neo4j.kernel.impl.api.store;
+package org.neo4j.storageengine.api;
 
 import org.neo4j.kernel.impl.store.NodeStore;
-import org.neo4j.storageengine.api.ProgressionFactory;
 
-public class CommunityProgressionFactory implements ProgressionFactory
+public interface BatchingProgressionFactory
 {
-    @Override
-    public BatchingLongProgression singleNodeFetch( long nodeId )
-    {
-        return new SingleNodeFetch( nodeId );
-    }
+    BatchingLongProgression singleNodeFetch( long nodeId );
 
-    @Override
-    public BatchingLongProgression allNodeScan( NodeStore nodeStore )
-    {
-        return new AllNodeScan( nodeStore );
-    }
+    BatchingLongProgression allNodeScan( NodeStore nodeStore );
 
-    @Override
-    public BatchingLongProgression parallelAllNodeScan( NodeStore nodeStore )
-    {
-        throw new UnsupportedOperationException( "Parallel All Node Scan is not available in Neo4j Community Edition" );
-    }
+    BatchingLongProgression parallelAllNodeScan( NodeStore nodeStore );
 }
