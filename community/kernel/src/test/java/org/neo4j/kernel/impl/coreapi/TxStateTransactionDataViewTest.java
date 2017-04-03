@@ -106,13 +106,13 @@ public class TxStateTransactionDataViewTest
         state.nodeDoDelete( 2L );
 
         NodeItem node1 = asNode( 2L, 20L, labels( 15 ) );
-        when( ops.nodeCursor( storeStatement, 2L, ReadableTransactionState.EMPTY ) ).thenReturn( cursor( node1 ) );
+        when( ops.nodeGetSingleCursor( storeStatement, 2L, ReadableTransactionState.EMPTY ) ).thenReturn( cursor( node1 ) );
 
         when( ops.nodeGetProperties( storeStatement, node1, NodeState.EMPTY ) )
                 .thenReturn( asPropertyCursor( stringProperty( 1, "p" ) ) );
 
         NodeItem node2 = asNode( 1L, 21L, labels() );
-        when( ops.nodeCursor( storeStatement, 1L, ReadableTransactionState.EMPTY ) ).thenReturn( cursor( node2 ) );
+        when( ops.nodeGetSingleCursor( storeStatement, 1L, ReadableTransactionState.EMPTY ) ).thenReturn( cursor( node2 ) );
         when( ops.nodeGetProperties( storeStatement, node2, NodeState.EMPTY ) ).thenReturn( asPropertyCursor() );
 
         when( ops.propertyKeyGetName( 1 ) ).thenReturn( "key" );
@@ -171,7 +171,7 @@ public class TxStateTransactionDataViewTest
         Node node = mock( Node.class );
         when( node.getId() ).thenReturn( 1L );
         NodeItem nodeItem = asNode( 1 );
-        when( ops.nodeCursor( storeStatement, 1, ReadableTransactionState.EMPTY ) ).thenReturn( cursor( nodeItem ) );
+        when( ops.nodeGetSingleCursor( storeStatement, 1, ReadableTransactionState.EMPTY ) ).thenReturn( cursor( nodeItem ) );
         when( ops.nodeGetProperties( storeStatement, nodeItem, NodeState.EMPTY ) ).thenReturn( asPropertyCursor() );
 
         // When & Then
@@ -206,7 +206,7 @@ public class TxStateTransactionDataViewTest
         when( ops.propertyKeyGetName( propertyKeyId ) ).thenReturn( "theKey" );
         long propertyId = 20L;
         NodeItem node = asNode( 1L, propertyId, labels() );
-        when( ops.nodeCursor( storeStatement, 1L, ReadableTransactionState.EMPTY ) ).thenReturn( cursor( node ) );
+        when( ops.nodeGetSingleCursor( storeStatement, 1L, ReadableTransactionState.EMPTY ) ).thenReturn( cursor( node ) );
         when( ops.nodeGetProperty( storeStatement, node, propertyKeyId, NodeState.EMPTY ) )
                 .thenReturn( asPropertyCursor( prevProp ) );
 
@@ -231,7 +231,7 @@ public class TxStateTransactionDataViewTest
         when( ops.propertyKeyGetName( propertyKeyId ) ).thenReturn( "theKey" );
         long propertyId = 20L;
         NodeItem node = asNode( 1L, propertyId, labels() );
-        when( ops.nodeCursor( storeStatement, 1L, ReadableTransactionState.EMPTY ) ).thenReturn( cursor( node ) );
+        when( ops.nodeGetSingleCursor( storeStatement, 1L, ReadableTransactionState.EMPTY ) ).thenReturn( cursor( node ) );
         when( ops.nodeGetProperty( storeStatement, node, propertyKeyId, NodeState.EMPTY ) )
                 .thenReturn( asPropertyCursor( prevProp ) );
 

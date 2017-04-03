@@ -66,6 +66,9 @@ public interface StorageStatement extends AutoCloseable
     @Override
     void close();
 
+    // FIXME: this is a temporary workaround until we have a way to cache cursors thread safely in the transaction
+    Cursor<NodeItem> acquireNewNodeCursor( BatchingLongProgression progression, NodeTransactionStateView stateView );
+
     /**
      * Acquires {@link Cursor} capable of {@link Cursor#get() serving} {@link NodeItem} for selected nodes.
      * No node is selected when this method returns, a call to {@link Cursor#next()} will have to be made

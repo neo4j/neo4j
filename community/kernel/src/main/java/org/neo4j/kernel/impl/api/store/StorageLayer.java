@@ -61,9 +61,10 @@ import org.neo4j.kernel.impl.store.record.IndexRule;
 import org.neo4j.kernel.impl.transaction.state.PropertyLoader;
 import org.neo4j.register.Register;
 import org.neo4j.register.Register.DoubleLongRegister;
+import org.neo4j.storageengine.api.BatchingLongProgression;
+import org.neo4j.storageengine.api.BatchingProgressionFactory;
 import org.neo4j.storageengine.api.Direction;
 import org.neo4j.storageengine.api.NodeItem;
-import org.neo4j.storageengine.api.BatchingProgressionFactory;
 import org.neo4j.storageengine.api.PropertyItem;
 import org.neo4j.storageengine.api.RelationshipItem;
 import org.neo4j.storageengine.api.StorageProperty;
@@ -399,13 +400,27 @@ public class StorageLayer implements StoreReadLayer
     }
 
     @Override
+    public BatchingLongProgression parallelNodeScanProgression( StorageStatement statement )
+    {
+        return progressionFactory.parallelAllNodeScan( nodeStore );
+    }
+
+    @Override
+    public Cursor<NodeItem> nodeGetCursor( StorageStatement statement, BatchingLongProgression progression,
+            NodeTransactionStateView stateView )
+    {
+        return statement.acquireNewNodeCursor( progression, stateView );
+    }
+
+    @Override
     public Cursor<NodeItem> nodeGetAllCursor( StorageStatement statement, NodeTransactionStateView stateView )
     {
         return statement.acquireNodeCursor( progressionFactory.allNodeScan( nodeStore ), stateView );
     }
 
     @Override
-    public Cursor<NodeItem> nodeCursor( StorageStatement statement, long nodeId, NodeTransactionStateView stateView )
+    public Cursor<NodeItem> nodeGetSingleCursor( StorageStatement statement, long nodeId,
+            NodeTransactionStateView stateView )
     {
         return statement.acquireNodeCursor( progressionFactory.singleNodeFetch( nodeId ), stateView );
     }

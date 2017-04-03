@@ -65,7 +65,7 @@ public class TransactionCountingStateVisitor extends TxStateVisitor.Delegator
     public void visitDeletedNode( long id )
     {
         counts.incrementNodeCount( ANY_LABEL, -1 );
-        storeLayer.nodeCursor( statement, id, ReadableTransactionState.EMPTY )
+        storeLayer.nodeGetSingleCursor( statement, id, ReadableTransactionState.EMPTY )
                 .forAll( this::decrementCountForLabelsAndRelationships );
         super.visitDeletedNode( id );
     }
@@ -125,7 +125,7 @@ public class TransactionCountingStateVisitor extends TxStateVisitor.Delegator
             }
             // get the relationship counts from *before* this transaction,
             // the relationship changes will compensate for what happens during the transaction
-            storeLayer.nodeCursor( statement, id, ReadableTransactionState.EMPTY )
+            storeLayer.nodeGetSingleCursor( statement, id, ReadableTransactionState.EMPTY )
                     .forAll( node -> storeLayer.degrees( statement, node, ( type, out, in ) ->
                     {
                         added.forEach( label -> updateRelationshipsCountsFromDegrees( type, label, out, in ) );
@@ -161,6 +161,6 @@ public class TransactionCountingStateVisitor extends TxStateVisitor.Delegator
 
     private void visitLabels( long nodeId, PrimitiveIntVisitor<RuntimeException> visitor )
     {
-        storeLayer.nodeCursor( statement, nodeId, txState ).forAll( node -> node.labels().visitKeys( visitor ) );
+        storeLayer.nodeGetSingleCursor( statement, nodeId, txState ).forAll( node -> node.labels().visitKeys( visitor ) );
     }
 }
