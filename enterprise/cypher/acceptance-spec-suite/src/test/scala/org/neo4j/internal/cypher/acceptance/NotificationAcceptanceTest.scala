@@ -21,7 +21,7 @@ package org.neo4j.internal.cypher.acceptance
 
 import org.neo4j.cypher.internal.frontend.v3_2.InputPosition
 import org.neo4j.cypher.internal.frontend.v3_2.notification._
-import org.neo4j.cypher.{ExecutionEngineFunSuite, NewPlannerTestSupport}
+import org.neo4j.cypher.{ChangedResults, ExecutionEngineFunSuite, NewPlannerTestSupport}
 import org.neo4j.kernel.impl.proc.Procedures
 import org.neo4j.procedure.Procedure
 
@@ -43,6 +43,12 @@ class NotificationAcceptanceTest extends ExecutionEngineFunSuite with NewPlanner
     val result = innerExecute("explain CALL oldProc() RETURN 1")
 
     result.notifications.toList should equal(List(DeprecatedProcedureNotification(InputPosition(0, 1, 1), "oldProc", "newProc")))
+  }
+
+  test("Warn on deprecated procedure result field") {
+    val result = innerExecute("explain CALL changedProc() YIELD oldField RETURN oldField")
+
+    result.notifications.toList should equal(List(DeprecatedFieldNotification(InputPosition(25, 1, 26), "changedProc", "oldField")))
   }
 
   test("Warn for cartesian product") {
@@ -497,6 +503,10 @@ object NotificationAcceptanceTest {
     @Deprecated
     @Procedure(name = "oldProc", deprecatedBy = "newProc")
     def oldProc(): Unit = {}
+
+    @Procedure("changedProc")
+    def changedProc(): java.util.stream.Stream[ChangedResults] =
+      java.util.stream.Stream.builder().add(new ChangedResults).build()
   }
 
 }

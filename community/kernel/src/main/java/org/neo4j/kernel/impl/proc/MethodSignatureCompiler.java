@@ -33,6 +33,8 @@ import org.neo4j.kernel.api.proc.Neo4jTypes;
 import org.neo4j.kernel.impl.proc.TypeMappers.NeoValueConverter;
 import org.neo4j.procedure.Name;
 
+import static org.neo4j.kernel.api.proc.FieldSignature.inputField;
+
 /**
  * Given a java method, figures out a valid {@link org.neo4j.kernel.api.proc.ProcedureSignature} field signature.
  * Basically, it takes the java signature and spits out the same signature described as Neo4j types.
@@ -102,8 +104,9 @@ public class MethodSignatureCompiler
                 }
 
                 seenDefault = defaultValue.isPresent();
-                signature.add( new FieldSignature( name, valueConverter.type(),
-                        defaultValue ) );
+                signature.add( defaultValue.isPresent()
+                        ? inputField( name, valueConverter.type(), defaultValue.get() )
+                        : inputField( name, valueConverter.type() ) );
             }
             catch ( ProcedureException e )
             {

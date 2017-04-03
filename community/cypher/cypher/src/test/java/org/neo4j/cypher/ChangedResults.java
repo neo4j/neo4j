@@ -17,31 +17,11 @@
  * You should have received a copy of the GNU General Public License
  * along with this program.  If not, see <http://www.gnu.org/licenses/>.
  */
-package org.neo4j.kernel.impl.query.clientconnection;
+package org.neo4j.cypher;
 
-import java.io.Serializable;
-
-/**
- * @see ClientConnectionInfo Parent class for documentation and tests.
- */
-public class ShellConnectionInfo extends ClientConnectionInfo
+public class ChangedResults
 {
-    private final Serializable id;
-
-    public ShellConnectionInfo( Serializable id )
-    {
-        this.id = id;
-    }
-
-    @Override
-    public String asConnectionDetails()
-    {
-        return "shell-session\tshell\t" + id;
-    }
-
-    @Override
-    public String protocol()
-    {
-        return "shell";
-    }
+    @Deprecated
+    public final String oldField = "deprecated";
+    public final String newField = "use this";
 }

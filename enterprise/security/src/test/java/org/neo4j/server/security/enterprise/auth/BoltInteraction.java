@@ -228,9 +228,9 @@ class BoltInteraction implements NeoInteractionLevel<BoltInteraction.BoltSubject
     }
 
     @Override
-    public String getConnectionDetails()
+    public String getConnectionProtocol()
     {
-        return "bolt-session";
+        return "bolt";
     }
 
     private static BoltResult collectResults( TransportConnection client ) throws Exception

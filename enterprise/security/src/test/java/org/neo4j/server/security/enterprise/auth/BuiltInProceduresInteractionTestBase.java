@@ -1091,7 +1091,7 @@ public abstract class BuiltInProceduresInteractionTestBase<S> extends ProcedureI
                 hasQueryId(),
                 hasStartTimeAfter( startTime ),
                 hasNoParameters(),
-                hasConnectionDetails( neo.getConnectionDetails() )
+                hasProtocol( neo.getConnectionProtocol() )
         );
     }
 
@@ -1156,10 +1156,9 @@ public abstract class BuiltInProceduresInteractionTestBase<S> extends ProcedureI
     }
 
     @SuppressWarnings( "unchecked" )
-    private Matcher<Map<String, Object>> hasConnectionDetails( String expected )
+    private Matcher<Map<String, Object>> hasProtocol( String expected )
     {
-        return (Matcher) hasEntry( equalTo( "connectionDetails" ),
-                containsString( expected ) );
+        return (Matcher) hasEntry( "protocol", expected );
     }
 
     @SuppressWarnings( "unchecked" )

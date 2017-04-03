@@ -146,7 +146,7 @@ public class UserFunctionSignature
         /** Define an input field */
         public Builder in( String name, AnyType type )
         {
-            inputSignature.add( new FieldSignature( name, type ) );
+            inputSignature.add( FieldSignature.inputField( name, type ) );
             return this;
         }
 

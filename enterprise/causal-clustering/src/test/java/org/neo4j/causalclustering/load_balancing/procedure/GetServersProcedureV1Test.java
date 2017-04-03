@@ -132,8 +132,8 @@ public class GetServersProcedureV1Test
 
         // then
         assertThat( signature.outputSignature(), containsInAnyOrder(
-                new FieldSignature( "ttl", NTInteger ),
-                new FieldSignature( "servers", NTMap ) ) );
+                FieldSignature.outputField( "ttl", NTInteger ),
+                FieldSignature.outputField( "servers", NTMap ) ) );
     }
 
     @Test

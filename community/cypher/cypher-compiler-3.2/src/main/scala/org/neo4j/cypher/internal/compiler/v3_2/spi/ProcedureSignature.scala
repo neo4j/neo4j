@@ -62,7 +62,7 @@ case class QualifiedName(namespace: Seq[String], name: String) {
 }
 
 case class CypherValue(value: AnyRef, cypherType: CypherType)
-case class FieldSignature(name: String, typ: CypherType, default: Option[CypherValue] = None) {
+case class FieldSignature(name: String, typ: CypherType, default: Option[CypherValue] = None, deprecated: Boolean = false) {
   override def toString = {
     val nameValue = default.map( d => s"$name  =  ${d.value}").getOrElse(name)
     s"$nameValue :: ${typ.toNeoTypeString}"

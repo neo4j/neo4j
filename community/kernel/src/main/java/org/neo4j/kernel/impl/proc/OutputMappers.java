@@ -199,7 +199,7 @@ public class OutputMappers
                 FieldMapper fieldMapper = new FieldMapper( getter, mapper );
 
                 fieldMappers[i] = fieldMapper;
-                signature[i] = new FieldSignature( field.getName(), mapper.type() );
+                signature[i] = FieldSignature.outputField( field.getName(), mapper.type(), field.isAnnotationPresent( Deprecated.class ) );
             }
             catch ( ProcedureException e )
             {

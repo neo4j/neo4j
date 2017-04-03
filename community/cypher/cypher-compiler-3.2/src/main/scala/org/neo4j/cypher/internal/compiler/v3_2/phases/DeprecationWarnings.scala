@@ -20,10 +20,10 @@
 package org.neo4j.cypher.internal.compiler.v3_2.phases
 
 import org.neo4j.cypher.internal.compiler.v3_2.ast.ResolvedCall
-import org.neo4j.cypher.internal.compiler.v3_2.spi.ProcedureSignature
+import org.neo4j.cypher.internal.compiler.v3_2.spi.{FieldSignature, ProcedureSignature}
 import org.neo4j.cypher.internal.frontend.v3_2.InternalException
-import org.neo4j.cypher.internal.frontend.v3_2.ast.{Statement, UnresolvedCall}
-import org.neo4j.cypher.internal.frontend.v3_2.notification.{DeprecatedProcedureNotification, InternalNotification, ProcedureWarningNotification}
+import org.neo4j.cypher.internal.frontend.v3_2.ast.{ProcedureResultItem, Statement, UnresolvedCall}
+import org.neo4j.cypher.internal.frontend.v3_2.notification.{DeprecatedFieldNotification, DeprecatedProcedureNotification, InternalNotification, ProcedureWarningNotification}
 import org.neo4j.cypher.internal.frontend.v3_2.phases.CompilationPhaseTracer.CompilationPhase.DEPRECATION_WARNINGS
 import org.neo4j.cypher.internal.frontend.v3_2.phases.{BaseContext, BaseState, VisitorPhase}
 
@@ -58,9 +58,15 @@ object ProcedureWarnings extends VisitorPhase[BaseContext, BaseState] {
     statement.treeFold(Set.empty[InternalNotification]) {
       case f@ResolvedCall(ProcedureSignature(name, _, _, _, _, _, Some(warning)), _, _, _, _) =>
         (seq) => (seq + ProcedureWarningNotification(f.position, name.toString, warning), None)
+      case ResolvedCall(ProcedureSignature(name, _, Some(output), None, _, _, _), _, results, _, _)
+        if output.exists(_.deprecated) => (set) => (set ++ usedDeprecatedFields(name.toString, results, output), None)
       case _:UnresolvedCall =>
         throw new InternalException("Expected procedures to have been resolved already")
     }
+
+  private def usedDeprecatedFields(procedure: String, used: Seq[ProcedureResultItem], available: Seq[FieldSignature]) =
+    used.filter(r => available.exists(o => o.name == r.outputName && o.deprecated)).
+       map(r => DeprecatedFieldNotification(r.position, procedure, r.outputName))
 
   override def phase = DEPRECATION_WARNINGS
 

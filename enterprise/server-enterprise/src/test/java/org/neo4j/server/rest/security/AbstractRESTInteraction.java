@@ -214,9 +214,9 @@ abstract class AbstractRESTInteraction extends CommunityServerTestBase implement
     }
 
     @Override
-    public String getConnectionDetails()
+    public String getConnectionProtocol()
     {
-        return "server-session";
+        return "http";
     }
 
     private String parseErrorMessage( HTTP.Response response )

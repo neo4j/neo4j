@@ -19,20 +19,23 @@
  */
 package org.neo4j.kernel.impl.proc;
 
+import java.util.Map;
+
 import org.junit.Rule;
 import org.junit.Test;
 import org.junit.rules.ExpectedException;
 
-import java.util.Map;
-
 import org.neo4j.kernel.api.exceptions.ProcedureException;
-import org.neo4j.kernel.api.proc.FieldSignature;
-import org.neo4j.kernel.api.proc.Neo4jTypes;
 import org.neo4j.kernel.impl.proc.OutputMappers.OutputMapper;
 
 import static java.util.Arrays.asList;
+import static org.hamcrest.Matchers.anyOf;
 import static org.hamcrest.Matchers.contains;
+import static org.hamcrest.Matchers.containsInAnyOrder;
+import static org.hamcrest.Matchers.not;
 import static org.junit.Assert.assertThat;
+import static org.neo4j.kernel.api.proc.FieldSignature.outputField;
+import static org.neo4j.kernel.api.proc.Neo4jTypes.NTString;
 
 public class OutputMappersTest
 {
@@ -76,6 +79,15 @@ public class OutputMappersTest
         }
     }
 
+    public static class RecordWithDeprecatedFields
+    {
+        @Deprecated
+        public String deprecated;
+        public String replacement;
+        @Deprecated
+        public String alsoDeprecated;
+    }
+
     @Test
     public void shouldMapSimpleRecordWithString() throws Throwable
     {
@@ -85,7 +97,7 @@ public class OutputMappersTest
         // Then
         assertThat(
                 mapper.signature(),
-                contains( new FieldSignature( "name", Neo4jTypes.NTString ) )
+                contains( outputField( "name", NTString ) )
         );
         assertThat(
                 asList( mapper.apply( new SingleStringFieldRecord( "hello, world!" ) ) ),
@@ -102,12 +114,25 @@ public class OutputMappersTest
         // Then
         assertThat(
                 mapper.signature(),
-                contains( new FieldSignature( "includeMe", Neo4jTypes.NTString ) )
+                contains( outputField( "includeMe", NTString ) )
         );
         assertThat(
                 asList( mapper.apply( new RecordWithStaticFields( "hello, world!" ) ) ),
                 contains( "hello, world!" )
         );
+    }
+
+    @Test
+    public void shouldNoteDeprecatedFields() throws Exception
+    {
+        // when
+        OutputMapper mapper = mapper( RecordWithDeprecatedFields.class );
+
+        // then
+        assertThat( mapper.signature(), containsInAnyOrder(
+                outputField( "deprecated", NTString, true ),
+                outputField( "alsoDeprecated", NTString, true ),
+                outputField( "replacement", NTString, false ) ) );
     }
 
     @Test

@@ -21,6 +21,12 @@ package org.neo4j.internal.cypher.acceptance
 
 import java.util
 
+import org.neo4j.collection.RawIterator
+import org.neo4j.helpers.collection.MapUtil.map
+import org.neo4j.kernel.api.exceptions.ProcedureException
+import org.neo4j.kernel.api.proc.CallableProcedure.BasicProcedure
+import org.neo4j.kernel.api.proc.{Context, FieldSignature, Neo4jTypes}
+
 class ProcedureCallSupportAcceptanceTest extends ProcedureCallAcceptanceTest {
 
   test("should return correctly typed map result (even if converting to and from scala representation internally)") {
@@ -60,6 +66,25 @@ class ProcedureCallSupportAcceptanceTest extends ProcedureCallAcceptanceTest {
     // Using graph execute to get a Java value
     graph.execute("CALL my.first.value() YIELD out RETURN * LIMIT 1").stream().toArray.toList should equal(List(
       java.util.Collections.singletonMap("out", stream)
+    ))
+  }
+
+  test("should not yield deprecated fields") {
+    // given
+    registerProcedure("something.with.deprecated.output") { builder =>
+      builder.out(util.Arrays.asList(
+        FieldSignature.outputField("one",Neo4jTypes.NTString),
+        FieldSignature.outputField("oldTwo",Neo4jTypes.NTString, true),
+        FieldSignature.outputField("newTwo",Neo4jTypes.NTString) ))
+      new BasicProcedure(builder.build) {
+        override def apply(ctx: Context, input: Array[AnyRef]):  RawIterator[Array[AnyRef], ProcedureException] =
+          RawIterator.of[Array[AnyRef], ProcedureException](Array("alpha","junk","beta"))
+      }
+    }
+
+    // then
+    graph.execute("CALL something.with.deprecated.output()").stream().toArray.toList should equal(List(
+      map("one", "alpha", "newTwo", "beta")
     ))
   }
 }
