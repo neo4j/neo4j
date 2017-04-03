@@ -22,13 +22,14 @@ package org.neo4j.kernel.impl.query;
 import org.neo4j.graphdb.Lock;
 import org.neo4j.graphdb.PropertyContainer;
 import org.neo4j.kernel.GraphDatabaseQueryService;
-import org.neo4j.kernel.api.query.ExecutingQuery;
 import org.neo4j.kernel.api.KernelTransaction;
 import org.neo4j.kernel.api.ReadOperations;
 import org.neo4j.kernel.api.Statement;
 import org.neo4j.kernel.api.dbms.DbmsOperations;
+import org.neo4j.kernel.api.query.ExecutingQuery;
 import org.neo4j.kernel.api.security.SecurityContext;
 import org.neo4j.kernel.api.txstate.TxStateHolder;
+import org.neo4j.kernel.impl.query.statistic.KernelStatisticProvider;
 
 public interface TransactionalContext
 {
@@ -76,6 +77,8 @@ public interface TransactionalContext
     Lock acquireWriteLock( PropertyContainer p );
 
     SecurityContext securityContext();
+
+    KernelStatisticProvider kernelStatisticProvider();
 
     KernelTransaction.Revertable restrictCurrentTransaction( SecurityContext context );
 }

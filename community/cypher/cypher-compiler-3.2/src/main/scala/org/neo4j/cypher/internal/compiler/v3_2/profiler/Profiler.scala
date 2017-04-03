@@ -54,7 +54,7 @@ class Profiler extends PipeDecorator {
       case _ => new ProfilingPipeQueryContext(state.query, pipe)
     })
 
-    val statisticProvider = decoratedContext.kernelStatisticProvider()
+    val statisticProvider = decoratedContext.transactionalContext.kernelStatisticProvider
     pageCacheStats(pipe.id) = (statisticProvider.getPageCacheHits, statisticProvider.getPageCacheMisses)
     state.withQueryContext(decoratedContext)
   }
@@ -141,7 +141,7 @@ class ProfilingIterator(inner: Iterator[ExecutionContext], startValue: Long, que
   def hasNext: Boolean = {
     val hasNext = inner.hasNext
     if (!hasNext) {
-      val statisticProvider = queryContext.kernelStatisticProvider()
+      val statisticProvider = queryContext.transactionalContext.kernelStatisticProvider
       val currentStat = pageCacheStats(pipeId)
       pageCacheStats(pipeId) = (statisticProvider.getPageCacheHits - currentStat._1,
                                 statisticProvider.getPageCacheMisses - currentStat._2)

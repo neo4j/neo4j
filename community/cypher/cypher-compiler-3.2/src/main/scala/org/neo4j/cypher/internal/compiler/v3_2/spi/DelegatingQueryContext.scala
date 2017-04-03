@@ -26,6 +26,7 @@ import org.neo4j.cypher.internal.compiler.v3_2.commands.expressions.{Expander, K
 import org.neo4j.cypher.internal.compiler.v3_2.pipes.matching.PatternNode
 import org.neo4j.cypher.internal.frontend.v3_2.SemanticDirection
 import org.neo4j.graphdb.{Node, Path, PropertyContainer, Relationship}
+import org.neo4j.kernel.impl.query.statistic.KernelStatisticProvider
 
 import scala.collection.Iterator
 
@@ -214,7 +215,6 @@ class DelegatingQueryContext(val inner: QueryContext) extends QueryContext {
 
   override def assertSchemaWritesAllowed(): Unit = inner.assertSchemaWritesAllowed()
 
-  override def kernelStatisticProvider(): KernelStatisticProvider = inner.kernelStatisticProvider()
 }
 
 class DelegatingOperations[T <: PropertyContainer](protected val inner: Operations[T]) extends Operations[T] {
@@ -265,4 +265,6 @@ class DelegatingQueryTransactionalContext(val inner: QueryTransactionalContext) 
   override def isTopLevelTx: Boolean = inner.isTopLevelTx
 
   override def close(success: Boolean) { inner.close(success) }
+
+  override def kernelStatisticProvider: KernelStatisticProvider = inner.kernelStatisticProvider
 }

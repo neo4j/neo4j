@@ -238,8 +238,6 @@ class ExceptionTranslatingQueryContext(val inner: QueryContext) extends QueryCon
 
   override def assertSchemaWritesAllowed(): Unit = translateException(inner.assertSchemaWritesAllowed())
 
-  override def kernelStatisticProvider(): KernelStatisticProvider = translateException(inner.kernelStatisticProvider())
-
   class ExceptionTranslatingOperations[T <: PropertyContainer](inner: Operations[T])
     extends DelegatingOperations[T](inner) {
     override def delete(obj: T) =

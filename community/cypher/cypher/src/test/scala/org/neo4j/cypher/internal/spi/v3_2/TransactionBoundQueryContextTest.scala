@@ -177,7 +177,7 @@ class TransactionBoundQueryContextTest extends CypherFunSuite {
     val transactionalContext = TransactionalContextWrapper(createTransactionContext(graph, tx))
     val context = new TransactionBoundQueryContext(transactionalContext)(indexSearchMonitor)
 
-    val tracer = context.kernelStatisticProvider()
+    val tracer = transactionalContext.kernelStatisticProvider
     tracer.getPageCacheHits should equal(0)
 
     graph.getNodeById(2)

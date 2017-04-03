@@ -129,9 +129,5 @@ class ProcedureCallPipeTest
       args.length should be(1)
       result(args)
     }
-
-    override def kernelStatisticProvider(): KernelStatisticProvider =  {
-      EmptyKernelStatisticProvider
-    }
   }
 }

@@ -26,6 +26,7 @@ import org.neo4j.cypher.internal.compiler.v3_2.pipes.matching.PatternNode
 import org.neo4j.cypher.internal.compiler.v3_2.{IndexDescriptor, InternalQueryStatistics}
 import org.neo4j.cypher.internal.frontend.v3_2.SemanticDirection
 import org.neo4j.graphdb.{Node, Path, PropertyContainer, Relationship}
+import org.neo4j.kernel.impl.query.statistic.KernelStatisticProvider
 
 import scala.collection.Iterator
 
@@ -182,7 +183,6 @@ trait QueryContext extends TokenContext {
 
   def assertSchemaWritesAllowed(): Unit
 
-  def kernelStatisticProvider() : KernelStatisticProvider
 }
 
 trait Operations[T <: PropertyContainer] {
@@ -227,5 +227,7 @@ trait QueryTransactionalContext {
   def close(success: Boolean)
 
   def commitAndRestartTx()
+
+  def kernelStatisticProvider: KernelStatisticProvider
 }
 

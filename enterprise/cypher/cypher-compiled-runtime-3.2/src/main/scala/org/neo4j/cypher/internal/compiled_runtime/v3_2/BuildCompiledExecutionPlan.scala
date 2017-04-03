@@ -94,7 +94,7 @@ object BuildCompiledExecutionPlan extends Phase[CompiledRuntimeContext, Compilat
 
   private def createTracer(mode: ExecutionMode, queryContext: QueryContext): DescriptionProvider = mode match {
     case ProfileMode =>
-      val tracer = new ProfilingTracer(queryContext.kernelStatisticProvider())
+      val tracer = new ProfilingTracer(queryContext.transactionalContext.kernelStatisticProvider)
       (description: InternalPlanDescription) =>
         (new Provider[InternalPlanDescription] {
 
