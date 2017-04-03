@@ -452,7 +452,7 @@ public class StoreUpgradeIntegrationTest
         try ( KernelTransaction tx = kernel.newTransaction( KernelTransaction.Type.implicit, AnonymousContext.read() );
               Statement statement = tx.acquireStatement() )
         {
-            Iterator<NewIndexDescriptor> indexes = getAllIndexes( db );
+            Iterator<NewIndexDescriptor> indexes = NewIndexDescriptor.sortByType( getAllIndexes( db ) );
             DoubleLongRegister register = Registers.newDoubleLongRegister();
             for ( int i = 0; indexes.hasNext(); i++ )
             {
