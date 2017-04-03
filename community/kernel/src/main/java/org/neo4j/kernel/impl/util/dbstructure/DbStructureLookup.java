@@ -34,6 +34,7 @@ public interface DbStructureLookup
     Iterator<Pair<String, String[]>> knownUniqueConstraints();
     Iterator<Pair<String, String[]>> knownNodePropertyExistenceConstraints();
     Iterator<Pair<String, String[]>> knownRelationshipPropertyExistenceConstraints();
+    Iterator<Pair<String, String[]>> knownNodeKeyConstraints();
 
     long nodesWithLabelCardinality( int labelId );
     long cardinalityByLabelsAndRelationshipType( int fromLabelId, int relTypeId, int toLabelId );

@@ -46,6 +46,7 @@ public class DbStructureCollectorTest
         collector.visitRelationshipType( 2, "FRIEND" );
         collector.visitIndex( NewIndexDescriptorFactory.uniqueForLabel( 1, 1 ), ":Person(name)", 1.0d, 1L );
         collector.visitUniqueConstraint( ConstraintDescriptorFactory.uniqueForLabel( 2, 1 ), ":City(name)" );
+        collector.visitNodeKeyConstraint( ConstraintDescriptorFactory.nodeKeyForLabel( 2, 1 ), ":City(name)" );
         collector.visitIndex( NewIndexDescriptorFactory.forLabel( 2, 2 ), ":City(income)", 0.2d, 1L );
         collector.visitAllNodesCount( 50 );
         collector.visitNodeCount( 1, "Person", 20 );
@@ -63,9 +64,15 @@ public class DbStructureCollectorTest
         assertEquals( asList( "Person" ),
                 Iterators.asList( Iterators.map( Pair::first, lookup.knownUniqueIndices() ) ) );
         assertArrayEquals( new String[]{"name"}, lookup.knownUniqueIndices().next().other() );
+
+        assertEquals( asList( "City" ),
+                Iterators.asList( Iterators.map( Pair::first, lookup.knownNodeKeyConstraints() ) ) );
+        assertArrayEquals( new String[]{"name"}, lookup.knownNodeKeyConstraints().next().other() );
+
         assertEquals( asList( "City" ),
                 Iterators.asList( Iterators.map( Pair::first, lookup.knownUniqueConstraints() ) ) );
         assertArrayEquals( new String[]{"name"}, lookup.knownUniqueConstraints().next().other() );
+
         assertEquals( asList( "City" ), Iterators.asList( Iterators.map( Pair::first, lookup.knownIndices() ) ) );
         assertArrayEquals( new String[]{"income"}, lookup.knownIndices().next().other() );
 
