@@ -21,6 +21,8 @@ package org.neo4j.collection.primitive;
 
 import java.util.Arrays;
 
+import static org.neo4j.collection.primitive.PrimitiveLongCollections.EMPTY_LONG_ARRAY;
+
 /**
  * Specialized methods for operations on primitive arrays.
  *
@@ -29,8 +31,6 @@ import java.util.Arrays;
  */
 public class PrimitiveArrays
 {
-    private static final long[] EMPTY_LONG_ARRAY = new long[]{};
-
     /**
      * Compute union of two sets of integers represented as sorted arrays.
      *
