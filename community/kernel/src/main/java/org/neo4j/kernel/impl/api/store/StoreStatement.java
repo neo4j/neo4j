@@ -51,7 +51,7 @@ import org.neo4j.storageengine.api.txstate.ReadableTransactionState;
  */
 public class StoreStatement implements StorageStatement
 {
-    protected final InstanceCache<NodeCursor> nodeCursor;
+    private final InstanceCache<NodeCursor> nodeCursor;
     private final InstanceCache<StoreSingleRelationshipCursor> singleRelationshipCursor;
     private final InstanceCache<StoreIteratorRelationshipCursor> iteratorRelationshipCursor;
     private final InstanceCache<StoreNodeRelationshipCursor> nodeRelationshipsCursor;
@@ -62,6 +62,7 @@ public class StoreStatement implements StorageStatement
     private final NeoStores neoStores;
     private final Supplier<IndexReaderFactory> indexReaderFactorySupplier;
     private final Supplier<LabelScanReader> labelScanStore;
+    private final LockService lockService;
 
     private IndexReaderFactory indexReaderFactory;
     private LabelScanReader labelScanReader;
@@ -75,6 +76,7 @@ public class StoreStatement implements StorageStatement
         this.neoStores = neoStores;
         this.indexReaderFactorySupplier = indexReaderFactory;
         this.labelScanStore = labelScanReaderSupplier;
+        this.lockService = lockService;
 
         nodeCursor = new InstanceCache<NodeCursor>()
         {
@@ -150,6 +152,14 @@ public class StoreStatement implements StorageStatement
         assert !closed;
         assert !acquired;
         this.acquired = true;
+    }
+
+    @Override
+    public Cursor<NodeItem> acquireNewNodeCursor( BatchingLongProgression progression,
+            NodeTransactionStateView stateView )
+    {
+        return new NodeCursor( neoStores.getNodeStore(), InstanceCache::noCache, lockService )
+                .init( progression, stateView );
     }
 
     @Override

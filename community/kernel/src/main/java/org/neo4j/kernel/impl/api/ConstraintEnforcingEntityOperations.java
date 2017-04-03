@@ -72,6 +72,7 @@ import org.neo4j.kernel.impl.api.store.NodeLoadingIterator;
 import org.neo4j.kernel.impl.constraints.ConstraintSemantics;
 import org.neo4j.kernel.impl.locking.LockTracer;
 import org.neo4j.kernel.impl.locking.Locks;
+import org.neo4j.storageengine.api.BatchingLongProgression;
 import org.neo4j.storageengine.api.Direction;
 import org.neo4j.storageengine.api.NodeItem;
 import org.neo4j.storageengine.api.PropertyItem;
@@ -463,6 +464,18 @@ public class ConstraintEnforcingEntityOperations implements EntityOperations, Sc
     public PrimitiveLongIterator relationshipsGetAll( KernelStatement state )
     {
         return entityReadOperations.relationshipsGetAll( state );
+    }
+
+    @Override
+    public BatchingLongProgression parallelNodeScanProgression( KernelStatement statement )
+    {
+        return entityReadOperations.parallelNodeScanProgression( statement );
+    }
+
+    @Override
+    public Cursor<NodeItem> nodeGetCursor( KernelStatement statement, BatchingLongProgression progression )
+    {
+        return entityReadOperations.nodeGetCursor( statement, progression );
     }
 
     @Override

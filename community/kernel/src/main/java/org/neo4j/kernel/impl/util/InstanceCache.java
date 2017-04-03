@@ -76,4 +76,9 @@ public abstract class InstanceCache<T extends Disposable> implements Supplier<T>
             instance.dispose();
         }
     }
+
+    public static <T extends Disposable>  void noCache( T instance )
+    {
+
+    }
 }

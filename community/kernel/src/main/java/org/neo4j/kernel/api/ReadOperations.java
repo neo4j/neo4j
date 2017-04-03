@@ -48,9 +48,9 @@ import org.neo4j.kernel.api.schema.LabelSchemaDescriptor;
 import org.neo4j.kernel.api.schema.SchemaDescriptor;
 import org.neo4j.kernel.api.schema.constaints.ConstraintDescriptor;
 import org.neo4j.kernel.api.schema.index.IndexDescriptor;
-import org.neo4j.kernel.impl.api.RelationshipVisitor;
 import org.neo4j.kernel.impl.api.store.RelationshipIterator;
 import org.neo4j.register.Register.DoubleLongRegister;
+import org.neo4j.storageengine.api.BatchingLongProgression;
 import org.neo4j.storageengine.api.NodeItem;
 import org.neo4j.storageengine.api.PropertyItem;
 import org.neo4j.storageengine.api.RelationshipItem;
@@ -211,6 +211,10 @@ public interface ReadOperations
     Cursor<NodeItem> nodeGetAllCursor();
 
     Cursor<NodeItem> nodeCursorById( long nodeId ) throws EntityNotFoundException;
+
+    Cursor<NodeItem> nodeGeCursor( BatchingLongProgression progression );
+
+    BatchingLongProgression parallelNodeScan();
 
     Cursor<RelationshipItem> relationshipCursorById( long relId ) throws EntityNotFoundException;
 
