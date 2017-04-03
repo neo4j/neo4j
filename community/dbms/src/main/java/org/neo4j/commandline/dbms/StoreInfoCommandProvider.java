@@ -27,26 +27,26 @@ import org.neo4j.commandline.admin.AdminCommandSection;
 import org.neo4j.commandline.admin.OutsideWorld;
 import org.neo4j.commandline.arguments.Arguments;
 
-public class VersionCommandProvider extends AdminCommand.Provider
+public class StoreInfoCommandProvider extends AdminCommand.Provider
 {
 
-    public VersionCommandProvider()
+    public StoreInfoCommandProvider()
     {
-        super( "version" );
+        super( "store-info" );
     }
 
     @Override
     @Nonnull
     public Arguments allArguments()
     {
-        return VersionCommand.arguments();
+        return StoreInfoCommand.arguments();
     }
 
     @Override
     @Nonnull
     public String summary()
     {
-        return "Check the version of a Neo4j database store.";
+        return "Prints information about a Neo4j database store.";
     }
 
     @Override
@@ -60,14 +60,14 @@ public class VersionCommandProvider extends AdminCommand.Provider
     @Nonnull
     public String description()
     {
-        return "Checks the version of a Neo4j database store. Note that this command expects a path to a store " +
-                "directory, for example --store=data/databases/graph.db.";
+        return "Prints information about a Neo4j database store, such as what version of Neo4j created it. Note that " +
+                "this command expects a path to a store directory, for example --store=data/databases/graph.db.";
     }
 
     @Override
     @Nonnull
     public AdminCommand create( Path homeDir, Path configDir, OutsideWorld outsideWorld )
     {
-        return new VersionCommand( outsideWorld::stdOutLine );
+        return new StoreInfoCommand( outsideWorld::stdOutLine );
     }
 }

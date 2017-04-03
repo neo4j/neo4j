@@ -52,7 +52,7 @@ import static org.mockito.Mockito.times;
 import static org.mockito.Mockito.verify;
 import static org.neo4j.kernel.impl.store.MetaDataStore.Position.STORE_VERSION;
 
-public class VersionCommandTest
+public class StoreInfoCommandTest
 {
     @Rule
     public TestDirectory testDirectory = TestDirectory.testDirectory();
@@ -65,7 +65,7 @@ public class VersionCommandTest
 
     private Path databaseDirectory;
     private ArgumentCaptor<String> outCaptor;
-    private VersionCommand command;
+    private StoreInfoCommand command;
     private Consumer<String> out;
 
     @Before
@@ -77,7 +77,7 @@ public class VersionCommandTest
 
         outCaptor = ArgumentCaptor.forClass( String.class );
         out = mock( Consumer.class );
-        command = new VersionCommand( out );
+        command = new StoreInfoCommand( out );
     }
 
     @Test
@@ -87,15 +87,16 @@ public class VersionCommandTest
         {
             PrintStream ps = new PrintStream( baos );
             Usage usage = new Usage( "neo4j-admin", mock( CommandLocator.class ) );
-            usage.printUsageForCommand( new VersionCommandProvider(), ps::println );
+            usage.printUsageForCommand( new StoreInfoCommandProvider(), ps::println );
 
-            assertEquals( String.format( "usage: neo4j-admin version --store=<path-to-dir>%n" +
+            assertEquals( String.format( "usage: neo4j-admin store-info --store=<path-to-dir>%n" +
                             "%n" +
-                            "Checks the version of a Neo4j database store. Note that this command expects a%n" +
-                            "path to a store directory, for example --store=data/databases/graph.db.%n" +
+                            "Prints information about a Neo4j database store, such as what version of Neo4j%n" +
+                            "created it. Note that this command expects a path to a store directory, for%n" +
+                            "example --store=data/databases/graph.db.%n" +
                             "%n" +
                             "options:%n" +
-                            "  --store=<path-to-dir>   Path to database store to check version of.%n" ),
+                            "  --store=<path-to-dir>   Path to database store.%n" ),
                     baos.toString() );
         }
     }
@@ -135,13 +136,12 @@ public class VersionCommandTest
 
         execute( databaseDirectory.toString() );
 
-        verify( out, times( 3 ) ).accept( outCaptor.capture() );
+        verify( out, times( 2 ) ).accept( outCaptor.capture() );
 
         assertEquals(
                 Arrays.asList(
-                        String.format( "Store format version:    %s", currentFormat.storeVersion() ),
-                        String.format( "Introduced in version:   %s", currentFormat.introductionVersion() ),
-                        String.format( "Current version:         %s", Version.getNeo4jVersion() ) ),
+                        String.format( "Store format version:         %s", currentFormat.storeVersion() ),
+                        String.format( "Store format introduced in:   %s", currentFormat.introductionVersion() ) ),
                 outCaptor.getAllValues() );
     }
 
@@ -152,14 +152,13 @@ public class VersionCommandTest
 
         execute( databaseDirectory.toString() );
 
-        verify( out, times( 4 ) ).accept( outCaptor.capture() );
+        verify( out, times( 3 ) ).accept( outCaptor.capture() );
 
         assertEquals(
                 Arrays.asList(
-                        "Store format version:    v0.A.5",
-                        "Introduced in version:   2.2.0",
-                        "Superseded in version:   2.3.0",
-                        String.format( "Current version:         %s", Version.getNeo4jVersion() ) ),
+                        "Store format version:         v0.A.5",
+                        "Store format introduced in:   2.2.0",
+                        "Store format superseded in:   2.3.0" ),
                 outCaptor.getAllValues() );
     }
 

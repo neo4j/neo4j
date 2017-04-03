@@ -54,6 +54,7 @@ public abstract class AdminCommandSection
 
     public final void printAllCommandsUnderSection( Consumer<String> output, List<AdminCommand.Provider> providers )
     {
+        output.accept( "" );
         output.accept( printable() );
         providers.sort( Comparator.comparing( AdminCommand.Provider::name ) );
         providers.forEach( provider -> provider.printSummary( s -> output.accept( "    " + s ) ) );

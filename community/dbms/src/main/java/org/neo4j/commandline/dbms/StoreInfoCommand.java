@@ -40,15 +40,15 @@ import org.neo4j.kernel.internal.Version;
 
 import static org.neo4j.kernel.impl.store.format.RecordFormatSelector.findSuccessor;
 
-public class VersionCommand implements AdminCommand
+public class StoreInfoCommand implements AdminCommand
 {
     private static final Arguments arguments = new Arguments()
             .withArgument( new MandatoryCanonicalPath( "store", "path-to-dir",
-                    "Path to database store to check version of." ) );
+                    "Path to database store." ) );
 
     private Consumer<String> out;
 
-    public VersionCommand( Consumer<String> out )
+    public StoreInfoCommand( Consumer<String> out )
     {
         this.out = out;
     }
@@ -69,17 +69,17 @@ public class VersionCommand implements AdminCommand
                             () -> new CommandFailed( String.format( "Could not find version metadata in store '%s'",
                                     storeDir ) ) );
 
-            final String fmt = "%-25s%s";
+            final String fmt = "%-30s%s";
             out.accept( String.format( fmt, "Store format version:", storeVersion ) );
 
             RecordFormats format = RecordFormatSelector.selectForVersion( storeVersion );
-            out.accept( String.format( fmt, "Introduced in version:", format.introductionVersion() ) );
+            out.accept( String.format( fmt, "Store format introduced in:", format.introductionVersion() ) );
 
             findSuccessor( format )
-                    .map( next -> String.format( fmt, "Superseded in version:", next.introductionVersion() ) )
+                    .map( next -> String.format( fmt, "Store format superseded in:", next.introductionVersion() ) )
                     .ifPresent( out );
 
-            out.accept( String.format( fmt, "Current version:", Version.getNeo4jVersion() ) );
+            //out.accept( String.format( fmt, "Current version:", Version.getNeo4jVersion() ) );
         }
         catch ( IOException e )
         {

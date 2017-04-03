@@ -45,7 +45,7 @@ import static org.mockito.Mockito.times;
 import static org.mockito.Mockito.verify;
 import static org.neo4j.kernel.impl.store.MetaDataStore.Position.STORE_VERSION;
 
-public class VersionCommandEnterpriseTest
+public class StoreInfoCommandEnterpriseTest
 {
     @Rule
     public TestDirectory testDirectory = TestDirectory.testDirectory();
@@ -58,7 +58,7 @@ public class VersionCommandEnterpriseTest
 
     private Path databaseDirectory;
     private ArgumentCaptor<String> outCaptor;
-    private VersionCommand command;
+    private StoreInfoCommand command;
     private Consumer<String> out;
 
     @Before
@@ -69,7 +69,7 @@ public class VersionCommandEnterpriseTest
         Files.createDirectories( databaseDirectory );
         outCaptor = ArgumentCaptor.forClass( String.class );
         out = mock( Consumer.class );
-        command = new VersionCommand( out );
+        command = new StoreInfoCommand( out );
     }
 
     @Test
@@ -79,14 +79,13 @@ public class VersionCommandEnterpriseTest
 
         execute( databaseDirectory.toString() );
 
-        verify( out, times( 4 ) ).accept( outCaptor.capture() );
+        verify( out, times( 3 ) ).accept( outCaptor.capture() );
 
         assertEquals(
                 Arrays.asList(
-                        "Store format version:    vE.H.0",
-                        "Introduced in version:   3.0.0",
-                        "Superseded in version:   3.0.6",
-                        String.format( "Current version:         %s", Version.getNeo4jVersion() ) ),
+                        "Store format version:         vE.H.0",
+                        "Store format introduced in:   3.0.0",
+                        "Store format superseded in:   3.0.6" ),
                 outCaptor.getAllValues() );
     }
 

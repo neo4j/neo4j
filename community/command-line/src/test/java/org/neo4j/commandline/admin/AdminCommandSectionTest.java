@@ -60,6 +60,7 @@ public class AdminCommandSectionTest
         generalSection.printAllCommandsUnderSection( out, providers );
 
         InOrder ordered = inOrder( out );
+        ordered.verify( out ).accept( "" );
         ordered.verify( out ).accept( "General" );
         ordered.verify( out ).accept( "    bam" );
         ordered.verify( out ).accept( "        A summary" );
