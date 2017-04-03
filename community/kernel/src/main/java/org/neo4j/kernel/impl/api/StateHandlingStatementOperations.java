@@ -115,7 +115,6 @@ import static org.neo4j.helpers.collection.Iterators.iterator;
 import static org.neo4j.helpers.collection.Iterators.singleOrNull;
 import static org.neo4j.kernel.api.StatementConstants.NO_SUCH_NODE;
 import static org.neo4j.kernel.api.properties.DefinedProperty.NO_SUCH_PROPERTY;
-import static org.neo4j.kernel.api.schema_new.index.NewIndexDescriptor.Filter.ANY;
 import static org.neo4j.kernel.impl.api.state.IndexTxStateUpdater.LabelChangeType.ADDED_LABEL;
 import static org.neo4j.kernel.impl.api.state.IndexTxStateUpdater.LabelChangeType.REMOVED_LABEL;
 import static org.neo4j.kernel.impl.util.Cursors.count;
@@ -736,7 +735,7 @@ public class StateHandlingStatementOperations implements
         {
             rules = filter(
                     SchemaDescriptor.equalTo( descriptor ),
-                    state.txState().indexDiffSetsByLabel( descriptor.getLabelId(), ANY ).apply( rules ) );
+                    state.txState().indexDiffSetsByLabel( descriptor.getLabelId() ).apply( rules ) );
         }
         return singleOrNull( rules );
     }
@@ -749,7 +748,7 @@ public class StateHandlingStatementOperations implements
         if ( state.hasTxStateWithChanges() )
         {
             if ( checkIndexState( descriptor,
-                    state.txState().indexDiffSetsByLabel( descriptor.schema().getLabelId(), ANY ) ) )
+                    state.txState().indexDiffSetsByLabel( descriptor.schema().getLabelId() ) ) )
             {
                 return InternalIndexState.POPULATING;
             }
@@ -766,7 +765,7 @@ public class StateHandlingStatementOperations implements
         if ( state.hasTxStateWithChanges() )
         {
             if ( checkIndexState( descriptor,
-                    state.txState().indexDiffSetsByLabel( descriptor.schema().getLabelId(), ANY ) ) )
+                    state.txState().indexDiffSetsByLabel( descriptor.schema().getLabelId() ) ) )
             {
                 return PopulationProgress.NONE;
             }
@@ -795,7 +794,7 @@ public class StateHandlingStatementOperations implements
     {
         if ( state.hasTxStateWithChanges() )
         {
-            return state.txState().indexDiffSetsByLabel( labelId, ANY )
+            return state.txState().indexDiffSetsByLabel( labelId )
                                         .apply( storeLayer.indexesGetForLabel( labelId ) );
         }
         return storeLayer.indexesGetForLabel( labelId );
@@ -806,7 +805,7 @@ public class StateHandlingStatementOperations implements
     {
         if ( state.hasTxStateWithChanges() )
         {
-            return state.txState().indexChanges( ANY ).apply( storeLayer.indexesGetAll() );
+            return state.txState().indexChanges().apply( storeLayer.indexesGetAll() );
         }
 
         return storeLayer.indexesGetAll();
