@@ -633,7 +633,7 @@ public class GBPTreeTest
             Future<?> writerClose = executor.submit( throwing( () -> index.writer().close() ) );
 
             // THEN
-            wait( writerClose );
+            shouldWait( writerClose );
             monitor.barrier.release();
 
             writerClose.get();
@@ -659,7 +659,7 @@ public class GBPTreeTest
             } ) );
             barrier.awaitUninterruptibly();
             Future<?> checkpoint = executor.submit( throwing( () -> index.checkpoint( unlimited() ) ) );
-            wait( checkpoint );
+            shouldWait( checkpoint );
 
             // THEN
             barrier.release();
@@ -700,7 +700,7 @@ public class GBPTreeTest
             }
         } );
 
-        wait( write );
+        shouldWait( write );
         barrier.release();
 
         // THEN
@@ -751,7 +751,7 @@ public class GBPTreeTest
         } ) );
         barrier.awaitUninterruptibly();
         Future<?> close = executor.submit( throwing( index::close ) );
-        wait( close );
+        shouldWait( close );
 
         // THEN
         barrier.release();
@@ -1154,7 +1154,7 @@ public class GBPTreeTest
         }
     }
 
-    private void wait( Future<?> future ) throws InterruptedException, ExecutionException
+    private void shouldWait( Future<?> future )throws InterruptedException, ExecutionException
     {
         try
         {
@@ -1185,6 +1185,7 @@ public class GBPTreeTest
         private Header.Reader headerReader = NO_HEADER;
         private Layout<MutableLong,MutableLong> layout = GBPTreeTest.layout;
         private PageCache specificPageCache;
+        private RecoveryCleanupWorkCollector recoveryCleanupWorkCollector = RecoveryCleanupWorkCollector.IMMEDIATE;
 
         private GBPTreeBuilder withPageCachePageSize( int pageSize )
         {
@@ -1240,7 +1241,7 @@ public class GBPTreeTest
             }
 
             return new GBPTree<>( pageCacheToUse, indexFile, layout, tentativePageSize, monitor, headerReader,
-                    RecoveryCleanupWorkCollector.IMMEDIATE );
+                    recoveryCleanupWorkCollector );
         }
     }
 
