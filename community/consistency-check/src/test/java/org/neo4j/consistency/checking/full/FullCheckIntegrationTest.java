@@ -1856,6 +1856,22 @@ public class FullCheckIntegrationTest
     }
 
     @Test
+    public void shouldReportInvalidLabelIdInNodeKeyConstraintRule() throws Exception
+    {
+        // Given
+        int badLabelId = fixture.idGenerator().label();
+        int propertyKeyId = createPropertyKey();
+        createNodeKeyConstraintRule( badLabelId, propertyKeyId );
+
+        // When
+        ConsistencySummaryStatistics stats = check();
+
+        // Then
+        on( stats ).verify( RecordType.SCHEMA, 2 ) // invalid label in both index & owning constraint
+                .andThatsAllFolks();
+    }
+
+    @Test
     public void shouldReportInvalidLabelIdInNodePropertyExistenceConstraintRule() throws Exception
     {
         // Given
@@ -1935,6 +1951,23 @@ public class FullCheckIntegrationTest
     }
 
     @Test
+    public void shouldReportInvalidSecondPropertyKeyIdInNodeKeyConstraintRule() throws Exception
+    {
+        // Given
+        int labelId = createLabel();
+        int propertyKeyId = createPropertyKey();
+        int badPropertyKeyId = fixture.idGenerator().propertyKey();
+        createNodeKeyConstraintRule( labelId, propertyKeyId, badPropertyKeyId );
+
+        // When
+        ConsistencySummaryStatistics stats = check();
+
+        // Then
+        on( stats ).verify( RecordType.SCHEMA, 2 ) // invalid property key in both index & owning constraint
+                .andThatsAllFolks();
+    }
+
+    @Test
     public void shouldReportInvalidPropertyKeyIdInNodePropertyExistenceConstraintRule() throws Exception
     {
         // Given
@@ -1972,6 +2005,23 @@ public class FullCheckIntegrationTest
         int propertyKeyId = createPropertyKey();
 
         createUniquenessConstraintRule( labelId, propertyKeyId );
+        createNodePropertyExistenceConstraint( labelId, propertyKeyId );
+
+        // When
+        ConsistencySummaryStatistics stats = check();
+
+        // Then
+        assertTrue( stats.isConsistent() );
+    }
+
+    @Test
+    public void shouldReportNothingForNodeKeyAndPropertyExistenceConstraintOnSameLabelAndProperty() throws Exception
+    {
+        // Given
+        int labelId = createLabel();
+        int propertyKeyId = createPropertyKey();
+
+        createNodeKeyConstraintRule( labelId, propertyKeyId );
         createNodePropertyExistenceConstraint( labelId, propertyKeyId );
 
         // When
