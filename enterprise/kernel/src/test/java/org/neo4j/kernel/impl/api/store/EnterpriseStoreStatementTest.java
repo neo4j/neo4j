@@ -37,6 +37,7 @@ import org.neo4j.kernel.impl.store.NeoStores;
 import org.neo4j.kernel.impl.store.NodeStore;
 import org.neo4j.kernel.internal.GraphDatabaseAPI;
 import org.neo4j.storageengine.api.NodeItem;
+import org.neo4j.storageengine.api.txstate.NodeTransactionStateView;
 import org.neo4j.storageengine.api.txstate.ReadableTransactionState;
 import org.neo4j.test.rule.EnterpriseDatabaseRule;
 import org.neo4j.test.rule.RandomRule;
@@ -106,7 +107,7 @@ public class EnterpriseStoreStatementTest
     }
 
     private Set<Long> parallelExecution( NeoStores neoStores, ExecutorService executorService, int threads,
-            ReadableTransactionState state ) throws Throwable
+            NodeTransactionStateView stateView ) throws Throwable
     {
         EnterpriseStoreStatement[] localStatements = new EnterpriseStoreStatement[threads];
         for ( int i = 0; i < threads; i++ )
@@ -114,7 +115,7 @@ public class EnterpriseStoreStatementTest
             localStatements[i] = new EnterpriseStoreStatement( neoStores, null, null, NO_LOCK_SERVICE );
         }
         // use any of the local statements to build the shared progression
-        NodeProgression progression = localStatements[0].parallelNodeScanProgression( state );
+        Progression progression = localStatements[0].parallelNodeScanProgression();
 
         @SuppressWarnings( "unchecked" )
         Future<Set<Long>>[] futures = new Future[threads];
@@ -124,7 +125,7 @@ public class EnterpriseStoreStatementTest
             futures[i] = executorService.submit( () ->
             {
                 HashSet<Long> ids = new HashSet<>();
-                try ( Cursor<NodeItem> cursor = localStatements[id].acquireNodeCursor( progression ) )
+                try ( Cursor<NodeItem> cursor = localStatements[id].acquireNodeCursor( progression, stateView ) )
                 {
                     while ( cursor.next() )
                     {
@@ -161,12 +162,12 @@ public class EnterpriseStoreStatementTest
         return parallelResult;
     }
 
-    private Set<Long> singleThreadExecution( NeoStores neoStores, ReadableTransactionState state )
+    private Set<Long> singleThreadExecution( NeoStores neoStores, NodeTransactionStateView stateView )
     {
         Set<Long> expected = new HashSet<>();
         EnterpriseStoreStatement statement = new EnterpriseStoreStatement( neoStores, null, null, NO_LOCK_SERVICE );
         try ( Cursor<NodeItem> cursor = statement
-                .acquireNodeCursor( new AllNodeProgression( neoStores.getNodeStore(), state ) ) )
+                .acquireNodeCursor( new AllNodeProgression( neoStores.getNodeStore() ), stateView ) )
         {
             while ( cursor.next() )
             {

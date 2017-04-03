@@ -276,7 +276,7 @@ public class SchemaTransactionStateTest
         Map<Integer, Collection<Long>> allLabels = new HashMap<>();
         for ( Labels nodeLabels : labels )
         {
-            when( storeStatement.acquireNodeCursor( new SingleNodeProgression( nodeLabels.nodeId, EMPTY ) ) )
+            when( storeStatement.acquireNodeCursor( new SingleNodeProgression( nodeLabels.nodeId ), EMPTY ) )
                     .thenReturn( asNodeCursor( nodeLabels.nodeId, StubCursors.labels( nodeLabels.labelIds ) ) );
 
             for ( int label : nodeLabels.labelIds )

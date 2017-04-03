@@ -19,28 +19,23 @@
  */
 package org.neo4j.kernel.impl.api.store;
 
-import java.util.Iterator;
 import java.util.concurrent.atomic.AtomicBoolean;
 import java.util.concurrent.atomic.AtomicLong;
 
 import org.neo4j.kernel.impl.store.NodeStore;
-import org.neo4j.storageengine.api.txstate.NodeState;
-import org.neo4j.storageengine.api.txstate.ReadableTransactionState;
 
-class ParallelAllNodeProgression implements NodeProgression
+class ParallelAllNodeProgression implements Progression
 {
     private final NodeStore nodeStore;
-    private final ReadableTransactionState state;
     private final AtomicLong nextPageId;
     private final long lastPageId;
 
     private final AtomicBoolean done = new AtomicBoolean();
     private final AtomicBoolean append = new AtomicBoolean( true );
 
-    ParallelAllNodeProgression( NodeStore nodeStore, ReadableTransactionState state )
+    ParallelAllNodeProgression( NodeStore nodeStore )
     {
         this.nodeStore = nodeStore;
-        this.state = state;
         // start from the page containing the first non reserved id
         this.nextPageId = new AtomicLong( nodeStore.pageIdForRecord( nodeStore.getNumberOfReservedLowIds() ) );
         // last page to process is the one containing the highest id in use
@@ -77,30 +72,14 @@ class ParallelAllNodeProgression implements NodeProgression
     }
 
     @Override
-    public Iterator<Long> addedNodes()
+    public boolean appendAdded()
     {
-        if ( append.get() && append.compareAndSet( true, false ) )
-        {
-            return state.addedAndRemovedNodes().getAdded().iterator();
-        }
-        return null;
+        return append.compareAndSet( true, false );
     }
 
     @Override
-    public boolean fetchFromTxState( long id )
+    public boolean fetchAdded()
     {
         return false;
-    }
-
-    @Override
-    public boolean fetchFromDisk( long id )
-    {
-        return !state.nodeIsDeletedInThisTx( id );
-    }
-
-    @Override
-    public NodeState nodeState( long id )
-    {
-        return state.getNodeState( id );
     }
 }

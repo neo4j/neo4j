@@ -44,7 +44,6 @@ import org.neo4j.kernel.impl.store.record.RelationshipGroupRecord;
 import org.neo4j.kernel.impl.store.record.RelationshipRecord;
 import org.neo4j.storageengine.api.Direction;
 import org.neo4j.storageengine.api.NodeItem;
-import org.neo4j.storageengine.api.txstate.ReadableTransactionState;
 import org.neo4j.test.TestGraphDatabaseFactory;
 import org.neo4j.test.rule.RandomRule;
 
@@ -65,6 +64,7 @@ import static org.neo4j.kernel.impl.store.record.Record.NO_NEXT_RELATIONSHIP;
 import static org.neo4j.storageengine.api.Direction.BOTH;
 import static org.neo4j.storageengine.api.Direction.INCOMING;
 import static org.neo4j.storageengine.api.Direction.OUTGOING;
+import static org.neo4j.storageengine.api.txstate.ReadableTransactionState.EMPTY;
 
 public class StorageLayerRelTypesAndDegreeTest extends StorageLayerTest
 {
@@ -472,7 +472,7 @@ public class StorageLayerRelTypesAndDegreeTest extends StorageLayerTest
     {
         NodeCursor cursor =
                 new NodeCursor( resolveNeoStores().getNodeStore(), mock( Consumer.class ), NO_LOCK_SERVICE );
-        cursor.init( new SingleNodeProgression( nodeId, ReadableTransactionState.EMPTY ) );
+        cursor.init( new SingleNodeProgression( nodeId ), EMPTY );
         assertTrue( cursor.next() );
         return cursor;
     }

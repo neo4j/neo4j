@@ -19,29 +19,11 @@
  */
 package org.neo4j.kernel.impl.api.store;
 
-import org.junit.Test;
-
-import static org.junit.Assert.assertEquals;
-import static org.junit.Assert.assertFalse;
-import static org.junit.Assert.assertTrue;
-
-public class SingleNodeProgressionTest
+public interface Progression
 {
-    @Test
-    public void shouldReturnOnlyTheGivenNodeId() throws Throwable
-    {
-        // given
-        long nodeId = 42L;
-        SingleNodeProgression progression = new SingleNodeProgression( nodeId );
-        Batch batch = new Batch();
+    boolean nextBatch( Batch batch );
 
-        // when / then
-        assertTrue( progression.nextBatch( batch ) );
-        assertTrue( batch.hasNext() );
-        assertEquals( nodeId, batch.next() );
+    boolean appendAdded();
 
-        assertFalse( batch.hasNext() );
-        assertFalse( progression.nextBatch( batch ) );
-        assertFalse( batch.hasNext() );
-    }
+    boolean fetchAdded();
 }
