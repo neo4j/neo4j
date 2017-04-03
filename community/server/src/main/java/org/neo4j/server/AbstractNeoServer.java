@@ -373,7 +373,7 @@ public abstract class AbstractNeoServer implements NeoServer
                     log.info( "No SSL certificate found, generating a self-signed certificate.." );
                     Certificates certFactory = new Certificates();
                     certFactory.createSelfSignedCertificate( certificatePath, privateKeyPath,
-                            httpListenAddress.getHostname() );
+                            httpAdvertisedAddress.getHostname() );
                 }
 
                 // Make sure both files were there, or were generated
