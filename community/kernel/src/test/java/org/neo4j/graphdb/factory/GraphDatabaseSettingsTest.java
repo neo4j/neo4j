@@ -130,7 +130,7 @@ public class GraphDatabaseSettingsTest
         ListenSocketAddress listenSocketAddress = config.get( boltConnector.listen_address );
 
         // then
-        assertEquals( new ListenSocketAddress( "localhost", 7687 ), listenSocketAddress );
+        assertEquals( new ListenSocketAddress( "127.0.0.1", 7687 ), listenSocketAddress );
     }
 
     @Test
@@ -155,7 +155,7 @@ public class GraphDatabaseSettingsTest
         BoltConnector boltConnector = config.boltConnectors().get( 0 );
 
         // then
-        assertEquals( new ListenSocketAddress( "localhost", 8000 ), config.get( boltConnector.listen_address ) );
+        assertEquals( new ListenSocketAddress( "127.0.0.1", 8000 ), config.get( boltConnector.listen_address ) );
     }
 
     @Test
@@ -199,7 +199,7 @@ public class GraphDatabaseSettingsTest
         BoltConnector boltConnector = config.boltConnectors().get( 0 );
 
         // then
-        assertEquals( new ListenSocketAddress( "localhost", 8000 ), config.get( boltConnector.listen_address ) );
+        assertEquals( new ListenSocketAddress( "127.0.0.1", 8000 ), config.get( boltConnector.listen_address ) );
     }
 
     @Test
@@ -224,13 +224,13 @@ public class GraphDatabaseSettingsTest
 
         if ( addresses.get( 0 ).getPort() == 8000 )
         {
-            assertEquals( new ListenSocketAddress( "localhost", 8000 ), addresses.get( 0 ) );
-            assertEquals( new ListenSocketAddress( "localhost", 9000 ), addresses.get( 1 ) );
+            assertEquals( new ListenSocketAddress( "127.0.0.1", 8000 ), addresses.get( 0 ) );
+            assertEquals( new ListenSocketAddress( "127.0.0.1", 9000 ), addresses.get( 1 ) );
         }
         else
         {
-            assertEquals( new ListenSocketAddress( "localhost", 8000 ), addresses.get( 1 ) );
-            assertEquals( new ListenSocketAddress( "localhost", 9000 ), addresses.get( 0 ) );
+            assertEquals( new ListenSocketAddress( "127.0.0.1", 8000 ), addresses.get( 1 ) );
+            assertEquals( new ListenSocketAddress( "127.0.0.1", 9000 ), addresses.get( 0 ) );
         }
     }
 
@@ -250,8 +250,8 @@ public class GraphDatabaseSettingsTest
         BoltConnector boltConnector2 = config.boltConnectors().get( 1 );
 
         // then
-        assertEquals( new ListenSocketAddress( "localhost", 8000 ), config.get( boltConnector1.listen_address ) );
-        assertEquals( new ListenSocketAddress( "localhost", 9000 ), config.get( boltConnector2.listen_address ) );
+        assertEquals( new ListenSocketAddress( "127.0.0.1", 8000 ), config.get( boltConnector1.listen_address ) );
+        assertEquals( new ListenSocketAddress( "127.0.0.1", 9000 ), config.get( boltConnector2.listen_address ) );
     }
 
     /// JONAS HTTP FOLLOWS
@@ -275,9 +275,9 @@ public class GraphDatabaseSettingsTest
         }
         else
         {
-            assertEquals( new ListenSocketAddress( "localhost", 7474 ),
+            assertEquals( new ListenSocketAddress( "127.0.0.1", 7474 ),
                     config.get( connectors.get( 0 ).listen_address ) );
-            assertEquals( new ListenSocketAddress( "localhost", 7473 ),
+            assertEquals( new ListenSocketAddress( "127.0.0.1", 7473 ),
                     config.get( connectors.get( 1 ).listen_address ) );
         }
     }
@@ -308,7 +308,7 @@ public class GraphDatabaseSettingsTest
 
         HttpConnector httpConnector = config.enabledHttpConnectors().get( 0 );
 
-        assertEquals( new ListenSocketAddress( "localhost", 8000 ),
+        assertEquals( new ListenSocketAddress( "127.0.0.1", 8000 ),
                 config.get( httpConnector.listen_address ) );
     }
 
@@ -332,7 +332,7 @@ public class GraphDatabaseSettingsTest
         assertEquals( 1, config.enabledHttpConnectors().size() );
         HttpConnector httpConnector = config.enabledHttpConnectors().get( 0 );
 
-        assertEquals( new ListenSocketAddress( "localhost", 8000 ),
+        assertEquals( new ListenSocketAddress( "127.0.0.1", 8000 ),
                 config.get( httpConnector.listen_address ) );
     }
 
@@ -411,7 +411,7 @@ public class GraphDatabaseSettingsTest
 
         // then
         assertEquals( 1, config.enabledHttpConnectors().size() );
-        assertEquals( new ListenSocketAddress( "localhost", 8000 ),
+        assertEquals( new ListenSocketAddress( "127.0.0.1", 8000 ),
                 config.get( config.enabledHttpConnectors().get( 0 ).listen_address ) );
     }
 
@@ -426,7 +426,7 @@ public class GraphDatabaseSettingsTest
 
         // then
         assertEquals( 1, config.enabledHttpConnectors().size() );
-        assertEquals( new ListenSocketAddress( "localhost", 9000 ),
+        assertEquals( new ListenSocketAddress( "127.0.0.1", 9000 ),
                 config.get( config.enabledHttpConnectors().get( 0 ).listen_address ) );
     }
 }
