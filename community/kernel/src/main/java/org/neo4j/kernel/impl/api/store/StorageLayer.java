@@ -63,6 +63,7 @@ import org.neo4j.register.Register;
 import org.neo4j.register.Register.DoubleLongRegister;
 import org.neo4j.storageengine.api.Direction;
 import org.neo4j.storageengine.api.NodeItem;
+import org.neo4j.storageengine.api.ProgressionFactory;
 import org.neo4j.storageengine.api.PropertyItem;
 import org.neo4j.storageengine.api.RelationshipItem;
 import org.neo4j.storageengine.api.StorageProperty;
@@ -101,10 +102,12 @@ public class StorageLayer implements StoreReadLayer
     private final PropertyLoader propertyLoader;
     private final Supplier<StorageStatement> statementProvider;
     private final SchemaCache schemaCache;
+    private final ProgressionFactory progressionFactory;
 
     public StorageLayer( PropertyKeyTokenHolder propertyKeyTokenHolder, LabelTokenHolder labelTokenHolder,
             RelationshipTypeTokenHolder relationshipTokenHolder, SchemaStorage schemaStorage, NeoStores neoStores,
-            IndexingService indexService, Supplier<StorageStatement> storeStatementSupplier, SchemaCache schemaCache )
+            IndexingService indexService, Supplier<StorageStatement> storeStatementSupplier, SchemaCache schemaCache,
+            ProgressionFactory progressionFactory )
     {
         this.relationshipTokenHolder = relationshipTokenHolder;
         this.schemaStorage = schemaStorage;
@@ -117,6 +120,7 @@ public class StorageLayer implements StoreReadLayer
         this.counts = neoStores.getCounts();
         this.propertyLoader = new PropertyLoader( neoStores );
         this.schemaCache = schemaCache;
+        this.progressionFactory = progressionFactory;
     }
 
     @Override
@@ -397,13 +401,13 @@ public class StorageLayer implements StoreReadLayer
     @Override
     public Cursor<NodeItem> nodeGetAllCursor( StorageStatement statement, NodeTransactionStateView stateView )
     {
-        return statement.acquireNodeCursor( new AllNodeProgression( nodeStore ), stateView );
+        return statement.acquireNodeCursor( progressionFactory.allNodeScan( nodeStore ), stateView );
     }
 
     @Override
     public Cursor<NodeItem> nodeCursor( StorageStatement statement, long nodeId, NodeTransactionStateView stateView )
     {
-        return statement.acquireNodeCursor( new SingleNodeProgression( nodeId ), stateView );
+        return statement.acquireNodeCursor( progressionFactory.singleNodeFetch( nodeId ), stateView );
     }
 
     @Override

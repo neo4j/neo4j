@@ -24,7 +24,7 @@ import java.util.concurrent.atomic.AtomicLong;
 
 import org.neo4j.kernel.impl.store.NodeStore;
 
-class ParallelAllNodeProgression implements BatchingLongProgression
+class ParallelAllNodeScan implements BatchingLongProgression
 {
     private final NodeStore nodeStore;
     private final AtomicLong nextPageId;
@@ -33,7 +33,7 @@ class ParallelAllNodeProgression implements BatchingLongProgression
     private final AtomicBoolean done = new AtomicBoolean();
     private final AtomicBoolean append = new AtomicBoolean( true );
 
-    ParallelAllNodeProgression( NodeStore nodeStore )
+    ParallelAllNodeScan( NodeStore nodeStore )
     {
         this.nodeStore = nodeStore;
         // start from the page containing the first non reserved id

@@ -38,6 +38,7 @@ import org.neo4j.kernel.api.security.UserManagerSupplier;
 import org.neo4j.kernel.configuration.Config;
 import org.neo4j.kernel.impl.api.SchemaWriteGuard;
 import org.neo4j.kernel.impl.api.index.RemoveOrphanConstraintIndexesOnStartup;
+import org.neo4j.kernel.impl.api.store.CommunityProgressionFactory;
 import org.neo4j.kernel.impl.api.store.StoreStatement;
 import org.neo4j.kernel.impl.constraints.ConstraintSemantics;
 import org.neo4j.kernel.impl.constraints.StandardConstraintSemantics;
@@ -58,7 +59,6 @@ import org.neo4j.kernel.impl.locking.StatementLocksFactory;
 import org.neo4j.kernel.impl.locking.community.CommunityLockManger;
 import org.neo4j.kernel.impl.logging.LogService;
 import org.neo4j.kernel.impl.proc.Procedures;
-import org.neo4j.kernel.impl.storageengine.impl.recordstorage.StorageStatementFactory;
 import org.neo4j.kernel.impl.store.id.DefaultIdGeneratorFactory;
 import org.neo4j.kernel.impl.store.id.IdGeneratorFactory;
 import org.neo4j.kernel.impl.store.id.IdReuseEligibility;
@@ -72,6 +72,7 @@ import org.neo4j.kernel.internal.GraphDatabaseAPI;
 import org.neo4j.kernel.internal.KernelData;
 import org.neo4j.kernel.lifecycle.LifeSupport;
 import org.neo4j.kernel.lifecycle.LifecycleStatus;
+import org.neo4j.storageengine.api.ProgressionFactory;
 import org.neo4j.udc.UsageData;
 
 /**
@@ -129,7 +130,9 @@ public class CommunityEditionModule extends EditionModule
 
         constraintSemantics = createSchemaRuleVerifier();
 
-        storageStatementFactory = createStorageStatementFactory();
+        storageStatementFactory = StoreStatement::new;
+
+        progressionFactory = platformModule.dependencies.satisfyDependency( createProgressionFactory() );
 
         coreAPIAvailabilityGuard = new CoreAPIAvailabilityGuard( platformModule.availabilityGuard, transactionStartTimeout );
 
@@ -142,6 +145,11 @@ public class CommunityEditionModule extends EditionModule
         publishEditionInfo( dependencies.resolveDependency( UsageData.class ), platformModule.databaseInfo, config );
 
         dependencies.satisfyDependency( createSessionTracker() );
+    }
+
+    protected ProgressionFactory createProgressionFactory()
+    {
+        return new CommunityProgressionFactory();
     }
 
     static Predicate<String> fileWatcherFileNameFilter()
@@ -160,11 +168,6 @@ public class CommunityEditionModule extends EditionModule
     protected ConstraintSemantics createSchemaRuleVerifier()
     {
         return new StandardConstraintSemantics();
-    }
-
-    protected StorageStatementFactory createStorageStatementFactory()
-    {
-        return StoreStatement::new;
     }
 
     protected StatementLocksFactory createStatementLocksFactory( Locks locks, Config config, LogService logService )

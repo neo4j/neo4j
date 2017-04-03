@@ -17,44 +17,16 @@
  * You should have received a copy of the GNU General Public License
  * along with this program.  If not, see <http://www.gnu.org/licenses/>.
  */
-package org.neo4j.kernel.impl.api.store;
+package org.neo4j.storageengine.api;
 
-import static org.neo4j.kernel.api.StatementConstants.NO_SUCH_NODE;
+import org.neo4j.kernel.impl.api.store.BatchingLongProgression;
+import org.neo4j.kernel.impl.store.NodeStore;
 
-public class SingleNodeProgression implements BatchingLongProgression
+public interface ProgressionFactory
 {
-    private long nodeId;
+    BatchingLongProgression singleNodeFetch( long nodeId );
 
-    public SingleNodeProgression( long nodeId )
-    {
-        this.nodeId = nodeId;
-    }
+    BatchingLongProgression allNodeScan( NodeStore nodeStore );
 
-    @Override
-    public boolean nextBatch( Batch batch )
-    {
-        if ( nodeId != NO_SUCH_NODE )
-        {
-            batch.init( nodeId, nodeId );
-            nodeId = NO_SUCH_NODE;
-            return true;
-        }
-        else
-        {
-            batch.nothing();
-            return false;
-        }
-    }
-
-    @Override
-    public boolean appendAdded()
-    {
-        return false;
-    }
-
-    @Override
-    public boolean fetchAdded()
-    {
-        return true;
-    }
+    BatchingLongProgression parallelAllNodeScan( NodeStore nodeStore );
 }
