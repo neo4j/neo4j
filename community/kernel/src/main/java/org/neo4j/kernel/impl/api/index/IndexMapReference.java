@@ -19,9 +19,9 @@
  */
 package org.neo4j.kernel.impl.api.index;
 
+import org.neo4j.collection.primitive.PrimitiveIntCollection;
 import org.neo4j.kernel.api.exceptions.index.IndexNotFoundKernelException;
 import org.neo4j.kernel.api.schema_new.LabelSchemaDescriptor;
-import org.neo4j.kernel.api.schema_new.index.NewIndexDescriptor;
 
 public class IndexMapReference implements IndexMapSnapshotProvider
 {
@@ -79,6 +79,12 @@ public class IndexMapReference implements IndexMapSnapshotProvider
     public Iterable<IndexProxy> getAllIndexProxies()
     {
         return indexMap.getAllIndexProxies();
+    }
+
+    public Iterable<LabelSchemaDescriptor> getRelatedIndexes(
+            long[] changedLabels, long[] unchangedLabels, PrimitiveIntCollection properties )
+    {
+        return indexMap.getRelatedIndexes( changedLabels, unchangedLabels, properties );
     }
 
     public void setIndexMap( IndexMap newIndexMap )

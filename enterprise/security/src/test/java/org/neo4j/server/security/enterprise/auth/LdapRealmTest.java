@@ -401,8 +401,7 @@ public class LdapRealmTest
         // When
         assertException( () -> realm.queryForAuthenticationInfo(
                 new ShiroAuthToken( map( "principal", "olivia", "credentials", "123" ) ), jndiLdapContectFactory ),
-                NamingException.class, ""
-            );
+                NamingException.class );
 
         // Then
         verify( securityLog ).error( contains(
@@ -439,7 +438,7 @@ public class LdapRealmTest
 
         // When
         assertException( () -> realm.doGetAuthorizationInfo( new SimplePrincipalCollection( "olivia", "LdapRealm" ) ),
-                AuthProviderFailedException.class, "" );
+                AuthProviderFailedException.class );
 
         // Then
         verify( securityLog ).error( contains( "{LdapRealm}: Failed to get authorization info: " +

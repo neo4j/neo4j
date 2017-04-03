@@ -23,13 +23,20 @@ import org.junit.Before;
 import org.junit.Test;
 
 import java.io.IOException;
+import java.util.List;
+import java.util.Set;
+import java.util.stream.Collectors;
 
+import org.neo4j.helpers.collection.Iterables;
 import org.neo4j.kernel.api.index.IndexUpdater;
+import org.neo4j.kernel.api.schema_new.LabelSchemaDescriptor;
 import org.neo4j.kernel.api.schema_new.index.NewIndexDescriptor;
 import org.neo4j.kernel.api.schema_new.index.NewIndexDescriptorFactory;
 
 import static org.hamcrest.MatcherAssert.assertThat;
+import static org.hamcrest.Matchers.contains;
 import static org.hamcrest.Matchers.equalTo;
+import static org.hamcrest.Matchers.hasSize;
 import static org.junit.Assert.assertEquals;
 import static org.junit.Assert.assertNull;
 import static org.junit.Assert.assertTrue;
@@ -40,8 +47,6 @@ import static org.mockito.Mockito.when;
 
 public class IndexUpdaterMapTest
 {
-    private final long transactionId = 42L;
-
     private IndexMap indexMap;
 
     private IndexProxy indexProxy1;
@@ -50,6 +55,9 @@ public class IndexUpdaterMapTest
 
     private IndexProxy indexProxy2;
     private NewIndexDescriptor indexDescriptor2;
+
+    private IndexProxy indexProxy3;
+    private NewIndexDescriptor indexDescriptor3;
 
     private IndexUpdaterMap updaterMap;
 
@@ -69,6 +77,12 @@ public class IndexUpdaterMapTest
         IndexUpdater indexUpdater2 = mock( IndexUpdater.class );
         when( indexProxy2.getDescriptor() ).thenReturn( indexDescriptor2 );
         when( indexProxy2.newUpdater( any( IndexUpdateMode.class ) ) ).thenReturn( indexUpdater2 );
+
+        indexProxy3 = mock( IndexProxy.class );
+        indexDescriptor3 = NewIndexDescriptorFactory.forLabel( 5, 7, 8 );
+        IndexUpdater indexUpdater3 = mock( IndexUpdater.class );
+        when( indexProxy3.getDescriptor() ).thenReturn( indexDescriptor3 );
+        when( indexProxy3.newUpdater( any( IndexUpdateMode.class ) ) ).thenReturn( indexUpdater3 );
 
         updaterMap = new IndexUpdaterMap( indexMap, IndexUpdateMode.ONLINE );
     }
@@ -145,5 +159,4 @@ public class IndexUpdaterMapTest
 
         assertTrue( "updater map must be empty", updaterMap.isEmpty() );
     }
-
 }

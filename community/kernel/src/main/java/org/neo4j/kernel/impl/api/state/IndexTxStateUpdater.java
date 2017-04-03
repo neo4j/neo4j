@@ -34,24 +34,25 @@ import org.neo4j.kernel.api.schema_new.OrderedPropertyValues;
 import org.neo4j.kernel.api.schema_new.index.NewIndexDescriptor;
 import org.neo4j.kernel.impl.api.KernelStatement;
 import org.neo4j.kernel.impl.api.operations.EntityReadOperations;
-import org.neo4j.kernel.impl.api.operations.SchemaReadOperations;
 import org.neo4j.kernel.impl.api.schema.NodeSchemaMatcher;
 import org.neo4j.kernel.impl.util.Validators;
 import org.neo4j.storageengine.api.NodeItem;
 import org.neo4j.storageengine.api.PropertyItem;
+import org.neo4j.storageengine.api.StoreReadLayer;
 
 import static org.neo4j.kernel.api.properties.DefinedProperty.NO_SUCH_PROPERTY;
-import static org.neo4j.kernel.api.schema_new.SchemaDescriptorPredicates.hasProperty;
 
 public class IndexTxStateUpdater
 {
-    private final SchemaReadOperations schemaReadOps;
+    private final StoreReadLayer storeReadLayer;
     private final EntityReadOperations readOps;
     private final NodeSchemaMatcher nodeIndexMatcher;
 
-    public IndexTxStateUpdater( SchemaReadOperations schemaReadOps, EntityReadOperations readOps )
+    // We can use the StoreReadLayer directly instead of the SchemaReadOps, because we know that in transactions
+    // where this class is needed we will never have index changes.
+    public IndexTxStateUpdater( StoreReadLayer storeReadLayer, EntityReadOperations readOps )
     {
-        this.schemaReadOps = schemaReadOps;
+        this.storeReadLayer = storeReadLayer;
         this.readOps = readOps;
         this.nodeIndexMatcher = new NodeSchemaMatcher( readOps );
     }
@@ -67,13 +68,14 @@ public class IndexTxStateUpdater
     public void onLabelChange( KernelStatement state, int labelId, NodeItem node, LabelChangeType changeType )
             throws EntityNotFoundException
     {
+        assert noSchemaChangedInTx( state );
         PrimitiveIntSet nodePropertyIds = Primitive.intSet();
         nodePropertyIds.addAll( readOps.nodeGetPropertyKeys( state, node ).iterator() );
 
         Iterator<NewIndexDescriptor> indexes =
                 Iterators.concat(
-                        schemaReadOps.indexesGetForLabel( state, labelId ),
-                        schemaReadOps.uniqueIndexesGetForLabel( state, labelId ) );
+                        storeReadLayer.indexesGetForLabel( labelId ),
+                        storeReadLayer.uniquenessIndexesGetForLabel( labelId ) );
 
         while ( indexes.hasNext() )
         {
@@ -94,38 +96,51 @@ public class IndexTxStateUpdater
         }
     }
 
+    private boolean noSchemaChangedInTx( KernelStatement state )
+    {
+        return !(state.txState().hasChanges() && !state.txState().hasDataChanges());
+    }
+
     // PROPERTY CHANGES
 
     public void onPropertyAdd( KernelStatement state, NodeItem node, DefinedProperty after )
             throws EntityNotFoundException
     {
-        Iterator<NewIndexDescriptor> indexes = getIndexesInvolvingProperty( state, after.propertyKeyId() );
-        nodeIndexMatcher.onMatchingSchema( state, indexes, node, after.propertyKeyId(), index ->
-        {
-            Validators.INDEX_VALUE_VALIDATOR.validate( after.value() );
-            OrderedPropertyValues values =
-                    getOrderedPropertyValues( state, node, after, index.schema().getPropertyIds() );
-            state.txState().indexDoUpdateEntry( index.schema(), node.id(), null, values );
-        } );
+        assert noSchemaChangedInTx( state );
+        Iterator<NewIndexDescriptor> indexes =
+                storeReadLayer.indexesAndUniqueIndexesRelatedToProperty( after.propertyKeyId() );
+        nodeIndexMatcher.onMatchingSchema( state, indexes, node, after.propertyKeyId(),
+                index ->
+                {
+                    Validators.INDEX_VALUE_VALIDATOR.validate( after.value() );
+                    OrderedPropertyValues values =
+                            getOrderedPropertyValues( state, node, after, index.schema().getPropertyIds() );
+                    state.txState().indexDoUpdateEntry( index.schema(), node.id(), null, values );
+                } );
     }
 
     public void onPropertyRemove( KernelStatement state, NodeItem node, DefinedProperty before )
             throws EntityNotFoundException
     {
-        Iterator<NewIndexDescriptor> indexes = getIndexesInvolvingProperty( state, before.propertyKeyId() );
-        nodeIndexMatcher.onMatchingSchema( state, indexes, node, before.propertyKeyId(), index ->
-        {
-            OrderedPropertyValues values =
-                    getOrderedPropertyValues( state, node, before, index.schema().getPropertyIds() );
-            state.txState().indexDoUpdateEntry( index.schema(), node.id(), values, null );
-        } );
+        assert noSchemaChangedInTx( state );
+        Iterator<NewIndexDescriptor> indexes =
+                storeReadLayer.indexesAndUniqueIndexesRelatedToProperty( before.propertyKeyId() );
+        nodeIndexMatcher.onMatchingSchema( state, indexes, node, before.propertyKeyId(),
+                index ->
+                {
+                    OrderedPropertyValues values =
+                            getOrderedPropertyValues( state, node, before, index.schema().getPropertyIds() );
+                    state.txState().indexDoUpdateEntry( index.schema(), node.id(), values, null );
+                });
     }
 
     public void onPropertyChange( KernelStatement state, NodeItem node, DefinedProperty before, DefinedProperty after )
             throws EntityNotFoundException
     {
+        assert noSchemaChangedInTx( state );
         assert before.propertyKeyId() == after.propertyKeyId();
-        Iterator<NewIndexDescriptor> indexes = getIndexesInvolvingProperty( state, before.propertyKeyId() );
+        Iterator<NewIndexDescriptor> indexes =
+                storeReadLayer.indexesAndUniqueIndexesRelatedToProperty( before.propertyKeyId() );
         nodeIndexMatcher.onMatchingSchema( state, indexes, node, before.propertyKeyId(),
                 index ->
                 {
@@ -202,17 +217,4 @@ public class IndexTxStateUpdater
         }
         return true;
     }
-
-    // Lifting this method to the schemaReadOps layer could allow more efficient finding of indexes, by introducing
-    // suitable maps in the SchemaCache. This can be done when we have a benchmarking reason.
-    private Iterator<NewIndexDescriptor> getIndexesInvolvingProperty( KernelStatement state, int propertyId )
-    {
-        Iterator<NewIndexDescriptor> allIndexes =
-                Iterators.concat(
-                        schemaReadOps.indexesGetAll( state ),
-                        schemaReadOps.uniqueIndexesGetAll( state ) );
-
-        return Iterators.filter( hasProperty( propertyId ), allIndexes );
-    }
-
 }

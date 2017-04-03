@@ -29,8 +29,9 @@ import org.neo4j.collection.primitive.PrimitiveLongSet;
 import org.neo4j.concurrent.Work;
 import org.neo4j.helpers.collection.NestingIterator;
 import org.neo4j.kernel.api.exceptions.index.IndexEntryConflictException;
+import org.neo4j.kernel.api.index.IndexEntryUpdate;
+import org.neo4j.kernel.api.schema_new.LabelSchemaDescriptor;
 import org.neo4j.kernel.impl.api.index.IndexingUpdateService;
-import org.neo4j.kernel.impl.api.index.NodeUpdates;
 import org.neo4j.kernel.impl.store.UnderlyingStorageException;
 import org.neo4j.kernel.impl.transaction.command.Command.NodeCommand;
 import org.neo4j.kernel.impl.transaction.command.Command.PropertyCommand;
@@ -73,12 +74,12 @@ public class IndexUpdatesWork implements Work<IndexingUpdateService,IndexUpdates
         return new IndexUpdates()
         {
             @Override
-            public Iterator<NodeUpdates> iterator()
+            public Iterator<IndexEntryUpdate<LabelSchemaDescriptor>> iterator()
             {
-                return new NestingIterator<NodeUpdates,IndexUpdates>( updates.iterator() )
+                return new NestingIterator<IndexEntryUpdate<LabelSchemaDescriptor>,IndexUpdates>( updates.iterator() )
                 {
                     @Override
-                    protected Iterator<NodeUpdates> createNestedIterator( IndexUpdates item )
+                    protected Iterator<IndexEntryUpdate<LabelSchemaDescriptor>> createNestedIterator( IndexUpdates item )
                     {
                         return item.iterator();
                     }

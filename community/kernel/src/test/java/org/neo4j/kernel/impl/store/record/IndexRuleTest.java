@@ -46,8 +46,8 @@ public class IndexRuleTest extends SchemaRuleTestBase
         assertThat( indexRule.schema(), equalTo( descriptor.schema() ) );
         assertThat( indexRule.getIndexDescriptor(), equalTo( descriptor ) );
         assertThat( indexRule.getProviderDescriptor(), equalTo( PROVIDER_DESCRIPTOR ) );
-        assertException( indexRule::getOwningConstraint, IllegalStateException.class, "" );
-        assertException( () -> indexRule.withOwningConstraint( RULE_ID_2 ), IllegalStateException.class, "" );
+        assertException( indexRule::getOwningConstraint, IllegalStateException.class );
+        assertException( () -> indexRule.withOwningConstraint( RULE_ID_2 ), IllegalStateException.class );
     }
 
     @Test

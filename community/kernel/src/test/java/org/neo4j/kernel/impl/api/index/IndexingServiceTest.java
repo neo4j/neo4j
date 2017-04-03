@@ -64,6 +64,8 @@ import org.neo4j.kernel.api.index.IndexPopulator;
 import org.neo4j.kernel.api.index.IndexUpdater;
 import org.neo4j.kernel.api.index.InternalIndexState;
 import org.neo4j.kernel.api.index.SchemaIndexProvider;
+import org.neo4j.kernel.api.schema_new.LabelSchemaDescriptor;
+import org.neo4j.kernel.api.schema_new.SchemaDescriptorFactory;
 import org.neo4j.kernel.api.schema_new.index.NewIndexDescriptor;
 import org.neo4j.kernel.api.schema_new.index.NewIndexDescriptorFactory;
 import org.neo4j.kernel.configuration.Config;
@@ -555,7 +557,7 @@ public class IndexingServiceTest
         try
         {
             // When
-            indexingService.apply( updates( asSet( addNodeUpdate( 1, "foo" ) ) ) );
+            indexingService.apply( updates( asSet( add( 1, "foo" ) ) ) );
             fail( "Should have thrown " + IllegalStateException.class.getSimpleName() );
         }
         catch ( IllegalStateException e )
@@ -565,7 +567,7 @@ public class IndexingServiceTest
         }
     }
 
-    private IndexUpdates updates( Iterable<NodeUpdates> updates )
+    private IndexUpdates updates( Iterable<IndexEntryUpdate<LabelSchemaDescriptor>> updates )
     {
         return new DirectIndexUpdates( updates );
     }
@@ -583,7 +585,7 @@ public class IndexingServiceTest
         verify( populator, timeout( 1000 ) ).close( true );
 
         // When
-        indexing.apply( updates( asList( addNodeUpdate( 1, "foo" ), addNodeUpdate( 2, "bar" ) ) ) );
+        indexing.apply( updates( asList( add( 1, "foo" ), add( 2, "bar" ) ) ) );
 
         // Then
         InOrder inOrder = inOrder( updater );
@@ -628,8 +630,9 @@ public class IndexingServiceTest
         verify( populator, timeout( 1000 ).times( 2 ) ).close( true );
 
         // When
-        indexing.apply( updates( asList(addNodeUpdate( 1, "foo", labelId1 ),
-                addNodeUpdate( 2, "bar", labelId2 ) ) ) );
+        indexing.apply( updates( asList(
+                add( 1, "foo", labelId1 ),
+                add( 2, "bar", labelId2 ) ) ) );
 
         // Then
         verify( updater1 ).close();
@@ -721,7 +724,7 @@ public class IndexingServiceTest
         return new IndexUpdates()
         {
             @Override
-            public Iterator<NodeUpdates> iterator()
+            public Iterator<IndexEntryUpdate<LabelSchemaDescriptor>> iterator()
             {
                 throw new UnsupportedOperationException();
             }
@@ -1104,9 +1107,15 @@ public class IndexingServiceTest
                 .added( index.schema().getPropertyId(), propertyValue ).build();
     }
 
-    private IndexEntryUpdate add( long nodeId, Object propertyValue )
+    private IndexEntryUpdate<LabelSchemaDescriptor> add( long nodeId, Object propertyValue )
     {
         return IndexEntryUpdate.add( nodeId, index.schema(), propertyValue );
+    }
+
+    private IndexEntryUpdate<LabelSchemaDescriptor> add( long nodeId, Object propertyValue, int labelId )
+    {
+        LabelSchemaDescriptor schema = SchemaDescriptorFactory.forLabel( labelId, index.schema().getPropertyId() );
+        return IndexEntryUpdate.add( nodeId, schema, propertyValue );
     }
 
     private IndexingService newIndexingServiceWithMockedDependencies( IndexPopulator populator,

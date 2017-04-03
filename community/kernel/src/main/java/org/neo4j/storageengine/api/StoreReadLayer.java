@@ -78,6 +78,11 @@ public interface StoreReadLayer
     Iterator<NewIndexDescriptor> uniquenessIndexesGetAll();
 
     /**
+     * Returns all indexes (including unique) related to a property.
+     */
+    Iterator<NewIndexDescriptor> indexesAndUniqueIndexesRelatedToProperty( int propertyId );
+
+    /**
      * @param index {@link NewIndexDescriptor} to get related uniqueness constraint for.
      * @return schema rule id of uniqueness constraint that owns the given {@code index}, or {@code null}
      * if the given index isn't related to a uniqueness constraint.

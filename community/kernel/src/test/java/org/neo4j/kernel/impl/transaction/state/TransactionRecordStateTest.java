@@ -38,6 +38,9 @@ import org.neo4j.graphdb.Direction;
 import org.neo4j.graphdb.factory.GraphDatabaseSettings;
 import org.neo4j.helpers.collection.Iterables;
 import org.neo4j.kernel.api.exceptions.TransactionFailureException;
+import org.neo4j.kernel.api.exceptions.index.IndexEntryConflictException;
+import org.neo4j.kernel.api.index.IndexEntryUpdate;
+import org.neo4j.kernel.api.schema_new.LabelSchemaDescriptor;
 import org.neo4j.kernel.impl.api.index.IndexingUpdateService;
 import org.neo4j.kernel.impl.api.index.NodeUpdates;
 import org.neo4j.kernel.api.properties.DefinedProperty;
@@ -1218,11 +1221,12 @@ public class TransactionRecordStateTest
         NodePropertyCommandsExtractor extractor = new NodePropertyCommandsExtractor();
         transaction.accept( extractor );
 
-        OnlineIndexUpdates lazyIndexUpdates = new OnlineIndexUpdates( neoStores.getNodeStore(),
-                mock( IndexingUpdateService.class ),
+        CollectingIndexingUpdateService indexingUpdateService = new CollectingIndexingUpdateService();
+        OnlineIndexUpdates onlineIndexUpdates = new OnlineIndexUpdates( neoStores.getNodeStore(),
+                indexingUpdateService,
                 new PropertyPhysicalToLogicalConverter( neoStores.getPropertyStore() ) );
-        lazyIndexUpdates.feed( extractor.propertyCommandsByNodeIds(), extractor.nodeCommandsById() );
-        return lazyIndexUpdates;
+        onlineIndexUpdates.feed( extractor.propertyCommandsByNodeIds(), extractor.nodeCommandsById() );
+        return indexingUpdateService.nodeUpdatesList;
     }
 
     private PhysicalTransactionRepresentation transactionRepresentationOf( TransactionRecordState writeTransaction )
@@ -1363,5 +1367,22 @@ public class TransactionRecordStateTest
     private RelationshipGroupCommand singleRelationshipGroupCommand( Collection<StorageCommand> commands )
     {
         return (RelationshipGroupCommand) Iterables.single( filter( t -> t instanceof RelationshipGroupCommand, commands ) );
+    }
+
+    private class CollectingIndexingUpdateService implements IndexingUpdateService
+    {
+        final List<NodeUpdates> nodeUpdatesList = new ArrayList<>();
+
+        @Override
+        public void apply( IndexUpdates updates ) throws IOException, IndexEntryConflictException
+        {
+        }
+
+        @Override
+        public Iterable<IndexEntryUpdate<LabelSchemaDescriptor>> convertToIndexUpdates( NodeUpdates nodeUpdates )
+        {
+            nodeUpdatesList.add( nodeUpdates );
+            return Iterables.empty();
+        }
     }
 }

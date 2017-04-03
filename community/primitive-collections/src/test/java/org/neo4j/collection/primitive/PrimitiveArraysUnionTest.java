@@ -27,10 +27,10 @@ import org.junit.runners.Parameterized;
 
 import static org.junit.Assert.assertArrayEquals;
 import static org.junit.Assert.assertSame;
-import static org.neo4j.collection.primitive.PrimitiveSortedArraySet.mergeSortedSet;
+import static org.neo4j.collection.primitive.PrimitiveArrays.union;
 
 @RunWith( Parameterized.class )
-public class PrimitiveSortedArraySetTest
+public class PrimitiveArraysUnionTest
 {
     @Parameterized.Parameters( name = "{0}" )
     public static Iterable<Object[]> parameters()
@@ -45,7 +45,9 @@ public class PrimitiveSortedArraySetTest
                 lhs( 3 ).rhs( 1, 2, 3 ).expectRhs(),
                 lhs( 1, 2, 3 ).rhs( 4, 5, 6 ).expect( 1, 2, 3, 4, 5, 6 ),
                 lhs( 1, 3, 5 ).rhs( 2, 4, 6 ).expect( 1, 2, 3, 4, 5, 6 ),
-                lhs( 1, 2, 3, 5 ).rhs( 2, 4, 6 ).expect( 1, 2, 3, 4, 5, 6 )
+                lhs( 1, 2, 3, 5 ).rhs( 2, 4, 6 ).expect( 1, 2, 3, 4, 5, 6 ),
+                lhs( 2, 3, 4, 7, 8, 9, 12, 16, 19 ).rhs( 4, 6, 9, 11, 12, 15 )
+                        .expect( 2, 3, 4, 6, 7, 8, 9, 11, 12, 15, 16, 19 )
         );
     }
 
@@ -53,7 +55,7 @@ public class PrimitiveSortedArraySetTest
     private final int[] rhs;
     private final int[] expected;
 
-    public PrimitiveSortedArraySetTest( Input input )
+    public PrimitiveArraysUnionTest( Input input )
     {
         this.lhs = input.lhs;
         this.rhs = input.rhs;
@@ -63,7 +65,7 @@ public class PrimitiveSortedArraySetTest
     @Test
     public void testMerge() throws Exception
     {
-        int[] actual = mergeSortedSet( lhs, rhs );
+        int[] actual = union( lhs, rhs );
         if ( lhs == expected || rhs == expected )
         {
             assertSame( expected, actual );

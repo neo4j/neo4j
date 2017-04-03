@@ -41,6 +41,12 @@ public final class Assert
     {
     }
 
+    public static <E extends Exception> void assertException( ThrowingAction<E> f, Class typeOfException ) throws
+            Exception
+    {
+        assertException( f, typeOfException, null );
+    }
+
     public static <E extends Exception> void assertException( ThrowingAction<E> f, Class typeOfException,
             String partOfErrorMessage ) throws Exception
     {
@@ -53,7 +59,10 @@ public final class Assert
         {
             if ( typeOfException.isInstance( e ) )
             {
-                assertThat( e.getMessage(), containsString( partOfErrorMessage ) );
+                if ( partOfErrorMessage != null )
+                {
+                    assertThat( e.getMessage(), containsString( partOfErrorMessage ) );
+                }
             }
             else
             {

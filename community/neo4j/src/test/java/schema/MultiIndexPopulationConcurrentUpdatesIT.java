@@ -47,6 +47,7 @@ import org.neo4j.kernel.api.exceptions.index.IndexEntryConflictException;
 import org.neo4j.kernel.api.exceptions.index.IndexNotFoundKernelException;
 import org.neo4j.kernel.api.exceptions.index.IndexPopulationFailedKernelException;
 import org.neo4j.kernel.api.index.IndexEntryUpdate;
+import org.neo4j.kernel.impl.api.index.IndexUpdateMode;
 import org.neo4j.kernel.impl.api.index.NodeUpdates;
 import org.neo4j.kernel.api.index.SchemaIndexProvider;
 import org.neo4j.kernel.api.labelscan.LabelScanStore;
@@ -70,7 +71,6 @@ import org.neo4j.kernel.impl.store.PropertyStore;
 import org.neo4j.kernel.impl.store.SchemaStorage;
 import org.neo4j.kernel.impl.store.record.IndexRule;
 import org.neo4j.kernel.impl.transaction.state.DefaultSchemaIndexProviderMap;
-import org.neo4j.kernel.impl.transaction.state.DirectIndexUpdates;
 import org.neo4j.kernel.impl.transaction.state.storeview.DynamicIndexStoreView;
 import org.neo4j.kernel.impl.transaction.state.storeview.LabelScanViewNodeStoreScan;
 import org.neo4j.kernel.impl.util.JobScheduler;
@@ -500,10 +500,9 @@ public class MultiIndexPopulationConcurrentUpdatesIT
                         transaction.success();
                     }
                 }
-                DirectIndexUpdates nodePropertyUpdates = new DirectIndexUpdates( updates );
                 try
                 {
-                    indexService.apply( nodePropertyUpdates );
+                    indexService.convertToIndexUpdatesAndApply( updates, IndexUpdateMode.ONLINE );
                 }
                 catch ( IOException | IndexEntryConflictException e )
                 {

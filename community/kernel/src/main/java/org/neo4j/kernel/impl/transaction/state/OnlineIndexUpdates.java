@@ -29,6 +29,8 @@ import org.neo4j.collection.primitive.PrimitiveLongIterator;
 import org.neo4j.collection.primitive.PrimitiveLongObjectMap;
 import org.neo4j.collection.primitive.PrimitiveLongSet;
 import org.neo4j.helpers.collection.Iterables;
+import org.neo4j.kernel.api.index.IndexEntryUpdate;
+import org.neo4j.kernel.api.schema_new.LabelSchemaDescriptor;
 import org.neo4j.kernel.impl.api.index.IndexingUpdateService;
 import org.neo4j.kernel.impl.api.index.NodeUpdates;
 import org.neo4j.kernel.impl.api.index.PropertyPhysicalToLogicalConverter;
@@ -55,7 +57,7 @@ public class OnlineIndexUpdates implements IndexUpdates
     private final NodeStore nodeStore;
     private final IndexingUpdateService updateService;
     private final PropertyPhysicalToLogicalConverter converter;
-    private final Collection<NodeUpdates> updates = new ArrayList<>();
+    private final Collection<IndexEntryUpdate<LabelSchemaDescriptor>> updates = new ArrayList<>();
     private NodeRecord nodeRecord;
 
     public OnlineIndexUpdates( NodeStore nodeStore,
@@ -68,7 +70,7 @@ public class OnlineIndexUpdates implements IndexUpdates
     }
 
     @Override
-    public Iterator<NodeUpdates> iterator()
+    public Iterator<IndexEntryUpdate<LabelSchemaDescriptor>> iterator()
     {
         return updates.iterator();
     }
@@ -113,8 +115,12 @@ public class OnlineIndexUpdates implements IndexUpdates
                 gatherUpdatesFromCommandsForNode( nodeId, nodeCommand, propertyCommands );
 
         NodeUpdates nodeUpdates = nodePropertyUpdate.build();
-        updateService.loadAdditionalProperties( nodeUpdates );
-        updates.add( nodeUpdates );
+        // we need to materialize the IndexEntryUpdates here, because when we
+        // consume (later in separate thread) the store might have changed.
+        for ( IndexEntryUpdate<LabelSchemaDescriptor> update :  updateService.convertToIndexUpdates( nodeUpdates ) )
+        {
+            updates.add( update );
+        }
     }
 
     private NodeUpdates.Builder gatherUpdatesFromCommandsForNode( long nodeId,

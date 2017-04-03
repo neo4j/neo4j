@@ -50,7 +50,7 @@ import org.neo4j.storageengine.api.txstate.TxStateVisitor;
 
 import static java.lang.String.format;
 import static java.util.Collections.emptyList;
-import static org.neo4j.collection.primitive.PrimitiveSortedArraySet.mergeSortedSet;
+import static org.neo4j.collection.primitive.PrimitiveArrays.union;
 import static org.neo4j.kernel.api.exceptions.schema.ConstraintValidationException.Phase.VALIDATION;
 
 class PropertyExistenceEnforcer
@@ -85,7 +85,7 @@ class PropertyExistenceEnforcer
         int[] current = map.get( key );
         if ( current != null )
         {
-            values = mergeSortedSet( current, values );
+            values = union( current, values );
         }
         map.put( key, values );
     }

@@ -61,13 +61,6 @@ class IndexUpdaterMap implements AutoCloseable, Iterable<IndexUpdater>
         this.updaterMap = new HashMap<>();
     }
 
-    Iterable<IndexUpdaterWithSchema> updaters()
-    {
-        return Iterables.map(
-                IndexUpdaterWithSchema::new,
-                indexMap::descriptors );
-    }
-
     IndexUpdater getUpdater( LabelSchemaDescriptor descriptor )
     {
         IndexUpdater updater = updaterMap.get( descriptor );
@@ -129,11 +122,6 @@ class IndexUpdaterMap implements AutoCloseable, Iterable<IndexUpdater>
         return updaterMap.size();
     }
 
-    public int numberOfIndexes()
-    {
-        return indexMap.size();
-    }
-
     @Override
     public Iterator<IndexUpdater> iterator()
     {
@@ -150,27 +138,5 @@ class IndexUpdaterMap implements AutoCloseable, Iterable<IndexUpdater>
                 return null;
             }
         };
-    }
-
-    class IndexUpdaterWithSchema implements LabelSchemaSupplier
-    {
-        private final LabelSchemaDescriptor schema;
-
-        IndexUpdaterWithSchema( LabelSchemaDescriptor schema )
-        {
-            this.schema = schema;
-        }
-
-        @Override
-        public LabelSchemaDescriptor schema()
-        {
-            return schema;
-        }
-
-        public void process( IndexEntryUpdate<IndexUpdaterWithSchema> indexUpdate )
-                throws IOException, IndexEntryConflictException
-        {
-            getUpdater( schema ).process( indexUpdate );
-        }
     }
 }

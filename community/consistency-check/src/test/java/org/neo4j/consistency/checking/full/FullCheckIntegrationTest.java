@@ -782,33 +782,42 @@ public class FullCheckIntegrationTest
     @Test
     public void shouldReportNodeDynamicLabelContainingDuplicateLabelAsNodeInconsistency() throws Exception
     {
+        int nodeId = 1000;
+        Collection<DynamicRecord> duplicatedLabel = new ArrayList<>();
+        final Pair<List<DynamicRecord>, List<Integer>> labels = chainOfDynamicRecordsWithLabelsForANode( 1 );
+
         // given
         fixture.apply( new GraphStoreFixture.Transaction()
         {
             @Override
             protected void transactionData( GraphStoreFixture.TransactionDataBuilder tx,
-                                            GraphStoreFixture.IdGenerator next )
+                    GraphStoreFixture.IdGenerator next )
             {
-                tx.nodeLabel( 42, "Label" );
+                NodeRecord node = new NodeRecord( nodeId, false, -1, -1 );
+                node.setInUse( true );
+                List<DynamicRecord> labelRecords = labels.first();
+                node.setLabelField( dynamicPointer( labelRecords ), labelRecords );
+                tx.create( node );
 
-                NodeRecord nodeRecord = new NodeRecord( next.node(), false, -1, -1 );
-                DynamicRecord record = inUse( new DynamicRecord( next.nodeLabel() ) );
-                Collection<DynamicRecord> newRecords = new ArrayList<>();
-                allocateFromNumbers( newRecords,
-                        prependNodeId( nodeRecord.getId(), new long[]{42L, 42L} ),
-                        new ReusableRecordsAllocator( 60, record ) );
-                nodeRecord.setLabelField( dynamicPointer( newRecords ), newRecords );
-
-                tx.create( nodeRecord );
+                Integer labelId = labels.other().get( 0 );
+                DynamicRecord record = inUse( new DynamicRecord( labelId ) );
+                allocateFromNumbers( duplicatedLabel, new long[]{nodeId, labelId, labelId}, new ReusableRecordsAllocator( 60, record ) );
             }
         } );
+
+        StoreAccess storeAccess = fixture.directStoreAccess().nativeStores();
+        NodeRecord nodeRecord = new NodeRecord( nodeId );
+        storeAccess.getNodeStore().getRecord( nodeId, nodeRecord, FORCE );
+        nodeRecord.setLabelField( dynamicPointer( duplicatedLabel ), duplicatedLabel );
+        nodeRecord.setInUse( true );
+        storeAccess.getNodeStore().updateRecord( nodeRecord );
 
         // when
         ConsistencySummaryStatistics stats = check();
 
         // then
-        on( stats ).verify( RecordType.NODE, 1 )
-                   .verify( RecordType.COUNTS, 1 )
+        on( stats ).verify( RecordType.NODE, 1 ) // the duplicated label
+                   .verify( RecordType.COUNTS, 0 )
                    .andThatsAllFolks();
     }
 

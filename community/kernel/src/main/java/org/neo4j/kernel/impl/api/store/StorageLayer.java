@@ -217,6 +217,12 @@ public class StorageLayer implements StoreReadLayer
     }
 
     @Override
+    public Iterator<NewIndexDescriptor> indexesAndUniqueIndexesRelatedToProperty( int propertyId )
+    {
+        return schemaCache.indexesByProperty( propertyId );
+    }
+
+    @Override
     public Long indexGetOwningUniquenessConstraintId( NewIndexDescriptor index ) throws SchemaRuleNotFoundException
     {
         IndexRule rule = indexRule( index );
