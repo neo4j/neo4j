@@ -47,6 +47,7 @@ import org.neo4j.graphdb.Label;
 import org.neo4j.graphdb.Node;
 import org.neo4j.graphdb.Path;
 import org.neo4j.graphdb.QueryExecutionException;
+import org.neo4j.graphdb.QueryExecutionType;
 import org.neo4j.graphdb.Relationship;
 import org.neo4j.graphdb.RelationshipType;
 import org.neo4j.graphdb.Result;
@@ -524,6 +525,54 @@ public class ProcedureIT
         try ( Transaction tx = db.beginTx() )
         {
             assertEquals( 1, db.getAllNodes().stream().count() );
+            tx.success();
+        }
+    }
+
+    @Test
+    public void readProceduresShouldPresentThemSelvesAsReadQueries() throws Throwable
+    {
+        // When
+        try ( Transaction tx = db.beginTx() )
+        {
+            Result result = db.execute( "EXPLAIN CALL org.neo4j.procedure.integrationTestMe()" );
+            assertEquals( result.getQueryExecutionType().queryType(), QueryExecutionType.QueryType.READ_ONLY);
+            tx.success();
+        }
+    }
+
+    @Test
+    public void readProceduresWithYieldShouldPresentThemSelvesAsReadQueries() throws Throwable
+    {
+        // When
+        try ( Transaction tx = db.beginTx() )
+        {
+            Result result = db.execute( "EXPLAIN CALL org.neo4j.procedure.integrationTestMe() YIELD someVal as v RETURN v" );
+            assertEquals( result.getQueryExecutionType().queryType(), QueryExecutionType.QueryType.READ_ONLY);
+            tx.success();
+        }
+    }
+
+    @Test
+    public void writeProceduresShouldPresentThemSelvesAsWriteQueries() throws Throwable
+    {
+        // When
+        try ( Transaction tx = db.beginTx() )
+        {
+            Result result = db.execute( "EXPLAIN CALL org.neo4j.procedure.createNode('n')" );
+            assertEquals( result.getQueryExecutionType().queryType(), QueryExecutionType.QueryType.READ_WRITE);
+            tx.success();
+        }
+    }
+
+    @Test
+    public void writeProceduresWithYieldShouldPresentThemSelvesAsWriteQueries() throws Throwable
+    {
+        // When
+        try ( Transaction tx = db.beginTx() )
+        {
+            Result result = db.execute( "EXPLAIN CALL org.neo4j.procedure.createNode('n') YIELD node as n RETURN n.prop" );
+            assertEquals( result.getQueryExecutionType().queryType(), QueryExecutionType.QueryType.READ_WRITE);
             tx.success();
         }
     }
