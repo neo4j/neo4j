@@ -50,12 +50,13 @@ public class StoreMigratorCheckPointer
      * <p>
      * It will create the file with header containing the log version and lastCommittedTx given as arguments
      *
-     * @param logVersion the log version to open
+     * @param lastClosedTransactionLogPosition last closed transaction log position
      * @param lastCommittedTx the last committed tx id
      */
-    public void checkPoint( long logVersion, long lastCommittedTx ) throws IOException
+    public void checkPoint( LogPosition lastClosedTransactionLogPosition, long lastCommittedTx ) throws IOException
     {
         PhysicalLogFiles logFiles = new PhysicalLogFiles( storeDir, fileSystem );
+        long logVersion = lastClosedTransactionLogPosition.getLogVersion();
         File logFileForVersion = logFiles.getLogFileForVersion( logVersion );
         if ( !fileSystem.fileExists( logFileForVersion ) )
         {
@@ -74,7 +75,7 @@ public class StoreMigratorCheckPointer
                           new PositionAwarePhysicalFlushableChannel( storeChannel ) )
             {
                 TransactionLogWriter writer = new TransactionLogWriter( new LogEntryWriter( channel ) );
-                writer.checkPoint( new LogPosition( logVersion, offset ) );
+                writer.checkPoint( lastClosedTransactionLogPosition );
             }
         }
     }
