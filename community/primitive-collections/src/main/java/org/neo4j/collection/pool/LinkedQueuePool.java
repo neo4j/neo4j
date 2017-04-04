@@ -24,9 +24,7 @@ import java.util.concurrent.ConcurrentLinkedQueue;
 import java.util.concurrent.atomic.AtomicInteger;
 import java.util.function.LongSupplier;
 
-import org.neo4j.function.Factory;
-
-public class LinkedQueuePool<R> implements Pool<R>
+public abstract class LinkedQueuePool<R> implements Pool<R>
 {
     public interface Monitor<R>
     {
@@ -105,39 +103,34 @@ public class LinkedQueuePool<R> implements Pool<R>
         }
     }
 
-    public static final int DEFAULT_CHECK_INTERVAL = 60 * 1000;
+    private static final int DEFAULT_CHECK_INTERVAL = 60 * 1000;
 
     private final Queue<R> unused = new ConcurrentLinkedQueue<>();
-    private final Monitor monitor;
+    private final Monitor<R> monitor;
     private final int minSize;
-    private final Factory<R> factory;
     private final CheckStrategy checkStrategy;
     // Guarded by nothing. Those are estimates, losing some values doesn't matter much
-    private final AtomicInteger allocated = new AtomicInteger( 0 );
-    private final AtomicInteger queueSize = new AtomicInteger( 0 );
+    private final AtomicInteger allocated = new AtomicInteger();
+    private final AtomicInteger queueSize = new AtomicInteger();
     private int currentPeakSize;
     private int targetSize;
 
-    public LinkedQueuePool( int minSize, Factory<R> factory )
+    public LinkedQueuePool( int minSize )
     {
-        this( minSize, factory, new CheckStrategy.TimeoutCheckStrategy( DEFAULT_CHECK_INTERVAL ),
-                new Monitor.Adapter() );
+        this( minSize, new CheckStrategy.TimeoutCheckStrategy( DEFAULT_CHECK_INTERVAL ),
+            new Monitor.Adapter<>() );
     }
 
-    public LinkedQueuePool( int minSize, Factory<R> factory, CheckStrategy strategy, Monitor monitor )
+    LinkedQueuePool( int minSize, CheckStrategy strategy, Monitor<R> monitor )
     {
         this.minSize = minSize;
-        this.factory = factory;
         this.currentPeakSize = 0;
         this.targetSize = minSize;
         this.checkStrategy = strategy;
         this.monitor = monitor;
     }
 
-    protected R create()
-    {
-        return factory.newInstance();
-    }
+    protected abstract R create();
 
     protected void dispose( R resource )
     {
