@@ -53,84 +53,24 @@ class CompositeUniquenessConstraintAcceptanceTest extends ExecutionEngineFunSuit
     graph should not(haveConstraints("UNIQUENESS:Person(email)"))
   }
 
-  test("should be able to create and remove composite uniqueness constraints") {
+  test("should fail to to create composite uniqueness constraints") {
     // When
-    exec("CREATE CONSTRAINT ON (n:Person) ASSERT n.email IS UNIQUE")
-    exec("CREATE CONSTRAINT ON (n:Person) ASSERT (n.firstname,n.lastname) IS UNIQUE")
+    expectError(
+      "CREATE CONSTRAINT ON (n:Person) ASSERT (n.firstname,n.lastname) IS UNIQUE",
+      "Only single property uniqueness constraints are supported")
 
     // Then
-    graph should haveConstraints("UNIQUENESS:Person(email)", "UNIQUENESS:Person(firstname,lastname)")
-
-    // When
-    exec("DROP CONSTRAINT ON (n:Person) ASSERT (n.firstname,n.lastname) IS UNIQUE")
-
-    // Then
-    graph should haveConstraints("UNIQUENESS:Person(email)")
     graph should not(haveConstraints("UNIQUENESS:Person(firstname,lastname)"))
   }
 
-  test("composite uniqueness constraint should not block adding nodes with different properties") {
+  test("should fail to to drop composite uniqueness constraints") {
     // When
-    exec("CREATE CONSTRAINT ON (n:User) ASSERT (n.firstname,n.lastname) IS UNIQUE")
-
-    // Then
-    createLabeledNode(Map("firstname" -> "Joe", "lastname" -> "Soap"), "User")
-    createLabeledNode(Map("firstname" -> "Joe", "lastname" -> "Smoke"), "User")
-    createLabeledNode(Map("firstname" -> "Jake", "lastname" -> "Soap"), "User")
-  }
-
-  test("composite uniqueness constraint should block adding nodes with same properties") {
-    // When
-    exec("CREATE CONSTRAINT ON (n:User) ASSERT (n.firstname,n.lastname) IS UNIQUE")
-    createLabeledNode(Map("firstname" -> "Joe", "lastname" -> "Soap"), "User")
-    createLabeledNode(Map("firstname" -> "Joe", "lastname" -> "Smoke"), "User")
-
-    // Then
-    a[ConstraintViolationException] should be thrownBy {
-      createLabeledNode(Map("firstname" -> "Joe", "lastname" -> "Soap"), "User")
-    }
-  }
-
-  test("composite uniqueness constraint should not fail when we have nodes with different properties") {
-    // When
-    createLabeledNode(Map("firstname" -> "Joe", "lastname" -> "Soap"), "User")
-    createLabeledNode(Map("firstname" -> "Joe", "lastname" -> "Smoke"), "User")
-    createLabeledNode(Map("firstname" -> "Jake", "lastname" -> "Soap"), "User")
-
-    // Then
-    exec("CREATE CONSTRAINT ON (n:User) ASSERT (n.firstname,n.lastname) IS UNIQUE")
-  }
-
-  test("composite uniqueness constraint should fail when we have nodes with same properties") {
-    // When
-    createLabeledNode(Map("firstname" -> "Joe", "lastname" -> "Soap"), "User")
-    createLabeledNode(Map("firstname" -> "Joe", "lastname" -> "Smoke"), "User")
-    createLabeledNode(Map("firstname" -> "Joe", "lastname" -> "Soap"), "User")
-
-    // Then
-    a[CypherExecutionException] should be thrownBy {
-      exec("CREATE CONSTRAINT ON (n:User) ASSERT (n.firstname,n.lastname) IS UNIQUE")
-    }
-  }
-
-  test("trying to add duplicate node when unique constraint exists") {
-    createLabeledNode(Map("name" -> "A"), "Person")
-    exec("CREATE CONSTRAINT ON (person:Person) ASSERT person.name IS UNIQUE")
-
     expectError(
-      "CREATE (n:Person) SET n.name = 'A'",
-      String.format("Node(0) already exists with label `Person` and property `name` = 'A'")
-    )
-  }
+      "DROP CONSTRAINT ON (n:Person) ASSERT (n.firstname,n.lastname) IS UNIQUE",
+      "Only single property uniqueness constraints are supported")
 
-  test("trying to add duplicate node when composite unique constraint exists") {
-    createLabeledNode(Map("name" -> "A", "surname" -> "B"), "Person")
-    exec("CREATE CONSTRAINT ON (person:Person) ASSERT (person.name, person.surname) IS UNIQUE")
-
-    expectError(
-      "CREATE (n:Person) SET n.name = 'A', n.surname = 'B'",
-      String.format("Node(0) already exists with label `Person` and properties `name` = 'A', `surname` = 'B'")
-    )
+    // Then
+    graph should not(haveConstraints("UNIQUENESS:Person(firstname,lastname)"))
   }
 
   private def expectError(query: String, expectedError: String) {
