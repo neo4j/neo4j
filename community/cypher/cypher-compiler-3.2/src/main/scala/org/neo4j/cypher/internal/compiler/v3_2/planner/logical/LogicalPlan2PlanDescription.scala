@@ -272,6 +272,9 @@ case class LogicalPlan2PlanDescription(idMap: Map[LogicalPlan, Id], readOnly: Bo
         }
         PlanDescriptionImpl(id, s"VarLengthExpand($modeDescr)", children, Seq(expandDescription) ++ predicatesDescription, variables)
 
+      case MergeLock(_, descriptions, lockMode) =>
+        PlanDescriptionImpl(id, s"MergeLock($lockMode)", children, Seq.empty, variables)
+
       case x => throw new InternalException(s"Unknown plan type: ${x.getClass.getSimpleName}. Missing a case?")
     }
 

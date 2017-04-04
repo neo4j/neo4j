@@ -214,6 +214,8 @@ class DelegatingQueryContext(val inner: QueryContext) extends QueryContext {
 
   override def assertSchemaWritesAllowed(): Unit = inner.assertSchemaWritesAllowed()
 
+  override def grabMergeLocks(labelId: Int, propValues: Seq[(Int, Any)], exclusive: Boolean): Unit =
+    inner.grabMergeLocks(labelId, propValues, exclusive)
 }
 
 class DelegatingOperations[T <: PropertyContainer](protected val inner: Operations[T]) extends Operations[T] {

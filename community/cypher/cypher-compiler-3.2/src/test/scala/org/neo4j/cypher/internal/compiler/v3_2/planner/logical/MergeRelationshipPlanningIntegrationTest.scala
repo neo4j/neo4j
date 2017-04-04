@@ -55,22 +55,34 @@ class MergeRelationshipPlanningIntegrationTest extends CypherFunSuite with Logic
   }
 
   test("should plan simple expand with argument dependency") {
-    val leaf = SingleRow()(solved)
-    val projection = Projection(leaf, Map("arg" -> SignedDecimalIntegerLiteral("42")(pos)))(solved)
-    val nodeByLabelScan = NodeByLabelScan(aId, LabelName("A")(pos), Set(argId))(solved)
-    val selection = Selection(Seq(In(Property(Variable("a")(pos), PropertyKeyName("p")(pos))(pos), ListLiteral(Seq(Variable("arg")(pos)))(pos))(pos)), nodeByLabelScan)(solved)
-    val expand = Expand(selection, aId, OUTGOING, Seq(RelTypeName("R")(pos)), bId, rId)(solved)
 
-    val optional = Optional(expand, Set(argId))(solved)
-    val argument = Argument(Set(argId))(solved)(Map.empty)
-    val createNodeA = MergeCreateNode(argument, aId, Seq(LabelName("A")(pos)), Some(MapExpression(Seq((PropertyKeyName("p")(pos), Variable("arg")(pos))))(pos)))(solved)
+    // MERGE Create side
+    val argBeforeMerge = Argument(Set(argId))(solved)(Map.empty)
+    val labelName = LabelName("A")(pos)
+    val propertyKeyName = PropertyKeyName("p")(pos)
+    val createNodeA = MergeCreateNode(argBeforeMerge, aId, Seq(labelName), Some(MapExpression(Seq((propertyKeyName, varFor("arg"))))(pos)))(solved)
     val createNodeB = MergeCreateNode(createNodeA, bId, Seq.empty, None)(solved)
-
     val onCreate = MergeCreateRelationship(createNodeB, rId, aId, LazyType("R"), bId, None)(solved)
 
+    // MERGE Optional match
+    val nodeByLabelScan = NodeByLabelScan(aId, labelName, Set(argId))(solved)
+    val selection = Selection(Seq(In(Property(Variable("a")(pos), propertyKeyName)(pos), ListLiteral(Seq(varFor("arg")))(pos))(pos)), nodeByLabelScan)(solved)
+    val expand = Expand(selection, aId, OUTGOING, Seq(RelTypeName("R")(pos)), bId, rId)(solved)
+    val optional = Optional(expand, Set(argId))(solved)
     val predicate = Ors(Set(isNull(aId), isNull(bId), isNull(rId)))(InputPosition.NONE)
+    val mergeLockS = MergeLock(argBeforeMerge, Seq(LockDescription(labelName, Seq(propertyKeyName -> varFor("arg")))), Shared)(solved)
+    val matchWithSLock = Apply(mergeLockS, optional)(solved)
+    val argInsideMerge = Argument(Set(argId, aId, bId, rId))(solved)(Map.empty)
+    val mergeLockX = MergeLock(argInsideMerge, Seq(LockDescription(labelName, Seq(propertyKeyName -> varFor("arg")))), Exclusive)(solved)
+    val matchWithXLock = Apply(mergeLockX, optional)(solved)
+    val lockedMatch = ConditionalApply(matchWithSLock, matchWithXLock, predicate)(solved)
 
-    val mergeNode = ConditionalApply(optional, onCreate, predicate)(solved)
+    val mergeNode = ConditionalApply(lockedMatch, onCreate, predicate)(solved)
+
+    // source including the `arg` variable
+    val leaf = SingleRow()(solved)
+    val projection = Projection(leaf, Map("arg" -> SignedDecimalIntegerLiteral("42")(pos)))(solved)
+
     val apply = Apply(projection, mergeNode)(solved)
     val emptyResult = EmptyResult(apply)(solved)
 

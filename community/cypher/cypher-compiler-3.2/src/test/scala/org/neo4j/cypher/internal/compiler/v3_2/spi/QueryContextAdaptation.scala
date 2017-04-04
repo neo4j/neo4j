@@ -171,4 +171,6 @@ trait QueryContextAdaptation {
   override def detachDeleteNode(node: Node): Int = ???
 
   override def assertSchemaWritesAllowed(): Unit = ???
+
+  override def grabMergeLocks(labelId: Int, propValues: Seq[(Int, Any)], exclusive: Boolean): Unit = ???
 }

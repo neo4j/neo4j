@@ -28,6 +28,7 @@ import org.neo4j.cypher.internal.compiler.v3_2.ast.convert.commands.StatementCon
 import org.neo4j.cypher.internal.compiler.v3_2.commands.EntityProducerFactory
 import org.neo4j.cypher.internal.compiler.v3_2.commands.expressions.{AggregationExpression, Literal, Expression => CommandExpression}
 import org.neo4j.cypher.internal.compiler.v3_2.commands.predicates.{True, _}
+import org.neo4j.cypher.internal.compiler.v3_2.commands.values.TokenType.PropertyKey
 import org.neo4j.cypher.internal.compiler.v3_2.executionplan._
 import org.neo4j.cypher.internal.compiler.v3_2.executionplan.builders.prepare.KeyTokenResolver
 import org.neo4j.cypher.internal.compiler.v3_2.pipes._
@@ -416,6 +417,16 @@ case class ActualPipeBuilder(monitors: Monitors, recurse: LogicalPlan => Pipe, r
 
       case ErrorPlan(_, ex) =>
         ErrorPipe(source, ex)(id = id)
+
+      case MergeLock(_, descriptions, lockMode) =>
+        val locksToGrab: Seq[MergeLockDescription] = descriptions map {
+          case LockDescription(label: LabelName, propertyValues: Seq[(PropertyKeyName, Expression)]) =>
+            val props = propertyValues map {
+              case (prop, exp) => (PropertyKey(prop.name), toCommandExpression(exp))
+            }
+            MergeLockDescription(LazyLabel(label), props)
+        }
+        MergeLockPipe(source, locksToGrab, lockMode)()
 
       case x =>
         throw new CantHandleQueryException(x.toString)

@@ -34,5 +34,5 @@ case class MergeLock(source: LogicalPlan, descriptions: Seq[LockDescription], lo
 case class LockDescription(label: LabelName, propertyValues: Seq[(PropertyKeyName, Expression)])
 
 sealed trait LockMode
-object Shared extends LockMode
-object Exclusive extends LockMode
+case object Shared extends LockMode
+case object Exclusive extends LockMode

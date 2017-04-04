@@ -136,24 +136,23 @@ case object PlanUpdates
 
   /*
    * MERGE either matches or creates. It is planned as following:
-   *
    *                                 cond-apply
    *                                 x IS NULL
    *                                /         \
    *                           cond-apply   onCreate
    *                          x IS NOT NULL    \
-   *                           /         \    CREATE
-   *                      cond-apply    onMatch
-   *                      x IS NULL
-   *                     /        \
-   *                cond-apply  optional
-   *                x IS NULL      \
-   *                  /    \      MATCH
-   *               apply  lock-X
-   *               /    \
-   *           lock-S optional
-   *             /       \
-   *          source    MATCH
+   *                          /          \    CREATE
+   *                       cond-apply   onMatch
+   *                       x IS NULL \
+   *                       /       apply
+   *                    apply      /   \
+   *                    /    \  lock-X optional
+   *                lock-S optional       \
+   *                  /       \          MATCH
+   *               source    MATCH         \
+   *                            \          LockNodes(X)
+   *                            Arg         \
+   *                                         Arg
    */
   def planMerge(source: LogicalPlan, matchGraph: QueryGraph, createNodePatterns: Seq[CreateNodePattern],
                 createRelationshipPatterns: Seq[CreateRelationshipPattern], onCreatePatterns: Seq[SetMutatingPattern],
@@ -258,29 +257,35 @@ case object PlanUpdates
     val matchOrNull = producer.planApply(source, mergeRead(context))(context)
     val nullPredicate = checkForNull(ids, negated = false)
 
-    val lockedIfNeeded = if (mergeLocks.nonEmpty)
-    //       CondApply (check if null)
-    //          /   \
-    //         /  merge-lock(X)
-    //        /       \
-    //   source   single-row
-      grabExclusiveLocks(producer, context, mergeLocks, matchOrNull, nullPredicate)
-    else
-      matchOrNull
-
     // If we are MERGEing on relationships, we need to lock nodes before matching again. Otherwise, we are done
     val nodesToLock = matchGraph.patternNodes intersect matchGraph.argumentIds
 
-    if (nodesToLock.nonEmpty) {
-      grabNodeLocks(producer, context, mergeRead, nullPredicate, lockedIfNeeded, nodesToLock)
-    } else
-      lockedIfNeeded
+    if (nodesToLock.nonEmpty || mergeLocks.nonEmpty) {
+      val arg = context.logicalPlanProducer.planArgumentRowFrom(matchOrNull)(context)
+      val lhsOfApply = if (mergeLocks.nonEmpty)
+      //       CondApply (check if null)
+      //          /   \
+      //         /  merge-lock(X)
+      //        /       \
+      //   source   single-row
+        grabExclusiveLocks(producer, context, mergeLocks, arg, nullPredicate)
+      else
+        arg
+
+      val rhsOfApply = grabNodeLocks(producer, context, mergeRead, nullPredicate, nodesToLock)
+
+      val applyPlan = context.logicalPlanProducer.planApply(lhsOfApply, rhsOfApply)(context)
+      producer.planConditionalApply(matchOrNull, applyPlan, nullPredicate)(context)
+
+    } else {
+      matchOrNull
+    }
   }
 
 
   private def grabNodeLocks(producer: LogicalPlanProducer, context: LogicalPlanningContext,
                             mergeRead: LogicalPlanningContext => LogicalPlan, nullPredicate: Expression,
-                            lockedIfNeeded: LogicalPlan, nodesToLock: Set[IdName]) = {
+                            nodesToLock: Set[IdName]) = {
     def addLockToPlan(plan: LogicalPlan): LogicalPlan = {
       val lockThese = nodesToLock intersect plan.availableSymbols
       if (lockThese.nonEmpty)
@@ -300,15 +305,13 @@ case object PlanUpdates
     //             lock-nodes
     //                  \
     //                  leaf
-    val ifMissingLockAndMatchAgain = mergeRead(lockingContext)
-    producer.planConditionalApply(lockedIfNeeded, ifMissingLockAndMatchAgain, nullPredicate)(context)
+    mergeRead(lockingContext)
   }
 
   private def grabExclusiveLocks(producer: LogicalPlanProducer, context: LogicalPlanningContext,
-                                 mergeLocks: Seq[LockDescription], matchOrNull: LogicalPlan, nullPredicate: Expression) = {
-    val singleRow = context.logicalPlanProducer.planSingleRow()(context)
-    val takeExclusiveLocks = context.logicalPlanProducer.planMergeLock(singleRow, mergeLocks, Exclusive)
-    producer.planConditionalApply(matchOrNull, takeExclusiveLocks, nullPredicate)(context)
+                                 mergeLocks: Seq[LockDescription], source: LogicalPlan, nullPredicate: Expression) = {
+    val singleRow = context.logicalPlanProducer.planArgumentRowFrom(source)(context)
+    context.logicalPlanProducer.planMergeLock(singleRow, mergeLocks, Exclusive)
   }
 
   def createLockingDescriptions(qg: QueryGraph): Seq[LockDescription] = {
@@ -316,9 +319,12 @@ case object PlanUpdates
     val nodesWithLabels = nodeIds.flatMap(id => qg.selections.labelsOnNode(id).map(lbl => id -> lbl))
     val lockDescriptions = nodesWithLabels flatMap {
       case (nodeId, label) =>
-        val propValues: Set[(PropertyKeyName, Expression)] = qg.selections.predicates.collect {
-          case Predicate(_, Equals(Property(Variable(x), propertyKeyName), exp)) if x == nodeId.name => propertyKeyName -> exp
-        }
+        val propValues = qg.selections.predicates.collect {
+          case Predicate(_, Equals(Property(Variable(x), propertyKeyName), exp)) if x == nodeId.name =>
+            Seq(propertyKeyName -> exp)
+          case Predicate(_, In(Property(Variable(x), propertyKeyName), values: ListLiteral)) if x == nodeId.name =>
+            values.expressions.map(e => propertyKeyName -> e)
+        }.flatten
         if (propValues.isEmpty)
           None
         else
