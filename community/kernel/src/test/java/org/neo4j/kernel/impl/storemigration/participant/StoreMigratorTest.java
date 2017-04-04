@@ -95,7 +95,6 @@ public class StoreMigratorTest
         TransactionId expected = new TransactionId( txId, checksum, timestamp );
 
         // ... and files
-        PageCache pageCache = pageCacheRule.getPageCache( fs );
         File storeDir = directory.graphDbDir();
         File neoStore = new File( storeDir, DEFAULT_NAME );
         neoStore.createNewFile();
@@ -129,8 +128,6 @@ public class StoreMigratorTest
         TransactionId expected = new TransactionId( txId, checksum, timestamp );
 
         // ... and files
-        PageCache pageCache = pageCacheRule.getPageCache( fs );
-
         File storeDir = directory.graphDbDir();
         File neoStore = new File( storeDir, DEFAULT_NAME );
         neoStore.createNewFile();
@@ -156,7 +153,6 @@ public class StoreMigratorTest
     {
         // given
         long txId = 42;
-        PageCache pageCache = pageCacheRule.getPageCache( fs );
         File storeDir = directory.graphDbDir();
         File neoStore = new File( storeDir, DEFAULT_NAME );
         neoStore.createNewFile();
@@ -186,7 +182,6 @@ public class StoreMigratorTest
     {
         // given
         long txId = 1;
-        PageCache pageCache = pageCacheRule.getPageCache( fs );
         File storeDir = directory.graphDbDir();
         File neoStore = new File( storeDir, DEFAULT_NAME );
         neoStore.createNewFile();
@@ -263,7 +258,6 @@ public class StoreMigratorTest
 
         assertEquals( writtenLogPosition, readLogPosition );
     }
-
     private StoreMigrator newStoreMigrator()
     {
         return new StoreMigrator( fs, pageCache,
