@@ -75,6 +75,21 @@ public interface FileHandle
         };
     }
 
+    static Consumer<FileHandle> handleRename( File to )
+    {
+        return fileHandle ->
+        {
+            try
+            {
+                fileHandle.rename( to );
+            }
+            catch ( IOException e )
+            {
+                throw new UncheckedIOException( e );
+            }
+        };
+    }
+
     /**
      * Get a {@link File} object for the abstract path name that this file handle represents.
      *

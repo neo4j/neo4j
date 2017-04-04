@@ -89,6 +89,7 @@ import static org.hamcrest.Matchers.containsString;
 import static org.hamcrest.Matchers.greaterThan;
 import static org.hamcrest.Matchers.greaterThanOrEqualTo;
 import static org.hamcrest.Matchers.is;
+import static org.hamcrest.Matchers.isA;
 import static org.hamcrest.Matchers.lessThan;
 import static org.hamcrest.Matchers.lessThanOrEqualTo;
 import static org.hamcrest.Matchers.not;
@@ -101,6 +102,8 @@ import static org.junit.Assert.assertThat;
 import static org.junit.Assert.assertTrue;
 import static org.junit.Assert.fail;
 import static org.junit.Assume.assumeTrue;
+import static org.neo4j.io.pagecache.FileHandle.HANDLE_DELETE;
+import static org.neo4j.io.pagecache.FileHandle.handleRename;
 import static org.neo4j.io.pagecache.PagedFile.PF_NO_FAULT;
 import static org.neo4j.io.pagecache.PagedFile.PF_NO_GROW;
 import static org.neo4j.io.pagecache.PagedFile.PF_SHARED_READ_LOCK;
@@ -2256,7 +2259,8 @@ public abstract class PageCacheTest<T extends PageCache> extends PageCacheTestSu
                 return super.beginPin( writeLock, filePageId, swapper );
             }
         };
-        ConfigurablePageCursorTracerSupplier cursorTracerSupplier = new ConfigurablePageCursorTracerSupplier( pageCursorTracer );
+        ConfigurablePageCursorTracerSupplier cursorTracerSupplier =
+                new ConfigurablePageCursorTracerSupplier<>( pageCursorTracer );
         generateFileWithRecords( file( "a" ), recordCount, recordSize );
 
         getPageCache( fs, maxPages, pageCachePageSize, tracer, cursorTracerSupplier );
@@ -5025,11 +5029,7 @@ public abstract class PageCacheTest<T extends PageCache> extends PageCacheTestSu
         File a = file( "a" );
         File b = file( "b" ); // does not yet exist
         File base = a.getParentFile();
-        Iterable<FileHandle> handles = pageCache.streamFilesRecursive( base )::iterator;
-        for ( FileHandle fh : handles )
-        {
-            fh.rename( b );
-        }
+        pageCache.streamFilesRecursive( base ).forEach( handleRename( b ) );
         List<File> filepaths = pageCache.streamFilesRecursive( base ).map( FileHandle::getFile ).collect( toList() );
         assertThat( filepaths, containsInAnyOrder( b.getCanonicalFile() ) );
     }
@@ -5046,11 +5046,7 @@ public abstract class PageCacheTest<T extends PageCache> extends PageCacheTestSu
         ensureExists( c );
 
         File base = a.getParentFile();
-        Iterable<FileHandle> handles = pageCache.streamFilesRecursive( base )::iterator;
-        for ( FileHandle fh : handles )
-        {
-            fh.delete();
-        }
+        pageCache.streamFilesRecursive( base ).forEach( HANDLE_DELETE );
 
         assertFalse( fs.fileExists( a ) );
         assertFalse( fs.fileExists( b ) );
@@ -5065,12 +5061,11 @@ public abstract class PageCacheTest<T extends PageCache> extends PageCacheTestSu
         File b = file( "b" );
         try ( PagedFile ignore = pageCache.map( a, filePageSize ) )
         {
-            Iterable<FileHandle> handles = pageCache.streamFilesRecursive( a.getParentFile() )::iterator;
-            for ( FileHandle handle : handles )
+            pageCache.streamFilesRecursive( a.getParentFile() ).forEach( fh ->
             {
-                expectedException.expect( FileIsMappedException.class );
-                handle.rename( b );
-            }
+                expectedException.expectCause( isA( FileIsMappedException.class ) );
+                handleRename( b ).accept( fh );
+            });
         }
     }
 
@@ -5082,14 +5077,11 @@ public abstract class PageCacheTest<T extends PageCache> extends PageCacheTestSu
         File b = existingFile( "b" );
         try ( PagedFile ignore = pageCache.map( b, filePageSize ) )
         {
-            Stream<FileHandle> streamOfA =
-                    pageCache.streamFilesRecursive( a.getParentFile() ).filter( hasFile( a ) );
-            Iterable<FileHandle> handles = streamOfA::iterator;
-            for ( FileHandle handle : handles )
+            pageCache.streamFilesRecursive( a.getParentFile() ).filter( hasFile( a ) ).forEach( fh ->
             {
-                expectedException.expect( FileIsMappedException.class );
-                handle.rename( b );
-            }
+                expectedException.expectCause( isA( FileIsMappedException.class ) );
+                handleRename( b ).accept( fh );
+            });
         }
     }
 
@@ -5153,11 +5145,7 @@ public abstract class PageCacheTest<T extends PageCache> extends PageCacheTestSu
         ensureExists( x );
         File target = file( "target" );
 
-        Iterable<FileHandle> handles = pageCache.streamFilesRecursive( sub )::iterator;
-        for ( FileHandle handle : handles )
-        {
-            handle.rename( target );
-        }
+        pageCache.streamFilesRecursive( sub ).forEach( handleRename( target ) );
 
         assertFalse( fs.isDirectory( sub ) );
         assertFalse( fs.fileExists( sub ) );
@@ -5174,11 +5162,7 @@ public abstract class PageCacheTest<T extends PageCache> extends PageCacheTestSu
         ensureExists( x );
         File target = file( "target" );
 
-        Iterable<FileHandle> handles = pageCache.streamFilesRecursive( sub )::iterator;
-        for ( FileHandle handle : handles )
-        {
-            handle.rename( target );
-        }
+        pageCache.streamFilesRecursive( sub ).forEach( handleRename( target ) );
 
         assertFalse( fs.isDirectory( subsub ) );
         assertFalse( fs.fileExists( subsub ) );
@@ -5199,11 +5183,7 @@ public abstract class PageCacheTest<T extends PageCache> extends PageCacheTestSu
         ensureExists( x );
         File target = file( "target" );
 
-        Iterable<FileHandle> handles = pageCache.streamFilesRecursive( subsub )::iterator;
-        for ( FileHandle handle : handles )
-        {
-            handle.rename( target );
-        }
+        pageCache.streamFilesRecursive( subsub ).forEach( handleRename( target ) );
 
         assertFalse( fs.fileExists( subsubsub ) );
         assertFalse( fs.isDirectory( subsubsub ) );
@@ -5221,11 +5201,7 @@ public abstract class PageCacheTest<T extends PageCache> extends PageCacheTestSu
         File x = new File( sub, "x" );
         ensureExists( x );
 
-        Iterable<FileHandle> handles = pageCache.streamFilesRecursive( sub )::iterator;
-        for ( FileHandle handle : handles )
-        {
-            handle.delete();
-        }
+        pageCache.streamFilesRecursive( sub ).forEach( HANDLE_DELETE );
 
         assertFalse( fs.isDirectory( sub ) );
         assertFalse( fs.fileExists( sub ) );
@@ -5241,11 +5217,7 @@ public abstract class PageCacheTest<T extends PageCache> extends PageCacheTestSu
         File x = new File( subsub, "x" );
         ensureExists( x );
 
-        Iterable<FileHandle> handles = pageCache.streamFilesRecursive( sub )::iterator;
-        for ( FileHandle handle : handles )
-        {
-            handle.delete();
-        }
+        pageCache.streamFilesRecursive( sub ).forEach( HANDLE_DELETE );
 
         assertFalse( fs.isDirectory( subsub ) );
         assertFalse( fs.fileExists( subsub ) );
@@ -5265,11 +5237,7 @@ public abstract class PageCacheTest<T extends PageCache> extends PageCacheTestSu
         File x = new File( subsubsub, "x" );
         ensureExists( x );
 
-        Iterable<FileHandle> handles = pageCache.streamFilesRecursive( subsub )::iterator;
-        for ( FileHandle handle : handles )
-        {
-            handle.delete();
-        }
+        pageCache.streamFilesRecursive( subsub ).forEach( HANDLE_DELETE );
 
         assertFalse( fs.fileExists( subsubsub ) );
         assertFalse( fs.isDirectory( subsubsub ) );
@@ -5315,17 +5283,16 @@ public abstract class PageCacheTest<T extends PageCache> extends PageCacheTestSu
         File x = new File( sub, "x" );
         ensureExists( x );
         File target = file( "target" );
-        Iterable<FileHandle> handles = pageCache.streamFilesRecursive( a.getParentFile() )::iterator;
         Set<File> observedFiles = new HashSet<>();
-        for ( FileHandle handle : handles )
+        pageCache.streamFilesRecursive( a.getParentFile() ).forEach( fh ->
         {
-            File file = handle.getFile();
+            File file = fh.getFile();
             observedFiles.add( file );
             if ( file.equals( x ) )
             {
-                handle.rename( target );
+                handleRename( target ).accept( fh );
             }
-        }
+        });
         assertThat( observedFiles, containsInAnyOrder( a, x ) );
     }
 
@@ -5336,17 +5303,16 @@ public abstract class PageCacheTest<T extends PageCache> extends PageCacheTestSu
         File a = file( "a" );
         File sub = existingDirectory( "sub" );
         File target = new File( sub, "target" );
-        Iterable<FileHandle> handles = pageCache.streamFilesRecursive( a.getParentFile() )::iterator;
         Set<File> observedFiles = new HashSet<>();
-        for ( FileHandle handle : handles )
+        pageCache.streamFilesRecursive( a.getParentFile() ).forEach( fh ->
         {
-            File file = handle.getFile();
+            File file = fh.getFile();
             observedFiles.add( file );
             if ( file.equals( a ) )
             {
-                handle.rename( target );
+                handleRename( target ).accept( fh );
             }
-        }
+        });
         assertThat( observedFiles, containsInAnyOrder( a ) );
     }
 
