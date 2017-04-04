@@ -46,13 +46,15 @@ object literalReplacement {
     case ast.ContainerIndex(_, _: ast.StringLiteral) =>
       (acc, _) => acc
     case l: ast.StringLiteral =>
-      (acc, _) => acc + (l -> ast.Parameter(s"  AUTOSTRING${acc.size}")(l.position))
+      (acc, _) => if (acc.contains(l)) acc else acc + (l -> ast.Parameter(s"  AUTOSTRING${acc.size}")(l.position))
     case l: ast.IntegerLiteral =>
-      (acc, _) => acc + (l -> ast.Parameter(s"  AUTOINT${acc.size}")(l.position))
+      (acc, _) =>
+        if (acc.contains(l)) acc else
+        acc + (l -> ast.Parameter(s"  AUTOINT${acc.size}")(l.position))
     case l: ast.DoubleLiteral =>
-      (acc, _) => acc + (l -> ast.Parameter(s"  AUTODOUBLE${acc.size}")(l.position))
+      (acc, _) => if (acc.contains(l)) acc else acc + (l -> ast.Parameter(s"  AUTODOUBLE${acc.size}")(l.position))
     case l: ast.BooleanLiteral =>
-      (acc, _) => acc + (l -> ast.Parameter(s"  AUTOBOOL${acc.size}")(l.position))
+      (acc, _) => if (acc.contains(l)) acc else acc + (l -> ast.Parameter(s"  AUTOBOOL${acc.size}")(l.position))
   }
 
   def apply(term: ASTNode): (Rewriter, Map[String, Any]) = {
