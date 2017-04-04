@@ -22,6 +22,7 @@ package org.neo4j.cypher.internal.compiler.v3_2.planner.logical.steps
 import org.neo4j.cypher.internal.compiler.v3_2.ast.NestedPlanExpression
 import org.neo4j.cypher.internal.frontend.v3_2._
 import org.neo4j.cypher.internal.frontend.v3_2.ast._
+import org.neo4j.cypher.internal.frontend.v3_2.helpers.calculateUsingGetDegree
 
 case object getDegreeRewriter extends Rewriter {
 
@@ -51,12 +52,5 @@ case object getDegreeRewriter extends Rewriter {
     case func@FunctionInvocation(_, _, _, IndexedSeq(PatternExpression(RelationshipsPattern(RelationshipChain(NodePattern(None, List(), None), RelationshipPattern(None, types, None, None, dir), NodePattern(Some(node), List(), None))))))
       if func.function == functions.Exists =>
       GreaterThan(calculateUsingGetDegree(func, node, types, dir.reversed), SignedDecimalIntegerLiteral("0")(func.position))(func.position)
-  }
-
-  private def calculateUsingGetDegree(func: FunctionInvocation, node: Variable, types: Seq[RelTypeName], dir: SemanticDirection): Expression = {
-    types
-      .map(typ => GetDegree(node.copyId, Some(typ), dir)(typ.position))
-      .reduceOption[Expression](Add(_, _)(func.position))
-      .getOrElse(GetDegree(node, None, dir)(func.position))
   }
 }

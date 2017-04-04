@@ -19,6 +19,7 @@
  */
 package org.neo4j.cypher.internal.compiler.v3_2.ast.rewriters
 
+import org.neo4j.cypher.internal.frontend.v3_2.ast._
 import org.neo4j.cypher.internal.frontend.v3_2.ast.rewriters.{LabelPredicateNormalizer, MatchPredicateNormalization, PropertyPredicateNormalizer}
 import org.neo4j.cypher.internal.frontend.v3_2.test_helpers.CypherFunSuite
 import org.neo4j.cypher.internal.frontend.v3_2.{Rewriter, inSequence}
@@ -134,5 +135,23 @@ class MatchPredicateNormalizerTest extends CypherFunSuite with RewriteTest {
     assertRewrite(
       "MATCH (a:Artist)-[r:WORKED_WITH* { year: {foo} }]->(b:Artist) RETURN *",
       "MATCH (a)-[r:WORKED_WITH*]->(b) WHERE a:Artist AND b:Artist AND ALL(`  FRESHID16` in r where `  FRESHID16`.year = {foo})  RETURN *")
+  }
+
+  test("rewrite outgoing pattern to getDegree call") {
+    rewrite(parseForRewriting("MATCH (a) WHERE (a)-[:R]->() RETURN a.prop")) should matchPattern {
+      case Query(_, SingleQuery(Seq(Match(_, _, _,
+                                             Some(Where(GreaterThan(GetDegree(_,_,_), _)))), Return(_, _, _, _,_, _))))=>
+
+    }
+  }
+
+  test("rewrite incoming pattern to getDegree call") {
+    val rewrite1 = rewrite(parseForRewriting("MATCH (a) WHERE ()-[:R]->(a) RETURN a.prop"))
+    println(rewrite1)
+    rewrite1 should matchPattern {
+      case Query(_, SingleQuery(Seq(Match(_, _, _,
+                                          Some(Where(GreaterThan(GetDegree(_,_,_), _)))), Return(_, _, _, _,_, _))))=>
+
+    }
   }
 }
