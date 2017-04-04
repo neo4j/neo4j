@@ -80,6 +80,7 @@ import org.neo4j.test.rule.RepeatRule;
 import static java.lang.Long.toHexString;
 import static java.lang.System.currentTimeMillis;
 import static java.nio.file.StandardCopyOption.REPLACE_EXISTING;
+import static java.nio.file.StandardOpenOption.DELETE_ON_CLOSE;
 import static java.util.stream.Collectors.toList;
 import static java.util.stream.Collectors.toSet;
 import static org.hamcrest.Matchers.both;
@@ -738,6 +739,26 @@ public abstract class PageCacheTest<T extends PageCache> extends PageCacheTestSu
         {
             //noinspection ThrowFromFinallyBlock
             pageCache.close();
+        }
+
+        verifyRecordsInFile( file, recordCount );
+    }
+
+    @Test( timeout = SHORT_TIMEOUT_MILLIS )
+    public void dirtyPagesMustBeFlushedWhenThePagedFileIsClosed() throws IOException
+    {
+        configureStandardPageCache();
+
+        long startPageId = 0;
+        long endPageId = recordCount / recordsPerFilePage;
+        File file = file( "a" );
+        try ( PagedFile pagedFile = pageCache.map( file, filePageSize );
+              PageCursor cursor = pagedFile.io( startPageId, PF_SHARED_WRITE_LOCK ) )
+        {
+            while ( cursor.getCurrentPageId() < endPageId && cursor.next() )
+            {
+                writeRecords( cursor );
+            }
         }
 
         verifyRecordsInFile( file, recordCount );
@@ -3858,7 +3879,7 @@ public abstract class PageCacheTest<T extends PageCache> extends PageCacheTestSu
     public void fileMappedWithDeleteOnCloseMustNotExistAfterUnmap() throws Exception
     {
         configureStandardPageCache();
-        pageCache.map( file( "a" ), filePageSize, StandardOpenOption.DELETE_ON_CLOSE ).close();
+        pageCache.map( file( "a" ), filePageSize, DELETE_ON_CLOSE ).close();
         expectedException.expect( NoSuchFileException.class );
         pageCache.map( file( "a" ), filePageSize );
     }
@@ -3870,10 +3891,92 @@ public abstract class PageCacheTest<T extends PageCache> extends PageCacheTestSu
         File file = file( "a" );
         try ( PagedFile ignore = pageCache.map( file, filePageSize ) )
         {
-            pageCache.map( file, filePageSize, StandardOpenOption.DELETE_ON_CLOSE ).close();
+            pageCache.map( file, filePageSize, DELETE_ON_CLOSE ).close();
         }
         expectedException.expect( NoSuchFileException.class );
         pageCache.map( file, filePageSize );
+    }
+
+    @Test
+    public void fileMappedWithDeleteOnCloseShouldNotFlushDirtyPagesOnClose() throws Exception
+    {
+        AtomicInteger flushCounter = new AtomicInteger();
+        PageSwapperFactory swapperFactory = flushCountingPageSwapperFactory( flushCounter );
+        swapperFactory.setFileSystemAbstraction( fs );
+        PageCache cache = createPageCache( swapperFactory, maxPages, pageCachePageSize, PageCacheTracer.NULL,
+                PageCursorTracerSupplier.NULL );
+        File file = file( "a" );
+        try ( PagedFile pf = cache.map( file, filePageSize, DELETE_ON_CLOSE );
+              WritableByteChannel channel = pf.openWritableByteChannel() )
+        {
+            generateFileWithRecords( channel, recordCount, recordSize );
+        }
+        assertThat( flushCounter.get(), lessThan( recordCount / recordsPerFilePage ) );
+    }
+
+    @Test
+    public void mustFlushAllDirtyPagesWhenClosingPagedFileThatIsNotMappedWithDeleteOnClose() throws Exception
+    {
+        AtomicInteger flushCounter = new AtomicInteger();
+        PageSwapperFactory swapperFactory = flushCountingPageSwapperFactory( flushCounter );
+        swapperFactory.setFileSystemAbstraction( fs );
+        PageCache cache = createPageCache( swapperFactory, maxPages, pageCachePageSize, PageCacheTracer.NULL,
+                PageCursorTracerSupplier.NULL );
+        File file = file( "a" );
+        try ( PagedFile pf = cache.map( file, filePageSize );
+              WritableByteChannel channel = pf.openWritableByteChannel() )
+        {
+            generateFileWithRecords( channel, recordCount, recordSize );
+        }
+        assertThat( flushCounter.get(), is( recordCount / recordsPerFilePage ) );
+    }
+
+    private SingleFilePageSwapperFactory flushCountingPageSwapperFactory( AtomicInteger flushCounter )
+    {
+        return new SingleFilePageSwapperFactory()
+        {
+            @Override
+            public PageSwapper createPageSwapper( File file, int filePageSize, PageEvictionCallback onEviction,
+                                                  boolean createIfNotExist ) throws IOException
+            {
+                PageSwapper swapper = super.createPageSwapper( file, filePageSize, onEviction, createIfNotExist );
+                return new DelegatingPageSwapper( swapper )
+                {
+                    @Override
+                    public long write( long filePageId, Page page ) throws IOException
+                    {
+                        flushCounter.getAndIncrement();
+                        return super.write( filePageId, page );
+                    }
+
+                    @Override
+                    public long write( long startFilePageId, Page[] pages, int arrayOffset, int length )
+                            throws IOException
+                    {
+                        flushCounter.getAndAdd( length );
+                        return super.write( startFilePageId, pages, arrayOffset, length );
+                    }
+                };
+            }
+        };
+    }
+
+    @Test( timeout = SHORT_TIMEOUT_MILLIS )
+    public void fileMappedWithDeleteOnCloseMustNotLeakDirtyPages() throws Exception
+    {
+        configureStandardPageCache();
+        File file = file( "a" );
+        int records = maxPages * recordsPerFilePage;
+        int iterations = 50;
+        for ( int i = 0; i < iterations; i++ )
+        {
+            ensureExists( file );
+            try ( PagedFile pf = pageCache.map( file, filePageSize, DELETE_ON_CLOSE );
+                  WritableByteChannel channel = pf.openWritableByteChannel() )
+            {
+                generateFileWithRecords( channel, records, recordSize );
+            }
+        }
     }
 
     @Test
