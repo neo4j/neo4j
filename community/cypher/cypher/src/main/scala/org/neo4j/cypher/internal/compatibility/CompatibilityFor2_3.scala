@@ -68,11 +68,6 @@ object exceptionHandlerFor2_3 extends MapToPublicExceptions[CypherException] {
     throw new ProfilerStatisticsNotReadyException(cause)
   }
 
-  override def incomparableValuesException(lhs: String, rhs: String,
-                                           cause: Throwable): CypherException = {
-    incomparableValuesException(None, lhs, rhs, cause)
-  }
-
   def incomparableValuesException(details: Option[String], lhs: String, rhs: String, cause: Throwable): CypherException = new IncomparableValuesException(details, lhs, rhs, cause)
 
   def unknownLabelException(s: String, cause: Throwable) = new UnknownLabelException(s, cause)
