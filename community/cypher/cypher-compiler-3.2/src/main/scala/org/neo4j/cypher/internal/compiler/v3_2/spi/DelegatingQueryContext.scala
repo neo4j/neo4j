@@ -26,7 +26,6 @@ import org.neo4j.cypher.internal.compiler.v3_2.commands.expressions.{Expander, K
 import org.neo4j.cypher.internal.compiler.v3_2.pipes.matching.PatternNode
 import org.neo4j.cypher.internal.frontend.v3_2.SemanticDirection
 import org.neo4j.graphdb.{Node, Path, PropertyContainer, Relationship}
-import org.neo4j.kernel.impl.query.statistic.KernelStatisticProvider
 
 import scala.collection.Iterator
 

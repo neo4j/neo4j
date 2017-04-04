@@ -41,7 +41,7 @@ import org.neo4j.kernel.impl.api.KernelStatement;
 import org.neo4j.kernel.impl.core.ThreadToStatementContextBridge;
 import org.neo4j.kernel.impl.coreapi.InternalTransaction;
 import org.neo4j.kernel.impl.coreapi.PropertyContainerLocker;
-import org.neo4j.kernel.impl.query.statistic.KernelStatisticProvider;
+import org.neo4j.kernel.impl.query.statistic.StatisticProvider;
 
 import static org.junit.Assert.assertEquals;
 import static org.mockito.Matchers.any;
@@ -268,7 +268,7 @@ public class Neo4jTransactionalContextTest
         tracer.setFaults( 2 );
         tracer.setHits( 5 );
 
-        KernelStatisticProvider statisticProvider = transactionalContext.kernelStatisticProvider();
+        StatisticProvider statisticProvider = transactionalContext.kernelStatisticProvider();
 
         assertEquals( "Expect to see accumulated number of page cache misses.",6, statisticProvider.getPageCacheMisses() );
         assertEquals( "Expected to see accumulated number of page cache hits.", 15, statisticProvider.getPageCacheHits() );

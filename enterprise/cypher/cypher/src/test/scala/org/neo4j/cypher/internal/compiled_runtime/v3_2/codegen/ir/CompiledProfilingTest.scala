@@ -31,7 +31,7 @@ import org.neo4j.cypher.internal.compiler.v3_2.planDescription.InternalPlanDescr
 import org.neo4j.cypher.internal.compiler.v3_2.planDescription._
 import org.neo4j.cypher.internal.compiler.v3_2.planner.logical.plans
 import org.neo4j.cypher.internal.compiler.v3_2.planner.logical.plans._
-import org.neo4j.cypher.internal.compiler.v3_2.spi.{QueryContext, QueryTransactionalContext}
+import org.neo4j.cypher.internal.compiler.v3_2.spi.{KernelStatisticProvider, QueryContext, QueryTransactionalContext}
 import org.neo4j.cypher.internal.frontend.v3_2.ast.SignedDecimalIntegerLiteral
 import org.neo4j.cypher.internal.frontend.v3_2.test_helpers.CypherFunSuite
 import org.neo4j.cypher.internal.ir.v3_2.{Cardinality, CardinalityEstimation, IdName, PlannerQuery}
@@ -41,7 +41,6 @@ import org.neo4j.io.pagecache.tracing.cursor.DefaultPageCursorTracer
 import org.neo4j.kernel.api._
 import org.neo4j.kernel.api.security.AnonymousContext
 import org.neo4j.kernel.impl.core.{NodeManager, NodeProxy}
-import org.neo4j.kernel.impl.query.statistic.KernelStatisticProvider
 import org.neo4j.test.TestGraphDatabaseFactory
 
 class CompiledProfilingTest extends CypherFunSuite with CodeGenSugar {

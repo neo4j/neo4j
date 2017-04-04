@@ -39,7 +39,7 @@ import org.neo4j.kernel.impl.api.KernelStatement;
 import org.neo4j.kernel.impl.core.ThreadToStatementContextBridge;
 import org.neo4j.kernel.impl.coreapi.InternalTransaction;
 import org.neo4j.kernel.impl.coreapi.PropertyContainerLocker;
-import org.neo4j.kernel.impl.query.statistic.KernelStatisticProvider;
+import org.neo4j.kernel.impl.query.statistic.StatisticProvider;
 
 public class Neo4jTransactionalContext implements TransactionalContext
 {
@@ -280,9 +280,9 @@ public class Neo4jTransactionalContext implements TransactionalContext
     }
 
     @Override
-    public KernelStatisticProvider kernelStatisticProvider()
+    public StatisticProvider kernelStatisticProvider()
     {
-        return new TransactionalContextKernelStatisticProvider( statement.executionStatisticsOperations().getPageCursorTracer() );
+        return new TransactionalContextStatisticProvider( statement.executionStatisticsOperations().getPageCursorTracer() );
     }
 
     private void collectTransactionExecutionStatistic()
@@ -302,11 +302,11 @@ public class Neo4jTransactionalContext implements TransactionalContext
         );
     }
 
-    private class TransactionalContextKernelStatisticProvider implements KernelStatisticProvider
+    private class TransactionalContextStatisticProvider implements StatisticProvider
     {
         private final PageCursorTracer pageCursorTracer;
 
-        private TransactionalContextKernelStatisticProvider( PageCursorTracer pageCursorTracer )
+        private TransactionalContextStatisticProvider( PageCursorTracer pageCursorTracer )
         {
             this.pageCursorTracer = pageCursorTracer;
         }

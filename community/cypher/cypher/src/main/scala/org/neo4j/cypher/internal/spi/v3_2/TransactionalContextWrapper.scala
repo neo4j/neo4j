@@ -20,7 +20,8 @@
 package org.neo4j.cypher.internal.spi.v3_2
 
 import org.neo4j.cypher.internal.ExecutionPlan
-import org.neo4j.cypher.internal.compiler.v3_2.spi.QueryTransactionalContext
+import org.neo4j.cypher.internal.compatibility.v3_2.ProfileKernelStatisticProvider
+import org.neo4j.cypher.internal.compiler.v3_2.spi.{KernelStatisticProvider, QueryTransactionalContext}
 import org.neo4j.graphdb.{Lock, PropertyContainer}
 import org.neo4j.kernel.GraphDatabaseQueryService
 import org.neo4j.kernel.api.KernelTransaction.Revertable
@@ -29,7 +30,6 @@ import org.neo4j.kernel.api.security.SecurityContext
 import org.neo4j.kernel.api.txstate.TxStateHolder
 import org.neo4j.kernel.api.{ReadOperations, Statement}
 import org.neo4j.kernel.impl.query.TransactionalContext
-import org.neo4j.kernel.impl.query.statistic.KernelStatisticProvider
 
 case class TransactionalContextWrapper(tc: TransactionalContext) extends QueryTransactionalContext {
 
@@ -68,5 +68,5 @@ case class TransactionalContextWrapper(tc: TransactionalContext) extends QueryTr
 
   def notifyPlanningCompleted(plan: ExecutionPlan): Unit = tc.executingQuery().planningCompleted(plan.plannerInfo)
 
-  def kernelStatisticProvider : KernelStatisticProvider = tc.kernelStatisticProvider()
+  def kernelStatisticProvider: KernelStatisticProvider = new ProfileKernelStatisticProvider(tc.kernelStatisticProvider())
 }

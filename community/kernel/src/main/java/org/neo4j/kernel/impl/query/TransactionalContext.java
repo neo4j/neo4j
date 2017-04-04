@@ -29,7 +29,7 @@ import org.neo4j.kernel.api.dbms.DbmsOperations;
 import org.neo4j.kernel.api.query.ExecutingQuery;
 import org.neo4j.kernel.api.security.SecurityContext;
 import org.neo4j.kernel.api.txstate.TxStateHolder;
-import org.neo4j.kernel.impl.query.statistic.KernelStatisticProvider;
+import org.neo4j.kernel.impl.query.statistic.StatisticProvider;
 
 public interface TransactionalContext
 {
@@ -78,7 +78,7 @@ public interface TransactionalContext
 
     SecurityContext securityContext();
 
-    KernelStatisticProvider kernelStatisticProvider();
+    StatisticProvider kernelStatisticProvider();
 
     KernelTransaction.Revertable restrictCurrentTransaction( SecurityContext context );
 }

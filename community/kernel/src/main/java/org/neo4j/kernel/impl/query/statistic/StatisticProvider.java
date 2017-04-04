@@ -19,9 +19,9 @@
  */
 package org.neo4j.kernel.impl.query.statistic;
 
-public interface KernelStatisticProvider
+public interface StatisticProvider
 {
-    KernelStatisticProvider EMPTY = new KernelStatisticProvider()
+    StatisticProvider EMPTY = new StatisticProvider()
     {
         @Override
         public long getPageCacheHits()

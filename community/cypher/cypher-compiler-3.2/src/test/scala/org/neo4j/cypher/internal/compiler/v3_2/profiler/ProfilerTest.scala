@@ -25,9 +25,8 @@ import org.neo4j.cypher.internal.compiler.v3_2.commands.expressions.{NestedPipeE
 import org.neo4j.cypher.internal.compiler.v3_2.pipes._
 import org.neo4j.cypher.internal.compiler.v3_2.planDescription.InternalPlanDescription.Arguments.{DbHits, PageCacheHits, PageCacheMisses, Rows}
 import org.neo4j.cypher.internal.compiler.v3_2.planDescription._
-import org.neo4j.cypher.internal.compiler.v3_2.spi.{QueryContext, QueryTransactionalContext}
+import org.neo4j.cypher.internal.compiler.v3_2.spi.{EmptyKernelStatisticProvider, KernelStatisticProvider, QueryContext, QueryTransactionalContext}
 import org.neo4j.cypher.internal.frontend.v3_2.test_helpers.CypherFunSuite
-import org.neo4j.kernel.impl.query.statistic.KernelStatisticProvider
 
 class ProfilerTest extends CypherFunSuite {
 
@@ -280,7 +279,7 @@ class ProfilerTest extends CypherFunSuite {
       profiled2.query.asInstanceOf[ProfilingPipeQueryContext].count should equal(1)
     }
 
-  private def prepareQueryContext(statisticProvider: KernelStatisticProvider = KernelStatisticProvider.EMPTY) = {
+  private def prepareQueryContext(statisticProvider: KernelStatisticProvider = EmptyKernelStatisticProvider) = {
     val queryContext = mock[QueryContext]
     val transactionalContext = mock[QueryTransactionalContext]
     when(queryContext.transactionalContext).thenReturn(transactionalContext)
