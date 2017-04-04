@@ -300,8 +300,15 @@ public class LinkedQueuePoolTest
 
     private LinkedQueuePool<Object> getLinkedQueuePool( StatefulMonitor stateMonitor, FakeClock clock, int minSize )
     {
-        return new LinkedQueuePool<>( minSize, Object::new,
-            new LinkedQueuePool.CheckStrategy.TimeoutCheckStrategy( 100, clock ), stateMonitor );
+        return new LinkedQueuePool<Object>( minSize,
+                new LinkedQueuePool.CheckStrategy.TimeoutCheckStrategy( 100, clock ), stateMonitor )
+        {
+            @Override
+            protected Object create()
+            {
+                return new Object();
+            }
+        };
     }
 
     private <R> List<FlyweightHolder<R>>  acquireFromPool( final LinkedQueuePool<R> pool, int times )
