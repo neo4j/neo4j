@@ -473,7 +473,6 @@ public class GraphDatabaseSettings implements LoadableConfig
             "Log entries are written to the file _query.log_ located in the Logs directory. " +
             "For location of the Logs directory, see <<file-locations>>. " +
             "This feature is available in the Neo4j Enterprise Edition." )
-
     public static final Setting<Boolean> log_queries = setting("dbms.logs.query.enabled", BOOLEAN, FALSE );
 
     @Description("Path of the logs directory")
@@ -485,16 +484,16 @@ public class GraphDatabaseSettings implements LoadableConfig
             ( logs ) -> new File( logs, "query.log" ),
             PATH );
 
-    @Description( "Log parameters for executed queries that took longer than the configured threshold." )
+    @Description( "Log parameters for the executed queries being logged." )
     public static final Setting<Boolean> log_queries_parameter_logging_enabled = setting( "dbms.logs.query.parameter_logging_enabled", BOOLEAN, TRUE );
 
-    @Description( "Log detailed time information for executed queries that took longer than the configured threshold." )
+    @Description( "Log detailed time information for the executed queries being logged." )
     public static final Setting<Boolean> log_queries_detailed_time_logging_enabled = setting( "dbms.logs.query.time_logging_enabled", BOOLEAN, FALSE );
 
-    @Description( "Log allocated bytes for executed queries that took longer than the configured threshold." )
+    @Description( "Log allocated bytes for the executed queries being logged." )
     public static final Setting<Boolean> log_queries_allocation_logging_enabled = setting( "dbms.logs.query.allocation_logging_enabled", BOOLEAN, FALSE );
 
-    @Description( "Log page hits and page faults for executed queries that took longer than the configured threshold." )
+    @Description( "Log page hits and page faults for the executed queries being logged." )
     public static final Setting<Boolean> log_queries_page_detail_logging_enabled = setting( "dbms.logs.query.page_logging_enabled", BOOLEAN, FALSE );
 
     @Description("If the execution of query takes more time than this threshold, the query is logged - " +
