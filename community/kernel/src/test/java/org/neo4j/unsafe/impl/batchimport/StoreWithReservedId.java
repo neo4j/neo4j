@@ -88,6 +88,7 @@ public final class StoreWithReservedId
             record.setId( realId );
             return true;
         } );
+        when( cursor.acquire( anyInt(), any() ) ).thenReturn( cursor );
         return cursor;
     }
 }

@@ -23,6 +23,7 @@ import org.neo4j.kernel.impl.store.RecordStore;
 import org.neo4j.kernel.impl.store.record.NodeRecord;
 import org.neo4j.kernel.impl.store.record.RelationshipGroupRecord;
 import org.neo4j.unsafe.impl.batchimport.cache.ByteArray;
+import org.neo4j.unsafe.impl.batchimport.staging.BatchFeedStep;
 import org.neo4j.unsafe.impl.batchimport.staging.ReadRecordsStep;
 import org.neo4j.unsafe.impl.batchimport.staging.Stage;
 
@@ -38,7 +39,8 @@ public class NodeFirstGroupStage extends Stage
             RecordStore<NodeRecord> nodeStore, ByteArray cache )
     {
         super( "Node --> Group", config );
-        add( new ReadRecordsStep<>( control(), config, groupStore, allIn( groupStore, config ) ) );
+        add( new BatchFeedStep( control(), config, allIn( groupStore, config ), groupStore.getRecordSize() ) );
+        add( new ReadRecordsStep<>( control(), config, groupStore ) );
         add( new NodeSetFirstGroupStep( control(), config, nodeStore, cache ) );
         add( new UpdateRecordsStep<>( control(), config, nodeStore ) );
     }
