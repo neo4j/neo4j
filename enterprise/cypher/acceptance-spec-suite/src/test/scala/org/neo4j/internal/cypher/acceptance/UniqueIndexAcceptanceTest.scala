@@ -35,7 +35,7 @@ class UniqueIndexAcceptanceTest extends ExecutionEngineFunSuite with NewPlannerT
     graph should haveConstraints("UNIQUENESS:Person(name)")
 
     //WHEN
-    val result = executeWithAllPlannersAndRuntimesAndCompatibilityMode("MATCH (n:Person)-->() USING INDEX n:Person(name) WHERE n.name IN ['Jacob'] RETURN n")
+    val result = executeWithCompatibilityAndAssertSimilarPlans("MATCH (n:Person)-->() USING INDEX n:Person(name) WHERE n.name IN ['Jacob'] RETURN n")
 
     //THEN
     result.toList should equal (List(Map("n" -> jake)))
@@ -53,7 +53,7 @@ class UniqueIndexAcceptanceTest extends ExecutionEngineFunSuite with NewPlannerT
     graph should haveConstraints("UNIQUENESS:Person(name)")
 
     //WHEN
-    val result = executeWithAllPlannersAndRuntimesAndCompatibilityMode("MATCH (n:Person)-->() USING INDEX n:Person(name) WHERE n.name IN ['Jacob','Jacob'] RETURN n")
+    val result = executeWithCompatibilityAndAssertSimilarPlans("MATCH (n:Person)-->() USING INDEX n:Person(name) WHERE n.name IN ['Jacob','Jacob'] RETURN n")
 
     //THEN
     result.toList should equal (List(Map("n" -> jake)))
@@ -71,7 +71,7 @@ class UniqueIndexAcceptanceTest extends ExecutionEngineFunSuite with NewPlannerT
     graph should haveConstraints("UNIQUENESS:Person(name)")
 
     //WHEN
-    val result = executeWithAllPlannersAndRuntimesAndCompatibilityMode("MATCH (n:Person)-->() USING INDEX n:Person(name) WHERE n.name IN null RETURN n")
+    val result = executeWithCompatibilityAndAssertSimilarPlans("MATCH (n:Person)-->() USING INDEX n:Person(name) WHERE n.name IN null RETURN n")
 
     //THEN
     result.toList should equal (List())
@@ -89,7 +89,7 @@ class UniqueIndexAcceptanceTest extends ExecutionEngineFunSuite with NewPlannerT
     graph should haveConstraints("UNIQUENESS:Person(name)")
 
     //WHEN
-    val result = executeWithAllPlannersAndRuntimesAndCompatibilityMode("MATCH (n:Person)-->() USING INDEX n:Person(name) WHERE n.name IN {coll} RETURN n","coll"->List("Jacob"))
+    val result = executeWithCompatibilityAndAssertSimilarPlans("MATCH (n:Person)-->() USING INDEX n:Person(name) WHERE n.name IN {coll} RETURN n","coll"->List("Jacob"))
 
     //THEN
     result.toList should equal (List(Map("n" -> jake)))
@@ -107,14 +107,14 @@ class UniqueIndexAcceptanceTest extends ExecutionEngineFunSuite with NewPlannerT
     graph should haveConstraints("UNIQUENESS:Person(name)")
 
     //WHEN
-    val result = executeWithAllPlannersAndRuntimesAndCompatibilityMode("MATCH (n:Person)-->() USING INDEX n:Person(name) WHERE n.name IN {coll} RETURN n","coll"->List("Jacob"))
+    val result = executeWithCompatibilityAndAssertSimilarPlans("MATCH (n:Person)-->() USING INDEX n:Person(name) WHERE n.name IN {coll} RETURN n","coll"->List("Jacob"))
 
     //THEN
     result should use("NodeUniqueIndexSeek")
     result shouldNot use("NodeUniqueIndexSeek(Locking)")
   }
 
-  test("should use locking unique index for merge queries") {
+  test("should use locking unique index for merge node queries") {
     //GIVEN
     createLabeledNode(Map("name" -> "Andres"), "Person")
     graph.createConstraint("Person", "name")
@@ -122,10 +122,26 @@ class UniqueIndexAcceptanceTest extends ExecutionEngineFunSuite with NewPlannerT
     graph should haveConstraints("UNIQUENESS:Person(name)")
 
     //WHEN
-    val result = updateWithBothPlannersAndCompatibilityMode("MERGE (n:Person {name: 'Andres'}) RETURN n.name")
+    val result = updateWithCompatibilityAndAssertSimilarPlans("MERGE (n:Person {name: 'Andres'}) RETURN n.name")
 
     //THEN
     result shouldNot use("NodeIndexSeek")
+    result should use("NodeUniqueIndexSeek(Locking)")
+  }
+
+  test("should use locking unique index for merge relationship queries") {
+    //GIVEN
+    createLabeledNode(Map("name" -> "Andres"), "Person")
+    graph.createConstraint("Person", "name")
+    graph should not(haveConstraints("NODE_KEY:Person(name)"))
+    graph should haveConstraints("UNIQUENESS:Person(name)")
+
+    //WHEN
+    val result = updateWithBothPlannersAndCompatibilityMode("MATCH (n:Person {name: 'Andres'}) MERGE (n)-[:KNOWS]->(m:Person {name: 'Maria'}) RETURN n.name")
+
+    //THEN
+    result shouldNot use("NodeIndexSeek")
+    result shouldNot use("NodeByLabelScan")
     result should use("NodeUniqueIndexSeek(Locking)")
   }
 
@@ -137,7 +153,7 @@ class UniqueIndexAcceptanceTest extends ExecutionEngineFunSuite with NewPlannerT
     graph should haveConstraints("UNIQUENESS:Person(name)")
 
     //WHEN
-    val result = updateWithBothPlannersAndCompatibilityMode("MATCH (n:Person)-->() USING INDEX n:Person(name) WHERE n.name IN {coll} SET n:Foo RETURN n.name","coll"->List("Jacob"))
+    val result = updateWithCompatibilityAndAssertSimilarPlans("MATCH (n:Person)-->() USING INDEX n:Person(name) WHERE n.name IN {coll} SET n:Foo RETURN n.name","coll"->List("Jacob"))
 
     //THEN
     result shouldNot use("NodeIndexSeek")

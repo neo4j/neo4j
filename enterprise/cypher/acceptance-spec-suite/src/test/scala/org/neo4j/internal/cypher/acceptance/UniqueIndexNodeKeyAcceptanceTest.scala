@@ -46,10 +46,10 @@ class UniqueIndexNodeKeyAcceptanceTest extends ExecutionEngineFunSuite with NewP
     graph should not(haveConstraints("UNIQUENESS:Person(name)"))
 
     //WHEN
-    val result = executeWithCompatibility("MATCH (n:Person)-->() USING INDEX n:Person(name) WHERE n.name IN ['Jacob'] RETURN n")
+    val result = executeWithCompatibilityAndAssertSimilarPlans("MATCH (n:Person)-->() USING INDEX n:Person(name) WHERE n.name IN ['Jacob'] RETURN n")
 
     //THEN
-    result.toList should equal (List(Map("n" -> jake)))
+    result.toList should equal(List(Map("n" -> jake)))
   }
 
   test("should be able to use unique index on IN collections with duplicates") {
@@ -64,10 +64,10 @@ class UniqueIndexNodeKeyAcceptanceTest extends ExecutionEngineFunSuite with NewP
     graph should not(haveConstraints("UNIQUENESS:Person(name)"))
 
     //WHEN
-    val result = executeWithCompatibility("MATCH (n:Person)-->() USING INDEX n:Person(name) WHERE n.name IN ['Jacob','Jacob'] RETURN n")
+    val result = executeWithCompatibilityAndAssertSimilarPlans("MATCH (n:Person)-->() USING INDEX n:Person(name) WHERE n.name IN ['Jacob','Jacob'] RETURN n")
 
     //THEN
-    result.toList should equal (List(Map("n" -> jake)))
+    result.toList should equal(List(Map("n" -> jake)))
   }
 
   test("should be able to use unique index on IN a null value") {
@@ -82,10 +82,10 @@ class UniqueIndexNodeKeyAcceptanceTest extends ExecutionEngineFunSuite with NewP
     graph should not(haveConstraints("UNIQUENESS:Person(name)"))
 
     //WHEN
-    val result = executeWithCompatibility("MATCH (n:Person)-->() USING INDEX n:Person(name) WHERE n.name IN null RETURN n")
+    val result = executeWithCompatibilityAndAssertSimilarPlans("MATCH (n:Person)-->() USING INDEX n:Person(name) WHERE n.name IN null RETURN n")
 
     //THEN
-    result.toList should equal (List())
+    result.toList should equal(List())
   }
 
   test("should be able to use index unique index on IN a collection parameter") {
@@ -100,10 +100,10 @@ class UniqueIndexNodeKeyAcceptanceTest extends ExecutionEngineFunSuite with NewP
     graph should not(haveConstraints("UNIQUENESS:Person(name)"))
 
     //WHEN
-    val result = executeWithCompatibility("MATCH (n:Person)-->() USING INDEX n:Person(name) WHERE n.name IN {coll} RETURN n","coll"->List("Jacob"))
+    val result = executeWithCompatibilityAndAssertSimilarPlans("MATCH (n:Person)-->() USING INDEX n:Person(name) WHERE n.name IN {coll} RETURN n", "coll" -> List("Jacob"))
 
     //THEN
-    result.toList should equal (List(Map("n" -> jake)))
+    result.toList should equal(List(Map("n" -> jake)))
   }
 
   test("should not use locking index for read only query") {
@@ -118,14 +118,14 @@ class UniqueIndexNodeKeyAcceptanceTest extends ExecutionEngineFunSuite with NewP
     graph should not(haveConstraints("UNIQUENESS:Person(name)"))
 
     //WHEN
-    val result = executeWithCompatibility("MATCH (n:Person)-->() USING INDEX n:Person(name) WHERE n.name IN {coll} RETURN n","coll"->List("Jacob"))
+    val result = executeWithCompatibilityAndAssertSimilarPlans("MATCH (n:Person)-->() USING INDEX n:Person(name) WHERE n.name IN {coll} RETURN n", "coll" -> List("Jacob"))
 
     //THEN
     result should use("NodeUniqueIndexSeek")
     result shouldNot use("NodeUniqueIndexSeek(Locking)")
   }
 
-  test("should use locking unique index for merge queries") {
+  test("should use locking unique index for merge node queries") {
     //GIVEN
     createLabeledNode(Map("name" -> "Andres"), "Person")
     graph.createNodeKeyConstraint("Person", "name")
@@ -133,7 +133,22 @@ class UniqueIndexNodeKeyAcceptanceTest extends ExecutionEngineFunSuite with NewP
     graph should not(haveConstraints("UNIQUENESS:Person(name)"))
 
     //WHEN
-    val result = updateWithCompatibility("MERGE (n:Person {name: 'Andres'}) RETURN n.name")
+    val result = updateWithCompatibilityAndAssertSimilarPlans("MERGE (n:Person {name: 'Andres'}) RETURN n.name")
+
+    //THEN
+    result shouldNot use("NodeIndexSeek")
+    result should use("NodeUniqueIndexSeek(Locking)")
+  }
+
+  test("should use locking unique index for merge relationship queries") {
+    //GIVEN
+    createLabeledNode(Map("name" -> "Andres"), "Person")
+    graph.createNodeKeyConstraint("Person", "name")
+    graph should haveConstraints("NODE_KEY:Person(name)")
+    graph should not(haveConstraints("UNIQUENESS:Person(name)"))
+
+    //WHEN
+    val result = updateWithBothPlannersAndCompatibilityMode("MATCH (n:Person {name: 'Andres'}) MERGE (n)-[:KNOWS]->(m:Person {name: 'Maria'}) RETURN n.name")
 
     //THEN
     result shouldNot use("NodeIndexSeek")
@@ -148,47 +163,10 @@ class UniqueIndexNodeKeyAcceptanceTest extends ExecutionEngineFunSuite with NewP
     graph should not(haveConstraints("UNIQUENESS:Person(name)"))
 
     //WHEN
-    val result = updateWithCompatibility("MATCH (n:Person)-->() USING INDEX n:Person(name) WHERE n.name IN {coll} SET n:Foo RETURN n.name","coll"->List("Jacob"))
+    val result = updateWithCompatibilityAndAssertSimilarPlans("MATCH (n:Person)-->() USING INDEX n:Person(name) WHERE n.name IN {coll} SET n:Foo RETURN n.name", "coll" -> List("Jacob"))
 
     //THEN
     result shouldNot use("NodeIndexSeek")
     result should use("NodeUniqueIndexSeek(Locking)")
-  }
-
-  private def updateWithCompatibility(queryText: String, params: (String, Any)*): InternalExecutionResult = {
-    val compatibility = "3.1" // 2.3 does not support updates with cost planner, so we cannot compare the query plans
-    val compatibilityResult = graph.rollback(innerExecute(s"CYPHER $compatibility $queryText", params: _*))
-    val costResult = executeWithCostPlannerAndInterpretedRuntimeOnly(queryText, params: _*)
-
-    assertResultsAreSame(compatibilityResult, costResult, queryText, s"Diverging results between $compatibility and current")
-    assertPlansAreSame(compatibilityResult, costResult, queryText, s"Diverging query plan between $compatibility and current")
-
-    compatibilityResult.close()
-    costResult
-  }
-
-  private def executeWithCompatibility(queryText: String, params: (String, Any)*): InternalExecutionResult = {
-    val compatibility = "2.3"
-    val compatibilityResult = innerExecute(s"CYPHER $compatibility $queryText", params: _*)
-    val interpretedResult = innerExecute(s"CYPHER runtime=interpreted $queryText", params: _*)
-
-    assertResultsAreSame(compatibilityResult, interpretedResult, queryText, s"Diverging results between $compatibility and current")
-    assertPlansAreSame(interpretedResult, compatibilityResult, queryText, s"Diverging query plan between $compatibility and current")
-
-    compatibilityResult.close()
-    interpretedResult.close()
-    interpretedResult
-  }
-
-  protected def assertPlansAreSame(current: InternalExecutionResult, other: InternalExecutionResult, queryText: String, errorMsg: String, replaceNaNs: Boolean = false) {
-    withClue(errorMsg) {
-      val currentText = current.executionPlanDescription().toString
-      val otherText = other.executionPlanDescription().toString
-      val currentOps = current.executionPlanDescription().flatten.map(_.name.toLowerCase)
-      val otherOps = other.executionPlanDescription().flatten.map(_.name.toLowerCase)
-      withClue(s"$errorMsg: $currentOps != $otherOps\n$currentText\n$otherText") {
-        currentOps should be(otherOps)
-      }
-    }
   }
 }

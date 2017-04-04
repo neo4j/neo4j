@@ -26,15 +26,15 @@ import org.neo4j.graphdb.{RelationshipType, Node, Label}
 class QueryPlanCompatibilityTest extends ExecutionEngineFunSuite with NewPlannerTestSupport {
 
   test("should produce compatible plans for simple MATCH node query") {
-    checkCompatibility("MATCH (n:Person) RETURN n")
+    executeWithCompatibilityAndAssertSimilarPlans("MATCH (n:Person) RETURN n")
   }
 
   test("should produce compatible plans for simple MATCH relationship query") {
-    checkCompatibility("MATCH (n:Person)-[r:KNOWS]->(m) RETURN r")
+    executeWithCompatibilityAndAssertSimilarPlans("MATCH (n:Person)-[r:KNOWS]->(m) RETURN r")
   }
 
   test("should produce compatible plans with predicates") {
-    checkCompatibility(
+    executeWithCompatibilityAndAssertSimilarPlans(
       """
         |MATCH (n:Person) WHERE n.name STARTS WITH 'Joe' AND n.age >= 42
         |RETURN count(n)
@@ -42,7 +42,7 @@ class QueryPlanCompatibilityTest extends ExecutionEngineFunSuite with NewPlanner
   }
 
   test("should produce compatible plans with unwind") {
-    checkCompatibility(
+    executeWithCompatibilityAndAssertSimilarPlans(
       """
         |WITH 'Joe' as name
         |UNWIND [42,43,44] as age
@@ -51,9 +51,9 @@ class QueryPlanCompatibilityTest extends ExecutionEngineFunSuite with NewPlanner
       """.stripMargin)
   }
 
-  // Too much has changed since 2.3, but this text might make sense against a more recent version
+  // Too much has changed since 2.3, but this test might make sense against a more recent version
   ignore("should produce compatible plans for complex query") {
-    checkCompatibility(
+    executeWithCompatibilityAndAssertSimilarPlans(
       """
         |WITH 'Joe' as name
         |UNWIND [42,43,44] as age
@@ -74,28 +74,6 @@ class QueryPlanCompatibilityTest extends ExecutionEngineFunSuite with NewPlanner
         r.setProperty("since", 1970 + i)
       }
       prev = node
-    }
-  }
-
-  private def checkCompatibility(queryText: String, params: (String, Any)*) = {
-    val compatibility = "2.3"
-    val compatibilityResult = innerExecute(s"CYPHER $compatibility $queryText", params: _*)
-    val interpretedResult = innerExecute(s"CYPHER runtime=interpreted $queryText", params: _*)
-    assertResultsAreSame(compatibilityResult, interpretedResult, queryText, s"Diverging results between $compatibility and current")
-    compatibilityResult.close()
-    interpretedResult.close()
-    assertPlansAreSame(interpretedResult, compatibilityResult, queryText, s"Diverging query plan between $compatibility and current")
-  }
-
-  protected def assertPlansAreSame(current: InternalExecutionResult, other: InternalExecutionResult, queryText: String, errorMsg: String, replaceNaNs: Boolean = false) {
-    withClue(errorMsg) {
-      val currentText = current.executionPlanDescription().toString
-      val otherText = other.executionPlanDescription().toString
-      val currentOps = current.executionPlanDescription().flatten.map(_.name.toLowerCase)
-      val otherOps = other.executionPlanDescription().flatten.map(_.name.toLowerCase)
-      withClue(s"$errorMsg: $currentOps != $otherOps\n$currentText\n$otherText") {
-        currentOps should be(otherOps)
-      }
     }
   }
 }
