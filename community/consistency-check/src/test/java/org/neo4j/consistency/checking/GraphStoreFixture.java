@@ -81,6 +81,7 @@ import org.neo4j.kernel.impl.transaction.tracing.CommitEvent;
 import org.neo4j.kernel.impl.util.Dependencies;
 import org.neo4j.kernel.internal.GraphDatabaseAPI;
 import org.neo4j.kernel.lifecycle.LifeSupport;
+import org.neo4j.kernel.monitoring.Monitors;
 import org.neo4j.logging.FormattedLogProvider;
 import org.neo4j.logging.LogProvider;
 import org.neo4j.logging.NullLog;
@@ -187,7 +188,7 @@ public abstract class GraphStoreFixture extends ConfigurablePageCacheRule implem
 
             Dependencies dependencies = new Dependencies();
             dependencies.satisfyDependencies( Config.defaults(), fileSystem,
-                    new SimpleLogService( logProvider, logProvider ), indexStoreView, pageCache );
+                    new SimpleLogService( logProvider, logProvider ), indexStoreView, pageCache, new Monitors() );
             KernelContext kernelContext = new SimpleKernelContext( directory, UNKNOWN, dependencies );
             LabelScanStore labelScanStore = startLabelScanStore( config, dependencies, kernelContext );
             directStoreAccess = new DirectStoreAccess( nativeStores, labelScanStore, createIndexes( fileSystem,
