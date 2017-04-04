@@ -20,13 +20,12 @@
 package org.neo4j.cypher.internal.spi.v2_3
 
 import org.neo4j.cypher.MissingIndexException
-import org.neo4j.cypher.internal.compiler.v2_3.{IndexDescriptor => CypherIndexDescriptor}
 import org.neo4j.cypher.internal.compiler.v2_3.pipes.EntityProducer
 import org.neo4j.cypher.internal.compiler.v2_3.pipes.matching.ExpanderStep
 import org.neo4j.cypher.internal.compiler.v2_3.spi._
 import org.neo4j.cypher.internal.spi.TransactionalContextWrapper
 import org.neo4j.graphdb.Node
-import org.neo4j.kernel.api.constraints.UniquenessConstraint
+import org.neo4j.kernel.api.constraints.{UniquenessConstraint => KernelUniquenessConstraint}
 import org.neo4j.kernel.api.exceptions.KernelException
 import org.neo4j.kernel.api.exceptions.schema.SchemaKernelException
 import org.neo4j.kernel.api.index.{InternalIndexState, IndexDescriptor => KernelIndexDescriptor}
@@ -35,10 +34,10 @@ import org.neo4j.kernel.impl.transaction.log.TransactionIdStore
 import scala.collection.JavaConverters._
 
 class TransactionBoundPlanContext(tc: TransactionalContextWrapper)
-  extends TransactionBoundTokenContext(tc.statement) with PlanContext with IndexDescriptorCompatibility {
+  extends TransactionBoundTokenContext(tc.statement) with PlanContext with SchemaDescriptorTranslation {
 
   @Deprecated
-  def getIndexRule(labelName: String, propertyKey: String): Option[CypherIndexDescriptor] = evalOrNone {
+  def getIndexRule(labelName: String, propertyKey: String): Option[SchemaTypes.IndexDescriptor] = evalOrNone {
     val labelId = tc.statement.readOperations().labelGetForName(labelName)
     val propertyKeyId = tc.statement.readOperations().propertyKeyGetForName(propertyKey)
 
@@ -54,7 +53,7 @@ class TransactionBoundPlanContext(tc: TransactionalContextWrapper)
     onlineIndexDescriptors.nonEmpty
   }
 
-  def getUniqueIndexRule(labelName: String, propertyKey: String): Option[CypherIndexDescriptor] = evalOrNone {
+  def getUniqueIndexRule(labelName: String, propertyKey: String): Option[SchemaTypes.IndexDescriptor] = evalOrNone {
     val labelId = tc.statement.readOperations().labelGetForName(labelName)
     val propertyKeyId = tc.statement.readOperations().propertyKeyGetForName(propertyKey)
 
@@ -65,19 +64,19 @@ class TransactionBoundPlanContext(tc: TransactionalContextWrapper)
   private def evalOrNone[T](f: => Option[T]): Option[T] =
     try { f } catch { case _: SchemaKernelException => None }
 
-  private def getOnlineIndex(descriptor: KernelIndexDescriptor): Option[CypherIndexDescriptor] =
+  private def getOnlineIndex(descriptor: KernelIndexDescriptor): Option[SchemaTypes.IndexDescriptor] =
     tc.statement.readOperations().indexGetState(descriptor) match {
       case InternalIndexState.ONLINE => Some(descriptor)
       case _                         => None
     }
 
-  def getUniquenessConstraint(labelName: String, propertyKey: String): Option[UniquenessConstraint] = try {
+  def getUniquenessConstraint(labelName: String, propertyKey: String): Option[SchemaTypes.UniquenessConstraint] = try {
     val labelId = tc.statement.readOperations().labelGetForName(labelName)
     val propertyKeyId = tc.statement.readOperations().propertyKeyGetForName(propertyKey)
 
     import scala.collection.JavaConverters._
     tc.statement.readOperations().constraintsGetForLabelAndPropertyKey(labelId, propertyKeyId).asScala.collectFirst {
-      case unique: UniquenessConstraint => unique
+      case unique: KernelUniquenessConstraint => unique
     }
   } catch {
     case _: KernelException => None
