@@ -60,7 +60,7 @@ import scala.collection.Iterator
 import scala.collection.JavaConverters._
 
 final class TransactionBoundQueryContext(val transactionalContext: TransactionalContextWrapperv3_1)(implicit indexSearchMonitor: IndexSearchMonitor)
-  extends TransactionBoundTokenContext(transactionalContext.statement) with QueryContext with IndexDescriptorCompatibility {
+  extends TransactionBoundTokenContext(transactionalContext.statement) with QueryContext with SchemaDescriptorTranslation {
 
   type EntityAccessor = NodeManager
 

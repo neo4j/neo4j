@@ -44,7 +44,7 @@ import org.neo4j.procedure.Mode
 import scala.collection.JavaConverters._
 
 class TransactionBoundPlanContext(tc: TransactionalContextWrapperv3_1, logger: InternalNotificationLogger)
-  extends TransactionBoundTokenContext(tc.statement) with PlanContext with IndexDescriptorCompatibility {
+  extends TransactionBoundTokenContext(tc.statement) with PlanContext with SchemaDescriptorTranslation {
 
   @Deprecated
   def getIndexRule(labelName: String, propertyKey: String): Option[IndexDescriptor] = evalOrNone {
