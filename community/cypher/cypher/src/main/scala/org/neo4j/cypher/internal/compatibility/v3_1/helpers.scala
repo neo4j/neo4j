@@ -35,13 +35,16 @@ object helpers {
     monitor.endFailure(tc.executingQuery(), t)
   }
   def as3_1(config: CypherCompilerConfiguration) =
-    CypherCompilerConfiguration3_1(config.queryCacheSize,
+    CypherCompilerConfiguration3_1(
+      config.queryCacheSize,
       config.statsDivergenceThreshold,
       config.queryPlanTTL,
       config.useErrorsOverWarnings,
       config.idpMaxTableSize,
       config.idpIterationDuration,
       config.errorIfShortestPathFallbackUsedAtRuntime,
+      config.errorIfShortestPathHasCommonNodesAtRuntime,
+      config.legacyCsvQuoteEscaping,
       config.nonIndexedLabelWarningThreshold)
 
   /** This is awful but needed until 3_0 is updated no to send in the tracer here */
