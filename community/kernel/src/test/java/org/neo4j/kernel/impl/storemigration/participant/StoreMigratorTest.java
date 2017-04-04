@@ -19,6 +19,7 @@
  */
 package org.neo4j.kernel.impl.storemigration.participant;
 
+import org.junit.Before;
 import org.junit.Rule;
 import org.junit.Test;
 import org.junit.rules.RuleChain;
@@ -34,10 +35,16 @@ import org.neo4j.kernel.impl.api.index.inmemory.InMemoryIndexProvider;
 import org.neo4j.kernel.impl.logging.LogService;
 import org.neo4j.kernel.impl.logging.NullLogService;
 import org.neo4j.kernel.impl.logging.SimpleLogService;
+import org.neo4j.kernel.impl.store.MetaDataStore;
 import org.neo4j.kernel.impl.store.TransactionId;
+import org.neo4j.kernel.impl.store.format.standard.StandardV2_2;
+import org.neo4j.kernel.impl.store.format.standard.StandardV3_0;
 import org.neo4j.kernel.impl.storemigration.legacylogs.LegacyLogs;
 import org.neo4j.kernel.impl.transaction.log.LogPosition;
 import org.neo4j.kernel.impl.transaction.log.TransactionIdStore;
+import org.neo4j.kernel.impl.transaction.log.PhysicalLogFiles;
+import org.neo4j.kernel.impl.transaction.log.entry.VersionAwareLogEntryReader;
+import org.neo4j.kernel.recovery.LatestCheckPointFinder;
 import org.neo4j.logging.NullLogProvider;
 import org.neo4j.test.rule.PageCacheRule;
 import org.neo4j.test.rule.RandomRule;
@@ -63,12 +70,19 @@ public class StoreMigratorTest
     private final PageCacheRule pageCacheRule = new PageCacheRule();
     private final RandomRule random = new RandomRule();
     private final SchemaIndexProvider schemaIndexProvider = new InMemoryIndexProvider();
+    private PageCache pageCache;
 
     @Rule
     public final RuleChain ruleChain = RuleChain.outerRule( directory )
             .around( fileSystemRule )
             .around( pageCacheRule )
             .around( random );
+
+    @Before
+    public void setUp()
+    {
+        pageCache = pageCacheRule.getPageCache( fileSystemRule );
+    }
 
     @Test
     public void shouldExtractTransactionInformationFromMetaDataStore() throws Exception
@@ -81,7 +95,6 @@ public class StoreMigratorTest
         TransactionId expected = new TransactionId( txId, checksum, timestamp );
 
         // ... and files
-        PageCache pageCache = pageCacheRule.getPageCache( fileSystemRule.get() );
         File storeDir = directory.graphDbDir();
         File neoStore = new File( storeDir, DEFAULT_NAME );
         neoStore.createNewFile();
@@ -115,8 +128,6 @@ public class StoreMigratorTest
         TransactionId expected = new TransactionId( txId, checksum, timestamp );
 
         // ... and files
-        PageCache pageCache = pageCacheRule.getPageCache( fileSystemRule.get() );
-
         File storeDir = directory.graphDbDir();
         File neoStore = new File( storeDir, DEFAULT_NAME );
         neoStore.createNewFile();
@@ -142,7 +153,6 @@ public class StoreMigratorTest
     {
         // given
         long txId = 42;
-        PageCache pageCache = pageCacheRule.getPageCache( fileSystemRule.get() );
         File storeDir = directory.graphDbDir();
         File neoStore = new File( storeDir, DEFAULT_NAME );
         neoStore.createNewFile();
@@ -173,7 +183,6 @@ public class StoreMigratorTest
     {
         // given
         long txId = 1;
-        PageCache pageCache = pageCacheRule.getPageCache( fileSystemRule.get() );
         File storeDir = directory.graphDbDir();
         File neoStore = new File( storeDir, DEFAULT_NAME );
         neoStore.createNewFile();
@@ -197,6 +206,33 @@ public class StoreMigratorTest
         assertEquals( txId, actual.transactionId() );
         assertEquals( TransactionIdStore.BASE_TX_CHECKSUM, actual.checksum() );
         assertEquals( TransactionIdStore.BASE_TX_COMMIT_TIMESTAMP, actual.commitTimestamp() );
+    }
+
+    @Test
+    public void checkpointBasedOnLastClosedTransactionPosition() throws IOException
+    {
+        StoreMigrator storeMigrator = newStoreMigrator();
+        LogPosition lastTxLogPosition = new LogPosition( 7, 8 );
+        TransactionId txInfo = new TransactionId( 100, 101, 102 );
+
+        File storeDir = directory.graphDbDir();
+        File migrationDirectory = directory.directory( "migratedDirectory" );
+
+        File neoStore = new File( storeDir, DEFAULT_NAME );
+        fileSystemRule.create( neoStore ).close();
+        MetaDataStore.setRecord( pageCache, neoStore, MetaDataStore.Position.LOG_VERSION, 73 );
+
+        storeMigrator.writeLastTxLogPosition( migrationDirectory, lastTxLogPosition );
+        storeMigrator.writeLastTxInformation( migrationDirectory, txInfo );
+        storeMigrator.moveMigratedFiles( migrationDirectory, storeDir,
+                StandardV2_2.STORE_VERSION, StandardV3_0.STORE_VERSION);
+
+        PhysicalLogFiles logFiles = new PhysicalLogFiles( storeDir, fileSystemRule );
+        LatestCheckPointFinder checkPointFinder = new LatestCheckPointFinder( logFiles, fileSystemRule,
+                new VersionAwareLogEntryReader<>() );
+        LatestCheckPointFinder.LatestCheckPoint latestCheckPoint = checkPointFinder.find( logFiles
+                .getHighestLogVersion() );
+        assertEquals( lastTxLogPosition, latestCheckPoint.checkPoint.getLogPosition() );
     }
 
     @Test
@@ -224,10 +260,9 @@ public class StoreMigratorTest
 
         assertEquals( writtenLogPosition, readLogPosition );
     }
-
     private StoreMigrator newStoreMigrator()
     {
-        return new StoreMigrator( fileSystemRule.get(), pageCacheRule.getPageCache( fileSystemRule.get() ),
+        return new StoreMigrator( fileSystemRule, pageCache,
                 Config.empty(), NullLogService.getInstance(), schemaIndexProvider );
     }
 }

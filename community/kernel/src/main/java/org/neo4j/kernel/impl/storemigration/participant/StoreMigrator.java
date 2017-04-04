@@ -40,7 +40,6 @@ import java.util.Optional;
 import java.util.function.BiConsumer;
 import java.util.function.Predicate;
 import java.util.function.Supplier;
-import java.util.stream.Stream;
 import java.util.stream.StreamSupport;
 
 import org.neo4j.helpers.collection.Iterables;
@@ -747,11 +746,11 @@ public class StoreMigrator extends AbstractStoreMigrationParticipant
         }
 
         File neoStore = new File( storeDir, MetaDataStore.DEFAULT_NAME );
-        long logVersion = MetaDataStore.getRecord( pageCache, neoStore, Position.LOG_VERSION );
         long lastCommittedTx = MetaDataStore.getRecord( pageCache, neoStore, Position.LAST_TRANSACTION_ID );
 
-        // update or add upgrade id and time and other necessary neostore records
-        updateOrAddNeoStoreFieldsAsPartOfMigration( migrationDir, storeDir, versionToUpgradeTo );
+        // update necessary neostore records
+        LogPosition logPosition = readLastTxLogPosition( migrationDir );
+        updateOrAddNeoStoreFieldsAsPartOfMigration( migrationDir, storeDir, versionToUpgradeTo, logPosition );
 
         // delete old logs
         legacyLogs.deleteUnusedLogFiles( storeDir );
@@ -759,7 +758,7 @@ public class StoreMigrator extends AbstractStoreMigrationParticipant
         if ( movingAwayFromVersionTrailers )
         {
             // write a check point in the log in order to make recovery work in the newer version
-            new StoreMigratorCheckPointer( storeDir, fileSystem ).checkPoint( logVersion, lastCommittedTx );
+            new StoreMigratorCheckPointer( storeDir, fileSystem ).checkPoint( logPosition, lastCommittedTx );
         }
     }
 
@@ -782,7 +781,7 @@ public class StoreMigrator extends AbstractStoreMigrationParticipant
     }
 
     private void updateOrAddNeoStoreFieldsAsPartOfMigration( File migrationDir, File storeDir,
-            String versionToMigrateTo ) throws IOException
+            String versionToMigrateTo, LogPosition lastClosedTxLogPosition ) throws IOException
     {
         final File storeDirNeoStore = new File( storeDir, MetaDataStore.DEFAULT_NAME );
         MetaDataStore.setRecord( pageCache, storeDirNeoStore, Position.UPGRADE_TRANSACTION_ID,
@@ -814,11 +813,10 @@ public class StoreMigrator extends AbstractStoreMigrationParticipant
 
         // add LAST_CLOSED_TRANSACTION_LOG_VERSION and LAST_CLOSED_TRANSACTION_LOG_BYTE_OFFSET to the migrated
         // NeoStore
-        LogPosition logPosition = readLastTxLogPosition( migrationDir );
-        MetaDataStore.setRecord( pageCache, storeDirNeoStore, Position.LAST_CLOSED_TRANSACTION_LOG_VERSION, logPosition
-                .getLogVersion() );
+        MetaDataStore.setRecord( pageCache, storeDirNeoStore, Position.LAST_CLOSED_TRANSACTION_LOG_VERSION,
+                lastClosedTxLogPosition.getLogVersion() );
         MetaDataStore.setRecord( pageCache, storeDirNeoStore, Position.LAST_CLOSED_TRANSACTION_LOG_BYTE_OFFSET,
-                logPosition.getByteOffset() );
+                lastClosedTxLogPosition.getByteOffset() );
 
         // Upgrade version in NeoStore
         MetaDataStore.setRecord( pageCache, storeDirNeoStore, Position.STORE_VERSION,
