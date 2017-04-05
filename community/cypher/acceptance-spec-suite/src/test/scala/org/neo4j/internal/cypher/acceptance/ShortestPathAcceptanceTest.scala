@@ -644,6 +644,26 @@ class ShortestPathAcceptanceTest extends ExecutionEngineFunSuite with NewPlanner
     result.length() should equal(2)
   }
 
+  test("should handle all predicate in optional match") {
+    // Given the graph:
+    // (p1)-[:KNOWS {prop:1337}]-> (p2)
+    // (p1)-[:KNOWS {prop:42}]->(intermediate)-[:KNOWS {prop:42}]->(p2)
+    val p1 = createLabeledNode(Map("id" -> 1), "Person")
+    val p2 = createLabeledNode(Map("id" -> 2), "Person")
+    val intermediate = createLabeledNode(Map("id" -> 3), "Person")
+    relate(p1, p2, "KNOWS", Map("prop" -> 1337))
+    relate(p1, intermediate, "KNOWS", Map("prop" -> 42))
+    relate(intermediate, p2, "KNOWS", Map("prop" -> 42))
+
+    // When
+    val result = executeWithAllPlannersAndCompatibilityMode("""MATCH (person1:Person {id:1}), (person2:Person {id:2})
+                                                           |OPTIONAL MATCH path = shortestPath((person1)-[k:KNOWS*0..]-(person2))
+                                                           |WHERE all(r in k WHERE r.prop IN [42])
+                                                           |RETURN length(path)""".stripMargin)
+    // Then
+    result.toList should equal(List(Map("length(path)" -> 2)))
+  }
+
   private def createLdbc14Model(): Unit = {
     def createPersonNode( id: Int ) = createLabeledNode(Map("id" -> id), "Person")
 
