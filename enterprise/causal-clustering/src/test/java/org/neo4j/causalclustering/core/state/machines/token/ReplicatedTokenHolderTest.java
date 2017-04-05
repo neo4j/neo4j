@@ -32,7 +32,7 @@ import org.neo4j.kernel.impl.transaction.command.Command;
 import org.neo4j.kernel.impl.util.Dependencies;
 import org.neo4j.storageengine.api.StorageCommand;
 import org.neo4j.storageengine.api.StorageEngine;
-import org.neo4j.storageengine.api.StorageStatement;
+import org.neo4j.storageengine.api.SchemaResources;
 import org.neo4j.storageengine.api.StoreReadLayer;
 import org.neo4j.storageengine.api.Token;
 import org.neo4j.storageengine.api.lock.ResourceLocker;
@@ -137,10 +137,10 @@ public class ReplicatedTokenHolderTest
             } );
             return null;
         } ).when( storageEngine ).createCommands( anyCollection(), any( ReadableTransactionState.class ),
-                any( StorageStatement.class ), any( ResourceLocker.class ), anyLong() );
+                any( SchemaResources.class ), any( ResourceLocker.class ), anyLong() );
 
         StoreReadLayer readLayer = mock( StoreReadLayer.class );
-        when( readLayer.newStatement() ).thenReturn( mock( StorageStatement.class ) );
+        when( readLayer.schemaResources() ).thenReturn( mock( SchemaResources.class ) );
         when( storageEngine.storeReadLayer() ).thenReturn( readLayer );
         return storageEngine;
     }

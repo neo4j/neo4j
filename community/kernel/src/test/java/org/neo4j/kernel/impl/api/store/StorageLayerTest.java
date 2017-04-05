@@ -69,7 +69,7 @@ public abstract class StorageLayerTest
         DependencyResolver resolver = db.getDependencyResolver();
         this.disk = resolver.resolveDependency( StorageEngine.class ).storeReadLayer();
         this.state =
-                new KernelStatementImplementation( null, null, disk.newStatement(), new Procedures(), new CanWrite(),
+                new KernelStatementImplementation( null, null, disk.schemaResources(), new Procedures(), new CanWrite(),
                         LockTracer.NONE );
     }
 
