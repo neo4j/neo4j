@@ -34,6 +34,8 @@ trait QueryHorizon {
     case id: Variable =>
       acc => (acc + IdName(id.name), Some(identity))
   }
+
+  def readOnly = true
 }
 
 final case class PassthroughAllHorizon() extends QueryHorizon {

@@ -22,7 +22,7 @@ package org.neo4j.cypher.internal.compiler.v3_2.executionplan.procs
 import org.neo4j.cypher.internal.compiler.v3_2.ast.convert.commands.ExpressionConverters._
 import org.neo4j.cypher.internal.compiler.v3_2.commands.expressions
 import org.neo4j.cypher.internal.compiler.v3_2.commands.expressions.Literal
-import org.neo4j.cypher.internal.compiler.v3_2.executionplan.{ExecutionPlan, InternalExecutionResult, ProcedureCallMode, READ_ONLY}
+import org.neo4j.cypher.internal.compiler.v3_2.executionplan.{ExecutionPlan, InternalExecutionResult, ProcedureCallMode}
 import org.neo4j.cypher.internal.compiler.v3_2.helpers.{Counter, RuntimeJavaValueConverter}
 import org.neo4j.cypher.internal.compiler.v3_2.pipes.{ExternalCSVResource, QueryState}
 import org.neo4j.cypher.internal.compiler.v3_2.planDescription.InternalPlanDescription.Arguments.{DbHits, Rows, Signature}
@@ -77,8 +77,9 @@ case class ProcedureCallExecutionPlan(signature: ProcedureSignature,
                                              notifications: Set[InternalNotification]) = {
     // close all statements
     taskCloser.close(success = true)
+    val callMode = ProcedureCallMode.fromAccessMode(signature.accessMode)
     val columns = signature.outputSignature.map(_.seq.map(_.name).toList).getOrElse(List.empty)
-    ExplainExecutionResult(columns, createNormalPlan, READ_ONLY, notifications)
+    ExplainExecutionResult(columns, createNormalPlan, callMode.queryType, notifications)
   }
 
   private def createProfiledExecutionResult(ctx: QueryContext, taskCloser: TaskCloser,

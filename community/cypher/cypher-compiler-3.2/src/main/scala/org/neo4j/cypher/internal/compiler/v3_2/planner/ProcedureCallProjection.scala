@@ -32,4 +32,6 @@ case class ProcedureCallProjection(call: ResolvedCall) extends QueryHorizon {
     case _:ProcedureReadOnlyAccess => Some(LazyMode)
     case _ => Some(EagerMode)
   }
+
+  override def readOnly = call.containsNoUpdates
 }

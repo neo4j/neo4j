@@ -30,7 +30,7 @@ sealed trait PlannerQuery {
   val horizon: QueryHorizon
   val tail: Option[PlannerQuery]
 
-  def readOnly: Boolean = queryGraph.readOnly && tail.forall(_.readOnly)
+  def readOnly: Boolean = (queryGraph.readOnly && horizon.readOnly) && tail.forall(_.readOnly)
 
   def preferredStrictness: Option[StrictnessMode] =
     horizon.preferredStrictness orElse tail.flatMap(_.preferredStrictness)
