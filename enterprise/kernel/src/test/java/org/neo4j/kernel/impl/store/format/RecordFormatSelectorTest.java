@@ -35,7 +35,6 @@ import org.neo4j.kernel.impl.store.format.highlimit.HighLimit;
 import org.neo4j.kernel.impl.store.format.highlimit.v300.HighLimitV3_0_0;
 import org.neo4j.kernel.impl.store.format.highlimit.v306.HighLimitV3_0_6;
 import org.neo4j.kernel.impl.store.format.standard.Standard;
-import org.neo4j.kernel.impl.store.format.standard.StandardV2_1;
 import org.neo4j.kernel.impl.store.format.standard.StandardV2_2;
 import org.neo4j.kernel.impl.store.format.standard.StandardV2_3;
 import org.neo4j.kernel.impl.store.format.standard.StandardV3_0;
@@ -350,7 +349,6 @@ public class RecordFormatSelectorTest
     @Test
     public void findSuccessorToOlderVersion() throws Exception
     {
-        assertEquals( StandardV2_2.RECORD_FORMATS, findSuccessor( StandardV2_1.RECORD_FORMATS ).get() );
         assertEquals( StandardV2_3.RECORD_FORMATS, findSuccessor( StandardV2_2.RECORD_FORMATS ).get() );
         assertEquals( StandardV3_0.RECORD_FORMATS, findSuccessor( StandardV2_3.RECORD_FORMATS ).get() );
 
