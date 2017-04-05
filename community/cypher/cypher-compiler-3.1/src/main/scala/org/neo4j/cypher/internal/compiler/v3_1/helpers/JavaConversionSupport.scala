@@ -54,7 +54,7 @@ object JavaConversionSupport {
     // Init
     private def fetchNext(): Option[T] = {
       _next = None
-      while ( _next.isEmpty && hasMore() ) {
+      while (_next.isEmpty && hasMore()) {
         try {
           _next = Some(f(more()))
         } catch {
@@ -62,7 +62,6 @@ object JavaConversionSupport {
           case _: EntityNotFoundException => // IGNORE
         }
       }
-
       _next
     }
 
