@@ -30,6 +30,7 @@ import java.util.Map;
 import java.util.function.IntFunction;
 
 import org.neo4j.backup.OnlineBackupSettings;
+import org.neo4j.causalclustering.PortPicker;
 import org.neo4j.causalclustering.core.CoreGraphDatabase;
 import org.neo4j.causalclustering.discovery.Cluster;
 import org.neo4j.causalclustering.discovery.CoreClusterMember;
@@ -78,7 +79,7 @@ public class ClusterSeedingIT
     {
         return singletonMap(
                 OnlineBackupSettings.online_backup_server.name(),
-                serverId -> ":" + (8000 + serverId) );
+                ignord -> ":" + PortPicker.pickPort() );
     }
 
     @After

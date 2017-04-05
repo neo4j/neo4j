@@ -25,6 +25,7 @@ import org.junit.Test;
 
 import java.util.List;
 
+import org.neo4j.causalclustering.core.CausalClusteringSettings;
 import org.neo4j.causalclustering.discovery.Cluster;
 import org.neo4j.causalclustering.discovery.CoreClusterMember;
 import org.neo4j.causalclustering.discovery.HazelcastDiscoveryServiceFactory;
@@ -37,7 +38,7 @@ import org.neo4j.kernel.api.security.AnonymousContext;
 import org.neo4j.kernel.impl.factory.GraphDatabaseFacade;
 import org.neo4j.test.causalclustering.ClusterRule;
 
-import static java.util.Collections.singletonList;
+import static java.util.stream.Collectors.toList;
 import static org.hamcrest.MatcherAssert.assertThat;
 import static org.hamcrest.Matchers.containsInAnyOrder;
 import static org.neo4j.causalclustering.load_balancing.procedure.ProcedureNames.GET_SERVERS_V1;
@@ -57,7 +58,11 @@ public class ClusterMembershipChangeIT
         // when
         Cluster cluster = clusterRule.withNumberOfReadReplicas( 0 ).startCluster();
 
-        List<AdvertisedSocketAddress> onlyServerZero = singletonList( Cluster.socketAddressForServer( 0 ) );
+        List<AdvertisedSocketAddress> onlyServerZero = cluster.coreMembers().stream()
+                .map( member -> member.settingValue( CausalClusteringSettings.discovery_listen_address.name() ) )
+                .map( Integer::valueOf )
+                .map( discoveryListenAddress -> new AdvertisedSocketAddress( "127.0.0.1", discoveryListenAddress ) )
+                .collect( toList() );
 
         // then
         cluster.addCoreMemberWithIdAndInitialMembers( 3, onlyServerZero ).start();
