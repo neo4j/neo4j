@@ -19,11 +19,11 @@
  */
 package org.neo4j.kernel.impl.api.store;
 
+import java.util.function.Consumer;
+
 import org.neo4j.collection.primitive.PrimitiveLongIterator;
 import org.neo4j.kernel.impl.locking.LockService;
 import org.neo4j.kernel.impl.store.RelationshipStore;
-import org.neo4j.kernel.impl.store.record.RelationshipRecord;
-import org.neo4j.kernel.impl.util.InstanceCache;
 import org.neo4j.storageengine.api.txstate.ReadableTransactionState;
 
 import static org.neo4j.collection.primitive.PrimitiveLongCollections.toPrimitiveIterator;
@@ -34,11 +34,11 @@ import static org.neo4j.kernel.impl.store.record.RecordLoad.CHECK;
  */
 public class StoreIteratorRelationshipCursor extends StoreAbstractIteratorRelationshipCursor
 {
+    private final Consumer<StoreIteratorRelationshipCursor> instanceCache;
     private PrimitiveLongIterator iterator;
-    private final InstanceCache<StoreIteratorRelationshipCursor> instanceCache;
 
     StoreIteratorRelationshipCursor( RelationshipStore relationshipStore,
-            InstanceCache<StoreIteratorRelationshipCursor> instanceCache,
+            Consumer<StoreIteratorRelationshipCursor> instanceCache,
             LockService lockService )
     {
         super( relationshipStore, lockService );

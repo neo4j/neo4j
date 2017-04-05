@@ -86,7 +86,6 @@ import org.neo4j.kernel.impl.locking.StatementLocksFactory;
 import org.neo4j.kernel.impl.logging.LogService;
 import org.neo4j.kernel.impl.proc.Procedures;
 import org.neo4j.kernel.impl.storageengine.impl.recordstorage.RecordStorageEngine;
-import org.neo4j.kernel.impl.storageengine.impl.recordstorage.StorageStatementFactory;
 import org.neo4j.kernel.impl.store.MetaDataStore;
 import org.neo4j.kernel.impl.store.StoreId;
 import org.neo4j.kernel.impl.store.format.RecordFormatPropertyConfigurator;
@@ -264,7 +263,6 @@ public class NeoStoreDataSource implements Lifecycle, IndexProviders
     private final Map<String,IndexImplementation> indexProviders = new HashMap<>();
     private final LegacyIndexProviderLookup legacyIndexProviderLookup;
     private final ConstraintSemantics constraintSemantics;
-    private final StorageStatementFactory storageStatementFactory;
     private final Procedures procedures;
     private final IOLimiter ioLimiter;
     private final AvailabilityGuard availabilityGuard;
@@ -318,7 +316,6 @@ public class NeoStoreDataSource implements Lifecycle, IndexProviders
             AutoIndexing autoIndexing,
             PageCache pageCache,
             ConstraintSemantics constraintSemantics,
-            StorageStatementFactory storageStatementFactory,
             Monitors monitors,
             Tracers tracers,
             Procedures procedures,
@@ -356,7 +353,6 @@ public class NeoStoreDataSource implements Lifecycle, IndexProviders
         this.startupStatistics = startupStatistics;
         this.guard = guard;
         this.constraintSemantics = constraintSemantics;
-        this.storageStatementFactory = storageStatementFactory;
         this.monitors = monitors;
         this.tracers = tracers;
         this.procedures = procedures;
@@ -583,7 +579,7 @@ public class NeoStoreDataSource implements Lifecycle, IndexProviders
         RecordStorageEngine storageEngine =
                 new RecordStorageEngine( storeDir, config, idGeneratorFactory, eligibleForReuse,
                         idTypeConfigurationProvider, pageCache, fs, logProvider, propertyKeyTokenHolder, labelTokens,
-                        relationshipTypeTokens, schemaStateChangeCallback, constraintSemantics, storageStatementFactory,
+                        relationshipTypeTokens, schemaStateChangeCallback, constraintSemantics,
                         scheduler, tokenNameLookup, lockService, schemaIndexProvider, indexingServiceMonitor,
                         databaseHealth, labelScanStoreProvider, legacyIndexProviderLookup, indexConfigStore,
                         legacyIndexTransactionOrdering, transactionSnapshotSupplier, progressionFactory );

@@ -38,7 +38,6 @@ import org.neo4j.kernel.impl.api.legacyindex.InternalAutoIndexing;
 import org.neo4j.kernel.impl.api.scan.LabelScanStoreProvider;
 import org.neo4j.kernel.impl.api.scan.NativeLabelScanStoreExtension;
 import org.neo4j.kernel.impl.api.store.CommunityBatchingProgressionFactory;
-import org.neo4j.kernel.impl.api.store.StoreStatement;
 import org.neo4j.kernel.impl.constraints.StandardConstraintSemantics;
 import org.neo4j.kernel.impl.core.DatabasePanicEventGenerator;
 import org.neo4j.kernel.impl.core.LabelTokenHolder;
@@ -138,7 +137,7 @@ public class NeoStoreDataSourceRule extends ExternalResource
                 mock( TransactionMonitor.class ), databaseHealth, mock( PhysicalLogFile.Monitor.class ),
                 TransactionHeaderInformationFactory.DEFAULT, new StartupStatisticsProvider(), null,
                 new CommunityCommitProcessFactory(), mock( InternalAutoIndexing.class ), pageCache,
-                new StandardConstraintSemantics(), StoreStatement::new, monitors,
+                new StandardConstraintSemantics(), monitors,
                 new Tracers( "null", NullLog.getInstance(), monitors, jobScheduler ), mock( Procedures.class ),
                 IOLimiter.unlimited(), new AvailabilityGuard( clock, NullLog.getInstance() ), clock, new CanWrite(),
                 new StoreCopyCheckPointMutex(), new CommunityBatchingProgressionFactory() );

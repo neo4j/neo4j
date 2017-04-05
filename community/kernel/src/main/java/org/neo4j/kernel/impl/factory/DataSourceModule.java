@@ -63,9 +63,9 @@ import org.neo4j.kernel.impl.core.StartupStatisticsProvider;
 import org.neo4j.kernel.impl.core.ThreadToStatementContextBridge;
 import org.neo4j.kernel.impl.core.TokenNotFoundException;
 import org.neo4j.kernel.impl.logging.LogService;
-import org.neo4j.kernel.impl.proc.ProcedureTransactionProvider;
 import org.neo4j.kernel.impl.proc.ProcedureConfig;
 import org.neo4j.kernel.impl.proc.ProcedureGDSFactory;
+import org.neo4j.kernel.impl.proc.ProcedureTransactionProvider;
 import org.neo4j.kernel.impl.proc.Procedures;
 import org.neo4j.kernel.impl.proc.TerminationGuardProvider;
 import org.neo4j.kernel.impl.proc.TypeMappers.SimpleConverter;
@@ -213,7 +213,6 @@ public class DataSourceModule
                 autoIndexing,
                 pageCache,
                 editionModule.constraintSemantics,
-                editionModule.storageStatementFactory,
                 platformModule.monitors,
                 platformModule.tracers,
                 procedures,

@@ -36,7 +36,6 @@ import org.neo4j.kernel.impl.index.LegacyIndexStore;
 import org.neo4j.storageengine.api.NodeItem;
 import org.neo4j.storageengine.api.PropertyItem;
 import org.neo4j.storageengine.api.RelationshipItem;
-import org.neo4j.storageengine.api.StorageStatement;
 import org.neo4j.storageengine.api.StoreReadLayer;
 import org.neo4j.storageengine.api.txstate.PropertyContainerState;
 import org.neo4j.storageengine.api.txstate.ReadableTransactionState;
@@ -75,8 +74,7 @@ public class StateOperationsAutoIndexingTest
     public void shouldSignalNodeRemovedToAutoIndex() throws Exception
     {
         // Given
-        when( storeLayer
-                .nodeGetSingleCursor( any( StorageStatement.class ), eq( 1337L ), any( ReadableTransactionState.class ) ) )
+        when( storeLayer.nodeGetSingleCursor( eq( 1337L ), any( ReadableTransactionState.class ) ) )
                 .thenReturn( cursor( mock( NodeItem.class ) ) );
 
         // When
@@ -90,8 +88,8 @@ public class StateOperationsAutoIndexingTest
     public void shouldSignalRelationshipRemovedToAutoIndex() throws Exception
     {
         // Given
-        when( storeLayer.relationshipCursor( any( StorageStatement.class ), eq( 1337L ),
-                any( ReadableTransactionState.class ) ) ).thenReturn( cursor( mock( RelationshipItem.class ) ) );
+        when( storeLayer.relationshipGetSingleCursor( eq( 1337L ), any( ReadableTransactionState.class ) ) )
+                .thenReturn( cursor( mock( RelationshipItem.class ) ) );
 
         // When
         context.relationshipDelete( stmt, 1337 );
@@ -108,12 +106,10 @@ public class StateOperationsAutoIndexingTest
 
         NodeItem node = mock( NodeItem.class );
         when( node.labels() ).thenReturn( PrimitiveIntCollections.emptySet() );
-        when( storeLayer
-                .nodeGetSingleCursor( any( StorageStatement.class ), eq( 1337L ), any( ReadableTransactionState.class ) ) )
+        when( storeLayer.nodeGetSingleCursor( eq( 1337L ), any( ReadableTransactionState.class ) ) )
                 .thenReturn( cursor( node ) );
-        when( storeLayer
-                .nodeGetProperty( any( StorageStatement.class ), any( NodeItem.class ), eq( property.propertyKeyId() ),
-                        any( PropertyContainerState.class ) ) ).thenReturn( cursor() );
+        when( storeLayer.nodeGetProperty( any( NodeItem.class ), eq( property.propertyKeyId() ),
+                any( PropertyContainerState.class ) ) ).thenReturn( cursor() );
 
         // When
         context.nodeSetProperty( stmt, 1337L, property );
@@ -130,11 +126,10 @@ public class StateOperationsAutoIndexingTest
         DefinedProperty property = property( propertyKeyId, "Hello!" );
 
         RelationshipItem relationship = mock( RelationshipItem.class );
-        when( storeLayer.relationshipCursor( any( StorageStatement.class ), eq( 1337L ), any( ReadableTransactionState.class ) ) )
+        when( storeLayer.relationshipGetSingleCursor( eq( 1337L ), any( ReadableTransactionState.class ) ) )
                 .thenReturn( cursor( relationship ) );
-        when( storeLayer
-                .relationshipGetProperty( any( StorageStatement.class ), eq( relationship ), eq( propertyKeyId ),
-                        any( PropertyContainerState.class ) ) ).thenReturn( empty() );
+        when( storeLayer.relationshipGetProperty( eq( relationship ), eq( propertyKeyId ),
+                any( PropertyContainerState.class ) ) ).thenReturn( empty() );
 
         // When
         context.relationshipSetProperty( stmt, 1337, property );
@@ -155,12 +150,10 @@ public class StateOperationsAutoIndexingTest
 
         NodeItem node = mock( NodeItem.class );
         when( node.labels() ).thenReturn( PrimitiveIntCollections.emptySet() );
-        when( storeLayer
-                .nodeGetSingleCursor( any( StorageStatement.class ), eq( 1337L ), any( ReadableTransactionState.class ) ) )
+        when( storeLayer.nodeGetSingleCursor( eq( 1337L ), any( ReadableTransactionState.class ) ) )
                 .thenReturn( cursor( node ) );
-        when( storeLayer
-                .nodeGetProperty( any( StorageStatement.class ), any( NodeItem.class ), eq( property.propertyKeyId() ),
-                        any( PropertyContainerState.class ) ) ).thenReturn( cursor( existingProperty ) );
+        when( storeLayer.nodeGetProperty( any( NodeItem.class ), eq( property.propertyKeyId() ),
+                any( PropertyContainerState.class ) ) ).thenReturn( cursor( existingProperty ) );
 
         // When
         context.nodeSetProperty( stmt, 1337L, property );
@@ -181,11 +174,10 @@ public class StateOperationsAutoIndexingTest
         when(existingProperty.value()).thenReturn( "Goodbye!" );
 
         RelationshipItem relationship = mock( RelationshipItem.class );
-        when( storeLayer.relationshipCursor( any( StorageStatement.class ), eq( 1337L ),
-                any( ReadableTransactionState.class ) ) ).thenReturn( cursor( relationship ) );
-        when( storeLayer
-                .relationshipGetProperty( any( StorageStatement.class ), eq( relationship ), eq( propertyKeyId ),
-                        any( PropertyContainerState.class ) ) ).thenReturn( cursor( existingProperty ) );
+        when( storeLayer.relationshipGetSingleCursor( eq( 1337L ), any( ReadableTransactionState.class ) ) )
+                .thenReturn( cursor( relationship ) );
+        when( storeLayer.relationshipGetProperty( eq( relationship ), eq( propertyKeyId ),
+                any( PropertyContainerState.class ) ) ).thenReturn( cursor( existingProperty ) );
 
         // When
         context.relationshipSetProperty( stmt, 1337, property );
@@ -204,12 +196,11 @@ public class StateOperationsAutoIndexingTest
         int propertyKeyId = existingProperty.propertyKeyId();
 
         NodeItem node = mock( NodeItem.class );
-        when( storeLayer.nodeGetProperty( any( StorageStatement.class ), any( NodeItem.class ), eq( propertyKeyId ),
-                any( PropertyContainerState.class ) ) )
+        when( storeLayer
+                .nodeGetProperty( any( NodeItem.class ), eq( propertyKeyId ), any( PropertyContainerState.class ) ) )
                 .thenReturn( cursor( existingProperty ) );
         when( node.labels() ).thenReturn( PrimitiveIntCollections.emptySet() );
-        when( storeLayer
-                .nodeGetSingleCursor( any( StorageStatement.class ), eq( 1337L ), any( ReadableTransactionState.class ) ) )
+        when( storeLayer.nodeGetSingleCursor( eq( 1337L ), any( ReadableTransactionState.class ) ) )
                 .thenReturn( cursor( node ) );
 
         // When
@@ -230,11 +221,10 @@ public class StateOperationsAutoIndexingTest
         when(existingProperty.value()).thenReturn( "Goodbye!" );
 
         RelationshipItem relationship = mock( RelationshipItem.class );
-        when( storeLayer.relationshipCursor( any( StorageStatement.class ), eq( 1337L ),
-                any( ReadableTransactionState.class ) ) ).thenReturn( cursor( relationship ) );
-        when( storeLayer
-                .relationshipGetProperty( any( StorageStatement.class ), eq( relationship ), eq( propertyKeyId ),
-                        any( PropertyContainerState.class ) ) ).thenReturn( cursor( existingProperty ) );
+        when( storeLayer.relationshipGetSingleCursor( eq( 1337L ), any( ReadableTransactionState.class ) ) )
+                .thenReturn( cursor( relationship ) );
+        when( storeLayer.relationshipGetProperty( eq( relationship ), eq( propertyKeyId ),
+                any( PropertyContainerState.class ) ) ).thenReturn( cursor( existingProperty ) );
 
         // When
         context.relationshipRemoveProperty( stmt, 1337, existingProperty.propertyKeyId() );

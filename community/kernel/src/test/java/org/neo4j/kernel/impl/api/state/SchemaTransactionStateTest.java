@@ -40,7 +40,7 @@ import org.neo4j.kernel.impl.api.StateHandlingStatementOperations;
 import org.neo4j.kernel.impl.api.StatementOperationsTestHelper;
 import org.neo4j.kernel.impl.api.legacyindex.InternalAutoIndexing;
 import org.neo4j.kernel.impl.api.store.SingleNodeFetch;
-import org.neo4j.kernel.impl.api.store.StoreStatement;
+import org.neo4j.kernel.impl.api.store.StoreSchemaResources;
 import org.neo4j.kernel.impl.index.LegacyIndexStore;
 import org.neo4j.storageengine.api.StoreReadLayer;
 
@@ -234,7 +234,7 @@ public class SchemaTransactionStateTest
     private TransactionState txState;
     private StateHandlingStatementOperations txContext;
     private KernelStatement state;
-    private StoreStatement storeStatement;
+    private StoreSchemaResources storeSchemaResources;
 
     @Before
     public void before() throws Exception
@@ -250,8 +250,8 @@ public class SchemaTransactionStateTest
         txContext = new StateHandlingStatementOperations( store, mock( InternalAutoIndexing.class ),
                 mock( ConstraintIndexCreator.class ), mock( LegacyIndexStore.class ) );
 
-        storeStatement = mock( StoreStatement.class );
-        when( state.storageStatement() ).thenReturn( storeStatement );
+        storeSchemaResources = mock( StoreSchemaResources.class );
+        when( state.schemaResources() ).thenReturn( storeSchemaResources );
     }
 
     private static class Labels
@@ -276,7 +276,7 @@ public class SchemaTransactionStateTest
         Map<Integer, Collection<Long>> allLabels = new HashMap<>();
         for ( Labels nodeLabels : labels )
         {
-            when( storeStatement.acquireNodeCursor( new SingleNodeFetch( nodeLabels.nodeId ), EMPTY ) )
+            when( store.nodeGetSingleCursor( nodeLabels.nodeId, EMPTY ) )
                     .thenReturn( asNodeCursor( nodeLabels.nodeId, StubCursors.labels( nodeLabels.labelIds ) ) );
 
             for ( int label : nodeLabels.labelIds )
@@ -289,7 +289,7 @@ public class SchemaTransactionStateTest
 
         for ( Map.Entry<Integer, Collection<Long>> entry : allLabels.entrySet() )
         {
-            when( store.nodesGetForLabel( state.storageStatement(), entry.getKey() ) )
+            when( store.nodesGetForLabel( state.schemaResources(), entry.getKey() ) )
                     .then( invocation -> entry.getValue().iterator() );
         }
     }

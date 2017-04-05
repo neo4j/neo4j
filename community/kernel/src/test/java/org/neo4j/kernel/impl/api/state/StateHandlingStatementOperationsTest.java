@@ -48,13 +48,13 @@ import org.neo4j.kernel.api.txstate.TransactionState;
 import org.neo4j.kernel.impl.api.KernelStatement;
 import org.neo4j.kernel.impl.api.StateHandlingStatementOperations;
 import org.neo4j.kernel.impl.api.legacyindex.InternalAutoIndexing;
-import org.neo4j.kernel.impl.api.store.StoreStatement;
+import org.neo4j.kernel.impl.api.store.StoreSchemaResources;
 import org.neo4j.kernel.impl.index.LegacyIndexStore;
 import org.neo4j.kernel.impl.util.diffsets.DiffSets;
 import org.neo4j.storageengine.api.NodeItem;
 import org.neo4j.storageengine.api.PropertyItem;
 import org.neo4j.storageengine.api.RelationshipItem;
-import org.neo4j.storageengine.api.StorageStatement;
+import org.neo4j.storageengine.api.SchemaResources;
 import org.neo4j.storageengine.api.StoreReadLayer;
 import org.neo4j.storageengine.api.schema.IndexReader;
 import org.neo4j.storageengine.api.txstate.PropertyContainerState;
@@ -95,12 +95,11 @@ public class StateHandlingStatementOperationsTest
     public void shouldNeverDelegateWrites() throws Exception
     {
         KernelStatement state = mockedState( new TxState() );
-
         when( inner.indexesGetForLabel( 0 ) ).thenReturn( iterator( IndexDescriptorFactory.forLabel( 0, 0 ) ) );
-        when( inner.nodeGetSingleCursor( any( StorageStatement.class ), anyLong(), any( ReadableTransactionState.class ) ) )
+        when( inner.nodeGetSingleCursor( anyLong(), any( ReadableTransactionState.class ) ) )
                 .thenReturn( asNodeCursor( 0 ) );
-        when( inner.nodeGetProperties( any( StorageStatement.class ), any( NodeItem.class ),
-                any( PropertyContainerState.class ) ) ).thenReturn( asPropertyCursor() );
+        when( inner.nodeGetProperties( any( NodeItem.class ), any( PropertyContainerState.class ) ) )
+                .thenReturn( asPropertyCursor() );
 
         StateHandlingStatementOperations ctx = newTxStateOps( inner );
 
@@ -112,8 +111,7 @@ public class StateHandlingStatementOperationsTest
         ctx.nodeRemoveLabel( state, 0, 0 );
 
         // one for add and one for remove
-        verify( inner, times( 2 ) )
-                .nodeGetSingleCursor( any( StorageStatement.class ), eq( 0L ), any( ReadableTransactionState.class ) );
+        verify( inner, times( 2 ) ).nodeGetSingleCursor( eq( 0L ), any( ReadableTransactionState.class ) );
     }
 
     @Test
@@ -417,13 +415,12 @@ public class StateHandlingStatementOperationsTest
                 IndexQuery.range( index.schema().getPropertyId(), lower, true, upper, false );
         when( indexReader.query( indexQuery ) ).thenReturn(
                 PrimitiveLongCollections.resourceIterator( PrimitiveLongCollections.iterator( 43L, 44L, 46L ), null ) );
-        when( storeReadLayer.nodeGetSingleCursor( any( StorageStatement.class ), anyLong(),
-                any( ReadableTransactionState.class ) ) ).thenAnswer( invocationOnMock ->
+        when( storeReadLayer.nodeGetSingleCursor( anyLong(), any( ReadableTransactionState.class ) ) ).thenAnswer( i ->
         {
-            long nodeId = (long) invocationOnMock.getArguments()[1];
+            long nodeId = (long) i.getArguments()[0];
             when( storeReadLayer
-                    .nodeGetProperty( any( StorageStatement.class ), any( NodeItem.class ), eq( propertyKey ),
-                            eq( null ) ) ).thenReturn( asPropertyCursor( intProperty( propertyKey, inRange ) ) );
+                    .nodeGetProperty( any( NodeItem.class ), eq( propertyKey ), any( PropertyContainerState.class ) ) )
+                    .thenReturn( asPropertyCursor( intProperty( propertyKey, inRange ) ) );
             return asNodeCursor( nodeId, nodeId + 20000 );
         } );
 
@@ -476,7 +473,7 @@ public class StateHandlingStatementOperationsTest
         IndexReader indexReader = mock( IndexReader.class );
         when( indexReader.query( any() ) ).thenReturn( PrimitiveLongCollections.emptyIterator() );
         StoreReadLayer storeReadLayer = mock( StoreReadLayer.class );
-        when( storeReadLayer.indexGetFreshReader( any( StorageStatement.class ), any( IndexDescriptor.class ) ) )
+        when( storeReadLayer.indexGetFreshReader( any( SchemaResources.class ), any( IndexDescriptor.class ) ) )
                 .thenReturn( indexReader );
 
         StateHandlingStatementOperations operations = newTxStateOps( storeReadLayer );
@@ -500,16 +497,16 @@ public class StateHandlingStatementOperationsTest
         StoreReadLayer storeReadLayer = mock( StoreReadLayer.class );
         when( kernelStatement.readableTxState() ).thenReturn( ReadableTransactionState.EMPTY );
         Cursor<NodeItem> ourNode = nodeCursorWithProperty( propertyKeyId );
-        when( storeReadLayer
-                .nodeGetSingleCursor( any( StorageStatement.class ), eq( nodeId ), any( ReadableTransactionState.class ) ) )
+        when( storeReadLayer.nodeGetSingleCursor( eq( nodeId ), any( ReadableTransactionState.class ) ) )
                 .thenReturn( ourNode );
         InternalAutoIndexing autoIndexing = mock( InternalAutoIndexing.class );
         AutoIndexOperations autoIndexOps = mock( AutoIndexOperations.class );
         when( autoIndexing.nodes() ).thenReturn( autoIndexOps );
         when( autoIndexing.relationships() ).thenReturn( AutoIndexOperations.UNSUPPORTED );
         Cursor<PropertyItem> propertyItemCursor = propertyCursor( propertyKeyId, value );
-        when( storeReadLayer.nodeGetProperty( any( StorageStatement.class ), any( NodeItem.class ), eq( propertyKeyId ),
-                any( PropertyContainerState.class ) ) ).thenReturn( propertyItemCursor );
+        when( storeReadLayer
+                .nodeGetProperty( any( NodeItem.class ), eq( propertyKeyId ), any( PropertyContainerState.class ) ) )
+                .thenReturn( propertyItemCursor );
         StateHandlingStatementOperations operations = newTxStateOps( storeReadLayer, autoIndexing );
 
         // WHEN
@@ -535,15 +532,16 @@ public class StateHandlingStatementOperationsTest
         when( kernelStatement.writableTxState() ).thenReturn( writableTransactionState );
         StoreReadLayer storeReadLayer = mock( StoreReadLayer.class );
         Cursor<RelationshipItem> ourRelationship = relationshipCursorWithProperty( propertyKeyId );
-        when( storeReadLayer.relationshipCursor( any( StorageStatement.class ), eq( relationshipId ),
-                any( ReadableTransactionState.class ) ) ).thenReturn( ourRelationship );
+        when( storeReadLayer
+                .relationshipGetSingleCursor( eq( relationshipId ), any( ReadableTransactionState.class ) ) )
+                .thenReturn( ourRelationship );
         InternalAutoIndexing autoIndexing = mock( InternalAutoIndexing.class );
         AutoIndexOperations autoIndexOps = mock( AutoIndexOperations.class );
         when( autoIndexing.nodes() ).thenReturn( AutoIndexOperations.UNSUPPORTED );
         when( autoIndexing.relationships() ).thenReturn( autoIndexOps );
         Cursor<PropertyItem> propertyItemCursor = propertyCursor( propertyKeyId, value );
-        when( storeReadLayer.relationshipGetProperty( any( StorageStatement.class ), any( RelationshipItem.class ),
-                eq( propertyKeyId ), any( PropertyContainerState.class ) ) ).thenReturn( propertyItemCursor );
+        when( storeReadLayer.relationshipGetProperty( any( RelationshipItem.class ), eq( propertyKeyId ),
+                any( PropertyContainerState.class ) ) ).thenReturn( propertyItemCursor );
         StateHandlingStatementOperations operations = newTxStateOps( storeReadLayer, autoIndexing );
 
         // WHEN
@@ -567,8 +565,8 @@ public class StateHandlingStatementOperationsTest
         when( kernelStatement.readableTxState() ).thenReturn( ReadableTransactionState.EMPTY );
         WritableTransactionState writableTransactionState = mock( WritableTransactionState.class );
         when( kernelStatement.writableTxState() ).thenReturn( writableTransactionState );
-        StoreStatement storeStatement = mock( StoreStatement.class );
-        when( kernelStatement.storageStatement() ).thenReturn( storeStatement );
+        StoreSchemaResources storeSchemaResources = mock( StoreSchemaResources.class );
+        when( kernelStatement.schemaResources() ).thenReturn( storeSchemaResources );
         when( inner.graphGetAllProperties() ).thenReturn( iterator( Property.stringProperty( propertyKeyId, value ) ) );
         StateHandlingStatementOperations operations = newTxStateOps( inner );
 
@@ -618,7 +616,7 @@ public class StateHandlingStatementOperationsTest
             throws IndexNotFoundKernelException
     {
         IndexReader indexReader = mock( IndexReader.class );
-        when( storeReadLayer.indexGetReader( any( StorageStatement.class ), any( IndexDescriptor.class ) ) )
+        when( storeReadLayer.indexGetReader( any( SchemaResources.class ), any( IndexDescriptor.class ) ) )
                 .thenReturn( indexReader );
         return indexReader;
     }

@@ -19,9 +19,10 @@
  */
 package org.neo4j.kernel.impl.api.store;
 
+import java.util.function.Consumer;
+
 import org.neo4j.kernel.impl.locking.LockService;
 import org.neo4j.kernel.impl.store.RelationshipStore;
-import org.neo4j.kernel.impl.util.InstanceCache;
 import org.neo4j.storageengine.api.txstate.ReadableTransactionState;
 
 import static org.neo4j.kernel.api.StatementConstants.NO_SUCH_NODE;
@@ -34,15 +35,15 @@ import static org.neo4j.kernel.impl.store.record.RecordLoad.CHECK;
  */
 public class StoreSingleRelationshipCursor extends StoreAbstractRelationshipCursor
 {
-    private final InstanceCache<StoreSingleRelationshipCursor> instanceCache;
+    private final Consumer<StoreSingleRelationshipCursor> consumer;
     private long relationshipId = NO_SUCH_RELATIONSHIP;
     private ReadableTransactionState state;
 
     StoreSingleRelationshipCursor( RelationshipStore relationshipStore,
-            InstanceCache<StoreSingleRelationshipCursor> instanceCache, LockService lockService )
+            Consumer<StoreSingleRelationshipCursor> consumer, LockService lockService )
     {
         super( relationshipStore, lockService );
-        this.instanceCache = instanceCache;
+        this.consumer = consumer;
     }
 
     public StoreSingleRelationshipCursor init( long relId, ReadableTransactionState state )
@@ -91,6 +92,6 @@ public class StoreSingleRelationshipCursor extends StoreAbstractRelationshipCurs
     {
         super.close();
         relationshipId = NO_SUCH_RELATIONSHIP;
-        instanceCache.accept( this );
+        consumer.accept( this );
     }
 }
