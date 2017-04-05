@@ -30,25 +30,25 @@ trait SchemaDescriptorTranslation {
 
   implicit def kernelToCypher(index: KernelIndexDescriptor): SchemaTypes.IndexDescriptor =
     if (index.schema().getPropertyIds.length == 1)
-      SchemaTypes.IndexDescriptor(index.schema().getLabelId, index.schema().getPropertyIds()(0))
+      SchemaTypes.IndexDescriptor(index.schema().getLabelId, index.schema().getPropertyId)
     else
       throw new UnsupportedOperationException("Cypher 2.3 does not support composite indexes")
 
   implicit def kernelToCypher(index: UniquenessConstraintDescriptor): SchemaTypes.UniquenessConstraint =
     if (index.schema().getPropertyIds.length == 1)
-      SchemaTypes.UniquenessConstraint(index.schema().getLabelId, index.schema().getPropertyIds()(0))
+      SchemaTypes.UniquenessConstraint(index.schema().getLabelId, index.schema().getPropertyId)
     else
       throw new UnsupportedOperationException("Cypher 2.3 does not support composite constraints")
 
   implicit def kernelToCypher(index: NodeExistenceConstraintDescriptor): SchemaTypes.NodePropertyExistenceConstraint =
     if (index.schema().getPropertyIds.length == 1)
-      SchemaTypes.NodePropertyExistenceConstraint(index.schema().getLabelId, index.schema().getPropertyIds()(0))
+      SchemaTypes.NodePropertyExistenceConstraint(index.schema().getLabelId, index.schema().getPropertyId)
     else
       throw new UnsupportedOperationException("Cypher 2.3 does not support composite constraints")
 
   implicit def kernelToCypher(index: RelExistenceConstraintDescriptor): SchemaTypes.RelationshipPropertyExistenceConstraint =
     if (index.schema().getPropertyIds.length == 1)
-      SchemaTypes.RelationshipPropertyExistenceConstraint(index.schema().getRelTypeId, index.schema().getPropertyIds()(0))
+      SchemaTypes.RelationshipPropertyExistenceConstraint(index.schema().getRelTypeId, index.schema().getPropertyId)
     else
       throw new UnsupportedOperationException("Cypher 2.3 does not support composite constraints")
 }
