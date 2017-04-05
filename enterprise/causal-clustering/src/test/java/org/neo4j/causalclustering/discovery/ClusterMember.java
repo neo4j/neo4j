@@ -30,4 +30,6 @@ public interface ClusterMember<T extends GraphDatabaseAPI>
     T database();
 
     ClientConnectorAddresses clientConnectorAddresses();
+
+    String settingValue(String settingName);
 }

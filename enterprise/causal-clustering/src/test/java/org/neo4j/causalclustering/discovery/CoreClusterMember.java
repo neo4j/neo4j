@@ -63,7 +63,7 @@ public class CoreClusterMember implements ClusterMember
     private final String boltAdvertisedAddress;
     private CoreGraphDatabase database;
 
-    public CoreClusterMember( int serverId, int clusterSize,
+    public CoreClusterMember( int serverId, int hazelcastPort, int txPort, int raftPort, int boltPort, int httpPort, int clusterSize,
                               List<AdvertisedSocketAddress> addresses,
                               DiscoveryServiceFactory discoveryServiceFactory,
                               String recordFormat,
@@ -72,16 +72,10 @@ public class CoreClusterMember implements ClusterMember
                               Map<String, IntFunction<String>> instanceExtraParams )
     {
         this.serverId = serverId;
-        int hazelcastPort = 5000 + serverId;
-        int txPort = 6000 + serverId;
-        int raftPort = 7000 + serverId;
-        int boltPort = 8000 + serverId;
-        int httpPort = 10000 + serverId;
 
         String initialMembers = addresses.stream().map( AdvertisedSocketAddress::toString ).collect( joining( "," ) );
 
-        AdvertisedSocketAddress advertisedSocketAddress = Cluster.socketAddressForServer( serverId );
-        String advertisedAddress = advertisedSocketAddress.getHostname();
+        String advertisedAddress = "127.0.0.1";
         String listenAddress = "127.0.0.1";
 
         config.put( ClusterSettings.mode.name(), ClusterSettings.Mode.CORE.name() );
@@ -214,6 +208,12 @@ public class CoreClusterMember implements ClusterMember
     public ClientConnectorAddresses clientConnectorAddresses()
     {
         return ClientConnectorAddresses.extractFromConfig( Config.embeddedDefaults( this.config ) );
+    }
+
+    @Override
+    public String settingValue(String settingName)
+    {
+        return config.get(settingName);
     }
 
     public File clusterStateDirectory()
