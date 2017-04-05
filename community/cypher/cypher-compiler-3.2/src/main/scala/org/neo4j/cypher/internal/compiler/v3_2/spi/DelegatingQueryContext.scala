@@ -214,7 +214,6 @@ class DelegatingQueryContext(val inner: QueryContext) extends QueryContext {
 
   override def assertSchemaWritesAllowed(): Unit = inner.assertSchemaWritesAllowed()
 
-  override def kernelStatisticProvider(): KernelStatisticProvider = inner.kernelStatisticProvider()
 }
 
 class DelegatingOperations[T <: PropertyContainer](protected val inner: Operations[T]) extends Operations[T] {
@@ -265,4 +264,6 @@ class DelegatingQueryTransactionalContext(val inner: QueryTransactionalContext) 
   override def isTopLevelTx: Boolean = inner.isTopLevelTx
 
   override def close(success: Boolean) { inner.close(success) }
+
+  override def kernelStatisticProvider: KernelStatisticProvider = inner.kernelStatisticProvider
 }

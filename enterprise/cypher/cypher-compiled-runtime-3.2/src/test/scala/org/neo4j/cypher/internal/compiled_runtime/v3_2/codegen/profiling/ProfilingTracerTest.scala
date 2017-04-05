@@ -19,9 +19,8 @@
  */
 package org.neo4j.cypher.internal.compiled_runtime.v3_2.codegen.profiling
 
-import org.neo4j.cypher.internal.compatibility.v3_2.ProfileKernelStatisticProvider
 import org.neo4j.cypher.internal.compiler.v3_2.planDescription.Id
-import org.neo4j.cypher.internal.compiler.v3_2.spi.EmptyKernelStatisticProvider
+import org.neo4j.cypher.internal.compiler.v3_2.spi.{EmptyKernelStatisticProvider, KernelStatisticProvider}
 import org.neo4j.cypher.internal.frontend.v3_2.test_helpers.CypherFunSuite
 import org.neo4j.io.pagecache.tracing.cursor.DefaultPageCursorTracer
 
@@ -108,7 +107,7 @@ class ProfilingTracerTest extends CypherFunSuite {
   test("report page cache hits as part of profiling statistics") {
     val operatorId = new Id
     val cursorTracer = new DefaultPageCursorTracer
-    var tracer = new ProfilingTracer(new ProfileKernelStatisticProvider(cursorTracer))
+    var tracer = new ProfilingTracer(new DelegatingKernelStatisticProvider(cursorTracer))
     val event = tracer.executeOperator(operatorId)
 
     1 to 100 foreach { _ => {
@@ -127,7 +126,7 @@ class ProfilingTracerTest extends CypherFunSuite {
   test("report page cache misses as part of profiling statistics") {
     val operatorId = new Id
     val cursorTracer = new DefaultPageCursorTracer
-    var tracer = new ProfilingTracer(new ProfileKernelStatisticProvider(cursorTracer))
+    var tracer = new ProfilingTracer(new DelegatingKernelStatisticProvider(cursorTracer))
     val event = tracer.executeOperator(operatorId)
 
     1 to 17 foreach { _ => {
@@ -142,5 +141,12 @@ class ProfilingTracerTest extends CypherFunSuite {
 
     val information = tracer.get(operatorId)
     information.pageCacheMisses() should equal(17)
+  }
+
+  class DelegatingKernelStatisticProvider(tracer: DefaultPageCursorTracer) extends KernelStatisticProvider {
+
+    override def getPageCacheHits: Long = tracer.hits()
+
+    override def getPageCacheMisses: Long = tracer.faults()
   }
 }

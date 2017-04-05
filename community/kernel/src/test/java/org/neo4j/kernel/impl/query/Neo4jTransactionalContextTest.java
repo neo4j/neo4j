@@ -28,18 +28,23 @@ import org.mockito.internal.stubbing.defaultanswers.ReturnsDeepStubs;
 import java.util.Collections;
 
 import org.neo4j.graphdb.DependencyResolver;
+import org.neo4j.io.pagecache.tracing.cursor.DefaultPageCursorTracer;
 import org.neo4j.kernel.GraphDatabaseQueryService;
-import org.neo4j.kernel.api.query.ExecutingQuery;
+import org.neo4j.kernel.api.ExecutionStatisticsOperations;
 import org.neo4j.kernel.api.KernelTransaction;
 import org.neo4j.kernel.api.QueryRegistryOperations;
 import org.neo4j.kernel.api.Statement;
+import org.neo4j.kernel.api.query.ExecutingQuery;
 import org.neo4j.kernel.api.security.SecurityContext;
 import org.neo4j.kernel.guard.Guard;
 import org.neo4j.kernel.impl.api.KernelStatement;
 import org.neo4j.kernel.impl.core.ThreadToStatementContextBridge;
 import org.neo4j.kernel.impl.coreapi.InternalTransaction;
 import org.neo4j.kernel.impl.coreapi.PropertyContainerLocker;
+import org.neo4j.kernel.impl.query.statistic.StatisticProvider;
 
+import static org.junit.Assert.assertEquals;
+import static org.mockito.Matchers.any;
 import static org.mockito.Mockito.mock;
 import static org.mockito.Mockito.verify;
 import static org.mockito.Mockito.verifyNoMoreInteractions;
@@ -50,6 +55,8 @@ public class Neo4jTransactionalContextTest
     private GraphDatabaseQueryService queryService;
     private Guard guard;
     private KernelStatement initialStatement;
+    private ConfiguredPageCursorTracer tracer;
+    private ThreadToStatementContextBridge txBridge;
 
     @Before
     public void setUp()
@@ -166,6 +173,7 @@ public class Neo4jTransactionalContextTest
         KernelTransaction initialKTX = mock( KernelTransaction.class );
         Statement initialStatement = mock( Statement.class );
         QueryRegistryOperations initialQueryRegistry = mock( QueryRegistryOperations.class );
+        ExecutionStatisticsOperations initialExecutionStatisticOperations = mock( ExecutionStatisticsOperations.class );
         ExecutingQuery executingQuery = mock( ExecutingQuery.class );
         PropertyContainerLocker locker = new PropertyContainerLocker();
         ThreadToStatementContextBridge txBridge = mock( ThreadToStatementContextBridge.class );
@@ -179,6 +187,8 @@ public class Neo4jTransactionalContextTest
         when( executingQuery.queryParameters() ).thenReturn( Collections.emptyMap() );
         Mockito.doThrow( RuntimeException.class ).when( initialTransaction ).close();
         when( initialStatement.queryRegistration() ).thenReturn( initialQueryRegistry );
+        when( initialStatement.executionStatisticsOperations() ).thenReturn( initialExecutionStatisticOperations );
+        when( initialExecutionStatisticOperations.getPageCursorTracer() ).thenReturn( tracer );
         when( queryService.beginTransaction( transactionType, securityContext ) ).thenReturn( secondTransaction );
         when( txBridge.getKernelTransactionBoundToThisThread( true ) ).thenReturn( initialKTX, secondKTX );
         when( txBridge.get() ).thenReturn( secondStatement );
@@ -237,18 +247,81 @@ public class Neo4jTransactionalContextTest
         }
     }
 
+    @Test
+    public void accumulateExecutionStatisticOverCommitAndRestart()
+    {
+        InternalTransaction initialTransaction = mock( InternalTransaction.class, new ReturnsDeepStubs() );
+        Neo4jTransactionalContext transactionalContext = new Neo4jTransactionalContext( queryService, null,
+                guard, txBridge, null, initialTransaction,
+                initialStatement, null );
+
+        tracer.setFaults( 2 );
+        tracer.setHits( 5 );
+
+        transactionalContext.commitAndRestartTx();
+
+        tracer.setFaults( 2 );
+        tracer.setHits( 5 );
+
+        transactionalContext.commitAndRestartTx();
+
+        tracer.setFaults( 2 );
+        tracer.setHits( 5 );
+
+        StatisticProvider statisticProvider = transactionalContext.kernelStatisticProvider();
+
+        assertEquals( "Expect to see accumulated number of page cache misses.",6, statisticProvider.getPageCacheMisses() );
+        assertEquals( "Expected to see accumulated number of page cache hits.", 15, statisticProvider.getPageCacheHits() );
+    }
+
     private void setUpMocks()
     {
         queryService = mock( GraphDatabaseQueryService.class );
         DependencyResolver resolver = mock( DependencyResolver.class );
-        ThreadToStatementContextBridge txBridge = mock( ThreadToStatementContextBridge.class );
+        txBridge = mock( ThreadToStatementContextBridge.class );
         guard = mock( Guard.class );
         initialStatement = mock( KernelStatement.class );
+        tracer = new ConfiguredPageCursorTracer();
         QueryRegistryOperations queryRegistryOperations = mock( QueryRegistryOperations.class );
+        ExecutionStatisticsOperations executionStatisticsOperations = mock( ExecutionStatisticsOperations.class );
+        InternalTransaction internalTransaction = mock( InternalTransaction.class );
 
         when( initialStatement.queryRegistration() ).thenReturn( queryRegistryOperations );
+        when( initialStatement.executionStatisticsOperations() ).thenReturn( executionStatisticsOperations );
+        when( executionStatisticsOperations.getPageCursorTracer() ).thenReturn( tracer );
         when( queryService.getDependencyResolver() ).thenReturn( resolver );
         when( resolver.resolveDependency( ThreadToStatementContextBridge.class ) ).thenReturn( txBridge );
         when( resolver.resolveDependency( Guard.class ) ).thenReturn( guard );
+        when( queryService.beginTransaction( any(), any()) ).thenReturn( internalTransaction );
+
+        when( txBridge.get() ).thenReturn( initialStatement );
+    }
+
+    private class ConfiguredPageCursorTracer extends DefaultPageCursorTracer
+    {
+        private long hits;
+        private long faults;
+
+        @Override
+        public long hits()
+        {
+            return super.hits() + hits;
+        }
+
+        @Override
+        public long faults()
+        {
+            return super.faults() + faults;
+        }
+
+        void setHits( long hits )
+        {
+            this.hits = hits;
+        }
+
+        void setFaults( long faults )
+        {
+            this.faults = faults;
+        }
     }
 }

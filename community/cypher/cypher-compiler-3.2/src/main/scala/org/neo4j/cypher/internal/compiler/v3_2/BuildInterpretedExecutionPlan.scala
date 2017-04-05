@@ -19,7 +19,6 @@
  */
 package org.neo4j.cypher.internal.compiler.v3_2
 
-import org.neo4j.cypher.internal.frontend.v3_2.phases.CompilationPhaseTracer.CompilationPhase.PIPE_BUILDING
 import org.neo4j.cypher.internal.compiler.v3_2.executionplan.{PipeInfo, _}
 import org.neo4j.cypher.internal.compiler.v3_2.phases._
 import org.neo4j.cypher.internal.compiler.v3_2.pipes.Pipe
@@ -29,6 +28,7 @@ import org.neo4j.cypher.internal.compiler.v3_2.profiler.Profiler
 import org.neo4j.cypher.internal.compiler.v3_2.spi.{GraphStatistics, PlanContext, QueryContext, UpdateCountingQueryContext}
 import org.neo4j.cypher.internal.frontend.v3_2.PeriodicCommitInOpenTransactionException
 import org.neo4j.cypher.internal.frontend.v3_2.notification.InternalNotification
+import org.neo4j.cypher.internal.frontend.v3_2.phases.CompilationPhaseTracer.CompilationPhase.PIPE_BUILDING
 import org.neo4j.cypher.internal.frontend.v3_2.phases.{InternalNotificationLogger, Phase}
 
 object BuildInterpretedExecutionPlan extends Phase[CompilerContext, CompilationState, CompilationState] {
@@ -88,6 +88,7 @@ object BuildInterpretedExecutionPlan extends Phase[CompilerContext, CompilationS
 
       val profiling = planType == ProfileMode
       val builderContext = if (updating || profiling) new UpdateCountingQueryContext(queryContext) else queryContext
+
       builder.setQueryContext(builderContext)
 
       if (periodicCommit.isDefined) {

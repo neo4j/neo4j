@@ -17,18 +17,26 @@
  * You should have received a copy of the GNU General Public License
  * along with this program.  If not, see <http://www.gnu.org/licenses/>.
  */
-package org.neo4j.cypher.internal.compatibility.v3_2
+package org.neo4j.kernel.impl.query.statistic;
 
-import org.neo4j.cypher.internal.compiler.v3_2.spi.KernelStatisticProvider
-import org.neo4j.kernel.impl.query.statistic.StatisticProvider
+public interface StatisticProvider
+{
+    StatisticProvider EMPTY = new StatisticProvider()
+    {
+        @Override
+        public long getPageCacheHits()
+        {
+            return 0;
+        }
 
-class ProfileKernelStatisticProvider(statisticProvider: StatisticProvider) extends KernelStatisticProvider {
+        @Override
+        public long getPageCacheMisses()
+        {
+            return 0;
+        }
+    };
 
-  override def getPageCacheHits: Long = {
-    statisticProvider.getPageCacheHits
-  }
+    long getPageCacheHits();
 
-  override def getPageCacheMisses: Long = {
-    statisticProvider.getPageCacheMisses
-  }
+    long getPageCacheMisses();
 }

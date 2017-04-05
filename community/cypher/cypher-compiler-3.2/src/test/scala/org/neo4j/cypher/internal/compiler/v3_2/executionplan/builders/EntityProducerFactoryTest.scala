@@ -85,10 +85,6 @@ class EntityProducerFactoryTest extends CypherFunSuite {
         seenValues = values
         Iterator.empty
       }
-
-      override def kernelStatisticProvider(): KernelStatisticProvider = {
-        EmptyKernelStatisticProvider
-      }
     }
     val state = QueryStateHelper.emptyWith(query = queryContext)
 

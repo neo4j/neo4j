@@ -182,7 +182,6 @@ trait QueryContext extends TokenContext {
 
   def assertSchemaWritesAllowed(): Unit
 
-  def kernelStatisticProvider() : KernelStatisticProvider
 }
 
 trait Operations[T <: PropertyContainer] {
@@ -227,5 +226,7 @@ trait QueryTransactionalContext {
   def close(success: Boolean)
 
   def commitAndRestartTx()
+
+  def kernelStatisticProvider: KernelStatisticProvider
 }
 
