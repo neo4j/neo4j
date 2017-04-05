@@ -19,7 +19,7 @@
  */
 package org.neo4j.internal.cypher.acceptance
 
-import org.neo4j.cypher.internal.helpers.GraphIcing
+import org.neo4j.cypher.internal.helpers.{NodeKeyConstraintCreator, UniquenessConstraintCreator}
 import org.neo4j.cypher.javacompat.internal.GraphDatabaseCypherService
 import org.neo4j.cypher.{ExecutionEngineFunSuite, MergeConstraintConflictException, NewPlannerTestSupport, QueryStatisticsTestSupport}
 import org.neo4j.graphdb.Node
@@ -28,24 +28,6 @@ import org.neo4j.test.TestEnterpriseGraphDatabaseFactory
 
 import scala.collection.JavaConverters._
 import scala.collection.Map
-
-trait ConstraintCreator extends GraphIcing {
-  def createConstraint(graph: GraphDatabaseCypherService, label: String, property: String)
-}
-
-object UniquenessConstraintCreator extends ConstraintCreator {
-  def createConstraint(graph: GraphDatabaseCypherService, label: String, property: String) =
-    graph.createConstraint(label, property)
-
-  override def toString = "Uniqueness Constraint"
-}
-
-object NodeKeyConstraintCreator extends ConstraintCreator {
-  def createConstraint(graph: GraphDatabaseCypherService, label: String, property: String) =
-    graph.createNodeKeyConstraint(label, property)
-
-  override def toString = "NODE KEY Constraint"
-}
 
 class MergeNodeCompatibilityAcceptanceTest extends ExecutionEngineFunSuite with QueryStatisticsTestSupport
   with NewPlannerTestSupport {
