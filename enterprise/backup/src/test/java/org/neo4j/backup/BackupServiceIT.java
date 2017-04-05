@@ -60,8 +60,8 @@ import org.neo4j.kernel.impl.store.MetaDataStore;
 import org.neo4j.kernel.impl.store.MetaDataStore.Position;
 import org.neo4j.kernel.impl.store.MismatchingStoreIdException;
 import org.neo4j.kernel.impl.store.StoreFactory;
+import org.neo4j.kernel.impl.store.StoreFile;
 import org.neo4j.kernel.impl.storemigration.LogFiles;
-import org.neo4j.kernel.impl.storemigration.StoreFile;
 import org.neo4j.kernel.impl.transaction.CommittedTransactionRepresentation;
 import org.neo4j.kernel.impl.transaction.log.LogFile;
 import org.neo4j.kernel.impl.transaction.log.LogicalTransactionStore;
@@ -107,8 +107,8 @@ import static org.mockito.Matchers.eq;
 import static org.mockito.Mockito.mock;
 import static org.mockito.Mockito.verify;
 import static org.mockito.Mockito.when;
-import static org.neo4j.kernel.impl.storemigration.StoreFile.COUNTS_STORE_LEFT;
-import static org.neo4j.kernel.impl.storemigration.StoreFile.COUNTS_STORE_RIGHT;
+import static org.neo4j.kernel.impl.store.StoreFile.COUNTS_STORE_LEFT;
+import static org.neo4j.kernel.impl.store.StoreFile.COUNTS_STORE_RIGHT;
 
 public class BackupServiceIT
 {
