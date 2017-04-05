@@ -122,6 +122,30 @@ public interface NotificationDetail
             };
         }
 
+        public static NotificationDetail bindingVarLengthRelationship( final String element )
+        {
+            return new NotificationDetail()
+            {
+                @Override
+                public String name()
+                {
+                    return element;
+                }
+
+                @Override
+                public String value()
+                {
+                    return String.format(
+                            "Binding a variable length relationship pattern to a variable ('%s') is deprecated and "
+                                    + "will be unsupported in a future version. The recommended way is to bind the "
+                                    + "whole path to a variable, then extract the relationships:%n"
+                                    + "\tMATCH p = (...)-[...]-(...)%n"
+                                    + "\tWITH *, relationships(p) AS %s",
+                            element, element );
+                }
+            };
+        }
+
         private static NotificationDetail createNotificationDetail( Set<String> elements, String singularTerm,
                 String pluralTerm )
         {

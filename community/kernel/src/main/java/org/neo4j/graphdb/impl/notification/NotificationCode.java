@@ -119,6 +119,11 @@ public enum NotificationCode
             Status.Statement.FeatureDeprecationWarning,
             "The query used a deprecated field from a procedure."
     ),
+    DEPRECATED_BINDING_VAR_LENGTH_RELATIONSHIP(
+            SeverityLevel.WARNING,
+            Status.Statement.FeatureDeprecationWarning,
+            "Binding relationships to a list in a variable length pattern is deprecated."
+    ),
     EAGER_LOAD_CSV(
         SeverityLevel.WARNING,
         Status.Statement.EagerOperatorWarning,

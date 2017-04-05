@@ -146,6 +146,8 @@ class ExecutionResultWrapper(val inner: InternalExecutionResult, val planner: Pl
       NotificationCode.DEPRECATED_PROCEDURE.notification(pos.asInputPosition, NotificationDetail.Factory.deprecatedName(oldName, newName))
     case DeprecatedFieldNotification(pos, procedure, field) =>
       NotificationCode.DEPRECATED_PROCEDURE_RETURN_FIELD.notification(pos.asInputPosition, NotificationDetail.Factory.deprecatedField(procedure, field))
+    case DeprecatedVarLengthBindingNotification(pos, variable) =>
+      NotificationCode.DEPRECATED_BINDING_VAR_LENGTH_RELATIONSHIP.notification(pos.asInputPosition, NotificationDetail.Factory.bindingVarLengthRelationship(variable))
     case DeprecatedPlannerNotification =>
       NotificationCode.DEPRECATED_PLANNER.notification(graphdb.InputPosition.empty)
     case ProcedureWarningNotification(pos, name, warning) =>
