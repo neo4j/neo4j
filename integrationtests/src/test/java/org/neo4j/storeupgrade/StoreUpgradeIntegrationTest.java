@@ -92,19 +92,6 @@ import static org.neo4j.kernel.impl.ha.ClusterManager.clusterOfSize;
 public class StoreUpgradeIntegrationTest
 {
     // NOTE: the zip files must contain the database files and NOT the graph.db folder itself!!!
-    private static final List<Store[]> STORES21 = Arrays.asList(
-            new Store[]{new Store( "0.A.3-empty.zip",
-                    0 /* node count */,
-                    1 /* last txId */,
-                    selectivities(),
-                    indexCounts()
-            )},
-            new Store[]{new Store( "0.A.3-data.zip",
-                    174 /* node count */,
-                    30 /* last txId */,
-                    selectivities( 1.0, 1.0, 1.0 ),
-                    indexCounts( counts( 0, 38, 38, 38 ), counts( 0, 1, 1, 1 ), counts( 0, 133, 133, 133 ) )
-            )} );
     private static final List<Store[]> STORES22 = Arrays.asList(
             new Store[]{new Store( "0.A.5-empty.zip",
                     0 /* node count */,
@@ -156,7 +143,7 @@ public class StoreUpgradeIntegrationTest
         @Parameterized.Parameters( name = "{0}" )
         public static Collection<Store[]> stores()
         {
-            return Iterables.asCollection( Iterables.concat( STORES21, STORES22, STORES23, STORES300 ) );
+            return Iterables.asCollection( Iterables.concat( STORES22, STORES23, STORES300 ) );
         }
 
         @Rule
@@ -296,7 +283,8 @@ public class StoreUpgradeIntegrationTest
             return Arrays.<String[]>asList(
                     new String[]{"on a not cleanly shutdown database", "0.A.3-to-be-recovered.zip"},
                     new String[]{"on a 1.9 store", "0.A.0-db.zip"},
-                    new String[]{"on a 2.0 store", "/upgrade/0.A.1-db.zip"}
+                    new String[]{"on a 2.0 store", "/upgrade/0.A.1-db.zip"},
+                    new String[]{"on a 2.1 store", "0.A.3-data.zip"}
             );
         }
 
@@ -334,7 +322,7 @@ public class StoreUpgradeIntegrationTest
         @Parameterized.Parameters( name = "{0}" )
         public static Collection<Store[]> stores()
         {
-            return Iterables.asCollection( Iterables.concat( STORES21, STORES22, STORES23, STORES300 ) );
+            return Iterables.asCollection( Iterables.concat( STORES22, STORES23, STORES300 ) );
         }
 
         @Rule

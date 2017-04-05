@@ -36,7 +36,6 @@ import org.neo4j.kernel.configuration.Config;
 import org.neo4j.kernel.impl.store.MetaDataStore;
 import org.neo4j.kernel.impl.store.format.standard.MetaDataRecordFormat;
 import org.neo4j.kernel.impl.store.format.standard.Standard;
-import org.neo4j.kernel.impl.store.format.standard.StandardV2_1;
 import org.neo4j.kernel.impl.store.format.standard.StandardV2_2;
 import org.neo4j.kernel.impl.store.format.standard.StandardV2_3;
 import org.neo4j.kernel.impl.store.format.standard.StandardV3_0;
@@ -60,7 +59,6 @@ public class RecordFormatSelector
     private static final RecordFormats DEFAULT_FORMAT = Standard.LATEST_RECORD_FORMATS;
 
     private static final Iterable<RecordFormats> KNOWN_FORMATS = asList(
-            StandardV2_1.RECORD_FORMATS,
             StandardV2_2.RECORD_FORMATS,
             StandardV2_3.RECORD_FORMATS,
             StandardV3_0.RECORD_FORMATS,
