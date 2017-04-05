@@ -35,16 +35,10 @@ import org.neo4j.kernel.impl.api.index.inmemory.InMemoryIndexProvider;
 import org.neo4j.kernel.impl.logging.LogService;
 import org.neo4j.kernel.impl.logging.NullLogService;
 import org.neo4j.kernel.impl.logging.SimpleLogService;
-import org.neo4j.kernel.impl.store.MetaDataStore;
 import org.neo4j.kernel.impl.store.TransactionId;
-import org.neo4j.kernel.impl.store.format.standard.StandardV2_2;
-import org.neo4j.kernel.impl.store.format.standard.StandardV3_0;
 import org.neo4j.kernel.impl.storemigration.legacylogs.LegacyLogs;
 import org.neo4j.kernel.impl.transaction.log.LogPosition;
 import org.neo4j.kernel.impl.transaction.log.TransactionIdStore;
-import org.neo4j.kernel.impl.transaction.log.PhysicalLogFiles;
-import org.neo4j.kernel.impl.transaction.log.entry.VersionAwareLogEntryReader;
-import org.neo4j.kernel.recovery.LatestCheckPointFinder;
 import org.neo4j.logging.NullLogProvider;
 import org.neo4j.test.rule.PageCacheRule;
 import org.neo4j.test.rule.RandomRule;
@@ -54,7 +48,6 @@ import org.neo4j.test.rule.fs.DefaultFileSystemRule;
 import static org.junit.Assert.assertEquals;
 import static org.mockito.Mockito.mock;
 import static org.mockito.Mockito.when;
-import static org.neo4j.kernel.api.index.SchemaIndexProvider.NO_INDEX_PROVIDER;
 import static org.neo4j.kernel.impl.store.MetaDataStore.DEFAULT_NAME;
 import static org.neo4j.kernel.impl.store.MetaDataStore.Position.LAST_TRANSACTION_CHECKSUM;
 import static org.neo4j.kernel.impl.store.MetaDataStore.Position.LAST_TRANSACTION_COMMIT_TIMESTAMP;
@@ -110,7 +103,7 @@ public class StoreMigratorTest
         setRecord( pageCache, neoStore, LAST_TRANSACTION_COMMIT_TIMESTAMP, timestamp );
 
         // ... and with migrator
-        StoreMigrator migrator = new StoreMigrator( fileSystemRule.get(), pageCache, config, logService, NO_INDEX_PROVIDER );
+        StoreMigrator migrator = new StoreMigrator( fileSystemRule.get(), pageCache, config, logService );
         TransactionId actual = migrator.extractTransactionIdInformation( neoStore, storeDir, txId );
 
         // then
@@ -141,7 +134,7 @@ public class StoreMigratorTest
         // when
         // ... neoStore is empty and with migrator
         StoreMigrator migrator =
-                new StoreMigrator( fileSystemRule.get(), pageCache, config, logService, schemaIndexProvider, legacyLogs );
+                new StoreMigrator( fileSystemRule.get(), pageCache, config, logService, legacyLogs );
         TransactionId actual = migrator.extractTransactionIdInformation( neoStore, storeDir, txId );
 
         // then
@@ -168,8 +161,7 @@ public class StoreMigratorTest
         // ... and transaction not in log
         when( legacyLogs.getTransactionInformation( storeDir, txId ) ).thenReturn( Optional.empty() );
         // ... and with migrator
-        StoreMigrator migrator = new StoreMigrator( fileSystemRule.get(), pageCache, config, logService,
-                schemaIndexProvider );
+        StoreMigrator migrator = new StoreMigrator( fileSystemRule.get(), pageCache, config, logService );
         TransactionId actual = migrator.extractTransactionIdInformation( neoStore, storeDir, txId );
 
         // then
@@ -198,41 +190,13 @@ public class StoreMigratorTest
         // ... and transaction not in log
         when( legacyLogs.getTransactionInformation( storeDir, txId ) ).thenReturn( Optional.empty() );
         // ... and with migrator
-        StoreMigrator migrator = new StoreMigrator( fileSystemRule.get(), pageCache, config, logService,
-                schemaIndexProvider );
+        StoreMigrator migrator = new StoreMigrator( fileSystemRule.get(), pageCache, config, logService );
         TransactionId actual = migrator.extractTransactionIdInformation( neoStore, storeDir, txId );
 
         // then
         assertEquals( txId, actual.transactionId() );
         assertEquals( TransactionIdStore.BASE_TX_CHECKSUM, actual.checksum() );
         assertEquals( TransactionIdStore.BASE_TX_COMMIT_TIMESTAMP, actual.commitTimestamp() );
-    }
-
-    @Test
-    public void checkpointBasedOnLastClosedTransactionPosition() throws IOException
-    {
-        StoreMigrator storeMigrator = newStoreMigrator();
-        LogPosition lastTxLogPosition = new LogPosition( 7, 8 );
-        TransactionId txInfo = new TransactionId( 100, 101, 102 );
-
-        File storeDir = directory.graphDbDir();
-        File migrationDirectory = directory.directory( "migratedDirectory" );
-
-        File neoStore = new File( storeDir, DEFAULT_NAME );
-        fileSystemRule.create( neoStore ).close();
-        MetaDataStore.setRecord( pageCache, neoStore, MetaDataStore.Position.LOG_VERSION, 73 );
-
-        storeMigrator.writeLastTxLogPosition( migrationDirectory, lastTxLogPosition );
-        storeMigrator.writeLastTxInformation( migrationDirectory, txInfo );
-        storeMigrator.moveMigratedFiles( migrationDirectory, storeDir,
-                StandardV2_2.STORE_VERSION, StandardV3_0.STORE_VERSION);
-
-        PhysicalLogFiles logFiles = new PhysicalLogFiles( storeDir, fileSystemRule );
-        LatestCheckPointFinder checkPointFinder = new LatestCheckPointFinder( logFiles, fileSystemRule,
-                new VersionAwareLogEntryReader<>() );
-        LatestCheckPointFinder.LatestCheckPoint latestCheckPoint = checkPointFinder.find( logFiles
-                .getHighestLogVersion() );
-        assertEquals( lastTxLogPosition, latestCheckPoint.checkPoint.getLogPosition() );
     }
 
     @Test
@@ -263,6 +227,6 @@ public class StoreMigratorTest
     private StoreMigrator newStoreMigrator()
     {
         return new StoreMigrator( fileSystemRule, pageCache,
-                Config.empty(), NullLogService.getInstance(), schemaIndexProvider );
+                Config.empty(), NullLogService.getInstance() );
     }
 }

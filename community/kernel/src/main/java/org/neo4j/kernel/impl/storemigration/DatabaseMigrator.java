@@ -29,7 +29,6 @@ import org.neo4j.kernel.configuration.Config;
 import org.neo4j.kernel.impl.api.scan.LabelScanStoreProvider;
 import org.neo4j.kernel.impl.logging.LogService;
 import org.neo4j.kernel.impl.store.format.RecordFormats;
-import org.neo4j.kernel.impl.storemigration.legacystore.LegacyStoreVersionCheck;
 import org.neo4j.kernel.impl.storemigration.monitoring.MigrationProgressMonitor;
 import org.neo4j.kernel.impl.storemigration.participant.LegacyIndexMigrator;
 import org.neo4j.kernel.impl.storemigration.participant.StoreMigrator;
@@ -82,7 +81,7 @@ public class DatabaseMigrator
     {
         LogProvider logProvider = logService.getInternalLogProvider();
         UpgradableDatabase upgradableDatabase =
-                new UpgradableDatabase( fs, new StoreVersionCheck( pageCache ), new LegacyStoreVersionCheck( fs ),
+                new UpgradableDatabase( fs, new StoreVersionCheck( pageCache ),
                         format );
         StoreUpgrader storeUpgrader = new StoreUpgrader( upgradableDatabase, progressMonitor, config, fs, pageCache,
                 logProvider );
@@ -90,7 +89,7 @@ public class DatabaseMigrator
         StoreMigrationParticipant schemaMigrator = schemaIndexProvider.storeMigrationParticipant( fs, pageCache,
                 labelScanStoreProvider );
         LegacyIndexMigrator legacyIndexMigrator = new LegacyIndexMigrator( fs, indexProviders, logProvider );
-        StoreMigrator storeMigrator = new StoreMigrator( fs, pageCache, config, logService, schemaIndexProvider );
+        StoreMigrator storeMigrator = new StoreMigrator( fs, pageCache, config, logService );
 
         storeUpgrader.addParticipant( schemaMigrator );
         storeUpgrader.addParticipant( legacyIndexMigrator );
