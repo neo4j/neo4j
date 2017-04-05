@@ -37,20 +37,25 @@ public class QuerySnapshot
     private final String status;
     private final Map<String,Object> resourceInfo;
     private final long activeLockCount;
+    private final long allocatedBytes;
+    private final PageCounterValues page;
 
     QuerySnapshot(
             ExecutingQuery query,
             PlannerInfo plannerInfo,
+            PageCounterValues page,
             long planningTimeMillis,
             long elapsedTimeMillis,
             long cpuTimeMillis,
             long waitTimeMillis,
             String status,
             Map<String,Object> resourceInfo,
-            long activeLockCount )
+            long activeLockCount,
+            long allocatedBytes )
     {
         this.query = query;
         this.plannerInfo = plannerInfo;
+        this.page = page;
         this.planningTimeMillis = planningTimeMillis;
         this.elapsedTimeMillis = elapsedTimeMillis;
         this.cpuTimeMillis = cpuTimeMillis;
@@ -58,6 +63,7 @@ public class QuerySnapshot
         this.status = status;
         this.resourceInfo = resourceInfo;
         this.activeLockCount = activeLockCount;
+        this.allocatedBytes = allocatedBytes;
     }
 
     public long internalQueryId()
@@ -164,11 +170,12 @@ public class QuerySnapshot
     /**
      * Time that the CPU has actively spent working on things related to this query.
      *
-     * @return the time in milliseconds that the CPU has spent on this query.
+     * @return the time in milliseconds that the CPU has spent on this query, or {@code null} if the cpu time could not
+     * be measured.
      */
-    public long cpuTimeMillis()
+    public Long cpuTimeMillis()
     {
-        return cpuTimeMillis;
+        return cpuTimeMillis < 0 ? null : cpuTimeMillis;
     }
 
     /**
@@ -181,10 +188,32 @@ public class QuerySnapshot
      * actually waiting on the lock rather than doing active work). In most cases such "lock bookkeeping time" is going
      * to be dwarfed by the idle time.
      *
-     * @return the time in milliseconds that this query was de-scheduled.
+     * @return the time in milliseconds that this query was de-scheduled, or {@code null} if the cpu time could not be
+     * measured.
      */
-    public long idleTimeMillis()
+    public Long idleTimeMillis()
     {
-        return elapsedTimeMillis - cpuTimeMillis - waitTimeMillis;
+        return cpuTimeMillis < 0 ? null : (elapsedTimeMillis - cpuTimeMillis - waitTimeMillis);
+    }
+
+    /**
+     * The number of bytes allocated by the query.
+     *
+     * @return the number of bytes allocated by the execution of the query, or {@code null} if the memory allocation
+     * could not be measured.
+     */
+    public Long allocatedBytes()
+    {
+        return allocatedBytes < 0 ? null : allocatedBytes;
+    }
+
+    public long pageHits()
+    {
+        return page.hits;
+    }
+
+    public long pageFaults()
+    {
+        return page.faults;
     }
 }

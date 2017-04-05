@@ -19,47 +19,34 @@
  */
 package org.neo4j.test;
 
-import java.util.concurrent.TimeUnit;
-
 import org.junit.rules.TestRule;
 import org.junit.runner.Description;
 import org.junit.runners.model.Statement;
 
-import org.neo4j.collection.primitive.Primitive;
 import org.neo4j.collection.primitive.PrimitiveLongLongMap;
-import org.neo4j.resources.CpuClock;
+import org.neo4j.resources.HeapAllocation;
 
-public class FakeCpuClock extends CpuClock implements TestRule
+import static java.lang.Thread.currentThread;
+import static org.neo4j.collection.primitive.Primitive.offHeapLongLongMap;
+
+public class FakeHeapAllocation extends HeapAllocation implements TestRule
 {
-    public static final CpuClock NOT_AVAILABLE = new CpuClock()
-    {
-        @Override
-        public long cpuTimeNanos( long threadId )
-        {
-            return -1;
-        }
-    };
-    private final PrimitiveLongLongMap cpuTimes = Primitive.offHeapLongLongMap();
+    private final PrimitiveLongLongMap allocation = offHeapLongLongMap();
 
     @Override
-    public long cpuTimeNanos( long threadId )
+    public long allocatedBytes( long threadId )
     {
-        return Math.max( 0, cpuTimes.get( threadId ) );
+        return Math.max( 0, allocation.get( threadId ) );
     }
 
-    public FakeCpuClock add( long delta, TimeUnit unit )
+    public FakeHeapAllocation add( long bytes )
     {
-        return add( unit.toNanos( delta ) );
+        return add( currentThread().getId(), bytes );
     }
 
-    public FakeCpuClock add( long nanos )
+    public FakeHeapAllocation add( long threadId, long bytes )
     {
-        return add( Thread.currentThread().getId(), nanos );
-    }
-
-    public FakeCpuClock add( long threadId, long nanos )
-    {
-        cpuTimes.put( threadId, cpuTimeNanos( threadId ) + nanos );
+        allocation.put( threadId, allocatedBytes( threadId ) + bytes );
         return this;
     }
 
@@ -77,7 +64,7 @@ public class FakeCpuClock extends CpuClock implements TestRule
                 }
                 finally
                 {
-                    cpuTimes.close();
+                    allocation.close();
                 }
             }
         };

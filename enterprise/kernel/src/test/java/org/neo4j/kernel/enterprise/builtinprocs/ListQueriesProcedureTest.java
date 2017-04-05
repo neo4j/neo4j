@@ -19,10 +19,7 @@
  */
 package org.neo4j.kernel.enterprise.builtinprocs;
 
-import org.hamcrest.Matchers;
-import org.junit.Rule;
-import org.junit.Test;
-
+import java.io.PrintWriter;
 import java.util.HashSet;
 import java.util.List;
 import java.util.Map;
@@ -32,6 +29,10 @@ import java.util.concurrent.ExecutionException;
 import java.util.concurrent.TimeoutException;
 import java.util.function.BiConsumer;
 import java.util.function.Supplier;
+
+import org.junit.Ignore;
+import org.junit.Rule;
+import org.junit.Test;
 
 import org.neo4j.graphdb.Node;
 import org.neo4j.graphdb.Result;
@@ -46,14 +47,17 @@ import static java.util.Collections.singletonMap;
 import static java.util.concurrent.TimeUnit.SECONDS;
 import static org.hamcrest.CoreMatchers.instanceOf;
 import static org.hamcrest.Matchers.equalTo;
+import static org.hamcrest.Matchers.greaterThan;
 import static org.hamcrest.Matchers.greaterThanOrEqualTo;
 import static org.hamcrest.Matchers.hasEntry;
 import static org.hamcrest.Matchers.hasKey;
+import static org.hamcrest.Matchers.lessThanOrEqualTo;
 import static org.hamcrest.Matchers.not;
 import static org.junit.Assert.assertArrayEquals;
 import static org.junit.Assert.assertEquals;
 import static org.junit.Assert.assertFalse;
 import static org.junit.Assert.assertNotNull;
+import static org.junit.Assert.assertSame;
 import static org.junit.Assert.assertThat;
 import static org.neo4j.graphdb.Label.label;
 import static org.neo4j.graphdb.factory.GraphDatabaseSettings.cypher_hints_error;
@@ -138,6 +142,43 @@ public class ListQueriesProcedureTest
             assertThat( cpuTime2, greaterThanOrEqualTo( (Long) cpuTime1 ) );
             Long waitTime2 = (Long) data.get( "waitTimeMillis" );
             assertThat( waitTime2, greaterThanOrEqualTo( (Long) waitTime1 ) );
+        }
+    }
+
+    @Test
+    public void shouldProvideAllocatedBytes() throws Exception
+    {
+        // given
+        String query = "MATCH (n) SET n.v = n.v + 1";
+        final Node node;
+        final long uncachedBytes, cachedBytes;
+        try ( Resource<Node> test = test( db::createNode, Transaction::acquireWriteLock, query ) )
+        {
+            node = test.resource();
+            // when
+            Map<String,Object> data = getQueryListing( query );
+
+            // then
+            assertThat( data, hasKey( "allocatedBytes" ) );
+            Object allocatedBytes = data.get( "allocatedBytes" );
+            assertThat( allocatedBytes, instanceOf( Long.class ) );
+            uncachedBytes = (Long)allocatedBytes;
+            assertThat( uncachedBytes, greaterThan( 0L ) );
+        }
+        // execute a second time, this time the query should be cached, and thus allocate less
+        try ( Resource<Node> test = test( () -> node, Transaction::acquireWriteLock, query ) )
+        {
+            // when
+            Map<String,Object> data = getQueryListing( query );
+
+            // then
+            assertThat( data, hasKey( "allocatedBytes" ) );
+            Object allocatedBytes = data.get( "allocatedBytes" );
+            assertThat( allocatedBytes, instanceOf( Long.class ) );
+            cachedBytes = (Long)allocatedBytes;
+            assertThat( cachedBytes, greaterThan( 0L ) );
+            assertThat( cachedBytes, lessThanOrEqualTo( uncachedBytes ) );
+            assertSame( node, test.resource() );
         }
     }
 
@@ -232,6 +273,22 @@ public class ListQueriesProcedureTest
     }
 
     @Test
+    public void shouldContainPageHitsAndPageFaults() throws Exception
+    {
+        // given
+        String query = "MATCH (n) SET n.v = n.v + 1";
+        try ( Resource<Node> test = test( db::createNode, Transaction::acquireWriteLock, query ) )
+        {
+            // when
+            Map<String,Object> data = getQueryListing( query );
+
+            // then
+            assertThat( data, hasEntry( equalTo( "pageHits" ), instanceOf( Long.class ) ) );
+            assertThat( data, hasEntry( equalTo( "pageFaults" ), instanceOf( Long.class ) ) );
+        }
+    }
+
+    @Test
     public void shouldListUsedIndexes() throws Exception
     {
         // given
@@ -296,6 +353,19 @@ public class ListQueriesProcedureTest
             assertThat( index, hasEntry( "identifier", "n" ) );
             assertThat( index, hasEntry( "label", "Node" ) );
             assertThat( index, hasEntry( "propertyKey", "value" ) );
+        }
+    }
+
+    @Ignore
+    @Test
+    public void sampleOutput() throws Exception
+    {
+        String query = "MATCH (n) SET n.v = n.v + 1";
+        db.execute( query ).close(); // ensure it's cached first
+        try ( Resource<Node> test = test( db::createNode, Transaction::acquireWriteLock, query );
+              PrintWriter out = new PrintWriter( System.out ) )
+        {
+            db.execute( "CALL dbms.listQueries" ).writeAsStringTo( out );
         }
     }
 

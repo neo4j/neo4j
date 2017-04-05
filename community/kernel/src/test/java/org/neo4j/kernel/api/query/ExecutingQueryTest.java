@@ -23,33 +23,43 @@ import java.time.ZonedDateTime;
 import java.util.Arrays;
 import java.util.Collections;
 import java.util.Map;
+import java.util.concurrent.ThreadLocalRandom;
 import java.util.concurrent.TimeUnit;
 
 import org.hamcrest.CoreMatchers;
 import org.hamcrest.Description;
 import org.hamcrest.Matcher;
 import org.hamcrest.TypeSafeMatcher;
+import org.junit.Rule;
 import org.junit.Test;
 
+import org.neo4j.io.pagecache.tracing.cursor.PageCursorCounters;
+import org.neo4j.io.pagecache.tracing.cursor.PageCursorTracer;
 import org.neo4j.kernel.impl.locking.LockWaitEvent;
 import org.neo4j.kernel.impl.query.clientconnection.ClientConnectionInfo;
+import org.neo4j.resources.HeapAllocation;
 import org.neo4j.storageengine.api.lock.ResourceType;
 import org.neo4j.storageengine.api.lock.WaitStrategy;
 import org.neo4j.test.FakeCpuClock;
+import org.neo4j.test.FakeHeapAllocation;
 import org.neo4j.time.Clocks;
 import org.neo4j.time.FakeClock;
 
 import static java.util.Collections.emptyList;
-import static java.util.Collections.singletonMap;
 import static org.hamcrest.CoreMatchers.equalTo;
 import static org.hamcrest.Matchers.hasEntry;
 import static org.junit.Assert.assertEquals;
+import static org.junit.Assert.assertNull;
 import static org.junit.Assert.assertThat;
 
 public class ExecutingQueryTest
 {
     private final FakeClock clock = Clocks.fakeClock( ZonedDateTime.parse( "2016-12-03T15:10:00+01:00" ) );
-    private final FakeCpuClock cpuClock = new FakeCpuClock();
+    @Rule
+    public final FakeCpuClock cpuClock = new FakeCpuClock().add( randomLong( 0x1_0000_0000L ) );
+    @Rule
+    public final FakeHeapAllocation heapAllocation = new FakeHeapAllocation().add( randomLong( 0x1_0000_0000L ) );
+    private final PageCursorCountersStub page = new PageCursorCountersStub();
     private long lockCount;
     private ExecutingQuery query = new ExecutingQuery(
             1,
@@ -58,9 +68,10 @@ public class ExecutingQueryTest
             "hello world",
             Collections.emptyMap(),
             Collections.emptyMap(),
-            () -> lockCount, Thread.currentThread(),
+            () -> lockCount, page, Thread.currentThread(),
             clock,
-            cpuClock );
+            cpuClock,
+            heapAllocation );
     private ExecutingQuery subQuery = new ExecutingQuery(
             2,
             ClientConnectionInfo.EMBEDDED_CONNECTION,
@@ -68,9 +79,10 @@ public class ExecutingQueryTest
             "goodbye world",
             Collections.emptyMap(),
             Collections.emptyMap(),
-            () -> lockCount, Thread.currentThread(),
+            () -> lockCount, page, Thread.currentThread(),
             clock,
-            cpuClock );
+            cpuClock,
+            heapAllocation );
 
     @Test
     public void shouldReportElapsedTime() throws Exception
@@ -233,6 +245,71 @@ public class ExecutingQueryTest
     }
 
     @Test
+    public void shouldNotReportCpuTimeIfUnavailable() throws Exception
+    {
+        // given
+        ExecutingQuery query = new ExecutingQuery( 17,
+                ClientConnectionInfo.EMBEDDED_CONNECTION,
+                "neo4j",
+                "hello world",
+                Collections.emptyMap(),
+                Collections.emptyMap(),
+                () -> lockCount, PageCursorTracer.NULL, Thread.currentThread(),
+                clock,
+                FakeCpuClock.NOT_AVAILABLE,
+                HeapAllocation.NOT_AVAILABLE );
+
+        // when
+        QuerySnapshot snapshot = query.snapshot();
+
+        // then
+        assertNull( snapshot.cpuTimeMillis() );
+        assertNull( snapshot.idleTimeMillis() );
+    }
+
+    @Test
+    public void shouldReportHeapAllocation() throws Exception
+    {
+        // given
+        heapAllocation.add( 4096 );
+
+        // when
+        long allocatedBytes = query.snapshot().allocatedBytes();
+
+        // then
+        assertEquals( 4096, allocatedBytes );
+
+        // when
+        heapAllocation.add( 4096 );
+        allocatedBytes = query.snapshot().allocatedBytes();
+
+        // then
+        assertEquals( 8192, allocatedBytes );
+    }
+
+    @Test
+    public void shouldNotReportHeapAllocationIfUnavailable() throws Exception
+    {
+        // given
+        ExecutingQuery query = new ExecutingQuery( 17,
+                ClientConnectionInfo.EMBEDDED_CONNECTION,
+                "neo4j",
+                "hello world",
+                Collections.emptyMap(),
+                Collections.emptyMap(),
+                () -> lockCount, PageCursorTracer.NULL, Thread.currentThread(),
+                clock,
+                FakeCpuClock.NOT_AVAILABLE,
+                HeapAllocation.NOT_AVAILABLE );
+
+        // when
+        QuerySnapshot snapshot = query.snapshot();
+
+        // then
+        assertNull( snapshot.allocatedBytes() );
+    }
+
+    @Test
     public void shouldReportLockCount() throws Exception
     {
         // given
@@ -246,6 +323,30 @@ public class ExecutingQueryTest
 
         // then
         assertEquals( 2, query.snapshot().activeLockCount() );
+    }
+
+    @Test
+    public void shouldReportPageHitsAndFaults() throws Exception
+    {
+        // given
+        page.hits( 7 );
+        page.faults( 3 );
+
+        // when
+        QuerySnapshot snapshot = query.snapshot();
+
+        // then
+        assertEquals( 7, snapshot.pageHits() );
+        assertEquals( 3, snapshot.pageFaults() );
+
+        // when
+        page.hits( 2 );
+        page.faults( 5 );
+        snapshot = query.snapshot();
+
+        // then
+        assertEquals( 9, snapshot.pageHits() );
+        assertEquals( 8, snapshot.pageFaults() );
     }
 
     private LockWaitEvent lock( String resourceType, long resourceId )
@@ -300,5 +401,122 @@ public class ExecutingQueryTest
                 description.appendValue( expected );
             }
         };
+    }
+
+    private static long randomLong( long bound )
+    {
+        return ThreadLocalRandom.current().nextLong( bound );
+    }
+
+    private static class PageCursorCountersStub implements PageCursorCounters
+    {
+        private long faults;
+        private long pins;
+        private long unpins;
+        private long hits;
+        private long bytesRead;
+        private long evictions;
+        private long evictionExceptions;
+        private long bytesWritten;
+        private long flushes;
+
+        @Override
+        public long faults()
+        {
+            return faults;
+        }
+
+        public void faults( long increment )
+        {
+            faults += increment;
+        }
+
+        @Override
+        public long pins()
+        {
+            return pins;
+        }
+
+        public void pins( long increment )
+        {
+            pins += increment;
+        }
+
+        @Override
+        public long unpins()
+        {
+            return unpins;
+        }
+
+        public void unpins( long increment )
+        {
+            unpins += increment;
+        }
+
+        @Override
+        public long hits()
+        {
+            return hits;
+        }
+
+        public void hits( long increment )
+        {
+            hits += increment;
+        }
+
+        @Override
+        public long bytesRead()
+        {
+            return bytesRead;
+        }
+
+        public void bytesRead( long increment )
+        {
+            bytesRead += increment;
+        }
+
+        @Override
+        public long evictions()
+        {
+            return evictions;
+        }
+
+        public void evictions( long increment )
+        {
+            evictions += increment;
+        }
+
+        @Override
+        public long evictionExceptions()
+        {
+            return evictionExceptions;
+        }
+
+        public void evictionExceptions( long increment )
+        {
+            evictionExceptions += increment;
+        }
+
+        @Override
+        public long bytesWritten()
+        {
+            return bytesWritten;
+        }
+
+        public void bytesWritten( long increment )
+        {
+            bytesWritten += increment;
+        }
+
+        @Override
+        public long flushes()
+        {
+            return flushes;
+        }
+
+        public void flushes( long increment )
+        {
+            flushes += increment;
+        }
     }
 }

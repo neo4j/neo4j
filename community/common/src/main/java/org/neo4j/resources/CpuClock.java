@@ -17,14 +17,17 @@
  * You should have received a copy of the GNU General Public License
  * along with this program.  If not, see <http://www.gnu.org/licenses/>.
  */
-package org.neo4j.time;
+package org.neo4j.resources;
 
 import java.lang.management.ManagementFactory;
 import java.lang.management.ThreadMXBean;
 
+/**
+ * Measures CPU time by thread.
+ */
 public abstract class CpuClock
 {
-    public static CpuClock CPU_CLOCK = new CpuClock()
+    public static final CpuClock CPU_CLOCK = new CpuClock()
     {
         private final ThreadMXBean threadMXBean = ManagementFactory.getThreadMXBean();
 
@@ -60,7 +63,8 @@ public abstract class CpuClock
      *
      * @param threadId
      *         the id of the thread to get the used CPU time for.
-     * @return the current CPU time used by the thread, in nanoseconds.
+     * @return the current CPU time used by the thread, in nanoseconds, or {@code -1} if getting the CPU time is not
+     * supported.
      */
     public abstract long cpuTimeNanos( long threadId );
 }

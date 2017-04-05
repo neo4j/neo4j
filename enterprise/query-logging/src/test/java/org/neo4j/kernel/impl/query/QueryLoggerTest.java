@@ -19,31 +19,38 @@
  */
 package org.neo4j.kernel.impl.query;
 
-import org.junit.Test;
-
-import java.time.Clock;
 import java.util.Arrays;
 import java.util.Collections;
+import java.util.EnumSet;
 import java.util.HashMap;
 import java.util.Map;
 import java.util.concurrent.TimeUnit;
 
+import org.junit.Rule;
+import org.junit.Test;
+
+import org.neo4j.io.pagecache.tracing.cursor.PageCursorCounters;
 import org.neo4j.kernel.api.query.ExecutingQuery;
-import org.neo4j.kernel.impl.query.QueryLoggerKernelExtension.QueryLogger;
 import org.neo4j.kernel.impl.query.clientconnection.ClientConnectionInfo;
 import org.neo4j.kernel.impl.query.clientconnection.ShellConnectionInfo;
 import org.neo4j.logging.AssertableLogProvider;
 import org.neo4j.logging.LogProvider;
+import org.neo4j.test.FakeCpuClock;
+import org.neo4j.test.FakeHeapAllocation;
 import org.neo4j.time.Clocks;
-import org.neo4j.time.CpuClock;
 import org.neo4j.time.FakeClock;
 
 import static java.lang.String.format;
 import static java.util.Collections.emptyMap;
+import static org.hamcrest.Matchers.containsString;
 import static org.hamcrest.Matchers.equalTo;
 import static org.hamcrest.Matchers.sameInstance;
 import static org.hamcrest.core.Is.is;
 import static org.neo4j.helpers.collection.MapUtil.map;
+import static org.neo4j.kernel.impl.query.QueryLogEntryContent.LOG_ALLOCATED_BYTES;
+import static org.neo4j.kernel.impl.query.QueryLogEntryContent.LOG_DETAILED_TIME;
+import static org.neo4j.kernel.impl.query.QueryLogEntryContent.LOG_PAGE_DETAILS;
+import static org.neo4j.kernel.impl.query.QueryLogEntryContent.LOG_PARAMETERS;
 import static org.neo4j.logging.AssertableLogProvider.inLog;
 
 public class QueryLoggerTest
@@ -55,15 +62,20 @@ public class QueryLoggerTest
     private static final String QUERY_2 = "MATCH (a)--(b) RETURN b.name";
     private static final String QUERY_3 = "MATCH (c)-[:FOO]->(d) RETURN d.size";
     private static final String QUERY_4 = "MATCH (n) WHERE n.age IN {ages} RETURN n";
+    private final FakeClock clock = Clocks.fakeClock();
+    @Rule
+    public final FakeCpuClock cpuClock = new FakeCpuClock();
+    @Rule
+    public final FakeHeapAllocation heapAllocation = new FakeHeapAllocation();
+    private long pageHits, pageFaults;
 
     @Test
     public void shouldLogQuerySlowerThanThreshold() throws Exception
     {
         // given
         final AssertableLogProvider logProvider = new AssertableLogProvider();
-        ExecutingQuery query = query( 0, SESSION_1, "TestUser", QUERY_1 );
-        FakeClock clock = Clocks.fakeClock();
-        QueryLogger queryLogger = queryLoggerWithoutParams( logProvider, clock );
+        ExecutingQuery query = query( SESSION_1, "TestUser", QUERY_1 );
+        QueryLogger queryLogger = queryLogger( logProvider );
 
         // when
         queryLogger.startQueryExecution( query );
@@ -82,9 +94,8 @@ public class QueryLoggerTest
     {
         // given
         final AssertableLogProvider logProvider = new AssertableLogProvider();
-        ExecutingQuery query = query( 0, SESSION_1, "TestUser", QUERY_1 );
-        FakeClock clock = Clocks.fakeClock();
-        QueryLogger queryLogger = queryLoggerWithoutParams( logProvider, clock );
+        ExecutingQuery query = query( SESSION_1, "TestUser", QUERY_1 );
+        QueryLogger queryLogger = queryLogger( logProvider );
 
         // when
         queryLogger.startQueryExecution( query );
@@ -100,12 +111,13 @@ public class QueryLoggerTest
     {
         // given
         final AssertableLogProvider logProvider = new AssertableLogProvider();
-        ExecutingQuery query1 = query( 0, SESSION_1, "TestUser1", QUERY_1 );
-        ExecutingQuery query2 = query( 1, SESSION_2, "TestUser2", QUERY_2 );
-        ExecutingQuery query3 = query( 2, SESSION_3, "TestUser3", QUERY_3 );
+        ExecutingQuery query1 = query( SESSION_1, "TestUser1", QUERY_1 );
+        clock.forward( 1, TimeUnit.MILLISECONDS );
+        ExecutingQuery query2 = query( SESSION_2, "TestUser2", QUERY_2 );
+        clock.forward( 1, TimeUnit.MILLISECONDS );
+        ExecutingQuery query3 = query( SESSION_3, "TestUser3", QUERY_3 );
 
-        FakeClock clock = Clocks.fakeClock();
-        QueryLogger queryLogger = queryLoggerWithoutParams( logProvider, clock );
+        QueryLogger queryLogger = queryLogger( logProvider );
 
         // when
         queryLogger.startQueryExecution( query1 );
@@ -124,8 +136,8 @@ public class QueryLoggerTest
         String expectedSession1String = sessionConnectionDetails( SESSION_1, "TestUser1" );
         String expectedSession2String = sessionConnectionDetails( SESSION_2, "TestUser2" );
         logProvider.assertExactly(
-                inLog( getClass() ).info( format( "%d ms: %s - %s - {}", 15L, expectedSession2String, QUERY_2 ) ),
-                inLog( getClass() ).info( format( "%d ms: %s - %s - {}", 23L, expectedSession1String, QUERY_1 ) )
+                inLog( getClass() ).info( format( "%d ms: %s - %s - {}", 17L, expectedSession2String, QUERY_2 ) ),
+                inLog( getClass() ).info( format( "%d ms: %s - %s - {}", 25L, expectedSession1String, QUERY_1 ) )
         );
     }
 
@@ -134,10 +146,9 @@ public class QueryLoggerTest
     {
         // given
         final AssertableLogProvider logProvider = new AssertableLogProvider();
-        ExecutingQuery query = query( 0, SESSION_1, "TestUser", QUERY_1 );
+        ExecutingQuery query = query( SESSION_1, "TestUser", QUERY_1 );
 
-        FakeClock clock = Clocks.fakeClock();
-        QueryLogger queryLogger = queryLoggerWithoutParams( logProvider, clock );
+        QueryLogger queryLogger = queryLogger( logProvider );
         RuntimeException failure = new RuntimeException();
 
         // when
@@ -160,11 +171,8 @@ public class QueryLoggerTest
         final AssertableLogProvider logProvider = new AssertableLogProvider();
         Map<String,Object> params = new HashMap<>();
         params.put( "ages", Arrays.asList( 41, 42, 43 ) );
-        ExecutingQuery query = query( 0,
-                SESSION_1, "TestUser", QUERY_4, params, emptyMap()
-        );
-        FakeClock clock = Clocks.fakeClock();
-        QueryLogger queryLogger = queryLoggerWithParams( logProvider, clock );
+        ExecutingQuery query = query( SESSION_1, "TestUser", QUERY_4, params, emptyMap() );
+        QueryLogger queryLogger = queryLogger( logProvider, LOG_PARAMETERS );
 
         // when
         queryLogger.startQueryExecution( query );
@@ -187,11 +195,8 @@ public class QueryLoggerTest
         final AssertableLogProvider logProvider = new AssertableLogProvider();
         Map<String,Object> params = new HashMap<>();
         params.put( "ages", Arrays.asList( 41, 42, 43 ) );
-        ExecutingQuery query = query( 0,
-                SESSION_1, "TestUser", QUERY_4, params, emptyMap()
-        );
-        FakeClock clock = Clocks.fakeClock();
-        QueryLogger queryLogger = queryLoggerWithParams( logProvider, clock );
+        ExecutingQuery query = query( SESSION_1, "TestUser", QUERY_4, params, emptyMap() );
+        QueryLogger queryLogger = queryLogger( logProvider, LOG_PARAMETERS );
         RuntimeException failure = new RuntimeException();
 
         // when
@@ -213,16 +218,15 @@ public class QueryLoggerTest
     {
         // given
         final AssertableLogProvider logProvider = new AssertableLogProvider();
-        FakeClock clock = Clocks.fakeClock();
-        QueryLogger queryLogger = queryLoggerWithoutParams( logProvider, clock );
+        QueryLogger queryLogger = queryLogger( logProvider );
 
         // when
-        ExecutingQuery query = query( 0, SESSION_1, "TestUser", QUERY_1 );
+        ExecutingQuery query = query( SESSION_1, "TestUser", QUERY_1 );
         queryLogger.startQueryExecution( query );
         clock.forward( 10, TimeUnit.MILLISECONDS );
         queryLogger.endSuccess( query );
 
-        ExecutingQuery anotherQuery = query( 10, SESSION_1, "AnotherUser", QUERY_1 );
+        ExecutingQuery anotherQuery = query( SESSION_1, "AnotherUser", QUERY_1 );
         queryLogger.startQueryExecution( anotherQuery );
         clock.forward( 10, TimeUnit.MILLISECONDS );
         queryLogger.endSuccess( anotherQuery );
@@ -241,20 +245,16 @@ public class QueryLoggerTest
     {
         // given
         final AssertableLogProvider logProvider = new AssertableLogProvider();
-        FakeClock clock = Clocks.fakeClock();
-        QueryLogger queryLogger = queryLoggerWithoutParams( logProvider, clock );
+        QueryLogger queryLogger = queryLogger( logProvider );
 
         // when
-        ExecutingQuery query = query( 0,
-                SESSION_1,
-                "TestUser", QUERY_1, emptyMap(), map( "User", "UltiMate" )
-        );
+        ExecutingQuery query = query( SESSION_1, "TestUser", QUERY_1, emptyMap(), map( "User", "UltiMate" ) );
         queryLogger.startQueryExecution( query );
         clock.forward( 10, TimeUnit.MILLISECONDS );
         queryLogger.endSuccess( query );
 
         ExecutingQuery anotherQuery =
-                query( 10, SESSION_1, "AnotherUser", QUERY_1, emptyMap(), map( "Place", "Town" ) );
+                query( SESSION_1, "AnotherUser", QUERY_1, emptyMap(), map( "Place", "Town" ) );
         queryLogger.startQueryExecution( anotherQuery );
         clock.forward( 10, TimeUnit.MILLISECONDS );
         Throwable error = new Throwable();
@@ -394,11 +394,10 @@ public class QueryLoggerTest
     private void runAndCheck( String inputQuery, String outputQuery, Map<String,Object> params, String paramsString )
     {
         final AssertableLogProvider logProvider = new AssertableLogProvider();
-        FakeClock clock = Clocks.fakeClock();
-        QueryLogger queryLogger = queryLoggerWithParams( logProvider, clock );
+        QueryLogger queryLogger = queryLogger( logProvider, LOG_PARAMETERS );
 
         // when
-        ExecutingQuery query = query( 0, SESSION_1, "neo", inputQuery, params, emptyMap() );
+        ExecutingQuery query = query( SESSION_1, "neo", inputQuery, params, emptyMap() );
         queryLogger.startQueryExecution( query );
         clock.forward( 10, TimeUnit.MILLISECONDS );
         queryLogger.endSuccess( query );
@@ -410,23 +409,77 @@ public class QueryLoggerTest
                         paramsString ) ) );
     }
 
-    private QueryLogger queryLoggerWithoutParams( LogProvider logProvider, Clock clock )
+    @Test
+    public void shouldBeAbleToLogDetailedTime() throws Exception
     {
-        return new QueryLogger( clock, logProvider.getLog( getClass() ), 10/*ms*/, false );
+        // given
+        final AssertableLogProvider logProvider = new AssertableLogProvider();
+        QueryLogger queryLogger = queryLogger( logProvider, LOG_DETAILED_TIME );
+        ExecutingQuery query = query( SESSION_1, "TestUser", QUERY_1 );
+
+        // when
+        queryLogger.startQueryExecution( query );
+        clock.forward( 17, TimeUnit.MILLISECONDS );
+        cpuClock.add( 12, TimeUnit.MILLISECONDS );
+        queryLogger.endSuccess( query );
+
+        // then
+        logProvider.assertExactly( inLog( getClass() ).info(
+                containsString( "17 ms: (planning: 17, cpu: 12, waiting: 0) - " ) ) );
     }
 
-    private QueryLogger queryLoggerWithParams( LogProvider logProvider, Clock clock )
+    @Test
+    public void shouldBeAbleToLogAllocatedBytes() throws Exception
     {
-        return new QueryLogger( clock, logProvider.getLog( getClass() ), 10/*ms*/, true );
+        // given
+        final AssertableLogProvider logProvider = new AssertableLogProvider();
+        QueryLogger queryLogger = queryLogger( logProvider, LOG_ALLOCATED_BYTES );
+        ExecutingQuery query = query( SESSION_1, "TestUser", QUERY_1 );
+
+        // when
+        queryLogger.startQueryExecution( query );
+        clock.forward( 17, TimeUnit.MILLISECONDS );
+        heapAllocation.add( 4096 );
+        queryLogger.endSuccess( query );
+
+        // then
+        logProvider.assertExactly( inLog( getClass() ).info(
+                containsString( "ms: 4096 B - " ) ) );
+    }
+
+    @Test
+    public void shouldBeAbleToLogPageHitsAndPageFaults() throws Exception
+    {
+        // given
+        final AssertableLogProvider logProvider = new AssertableLogProvider();
+        QueryLogger queryLogger = queryLogger( logProvider, LOG_PAGE_DETAILS );
+        ExecutingQuery query = query( SESSION_1, "TestUser", QUERY_1 );
+
+        // when
+        queryLogger.startQueryExecution( query );
+        clock.forward( 12, TimeUnit.MILLISECONDS );
+        pageHits = 17;
+        pageFaults = 12;
+        queryLogger.endSuccess( query );
+
+        // then
+        logProvider.assertExactly( inLog( getClass() ).info(
+                containsString( " 17 page hits, 12 page faults - " ) ) );
+    }
+
+    private QueryLogger queryLogger( LogProvider logProvider, QueryLogEntryContent... flags )
+    {
+        EnumSet<QueryLogEntryContent> flagSet = EnumSet.noneOf( QueryLogEntryContent.class );
+        Collections.addAll( flagSet, flags );
+        return new QueryLogger( logProvider.getLog( getClass() ), 10/*ms*/, flagSet );
     }
 
     private ExecutingQuery query(
-            long startTime,
             ClientConnectionInfo sessionInfo,
             String username,
             String queryText )
     {
-        return query( startTime, sessionInfo, username, queryText, emptyMap(), emptyMap() );
+        return query( sessionInfo, username, queryText, emptyMap(), emptyMap() );
     }
 
     private String sessionConnectionDetails( ClientConnectionInfo sessionInfo, String username )
@@ -437,11 +490,12 @@ public class QueryLoggerTest
     private int queryId;
 
     private ExecutingQuery query(
-            long startTime, ClientConnectionInfo sessionInfo, String username, String queryText, Map<String,Object> params,
-            Map<String,Object> metaData
-    )
+            ClientConnectionInfo sessionInfo,
+            String username,
+            String queryText,
+            Map<String,Object> params,
+            Map<String,Object> metaData )
     {
-        FakeClock clock = Clocks.fakeClock( startTime, TimeUnit.MILLISECONDS );
         return new ExecutingQuery( queryId++,
                 sessionInfo.withUsername( username ),
                 username,
@@ -449,8 +503,64 @@ public class QueryLoggerTest
                 params,
                 metaData,
                 () -> 0,
-                Thread.currentThread(),
+                new PageCursorCounters()
+                {
+                    @Override
+                    public long faults()
+                    {
+                        return pageFaults;
+                    }
+
+                    @Override
+                    public long hits()
+                    {
+                        return pageHits;
+                    }
+
+                    @Override
+                    public long pins()
+                    {
+                        return 0;
+                    }
+
+                    @Override
+                    public long unpins()
+                    {
+                        return 0;
+                    }
+
+                    @Override
+                    public long bytesRead()
+                    {
+                        return 0;
+                    }
+
+                    @Override
+                    public long evictions()
+                    {
+                        return 0;
+                    }
+
+                    @Override
+                    public long evictionExceptions()
+                    {
+                        return 0;
+                    }
+
+                    @Override
+                    public long bytesWritten()
+                    {
+                        return 0;
+                    }
+
+                    @Override
+                    public long flushes()
+                    {
+                        return 0;
+                    }
+                }, Thread.currentThread(),
                 clock,
-                CpuClock.CPU_CLOCK );
+                cpuClock,
+                heapAllocation );
     }
 }
