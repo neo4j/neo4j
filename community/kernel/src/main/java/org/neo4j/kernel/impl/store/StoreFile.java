@@ -21,118 +21,46 @@ package org.neo4j.kernel.impl.store;
 
 import java.io.File;
 import java.io.IOException;
-import java.nio.ByteBuffer;
-import java.util.Arrays;
-import java.util.function.Predicate;
 
 import org.neo4j.helpers.collection.Iterables;
 import org.neo4j.io.fs.FileSystemAbstraction;
-import org.neo4j.io.fs.StoreChannel;
 import org.neo4j.kernel.impl.store.counts.CountsTracker;
-import org.neo4j.kernel.impl.store.format.standard.StandardV2_0;
-import org.neo4j.kernel.impl.store.format.standard.StandardV2_1;
-import org.neo4j.kernel.impl.store.format.standard.StandardV2_2;
-import org.neo4j.kernel.impl.store.format.standard.StandardV3_0;
 import org.neo4j.kernel.impl.storemigration.ExistingTargetStrategy;
 import org.neo4j.kernel.impl.storemigration.FileOperation;
 import org.neo4j.kernel.impl.storemigration.StoreFileType;
-import org.neo4j.string.UTF8;
-
-import static org.neo4j.helpers.collection.Iterables.iterable;
 
 public enum StoreFile
 {
     // all store files in Neo4j
-    NODE_STORE(
-            NodeStore.TYPE_DESCRIPTOR,
-            StoreFactory.NODE_STORE_NAME,
-            StandardV2_0.STORE_VERSION
-    ),
+    NODE_STORE( StoreFactory.NODE_STORE_NAME ),
 
-    NODE_LABEL_STORE(
-            DynamicArrayStore.TYPE_DESCRIPTOR,
-            StoreFactory.NODE_LABELS_STORE_NAME,
-            StandardV2_0.STORE_VERSION
-    ),
+    NODE_LABEL_STORE( StoreFactory.NODE_LABELS_STORE_NAME ),
 
-    PROPERTY_STORE(
-            PropertyStore.TYPE_DESCRIPTOR,
-            StoreFactory.PROPERTY_STORE_NAME,
-            StandardV2_0.STORE_VERSION
-    ),
+    PROPERTY_STORE( StoreFactory.PROPERTY_STORE_NAME ),
 
-    PROPERTY_ARRAY_STORE(
-            DynamicArrayStore.TYPE_DESCRIPTOR,
-            StoreFactory.PROPERTY_ARRAYS_STORE_NAME,
-            StandardV2_0.STORE_VERSION
-    ),
+    PROPERTY_ARRAY_STORE( StoreFactory.PROPERTY_ARRAYS_STORE_NAME ),
 
-    PROPERTY_STRING_STORE(
-            DynamicStringStore.TYPE_DESCRIPTOR,
-            StoreFactory.PROPERTY_STRINGS_STORE_NAME,
-            StandardV2_0.STORE_VERSION
-    ),
+    PROPERTY_STRING_STORE( StoreFactory.PROPERTY_STRINGS_STORE_NAME ),
 
-    PROPERTY_KEY_TOKEN_STORE(
-            PropertyKeyTokenStore.TYPE_DESCRIPTOR,
-            StoreFactory.PROPERTY_KEY_TOKEN_STORE_NAME,
-            StandardV2_0.STORE_VERSION
-    ),
+    PROPERTY_KEY_TOKEN_STORE( StoreFactory.PROPERTY_KEY_TOKEN_STORE_NAME ),
 
-    PROPERTY_KEY_TOKEN_NAMES_STORE(
-            DynamicStringStore.TYPE_DESCRIPTOR,
-            StoreFactory.PROPERTY_KEY_TOKEN_NAMES_STORE_NAME,
-            StandardV2_0.STORE_VERSION
-    ),
+    PROPERTY_KEY_TOKEN_NAMES_STORE( StoreFactory.PROPERTY_KEY_TOKEN_NAMES_STORE_NAME ),
 
-    RELATIONSHIP_STORE(
-            RelationshipStore.TYPE_DESCRIPTOR,
-            StoreFactory.RELATIONSHIP_STORE_NAME,
-            StandardV2_0.STORE_VERSION
-    ),
+    RELATIONSHIP_STORE( StoreFactory.RELATIONSHIP_STORE_NAME ),
 
-    RELATIONSHIP_GROUP_STORE(
-            RelationshipGroupStore.TYPE_DESCRIPTOR,
-            StoreFactory.RELATIONSHIP_GROUP_STORE_NAME,
-            StandardV2_1.STORE_VERSION
-    ),
+    RELATIONSHIP_GROUP_STORE( StoreFactory.RELATIONSHIP_GROUP_STORE_NAME ),
 
-    RELATIONSHIP_TYPE_TOKEN_STORE(
-            RelationshipTypeTokenStore.TYPE_DESCRIPTOR,
-            StoreFactory.RELATIONSHIP_TYPE_TOKEN_STORE_NAME,
-            StandardV2_0.STORE_VERSION
-    ),
+    RELATIONSHIP_TYPE_TOKEN_STORE( StoreFactory.RELATIONSHIP_TYPE_TOKEN_STORE_NAME ),
 
-    RELATIONSHIP_TYPE_TOKEN_NAMES_STORE(
-            DynamicStringStore.TYPE_DESCRIPTOR,
-            StoreFactory.RELATIONSHIP_TYPE_TOKEN_NAMES_STORE_NAME,
-            StandardV2_0.STORE_VERSION
-    ),
+    RELATIONSHIP_TYPE_TOKEN_NAMES_STORE( StoreFactory.RELATIONSHIP_TYPE_TOKEN_NAMES_STORE_NAME ),
 
-    LABEL_TOKEN_STORE(
-            LabelTokenStore.TYPE_DESCRIPTOR,
-            StoreFactory.LABEL_TOKEN_STORE_NAME,
-            StandardV2_0.STORE_VERSION
-    ),
+    LABEL_TOKEN_STORE( StoreFactory.LABEL_TOKEN_STORE_NAME ),
 
-    LABEL_TOKEN_NAMES_STORE(
-            DynamicStringStore.TYPE_DESCRIPTOR,
-            StoreFactory.LABEL_TOKEN_NAMES_STORE_NAME,
-            StandardV2_0.STORE_VERSION
-    ),
+    LABEL_TOKEN_NAMES_STORE( StoreFactory.LABEL_TOKEN_NAMES_STORE_NAME ),
 
-    SCHEMA_STORE(
-            SchemaStore.TYPE_DESCRIPTOR,
-            StoreFactory.SCHEMA_STORE_NAME,
-            StandardV2_0.STORE_VERSION
-    ),
+    SCHEMA_STORE( StoreFactory.SCHEMA_STORE_NAME ),
 
-    COUNTS_STORE_LEFT(
-            CountsTracker.TYPE_DESCRIPTOR,
-            StoreFactory.COUNTS_STORE + CountsTracker.LEFT,
-            StandardV2_2.STORE_VERSION,
-            false
-    )
+    COUNTS_STORE_LEFT( StoreFactory.COUNTS_STORE + CountsTracker.LEFT, false )
             {
                 @Override
                 public boolean isOptional()
@@ -140,12 +68,7 @@ public enum StoreFile
                     return true;
                 }
             },
-    COUNTS_STORE_RIGHT(
-            CountsTracker.TYPE_DESCRIPTOR,
-            StoreFactory.COUNTS_STORE + CountsTracker.RIGHT,
-            StandardV2_2.STORE_VERSION,
-            false
-    )
+    COUNTS_STORE_RIGHT( StoreFactory.COUNTS_STORE + CountsTracker.RIGHT, false )
             {
                 @Override
                 public boolean isOptional()
@@ -154,33 +77,20 @@ public enum StoreFile
                 }
             },
 
-    NEO_STORE(
-            MetaDataStore.TYPE_DESCRIPTOR,
-            "",
-            StandardV2_0.STORE_VERSION
-    );
+    NEO_STORE( "" );
 
-    private final String typeDescriptor;
     private final String storeFileNamePart;
-    private final String sinceVersion;
     private final boolean recordStore;
 
-    StoreFile( String typeDescriptor, String storeFileNamePart, String sinceVersion )
+    StoreFile( String storeFileNamePart )
     {
-        this( typeDescriptor, storeFileNamePart, sinceVersion, true );
+        this( storeFileNamePart, true );
     }
 
-    StoreFile( String typeDescriptor, String storeFileNamePart, String sinceVersion, boolean recordStore )
+    StoreFile( String storeFileNamePart, boolean recordStore )
     {
-        this.typeDescriptor = typeDescriptor;
         this.storeFileNamePart = storeFileNamePart;
-        this.sinceVersion = sinceVersion;
         this.recordStore = recordStore;
-    }
-
-    public String forVersion( String version )
-    {
-        return typeDescriptor + " " + version;
     }
 
     public String fileName( StoreFileType type )
@@ -203,32 +113,9 @@ public enum StoreFile
         return recordStore;
     }
 
-    public static Iterable<StoreFile> legacyStoreFilesForVersion( final String version )
-    {
-        Predicate<StoreFile> predicate = item -> version.compareTo( item.sinceVersion ) >= 0;
-        Iterable<StoreFile> storeFiles = currentStoreFiles();
-        Iterable<StoreFile> filter = Iterables.filter( predicate, storeFiles );
-        return filter;
-    }
-
     public static Iterable<StoreFile> currentStoreFiles()
     {
         return Iterables.iterable( values() );
-    }
-
-    public static void fileOperation( FileOperation operation, FileSystemAbstraction fs, File fromDirectory,
-            File toDirectory, StoreFile... files ) throws IOException
-    {
-        fileOperation( operation, fs, fromDirectory, toDirectory, storeFiles( files ), false,
-                ExistingTargetStrategy.FAIL );
-    }
-
-    public static void fileOperation( FileOperation operation, FileSystemAbstraction fs, File fromDirectory,
-            File toDirectory, Iterable<StoreFile> files,
-            boolean allowSkipNonExistentFiles, ExistingTargetStrategy existingTargetStrategy ) throws IOException
-    {
-        fileOperation( operation, fs, fromDirectory, toDirectory, files, allowSkipNonExistentFiles,
-                existingTargetStrategy, StoreFileType.values() );
     }
 
     /**
@@ -257,73 +144,8 @@ public enum StoreFile
         }
     }
 
-    public static void removeTrailers( String version, FileSystemAbstraction fs, File storeDir, int pageSize )
-            throws IOException
-    {
-        for ( StoreFile storeFile : legacyStoreFilesForVersion( StandardV3_0.STORE_VERSION ) )
-        {
-            String trailer = storeFile.forVersion( version );
-            byte[] encodedTrailer = UTF8.encode( trailer );
-            File file = new File( storeDir, storeFile.storeFileName() );
-            long fileSize = fs.getFileSize( file );
-            long truncationPosition = containsTrailer( fs, file, fileSize, pageSize, encodedTrailer );
-            if ( truncationPosition != -1 )
-            {
-                fs.truncate( file, truncationPosition );
-            }
-        }
-    }
-
-    private static long containsTrailer( FileSystemAbstraction fs, File file, long fileSize, int pageSize,
-            byte[] encodedTrailer ) throws IOException
-    {
-        if ( !fs.fileExists( file ) )
-        {
-            return -1L;
-        }
-
-        try ( StoreChannel channel = fs.open( file, "rw" ) )
-        {
-            ByteBuffer buffer = ByteBuffer.allocate( encodedTrailer.length );
-            long newPosition = Math.max( 0, fileSize - encodedTrailer.length );
-            long stopPosition = Math.max( 0, fileSize - encodedTrailer.length - pageSize );
-            while ( newPosition >= stopPosition )
-            {
-                channel.position( newPosition );
-                int totalRead = 0;
-                do
-                {
-                    int read = channel.read( buffer );
-                    if ( read == -1 )
-                    {
-                        return -1L;
-                    }
-                    totalRead += read;
-                }
-                while ( totalRead < encodedTrailer.length );
-
-                if ( Arrays.equals( buffer.array(), encodedTrailer ) )
-                {
-                    return newPosition;
-                }
-                else
-                {
-                    newPosition -= 1;
-                    buffer.clear();
-                }
-            }
-
-            return -1;
-        }
-    }
-
     public boolean isOptional()
     {
         return false;
-    }
-
-    public static Iterable<StoreFile> storeFiles( StoreFile... files )
-    {
-        return iterable( files );
     }
 }
