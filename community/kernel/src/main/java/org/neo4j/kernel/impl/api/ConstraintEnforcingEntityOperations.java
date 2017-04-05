@@ -103,6 +103,10 @@ public class ConstraintEnforcingEntityOperations implements EntityOperations, Sc
             try ( Cursor<NodeItem> cursor = nodeCursorById( state, nodeId ) )
             {
                 NodeItem node = cursor.get();
+                if ( node.hasLabel( labelId ) )
+                {
+                    break; // no need to verify if the node already had the label
+                }
                 Object propertyValue = node.getProperty( propertyKeyId );
                 if ( propertyValue != null )
                 {
@@ -120,27 +124,29 @@ public class ConstraintEnforcingEntityOperations implements EntityOperations, Sc
     {
         try ( Cursor<NodeItem> cursor = nodeCursorById( state, nodeId ) )
         {
-
             NodeItem node = cursor.get();
 
-            try ( Cursor<LabelItem> labels = node.labels() )
+            Object previousValue = node.getProperty( property.propertyKeyId() );
+            if ( !property.valueEquals( previousValue ) )
             {
-                while ( labels.next() )
+                try ( Cursor<LabelItem> labels = node.labels() )
                 {
-                    int labelId = labels.get().getAsInt();
-                    int propertyKeyId = property.propertyKeyId();
-                    Iterator<NodePropertyConstraint> constraintIterator =
-                            uniquePropertyConstraints(
-                                    schemaReadOperations.constraintsGetForLabelAndPropertyKey( state, labelId,
-                                            propertyKeyId ) );
-                    if ( constraintIterator.hasNext() )
+                    while ( labels.next() )
                     {
-                        validateNoExistingNodeWithLabelAndProperty(
-                                state, labelId, property.propertyKeyId(), property.value(), node.id() );
+                        int labelId = labels.get().getAsInt();
+                        int propertyKeyId = property.propertyKeyId();
+                        Iterator<NodePropertyConstraint> constraintIterator =
+                                uniquePropertyConstraints(
+                                        schemaReadOperations.constraintsGetForLabelAndPropertyKey( state, labelId,
+                                                propertyKeyId ) );
+                        if ( constraintIterator.hasNext() )
+                        {
+                            validateNoExistingNodeWithLabelAndProperty(
+                                    state, labelId, property.propertyKeyId(), property.value(), node.id() );
+                        }
                     }
                 }
             }
-
         }
 
         return entityWriteOperations.nodeSetProperty( state, nodeId, property );
