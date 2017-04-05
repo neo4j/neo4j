@@ -26,8 +26,8 @@ import java.io.IOException;
 import java.io.UncheckedIOException;
 import java.nio.file.NoSuchFileException;
 import java.util.function.Consumer;
+import java.util.Optional;
 import java.util.function.IntFunction;
-import java.util.stream.Collectors;
 
 import org.neo4j.cursor.RawCursor;
 import org.neo4j.graphdb.ResourceIterator;
@@ -49,7 +49,6 @@ import org.neo4j.kernel.monitoring.Monitors;
 import org.neo4j.storageengine.api.schema.LabelScanReader;
 
 import static org.neo4j.helpers.Format.duration;
-import static org.neo4j.helpers.collection.Iterables.single;
 import static org.neo4j.helpers.collection.Iterators.asResourceIterator;
 import static org.neo4j.helpers.collection.Iterators.iterator;
 import static org.neo4j.helpers.collection.MapUtil.map;
@@ -325,8 +324,7 @@ public class NativeLabelScanStore implements LabelScanStore
     {
         try
         {
-            storeFileHandle();
-            return true;
+            return storeFileHandle().isPresent();
         }
         catch ( NoSuchFileException e )
         {
@@ -334,9 +332,9 @@ public class NativeLabelScanStore implements LabelScanStore
         }
     }
 
-    private FileHandle storeFileHandle() throws IOException
+    private Optional<FileHandle> storeFileHandle() throws IOException
     {
-        return single( pageCache.streamFilesRecursive( storeFile ).collect( Collectors.toList() ) );
+        return pageCache.streamFilesRecursive( storeFile ).findFirst();
     }
 
     /**
@@ -389,7 +387,11 @@ public class NativeLabelScanStore implements LabelScanStore
             index.close();
             index = null;
         }
-        storeFileHandle().delete();
+        Optional<FileHandle> fileHandle = storeFileHandle();
+        if ( fileHandle.isPresent() )
+        {
+            fileHandle.get().delete();
+        }
     }
 
     /**

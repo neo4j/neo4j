@@ -22,15 +22,17 @@ package upgrade;
 import org.junit.Before;
 import org.junit.Rule;
 import org.junit.Test;
+import org.junit.runner.RunWith;
+import org.junit.runners.Parameterized;
 
 import java.io.File;
 import java.io.IOException;
+import java.util.Collection;
+import java.util.Collections;
 
 import org.neo4j.graphdb.GraphDatabaseService;
 import org.neo4j.graphdb.factory.GraphDatabaseSettings;
-import org.neo4j.kernel.impl.store.format.standard.StandardV2_0;
-import org.neo4j.kernel.impl.store.format.standard.StandardV2_1;
-import org.neo4j.kernel.impl.store.format.standard.StandardV2_2;
+import org.neo4j.kernel.impl.store.format.standard.StandardV2_3;
 import org.neo4j.kernel.impl.storemigration.participant.StoreMigrator;
 import org.neo4j.test.TestGraphDatabaseFactory;
 import org.neo4j.test.rule.TestDirectory;
@@ -41,6 +43,7 @@ import static org.junit.Assert.fail;
 import static org.neo4j.kernel.impl.pagecache.PageSwapperFactoryForTesting.TEST_PAGESWAPPER_NAME;
 import static org.neo4j.kernel.impl.storemigration.MigrationTestUtils.prepareSampleLegacyDatabase;
 
+@RunWith( Parameterized.class )
 public class PlatformConstraintStoreUpgradeTest
 {
     @Rule
@@ -51,36 +54,34 @@ public class PlatformConstraintStoreUpgradeTest
     private File prepareDir;
     private File workingDir;
 
+    @Parameterized.Parameter( 0 )
+    public String version;
+
+    @Parameterized.Parameters( name = "{0}" )
+    public static Collection<String> versions()
+    {
+        return Collections.singletonList( StandardV2_3.STORE_VERSION );
+    }
+
+//    public PlatformConstraintStoreUpgradeTest( String version )
+//    {
+//        this.version = version;
+//    }
+
     @Before
     public void setup()
     {
-
         prepareDir = storeDir.directory( "prepare" );
         workingDir = storeDir.directory( "working" );
     }
 
     @Test
-    public void shouldFailToStartWithCustomIOConfigurationTest20() throws IOException
+    public void shouldFailToStartWithCustomIOConfigurationTest() throws IOException
     {
-        String storeVersion = StandardV2_0.STORE_VERSION;
-        checkForStoreVersion( storeVersion );
+        checkForStoreVersion( version );
     }
 
-    @Test
-    public void shouldFailToStartWithCustomIOConfigurationTest21() throws IOException
-    {
-        String storeVersion = StandardV2_1.STORE_VERSION;
-        checkForStoreVersion( storeVersion );
-    }
-
-    @Test
-    public void shouldFailToStartWithCustomIOConfigurationTest22() throws IOException
-    {
-        String storeVersion = StandardV2_2.STORE_VERSION;
-        checkForStoreVersion( storeVersion );
-    }
-
-    protected void checkForStoreVersion( String storeVersion ) throws IOException
+    private void checkForStoreVersion( String storeVersion ) throws IOException
     {
         prepareSampleLegacyDatabase( storeVersion, fileSystemRule.get(), workingDir, prepareDir );
         try

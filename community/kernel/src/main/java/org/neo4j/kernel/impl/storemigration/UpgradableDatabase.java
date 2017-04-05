@@ -24,8 +24,6 @@ import java.io.IOException;
 
 import org.neo4j.io.fs.FileSystemAbstraction;
 import org.neo4j.kernel.impl.store.MetaDataStore;
-import org.neo4j.kernel.impl.store.StoreFile;
-import org.neo4j.kernel.impl.store.format.Capability;
 import org.neo4j.kernel.impl.store.format.FormatFamily;
 import org.neo4j.kernel.impl.store.format.RecordFormatSelector;
 import org.neo4j.kernel.impl.store.format.RecordFormats;
@@ -36,7 +34,6 @@ import org.neo4j.kernel.impl.storemigration.StoreUpgrader.UpgradeMissingStoreFil
 import org.neo4j.kernel.impl.storemigration.StoreUpgrader.UpgradingStoreVersionNotFoundException;
 import org.neo4j.kernel.impl.storemigration.StoreVersionCheck.Result;
 import org.neo4j.kernel.impl.storemigration.StoreVersionCheck.Result.Outcome;
-import org.neo4j.kernel.impl.storemigration.legacystore.LegacyStoreVersionCheck;
 import org.neo4j.kernel.impl.transaction.log.PhysicalLogFiles;
 import org.neo4j.kernel.impl.transaction.log.ReadableClosablePositionAwareChannel;
 import org.neo4j.kernel.impl.transaction.log.entry.LogEntryReader;
@@ -52,15 +49,13 @@ public class UpgradableDatabase
 {
     private final FileSystemAbstraction fs;
     private final StoreVersionCheck storeVersionCheck;
-    private final LegacyStoreVersionCheck legacyStoreVersionCheck;
     private final RecordFormats format;
 
     public UpgradableDatabase( FileSystemAbstraction fs,
-            StoreVersionCheck storeVersionCheck, LegacyStoreVersionCheck legacyStoreVersionCheck, RecordFormats format )
+            StoreVersionCheck storeVersionCheck, RecordFormats format )
     {
         this.fs = fs;
         this.storeVersionCheck = storeVersionCheck;
-        this.legacyStoreVersionCheck = legacyStoreVersionCheck;
         this.format = format;
     }
 
@@ -109,9 +104,7 @@ public class UpgradableDatabase
             }
             else
             {
-                result = fromFormat.hasCapability( Capability.VERSION_TRAILERS )
-                        ? checkCleanShutDownByVersionTrailer( storeDirectory, fromFormat )
-                        : checkCleanShutDownByCheckPoint( storeDirectory );
+                result = checkCleanShutDownByCheckPoint( storeDirectory );
                 if ( result.outcome.isSuccessful() )
                 {
                     return fromFormat;
@@ -164,28 +157,12 @@ public class UpgradableDatabase
         return new Result( Result.Outcome.storeNotCleanlyShutDown, null, null );
     }
 
-    private Result checkCleanShutDownByVersionTrailer( File storeDirectory, RecordFormats fromFormat )
-    {
-        Result result = null;
-        for ( StoreFile store : StoreFile.legacyStoreFilesForVersion( fromFormat.storeVersion() ) )
-        {
-            String expectedVersion = store.forVersion( fromFormat.storeVersion() );
-            File storeFile = new File( storeDirectory, store.storeFileName() );
-            result = legacyStoreVersionCheck.hasVersion( storeFile, expectedVersion, store.isOptional() );
-            if ( !result.outcome.isSuccessful() )
-            {
-                break;
-            }
-        }
-        return result;
-    }
-
     private String getPathToStoreFile( File storeDirectory, Result result )
     {
         return new File( storeDirectory, result.storeFilename ).getAbsolutePath();
     }
 
-    public boolean hasCurrentVersion( File storeDir )
+    boolean hasCurrentVersion( File storeDir )
     {
         File neoStore = new File( storeDir, MetaDataStore.DEFAULT_NAME );
         Result result = storeVersionCheck.hasVersion( neoStore, format.storeVersion() );

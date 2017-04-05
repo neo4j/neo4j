@@ -55,7 +55,6 @@ import org.neo4j.kernel.impl.store.format.RecordFormats;
 import org.neo4j.kernel.impl.store.format.standard.StandardV2_3;
 import org.neo4j.kernel.impl.store.format.standard.StandardV3_0;
 import org.neo4j.kernel.impl.store.format.standard.StandardV3_2;
-import org.neo4j.kernel.impl.storemigration.legacystore.LegacyStoreVersionCheck;
 import org.neo4j.logging.NullLogProvider;
 import org.neo4j.test.rule.PageCacheRule;
 import org.neo4j.test.rule.TestDirectory;
@@ -103,14 +102,12 @@ public class StoreMigrationIT
         PageCache pageCache = pageCacheRule.getPageCache( fs );
         File dir = TestDirectory.testDirectory( StoreMigrationIT.class ).prepareDirectoryForTest( "migration" );
         StoreVersionCheck storeVersionCheck = new StoreVersionCheck( pageCache );
-        LegacyStoreVersionCheck legacyStoreVersionCheck = new LegacyStoreVersionCheck( fs );
         List<Object[]> data = new ArrayList<>();
         ArrayList<RecordFormats> recordFormatses = new ArrayList<>();
         RecordFormatSelector.allFormats().forEach( ( f ) -> addIfNotThere( f, recordFormatses ) );
         for ( RecordFormats toFormat : recordFormatses )
         {
-            UpgradableDatabase upgradableDatabase = new UpgradableDatabase( fs, storeVersionCheck,
-                    legacyStoreVersionCheck, toFormat );
+            UpgradableDatabase upgradableDatabase = new UpgradableDatabase( fs, storeVersionCheck, toFormat );
             for ( RecordFormats fromFormat : recordFormatses )
             {
                 File db = new File( dir, baseDirName( toFormat, fromFormat ) );

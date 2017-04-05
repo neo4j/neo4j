@@ -47,7 +47,6 @@ import static org.mockito.Mockito.verifyNoMoreInteractions;
 import static org.neo4j.graphdb.factory.GraphDatabaseSettings.pagecache_memory;
 import static org.neo4j.helpers.collection.MapUtil.stringMap;
 import static org.neo4j.io.pagecache.tracing.PageCacheTracer.NULL;
-import static org.neo4j.kernel.api.index.SchemaIndexProvider.NO_INDEX_PROVIDER;
 import static org.neo4j.kernel.impl.store.StoreFile.NEO_STORE;
 import static org.neo4j.kernel.impl.storemigration.StoreFileType.STORE;
 
@@ -80,8 +79,8 @@ public class StoreMigratorTest
             assertTrue( hasVersionResult.actualVersion, hasVersionResult.outcome.isSuccessful() );
 
             // WHEN
-            StoreMigrator migrator = new StoreMigrator( fs, pageCache, config, NullLogService.getInstance(),
-                    NO_INDEX_PROVIDER );
+            StoreMigrator migrator = new StoreMigrator( fs, pageCache, config, NullLogService.getInstance()
+            );
             MigrationProgressMonitor.Section monitor = mock( MigrationProgressMonitor.Section.class );
             File migrationDir = new File( storeDir, "migration" );
             fs.mkdirs( migrationDir );

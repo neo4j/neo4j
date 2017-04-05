@@ -40,8 +40,7 @@ import org.neo4j.commandline.admin.Usage;
 import org.neo4j.kernel.impl.store.MetaDataStore;
 import org.neo4j.kernel.impl.store.format.RecordFormatSelector;
 import org.neo4j.kernel.impl.store.format.RecordFormats;
-import org.neo4j.kernel.impl.store.format.standard.StandardV2_2;
-import org.neo4j.kernel.internal.Version;
+import org.neo4j.kernel.impl.store.format.standard.StandardV2_3;
 import org.neo4j.test.rule.PageCacheRule;
 import org.neo4j.test.rule.TestDirectory;
 import org.neo4j.test.rule.fs.DefaultFileSystemRule;
@@ -148,7 +147,7 @@ public class StoreInfoCommandTest
     @Test
     public void readsOlderStoreVersionCorrectly() throws Exception
     {
-        prepareNeoStoreFile( StandardV2_2.RECORD_FORMATS.storeVersion() );
+        prepareNeoStoreFile( StandardV2_3.RECORD_FORMATS.storeVersion() );
 
         execute( databaseDirectory.toString() );
 
@@ -156,9 +155,9 @@ public class StoreInfoCommandTest
 
         assertEquals(
                 Arrays.asList(
-                        "Store format version:         v0.A.5",
-                        "Store format introduced in:   2.2.0",
-                        "Store format superseded in:   2.3.0" ),
+                        "Store format version:         v0.A.6",
+                        "Store format introduced in:   2.3.0",
+                        "Store format superseded in:   3.0.0" ),
                 outCaptor.getAllValues() );
     }
 

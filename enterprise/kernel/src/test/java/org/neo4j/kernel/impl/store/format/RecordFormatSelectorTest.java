@@ -91,9 +91,6 @@ public class RecordFormatSelectorTest
     @Test
     public void selectForVersionTest()
     {
-        assertSame( StandardV2_0.RECORD_FORMATS, selectForVersion( StandardV2_0.STORE_VERSION ) );
-        assertSame( StandardV2_1.RECORD_FORMATS, selectForVersion( StandardV2_1.STORE_VERSION ) );
-        assertSame( StandardV2_2.RECORD_FORMATS, selectForVersion( StandardV2_2.STORE_VERSION ) );
         assertSame( StandardV2_3.RECORD_FORMATS, selectForVersion( StandardV2_3.STORE_VERSION ) );
         assertSame( StandardV3_0.RECORD_FORMATS, selectForVersion( StandardV3_0.STORE_VERSION ) );
         assertSame( StandardV3_2.RECORD_FORMATS, selectForVersion( StandardV3_2.STORE_VERSION ) );
@@ -147,9 +144,6 @@ public class RecordFormatSelectorTest
     public void selectForStoreWithValidStore() throws IOException
     {
         PageCache pageCache = getPageCache();
-        verifySelectForStore( pageCache, StandardV2_0.RECORD_FORMATS );
-        verifySelectForStore( pageCache, StandardV2_1.RECORD_FORMATS );
-        verifySelectForStore( pageCache, StandardV2_2.RECORD_FORMATS );
         verifySelectForStore( pageCache, StandardV2_3.RECORD_FORMATS );
         verifySelectForStore( pageCache, StandardV3_0.RECORD_FORMATS );
         verifySelectForStore( pageCache, HighLimitV3_0_0.RECORD_FORMATS );
