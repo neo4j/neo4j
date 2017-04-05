@@ -746,6 +746,7 @@ final class TransactionBoundQueryContext(val transactionalContext: Transactional
 
     val indexEntryId = indexEntryResourceId(labelId, predicates: _*)
     if (exclusive) {
+//      transactionalContext.statement.readOperations().releaseShared(ResourceTypes.INDEX_ENTRY, indexEntryId) //TODO!
       transactionalContext.statement.readOperations().acquireExclusive(ResourceTypes.INDEX_ENTRY, indexEntryId)
     } else {
       transactionalContext.statement.readOperations().acquireShared(ResourceTypes.INDEX_ENTRY, indexEntryId)
