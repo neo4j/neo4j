@@ -27,7 +27,6 @@ import org.neo4j.io.fs.FileSystemAbstraction;
 import org.neo4j.kernel.impl.index.labelscan.NativeLabelScanStore;
 import org.neo4j.kernel.impl.store.counts.CountsTracker;
 import org.neo4j.kernel.impl.store.id.IdType;
-import org.neo4j.kernel.impl.storemigration.StoreFile;
 
 public enum StoreType
 {

@@ -48,7 +48,7 @@ import static org.neo4j.graphdb.factory.GraphDatabaseSettings.pagecache_memory;
 import static org.neo4j.helpers.collection.MapUtil.stringMap;
 import static org.neo4j.io.pagecache.tracing.PageCacheTracer.NULL;
 import static org.neo4j.kernel.api.index.SchemaIndexProvider.NO_INDEX_PROVIDER;
-import static org.neo4j.kernel.impl.storemigration.StoreFile.NEO_STORE;
+import static org.neo4j.kernel.impl.store.StoreFile.NEO_STORE;
 import static org.neo4j.kernel.impl.storemigration.StoreFileType.STORE;
 
 public class StoreMigratorTest

@@ -17,7 +17,7 @@
  * You should have received a copy of the GNU General Public License
  * along with this program.  If not, see <http://www.gnu.org/licenses/>.
  */
-package org.neo4j.kernel.impl.storemigration;
+package org.neo4j.kernel.impl.store;
 
 import java.io.File;
 import java.io.IOException;
@@ -28,23 +28,14 @@ import java.util.function.Predicate;
 import org.neo4j.helpers.collection.Iterables;
 import org.neo4j.io.fs.FileSystemAbstraction;
 import org.neo4j.io.fs.StoreChannel;
-import org.neo4j.kernel.impl.store.DynamicArrayStore;
-import org.neo4j.kernel.impl.store.DynamicStringStore;
-import org.neo4j.kernel.impl.store.LabelTokenStore;
-import org.neo4j.kernel.impl.store.MetaDataStore;
-import org.neo4j.kernel.impl.store.NodeStore;
-import org.neo4j.kernel.impl.store.PropertyKeyTokenStore;
-import org.neo4j.kernel.impl.store.PropertyStore;
-import org.neo4j.kernel.impl.store.RelationshipGroupStore;
-import org.neo4j.kernel.impl.store.RelationshipStore;
-import org.neo4j.kernel.impl.store.RelationshipTypeTokenStore;
-import org.neo4j.kernel.impl.store.SchemaStore;
-import org.neo4j.kernel.impl.store.StoreFactory;
 import org.neo4j.kernel.impl.store.counts.CountsTracker;
 import org.neo4j.kernel.impl.store.format.standard.StandardV2_0;
 import org.neo4j.kernel.impl.store.format.standard.StandardV2_1;
 import org.neo4j.kernel.impl.store.format.standard.StandardV2_2;
 import org.neo4j.kernel.impl.store.format.standard.StandardV3_0;
+import org.neo4j.kernel.impl.storemigration.ExistingTargetStrategy;
+import org.neo4j.kernel.impl.storemigration.FileOperation;
+import org.neo4j.kernel.impl.storemigration.StoreFileType;
 import org.neo4j.string.UTF8;
 
 import static org.neo4j.helpers.collection.Iterables.iterable;
@@ -144,7 +135,7 @@ public enum StoreFile
     )
             {
                 @Override
-                boolean isOptional()
+                public boolean isOptional()
                 {
                     return true;
                 }
@@ -157,7 +148,7 @@ public enum StoreFile
     )
             {
                 @Override
-                boolean isOptional()
+                public boolean isOptional()
                 {
                     return true;
                 }
@@ -326,7 +317,7 @@ public enum StoreFile
         }
     }
 
-    boolean isOptional()
+    public boolean isOptional()
     {
         return false;
     }
