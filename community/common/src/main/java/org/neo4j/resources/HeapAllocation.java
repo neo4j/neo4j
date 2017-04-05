@@ -23,18 +23,17 @@ import java.lang.management.ManagementFactory;
 import java.lang.management.ThreadMXBean;
 
 import static java.lang.Character.toUpperCase;
+import static java.util.Objects.requireNonNull;
 
 public abstract class HeapAllocation
 {
-    public static final HeapAllocation HEAP_ALLOCATION = load( ManagementFactory.getThreadMXBean() );
-    public static final HeapAllocation NOT_AVAILABLE = new HeapAllocation()
+    public static final HeapAllocation HEAP_ALLOCATION, NOT_AVAILABLE;
+
+    static
     {
-        @Override
-        public long allocatedBytes( long threadId )
-        {
-            return -1;
-        }
-    };
+        NOT_AVAILABLE = new HeapAllocationNotAvailable(); // must be first!
+        HEAP_ALLOCATION = load( ManagementFactory.getThreadMXBean() );
+    }
 
     /**
      * Returns the current CPU time used by the thread, in nanoseconds.
@@ -74,13 +73,27 @@ public abstract class HeapAllocation
         name.append( base.getSimpleName() );
         try
         {
-            return (HeapAllocation) Class.forName( name.toString() )
+            return requireNonNull( (HeapAllocation) Class.forName( name.toString() )
                     .getDeclaredMethod( "load", ThreadMXBean.class )
-                    .invoke( null, bean );
+                    .invoke( null, bean ), "Loader method returned null." );
         }
         catch ( Throwable e )
         {
+            //noinspection ConstantConditions -- this can actually happen if the code order is wrong
+            if ( NOT_AVAILABLE == null )
+            {
+                throw new LinkageError( "Bad code loading order.", e );
+            }
             return NOT_AVAILABLE;
+        }
+    }
+
+    private static class HeapAllocationNotAvailable extends HeapAllocation
+    {
+        @Override
+        public long allocatedBytes( long threadId )
+        {
+            return -1;
         }
     }
 }
